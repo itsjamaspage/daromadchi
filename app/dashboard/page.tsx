@@ -1,6 +1,8 @@
+import { Suspense } from 'react'
 import { DollarSign, TrendingUp, ShoppingBag, Package } from 'lucide-react'
 import KpiCard from '@/components/dashboard/KpiCard'
 import RevenueChart from '@/components/dashboard/RevenueChart'
+import DateFilter from '@/components/dashboard/DateFilter'
 import { getKpis } from '@/lib/db/kpis'
 import { getOrders } from '@/lib/db/orders'
 import { getProducts } from '@/lib/db/products'
@@ -17,21 +19,41 @@ const statusMap: Record<string, { label: string; className: string }> = {
   cancelled:  { label: 'Bekor',     className: 'bg-red-500/10 text-red-400' },
 }
 
-export default async function DashboardPage() {
+function parseDays(params: Record<string, string> | undefined): number {
+  const v = params?.days
+  return v === '7' || v === '90' ? Number(v) : 30
+}
+
+interface Props {
+  searchParams: Promise<Record<string, string>>
+}
+
+export default async function DashboardPage({ searchParams }: Props) {
+  const params = await searchParams
+  const days   = parseDays(params)
+  const daysStr = String(days)
+
   const [kpis, recentOrders, topProducts, chartData] = await Promise.all([
-    getKpis(),
+    getKpis(days),
     getOrders(5),
     getProducts(),
-    getDailyRevenue(7),
+    getDailyRevenue(days),
   ])
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-white">Dashboard</h1>
-        <p className="text-slate-400 text-sm mt-1">Xush kelibsiz! Bu sizning analitika panelingiz.</p>
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-white">Dashboard</h1>
+          <p className="text-slate-400 text-sm mt-0.5">Xush kelibsiz! Bu sizning analitika panelingiz.</p>
+        </div>
+        <Suspense>
+          <DateFilter current={daysStr} />
+        </Suspense>
       </div>
 
+      {/* KPI cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <KpiCard
           title="Umumiy daromad"
@@ -63,9 +85,10 @@ export default async function DashboardPage() {
         />
       </div>
 
+      {/* Chart + recent orders */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         <div className="xl:col-span-2">
-          <RevenueChart data={chartData} />
+          <RevenueChart data={chartData} days={days} />
         </div>
 
         <div className="bg-[#13131f] border border-white/[0.06] rounded-2xl p-6">
@@ -92,6 +115,7 @@ export default async function DashboardPage() {
         </div>
       </div>
 
+      {/* Top products */}
       <div className="bg-[#13131f] border border-white/[0.06] rounded-2xl p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-white font-semibold">Top mahsulotlar</h3>

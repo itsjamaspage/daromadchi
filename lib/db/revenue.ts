@@ -6,13 +6,22 @@ const supabaseConfigured =
   process.env.NEXT_PUBLIC_SUPABASE_URL &&
   !process.env.NEXT_PUBLIC_SUPABASE_URL.includes('your-project')
 
+// Extend mock data for longer ranges by repeating the 7-day pattern
+function buildMockRevenue(days: number): DailyRevenue[] {
+  const result: DailyRevenue[] = []
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date()
+    d.setDate(d.getDate() - i)
+    const label = d.toLocaleDateString('uz-UZ', { month: 'short', day: 'numeric' })
+    const base = mockRevenue[i % mockRevenue.length]
+    result.push({ date: label, revenue: base.revenue, order_count: 0 })
+  }
+  return result
+}
+
 export async function getDailyRevenue(days = 7): Promise<DailyRevenue[]> {
   if (!supabaseConfigured) {
-    return mockRevenue.map(r => ({
-      date: r.date,
-      revenue: r.revenue,
-      order_count: 0,
-    }))
+    return buildMockRevenue(days)
   }
 
   const supabase = await createClient()

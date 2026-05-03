@@ -25,13 +25,13 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return null
 }
 
-export default function RevenueChart({ data }: { data: DailyRevenue[] }) {
+export default function RevenueChart({ data, days = 7 }: { data: DailyRevenue[]; days?: number }) {
   return (
     <div className="bg-[#13131f] border border-white/[0.06] rounded-2xl p-6">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h3 className="text-white font-semibold">Kunlik daromad</h3>
-          <p className="text-slate-500 text-xs mt-0.5">So&apos;nggi 7 kun</p>
+          <p className="text-slate-500 text-xs mt-0.5">So&apos;nggi {days} kun</p>
         </div>
         <span className="text-xs text-slate-500 bg-white/[0.04] px-3 py-1.5 rounded-lg border border-white/[0.06]">
           So&apos;m
