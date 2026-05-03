@@ -12,13 +12,17 @@ import {
   ChevronRight,
   X,
   Settings,
+  BarChart2,
+  Calculator,
 } from 'lucide-react'
 
 const nav = [
-  { href: '/dashboard',          label: 'Dashboard',    icon: LayoutDashboard },
-  { href: '/dashboard/products', label: 'Mahsulotlar',  icon: Package },
-  { href: '/dashboard/orders',   label: 'Buyurtmalar',  icon: ShoppingCart },
-  { href: '/dashboard/settings', label: 'Sozlamalar',   icon: Settings },
+  { href: '/dashboard',            label: 'Dashboard',    icon: LayoutDashboard },
+  { href: '/dashboard/products',   label: 'Mahsulotlar',  icon: Package },
+  { href: '/dashboard/orders',     label: 'Buyurtmalar',  icon: ShoppingCart },
+  { href: '/dashboard/analytics',  label: 'Reklama',      icon: BarChart2 },
+  { href: '/dashboard/calculator', label: 'Kalkulyator',  icon: Calculator },
+  { href: '/dashboard/settings',   label: 'Sozlamalar',   icon: Settings },
 ]
 
 interface SidebarProps {

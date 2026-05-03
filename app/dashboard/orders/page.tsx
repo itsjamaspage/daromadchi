@@ -1,6 +1,7 @@
 import { ShoppingCart, Filter } from 'lucide-react'
 import { getOrders } from '@/lib/db/orders'
 import type { OrderStatus } from '@/lib/types'
+import ExportButton from '@/components/dashboard/ExportButton'
 
 function formatSum(n: number) {
   return new Intl.NumberFormat('uz-UZ').format(n) + " so'm"
@@ -37,6 +38,15 @@ export default async function OrdersPage() {
     return acc
   }, {} as Record<string, number>)
 
+  const exportData = orders.map(o => ({
+    'Buyurtma ID': o.order_ref,
+    'Mijoz': o.customer,
+    'Mahsulot': o.product_name,
+    'Sana': o.ordered_at,
+    "Summa (so'm)": o.amount,
+    'Holat': statusConfig[o.status]?.label ?? o.status,
+  }))
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -44,10 +54,13 @@ export default async function OrdersPage() {
           <h1 className="text-2xl font-bold text-white">Buyurtmalar</h1>
           <p className="text-slate-400 text-sm mt-1">{orders.length} ta buyurtma</p>
         </div>
-        <button className="flex items-center gap-2 bg-[#13131f] hover:bg-white/[0.06] border border-white/[0.08] text-slate-300 text-sm font-medium px-4 py-2.5 rounded-xl transition-colors">
-          <Filter className="w-4 h-4" />
-          Filter
-        </button>
+        <div className="flex items-center gap-2">
+          <ExportButton data={exportData} filename="buyurtmalar" />
+          <button className="flex items-center gap-2 bg-[#13131f] hover:bg-white/[0.06] border border-white/[0.08] text-slate-300 text-sm font-medium px-4 py-2.5 rounded-xl transition-colors">
+            <Filter className="w-4 h-4" />
+            Filter
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

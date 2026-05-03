@@ -1,5 +1,6 @@
 import { Package } from 'lucide-react'
 import { getProducts } from '@/lib/db/products'
+import ExportButton from '@/components/dashboard/ExportButton'
 
 function formatSum(n: number) {
   return new Intl.NumberFormat('uz-UZ').format(n) + " so'm"
@@ -8,6 +9,18 @@ function formatSum(n: number) {
 export default async function ProductsPage() {
   const products = await getProducts()
 
+  const exportData = products.map(p => ({
+    'Mahsulot': p.name,
+    'SKU': p.sku,
+    'Kategoriya': p.category,
+    "Narx (so'm)": p.price,
+    "Tannarx (so'm)": p.cost,
+    "Foyda (so'm)": p.profit,
+    'Margin (%)': ((p.profit / p.price) * 100).toFixed(1),
+    'Sotilgan': p.sold ?? 0,
+    'Ombor': p.stock,
+  }))
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -15,10 +28,13 @@ export default async function ProductsPage() {
           <h1 className="text-2xl font-bold text-white">Mahsulotlar</h1>
           <p className="text-slate-400 text-sm mt-1">{products.length} ta mahsulot</p>
         </div>
-        <button className="flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium px-4 py-2.5 rounded-xl transition-colors shadow-lg shadow-violet-500/20">
-          <Package className="w-4 h-4" />
-          Mahsulot qo&apos;shish
-        </button>
+        <div className="flex items-center gap-2">
+          <ExportButton data={exportData} filename="mahsulotlar" />
+          <button className="flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium px-4 py-2.5 rounded-xl transition-colors shadow-lg shadow-violet-500/20">
+            <Package className="w-4 h-4" />
+            Mahsulot qo&apos;shish
+          </button>
+        </div>
       </div>
 
       <div className="bg-[#13131f] border border-white/[0.06] rounded-2xl overflow-hidden">
