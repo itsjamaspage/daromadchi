@@ -3,6 +3,7 @@ import { DollarSign, TrendingUp, ShoppingBag, Package } from 'lucide-react'
 import KpiCard from '@/components/dashboard/KpiCard'
 import RevenueChart from '@/components/dashboard/RevenueChart'
 import DateFilter from '@/components/dashboard/DateFilter'
+import SyncButton from '@/components/dashboard/SyncButton'
 import { getKpis } from '@/lib/db/kpis'
 import { getOrders } from '@/lib/db/orders'
 import { getProducts } from '@/lib/db/products'
@@ -48,9 +49,12 @@ export default async function DashboardPage({ searchParams }: Props) {
           <h1 className="text-2xl font-bold text-white">Dashboard</h1>
           <p className="text-slate-400 text-sm mt-0.5">Xush kelibsiz! Bu sizning analitika panelingiz.</p>
         </div>
-        <Suspense>
-          <DateFilter current={daysStr} />
-        </Suspense>
+        <div className="flex items-center gap-2">
+          <SyncButton />
+          <Suspense>
+            <DateFilter current={daysStr} />
+          </Suspense>
+        </div>
       </div>
 
       {/* KPI cards */}
