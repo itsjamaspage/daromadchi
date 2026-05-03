@@ -11,12 +11,14 @@ import {
   LogOut,
   ChevronRight,
   X,
+  Settings,
 } from 'lucide-react'
 
 const nav = [
   { href: '/dashboard',          label: 'Dashboard',    icon: LayoutDashboard },
   { href: '/dashboard/products', label: 'Mahsulotlar',  icon: Package },
   { href: '/dashboard/orders',   label: 'Buyurtmalar',  icon: ShoppingCart },
+  { href: '/dashboard/settings', label: 'Sozlamalar',   icon: Settings },
 ]
 
 interface SidebarProps {
