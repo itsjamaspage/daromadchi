@@ -1,11 +1,12 @@
 import { ShoppingCart, Filter } from 'lucide-react'
-import { orders } from '@/lib/mock-data'
+import { getOrders } from '@/lib/db/orders'
+import type { OrderStatus } from '@/lib/types'
 
 function formatSum(n: number) {
   return new Intl.NumberFormat('uz-UZ').format(n) + " so'm"
 }
 
-const statusConfig: Record<string, { label: string; className: string; dot: string }> = {
+const statusConfig: Record<OrderStatus, { label: string; className: string; dot: string }> = {
   delivered: {
     label: 'Yetkazildi',
     className: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20',
@@ -28,12 +29,14 @@ const statusConfig: Record<string, { label: string; className: string; dot: stri
   },
 }
 
-const statusCounts = orders.reduce((acc, o) => {
-  acc[o.status] = (acc[o.status] || 0) + 1
-  return acc
-}, {} as Record<string, number>)
+export default async function OrdersPage() {
+  const orders = await getOrders()
 
-export default function OrdersPage() {
+  const statusCounts = orders.reduce((acc, o) => {
+    acc[o.status] = (acc[o.status] || 0) + 1
+    return acc
+  }, {} as Record<string, number>)
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -47,9 +50,8 @@ export default function OrdersPage() {
         </button>
       </div>
 
-      {/* Status summary */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {Object.entries(statusConfig).map(([key, cfg]) => (
+        {(Object.entries(statusConfig) as [OrderStatus, typeof statusConfig[OrderStatus]][]).map(([key, cfg]) => (
           <div key={key} className="bg-[#13131f] border border-white/[0.06] rounded-xl p-4">
             <div className="flex items-center gap-2 mb-2">
               <div className={`w-2 h-2 rounded-full ${cfg.dot}`} />
@@ -60,7 +62,6 @@ export default function OrdersPage() {
         ))}
       </div>
 
-      {/* Orders table */}
       <div className="bg-[#13131f] border border-white/[0.06] rounded-2xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -78,27 +79,19 @@ export default function OrdersPage() {
               {orders.map(order => {
                 const s = statusConfig[order.status]
                 return (
-                  <tr key={order.id} className="hover:bg-white/[0.02] transition-colors group">
+                  <tr key={order.id} className="hover:bg-white/[0.02] transition-colors">
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-2">
                         <div className="w-7 h-7 rounded-lg bg-violet-500/10 flex items-center justify-center flex-shrink-0">
                           <ShoppingCart className="w-3.5 h-3.5 text-violet-400" />
                         </div>
-                        <span className="text-violet-400 font-mono text-xs font-medium">{order.id}</span>
+                        <span className="text-violet-400 font-mono text-xs font-medium">{order.order_ref}</span>
                       </div>
                     </td>
-                    <td className="px-5 py-4">
-                      <span className="text-white font-medium">{order.customer}</span>
-                    </td>
-                    <td className="px-5 py-4">
-                      <span className="text-slate-300">{order.product}</span>
-                    </td>
-                    <td className="px-5 py-4">
-                      <span className="text-slate-500 text-xs">{order.date}</span>
-                    </td>
-                    <td className="px-5 py-4 text-right">
-                      <span className="text-white font-semibold">{formatSum(order.amount)}</span>
-                    </td>
+                    <td className="px-5 py-4 text-white font-medium">{order.customer}</td>
+                    <td className="px-5 py-4 text-slate-300">{order.product_name}</td>
+                    <td className="px-5 py-4 text-slate-500 text-xs">{order.ordered_at}</td>
+                    <td className="px-5 py-4 text-right text-white font-semibold">{formatSum(order.amount)}</td>
                     <td className="px-5 py-4 text-center">
                       <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg ${s.className}`}>
                         <div className={`w-1.5 h-1.5 rounded-full ${s.dot}`} />

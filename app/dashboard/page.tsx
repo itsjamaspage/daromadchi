@@ -1,7 +1,10 @@
 import { DollarSign, TrendingUp, ShoppingBag, Package } from 'lucide-react'
 import KpiCard from '@/components/dashboard/KpiCard'
 import RevenueChart from '@/components/dashboard/RevenueChart'
-import { kpiData, orders, products } from '@/lib/mock-data'
+import { getKpis } from '@/lib/db/kpis'
+import { getOrders } from '@/lib/db/orders'
+import { getProducts } from '@/lib/db/products'
+import { getDailyRevenue } from '@/lib/db/revenue'
 
 function formatSum(n: number) {
   return new Intl.NumberFormat('uz-UZ').format(n) + " so'm"
@@ -10,13 +13,17 @@ function formatSum(n: number) {
 const statusMap: Record<string, { label: string; className: string }> = {
   delivered: { label: 'Yetkazildi', className: 'bg-emerald-500/10 text-emerald-400' },
   processing: { label: 'Jarayonda', className: 'bg-amber-500/10 text-amber-400' },
-  shipped: { label: 'Yuborildi', className: 'bg-blue-500/10 text-blue-400' },
-  cancelled: { label: 'Bekor', className: 'bg-red-500/10 text-red-400' },
+  shipped:    { label: 'Yuborildi', className: 'bg-blue-500/10 text-blue-400' },
+  cancelled:  { label: 'Bekor',     className: 'bg-red-500/10 text-red-400' },
 }
 
-export default function DashboardPage() {
-  const recentOrders = orders.slice(0, 5)
-  const topProducts = products.slice(0, 4)
+export default async function DashboardPage() {
+  const [kpis, recentOrders, topProducts, chartData] = await Promise.all([
+    getKpis(),
+    getOrders(5),
+    getProducts(),
+    getDailyRevenue(7),
+  ])
 
   return (
     <div className="space-y-6">
@@ -28,29 +35,29 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <KpiCard
           title="Umumiy daromad"
-          value={formatSum(kpiData.revenue.value)}
-          change={kpiData.revenue.change}
+          value={formatSum(kpis.total_revenue)}
+          change={12.4}
           icon={DollarSign}
           color="violet"
         />
         <KpiCard
           title="Sof foyda"
-          value={formatSum(kpiData.profit.value)}
-          change={kpiData.profit.change}
+          value={formatSum(kpis.total_profit)}
+          change={8.7}
           icon={TrendingUp}
           color="emerald"
         />
         <KpiCard
           title="Buyurtmalar"
-          value={kpiData.orders.value.toLocaleString('uz-UZ')}
-          change={kpiData.orders.change}
+          value={kpis.total_orders.toLocaleString('uz-UZ')}
+          change={5.2}
           icon={ShoppingBag}
           color="blue"
         />
         <KpiCard
           title="Ombordagi mahsulot"
-          value={kpiData.stock.value.toLocaleString('uz-UZ')}
-          change={kpiData.stock.change}
+          value={kpis.total_stock.toLocaleString('uz-UZ')}
+          change={-2.1}
           icon={Package}
           color="amber"
         />
@@ -58,7 +65,7 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         <div className="xl:col-span-2">
-          <RevenueChart />
+          <RevenueChart data={chartData} />
         </div>
 
         <div className="bg-[#13131f] border border-white/[0.06] rounded-2xl p-6">
@@ -73,7 +80,7 @@ export default function DashboardPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-white font-medium truncate">{order.customer}</p>
-                    <p className="text-xs text-slate-500 truncate">{order.product}</p>
+                    <p className="text-xs text-slate-500 truncate">{order.product_name}</p>
                   </div>
                   <span className={`text-[11px] font-medium px-2 py-0.5 rounded-lg flex-shrink-0 ${s.className}`}>
                     {s.label}
@@ -103,21 +110,17 @@ export default function DashboardPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/[0.03]">
-              {topProducts.map(p => (
+              {topProducts.slice(0, 4).map(p => (
                 <tr key={p.id} className="hover:bg-white/[0.02] transition-colors">
                   <td className="py-3 pr-6">
-                    <div>
-                      <p className="text-white font-medium">{p.name}</p>
-                      <p className="text-slate-500 text-xs">{p.sku}</p>
-                    </div>
+                    <p className="text-white font-medium">{p.name}</p>
+                    <p className="text-slate-500 text-xs">{p.sku}</p>
                   </td>
-                  <td className="py-3 pr-6 text-right text-slate-300">
-                    {formatSum(p.price)}
-                  </td>
+                  <td className="py-3 pr-6 text-right text-slate-300">{formatSum(p.price)}</td>
                   <td className="py-3 pr-6 text-right">
                     <span className="text-emerald-400 font-medium">{formatSum(p.profit)}</span>
                   </td>
-                  <td className="py-3 text-right text-slate-300">{p.sold}</td>
+                  <td className="py-3 text-right text-slate-300">{p.sold ?? 0}</td>
                 </tr>
               ))}
             </tbody>

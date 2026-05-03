@@ -3,7 +3,7 @@
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts'
-import { dailyRevenue } from '@/lib/mock-data'
+import type { DailyRevenue } from '@/lib/types'
 
 function formatSum(value: number) {
   if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`
@@ -25,7 +25,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return null
 }
 
-export default function RevenueChart() {
+export default function RevenueChart({ data }: { data: DailyRevenue[] }) {
   return (
     <div className="bg-[#13131f] border border-white/[0.06] rounded-2xl p-6">
       <div className="flex items-center justify-between mb-6">
@@ -38,7 +38,7 @@ export default function RevenueChart() {
         </span>
       </div>
       <ResponsiveContainer width="100%" height={220}>
-        <BarChart data={dailyRevenue} barSize={32} margin={{ top: 4, right: 4, left: 4, bottom: 0 }}>
+        <BarChart data={data} barSize={32} margin={{ top: 4, right: 4, left: 4, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#ffffff08" vertical={false} />
           <XAxis
             dataKey="date"
@@ -54,11 +54,7 @@ export default function RevenueChart() {
             width={45}
           />
           <Tooltip content={<CustomTooltip />} cursor={{ fill: '#ffffff05' }} />
-          <Bar
-            dataKey="revenue"
-            fill="url(#barGradient)"
-            radius={[6, 6, 0, 0]}
-          />
+          <Bar dataKey="revenue" fill="url(#barGradient)" radius={[6, 6, 0, 0]} />
           <defs>
             <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="#7c3aed" />

@@ -1,15 +1,13 @@
-import { Package, Search } from 'lucide-react'
-import { products } from '@/lib/mock-data'
+import { Package } from 'lucide-react'
+import { getProducts } from '@/lib/db/products'
 
 function formatSum(n: number) {
   return new Intl.NumberFormat('uz-UZ').format(n) + " so'm"
 }
 
-function profitMargin(profit: number, price: number) {
-  return ((profit / price) * 100).toFixed(1)
-}
+export default async function ProductsPage() {
+  const products = await getProducts()
 
-export default function ProductsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -24,19 +22,6 @@ export default function ProductsPage() {
       </div>
 
       <div className="bg-[#13131f] border border-white/[0.06] rounded-2xl overflow-hidden">
-        {/* Search bar */}
-        <div className="p-4 border-b border-white/[0.05]">
-          <div className="relative max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-            <input
-              type="text"
-              placeholder="Mahsulot qidirish..."
-              className="w-full bg-[#1c1c2e] border border-white/[0.08] rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/30 transition-all"
-            />
-          </div>
-        </div>
-
-        {/* Table */}
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -53,15 +38,13 @@ export default function ProductsPage() {
             </thead>
             <tbody className="divide-y divide-white/[0.03]">
               {products.map(p => {
-                const margin = Number(profitMargin(p.profit, p.price))
+                const margin = Number(((p.profit / p.price) * 100).toFixed(1))
                 const stockLow = p.stock < 20
                 return (
                   <tr key={p.id} className="hover:bg-white/[0.02] transition-colors group">
                     <td className="px-5 py-4">
-                      <div>
-                        <p className="text-white font-medium group-hover:text-violet-300 transition-colors">{p.name}</p>
-                        <p className="text-slate-500 text-xs mt-0.5">{p.sku}</p>
-                      </div>
+                      <p className="text-white font-medium group-hover:text-violet-300 transition-colors">{p.name}</p>
+                      <p className="text-slate-500 text-xs mt-0.5">{p.sku}</p>
                     </td>
                     <td className="px-5 py-4">
                       <span className="text-xs text-slate-400 bg-white/[0.04] px-2.5 py-1 rounded-lg border border-white/[0.06]">
@@ -86,7 +69,7 @@ export default function ProductsPage() {
                         </span>
                       </div>
                     </td>
-                    <td className="px-5 py-4 text-right text-slate-300">{p.sold}</td>
+                    <td className="px-5 py-4 text-right text-slate-300">{p.sold ?? 0}</td>
                     <td className="px-5 py-4 text-right">
                       <span className={`text-xs font-medium px-2.5 py-1 rounded-lg ${
                         stockLow ? 'bg-red-500/10 text-red-400' : 'bg-slate-700/40 text-slate-300'
