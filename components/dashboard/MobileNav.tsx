@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import { Menu } from 'lucide-react'
 import Sidebar from './Sidebar'
-import NotificationsButton from './NotificationsButton'
 
 export default function MobileNav() {
   const [open, setOpen] = useState(false)
@@ -31,7 +30,6 @@ export default function MobileNav() {
           <Menu className="w-5 h-5" />
         </button>
         <span className="font-bold text-white text-sm tracking-tight flex-1">Daromadchi</span>
-        <NotificationsButton />
       </header>
 
       {/* Backdrop */}
