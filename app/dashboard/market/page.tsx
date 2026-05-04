@@ -1,4 +1,4 @@
-import { Globe2, Settings } from 'lucide-react'
+import { Globe2 } from 'lucide-react'
 import Link from 'next/link'
 import { getRootCategories } from '@/lib/uzum/public'
 import { getProducts } from '@/lib/db/products'
@@ -16,12 +16,17 @@ export default async function MarketPage() {
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-            <Globe2 className="w-6 h-6 text-violet-400" />
-            Bozor tadqiqoti
-          </h1>
-          <p className="text-slate-400 text-sm mt-1">
-            Uzum ommaviy ma'lumotlari — raqiblar narxi, buyurtmalar va trend mahsulotlar
+          <div className="flex items-center gap-3 mb-1">
+            <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+              <Globe2 className="w-6 h-6 text-cyan-400" />
+              Bozor tadqiqoti
+            </h1>
+            <span className="text-[10px] font-semibold px-2 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/25 text-cyan-400">
+              Ommaviy ma&apos;lumot
+            </span>
+          </div>
+          <p className="text-slate-400 text-sm">
+            Uzum.uz barcha sotuvchilarining ommaviy narx va savdo statistikasi
           </p>
         </div>
         {userCategories.length > 0 && (

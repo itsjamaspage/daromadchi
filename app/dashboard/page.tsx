@@ -69,8 +69,13 @@ export default async function DashboardPage({ searchParams }: Props) {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-white">Dashboard</h1>
-          <p className="text-slate-400 text-sm mt-0.5">Xush kelibsiz! Bu sizning analitika panelingiz.</p>
+          <div className="flex items-center gap-3 mb-0.5">
+            <h1 className="text-2xl font-bold text-white">Dashboard</h1>
+            <span className="text-[10px] font-semibold px-2 py-1 rounded-full bg-violet-500/10 border border-violet-500/25 text-violet-400">
+              Sizning ma&apos;lumotingiz
+            </span>
+          </div>
+          <p className="text-slate-400 text-sm">Xush kelibsiz! Bu sizning do&apos;koningiz analitikasi.</p>
         </div>
         <div className="flex items-center gap-2">
           <SyncButton />
