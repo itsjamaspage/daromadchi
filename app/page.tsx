@@ -271,14 +271,15 @@ export default function LandingPage() {
         <div className="mx-4 mt-4">
           <div className="max-w-6xl mx-auto backdrop-blur-xl rounded-2xl px-5 h-14 flex items-center justify-between shadow-xl border"
             style={{ background: 'var(--nav-bg)', borderColor: 'var(--border)' }}>
-            <Link href="/" className="flex items-center gap-2.5 group">
+            <Link
+              href="/"
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              className="flex items-center gap-2.5 group"
+            >
               <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-violet-500/30 neon-border">
                 <TrendingUp className="w-4 h-4 text-white" />
               </div>
               <span className="font-bold tracking-tight group-hover:text-violet-400 transition-colors" style={{ color: 'var(--text-base)' }}>Daromadchi</span>
-              <span className="hidden sm:inline-flex items-center gap-1 text-[10px] bg-violet-500/10 border border-violet-500/20 text-violet-400 px-2 py-0.5 rounded-full font-medium">
-                <Zap className="w-2.5 h-2.5" /> Beta
-              </span>
             </Link>
 
             <nav className="hidden md:flex items-center gap-6 text-sm" style={{ color: 'var(--text-muted)' }}>
