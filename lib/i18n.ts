@@ -52,6 +52,11 @@ export const translations = {
     ctaTitle2: 'oshiring',
     ctaSubtitle: "Ro'yxatdan o'ting va demo ma'lumotlar bilan dashboardni sinab ko'ring. Karta shart emas.",
     footer: 'Uzum Market sotuvchilari uchun.',
+    preview: {
+      revenue: 'Tushum', profit: 'Foyda', orders: 'Buyurtmalar', stock: 'Qoldiq',
+      dailyRevenue: 'Kunlik tushum', categories: 'Kategoriyalar',
+      revenueUp: '+12.4% tushum', aiReady: 'AI tayyor',
+    },
   },
   en: {
     nav: {
@@ -104,6 +109,11 @@ export const translations = {
     ctaTitle2: 'sales',
     ctaSubtitle: 'Sign up and try the dashboard with demo data. No credit card required.',
     footer: 'For Uzum Market sellers.',
+    preview: {
+      revenue: 'Revenue', profit: 'Profit', orders: 'Orders', stock: 'Stock',
+      dailyRevenue: 'Daily revenue', categories: 'Categories',
+      revenueUp: '+12.4% revenue', aiReady: 'AI ready',
+    },
   },
   ru: {
     nav: {
@@ -156,6 +166,11 @@ export const translations = {
     ctaTitle2: 'продажи',
     ctaSubtitle: 'Зарегистрируйтесь и попробуйте дашборд с демо-данными. Карта не нужна.',
     footer: 'Для продавцов Uzum Market.',
+    preview: {
+      revenue: 'Выручка', profit: 'Прибыль', orders: 'Заказы', stock: 'Остаток',
+      dailyRevenue: 'Дневная выручка', categories: 'Категории',
+      revenueUp: '+12.4% выручка', aiReady: 'AI готов',
+    },
   },
 } satisfies Record<string, unknown>
 

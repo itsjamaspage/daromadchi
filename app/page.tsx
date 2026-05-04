@@ -135,13 +135,20 @@ function LangToggle() {
 }
 
 /* ── dashboard preview ──────────────────────────────────────────────────── */
-function DashboardPreview() {
+function DashboardPreview({ p }: { p: typeof import('@/lib/i18n').translations.en.preview }) {
   const { theme } = useTheme()
   const card  = theme === 'dark' ? '#0e0e1a' : '#ffffff'
   const card2 = theme === 'dark' ? '#13131f' : '#f8f8ff'
   const border = theme === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(139,92,246,0.15)'
   const textMuted = theme === 'dark' ? '#64748b' : '#9ca3af'
   const textSub = theme === 'dark' ? '#475569' : '#d1d5db'
+
+  const kpis = [
+    { l: p.revenue,  v: '124.5M', c: 'text-violet-400',  g: 'from-violet-500/20 to-transparent' },
+    { l: p.profit,   v: '38.2M',  c: 'text-emerald-400', g: 'from-emerald-500/20 to-transparent' },
+    { l: p.orders,   v: '1,842',  c: 'text-blue-400',    g: 'from-blue-500/20 to-transparent' },
+    { l: p.stock,    v: '3,410',  c: 'text-amber-400',   g: 'from-amber-500/20 to-transparent' },
+  ]
 
   return (
     <div className="relative">
@@ -162,12 +169,7 @@ function DashboardPreview() {
 
         <div className="p-3 space-y-2.5">
           <div className="grid grid-cols-4 gap-2">
-            {[
-              { l: 'Revenue',  v: '124.5M', c: 'text-violet-400', g: 'from-violet-500/20 to-transparent' },
-              { l: 'Profit',   v: '38.2M',  c: 'text-emerald-400', g: 'from-emerald-500/20 to-transparent' },
-              { l: 'Orders',   v: '1,842',  c: 'text-blue-400',    g: 'from-blue-500/20 to-transparent' },
-              { l: 'Stock',    v: '3,410',  c: 'text-amber-400',   g: 'from-amber-500/20 to-transparent' },
-            ].map(k => (
+            {kpis.map(k => (
               <div key={k.l} className="rounded-xl p-2.5 relative overflow-hidden border" style={{ background: card2, borderColor: border }}>
                 <div className={`absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r ${k.g}`} />
                 <p className="text-[9px] mb-1" style={{ color: textMuted }}>{k.l}</p>
@@ -179,7 +181,7 @@ function DashboardPreview() {
 
           <div className="grid grid-cols-3 gap-2">
             <div className="col-span-2 rounded-xl p-3 border" style={{ background: card2, borderColor: border }}>
-              <p className="text-[9px] mb-2" style={{ color: textMuted }}>Daily revenue</p>
+              <p className="text-[9px] mb-2" style={{ color: textMuted }}>{p.dailyRevenue}</p>
               <div className="flex items-end gap-1 h-16">
                 {[30,55,40,70,45,85,65,90,75,60,80,95,70,85].map((h, i) => (
                   <div key={i} className="flex-1 rounded-t-sm"
@@ -188,7 +190,7 @@ function DashboardPreview() {
               </div>
             </div>
             <div className="rounded-xl p-3 border flex flex-col gap-2" style={{ background: card2, borderColor: border }}>
-              <p className="text-[9px] self-start" style={{ color: textMuted }}>Categories</p>
+              <p className="text-[9px] self-start" style={{ color: textMuted }}>{p.categories}</p>
               <div className="relative w-14 h-14 mx-auto">
                 <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
                   <circle cx="18" cy="18" r="14" fill="none" stroke={textSub} strokeWidth="4" />
@@ -207,7 +209,7 @@ function DashboardPreview() {
         style={{ background: card2, borderColor: 'rgba(52,211,153,0.3)' }}>
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="text-emerald-400 text-xs font-medium">+12.4% revenue</span>
+          <span className="text-emerald-400 text-xs font-medium">{p.revenueUp}</span>
         </div>
       </motion.div>
 
@@ -216,7 +218,7 @@ function DashboardPreview() {
         style={{ background: card2, borderColor: 'rgba(139,92,246,0.3)' }}>
         <div className="flex items-center gap-2">
           <Sparkles className="w-3 h-3 text-violet-400" />
-          <span className="text-violet-400 text-xs font-medium">AI ready</span>
+          <span className="text-violet-400 text-xs font-medium">{p.aiReady}</span>
         </div>
       </motion.div>
     </div>
@@ -359,7 +361,7 @@ export default function LandingPage() {
 
             <motion.div initial={{ opacity:0, x:60, scale:0.95 }} animate={{ opacity:1, x:0, scale:1 }}
               transition={{ delay:0.5, duration:0.9, ease:'easeOut' }}>
-              <DashboardPreview />
+              <DashboardPreview p={t.preview} />
             </motion.div>
           </div>
         </motion.div>
