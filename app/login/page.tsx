@@ -203,14 +203,15 @@ export default function LoginPage() {
           <div className="absolute top-0 left-1/4 right-1/4 h-px bg-gradient-to-r from-transparent via-violet-500 to-transparent rounded-full" />
 
           {/* Tabs */}
-          <div className="flex rounded-xl p-1 mb-6 border" style={{ background: isDark ? '#13131f' : '#eeeefc', borderColor: border }}>
+          <div className="flex rounded-xl p-1 mb-6 gap-1" style={{ background: isDark ? '#13131f' : '#e8e8f8' }}>
             {(['login','signup'] as const).map(m => (
               <button key={m} onClick={() => switchMode(m)}
-                className="flex-1 py-2 rounded-lg text-sm font-semibold transition-all"
+                className="flex-1 py-2.5 rounded-lg text-sm font-bold transition-all"
                 style={{
-                  background: mode === m ? 'linear-gradient(135deg,#7c3aed,#4f46e5)' : 'transparent',
-                  color: mode === m ? '#ffffff' : textMuted,
-                  boxShadow: mode === m ? '0 4px 12px rgba(124,58,237,0.3)' : undefined,
+                  background: mode === m ? 'linear-gradient(135deg,#7c3aed,#4f46e5)' : isDark ? 'rgba(255,255,255,0.04)' : 'rgba(139,92,246,0.08)',
+                  color: mode === m ? '#ffffff' : isDark ? '#94a3b8' : '#6b7280',
+                  boxShadow: mode === m ? '0 4px 12px rgba(124,58,237,0.35)' : undefined,
+                  border: mode === m ? 'none' : `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(139,92,246,0.12)'}`,
                 }}>
                 {t.tabs[m]}
               </button>
