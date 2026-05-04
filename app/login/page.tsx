@@ -148,11 +148,12 @@ export default function LoginPage() {
       if (error) { setError(error.message); setLoading(false) }
       else { router.push('/dashboard'); router.refresh() }
     } else {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email, password,
         options: { data: { full_name: name } },
       })
       if (error) { setError(error.message); setLoading(false) }
+      else if (data.session) { router.push('/dashboard'); router.refresh() }
       else { setSuccess(true); setLoading(false) }
     }
   }
