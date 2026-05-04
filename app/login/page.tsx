@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -14,6 +14,21 @@ const supabaseConfigured =
   !process.env.NEXT_PUBLIC_SUPABASE_URL.includes('your-project')
 
 const ui = {
+  uz: {
+    tagline: 'Uzum Market tahlil paneli',
+    tabs: { login: 'Kirish', signup: "Ro'yxatdan o'tish" },
+    email: 'Email', password: 'Parol', name: 'To\'liq ism',
+    namePh: 'Alisher Umarov',
+    emailPh: 'email@example.com',
+    loginBtn: 'Kirish', signupBtn: 'Hisob yaratish',
+    loggingIn: 'Kirish...', signingUp: 'Hisob yaratilmoqda...',
+    noAccount: "Hisobingiz yo'qmi?", hasAccount: 'Hisobingiz bormi?',
+    signupLink: "Ro'yxatdan o'tish", loginLink: 'Kirish',
+    success: "Hisob yaratildi! Tasdiqlash uchun emailni tekshiring.",
+    back: 'Bosh sahifaga',
+    demo: 'Demo: demo@daromadchi.uz / demo1234',
+    forgotPw: 'Parolni unutdingizmi?',
+  },
   en: {
     tagline: 'Uzum Market analytics dashboard',
     tabs: { login: 'Sign in', signup: 'Sign up' },
@@ -46,10 +61,53 @@ const ui = {
   },
 }
 
+function LangDropdown({ lang, setLang, inputBg, inputBorder, textMuted, card }: {
+  lang: string; setLang: (l: 'uz'|'en'|'ru') => void
+  inputBg: string; inputBorder: string; textMuted: string; card: string
+}) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+  const langs = ['uz', 'en', 'ru'] as const
+  return (
+    <div ref={ref} className="relative">
+      <button onClick={() => setOpen(o => !o)}
+        className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold uppercase transition-all border"
+        style={{ background: inputBg, borderColor: inputBorder, color: '#a78bfa' }}>
+        {lang}
+        <svg className={`w-3 h-3 transition-transform ${open ? 'rotate-180' : ''}`} viewBox="0 0 12 12" fill="none">
+          <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      </button>
+      {open && (
+        <div className="absolute right-0 top-full mt-1.5 rounded-xl overflow-hidden border shadow-xl z-50"
+          style={{ background: card, borderColor: inputBorder, minWidth: '4rem' }}>
+          {langs.map(l => (
+            <button key={l} onClick={() => { setLang(l); setOpen(false) }}
+              className="w-full px-3 py-2 text-xs font-bold uppercase text-left transition-all"
+              style={{
+                background: lang === l ? 'rgba(139,92,246,0.15)' : 'transparent',
+                color: lang === l ? '#a78bfa' : textMuted,
+              }}>
+              {l}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function LoginPage() {
   const { theme, toggle } = useTheme()
   const { lang, setLang } = useLang()
-  const t = ui[lang in ui ? lang as keyof typeof ui : 'en']
+  const t = ui[lang in ui ? lang as keyof typeof ui : 'uz']
 
   const [mode, setMode] = useState<'login' | 'signup'>('login')
   const [email,    setEmail]    = useState('')
@@ -116,16 +174,8 @@ export default function LoginPage() {
           <ArrowLeft className="w-4 h-4" /> {t.back}
         </Link>
         <div className="flex items-center gap-2">
-          {/* lang */}
-          <div className="flex items-center rounded-xl overflow-hidden border" style={{ borderColor: inputBorder }}>
-            {(['en','ru'] as const).map(l => (
-              <button key={l} onClick={() => setLang(l)}
-                className="px-2.5 py-1.5 text-xs font-bold uppercase transition-all"
-                style={{ background: lang === l ? 'rgba(139,92,246,0.2)' : inputBg, color: lang === l ? '#a78bfa' : textMuted }}>
-                {l}
-              </button>
-            ))}
-          </div>
+          {/* lang dropdown */}
+          <LangDropdown lang={lang} setLang={setLang} inputBg={inputBg} inputBorder={inputBorder} textMuted={textMuted} card={card} />
           {/* theme */}
           <button onClick={toggle}
             className="w-8 h-8 rounded-xl flex items-center justify-center border transition-all text-sm"

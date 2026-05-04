@@ -9,12 +9,12 @@ const ThemeCtx = createContext<{ theme: Theme; toggle: () => void }>({ theme: 'd
 export const useTheme = () => useContext(ThemeCtx)
 
 /* ── Language ───────────────────────────────────────────────────────────────── */
-const LangCtx = createContext<{ lang: Lang; setLang: (l: Lang) => void }>({ lang: 'en', setLang: () => {} })
+const LangCtx = createContext<{ lang: Lang; setLang: (l: Lang) => void }>({ lang: 'uz', setLang: () => {} })
 export const useLang = () => useContext(LangCtx)
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>('dark')
-  const [lang,  setLangState] = useState<Lang>('en')
+  const [lang,  setLangState] = useState<Lang>('uz')
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme') as Theme | null

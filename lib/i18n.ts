@@ -1,6 +1,58 @@
-export type Lang = 'en' | 'ru'
+export type Lang = 'en' | 'ru' | 'uz'
 
 export const translations = {
+  uz: {
+    nav: {
+      features: 'Imkoniyatlar',
+      how: 'Qanday ishlaydi',
+      stats: 'Statistika',
+      login: 'Kirish',
+      start: 'Boshlash',
+    },
+    badge: 'Uzum + Yandex Market sotuvchilari uchun',
+    hero: {
+      title1: "To'liq",
+      title2: 'nazorat',
+      title3: "do'koningiz ustida",
+      subtitle: "Reklama tahlili, qoldiq ogohlantirishlari, foyda hisobotlari va birlik iqtisodiyoti kalkulyatori — barchasi bitta panelda.",
+      cta: 'Bepul boshlash',
+      demo: 'Demo ko\'rish',
+      secure: 'Xavfsiz',
+      fast: 'Tez',
+      sync: 'Avto-sinxr.',
+    },
+    stats: [
+      { label: 'Tahlil sahifalari' },
+      { label: "O'rtacha yuklanish vaqti" },
+      { label: 'Uzum uchun yaratilgan' },
+      { label: 'Boshlang\'ich narx' },
+    ],
+    featuresTitle: 'Hamma narsa bir joyda',
+    featuresSubtitle: 'Marketplace sotuvchisiga kerakli barcha tahlil vositalari — bitta platformada.',
+    featuresBadge: 'Barcha imkoniyatlar',
+    features: [
+      { title: 'Reklama tahlili', desc: 'DRR, CPC, CPO ko\'rsatkichlari. Sotuvsiз xarajatlar va ortiqcha sarflarni avtomatik aniqlash.' },
+      { title: 'Birlik iqtisodiyoti', desc: 'Har bir mahsulot uchun sof foyda, marja va zararсizlik narxini hisoblang.' },
+      { title: 'Qoldiq ogohlantirishlari', desc: 'Savdo tezligiga ko\'ra necha kun qoldiq qolganini ko\'ring va vaqtida buyurtma bering.' },
+      { title: 'P&L hisobot', desc: 'Oylik tushum, tannarx, komissiyalar va reklama xarajatlarini bitta jadvalda ko\'ring.' },
+      { title: 'Avto-sinxronizatsiya', desc: 'Buyurtmalar va mahsulotlar Uzum Market API tokeni orqali avtomatik yangilanadi.' },
+      { title: 'Kategoriya tahlili', desc: 'Qaysi kategoriya eng ko\'p foyda keltirishini donut diagramma orqali bilib oling.' },
+    ],
+    howBadge: 'Tez boshlash',
+    howTitle1: 'Tayyor',
+    howTitle2: '4 qadamda',
+    steps: [
+      { title: "Ro'yxatdan o'tish", desc: 'Email va parol bilan tezda hisob yarating.' },
+      { title: 'Token kiriting', desc: "Sozlamalarda seller.uzum.uz'dan API tokeningizni qo'shing." },
+      { title: 'Sinxronizatsiya', desc: 'Mahsulotlar va buyurtmalarni bir tugma bilan import qiling.' },
+      { title: 'Tahlil qiling', desc: 'DRR, foyda, qoldiqlar va boshqa ko\'rsatkichlar tayyor.' },
+    ],
+    ctaBadge: 'Hoziroq bepul boshlang',
+    ctaTitle1: 'Savdoingizni',
+    ctaTitle2: 'oshiring',
+    ctaSubtitle: "Ro'yxatdan o'ting va demo ma'lumotlar bilan dashboardni sinab ko'ring. Karta shart emas.",
+    footer: 'Uzum Market sotuvchilari uchun.',
+  },
   en: {
     nav: {
       features: 'Features',
@@ -105,6 +157,6 @@ export const translations = {
     ctaSubtitle: 'Зарегистрируйтесь и попробуйте дашборд с демо-данными. Карта не нужна.',
     footer: 'Для продавцов Uzum Market.',
   },
-} satisfies Record<Lang, unknown>
+} satisfies Record<string, unknown>
 
 export type T = typeof translations.en

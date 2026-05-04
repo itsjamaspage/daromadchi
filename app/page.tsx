@@ -93,20 +93,43 @@ function ThemeToggle() {
 
 function LangToggle() {
   const { lang, setLang } = useLang()
-  const langs: Lang[] = ['en', 'ru']
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+  const langs: Lang[] = ['uz', 'ru', 'en']
+
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
   return (
-    <div className="flex items-center rounded-xl overflow-hidden border" style={{ borderColor: 'var(--border2)' }}>
-      {langs.map(l => (
-        <button key={l} onClick={() => setLang(l)}
-          className="px-2.5 py-1.5 text-xs font-bold uppercase transition-all"
-          style={{
-            background: lang === l ? 'rgba(139,92,246,0.2)' : 'var(--bg-input)',
-            color: lang === l ? '#a78bfa' : 'var(--text-muted)',
-          }}
-        >
-          {l}
-        </button>
-      ))}
+    <div ref={ref} className="relative">
+      <button onClick={() => setOpen(o => !o)}
+        className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold uppercase transition-all border"
+        style={{ background: 'var(--bg-input)', borderColor: 'var(--border2)', color: '#a78bfa' }}>
+        {lang}
+        <svg className={`w-3 h-3 transition-transform ${open ? 'rotate-180' : ''}`} viewBox="0 0 12 12" fill="none">
+          <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      </button>
+      {open && (
+        <div className="absolute right-0 top-full mt-1.5 rounded-xl overflow-hidden border shadow-xl z-50"
+          style={{ background: 'var(--bg-card)', borderColor: 'var(--border2)', minWidth: '4rem' }}>
+          {langs.map(l => (
+            <button key={l} onClick={() => { setLang(l); setOpen(false) }}
+              className="w-full px-3 py-2 text-xs font-bold uppercase text-left transition-all"
+              style={{
+                background: lang === l ? 'rgba(139,92,246,0.15)' : 'transparent',
+                color: lang === l ? '#a78bfa' : 'var(--text-muted)',
+              }}>
+              {l}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
