@@ -1,5 +1,6 @@
 import { Suspense } from 'react'
-import { DollarSign, TrendingUp, ShoppingBag, Package } from 'lucide-react'
+import Link from 'next/link'
+import { DollarSign, TrendingUp, ShoppingBag, Package, Settings, ArrowRight, RefreshCw } from 'lucide-react'
 import KpiCard from '@/components/dashboard/KpiCard'
 import RevenueChart from '@/components/dashboard/RevenueChart'
 import DateFilter from '@/components/dashboard/DateFilter'
@@ -61,6 +62,7 @@ export default async function DashboardPage({ searchParams }: Props) {
   ])
 
   const categoryData = buildCategoryData(allProducts)
+  const isEmpty = kpis.total_orders === 0 && allProducts.length === 0
 
   return (
     <div className="space-y-6">
@@ -78,12 +80,35 @@ export default async function DashboardPage({ searchParams }: Props) {
         </div>
       </div>
 
+      {/* Empty state — no data yet */}
+      {isEmpty && (
+        <div className="bg-[#13131f] border border-dashed border-violet-500/30 rounded-2xl p-10 text-center">
+          <div className="w-14 h-14 rounded-2xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center mx-auto mb-4">
+            <RefreshCw className="w-7 h-7 text-violet-400" />
+          </div>
+          <h2 className="text-white font-bold text-lg mb-2">Hali ma'lumot yo'q</h2>
+          <p className="text-slate-400 text-sm mb-6 max-w-sm mx-auto">
+            Do'koningizni ulash uchun Sozlamalar sahifasiga o'ting, Uzum API tokeningizni kiriting va sinxronizatsiyani boshlang.
+          </p>
+          <div className="flex items-center justify-center gap-3">
+            <Link href="/dashboard/settings"
+              className="inline-flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors shadow-lg shadow-violet-500/20">
+              <Settings className="w-4 h-4" /> Sozlamalarga o'tish
+            </Link>
+            <Link href="https://seller.uzum.uz" target="_blank" rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 text-slate-400 hover:text-white text-sm font-medium px-5 py-2.5 rounded-xl border border-white/[0.08] hover:bg-white/[0.04] transition-all">
+              seller.uzum.uz <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+        </div>
+      )}
+
       {/* KPI cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        <KpiCard title="Umumiy daromad"    value={formatSum(kpis.total_revenue)}                     change={12.4} icon={DollarSign} color="violet" />
-        <KpiCard title="Sof foyda"         value={formatSum(kpis.total_profit)}                      change={8.7}  icon={TrendingUp} color="emerald" />
-        <KpiCard title="Buyurtmalar"       value={kpis.total_orders.toLocaleString('uz-UZ')}         change={5.2}  icon={ShoppingBag} color="blue" />
-        <KpiCard title="Ombordagi mahsulot" value={kpis.total_stock.toLocaleString('uz-UZ')}         change={-2.1} icon={Package} color="amber" />
+        <KpiCard title="Umumiy daromad"     value={formatSum(kpis.total_revenue)}               change={isEmpty ? null : undefined} icon={DollarSign}  color="violet" />
+        <KpiCard title="Sof foyda"          value={formatSum(kpis.total_profit)}                change={isEmpty ? null : undefined} icon={TrendingUp}  color="emerald" />
+        <KpiCard title="Buyurtmalar"        value={kpis.total_orders.toLocaleString('uz-UZ')}   change={isEmpty ? null : undefined} icon={ShoppingBag} color="blue" />
+        <KpiCard title="Ombordagi mahsulot" value={kpis.total_stock.toLocaleString('uz-UZ')}    change={isEmpty ? null : undefined} icon={Package}     color="amber" />
       </div>
 
       {/* Stock alerts — shown when relevant */}

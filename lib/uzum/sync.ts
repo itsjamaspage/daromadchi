@@ -7,10 +7,11 @@ import {
 } from './client'
 
 const STATUS_MAP: Record<string, string> = {
-  PROCESSING: 'processing',
-  SHIPPED:    'shipped',
+  PROCESSING: 'pending',
+  SHIPPED:    'confirmed',
   DELIVERED:  'delivered',
   CANCELLED:  'cancelled',
+  RETURNED:   'returned',
 }
 
 export interface SyncResult {
@@ -20,79 +21,73 @@ export interface SyncResult {
   error?: string
 }
 
-export async function syncFromUzum(token: string): Promise<SyncResult> {
+export async function syncFromUzum(shopId: string, token: string): Promise<SyncResult> {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { ok: false, ordersUpserted: 0, productsUpserted: 0, error: 'Autentifikatsiya talab qilinadi' }
 
   try {
-    // ── Sync products ────────────────────────────────────────────────────────
-    const uzumProducts = await fetchAllPages(page =>
-      fetchUzumProducts(token, page)
-    )
+    // ── Sync products ──────────────────────────────────────────────────────────
+    const uzumProducts = await fetchAllPages(page => fetchUzumProducts(token, page))
 
     const productRows = uzumProducts.map(p => ({
-      user_id:  user.id,
-      name:     p.name,
-      sku:      p.sku,
-      category: p.categoryName,
-      price:    p.price,
-      cost:     p.purchasePrice,
-      stock:    p.stock,
+      shop_id:                shopId,
+      marketplace_product_id: String(p.productId),
+      title:                  p.name,
+      sku:                    p.sku || String(p.productId),
+      category:               p.categoryName,
+      selling_price:          p.price,
+      cost_price:             p.purchasePrice,
+      stock_quantity:         p.stock,
     }))
 
-    const { error: prodErr } = await supabase
-      .from('products')
-      .upsert(productRows, { onConflict: 'user_id,sku', ignoreDuplicates: false })
+    // Replace all products for this shop with fresh data from Uzum
+    await supabase.from('products').delete().eq('shop_id', shopId)
+    if (productRows.length > 0) {
+      const { error: prodErr } = await supabase.from('products').insert(productRows)
+      if (prodErr) throw new Error(`Mahsulotlarni saqlashda xato: ${prodErr.message}`)
+    }
 
-    if (prodErr) throw new Error(`Mahsulotlarni saqlashda xato: ${prodErr.message}`)
-
-    // ── Build sku→id map for order linking ──────────────────────────────────
-    const { data: savedProducts } = await supabase
-      .from('products')
-      .select('id, sku')
-      .eq('user_id', user.id)
-
-    const skuToId = Object.fromEntries((savedProducts ?? []).map(p => [p.sku, p.id]))
-
-    // ── Sync orders (last 90 days to keep it bounded) ────────────────────────
+    // ── Sync orders (last 90 days) ────────────────────────────────────────────
     const since = new Date()
     since.setDate(since.getDate() - 90)
-    const sinceStr = since.toISOString().slice(0, 10)
 
     const uzumOrders = await fetchAllPages(page =>
-      fetchUzumOrders(token, page, 100, sinceStr)
+      fetchUzumOrders(token, page, 100, since.toISOString().slice(0, 10))
     )
 
-    const orderRows = uzumOrders.map(o => {
-      const firstItem = o.items?.[0]
-      return {
-        user_id:      user.id,
-        order_ref:    o.orderNumber,
-        customer:     o.customerName,
-        product_name: firstItem?.productName ?? 'Noma\'lum',
-        product_id:   firstItem ? (skuToId[firstItem.productId] ?? null) : null,
-        amount:       o.totalPrice,
-        status:       STATUS_MAP[o.status] ?? 'processing',
-        ordered_at:   o.createdAt.slice(0, 10),
-      }
-    })
-
-    const { error: ordErr } = await supabase
+    // Only insert orders not already stored
+    const { data: existing } = await supabase
       .from('orders')
-      .upsert(orderRows, { onConflict: 'user_id,order_ref', ignoreDuplicates: false })
+      .select('order_id_external')
+      .eq('shop_id', shopId)
 
-    if (ordErr) throw new Error(`Buyurtmalarni saqlashda xato: ${ordErr.message}`)
+    const existingIds = new Set((existing ?? []).map(o => o.order_id_external))
 
-    // ── Save last sync time ──────────────────────────────────────────────────
+    const newOrderRows = uzumOrders
+      .filter(o => !existingIds.has(o.orderId))
+      .map(o => ({
+        shop_id:           shopId,
+        order_id_external: o.orderId,
+        marketplace:       'uzum' as const,
+        status:            (STATUS_MAP[o.status] ?? 'pending') as 'pending' | 'confirmed' | 'delivered' | 'cancelled' | 'returned',
+        revenue:           o.totalPrice,
+        items_count:       o.items?.length ?? 1,
+        ordered_at:        o.createdAt,
+      }))
+
+    if (newOrderRows.length > 0) {
+      const { error: ordErr } = await supabase.from('orders').insert(newOrderRows)
+      if (ordErr) throw new Error(`Buyurtmalarni saqlashda xato: ${ordErr.message}`)
+    }
+
+    // ── Update last sync timestamp ────────────────────────────────────────────
     await supabase
-      .from('profiles')
-      .update({ last_synced_at: new Date().toISOString() } as any)
-      .eq('id', user.id)
+      .from('shops')
+      .update({ last_synced_at: new Date().toISOString() })
+      .eq('id', shopId)
 
     return {
-      ok: true,
-      ordersUpserted:   orderRows.length,
+      ok:               true,
+      ordersUpserted:   newOrderRows.length,
       productsUpserted: productRows.length,
     }
   } catch (err) {
