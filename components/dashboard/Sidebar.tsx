@@ -6,7 +6,10 @@ import { createClient } from '@/lib/supabase/client'
 import {
   LayoutDashboard, Package, ShoppingCart, TrendingUp,
   LogOut, ChevronRight, X, Settings, BarChart2, Calculator, FileText, Globe2,
+  Sun, Moon,
 } from 'lucide-react'
+import { useTheme, useLang } from '@/app/providers'
+import type { Lang } from '@/lib/i18n'
 
 type NavItem = { href: string; label: string; icon: React.ElementType }
 
@@ -70,10 +73,18 @@ function NavSection({
   )
 }
 
+const LANGS: { value: Lang; label: string }[] = [
+  { value: 'uz', label: 'UZ' },
+  { value: 'ru', label: 'RU' },
+  { value: 'en', label: 'EN' },
+]
+
 export default function Sidebar({ onClose }: SidebarProps) {
-  const pathname = usePathname()
-  const router   = useRouter()
-  const supabase = createClient()
+  const pathname       = usePathname()
+  const router         = useRouter()
+  const supabase       = createClient()
+  const { theme, toggle } = useTheme()
+  const { lang, setLang } = useLang()
 
   async function handleLogout() {
     await supabase.auth.signOut()
@@ -89,15 +100,15 @@ export default function Sidebar({ onClose }: SidebarProps) {
     <aside className="h-full w-60 bg-[#0d0d1a] border-r border-white/[0.05] flex flex-col">
       {/* Logo row */}
       <div className="p-5 border-b border-white/[0.05] flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center shadow-md shadow-violet-500/30">
+        <Link href="/" className="flex items-center gap-3 group">
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center shadow-md shadow-violet-500/30 group-hover:shadow-violet-500/50 transition-shadow">
             <TrendingUp className="w-5 h-5 text-white" />
           </div>
           <div>
-            <span className="font-bold text-white text-base tracking-tight">Daromadchi</span>
+            <span className="font-bold text-white text-base tracking-tight group-hover:text-violet-300 transition-colors">Daromadchi</span>
             <p className="text-[10px] text-slate-500 leading-none mt-0.5">Uzum Market</p>
           </div>
-        </div>
+        </Link>
         {onClose && (
           <button
             onClick={onClose}
@@ -130,8 +141,36 @@ export default function Sidebar({ onClose }: SidebarProps) {
         />
       </nav>
 
-      {/* Settings + Logout */}
-      <div className="p-3 border-t border-white/[0.05] space-y-0.5">
+      {/* Theme + Language + Settings + Logout */}
+      <div className="p-3 border-t border-white/[0.05] space-y-1">
+        {/* Theme & Language row */}
+        <div className="flex items-center gap-2 px-1 py-1">
+          {/* Theme toggle */}
+          <button
+            onClick={toggle}
+            title={theme === 'dark' ? 'Yorug\' rejim' : 'Qorong\'u rejim'}
+            className="flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-white hover:bg-white/[0.06] transition-all"
+          >
+            {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </button>
+          {/* Language pills */}
+          <div className="flex items-center gap-1 flex-1">
+            {LANGS.map(({ value, label }) => (
+              <button
+                key={value}
+                onClick={() => setLang(value)}
+                className={`flex-1 text-[10px] font-semibold py-1 rounded-lg transition-all ${
+                  lang === value
+                    ? 'bg-violet-600/20 text-violet-300 border border-violet-500/20'
+                    : 'text-slate-500 hover:text-slate-300 hover:bg-white/[0.04]'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <Link
           href="/dashboard/settings"
           onClick={handleNavClick}
