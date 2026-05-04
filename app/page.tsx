@@ -225,95 +225,6 @@ function DashboardPreview({ p }: { p: typeof import('@/lib/i18n').translations.e
   )
 }
 
-/* ── positioning section ────────────────────────────────────────────────── */
-function PositioningSection({ t, theme }: { t: typeof import('@/lib/i18n').translations.en.positioning; theme: string }) {
-  const posRef  = useRef(null)
-  const inView  = useInView(posRef, { once: true, margin: '-80px' })
-  const card    = theme === 'dark' ? '#0e0e1a' : '#ffffff'
-  const card2   = theme === 'dark' ? '#13131f' : '#f8f8ff'
-  const isDark  = theme === 'dark'
-
-  return (
-    <section ref={posRef} className="py-24 px-4 sm:px-6 relative overflow-hidden">
-      <NeonGrid />
-      <div className="max-w-5xl mx-auto relative z-10">
-        <motion.div initial={{ opacity:0, y:30 }} animate={inView ? { opacity:1, y:0 } : {}}
-          transition={{ duration:0.6 }} className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 bg-violet-500/10 border border-violet-500/20 rounded-full px-4 py-1.5 text-xs text-violet-400 font-medium mb-4">
-            <Sparkles className="w-3.5 h-3.5" /> {t.badge}
-          </div>
-          <h2 className="text-3xl sm:text-4xl font-black mb-4 leading-tight" style={{ color: 'var(--text-base)' }}>
-            {t.title1}{' '}<span className="shimmer-text">{t.title2}</span>
-          </h2>
-          <p className="max-w-xl mx-auto text-base" style={{ color: 'var(--text-muted)' }}>{t.subtitle}</p>
-        </motion.div>
-
-        {/* Two-column comparison */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-          {/* Bestats — muted */}
-          <motion.div initial={{ opacity:0, x:-30 }} animate={inView ? { opacity:1, x:0 } : {}}
-            transition={{ delay:0.15, duration:0.6 }}
-            className="rounded-2xl border p-6" style={{ background: card2, borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)' }}>
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-sm font-bold" style={{ color: 'var(--text-base)' }}>{t.beststatsTitle}</span>
-              <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full border"
-                style={{ background: isDark ? 'rgba(100,116,139,0.1)' : 'rgba(100,116,139,0.08)', borderColor: isDark ? 'rgba(100,116,139,0.2)' : 'rgba(100,116,139,0.15)', color: isDark ? '#94a3b8' : '#6b7280' }}>
-                {t.beststatsRole}
-              </span>
-            </div>
-            <ul className="mt-4 space-y-2.5">
-              {t.beststatsItems.map(item => (
-                <li key={item} className="flex items-start gap-2.5 text-sm" style={{ color: 'var(--text-muted)' }}>
-                  <span className="mt-1 w-4 h-4 rounded-full flex-shrink-0 flex items-center justify-center"
-                    style={{ background: isDark ? 'rgba(100,116,139,0.15)' : 'rgba(100,116,139,0.1)' }}>
-                    <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
-                  </span>
-                  {item}
-                </li>
-              ))}
-            </ul>
-          </motion.div>
-
-          {/* Daromadchi — highlighted */}
-          <motion.div initial={{ opacity:0, x:30 }} animate={inView ? { opacity:1, x:0 } : {}}
-            transition={{ delay:0.25, duration:0.6 }}
-            className="rounded-2xl border p-6 relative overflow-hidden"
-            style={{ background: card, borderColor: 'rgba(139,92,246,0.3)', boxShadow: '0 0 40px rgba(139,92,246,0.08)' }}>
-            <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-violet-500 to-transparent" />
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-sm font-bold" style={{ color: 'var(--text-base)' }}>{t.daromadchiTitle}</span>
-              <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full border border-violet-500/30 bg-violet-500/10 text-violet-400">
-                {t.daromadchiRole}
-              </span>
-            </div>
-            <ul className="mt-4 space-y-2.5">
-              {t.daromadchiItems.map(item => (
-                <li key={item} className="flex items-start gap-2.5 text-sm" style={{ color: 'var(--text-muted)' }}>
-                  <span className="mt-1 w-4 h-4 rounded-full flex-shrink-0 flex items-center justify-center bg-violet-500/15">
-                    <span className="w-1.5 h-1.5 rounded-full bg-violet-400" />
-                  </span>
-                  {item}
-                </li>
-              ))}
-            </ul>
-          </motion.div>
-        </div>
-
-        {/* Analogy card */}
-        <motion.div initial={{ opacity:0, y:20 }} animate={inView ? { opacity:1, y:0 } : {}}
-          transition={{ delay:0.4, duration:0.6 }}
-          className="rounded-2xl border p-6 text-center relative overflow-hidden"
-          style={{ background: isDark ? 'rgba(139,92,246,0.05)' : 'rgba(139,92,246,0.04)', borderColor: 'rgba(139,92,246,0.2)' }}>
-          <p className="text-lg font-bold mb-1" style={{ color: 'var(--text-base)' }}>
-            🗺️ {t.analogy}
-          </p>
-          <p className="text-sm font-semibold text-violet-400">{t.analogySub}</p>
-        </motion.div>
-      </div>
-    </section>
-  )
-}
-
 /* ── feature icon config ────────────────────────────────────────────────── */
 const featureIcons = [
   { Icon: BarChart2,    glow: 'hover:shadow-violet-500/20', border: 'hover:border-violet-500/40', iconBg: 'bg-violet-500/10 border-violet-500/20', iconColor: 'text-violet-400',  grad: 'from-violet-500 to-purple-600'  },
@@ -514,9 +425,6 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
-
-      {/* ── Positioning vs Bestats ────────────────────────────────────── */}
-      <PositioningSection t={t.positioning} theme={theme} />
 
       {/* ── How it works ──────────────────────────────────────────────── */}
       <section id="how" ref={stepsRef} className="py-24 px-4 sm:px-6 relative overflow-hidden"

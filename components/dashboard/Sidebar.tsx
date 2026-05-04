@@ -5,14 +5,15 @@ import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import {
   LayoutDashboard, Package, ShoppingCart, TrendingUp,
-  LogOut, ChevronRight, X, Settings, BarChart2, Calculator, FileText,
+  LogOut, ChevronRight, X, Settings, BarChart2, Calculator, FileText, Globe2,
 } from 'lucide-react'
 
 const nav = [
   { href: '/dashboard',            label: 'Dashboard',    icon: LayoutDashboard },
   { href: '/dashboard/products',   label: 'Mahsulotlar',  icon: Package         },
   { href: '/dashboard/orders',     label: 'Buyurtmalar',  icon: ShoppingCart    },
-  { href: '/dashboard/analytics',  label: 'Reklama',      icon: BarChart2       },
+  { href: '/dashboard/market',     label: 'Bozor',        icon: Globe2          },
+  { href: '/dashboard/analytics',  label: 'Tahlil',       icon: BarChart2       },
   { href: '/dashboard/pnl',        label: 'F & Z hisobot',icon: FileText        },
   { href: '/dashboard/calculator', label: 'Kalkulyator',  icon: Calculator      },
   { href: '/dashboard/settings',   label: 'Sozlamalar',   icon: Settings        },
