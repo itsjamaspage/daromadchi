@@ -1,5 +1,6 @@
 import Sidebar from '@/components/dashboard/Sidebar'
 import MobileNav from '@/components/dashboard/MobileNav'
+import TopBar from '@/components/dashboard/TopBar'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -13,8 +14,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <MobileNav />
 
       {/* Main content */}
-      <main className="lg:ml-60 pt-14 lg:pt-0 min-w-0 p-4 sm:p-6 lg:p-8">
-        {children}
+      <main className="lg:ml-60 pt-14 lg:pt-0 min-w-0">
+        <TopBar />
+        <div className="p-4 sm:p-6 lg:p-8">
+          {children}
+        </div>
       </main>
     </div>
   )
