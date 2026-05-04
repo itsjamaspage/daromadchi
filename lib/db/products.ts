@@ -8,32 +8,36 @@ const supabaseConfigured =
 
 export async function getProducts(): Promise<Product[]> {
   if (!supabaseConfigured) {
-    return mockProducts.map(p => ({ ...p, user_id: 'mock', created_at: '', profit: p.profit }))
+    return mockProducts.map(p => ({
+      id: String(p.id),
+      shop_id: 'mock',
+      sku: p.sku,
+      title: p.name,
+      cost_price: p.cost,
+      selling_price: p.price,
+      stock_quantity: p.stock,
+      category: p.category,
+      marketplace_product_id: null,
+      updated_at: '',
+      profit: p.profit,
+      sold: p.sold,
+    }))
   }
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return []
 
-  // Enrich with sold count from orders
   const { data, error } = await supabase
     .from('products')
-    .select(`
-      id, user_id, name, sku, category, price, cost, stock, created_at,
-      orders (amount)
-    `)
-    .eq('user_id', user.id)
-    .order('name')
+    .select('id, shop_id, sku, title, cost_price, selling_price, stock_quantity, category, marketplace_product_id, updated_at')
+    .order('title')
 
   if (error || !data) return []
 
-  return data.map(p => {
-    const orders = (p.orders ?? []) as { amount: number }[]
-    return {
-      ...p,
-      orders: undefined,
-      profit: p.price - p.cost,
-      sold: orders.length,
-    }
-  })
+  return data.map(p => ({
+    ...p,
+    profit: Number(p.selling_price ?? 0) - Number(p.cost_price ?? 0),
+    sold: 0,
+  }))
 }

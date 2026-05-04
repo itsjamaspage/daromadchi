@@ -16,10 +16,11 @@ function formatSum(n: number) {
 }
 
 const statusMap: Record<string, { label: string; className: string }> = {
-  delivered: { label: 'Yetkazildi', className: 'bg-emerald-500/10 text-emerald-400' },
-  processing: { label: 'Jarayonda', className: 'bg-amber-500/10 text-amber-400' },
-  shipped:    { label: 'Yuborildi', className: 'bg-blue-500/10 text-blue-400' },
-  cancelled:  { label: 'Bekor',     className: 'bg-red-500/10 text-red-400' },
+  pending:   { label: 'Kutilmoqda',  className: 'bg-slate-500/10 text-slate-400' },
+  confirmed: { label: 'Tasdiqlandi', className: 'bg-blue-500/10 text-blue-400' },
+  delivered: { label: 'Yetkazildi',  className: 'bg-emerald-500/10 text-emerald-400' },
+  cancelled: { label: 'Bekor',       className: 'bg-red-500/10 text-red-400' },
+  returned:  { label: 'Qaytarildi',  className: 'bg-amber-500/10 text-amber-400' },
 }
 
 function parseDays(params: Record<string, string> | undefined): number {
@@ -30,11 +31,12 @@ function parseDays(params: Record<string, string> | undefined): number {
 function buildCategoryData(products: Awaited<ReturnType<typeof getProducts>>) {
   const map: Record<string, { revenue: number; profit: number }> = {}
   for (const p of products) {
-    const rev = p.price * (p.sold ?? 0)
+    const cat = p.category ?? 'Boshqa'
+    const rev = Number(p.selling_price ?? 0) * (p.sold ?? 0)
     const pro = p.profit * (p.sold ?? 0)
-    if (!map[p.category]) map[p.category] = { revenue: 0, profit: 0 }
-    map[p.category].revenue += rev
-    map[p.category].profit  += pro
+    if (!map[cat]) map[cat] = { revenue: 0, profit: 0 }
+    map[cat].revenue += rev
+    map[cat].profit  += pro
   }
   const total = Object.values(map).reduce((s, v) => s + v.revenue, 0)
   return Object.entries(map)
@@ -103,8 +105,8 @@ export default async function DashboardPage({ searchParams }: Props) {
                     <ShoppingBag className="w-4 h-4 text-violet-400" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-white font-medium truncate">{order.customer}</p>
-                    <p className="text-xs text-slate-500 truncate">{order.product_name}</p>
+                    <p className="text-sm text-white font-medium truncate font-mono">{order.order_id_external ?? order.id.slice(0, 8)}</p>
+                    <p className="text-xs text-slate-500 truncate">{order.marketplace === 'uzum' ? 'Uzum Market' : 'Yandex Market'}</p>
                   </div>
                   <span className={`text-[11px] font-medium px-2 py-0.5 rounded-lg flex-shrink-0 ${s.className}`}>
                     {s.label}
@@ -139,7 +141,7 @@ export default async function DashboardPage({ searchParams }: Props) {
               {allProducts.slice(0, 5).map(p => (
                 <tr key={p.id} className="hover:bg-white/[0.02] transition-colors">
                   <td className="py-3 pr-4">
-                    <p className="text-white font-medium text-xs">{p.name}</p>
+                    <p className="text-white font-medium text-xs">{p.title}</p>
                     <p className="text-slate-500 text-xs">{p.sku}</p>
                   </td>
                   <td className="py-3 pr-4 text-right">

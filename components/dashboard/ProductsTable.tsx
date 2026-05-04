@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { Search, Package } from 'lucide-react'
+import { Search } from 'lucide-react'
 import ExportButton from './ExportButton'
 import type { Product } from '@/lib/types'
 
@@ -9,28 +9,35 @@ function fmt(n: number) {
   return new Intl.NumberFormat('uz-UZ').format(n) + " so'm"
 }
 
-const CATEGORIES = ['Barchasi', 'Krossovkalar', 'Elektronika', 'Soatlar', 'Kiyim']
-
 export default function ProductsTable({ products }: { products: Product[] }) {
-  const [query,    setQuery]    = useState('')
+  const [query,   setQuery]   = useState('')
+  const [sortBy,  setSortBy]  = useState<'title' | 'profit' | 'margin' | 'stock_quantity'>('profit')
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
+
+  const categories = useMemo(() => {
+    const cats = [...new Set(products.map(p => p.category).filter(Boolean))] as string[]
+    return ['Barchasi', ...cats]
+  }, [products])
   const [category, setCategory] = useState('Barchasi')
-  const [sortBy,   setSortBy]   = useState<'name' | 'profit' | 'margin' | 'stock'>('profit')
-  const [sortDir,  setSortDir]  = useState<'asc' | 'desc'>('desc')
 
   const filtered = useMemo(() => {
     let rows = [...products]
     if (query.trim()) {
       const q = query.toLowerCase()
       rows = rows.filter(p =>
-        p.name.toLowerCase().includes(q) ||
-        p.sku.toLowerCase().includes(q) ||
-        p.category.toLowerCase().includes(q)
+        p.title.toLowerCase().includes(q) ||
+        (p.sku ?? '').toLowerCase().includes(q) ||
+        (p.category ?? '').toLowerCase().includes(q)
       )
     }
     if (category !== 'Barchasi') rows = rows.filter(p => p.category === category)
     rows.sort((a, b) => {
-      const av = sortBy === 'margin' ? a.profit / a.price : (a as any)[sortBy]
-      const bv = sortBy === 'margin' ? b.profit / b.price : (b as any)[sortBy]
+      const av = sortBy === 'margin'
+        ? a.profit / (Number(a.selling_price) || 1)
+        : (a as any)[sortBy]
+      const bv = sortBy === 'margin'
+        ? b.profit / (Number(b.selling_price) || 1)
+        : (b as any)[sortBy]
       return sortDir === 'desc' ? bv - av : av - bv
     })
     return rows
@@ -42,10 +49,15 @@ export default function ProductsTable({ products }: { products: Product[] }) {
   }
 
   const exportData = filtered.map(p => ({
-    'Mahsulot': p.name, 'SKU': p.sku, 'Kategoriya': p.category,
-    "Narx (so'm)": p.price, "Tannarx (so'm)": p.cost, "Foyda (so'm)": p.profit,
-    'Margin (%)': ((p.profit / p.price) * 100).toFixed(1),
-    'Sotilgan': p.sold ?? 0, 'Ombor': p.stock,
+    'Mahsulot': p.title,
+    'SKU': p.sku ?? '',
+    'Kategoriya': p.category ?? '',
+    "Narx (so'm)": p.selling_price ?? 0,
+    "Tannarx (so'm)": p.cost_price ?? 0,
+    "Foyda (so'm)": p.profit,
+    'Margin (%)': (p.profit / (Number(p.selling_price) || 1) * 100).toFixed(1),
+    'Sotilgan': p.sold ?? 0,
+    'Ombor': p.stock_quantity,
   }))
 
   function SortIcon({ col }: { col: typeof sortBy }) {
@@ -55,7 +67,6 @@ export default function ProductsTable({ products }: { products: Product[] }) {
 
   return (
     <div className="space-y-4">
-      {/* Toolbar */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
@@ -68,7 +79,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
           />
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          {CATEGORIES.map(c => (
+          {categories.map(c => (
             <button
               key={c}
               onClick={() => setCategory(c)}
@@ -87,16 +98,16 @@ export default function ProductsTable({ products }: { products: Product[] }) {
         </div>
       </div>
 
-      {/* Count */}
       <p className="text-slate-500 text-xs">{filtered.length} ta mahsulot {query || category !== 'Barchasi' ? '(filtr)' : ''}</p>
 
-      {/* Table */}
       <div className="bg-[#13131f] border border-white/[0.06] rounded-2xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="text-slate-500 text-xs border-b border-white/[0.05] bg-white/[0.01]">
-                <th className="text-left font-medium px-5 py-3">Mahsulot</th>
+                <th className="text-left font-medium px-5 py-3 cursor-pointer select-none hover:text-slate-300" onClick={() => toggleSort('title')}>
+                  Mahsulot <SortIcon col="title" />
+                </th>
                 <th className="text-left font-medium px-5 py-3">Kategoriya</th>
                 <th className="text-right font-medium px-5 py-3">Narx</th>
                 <th className="text-right font-medium px-5 py-3">Tannarx</th>
@@ -107,8 +118,8 @@ export default function ProductsTable({ products }: { products: Product[] }) {
                   Margin <SortIcon col="margin" />
                 </th>
                 <th className="text-right font-medium px-5 py-3">Sotilgan</th>
-                <th className="text-right font-medium px-5 py-3 cursor-pointer select-none hover:text-slate-300" onClick={() => toggleSort('stock')}>
-                  Ombor <SortIcon col="stock" />
+                <th className="text-right font-medium px-5 py-3 cursor-pointer select-none hover:text-slate-300" onClick={() => toggleSort('stock_quantity')}>
+                  Ombor <SortIcon col="stock_quantity" />
                 </th>
               </tr>
             </thead>
@@ -116,19 +127,20 @@ export default function ProductsTable({ products }: { products: Product[] }) {
               {filtered.length === 0 ? (
                 <tr><td colSpan={8} className="px-5 py-10 text-center text-slate-500 text-sm">Hech narsa topilmadi</td></tr>
               ) : filtered.map(p => {
-                const margin   = Number(((p.profit / p.price) * 100).toFixed(1))
-                const stockLow = p.stock < 20
+                const price  = Number(p.selling_price ?? 0)
+                const margin = price > 0 ? Number(((p.profit / price) * 100).toFixed(1)) : 0
+                const stockLow = p.stock_quantity < 20
                 return (
                   <tr key={p.id} className="hover:bg-white/[0.02] transition-colors group">
                     <td className="px-5 py-4">
-                      <p className="text-white font-medium group-hover:text-violet-300 transition-colors">{p.name}</p>
+                      <p className="text-white font-medium group-hover:text-violet-300 transition-colors">{p.title}</p>
                       <p className="text-slate-500 text-xs mt-0.5">{p.sku}</p>
                     </td>
                     <td className="px-5 py-4">
-                      <span className="text-xs text-slate-400 bg-white/[0.04] px-2.5 py-1 rounded-lg border border-white/[0.06]">{p.category}</span>
+                      <span className="text-xs text-slate-400 bg-white/[0.04] px-2.5 py-1 rounded-lg border border-white/[0.06]">{p.category ?? '—'}</span>
                     </td>
-                    <td className="px-5 py-4 text-right text-slate-300">{fmt(p.price)}</td>
-                    <td className="px-5 py-4 text-right text-slate-500">{fmt(p.cost)}</td>
+                    <td className="px-5 py-4 text-right text-slate-300">{fmt(price)}</td>
+                    <td className="px-5 py-4 text-right text-slate-500">{fmt(Number(p.cost_price ?? 0))}</td>
                     <td className="px-5 py-4 text-right"><span className="text-emerald-400 font-semibold">{fmt(p.profit)}</span></td>
                     <td className="px-5 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
@@ -140,7 +152,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
                     </td>
                     <td className="px-5 py-4 text-right text-slate-300">{p.sold ?? 0}</td>
                     <td className="px-5 py-4 text-right">
-                      <span className={`text-xs font-medium px-2.5 py-1 rounded-lg ${stockLow ? 'bg-red-500/10 text-red-400' : 'bg-slate-700/40 text-slate-300'}`}>{p.stock}</span>
+                      <span className={`text-xs font-medium px-2.5 py-1 rounded-lg ${stockLow ? 'bg-red-500/10 text-red-400' : 'bg-slate-700/40 text-slate-300'}`}>{p.stock_quantity}</span>
                     </td>
                   </tr>
                 )

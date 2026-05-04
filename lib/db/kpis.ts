@@ -8,7 +8,6 @@ const supabaseConfigured =
 
 export async function getKpis(days = 30): Promise<Kpis> {
   if (!supabaseConfigured) {
-    // Scale mock values by day range so the filter visibly changes numbers
     const scale = days === 7 ? 0.25 : days === 30 ? 1 : days === 90 ? 2.8 : 1
     const filtered = mockOrders.filter(o => o.status !== 'cancelled')
     return {
@@ -25,29 +24,26 @@ export async function getKpis(days = 30): Promise<Kpis> {
 
   const since = new Date()
   since.setDate(since.getDate() - days + 1)
-  const sinceStr = since.toISOString().slice(0, 10)
 
+  // RLS automatically scopes orders/products to the authenticated user's shops
   const [ordersRes, stockRes] = await Promise.all([
     supabase
       .from('orders')
-      .select('amount, products(cost)')
-      .eq('user_id', user.id)
+      .select('revenue, marketplace_fee, delivery_cost')
       .neq('status', 'cancelled')
-      .gte('ordered_at', sinceStr),
+      .gte('ordered_at', since.toISOString()),
     supabase
       .from('products')
-      .select('stock')
-      .eq('user_id', user.id),
+      .select('stock_quantity'),
   ])
 
-  const orderRows = ordersRes.data ?? []
-  const total_revenue = orderRows.reduce((s, o) => s + Number(o.amount), 0)
-  const total_profit  = orderRows.reduce((s, o) => {
-    const cost = (o.products as any)?.cost ?? 0
-    return s + Number(o.amount) - Number(cost)
-  }, 0)
-  const total_orders = orderRows.length
-  const total_stock  = (stockRes.data ?? []).reduce((s, p) => s + p.stock, 0)
+  const rows = ordersRes.data ?? []
+  const total_revenue = rows.reduce((s, o) => s + Number(o.revenue ?? 0), 0)
+  const total_profit  = rows.reduce((s, o) =>
+    s + Number(o.revenue ?? 0) - Number(o.marketplace_fee ?? 0) - Number(o.delivery_cost ?? 0)
+  , 0)
+  const total_orders = rows.length
+  const total_stock  = (stockRes.data ?? []).reduce((s, p) => s + p.stock_quantity, 0)
 
   return { total_revenue, total_profit, total_orders, total_stock }
 }
