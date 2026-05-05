@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import './globals.css'
+import Providers from './providers'
 
 export const metadata: Metadata = {
   title: 'Daromadchi — Uzum Market Analytics',
@@ -8,9 +9,9 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="uz">
-      <body className="bg-[#0a0a0f] text-slate-200 antialiased">
-        {children}
+    <html lang="uz" data-theme="dark">
+      <body className="antialiased">
+        <Providers>{children}</Providers>
       </body>
     </html>
   )

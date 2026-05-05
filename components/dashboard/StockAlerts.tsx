@@ -3,7 +3,7 @@ import type { Product } from '@/lib/types'
 
 interface StockRow extends Product {
   daysLeft: number
-  velocity: number  // units sold per day
+  velocity: number
 }
 
 function computeAlerts(products: Product[]): StockRow[] {
@@ -11,10 +11,10 @@ function computeAlerts(products: Product[]): StockRow[] {
   return products
     .map(p => {
       const velocity = (p.sold ?? 0) / PERIOD_DAYS
-      const daysLeft = velocity > 0 ? Math.floor(p.stock / velocity) : 999
+      const daysLeft = velocity > 0 ? Math.floor(p.stock_quantity / velocity) : 999
       return { ...p, daysLeft, velocity }
     })
-    .filter(p => p.daysLeft <= 30 || p.stock < 15)
+    .filter(p => p.daysLeft <= 30 || p.stock_quantity < 15)
     .sort((a, b) => a.daysLeft - b.daysLeft)
 }
 
@@ -36,7 +36,7 @@ export default function StockAlerts({ products }: { products: Product[] }) {
         {alerts.map(p => {
           const urgent  = p.daysLeft <= 7
           const warning = p.daysLeft <= 14
-          const reorder = Math.max(30, Math.ceil(p.velocity * 45)) // 45-day restock
+          const reorder = Math.max(30, Math.ceil(p.velocity * 45))
 
           return (
             <div key={p.id} className="flex items-center gap-4 px-5 py-3.5 hover:bg-white/[0.02] transition-colors">
@@ -50,13 +50,13 @@ export default function StockAlerts({ products }: { products: Product[] }) {
               </div>
 
               <div className="flex-1 min-w-0">
-                <p className="text-white text-sm font-medium truncate">{p.name}</p>
+                <p className="text-white text-sm font-medium truncate">{p.title}</p>
                 <p className="text-slate-500 text-xs">{p.sku} · {p.category}</p>
               </div>
 
               <div className="text-right flex-shrink-0">
                 <p className={`text-sm font-bold ${urgent ? 'text-red-400' : warning ? 'text-amber-400' : 'text-slate-300'}`}>
-                  {p.stock} dona
+                  {p.stock_quantity} dona
                 </p>
                 <p className="text-slate-500 text-xs">
                   {p.daysLeft >= 999 ? 'Harakat yo\'q' : `~${p.daysLeft} kun qoldi`}

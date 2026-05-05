@@ -1,30 +1,46 @@
-export type OrderStatus = 'processing' | 'shipped' | 'delivered' | 'cancelled'
+export type MarketplaceType = 'uzum' | 'yandex_market'
+export type OrderStatus = 'pending' | 'confirmed' | 'delivered' | 'cancelled' | 'returned'
+export type SyncStatus = 'success' | 'error'
 
-export interface Product {
-  id: number
+export interface Shop {
+  id: string
   user_id: string
   name: string
-  sku: string
-  category: string
-  price: number
-  cost: number
-  stock: number
+  marketplace: MarketplaceType
+  api_key_encrypted: string | null
+  shop_id_external: string | null
+  is_active: boolean
+  last_synced_at: string | null
   created_at: string
+}
+
+export interface Product {
+  id: string
+  shop_id: string
+  sku: string | null
+  title: string
+  cost_price: number | null
+  selling_price: number | null
+  stock_quantity: number
+  category: string | null
+  marketplace_product_id: string | null
+  updated_at: string
   // computed
   profit: number
   sold?: number
 }
 
 export interface Order {
-  id: number
-  user_id: string
-  order_ref: string
-  customer: string
-  product_name: string
-  amount: number
+  id: string
+  shop_id: string
+  order_id_external: string | null
+  marketplace: MarketplaceType
   status: OrderStatus
+  revenue: number | null
+  marketplace_fee: number | null
+  delivery_cost: number | null
+  items_count: number
   ordered_at: string
-  created_at: string
 }
 
 export interface DailyRevenue {

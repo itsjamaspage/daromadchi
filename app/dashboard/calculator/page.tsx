@@ -1,206 +1,272 @@
 'use client'
 
-import { useState } from 'react'
-import { Calculator, TrendingUp, TrendingDown, Info } from 'lucide-react'
-import { uzumCommissions } from '@/lib/mock-data'
+import { useState, useMemo } from 'react'
+import { Calculator, TrendingUp, TrendingDown, AlertTriangle, Info, Zap } from 'lucide-react'
 
 function fmt(n: number) {
   return new Intl.NumberFormat('uz-UZ').format(Math.round(n))
 }
 
-const CATEGORIES = Object.keys(uzumCommissions)
+const CATEGORIES: { name: string; rate: number }[] = [
+  { name: 'Elektronika',          rate: 5  },
+  { name: 'Kompyuter texnikasi',  rate: 5  },
+  { name: 'Telefon va gadjetlar', rate: 6  },
+  { name: 'Krossovkalar',         rate: 8  },
+  { name: 'Sport',                rate: 8  },
+  { name: 'Soatlar',              rate: 9  },
+  { name: 'Uy-joy va bog\'',      rate: 7  },
+  { name: 'Kiyim (erkaklar)',     rate: 10 },
+  { name: 'Kiyim (ayollar)',      rate: 10 },
+  { name: 'Kiyim (bolalar)',      rate: 10 },
+  { name: 'Go\'zallik va parvarishl', rate: 11 },
+  { name: 'Sog\'liq va tibbiyot', rate: 9  },
+  { name: 'Oziq-ovqat',           rate: 12 },
+  { name: 'O\'yinchoqlar',        rate: 10 },
+  { name: 'Avtomobil',            rate: 6  },
+  { name: 'Boshqa',               rate: 10 },
+]
 
-interface Result {
-  grossProfit:    number
-  netProfit:      number
-  margin:         number
-  drr:            number
-  breakeven:      number
-  unitEconomics:  number
-  roiPercent:     number
-}
+const inputCls = "w-full bg-[#1c1c2e] border border-white/[0.08] rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/30 transition-all"
 
 export default function CalculatorPage() {
-  const [price,       setPrice]       = useState('')
-  const [cost,        setCost]        = useState('')
-  const [logistics,   setLogistics]   = useState('')
-  const [adSpend,     setAdSpend]     = useState('')
-  const [returnRate,  setReturnRate]  = useState('10')
-  const [category,    setCategory]    = useState('Krossovkalar')
-  const [units,       setUnits]       = useState('1')
+  const [price,      setPrice]      = useState('')
+  const [cost,       setCost]       = useState('')
+  const [logistics,  setLogistics]  = useState('')
+  const [adSpend,    setAdSpend]    = useState('')
+  const [returnRate, setReturnRate] = useState('5')
+  const [units,      setUnits]      = useState('100')
+  const [catIdx,     setCatIdx]     = useState(0)
 
-  const commission = uzumCommissions[category] ?? 10
+  const commission = CATEGORIES[catIdx].rate
 
-  function calculate(): Result | null {
-    const p  = parseFloat(price)   || 0
-    const c  = parseFloat(cost)    || 0
-    const l  = parseFloat(logistics) || 0
-    const ad = parseFloat(adSpend) || 0
+  const result = useMemo(() => {
+    const p  = parseFloat(price)      || 0
+    const c  = parseFloat(cost)       || 0
+    const l  = parseFloat(logistics)  || 0
+    const ad = parseFloat(adSpend)    || 0
     const rr = parseFloat(returnRate) / 100
-    const u  = Math.max(1, parseFloat(units) || 1)
-
+    const u  = Math.max(1, parseInt(units) || 1)
     if (p <= 0 || c <= 0) return null
 
-    const commissionAmount = p * (commission / 100)
-    // Returns cost seller extra logistics for returned items
-    const returnCost = p * rr * (l / p || 0.05)
-    const netRevenue = p * (1 - rr) - commissionAmount - returnCost
+    // What the seller THINKS they made (naive)
+    const naiveProfit      = (p - c) * u
+    const naiveProfitUnit  = p - c
 
-    const grossProfit   = netRevenue - c - l
-    const adPerUnit     = ad / u
-    const netProfit     = grossProfit - adPerUnit
-    const margin        = (netProfit / p) * 100
-    const drr           = p > 0 ? (ad / (p * u)) * 100 : 0
-    const breakeven     = c + l + commissionAmount + adPerUnit + (p * rr * 0.05)
-    const roiPercent    = c > 0 ? (netProfit / c) * 100 : 0
+    // Deductions per unit
+    const commAmt      = p * (commission / 100)
+    const returnLoss   = p * rr                          // lost revenue on returns
+    const returnLogist = l * rr                          // extra logistics for returns
+    const netRevenue   = p * (1 - rr) - commAmt
 
-    return { grossProfit, netProfit, margin, drr, breakeven, unitEconomics: netProfit, roiPercent }
-  }
+    const realProfitUnit = netRevenue - c - l - (ad / u)
+    const realProfit     = realProfitUnit * u
 
-  const result = calculate()
+    const stolen         = naiveProfit - realProfit       // what Uzum/costs "steal"
+    const stolenPct      = naiveProfit > 0 ? (stolen / naiveProfit) * 100 : 0
+    const keepPct        = 100 - stolenPct
 
-  const inputCls = "w-full bg-[#1c1c2e] border border-white/[0.08] rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/30 transition-all"
+    const margin         = p > 0 ? (realProfitUnit / p) * 100 : 0
+    const drr            = p * u > 0 ? (ad / (p * u)) * 100 : 0
+    const roi            = c > 0 ? (realProfitUnit / c) * 100 : 0
+    const breakeven      = c + l + commAmt + (ad / u) + (p * rr * 0.05)
+
+    return {
+      naiveProfitUnit, naiveProfit,
+      realProfitUnit,  realProfit,
+      stolen,          stolenPct, keepPct,
+      commAmt, returnLoss, returnLogist,
+      adPerUnit: ad / u,
+      margin, drr, roi, breakeven,
+      units: u, price: p, cost: c, logistics: l, adSpend: ad,
+    }
+  }, [price, cost, logistics, adSpend, returnRate, units, commission])
 
   return (
-    <div className="space-y-6 max-w-4xl">
+    <div className="space-y-6 max-w-5xl">
       <div>
         <h1 className="text-2xl font-bold text-white flex items-center gap-2">
           <Calculator className="w-6 h-6 text-violet-400" />
-          Unit-iqtisodiyot kalkulyatori
+          Foyda kalkulyatori
         </h1>
         <p className="text-slate-400 text-sm mt-1">
-          Har bir mahsulot uchun sof foyda, margin va reklamani hisoblang
+          Uzum komissiyasi, qaytarish va logistika hisobga olingandan keyin <strong className="text-white">haqiqiy foydangizni</strong> bilib oling
         </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Inputs */}
+        {/* ── Inputs ──────────────────────────────────────────────────── */}
         <div className="bg-[#13131f] border border-white/[0.06] rounded-2xl p-6 space-y-4">
-          <h2 className="text-white font-semibold text-sm mb-1">Mahsulot ma&apos;lumotlari</h2>
+          <h2 className="text-white font-semibold text-sm">Mahsulot ma'lumotlari</h2>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs text-slate-400 mb-1.5">Sotish narxi (so&apos;m)</label>
-              <input value={price} onChange={e => setPrice(e.target.value)} type="number" placeholder="890 000" className={inputCls} />
+              <label className="block text-xs text-slate-400 mb-1.5">Sotish narxi (so'm)</label>
+              <input value={price} onChange={e => setPrice(e.target.value)} type="number"
+                placeholder="890 000" className={inputCls} />
             </div>
             <div>
-              <label className="block text-xs text-slate-400 mb-1.5">Tannarx (so&apos;m)</label>
-              <input value={cost} onChange={e => setCost(e.target.value)} type="number" placeholder="520 000" className={inputCls} />
+              <label className="block text-xs text-slate-400 mb-1.5">Tannarx (so'm)</label>
+              <input value={cost} onChange={e => setCost(e.target.value)} type="number"
+                placeholder="520 000" className={inputCls} />
             </div>
             <div>
-              <label className="block text-xs text-slate-400 mb-1.5">Logistika (so&apos;m)</label>
-              <input value={logistics} onChange={e => setLogistics(e.target.value)} type="number" placeholder="25 000" className={inputCls} />
+              <label className="block text-xs text-slate-400 mb-1.5">Logistika (so'm)</label>
+              <input value={logistics} onChange={e => setLogistics(e.target.value)} type="number"
+                placeholder="25 000" className={inputCls} />
             </div>
             <div>
-              <label className="block text-xs text-slate-400 mb-1.5">Reklama xarajati (so&apos;m)</label>
-              <input value={adSpend} onChange={e => setAdSpend(e.target.value)} type="number" placeholder="12 000" className={inputCls} />
+              <label className="block text-xs text-slate-400 mb-1.5">Reklama xarajati (so'm)</label>
+              <input value={adSpend} onChange={e => setAdSpend(e.target.value)} type="number"
+                placeholder="0" className={inputCls} />
             </div>
             <div>
               <label className="block text-xs text-slate-400 mb-1.5">Qaytarish foizi (%)</label>
-              <input value={returnRate} onChange={e => setReturnRate(e.target.value)} type="number" placeholder="10" min="0" max="100" className={inputCls} />
+              <input value={returnRate} onChange={e => setReturnRate(e.target.value)} type="number"
+                placeholder="5" min="0" max="100" className={inputCls} />
             </div>
             <div>
-              <label className="block text-xs text-slate-400 mb-1.5">Sotilgan dona</label>
-              <input value={units} onChange={e => setUnits(e.target.value)} type="number" placeholder="1" min="1" className={inputCls} />
+              <label className="block text-xs text-slate-400 mb-1.5">Oylik savdo (dona)</label>
+              <input value={units} onChange={e => setUnits(e.target.value)} type="number"
+                placeholder="100" min="1" className={inputCls} />
             </div>
           </div>
 
           <div>
             <label className="block text-xs text-slate-400 mb-1.5">Kategoriya</label>
-            <select
-              value={category}
-              onChange={e => setCategory(e.target.value)}
-              className={inputCls}
-            >
-              {CATEGORIES.map(c => (
-                <option key={c} value={c}>{c} — {uzumCommissions[c]}% komissiya</option>
+            <select value={catIdx} onChange={e => setCatIdx(Number(e.target.value))} className={inputCls}>
+              {CATEGORIES.map((c, i) => (
+                <option key={c.name} value={i}>{c.name} — {c.rate}% komissiya</option>
               ))}
             </select>
           </div>
 
-          {/* Commission display */}
           <div className="flex items-center gap-2 bg-violet-500/[0.07] border border-violet-500/10 rounded-xl px-4 py-2.5">
             <Info className="w-4 h-4 text-violet-400 flex-shrink-0" />
             <p className="text-xs text-slate-400">
-              Uzum Market komissiyasi: <span className="text-violet-400 font-semibold">{commission}%</span> ({category} kategoriyasi uchun)
+              Uzum komissiyasi: <span className="text-violet-400 font-semibold">{commission}%</span> · {CATEGORIES[catIdx].name}
             </p>
           </div>
         </div>
 
-        {/* Results */}
-        <div className="space-y-3">
+        {/* ── Results ─────────────────────────────────────────────────── */}
+        <div className="space-y-4">
           {!result ? (
-            <div className="bg-[#13131f] border border-white/[0.06] rounded-2xl p-6 flex items-center justify-center h-full min-h-[200px]">
-              <p className="text-slate-500 text-sm text-center">Natijani ko&apos;rish uchun<br/>narx va tannarxni kiriting</p>
+            <div className="bg-[#13131f] border border-white/[0.06] rounded-2xl p-6 flex flex-col items-center justify-center min-h-[220px] gap-3">
+              <Calculator className="w-10 h-10 text-slate-700" />
+              <p className="text-slate-500 text-sm text-center">Natijani ko'rish uchun<br/>narx va tannarxni kiriting</p>
             </div>
           ) : (
             <>
-              {/* Main result card */}
-              <div className={`rounded-2xl p-6 border ${
-                result.netProfit > 0
-                  ? 'bg-emerald-500/[0.07] border-emerald-500/20'
-                  : 'bg-red-500/[0.07] border-red-500/20'
-              }`}>
-                <p className="text-slate-400 text-xs mb-1">Har bir mahsulotdan sof foyda</p>
-                <div className="flex items-end gap-3">
-                  <p className={`text-3xl font-bold ${result.netProfit > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                    {fmt(result.netProfit)} so&apos;m
-                  </p>
-                  {result.netProfit > 0
-                    ? <TrendingUp className="w-5 h-5 text-emerald-400 mb-1" />
-                    : <TrendingDown className="w-5 h-5 text-red-400 mb-1" />
-                  }
+              {/* ── REALITY CHECK ─────────────────────────────────────── */}
+              <div className="rounded-2xl overflow-hidden border border-white/[0.08]">
+                <div className="bg-gradient-to-r from-violet-600/20 to-indigo-600/10 px-5 py-3 border-b border-white/[0.06] flex items-center gap-2">
+                  <Zap className="w-4 h-4 text-violet-400" />
+                  <span className="text-white font-bold text-sm">Reality Check — oylik hisob</span>
+                </div>
+
+                <div className="bg-[#13131f] p-5 space-y-4">
+                  {/* Two-column comparison */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4">
+                      <p className="text-slate-500 text-[11px] mb-1">Siz hisoblagan foyda</p>
+                      <p className="text-white font-bold text-xl">{fmt(result.naiveProfit)}</p>
+                      <p className="text-slate-600 text-[10px] mt-0.5">so'm</p>
+                    </div>
+                    <div className={`border rounded-xl p-4 ${result.realProfit > 0 ? 'bg-emerald-500/[0.08] border-emerald-500/25' : 'bg-red-500/[0.08] border-red-500/25'}`}>
+                      <p className="text-slate-400 text-[11px] mb-1">Haqiqiy foydangiz</p>
+                      <p className={`font-bold text-xl ${result.realProfit > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                        {fmt(result.realProfit)}
+                      </p>
+                      <p className="text-slate-600 text-[10px] mt-0.5">so'm</p>
+                    </div>
+                  </div>
+
+                  {/* The "stolen" line */}
+                  <div className="bg-red-500/[0.07] border border-red-500/20 rounded-xl px-4 py-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-red-400 text-xs font-semibold flex items-center gap-1.5">
+                        <AlertTriangle className="w-3.5 h-3.5" />
+                        Uzum + xarajatlar olib ketdi
+                      </span>
+                      <span className="text-red-400 font-bold text-sm">{fmt(result.stolen)} so'm</span>
+                    </div>
+                    {/* Progress bar */}
+                    <div className="w-full h-2 bg-white/[0.06] rounded-full overflow-hidden">
+                      <div className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full transition-all duration-500"
+                        style={{ width: `${Math.max(0, Math.min(100, result.keepPct))}%` }} />
+                    </div>
+                    <div className="flex justify-between text-[10px] mt-1.5">
+                      <span className="text-emerald-400">Qoldi: {result.keepPct.toFixed(0)}%</span>
+                      <span className="text-red-400">Ketdi: {result.stolenPct.toFixed(0)}%</span>
+                    </div>
+                  </div>
+
+                  {/* Cost breakdown per unit */}
+                  <div className="space-y-1.5">
+                    <p className="text-slate-500 text-xs font-medium">1 dona mahsulotdan xarajatlar taqsimoti:</p>
+                    {[
+                      { label: `Uzum komissiyasi (${commission}%)`, value: result.commAmt,     color: 'bg-red-500' },
+                      { label: 'Tannarx',                           value: result.cost,         color: 'bg-orange-500' },
+                      { label: 'Logistika',                         value: result.logistics,    color: 'bg-amber-500' },
+                      { label: 'Qaytarish zarari',                  value: result.returnLoss * (parseFloat(returnRate)/100), color: 'bg-rose-500' },
+                      { label: 'Reklama (dona)',                    value: result.adPerUnit,    color: 'bg-purple-500' },
+                    ].filter(r => r.value > 0).map(r => {
+                      const pct = result.price > 0 ? (r.value / result.price) * 100 : 0
+                      return (
+                        <div key={r.label} className="flex items-center gap-2 text-xs">
+                          <div className={`w-2 h-2 rounded-full flex-shrink-0 ${r.color}`} />
+                          <span className="text-slate-400 flex-1">{r.label}</span>
+                          <span className="text-slate-300 tabular-nums">{fmt(r.value)} so'm</span>
+                          <span className="text-slate-600 w-10 text-right tabular-nums">{pct.toFixed(1)}%</span>
+                        </div>
+                      )
+                    })}
+                    <div className="border-t border-white/[0.06] pt-1.5 flex items-center gap-2 text-xs">
+                      <div className="w-2 h-2 rounded-full flex-shrink-0 bg-emerald-500" />
+                      <span className="text-slate-200 font-semibold flex-1">Sof foyda (dona)</span>
+                      <span className={`font-bold tabular-nums ${result.realProfitUnit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                        {fmt(result.realProfitUnit)} so'm
+                      </span>
+                      <span className={`w-10 text-right tabular-nums font-semibold ${result.margin >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                        {result.margin.toFixed(1)}%
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              {/* Metric grid */}
-              <div className="grid grid-cols-2 gap-3">
+              {/* Metric chips */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {[
-                  { label: 'Margin',        value: `${result.margin.toFixed(1)}%`,     good: result.margin > 15,  warn: result.margin < 5  },
-                  { label: 'DRR (reklama)', value: `${result.drr.toFixed(1)}%`,         good: result.drr < 15,     warn: result.drr > 25    },
-                  { label: 'ROI',           value: `${result.roiPercent.toFixed(0)}%`,  good: result.roiPercent > 30, warn: result.roiPercent < 0 },
-                  { label: 'Zararlanmaslik narxi', value: `${fmt(result.breakeven)} so'm`, good: parseFloat(price) > result.breakeven, warn: parseFloat(price) <= result.breakeven },
-                ].map(({ label, value, good, warn }) => (
-                  <div key={label} className="bg-[#13131f] border border-white/[0.06] rounded-xl p-4">
-                    <p className="text-slate-500 text-xs mb-1">{label}</p>
-                    <p className={`text-lg font-bold ${good ? 'text-emerald-400' : warn ? 'text-red-400' : 'text-amber-400'}`}>
-                      {value}
-                    </p>
-                  </div>
-                ))}
-              </div>
-
-              {/* Breakdown */}
-              <div className="bg-[#13131f] border border-white/[0.06] rounded-2xl p-5 space-y-2.5">
-                <p className="text-white text-sm font-semibold mb-3">Taqsimot</p>
-                {[
-                  { label: 'Sotish narxi',     value: parseFloat(price) || 0,  color: 'text-white' },
-                  { label: `Komissiya (${commission}%)`, value: -(parseFloat(price) || 0) * commission / 100, color: 'text-red-400' },
-                  { label: 'Tannarx',          value: -(parseFloat(cost) || 0),       color: 'text-red-400' },
-                  { label: 'Logistika',         value: -(parseFloat(logistics) || 0),  color: 'text-red-400' },
-                  { label: 'Reklama (dona)',    value: -(parseFloat(adSpend) || 0) / Math.max(1, parseFloat(units) || 1), color: 'text-amber-400' },
-                  { label: 'Sof foyda',        value: result.netProfit,               color: result.netProfit >= 0 ? 'text-emerald-400' : 'text-red-400', bold: true },
-                ].map(({ label, value, color, bold }) => (
-                  <div key={label} className="flex items-center justify-between text-sm border-b border-white/[0.03] pb-2 last:border-0 last:pb-0">
-                    <span className={`text-slate-400 ${bold ? 'font-semibold text-slate-200' : ''}`}>{label}</span>
-                    <span className={`font-medium tabular-nums ${color}`}>
-                      {value >= 0 ? '+' : ''}{fmt(value)} so&apos;m
-                    </span>
+                  { label: 'Margin',     value: `${result.margin.toFixed(1)}%`,    good: result.margin >= 20,  bad: result.margin < 5   },
+                  { label: 'ROI',        value: `${result.roi.toFixed(0)}%`,        good: result.roi >= 30,     bad: result.roi < 0      },
+                  { label: 'DRR',        value: `${result.drr.toFixed(1)}%`,        good: result.drr < 15,      bad: result.drr > 25     },
+                  { label: 'Zararlanmaslik', value: `${fmt(result.breakeven)} s'm`, good: result.price > result.breakeven, bad: result.price <= result.breakeven },
+                ].map(({ label, value, good, bad }) => (
+                  <div key={label} className="bg-[#13131f] border border-white/[0.06] rounded-xl p-3">
+                    <p className="text-slate-500 text-[10px] mb-0.5">{label}</p>
+                    <p className={`text-base font-bold ${good ? 'text-emerald-400' : bad ? 'text-red-400' : 'text-amber-400'}`}>{value}</p>
                   </div>
                 ))}
               </div>
 
               {/* Warnings */}
-              {result.drr > 25 && (
-                <div className="flex items-start gap-2 bg-amber-500/[0.08] border border-amber-500/20 rounded-xl px-4 py-3 text-xs text-amber-400">
-                  <span className="text-base leading-none">⚠️</span>
-                  <span>DRR {result.drr.toFixed(1)}% — reklama xarajati juda yuqori. Optimal darajasi 15–20% oralig&apos;ida.</span>
+              {result.realProfit <= 0 && (
+                <div className="flex items-start gap-2 bg-red-500/[0.08] border border-red-500/20 rounded-xl px-4 py-3 text-xs text-red-400">
+                  <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                  <span>Hozirgi narx bilan oyiga <strong>{fmt(Math.abs(result.realProfit))} so'm zarar</strong> ko'rmoqdasiz. Narxni kamida <strong>{fmt(result.breakeven)} so'm</strong>ga ko'taring.</span>
                 </div>
               )}
-              {result.netProfit <= 0 && (
-                <div className="flex items-start gap-2 bg-red-500/[0.08] border border-red-500/20 rounded-xl px-4 py-3 text-xs text-red-400">
-                  <span className="text-base leading-none">🚨</span>
-                  <span>Hozirgi narx bilan zarar ko&apos;rmoqdasiz. Narxni {fmt(result.breakeven)} so&apos;mdan yuqori qiling.</span>
+              {result.margin > 0 && result.margin < 15 && (
+                <div className="flex items-start gap-2 bg-amber-500/[0.08] border border-amber-500/20 rounded-xl px-4 py-3 text-xs text-amber-400">
+                  <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                  <span>Margin {result.margin.toFixed(1)}% — juda past. Narx oshirish yoki tannarxni kamaytirish kerak. Tavsiya etilgan minimum: 20%.</span>
+                </div>
+              )}
+              {result.drr > 25 && (
+                <div className="flex items-start gap-2 bg-amber-500/[0.08] border border-amber-500/20 rounded-xl px-4 py-3 text-xs text-amber-400">
+                  <TrendingDown className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                  <span>DRR {result.drr.toFixed(1)}% — reklama xarajati haddan oshgan. Optimal: 10–20%.</span>
                 </div>
               )}
             </>

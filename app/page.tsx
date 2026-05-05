@@ -1,268 +1,521 @@
+'use client'
+
 import Link from 'next/link'
+import { useEffect, useRef, useState } from 'react'
+import { motion, useInView, useScroll, useTransform } from 'framer-motion'
 import {
-  TrendingUp, BarChart2, Package, ShoppingCart, Calculator,
-  FileText, Zap, ArrowRight, CheckCircle, Star, RefreshCw,
-  AlertTriangle, DollarSign,
+  TrendingUp, BarChart2, Calculator, FileText,
+  Zap, ArrowRight, RefreshCw, AlertTriangle, DollarSign,
+  ShieldCheck, Sparkles, ChevronRight, Activity, Sun, Moon,
 } from 'lucide-react'
+import { useTheme, useLang } from './providers'
+import { translations } from '@/lib/i18n'
+import type { Lang } from '@/lib/i18n'
 
-const features = [
-  {
-    icon: BarChart2,
-    title: 'Reklama analitikasi',
-    desc: 'DRR, CPC, CPO ko\'rsatkichlari. Savdosiz xarajat va ortiqcha sarflarni avtomatik aniqlash.',
-    color: 'text-violet-400', bg: 'bg-violet-500/10', border: 'border-violet-500/10',
-  },
-  {
-    icon: Calculator,
-    title: 'Unit-iqtisodiyot',
-    desc: 'Har bir mahsulot uchun sof foyda, margin va zararlanmaslik narxini hisoblang.',
-    color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/10',
-  },
-  {
-    icon: AlertTriangle,
-    title: 'Ombor ogohlantirishlari',
-    desc: 'Savdo tezligiga asoslanib qancha kun zaxira qolganini ko\'ring va o\'z vaqtida buyurtma bering.',
-    color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/10',
-  },
-  {
-    icon: FileText,
-    title: 'F & Z hisoboti',
-    desc: 'Oylik daromad, tannarx, komissiya va reklama xarajatlarini bitta jadvalda ko\'ring.',
-    color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/10',
-  },
-  {
-    icon: RefreshCw,
-    title: 'Uzum Market sinxronizatsiya',
-    desc: 'API token orqali buyurtmalar va mahsulotlar avtomatik yangilanib turadi.',
-    color: 'text-pink-400', bg: 'bg-pink-500/10', border: 'border-pink-500/10',
-  },
-  {
-    icon: DollarSign,
-    title: 'Kategoriya tahlili',
-    desc: 'Qaysi kategoriya ko\'proq foyda keltirayotganini donut grafik orqali bilib oling.',
-    color: 'text-cyan-400', bg: 'bg-cyan-500/10', border: 'border-cyan-500/10',
-  },
-]
+/* ── animated counter ───────────────────────────────────────────────────── */
+function useCounter(target: number, duration = 2000, start = false) {
+  const [count, setCount] = useState(0)
+  useEffect(() => {
+    if (!start) return
+    let startTime: number
+    const step = (ts: number) => {
+      if (!startTime) startTime = ts
+      const progress = Math.min((ts - startTime) / duration, 1)
+      setCount(Math.floor((1 - Math.pow(1 - progress, 3)) * target))
+      if (progress < 1) requestAnimationFrame(step)
+    }
+    requestAnimationFrame(step)
+  }, [start, target, duration])
+  return count
+}
 
-const stats = [
-  { value: '6+', label: 'Analitika sahifasi' },
-  { value: '30s', label: 'O\'rtacha yuklash vaqti' },
-  { value: '100%', label: 'Uzum Market uchun' },
-  { value: 'Bepul', label: 'Sinab ko\'rish' },
-]
-
-const steps = [
-  { n: '01', title: 'Ro\'yxatdan o\'ting', desc: 'Email va parol bilan tezda hisob yarating.' },
-  { n: '02', title: 'Uzum tokenini kiriting', desc: 'seller.uzum.uz dan API tokeningizni sozlamalarga kiriting.' },
-  { n: '03', title: 'Sinxronlang', desc: 'Bir tugma bilan mahsulot va buyurtmalaringiz import qilinadi.' },
-  { n: '04', title: 'Tahlil qiling', desc: 'DRR, foyda, ombor va ko\'p boshqa ko\'rsatkichlar tayyor.' },
-]
-
-export default function LandingPage() {
+function StatCard({ value, suffix, labelKey, delay, labelIdx }: {
+  value: number; suffix: string; labelKey: Lang; labelIdx: number; delay: number
+}) {
+  const ref = useRef(null)
+  const inView = useInView(ref, { once: true })
+  const count = useCounter(value, 2000, inView)
+  const t = translations[labelKey]
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-slate-200">
-      {/* Nav */}
-      <header className="fixed top-0 left-0 right-0 z-50 border-b border-white/[0.05] bg-[#0a0a0f]/80 backdrop-blur-md">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center shadow shadow-violet-500/30">
-              <TrendingUp className="w-4 h-4 text-white" />
-            </div>
-            <span className="font-bold text-white tracking-tight">Daromadchi</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <Link href="/login" className="text-sm text-slate-400 hover:text-white transition-colors">
-              Kirish
-            </Link>
-            <Link href="/login" className="text-sm font-medium bg-violet-600 hover:bg-violet-500 text-white px-4 py-2 rounded-xl transition-colors shadow shadow-violet-500/20">
-              Boshlash
-            </Link>
-          </div>
-        </div>
-      </header>
+    <motion.div ref={ref} initial={{ opacity: 0, y: 30 }} animate={inView ? { opacity: 1, y: 0 } : {}}
+      transition={{ delay, duration: 0.6, ease: 'easeOut' }} className="text-center">
+      <div className="text-4xl sm:text-5xl font-black mb-2 tabular-nums" style={{ color: 'var(--text-base)' }}>
+        {count.toLocaleString()}<span className="shimmer-text">{suffix}</span>
+      </div>
+      <div className="text-sm font-medium" style={{ color: 'var(--text-muted)' }}>{t.stats[labelIdx].label}</div>
+    </motion.div>
+  )
+}
 
-      {/* Hero */}
-      <section className="pt-32 pb-20 px-4 sm:px-6 relative overflow-hidden">
-        {/* Background glow */}
-        <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-violet-600/10 rounded-full blur-3xl pointer-events-none" />
+function NeonGrid() {
+  const { theme } = useTheme()
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none select-none">
+      <svg className="absolute inset-0 w-full h-full animate-grid-fade" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse">
+            <path d="M 60 0 L 0 0 0 60" fill="none"
+              stroke={theme === 'dark' ? 'rgba(139,92,246,0.15)' : 'rgba(139,92,246,0.1)'}
+              strokeWidth="0.5" />
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#grid)" />
+      </svg>
+    </div>
+  )
+}
 
-        <div className="max-w-4xl mx-auto text-center relative">
-          <div className="inline-flex items-center gap-2 bg-violet-500/10 border border-violet-500/20 rounded-full px-4 py-1.5 text-xs text-violet-400 font-medium mb-6">
-            <Zap className="w-3.5 h-3.5" />
-            Uzum Market sotuvchilari uchun
-          </div>
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white leading-tight tracking-tight mb-6">
-            Do&apos;koningiz raqamlarini{' '}
-            <span className="bg-gradient-to-r from-violet-400 to-indigo-400 bg-clip-text text-transparent">
-              to&apos;liq nazorat qiling
-            </span>
-          </h1>
-          <p className="text-lg text-slate-400 max-w-2xl mx-auto mb-8 leading-relaxed">
-            DRR tahlili, ombor ogohlantirishlari, foyda hisoboti va unit-iqtisodiyot kalkulyatori —
-            hamma narsa bitta panelda, Uzum Market uchun maxsus.
-          </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Link
-              href="/login"
-              className="flex items-center gap-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-semibold px-6 py-3 rounded-xl transition-all shadow-lg shadow-violet-500/25 text-sm"
-            >
-              Bepul boshlash
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-            <Link
-              href="/dashboard"
-              className="flex items-center gap-2 bg-white/[0.05] hover:bg-white/[0.08] border border-white/[0.08] text-slate-300 font-medium px-6 py-3 rounded-xl transition-all text-sm"
-            >
-              Demo ko&apos;rish
-            </Link>
-          </div>
-        </div>
+function FloatingOrbs() {
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      <div className="animate-float absolute top-1/4 left-1/4 w-72 h-72 rounded-full bg-violet-600/10 blur-3xl animate-pulse-glow" />
+      <div className="animate-float2 absolute top-1/3 right-1/4 w-96 h-96 rounded-full bg-indigo-600/8 blur-3xl animate-pulse-glow2" />
+      <div className="animate-float3 absolute bottom-1/4 left-1/3 w-64 h-64 rounded-full bg-cyan-500/6 blur-3xl" />
+    </div>
+  )
+}
 
-        {/* Dashboard preview card */}
-        <div className="max-w-5xl mx-auto mt-16 relative">
-          <div className="bg-[#13131f] border border-white/[0.06] rounded-2xl p-4 shadow-2xl">
-            {/* Fake browser bar */}
-            <div className="flex items-center gap-1.5 mb-4 px-1">
-              <div className="w-3 h-3 rounded-full bg-red-500/60" />
-              <div className="w-3 h-3 rounded-full bg-amber-500/60" />
-              <div className="w-3 h-3 rounded-full bg-emerald-500/60" />
-              <div className="flex-1 bg-white/[0.04] rounded-lg h-5 mx-3" />
-            </div>
-            {/* Mock dashboard grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
-              {[
-                { label: 'Daromad', value: '124.5M', color: 'text-violet-400' },
-                { label: 'Foyda',   value: '38.2M',  color: 'text-emerald-400' },
-                { label: 'Buyurtma',value: '1,842',  color: 'text-blue-400' },
-                { label: 'Ombor',   value: '3,410',  color: 'text-amber-400' },
-              ].map(k => (
-                <div key={k.label} className="bg-[#1c1c2e] rounded-xl p-3 border border-white/[0.04]">
-                  <p className="text-slate-500 text-xs mb-1">{k.label}</p>
-                  <p className={`font-bold text-lg ${k.color}`}>{k.value}</p>
-                </div>
-              ))}
-            </div>
-            <div className="grid grid-cols-3 gap-3">
-              <div className="col-span-2 bg-[#1c1c2e] rounded-xl h-28 border border-white/[0.04] flex items-end px-4 pb-3 gap-2">
-                {[40, 55, 35, 70, 60, 80, 72].map((h, i) => (
-                  <div key={i} className="flex-1 rounded-t-md bg-gradient-to-t from-violet-600 to-indigo-500 opacity-80" style={{ height: `${h}%` }} />
-                ))}
-              </div>
-              <div className="bg-[#1c1c2e] rounded-xl h-28 border border-white/[0.04] p-3 space-y-2">
-                {['Krossovkalar', 'Elektronika', 'Soatlar'].map((c, i) => (
-                  <div key={c}>
-                    <div className="flex justify-between text-xs mb-1">
-                      <span className="text-slate-500">{c}</span>
-                      <span className="text-slate-400">{[42, 35, 23][i]}%</span>
-                    </div>
-                    <div className="h-1 bg-white/[0.05] rounded-full">
-                      <div className="h-full rounded-full bg-violet-500" style={{ width: `${[42, 35, 23][i]}%` }} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-          {/* Glow under card */}
-          <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-3/4 h-12 bg-violet-600/20 blur-2xl rounded-full" />
-        </div>
-      </section>
+/* ── theme + lang controls ──────────────────────────────────────────────── */
+function ThemeToggle() {
+  const { theme, toggle } = useTheme()
+  return (
+    <button onClick={toggle}
+      className="w-9 h-9 rounded-xl flex items-center justify-center transition-all border"
+      style={{ background: 'var(--bg-input)', borderColor: 'var(--border2)', color: 'var(--text-dim)' }}
+      title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
+    >
+      {theme === 'dark'
+        ? <Sun className="w-4 h-4 text-amber-400" />
+        : <Moon className="w-4 h-4 text-violet-500" />}
+    </button>
+  )
+}
 
-      {/* Stats */}
-      <section className="py-12 px-4 sm:px-6 border-y border-white/[0.04]">
-        <div className="max-w-4xl mx-auto grid grid-cols-2 sm:grid-cols-4 gap-8">
-          {stats.map(s => (
-            <div key={s.label} className="text-center">
-              <p className="text-3xl font-bold text-white mb-1">{s.value}</p>
-              <p className="text-slate-500 text-sm">{s.label}</p>
-            </div>
+function LangToggle() {
+  const { lang, setLang } = useLang()
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+  const langs: Lang[] = ['uz', 'ru', 'en']
+
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  return (
+    <div ref={ref} className="relative">
+      <button onClick={() => setOpen(o => !o)}
+        className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold uppercase transition-all border"
+        style={{ background: 'var(--bg-input)', borderColor: 'var(--border2)', color: '#a78bfa' }}>
+        {lang}
+        <svg className={`w-3 h-3 transition-transform ${open ? 'rotate-180' : ''}`} viewBox="0 0 12 12" fill="none">
+          <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      </button>
+      {open && (
+        <div className="absolute right-0 top-full mt-1.5 rounded-xl overflow-hidden border shadow-xl z-50"
+          style={{ background: 'var(--bg-card)', borderColor: 'var(--border2)', minWidth: '4rem' }}>
+          {langs.map(l => (
+            <button key={l} onClick={() => { setLang(l); setOpen(false) }}
+              className="w-full px-3 py-2 text-xs font-bold uppercase text-left transition-all"
+              style={{
+                background: lang === l ? 'rgba(139,92,246,0.15)' : 'transparent',
+                color: lang === l ? '#a78bfa' : 'var(--text-muted)',
+              }}>
+              {l}
+            </button>
           ))}
         </div>
-      </section>
+      )}
+    </div>
+  )
+}
 
-      {/* Features */}
-      <section className="py-20 px-4 sm:px-6">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-white mb-3">Hamma narsa bir joyda</h2>
-            <p className="text-slate-400 max-w-xl mx-auto">Uzum Market sotuvchisi kerak bo&apos;ladigan barcha analitika vositalari.</p>
+/* ── dashboard preview ──────────────────────────────────────────────────── */
+function DashboardPreview({ p }: { p: typeof import('@/lib/i18n').translations.en.preview }) {
+  const { theme } = useTheme()
+  const card  = theme === 'dark' ? '#0e0e1a' : '#ffffff'
+  const card2 = theme === 'dark' ? '#13131f' : '#f8f8ff'
+  const border = theme === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(139,92,246,0.15)'
+  const textMuted = theme === 'dark' ? '#64748b' : '#9ca3af'
+  const textSub = theme === 'dark' ? '#475569' : '#d1d5db'
+
+  const kpis = [
+    { l: p.revenue,  v: '124.5M', c: 'text-violet-400',  g: 'from-violet-500/20 to-transparent' },
+    { l: p.profit,   v: '38.2M',  c: 'text-emerald-400', g: 'from-emerald-500/20 to-transparent' },
+    { l: p.orders,   v: '1,842',  c: 'text-blue-400',    g: 'from-blue-500/20 to-transparent' },
+    { l: p.stock,    v: '3,410',  c: 'text-amber-400',   g: 'from-amber-500/20 to-transparent' },
+  ]
+
+  return (
+    <div className="relative">
+      <div className="absolute -inset-4 rounded-3xl border animate-spin-slow" style={{ borderColor: 'rgba(139,92,246,0.1)' }} />
+      <div className="relative rounded-2xl overflow-hidden shadow-2xl shadow-violet-900/20 border" style={{ background: card, borderColor: border }}>
+        {/* Browser bar */}
+        <div className="flex items-center gap-2 px-4 py-3 border-b" style={{ background: card2, borderColor: border }}>
+          <div className="flex gap-1.5">
+            <div className="w-3 h-3 rounded-full bg-red-500/70" />
+            <div className="w-3 h-3 rounded-full bg-amber-500/70" />
+            <div className="w-3 h-3 rounded-full bg-emerald-500/70" />
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {features.map(f => (
-              <div key={f.title} className={`bg-[#13131f] border border-white/[0.06] hover:border-white/[0.1] rounded-2xl p-6 transition-all group`}>
-                <div className={`w-10 h-10 rounded-xl ${f.bg} border ${f.border} flex items-center justify-center mb-4`}>
-                  <f.icon className={`w-5 h-5 ${f.color}`} />
-                </div>
-                <h3 className="text-white font-semibold mb-2">{f.title}</h3>
-                <p className="text-slate-400 text-sm leading-relaxed">{f.desc}</p>
+          <div className="flex-1 rounded-md h-5 mx-4 flex items-center px-2 border" style={{ background: 'var(--bg-input)', borderColor: border }}>
+            <span className="text-[9px]" style={{ color: textMuted }}>daromadchi.uz/dashboard</span>
+          </div>
+          <Activity className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
+        </div>
+
+        <div className="p-3 space-y-2.5">
+          <div className="grid grid-cols-4 gap-2">
+            {kpis.map(k => (
+              <div key={k.l} className="rounded-xl p-2.5 relative overflow-hidden border" style={{ background: card2, borderColor: border }}>
+                <div className={`absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r ${k.g}`} />
+                <p className="text-[9px] mb-1" style={{ color: textMuted }}>{k.l}</p>
+                <p className={`font-bold text-sm ${k.c}`}>{k.v}</p>
+                <p className="text-emerald-400 text-[9px] mt-0.5">↑ 12.4%</p>
               </div>
             ))}
           </div>
-        </div>
-      </section>
 
-      {/* How it works */}
-      <section className="py-20 px-4 sm:px-6 bg-[#0d0d1a]">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-white mb-3">Qanday ishlaydi?</h2>
-            <p className="text-slate-400">4 qadamda ishga tushiring</p>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {steps.map((s, i) => (
-              <div key={s.n} className="relative">
-                {i < steps.length - 1 && (
-                  <div className="hidden lg:block absolute top-5 left-full w-full h-px bg-gradient-to-r from-violet-500/30 to-transparent z-0" />
-                )}
-                <div className="relative z-10">
-                  <div className="w-10 h-10 rounded-xl bg-violet-600/20 border border-violet-500/20 flex items-center justify-center text-violet-400 font-bold text-sm mb-4">
-                    {s.n}
-                  </div>
-                  <h3 className="text-white font-semibold mb-1.5 text-sm">{s.title}</h3>
-                  <p className="text-slate-400 text-xs leading-relaxed">{s.desc}</p>
-                </div>
+          <div className="grid grid-cols-3 gap-2">
+            <div className="col-span-2 rounded-xl p-3 border" style={{ background: card2, borderColor: border }}>
+              <p className="text-[9px] mb-2" style={{ color: textMuted }}>{p.dailyRevenue}</p>
+              <div className="flex items-end gap-1 h-16">
+                {[30,55,40,70,45,85,65,90,75,60,80,95,70,85].map((h, i) => (
+                  <div key={i} className="flex-1 rounded-t-sm"
+                    style={{ height: `${h}%`, background: 'linear-gradient(to top,rgba(139,92,246,0.8),rgba(99,102,241,0.4))', boxShadow: h > 70 ? '0 0 8px rgba(139,92,246,0.5)' : undefined }} />
+                ))}
               </div>
-            ))}
+            </div>
+            <div className="rounded-xl p-3 border flex flex-col gap-2" style={{ background: card2, borderColor: border }}>
+              <p className="text-[9px] self-start" style={{ color: textMuted }}>{p.categories}</p>
+              <div className="relative w-14 h-14 mx-auto">
+                <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
+                  <circle cx="18" cy="18" r="14" fill="none" stroke={textSub} strokeWidth="4" />
+                  <circle cx="18" cy="18" r="14" fill="none" stroke="rgba(139,92,246,0.8)" strokeWidth="4" strokeDasharray="37 51" strokeLinecap="round" />
+                  <circle cx="18" cy="18" r="14" fill="none" stroke="rgba(34,211,238,0.7)" strokeWidth="4" strokeDasharray="24 64" strokeDashoffset="-37" strokeLinecap="round" />
+                  <circle cx="18" cy="18" r="14" fill="none" stroke="rgba(251,191,36,0.7)" strokeWidth="4" strokeDasharray="15 73" strokeDashoffset="-61" strokeLinecap="round" />
+                </svg>
+              </div>
+            </div>
           </div>
         </div>
-      </section>
+      </div>
 
-      {/* CTA */}
-      <section className="py-20 px-4 sm:px-6">
-        <div className="max-w-2xl mx-auto text-center">
-          <div className="bg-gradient-to-br from-violet-600/20 to-indigo-600/10 border border-violet-500/20 rounded-3xl p-10">
-            <h2 className="text-3xl font-bold text-white mb-3">Hoziroq boshlang</h2>
-            <p className="text-slate-400 mb-6">Ro&apos;yxatdan o&apos;ting va demo ma&apos;lumotlar bilan dashboardni sinab ko&apos;ring.</p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Link
-                href="/login"
-                className="flex items-center justify-center gap-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-semibold px-8 py-3 rounded-xl transition-all shadow-lg shadow-violet-500/25 text-sm"
-              >
-                Bepul boshlash <ArrowRight className="w-4 h-4" />
+      <motion.div animate={{ y: [0,-8,0] }} transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+        className="absolute -left-6 top-1/3 rounded-xl px-3 py-2 shadow-lg shadow-emerald-500/10 hidden sm:block border"
+        style={{ background: card2, borderColor: 'rgba(52,211,153,0.3)' }}>
+        <div className="flex items-center gap-2">
+          <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+          <span className="text-emerald-400 text-xs font-medium">{p.revenueUp}</span>
+        </div>
+      </motion.div>
+
+      <motion.div animate={{ y: [0,8,0] }} transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
+        className="absolute -right-6 bottom-1/3 rounded-xl px-3 py-2 shadow-lg shadow-violet-500/10 hidden sm:block border"
+        style={{ background: card2, borderColor: 'rgba(139,92,246,0.3)' }}>
+        <div className="flex items-center gap-2">
+          <Sparkles className="w-3 h-3 text-violet-400" />
+          <span className="text-violet-400 text-xs font-medium">{p.aiReady}</span>
+        </div>
+      </motion.div>
+    </div>
+  )
+}
+
+/* ── feature icon config ────────────────────────────────────────────────── */
+const featureIcons = [
+  { Icon: BarChart2,    glow: 'hover:shadow-violet-500/20', border: 'hover:border-violet-500/40', iconBg: 'bg-violet-500/10 border-violet-500/20', iconColor: 'text-violet-400',  grad: 'from-violet-500 to-purple-600'  },
+  { Icon: Calculator,  glow: 'hover:shadow-cyan-500/20',    border: 'hover:border-cyan-500/40',    iconBg: 'bg-cyan-500/10 border-cyan-500/20',     iconColor: 'text-cyan-400',    grad: 'from-cyan-500 to-blue-600'      },
+  { Icon: AlertTriangle,glow:'hover:shadow-amber-500/20',  border: 'hover:border-amber-500/40',   iconBg: 'bg-amber-500/10 border-amber-500/20',   iconColor: 'text-amber-400',   grad: 'from-amber-500 to-orange-600'   },
+  { Icon: FileText,    glow: 'hover:shadow-emerald-500/20', border: 'hover:border-emerald-500/40', iconBg: 'bg-emerald-500/10 border-emerald-500/20',iconColor: 'text-emerald-400', grad: 'from-emerald-500 to-green-600'  },
+  { Icon: RefreshCw,   glow: 'hover:shadow-pink-500/20',    border: 'hover:border-pink-500/40',    iconBg: 'bg-pink-500/10 border-pink-500/20',     iconColor: 'text-pink-400',    grad: 'from-pink-500 to-rose-600'      },
+  { Icon: DollarSign,  glow: 'hover:shadow-indigo-500/20',  border: 'hover:border-indigo-500/40',  iconBg: 'bg-indigo-500/10 border-indigo-500/20', iconColor: 'text-indigo-400',  grad: 'from-indigo-500 to-violet-600'  },
+]
+
+const stepColors = [
+  { color: 'text-violet-400', bg: 'bg-violet-500/10 border-violet-500/30' },
+  { color: 'text-cyan-400',   bg: 'bg-cyan-500/10 border-cyan-500/30'   },
+  { color: 'text-pink-400',   bg: 'bg-pink-500/10 border-pink-500/30'   },
+  { color: 'text-emerald-400',bg: 'bg-emerald-500/10 border-emerald-500/30' },
+]
+
+/* ── main page ──────────────────────────────────────────────────────────── */
+export default function LandingPage() {
+  const { theme } = useTheme()
+  const { lang }  = useLang()
+  const t = translations[lang]
+
+  const { scrollY } = useScroll()
+  const heroY = useTransform(scrollY, [0,500], [0,-80])
+  const heroOpacity = useTransform(scrollY, [0,400], [1,0])
+
+  const featuresRef = useRef(null)
+  const stepsRef    = useRef(null)
+  const statsRef    = useRef(null)
+  const featuresInView = useInView(featuresRef, { once: true, margin: '-100px' })
+  const stepsInView    = useInView(stepsRef,    { once: true, margin: '-100px' })
+  const statsInView    = useInView(statsRef,    { once: true, margin: '-100px' })
+
+  const card  = theme === 'dark' ? '#0e0e1a' : '#ffffff'
+  const card2 = theme === 'dark' ? '#0e0e1a' : '#f8f8ff'
+
+  return (
+    <div className="min-h-screen overflow-x-hidden" style={{ background: 'var(--bg-base)', color: 'var(--text-base)' }}>
+
+      {/* ── Nav ───────────────────────────────────────────────────────── */}
+      <motion.header initial={{ y:-80, opacity:0 }} animate={{ y:0, opacity:1 }}
+        transition={{ duration:0.6, ease:'easeOut' }} className="fixed top-0 left-0 right-0 z-50">
+        <div className="mx-4 mt-4">
+          <div className="max-w-6xl mx-auto backdrop-blur-xl rounded-2xl px-5 h-14 flex items-center justify-between shadow-xl border"
+            style={{ background: 'var(--nav-bg)', borderColor: 'var(--border)' }}>
+            <Link
+              href="/"
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              className="flex items-center gap-2.5 group"
+            >
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-violet-500/30 neon-border">
+                <TrendingUp className="w-4 h-4 text-white" />
+              </div>
+              <span className="font-bold tracking-tight group-hover:text-violet-400 transition-colors" style={{ color: 'var(--text-base)' }}>Daromadchi</span>
+            </Link>
+
+            <nav className="hidden md:flex items-center gap-6 text-sm" style={{ color: 'var(--text-muted)' }}>
+              <a href="#features" className="hover:text-violet-500 transition-colors">{t.nav.features}</a>
+              <a href="#how"      className="hover:text-violet-500 transition-colors">{t.nav.how}</a>
+              <a href="#stats"    className="hover:text-violet-500 transition-colors">{t.nav.stats}</a>
+            </nav>
+
+            <div className="flex items-center gap-2">
+              <LangToggle />
+              <ThemeToggle />
+              <Link href="/login" className="hidden sm:block text-sm px-3 py-1.5 transition-colors" style={{ color: 'var(--text-muted)' }}>
+                {t.nav.login}
               </Link>
-              <Link
-                href="/dashboard"
-                className="flex items-center justify-center gap-2 border border-white/[0.1] hover:border-white/[0.2] text-slate-300 font-medium px-8 py-3 rounded-xl transition-all text-sm"
-              >
-                Demo ko&apos;rish
+              <Link href="/login"
+                className="flex items-center gap-1.5 text-sm font-semibold bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white px-4 py-2 rounded-xl transition-all shadow-lg shadow-violet-500/25">
+                {t.nav.start} <ChevronRight className="w-3.5 h-3.5" />
               </Link>
             </div>
           </div>
         </div>
+      </motion.header>
+
+      {/* ── Hero ──────────────────────────────────────────────────────── */}
+      <section className="relative min-h-screen flex items-center pt-24 pb-16 px-4 sm:px-6 overflow-hidden">
+        <NeonGrid />
+        <FloatingOrbs />
+        <div className="absolute top-1/3 left-0 right-0 h-px bg-gradient-to-r from-transparent via-violet-500/30 to-transparent animate-beam" />
+
+        <motion.div style={{ y: heroY, opacity: heroOpacity }} className="relative z-10 max-w-7xl mx-auto w-full">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+            <div>
+              <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.3, duration:0.6 }}
+                className="inline-flex items-center gap-2 bg-violet-500/10 border border-violet-500/20 rounded-full px-4 py-1.5 text-xs text-violet-400 font-medium mb-6">
+                <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse" />
+                {t.badge}
+              </motion.div>
+
+              <motion.h1 initial={{ opacity:0, y:30 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.4, duration:0.7 }}
+                className="text-4xl sm:text-5xl xl:text-6xl font-black leading-[1.1] tracking-tight mb-6"
+                style={{ color: 'var(--text-base)' }}>
+                {t.hero.title1}{' '}
+                <span className="shimmer-text animate-neon-flicker">{t.hero.title2}</span>{' '}
+                {t.hero.title3}
+              </motion.h1>
+
+              <motion.p initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.5, duration:0.6 }}
+                className="text-lg max-w-lg mb-8 leading-relaxed" style={{ color: 'var(--text-muted)' }}>
+                {t.hero.subtitle}
+              </motion.p>
+
+              <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.6, duration:0.6 }}
+                className="flex flex-col sm:flex-row gap-3">
+                <Link href="/login"
+                  className="group flex items-center justify-center gap-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-bold px-7 py-3.5 rounded-2xl transition-all shadow-xl shadow-violet-500/30 text-sm">
+                  {t.hero.cta}
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </Link>
+                <Link href="/dashboard"
+                  className="flex items-center justify-center gap-2 font-medium px-7 py-3.5 rounded-2xl transition-all text-sm border"
+                  style={{ background: 'var(--bg-input)', borderColor: 'var(--border2)', color: 'var(--text-dim)' }}>
+                  {t.hero.demo}
+                </Link>
+              </motion.div>
+
+              <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }} transition={{ delay:0.9, duration:0.6 }}
+                className="flex items-center gap-6 mt-8">
+                {([
+                  { Icon: ShieldCheck, label: t.hero.secure },
+                  { Icon: Zap,         label: t.hero.fast },
+                  { Icon: RefreshCw,   label: t.hero.sync },
+                ] as const).map(({ Icon, label }) => (
+                  <div key={label} className="flex items-center gap-1.5 text-xs" style={{ color: 'var(--text-muted)' }}>
+                    <Icon className="w-3.5 h-3.5 text-violet-400" />
+                    {label}
+                  </div>
+                ))}
+              </motion.div>
+            </div>
+
+            <motion.div initial={{ opacity:0, x:60, scale:0.95 }} animate={{ opacity:1, x:0, scale:1 }}
+              transition={{ delay:0.5, duration:0.9, ease:'easeOut' }}>
+              <DashboardPreview p={t.preview} />
+            </motion.div>
+          </div>
+        </motion.div>
+        <div className="absolute bottom-0 left-0 right-0 h-32 pointer-events-none"
+          style={{ background: `linear-gradient(to top, var(--bg-base), transparent)` }} />
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-white/[0.05] py-8 px-4 sm:px-6">
+      {/* ── Stats ─────────────────────────────────────────────────────── */}
+      <section id="stats" ref={statsRef} className="py-20 px-4 sm:px-6 relative">
+        <div className="max-w-4xl mx-auto">
+          <motion.div initial={{ opacity:0, y:40 }} animate={statsInView ? { opacity:1, y:0 } : {}}
+            transition={{ duration:0.6 }}
+            className="relative rounded-3xl p-10 overflow-hidden border"
+            style={{ background: card, borderColor: 'var(--border)' }}>
+            <div className="absolute top-0 left-1/4 right-1/4 h-px bg-gradient-to-r from-transparent via-violet-500 to-transparent" />
+            <FloatingOrbs />
+            <div className="relative grid grid-cols-2 sm:grid-cols-4 gap-8">
+              <StatCard value={6}   suffix="+"     labelKey={lang} labelIdx={0} delay={0}   />
+              <StatCard value={30}  suffix="s"     labelKey={lang} labelIdx={1} delay={0.1} />
+              <StatCard value={100} suffix="%"     labelKey={lang} labelIdx={2} delay={0.2} />
+              <StatCard value={0}   suffix=" so'm" labelKey={lang} labelIdx={3} delay={0.3} />
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ── Features ──────────────────────────────────────────────────── */}
+      <section id="features" ref={featuresRef} className="py-24 px-4 sm:px-6 relative">
+        <NeonGrid />
+        <div className="max-w-6xl mx-auto relative z-10">
+          <motion.div initial={{ opacity:0, y:30 }} animate={featuresInView ? { opacity:1, y:0 } : {}}
+            transition={{ duration:0.6 }} className="text-center mb-16">
+            <div className="inline-flex items-center gap-2 bg-violet-500/10 border border-violet-500/20 rounded-full px-4 py-1.5 text-xs text-violet-400 font-medium mb-4">
+              <Sparkles className="w-3.5 h-3.5" /> {t.featuresBadge}
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-black mb-4" style={{ color: 'var(--text-base)' }}>
+              {t.featuresTitle.split(' ').slice(0,-2).join(' ')}{' '}
+              <span className="shimmer-text">{t.featuresTitle.split(' ').slice(-2).join(' ')}</span>
+            </h2>
+            <p className="max-w-xl mx-auto" style={{ color: 'var(--text-muted)' }}>{t.featuresSubtitle}</p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {t.features.map((f, i) => {
+              const { Icon, glow, border, iconBg, iconColor, grad } = featureIcons[i]
+              return (
+                <motion.div key={f.title}
+                  initial={{ opacity:0, y:40 }} animate={featuresInView ? { opacity:1, y:0 } : {}}
+                  transition={{ delay: i*0.1, duration:0.6 }}
+                  className={`neon-card group border rounded-2xl p-6 cursor-default hover:shadow-xl ${glow} ${border}`}
+                  style={{ background: card2, borderColor: 'var(--border)' }}>
+                  <div className={`w-11 h-11 rounded-xl ${iconBg} border flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
+                    <Icon className={`w-5 h-5 ${iconColor}`} />
+                  </div>
+                  <h3 className="font-bold mb-2" style={{ color: 'var(--text-base)' }}>{f.title}</h3>
+                  <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>{f.desc}</p>
+                  <div className={`mt-4 h-px bg-gradient-to-r ${grad} opacity-0 group-hover:opacity-100 transition-opacity rounded-full`} />
+                </motion.div>
+              )
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* ── How it works ──────────────────────────────────────────────── */}
+      <section id="how" ref={stepsRef} className="py-24 px-4 sm:px-6 relative overflow-hidden"
+        style={{ background: theme === 'dark' ? '#0a0a14' : '#f0f0fa' }}>
+        <FloatingOrbs />
+        <div className="max-w-5xl mx-auto relative z-10">
+          <motion.div initial={{ opacity:0, y:30 }} animate={stepsInView ? { opacity:1, y:0 } : {}}
+            transition={{ duration:0.6 }} className="text-center mb-16">
+            <div className="inline-flex items-center gap-2 bg-cyan-500/10 border border-cyan-500/20 rounded-full px-4 py-1.5 text-xs text-cyan-400 font-medium mb-4">
+              <Zap className="w-3.5 h-3.5" /> {t.howBadge}
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-black mb-4" style={{ color: 'var(--text-base)' }}>
+              {t.howTitle1} <span className="shimmer-text">{t.howTitle2}</span>
+            </h2>
+          </motion.div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {t.steps.map((s, i) => (
+              <motion.div key={s.title}
+                initial={{ opacity:0, y:40 }} animate={stepsInView ? { opacity:1, y:0 } : {}}
+                transition={{ delay: i*0.15, duration:0.6 }}
+                className="relative group">
+                {i < t.steps.length - 1 && (
+                  <div className="hidden lg:block absolute top-5 left-full w-full h-px bg-gradient-to-r from-violet-500/30 via-violet-500/10 to-transparent z-0" />
+                )}
+                <div className="relative z-10 border rounded-2xl p-6 transition-all group-hover:shadow-lg"
+                  style={{ background: card2, borderColor: 'var(--border)' }}>
+                  <div className={`w-11 h-11 rounded-xl ${stepColors[i].bg} border flex items-center justify-center text-base font-black ${stepColors[i].color} mb-5 group-hover:scale-110 transition-transform`}>
+                    0{i+1}
+                  </div>
+                  <h3 className="font-bold mb-2 text-sm" style={{ color: 'var(--text-base)' }}>{s.title}</h3>
+                  <p className="text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>{s.desc}</p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── CTA ───────────────────────────────────────────────────────── */}
+      <section className="py-24 px-4 sm:px-6 relative overflow-hidden">
+        <NeonGrid />
+        <FloatingOrbs />
+        <div className="max-w-3xl mx-auto relative z-10">
+          <motion.div initial={{ opacity:0, scale:0.95 }} whileInView={{ opacity:1, scale:1 }}
+            viewport={{ once:true }} transition={{ duration:0.7 }}
+            className="relative rounded-3xl p-10 sm:p-14 text-center overflow-hidden border"
+            style={{ background: card }}>
+            <div className="absolute inset-0 rounded-3xl border border-violet-500/20" />
+            <div className="absolute top-0 left-1/4 right-1/4 h-px bg-gradient-to-r from-transparent via-violet-500 to-transparent" />
+            <div className="absolute bottom-0 left-1/4 right-1/4 h-px bg-gradient-to-r from-transparent via-indigo-500 to-transparent" />
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-32 bg-violet-600/10 blur-3xl" />
+            <div className="relative">
+              <div className="inline-flex items-center gap-2 bg-violet-500/10 border border-violet-500/20 rounded-full px-4 py-1.5 text-xs text-violet-400 font-medium mb-6">
+                <Sparkles className="w-3.5 h-3.5" /> {t.ctaBadge}
+              </div>
+              <h2 className="text-3xl sm:text-4xl font-black mb-4" style={{ color: 'var(--text-base)' }}>
+                {t.ctaTitle1} <span className="shimmer-text">{t.ctaTitle2}</span>
+              </h2>
+              <p className="mb-8 max-w-lg mx-auto leading-relaxed" style={{ color: 'var(--text-muted)' }}>
+                {t.ctaSubtitle}
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <Link href="/login"
+                  className="group flex items-center justify-center gap-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-bold px-8 py-4 rounded-2xl transition-all shadow-xl shadow-violet-500/30 text-sm">
+                  {t.hero.cta} <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </Link>
+                <Link href="/dashboard"
+                  className="flex items-center justify-center gap-2 font-medium px-8 py-4 rounded-2xl transition-all text-sm border"
+                  style={{ borderColor: 'var(--border2)', color: 'var(--text-dim)' }}>
+                  {t.hero.demo}
+                </Link>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ── Footer ────────────────────────────────────────────────────── */}
+      <footer className="border-t py-8 px-4 sm:px-6" style={{ borderColor: 'var(--border)' }}>
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center">
+            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center shadow shadow-violet-500/30">
               <TrendingUp className="w-3.5 h-3.5 text-white" />
             </div>
-            <span className="font-bold text-white text-sm">Daromadchi</span>
+            <span className="font-bold text-sm" style={{ color: 'var(--text-base)' }}>Daromadchi</span>
           </div>
-          <p className="text-slate-500 text-xs">© 2026 Daromadchi. Uzum Market sotuvchilari uchun.</p>
-          <Link href="/dashboard" className="text-xs text-violet-400 hover:text-violet-300 transition-colors">
-            Dashboard &rarr;
+          <p className="text-xs" style={{ color: 'var(--text-muted)' }}>© 2026 Daromadchi. {t.footer}</p>
+          <Link href="/dashboard" className="text-xs text-violet-400 hover:text-violet-300 transition-colors flex items-center gap-1">
+            Dashboard <ArrowRight className="w-3 h-3" />
           </Link>
         </div>
       </footer>

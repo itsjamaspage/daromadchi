@@ -2,18 +2,25 @@
 
 import { useState, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
-import { Menu } from 'lucide-react'
+import { Menu, Sun, Moon } from 'lucide-react'
+import Link from 'next/link'
 import Sidebar from './Sidebar'
-import NotificationsButton from './NotificationsButton'
+import { useTheme, useLang } from '@/app/providers'
+import type { Lang } from '@/lib/i18n'
+
+const LANGS: { value: Lang; label: string }[] = [
+  { value: 'uz', label: 'UZ' },
+  { value: 'ru', label: 'RU' },
+  { value: 'en', label: 'EN' },
+]
 
 export default function MobileNav() {
-  const [open, setOpen] = useState(false)
-  const pathname = usePathname()
+  const [open, setOpen]       = useState(false)
+  const pathname              = usePathname()
+  const { theme, toggle }     = useTheme()
+  const { lang, setLang }     = useLang()
 
-  // Close drawer on route change
   useEffect(() => { setOpen(false) }, [pathname])
-
-  // Prevent body scroll when drawer is open
   useEffect(() => {
     document.body.style.overflow = open ? 'hidden' : ''
     return () => { document.body.style.overflow = '' }
@@ -22,7 +29,7 @@ export default function MobileNav() {
   return (
     <>
       {/* Top bar — mobile only */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 z-40 h-14 bg-[#0d0d1a] border-b border-white/[0.05] flex items-center px-4 gap-3">
+      <header className="lg:hidden fixed top-0 left-0 right-0 z-40 h-14 bg-[#0d0d1a] border-b border-white/[0.05] flex items-center px-4 gap-2">
         <button
           onClick={() => setOpen(true)}
           className="text-slate-400 hover:text-white transition-colors p-1"
@@ -30,8 +37,34 @@ export default function MobileNav() {
         >
           <Menu className="w-5 h-5" />
         </button>
-        <span className="font-bold text-white text-sm tracking-tight flex-1">Daromadchi</span>
-        <NotificationsButton />
+        <Link href="/" className="font-bold text-white text-sm tracking-tight flex-1 hover:text-violet-300 transition-colors">
+          Daromadchi
+        </Link>
+
+        {/* Language pills */}
+        <div className="flex items-center gap-0.5">
+          {LANGS.map(({ value, label }) => (
+            <button
+              key={value}
+              onClick={() => setLang(value)}
+              className={`text-[10px] font-semibold px-2 py-1 rounded-lg transition-all ${
+                lang === value
+                  ? 'bg-violet-600/20 text-violet-300 border border-violet-500/20'
+                  : 'text-slate-500 hover:text-slate-300'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {/* Theme toggle */}
+        <button
+          onClick={toggle}
+          className="text-slate-400 hover:text-white transition-colors p-1.5 rounded-lg hover:bg-white/[0.06]"
+        >
+          {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+        </button>
       </header>
 
       {/* Backdrop */}
