@@ -45,20 +45,30 @@ function buildCategoryData(products: Awaited<ReturnType<typeof getProducts>>) {
     .sort((a, b) => b.revenue - a.revenue)
 }
 
+import type { MarketplaceType } from '@/lib/types'
+
+const VALID_MARKETPLACES = ['uzum', 'yandex_market'] as const
+
+function parseMarketplace(params: Record<string, string> | undefined): MarketplaceType | undefined {
+  const v = params?.mp
+  return (VALID_MARKETPLACES as readonly string[]).includes(v ?? '') ? v as MarketplaceType : undefined
+}
+
 interface Props {
   searchParams: Promise<Record<string, string>>
 }
 
 export default async function DashboardPage({ searchParams }: Props) {
-  const params  = await searchParams
-  const days    = parseDays(params)
-  const daysStr = String(days)
+  const params      = await searchParams
+  const days        = parseDays(params)
+  const daysStr     = String(days)
+  const marketplace = parseMarketplace(params)
 
   const [kpis, recentOrders, allProducts, chartData] = await Promise.all([
-    getKpis(days),
-    getOrders(5),
-    getProducts(),
-    getDailyRevenue(days),
+    getKpis(days, marketplace),
+    getOrders(5,  marketplace),
+    getProducts(  marketplace),
+    getDailyRevenue(days, marketplace),
   ])
 
   const categoryData = buildCategoryData(allProducts)
@@ -83,6 +93,32 @@ export default async function DashboardPage({ searchParams }: Props) {
             <DateFilter current={daysStr} />
           </Suspense>
         </div>
+      </div>
+
+      {/* Marketplace tabs */}
+      <div className="flex items-center gap-1.5 p-1 bg-[#13131f] border border-white/[0.06] rounded-xl w-fit">
+        {([
+          { label: 'Hammasi',       mp: undefined,          color: 'violet' },
+          { label: 'Uzum',          mp: 'uzum',             color: 'violet' },
+          { label: 'Yandex Market', mp: 'yandex_market',    color: 'amber'  },
+        ] as { label: string; mp: string | undefined; color: string }[]).map(({ label, mp, color }) => {
+          const active = (marketplace ?? undefined) === mp
+          return (
+            <Link
+              key={label}
+              href={mp ? `/dashboard?mp=${mp}&days=${daysStr}` : `/dashboard?days=${daysStr}`}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                active
+                  ? color === 'amber'
+                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                    : 'bg-violet-600/20 text-violet-300 border border-violet-500/30'
+                  : 'text-slate-500 hover:text-slate-300'
+              }`}
+            >
+              {label}
+            </Link>
+          )
+        })}
       </div>
 
       {/* Empty state — no data yet */}

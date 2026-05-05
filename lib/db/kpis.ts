@@ -1,12 +1,22 @@
 import { createClient } from '@/lib/supabase/server'
 import { kpiData, orders as mockOrders, products as mockProducts } from '@/lib/mock-data'
-import type { Kpis } from '@/lib/types'
+import type { Kpis, MarketplaceType } from '@/lib/types'
 
 const supabaseConfigured =
   process.env.NEXT_PUBLIC_SUPABASE_URL &&
   !process.env.NEXT_PUBLIC_SUPABASE_URL.includes('your-project')
 
-export async function getKpis(days = 30): Promise<Kpis> {
+async function getShopIds(marketplace?: MarketplaceType): Promise<string[] | null> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return null
+  let q = supabase.from('shops').select('id').eq('user_id', user.id)
+  if (marketplace) q = q.eq('marketplace', marketplace)
+  const { data } = await q
+  return (data ?? []).map((s: { id: string }) => s.id)
+}
+
+export async function getKpis(days = 30, marketplace?: MarketplaceType): Promise<Kpis> {
   if (!supabaseConfigured) {
     const scale = days === 7 ? 0.25 : days === 30 ? 1 : days === 90 ? 2.8 : 1
     const filtered = mockOrders.filter(o => o.status !== 'cancelled')
@@ -18,32 +28,34 @@ export async function getKpis(days = 30): Promise<Kpis> {
     }
   }
 
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { total_revenue: 0, total_profit: 0, total_orders: 0, total_stock: 0 }
+  const shopIds = await getShopIds(marketplace)
+  if (!shopIds || shopIds.length === 0) {
+    return { total_revenue: 0, total_profit: 0, total_orders: 0, total_stock: 0 }
+  }
 
   const since = new Date()
   since.setDate(since.getDate() - days + 1)
+  const supabase = await createClient()
 
-  // RLS automatically scopes orders/products to the authenticated user's shops
   const [ordersRes, stockRes] = await Promise.all([
     supabase
       .from('orders')
       .select('revenue, marketplace_fee, delivery_cost')
+      .in('shop_id', shopIds)
       .neq('status', 'cancelled')
       .gte('ordered_at', since.toISOString()),
     supabase
       .from('products')
-      .select('stock_quantity'),
+      .select('stock_quantity')
+      .in('shop_id', shopIds),
   ])
 
   const rows = ordersRes.data ?? []
   const total_revenue = rows.reduce((s, o) => s + Number(o.revenue ?? 0), 0)
   const total_profit  = rows.reduce((s, o) =>
-    s + Number(o.revenue ?? 0) - Number(o.marketplace_fee ?? 0) - Number(o.delivery_cost ?? 0)
-  , 0)
-  const total_orders = rows.length
-  const total_stock  = (stockRes.data ?? []).reduce((s, p) => s + p.stock_quantity, 0)
+    s + Number(o.revenue ?? 0) - Number(o.marketplace_fee ?? 0) - Number(o.delivery_cost ?? 0), 0)
+  const total_orders  = rows.length
+  const total_stock   = (stockRes.data ?? []).reduce((s, p) => s + p.stock_quantity, 0)
 
   return { total_revenue, total_profit, total_orders, total_stock }
 }

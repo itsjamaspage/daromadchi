@@ -6,27 +6,37 @@ export default async function SettingsPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  let shop: Shop | null = null
+  let uzumShop:   Shop | null = null
+  let yandexShop: Shop | null = null
 
   if (user) {
     const { data } = await supabase
       .from('shops')
       .select('*')
       .eq('user_id', user.id)
-      .eq('marketplace', 'uzum')
-      .order('created_at')
-      .limit(1)
-      .single()
-    if (data) shop = data as Shop
+
+    for (const row of data ?? []) {
+      if (row.marketplace === 'uzum')          uzumShop   = row as Shop
+      if (row.marketplace === 'yandex_market') yandexShop = row as Shop
+    }
   }
 
   return (
     <div className="space-y-6 max-w-2xl">
       <div>
-        <h1 className="text-2xl font-bold text-white">Sozlamalar</h1>
-        <p className="text-slate-400 text-sm mt-1">Do&apos;kon va integratsiya sozlamalari</p>
+        <div className="flex items-center gap-3 mb-0.5">
+          <h1 className="text-2xl font-bold text-white">Sozlamalar</h1>
+          <span className="text-[10px] font-semibold px-2 py-1 rounded-full bg-violet-500/10 border border-violet-500/25 text-violet-400">
+            Sizning ma&apos;lumotingiz
+          </span>
+        </div>
+        <p className="text-slate-400 text-sm">Marketplace integratsiyalari</p>
       </div>
-      <SettingsForm shop={shop} />
+      <SettingsForm
+        uzumShop={uzumShop}
+        yandexShop={yandexShop}
+        userId={user?.id ?? ''}
+      />
     </div>
   )
 }

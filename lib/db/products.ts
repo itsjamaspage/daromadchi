@@ -1,12 +1,22 @@
 import { createClient } from '@/lib/supabase/server'
 import { products as mockProducts } from '@/lib/mock-data'
-import type { Product } from '@/lib/types'
+import type { Product, MarketplaceType } from '@/lib/types'
 
 const supabaseConfigured =
   process.env.NEXT_PUBLIC_SUPABASE_URL &&
   !process.env.NEXT_PUBLIC_SUPABASE_URL.includes('your-project')
 
-export async function getProducts(): Promise<Product[]> {
+async function getShopIds(marketplace?: MarketplaceType): Promise<string[] | null> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return null
+  let q = supabase.from('shops').select('id').eq('user_id', user.id)
+  if (marketplace) q = q.eq('marketplace', marketplace)
+  const { data } = await q
+  return (data ?? []).map((s: { id: string }) => s.id)
+}
+
+export async function getProducts(marketplace?: MarketplaceType): Promise<Product[]> {
   if (!supabaseConfigured) {
     return mockProducts.map(p => ({
       id: String(p.id),
@@ -24,13 +34,14 @@ export async function getProducts(): Promise<Product[]> {
     }))
   }
 
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return []
+  const shopIds = await getShopIds(marketplace)
+  if (!shopIds || shopIds.length === 0) return []
 
+  const supabase = await createClient()
   const { data, error } = await supabase
     .from('products')
     .select('id, shop_id, sku, title, cost_price, selling_price, stock_quantity, category, marketplace_product_id, updated_at')
+    .in('shop_id', shopIds)
     .order('title')
 
   if (error || !data) return []
