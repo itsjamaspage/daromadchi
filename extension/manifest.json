@@ -20,7 +20,9 @@
   "content_scripts": [
     {
       "matches": [
+        "https://uzum.uz/product/*",
         "https://uzum.uz/*/product/*",
+        "https://www.uzum.uz/product/*",
         "https://www.uzum.uz/*/product/*",
         "https://market.yandex.ru/product/*",
         "https://market.yandex.uz/product/*"
