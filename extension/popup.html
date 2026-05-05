@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Daromadchi Analytics</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Login view -->
+    <div id="view-login" class="view hidden">
+      <div class="logo-area">
+        <div class="logo-icon">D</div>
+        <span class="logo-text">Daromadchi</span>
+      </div>
+      <p class="subtitle">Analitika uchun kiring</p>
+
+      <form id="login-form">
+        <div class="field">
+          <label for="email">Email</label>
+          <input type="email" id="email" placeholder="email@example.com" autocomplete="email" required>
+        </div>
+        <div class="field">
+          <label for="password">Parol</label>
+          <input type="password" id="password" placeholder="••••••••" autocomplete="current-password" required>
+        </div>
+        <div id="login-error" class="error-msg hidden"></div>
+        <button type="submit" id="login-btn" class="btn-primary">Kirish</button>
+      </form>
+
+      <a href="https://daromadchi.uz" target="_blank" class="signup-link">
+        Hisob yo'qmi? Ro'yxatdan o'tish →
+      </a>
+    </div>
+
+    <!-- Connected view -->
+    <div id="view-connected" class="view hidden">
+      <div class="logo-area">
+        <div class="logo-icon">D</div>
+        <span class="logo-text">Daromadchi</span>
+      </div>
+
+      <div class="user-card">
+        <div class="user-icon">✓</div>
+        <div>
+          <div class="user-email" id="user-email"></div>
+          <div class="user-status">Ulangan</div>
+        </div>
+      </div>
+
+      <div class="info-box">
+        <p>Uzum.uz va Yandex Market mahsulot sahifalarini oching — analitika avtomatik ko'rsatiladi.</p>
+      </div>
+
+      <div class="overlay-toggle">
+        <span>Overlay</span>
+        <label class="toggle">
+          <input type="checkbox" id="overlay-toggle" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="btn-row">
+        <a href="https://daromadchi.uz/dashboard" target="_blank" class="btn-secondary">
+          Dashboard →
+        </a>
+        <button id="logout-btn" class="btn-outline">Chiqish</button>
+      </div>
+    </div>
+
+    <!-- Loading spinner -->
+    <div id="view-loading" class="view">
+      <div class="spinner"></div>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
