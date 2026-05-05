@@ -1,359 +1,338 @@
-// ── Product ID extraction ─────────────────────────────────────────────────────
+// Daromadchi Extension — Content Script v2
 
-function getUzumProductId() {
-  // URL: /uz/product/some-slug-12345678 or /ru/product/slug-12345678
-  const m = location.pathname.match(/\/product\/[^/]+-(\d+)\/?$/)
-  if (m) return m[1]
-  // Fallback: last numeric segment
-  const parts = location.pathname.split('/').filter(Boolean)
-  const last = parts[parts.length - 1]
-  const digits = last?.match(/(\d+)$/)
-  return digits ? digits[1] : null
-}
+(function () {
+  'use strict';
 
-function getYandexProductId() {
-  // URL: /product/slug/12345678 or /product/12345678
-  const m = location.pathname.match(/\/product\/(?:[^/]+-)?(\d+)\/?/)
-  return m ? m[1] : null
-}
+  const IS_SELLER = window.location.hostname.includes('seller.uzum') ||
+                    window.location.pathname.includes('/seller/');
+  const IS_PRODUCT = !IS_SELLER && (
+    window.location.pathname.includes('/product/') ||
+    window.location.pathname.includes('/item/') ||
+    /\/[a-z]{2,3}\/[^/]+-\d+/.test(window.location.pathname)
+  );
 
-function detectMarketplace() {
-  const host = location.hostname
-  if (host.includes('uzum.uz')) return 'uzum'
-  if (host.includes('yandex.ru') || host.includes('yandex.uz')) return 'yandex'
-  return null
-}
+  if (!IS_PRODUCT && !IS_SELLER) return;
 
-function getProductId(marketplace) {
-  return marketplace === 'uzum' ? getUzumProductId() : getYandexProductId()
-}
+  // Commission by category keyword
+  const COMMISSIONS = {
+    'kiyim': 12, 'elektronika': 10, 'uy': 14, 'sport': 13,
+    "go'zallik": 12, 'oziq': 8, 'avto': 11, 'bolalar': 13, 'default': 15
+  };
 
-// ── Overlay ───────────────────────────────────────────────────────────────────
-
-let shadowHost = null
-let shadowRoot = null
-
-function ensureShadow() {
-  if (shadowHost) return shadowRoot
-  shadowHost = document.createElement('div')
-  shadowHost.id = '__daromadchi_host__'
-  shadowHost.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:2147483647;font-family:sans-serif;'
-  document.body.appendChild(shadowHost)
-  shadowRoot = shadowHost.attachShadow({ mode: 'closed' })
-  return shadowRoot
-}
-
-function removeOverlay() {
-  if (shadowHost) {
-    shadowHost.remove()
-    shadowHost = null
-    shadowRoot = null
+  function getCommission() {
+    const bc = document.querySelector('[class*="readcrumb"], [class*="ategory"]');
+    if (bc) {
+      const t = bc.innerText.toLowerCase();
+      for (const [k, v] of Object.entries(COMMISSIONS)) if (t.includes(k)) return v;
+    }
+    return COMMISSIONS.default;
   }
-}
 
-const STYLES = `
-  .panel {
-    background: rgba(13,13,25,0.95);
-    border: 1px solid rgba(139,92,246,0.35);
-    border-radius: 16px;
-    padding: 14px 16px 12px;
-    width: 260px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.6);
-    color: #e2e8f0;
-    font-size: 12px;
-    line-height: 1.4;
-    backdrop-filter: blur(12px);
-    transition: opacity 0.2s;
+  function parsePrice() {
+    const els = document.querySelectorAll('[class*="price"], [class*="Price"], [class*="cost"], [class*="amount"]');
+    for (const el of els) {
+      if (el.className.toLowerCase().includes('old') || el.className.toLowerCase().includes('cross')) continue;
+      const raw = el.innerText.replace(/[^\d]/g, '');
+      if (raw.length >= 4 && raw.length <= 12) return parseInt(raw);
+    }
+    return null;
   }
-  .header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 10px;
-  }
-  .logo {
-    font-weight: 700;
-    font-size: 13px;
-    background: linear-gradient(135deg,#a78bfa,#38bdf8);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-  }
-  .close-btn {
-    cursor: pointer;
-    color: #64748b;
-    font-size: 16px;
-    line-height: 1;
-    background: none;
-    border: none;
-    padding: 0 2px;
-    transition: color 0.15s;
-  }
-  .close-btn:hover { color: #e2e8f0; }
-  .section-label {
-    font-size: 9px;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: #475569;
-    margin: 8px 0 4px;
-  }
-  .row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 3px 0;
-    border-bottom: 1px solid rgba(255,255,255,0.04);
-  }
-  .row:last-child { border-bottom: none; }
-  .label { color: #94a3b8; }
-  .val { font-weight: 600; color: #f1f5f9; }
-  .val.good { color: #34d399; }
-  .val.warn { color: #fbbf24; }
-  .val.bad  { color: #f87171; }
-  .null { color: #475569; }
-  .loading {
-    text-align: center;
-    color: #64748b;
-    padding: 20px 0;
-    font-size: 12px;
-  }
-  .error-msg {
-    text-align: center;
-    color: #f87171;
-    padding: 12px 0;
-    font-size: 12px;
-  }
-  .login-link {
-    display: block;
-    text-align: center;
-    color: #a78bfa;
-    text-decoration: none;
-    font-size: 11px;
-    margin-top: 8px;
-  }
-  .divider {
-    border: none;
-    border-top: 1px solid rgba(255,255,255,0.06);
-    margin: 8px 0;
-  }
-  .badge {
-    font-size: 9px;
-    font-weight: 600;
-    padding: 1px 5px;
-    border-radius: 4px;
-    background: rgba(139,92,246,0.2);
-    color: #a78bfa;
-    border: 1px solid rgba(139,92,246,0.3);
-  }
-`
 
-function fmt(n, suffix = '') {
-  if (n == null) return null
-  return `${n.toLocaleString('uz')}${suffix}`
-}
+  function parseOldPrice() {
+    const el = document.querySelector('[class*="old"], [class*="Old"], [class*="cross"], s');
+    if (!el) return null;
+    const raw = el.innerText.replace(/[^\d]/g, '');
+    return raw.length >= 4 ? parseInt(raw) : null;
+  }
 
-function colorClass(val, goodAbove, badBelow) {
-  if (val == null) return ''
-  if (val >= goodAbove) return 'good'
-  if (val <= badBelow) return 'bad'
-  return 'warn'
-}
+  function parseTitle() {
+    return (document.querySelector('h1') || {}).innerText?.trim().slice(0, 65) || 'Mahsulot';
+  }
 
-function renderPanel(data) {
-  const root = ensureShadow()
+  function parseRating() {
+    const el = document.querySelector('[class*="rating"], [class*="Rating"], [class*="star"], [class*="Star"]');
+    return el ? el.innerText.trim().split('\n')[0] : null;
+  }
 
-  const styleEl = document.createElement('style')
-  styleEl.textContent = STYLES
+  function parseReviewCount() {
+    const el = document.querySelector('[class*="review"], [class*="Review"], [class*="opinion"]');
+    if (!el) return null;
+    const n = el.innerText.match(/\d+/);
+    return n ? parseInt(n[0]) : null;
+  }
 
-  const panel = document.createElement('div')
-  panel.className = 'panel'
+  function parseSellerCount() {
+    // Multiple sellers selling same product
+    const els = document.querySelectorAll('[class*="seller"], [class*="Seller"], [class*="merchant"]');
+    return els.length > 1 ? els.length : null;
+  }
 
-  const { ownProduct: op, marketData: md } = data
+  function getProductIdFromUrl() {
+    const m = window.location.pathname.match(/-(\d{5,})/);
+    return m ? m[1] : null;
+  }
 
-  let inner = `
-    <div class="header">
-      <span class="logo">Daromadchi</span>
-      <button class="close-btn" id="__dm_close__">✕</button>
-    </div>
-  `
+  function calcEco(price) {
+    const commPct = getCommission();
+    const comm = Math.round(price * commPct / 100);
+    const delivery = Math.round(price * 0.04);
+    const returns = Math.round(price * 0.02);
+    const acquiring = Math.round(price * 0.015);
+    const total = comm + delivery + returns + acquiring;
+    const profit = price - total;
+    const pct = Math.round((profit / price) * 100);
+    return { commPct, comm, delivery, returns, acquiring, total, profit, pct };
+  }
 
-  if (op) {
-    const marginClass = colorClass(op.margin, 30, 10)
-    const drrClass    = colorClass(op.drr, null, null) // lower is better, invert logic
-    const drrColor    = op.drr == null ? '' : op.drr <= 15 ? 'good' : op.drr <= 30 ? 'warn' : 'bad'
-    const stockClass  = colorClass(op.stockDaysRemaining, 30, 7)
+  function marginColor(pct) {
+    return pct >= 25 ? '#22c55e' : pct >= 12 ? '#f59e0b' : '#ef4444';
+  }
 
-    inner += `<div class="section-label">Sizning do'koningiz <span class="badge">Shaxsiy</span></div>`
-    inner += row('Narx', fmt(op.sellingPrice, " so'm"))
-    if (op.costPrice != null) inner += row('Tannarx', fmt(op.costPrice, " so'm"))
-    inner += row('Marja', op.margin != null ? `<span class="val ${marginClass}">${op.margin}%</span>` : nullVal(), false)
-    inner += row('DRR (30k)', op.drr != null ? `<span class="val ${drrColor}">${op.drr}%</span>` : nullVal(), false)
-    inner += row('Sotuv (7k)', fmt(op.sales7d, ' ta'))
-    inner += row('Qoldiq', fmt(op.stockQuantity, ' ta'))
-    inner += row('Tugaydi', op.stockDaysRemaining != null ? `<span class="val ${stockClass}">${op.stockDaysRemaining} kun</span>` : nullVal(), false)
+  function fp(n, short = false) {
+    if (!n && n !== 0) return '—';
+    if (short && n >= 1000000) return (n/1000000).toFixed(1) + ' mln';
+    if (short && n >= 1000) return (n/1000).toFixed(0) + ' ming';
+    return n.toLocaleString('uz-UZ') + ' so\'m';
+  }
+
+  // ── PRODUCT WIDGET ────────────────────────────────────────────────────────
+
+  function buildWidget() {
+    const price   = parsePrice();
+    const oldPrice = parseOldPrice();
+    const title   = parseTitle();
+    const rating  = parseRating();
+    const reviews = parseReviewCount();
+    const sellers = parseSellerCount();
+    const productId = getProductIdFromUrl();
+    const eco     = price ? calcEco(price) : null;
+    const color   = eco ? marginColor(eco.pct) : '#64748b';
+    const discount = (oldPrice && price) ? Math.round((1 - price/oldPrice)*100) : null;
+
+    const wrap = document.createElement('div');
+    wrap.id = 'drm-widget';
+
+    wrap.innerHTML = `
+      <div class="drm-hd">
+        <div class="drm-brand"><span class="drm-pulse"></span>Daromadchi</div>
+        <div class="drm-hd-right">
+          <button class="drm-ico-btn" id="drm-refresh" title="Yangilash">↻</button>
+          <button class="drm-ico-btn" id="drm-close" title="Yopish">✕</button>
+        </div>
+      </div>
+
+      <div class="drm-bd" id="drm-body">
+        ${!price ? `<div class="drm-empty">Narx aniqlanmadi. <br>Sahifani yangilang.</div>` : `
+
+        <!-- PRICE BLOCK -->
+        <div class="drm-card">
+          <div class="drm-row"><span class="drm-l">Sotuv narxi</span><span class="drm-v drm-bold">${fp(price)}</span></div>
+          ${oldPrice ? `<div class="drm-row"><span class="drm-l">Eski narx</span><span class="drm-v drm-strike">${fp(oldPrice)}</span></div>` : ''}
+          ${discount ? `<div class="drm-row"><span class="drm-l">Chegirma</span><span class="drm-v drm-green">−${discount}%</span></div>` : ''}
+          ${rating ? `<div class="drm-row"><span class="drm-l">Reyting</span><span class="drm-v">⭐ ${rating}${reviews ? ` (${reviews} ta sharh)` : ''}</span></div>` : ''}
+          ${sellers ? `<div class="drm-row"><span class="drm-l">Sotuvchilar</span><span class="drm-v drm-amber">${sellers} ta raqib</span></div>` : ''}
+        </div>
+
+        <!-- COST BREAKDOWN -->
+        <div class="drm-section-lbl">Xarajatlar taqsimoti</div>
+        <div class="drm-card">
+          <div class="drm-row"><span class="drm-l">Uzum komissiyasi (${eco.commPct}%)</span><span class="drm-v drm-red">−${fp(eco.comm)}</span></div>
+          <div class="drm-row"><span class="drm-l">Yetkazib berish</span><span class="drm-v drm-red">−${fp(eco.delivery)}</span></div>
+          <div class="drm-row"><span class="drm-l">Qaytarishlar (~2%)</span><span class="drm-v drm-red">−${fp(eco.returns)}</span></div>
+          <div class="drm-row"><span class="drm-l">Ekvayring (1.5%)</span><span class="drm-v drm-red">−${fp(eco.acquiring)}</span></div>
+          <div class="drm-divider"></div>
+          <div class="drm-row drm-bold-row"><span class="drm-l">Jami xarajatlar</span><span class="drm-v drm-red">−${fp(eco.total)}</span></div>
+        </div>
+
+        <!-- PROFIT BOX -->
+        <div class="drm-profit" style="border-color:${color}30;background:${color}0d">
+          <div class="drm-profit-lbl">Taxminiy sof foyda</div>
+          <div class="drm-profit-val" style="color:${color}">${fp(eco.profit)}</div>
+          <div class="drm-profit-bar-wrap"><div class="drm-profit-bar" style="width:${Math.max(0,Math.min(100,eco.pct))}%;background:${color}"></div></div>
+          <div class="drm-profit-pct" style="color:${color}">${eco.pct}% marja</div>
+        </div>
+
+        <!-- OWN PRODUCT BLOCK (loaded async) -->
+        <div id="drm-own-block"></div>
+
+        `}
+
+        <!-- ACTIONS -->
+        <div class="drm-actions">
+          <button class="drm-btn drm-pri" id="drm-ue">📊 Unit-ekonomikaga qo'shish</button>
+          <div class="drm-btn-row">
+            <button class="drm-btn drm-sec" id="drm-dash">Dashboard</button>
+            <button class="drm-btn drm-sec" id="drm-comp">Raqiblar</button>
+          </div>
+        </div>
+
+        <div class="drm-note">Taxminiy hisob. <a href="https://daromadchi.uz" target="_blank">Aniq tahlil →</a></div>
+      </div>
+    `;
+
+    // Events
+    wrap.querySelector('#drm-close').onclick = () => {
+      wrap.classList.add('drm-gone');
+      chrome.storage.local.set({ widgetClosed: Date.now() });
+    };
+    wrap.querySelector('#drm-refresh').onclick = () => {
+      wrap.remove();
+      setTimeout(init, 300);
+    };
+    wrap.querySelector('#drm-dash').onclick = () => window.open('https://daromadchi.uz/dashboard', '_blank');
+    wrap.querySelector('#drm-comp').onclick = () => {
+      window.open(`https://daromadchi.uz/competitors?product=${encodeURIComponent(title)}`, '_blank');
+    };
+    wrap.querySelector('#drm-ue')?.addEventListener('click', () => {
+      const params = new URLSearchParams({ price: price||'', title, url: location.href });
+      if (productId) params.set('id', productId);
+      window.open(`https://daromadchi.uz/unit-economics?${params}`, '_blank');
+    });
+
+    // Load own-product data async
+    if (price) loadOwnProductData(productId, price, wrap);
+
+    return wrap;
+  }
+
+  async function loadOwnProductData(productId, price, wrap) {
+    const { authToken } = await chrome.storage.local.get('authToken');
+    if (!authToken || !productId) return;
+
+    try {
+      const res = await fetch(`https://daromadchi.uz/api/extension/product/${productId}`, {
+        headers: { 'Authorization': `Bearer ${authToken}` }
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+
+      const block = wrap.querySelector('#drm-own-block');
+      if (!block) return;
+
+      const stockColor = data.stock <= 3 ? '#ef4444' : data.stock <= 10 ? '#f59e0b' : '#22c55e';
+      const daysColor  = data.daysOfStock <= 5 ? '#ef4444' : data.daysOfStock <= 14 ? '#f59e0b' : '#22c55e';
+
+      block.innerHTML = `
+        <div class="drm-section-lbl">Sizning mahsulotingiz</div>
+        <div class="drm-card drm-own">
+          <div class="drm-row">
+            <span class="drm-l">Ombordagi zaxira</span>
+            <span class="drm-v drm-bold" style="color:${stockColor}">${data.stock} dona</span>
+          </div>
+          <div class="drm-row">
+            <span class="drm-l">Zaxira kunlari</span>
+            <span class="drm-v" style="color:${daysColor}">${data.daysOfStock ?? '—'} kun</span>
+          </div>
+          <div class="drm-row">
+            <span class="drm-l">Bugungi sotuv</span>
+            <span class="drm-v">${data.salesToday ?? 0} ta</span>
+          </div>
+          <div class="drm-row">
+            <span class="drm-l">Reklama holati</span>
+            <span class="drm-v ${data.hasActiveAd ? 'drm-green' : 'drm-muted'}">${data.hasActiveAd ? '✅ Faol' : '⭕ Faol emas'}</span>
+          </div>
+          ${data.hasActiveAd && data.adSpendToday ? `
+          <div class="drm-row">
+            <span class="drm-l">Bugungi reklama sarfi</span>
+            <span class="drm-v drm-amber">−${fp(data.adSpendToday, true)}</span>
+          </div>` : ''}
+          ${data.hasActiveAd && data.stock <= 5 ? `
+          <div class="drm-alert-row">
+            🚨 Reklama ishlayapti, lekin zaxira kam! Reklamani to'xtating yoki tez buyurtma bering.
+          </div>` : ''}
+          ${data.returnRate ? `
+          <div class="drm-row">
+            <span class="drm-l">Qaytarish foizi</span>
+            <span class="drm-v ${data.returnRate>10?'drm-red':'drm-muted'}">${data.returnRate}%</span>
+          </div>` : ''}
+        </div>
+      `;
+    } catch {}
+  }
+
+  // ── SELLER CABINET BAR ────────────────────────────────────────────────────
+
+  async function buildSellerBar() {
+    const bar = document.createElement('div');
+    bar.id = 'drm-bar';
+    bar.innerHTML = `
+      <div class="drm-bar-in">
+        <span class="drm-bar-brand">📊 Daromadchi</span>
+        <div class="drm-bar-stats" id="drm-bar-stats">
+          <span class="drm-bar-item drm-bar-dim">Yuklanmoqda...</span>
+        </div>
+        <div class="drm-bar-right">
+          <span class="drm-bar-alerts" id="drm-bar-alerts" style="display:none"></span>
+          <a href="https://daromadchi.uz/dashboard" target="_blank" class="drm-bar-cta">To'liq tahlil →</a>
+        </div>
+      </div>
+    `;
+    document.body.prepend(bar);
+    document.body.style.paddingTop = (parseInt(getComputedStyle(document.body).paddingTop)||0) + 44 + 'px';
+
+    const { authToken, cachedStats, activeAlerts } = 
+      await chrome.storage.local.get(['authToken', 'cachedStats', 'activeAlerts']);
+
+    if (!authToken) {
+      bar.querySelector('#drm-bar-stats').innerHTML = 
+        `<a href="https://daromadchi.uz/login" target="_blank" class="drm-bar-cta">Daromadchiga kirish →</a>`;
+      return;
+    }
+
+    if (cachedStats) renderBarStats(cachedStats);
+
+    const criticals = (activeAlerts||[]).filter(a => a.priority === 'critical');
+    if (criticals.length > 0) {
+      const alertEl = bar.querySelector('#drm-bar-alerts');
+      alertEl.style.display = 'flex';
+      alertEl.innerHTML = `<span class="drm-bar-alert-badge">${criticals.length} kritik xabar</span>`;
+      alertEl.onclick = () => window.open('https://daromadchi.uz/alerts', '_blank');
+    }
+  }
+
+  function renderBarStats(s) {
+    const el = document.getElementById('drm-bar-stats');
+    if (!el) return;
+    el.innerHTML = `
+      <span class="drm-bar-item">Bugun: <b>${fp(s.todayRevenue, true)}</b></span>
+      <span class="drm-bar-sep">|</span>
+      <span class="drm-bar-item">Foyda: <b class="drm-g">${fp(s.todayProfit, true)}</b></span>
+      <span class="drm-bar-sep">|</span>
+      <span class="drm-bar-item">Buyurtma: <b>${s.todayOrders||0}</b></span>
+      ${s.lowStock > 0 ? `<span class="drm-bar-sep">|</span><span class="drm-bar-item"><b class="drm-r">⚠️ ${s.lowStock} kam zaxira</b></span>` : ''}
+    `;
+  }
+
+  // ── INIT ──────────────────────────────────────────────────────────────────
+
+  function init() {
+    if (IS_PRODUCT) {
+      chrome.storage.local.get('widgetClosed', ({ widgetClosed }) => {
+        const w = buildWidget();
+        if (Date.now() - (widgetClosed||0) < 1800000) w.classList.add('drm-gone');
+        document.body.appendChild(w);
+      });
+    } else if (IS_SELLER) {
+      buildSellerBar();
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => setTimeout(init, 1200));
   } else {
-    inner += `<div class="section-label">Sizning do'koningiz</div>`
-    inner += `<div class="null" style="font-size:11px;color:#64748b;padding:4px 0">Bu mahsulot sizning do'konlaringizda topilmadi.</div>`
+    setTimeout(init, 1200);
   }
 
-  if (md) {
-    inner += `<hr class="divider"><div class="section-label">Bozor ma'lumotlari <span class="badge" style="background:rgba(56,189,248,0.15);color:#38bdf8;border-color:rgba(56,189,248,0.3)">Ommaviy</span></div>`
-    if (md.minPrice || md.maxPrice) {
-      inner += row('Narx diapazoni', `${fmt(md.minPrice)} – ${fmt(md.maxPrice)} so'm`)
+  // SPA nav handler
+  let lastUrl = location.href;
+  new MutationObserver(() => {
+    if (location.href !== lastUrl) {
+      lastUrl = location.href;
+      setTimeout(() => {
+        document.getElementById('drm-widget')?.remove();
+        init();
+      }, 1500);
     }
-    if (md.avgRating != null) inner += row('Reyting', `⭐ ${md.avgRating}`)
-    if (md.reviewCount != null) inner += row('Sharhlar', fmt(md.reviewCount, ' ta'))
-    if (md.ordersAmount != null) inner += row('Buyurtmalar', fmt(md.ordersAmount, ' ta'))
-  }
+  }).observe(document, { subtree: true, childList: true });
 
-  inner += `
-    <a class="login-link" href="https://daromadchi.uz/dashboard" target="_blank">
-      Batafsil dashboard →
-    </a>
-  `
-
-  panel.innerHTML = inner
-  root.innerHTML = ''
-  root.appendChild(styleEl)
-  root.appendChild(panel)
-
-  root.getElementById('__dm_close__').addEventListener('click', () => {
-    removeOverlay()
-    sessionStorage.setItem('__dm_closed__', '1')
-  })
-}
-
-function row(label, val, raw = true) {
-  const valHtml = raw ? `<span class="val">${val ?? '<span class="null">—</span>'}</span>` : (val ?? '<span class="null">—</span>')
-  return `<div class="row"><span class="label">${label}</span>${valHtml}</div>`
-}
-
-function nullVal() {
-  return '<span class="null">—</span>'
-}
-
-function renderLoading() {
-  const root = ensureShadow()
-  const styleEl = document.createElement('style')
-  styleEl.textContent = STYLES
-  const panel = document.createElement('div')
-  panel.className = 'panel'
-  panel.innerHTML = `
-    <div class="header">
-      <span class="logo">Daromadchi</span>
-      <button class="close-btn" id="__dm_close__">✕</button>
-    </div>
-    <div class="loading">Yuklanmoqda…</div>
-  `
-  root.innerHTML = ''
-  root.appendChild(styleEl)
-  root.appendChild(panel)
-  root.getElementById('__dm_close__').addEventListener('click', () => {
-    removeOverlay()
-    sessionStorage.setItem('__dm_closed__', '1')
-  })
-}
-
-function renderAuthNeeded() {
-  const root = ensureShadow()
-  const styleEl = document.createElement('style')
-  styleEl.textContent = STYLES
-  const panel = document.createElement('div')
-  panel.className = 'panel'
-  panel.innerHTML = `
-    <div class="header">
-      <span class="logo">Daromadchi</span>
-      <button class="close-btn" id="__dm_close__">✕</button>
-    </div>
-    <div class="error-msg">
-      Kirish talab etiladi.<br>
-      <small style="color:#64748b">Kengaytma ikonasini bosing.</small>
-    </div>
-  `
-  root.innerHTML = ''
-  root.appendChild(styleEl)
-  root.appendChild(panel)
-  root.getElementById('__dm_close__').addEventListener('click', () => {
-    removeOverlay()
-    sessionStorage.setItem('__dm_closed__', '1')
-  })
-}
-
-// ── Main logic ────────────────────────────────────────────────────────────────
-
-let lastUrl = ''
-
-async function run() {
-  const marketplace = detectMarketplace()
-  if (!marketplace) return
-
-  const productId = getProductId(marketplace)
-  if (!productId) return
-
-  // Same page, same product — don't re-render
-  const key = `${marketplace}:${productId}`
-  if (key === lastUrl) return
-  lastUrl = key
-
-  // User manually closed this session
-  if (sessionStorage.getItem('__dm_closed__')) {
-    removeOverlay()
-    return
-  }
-
-  // Respect the overlay toggle from popup settings
-  const { __dm_overlay_enabled__: enabled } = await chrome.storage.sync.get(['__dm_overlay_enabled__'])
-  if (enabled === false) {
-    removeOverlay()
-    return
-  }
-
-  renderLoading()
-
-  const data = await chrome.runtime.sendMessage({
-    type: 'FETCH_PRODUCT',
-    marketplace,
-    productId,
-  })
-
-  if (!data || data.error === 'auth') {
-    renderAuthNeeded()
-    return
-  }
-
-  renderPanel(data)
-}
-
-// Run on load
-run()
-
-// SPA navigation: watch for URL changes via MutationObserver on <title> and pushState
-let titleObserver = null
-function watchSpa() {
-  if (titleObserver) return
-  titleObserver = new MutationObserver(() => {
-    const key = `${detectMarketplace()}:${getProductId(detectMarketplace())}`
-    if (key !== lastUrl) {
-      sessionStorage.removeItem('__dm_closed__')
-      run()
-    }
-  })
-  const titleEl = document.querySelector('title')
-  if (titleEl) titleObserver.observe(titleEl, { childList: true, characterData: true, subtree: true })
-
-  // Also patch history methods
-  const orig = history.pushState.bind(history)
-  history.pushState = function (...args) {
-    orig(...args)
-    setTimeout(() => {
-      sessionStorage.removeItem('__dm_closed__')
-      run()
-    }, 500)
-  }
-}
-
-if (document.readyState === 'complete') {
-  watchSpa()
-} else {
-  window.addEventListener('load', watchSpa)
-}
+})();

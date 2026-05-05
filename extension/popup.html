@@ -1,80 +1,114 @@
 <!DOCTYPE html>
 <html lang="uz">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Daromadchi Analytics</title>
-  <link rel="stylesheet" href="popup.css">
+<meta charset="UTF-8"/>
+<title>Daromadchi</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{width:340px;min-height:180px;background:#0f172a;color:#e2e8f0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px}
+/* Header */
+.hd{background:#1e293b;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #334155}
+.brand{display:flex;align-items:center;gap:8px;font-weight:700;font-size:14px}
+.pulse{width:9px;height:9px;border-radius:50%;background:#6366f1;box-shadow:0 0 8px #6366f1;animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.badge{font-size:10px;padding:3px 8px;border-radius:20px;font-weight:600}
+.badge-ok{background:#22c55e20;color:#22c55e}
+.badge-off{background:#f8717120;color:#f87171}
+.badge-tg{background:#0ea5e920;color:#38bdf8}
+/* Tabs */
+.tabs{display:flex;background:#1e293b;border-bottom:1px solid #334155}
+.tab{flex:1;padding:9px;text-align:center;font-size:11.5px;color:#64748b;cursor:pointer;transition:all .15s;border:none;background:none;font-family:inherit}
+.tab:hover{color:#94a3b8}
+.tab.active{color:#818cf8;border-bottom:2px solid #6366f1}
+/* Panels */
+.panel{display:none}.panel.active{display:block}
+/* Stats */
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:#1e293b}
+.stat{background:#0f172a;padding:13px 14px}
+.stat-lbl{font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
+.stat-val{font-size:17px;font-weight:700;color:#f1f5f9;line-height:1}
+.stat-sub{font-size:10px;color:#64748b;margin-top:3px}
+.up{color:#22c55e}.dn{color:#f87171}
+/* Quick links */
+.links{padding:10px 12px;display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.lnk{background:#1e293b;border:1px solid #334155;border-radius:8px;padding:8px 10px;
+  font-size:11px;color:#94a3b8;cursor:pointer;text-decoration:none;display:flex;align-items:center;gap:6px;transition:all .15s;font-weight:500}
+.lnk:hover{background:#334155;color:#e2e8f0}
+.lnk-full{grid-column:1/-1;background:#6366f115;border-color:#6366f130;color:#818cf8;justify-content:center;font-weight:700}
+.lnk-full:hover{background:#6366f125;color:#a5b4fc}
+/* Footer sync */
+.sync-row{padding:8px 14px;border-top:1px solid #1e293b;display:flex;justify-content:space-between;align-items:center}
+.sync-lbl{font-size:10px;color:#475569}
+.sync-btn{font-size:10px;color:#6366f1;background:none;border:none;cursor:pointer;font-family:inherit}
+.sync-btn:hover{text-decoration:underline}
+/* Not logged */
+.login-box{padding:20px 16px;text-align:center}
+.login-box p{color:#64748b;font-size:12px;margin-bottom:14px;line-height:1.5}
+.btn-login{display:block;width:100%;padding:10px;background:#6366f1;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;text-align:center}
+/* Alerts panel */
+.alerts-header{padding:10px 14px 6px;display:flex;justify-content:space-between;align-items:center}
+.alerts-title{font-size:11px;text-transform:uppercase;letter-spacing:.7px;color:#64748b}
+.alerts-clear{font-size:10px;color:#64748b;background:none;border:none;cursor:pointer;font-family:inherit}
+.alerts-clear:hover{color:#94a3b8}
+.alert-list{max-height:280px;overflow-y:auto}
+.alert-list::-webkit-scrollbar{width:3px}
+.alert-list::-webkit-scrollbar-thumb{background:#334155;border-radius:2px}
+.alert-item{padding:10px 14px;border-bottom:1px solid #1e293b;display:flex;gap:10px;align-items:flex-start}
+.alert-item:last-child{border-bottom:none}
+.alert-icon{font-size:16px;line-height:1;margin-top:1px}
+.alert-text{flex:1}
+.alert-msg{font-size:11.5px;color:#94a3b8;line-height:1.4}
+.alert-time{font-size:10px;color:#475569;margin-top:3px}
+.alert-critical .alert-msg{color:#fca5a5}
+.alert-warning .alert-msg{color:#fcd34d}
+.alert-info .alert-msg{color:#93c5fd}
+.no-alerts{padding:24px;text-align:center;color:#475569;font-size:12px}
+/* Settings panel */
+.settings{padding:12px 14px;display:flex;flex-direction:column;gap:14px;max-height:380px;overflow-y:auto}
+.settings::-webkit-scrollbar{width:3px}
+.settings::-webkit-scrollbar-thumb{background:#334155;border-radius:2px}
+.s-section{display:flex;flex-direction:column;gap:8px}
+.s-section-title{font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:#64748b;padding-bottom:4px;border-bottom:1px solid #1e293b}
+/* Telegram connect */
+.tg-box{background:#1e293b;border-radius:10px;padding:12px}
+.tg-status{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.tg-status-text{font-size:12px;color:#94a3b8}
+.tg-username{font-size:12px;color:#38bdf8;font-weight:600}
+.btn-tg{width:100%;padding:9px;background:#0ea5e9;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+.btn-tg:hover{opacity:.85}
+.btn-tg-disc{background:#334155;color:#94a3b8}
+/* Toggle row */
+.toggle-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.toggle-lbl{font-size:12px;color:#94a3b8;flex:1;line-height:1.3}
+.toggle{position:relative;width:36px;height:20px;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0}
+.toggle-slider{position:absolute;inset:0;background:#334155;border-radius:10px;cursor:pointer;transition:.2s}
+.toggle-slider:before{content:'';position:absolute;width:14px;height:14px;left:3px;top:3px;background:#94a3b8;border-radius:50%;transition:.2s}
+.toggle input:checked+.toggle-slider{background:#6366f1}
+.toggle input:checked+.toggle-slider:before{transform:translateX(16px);background:#fff}
+/* Number input */
+.num-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.num-lbl{font-size:12px;color:#94a3b8;flex:1}
+.num-in{width:60px;background:#1e293b;border:1px solid #334155;border-radius:6px;padding:4px 8px;color:#e2e8f0;font-size:12px;text-align:center;font-family:inherit}
+.num-in:focus{outline:1px solid #6366f1}
+.save-btn{width:100%;padding:9px;background:#6366f1;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+.save-btn:hover{opacity:.85}
+.saved-msg{text-align:center;font-size:11px;color:#22c55e;margin-top:-4px;display:none}
+</style>
 </head>
 <body>
-  <div id="app">
-    <!-- Login view -->
-    <div id="view-login" class="view hidden">
-      <div class="logo-area">
-        <div class="logo-icon">D</div>
-        <span class="logo-text">Daromadchi</span>
-      </div>
-      <p class="subtitle">Analitika uchun kiring</p>
-
-      <form id="login-form">
-        <div class="field">
-          <label for="email">Email</label>
-          <input type="email" id="email" placeholder="email@example.com" autocomplete="email" required>
-        </div>
-        <div class="field">
-          <label for="password">Parol</label>
-          <input type="password" id="password" placeholder="••••••••" autocomplete="current-password" required>
-        </div>
-        <div id="login-error" class="error-msg hidden"></div>
-        <button type="submit" id="login-btn" class="btn-primary">Kirish</button>
-      </form>
-
-      <a href="https://daromadchi.uz" target="_blank" class="signup-link">
-        Hisob yo'qmi? Ro'yxatdan o'tish →
-      </a>
-    </div>
-
-    <!-- Connected view -->
-    <div id="view-connected" class="view hidden">
-      <div class="logo-area">
-        <div class="logo-icon">D</div>
-        <span class="logo-text">Daromadchi</span>
-      </div>
-
-      <div class="user-card">
-        <div class="user-icon">✓</div>
-        <div>
-          <div class="user-email" id="user-email"></div>
-          <div class="user-status">Ulangan</div>
-        </div>
-      </div>
-
-      <div class="info-box">
-        <p>Uzum.uz va Yandex Market mahsulot sahifalarini oching — analitika avtomatik ko'rsatiladi.</p>
-      </div>
-
-      <div class="overlay-toggle">
-        <span>Overlay</span>
-        <label class="toggle">
-          <input type="checkbox" id="overlay-toggle" checked>
-          <span class="slider"></span>
-        </label>
-      </div>
-
-      <div class="btn-row">
-        <a href="https://daromadchi.uz/dashboard" target="_blank" class="btn-secondary">
-          Dashboard →
-        </a>
-        <button id="logout-btn" class="btn-outline">Chiqish</button>
-      </div>
-    </div>
-
-    <!-- Loading spinner -->
-    <div id="view-loading" class="view">
-      <div class="spinner"></div>
-    </div>
-  </div>
-
-  <script src="popup.js"></script>
+<div class="hd">
+  <div class="brand"><div class="pulse"></div>Daromadchi</div>
+  <span class="badge badge-off" id="status-badge">...</span>
+</div>
+<div class="tabs">
+  <button class="tab active" data-tab="stats">📊 Tahlil</button>
+  <button class="tab" data-tab="alerts">🔔 Xabarlar <span id="alert-count-tab"></span></button>
+  <button class="tab" data-tab="settings">⚙️ Sozlamalar</button>
+</div>
+<div id="panel-stats" class="panel active"><div style="padding:20px;text-align:center;color:#64748b;font-size:12px">Yuklanmoqda...</div></div>
+<div id="panel-alerts" class="panel"></div>
+<div id="panel-settings" class="panel"></div>
+<script src="popup.js"></script>
 </body>
 </html>

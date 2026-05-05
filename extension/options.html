@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8"/>
+<title>Daromadchi — Sozlamalar</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0f172a;color:#e2e8f0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh}
+.page{max-width:680px;margin:0 auto;padding:32px 24px}
+.page-hd{display:flex;align-items:center;gap:12px;margin-bottom:32px}
+.dot{width:10px;height:10px;border-radius:50%;background:#6366f1;box-shadow:0 0 10px #6366f1}
+h1{font-size:22px;font-weight:700}
+.sub{color:#64748b;font-size:13px;margin-top:4px}
+.section{background:#1e293b;border-radius:14px;padding:20px;margin-bottom:16px}
+.section-title{font-size:12px;text-transform:uppercase;letter-spacing:.8px;color:#64748b;margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid #334155}
+.row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:8px 0;border-bottom:1px solid #0f172a}
+.row:last-child{border-bottom:none}
+.row-lbl{flex:1}
+.row-lbl strong{font-size:13px;color:#e2e8f0;display:block}
+.row-lbl span{font-size:11px;color:#64748b;margin-top:2px;display:block;line-height:1.4}
+.num-in{width:70px;background:#0f172a;border:1px solid #334155;border-radius:6px;padding:6px 10px;color:#e2e8f0;font-size:13px;text-align:center}
+.num-in:focus{outline:1px solid #6366f1}
+.toggle{position:relative;width:40px;height:22px;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0}
+.slider{position:absolute;inset:0;background:#334155;border-radius:11px;cursor:pointer;transition:.2s}
+.slider:before{content:'';position:absolute;width:16px;height:16px;left:3px;top:3px;background:#94a3b8;border-radius:50%;transition:.2s}
+input:checked+.slider{background:#6366f1}
+input:checked+.slider:before{transform:translateX(18px);background:#fff}
+.save-wrap{display:flex;align-items:center;gap:12px;margin-top:8px}
+.save-btn{padding:12px 28px;background:#6366f1;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer}
+.save-btn:hover{opacity:.85}
+.saved{color:#22c55e;font-size:13px;display:none}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="page-hd">
+    <div class="dot"></div>
+    <div>
+      <h1>Daromadchi Sozlamalari</h1>
+      <p class="sub">Xabarnomalar va ogohlantirish chegaralarini sozlang</p>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">🎛️ Ogohlantirish Chegaralari</div>
+    <div class="row">
+      <div class="row-lbl"><strong>Kam zaxira (dona)</strong><span>Nechta qolganda ogohlantirish yuborilsin</span></div>
+      <input class="num-in" id="o-lowstock" type="number" min="1" max="999" value="5"/>
+    </div>
+    <div class="row">
+      <div class="row-lbl"><strong>Savdo pasayishi (%)</strong><span>Kechagi kundan necha % kamaysa ogohlantirsin</span></div>
+      <input class="num-in" id="o-salesdrop" type="number" min="5" max="90" value="40"/>
+    </div>
+    <div class="row">
+      <div class="row-lbl"><strong>Qaytarish foizi (%)</strong><span>Qaytarish foizi necha %dan oshsa ogohlantirsin</span></div>
+      <input class="num-in" id="o-returnrate" type="number" min="5" max="50" value="15"/>
+    </div>
+    <div class="row">
+      <div class="row-lbl"><strong>Jim rejim — boshlanishi (soat)</strong><span>Bu vaqtda bildirishnomalar kelmaydi</span></div>
+      <input class="num-in" id="o-qstart" type="number" min="0" max="23" value="23"/>
+    </div>
+    <div class="row">
+      <div class="row-lbl"><strong>Jim rejim — tugashi (soat)</strong></div>
+      <input class="num-in" id="o-qend" type="number" min="0" max="23" value="7"/>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">🔔 Xabarnoma Turlari</div>
+    ${[
+      ['low_stock_with_ad','🚨 Reklama + Kam zaxira','Eng muhim: reklama ishlayapti lekin zaxira kam. Kritik.'],
+      ['out_of_stock','📦 Mahsulot tugadi','Omborda birorta ham qolmasa xabar beradi'],
+      ['low_stock','⚠️ Kam zaxira','Chegara miqdoridan kamroq qolganda xabar beradi'],
+      ['sales_drop','📉 Savdo pasaydi','Kunlik sotuv sezilarli kamaysa xabar beradi'],
+      ['ad_no_sales','💸 Reklama bepusht','Reklama puli sarflanmoqda, lekin sotuv yo\'q'],
+      ['high_return_rate','↩️ Yuqori qaytarish','Qaytarish foizi haddan oshsa xabar beradi'],
+      ['competitor_price_cut','🏷️ Raqib narx tushirdi','Kategoriyada raqib narxini tushirsa xabar beradi'],
+      ['new_review','⭐ Yangi sharh','Mahsulotga yangi sharh qoldirilsa xabar beradi'],
+      ['daily_summary','📊 Kunlik hisobot','Har kuni soat 20:00 da umumiy hisobot yuboriladi']
+    ].map(([id,label,desc]) => `
+      <div class="row">
+        <div class="row-lbl"><strong>${label}</strong><span>${desc}</span></div>
+        <label class="toggle">
+          <input type="checkbox" data-alert-id="${id}" checked/>
+          <span class="slider"></span>
+        </label>
+      </div>
+    `).join('')}
+  </div>
+
+  <div class="save-wrap">
+    <button class="save-btn" id="save-btn">💾 Saqlash</button>
+    <span class="saved" id="saved-msg">✅ Sozlamalar saqlandi!</span>
+  </div>
+</div>
+<script>
+async function loadSettings() {
+  const { alertSettings = {} } = await chrome.storage.local.get('alertSettings');
+  if (alertSettings.lowStockThreshold) document.getElementById('o-lowstock').value = alertSettings.lowStockThreshold;
+  if (alertSettings.salesDropThreshold) document.getElementById('o-salesdrop').value = alertSettings.salesDropThreshold;
+  if (alertSettings.returnRateThreshold) document.getElementById('o-returnrate').value = alertSettings.returnRateThreshold;
+  if (alertSettings.quietHoursStart != null) document.getElementById('o-qstart').value = alertSettings.quietHoursStart;
+  if (alertSettings.quietHoursEnd != null) document.getElementById('o-qend').value = alertSettings.quietHoursEnd;
+  const disabled = alertSettings.disabledAlerts || [];
+  document.querySelectorAll('[data-alert-id]').forEach(cb => {
+    cb.checked = !disabled.includes(cb.dataset.alertId);
+  });
+}
+document.getElementById('save-btn').onclick = async () => {
+  const disabled = [];
+  document.querySelectorAll('[data-alert-id]').forEach(cb => { if (!cb.checked) disabled.push(cb.dataset.alertId); });
+  await chrome.storage.local.set({ alertSettings: {
+    lowStockThreshold: +document.getElementById('o-lowstock').value||5,
+    salesDropThreshold: +document.getElementById('o-salesdrop').value||40,
+    returnRateThreshold: +document.getElementById('o-returnrate').value||15,
+    quietHoursStart: +document.getElementById('o-qstart').value,
+    quietHoursEnd: +document.getElementById('o-qend').value,
+    disabledAlerts: disabled
+  }});
+  const msg = document.getElementById('saved-msg');
+  msg.style.display = 'block';
+  setTimeout(() => msg.style.display = 'none', 2000);
+};
+loadSettings();
+</script>
+</body>
+</html>
