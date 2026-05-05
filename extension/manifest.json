@@ -1,50 +1,43 @@
 {
   "manifest_version": 3,
-  "name": "Daromadchi Analytics",
-  "version": "1.0.0",
-  "description": "Uzum va Yandex Market mahsulot sahifalarida real-time analitika: marja, DRR, qoldiq kunlar, sotuv",
-  "permissions": [
-    "storage",
-    "activeTab"
-  ],
-  "host_permissions": [
-    "https://daromadchi.uz/*",
-    "https://*.uzum.uz/*",
-    "https://market.yandex.ru/*",
-    "https://market.yandex.uz/*"
-  ],
-  "background": {
-    "service_worker": "background.js",
-    "type": "module"
-  },
-  "content_scripts": [
-    {
-      "matches": [
-        "https://uzum.uz/*/product/*",
-        "https://www.uzum.uz/*/product/*",
-        "https://market.yandex.ru/product/*",
-        "https://market.yandex.uz/product/*"
-      ],
-      "js": ["content.js"],
-      "run_at": "document_idle",
-      "all_frames": false
-    }
-  ],
-  "action": {
-    "default_popup": "popup.html",
-    "default_title": "Daromadchi Analytics",
-    "default_icon": {
-      "16": "icons/icon16.png",
-      "48": "icons/icon48.png",
-      "128": "icons/icon128.png"
-    }
-  },
+  "name": "Daromadchi — Uzum Seller Analytics",
+  "version": "2.0.0",
+  "description": "Uzum sotuvchilari uchun aqlli tahlil: marja, zaxira, reklama samaradorligi va Telegram xabarnomalar",
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
   },
-  "content_security_policy": {
-    "extension_pages": "script-src 'self'; object-src 'self'"
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png"
+    }
+  },
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://uzum.uz/*",
+        "https://www.uzum.uz/*",
+        "*://*.uzum.uz/*"
+      ],
+      "js": ["content.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "permissions": ["storage", "alarms", "notifications", "activeTab"],
+  "host_permissions": [
+    "*://*.uzum.uz/*",
+    "https://uzum.uz/*",
+    "https://daromadchi.uz/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
   }
 }

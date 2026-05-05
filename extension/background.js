@@ -1,133 +1,277 @@
-const SUPABASE_URL  = 'https://ajwtpyrucfcrdndedumt.supabase.co'
-const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqd3RweXJ1Y2ZjcmRuZGVkdW10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4NDAyMDUsImV4cCI6MjA5MzQxNjIwNX0.8AvDWSlO-k9MJBoXkAOIQquOzza-7OFTqZ5DPXaep1s'
-const API_BASE      = 'https://daromadchi.uz'
+// Daromadchi Extension — Background Service Worker v2
+// Smart alert engine + Telegram notification bridge
 
-// ── Auth ──────────────────────────────────────────────────────────────────────
+const API = 'https://daromadchi.uz/api';
 
-async function signIn(email, password) {
-  const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'apikey': SUPABASE_ANON,
-    },
-    body: JSON.stringify({ email, password }),
-  })
-  const data = await res.json()
-  if (!res.ok) throw new Error(data.error_description || data.msg || 'Login xatosi')
-  return { accessToken: data.access_token, refreshToken: data.refresh_token, email }
+// ─── ALERT DEFINITIONS ───────────────────────────────────────────────────────
+// Each alert has: id, priority (critical/warning/info), check function, message builder
+
+const ALERT_RULES = [
+  {
+    id: 'low_stock_with_ad',
+    priority: 'critical',
+    label: '🚨 Reklama + Kam zaxira',
+    check: (p, settings) =>
+      p.stock <= (settings.lowStockThreshold || 5) && p.hasActiveAd,
+    message: (p) =>
+      `🚨 KRITIK: "${p.name}" mahsulotida faqat ${p.stock} dona qoldi, lekin reklama ishlayapti! Reklama pulini behuda sarflayapsiz.`
+  },
+  {
+    id: 'out_of_stock',
+    priority: 'critical',
+    label: '📦 Mahsulot tugadi',
+    check: (p) => p.stock === 0,
+    message: (p) =>
+      `📦 TUGADI: "${p.name}" omborda qolmadi. Buyurtmalar bekor qilinishi mumkin.`
+  },
+  {
+    id: 'low_stock',
+    priority: 'warning',
+    label: '⚠️ Kam zaxira',
+    check: (p, settings) =>
+      p.stock > 0 && p.stock <= (settings.lowStockThreshold || 5) && !p.hasActiveAd,
+    message: (p) =>
+      `⚠️ Kam zaxira: "${p.name}" — ${p.stock} dona qoldi. Tez buyurtma bering.`
+  },
+  {
+    id: 'sales_drop',
+    priority: 'warning',
+    label: '📉 Savdo pasaydi',
+    check: (p, settings) =>
+      p.salesDropPct >= (settings.salesDropThreshold || 40),
+    message: (p) =>
+      `📉 Savdo pasaydi: "${p.name}" bugun ${p.salesDropPct}% kamroq sotilyapti.`
+  },
+  {
+    id: 'ad_no_sales',
+    priority: 'warning',
+    label: '💸 Reklama bepusht',
+    check: (p) => p.hasActiveAd && p.adSpendToday > 0 && p.salesToday === 0,
+    message: (p) =>
+      `💸 Reklama bepusht: "${p.name}" bugun ${formatPrice(p.adSpendToday)} sarflandi, lekin 0 sotuv.`
+  },
+  {
+    id: 'high_return_rate',
+    priority: 'warning',
+    label: '↩️ Yuqori qaytarish',
+    check: (p, settings) =>
+      p.returnRate >= (settings.returnRateThreshold || 15),
+    message: (p) =>
+      `↩️ Yuqori qaytarish: "${p.name}" — ${p.returnRate}% qaytarilmoqda. Sabab tekshiring.`
+  },
+  {
+    id: 'competitor_price_cut',
+    priority: 'info',
+    label: '🏷️ Raqib narx tushirdi',
+    check: (p) => p.competitorPriceDrop > 0,
+    message: (p) =>
+      `🏷️ Raqib: "${p.name}" kategoriyasida narx ${p.competitorPriceDrop}% tushirildi.`
+  },
+  {
+    id: 'new_review',
+    priority: 'info',
+    label: '⭐ Yangi sharh',
+    check: (p, settings) =>
+      settings.notifyNewReviews && p.newReviews > 0,
+    message: (p) =>
+      `⭐ Yangi sharh: "${p.name}" mahsulotiga ${p.newReviews} ta yangi sharh qoldirildi.`
+  }
+];
+
+function formatPrice(n) {
+  if (!n) return '0';
+  return n.toLocaleString('uz-UZ') + ' so\'m';
 }
 
-async function refreshSession(refreshToken) {
-  const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'apikey': SUPABASE_ANON,
-    },
-    body: JSON.stringify({ refresh_token: refreshToken }),
-  })
-  const data = await res.json()
-  if (!res.ok) throw new Error('Token yangilanmadi')
-  return { accessToken: data.access_token, refreshToken: data.refresh_token }
+// ─── FETCH HELPERS ─────────────────────────────────────────────────────────
+
+async function apiFetch(path, token) {
+  try {
+    const res = await fetch(`${API}${path}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
 }
 
-async function getStoredAuth() {
-  return new Promise((resolve) => {
-    chrome.storage.sync.get(['accessToken', 'refreshToken', 'email'], (items) => {
-      resolve(items)
-    })
-  })
-}
+// ─── MAIN SYNC + ALERT CHECK ──────────────────────────────────────────────
 
-async function setStoredAuth(tokens) {
-  return new Promise((resolve) => {
-    chrome.storage.sync.set(tokens, resolve)
-  })
-}
+async function runSync() {
+  const { authToken, alertSettings = {}, sentAlertIds = [] } = 
+    await chrome.storage.local.get(['authToken', 'alertSettings', 'sentAlertIds']);
 
-async function clearStoredAuth() {
-  return new Promise((resolve) => {
-    chrome.storage.sync.remove(['accessToken', 'refreshToken', 'email'], resolve)
-  })
-}
+  if (!authToken) return;
 
-async function getValidToken() {
-  const { accessToken, refreshToken } = await getStoredAuth()
-  if (!accessToken) return null
+  // Fetch latest data
+  const [stats, products] = await Promise.all([
+    apiFetch('/extension/stats', authToken),
+    apiFetch('/extension/products', authToken)
+  ]);
 
-  // Validate token with backend
-  const res = await fetch(`${API_BASE}/api/extension/validate`, {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  })
+  if (stats) {
+    chrome.storage.local.set({ cachedStats: stats, cacheTime: Date.now() });
+  }
 
-  if (res.ok) return accessToken
+  if (!products) return;
 
-  // Token expired — try refresh
-  if (refreshToken) {
-    try {
-      const tokens = await refreshSession(refreshToken)
-      await setStoredAuth(tokens)
-      return tokens.accessToken
-    } catch {
-      await clearStoredAuth()
-      return null
+  // Run alert rules against each product
+  const newAlerts = [];
+  const now = Date.now();
+
+  for (const product of products) {
+    for (const rule of ALERT_RULES) {
+      if (!isAlertEnabled(rule.id, alertSettings)) continue;
+
+      const alertKey = `${rule.id}:${product.id}`;
+      const alreadySent = sentAlertIds.find(a => a.key === alertKey && now - a.ts < 3600000); // 1hr cooldown
+
+      if (rule.check(product, alertSettings) && !alreadySent) {
+        newAlerts.push({
+          key: alertKey,
+          priority: rule.priority,
+          label: rule.label,
+          message: rule.message(product),
+          productId: product.id,
+          ts: now
+        });
+      }
     }
   }
 
-  await clearStoredAuth()
-  return null
+  if (newAlerts.length === 0) {
+    updateBadge(0);
+    return;
+  }
+
+  // Save alerts to storage for popup
+  const existingAlerts = (await chrome.storage.local.get('activeAlerts')).activeAlerts || [];
+  const merged = [...newAlerts, ...existingAlerts].slice(0, 50);
+  
+  const newSentIds = [
+    ...sentAlertIds.filter(a => now - a.ts < 86400000), // keep 24h
+    ...newAlerts.map(a => ({ key: a.key, ts: a.ts }))
+  ];
+
+  chrome.storage.local.set({ 
+    activeAlerts: merged,
+    sentAlertIds: newSentIds
+  });
+
+  // Browser notifications for critical alerts
+  const criticalAlerts = newAlerts.filter(a => a.priority === 'critical');
+  for (const alert of criticalAlerts.slice(0, 3)) {
+    chrome.notifications.create({
+      type: 'basic',
+      iconUrl: 'icons/icon48.png',
+      title: 'Daromadchi — ' + alert.label,
+      message: alert.message,
+      priority: 2
+    });
+  }
+
+  // Send to Telegram via backend
+  if (newAlerts.length > 0) {
+    sendTelegramAlerts(newAlerts, authToken);
+  }
+
+  updateBadge(newAlerts.filter(a => a.priority === 'critical').length);
 }
 
-// ── Product data ──────────────────────────────────────────────────────────────
-
-async function fetchProductData(marketplace, productId) {
-  const token = await getValidToken()
-  if (!token) return { error: 'auth' }
-
-  const url = `${API_BASE}/api/extension/product?marketplace=${marketplace}&productId=${productId}`
-  const res = await fetch(url, {
-    headers: { Authorization: `Bearer ${token}` },
-  })
-
-  if (res.status === 401) return { error: 'auth' }
-  if (!res.ok) return { error: `HTTP ${res.status}` }
-
-  return res.json()
+function isAlertEnabled(ruleId, settings) {
+  if (settings.disabledAlerts && settings.disabledAlerts.includes(ruleId)) return false;
+  
+  // Quiet hours check
+  if (settings.quietHoursStart !== undefined && settings.quietHoursEnd !== undefined) {
+    const hour = new Date().getHours();
+    const { quietHoursStart, quietHoursEnd } = settings;
+    if (quietHoursStart <= quietHoursEnd) {
+      if (hour >= quietHoursStart && hour < quietHoursEnd) return false;
+    } else {
+      if (hour >= quietHoursStart || hour < quietHoursEnd) return false;
+    }
+  }
+  return true;
 }
 
-// ── Message router ────────────────────────────────────────────────────────────
-
-chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
-  if (msg.type === 'LOGIN') {
-    signIn(msg.email, msg.password)
-      .then(async (tokens) => {
-        await setStoredAuth(tokens)
-        sendResponse({ ok: true, email: tokens.email })
-      })
-      .catch((err) => sendResponse({ ok: false, error: err.message }))
-    return true
+async function sendTelegramAlerts(alerts, token) {
+  try {
+    await fetch(`${API}/extension/send-alerts`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ alerts: alerts.map(a => ({ message: a.message, priority: a.priority })) })
+    });
+  } catch {
+    // fail silently
   }
+}
 
-  if (msg.type === 'LOGOUT') {
-    clearStoredAuth().then(() => sendResponse({ ok: true }))
-    return true
+function updateBadge(count) {
+  if (count > 0) {
+    chrome.action.setBadgeText({ text: String(count) });
+    chrome.action.setBadgeBackgroundColor({ color: '#ef4444' });
+  } else {
+    chrome.action.setBadgeText({ text: '' });
   }
+}
 
-  if (msg.type === 'GET_AUTH') {
-    getStoredAuth().then((items) => {
-      if (!items.accessToken) {
-        sendResponse({ loggedIn: false })
-      } else {
-        sendResponse({ loggedIn: true, email: items.email })
-      }
-    })
-    return true
-  }
+// ─── DAILY SUMMARY ───────────────────────────────────────────────────────
 
-  if (msg.type === 'FETCH_PRODUCT') {
-    fetchProductData(msg.marketplace, msg.productId)
-      .then((data) => sendResponse(data))
-    return true
+async function sendDailySummary() {
+  const { authToken, alertSettings = {} } = await chrome.storage.local.get(['authToken', 'alertSettings']);
+  if (!authToken || alertSettings.disableDailySummary) return;
+
+  const stats = await apiFetch('/extension/stats', authToken);
+  if (!stats) return;
+
+  await fetch(`${API}/extension/send-daily-summary`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ stats })
+  }).catch(() => {});
+}
+
+// ─── ALARMS ──────────────────────────────────────────────────────────────
+
+chrome.alarms.create('sync', { periodInMinutes: 15 });
+chrome.alarms.create('dailySummary', { when: getNextSummaryTime(), periodInMinutes: 1440 });
+
+function getNextSummaryTime() {
+  const now = new Date();
+  const next = new Date();
+  next.setHours(20, 0, 0, 0); // 8 PM daily summary
+  if (next <= now) next.setDate(next.getDate() + 1);
+  return next.getTime();
+}
+
+chrome.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name === 'sync') runSync();
+  if (alarm.name === 'dailySummary') sendDailySummary();
+});
+
+// ─── MESSAGES ────────────────────────────────────────────────────────────
+
+chrome.runtime.onMessage.addListener((msg, sender, reply) => {
+  if (msg.action === 'sync') runSync().then(() => reply({ ok: true }));
+  if (msg.action === 'clearAlerts') {
+    chrome.storage.local.set({ activeAlerts: [] });
+    updateBadge(0);
   }
-})
+  if (msg.action === 'connectTelegram') {
+    fetch(`${API}/extension/telegram-link`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${msg.token}`, 'Content-Type': 'application/json' }
+    }).then(r => r.json()).then(d => reply(d)).catch(() => reply({ error: true }));
+    return true;
+  }
+  return true;
+});
+
+chrome.runtime.onInstalled.addListener(() => {
+  runSync();
+});
