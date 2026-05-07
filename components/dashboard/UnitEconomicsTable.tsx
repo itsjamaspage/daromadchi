@@ -60,9 +60,11 @@ const DEFAULT_SETTINGS: UnitEcoSettings = {
 
 interface Props {
   items: UnitEconomicsItem[]
+  defaultSettings?: UnitEcoSettings
 }
 
-export default function UnitEconomicsTable({ items: initialItems }: Props) {
+export default function UnitEconomicsTable({ items: initialItems, defaultSettings }: Props) {
+  const initSettings = defaultSettings ?? DEFAULT_SETTINGS
   const [items, setItems]               = useState(initialItems)
   const [search, setSearch]             = useState('')
   const [selected, setSelected]         = useState<Set<string>>(new Set())
@@ -71,8 +73,8 @@ export default function UnitEconomicsTable({ items: initialItems }: Props) {
   const [visibleCols, setVisibleCols]   = useState<Set<ColKey>>(new Set(DEFAULT_VISIBLE))
   const [showColPicker, setShowColPicker] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
-  const [settings, setSettings]         = useState<UnitEcoSettings>(DEFAULT_SETTINGS)
-  const [draftSettings, setDraftSettings] = useState<UnitEcoSettings>(DEFAULT_SETTINGS)
+  const [settings, setSettings]         = useState<UnitEcoSettings>(initSettings)
+  const [draftSettings, setDraftSettings] = useState<UnitEcoSettings>(initSettings)
   const [editingSupplier, setEditingSupplier] = useState<string|null>(null)
   const supplierRef = useRef<HTMLInputElement>(null)
 
@@ -106,8 +108,14 @@ export default function UnitEconomicsTable({ items: initialItems }: Props) {
   }
 
   function deleteSelected() {
+    const ids = [...selected]
     setItems(prev => prev.filter(i => !selected.has(i.id)))
     setSelected(new Set())
+    fetch('/api/unit-economics', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids }),
+    }).catch(() => {})
   }
 
   function toggleCol(key: ColKey) {
@@ -121,6 +129,11 @@ export default function UnitEconomicsTable({ items: initialItems }: Props) {
   function saveSupplier(id: string, val: string) {
     setItems(prev => prev.map(i => i.id === id ? { ...i, supplierUrl: val } : i))
     setEditingSupplier(null)
+    fetch('/api/unit-economics', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, supplierUrl: val }),
+    }).catch(() => {})
   }
 
   function exportExcel() {
@@ -240,7 +253,15 @@ export default function UnitEconomicsTable({ items: initialItems }: Props) {
             </label>
           </div>
           <div className="flex gap-2 mt-4">
-            <button onClick={() => { setSettings(draftSettings); setShowSettings(false) }}
+            <button onClick={() => {
+                setSettings(draftSettings)
+                setShowSettings(false)
+                fetch('/api/unit-economics/settings', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(draftSettings),
+                }).catch(() => {})
+              }}
               className="px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold rounded-xl transition-colors">
               Saqlash
             </button>
