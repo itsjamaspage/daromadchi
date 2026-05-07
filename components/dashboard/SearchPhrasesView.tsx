@@ -62,18 +62,18 @@ export default function SearchPhrasesView({ phrases }: Props) {
     <div className="space-y-4">
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-        <div className="relative flex-1 max-w-xs">
+        <div className="relative w-full sm:flex-1 sm:max-w-xs">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
           <input value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Ibora qidirish..."
             className="w-full pl-9 pr-3 py-2 bg-[#13131f] border border-white/[0.06] rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-violet-500/50" />
         </div>
         <select value={productFilter} onChange={e => setProductFilter(e.target.value)}
-          className="px-3 py-2 bg-[#13131f] border border-white/[0.06] rounded-xl text-sm text-white focus:outline-none focus:border-violet-500/50">
+          className="w-full sm:w-auto px-3 py-2 bg-[#13131f] border border-white/[0.06] rounded-xl text-sm text-white focus:outline-none focus:border-violet-500/50">
           <option value="all">Barcha mahsulotlar</option>
           {products.slice(1).map(p => <option key={p} value={p}>{p}</option>)}
         </select>
-        <button onClick={exportExcel} className="ml-auto flex items-center gap-1.5 px-3 py-2 bg-[#13131f] hover:bg-white/[0.04] text-slate-400 hover:text-white text-xs font-semibold rounded-xl border border-white/[0.06] transition-all">
+        <button onClick={exportExcel} className="flex items-center gap-1.5 px-3 py-2 bg-[#13131f] hover:bg-white/[0.04] text-slate-400 hover:text-white text-xs font-semibold rounded-xl border border-white/[0.06] transition-all sm:ml-auto w-fit">
           <Download className="w-3.5 h-3.5" /> Excel
         </button>
       </div>

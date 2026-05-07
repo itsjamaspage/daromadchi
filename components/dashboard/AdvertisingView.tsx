@@ -80,9 +80,9 @@ export default function AdvertisingView({ campaigns }: Props) {
       </div>
 
       {/* Tabs + Export */}
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-1 p-1 bg-[#13131f] border border-white/[0.06] rounded-xl">
-          {([['all','Hammasi'],['cpc','CPC — Klik uchun'],['cpo','CPO — Buyurtma uchun']] as const).map(([v, label]) => (
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+        <div className="flex flex-wrap items-center gap-1 p-1 bg-[#13131f] border border-white/[0.06] rounded-xl w-fit">
+          {([['all','Hammasi'],['cpc','CPC'],['cpo','CPO']] as const).map(([v, label]) => (
             <button key={v} onClick={() => setTab(v)}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                 tab === v ? 'bg-violet-600/20 text-violet-300 border border-violet-500/30' : 'text-slate-500 hover:text-slate-300'
@@ -92,7 +92,7 @@ export default function AdvertisingView({ campaigns }: Props) {
           ))}
         </div>
         <button onClick={exportExcel}
-          className="flex items-center gap-1.5 px-3 py-2 bg-[#13131f] hover:bg-white/[0.04] text-slate-400 hover:text-white text-xs font-semibold rounded-xl border border-white/[0.06] transition-all">
+          className="flex items-center gap-1.5 px-3 py-2 bg-[#13131f] hover:bg-white/[0.04] text-slate-400 hover:text-white text-xs font-semibold rounded-xl border border-white/[0.06] transition-all sm:ml-auto w-fit">
           <Download className="w-3.5 h-3.5" /> Excel
         </button>
       </div>

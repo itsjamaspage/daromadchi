@@ -176,7 +176,7 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
           />
         </div>
 
-        <div className="flex items-center gap-2 ml-auto">
+        <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
           {selected.size > 0 && (
             <button onClick={deleteSelected}
               className="flex items-center gap-1.5 px-3 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-semibold rounded-xl border border-red-500/20 transition-colors">
