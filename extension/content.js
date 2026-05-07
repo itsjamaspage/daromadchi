@@ -72,20 +72,36 @@
     return m ? m[1] : null;
   }
 
-  function calcEco(price) {
-    const commPct = getCommission();
-    const comm = Math.round(price * commPct / 100);
+  function calcEco(price, opts = {}) {
+    const {
+      commPctOverride = null,
+      costPrice = 0,    // in so'm
+      adPct = 5,        // advertising %
+      taxPct = 6,       // tax %
+      lastMile = 0,
+    } = opts;
+    const commPct = commPctOverride !== null ? commPctOverride : getCommission();
+    const comm     = Math.round(price * commPct / 100);
     const delivery = Math.round(price * 0.04);
-    const returns = Math.round(price * 0.02);
+    const returns  = Math.round(price * 0.02);
     const acquiring = Math.round(price * 0.015);
-    const total = comm + delivery + returns + acquiring;
-    const profit = price - total;
-    const pct = Math.round((profit / price) * 100);
-    return { commPct, comm, delivery, returns, acquiring, total, profit, pct };
+    const adSpend  = Math.round(price * adPct / 100);
+    const preTax   = price - comm - delivery - returns - acquiring - adSpend - lastMile - costPrice;
+    const tax      = Math.round(Math.max(0, preTax) * taxPct / 100);
+    const profit   = preTax - tax;
+    const pct      = Math.round((profit / price) * 100);
+    const roi      = costPrice > 0 ? Math.round((profit / costPrice) * 100) : null;
+    const total    = comm + delivery + returns + acquiring + adSpend + lastMile + tax + costPrice;
+    return { commPct, comm, delivery, returns, acquiring, adSpend, lastMile, tax, costPrice, total, profit, pct, roi };
   }
 
   function marginColor(pct) {
     return pct >= 25 ? '#22c55e' : pct >= 12 ? '#f59e0b' : '#ef4444';
+  }
+
+  function roiColor(roi) {
+    if (roi === null) return '#64748b';
+    return roi >= 80 ? '#22c55e' : roi >= 30 ? '#f59e0b' : '#ef4444';
   }
 
   function fp(n, short = false) {
@@ -95,19 +111,31 @@
     return n.toLocaleString('uz-UZ') + ' so\'m';
   }
 
+  // Load user settings from storage
+  async function loadSettings() {
+    const data = await chrome.storage.local.get(['ueSettings']);
+    return data.ueSettings || { adPct: 5, taxPct: 6, lastMile: 0 };
+  }
+
   // ── PRODUCT WIDGET ────────────────────────────────────────────────────────
 
-  function buildWidget() {
-    const price   = parsePrice();
+  async function buildWidget() {
+    const price    = parsePrice();
     const oldPrice = parseOldPrice();
-    const title   = parseTitle();
-    const rating  = parseRating();
-    const reviews = parseReviewCount();
-    const sellers = parseSellerCount();
+    const title    = parseTitle();
+    const rating   = parseRating();
+    const reviews  = parseReviewCount();
+    const sellers  = parseSellerCount();
     const productId = getProductIdFromUrl();
-    const eco     = price ? calcEco(price) : null;
-    const color   = eco ? marginColor(eco.pct) : '#64748b';
     const discount = (oldPrice && price) ? Math.round((1 - price/oldPrice)*100) : null;
+
+    // Load user settings
+    const settings = await loadSettings();
+    const { adPct = 5, taxPct = 6, lastMile = 0, costPrice = 0 } = settings;
+
+    const eco   = price ? calcEco(price, { adPct, taxPct, lastMile, costPrice }) : null;
+    const color = eco ? marginColor(eco.pct) : '#64748b';
+    const rc    = eco?.roi !== undefined && eco.roi !== null ? roiColor(eco.roi) : color;
 
     const wrap = document.createElement('div');
     wrap.id = 'drm-widget';
@@ -116,8 +144,40 @@
       <div class="drm-hd">
         <div class="drm-brand"><span class="drm-pulse"></span>Daromadchi</div>
         <div class="drm-hd-right">
+          <button class="drm-ico-btn" id="drm-cfg-toggle" title="Sozlamalar">⚙</button>
           <button class="drm-ico-btn" id="drm-refresh" title="Yangilash">↻</button>
           <button class="drm-ico-btn" id="drm-close" title="Yopish">✕</button>
+        </div>
+      </div>
+
+      <!-- INLINE SETTINGS (collapsed) -->
+      <div id="drm-cfg-panel" style="display:none;padding:10px 12px;border-bottom:1px solid #1e293b;background:#0a0f1e">
+        <div style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px">Hisob sozlamalari</div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:11px;color:#94a3b8">Tannarx (so'm)</span>
+            <input id="drm-cost" type="number" value="${costPrice||''}" placeholder="0"
+              style="width:80px;background:#1e293b;border:1px solid #334155;border-radius:5px;padding:3px 6px;color:#e2e8f0;font-size:11px;text-align:right"/>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:11px;color:#94a3b8">Reklama (%)</span>
+            <input id="drm-adpct" type="number" step="0.5" value="${adPct}"
+              style="width:60px;background:#1e293b;border:1px solid #334155;border-radius:5px;padding:3px 6px;color:#e2e8f0;font-size:11px;text-align:right"/>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:11px;color:#94a3b8">Soliq (%)</span>
+            <input id="drm-tax" type="number" step="0.5" value="${taxPct}"
+              style="width:60px;background:#1e293b;border:1px solid #334155;border-radius:5px;padding:3px 6px;color:#e2e8f0;font-size:11px;text-align:right"/>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:11px;color:#94a3b8">Oxirgi milya (so'm)</span>
+            <input id="drm-lastmile" type="number" value="${lastMile||''}" placeholder="0"
+              style="width:80px;background:#1e293b;border:1px solid #334155;border-radius:5px;padding:3px 6px;color:#e2e8f0;font-size:11px;text-align:right"/>
+          </div>
+          <button id="drm-cfg-save"
+            style="width:100%;padding:7px;background:#6366f1;color:#fff;border:none;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;margin-top:2px">
+            Qayta hisoblash
+          </button>
         </div>
       </div>
 
@@ -137,9 +197,13 @@
         <div class="drm-section-lbl">Xarajatlar taqsimoti</div>
         <div class="drm-card">
           <div class="drm-row"><span class="drm-l">Uzum komissiyasi (${eco.commPct}%)</span><span class="drm-v drm-red">−${fp(eco.comm)}</span></div>
-          <div class="drm-row"><span class="drm-l">Yetkazib berish</span><span class="drm-v drm-red">−${fp(eco.delivery)}</span></div>
+          <div class="drm-row"><span class="drm-l">Yetkazib berish (~4%)</span><span class="drm-v drm-red">−${fp(eco.delivery)}</span></div>
           <div class="drm-row"><span class="drm-l">Qaytarishlar (~2%)</span><span class="drm-v drm-red">−${fp(eco.returns)}</span></div>
           <div class="drm-row"><span class="drm-l">Ekvayring (1.5%)</span><span class="drm-v drm-red">−${fp(eco.acquiring)}</span></div>
+          <div class="drm-row"><span class="drm-l">Reklama (${adPct}%)</span><span class="drm-v drm-red">−${fp(eco.adSpend)}</span></div>
+          ${lastMile ? `<div class="drm-row"><span class="drm-l">Oxirgi milya</span><span class="drm-v drm-red">−${fp(eco.lastMile)}</span></div>` : ''}
+          ${costPrice ? `<div class="drm-row"><span class="drm-l">Tannarx</span><span class="drm-v drm-red">−${fp(eco.costPrice)}</span></div>` : ''}
+          <div class="drm-row"><span class="drm-l">Soliq (${taxPct}%)</span><span class="drm-v drm-red">−${fp(eco.tax)}</span></div>
           <div class="drm-divider"></div>
           <div class="drm-row drm-bold-row"><span class="drm-l">Jami xarajatlar</span><span class="drm-v drm-red">−${fp(eco.total)}</span></div>
         </div>
@@ -149,7 +213,10 @@
           <div class="drm-profit-lbl">Taxminiy sof foyda</div>
           <div class="drm-profit-val" style="color:${color}">${fp(eco.profit)}</div>
           <div class="drm-profit-bar-wrap"><div class="drm-profit-bar" style="width:${Math.max(0,Math.min(100,eco.pct))}%;background:${color}"></div></div>
-          <div class="drm-profit-pct" style="color:${color}">${eco.pct}% marja</div>
+          <div style="display:flex;justify-content:center;gap:16px">
+            <div class="drm-profit-pct" style="color:${color}">${eco.pct}% marja</div>
+            ${eco.roi !== null ? `<div class="drm-profit-pct" style="color:${rc}">ROI ${eco.roi}%</div>` : ''}
+          </div>
         </div>
 
         <!-- OWN PRODUCT BLOCK (loaded async) -->
@@ -179,20 +246,50 @@
       wrap.remove();
       setTimeout(init, 300);
     };
+
+    // Settings panel toggle
+    const cfgPanel = wrap.querySelector('#drm-cfg-panel');
+    wrap.querySelector('#drm-cfg-toggle').onclick = () => {
+      cfgPanel.style.display = cfgPanel.style.display === 'none' ? 'block' : 'none';
+    };
+
+    // Save settings + rebuild
+    wrap.querySelector('#drm-cfg-save').onclick = async () => {
+      const newSettings = {
+        costPrice: parseFloat(wrap.querySelector('#drm-cost').value) || 0,
+        adPct:     parseFloat(wrap.querySelector('#drm-adpct').value) || 5,
+        taxPct:    parseFloat(wrap.querySelector('#drm-tax').value) || 6,
+        lastMile:  parseFloat(wrap.querySelector('#drm-lastmile').value) || 0,
+      };
+      await chrome.storage.local.set({ ueSettings: newSettings });
+      wrap.remove();
+      buildWidget();
+    };
     wrap.querySelector('#drm-dash').onclick = () => window.open('https://daromadchi.uz/dashboard', '_blank');
     wrap.querySelector('#drm-comp').onclick = () => {
       window.open(`https://daromadchi.uz/competitors?product=${encodeURIComponent(title)}`, '_blank');
     };
     wrap.querySelector('#drm-ue')?.addEventListener('click', () => {
-      const params = new URLSearchParams({ price: price||'', title, url: location.href });
-      if (productId) params.set('id', productId);
-      window.open(`https://daromadchi.uz/unit-economics?${params}`, '_blank');
+      const params = new URLSearchParams({
+        source: 'uzum',
+        title,
+        url: location.href,
+        price: String(price || ''),
+        commPct: String(eco?.commPct || ''),
+        costPrice: String(settings.costPrice || ''),
+        adPct: String(settings.adPct || ''),
+        taxPct: String(settings.taxPct || ''),
+        roi: String(eco?.roi ?? ''),
+        margin: String(eco?.pct ?? ''),
+      });
+      if (productId) params.set('productId', productId);
+      window.open(`https://daromadchi.uz/dashboard/unit-economics?${params}`, '_blank');
     });
 
     // Load own-product data async
     if (price) loadOwnProductData(productId, price, wrap);
 
-    return wrap;
+    document.body.appendChild(wrap);
   }
 
   async function loadOwnProductData(productId, price, wrap) {
@@ -305,13 +402,12 @@
 
   // ── INIT ──────────────────────────────────────────────────────────────────
 
-  function init() {
+  async function init() {
     if (IS_PRODUCT) {
-      chrome.storage.local.get('widgetClosed', ({ widgetClosed }) => {
-        const w = buildWidget();
-        if (Date.now() - (widgetClosed||0) < 1800000) w.classList.add('drm-gone');
-        document.body.appendChild(w);
-      });
+      const { widgetClosed } = await chrome.storage.local.get('widgetClosed');
+      await buildWidget();
+      const w = document.getElementById('drm-widget');
+      if (w && Date.now() - (widgetClosed||0) < 1800000) w.classList.add('drm-gone');
     } else if (IS_SELLER) {
       buildSellerBar();
     }

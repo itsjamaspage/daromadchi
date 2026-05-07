@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import {
   LayoutDashboard, Package, ShoppingCart, TrendingUp,
   LogOut, ChevronRight, X, Settings, BarChart2, Calculator, FileText, Globe2,
-  Sun, Moon,
+  Sun, Moon, Megaphone, Search, Database, Layers,
 } from 'lucide-react'
 import { useTheme, useLang } from '@/app/providers'
 import type { Lang } from '@/lib/i18n'
@@ -14,12 +14,16 @@ import type { Lang } from '@/lib/i18n'
 type NavItem = { href: string; label: string; icon: React.ElementType }
 
 const storeNav: NavItem[] = [
-  { href: '/dashboard',            label: 'Dashboard',     icon: LayoutDashboard },
-  { href: '/dashboard/products',   label: 'Mahsulotlar',   icon: Package         },
-  { href: '/dashboard/orders',     label: 'Buyurtmalar',   icon: ShoppingCart    },
-  { href: '/dashboard/analytics',  label: 'Tahlil',        icon: BarChart2       },
-  { href: '/dashboard/pnl',        label: 'F & Z hisobot', icon: FileText        },
-  { href: '/dashboard/calculator', label: 'Kalkulyator',   icon: Calculator      },
+  { href: '/dashboard',                  label: 'Dashboard',         icon: LayoutDashboard },
+  { href: '/dashboard/products',         label: 'Mahsulotlar',       icon: Package         },
+  { href: '/dashboard/orders',           label: 'Buyurtmalar',       icon: ShoppingCart    },
+  { href: '/dashboard/analytics',        label: 'Tahlil',            icon: BarChart2       },
+  { href: '/dashboard/advertising',      label: 'Reklama',           icon: Megaphone       },
+  { href: '/dashboard/search-phrases',   label: 'Qidiruv iboralari', icon: Search          },
+  { href: '/dashboard/unit-economics',   label: 'Yuнit-Ekonomika',   icon: Layers          },
+  { href: '/dashboard/pnl',              label: 'F & Z hisobot',     icon: FileText        },
+  { href: '/dashboard/calculator',       label: 'Kalkulyator',       icon: Calculator      },
+  { href: '/dashboard/data-state',       label: 'Ma\'lumot holati',  icon: Database        },
 ]
 
 const marketNav: NavItem[] = [
