@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getUnitEcoSettings } from '@/lib/db/unit-economics'
 import SettingsForm from './SettingsForm'
 import type { Shop } from '@/lib/types'
 
@@ -21,6 +22,8 @@ export default async function SettingsPage() {
     }
   }
 
+  const ueSettings = await getUnitEcoSettings()
+
   return (
     <div className="space-y-6 max-w-2xl">
       <div>
@@ -30,12 +33,13 @@ export default async function SettingsPage() {
             Sizning ma&apos;lumotingiz
           </span>
         </div>
-        <p className="text-slate-400 text-sm">Marketplace integratsiyalari</p>
+        <p className="text-slate-400 text-sm">Marketplace integratsiyalari va standart sozlamalar</p>
       </div>
       <SettingsForm
         uzumShop={uzumShop}
         yandexShop={yandexShop}
         userId={user?.id ?? ''}
+        ueSettings={ueSettings}
       />
     </div>
   )

@@ -5,9 +5,9 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import {
   RefreshCw, Save, Key, CheckCircle, XCircle, ExternalLink,
-  Loader2, Hash,
+  Loader2, Hash, Calculator,
 } from 'lucide-react'
-import type { Shop } from '@/lib/types'
+import type { Shop, UnitEcoSettings } from '@/lib/types'
 
 // ─── Shared sub-components ────────────────────────────────────────────────────
 
@@ -273,19 +273,101 @@ function YandexCard({ shop, userId }: { shop: Shop | null; userId: string }) {
   )
 }
 
+// ─── Unit Economics defaults card ─────────────────────────────────────────────
+
+function UnitEcoDefaultsCard({ initial }: { initial: UnitEcoSettings }) {
+  const [draft,   setDraft]   = useState<UnitEcoSettings>(initial)
+  const [saving,  setSaving]  = useState(false)
+  const [saveMsg, setSaveMsg] = useState<{ ok: boolean; text: string } | null>(null)
+
+  async function handleSave(e: React.FormEvent) {
+    e.preventDefault()
+    setSaving(true); setSaveMsg(null)
+    try {
+      const res  = await fetch('/api/unit-economics/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(draft),
+      })
+      const data = await res.json()
+      setSaveMsg(data.ok ? { ok: true, text: 'Saqlandi!' } : { ok: false, text: data.error ?? 'Xato' })
+    } catch {
+      setSaveMsg({ ok: false, text: 'Server bilan bog\'lanishda xato' })
+    }
+    setSaving(false)
+  }
+
+  function numField(key: keyof UnitEcoSettings, label: string, step = '0.5', max = 30) {
+    return (
+      <label key={key} className="flex flex-col gap-1.5">
+        <span className="text-xs text-slate-500">{label}</span>
+        <input
+          type="number" step={step} min={0} max={max}
+          value={draft[key] as number}
+          onChange={e => setDraft(prev => ({ ...prev, [key]: parseFloat(e.target.value) || 0 }))}
+          className="w-full px-3 py-2 bg-[#1c1c2e] border border-white/[0.08] rounded-xl text-sm text-white focus:outline-none focus:border-violet-500/50 transition-all"
+        />
+      </label>
+    )
+  }
+
+  return (
+    <div className="bg-[#13131f] border border-white/[0.06] rounded-2xl overflow-hidden">
+      <div className="px-6 py-4 border-b border-white/[0.05] flex items-center gap-3">
+        <div className="w-8 h-8 rounded-lg bg-violet-500/15 border border-violet-500/25 flex items-center justify-center">
+          <Calculator className="w-4 h-4 text-violet-400" />
+        </div>
+        <div>
+          <p className="text-white font-semibold text-sm">Unit-ekonomika standart sozlamalari</p>
+          <p className="text-slate-500 text-xs">Kengaytma va hisob-kitoblar uchun standart foizlar</p>
+        </div>
+      </div>
+
+      <form onSubmit={handleSave} className="p-6 space-y-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+          {numField('acquiringPct',         'Ekvayring (%)',   '0.1', 5)}
+          {numField('adPct',                'Reklama (%)',     '0.5', 30)}
+          {numField('taxPct',               'Soliq (%)',       '0.5', 20)}
+          {numField('defaultCommissionPct', 'Komissiya (%)',   '0.5', 30)}
+          {numField('lastMilePct',          'Oxirgi milya (%)', '0.5', 10)}
+          <label className="flex flex-col gap-1.5">
+            <span className="text-xs text-slate-500">Soliq turi</span>
+            <select
+              value={draft.taxType}
+              onChange={e => setDraft(prev => ({ ...prev, taxType: e.target.value as UnitEcoSettings['taxType'] }))}
+              className="w-full px-3 py-2 bg-[#1c1c2e] border border-white/[0.08] rounded-xl text-sm text-white focus:outline-none focus:border-violet-500/50 transition-all">
+              <option value="income">Daromad (6%)</option>
+              <option value="income_minus_expense">Daromad − xarajat (15%)</option>
+            </select>
+          </label>
+        </div>
+
+        <StatusMsg msg={saveMsg} />
+        <button type="submit" disabled={saving}
+          className="flex items-center gap-2 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors">
+          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+          Saqlash
+        </button>
+      </form>
+    </div>
+  )
+}
+
 // ─── Main export ──────────────────────────────────────────────────────────────
 
 interface Props {
   uzumShop:   Shop | null
   yandexShop: Shop | null
   userId:     string
+  ueSettings: UnitEcoSettings
 }
 
-export default function SettingsForm({ uzumShop, yandexShop, userId }: Props) {
+export default function SettingsForm({ uzumShop, yandexShop, userId, ueSettings }: Props) {
   return (
     <div className="space-y-4">
-      <UzumCard   shop={uzumShop}   userId={userId} />
-      <YandexCard shop={yandexShop} userId={userId} />
+      <UzumCard              shop={uzumShop}   userId={userId} />
+      <YandexCard            shop={yandexShop} userId={userId} />
+      <UnitEcoDefaultsCard   initial={ueSettings} />
     </div>
   )
 }
