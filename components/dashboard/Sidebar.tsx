@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import {
   LayoutDashboard, Package, ShoppingCart, TrendingUp,
   LogOut, ChevronRight, X, Settings, BarChart2, Calculator, FileText, Globe2,
-  Sun, Moon, Megaphone, Search, Database, Layers,
+  Sun, Moon, Megaphone, Search, Database, Layers, Gift,
 } from 'lucide-react'
 import { useTheme, useLang } from '@/app/providers'
 import type { Lang } from '@/lib/i18n'
@@ -24,6 +24,7 @@ const storeNav: NavItem[] = [
   { href: '/dashboard/pnl',              label: 'F & Z hisobot',     icon: FileText        },
   { href: '/dashboard/calculator',       label: 'Kalkulyator',       icon: Calculator      },
   { href: '/dashboard/data-state',       label: 'Ma\'lumot holati',  icon: Database        },
+  { href: '/dashboard/referral',         label: 'Referal dasturi',   icon: Gift            },
 ]
 
 const marketNav: NavItem[] = [
