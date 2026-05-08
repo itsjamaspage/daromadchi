@@ -2,10 +2,11 @@
 
 import { useState, useMemo, useRef } from 'react'
 import {
-  Search, Trash2, Download, Settings2, ExternalLink, ChevronUp, ChevronDown,
+  Search, Trash2, Settings2, ExternalLink, ChevronUp, ChevronDown,
   Package, Plus, X, Check,
 } from 'lucide-react'
 import type { UnitEconomicsItem, UnitEcoSettings } from '@/lib/types'
+import ExportButton from '@/components/dashboard/ExportButton'
 
 function fs(n: number) {
   return new Intl.NumberFormat('uz-UZ').format(Math.round(n)) + " so'm"
@@ -77,6 +78,7 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
   const [draftSettings, setDraftSettings] = useState<UnitEcoSettings>(initSettings)
   const [editingSupplier, setEditingSupplier] = useState<string|null>(null)
   const supplierRef = useRef<HTMLInputElement>(null)
+  const printRef    = useRef<HTMLDivElement>(null)
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase()
@@ -136,23 +138,13 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
     }).catch(() => {})
   }
 
-  function exportExcel() {
-    const cols = ALL_COLUMNS.filter(c => visibleCols.has(c.key))
-    const header = cols.map(c => c.label).join('\t')
-    const rows = filtered.map(it =>
-      cols.map(c => {
-        const v = it[c.key as keyof UnitEconomicsItem]
-        if (typeof v === 'number') return Math.round(v)
-        return v ?? ''
-      }).join('\t')
-    )
-    const tsv = [header, ...rows].join('\n')
-    const blob = new Blob(['﻿' + tsv], { type: 'text/csv;charset=utf-8;' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a'); a.href = url
-    a.download = 'unit-ekonomika.csv'; a.click()
-    URL.revokeObjectURL(url)
-  }
+  const exportData = filtered.map(it => {
+    const cols = ALL_COLUMNS.filter(c => c.always || visibleCols.has(c.key))
+    return Object.fromEntries(cols.map(c => {
+      const v = it[c.key as keyof UnitEconomicsItem]
+      return [c.label, typeof v === 'number' ? Math.round(v) : (v ?? '')]
+    })) as Record<string, string | number>
+  })
 
   const shownCols = ALL_COLUMNS.filter(c => c.always || visibleCols.has(c.key))
 
@@ -164,7 +156,7 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" ref={printRef}>
       {/* Toolbar */}
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
         <div className="relative flex-1 max-w-xs">
@@ -191,10 +183,7 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
             className="flex items-center gap-1.5 px-3 py-2 bg-[#13131f] hover:bg-white/[0.04] text-slate-400 hover:text-white text-xs font-semibold rounded-xl border border-white/[0.06] transition-all">
             <Settings2 className="w-3.5 h-3.5" /> Sozlamalar
           </button>
-          <button onClick={exportExcel}
-            className="flex items-center gap-1.5 px-3 py-2 bg-[#13131f] hover:bg-white/[0.04] text-slate-400 hover:text-white text-xs font-semibold rounded-xl border border-white/[0.06] transition-all">
-            <Download className="w-3.5 h-3.5" /> Excel
-          </button>
+          <ExportButton data={exportData} filename="unit-ekonomika" targetRef={printRef} />
         </div>
       </div>
 

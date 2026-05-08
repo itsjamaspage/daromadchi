@@ -1,11 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { TrendingUp, TrendingDown, Minus, RefreshCw, AlertTriangle } from 'lucide-react'
 import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend,
 } from 'recharts'
 import type { CompetitorPrice } from '@/lib/mock-data'
+import ExportButton from '@/components/dashboard/ExportButton'
 
 interface Props {
   prices: CompetitorPrice[]
@@ -38,6 +39,7 @@ type Filter = 'all' | 'lowest' | 'competitive' | 'high-highest'
 export default function PriceTrackingView({ prices }: Props) {
   const [filter, setFilter] = useState<Filter>('all')
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const printRef = useRef<HTMLDivElement>(null)
 
   const filtered = prices.filter(p => {
     if (filter === 'all') return true
@@ -77,8 +79,19 @@ export default function PriceTrackingView({ prices }: Props) {
     { key: 'high-highest', label: 'Qimmat' },
   ]
 
+  const exportData = prices.map(p => ({
+    'Mahsulot':             p.productTitle,
+    "Mening narxim (so'm)": p.myPrice,
+    "Min raqobatchi (so'm)": p.minCompetitorPrice,
+    "O'rt. raqobatchi (so'm)": p.avgCompetitorPrice,
+    "Narx farqi (so'm)":    p.priceDiff,
+    'Farq (%)':             p.priceDiffPct.toFixed(1),
+    'Pozitsiya':            positionLabel(p.pricePosition),
+    'Raqobatchilar':        p.competitorCount,
+  }))
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" ref={printRef}>
       {/* Summary row */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="bg-[#13131f] border border-white/[0.06] rounded-2xl px-4 py-3">
@@ -103,8 +116,8 @@ export default function PriceTrackingView({ prices }: Props) {
         </div>
       </div>
 
-      {/* Filter tabs */}
-      <div className="flex gap-2 flex-wrap">
+      {/* Filter tabs + Export */}
+      <div className="flex gap-2 flex-wrap items-center">
         {tabs.map(tab => (
           <button
             key={tab.key}
@@ -118,6 +131,9 @@ export default function PriceTrackingView({ prices }: Props) {
             {tab.label}
           </button>
         ))}
+        <div className="ml-auto">
+          <ExportButton data={exportData} filename="narx-kuzatuvi" targetRef={printRef} />
+        </div>
       </div>
 
       {/* Table */}
@@ -217,8 +233,8 @@ export default function PriceTrackingView({ prices }: Props) {
                                   fontSize: 12,
                                   color: '#f1f5f9',
                                 }}
-                                formatter={(value: number, name: string) => [
-                                  fs(value),
+                                formatter={(value, name) => [
+                                  fs(Number(value)),
                                   name === 'myPrice' ? 'Mening narxim' : 'Min raqobatchi',
                                 ]}
                               />

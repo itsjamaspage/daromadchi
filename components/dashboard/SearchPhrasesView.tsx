@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useMemo } from 'react'
-import { Search, Download, ChevronUp, ChevronDown } from 'lucide-react'
+import { useState, useMemo, useRef } from 'react'
+import { Search, ChevronUp, ChevronDown } from 'lucide-react'
 import type { SearchPhrase } from '@/lib/types'
+import ExportButton from '@/components/dashboard/ExportButton'
 
 function fs(n: number) {
   return new Intl.NumberFormat('uz-UZ').format(Math.round(n)) + " so'm"
@@ -17,6 +18,7 @@ export default function SearchPhrasesView({ phrases }: Props) {
   const [productFilter, setProductFilter] = useState('all')
   const [sortKey, setSortKey]         = useState<SortKey>('impressions')
   const [sortDir, setSortDir]         = useState<'asc'|'desc'>('desc')
+  const printRef                      = useRef<HTMLDivElement>(null)
 
   const products = useMemo(() => {
     const set = new Set(phrases.map(p => p.productTitle))
@@ -47,19 +49,18 @@ export default function SearchPhrasesView({ phrases }: Props) {
     return sortDir === 'asc' ? <ChevronUp className="w-3 h-3 text-violet-400" /> : <ChevronDown className="w-3 h-3 text-violet-400" />
   }
 
-  function exportExcel() {
-    const header = ['Ibora', 'Mahsulot', 'Ko\'rsatuvlar', 'Kliklar', 'CTR', 'Buyurtmalar', 'Sarflar'].join('\t')
-    const rows = filtered.map(p =>
-      [p.phrase, p.productTitle, p.impressions, p.clicks, p.ctr.toFixed(2)+'%', p.orders, Math.round(p.spend)].join('\t')
-    )
-    const blob = new Blob(['﻿' + [header, ...rows].join('\n')], { type: 'text/csv;charset=utf-8;' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a'); a.href = url; a.download = 'qidiruv-iboralari.csv'; a.click()
-    URL.revokeObjectURL(url)
-  }
+  const exportData = filtered.map(p => ({
+    'Ibora':          p.phrase,
+    'Mahsulot':       p.productTitle,
+    "Ko'rsatuvlar":   p.impressions,
+    'Kliklar':        p.clicks,
+    'CTR (%)':        p.ctr.toFixed(2),
+    'Buyurtmalar':    p.orders,
+    "Sarflar (so'm)": Math.round(p.spend),
+  }))
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" ref={printRef}>
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
         <div className="relative w-full sm:flex-1 sm:max-w-xs">
@@ -73,9 +74,9 @@ export default function SearchPhrasesView({ phrases }: Props) {
           <option value="all">Barcha mahsulotlar</option>
           {products.slice(1).map(p => <option key={p} value={p}>{p}</option>)}
         </select>
-        <button onClick={exportExcel} className="flex items-center gap-1.5 px-3 py-2 bg-[#13131f] hover:bg-white/[0.04] text-slate-400 hover:text-white text-xs font-semibold rounded-xl border border-white/[0.06] transition-all sm:ml-auto w-fit">
-          <Download className="w-3.5 h-3.5" /> Excel
-        </button>
+        <div className="sm:ml-auto">
+          <ExportButton data={exportData} filename="qidiruv-iboralari" targetRef={printRef} />
+        </div>
       </div>
 
       {/* Summary */}

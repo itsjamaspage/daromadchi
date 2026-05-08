@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useMemo } from 'react'
-import { Download, TrendingUp, TrendingDown, CircleDot } from 'lucide-react'
+import { useState, useMemo, useRef } from 'react'
+import { TrendingUp, TrendingDown, CircleDot } from 'lucide-react'
 import type { AdCampaign, AdType } from '@/lib/types'
+import ExportButton from '@/components/dashboard/ExportButton'
 
 function fs(n: number) {
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + ' mln'
@@ -30,6 +31,7 @@ interface Props { campaigns: AdCampaign[] }
 
 export default function AdvertisingView({ campaigns }: Props) {
   const [tab, setTab] = useState<AdType | 'all'>('all')
+  const printRef = useRef<HTMLDivElement>(null)
 
   const filtered = useMemo(() =>
     tab === 'all' ? campaigns : campaigns.filter(c => c.type === tab),
@@ -47,21 +49,22 @@ export default function AdvertisingView({ campaigns }: Props) {
       : 0,
   }), [filtered])
 
-  function exportExcel() {
-    const header = ['Kampaniya', 'Tur', 'Holat', 'Mahsulot', 'Sarflar', 'Korsatuvlar', 'Kliklar', 'CTR', 'Buyurtmalar', 'Daromad', 'DRR'].join('\t')
-    const rows = filtered.map(c =>
-      [c.name, c.type.toUpperCase(), statusLabel(c.status), c.productTitle,
-       Math.round(c.spend), c.impressions, c.clicks, c.ctr.toFixed(2) + '%',
-       c.orders, Math.round(c.revenue), c.drr.toFixed(1) + '%'].join('\t')
-    )
-    const blob = new Blob(['﻿' + [header, ...rows].join('\n')], { type: 'text/csv;charset=utf-8;' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a'); a.href = url; a.download = 'reklama.csv'; a.click()
-    URL.revokeObjectURL(url)
-  }
+  const exportData = filtered.map(c => ({
+    'Kampaniya':     c.name,
+    'Tur':           c.type.toUpperCase(),
+    'Holat':         statusLabel(c.status),
+    'Mahsulot':      c.productTitle,
+    "Sarflar (so'm)": Math.round(c.spend),
+    "Ko'rsatuvlar":  c.impressions,
+    'Kliklar':       c.clicks,
+    'CTR (%)':       c.ctr.toFixed(2),
+    'Buyurtmalar':   c.orders,
+    "Daromad (so'm)": Math.round(c.revenue),
+    'DRR (%)':       c.drr.toFixed(1),
+  }))
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" ref={printRef}>
       {/* Summary KPIs */}
       <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3">
         {[
@@ -91,10 +94,9 @@ export default function AdvertisingView({ campaigns }: Props) {
             </button>
           ))}
         </div>
-        <button onClick={exportExcel}
-          className="flex items-center gap-1.5 px-3 py-2 bg-[#13131f] hover:bg-white/[0.04] text-slate-400 hover:text-white text-xs font-semibold rounded-xl border border-white/[0.06] transition-all sm:ml-auto w-fit">
-          <Download className="w-3.5 h-3.5" /> Excel
-        </button>
+        <div className="sm:ml-auto">
+          <ExportButton data={exportData} filename="reklama-hisoboti" targetRef={printRef} />
+        </div>
       </div>
 
       {/* Table */}

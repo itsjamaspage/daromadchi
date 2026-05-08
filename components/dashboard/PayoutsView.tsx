@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { ChevronDown, ChevronUp, HelpCircle } from 'lucide-react'
 import type { PayoutEntry } from '@/lib/db/payouts'
+import ExportButton from '@/components/dashboard/ExportButton'
 
 interface Props {
   entries: PayoutEntry[]
@@ -91,6 +92,7 @@ function DeductionBar({ entry }: { entry: PayoutEntry }) {
 
 export default function PayoutsView({ entries }: Props) {
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const printRef = useRef<HTMLDivElement>(null)
 
   const paidEntries = entries.filter(e => e.status === 'paid')
   const totalPaid   = paidEntries.reduce((s, e) => s + e.netPayout, 0)
@@ -101,8 +103,26 @@ export default function PayoutsView({ entries }: Props) {
     setExpandedId(prev => prev === id ? null : id)
   }
 
+  const exportData = entries.map(e => ({
+    'Davr':            e.period,
+    'Buyurtmalar':     e.ordersCount,
+    "Brutto (so'm)":   e.grossRevenue,
+    "Komissiya (so'm)": e.commission,
+    "Yetkazish (so'm)": e.delivery,
+    "Qaytarish (so'm)": e.returns,
+    "Reklama (so'm)":  e.adSpend,
+    "Soliq (so'm)":    e.tax,
+    "Sof to'lov (so'm)": e.netPayout,
+    'Holat': e.status === 'paid' ? "To'langan" : e.status === 'processing' ? 'Jarayonda' : 'Kutilmoqda',
+  }))
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" ref={printRef}>
+      {/* Export button */}
+      <div className="flex justify-end">
+        <ExportButton data={exportData} filename="tolovu-hisoboti" targetRef={printRef} />
+      </div>
+
       {/* Summary cards */}
       <div className="grid grid-cols-3 gap-3">
         <div className="bg-[#13131f] border border-white/[0.06] rounded-2xl px-4 py-3">

@@ -1,12 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   CartesianGrid, Cell,
 } from 'recharts'
-import { TrendingUp, TrendingDown, Package } from 'lucide-react'
+import { TrendingUp, Package } from 'lucide-react'
 import type { ProductSeasonality } from '@/lib/mock-reviews-seasonality'
+import ExportButton from '@/components/dashboard/ExportButton'
 
 function fs(n: number) {
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + ' mln'
@@ -26,6 +27,7 @@ interface Props { data: ProductSeasonality[] }
 
 export default function SeasonalityView({ data }: Props) {
   const [selectedIdx, setSelectedIdx] = useState(0)
+  const printRef = useRef<HTMLDivElement>(null)
   const product = data[selectedIdx]
 
   const maxRevenue = Math.max(...product.data.map(d => d.revenue))
@@ -51,21 +53,31 @@ export default function SeasonalityView({ data }: Props) {
     )
   }
 
+  const exportData = product.data.map(d => ({
+    'Oy':              d.month,
+    "Daromad (so'm)":  d.revenue,
+    'Buyurtmalar':     d.orders,
+    "O'rtacha chek":   d.avgCheck,
+  }))
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" ref={printRef}>
       {/* Product selector */}
-      <div className="flex flex-wrap gap-2">
-        {data.map((p, i) => (
-          <button key={p.productId} onClick={() => setSelectedIdx(i)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border transition-all ${
-              selectedIdx === i
-                ? 'bg-violet-600/20 border-violet-500/30 text-violet-300'
-                : 'bg-[#13131f] border-white/[0.06] text-slate-400 hover:text-white hover:border-white/10'
-            }`}>
-            <Package className="w-3.5 h-3.5" />
-            {p.productTitle}
-          </button>
-        ))}
+      <div className="flex flex-wrap gap-2 items-center">
+        <div className="flex flex-wrap gap-2 flex-1">
+          {data.map((p, i) => (
+            <button key={p.productId} onClick={() => setSelectedIdx(i)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border transition-all ${
+                selectedIdx === i
+                  ? 'bg-violet-600/20 border-violet-500/30 text-violet-300'
+                  : 'bg-[#13131f] border-white/[0.06] text-slate-400 hover:text-white hover:border-white/10'
+              }`}>
+              <Package className="w-3.5 h-3.5" />
+              {p.productTitle}
+            </button>
+          ))}
+        </div>
+        <ExportButton data={exportData} filename={`mavsumiylik-${product.productTitle.replace(/\s+/g, '-')}`} targetRef={printRef} />
       </div>
 
       {/* Insight cards */}

@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { Settings2, AlertTriangle, Bell, Package } from 'lucide-react'
 import type { StockAlert } from '@/lib/db/alerts'
 import type { AlertSettings } from '@/lib/db/alerts'
+import ExportButton from '@/components/dashboard/ExportButton'
 
 interface Props {
   alerts: StockAlert[]
@@ -15,9 +16,20 @@ export default function StockAlertsView({ alerts, settings: initialSettings }: P
   const [settings, setSettings] = useState(initialSettings)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const printRef = useRef<HTMLDivElement>(null)
 
   const critical = alerts.filter(a => a.daysLeft <= 3).length
   const warning  = alerts.filter(a => a.daysLeft > 3 && a.daysLeft <= 7).length
+
+  const exportData = alerts.map(a => ({
+    'Mahsulot':       a.productTitle,
+    'SKU':            a.sku,
+    'Zaxira (dona)':  a.currentStock,
+    'Chegara (dona)': a.threshold,
+    'Qolgan kunlar':  a.daysLeft,
+    'Kunlik sotuv':   a.dailySales,
+    'Holat': a.daysLeft <= 3 ? 'Kritik' : a.daysLeft <= 7 ? 'Ogohlantirish' : 'Kuzatuv',
+  }))
 
   async function handleSave() {
     setSaving(true)
@@ -57,7 +69,12 @@ export default function StockAlertsView({ alerts, settings: initialSettings }: P
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" ref={printRef}>
+      {alerts.length > 0 && (
+        <div className="flex justify-end">
+          <ExportButton data={exportData} filename="zaxira-ogohlantirishlar" targetRef={printRef} />
+        </div>
+      )}
       {/* Summary row */}
       <div className="grid grid-cols-3 gap-3">
         <div className="bg-[#13131f] border border-white/[0.06] rounded-2xl px-4 py-3">

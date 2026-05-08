@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef } from 'react'
 import { Star, MessageSquare, Check, ChevronDown, ChevronUp, Search } from 'lucide-react'
 import type { ReviewEntry } from '@/lib/mock-reviews-seasonality'
+import ExportButton from '@/components/dashboard/ExportButton'
 
 function StarRating({ rating }: { rating: number }) {
   return (
@@ -39,6 +40,7 @@ export default function ReviewsView({ reviews }: Props) {
   const [replied, setReplied]         = useState<Set<string>>(new Set(reviews.filter(r => r.replied).map(r => r.id)))
   const [replyDraft, setReplyDraft]   = useState<Record<string, string>>({})
   const [replyOpen, setReplyOpen]     = useState<string | null>(null)
+  const printRef                      = useRef<HTMLDivElement>(null)
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase()
@@ -62,6 +64,16 @@ export default function ReviewsView({ reviews }: Props) {
     positive:  reviews.filter(r => r.sentiment === 'positive').length,
   }
 
+  const exportData = reviews.map(r => ({
+    'Muallif':   r.author,
+    'Sana':      r.date,
+    'Mahsulot':  r.productTitle,
+    'Reyting':   r.rating,
+    'Izoh':      r.text,
+    'Kayfiyat':  r.sentiment === 'positive' ? 'Ijobiy' : r.sentiment === 'negative' ? 'Salbiy' : 'Neytral',
+    'Holat':     replied.has(r.id) ? "Javob berildi" : 'Javobsiz',
+  }))
+
   function submitReply(id: string) {
     const text = replyDraft[id]?.trim()
     if (!text) return
@@ -78,7 +90,7 @@ export default function ReviewsView({ reviews }: Props) {
   ]
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" ref={printRef}>
       {/* Summary */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
@@ -95,7 +107,7 @@ export default function ReviewsView({ reviews }: Props) {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center" data-noprint>
         <div className="flex flex-wrap gap-1 p-1 bg-[#13131f] border border-white/[0.06] rounded-xl">
           {TABS.map(({ key, label, count }) => (
             <button key={key} onClick={() => setFilter(key)}
@@ -111,11 +123,14 @@ export default function ReviewsView({ reviews }: Props) {
             </button>
           ))}
         </div>
-        <div className="relative w-full sm:w-64 sm:ml-auto">
+        <div className="relative w-full sm:w-64">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
           <input value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Qidirish..."
             className="w-full pl-9 pr-3 py-2 bg-[#13131f] border border-white/[0.06] rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-violet-500/50" />
+        </div>
+        <div className="sm:ml-auto flex-shrink-0">
+          <ExportButton data={exportData} filename="izohlar" targetRef={printRef} />
         </div>
       </div>
 
