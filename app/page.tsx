@@ -7,6 +7,9 @@ import {
   TrendingUp, BarChart2, Calculator, FileText,
   Zap, ArrowRight, RefreshCw, AlertTriangle, DollarSign,
   ShieldCheck, Sparkles, ChevronRight, Activity, Sun, Moon,
+  Check, ChevronDown, Star, Users, BookOpen, Tag,
+  Terminal, Key, RotateCcw, BarChart, Package, Search,
+  Layers, Download,
 } from 'lucide-react'
 import { useTheme, useLang } from './providers'
 import { translations } from '@/lib/i18n'
@@ -125,7 +128,7 @@ function LangToggle() {
                 background: lang === l ? 'rgba(139,92,246,0.15)' : 'transparent',
                 color: lang === l ? '#a78bfa' : 'var(--text-muted)',
               }}>
-              {l}
+              {l === 'uz' ? '🇺🇿 UZ' : l === 'ru' ? '🇷🇺 RU' : '🇬🇧 EN'}
             </button>
           ))}
         </div>
@@ -242,6 +245,34 @@ const stepColors = [
   { color: 'text-emerald-400',bg: 'bg-emerald-500/10 border-emerald-500/30' },
 ]
 
+const tutorialIcons = [Terminal, Key, Terminal, RotateCcw, BarChart, Search, Layers, Download]
+const tutorialColors = ['violet', 'cyan', 'pink', 'emerald', 'blue', 'amber', 'indigo', 'rose']
+
+/* ── faq accordion ──────────────────────────────────────────────────────── */
+function FaqItem({ q, a, idx }: { q: string; a: string; idx: number }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <div className="border rounded-2xl overflow-hidden transition-all" style={{ borderColor: open ? 'rgba(139,92,246,0.3)' : 'var(--border)' }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center justify-between px-6 py-4 text-left transition-all"
+        style={{ background: open ? 'rgba(139,92,246,0.05)' : 'var(--bg-card)' }}
+      >
+        <span className="font-semibold text-sm pr-4" style={{ color: 'var(--text-base)' }}>
+          <span className="text-violet-400 font-bold mr-2">{String(idx + 1).padStart(2, '0')}.</span>
+          {q}
+        </span>
+        <ChevronDown className={`w-4 h-4 flex-shrink-0 transition-transform ${open ? 'rotate-180 text-violet-400' : ''}`} style={{ color: open ? undefined : 'var(--text-muted)' }} />
+      </button>
+      {open && (
+        <div className="px-6 pb-5 pt-2" style={{ background: 'var(--bg-card)' }}>
+          <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>{a}</p>
+        </div>
+      )}
+    </div>
+  )
+}
+
 /* ── main page ──────────────────────────────────────────────────────────── */
 export default function LandingPage() {
   const { theme } = useTheme()
@@ -252,15 +283,28 @@ export default function LandingPage() {
   const heroY = useTransform(scrollY, [0,500], [0,-80])
   const heroOpacity = useTransform(scrollY, [0,400], [1,0])
 
-  const featuresRef = useRef(null)
-  const stepsRef    = useRef(null)
-  const statsRef    = useRef(null)
-  const featuresInView = useInView(featuresRef, { once: true, margin: '-100px' })
-  const stepsInView    = useInView(stepsRef,    { once: true, margin: '-100px' })
-  const statsInView    = useInView(statsRef,    { once: true, margin: '-100px' })
+  const featuresRef    = useRef(null)
+  const stepsRef       = useRef(null)
+  const statsRef       = useRef(null)
+  const pricingRef     = useRef(null)
+  const tutorialRef    = useRef(null)
+  const faqRef         = useRef(null)
+  const testimonialsRef = useRef(null)
+  const featuresInView    = useInView(featuresRef,    { once: true, margin: '-100px' })
+  const stepsInView       = useInView(stepsRef,       { once: true, margin: '-100px' })
+  const statsInView       = useInView(statsRef,       { once: true, margin: '-100px' })
+  const pricingInView     = useInView(pricingRef,     { once: true, margin: '-80px' })
+  const tutorialInView    = useInView(tutorialRef,    { once: true, margin: '-80px' })
+  const faqInView         = useInView(faqRef,         { once: true, margin: '-80px' })
+  const testimonialsInView = useInView(testimonialsRef,{ once: true, margin: '-80px' })
 
   const card  = theme === 'dark' ? '#0e0e1a' : '#ffffff'
   const card2 = theme === 'dark' ? '#0e0e1a' : '#f8f8ff'
+
+  const pricing = (t as typeof translations.en & { pricing?: typeof translations.en.pricing }).pricing
+  const tutorial = (t as typeof translations.en & { tutorial?: typeof translations.en.tutorial }).tutorial
+  const faq = (t as typeof translations.en & { faq?: typeof translations.en.faq }).faq
+  const testimonials = (t as typeof translations.en & { testimonials?: typeof translations.en.testimonials }).testimonials
 
   return (
     <div className="min-h-screen overflow-x-hidden" style={{ background: 'var(--bg-base)', color: 'var(--text-base)' }}>
@@ -283,9 +327,10 @@ export default function LandingPage() {
             </Link>
 
             <nav className="hidden md:flex items-center gap-6 text-sm" style={{ color: 'var(--text-muted)' }}>
-              <a href="#features" className="hover:text-violet-500 transition-colors">{t.nav.features}</a>
-              <a href="#how"      className="hover:text-violet-500 transition-colors">{t.nav.how}</a>
-              <a href="#stats"    className="hover:text-violet-500 transition-colors">{t.nav.stats}</a>
+              <a href="#features"   className="hover:text-violet-500 transition-colors">{t.nav.features}</a>
+              <a href="#tutorial"   className="hover:text-violet-500 transition-colors">{(t.nav as typeof translations.en.nav & { tutorial?: string }).tutorial ?? 'Tutorial'}</a>
+              <a href="#pricing"    className="hover:text-violet-500 transition-colors">{(t.nav as typeof translations.en.nav & { pricing?: string }).pricing ?? 'Pricing'}</a>
+              <a href="#stats"      className="hover:text-violet-500 transition-colors">{t.nav.stats}</a>
             </nav>
 
             <div className="flex items-center gap-2">
@@ -380,7 +425,7 @@ export default function LandingPage() {
             <div className="absolute top-0 left-1/4 right-1/4 h-px bg-gradient-to-r from-transparent via-violet-500 to-transparent" />
             <FloatingOrbs />
             <div className="relative grid grid-cols-2 sm:grid-cols-4 gap-8">
-              <StatCard value={6}   suffix="+"     labelKey={lang} labelIdx={0} delay={0}   />
+              <StatCard value={16}  suffix="+"     labelKey={lang} labelIdx={0} delay={0}   />
               <StatCard value={30}  suffix="s"     labelKey={lang} labelIdx={1} delay={0.1} />
               <StatCard value={100} suffix="%"     labelKey={lang} labelIdx={2} delay={0.2} />
               <StatCard value={0}   suffix=" so'm" labelKey={lang} labelIdx={3} delay={0.3} />
@@ -427,6 +472,203 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ── Tutorial ──────────────────────────────────────────────────── */}
+      {tutorial && (
+        <section id="tutorial" ref={tutorialRef} className="py-24 px-4 sm:px-6 relative overflow-hidden"
+          style={{ background: theme === 'dark' ? '#070710' : '#f5f5ff' }}>
+          <NeonGrid />
+          <FloatingOrbs />
+          <div className="max-w-6xl mx-auto relative z-10">
+            <motion.div initial={{ opacity:0, y:30 }} animate={tutorialInView ? { opacity:1, y:0 } : {}}
+              transition={{ duration:0.6 }} className="text-center mb-16">
+              <div className="inline-flex items-center gap-2 bg-cyan-500/10 border border-cyan-500/20 rounded-full px-4 py-1.5 text-xs text-cyan-400 font-medium mb-4">
+                <BookOpen className="w-3.5 h-3.5" /> {tutorial.badge}
+              </div>
+              <h2 className="text-3xl sm:text-4xl font-black mb-4" style={{ color: 'var(--text-base)' }}>
+                {tutorial.title}
+              </h2>
+              <p className="max-w-xl mx-auto" style={{ color: 'var(--text-muted)' }}>{tutorial.subtitle}</p>
+            </motion.div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {tutorial.steps.map((step, i) => {
+                const Icon = tutorialIcons[i] ?? Terminal
+                const color = tutorialColors[i] ?? 'violet'
+                const colorMap: Record<string, string> = {
+                  violet: 'text-violet-400 bg-violet-500/10 border-violet-500/25',
+                  cyan:   'text-cyan-400 bg-cyan-500/10 border-cyan-500/25',
+                  pink:   'text-pink-400 bg-pink-500/10 border-pink-500/25',
+                  emerald:'text-emerald-400 bg-emerald-500/10 border-emerald-500/25',
+                  blue:   'text-blue-400 bg-blue-500/10 border-blue-500/25',
+                  amber:  'text-amber-400 bg-amber-500/10 border-amber-500/25',
+                  indigo: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/25',
+                  rose:   'text-rose-400 bg-rose-500/10 border-rose-500/25',
+                }
+                const cls = colorMap[color]
+                return (
+                  <motion.div key={i}
+                    initial={{ opacity:0, y:40 }} animate={tutorialInView ? { opacity:1, y:0 } : {}}
+                    transition={{ delay: i * 0.08, duration:0.6 }}
+                    className="relative group border rounded-2xl p-5 transition-all hover:shadow-lg"
+                    style={{ background: card, borderColor: 'var(--border)' }}>
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className={`w-10 h-10 rounded-xl ${cls} border flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform`}>
+                        <Icon className="w-4.5 h-4.5" />
+                      </div>
+                      <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">
+                        {String(i + 1).padStart(2, '0')}
+                      </span>
+                    </div>
+                    <h3 className="font-bold text-sm mb-1" style={{ color: 'var(--text-base)' }}>{step.title}</h3>
+                    <p className="text-xs font-medium mb-2" style={{ color: 'var(--text-muted)' }}>{step.desc}</p>
+                    <p className="text-xs leading-relaxed" style={{ color: 'var(--text-dim)' }}>{step.detail}</p>
+                  </motion.div>
+                )
+              })}
+            </div>
+
+            {/* API notice */}
+            <motion.div initial={{ opacity:0, y:20 }} animate={tutorialInView ? { opacity:1, y:0 } : {}}
+              transition={{ delay:0.6, duration:0.6 }}
+              className="mt-8 rounded-2xl border border-amber-500/20 bg-amber-500/5 px-6 py-4 flex items-start gap-4">
+              <AlertTriangle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-semibold text-amber-400 mb-1">
+                  {lang === 'uz' ? "API integratsiya haqida" : lang === 'ru' ? "Об API-интеграции" : "About API integration"}
+                </p>
+                <p className="text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>
+                  {lang === 'uz'
+                    ? "Hozirda Uzum va Yandex Market rasmiy API'lari bilan to'liq integratsiya ishlab chiqilmoqda. Demo rejimda barcha funksiyalar namuna ma'lumotlar bilan ishlaydi. Real sinxronizatsiya uchun API token kiritish kerak — ammo bu joriy versiyada qo'lda sync orqali amalga oshiriladi."
+                    : lang === 'ru'
+                    ? "Полная интеграция с официальными API Uzum и Яндекс Маркет находится в разработке. В демо-режиме все функции работают с образцами данных. Для реальной синхронизации нужен API-токен — в текущей версии синхронизация выполняется вручную."
+                    : "Full integration with the official Uzum and Yandex Market APIs is in development. In demo mode, all features work with sample data. For real sync an API token is required — in the current version sync is manual."}
+                </p>
+              </div>
+            </motion.div>
+          </div>
+        </section>
+      )}
+
+      {/* ── Pricing ───────────────────────────────────────────────────── */}
+      {pricing && (
+        <section id="pricing" ref={pricingRef} className="py-24 px-4 sm:px-6 relative">
+          <NeonGrid />
+          <div className="max-w-5xl mx-auto relative z-10">
+            <motion.div initial={{ opacity:0, y:30 }} animate={pricingInView ? { opacity:1, y:0 } : {}}
+              transition={{ duration:0.6 }} className="text-center mb-14">
+              <div className="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-4 py-1.5 text-xs text-emerald-400 font-medium mb-4">
+                <Tag className="w-3.5 h-3.5" /> {pricing.badge}
+              </div>
+              <h2 className="text-3xl sm:text-4xl font-black mb-4" style={{ color: 'var(--text-base)' }}>
+                {pricing.title}
+              </h2>
+              <p style={{ color: 'var(--text-muted)' }}>{pricing.subtitle}</p>
+            </motion.div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              {pricing.plans.map((plan, i) => {
+                const isPopular = i === 1
+                return (
+                  <motion.div key={plan.name}
+                    initial={{ opacity:0, y:40 }} animate={pricingInView ? { opacity:1, y:0 } : {}}
+                    transition={{ delay: i * 0.12, duration:0.6 }}
+                    className={`relative rounded-3xl p-7 border flex flex-col transition-all ${
+                      isPopular ? 'border-violet-500/40 shadow-xl shadow-violet-500/10' : ''
+                    }`}
+                    style={{ background: isPopular ? (theme === 'dark' ? '#0f0f1e' : '#fafaff') : card, borderColor: isPopular ? undefined : 'var(--border)' }}>
+                    {isPopular && (
+                      <>
+                        <div className="absolute top-0 left-1/4 right-1/4 h-px bg-gradient-to-r from-transparent via-violet-500 to-transparent" />
+                        <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                          <span className="bg-gradient-to-r from-violet-600 to-indigo-600 text-white text-[10px] font-bold px-3 py-1 rounded-full">
+                            {pricing.popular}
+                          </span>
+                        </div>
+                      </>
+                    )}
+                    <div className="mb-5">
+                      <h3 className="font-black text-lg mb-1" style={{ color: 'var(--text-base)' }}>{plan.name}</h3>
+                      <p className="text-xs mb-4" style={{ color: 'var(--text-muted)' }}>{plan.desc}</p>
+                      <div className="flex items-end gap-1">
+                        <span className="text-4xl font-black" style={{ color: 'var(--text-base)' }}>{plan.price}</span>
+                        {plan.price !== '0' && (
+                          <span className="text-sm mb-1" style={{ color: 'var(--text-muted)' }}>{' '}so&apos;m {pricing.monthly}</span>
+                        )}
+                        {plan.price === '0' && (
+                          <span className="text-sm mb-1 text-emerald-400 font-semibold"> {lang === 'uz' ? 'bepul' : lang === 'ru' ? 'бесплатно' : 'free'}</span>
+                        )}
+                      </div>
+                    </div>
+
+                    <ul className="space-y-2.5 mb-7 flex-1">
+                      {plan.features.map((f: string) => (
+                        <li key={f} className="flex items-start gap-2.5 text-xs" style={{ color: 'var(--text-muted)' }}>
+                          <Check className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0 mt-0.5" />
+                          {f}
+                        </li>
+                      ))}
+                    </ul>
+
+                    <Link href="/login"
+                      className={`flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-bold transition-all ${
+                        isPopular
+                          ? 'bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white shadow-lg shadow-violet-500/25'
+                          : 'border hover:border-violet-500/40 hover:text-violet-400'
+                      }`}
+                      style={isPopular ? {} : { borderColor: 'var(--border2)', color: 'var(--text-dim)' }}>
+                      {pricing.cta} <ArrowRight className="w-3.5 h-3.5" />
+                    </Link>
+                  </motion.div>
+                )
+              })}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ── Testimonials ──────────────────────────────────────────────── */}
+      {testimonials && (
+        <section ref={testimonialsRef} className="py-24 px-4 sm:px-6 relative overflow-hidden"
+          style={{ background: theme === 'dark' ? '#0a0a14' : '#f0f0fa' }}>
+          <FloatingOrbs />
+          <div className="max-w-5xl mx-auto relative z-10">
+            <motion.div initial={{ opacity:0, y:30 }} animate={testimonialsInView ? { opacity:1, y:0 } : {}}
+              transition={{ duration:0.6 }} className="text-center mb-14">
+              <div className="inline-flex items-center gap-2 bg-pink-500/10 border border-pink-500/20 rounded-full px-4 py-1.5 text-xs text-pink-400 font-medium mb-4">
+                <Users className="w-3.5 h-3.5" /> {testimonials.badge}
+              </div>
+              <h2 className="text-3xl sm:text-4xl font-black" style={{ color: 'var(--text-base)' }}>
+                {testimonials.title}
+              </h2>
+            </motion.div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              {testimonials.items.map((item, i) => (
+                <motion.div key={item.name}
+                  initial={{ opacity:0, y:40 }} animate={testimonialsInView ? { opacity:1, y:0 } : {}}
+                  transition={{ delay: i * 0.12, duration:0.6 }}
+                  className="border rounded-2xl p-6 flex flex-col gap-4 transition-all hover:border-violet-500/30"
+                  style={{ background: card, borderColor: 'var(--border)' }}>
+                  <div className="flex gap-0.5">
+                    {[1,2,3,4,5].map(s => <Star key={s} className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />)}
+                  </div>
+                  <p className="text-sm leading-relaxed flex-1" style={{ color: 'var(--text-muted)' }}>&ldquo;{item.text}&rdquo;</p>
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500/30 to-indigo-500/30 border border-violet-500/20 flex items-center justify-center text-violet-400 font-black text-sm">
+                      {item.name[0]}
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold" style={{ color: 'var(--text-base)' }}>{item.name}</p>
+                      <p className="text-xs" style={{ color: 'var(--text-dim)' }}>{item.role}</p>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* ── How it works ──────────────────────────────────────────────── */}
       <section id="how" ref={stepsRef} className="py-24 px-4 sm:px-6 relative overflow-hidden"
         style={{ background: theme === 'dark' ? '#0a0a14' : '#f0f0fa' }}>
@@ -464,6 +706,31 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* ── FAQ ───────────────────────────────────────────────────────── */}
+      {faq && (
+        <section ref={faqRef} className="py-24 px-4 sm:px-6 relative">
+          <NeonGrid />
+          <div className="max-w-3xl mx-auto relative z-10">
+            <motion.div initial={{ opacity:0, y:30 }} animate={faqInView ? { opacity:1, y:0 } : {}}
+              transition={{ duration:0.6 }} className="text-center mb-14">
+              <div className="inline-flex items-center gap-2 bg-indigo-500/10 border border-indigo-500/20 rounded-full px-4 py-1.5 text-xs text-indigo-400 font-medium mb-4">
+                <Sparkles className="w-3.5 h-3.5" /> {faq.badge}
+              </div>
+              <h2 className="text-3xl sm:text-4xl font-black" style={{ color: 'var(--text-base)' }}>
+                {faq.title}
+              </h2>
+            </motion.div>
+
+            <motion.div initial={{ opacity:0, y:20 }} animate={faqInView ? { opacity:1, y:0 } : {}}
+              transition={{ delay:0.2, duration:0.6 }} className="space-y-3">
+              {faq.items.map((item, i) => (
+                <FaqItem key={i} q={item.q} a={item.a} idx={i} />
+              ))}
+            </motion.div>
+          </div>
+        </section>
+      )}
 
       {/* ── CTA ───────────────────────────────────────────────────────── */}
       <section className="py-24 px-4 sm:px-6 relative overflow-hidden">
@@ -505,18 +772,59 @@ export default function LandingPage() {
       </section>
 
       {/* ── Footer ────────────────────────────────────────────────────── */}
-      <footer className="border-t py-8 px-4 sm:px-6" style={{ borderColor: 'var(--border)' }}>
-        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center shadow shadow-violet-500/30">
-              <TrendingUp className="w-3.5 h-3.5 text-white" />
+      <footer className="border-t py-10 px-4 sm:px-6" style={{ borderColor: 'var(--border)' }}>
+        <div className="max-w-6xl mx-auto">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-8">
+            <div className="col-span-2 md:col-span-1">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center shadow shadow-violet-500/30">
+                  <TrendingUp className="w-3.5 h-3.5 text-white" />
+                </div>
+                <span className="font-bold text-sm" style={{ color: 'var(--text-base)' }}>Daromadchi</span>
+              </div>
+              <p className="text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>{t.footer}</p>
             </div>
-            <span className="font-bold text-sm" style={{ color: 'var(--text-base)' }}>Daromadchi</span>
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: 'var(--text-dim)' }}>
+                {lang === 'uz' ? 'Mahsulot' : lang === 'ru' ? 'Продукт' : 'Product'}
+              </p>
+              <div className="space-y-2">
+                {[
+                  { label: t.nav.features, href: '#features' },
+                  { label: (t.nav as typeof translations.en.nav & { tutorial?: string }).tutorial ?? 'Tutorial', href: '#tutorial' },
+                  { label: (t.nav as typeof translations.en.nav & { pricing?: string }).pricing ?? 'Pricing', href: '#pricing' },
+                ].map(l => (
+                  <a key={l.href} href={l.href} className="block text-xs transition-colors hover:text-violet-400" style={{ color: 'var(--text-muted)' }}>{l.label}</a>
+                ))}
+              </div>
+            </div>
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: 'var(--text-dim)' }}>
+                {lang === 'uz' ? 'Havola' : lang === 'ru' ? 'Ссылки' : 'Links'}
+              </p>
+              <div className="space-y-2">
+                <Link href="/dashboard" className="block text-xs transition-colors hover:text-violet-400" style={{ color: 'var(--text-muted)' }}>Dashboard</Link>
+                <Link href="/login" className="block text-xs transition-colors hover:text-violet-400" style={{ color: 'var(--text-muted)' }}>{t.nav.login}</Link>
+                <Link href="/pricing" className="block text-xs transition-colors hover:text-violet-400" style={{ color: 'var(--text-muted)' }}>{(t.nav as typeof translations.en.nav & { pricing?: string }).pricing ?? 'Pricing'}</Link>
+              </div>
+            </div>
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: 'var(--text-dim)' }}>
+                {lang === 'uz' ? 'Marketplace' : lang === 'ru' ? 'Маркетплейс' : 'Marketplace'}
+              </p>
+              <div className="space-y-2">
+                <a href="https://seller.uzum.uz" target="_blank" rel="noopener noreferrer" className="block text-xs transition-colors hover:text-violet-400" style={{ color: 'var(--text-muted)' }}>Uzum Market</a>
+                <a href="https://partner.market.yandex.ru" target="_blank" rel="noopener noreferrer" className="block text-xs transition-colors hover:text-violet-400" style={{ color: 'var(--text-muted)' }}>Yandex Market</a>
+              </div>
+            </div>
           </div>
-          <p className="text-xs" style={{ color: 'var(--text-muted)' }}>© 2026 Daromadchi. {t.footer}</p>
-          <Link href="/dashboard" className="text-xs text-violet-400 hover:text-violet-300 transition-colors flex items-center gap-1">
-            Dashboard <ArrowRight className="w-3 h-3" />
-          </Link>
+          <div className="border-t pt-6 flex flex-col sm:flex-row items-center justify-between gap-3" style={{ borderColor: 'var(--border)' }}>
+            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>© 2026 Daromadchi. {t.footer}</p>
+            <div className="flex items-center gap-4">
+              <LangToggle />
+              <ThemeToggle />
+            </div>
+          </div>
         </div>
       </footer>
     </div>
