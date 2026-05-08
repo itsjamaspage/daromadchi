@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { TrendingUp, Mail, Lock, Loader2, Eye, EyeOff, User, CheckCircle, ArrowLeft } from 'lucide-react'
 import { useTheme, useLang } from '@/app/providers'
@@ -109,6 +109,9 @@ export default function LoginPage() {
   const { lang, setLang } = useLang()
   const t = ui[lang in ui ? lang as keyof typeof ui : 'uz']
 
+  const searchParams = useSearchParams()
+  const refCode = searchParams.get('ref') ?? ''
+
   const [mode, setMode] = useState<'login' | 'signup'>('login')
   const [email,    setEmail]    = useState('')
   const [password, setPassword] = useState('')
@@ -153,8 +156,17 @@ export default function LoginPage() {
         options: { data: { full_name: name } },
       })
       if (error) { setError(error.message); setLoading(false) }
-      else if (data.session) { router.push('/dashboard'); router.refresh() }
-      else { setSuccess(true); setLoading(false) }
+      else {
+        if (refCode && data.user) {
+          await fetch('/api/referral/track', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ refCode, newUserId: data.user.id }),
+          }).catch(() => {})
+        }
+        if (data.session) { router.push('/dashboard'); router.refresh() }
+        else { setSuccess(true); setLoading(false) }
+      }
     }
   }
 
