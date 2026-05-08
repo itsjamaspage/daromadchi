@@ -8,6 +8,8 @@ export const translations = {
       stats: 'Statistika',
       login: 'Kirish',
       start: 'Boshlash',
+      pricing: 'Narxlar',
+      tutorial: "Qo'llanma",
     },
     badge: 'Uzum + Yandex Market sotuvchilari uchun',
     hero: {
@@ -57,6 +59,163 @@ export const translations = {
       dailyRevenue: 'Kunlik tushum', categories: 'Kategoriyalar',
       revenueUp: '+12.4% tushum', aiReady: 'AI tayyor',
     },
+    pricing: {
+      badge: 'Shaffof narxlar',
+      title: 'Sizga mos tarifni tanlang',
+      subtitle: "Barcha tariflar demo ma'lumotlar bilan sinab ko'rilishi mumkin",
+      monthly: 'oylik',
+      popular: 'Mashhur',
+      cta: 'Boshlash',
+      plans: [
+        {
+          name: 'Bepul',
+          price: '0',
+          desc: 'Tanishish uchun',
+          features: [
+            "Demo ma'lumotlar",
+            "1 do'kon",
+            'Asosiy tahlil',
+            'Birlik iqtisodiyoti',
+            "Hamjamiyat ko'magi",
+          ],
+        },
+        {
+          name: 'Pro',
+          price: '99 000',
+          desc: 'Faol sotuvchilar uchun',
+          features: [
+            "Demo ma'lumotlar",
+            "1 do'kon",
+            'Asosiy tahlil',
+            'Birlik iqtisodiyoti',
+            "Hamjamiyat ko'magi",
+            'Haqiqiy sinxronizatsiya',
+            'Reklama tahlili',
+            'Qoldiq ogohlantirishlari',
+            'Narx kuzatuvi',
+            'Excel va PDF eksport',
+            "Email qo'magi",
+          ],
+        },
+        {
+          name: 'Business',
+          price: '249 000',
+          desc: 'Katta hajmdagi biznes uchun',
+          features: [
+            "Demo ma'lumotlar",
+            "1 do'kon",
+            'Asosiy tahlil',
+            'Birlik iqtisodiyoti',
+            "Hamjamiyat ko'magi",
+            'Haqiqiy sinxronizatsiya',
+            'Reklama tahlili',
+            'Qoldiq ogohlantirishlari',
+            'Narx kuzatuvi',
+            'Excel va PDF eksport',
+            "Email qo'magi",
+            "5 ta do'kon",
+            'API integratsiya',
+            'Referal dasturi',
+            "Ustuvor qo'mag",
+            'Maxsus tahlil',
+          ],
+        },
+      ],
+    },
+    tutorial: {
+      badge: 'Qanday boshlash',
+      title: "Batafsil qo'llanma",
+      subtitle: "Bir necha daqiqada to'liq sozlang",
+      steps: [
+        {
+          title: "Ro'yxatdan o'tish",
+          desc: 'Email va parolni kiriting',
+          detail: "seller.uzum.uz yoki partner.market.yandex.ru hisobingiz bo'lsa, shu email bilan ro'yxatdan o'ting",
+        },
+        {
+          title: 'API token olish',
+          desc: 'Seller portalidan token oling',
+          detail: "seller.uzum.uz → Profil → API → Yangi token yarating. Uni nusxalab oling.",
+        },
+        {
+          title: 'Tokenni kiriting',
+          desc: "Sozlamalarda tokenni saqlang",
+          detail: "Dashboard → Sozlamalar → Uzum API token maydoniga yapishtirib, Saqlash tugmasini bosing.",
+        },
+        {
+          title: 'Sinxronizatsiya',
+          desc: "Ma'lumotlarni import qiling",
+          detail: "Sozlamalar sahifasidagi 'Sinxronizatsiya' tugmasini bosing. Buyurtmalar va mahsulotlar yuklanadi.",
+        },
+        {
+          title: "Tahlilni ko'ring",
+          desc: "Dashboard'dagi ko'rsatkichlarni o'rganib chiqing",
+          detail: "Asosiy dashboard'da KPI kartochkalar, grafik va kategoriya tahlili ko'rinadi.",
+        },
+        {
+          title: 'Reklamani tekshiring',
+          desc: 'DRR va sarflarni tahlil qiling',
+          detail: "Reklama → Kampaniyalar ro'yxati, DRR va buyurtma yo'q sarflar avtomatik ajratib ko'rsatiladi.",
+        },
+        {
+          title: 'Birlik iqtisodiyoti',
+          desc: 'Har bir mahsulot uchun foydani hisoblang',
+          detail: "Tannarxni kiriting → komissiya, yetkazib berish, reklama va soliq avtomatik hisoblanadi. Zarar ko'rsatib turgan mahsulotlar qizil rangda ajratiladi.",
+        },
+        {
+          title: 'Hisobotni yuklab oling',
+          desc: 'Excel yoki PDF formatda saqlang',
+          detail: "Har bir sahifada 'Yuklab olish' tugmasini bosing → Excel, PDF yoki CSV formatini tanlang.",
+        },
+      ],
+    },
+    faq: {
+      badge: 'Savol-javob',
+      title: "Ko'p beriladigan savollar",
+      items: [
+        {
+          q: "Haqiqiy ma'lumotlar uchun nima kerak?",
+          a: "seller.uzum.uz yoki partner.market.yandex.ru hisobi va API token kerak. Sozlamalarda tokenni kiriting va sinxronizatsiyani bosing.",
+        },
+        {
+          q: "Demo rejimda nima ko'rinadi?",
+          a: "Barcha sahifalar namuna ma'lumotlar bilan to'liq ishlaydi — reklama, buyurtmalar, qoldiqlar, foyda hisoboti va boshqalar.",
+        },
+        {
+          q: 'Yandex Market ham qo\'llab-quvvatlanadimi?',
+          a: "Ha, Chrome kengaytmamiz partner.market.yandex.ru saytida ham ishlaydi. Dashboard sinxronizatsiyasi ham tez orada qo'shiladi.",
+        },
+        {
+          q: "Ma'lumotlar xavfsizmi?",
+          a: "Barcha ma'lumotlar Supabase'da saqlanadi va faqat siz ko'rasiz. API tokenlar shifrlangan holda saqlanadi.",
+        },
+        {
+          q: 'Bepul tarif qancha vaqt ishlaydi?',
+          a: "Bepul tarif muddatsiz ishlaydi. Demo ma'lumotlar bilan barcha sahifalarni ko'rishingiz mumkin. Haqiqiy API sinxronizatsiyasi uchun Pro tarif kerak.",
+        },
+      ],
+    },
+    testimonials: {
+      badge: 'Foydalanuvchilar',
+      title: 'Ular biz haqimizda nima deydi',
+      items: [
+        {
+          name: 'Bobur T.',
+          role: 'Uzum sotuvchisi',
+          text: "DRR ko'rsatkichim 28%dan 14%ga tushdi. Qaysi kampaniyalar pul isrof qilayotganini ko'rish oson bo'ldi.",
+        },
+        {
+          name: 'Dilnoza M.',
+          role: "Kiyim do'koni egasi",
+          text: "Birlik iqtisodiyoti kalkulyatori mening eng ko'p sotiluvchi mahsulotim aslida zarar ko'rsatib turganini ko'rsatdi!",
+        },
+        {
+          name: 'Sardor N.',
+          role: 'Elektronika sotuvchisi',
+          text: "Qoldiq ogohlantirishlari menga bir necha marta stockout'dan qutqardi. Endi hech qachon mahsulot tugab qolmaydi.",
+        },
+      ],
+    },
   },
   en: {
     nav: {
@@ -65,6 +224,8 @@ export const translations = {
       stats: 'Stats',
       login: 'Sign in',
       start: 'Get started',
+      pricing: 'Pricing',
+      tutorial: 'Tutorial',
     },
     badge: 'For Uzum + Yandex Market sellers',
     hero: {
@@ -114,6 +275,163 @@ export const translations = {
       dailyRevenue: 'Daily revenue', categories: 'Categories',
       revenueUp: '+12.4% revenue', aiReady: 'AI ready',
     },
+    pricing: {
+      badge: 'Transparent pricing',
+      title: 'Choose the right plan',
+      subtitle: 'All plans can be tried with demo data',
+      monthly: '/ month',
+      popular: 'Popular',
+      cta: 'Get started',
+      plans: [
+        {
+          name: 'Free',
+          price: '0',
+          desc: 'Get started',
+          features: [
+            'Demo data',
+            '1 store',
+            'Basic analytics',
+            'Unit economics',
+            'Community support',
+          ],
+        },
+        {
+          name: 'Pro',
+          price: '99,000',
+          desc: 'For active sellers',
+          features: [
+            'Demo data',
+            '1 store',
+            'Basic analytics',
+            'Unit economics',
+            'Community support',
+            'Real sync',
+            'Ad analytics',
+            'Stock alerts',
+            'Price tracking',
+            'Excel & PDF export',
+            'Email support',
+          ],
+        },
+        {
+          name: 'Business',
+          price: '249,000',
+          desc: 'For high-volume businesses',
+          features: [
+            'Demo data',
+            '1 store',
+            'Basic analytics',
+            'Unit economics',
+            'Community support',
+            'Real sync',
+            'Ad analytics',
+            'Stock alerts',
+            'Price tracking',
+            'Excel & PDF export',
+            'Email support',
+            '5 stores',
+            'API integration',
+            'Referral program',
+            'Priority support',
+            'Custom analytics',
+          ],
+        },
+      ],
+    },
+    tutorial: {
+      badge: 'How to get started',
+      title: 'Step-by-step guide',
+      subtitle: 'Set up completely in a few minutes',
+      steps: [
+        {
+          title: 'Sign up',
+          desc: 'Enter your email and password',
+          detail: 'Sign up with the same email you use on seller.uzum.uz or partner.market.yandex.ru',
+        },
+        {
+          title: 'Get API token',
+          desc: 'Get token from seller portal',
+          detail: 'Go to seller.uzum.uz → Profile → API → Generate new token. Copy it.',
+        },
+        {
+          title: 'Enter the token',
+          desc: 'Save the token in settings',
+          detail: 'Dashboard → Settings → Paste into the Uzum API token field and click Save.',
+        },
+        {
+          title: 'Sync data',
+          desc: 'Import your data',
+          detail: "Click the 'Sync' button on the Settings page. Orders and products will load.",
+        },
+        {
+          title: 'View analytics',
+          desc: 'Explore the dashboard metrics',
+          detail: 'The main dashboard shows KPI cards, a chart, and category breakdown.',
+        },
+        {
+          title: 'Check your ads',
+          desc: 'Analyze DRR and ad spend',
+          detail: 'Advertising → Campaign list, DRR and spend-without-orders are highlighted automatically.',
+        },
+        {
+          title: 'Unit economics',
+          desc: 'Calculate profit per product',
+          detail: 'Enter cost price → commission, delivery, ads and tax are calculated automatically. Loss-making products are highlighted in red.',
+        },
+        {
+          title: 'Download report',
+          desc: 'Save as Excel or PDF',
+          detail: "On each page click 'Download' → choose Excel, PDF or CSV format.",
+        },
+      ],
+    },
+    faq: {
+      badge: 'FAQ',
+      title: 'Frequently asked questions',
+      items: [
+        {
+          q: 'What do I need for real data?',
+          a: 'You need an account on seller.uzum.uz or partner.market.yandex.ru and an API token. Enter the token in Settings and click Sync.',
+        },
+        {
+          q: 'What is shown in demo mode?',
+          a: 'All pages work fully with sample data — ads, orders, stock, profit report and more.',
+        },
+        {
+          q: 'Is Yandex Market supported?',
+          a: 'Yes, our Chrome extension also works on partner.market.yandex.ru. Dashboard sync for Yandex is coming soon.',
+        },
+        {
+          q: 'Is my data secure?',
+          a: 'All data is stored in Supabase and only you can see it. API tokens are stored encrypted.',
+        },
+        {
+          q: 'How long does the free plan last?',
+          a: 'The free plan lasts forever. You can explore all pages with demo data. A Pro plan is required for real API sync.',
+        },
+      ],
+    },
+    testimonials: {
+      badge: 'Users',
+      title: 'What they say about us',
+      items: [
+        {
+          name: 'Bobur T.',
+          role: 'Uzum seller',
+          text: 'My DRR dropped from 28% to 14%. It became easy to see which campaigns were wasting money.',
+        },
+        {
+          name: 'Dilnoza M.',
+          role: 'Clothing store owner',
+          text: 'The unit economics calculator showed that my best-selling product was actually losing money!',
+        },
+        {
+          name: 'Sardor N.',
+          role: 'Electronics seller',
+          text: 'Stock alerts have saved me from stockouts several times. Products never run out now.',
+        },
+      ],
+    },
   },
   ru: {
     nav: {
@@ -122,6 +440,8 @@ export const translations = {
       stats: 'Статистика',
       login: 'Войти',
       start: 'Начать',
+      pricing: 'Цены',
+      tutorial: 'Инструкция',
     },
     badge: 'Для продавцов Uzum + Yandex Market',
     hero: {
@@ -170,6 +490,163 @@ export const translations = {
       revenue: 'Выручка', profit: 'Прибыль', orders: 'Заказы', stock: 'Остаток',
       dailyRevenue: 'Дневная выручка', categories: 'Категории',
       revenueUp: '+12.4% выручка', aiReady: 'AI готов',
+    },
+    pricing: {
+      badge: 'Прозрачные цены',
+      title: 'Выберите подходящий тариф',
+      subtitle: 'Все тарифы можно протестировать с демо-данными',
+      monthly: '/ месяц',
+      popular: 'Популярный',
+      cta: 'Начать',
+      plans: [
+        {
+          name: 'Бесплатно',
+          price: '0',
+          desc: 'Для знакомства',
+          features: [
+            'Демо-данные',
+            '1 магазин',
+            'Базовая аналитика',
+            'Юнит-экономика',
+            'Поддержка сообщества',
+          ],
+        },
+        {
+          name: 'Pro',
+          price: '99 000',
+          desc: 'Для активных продавцов',
+          features: [
+            'Демо-данные',
+            '1 магазин',
+            'Базовая аналитика',
+            'Юнит-экономика',
+            'Поддержка сообщества',
+            'Реальная синхронизация',
+            'Аналитика рекламы',
+            'Уведомления об остатках',
+            'Отслеживание цен',
+            'Экспорт Excel и PDF',
+            'Поддержка по email',
+          ],
+        },
+        {
+          name: 'Business',
+          price: '249 000',
+          desc: 'Для крупного бизнеса',
+          features: [
+            'Демо-данные',
+            '1 магазин',
+            'Базовая аналитика',
+            'Юнит-экономика',
+            'Поддержка сообщества',
+            'Реальная синхронизация',
+            'Аналитика рекламы',
+            'Уведомления об остатках',
+            'Отслеживание цен',
+            'Экспорт Excel и PDF',
+            'Поддержка по email',
+            '5 магазинов',
+            'API-интеграция',
+            'Реферальная программа',
+            'Приоритетная поддержка',
+            'Кастомная аналитика',
+          ],
+        },
+      ],
+    },
+    tutorial: {
+      badge: 'Как начать',
+      title: 'Пошаговая инструкция',
+      subtitle: 'Полная настройка за несколько минут',
+      steps: [
+        {
+          title: 'Регистрация',
+          desc: 'Введите email и пароль',
+          detail: 'Зарегистрируйтесь с тем же email, что используете на seller.uzum.uz или partner.market.yandex.ru',
+        },
+        {
+          title: 'Получить API-токен',
+          desc: 'Получите токен из портала продавца',
+          detail: 'Перейдите на seller.uzum.uz → Профиль → API → Создайте новый токен. Скопируйте его.',
+        },
+        {
+          title: 'Ввести токен',
+          desc: 'Сохраните токен в настройках',
+          detail: 'Dashboard → Настройки → Вставьте в поле Uzum API токен и нажмите Сохранить.',
+        },
+        {
+          title: 'Синхронизация',
+          desc: 'Импортируйте данные',
+          detail: 'Нажмите кнопку «Синхронизация» на странице настроек. Заказы и товары загрузятся.',
+        },
+        {
+          title: 'Просмотр аналитики',
+          desc: 'Изучите показатели дашборда',
+          detail: 'На главном дашборде отображаются KPI-карточки, график и разбивка по категориям.',
+        },
+        {
+          title: 'Проверьте рекламу',
+          desc: 'Анализируйте DRR и расходы',
+          detail: 'Реклама → Список кампаний, DRR и затраты без заказов выделяются автоматически.',
+        },
+        {
+          title: 'Юнит-экономика',
+          desc: 'Рассчитайте прибыль по товару',
+          detail: 'Введите себестоимость → комиссия, доставка, реклама и налог считаются автоматически. Убыточные товары выделяются красным.',
+        },
+        {
+          title: 'Скачать отчёт',
+          desc: 'Сохраните в Excel или PDF',
+          detail: 'На каждой странице нажмите «Скачать» → выберите формат Excel, PDF или CSV.',
+        },
+      ],
+    },
+    faq: {
+      badge: 'Вопросы и ответы',
+      title: 'Часто задаваемые вопросы',
+      items: [
+        {
+          q: 'Что нужно для реальных данных?',
+          a: 'Нужен аккаунт на seller.uzum.uz или partner.market.yandex.ru и API-токен. Введите токен в настройках и нажмите «Синхронизация».',
+        },
+        {
+          q: 'Что видно в демо-режиме?',
+          a: 'Все страницы полностью работают с образцами данных — реклама, заказы, остатки, отчёт о прибыли и другое.',
+        },
+        {
+          q: 'Поддерживается ли Яндекс Маркет?',
+          a: 'Да, наше расширение Chrome также работает на partner.market.yandex.ru. Синхронизация дашборда с Яндексом скоро добавится.',
+        },
+        {
+          q: 'Мои данные в безопасности?',
+          a: 'Все данные хранятся в Supabase и доступны только вам. API-токены хранятся в зашифрованном виде.',
+        },
+        {
+          q: 'Сколько работает бесплатный тариф?',
+          a: 'Бесплатный тариф работает бессрочно. Можно изучить все страницы с демо-данными. Для реальной синхронизации через API нужен тариф Pro.',
+        },
+      ],
+    },
+    testimonials: {
+      badge: 'Пользователи',
+      title: 'Что они говорят о нас',
+      items: [
+        {
+          name: 'Bobur T.',
+          role: 'Продавец Uzum',
+          text: 'Мой DRR упал с 28% до 14%. Стало легко видеть, какие кампании тратили деньги впустую.',
+        },
+        {
+          name: 'Dilnoza M.',
+          role: 'Владелец магазина одежды',
+          text: 'Калькулятор юнит-экономики показал, что мой самый продаваемый товар на самом деле приносил убытки!',
+        },
+        {
+          name: 'Sardor N.',
+          role: 'Продавец электроники',
+          text: 'Уведомления об остатках несколько раз спасали меня от stockout-ов. Теперь товары никогда не заканчиваются.',
+        },
+      ],
     },
   },
 } satisfies Record<string, unknown>
