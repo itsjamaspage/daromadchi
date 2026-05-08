@@ -27,11 +27,13 @@ function UzumCard({ shop, userId }: { shop: Shop | null; userId: string }) {
   const router   = useRouter()
   const supabase = createClient()
 
-  const [apiKey,  setApiKey]  = useState('')
-  const [saving,  setSaving]  = useState(false)
-  const [syncing, setSyncing] = useState(false)
-  const [saveMsg, setSaveMsg] = useState<{ ok: boolean; text: string } | null>(null)
-  const [syncMsg, setSyncMsg] = useState<{ ok: boolean; text: string } | null>(null)
+  const [apiKey,   setApiKey]   = useState('')
+  const [saving,   setSaving]   = useState(false)
+  const [syncing,  setSyncing]  = useState(false)
+  const [testing,  setTesting]  = useState(false)
+  const [syncStep, setSyncStep] = useState<string | null>(null)
+  const [saveMsg,  setSaveMsg]  = useState<{ ok: boolean; text: string } | null>(null)
+  const [syncMsg,  setSyncMsg]  = useState<{ ok: boolean; text: string } | null>(null)
 
   const hasKey  = !!shop?.api_key_encrypted
   const lastSync = shop?.last_synced_at
@@ -47,29 +49,50 @@ function UzumCard({ shop, userId }: { shop: Shop | null; userId: string }) {
       setSaveMsg(error ? { ok: false, text: error.message } : { ok: true, text: 'Saqlandi!' })
     } else {
       const { error } = await supabase.from('shops').insert({
-        user_id: userId, name: 'Uzum do\'konim',
+        user_id: userId, name: "Uzum do'konim",
         marketplace: 'uzum', is_active: true,
         ...(apiKey.trim() ? { api_key_encrypted: apiKey.trim() } : {}),
       })
-      setSaveMsg(error ? { ok: false, text: error.message } : { ok: true, text: 'Do\'kon yaratildi!' })
+      setSaveMsg(error ? { ok: false, text: error.message } : { ok: true, text: "Do'kon yaratildi!" })
     }
     setApiKey('')
     router.refresh()
     setSaving(false)
   }
 
+  async function handleTest() {
+    setTesting(true); setSyncMsg(null)
+    try {
+      const res  = await fetch('/api/uzum/sync', { method: 'GET' })
+      const data = await res.json()
+      setSyncMsg({ ok: data.ok, text: data.message ?? data.error ?? 'Xato' })
+    } catch {
+      setSyncMsg({ ok: false, text: "Server bilan bog'lanishda xato" })
+    }
+    setTesting(false)
+  }
+
   async function handleSync() {
     setSyncing(true); setSyncMsg(null)
+    const steps = ['Mahsulotlar yuklanmoqda…', 'Buyurtmalar tekshirilmoqda…', 'Reklama kampaniyalari…', 'Saqlanyapti…']
+    let stepIdx = 0
+    setSyncStep(steps[0])
+    const interval = setInterval(() => {
+      stepIdx = Math.min(stepIdx + 1, steps.length - 1)
+      setSyncStep(steps[stepIdx])
+    }, 4000)
     try {
       const res  = await fetch('/api/uzum/sync', { method: 'POST' })
       const data = await res.json()
       setSyncMsg(data.ok
-        ? { ok: true,  text: `${data.productsUpserted ?? 0} mahsulot, ${data.ordersUpserted ?? 0} buyurtma yangilandi.` }
+        ? { ok: true, text: `${data.productsUpserted ?? 0} mahsulot, ${data.ordersUpserted ?? 0} buyurtma${data.campaignsUpserted ? `, ${data.campaignsUpserted} kampaniya` : ''} yangilandi.` }
         : { ok: false, text: data.error ?? 'Xato' })
       if (data.ok) router.refresh()
     } catch {
-      setSyncMsg({ ok: false, text: 'Server bilan bog\'lanishda xato' })
+      setSyncMsg({ ok: false, text: "Server bilan bog'lanishda xato" })
     }
+    clearInterval(interval)
+    setSyncStep(null)
     setSyncing(false)
   }
 
@@ -125,12 +148,26 @@ function UzumCard({ shop, userId }: { shop: Shop | null; userId: string }) {
               {lastSync ? <>Oxirgi sinxr: <span className="text-slate-300">{lastSync}</span></> : 'Hali sinxronlanmagan'}
             </p>
           </div>
+          {syncing && syncStep && (
+            <div className="flex items-center gap-2 text-xs text-violet-400 bg-violet-500/5 border border-violet-500/15 rounded-xl px-3 py-2">
+              <Loader2 className="w-3.5 h-3.5 animate-spin flex-shrink-0" />
+              {syncStep}
+            </div>
+          )}
           <StatusMsg msg={syncMsg} />
+          <div className="flex gap-2 flex-wrap">
+          <button onClick={handleTest} disabled={testing || syncing || !hasKey}
+            title={!hasKey ? 'Avval token saqlang' : ''}
+            className="flex items-center gap-2 bg-[#1c1c2e] hover:bg-white/[0.06] border border-white/[0.08] disabled:opacity-40 disabled:cursor-not-allowed text-slate-300 text-sm font-medium px-4 py-2 rounded-xl transition-colors">
+            {testing ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4 text-emerald-400" />}
+            Tekshirish
+          </button>
           <button onClick={handleSync} disabled={syncing || !hasKey}
             title={!hasKey ? 'Avval token saqlang' : ''}
-            className="flex items-center gap-2 bg-[#1c1c2e] hover:bg-white/[0.06] border border-white/[0.08] disabled:opacity-40 disabled:cursor-not-allowed text-slate-200 text-sm font-medium px-4 py-2 rounded-xl transition-colors">
+            className="flex items-center gap-2 bg-violet-600 hover:bg-violet-500 border border-transparent disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors">
             {syncing ? <><Loader2 className="w-4 h-4 animate-spin" /> Sinxronlanmoqda…</> : <><RefreshCw className="w-4 h-4" /> Sinxronlash</>}
           </button>
+          </div>
         </div>
       )}
     </div>
@@ -147,6 +184,8 @@ function YandexCard({ shop, userId }: { shop: Shop | null; userId: string }) {
   const [campaignId,  setCampaignId]  = useState(shop?.shop_id_external ?? '')
   const [saving,      setSaving]      = useState(false)
   const [syncing,     setSyncing]     = useState(false)
+  const [testing,     setTesting]     = useState(false)
+  const [syncStep,    setSyncStep]    = useState<string | null>(null)
   const [saveMsg,     setSaveMsg]     = useState<{ ok: boolean; text: string } | null>(null)
   const [syncMsg,     setSyncMsg]     = useState<{ ok: boolean; text: string } | null>(null)
 
@@ -154,6 +193,18 @@ function YandexCard({ shop, userId }: { shop: Shop | null; userId: string }) {
   const hasCampaign = !!shop?.shop_id_external
   const lastSync    = shop?.last_synced_at
     ? new Date(shop.last_synced_at).toLocaleString('uz-UZ') : null
+
+  async function handleTest() {
+    setTesting(true); setSyncMsg(null)
+    try {
+      const res  = await fetch('/api/yandex/sync', { method: 'GET' })
+      const data = await res.json()
+      setSyncMsg({ ok: data.ok, text: data.message ?? data.error ?? 'Xato' })
+    } catch {
+      setSyncMsg({ ok: false, text: "Server bilan bog'lanishda xato" })
+    }
+    setTesting(false)
+  }
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
@@ -181,16 +232,25 @@ function YandexCard({ shop, userId }: { shop: Shop | null; userId: string }) {
 
   async function handleSync() {
     setSyncing(true); setSyncMsg(null)
+    const steps = ['Mahsulotlar yuklanmoqda…', 'Buyurtmalar tekshirilmoqda…', 'Reklama kampaniyalari…', 'Saqlanyapti…']
+    let stepIdx = 0
+    setSyncStep(steps[0])
+    const interval = setInterval(() => {
+      stepIdx = Math.min(stepIdx + 1, steps.length - 1)
+      setSyncStep(steps[stepIdx])
+    }, 4000)
     try {
       const res  = await fetch('/api/yandex/sync', { method: 'POST' })
       const data = await res.json()
       setSyncMsg(data.ok
-        ? { ok: true,  text: `${data.productsUpserted ?? 0} mahsulot, ${data.ordersUpserted ?? 0} buyurtma yangilandi.` }
+        ? { ok: true, text: `${data.productsUpserted ?? 0} mahsulot, ${data.ordersUpserted ?? 0} buyurtma${data.campaignsUpserted ? `, ${data.campaignsUpserted} kampaniya` : ''} yangilandi.` }
         : { ok: false, text: data.error ?? 'Xato' })
       if (data.ok) router.refresh()
     } catch {
-      setSyncMsg({ ok: false, text: 'Server bilan bog\'lanishda xato' })
+      setSyncMsg({ ok: false, text: "Server bilan bog'lanishda xato" })
     }
+    clearInterval(interval)
+    setSyncStep(null)
     setSyncing(false)
   }
 
@@ -261,12 +321,26 @@ function YandexCard({ shop, userId }: { shop: Shop | null; userId: string }) {
           <p className="text-slate-400 text-xs">
             {lastSync ? <>Oxirgi sinxr: <span className="text-slate-300">{lastSync}</span></> : 'Hali sinxronlanmagan'}
           </p>
+          {syncing && syncStep && (
+            <div className="flex items-center gap-2 text-xs text-amber-400 bg-amber-500/5 border border-amber-500/15 rounded-xl px-3 py-2">
+              <Loader2 className="w-3.5 h-3.5 animate-spin flex-shrink-0" />
+              {syncStep}
+            </div>
+          )}
           <StatusMsg msg={syncMsg} />
-          <button onClick={handleSync} disabled={syncing || !connected}
-            title={!connected ? 'Avval token va Campaign ID saqlang' : ''}
-            className="flex items-center gap-2 bg-[#1c1c2e] hover:bg-white/[0.06] border border-white/[0.08] disabled:opacity-40 disabled:cursor-not-allowed text-slate-200 text-sm font-medium px-4 py-2 rounded-xl transition-colors">
-            {syncing ? <><Loader2 className="w-4 h-4 animate-spin" /> Sinxronlanmoqda…</> : <><RefreshCw className="w-4 h-4" /> Sinxronlash</>}
-          </button>
+          <div className="flex gap-2 flex-wrap">
+            <button onClick={handleTest} disabled={testing || syncing || !connected}
+              title={!connected ? 'Avval token va Campaign ID saqlang' : ''}
+              className="flex items-center gap-2 bg-[#1c1c2e] hover:bg-white/[0.06] border border-white/[0.08] disabled:opacity-40 disabled:cursor-not-allowed text-slate-300 text-sm font-medium px-4 py-2 rounded-xl transition-colors">
+              {testing ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4 text-emerald-400" />}
+              Tekshirish
+            </button>
+            <button onClick={handleSync} disabled={syncing || !connected}
+              title={!connected ? 'Avval token va Campaign ID saqlang' : ''}
+              className="flex items-center gap-2 bg-amber-600 hover:bg-amber-500 border border-transparent disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors">
+              {syncing ? <><Loader2 className="w-4 h-4 animate-spin" /> Sinxronlanmoqda…</> : <><RefreshCw className="w-4 h-4" /> Sinxronlash</>}
+            </button>
+          </div>
         </div>
       )}
     </div>
