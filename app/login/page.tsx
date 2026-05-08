@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, Suspense } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
@@ -104,7 +104,7 @@ function LangDropdown({ lang, setLang, inputBg, inputBorder, textMuted, card }: 
   )
 }
 
-export default function LoginPage() {
+function LoginForm() {
   const { theme, toggle } = useTheme()
   const { lang, setLang } = useLang()
   const t = ui[lang in ui ? lang as keyof typeof ui : 'uz']
@@ -333,5 +333,13 @@ export default function LoginPage() {
         </p>
       </div>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
   )
 }
