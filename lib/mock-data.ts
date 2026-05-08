@@ -307,6 +307,50 @@ function makeSyncDays(): SyncDay[] {
 
 export const syncDays: SyncDay[] = makeSyncDays()
 
+// ── Stock Alerts mock data ────────────────────────────────────────────────────
+export interface StockAlert {
+  productId: string
+  productTitle: string
+  sku: string
+  currentStock: number
+  threshold: number
+  daysLeft: number      // estimated days until stockout at current sales rate
+  dailySales: number    // avg daily sales
+  marketplace: 'uzum' | 'yandex_market'
+}
+
+export const stockAlerts: StockAlert[] = [
+  { productId: '3', productTitle: 'Samsung Galaxy A54',  sku: 'SM-A54-128',  currentStock: 12, threshold: 15, daysLeft: 5,  dailySales: 2.2, marketplace: 'uzum' },
+  { productId: '7', productTitle: 'Sony WH-1000XM5',     sku: 'SN-WH5-BLK',  currentStock: 9,  threshold: 15, daysLeft: 3,  dailySales: 3.0, marketplace: 'uzum' },
+  { productId: '2', productTitle: 'Adidas Ultraboost 22',sku: 'AD-UB22-41',  currentStock: 23, threshold: 25, daysLeft: 11, dailySales: 2.1, marketplace: 'uzum' },
+]
+
+// ── Payout Reconciliation mock data ──────────────────────────────────────────
+export interface PayoutEntry {
+  id: string
+  period: string        // e.g. "2026 may 1–15"
+  grossRevenue: number
+  commission: number
+  delivery: number
+  returns: number
+  adSpend: number
+  acquiring: number
+  tax: number
+  otherDeductions: number
+  netPayout: number
+  ordersCount: number
+  status: 'paid' | 'pending' | 'processing'
+  payoutDate: string | null
+}
+
+export const payoutEntries: PayoutEntry[] = [
+  { id: 'pay-1', period: '2026 may 1–15',    grossRevenue: 62_400_000, commission: 4_992_000, delivery: 2_496_000, returns: 3_120_000, adSpend: 8_960_000, acquiring: 936_000,  tax: 3_744_000, otherDeductions: 0,       netPayout: 38_152_000, ordersCount: 84,  status: 'pending',    payoutDate: null },
+  { id: 'pay-2', period: '2026 apr 16–30',   grossRevenue: 58_200_000, commission: 4_656_000, delivery: 2_328_000, returns: 2_910_000, adSpend: 7_840_000, acquiring: 873_000,  tax: 3_492_000, otherDeductions: 120_000, netPayout: 35_981_000, ordersCount: 76,  status: 'processing', payoutDate: null },
+  { id: 'pay-3', period: '2026 apr 1–15',    grossRevenue: 51_800_000, commission: 4_144_000, delivery: 2_072_000, returns: 2_590_000, adSpend: 6_400_000, acquiring: 777_000,  tax: 3_108_000, otherDeductions: 0,       netPayout: 32_709_000, ordersCount: 68,  status: 'paid',       payoutDate: '2026-04-18' },
+  { id: 'pay-4', period: '2026 mar 16–31',   grossRevenue: 44_600_000, commission: 3_568_000, delivery: 1_784_000, returns: 2_230_000, adSpend: 5_200_000, acquiring: 669_000,  tax: 2_676_000, otherDeductions: 0,       netPayout: 28_473_000, ordersCount: 59,  status: 'paid',       payoutDate: '2026-04-03' },
+  { id: 'pay-5', period: '2026 mar 1–15',    grossRevenue: 38_100_000, commission: 3_048_000, delivery: 1_524_000, returns: 1_905_000, adSpend: 4_100_000, acquiring: 571_500,  tax: 2_286_000, otherDeductions: 0,       netPayout: 24_665_500, ordersCount: 51,  status: 'paid',       payoutDate: '2026-03-18' },
+]
+
 // ── Dashboard dynamics mock data ──────────────────────────────────────────────
 export const dynamicsData = [
   { date: 'Apr 21', revenue: 3_100_000, profit: 820_000, adSpend: 480_000, drr: 15.5, clicks: 2_100, impressions: 98_000, avgCheck: 620_000 },
@@ -326,4 +370,95 @@ export const dynamicsData = [
   { date: 'May 5',  revenue: 5_900_000, profit: 1_860_000, adSpend: 980_000,   drr: 16.6, clicks: 3_830, impressions: 174_000, avgCheck: 750_000 },
   { date: 'May 6',  revenue: 4_800_000, profit: 1_440_000, adSpend: 810_000,   drr: 16.9, clicks: 3_120, impressions: 142_000, avgCheck: 710_000 },
   { date: 'May 7',  revenue: 2_100_000, profit: 610_000,   adSpend: 360_000,   drr: 17.1, clicks: 1_360, impressions: 62_000,  avgCheck: 700_000 },
+]
+
+// ── Price Tracking mock data ──────────────────────────────────────────────────
+export interface CompetitorPrice {
+  id: string
+  productId: string
+  productTitle: string
+  sku: string
+  myPrice: number
+  minCompetitorPrice: number
+  avgCompetitorPrice: number
+  maxCompetitorPrice: number
+  competitorCount: number
+  pricePosition: 'lowest' | 'competitive' | 'high' | 'highest'
+  priceDiff: number          // my price - min competitor (positive = I'm more expensive)
+  priceDiffPct: number       // priceDiff / myPrice * 100
+  lastChecked: string
+  history: { date: string; myPrice: number; minPrice: number }[]
+}
+
+export const competitorPrices: CompetitorPrice[] = [
+  {
+    id: 'cp-1', productId: '1', productTitle: 'Nike Air Max 270', sku: 'NK-AM270-42',
+    myPrice: 890_000, minCompetitorPrice: 820_000, avgCompetitorPrice: 875_000, maxCompetitorPrice: 960_000,
+    competitorCount: 7, pricePosition: 'high', priceDiff: 70_000, priceDiffPct: 7.9,
+    lastChecked: '2026-05-07T14:00:00Z',
+    history: [
+      { date: 'Apr 22', myPrice: 890_000, minPrice: 850_000 },
+      { date: 'Apr 25', myPrice: 890_000, minPrice: 840_000 },
+      { date: 'Apr 28', myPrice: 890_000, minPrice: 830_000 },
+      { date: 'May 1',  myPrice: 890_000, minPrice: 825_000 },
+      { date: 'May 4',  myPrice: 890_000, minPrice: 820_000 },
+      { date: 'May 7',  myPrice: 890_000, minPrice: 820_000 },
+    ],
+  },
+  {
+    id: 'cp-2', productId: '2', productTitle: 'Adidas Ultraboost 22', sku: 'AD-UB22-41',
+    myPrice: 1_120_000, minCompetitorPrice: 1_090_000, avgCompetitorPrice: 1_140_000, maxCompetitorPrice: 1_250_000,
+    competitorCount: 4, pricePosition: 'competitive', priceDiff: 30_000, priceDiffPct: 2.7,
+    lastChecked: '2026-05-07T14:00:00Z',
+    history: [
+      { date: 'Apr 22', myPrice: 1_120_000, minPrice: 1_100_000 },
+      { date: 'Apr 25', myPrice: 1_120_000, minPrice: 1_095_000 },
+      { date: 'Apr 28', myPrice: 1_120_000, minPrice: 1_090_000 },
+      { date: 'May 1',  myPrice: 1_120_000, minPrice: 1_090_000 },
+      { date: 'May 4',  myPrice: 1_120_000, minPrice: 1_090_000 },
+      { date: 'May 7',  myPrice: 1_120_000, minPrice: 1_090_000 },
+    ],
+  },
+  {
+    id: 'cp-3', productId: '3', productTitle: 'Samsung Galaxy A54', sku: 'SM-A54-128',
+    myPrice: 3_200_000, minCompetitorPrice: 3_180_000, avgCompetitorPrice: 3_240_000, maxCompetitorPrice: 3_450_000,
+    competitorCount: 12, pricePosition: 'competitive', priceDiff: 20_000, priceDiffPct: 0.6,
+    lastChecked: '2026-05-07T14:00:00Z',
+    history: [
+      { date: 'Apr 22', myPrice: 3_200_000, minPrice: 3_150_000 },
+      { date: 'Apr 25', myPrice: 3_200_000, minPrice: 3_160_000 },
+      { date: 'Apr 28', myPrice: 3_200_000, minPrice: 3_170_000 },
+      { date: 'May 1',  myPrice: 3_200_000, minPrice: 3_180_000 },
+      { date: 'May 4',  myPrice: 3_200_000, minPrice: 3_180_000 },
+      { date: 'May 7',  myPrice: 3_200_000, minPrice: 3_180_000 },
+    ],
+  },
+  {
+    id: 'cp-4', productId: '4', productTitle: 'Xiaomi Redmi Watch 3', sku: 'XM-RW3-BLK',
+    myPrice: 680_000, minCompetitorPrice: 720_000, avgCompetitorPrice: 748_000, maxCompetitorPrice: 810_000,
+    competitorCount: 9, pricePosition: 'lowest', priceDiff: -40_000, priceDiffPct: -5.9,
+    lastChecked: '2026-05-07T14:00:00Z',
+    history: [
+      { date: 'Apr 22', myPrice: 700_000, minPrice: 730_000 },
+      { date: 'Apr 25', myPrice: 700_000, minPrice: 728_000 },
+      { date: 'Apr 28', myPrice: 690_000, minPrice: 725_000 },
+      { date: 'May 1',  myPrice: 680_000, minPrice: 722_000 },
+      { date: 'May 4',  myPrice: 680_000, minPrice: 720_000 },
+      { date: 'May 7',  myPrice: 680_000, minPrice: 720_000 },
+    ],
+  },
+  {
+    id: 'cp-5', productId: '6', productTitle: 'Sony WH-1000XM5', sku: 'SN-WH5-BLK',
+    myPrice: 3_600_000, minCompetitorPrice: 3_200_000, avgCompetitorPrice: 3_450_000, maxCompetitorPrice: 3_800_000,
+    competitorCount: 5, pricePosition: 'highest', priceDiff: 400_000, priceDiffPct: 11.1,
+    lastChecked: '2026-05-07T14:00:00Z',
+    history: [
+      { date: 'Apr 22', myPrice: 3_600_000, minPrice: 3_300_000 },
+      { date: 'Apr 25', myPrice: 3_600_000, minPrice: 3_280_000 },
+      { date: 'Apr 28', myPrice: 3_600_000, minPrice: 3_250_000 },
+      { date: 'May 1',  myPrice: 3_600_000, minPrice: 3_220_000 },
+      { date: 'May 4',  myPrice: 3_600_000, minPrice: 3_200_000 },
+      { date: 'May 7',  myPrice: 3_600_000, minPrice: 3_200_000 },
+    ],
+  },
 ]
