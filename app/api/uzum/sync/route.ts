@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { syncFromUzum } from '@/lib/uzum/sync'
 import { createClient } from '@/lib/supabase/server'
+import { decrypt } from '@/lib/crypto'
 
 export async function POST() {
   const supabase = await createClient()
@@ -24,7 +25,8 @@ export async function POST() {
     )
   }
 
-  const result = await syncFromUzum(shop.id, shop.api_key_encrypted)
+  const token = decrypt(shop.api_key_encrypted)
+  const result = await syncFromUzum(shop.id, token)
   return NextResponse.json(result, { status: result.ok ? 200 : 500 })
 }
 
@@ -46,8 +48,9 @@ export async function GET() {
   }
 
   try {
+    const token = decrypt(shop.api_key_encrypted)
     const res = await fetch('https://api-seller.uzum.uz/api/v1/products?page=0&size=1', {
-      headers: { Authorization: `Bearer ${shop.api_key_encrypted}`, Accept: 'application/json' },
+      headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
       next: { revalidate: 0 },
     })
     if (!res.ok) {
@@ -61,4 +64,3 @@ export async function GET() {
     return NextResponse.json({ ok: false, error: `Tarmoq xatosi: ${String(err)}` })
   }
 }
-

@@ -73,36 +73,32 @@ export async function syncFromYandex(
 
     const yandexOrders = await fetchAllYandexOrders(token, campaignId, fromDate)
 
-    const { data: existing } = await supabase
-      .from('orders')
-      .select('order_id_external')
-      .eq('shop_id', shopId)
+    const orderRows = yandexOrders.map(o => ({
+      shop_id: shopId,
+      order_id_external: String(o.id),
+      marketplace: 'yandex_market' as const,
+      status: (STATUS_MAP[o.status] ?? 'pending') as
+        | 'pending'
+        | 'confirmed'
+        | 'delivered'
+        | 'cancelled'
+        | 'returned',
+      revenue: o.buyerTotal ?? o.itemsTotal ?? 0,
+      marketplace_fee: o.commissionTotal ?? null,
+      delivery_cost: o.deliveryTotal ?? null,
+      items_count: o.items?.length ?? 1,
+      ordered_at: o.createdAt,
+    }))
 
-    const existingIds = new Set((existing ?? []).map(o => o.order_id_external))
-
-    const newOrderRows = yandexOrders
-      .filter(o => !existingIds.has(String(o.id)))
-      .map(o => ({
-        shop_id: shopId,
-        order_id_external: String(o.id),
-        marketplace: 'yandex_market' as const,
-        status: (STATUS_MAP[o.status] ?? 'pending') as
-          | 'pending'
-          | 'confirmed'
-          | 'delivered'
-          | 'cancelled'
-          | 'returned',
-        revenue: o.buyerTotal ?? o.itemsTotal ?? 0,
-        marketplace_fee: o.commissionTotal ?? null,
-        delivery_cost: o.deliveryTotal ?? null,
-        items_count: o.items?.length ?? 1,
-        ordered_at: o.createdAt,
-      }))
-
-    if (newOrderRows.length > 0) {
-      const { error } = await supabase.from('orders').insert(newOrderRows)
+    // Upsert: inserts new orders AND updates status of existing ones
+    if (orderRows.length > 0) {
+      const { error } = await supabase
+        .from('orders')
+        .upsert(orderRows, { onConflict: 'shop_id,order_id_external', ignoreDuplicates: false })
       if (error) throw new Error(`Buyurtma xato: ${error.message}`)
     }
+
+    const newOrderRows = orderRows
 
     // ── SKU stats → ad_campaigns proxy (best-effort) ──────────────────────────
     // Yandex doesn't expose a simple "campaign list" endpoint in v2.

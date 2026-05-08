@@ -74,34 +74,30 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
       fetchUzumOrders(token, page, 100, fromDate),
     )
 
-    const { data: existing } = await supabase
-      .from('orders')
-      .select('order_id_external')
-      .eq('shop_id', shopId)
+    const orderRows = uzumOrders.map(o => ({
+      shop_id: shopId,
+      order_id_external: o.orderId,
+      marketplace: 'uzum' as const,
+      status: (STATUS_MAP[o.status] ?? 'pending') as
+        | 'pending'
+        | 'confirmed'
+        | 'delivered'
+        | 'cancelled'
+        | 'returned',
+      revenue: o.totalPrice,
+      items_count: o.items?.length ?? 1,
+      ordered_at: o.createdAt,
+    }))
 
-    const existingIds = new Set((existing ?? []).map(o => o.order_id_external))
-
-    const newOrderRows = uzumOrders
-      .filter(o => !existingIds.has(o.orderId))
-      .map(o => ({
-        shop_id: shopId,
-        order_id_external: o.orderId,
-        marketplace: 'uzum' as const,
-        status: (STATUS_MAP[o.status] ?? 'pending') as
-          | 'pending'
-          | 'confirmed'
-          | 'delivered'
-          | 'cancelled'
-          | 'returned',
-        revenue: o.totalPrice,
-        items_count: o.items?.length ?? 1,
-        ordered_at: o.createdAt,
-      }))
-
-    if (newOrderRows.length > 0) {
-      const { error: ordErr } = await supabase.from('orders').insert(newOrderRows)
+    // Upsert: inserts new orders AND updates status of existing ones
+    if (orderRows.length > 0) {
+      const { error: ordErr } = await supabase
+        .from('orders')
+        .upsert(orderRows, { onConflict: 'shop_id,order_id_external', ignoreDuplicates: false })
       if (ordErr) throw new Error(`Buyurtmalarni saqlashda xato: ${ordErr.message}`)
     }
+
+    const newOrderRows = orderRows
 
     // ── Ad campaigns (best-effort — gracefully skipped if endpoint 404s) ──────
     let campaignsUpserted = 0
