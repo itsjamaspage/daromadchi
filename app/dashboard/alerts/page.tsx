@@ -1,8 +1,11 @@
 import { Bell } from 'lucide-react'
 import { getStockAlerts, getAlertSettings } from '@/lib/db/alerts'
 import StockAlertsView from '@/components/dashboard/StockAlertsView'
+import { getT } from '@/lib/server-i18n'
 
 export default async function AlertsPage() {
+  const t = await getT()
+  const d = t.dashboard
   const [alerts, settings] = await Promise.all([
     getStockAlerts(),
     getAlertSettings(),
@@ -15,8 +18,8 @@ export default async function AlertsPage() {
           <Bell className="w-5 h-5 text-violet-400" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-white">Ogohlantirishlar</h1>
-          <p className="text-slate-400 text-sm">Ombordagi kritik mahsulotlar va qoldiq nazorati</p>
+          <h1 className="text-2xl font-bold text-white">{d.alertsTitle}</h1>
+          <p className="text-slate-400 text-sm">{d.alertsSubtitle}</p>
         </div>
       </div>
 

@@ -3,6 +3,8 @@
 import { useState, useMemo } from 'react'
 import { Search } from 'lucide-react'
 import ExportButton from './ExportButton'
+import { useLang } from '@/app/providers'
+import { translations } from '@/lib/i18n'
 import type { Product } from '@/lib/types'
 import { productAds } from '@/lib/mock-data'
 
@@ -11,13 +13,6 @@ function fmt(n: number) {
 }
 
 type TabKey = 'all' | 'high_drr' | 'low_stock' | 'no_orders'
-
-const TABS: { key: TabKey; label: string }[] = [
-  { key: 'all',       label: 'Hammasi'        },
-  { key: 'high_drr',  label: '⚠️ Yuqori DRR'  },
-  { key: 'low_stock', label: '📦 Kam zaxira'  },
-  { key: 'no_orders', label: '🚫 Sotuvsiz'    },
-]
 
 function drrBadge(drr: number) {
   if (drr < 10) return { bg: 'bg-emerald-500/10 text-emerald-400', label: `${drr.toFixed(1)}%` }
@@ -32,6 +27,18 @@ function stockBadge(qty: number) {
 }
 
 export default function ProductsTable({ products }: { products: Product[] }) {
+  const { lang } = useLang()
+  const d = translations[lang].dashboard
+
+  const TABS: { key: TabKey; label: string }[] = [
+    { key: 'all',       label: d.status.all          },
+    { key: 'high_drr',  label: '⚠️ ' + d.highMargin  },
+    { key: 'low_stock', label: '📦 ' + d.stockQty    },
+    { key: 'no_orders', label: '🚫 ' + d.noMovement  },
+  ]
+
+  const allLabel = d.status.all
+
   const [query,    setQuery]    = useState('')
   const [sortBy,   setSortBy]   = useState<'title' | 'profit' | 'margin' | 'stock_quantity' | 'drr'>('profit')
   const [sortDir,  setSortDir]  = useState<'asc' | 'desc'>('desc')
@@ -41,9 +48,9 @@ export default function ProductsTable({ products }: { products: Product[] }) {
 
   const categories = useMemo(() => {
     const cats = [...new Set(products.map(p => p.category).filter(Boolean))] as string[]
-    return ['Barchasi', ...cats]
-  }, [products])
-  const [category, setCategory] = useState('Barchasi')
+    return [allLabel, ...cats]
+  }, [products, allLabel])
+  const [category, setCategory] = useState(allLabel)
 
   // Enrich products with ad data + DRR
   const enriched = useMemo(() => products.map((p, idx) => {
@@ -65,7 +72,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
         (p.category ?? '').toLowerCase().includes(q)
       )
     }
-    if (category !== 'Barchasi') rows = rows.filter(p => p.category === category)
+    if (category !== allLabel) rows = rows.filter(p => p.category === category)
 
     // Tab filter
     if (tab === 'high_drr')  rows = rows.filter(p => p.drr >= drrThreshold)
@@ -94,17 +101,17 @@ export default function ProductsTable({ products }: { products: Product[] }) {
   }
 
   const exportData = filtered.map(p => ({
-    'Mahsulot':    p.title,
-    'SKU':         p.sku ?? '',
-    'Kategoriya':  p.category ?? '',
-    "Narx":        p.selling_price ?? 0,
-    "Tannarx":     p.cost_price ?? 0,
-    "Foyda":       p.profit,
-    'Margin (%)':  (p.profit / (Number(p.selling_price) || 1) * 100).toFixed(1),
-    'Sotilgan':    p.sold ?? 0,
-    'Ombor':       p.stock_quantity,
-    'Reklama':     p.adSpend,
-    'DRR (%)':     p.drr.toFixed(1),
+    [d.product]:       p.title,
+    'SKU':             p.sku ?? '',
+    [d.category]:      p.category ?? '',
+    [d.price]:         p.selling_price ?? 0,
+    [d.costPriceLabel]:p.cost_price ?? 0,
+    [d.profit]:        p.profit,
+    [`${d.margin} (%)`]: (p.profit / (Number(p.selling_price) || 1) * 100).toFixed(1),
+    [d.sold]:          p.sold ?? 0,
+    [d.stockQty]:      p.stock_quantity,
+    [d.adSpendLabel]:  p.adSpend,
+    'DRR (%)':         p.drr.toFixed(1),
   }))
 
   function SortIcon({ col }: { col: typeof sortBy }) {
@@ -170,7 +177,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
             type="text"
             value={query}
             onChange={e => setQuery(e.target.value)}
-            placeholder="Mahsulot nomi, SKU yoki kategoriya..."
+            placeholder={`${d.product}, SKU, ${d.category}...`}
             className="w-full bg-[#13131f] border border-white/[0.08] rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/30 transition-all"
           />
         </div>
@@ -191,7 +198,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
         </div>
       </div>
 
-      <p className="text-slate-500 text-xs">{filtered.length} ta mahsulot {query || category !== 'Barchasi' ? '(filtr)' : ''}</p>
+      <p className="text-slate-500 text-xs">{filtered.length} {d.productCount} {query || category !== allLabel ? '(filtr)' : ''}</p>
 
       <div className="bg-[#13131f] border border-white/[0.06] rounded-2xl overflow-hidden">
         <div className="overflow-x-auto">
@@ -199,28 +206,28 @@ export default function ProductsTable({ products }: { products: Product[] }) {
             <thead>
               <tr className="text-slate-500 text-xs border-b border-white/[0.05] bg-white/[0.01]">
                 <th className="text-left font-medium px-5 py-3 cursor-pointer select-none hover:text-slate-300" onClick={() => toggleSort('title')}>
-                  Mahsulot <SortIcon col="title" />
+                  {d.product} <SortIcon col="title" />
                 </th>
-                <th className="text-left font-medium px-5 py-3">Kategoriya</th>
-                <th className="text-right font-medium px-5 py-3">Narx</th>
+                <th className="text-left font-medium px-5 py-3">{d.category}</th>
+                <th className="text-right font-medium px-5 py-3">{d.price}</th>
                 <th className="text-right font-medium px-5 py-3 cursor-pointer select-none hover:text-slate-300" onClick={() => toggleSort('profit')}>
-                  Foyda <SortIcon col="profit" />
+                  {d.profit} <SortIcon col="profit" />
                 </th>
                 <th className="text-right font-medium px-5 py-3 cursor-pointer select-none hover:text-slate-300" onClick={() => toggleSort('margin')}>
-                  Margin <SortIcon col="margin" />
+                  {d.margin} <SortIcon col="margin" />
                 </th>
                 <th className="text-right font-medium px-5 py-3 cursor-pointer select-none hover:text-slate-300" onClick={() => toggleSort('drr')}>
                   DRR <SortIcon col="drr" />
                 </th>
-                <th className="text-right font-medium px-5 py-3">Sotilgan</th>
+                <th className="text-right font-medium px-5 py-3">{d.sold}</th>
                 <th className="text-right font-medium px-5 py-3 cursor-pointer select-none hover:text-slate-300" onClick={() => toggleSort('stock_quantity')}>
-                  Ombor <SortIcon col="stock_quantity" />
+                  {d.stockQty} <SortIcon col="stock_quantity" />
                 </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/[0.03]">
               {filtered.length === 0 ? (
-                <tr><td colSpan={8} className="px-5 py-10 text-center text-slate-500 text-sm">Hech narsa topilmadi</td></tr>
+                <tr><td colSpan={8} className="px-5 py-10 text-center text-slate-500 text-sm">{d.noProductsTitle}</td></tr>
               ) : filtered.map(p => {
                 const price  = Number(p.selling_price ?? 0)
                 const margin = price > 0 ? Number(((p.profit / price) * 100).toFixed(1)) : 0

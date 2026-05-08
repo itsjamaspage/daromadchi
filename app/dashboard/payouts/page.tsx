@@ -1,8 +1,11 @@
 import { CreditCard } from 'lucide-react'
 import { getPayoutEntries } from '@/lib/db/payouts'
 import PayoutsView from '@/components/dashboard/PayoutsView'
+import { getT } from '@/lib/server-i18n'
 
 export default async function PayoutsPage() {
+  const t = await getT()
+  const d = t.dashboard
   const entries = await getPayoutEntries()
 
   return (
@@ -12,8 +15,8 @@ export default async function PayoutsPage() {
           <CreditCard className="w-5 h-5 text-violet-400" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-white">To&apos;lovlar</h1>
-          <p className="text-slate-400 text-sm">Marketplace to&apos;lovlari va chegirmalar tahlili</p>
+          <h1 className="text-2xl font-bold text-white">{d.payoutsTitle}</h1>
+          <p className="text-slate-400 text-sm">{d.payoutsSubtitle}</p>
         </div>
       </div>
 

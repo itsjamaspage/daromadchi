@@ -13,18 +13,13 @@ import { getOrders } from '@/lib/db/orders'
 import { getProducts } from '@/lib/db/products'
 import { getDailyRevenue } from '@/lib/db/revenue'
 import { adCampaigns, dynamicsData, productAds } from '@/lib/mock-data'
+import { getT } from '@/lib/server-i18n'
 
 function formatSum(n: number) {
   return new Intl.NumberFormat('uz-UZ').format(n) + " so'm"
 }
 
-const statusMap: Record<string, { label: string; className: string }> = {
-  pending:   { label: 'Kutilmoqda',  className: 'bg-slate-500/10 text-slate-400' },
-  confirmed: { label: 'Tasdiqlandi', className: 'bg-blue-500/10 text-blue-400' },
-  delivered: { label: 'Yetkazildi',  className: 'bg-emerald-500/10 text-emerald-400' },
-  cancelled: { label: 'Bekor',       className: 'bg-red-500/10 text-red-400' },
-  returned:  { label: 'Qaytarildi',  className: 'bg-amber-500/10 text-amber-400' },
-}
+// statusMap is now built dynamically inside the component using translations
 
 function parseDays(params: Record<string, string> | undefined): number {
   const v = params?.days
@@ -65,6 +60,16 @@ export default async function DashboardPage({ searchParams }: Props) {
   const days        = parseDays(params)
   const daysStr     = String(days)
   const marketplace = parseMarketplace(params)
+  const t = await getT()
+  const d = t.dashboard
+
+  const statusMap: Record<string, { label: string; className: string }> = {
+    pending:   { label: d.status.pending,   className: 'bg-slate-500/10 text-slate-400' },
+    confirmed: { label: d.status.confirmed, className: 'bg-blue-500/10 text-blue-400' },
+    delivered: { label: d.status.delivered, className: 'bg-emerald-500/10 text-emerald-400' },
+    cancelled: { label: d.status.cancelledShort, className: 'bg-red-500/10 text-red-400' },
+    returned:  { label: d.status.returned,  className: 'bg-amber-500/10 text-amber-400' },
+  }
 
   const [kpis, recentOrders, allProducts, chartData] = await Promise.all([
     getKpis(days, marketplace),
@@ -82,12 +87,12 @@ export default async function DashboardPage({ searchParams }: Props) {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <div className="flex items-center gap-3 mb-0.5">
-            <h1 className="text-2xl font-bold text-white">Dashboard</h1>
+            <h1 className="text-2xl font-bold text-white">{d.nav.dashboard}</h1>
             <span className="text-[10px] font-semibold px-2 py-1 rounded-full bg-violet-500/10 border border-violet-500/25 text-violet-400">
-              Sizning ma&apos;lumotingiz
+              {d.yourData}
             </span>
           </div>
-          <p className="text-slate-400 text-sm">Xush kelibsiz! Bu sizning do&apos;koningiz analitikasi.</p>
+          <p className="text-slate-400 text-sm">{d.welcome}</p>
         </div>
         <div className="flex items-center gap-2">
           <SyncButton />
@@ -100,7 +105,7 @@ export default async function DashboardPage({ searchParams }: Props) {
       {/* Marketplace tabs */}
       <div className="flex items-center gap-1.5 p-1 bg-[#13131f] border border-white/[0.06] rounded-xl w-fit">
         {([
-          { label: 'Hammasi',       mp: undefined,          color: 'violet' },
+          { label: d.all,           mp: undefined,          color: 'violet' },
           { label: 'Uzum',          mp: 'uzum',             color: 'violet' },
           { label: 'Yandex Market', mp: 'yandex_market',    color: 'amber'  },
         ] as { label: string; mp: string | undefined; color: string }[]).map(({ label, mp, color }) => {
@@ -129,14 +134,14 @@ export default async function DashboardPage({ searchParams }: Props) {
           <div className="w-14 h-14 rounded-2xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center mx-auto mb-4">
             <RefreshCw className="w-7 h-7 text-violet-400" />
           </div>
-          <h2 className="text-white font-bold text-lg mb-2">Hali ma'lumot yo'q</h2>
+          <h2 className="text-white font-bold text-lg mb-2">{d.noDataYet}</h2>
           <p className="text-slate-400 text-sm mb-6 max-w-sm mx-auto">
-            Do'koningizni ulash uchun Sozlamalar sahifasiga o'ting, Uzum API tokeningizni kiriting va sinxronizatsiyani boshlang.
+            {d.noDataDesc}
           </p>
           <div className="flex items-center justify-center gap-3">
             <Link href="/dashboard/settings"
               className="inline-flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors shadow-lg shadow-violet-500/20">
-              <Settings className="w-4 h-4" /> Sozlamalarga o'tish
+              <Settings className="w-4 h-4" /> {d.goToSettings}
             </Link>
             <Link href="https://seller.uzum.uz" target="_blank" rel="noopener noreferrer"
               className="inline-flex items-center gap-2 text-slate-400 hover:text-white text-sm font-medium px-5 py-2.5 rounded-xl border border-white/[0.08] hover:bg-white/[0.04] transition-all">
@@ -148,10 +153,10 @@ export default async function DashboardPage({ searchParams }: Props) {
 
       {/* KPI cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        <KpiCard title="Umumiy daromad"     value={formatSum(kpis.total_revenue)}               change={isEmpty ? null : undefined} icon={DollarSign}  color="violet" />
-        <KpiCard title="Sof foyda"          value={formatSum(kpis.total_profit)}                change={isEmpty ? null : undefined} icon={TrendingUp}  color="emerald" />
-        <KpiCard title="Buyurtmalar"        value={kpis.total_orders.toLocaleString('uz-UZ')}   change={isEmpty ? null : undefined} icon={ShoppingBag} color="blue" />
-        <KpiCard title="Ombordagi mahsulot" value={kpis.total_stock.toLocaleString('uz-UZ')}    change={isEmpty ? null : undefined} icon={Package}     color="amber" />
+        <KpiCard title={d.totalRevenue}     value={formatSum(kpis.total_revenue)}               change={isEmpty ? null : undefined} icon={DollarSign}  color="violet" />
+        <KpiCard title={d.netProfit}        value={formatSum(kpis.total_profit)}                change={isEmpty ? null : undefined} icon={TrendingUp}  color="emerald" />
+        <KpiCard title={d.totalOrders}      value={kpis.total_orders.toLocaleString('uz-UZ')}   change={isEmpty ? null : undefined} icon={ShoppingBag} color="blue" />
+        <KpiCard title={d.stockInWarehouse} value={kpis.total_stock.toLocaleString('uz-UZ')}    change={isEmpty ? null : undefined} icon={Package}     color="amber" />
       </div>
 
       {/* Ad KPI summary */}
@@ -162,9 +167,9 @@ export default async function DashboardPage({ searchParams }: Props) {
         const totalClicks = Object.values(productAds).reduce((s, a) => s + a.clicks, 0)
         return (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <KpiCard title="Reklama sarfi" value={formatSum(totalAdSpend)} change={undefined} icon={Megaphone} color="violet" />
+            <KpiCard title={d.adSpend} value={formatSum(totalAdSpend)} change={undefined} icon={Megaphone} color="violet" />
             <KpiCard title="DRR" value={`${drr}%`} change={undefined} icon={BarChart2} color="amber" />
-            <KpiCard title="Jami kliklar" value={totalClicks.toLocaleString('uz-UZ')} change={undefined} icon={TrendingUp} color="blue" />
+            <KpiCard title={d.totalClicks} value={totalClicks.toLocaleString('uz-UZ')} change={undefined} icon={TrendingUp} color="blue" />
           </div>
         )
       })()}
@@ -178,7 +183,7 @@ export default async function DashboardPage({ searchParams }: Props) {
           <RevenueChart data={chartData} days={days} />
         </div>
         <div className="bg-[#13131f] border border-white/[0.06] rounded-2xl p-6">
-          <h3 className="text-white font-semibold mb-4">So&apos;nggi buyurtmalar</h3>
+          <h3 className="text-white font-semibold mb-4">{d.recentOrders}</h3>
           <div className="space-y-3">
             {recentOrders.map(order => {
               const s = statusMap[order.status]
@@ -210,17 +215,17 @@ export default async function DashboardPage({ searchParams }: Props) {
 
         <div className="bg-[#13131f] border border-white/[0.06] rounded-2xl p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-white font-semibold">Top mahsulotlar</h3>
+            <h3 className="text-white font-semibold">{d.topProducts}</h3>
             <a href="/dashboard/products" className="text-xs text-violet-400 hover:text-violet-300 transition-colors">
-              Hammasini ko&apos;rish &rarr;
+              {d.viewAll} &rarr;
             </a>
           </div>
           <table className="w-full text-sm">
             <thead>
               <tr className="text-slate-500 text-xs border-b border-white/[0.04]">
-                <th className="text-left font-medium pb-3 pr-4">Mahsulot</th>
-                <th className="text-right font-medium pb-3 pr-4">Foyda</th>
-                <th className="text-right font-medium pb-3">Sotilgan</th>
+                <th className="text-left font-medium pb-3 pr-4">{d.product}</th>
+                <th className="text-right font-medium pb-3 pr-4">{d.profit}</th>
+                <th className="text-right font-medium pb-3">{d.sold}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/[0.03]">
@@ -245,10 +250,10 @@ export default async function DashboardPage({ searchParams }: Props) {
       {!isEmpty && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { href: '/dashboard/advertising',    icon: '📢', label: 'Reklama tahlili',       sub: `${adCampaigns.filter(c=>c.status==='active').length} faol kampaniya` },
-            { href: '/dashboard/search-phrases', icon: '🔍', label: 'Qidiruv iboralari',     sub: 'Trafik manbai' },
-            { href: '/dashboard/unit-economics', icon: '📊', label: 'Yuнit-Ekonomika',        sub: 'Xarajat tahlili' },
-            { href: '/dashboard/data-state',     icon: '🗂️', label: "Ma'lumot holati",       sub: 'Sinxronizatsiya' },
+            { href: '/dashboard/advertising',    icon: '📢', label: d.advertisingTitle,       sub: `${adCampaigns.filter(c=>c.status==='active').length} ${d.activeCampaigns}` },
+            { href: '/dashboard/search-phrases', icon: '🔍', label: d.searchPhrasesTitle,     sub: d.trafficSource },
+            { href: '/dashboard/unit-economics', icon: '📊', label: d.unitEcoTitle,            sub: d.costAnalysis },
+            { href: '/dashboard/data-state',     icon: '🗂️', label: d.dataStateTitle,         sub: d.syncStatus },
           ].map(({ href, icon, label, sub }) => (
             <Link key={href} href={href}
               className="bg-[#13131f] border border-white/[0.06] hover:border-violet-500/30 rounded-2xl p-4 flex items-center gap-3 transition-all group">

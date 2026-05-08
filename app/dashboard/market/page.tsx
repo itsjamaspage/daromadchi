@@ -4,6 +4,7 @@ import { getRootCategories } from '@/lib/uzum/public'
 import { getProducts } from '@/lib/db/products'
 import { createClient } from '@/lib/supabase/server'
 import MarketClient from './MarketClient'
+import { getT } from '@/lib/server-i18n'
 
 interface Props {
   searchParams: Promise<Record<string, string>>
@@ -12,6 +13,8 @@ interface Props {
 export default async function MarketPage({ searchParams }: Props) {
   const params = await searchParams
   const tab    = params.tab === 'yandex' ? 'yandex' : 'uzum'
+  const t = await getT()
+  const d = t.dashboard
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -42,14 +45,14 @@ export default async function MarketPage({ searchParams }: Props) {
         <div className="flex items-center gap-3 mb-0.5">
           <h1 className="text-2xl font-bold text-white flex items-center gap-2">
             <Globe2 className="w-6 h-6 text-cyan-400" />
-            Bozor tadqiqoti
+            {d.marketTitle}
           </h1>
           <span className="text-[10px] font-semibold px-2 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/25 text-cyan-400">
-            Ommaviy ma&apos;lumot
+            {d.publicData}
           </span>
         </div>
         <p className="text-slate-400 text-sm">
-          Raqiblar narxi, buyurtmalar va trend mahsulotlar
+          {d.marketSubtitle}
         </p>
       </div>
 
@@ -85,12 +88,12 @@ export default async function MarketPage({ searchParams }: Props) {
           <div className="flex items-start gap-3 bg-violet-500/[0.06] border border-violet-500/20 rounded-xl px-4 py-3 text-xs text-violet-300/80">
             <Globe2 className="w-4 h-4 mt-0.5 shrink-0 text-violet-400" />
             <span>
-              {"Uzum.uz ommaviy API'sidan foydalaniladi — hech qanday token shart emas. "}
+              {d.uzumApiNote}
               {userUzumCategories.length > 0
-                ? "Sizning kategoriyalaringizdagi mahsulotlar belgilanadi."
-                : "Do'koningizni ulasangiz, o'z kategoriyalaringiz avtomatik belgilanadi."}
+                ? d.uzumCategoriesHighlighted
+                : d.connectToHighlight}
               {userUzumCategories.length === 0 && (
-                <Link href="/dashboard/settings" className="ml-1 underline text-violet-400">Ulash →</Link>
+                <Link href="/dashboard/settings" className="ml-1 underline text-violet-400">{d.connectLink} →</Link>
               )}
             </span>
           </div>
@@ -107,8 +110,7 @@ export default async function MarketPage({ searchParams }: Props) {
               <div className="flex items-start gap-3 bg-amber-500/[0.06] border border-amber-500/20 rounded-xl px-4 py-3 text-xs text-amber-300/80">
                 <Globe2 className="w-4 h-4 mt-0.5 shrink-0 text-amber-400" />
                 <span>
-                  Yandex Market katalogidan ma&apos;lumotlar sizning Partner API tokeningiz orqali yuklanadi.
-                  Kategoriya tanlang yoki mahsulot qidiring.
+                  {d.yandexApiNote}
                 </span>
               </div>
               <MarketClient
@@ -122,15 +124,15 @@ export default async function MarketPage({ searchParams }: Props) {
               <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mx-auto mb-4">
                 <Globe2 className="w-7 h-7 text-amber-400" />
               </div>
-              <h2 className="text-white font-bold text-lg mb-2">Yandex Market ulanmagan</h2>
+              <h2 className="text-white font-bold text-lg mb-2">{d.yandexNotConnected}</h2>
               <p className="text-slate-400 text-sm mb-6 max-w-sm mx-auto">
-                Yandex bozor tadqiqotini ko&apos;rish uchun Sozlamalarda Partner API tokeningizni ulang.
+                {d.yandexNotConnectedDesc}
               </p>
               <Link
                 href="/dashboard/settings"
                 className="inline-flex items-center gap-2 bg-amber-600 hover:bg-amber-500 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors"
               >
-                <Settings className="w-4 h-4" /> Yandex ulash
+                <Settings className="w-4 h-4" /> {d.connectYandex}
               </Link>
             </div>
           )}

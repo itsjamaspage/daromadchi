@@ -3,12 +3,15 @@ import Link from 'next/link'
 import { getProducts } from '@/lib/db/products'
 import { getKpis } from '@/lib/db/kpis'
 import AdDrrChart from './AdDrrChart'
+import { getT } from '@/lib/server-i18n'
 
 function fmt(n: number) {
   return new Intl.NumberFormat('uz-UZ').format(Math.round(n))
 }
 
 export default async function AnalyticsPage() {
+  const t = await getT()
+  const d = t.dashboard
   const [products, kpis] = await Promise.all([getProducts(), getKpis(30)])
   const isEmpty = products.length === 0
 
@@ -49,9 +52,9 @@ export default async function AnalyticsPage() {
       <div>
         <h1 className="text-2xl font-bold text-white flex items-center gap-2">
           <BarChart2 className="w-6 h-6 text-violet-400" />
-          Mahsulot tahlili
+          {d.analyticsTitle}
         </h1>
-        <p className="text-slate-400 text-sm mt-1">Margin, qoldiq va daromad tahlili</p>
+        <p className="text-slate-400 text-sm mt-1">{d.analyticsSubtitle}</p>
       </div>
 
       {isEmpty ? (
@@ -59,13 +62,13 @@ export default async function AnalyticsPage() {
           <div className="w-14 h-14 rounded-2xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center mx-auto mb-4">
             <BarChart2 className="w-7 h-7 text-violet-400" />
           </div>
-          <h2 className="text-white font-bold text-lg mb-2">Tahlil uchun ma'lumot yo'q</h2>
+          <h2 className="text-white font-bold text-lg mb-2">{d.noAnalyticsData}</h2>
           <p className="text-slate-400 text-sm mb-6 max-w-sm mx-auto">
-            Do'koningizni ulab, mahsulotlarni sinxronlashtiring — shunda bu sahifada to'liq tahlil ko'rinadi.
+            {d.noAnalyticsDataDesc}
           </p>
           <Link href="/dashboard/settings"
             className="inline-flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors shadow-lg shadow-violet-500/20">
-            <Settings className="w-4 h-4" /> Sozlamalarga o'tish
+            <Settings className="w-4 h-4" /> {d.goToSettings}
           </Link>
         </div>
       ) : (
@@ -73,10 +76,10 @@ export default async function AnalyticsPage() {
           {/* KPI cards */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {[
-              { label: 'Jami mahsulot',       value: products.length.toString(),  color: 'text-violet-400' },
-              { label: "O'rtacha margin",      value: `${avgMargin.toFixed(1)}%`,  color: avgMargin >= 25 ? 'text-emerald-400' : 'text-amber-400' },
-              { label: 'Past margin (<15%)',   value: lowMarginCount.toString(),   color: lowMarginCount > 0 ? 'text-red-400' : 'text-emerald-400' },
-              { label: 'Yuqori margin (≥35%)', value: highMarginCount.toString(),  color: 'text-emerald-400' },
+              { label: d.totalProducts,  value: products.length.toString(),  color: 'text-violet-400' },
+              { label: d.avgMargin,      value: `${avgMargin.toFixed(1)}%`,  color: avgMargin >= 25 ? 'text-emerald-400' : 'text-amber-400' },
+              { label: d.lowMargin,      value: lowMarginCount.toString(),   color: lowMarginCount > 0 ? 'text-red-400' : 'text-emerald-400' },
+              { label: d.highMargin,     value: highMarginCount.toString(),  color: 'text-emerald-400' },
             ].map(({ label, value, color }) => (
               <div key={label} className="bg-[#13131f] border border-white/[0.06] rounded-2xl p-5">
                 <p className="text-slate-500 text-xs mb-2">{label}</p>
@@ -98,7 +101,7 @@ export default async function AnalyticsPage() {
                     <Package className="w-4 h-4 text-red-400 flex-shrink-0" />
                     <span className="text-red-300 font-medium">{p.title}</span>
                     <span className="text-red-400/70">
-                      — margin {((p.profit / Number(p.selling_price)) * 100).toFixed(1)}% (15% dan past) · tannarx yoki narxni ko'rib chiqing
+                      — margin {((p.profit / Number(p.selling_price)) * 100).toFixed(1)}% ({d.belowMarginNote}
                     </span>
                   </div>
                 ))}
@@ -112,27 +115,26 @@ export default async function AnalyticsPage() {
           <div className="flex items-start gap-3 bg-blue-500/[0.06] border border-blue-500/20 rounded-xl px-4 py-3 text-xs text-blue-400/80">
             <Link2 className="w-4 h-4 mt-0.5 flex-shrink-0" />
             <span>
-              <strong className="text-blue-300">Reklama tahlili (DRR, CPC, CPO)</strong> — Uzum Ads API integratsiyasi yaqinda qo'shiladi.
-              Hozircha mahsulot narxi va tannarxi asosida margin tahlili ko'rsatilmoqda.
+              <strong className="text-blue-300">{d.adAnalyticsNote}</strong> {d.adAnalyticsNoteSuffix}
             </span>
           </div>
 
           {/* Full margin table */}
           <div className="bg-[#13131f] border border-white/[0.06] rounded-2xl overflow-hidden">
             <div className="px-5 py-4 border-b border-white/[0.05]">
-              <h2 className="text-white font-semibold text-sm">Mahsulotlar bo'yicha margin tahlili</h2>
+              <h2 className="text-white font-semibold text-sm">{d.marginByProduct}</h2>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="text-slate-500 text-xs border-b border-white/[0.05] bg-white/[0.01]">
-                    <th className="text-left font-medium px-5 py-3">Mahsulot</th>
-                    <th className="text-right font-medium px-4 py-3">Narx</th>
-                    <th className="text-right font-medium px-4 py-3">Tannarx</th>
-                    <th className="text-right font-medium px-4 py-3">Foyda</th>
-                    <th className="text-right font-medium px-4 py-3">Margin</th>
-                    <th className="text-right font-medium px-4 py-3">Qoldiq</th>
-                    <th className="text-right font-medium px-4 py-3">Qoldiq qiymati</th>
+                    <th className="text-left font-medium px-5 py-3">{d.product}</th>
+                    <th className="text-right font-medium px-4 py-3">{d.price}</th>
+                    <th className="text-right font-medium px-4 py-3">{d.costPrice}</th>
+                    <th className="text-right font-medium px-4 py-3">{d.profit}</th>
+                    <th className="text-right font-medium px-4 py-3">{d.margin}</th>
+                    <th className="text-right font-medium px-4 py-3">{d.stockQty}</th>
+                    <th className="text-right font-medium px-4 py-3">{d.stockValue}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/[0.03]">
@@ -170,7 +172,7 @@ export default async function AnalyticsPage() {
                 <tfoot>
                   <tr className="bg-white/[0.03] border-t border-white/[0.08]">
                     <td colSpan={6} className="px-5 py-4 text-white font-bold text-xs uppercase tracking-wide">
-                      Ombor qiymati jami
+                      {d.warehouseValueTotal}
                     </td>
                     <td className="px-4 py-4 text-right text-violet-400 font-bold">{fmt(totalStockValue)} so'm</td>
                   </tr>
