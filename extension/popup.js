@@ -158,6 +158,52 @@ function renderAlerts(alerts) {
   };
 }
 
+// ─── MARKETPLACE API STATUS PANEL ────────────────────────────────────────────
+function renderMarketplaceStatus(panel, yandexStats, uzumDirectStats, yandexConnected, uzumConnected) {
+  const rows = [];
+
+  if (yandexConnected || yandexStats) {
+    const s = yandexStats;
+    rows.push(`
+      <div class="mkt-row">
+        <span class="mkt-badge mkt-ym">YM</span>
+        <span class="mkt-name">Yandex Market</span>
+        <span class="mkt-dot ${yandexConnected ? 'mkt-on' : 'mkt-off'}">
+          ${yandexConnected ? '● Ulangan' : '○ Ulanmagan'}
+        </span>
+        ${s ? `<span class="mkt-rev">${fp(s.todayRevenue, true)} / ${s.todayOrders || 0} buyurtma</span>` : ''}
+      </div>`);
+  }
+
+  if (uzumConnected || uzumDirectStats) {
+    const s = uzumDirectStats;
+    rows.push(`
+      <div class="mkt-row">
+        <span class="mkt-badge mkt-uz">UZ</span>
+        <span class="mkt-name">Uzum (to'g'ridan)</span>
+        <span class="mkt-dot ${uzumConnected ? 'mkt-on' : 'mkt-off'}">
+          ${uzumConnected ? '● Ulangan' : '○ Ulanmagan'}
+        </span>
+        ${s ? `<span class="mkt-rev">${fp(s.todayRevenue, true)} / ${s.todayOrders || 0} buyurtma</span>` : ''}
+      </div>`);
+  }
+
+  if (!rows.length) {
+    panel.insertAdjacentHTML('beforeend', `
+      <div class="mkt-empty">
+        <span>API ulanishlari sozlanmagan.</span>
+        <a href="options.html" target="_blank" class="mkt-cfg-link">Sozlash →</a>
+      </div>`);
+  } else {
+    panel.insertAdjacentHTML('beforeend', `
+      <div class="mkt-section">
+        <div class="mkt-title">Marketplace API</div>
+        ${rows.join('')}
+        <a href="options.html" target="_blank" class="mkt-cfg-link">API kalitlarini boshqarish →</a>
+      </div>`);
+  }
+}
+
 // ─── SETTINGS PANEL ──────────────────────────────────────────────────────────
 async function renderSettings(token, settings, tgStatus) {
   const panel = document.getElementById('panel-settings');
@@ -308,14 +354,20 @@ async function renderSettings(token, settings, tgStatus) {
 // ─── LOAD ALL ─────────────────────────────────────────────────────────────────
 async function loadAll() {
   const data = await chrome.storage.local.get([
-    'authToken', 'cachedStats', 'cacheTime', 
-    'activeAlerts', 'alertSettings', 'tgStatus'
+    'authToken', 'cachedStats', 'cacheTime',
+    'activeAlerts', 'alertSettings', 'tgStatus',
+    'yandexStats', 'yandexStatsTime', 'yandexConnected',
+    'uzumDirectStats', 'uzumDirectStatsTime', 'uzumConnected'
   ]);
 
-  const { authToken, cachedStats, cacheTime, 
-          activeAlerts = [], alertSettings = {}, tgStatus = {} } = data;
+  const {
+    authToken, cachedStats, cacheTime,
+    activeAlerts = [], alertSettings = {}, tgStatus = {},
+    yandexStats, yandexConnected,
+    uzumDirectStats, uzumConnected
+  } = data;
 
-  // Use cache < 5min; else try to fetch fresh
+  // Use Daromadchi backend stats if connected, refreshing when stale
   let stats = cachedStats;
   const stale = Date.now() - (cacheTime||0) > 300000;
 
@@ -330,7 +382,6 @@ async function loadAll() {
       }
     } catch {}
 
-    // Also refresh TG status
     try {
       const res = await fetch(`${API}/extension/telegram-status`, {
         headers: { 'Authorization': `Bearer ${authToken}` }
@@ -339,7 +390,7 @@ async function loadAll() {
         const tg = await res.json();
         chrome.storage.local.set({ tgStatus: tg });
         tgStatus.connected = tg.connected;
-        tgStatus.username = tg.username;
+        tgStatus.username  = tg.username;
       }
     } catch {}
   }
@@ -347,6 +398,12 @@ async function loadAll() {
   renderStats(authToken, stats);
   renderAlerts(activeAlerts);
   renderSettings(authToken, alertSettings, tgStatus);
+
+  // Inject marketplace API status at the bottom of the stats panel
+  const statsPanel = document.getElementById('panel-stats');
+  if (statsPanel) {
+    renderMarketplaceStatus(statsPanel, yandexStats, uzumDirectStats, yandexConnected, uzumConnected);
+  }
 }
 
 loadAll();

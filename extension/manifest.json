@@ -39,6 +39,8 @@
     "https://uzum.uz/*",
     "https://market.yandex.uz/*",
     "https://www.market.yandex.uz/*",
+    "https://api.partner.market.yandex.ru/*",
+    "https://api-seller.uzum.uz/*",
     "https://daromadchi.uz/*"
   ],
   "background": {

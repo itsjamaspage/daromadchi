@@ -30,6 +30,16 @@ input:checked+.slider:before{transform:translateX(18px);background:#fff}
 .save-btn{padding:12px 28px;background:#6366f1;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer}
 .save-btn:hover{opacity:.85}
 .saved{color:#22c55e;font-size:13px;display:none}
+.api-row{flex-direction:column;align-items:flex-start;gap:8px}
+.api-field-wrap{display:flex;gap:6px;width:100%}
+.api-in{flex:1;background:#0f172a;border:1px solid #334155;border-radius:6px;padding:7px 10px;color:#e2e8f0;font-size:13px;min-width:0}
+.api-in:focus{outline:1px solid #6366f1}
+.test-btn{padding:6px 14px;background:#6366f1;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap}
+.test-btn:hover{opacity:.85}
+.test-btn:disabled{opacity:.5;cursor:default}
+.clear-btn{padding:6px 10px;background:#334155;color:#94a3b8;border:none;border-radius:6px;font-size:12px;cursor:pointer}
+.clear-btn:hover{background:#475569}
+.api-status{font-size:12px;min-height:16px}
 </style>
 </head>
 <body>
@@ -89,6 +99,36 @@ input:checked+.slider:before{transform:translateX(18px);background:#fff}
     `).join('')}
   </div>
 
+  <div class="section">
+    <div class="section-title">🔗 Marketplace API Ulanishlari</div>
+
+    <div class="row api-row">
+      <div class="row-lbl">
+        <strong>Yandex Market API kaliti</strong>
+        <span>Seller kabineti → Sozlamalar → API va modullar → Yangi token yaratish</span>
+      </div>
+      <div class="api-field-wrap">
+        <input class="api-in" id="o-yandex-key" type="password" placeholder="Api-Key tokenini kiriting"/>
+        <button class="test-btn" id="test-yandex">Tekshirish</button>
+        <button class="clear-btn" id="clear-yandex" title="O'chirish">✕</button>
+      </div>
+      <div class="api-status" id="yandex-status"></div>
+    </div>
+
+    <div class="row api-row">
+      <div class="row-lbl">
+        <strong>Uzum Seller API tokeni</strong>
+        <span>seller.uzum.uz → Profil → API kalitlari bo'limidan oling</span>
+      </div>
+      <div class="api-field-wrap">
+        <input class="api-in" id="o-uzum-token" type="password" placeholder="Bearer tokenini kiriting"/>
+        <button class="test-btn" id="test-uzum">Tekshirish</button>
+        <button class="clear-btn" id="clear-uzum" title="O'chirish">✕</button>
+      </div>
+      <div class="api-status" id="uzum-status"></div>
+    </div>
+  </div>
+
   <div class="save-wrap">
     <button class="save-btn" id="save-btn">💾 Saqlash</button>
     <span class="saved" id="saved-msg">✅ Sozlamalar saqlandi!</span>
@@ -118,11 +158,133 @@ document.getElementById('save-btn').onclick = async () => {
     quietHoursEnd: +document.getElementById('o-qend').value,
     disabledAlerts: disabled
   }});
+
+  // Persist any newly-typed API keys (skip placeholder mask)
+  const yKey   = document.getElementById('o-yandex-key').value.trim();
+  const uToken = document.getElementById('o-uzum-token').value.trim();
+  if (yKey && !yKey.startsWith('●'))   await chrome.storage.local.set({ yandexApiKey: yKey });
+  if (uToken && !uToken.startsWith('●')) await chrome.storage.local.set({ uzumSellerToken: uToken });
+
   const msg = document.getElementById('saved-msg');
   msg.style.display = 'block';
   setTimeout(() => msg.style.display = 'none', 2000);
 };
+
+// ── API Key management ────────────────────────────────────────────────────────
+async function loadApiKeys() {
+  const { yandexApiKey, yandexCampaignId, yandexConnected,
+          uzumSellerToken, uzumConnected } =
+    await chrome.storage.local.get([
+      'yandexApiKey', 'yandexCampaignId', 'yandexConnected',
+      'uzumSellerToken', 'uzumConnected'
+    ]);
+
+  if (yandexApiKey) {
+    document.getElementById('o-yandex-key').value = '●'.repeat(24);
+    document.getElementById('yandex-status').innerHTML = yandexConnected
+      ? `<span style="color:#22c55e">✅ Ulangan${yandexCampaignId ? ` · Kampaniya ID: ${yandexCampaignId}` : ''}</span>`
+      : `<span style="color:#f59e0b">⚠️ Saqlangan, lekin tekshirilmagan</span>`;
+  }
+  if (uzumSellerToken) {
+    document.getElementById('o-uzum-token').value = '●'.repeat(24);
+    document.getElementById('uzum-status').innerHTML = uzumConnected
+      ? `<span style="color:#22c55e">✅ Ulangan</span>`
+      : `<span style="color:#f59e0b">⚠️ Saqlangan, lekin tekshirilmagan</span>`;
+  }
+}
+
+document.getElementById('test-yandex').onclick = async () => {
+  const key = document.getElementById('o-yandex-key').value.trim();
+  if (!key || key.startsWith('●')) {
+    document.getElementById('yandex-status').innerHTML =
+      `<span style="color:#f59e0b">Yangi kalit kiriting</span>`;
+    return;
+  }
+  const btn = document.getElementById('test-yandex');
+  btn.textContent = '⏳';
+  btn.disabled = true;
+  try {
+    const res  = await fetch('https://api.partner.market.yandex.ru/campaigns', {
+      headers: { 'Api-Key': key, 'Content-Type': 'application/json' }
+    });
+    const data = res.ok ? await res.json() : null;
+    if (data?.campaigns?.length > 0) {
+      const campaign = data.campaigns[0];
+      await chrome.storage.local.set({
+        yandexApiKey:    key,
+        yandexCampaignId: campaign.id,
+        yandexCampaigns:  data.campaigns,
+        yandexConnected:  true
+      });
+      document.getElementById('yandex-status').innerHTML =
+        `<span style="color:#22c55e">✅ Ulandi! Do'kon: ${campaign.domain || campaign.id}</span>`;
+      document.getElementById('o-yandex-key').value = '●'.repeat(24);
+    } else {
+      document.getElementById('yandex-status').innerHTML =
+        `<span style="color:#ef4444">❌ Noto'g'ri kalit yoki ruxsat yo'q (HTTP ${res.status})</span>`;
+    }
+  } catch {
+    document.getElementById('yandex-status').innerHTML =
+      `<span style="color:#ef4444">❌ Ulanish xatosi. CORS yoki tarmoqni tekshiring.</span>`;
+  }
+  btn.textContent = 'Tekshirish';
+  btn.disabled = false;
+};
+
+document.getElementById('clear-yandex').onclick = async () => {
+  await chrome.storage.local.remove(['yandexApiKey', 'yandexCampaignId', 'yandexCampaigns',
+                                      'yandexConnected', 'yandexStats', 'yandexProducts']);
+  document.getElementById('o-yandex-key').value = '';
+  document.getElementById('yandex-status').innerHTML =
+    `<span style="color:#64748b">O'chirildi</span>`;
+};
+
+document.getElementById('test-uzum').onclick = async () => {
+  const token = document.getElementById('o-uzum-token').value.trim();
+  if (!token || token.startsWith('●')) {
+    document.getElementById('uzum-status').innerHTML =
+      `<span style="color:#f59e0b">Yangi token kiriting</span>`;
+    return;
+  }
+  const btn = document.getElementById('test-uzum');
+  btn.textContent = '⏳';
+  btn.disabled = true;
+  try {
+    // CHECK: verify this path against api-seller.uzum.uz swagger if it returns 404
+    const res = await fetch('https://api-seller.uzum.uz/api/v1/product/', {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type':  'application/json',
+        'Accept':        'application/json'
+      }
+    });
+    if (res.ok || res.status === 200) {
+      await chrome.storage.local.set({ uzumSellerToken: token, uzumConnected: true });
+      document.getElementById('uzum-status').innerHTML =
+        `<span style="color:#22c55e">✅ Ulandi!</span>`;
+      document.getElementById('o-uzum-token').value = '●'.repeat(24);
+    } else {
+      document.getElementById('uzum-status').innerHTML =
+        `<span style="color:#ef4444">❌ Noto'g'ri token (HTTP ${res.status})</span>`;
+    }
+  } catch {
+    document.getElementById('uzum-status').innerHTML =
+      `<span style="color:#ef4444">❌ Ulanish xatosi</span>`;
+  }
+  btn.textContent = 'Tekshirish';
+  btn.disabled = false;
+};
+
+document.getElementById('clear-uzum').onclick = async () => {
+  await chrome.storage.local.remove(['uzumSellerToken', 'uzumConnected',
+                                      'uzumDirectStats', 'uzumProducts']);
+  document.getElementById('o-uzum-token').value = '';
+  document.getElementById('uzum-status').innerHTML =
+    `<span style="color:#64748b">O'chirildi</span>`;
+};
+
 loadSettings();
+loadApiKeys();
 </script>
 </body>
 </html>

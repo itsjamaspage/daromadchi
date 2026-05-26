@@ -1,10 +1,11 @@
 // Daromadchi Extension — Background Service Worker v2
-// Smart alert engine + Telegram notification bridge
+// Smart alert engine + Telegram notification bridge + Marketplace API sync
 
-const API = 'https://daromadchi.uz/api';
+const API            = 'https://daromadchi.uz/api';
+const YANDEX_API     = 'https://api.partner.market.yandex.ru';
+const UZUM_SELLER_API = 'https://api-seller.uzum.uz';
 
 // ─── ALERT DEFINITIONS ───────────────────────────────────────────────────────
-// Each alert has: id, priority (critical/warning/info), check function, message builder
 
 const ALERT_RULES = [
   {
@@ -83,7 +84,7 @@ function formatPrice(n) {
   return n.toLocaleString('uz-UZ') + ' so\'m';
 }
 
-// ─── FETCH HELPERS ─────────────────────────────────────────────────────────
+// ─── DAROMADCHI BACKEND FETCH ────────────────────────────────────────────────
 
 async function apiFetch(path, token) {
   try {
@@ -97,15 +98,293 @@ async function apiFetch(path, token) {
   }
 }
 
-// ─── MAIN SYNC + ALERT CHECK ──────────────────────────────────────────────
+// ─── YANDEX MARKET PARTNER API ───────────────────────────────────────────────
+// Auth: Api-Key header (recommended over OAuth — see yandex.ru/dev/market/partner-api)
+// Base URL: https://api.partner.market.yandex.ru
+
+async function yandexApiFetch(path, apiKey, method = 'GET', body = null) {
+  try {
+    const res = await fetch(`${YANDEX_API}${path}`, {
+      method,
+      headers: {
+        'Api-Key': apiKey,
+        'Content-Type': 'application/json',
+      },
+      ...(body !== null ? { body: JSON.stringify(body) } : {})
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
+async function getOrCacheYandexCampaignId(apiKey) {
+  const { yandexCampaignId } = await chrome.storage.local.get('yandexCampaignId');
+  if (yandexCampaignId) return yandexCampaignId;
+
+  // Auto-discover: GET /campaigns returns all shops for this API key
+  const data = await yandexApiFetch('/campaigns', apiKey);
+  if (data?.campaigns?.length) {
+    const id = data.campaigns[0].id;
+    chrome.storage.local.set({
+      yandexCampaignId: id,
+      yandexCampaigns: data.campaigns
+    });
+    return id;
+  }
+  return null;
+}
+
+async function syncYandexMarket() {
+  const { yandexApiKey } = await chrome.storage.local.get('yandexApiKey');
+  if (!yandexApiKey) return;
+
+  const campaignId = await getOrCacheYandexCampaignId(yandexApiKey);
+  if (!campaignId) {
+    chrome.storage.local.set({ yandexConnected: false });
+    return;
+  }
+
+  const today     = new Date().toISOString().slice(0, 10);
+  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+
+  // Fetch order stats and current offers in parallel
+  // Order stats endpoint: POST /campaigns/{campaignId}/stats/orders
+  // Offers endpoint:      POST /campaigns/{campaignId}/offers
+  const [orderData, offerData] = await Promise.all([
+    yandexApiFetch(
+      `/campaigns/${campaignId}/stats/orders`,
+      yandexApiKey, 'POST',
+      { dateFrom: yesterday, dateTo: today, limit: 200 }
+    ),
+    yandexApiFetch(
+      `/campaigns/${campaignId}/offers`,
+      yandexApiKey, 'POST',
+      { limit: 200 }
+    )
+  ]);
+
+  // Aggregate today's orders only (API may return yesterday + today)
+  const orders = (orderData?.result?.orders || []).filter(o =>
+    (o.creationDate || '').startsWith(today)
+  );
+
+  let todayRevenue = 0, todayCommissions = 0, todayReturns = 0;
+  for (const order of orders) {
+    for (const item of (order.items || [])) {
+      todayRevenue     += item.prices?.buyerTotal || 0;
+      todayCommissions += (item.commissions || []).reduce((s, c) => s + (c.actual || 0), 0);
+    }
+    if (['CANCELLED_IN_DELIVERY', 'RETURNED', 'PARTIALLY_RETURNED'].includes(order.status)) {
+      todayReturns++;
+    }
+  }
+
+  // Map offers to alert-rule product shape for stock alerts
+  const offers = offerData?.offers || offerData?.offerMappings || [];
+  const yandexProducts = offers.map(o => ({
+    id:          `yandex-${o.offer?.offerId || o.mapping?.marketSku || o.id}`,
+    name:        o.offer?.name || 'Yandex mahsuloti',
+    // CHECK: stock field path — verify against current API response if alerts stop firing
+    stock:       o.stocks?.[0]?.count ?? o.stockInfo?.count ?? 0,
+    hasActiveAd: false,  // requires separate boost API call
+    adSpendToday: 0,
+    salesToday:  0,
+    salesDropPct: 0,
+    returnRate:  0,
+    source:      'yandex'
+  }));
+  const lowStock = yandexProducts.filter(p => p.stock > 0 && p.stock <= 5).length;
+
+  const stats = {
+    todayRevenue,
+    todayProfit:  todayRevenue - todayCommissions,
+    todayOrders:  orders.length,
+    todayReturns,
+    marginPct:    todayRevenue > 0
+      ? Math.round(((todayRevenue - todayCommissions) / todayRevenue) * 100)
+      : 0,
+    lowStock,
+    adSpendToday: 0,
+    lastSynced:   new Date().toLocaleTimeString('uz-UZ'),
+    source:       'yandex'
+  };
+
+  chrome.storage.local.set({
+    yandexStats:     stats,
+    yandexStatsTime: Date.now(),
+    yandexConnected: true,
+    yandexProducts
+  });
+
+  // Run stock-based alert rules against Yandex products
+  runMarketplaceAlerts(yandexProducts, 'yandex');
+}
+
+// ─── UZUM SELLER API ─────────────────────────────────────────────────────────
+// Auth: Authorization: Bearer {token}  (from seller.uzum.uz → API kalitlari)
+// Base URL: https://api-seller.uzum.uz
+// CHECK: verify endpoint paths at api-seller.uzum.uz/api/seller-openapi/swagger/
+//        if requests return 404 after a Uzum API update
+
+async function uzumSellerFetch(path, token, method = 'GET', body = null) {
+  try {
+    const res = await fetch(`${UZUM_SELLER_API}${path}`, {
+      method,
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      ...(body !== null ? { body: JSON.stringify(body) } : {})
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
+async function syncUzumSeller() {
+  const { uzumSellerToken } = await chrome.storage.local.get('uzumSellerToken');
+  if (!uzumSellerToken) return;
+
+  const today = new Date().toISOString().slice(0, 10);
+
+  // CHECK: verify these endpoint paths against api-seller.uzum.uz swagger if data stops syncing
+  const [productsData, ordersData] = await Promise.all([
+    uzumSellerFetch('/api/v1/product/', uzumSellerToken),
+    uzumSellerFetch('/api/v1/order/list', uzumSellerToken, 'POST', {
+      page: 0,
+      size: 200,
+      statuses: ['DELIVERED', 'PROCESSING', 'APPROVED']
+    })
+  ]);
+
+  if (!productsData && !ordersData) {
+    chrome.storage.local.set({ uzumConnected: false });
+    return;
+  }
+
+  const products = productsData?.payload  ??
+                   productsData?.data?.items ??
+                   productsData?.items       ?? [];
+  const orders   = ordersData?.payload    ??
+                   ordersData?.data?.items  ??
+                   ordersData?.items        ?? [];
+
+  // Filter to today's orders only
+  const todayOrders = orders.filter(o =>
+    (o.createdAt || o.orderDate || o.creationDate || '').startsWith(today)
+  );
+
+  const todayRevenue = todayOrders.reduce(
+    (s, o) => s + (o.deliveryTotalPrice || o.totalPrice || o.amount || 0), 0
+  );
+
+  // Map Uzum products to alert-rule product shape
+  const uzumProducts = products.map(p => ({
+    id:           `uzum-${p.id || p.productId}`,
+    name:         p.title || p.name || 'Uzum mahsuloti',
+    // CHECK: stock field — might be p.skuList[0].stock or p.stockCount or p.stock
+    stock:        p.skuList?.[0]?.stock ?? p.stockCount ?? p.stock ?? 0,
+    hasActiveAd:  !!(p.hasActivePromotion || p.isPromoted),
+    adSpendToday: 0,
+    salesToday:   p.salesToday || 0,
+    salesDropPct: p.salesDropPct || 0,
+    returnRate:   p.returnRate || 0,
+    source:       'uzum-direct'
+  }));
+  const lowStock = uzumProducts.filter(p => p.stock > 0 && p.stock <= 5).length;
+
+  const stats = {
+    todayRevenue,
+    todayOrders: todayOrders.length,
+    lowStock,
+    lastSynced:  new Date().toLocaleTimeString('uz-UZ'),
+    source:      'uzum-direct'
+  };
+
+  chrome.storage.local.set({
+    uzumDirectStats:     stats,
+    uzumDirectStatsTime: Date.now(),
+    uzumConnected:       true,
+    uzumProducts
+  });
+
+  runMarketplaceAlerts(uzumProducts, 'uzum');
+}
+
+// ─── SHARED ALERT RUNNER (used by both marketplace syncs) ────────────────────
+
+async function runMarketplaceAlerts(products, source) {
+  const { alertSettings = {}, sentAlertIds = [] } =
+    await chrome.storage.local.get(['alertSettings', 'sentAlertIds']);
+
+  const newAlerts = [];
+  const now = Date.now();
+
+  for (const product of products) {
+    for (const rule of ALERT_RULES) {
+      if (!['low_stock_with_ad', 'out_of_stock', 'low_stock'].includes(rule.id)) continue;
+      if (!isAlertEnabled(rule.id, alertSettings)) continue;
+
+      const alertKey   = `${source}:${rule.id}:${product.id}`;
+      const alreadySent = sentAlertIds.find(a => a.key === alertKey && now - a.ts < 3600000);
+
+      if (rule.check(product, alertSettings) && !alreadySent) {
+        newAlerts.push({
+          key:       alertKey,
+          priority:  rule.priority,
+          label:     rule.label,
+          message:   rule.message(product),
+          productId: product.id,
+          ts:        now,
+          source
+        });
+      }
+    }
+  }
+
+  if (!newAlerts.length) return;
+
+  const existing = (await chrome.storage.local.get('activeAlerts')).activeAlerts || [];
+  const newSentIds = [
+    ...sentAlertIds.filter(a => now - a.ts < 86400000),
+    ...newAlerts.map(a => ({ key: a.key, ts: a.ts }))
+  ];
+  chrome.storage.local.set({
+    activeAlerts: [...newAlerts, ...existing].slice(0, 50),
+    sentAlertIds: newSentIds
+  });
+
+  const criticals = newAlerts.filter(a => a.priority === 'critical');
+  for (const alert of criticals.slice(0, 3)) {
+    chrome.notifications.create({
+      type: 'basic', iconUrl: 'icons/icon48.png',
+      title: 'Daromadchi — ' + alert.label,
+      message: alert.message, priority: 2
+    });
+  }
+
+  updateBadge(criticals.length);
+  if (newAlerts.length) sendTelegramAlerts(newAlerts, null, source);
+}
+
+// ─── MAIN SYNC + ALERT CHECK ──────────────────────────────────────────────────
 
 async function runSync() {
-  const { authToken, alertSettings = {}, sentAlertIds = [] } = 
+  // Fire marketplace syncs independently — they store results in storage
+  // and don't need a Daromadchi account to function
+  syncYandexMarket();
+  syncUzumSeller();
+
+  const { authToken, alertSettings = {}, sentAlertIds = [] } =
     await chrome.storage.local.get(['authToken', 'alertSettings', 'sentAlertIds']);
 
   if (!authToken) return;
 
-  // Fetch latest data
   const [stats, products] = await Promise.all([
     apiFetch('/extension/stats', authToken),
     apiFetch('/extension/products', authToken)
@@ -117,7 +396,6 @@ async function runSync() {
 
   if (!products) return;
 
-  // Run alert rules against each product
   const newAlerts = [];
   const now = Date.now();
 
@@ -125,17 +403,18 @@ async function runSync() {
     for (const rule of ALERT_RULES) {
       if (!isAlertEnabled(rule.id, alertSettings)) continue;
 
-      const alertKey = `${rule.id}:${product.id}`;
-      const alreadySent = sentAlertIds.find(a => a.key === alertKey && now - a.ts < 3600000); // 1hr cooldown
+      const alertKey    = `${rule.id}:${product.id}`;
+      const alreadySent = sentAlertIds.find(a => a.key === alertKey && now - a.ts < 3600000);
 
       if (rule.check(product, alertSettings) && !alreadySent) {
         newAlerts.push({
-          key: alertKey,
-          priority: rule.priority,
-          label: rule.label,
-          message: rule.message(product),
+          key:       alertKey,
+          priority:  rule.priority,
+          label:     rule.label,
+          message:   rule.message(product),
           productId: product.id,
-          ts: now
+          ts:        now,
+          source:    'daromadchi'
         });
       }
     }
@@ -146,35 +425,30 @@ async function runSync() {
     return;
   }
 
-  // Save alerts to storage for popup
   const existingAlerts = (await chrome.storage.local.get('activeAlerts')).activeAlerts || [];
   const merged = [...newAlerts, ...existingAlerts].slice(0, 50);
-  
+
   const newSentIds = [
-    ...sentAlertIds.filter(a => now - a.ts < 86400000), // keep 24h
+    ...sentAlertIds.filter(a => now - a.ts < 86400000),
     ...newAlerts.map(a => ({ key: a.key, ts: a.ts }))
   ];
 
-  chrome.storage.local.set({ 
+  chrome.storage.local.set({
     activeAlerts: merged,
     sentAlertIds: newSentIds
   });
 
-  // Browser notifications for critical alerts
   const criticalAlerts = newAlerts.filter(a => a.priority === 'critical');
   for (const alert of criticalAlerts.slice(0, 3)) {
     chrome.notifications.create({
-      type: 'basic',
-      iconUrl: 'icons/icon48.png',
+      type: 'basic', iconUrl: 'icons/icon48.png',
       title: 'Daromadchi — ' + alert.label,
-      message: alert.message,
-      priority: 2
+      message: alert.message, priority: 2
     });
   }
 
-  // Send to Telegram via backend
   if (newAlerts.length > 0) {
-    sendTelegramAlerts(newAlerts, authToken);
+    sendTelegramAlerts(newAlerts, authToken, 'daromadchi');
   }
 
   updateBadge(newAlerts.filter(a => a.priority === 'critical').length);
@@ -182,8 +456,7 @@ async function runSync() {
 
 function isAlertEnabled(ruleId, settings) {
   if (settings.disabledAlerts && settings.disabledAlerts.includes(ruleId)) return false;
-  
-  // Quiet hours check
+
   if (settings.quietHoursStart !== undefined && settings.quietHoursEnd !== undefined) {
     const hour = new Date().getHours();
     const { quietHoursStart, quietHoursEnd } = settings;
@@ -196,18 +469,22 @@ function isAlertEnabled(ruleId, settings) {
   return true;
 }
 
-async function sendTelegramAlerts(alerts, token) {
+async function sendTelegramAlerts(alerts, token, source) {
+  const { authToken: storedToken, lastMarketplace } =
+    await chrome.storage.local.get(['authToken', 'lastMarketplace']);
+  const bearerToken = token || storedToken;
+  if (!bearerToken) return;
+
   try {
-    const { lastMarketplace } = await chrome.storage.local.get('lastMarketplace');
     await fetch(`${API}/extension/send-alerts`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${token}`,
+        'Authorization': `Bearer ${bearerToken}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
         alerts: alerts.map(a => ({ message: a.message, priority: a.priority })),
-        marketplace: lastMarketplace || 'uzum'
+        marketplace: source || lastMarketplace || 'uzum'
       })
     });
   } catch {
@@ -224,10 +501,11 @@ function updateBadge(count) {
   }
 }
 
-// ─── DAILY SUMMARY ───────────────────────────────────────────────────────
+// ─── DAILY SUMMARY ────────────────────────────────────────────────────────────
 
 async function sendDailySummary() {
-  const { authToken, alertSettings = {} } = await chrome.storage.local.get(['authToken', 'alertSettings']);
+  const { authToken, alertSettings = {} } =
+    await chrome.storage.local.get(['authToken', 'alertSettings']);
   if (!authToken || alertSettings.disableDailySummary) return;
 
   const stats = await apiFetch('/extension/stats', authToken);
@@ -240,7 +518,7 @@ async function sendDailySummary() {
   }).catch(() => {});
 }
 
-// ─── ALARMS ──────────────────────────────────────────────────────────────
+// ─── ALARMS ───────────────────────────────────────────────────────────────────
 
 chrome.alarms.create('sync', { periodInMinutes: 15 });
 chrome.alarms.create('dailySummary', { when: getNextSummaryTime(), periodInMinutes: 1440 });
@@ -248,7 +526,7 @@ chrome.alarms.create('dailySummary', { when: getNextSummaryTime(), periodInMinut
 function getNextSummaryTime() {
   const now = new Date();
   const next = new Date();
-  next.setHours(20, 0, 0, 0); // 8 PM daily summary
+  next.setHours(20, 0, 0, 0);
   if (next <= now) next.setDate(next.getDate() + 1);
   return next.getTime();
 }
@@ -258,7 +536,7 @@ chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === 'dailySummary') sendDailySummary();
 });
 
-// ─── MESSAGES ────────────────────────────────────────────────────────────
+// ─── MESSAGES ─────────────────────────────────────────────────────────────────
 
 chrome.runtime.onMessage.addListener((msg, sender, reply) => {
   if (msg.action === 'sync') runSync().then(() => reply({ ok: true }));
