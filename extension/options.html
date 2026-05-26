@@ -250,8 +250,8 @@ document.getElementById('test-uzum').onclick = async () => {
   btn.textContent = '⏳';
   btn.disabled = true;
   try {
-    // CHECK: verify this path against api-seller.uzum.uz swagger if it returns 404
-    const res = await fetch('https://api-seller.uzum.uz/api/v1/product/', {
+    // GET /v1/invoice confirmed in Swagger UI (FBO invoice list — lightweight auth probe)
+    const res = await fetch('https://api-seller.uzum.uz/api/seller-openapi/v1/invoice', {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type':  'application/json',
