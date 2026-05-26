@@ -198,13 +198,17 @@ function isAlertEnabled(ruleId, settings) {
 
 async function sendTelegramAlerts(alerts, token) {
   try {
+    const { lastMarketplace } = await chrome.storage.local.get('lastMarketplace');
     await fetch(`${API}/extension/send-alerts`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ alerts: alerts.map(a => ({ message: a.message, priority: a.priority })) })
+      body: JSON.stringify({
+        alerts: alerts.map(a => ({ message: a.message, priority: a.priority })),
+        marketplace: lastMarketplace || 'uzum'
+      })
     });
   } catch {
     // fail silently

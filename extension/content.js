@@ -3,15 +3,38 @@
 (function () {
   'use strict';
 
-  const IS_SELLER = window.location.hostname.includes('seller.uzum') ||
-                    window.location.pathname.includes('/seller/');
-  const IS_PRODUCT = !IS_SELLER && (
-    window.location.pathname.includes('/product/') ||
-    window.location.pathname.includes('/item/') ||
-    /\/[a-z]{2,3}\/[^/]+-\d+/.test(window.location.pathname)
+  function getMarketplace() {
+    if (window.location.hostname.includes('uzum.uz')) return 'uzum';
+    if (window.location.hostname.includes('market.yandex.uz')) return 'yandex';
+    return null;
+  }
+  const marketplace = getMarketplace();
+  if (!marketplace) return;
+
+  const IS_SELLER = marketplace === 'uzum' && (
+    window.location.hostname.includes('seller.uzum') ||
+    window.location.pathname.includes('/seller/')
   );
 
-  if (!IS_PRODUCT && !IS_SELLER) return;
+  function isProductPage() {
+    if (marketplace === 'uzum') {
+      return !IS_SELLER && (
+        window.location.pathname.includes('/product/') ||
+        window.location.pathname.includes('/item/') ||
+        /\/[a-z]{2,3}\/[^/]+-\d+/.test(window.location.pathname)
+      );
+    }
+    // Yandex Market: CHECK /product/ and /offer/ URL patterns if widget stops working after a Yandex DOM update
+    if (marketplace === 'yandex') {
+      return window.location.pathname.includes('/product/') ||
+             window.location.pathname.includes('/offer/');
+    }
+    return false;
+  }
+
+  // For Uzum: bail early on irrelevant pages to avoid MutationObserver overhead.
+  // For Yandex: always keep running so the observer can catch SPA navigation to product pages.
+  if (marketplace === 'uzum' && !isProductPage() && !IS_SELLER) return;
 
   // Commission by category keyword
   const COMMISSIONS = {
@@ -72,6 +95,47 @@
     return m ? m[1] : null;
   }
 
+  // ── YANDEX MARKET PARSERS ─────────────────────────────────────────────────
+
+  function parseYandexPrice() {
+    // CHECK: [data-auto="price-value"] is the primary selector — verify on market.yandex.uz if widget stops working
+    const primary = document.querySelector('[data-auto="price-value"]');
+    if (primary) {
+      const raw = primary.innerText.replace(/[^\d]/g, '');
+      if (raw.length >= 4 && raw.length <= 12) return parseInt(raw);
+    }
+    // Fallback: CHECK span[class*="price"] / div[class*="price"] selectors if primary fails
+    const els = document.querySelectorAll('span[class*="price"], div[class*="price"], span[class*="Price"], div[class*="Price"]');
+    for (const el of els) {
+      const cls = el.className.toLowerCase();
+      if (cls.includes('old') || cls.includes('cross') || cls.includes('before')) continue;
+      const raw = el.innerText.replace(/[^\d]/g, '');
+      if (raw.length >= 4 && raw.length <= 12) return parseInt(raw);
+    }
+    return null;
+  }
+
+  function parseYandexOldPrice() {
+    // CHECK: [data-auto="price-old"] and class-based selectors if widget stops working after a Yandex DOM update
+    const el = document.querySelector('[data-auto="price-old"], [class*="priceBefore"], [class*="priceOld"], [class*="price-before"]');
+    if (el) {
+      const raw = el.innerText.replace(/[^\d]/g, '');
+      return raw.length >= 4 ? parseInt(raw) : null;
+    }
+    return null;
+  }
+
+  function getYandexProductIdFromUrl() {
+    // Yandex Market URLs: /product--slug/12345678 or /product/12345678
+    const m = window.location.pathname.match(/\/product[^/]*\/(\d+)/);
+    if (m) return m[1];
+    // Offer pages: /offer/ABCDE123 — CHECK if offer ID format changes
+    const o = window.location.pathname.match(/\/offer\/([^/?]+)/);
+    return o ? o[1] : null;
+  }
+
+  // ── SHARED UTILS ──────────────────────────────────────────────────────────
+
   function calcEco(price) {
     const commPct = getCommission();
     const comm = Math.round(price * commPct / 100);
@@ -98,16 +162,19 @@
   // ── PRODUCT WIDGET ────────────────────────────────────────────────────────
 
   function buildWidget() {
-    const price   = parsePrice();
-    const oldPrice = parseOldPrice();
-    const title   = parseTitle();
-    const rating  = parseRating();
-    const reviews = parseReviewCount();
-    const sellers = parseSellerCount();
-    const productId = getProductIdFromUrl();
-    const eco     = price ? calcEco(price) : null;
-    const color   = eco ? marginColor(eco.pct) : '#64748b';
+    const price    = marketplace === 'yandex' ? parseYandexPrice()    : parsePrice();
+    const oldPrice = marketplace === 'yandex' ? parseYandexOldPrice() : parseOldPrice();
+    const title    = parseTitle();
+    const rating   = parseRating();
+    const reviews  = parseReviewCount();
+    const sellers  = parseSellerCount();
+    const productId = marketplace === 'yandex' ? getYandexProductIdFromUrl() : getProductIdFromUrl();
+    const eco      = price ? calcEco(price) : null;
+    const color    = eco ? marginColor(eco.pct) : '#64748b';
     const discount = (oldPrice && price) ? Math.round((1 - price/oldPrice)*100) : null;
+    const commLabel = marketplace === 'yandex'
+      ? `Yandex komissiyasi (${eco?.commPct}%)`
+      : `Uzum komissiyasi (${eco?.commPct}%)`;
 
     const wrap = document.createElement('div');
     wrap.id = 'drm-widget';
@@ -136,7 +203,7 @@
         <!-- COST BREAKDOWN -->
         <div class="drm-section-lbl">Xarajatlar taqsimoti</div>
         <div class="drm-card">
-          <div class="drm-row"><span class="drm-l">Uzum komissiyasi (${eco.commPct}%)</span><span class="drm-v drm-red">−${fp(eco.comm)}</span></div>
+          <div class="drm-row"><span class="drm-l">${commLabel}</span><span class="drm-v drm-red">−${fp(eco.comm)}</span></div>
           <div class="drm-row"><span class="drm-l">Yetkazib berish</span><span class="drm-v drm-red">−${fp(eco.delivery)}</span></div>
           <div class="drm-row"><span class="drm-l">Qaytarishlar (~2%)</span><span class="drm-v drm-red">−${fp(eco.returns)}</span></div>
           <div class="drm-row"><span class="drm-l">Ekvayring (1.5%)</span><span class="drm-v drm-red">−${fp(eco.acquiring)}</span></div>
@@ -184,7 +251,7 @@
       window.open(`https://daromadchi.uz/competitors?product=${encodeURIComponent(title)}`, '_blank');
     };
     wrap.querySelector('#drm-ue')?.addEventListener('click', () => {
-      const params = new URLSearchParams({ price: price||'', title, url: location.href });
+      const params = new URLSearchParams({ price: price||'', title, url: location.href, marketplace });
       if (productId) params.set('id', productId);
       window.open(`https://daromadchi.uz/unit-economics?${params}`, '_blank');
     });
@@ -200,9 +267,10 @@
     if (!authToken || !productId) return;
 
     try {
-      const res = await fetch(`https://daromadchi.uz/api/extension/product/${productId}`, {
-        headers: { 'Authorization': `Bearer ${authToken}` }
-      });
+      const res = await fetch(
+        `https://daromadchi.uz/api/extension/product/${productId}?marketplace=${marketplace}`,
+        { headers: { 'Authorization': `Bearer ${authToken}` } }
+      );
       if (!res.ok) return;
       const data = await res.json();
 
@@ -270,11 +338,11 @@
     document.body.prepend(bar);
     document.body.style.paddingTop = (parseInt(getComputedStyle(document.body).paddingTop)||0) + 44 + 'px';
 
-    const { authToken, cachedStats, activeAlerts } = 
+    const { authToken, cachedStats, activeAlerts } =
       await chrome.storage.local.get(['authToken', 'cachedStats', 'activeAlerts']);
 
     if (!authToken) {
-      bar.querySelector('#drm-bar-stats').innerHTML = 
+      bar.querySelector('#drm-bar-stats').innerHTML =
         `<a href="https://daromadchi.uz/login" target="_blank" class="drm-bar-cta">Daromadchiga kirish →</a>`;
       return;
     }
@@ -306,7 +374,10 @@
   // ── INIT ──────────────────────────────────────────────────────────────────
 
   function init() {
-    if (IS_PRODUCT) {
+    // Persist marketplace so background.js can include it in outbound API calls
+    chrome.storage.local.set({ lastMarketplace: marketplace });
+
+    if (isProductPage()) {
       chrome.storage.local.get('widgetClosed', ({ widgetClosed }) => {
         const w = buildWidget();
         if (Date.now() - (widgetClosed||0) < 1800000) w.classList.add('drm-gone');
@@ -323,7 +394,7 @@
     setTimeout(init, 1200);
   }
 
-  // SPA nav handler
+  // SPA nav handler — covers both Uzum and Yandex Market React routing
   let lastUrl = location.href;
   new MutationObserver(() => {
     if (location.href !== lastUrl) {
