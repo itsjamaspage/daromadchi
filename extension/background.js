@@ -223,15 +223,23 @@ async function syncYandexMarket() {
 }
 
 // ─── UZUM SELLER API ─────────────────────────────────────────────────────────
-// Auth: Authorization: Bearer {token}  (from seller.uzum.uz → API kalitlari)
-// Base URL: https://api-seller.uzum.uz/api/seller-openapi  (confirmed from Swagger UI)
-// Confirmed endpoints (swagger-ui/index.html):
-//   GET /v1/invoice                       — FBO delivery invoice list
-//   GET /v1/return                        — seller returns list
-//   GET /v1/shop/{shopId}/invoice         — FBO invoices by shop
-//   GET /v1/fbs/invoice                   — FBS order invoice list
-//   GET /v1/fbs/invoice/{invoiceId}       — single FBS invoice
-// CHECK: product/stock endpoint path — scroll swagger to the Product section to confirm
+// Auth: Authorization: Bearer {token}
+// Base URL: https://api-seller.uzum.uz/api/seller-openapi
+//
+// Confirmed endpoints & response shapes (from Swagger UI):
+//
+//   GET  /v1/shops
+//     → [ { id: number, name: string } ]
+//
+//   GET  /v1/finance/orders?shopIds={id}&dateFrom={ms}&dateTo={ms}&size=200
+//     → { orderItems: [ {} ], totalElements: number }
+//     dateFrom/dateTo are Unix millisecond timestamps; shopIds is REQUIRED
+//
+//   GET  /v2/fbs/sku/stocks
+//     → { payload: { skuAmountList: [ { skuId, skuTitle, productTitle,
+//          barcode, amount, fbsAllowed, dbsAllowed, fbsLinked,
+//          dbsLinked, sellerSkuCode } ] }, errors: [...] }
+//     Stock quantity field: amount
 
 async function uzumSellerFetch(path, token, method = 'GET', body = null) {
   try {
@@ -251,71 +259,77 @@ async function uzumSellerFetch(path, token, method = 'GET', body = null) {
   }
 }
 
+async function getOrCacheUzumShopId(token) {
+  const { uzumShopId } = await chrome.storage.local.get('uzumShopId');
+  if (uzumShopId) return uzumShopId;
+
+  // GET /v1/shops → plain array [{ id, name }]
+  const data = await uzumSellerFetch('/v1/shops', token);
+  if (Array.isArray(data) && data.length > 0) {
+    const id   = data[0].id;
+    const name = data[0].name;
+    chrome.storage.local.set({ uzumShopId: id, uzumShopName: name, uzumShops: data });
+    return id;
+  }
+  return null;
+}
+
 async function syncUzumSeller() {
   const { uzumSellerToken } = await chrome.storage.local.get('uzumSellerToken');
   if (!uzumSellerToken) return;
 
-  const today = new Date().toISOString().slice(0, 10);
-
-  // Confirmed endpoints from Swagger UI:
-  //   GET /v1/fbs/invoice — FBS orders (fulfilled by seller); add date filter params if supported
-  //   GET /v1/return      — returns list
-  //   GET /v1/invoice     — FBO delivery invoices
-  // CHECK: product/stock endpoint — update path once confirmed in swagger Product section
-  const [fbsData, returnsData, productsData] = await Promise.all([
-    uzumSellerFetch('/v1/fbs/invoice', uzumSellerToken),
-    uzumSellerFetch('/v1/return', uzumSellerToken),
-    // CHECK: replace /v1/product with the confirmed path from swagger Product section
-    uzumSellerFetch('/v1/product', uzumSellerToken)
-  ]);
-
-  if (!fbsData && !returnsData && !productsData) {
+  const shopId = await getOrCacheUzumShopId(uzumSellerToken);
+  if (!shopId) {
     chrome.storage.local.set({ uzumConnected: false });
     return;
   }
 
-  // FBS invoices are individual seller-fulfilled orders
-  const fbsOrders = fbsData?.payload ?? fbsData?.data ?? fbsData?.items ?? fbsData ?? [];
-  const allOrders = Array.isArray(fbsOrders) ? fbsOrders : [];
+  // dateFrom/dateTo must be Unix timestamps in milliseconds
+  const now          = Date.now();
+  const todayStartMs = now - (now % 86400000); // start of UTC day
+  const todayEndMs   = todayStartMs + 86400000;
 
-  // Filter to today's orders (createdAt or similar date field)
-  const todayOrders = allOrders.filter(o =>
-    (o.createdAt || o.creationDate || o.date || '').startsWith(today)
+  // GET /v1/finance/orders — shopIds is required; fetch today's orders only
+  // GET /v2/fbs/sku/stocks — no params needed; returns all SKU stock levels
+  const ordersPath = `/v1/finance/orders?shopIds=${shopId}&dateFrom=${todayStartMs}&dateTo=${todayEndMs}&size=200`;
+
+  const [ordersData, stocksData] = await Promise.all([
+    uzumSellerFetch(ordersPath, uzumSellerToken),
+    uzumSellerFetch('/v2/fbs/sku/stocks', uzumSellerToken)
+  ]);
+
+  if (!ordersData && !stocksData) {
+    chrome.storage.local.set({ uzumConnected: false });
+    return;
+  }
+
+  // Orders: { orderItems: [...], totalElements: number }
+  const orderItems = ordersData?.orderItems ?? [];
+  // orderItem price field not confirmed in swagger — use likely candidates
+  const todayRevenue = orderItems.reduce(
+    (s, o) => s + (o.orderItemPrice ?? o.totalPrice ?? o.price ?? o.amount ?? 0), 0
   );
 
-  const todayRevenue = todayOrders.reduce(
-    (s, o) => s + (o.totalPrice || o.deliveryTotalPrice || o.amount || o.price || 0), 0
-  );
+  // Stocks: { payload: { skuAmountList: [{ skuId, productTitle, skuTitle, amount }] } }
+  const skuList = stocksData?.payload?.skuAmountList ?? [];
 
-  // Returns today
-  const returnsRaw = returnsData?.payload ?? returnsData?.data ?? returnsData?.items ?? returnsData ?? [];
-  const todayReturns = Array.isArray(returnsRaw)
-    ? returnsRaw.filter(r => (r.createdAt || r.date || '').startsWith(today)).length
-    : 0;
-
-  const products = productsData?.payload ?? productsData?.data?.items ??
-                   productsData?.items   ?? productsData?.data        ?? [];
-  const productList = Array.isArray(products) ? products : [];
-
-  // Map Uzum products to alert-rule product shape
-  // CHECK: confirm field names (stock, name, id) against actual swagger Product response schema
-  const uzumProducts = productList.map(p => ({
-    id:           `uzum-${p.id ?? p.productId ?? p.skuId}`,
-    name:         p.title ?? p.name ?? p.productName ?? 'Uzum mahsuloti',
-    stock:        p.skuList?.[0]?.stock ?? p.stockCount ?? p.stock ?? p.quantity ?? 0,
-    hasActiveAd:  !!(p.hasActivePromotion || p.isPromoted || p.hasPromotion),
+  const uzumProducts = skuList.map(sku => ({
+    id:           `uzum-${sku.skuId}`,
+    name:         sku.productTitle || sku.skuTitle || 'Uzum mahsuloti',
+    stock:        sku.amount,          // confirmed field name from swagger
+    hasActiveAd:  false,
     adSpendToday: 0,
-    salesToday:   p.salesToday || 0,
-    salesDropPct: p.salesDropPct || 0,
-    returnRate:   p.returnRate || 0,
+    salesToday:   0,
+    salesDropPct: 0,
+    returnRate:   0,
     source:       'uzum-direct'
   }));
   const lowStock = uzumProducts.filter(p => p.stock > 0 && p.stock <= 5).length;
 
   const stats = {
     todayRevenue,
-    todayOrders:  todayOrders.length,
-    todayReturns,
+    todayOrders:  orderItems.length,
+    todayReturns: 0,
     lowStock,
     lastSynced:   new Date().toLocaleTimeString('uz-UZ'),
     source:       'uzum-direct'
@@ -323,8 +337,9 @@ async function syncUzumSeller() {
 
   chrome.storage.local.set({
     uzumDirectStats:     stats,
-    uzumDirectStatsTime: Date.now(),
+    uzumDirectStatsTime: now,
     uzumConnected:       true,
+    uzumShopId:          shopId,
     uzumProducts
   });
 

@@ -250,22 +250,28 @@ document.getElementById('test-uzum').onclick = async () => {
   btn.textContent = '⏳';
   btn.disabled = true;
   try {
-    // GET /v1/invoice confirmed in Swagger UI (FBO invoice list — lightweight auth probe)
-    const res = await fetch('https://api-seller.uzum.uz/api/seller-openapi/v1/invoice', {
+    // GET /v1/shops → [{ id, name }] — confirms auth and gives us shopId in one call
+    const res = await fetch('https://api-seller.uzum.uz/api/seller-openapi/v1/shops', {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type':  'application/json',
         'Accept':        'application/json'
       }
     });
-    if (res.ok || res.status === 200) {
-      await chrome.storage.local.set({ uzumSellerToken: token, uzumConnected: true });
+    const data = res.ok ? await res.json() : null;
+    if (Array.isArray(data) && data.length > 0) {
+      const shopId   = data[0].id;
+      const shopName = data[0].name;
+      await chrome.storage.local.set({
+        uzumSellerToken: token, uzumConnected: true,
+        uzumShopId: shopId, uzumShopName: shopName, uzumShops: data
+      });
       document.getElementById('uzum-status').innerHTML =
-        `<span style="color:#22c55e">✅ Ulandi!</span>`;
+        `<span style="color:#22c55e">✅ Ulandi! Do'kon: ${shopName} (ID: ${shopId})</span>`;
       document.getElementById('o-uzum-token').value = '●'.repeat(24);
     } else {
       document.getElementById('uzum-status').innerHTML =
-        `<span style="color:#ef4444">❌ Noto'g'ri token (HTTP ${res.status})</span>`;
+        `<span style="color:#ef4444">❌ Noto'g'ri token yoki do'kon topilmadi (HTTP ${res.status})</span>`;
     }
   } catch {
     document.getElementById('uzum-status').innerHTML =

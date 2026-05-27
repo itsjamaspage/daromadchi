@@ -159,7 +159,7 @@ function renderAlerts(alerts) {
 }
 
 // ─── MARKETPLACE API STATUS PANEL ────────────────────────────────────────────
-function renderMarketplaceStatus(panel, yandexStats, uzumDirectStats, yandexConnected, uzumConnected) {
+function renderMarketplaceStatus(panel, yandexStats, uzumDirectStats, yandexConnected, uzumConnected, yandexCampaignId, uzumShopName) {
   const rows = [];
 
   if (yandexConnected || yandexStats) {
@@ -169,7 +169,7 @@ function renderMarketplaceStatus(panel, yandexStats, uzumDirectStats, yandexConn
         <span class="mkt-badge mkt-ym">YM</span>
         <span class="mkt-name">Yandex Market</span>
         <span class="mkt-dot ${yandexConnected ? 'mkt-on' : 'mkt-off'}">
-          ${yandexConnected ? '● Ulangan' : '○ Ulanmagan'}
+          ${yandexConnected ? `● Ulangan${yandexCampaignId ? ` · ${yandexCampaignId}` : ''}` : '○ Ulanmagan'}
         </span>
         ${s ? `<span class="mkt-rev">${fp(s.todayRevenue, true)} / ${s.todayOrders || 0} buyurtma</span>` : ''}
       </div>`);
@@ -182,7 +182,7 @@ function renderMarketplaceStatus(panel, yandexStats, uzumDirectStats, yandexConn
         <span class="mkt-badge mkt-uz">UZ</span>
         <span class="mkt-name">Uzum (to'g'ridan)</span>
         <span class="mkt-dot ${uzumConnected ? 'mkt-on' : 'mkt-off'}">
-          ${uzumConnected ? '● Ulangan' : '○ Ulanmagan'}
+          ${uzumConnected ? `● Ulangan${uzumShopName ? ` · ${uzumShopName}` : ''}` : '○ Ulanmagan'}
         </span>
         ${s ? `<span class="mkt-rev">${fp(s.todayRevenue, true)} / ${s.todayOrders || 0} buyurtma</span>` : ''}
       </div>`);
@@ -356,15 +356,15 @@ async function loadAll() {
   const data = await chrome.storage.local.get([
     'authToken', 'cachedStats', 'cacheTime',
     'activeAlerts', 'alertSettings', 'tgStatus',
-    'yandexStats', 'yandexStatsTime', 'yandexConnected',
-    'uzumDirectStats', 'uzumDirectStatsTime', 'uzumConnected'
+    'yandexStats', 'yandexStatsTime', 'yandexConnected', 'yandexCampaignId',
+    'uzumDirectStats', 'uzumDirectStatsTime', 'uzumConnected', 'uzumShopName'
   ]);
 
   const {
     authToken, cachedStats, cacheTime,
     activeAlerts = [], alertSettings = {}, tgStatus = {},
-    yandexStats, yandexConnected,
-    uzumDirectStats, uzumConnected
+    yandexStats, yandexConnected, yandexCampaignId,
+    uzumDirectStats, uzumConnected, uzumShopName
   } = data;
 
   // Use Daromadchi backend stats if connected, refreshing when stale
@@ -402,7 +402,7 @@ async function loadAll() {
   // Inject marketplace API status at the bottom of the stats panel
   const statsPanel = document.getElementById('panel-stats');
   if (statsPanel) {
-    renderMarketplaceStatus(statsPanel, yandexStats, uzumDirectStats, yandexConnected, uzumConnected);
+    renderMarketplaceStatus(statsPanel, yandexStats, uzumDirectStats, yandexConnected, uzumConnected, yandexCampaignId, uzumShopName);
   }
 }
 
