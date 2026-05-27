@@ -251,9 +251,10 @@ document.getElementById('test-uzum').onclick = async () => {
   btn.disabled = true;
   try {
     // GET /v1/shops → [{ id, name }] — confirms auth and gives us shopId in one call
+    // Uzum spec: Authorization header takes the token directly, no "Bearer " prefix
     const res = await fetch('https://api-seller.uzum.uz/api/seller-openapi/v1/shops', {
       headers: {
-        'Authorization': `Bearer ${token}`,
+        'Authorization': token,
         'Content-Type':  'application/json',
         'Accept':        'application/json'
       }

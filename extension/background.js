@@ -223,7 +223,7 @@ async function syncYandexMarket() {
 }
 
 // ─── UZUM SELLER API ─────────────────────────────────────────────────────────
-// Auth: Authorization: Bearer {token}
+// Auth: Authorization: {token}  — NO "Bearer " prefix per Uzum spec
 // Base URL: https://api-seller.uzum.uz/api/seller-openapi
 //
 // Confirmed endpoints & response shapes (from Swagger UI):
@@ -246,7 +246,7 @@ async function uzumSellerFetch(path, token, method = 'GET', body = null) {
     const res = await fetch(`${UZUM_SELLER_API}${path}`, {
       method,
       headers: {
-        'Authorization': `Bearer ${token}`,
+        'Authorization': token,
         'Content-Type': 'application/json',
         'Accept': 'application/json',
       },
@@ -305,10 +305,8 @@ async function syncUzumSeller() {
 
   // Orders: { orderItems: [...], totalElements: number }
   const orderItems = ordersData?.orderItems ?? [];
-  // orderItem price field not confirmed in swagger — use likely candidates
-  const todayRevenue = orderItems.reduce(
-    (s, o) => s + (o.orderItemPrice ?? o.totalPrice ?? o.price ?? o.amount ?? 0), 0
-  );
+  // sellerPrice is the confirmed revenue field from the Uzum OpenAPI spec
+  const todayRevenue = orderItems.reduce((s, o) => s + (o.sellerPrice ?? 0), 0);
 
   // Stocks: { payload: { skuAmountList: [{ skuId, productTitle, skuTitle, amount }] } }
   const skuList = stocksData?.payload?.skuAmountList ?? [];

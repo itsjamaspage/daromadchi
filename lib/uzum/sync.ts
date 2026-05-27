@@ -1,17 +1,16 @@
 import { createClient } from '@/lib/supabase/server'
 import {
-  fetchAllPages,
-  fetchUzumOrders,
-  fetchUzumProducts,
+  fetchUzumShops,
+  fetchAllUzumProducts,
+  fetchAllUzumFinanceOrders,
   UzumApiError,
 } from './client'
 
 const STATUS_MAP: Record<string, string> = {
-  PROCESSING: 'pending',
-  SHIPPED:    'confirmed',
-  DELIVERED:  'delivered',
-  CANCELLED:  'cancelled',
-  RETURNED:   'returned',
+  TO_WITHDRAW:          'delivered',
+  PROCESSING:           'confirmed',
+  CANCELED:             'cancelled',
+  PARTIALLY_CANCELLED:  'cancelled',
 }
 
 export interface SyncResult {
@@ -25,21 +24,31 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
   const supabase = await createClient()
 
   try {
+    // ── Resolve Uzum numeric shop ID ──────────────────────────────────────────
+    const shops = await fetchUzumShops(token)
+    if (!shops.length) throw new Error('Uzum API: hech qanday do\'kon topilmadi')
+    const uzumShopId = shops[0].id
+
     // ── Sync products ──────────────────────────────────────────────────────────
-    const uzumProducts = await fetchAllPages(page => fetchUzumProducts(token, page))
+    const uzumProducts = await fetchAllUzumProducts(token, uzumShopId)
 
-    const productRows = uzumProducts.map(p => ({
-      shop_id:                shopId,
-      marketplace_product_id: String(p.productId),
-      title:                  p.name,
-      sku:                    p.sku || String(p.productId),
-      category:               p.categoryName,
-      selling_price:          p.price,
-      cost_price:             p.purchasePrice,
-      stock_quantity:         p.stock,
-    }))
+    const productRows = uzumProducts.map(p => {
+      const sku0 = p.skuList?.[0]
+      const stock = (p.skuList ?? []).reduce(
+        (s, sku) => s + (sku.quantityActive ?? 0) + (sku.quantityFbs ?? 0), 0
+      )
+      return {
+        shop_id:                shopId,
+        marketplace_product_id: String(p.productId),
+        title:                  p.title ?? String(p.productId),
+        sku:                    String(sku0?.skuId ?? p.productId),
+        category:               p.category ?? null,
+        selling_price:          sku0?.price ?? 0,
+        cost_price:             sku0?.purchasePrice ?? 0,
+        stock_quantity:         stock,
+      }
+    })
 
-    // Replace all products for this shop with fresh data from Uzum
     await supabase.from('products').delete().eq('shop_id', shopId)
     if (productRows.length > 0) {
       const { error: prodErr } = await supabase.from('products').insert(productRows)
@@ -47,39 +56,72 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
     }
 
     // ── Sync orders (last 90 days) ────────────────────────────────────────────
-    const since = new Date()
-    since.setDate(since.getDate() - 90)
+    const now  = Date.now()
+    const from = now - 90 * 86400000
 
-    const uzumOrders = await fetchAllPages(page =>
-      fetchUzumOrders(token, page, 100, since.toISOString().slice(0, 10))
-    )
+    const orderItems = await fetchAllUzumFinanceOrders(token, {
+      shopId:   uzumShopId,
+      dateFrom: from,
+      dateTo:   now,
+      group:    false,
+    })
 
-    // Only insert orders not already stored
     const { data: existing } = await supabase
       .from('orders')
       .select('order_id_external')
       .eq('shop_id', shopId)
 
-    const existingIds = new Set((existing ?? []).map(o => o.order_id_external))
+    const existingIds = new Set((existing ?? []).map((o: { order_id_external: string | null }) => o.order_id_external))
 
-    const newOrderRows = uzumOrders
-      .filter(o => !existingIds.has(o.orderId))
-      .map(o => ({
+    // Each SellerOrderItemDto is one line item; group by orderId
+    const orderMap = new Map<number, typeof orderItems[number][]>()
+    for (const item of orderItems) {
+      if (!orderMap.has(item.orderId)) orderMap.set(item.orderId, [])
+      orderMap.get(item.orderId)!.push(item)
+    }
+
+    const newOrderRows: {
+      shop_id: string
+      order_id_external: string
+      marketplace: 'uzum'
+      status: 'pending' | 'confirmed' | 'delivered' | 'cancelled' | 'returned'
+      revenue: number
+      marketplace_fee: number
+      delivery_cost: number
+      items_count: number
+      ordered_at: string
+    }[] = []
+
+    for (const [orderId, items] of orderMap) {
+      const extId = String(orderId)
+      if (existingIds.has(extId)) continue
+
+      const revenue          = items.reduce((s, i) => s + i.sellerPrice, 0)
+      const marketplace_fee  = items.reduce((s, i) => s + i.commission, 0)
+      const delivery_cost    = items.reduce((s, i) => s + i.logisticDeliveryFee, 0)
+      // Use the status of the first item (all items in an order share status)
+      const rawStatus = items[0].status
+      const status = (STATUS_MAP[rawStatus] ?? 'pending') as
+        'pending' | 'confirmed' | 'delivered' | 'cancelled' | 'returned'
+
+      newOrderRows.push({
         shop_id:           shopId,
-        order_id_external: o.orderId,
-        marketplace:       'uzum' as const,
-        status:            (STATUS_MAP[o.status] ?? 'pending') as 'pending' | 'confirmed' | 'delivered' | 'cancelled' | 'returned',
-        revenue:           o.totalPrice,
-        items_count:       o.items?.length ?? 1,
-        ordered_at:        o.createdAt,
-      }))
+        order_id_external: extId,
+        marketplace:       'uzum',
+        status,
+        revenue,
+        marketplace_fee,
+        delivery_cost,
+        items_count:       items.reduce((s, i) => s + i.amount, 0),
+        ordered_at:        new Date(items[0].date).toISOString(),
+      })
+    }
 
     if (newOrderRows.length > 0) {
       const { error: ordErr } = await supabase.from('orders').insert(newOrderRows)
       if (ordErr) throw new Error(`Buyurtmalarni saqlashda xato: ${ordErr.message}`)
     }
 
-    // ── Update last sync timestamp ────────────────────────────────────────────
     await supabase
       .from('shops')
       .update({ last_synced_at: new Date().toISOString() })
