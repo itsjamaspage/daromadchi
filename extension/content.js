@@ -336,7 +336,7 @@
       </div>
     `;
     document.body.prepend(bar);
-    document.body.style.paddingTop = (parseInt(getComputedStyle(document.body).paddingTop)||0) + 44 + 'px';
+    document.body.style.paddingTop = '48px';
 
     const { daromadchi_token, cachedStats, activeAlerts } =
       await chrome.storage.local.get(['daromadchi_token', 'cachedStats', 'activeAlerts']);
