@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   RefreshCw, Save, Key, CheckCircle, XCircle, ExternalLink,
-  Loader2, Hash, Copy, Puzzle,
+  Loader2, Hash, Copy, Puzzle, Lock, Eye, EyeOff, X,
 } from 'lucide-react'
 import type { Shop } from '@/lib/types'
 import { createClient } from '@/lib/supabase/client'
@@ -367,6 +367,96 @@ function ExtensionTokenCard() {
   )
 }
 
+// ─── Password update modal ────────────────────────────────────────────────────
+
+function PasswordUpdateModal({ onClose }: { onClose: () => void }) {
+  const supabase = createClient()
+  const [password, setPassword] = useState('')
+  const [confirm,  setConfirm]  = useState('')
+  const [showPw,   setShowPw]   = useState(false)
+  const [loading,  setLoading]  = useState(false)
+  const [error,    setError]    = useState('')
+  const [success,  setSuccess]  = useState(false)
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setError('')
+    if (password.length < 6) { setError('Kamida 6 belgi bo\'lishi kerak'); return }
+    if (password !== confirm) { setError('Parollar mos kelmadi'); return }
+    setLoading(true)
+    const { error } = await supabase.auth.updateUser({ password })
+    if (error) { setError(error.message); setLoading(false) }
+    else { setSuccess(true); setTimeout(onClose, 2000) }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}>
+      <div className="w-full max-w-sm bg-[#0e0e1a] border border-white/[0.08] rounded-2xl p-6 shadow-2xl relative">
+        <button onClick={onClose}
+          className="absolute top-4 right-4 text-slate-500 hover:text-white transition-colors">
+          <X className="w-4 h-4" />
+        </button>
+
+        {success ? (
+          <div className="text-center py-4 space-y-3">
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+              <CheckCircle className="w-6 h-6 text-emerald-400" />
+            </div>
+            <p className="text-white font-semibold">Parol muvaffaqiyatli o'zgartirildi!</p>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <h2 className="text-white font-bold text-base mb-1">Yangi parol o'rnatish</h2>
+              <p className="text-slate-500 text-xs">Kamida 6 belgilik yangi parol kiriting</p>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-slate-400 mb-2">Yangi parol</label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                <input type={showPw ? 'text' : 'password'} value={password}
+                  onChange={e => setPassword(e.target.value)} required minLength={6}
+                  placeholder="••••••••"
+                  className="w-full bg-[#1c1c2e] border border-white/[0.08] rounded-xl pl-10 pr-10 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-violet-500/40 transition-all"
+                />
+                <button type="button" onClick={() => setShowPw(!showPw)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500">
+                  {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-slate-400 mb-2">Parolni tasdiqlang</label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                <input type={showPw ? 'text' : 'password'} value={confirm}
+                  onChange={e => setConfirm(e.target.value)} required minLength={6}
+                  placeholder="••••••••"
+                  className="w-full bg-[#1c1c2e] border border-white/[0.08] rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-violet-500/40 transition-all"
+                />
+              </div>
+            </div>
+
+            {error && (
+              <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-2.5 text-sm text-red-400">
+                {error}
+              </div>
+            )}
+
+            <button type="submit" disabled={loading}
+              className="w-full flex items-center justify-center gap-2 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white font-bold text-sm py-2.5 rounded-xl transition-colors">
+              {loading ? <><Loader2 className="w-4 h-4 animate-spin" />Saqlanmoqda...</> : 'Parolni saqlash'}
+            </button>
+          </form>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ─── Main export ──────────────────────────────────────────────────────────────
 
 interface Props {
@@ -376,11 +466,25 @@ interface Props {
 }
 
 export default function SettingsForm({ uzumShop, yandexShop, userId }: Props) {
+  const supabase = createClient()
+  const [showPasswordModal, setShowPasswordModal] = useState(false)
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY') setShowPasswordModal(true)
+    })
+    return () => subscription.unsubscribe()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   return (
-    <div className="space-y-4">
-      <UzumCard          shop={uzumShop}   userId={userId} />
-      <YandexCard        shop={yandexShop} userId={userId} />
-      <ExtensionTokenCard />
-    </div>
+    <>
+      {showPasswordModal && <PasswordUpdateModal onClose={() => setShowPasswordModal(false)} />}
+      <div className="space-y-4">
+        <UzumCard          shop={uzumShop}   userId={userId} />
+        <YandexCard        shop={yandexShop} userId={userId} />
+        <ExtensionTokenCard />
+      </div>
+    </>
   )
 }
