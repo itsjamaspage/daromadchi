@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { syncFromYandex } from '@/lib/yandex/sync'
+import { decryptKey } from '@/lib/crypto'
 
 export async function POST() {
   const supabase = await createClient()
@@ -25,6 +26,6 @@ export async function POST() {
     return NextResponse.json({ ok: false, error: 'Yandex Campaign ID topilmadi. Avval sozlamalarda Campaign ID saqlang.' }, { status: 400 })
   }
 
-  const result = await syncFromYandex(shop.id, shop.api_key_encrypted, shop.shop_id_external)
+  const result = await syncFromYandex(shop.id, decryptKey(shop.api_key_encrypted), shop.shop_id_external)
   return NextResponse.json(result, { status: result.ok ? 200 : 500 })
 }

@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
 import {
   RefreshCw, Save, Key, CheckCircle, XCircle, ExternalLink,
   Loader2, Hash,
@@ -24,8 +23,8 @@ function StatusMsg({ msg }: { msg: { ok: boolean; text: string } | null }) {
 // ─── Uzum section ─────────────────────────────────────────────────────────────
 
 function UzumCard({ shop, userId }: { shop: Shop | null; userId: string }) {
-  const router   = useRouter()
-  const supabase = createClient()
+  const router = useRouter()
+  void userId
 
   const [apiKey,  setApiKey]  = useState('')
   const [saving,  setSaving]  = useState(false)
@@ -39,22 +38,22 @@ function UzumCard({ shop, userId }: { shop: Shop | null; userId: string }) {
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
+    if (!apiKey.trim()) return
     setSaving(true); setSaveMsg(null)
-    if (shop) {
-      const update: Record<string, string> = {}
-      if (apiKey.trim()) update.api_key_encrypted = apiKey.trim()
-      const { error } = await supabase.from('shops').update(update).eq('id', shop.id)
-      setSaveMsg(error ? { ok: false, text: error.message } : { ok: true, text: 'Saqlandi!' })
-    } else {
-      const { error } = await supabase.from('shops').insert({
-        user_id: userId, name: 'Uzum do\'konim',
-        marketplace: 'uzum', is_active: true,
-        ...(apiKey.trim() ? { api_key_encrypted: apiKey.trim() } : {}),
+    try {
+      const res  = await fetch('/api/settings/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ marketplace: 'uzum', apiKey: apiKey.trim() }),
       })
-      setSaveMsg(error ? { ok: false, text: error.message } : { ok: true, text: 'Do\'kon yaratildi!' })
+      const data = await res.json()
+      setSaveMsg(data.ok
+        ? { ok: true,  text: data.created ? 'Do\'kon yaratildi!' : 'Saqlandi!' }
+        : { ok: false, text: data.error ?? 'Xato' })
+      if (data.ok) { setApiKey(''); router.refresh() }
+    } catch {
+      setSaveMsg({ ok: false, text: 'Server bilan bog\'lanishda xato' })
     }
-    setApiKey('')
-    router.refresh()
     setSaving(false)
   }
 
@@ -140,8 +139,8 @@ function UzumCard({ shop, userId }: { shop: Shop | null; userId: string }) {
 // ─── Yandex section ───────────────────────────────────────────────────────────
 
 function YandexCard({ shop, userId }: { shop: Shop | null; userId: string }) {
-  const router   = useRouter()
-  const supabase = createClient()
+  const router = useRouter()
+  void userId
 
   const [apiKey,      setApiKey]      = useState('')
   const [campaignId,  setCampaignId]  = useState(shop?.shop_id_external ?? '')
@@ -157,25 +156,26 @@ function YandexCard({ shop, userId }: { shop: Shop | null; userId: string }) {
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
+    if (!apiKey.trim() && !campaignId.trim()) return
     setSaving(true); setSaveMsg(null)
-    const update: Record<string, string> = {}
-    if (apiKey.trim())     update.api_key_encrypted = apiKey.trim()
-    if (campaignId.trim()) update.shop_id_external  = campaignId.trim()
-
-    if (shop) {
-      const { error } = await supabase.from('shops').update(update).eq('id', shop.id)
-      setSaveMsg(error ? { ok: false, text: error.message } : { ok: true, text: 'Saqlandi!' })
-    } else {
-      const { error } = await supabase.from('shops').insert({
-        user_id: userId, name: 'Yandex Market do\'konim',
-        marketplace: 'yandex_market', is_active: true,
-        ...(apiKey.trim()     ? { api_key_encrypted: apiKey.trim() } : {}),
-        ...(campaignId.trim() ? { shop_id_external:  campaignId.trim() } : {}),
+    try {
+      const res  = await fetch('/api/settings/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          marketplace:    'yandex_market',
+          apiKey:         apiKey.trim()      || undefined,
+          shopIdExternal: campaignId.trim()  || undefined,
+        }),
       })
-      setSaveMsg(error ? { ok: false, text: error.message } : { ok: true, text: 'Do\'kon yaratildi!' })
+      const data = await res.json()
+      setSaveMsg(data.ok
+        ? { ok: true,  text: data.created ? 'Do\'kon yaratildi!' : 'Saqlandi!' }
+        : { ok: false, text: data.error ?? 'Xato' })
+      if (data.ok) { setApiKey(''); router.refresh() }
+    } catch {
+      setSaveMsg({ ok: false, text: 'Server bilan bog\'lanishda xato' })
     }
-    setApiKey('')
-    router.refresh()
     setSaving(false)
   }
 

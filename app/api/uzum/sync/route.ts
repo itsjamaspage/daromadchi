@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { syncFromUzum } from '@/lib/uzum/sync'
 import { createClient } from '@/lib/supabase/server'
+import { decryptKey } from '@/lib/crypto'
 
 export async function POST() {
   const supabase = await createClient()
@@ -24,6 +25,6 @@ export async function POST() {
     )
   }
 
-  const result = await syncFromUzum(shop.id, shop.api_key_encrypted)
+  const result = await syncFromUzum(shop.id, decryptKey(shop.api_key_encrypted))
   return NextResponse.json(result, { status: result.ok ? 200 : 500 })
 }
