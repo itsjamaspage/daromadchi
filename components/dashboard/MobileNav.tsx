@@ -29,7 +29,7 @@ export default function MobileNav() {
   return (
     <>
       {/* Top bar — mobile only */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 z-40 h-14 bg-[#0d0d1a] border-b border-white/[0.05] flex items-center px-4 gap-2">
+      <header className="lg:hidden fixed top-0 left-0 right-0 z-40 h-14 bg-[var(--bg-card)] border-b border-[var(--border)] flex items-center px-4 gap-2">
         <button
           onClick={() => setOpen(true)}
           className="text-slate-400 hover:text-white transition-colors p-1"

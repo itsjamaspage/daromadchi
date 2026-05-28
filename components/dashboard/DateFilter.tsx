@@ -33,7 +33,7 @@ export default function DateFilter({ current }: DateFilterProps) {
   }
 
   return (
-    <div className={`flex items-center gap-1 bg-[#1c1c2e] border border-white/[0.06] rounded-xl p-1 transition-opacity ${pending ? 'opacity-60' : ''}`}>
+    <div className={`flex items-center gap-1 bg-[var(--bg-input)] border border-[var(--border)] rounded-xl p-1 transition-opacity ${pending ? 'opacity-60' : ''}`}>
       {RANGE_OPTIONS.map(opt => (
         <button
           key={opt.value}

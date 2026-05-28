@@ -10,7 +10,7 @@ const CustomTooltip = ({ active, payload }: any) => {
   if (!active || !payload?.length) return null
   const { name, value, payload: p } = payload[0]
   return (
-    <div className="bg-[#1c1c2e] border border-white/[0.08] rounded-xl px-4 py-3 shadow-xl text-xs space-y-1">
+    <div className="bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-3 shadow-xl text-xs space-y-1">
       <p className="text-slate-300 font-medium">{name}</p>
       <p className="text-white font-bold">{new Intl.NumberFormat('uz-UZ').format(value)} so&apos;m</p>
       <p className="text-slate-400">{p.percent?.toFixed(1)}% ulush</p>
@@ -22,7 +22,7 @@ interface CategoryData { name: string; revenue: number; profit: number; percent:
 
 export default function CategoryChart({ data }: { data: CategoryData[] }) {
   return (
-    <div className="bg-[#13131f] border border-white/[0.06] rounded-2xl p-6">
+    <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl p-6">
       <h3 className="text-white font-semibold mb-0.5">Kategoriya bo&apos;yicha daromad</h3>
       <p className="text-slate-500 text-xs mb-5">Savdo ulushi</p>
 

@@ -96,7 +96,7 @@ export default async function DashboardPage({ searchParams }: Props) {
       </div>
 
       {/* Marketplace tabs */}
-      <div className="flex items-center gap-1.5 p-1 bg-[#13131f] border border-white/[0.06] rounded-xl w-fit">
+      <div className="flex items-center gap-1.5 p-1 bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl w-fit">
         {([
           { label: 'Hammasi',       mp: undefined,          color: 'violet' },
           { label: 'Uzum',          mp: 'uzum',             color: 'violet' },
@@ -123,7 +123,7 @@ export default async function DashboardPage({ searchParams }: Props) {
 
       {/* Empty state — no data yet */}
       {isEmpty && (
-        <div className="bg-[#13131f] border border-dashed border-violet-500/30 rounded-2xl p-10 text-center">
+        <div className="bg-[var(--bg-card2)] border border-dashed border-violet-500/30 rounded-2xl p-10 text-center">
           <div className="w-14 h-14 rounded-2xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center mx-auto mb-4">
             <RefreshCw className="w-7 h-7 text-violet-400" />
           </div>
@@ -137,7 +137,7 @@ export default async function DashboardPage({ searchParams }: Props) {
               <Settings className="w-4 h-4" /> Sozlamalarga o'tish
             </Link>
             <Link href="https://seller.uzum.uz" target="_blank" rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-slate-400 hover:text-white text-sm font-medium px-5 py-2.5 rounded-xl border border-white/[0.08] hover:bg-white/[0.04] transition-all">
+              className="inline-flex items-center gap-2 text-slate-400 hover:text-white text-sm font-medium px-5 py-2.5 rounded-xl border border-[var(--border2)] hover:bg-white/[0.04] transition-all">
               seller.uzum.uz <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
@@ -160,13 +160,13 @@ export default async function DashboardPage({ searchParams }: Props) {
         <div className="xl:col-span-2">
           <RevenueChart data={chartData} days={days} />
         </div>
-        <div className="bg-[#13131f] border border-white/[0.06] rounded-2xl p-6">
+        <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl p-6">
           <h3 className="text-white font-semibold mb-4">So&apos;nggi buyurtmalar</h3>
           <div className="space-y-3">
             {recentOrders.map(order => {
               const s = statusMap[order.status]
               return (
-                <div key={order.id} className="flex items-start gap-3 pb-3 border-b border-white/[0.04] last:border-0 last:pb-0">
+                <div key={order.id} className="flex items-start gap-3 pb-3 border-b border-[var(--border)] last:border-0 last:pb-0">
                   <div className="w-8 h-8 rounded-lg bg-violet-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
                     <ShoppingBag className="w-4 h-4 text-violet-400" />
                   </div>
@@ -188,7 +188,7 @@ export default async function DashboardPage({ searchParams }: Props) {
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <CategoryChart data={categoryData} />
 
-        <div className="bg-[#13131f] border border-white/[0.06] rounded-2xl p-6">
+        <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-white font-semibold">Top mahsulotlar</h3>
             <a href="/dashboard/products" className="text-xs text-violet-400 hover:text-violet-300 transition-colors">
@@ -197,7 +197,7 @@ export default async function DashboardPage({ searchParams }: Props) {
           </div>
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-slate-500 text-xs border-b border-white/[0.04]">
+              <tr className="text-slate-500 text-xs border-b border-[var(--border)]">
                 <th className="text-left font-medium pb-3 pr-4">Mahsulot</th>
                 <th className="text-right font-medium pb-3 pr-4">Foyda</th>
                 <th className="text-right font-medium pb-3">Sotilgan</th>

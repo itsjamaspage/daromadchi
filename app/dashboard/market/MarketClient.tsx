@@ -27,21 +27,21 @@ function UzumProductTable({ products, userCategories }: { products: UzumPublicPr
           { label: 'Max narx',      value: `${fmt(maxP)} so'm`, color: 'text-amber-400'   },
           { label: 'Jami buyurtma', value: fmt(totalO),          color: 'text-cyan-400'    },
         ].map(({ label, value, color }) => (
-          <div key={label} className="bg-[#13131f] border border-white/[0.06] rounded-xl p-4">
+          <div key={label} className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl p-4">
             <p className="text-slate-500 text-xs mb-1">{label}</p>
             <p className={`font-bold text-sm ${color}`}>{value}</p>
           </div>
         ))}
       </div>
-      <div className="bg-[#13131f] border border-white/[0.06] rounded-2xl overflow-hidden">
-        <div className="px-5 py-4 border-b border-white/[0.05] flex items-center gap-2">
+      <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
+        <div className="px-5 py-4 border-b border-[var(--border)] flex items-center gap-2">
           <TrendingUp className="w-4 h-4 text-violet-400" />
           <h3 className="text-white font-semibold text-sm">Top mahsulotlar — buyurtmalar bo'yicha</h3>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-slate-500 text-xs border-b border-white/[0.05] bg-white/[0.01]">
+              <tr className="text-slate-500 text-xs border-b border-[var(--border)] bg-white/[0.01]">
                 <th className="text-left px-5 py-3 font-medium">#</th>
                 <th className="text-left px-4 py-3 font-medium">Mahsulot</th>
                 <th className="text-right px-4 py-3 font-medium">Narx</th>
@@ -116,21 +116,21 @@ function YandexModelTable({ models }: { models: YandexModel[] }) {
           { label: "O'rtacha narx", value: `${fmt(avgP)} ${cur}`, color: 'text-amber-400'   },
           { label: 'Max narx',      value: `${fmt(maxP)} ${cur}`, color: 'text-red-400'     },
         ].map(({ label, value, color }) => (
-          <div key={label} className="bg-[#13131f] border border-white/[0.06] rounded-xl p-4">
+          <div key={label} className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl p-4">
             <p className="text-slate-500 text-xs mb-1">{label}</p>
             <p className={`font-bold text-sm ${color}`}>{value}</p>
           </div>
         ))}
       </div>
-      <div className="bg-[#13131f] border border-white/[0.06] rounded-2xl overflow-hidden">
-        <div className="px-5 py-4 border-b border-white/[0.05] flex items-center gap-2">
+      <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
+        <div className="px-5 py-4 border-b border-[var(--border)] flex items-center gap-2">
           <TrendingUp className="w-4 h-4 text-amber-400" />
           <h3 className="text-white font-semibold text-sm">Yandex Market — top modellar</h3>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-slate-500 text-xs border-b border-white/[0.05] bg-white/[0.01]">
+              <tr className="text-slate-500 text-xs border-b border-[var(--border)] bg-white/[0.01]">
                 <th className="text-left px-5 py-3 font-medium">#</th>
                 <th className="text-left px-4 py-3 font-medium">Model</th>
                 <th className="text-right px-4 py-3 font-medium">Narx diapazoni</th>
@@ -274,7 +274,7 @@ export default function MarketClient({ marketplace, initialCategories, userCateg
               onChange={e => setSearchQuery(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSearch()}
               placeholder="Mahsulot nomini qidiring…"
-              className={`w-full bg-[#13131f] border border-white/[0.06] rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder:text-slate-500 focus:outline-none ${searchBorder} transition-colors`}
+              className={`w-full bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder:text-slate-500 focus:outline-none ${searchBorder} transition-colors`}
             />
           </div>
           <button onClick={handleSearch}
@@ -304,7 +304,7 @@ export default function MarketClient({ marketplace, initialCategories, userCateg
                     ? loadUzumCategory({ id, title })
                     : loadYandexCategory({ id, name: title })}
                   className={`flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl border text-left text-xs font-medium transition-all ${
-                    active ? accentActive : `bg-[#13131f] border-white/[0.06] text-slate-300 hover:text-white ${accentHover}`
+                    active ? accentActive : `bg-[var(--bg-card2)] border-[var(--border)] text-slate-300 hover:text-white ${accentHover}`
                   }`}
                 >
                   <span className="truncate">{title}</span>
@@ -338,7 +338,7 @@ export default function MarketClient({ marketplace, initialCategories, userCateg
                   const s = e.target.value as SortUzum; setSortUzum(s)
                   if (selectedCat) loadUzumCategory(selectedCat, s)
                 }}
-                className="bg-[#13131f] border border-white/[0.06] text-slate-300 text-xs rounded-lg px-3 py-1.5 focus:outline-none">
+                className="bg-[var(--bg-card2)] border border-[var(--border)] text-slate-300 text-xs rounded-lg px-3 py-1.5 focus:outline-none">
                 {UZUM_SORTS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
             ) : (
@@ -347,7 +347,7 @@ export default function MarketClient({ marketplace, initialCategories, userCateg
                   const s = e.target.value as SortYandex; setSortYandex(s)
                   if (selectedCat) loadYandexCategory({ id: selectedCat.id, name: selectedCat.title }, s)
                 }}
-                className="bg-[#13131f] border border-white/[0.06] text-slate-300 text-xs rounded-lg px-3 py-1.5 focus:outline-none">
+                className="bg-[var(--bg-card2)] border border-[var(--border)] text-slate-300 text-xs rounded-lg px-3 py-1.5 focus:outline-none">
                 {YANDEX_SORTS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
             )}

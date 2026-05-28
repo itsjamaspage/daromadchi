@@ -114,8 +114,8 @@ export default function NotificationsButton() {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-80 bg-[#13131f] border border-white/[0.08] rounded-2xl shadow-2xl shadow-black/50 z-50 overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.05]">
+        <div className="absolute right-0 top-full mt-2 w-80 bg-[var(--bg-card2)] border border-[var(--border2)] rounded-2xl shadow-2xl shadow-black/50 z-50 overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)]">
             <h3 className="text-white font-semibold text-sm">Bildirishnomalar</h3>
             <span className="text-xs text-slate-500">{alerts.length} ta</span>
           </div>
@@ -153,7 +153,7 @@ export default function NotificationsButton() {
           )}
 
           {alerts.length > 0 && (
-            <div className="px-4 py-2.5 border-t border-white/[0.05]">
+            <div className="px-4 py-2.5 border-t border-[var(--border)]">
               <button
                 onClick={() => setAlerts([])}
                 className="text-xs text-slate-500 hover:text-slate-300 transition-colors w-full text-center"

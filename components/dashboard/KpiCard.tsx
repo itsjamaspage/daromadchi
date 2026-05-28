@@ -20,7 +20,7 @@ export default function KpiCard({ title, value, change, icon: Icon, color }: Kpi
   const isPositive = (change ?? 0) >= 0
 
   return (
-    <div className="bg-[#13131f] border border-white/[0.06] rounded-2xl p-5 hover:border-white/[0.1] transition-all">
+    <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl p-5 hover:border-white/[0.1] transition-all">
       <div className="flex items-start justify-between mb-4">
         <div className={`w-10 h-10 rounded-xl ${c.bg} border ${c.border} flex items-center justify-center`}>
           <Icon className={`w-5 h-5 ${c.icon}`} />

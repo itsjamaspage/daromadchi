@@ -33,7 +33,7 @@ export default function SyncButton() {
           ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
           : state === 'err'
           ? 'bg-red-500/10 border-red-500/20 text-red-400'
-          : 'bg-[#1c1c2e] border-white/[0.08] text-slate-400 hover:text-white'
+          : 'bg-[var(--bg-input)] border-[var(--border2)] text-slate-400 hover:text-white'
       }`}
     >
       {state === 'syncing' && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}

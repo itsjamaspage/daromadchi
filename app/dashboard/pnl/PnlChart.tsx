@@ -14,7 +14,7 @@ function fmtM(v: number) {
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null
   return (
-    <div className="bg-[#1c1c2e] border border-white/[0.08] rounded-xl px-4 py-3 shadow-xl text-xs space-y-1.5 min-w-[160px]">
+    <div className="bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-3 shadow-xl text-xs space-y-1.5 min-w-[160px]">
       <p className="text-slate-300 font-medium mb-2">{label}</p>
       {payload.map((p: any) => (
         <div key={p.dataKey} className="flex items-center justify-between gap-4">
@@ -31,7 +31,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
 export default function PnlChart({ data }: { data: { month: string; revenue: number; cost: number; adSpend: number; profit: number }[] }) {
   return (
-    <div className="bg-[#13131f] border border-white/[0.06] rounded-2xl p-6">
+    <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl p-6">
       <h3 className="text-white font-semibold mb-1">Daromad va foyda dinamikasi</h3>
       <p className="text-slate-500 text-xs mb-5">Oylik ko&apos;rsatkichlar</p>
       <ResponsiveContainer width="100%" height={260}>

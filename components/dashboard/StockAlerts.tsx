@@ -23,8 +23,8 @@ export default function StockAlerts({ products }: { products: Product[] }) {
   if (alerts.length === 0) return null
 
   return (
-    <div className="bg-[#13131f] border border-white/[0.06] rounded-2xl overflow-hidden">
-      <div className="px-5 py-4 border-b border-white/[0.05] flex items-center gap-2">
+    <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
+      <div className="px-5 py-4 border-b border-[var(--border)] flex items-center gap-2">
         <AlertTriangle className="w-4 h-4 text-amber-400" />
         <h3 className="text-white font-semibold text-sm">Ombor ogohlantirishlari</h3>
         <span className="ml-auto text-xs text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-lg">
@@ -76,7 +76,7 @@ export default function StockAlerts({ products }: { products: Product[] }) {
         })}
       </div>
 
-      <div className="px-5 py-3 border-t border-white/[0.05] bg-white/[0.01]">
+      <div className="px-5 py-3 border-t border-[var(--border)] bg-white/[0.01]">
         <p className="text-slate-500 text-xs">
           Hisoblash: so&apos;nggi 30 kunlik savdo tezligiga asoslangan · Buyurtma: 45 kunlik zaxira
         </p>

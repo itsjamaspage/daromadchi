@@ -41,7 +41,7 @@ export default async function AccountPage() {
       </div>
 
       {/* Avatar + name */}
-      <div className="bg-[#13131f] border border-white/[0.06] rounded-2xl p-6 flex items-center gap-5">
+      <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl p-6 flex items-center gap-5">
         <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-violet-500/20 flex-shrink-0">
           <User className="w-8 h-8 text-white" />
         </div>
@@ -59,8 +59,8 @@ export default async function AccountPage() {
       </div>
 
       {/* Plan */}
-      <div className="bg-[#13131f] border border-white/[0.06] rounded-2xl overflow-hidden">
-        <div className="px-6 py-4 border-b border-white/[0.05] flex items-center gap-3">
+      <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
+        <div className="px-6 py-4 border-b border-[var(--border)] flex items-center gap-3">
           <CreditCard className="w-4 h-4 text-slate-400" />
           <p className="text-white font-semibold text-sm">Tarif rejasi</p>
         </div>
@@ -92,8 +92,8 @@ export default async function AccountPage() {
       </div>
 
       {/* Security */}
-      <div className="bg-[#13131f] border border-white/[0.06] rounded-2xl overflow-hidden">
-        <div className="px-6 py-4 border-b border-white/[0.05] flex items-center gap-3">
+      <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
+        <div className="px-6 py-4 border-b border-[var(--border)] flex items-center gap-3">
           <Shield className="w-4 h-4 text-slate-400" />
           <p className="text-white font-semibold text-sm">Xavfsizlik</p>
         </div>

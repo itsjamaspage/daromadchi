@@ -26,7 +26,7 @@ const CATEGORIES: { name: string; rate: number }[] = [
   { name: 'Boshqa',               rate: 10 },
 ]
 
-const inputCls = "w-full bg-[#1c1c2e] border border-white/[0.08] rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/30 transition-all"
+const inputCls = "w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/30 transition-all"
 
 export default function CalculatorPage() {
   const [price,      setPrice]      = useState('')
@@ -95,7 +95,7 @@ export default function CalculatorPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* ── Inputs ──────────────────────────────────────────────────── */}
-        <div className="bg-[#13131f] border border-white/[0.06] rounded-2xl p-6 space-y-4">
+        <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl p-6 space-y-4">
           <h2 className="text-white font-semibold text-sm">Mahsulot ma'lumotlari</h2>
 
           <div className="grid grid-cols-2 gap-3">
@@ -151,23 +151,23 @@ export default function CalculatorPage() {
         {/* ── Results ─────────────────────────────────────────────────── */}
         <div className="space-y-4">
           {!result ? (
-            <div className="bg-[#13131f] border border-white/[0.06] rounded-2xl p-6 flex flex-col items-center justify-center min-h-[220px] gap-3">
+            <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl p-6 flex flex-col items-center justify-center min-h-[220px] gap-3">
               <Calculator className="w-10 h-10 text-slate-700" />
               <p className="text-slate-500 text-sm text-center">Natijani ko'rish uchun<br/>narx va tannarxni kiriting</p>
             </div>
           ) : (
             <>
               {/* ── REALITY CHECK ─────────────────────────────────────── */}
-              <div className="rounded-2xl overflow-hidden border border-white/[0.08]">
-                <div className="bg-gradient-to-r from-violet-600/20 to-indigo-600/10 px-5 py-3 border-b border-white/[0.06] flex items-center gap-2">
+              <div className="rounded-2xl overflow-hidden border border-[var(--border2)]">
+                <div className="bg-gradient-to-r from-violet-600/20 to-indigo-600/10 px-5 py-3 border-b border-[var(--border)] flex items-center gap-2">
                   <Zap className="w-4 h-4 text-violet-400" />
                   <span className="text-white font-bold text-sm">Reality Check — oylik hisob</span>
                 </div>
 
-                <div className="bg-[#13131f] p-5 space-y-4">
+                <div className="bg-[var(--bg-card2)] p-5 space-y-4">
                   {/* Two-column comparison */}
                   <div className="grid grid-cols-2 gap-3">
-                    <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4">
+                    <div className="bg-white/[0.03] border border-[var(--border)] rounded-xl p-4">
                       <p className="text-slate-500 text-[11px] mb-1">Siz hisoblagan foyda</p>
                       <p className="text-white font-bold text-xl">{fmt(result.naiveProfit)}</p>
                       <p className="text-slate-600 text-[10px] mt-0.5">so'm</p>
@@ -221,7 +221,7 @@ export default function CalculatorPage() {
                         </div>
                       )
                     })}
-                    <div className="border-t border-white/[0.06] pt-1.5 flex items-center gap-2 text-xs">
+                    <div className="border-t border-[var(--border)] pt-1.5 flex items-center gap-2 text-xs">
                       <div className="w-2 h-2 rounded-full flex-shrink-0 bg-emerald-500" />
                       <span className="text-slate-200 font-semibold flex-1">Sof foyda (dona)</span>
                       <span className={`font-bold tabular-nums ${result.realProfitUnit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
@@ -243,7 +243,7 @@ export default function CalculatorPage() {
                   { label: 'DRR',        value: `${result.drr.toFixed(1)}%`,        good: result.drr < 15,      bad: result.drr > 25     },
                   { label: 'Zararlanmaslik', value: `${fmt(result.breakeven)} s'm`, good: result.price > result.breakeven, bad: result.price <= result.breakeven },
                 ].map(({ label, value, good, bad }) => (
-                  <div key={label} className="bg-[#13131f] border border-white/[0.06] rounded-xl p-3">
+                  <div key={label} className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl p-3">
                     <p className="text-slate-500 text-[10px] mb-0.5">{label}</p>
                     <p className={`text-base font-bold ${good ? 'text-emerald-400' : bad ? 'text-red-400' : 'text-amber-400'}`}>{value}</p>
                   </div>

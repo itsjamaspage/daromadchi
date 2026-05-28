@@ -131,8 +131,8 @@ export default function PricingPage() {
   const [annual,  setAnnual]  = useState(false)
   const [modal,   setModal]   = useState<ModalState>(null)
 
-  const card  = theme === 'dark' ? '#0e0e1a' : '#ffffff'
-  const card2 = theme === 'dark' ? '#13131f' : '#f8f8ff'
+  const card  = theme === 'dark' ? 'var(--bg-card)' : '#ffffff'
+  const card2 = theme === 'dark' ? 'var(--bg-card2)' : '#f8f8ff'
 
   const prices = annual ? ANNUAL : MONTHLY
 

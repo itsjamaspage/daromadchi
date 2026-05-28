@@ -40,6 +40,29 @@ body {
   transition: background 0.3s ease, color 0.3s ease;
 }
 
+/* Light mode: make white text readable on light backgrounds */
+[data-theme="light"] .text-white {
+  color: var(--text-base) !important;
+}
+/* But keep white text on colored buttons/badges */
+[data-theme="light"] button.bg-violet-600 .text-white,
+[data-theme="light"] .bg-violet-600,
+[data-theme="light"] .bg-violet-500,
+[data-theme="light"] .bg-emerald-600,
+[data-theme="light"] .bg-red-500,
+[data-theme="light"] .bg-amber-600 {
+  color: #ffffff !important;
+}
+[data-theme="light"] .bg-violet-600 *,
+[data-theme="light"] .bg-violet-500 *,
+[data-theme="light"] .bg-amber-600 * {
+  color: #ffffff !important;
+}
+/* Hover states that use white text */
+[data-theme="light"] .hover\:text-white:hover {
+  color: var(--text-base) !important;
+}
+
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;

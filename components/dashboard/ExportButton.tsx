@@ -32,7 +32,7 @@ export default function ExportButton({ data, filename }: ExportButtonProps) {
   return (
     <button
       onClick={handleExport}
-      className="flex items-center gap-2 bg-[#1c1c2e] hover:bg-white/[0.06] border border-white/[0.08] text-slate-300 text-sm font-medium px-4 py-2.5 rounded-xl transition-colors"
+      className="flex items-center gap-2 bg-[var(--bg-input)] hover:bg-white/[0.06] border border-[var(--border2)] text-slate-300 text-sm font-medium px-4 py-2.5 rounded-xl transition-colors"
     >
       <Download className="w-4 h-4" />
       CSV

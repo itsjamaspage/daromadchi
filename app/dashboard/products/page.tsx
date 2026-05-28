@@ -13,7 +13,7 @@ export default async function ProductsPage() {
           <h1 className="text-2xl font-bold text-white">Mahsulotlar</h1>
           <p className="text-slate-400 text-sm mt-1">0 ta mahsulot</p>
         </div>
-        <div className="bg-[#13131f] border border-dashed border-violet-500/30 rounded-2xl p-10 text-center">
+        <div className="bg-[var(--bg-card2)] border border-dashed border-violet-500/30 rounded-2xl p-10 text-center">
           <div className="w-14 h-14 rounded-2xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center mx-auto mb-4">
             <Package className="w-7 h-7 text-violet-400" />
           </div>

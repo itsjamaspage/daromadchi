@@ -43,7 +43,7 @@ export default async function PnlPage() {
       </div>
 
       {isEmpty ? (
-        <div className="bg-[#13131f] border border-dashed border-violet-500/30 rounded-2xl p-10 text-center">
+        <div className="bg-[var(--bg-card2)] border border-dashed border-violet-500/30 rounded-2xl p-10 text-center">
           <div className="w-14 h-14 rounded-2xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center mx-auto mb-4">
             <FileText className="w-7 h-7 text-violet-400" />
           </div>
@@ -66,7 +66,7 @@ export default async function PnlPage() {
               { label: 'Yetkazib berish',     value: fmt(totalDelivery),color: 'text-amber-400' },
               { label: "Sof (komissiyasiz)",  value: fmt(totalNet),     color: totalNet > 0 ? 'text-emerald-400' : 'text-red-400' },
             ].map(({ label, value, color }) => (
-              <div key={label} className="bg-[#13131f] border border-white/[0.06] rounded-2xl p-5">
+              <div key={label} className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl p-5">
                 <p className="text-slate-500 text-xs mb-2">{label}</p>
                 <p className={`text-xl font-bold ${color}`}>{value}</p>
               </div>
@@ -92,11 +92,11 @@ export default async function PnlPage() {
           }))} />
 
           {/* Monthly table */}
-          <div className="bg-[#13131f] border border-white/[0.06] rounded-2xl overflow-hidden">
+          <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="text-slate-500 text-xs border-b border-white/[0.05] bg-white/[0.01]">
+                  <tr className="text-slate-500 text-xs border-b border-[var(--border)] bg-white/[0.01]">
                     <th className="text-left font-medium px-5 py-3">Oy</th>
                     <th className="text-right font-medium px-5 py-3">Buyurtmalar</th>
                     <th className="text-right font-medium px-5 py-3">Daromad</th>
@@ -133,7 +133,7 @@ export default async function PnlPage() {
                     )
                   })}
                   {/* Totals */}
-                  <tr className="bg-white/[0.03] border-t border-white/[0.08]">
+                  <tr className="bg-white/[0.03] border-t border-[var(--border2)]">
                     <td className="px-5 py-4 text-white font-bold text-xs uppercase tracking-wide">Jami</td>
                     <td className="px-5 py-4 text-right text-slate-300 font-bold">{monthlyData.reduce((s, m) => s + m.order_count, 0)}</td>
                     <td className="px-5 py-4 text-right text-white font-bold">{fmt(totalRevenue)}</td>

@@ -65,7 +65,7 @@ export default function OrdersTable({ orders }: { orders: Order[] }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-1 bg-[#13131f] border border-white/[0.06] rounded-xl p-1 w-fit flex-wrap">
+      <div className="flex items-center gap-1 bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl p-1 w-fit flex-wrap">
         {STATUS_TABS.map(tab => (
           <button
             key={tab.value}
@@ -92,7 +92,7 @@ export default function OrdersTable({ orders }: { orders: Order[] }) {
             value={query}
             onChange={e => setQuery(e.target.value)}
             placeholder="Buyurtma ID yoki marketplace..."
-            className="w-full bg-[#13131f] border border-white/[0.08] rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/30 transition-all"
+            className="w-full bg-[var(--bg-card2)] border border-[var(--border2)] rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/30 transition-all"
           />
         </div>
         <ExportButton data={exportData} filename="buyurtmalar" />
@@ -100,11 +100,11 @@ export default function OrdersTable({ orders }: { orders: Order[] }) {
 
       <p className="text-slate-500 text-xs">{filtered.length} ta buyurtma</p>
 
-      <div className="bg-[#13131f] border border-white/[0.06] rounded-2xl overflow-hidden">
+      <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-slate-500 text-xs border-b border-white/[0.05] bg-white/[0.01]">
+              <tr className="text-slate-500 text-xs border-b border-[var(--border)] bg-white/[0.01]">
                 <th className="text-left font-medium px-5 py-3">Buyurtma ID</th>
                 <th className="text-left font-medium px-5 py-3">Marketplace</th>
                 <th className="text-left font-medium px-5 py-3">Sana</th>

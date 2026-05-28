@@ -39,7 +39,7 @@ export default function UpdatePasswordPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4"
-      style={{ background: '#07070f' }}>
+      style={{ background: 'var(--bg-base)' }}>
 
       <div className="absolute top-1/4 left-1/4 w-80 h-80 rounded-full bg-violet-600/10 blur-3xl pointer-events-none" />
       <div className="absolute bottom-1/4 right-1/4 w-64 h-64 rounded-full bg-indigo-600/8 blur-3xl pointer-events-none" />
@@ -54,7 +54,7 @@ export default function UpdatePasswordPage() {
         </div>
 
         <div className="rounded-2xl p-8 shadow-2xl border"
-          style={{ background: '#0e0e1a', borderColor: 'rgba(255,255,255,0.07)' }}>
+          style={{ background: 'var(--bg-card)', borderColor: 'rgba(255,255,255,0.07)' }}>
 
           {success ? (
             <div className="text-center py-6 space-y-4">
@@ -82,7 +82,7 @@ export default function UpdatePasswordPage() {
                     required minLength={6}
                     placeholder="••••••••"
                     className="w-full rounded-xl pl-10 pr-10 py-3 text-sm outline-none transition-all text-white"
-                    style={{ background: '#1c1c2e', border: '1px solid rgba(255,255,255,0.08)' }}
+                    style={{ background: 'var(--bg-input)', border: '1px solid rgba(255,255,255,0.08)' }}
                   />
                   <button type="button" onClick={() => setShowPw(!showPw)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500">
@@ -102,7 +102,7 @@ export default function UpdatePasswordPage() {
                     required minLength={6}
                     placeholder="••••••••"
                     className="w-full rounded-xl pl-10 pr-4 py-3 text-sm outline-none transition-all text-white"
-                    style={{ background: '#1c1c2e', border: '1px solid rgba(255,255,255,0.08)' }}
+                    style={{ background: 'var(--bg-input)', border: '1px solid rgba(255,255,255,0.08)' }}
                   />
                 </div>
               </div>

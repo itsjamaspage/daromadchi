@@ -4,7 +4,7 @@ import BottomNav from '@/components/dashboard/BottomNav'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-[#0a0a0f]">
+    <div className="min-h-screen bg-[var(--bg-base)]">
       {/* Desktop sidebar */}
       <div className="hidden lg:block fixed left-0 top-0 h-full w-60 z-30">
         <Sidebar />

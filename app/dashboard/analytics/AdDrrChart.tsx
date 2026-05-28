@@ -10,7 +10,7 @@ interface Row { name: string; drrTotal: number; drrAd: number }
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null
   return (
-    <div className="bg-[#1c1c2e] border border-white/[0.08] rounded-xl px-4 py-3 shadow-xl text-xs space-y-1.5">
+    <div className="bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-3 shadow-xl text-xs space-y-1.5">
       <p className="text-slate-300 font-medium truncate max-w-[160px]">{label}</p>
       {payload.map((p: any) => (
         <div key={p.dataKey} className="flex items-center gap-2">
@@ -31,7 +31,7 @@ export default function AdDrrChart({ rows }: { rows: Row[] }) {
   }))
 
   return (
-    <div className="bg-[#13131f] border border-white/[0.06] rounded-2xl p-6">
+    <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl p-6">
       <div className="flex items-center justify-between mb-5">
         <div>
           <h3 className="text-white font-semibold">DRR taqqoslash</h3>

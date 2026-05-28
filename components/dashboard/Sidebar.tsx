@@ -10,21 +10,9 @@ import {
 } from 'lucide-react'
 import { useTheme, useLang } from '@/app/providers'
 import type { Lang } from '@/lib/i18n'
+import { dashT } from '@/lib/lang'
 
 type NavItem = { href: string; label: string; icon: React.ElementType }
-
-const storeNav: NavItem[] = [
-  { href: '/dashboard',            label: 'Dashboard',     icon: LayoutDashboard },
-  { href: '/dashboard/products',   label: 'Mahsulotlar',   icon: Package         },
-  { href: '/dashboard/orders',     label: 'Buyurtmalar',   icon: ShoppingCart    },
-  { href: '/dashboard/analytics',  label: 'Tahlil',        icon: BarChart2       },
-  { href: '/dashboard/pnl',        label: 'F & Z hisobot', icon: FileText        },
-  { href: '/dashboard/calculator', label: 'Kalkulyator',   icon: Calculator      },
-]
-
-const marketNav: NavItem[] = [
-  { href: '/dashboard/market', label: 'Bozor tadqiqoti', icon: Globe2 },
-]
 
 interface SidebarProps {
   onClose?: () => void
@@ -85,6 +73,20 @@ export default function Sidebar({ onClose }: SidebarProps) {
   const supabase       = createClient()
   const { theme, toggle } = useTheme()
   const { lang, setLang } = useLang()
+  const t = dashT[lang as keyof typeof dashT] ?? dashT.uz
+  const nav = t.nav
+
+  const storeNav: NavItem[] = [
+    { href: '/dashboard',            label: nav.dashboard,   icon: LayoutDashboard },
+    { href: '/dashboard/products',   label: nav.products,    icon: Package         },
+    { href: '/dashboard/orders',     label: nav.orders,      icon: ShoppingCart    },
+    { href: '/dashboard/analytics',  label: nav.analytics,   icon: BarChart2       },
+    { href: '/dashboard/pnl',        label: nav.pnl,         icon: FileText        },
+    { href: '/dashboard/calculator', label: nav.calculator,  icon: Calculator      },
+  ]
+  const marketNav: NavItem[] = [
+    { href: '/dashboard/market', label: nav.market, icon: Globe2 },
+  ]
 
   async function handleLogout() {
     await supabase.auth.signOut()
@@ -97,9 +99,9 @@ export default function Sidebar({ onClose }: SidebarProps) {
   }
 
   return (
-    <aside className="h-full w-60 bg-[#0d0d1a] border-r border-white/[0.05] flex flex-col">
+    <aside className="h-full w-60 bg-[var(--bg-card)] border-r border-[var(--border)] flex flex-col">
       {/* Logo row */}
-      <div className="p-5 border-b border-white/[0.05] flex items-center justify-between">
+      <div className="p-5 border-b border-[var(--border)] flex items-center justify-between">
         <Link href="/" className="flex items-center gap-3 group">
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center shadow-md shadow-violet-500/30 group-hover:shadow-violet-500/50 transition-shadow">
             <TrendingUp className="w-5 h-5 text-white" />
@@ -124,17 +126,17 @@ export default function Sidebar({ onClose }: SidebarProps) {
       <nav className="flex-1 p-3 space-y-4 overflow-y-auto">
         <NavSection
           items={storeNav}
-          label="Do'konim"
+          label={nav.store}
           labelColor="text-violet-400/60"
           pathname={pathname}
           onNavClick={handleNavClick}
         />
 
-        <div className="border-t border-white/[0.04]" />
+        <div className="border-t border-[var(--border)]" />
 
         <NavSection
           items={marketNav}
-          label="Bozor"
+          label={nav.bozor}
           labelColor="text-cyan-400/60"
           pathname={pathname}
           onNavClick={handleNavClick}
@@ -142,7 +144,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
       </nav>
 
       {/* Theme + Language + Settings + Logout */}
-      <div className="p-3 border-t border-white/[0.05] space-y-1">
+      <div className="p-3 border-t border-[var(--border)] space-y-1">
         {/* Theme & Language row */}
         <div className="flex items-center gap-2 px-1 py-1">
           {/* Theme toggle */}
@@ -181,7 +183,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
           }`}
         >
           <User className={`w-4 h-4 flex-shrink-0 ${pathname === '/dashboard/account' ? 'text-violet-400' : 'text-slate-500 group-hover:text-slate-300'}`} />
-          Profil
+          {nav.profile}
           {pathname === '/dashboard/account' && <ChevronRight className="w-3 h-3 ml-auto text-violet-400" />}
         </Link>
         <Link
@@ -194,7 +196,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
           }`}
         >
           <Settings className={`w-4 h-4 flex-shrink-0 ${pathname === '/dashboard/settings' ? 'text-violet-400' : 'text-slate-500 group-hover:text-slate-300'}`} />
-          Sozlamalar
+          {nav.settings}
           {pathname === '/dashboard/settings' && <ChevronRight className="w-3 h-3 ml-auto text-violet-400" />}
         </Link>
         <button
@@ -202,7 +204,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
           className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:text-red-400 hover:bg-red-500/[0.08] transition-all"
         >
           <LogOut className="w-4 h-4" />
-          Chiqish
+          {nav.logout}
         </button>
       </div>
     </aside>

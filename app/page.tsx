@@ -137,8 +137,8 @@ function LangToggle() {
 /* ── dashboard preview ──────────────────────────────────────────────────── */
 function DashboardPreview({ p }: { p: typeof import('@/lib/i18n').translations.en.preview }) {
   const { theme } = useTheme()
-  const card  = theme === 'dark' ? '#0e0e1a' : '#ffffff'
-  const card2 = theme === 'dark' ? '#13131f' : '#f8f8ff'
+  const card  = theme === 'dark' ? 'var(--bg-card)' : '#ffffff'
+  const card2 = theme === 'dark' ? 'var(--bg-card2)' : '#f8f8ff'
   const border = theme === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(139,92,246,0.15)'
   const textMuted = theme === 'dark' ? '#64748b' : '#9ca3af'
   const textSub = theme === 'dark' ? '#475569' : '#d1d5db'
@@ -259,8 +259,8 @@ export default function LandingPage() {
   const stepsInView    = useInView(stepsRef,    { once: true, margin: '-100px' })
   const statsInView    = useInView(statsRef,    { once: true, margin: '-100px' })
 
-  const card  = theme === 'dark' ? '#0e0e1a' : '#ffffff'
-  const card2 = theme === 'dark' ? '#0e0e1a' : '#f8f8ff'
+  const card  = theme === 'dark' ? 'var(--bg-card)' : '#ffffff'
+  const card2 = theme === 'dark' ? 'var(--bg-card)' : '#f8f8ff'
 
   return (
     <div className="min-h-screen overflow-x-hidden" style={{ background: 'var(--bg-base)', color: 'var(--text-base)' }}>

@@ -59,8 +59,8 @@ function Section({ title, icon: Icon, children }: {
   title: string; icon: React.ComponentType<{ className?: string }>; children: React.ReactNode
 }) {
   return (
-    <div className="bg-[#13131f] border border-white/[0.06] rounded-2xl overflow-hidden">
-      <div className="px-5 py-4 border-b border-white/[0.05] flex items-center gap-2">
+    <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
+      <div className="px-5 py-4 border-b border-[var(--border)] flex items-center gap-2">
         <Icon className="w-4 h-4 text-violet-400" />
         <h2 className="text-white font-semibold text-sm">{title}</h2>
       </div>
@@ -124,7 +124,7 @@ export default async function AnalyticsPage({ searchParams }: Props) {
     return (
       <div className="space-y-6">
         <PageHeader isFree={isFree} days={days} />
-        <div className="bg-[#13131f] border border-dashed border-violet-500/30 rounded-2xl p-10 text-center">
+        <div className="bg-[var(--bg-card2)] border border-dashed border-violet-500/30 rounded-2xl p-10 text-center">
           <BarChart2 className="w-10 h-10 text-violet-400/40 mx-auto mb-4" />
           <h2 className="text-white font-bold text-lg mb-2">Do&apos;kon ulanmagan</h2>
           <p className="text-slate-400 text-sm mb-6 max-w-xs mx-auto">
@@ -272,7 +272,7 @@ export default async function AnalyticsPage({ searchParams }: Props) {
                 <div key={stage.label} className="flex items-center shrink-0">
                   <div className={`flex flex-col items-center justify-center px-5 py-4 rounded-xl border min-w-[140px] text-center
                     ${stage.dim
-                      ? 'bg-white/[0.02] border-white/[0.05]'
+                      ? 'bg-white/[0.02] border-[var(--border)]'
                       : 'bg-violet-500/8 border-violet-500/20'}`}>
                     <p className="text-slate-500 text-[10px] uppercase tracking-wide mb-1">{stage.label}</p>
                     <p className={`font-bold text-lg ${stage.dim ? 'text-slate-600' : 'text-white'}`}>{stage.value}</p>
@@ -297,7 +297,7 @@ export default async function AnalyticsPage({ searchParams }: Props) {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-slate-500 text-xs border-b border-white/[0.05] bg-white/[0.01]">
+                <tr className="text-slate-500 text-xs border-b border-[var(--border)] bg-white/[0.01]">
                   <th className="text-left font-medium px-5 py-3">Mahsulot nomi</th>
                   <th className="text-right font-medium px-4 py-3">Sotuvlar</th>
                   <th className="text-right font-medium px-4 py-3">Daromad</th>
@@ -340,7 +340,7 @@ export default async function AnalyticsPage({ searchParams }: Props) {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-slate-500 text-xs border-b border-white/[0.05] bg-white/[0.01]">
+                <tr className="text-slate-500 text-xs border-b border-[var(--border)] bg-white/[0.01]">
                   <th className="text-left font-medium px-5 py-3">Ko&apos;rsatkich</th>
                   <th className="text-right font-medium px-4 py-3">Bu hafta</th>
                   <th className="text-right font-medium px-4 py-3">O&apos;tgan hafta</th>
@@ -395,7 +395,7 @@ export default async function AnalyticsPage({ searchParams }: Props) {
                 { label: 'Jami daromad',               value: fmtS(totalRev) },
                 { label: 'DRR (jami)',                  value: `${drrTotal.toFixed(1)}%`, colorCls: drrCls(drrTotal) },
               ].map(c => (
-                <div key={c.label} className="bg-[#1a1a2e] border border-white/[0.05] rounded-xl p-3">
+                <div key={c.label} className="bg-[#1a1a2e] border border-[var(--border)] rounded-xl p-3">
                   <p className="text-slate-500 text-[10px] uppercase tracking-wide mb-1">{c.label}</p>
                   <p className={`font-bold text-base ${(c as { colorCls?: string }).colorCls ?? 'text-white'}`}>{c.value}</p>
                 </div>
@@ -405,7 +405,7 @@ export default async function AnalyticsPage({ searchParams }: Props) {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="text-slate-500 text-xs border-b border-white/[0.05]">
+                  <tr className="text-slate-500 text-xs border-b border-[var(--border)]">
                     <th className="text-left font-medium py-2">Mahsulot</th>
                     <th className="text-right font-medium px-3 py-2">Reklama xarajati</th>
                     <th className="text-right font-medium px-3 py-2">Sotuvlar</th>
@@ -455,7 +455,7 @@ export default async function AnalyticsPage({ searchParams }: Props) {
                 { label: 'Qaytarish foizi',   value: `${returnRate.toFixed(1)}%`,   colorCls: returnRate > 15 ? 'text-red-400' : returnRate > 5 ? 'text-amber-400' : 'text-emerald-400' },
                 { label: 'Qaytarish qiymati', value: fmtS(returnedRev) },
               ].map(c => (
-                <div key={c.label} className="bg-[#1a1a2e] border border-white/[0.05] rounded-xl p-3">
+                <div key={c.label} className="bg-[#1a1a2e] border border-[var(--border)] rounded-xl p-3">
                   <p className="text-slate-500 text-[10px] uppercase tracking-wide mb-1">{c.label}</p>
                   <p className={`font-bold text-base ${(c as { colorCls?: string }).colorCls ?? 'text-white'}`}>{c.value}</p>
                 </div>
@@ -501,7 +501,7 @@ export default async function AnalyticsPage({ searchParams }: Props) {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="text-slate-500 text-xs border-b border-white/[0.05] bg-white/[0.01]">
+                  <tr className="text-slate-500 text-xs border-b border-[var(--border)] bg-white/[0.01]">
                     <th className="text-left font-medium px-5 py-3">Mahsulot nomi</th>
                     <th className="text-right font-medium px-4 py-3">Sizning narxingiz</th>
                     <th className="text-right font-medium px-4 py-3">Kategoriya o&apos;rtachasi</th>
@@ -527,7 +527,7 @@ export default async function AnalyticsPage({ searchParams }: Props) {
                 </tbody>
               </table>
             </div>
-            <div className="px-5 py-3 border-t border-white/[0.04] flex gap-4 text-[10px] text-slate-600">
+            <div className="px-5 py-3 border-t border-[var(--border)] flex gap-4 text-[10px] text-slate-600">
               <span><span className="text-emerald-400">■</span> O&apos;rtachadan past (−10%)</span>
               <span><span className="text-amber-400">■</span> O&apos;rtacha atrofida</span>
               <span><span className="text-red-400">■</span> O&apos;rtachadan yuqori (+20%)</span>
@@ -590,7 +590,7 @@ function PageHeader({ isFree, days }: { isFree: boolean; days: number }) {
         <p className="text-slate-400 text-sm mt-0.5">Sotuv, reklama, qaytarish va vaqt tahlili</p>
       </div>
       {!isFree && (
-        <div className="flex items-center gap-1.5 p-1 bg-[#13131f] border border-white/[0.06] rounded-xl w-fit">
+        <div className="flex items-center gap-1.5 p-1 bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl w-fit">
           {opts.map(d => (
             <Link key={d} href={`?days=${d}`}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${

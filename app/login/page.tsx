@@ -172,10 +172,10 @@ export default function LoginPage() {
   const router = useRouter()
 
   const isDark = theme === 'dark'
-  const bg     = isDark ? '#07070f'  : '#f3f3fa'
-  const card   = isDark ? '#0e0e1a'  : '#ffffff'
+  const bg     = isDark ? 'var(--bg-base)'  : '#f3f3fa'
+  const card   = isDark ? 'var(--bg-card)'  : '#ffffff'
   const border = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(139,92,246,0.15)'
-  const inputBg = isDark ? '#1c1c2e' : '#eeeefc'
+  const inputBg = isDark ? 'var(--bg-input)' : '#eeeefc'
   const inputBorder = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(139,92,246,0.2)'
   const textBase  = isDark ? '#e2e8f0' : '#1a1a2e'
   const textMuted = isDark ? '#64748b' : '#6b7280'
@@ -266,7 +266,7 @@ export default function LoginPage() {
 
           {/* Tabs — hidden in forgot mode */}
           {mode !== 'forgot' && (
-            <div className="flex rounded-xl p-1 mb-6 gap-1" style={{ background: isDark ? '#13131f' : '#e8e8f8' }}>
+            <div className="flex rounded-xl p-1 mb-6 gap-1" style={{ background: isDark ? 'var(--bg-card2)' : '#e8e8f8' }}>
               {(['login','signup'] as const).map(m => (
                 <button key={m} onClick={() => switchMode(m)}
                   className="flex-1 py-2.5 rounded-lg text-sm font-bold transition-all"

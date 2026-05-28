@@ -15,7 +15,7 @@ const tabs = [
 export default function BottomNav() {
   const pathname = usePathname()
   return (
-    <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-white/[0.06] bg-[#0d0d1a]/95 backdrop-blur-xl">
+    <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-[var(--border)] bg-[var(--bg-card)]/95 backdrop-blur-xl">
       <div className="flex items-stretch h-16">
         {tabs.map(({ href, label, icon: Icon }) => {
           const active = pathname === href

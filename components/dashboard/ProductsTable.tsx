@@ -75,7 +75,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
             value={query}
             onChange={e => setQuery(e.target.value)}
             placeholder="Mahsulot nomi, SKU yoki kategoriya..."
-            className="w-full bg-[#13131f] border border-white/[0.08] rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/30 transition-all"
+            className="w-full bg-[var(--bg-card2)] border border-[var(--border2)] rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/30 transition-all"
           />
         </div>
         <div className="flex items-center gap-2 flex-wrap">
@@ -86,7 +86,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
               className={`px-3 py-2 rounded-xl text-xs font-medium transition-all border ${
                 category === c
                   ? 'bg-violet-600/20 text-violet-300 border-violet-500/30'
-                  : 'text-slate-400 border-white/[0.06] hover:text-white hover:border-white/[0.12]'
+                  : 'text-slate-400 border-[var(--border)] hover:text-white hover:border-white/[0.12]'
               }`}
             >
               {c}
@@ -100,11 +100,11 @@ export default function ProductsTable({ products }: { products: Product[] }) {
 
       <p className="text-slate-500 text-xs">{filtered.length} ta mahsulot {query || category !== 'Barchasi' ? '(filtr)' : ''}</p>
 
-      <div className="bg-[#13131f] border border-white/[0.06] rounded-2xl overflow-hidden">
+      <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-slate-500 text-xs border-b border-white/[0.05] bg-white/[0.01]">
+              <tr className="text-slate-500 text-xs border-b border-[var(--border)] bg-white/[0.01]">
                 <th className="text-left font-medium px-5 py-3 cursor-pointer select-none hover:text-slate-300" onClick={() => toggleSort('title')}>
                   Mahsulot <SortIcon col="title" />
                 </th>
@@ -137,7 +137,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
                       <p className="text-slate-500 text-xs mt-0.5">{p.sku}</p>
                     </td>
                     <td className="px-5 py-4">
-                      <span className="text-xs text-slate-400 bg-white/[0.04] px-2.5 py-1 rounded-lg border border-white/[0.06]">{p.category ?? '—'}</span>
+                      <span className="text-xs text-slate-400 bg-white/[0.04] px-2.5 py-1 rounded-lg border border-[var(--border)]">{p.category ?? '—'}</span>
                     </td>
                     <td className="px-5 py-4 text-right text-slate-300">{fmt(price)}</td>
                     <td className="px-5 py-4 text-right text-slate-500">{fmt(Number(p.cost_price ?? 0))}</td>

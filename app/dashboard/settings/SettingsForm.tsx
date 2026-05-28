@@ -74,9 +74,9 @@ function UzumCard({ shop, userId }: { shop: Shop | null; userId: string }) {
   }
 
   return (
-    <div className="bg-[#13131f] border border-white/[0.06] rounded-2xl overflow-hidden">
+    <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
       {/* Header */}
-      <div className="px-6 py-4 border-b border-white/[0.05] flex items-center gap-3">
+      <div className="px-6 py-4 border-b border-[var(--border)] flex items-center gap-3">
         <div className="w-8 h-8 rounded-lg bg-violet-500/15 border border-violet-500/25 flex items-center justify-center">
           <span className="text-sm font-bold text-violet-400">U</span>
         </div>
@@ -100,7 +100,7 @@ function UzumCard({ shop, userId }: { shop: Shop | null; userId: string }) {
             value={apiKey}
             onChange={e => setApiKey(e.target.value)}
             placeholder={hasKey ? '••••••••  (yangilash uchun kiriting)' : 'Token kiriting…'}
-            className="w-full bg-[#1c1c2e] border border-white/[0.08] rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-violet-500/60 transition-all font-mono"
+            className="w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-violet-500/60 transition-all font-mono"
           />
           <p className="text-slate-500 text-xs mt-1.5 flex items-center gap-1">
             <a href="https://seller.uzum.uz" target="_blank" rel="noopener noreferrer" className="text-violet-400 hover:text-violet-300 flex items-center gap-0.5">
@@ -119,7 +119,7 @@ function UzumCard({ shop, userId }: { shop: Shop | null; userId: string }) {
 
       {/* Sync */}
       {shop && (
-        <div className="px-6 pb-6 space-y-3 border-t border-white/[0.04] pt-4">
+        <div className="px-6 pb-6 space-y-3 border-t border-[var(--border)] pt-4">
           <div className="flex items-center justify-between">
             <p className="text-slate-400 text-xs">
               {lastSync ? <>Oxirgi sinxr: <span className="text-slate-300">{lastSync}</span></> : 'Hali sinxronlanmagan'}
@@ -128,7 +128,7 @@ function UzumCard({ shop, userId }: { shop: Shop | null; userId: string }) {
           <StatusMsg msg={syncMsg} />
           <button onClick={handleSync} disabled={syncing || !hasKey}
             title={!hasKey ? 'Avval token saqlang' : ''}
-            className="flex items-center gap-2 bg-[#1c1c2e] hover:bg-white/[0.06] border border-white/[0.08] disabled:opacity-40 disabled:cursor-not-allowed text-slate-200 text-sm font-medium px-4 py-2 rounded-xl transition-colors">
+            className="flex items-center gap-2 bg-[var(--bg-input)] hover:bg-white/[0.06] border border-[var(--border2)] disabled:opacity-40 disabled:cursor-not-allowed text-slate-200 text-sm font-medium px-4 py-2 rounded-xl transition-colors">
             {syncing ? <><Loader2 className="w-4 h-4 animate-spin" /> Sinxronlanmoqda…</> : <><RefreshCw className="w-4 h-4" /> Sinxronlash</>}
           </button>
         </div>
@@ -198,9 +198,9 @@ function YandexCard({ shop, userId }: { shop: Shop | null; userId: string }) {
   const connected = hasKey && hasCampaign
 
   return (
-    <div className="bg-[#13131f] border border-white/[0.06] rounded-2xl overflow-hidden">
+    <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
       {/* Header */}
-      <div className="px-6 py-4 border-b border-white/[0.05] flex items-center gap-3">
+      <div className="px-6 py-4 border-b border-[var(--border)] flex items-center gap-3">
         <div className="w-8 h-8 rounded-lg bg-amber-500/15 border border-amber-500/25 flex items-center justify-center">
           <span className="text-sm font-bold text-amber-400">Y</span>
         </div>
@@ -224,7 +224,7 @@ function YandexCard({ shop, userId }: { shop: Shop | null; userId: string }) {
             value={apiKey}
             onChange={e => setApiKey(e.target.value)}
             placeholder={hasKey ? '••••••••  (yangilash uchun kiriting)' : 'OAuth token kiriting…'}
-            className="w-full bg-[#1c1c2e] border border-white/[0.08] rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-amber-500/40 transition-all font-mono"
+            className="w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-amber-500/40 transition-all font-mono"
           />
         </div>
 
@@ -237,7 +237,7 @@ function YandexCard({ shop, userId }: { shop: Shop | null; userId: string }) {
             value={campaignId}
             onChange={e => setCampaignId(e.target.value)}
             placeholder={hasCampaign ? shop!.shop_id_external! : 'Campaign ID (masalan: 12345678)'}
-            className="w-full bg-[#1c1c2e] border border-white/[0.08] rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-amber-500/40 transition-all font-mono"
+            className="w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-amber-500/40 transition-all font-mono"
           />
           <p className="text-slate-500 text-xs mt-1.5 flex items-center gap-1">
             <a href="https://partner.market.yandex.ru" target="_blank" rel="noopener noreferrer"
@@ -258,14 +258,14 @@ function YandexCard({ shop, userId }: { shop: Shop | null; userId: string }) {
 
       {/* Sync */}
       {shop && (
-        <div className="px-6 pb-6 space-y-3 border-t border-white/[0.04] pt-4">
+        <div className="px-6 pb-6 space-y-3 border-t border-[var(--border)] pt-4">
           <p className="text-slate-400 text-xs">
             {lastSync ? <>Oxirgi sinxr: <span className="text-slate-300">{lastSync}</span></> : 'Hali sinxronlanmagan'}
           </p>
           <StatusMsg msg={syncMsg} />
           <button onClick={handleSync} disabled={syncing || !connected}
             title={!connected ? 'Avval token va Campaign ID saqlang' : ''}
-            className="flex items-center gap-2 bg-[#1c1c2e] hover:bg-white/[0.06] border border-white/[0.08] disabled:opacity-40 disabled:cursor-not-allowed text-slate-200 text-sm font-medium px-4 py-2 rounded-xl transition-colors">
+            className="flex items-center gap-2 bg-[var(--bg-input)] hover:bg-white/[0.06] border border-[var(--border2)] disabled:opacity-40 disabled:cursor-not-allowed text-slate-200 text-sm font-medium px-4 py-2 rounded-xl transition-colors">
             {syncing ? <><Loader2 className="w-4 h-4 animate-spin" /> Sinxronlanmoqda…</> : <><RefreshCw className="w-4 h-4" /> Sinxronlash</>}
           </button>
         </div>
@@ -306,9 +306,9 @@ function ExtensionTokenCard() {
   const masked = token ? token.slice(0, 20) + '…' : '—'
 
   return (
-    <div className="bg-[#13131f] border border-white/[0.06] rounded-2xl overflow-hidden">
+    <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
       {/* Header */}
-      <div className="px-6 py-4 border-b border-white/[0.05] flex items-center gap-3">
+      <div className="px-6 py-4 border-b border-[var(--border)] flex items-center gap-3">
         <div className="w-8 h-8 rounded-lg bg-indigo-500/15 border border-indigo-500/25 flex items-center justify-center">
           <Puzzle className="w-4 h-4 text-indigo-400" />
         </div>
@@ -325,7 +325,7 @@ function ExtensionTokenCard() {
             <Key className="w-3.5 h-3.5" /> Joriy token
           </label>
           <div className="flex items-center gap-2">
-            <code className="flex-1 bg-[#1c1c2e] border border-white/[0.08] rounded-xl px-4 py-2.5 text-sm text-slate-300 font-mono truncate">
+            <code className="flex-1 bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-slate-300 font-mono truncate">
               {masked}
             </code>
             <button
@@ -335,7 +335,7 @@ function ExtensionTokenCard() {
               className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium border transition-all shrink-0 ${
                 copied
                   ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
-                  : 'bg-[#1c1c2e] border-white/[0.08] text-slate-300 hover:border-indigo-500/40 hover:text-indigo-300 disabled:opacity-40 disabled:cursor-not-allowed'
+                  : 'bg-[var(--bg-input)] border-[var(--border2)] text-slate-300 hover:border-indigo-500/40 hover:text-indigo-300 disabled:opacity-40 disabled:cursor-not-allowed'
               }`}
             >
               {copied
@@ -347,7 +347,7 @@ function ExtensionTokenCard() {
         </div>
 
         {/* Instructions */}
-        <p className="text-slate-500 text-xs leading-relaxed bg-[#1c1c2e] rounded-xl px-4 py-3 border border-white/[0.05]">
+        <p className="text-slate-500 text-xs leading-relaxed bg-[var(--bg-input)] rounded-xl px-4 py-3 border border-[var(--border)]">
           Ushbu tokenni <span className="text-slate-300">Chrome kengaytmasi → Options → Daromadchi token</span> maydoniga joylashtiring
         </p>
 
@@ -355,7 +355,7 @@ function ExtensionTokenCard() {
         <button
           onClick={handleRefresh}
           disabled={refreshing}
-          className="flex items-center gap-2 bg-[#1c1c2e] hover:bg-white/[0.06] border border-white/[0.08] disabled:opacity-50 text-slate-200 text-sm font-medium px-4 py-2 rounded-xl transition-colors"
+          className="flex items-center gap-2 bg-[var(--bg-input)] hover:bg-white/[0.06] border border-[var(--border2)] disabled:opacity-50 text-slate-200 text-sm font-medium px-4 py-2 rounded-xl transition-colors"
         >
           {refreshing
             ? <><Loader2 className="w-4 h-4 animate-spin" /> Yangilanmoqda…</>
@@ -392,7 +392,7 @@ function PasswordUpdateModal({ onClose }: { onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
       style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}>
-      <div className="w-full max-w-sm bg-[#0e0e1a] border border-white/[0.08] rounded-2xl p-6 shadow-2xl relative">
+      <div className="w-full max-w-sm bg-[var(--bg-card)] border border-[var(--border2)] rounded-2xl p-6 shadow-2xl relative">
         <button onClick={onClose}
           className="absolute top-4 right-4 text-slate-500 hover:text-white transition-colors">
           <X className="w-4 h-4" />
@@ -419,7 +419,7 @@ function PasswordUpdateModal({ onClose }: { onClose: () => void }) {
                 <input type={showPw ? 'text' : 'password'} value={password}
                   onChange={e => setPassword(e.target.value)} required minLength={6}
                   placeholder="••••••••"
-                  className="w-full bg-[#1c1c2e] border border-white/[0.08] rounded-xl pl-10 pr-10 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-violet-500/40 transition-all"
+                  className="w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl pl-10 pr-10 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-violet-500/40 transition-all"
                 />
                 <button type="button" onClick={() => setShowPw(!showPw)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500">
@@ -435,7 +435,7 @@ function PasswordUpdateModal({ onClose }: { onClose: () => void }) {
                 <input type={showPw ? 'text' : 'password'} value={confirm}
                   onChange={e => setConfirm(e.target.value)} required minLength={6}
                   placeholder="••••••••"
-                  className="w-full bg-[#1c1c2e] border border-white/[0.08] rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-violet-500/40 transition-all"
+                  className="w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-violet-500/40 transition-all"
                 />
               </div>
             </div>

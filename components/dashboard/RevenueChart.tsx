@@ -14,7 +14,7 @@ function formatSum(value: number) {
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload?.length) {
     return (
-      <div className="bg-[#1c1c2e] border border-white/[0.08] rounded-xl px-4 py-3 shadow-xl">
+      <div className="bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-3 shadow-xl">
         <p className="text-slate-400 text-xs mb-1">{label}</p>
         <p className="text-white font-bold text-sm">
           {payload[0].value.toLocaleString('uz-UZ')} so&apos;m
@@ -27,13 +27,13 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
 export default function RevenueChart({ data, days = 7 }: { data: DailyRevenue[]; days?: number }) {
   return (
-    <div className="bg-[#13131f] border border-white/[0.06] rounded-2xl p-6">
+    <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl p-6">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h3 className="text-white font-semibold">Kunlik daromad</h3>
           <p className="text-slate-500 text-xs mt-0.5">So&apos;nggi {days} kun</p>
         </div>
-        <span className="text-xs text-slate-500 bg-white/[0.04] px-3 py-1.5 rounded-lg border border-white/[0.06]">
+        <span className="text-xs text-slate-500 bg-white/[0.04] px-3 py-1.5 rounded-lg border border-[var(--border)]">
           So&apos;m
         </span>
       </div>
