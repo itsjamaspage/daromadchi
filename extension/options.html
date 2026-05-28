@@ -53,6 +53,25 @@ input:checked+.slider:before{transform:translateX(18px);background:#fff}
   </div>
 
   <div class="section">
+    <div class="section-title">🔐 Daromadchi Hisobi</div>
+    <div class="row api-row">
+      <div class="row-lbl">
+        <strong>Daromadchi Token</strong>
+        <span>
+          <a href="https://daromadchi.uz/login" target="_blank" style="color:#6366f1">Daromadchi.uz</a>
+          ga kiring → Sozlamalar → Kengaytma bo'limidan tokenni oling
+        </span>
+      </div>
+      <div class="api-field-wrap">
+        <input class="api-in" id="o-drm-token" type="password" placeholder="Tokenni kiriting..."/>
+        <button class="test-btn" id="test-drm">Tekshirish</button>
+        <button class="clear-btn" id="clear-drm" title="O'chirish">✕</button>
+      </div>
+      <div class="api-status" id="drm-status"></div>
+    </div>
+  </div>
+
+  <div class="section">
     <div class="section-title">🎛️ Ogohlantirish Chegaralari</div>
     <div class="row">
       <div class="row-lbl"><strong>Kam zaxira (dona)</strong><span>Nechta qolganda ogohlantirish yuborilsin</span></div>
@@ -170,14 +189,70 @@ document.getElementById('save-btn').onclick = async () => {
   setTimeout(() => msg.style.display = 'none', 2000);
 };
 
+// ── Daromadchi account token ──────────────────────────────────────────────────
+document.getElementById('test-drm').onclick = async () => {
+  const token = document.getElementById('o-drm-token').value.trim();
+  if (!token || token.startsWith('●')) {
+    document.getElementById('drm-status').innerHTML =
+      `<span style="color:#f59e0b">Yangi token kiriting</span>`;
+    return;
+  }
+  const btn = document.getElementById('test-drm');
+  btn.textContent = '⏳'; btn.disabled = true;
+  try {
+    const res  = await fetch('https://daromadchi.uz/api/extension/validate', {
+      headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
+    });
+    const data = res.ok ? await res.json() : null;
+    if (data?.valid) {
+      await chrome.storage.local.set({ daromadchi_token: token });
+      document.getElementById('drm-status').innerHTML =
+        `<span style="color:#22c55e">✅ Ulandi! ${data.email}</span>`;
+      document.getElementById('o-drm-token').value = '●'.repeat(24);
+    } else {
+      document.getElementById('drm-status').innerHTML =
+        `<span style="color:#ef4444">❌ Token yaroqsiz (HTTP ${res.status})</span>`;
+    }
+  } catch {
+    document.getElementById('drm-status').innerHTML =
+      `<span style="color:#ef4444">❌ Ulanish xatosi</span>`;
+  }
+  btn.textContent = 'Tekshirish'; btn.disabled = false;
+};
+
+document.getElementById('clear-drm').onclick = async () => {
+  await chrome.storage.local.remove('daromadchi_token');
+  document.getElementById('o-drm-token').value = '';
+  document.getElementById('drm-status').innerHTML =
+    `<span style="color:#64748b">O'chirildi</span>`;
+};
+
 // ── API Key management ────────────────────────────────────────────────────────
 async function loadApiKeys() {
-  const { yandexApiKey, yandexCampaignId, yandexConnected,
+  const { daromadchi_token,
+          yandexApiKey, yandexCampaignId, yandexConnected,
           uzumSellerToken, uzumConnected } =
     await chrome.storage.local.get([
+      'daromadchi_token',
       'yandexApiKey', 'yandexCampaignId', 'yandexConnected',
       'uzumSellerToken', 'uzumConnected'
     ]);
+
+  if (daromadchi_token) {
+    document.getElementById('o-drm-token').value = '●'.repeat(24);
+    try {
+      const res  = await fetch('https://daromadchi.uz/api/extension/validate', {
+        headers: { 'Authorization': `Bearer ${daromadchi_token}` }
+      });
+      const data = res.ok ? await res.json() : null;
+      document.getElementById('drm-status').innerHTML = data?.valid
+        ? `<span style="color:#22c55e">✅ Ulangan: ${data.email}</span>`
+        : `<span style="color:#f59e0b">⚠️ Token yaroqsiz — qayta kiring</span>`;
+    } catch {
+      document.getElementById('drm-status').innerHTML =
+        `<span style="color:#64748b">Saqlangan (internet yo'q — tekshirilmadi)</span>`;
+    }
+  }
 
   if (yandexApiKey) {
     document.getElementById('o-yandex-key').value = '●'.repeat(24);

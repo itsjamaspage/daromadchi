@@ -351,30 +351,72 @@ async function renderSettings(token, settings, tgStatus) {
   };
 }
 
+// ─── LOGIN GATE ───────────────────────────────────────────────────────────────
+function showLoginGate() {
+  document.querySelector('.tabs').style.display = 'none';
+  document.querySelectorAll('.panel').forEach(p => { p.style.display = 'none'; });
+  document.getElementById('status-badge').className = 'badge badge-off';
+  document.getElementById('status-badge').textContent = 'Ulanmagan';
+
+  const gate = document.createElement('div');
+  gate.style.cssText = 'padding:28px 18px;text-align:center';
+  gate.innerHTML = `
+    <div style="width:44px;height:44px;background:linear-gradient(135deg,#7c3aed,#2563eb);border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:20px">📊</div>
+    <p style="color:#94a3b8;font-size:12px;line-height:1.5;margin-bottom:16px">
+      Statistika, ogohlantirishlar va Telegram xabarnomalar uchun tizimga kiring
+    </p>
+    <a href="https://daromadchi.uz/login" target="_blank" class="btn-login">
+      Daromadchiga kirish →
+    </a>
+    <p style="font-size:10px;color:#475569;margin-top:12px;line-height:1.4">
+      Kirganingizdan so'ng <a href="options.html" target="_blank" style="color:#6366f1">Sozlamalar</a>dan tokenni qo'shing
+    </p>
+  `;
+  document.querySelector('body').appendChild(gate);
+}
+
 // ─── LOAD ALL ─────────────────────────────────────────────────────────────────
 async function loadAll() {
   const data = await chrome.storage.local.get([
-    'authToken', 'cachedStats', 'cacheTime',
+    'daromadchi_token', 'cachedStats', 'cacheTime',
     'activeAlerts', 'alertSettings', 'tgStatus',
     'yandexStats', 'yandexStatsTime', 'yandexConnected', 'yandexCampaignId',
     'uzumDirectStats', 'uzumDirectStatsTime', 'uzumConnected', 'uzumShopName'
   ]);
 
   const {
-    authToken, cachedStats, cacheTime,
+    daromadchi_token, cachedStats, cacheTime,
     activeAlerts = [], alertSettings = {}, tgStatus = {},
     yandexStats, yandexConnected, yandexCampaignId,
     uzumDirectStats, uzumConnected, uzumShopName
   } = data;
 
+  // No token → full-screen login gate
+  if (!daromadchi_token) {
+    showLoginGate();
+    return;
+  }
+
+  // Validate token — only block on explicit 401; pass through on network errors
+  try {
+    const vRes = await fetch(`${API}/extension/validate`, {
+      headers: { 'Authorization': `Bearer ${daromadchi_token}` }
+    });
+    if (vRes.status === 401) {
+      chrome.storage.local.remove('daromadchi_token');
+      showLoginGate();
+      return;
+    }
+  } catch { /* offline — proceed */ }
+
   // Use Daromadchi backend stats if connected, refreshing when stale
   let stats = cachedStats;
-  const stale = Date.now() - (cacheTime||0) > 300000;
+  const stale = Date.now() - (cacheTime || 0) > 300000;
 
-  if (authToken && stale) {
+  if (stale) {
     try {
       const res = await fetch(`${API}/extension/stats`, {
-        headers: { 'Authorization': `Bearer ${authToken}` }
+        headers: { 'Authorization': `Bearer ${daromadchi_token}` }
       });
       if (res.ok) {
         stats = await res.json();
@@ -384,7 +426,7 @@ async function loadAll() {
 
     try {
       const res = await fetch(`${API}/extension/telegram-status`, {
-        headers: { 'Authorization': `Bearer ${authToken}` }
+        headers: { 'Authorization': `Bearer ${daromadchi_token}` }
       });
       if (res.ok) {
         const tg = await res.json();
@@ -395,9 +437,9 @@ async function loadAll() {
     } catch {}
   }
 
-  renderStats(authToken, stats);
+  renderStats(daromadchi_token, stats);
   renderAlerts(activeAlerts);
-  renderSettings(authToken, alertSettings, tgStatus);
+  renderSettings(daromadchi_token, alertSettings, tgStatus);
 
   // Inject marketplace API status at the bottom of the stats panel
   const statsPanel = document.getElementById('panel-stats');

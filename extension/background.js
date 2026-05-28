@@ -408,14 +408,14 @@ async function runSync() {
   syncYandexMarket();
   syncUzumSeller();
 
-  const { authToken, alertSettings = {}, sentAlertIds = [] } =
-    await chrome.storage.local.get(['authToken', 'alertSettings', 'sentAlertIds']);
+  const { daromadchi_token, alertSettings = {}, sentAlertIds = [] } =
+    await chrome.storage.local.get(['daromadchi_token', 'alertSettings', 'sentAlertIds']);
 
-  if (!authToken) return;
+  if (!daromadchi_token) return;
 
   const [stats, products] = await Promise.all([
-    apiFetch('/extension/stats', authToken),
-    apiFetch('/extension/products', authToken)
+    apiFetch('/extension/stats', daromadchi_token),
+    apiFetch('/extension/products', daromadchi_token)
   ]);
 
   if (stats) {
@@ -476,7 +476,7 @@ async function runSync() {
   }
 
   if (newAlerts.length > 0) {
-    sendTelegramAlerts(newAlerts, authToken, 'daromadchi');
+    sendTelegramAlerts(newAlerts, daromadchi_token, 'daromadchi');
   }
 
   updateBadge(newAlerts.filter(a => a.priority === 'critical').length);
@@ -498,8 +498,8 @@ function isAlertEnabled(ruleId, settings) {
 }
 
 async function sendTelegramAlerts(alerts, token, source) {
-  const { authToken: storedToken, lastMarketplace } =
-    await chrome.storage.local.get(['authToken', 'lastMarketplace']);
+  const { daromadchi_token: storedToken, lastMarketplace } =
+    await chrome.storage.local.get(['daromadchi_token', 'lastMarketplace']);
   const bearerToken = token || storedToken;
   if (!bearerToken) return;
 
@@ -532,16 +532,16 @@ function updateBadge(count) {
 // ─── DAILY SUMMARY ────────────────────────────────────────────────────────────
 
 async function sendDailySummary() {
-  const { authToken, alertSettings = {} } =
-    await chrome.storage.local.get(['authToken', 'alertSettings']);
-  if (!authToken || alertSettings.disableDailySummary) return;
+  const { daromadchi_token, alertSettings = {} } =
+    await chrome.storage.local.get(['daromadchi_token', 'alertSettings']);
+  if (!daromadchi_token || alertSettings.disableDailySummary) return;
 
-  const stats = await apiFetch('/extension/stats', authToken);
+  const stats = await apiFetch('/extension/stats', daromadchi_token);
   if (!stats) return;
 
   await fetch(`${API}/extension/send-daily-summary`, {
     method: 'POST',
-    headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+    headers: { 'Authorization': `Bearer ${daromadchi_token}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ stats })
   }).catch(() => {});
 }

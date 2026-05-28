@@ -263,13 +263,13 @@
   }
 
   async function loadOwnProductData(productId, price, wrap) {
-    const { authToken } = await chrome.storage.local.get('authToken');
-    if (!authToken || !productId) return;
+    const { daromadchi_token } = await chrome.storage.local.get('daromadchi_token');
+    if (!daromadchi_token || !productId) return;
 
     try {
       const res = await fetch(
         `https://daromadchi.uz/api/extension/product/${productId}?marketplace=${marketplace}`,
-        { headers: { 'Authorization': `Bearer ${authToken}` } }
+        { headers: { 'Authorization': `Bearer ${daromadchi_token}` } }
       );
       if (!res.ok) return;
       const data = await res.json();
@@ -338,10 +338,10 @@
     document.body.prepend(bar);
     document.body.style.paddingTop = (parseInt(getComputedStyle(document.body).paddingTop)||0) + 44 + 'px';
 
-    const { authToken, cachedStats, activeAlerts } =
-      await chrome.storage.local.get(['authToken', 'cachedStats', 'activeAlerts']);
+    const { daromadchi_token, cachedStats, activeAlerts } =
+      await chrome.storage.local.get(['daromadchi_token', 'cachedStats', 'activeAlerts']);
 
-    if (!authToken) {
+    if (!daromadchi_token) {
       bar.querySelector('#drm-bar-stats').innerHTML =
         `<a href="https://daromadchi.uz/login" target="_blank" class="drm-bar-cta">Daromadchiga kirish →</a>`;
       return;
@@ -371,18 +371,66 @@
     `;
   }
 
+  // ── LOGIN GATE ────────────────────────────────────────────────────────────
+
+  function showLoginButton() {
+    const el = document.createElement('div');
+    el.id = 'drm-widget';
+    el.innerHTML = `
+      <div class="drm-hd">
+        <div class="drm-brand"><span class="drm-pulse"></span>Daromadchi</div>
+        <button class="drm-ico-btn" id="drm-login-close">✕</button>
+      </div>
+      <div class="drm-bd" style="padding:16px;text-align:center">
+        <p style="color:#94a3b8;font-size:12px;margin-bottom:12px;line-height:1.5">
+          Tahlilni ko'rish uchun Daromadchi hisobingizga kiring
+        </p>
+        <button id="drm-login-cta" style="display:block;width:100%;padding:9px 12px;background:#6366f1;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">
+          🔑 Daromadchiga kirish
+        </button>
+      </div>
+    `;
+    el.querySelector('#drm-login-cta').onclick = () =>
+      window.open('https://daromadchi.uz/login', '_blank');
+    el.querySelector('#drm-login-close').onclick = () => {
+      el.classList.add('drm-gone');
+      chrome.storage.local.set({ widgetClosed: Date.now() });
+    };
+    document.body.appendChild(el);
+  }
+
   // ── INIT ──────────────────────────────────────────────────────────────────
 
-  function init() {
-    // Persist marketplace so background.js can include it in outbound API calls
+  async function init() {
     chrome.storage.local.set({ lastMarketplace: marketplace });
 
-    if (isProductPage()) {
-      chrome.storage.local.get('widgetClosed', ({ widgetClosed }) => {
-        const w = buildWidget();
-        if (Date.now() - (widgetClosed||0) < 1800000) w.classList.add('drm-gone');
-        document.body.appendChild(w);
+    const { daromadchi_token, widgetClosed } =
+      await chrome.storage.local.get(['daromadchi_token', 'widgetClosed']);
+    const recentlyClosed = Date.now() - (widgetClosed || 0) < 1800000;
+
+    // No token → show login button (or seller bar which handles its own no-auth UI)
+    if (!daromadchi_token) {
+      if (isProductPage() && !recentlyClosed) showLoginButton();
+      else if (IS_SELLER) buildSellerBar();
+      return;
+    }
+
+    // Validate token — only block on explicit 401; pass through on network errors
+    try {
+      const res = await fetch('https://daromadchi.uz/api/extension/validate', {
+        headers: { 'Authorization': `Bearer ${daromadchi_token}` }
       });
+      if (res.status === 401) {
+        chrome.storage.local.remove('daromadchi_token');
+        if (isProductPage() && !recentlyClosed) showLoginButton();
+        return;
+      }
+    } catch { /* offline — proceed with cached token */ }
+
+    if (isProductPage()) {
+      const w = buildWidget();
+      if (recentlyClosed) w.classList.add('drm-gone');
+      document.body.appendChild(w);
     } else if (IS_SELLER) {
       buildSellerBar();
     }
