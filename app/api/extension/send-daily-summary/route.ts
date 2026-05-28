@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin, getAuthUser, getShopIds } from '@/lib/api/auth'
-import { sendTelegramMessage } from '@/lib/telegram'
+import { supabaseAdmin, getAuthUser, getShopIds, getUserPlan } from '@/lib/api/auth'
+import { sendTelegramMessage, isInNotificationWindow } from '@/lib/telegram'
 
 function fmt(n: number) {
   return new Intl.NumberFormat('uz-UZ').format(Math.round(n)) + " so'm"
@@ -10,14 +10,24 @@ export async function POST(req: NextRequest) {
   const user = await getAuthUser(req.headers.get('authorization'))
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+  const plan = await getUserPlan(user.id)
+  if (plan === 'free') {
+    return NextResponse.json({ error: 'PRO_REQUIRED' }, { status: 403 })
+  }
+
   const { data: settings } = await supabaseAdmin
     .from('user_settings')
-    .select('telegram_chat_id')
+    .select('telegram_chat_id, notification_time')
     .eq('user_id', user.id)
     .maybeSingle()
 
   if (!settings?.telegram_chat_id) {
     return NextResponse.json({ error: 'Telegram ulanmagan' }, { status: 400 })
+  }
+
+  // Only send if we're within ±30 min of the user's chosen notification window
+  if (!isInNotificationWindow(settings.notification_time ?? null)) {
+    return NextResponse.json({ ok: false, skipped: true, reason: 'outside_window' })
   }
 
   const shopIds = await getShopIds(user.id)

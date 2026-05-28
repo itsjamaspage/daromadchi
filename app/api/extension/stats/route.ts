@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin, getAuthUser, getShopIds } from '@/lib/api/auth'
+import { supabaseAdmin, getAuthUser, getShopIds, getUserPlan } from '@/lib/api/auth'
 
 export async function GET(req: NextRequest) {
   const user = await getAuthUser(req.headers.get('authorization'))
@@ -15,8 +15,16 @@ export async function GET(req: NextRequest) {
     })
   }
 
-  const todayStart = new Date()
-  todayStart.setUTCHours(0, 0, 0, 0)
+  const plan = await getUserPlan(user.id)
+
+  // Free plan: limit to last 7 days; paid: full today view
+  const since = new Date()
+  if (plan === 'free') {
+    since.setDate(since.getDate() - 7)
+    since.setUTCHours(0, 0, 0, 0)
+  } else {
+    since.setUTCHours(0, 0, 0, 0)
+  }
 
   const [ordersRes, stockRes, shopsRes] = await Promise.all([
     supabaseAdmin
@@ -24,7 +32,7 @@ export async function GET(req: NextRequest) {
       .select('revenue, marketplace_fee, delivery_cost')
       .in('shop_id', shopIds)
       .neq('status', 'cancelled')
-      .gte('ordered_at', todayStart.toISOString()),
+      .gte('ordered_at', since.toISOString()),
     supabaseAdmin
       .from('products')
       .select('stock_quantity', { count: 'exact', head: false })
@@ -49,5 +57,9 @@ export async function GET(req: NextRequest) {
   const lowStock        = stockRes.data?.length ?? 0
   const lastSynced      = shopsRes.data?.[0]?.last_synced_at ?? null
 
-  return NextResponse.json({ todayRevenue, todayProfit, todayOrders, todayCommission, lowStock, lastSynced })
+  return NextResponse.json({
+    todayRevenue, todayProfit, todayOrders, todayCommission, lowStock, lastSynced,
+    plan,
+    ...(plan === 'free' ? { historyDays: 7 } : {}),
+  })
 }

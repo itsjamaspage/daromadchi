@@ -1,15 +1,45 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/api/auth'
-import { sendTelegramMessage } from '@/lib/telegram'
+import { sendTelegramMessage, sendTelegramKeyboard, answerCallbackQuery } from '@/lib/telegram'
 
-// Telegram sends updates to this endpoint.
 // Register via: GET https://api.telegram.org/bot{TOKEN}/setWebhook?url=https://daromadchi.uz/api/telegram/webhook
 // Always return 200 so Telegram doesn't retry.
+
+const NOTIF_LABELS: Record<string, string> = {
+  morning: '🌅 Ertalab 8:00',
+  noon:    '☀️ Kunduzi 13:00',
+  evening: '🌆 Kechqurun 20:00',
+}
 
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null)
   if (!body) return NextResponse.json({ ok: true })
 
+  // ── callback_query: user tapped a notification-time button ──
+  if (body.callback_query) {
+    const cb     = body.callback_query
+    const chatId = String(cb.message?.chat?.id ?? cb.from?.id)
+    const data   = (cb.data ?? '') as string
+
+    if (data.startsWith('notif_time:')) {
+      const notifTime = data.replace('notif_time:', '')
+
+      await supabaseAdmin
+        .from('user_settings')
+        .update({ notification_time: notifTime, updated_at: new Date().toISOString() })
+        .eq('telegram_chat_id', chatId)
+
+      await answerCallbackQuery(cb.id, '✅ Saqlandi!')
+      await sendTelegramMessage(
+        chatId,
+        `✅ Kunlik hisobot vaqti: <b>${NOTIF_LABELS[notifTime] ?? notifTime}</b> ga sozlandi.\n\nTo'liq tahlil: https://daromadchi.uz/dashboard`
+      )
+    }
+
+    return NextResponse.json({ ok: true })
+  }
+
+  // ── regular message ──
   const message = body.message
   if (!message?.text) return NextResponse.json({ ok: true })
 
@@ -17,7 +47,7 @@ export async function POST(req: NextRequest) {
   const username = (message.from?.username as string | undefined) ?? null
   const text     = (message.text as string).trim()
 
-  // Handle /start {token} — links the chat to a daromadchi account
+  // /start {token} — link account
   if (text.startsWith('/start ') || text.startsWith('/start@')) {
     const token = text.split(' ')[1]?.trim()
     if (!token) {
@@ -52,16 +82,24 @@ export async function POST(req: NextRequest) {
       })
       .eq('user_id', settings.user_id)
 
-    await sendTelegramMessage(
+    await sendTelegramKeyboard(
       chatId,
-      `✅ <b>Muvaffaqiyatli ulandi!</b>\n\nEndi Daromadchi ogohlantirishlari shu chatga yuboriladi.\n\nTo'liq tahlil: https://daromadchi.uz/dashboard`
+      `✅ <b>Muvaffaqiyatli ulandi!</b>\n\nKunlik hisobotni qaysi vaqtda olishni xohlaysiz?`,
+      [[
+        { text: '🌅 Ertalab 8:00',    callback_data: 'notif_time:morning' },
+        { text: '☀️ Kunduzi 13:00',   callback_data: 'notif_time:noon'    },
+        { text: '🌆 Kechqurun 20:00', callback_data: 'notif_time:evening' },
+      ]]
     )
     return NextResponse.json({ ok: true })
   }
 
-  // /start with no token (fresh bot open)
+  // /start with no token
   if (text === '/start') {
-    await sendTelegramMessage(chatId, '👋 Daromadchi botiga xush kelibsiz!\nUlanish uchun kengaytmadan "Telegram ulash" tugmasini bosing.')
+    await sendTelegramMessage(
+      chatId,
+      '👋 Daromadchi botiga xush kelibsiz!\nUlanish uchun kengaytmadan "Telegram ulash" tugmasini bosing.'
+    )
   }
 
   return NextResponse.json({ ok: true })

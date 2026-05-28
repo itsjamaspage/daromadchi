@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin, getAuthUser } from '@/lib/api/auth'
+import { supabaseAdmin, getAuthUser, getUserPlan } from '@/lib/api/auth'
 import { sendTelegramMessage } from '@/lib/telegram'
 
 interface AlertInput {
@@ -11,6 +11,11 @@ interface AlertInput {
 export async function POST(req: NextRequest) {
   const user = await getAuthUser(req.headers.get('authorization'))
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const plan = await getUserPlan(user.id)
+  if (plan === 'free') {
+    return NextResponse.json({ error: 'PRO_REQUIRED' }, { status: 403 })
+  }
 
   const body = await req.json().catch(() => null)
   if (!Array.isArray(body?.alerts) || body.alerts.length === 0) {

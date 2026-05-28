@@ -119,8 +119,46 @@ async function renderStats(token, stats) {
 }
 
 // ─── ALERTS PANEL ─────────────────────────────────────────────────────────────
-function renderAlerts(alerts) {
+function renderAlerts(alerts, plan) {
   const panel = document.getElementById('panel-alerts');
+
+  // Free plan: show Telegram upgrade CTA, then local alerts below
+  if (plan === 'free') {
+    panel.innerHTML = `
+      <div style="padding:20px 16px;text-align:center;border-bottom:1px solid #e2e8f0;margin-bottom:8px">
+        <div style="font-size:28px;margin-bottom:10px">📱</div>
+        <p style="font-size:13px;font-weight:600;color:#1e293b;margin-bottom:6px">Telegram ogohlantirishlari</p>
+        <p style="font-size:11px;color:#64748b;line-height:1.5;margin-bottom:14px">
+          Pro tarifida mavjud.<br>Kam zaxira, savdo pasayishi va boshqa<br>ogohlantirishlar Telegramga yuboriladi.
+        </p>
+        <a href="https://daromadchi.uz/pricing" target="_blank" class="btn-login">Pro ga o'tish →</a>
+      </div>
+    `;
+
+    if (alerts.length > 0) {
+      const priorityOrder = { critical: 0, warning: 1, info: 2 };
+      const sorted = [...alerts].sort((a,b) => (priorityOrder[a.priority]??2) - (priorityOrder[b.priority]??2));
+      panel.insertAdjacentHTML('beforeend', `
+        <div class="alert-list" style="padding:0 4px 8px">
+          ${sorted.map(a => `
+            <div class="alert-item alert-${a.priority}">
+              <span class="alert-icon">${a.priority==='critical'?'🚨':a.priority==='warning'?'⚠️':'ℹ️'}</span>
+              <div class="alert-text">
+                <div class="alert-msg">${a.message}</div>
+                <div class="alert-time">${timeAgo(a.ts)}</div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `);
+    } else {
+      panel.insertAdjacentHTML('beforeend', `
+        <div class="no-alerts" style="padding:12px">🎉 Hozircha ogohlantirish yo'q.</div>
+      `);
+    }
+    return;
+  }
+
   const count = alerts.filter(a => a.priority === 'critical').length;
 
   const alertCountEl = document.getElementById('alert-count-tab');
@@ -154,7 +192,7 @@ function renderAlerts(alerts) {
 
   document.getElementById('clear-alerts').onclick = () => {
     chrome.runtime.sendMessage({ action: 'clearAlerts' });
-    renderAlerts([]);
+    renderAlerts([], plan);
   };
 }
 
@@ -378,14 +416,14 @@ function showLoginGate() {
 // ─── LOAD ALL ─────────────────────────────────────────────────────────────────
 async function loadAll() {
   const data = await chrome.storage.local.get([
-    'daromadchi_token', 'cachedStats', 'cacheTime',
+    'daromadchi_token', 'daromadchi_plan', 'cachedStats', 'cacheTime',
     'activeAlerts', 'alertSettings', 'tgStatus',
     'yandexStats', 'yandexStatsTime', 'yandexConnected', 'yandexCampaignId',
     'uzumDirectStats', 'uzumDirectStatsTime', 'uzumConnected', 'uzumShopName'
   ]);
 
   const {
-    daromadchi_token, cachedStats, cacheTime,
+    daromadchi_token, daromadchi_plan = 'free', cachedStats, cacheTime,
     activeAlerts = [], alertSettings = {}, tgStatus = {},
     yandexStats, yandexConnected, yandexCampaignId,
     uzumDirectStats, uzumConnected, uzumShopName
@@ -398,6 +436,7 @@ async function loadAll() {
   }
 
   // Validate token — only block on explicit 401; pass through on network errors
+  let plan = daromadchi_plan;
   try {
     const vRes = await fetch(`${API}/extension/validate`, {
       headers: { 'Authorization': `Bearer ${daromadchi_token}` }
@@ -406,6 +445,13 @@ async function loadAll() {
       chrome.storage.local.remove('daromadchi_token');
       showLoginGate();
       return;
+    }
+    if (vRes.ok) {
+      const vData = await vRes.json();
+      if (vData.plan) {
+        plan = vData.plan;
+        chrome.storage.local.set({ daromadchi_plan: vData.plan });
+      }
     }
   } catch { /* offline — proceed */ }
 
@@ -438,7 +484,7 @@ async function loadAll() {
   }
 
   renderStats(daromadchi_token, stats);
-  renderAlerts(activeAlerts);
+  renderAlerts(activeAlerts, plan);
   renderSettings(daromadchi_token, alertSettings, tgStatus);
 
   // Inject marketplace API status at the bottom of the stats panel
