@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import {
   RefreshCw, Save, Key, CheckCircle, XCircle, ExternalLink,
   Loader2, Hash, Copy, Puzzle, Lock, Eye, EyeOff, X,
@@ -466,14 +466,15 @@ interface Props {
 }
 
 export default function SettingsForm({ uzumShop, yandexShop, userId }: Props) {
-  const supabase = createClient()
+  const searchParams = useSearchParams()
+  const router = useRouter()
   const [showPasswordModal, setShowPasswordModal] = useState(false)
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'PASSWORD_RECOVERY') setShowPasswordModal(true)
-    })
-    return () => subscription.unsubscribe()
+    if (searchParams.get('reset') === '1') {
+      setShowPasswordModal(true)
+      router.replace('/dashboard/settings')
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
