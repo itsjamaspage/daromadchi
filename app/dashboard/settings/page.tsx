@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import SettingsForm from './SettingsForm'
 import type { Shop } from '@/lib/types'
@@ -32,11 +33,13 @@ export default async function SettingsPage() {
         </div>
         <p className="text-slate-400 text-sm">Marketplace integratsiyalari</p>
       </div>
-      <SettingsForm
-        uzumShop={uzumShop}
-        yandexShop={yandexShop}
-        userId={user?.id ?? ''}
-      />
+      <Suspense>
+        <SettingsForm
+          uzumShop={uzumShop}
+          yandexShop={yandexShop}
+          userId={user?.id ?? ''}
+        />
+      </Suspense>
     </div>
   )
 }
