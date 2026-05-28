@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import {
   LayoutDashboard, Package, ShoppingCart, TrendingUp,
   LogOut, ChevronRight, X, Settings, BarChart2, Calculator, FileText, Globe2,
-  Sun, Moon,
+  Sun, Moon, User,
 } from 'lucide-react'
 import { useTheme, useLang } from '@/app/providers'
 import type { Lang } from '@/lib/i18n'
@@ -171,6 +171,19 @@ export default function Sidebar({ onClose }: SidebarProps) {
           </div>
         </div>
 
+        <Link
+          href="/dashboard/account"
+          onClick={handleNavClick}
+          className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all group ${
+            pathname === '/dashboard/account'
+              ? 'bg-violet-600/20 text-violet-300 border border-violet-500/20'
+              : 'text-slate-400 hover:text-white hover:bg-white/[0.04]'
+          }`}
+        >
+          <User className={`w-4 h-4 flex-shrink-0 ${pathname === '/dashboard/account' ? 'text-violet-400' : 'text-slate-500 group-hover:text-slate-300'}`} />
+          Profil
+          {pathname === '/dashboard/account' && <ChevronRight className="w-3 h-3 ml-auto text-violet-400" />}
+        </Link>
         <Link
           href="/dashboard/settings"
           onClick={handleNavClick}
