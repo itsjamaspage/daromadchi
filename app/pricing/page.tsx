@@ -5,8 +5,7 @@ import { useState } from 'react'
 import { Check, X, Zap, TrendingUp, ArrowRight } from 'lucide-react'
 import { useTheme } from '../providers'
 
-// TODO: replace with your personal Telegram @username for paid plan CTAs
-const SALES_TELEGRAM = 'daromadchii_bot'
+const SALES_TELEGRAM = 'itsjamaspage'
 
 const MONTHLY = { free: 0, pro: 149000, pro_plus: 349000 }
 const ANNUAL  = { free: 0, pro: Math.round(149000 * 10), pro_plus: Math.round(349000 * 10) }
