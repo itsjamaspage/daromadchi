@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/billing/expire-plans",
+      "schedule": "0 1 * * *"
+    }
+  ]
+}
