@@ -1,12 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   RefreshCw, Save, Key, CheckCircle, XCircle, ExternalLink,
-  Loader2, Hash,
+  Loader2, Hash, Copy, Puzzle,
 } from 'lucide-react'
 import type { Shop } from '@/lib/types'
+import { createClient } from '@/lib/supabase/client'
 
 // ─── Shared sub-components ────────────────────────────────────────────────────
 
@@ -273,6 +274,99 @@ function YandexCard({ shop, userId }: { shop: Shop | null; userId: string }) {
   )
 }
 
+// ─── Extension token section ──────────────────────────────────────────────────
+
+function ExtensionTokenCard() {
+  const supabase = createClient()
+  const [token,    setToken]    = useState<string | null>(null)
+  const [copied,   setCopied]   = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setToken(data.session?.access_token ?? null)
+    })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  async function handleRefresh() {
+    setRefreshing(true)
+    const { data } = await supabase.auth.refreshSession()
+    setToken(data.session?.access_token ?? null)
+    setRefreshing(false)
+  }
+
+  async function handleCopy() {
+    if (!token) return
+    await navigator.clipboard.writeText(token)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  const masked = token ? token.slice(0, 20) + '…' : '—'
+
+  return (
+    <div className="bg-[#13131f] border border-white/[0.06] rounded-2xl overflow-hidden">
+      {/* Header */}
+      <div className="px-6 py-4 border-b border-white/[0.05] flex items-center gap-3">
+        <div className="w-8 h-8 rounded-lg bg-indigo-500/15 border border-indigo-500/25 flex items-center justify-center">
+          <Puzzle className="w-4 h-4 text-indigo-400" />
+        </div>
+        <div>
+          <p className="text-white font-semibold text-sm">Kengayma Token</p>
+          <p className="text-slate-500 text-xs">Chrome extension uchun</p>
+        </div>
+      </div>
+
+      <div className="p-6 space-y-4">
+        {/* Masked token display */}
+        <div>
+          <label className="flex items-center gap-1.5 text-xs font-medium text-slate-400 mb-2">
+            <Key className="w-3.5 h-3.5" /> Joriy token
+          </label>
+          <div className="flex items-center gap-2">
+            <code className="flex-1 bg-[#1c1c2e] border border-white/[0.08] rounded-xl px-4 py-2.5 text-sm text-slate-300 font-mono truncate">
+              {masked}
+            </code>
+            <button
+              onClick={handleCopy}
+              disabled={!token}
+              title="Nusxalash"
+              className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium border transition-all shrink-0 ${
+                copied
+                  ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
+                  : 'bg-[#1c1c2e] border-white/[0.08] text-slate-300 hover:border-indigo-500/40 hover:text-indigo-300 disabled:opacity-40 disabled:cursor-not-allowed'
+              }`}
+            >
+              {copied
+                ? <><CheckCircle className="w-4 h-4" /> Nusxalandi!</>
+                : <><Copy className="w-4 h-4" /> Nusxalash</>
+              }
+            </button>
+          </div>
+        </div>
+
+        {/* Instructions */}
+        <p className="text-slate-500 text-xs leading-relaxed bg-[#1c1c2e] rounded-xl px-4 py-3 border border-white/[0.05]">
+          Ushbu tokenni <span className="text-slate-300">Chrome kengaytmasi → Options → Daromadchi token</span> maydoniga joylashtiring
+        </p>
+
+        {/* Refresh button */}
+        <button
+          onClick={handleRefresh}
+          disabled={refreshing}
+          className="flex items-center gap-2 bg-[#1c1c2e] hover:bg-white/[0.06] border border-white/[0.08] disabled:opacity-50 text-slate-200 text-sm font-medium px-4 py-2 rounded-xl transition-colors"
+        >
+          {refreshing
+            ? <><Loader2 className="w-4 h-4 animate-spin" /> Yangilanmoqda…</>
+            : <><RefreshCw className="w-4 h-4" /> Yangilash</>
+          }
+        </button>
+      </div>
+    </div>
+  )
+}
+
 // ─── Main export ──────────────────────────────────────────────────────────────
 
 interface Props {
@@ -284,8 +378,9 @@ interface Props {
 export default function SettingsForm({ uzumShop, yandexShop, userId }: Props) {
   return (
     <div className="space-y-4">
-      <UzumCard   shop={uzumShop}   userId={userId} />
-      <YandexCard shop={yandexShop} userId={userId} />
+      <UzumCard          shop={uzumShop}   userId={userId} />
+      <YandexCard        shop={yandexShop} userId={userId} />
+      <ExtensionTokenCard />
     </div>
   )
 }
