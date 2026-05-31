@@ -8,6 +8,8 @@ import {
 } from 'lucide-react'
 import type { Shop } from '@/lib/types'
 import { createClient } from '@/lib/supabase/client'
+import { useLang } from '@/app/providers'
+import { dashT } from '@/lib/dashT'
 
 // ─── Shared sub-components ────────────────────────────────────────────────────
 
@@ -25,6 +27,8 @@ function StatusMsg({ msg }: { msg: { ok: boolean; text: string } | null }) {
 
 function UzumCard({ shop, userId }: { shop: Shop | null; userId: string }) {
   const router = useRouter()
+  const { lang } = useLang()
+  const t = dashT[lang].settings
   void userId
 
   const [apiKey,  setApiKey]  = useState('')
@@ -49,11 +53,11 @@ function UzumCard({ shop, userId }: { shop: Shop | null; userId: string }) {
       })
       const data = await res.json()
       setSaveMsg(data.ok
-        ? { ok: true,  text: data.created ? 'Do\'kon yaratildi!' : 'Saqlandi!' }
-        : { ok: false, text: data.error ?? 'Xato' })
+        ? { ok: true,  text: data.created ? t.shopCreated : t.saved }
+        : { ok: false, text: data.error ?? t.err })
       if (data.ok) { setApiKey(''); router.refresh() }
     } catch {
-      setSaveMsg({ ok: false, text: 'Server bilan bog\'lanishda xato' })
+      setSaveMsg({ ok: false, text: t.serverErr })
     }
     setSaving(false)
   }
@@ -64,11 +68,11 @@ function UzumCard({ shop, userId }: { shop: Shop | null; userId: string }) {
       const res  = await fetch('/api/uzum/sync', { method: 'POST' })
       const data = await res.json()
       setSyncMsg(data.ok
-        ? { ok: true,  text: `${data.productsUpserted ?? 0} mahsulot, ${data.ordersUpserted ?? 0} buyurtma yangilandi.` }
-        : { ok: false, text: data.error ?? 'Xato' })
+        ? { ok: true,  text: `${data.productsUpserted ?? 0} ${t.syncResult1} ${data.ordersUpserted ?? 0} ${t.syncResult2}` }
+        : { ok: false, text: data.error ?? t.err })
       if (data.ok) router.refresh()
     } catch {
-      setSyncMsg({ ok: false, text: 'Server bilan bog\'lanishda xato' })
+      setSyncMsg({ ok: false, text: t.serverErr })
     }
     setSyncing(false)
   }
@@ -85,7 +89,7 @@ function UzumCard({ shop, userId }: { shop: Shop | null; userId: string }) {
           <p className="text-slate-500 text-xs">seller.uzum.uz</p>
         </div>
         <span className={`ml-auto text-[10px] font-semibold px-2 py-1 rounded-full border ${hasKey ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-400' : 'bg-slate-500/10 border-slate-500/20 text-slate-500'}`}>
-          {hasKey ? 'Ulangan' : 'Ulanmagan'}
+          {hasKey ? t.connected : t.notConnected}
         </span>
       </div>
 
@@ -93,27 +97,27 @@ function UzumCard({ shop, userId }: { shop: Shop | null; userId: string }) {
       <form onSubmit={handleSave} className="p-6 space-y-4">
         <div>
           <label className="flex items-center gap-1.5 text-xs font-medium text-slate-400 mb-2">
-            <Key className="w-3.5 h-3.5" /> API Token
+            <Key className="w-3.5 h-3.5" /> {t.apiToken}
           </label>
           <input
             type="password"
             value={apiKey}
             onChange={e => setApiKey(e.target.value)}
-            placeholder={hasKey ? '••••••••  (yangilash uchun kiriting)' : 'Token kiriting…'}
+            placeholder={hasKey ? t.tokenPlaceholderHas : t.tokenPlaceholder}
             className="w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-violet-500/60 transition-all font-mono"
           />
           <p className="text-slate-500 text-xs mt-1.5 flex items-center gap-1">
             <a href="https://seller.uzum.uz" target="_blank" rel="noopener noreferrer" className="text-violet-400 hover:text-violet-300 flex items-center gap-0.5">
               seller.uzum.uz <ExternalLink className="w-3 h-3" />
             </a>
-            → Sozlamalar → API integratsiya
+            → {t.uzumHint1} → {t.uzumHint2}
           </p>
         </div>
         <StatusMsg msg={saveMsg} />
         <button type="submit" disabled={saving}
           className="flex items-center gap-2 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors">
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-          Saqlash
+          {t.save}
         </button>
       </form>
 
@@ -122,14 +126,14 @@ function UzumCard({ shop, userId }: { shop: Shop | null; userId: string }) {
         <div className="px-6 pb-6 space-y-3 border-t border-[var(--border)] pt-4">
           <div className="flex items-center justify-between">
             <p className="text-slate-400 text-xs">
-              {lastSync ? <>Oxirgi sinxr: <span className="text-slate-300">{lastSync}</span></> : 'Hali sinxronlanmagan'}
+              {lastSync ? <>{t.lastSyncPre} <span className="text-slate-300">{lastSync}</span></> : t.notSynced}
             </p>
           </div>
           <StatusMsg msg={syncMsg} />
           <button onClick={handleSync} disabled={syncing || !hasKey}
-            title={!hasKey ? 'Avval token saqlang' : ''}
+            title={!hasKey ? t.saveTokenFirst : ''}
             className="flex items-center gap-2 bg-[var(--bg-input)] hover:bg-white/[0.06] border border-[var(--border2)] disabled:opacity-40 disabled:cursor-not-allowed text-slate-200 text-sm font-medium px-4 py-2 rounded-xl transition-colors">
-            {syncing ? <><Loader2 className="w-4 h-4 animate-spin" /> Sinxronlanmoqda…</> : <><RefreshCw className="w-4 h-4" /> Sinxronlash</>}
+            {syncing ? <><Loader2 className="w-4 h-4 animate-spin" /> {t.syncing}</> : <><RefreshCw className="w-4 h-4" /> {t.sync}</>}
           </button>
         </div>
       )}
@@ -141,6 +145,8 @@ function UzumCard({ shop, userId }: { shop: Shop | null; userId: string }) {
 
 function YandexCard({ shop, userId }: { shop: Shop | null; userId: string }) {
   const router = useRouter()
+  const { lang } = useLang()
+  const t = dashT[lang].settings
   void userId
 
   const [apiKey,      setApiKey]      = useState('')
@@ -171,11 +177,11 @@ function YandexCard({ shop, userId }: { shop: Shop | null; userId: string }) {
       })
       const data = await res.json()
       setSaveMsg(data.ok
-        ? { ok: true,  text: data.created ? 'Do\'kon yaratildi!' : 'Saqlandi!' }
-        : { ok: false, text: data.error ?? 'Xato' })
+        ? { ok: true,  text: data.created ? t.shopCreated : t.saved }
+        : { ok: false, text: data.error ?? t.err })
       if (data.ok) { setApiKey(''); router.refresh() }
     } catch {
-      setSaveMsg({ ok: false, text: 'Server bilan bog\'lanishda xato' })
+      setSaveMsg({ ok: false, text: t.serverErr })
     }
     setSaving(false)
   }
@@ -186,11 +192,11 @@ function YandexCard({ shop, userId }: { shop: Shop | null; userId: string }) {
       const res  = await fetch('/api/yandex/sync', { method: 'POST' })
       const data = await res.json()
       setSyncMsg(data.ok
-        ? { ok: true,  text: `${data.productsUpserted ?? 0} mahsulot, ${data.ordersUpserted ?? 0} buyurtma yangilandi.` }
-        : { ok: false, text: data.error ?? 'Xato' })
+        ? { ok: true,  text: `${data.productsUpserted ?? 0} ${t.syncResult1} ${data.ordersUpserted ?? 0} ${t.syncResult2}` }
+        : { ok: false, text: data.error ?? t.err })
       if (data.ok) router.refresh()
     } catch {
-      setSyncMsg({ ok: false, text: 'Server bilan bog\'lanishda xato' })
+      setSyncMsg({ ok: false, text: t.serverErr })
     }
     setSyncing(false)
   }
@@ -209,7 +215,7 @@ function YandexCard({ shop, userId }: { shop: Shop | null; userId: string }) {
           <p className="text-slate-500 text-xs">partner.market.yandex.ru</p>
         </div>
         <span className={`ml-auto text-[10px] font-semibold px-2 py-1 rounded-full border ${connected ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-400' : 'bg-slate-500/10 border-slate-500/20 text-slate-500'}`}>
-          {connected ? 'Ulangan' : 'Ulanmagan'}
+          {connected ? t.connected : t.notConnected}
         </span>
       </div>
 
@@ -217,26 +223,26 @@ function YandexCard({ shop, userId }: { shop: Shop | null; userId: string }) {
       <form onSubmit={handleSave} className="p-6 space-y-4">
         <div>
           <label className="flex items-center gap-1.5 text-xs font-medium text-slate-400 mb-2">
-            <Key className="w-3.5 h-3.5" /> OAuth Token
+            <Key className="w-3.5 h-3.5" /> {t.oauthToken}
           </label>
           <input
             type="password"
             value={apiKey}
             onChange={e => setApiKey(e.target.value)}
-            placeholder={hasKey ? '••••••••  (yangilash uchun kiriting)' : 'OAuth token kiriting…'}
+            placeholder={hasKey ? t.tokenPlaceholderHas : t.oauthPlaceholder}
             className="w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-amber-500/40 transition-all font-mono"
           />
         </div>
 
         <div>
           <label className="flex items-center gap-1.5 text-xs font-medium text-slate-400 mb-2">
-            <Hash className="w-3.5 h-3.5" /> Campaign ID
+            <Hash className="w-3.5 h-3.5" /> {t.campaignId}
           </label>
           <input
             type="text"
             value={campaignId}
             onChange={e => setCampaignId(e.target.value)}
-            placeholder={hasCampaign ? shop!.shop_id_external! : 'Campaign ID (masalan: 12345678)'}
+            placeholder={hasCampaign ? shop!.shop_id_external! : t.campaignPlaceholder}
             className="w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-amber-500/40 transition-all font-mono"
           />
           <p className="text-slate-500 text-xs mt-1.5 flex items-center gap-1">
@@ -244,7 +250,7 @@ function YandexCard({ shop, userId }: { shop: Shop | null; userId: string }) {
               className="text-amber-400 hover:text-amber-300 flex items-center gap-0.5">
               partner.market.yandex.ru <ExternalLink className="w-3 h-3" />
             </a>
-            → API → OAuth token va Campaign ID
+            → API → {t.yandexHint}
           </p>
         </div>
 
@@ -252,7 +258,7 @@ function YandexCard({ shop, userId }: { shop: Shop | null; userId: string }) {
         <button type="submit" disabled={saving}
           className="flex items-center gap-2 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors">
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-          Saqlash
+          {t.save}
         </button>
       </form>
 
@@ -260,13 +266,13 @@ function YandexCard({ shop, userId }: { shop: Shop | null; userId: string }) {
       {shop && (
         <div className="px-6 pb-6 space-y-3 border-t border-[var(--border)] pt-4">
           <p className="text-slate-400 text-xs">
-            {lastSync ? <>Oxirgi sinxr: <span className="text-slate-300">{lastSync}</span></> : 'Hali sinxronlanmagan'}
+            {lastSync ? <>{t.lastSyncPre} <span className="text-slate-300">{lastSync}</span></> : t.notSynced}
           </p>
           <StatusMsg msg={syncMsg} />
           <button onClick={handleSync} disabled={syncing || !connected}
-            title={!connected ? 'Avval token va Campaign ID saqlang' : ''}
+            title={!connected ? t.saveTokenCampaignFirst : ''}
             className="flex items-center gap-2 bg-[var(--bg-input)] hover:bg-white/[0.06] border border-[var(--border2)] disabled:opacity-40 disabled:cursor-not-allowed text-slate-200 text-sm font-medium px-4 py-2 rounded-xl transition-colors">
-            {syncing ? <><Loader2 className="w-4 h-4 animate-spin" /> Sinxronlanmoqda…</> : <><RefreshCw className="w-4 h-4" /> Sinxronlash</>}
+            {syncing ? <><Loader2 className="w-4 h-4 animate-spin" /> {t.syncing}</> : <><RefreshCw className="w-4 h-4" /> {t.sync}</>}
           </button>
         </div>
       )}
@@ -278,6 +284,8 @@ function YandexCard({ shop, userId }: { shop: Shop | null; userId: string }) {
 
 function ExtensionTokenCard() {
   const supabase = createClient()
+  const { lang } = useLang()
+  const t = dashT[lang].settings
   const [token,    setToken]    = useState<string | null>(null)
   const [copied,   setCopied]   = useState(false)
   const [refreshing, setRefreshing] = useState(false)
@@ -313,8 +321,8 @@ function ExtensionTokenCard() {
           <Puzzle className="w-4 h-4 text-indigo-400" />
         </div>
         <div>
-          <p className="text-white font-semibold text-sm">Kengayma Token</p>
-          <p className="text-slate-500 text-xs">Chrome extension uchun</p>
+          <p className="text-white font-semibold text-sm">{t.extToken}</p>
+          <p className="text-slate-500 text-xs">{t.extTokenSub}</p>
         </div>
       </div>
 
@@ -322,7 +330,7 @@ function ExtensionTokenCard() {
         {/* Masked token display */}
         <div>
           <label className="flex items-center gap-1.5 text-xs font-medium text-slate-400 mb-2">
-            <Key className="w-3.5 h-3.5" /> Joriy token
+            <Key className="w-3.5 h-3.5" /> {t.currentToken}
           </label>
           <div className="flex items-center gap-2">
             <code className="flex-1 bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-slate-300 font-mono truncate">
@@ -331,7 +339,7 @@ function ExtensionTokenCard() {
             <button
               onClick={handleCopy}
               disabled={!token}
-              title="Nusxalash"
+              title={t.copyTitle}
               className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium border transition-all shrink-0 ${
                 copied
                   ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
@@ -339,8 +347,8 @@ function ExtensionTokenCard() {
               }`}
             >
               {copied
-                ? <><CheckCircle className="w-4 h-4" /> Nusxalandi!</>
-                : <><Copy className="w-4 h-4" /> Nusxalash</>
+                ? <><CheckCircle className="w-4 h-4" /> {t.copied}</>
+                : <><Copy className="w-4 h-4" /> {t.copy}</>
               }
             </button>
           </div>
@@ -348,7 +356,7 @@ function ExtensionTokenCard() {
 
         {/* Instructions */}
         <p className="text-slate-500 text-xs leading-relaxed bg-[var(--bg-input)] rounded-xl px-4 py-3 border border-[var(--border)]">
-          Ushbu tokenni <span className="text-slate-300">Chrome kengaytmasi → Options → Daromadchi token</span> maydoniga joylashtiring
+          {t.extInstrPre} <span className="text-slate-300">{t.extInstrStrong}</span> {t.extInstrPost}
         </p>
 
         {/* Refresh button */}
@@ -358,8 +366,8 @@ function ExtensionTokenCard() {
           className="flex items-center gap-2 bg-[var(--bg-input)] hover:bg-white/[0.06] border border-[var(--border2)] disabled:opacity-50 text-slate-200 text-sm font-medium px-4 py-2 rounded-xl transition-colors"
         >
           {refreshing
-            ? <><Loader2 className="w-4 h-4 animate-spin" /> Yangilanmoqda…</>
-            : <><RefreshCw className="w-4 h-4" /> Yangilash</>
+            ? <><Loader2 className="w-4 h-4 animate-spin" /> {t.refreshing}</>
+            : <><RefreshCw className="w-4 h-4" /> {t.refresh}</>
           }
         </button>
       </div>
@@ -371,6 +379,8 @@ function ExtensionTokenCard() {
 
 function PasswordUpdateModal({ onClose }: { onClose: () => void }) {
   const supabase = createClient()
+  const { lang } = useLang()
+  const t = dashT[lang].settings
   const [password, setPassword] = useState('')
   const [confirm,  setConfirm]  = useState('')
   const [showPw,   setShowPw]   = useState(false)
@@ -381,8 +391,8 @@ function PasswordUpdateModal({ onClose }: { onClose: () => void }) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError('')
-    if (password.length < 6) { setError('Kamida 6 belgi bo\'lishi kerak'); return }
-    if (password !== confirm) { setError('Parollar mos kelmadi'); return }
+    if (password.length < 6) { setError(t.pwMin6); return }
+    if (password !== confirm) { setError(t.pwMismatch); return }
     setLoading(true)
     const { error } = await supabase.auth.updateUser({ password })
     if (error) { setError(error.message); setLoading(false) }
@@ -403,17 +413,17 @@ function PasswordUpdateModal({ onClose }: { onClose: () => void }) {
             <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-emerald-500/10 border border-emerald-500/20">
               <CheckCircle className="w-6 h-6 text-emerald-400" />
             </div>
-            <p className="text-white font-semibold">Parol muvaffaqiyatli o'zgartirildi!</p>
+            <p className="text-white font-semibold">{t.pwChanged}</p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <h2 className="text-white font-bold text-base mb-1">Yangi parol o'rnatish</h2>
-              <p className="text-slate-500 text-xs">Kamida 6 belgilik yangi parol kiriting</p>
+              <h2 className="text-white font-bold text-base mb-1">{t.pwSetNew}</h2>
+              <p className="text-slate-500 text-xs">{t.pwSetNewDesc}</p>
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-slate-400 mb-2">Yangi parol</label>
+              <label className="block text-xs font-medium text-slate-400 mb-2">{t.pwNew}</label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                 <input type={showPw ? 'text' : 'password'} value={password}
@@ -429,7 +439,7 @@ function PasswordUpdateModal({ onClose }: { onClose: () => void }) {
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-slate-400 mb-2">Parolni tasdiqlang</label>
+              <label className="block text-xs font-medium text-slate-400 mb-2">{t.pwConfirm}</label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                 <input type={showPw ? 'text' : 'password'} value={confirm}
@@ -448,7 +458,7 @@ function PasswordUpdateModal({ onClose }: { onClose: () => void }) {
 
             <button type="submit" disabled={loading}
               className="w-full flex items-center justify-center gap-2 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white font-bold text-sm py-2.5 rounded-xl transition-colors">
-              {loading ? <><Loader2 className="w-4 h-4 animate-spin" />Saqlanmoqda...</> : 'Parolni saqlash'}
+              {loading ? <><Loader2 className="w-4 h-4 animate-spin" />{t.pwSaving}</> : t.pwSave}
             </button>
           </form>
         )}

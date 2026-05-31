@@ -29,11 +29,14 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   )
 }
 
-export default function PnlChart({ data }: { data: { month: string; revenue: number; cost: number; adSpend: number; profit: number }[] }) {
+export default function PnlChart({ data, title, subtitle, revenueLabel, profitLabel }: {
+  data: { month: string; revenue: number; cost: number; adSpend: number; profit: number }[]
+  title: string; subtitle: string; revenueLabel: string; profitLabel: string
+}) {
   return (
     <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl p-6">
-      <h3 className="text-white font-semibold mb-1">Daromad va foyda dinamikasi</h3>
-      <p className="text-slate-500 text-xs mb-5">Oylik ko&apos;rsatkichlar</p>
+      <h3 className="text-white font-semibold mb-1">{title}</h3>
+      <p className="text-slate-500 text-xs mb-5">{subtitle}</p>
       <ResponsiveContainer width="100%" height={260}>
         <AreaChart data={data} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
           <defs>
@@ -51,8 +54,8 @@ export default function PnlChart({ data }: { data: { month: string; revenue: num
           <YAxis tickFormatter={fmtM} tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} width={42} />
           <Tooltip content={<CustomTooltip />} />
           <Legend wrapperStyle={{ fontSize: 12, color: '#94a3b8', paddingTop: 12 }} formatter={v => <span style={{ color: '#94a3b8' }}>{v}</span>} />
-          <Area type="monotone" dataKey="revenue"  name="Daromad" stroke="#7c3aed" fill="url(#gRevenue)" strokeWidth={2} dot={false} />
-          <Area type="monotone" dataKey="profit"   name="Sof foyda" stroke="#10b981" fill="url(#gProfit)"  strokeWidth={2} dot={false} />
+          <Area type="monotone" dataKey="revenue"  name={revenueLabel} stroke="#7c3aed" fill="url(#gRevenue)" strokeWidth={2} dot={false} />
+          <Area type="monotone" dataKey="profit"   name={profitLabel} stroke="#10b981" fill="url(#gProfit)"  strokeWidth={2} dot={false} />
         </AreaChart>
       </ResponsiveContainer>
     </div>

@@ -4,27 +4,12 @@ import { useState, useMemo } from 'react'
 import { Search, ShoppingCart } from 'lucide-react'
 import ExportButton from './ExportButton'
 import type { Order, OrderStatus } from '@/lib/types'
+import { useLang } from '@/app/providers'
+import { dashT } from '@/lib/dashT'
 
 function fmt(n: number) {
   return new Intl.NumberFormat('uz-UZ').format(n) + " so'm"
 }
-
-const statusConfig: Record<OrderStatus, { label: string; className: string; dot: string }> = {
-  pending:   { label: 'Kutilmoqda',    className: 'bg-slate-500/10 text-slate-400 border border-slate-500/20',   dot: 'bg-slate-400'  },
-  confirmed: { label: 'Tasdiqlandi',   className: 'bg-blue-500/10 text-blue-400 border border-blue-500/20',     dot: 'bg-blue-400'   },
-  delivered: { label: 'Yetkazildi',    className: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20', dot: 'bg-emerald-400' },
-  cancelled: { label: 'Bekor qilindi', className: 'bg-red-500/10 text-red-400 border border-red-500/20',         dot: 'bg-red-400'    },
-  returned:  { label: 'Qaytarildi',    className: 'bg-amber-500/10 text-amber-400 border border-amber-500/20',   dot: 'bg-amber-400'  },
-}
-
-const STATUS_TABS: { value: OrderStatus | 'all'; label: string }[] = [
-  { value: 'all',       label: 'Barchasi'    },
-  { value: 'delivered', label: 'Yetkazildi'  },
-  { value: 'confirmed', label: 'Tasdiqlandi' },
-  { value: 'pending',   label: 'Kutilmoqda'  },
-  { value: 'returned',  label: 'Qaytarildi'  },
-  { value: 'cancelled', label: 'Bekor'       },
-]
 
 const marketplaceLabel: Record<string, string> = {
   uzum: 'Uzum',
@@ -32,8 +17,27 @@ const marketplaceLabel: Record<string, string> = {
 }
 
 export default function OrdersTable({ orders }: { orders: Order[] }) {
+  const { lang } = useLang()
+  const t = dashT[lang].orders
   const [query,  setQuery]  = useState('')
   const [status, setStatus] = useState<OrderStatus | 'all'>('all')
+
+  const statusConfig: Record<OrderStatus, { label: string; className: string; dot: string }> = {
+    pending:   { label: t.pending,       className: 'bg-slate-500/10 text-slate-400 border border-slate-500/20',   dot: 'bg-slate-400'  },
+    confirmed: { label: t.confirmed,     className: 'bg-blue-500/10 text-blue-400 border border-blue-500/20',     dot: 'bg-blue-400'   },
+    delivered: { label: t.delivered,     className: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20', dot: 'bg-emerald-400' },
+    cancelled: { label: t.cancelledFull, className: 'bg-red-500/10 text-red-400 border border-red-500/20',         dot: 'bg-red-400'    },
+    returned:  { label: t.returned,      className: 'bg-amber-500/10 text-amber-400 border border-amber-500/20',   dot: 'bg-amber-400'  },
+  }
+
+  const STATUS_TABS: { value: OrderStatus | 'all'; label: string }[] = [
+    { value: 'all',       label: t.all          },
+    { value: 'delivered', label: t.delivered    },
+    { value: 'confirmed', label: t.confirmed    },
+    { value: 'pending',   label: t.pending      },
+    { value: 'returned',  label: t.returned     },
+    { value: 'cancelled', label: t.cancelled    },
+  ]
 
   const statusCounts = useMemo(() =>
     orders.reduce((acc, o) => { acc[o.status] = (acc[o.status] || 0) + 1; return acc }, {} as Record<string, number>)
@@ -53,14 +57,14 @@ export default function OrdersTable({ orders }: { orders: Order[] }) {
   }, [orders, status, query])
 
   const exportData = filtered.map(o => ({
-    'Buyurtma ID': o.order_id_external ?? o.id,
-    'Marketplace': marketplaceLabel[o.marketplace] ?? o.marketplace,
-    'Sana': o.ordered_at,
-    "Daromad (so'm)": o.revenue ?? 0,
-    "Komissiya (so'm)": o.marketplace_fee ?? 0,
-    "Yetkazish (so'm)": o.delivery_cost ?? 0,
-    'Mahsulotlar': o.items_count,
-    'Holat': statusConfig[o.status]?.label ?? o.status,
+    [t.orderId]: o.order_id_external ?? o.id,
+    [t.marketplace]: marketplaceLabel[o.marketplace] ?? o.marketplace,
+    [t.date]: o.ordered_at,
+    [t.colRevenue]: o.revenue ?? 0,
+    [t.colCommission]: o.marketplace_fee ?? 0,
+    [t.colDelivery]: o.delivery_cost ?? 0,
+    [t.items]: o.items_count,
+    [t.statusCol]: statusConfig[o.status]?.label ?? o.status,
   }))
 
   return (
@@ -91,32 +95,32 @@ export default function OrdersTable({ orders }: { orders: Order[] }) {
             type="text"
             value={query}
             onChange={e => setQuery(e.target.value)}
-            placeholder="Buyurtma ID yoki marketplace..."
+            placeholder={t.searchPlaceholder}
             className="w-full bg-[var(--bg-card2)] border border-[var(--border2)] rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/30 transition-all"
           />
         </div>
-        <ExportButton data={exportData} filename="buyurtmalar" />
+        <ExportButton data={exportData} filename={t.exportFilename} />
       </div>
 
-      <p className="text-slate-500 text-xs">{filtered.length} ta buyurtma</p>
+      <p className="text-slate-500 text-xs">{filtered.length} {t.count}</p>
 
       <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="text-slate-500 text-xs border-b border-[var(--border)] bg-white/[0.01]">
-                <th className="text-left font-medium px-5 py-3">Buyurtma ID</th>
-                <th className="text-left font-medium px-5 py-3">Marketplace</th>
-                <th className="text-left font-medium px-5 py-3">Sana</th>
-                <th className="text-right font-medium px-5 py-3">Daromad</th>
-                <th className="text-right font-medium px-5 py-3">Komissiya</th>
-                <th className="text-right font-medium px-5 py-3">Mahsulotlar</th>
-                <th className="text-center font-medium px-5 py-3">Holat</th>
+                <th className="text-left font-medium px-5 py-3">{t.orderId}</th>
+                <th className="text-left font-medium px-5 py-3">{t.marketplace}</th>
+                <th className="text-left font-medium px-5 py-3">{t.date}</th>
+                <th className="text-right font-medium px-5 py-3">{t.revenue}</th>
+                <th className="text-right font-medium px-5 py-3">{t.commission}</th>
+                <th className="text-right font-medium px-5 py-3">{t.items}</th>
+                <th className="text-center font-medium px-5 py-3">{t.statusCol}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/[0.03]">
               {filtered.length === 0 ? (
-                <tr><td colSpan={7} className="px-5 py-10 text-center text-slate-500 text-sm">Hech narsa topilmadi</td></tr>
+                <tr><td colSpan={7} className="px-5 py-10 text-center text-slate-500 text-sm">{t.notFound}</td></tr>
               ) : filtered.map(order => {
                 const s = statusConfig[order.status]
                 return (

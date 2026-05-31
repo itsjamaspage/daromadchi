@@ -2,28 +2,32 @@ import { Package, Settings } from 'lucide-react'
 import Link from 'next/link'
 import { getProducts } from '@/lib/db/products'
 import ProductsTable from '@/components/dashboard/ProductsTable'
+import { getLang } from '@/lib/lang'
+import { dashT } from '@/lib/dashT'
 
 export default async function ProductsPage() {
   const products = await getProducts()
+  const lang = await getLang()
+  const t = dashT[lang].products
 
   if (products.length === 0) {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-bold text-white">Mahsulotlar</h1>
-          <p className="text-slate-400 text-sm mt-1">0 ta mahsulot</p>
+          <h1 className="text-2xl font-bold text-white">{t.title}</h1>
+          <p className="text-slate-400 text-sm mt-1">0 {t.count}</p>
         </div>
         <div className="bg-[var(--bg-card2)] border border-dashed border-violet-500/30 rounded-2xl p-10 text-center">
           <div className="w-14 h-14 rounded-2xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center mx-auto mb-4">
             <Package className="w-7 h-7 text-violet-400" />
           </div>
-          <h2 className="text-white font-bold text-lg mb-2">Mahsulotlar yo'q</h2>
+          <h2 className="text-white font-bold text-lg mb-2">{t.empty}</h2>
           <p className="text-slate-400 text-sm mb-6 max-w-sm mx-auto">
-            Uzum do'koningizni ulab, sinxronizatsiyani boshlang — mahsulotlar avtomatik import qilinadi.
+            {t.emptyDesc}
           </p>
           <Link href="/dashboard/settings"
             className="inline-flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors shadow-lg shadow-violet-500/20">
-            <Settings className="w-4 h-4" /> Sozlamalarga o'tish
+            <Settings className="w-4 h-4" /> {t.goSettings}
           </Link>
         </div>
       </div>
@@ -33,8 +37,8 @@ export default async function ProductsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-white">Mahsulotlar</h1>
-        <p className="text-slate-400 text-sm mt-1">{products.length} ta mahsulot</p>
+        <h1 className="text-2xl font-bold text-white">{t.title}</h1>
+        <p className="text-slate-400 text-sm mt-1">{products.length} {t.count}</p>
       </div>
       <ProductsTable products={products} />
     </div>

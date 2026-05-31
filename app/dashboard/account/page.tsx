@@ -2,11 +2,15 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { User, Mail, Calendar, Shield, CreditCard } from 'lucide-react'
 import Link from 'next/link'
+import { getLang } from '@/lib/lang'
+import { dashT } from '@/lib/dashT'
 
 export default async function AccountPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
+  const lang = await getLang()
+  const t = dashT[lang].account
 
   const { data: profile } = await supabase
     .from('users')
@@ -21,9 +25,9 @@ export default async function AccountPage() {
     : null
 
   const planLabel: Record<string, { label: string; color: string }> = {
-    free:     { label: 'Bepul',  color: 'text-slate-400 bg-slate-500/10 border-slate-500/20' },
-    pro:      { label: 'Pro',    color: 'text-violet-400 bg-violet-500/10 border-violet-500/20' },
-    pro_plus: { label: 'Pro+',   color: 'text-amber-400 bg-amber-500/10 border-amber-500/20' },
+    free:     { label: t.planFree,    color: 'text-slate-400 bg-slate-500/10 border-slate-500/20' },
+    pro:      { label: t.planPro,     color: 'text-violet-400 bg-violet-500/10 border-violet-500/20' },
+    pro_plus: { label: t.planProPlus, color: 'text-amber-400 bg-amber-500/10 border-amber-500/20' },
   }
   const planInfo = planLabel[plan] ?? planLabel.free
 
@@ -32,12 +36,12 @@ export default async function AccountPage() {
       {/* Header */}
       <div>
         <div className="flex items-center gap-3 mb-0.5">
-          <h1 className="text-2xl font-bold text-white">Profil</h1>
+          <h1 className="text-2xl font-bold text-white">{t.title}</h1>
           <span className={`text-[10px] font-semibold px-2 py-1 rounded-full border ${planInfo.color}`}>
             {planInfo.label}
           </span>
         </div>
-        <p className="text-slate-400 text-sm">Akkaunt ma'lumotlari va tarif rejasi</p>
+        <p className="text-slate-400 text-sm">{t.subtitle}</p>
       </div>
 
       {/* Avatar + name */}
@@ -47,13 +51,13 @@ export default async function AccountPage() {
         </div>
         <div>
           <p className="text-white font-bold text-lg">
-            {user.user_metadata?.full_name ?? 'Foydalanuvchi'}
+            {user.user_metadata?.full_name ?? t.defaultUser}
           </p>
           <p className="text-slate-400 text-sm flex items-center gap-1.5 mt-0.5">
             <Mail className="w-3.5 h-3.5" /> {user.email}
           </p>
           <p className="text-slate-500 text-xs flex items-center gap-1.5 mt-1">
-            <Calendar className="w-3 h-3" /> Ro'yxatdan o'tgan: {joinedAt}
+            <Calendar className="w-3 h-3" /> {t.joined} {joinedAt}
           </p>
         </div>
       </div>
@@ -62,7 +66,7 @@ export default async function AccountPage() {
       <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
         <div className="px-6 py-4 border-b border-[var(--border)] flex items-center gap-3">
           <CreditCard className="w-4 h-4 text-slate-400" />
-          <p className="text-white font-semibold text-sm">Tarif rejasi</p>
+          <p className="text-white font-semibold text-sm">{t.planTitle}</p>
         </div>
         <div className="p-6 flex items-center justify-between">
           <div>
@@ -70,22 +74,22 @@ export default async function AccountPage() {
               {planInfo.label}
             </span>
             {expiresAt && (
-              <p className="text-slate-500 text-xs mt-2">Muddati: {expiresAt}</p>
+              <p className="text-slate-500 text-xs mt-2">{t.expires} {expiresAt}</p>
             )}
             {plan === 'free' && (
-              <p className="text-slate-500 text-xs mt-2">1 do'kon · 7 kunlik tarix</p>
+              <p className="text-slate-500 text-xs mt-2">{t.freeDesc}</p>
             )}
             {plan === 'pro' && (
-              <p className="text-slate-500 text-xs mt-2">3 do'kon · Cheksiz tarix</p>
+              <p className="text-slate-500 text-xs mt-2">{t.proDesc}</p>
             )}
             {plan === 'pro_plus' && (
-              <p className="text-slate-500 text-xs mt-2">5 do'kon · Cheksiz tarix · Ustuvor qo'llab-quvvatlash</p>
+              <p className="text-slate-500 text-xs mt-2">{t.proPlusDesc}</p>
             )}
           </div>
           {plan === 'free' && (
             <Link href="/pricing"
               className="bg-violet-600 hover:bg-violet-500 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors">
-              Pro ga o'tish →
+              {t.upgradePro}
             </Link>
           )}
         </div>
@@ -95,17 +99,17 @@ export default async function AccountPage() {
       <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
         <div className="px-6 py-4 border-b border-[var(--border)] flex items-center gap-3">
           <Shield className="w-4 h-4 text-slate-400" />
-          <p className="text-white font-semibold text-sm">Xavfsizlik</p>
+          <p className="text-white font-semibold text-sm">{t.security}</p>
         </div>
         <div className="p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-white text-sm font-medium">Parol</p>
-              <p className="text-slate-500 text-xs mt-0.5">Parolingizni o'zgartiring</p>
+              <p className="text-white text-sm font-medium">{t.password}</p>
+              <p className="text-slate-500 text-xs mt-0.5">{t.passwordDesc}</p>
             </div>
             <Link href="/login?forgot=1"
               className="text-violet-400 hover:text-violet-300 text-sm font-medium transition-colors border border-violet-500/20 px-3 py-1.5 rounded-xl hover:bg-violet-500/10">
-              O'zgartirish
+              {t.change}
             </Link>
           </div>
         </div>

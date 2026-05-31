@@ -3,6 +3,10 @@
 import { useState, useTransition, useCallback } from 'react'
 import { Search, TrendingUp, Star, ShoppingBag, ChevronRight, ArrowUpDown, Loader2 } from 'lucide-react'
 import type { UzumPublicCategory, UzumPublicProduct } from '@/lib/uzum/public'
+import { useLang } from '@/app/providers'
+import { dashT } from '@/lib/dashT'
+
+type MarketT = (typeof dashT)['uz']['market']
 
 function fmt(n: number) {
   return new Intl.NumberFormat('uz-UZ').format(Math.round(n))
@@ -10,7 +14,7 @@ function fmt(n: number) {
 
 // ─── Uzum product table ───────────────────────────────────────────────────────
 
-function UzumProductTable({ products, userCategories }: { products: UzumPublicProduct[]; userCategories: string[] }) {
+function UzumProductTable({ products, userCategories, t }: { products: UzumPublicProduct[]; userCategories: string[]; t: MarketT }) {
   if (!products.length) return null
   const prices = products.map(p => p.minSellPrice).filter(Boolean)
   const minP   = Math.min(...prices)
@@ -22,10 +26,10 @@ function UzumProductTable({ products, userCategories }: { products: UzumPublicPr
     <div className="space-y-4">
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: 'Min narx',      value: `${fmt(minP)} so'm`, color: 'text-emerald-400' },
-          { label: "O'rtacha narx", value: `${fmt(avgP)} so'm`, color: 'text-violet-400'  },
-          { label: 'Max narx',      value: `${fmt(maxP)} so'm`, color: 'text-amber-400'   },
-          { label: 'Jami buyurtma', value: fmt(totalO),          color: 'text-cyan-400'    },
+          { label: t.minPrice,    value: `${fmt(minP)} so'm`, color: 'text-emerald-400' },
+          { label: t.avgPrice,    value: `${fmt(avgP)} so'm`, color: 'text-violet-400'  },
+          { label: t.maxPrice,    value: `${fmt(maxP)} so'm`, color: 'text-amber-400'   },
+          { label: t.totalOrders, value: fmt(totalO),          color: 'text-cyan-400'    },
         ].map(({ label, value, color }) => (
           <div key={label} className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl p-4">
             <p className="text-slate-500 text-xs mb-1">{label}</p>
@@ -36,17 +40,17 @@ function UzumProductTable({ products, userCategories }: { products: UzumPublicPr
       <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
         <div className="px-5 py-4 border-b border-[var(--border)] flex items-center gap-2">
           <TrendingUp className="w-4 h-4 text-violet-400" />
-          <h3 className="text-white font-semibold text-sm">Top mahsulotlar — buyurtmalar bo'yicha</h3>
+          <h3 className="text-white font-semibold text-sm">{t.topProducts}</h3>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="text-slate-500 text-xs border-b border-[var(--border)] bg-white/[0.01]">
                 <th className="text-left px-5 py-3 font-medium">#</th>
-                <th className="text-left px-4 py-3 font-medium">Mahsulot</th>
-                <th className="text-right px-4 py-3 font-medium">Narx</th>
-                <th className="text-right px-4 py-3 font-medium">Buyurtmalar</th>
-                <th className="text-right px-4 py-3 font-medium">Reyting</th>
+                <th className="text-left px-4 py-3 font-medium">{t.product}</th>
+                <th className="text-right px-4 py-3 font-medium">{t.price}</th>
+                <th className="text-right px-4 py-3 font-medium">{t.orders}</th>
+                <th className="text-right px-4 py-3 font-medium">{t.rating}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/[0.03]">
@@ -61,7 +65,7 @@ function UzumProductTable({ products, userCategories }: { products: UzumPublicPr
                     <td className="px-4 py-3.5">
                       <p className="text-white text-xs font-medium leading-snug max-w-xs">
                         {p.title}
-                        {mine && <span className="ml-2 text-[9px] bg-violet-500/20 text-violet-400 px-1.5 py-0.5 rounded-full border border-violet-500/20">Sizning kategoriya</span>}
+                        {mine && <span className="ml-2 text-[9px] bg-violet-500/20 text-violet-400 px-1.5 py-0.5 rounded-full border border-violet-500/20">{t.yourCategory}</span>}
                       </p>
                       {p.shopTitle && <p className="text-slate-500 text-[10px] mt-0.5">{p.shopTitle}</p>}
                     </td>
@@ -99,7 +103,7 @@ interface YandexModel {
   rating?: number; reviewCount?: number; offersCount?: number
 }
 
-function YandexModelTable({ models }: { models: YandexModel[] }) {
+function YandexModelTable({ models, t }: { models: YandexModel[]; t: MarketT }) {
   if (!models.length) return null
   const withPrices = models.filter(m => m.prices?.avg)
   const avgP = withPrices.length
@@ -112,9 +116,9 @@ function YandexModelTable({ models }: { models: YandexModel[] }) {
     <div className="space-y-4">
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         {[
-          { label: 'Min narx',      value: `${fmt(minP)} ${cur}`, color: 'text-emerald-400' },
-          { label: "O'rtacha narx", value: `${fmt(avgP)} ${cur}`, color: 'text-amber-400'   },
-          { label: 'Max narx',      value: `${fmt(maxP)} ${cur}`, color: 'text-red-400'     },
+          { label: t.minPrice, value: `${fmt(minP)} ${cur}`, color: 'text-emerald-400' },
+          { label: t.avgPrice, value: `${fmt(avgP)} ${cur}`, color: 'text-amber-400'   },
+          { label: t.maxPrice, value: `${fmt(maxP)} ${cur}`, color: 'text-red-400'     },
         ].map(({ label, value, color }) => (
           <div key={label} className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl p-4">
             <p className="text-slate-500 text-xs mb-1">{label}</p>
@@ -125,18 +129,18 @@ function YandexModelTable({ models }: { models: YandexModel[] }) {
       <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
         <div className="px-5 py-4 border-b border-[var(--border)] flex items-center gap-2">
           <TrendingUp className="w-4 h-4 text-amber-400" />
-          <h3 className="text-white font-semibold text-sm">Yandex Market — top modellar</h3>
+          <h3 className="text-white font-semibold text-sm">{t.topModels}</h3>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="text-slate-500 text-xs border-b border-[var(--border)] bg-white/[0.01]">
                 <th className="text-left px-5 py-3 font-medium">#</th>
-                <th className="text-left px-4 py-3 font-medium">Model</th>
-                <th className="text-right px-4 py-3 font-medium">Narx diapazoni</th>
-                <th className="text-right px-4 py-3 font-medium">Reyting</th>
-                <th className="text-right px-4 py-3 font-medium">Sharhlar</th>
-                <th className="text-right px-4 py-3 font-medium">Takliflar</th>
+                <th className="text-left px-4 py-3 font-medium">{t.model}</th>
+                <th className="text-right px-4 py-3 font-medium">{t.priceRange}</th>
+                <th className="text-right px-4 py-3 font-medium">{t.rating}</th>
+                <th className="text-right px-4 py-3 font-medium">{t.reviews}</th>
+                <th className="text-right px-4 py-3 font-medium">{t.offers}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/[0.03]">
@@ -177,6 +181,8 @@ interface Props {
 }
 
 export default function MarketClient({ marketplace, initialCategories, userCategories }: Props) {
+  const { lang } = useLang()
+  const t = dashT[lang].market
   const [selectedCat,  setSelectedCat]  = useState<{ id: number; title: string } | null>(null)
   const [uzumProducts, setUzumProducts] = useState<UzumPublicProduct[]>([])
   const [yandexCats,   setYandexCats]   = useState<{ id: number; name: string }[]>([])
@@ -242,15 +248,15 @@ export default function MarketClient({ marketplace, initialCategories, userCateg
   }
 
   const UZUM_SORTS: { value: SortUzum; label: string }[] = [
-    { value: 'ORDER_COUNT_DESC', label: 'Buyurtmalar ↓' },
-    { value: 'PRICE_ASC',        label: 'Narx ↑'        },
-    { value: 'PRICE_DESC',       label: 'Narx ↓'        },
-    { value: 'RATING_DESC',      label: 'Reyting ↓'     },
+    { value: 'ORDER_COUNT_DESC', label: t.sortOrders   },
+    { value: 'PRICE_ASC',        label: t.sortPriceAsc  },
+    { value: 'PRICE_DESC',       label: t.sortPriceDesc },
+    { value: 'RATING_DESC',      label: t.sortRating    },
   ]
   const YANDEX_SORTS: { value: SortYandex; label: string }[] = [
-    { value: 'OPINIONS', label: 'Fikrlar ↓' },
-    { value: 'PRICE',    label: 'Narx'       },
-    { value: 'QUALITY',  label: 'Sifat'      },
+    { value: 'OPINIONS', label: t.sortOpinions },
+    { value: 'PRICE',    label: t.sortPrice    },
+    { value: 'QUALITY',  label: t.sortQuality  },
   ]
 
   const accentActive  = marketplace === 'yandex' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-violet-600/20 text-violet-300 border border-violet-500/30'
@@ -273,24 +279,24 @@ export default function MarketClient({ marketplace, initialCategories, userCateg
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSearch()}
-              placeholder="Mahsulot nomini qidiring…"
+              placeholder={t.searchPlaceholder}
               className={`w-full bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder:text-slate-500 focus:outline-none ${searchBorder} transition-colors`}
             />
           </div>
           <button onClick={handleSearch}
             className={`${btnColor} text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors flex items-center gap-2`}>
             {isPending && mode === 'search' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-            Qidirish
+            {t.search}
           </button>
         </div>
       )}
 
       {/* Category grid */}
       <div>
-        <p className="text-slate-500 text-xs font-medium mb-3 uppercase tracking-wide">Kategoriyalar</p>
+        <p className="text-slate-500 text-xs font-medium mb-3 uppercase tracking-wide">{t.categories}</p>
         {isPending && !selectedCat && marketplace === 'yandex' ? (
           <div className="flex items-center gap-2 text-slate-500 text-sm py-4">
-            <Loader2 className="w-4 h-4 animate-spin" /> Yuklanmoqda…
+            <Loader2 className="w-4 h-4 animate-spin" /> {t.loading}
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
@@ -324,10 +330,10 @@ export default function MarketClient({ marketplace, initialCategories, userCateg
         <div className="flex items-center justify-between">
           <div>
             <p className="text-white font-semibold text-sm">
-              {mode === 'category' ? selectedCat?.title : `"${searchQuery}" natijalari`}
+              {mode === 'category' ? selectedCat?.title : `"${searchQuery}" ${t.resultsSuffix}`}
             </p>
             {marketplace === 'uzum' && (
-              <p className="text-slate-500 text-xs mt-0.5">{fmt(total)} mahsulot</p>
+              <p className="text-slate-500 text-xs mt-0.5">{fmt(total)} {t.productsCount}</p>
             )}
           </div>
           <div className="flex items-center gap-2">
@@ -359,23 +365,23 @@ export default function MarketClient({ marketplace, initialCategories, userCateg
       {isPending && selectedCat && (
         <div className="flex items-center justify-center py-12 gap-3 text-slate-400">
           <Loader2 className="w-5 h-5 animate-spin text-violet-400" />
-          <span className="text-sm">Yuklanmoqda…</span>
+          <span className="text-sm">{t.loading}</span>
         </div>
       )}
 
       {/* Results */}
       {!isPending && marketplace === 'uzum' && uzumProducts.length > 0 && (
-        <UzumProductTable products={uzumProducts} userCategories={userCategories} />
+        <UzumProductTable products={uzumProducts} userCategories={userCategories} t={t} />
       )}
       {!isPending && marketplace === 'yandex' && yandexModels.length > 0 && (
-        <YandexModelTable models={yandexModels} />
+        <YandexModelTable models={yandexModels} t={t} />
       )}
 
       {/* Empty */}
       {!isPending && !hasResults && selectedCat && (
         <div className="text-center py-12 text-slate-500 text-sm">
           <ShoppingBag className="w-8 h-8 mx-auto mb-3 text-slate-700" />
-          Ma&apos;lumot topilmadi
+          {t.notFound}
         </div>
       )}
     </div>

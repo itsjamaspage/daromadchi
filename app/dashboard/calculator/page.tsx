@@ -2,33 +2,21 @@
 
 import { useState, useMemo } from 'react'
 import { Calculator, TrendingUp, TrendingDown, AlertTriangle, Info, Zap } from 'lucide-react'
+import { useLang } from '@/app/providers'
+import { dashT } from '@/lib/dashT'
 
 function fmt(n: number) {
   return new Intl.NumberFormat('uz-UZ').format(Math.round(n))
 }
 
-const CATEGORIES: { name: string; rate: number }[] = [
-  { name: 'Elektronika',          rate: 5  },
-  { name: 'Kompyuter texnikasi',  rate: 5  },
-  { name: 'Telefon va gadjetlar', rate: 6  },
-  { name: 'Krossovkalar',         rate: 8  },
-  { name: 'Sport',                rate: 8  },
-  { name: 'Soatlar',              rate: 9  },
-  { name: 'Uy-joy va bog\'',      rate: 7  },
-  { name: 'Kiyim (erkaklar)',     rate: 10 },
-  { name: 'Kiyim (ayollar)',      rate: 10 },
-  { name: 'Kiyim (bolalar)',      rate: 10 },
-  { name: 'Go\'zallik va parvarishl', rate: 11 },
-  { name: 'Sog\'liq va tibbiyot', rate: 9  },
-  { name: 'Oziq-ovqat',           rate: 12 },
-  { name: 'O\'yinchoqlar',        rate: 10 },
-  { name: 'Avtomobil',            rate: 6  },
-  { name: 'Boshqa',               rate: 10 },
-]
+const CATEGORY_RATES = [5, 5, 6, 8, 8, 9, 7, 10, 10, 10, 11, 9, 12, 10, 6, 10]
 
 const inputCls = "w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/30 transition-all"
 
 export default function CalculatorPage() {
+  const { lang } = useLang()
+  const t = dashT[lang].calculator
+  const CATEGORIES = t.categories.map((name, i) => ({ name, rate: CATEGORY_RATES[i] }))
   const [price,      setPrice]      = useState('')
   const [cost,       setCost]       = useState('')
   const [logistics,  setLogistics]  = useState('')
@@ -86,56 +74,56 @@ export default function CalculatorPage() {
       <div>
         <h1 className="text-2xl font-bold text-white flex items-center gap-2">
           <Calculator className="w-6 h-6 text-violet-400" />
-          Foyda kalkulyatori
+          {t.title}
         </h1>
         <p className="text-slate-400 text-sm mt-1">
-          Uzum komissiyasi, qaytarish va logistika hisobga olingandan keyin <strong className="text-white">haqiqiy foydangizni</strong> bilib oling
+          {t.subtitlePre} <strong className="text-white">{t.subtitleStrong}</strong> {t.subtitlePost}
         </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* ── Inputs ──────────────────────────────────────────────────── */}
         <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl p-6 space-y-4">
-          <h2 className="text-white font-semibold text-sm">Mahsulot ma'lumotlari</h2>
+          <h2 className="text-white font-semibold text-sm">{t.productInfo}</h2>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs text-slate-400 mb-1.5">Sotish narxi (so'm)</label>
+              <label className="block text-xs text-slate-400 mb-1.5">{t.sellPrice}</label>
               <input value={price} onChange={e => setPrice(e.target.value)} type="number"
                 placeholder="890 000" className={inputCls} />
             </div>
             <div>
-              <label className="block text-xs text-slate-400 mb-1.5">Tannarx (so'm)</label>
+              <label className="block text-xs text-slate-400 mb-1.5">{t.cost}</label>
               <input value={cost} onChange={e => setCost(e.target.value)} type="number"
                 placeholder="520 000" className={inputCls} />
             </div>
             <div>
-              <label className="block text-xs text-slate-400 mb-1.5">Logistika (so'm)</label>
+              <label className="block text-xs text-slate-400 mb-1.5">{t.logistics}</label>
               <input value={logistics} onChange={e => setLogistics(e.target.value)} type="number"
                 placeholder="25 000" className={inputCls} />
             </div>
             <div>
-              <label className="block text-xs text-slate-400 mb-1.5">Reklama xarajati (so'm)</label>
+              <label className="block text-xs text-slate-400 mb-1.5">{t.adSpend}</label>
               <input value={adSpend} onChange={e => setAdSpend(e.target.value)} type="number"
                 placeholder="0" className={inputCls} />
             </div>
             <div>
-              <label className="block text-xs text-slate-400 mb-1.5">Qaytarish foizi (%)</label>
+              <label className="block text-xs text-slate-400 mb-1.5">{t.returnRate}</label>
               <input value={returnRate} onChange={e => setReturnRate(e.target.value)} type="number"
                 placeholder="5" min="0" max="100" className={inputCls} />
             </div>
             <div>
-              <label className="block text-xs text-slate-400 mb-1.5">Oylik savdo (dona)</label>
+              <label className="block text-xs text-slate-400 mb-1.5">{t.monthlyUnits}</label>
               <input value={units} onChange={e => setUnits(e.target.value)} type="number"
                 placeholder="100" min="1" className={inputCls} />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs text-slate-400 mb-1.5">Kategoriya</label>
+            <label className="block text-xs text-slate-400 mb-1.5">{t.category}</label>
             <select value={catIdx} onChange={e => setCatIdx(Number(e.target.value))} className={inputCls}>
               {CATEGORIES.map((c, i) => (
-                <option key={c.name} value={i}>{c.name} — {c.rate}% komissiya</option>
+                <option key={c.name} value={i}>{c.name} — {c.rate}% {t.commissionSuffix}</option>
               ))}
             </select>
           </div>
@@ -143,7 +131,7 @@ export default function CalculatorPage() {
           <div className="flex items-center gap-2 bg-violet-500/[0.07] border border-violet-500/10 rounded-xl px-4 py-2.5">
             <Info className="w-4 h-4 text-violet-400 flex-shrink-0" />
             <p className="text-xs text-slate-400">
-              Uzum komissiyasi: <span className="text-violet-400 font-semibold">{commission}%</span> · {CATEGORIES[catIdx].name}
+              {t.uzumCommission} <span className="text-violet-400 font-semibold">{commission}%</span> · {CATEGORIES[catIdx].name}
             </p>
           </div>
         </div>
@@ -153,7 +141,7 @@ export default function CalculatorPage() {
           {!result ? (
             <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl p-6 flex flex-col items-center justify-center min-h-[220px] gap-3">
               <Calculator className="w-10 h-10 text-slate-700" />
-              <p className="text-slate-500 text-sm text-center">Natijani ko'rish uchun<br/>narx va tannarxni kiriting</p>
+              <p className="text-slate-500 text-sm text-center">{t.enterToSee}<br/>{t.enterPriceCost}</p>
             </div>
           ) : (
             <>
@@ -161,19 +149,19 @@ export default function CalculatorPage() {
               <div className="rounded-2xl overflow-hidden border border-[var(--border2)]">
                 <div className="bg-gradient-to-r from-violet-600/20 to-indigo-600/10 px-5 py-3 border-b border-[var(--border)] flex items-center gap-2">
                   <Zap className="w-4 h-4 text-violet-400" />
-                  <span className="text-white font-bold text-sm">Reality Check — oylik hisob</span>
+                  <span className="text-white font-bold text-sm">{t.realityCheck}</span>
                 </div>
 
                 <div className="bg-[var(--bg-card2)] p-5 space-y-4">
                   {/* Two-column comparison */}
                   <div className="grid grid-cols-2 gap-3">
                     <div className="bg-white/[0.03] border border-[var(--border)] rounded-xl p-4">
-                      <p className="text-slate-500 text-[11px] mb-1">Siz hisoblagan foyda</p>
+                      <p className="text-slate-500 text-[11px] mb-1">{t.youThink}</p>
                       <p className="text-white font-bold text-xl">{fmt(result.naiveProfit)}</p>
                       <p className="text-slate-600 text-[10px] mt-0.5">so'm</p>
                     </div>
                     <div className={`border rounded-xl p-4 ${result.realProfit > 0 ? 'bg-emerald-500/[0.08] border-emerald-500/25' : 'bg-red-500/[0.08] border-red-500/25'}`}>
-                      <p className="text-slate-400 text-[11px] mb-1">Haqiqiy foydangiz</p>
+                      <p className="text-slate-400 text-[11px] mb-1">{t.yourReal}</p>
                       <p className={`font-bold text-xl ${result.realProfit > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                         {fmt(result.realProfit)}
                       </p>
@@ -186,7 +174,7 @@ export default function CalculatorPage() {
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-red-400 text-xs font-semibold flex items-center gap-1.5">
                         <AlertTriangle className="w-3.5 h-3.5" />
-                        Uzum + xarajatlar olib ketdi
+                        {t.uzumTook}
                       </span>
                       <span className="text-red-400 font-bold text-sm">{fmt(result.stolen)} so'm</span>
                     </div>
@@ -196,20 +184,20 @@ export default function CalculatorPage() {
                         style={{ width: `${Math.max(0, Math.min(100, result.keepPct))}%` }} />
                     </div>
                     <div className="flex justify-between text-[10px] mt-1.5">
-                      <span className="text-emerald-400">Qoldi: {result.keepPct.toFixed(0)}%</span>
-                      <span className="text-red-400">Ketdi: {result.stolenPct.toFixed(0)}%</span>
+                      <span className="text-emerald-400">{t.kept} {result.keepPct.toFixed(0)}%</span>
+                      <span className="text-red-400">{t.gone} {result.stolenPct.toFixed(0)}%</span>
                     </div>
                   </div>
 
                   {/* Cost breakdown per unit */}
                   <div className="space-y-1.5">
-                    <p className="text-slate-500 text-xs font-medium">1 dona mahsulotdan xarajatlar taqsimoti:</p>
+                    <p className="text-slate-500 text-xs font-medium">{t.breakdownTitle}</p>
                     {[
-                      { label: `Uzum komissiyasi (${commission}%)`, value: result.commAmt,     color: 'bg-red-500' },
-                      { label: 'Tannarx',                           value: result.cost,         color: 'bg-orange-500' },
-                      { label: 'Logistika',                         value: result.logistics,    color: 'bg-amber-500' },
-                      { label: 'Qaytarish zarari',                  value: result.returnLoss * (parseFloat(returnRate)/100), color: 'bg-rose-500' },
-                      { label: 'Reklama (dona)',                    value: result.adPerUnit,    color: 'bg-purple-500' },
+                      { label: `${t.bdCommission} (${commission}%)`, value: result.commAmt,     color: 'bg-red-500' },
+                      { label: t.bdCost,                            value: result.cost,         color: 'bg-orange-500' },
+                      { label: t.bdLogistics,                       value: result.logistics,    color: 'bg-amber-500' },
+                      { label: t.bdReturnLoss,                      value: result.returnLoss * (parseFloat(returnRate)/100), color: 'bg-rose-500' },
+                      { label: t.bdAd,                              value: result.adPerUnit,    color: 'bg-purple-500' },
                     ].filter(r => r.value > 0).map(r => {
                       const pct = result.price > 0 ? (r.value / result.price) * 100 : 0
                       return (
@@ -223,7 +211,7 @@ export default function CalculatorPage() {
                     })}
                     <div className="border-t border-[var(--border)] pt-1.5 flex items-center gap-2 text-xs">
                       <div className="w-2 h-2 rounded-full flex-shrink-0 bg-emerald-500" />
-                      <span className="text-slate-200 font-semibold flex-1">Sof foyda (dona)</span>
+                      <span className="text-slate-200 font-semibold flex-1">{t.netProfitUnit}</span>
                       <span className={`font-bold tabular-nums ${result.realProfitUnit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                         {fmt(result.realProfitUnit)} so'm
                       </span>
@@ -238,10 +226,10 @@ export default function CalculatorPage() {
               {/* Metric chips */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {[
-                  { label: 'Margin',     value: `${result.margin.toFixed(1)}%`,    good: result.margin >= 20,  bad: result.margin < 5   },
-                  { label: 'ROI',        value: `${result.roi.toFixed(0)}%`,        good: result.roi >= 30,     bad: result.roi < 0      },
-                  { label: 'DRR',        value: `${result.drr.toFixed(1)}%`,        good: result.drr < 15,      bad: result.drr > 25     },
-                  { label: 'Zararlanmaslik', value: `${fmt(result.breakeven)} s'm`, good: result.price > result.breakeven, bad: result.price <= result.breakeven },
+                  { label: t.margin,    value: `${result.margin.toFixed(1)}%`,    good: result.margin >= 20,  bad: result.margin < 5   },
+                  { label: t.roi,       value: `${result.roi.toFixed(0)}%`,        good: result.roi >= 30,     bad: result.roi < 0      },
+                  { label: t.drr,       value: `${result.drr.toFixed(1)}%`,        good: result.drr < 15,      bad: result.drr > 25     },
+                  { label: t.breakeven, value: `${fmt(result.breakeven)} s'm`, good: result.price > result.breakeven, bad: result.price <= result.breakeven },
                 ].map(({ label, value, good, bad }) => (
                   <div key={label} className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl p-3">
                     <p className="text-slate-500 text-[10px] mb-0.5">{label}</p>
@@ -254,19 +242,19 @@ export default function CalculatorPage() {
               {result.realProfit <= 0 && (
                 <div className="flex items-start gap-2 bg-red-500/[0.08] border border-red-500/20 rounded-xl px-4 py-3 text-xs text-red-400">
                   <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                  <span>Hozirgi narx bilan oyiga <strong>{fmt(Math.abs(result.realProfit))} so'm zarar</strong> ko'rmoqdasiz. Narxni kamida <strong>{fmt(result.breakeven)} so'm</strong>ga ko'taring.</span>
+                  <span>{t.warnLossPre} <strong>{fmt(Math.abs(result.realProfit))} {t.warnLossStrong}</strong> {t.warnLossMid} <strong>{fmt(result.breakeven)} {t.warnLossEnd}</strong></span>
                 </div>
               )}
               {result.margin > 0 && result.margin < 15 && (
                 <div className="flex items-start gap-2 bg-amber-500/[0.08] border border-amber-500/20 rounded-xl px-4 py-3 text-xs text-amber-400">
                   <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                  <span>Margin {result.margin.toFixed(1)}% — juda past. Narx oshirish yoki tannarxni kamaytirish kerak. Tavsiya etilgan minimum: 20%.</span>
+                  <span>{t.warnMarginPre} {result.margin.toFixed(1)}% {t.warnMarginPost}</span>
                 </div>
               )}
               {result.drr > 25 && (
                 <div className="flex items-start gap-2 bg-amber-500/[0.08] border border-amber-500/20 rounded-xl px-4 py-3 text-xs text-amber-400">
                   <TrendingDown className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                  <span>DRR {result.drr.toFixed(1)}% — reklama xarajati haddan oshgan. Optimal: 10–20%.</span>
+                  <span>{t.warnDrrPre} {result.drr.toFixed(1)}% {t.warnDrrPost}</span>
                 </div>
               )}
             </>
