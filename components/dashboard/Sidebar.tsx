@@ -10,7 +10,7 @@ import {
 } from 'lucide-react'
 import { useTheme, useLang } from '@/app/providers'
 import type { Lang } from '@/lib/i18n'
-import { dashT } from '@/lib/lang'
+import { dashT } from '@/lib/dashT'
 
 type NavItem = { href: string; label: string; icon: React.ElementType }
 
