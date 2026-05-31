@@ -5,8 +5,8 @@ import { useState } from 'react'
 import { Check, X, Zap, TrendingUp, ArrowRight, Loader2 } from 'lucide-react'
 import { useTheme } from '../providers'
 
-const MONTHLY = { pro: 149_000, pro_plus: 349_000 }
-const ANNUAL  = { pro: 1_490_000, pro_plus: 3_490_000 }
+const MONTHLY = { pro: 300_000, pro_plus: 600_000 }
+const ANNUAL  = { pro: 3_000_000, pro_plus: 6_000_000 }
 
 function fmt(n: number) {
   return n.toLocaleString('uz-UZ') + " so'm"
@@ -17,6 +17,8 @@ const FEATURES: { label: string; free: boolean | string; pro: boolean | string; 
   { label: 'Buyurtmalar tarixi',        free: '7 kun', pro: 'Cheksiz', pro_plus: 'Cheksiz' },
   { label: 'Uzum Market',               free: true,    pro: true,      pro_plus: true       },
   { label: 'Yandex Market',             free: true,    pro: true,      pro_plus: true       },
+  { label: 'Wildberries',               free: true,    pro: true,      pro_plus: true       },
+  { label: 'WB Reklama tahlili (DRR)',  free: false,   pro: true,      pro_plus: true       },
   { label: 'Real vaqt sinxronizatsiya', free: false,   pro: true,      pro_plus: true       },
   { label: 'Telegram xabarnomalar',     free: false,   pro: true,      pro_plus: true       },
   { label: 'Kunlik hisobot (Telegram)', free: false,   pro: true,      pro_plus: true       },
@@ -28,6 +30,7 @@ const FEATURES: { label: string; free: boolean | string; pro: boolean | string; 
   { label: 'Raqobatchi narx kuzatish',  free: false,   pro: false,     pro_plus: true       },
   { label: "Hisobotlarni eksport (CSV)",free: false,   pro: false,     pro_plus: true       },
   { label: "Ustuvor qo'llab-quvvatlash",free: false,  pro: false,     pro_plus: true       },
+  { label: 'ABC-XYZ tahlil',            free: false,   pro: true,      pro_plus: true       },
 ]
 
 function Cell({ value }: { value: boolean | string }) {
@@ -258,6 +261,7 @@ export default function PricingPage() {
               className="w-full text-center py-3 rounded-xl text-sm font-bold bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white transition-all shadow-lg shadow-violet-500/25">
               Boshlash →
             </button>
+            <p className="text-xs text-center mt-2 text-emerald-400/80">3 kun bepul</p>
           </div>
 
           {/* Pro+ */}
@@ -289,6 +293,7 @@ export default function PricingPage() {
               style={{ borderColor: 'var(--border2)', color: 'var(--text-dim)' }}>
               Boshlash →
             </button>
+            <p className="text-xs text-center mt-2 text-emerald-400/80">3 kun bepul</p>
           </div>
         </div>
 

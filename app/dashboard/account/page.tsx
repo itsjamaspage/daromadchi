@@ -4,6 +4,7 @@ import { User, Mail, Calendar, Shield, CreditCard } from 'lucide-react'
 import Link from 'next/link'
 import { getLang } from '@/lib/lang'
 import { dashT } from '@/lib/dashT'
+import { getUserPlanFull } from '@/lib/api/auth'
 
 export default async function AccountPage() {
   const supabase = await createClient()
@@ -12,24 +13,25 @@ export default async function AccountPage() {
   const lang = await getLang()
   const t = dashT[lang].account
 
-  const { data: profile } = await supabase
-    .from('users')
-    .select('plan, plan_expires_at, created_at')
-    .eq('id', user.id)
-    .single()
+  const planFull = await getUserPlanFull(user.id)
+  const { plan, effectivePlan, planExpiresAt, trialEndsAt, isOnTrial } = planFull
 
-  const plan = profile?.plan ?? 'free'
   const joinedAt = new Date(user.created_at).toLocaleDateString('uz-UZ', { year: 'numeric', month: 'long', day: 'numeric' })
-  const expiresAt = profile?.plan_expires_at
-    ? new Date(profile.plan_expires_at).toLocaleDateString('uz-UZ', { year: 'numeric', month: 'long', day: 'numeric' })
+  const expiresAt = planExpiresAt
+    ? new Date(planExpiresAt).toLocaleDateString('uz-UZ', { year: 'numeric', month: 'long', day: 'numeric' })
     : null
+
+  const trialExpired = !isOnTrial && trialEndsAt !== null && plan === 'free'
+  const trialDaysLeft = isOnTrial && trialEndsAt
+    ? Math.ceil((new Date(trialEndsAt).getTime() - Date.now()) / 86400000)
+    : 0
 
   const planLabel: Record<string, { label: string; color: string }> = {
     free:     { label: t.planFree,    color: 'text-slate-400 bg-slate-500/10 border-slate-500/20' },
     pro:      { label: t.planPro,     color: 'text-violet-400 bg-violet-500/10 border-violet-500/20' },
     pro_plus: { label: t.planProPlus, color: 'text-amber-400 bg-amber-500/10 border-amber-500/20' },
   }
-  const planInfo = planLabel[plan] ?? planLabel.free
+  const planInfo = planLabel[effectivePlan] ?? planLabel.free
 
   return (
     <div className="space-y-6 max-w-2xl">
@@ -68,6 +70,33 @@ export default async function AccountPage() {
           <CreditCard className="w-4 h-4 text-slate-400" />
           <p className="text-white font-semibold text-sm">{t.planTitle}</p>
         </div>
+
+        {/* Trial active banner */}
+        {isOnTrial && (
+          <div className="mx-6 mt-5 flex items-center justify-between gap-4 bg-emerald-500/10 border border-emerald-500/25 rounded-xl px-4 py-3">
+            <p className="text-emerald-400 text-sm font-medium">
+              Pro tarifni 3 kun bepul sinayapsiz. {trialDaysLeft} kun qoldi.
+            </p>
+            <Link href="/pricing"
+              className="bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap">
+              {t.upgradePro}
+            </Link>
+          </div>
+        )}
+
+        {/* Trial expired banner */}
+        {trialExpired && (
+          <div className="mx-6 mt-5 flex items-center justify-between gap-4 bg-amber-500/10 border border-amber-500/25 rounded-xl px-4 py-3">
+            <p className="text-amber-400 text-sm font-medium">
+              Bepul sinov tugadi. Pro tarifga o&apos;tib barcha imkoniyatlardan foydalaning.
+            </p>
+            <Link href="/pricing"
+              className="bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap">
+              {t.upgradePro}
+            </Link>
+          </div>
+        )}
+
         <div className="p-6 flex items-center justify-between">
           <div>
             <span className={`text-sm font-bold px-3 py-1.5 rounded-xl border ${planInfo.color}`}>
@@ -76,17 +105,17 @@ export default async function AccountPage() {
             {expiresAt && (
               <p className="text-slate-500 text-xs mt-2">{t.expires} {expiresAt}</p>
             )}
-            {plan === 'free' && (
+            {effectivePlan === 'free' && !isOnTrial && (
               <p className="text-slate-500 text-xs mt-2">{t.freeDesc}</p>
             )}
-            {plan === 'pro' && (
+            {effectivePlan === 'pro' && !isOnTrial && (
               <p className="text-slate-500 text-xs mt-2">{t.proDesc}</p>
             )}
-            {plan === 'pro_plus' && (
+            {effectivePlan === 'pro_plus' && (
               <p className="text-slate-500 text-xs mt-2">{t.proPlusDesc}</p>
             )}
           </div>
-          {plan === 'free' && (
+          {effectivePlan === 'free' && !isOnTrial && (
             <Link href="/pricing"
               className="bg-violet-600 hover:bg-violet-500 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors">
               {t.upgradePro}

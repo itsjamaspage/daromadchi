@@ -31,13 +31,76 @@ export const PLAN_SHOP_LIMITS: Record<Plan, number> = {
 export async function getUserPlan(userId: string): Promise<Plan> {
   const { data } = await supabaseAdmin
     .from('users')
-    .select('plan, plan_expires_at')
+    .select('plan, plan_expires_at, trial_ends_at')
     .eq('id', userId)
     .maybeSingle()
 
   const plan = (data?.plan ?? 'free') as Plan
+
+  // Paid plan expiry check
   if (plan !== 'free' && data?.plan_expires_at) {
     if (new Date(data.plan_expires_at) < new Date()) return 'free'
   }
+
+  // Trial logic (only for free plan users)
+  if (plan === 'free') {
+    if (!data?.trial_ends_at) {
+      // Auto-start 3-day trial for first-time users
+      const trialEnd = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString()
+      await supabaseAdmin.from('users').update({ trial_ends_at: trialEnd }).eq('id', userId)
+      return 'pro'
+    }
+    if (new Date(data.trial_ends_at) > new Date()) {
+      return 'pro' // Trial still active
+    }
+  }
+
   return plan
+}
+
+export interface PlanInfo {
+  plan: Plan
+  effectivePlan: Plan
+  planExpiresAt: string | null
+  trialEndsAt: string | null
+  isOnTrial: boolean
+}
+
+export async function getUserPlanFull(userId: string): Promise<PlanInfo> {
+  const { data } = await supabaseAdmin
+    .from('users')
+    .select('plan, plan_expires_at, trial_ends_at')
+    .eq('id', userId)
+    .maybeSingle()
+
+  const plan = (data?.plan ?? 'free') as Plan
+  const planExpiresAt = data?.plan_expires_at ?? null
+  const trialEndsAt = data?.trial_ends_at ?? null
+
+  let effectivePlan: Plan = plan
+
+  // Paid plan expiry check
+  if (plan !== 'free' && planExpiresAt) {
+    if (new Date(planExpiresAt) < new Date()) effectivePlan = 'free'
+  }
+
+  let isOnTrial = false
+
+  // Trial logic (only for free plan users)
+  if (plan === 'free') {
+    if (!trialEndsAt) {
+      // Auto-start 3-day trial for first-time users
+      const trialEnd = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString()
+      await supabaseAdmin.from('users').update({ trial_ends_at: trialEnd }).eq('id', userId)
+      effectivePlan = 'pro'
+      isOnTrial = true
+      return { plan, effectivePlan, planExpiresAt, trialEndsAt: trialEnd, isOnTrial }
+    }
+    if (new Date(trialEndsAt) > new Date()) {
+      effectivePlan = 'pro'
+      isOnTrial = true
+    }
+  }
+
+  return { plan, effectivePlan, planExpiresAt, trialEndsAt, isOnTrial }
 }
