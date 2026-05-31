@@ -5,7 +5,7 @@ import { getDailyRevenue } from '@/lib/db/revenue'
 import DashboardClient from './DashboardClient'
 import type { MarketplaceType } from '@/lib/types'
 
-const VALID_MARKETPLACES = ['uzum', 'yandex_market'] as const
+const VALID_MARKETPLACES = ['uzum', 'yandex_market', 'wildberries'] as const
 const VALID_PERIODS = ['1', '7', '30', '90', 'month'] as const
 type Period = typeof VALID_PERIODS[number]
 

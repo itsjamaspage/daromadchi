@@ -75,9 +75,10 @@ export default function DashboardClient({ kpis, recentOrders, allProducts, chart
       {/* Marketplace tabs */}
       <div className="flex items-center gap-1.5 p-1 bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl w-fit">
         {([
-          { label: d.all,           mp: undefined,       color: 'violet' },
-          { label: 'Uzum',          mp: 'uzum',          color: 'violet' },
-          { label: 'Yandex Market', mp: 'yandex_market', color: 'amber'  },
+          { label: d.all,           mp: undefined,       color: 'violet'  },
+          { label: 'Uzum',          mp: 'uzum',          color: 'violet'  },
+          { label: 'Yandex Market', mp: 'yandex_market', color: 'amber'   },
+          { label: 'Wildberries',   mp: 'wildberries',   color: 'purple'  },
         ] as { label: string; mp: string | undefined; color: string }[]).map(({ label, mp, color }) => {
           const active = (marketplace ?? undefined) === mp
           return (
@@ -88,6 +89,8 @@ export default function DashboardClient({ kpis, recentOrders, allProducts, chart
                 active
                   ? color === 'amber'
                     ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                    : color === 'purple'
+                    ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
                     : 'bg-violet-600/20 text-violet-300 border border-violet-500/30'
                   : 'text-slate-500 hover:text-slate-300'
               }`}

@@ -1,4 +1,15 @@
-export type MarketplaceType = 'uzum' | 'yandex_market'
+export type MarketplaceType = 'uzum' | 'yandex_market' | 'wildberries'
+
+export interface AdsStatsSummary {
+  impressions: number
+  clicks: number
+  spend: number
+  orders_from_ads: number
+  revenue_from_ads: number
+  ctr: number   // clicks / impressions * 100
+  cpc: number   // spend / clicks
+  drr: number   // spend / revenue * 100
+}
 export type OrderStatus = 'pending' | 'confirmed' | 'delivered' | 'cancelled' | 'returned'
 export type SyncStatus = 'success' | 'error'
 

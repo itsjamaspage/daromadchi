@@ -280,6 +280,141 @@ function YandexCard({ shop, userId }: { shop: Shop | null; userId: string }) {
   )
 }
 
+// ─── Wildberries section ─────────────────────────────────────────────────────
+
+function WildberriesCard({ shop, userId }: { shop: Shop | null; userId: string }) {
+  const router = useRouter()
+  const { lang } = useLang()
+  const t = dashT[lang].settings
+  void userId
+
+  const [apiKey,    setApiKey]    = useState('')
+  const [saving,    setSaving]    = useState(false)
+  const [syncing,   setSyncing]   = useState(false)
+  const [syncingAds, setSyncingAds] = useState(false)
+  const [saveMsg,   setSaveMsg]   = useState<{ ok: boolean; text: string } | null>(null)
+  const [syncMsg,   setSyncMsg]   = useState<{ ok: boolean; text: string } | null>(null)
+  const [adsMsg,    setAdsMsg]    = useState<{ ok: boolean; text: string } | null>(null)
+
+  const hasKey  = !!shop?.api_key_encrypted
+  const lastSync = shop?.last_synced_at
+    ? new Date(shop.last_synced_at).toLocaleString('uz-UZ') : null
+
+  async function handleSave(e: React.FormEvent) {
+    e.preventDefault()
+    if (!apiKey.trim()) return
+    setSaving(true); setSaveMsg(null)
+    try {
+      const res  = await fetch('/api/settings/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ marketplace: 'wildberries', apiKey: apiKey.trim() }),
+      })
+      const data = await res.json()
+      setSaveMsg(data.ok
+        ? { ok: true,  text: data.created ? t.shopCreated : t.saved }
+        : { ok: false, text: data.error ?? t.err })
+      if (data.ok) { setApiKey(''); router.refresh() }
+    } catch {
+      setSaveMsg({ ok: false, text: t.serverErr })
+    }
+    setSaving(false)
+  }
+
+  async function handleSync() {
+    setSyncing(true); setSyncMsg(null)
+    try {
+      const res  = await fetch('/api/wildberries/sync', { method: 'POST' })
+      const data = await res.json()
+      setSyncMsg(data.ok
+        ? { ok: true,  text: `${data.productsUpserted ?? 0} ${t.syncResult1} ${data.ordersUpserted ?? 0} ${t.syncResult2}` }
+        : { ok: false, text: (data.errors ?? [data.error ?? t.err]).join('; ') })
+      if (data.ok) router.refresh()
+    } catch {
+      setSyncMsg({ ok: false, text: t.serverErr })
+    }
+    setSyncing(false)
+  }
+
+  async function handleAdsSync() {
+    setSyncingAds(true); setAdsMsg(null)
+    try {
+      const res  = await fetch('/api/wildberries/ads-sync', { method: 'POST' })
+      const data = await res.json()
+      setAdsMsg(data.ok
+        ? { ok: true,  text: `${data.statsUpserted ?? 0} ${t.adsSynced}` }
+        : { ok: false, text: data.error ?? t.err })
+    } catch {
+      setAdsMsg({ ok: false, text: t.serverErr })
+    }
+    setSyncingAds(false)
+  }
+
+  return (
+    <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
+      {/* Header */}
+      <div className="px-6 py-4 border-b border-[var(--border)] flex items-center gap-3">
+        <div className="w-8 h-8 rounded-lg bg-purple-500/15 border border-purple-500/25 flex items-center justify-center">
+          <span className="text-sm font-bold text-purple-400">W</span>
+        </div>
+        <div>
+          <p className="text-white font-semibold text-sm">Wildberries</p>
+          <p className="text-slate-500 text-xs">seller.wildberries.ru</p>
+        </div>
+        <span className={`ml-auto text-[10px] font-semibold px-2 py-1 rounded-full border ${hasKey ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-400' : 'bg-slate-500/10 border-slate-500/20 text-slate-500'}`}>
+          {hasKey ? t.connected : t.notConnected}
+        </span>
+      </div>
+
+      {/* API token form */}
+      <form onSubmit={handleSave} className="p-6 space-y-4">
+        <div>
+          <label className="flex items-center gap-1.5 text-xs font-medium text-slate-400 mb-2">
+            <Key className="w-3.5 h-3.5" /> {t.apiToken}
+          </label>
+          <input
+            type="password"
+            value={apiKey}
+            onChange={e => setApiKey(e.target.value)}
+            placeholder={hasKey ? t.tokenPlaceholderHas : t.tokenPlaceholder}
+            className="w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-purple-500/60 transition-all font-mono"
+          />
+          <p className="text-slate-500 text-xs mt-1.5">{t.wbHint}</p>
+        </div>
+        <StatusMsg msg={saveMsg} />
+        <button type="submit" disabled={saving}
+          className="flex items-center gap-2 bg-purple-700 hover:bg-purple-600 disabled:opacity-50 text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors">
+          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+          {t.save}
+        </button>
+      </form>
+
+      {/* Sync */}
+      {shop && (
+        <div className="px-6 pb-6 space-y-3 border-t border-[var(--border)] pt-4">
+          <p className="text-slate-400 text-xs">
+            {lastSync ? <>{t.lastSyncPre} <span className="text-slate-300">{lastSync}</span></> : t.notSynced}
+          </p>
+          <div className="flex gap-2 flex-wrap">
+            <button onClick={handleSync} disabled={syncing || !hasKey}
+              title={!hasKey ? t.saveTokenFirst : ''}
+              className="flex items-center gap-2 bg-[var(--bg-input)] hover:bg-white/[0.06] border border-[var(--border2)] disabled:opacity-40 disabled:cursor-not-allowed text-slate-200 text-sm font-medium px-4 py-2 rounded-xl transition-colors">
+              {syncing ? <><Loader2 className="w-4 h-4 animate-spin" /> {t.syncing}</> : <><RefreshCw className="w-4 h-4" /> {t.sync}</>}
+            </button>
+            <button onClick={handleAdsSync} disabled={syncingAds || !hasKey}
+              title={!hasKey ? t.saveTokenFirst : ''}
+              className="flex items-center gap-2 bg-purple-900/40 hover:bg-purple-800/40 border border-purple-700/30 disabled:opacity-40 disabled:cursor-not-allowed text-purple-300 text-sm font-medium px-4 py-2 rounded-xl transition-colors">
+              {syncingAds ? <><Loader2 className="w-4 h-4 animate-spin" /> {t.syncingAds}</> : <><RefreshCw className="w-4 h-4" /> {t.syncAds}</>}
+            </button>
+          </div>
+          <StatusMsg msg={syncMsg} />
+          <StatusMsg msg={adsMsg} />
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── Extension token section ──────────────────────────────────────────────────
 
 function ExtensionTokenCard() {
@@ -470,12 +605,13 @@ function PasswordUpdateModal({ onClose }: { onClose: () => void }) {
 // ─── Main export ──────────────────────────────────────────────────────────────
 
 interface Props {
-  uzumShop:   Shop | null
-  yandexShop: Shop | null
-  userId:     string
+  uzumShop:        Shop | null
+  yandexShop:      Shop | null
+  wildberriesShop: Shop | null
+  userId:          string
 }
 
-export default function SettingsForm({ uzumShop, yandexShop, userId }: Props) {
+export default function SettingsForm({ uzumShop, yandexShop, wildberriesShop, userId }: Props) {
   const searchParams = useSearchParams()
   const router = useRouter()
   const [showPasswordModal, setShowPasswordModal] = useState(false)
@@ -492,8 +628,9 @@ export default function SettingsForm({ uzumShop, yandexShop, userId }: Props) {
     <>
       {showPasswordModal && <PasswordUpdateModal onClose={() => setShowPasswordModal(false)} />}
       <div className="space-y-4">
-        <UzumCard          shop={uzumShop}   userId={userId} />
-        <YandexCard        shop={yandexShop} userId={userId} />
+        <UzumCard          shop={uzumShop}        userId={userId} />
+        <YandexCard        shop={yandexShop}       userId={userId} />
+        <WildberriesCard   shop={wildberriesShop}  userId={userId} />
         <ExtensionTokenCard />
       </div>
     </>

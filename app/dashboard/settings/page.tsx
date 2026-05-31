@@ -11,8 +11,9 @@ export default async function SettingsPage() {
   const lang = await getLang()
   const t = dashT[lang].settings
 
-  let uzumShop:   Shop | null = null
-  let yandexShop: Shop | null = null
+  let uzumShop:        Shop | null = null
+  let yandexShop:      Shop | null = null
+  let wildberriesShop: Shop | null = null
 
   if (user) {
     const { data } = await supabase
@@ -21,8 +22,9 @@ export default async function SettingsPage() {
       .eq('user_id', user.id)
 
     for (const row of data ?? []) {
-      if (row.marketplace === 'uzum')          uzumShop   = row as Shop
-      if (row.marketplace === 'yandex_market') yandexShop = row as Shop
+      if (row.marketplace === 'uzum')          uzumShop        = row as Shop
+      if (row.marketplace === 'yandex_market') yandexShop      = row as Shop
+      if (row.marketplace === 'wildberries')   wildberriesShop = row as Shop
     }
   }
 
@@ -41,6 +43,7 @@ export default async function SettingsPage() {
         <SettingsForm
           uzumShop={uzumShop}
           yandexShop={yandexShop}
+          wildberriesShop={wildberriesShop}
           userId={user?.id ?? ''}
         />
       </Suspense>

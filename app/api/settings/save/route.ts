@@ -13,13 +13,13 @@ export async function POST(req: NextRequest) {
   }
 
   const { marketplace, apiKey, shopIdExternal, shopName } = body as {
-    marketplace:    'uzum' | 'yandex_market'
-    apiKey?:        string
+    marketplace:     'uzum' | 'yandex_market' | 'wildberries'
+    apiKey?:         string
     shopIdExternal?: string
-    shopName?:      string
+    shopName?:       string
   }
 
-  if (!['uzum', 'yandex_market'].includes(marketplace)) {
+  if (!['uzum', 'yandex_market', 'wildberries'].includes(marketplace)) {
     return NextResponse.json({ error: 'marketplace noto\'g\'ri' }, { status: 400 })
   }
 
@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
   // Insert new shop
   const { error } = await supabase.from('shops').insert({
     user_id:     user.id,
-    name:        shopName ?? (marketplace === 'uzum' ? 'Uzum do\'konim' : 'Yandex Market do\'konim'),
+    name:        shopName ?? (marketplace === 'uzum' ? 'Uzum do\'konim' : marketplace === 'wildberries' ? 'Wildberries do\'konim' : 'Yandex Market do\'konim'),
     marketplace,
     is_active:   true,
     ...update,
