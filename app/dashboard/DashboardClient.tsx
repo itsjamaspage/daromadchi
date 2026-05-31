@@ -91,7 +91,7 @@ export default function DashboardClient({ kpis, recentOrders, allProducts, chart
             <DateFilter current={period} />
           </Suspense>
           <button
-            onClick={() => setShowCustomize(s => !s)}
+            onClick={() => setShowCustomize(v => !v)}
             className={`hidden sm:flex items-center gap-2 text-xs font-medium px-3 py-2 rounded-xl border transition-all ${
               showCustomize
                 ? 'bg-violet-500/10 border-violet-500/20 text-violet-400'
