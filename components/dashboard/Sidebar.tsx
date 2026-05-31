@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import {
   LayoutDashboard, Package, ShoppingCart, TrendingUp,
   LogOut, ChevronRight, X, Settings, BarChart2, Calculator, FileText, Globe2,
-  Sun, Moon, User, Activity,
+  Sun, Moon, User, Activity, Layers,
 } from 'lucide-react'
 import { useTheme, useLang } from '@/app/providers'
 import type { Lang } from '@/lib/i18n'
@@ -83,6 +83,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
     { href: '/dashboard/analytics',  label: nav.analytics,   icon: BarChart2       },
     { href: '/dashboard/pnl',        label: nav.pnl,         icon: FileText        },
     { href: '/dashboard/calculator', label: nav.calculator,  icon: Calculator      },
+    { href: '/dashboard/abcxyz',     label: nav.abcxyz,      icon: Layers          },
     { href: '/dashboard/sync',       label: nav.sync,        icon: Activity        },
   ]
   const marketNav: NavItem[] = [
