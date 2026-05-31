@@ -10,11 +10,11 @@ function computeAlerts(products: Product[]): StockRow[] {
   const PERIOD_DAYS = 30
   return products
     .map(p => {
-      const velocity = (p.sold ?? 0) / PERIOD_DAYS
-      const daysLeft = velocity > 0 ? Math.floor(p.stock_quantity / velocity) : 999
+      const velocity = p.sold / PERIOD_DAYS
+      const daysLeft = velocity > 0 ? Math.floor(p.available_stock / velocity) : 999
       return { ...p, daysLeft, velocity }
     })
-    .filter(p => p.daysLeft <= 30 || p.stock_quantity < 15)
+    .filter(p => p.daysLeft <= 30 || p.available_stock < 15)
     .sort((a, b) => a.daysLeft - b.daysLeft)
 }
 
@@ -56,7 +56,7 @@ export default function StockAlerts({ products }: { products: Product[] }) {
 
               <div className="text-right flex-shrink-0">
                 <p className={`text-sm font-bold ${urgent ? 'text-red-400' : warning ? 'text-amber-400' : 'text-slate-300'}`}>
-                  {p.stock_quantity} dona
+                  {p.available_stock} dona
                 </p>
                 <p className="text-slate-500 text-xs">
                   {p.daysLeft >= 999 ? 'Harakat yo\'q' : `~${p.daysLeft} kun qoldi`}

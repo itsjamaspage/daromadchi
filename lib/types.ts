@@ -22,12 +22,15 @@ export interface Product {
   cost_price: number | null
   selling_price: number | null
   stock_quantity: number
+  physical_stock: number | null  // user-set total physical inventory
+  available_stock: number        // physical_stock - sold_across_all_sku_shops, or stock_quantity
   category: string | null
   marketplace_product_id: string | null
   updated_at: string
   // computed
   profit: number
-  sold?: number
+  sold: number
+  is_shared: boolean             // true when physical_stock links across marketplaces
 }
 
 export interface Order {

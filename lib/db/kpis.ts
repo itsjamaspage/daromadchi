@@ -46,7 +46,7 @@ export async function getKpis(days = 30, marketplace?: MarketplaceType): Promise
       .gte('ordered_at', since.toISOString()),
     supabase
       .from('products')
-      .select('stock_quantity')
+      .select('sku, stock_quantity, physical_stock')
       .in('shop_id', shopIds),
   ])
 
@@ -55,7 +55,21 @@ export async function getKpis(days = 30, marketplace?: MarketplaceType): Promise
   const total_profit  = rows.reduce((s, o) =>
     s + Number(o.revenue ?? 0) - Number(o.marketplace_fee ?? 0) - Number(o.delivery_cost ?? 0), 0)
   const total_orders  = rows.length
-  const total_stock   = (stockRes.data ?? []).reduce((s, p) => s + p.stock_quantity, 0)
+
+  // Avoid double-counting shared inventory: for products with physical_stock set,
+  // count the pool once per SKU instead of once per marketplace listing.
+  const seenSkus = new Set<string>()
+  let total_stock = 0
+  for (const p of stockRes.data ?? []) {
+    if (p.physical_stock !== null && p.sku) {
+      if (!seenSkus.has(p.sku)) {
+        seenSkus.add(p.sku)
+        total_stock += p.physical_stock
+      }
+    } else {
+      total_stock += p.stock_quantity
+    }
+  }
 
   return { total_revenue, total_profit, total_orders, total_stock }
 }
