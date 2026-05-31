@@ -1,6 +1,7 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import type { Lang } from '@/lib/i18n'
 
 /* ── Theme ─────────────────────────────────────────────────────────────────── */
@@ -13,6 +14,7 @@ const LangCtx = createContext<{ lang: Lang; setLang: (l: Lang) => void }>({ lang
 export const useLang = () => useContext(LangCtx)
 
 export default function Providers({ children }: { children: React.ReactNode }) {
+  const router = useRouter()
   const [theme, setTheme] = useState<Theme>('dark')
   const [lang,  setLangState] = useState<Lang>('uz')
 
@@ -20,8 +22,16 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     const savedTheme = localStorage.getItem('theme') as Theme | null
     const savedLang  = localStorage.getItem('lang')  as Lang  | null
     if (savedTheme) setTheme(savedTheme)
-    if (savedLang)  setLangState(savedLang)
-  }, [])
+    if (savedLang) {
+      setLangState(savedLang)
+      // Keep the cookie (read by server components) in sync with localStorage
+      // in case they drifted, then refresh server-rendered content.
+      if (document.cookie.indexOf(`lang=${savedLang}`) === -1) {
+        document.cookie = `lang=${savedLang};path=/;max-age=31536000`
+        router.refresh()
+      }
+    }
+  }, [router])
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
@@ -36,6 +46,8 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     setLangState(l)
     localStorage.setItem('lang', l)
     document.cookie = `lang=${l};path=/;max-age=31536000`
+    // Re-render server components so the page body picks up the new language.
+    router.refresh()
   }
 
   return (
