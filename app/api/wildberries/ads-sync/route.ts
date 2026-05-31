@@ -3,6 +3,10 @@ import { createClient } from '@/lib/supabase/server'
 
 const WB_ADV = 'https://advert-api.wildberries.ru'
 
+function advHeaders(token: string) {
+  return { 'Authorization': `Bearer ${token}` }
+}
+
 export async function POST() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -26,7 +30,7 @@ export async function POST() {
   try {
     // 1. Get all campaign IDs
     const countRes = await fetch(`${WB_ADV}/adv/v1/promotion/count`, {
-      headers: { 'Authorization': token },
+      headers: advHeaders(token),
     })
     if (!countRes.ok) {
       return NextResponse.json({ error: `Ads API ${countRes.status}: ${await countRes.text()}` }, { status: 502 })
@@ -47,24 +51,24 @@ export async function POST() {
       return NextResponse.json({ ok: true, statsUpserted: 0 })
     }
 
-    // 2. Build date list for last 7 days
-    const dates: string[] = []
-    for (let i = 0; i < 7; i++) {
-      const d = new Date()
-      d.setDate(d.getDate() - i)
-      dates.push(d.toISOString().split('T')[0])
-    }
+    // 2. Build date range for last 7 days
+    const endDate = new Date()
+    const beginDate = new Date()
+    beginDate.setDate(beginDate.getDate() - 6)
+    const beginStr = beginDate.toISOString().split('T')[0]
+    const endStr   = endDate.toISOString().split('T')[0]
 
     // 3. Fetch stats in batches of 100 campaigns
+    // v3 fullstats: GET /adv/v3/fullstats?ids=1,2,3&beginDate=YYYY-MM-DD&endDate=YYYY-MM-DD
     const aggMap = new Map<string, { imp: number; clicks: number; spend: number; orders: number; revenue: number }>()
 
     for (let i = 0; i < campaignIds.length; i += 100) {
       const batch = campaignIds.slice(i, i + 100)
-      const statsRes = await fetch(`${WB_ADV}/adv/v3/fullstats`, {
-        method: 'POST',
-        headers: { 'Authorization': token, 'Content-Type': 'application/json' },
-        body: JSON.stringify(batch.map(id => ({ id, dates }))),
-      })
+      const ids = batch.join(',')
+      const statsRes = await fetch(
+        `${WB_ADV}/adv/v3/fullstats?ids=${ids}&beginDate=${beginStr}&endDate=${endStr}`,
+        { headers: advHeaders(token) },
+      )
       if (!statsRes.ok) continue
 
       const statsData: any[] = await statsRes.json()
