@@ -14,6 +14,7 @@ function fmt(n: number) {
 const marketplaceLabel: Record<string, string> = {
   uzum: 'Uzum',
   yandex_market: 'Yandex Market',
+  wildberries: 'Wildberries',
 }
 
 export default function OrdersTable({ orders }: { orders: Order[] }) {

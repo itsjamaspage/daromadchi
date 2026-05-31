@@ -6,6 +6,10 @@ import { RefreshCw, CheckCircle, XCircle } from 'lucide-react'
 import { useLang } from '@/app/providers'
 import { dashT } from '@/lib/dashT'
 
+function isNoToken(res: Response, data: { error?: string }): boolean {
+  return res.status === 400 && typeof data.error === 'string' && data.error.toLowerCase().includes('token')
+}
+
 export default function SyncButton() {
   const router = useRouter()
   const { lang } = useLang()
@@ -14,16 +18,39 @@ export default function SyncButton() {
 
   async function handleSync() {
     setState('syncing')
-    try {
-      const res = await fetch('/api/uzum/sync', { method: 'POST' })
-      const data = await res.json()
-      setState(data.ok ? 'ok' : 'err')
-      if (data.ok) {
-        router.refresh()
-        setTimeout(() => setState('idle'), 3000)
+
+    const endpoints = ['/api/uzum/sync', '/api/yandex/sync', '/api/wildberries/sync']
+
+    const results = await Promise.allSettled(
+      endpoints.map(async (url) => {
+        const res = await fetch(url, { method: 'POST' })
+        const data = await res.json()
+        return { res, data }
+      })
+    )
+
+    let anySuccess = false
+    let anyRealError = false
+
+    for (const result of results) {
+      if (result.status === 'rejected') {
+        anyRealError = true
+      } else {
+        const { res, data } = result.value
+        if (data.ok) {
+          anySuccess = true
+        } else if (!isNoToken(res, data)) {
+          anyRealError = true
+        }
       }
-    } catch {
+    }
+
+    if (anyRealError && !anySuccess) {
       setState('err')
+    } else {
+      setState('ok')
+      router.refresh()
+      setTimeout(() => setState('idle'), 3000)
     }
   }
 
@@ -31,7 +58,7 @@ export default function SyncButton() {
     <button
       onClick={handleSync}
       disabled={state === 'syncing'}
-      title="Uzum Market dan sinxronlash"
+      title="Barcha marketplacelarni sinxronlash"
       className={`hidden sm:flex items-center gap-2 text-xs font-medium px-3 py-2 rounded-xl border transition-all ${
         state === 'ok'
           ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
