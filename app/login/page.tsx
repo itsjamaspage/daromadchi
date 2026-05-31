@@ -68,7 +68,7 @@ const ui = {
     minChars: 'Kamida 6 belgi',
   },
   en: {
-    tagline: 'Uzum Market analytics dashboard',
+    tagline: 'Marketplace analytics platform',
     tabs: { login: 'Sign in', signup: 'Sign up' },
     email: 'Email', password: 'Password', name: 'Full name',
     namePh: 'John Smith',
