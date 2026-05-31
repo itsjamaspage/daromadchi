@@ -17,20 +17,20 @@
   --scrollbar-thumb: #3b3b5c;
 }
 
-/* ── Light theme ─────────────────────────────────────────────────────────── */
+/* ── Light theme (glassmorphic / futuristic) ─────────────────────────────── */
 [data-theme="light"] {
-  --bg-base:    #ece9ff;
-  --bg-card:    #ffffff;
-  --bg-card2:   #f3f0ff;
-  --bg-input:   #e8e3ff;
-  --border:     rgba(109,40,217,0.15);
-  --border2:    rgba(109,40,217,0.24);
-  --text-base:  #0d0820;
-  --text-muted: #5b5678;
-  --text-dim:   #3d3760;
-  --nav-bg:     rgba(243,240,255,0.92);
-  --scrollbar-track: #e8e3ff;
-  --scrollbar-thumb: #7c3aed;
+  --bg-base:    #eae9fb;
+  --bg-card:    rgba(255,255,255,0.72);
+  --bg-card2:   rgba(255,255,255,0.55);
+  --bg-input:   rgba(255,255,255,0.85);
+  --border:     rgba(120,90,230,0.16);
+  --border2:    rgba(120,90,230,0.30);
+  --text-base:  #160f33;
+  --text-muted: #6b6593;
+  --text-dim:   #423b69;
+  --nav-bg:     rgba(255,255,255,0.70);
+  --scrollbar-track: #e6e3f7;
+  --scrollbar-thumb: #8b5cf6;
 }
 
 body {
@@ -38,6 +38,17 @@ body {
   color: var(--text-base);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   transition: background 0.3s ease, color 0.3s ease;
+}
+
+/* Light mode: soft animated-feel gradient mesh behind everything */
+[data-theme="light"] body {
+  background:
+    radial-gradient(1100px circle at 6% -8%, rgba(139,92,246,0.22), transparent 42%),
+    radial-gradient(950px circle at 100% -2%,  rgba(34,211,238,0.16), transparent 42%),
+    radial-gradient(1000px circle at 96% 102%, rgba(236,72,153,0.14), transparent 46%),
+    radial-gradient(850px circle at -4% 104%,  rgba(99,102,241,0.18), transparent 46%),
+    #eae9fb;
+  background-attachment: fixed;
 }
 
 /* Light mode: make white text readable on light backgrounds */
@@ -62,14 +73,29 @@ body {
 [data-theme="light"] .hover\:text-white:hover {
   color: var(--text-base) !important;
 }
-/* Light mode futuristic card polish */
-[data-theme="light"] .rounded-2xl,
-[data-theme="light"] .rounded-xl {
-  box-shadow: 0 2px 12px rgba(109,40,217,0.07), 0 1px 3px rgba(109,40,217,0.05);
+/* Frosted-glass cards: blur + saturate + layered violet shadow with top highlight.
+   Targets only elements that explicitly use the card background variables. */
+[data-theme="light"] .bg-\[var\(--bg-card\)\],
+[data-theme="light"] .bg-\[var\(--bg-card2\)\] {
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  backdrop-filter: blur(16px) saturate(150%);
+  box-shadow:
+    0 1px 0 0 rgba(255,255,255,0.65) inset,
+    0 10px 30px -12px rgba(76,29,149,0.22),
+    0 2px 8px -3px rgba(76,29,149,0.10);
 }
+/* Inputs: subtle inner depth instead of the heavy card shadow */
+[data-theme="light"] .bg-\[var\(--bg-input\)\] {
+  box-shadow: 0 1px 2px rgba(76,29,149,0.06) inset;
+}
+/* Muted text readability on light glass */
 [data-theme="light"] .text-slate-400 { color: var(--text-muted) !important; }
 [data-theme="light"] .text-slate-500 { color: var(--text-muted) !important; }
 [data-theme="light"] .text-slate-300 { color: var(--text-dim) !important; }
+/* Colored accent buttons keep a soft glow in light mode */
+[data-theme="light"] .bg-violet-600 {
+  box-shadow: 0 8px 20px -6px rgba(124,58,237,0.45);
+}
 
 ::-webkit-scrollbar {
   width: 6px;
