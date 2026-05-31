@@ -1,0 +1,38 @@
+import { createClient } from '@/lib/supabase/server'
+import SyncStatusClient from './SyncStatusClient'
+import { getLang } from '@/lib/lang'
+import { dashT } from '@/lib/dashT'
+
+export default async function SyncStatusPage() {
+  const supabase = await createClient()
+  const lang = await getLang()
+  const t = dashT[lang].sync
+
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return null
+
+  const { data: shops } = await supabase
+    .from('shops')
+    .select('id, name, marketplace, api_key_encrypted, last_synced_at')
+    .eq('user_id', user.id)
+
+  const shopsWithCounts = await Promise.all(
+    (shops ?? []).map(async shop => {
+      const [{ count: productCount }, { count: orderCount }] = await Promise.all([
+        supabase.from('products').select('*', { count: 'exact', head: true }).eq('shop_id', shop.id),
+        supabase.from('orders').select('*', { count: 'exact', head: true }).eq('shop_id', shop.id),
+      ])
+      return { ...shop, productCount: productCount ?? 0, orderCount: orderCount ?? 0 }
+    })
+  )
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-white">{t.title}</h1>
+        <p className="text-slate-400 text-sm mt-1">{t.subtitle}</p>
+      </div>
+      <SyncStatusClient shops={shopsWithCounts} />
+    </div>
+  )
+}

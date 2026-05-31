@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import {
   LayoutDashboard, Package, ShoppingCart, TrendingUp,
   LogOut, ChevronRight, X, Settings, BarChart2, Calculator, FileText, Globe2,
-  Sun, Moon, User,
+  Sun, Moon, User, Activity,
 } from 'lucide-react'
 import { useTheme, useLang } from '@/app/providers'
 import type { Lang } from '@/lib/i18n'
@@ -83,6 +83,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
     { href: '/dashboard/analytics',  label: nav.analytics,   icon: BarChart2       },
     { href: '/dashboard/pnl',        label: nav.pnl,         icon: FileText        },
     { href: '/dashboard/calculator', label: nav.calculator,  icon: Calculator      },
+    { href: '/dashboard/sync',       label: nav.sync,        icon: Activity        },
   ]
   const marketNav: NavItem[] = [
     { href: '/dashboard/market', label: nav.market, icon: Globe2 },
@@ -108,7 +109,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
           </div>
           <div>
             <span className="font-bold text-white text-base tracking-tight group-hover:text-violet-300 transition-colors">Daromadchi</span>
-            <p className="text-[10px] text-slate-500 leading-none mt-0.5">Uzum Market</p>
+            <p className="text-[10px] text-slate-500 leading-none mt-0.5">Multi-marketplace</p>
           </div>
         </Link>
         {onClose && (
