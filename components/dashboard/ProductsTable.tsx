@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useMemo, useRef } from 'react'
-import { Search, Link2, Pencil, Check, X } from 'lucide-react'
+import { useState, useMemo, useRef, useEffect } from 'react'
+import { Search, Link2, Pencil, Check, X, SlidersHorizontal } from 'lucide-react'
 import ExportButton from './ExportButton'
 import type { Product } from '@/lib/types'
 import { useLang } from '@/app/providers'
@@ -12,8 +12,13 @@ function fmt(n: number) {
 }
 
 const ALL = 'Barchasi'
+const LS_HIDDEN_COLS = 'products-hidden-cols'
 
-// Inline editor for physical_stock — shown in the stock column
+type QuickFilter = 'all' | 'low-stock' | 'out-of-stock' | 'no-orders' | 'high-margin'
+
+const TOGGLEABLE_COLS = ['category', 'price', 'cost', 'profit', 'margin', 'sold', 'stock'] as const
+type ColId = typeof TOGGLEABLE_COLS[number]
+
 function StockCell({ product, onUpdated }: { product: Product; onUpdated: (sku: string, val: number | null) => void }) {
   const [editing, setEditing] = useState(false)
   const [value, setValue] = useState(String(product.physical_stock ?? ''))
@@ -91,9 +96,51 @@ export default function ProductsTable({ products: initialProducts }: { products:
   const { lang } = useLang()
   const t = dashT[lang].products
   const [products, setProducts] = useState(initialProducts)
-  const [query,    setQuery]    = useState('')
-  const [sortBy,   setSortBy]   = useState<'title' | 'profit' | 'margin' | 'available_stock'>('profit')
-  const [sortDir,  setSortDir]  = useState<'asc' | 'desc'>('desc')
+  const [query,      setQuery]      = useState('')
+  const [sortBy,     setSortBy]     = useState<'title' | 'profit' | 'margin' | 'available_stock'>('profit')
+  const [sortDir,    setSortDir]    = useState<'asc' | 'desc'>('desc')
+  const [quickFilter, setQuickFilter] = useState<QuickFilter>('all')
+  const [hiddenCols,  setHiddenCols]  = useState<Set<ColId>>(new Set())
+  const [showColPanel, setShowColPanel] = useState(false)
+  const colPanelRef = useRef<HTMLDivElement>(null)
+
+  // Load hidden cols from localStorage on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(LS_HIDDEN_COLS)
+      if (saved) setHiddenCols(new Set(JSON.parse(saved) as ColId[]))
+    } catch { /* ignore */ }
+  }, [])
+
+  // Close column panel on outside click
+  useEffect(() => {
+    function onClickOutside(e: MouseEvent) {
+      if (colPanelRef.current && !colPanelRef.current.contains(e.target as Node)) {
+        setShowColPanel(false)
+      }
+    }
+    if (showColPanel) document.addEventListener('mousedown', onClickOutside)
+    return () => document.removeEventListener('mousedown', onClickOutside)
+  }, [showColPanel])
+
+  function toggleCol(id: ColId) {
+    setHiddenCols(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id); else next.add(id)
+      try { localStorage.setItem(LS_HIDDEN_COLS, JSON.stringify([...next])) } catch { /* ignore */ }
+      return next
+    })
+  }
+
+  function applyPreset(preset: 'default' | 'compact') {
+    const next: Set<ColId> = preset === 'compact'
+      ? new Set(['cost', 'margin', 'sold'] as ColId[])
+      : new Set()
+    setHiddenCols(next)
+    try { localStorage.setItem(LS_HIDDEN_COLS, JSON.stringify([...next])) } catch { /* ignore */ }
+  }
+
+  const show = (id: ColId) => !hiddenCols.has(id)
 
   const categories = useMemo(() => {
     const cats = [...new Set(products.map(p => p.category).filter(Boolean))] as string[]
@@ -101,10 +148,8 @@ export default function ProductsTable({ products: initialProducts }: { products:
   }, [products])
   const [category, setCategory] = useState(ALL)
 
-  // Optimistic update after physical_stock edit
   function handleStockUpdated(sku: string, physical_stock: number | null) {
     setProducts(prev => {
-      // Recompute available_stock for all products with this SKU
       const skuSold = prev
         .filter(p => p.sku === sku)
         .reduce((sum, p) => sum + (p.sold ?? 0), 0)
@@ -129,6 +174,16 @@ export default function ProductsTable({ products: initialProducts }: { products:
       )
     }
     if (category !== ALL) rows = rows.filter(p => p.category === category)
+
+    // Quick filters
+    if (quickFilter === 'low-stock')   rows = rows.filter(p => p.available_stock > 0 && p.available_stock < 15)
+    if (quickFilter === 'out-of-stock') rows = rows.filter(p => p.available_stock === 0)
+    if (quickFilter === 'no-orders')   rows = rows.filter(p => p.sold === 0)
+    if (quickFilter === 'high-margin') rows = rows.filter(p => {
+      const price = Number(p.selling_price ?? 0)
+      return price > 0 && (p.profit / price) > 0.35
+    })
+
     rows.sort((a, b) => {
       const av = sortBy === 'margin'
         ? a.profit / (Number(a.selling_price) || 1)
@@ -143,7 +198,23 @@ export default function ProductsTable({ products: initialProducts }: { products:
       return sortDir === 'desc' ? bv - av : av - bv
     })
     return rows
-  }, [products, query, category, sortBy, sortDir])
+  }, [products, query, category, sortBy, sortDir, quickFilter])
+
+  // Quick-filter chip counts (computed from category+text filtered, before quick filter)
+  const chipCounts = useMemo(() => {
+    let base = products.filter(p =>
+      (!query.trim() || p.title.toLowerCase().includes(query.toLowerCase()) ||
+       (p.sku ?? '').toLowerCase().includes(query.toLowerCase())) &&
+      (category === ALL || p.category === category)
+    )
+    return {
+      all:          base.length,
+      'low-stock':  base.filter(p => p.available_stock > 0 && p.available_stock < 15).length,
+      'out-of-stock': base.filter(p => p.available_stock === 0).length,
+      'no-orders':  base.filter(p => p.sold === 0).length,
+      'high-margin': base.filter(p => { const pr = Number(p.selling_price ?? 0); return pr > 0 && (p.profit / pr) > 0.35 }).length,
+    }
+  }, [products, query, category])
 
   function toggleSort(col: typeof sortBy) {
     if (sortBy === col) setSortDir(d => d === 'desc' ? 'asc' : 'desc')
@@ -167,9 +238,24 @@ export default function ProductsTable({ products: initialProducts }: { products:
     return <span className="text-violet-400 ml-1">{sortDir === 'desc' ? '↓' : '↑'}</span>
   }
 
+  const colLabels: Record<ColId, string> = {
+    category: t.category, price: t.price, cost: t.cost,
+    profit: t.profit, margin: t.margin, sold: t.sold, stock: t.stock,
+  }
+
+  const quickChips: { id: QuickFilter; label: string }[] = [
+    { id: 'all',           label: t.all },
+    { id: 'low-stock',     label: t.filterLowStock },
+    { id: 'out-of-stock',  label: t.filterOutOfStock },
+    { id: 'no-orders',     label: t.filterNoOrders },
+    { id: 'high-margin',   label: t.filterHighMargin },
+  ]
+
+  const visibleColCount = TOGGLEABLE_COLS.filter(show).length + 1 // +1 for product name column
+
   return (
     <div className="space-y-4">
-      {/* Filters */}
+      {/* Search + category filters */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
@@ -196,12 +282,110 @@ export default function ProductsTable({ products: initialProducts }: { products:
             </button>
           ))}
         </div>
-        <div className="sm:ml-auto">
+        <div className="sm:ml-auto flex items-center gap-2">
+          {/* Column visibility button */}
+          <div className="relative" ref={colPanelRef}>
+            <button
+              onClick={() => setShowColPanel(v => !v)}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium border transition-all ${
+                showColPanel
+                  ? 'bg-violet-600/20 text-violet-300 border-violet-500/30'
+                  : 'text-slate-400 border-[var(--border)] hover:text-white hover:border-white/[0.12]'
+              }`}
+            >
+              <SlidersHorizontal className="w-3.5 h-3.5" />
+              {t.columns}
+              {hiddenCols.size > 0 && (
+                <span className="bg-violet-500/20 text-violet-300 text-[10px] px-1.5 py-0.5 rounded-md font-semibold">
+                  {TOGGLEABLE_COLS.length - hiddenCols.size}/{TOGGLEABLE_COLS.length}
+                </span>
+              )}
+            </button>
+
+            {showColPanel && (
+              <div className="absolute right-0 top-full mt-2 z-20 w-56 bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl shadow-2xl p-4">
+                <p className="text-xs font-semibold text-slate-400 mb-3 uppercase tracking-wide">{t.columns}</p>
+                {/* Presets */}
+                <div className="flex gap-2 mb-4">
+                  <button
+                    onClick={() => applyPreset('default')}
+                    className="flex-1 px-2 py-1.5 rounded-lg text-xs font-medium bg-white/[0.04] hover:bg-violet-500/10 text-slate-300 hover:text-violet-300 border border-[var(--border)] transition-all"
+                  >
+                    {t.presetDefault}
+                  </button>
+                  <button
+                    onClick={() => applyPreset('compact')}
+                    className="flex-1 px-2 py-1.5 rounded-lg text-xs font-medium bg-white/[0.04] hover:bg-violet-500/10 text-slate-300 hover:text-violet-300 border border-[var(--border)] transition-all"
+                  >
+                    {t.presetCompact}
+                  </button>
+                </div>
+                {/* Column toggles */}
+                <div className="space-y-1">
+                  {TOGGLEABLE_COLS.map(id => (
+                    <label key={id} className="flex items-center gap-2.5 py-1.5 px-1 rounded-lg hover:bg-white/[0.03] cursor-pointer">
+                      <div
+                        onClick={() => toggleCol(id)}
+                        className={`w-4 h-4 rounded flex items-center justify-center flex-shrink-0 transition-all border cursor-pointer ${
+                          show(id)
+                            ? 'bg-violet-600 border-violet-500'
+                            : 'bg-transparent border-slate-600'
+                        }`}
+                      >
+                        {show(id) && <Check className="w-2.5 h-2.5 text-white" />}
+                      </div>
+                      <span className="text-sm text-slate-300 select-none" onClick={() => toggleCol(id)}>
+                        {colLabels[id]}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
           <ExportButton data={exportData} filename={t.exportFilename} />
         </div>
       </div>
 
-      <p className="text-slate-500 text-xs">{filtered.length} {t.count} {query || category !== ALL ? t.filter : ''}</p>
+      {/* Quick filter chips */}
+      <div className="flex items-center gap-2 flex-wrap">
+        {quickChips.map(chip => {
+          const count = chipCounts[chip.id]
+          const active = quickFilter === chip.id
+          const hasItems = count > 0
+          const isAlert = chip.id === 'low-stock' || chip.id === 'out-of-stock'
+          return (
+            <button
+              key={chip.id}
+              onClick={() => setQuickFilter(chip.id)}
+              disabled={!hasItems && chip.id !== 'all'}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all border ${
+                active
+                  ? isAlert && count > 0
+                    ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+                    : 'bg-violet-600/20 text-violet-300 border-violet-500/30'
+                  : hasItems
+                  ? 'text-slate-400 border-[var(--border)] hover:text-white hover:border-white/[0.12]'
+                  : 'text-slate-700 border-slate-800/60 cursor-not-allowed'
+              }`}
+            >
+              {chip.label}
+              <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-semibold ${
+                active
+                  ? isAlert && count > 0
+                    ? 'bg-amber-500/20 text-amber-300'
+                    : 'bg-violet-500/20 text-violet-300'
+                  : 'bg-white/[0.06] text-slate-500'
+              }`}>
+                {count}
+              </span>
+            </button>
+          )
+        })}
+      </div>
+
+      <p className="text-slate-500 text-xs">{filtered.length} {t.count} {query || category !== ALL || quickFilter !== 'all' ? t.filter : ''}</p>
 
       <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
         <div className="overflow-x-auto">
@@ -211,24 +395,30 @@ export default function ProductsTable({ products: initialProducts }: { products:
                 <th className="text-left font-medium px-5 py-3 cursor-pointer select-none hover:text-slate-300" onClick={() => toggleSort('title')}>
                   {t.product} <SortIcon col="title" />
                 </th>
-                <th className="text-left font-medium px-5 py-3">{t.category}</th>
-                <th className="text-right font-medium px-5 py-3">{t.price}</th>
-                <th className="text-right font-medium px-5 py-3">{t.cost}</th>
-                <th className="text-right font-medium px-5 py-3 cursor-pointer select-none hover:text-slate-300" onClick={() => toggleSort('profit')}>
-                  {t.profit} <SortIcon col="profit" />
-                </th>
-                <th className="text-right font-medium px-5 py-3 cursor-pointer select-none hover:text-slate-300" onClick={() => toggleSort('margin')}>
-                  {t.margin} <SortIcon col="margin" />
-                </th>
-                <th className="text-right font-medium px-5 py-3">{t.sold}</th>
-                <th className="text-right font-medium px-5 py-3 cursor-pointer select-none hover:text-slate-300" onClick={() => toggleSort('available_stock')}>
-                  {t.stock} <SortIcon col="available_stock" />
-                </th>
+                {show('category') && <th className="text-left font-medium px-5 py-3">{t.category}</th>}
+                {show('price')    && <th className="text-right font-medium px-5 py-3">{t.price}</th>}
+                {show('cost')     && <th className="text-right font-medium px-5 py-3">{t.cost}</th>}
+                {show('profit')   && (
+                  <th className="text-right font-medium px-5 py-3 cursor-pointer select-none hover:text-slate-300" onClick={() => toggleSort('profit')}>
+                    {t.profit} <SortIcon col="profit" />
+                  </th>
+                )}
+                {show('margin')   && (
+                  <th className="text-right font-medium px-5 py-3 cursor-pointer select-none hover:text-slate-300" onClick={() => toggleSort('margin')}>
+                    {t.margin} <SortIcon col="margin" />
+                  </th>
+                )}
+                {show('sold')     && <th className="text-right font-medium px-5 py-3">{t.sold}</th>}
+                {show('stock')    && (
+                  <th className="text-right font-medium px-5 py-3 cursor-pointer select-none hover:text-slate-300" onClick={() => toggleSort('available_stock')}>
+                    {t.stock} <SortIcon col="available_stock" />
+                  </th>
+                )}
               </tr>
             </thead>
             <tbody className="divide-y divide-white/[0.03]">
               {filtered.length === 0 ? (
-                <tr><td colSpan={8} className="px-5 py-10 text-center text-slate-500 text-sm">{t.notFound}</td></tr>
+                <tr><td colSpan={visibleColCount} className="px-5 py-10 text-center text-slate-500 text-sm">{t.notFound}</td></tr>
               ) : filtered.map(p => {
                 const price  = Number(p.selling_price ?? 0)
                 const margin = price > 0 ? Number(((p.profit / price) * 100).toFixed(1)) : 0
@@ -247,24 +437,32 @@ export default function ProductsTable({ products: initialProducts }: { products:
                         )}
                       </div>
                     </td>
-                    <td className="px-5 py-4">
-                      <span className="text-xs text-slate-400 bg-white/[0.04] px-2.5 py-1 rounded-lg border border-[var(--border)]">{p.category ?? '—'}</span>
-                    </td>
-                    <td className="px-5 py-4 text-right text-slate-300">{fmt(price)}</td>
-                    <td className="px-5 py-4 text-right text-slate-500">{fmt(Number(p.cost_price ?? 0))}</td>
-                    <td className="px-5 py-4 text-right"><span className="text-emerald-400 font-semibold">{fmt(p.profit)}</span></td>
-                    <td className="px-5 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <div className="w-16 h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
-                          <div className="h-full rounded-full bg-gradient-to-r from-violet-500 to-emerald-500" style={{ width: `${Math.min(margin, 100)}%` }} />
+                    {show('category') && (
+                      <td className="px-5 py-4">
+                        <span className="text-xs text-slate-400 bg-white/[0.04] px-2.5 py-1 rounded-lg border border-[var(--border)]">{p.category ?? '—'}</span>
+                      </td>
+                    )}
+                    {show('price')  && <td className="px-5 py-4 text-right text-slate-300">{fmt(price)}</td>}
+                    {show('cost')   && <td className="px-5 py-4 text-right text-slate-500">{fmt(Number(p.cost_price ?? 0))}</td>}
+                    {show('profit') && (
+                      <td className="px-5 py-4 text-right"><span className="text-emerald-400 font-semibold">{fmt(p.profit)}</span></td>
+                    )}
+                    {show('margin') && (
+                      <td className="px-5 py-4 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <div className="w-16 h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
+                            <div className="h-full rounded-full bg-gradient-to-r from-violet-500 to-emerald-500" style={{ width: `${Math.min(margin, 100)}%` }} />
+                          </div>
+                          <span className={`text-xs font-medium ${margin > 35 ? 'text-emerald-400' : margin > 20 ? 'text-amber-400' : 'text-red-400'}`}>{margin}%</span>
                         </div>
-                        <span className={`text-xs font-medium ${margin > 35 ? 'text-emerald-400' : margin > 20 ? 'text-amber-400' : 'text-red-400'}`}>{margin}%</span>
-                      </div>
-                    </td>
-                    <td className="px-5 py-4 text-right text-slate-300">{p.sold}</td>
-                    <td className="px-5 py-4 text-right">
-                      <StockCell product={p} onUpdated={handleStockUpdated} />
-                    </td>
+                      </td>
+                    )}
+                    {show('sold')  && <td className="px-5 py-4 text-right text-slate-300">{p.sold}</td>}
+                    {show('stock') && (
+                      <td className="px-5 py-4 text-right">
+                        <StockCell product={p} onUpdated={handleStockUpdated} />
+                      </td>
+                    )}
                   </tr>
                 )
               })}

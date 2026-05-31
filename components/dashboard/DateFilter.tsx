@@ -5,30 +5,21 @@ import { useTransition } from 'react'
 import { useLang } from '@/app/providers'
 import { dashT } from '@/lib/dashT'
 
-export const RANGE_OPTIONS = [
-  { value: '7'  },
-  { value: '30' },
-  { value: '90' },
-] as const
-
-export type RangeValue = typeof RANGE_OPTIONS[number]['value']
-
-export function parseDays(searchParams: { get(key: string): string | null }): number {
-  const v = searchParams.get('days')
-  return v === '7' || v === '90' ? Number(v) : 30
-}
-
-interface DateFilterProps {
-  current: string
-}
-
-export default function DateFilter({ current }: DateFilterProps) {
-  const router      = useRouter()
-  const pathname    = usePathname()
+export default function DateFilter({ current }: { current: string }) {
+  const router       = useRouter()
+  const pathname     = usePathname()
   const searchParams = useSearchParams()
   const [pending, startTransition] = useTransition()
   const { lang } = useLang()
-  const suffix = dashT[lang].dashboard.daysSuffix
+  const d = dashT[lang].dashboard
+
+  const options = [
+    { value: '1',     label: d.yesterday },
+    { value: '7',     label: `7 ${d.daysSuffix}` },
+    { value: '30',    label: `30 ${d.daysSuffix}` },
+    { value: '90',    label: `90 ${d.daysSuffix}` },
+    { value: 'month', label: d.thisMonth },
+  ]
 
   function setRange(value: string) {
     const params = new URLSearchParams(searchParams.toString())
@@ -38,7 +29,7 @@ export default function DateFilter({ current }: DateFilterProps) {
 
   return (
     <div className={`flex items-center gap-1 bg-[var(--bg-input)] border border-[var(--border)] rounded-xl p-1 transition-opacity ${pending ? 'opacity-60' : ''}`}>
-      {RANGE_OPTIONS.map(opt => (
+      {options.map(opt => (
         <button
           key={opt.value}
           onClick={() => setRange(opt.value)}
@@ -48,7 +39,7 @@ export default function DateFilter({ current }: DateFilterProps) {
               : 'text-slate-400 hover:text-white'
           }`}
         >
-          {opt.value} {suffix}
+          {opt.label}
         </button>
       ))}
     </div>

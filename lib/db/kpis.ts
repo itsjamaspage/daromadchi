@@ -16,15 +16,28 @@ async function getShopIds(marketplace?: MarketplaceType): Promise<string[] | nul
   return (data ?? []).map((s: { id: string }) => s.id)
 }
 
+function pct(curr: number, prev: number): number | null {
+  if (prev === 0) return null
+  return Math.round(((curr - prev) / prev) * 100)
+}
+
 export async function getKpis(days = 30, marketplace?: MarketplaceType): Promise<Kpis> {
   if (!supabaseConfigured) {
     const scale = days === 7 ? 0.25 : days === 30 ? 1 : days === 90 ? 2.8 : 1
+    const prevScale = scale * 0.88
     const filtered = mockOrders.filter(o => o.status !== 'cancelled')
+    const curr_rev = Math.round(kpiData.revenue.value * scale)
+    const curr_pro = Math.round(kpiData.profit.value  * scale)
+    const curr_ord = Math.round(filtered.length * scale)
+    const prev_rev = Math.round(kpiData.revenue.value * prevScale)
+    const prev_pro = Math.round(kpiData.profit.value  * prevScale)
+    const prev_ord = Math.round(filtered.length * prevScale)
     return {
-      total_revenue: Math.round(kpiData.revenue.value * scale),
-      total_profit:  Math.round(kpiData.profit.value  * scale),
-      total_orders:  Math.round(filtered.length * scale),
+      total_revenue: curr_rev, total_profit: curr_pro, total_orders: curr_ord,
       total_stock:   mockProducts.reduce((s, p) => s + p.stock, 0),
+      change_revenue: pct(curr_rev, prev_rev),
+      change_profit:  pct(curr_pro, prev_pro),
+      change_orders:  pct(curr_ord, prev_ord),
     }
   }
 
@@ -33,17 +46,27 @@ export async function getKpis(days = 30, marketplace?: MarketplaceType): Promise
     return { total_revenue: 0, total_profit: 0, total_orders: 0, total_stock: 0 }
   }
 
-  const since = new Date()
+  const now = new Date()
+  const since = new Date(now)
   since.setDate(since.getDate() - days + 1)
+  const prevSince = new Date(since)
+  prevSince.setDate(prevSince.getDate() - days)
   const supabase = await createClient()
 
-  const [ordersRes, stockRes] = await Promise.all([
+  const [ordersRes, prevOrdersRes, stockRes] = await Promise.all([
     supabase
       .from('orders')
       .select('revenue, marketplace_fee, delivery_cost')
       .in('shop_id', shopIds)
       .neq('status', 'cancelled')
       .gte('ordered_at', since.toISOString()),
+    supabase
+      .from('orders')
+      .select('revenue, marketplace_fee, delivery_cost')
+      .in('shop_id', shopIds)
+      .neq('status', 'cancelled')
+      .gte('ordered_at', prevSince.toISOString())
+      .lt('ordered_at', since.toISOString()),
     supabase
       .from('products')
       .select('sku, stock_quantity, physical_stock')
@@ -55,6 +78,12 @@ export async function getKpis(days = 30, marketplace?: MarketplaceType): Promise
   const total_profit  = rows.reduce((s, o) =>
     s + Number(o.revenue ?? 0) - Number(o.marketplace_fee ?? 0) - Number(o.delivery_cost ?? 0), 0)
   const total_orders  = rows.length
+
+  const prevRows = prevOrdersRes.data ?? []
+  const prev_revenue = prevRows.reduce((s, o) => s + Number(o.revenue ?? 0), 0)
+  const prev_profit  = prevRows.reduce((s, o) =>
+    s + Number(o.revenue ?? 0) - Number(o.marketplace_fee ?? 0) - Number(o.delivery_cost ?? 0), 0)
+  const prev_orders  = prevRows.length
 
   // Avoid double-counting shared inventory: for products with physical_stock set,
   // count the pool once per SKU instead of once per marketplace listing.
@@ -71,5 +100,10 @@ export async function getKpis(days = 30, marketplace?: MarketplaceType): Promise
     }
   }
 
-  return { total_revenue, total_profit, total_orders, total_stock }
+  return {
+    total_revenue, total_profit, total_orders, total_stock,
+    change_revenue: pct(total_revenue, prev_revenue),
+    change_profit:  pct(total_profit,  prev_profit),
+    change_orders:  pct(total_orders,  prev_orders),
+  }
 }

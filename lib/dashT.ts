@@ -21,6 +21,7 @@ export const dashT = {
       product: 'Mahsulot', profit2: 'Foyda', sold: 'Sotilgan',
       syncing: 'Sinxronlanmoqda...', done: 'Tayyor!', err: 'Xato',
       last: "So'nggi", daysSuffix: 'kun',
+      yesterday: 'Kecha', thisMonth: 'Bu oy', vsPrev: 'o\'tgan davrga nisbatan',
     },
     status: {
       pending: 'Kutilmoqda', confirmed: 'Tasdiqlandi', delivered: 'Yetkazildi',
@@ -38,6 +39,9 @@ export const dashT = {
       colProduct: 'Mahsulot', colSku: 'SKU', colCategory: 'Kategoriya',
       colPrice: "Narx (so'm)", colCost: "Tannarx (so'm)", colProfit: "Foyda (so'm)",
       colMargin: 'Margin (%)', colSold: 'Sotilgan', colStock: 'Ombor',
+      filterLowStock: 'Kam qoldi', filterOutOfStock: 'Tugagan',
+      filterNoOrders: "Buyurtma yo'q", filterHighMargin: 'Yuqori margin',
+      columns: 'Ustunlar', presetDefault: 'Standart', presetCompact: 'Qisqa',
     },
     orders: {
       title: 'Buyurtmalar', count: 'ta buyurtma', empty: "Buyurtmalar yo'q",
@@ -211,6 +215,7 @@ export const dashT = {
       product: 'Product', profit2: 'Profit', sold: 'Sold',
       syncing: 'Syncing...', done: 'Done!', err: 'Error',
       last: 'Last', daysSuffix: 'days',
+      yesterday: 'Yesterday', thisMonth: 'This month', vsPrev: 'vs prior period',
     },
     status: {
       pending: 'Pending', confirmed: 'Confirmed', delivered: 'Delivered',
@@ -228,6 +233,9 @@ export const dashT = {
       colProduct: 'Product', colSku: 'SKU', colCategory: 'Category',
       colPrice: "Price (so'm)", colCost: "Cost (so'm)", colProfit: "Profit (so'm)",
       colMargin: 'Margin (%)', colSold: 'Sold', colStock: 'Stock',
+      filterLowStock: 'Low stock', filterOutOfStock: 'Out of stock',
+      filterNoOrders: 'No orders', filterHighMargin: 'High margin',
+      columns: 'Columns', presetDefault: 'Default', presetCompact: 'Compact',
     },
     orders: {
       title: 'Orders', count: 'orders', empty: 'No orders',
@@ -401,6 +409,7 @@ export const dashT = {
       product: 'Товар', profit2: 'Прибыль', sold: 'Продано',
       syncing: 'Синхронизирую...', done: 'Готово!', err: 'Ошибка',
       last: 'Последние', daysSuffix: 'дн.',
+      yesterday: 'Вчера', thisMonth: 'Тек. месяц', vsPrev: 'к прошлому периоду',
     },
     status: {
       pending: 'Ожидает', confirmed: 'Подтверждён', delivered: 'Доставлен',
@@ -418,6 +427,9 @@ export const dashT = {
       colProduct: 'Товар', colSku: 'SKU', colCategory: 'Категория',
       colPrice: "Цена (so'm)", colCost: "Себестоимость (so'm)", colProfit: "Прибыль (so'm)",
       colMargin: 'Маржа (%)', colSold: 'Продано', colStock: 'Остаток',
+      filterLowStock: 'Мало остатков', filterOutOfStock: 'Нет остатков',
+      filterNoOrders: 'Без заказов', filterHighMargin: 'Высокая маржа',
+      columns: 'Столбцы', presetDefault: 'По умолч.', presetCompact: 'Компактный',
     },
     orders: {
       title: 'Заказы', count: 'заказов', empty: 'Нет заказов',

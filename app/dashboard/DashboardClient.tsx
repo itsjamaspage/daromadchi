@@ -31,7 +31,7 @@ interface Props {
   chartData: DailyRevenue[]
   categoryData: CategoryData[]
   days: number
-  daysStr: string
+  period: string
   marketplace: MarketplaceType | undefined
 }
 
@@ -43,7 +43,7 @@ const STATUS_CLASS: Record<string, string> = {
   returned:  'bg-amber-500/10 text-amber-400',
 }
 
-export default function DashboardClient({ kpis, recentOrders, allProducts, chartData, categoryData, days, daysStr, marketplace }: Props) {
+export default function DashboardClient({ kpis, recentOrders, allProducts, chartData, categoryData, days, period, marketplace }: Props) {
   const { lang } = useLang()
   const t = dashT[lang]
   const d = t.dashboard
@@ -67,7 +67,7 @@ export default function DashboardClient({ kpis, recentOrders, allProducts, chart
         <div className="flex items-center gap-2">
           <SyncButton />
           <Suspense>
-            <DateFilter current={daysStr} />
+            <DateFilter current={period} />
           </Suspense>
         </div>
       </div>
@@ -83,7 +83,7 @@ export default function DashboardClient({ kpis, recentOrders, allProducts, chart
           return (
             <Link
               key={label}
-              href={mp ? `/dashboard?mp=${mp}&days=${daysStr}` : `/dashboard?days=${daysStr}`}
+              href={mp ? `/dashboard?mp=${mp}&days=${period}` : `/dashboard?days=${period}`}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                 active
                   ? color === 'amber'
@@ -121,10 +121,10 @@ export default function DashboardClient({ kpis, recentOrders, allProducts, chart
 
       {/* KPI cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        <KpiCard title={d.revenue} value={formatSum(kpis.total_revenue)}             change={isEmpty ? null : undefined} icon={DollarSign}  color="violet" />
-        <KpiCard title={d.profit}  value={formatSum(kpis.total_profit)}              change={isEmpty ? null : undefined} icon={TrendingUp}  color="emerald" />
-        <KpiCard title={d.orders}  value={kpis.total_orders.toLocaleString('uz-UZ')} change={isEmpty ? null : undefined} icon={ShoppingBag} color="blue" />
-        <KpiCard title={d.stock}   value={kpis.total_stock.toLocaleString('uz-UZ')}  change={isEmpty ? null : undefined} icon={Package}     color="amber" />
+        <KpiCard title={d.revenue} value={formatSum(kpis.total_revenue)}             change={isEmpty ? null : kpis.change_revenue} icon={DollarSign}  color="violet" />
+        <KpiCard title={d.profit}  value={formatSum(kpis.total_profit)}              change={isEmpty ? null : kpis.change_profit}  icon={TrendingUp}  color="emerald" />
+        <KpiCard title={d.orders}  value={kpis.total_orders.toLocaleString('uz-UZ')} change={isEmpty ? null : kpis.change_orders}  icon={ShoppingBag} color="blue" />
+        <KpiCard title={d.stock}   value={kpis.total_stock.toLocaleString('uz-UZ')}  change={isEmpty ? null : undefined}           icon={Package}     color="amber" />
       </div>
 
       {/* Stock alerts */}

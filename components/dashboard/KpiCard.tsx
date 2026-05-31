@@ -26,11 +26,14 @@ export default function KpiCard({ title, value, change, icon: Icon, color }: Kpi
           <Icon className={`w-5 h-5 ${c.icon}`} />
         </div>
         {change != null && (
-          <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-lg ${
-            isPositive ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'
-          }`}>
+          <span
+            title="vs prior period"
+            className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-lg cursor-default ${
+              isPositive ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'
+            }`}
+          >
             {isPositive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-            {Math.abs(change)}%
+            {isPositive ? '+' : ''}{change}%
           </span>
         )}
       </div>

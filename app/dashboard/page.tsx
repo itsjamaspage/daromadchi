@@ -6,10 +6,20 @@ import DashboardClient from './DashboardClient'
 import type { MarketplaceType } from '@/lib/types'
 
 const VALID_MARKETPLACES = ['uzum', 'yandex_market'] as const
+const VALID_PERIODS = ['1', '7', '30', '90', 'month'] as const
+type Period = typeof VALID_PERIODS[number]
 
-function parseDays(params: Record<string, string> | undefined): number {
-  const v = params?.days
-  return v === '7' || v === '90' ? Number(v) : 30
+function parsePeriod(params: Record<string, string> | undefined): Period {
+  const v = params?.days ?? '30'
+  return (VALID_PERIODS as readonly string[]).includes(v) ? v as Period : '30'
+}
+
+function periodToDays(period: Period): number {
+  if (period === '1')     return 1
+  if (period === '7')     return 7
+  if (period === '90')    return 90
+  if (period === 'month') return new Date().getDate()
+  return 30
 }
 
 function parseMarketplace(params: Record<string, string> | undefined): MarketplaceType | undefined {
@@ -39,8 +49,8 @@ interface Props {
 
 export default async function DashboardPage({ searchParams }: Props) {
   const params      = await searchParams
-  const days        = parseDays(params)
-  const daysStr     = String(days)
+  const period      = parsePeriod(params)
+  const days        = periodToDays(period)
   const marketplace = parseMarketplace(params)
 
   const [kpis, recentOrders, allProducts, chartData] = await Promise.all([
@@ -58,7 +68,7 @@ export default async function DashboardPage({ searchParams }: Props) {
       chartData={chartData}
       categoryData={buildCategoryData(allProducts)}
       days={days}
-      daysStr={daysStr}
+      period={period}
       marketplace={marketplace}
     />
   )

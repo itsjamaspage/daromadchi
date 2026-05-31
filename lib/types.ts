@@ -57,4 +57,7 @@ export interface Kpis {
   total_profit: number
   total_orders: number
   total_stock: number
+  change_revenue?: number | null  // % vs prior period
+  change_profit?: number | null
+  change_orders?: number | null
 }
