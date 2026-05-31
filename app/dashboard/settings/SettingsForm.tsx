@@ -135,6 +135,10 @@ function UzumCard({ shop, userId }: { shop: Shop | null; userId: string }) {
             className="flex items-center gap-2 bg-[var(--bg-input)] hover:bg-white/[0.06] border border-[var(--border2)] disabled:opacity-40 disabled:cursor-not-allowed text-slate-200 text-sm font-medium px-4 py-2 rounded-xl transition-colors">
             {syncing ? <><Loader2 className="w-4 h-4 animate-spin" /> {t.syncing}</> : <><RefreshCw className="w-4 h-4" /> {t.sync}</>}
           </button>
+          <div className="text-xs text-slate-500 bg-[var(--bg-input)] border border-[var(--border)] rounded-xl px-3 py-2.5 flex items-center gap-2">
+            <span className="text-slate-600">⊙</span>
+            {t.uzumAdsComing}
+          </div>
         </div>
       )}
     </div>
@@ -274,6 +278,10 @@ function YandexCard({ shop, userId }: { shop: Shop | null; userId: string }) {
             className="flex items-center gap-2 bg-[var(--bg-input)] hover:bg-white/[0.06] border border-[var(--border2)] disabled:opacity-40 disabled:cursor-not-allowed text-slate-200 text-sm font-medium px-4 py-2 rounded-xl transition-colors">
             {syncing ? <><Loader2 className="w-4 h-4 animate-spin" /> {t.syncing}</> : <><RefreshCw className="w-4 h-4" /> {t.sync}</>}
           </button>
+          <div className="text-xs text-slate-500 bg-[var(--bg-input)] border border-[var(--border)] rounded-xl px-3 py-2.5 flex items-center gap-2">
+            <span className="text-slate-600">⊙</span>
+            {t.yandexAdsComing}
+          </div>
         </div>
       )}
     </div>
