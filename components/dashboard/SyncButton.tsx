@@ -3,9 +3,13 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { RefreshCw, CheckCircle, XCircle } from 'lucide-react'
+import { useLang } from '@/app/providers'
+import { dashT } from '@/lib/dashT'
 
 export default function SyncButton() {
   const router = useRouter()
+  const { lang } = useLang()
+  const d = dashT[lang].dashboard
   const [state, setState] = useState<'idle' | 'syncing' | 'ok' | 'err'>('idle')
 
   async function handleSync() {
@@ -40,7 +44,7 @@ export default function SyncButton() {
       {state === 'ok'      && <CheckCircle className="w-3.5 h-3.5" />}
       {state === 'err'     && <XCircle className="w-3.5 h-3.5" />}
       {state === 'idle'    && <RefreshCw className="w-3.5 h-3.5" />}
-      {state === 'syncing' ? 'Sinxronlanmoqda...' : state === 'ok' ? 'Tayyor!' : state === 'err' ? 'Xato' : 'Sinxronlash'}
+      {state === 'syncing' ? d.syncing : state === 'ok' ? d.done : state === 'err' ? d.err : d.sync}
     </button>
   )
 }

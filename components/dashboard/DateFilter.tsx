@@ -2,11 +2,13 @@
 
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { useTransition } from 'react'
+import { useLang } from '@/app/providers'
+import { dashT } from '@/lib/dashT'
 
 export const RANGE_OPTIONS = [
-  { label: '7 kun',  value: '7'  },
-  { label: '30 kun', value: '30' },
-  { label: '90 kun', value: '90' },
+  { value: '7'  },
+  { value: '30' },
+  { value: '90' },
 ] as const
 
 export type RangeValue = typeof RANGE_OPTIONS[number]['value']
@@ -25,6 +27,8 @@ export default function DateFilter({ current }: DateFilterProps) {
   const pathname    = usePathname()
   const searchParams = useSearchParams()
   const [pending, startTransition] = useTransition()
+  const { lang } = useLang()
+  const suffix = dashT[lang].dashboard.daysSuffix
 
   function setRange(value: string) {
     const params = new URLSearchParams(searchParams.toString())
@@ -44,7 +48,7 @@ export default function DateFilter({ current }: DateFilterProps) {
               : 'text-slate-400 hover:text-white'
           }`}
         >
-          {opt.label}
+          {opt.value} {suffix}
         </button>
       ))}
     </div>

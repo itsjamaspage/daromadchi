@@ -19,6 +19,8 @@ export const dashT = {
       goSettings: "Sozlamalarga o'tish",
       dailyRevenue: 'Kunlik daromad', categories: 'Kategoriyalar',
       product: 'Mahsulot', profit2: 'Foyda', sold: 'Sotilgan',
+      syncing: 'Sinxronlanmoqda...', done: 'Tayyor!', err: 'Xato',
+      last: "So'nggi", daysSuffix: 'kun',
     },
     status: {
       pending: 'Kutilmoqda', confirmed: 'Tasdiqlandi', delivered: 'Yetkazildi',
@@ -43,6 +45,8 @@ export const dashT = {
       goSettings: 'Go to settings',
       dailyRevenue: 'Daily revenue', categories: 'Categories',
       product: 'Product', profit2: 'Profit', sold: 'Sold',
+      syncing: 'Syncing...', done: 'Done!', err: 'Error',
+      last: 'Last', daysSuffix: 'days',
     },
     status: {
       pending: 'Pending', confirmed: 'Confirmed', delivered: 'Delivered',
@@ -67,6 +71,8 @@ export const dashT = {
       goSettings: 'Перейти в настройки',
       dailyRevenue: 'Дневная выручка', categories: 'Категории',
       product: 'Товар', profit2: 'Прибыль', sold: 'Продано',
+      syncing: 'Синхронизирую...', done: 'Готово!', err: 'Ошибка',
+      last: 'Последние', daysSuffix: 'дн.',
     },
     status: {
       pending: 'Ожидает', confirmed: 'Подтверждён', delivered: 'Доставлен',

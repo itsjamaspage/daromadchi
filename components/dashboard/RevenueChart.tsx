@@ -4,6 +4,8 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts'
 import type { DailyRevenue } from '@/lib/types'
+import { useLang } from '@/app/providers'
+import { dashT } from '@/lib/dashT'
 
 function formatSum(value: number) {
   if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`
@@ -26,12 +28,14 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 }
 
 export default function RevenueChart({ data, days = 7 }: { data: DailyRevenue[]; days?: number }) {
+  const { lang } = useLang()
+  const d = dashT[lang].dashboard
   return (
     <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl p-6">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h3 className="text-white font-semibold">Kunlik daromad</h3>
-          <p className="text-slate-500 text-xs mt-0.5">So&apos;nggi {days} kun</p>
+          <h3 className="text-white font-semibold">{d.dailyRevenue}</h3>
+          <p className="text-slate-500 text-xs mt-0.5">{d.last} {days} {d.daysSuffix}</p>
         </div>
         <span className="text-xs text-slate-500 bg-white/[0.04] px-3 py-1.5 rounded-lg border border-[var(--border)]">
           So&apos;m
