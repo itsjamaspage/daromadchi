@@ -1,85 +1,155 @@
-import Link from 'next/link'
-import { Search } from 'lucide-react'
-import { ARTICLES, CATEGORIES } from '@/lib/help-content'
+'use client'
 
-export default function HelpPage({
-  searchParams,
-}: {
-  searchParams: Promise<Record<string, string>>
-}) {
-  // Note: for static rendering just show all articles grouped by category
-  const featuredArticles = ARTICLES.slice(0, 3)
-  const restByCategory = CATEGORIES.map(cat => ({
-    ...cat,
-    articles: ARTICLES.filter(a => a.categorySlug === cat.slug),
-  })).filter(c => c.articles.length > 0)
+import Link from 'next/link'
+import { useState } from 'react'
+import { getCategoryList } from '@/lib/help-content'
+
+const ICON_MAP: Record<string, string> = {
+  '🚀': '🚀', '🔔': '🔔', '🧩': '🧩', '📊': '📊',
+  '📦': '📦', '🧮': '🧮', '📈': '📈', '💳': '💳', '⚙️': '⚙️',
+}
+
+export default function HelpPage() {
+  const categories = getCategoryList()
+  const [query, setQuery] = useState('')
+
+  const allArticles = categories.flatMap((c) => c.articles)
+  const filtered = query.trim()
+    ? allArticles.filter(
+        (a) =>
+          a.title.toLowerCase().includes(query.toLowerCase()) ||
+          a.summary.toLowerCase().includes(query.toLowerCase()),
+      )
+    : []
 
   return (
-    <div className="space-y-10">
-      {/* Header + search */}
-      <div>
-        <h1 className="text-3xl font-bold text-white mb-1">Yordam markazi</h1>
-        <p className="text-slate-400 text-sm mb-6">Maqolalar, qo&apos;llanmalar va Daromadchi bo&apos;yicha ko&apos;rsatmalar</p>
-        <div className="relative max-w-lg">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+    <main className="max-w-5xl mx-auto px-4 sm:px-6 py-12">
+      {/* Hero */}
+      <div className="text-center mb-12">
+        <h1
+          className="text-3xl sm:text-4xl font-extrabold mb-3"
+          style={{ fontFamily: 'var(--font-display)', color: 'var(--text-base)' }}
+        >
+          Yordam markazi
+        </h1>
+        <p className="text-[var(--text-muted)] mb-8 max-w-md mx-auto text-sm">
+          Savollaringizga javob toping yoki qo'llanmalardan foydalaning
+        </p>
+
+        {/* Search */}
+        <div className="relative max-w-lg mx-auto">
+          <svg
+            className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]"
+            fill="none" stroke="currentColor" viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
           <input
             type="text"
-            placeholder="Maqolalar bo'yicha qidiring..."
-            className="w-full bg-white/[0.05] border border-white/[0.08] rounded-xl pl-11 pr-4 py-3 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50 transition-all"
+            placeholder="Maqola qidirish..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="w-full pl-11 pr-4 py-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border2)]
+              text-[var(--text-base)] placeholder:text-[var(--text-muted)] text-sm
+              focus:outline-none focus:border-[var(--c1)] transition-colors"
           />
         </div>
       </div>
 
-      {/* Featured / Getting started */}
-      <section>
-        <h2 className="text-lg font-semibold text-white mb-4">🚀 Boshlash</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {featuredArticles.map(article => (
-            <ArticleCard key={article.slug} article={article} />
+      {/* Search results */}
+      {query.trim() && (
+        <div className="mb-10">
+          {filtered.length === 0 ? (
+            <p className="text-center text-[var(--text-muted)] py-8">
+              "{query}" bo'yicha hech narsa topilmadi
+            </p>
+          ) : (
+            <div className="space-y-2">
+              <p className="text-xs text-[var(--text-muted)] mb-3">{filtered.length} ta natija</p>
+              {filtered.map((a) => (
+                <Link
+                  key={a.slug}
+                  href={`/help/${a.slug}`}
+                  className="block p-4 rounded-xl bg-[var(--bg-card)] border border-[var(--border)] hover:border-[var(--c1)]/40 transition-all neon-card"
+                >
+                  <p className="text-xs text-[var(--c1)] mb-1">{a.category}</p>
+                  <p className="text-sm font-semibold text-[var(--text-base)]">{a.title}</p>
+                  <p className="text-xs text-[var(--text-muted)] mt-1">{a.summary}</p>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Categories */}
+      {!query.trim() && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {categories.map((cat) => (
+            <div
+              key={cat.slug}
+              className="rounded-2xl bg-[var(--bg-card)] border border-[var(--border)] p-5 neon-card"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--c1)]/10 to-[var(--c2)]/10 border border-[var(--border2)] flex items-center justify-center text-xl">
+                  {cat.icon}
+                </div>
+                <div>
+                  <h2
+                    className="font-bold text-[var(--text-base)] text-sm"
+                    style={{ fontFamily: 'var(--font-display)' }}
+                  >
+                    {cat.title}
+                  </h2>
+                  <p className="text-xs text-[var(--text-muted)]">{cat.articles.length} ta maqola</p>
+                </div>
+              </div>
+
+              <ul className="space-y-1.5">
+                {cat.articles.map((a) => (
+                  <li key={a.slug}>
+                    <Link
+                      href={`/help/${a.slug}`}
+                      className="flex items-start gap-2 text-xs text-[var(--text-dim)] hover:text-[var(--c1)] transition-colors group"
+                    >
+                      <svg
+                        className="w-3 h-3 mt-0.5 flex-shrink-0 text-[var(--text-muted)] group-hover:text-[var(--c1)] transition-colors"
+                        fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                      {a.title}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
           ))}
         </div>
-      </section>
+      )}
 
-      {/* Other categories */}
-      {restByCategory.slice(1).map(cat => (
-        <section key={cat.slug}>
-          <h2 className="text-lg font-semibold text-white mb-4">{cat.icon} {cat.label}</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {cat.articles.map(article => (
-              <ArticleCard key={article.slug} article={article} />
-            ))}
-          </div>
-        </section>
-      ))}
-    </div>
-  )
-}
-
-function ArticleCard({ article }: { article: typeof ARTICLES[0] }) {
-  return (
-    <Link href={`/help/${article.slug}`}
-      className="group bg-white/[0.03] border border-white/[0.07] rounded-2xl overflow-hidden hover:border-violet-500/30 hover:bg-white/[0.05] transition-all">
-      {/* Thumbnail */}
-      <div className={`h-36 bg-gradient-to-br ${article.gradient} flex items-center justify-center relative overflow-hidden`}>
-        <div className="absolute inset-0 bg-black/20" />
-        <div className="relative text-center px-4">
-          <div className="text-4xl mb-2">{article.icon}</div>
-          <p className="text-white font-bold text-sm leading-tight line-clamp-2">{article.title}</p>
+      {/* Bottom CTA */}
+      <div className="mt-16 text-center p-8 rounded-2xl bg-[var(--bg-card2)] border border-[var(--border)]">
+        <p className="text-[var(--text-muted)] text-sm mb-2">Javob topa olmadingizmi?</p>
+        <p className="text-[var(--text-base)] font-semibold mb-4">Bizga to'g'ridan-to'g'ri yozing</p>
+        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <a
+            href="https://t.me/daromadchi_support_bot"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-5 py-2.5 rounded-xl bg-[var(--c1)] text-[#020c1a] font-semibold text-sm hover:opacity-90 transition-opacity"
+          >
+            Telegram orqali yozish
+          </a>
+          <a
+            href="mailto:support@daromadchi.uz"
+            className="px-5 py-2.5 rounded-xl border border-[var(--border2)] text-[var(--text-base)] text-sm hover:border-[var(--c1)]/40 hover:text-[var(--c1)] transition-all"
+          >
+            support@daromadchi.uz
+          </a>
         </div>
       </div>
-      {/* Content */}
-      <div className="p-4">
-        <div className="flex items-center gap-2 mb-2">
-          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-violet-500/10 border border-violet-500/20 text-violet-400">
-            {article.type === 'video' ? 'Video' : 'Maqola'}
-          </span>
-          <span className="text-[10px] text-slate-500">{article.category}</span>
-        </div>
-        <p className="text-slate-400 text-xs leading-relaxed line-clamp-2">{article.description}</p>
-        <p className="text-violet-400 text-xs mt-3 group-hover:text-violet-300 transition-colors flex items-center gap-1">
-          O&apos;qish → <span className="text-slate-600">{article.readTime}</span>
-        </p>
-      </div>
-    </Link>
+    </main>
   )
 }

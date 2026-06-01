@@ -277,45 +277,48 @@ export default function LandingPage() {
       {/* ────────────────────────── NAVBAR ───────────────────────────── */}
       <motion.header initial={{ y: -80, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.55 }}
         className="fixed top-0 left-0 right-0 z-50 border-b backdrop-blur-xl"
-        style={{ background: 'var(--nav-bg)', borderColor: 'var(--border)' }}>
+        style={{ background: 'rgba(13,14,20,0.75)', borderColor: 'rgba(255,255,255,0.07)' }}>
         <div className="max-w-7xl mx-auto px-5 h-16 flex items-center justify-between">
+          {/* Logo */}
           <Link href="/" className="flex items-center gap-2.5 shrink-0">
             <div className="w-8 h-8 rounded-xl flex items-center justify-center"
-              style={{ background: 'linear-gradient(135deg, var(--c1), var(--c2))' }}>
+              style={{ background: 'linear-gradient(135deg, #00d4ff, #0099cc)' }}>
               <TrendingUp className="w-4 h-4 text-white" />
             </div>
-            <span className="font-bold text-base" style={{ fontFamily: 'var(--font-display)', color: 'var(--text-base)' }}>
+            <span className="font-bold text-base text-white" style={{ fontFamily: 'var(--font-display)' }}>
               Daromadchi
             </span>
           </Link>
 
+          {/* Center nav */}
           <nav className="hidden md:flex items-center gap-8 text-sm font-medium">
             {[
-              { href: '#features', label: t.nav.features },
-              { href: '#how',      label: t.nav.how },
+              { href: '#features', label: lang === 'uz' ? 'Imkoniyatlar' : t.nav.features },
+              { href: '#how',      label: lang === 'uz' ? 'Qanday ishlaydi' : t.nav.how },
+              { href: '#pricing',  label: lang === 'uz' ? 'Narxlar' : lang === 'ru' ? 'Цены' : 'Pricing' },
               { href: '/help',     label: helpLabel },
             ].map(item => (
               <a key={item.label} href={item.href}
-                className="transition-opacity opacity-70 hover:opacity-100"
-                style={{ color: 'var(--text-base)' }}>
+                className="transition-opacity opacity-60 hover:opacity-100"
+                style={{ color: '#e2e8f0' }}>
                 {item.label}
               </a>
             ))}
           </nav>
 
+          {/* Right actions */}
           <div className="flex items-center gap-2">
             <LangToggle />
             <ThemeToggle />
-            <Link href="/login" className="hidden sm:block text-sm font-medium px-3 py-2 opacity-70 hover:opacity-100 transition-opacity"
-              style={{ color: 'var(--text-base)' }}>
+            <Link href="/login" className="hidden sm:block text-sm font-medium px-3 py-2 opacity-60 hover:opacity-100 transition-opacity text-white">
               {t.nav.login}
             </Link>
             <Link href="/login"
-              className="text-sm font-bold px-4 py-2 rounded-xl text-white flex items-center gap-1 whitespace-nowrap"
-              style={{ background: 'linear-gradient(135deg, var(--c1), var(--c2))' }}>
-              {t.nav.start} ↗
+              className="text-sm font-bold px-4 py-2 rounded-xl flex items-center gap-1 whitespace-nowrap transition-all hover:shadow-[0_0_20px_rgba(0,212,255,0.4)]"
+              style={{ background: '#00d4ff', color: '#0d0e14' }}>
+              {lang === 'uz' ? 'Bepul boshlash' : t.nav.start}
             </Link>
-            <button className="md:hidden p-2 rounded-xl" style={{ color: 'var(--text-muted)' }}
+            <button className="md:hidden p-2 rounded-xl text-white/60"
               onClick={() => setMenuOpen(v => !v)}>
               {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
@@ -327,18 +330,23 @@ export default function LandingPage() {
             <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
               transition={{ duration: 0.2 }}
               className="md:hidden border-t overflow-hidden"
-              style={{ borderColor: 'var(--border)', background: 'var(--nav-bg)' }}>
+              style={{ borderColor: 'rgba(255,255,255,0.07)', background: 'rgba(13,14,20,0.97)' }}>
               <div className="px-5 py-4 flex flex-col gap-2">
-                {[t.nav.features, t.nav.how, helpLabel].map(label => (
+                {[
+                  lang === 'uz' ? 'Imkoniyatlar' : t.nav.features,
+                  lang === 'uz' ? 'Qanday ishlaydi' : t.nav.how,
+                  lang === 'uz' ? 'Narxlar' : lang === 'ru' ? 'Цены' : 'Pricing',
+                  helpLabel,
+                ].map(label => (
                   <a key={label} href="#" onClick={() => setMenuOpen(false)}
-                    className="text-sm font-medium py-2 opacity-80" style={{ color: 'var(--text-base)' }}>
+                    className="text-sm font-medium py-2 opacity-80 text-white">
                     {label}
                   </a>
                 ))}
                 <Link href="/login" onClick={() => setMenuOpen(false)}
-                  className="mt-2 text-sm font-bold py-3 text-center rounded-xl text-white"
-                  style={{ background: 'linear-gradient(135deg, var(--c1), var(--c2))' }}>
-                  {t.nav.start}
+                  className="mt-2 text-sm font-bold py-3 text-center rounded-xl"
+                  style={{ background: '#00d4ff', color: '#0d0e14' }}>
+                  {lang === 'uz' ? 'Bepul boshlash' : t.nav.start}
                 </Link>
               </div>
             </motion.div>
@@ -347,101 +355,158 @@ export default function LandingPage() {
       </motion.header>
 
       {/* ────────────────────────── HERO ─────────────────────────────── */}
-      <section className="relative min-h-screen flex items-center pt-20 pb-16 px-5 overflow-hidden">
-        {isDark && <Particles />}
-        <div className="absolute top-10 -left-32 w-[500px] h-[500px] rounded-full blur-3xl opacity-15 pointer-events-none"
-          style={{ background: 'var(--c1)' }} />
-        <div className="absolute bottom-0 right-0 w-96 h-96 rounded-full blur-3xl opacity-10 pointer-events-none"
-          style={{ background: 'var(--c2)' }} />
+      <section className="relative min-h-screen flex flex-col items-center justify-center pt-20 pb-16 px-5 overflow-hidden"
+        style={{ background: '#0d0e14' }}>
+        {/* Aurora radial glow */}
+        <div className="absolute inset-0 pointer-events-none"
+          style={{ background: 'radial-gradient(ellipse 80% 60% at 50% -10%, rgba(0,212,255,0.18) 0%, transparent 60%)' }} />
+        <Particles />
 
-        <div className="relative z-10 max-w-7xl mx-auto w-full">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div>
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-                className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-semibold mb-6 border"
-                style={{ background: isDark ? 'rgba(0,212,255,0.08)' : 'rgba(2,132,199,0.08)', borderColor: 'var(--c1)', color: 'var(--c1)' }}>
-                <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: 'var(--c1)' }} />
-                {t.badge}
-              </motion.div>
-
-              <motion.h1 initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.32, duration: 0.7 }}
-                className="text-5xl sm:text-6xl xl:text-7xl font-black leading-[1.05] tracking-tight mb-6"
-                style={{ fontFamily: 'var(--font-display)', color: 'var(--text-base)' }}>
-                {lang === 'uz' ? (
-                  <>To&apos;liq nazorat<br />
-                    <span className="grad-text">{typeText}</span>
-                    <span className="animate-blink" style={{ color: 'var(--c1)' }}>|</span>&nbsp;ustida
-                  </>
-                ) : lang === 'ru' ? (
-                  <>Полный контроль над<br />
-                    <span className="grad-text">{typeText}</span>
-                    <span className="animate-blink" style={{ color: 'var(--c1)' }}>|</span>
-                  </>
-                ) : (
-                  <>Take full control of<br />
-                    <span className="grad-text">{typeText}</span>
-                    <span className="animate-blink" style={{ color: 'var(--c1)' }}>|</span>
-                  </>
-                )}
-              </motion.h1>
-
-              <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.48 }}
-                className="text-lg max-w-lg mb-8 leading-relaxed" style={{ color: 'var(--text-muted)' }}>
-                {t.hero.subtitle}
-              </motion.p>
-
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.58 }}
-                className="flex flex-col sm:flex-row gap-3 mb-7">
-                <Link href="/login"
-                  className="group flex items-center justify-center gap-2 text-white font-bold px-8 py-4 rounded-2xl transition-all text-sm"
-                  style={{ background: 'linear-gradient(135deg, var(--c1), var(--c2))', boxShadow: '0 8px 32px rgba(0,212,255,0.28)' }}>
-                  {t.hero.cta}
-                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                </Link>
-                <Link href="/dashboard"
-                  className="flex items-center justify-center gap-2 font-medium px-8 py-4 rounded-2xl transition-all text-sm border"
-                  style={{ borderColor: 'var(--border2)', color: 'var(--text-dim)' }}>
-                  {t.hero.demo}
-                </Link>
-              </motion.div>
-
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.75 }}
-                className="flex items-center gap-6 text-xs" style={{ color: 'var(--text-muted)' }}>
-                {[
-                  { Icon: ShieldCheck, label: t.hero.secure },
-                  { Icon: Zap,         label: t.hero.fast },
-                  { Icon: RefreshCw,   label: t.hero.sync },
-                ].map(({ Icon, label }) => (
-                  <span key={label} className="flex items-center gap-1.5">
-                    <Icon className="w-3.5 h-3.5" style={{ color: 'var(--c1)' }} />{label}
-                  </span>
-                ))}
-              </motion.div>
-            </div>
-
-            <motion.div initial={{ opacity: 0, x: 60 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.38, duration: 0.85 }}
-              className="relative">
-              <div className="absolute -inset-6 rounded-3xl blur-2xl opacity-20 pointer-events-none"
-                style={{ background: 'linear-gradient(135deg, var(--c1), var(--c2))' }} />
-              <DashboardMockup p={t.preview} />
-
-              <motion.div animate={{ y: [0, -10, 0] }} transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-                className="absolute -left-10 top-1/4 rounded-2xl px-4 py-3 border shadow-xl hidden lg:block"
-                style={{ background: card2, borderColor: isDark ? 'rgba(0,212,255,0.3)' : 'rgba(2,132,199,0.3)' }}>
-                <p className="text-[11px] font-semibold mb-0.5" style={{ color: 'var(--c1)' }}>Jami buyurtmalar</p>
-                <p className="text-xl font-black" style={{ color: 'var(--text-base)' }}>
-                  428 <span className="text-green-400 text-sm font-bold">↗</span>
-                </p>
-              </motion.div>
-
-              <motion.div animate={{ y: [0, 10, 0] }} transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
-                className="absolute -right-10 bottom-1/4 rounded-2xl px-4 py-3 border shadow-xl hidden lg:block"
-                style={{ background: card2, borderColor: isDark ? 'rgba(255,45,155,0.3)' : 'rgba(219,39,119,0.3)' }}>
-                <p className="text-[11px] font-semibold mb-0.5" style={{ color: 'var(--c2)' }}>Daromad o&apos;sishi</p>
-                <p className="text-2xl font-black" style={{ color: 'var(--text-base)' }}>+43%</p>
-              </motion.div>
+        {/* Floating cards — LEFT */}
+        <div className="absolute left-[3%] top-1/2 -translate-y-1/2 hidden xl:flex flex-col gap-3 pointer-events-none" style={{ zIndex: 2 }}>
+          {[
+            { label: 'DRR', value: '8.5%', sub: 'Reklama ulushi', color: '#00d4ff', rotate: '-5deg', delay: 0 },
+            { label: 'Tushum', value: '45.2M', sub: "so'm bugun", color: '#22c55e', rotate: '-3deg', delay: 0.4 },
+            { label: 'Buyurtmalar', value: '342', sub: 'bugun', color: '#f59e0b', rotate: '-7deg', delay: 0.8 },
+          ].map((fc, i) => (
+            <motion.div key={fc.label}
+              animate={{ y: [0, -8, 0] }}
+              transition={{ duration: 3 + i * 0.7, repeat: Infinity, ease: 'easeInOut', delay: fc.delay }}
+              className="rounded-2xl px-4 py-3 border shadow-xl"
+              style={{
+                background: 'rgba(255,255,255,0.06)',
+                borderColor: 'rgba(255,255,255,0.12)',
+                transform: `rotate(${fc.rotate})`,
+                backdropFilter: 'blur(12px)',
+                minWidth: '148px',
+              }}>
+              <p className="text-[10px] font-semibold mb-0.5 uppercase tracking-wide" style={{ color: 'rgba(255,255,255,0.45)' }}>{fc.label}</p>
+              <p className="text-xl font-black" style={{ color: fc.color }}>{fc.value}</p>
+              <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.35)' }}>{fc.sub}</p>
             </motion.div>
-          </div>
+          ))}
+        </div>
+
+        {/* Floating cards — RIGHT */}
+        <div className="absolute right-[3%] top-1/2 -translate-y-1/2 hidden xl:flex flex-col gap-3 pointer-events-none" style={{ zIndex: 2 }}>
+          {[
+            { label: 'Foyda', value: '+43%', sub: "o'tgan oyga", color: '#22c55e', rotate: '5deg', delay: 0.2 },
+            { label: 'Qoldiq', value: '1,284', sub: 'dona', color: '#a78bfa', rotate: '3deg', delay: 0.6 },
+            { label: 'ROI', value: '312%', sub: 'reklama samarasi', color: '#00d4ff', rotate: '6deg', delay: 1.0 },
+          ].map((fc, i) => (
+            <motion.div key={fc.label}
+              animate={{ y: [0, -8, 0] }}
+              transition={{ duration: 3.5 + i * 0.6, repeat: Infinity, ease: 'easeInOut', delay: fc.delay }}
+              className="rounded-2xl px-4 py-3 border shadow-xl"
+              style={{
+                background: 'rgba(255,255,255,0.06)',
+                borderColor: 'rgba(255,255,255,0.12)',
+                transform: `rotate(${fc.rotate})`,
+                backdropFilter: 'blur(12px)',
+                minWidth: '148px',
+              }}>
+              <p className="text-[10px] font-semibold mb-0.5 uppercase tracking-wide" style={{ color: 'rgba(255,255,255,0.45)' }}>{fc.label}</p>
+              <p className="text-xl font-black" style={{ color: fc.color }}>{fc.value}</p>
+              <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.35)' }}>{fc.sub}</p>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* CENTER content */}
+        <div className="relative z-10 flex flex-col items-center text-center max-w-3xl mx-auto w-full">
+
+          {/* Social proof pill */}
+          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
+            className="flex items-center gap-3 rounded-full px-4 py-2 mb-8 border"
+            style={{ background: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(8px)' }}>
+            {/* Avatar bubbles */}
+            <div className="flex items-center">
+              {[
+                'linear-gradient(135deg,#f97316,#ec4899)',
+                'linear-gradient(135deg,#06b6d4,#3b82f6)',
+                'linear-gradient(135deg,#22c55e,#16a34a)',
+                'linear-gradient(135deg,#a78bfa,#7c3aed)',
+              ].map((grad, i) => (
+                <div key={i} className="w-7 h-7 rounded-full border-2 border-[#0d0e14] flex items-center justify-center text-[9px] font-bold text-white"
+                  style={{ background: grad, marginLeft: i === 0 ? 0 : '-8px', zIndex: 4 - i, position: 'relative' }}>
+                  {['J', 'M', 'O', 'A'][i]}
+                </div>
+              ))}
+            </div>
+            <span className="text-xs font-semibold" style={{ color: 'rgba(255,255,255,0.75)' }}>
+              500+ sotuvchilar Uzum Market&apos;da
+            </span>
+          </motion.div>
+
+          {/* Main headline */}
+          <motion.h1 initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.28, duration: 0.7 }}
+            className="text-5xl sm:text-6xl lg:text-[68px] font-black leading-[1.08] tracking-tight mb-5 text-white"
+            style={{ fontFamily: 'var(--font-display)' }}>
+            {lang === 'uz' ? (
+              <>Savdo va reklama tahlili —<br />
+                <span style={{ color: '#00d4ff' }}>hammasi bitta ekranda</span>
+              </>
+            ) : lang === 'ru' ? (
+              <>Аналитика продаж и рекламы —<br />
+                <span style={{ color: '#00d4ff' }}>всё на одном экране</span>
+              </>
+            ) : (
+              <>Sales &amp; ad analytics —<br />
+                <span style={{ color: '#00d4ff' }}>all on one screen</span>
+              </>
+            )}
+          </motion.h1>
+
+          {/* Subtitle */}
+          <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.42 }}
+            className="text-lg mb-8 leading-relaxed max-w-xl"
+            style={{ color: 'rgba(180,195,215,0.85)' }}>
+            {lang === 'uz'
+              ? 'DRR, qoldiq, narx va birlik iqtisodiyoti. Savdoni kuniga 5 daqiqada boshqaring.'
+              : lang === 'ru'
+              ? 'DRR, остатки, цены и юнит-экономика. Управляйте продажами за 5 минут в день.'
+              : 'DRR, stock, pricing & unit economics. Manage your sales in 5 minutes a day.'}
+          </motion.p>
+
+          {/* CTA buttons */}
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.54 }}
+            className="flex flex-col sm:flex-row gap-3 mb-4">
+            <Link href="/login"
+              className="flex items-center justify-center gap-2 font-bold px-8 rounded-2xl transition-all text-sm"
+              style={{
+                background: '#00d4ff',
+                color: '#0d0e14',
+                height: '48px',
+                boxShadow: '0 8px 32px rgba(0,212,255,0.35)',
+              }}>
+              {lang === 'uz' ? '30 kun bepul boshlash' : lang === 'ru' ? '30 дней бесплатно' : 'Start 30 days free'}
+            </Link>
+            <Link href="/dashboard"
+              className="flex items-center justify-center gap-2 font-medium px-8 rounded-2xl transition-all text-sm border"
+              style={{
+                borderColor: 'rgba(255,255,255,0.18)',
+                color: 'rgba(255,255,255,0.8)',
+                height: '48px',
+                background: 'rgba(255,255,255,0.05)',
+              }}>
+              {lang === 'uz' ? "Demo ko'rish →" : lang === 'ru' ? 'Смотреть демо →' : 'View demo →'}
+            </Link>
+          </motion.div>
+
+          {/* No card required */}
+          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.68 }}
+            className="text-xs mb-12"
+            style={{ color: 'rgba(255,255,255,0.35)' }}>
+            {lang === 'uz' ? 'Karta shart emas' : lang === 'ru' ? 'Карта не нужна' : 'No credit card required'}
+          </motion.p>
+
+          {/* Dashboard mockup */}
+          <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.62, duration: 0.9 }}
+            className="relative w-full max-w-4xl">
+            <div className="absolute -inset-4 rounded-3xl blur-3xl opacity-20 pointer-events-none"
+              style={{ background: 'radial-gradient(ellipse at 50% 50%, #00d4ff, transparent 70%)' }} />
+            <DashboardMockup p={t.preview} />
+          </motion.div>
         </div>
       </section>
 
@@ -598,7 +663,7 @@ export default function LandingPage() {
       </section>
 
       {/* ─────────────────────────── PRICING ─────────────────────────── */}
-      <section ref={pricingRef} className="py-24 px-5" style={{ background: isDark ? 'var(--bg-base)' : '#f0f8ff' }}>
+      <section id="pricing" ref={pricingRef} className="py-24 px-5" style={{ background: isDark ? 'var(--bg-base)' : '#f0f8ff' }}>
         <div className="max-w-4xl mx-auto">
           <motion.div initial={{ opacity: 0, y: 30 }} animate={pricingInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.6 }} className="text-center mb-12">

@@ -1,0 +1,326 @@
+'use client'
+
+import { useState } from 'react'
+import { Users, UserPlus, X, Crown, Eye, Trash2, Shield, Lock } from 'lucide-react'
+
+// ── Types & mock data ──────────────────────────────────────────────────────────
+
+type Role = 'owner' | 'admin' | 'viewer'
+
+type TeamMember = {
+  id: number
+  name: string
+  email: string
+  role: Role
+  status: 'active' | 'pending'
+  joinedAt: string
+  initials: string
+  color: string
+}
+
+const MOCK_MEMBERS: TeamMember[] = [
+  {
+    id: 1,
+    name: 'Bobur Toshmatov',
+    email: 'bobur@example.uz',
+    role: 'owner',
+    status: 'active',
+    joinedAt: '2025-01-15',
+    initials: 'BT',
+    color: 'from-violet-600 to-indigo-600',
+  },
+  {
+    id: 2,
+    name: 'Malika Yusupova',
+    email: 'malika@example.uz',
+    role: 'admin',
+    status: 'active',
+    joinedAt: '2025-03-22',
+    initials: 'MY',
+    color: 'from-emerald-600 to-teal-600',
+  },
+  {
+    id: 3,
+    name: 'Jasur Nazarov',
+    email: 'jasur@example.uz',
+    role: 'viewer',
+    status: 'active',
+    joinedAt: '2025-05-10',
+    initials: 'JN',
+    color: 'from-amber-600 to-orange-600',
+  },
+]
+
+// ── Helpers ────────────────────────────────────────────────────────────────────
+
+function RoleBadge({ role }: { role: Role }) {
+  const config: Record<Role, { label: string; cls: string; icon: React.ReactNode }> = {
+    owner:  { label: 'Egasi',  cls: 'bg-violet-500/15 border-violet-500/30 text-violet-300',  icon: <Crown  className="w-3 h-3" /> },
+    admin:  { label: 'Admin',  cls: 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300', icon: <Shield className="w-3 h-3" /> },
+    viewer: { label: 'Viewer', cls: 'bg-slate-500/15 border-slate-500/20 text-slate-400',      icon: <Eye    className="w-3 h-3" /> },
+  }
+  const c = config[role]
+  return (
+    <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border ${c.cls}`}>
+      {c.icon} {c.label}
+    </span>
+  )
+}
+
+function StatusDot({ status }: { status: 'active' | 'pending' }) {
+  return (
+    <span className={`inline-flex items-center gap-1.5 text-xs ${status === 'active' ? 'text-emerald-400' : 'text-amber-400'}`}>
+      <span className={`w-1.5 h-1.5 rounded-full ${status === 'active' ? 'bg-emerald-400' : 'bg-amber-400'}`} />
+      {status === 'active' ? 'Faol' : 'Kutilmoqda'}
+    </span>
+  )
+}
+
+// ── Invite Modal ───────────────────────────────────────────────────────────────
+
+function InviteModal({ onClose }: { onClose: () => void }) {
+  const [email, setEmail]   = useState('')
+  const [role, setRole]     = useState<'admin' | 'viewer'>('viewer')
+  const [loading, setLoading] = useState(false)
+  const [success, setSuccess] = useState(false)
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!email.trim()) return
+    setLoading(true)
+    setTimeout(() => {
+      setLoading(false)
+      setSuccess(true)
+      setTimeout(onClose, 1200)
+    }, 800)
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        onClick={onClose}
+      />
+
+      {/* Modal */}
+      <div className="relative w-full max-w-md bg-[#13131f] border border-white/[0.08] rounded-2xl shadow-2xl shadow-black/60 overflow-hidden">
+        {/* Header */}
+        <div className="px-6 py-4 border-b border-white/[0.05] flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <UserPlus className="w-4 h-4 text-violet-400" />
+            <h2 className="text-white font-semibold text-sm">Jamoa a&apos;zosini qo&apos;shish</h2>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-slate-500 hover:text-white transition-colors p-1"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Body */}
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {/* Email */}
+          <div>
+            <label className="block text-xs font-medium text-slate-400 mb-2">
+              Email manzil
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              placeholder="example@email.com"
+              required
+              className="w-full bg-[#1c1c2e] border border-white/[0.08] rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-violet-500/60 transition-all"
+            />
+          </div>
+
+          {/* Role */}
+          <div>
+            <label className="block text-xs font-medium text-slate-400 mb-2">
+              Rol
+            </label>
+            <div className="space-y-2">
+              {([
+                { value: 'admin',  label: 'Admin',  desc: 'To\'liq kirish: mahsulotlar, buyurtmalar, sozlamalar' },
+                { value: 'viewer', label: 'Viewer', desc: 'Faqat o\'qish: tahlil va hisobotlarni ko\'rish' },
+              ] as { value: 'admin' | 'viewer'; label: string; desc: string }[]).map(opt => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setRole(opt.value)}
+                  className={`w-full flex items-start gap-3 px-4 py-3 rounded-xl border text-left transition-all ${
+                    role === opt.value
+                      ? 'bg-violet-600/15 border-violet-500/40'
+                      : 'bg-white/[0.02] border-white/[0.06] hover:border-white/[0.12]'
+                  }`}
+                >
+                  <div className={`mt-0.5 w-3.5 h-3.5 rounded-full border-2 flex-shrink-0 ${
+                    role === opt.value
+                      ? 'border-violet-400 bg-violet-400'
+                      : 'border-slate-600'
+                  }`} />
+                  <div>
+                    <p className={`text-xs font-semibold ${role === opt.value ? 'text-violet-300' : 'text-slate-300'}`}>
+                      {opt.label}
+                    </p>
+                    <p className="text-[11px] text-slate-500 mt-0.5">{opt.desc}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {success ? (
+            <div className="flex items-center gap-2 text-sm px-4 py-2.5 rounded-xl bg-emerald-500/10 text-emerald-400">
+              Taklif yuborildi!
+            </div>
+          ) : (
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full flex items-center justify-center gap-2 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white text-sm font-medium px-4 py-2.5 rounded-xl transition-colors"
+            >
+              {loading ? (
+                <span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+              ) : (
+                <UserPlus className="w-4 h-4" />
+              )}
+              Taklif yuborish
+            </button>
+          )}
+        </form>
+      </div>
+    </div>
+  )
+}
+
+// ── Page ───────────────────────────────────────────────────────────────────────
+
+export default function TeamPage() {
+  const [members, setMembers] = useState<TeamMember[]>(MOCK_MEMBERS)
+  const [showModal, setShowModal] = useState(false)
+  const isPro = false  // mock: not on Pro+
+
+  function handleRemove(id: number) {
+    setMembers(prev => prev.filter(m => m.id !== id))
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-white">Jamoa</h1>
+          <p className="text-slate-400 text-sm mt-1">
+            Do'koningizga kirish huquqini boshqaruvchi a'zolar ro'yxati
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          {!isPro && (
+            <span className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400">
+              <Lock className="w-3 h-3" />
+              Pro+ tarifida mavjud
+            </span>
+          )}
+          <button
+            onClick={() => setShowModal(true)}
+            disabled={!isPro}
+            title={!isPro ? 'Pro+ tarifiga o\'ting' : ''}
+            className="flex items-center gap-2 bg-violet-600 hover:bg-violet-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors"
+          >
+            <UserPlus className="w-4 h-4" />
+            A'zo qo'shish
+          </button>
+        </div>
+      </div>
+
+      {/* Role legend */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {[
+          { icon: <Crown  className="w-4 h-4 text-violet-400" />, label: 'Egasi',  desc: 'To\'liq nazorat, tarif boshqaruvi, a\'zo qo\'shish' },
+          { icon: <Shield className="w-4 h-4 text-emerald-400" />, label: 'Admin', desc: 'Mahsulot, buyurtma, sozlamalar — to\'liq kirish' },
+          { icon: <Eye    className="w-4 h-4 text-slate-400" />,  label: 'Viewer', desc: 'Tahlil va hisobotlarni faqat ko\'rish' },
+        ].map(r => (
+          <div key={r.label} className="bg-[#13131f] border border-white/[0.06] rounded-xl px-4 py-3 flex items-start gap-3">
+            <div className="mt-0.5">{r.icon}</div>
+            <div>
+              <p className="text-white text-xs font-semibold">{r.label}</p>
+              <p className="text-slate-500 text-[11px] mt-0.5">{r.desc}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Members list */}
+      <div className="bg-[#13131f] border border-white/[0.06] rounded-2xl overflow-hidden">
+        <div className="px-5 py-4 border-b border-white/[0.05] flex items-center gap-2">
+          <Users className="w-4 h-4 text-violet-400" />
+          <h2 className="text-white font-semibold text-sm">Jamoa a&apos;zolari</h2>
+          <span className="ml-auto text-xs text-slate-500">{members.length} ta a'zo</span>
+        </div>
+
+        <div className="divide-y divide-white/[0.03]">
+          {members.map(member => (
+            <div key={member.id} className="px-5 py-4 flex items-center gap-4 hover:bg-white/[0.02] transition-colors">
+              {/* Avatar */}
+              <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${member.color} flex items-center justify-center flex-shrink-0`}>
+                <span className="text-white font-bold text-sm">{member.initials}</span>
+              </div>
+
+              {/* Info */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="text-white font-semibold text-sm">{member.name}</p>
+                  <RoleBadge role={member.role} />
+                </div>
+                <p className="text-slate-500 text-xs mt-0.5">{member.email}</p>
+              </div>
+
+              {/* Status */}
+              <div className="hidden sm:block">
+                <StatusDot status={member.status} />
+              </div>
+
+              {/* Joined */}
+              <div className="hidden md:block text-slate-600 text-xs">
+                {new Date(member.joinedAt).toLocaleDateString('uz-UZ')}
+              </div>
+
+              {/* Remove button */}
+              {member.role !== 'owner' && (
+                <button
+                  onClick={() => handleRemove(member.id)}
+                  disabled={!isPro}
+                  title={!isPro ? 'Pro+ tarifida mavjud' : 'Olib tashlash'}
+                  className="text-slate-600 hover:text-red-400 disabled:opacity-30 disabled:cursor-not-allowed transition-colors p-1.5 rounded-lg hover:bg-red-500/[0.08]"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Pro upsell */}
+      {!isPro && (
+        <div className="bg-[#13131f] border border-dashed border-violet-500/30 rounded-2xl p-6 flex items-start gap-4">
+          <div className="w-10 h-10 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center flex-shrink-0">
+            <Lock className="w-5 h-5 text-violet-400" />
+          </div>
+          <div>
+            <p className="text-white font-semibold text-sm mb-1">Jamoa boshqaruvi — Pro+ tarifida</p>
+            <p className="text-slate-400 text-xs leading-relaxed">
+              Pro+ tarifiga o'ting va do'koningizga 5 tagacha a'zo qo'shing.
+              Har bir a'zo uchun alohida rol va huquqlar belgilang.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {showModal && <InviteModal onClose={() => setShowModal(false)} />}
+    </div>
+  )
+}
