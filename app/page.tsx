@@ -2,424 +2,560 @@
 
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
-import { motion, useInView, useScroll, useTransform } from 'framer-motion'
+import { motion, useInView, AnimatePresence } from 'framer-motion'
 import {
   TrendingUp, BarChart2, Calculator, FileText,
   Zap, ArrowRight, RefreshCw, AlertTriangle, DollarSign,
-  ShieldCheck, Sparkles, ChevronRight, Activity, Sun, Moon,
+  ShieldCheck, Sparkles, Sun, Moon, Globe, X, Menu,
+  Star, Quote, CheckCircle, Activity,
 } from 'lucide-react'
 import { useTheme, useLang } from './providers'
 import { translations } from '@/lib/i18n'
 import type { Lang } from '@/lib/i18n'
 
-/* ── animated counter ───────────────────────────────────────────────────── */
+/* ── Typewriter ─────────────────────────────────────────────────────────── */
+function useTypewriter(words: string[], speed = 80, pause = 2200) {
+  const [idx, setIdx]           = useState(0)
+  const [text, setText]         = useState('')
+  const [deleting, setDeleting] = useState(false)
+  useEffect(() => {
+    const word = words[idx % words.length]
+    let timer: ReturnType<typeof setTimeout>
+    if (deleting) {
+      if (text.length === 0) { setDeleting(false); setIdx(i => i + 1) }
+      else timer = setTimeout(() => setText(s => s.slice(0, -1)), speed / 2)
+    } else {
+      if (text.length === word.length) timer = setTimeout(() => setDeleting(true), pause)
+      else timer = setTimeout(() => setText(word.slice(0, text.length + 1)), speed)
+    }
+    return () => clearTimeout(timer)
+  }, [text, deleting, idx, words, speed, pause])
+  return text
+}
+
+/* ── Animated counter ───────────────────────────────────────────────────── */
 function useCounter(target: number, duration = 2000, start = false) {
   const [count, setCount] = useState(0)
   useEffect(() => {
     if (!start) return
-    let startTime: number
+    let startTs: number
     const step = (ts: number) => {
-      if (!startTime) startTime = ts
-      const progress = Math.min((ts - startTime) / duration, 1)
-      setCount(Math.floor((1 - Math.pow(1 - progress, 3)) * target))
-      if (progress < 1) requestAnimationFrame(step)
+      if (!startTs) startTs = ts
+      const p = Math.min((ts - startTs) / duration, 1)
+      setCount(Math.floor((1 - Math.pow(1 - p, 3)) * target))
+      if (p < 1) requestAnimationFrame(step)
     }
     requestAnimationFrame(step)
   }, [start, target, duration])
   return count
 }
 
-function StatCard({ value, suffix, labelKey, delay, labelIdx }: {
-  value: number; suffix: string; labelKey: Lang; labelIdx: number; delay: number
-}) {
-  const ref = useRef(null)
+function StatNum({ value, suffix }: { value: number; suffix: string }) {
+  const ref    = useRef(null)
   const inView = useInView(ref, { once: true })
-  const count = useCounter(value, 2000, inView)
-  const t = translations[labelKey]
+  const count  = useCounter(value, 2000, inView)
   return (
-    <motion.div ref={ref} initial={{ opacity: 0, y: 30 }} animate={inView ? { opacity: 1, y: 0 } : {}}
-      transition={{ delay, duration: 0.6, ease: 'easeOut' }} className="text-center">
-      <div className="text-4xl sm:text-5xl font-black mb-2 tabular-nums" style={{ color: 'var(--text-base)' }}>
-        {count.toLocaleString()}<span className="shimmer-text">{suffix}</span>
-      </div>
-      <div className="text-sm font-medium" style={{ color: 'var(--text-muted)' }}>{t.stats[labelIdx].label}</div>
-    </motion.div>
+    <span ref={ref} className="tabular-nums">
+      {count.toLocaleString()}<span style={{ color: 'var(--c1)' }}>{suffix}</span>
+    </span>
   )
 }
 
-function NeonGrid() {
-  const { theme } = useTheme()
-  return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none select-none">
-      <svg className="absolute inset-0 w-full h-full animate-grid-fade" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse">
-            <path d="M 60 0 L 0 0 0 60" fill="none"
-              stroke={theme === 'dark' ? 'rgba(139,92,246,0.15)' : 'rgba(139,92,246,0.1)'}
-              strokeWidth="0.5" />
-          </pattern>
-        </defs>
-        <rect width="100%" height="100%" fill="url(#grid)" />
-      </svg>
-    </div>
-  )
+/* ── Particles canvas ───────────────────────────────────────────────────── */
+function Particles() {
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+    const resize = () => { canvas.width = canvas.offsetWidth; canvas.height = canvas.offsetHeight }
+    resize()
+    window.addEventListener('resize', resize)
+    const dots = Array.from({ length: 55 }, () => ({
+      x: Math.random() * canvas.width, y: Math.random() * canvas.height,
+      vx: (Math.random() - 0.5) * 0.3, vy: (Math.random() - 0.5) * 0.3,
+      r: Math.random() * 1.5 + 0.5,
+      color: Math.random() > 0.5 ? '#00d4ff' : '#ff2d9b',
+    }))
+    let raf: number
+    const draw = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+      dots.forEach(p => {
+        p.x += p.vx; p.y += p.vy
+        if (p.x < 0 || p.x > canvas.width)  p.vx *= -1
+        if (p.y < 0 || p.y > canvas.height) p.vy *= -1
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2)
+        ctx.fillStyle = p.color + '99'; ctx.fill()
+      })
+      dots.forEach((a, i) => dots.slice(i + 1).forEach(b => {
+        const d = Math.hypot(a.x - b.x, a.y - b.y)
+        if (d < 100) {
+          ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y)
+          ctx.strokeStyle = `rgba(0,212,255,${0.08 * (1 - d / 100)})`
+          ctx.lineWidth = 0.5; ctx.stroke()
+        }
+      }))
+      raf = requestAnimationFrame(draw)
+    }
+    draw()
+    return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', resize) }
+  }, [])
+  return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" style={{ opacity: 0.55, pointerEvents: 'none' }} />
 }
 
-function FloatingOrbs() {
-  return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      <div className="animate-float absolute top-1/4 left-1/4 w-72 h-72 rounded-full bg-violet-600/10 blur-3xl animate-pulse-glow" />
-      <div className="animate-float2 absolute top-1/3 right-1/4 w-96 h-96 rounded-full bg-indigo-600/8 blur-3xl animate-pulse-glow2" />
-      <div className="animate-float3 absolute bottom-1/4 left-1/3 w-64 h-64 rounded-full bg-cyan-500/6 blur-3xl" />
-    </div>
-  )
-}
-
-/* ── theme + lang controls ──────────────────────────────────────────────── */
+/* ── Theme toggle ───────────────────────────────────────────────────────── */
 function ThemeToggle() {
   const { theme, toggle } = useTheme()
   return (
-    <button onClick={toggle}
+    <button onClick={toggle} title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
       className="w-9 h-9 rounded-xl flex items-center justify-center transition-all border"
-      style={{ background: 'var(--bg-input)', borderColor: 'var(--border2)', color: 'var(--text-dim)' }}
-      title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
-    >
-      {theme === 'dark'
-        ? <Sun className="w-4 h-4 text-amber-400" />
-        : <Moon className="w-4 h-4 text-violet-500" />}
+      style={{ background: 'var(--bg-input)', borderColor: 'var(--border2)', color: 'var(--text-dim)' }}>
+      {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-blue-500" />}
     </button>
   )
 }
 
+/* ── Lang toggle ────────────────────────────────────────────────────────── */
 function LangToggle() {
   const { lang, setLang } = useLang()
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   const langs: Lang[] = ['uz', 'ru', 'en']
-
   useEffect(() => {
-    function handler(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
-    }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
+    const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false) }
+    document.addEventListener('mousedown', h)
+    return () => document.removeEventListener('mousedown', h)
   }, [])
-
   return (
     <div ref={ref} className="relative">
       <button onClick={() => setOpen(o => !o)}
-        className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold uppercase transition-all border"
-        style={{ background: 'var(--bg-input)', borderColor: 'var(--border2)', color: '#a78bfa' }}>
-        {lang}
-        <svg className={`w-3 h-3 transition-transform ${open ? 'rotate-180' : ''}`} viewBox="0 0 12 12" fill="none">
-          <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-        </svg>
+        className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all border"
+        style={{ background: 'var(--bg-input)', borderColor: 'var(--border2)', color: 'var(--text-dim)' }}>
+        <Globe className="w-3.5 h-3.5" /> {lang.toUpperCase()}
       </button>
-      {open && (
-        <div className="absolute right-0 top-full mt-1.5 rounded-xl overflow-hidden border shadow-xl z-50"
-          style={{ background: 'var(--bg-card)', borderColor: 'var(--border2)', minWidth: '4rem' }}>
-          {langs.map(l => (
-            <button key={l} onClick={() => { setLang(l); setOpen(false) }}
-              className="w-full px-3 py-2 text-xs font-bold uppercase text-left transition-all"
-              style={{
-                background: lang === l ? 'rgba(139,92,246,0.15)' : 'transparent',
-                color: lang === l ? '#a78bfa' : 'var(--text-muted)',
-              }}>
-              {l}
-            </button>
-          ))}
-        </div>
-      )}
+      <AnimatePresence>
+        {open && (
+          <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.15 }}
+            className="absolute right-0 top-full mt-1.5 rounded-xl overflow-hidden border shadow-xl z-50"
+            style={{ background: 'var(--bg-card)', borderColor: 'var(--border2)', minWidth: '4.5rem' }}>
+            {langs.map(l => (
+              <button key={l} onClick={() => { setLang(l); setOpen(false) }}
+                className="w-full px-3 py-2 text-xs font-semibold uppercase text-left transition-all"
+                style={{ background: lang === l ? 'rgba(0,212,255,0.1)' : 'transparent', color: lang === l ? 'var(--c1)' : 'var(--text-muted)' }}>
+                {l}
+              </button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
 
-/* ── dashboard preview ──────────────────────────────────────────────────── */
-function DashboardPreview({ p }: { p: typeof import('@/lib/i18n').translations.en.preview }) {
+/* ── Dashboard mockup ───────────────────────────────────────────────────── */
+function DashboardMockup({ p }: { p: typeof translations.en.preview }) {
   const { theme } = useTheme()
-  const card  = theme === 'dark' ? '#0e0e1a' : '#ffffff'
-  const card2 = theme === 'dark' ? '#13131f' : '#f8f8ff'
-  const border = theme === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(139,92,246,0.15)'
-  const textMuted = theme === 'dark' ? '#64748b' : '#9ca3af'
-  const textSub = theme === 'dark' ? '#475569' : '#d1d5db'
+  const isDark = theme === 'dark'
+  const bg     = isDark ? '#071425' : '#ffffff'
+  const bg2    = isDark ? '#0b1c34' : '#f0f8ff'
+  const border = isDark ? 'rgba(0,210,255,0.12)' : 'rgba(0,120,200,0.15)'
+  const muted  = isDark ? '#4a7a9b' : '#6b8eab'
+  const c1     = isDark ? '#00d4ff' : '#0284c7'
+  const c2     = isDark ? '#ff2d9b' : '#db2777'
 
   const kpis = [
-    { l: p.revenue,  v: '124.5M', c: 'text-violet-400',  g: 'from-violet-500/20 to-transparent' },
-    { l: p.profit,   v: '38.2M',  c: 'text-emerald-400', g: 'from-emerald-500/20 to-transparent' },
-    { l: p.orders,   v: '1,842',  c: 'text-blue-400',    g: 'from-blue-500/20 to-transparent' },
-    { l: p.stock,    v: '3,410',  c: 'text-amber-400',   g: 'from-amber-500/20 to-transparent' },
+    { l: p.revenue, v: '124.5M', color: c1 },
+    { l: p.profit,  v: '38.2M',  color: '#22c55e' },
+    { l: p.orders,  v: '1,842',  color: c2 },
+    { l: p.stock,   v: '3,410',  color: '#f59e0b' },
   ]
 
   return (
-    <div className="relative">
-      <div className="absolute -inset-4 rounded-3xl border animate-spin-slow" style={{ borderColor: 'rgba(139,92,246,0.1)' }} />
-      <div className="relative rounded-2xl overflow-hidden shadow-2xl shadow-violet-900/20 border" style={{ background: card, borderColor: border }}>
-        {/* Browser bar */}
-        <div className="flex items-center gap-2 px-4 py-3 border-b" style={{ background: card2, borderColor: border }}>
-          <div className="flex gap-1.5">
-            <div className="w-3 h-3 rounded-full bg-red-500/70" />
-            <div className="w-3 h-3 rounded-full bg-amber-500/70" />
-            <div className="w-3 h-3 rounded-full bg-emerald-500/70" />
-          </div>
-          <div className="flex-1 rounded-md h-5 mx-4 flex items-center px-2 border" style={{ background: 'var(--bg-input)', borderColor: border }}>
-            <span className="text-[9px]" style={{ color: textMuted }}>daromadchi.uz/dashboard</span>
-          </div>
-          <Activity className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
+    <div className="rounded-2xl overflow-hidden shadow-2xl border" style={{ background: bg, borderColor: border }}>
+      {/* Browser chrome */}
+      <div className="flex items-center gap-2 px-4 py-3 border-b" style={{ background: bg2, borderColor: border }}>
+        <div className="flex gap-1.5">
+          <div className="w-2.5 h-2.5 rounded-full bg-red-400/70" />
+          <div className="w-2.5 h-2.5 rounded-full bg-amber-400/70" />
+          <div className="w-2.5 h-2.5 rounded-full bg-green-400/70" />
         </div>
+        <div className="flex-1 h-5 mx-3 rounded-md border flex items-center px-2"
+          style={{ background: isDark ? '#0f2040' : '#dceefa', borderColor: border }}>
+          <span className="text-[9px]" style={{ color: muted }}>daromadchi.uz/dashboard</span>
+        </div>
+        <Activity className="w-3 h-3 text-green-400 animate-pulse" />
+      </div>
 
-        <div className="p-3 space-y-2.5">
-          <div className="grid grid-cols-4 gap-2">
-            {kpis.map(k => (
-              <div key={k.l} className="rounded-xl p-2.5 relative overflow-hidden border" style={{ background: card2, borderColor: border }}>
-                <div className={`absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r ${k.g}`} />
-                <p className="text-[9px] mb-1" style={{ color: textMuted }}>{k.l}</p>
-                <p className={`font-bold text-sm ${k.c}`}>{k.v}</p>
-                <p className="text-emerald-400 text-[9px] mt-0.5">↑ 12.4%</p>
-              </div>
-            ))}
-          </div>
-
-          <div className="grid grid-cols-3 gap-2">
-            <div className="col-span-2 rounded-xl p-3 border" style={{ background: card2, borderColor: border }}>
-              <p className="text-[9px] mb-2" style={{ color: textMuted }}>{p.dailyRevenue}</p>
-              <div className="flex items-end gap-1 h-16">
-                {[30,55,40,70,45,85,65,90,75,60,80,95,70,85].map((h, i) => (
-                  <div key={i} className="flex-1 rounded-t-sm"
-                    style={{ height: `${h}%`, background: 'linear-gradient(to top,rgba(139,92,246,0.8),rgba(99,102,241,0.4))', boxShadow: h > 70 ? '0 0 8px rgba(139,92,246,0.5)' : undefined }} />
-                ))}
-              </div>
+      <div className="p-3 space-y-2.5">
+        <div className="grid grid-cols-4 gap-2">
+          {kpis.map(k => (
+            <div key={k.l} className="rounded-lg p-2.5 border" style={{ background: bg2, borderColor: border }}>
+              <p className="text-[8px] mb-1" style={{ color: muted }}>{k.l}</p>
+              <p className="font-bold text-[11px]" style={{ color: k.color }}>{k.v}</p>
+              <p className="text-green-400 text-[8px] mt-0.5">↑ 12.4%</p>
             </div>
-            <div className="rounded-xl p-3 border flex flex-col gap-2" style={{ background: card2, borderColor: border }}>
-              <p className="text-[9px] self-start" style={{ color: textMuted }}>{p.categories}</p>
-              <div className="relative w-14 h-14 mx-auto">
-                <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
-                  <circle cx="18" cy="18" r="14" fill="none" stroke={textSub} strokeWidth="4" />
-                  <circle cx="18" cy="18" r="14" fill="none" stroke="rgba(139,92,246,0.8)" strokeWidth="4" strokeDasharray="37 51" strokeLinecap="round" />
-                  <circle cx="18" cy="18" r="14" fill="none" stroke="rgba(34,211,238,0.7)" strokeWidth="4" strokeDasharray="24 64" strokeDashoffset="-37" strokeLinecap="round" />
-                  <circle cx="18" cy="18" r="14" fill="none" stroke="rgba(251,191,36,0.7)" strokeWidth="4" strokeDasharray="15 73" strokeDashoffset="-61" strokeLinecap="round" />
-                </svg>
-              </div>
+          ))}
+        </div>
+        <div className="grid grid-cols-3 gap-2">
+          <div className="col-span-2 rounded-lg p-2.5 border" style={{ background: bg2, borderColor: border }}>
+            <p className="text-[8px] mb-2" style={{ color: muted }}>{p.dailyRevenue}</p>
+            <div className="flex items-end gap-0.5 h-14">
+              {[30,50,38,70,45,82,60,88,72,55,78,92,65,80].map((h, i) => (
+                <div key={i} className="flex-1 rounded-t-sm"
+                  style={{ height: `${h}%`, background: isDark ? 'linear-gradient(to top,#00d4ff88,#00d4ff22)' : 'linear-gradient(to top,#0284c788,#0284c722)' }} />
+              ))}
+            </div>
+          </div>
+          <div className="rounded-lg p-2.5 border flex flex-col" style={{ background: bg2, borderColor: border }}>
+            <p className="text-[8px] mb-1" style={{ color: muted }}>{p.categories}</p>
+            <div className="relative w-12 h-12 mx-auto mt-1">
+              <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
+                <circle cx="18" cy="18" r="14" fill="none" stroke={isDark ? 'rgba(0,210,255,0.15)' : 'rgba(0,120,200,0.15)'} strokeWidth="4" />
+                <circle cx="18" cy="18" r="14" fill="none" stroke={c1} strokeWidth="4" strokeDasharray="38 50" strokeLinecap="round" />
+                <circle cx="18" cy="18" r="14" fill="none" stroke={c2} strokeWidth="4" strokeDasharray="22 66" strokeDashoffset="-38" strokeLinecap="round" />
+                <circle cx="18" cy="18" r="14" fill="none" stroke="#f59e0b" strokeWidth="4" strokeDasharray="14 74" strokeDashoffset="-60" strokeLinecap="round" />
+              </svg>
             </div>
           </div>
         </div>
       </div>
-
-      <motion.div animate={{ y: [0,-8,0] }} transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-        className="absolute -left-6 top-1/3 rounded-xl px-3 py-2 shadow-lg shadow-emerald-500/10 hidden sm:block border"
-        style={{ background: card2, borderColor: 'rgba(52,211,153,0.3)' }}>
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="text-emerald-400 text-xs font-medium">{p.revenueUp}</span>
-        </div>
-      </motion.div>
-
-      <motion.div animate={{ y: [0,8,0] }} transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
-        className="absolute -right-6 bottom-1/3 rounded-xl px-3 py-2 shadow-lg shadow-violet-500/10 hidden sm:block border"
-        style={{ background: card2, borderColor: 'rgba(139,92,246,0.3)' }}>
-        <div className="flex items-center gap-2">
-          <Sparkles className="w-3 h-3 text-violet-400" />
-          <span className="text-violet-400 text-xs font-medium">{p.aiReady}</span>
-        </div>
-      </motion.div>
     </div>
   )
 }
 
-/* ── feature icon config ────────────────────────────────────────────────── */
-const featureIcons = [
-  { Icon: BarChart2,    glow: 'hover:shadow-violet-500/20', border: 'hover:border-violet-500/40', iconBg: 'bg-violet-500/10 border-violet-500/20', iconColor: 'text-violet-400',  grad: 'from-violet-500 to-purple-600'  },
-  { Icon: Calculator,  glow: 'hover:shadow-cyan-500/20',    border: 'hover:border-cyan-500/40',    iconBg: 'bg-cyan-500/10 border-cyan-500/20',     iconColor: 'text-cyan-400',    grad: 'from-cyan-500 to-blue-600'      },
-  { Icon: AlertTriangle,glow:'hover:shadow-amber-500/20',  border: 'hover:border-amber-500/40',   iconBg: 'bg-amber-500/10 border-amber-500/20',   iconColor: 'text-amber-400',   grad: 'from-amber-500 to-orange-600'   },
-  { Icon: FileText,    glow: 'hover:shadow-emerald-500/20', border: 'hover:border-emerald-500/40', iconBg: 'bg-emerald-500/10 border-emerald-500/20',iconColor: 'text-emerald-400', grad: 'from-emerald-500 to-green-600'  },
-  { Icon: RefreshCw,   glow: 'hover:shadow-pink-500/20',    border: 'hover:border-pink-500/40',    iconBg: 'bg-pink-500/10 border-pink-500/20',     iconColor: 'text-pink-400',    grad: 'from-pink-500 to-rose-600'      },
-  { Icon: DollarSign,  glow: 'hover:shadow-indigo-500/20',  border: 'hover:border-indigo-500/40',  iconBg: 'bg-indigo-500/10 border-indigo-500/20', iconColor: 'text-indigo-400',  grad: 'from-indigo-500 to-violet-600'  },
+/* ── Testimonial data ───────────────────────────────────────────────────── */
+const TESTIMONIALS = [
+  { name: 'Jasur Toshmatov', role: 'Uzum Market sotuvchisi',  text: "Daromadchi bizning savdoni 40% oshirishimizga yordam berdi. DRR tahlili juda qulay.", stars: 5 },
+  { name: 'Malika Rahimova', role: 'Yandex Market',           text: "Qoldiq ogohlantirishlari tufayli endi birortam mahsulot tamom bo'lmaydi. Ajoyib!", stars: 5 },
+  { name: 'Otabek Xasanov',  role: 'Wildberries sotuvchisi',  text: "P&L hisobot birinchi oyda 3 soatni tejadi. Barcha raqamlar bir joyda.", stars: 5 },
 ]
 
-const stepColors = [
-  { color: 'text-violet-400', bg: 'bg-violet-500/10 border-violet-500/30' },
-  { color: 'text-cyan-400',   bg: 'bg-cyan-500/10 border-cyan-500/30'   },
-  { color: 'text-pink-400',   bg: 'bg-pink-500/10 border-pink-500/30'   },
-  { color: 'text-emerald-400',bg: 'bg-emerald-500/10 border-emerald-500/30' },
-]
-
-/* ── main page ──────────────────────────────────────────────────────────── */
+/* ══════════════════════════════════════════════════════════════════════════
+   MAIN PAGE
+══════════════════════════════════════════════════════════════════════════ */
 export default function LandingPage() {
   const { theme } = useTheme()
   const { lang }  = useLang()
   const t = translations[lang]
+  const isDark = theme === 'dark'
 
-  const { scrollY } = useScroll()
-  const heroY = useTransform(scrollY, [0,500], [0,-80])
-  const heroOpacity = useTransform(scrollY, [0,400], [1,0])
+  const [showBar,  setShowBar]  = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
 
-  const featuresRef = useRef(null)
-  const stepsRef    = useRef(null)
-  const statsRef    = useRef(null)
-  const featuresInView = useInView(featuresRef, { once: true, margin: '-100px' })
-  const stepsInView    = useInView(stepsRef,    { once: true, margin: '-100px' })
-  const statsInView    = useInView(statsRef,    { once: true, margin: '-100px' })
+  useEffect(() => {
+    const onScroll = () => setShowBar(window.scrollY > 400)
+    window.addEventListener('scroll', onScroll)
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
 
-  const card  = theme === 'dark' ? '#0e0e1a' : '#ffffff'
-  const card2 = theme === 'dark' ? '#0e0e1a' : '#f8f8ff'
+  const typeWords =
+    lang === 'uz' ? ["do'koningizni", 'savdoingizni', 'daromadingizni'] :
+    lang === 'ru' ? ['ваш магазин', 'ваши продажи', 'вашу прибыль'] :
+                    ['your store', 'your sales', 'your revenue']
+  const typeText = useTypewriter(typeWords, 75, 2200)
+
+  const featuresRef    = useRef(null)
+  const howRef         = useRef(null)
+  const pricingRef     = useRef(null)
+  const testimonialRef = useRef(null)
+  const ctaRef         = useRef(null)
+  const featuresInView    = useInView(featuresRef,    { once: true, margin: '-80px' })
+  const howInView         = useInView(howRef,         { once: true, margin: '-80px' })
+  const pricingInView     = useInView(pricingRef,     { once: true, margin: '-80px' })
+  const testimonialInView = useInView(testimonialRef, { once: true, margin: '-80px' })
+  const ctaInView         = useInView(ctaRef,         { once: true, margin: '-80px' })
+
+  const card  = isDark ? 'var(--bg-card)'  : '#ffffff'
+  const card2 = isDark ? 'var(--bg-card2)' : '#f0f8ff'
+  const helpLabel = lang === 'uz' ? 'Yordam' : lang === 'ru' ? 'Помощь' : 'Help'
 
   return (
     <div className="min-h-screen overflow-x-hidden" style={{ background: 'var(--bg-base)', color: 'var(--text-base)' }}>
 
-      {/* ── Nav ───────────────────────────────────────────────────────── */}
-      <motion.header initial={{ y:-80, opacity:0 }} animate={{ y:0, opacity:1 }}
-        transition={{ duration:0.6, ease:'easeOut' }} className="fixed top-0 left-0 right-0 z-50">
-        <div className="mx-4 mt-4">
-          <div className="max-w-6xl mx-auto backdrop-blur-xl rounded-2xl px-5 h-14 flex items-center justify-between shadow-xl border"
-            style={{ background: 'var(--nav-bg)', borderColor: 'var(--border)' }}>
-            <Link
-              href="/"
-              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-              className="flex items-center gap-2.5 group"
-            >
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-violet-500/30 neon-border">
-                <TrendingUp className="w-4 h-4 text-white" />
-              </div>
-              <span className="font-bold tracking-tight group-hover:text-violet-400 transition-colors" style={{ color: 'var(--text-base)' }}>Daromadchi</span>
-            </Link>
-
-            <nav className="hidden md:flex items-center gap-6 text-sm" style={{ color: 'var(--text-muted)' }}>
-              <a href="#features" className="hover:text-violet-500 transition-colors">{t.nav.features}</a>
-              <a href="#how"      className="hover:text-violet-500 transition-colors">{t.nav.how}</a>
-              <a href="#stats"    className="hover:text-violet-500 transition-colors">{t.nav.stats}</a>
-            </nav>
-
-            <div className="flex items-center gap-2">
-              <LangToggle />
-              <ThemeToggle />
-              <Link href="/login" className="hidden sm:block text-sm px-3 py-1.5 transition-colors" style={{ color: 'var(--text-muted)' }}>
-                {t.nav.login}
-              </Link>
-              <Link href="/login"
-                className="flex items-center gap-1.5 text-sm font-semibold bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white px-4 py-2 rounded-xl transition-all shadow-lg shadow-violet-500/25">
-                {t.nav.start} <ChevronRight className="w-3.5 h-3.5" />
-              </Link>
+      {/* ────────────────────────── NAVBAR ───────────────────────────── */}
+      <motion.header initial={{ y: -80, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.55 }}
+        className="fixed top-0 left-0 right-0 z-50 border-b backdrop-blur-xl"
+        style={{ background: 'var(--nav-bg)', borderColor: 'var(--border)' }}>
+        <div className="max-w-7xl mx-auto px-5 h-16 flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-2.5 shrink-0">
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center"
+              style={{ background: 'linear-gradient(135deg, var(--c1), var(--c2))' }}>
+              <TrendingUp className="w-4 h-4 text-white" />
             </div>
+            <span className="font-bold text-base" style={{ fontFamily: 'var(--font-display)', color: 'var(--text-base)' }}>
+              Daromadchi
+            </span>
+          </Link>
+
+          <nav className="hidden md:flex items-center gap-8 text-sm font-medium">
+            {[
+              { href: '#features', label: t.nav.features },
+              { href: '#how',      label: t.nav.how },
+              { href: '/help',     label: helpLabel },
+            ].map(item => (
+              <a key={item.label} href={item.href}
+                className="transition-opacity opacity-70 hover:opacity-100"
+                style={{ color: 'var(--text-base)' }}>
+                {item.label}
+              </a>
+            ))}
+          </nav>
+
+          <div className="flex items-center gap-2">
+            <LangToggle />
+            <ThemeToggle />
+            <Link href="/login" className="hidden sm:block text-sm font-medium px-3 py-2 opacity-70 hover:opacity-100 transition-opacity"
+              style={{ color: 'var(--text-base)' }}>
+              {t.nav.login}
+            </Link>
+            <Link href="/login"
+              className="text-sm font-bold px-4 py-2 rounded-xl text-white flex items-center gap-1 whitespace-nowrap"
+              style={{ background: 'linear-gradient(135deg, var(--c1), var(--c2))' }}>
+              {t.nav.start} ↗
+            </Link>
+            <button className="md:hidden p-2 rounded-xl" style={{ color: 'var(--text-muted)' }}
+              onClick={() => setMenuOpen(v => !v)}>
+              {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
           </div>
         </div>
+
+        <AnimatePresence>
+          {menuOpen && (
+            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="md:hidden border-t overflow-hidden"
+              style={{ borderColor: 'var(--border)', background: 'var(--nav-bg)' }}>
+              <div className="px-5 py-4 flex flex-col gap-2">
+                {[t.nav.features, t.nav.how, helpLabel].map(label => (
+                  <a key={label} href="#" onClick={() => setMenuOpen(false)}
+                    className="text-sm font-medium py-2 opacity-80" style={{ color: 'var(--text-base)' }}>
+                    {label}
+                  </a>
+                ))}
+                <Link href="/login" onClick={() => setMenuOpen(false)}
+                  className="mt-2 text-sm font-bold py-3 text-center rounded-xl text-white"
+                  style={{ background: 'linear-gradient(135deg, var(--c1), var(--c2))' }}>
+                  {t.nav.start}
+                </Link>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.header>
 
-      {/* ── Hero ──────────────────────────────────────────────────────── */}
-      <section className="relative min-h-screen flex items-center pt-24 pb-16 px-4 sm:px-6 overflow-hidden">
-        <NeonGrid />
-        <FloatingOrbs />
-        <div className="absolute top-1/3 left-0 right-0 h-px bg-gradient-to-r from-transparent via-violet-500/30 to-transparent animate-beam" />
+      {/* ────────────────────────── HERO ─────────────────────────────── */}
+      <section className="relative min-h-screen flex items-center pt-20 pb-16 px-5 overflow-hidden">
+        {isDark && <Particles />}
+        <div className="absolute top-10 -left-32 w-[500px] h-[500px] rounded-full blur-3xl opacity-15 pointer-events-none"
+          style={{ background: 'var(--c1)' }} />
+        <div className="absolute bottom-0 right-0 w-96 h-96 rounded-full blur-3xl opacity-10 pointer-events-none"
+          style={{ background: 'var(--c2)' }} />
 
-        <motion.div style={{ y: heroY, opacity: heroOpacity }} className="relative z-10 max-w-7xl mx-auto w-full">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+        <div className="relative z-10 max-w-7xl mx-auto w-full">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div>
-              <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.3, duration:0.6 }}
-                className="inline-flex items-center gap-2 bg-violet-500/10 border border-violet-500/20 rounded-full px-4 py-1.5 text-xs text-violet-400 font-medium mb-6">
-                <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse" />
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+                className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-semibold mb-6 border"
+                style={{ background: isDark ? 'rgba(0,212,255,0.08)' : 'rgba(2,132,199,0.08)', borderColor: 'var(--c1)', color: 'var(--c1)' }}>
+                <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: 'var(--c1)' }} />
                 {t.badge}
               </motion.div>
 
-              <motion.h1 initial={{ opacity:0, y:30 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.4, duration:0.7 }}
-                className="text-4xl sm:text-5xl xl:text-6xl font-black leading-[1.1] tracking-tight mb-6"
-                style={{ color: 'var(--text-base)' }}>
-                {t.hero.title1}{' '}
-                <span className="shimmer-text animate-neon-flicker">{t.hero.title2}</span>{' '}
-                {t.hero.title3}
+              <motion.h1 initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.32, duration: 0.7 }}
+                className="text-5xl sm:text-6xl xl:text-7xl font-black leading-[1.05] tracking-tight mb-6"
+                style={{ fontFamily: 'var(--font-display)', color: 'var(--text-base)' }}>
+                {lang === 'uz' ? (
+                  <>To&apos;liq nazorat<br />
+                    <span className="grad-text">{typeText}</span>
+                    <span className="animate-blink" style={{ color: 'var(--c1)' }}>|</span>&nbsp;ustida
+                  </>
+                ) : lang === 'ru' ? (
+                  <>Полный контроль над<br />
+                    <span className="grad-text">{typeText}</span>
+                    <span className="animate-blink" style={{ color: 'var(--c1)' }}>|</span>
+                  </>
+                ) : (
+                  <>Take full control of<br />
+                    <span className="grad-text">{typeText}</span>
+                    <span className="animate-blink" style={{ color: 'var(--c1)' }}>|</span>
+                  </>
+                )}
               </motion.h1>
 
-              <motion.p initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.5, duration:0.6 }}
+              <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.48 }}
                 className="text-lg max-w-lg mb-8 leading-relaxed" style={{ color: 'var(--text-muted)' }}>
                 {t.hero.subtitle}
               </motion.p>
 
-              <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.6, duration:0.6 }}
-                className="flex flex-col sm:flex-row gap-3">
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.58 }}
+                className="flex flex-col sm:flex-row gap-3 mb-7">
                 <Link href="/login"
-                  className="group flex items-center justify-center gap-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-bold px-7 py-3.5 rounded-2xl transition-all shadow-xl shadow-violet-500/30 text-sm">
+                  className="group flex items-center justify-center gap-2 text-white font-bold px-8 py-4 rounded-2xl transition-all text-sm"
+                  style={{ background: 'linear-gradient(135deg, var(--c1), var(--c2))', boxShadow: '0 8px 32px rgba(0,212,255,0.28)' }}>
                   {t.hero.cta}
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </Link>
                 <Link href="/dashboard"
-                  className="flex items-center justify-center gap-2 font-medium px-7 py-3.5 rounded-2xl transition-all text-sm border"
-                  style={{ background: 'var(--bg-input)', borderColor: 'var(--border2)', color: 'var(--text-dim)' }}>
+                  className="flex items-center justify-center gap-2 font-medium px-8 py-4 rounded-2xl transition-all text-sm border"
+                  style={{ borderColor: 'var(--border2)', color: 'var(--text-dim)' }}>
                   {t.hero.demo}
                 </Link>
               </motion.div>
 
-              <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }} transition={{ delay:0.9, duration:0.6 }}
-                className="flex items-center gap-6 mt-8">
-                {([
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.75 }}
+                className="flex items-center gap-6 text-xs" style={{ color: 'var(--text-muted)' }}>
+                {[
                   { Icon: ShieldCheck, label: t.hero.secure },
                   { Icon: Zap,         label: t.hero.fast },
                   { Icon: RefreshCw,   label: t.hero.sync },
-                ] as const).map(({ Icon, label }) => (
-                  <div key={label} className="flex items-center gap-1.5 text-xs" style={{ color: 'var(--text-muted)' }}>
-                    <Icon className="w-3.5 h-3.5 text-violet-400" />
-                    {label}
-                  </div>
+                ].map(({ Icon, label }) => (
+                  <span key={label} className="flex items-center gap-1.5">
+                    <Icon className="w-3.5 h-3.5" style={{ color: 'var(--c1)' }} />{label}
+                  </span>
                 ))}
               </motion.div>
             </div>
 
-            <motion.div initial={{ opacity:0, x:60, scale:0.95 }} animate={{ opacity:1, x:0, scale:1 }}
-              transition={{ delay:0.5, duration:0.9, ease:'easeOut' }}>
-              <DashboardPreview p={t.preview} />
+            <motion.div initial={{ opacity: 0, x: 60 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.38, duration: 0.85 }}
+              className="relative">
+              <div className="absolute -inset-6 rounded-3xl blur-2xl opacity-20 pointer-events-none"
+                style={{ background: 'linear-gradient(135deg, var(--c1), var(--c2))' }} />
+              <DashboardMockup p={t.preview} />
+
+              <motion.div animate={{ y: [0, -10, 0] }} transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+                className="absolute -left-10 top-1/4 rounded-2xl px-4 py-3 border shadow-xl hidden lg:block"
+                style={{ background: card2, borderColor: isDark ? 'rgba(0,212,255,0.3)' : 'rgba(2,132,199,0.3)' }}>
+                <p className="text-[11px] font-semibold mb-0.5" style={{ color: 'var(--c1)' }}>Jami buyurtmalar</p>
+                <p className="text-xl font-black" style={{ color: 'var(--text-base)' }}>
+                  428 <span className="text-green-400 text-sm font-bold">↗</span>
+                </p>
+              </motion.div>
+
+              <motion.div animate={{ y: [0, 10, 0] }} transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
+                className="absolute -right-10 bottom-1/4 rounded-2xl px-4 py-3 border shadow-xl hidden lg:block"
+                style={{ background: card2, borderColor: isDark ? 'rgba(255,45,155,0.3)' : 'rgba(219,39,119,0.3)' }}>
+                <p className="text-[11px] font-semibold mb-0.5" style={{ color: 'var(--c2)' }}>Daromad o&apos;sishi</p>
+                <p className="text-2xl font-black" style={{ color: 'var(--text-base)' }}>+43%</p>
+              </motion.div>
             </motion.div>
           </div>
-        </motion.div>
-        <div className="absolute bottom-0 left-0 right-0 h-32 pointer-events-none"
-          style={{ background: `linear-gradient(to top, var(--bg-base), transparent)` }} />
-      </section>
-
-      {/* ── Stats ─────────────────────────────────────────────────────── */}
-      <section id="stats" ref={statsRef} className="py-20 px-4 sm:px-6 relative">
-        <div className="max-w-4xl mx-auto">
-          <motion.div initial={{ opacity:0, y:40 }} animate={statsInView ? { opacity:1, y:0 } : {}}
-            transition={{ duration:0.6 }}
-            className="relative rounded-3xl p-10 overflow-hidden border"
-            style={{ background: card, borderColor: 'var(--border)' }}>
-            <div className="absolute top-0 left-1/4 right-1/4 h-px bg-gradient-to-r from-transparent via-violet-500 to-transparent" />
-            <FloatingOrbs />
-            <div className="relative grid grid-cols-2 sm:grid-cols-4 gap-8">
-              <StatCard value={6}   suffix="+"     labelKey={lang} labelIdx={0} delay={0}   />
-              <StatCard value={30}  suffix="s"     labelKey={lang} labelIdx={1} delay={0.1} />
-              <StatCard value={100} suffix="%"     labelKey={lang} labelIdx={2} delay={0.2} />
-              <StatCard value={0}   suffix=" so'm" labelKey={lang} labelIdx={3} delay={0.3} />
-            </div>
-          </motion.div>
         </div>
       </section>
 
-      {/* ── Features ──────────────────────────────────────────────────── */}
-      <section id="features" ref={featuresRef} className="py-24 px-4 sm:px-6 relative">
-        <NeonGrid />
-        <div className="max-w-6xl mx-auto relative z-10">
-          <motion.div initial={{ opacity:0, y:30 }} animate={featuresInView ? { opacity:1, y:0 } : {}}
-            transition={{ duration:0.6 }} className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 bg-violet-500/10 border border-violet-500/20 rounded-full px-4 py-1.5 text-xs text-violet-400 font-medium mb-4">
-              <Sparkles className="w-3.5 h-3.5" /> {t.featuresBadge}
-            </div>
-            <h2 className="text-3xl sm:text-4xl font-black mb-4" style={{ color: 'var(--text-base)' }}>
-              {t.featuresTitle.split(' ').slice(0,-2).join(' ')}{' '}
-              <span className="shimmer-text">{t.featuresTitle.split(' ').slice(-2).join(' ')}</span>
+      {/* ─────────────────────────── TICKER ──────────────────────────── */}
+      <div className="py-3.5 overflow-hidden border-y"
+        style={{ borderColor: 'var(--border)', background: isDark ? 'rgba(0,212,255,0.03)' : 'rgba(2,132,199,0.03)' }}>
+        <div className="animate-ticker flex gap-14 whitespace-nowrap text-sm font-semibold">
+          {Array(4).fill(null).flatMap((_, gi) => [
+            <span key={`${gi}a`} style={{ color: 'var(--c1)' }}>● Uzum Market API</span>,
+            <span key={`${gi}b`} style={{ color: 'var(--text-muted)' }}>&nbsp;·&nbsp;DRR tahlili&nbsp;·&nbsp;</span>,
+            <span key={`${gi}c`} style={{ color: 'var(--c2)' }}>● Wildberries</span>,
+            <span key={`${gi}d`} style={{ color: 'var(--text-muted)' }}>&nbsp;·&nbsp;P&amp;L hisobot&nbsp;·&nbsp;</span>,
+            <span key={`${gi}e`} style={{ color: 'var(--c1)' }}>● Yandex Market</span>,
+            <span key={`${gi}f`} style={{ color: 'var(--text-muted)' }}>&nbsp;·&nbsp;Birlik iqtisodiyoti&nbsp;·&nbsp;</span>,
+          ])}
+        </div>
+      </div>
+
+      {/* ─────────────────────────── NEON BAND ───────────────────────── */}
+      <section className="py-20 px-5 relative overflow-hidden"
+        style={{ background: isDark
+          ? 'linear-gradient(135deg, #020c1a 0%, #041530 50%, #020c1a 100%)'
+          : 'linear-gradient(135deg, #0369a1 0%, #0284c7 60%, #0369a1 100%)' }}>
+        {isDark && (
+          <>
+            <div className="absolute top-0 left-1/3 w-px h-full opacity-[0.07]" style={{ background: 'var(--c1)' }} />
+            <div className="absolute top-0 right-1/3 w-px h-full opacity-[0.07]" style={{ background: 'var(--c2)' }} />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] rounded-full blur-3xl opacity-10"
+              style={{ background: 'var(--c1)' }} />
+          </>
+        )}
+        <div className="max-w-5xl mx-auto relative z-10">
+          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.7 }}>
+            <p className="text-xs font-bold tracking-widest uppercase mb-5 opacity-70 text-white">
+              ● Sizning muvaffaqiyatingiz shu yerdan boshlanadi
+            </p>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white leading-tight mb-14"
+              style={{ fontFamily: 'var(--font-display)' }}>
+              Daromadchi marketplace savdosining murakkabligini soddalashtirish uchun yaratilgan.{' '}
+              <span className="opacity-60">
+                Uzum, Yandex Market va Wildberries sotuvchilari uchun — bitta platformada barcha raqamlar.
+              </span>
             </h2>
-            <p className="max-w-xl mx-auto" style={{ color: 'var(--text-muted)' }}>{t.featuresSubtitle}</p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {[
+              { icon: '📊', title: 'Analitika markazi', desc: "Real vaqtda savdo ko'rsatkichlari va reklama tahlili." },
+              { icon: '🔔', title: 'Zaxira nazorati',   desc: 'Avtomatik ogohlantirishlar va buyurtma tavsiyalari.' },
+              { icon: '💰', title: 'Foyda hisobi',      desc: 'Har bir mahsulot uchun aniq foyda va zarar hisobi.' },
+            ].map((c, i) => (
+              <motion.div key={c.title} initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }} transition={{ delay: i * 0.1, duration: 0.6 }}
+                className="rounded-2xl p-6 border backdrop-blur-sm"
+                style={{ background: isDark ? 'rgba(0,212,255,0.06)' : 'rgba(255,255,255,0.12)', borderColor: isDark ? 'rgba(0,212,255,0.15)' : 'rgba(255,255,255,0.3)' }}>
+                <div className="text-3xl mb-3">{c.icon}</div>
+                <h3 className="font-bold text-white mb-2">{c.title}</h3>
+                <p className="text-sm text-white/65">{c.desc}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ─────────────────────────── STATS ───────────────────────────── */}
+      <section className="py-16 px-5" style={{ background: card2 }}>
+        <div className="max-w-4xl mx-auto grid grid-cols-2 sm:grid-cols-4 gap-8 text-center">
+          {[
+            { value: 6,   suffix: '+',     label: t.stats[0].label },
+            { value: 30,  suffix: 's',     label: t.stats[1].label },
+            { value: 100, suffix: '%',     label: t.stats[2].label },
+            { value: 0,   suffix: " so'm", label: t.stats[3].label },
+          ].map(s => (
+            <div key={s.label}>
+              <div className="text-3xl sm:text-4xl font-black mb-1" style={{ color: 'var(--text-base)' }}>
+                <StatNum value={s.value} suffix={s.suffix} />
+              </div>
+              <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{s.label}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ─────────────────────────── FEATURES ────────────────────────── */}
+      <section id="features" ref={featuresRef} className="py-24 px-5">
+        <div className="max-w-6xl mx-auto">
+          <motion.div initial={{ opacity: 0, y: 30 }} animate={featuresInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.6 }} className="text-center mb-14">
+            <span className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-semibold mb-4 border"
+              style={{ background: isDark ? 'rgba(0,212,255,0.08)' : 'rgba(2,132,199,0.08)', borderColor: 'var(--border2)', color: 'var(--c1)' }}>
+              <Sparkles className="w-3.5 h-3.5" /> {t.featuresBadge}
+            </span>
+            <h2 className="text-3xl sm:text-4xl font-black mb-3" style={{ fontFamily: 'var(--font-display)', color: 'var(--text-base)' }}>
+              {t.featuresTitle}
+            </h2>
+            <p className="max-w-xl mx-auto text-sm" style={{ color: 'var(--text-muted)' }}>{t.featuresSubtitle}</p>
           </motion.div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {t.features.map((f, i) => {
-              const { Icon, glow, border, iconBg, iconColor, grad } = featureIcons[i]
+              const icons = [BarChart2, Calculator, AlertTriangle, FileText, RefreshCw, DollarSign]
+              const Icon = icons[i]
               return (
                 <motion.div key={f.title}
-                  initial={{ opacity:0, y:40 }} animate={featuresInView ? { opacity:1, y:0 } : {}}
-                  transition={{ delay: i*0.1, duration:0.6 }}
-                  className={`neon-card group border rounded-2xl p-6 cursor-default hover:shadow-xl ${glow} ${border}`}
-                  style={{ background: card2, borderColor: 'var(--border)' }}>
-                  <div className={`w-11 h-11 rounded-xl ${iconBg} border flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
-                    <Icon className={`w-5 h-5 ${iconColor}`} />
+                  initial={{ opacity: 0, y: 40 }} animate={featuresInView ? { opacity: 1, y: 0 } : {}}
+                  transition={{ delay: i * 0.08, duration: 0.5 }}
+                  className="neon-card rounded-2xl p-6 border cursor-default group"
+                  style={{ background: card, borderColor: 'var(--border)' }}>
+                  <div className="w-11 h-11 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"
+                    style={{ background: isDark ? 'rgba(0,212,255,0.1)' : 'rgba(2,132,199,0.1)', border: '1px solid var(--border2)' }}>
+                    <Icon className="w-5 h-5" style={{ color: 'var(--c1)' }} />
                   </div>
-                  <h3 className="font-bold mb-2" style={{ color: 'var(--text-base)' }}>{f.title}</h3>
+                  <h3 className="font-bold mb-2 text-sm" style={{ color: 'var(--text-base)' }}>{f.title}</h3>
                   <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>{f.desc}</p>
-                  <div className={`mt-4 h-px bg-gradient-to-r ${grad} opacity-0 group-hover:opacity-100 transition-opacity rounded-full`} />
                 </motion.div>
               )
             })}
@@ -427,98 +563,231 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── How it works ──────────────────────────────────────────────── */}
-      <section id="how" ref={stepsRef} className="py-24 px-4 sm:px-6 relative overflow-hidden"
-        style={{ background: theme === 'dark' ? '#0a0a14' : '#f0f0fa' }}>
-        <FloatingOrbs />
+      {/* ─────────────────────────── HOW IT WORKS ────────────────────── */}
+      <section id="how" ref={howRef} className="py-24 px-5 relative overflow-hidden"
+        style={{ background: isDark ? '#041020' : 'var(--bg-card2)' }}>
         <div className="max-w-5xl mx-auto relative z-10">
-          <motion.div initial={{ opacity:0, y:30 }} animate={stepsInView ? { opacity:1, y:0 } : {}}
-            transition={{ duration:0.6 }} className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 bg-cyan-500/10 border border-cyan-500/20 rounded-full px-4 py-1.5 text-xs text-cyan-400 font-medium mb-4">
+          <motion.div initial={{ opacity: 0, y: 30 }} animate={howInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.6 }} className="text-center mb-14">
+            <span className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-semibold mb-4 border"
+              style={{ background: isDark ? 'rgba(255,45,155,0.08)' : 'rgba(219,39,119,0.08)', borderColor: 'var(--c2)', color: 'var(--c2)' }}>
               <Zap className="w-3.5 h-3.5" /> {t.howBadge}
-            </div>
-            <h2 className="text-3xl sm:text-4xl font-black mb-4" style={{ color: 'var(--text-base)' }}>
-              {t.howTitle1} <span className="shimmer-text">{t.howTitle2}</span>
+            </span>
+            <h2 className="text-3xl sm:text-4xl font-black mb-3" style={{ fontFamily: 'var(--font-display)', color: 'var(--text-base)' }}>
+              {t.howTitle1} <span className="grad-text">{t.howTitle2}</span>
             </h2>
           </motion.div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {t.steps.map((s, i) => (
               <motion.div key={s.title}
-                initial={{ opacity:0, y:40 }} animate={stepsInView ? { opacity:1, y:0 } : {}}
-                transition={{ delay: i*0.15, duration:0.6 }}
-                className="relative group">
-                {i < t.steps.length - 1 && (
-                  <div className="hidden lg:block absolute top-5 left-full w-full h-px bg-gradient-to-r from-violet-500/30 via-violet-500/10 to-transparent z-0" />
-                )}
-                <div className="relative z-10 border rounded-2xl p-6 transition-all group-hover:shadow-lg"
-                  style={{ background: card2, borderColor: 'var(--border)' }}>
-                  <div className={`w-11 h-11 rounded-xl ${stepColors[i].bg} border flex items-center justify-center text-base font-black ${stepColors[i].color} mb-5 group-hover:scale-110 transition-transform`}>
-                    0{i+1}
-                  </div>
-                  <h3 className="font-bold mb-2 text-sm" style={{ color: 'var(--text-base)' }}>{s.title}</h3>
-                  <p className="text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>{s.desc}</p>
+                initial={{ opacity: 0, y: 40 }} animate={howInView ? { opacity: 1, y: 0 } : {}}
+                transition={{ delay: i * 0.12, duration: 0.5 }}
+                className="rounded-2xl p-6 border group hover:scale-[1.03] transition-transform"
+                style={{ background: card, borderColor: 'var(--border)' }}>
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center text-base font-black mb-5"
+                  style={{ background: 'linear-gradient(135deg, var(--c1), var(--c2))', color: '#fff', fontFamily: 'var(--font-display)' }}>
+                  0{i + 1}
                 </div>
+                <h3 className="font-bold mb-2 text-sm" style={{ color: 'var(--text-base)' }}>{s.title}</h3>
+                <p className="text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>{s.desc}</p>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── CTA ───────────────────────────────────────────────────────── */}
-      <section className="py-24 px-4 sm:px-6 relative overflow-hidden">
-        <NeonGrid />
-        <FloatingOrbs />
-        <div className="max-w-3xl mx-auto relative z-10">
-          <motion.div initial={{ opacity:0, scale:0.95 }} whileInView={{ opacity:1, scale:1 }}
-            viewport={{ once:true }} transition={{ duration:0.7 }}
-            className="relative rounded-3xl p-10 sm:p-14 text-center overflow-hidden border"
-            style={{ background: card }}>
-            <div className="absolute inset-0 rounded-3xl border border-violet-500/20" />
-            <div className="absolute top-0 left-1/4 right-1/4 h-px bg-gradient-to-r from-transparent via-violet-500 to-transparent" />
-            <div className="absolute bottom-0 left-1/4 right-1/4 h-px bg-gradient-to-r from-transparent via-indigo-500 to-transparent" />
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-32 bg-violet-600/10 blur-3xl" />
-            <div className="relative">
-              <div className="inline-flex items-center gap-2 bg-violet-500/10 border border-violet-500/20 rounded-full px-4 py-1.5 text-xs text-violet-400 font-medium mb-6">
-                <Sparkles className="w-3.5 h-3.5" /> {t.ctaBadge}
-              </div>
-              <h2 className="text-3xl sm:text-4xl font-black mb-4" style={{ color: 'var(--text-base)' }}>
-                {t.ctaTitle1} <span className="shimmer-text">{t.ctaTitle2}</span>
-              </h2>
-              <p className="mb-8 max-w-lg mx-auto leading-relaxed" style={{ color: 'var(--text-muted)' }}>
-                {t.ctaSubtitle}
-              </p>
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <Link href="/login"
-                  className="group flex items-center justify-center gap-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-bold px-8 py-4 rounded-2xl transition-all shadow-xl shadow-violet-500/30 text-sm">
-                  {t.hero.cta} <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+      {/* ─────────────────────────── PRICING ─────────────────────────── */}
+      <section ref={pricingRef} className="py-24 px-5" style={{ background: isDark ? 'var(--bg-base)' : '#f0f8ff' }}>
+        <div className="max-w-4xl mx-auto">
+          <motion.div initial={{ opacity: 0, y: 30 }} animate={pricingInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.6 }} className="text-center mb-12">
+            <h2 className="text-3xl sm:text-4xl font-black mb-3" style={{ fontFamily: 'var(--font-display)', color: 'var(--text-base)' }}>
+              {lang === 'uz' ? 'Narxlar' : lang === 'ru' ? 'Цены' : 'Pricing'}
+            </h2>
+            <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+              {lang === 'uz' ? '30 kun bepul. Karta shart emas.' : lang === 'ru' ? '30 дней бесплатно. Карта не нужна.' : '30 days free. No card required.'}
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {([
+              {
+                name: lang === 'uz' ? 'Bepul' : lang === 'ru' ? 'Бесплатно' : 'Free',
+                price: '0', highlight: false,
+                features: lang === 'uz' ? ["1 do'kon", '6 tahlil sahifasi', "Demo ma'lumotlar"]
+                  : lang === 'ru' ? ['1 магазин', '6 страниц аналитики', 'Демо-данные']
+                  : ['1 store', '6 analytics pages', 'Demo data'],
+              },
+              {
+                name: 'Pro', price: '300 000', highlight: true,
+                features: lang === 'uz' ? ["3 do'kon", 'Barcha tahlillar', 'Avto-sinxronizatsiya', 'P&L hisobot', 'Email ogohlantirishlar']
+                  : lang === 'ru' ? ['3 магазина', 'Все аналитики', 'Авто-синхронизация', 'Отчёт P&L', 'Email-уведомления']
+                  : ['3 stores', 'All analytics', 'Auto-sync', 'P&L report', 'Email alerts'],
+              },
+              {
+                name: 'Pro+', price: '600 000', highlight: false,
+                features: lang === 'uz' ? ["Cheksiz do'konlar", 'Barcha Pro imkoniyatlar', 'API kirish', 'Ustuvor yordam']
+                  : lang === 'ru' ? ['Неограниченно магазинов', 'Все Pro возможности', 'API доступ', 'Приоритетная поддержка']
+                  : ['Unlimited stores', 'All Pro features', 'API access', 'Priority support'],
+              },
+            ] as const).map((plan, i) => (
+              <motion.div key={plan.name}
+                initial={{ opacity: 0, y: 30 }} animate={pricingInView ? { opacity: 1, y: 0 } : {}}
+                transition={{ delay: i * 0.1, duration: 0.5 }}
+                className="rounded-2xl p-6 border relative"
+                style={{ background: plan.highlight ? (isDark ? 'rgba(0,212,255,0.07)' : 'rgba(2,132,199,0.06)') : card, borderColor: plan.highlight ? 'var(--c1)' : 'var(--border)' }}>
+                {plan.highlight && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[10px] font-bold text-white"
+                    style={{ background: 'linear-gradient(135deg, var(--c1), var(--c2))' }}>
+                    {lang === 'uz' ? 'OMMABOP' : lang === 'ru' ? 'ПОПУЛЯРНЫЙ' : 'POPULAR'}
+                  </div>
+                )}
+                <h3 className="font-bold mb-1" style={{ color: 'var(--text-base)' }}>{plan.name}</h3>
+                <div className="flex items-baseline gap-1 mb-4">
+                  <span className="text-2xl font-black" style={{ color: 'var(--text-base)' }}>{plan.price}</span>
+                  <span className="text-xs" style={{ color: 'var(--text-muted)' }}>so&apos;m/oy</span>
+                </div>
+                <ul className="space-y-2 mb-5">
+                  {plan.features.map(f => (
+                    <li key={f} className="flex items-start gap-2 text-xs" style={{ color: 'var(--text-muted)' }}>
+                      <CheckCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" style={{ color: 'var(--c1)' }} />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+                <Link href="/login" className="block w-full text-center py-2.5 rounded-xl text-sm font-semibold transition-all"
+                  style={plan.highlight
+                    ? { background: 'linear-gradient(135deg, var(--c1), var(--c2))', color: '#fff' }
+                    : { background: 'var(--bg-input)', color: 'var(--text-dim)', border: '1px solid var(--border2)' }}>
+                  {lang === 'uz' ? 'Boshlash' : lang === 'ru' ? 'Начать' : 'Get started'}
                 </Link>
-                <Link href="/dashboard"
-                  className="flex items-center justify-center gap-2 font-medium px-8 py-4 rounded-2xl transition-all text-sm border"
-                  style={{ borderColor: 'var(--border2)', color: 'var(--text-dim)' }}>
-                  {t.hero.demo}
-                </Link>
-              </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ─────────────────────────── TESTIMONIALS ────────────────────── */}
+      <section ref={testimonialRef} className="py-24 px-5 relative overflow-hidden"
+        style={{ background: isDark ? '#041020' : 'var(--bg-card2)' }}>
+        <div className="max-w-6xl mx-auto">
+          <motion.div initial={{ opacity: 0, y: 30 }} animate={testimonialInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.6 }} className="text-center mb-12">
+            <h2 className="text-3xl sm:text-4xl font-black" style={{ fontFamily: 'var(--font-display)', color: 'var(--text-base)' }}>
+              {lang === 'uz' ? 'Sotuvchilar nima deydi' : lang === 'ru' ? 'Что говорят продавцы' : 'What sellers say'}
+            </h2>
+          </motion.div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+            {TESTIMONIALS.map((review, i) => (
+              <motion.div key={review.name}
+                initial={{ opacity: 0, y: 40 + i * 8 }} animate={testimonialInView ? { opacity: 1, y: 0 } : {}}
+                transition={{ delay: i * 0.15, duration: 0.6 }}
+                className="rounded-2xl p-6 border"
+                style={{ background: isDark ? 'rgba(0,212,255,0.04)' : '#fff', borderColor: 'var(--border)' }}>
+                <Quote className="w-8 h-8 mb-4 opacity-30" style={{ color: 'var(--c1)' }} />
+                <p className="text-sm leading-relaxed mb-4" style={{ color: 'var(--text-muted)' }}>
+                  &ldquo;{review.text}&rdquo;
+                </p>
+                <div className="flex items-center gap-0.5 mb-3">
+                  {Array(review.stars).fill(0).map((_, j) => (
+                    <Star key={j} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                  ))}
+                </div>
+                <p className="font-bold text-sm" style={{ color: 'var(--text-base)' }}>{review.name}</p>
+                <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{review.role}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ─────────────────────────── CTA ─────────────────────────────── */}
+      <section ref={ctaRef} className="py-24 px-5 relative overflow-hidden">
+        {isDark && <Particles />}
+        <div className="absolute inset-0 pointer-events-none"
+          style={{ background: isDark
+            ? 'radial-gradient(ellipse 70% 60% at 50% 50%, rgba(0,212,255,0.06) 0%, transparent 70%)'
+            : 'radial-gradient(ellipse 70% 60% at 50% 50%, rgba(2,132,199,0.06) 0%, transparent 70%)' }} />
+        <div className="relative z-10 max-w-3xl mx-auto text-center">
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={ctaInView ? { opacity: 1, scale: 1 } : {}} transition={{ duration: 0.7 }}>
+            <span className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-semibold mb-6 border"
+              style={{ background: isDark ? 'rgba(0,212,255,0.08)' : 'rgba(2,132,199,0.08)', borderColor: 'var(--border2)', color: 'var(--c1)' }}>
+              <Sparkles className="w-3.5 h-3.5" /> {t.ctaBadge}
+            </span>
+            <h2 className="text-3xl sm:text-5xl font-black mb-4" style={{ fontFamily: 'var(--font-display)', color: 'var(--text-base)' }}>
+              {t.ctaTitle1} <span className="grad-text">{t.ctaTitle2}</span>
+            </h2>
+            <p className="text-lg mb-8 max-w-lg mx-auto" style={{ color: 'var(--text-muted)' }}>{t.ctaSubtitle}</p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Link href="/login"
+                className="group flex items-center justify-center gap-2 text-white font-bold px-10 py-4 rounded-2xl transition-all text-sm"
+                style={{ background: 'linear-gradient(135deg, var(--c1), var(--c2))', boxShadow: '0 8px 32px rgba(0,212,255,0.28)' }}>
+                {t.hero.cta}
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </Link>
+              <Link href="/dashboard"
+                className="flex items-center justify-center gap-2 font-medium px-10 py-4 rounded-2xl transition-all text-sm border"
+                style={{ borderColor: 'var(--border2)', color: 'var(--text-dim)' }}>
+                {t.hero.demo}
+              </Link>
             </div>
           </motion.div>
         </div>
       </section>
 
-      {/* ── Footer ────────────────────────────────────────────────────── */}
-      <footer className="border-t py-8 px-4 sm:px-6" style={{ borderColor: 'var(--border)' }}>
-        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center shadow shadow-violet-500/30">
-              <TrendingUp className="w-3.5 h-3.5 text-white" />
+      {/* ─────────────────────────── FOOTER ──────────────────────────── */}
+      <footer className="border-t py-10 px-5" style={{ borderColor: 'var(--border)' }}>
+        <div className="max-w-6xl mx-auto">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-6 mb-8">
+            <Link href="/" className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl flex items-center justify-center"
+                style={{ background: 'linear-gradient(135deg, var(--c1), var(--c2))' }}>
+                <TrendingUp className="w-4 h-4 text-white" />
+              </div>
+              <span className="font-bold" style={{ fontFamily: 'var(--font-display)', color: 'var(--text-base)' }}>Daromadchi</span>
+            </Link>
+            <div className="flex items-center gap-6 text-sm" style={{ color: 'var(--text-muted)' }}>
+              <a href="#features" className="opacity-70 hover:opacity-100 transition-opacity">{t.nav.features}</a>
+              <a href="#how"      className="opacity-70 hover:opacity-100 transition-opacity">{t.nav.how}</a>
+              <Link href="/help"  className="opacity-70 hover:opacity-100 transition-opacity">{helpLabel}</Link>
+              <Link href="/login" className="opacity-70 hover:opacity-100 transition-opacity">{t.nav.login}</Link>
             </div>
-            <span className="font-bold text-sm" style={{ color: 'var(--text-base)' }}>Daromadchi</span>
           </div>
-          <p className="text-xs" style={{ color: 'var(--text-muted)' }}>© 2026 Daromadchi. {t.footer}</p>
-          <Link href="/dashboard" className="text-xs text-violet-400 hover:text-violet-300 transition-colors flex items-center gap-1">
-            Dashboard <ArrowRight className="w-3 h-3" />
-          </Link>
+          <div className="border-t pt-6 flex flex-col sm:flex-row items-center justify-between gap-3" style={{ borderColor: 'var(--border)' }}>
+            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>© 2026 Daromadchi. {t.footer}</p>
+            <Link href="/dashboard" className="text-xs flex items-center gap-1 opacity-70 hover:opacity-100 transition-opacity"
+              style={{ color: 'var(--c1)' }}>
+              Dashboard <ArrowRight className="w-3 h-3" />
+            </Link>
+          </div>
         </div>
       </footer>
+
+      {/* ─────────────────────────── STICKY BAR ──────────────────────── */}
+      <AnimatePresence>
+        {showBar && (
+          <motion.div initial={{ y: 100, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 100, opacity: 0 }}
+            transition={{ duration: 0.35, ease: 'easeOut' }}
+            className="fixed bottom-0 left-0 right-0 z-50 border-t"
+            style={{ background: isDark ? 'rgba(2,12,26,0.97)' : 'rgba(240,248,255,0.97)', borderColor: 'var(--border)', backdropFilter: 'blur(20px)' }}>
+            <div className="max-w-5xl mx-auto px-5 py-3 flex flex-col sm:flex-row items-center justify-between gap-3">
+              <p className="text-sm font-semibold" style={{ color: 'var(--text-base)' }}>
+                🚀{' '}
+                {lang === 'uz' ? "30 kun bepul sinab ko'ring. Karta shart emas."
+                 : lang === 'ru' ? '30 дней бесплатно. Карта не нужна.'
+                 : '30 days free. No credit card required.'}
+              </p>
+              <Link href="/login"
+                className="shrink-0 text-sm font-bold px-6 py-2.5 rounded-xl text-white"
+                style={{ background: 'linear-gradient(135deg, var(--c1), var(--c2))' }}>
+                {t.hero.cta} ↗
+              </Link>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
