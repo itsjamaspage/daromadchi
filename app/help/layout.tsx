@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import HelpHeaderControls from './HelpHeaderControls'
 
 export const metadata: Metadata = {
   title: 'Yordam Markazi — Daromadchi',
@@ -9,7 +10,6 @@ export const metadata: Metadata = {
 export default function HelpLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-[var(--bg-base)]">
-      {/* Top bar */}
       <header className="border-b border-[var(--border)] bg-[var(--nav-bg)] backdrop-blur-md sticky top-0 z-40">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 group">
@@ -18,13 +18,14 @@ export default function HelpLayout({ children }: { children: React.ReactNode }) 
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
               </svg>
             </div>
-            <span className="font-bold text-[var(--text-base)] text-sm group-hover:text-[var(--c1)] transition-colors" style={{ fontFamily: 'var(--font-display)' }}>
+            <span className="font-semibold text-[var(--text-base)] text-sm group-hover:text-[var(--c1)] transition-colors">
               Daromadchi
             </span>
           </Link>
 
-          <nav className="flex items-center gap-4 text-sm">
-            <Link href="/help" className="text-[var(--text-muted)] hover:text-[var(--c1)] transition-colors">
+          <div className="flex items-center gap-3">
+            <HelpHeaderControls />
+            <Link href="/help" className="text-xs text-[var(--text-muted)] hover:text-[var(--c1)] transition-colors hidden sm:block">
               Yordam markazi
             </Link>
             <Link
@@ -33,7 +34,7 @@ export default function HelpLayout({ children }: { children: React.ReactNode }) 
             >
               Dashboard
             </Link>
-          </nav>
+          </div>
         </div>
       </header>
 
@@ -41,3 +42,4 @@ export default function HelpLayout({ children }: { children: React.ReactNode }) 
     </div>
   )
 }
+
