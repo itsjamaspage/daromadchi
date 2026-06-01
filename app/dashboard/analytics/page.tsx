@@ -310,14 +310,86 @@ export default async function AnalyticsPage({ searchParams }: Props) {
 
       {/* ── Tab: Tashqi trafik ────────────────────────────────────────────── */}
       {activeTab === 'tashqi' && (
-        <div className="bg-[#13131f] border border-white/[0.06] rounded-2xl p-10 text-center">
-          <BarChart2 className="w-10 h-10 text-violet-400/30 mx-auto mb-4" />
-          <h2 className="text-white font-bold text-lg mb-2">Tashqi trafik tahlili tez orada</h2>
-          <p className="text-slate-400 text-sm max-w-md mx-auto leading-relaxed">
-            <strong className="text-slate-200">Tashqi trafik</strong> — bu Instagram, Telegram, YouTube va boshqa
-            kanallardan sizning do&apos;koningizga kelayotgan xaridorlar. Bu funksiya yordamida
-            qaysi kanal eng ko&apos;p konversiya berganini ko&apos;rishingiz mumkin bo&apos;ladi.
-          </p>
+        <div className="space-y-6">
+          {/* KPI Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[
+              { label: 'Umumiy tashqi trafik', value: '2,847', sub: 'tashrif' },
+              { label: "O'rtacha konversiya",  value: '2.8%',   sub: 'barcha manbalar' },
+              { label: 'Tashqi buyurtmalar',   value: '79',     sub: 'buyurtma' },
+              { label: 'Tashqi tushum',        value: "18,240,000 so'm", sub: 'ushbu davr' },
+            ].map(c => (
+              <div key={c.label} className="bg-[#13131f] border border-white/[0.06] rounded-2xl p-4">
+                <p className="text-slate-500 text-[10px] uppercase tracking-wide mb-2">{c.label}</p>
+                <p className="text-white font-bold text-xl">{c.value}</p>
+                <p className="text-slate-500 text-xs mt-0.5">{c.sub}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Source Breakdown Table */}
+          <div className="bg-[#13131f] border border-white/[0.06] rounded-2xl overflow-hidden">
+            <div className="px-5 py-4 border-b border-white/[0.05] flex items-center gap-2">
+              <BarChart2 className="w-4 h-4 text-violet-400" />
+              <h2 className="text-white font-semibold text-sm">Manba bo&apos;yicha taqsimot</h2>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-slate-500 text-xs border-b border-white/[0.05] bg-white/[0.01]">
+                    <th className="text-left font-medium px-5 py-3">Manba</th>
+                    <th className="text-right font-medium px-4 py-3">Tashriflar</th>
+                    <th className="text-right font-medium px-4 py-3">Konversiya</th>
+                    <th className="text-right font-medium px-4 py-3">Buyurtmalar</th>
+                    <th className="text-right font-medium px-4 py-3">Tushum</th>
+                    <th className="text-right font-medium px-4 py-3">Trend</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/[0.03]">
+                  {[
+                    { source: 'Instagram', visits: 1282, conv: 2.3, orders: 29, revenue: 6_670_000, trend: '+12%', up: true  },
+                    { source: 'Telegram',  visits: 854,  conv: 4.1, orders: 35, revenue: 8_050_000, trend: '+28%', up: true  },
+                    { source: 'YouTube',   visits: 427,  conv: 1.8, orders: 7,  revenue: 1_610_000, trend: '-5%',  up: false },
+                    { source: 'Blog',      visits: 284,  conv: 3.5, orders: 9,  revenue: 2_070_000, trend: '+7%',  up: true  },
+                  ].map(row => (
+                    <tr key={row.source} className={`transition-colors ${row.up ? 'hover:bg-emerald-500/[0.03]' : 'bg-red-500/[0.02] hover:bg-red-500/[0.04]'}`}>
+                      <td className="px-5 py-3.5">
+                        <div className="flex items-center gap-2">
+                          <div className={`w-1.5 h-6 rounded-full ${row.up ? 'bg-emerald-500/40' : 'bg-red-500/40'}`} />
+                          <span className="text-white font-medium text-xs">{row.source}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3.5 text-right text-slate-300 text-xs">{fmt(row.visits)}</td>
+                      <td className="px-4 py-3.5 text-right">
+                        <span className={`text-xs font-semibold ${row.conv >= 3 ? 'text-emerald-400' : row.conv >= 2 ? 'text-amber-400' : 'text-red-400'}`}>{row.conv}%</span>
+                      </td>
+                      <td className="px-4 py-3.5 text-right text-slate-300 text-xs">{row.orders}</td>
+                      <td className="px-4 py-3.5 text-right text-slate-300 text-xs">{fmtS(row.revenue)}</td>
+                      <td className="px-4 py-3.5 text-right">
+                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${row.up ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
+                          {row.up ? '↑' : '↓'}{row.trend}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* UTM Instructions */}
+          <div className="flex items-start gap-3 bg-blue-500/[0.07] border border-blue-500/20 rounded-2xl px-5 py-4 text-sm">
+            <ArrowRight className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-blue-300 font-semibold mb-1">UTM parametrlar qo&apos;shish</p>
+              <p className="text-slate-400 text-xs leading-relaxed mb-2">
+                Tashqi trafikni kuzatish uchun havolalaringizga UTM parametrlar qo&apos;shing:
+              </p>
+              <code className="block bg-[#0d0d1a] border border-white/[0.06] rounded-xl px-4 py-2 text-[11px] text-cyan-400 font-mono leading-relaxed">
+                https://uzum.uz/product/ID?utm_source=instagram&amp;utm_campaign=nomi
+              </code>
+            </div>
+          </div>
         </div>
       )}
 

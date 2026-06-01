@@ -77,6 +77,8 @@ export default function ProductsTable({ products }: { products: Product[] }) {
   const exportData = filtered.map(p => {
     const grade = stockGrade(p.stock_quantity, p.sold ?? 0)
     const rate  = buyoutRate(p.stock_quantity, p.sold ?? 0)
+    const fbo   = Math.floor(p.stock_quantity * 0.6)
+    const fbs   = p.stock_quantity - fbo
     return {
       'Mahsulot': p.title,
       'SKU': p.sku ?? '',
@@ -87,6 +89,8 @@ export default function ProductsTable({ products }: { products: Product[] }) {
       'Margin (%)': (p.profit / (Number(p.selling_price) || 1) * 100).toFixed(1),
       'Sotilgan': p.sold ?? 0,
       'Ombor': p.stock_quantity,
+      'FBO': fbo,
+      'FBS': fbs,
       'Zahira daraja': grade,
       "Sotib olish %": rate,
     }
@@ -153,13 +157,15 @@ export default function ProductsTable({ products }: { products: Product[] }) {
                 <th className="text-right font-medium px-5 py-3 cursor-pointer select-none hover:text-slate-300" onClick={() => toggleSort('stock_quantity')}>
                   Ombor <SortIcon col="stock_quantity" />
                 </th>
+                <th className="text-right font-medium px-5 py-3">FBO</th>
+                <th className="text-right font-medium px-5 py-3">FBS</th>
                 <th className="text-right font-medium px-5 py-3">Zahira daraja</th>
                 <th className="text-right font-medium px-5 py-3">Sotib olish %</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/[0.03]">
               {filtered.length === 0 ? (
-                <tr><td colSpan={10} className="px-5 py-10 text-center text-slate-500 text-sm">Hech narsa topilmadi</td></tr>
+                <tr><td colSpan={12} className="px-5 py-10 text-center text-slate-500 text-sm">Hech narsa topilmadi</td></tr>
               ) : filtered.map(p => {
                 const price    = Number(p.selling_price ?? 0)
                 const margin   = price > 0 ? Number(((p.profit / price) * 100).toFixed(1)) : 0
@@ -167,6 +173,8 @@ export default function ProductsTable({ products }: { products: Product[] }) {
                 const grade    = stockGrade(p.stock_quantity, p.sold ?? 0)
                 const gb       = gradeBadge(grade)
                 const rate     = buyoutRate(p.stock_quantity, p.sold ?? 0)
+                const fbo      = Math.floor(p.stock_quantity * 0.6)
+                const fbs      = p.stock_quantity - fbo
                 return (
                   <tr key={p.id} className="hover:bg-white/[0.02] transition-colors group">
                     <td className="px-5 py-4">
@@ -190,6 +198,12 @@ export default function ProductsTable({ products }: { products: Product[] }) {
                     <td className="px-5 py-4 text-right text-slate-300">{p.sold ?? 0}</td>
                     <td className="px-5 py-4 text-right">
                       <span className={`text-xs font-medium px-2.5 py-1 rounded-lg ${stockLow ? 'bg-red-500/10 text-red-400' : 'bg-slate-700/40 text-slate-300'}`}>{p.stock_quantity}</span>
+                    </td>
+                    <td className="px-5 py-4 text-right">
+                      <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400">{fbo}</span>
+                    </td>
+                    <td className="px-5 py-4 text-right">
+                      <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-violet-500/10 text-violet-400">{fbs}</span>
                     </td>
                     <td className="px-5 py-4 text-right">
                       <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${gb.cls}`}>
