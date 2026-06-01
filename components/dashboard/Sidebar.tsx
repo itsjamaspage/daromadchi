@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import {
   LayoutDashboard, Package, ShoppingCart, TrendingUp,
   LogOut, ChevronRight, X, Settings, BarChart2, Calculator, FileText, Globe2,
-  Sun, Moon, Search, Users, Bell,
+  Sun, Moon, Search, Users, Bell, HelpCircle,
 } from 'lucide-react'
 import { useTheme, useLang } from '@/app/providers'
 import type { Lang } from '@/lib/i18n'
@@ -30,6 +30,7 @@ const marketNav: NavItem[] = [
 
 const settingsNav: NavItem[] = [
   { href: '/dashboard/notifications', label: 'Bildirishnomalar', icon: Bell },
+  { href: '/help',                    label: 'Yordam markazi',   icon: HelpCircle },
 ]
 
 interface SidebarProps {
