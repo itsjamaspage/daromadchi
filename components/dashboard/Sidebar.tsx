@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import {
   LayoutDashboard, Package, ShoppingCart, TrendingUp,
   LogOut, ChevronRight, X, Settings, BarChart2, Calculator, FileText, Globe2,
-  Sun, Moon,
+  Sun, Moon, Search, Users, Bell,
 } from 'lucide-react'
 import { useTheme, useLang } from '@/app/providers'
 import type { Lang } from '@/lib/i18n'
@@ -14,16 +14,22 @@ import type { Lang } from '@/lib/i18n'
 type NavItem = { href: string; label: string; icon: React.ElementType }
 
 const storeNav: NavItem[] = [
-  { href: '/dashboard',            label: 'Dashboard',     icon: LayoutDashboard },
-  { href: '/dashboard/products',   label: 'Mahsulotlar',   icon: Package         },
-  { href: '/dashboard/orders',     label: 'Buyurtmalar',   icon: ShoppingCart    },
-  { href: '/dashboard/analytics',  label: 'Tahlil',        icon: BarChart2       },
-  { href: '/dashboard/pnl',        label: 'F & Z hisobot', icon: FileText        },
-  { href: '/dashboard/calculator', label: 'Kalkulyator',   icon: Calculator      },
+  { href: '/dashboard',            label: 'Dashboard',       icon: LayoutDashboard },
+  { href: '/dashboard/products',   label: 'Mahsulotlar',     icon: Package         },
+  { href: '/dashboard/orders',     label: 'Buyurtmalar',     icon: ShoppingCart    },
+  { href: '/dashboard/analytics',  label: 'Tahlil',          icon: BarChart2       },
+  { href: '/dashboard/pnl',        label: 'F & Z hisobot',   icon: FileText        },
+  { href: '/dashboard/calculator', label: 'Kalkulyator',     icon: Calculator      },
+  { href: '/dashboard/keywords',   label: 'Qidiruv iboralari', icon: Search        },
+  { href: '/dashboard/team',       label: 'Jamoa',           icon: Users           },
 ]
 
 const marketNav: NavItem[] = [
   { href: '/dashboard/market', label: 'Bozor tadqiqoti', icon: Globe2 },
+]
+
+const settingsNav: NavItem[] = [
+  { href: '/dashboard/notifications', label: 'Bildirishnomalar', icon: Bell },
 ]
 
 interface SidebarProps {
@@ -136,6 +142,16 @@ export default function Sidebar({ onClose }: SidebarProps) {
           items={marketNav}
           label="Bozor"
           labelColor="text-cyan-400/60"
+          pathname={pathname}
+          onNavClick={handleNavClick}
+        />
+
+        <div className="border-t border-white/[0.04]" />
+
+        <NavSection
+          items={settingsNav}
+          label="Sozlamalar"
+          labelColor="text-slate-400/60"
           pathname={pathname}
           onNavClick={handleNavClick}
         />

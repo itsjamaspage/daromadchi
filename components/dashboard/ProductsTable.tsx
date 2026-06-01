@@ -48,17 +48,49 @@ export default function ProductsTable({ products }: { products: Product[] }) {
     else { setSortBy(col); setSortDir('desc') }
   }
 
-  const exportData = filtered.map(p => ({
-    'Mahsulot': p.title,
-    'SKU': p.sku ?? '',
-    'Kategoriya': p.category ?? '',
-    "Narx (so'm)": p.selling_price ?? 0,
-    "Tannarx (so'm)": p.cost_price ?? 0,
-    "Foyda (so'm)": p.profit,
-    'Margin (%)': (p.profit / (Number(p.selling_price) || 1) * 100).toFixed(1),
-    'Sotilgan': p.sold ?? 0,
-    'Ombor': p.stock_quantity,
-  }))
+  // ── Stock grade helpers ────────────────────────────────────────────────────
+  function stockGrade(stock: number, sold: number): 'A' | 'B' | 'C' | 'D' {
+    const avgDailySales = sold > 0 ? sold / 30 : 0.5
+    const daysLeft = avgDailySales > 0 ? stock / avgDailySales : stock
+    if (daysLeft >= 30) return 'A'
+    if (daysLeft >= 15) return 'B'
+    if (daysLeft >= 7)  return 'C'
+    return 'D'
+  }
+
+  function gradeBadge(grade: 'A' | 'B' | 'C' | 'D') {
+    const map = {
+      A: { label: 'A (30+ kun)', cls: 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400' },
+      B: { label: 'B (15-30 kun)', cls: 'bg-amber-400/15 border-amber-400/30 text-amber-300'    },
+      C: { label: 'C (7-15 kun)', cls: 'bg-orange-500/15 border-orange-500/30 text-orange-400'  },
+      D: { label: 'D (<7 kun)',   cls: 'bg-red-500/15 border-red-500/30 text-red-400'            },
+    }
+    return map[grade]
+  }
+
+  // ── Buyout rate: sold / (sold + stock) × 100  ──────────────────────────────
+  function buyoutRate(stock: number, sold: number): number {
+    const total = sold + stock
+    return total > 0 ? Math.round((sold / total) * 100) : 0
+  }
+
+  const exportData = filtered.map(p => {
+    const grade = stockGrade(p.stock_quantity, p.sold ?? 0)
+    const rate  = buyoutRate(p.stock_quantity, p.sold ?? 0)
+    return {
+      'Mahsulot': p.title,
+      'SKU': p.sku ?? '',
+      'Kategoriya': p.category ?? '',
+      "Narx (so'm)": p.selling_price ?? 0,
+      "Tannarx (so'm)": p.cost_price ?? 0,
+      "Foyda (so'm)": p.profit,
+      'Margin (%)': (p.profit / (Number(p.selling_price) || 1) * 100).toFixed(1),
+      'Sotilgan': p.sold ?? 0,
+      'Ombor': p.stock_quantity,
+      'Zahira daraja': grade,
+      "Sotib olish %": rate,
+    }
+  })
 
   function SortIcon({ col }: { col: typeof sortBy }) {
     if (sortBy !== col) return <span className="text-slate-700 ml-1">↕</span>
@@ -121,15 +153,20 @@ export default function ProductsTable({ products }: { products: Product[] }) {
                 <th className="text-right font-medium px-5 py-3 cursor-pointer select-none hover:text-slate-300" onClick={() => toggleSort('stock_quantity')}>
                   Ombor <SortIcon col="stock_quantity" />
                 </th>
+                <th className="text-right font-medium px-5 py-3">Zahira daraja</th>
+                <th className="text-right font-medium px-5 py-3">Sotib olish %</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/[0.03]">
               {filtered.length === 0 ? (
-                <tr><td colSpan={8} className="px-5 py-10 text-center text-slate-500 text-sm">Hech narsa topilmadi</td></tr>
+                <tr><td colSpan={10} className="px-5 py-10 text-center text-slate-500 text-sm">Hech narsa topilmadi</td></tr>
               ) : filtered.map(p => {
-                const price  = Number(p.selling_price ?? 0)
-                const margin = price > 0 ? Number(((p.profit / price) * 100).toFixed(1)) : 0
+                const price    = Number(p.selling_price ?? 0)
+                const margin   = price > 0 ? Number(((p.profit / price) * 100).toFixed(1)) : 0
                 const stockLow = p.stock_quantity < 20
+                const grade    = stockGrade(p.stock_quantity, p.sold ?? 0)
+                const gb       = gradeBadge(grade)
+                const rate     = buyoutRate(p.stock_quantity, p.sold ?? 0)
                 return (
                   <tr key={p.id} className="hover:bg-white/[0.02] transition-colors group">
                     <td className="px-5 py-4">
@@ -153,6 +190,16 @@ export default function ProductsTable({ products }: { products: Product[] }) {
                     <td className="px-5 py-4 text-right text-slate-300">{p.sold ?? 0}</td>
                     <td className="px-5 py-4 text-right">
                       <span className={`text-xs font-medium px-2.5 py-1 rounded-lg ${stockLow ? 'bg-red-500/10 text-red-400' : 'bg-slate-700/40 text-slate-300'}`}>{p.stock_quantity}</span>
+                    </td>
+                    <td className="px-5 py-4 text-right">
+                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${gb.cls}`}>
+                        {gb.label}
+                      </span>
+                    </td>
+                    <td className="px-5 py-4 text-right">
+                      <span className={`text-xs font-bold ${rate >= 70 ? 'text-emerald-400' : rate >= 40 ? 'text-amber-400' : 'text-red-400'}`}>
+                        {rate}%
+                      </span>
                     </td>
                   </tr>
                 )

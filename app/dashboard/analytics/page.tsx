@@ -14,11 +14,6 @@ function fmt(n: number) {
 }
 function fmtS(n: number) { return fmt(n) + " so'm" }
 
-function marginCls(pct: number) {
-  if (pct >= 30) return 'text-emerald-400'
-  if (pct >= 10) return 'text-amber-400'
-  return 'text-red-400'
-}
 function marginBadge(pct: number) {
   if (pct >= 30) return 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400'
   if (pct >= 10) return 'bg-amber-500/10 border border-amber-500/20 text-amber-400'
@@ -97,6 +92,16 @@ type ProductRow = {
 
 interface Props { searchParams: Promise<Record<string, string>> }
 
+// ── Mock campaign data ─────────────────────────────────────────────────────────
+
+const MOCK_CAMPAIGNS = [
+  { id: 1, name: 'Bahorgi kampaniya — kiyim',     spend: 8_400_000,  revenue: 42_000_000, drr: 20.0, clicks: 4_200, orders: 98,  roas: 5.0  },
+  { id: 2, name: 'Elektronika promo — may',        spend: 12_100_000, revenue: 48_000_000, drr: 25.2, clicks: 2_840, orders: 54,  roas: 3.97 },
+  { id: 3, name: 'Krossovka — yangi to\'plam',     spend: 6_800_000,  revenue: 38_500_000, drr: 17.7, clicks: 5_600, orders: 142, roas: 5.66 },
+  { id: 4, name: 'Smartfon aksessuar retargeting', spend: 3_200_000,  revenue: 9_800_000,  drr: 32.7, clicks: 1_050, orders: 22,  roas: 3.06 },
+  { id: 5, name: 'Yozgi sport kiyim',              spend: 5_500_000,  revenue: 28_200_000, drr: 19.5, clicks: 3_390, orders: 76,  roas: 5.13 },
+]
+
 export default async function AnalyticsPage({ searchParams }: Props) {
   const params  = await searchParams
   const supabase = await createClient()
@@ -107,6 +112,7 @@ export default async function AnalyticsPage({ searchParams }: Props) {
   const isFree = plan === 'free'
   const rawDays = Number(params.days) || 30
   const days   = isFree ? 7 : Math.min(Math.max(rawDays, 7), 365)
+  const activeTab = (params.tab ?? 'umumiy') as 'umumiy' | 'kampaniyalar' | 'tashqi'
 
   const { data: shopsData } = await supabase.from('shops').select('id').eq('user_id', user.id)
   const shopIds = (shopsData ?? []).map((s: { id: string }) => s.id)
@@ -123,7 +129,7 @@ export default async function AnalyticsPage({ searchParams }: Props) {
   if (shopIds.length === 0) {
     return (
       <div className="space-y-6">
-        <PageHeader isFree={isFree} days={days} />
+        <PageHeader isFree={isFree} days={days} activeTab={activeTab} />
         <div className="bg-[#13131f] border border-dashed border-violet-500/30 rounded-2xl p-10 text-center">
           <BarChart2 className="w-10 h-10 text-violet-400/40 mx-auto mb-4" />
           <h2 className="text-white font-bold text-lg mb-2">Do&apos;kon ulanmagan</h2>
@@ -254,8 +260,69 @@ export default async function AnalyticsPage({ searchParams }: Props) {
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div className="space-y-6">
-      <PageHeader isFree={isFree} days={days} />
+      <PageHeader isFree={isFree} days={days} activeTab={activeTab} />
       {isFree && <FreeBanner />}
+
+      {/* ── Tab: Kampaniyalar ─────────────────────────────────────────────── */}
+      {activeTab === 'kampaniyalar' && (
+        <Section title="Kampaniyalar" icon={Zap}>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-slate-500 text-xs border-b border-white/[0.05] bg-white/[0.01]">
+                  <th className="text-left font-medium px-5 py-3">Kampaniya nomi</th>
+                  <th className="text-right font-medium px-4 py-3">Sarfi</th>
+                  <th className="text-right font-medium px-4 py-3">Daromad</th>
+                  <th className="text-right font-medium px-4 py-3">DRR</th>
+                  <th className="text-right font-medium px-4 py-3">Bosishlar</th>
+                  <th className="text-right font-medium px-4 py-3">Buyurtmalar</th>
+                  <th className="text-right font-medium px-4 py-3">ROAS</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/[0.03]">
+                {MOCK_CAMPAIGNS.map(c => (
+                  <tr key={c.id} className="hover:bg-white/[0.02] transition-colors">
+                    <td className="px-5 py-3.5">
+                      <p className="text-white font-medium text-xs">{c.name}</p>
+                    </td>
+                    <td className="px-4 py-3.5 text-right text-red-400/80 text-xs">−{fmtS(c.spend)}</td>
+                    <td className="px-4 py-3.5 text-right text-slate-300 text-xs">{fmtS(c.revenue)}</td>
+                    <td className="px-4 py-3.5 text-right">
+                      <span className={`text-xs font-bold ${drrCls(c.drr)}`}>{c.drr.toFixed(1)}%</span>
+                    </td>
+                    <td className="px-4 py-3.5 text-right text-slate-400 text-xs">{fmt(c.clicks)}</td>
+                    <td className="px-4 py-3.5 text-right text-slate-300 text-xs">{c.orders}</td>
+                    <td className="px-4 py-3.5 text-right">
+                      <span className={`text-xs font-bold ${c.roas >= 4 ? 'text-emerald-400' : c.roas >= 2.5 ? 'text-amber-400' : 'text-red-400'}`}>
+                        {c.roas.toFixed(2)}x
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="px-5 py-3 border-t border-white/[0.04] text-xs text-slate-600">
+            * Kampaniya ma&apos;lumotlari namunali. Haqiqiy Uzum Ads ma&apos;lumotlari tez orada qo&apos;shiladi.
+          </div>
+        </Section>
+      )}
+
+      {/* ── Tab: Tashqi trafik ────────────────────────────────────────────── */}
+      {activeTab === 'tashqi' && (
+        <div className="bg-[#13131f] border border-white/[0.06] rounded-2xl p-10 text-center">
+          <BarChart2 className="w-10 h-10 text-violet-400/30 mx-auto mb-4" />
+          <h2 className="text-white font-bold text-lg mb-2">Tashqi trafik tahlili tez orada</h2>
+          <p className="text-slate-400 text-sm max-w-md mx-auto leading-relaxed">
+            <strong className="text-slate-200">Tashqi trafik</strong> — bu Instagram, Telegram, YouTube va boshqa
+            kanallardan sizning do&apos;koningizga kelayotgan xaridorlar. Bu funksiya yordamida
+            qaysi kanal eng ko&apos;p konversiya berganini ko&apos;rishingiz mumkin bo&apos;ladi.
+          </p>
+        </div>
+      )}
+
+      {/* ── Tab: Umumiy ───────────────────────────────────────────────────── */}
+      {activeTab === 'umumiy' && <>
 
       {/* ── 1. Sales Funnel ───────────────────────────────────────────────── */}
       <Section title="Sotuv hunisi" icon={TrendingUp}>
@@ -572,37 +639,64 @@ export default async function AnalyticsPage({ searchParams }: Props) {
           </div>
         )}
       </Section>
+
+      </>}
     </div>
   )
 }
 
 // ── Sub-components ─────────────────────────────────────────────────────────────
 
-function PageHeader({ isFree, days }: { isFree: boolean; days: number }) {
+type TabKey = 'umumiy' | 'kampaniyalar' | 'tashqi'
+
+function PageHeader({ isFree, days, activeTab }: { isFree: boolean; days: number; activeTab: TabKey }) {
   const opts = [7, 30, 90, 180] as const
+  const tabs: { key: TabKey; label: string }[] = [
+    { key: 'umumiy',       label: 'Umumiy'        },
+    { key: 'kampaniyalar', label: 'Kampaniyalar'  },
+    { key: 'tashqi',       label: 'Tashqi trafik' },
+  ]
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-      <div>
-        <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-          <BarChart2 className="w-6 h-6 text-violet-400" />
-          Kengaytirilgan tahlil
-        </h1>
-        <p className="text-slate-400 text-sm mt-0.5">Sotuv, reklama, qaytarish va vaqt tahlili</p>
-      </div>
-      {!isFree && (
-        <div className="flex items-center gap-1.5 p-1 bg-[#13131f] border border-white/[0.06] rounded-xl w-fit">
-          {opts.map(d => (
-            <Link key={d} href={`?days=${d}`}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                days === d
-                  ? 'bg-violet-600/20 text-violet-300 border border-violet-500/30'
-                  : 'text-slate-500 hover:text-slate-300'
-              }`}>
-              {d} kun
-            </Link>
-          ))}
+    <div className="space-y-3">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+            <BarChart2 className="w-6 h-6 text-violet-400" />
+            Kengaytirilgan tahlil
+          </h1>
+          <p className="text-slate-400 text-sm mt-0.5">Sotuv, reklama, qaytarish va vaqt tahlili</p>
         </div>
-      )}
+        {!isFree && activeTab === 'umumiy' && (
+          <div className="flex items-center gap-1.5 p-1 bg-[#13131f] border border-white/[0.06] rounded-xl w-fit">
+            {opts.map(d => (
+              <Link key={d} href={`?days=${d}`}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  days === d
+                    ? 'bg-violet-600/20 text-violet-300 border border-violet-500/30'
+                    : 'text-slate-500 hover:text-slate-300'
+                }`}>
+                {d} kun
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
+      {/* Tab switcher */}
+      <div className="flex items-center gap-1 p-1 bg-[#13131f] border border-white/[0.06] rounded-xl w-fit">
+        {tabs.map(t => (
+          <Link
+            key={t.key}
+            href={`?tab=${t.key}${activeTab === 'umumiy' && days !== 30 ? `&days=${days}` : ''}`}
+            className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              activeTab === t.key
+                ? 'bg-violet-600/20 text-violet-300 border border-violet-500/30'
+                : 'text-slate-500 hover:text-slate-300'
+            }`}
+          >
+            {t.label}
+          </Link>
+        ))}
+      </div>
     </div>
   )
 }
