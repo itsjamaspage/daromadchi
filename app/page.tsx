@@ -194,12 +194,10 @@ export default function LandingPage() {
   const featuresRef    = useRef(null)
   const howRef         = useRef(null)
   const pricingRef     = useRef(null)
-  const testimonialRef = useRef(null)
   const ctaRef         = useRef(null)
   const featuresInView    = useInView(featuresRef,    { once: true, margin: '-80px' })
   const howInView         = useInView(howRef,         { once: true, margin: '-80px' })
   const pricingInView     = useInView(pricingRef,     { once: true, margin: '-80px' })
-  const testimonialInView = useInView(testimonialRef, { once: true, margin: '-80px' })
   const ctaInView         = useInView(ctaRef,         { once: true, margin: '-80px' })
 
   const card  = isDark ? 'var(--bg-card)'  : '#ffffff'
@@ -578,23 +576,20 @@ export default function LandingPage() {
       </section>
 
       {/* ── TESTIMONIALS ── */}
-      <section ref={testimonialRef} className="py-20 px-5" style={{ background: 'var(--bg-base)' }}>
-        <div className="max-w-4xl mx-auto">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={testimonialInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.5 }} className="text-center mb-10">
-            <h2 className="text-xl sm:text-2xl font-bold" style={{ color: 'var(--text-base)' }}>
-              {lang === 'uz' ? 'Sotuvchilar nima deydi' : lang === 'ru' ? 'Что говорят продавцы' : 'What sellers say'}
-            </h2>
-          </motion.div>
+      <section className="py-20" style={{ background: 'var(--bg-base)' }}>
+        <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }} transition={{ duration: 0.5 }}
+          className="text-center mb-10 px-5">
+          <h2 className="text-xl sm:text-2xl font-bold" style={{ color: 'var(--text-base)' }}>
+            {lang === 'uz' ? 'Sotuvchilar nima deydi' : lang === 'ru' ? 'Что говорят продавцы' : 'What sellers say'}
+          </h2>
+        </motion.div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {TESTIMONIALS.map((review, i) => (
-              <motion.div key={review.name}
-                initial={{ opacity: 0, y: 30, scale: 0.97 }}
-                animate={testimonialInView ? { opacity: 1, y: 0, scale: 1 } : {}}
-                transition={{ delay: i * 0.07, duration: 0.45, ease: 'easeOut' }}
-                whileHover={{ y: -4, transition: { duration: 0.2 } }}
-                className="rounded-xl p-5 border cursor-default"
+        <div className="overflow-hidden">
+          <div className="animate-ticker-cards flex gap-4 w-max px-4">
+            {[...TESTIMONIALS, ...TESTIMONIALS].map((review, i) => (
+              <div key={i}
+                className="flex-shrink-0 w-72 rounded-xl p-5 border"
                 style={{ background: card, borderColor: 'var(--border)' }}>
                 <div className="flex items-center gap-0.5 mb-3">
                   {Array(review.stars).fill(0).map((_, j) => (
@@ -606,7 +601,7 @@ export default function LandingPage() {
                 </p>
                 <p className="font-semibold text-xs" style={{ color: 'var(--text-base)' }}>{review.name}</p>
                 <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{review.role}</p>
-              </motion.div>
+              </div>
             ))}
           </div>
         </div>
