@@ -31,24 +31,23 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   LIGHT THEME — Clean Ocean
-   Pure white + deep ocean blue + cyan accents
+   LIGHT THEME — Warm Off-White (easy on eyes)
 ═══════════════════════════════════════════════════════════════════ */
 [data-theme="light"] {
-  --bg-base:    #f0f8ff;
-  --bg-card:    #ffffff;
-  --bg-card2:   #e8f4fd;
-  --bg-input:   #dceefa;
-  --border:     rgba(0, 100, 180, 0.10);
-  --border2:    rgba(0, 100, 180, 0.18);
-  --text-base:  #021a2e;
-  --text-muted: #3a6080;
-  --text-dim:   #1a4060;
-  --nav-bg:     rgba(240, 248, 255, 0.95);
-  --c1:         #0284c7;   /* ocean blue  */
-  --c2:         #db2777;   /* deep pink   */
-  --scrollbar-track: #dceefa;
-  --scrollbar-thumb: #7dd3fc;
+  --bg-base:    #F7F6F3;
+  --bg-card:    #FFFFFF;
+  --bg-card2:   #F1F0F9;
+  --bg-input:   #ECEAF6;
+  --border:     rgba(80, 50, 160, 0.09);
+  --border2:    rgba(80, 50, 160, 0.16);
+  --text-base:  #1C1A2E;
+  --text-muted: #6B6880;
+  --text-dim:   #4A4760;
+  --nav-bg:     rgba(247, 246, 243, 0.96);
+  --c1:         #7C3AED;   /* purple */
+  --c2:         #DB2777;   /* pink   */
+  --scrollbar-track: #ECEAF6;
+  --scrollbar-thumb: #C4B5FD;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -77,13 +76,9 @@ h1, h2, h3, h4, h5, h6 {
   background-attachment: fixed;
 }
 
-/* Light: soft gradient */
+/* Light: flat warm off-white, no glare */
 [data-theme="light"] body {
-  background:
-    radial-gradient(ellipse 80% 50% at 100% -10%, rgba(0,150,255,0.08) 0%, transparent 55%),
-    radial-gradient(ellipse 60% 40% at 0%   110%, rgba(0,150,255,0.06) 0%, transparent 55%),
-    #f0f8ff;
-  background-attachment: fixed;
+  background: #F7F6F3;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -97,7 +92,7 @@ h1, h2, h3, h4, h5, h6 {
 
 [data-theme="light"] .bg-\[var\(--bg-card\)\],
 [data-theme="light"] .bg-\[var\(--bg-card2\)\] {
-  box-shadow: 0 2px 8px rgba(0,60,120,0.08), 0 16px 40px rgba(0,60,120,0.05);
+  box-shadow: 0 1px 4px rgba(80,50,160,0.07), 0 8px 24px rgba(80,50,160,0.05);
 }
 
 /* ═══════════════════════════════════════════════════════════════════
