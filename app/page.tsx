@@ -540,16 +540,16 @@ export default function LandingPage() {
         )}
         <div className="max-w-5xl mx-auto relative z-10">
           <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.7 }}>
-            <p className="text-xs font-bold tracking-widest uppercase mb-5 opacity-70 text-white">
+            <p className="text-xs font-bold tracking-widest uppercase mb-4 opacity-70 text-white">
               ● Sizning muvaffaqiyatingiz shu yerdan boshlanadi
             </p>
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white leading-tight mb-14"
+            <h2 className="text-2xl sm:text-3xl font-black text-white leading-snug mb-3"
               style={{ fontFamily: 'var(--font-display)' }}>
-              Daromadchi marketplace savdosining murakkabligini soddalashtirish uchun yaratilgan.{' '}
-              <span className="opacity-60">
-                Uzum, Yandex Market va Wildberries sotuvchilari uchun — bitta platformada barcha raqamlar.
-              </span>
+              Marketplace savdosining murakkabligini soddalashtirish uchun yaratilgan.
             </h2>
+            <p className="text-base sm:text-lg text-white/60 mb-12 max-w-2xl">
+              Uzum, Yandex Market va Wildberries sotuvchilari uchun — bitta platformada barcha raqamlar.
+            </p>
           </motion.div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
