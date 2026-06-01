@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Monitor, Smartphone, Chrome, Eye, EyeOff, RefreshCw, LogOut, ToggleLeft, ToggleRight, ExternalLink, AlertTriangle } from 'lucide-react'
+import { Monitor, Smartphone, Globe, Eye, EyeOff, RefreshCw, LogOut, ToggleLeft, ToggleRight, ExternalLink, AlertTriangle } from 'lucide-react'
 
 const MOCK_DEVICES = [
   {
@@ -97,7 +97,7 @@ export default function DevicesPage() {
 
       {/* Chrome Web Store banner */}
       <div className="flex items-center gap-4 bg-gradient-to-r from-cyan-500/10 to-blue-500/10 border border-cyan-500/20 rounded-2xl px-5 py-4">
-        <Chrome className="w-8 h-8 text-cyan-400 shrink-0" />
+        <Globe className="w-8 h-8 text-cyan-400 shrink-0" />
         <div className="flex-1">
           <p className="text-white font-semibold text-sm">Chrome kengaytmasini o&apos;rnating</p>
           <p className="text-slate-400 text-xs mt-0.5">Chrome kengaytmasini o&apos;rnatish uchun Chrome Web Store&apos;ga o&apos;ting</p>
@@ -208,7 +208,7 @@ export default function DevicesPage() {
       {/* API Token */}
       <div className="bg-[#13131f] border border-white/[0.06] rounded-2xl overflow-hidden">
         <div className="px-5 py-4 border-b border-white/[0.05] flex items-center gap-2">
-          <Chrome className="w-4 h-4 text-violet-400" />
+          <Globe className="w-4 h-4 text-violet-400" />
           <h2 className="text-white font-semibold text-sm">API Token (Kengaytma uchun)</h2>
         </div>
         <div className="p-5 space-y-3">
