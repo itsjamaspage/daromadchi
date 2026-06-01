@@ -4,8 +4,8 @@
    FONTS
 ═══════════════════════════════════════════════════════════════════ */
 :root {
-  --font-display: 'Syne', system-ui, sans-serif;
-  --font-body:    'Space Grotesk', system-ui, sans-serif;
+  --font-display: 'Inter', system-ui, sans-serif;
+  --font-body:    'Inter', system-ui, sans-serif;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -75,21 +75,6 @@ h1, h2, h3, h4, h5, h6 {
     radial-gradient(ellipse 60%  40% at 50% 50%,  rgba(0,40,100,0.3)   0%, transparent 70%),
     #020c1a;
   background-attachment: fixed;
-}
-/* scan-line grain overlay */
-[data-theme="dark"] body::after {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  pointer-events: none;
-  background: repeating-linear-gradient(
-    0deg,
-    transparent,
-    transparent 2px,
-    rgba(0,200,255,0.012) 2px,
-    rgba(0,200,255,0.012) 3px
-  );
 }
 
 /* Light: soft gradient */
