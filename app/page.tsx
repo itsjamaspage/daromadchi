@@ -293,7 +293,9 @@ export default function LandingPage() {
       <section className="relative flex flex-col items-center justify-center pt-28 pb-20 px-5 text-center overflow-hidden"
         style={{ background: isDark ? '#0d0e14' : 'var(--bg-base)' }}>
         <div className="absolute inset-0 pointer-events-none"
-          style={{ background: 'radial-gradient(ellipse 70% 50% at 50% 0%, rgba(0,212,255,0.10) 0%, transparent 65%)' }} />
+          style={{ background: isDark
+            ? 'radial-gradient(ellipse 70% 50% at 50% 0%, rgba(0,212,255,0.10) 0%, transparent 65%)'
+            : 'radial-gradient(ellipse 70% 50% at 50% 0%, rgba(124,58,237,0.07) 0%, transparent 65%)' }} />
 
         <div className="relative z-10 max-w-2xl mx-auto">
           <motion.div {...fade(0.1)}
@@ -329,7 +331,7 @@ export default function LandingPage() {
 
           <motion.p {...fade(0.3)}
             className="text-sm sm:text-base mb-8 max-w-md mx-auto leading-relaxed"
-            style={{ color: 'rgba(180,195,215,0.75)' }}>
+            style={{ color: 'var(--text-muted)' }}>
             {lang === 'uz'
               ? 'DRR, qoldiq, narx va birlik iqtisodiyoti. Savdoni kuniga 5 daqiqada boshqaring.'
               : lang === 'ru'
@@ -345,12 +347,12 @@ export default function LandingPage() {
             </Link>
             <Link href="/dashboard"
               className="inline-flex items-center justify-center gap-2 font-medium px-6 py-2.5 rounded-xl text-sm border transition-all"
-              style={{ borderColor: 'rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.7)' }}>
+              style={{ borderColor: 'var(--border2)', color: 'var(--text-dim)' }}>
               {lang === 'uz' ? "Platformani o'rganish →" : lang === 'ru' ? 'Изучить платформу →' : 'Explore platform →'}
             </Link>
           </motion.div>
 
-          <motion.p {...fade(0.5)} className="text-xs mb-10" style={{ color: 'rgba(255,255,255,0.3)' }}>
+          <motion.p {...fade(0.5)} className="text-xs mb-10" style={{ color: 'var(--text-muted)', opacity: 0.7 }}>
             {lang === 'uz' ? 'Karta shart emas' : lang === 'ru' ? 'Карта не нужна' : 'No credit card required'}
           </motion.p>
 
@@ -405,7 +407,7 @@ export default function LandingPage() {
                 initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }} transition={{ delay: i * 0.08, duration: 0.45 }}
                 className="rounded-xl p-5 border"
-                style={{ background: isDark ? 'rgba(255,255,255,0.03)' : '#fff', borderColor: 'var(--border)' }}>
+                style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}>
                 <div className="text-2xl mb-2">{c.icon}</div>
                 <h3 className="font-semibold text-sm mb-1" style={{ color: 'var(--text-base)' }}>{c.title}</h3>
                 <p className="text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>{c.desc}</p>
