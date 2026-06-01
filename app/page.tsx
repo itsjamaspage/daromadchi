@@ -1,47 +1,112 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useRef, useState } from 'react'
-import { motion, useInView } from 'framer-motion'
+import { useEffect, useRef, useState, useCallback } from 'react'
+import { motion, useInView, AnimatePresence } from 'framer-motion'
 import {
   TrendingUp, BarChart2, Calculator, FileText, Zap,
   ArrowRight, RefreshCw, AlertTriangle, ShieldCheck,
-  Activity, Sun, Moon, X, Layers,
+  Activity, Sun, Moon, X, Layers, ChevronRight,
 } from 'lucide-react'
 import { useTheme, useLang } from './providers'
 import { translations } from '@/lib/i18n'
 import type { Lang } from '@/lib/i18n'
 
-/* ── counter hook ─────────────────────────────────────────────────────────── */
-function useCounter(target: number, duration = 2000, start = false) {
-  const [count, setCount] = useState(0)
+/* ── typewriter ───────────────────────────────────────────────────────────── */
+function useTypewriter(words: string[], speed = 80, pause = 1800) {
+  const [idx, setIdx] = useState(0)
+  const [displayed, setDisplayed] = useState('')
+  const [deleting, setDeleting] = useState(false)
+
+  useEffect(() => {
+    const word = words[idx % words.length]
+    let timeout: ReturnType<typeof setTimeout>
+    if (!deleting && displayed.length < word.length) {
+      timeout = setTimeout(() => setDisplayed(word.slice(0, displayed.length + 1)), speed)
+    } else if (!deleting && displayed.length === word.length) {
+      timeout = setTimeout(() => setDeleting(true), pause)
+    } else if (deleting && displayed.length > 0) {
+      timeout = setTimeout(() => setDisplayed(displayed.slice(0, -1)), speed / 2)
+    } else {
+      setDeleting(false)
+      setIdx(i => i + 1)
+    }
+    return () => clearTimeout(timeout)
+  }, [displayed, deleting, idx, words, speed, pause])
+
+  return displayed
+}
+
+/* ── counter ──────────────────────────────────────────────────────────────── */
+function useCounter(target: number, duration = 1800, start = false) {
+  const [n, setN] = useState(0)
   useEffect(() => {
     if (!start) return
     let t0: number
-    const tick = (ts: number) => {
+    const raf = (ts: number) => {
       if (!t0) t0 = ts
       const p = Math.min((ts - t0) / duration, 1)
-      setCount(Math.floor((1 - Math.pow(1 - p, 3)) * target))
-      if (p < 1) requestAnimationFrame(tick)
+      setN(Math.floor((1 - Math.pow(1 - p, 3)) * target))
+      if (p < 1) requestAnimationFrame(raf)
     }
-    requestAnimationFrame(tick)
+    requestAnimationFrame(raf)
   }, [start, target, duration])
-  return count
+  return n
 }
 
-function StatNum({ value, suffix, label, delay, active }: {
-  value: number; suffix: string; label: string; delay: number; active: boolean
-}) {
-  const n = useCounter(value, 2000, active)
-  return (
-    <motion.div initial={{ opacity: 0, y: 20 }} animate={active ? { opacity: 1, y: 0 } : {}}
-      transition={{ delay, duration: 0.5 }} className="text-center">
-      <div className="text-4xl sm:text-5xl font-black mb-2 tabular-nums" style={{ color: 'var(--text-base)' }}>
-        {n.toLocaleString()}<span className="neon-gradient-text">{suffix}</span>
-      </div>
-      <div className="text-sm" style={{ color: 'var(--text-muted)' }}>{label}</div>
-    </motion.div>
-  )
+/* ── particles canvas (dark only) ────────────────────────────────────────── */
+function Particles() {
+  const ref = useRef<HTMLCanvasElement>(null)
+  useEffect(() => {
+    const canvas = ref.current
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')!
+    let animId: number
+    const resize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight }
+    resize()
+    window.addEventListener('resize', resize)
+
+    const pts = Array.from({ length: 70 }, () => ({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      r: Math.random() * 1.4 + 0.3,
+      vx: (Math.random() - 0.5) * 0.3,
+      vy: (Math.random() - 0.5) * 0.3,
+      color: Math.random() > 0.6 ? '#00d4ff' : '#ff2d9b',
+      alpha: Math.random() * 0.5 + 0.15,
+    }))
+
+    const draw = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+      pts.forEach(p => {
+        p.x = (p.x + p.vx + canvas.width) % canvas.width
+        p.y = (p.y + p.vy + canvas.height) % canvas.height
+        ctx.beginPath()
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2)
+        ctx.fillStyle = p.color + Math.floor(p.alpha * 255).toString(16).padStart(2, '0')
+        ctx.fill()
+      })
+      // draw connections
+      for (let i = 0; i < pts.length; i++) {
+        for (let j = i + 1; j < pts.length; j++) {
+          const dx = pts[i].x - pts[j].x, dy = pts[i].y - pts[j].y
+          const d = Math.sqrt(dx * dx + dy * dy)
+          if (d < 100) {
+            ctx.beginPath()
+            ctx.moveTo(pts[i].x, pts[i].y)
+            ctx.lineTo(pts[j].x, pts[j].y)
+            ctx.strokeStyle = `rgba(0,212,255,${0.06 * (1 - d / 100)})`
+            ctx.lineWidth = 0.5
+            ctx.stroke()
+          }
+        }
+      }
+      animId = requestAnimationFrame(draw)
+    }
+    draw()
+    return () => { cancelAnimationFrame(animId); window.removeEventListener('resize', resize) }
+  }, [])
+  return <canvas ref={ref} className="absolute inset-0 pointer-events-none" style={{ zIndex: 0 }} />
 }
 
 /* ── theme + lang ─────────────────────────────────────────────────────────── */
@@ -49,9 +114,11 @@ function ThemeToggle() {
   const { theme, toggle } = useTheme()
   return (
     <button onClick={toggle}
-      className="w-8 h-8 rounded-lg flex items-center justify-center transition-all"
-      style={{ background: 'var(--bg-input)', border: '1px solid var(--border2)', color: 'var(--text-dim)' }}>
-      {theme === 'dark' ? <Sun className="w-3.5 h-3.5 text-amber-400" /> : <Moon className="w-3.5 h-3.5 text-violet-600" />}
+      className="w-9 h-9 rounded-xl flex items-center justify-center transition-all border"
+      style={{ background: 'var(--bg-card2)', borderColor: 'var(--border2)' }}>
+      {theme === 'dark'
+        ? <Sun className="w-4 h-4" style={{ color: '#fbbf24' }} />
+        : <Moon className="w-4 h-4" style={{ color: 'var(--c1)' }} />}
     </button>
   )
 }
@@ -67,59 +134,58 @@ function LangToggle() {
   return (
     <div ref={ref} className="relative">
       <button onClick={() => setOpen(o => !o)}
-        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all"
-        style={{ background: 'var(--bg-input)', border: '1px solid var(--border2)', color: 'var(--neon-v)' }}>
-        {lang}
-        <svg className={`w-2.5 h-2.5 transition-transform ${open ? 'rotate-180' : ''}`} viewBox="0 0 12 12" fill="none">
-          <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-        </svg>
+        className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold uppercase tracking-widest border transition-all"
+        style={{ background: 'var(--bg-card2)', borderColor: 'var(--border2)', color: 'var(--c1)', fontFamily: 'var(--font-display)' }}>
+        {lang} <ChevronRight className={`w-3 h-3 transition-transform ${open ? 'rotate-90' : ''}`} />
       </button>
-      {open && (
-        <div className="absolute right-0 top-full mt-1.5 rounded-xl overflow-hidden shadow-2xl z-50 min-w-[3.5rem]"
-          style={{ background: 'var(--bg-card)', border: '1px solid var(--border2)' }}>
-          {langs.map(l => (
-            <button key={l} onClick={() => { setLang(l); setOpen(false) }}
-              className="w-full px-3 py-2 text-[10px] font-black uppercase tracking-widest text-left transition-all"
-              style={{ background: lang === l ? 'rgba(168,85,247,0.12)' : 'transparent', color: lang === l ? 'var(--neon-v)' : 'var(--text-muted)' }}>
-              {l}
-            </button>
-          ))}
-        </div>
-      )}
+      <AnimatePresence>
+        {open && (
+          <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 6 }}
+            className="absolute right-0 top-full mt-2 rounded-xl overflow-hidden shadow-2xl z-50 min-w-[4rem]"
+            style={{ background: 'var(--bg-card)', border: '1px solid var(--border2)' }}>
+            {langs.map(l => (
+              <button key={l} onClick={() => { setLang(l); setOpen(false) }}
+                className="w-full px-3 py-2.5 text-xs font-bold uppercase tracking-widest text-left transition-all"
+                style={{ background: lang === l ? 'rgba(0,212,255,0.1)' : 'transparent', color: lang === l ? 'var(--c1)' : 'var(--text-muted)', fontFamily: 'var(--font-display)' }}>
+                {l}
+              </button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
 
-/* ── dashboard mockup (Amzigo style) ─────────────────────────────────────── */
+/* ── dashboard mockup ─────────────────────────────────────────────────────── */
 function DashboardMockup({ p }: { p: typeof import('@/lib/i18n').translations.en.preview }) {
   const kpis = [
-    { l: p.revenue, v: '124.5M', c: 'var(--neon-v)' },
-    { l: p.profit,  v: '38.2M',  c: '#34d399'        },
-    { l: p.orders,  v: '1,842',  c: 'var(--neon-c)'  },
-    { l: p.stock,   v: '3,410',  c: '#fbbf24'        },
+    { l: p.revenue, v: '124.5M', c: 'var(--c1)' },
+    { l: p.profit,  v: '38.2M',  c: '#34d399'   },
+    { l: p.orders,  v: '1,842',  c: 'var(--c2)'  },
+    { l: p.stock,   v: '3,410',  c: '#fbbf24'   },
   ]
   const bars = [28, 52, 38, 68, 44, 82, 62, 90, 72, 58, 78, 94, 68, 86]
   return (
     <div className="w-full rounded-2xl overflow-hidden neon-card"
       style={{ background: 'var(--bg-card)', border: '1px solid var(--border2)', boxShadow: '0 32px 80px rgba(0,0,0,0.5)' }}>
-      {/* browser chrome */}
       <div className="flex items-center gap-2 px-4 py-3" style={{ background: 'var(--bg-card2)', borderBottom: '1px solid var(--border)' }}>
         <div className="flex gap-1.5">
-          <div className="w-2.5 h-2.5 rounded-full bg-red-500/80" />
-          <div className="w-2.5 h-2.5 rounded-full bg-amber-500/80" />
-          <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/80" />
+          <div className="w-2.5 h-2.5 rounded-full" style={{ background: '#ff5f57' }} />
+          <div className="w-2.5 h-2.5 rounded-full" style={{ background: '#febc2e' }} />
+          <div className="w-2.5 h-2.5 rounded-full" style={{ background: '#28c840' }} />
         </div>
         <div className="flex-1 mx-3 rounded-md h-5 flex items-center px-2" style={{ background: 'var(--bg-input)', border: '1px solid var(--border)' }}>
           <span className="text-[9px]" style={{ color: 'var(--text-muted)' }}>daromadchi.uz/dashboard</span>
         </div>
-        <Activity className="w-3 h-3 text-emerald-400 animate-pulse" />
+        <Activity className="w-3 h-3 animate-pulse" style={{ color: '#34d399' }} />
       </div>
       <div className="p-3 space-y-2">
         <div className="grid grid-cols-4 gap-2">
           {kpis.map(k => (
             <div key={k.l} className="rounded-xl p-2.5" style={{ background: 'var(--bg-card2)', border: '1px solid var(--border)' }}>
               <p className="text-[9px] mb-1" style={{ color: 'var(--text-muted)' }}>{k.l}</p>
-              <p className="font-bold text-sm" style={{ color: k.c }}>{k.v}</p>
+              <p className="font-bold text-sm" style={{ color: k.c, fontFamily: 'var(--font-display)' }}>{k.v}</p>
               <p className="text-[9px] mt-0.5 text-emerald-400">↑ 12.4%</p>
             </div>
           ))}
@@ -129,21 +195,19 @@ function DashboardMockup({ p }: { p: typeof import('@/lib/i18n').translations.en
             <p className="text-[9px] mb-2" style={{ color: 'var(--text-muted)' }}>{p.dailyRevenue}</p>
             <div className="flex items-end gap-0.5 h-14">
               {bars.map((h, i) => (
-                <div key={i} className="flex-1 rounded-t-sm"
-                  style={{ height: `${h}%`, background: h > 68 ? 'var(--neon-v)' : 'rgba(168,85,247,0.28)', boxShadow: h > 80 ? '0 0 8px var(--neon-v)' : undefined }} />
+                <div key={i} className="flex-1 rounded-t"
+                  style={{ height: `${h}%`, background: h > 68 ? 'var(--c1)' : 'rgba(0,212,255,0.22)', boxShadow: h > 80 ? '0 0 6px var(--c1)' : undefined }} />
               ))}
             </div>
           </div>
           <div className="rounded-xl p-3 flex flex-col items-center justify-center" style={{ background: 'var(--bg-card2)', border: '1px solid var(--border)' }}>
             <p className="text-[9px] self-start mb-2" style={{ color: 'var(--text-muted)' }}>{p.categories}</p>
-            <div className="w-11 h-11">
-              <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
-                <circle cx="18" cy="18" r="14" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="4" />
-                <circle cx="18" cy="18" r="14" fill="none" stroke="rgba(168,85,247,0.9)" strokeWidth="4" strokeDasharray="37 51" strokeLinecap="round" />
-                <circle cx="18" cy="18" r="14" fill="none" stroke="rgba(34,211,238,0.7)" strokeWidth="4" strokeDasharray="24 64" strokeDashoffset="-37" strokeLinecap="round" />
-                <circle cx="18" cy="18" r="14" fill="none" stroke="rgba(251,191,36,0.7)" strokeWidth="4" strokeDasharray="15 73" strokeDashoffset="-61" strokeLinecap="round" />
-              </svg>
-            </div>
+            <svg viewBox="0 0 36 36" className="w-11 h-11 -rotate-90">
+              <circle cx="18" cy="18" r="14" fill="none" stroke="var(--border)" strokeWidth="4" />
+              <circle cx="18" cy="18" r="14" fill="none" stroke="var(--c1)" strokeWidth="4" strokeDasharray="37 51" strokeLinecap="round" />
+              <circle cx="18" cy="18" r="14" fill="none" stroke="var(--c2)" strokeWidth="4" strokeDasharray="24 64" strokeDashoffset="-37" strokeLinecap="round" />
+              <circle cx="18" cy="18" r="14" fill="none" stroke="#fbbf24" strokeWidth="4" strokeDasharray="15 73" strokeDashoffset="-61" strokeLinecap="round" />
+            </svg>
           </div>
         </div>
       </div>
@@ -151,20 +215,20 @@ function DashboardMockup({ p }: { p: typeof import('@/lib/i18n').translations.en
   )
 }
 
-/* ── feature icons ────────────────────────────────────────────────────────── */
+/* ── feature data ─────────────────────────────────────────────────────────── */
 const FEAT_ICONS = [
-  { Icon: BarChart2,     c: 'text-violet-400',  bg: 'rgba(168,85,247,0.1)',  border: 'rgba(168,85,247,0.25)' },
-  { Icon: Calculator,    c: 'text-cyan-400',    bg: 'rgba(34,211,238,0.1)',  border: 'rgba(34,211,238,0.25)' },
-  { Icon: AlertTriangle, c: 'text-amber-400',   bg: 'rgba(251,191,36,0.1)', border: 'rgba(251,191,36,0.25)' },
-  { Icon: FileText,      c: 'text-emerald-400', bg: 'rgba(52,211,153,0.1)', border: 'rgba(52,211,153,0.25)' },
-  { Icon: RefreshCw,     c: 'text-pink-400',    bg: 'rgba(236,72,153,0.1)', border: 'rgba(236,72,153,0.25)' },
-  { Icon: Layers,        c: 'text-indigo-400',  bg: 'rgba(99,102,241,0.1)', border: 'rgba(99,102,241,0.25)' },
+  { Icon: BarChart2,     c: 'var(--c1)',  bg: 'rgba(0,212,255,0.08)',   border: 'rgba(0,212,255,0.22)'  },
+  { Icon: Calculator,    c: '#34d399',    bg: 'rgba(52,211,153,0.08)',  border: 'rgba(52,211,153,0.22)' },
+  { Icon: AlertTriangle, c: '#fbbf24',    bg: 'rgba(251,191,36,0.08)', border: 'rgba(251,191,36,0.22)' },
+  { Icon: FileText,      c: 'var(--c2)',  bg: 'rgba(255,45,155,0.08)', border: 'rgba(255,45,155,0.22)' },
+  { Icon: RefreshCw,     c: '#a78bfa',    bg: 'rgba(167,139,250,0.08)', border: 'rgba(167,139,250,0.22)' },
+  { Icon: Layers,        c: '#fb923c',    bg: 'rgba(251,146,60,0.08)', border: 'rgba(251,146,60,0.22)' },
 ]
 
-const MARKETPLACES = [
+const MARKETS = [
   { name: 'Uzum Market',   dot: '#fb923c' },
   { name: 'Yandex Market', dot: '#fbbf24' },
-  { name: 'Wildberries',   dot: '#a855f7' },
+  { name: 'Wildberries',   dot: 'var(--c2)' },
 ]
 
 /* ════════════════════════════════════════════════════════════════════════════
@@ -174,7 +238,15 @@ export default function LandingPage() {
   const { theme } = useTheme()
   const { lang }  = useLang()
   const t = translations[lang]
+  const isDark = theme === 'dark'
   const [banner, setBanner] = useState(true)
+
+  const typedWords = lang === 'uz'
+    ? ["do'konni", 'savdoni', 'daromadni', 'reklamani']
+    : lang === 'ru'
+    ? ['магазин', 'продажи', 'прибыль', 'рекламу']
+    : ['your store', 'your sales', 'your profit', 'your ads']
+  const typed = useTypewriter(typedWords, 75, 1600)
 
   const featRef  = useRef(null)
   const stepsRef = useRef(null)
@@ -183,140 +255,148 @@ export default function LandingPage() {
   const stepsInView = useInView(stepsRef, { once: true, margin: '-80px' })
   const statsInView = useInView(statsRef, { once: true, margin: '-80px' })
 
-  const isDark = theme === 'dark'
+  /* stat counters */
+  const c0 = useCounter(6,   1800, statsInView)
+  const c1 = useCounter(30,  1800, statsInView)
+  const c2 = useCounter(100, 1800, statsInView)
 
   return (
     <div className="min-h-screen overflow-x-hidden" style={{ background: 'var(--bg-base)', color: 'var(--text-base)' }}>
 
       {/* ── ANNOUNCEMENT BANNER ─────────────────────────────────────────── */}
-      {banner && (
-        <div className="relative py-2.5 px-8 text-center text-xs font-semibold text-white z-50"
-          style={{ background: 'linear-gradient(90deg,#7c3aed 0%,#0891b2 50%,#7c3aed 100%)', backgroundSize: '200%', animation: 'shimmer 6s linear infinite' }}>
-          🎉 Wildberries integratsiyasi qo'shildi! &nbsp;
-          <Link href="/dashboard/settings" className="underline underline-offset-2 font-bold hover:opacity-80 transition-opacity">
-            Hozir ulang →
-          </Link>
-          <button onClick={() => setBanner(false)} className="absolute right-4 top-1/2 -translate-y-1/2 opacity-70 hover:opacity-100 transition-opacity">
-            <X className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      )}
+      <AnimatePresence>
+        {banner && (
+          <motion.div initial={{ height: 40, opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.3 }}
+            className="relative flex items-center justify-center text-xs font-semibold text-white overflow-hidden"
+            style={{ background: 'linear-gradient(90deg,#0284c7,var(--c2),#0284c7)', backgroundSize: '200% 100%', animation: 'grad-shift 4s ease infinite', height: 40 }}>
+            🎉 Wildberries integratsiyasi qo'shildi! &nbsp;
+            <Link href="/dashboard/settings" className="underline underline-offset-2 font-bold hover:opacity-80">
+              Hozir ulang →
+            </Link>
+            <button onClick={() => setBanner(false)} className="absolute right-4 opacity-70 hover:opacity-100 transition-opacity">
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ══════════════════════════════════════════════════════════════════
-          TAVUS-STYLE NAVBAR
-          Full width · border-bottom · ALL CAPS with ■ prefix
+          NAVBAR — Tavus style: full-width, uppercase, ■ markers, glowing CTA
       ══════════════════════════════════════════════════════════════════ */}
-      <motion.header initial={{ y: -52, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.4, ease: 'easeOut' }}
-        className="sticky top-0 z-40"
-        style={{ background: 'var(--nav-bg)', backdropFilter: 'blur(18px)', borderBottom: '1px solid var(--border)' }}>
-        <div className="max-w-[1280px] mx-auto px-6 h-[60px] flex items-center justify-between gap-6">
+      <header className="sticky top-0 z-40" style={{ background: 'var(--nav-bg)', backdropFilter: 'blur(20px)', borderBottom: `1px solid var(--border2)` }}>
+        {/* Glowing top line */}
+        <div className="h-px w-full" style={{ background: `linear-gradient(90deg, transparent, var(--c1), var(--c2), var(--c1), transparent)`, opacity: isDark ? 0.7 : 0.4 }} />
 
+        <div className="max-w-[1300px] mx-auto px-6 h-16 flex items-center gap-6">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2.5 flex-shrink-0 group">
-            <div className="w-8 h-8 rounded-xl flex items-center justify-center"
-              style={{ background: 'linear-gradient(135deg,#7c3aed,#0891b2)', boxShadow: isDark ? '0 0 16px rgba(168,85,247,0.5)' : '0 4px 12px rgba(124,58,237,0.3)' }}>
-              <TrendingUp className="w-4 h-4 text-white" />
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-all group-hover:scale-105"
+              style={{ background: `linear-gradient(135deg, var(--c1), var(--c2))`, boxShadow: isDark ? '0 0 18px rgba(0,212,255,0.4)' : '0 4px 12px rgba(2,132,199,0.35)' }}>
+              <TrendingUp className="w-4.5 h-4.5 text-white" />
             </div>
-            <span className="font-black text-sm tracking-tight" style={{ color: 'var(--text-base)' }}>DAROMADCHI</span>
+            <span className="font-black text-sm tracking-tight" style={{ fontFamily: 'var(--font-display)', color: 'var(--text-base)' }}>
+              DAROMADCHI
+            </span>
           </Link>
 
-          {/* Nav items — Tavus style: ALL CAPS + ■ prefix */}
-          <nav className="hidden md:flex items-center gap-0.5 flex-1 justify-center">
+          {/* Divider */}
+          <div className="hidden md:block h-5 w-px" style={{ background: 'var(--border2)' }} />
+
+          {/* Nav links — Tavus: ■ + ALL CAPS */}
+          <nav className="hidden md:flex items-center gap-1 flex-1">
             {[
-              { href: '#features', label: t.nav.features.toUpperCase() },
-              { href: '#how',      label: t.nav.how.toUpperCase()      },
-              { href: '/pricing',  label: 'NARXLAR'                    },
-              { href: '/help',     label: 'YORDAM'                     },
+              { href: '#features', label: t.nav.features },
+              { href: '#how',      label: t.nav.how      },
+              { href: '/pricing',  label: 'Narxlar'      },
+              { href: '/help',     label: 'Yordam'       },
             ].map(item => (
               <a key={item.href} href={item.href}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[11px] font-bold tracking-wider transition-all"
-                style={{ color: 'var(--text-muted)' }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--text-base)'; (e.currentTarget as HTMLElement).style.background = 'var(--bg-input)' }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--text-muted)'; (e.currentTarget as HTMLElement).style.background = 'transparent' }}>
-                <span style={{ color: 'var(--neon-v)', fontSize: 7 }}>■</span>
-                {item.label}
+                className="group flex items-center gap-1.5 px-4 py-2 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-all relative overflow-hidden"
+                style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-display)' }}
+                onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.color = 'var(--text-base)'; el.style.background = 'var(--bg-card2)' }}
+                onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.color = 'var(--text-muted)'; el.style.background = 'transparent' }}>
+                <span className="text-[7px] transition-colors" style={{ color: 'var(--c1)' }}>■</span>
+                {item.label.toUpperCase()}
               </a>
             ))}
           </nav>
 
-          {/* Right controls */}
-          <div className="flex items-center gap-2 flex-shrink-0">
+          {/* Right side */}
+          <div className="flex items-center gap-2 ml-auto flex-shrink-0">
             <LangToggle />
             <ThemeToggle />
+            <div className="hidden sm:block h-5 w-px mx-1" style={{ background: 'var(--border2)' }} />
             <Link href="/login"
-              className="hidden sm:block text-[11px] font-bold uppercase tracking-wider px-3 py-1.5 transition-all"
-              style={{ color: 'var(--text-muted)' }}>
+              className="hidden sm:block text-[11px] font-bold uppercase tracking-wider px-3 py-2 rounded-xl transition-all"
+              style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-display)' }}>
               {t.nav.login.toUpperCase()}
             </Link>
             <Link href="/login"
-              className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-white px-4 py-2.5 rounded-xl transition-all"
-              style={{ background: 'linear-gradient(135deg,#7c3aed,#6d28d9)', boxShadow: isDark ? '0 0 16px rgba(168,85,247,0.4)' : '0 4px 14px rgba(124,58,237,0.35)' }}>
+              className="btn-cta flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-white px-5 py-2.5 rounded-xl transition-all"
+              style={{ background: `linear-gradient(135deg, var(--c1), var(--c2))`, boxShadow: isDark ? '0 0 20px rgba(0,212,255,0.3)' : '0 4px 14px rgba(2,132,199,0.35)', fontFamily: 'var(--font-display)' }}>
               {t.nav.start.toUpperCase()} <ArrowRight className="w-3 h-3" />
             </Link>
           </div>
         </div>
-      </motion.header>
+      </header>
 
       {/* ══════════════════════════════════════════════════════════════════
-          HERO — Amzigo layout: left text + right product screenshot
+          HERO — Amzigo: left text + right product screenshot
       ══════════════════════════════════════════════════════════════════ */}
-      <section className="relative min-h-[90vh] flex items-center px-6 py-20 overflow-hidden">
+      <section className="relative min-h-[92vh] flex items-center px-6 py-20 overflow-hidden">
+        {isDark && <Particles />}
 
-        {/* Background glow (dark only) */}
-        {isDark && <>
-          <div className="absolute inset-0 pointer-events-none overflow-hidden">
-            <div className="absolute -top-32 left-[40%] w-[700px] h-[700px] rounded-full opacity-20"
-              style={{ background: 'radial-gradient(ellipse, rgba(120,40,255,0.6) 0%, transparent 65%)' }} />
-            <div className="absolute top-1/3 right-[-10%] w-[400px] h-[400px] rounded-full opacity-12"
-              style={{ background: 'radial-gradient(ellipse, rgba(34,211,238,0.5) 0%, transparent 65%)' }} />
-            {/* Neon beam */}
-            <div className="absolute top-1/2 left-0 right-0 h-px animate-beam opacity-30"
-              style={{ background: 'linear-gradient(90deg, transparent, var(--neon-c), transparent)' }} />
-          </div>
-          {/* Dot grid */}
-          <div className="absolute inset-0 pointer-events-none opacity-25"
-            style={{ backgroundImage: 'radial-gradient(circle, rgba(168,85,247,0.5) 1px, transparent 1px)', backgroundSize: '44px 44px' }} />
-        </>}
+        {/* Background glow blobs */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 1 }}>
+          {isDark && <>
+            <div className="absolute -top-40 -left-20 w-[700px] h-[700px] rounded-full opacity-15"
+              style={{ background: 'radial-gradient(ellipse, var(--c1) 0%, transparent 65%)' }} />
+            <div className="absolute -bottom-40 right-[-10%] w-[500px] h-[500px] rounded-full opacity-10"
+              style={{ background: 'radial-gradient(ellipse, var(--c2) 0%, transparent 65%)' }} />
+          </>}
+        </div>
 
-        <div className="relative z-10 max-w-[1280px] mx-auto w-full">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+        <div className="relative max-w-[1300px] mx-auto w-full" style={{ zIndex: 2 }}>
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.05fr] gap-16 xl:gap-24 items-center">
 
-            {/* LEFT — text (Amzigo style: huge bold left-aligned) */}
+            {/* LEFT */}
             <div>
               {/* Marketplace pills */}
-              <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.45 }}
-                className="flex flex-wrap items-center gap-2 mb-7">
-                {MARKETPLACES.map(mp => (
-                  <span key={mp.name}
-                    className="flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1.5 rounded-full"
+              <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05, duration: 0.5 }}
+                className="flex flex-wrap items-center gap-2 mb-8">
+                {MARKETS.map(mp => (
+                  <span key={mp.name} className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full"
                     style={{ background: 'var(--bg-card2)', border: '1px solid var(--border2)', color: 'var(--text-dim)' }}>
-                    <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: mp.dot, boxShadow: isDark ? `0 0 6px ${mp.dot}` : undefined }} />
+                    <span className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                      style={{ background: mp.dot, boxShadow: isDark ? `0 0 5px ${mp.dot}` : undefined }} />
                     {mp.name}
                   </span>
                 ))}
               </motion.div>
 
-              {/* Headline — very large bold like Amzigo */}
-              <motion.h1 initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.55 }}
-                className="font-black leading-[1.04] tracking-tight mb-5"
-                style={{ fontSize: 'clamp(44px,5.5vw,80px)', color: 'var(--text-base)' }}>
-                {lang === 'uz' ? (<>Do'koningizni<br /><span className="neon-gradient-text">to'liq nazorat</span><br />qiling</>) :
-                 lang === 'ru' ? (<>Полный<br /><span className="neon-gradient-text">контроль</span><br />над магазином</>) :
-                 (<>Take <span className="neon-gradient-text">full control</span><br />of your store</>)}
-              </motion.h1>
+              {/* HEADLINE with typewriter */}
+              <motion.div initial={{ opacity: 0, y: 28 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15, duration: 0.6 }}>
+                <h1 className="font-black leading-[1.05] tracking-tight mb-6"
+                  style={{ fontSize: 'clamp(40px, 5.5vw, 78px)', fontFamily: 'var(--font-display)', color: 'var(--text-base)' }}>
+                  {lang === 'uz' ? 'Nazorat qiling' : lang === 'ru' ? 'Контролируйте' : 'Control'}<br />
+                  <span className="grad-text" style={isDark ? { filter: 'drop-shadow(0 0 20px rgba(0,212,255,0.4))' } : {}}>
+                    {typed}
+                  </span>
+                  <span className="animate-blink" style={{ color: 'var(--c1)' }}>|</span>
+                </h1>
+              </motion.div>
 
-              <motion.p initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.32, duration: 0.5 }}
-                className="text-lg leading-relaxed mb-8 max-w-lg" style={{ color: 'var(--text-muted)' }}>
+              <motion.p initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.28, duration: 0.55 }}
+                className="text-lg leading-relaxed mb-9 max-w-lg" style={{ color: 'var(--text-muted)' }}>
                 {t.hero.subtitle}
               </motion.p>
 
-              {/* CTA buttons — Amzigo style */}
-              <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.42, duration: 0.5 }}
-                className="flex flex-col sm:flex-row gap-3 mb-8">
+              {/* CTA row */}
+              <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.38, duration: 0.5 }}
+                className="flex flex-col sm:flex-row gap-3 mb-9">
                 <Link href="/login"
-                  className="group inline-flex items-center justify-center gap-2 text-white font-bold px-8 py-4 rounded-2xl transition-all text-sm"
-                  style={{ background: 'linear-gradient(135deg,#7c3aed,#0891b2)', boxShadow: isDark ? '0 0 30px rgba(168,85,247,0.4), 0 8px 24px rgba(0,0,0,0.4)' : '0 8px 24px rgba(124,58,237,0.35)' }}>
+                  className="btn-cta group inline-flex items-center justify-center gap-2 text-white font-bold px-8 py-4 rounded-2xl transition-all text-sm"
+                  style={{ fontFamily: 'var(--font-display)', background: `linear-gradient(135deg, var(--c1), var(--c2))`, boxShadow: isDark ? '0 0 32px rgba(0,212,255,0.35), 0 8px 24px rgba(0,0,0,0.4)' : '0 8px 24px rgba(2,132,199,0.35)' }}>
                   {t.hero.cta} <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </Link>
                 <Link href="/dashboard"
@@ -326,44 +406,51 @@ export default function LandingPage() {
                 </Link>
               </motion.div>
 
-              {/* Trust signals */}
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.58, duration: 0.5 }}
-                className="flex items-center gap-5">
+              {/* Trust */}
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.52, duration: 0.5 }}
+                className="flex flex-wrap items-center gap-5">
                 {[{ Icon: ShieldCheck, l: t.hero.secure }, { Icon: Zap, l: t.hero.fast }, { Icon: RefreshCw, l: t.hero.sync }]
                   .map(({ Icon, l }) => (
                     <div key={l} className="flex items-center gap-1.5 text-xs" style={{ color: 'var(--text-muted)' }}>
-                      <Icon className="w-3.5 h-3.5" style={{ color: 'var(--neon-v)' } as React.CSSProperties} />
-                      {l}
+                      <Icon className="w-3.5 h-3.5" style={{ color: 'var(--c1)' }} /> {l}
                     </div>
                   ))}
+                <div className="h-3 w-px" style={{ background: 'var(--border2)' }} />
+                <span className="text-xs font-semibold" style={{ color: 'var(--c1)' }}>3 kun bepul</span>
               </motion.div>
             </div>
 
-            {/* RIGHT — dashboard screenshot with floating cards (Amzigo) */}
-            <motion.div initial={{ opacity: 0, x: 48, scale: 0.97 }} animate={{ opacity: 1, x: 0, scale: 1 }}
-              transition={{ delay: 0.38, duration: 0.75, ease: 'easeOut' }}
+            {/* RIGHT — mockup with floating cards (Amzigo style) */}
+            <motion.div initial={{ opacity: 0, x: 50, scale: 0.97 }} animate={{ opacity: 1, x: 0, scale: 1 }}
+              transition={{ delay: 0.35, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
               className="relative">
 
-              {/* Floating card — top left */}
-              <div className="animate-float-up absolute -left-6 top-8 rounded-2xl p-4 z-20 hidden lg:block"
-                style={{ background: 'var(--bg-card)', border: '1px solid var(--border2)', minWidth: 160, boxShadow: isDark ? '0 0 24px rgba(168,85,247,0.2), 0 16px 40px rgba(0,0,0,0.5)' : '0 8px 32px rgba(0,0,0,0.12)' }}>
-                <p className="text-[10px] mb-1" style={{ color: 'var(--text-muted)' }}>{t.preview.orders} · 30 kun</p>
-                <p className="text-2xl font-black" style={{ color: 'var(--text-base)' }}>1,842</p>
-                <p className="text-xs font-bold text-emerald-400 mt-1">↑ 12.4% <span className="font-normal" style={{ color: 'var(--text-muted)' }}>o'tgan oy</span></p>
+              {/* Floating card left */}
+              <div className="animate-float-up absolute -left-8 top-8 z-20 rounded-2xl p-4 hidden lg:block"
+                style={{ background: 'var(--bg-card)', border: '1px solid var(--border2)', minWidth: 164, boxShadow: isDark ? '0 0 30px rgba(0,212,255,0.15), 0 20px 50px rgba(0,0,0,0.6)' : '0 12px 40px rgba(0,80,160,0.14)' }}>
+                <p className="text-[10px] mb-1.5" style={{ color: 'var(--text-muted)' }}>{t.preview.orders} · 30 kun</p>
+                <p className="text-2xl font-black" style={{ color: 'var(--text-base)', fontFamily: 'var(--font-display)' }}>1,842</p>
+                <div className="flex items-center gap-1.5 mt-1.5">
+                  <span className="text-xs font-bold text-emerald-400">↑ 12.4%</span>
+                  <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>o'tgan oy</span>
+                </div>
               </div>
 
-              {/* Floating card — right */}
-              <div className="animate-float-down absolute -right-6 top-1/3 rounded-2xl p-4 z-20 hidden lg:block"
-                style={{ background: 'var(--bg-card)', border: '1px solid var(--border2)', minWidth: 160, boxShadow: isDark ? '0 0 24px rgba(34,211,238,0.15), 0 16px 40px rgba(0,0,0,0.5)' : '0 8px 32px rgba(0,0,0,0.12)' }}>
-                <p className="text-[10px] mb-1" style={{ color: 'var(--text-muted)' }}>{t.preview.revenue} · bugun</p>
-                <p className="text-2xl font-black" style={{ color: 'var(--text-base)' }}>4.2M</p>
-                <p className="text-xs font-bold mt-1" style={{ color: 'var(--neon-c)' }}>↑ 8.1% <span className="font-normal" style={{ color: 'var(--text-muted)' }}>kecha</span></p>
+              {/* Floating card right */}
+              <div className="animate-float-down absolute -right-8 top-1/3 z-20 rounded-2xl p-4 hidden lg:block"
+                style={{ background: 'var(--bg-card)', border: '1px solid var(--border2)', minWidth: 164, boxShadow: isDark ? '0 0 30px rgba(255,45,155,0.12), 0 20px 50px rgba(0,0,0,0.6)' : '0 12px 40px rgba(0,80,160,0.14)' }}>
+                <p className="text-[10px] mb-1.5" style={{ color: 'var(--text-muted)' }}>{t.preview.revenue} · bugun</p>
+                <p className="text-2xl font-black" style={{ color: 'var(--text-base)', fontFamily: 'var(--font-display)' }}>4.2M</p>
+                <div className="flex items-center gap-1.5 mt-1.5">
+                  <span className="text-xs font-bold" style={{ color: 'var(--c1)' }}>↑ 8.1%</span>
+                  <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>kecha</span>
+                </div>
               </div>
 
-              {/* Neon ring (dark only) */}
+              {/* Spinning ring (dark only) */}
               {isDark && (
-                <div className="absolute -inset-3 rounded-3xl animate-spin-slow pointer-events-none"
-                  style={{ border: '1px solid', borderColor: 'rgba(168,85,247,0.12)' }} />
+                <div className="absolute -inset-4 rounded-3xl animate-spin-slow pointer-events-none"
+                  style={{ border: '1px solid', borderColor: 'rgba(0,212,255,0.08)' }} />
               )}
 
               <DashboardMockup p={t.preview} />
@@ -374,45 +461,53 @@ export default function LandingPage() {
 
       {/* ── STATS BAR ──────────────────────────────────────────────────────── */}
       <section ref={statsRef} className="py-16 px-6" style={{ borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)', background: 'var(--bg-card2)' }}>
-        <div className="max-w-4xl mx-auto grid grid-cols-2 sm:grid-cols-4 gap-8">
-          {([
-            { value: 6,   suffix: '+',     label: t.stats[0].label, delay: 0    },
-            { value: 30,  suffix: 's',     label: t.stats[1].label, delay: 0.1  },
-            { value: 100, suffix: '%',     label: t.stats[2].label, delay: 0.2  },
-            { value: 0,   suffix: " so'm", label: t.stats[3].label, delay: 0.3  },
-          ] as const).map(s => <StatNum key={s.label} {...s} active={statsInView} />)}
+        <div className="max-w-4xl mx-auto grid grid-cols-2 sm:grid-cols-4 gap-8 text-center">
+          {[
+            { n: c0, suffix: '+',     label: t.stats[0].label, delay: 0   },
+            { n: c1, suffix: 's',     label: t.stats[1].label, delay: 0.1 },
+            { n: c2, suffix: '%',     label: t.stats[2].label, delay: 0.2 },
+            { n: 0,  suffix: " so'm", label: t.stats[3].label, delay: 0.3 },
+          ].map(({ n, suffix, label, delay }) => (
+            <motion.div key={label} initial={{ opacity: 0, y: 20 }} animate={statsInView ? { opacity: 1, y: 0 } : {}}
+              transition={{ delay, duration: 0.5 }}>
+              <div className="text-4xl sm:text-5xl font-black mb-2 tabular-nums" style={{ fontFamily: 'var(--font-display)', color: 'var(--text-base)' }}>
+                {n.toLocaleString()}<span className="grad-text">{suffix}</span>
+              </div>
+              <div className="text-sm" style={{ color: 'var(--text-muted)' }}>{label}</div>
+            </motion.div>
+          ))}
         </div>
       </section>
 
       {/* ── FEATURES ───────────────────────────────────────────────────────── */}
       <section id="features" ref={featRef} className="py-28 px-6">
-        <div className="max-w-[1280px] mx-auto">
+        <div className="max-w-[1300px] mx-auto">
           <motion.div initial={{ opacity: 0, y: 24 }} animate={featInView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.5 }}
-            className="mb-14">
-            <p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] mb-3"
-              style={{ color: 'var(--neon-v)' }}>
+            className="mb-16">
+            <p className="text-[10px] font-black uppercase tracking-[0.25em] mb-3 flex items-center gap-2"
+              style={{ color: 'var(--c1)', fontFamily: 'var(--font-display)' }}>
               <span style={{ fontSize: 6 }}>■</span> {t.featuresBadge.toUpperCase()}
             </p>
-            <h2 className="font-black leading-tight mb-3" style={{ fontSize: 'clamp(28px,3.5vw,48px)', color: 'var(--text-base)' }}>
+            <h2 className="font-black leading-tight mb-3" style={{ fontSize: 'clamp(28px,3.5vw,52px)', fontFamily: 'var(--font-display)', color: 'var(--text-base)' }}>
               {t.featuresTitle}
             </h2>
-            <p style={{ color: 'var(--text-muted)', maxWidth: 480 }}>{t.featuresSubtitle}</p>
+            <p className="text-base" style={{ color: 'var(--text-muted)', maxWidth: 480 }}>{t.featuresSubtitle}</p>
           </motion.div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {t.features.map((f, i) => {
               const { Icon, c, bg, border } = FEAT_ICONS[i] ?? FEAT_ICONS[0]
               return (
                 <motion.div key={f.title}
-                  initial={{ opacity: 0, y: 28 }} animate={featInView ? { opacity: 1, y: 0 } : {}}
+                  initial={{ opacity: 0, y: 30 }} animate={featInView ? { opacity: 1, y: 0 } : {}}
                   transition={{ delay: i * 0.07, duration: 0.5 }}
-                  className="neon-card rounded-2xl p-6 cursor-default"
+                  className="neon-card rounded-2xl p-6 cursor-default group"
                   style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-                  <div className="w-11 h-11 rounded-xl flex items-center justify-center mb-5"
+                  <div className="w-11 h-11 rounded-xl flex items-center justify-center mb-5 transition-all group-hover:scale-110"
                     style={{ background: bg, border: `1px solid ${border}` }}>
-                    <Icon className={`w-5 h-5 ${c}`} />
+                    <Icon className="w-5 h-5" style={{ color: c }} />
                   </div>
-                  <h3 className="font-bold mb-2" style={{ color: 'var(--text-base)' }}>{f.title}</h3>
+                  <h3 className="font-bold mb-2" style={{ fontFamily: 'var(--font-display)', color: 'var(--text-base)' }}>{f.title}</h3>
                   <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>{f.desc}</p>
                 </motion.div>
               )
@@ -424,33 +519,34 @@ export default function LandingPage() {
       {/* ── HOW IT WORKS ───────────────────────────────────────────────────── */}
       <section id="how" ref={stepsRef} className="py-28 px-6"
         style={{ background: 'var(--bg-card2)', borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)' }}>
-        <div className="max-w-[1280px] mx-auto">
+        <div className="max-w-[1300px] mx-auto">
           <motion.div initial={{ opacity: 0, y: 24 }} animate={stepsInView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.5 }}
-            className="mb-14">
-            <p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] mb-3"
-              style={{ color: 'var(--neon-c)' }}>
+            className="mb-16">
+            <p className="text-[10px] font-black uppercase tracking-[0.25em] mb-3 flex items-center gap-2"
+              style={{ color: 'var(--c2)', fontFamily: 'var(--font-display)' }}>
               <span style={{ fontSize: 6 }}>■</span> {t.howBadge.toUpperCase()}
             </p>
-            <h2 className="font-black leading-tight" style={{ fontSize: 'clamp(28px,3.5vw,48px)', color: 'var(--text-base)' }}>
-              {t.howTitle1} <span className="neon-gradient-text">{t.howTitle2}</span>
+            <h2 className="font-black leading-tight" style={{ fontSize: 'clamp(28px,3.5vw,52px)', fontFamily: 'var(--font-display)', color: 'var(--text-base)' }}>
+              {t.howTitle1} <span className="grad-text">{t.howTitle2}</span>
             </h2>
           </motion.div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {t.steps.map((s, i) => (
               <motion.div key={s.title}
-                initial={{ opacity: 0, y: 28 }} animate={stepsInView ? { opacity: 1, y: 0 } : {}}
+                initial={{ opacity: 0, y: 30 }} animate={stepsInView ? { opacity: 1, y: 0 } : {}}
                 transition={{ delay: i * 0.1, duration: 0.5 }}
-                className="neon-card relative rounded-2xl p-6"
+                className="neon-card relative rounded-2xl p-6 group"
                 style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
                 {i < t.steps.length - 1 && (
-                  <div className="hidden lg:block absolute top-9 left-full w-4 h-px" style={{ background: 'linear-gradient(90deg,var(--neon-v),transparent)' }} />
+                  <div className="hidden lg:block absolute top-9 left-full w-4 h-px"
+                    style={{ background: `linear-gradient(90deg,var(--c1),transparent)`, opacity: 0.4 }} />
                 )}
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-black mb-5"
-                  style={{ background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.25)', color: 'var(--neon-v)', boxShadow: isDark ? '0 0 12px rgba(168,85,247,0.2)' : undefined }}>
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-black mb-5 group-hover:scale-110 transition-transform"
+                  style={{ fontFamily: 'var(--font-display)', background: 'rgba(0,212,255,0.08)', border: '1px solid rgba(0,212,255,0.22)', color: 'var(--c1)', boxShadow: isDark ? '0 0 12px rgba(0,212,255,0.2)' : undefined }}>
                   {String(i + 1).padStart(2, '0')}
                 </div>
-                <h3 className="font-bold text-sm mb-2" style={{ color: 'var(--text-base)' }}>{s.title}</h3>
+                <h3 className="font-bold text-sm mb-2" style={{ fontFamily: 'var(--font-display)', color: 'var(--text-base)' }}>{s.title}</h3>
                 <p className="text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>{s.desc}</p>
               </motion.div>
             ))}
@@ -465,21 +561,24 @@ export default function LandingPage() {
             viewport={{ once: true }} transition={{ duration: 0.6 }}
             className="relative rounded-3xl p-12 sm:p-16 text-center overflow-hidden"
             style={{ background: 'var(--bg-card)', border: '1px solid var(--border2)' }}>
-            {isDark && <>
-              <div className="absolute top-0 left-1/4 right-1/4 h-px" style={{ background: 'linear-gradient(90deg,transparent,var(--neon-v),transparent)' }} />
-              <div className="absolute bottom-0 left-1/4 right-1/4 h-px" style={{ background: 'linear-gradient(90deg,transparent,var(--neon-c),transparent)' }} />
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-72 h-40 blur-3xl opacity-25 pointer-events-none"
-                style={{ background: 'radial-gradient(ellipse,rgba(168,85,247,0.7) 0%,transparent 70%)' }} />
-            </>}
+            {/* top + bottom glow lines */}
+            <div className="absolute top-0 left-1/4 right-1/4 h-px"
+              style={{ background: 'linear-gradient(90deg,transparent,var(--c1),transparent)' }} />
+            <div className="absolute bottom-0 left-1/4 right-1/4 h-px"
+              style={{ background: 'linear-gradient(90deg,transparent,var(--c2),transparent)' }} />
+            {isDark && (
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-72 h-48 blur-3xl opacity-20 pointer-events-none"
+                style={{ background: 'radial-gradient(ellipse,var(--c1) 0%,transparent 70%)' }} />
+            )}
             <div className="relative">
-              <h2 className="font-black mb-4 leading-tight" style={{ fontSize: 'clamp(24px,3.5vw,44px)', color: 'var(--text-base)' }}>
-                {t.ctaTitle1} <span className="neon-gradient-text">{t.ctaTitle2}</span>
+              <h2 className="font-black mb-4 leading-tight" style={{ fontSize: 'clamp(24px,3.5vw,48px)', fontFamily: 'var(--font-display)', color: 'var(--text-base)' }}>
+                {t.ctaTitle1} <span className="grad-text">{t.ctaTitle2}</span>
               </h2>
               <p className="mb-8 max-w-md mx-auto leading-relaxed" style={{ color: 'var(--text-muted)' }}>{t.ctaSubtitle}</p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <Link href="/login"
-                  className="group inline-flex items-center justify-center gap-2 text-white font-bold px-8 py-4 rounded-2xl transition-all text-sm"
-                  style={{ background: 'linear-gradient(135deg,#7c3aed,#0891b2)', boxShadow: isDark ? '0 0 30px rgba(168,85,247,0.4)' : '0 8px 24px rgba(124,58,237,0.3)' }}>
+                  className="btn-cta group inline-flex items-center justify-center gap-2 text-white font-bold px-8 py-4 rounded-2xl transition-all text-sm"
+                  style={{ fontFamily: 'var(--font-display)', background: `linear-gradient(135deg, var(--c1), var(--c2))`, boxShadow: isDark ? '0 0 30px rgba(0,212,255,0.3)' : '0 8px 24px rgba(2,132,199,0.3)' }}>
                   {t.hero.cta} <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </Link>
                 <Link href="/pricing"
@@ -488,7 +587,9 @@ export default function LandingPage() {
                   Narxlar →
                 </Link>
               </div>
-              <p className="text-xs mt-5" style={{ color: 'var(--text-muted)', opacity: 0.6 }}>3 kun bepul · Karta shart emas</p>
+              <p className="text-xs mt-5" style={{ color: 'var(--text-muted)', opacity: 0.6 }}>
+                3 kun bepul · Karta shart emas
+              </p>
             </div>
           </motion.div>
         </div>
@@ -496,18 +597,18 @@ export default function LandingPage() {
 
       {/* ── FOOTER ─────────────────────────────────────────────────────────── */}
       <footer className="px-6 py-8" style={{ borderTop: '1px solid var(--border)' }}>
-        <div className="max-w-[1280px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="max-w-[1300px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2.5">
             <div className="w-7 h-7 rounded-lg flex items-center justify-center"
-              style={{ background: 'linear-gradient(135deg,#7c3aed,#0891b2)' }}>
+              style={{ background: `linear-gradient(135deg, var(--c1), var(--c2))` }}>
               <TrendingUp className="w-3.5 h-3.5 text-white" />
             </div>
-            <span className="font-black text-sm tracking-tight" style={{ color: 'var(--text-base)' }}>DAROMADCHI</span>
+            <span className="font-black text-sm tracking-tight" style={{ fontFamily: 'var(--font-display)', color: 'var(--text-base)' }}>DAROMADCHI</span>
           </div>
-          <div className="flex items-center gap-6 text-xs font-semibold" style={{ color: 'var(--text-muted)' }}>
-            <Link href="/help"    className="hover:underline transition-all" style={{ ':hover': { color: 'var(--text-base)' } } as React.CSSProperties}>YORDAM</Link>
-            <Link href="/pricing" className="hover:underline transition-all">NARXLAR</Link>
-            <Link href="/dashboard" className="hover:underline transition-all">DASHBOARD</Link>
+          <div className="flex items-center gap-6 text-xs font-semibold" style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-display)' }}>
+            <Link href="/help" className="uppercase tracking-wider hover:underline transition-all">Yordam</Link>
+            <Link href="/pricing" className="uppercase tracking-wider hover:underline transition-all">Narxlar</Link>
+            <Link href="/dashboard" className="uppercase tracking-wider hover:underline transition-all">Dashboard</Link>
           </div>
           <p className="text-xs" style={{ color: 'var(--text-muted)' }}>© 2026 Daromadchi.</p>
         </div>
