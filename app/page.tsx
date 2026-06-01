@@ -1,43 +1,19 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { motion, useInView, AnimatePresence } from 'framer-motion'
 import {
-  TrendingUp, BarChart2, Calculator, FileText, Zap,
-  ArrowRight, RefreshCw, AlertTriangle, ShieldCheck,
-  Activity, Sun, Moon, X, Layers, ChevronRight,
+  TrendingUp, BarChart2, Calculator, FileText,
+  RefreshCw, AlertTriangle, ArrowUpRight,
+  Activity, Sun, Moon, X, Layers, ChevronRight, Check,
+  Package, LayoutDashboard, Store,
 } from 'lucide-react'
 import { useTheme, useLang } from './providers'
 import { translations } from '@/lib/i18n'
 import type { Lang } from '@/lib/i18n'
 
-/* ── typewriter ───────────────────────────────────────────────────────────── */
-function useTypewriter(words: string[], speed = 80, pause = 1800) {
-  const [idx, setIdx] = useState(0)
-  const [displayed, setDisplayed] = useState('')
-  const [deleting, setDeleting] = useState(false)
-
-  useEffect(() => {
-    const word = words[idx % words.length]
-    let timeout: ReturnType<typeof setTimeout>
-    if (!deleting && displayed.length < word.length) {
-      timeout = setTimeout(() => setDisplayed(word.slice(0, displayed.length + 1)), speed)
-    } else if (!deleting && displayed.length === word.length) {
-      timeout = setTimeout(() => setDeleting(true), pause)
-    } else if (deleting && displayed.length > 0) {
-      timeout = setTimeout(() => setDisplayed(displayed.slice(0, -1)), speed / 2)
-    } else {
-      setDeleting(false)
-      setIdx(i => i + 1)
-    }
-    return () => clearTimeout(timeout)
-  }, [displayed, deleting, idx, words, speed, pause])
-
-  return displayed
-}
-
-/* ── counter ──────────────────────────────────────────────────────────────── */
+/* ── useCounter ────────────────────────────────────────────────────────────── */
 function useCounter(target: number, duration = 1800, start = false) {
   const [n, setN] = useState(0)
   useEffect(() => {
@@ -54,100 +30,67 @@ function useCounter(target: number, duration = 1800, start = false) {
   return n
 }
 
-/* ── particles canvas (dark only) ────────────────────────────────────────── */
-function Particles() {
-  const ref = useRef<HTMLCanvasElement>(null)
-  useEffect(() => {
-    const canvas = ref.current
-    if (!canvas) return
-    const ctx = canvas.getContext('2d')!
-    let animId: number
-    const resize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight }
-    resize()
-    window.addEventListener('resize', resize)
-
-    const pts = Array.from({ length: 70 }, () => ({
-      x: Math.random() * canvas.width,
-      y: Math.random() * canvas.height,
-      r: Math.random() * 1.4 + 0.3,
-      vx: (Math.random() - 0.5) * 0.3,
-      vy: (Math.random() - 0.5) * 0.3,
-      color: Math.random() > 0.6 ? '#00d4ff' : '#ff2d9b',
-      alpha: Math.random() * 0.5 + 0.15,
-    }))
-
-    const draw = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height)
-      pts.forEach(p => {
-        p.x = (p.x + p.vx + canvas.width) % canvas.width
-        p.y = (p.y + p.vy + canvas.height) % canvas.height
-        ctx.beginPath()
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2)
-        ctx.fillStyle = p.color + Math.floor(p.alpha * 255).toString(16).padStart(2, '0')
-        ctx.fill()
-      })
-      // draw connections
-      for (let i = 0; i < pts.length; i++) {
-        for (let j = i + 1; j < pts.length; j++) {
-          const dx = pts[i].x - pts[j].x, dy = pts[i].y - pts[j].y
-          const d = Math.sqrt(dx * dx + dy * dy)
-          if (d < 100) {
-            ctx.beginPath()
-            ctx.moveTo(pts[i].x, pts[i].y)
-            ctx.lineTo(pts[j].x, pts[j].y)
-            ctx.strokeStyle = `rgba(0,212,255,${0.06 * (1 - d / 100)})`
-            ctx.lineWidth = 0.5
-            ctx.stroke()
-          }
-        }
-      }
-      animId = requestAnimationFrame(draw)
-    }
-    draw()
-    return () => { cancelAnimationFrame(animId); window.removeEventListener('resize', resize) }
-  }, [])
-  return <canvas ref={ref} className="absolute inset-0 pointer-events-none" style={{ zIndex: 0 }} />
-}
-
-/* ── theme + lang ─────────────────────────────────────────────────────────── */
+/* ── ThemeToggle ───────────────────────────────────────────────────────────── */
 function ThemeToggle() {
   const { theme, toggle } = useTheme()
   return (
-    <button onClick={toggle}
+    <button
+      onClick={toggle}
       className="w-9 h-9 rounded-xl flex items-center justify-center transition-all border"
-      style={{ background: 'var(--bg-card2)', borderColor: 'var(--border2)' }}>
+      style={{ background: 'var(--bg-card)', borderColor: 'var(--border)', color: 'var(--text-muted)' }}
+    >
       {theme === 'dark'
         ? <Sun className="w-4 h-4" style={{ color: '#fbbf24' }} />
-        : <Moon className="w-4 h-4" style={{ color: 'var(--c1)' }} />}
+        : <Moon className="w-4 h-4" style={{ color: '#5c27f5' }} />}
     </button>
   )
 }
+
+/* ── LangToggle ────────────────────────────────────────────────────────────── */
 function LangToggle() {
   const { lang, setLang } = useLang()
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   const langs: Lang[] = ['uz', 'ru', 'en']
+
   useEffect(() => {
-    const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false) }
-    document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h)
+    const h = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', h)
+    return () => document.removeEventListener('mousedown', h)
   }, [])
+
   return (
     <div ref={ref} className="relative">
-      <button onClick={() => setOpen(o => !o)}
-        className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold uppercase tracking-widest border transition-all"
-        style={{ background: 'var(--bg-card2)', borderColor: 'var(--border2)', color: 'var(--c1)', fontFamily: 'var(--font-display)' }}>
-        {lang} <ChevronRight className={`w-3 h-3 transition-transform ${open ? 'rotate-90' : ''}`} />
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-medium border transition-all"
+        style={{ background: 'var(--bg-card)', borderColor: 'var(--border)', color: 'var(--text-muted)' }}
+      >
+        {lang.toUpperCase()}
+        <ChevronRight className={`w-3 h-3 transition-transform ${open ? 'rotate-90' : ''}`} />
       </button>
       <AnimatePresence>
         {open && (
-          <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 6 }}
+          <motion.div
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 6 }}
             className="absolute right-0 top-full mt-2 rounded-xl overflow-hidden shadow-2xl z-50 min-w-[4rem]"
-            style={{ background: 'var(--bg-card)', border: '1px solid var(--border2)' }}>
+            style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}
+          >
             {langs.map(l => (
-              <button key={l} onClick={() => { setLang(l); setOpen(false) }}
-                className="w-full px-3 py-2.5 text-xs font-bold uppercase tracking-widest text-left transition-all"
-                style={{ background: lang === l ? 'rgba(0,212,255,0.1)' : 'transparent', color: lang === l ? 'var(--c1)' : 'var(--text-muted)', fontFamily: 'var(--font-display)' }}>
-                {l}
+              <button
+                key={l}
+                onClick={() => { setLang(l); setOpen(false) }}
+                className="w-full px-3 py-2.5 text-xs font-medium text-left transition-all"
+                style={{
+                  background: lang === l ? 'rgba(92,39,245,0.08)' : 'transparent',
+                  color: lang === l ? '#5c27f5' : 'var(--text-muted)',
+                }}
+              >
+                {l.toUpperCase()}
               </button>
             ))}
           </motion.div>
@@ -157,55 +100,84 @@ function LangToggle() {
   )
 }
 
-/* ── dashboard mockup ─────────────────────────────────────────────────────── */
+/* ── DashboardMockup ───────────────────────────────────────────────────────── */
 function DashboardMockup({ p }: { p: typeof import('@/lib/i18n').translations.en.preview }) {
   const kpis = [
-    { l: p.revenue, v: '124.5M', c: 'var(--c1)' },
-    { l: p.profit,  v: '38.2M',  c: '#34d399'   },
-    { l: p.orders,  v: '1,842',  c: 'var(--c2)'  },
-    { l: p.stock,   v: '3,410',  c: '#fbbf24'   },
+    { l: p.revenue, v: '124.5M', c: '#5c27f5' },
+    { l: p.profit,  v: '38.2M',  c: '#34d399' },
+    { l: p.orders,  v: '1,842',  c: '#818cf8' },
+    { l: p.stock,   v: '3,410',  c: '#fbbf24' },
   ]
   const bars = [28, 52, 38, 68, 44, 82, 62, 90, 72, 58, 78, 94, 68, 86]
+
   return (
-    <div className="w-full rounded-2xl overflow-hidden neon-card"
-      style={{ background: 'var(--bg-card)', border: '1px solid var(--border2)', boxShadow: '0 32px 80px rgba(0,0,0,0.5)' }}>
-      <div className="flex items-center gap-2 px-4 py-3" style={{ background: 'var(--bg-card2)', borderBottom: '1px solid var(--border)' }}>
+    <div
+      className="w-full rounded-2xl overflow-hidden"
+      style={{
+        background: '#ffffff',
+        border: '1px solid rgba(92,39,245,0.12)',
+        boxShadow: '0 32px 80px rgba(92,39,245,0.18), 0 8px 24px rgba(0,0,0,0.08)',
+      }}
+    >
+      {/* Browser chrome */}
+      <div
+        className="flex items-center gap-2 px-4 py-3"
+        style={{ background: '#f8f7ff', borderBottom: '1px solid rgba(92,39,245,0.10)' }}
+      >
         <div className="flex gap-1.5">
           <div className="w-2.5 h-2.5 rounded-full" style={{ background: '#ff5f57' }} />
           <div className="w-2.5 h-2.5 rounded-full" style={{ background: '#febc2e' }} />
           <div className="w-2.5 h-2.5 rounded-full" style={{ background: '#28c840' }} />
         </div>
-        <div className="flex-1 mx-3 rounded-md h-5 flex items-center px-2" style={{ background: 'var(--bg-input)', border: '1px solid var(--border)' }}>
-          <span className="text-[9px]" style={{ color: 'var(--text-muted)' }}>daromadchi.uz/dashboard</span>
+        <div
+          className="flex-1 mx-3 rounded-md h-5 flex items-center px-2"
+          style={{ background: '#ede9fe', border: '1px solid rgba(92,39,245,0.15)' }}
+        >
+          <span className="text-[9px]" style={{ color: '#7c3aed' }}>daromadchi.uz/dashboard</span>
         </div>
         <Activity className="w-3 h-3 animate-pulse" style={{ color: '#34d399' }} />
       </div>
-      <div className="p-3 space-y-2">
+
+      {/* Content */}
+      <div className="p-3 space-y-2" style={{ background: '#faf9ff' }}>
         <div className="grid grid-cols-4 gap-2">
           {kpis.map(k => (
-            <div key={k.l} className="rounded-xl p-2.5" style={{ background: 'var(--bg-card2)', border: '1px solid var(--border)' }}>
-              <p className="text-[9px] mb-1" style={{ color: 'var(--text-muted)' }}>{k.l}</p>
-              <p className="font-bold text-sm" style={{ color: k.c, fontFamily: 'var(--font-display)' }}>{k.v}</p>
-              <p className="text-[9px] mt-0.5 text-emerald-400">↑ 12.4%</p>
+            <div
+              key={k.l}
+              className="rounded-xl p-2.5"
+              style={{ background: '#ffffff', border: '1px solid rgba(92,39,245,0.10)' }}
+            >
+              <p className="text-[9px] mb-1" style={{ color: '#9ca3af' }}>{k.l}</p>
+              <p className="font-bold text-sm" style={{ color: k.c }}>{k.v}</p>
+              <p className="text-[9px] mt-0.5 text-emerald-500">&#8593; 12.4%</p>
             </div>
           ))}
         </div>
         <div className="grid grid-cols-3 gap-2">
-          <div className="col-span-2 rounded-xl p-3" style={{ background: 'var(--bg-card2)', border: '1px solid var(--border)' }}>
-            <p className="text-[9px] mb-2" style={{ color: 'var(--text-muted)' }}>{p.dailyRevenue}</p>
+          <div
+            className="col-span-2 rounded-xl p-3"
+            style={{ background: '#ffffff', border: '1px solid rgba(92,39,245,0.10)' }}
+          >
+            <p className="text-[9px] mb-2" style={{ color: '#9ca3af' }}>{p.dailyRevenue}</p>
             <div className="flex items-end gap-0.5 h-14">
               {bars.map((h, i) => (
-                <div key={i} className="flex-1 rounded-t"
-                  style={{ height: `${h}%`, background: h > 68 ? 'var(--c1)' : 'rgba(0,212,255,0.22)', boxShadow: h > 80 ? '0 0 6px var(--c1)' : undefined }} />
+                <div
+                  key={i}
+                  className="flex-1 rounded-t"
+                  style={{ height: `${h}%`, background: h > 68 ? '#5c27f5' : 'rgba(92,39,245,0.18)' }}
+                />
               ))}
             </div>
           </div>
-          <div className="rounded-xl p-3 flex flex-col items-center justify-center" style={{ background: 'var(--bg-card2)', border: '1px solid var(--border)' }}>
-            <p className="text-[9px] self-start mb-2" style={{ color: 'var(--text-muted)' }}>{p.categories}</p>
+          <div
+            className="rounded-xl p-3 flex flex-col items-center justify-center"
+            style={{ background: '#ffffff', border: '1px solid rgba(92,39,245,0.10)' }}
+          >
+            <p className="text-[9px] self-start mb-2" style={{ color: '#9ca3af' }}>{p.categories}</p>
             <svg viewBox="0 0 36 36" className="w-11 h-11 -rotate-90">
-              <circle cx="18" cy="18" r="14" fill="none" stroke="var(--border)" strokeWidth="4" />
-              <circle cx="18" cy="18" r="14" fill="none" stroke="var(--c1)" strokeWidth="4" strokeDasharray="37 51" strokeLinecap="round" />
-              <circle cx="18" cy="18" r="14" fill="none" stroke="var(--c2)" strokeWidth="4" strokeDasharray="24 64" strokeDashoffset="-37" strokeLinecap="round" />
+              <circle cx="18" cy="18" r="14" fill="none" stroke="#ede9fe" strokeWidth="4" />
+              <circle cx="18" cy="18" r="14" fill="none" stroke="#5c27f5" strokeWidth="4" strokeDasharray="37 51" strokeLinecap="round" />
+              <circle cx="18" cy="18" r="14" fill="none" stroke="#818cf8" strokeWidth="4" strokeDasharray="24 64" strokeDashoffset="-37" strokeLinecap="round" />
               <circle cx="18" cy="18" r="14" fill="none" stroke="#fbbf24" strokeWidth="4" strokeDasharray="15 73" strokeDashoffset="-61" strokeLinecap="round" />
             </svg>
           </div>
@@ -215,21 +187,222 @@ function DashboardMockup({ p }: { p: typeof import('@/lib/i18n').translations.en
   )
 }
 
-/* ── feature data ─────────────────────────────────────────────────────────── */
+/* ── FeatureCard (extracted to avoid hooks-in-map) ─────────────────────────── */
 const FEAT_ICONS = [
-  { Icon: BarChart2,     c: 'var(--c1)',  bg: 'rgba(0,212,255,0.08)',   border: 'rgba(0,212,255,0.22)'  },
-  { Icon: Calculator,    c: '#34d399',    bg: 'rgba(52,211,153,0.08)',  border: 'rgba(52,211,153,0.22)' },
-  { Icon: AlertTriangle, c: '#fbbf24',    bg: 'rgba(251,191,36,0.08)', border: 'rgba(251,191,36,0.22)' },
-  { Icon: FileText,      c: 'var(--c2)',  bg: 'rgba(255,45,155,0.08)', border: 'rgba(255,45,155,0.22)' },
-  { Icon: RefreshCw,     c: '#a78bfa',    bg: 'rgba(167,139,250,0.08)', border: 'rgba(167,139,250,0.22)' },
-  { Icon: Layers,        c: '#fb923c',    bg: 'rgba(251,146,60,0.08)', border: 'rgba(251,146,60,0.22)' },
+  { Icon: BarChart2,     color: '#5c27f5' },
+  { Icon: Calculator,    color: '#34d399' },
+  { Icon: AlertTriangle, color: '#f59e0b' },
+  { Icon: FileText,      color: '#818cf8' },
+  { Icon: RefreshCw,     color: '#06b6d4' },
+  { Icon: Layers,        color: '#fb923c' },
 ]
 
-const MARKETS = [
-  { name: 'Uzum Market',   dot: '#fb923c' },
-  { name: 'Yandex Market', dot: '#fbbf24' },
-  { name: 'Wildberries',   dot: 'var(--c2)' },
-]
+function FeatureCard({
+  title,
+  desc,
+  icon,
+  index,
+  inView,
+}: {
+  title: string
+  desc: string
+  icon: { Icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>; color: string }
+  index: number
+  inView: boolean
+}) {
+  const { Icon, color } = icon
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 28 }}
+      animate={inView ? { opacity: 1, y: 0 } : {}}
+      transition={{ delay: index * 0.07, duration: 0.5 }}
+      className="rounded-2xl p-6 cursor-default group transition-all hover:-translate-y-1"
+      style={{
+        background: '#f5f3ff',
+        border: '1px solid rgba(92,39,245,0.08)',
+        boxShadow: '0 2px 12px rgba(92,39,245,0.06)',
+      }}
+    >
+      <div
+        className="w-12 h-12 rounded-xl flex items-center justify-center mb-5 transition-all group-hover:scale-110"
+        style={{ background: `${color}18`, border: `1px solid ${color}30` }}
+      >
+        <Icon className="w-5 h-5" style={{ color }} />
+      </div>
+      <h3 className="font-bold mb-2 text-base" style={{ color: '#0f0a1e' }}>{title}</h3>
+      <p className="text-sm leading-relaxed" style={{ color: '#6b7280' }}>{desc}</p>
+    </motion.div>
+  )
+}
+
+/* ── TestimonialCard (extracted) ───────────────────────────────────────────── */
+function TestimonialCard({
+  quote,
+  name,
+  role,
+  index,
+  inView,
+  offsetY = 0,
+}: {
+  quote: string
+  name: string
+  role: string
+  index: number
+  inView: boolean
+  offsetY?: number
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 40 }}
+      animate={inView ? { opacity: 1, y: offsetY } : {}}
+      transition={{ delay: index * 0.12, duration: 0.6 }}
+      className="rounded-2xl p-7 flex flex-col justify-between"
+      style={{ background: '#5c27f5', minHeight: 220 }}
+    >
+      <p className="text-white text-sm leading-relaxed mb-6 flex-1">
+        &ldquo;{quote}&rdquo;
+      </p>
+      <p className="text-white text-xs font-semibold" style={{ opacity: 0.7 }}>
+        &bull; {name} &mdash; {role}
+      </p>
+    </motion.div>
+  )
+}
+
+/* ── PricingCard (extracted) ───────────────────────────────────────────────── */
+function PricingCard({
+  name,
+  desc,
+  price,
+  period,
+  features,
+  highlight,
+  index,
+  inView,
+}: {
+  name: string
+  desc: string
+  price: string
+  period: string
+  features: string[]
+  highlight?: boolean
+  index: number
+  inView: boolean
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={inView ? { opacity: 1, scale: 1 } : {}}
+      transition={{ delay: index * 0.1, duration: 0.5 }}
+      className="rounded-2xl p-7 flex flex-col"
+      style={{
+        background: highlight ? '#5c27f5' : '#ffffff',
+        border: highlight ? 'none' : '1px solid rgba(92,39,245,0.12)',
+        boxShadow: highlight
+          ? '0 20px 60px rgba(92,39,245,0.35)'
+          : '0 4px 20px rgba(92,39,245,0.08)',
+      }}
+    >
+      <div className="mb-5">
+        <h3
+          className="text-xl font-bold mb-1.5"
+          style={{ color: highlight ? '#ffffff' : '#0f0a1e' }}
+        >
+          {name}
+        </h3>
+        <p className="text-sm" style={{ color: highlight ? 'rgba(255,255,255,0.7)' : '#6b7280' }}>
+          {desc}
+        </p>
+      </div>
+      <hr style={{ borderColor: highlight ? 'rgba(255,255,255,0.15)' : 'rgba(92,39,245,0.12)', marginBottom: 20 }} />
+      <div className="mb-5">
+        <span className="text-3xl font-black" style={{ color: highlight ? '#ffffff' : '#0f0a1e' }}>
+          {price}
+        </span>
+        {period && (
+          <span className="text-sm ml-1" style={{ color: highlight ? 'rgba(255,255,255,0.6)' : '#9ca3af' }}>
+            {period}
+          </span>
+        )}
+      </div>
+      <p
+        className="text-xs font-semibold mb-4 uppercase tracking-wider"
+        style={{ color: highlight ? 'rgba(255,255,255,0.6)' : '#5c27f5' }}
+      >
+        Kiritilgan imkoniyatlar
+      </p>
+      <ul className="space-y-2.5 flex-1 mb-6">
+        {features.map(f => (
+          <li key={f} className="flex items-start gap-2 text-sm">
+            <Check
+              className="w-4 h-4 mt-0.5 flex-shrink-0"
+              style={{ color: highlight ? '#c4b5fd' : '#5c27f5' }}
+            />
+            <span style={{ color: highlight ? 'rgba(255,255,255,0.85)' : '#374151' }}>{f}</span>
+          </li>
+        ))}
+      </ul>
+      <Link
+        href="/login"
+        className="w-full py-3 rounded-xl text-sm font-bold text-center transition-all hover:opacity-90 block"
+        style={{
+          background: highlight ? 'rgba(255,255,255,0.15)' : '#5c27f5',
+          color: '#ffffff',
+          border: highlight ? '1px solid rgba(255,255,255,0.25)' : 'none',
+        }}
+      >
+        Boshlash &#8599;
+      </Link>
+    </motion.div>
+  )
+}
+
+/* ── StickyBar ─────────────────────────────────────────────────────────────── */
+function StickyBar() {
+  const [visible, setVisible] = useState(false)
+  const [closed, setClosed] = useState(false)
+
+  useEffect(() => {
+    const onScroll = () => setVisible(window.scrollY > 400)
+    window.addEventListener('scroll', onScroll)
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  return (
+    <AnimatePresence>
+      {visible && !closed && (
+        <motion.div
+          initial={{ y: 80, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: 80, opacity: 0 }}
+          transition={{ duration: 0.35, ease: 'easeOut' }}
+          className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-4"
+          style={{ background: '#0d0d1a', borderTop: '1px solid rgba(92,39,245,0.3)' }}
+        >
+          <p className="text-sm text-white font-medium">
+            3 kun bepul boshlang &middot; <span style={{ color: '#a78bfa' }}>Karta shart emas</span>
+          </p>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/login"
+              className="px-5 py-2.5 rounded-xl text-sm font-bold text-white transition-all hover:opacity-90"
+              style={{ background: '#5c27f5' }}
+            >
+              Hozir boshlash &#8599;
+            </Link>
+            <button
+              onClick={() => setClosed(true)}
+              className="w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:bg-white/10"
+              style={{ color: 'rgba(255,255,255,0.5)' }}
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  )
+}
 
 /* ════════════════════════════════════════════════════════════════════════════
    MAIN PAGE
@@ -239,219 +412,308 @@ export default function LandingPage() {
   const { lang }  = useLang()
   const t = translations[lang]
   const isDark = theme === 'dark'
-  const [banner, setBanner] = useState(true)
 
-  const typedWords = lang === 'uz'
-    ? ["do'konni", 'savdoni', 'daromadni', 'reklamani']
-    : lang === 'ru'
-    ? ['магазин', 'продажи', 'прибыль', 'рекламу']
-    : ['your store', 'your sales', 'your profit', 'your ads']
-  const typed = useTypewriter(typedWords, 75, 1600)
+  /* scroll refs */
+  const purpleRef  = useRef(null)
+  const floatRef   = useRef(null)
+  const featRef    = useRef(null)
+  const pricingRef = useRef(null)
+  const testiRef   = useRef(null)
 
-  const featRef  = useRef(null)
-  const stepsRef = useRef(null)
-  const statsRef = useRef(null)
-  const featInView  = useInView(featRef,  { once: true, margin: '-80px' })
-  const stepsInView = useInView(stepsRef, { once: true, margin: '-80px' })
-  const statsInView = useInView(statsRef, { once: true, margin: '-80px' })
+  const purpleInView  = useInView(purpleRef,  { once: true, margin: '-60px' })
+  const floatInView   = useInView(floatRef,   { once: true, margin: '-60px' })
+  const featInView    = useInView(featRef,    { once: true, margin: '-60px' })
+  const pricingInView = useInView(pricingRef, { once: true, margin: '-60px' })
+  const testiInView   = useInView(testiRef,   { once: true, margin: '-60px' })
 
-  /* stat counters */
-  const c0 = useCounter(6,   1800, statsInView)
-  const c1 = useCounter(30,  1800, statsInView)
-  const c2 = useCounter(100, 1800, statsInView)
+  /* useCounter kept for possible future stats section */
+  const _c = useCounter(0, 1800, false)
+  void _c
+
+  /* theme-aware colors */
+  const pageBg   = isDark ? 'var(--bg-base)' : '#ffffff'
+  const textDark = isDark ? 'var(--text-base)' : '#0f0a1e'
+  const textGray = isDark ? 'var(--text-muted)' : '#6b7280'
+
+  /* pricing plans */
+  const plans = [
+    {
+      name: 'Bepul',
+      desc: "Boshlash uchun ideal — hech narsa to'lash shart emas.",
+      price: "0 so'm",
+      period: '/oyiga',
+      features: [
+        '1 ta marketplace',
+        'Asosiy analitika',
+        "30 kunlik ma'lumot tarixi",
+        "Email qo'llab-quvvatlash",
+      ],
+      highlight: false,
+    },
+    {
+      name: 'Pro',
+      desc: 'Faol sotuvchilar uchun barcha kerakli imkoniyatlar.',
+      price: "300,000 so'm",
+      period: '/oyiga',
+      features: [
+        'Barcha marketplacelar',
+        "To'liq reklama tahlili",
+        'P&L hisoboti',
+        'Qoldiq ogohlantirishlari',
+        'Telegram bot integratsiyasi',
+        "Ustuvor qo'llab-quvvatlash",
+      ],
+      highlight: true,
+    },
+    {
+      name: 'Pro+',
+      desc: 'Katta hajmdagi savdo uchun kengaytirilgan imkoniyatlar.',
+      price: "600,000 so'm",
+      period: '/oyiga',
+      features: [
+        "Pro'ning hamma imkoniyati",
+        'ABC/XYZ tahlili',
+        'Birlik iqtisodiyoti kalkulyatori',
+        "Ko'p foydalanuvchi",
+        'API kirish',
+        "Maxsus qo'llab-quvvatlash",
+      ],
+      highlight: false,
+    },
+  ]
+
+  /* testimonials */
+  const testimonials = [
+    {
+      quote: "Daromadchi yordamida reklamamdagi ortiqcha xarajatlarni aniqladim va oylik foydamni 40% ga oshirdim. Endi hamma narsa bitta panelda ko'rinadi.",
+      name: 'Jasur Toshmatov',
+      role: 'Uzum Market Sotuvchi',
+      offsetY: 0,
+    },
+    {
+      quote: "Wildberries va Uzum savdolarimni bitta joyda ko'rish juda qulay. Qoldiq ogohlantirishlari funksiyasi ombor boshqaruvimni tubdan o'zgartirdi.",
+      name: 'Dilnoza Yusupova',
+      role: 'Yandex Market Sotuvchi',
+      offsetY: 24,
+    },
+    {
+      quote: "P&L hisobotlari juda aniq va tushunish oson. Endi moliyaviy qarorlarni ko'r-ko'rona emas, aniq raqamlarga asoslanib qabul qilaman.",
+      name: 'Bobur Rahimov',
+      role: "Ko'p Marketplace Sotuvchi",
+      offsetY: 0,
+    },
+  ]
 
   return (
-    <div className="min-h-screen overflow-x-hidden" style={{ background: 'var(--bg-base)', color: 'var(--text-base)' }}>
-
-      {/* ── ANNOUNCEMENT BANNER ─────────────────────────────────────────── */}
-      <AnimatePresence>
-        {banner && (
-          <motion.div initial={{ height: 40, opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.3 }}
-            className="relative flex items-center justify-center text-xs font-semibold text-white overflow-hidden"
-            style={{ background: 'linear-gradient(90deg,#0284c7,var(--c2),#0284c7)', backgroundSize: '200% 100%', animation: 'grad-shift 4s ease infinite', height: 40 }}>
-            🎉 Wildberries integratsiyasi qo'shildi! &nbsp;
-            <Link href="/dashboard/settings" className="underline underline-offset-2 font-bold hover:opacity-80">
-              Hozir ulang →
-            </Link>
-            <button onClick={() => setBanner(false)} className="absolute right-4 opacity-70 hover:opacity-100 transition-opacity">
-              <X className="w-3.5 h-3.5" />
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
+    <div className="min-h-screen overflow-x-hidden" style={{ background: pageBg, color: textDark }}>
 
       {/* ══════════════════════════════════════════════════════════════════
-          NAVBAR — Tavus style: full-width, uppercase, ■ markers, glowing CTA
+          SECTION 1 — NAVBAR
       ══════════════════════════════════════════════════════════════════ */}
-      <header className="sticky top-0 z-40" style={{ background: 'var(--nav-bg)', backdropFilter: 'blur(20px)', borderBottom: `1px solid var(--border2)` }}>
-        {/* Glowing top line */}
-        <div className="h-px w-full" style={{ background: `linear-gradient(90deg, transparent, var(--c1), var(--c2), var(--c1), transparent)`, opacity: isDark ? 0.7 : 0.4 }} />
-
-        <div className="max-w-[1300px] mx-auto px-6 h-16 flex items-center gap-6">
-          {/* Logo */}
-          <Link href="/" className="flex items-center gap-2.5 flex-shrink-0 group">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-all group-hover:scale-105"
-              style={{ background: `linear-gradient(135deg, var(--c1), var(--c2))`, boxShadow: isDark ? '0 0 18px rgba(0,212,255,0.4)' : '0 4px 12px rgba(2,132,199,0.35)' }}>
-              <TrendingUp className="w-4.5 h-4.5 text-white" />
+      <header
+        className="sticky top-0 z-40"
+        style={{
+          background: isDark ? 'rgba(2,12,26,0.92)' : 'rgba(255,255,255,0.96)',
+          backdropFilter: 'blur(20px)',
+          borderBottom: `1px solid ${isDark ? 'rgba(92,39,245,0.15)' : 'rgba(92,39,245,0.10)'}`,
+        }}
+      >
+        <div className="max-w-[1200px] mx-auto px-6 h-16 flex items-center gap-8">
+          {/* Logo LEFT */}
+          <Link href="/" className="flex items-center gap-2.5 flex-shrink-0">
+            <div
+              className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+              style={{ background: '#5c27f5' }}
+            >
+              <TrendingUp className="w-4 h-4 text-white" />
             </div>
-            <span className="font-black text-sm tracking-tight" style={{ fontFamily: 'var(--font-display)', color: 'var(--text-base)' }}>
-              DAROMADCHI
-            </span>
+            <span className="font-bold text-sm" style={{ color: textDark }}>Daromadchi</span>
           </Link>
 
-          {/* Divider */}
-          <div className="hidden md:block h-5 w-px" style={{ background: 'var(--border2)' }} />
-
-          {/* Nav links — Tavus: ■ + ALL CAPS */}
-          <nav className="hidden md:flex items-center gap-1 flex-1">
+          {/* Nav links CENTER */}
+          <nav className="hidden md:flex items-center gap-1 flex-1 justify-center">
             {[
-              { href: '#features', label: t.nav.features },
-              { href: '#how',      label: t.nav.how      },
-              { href: '/pricing',  label: 'Narxlar'      },
-              { href: '/help',     label: 'Yordam'       },
+              { href: '#features', label: 'Imkoniyatlar'    },
+              { href: '#how',      label: 'Qanday ishlaydi' },
+              { href: '/pricing',  label: 'Narxlar'         },
+              { href: '/help',     label: 'Yordam'          },
             ].map(item => (
-              <a key={item.href} href={item.href}
-                className="group flex items-center gap-1.5 px-4 py-2 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-all relative overflow-hidden"
-                style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-display)' }}
-                onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.color = 'var(--text-base)'; el.style.background = 'var(--bg-card2)' }}
-                onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.color = 'var(--text-muted)'; el.style.background = 'transparent' }}>
-                <span className="text-[7px] transition-colors" style={{ color: 'var(--c1)' }}>■</span>
-                {item.label.toUpperCase()}
+              <a
+                key={item.href}
+                href={item.href}
+                className="px-4 py-2 rounded-lg text-sm font-normal transition-all"
+                style={{ color: textGray }}
+                onMouseEnter={e => {
+                  const el = e.currentTarget as HTMLElement
+                  el.style.color = textDark
+                  el.style.background = isDark ? 'rgba(92,39,245,0.08)' : '#f5f3ff'
+                }}
+                onMouseLeave={e => {
+                  const el = e.currentTarget as HTMLElement
+                  el.style.color = textGray
+                  el.style.background = 'transparent'
+                }}
+              >
+                {item.label}
               </a>
             ))}
           </nav>
 
-          {/* Right side */}
+          {/* RIGHT: lang + theme + login + cta */}
           <div className="flex items-center gap-2 ml-auto flex-shrink-0">
             <LangToggle />
             <ThemeToggle />
-            <div className="hidden sm:block h-5 w-px mx-1" style={{ background: 'var(--border2)' }} />
-            <Link href="/login"
-              className="hidden sm:block text-[11px] font-bold uppercase tracking-wider px-3 py-2 rounded-xl transition-all"
-              style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-display)' }}>
-              {t.nav.login.toUpperCase()}
+            <Link
+              href="/login"
+              className="hidden sm:block text-sm px-4 py-2 rounded-lg transition-all"
+              style={{ color: textGray }}
+            >
+              Kirish
             </Link>
-            <Link href="/login"
-              className="btn-cta flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-white px-5 py-2.5 rounded-xl transition-all"
-              style={{ background: `linear-gradient(135deg, var(--c1), var(--c2))`, boxShadow: isDark ? '0 0 20px rgba(0,212,255,0.3)' : '0 4px 14px rgba(2,132,199,0.35)', fontFamily: 'var(--font-display)' }}>
-              {t.nav.start.toUpperCase()} <ArrowRight className="w-3 h-3" />
+            <Link
+              href="/login"
+              className="flex items-center gap-1.5 text-sm font-semibold text-white px-5 py-2.5 rounded-xl transition-all hover:opacity-90"
+              style={{ background: '#5c27f5' }}
+            >
+              Bepul boshlash <ArrowUpRight className="w-3.5 h-3.5" />
             </Link>
           </div>
         </div>
       </header>
 
       {/* ══════════════════════════════════════════════════════════════════
-          HERO — Amzigo: left text + right product screenshot
+          SECTION 2 — HERO
       ══════════════════════════════════════════════════════════════════ */}
-      <section className="relative min-h-[92vh] flex items-center px-6 py-20 overflow-hidden">
-        {isDark && <Particles />}
-
-        {/* Background glow blobs */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 1 }}>
-          {isDark && <>
-            <div className="absolute -top-40 -left-20 w-[700px] h-[700px] rounded-full opacity-15"
-              style={{ background: 'radial-gradient(ellipse, var(--c1) 0%, transparent 65%)' }} />
-            <div className="absolute -bottom-40 right-[-10%] w-[500px] h-[500px] rounded-full opacity-10"
-              style={{ background: 'radial-gradient(ellipse, var(--c2) 0%, transparent 65%)' }} />
-          </>}
+      <section
+        className="relative px-6 py-20 lg:py-28 overflow-hidden"
+        style={{ background: isDark ? 'var(--bg-base)' : '#ffffff' }}
+      >
+        {/* Soft bg blobs */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          <div
+            className="absolute -top-40 -right-40 w-[600px] h-[600px] rounded-full"
+            style={{ background: 'radial-gradient(ellipse, rgba(92,39,245,0.08) 0%, transparent 65%)' }}
+          />
+          <div
+            className="absolute -bottom-20 -left-20 w-[400px] h-[400px] rounded-full"
+            style={{ background: 'radial-gradient(ellipse, rgba(92,39,245,0.05) 0%, transparent 65%)' }}
+          />
         </div>
 
-        <div className="relative max-w-[1300px] mx-auto w-full" style={{ zIndex: 2 }}>
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.05fr] gap-16 xl:gap-24 items-center">
+        <div className="max-w-[1200px] mx-auto relative">
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.1fr] gap-16 xl:gap-20 items-center">
 
-            {/* LEFT */}
+            {/* LEFT text */}
             <div>
-              {/* Marketplace pills */}
-              <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05, duration: 0.5 }}
-                className="flex flex-wrap items-center gap-2 mb-8">
-                {MARKETS.map(mp => (
-                  <span key={mp.name} className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full"
-                    style={{ background: 'var(--bg-card2)', border: '1px solid var(--border2)', color: 'var(--text-dim)' }}>
-                    <span className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                      style={{ background: mp.dot, boxShadow: isDark ? `0 0 5px ${mp.dot}` : undefined }} />
-                    {mp.name}
-                  </span>
-                ))}
-              </motion.div>
+              <motion.h1
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6 }}
+                className="font-black leading-[1.08] mb-6"
+                style={{ fontSize: 'clamp(44px, 5.5vw, 82px)', color: textDark }}
+              >
+                Do&rsquo;koningizni{' '}
+                <span style={{ color: '#5c27f5' }}>to&rsquo;liq</span>
+                {' '}nazorat qiling
+              </motion.h1>
 
-              {/* HEADLINE with typewriter */}
-              <motion.div initial={{ opacity: 0, y: 28 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15, duration: 0.6 }}>
-                <h1 className="font-black leading-[1.05] tracking-tight mb-6"
-                  style={{ fontSize: 'clamp(40px, 5.5vw, 78px)', fontFamily: 'var(--font-display)', color: 'var(--text-base)' }}>
-                  {lang === 'uz' ? 'Nazorat qiling' : lang === 'ru' ? 'Контролируйте' : 'Control'}<br />
-                  <span className="grad-text" style={isDark ? { filter: 'drop-shadow(0 0 20px rgba(0,212,255,0.4))' } : {}}>
-                    {typed}
-                  </span>
-                  <span className="animate-blink" style={{ color: 'var(--c1)' }}>|</span>
-                </h1>
-              </motion.div>
-
-              <motion.p initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.28, duration: 0.55 }}
-                className="text-lg leading-relaxed mb-9 max-w-lg" style={{ color: 'var(--text-muted)' }}>
-                {t.hero.subtitle}
+              <motion.p
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.15, duration: 0.55 }}
+                className="text-lg leading-relaxed mb-10 max-w-md"
+                style={{ color: textGray }}
+              >
+                Reklama tahlili, qoldiq ogohlantirishlari, foyda hisobotlari &mdash; barchasi bitta panelda.
               </motion.p>
 
-              {/* CTA row */}
-              <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.38, duration: 0.5 }}
-                className="flex flex-col sm:flex-row gap-3 mb-9">
-                <Link href="/login"
-                  className="btn-cta group inline-flex items-center justify-center gap-2 text-white font-bold px-8 py-4 rounded-2xl transition-all text-sm"
-                  style={{ fontFamily: 'var(--font-display)', background: `linear-gradient(135deg, var(--c1), var(--c2))`, boxShadow: isDark ? '0 0 32px rgba(0,212,255,0.35), 0 8px 24px rgba(0,0,0,0.4)' : '0 8px 24px rgba(2,132,199,0.35)' }}>
-                  {t.hero.cta} <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                </Link>
-                <Link href="/dashboard"
-                  className="inline-flex items-center justify-center gap-2 font-semibold px-8 py-4 rounded-2xl transition-all text-sm"
-                  style={{ background: 'var(--bg-card2)', border: '1px solid var(--border2)', color: 'var(--text-dim)' }}>
-                  {t.hero.demo}
+              <motion.div
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.28, duration: 0.5 }}
+                className="flex flex-col sm:flex-row gap-3 mb-6"
+              >
+                <Link
+                  href="/login"
+                  className="inline-flex items-center justify-center gap-2 text-white font-bold px-8 py-4 rounded-2xl transition-all hover:opacity-90 text-base"
+                  style={{ background: '#5c27f5', boxShadow: '0 8px 28px rgba(92,39,245,0.35)' }}
+                >
+                  30 kun bepul boshlash <ArrowUpRight className="w-4 h-4" />
                 </Link>
               </motion.div>
 
-              {/* Trust */}
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.52, duration: 0.5 }}
-                className="flex flex-wrap items-center gap-5">
-                {[{ Icon: ShieldCheck, l: t.hero.secure }, { Icon: Zap, l: t.hero.fast }, { Icon: RefreshCw, l: t.hero.sync }]
-                  .map(({ Icon, l }) => (
-                    <div key={l} className="flex items-center gap-1.5 text-xs" style={{ color: 'var(--text-muted)' }}>
-                      <Icon className="w-3.5 h-3.5" style={{ color: 'var(--c1)' }} /> {l}
-                    </div>
-                  ))}
-                <div className="h-3 w-px" style={{ background: 'var(--border2)' }} />
-                <span className="text-xs font-semibold" style={{ color: 'var(--c1)' }}>3 kun bepul</span>
-              </motion.div>
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.4, duration: 0.4 }}
+                className="text-sm"
+                style={{ color: textGray }}
+              >
+                Karta shart emas
+              </motion.p>
             </div>
 
-            {/* RIGHT — mockup with floating cards (Amzigo style) */}
-            <motion.div initial={{ opacity: 0, x: 50, scale: 0.97 }} animate={{ opacity: 1, x: 0, scale: 1 }}
-              transition={{ delay: 0.35, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-              className="relative">
-
-              {/* Floating card left */}
-              <div className="animate-float-up absolute -left-8 top-8 z-20 rounded-2xl p-4 hidden lg:block"
-                style={{ background: 'var(--bg-card)', border: '1px solid var(--border2)', minWidth: 164, boxShadow: isDark ? '0 0 30px rgba(0,212,255,0.15), 0 20px 50px rgba(0,0,0,0.6)' : '0 12px 40px rgba(0,80,160,0.14)' }}>
-                <p className="text-[10px] mb-1.5" style={{ color: 'var(--text-muted)' }}>{t.preview.orders} · 30 kun</p>
-                <p className="text-2xl font-black" style={{ color: 'var(--text-base)', fontFamily: 'var(--font-display)' }}>1,842</p>
-                <div className="flex items-center gap-1.5 mt-1.5">
-                  <span className="text-xs font-bold text-emerald-400">↑ 12.4%</span>
-                  <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>o'tgan oy</span>
+            {/* RIGHT: mockup + floating cards */}
+            <motion.div
+              initial={{ opacity: 0, x: 48, scale: 0.97 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              transition={{ delay: 0.3, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+              className="relative"
+            >
+              {/* Floating card top-left: orders */}
+              <div
+                className="animate-float-up absolute -left-6 -top-4 z-20 rounded-2xl p-4 hidden lg:block"
+                style={{
+                  background: '#ffffff',
+                  border: '1px solid rgba(92,39,245,0.12)',
+                  boxShadow: '0 12px 40px rgba(92,39,245,0.14)',
+                  minWidth: 170,
+                }}
+              >
+                <p className="text-[10px] mb-1" style={{ color: '#9ca3af' }}>Jami buyurtmalar &middot; 428 &#8599;</p>
+                <p className="text-2xl font-black" style={{ color: '#0f0a1e' }}>428</p>
+                <div className="flex items-center gap-1.5 mt-1">
+                  <span className="text-xs font-bold text-emerald-500">&#8599; +18.2%</span>
                 </div>
               </div>
 
-              {/* Floating card right */}
-              <div className="animate-float-down absolute -right-8 top-1/3 z-20 rounded-2xl p-4 hidden lg:block"
-                style={{ background: 'var(--bg-card)', border: '1px solid var(--border2)', minWidth: 164, boxShadow: isDark ? '0 0 30px rgba(255,45,155,0.12), 0 20px 50px rgba(0,0,0,0.6)' : '0 12px 40px rgba(0,80,160,0.14)' }}>
-                <p className="text-[10px] mb-1.5" style={{ color: 'var(--text-muted)' }}>{t.preview.revenue} · bugun</p>
-                <p className="text-2xl font-black" style={{ color: 'var(--text-base)', fontFamily: 'var(--font-display)' }}>4.2M</p>
-                <div className="flex items-center gap-1.5 mt-1.5">
-                  <span className="text-xs font-bold" style={{ color: 'var(--c1)' }}>↑ 8.1%</span>
-                  <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>kecha</span>
+              {/* Floating card bottom-left: bar chart (dark) */}
+              <div
+                className="animate-float-down absolute -left-6 bottom-8 z-20 rounded-2xl p-4 hidden lg:block"
+                style={{
+                  background: '#0d0d1a',
+                  border: '1px solid rgba(92,39,245,0.3)',
+                  boxShadow: '0 12px 40px rgba(0,0,0,0.4)',
+                  minWidth: 170,
+                }}
+              >
+                <p className="text-[10px] mb-2" style={{ color: 'rgba(255,255,255,0.5)' }}>Savdo samaradorligi</p>
+                <div className="flex items-end gap-0.5 h-8 mb-1">
+                  {[40, 60, 45, 75, 55, 80, 65].map((h, i) => (
+                    <div
+                      key={i}
+                      className="flex-1 rounded-t"
+                      style={{ height: `${h}%`, background: h > 65 ? '#5c27f5' : 'rgba(92,39,245,0.35)' }}
+                    />
+                  ))}
                 </div>
+                <p className="text-xs text-white font-semibold">DRR: 12.4%</p>
               </div>
 
-              {/* Spinning ring (dark only) */}
-              {isDark && (
-                <div className="absolute -inset-4 rounded-3xl animate-spin-slow pointer-events-none"
-                  style={{ border: '1px solid', borderColor: 'rgba(0,212,255,0.08)' }} />
-              )}
+              {/* Floating card bottom-right: revenue growth (dark) */}
+              <div
+                className="animate-float-up absolute -right-6 bottom-4 z-20 rounded-2xl p-4 hidden lg:block"
+                style={{
+                  background: '#0d0d1a',
+                  border: '1px solid rgba(92,39,245,0.3)',
+                  boxShadow: '0 12px 40px rgba(0,0,0,0.4)',
+                  minWidth: 140,
+                }}
+              >
+                <p className="text-[10px] mb-1" style={{ color: 'rgba(255,255,255,0.5)' }}>Daromad o&rsquo;sishi &middot; 643</p>
+                <p className="text-2xl font-black text-white">643</p>
+                <p className="text-xs mt-0.5" style={{ color: '#a78bfa' }}>&#8599; so&rsquo;m mlrd</p>
+              </div>
 
               <DashboardMockup p={t.preview} />
             </motion.div>
@@ -459,160 +721,441 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── STATS BAR ──────────────────────────────────────────────────────── */}
-      <section ref={statsRef} className="py-16 px-6" style={{ borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)', background: 'var(--bg-card2)' }}>
-        <div className="max-w-4xl mx-auto grid grid-cols-2 sm:grid-cols-4 gap-8 text-center">
-          {[
-            { n: c0, suffix: '+',     label: t.stats[0].label, delay: 0   },
-            { n: c1, suffix: 's',     label: t.stats[1].label, delay: 0.1 },
-            { n: c2, suffix: '%',     label: t.stats[2].label, delay: 0.2 },
-            { n: 0,  suffix: " so'm", label: t.stats[3].label, delay: 0.3 },
-          ].map(({ n, suffix, label, delay }) => (
-            <motion.div key={label} initial={{ opacity: 0, y: 20 }} animate={statsInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ delay, duration: 0.5 }}>
-              <div className="text-4xl sm:text-5xl font-black mb-2 tabular-nums" style={{ fontFamily: 'var(--font-display)', color: 'var(--text-base)' }}>
-                {n.toLocaleString()}<span className="grad-text">{suffix}</span>
-              </div>
-              <div className="text-sm" style={{ color: 'var(--text-muted)' }}>{label}</div>
-            </motion.div>
-          ))}
-        </div>
-      </section>
-
-      {/* ── FEATURES ───────────────────────────────────────────────────────── */}
-      <section id="features" ref={featRef} className="py-28 px-6">
-        <div className="max-w-[1300px] mx-auto">
-          <motion.div initial={{ opacity: 0, y: 24 }} animate={featInView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.5 }}
-            className="mb-16">
-            <p className="text-[10px] font-black uppercase tracking-[0.25em] mb-3 flex items-center gap-2"
-              style={{ color: 'var(--c1)', fontFamily: 'var(--font-display)' }}>
-              <span style={{ fontSize: 6 }}>■</span> {t.featuresBadge.toUpperCase()}
-            </p>
-            <h2 className="font-black leading-tight mb-3" style={{ fontSize: 'clamp(28px,3.5vw,52px)', fontFamily: 'var(--font-display)', color: 'var(--text-base)' }}>
-              {t.featuresTitle}
-            </h2>
-            <p className="text-base" style={{ color: 'var(--text-muted)', maxWidth: 480 }}>{t.featuresSubtitle}</p>
+      {/* ══════════════════════════════════════════════════════════════════
+          SECTION 3 — PURPLE BAND
+      ══════════════════════════════════════════════════════════════════ */}
+      <section ref={purpleRef} className="px-6 py-20" style={{ background: '#5c27f5' }}>
+        <div className="max-w-[1200px] mx-auto">
+          {/* Small tag */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={purpleInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.5 }}
+            className="mb-8"
+          >
+            <span
+              className="text-xs font-medium px-3 py-1.5 rounded-full inline-flex items-center gap-1.5"
+              style={{ background: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.85)' }}
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-white inline-block" />
+              Sizning muvaffaqiyatingiz shu yerdan boshlanadi
+            </span>
           </motion.div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {t.features.map((f, i) => {
-              const { Icon, c, bg, border } = FEAT_ICONS[i] ?? FEAT_ICONS[0]
-              return (
-                <motion.div key={f.title}
-                  initial={{ opacity: 0, y: 30 }} animate={featInView ? { opacity: 1, y: 0 } : {}}
-                  transition={{ delay: i * 0.07, duration: 0.5 }}
-                  className="neon-card rounded-2xl p-6 cursor-default group"
-                  style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-                  <div className="w-11 h-11 rounded-xl flex items-center justify-center mb-5 transition-all group-hover:scale-110"
-                    style={{ background: bg, border: `1px solid ${border}` }}>
-                    <Icon className="w-5 h-5" style={{ color: c }} />
+          {/* Large white text */}
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={purpleInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ delay: 0.1, duration: 0.6 }}
+            className="text-white font-bold leading-snug mb-14"
+            style={{ fontSize: 'clamp(20px, 2.8vw, 36px)', maxWidth: 780 }}
+          >
+            Daromadchi marketplace savdosining murakkabligini soddalashtirish uchun yaratilgan.
+            Uzum, Yandex Market va Wildberries sotuvchilari uchun &mdash; bitta platformada barcha raqamlar.
+          </motion.p>
+
+          {/* 3 dark cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {([
+              {
+                icon: LayoutDashboard,
+                title: 'Analitika markazi',
+                content: (
+                  <div className="mt-4 space-y-2">
+                    {(['Uzum Market', 'Yandex Market', 'Wildberries'] as const).map((m, i) => (
+                      <div
+                        key={m}
+                        className="flex items-center justify-between py-1.5 border-b"
+                        style={{ borderColor: 'rgba(255,255,255,0.07)' }}
+                      >
+                        <span className="text-xs" style={{ color: 'rgba(255,255,255,0.6)' }}>{m}</span>
+                        <span
+                          className="text-xs font-semibold"
+                          style={{ color: ['#a78bfa', '#c4b5fd', '#818cf8'][i] }}
+                        >
+                          {(['124.5M', '38.2M', '61.3M'] as const)[i]} so&rsquo;m
+                        </span>
+                      </div>
+                    ))}
                   </div>
-                  <h3 className="font-bold mb-2" style={{ fontFamily: 'var(--font-display)', color: 'var(--text-base)' }}>{f.title}</h3>
-                  <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>{f.desc}</p>
-                </motion.div>
-              )
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* ── HOW IT WORKS ───────────────────────────────────────────────────── */}
-      <section id="how" ref={stepsRef} className="py-28 px-6"
-        style={{ background: 'var(--bg-card2)', borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)' }}>
-        <div className="max-w-[1300px] mx-auto">
-          <motion.div initial={{ opacity: 0, y: 24 }} animate={stepsInView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.5 }}
-            className="mb-16">
-            <p className="text-[10px] font-black uppercase tracking-[0.25em] mb-3 flex items-center gap-2"
-              style={{ color: 'var(--c2)', fontFamily: 'var(--font-display)' }}>
-              <span style={{ fontSize: 6 }}>■</span> {t.howBadge.toUpperCase()}
-            </p>
-            <h2 className="font-black leading-tight" style={{ fontSize: 'clamp(28px,3.5vw,52px)', fontFamily: 'var(--font-display)', color: 'var(--text-base)' }}>
-              {t.howTitle1} <span className="grad-text">{t.howTitle2}</span>
-            </h2>
-          </motion.div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {t.steps.map((s, i) => (
-              <motion.div key={s.title}
-                initial={{ opacity: 0, y: 30 }} animate={stepsInView ? { opacity: 1, y: 0 } : {}}
-                transition={{ delay: i * 0.1, duration: 0.5 }}
-                className="neon-card relative rounded-2xl p-6 group"
-                style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-                {i < t.steps.length - 1 && (
-                  <div className="hidden lg:block absolute top-9 left-full w-4 h-px"
-                    style={{ background: `linear-gradient(90deg,var(--c1),transparent)`, opacity: 0.4 }} />
-                )}
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-black mb-5 group-hover:scale-110 transition-transform"
-                  style={{ fontFamily: 'var(--font-display)', background: 'rgba(0,212,255,0.08)', border: '1px solid rgba(0,212,255,0.22)', color: 'var(--c1)', boxShadow: isDark ? '0 0 12px rgba(0,212,255,0.2)' : undefined }}>
-                  {String(i + 1).padStart(2, '0')}
+                ),
+              },
+              {
+                icon: BarChart2,
+                title: "Savdo ko'rsatkichlari",
+                content: (
+                  <div className="mt-4 flex items-end gap-1 h-16">
+                    {[35, 55, 40, 70, 50, 85, 65, 90, 75].map((h, i) => (
+                      <div
+                        key={i}
+                        className="flex-1 rounded-t"
+                        style={{ height: `${h}%`, background: h > 65 ? '#a78bfa' : 'rgba(167,139,250,0.3)' }}
+                      />
+                    ))}
+                  </div>
+                ),
+              },
+              {
+                icon: Package,
+                title: 'Ombor nazorati',
+                content: (
+                  <div className="mt-4 space-y-2">
+                    {([
+                      { sku: 'SKU-001', days: 12, status: 'warn'   },
+                      { sku: 'SKU-047', days: 3,  status: 'danger' },
+                      { sku: 'SKU-112', days: 28, status: 'ok'     },
+                    ] as const).map(({ sku, days, status }) => (
+                      <div
+                        key={sku}
+                        className="flex items-center justify-between py-1.5 border-b"
+                        style={{ borderColor: 'rgba(255,255,255,0.07)' }}
+                      >
+                        <span className="text-xs font-mono" style={{ color: 'rgba(255,255,255,0.6)' }}>{sku}</span>
+                        <span
+                          className="text-xs font-semibold px-2 py-0.5 rounded"
+                          style={{
+                            background: status === 'danger' ? 'rgba(239,68,68,0.2)'  : status === 'warn' ? 'rgba(251,191,36,0.2)' : 'rgba(52,211,153,0.2)',
+                            color:      status === 'danger' ? '#f87171'              : status === 'warn' ? '#fcd34d'              : '#6ee7b7',
+                          }}
+                        >
+                          {days} kun
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ),
+              },
+            ] as Array<{ icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>; title: string; content: React.ReactNode }>).map(({ icon: Icon, title, content }, i) => (
+              <motion.div
+                key={title}
+                initial={{ opacity: 0, y: 28 }}
+                animate={purpleInView ? { opacity: 1, y: 0 } : {}}
+                transition={{ delay: 0.2 + i * 0.1, duration: 0.5 }}
+                className="rounded-2xl p-6"
+                style={{ background: '#0d0d1a' }}
+              >
+                <div className="flex items-center gap-2.5 mb-1">
+                  <Icon className="w-4 h-4" style={{ color: '#a78bfa' }} />
+                  <h3 className="text-sm font-semibold text-white">{title}</h3>
                 </div>
-                <h3 className="font-bold text-sm mb-2" style={{ fontFamily: 'var(--font-display)', color: 'var(--text-base)' }}>{s.title}</h3>
-                <p className="text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>{s.desc}</p>
+                {content}
               </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── CTA ────────────────────────────────────────────────────────────── */}
-      <section className="py-28 px-6">
-        <div className="max-w-3xl mx-auto">
-          <motion.div initial={{ opacity: 0, y: 28 }} whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }} transition={{ duration: 0.6 }}
-            className="relative rounded-3xl p-12 sm:p-16 text-center overflow-hidden"
-            style={{ background: 'var(--bg-card)', border: '1px solid var(--border2)' }}>
-            {/* top + bottom glow lines */}
-            <div className="absolute top-0 left-1/4 right-1/4 h-px"
-              style={{ background: 'linear-gradient(90deg,transparent,var(--c1),transparent)' }} />
-            <div className="absolute bottom-0 left-1/4 right-1/4 h-px"
-              style={{ background: 'linear-gradient(90deg,transparent,var(--c2),transparent)' }} />
-            {isDark && (
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-72 h-48 blur-3xl opacity-20 pointer-events-none"
-                style={{ background: 'radial-gradient(ellipse,var(--c1) 0%,transparent 70%)' }} />
-            )}
-            <div className="relative">
-              <h2 className="font-black mb-4 leading-tight" style={{ fontSize: 'clamp(24px,3.5vw,48px)', fontFamily: 'var(--font-display)', color: 'var(--text-base)' }}>
-                {t.ctaTitle1} <span className="grad-text">{t.ctaTitle2}</span>
-              </h2>
-              <p className="mb-8 max-w-md mx-auto leading-relaxed" style={{ color: 'var(--text-muted)' }}>{t.ctaSubtitle}</p>
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <Link href="/login"
-                  className="btn-cta group inline-flex items-center justify-center gap-2 text-white font-bold px-8 py-4 rounded-2xl transition-all text-sm"
-                  style={{ fontFamily: 'var(--font-display)', background: `linear-gradient(135deg, var(--c1), var(--c2))`, boxShadow: isDark ? '0 0 30px rgba(0,212,255,0.3)' : '0 8px 24px rgba(2,132,199,0.3)' }}>
-                  {t.hero.cta} <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                </Link>
-                <Link href="/pricing"
-                  className="inline-flex items-center justify-center gap-2 font-semibold px-8 py-4 rounded-2xl transition-all text-sm"
-                  style={{ background: 'var(--bg-card2)', border: '1px solid var(--border2)', color: 'var(--text-dim)' }}>
-                  Narxlar →
-                </Link>
+      {/* ══════════════════════════════════════════════════════════════════
+          SECTION 4 — LIGHT FLOATING SECTION
+      ══════════════════════════════════════════════════════════════════ */}
+      <section
+        ref={floatRef}
+        id="how"
+        className="px-6 py-20 relative overflow-hidden"
+        style={{ background: '#f5f3ff' }}
+      >
+        <div className="max-w-[1200px] mx-auto text-center relative">
+          {/* Floating icons scattered around */}
+          <div className="absolute inset-0 pointer-events-none">
+            {([
+              { Icon: BarChart2,     x: '5%',  y: '20%', delay: 0,   color: '#5c27f5', dur: 4   },
+              { Icon: Store,         x: '90%', y: '15%', delay: 0.5, color: '#818cf8', dur: 5   },
+              { Icon: AlertTriangle, x: '8%',  y: '65%', delay: 1,   color: '#f59e0b', dur: 6   },
+              { Icon: RefreshCw,     x: '85%', y: '70%', delay: 1.5, color: '#34d399', dur: 4.5 },
+              { Icon: Calculator,    x: '50%', y: '82%', delay: 0.8, color: '#a78bfa', dur: 5.5 },
+            ] as Array<{ Icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>; x: string; y: string; delay: number; color: string; dur: number }>).map(({ Icon, x, y, delay, color, dur }, i) => (
+              <div
+                key={i}
+                className="absolute animate-float-up"
+                style={{ left: x, top: y, animationDelay: `${delay}s`, animationDuration: `${dur}s` }}
+              >
+                <div
+                  className="w-11 h-11 rounded-xl flex items-center justify-center shadow-lg"
+                  style={{ background: '#ffffff', border: '1px solid rgba(92,39,245,0.12)' }}
+                >
+                  <Icon className="w-5 h-5" style={{ color }} />
+                </div>
               </div>
-              <p className="text-xs mt-5" style={{ color: 'var(--text-muted)', opacity: 0.6 }}>
-                3 kun bepul · Karta shart emas
-              </p>
+            ))}
+          </div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            animate={floatInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.6 }}
+          >
+            <h2
+              className="font-black mb-4 leading-tight"
+              style={{ fontSize: 'clamp(28px, 3.5vw, 52px)', color: '#0f0a1e' }}
+            >
+              3 marketplace, bitta panel
+            </h2>
+            <p
+              className="text-base mb-6"
+              style={{ color: '#6b7280', maxWidth: 500, margin: '0 auto 24px' }}
+            >
+              Uzum Market, Yandex Market va Wildberries &mdash; ularning barchasini bitta dashboarddan boshqaring.
+            </p>
+            <Link
+              href="#features"
+              className="inline-flex items-center gap-1 text-sm font-semibold transition-all hover:underline"
+              style={{ color: '#5c27f5' }}
+            >
+              Barcha imkoniyatlarni ko&rsquo;rish <ArrowUpRight className="w-4 h-4" />
+            </Link>
+          </motion.div>
+
+          {/* Market pills */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={floatInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ delay: 0.2, duration: 0.5 }}
+            className="flex items-center justify-center gap-6 mt-12 flex-wrap"
+          >
+            {[
+              { name: 'Uzum Market',   dot: '#fb923c' },
+              { name: 'Yandex Market', dot: '#fbbf24' },
+              { name: 'Wildberries',   dot: '#818cf8' },
+            ].map(mp => (
+              <div
+                key={mp.name}
+                className="flex items-center gap-2 px-5 py-3 rounded-2xl text-sm font-medium"
+                style={{
+                  background: '#ffffff',
+                  border: '1px solid rgba(92,39,245,0.10)',
+                  color: '#374151',
+                  boxShadow: '0 2px 12px rgba(92,39,245,0.07)',
+                }}
+              >
+                <span className="w-2 h-2 rounded-full" style={{ background: mp.dot }} />
+                {mp.name}
+              </div>
+            ))}
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════════════════════════
+          SECTION 5 — FEATURES GRID
+      ══════════════════════════════════════════════════════════════════ */}
+      <section
+        id="features"
+        ref={featRef}
+        className="px-6 py-20"
+        style={{ background: isDark ? 'var(--bg-base)' : '#ffffff' }}
+      >
+        <div className="max-w-[1200px] mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={featInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.5 }}
+            className="mb-12 text-center"
+          >
+            <h2
+              className="font-black mb-3 leading-tight"
+              style={{ fontSize: 'clamp(26px, 3.2vw, 48px)', color: textDark }}
+            >
+              {t.featuresTitle}
+            </h2>
+            <p className="text-base" style={{ color: textGray, maxWidth: 480, margin: '0 auto' }}>
+              {t.featuresSubtitle}
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {t.features.map((f, i) => (
+              <FeatureCard
+                key={f.title}
+                title={f.title}
+                desc={f.desc}
+                icon={FEAT_ICONS[i] ?? FEAT_ICONS[0]}
+                index={i}
+                inView={featInView}
+              />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════════════════════════
+          SECTION 6 — PRICING PREVIEW
+      ══════════════════════════════════════════════════════════════════ */}
+      <section ref={pricingRef} className="px-6 py-20" style={{ background: '#ede9fe' }}>
+        <div className="max-w-[1200px] mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={pricingInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.5 }}
+            className="text-center mb-12"
+          >
+            <h2
+              className="font-black mb-3 leading-tight"
+              style={{ fontSize: 'clamp(26px, 3.2vw, 48px)', color: '#0f0a1e' }}
+            >
+              Narxlar
+            </h2>
+            <p className="text-base" style={{ color: '#6b7280', maxWidth: 440, margin: '0 auto' }}>
+              3 kun bepul sinab ko&rsquo;ring. Karta shart emas.
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
+            {plans.map((plan, i) => (
+              <PricingCard
+                key={plan.name}
+                name={plan.name}
+                desc={plan.desc}
+                price={plan.price}
+                period={plan.period}
+                features={plan.features}
+                highlight={plan.highlight}
+                index={i}
+                inView={pricingInView}
+              />
+            ))}
+          </div>
+
+          {/* Full-width purple CTA bar */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={pricingInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ delay: 0.35, duration: 0.5 }}
+          >
+            <Link
+              href="/login"
+              className="flex items-center justify-center gap-2 w-full py-5 rounded-2xl text-white font-bold text-base transition-all hover:opacity-90"
+              style={{ background: '#5c27f5', boxShadow: '0 8px 28px rgba(92,39,245,0.3)' }}
+            >
+              3 kun bepul boshlang <ArrowUpRight className="w-5 h-5" />
+            </Link>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════════════════════════
+          SECTION 7 — TESTIMONIALS
+      ══════════════════════════════════════════════════════════════════ */}
+      <section
+        ref={testiRef}
+        className="px-6 py-20"
+        style={{ background: 'linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%)' }}
+      >
+        <div className="max-w-[1200px] mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={testiInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.5 }}
+            className="text-center mb-12"
+          >
+            <h2
+              className="font-black mb-3 leading-tight"
+              style={{ fontSize: 'clamp(26px, 3.2vw, 48px)', color: '#0f0a1e' }}
+            >
+              Sotuvchilar nima deydi
+            </h2>
+            <p className="text-base" style={{ color: '#6b7280' }}>
+              Daromadchi bilan savdolarini o&rsquo;stirgan sotuvchilar fikri
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-start">
+            {testimonials.map((item, i) => (
+              <TestimonialCard
+                key={item.name}
+                quote={item.quote}
+                name={item.name}
+                role={item.role}
+                index={i}
+                inView={testiInView}
+                offsetY={item.offsetY}
+              />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════════════════════════
+          SECTION 8 — CTA SECTION
+      ══════════════════════════════════════════════════════════════════ */}
+      <section
+        className="px-6 py-20"
+        style={{ background: isDark ? 'var(--bg-base)' : '#ffffff' }}
+      >
+        <div className="max-w-[760px] mx-auto text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 28 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+          >
+            <h2
+              className="font-black mb-4 leading-tight"
+              style={{ fontSize: 'clamp(28px, 3.5vw, 52px)', color: textDark }}
+            >
+              Bugun boshlang,{' '}
+              <span style={{ color: '#5c27f5' }}>3 kun bepul</span>
+            </h2>
+            <p
+              className="text-base mb-10"
+              style={{ color: textGray, maxWidth: 460, margin: '0 auto 40px' }}
+            >
+              Karta shart emas. Ro&rsquo;yxatdan o&rsquo;ting va barcha imkoniyatlarni sinab ko&rsquo;ring.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Link
+                href="/login"
+                className="inline-flex items-center justify-center gap-2 text-white font-bold px-10 py-4 rounded-2xl transition-all hover:opacity-90 text-base"
+                style={{ background: '#5c27f5', boxShadow: '0 8px 28px rgba(92,39,245,0.35)' }}
+              >
+                Bepul boshlash <ArrowUpRight className="w-4 h-4" />
+              </Link>
+              <Link
+                href="/pricing"
+                className="inline-flex items-center justify-center gap-2 font-semibold px-10 py-4 rounded-2xl transition-all text-base"
+                style={{
+                  background: isDark ? 'var(--bg-card)' : '#f5f3ff',
+                  border: '1px solid rgba(92,39,245,0.18)',
+                  color: '#5c27f5',
+                }}
+              >
+                Narxlarni ko&rsquo;rish
+              </Link>
             </div>
           </motion.div>
         </div>
       </section>
 
-      {/* ── FOOTER ─────────────────────────────────────────────────────────── */}
-      <footer className="px-6 py-8" style={{ borderTop: '1px solid var(--border)' }}>
-        <div className="max-w-[1300px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+      {/* ══════════════════════════════════════════════════════════════════
+          SECTION 9 — FOOTER
+      ══════════════════════════════════════════════════════════════════ */}
+      <footer
+        className="px-6 py-8"
+        style={{
+          background: isDark ? 'var(--bg-card)' : '#ffffff',
+          borderTop: `1px solid ${isDark ? 'var(--border)' : 'rgba(92,39,245,0.10)'}`,
+        }}
+      >
+        <div className="max-w-[1200px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg flex items-center justify-center"
-              style={{ background: `linear-gradient(135deg, var(--c1), var(--c2))` }}>
+            <div
+              className="w-7 h-7 rounded-lg flex items-center justify-center"
+              style={{ background: '#5c27f5' }}
+            >
               <TrendingUp className="w-3.5 h-3.5 text-white" />
             </div>
-            <span className="font-black text-sm tracking-tight" style={{ fontFamily: 'var(--font-display)', color: 'var(--text-base)' }}>DAROMADCHI</span>
+            <span className="font-bold text-sm" style={{ color: textDark }}>Daromadchi</span>
           </div>
-          <div className="flex items-center gap-6 text-xs font-semibold" style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-display)' }}>
-            <Link href="/help" className="uppercase tracking-wider hover:underline transition-all">Yordam</Link>
-            <Link href="/pricing" className="uppercase tracking-wider hover:underline transition-all">Narxlar</Link>
-            <Link href="/dashboard" className="uppercase tracking-wider hover:underline transition-all">Dashboard</Link>
+          <div className="flex items-center gap-6 text-sm" style={{ color: textGray }}>
+            <Link href="/help"      className="hover:underline transition-all">Yordam</Link>
+            <Link href="/pricing"   className="hover:underline transition-all">Narxlar</Link>
+            <Link href="/dashboard" className="hover:underline transition-all">Dashboard</Link>
           </div>
-          <p className="text-xs" style={{ color: 'var(--text-muted)' }}>© 2026 Daromadchi.</p>
+          <p className="text-sm" style={{ color: textGray }}>&copy; 2026 Daromadchi.</p>
         </div>
       </footer>
+
+      {/* ── STICKY BOTTOM BAR ────────────────────────────────────────────── */}
+      <StickyBar />
     </div>
   )
 }

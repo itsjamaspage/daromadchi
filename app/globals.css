@@ -31,7 +31,7 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   LIGHT THEME — Clean Ocean / Amzigo-inspired
+   LIGHT THEME — Clean Ocean
    Pure white + deep ocean blue + cyan accents
 ═══════════════════════════════════════════════════════════════════ */
 [data-theme="light"] {
@@ -67,7 +67,7 @@ h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-display);
 }
 
-/* Dark: animated deep-space gradient + grain */
+/* Dark: deep-space gradient + grain */
 [data-theme="dark"] body {
   background:
     radial-gradient(ellipse 100% 60% at 15% -5%,  rgba(0,180,255,0.12) 0%, transparent 55%),
@@ -92,7 +92,7 @@ h1, h2, h3, h4, h5, h6 {
   );
 }
 
-/* Light: very soft gradient */
+/* Light: soft gradient */
 [data-theme="light"] body {
   background:
     radial-gradient(ellipse 80% 50% at 100% -10%, rgba(0,150,255,0.08) 0%, transparent 55%),
@@ -102,18 +102,13 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   LIGHT MODE OVERRIDES — keep white text inside colored elements
+   LIGHT MODE OVERRIDES
 ═══════════════════════════════════════════════════════════════════ */
 [data-theme="light"] .text-white     { color: var(--text-base) !important; }
 [data-theme="light"] .text-slate-400 { color: var(--text-muted) !important; }
 [data-theme="light"] .text-slate-500 { color: var(--text-muted) !important; }
 [data-theme="light"] .text-slate-300 { color: var(--text-dim)   !important; }
 [data-theme="light"] .text-slate-600 { color: var(--text-muted) !important; }
-[data-theme="light"] .hover\:text-white:hover { color: var(--text-base) !important; }
-
-[data-theme="light"] .bg-cta,
-[data-theme="light"] .btn-cta { color: #fff !important; }
-[data-theme="light"] .btn-cta * { color: #fff !important; }
 
 [data-theme="light"] .bg-\[var\(--bg-card\)\],
 [data-theme="light"] .bg-\[var\(--bg-card2\)\] {
@@ -138,9 +133,6 @@ h1, h2, h3, h4, h5, h6 {
 }
 [data-theme="dark"] .glow-c2 {
   box-shadow: 0 0 20px rgba(255,45,155,0.4), 0 0 40px rgba(255,45,155,0.15);
-}
-[data-theme="dark"] .glow-text-c1 {
-  text-shadow: 0 0 16px rgba(0,212,255,0.6), 0 0 32px rgba(0,212,255,0.25);
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -182,14 +174,6 @@ h1, h2, h3, h4, h5, h6 {
   from { transform: rotate(0deg); }
   to   { transform: rotate(360deg); }
 }
-@keyframes grad-shift {
-  0%,100% { background-position: 0% 50%; }
-  50%      { background-position: 100% 50%; }
-}
-@keyframes neon-border-pulse {
-  0%,100% { opacity: 0.4; }
-  50%      { opacity: 1; }
-}
 @keyframes ticker {
   from { transform: translateX(0); }
   to   { transform: translateX(-50%); }
@@ -206,14 +190,11 @@ h1, h2, h3, h4, h5, h6 {
   from { opacity: 0; transform: translateX(48px) scale(0.97); }
   to   { opacity: 1; transform: translateX(0) scale(1); }
 }
-@keyframes counter-spin {
-  0%,100% { opacity: 1; }
-}
 
 .animate-float-up   { animation: float-up   4s ease-in-out infinite; }
 .animate-float-down { animation: float-down 4.5s ease-in-out infinite; }
 .animate-spin-slow  { animation: spin-slow  22s linear infinite; }
-.animate-ticker     { animation: ticker 28s linear infinite; }
+.animate-ticker     { animation: ticker 32s linear infinite; }
 .animate-blink      { animation: blink 1.1s step-end infinite; }
 .animate-fade-up    { animation: fade-up 0.7s ease-out both; }
 .animate-slide-right{ animation: slide-in-right 0.8s ease-out both; }
