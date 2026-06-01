@@ -1,40 +1,34 @@
-// Generate key: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 import { createCipheriv, createDecipheriv, randomBytes } from 'crypto'
 
-function getKey(): Buffer {
-  const hex = process.env.ENCRYPTION_KEY ?? ''
-  if (hex.length !== 64) {
-    throw new Error('ENCRYPTION_KEY must be a 64-char hex string. Generate: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"')
-  }
-  return Buffer.from(hex, 'hex')
+const ALGO = 'aes-256-cbc'
+
+function getKey(): Buffer | null {
+  const raw = process.env.ENCRYPTION_KEY
+  if (!raw) return null
+  const buf = Buffer.from(raw, 'base64')
+  return buf.length === 32 ? buf : null
 }
 
-// Returns "ivHex:authTagHex:ciphertextHex"
+// Returns `enc:<iv_hex>:<ciphertext_hex>` when ENCRYPTION_KEY is set,
+// otherwise returns plaintext unchanged (graceful degradation).
 export function encrypt(plaintext: string): string {
-  const key    = getKey()
-  const iv     = randomBytes(12)
-  const cipher = createCipheriv('aes-256-gcm', key, iv)
-  const enc    = Buffer.concat([cipher.update(plaintext, 'utf8'), cipher.final()])
-  const tag    = cipher.getAuthTag()
-  return `${iv.toString('hex')}:${tag.toString('hex')}:${enc.toString('hex')}`
+  const key = getKey()
+  if (!key) return plaintext
+  const iv      = randomBytes(16)
+  const cipher  = createCipheriv(ALGO, key, iv)
+  const enc     = Buffer.concat([cipher.update(plaintext, 'utf8'), cipher.final()])
+  return `enc:${iv.toString('hex')}:${enc.toString('hex')}`
 }
 
-export function decrypt(ciphertext: string): string {
-  const parts = ciphertext.split(':')
-  if (parts.length !== 3) throw new Error('Invalid ciphertext format — expected iv:tag:enc')
-  const [ivHex, tagHex, encHex] = parts
-  const key      = getKey()
-  const decipher = createDecipheriv('aes-256-gcm', key, Buffer.from(ivHex, 'hex'))
-  decipher.setAuthTag(Buffer.from(tagHex, 'hex'))
-  return decipher.update(Buffer.from(encHex, 'hex')) + decipher.final('utf8')
-}
-
-// Two colons = encrypted format; one colon or zero = plaintext (legacy)
-export function isEncrypted(value: string): boolean {
-  return (value.match(/:/g) ?? []).length === 2
-}
-
-// Safe decrypt — returns plaintext as-is if not yet migrated
-export function decryptKey(stored: string): string {
-  return isEncrypted(stored) ? decrypt(stored) : stored
+// Decrypts `enc:…` values; returns other values unchanged (backward compat).
+export function decrypt(value: string): string {
+  if (!value.startsWith('enc:')) return value
+  const key = getKey()
+  if (!key) throw new Error('ENCRYPTION_KEY env var is required to decrypt tokens')
+  const parts = value.split(':')
+  if (parts.length !== 3) return value
+  const iv     = Buffer.from(parts[1], 'hex')
+  const encBuf = Buffer.from(parts[2], 'hex')
+  const decipher = createDecipheriv(ALGO, key, iv)
+  return Buffer.concat([decipher.update(encBuf), decipher.final()]).toString('utf8')
 }

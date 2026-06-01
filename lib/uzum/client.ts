@@ -1,31 +1,60 @@
-// Uzum Seller API client
-// Base URL: https://api-seller.uzum.uz/api/seller-openapi
-// Auth: Authorization: {token}  — NO "Bearer " prefix per Uzum spec
-// Swagger: https://api-seller.uzum.uz/api/seller-openapi/swagger/swagger-ui/...
+// Uzum Market Seller API client
+// Base URL: https://api-seller.uzum.uz/api
+// Auth: Bearer token from seller.uzum.uz → Settings → API
+// Swagger (requires login): https://api-seller.uzum.uz/api/seller-openapi/swagger/swagger-ui/webjars/swagger-ui/index.html
 
-export const UZUM_API_BASE = 'https://api-seller.uzum.uz/api/seller-openapi'
+export const UZUM_API_BASE = 'https://api-seller.uzum.uz/api'
 
 export class UzumApiError extends Error {
-  constructor(public status: number, message: string) {
+  constructor(
+    public status: number,
+    message: string,
+    public body?: string,
+  ) {
     super(message)
     this.name = 'UzumApiError'
   }
 }
 
-async function request<T>(path: string, token: string, options?: RequestInit): Promise<T> {
+// Exponential backoff for transient errors (429, 5xx)
+async function withRetry<T>(fn: () => Promise<T>, retries = 3, baseMs = 500): Promise<T> {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      return await fn()
+    } catch (err) {
+      const status = err instanceof UzumApiError ? err.status : 0
+      const retryable = status === 429 || status >= 500
+      if (!retryable || attempt === retries) throw err
+      await new Promise(r => setTimeout(r, baseMs * 2 ** attempt))
+    }
+  }
+  throw new Error('unreachable')
+}
+
+async function request<T>(
+  path: string,
+  token: string,
+  options?: RequestInit,
+): Promise<T> {
   const res = await fetch(`${UZUM_API_BASE}${path}`, {
     ...options,
     headers: {
-      'Authorization': token,
+      Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
-      'Accept': 'application/json',
+      Accept: 'application/json',
       ...options?.headers,
     },
-    cache: 'no-store',
+    next: { revalidate: 0 },
   })
 
   if (!res.ok) {
-    throw new UzumApiError(res.status, `Uzum API error: ${res.status} ${res.statusText} (${path})`)
+    let body = ''
+    try { body = await res.text() } catch { /* ignore */ }
+    throw new UzumApiError(
+      res.status,
+      `Uzum API error: ${res.status} ${res.statusText} (${path})`,
+      body,
+    )
   }
 
   return res.json() as Promise<T>
@@ -33,146 +62,137 @@ async function request<T>(path: string, token: string, options?: RequestInit): P
 
 // ─── Response shapes ──────────────────────────────────────────────────────────
 
-export interface OrganizationDto {
-  id: number
+export interface UzumOrderItem {
+  productId: number
+  productName: string
+  quantity: number
+  price: number // unit price in so'm
+}
+
+export interface UzumOrder {
+  orderId: string
+  orderNumber: string
+  customerName: string
+  status: 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' | 'RETURNED'
+  createdAt: string // ISO date
+  items: UzumOrderItem[]
+  totalPrice: number
+}
+
+export interface UzumOrdersResponse {
+  data: UzumOrder[]
+  totalCount: number
+  page: number
+  pageSize: number
+}
+
+export interface UzumProduct {
+  productId: number
   name: string
+  sku: string
+  categoryName: string
+  price: number
+  purchasePrice: number // cost / tannarx
+  stock: number
 }
 
-export interface SkuForTable {
-  skuId: number
-  price?: number           // selling price
-  purchasePrice?: number   // cost price
-  quantityActive?: number  // FBO stock
-  quantityFbs?: number     // FBS stock
-  commission?: number
-  dimensionalGroup?: 'SMALL' | 'MEDIUM' | 'LARGE' | string
+export interface UzumProductsResponse {
+  data: UzumProduct[]
+  totalCount: number
+  page: number
+  pageSize: number
 }
 
-export interface SellerProductCard {
-  productId: number
-  title?: string
-  category?: string
-  commissionDto?: { minCommission: number; maxCommission: number }
-  skuList?: SkuForTable[]
+export interface UzumAdCampaign {
+  campaignId: string
+  name: string
+  status: 'ACTIVE' | 'PAUSED' | 'STOPPED' | 'COMPLETED'
+  type: 'CPC' | 'CPO' | 'SEARCH_PROMO'
+  totalBudget: number
+  spentBudget: number
+  startDate: string
+  endDate?: string
+  productId?: number
+  productName?: string
+  clicks?: number
+  impressions?: number
+  orders?: number
+  revenue?: number
 }
 
-export interface AllProducts {
-  productList: SellerProductCard[]
-  totalProductsAmount: number
-}
-
-export interface SellerOrderItemDto {
-  id: number
-  status: 'TO_WITHDRAW' | 'PROCESSING' | 'CANCELED' | 'PARTIALLY_CANCELLED'
-  date: number              // Unix ms
-  orderId: number
-  skuTitle?: string
-  productTitle?: string
-  productId: number
-  shopId: number
-  sellerPrice: number       // revenue per item
-  amount: number            // quantity sold
-  amountReturns: number
-  commission: number        // marketplace commission
-  sellerProfit: number      // profit after all fees
-  purchasePrice: number     // cost price
-  logisticDeliveryFee: number
-  withdrawnProfit: number
-  cancelled: number
-}
-
-export interface FinanceOrderItemsDto {
-  orderItems: SellerOrderItemDto[]
-  totalElements: number
-}
-
-export interface SkuAmountApiResponseDto {
-  skuId: number
-  skuTitle?: string
-  productTitle?: string
-  barcode?: string
-  amount: number            // FBS stock quantity
-  fbsAllowed?: boolean
-  dbsAllowed?: boolean
-}
-
-export interface StocksResponse {
-  payload?: { skuAmountList: SkuAmountApiResponseDto[] }
-  errors?: unknown[]
+export interface UzumAdCampaignsResponse {
+  data: UzumAdCampaign[]
+  totalCount: number
 }
 
 // ─── API calls ────────────────────────────────────────────────────────────────
 
-export async function fetchUzumShops(token: string): Promise<OrganizationDto[]> {
-  return request<OrganizationDto[]>('/v1/shops', token)
+export async function fetchUzumOrders(
+  token: string,
+  page = 0,
+  pageSize = 100,
+  fromDate?: string,
+): Promise<UzumOrdersResponse> {
+  return withRetry(() => {
+    const params = new URLSearchParams({
+      page: String(page),
+      size: String(pageSize),
+      ...(fromDate ? { dateFrom: fromDate } : {}),
+    })
+    return request<UzumOrdersResponse>(`/v1/orders?${params}`, token)
+  })
 }
 
 export async function fetchUzumProducts(
   token: string,
-  shopId: number,
   page = 0,
-  size = 50,
-): Promise<AllProducts> {
-  const params = new URLSearchParams({ page: String(page), size: String(size) })
-  return request<AllProducts>(`/v1/product/shop/${shopId}?${params}`, token)
-}
-
-export interface FinanceOrdersOptions {
-  shopId: number
-  dateFrom: number   // Unix ms
-  dateTo: number     // Unix ms
-  page?: number
-  size?: number
-  group?: boolean
-}
-
-export async function fetchUzumFinanceOrders(
-  token: string,
-  opts: FinanceOrdersOptions,
-): Promise<FinanceOrderItemsDto> {
-  const params = new URLSearchParams({
-    shopIds: String(opts.shopId),
-    dateFrom: String(opts.dateFrom),
-    dateTo:   String(opts.dateTo),
-    page:     String(opts.page ?? 0),
-    size:     String(opts.size ?? 200),
-    group:    String(opts.group ?? false),
+  pageSize = 100,
+): Promise<UzumProductsResponse> {
+  return withRetry(() => {
+    const params = new URLSearchParams({ page: String(page), size: String(pageSize) })
+    return request<UzumProductsResponse>(`/v1/products?${params}`, token)
   })
-  return request<FinanceOrderItemsDto>(`/v1/finance/orders?${params}`, token)
 }
 
-export async function fetchUzumStocks(token: string): Promise<StocksResponse> {
-  return request<StocksResponse>('/v2/fbs/sku/stocks', token)
-}
-
-// Paginate products across all pages
-export async function fetchAllUzumProducts(
+export async function fetchUzumAdCampaigns(
   token: string,
-  shopId: number,
-  pageSize = 50,
-): Promise<SellerProductCard[]> {
-  const first = await fetchUzumProducts(token, shopId, 0, pageSize)
-  const results: SellerProductCard[] = [...first.productList]
-  const totalPages = Math.ceil(first.totalProductsAmount / pageSize)
-  for (let p = 1; p < totalPages; p++) {
-    const res = await fetchUzumProducts(token, shopId, p, pageSize)
-    results.push(...res.productList)
-  }
-  return results
+  page = 0,
+  pageSize = 100,
+): Promise<UzumAdCampaignsResponse> {
+  return withRetry(async () => {
+    const params = new URLSearchParams({ page: String(page), size: String(pageSize) })
+    // Try the most common Uzum campaign endpoint patterns
+    try {
+      return await request<UzumAdCampaignsResponse>(`/v1/campaign/campaigns?${params}`, token)
+    } catch (e1) {
+      if (e1 instanceof UzumApiError && e1.status === 404) {
+        try {
+          return await request<UzumAdCampaignsResponse>(`/v1/promotion/campaigns?${params}`, token)
+        } catch (e2) {
+          if (e2 instanceof UzumApiError && e2.status === 404) {
+            return { data: [], totalCount: 0 } // ads not available on this account tier
+          }
+          throw e2
+        }
+      }
+      throw e1
+    }
+  })
 }
 
-// Paginate finance orders across all pages
-export async function fetchAllUzumFinanceOrders(
-  token: string,
-  opts: Omit<FinanceOrdersOptions, 'page'>,
-  pageSize = 200,
-): Promise<SellerOrderItemDto[]> {
-  const first = await fetchUzumFinanceOrders(token, { ...opts, page: 0, size: pageSize })
-  const results: SellerOrderItemDto[] = [...first.orderItems]
-  const totalPages = Math.ceil(first.totalElements / pageSize)
-  for (let p = 1; p < totalPages; p++) {
-    const res = await fetchUzumFinanceOrders(token, { ...opts, page: p, size: pageSize })
-    results.push(...res.orderItems)
+// Fetch all pages of a paginated resource
+export async function fetchAllPages<T>(
+  fetcher: (page: number) => Promise<{ data: T[]; totalCount: number; pageSize?: number }>,
+  maxPages = 50,
+): Promise<T[]> {
+  const first = await fetcher(0)
+  const results: T[] = [...first.data]
+  const total = first.totalCount
+  const size = first.pageSize ?? 100
+  const pages = Math.min(Math.ceil(total / size), maxPages)
+  for (let p = 1; p < pages; p++) {
+    const res = await fetcher(p)
+    results.push(...res.data)
   }
   return results
 }

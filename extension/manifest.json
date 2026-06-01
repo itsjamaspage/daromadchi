@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Daromadchi — Uzum & Yandex Market Analytics",
-  "version": "2.0.0",
-  "description": "Uzum va Yandex Market sotuvchilari uchun aqlli tahlil: marja, zaxira, reklama samaradorligi va Telegram xabarnomalar",
+  "version": "2.1.0",
+  "description": "Uzum va Yandex Market sotuvchilari uchun aqlli tahlil: marja, ROI, reklama samaradorligi",
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
@@ -24,11 +24,17 @@
       "matches": [
         "https://uzum.uz/*",
         "https://www.uzum.uz/*",
-        "*://*.uzum.uz/*",
-        "https://market.yandex.uz/*",
-        "https://www.market.yandex.uz/*"
+        "*://*.uzum.uz/*"
       ],
       "js": ["content.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://partner.market.yandex.ru/*"
+      ],
+      "js": ["content-yandex.js"],
       "css": ["content.css"],
       "run_at": "document_idle"
     }
@@ -37,10 +43,7 @@
   "host_permissions": [
     "*://*.uzum.uz/*",
     "https://uzum.uz/*",
-    "https://market.yandex.uz/*",
-    "https://www.market.yandex.uz/*",
-    "https://api.partner.market.yandex.ru/*",
-    "https://api-seller.uzum.uz/*",
+    "https://partner.market.yandex.ru/*",
     "https://daromadchi.uz/*"
   ],
   "background": {

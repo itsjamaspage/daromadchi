@@ -3,17 +3,22 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { LayoutDashboard, Package, ShoppingCart, Calculator, Settings } from 'lucide-react'
-
-const tabs = [
-  { href: '/dashboard',            label: 'Bosh',        icon: LayoutDashboard },
-  { href: '/dashboard/products',   label: 'Mahsulot',    icon: Package         },
-  { href: '/dashboard/orders',     label: 'Buyurtma',    icon: ShoppingCart    },
-  { href: '/dashboard/calculator', label: 'Kalkulyator', icon: Calculator      },
-  { href: '/dashboard/settings',   label: 'Sozlama',     icon: Settings        },
-]
+import { useLang } from '@/app/providers'
+import { translations } from '@/lib/i18n'
 
 export default function BottomNav() {
   const pathname = usePathname()
+  const { lang } = useLang()
+  const d = translations[lang].dashboard
+
+  const tabs = [
+    { href: '/dashboard',            label: d.nav.dashboard,   icon: LayoutDashboard },
+    { href: '/dashboard/products',   label: d.nav.products,    icon: Package         },
+    { href: '/dashboard/orders',     label: d.nav.orders,      icon: ShoppingCart    },
+    { href: '/dashboard/calculator', label: d.nav.calculator,  icon: Calculator      },
+    { href: '/dashboard/settings',   label: d.nav.settings,    icon: Settings        },
+  ]
+
   return (
     <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-[var(--border)] bg-[var(--bg-card)]/95 backdrop-blur-xl">
       <div className="flex items-stretch h-16">
@@ -24,9 +29,7 @@ export default function BottomNav() {
               className={`flex-1 flex flex-col items-center justify-center gap-1 text-[10px] font-medium transition-all ${
                 active ? 'text-violet-400' : 'text-slate-500 hover:text-slate-300'
               }`}>
-              <div className={`w-8 h-6 flex items-center justify-center rounded-lg transition-all ${
-                active ? 'bg-violet-500/15' : ''
-              }`}>
+              <div className={`w-8 h-6 flex items-center justify-center rounded-lg transition-all ${active ? 'bg-violet-500/15' : ''}`}>
                 <Icon className="w-4 h-4" />
               </div>
               {label}

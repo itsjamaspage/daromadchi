@@ -6,35 +6,51 @@ import { createClient } from '@/lib/supabase/client'
 import {
   LayoutDashboard, Package, ShoppingCart, TrendingUp,
   LogOut, ChevronRight, X, Settings, BarChart2, Calculator, FileText, Globe2,
-  Sun, Moon, Search, Users, Bell, HelpCircle, CreditCard, UserCircle, Monitor,
+  Sun, Moon, Megaphone, Search, Database, Layers, Gift, Bell, CreditCard, Tag,
+  MessageSquare, CalendarDays, Users, HelpCircle, UserCircle, Monitor,
 } from 'lucide-react'
 import { useTheme, useLang } from '@/app/providers'
+import { translations } from '@/lib/i18n'
 import type { Lang } from '@/lib/i18n'
 
-type NavItem = { href: string; label: string; icon: React.ElementType }
+type NavItem = { href: string; key: string; icon: React.ElementType }
 
-const storeNav: NavItem[] = [
-  { href: '/dashboard',            label: 'Dashboard',       icon: LayoutDashboard },
-  { href: '/dashboard/products',   label: 'Mahsulotlar',     icon: Package         },
-  { href: '/dashboard/orders',     label: 'Buyurtmalar',     icon: ShoppingCart    },
-  { href: '/dashboard/analytics',  label: 'Tahlil',          icon: BarChart2       },
-  { href: '/dashboard/pnl',        label: 'F & Z hisobot',   icon: FileText        },
-  { href: '/dashboard/calculator', label: 'Kalkulyator',     icon: Calculator      },
-  { href: '/dashboard/keywords',   label: 'Qidiruv iboralari', icon: Search        },
-  { href: '/dashboard/team',       label: 'Jamoa',           icon: Users           },
+const storeNavItems: NavItem[] = [
+  { href: '/dashboard',                key: 'dashboard',     icon: LayoutDashboard },
+  { href: '/dashboard/products',       key: 'products',      icon: Package         },
+  { href: '/dashboard/orders',         key: 'orders',        icon: ShoppingCart    },
+  { href: '/dashboard/analytics',      key: 'analytics',     icon: BarChart2       },
+  { href: '/dashboard/advertising',    key: 'advertising',   icon: Megaphone       },
+  { href: '/dashboard/search-phrases', key: 'searchPhrases', icon: Search          },
+  { href: '/dashboard/unit-economics', key: 'unitEconomics', icon: Layers          },
+  { href: '/dashboard/pnl',            key: 'pnl',           icon: FileText        },
+  { href: '/dashboard/calculator',     key: 'calculator',    icon: Calculator      },
+  { href: '/dashboard/keywords',       key: 'keywords',      icon: Search          },
+  { href: '/dashboard/team',           key: 'team',          icon: Users           },
+  { href: '/dashboard/data-state',     key: 'dataState',     icon: Database        },
+  { href: '/dashboard/referral',       key: 'referral',      icon: Gift            },
+  { href: '/dashboard/price-tracking', key: 'priceTracking', icon: Tag             },
+  { href: '/dashboard/alerts',         key: 'alerts',        icon: Bell            },
+  { href: '/dashboard/payouts',        key: 'payouts',       icon: CreditCard      },
+  { href: '/dashboard/reviews',        key: 'reviews',       icon: MessageSquare   },
+  { href: '/dashboard/seasonality',    key: 'seasonality',   icon: CalendarDays    },
 ]
 
-const marketNav: NavItem[] = [
-  { href: '/dashboard/market', label: 'Bozor tadqiqoti', icon: Globe2 },
+const settingsNavItems: NavItem[] = [
+  { href: '/dashboard/notifications', key: 'notifications', icon: Bell        },
+  { href: '/dashboard/billing',       key: 'billing',       icon: CreditCard  },
+  { href: '/dashboard/profile',       key: 'profile',       icon: UserCircle  },
+  { href: '/dashboard/devices',       key: 'devices',       icon: Monitor     },
+  { href: '/help',                    key: 'help',          icon: HelpCircle  },
 ]
 
-const settingsNav: NavItem[] = [
-  { href: '/dashboard/notifications', label: 'Bildirishnomalar',  icon: Bell        },
-  { href: '/dashboard/billing',       label: "Tarif va to'lov",   icon: CreditCard  },
-  { href: '/dashboard/profile',       label: 'Profil',            icon: UserCircle  },
-  { href: '/dashboard/devices',       label: 'Qurilmalar',        icon: Monitor     },
-  { href: '/help',                    label: 'Yordam markazi',    icon: HelpCircle  },
-]
+const SETTINGS_LABELS: Record<string, string> = {
+  notifications: 'Bildirishnomalar',
+  billing:       "Tarif va to'lov",
+  profile:       'Profil',
+  devices:       'Qurilmalar',
+  help:          'Yordam markazi',
+}
 
 interface SidebarProps {
   onClose?: () => void
@@ -46,12 +62,16 @@ function NavSection({
   labelColor,
   pathname,
   onNavClick,
+  navT,
+  fallbackLabels,
 }: {
   items: NavItem[]
   label: string
   labelColor: string
   pathname: string
   onNavClick: () => void
+  navT: Record<string, string>
+  fallbackLabels?: Record<string, string>
 }) {
   return (
     <div>
@@ -59,8 +79,9 @@ function NavSection({
         {label}
       </p>
       <div className="space-y-0.5">
-        {items.map(({ href, label: itemLabel, icon: Icon }) => {
+        {items.map(({ href, key, icon: Icon }) => {
           const active = pathname === href
+          const itemLabel = navT[key] ?? fallbackLabels?.[key] ?? key
           return (
             <Link
               key={href}
@@ -90,11 +111,12 @@ const LANGS: { value: Lang; label: string }[] = [
 ]
 
 export default function Sidebar({ onClose }: SidebarProps) {
-  const pathname       = usePathname()
-  const router         = useRouter()
-  const supabase       = createClient()
+  const pathname          = usePathname()
+  const router            = useRouter()
+  const supabase          = createClient()
   const { theme, toggle } = useTheme()
   const { lang, setLang } = useLang()
+  const d                 = translations[lang].dashboard
 
   async function handleLogout() {
     await supabase.auth.signOut()
@@ -120,11 +142,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
           </div>
         </Link>
         {onClose && (
-          <button
-            onClick={onClose}
-            className="lg:hidden text-slate-500 hover:text-white transition-colors p-1"
-            aria-label="Yopish"
-          >
+          <button onClick={onClose} className="lg:hidden text-slate-500 hover:text-white transition-colors p-1">
             <X className="w-5 h-5" />
           </button>
         )}
@@ -133,47 +151,48 @@ export default function Sidebar({ onClose }: SidebarProps) {
       {/* Nav */}
       <nav className="flex-1 p-3 space-y-4 overflow-y-auto">
         <NavSection
-          items={storeNav}
-          label="Do'konim"
+          items={storeNavItems}
+          label={d.nav.store}
           labelColor="text-violet-400/60"
           pathname={pathname}
           onNavClick={handleNavClick}
+          navT={d.nav as unknown as Record<string, string>}
         />
 
         <div className="border-t border-white/[0.04]" />
 
         <NavSection
-          items={marketNav}
-          label="Bozor"
+          items={[{ href: '/dashboard/market', key: 'marketResearch', icon: Globe2 }]}
+          label={d.nav.market}
           labelColor="text-cyan-400/60"
           pathname={pathname}
           onNavClick={handleNavClick}
+          navT={d.nav as unknown as Record<string, string>}
         />
 
         <div className="border-t border-white/[0.04]" />
 
         <NavSection
-          items={settingsNav}
-          label="Sozlamalar"
+          items={settingsNavItems}
+          label={d.nav.settings ?? 'Sozlamalar'}
           labelColor="text-slate-400/60"
           pathname={pathname}
           onNavClick={handleNavClick}
+          navT={d.nav as unknown as Record<string, string>}
+          fallbackLabels={SETTINGS_LABELS}
         />
       </nav>
 
       {/* Theme + Language + Settings + Logout */}
       <div className="p-3 border-t border-white/[0.05] space-y-1">
-        {/* Theme & Language row */}
         <div className="flex items-center gap-2 px-1 py-1">
-          {/* Theme toggle */}
           <button
             onClick={toggle}
-            title={theme === 'dark' ? 'Yorug\' rejim' : 'Qorong\'u rejim'}
+            title={theme === 'dark' ? "Yorug' rejim" : "Qorong'u rejim"}
             className="flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-white hover:bg-white/[0.06] transition-all"
           >
             {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </button>
-          {/* Language pills */}
           <div className="flex items-center gap-1 flex-1">
             {LANGS.map(({ value, label }) => (
               <button
@@ -201,15 +220,16 @@ export default function Sidebar({ onClose }: SidebarProps) {
           }`}
         >
           <Settings className={`w-4 h-4 flex-shrink-0 ${pathname === '/dashboard/settings' ? 'text-violet-400' : 'text-slate-500 group-hover:text-slate-300'}`} />
-          Sozlamalar
+          {d.nav.settings ?? 'Sozlamalar'}
           {pathname === '/dashboard/settings' && <ChevronRight className="w-3 h-3 ml-auto text-violet-400" />}
         </Link>
+
         <button
           onClick={handleLogout}
           className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:text-red-400 hover:bg-red-500/[0.08] transition-all"
         >
           <LogOut className="w-4 h-4" />
-          Chiqish
+          {d.nav.logout ?? 'Chiqish'}
         </button>
       </div>
     </aside>

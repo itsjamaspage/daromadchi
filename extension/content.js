@@ -3,38 +3,15 @@
 (function () {
   'use strict';
 
-  function getMarketplace() {
-    if (window.location.hostname.includes('uzum.uz')) return 'uzum';
-    if (window.location.hostname.includes('market.yandex.uz')) return 'yandex';
-    return null;
-  }
-  const marketplace = getMarketplace();
-  if (!marketplace) return;
-
-  const IS_SELLER = marketplace === 'uzum' && (
-    window.location.hostname.includes('seller.uzum') ||
-    window.location.pathname.includes('/seller/')
+  const IS_SELLER = window.location.hostname.includes('seller.uzum') ||
+                    window.location.pathname.includes('/seller/');
+  const IS_PRODUCT = !IS_SELLER && (
+    window.location.pathname.includes('/product/') ||
+    window.location.pathname.includes('/item/') ||
+    /\/[a-z]{2,3}\/[^/]+-\d+/.test(window.location.pathname)
   );
 
-  function isProductPage() {
-    if (marketplace === 'uzum') {
-      return !IS_SELLER && (
-        window.location.pathname.includes('/product/') ||
-        window.location.pathname.includes('/item/') ||
-        /\/[a-z]{2,3}\/[^/]+-\d+/.test(window.location.pathname)
-      );
-    }
-    // Yandex Market: CHECK /product/ and /offer/ URL patterns if widget stops working after a Yandex DOM update
-    if (marketplace === 'yandex') {
-      return window.location.pathname.includes('/product/') ||
-             window.location.pathname.includes('/offer/');
-    }
-    return false;
-  }
-
-  // For Uzum: bail early on irrelevant pages to avoid MutationObserver overhead.
-  // For Yandex: always keep running so the observer can catch SPA navigation to product pages.
-  if (marketplace === 'uzum' && !isProductPage() && !IS_SELLER) return;
+  if (!IS_PRODUCT && !IS_SELLER) return;
 
   // Commission by category keyword
   const COMMISSIONS = {
@@ -95,61 +72,36 @@
     return m ? m[1] : null;
   }
 
-  // ── YANDEX MARKET PARSERS ─────────────────────────────────────────────────
-
-  function parseYandexPrice() {
-    // CHECK: [data-auto="price-value"] is the primary selector — verify on market.yandex.uz if widget stops working
-    const primary = document.querySelector('[data-auto="price-value"]');
-    if (primary) {
-      const raw = primary.innerText.replace(/[^\d]/g, '');
-      if (raw.length >= 4 && raw.length <= 12) return parseInt(raw);
-    }
-    // Fallback: CHECK span[class*="price"] / div[class*="price"] selectors if primary fails
-    const els = document.querySelectorAll('span[class*="price"], div[class*="price"], span[class*="Price"], div[class*="Price"]');
-    for (const el of els) {
-      const cls = el.className.toLowerCase();
-      if (cls.includes('old') || cls.includes('cross') || cls.includes('before')) continue;
-      const raw = el.innerText.replace(/[^\d]/g, '');
-      if (raw.length >= 4 && raw.length <= 12) return parseInt(raw);
-    }
-    return null;
-  }
-
-  function parseYandexOldPrice() {
-    // CHECK: [data-auto="price-old"] and class-based selectors if widget stops working after a Yandex DOM update
-    const el = document.querySelector('[data-auto="price-old"], [class*="priceBefore"], [class*="priceOld"], [class*="price-before"]');
-    if (el) {
-      const raw = el.innerText.replace(/[^\d]/g, '');
-      return raw.length >= 4 ? parseInt(raw) : null;
-    }
-    return null;
-  }
-
-  function getYandexProductIdFromUrl() {
-    // Yandex Market URLs: /product--slug/12345678 or /product/12345678
-    const m = window.location.pathname.match(/\/product[^/]*\/(\d+)/);
-    if (m) return m[1];
-    // Offer pages: /offer/ABCDE123 — CHECK if offer ID format changes
-    const o = window.location.pathname.match(/\/offer\/([^/?]+)/);
-    return o ? o[1] : null;
-  }
-
-  // ── SHARED UTILS ──────────────────────────────────────────────────────────
-
-  function calcEco(price) {
-    const commPct = getCommission();
-    const comm = Math.round(price * commPct / 100);
+  function calcEco(price, opts = {}) {
+    const {
+      commPctOverride = null,
+      costPrice = 0,    // in so'm
+      adPct = 5,        // advertising %
+      taxPct = 6,       // tax %
+      lastMile = 0,
+    } = opts;
+    const commPct = commPctOverride !== null ? commPctOverride : getCommission();
+    const comm     = Math.round(price * commPct / 100);
     const delivery = Math.round(price * 0.04);
-    const returns = Math.round(price * 0.02);
+    const returns  = Math.round(price * 0.02);
     const acquiring = Math.round(price * 0.015);
-    const total = comm + delivery + returns + acquiring;
-    const profit = price - total;
-    const pct = Math.round((profit / price) * 100);
-    return { commPct, comm, delivery, returns, acquiring, total, profit, pct };
+    const adSpend  = Math.round(price * adPct / 100);
+    const preTax   = price - comm - delivery - returns - acquiring - adSpend - lastMile - costPrice;
+    const tax      = Math.round(Math.max(0, preTax) * taxPct / 100);
+    const profit   = preTax - tax;
+    const pct      = Math.round((profit / price) * 100);
+    const roi      = costPrice > 0 ? Math.round((profit / costPrice) * 100) : null;
+    const total    = comm + delivery + returns + acquiring + adSpend + lastMile + tax + costPrice;
+    return { commPct, comm, delivery, returns, acquiring, adSpend, lastMile, tax, costPrice, total, profit, pct, roi };
   }
 
   function marginColor(pct) {
     return pct >= 25 ? '#22c55e' : pct >= 12 ? '#f59e0b' : '#ef4444';
+  }
+
+  function roiColor(roi) {
+    if (roi === null) return '#64748b';
+    return roi >= 80 ? '#22c55e' : roi >= 30 ? '#f59e0b' : '#ef4444';
   }
 
   function fp(n, short = false) {
@@ -159,22 +111,31 @@
     return n.toLocaleString('uz-UZ') + ' so\'m';
   }
 
+  // Load user settings from storage
+  async function loadSettings() {
+    const data = await chrome.storage.local.get(['ueSettings']);
+    return data.ueSettings || { adPct: 5, taxPct: 6, lastMile: 0 };
+  }
+
   // ── PRODUCT WIDGET ────────────────────────────────────────────────────────
 
-  function buildWidget() {
-    const price    = marketplace === 'yandex' ? parseYandexPrice()    : parsePrice();
-    const oldPrice = marketplace === 'yandex' ? parseYandexOldPrice() : parseOldPrice();
+  async function buildWidget() {
+    const price    = parsePrice();
+    const oldPrice = parseOldPrice();
     const title    = parseTitle();
     const rating   = parseRating();
     const reviews  = parseReviewCount();
     const sellers  = parseSellerCount();
-    const productId = marketplace === 'yandex' ? getYandexProductIdFromUrl() : getProductIdFromUrl();
-    const eco      = price ? calcEco(price) : null;
-    const color    = eco ? marginColor(eco.pct) : '#64748b';
+    const productId = getProductIdFromUrl();
     const discount = (oldPrice && price) ? Math.round((1 - price/oldPrice)*100) : null;
-    const commLabel = marketplace === 'yandex'
-      ? `Yandex komissiyasi (${eco?.commPct}%)`
-      : `Uzum komissiyasi (${eco?.commPct}%)`;
+
+    // Load user settings
+    const settings = await loadSettings();
+    const { adPct = 5, taxPct = 6, lastMile = 0, costPrice = 0 } = settings;
+
+    const eco   = price ? calcEco(price, { adPct, taxPct, lastMile, costPrice }) : null;
+    const color = eco ? marginColor(eco.pct) : '#64748b';
+    const rc    = eco?.roi !== undefined && eco.roi !== null ? roiColor(eco.roi) : color;
 
     const wrap = document.createElement('div');
     wrap.id = 'drm-widget';
@@ -183,8 +144,40 @@
       <div class="drm-hd">
         <div class="drm-brand"><span class="drm-pulse"></span>Daromadchi</div>
         <div class="drm-hd-right">
+          <button class="drm-ico-btn" id="drm-cfg-toggle" title="Sozlamalar">⚙</button>
           <button class="drm-ico-btn" id="drm-refresh" title="Yangilash">↻</button>
           <button class="drm-ico-btn" id="drm-close" title="Yopish">✕</button>
+        </div>
+      </div>
+
+      <!-- INLINE SETTINGS (collapsed) -->
+      <div id="drm-cfg-panel" style="display:none;padding:10px 12px;border-bottom:1px solid #1e293b;background:#0a0f1e">
+        <div style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px">Hisob sozlamalari</div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:11px;color:#94a3b8">Tannarx (so'm)</span>
+            <input id="drm-cost" type="number" value="${costPrice||''}" placeholder="0"
+              style="width:80px;background:#1e293b;border:1px solid #334155;border-radius:5px;padding:3px 6px;color:#e2e8f0;font-size:11px;text-align:right"/>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:11px;color:#94a3b8">Reklama (%)</span>
+            <input id="drm-adpct" type="number" step="0.5" value="${adPct}"
+              style="width:60px;background:#1e293b;border:1px solid #334155;border-radius:5px;padding:3px 6px;color:#e2e8f0;font-size:11px;text-align:right"/>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:11px;color:#94a3b8">Soliq (%)</span>
+            <input id="drm-tax" type="number" step="0.5" value="${taxPct}"
+              style="width:60px;background:#1e293b;border:1px solid #334155;border-radius:5px;padding:3px 6px;color:#e2e8f0;font-size:11px;text-align:right"/>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:11px;color:#94a3b8">Oxirgi milya (so'm)</span>
+            <input id="drm-lastmile" type="number" value="${lastMile||''}" placeholder="0"
+              style="width:80px;background:#1e293b;border:1px solid #334155;border-radius:5px;padding:3px 6px;color:#e2e8f0;font-size:11px;text-align:right"/>
+          </div>
+          <button id="drm-cfg-save"
+            style="width:100%;padding:7px;background:#6366f1;color:#fff;border:none;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;margin-top:2px">
+            Qayta hisoblash
+          </button>
         </div>
       </div>
 
@@ -203,10 +196,14 @@
         <!-- COST BREAKDOWN -->
         <div class="drm-section-lbl">Xarajatlar taqsimoti</div>
         <div class="drm-card">
-          <div class="drm-row"><span class="drm-l">${commLabel}</span><span class="drm-v drm-red">−${fp(eco.comm)}</span></div>
-          <div class="drm-row"><span class="drm-l">Yetkazib berish</span><span class="drm-v drm-red">−${fp(eco.delivery)}</span></div>
+          <div class="drm-row"><span class="drm-l">Uzum komissiyasi (${eco.commPct}%)</span><span class="drm-v drm-red">−${fp(eco.comm)}</span></div>
+          <div class="drm-row"><span class="drm-l">Yetkazib berish (~4%)</span><span class="drm-v drm-red">−${fp(eco.delivery)}</span></div>
           <div class="drm-row"><span class="drm-l">Qaytarishlar (~2%)</span><span class="drm-v drm-red">−${fp(eco.returns)}</span></div>
           <div class="drm-row"><span class="drm-l">Ekvayring (1.5%)</span><span class="drm-v drm-red">−${fp(eco.acquiring)}</span></div>
+          <div class="drm-row"><span class="drm-l">Reklama (${adPct}%)</span><span class="drm-v drm-red">−${fp(eco.adSpend)}</span></div>
+          ${lastMile ? `<div class="drm-row"><span class="drm-l">Oxirgi milya</span><span class="drm-v drm-red">−${fp(eco.lastMile)}</span></div>` : ''}
+          ${costPrice ? `<div class="drm-row"><span class="drm-l">Tannarx</span><span class="drm-v drm-red">−${fp(eco.costPrice)}</span></div>` : ''}
+          <div class="drm-row"><span class="drm-l">Soliq (${taxPct}%)</span><span class="drm-v drm-red">−${fp(eco.tax)}</span></div>
           <div class="drm-divider"></div>
           <div class="drm-row drm-bold-row"><span class="drm-l">Jami xarajatlar</span><span class="drm-v drm-red">−${fp(eco.total)}</span></div>
         </div>
@@ -216,7 +213,10 @@
           <div class="drm-profit-lbl">Taxminiy sof foyda</div>
           <div class="drm-profit-val" style="color:${color}">${fp(eco.profit)}</div>
           <div class="drm-profit-bar-wrap"><div class="drm-profit-bar" style="width:${Math.max(0,Math.min(100,eco.pct))}%;background:${color}"></div></div>
-          <div class="drm-profit-pct" style="color:${color}">${eco.pct}% marja</div>
+          <div style="display:flex;justify-content:center;gap:16px">
+            <div class="drm-profit-pct" style="color:${color}">${eco.pct}% marja</div>
+            ${eco.roi !== null ? `<div class="drm-profit-pct" style="color:${rc}">ROI ${eco.roi}%</div>` : ''}
+          </div>
         </div>
 
         <!-- OWN PRODUCT BLOCK (loaded async) -->
@@ -246,31 +246,60 @@
       wrap.remove();
       setTimeout(init, 300);
     };
+
+    // Settings panel toggle
+    const cfgPanel = wrap.querySelector('#drm-cfg-panel');
+    wrap.querySelector('#drm-cfg-toggle').onclick = () => {
+      cfgPanel.style.display = cfgPanel.style.display === 'none' ? 'block' : 'none';
+    };
+
+    // Save settings + rebuild
+    wrap.querySelector('#drm-cfg-save').onclick = async () => {
+      const newSettings = {
+        costPrice: parseFloat(wrap.querySelector('#drm-cost').value) || 0,
+        adPct:     parseFloat(wrap.querySelector('#drm-adpct').value) || 5,
+        taxPct:    parseFloat(wrap.querySelector('#drm-tax').value) || 6,
+        lastMile:  parseFloat(wrap.querySelector('#drm-lastmile').value) || 0,
+      };
+      await chrome.storage.local.set({ ueSettings: newSettings });
+      wrap.remove();
+      buildWidget();
+    };
     wrap.querySelector('#drm-dash').onclick = () => window.open('https://daromadchi.uz/dashboard', '_blank');
     wrap.querySelector('#drm-comp').onclick = () => {
       window.open(`https://daromadchi.uz/competitors?product=${encodeURIComponent(title)}`, '_blank');
     };
     wrap.querySelector('#drm-ue')?.addEventListener('click', () => {
-      const params = new URLSearchParams({ price: price||'', title, url: location.href, marketplace });
-      if (productId) params.set('id', productId);
-      window.open(`https://daromadchi.uz/unit-economics?${params}`, '_blank');
+      const params = new URLSearchParams({
+        source: 'uzum',
+        title,
+        url: location.href,
+        price: String(price || ''),
+        commPct: String(eco?.commPct || ''),
+        costPrice: String(settings.costPrice || ''),
+        adPct: String(settings.adPct || ''),
+        taxPct: String(settings.taxPct || ''),
+        roi: String(eco?.roi ?? ''),
+        margin: String(eco?.pct ?? ''),
+      });
+      if (productId) params.set('productId', productId);
+      window.open(`https://daromadchi.uz/dashboard/unit-economics?${params}`, '_blank');
     });
 
     // Load own-product data async
     if (price) loadOwnProductData(productId, price, wrap);
 
-    return wrap;
+    document.body.appendChild(wrap);
   }
 
   async function loadOwnProductData(productId, price, wrap) {
-    const { daromadchi_token } = await chrome.storage.local.get('daromadchi_token');
-    if (!daromadchi_token || !productId) return;
+    const { authToken } = await chrome.storage.local.get('authToken');
+    if (!authToken || !productId) return;
 
     try {
-      const res = await fetch(
-        `https://daromadchi.uz/api/extension/product/${productId}?marketplace=${marketplace}`,
-        { headers: { 'Authorization': `Bearer ${daromadchi_token}` } }
-      );
+      const res = await fetch(`https://daromadchi.uz/api/extension/product/${productId}`, {
+        headers: { 'Authorization': `Bearer ${authToken}` }
+      });
       if (!res.ok) return;
       const data = await res.json();
 
@@ -336,13 +365,13 @@
       </div>
     `;
     document.body.prepend(bar);
-    document.body.style.paddingTop = '48px';
+    document.body.style.paddingTop = (parseInt(getComputedStyle(document.body).paddingTop)||0) + 44 + 'px';
 
-    const { daromadchi_token, cachedStats, activeAlerts } =
-      await chrome.storage.local.get(['daromadchi_token', 'cachedStats', 'activeAlerts']);
+    const { authToken, cachedStats, activeAlerts } = 
+      await chrome.storage.local.get(['authToken', 'cachedStats', 'activeAlerts']);
 
-    if (!daromadchi_token) {
-      bar.querySelector('#drm-bar-stats').innerHTML =
+    if (!authToken) {
+      bar.querySelector('#drm-bar-stats').innerHTML = 
         `<a href="https://daromadchi.uz/login" target="_blank" class="drm-bar-cta">Daromadchiga kirish →</a>`;
       return;
     }
@@ -371,66 +400,14 @@
     `;
   }
 
-  // ── LOGIN GATE ────────────────────────────────────────────────────────────
-
-  function showLoginButton() {
-    const el = document.createElement('div');
-    el.id = 'drm-widget';
-    el.innerHTML = `
-      <div class="drm-hd">
-        <div class="drm-brand"><span class="drm-pulse"></span>Daromadchi</div>
-        <button class="drm-ico-btn" id="drm-login-close">✕</button>
-      </div>
-      <div class="drm-bd" style="padding:16px;text-align:center">
-        <p style="color:#94a3b8;font-size:12px;margin-bottom:12px;line-height:1.5">
-          Tahlilni ko'rish uchun Daromadchi hisobingizga kiring
-        </p>
-        <button id="drm-login-cta" style="display:block;width:100%;padding:9px 12px;background:#6366f1;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">
-          🔑 Daromadchiga kirish
-        </button>
-      </div>
-    `;
-    el.querySelector('#drm-login-cta').onclick = () =>
-      window.open('https://daromadchi.uz/login', '_blank');
-    el.querySelector('#drm-login-close').onclick = () => {
-      el.classList.add('drm-gone');
-      chrome.storage.local.set({ widgetClosed: Date.now() });
-    };
-    document.body.appendChild(el);
-  }
-
   // ── INIT ──────────────────────────────────────────────────────────────────
 
   async function init() {
-    chrome.storage.local.set({ lastMarketplace: marketplace });
-
-    const { daromadchi_token, widgetClosed } =
-      await chrome.storage.local.get(['daromadchi_token', 'widgetClosed']);
-    const recentlyClosed = Date.now() - (widgetClosed || 0) < 1800000;
-
-    // No token → show login button (or seller bar which handles its own no-auth UI)
-    if (!daromadchi_token) {
-      if (isProductPage() && !recentlyClosed) showLoginButton();
-      else if (IS_SELLER) buildSellerBar();
-      return;
-    }
-
-    // Validate token — only block on explicit 401; pass through on network errors
-    try {
-      const res = await fetch('https://daromadchi.uz/api/extension/validate', {
-        headers: { 'Authorization': `Bearer ${daromadchi_token}` }
-      });
-      if (res.status === 401) {
-        chrome.storage.local.remove('daromadchi_token');
-        if (isProductPage() && !recentlyClosed) showLoginButton();
-        return;
-      }
-    } catch { /* offline — proceed with cached token */ }
-
-    if (isProductPage()) {
-      const w = buildWidget();
-      if (recentlyClosed) w.classList.add('drm-gone');
-      document.body.appendChild(w);
+    if (IS_PRODUCT) {
+      const { widgetClosed } = await chrome.storage.local.get('widgetClosed');
+      await buildWidget();
+      const w = document.getElementById('drm-widget');
+      if (w && Date.now() - (widgetClosed||0) < 1800000) w.classList.add('drm-gone');
     } else if (IS_SELLER) {
       buildSellerBar();
     }
@@ -442,7 +419,7 @@
     setTimeout(init, 1200);
   }
 
-  // SPA nav handler — covers both Uzum and Yandex Market React routing
+  // SPA nav handler
   let lastUrl = location.href;
   new MutationObserver(() => {
     if (location.href !== lastUrl) {

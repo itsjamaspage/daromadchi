@@ -3,9 +3,9 @@
 import { useState, useMemo } from 'react'
 import { Search, ShoppingCart } from 'lucide-react'
 import ExportButton from './ExportButton'
-import type { Order, OrderStatus } from '@/lib/types'
 import { useLang } from '@/app/providers'
-import { dashT } from '@/lib/dashT'
+import { translations } from '@/lib/i18n'
+import type { Order, OrderStatus } from '@/lib/types'
 
 function fmt(n: number) {
   return new Intl.NumberFormat('uz-UZ').format(n) + " so'm"
@@ -14,31 +14,32 @@ function fmt(n: number) {
 const marketplaceLabel: Record<string, string> = {
   uzum: 'Uzum',
   yandex_market: 'Yandex Market',
-  wildberries: 'Wildberries',
 }
 
 export default function OrdersTable({ orders }: { orders: Order[] }) {
   const { lang } = useLang()
-  const t = dashT[lang].orders
-  const [query,  setQuery]  = useState('')
-  const [status, setStatus] = useState<OrderStatus | 'all'>('all')
+  const d = translations[lang].dashboard
+  const s = d.status
 
   const statusConfig: Record<OrderStatus, { label: string; className: string; dot: string }> = {
-    pending:   { label: t.pending,       className: 'bg-slate-500/10 text-slate-400 border border-slate-500/20',   dot: 'bg-slate-400'  },
-    confirmed: { label: t.confirmed,     className: 'bg-blue-500/10 text-blue-400 border border-blue-500/20',     dot: 'bg-blue-400'   },
-    delivered: { label: t.delivered,     className: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20', dot: 'bg-emerald-400' },
-    cancelled: { label: t.cancelledFull, className: 'bg-red-500/10 text-red-400 border border-red-500/20',         dot: 'bg-red-400'    },
-    returned:  { label: t.returned,      className: 'bg-amber-500/10 text-amber-400 border border-amber-500/20',   dot: 'bg-amber-400'  },
+    pending:   { label: s.pending,   className: 'bg-slate-500/10 text-slate-400 border border-slate-500/20',       dot: 'bg-slate-400'   },
+    confirmed: { label: s.confirmed, className: 'bg-blue-500/10 text-blue-400 border border-blue-500/20',          dot: 'bg-blue-400'    },
+    delivered: { label: s.delivered, className: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20', dot: 'bg-emerald-400' },
+    cancelled: { label: s.cancelled, className: 'bg-red-500/10 text-red-400 border border-red-500/20',             dot: 'bg-red-400'     },
+    returned:  { label: s.returned,  className: 'bg-amber-500/10 text-amber-400 border border-amber-500/20',       dot: 'bg-amber-400'   },
   }
 
   const STATUS_TABS: { value: OrderStatus | 'all'; label: string }[] = [
-    { value: 'all',       label: t.all          },
-    { value: 'delivered', label: t.delivered    },
-    { value: 'confirmed', label: t.confirmed    },
-    { value: 'pending',   label: t.pending      },
-    { value: 'returned',  label: t.returned     },
-    { value: 'cancelled', label: t.cancelled    },
+    { value: 'all',       label: s.all            },
+    { value: 'delivered', label: s.delivered      },
+    { value: 'confirmed', label: s.confirmed      },
+    { value: 'pending',   label: s.pending        },
+    { value: 'returned',  label: s.returned       },
+    { value: 'cancelled', label: s.cancelledShort },
   ]
+
+  const [query,  setQuery]  = useState('')
+  const [status, setStatus] = useState<OrderStatus | 'all'>('all')
 
   const statusCounts = useMemo(() =>
     orders.reduce((acc, o) => { acc[o.status] = (acc[o.status] || 0) + 1; return acc }, {} as Record<string, number>)
@@ -58,19 +59,19 @@ export default function OrdersTable({ orders }: { orders: Order[] }) {
   }, [orders, status, query])
 
   const exportData = filtered.map(o => ({
-    [t.orderId]: o.order_id_external ?? o.id,
-    [t.marketplace]: marketplaceLabel[o.marketplace] ?? o.marketplace,
-    [t.date]: o.ordered_at,
-    [t.colRevenue]: o.revenue ?? 0,
-    [t.colCommission]: o.marketplace_fee ?? 0,
-    [t.colDelivery]: o.delivery_cost ?? 0,
-    [t.items]: o.items_count,
-    [t.statusCol]: statusConfig[o.status]?.label ?? o.status,
+    [d.orderId]: o.order_id_external ?? o.id,
+    [d.marketplace]: marketplaceLabel[o.marketplace] ?? o.marketplace,
+    [d.date]: o.ordered_at,
+    [`${d.revenue} (so'm)`]: o.revenue ?? 0,
+    [`${d.commission2} (so'm)`]: o.marketplace_fee ?? 0,
+    [`${d.delivery} (so'm)`]: o.delivery_cost ?? 0,
+    [d.items]: o.items_count,
+    [d.state]: statusConfig[o.status]?.label ?? o.status,
   }))
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-1 bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl p-1 w-fit flex-wrap">
+      <div className="flex items-center gap-1 bg-[#13131f] border border-white/[0.06] rounded-xl p-1 w-fit flex-wrap">
         {STATUS_TABS.map(tab => (
           <button
             key={tab.value}
@@ -96,34 +97,34 @@ export default function OrdersTable({ orders }: { orders: Order[] }) {
             type="text"
             value={query}
             onChange={e => setQuery(e.target.value)}
-            placeholder={t.searchPlaceholder}
-            className="w-full bg-[var(--bg-card2)] border border-[var(--border2)] rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/30 transition-all"
+            placeholder={d.searchOrderPlaceholder}
+            className="w-full bg-[#13131f] border border-white/[0.08] rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/30 transition-all"
           />
         </div>
-        <ExportButton data={exportData} filename={t.exportFilename} />
+        <ExportButton data={exportData} filename="buyurtmalar" />
       </div>
 
-      <p className="text-slate-500 text-xs">{filtered.length} {t.count}</p>
+      <p className="text-slate-500 text-xs">{filtered.length} {d.orderCount}</p>
 
-      <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
+      <div className="bg-[#13131f] border border-white/[0.06] rounded-2xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-slate-500 text-xs border-b border-[var(--border)] bg-white/[0.01]">
-                <th className="text-left font-medium px-5 py-3">{t.orderId}</th>
-                <th className="text-left font-medium px-5 py-3">{t.marketplace}</th>
-                <th className="text-left font-medium px-5 py-3">{t.date}</th>
-                <th className="text-right font-medium px-5 py-3">{t.revenue}</th>
-                <th className="text-right font-medium px-5 py-3">{t.commission}</th>
-                <th className="text-right font-medium px-5 py-3">{t.items}</th>
-                <th className="text-center font-medium px-5 py-3">{t.statusCol}</th>
+              <tr className="text-slate-500 text-xs border-b border-white/[0.05] bg-white/[0.01]">
+                <th className="text-left font-medium px-5 py-3">{d.orderId}</th>
+                <th className="text-left font-medium px-5 py-3">{d.marketplace}</th>
+                <th className="text-left font-medium px-5 py-3">{d.date}</th>
+                <th className="text-right font-medium px-5 py-3">{d.revenue}</th>
+                <th className="text-right font-medium px-5 py-3">{d.commission2}</th>
+                <th className="text-right font-medium px-5 py-3">{d.items}</th>
+                <th className="text-center font-medium px-5 py-3">{d.state}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/[0.03]">
               {filtered.length === 0 ? (
-                <tr><td colSpan={7} className="px-5 py-10 text-center text-slate-500 text-sm">{t.notFound}</td></tr>
+                <tr><td colSpan={7} className="px-5 py-10 text-center text-slate-500 text-sm">{d.noOrdersTitle}</td></tr>
               ) : filtered.map(order => {
-                const s = statusConfig[order.status]
+                const sc = statusConfig[order.status]
                 return (
                   <tr key={order.id} className="hover:bg-white/[0.02] transition-colors">
                     <td className="px-5 py-4">
@@ -140,9 +141,9 @@ export default function OrdersTable({ orders }: { orders: Order[] }) {
                     <td className="px-5 py-4 text-right text-red-400/70 text-xs">{order.marketplace_fee != null ? fmt(order.marketplace_fee) : '—'}</td>
                     <td className="px-5 py-4 text-right text-slate-300">{order.items_count}</td>
                     <td className="px-5 py-4 text-center">
-                      <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg ${s.className}`}>
-                        <div className={`w-1.5 h-1.5 rounded-full ${s.dot}`} />
-                        {s.label}
+                      <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg ${sc.className}`}>
+                        <div className={`w-1.5 h-1.5 rounded-full ${sc.dot}`} />
+                        {sc.label}
                       </span>
                     </td>
                   </tr>
