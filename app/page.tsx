@@ -162,9 +162,15 @@ function DashboardMockup({ p }: { p: typeof translations.en.preview }) {
 
 /* ── Testimonials ───────────────────────────────────────────────────────── */
 const TESTIMONIALS = [
-  { name: 'Jasur Toshmatov', role: 'Uzum Market sotuvchisi',  text: "Daromadchi bizning savdoni 40% oshirishimizga yordam berdi. DRR tahlili juda qulay.", stars: 5 },
-  { name: 'Malika Rahimova', role: 'Yandex Market',           text: "Qoldiq ogohlantirishlari tufayli endi birortam mahsulot tamom bo'lmaydi. Ajoyib!", stars: 5 },
-  { name: 'Otabek Xasanov',  role: 'Wildberries sotuvchisi',  text: "P&L hisobot birinchi oyda 3 soatni tejadi. Barcha raqamlar bir joyda.", stars: 5 },
+  { name: 'Jasur Toshmatov',   role: 'Uzum Market sotuvchisi',   text: "Daromadchi bizning savdoni 40% oshirishimizga yordam berdi. DRR tahlili juda qulay.", stars: 5 },
+  { name: 'Malika Rahimova',   role: 'Yandex Market',            text: "Qoldiq ogohlantirishlari tufayli endi birortam mahsulot tamom bo'lmaydi. Ajoyib!", stars: 5 },
+  { name: 'Otabek Xasanov',    role: 'Wildberries sotuvchisi',   text: "P&L hisobot birinchi oyda 3 soatni tejadi. Barcha raqamlar bir joyda.", stars: 5 },
+  { name: 'Dilnoza Yusupova',  role: 'Uzum Market sotuvchisi',   text: "Birlik iqtisodiyoti bo'limi har bir mahsulotning haqiqiy foydasini ko'rsatdi. Endi zarar qilmayapman.", stars: 5 },
+  { name: 'Sardor Nazarov',    role: 'Uzum Market, 3 yil',       text: "Reklama xarajatlarini nazorat qilish endi juda oson. DRR ko'rsatkichi menga juda kerak edi.", stars: 5 },
+  { name: 'Kamola Mirzayeva',  role: 'Yandex Market sotuvchi',   text: "Narx kuzatuvi orqali raqobatchilardan doim xabardor bo'lib turaman. Zo'r funksiya!", stars: 5 },
+  { name: 'Bobur Tursunov',    role: 'Wildberries & Uzum',       text: "Ikki marketpleysni bir joydan boshqarish imkoniyati — bu juda qulay. Vaqtni 2 barobarga tejadim.", stars: 5 },
+  { name: 'Nargiza Ergasheva', role: 'Uzum Market sotuvchisi',   text: "Avto-sinxronizatsiya tufayli har kuni qo'lda ma'lumot kiritishdan qutuldim. Ajoyib!", stars: 5 },
+  { name: 'Firdavs Aliyev',    role: 'Yandex Market, 2 yil',     text: "Kategoriya tahlili orqali eng foydali mahsulotlarimni aniqladim. Daromad 25% oshdi!", stars: 5 },
 ]
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -335,12 +341,12 @@ export default function LandingPage() {
             <Link href="/login"
               className="inline-flex items-center justify-center gap-2 font-semibold px-6 py-2.5 rounded-xl text-sm transition-all"
               style={{ background: 'var(--c1)', color: '#0d0e14', boxShadow: '0 4px 20px rgba(0,212,255,0.25)' }}>
-              {lang === 'uz' ? '30 kun bepul boshlash' : lang === 'ru' ? '30 дней бесплатно' : 'Start 30 days free'}
+              {lang === 'uz' ? '3 kun bepul boshlash' : lang === 'ru' ? '3 дня бесплатно' : 'Start 3 days free'}
             </Link>
             <Link href="/dashboard"
               className="inline-flex items-center justify-center gap-2 font-medium px-6 py-2.5 rounded-xl text-sm border transition-all"
               style={{ borderColor: 'rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.7)' }}>
-              {lang === 'uz' ? "Demo ko'rish →" : lang === 'ru' ? 'Смотреть демо →' : 'View demo →'}
+              {lang === 'uz' ? "Platformani o'rganish →" : lang === 'ru' ? 'Изучить платформу →' : 'Explore platform →'}
             </Link>
           </motion.div>
 
@@ -506,12 +512,9 @@ export default function LandingPage() {
         <div className="max-w-3xl mx-auto">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={pricingInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.5 }} className="text-center mb-10">
-            <h2 className="text-xl sm:text-2xl font-bold mb-2" style={{ color: 'var(--text-base)' }}>
+            <h2 className="text-xl sm:text-2xl font-bold" style={{ color: 'var(--text-base)' }}>
               {lang === 'uz' ? 'Narxlar' : lang === 'ru' ? 'Цены' : 'Pricing'}
             </h2>
-            <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-              {lang === 'uz' ? '30 kun bepul. Karta shart emas.' : lang === 'ru' ? '30 дней бесплатно. Карта не нужна.' : '30 days free. No card required.'}
-            </p>
           </motion.div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -531,9 +534,9 @@ export default function LandingPage() {
               },
               {
                 name: 'Pro+', price: '600 000', highlight: false,
-                features: lang === 'uz' ? ["Cheksiz do'konlar", 'Barcha Pro imkoniyatlar', 'API kirish', 'Ustuvor yordam']
-                  : lang === 'ru' ? ['Неограниченно магазинов', 'Все Pro возможности', 'API доступ', 'Приоритетная поддержка']
-                  : ['Unlimited stores', 'All Pro features', 'API access', 'Priority support'],
+                features: lang === 'uz' ? ["5+ do'konlar", 'Barcha Pro imkoniyatlar', 'API kirish', 'Ustuvor yordam']
+                  : lang === 'ru' ? ['5+ магазинов', 'Все Pro возможности', 'API доступ', 'Приоритетная поддержка']
+                  : ['5+ stores', 'All Pro features', 'API access', 'Priority support'],
               },
             ] as const).map((plan, i) => (
               <motion.div key={plan.name}
@@ -582,12 +585,14 @@ export default function LandingPage() {
             </h2>
           </motion.div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {TESTIMONIALS.map((review, i) => (
               <motion.div key={review.name}
-                initial={{ opacity: 0, y: 20 }} animate={testimonialInView ? { opacity: 1, y: 0 } : {}}
-                transition={{ delay: i * 0.1, duration: 0.45 }}
-                className="rounded-xl p-5 border"
+                initial={{ opacity: 0, y: 30, scale: 0.97 }}
+                animate={testimonialInView ? { opacity: 1, y: 0, scale: 1 } : {}}
+                transition={{ delay: i * 0.07, duration: 0.45, ease: 'easeOut' }}
+                whileHover={{ y: -4, transition: { duration: 0.2 } }}
+                className="rounded-xl p-5 border cursor-default"
                 style={{ background: card, borderColor: 'var(--border)' }}>
                 <div className="flex items-center gap-0.5 mb-3">
                   {Array(review.stars).fill(0).map((_, j) => (
@@ -659,9 +664,9 @@ export default function LandingPage() {
             style={{ background: isDark ? 'rgba(2,12,26,0.97)' : 'rgba(240,248,255,0.97)', borderColor: 'var(--border)', backdropFilter: 'blur(16px)' }}>
             <div className="max-w-4xl mx-auto px-5 py-3 flex items-center justify-between gap-3">
               <p className="text-xs font-medium" style={{ color: 'var(--text-base)' }}>
-                {lang === 'uz' ? "30 kun bepul sinab ko'ring. Karta shart emas."
-                 : lang === 'ru' ? '30 дней бесплатно. Карта не нужна.'
-                 : '30 days free. No credit card required.'}
+                {lang === 'uz' ? "3 kun bepul sinab ko'ring. Karta shart emas."
+                 : lang === 'ru' ? '3 дня бесплатно. Карта не нужна.'
+                 : '3 days free. No credit card required.'}
               </p>
               <Link href="/login"
                 className="shrink-0 text-xs font-semibold px-5 py-2 rounded-lg text-white"
