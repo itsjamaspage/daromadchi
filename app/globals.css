@@ -31,23 +31,23 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   LIGHT THEME — Warm Off-White (easy on eyes)
+   LIGHT THEME — Soft Gray (easy on eyes, no glare)
 ═══════════════════════════════════════════════════════════════════ */
 [data-theme="light"] {
-  --bg-base:    #F7F6F3;
-  --bg-card:    #FFFFFF;
-  --bg-card2:   #F1F0F9;
-  --bg-input:   #ECEAF6;
-  --border:     rgba(80, 50, 160, 0.09);
-  --border2:    rgba(80, 50, 160, 0.16);
+  --bg-base:    #E4E3EC;
+  --bg-card:    #EDEcf4;
+  --bg-card2:   #E0DFE9;
+  --bg-input:   #D8D7E3;
+  --border:     rgba(80, 50, 160, 0.10);
+  --border2:    rgba(80, 50, 160, 0.18);
   --text-base:  #1C1A2E;
-  --text-muted: #6B6880;
+  --text-muted: #5E5B72;
   --text-dim:   #4A4760;
-  --nav-bg:     rgba(247, 246, 243, 0.96);
-  --c1:         #7C3AED;   /* purple */
-  --c2:         #DB2777;   /* pink   */
-  --scrollbar-track: #ECEAF6;
-  --scrollbar-thumb: #C4B5FD;
+  --nav-bg:     rgba(228, 227, 236, 0.97);
+  --c1:         #7C3AED;
+  --c2:         #DB2777;
+  --scrollbar-track: #D8D7E3;
+  --scrollbar-thumb: #B8B0D8;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -76,9 +76,9 @@ h1, h2, h3, h4, h5, h6 {
   background-attachment: fixed;
 }
 
-/* Light: flat warm off-white, no glare */
+/* Light: flat soft gray, no glare */
 [data-theme="light"] body {
-  background: #F7F6F3;
+  background: #E4E3EC;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
