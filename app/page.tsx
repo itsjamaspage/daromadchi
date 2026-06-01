@@ -351,7 +351,7 @@ export default function LandingPage() {
           </motion.div>
 
           <motion.p {...fade(0.5)} className="text-xs mb-10" style={{ color: 'var(--text-muted)', opacity: 0.7 }}>
-            {lang === 'uz' ? 'Karta shart emas' : lang === 'ru' ? 'Карта не нужна' : 'No credit card required'}
+            {lang === 'uz' ? "3 kun bepul sinab ko'ring" : lang === 'ru' ? '3 дня бесплатно' : '3 days free trial'}
           </motion.p>
 
           <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.55, duration: 0.7 }}
@@ -661,9 +661,9 @@ export default function LandingPage() {
             style={{ background: isDark ? 'rgba(2,12,26,0.97)' : 'rgba(240,248,255,0.97)', borderColor: 'var(--border)', backdropFilter: 'blur(16px)' }}>
             <div className="max-w-4xl mx-auto px-5 py-3 flex items-center justify-between gap-3">
               <p className="text-xs font-medium" style={{ color: 'var(--text-base)' }}>
-                {lang === 'uz' ? "3 kun bepul sinab ko'ring. Karta shart emas."
-                 : lang === 'ru' ? '3 дня бесплатно. Карта не нужна.'
-                 : '3 days free. No credit card required.'}
+                {lang === 'uz' ? "3 kun bepul sinab ko'ring."
+                 : lang === 'ru' ? '3 дня бесплатно.'
+                 : '3 days free trial.'}
               </p>
               <Link href="/login"
                 className="shrink-0 text-xs font-semibold px-5 py-2 rounded-lg text-white"
