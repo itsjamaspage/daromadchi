@@ -31,7 +31,7 @@ const T = {
   },
 }
 
-interface Props {
+interface LangData {
   article: Article
   related: Article[]
   categoryTitle: string
@@ -39,11 +39,15 @@ interface Props {
   renderedContent: string
 }
 
-export default function HelpArticleContent({
-  article, related, categoryTitle, categoryArticles, renderedContent,
-}: Props) {
+interface Props {
+  dataPerLang: Record<string, LangData>
+}
+
+export default function HelpArticleContent({ dataPerLang }: Props) {
   const { lang } = useLang()
-  const t = T[lang] ?? T.uz
+  const t = T[lang as keyof typeof T] ?? T.uz
+  const d = dataPerLang[lang] ?? dataPerLang['uz']
+  const { article, related, categoryTitle, categoryArticles, renderedContent } = d
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10 flex gap-10">

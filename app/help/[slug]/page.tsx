@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
 import { getArticle, getRelatedArticles, getAllSlugs, getCategoryList } from '@/lib/help-content'
+import type { Article } from '@/lib/help-content'
 import type { Metadata } from 'next'
 import HelpArticleContent from '../HelpArticleContent'
 
@@ -9,7 +10,7 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
-  const article = getArticle(slug)
+  const article = getArticle(slug, 'uz')
   if (!article) return {}
   return {
     title: `${article.title} — Daromadchi`,
@@ -82,22 +83,33 @@ function inlineFormat(s: string) {
     .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" class="prose-link">$1</a>')
 }
 
+function buildLangData(slug: string, lang: string) {
+  const article = getArticle(slug, lang)
+  if (!article) return null
+  const related = getRelatedArticles(slug, lang)
+  const categories = getCategoryList(lang)
+  const currentCategory = categories.find((c) => c.slug === article.categorySlug)
+  return {
+    article,
+    related,
+    categoryTitle: currentCategory?.title ?? '',
+    categoryArticles: currentCategory?.articles ?? [] as Article[],
+    renderedContent: renderContent(article.content),
+  }
+}
+
 export default async function ArticlePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
-  const article = getArticle(slug)
-  if (!article) notFound()
 
-  const related = getRelatedArticles(slug)
-  const categories = getCategoryList()
-  const currentCategory = categories.find((c) => c.slug === article.categorySlug)
+  const uz = buildLangData(slug, 'uz')
+  if (!uz) notFound()
+
+  const ru = buildLangData(slug, 'ru') ?? uz
+  const en = buildLangData(slug, 'en') ?? uz
 
   return (
     <HelpArticleContent
-      article={article}
-      related={related}
-      categoryTitle={currentCategory?.title ?? ''}
-      categoryArticles={currentCategory?.articles ?? []}
-      renderedContent={renderContent(article.content)}
+      dataPerLang={{ uz, ru, en }}
     />
   )
 }
