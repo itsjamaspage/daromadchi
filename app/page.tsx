@@ -369,22 +369,18 @@ export default function LandingPage() {
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }}
             className="text-center mb-10">
             <p className="text-xs font-medium uppercase tracking-widest mb-3" style={{ color: 'var(--c1)' }}>
-              Nima uchun Daromadchi
+              {t.valuePropBadge}
             </p>
             <h2 className="text-xl sm:text-2xl font-bold mb-3" style={{ color: 'var(--text-base)' }}>
-              Marketplace savdosini boshqarish — endi oson.
+              {t.valuePropTitle}
             </h2>
             <p className="text-sm max-w-lg mx-auto" style={{ color: 'var(--text-muted)' }}>
-              Uzum, Yandex Market va Wildberries sotuvchilari uchun — bitta platformada barcha raqamlar.
+              {t.valuePropSubtitle}
             </p>
           </motion.div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {[
-              { icon: '📊', title: 'Analitika markazi', desc: "Real vaqtda savdo ko'rsatkichlari va hisobotlar." },
-              { icon: '🔔', title: 'Zaxira nazorati',   desc: 'Avtomatik ogohlantirishlar va buyurtma tavsiyalari.' },
-              { icon: '💰', title: 'Foyda hisobi',      desc: 'Har bir mahsulot uchun aniq foyda va zarar hisobi.' },
-            ].map((c, i) => (
+            {t.valueProps.map((c, i) => (
               <motion.div key={c.title}
                 initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }} transition={{ delay: i * 0.08, duration: 0.45 }}
