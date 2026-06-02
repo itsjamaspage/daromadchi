@@ -88,7 +88,7 @@ Ma'lumotlar **har 4 soatda** avtomatik ravishda yangilanadi:
 
 Dashboard sahifasida **"Yangilash"** tugmasi orqali istalgan vaqt sinxronizatsiyani ishga tushirishingiz mumkin.
 
-<info>Qo'lda sinxronizatsiya kuniga 10 martadan ko'p bosib bo'lmaydi (Standard tarif).</info>
+<info>Qo'lda sinxronizatsiya kuniga 10 martadan ko'p bosib bo'lmaydi (Pro tarif).</info>
 
 ## Qanday ma'lumotlar yuklanadi?
 
@@ -379,7 +379,7 @@ Har bir qurilma uchun:
 
 Eski yoki ishlatilmaydigan qurilmani ro'yxatdan chiqarish uchun "O'chirish" tugmasini bosing. Bu qurilmadagi kengaytma hisobdan uziladi.
 
-<info>Maksimum 5 ta qurilma ulanishi mumkin (Standard tarif). Pro tarifda cheksiz.</info>
+<info>Maksimum 5 ta qurilma ulanishi mumkin (Pro tarif). Pro tarifda cheksiz.</info>
 
 ## Barcha qurilmalardan chiqish
 
@@ -1123,46 +1123,45 @@ Telegram orqali kelgan trafik konversiyasi yuqori chunki auditoriya yanada ishon
     content: `
 ## Daromadchi tariflar rejasi
 
-Uchta tarif mavjud: Bepul, Standard va Pro.
+Uchta tarif mavjud: Bepul, Pro va Pro+.
 
 ## Bepul tarif
 
 **0 so'm/oy**
 
 - 1 ta do'kon
-- Oxirgi 30 kunlik ma'lumotlar
+- 6 tahlil sahifasi
+- Demo ma'lumotlar
 - Asosiy dashboard
 - Mahsulotlar va buyurtmalar ro'yxati
-- Haftalik sinxronizatsiya
-
-## Standard tarif
-
-**99,000 so'm/oy**
-
-Bepul tarifning hamma narsi, qo'shimcha:
-- 3 ta do'kon
-- Oxirgi 90 kunlik ma'lumotlar
-- P&L hisobot
-- Reklama tahlili va DRR
-- Qoldiq ogohlantirishlari
-- Telegram bildirishnomalar
-- Kunlik sinxronizatsiya (qo'lda 10x/kun)
-- Chrome kengaytmasi
 
 ## Pro tarif
 
-**249,000 so'm/oy**
+**300,000 so'm/oy**
 
-Standard tarifning hamma narsi, qo'shimcha:
-- Cheksiz do'konlar
-- Oxirgi 365 kunlik ma'lumotlar
+Bepul tarifning hamma narsi, qo'shimcha:
+- 3 ta do'kon
+- Barcha tahlillar
+- Avto-sinxronizatsiya
+- P&L hisobot
+- Email ogohlantirishlar
+- Reklama tahlili va DRR
+- Qoldiq ogohlantirishlari
+- Chrome kengaytmasi
+
+## Pro+ tarif
+
+**600,000 so'm/oy**
+
+Pro tarifning hamma narsi, qo'shimcha:
+- 5+ do'konlar
+- API kirish
+- Ustuvor yordam
 - Kategoriya tahlili (batafsil)
-- Tashqi trafik tahlili
-- Jamoa boshqaruvi (5 a'zo)
-- API cheksiz so'rovlar
-- Ustunlik xizmat ko'rsatish
+- Jamoa boshqaruvi
+- Oxirgi 365 kunlik ma'lumotlar
 
-<info>Barcha tariflar bir oylik bepul sinov bilan keladi. Karta ma'lumotlari talab qilinmaydi.</info>
+<info>Barcha tariflar 3 kunlik bepul sinov bilan keladi. Karta ma'lumotlari talab qilinmaydi.</info>
 `,
   },
   {
@@ -1251,11 +1250,11 @@ Bekor qilgandan so'ng:
     title: "Bepul sinov davri",
     category: "To'lov va Tariflar",
     categorySlug: 'tolov-va-tariflar',
-    summary: "14 kunlik bepul sinov davridan qanday foydalanish.",
+    summary: "3 kunlik bepul sinov davridan qanday foydalanish.",
     content: `
 ## Bepul sinov davri
 
-Daromadchi'ga yangi ro'yxatdan o'tgan foydalanuvchilar **14 kunlik Pro tarif sinov davrini** bepul ishlatadilar.
+Daromadchi'ga yangi ro'yxatdan o'tgan foydalanuvchilar **3 kunlik Pro tarif sinov davrini** bepul ishlatadilar.
 
 ## Nima kiritilgan?
 
@@ -1418,7 +1417,7 @@ Taklif email orqali yuboriladi. A'zo qabul qilgach, jamoaga qo'shiladi.
 
 Jamoa jadvalida a'zo yonidagi "..." menyusini bosib "O'chirish" ni tanlang.
 
-<info>Jamoa boshqaruvi faqat Pro tarifda mavjud. Standard tarifda faqat 1 foydalanuvchi.</info>
+<info>Jamoa boshqaruvi faqat Pro tarifda mavjud. Bepul tarifda faqat 1 foydalanuvchi.</info>
 `,
   },
   {
