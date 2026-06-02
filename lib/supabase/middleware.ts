@@ -6,12 +6,12 @@ const supabaseConfigured =
   !process.env.NEXT_PUBLIC_SUPABASE_URL.includes('your-project')
 
 // Routes that don't require authentication
-const PUBLIC_PATHS = ['/', '/login', '/auth/callback']
+const PUBLIC_PATHS = ['/', '/login', '/auth/callback', '/help']
 
 export async function updateSession(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  if (!supabaseConfigured || PUBLIC_PATHS.includes(pathname)) {
+  if (!supabaseConfigured || PUBLIC_PATHS.some(p => pathname === p || pathname.startsWith(p + '/'))) {
     return NextResponse.next({ request })
   }
 

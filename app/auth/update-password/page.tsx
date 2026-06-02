@@ -50,7 +50,7 @@ export default function UpdatePasswordPage() {
             <TrendingUp className="w-7 h-7 text-white" />
           </div>
           <h1 className="text-3xl font-black tracking-tight text-white">Daromadchi</h1>
-          <p className="mt-1 text-sm text-slate-500">Uzum Market tahlil paneli</p>
+          <p className="mt-1 text-sm text-slate-500">Savdo tahlil platformasi</p>
         </div>
 
         <div className="rounded-2xl p-8 shadow-2xl border"

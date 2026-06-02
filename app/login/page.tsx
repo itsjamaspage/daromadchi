@@ -15,7 +15,7 @@ const supabaseConfigured =
 
 const ui = {
   uz: {
-    tagline: 'Uzum Market tahlil paneli',
+    tagline: 'Savdo tahlil platformasi',
     tabs: { login: 'Kirish', signup: "Ro'yxatdan o'tish" },
     email: 'Email', password: 'Parol', name: 'To\'liq ism',
     namePh: 'Alisher Umarov',
@@ -30,7 +30,7 @@ const ui = {
     forgotPw: 'Parolni unutdingizmi?',
   },
   en: {
-    tagline: 'Uzum Market analytics dashboard',
+    tagline: 'Sales analytics platform',
     tabs: { login: 'Sign in', signup: 'Sign up' },
     email: 'Email', password: 'Password', name: 'Full name',
     namePh: 'John Smith',
@@ -45,7 +45,7 @@ const ui = {
     forgotPw: 'Forgot password?',
   },
   ru: {
-    tagline: 'Аналитика для Uzum Market',
+    tagline: 'Платформа аналитики продаж',
     tabs: { login: 'Войти', signup: 'Регистрация' },
     email: 'Email', password: 'Пароль', name: 'Полное имя',
     namePh: 'Иван Иванов',
