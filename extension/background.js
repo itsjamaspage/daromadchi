@@ -1,9 +1,11 @@
 // Daromadchi Extension — Background Service Worker v2
 // Smart alert engine + Telegram notification bridge + Marketplace API sync
 
-const API            = 'https://daromadchi.uz/api';
-const YANDEX_API     = 'https://api.partner.market.yandex.ru';
+const API             = 'https://daromadchi.uz/api';
+const YANDEX_API      = 'https://api.partner.market.yandex.ru';
 const UZUM_SELLER_API = 'https://api-seller.uzum.uz/api/seller-openapi';
+const WB_COMMON_API   = 'https://common-api.wildberries.ru';
+const WB_STATS_API    = 'https://statistics-api.wildberries.ru';
 
 // ─── ALERT DEFINITIONS ───────────────────────────────────────────────────────
 
@@ -344,6 +346,102 @@ async function syncUzumSeller() {
   runMarketplaceAlerts(uzumProducts, 'uzum');
 }
 
+// ─── WILDBERRIES API ─────────────────────────────────────────────────────────
+// Auth: Authorization: {token}  — NO "Bearer " prefix per WB spec
+// Tokens are IP-whitelisted by WB; test from seller's own machine.
+//
+// Endpoints used:
+//   GET  /api/v1/seller-info          (common-api) — seller identity
+//   GET  /api/v1/supplier/orders      (statistics-api) — order list, dateFrom param
+//   GET  /api/v1/supplier/stocks      (statistics-api) — warehouse stock
+//   GET  /api/v1/supplier/sales       (statistics-api) — completed sales
+
+async function wbApiFetch(base, path, token) {
+  try {
+    const res = await fetch(`${base}${path}`, {
+      headers: {
+        'Authorization': token,
+        'Content-Type':  'application/json',
+      }
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
+async function syncWildberries() {
+  const { wbToken } = await chrome.storage.local.get('wbToken');
+  if (!wbToken) return;
+
+  // WB stats API requires ISO datetime string for dateFrom
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const dateFrom = today.toISOString().slice(0, 19); // YYYY-MM-DDTHH:MM:SS
+
+  const [sellerInfo, orders, stocks] = await Promise.all([
+    wbApiFetch(WB_COMMON_API, '/api/v1/seller-info', wbToken),
+    wbApiFetch(WB_STATS_API,  `/api/v1/supplier/orders?dateFrom=${dateFrom}`, wbToken),
+    wbApiFetch(WB_STATS_API,  `/api/v1/supplier/stocks?dateFrom=${dateFrom}`, wbToken),
+  ]);
+
+  if (!orders && !stocks && !sellerInfo) {
+    chrome.storage.local.set({ wbConnected: false });
+    return;
+  }
+
+  // Orders today — WB returns array; each order has totalPrice in kopecks → convert to rubles
+  // isCancel=false excludes cancellations; date field is ISO string
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const todayOrders = (orders || []).filter(o =>
+    !o.isCancel && (o.date || '').startsWith(todayStr)
+  );
+  // totalPrice is in RUB (not kopecks) per WB OpenAPI spec
+  const todayRevenue = todayOrders.reduce((s, o) => s + (o.totalPrice || 0), 0);
+  const todayReturns = (orders || []).filter(o => o.isCancel && (o.date || '').startsWith(todayStr)).length;
+
+  // Map stocks to alert-rule product shape
+  // WB stocks: nmId, subject, supplierArticle, quantity (warehouse qty), quantityFull
+  const wbProducts = (stocks || []).map(s => ({
+    id:           `wb-${s.nmId}-${s.barcode || ''}`,
+    name:         s.subject || s.supplierArticle || 'WB mahsuloti',
+    stock:        s.quantity ?? 0,
+    hasActiveAd:  false,
+    adSpendToday: 0,
+    salesToday:   0,
+    salesDropPct: 0,
+    returnRate:   0,
+    source:       'wb'
+  }));
+
+  const lowStock = wbProducts.filter(p => p.stock > 0 && p.stock <= 5).length;
+  const outOfStock = wbProducts.filter(p => p.stock === 0).length;
+
+  const stats = {
+    todayRevenue,
+    todayOrders:  todayOrders.length,
+    todayReturns,
+    lowStock,
+    outOfStock,
+    totalSkus:    wbProducts.length,
+    sellerName:   sellerInfo?.supplierName || sellerInfo?.name || '',
+    tradeMark:    sellerInfo?.tradeMark || '',
+    lastSynced:   new Date().toLocaleTimeString('uz-UZ'),
+    source:       'wb'
+  };
+
+  chrome.storage.local.set({
+    wbStats:     stats,
+    wbStatsTime: Date.now(),
+    wbConnected: true,
+    wbProducts,
+    wbSellerInfo: sellerInfo,
+  });
+
+  runMarketplaceAlerts(wbProducts, 'wb');
+}
+
 // ─── SHARED ALERT RUNNER (used by both marketplace syncs) ────────────────────
 
 async function runMarketplaceAlerts(products, source) {
@@ -407,6 +505,7 @@ async function runSync() {
   // and don't need a Daromadchi account to function
   syncYandexMarket();
   syncUzumSeller();
+  syncWildberries();
 
   const { daromadchi_token, alertSettings = {}, sentAlertIds = [] } =
     await chrome.storage.local.get(['daromadchi_token', 'alertSettings', 'sentAlertIds']);

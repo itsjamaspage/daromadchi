@@ -197,7 +197,7 @@ function renderAlerts(alerts, plan) {
 }
 
 // ─── MARKETPLACE API STATUS PANEL ────────────────────────────────────────────
-function renderMarketplaceStatus(panel, yandexStats, uzumDirectStats, yandexConnected, uzumConnected, yandexCampaignId, uzumShopName) {
+function renderMarketplaceStatus(panel, yandexStats, uzumDirectStats, yandexConnected, uzumConnected, yandexCampaignId, uzumShopName, wbStats, wbConnected, wbSellerInfo) {
   const rows = [];
 
   if (yandexConnected || yandexStats) {
@@ -221,6 +221,20 @@ function renderMarketplaceStatus(panel, yandexStats, uzumDirectStats, yandexConn
         <span class="mkt-name">Uzum (to'g'ridan)</span>
         <span class="mkt-dot ${uzumConnected ? 'mkt-on' : 'mkt-off'}">
           ${uzumConnected ? `● Ulangan${uzumShopName ? ` · ${uzumShopName}` : ''}` : '○ Ulanmagan'}
+        </span>
+        ${s ? `<span class="mkt-rev">${fp(s.todayRevenue, true)} / ${s.todayOrders || 0} buyurtma</span>` : ''}
+      </div>`);
+  }
+
+  if (wbConnected || wbStats) {
+    const s = wbStats;
+    const wbName = wbSellerInfo?.supplierName || wbSellerInfo?.name || '';
+    rows.push(`
+      <div class="mkt-row">
+        <span class="mkt-badge mkt-wb">WB</span>
+        <span class="mkt-name">Wildberries</span>
+        <span class="mkt-dot ${wbConnected ? 'mkt-on' : 'mkt-off'}">
+          ${wbConnected ? `● Ulangan${wbName ? ` · ${wbName}` : ''}` : '○ Ulanmagan'}
         </span>
         ${s ? `<span class="mkt-rev">${fp(s.todayRevenue, true)} / ${s.todayOrders || 0} buyurtma</span>` : ''}
       </div>`);
@@ -419,14 +433,16 @@ async function loadAll() {
     'daromadchi_token', 'daromadchi_plan', 'cachedStats', 'cacheTime',
     'activeAlerts', 'alertSettings', 'tgStatus',
     'yandexStats', 'yandexStatsTime', 'yandexConnected', 'yandexCampaignId',
-    'uzumDirectStats', 'uzumDirectStatsTime', 'uzumConnected', 'uzumShopName'
+    'uzumDirectStats', 'uzumDirectStatsTime', 'uzumConnected', 'uzumShopName',
+    'wbStats', 'wbStatsTime', 'wbConnected', 'wbSellerInfo'
   ]);
 
   const {
     daromadchi_token, daromadchi_plan = 'free', cachedStats, cacheTime,
     activeAlerts = [], alertSettings = {}, tgStatus = {},
     yandexStats, yandexConnected, yandexCampaignId,
-    uzumDirectStats, uzumConnected, uzumShopName
+    uzumDirectStats, uzumConnected, uzumShopName,
+    wbStats, wbConnected, wbSellerInfo
   } = data;
 
   // No token → full-screen login gate
@@ -490,7 +506,7 @@ async function loadAll() {
   // Inject marketplace API status at the bottom of the stats panel
   const statsPanel = document.getElementById('panel-stats');
   if (statsPanel) {
-    renderMarketplaceStatus(statsPanel, yandexStats, uzumDirectStats, yandexConnected, uzumConnected, yandexCampaignId, uzumShopName);
+    renderMarketplaceStatus(statsPanel, yandexStats, uzumDirectStats, yandexConnected, uzumConnected, yandexCampaignId, uzumShopName, wbStats, wbConnected, wbSellerInfo);
   }
 }
 
