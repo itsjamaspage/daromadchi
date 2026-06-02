@@ -31,23 +31,23 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   LIGHT THEME — Soft Gray (easy on eyes, no glare)
+   LIGHT THEME — Clean White (landing page style)
 ═══════════════════════════════════════════════════════════════════ */
 [data-theme="light"] {
-  --bg-base:    #E4E3EC;
-  --bg-card:    #EDEcf4;
-  --bg-card2:   #E0DFE9;
-  --bg-input:   #D8D7E3;
-  --border:     rgba(80, 50, 160, 0.10);
-  --border2:    rgba(80, 50, 160, 0.18);
-  --text-base:  #18162A;
-  --text-muted: #3E3B55;
-  --text-dim:   #302E48;
-  --nav-bg:     rgba(228, 227, 236, 0.97);
+  --bg-base:    #F8F7FC;
+  --bg-card:    #FFFFFF;
+  --bg-card2:   #FAFAF9;
+  --bg-input:   #F3F1FA;
+  --border:     rgba(124, 58, 237, 0.12);
+  --border2:    rgba(124, 58, 237, 0.20);
+  --text-base:  #1F1F2E;
+  --text-muted: #6B6B7F;
+  --text-dim:   #4F4F66;
+  --nav-bg:     rgba(255, 255, 255, 0.98);
   --c1:         #7C3AED;
   --c2:         #DB2777;
-  --scrollbar-track: #D8D7E3;
-  --scrollbar-thumb: #B8B0D8;
+  --scrollbar-track: #F3F1FA;
+  --scrollbar-thumb: #D4C8F0;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -76,9 +76,9 @@ h1, h2, h3, h4, h5, h6 {
   background-attachment: fixed;
 }
 
-/* Light: flat soft gray, no glare */
+/* Light: clean white, matches landing page */
 [data-theme="light"] body {
-  background: #E4E3EC;
+  background: #F8F7FC;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
