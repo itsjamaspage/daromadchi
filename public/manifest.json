@@ -1,0 +1,17 @@
+{
+  "name": "Daromadchi",
+  "short_name": "Daromadchi",
+  "description": "Marketplace savdo tahlil platformasi",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#020c1a",
+  "theme_color": "#00d4ff",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
