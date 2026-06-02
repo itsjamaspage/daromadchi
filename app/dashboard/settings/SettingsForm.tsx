@@ -342,6 +342,158 @@ function YandexCard({ shop, userId: _userId }: { shop: Shop | null; userId: stri
   )
 }
 
+// ─── Wildberries section ──────────────────────────────────────────────────────
+
+function WildberriesCard({ shop, userId: _userId }: { shop: Shop | null; userId: string }) {
+  const router = useRouter()
+
+  const [apiKey,   setApiKey]   = useState('')
+  const [saving,   setSaving]   = useState(false)
+  const [syncing,  setSyncing]  = useState(false)
+  const [testing,  setTesting]  = useState(false)
+  const [syncStep, setSyncStep] = useState<string | null>(null)
+  const [saveMsg,  setSaveMsg]  = useState<{ ok: boolean; text: string } | null>(null)
+  const [syncMsg,  setSyncMsg]  = useState<{ ok: boolean; text: string } | null>(null)
+
+  const hasKey  = !!shop?.api_key_encrypted
+  const lastSync = shop?.last_synced_at
+    ? new Date(shop.last_synced_at).toLocaleString('uz-UZ') : null
+
+  async function handleSave(e: React.FormEvent) {
+    e.preventDefault()
+    if (!apiKey.trim()) return
+    setSaving(true); setSaveMsg(null)
+    try {
+      const res  = await fetch('/api/shops/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ marketplace: 'wildberries', token: apiKey.trim(), shopName: 'Wildberries do\'konim' }),
+      })
+      const data = await res.json()
+      setSaveMsg(data.ok ? { ok: true, text: 'Saqlandi!' } : { ok: false, text: data.error ?? 'Xato' })
+      if (data.ok) { setApiKey(''); router.refresh() }
+    } catch {
+      setSaveMsg({ ok: false, text: "Server bilan bog'lanishda xato" })
+    }
+    setSaving(false)
+  }
+
+  async function handleTest() {
+    setTesting(true); setSyncMsg(null)
+    try {
+      const res  = await fetch('/api/wildberries/sync', { method: 'GET' })
+      const data = await res.json()
+      setSyncMsg({ ok: data.ok, text: data.message ?? data.error ?? 'Xato' })
+    } catch {
+      setSyncMsg({ ok: false, text: "Server bilan bog'lanishda xato" })
+    }
+    setTesting(false)
+  }
+
+  async function handleSync() {
+    setSyncing(true); setSyncMsg(null)
+    const steps = ['Mahsulotlar yuklanmoqda…', 'Buyurtmalar tekshirilmoqda…', 'Saqlanyapti…']
+    let stepIdx = 0
+    setSyncStep(steps[0])
+    const interval = setInterval(() => {
+      stepIdx = Math.min(stepIdx + 1, steps.length - 1)
+      setSyncStep(steps[stepIdx])
+    }, 4000)
+    try {
+      const res  = await fetch('/api/wildberries/sync', { method: 'POST' })
+      const data = await res.json()
+      setSyncMsg(data.ok
+        ? { ok: true, text: `${data.productsUpserted ?? 0} mahsulot, ${data.ordersUpserted ?? 0} buyurtma yangilandi.` }
+        : { ok: false, text: data.error ?? (data.errors?.[0]) ?? 'Xato' })
+      if (data.ok) router.refresh()
+    } catch {
+      setSyncMsg({ ok: false, text: "Server bilan bog'lanishda xato" })
+    }
+    clearInterval(interval)
+    setSyncStep(null)
+    setSyncing(false)
+  }
+
+  return (
+    <div className="bg-[#13131f] border border-white/[0.06] rounded-2xl overflow-hidden">
+      {/* Header */}
+      <div className="px-6 py-4 border-b border-white/[0.05] flex items-center gap-3">
+        <div className="w-8 h-8 rounded-lg bg-purple-500/15 border border-purple-500/25 flex items-center justify-center">
+          <span className="text-sm font-bold text-purple-400">WB</span>
+        </div>
+        <div>
+          <p className="text-white font-semibold text-sm">Wildberries</p>
+          <p className="text-slate-500 text-xs">seller.wildberries.ru</p>
+        </div>
+        <span className={`ml-auto text-[10px] font-semibold px-2 py-1 rounded-full border ${hasKey ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-400' : 'bg-slate-500/10 border-slate-500/20 text-slate-500'}`}>
+          {hasKey ? 'Ulangan' : 'Ulanmagan'}
+        </span>
+      </div>
+
+      {/* API token form */}
+      <form onSubmit={handleSave} className="p-6 space-y-4">
+        <div>
+          <label className="flex items-center gap-1.5 text-xs font-medium text-slate-400 mb-2">
+            <Key className="w-3.5 h-3.5" /> API Token
+          </label>
+          <input
+            type="password"
+            value={apiKey}
+            onChange={e => setApiKey(e.target.value)}
+            placeholder={hasKey ? '••••••••  (yangilash uchun kiriting)' : 'Token kiriting…'}
+            className="w-full bg-[#1c1c2e] border border-white/[0.08] rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-purple-500/60 transition-all font-mono"
+          />
+          <p className="text-slate-500 text-xs mt-1.5">
+            <a href="https://seller.wildberries.ru/supplier-settings/access-to-api" target="_blank" rel="noopener noreferrer"
+              className="text-purple-400 hover:text-purple-300 inline-flex items-center gap-0.5">
+              seller.wildberries.ru <ExternalLink className="w-3 h-3" />
+            </a>
+            {' '}→ Nastroyki → Dostup k API → Sozdat' novy klyuch
+          </p>
+          <p className="text-amber-500/80 text-xs mt-1">
+            ⚠️ Token yaratishda IP cheklovini olib tashlang, aks holda sinxronlash ishlamaydi.
+          </p>
+        </div>
+        <StatusMsg msg={saveMsg} />
+        <button type="submit" disabled={saving}
+          className="flex items-center gap-2 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors">
+          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+          Saqlash
+        </button>
+      </form>
+
+      {/* Sync */}
+      {shop && (
+        <div className="px-6 pb-6 space-y-3 border-t border-white/[0.04] pt-4">
+          <p className="text-slate-400 text-xs">
+            {lastSync ? <>Oxirgi sinxr: <span className="text-slate-300">{lastSync}</span></> : 'Hali sinxronlanmagan'}
+          </p>
+          {syncing && syncStep && (
+            <div className="flex items-center gap-2 text-xs text-purple-400 bg-purple-500/5 border border-purple-500/15 rounded-xl px-3 py-2">
+              <Loader2 className="w-3.5 h-3.5 animate-spin flex-shrink-0" />
+              {syncStep}
+            </div>
+          )}
+          <StatusMsg msg={syncMsg} />
+          <div className="flex gap-2 flex-wrap">
+            <button onClick={handleTest} disabled={testing || syncing || !hasKey}
+              title={!hasKey ? 'Avval token saqlang' : ''}
+              className="flex items-center gap-2 bg-[#1c1c2e] hover:bg-white/[0.06] border border-white/[0.08] disabled:opacity-40 disabled:cursor-not-allowed text-slate-300 text-sm font-medium px-4 py-2 rounded-xl transition-colors">
+              {testing ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4 text-emerald-400" />}
+              Tekshirish
+            </button>
+            <button onClick={handleSync} disabled={syncing || !hasKey}
+              title={!hasKey ? 'Avval token saqlang' : ''}
+              className="flex items-center gap-2 bg-purple-600 hover:bg-purple-500 border border-transparent disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors">
+              {syncing ? <><Loader2 className="w-4 h-4 animate-spin" /> Sinxronlanmoqda…</> : <><RefreshCw className="w-4 h-4" /> Sinxronlash</>}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── Unit Economics defaults card ─────────────────────────────────────────────
 
 function UnitEcoDefaultsCard({ initial }: { initial: UnitEcoSettings }) {
@@ -427,15 +579,17 @@ function UnitEcoDefaultsCard({ initial }: { initial: UnitEcoSettings }) {
 interface Props {
   uzumShop:   Shop | null
   yandexShop: Shop | null
+  wbShop:     Shop | null
   userId:     string
   ueSettings: UnitEcoSettings
 }
 
-export default function SettingsForm({ uzumShop, yandexShop, userId, ueSettings }: Props) {
+export default function SettingsForm({ uzumShop, yandexShop, wbShop, userId, ueSettings }: Props) {
   return (
     <div className="space-y-4">
       <UzumCard              shop={uzumShop}   userId={userId} />
       <YandexCard            shop={yandexShop} userId={userId} />
+      <WildberriesCard       shop={wbShop}     userId={userId} />
       <UnitEcoDefaultsCard   initial={ueSettings} />
     </div>
   )
