@@ -599,7 +599,7 @@ export default function LandingPage() {
           <div className="flex items-center gap-5 text-xs" style={{ color: 'var(--text-muted)' }}>
             <a href="#features" className="opacity-60 hover:opacity-100 transition-opacity">{t.nav.features}</a>
             <a href="#how"      className="opacity-60 hover:opacity-100 transition-opacity">{t.nav.how}</a>
-            <Link href="/help"  className="opacity-60 hover:opacity-100 transition-opacity">{helpLabel}</Link>
+            <Link href="/help"  className="opacity-60 hover:opacity-100 transition-opacity">{t.nav.help}</Link>
             <Link href="/login" className="opacity-60 hover:opacity-100 transition-opacity">{t.nav.login}</Link>
           </div>
           <p className="text-xs" style={{ color: 'var(--text-muted)' }}>© 2026 Daromadchi. {t.footer}</p>
