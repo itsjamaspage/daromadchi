@@ -12,24 +12,30 @@ export const useTheme = () => useContext(ThemeCtx)
 const LangCtx = createContext<{ lang: Lang; setLang: (l: Lang) => void }>({ lang: 'uz', setLang: () => {} })
 export const useLang = () => useContext(LangCtx)
 
-export default function Providers({ children }: { children: React.ReactNode }) {
+interface Props {
+  children: React.ReactNode
+  initialLang?: Lang
+}
+
+export default function Providers({ children, initialLang = 'uz' }: Props) {
   const [theme, setTheme] = useState<Theme>('dark')
-  const [lang,  setLangState] = useState<Lang>('uz')
+  const [lang,  setLangState] = useState<Lang>(initialLang)
 
   useEffect(() => {
-    const savedTheme = localStorage.getItem('theme') as Theme | null
-    const savedLang  = localStorage.getItem('lang')  as Lang  | null
-    if (savedTheme) setTheme(savedTheme)
-    if (savedLang) {
+    // Always force dark — reset any accidentally stored 'light' preference
+    document.documentElement.setAttribute('data-theme', 'dark')
+    localStorage.setItem('theme', 'dark')
+
+    // Sync language: if localStorage has a different (newer) preference, use it
+    const savedLang = localStorage.getItem('lang') as Lang | null
+    if (savedLang && savedLang !== lang) {
       setLangState(savedLang)
       document.cookie = `lang=${savedLang};path=/;max-age=31536000`
+    } else if (!savedLang) {
+      // Write current lang to localStorage for backwards compat
+      localStorage.setItem('lang', lang)
     }
   }, [])
-
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme)
-    localStorage.setItem('theme', theme)
-  }, [theme])
 
   function toggle() {
     setTheme(t => t === 'dark' ? 'light' : 'dark')

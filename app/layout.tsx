@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
+import { cookies } from 'next/headers'
 import './globals.css'
 import Providers from './providers'
+import type { Lang } from '@/lib/i18n'
 
 export const metadata: Metadata = {
   title: 'Daromadchi — Multi-Marketplace Analytics',
@@ -12,9 +14,12 @@ export const metadata: Metadata = {
   },
 }
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const cookieStore = await cookies()
+  const lang = (cookieStore.get('lang')?.value ?? 'uz') as Lang
+
   return (
-    <html lang="uz" suppressHydrationWarning>
+    <html lang={lang} suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
@@ -23,10 +28,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="icon" href="/icon.svg" type="image/svg+xml" />
         <link rel="apple-touch-icon" href="/icon.svg" />
         <meta name="theme-color" content="#00d4ff" />
-        <script dangerouslySetInnerHTML={{ __html: `(function(){try{var t=localStorage.getItem('theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}})()` }} />
+        {/* Always force dark theme — reset any accidentally stored light preference */}
+        <script dangerouslySetInnerHTML={{ __html: `(function(){try{var t=localStorage.getItem('theme');if(t==='light'){localStorage.setItem('theme','dark');}document.documentElement.setAttribute('data-theme','dark');}catch(e){document.documentElement.setAttribute('data-theme','dark');}})()` }} />
       </head>
       <body className="antialiased">
-        <Providers>{children}</Providers>
+        <Providers initialLang={lang}>{children}</Providers>
       </body>
     </html>
   )
