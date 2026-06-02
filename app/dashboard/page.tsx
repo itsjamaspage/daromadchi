@@ -64,12 +64,12 @@ export default async function DashboardPage({ searchParams }: Props) {
   const t = await getT()
   const d = t.dashboard
 
-  const statusMap: Record<string, { label: string; className: string }> = {
-    pending:   { label: d.status.pending,   className: 'bg-slate-500/10 text-slate-400' },
-    confirmed: { label: d.status.confirmed, className: 'bg-blue-500/10 text-blue-400' },
-    delivered: { label: d.status.delivered, className: 'bg-emerald-500/10 text-emerald-400' },
-    cancelled: { label: d.status.cancelledShort, className: 'bg-red-500/10 text-red-400' },
-    returned:  { label: d.status.returned,  className: 'bg-amber-500/10 text-amber-400' },
+  const statusMap: Record<string, { label: string; bgColor: string; textColor: string }> = {
+    pending:   { label: d.status.pending,   bgColor: 'rgba(100, 116, 139, 0.1)', textColor: '#64748b' },
+    confirmed: { label: d.status.confirmed, bgColor: 'rgba(59, 130, 246, 0.1)', textColor: '#3b82f6' },
+    delivered: { label: d.status.delivered, bgColor: 'rgba(52, 211, 153, 0.1)', textColor: '#10b981' },
+    cancelled: { label: d.status.cancelledShort, bgColor: 'rgba(239, 68, 68, 0.1)', textColor: '#ef4444' },
+    returned:  { label: d.status.returned,  bgColor: 'rgba(245, 158, 11, 0.1)', textColor: '#f59e0b' },
   }
 
   const [kpis, recentOrders, allProducts, chartData] = await Promise.all([
@@ -88,13 +88,13 @@ export default async function DashboardPage({ searchParams }: Props) {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <div className="flex items-center gap-2 mb-0.5">
-            <h1 className="text-2xl font-bold text-white">{d.nav.dashboard}</h1>
-            <span className="text-[10px] font-semibold px-2 py-1 rounded-full bg-violet-500/10 border border-violet-500/25 text-violet-400">
+            <h1 className="text-2xl font-bold" style={{ color: 'var(--text-base)' }}>{d.nav.dashboard}</h1>
+            <span className="text-[10px] font-semibold px-2 py-1 rounded-full border" style={{ background: 'rgba(124, 58, 237, 0.1)', borderColor: 'rgba(124, 58, 237, 0.25)', color: '#7c3aed' }}>
               {d.yourData}
             </span>
             <HelpTooltip section="dashboard" />
           </div>
-          <p className="text-slate-400 text-sm">{d.welcome}</p>
+          <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{d.welcome}</p>
         </div>
         <div className="flex items-center gap-2">
           <SyncButton />
@@ -105,7 +105,7 @@ export default async function DashboardPage({ searchParams }: Props) {
       </div>
 
       {/* Marketplace tabs */}
-      <div className="flex items-center gap-1.5 p-1 bg-[#13131f] border border-white/[0.06] rounded-xl w-fit">
+      <div className="flex items-center gap-1.5 p-1 rounded-xl w-fit" style={{ background: 'var(--bg-card2)', border: '1px solid var(--border)' }}>
         {([
           { label: d.all,           mp: undefined,          color: 'violet' },
           { label: 'Uzum',          mp: 'uzum',             color: 'violet' },
@@ -116,13 +116,15 @@ export default async function DashboardPage({ searchParams }: Props) {
             <Link
               key={label}
               href={mp ? `/dashboard?mp=${mp}&days=${daysStr}` : `/dashboard?days=${daysStr}`}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                active
-                  ? color === 'amber'
-                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                    : 'bg-violet-600/20 text-violet-300 border border-violet-500/30'
-                  : 'text-slate-500 hover:text-slate-300'
-              }`}
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border"
+              style={active ? {
+                background: color === 'amber' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(124, 58, 237, 0.2)',
+                color: color === 'amber' ? '#fcd34d' : '#a78bfa',
+                borderColor: color === 'amber' ? 'rgba(245, 158, 11, 0.3)' : 'rgba(124, 58, 237, 0.3)',
+              } : {
+                color: 'var(--text-muted)',
+                borderColor: 'transparent',
+              }}
             >
               {label}
             </Link>
@@ -132,21 +134,23 @@ export default async function DashboardPage({ searchParams }: Props) {
 
       {/* Empty state — no data yet */}
       {isEmpty && (
-        <div className="bg-[#13131f] border border-dashed border-violet-500/30 rounded-2xl p-10 text-center">
-          <div className="w-14 h-14 rounded-2xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center mx-auto mb-4">
-            <RefreshCw className="w-7 h-7 text-violet-400" />
+        <div className="border border-dashed rounded-2xl p-10 text-center" style={{ background: 'var(--bg-card2)', borderColor: 'rgba(124, 58, 237, 0.3)' }}>
+          <div className="w-14 h-14 rounded-2xl border flex items-center justify-center mx-auto mb-4" style={{ background: 'rgba(124, 58, 237, 0.1)', borderColor: 'rgba(124, 58, 237, 0.2)', color: '#7c3aed' }}>
+            <RefreshCw className="w-7 h-7" />
           </div>
-          <h2 className="text-white font-bold text-lg mb-2">{d.noDataYet}</h2>
-          <p className="text-slate-400 text-sm mb-6 max-w-sm mx-auto">
+          <h2 className="font-bold text-lg mb-2" style={{ color: 'var(--text-base)' }}>{d.noDataYet}</h2>
+          <p className="text-sm mb-6 max-w-sm mx-auto" style={{ color: 'var(--text-muted)' }}>
             {d.noDataDesc}
           </p>
           <div className="flex items-center justify-center gap-3">
             <Link href="/dashboard/settings"
-              className="inline-flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors shadow-lg shadow-violet-500/20">
+              className="inline-flex items-center gap-2 text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors"
+              style={{ background: '#7c3aed', color: 'white' }}>
               <Settings className="w-4 h-4" /> {d.goToSettings}
             </Link>
             <Link href="https://seller.uzum.uz" target="_blank" rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-slate-400 hover:text-white text-sm font-medium px-5 py-2.5 rounded-xl border border-white/[0.08] hover:bg-white/[0.04] transition-all">
+              className="inline-flex items-center gap-2 text-sm font-medium px-5 py-2.5 rounded-xl border transition-all"
+              style={{ color: 'var(--text-muted)', borderColor: 'var(--border)' }}>
               seller.uzum.uz <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
@@ -184,21 +188,21 @@ export default async function DashboardPage({ searchParams }: Props) {
         <div className="xl:col-span-2">
           <RevenueChart data={chartData} days={days} />
         </div>
-        <div className="bg-[#13131f] border border-white/[0.06] rounded-2xl p-6">
-          <h3 className="text-white font-semibold mb-4">{d.recentOrders}</h3>
+        <div className="border rounded-2xl p-6" style={{ background: 'var(--bg-card2)', borderColor: 'var(--border)' }}>
+          <h3 className="font-semibold mb-4" style={{ color: 'var(--text-base)' }}>{d.recentOrders}</h3>
           <div className="space-y-3">
             {recentOrders.map(order => {
               const s = statusMap[order.status]
               return (
-                <div key={order.id} className="flex items-start gap-3 pb-3 border-b border-white/[0.04] last:border-0 last:pb-0">
-                  <div className="w-8 h-8 rounded-lg bg-violet-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <ShoppingBag className="w-4 h-4 text-violet-400" />
+                <div key={order.id} className="flex items-start gap-3 pb-3 last:border-0 last:pb-0" style={{ borderBottom: '1px solid var(--border)' }}>
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5" style={{ background: 'rgba(124, 58, 237, 0.1)', color: '#7c3aed' }}>
+                    <ShoppingBag className="w-4 h-4" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-white font-medium truncate font-mono">{order.order_id_external ?? order.id.slice(0, 8)}</p>
-                    <p className="text-xs text-slate-500 truncate">{order.marketplace === 'uzum' ? 'Uzum Market' : 'Yandex Market'}</p>
+                    <p className="text-sm font-medium truncate font-mono" style={{ color: 'var(--text-base)' }}>{order.order_id_external ?? order.id.slice(0, 8)}</p>
+                    <p className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>{order.marketplace === 'uzum' ? 'Uzum Market' : 'Yandex Market'}</p>
                   </div>
-                  <span className={`text-[11px] font-medium px-2 py-0.5 rounded-lg flex-shrink-0 ${s.className}`}>
+                  <span className="text-[11px] font-medium px-2 py-0.5 rounded-lg flex-shrink-0" style={{ background: s.bgColor, color: s.textColor }}>
                     {s.label}
                   </span>
                 </div>
@@ -215,33 +219,33 @@ export default async function DashboardPage({ searchParams }: Props) {
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <CategoryChart data={categoryData} />
 
-        <div className="bg-[#13131f] border border-white/[0.06] rounded-2xl p-6">
+        <div className="border rounded-2xl p-6" style={{ background: 'var(--bg-card2)', borderColor: 'var(--border)' }}>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-white font-semibold">{d.topProducts}</h3>
-            <a href="/dashboard/products" className="text-xs text-violet-400 hover:text-violet-300 transition-colors">
+            <h3 className="font-semibold" style={{ color: 'var(--text-base)' }}>{d.topProducts}</h3>
+            <a href="/dashboard/products" className="text-xs transition-colors" style={{ color: '#7c3aed' }}>
               {d.viewAll} &rarr;
             </a>
           </div>
           <div className="overflow-x-auto">
           <table className="w-full text-sm min-w-[280px]">
             <thead>
-              <tr className="text-slate-500 text-xs border-b border-white/[0.04]">
+              <tr className="text-xs" style={{ color: 'var(--text-muted)', borderBottom: '1px solid var(--border)' }}>
                 <th className="text-left font-medium pb-3 pr-4">{d.product}</th>
                 <th className="text-right font-medium pb-3 pr-4">{d.profit}</th>
                 <th className="text-right font-medium pb-3">{d.sold}</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/[0.03]">
+            <tbody style={{ borderColor: 'var(--border)' }}>
               {allProducts.slice(0, 5).map(p => (
-                <tr key={p.id} className="hover:bg-white/[0.02] transition-colors">
+                <tr key={p.id} className="transition-colors" style={{ borderBottom: '1px solid var(--border)' }}>
                   <td className="py-3 pr-4">
-                    <p className="text-white font-medium text-xs">{p.title}</p>
-                    <p className="text-slate-500 text-xs">{p.sku}</p>
+                    <p className="font-medium text-xs" style={{ color: 'var(--text-base)' }}>{p.title}</p>
+                    <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{p.sku}</p>
                   </td>
                   <td className="py-3 pr-4 text-right">
-                    <span className="text-emerald-400 font-medium text-xs">{formatSum(p.profit)}</span>
+                    <span className="font-medium text-xs" style={{ color: '#10b981' }}>{formatSum(p.profit)}</span>
                   </td>
-                  <td className="py-3 text-right text-slate-300 text-xs">{p.sold ?? 0}</td>
+                  <td className="py-3 text-right text-xs" style={{ color: 'var(--text-dim)' }}>{p.sold ?? 0}</td>
                 </tr>
               ))}
             </tbody>

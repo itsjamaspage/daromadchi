@@ -1,7 +1,6 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import type { Lang } from '@/lib/i18n'
 
 /* ── Theme ─────────────────────────────────────────────────────────────────── */
@@ -19,7 +18,6 @@ interface Props {
 }
 
 export default function Providers({ children, initialLang = 'uz' }: Props) {
-  const router = useRouter()
   const [theme, setTheme] = useState<Theme>('dark')
   const [lang,  setLangState] = useState<Lang>(initialLang)
 
@@ -33,8 +31,6 @@ export default function Providers({ children, initialLang = 'uz' }: Props) {
     if (savedLang && savedLang !== initialLang) {
       setLangState(savedLang)
       document.cookie = `lang=${savedLang};path=/;max-age=31536000`
-      // Refresh server components so they re-render in the correct language
-      router.refresh()
     } else if (!savedLang) {
       localStorage.setItem('lang', initialLang)
     }
@@ -50,11 +46,10 @@ export default function Providers({ children, initialLang = 'uz' }: Props) {
   }
 
   function setLang(l: Lang) {
-    setLangState(l)
     localStorage.setItem('lang', l)
     document.cookie = `lang=${l};path=/;max-age=31536000`
-    // Re-run server components so page titles/content update immediately
-    router.refresh()
+    // Full page reload ensures server reads new cookie immediately
+    window.location.reload()
   }
 
   return (

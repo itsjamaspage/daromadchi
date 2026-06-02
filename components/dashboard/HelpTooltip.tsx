@@ -22,7 +22,7 @@ export default function HelpTooltip({ section, className = '' }: Props) {
       <button
         onClick={() => setOpen(true)}
         title={content.title}
-        className={`inline-flex items-center justify-center w-6 h-6 rounded-full border border-white/10 text-slate-500 hover:text-violet-400 hover:border-violet-500/40 hover:bg-violet-500/10 transition-all flex-shrink-0 ${className}`}
+        className={`inline-flex items-center justify-center w-6 h-6 rounded-full border border-violet-500/40 bg-violet-500/10 text-violet-400 hover:border-violet-400/70 hover:bg-violet-500/20 hover:text-violet-300 transition-all flex-shrink-0 ${className}`}
       >
         <HelpCircle className="w-3.5 h-3.5" />
       </button>

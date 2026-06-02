@@ -201,7 +201,6 @@ export default function LandingPage() {
   const ctaInView         = useInView(ctaRef,         { once: true, margin: '-80px' })
 
   const card  = isDark ? 'var(--bg-card)'  : '#ffffff'
-  const helpLabel = lang === 'uz' ? 'Yordam' : lang === 'ru' ? 'Помощь' : 'Help'
 
   const fade = (delay = 0) => ({
     initial: { opacity: 0, y: 16 },
@@ -223,10 +222,10 @@ export default function LandingPage() {
 
           <nav className="hidden md:flex items-center gap-7 text-sm">
             {[
-              { href: '#features', label: lang === 'uz' ? 'Imkoniyatlar' : t.nav.features },
-              { href: '#how',      label: lang === 'uz' ? 'Qanday ishlaydi' : t.nav.how },
-              { href: '#pricing',  label: lang === 'uz' ? 'Narxlar' : lang === 'ru' ? 'Цены' : 'Pricing' },
-              { href: '/help',     label: helpLabel },
+              { href: '#features', label: t.nav.features },
+              { href: '#how',      label: t.nav.how },
+              { href: '#pricing',  label: t.nav.pricing },
+              { href: '/help',     label: t.nav.help },
             ].map(item => (
               <a key={item.label} href={item.href}
                 className="text-sm transition-opacity opacity-50 hover:opacity-100"
@@ -246,7 +245,7 @@ export default function LandingPage() {
             <Link href="/login"
               className="text-xs font-semibold px-4 py-2 rounded-lg transition-all"
               style={{ background: 'var(--c1)', color: '#fff' }}>
-              {lang === 'uz' ? 'Boshlash' : t.nav.start}
+              {t.nav.start}
             </Link>
             <button className="md:hidden p-1.5 rounded-lg" onClick={() => setMenuOpen(v => !v)}
               style={{ color: 'var(--text-muted)' }}>
@@ -263,10 +262,10 @@ export default function LandingPage() {
               style={{ borderColor: 'var(--border)', background: 'var(--nav-bg)' }}>
               <div className="px-5 py-3 flex flex-col gap-1">
                 {[
-                  { label: lang === 'uz' ? 'Imkoniyatlar' : t.nav.features,                              href: '#features' },
-                  { label: lang === 'uz' ? 'Qanday ishlaydi' : t.nav.how,                                href: '#how'      },
-                  { label: lang === 'uz' ? 'Narxlar' : lang === 'ru' ? 'Цены' : 'Pricing',               href: '#pricing'  },
-                  { label: helpLabel,                                                                      href: '/help'     },
+                  { label: t.nav.features, href: '#features' },
+                  { label: t.nav.how, href: '#how' },
+                  { label: t.nav.pricing, href: '#pricing' },
+                  { label: t.nav.help, href: '/help' },
                 ].map(({ label, href }) => (
                   <a key={label} href={href} onClick={() => setMenuOpen(false)}
                     className="text-sm py-2 opacity-70" style={{ color: 'var(--text-base)' }}>
@@ -276,7 +275,7 @@ export default function LandingPage() {
                 <Link href="/login" onClick={() => setMenuOpen(false)}
                   className="mt-2 text-sm font-semibold py-2.5 text-center rounded-lg"
                   style={{ background: 'var(--c1)', color: '#fff' }}>
-                  {lang === 'uz' ? 'Boshlash' : t.nav.start}
+                  {t.nav.start}
                 </Link>
               </div>
             </motion.div>
@@ -296,46 +295,30 @@ export default function LandingPage() {
 
           <motion.h1 {...fade(0.2)}
             className="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight tracking-tight mb-4 text-white">
-            {lang === 'uz' ? (
-              <>Savdo va analitika —<br />
-                <span style={{ color: 'var(--c1)' }}>hammasi bitta ekranda</span>
-              </>
-            ) : lang === 'ru' ? (
-              <>Продажи и аналитика —<br />
-                <span style={{ color: 'var(--c1)' }}>всё на одном экране</span>
-              </>
-            ) : (
-              <>Sales &amp; analytics —<br />
-                <span style={{ color: 'var(--c1)' }}>all on one screen</span>
-              </>
-            )}
+            {t.hero.landingTitle}
           </motion.h1>
 
           <motion.p {...fade(0.3)}
             className="text-sm sm:text-base mb-8 max-w-md mx-auto leading-relaxed"
             style={{ color: 'var(--text-muted)' }}>
-            {lang === 'uz'
-              ? 'DRR, qoldiq, narx va birlik iqtisodiyoti. Savdoni kuniga 5 daqiqada boshqaring.'
-              : lang === 'ru'
-              ? 'DRR, остатки, цены и юнит-экономика. Управляйте продажами за 5 минут в день.'
-              : 'DRR, stock, pricing & unit economics. Manage your sales in 5 minutes a day.'}
+            {t.hero.landingSubtitle}
           </motion.p>
 
           <motion.div {...fade(0.4)} className="flex flex-col sm:flex-row gap-2.5 justify-center mb-3">
             <Link href="/login"
               className="inline-flex items-center justify-center gap-2 font-semibold px-6 py-2.5 rounded-xl text-sm transition-all"
               style={{ background: 'var(--c1)', color: '#0d0e14', boxShadow: '0 4px 20px rgba(0,212,255,0.25)' }}>
-              {lang === 'uz' ? '3 kun bepul boshlash' : lang === 'ru' ? '3 дня бесплатно' : 'Start 3 days free'}
+              {t.trialFreeStart}
             </Link>
             <Link href="/dashboard"
               className="inline-flex items-center justify-center gap-2 font-medium px-6 py-2.5 rounded-xl text-sm border transition-all"
               style={{ borderColor: 'var(--border2)', color: 'var(--text-dim)' }}>
-              {lang === 'uz' ? "Platformani o'rganish →" : lang === 'ru' ? 'Изучить платформу →' : 'Explore platform →'}
+              {t.nav.explorePlatform}
             </Link>
           </motion.div>
 
           <motion.p {...fade(0.5)} className="text-xs mb-10" style={{ color: 'var(--text-muted)', opacity: 0.7 }}>
-            {lang === 'uz' ? "3 kun bepul sinab ko'ring" : lang === 'ru' ? '3 дня бесплатно' : '3 days free trial'}
+            {t.trialFree}
           </motion.p>
 
           <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.55, duration: 0.7 }}
@@ -353,11 +336,11 @@ export default function LandingPage() {
         <div className="animate-ticker flex gap-12 whitespace-nowrap text-xs font-medium">
           {Array(4).fill(null).flatMap((_, gi) => [
             <span key={`${gi}a`} style={{ color: 'var(--c1)' }}>● Uzum Market API</span>,
-            <span key={`${gi}b`} style={{ color: 'var(--text-muted)' }}>&nbsp;·&nbsp;Savdo tahlili&nbsp;·&nbsp;</span>,
+            <span key={`${gi}b`} style={{ color: 'var(--text-muted)' }}>&nbsp;·&nbsp;{t.tickerItems[0]}&nbsp;·&nbsp;</span>,
             <span key={`${gi}c`} style={{ color: 'var(--c2)' }}>● Wildberries</span>,
-            <span key={`${gi}d`} style={{ color: 'var(--text-muted)' }}>&nbsp;·&nbsp;P&amp;L hisobot&nbsp;·&nbsp;</span>,
+            <span key={`${gi}d`} style={{ color: 'var(--text-muted)' }}>&nbsp;·&nbsp;{t.tickerItems[1]}&nbsp;·&nbsp;</span>,
             <span key={`${gi}e`} style={{ color: 'var(--c1)' }}>● Yandex Market</span>,
-            <span key={`${gi}f`} style={{ color: 'var(--text-muted)' }}>&nbsp;·&nbsp;Birlik iqtisodiyoti&nbsp;·&nbsp;</span>,
+            <span key={`${gi}f`} style={{ color: 'var(--text-muted)' }}>&nbsp;·&nbsp;{t.tickerItems[2]}&nbsp;·&nbsp;</span>,
           ])}
         </div>
       </div>
@@ -369,22 +352,18 @@ export default function LandingPage() {
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }}
             className="text-center mb-10">
             <p className="text-xs font-medium uppercase tracking-widest mb-3" style={{ color: 'var(--c1)' }}>
-              Nima uchun Daromadchi
+              {t.valuePropBadge}
             </p>
             <h2 className="text-xl sm:text-2xl font-bold mb-3" style={{ color: 'var(--text-base)' }}>
-              Marketplace savdosini boshqarish — endi oson.
+              {t.valuePropTitle}
             </h2>
             <p className="text-sm max-w-lg mx-auto" style={{ color: 'var(--text-muted)' }}>
-              Uzum, Yandex Market va Wildberries sotuvchilari uchun — bitta platformada barcha raqamlar.
+              {t.valuePropSubtitle}
             </p>
           </motion.div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {[
-              { icon: '📊', title: 'Analitika markazi', desc: "Real vaqtda savdo ko'rsatkichlari va hisobotlar." },
-              { icon: '🔔', title: 'Zaxira nazorati',   desc: 'Avtomatik ogohlantirishlar va buyurtma tavsiyalari.' },
-              { icon: '💰', title: 'Foyda hisobi',      desc: 'Har bir mahsulot uchun aniq foyda va zarar hisobi.' },
-            ].map((c, i) => (
+            {t.valueProps.map((c, i) => (
               <motion.div key={c.title}
                 initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }} transition={{ delay: i * 0.08, duration: 0.45 }}
@@ -497,30 +476,24 @@ export default function LandingPage() {
           <motion.div initial={{ opacity: 0, y: 20 }} animate={pricingInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.5 }} className="text-center mb-10">
             <h2 className="text-xl sm:text-2xl font-bold" style={{ color: 'var(--text-base)' }}>
-              {lang === 'uz' ? 'Narxlar' : lang === 'ru' ? 'Цены' : 'Pricing'}
+              {t.nav.pricing}
             </h2>
           </motion.div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {([
               {
-                name: lang === 'uz' ? 'Bepul' : lang === 'ru' ? 'Бесплатно' : 'Free',
+                name: t.pricingFree,
                 price: '0', highlight: false,
-                features: lang === 'uz' ? ["1 do'kon", '6 tahlil sahifasi', "Demo ma'lumotlar"]
-                  : lang === 'ru' ? ['1 магазин', '6 страниц аналитики', 'Демо-данные']
-                  : ['1 store', '6 analytics pages', 'Demo data'],
+                features: t.pricingFreeFeatures,
               },
               {
                 name: 'Pro', price: '300 000', highlight: true,
-                features: lang === 'uz' ? ["3 do'kon", 'Barcha tahlillar', 'Avto-sinxronizatsiya', 'P&L hisobot', 'Email ogohlantirishlar']
-                  : lang === 'ru' ? ['3 магазина', 'Все аналитики', 'Авто-синхронизация', 'Отчёт P&L', 'Email-уведомления']
-                  : ['3 stores', 'All analytics', 'Auto-sync', 'P&L report', 'Email alerts'],
+                features: t.pricingProFeatures,
               },
               {
                 name: 'Pro+', price: '600 000', highlight: false,
-                features: lang === 'uz' ? ["5+ do'konlar", 'Barcha Pro imkoniyatlar', 'API kirish', 'Ustuvor yordam']
-                  : lang === 'ru' ? ['5+ магазинов', 'Все Pro возможности', 'API доступ', 'Приоритетная поддержка']
-                  : ['5+ stores', 'All Pro features', 'API access', 'Priority support'],
+                features: t.pricingProPlusFeatures,
               },
             ] as const).map((plan, i) => (
               <motion.div key={plan.name}
@@ -531,7 +504,7 @@ export default function LandingPage() {
                 {plan.highlight && (
                   <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full text-[10px] font-semibold text-white"
                     style={{ background: 'linear-gradient(135deg, var(--c1), var(--c2))' }}>
-                    {lang === 'uz' ? 'OMMABOP' : lang === 'ru' ? 'ПОПУЛЯРНЫЙ' : 'POPULAR'}
+                    {t.pricingPopular}
                   </div>
                 )}
                 <h3 className="font-semibold text-sm mb-1" style={{ color: 'var(--text-base)' }}>{plan.name}</h3>
@@ -551,7 +524,7 @@ export default function LandingPage() {
                   style={plan.highlight
                     ? { background: 'linear-gradient(135deg, var(--c1), var(--c2))', color: '#fff' }
                     : { background: 'var(--bg-input)', color: 'var(--text-dim)', border: '1px solid var(--border2)' }}>
-                  {lang === 'uz' ? 'Boshlash' : lang === 'ru' ? 'Начать' : 'Get started'}
+                  {t.nav.start}
                 </Link>
               </motion.div>
             ))}
@@ -565,7 +538,7 @@ export default function LandingPage() {
           viewport={{ once: true }} transition={{ duration: 0.5 }}
           className="text-center mb-10 px-5">
           <h2 className="text-xl sm:text-2xl font-bold" style={{ color: 'var(--text-base)' }}>
-            {lang === 'uz' ? 'Sotuvchilar nima deydi' : lang === 'ru' ? 'Что говорят продавцы' : 'What sellers say'}
+            {t.testimonialsTitle}
           </h2>
         </motion.div>
 
@@ -626,7 +599,7 @@ export default function LandingPage() {
           <div className="flex items-center gap-5 text-xs" style={{ color: 'var(--text-muted)' }}>
             <a href="#features" className="opacity-60 hover:opacity-100 transition-opacity">{t.nav.features}</a>
             <a href="#how"      className="opacity-60 hover:opacity-100 transition-opacity">{t.nav.how}</a>
-            <Link href="/help"  className="opacity-60 hover:opacity-100 transition-opacity">{helpLabel}</Link>
+            <Link href="/help"  className="opacity-60 hover:opacity-100 transition-opacity">{t.nav.help}</Link>
             <Link href="/login" className="opacity-60 hover:opacity-100 transition-opacity">{t.nav.login}</Link>
           </div>
           <p className="text-xs" style={{ color: 'var(--text-muted)' }}>© 2026 Daromadchi. {t.footer}</p>
@@ -642,9 +615,7 @@ export default function LandingPage() {
             style={{ background: isDark ? 'rgba(2,12,26,0.97)' : 'rgba(240,248,255,0.97)', borderColor: 'var(--border)', backdropFilter: 'blur(16px)' }}>
             <div className="max-w-4xl mx-auto px-5 py-3 flex items-center justify-between gap-3">
               <p className="text-xs font-medium" style={{ color: 'var(--text-base)' }}>
-                {lang === 'uz' ? "3 kun bepul sinab ko'ring."
-                 : lang === 'ru' ? '3 дня бесплатно.'
-                 : '3 days free trial.'}
+                {t.stickyBarText}
               </p>
               <Link href="/login"
                 className="shrink-0 text-xs font-semibold px-5 py-2 rounded-lg text-white"
