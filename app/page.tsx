@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 import { motion, useInView, AnimatePresence } from 'framer-motion'
 import {
-  TrendingUp, BarChart2, Calculator, FileText,
+  BarChart2, Calculator, FileText,
   Zap, ArrowRight, RefreshCw, AlertTriangle, DollarSign,
   ShieldCheck, Sparkles, Sun, Moon, Globe, X, Menu,
   Star, Quote, CheckCircle, Activity,
@@ -217,10 +217,7 @@ export default function LandingPage() {
         style={{ background: 'var(--nav-bg)', borderColor: 'var(--border)' }}>
         <div className="max-w-6xl mx-auto px-5 h-14 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 shrink-0">
-            <div className="w-7 h-7 rounded-lg flex items-center justify-center"
-              style={{ background: 'linear-gradient(135deg, var(--c1), var(--c2))' }}>
-              <TrendingUp className="w-3.5 h-3.5 text-white" />
-            </div>
+            <img src="/icon.svg" alt="Daromadchi" className="w-7 h-7 rounded-lg" />
             <span className="font-semibold text-sm" style={{ color: 'var(--text-base)' }}>Daromadchi</span>
           </Link>
 
@@ -623,10 +620,7 @@ export default function LandingPage() {
       <footer className="border-t py-8 px-5" style={{ borderColor: 'var(--border)' }}>
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <Link href="/" className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-lg flex items-center justify-center"
-              style={{ background: 'linear-gradient(135deg, var(--c1), var(--c2))' }}>
-              <TrendingUp className="w-3 h-3 text-white" />
-            </div>
+            <img src="/icon.svg" alt="Daromadchi" className="w-6 h-6 rounded-lg" />
             <span className="font-semibold text-sm" style={{ color: 'var(--text-base)' }}>Daromadchi</span>
           </Link>
           <div className="flex items-center gap-5 text-xs" style={{ color: 'var(--text-muted)' }}>

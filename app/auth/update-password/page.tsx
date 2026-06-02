@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
-import { TrendingUp, Lock, Eye, EyeOff, Loader2, CheckCircle } from 'lucide-react'
+import { Lock, Eye, EyeOff, Loader2, CheckCircle } from 'lucide-react'
 
 export default function UpdatePasswordPage() {
   const [password, setPassword]       = useState('')
@@ -46,9 +46,7 @@ export default function UpdatePasswordPage() {
 
       <div className="w-full max-w-md relative z-10">
         <div className="text-center mb-7">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-600 mb-4 shadow-xl shadow-violet-500/30">
-            <TrendingUp className="w-7 h-7 text-white" />
-          </div>
+          <img src="/icon.svg" alt="Daromadchi" className="w-14 h-14 rounded-2xl mb-4 shadow-xl" />
           <h1 className="text-3xl font-black tracking-tight text-white">Daromadchi</h1>
           <p className="mt-1 text-sm text-slate-500">Savdo tahlil platformasi</p>
         </div>

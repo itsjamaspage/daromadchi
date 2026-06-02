@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, Suspense } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { TrendingUp, Mail, Lock, Loader2, Eye, EyeOff, User, CheckCircle, ArrowLeft } from 'lucide-react'
+import { Mail, Lock, Loader2, Eye, EyeOff, User, CheckCircle, ArrowLeft } from 'lucide-react'
 import { useTheme, useLang } from '@/app/providers'
 import { translations } from '@/lib/i18n'
 
@@ -202,9 +202,7 @@ function LoginForm() {
         {/* Logo */}
         <div className="text-center mb-7">
           <Link href="/">
-            <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-600 mb-4 shadow-xl shadow-violet-500/30 cursor-pointer hover:scale-105 transition-transform">
-              <TrendingUp className="w-7 h-7 text-white" />
-            </div>
+            <img src="/icon.svg" alt="Daromadchi" className="w-14 h-14 rounded-2xl mb-4 shadow-xl hover:scale-105 transition-transform cursor-pointer" />
           </Link>
           <h1 className="text-3xl font-black tracking-tight" style={{ color: textBase }}>Daromadchi</h1>
           <p className="mt-1 text-sm" style={{ color: textMuted }}>{t.tagline}</p>

@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import {
-  LayoutDashboard, Package, ShoppingCart, TrendingUp,
+  LayoutDashboard, Package, ShoppingCart,
   LogOut, ChevronRight, X, Settings, BarChart2, Calculator, FileText, Globe2,
   Sun, Moon, Megaphone, Search, Database, Layers, Gift, Bell, CreditCard, Tag,
   MessageSquare, CalendarDays, Users, HelpCircle, UserCircle, Monitor,
@@ -133,9 +133,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
       {/* Logo row */}
       <div className="p-5 border-b border-white/[0.05] flex items-center justify-between">
         <Link href="/" className="flex items-center gap-3 group">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center shadow-md shadow-violet-500/30 group-hover:shadow-violet-500/50 transition-shadow">
-            <TrendingUp className="w-5 h-5 text-white" />
-          </div>
+          <img src="/icon.svg" alt="Daromadchi" className="w-9 h-9 rounded-xl shadow-md" />
           <div>
             <span className="font-bold text-white text-base tracking-tight group-hover:text-violet-300 transition-colors">Daromadchi</span>
             <p className="text-[10px] text-slate-500 leading-none mt-0.5">Uzum Market</p>
