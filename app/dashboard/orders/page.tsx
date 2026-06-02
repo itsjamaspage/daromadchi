@@ -14,19 +14,20 @@ export default async function OrdersPage() {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-bold text-white">{d.ordersTitle}</h1>
-          <p className="text-slate-400 text-sm mt-1">0 {d.orderCount}</p>
+          <h1 className="text-2xl font-bold" style={{ color: 'var(--text-base)' }}>{d.ordersTitle}</h1>
+          <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>0 {d.orderCount}</p>
         </div>
-        <div className="bg-[#13131f] border border-dashed border-violet-500/30 rounded-2xl p-10 text-center">
-          <div className="w-14 h-14 rounded-2xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center mx-auto mb-4">
-            <ShoppingCart className="w-7 h-7 text-violet-400" />
+        <div className="border border-dashed rounded-2xl p-10 text-center" style={{ background: 'var(--bg-card2)', borderColor: 'rgba(124, 58, 237, 0.3)' }}>
+          <div className="w-14 h-14 rounded-2xl border flex items-center justify-center mx-auto mb-4" style={{ background: 'rgba(124, 58, 237, 0.1)', borderColor: 'rgba(124, 58, 237, 0.2)', color: '#7c3aed' }}>
+            <ShoppingCart className="w-7 h-7" />
           </div>
-          <h2 className="text-white font-bold text-lg mb-2">{d.noOrdersTitle}</h2>
-          <p className="text-slate-400 text-sm mb-6 max-w-sm mx-auto">
+          <h2 className="font-bold text-lg mb-2" style={{ color: 'var(--text-base)' }}>{d.noOrdersTitle}</h2>
+          <p className="text-sm mb-6 max-w-sm mx-auto" style={{ color: 'var(--text-muted)' }}>
             {d.noOrdersDesc}
           </p>
           <Link href="/dashboard/settings"
-            className="inline-flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors shadow-lg shadow-violet-500/20">
+            className="inline-flex items-center gap-2 text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors"
+            style={{ background: '#7c3aed', color: 'white' }}>
             <Settings className="w-4 h-4" /> {d.goToSettings}
           </Link>
         </div>
@@ -38,10 +39,10 @@ export default async function OrdersPage() {
     <div className="space-y-6">
       <div>
         <div className="flex items-center gap-2 mb-0.5">
-          <h1 className="text-2xl font-bold text-white">{d.ordersTitle}</h1>
+          <h1 className="text-2xl font-bold" style={{ color: 'var(--text-base)' }}>{d.ordersTitle}</h1>
           <HelpTooltip section="orders" />
         </div>
-        <p className="text-slate-400 text-sm">{orders.length} {d.orderCount}</p>
+        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{orders.length} {d.orderCount}</p>
       </div>
       <OrdersTable orders={orders} />
     </div>
