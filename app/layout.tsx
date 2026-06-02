@@ -5,6 +5,11 @@ import Providers from './providers'
 export const metadata: Metadata = {
   title: 'Daromadchi — Multi-Marketplace Analytics',
   description: 'Uzum Market, Yandex Market va Wildberries sotuvchilari uchun analitika platformasi',
+  icons: {
+    icon: '/icon.svg',
+    shortcut: '/icon.svg',
+    apple: '/icon.svg',
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
