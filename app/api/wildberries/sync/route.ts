@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { decrypt } from '@/lib/crypto'
 
 // Correct base URLs per WB API docs (migrated from suppliers-api Jan 2025)
 const WB_CONTENT = 'https://content-api.wildberries.ru'
@@ -29,7 +30,7 @@ export async function POST() {
     return NextResponse.json({ error: 'No Wildberries API token saved' }, { status: 400 })
   }
 
-  const token  = shop.api_key_encrypted
+  const token  = decrypt(shop.api_key_encrypted)
   const shopId = shop.id
   let productsUpserted = 0
   let ordersUpserted   = 0
@@ -130,4 +131,47 @@ export async function POST() {
     ordersUpserted,
     errors: errors.length > 0 ? errors : undefined,
   })
+}
+
+// GET /api/wildberries/sync — lightweight token test, no data written
+export async function GET() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 })
+
+  const { data: shop } = await supabase
+    .from('shops')
+    .select('api_key_encrypted')
+    .eq('user_id', user.id)
+    .eq('marketplace', 'wildberries')
+    .maybeSingle()
+
+  if (!shop?.api_key_encrypted) {
+    return NextResponse.json({ ok: false, error: 'Token topilmadi' }, { status: 400 })
+  }
+
+  const token = decrypt(shop.api_key_encrypted)
+
+  // Test with seller-info (common-api) — no IP whitelist required for some accounts
+  try {
+    const res = await fetch('https://common-api.wildberries.ru/api/v1/seller-info', {
+      headers: { 'Authorization': token }
+    })
+    if (res.ok) {
+      const info = await res.json()
+      return NextResponse.json({
+        ok: true,
+        message: `Ulandi! Sotuvchi: ${info.supplierName || info.name || 'Wildberries'}`,
+      })
+    }
+    if (res.status === 403) {
+      return NextResponse.json({
+        ok: false,
+        error: 'IP-whitelist xatosi (403). Token faqat muayyan IP-dan foydalanish uchun sozlangan. Wildberries kabinetida IP cheklovini olib tashlang yoki yangi token yarating.',
+      })
+    }
+    return NextResponse.json({ ok: false, error: `WB API xatosi: HTTP ${res.status}` })
+  } catch {
+    return NextResponse.json({ ok: false, error: 'WB API bilan bog\'lanishda xato' })
+  }
 }

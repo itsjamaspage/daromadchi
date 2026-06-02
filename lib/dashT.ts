@@ -143,7 +143,7 @@ export const dashT = {
       warnLossMid: "ko'rmoqdasiz. Narxni kamida", warnLossEnd: "so'mga ko'taring.",
       warnMarginPre: 'Margin', warnMarginPost: "— juda past. Narx oshirish yoki tannarxni kamaytirish kerak. Tavsiya etilgan minimum: 20%.",
       warnDrrPre: 'DRR', warnDrrPost: '— reklama xarajati haddan oshgan. Optimal: 10–20%.',
-      categories: ['Elektronika', 'Kompyuter texnikasi', 'Telefon va gadjetlar', 'Krossovkalar', 'Sport', 'Soatlar', "Uy-joy va bog'", 'Kiyim (erkaklar)', 'Kiyim (ayollar)', 'Kiyim (bolalar)', "Go'zallik va parvarishl", "Sog'liq va tibbiyot", 'Oziq-ovqat', "O'yinchoqlar", 'Avtomobil', 'Boshqa'],
+      categories: ['Elektronika', 'Kompyuter texnikasi', 'Telefon va gadjetlar', 'Krossovkalar', 'Sport', 'Soatlar', "Uy-joy va bog'", 'Kiyim (erkaklar)', 'Kiyim (ayollar)', 'Kiyim (bolalar)', "Go'zallik va parvarish", "Sog'liq va tibbiyot", 'Oziq-ovqat', "O'yinchoqlar", 'Avtomobil', 'Boshqa'],
     },
     settings: {
       title: 'Sozlamalar', badge: "Sizning ma'lumotingiz", subtitle: 'Marketplace integratsiyalari',

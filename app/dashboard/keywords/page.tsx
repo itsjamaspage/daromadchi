@@ -153,6 +153,16 @@ export default function KeywordsPage() {
         </p>
       </div>
 
+      {/* Demo notice */}
+      <div className="flex items-start gap-3 bg-amber-500/8 border border-amber-500/20 rounded-xl px-4 py-3">
+        <span className="text-amber-400 text-base mt-0.5 flex-shrink-0">⚠️</span>
+        <p className="text-amber-300/80 text-xs leading-relaxed">
+          <span className="font-semibold text-amber-300">Demo ko'rinish.</span>{' '}
+          Quyidagi raqamlar namunali ma'lumotlar — sizning haqiqiy mahsulotlaringiz emas.
+          Uzum Market qidiruv tahlili funksiyasi hali ishlab chiqilmoqda.
+        </p>
+      </div>
+
       {/* Summary cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[

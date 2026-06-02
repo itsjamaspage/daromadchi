@@ -20,7 +20,11 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     const savedTheme = localStorage.getItem('theme') as Theme | null
     const savedLang  = localStorage.getItem('lang')  as Lang  | null
     if (savedTheme) setTheme(savedTheme)
-    if (savedLang)  setLangState(savedLang)
+    if (savedLang) {
+      setLangState(savedLang)
+      // Sync cookie so server components (getT) match the client-side language
+      document.cookie = `lang=${savedLang};path=/;max-age=31536000`
+    }
   }, [])
 
   useEffect(() => {

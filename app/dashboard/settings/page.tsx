@@ -11,6 +11,7 @@ export default async function SettingsPage() {
 
   let uzumShop:   Shop | null = null
   let yandexShop: Shop | null = null
+  let wbShop:     Shop | null = null
 
   if (user) {
     const { data } = await supabase
@@ -21,6 +22,7 @@ export default async function SettingsPage() {
     for (const row of data ?? []) {
       if (row.marketplace === 'uzum')          uzumShop   = row as Shop
       if (row.marketplace === 'yandex_market') yandexShop = row as Shop
+      if (row.marketplace === 'wildberries')   wbShop     = row as Shop
     }
   }
 
@@ -40,6 +42,7 @@ export default async function SettingsPage() {
       <SettingsForm
         uzumShop={uzumShop}
         yandexShop={yandexShop}
+        wbShop={wbShop}
         userId={user?.id ?? ''}
         ueSettings={ueSettings}
       />

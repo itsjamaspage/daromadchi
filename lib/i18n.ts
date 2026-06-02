@@ -13,7 +13,7 @@ export const translations = {
         analytics: 'Tahlil',
         advertising: 'Reklama',
         searchPhrases: 'Qidiruv iboralari',
-        unitEconomics: 'Yuнit-Ekonomika',
+        unitEconomics: 'Birlik iqtisodiyoti',
         pnl: 'F & Z hisobot',
         calculator: 'Kalkulyator',
         dataState: "Ma'lumot holati",
