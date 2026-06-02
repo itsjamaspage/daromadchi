@@ -229,6 +229,20 @@ export const translations = {
       close: 'Yopish',
       lightMode: "Yorug' rejim",
       darkMode: "Qorong'u rejim",
+      // CategoryChart
+      categoryRevenue: "Kategoriya bo'yicha daromad",
+      tradeShare: "Savdo ulushi",
+      categoryShare: "ulush",
+      // DynamicsChart
+      dynamicsTitle: "Dinamika grafigi",
+      dynamicsSelect: "Ko'rsatgichlarni tanlang",
+      dynamicsRevenue: "Daromad",
+      dynamicsProfit: "Foyda",
+      dynamicsAdSpend: "Reklama sarfi",
+      dynamicsDrr: "DRR",
+      dynamicsClicks: "Kliklar",
+      dynamicsImpressions: "Ko'rsatuvlar",
+      dynamicsAvgCheck: "O'rtacha chek",
     },
     nav: {
       features: 'Imkoniyatlar',
@@ -701,6 +715,20 @@ export const translations = {
       close: 'Close',
       lightMode: 'Light mode',
       darkMode: 'Dark mode',
+      // CategoryChart
+      categoryRevenue: 'Revenue by category',
+      tradeShare: 'Sales share',
+      categoryShare: 'share',
+      // DynamicsChart
+      dynamicsTitle: 'Dynamics chart',
+      dynamicsSelect: 'Select metrics',
+      dynamicsRevenue: 'Revenue',
+      dynamicsProfit: 'Profit',
+      dynamicsAdSpend: 'Ad spend',
+      dynamicsDrr: 'DRR',
+      dynamicsClicks: 'Clicks',
+      dynamicsImpressions: 'Impressions',
+      dynamicsAvgCheck: 'Avg check',
     },
     nav: {
       features: 'Features',
@@ -1173,6 +1201,20 @@ export const translations = {
       close: 'Закрыть',
       lightMode: 'Светлая тема',
       darkMode: 'Тёмная тема',
+      // CategoryChart
+      categoryRevenue: 'Доход по категориям',
+      tradeShare: 'Доля продаж',
+      categoryShare: 'доля',
+      // DynamicsChart
+      dynamicsTitle: 'График динамики',
+      dynamicsSelect: 'Выберите показатели',
+      dynamicsRevenue: 'Доход',
+      dynamicsProfit: 'Прибыль',
+      dynamicsAdSpend: 'Расходы на рекламу',
+      dynamicsDrr: 'DRR',
+      dynamicsClicks: 'Клики',
+      dynamicsImpressions: 'Показы',
+      dynamicsAvgCheck: 'Средний чек',
     },
     nav: {
       features: 'Возможности',

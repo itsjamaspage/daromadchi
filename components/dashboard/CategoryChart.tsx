@@ -3,17 +3,21 @@
 import {
   PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend,
 } from 'recharts'
+import { useLang } from '@/app/providers'
+import { translations } from '@/lib/i18n'
 
 const COLORS = ['#7c3aed', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6']
 
 const CustomTooltip = ({ active, payload }: any) => {
+  const { lang } = useLang()
+  const t = translations[lang].dashboard
   if (!active || !payload?.length) return null
   const { name, value, payload: p } = payload[0]
   return (
-    <div className="bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-3 shadow-xl text-xs space-y-1">
-      <p className="text-slate-300 font-medium">{name}</p>
-      <p className="text-white font-bold">{new Intl.NumberFormat('uz-UZ').format(value)} so&apos;m</p>
-      <p className="text-slate-400">{p.percent?.toFixed(1)}% ulush</p>
+    <div className="border rounded-xl px-4 py-3 shadow-xl text-xs space-y-1" style={{ background: 'var(--bg-input)', borderColor: 'var(--border2)' }}>
+      <p className="font-medium" style={{ color: 'var(--text-dim)' }}>{name}</p>
+      <p className="font-bold" style={{ color: 'var(--text-base)' }}>{new Intl.NumberFormat('uz-UZ').format(value)} so&apos;m</p>
+      <p style={{ color: 'var(--text-muted)' }}>{p.percent?.toFixed(1)}% {t?.categoryShare || 'ulush'}</p>
     </div>
   )
 }
@@ -21,10 +25,12 @@ const CustomTooltip = ({ active, payload }: any) => {
 interface CategoryData { name: string; revenue: number; profit: number; percent: number }
 
 export default function CategoryChart({ data }: { data: CategoryData[] }) {
+  const { lang } = useLang()
+  const t = translations[lang].dashboard
   return (
-    <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl p-6">
-      <h3 className="text-white font-semibold mb-0.5">Kategoriya bo&apos;yicha daromad</h3>
-      <p className="text-slate-500 text-xs mb-5">Savdo ulushi</p>
+    <div className="border rounded-2xl p-6" style={{ background: 'var(--bg-card2)', borderColor: 'var(--border)' }}>
+      <h3 className="font-semibold mb-0.5" style={{ color: 'var(--text-base)' }}>{t?.categoryRevenue || 'Kategoriya bo\'yicha daromad'}</h3>
+      <p className="text-xs mb-5" style={{ color: 'var(--text-muted)' }}>{t?.tradeShare || 'Savdo ulushi'}</p>
 
       <div className="flex flex-col sm:flex-row items-center gap-6">
         <ResponsiveContainer width={180} height={180}>
@@ -53,17 +59,17 @@ export default function CategoryChart({ data }: { data: CategoryData[] }) {
               <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: COLORS[i % COLORS.length] }} />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-slate-300 text-xs truncate">{d.name}</span>
-                  <span className="text-slate-500 text-xs ml-2">{d.percent.toFixed(0)}%</span>
+                  <span className="text-xs truncate" style={{ color: 'var(--text-dim)' }}>{d.name}</span>
+                  <span className="text-xs ml-2" style={{ color: 'var(--text-muted)' }}>{d.percent.toFixed(0)}%</span>
                 </div>
-                <div className="h-1 bg-white/[0.05] rounded-full overflow-hidden">
+                <div className="h-1 rounded-full overflow-hidden" style={{ background: 'rgba(255, 255, 255, 0.05)' }}>
                   <div
                     className="h-full rounded-full transition-all"
                     style={{ width: `${d.percent}%`, background: COLORS[i % COLORS.length] }}
                   />
                 </div>
               </div>
-              <span className="text-slate-400 text-xs flex-shrink-0 hidden sm:block">
+              <span className="text-xs flex-shrink-0 hidden sm:block" style={{ color: 'var(--text-muted)' }}>
                 {new Intl.NumberFormat('uz-UZ').format(Math.round(d.revenue / 1_000_000))}M
               </span>
             </div>
