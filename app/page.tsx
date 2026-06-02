@@ -160,18 +160,6 @@ function DashboardMockup({ p }: { p: typeof translations.en.preview }) {
   )
 }
 
-/* ── Testimonials ───────────────────────────────────────────────────────── */
-const TESTIMONIALS = [
-  { name: 'Jasur Toshmatov',   role: 'Uzum Market sotuvchisi',   text: "Daromadchi bizning savdoni 40% oshirishimizga yordam berdi. DRR tahlili juda qulay.", stars: 5 },
-  { name: 'Malika Rahimova',   role: 'Yandex Market',            text: "Qoldiq ogohlantirishlari tufayli endi birortam mahsulot tamom bo'lmaydi. Ajoyib!", stars: 5 },
-  { name: 'Otabek Xasanov',    role: 'Wildberries sotuvchisi',   text: "P&L hisobot birinchi oyda 3 soatni tejadi. Barcha raqamlar bir joyda.", stars: 5 },
-  { name: 'Dilnoza Yusupova',  role: 'Uzum Market sotuvchisi',   text: "Birlik iqtisodiyoti bo'limi har bir mahsulotning haqiqiy foydasini ko'rsatdi. Endi zarar qilmayapman.", stars: 5 },
-  { name: 'Sardor Nazarov',    role: 'Uzum Market, 3 yil',       text: "Reklama xarajatlarini nazorat qilish endi juda oson. DRR ko'rsatkichi menga juda kerak edi.", stars: 5 },
-  { name: 'Kamola Mirzayeva',  role: 'Yandex Market sotuvchi',   text: "Narx kuzatuvi orqali raqobatchilardan doim xabardor bo'lib turaman. Zo'r funksiya!", stars: 5 },
-  { name: 'Bobur Tursunov',    role: 'Wildberries & Uzum',       text: "Ikki marketpleysni bir joydan boshqarish imkoniyati — bu juda qulay. Vaqtni 2 barobarga tejadim.", stars: 5 },
-  { name: 'Nargiza Ergasheva', role: 'Uzum Market sotuvchisi',   text: "Avto-sinxronizatsiya tufayli har kuni qo'lda ma'lumot kiritishdan qutuldim. Ajoyib!", stars: 5 },
-  { name: 'Firdavs Aliyev',    role: 'Yandex Market, 2 yil',     text: "Kategoriya tahlili orqali eng foydali mahsulotlarimni aniqladim. Daromad 25% oshdi!", stars: 5 },
-]
 
 /* ══════════════════════════════════════════════════════════════════════════
    MAIN PAGE
@@ -544,12 +532,12 @@ export default function LandingPage() {
 
         <div className="overflow-hidden">
           <div className="animate-ticker-cards flex gap-4 w-max px-4">
-            {[...TESTIMONIALS, ...TESTIMONIALS].map((review, i) => (
+            {[...(t.testimonialsList ?? []), ...(t.testimonialsList ?? [])].map((review, i) => (
               <div key={i}
                 className="flex-shrink-0 w-72 rounded-xl p-5 border"
                 style={{ background: card, borderColor: 'var(--border)' }}>
                 <div className="flex items-center gap-0.5 mb-3">
-                  {Array(review.stars).fill(0).map((_, j) => (
+                  {Array(5).fill(0).map((_, j) => (
                     <Star key={j} className="w-3 h-3 fill-amber-400 text-amber-400" />
                   ))}
                 </div>

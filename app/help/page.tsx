@@ -44,7 +44,7 @@ const T = {
 export default function HelpPage() {
   const { lang } = useLang()
   const t = T[lang] ?? T.uz
-  const categories = getCategoryList()
+  const categories = getCategoryList(lang)
   const [query, setQuery] = useState('')
 
   const allArticles = categories.flatMap((c) => c.articles)

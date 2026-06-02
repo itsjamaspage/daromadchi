@@ -1508,28 +1508,66 @@ Bu barcha qurilmalardagi aktiv sessiyalarni tugatadi.
   },
 ]
 
-export function getCategoryList(): Category[] {
-  const map = new Map<string, Category>()
+const CATEGORY_NAMES: Record<string, Record<string, string>> = {
+  boshlash:               { uz: 'Boshlash',              ru: 'Начало работы',         en: 'Getting started' },
+  bildirishnomalar:       { uz: 'Bildirishnomalar',       ru: 'Уведомления',           en: 'Notifications' },
+  'chrome-kengaytmasi':   { uz: 'Chrome Kengaytmasi',    ru: 'Расширение Chrome',     en: 'Chrome Extension' },
+  'reklama-tahlili':      { uz: 'Reklama Tahlili',        ru: 'Аналитика рекламы',    en: 'Ad Analytics' },
+  qoldiqlar:              { uz: 'Qoldiqlar',              ru: 'Остатки',               en: 'Stock' },
+  'birlik-iqtisodiyoti':  { uz: 'Birlik Iqtisodiyoti',   ru: 'Юнит-экономика',        en: 'Unit Economics' },
+  analitika:              { uz: 'Analitika',              ru: 'Аналитика',             en: 'Analytics' },
+  'tolov-va-tariflar':    { uz: "To'lov va Tariflar",    ru: 'Тарифы и оплата',       en: 'Billing & Plans' },
+  'hisob-sozlamalari':    { uz: 'Hisob Sozlamalari',     ru: 'Настройки аккаунта',    en: 'Account Settings' },
+}
 
-  const ORDER: Record<string, { title: string; icon: string }> = {
-    boshlash:           { title: 'Boshlash',             icon: '🚀' },
-    bildirishnomalar:   { title: 'Bildirishnomalar',     icon: '🔔' },
-    'chrome-kengaytmasi': { title: 'Chrome Kengaytmasi', icon: '🧩' },
-    'reklama-tahlili':  { title: 'Reklama Tahlili',      icon: '📊' },
-    qoldiqlar:          { title: 'Qoldiqlar',            icon: '📦' },
-    'birlik-iqtisodiyoti': { title: 'Birlik Iqtisodiyoti', icon: '🧮' },
-    analitika:          { title: 'Analitika',            icon: '📈' },
-    'tolov-va-tariflar': { title: "To'lov va Tariflar",  icon: '💳' },
-    'hisob-sozlamalari': { title: 'Hisob Sozlamalari',   icon: '⚙️' },
+const ARTICLE_TITLES: Record<string, Record<string, { title: string; summary: string }>> = {
+  'tez-boshlash':           { ru: { title: 'Быстрый старт',                           summary: 'Регистрация, подключение токена и первый анализ за 4 шага.' },            en: { title: 'Quick start guide',                      summary: 'Registration, connecting a token, and first analysis in 4 steps.' } },
+  'malumotlar-sinxronizatsiyasi': { ru: { title: 'Как работает синхронизация данных', summary: 'Автоматическая и ручная синхронизация, какие данные загружаются.' },      en: { title: 'How data sync works',                    summary: 'Auto and manual sync — what data gets imported.' } },
+  'fikr-va-xato':           { ru: { title: 'Отправить отзыв или сообщить об ошибке', summary: 'Нашли ошибку или есть предложение? Как сообщить нам.' },                   en: { title: 'Submit feedback or report a bug',        summary: 'Found a bug or have a suggestion? How to reach us.' } },
+  'bildirishnomalar':       { ru: { title: 'Типы уведомлений и настройки',            summary: 'Какие уведомления доступны и как их настроить.' },                        en: { title: 'Notification types and settings',        summary: 'Which notifications are available and how to configure them.' } },
+  'telegram-ulash':         { ru: { title: 'Подключение Telegram-бота',               summary: 'Получайте уведомления Daromadchi через Telegram.' },                      en: { title: 'Connect Telegram bot',                   summary: 'Receive Daromadchi notifications via Telegram.' } },
+  'chrome-kengaytma':       { ru: { title: 'О расширении Chrome',                     summary: 'Расширение, показывающее аналитику прямо на страницах Uzum Market.' },   en: { title: 'About the Chrome extension',             summary: 'Extension that shows analytics directly on Uzum Market pages.' } },
+  'vidzhet-nima-korsatadi': { ru: { title: 'Что показывает виджет',                   summary: 'Содержимое виджета Daromadchi в кабинете Uzum Market.' },                 en: { title: 'What the widget shows',                  summary: 'Daromadchi widget content in your Uzum Market cabinet.' } },
+  'vidzhet-ornatish':       { ru: { title: 'Установка расширения',                    summary: 'Руководство по установке и настройке расширения Chrome.' },               en: { title: 'Install the extension',                  summary: 'Guide to installing and configuring the Chrome extension.' } },
+  'qurilmalar-boshqaruvi':  { ru: { title: 'Управление устройствами',                 summary: 'Управление расширениями, установленными на нескольких устройствах.' },    en: { title: 'Device management',                      summary: 'Manage extensions installed on multiple devices.' } },
+  'reklama-tahlili':        { ru: { title: 'Основы аналитики рекламы',                summary: 'Показатели DRR, CPC, CPO и оценка эффективности рекламы.' },             en: { title: 'Ad analytics basics',                    summary: 'DRR, CPC, CPO metrics and ad performance evaluation.' } },
+  'drr-nima':               { ru: { title: 'Что такое DRR и как его снизить',          summary: 'Показатель DRR и методы его оптимизации.' },                            en: { title: 'What is DRR and how to reduce it',       summary: 'DRR metric and how to optimize it.' } },
+  'samarasiz-xarajatlar':   { ru: { title: 'Выявление неэффективных рекламных расходов', summary: 'Какие расходы не приносят прибыли и что с этим делать.' },            en: { title: 'Finding ineffective ad spend',           summary: 'Which costs bring no profit and what to do about it.' } },
+  'kampaniya-byudjeti':     { ru: { title: 'Управление рекламным бюджетом',           summary: 'Как планировать и контролировать рекламный бюджет.' },                   en: { title: 'Managing your ad budget',                summary: 'How to plan and control your advertising budget.' } },
+  'qoldiq-boshqaruvi':      { ru: { title: 'Управление остатками',                    summary: 'Остатки товаров на складе, уровни запасов и система оповещений.' },      en: { title: 'Stock management',                       summary: 'Warehouse stock levels and alert system.' } },
+  'qoldiq-ogohlantirish':   { ru: { title: 'Оповещения об остатках',                  summary: 'Настройка оповещений о низких остатках и получение их в Telegram.' },    en: { title: 'Stock alerts',                           summary: 'Setting up low-stock alerts and receiving them in Telegram.' } },
+  'fbo-fbs-rfbs':           { ru: { title: 'Разница между FBO, FBS и rFBS',           summary: 'Различия складских моделей Uzum Market и как их видеть в Daromadchi.' }, en: { title: 'FBO, FBS and rFBS differences',          summary: 'Uzum Market warehouse model differences and how to view them.' } },
+  'tovar-aylanmasi':        { ru: { title: 'Оборачиваемость товаров и прогноз заказа',summary: 'Скорость оборота остатков и расчёт времени следующего заказа.' },        en: { title: 'Stock turnover and order forecast',      summary: 'Stock rotation speed and calculating when to reorder.' } },
+  'birlik-iqtisodiyoti':    { ru: { title: 'Калькулятор юнит-экономики',              summary: 'Расчёт чистой прибыли, маржи и точки безубыточности для каждого товара.' }, en: { title: 'Unit economics calculator',            summary: 'Calculate net profit, margin and break-even for each product.' } },
+}
+
+export function getCategoryList(lang: string = 'uz'): Category[] {
+  const map = new Map<string, Category>()
+  const l = lang === 'ru' || lang === 'en' ? lang : 'uz'
+
+  const ORDER: Record<string, { icon: string }> = {
+    boshlash:             { icon: '🚀' },
+    bildirishnomalar:     { icon: '🔔' },
+    'chrome-kengaytmasi': { icon: '🧩' },
+    'reklama-tahlili':    { icon: '📊' },
+    qoldiqlar:            { icon: '📦' },
+    'birlik-iqtisodiyoti':{ icon: '🧮' },
+    analitika:            { icon: '📈' },
+    'tolov-va-tariflar':  { icon: '💳' },
+    'hisob-sozlamalari':  { icon: '⚙️' },
   }
 
   for (const article of ARTICLES) {
     const slug = article.categorySlug
     if (!map.has(slug)) {
-      const meta = ORDER[slug] ?? { title: article.category, icon: '📄' }
-      map.set(slug, { slug, title: meta.title, icon: meta.icon, articles: [] })
+      const icon  = ORDER[slug]?.icon ?? '📄'
+      const title = CATEGORY_NAMES[slug]?.[l] ?? CATEGORY_NAMES[slug]?.['uz'] ?? article.category
+      map.set(slug, { slug, title, icon, articles: [] })
     }
-    map.get(slug)!.articles.push(article)
+    const translatedArticle = l !== 'uz' && ARTICLE_TITLES[article.slug]?.[l]
+      ? { ...article, title: ARTICLE_TITLES[article.slug][l].title, summary: ARTICLE_TITLES[article.slug][l].summary }
+      : article
+    map.get(slug)!.articles.push(translatedArticle)
   }
 
   const result: Category[] = []
