@@ -57,7 +57,6 @@ interface SidebarProps {
 function NavSection({
   items,
   label,
-  labelColor,
   pathname,
   onNavClick,
   navT,
@@ -65,7 +64,6 @@ function NavSection({
 }: {
   items: NavItem[]
   label: string
-  labelColor: string
   pathname: string
   onNavClick: () => void
   navT: Record<string, string>
@@ -73,7 +71,7 @@ function NavSection({
 }) {
   return (
     <div>
-      <p className={`px-3 mb-1.5 text-[10px] font-semibold uppercase tracking-widest ${labelColor}`}>
+      <p className="px-3 mb-1.5 text-[10px] font-semibold uppercase tracking-widest" style={{ color: 'var(--c1)', opacity: 0.6 }}>
         {label}
       </p>
       <div className="space-y-0.5">
@@ -85,15 +83,19 @@ function NavSection({
               key={href}
               href={href}
               onClick={onNavClick}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all group ${
-                active
-                  ? 'bg-violet-600/20 text-violet-300 border border-violet-500/20'
-                  : 'text-slate-400 hover:text-white hover:bg-white/[0.04]'
-              }`}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all"
+              style={active ? {
+                background: 'rgba(124,58,237,0.12)',
+                color: 'var(--c1)',
+                border: '1px solid rgba(124,58,237,0.2)',
+              } : {
+                color: 'var(--text-muted)',
+                border: '1px solid transparent',
+              }}
             >
-              <Icon className={`w-4 h-4 flex-shrink-0 ${active ? 'text-violet-400' : 'text-slate-500 group-hover:text-slate-300'}`} />
+              <Icon className="w-4 h-4 flex-shrink-0" style={{ color: active ? 'var(--c1)' : 'var(--text-muted)' }} />
               {itemLabel}
-              {active && <ChevronRight className="w-3 h-3 ml-auto text-violet-400" />}
+              {active && <ChevronRight className="w-3 h-3 ml-auto" style={{ color: 'var(--c1)' }} />}
             </Link>
           )
         })}
@@ -126,19 +128,21 @@ export default function Sidebar({ onClose }: SidebarProps) {
     onClose?.()
   }
 
+  const settingsActive = pathname === '/dashboard/settings'
+
   return (
-    <aside className="h-full w-60 bg-[#0d0d1a] border-r border-white/[0.05] flex flex-col">
+    <aside className="h-full w-60 flex flex-col" style={{ background: 'var(--bg-card)', borderRight: '1px solid var(--border)' }}>
       {/* Logo row */}
-      <div className="p-5 border-b border-white/[0.05] flex items-center justify-between">
+      <div className="p-5 flex items-center justify-between" style={{ borderBottom: '1px solid var(--border)' }}>
         <Link href="/" className="flex items-center gap-3 group">
           <img src="/icon.svg" alt="Daromadchi" className="w-9 h-9 rounded-xl shadow-md" />
           <div>
-            <span className="font-bold text-white text-base tracking-tight group-hover:text-violet-300 transition-colors">Daromadchi</span>
-            <p className="text-[10px] text-slate-500 leading-none mt-0.5">Uzum Market</p>
+            <span className="font-bold text-base tracking-tight transition-colors" style={{ color: 'var(--text-base)' }}>Daromadchi</span>
+            <p className="text-[10px] leading-none mt-0.5" style={{ color: 'var(--text-muted)' }}>Uzum Market</p>
           </div>
         </Link>
         {onClose && (
-          <button onClick={onClose} className="lg:hidden text-slate-500 hover:text-white transition-colors p-1">
+          <button onClick={onClose} className="lg:hidden transition-colors p-1" style={{ color: 'var(--text-muted)' }}>
             <X className="w-5 h-5" />
           </button>
         )}
@@ -149,29 +153,26 @@ export default function Sidebar({ onClose }: SidebarProps) {
         <NavSection
           items={storeNavItems}
           label={d.nav.store}
-          labelColor="text-violet-400/60"
           pathname={pathname}
           onNavClick={handleNavClick}
           navT={d.nav as unknown as Record<string, string>}
         />
 
-        <div className="border-t border-white/[0.04]" />
+        <div style={{ borderTop: '1px solid var(--border)' }} />
 
         <NavSection
           items={[{ href: '/dashboard/market', key: 'marketResearch', icon: Globe2 }]}
           label={d.nav.market}
-          labelColor="text-cyan-400/60"
           pathname={pathname}
           onNavClick={handleNavClick}
           navT={d.nav as unknown as Record<string, string>}
         />
 
-        <div className="border-t border-white/[0.04]" />
+        <div style={{ borderTop: '1px solid var(--border)' }} />
 
         <NavSection
           items={settingsNavItems}
           label={d.nav.settings ?? 'Sozlamalar'}
-          labelColor="text-slate-400/60"
           pathname={pathname}
           onNavClick={handleNavClick}
           navT={d.nav as unknown as Record<string, string>}
@@ -180,12 +181,13 @@ export default function Sidebar({ onClose }: SidebarProps) {
       </nav>
 
       {/* Theme + Language + Settings + Logout */}
-      <div className="p-3 border-t border-white/[0.05] space-y-1">
+      <div className="p-3 space-y-1" style={{ borderTop: '1px solid var(--border)' }}>
         <div className="flex items-center gap-2 px-1 py-1">
           <button
             onClick={toggle}
-            title={theme === 'dark' ? "Yorug' rejim" : "Qorong'u rejim"}
-            className="flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-white hover:bg-white/[0.06] transition-all"
+            title={theme === 'dark' ? d.lightMode : d.darkMode}
+            className="flex items-center justify-center w-8 h-8 rounded-lg transition-all"
+            style={{ color: 'var(--text-muted)', background: 'var(--bg-input)' }}
           >
             {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </button>
@@ -194,11 +196,15 @@ export default function Sidebar({ onClose }: SidebarProps) {
               <button
                 key={value}
                 onClick={() => setLang(value)}
-                className={`flex-1 text-[10px] font-semibold py-1 rounded-lg transition-all ${
-                  lang === value
-                    ? 'bg-violet-600/20 text-violet-300 border border-violet-500/20'
-                    : 'text-slate-500 hover:text-slate-300 hover:bg-white/[0.04]'
-                }`}
+                className="flex-1 text-[10px] font-semibold py-1 rounded-lg transition-all"
+                style={lang === value ? {
+                  background: 'rgba(124,58,237,0.12)',
+                  color: 'var(--c1)',
+                  border: '1px solid rgba(124,58,237,0.2)',
+                } : {
+                  color: 'var(--text-muted)',
+                  border: '1px solid transparent',
+                }}
               >
                 {label}
               </button>
@@ -209,20 +215,27 @@ export default function Sidebar({ onClose }: SidebarProps) {
         <Link
           href="/dashboard/settings"
           onClick={handleNavClick}
-          className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all group ${
-            pathname === '/dashboard/settings'
-              ? 'bg-violet-600/20 text-violet-300 border border-violet-500/20'
-              : 'text-slate-400 hover:text-white hover:bg-white/[0.04]'
-          }`}
+          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all"
+          style={settingsActive ? {
+            background: 'rgba(124,58,237,0.12)',
+            color: 'var(--c1)',
+            border: '1px solid rgba(124,58,237,0.2)',
+          } : {
+            color: 'var(--text-muted)',
+            border: '1px solid transparent',
+          }}
         >
-          <Settings className={`w-4 h-4 flex-shrink-0 ${pathname === '/dashboard/settings' ? 'text-violet-400' : 'text-slate-500 group-hover:text-slate-300'}`} />
+          <Settings className="w-4 h-4 flex-shrink-0" style={{ color: settingsActive ? 'var(--c1)' : 'var(--text-muted)' }} />
           {d.nav.settings ?? 'Sozlamalar'}
-          {pathname === '/dashboard/settings' && <ChevronRight className="w-3 h-3 ml-auto text-violet-400" />}
+          {settingsActive && <ChevronRight className="w-3 h-3 ml-auto" style={{ color: 'var(--c1)' }} />}
         </Link>
 
         <button
           onClick={handleLogout}
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:text-red-400 hover:bg-red-500/[0.08] transition-all"
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all"
+          style={{ color: 'var(--text-muted)' }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#f87171'; (e.currentTarget as HTMLElement).style.background = 'rgba(239,68,68,0.06)' }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--text-muted)'; (e.currentTarget as HTMLElement).style.background = 'transparent' }}
         >
           <LogOut className="w-4 h-4" />
           {d.nav.logout ?? 'Chiqish'}
