@@ -326,9 +326,20 @@ function LoginForm() {
           )}
         </div>
 
-        <p className="text-center text-xs mt-5" style={{ color: isDark ? '#374151' : '#9ca3af' }}>
-          {t.demo}
-        </p>
+        {/* Supported marketplaces */}
+        <div className="flex items-center justify-center gap-2 mt-5 flex-wrap">
+          {['Uzum Market', 'Wildberries', 'Yandex Market'].map((mp) => (
+            <span key={mp}
+              className="px-2.5 py-1 rounded-lg text-[11px] font-medium border"
+              style={{
+                background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(139,92,246,0.06)',
+                borderColor: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(139,92,246,0.14)',
+                color: textMuted,
+              }}>
+              {mp}
+            </span>
+          ))}
+        </div>
       </div>
     </div>
   )
