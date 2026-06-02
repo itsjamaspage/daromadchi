@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Daromadchi — Uzum & Yandex Market Analytics",
-  "version": "2.1.0",
-  "description": "Uzum va Yandex Market sotuvchilari uchun aqlli tahlil: marja, ROI, reklama samaradorligi",
+  "name": "Daromadchi — Uzum, Yandex & Wildberries Analytics",
+  "version": "2.2.0",
+  "description": "Uzum, Yandex Market va Wildberries sotuvchilari uchun aqlli tahlil: marja, ROI, reklama samaradorligi",
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
@@ -37,6 +37,15 @@
       "js": ["content-yandex.js"],
       "css": ["content.css"],
       "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://seller.wildberries.ru/*",
+        "https://seller-weekly-report.wildberries.ru/*"
+      ],
+      "js": ["content-wb.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle"
     }
   ],
   "permissions": ["storage", "alarms", "notifications", "activeTab"],
@@ -44,7 +53,12 @@
     "*://*.uzum.uz/*",
     "https://uzum.uz/*",
     "https://partner.market.yandex.ru/*",
-    "https://daromadchi.uz/*"
+    "https://api.partner.market.yandex.ru/*",
+    "https://daromadchi.uz/*",
+    "https://common-api.wildberries.ru/*",
+    "https://statistics-api.wildberries.ru/*",
+    "https://suppliers-api.wildberries.ru/*",
+    "https://seller.wildberries.ru/*"
   ],
   "background": {
     "service_worker": "background.js"

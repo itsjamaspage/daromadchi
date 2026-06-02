@@ -6,7 +6,7 @@ const supabaseConfigured = process.env.NEXT_PUBLIC_SUPABASE_URL && !process.env.
 export async function getCompetitorPrices(): Promise<CompetitorPrice[]> {
   if (!supabaseConfigured) return mock
   // Real: query competitor_prices table joined with products
-  return mock
+  return []
 }
 
 export type { CompetitorPrice }

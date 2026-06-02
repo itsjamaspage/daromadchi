@@ -14,6 +14,7 @@ import { getProducts } from '@/lib/db/products'
 import { getDailyRevenue } from '@/lib/db/revenue'
 import { adCampaigns, dynamicsData, productAds } from '@/lib/mock-data'
 import { getT } from '@/lib/server-i18n'
+import HelpTooltip from '@/components/dashboard/HelpTooltip'
 
 function formatSum(n: number) {
   return new Intl.NumberFormat('uz-UZ').format(n) + " so'm"
@@ -86,11 +87,12 @@ export default async function DashboardPage({ searchParams }: Props) {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <div className="flex items-center gap-3 mb-0.5">
+          <div className="flex items-center gap-2 mb-0.5">
             <h1 className="text-2xl font-bold text-white">{d.nav.dashboard}</h1>
             <span className="text-[10px] font-semibold px-2 py-1 rounded-full bg-violet-500/10 border border-violet-500/25 text-violet-400">
               {d.yourData}
             </span>
+            <HelpTooltip section="dashboard" />
           </div>
           <p className="text-slate-400 text-sm">{d.welcome}</p>
         </div>

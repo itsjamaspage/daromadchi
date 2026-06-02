@@ -22,7 +22,6 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     if (savedTheme) setTheme(savedTheme)
     if (savedLang) {
       setLangState(savedLang)
-      // Sync cookie so server components (getT) match the client-side language
       document.cookie = `lang=${savedLang};path=/;max-age=31536000`
     }
   }, [])

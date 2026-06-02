@@ -2,6 +2,7 @@ import { getT } from '@/lib/server-i18n'
 import { Calculator, Info } from 'lucide-react'
 import UnitEconomicsTable from '@/components/dashboard/UnitEconomicsTable'
 import { getUnitEconomicsItems, getUnitEcoSettings } from '@/lib/db/unit-economics'
+import HelpTooltip from '@/components/dashboard/HelpTooltip'
 
 export default async function UnitEconomicsPage() {
   const [t, items, settings] = await Promise.all([
@@ -15,11 +16,12 @@ export default async function UnitEconomicsPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <div className="flex items-center gap-3 mb-0.5">
+          <div className="flex items-center gap-2 mb-0.5">
             <h1 className="text-2xl font-bold text-white">{d.unitEcoTitle}</h1>
             <span className="text-[10px] font-semibold px-2 py-1 rounded-full bg-violet-500/10 border border-violet-500/25 text-violet-400">
               {items.length} {d.productCount}
             </span>
+            <HelpTooltip section="unitEconomics" />
           </div>
           <p className="text-slate-400 text-sm">{d.unitEcoSubtitle}</p>
         </div>

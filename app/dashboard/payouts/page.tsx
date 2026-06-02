@@ -2,6 +2,7 @@ import { CreditCard } from 'lucide-react'
 import { getPayoutEntries } from '@/lib/db/payouts'
 import PayoutsView from '@/components/dashboard/PayoutsView'
 import { getT } from '@/lib/server-i18n'
+import HelpTooltip from '@/components/dashboard/HelpTooltip'
 
 export default async function PayoutsPage() {
   const t = await getT()
@@ -15,7 +16,10 @@ export default async function PayoutsPage() {
           <CreditCard className="w-5 h-5 text-violet-400" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-white">{d.payoutsTitle}</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold text-white">{d.payoutsTitle}</h1>
+            <HelpTooltip section="payouts" />
+          </div>
           <p className="text-slate-400 text-sm">{d.payoutsSubtitle}</p>
         </div>
       </div>

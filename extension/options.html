@@ -146,6 +146,22 @@ input:checked+.slider:before{transform:translateX(18px);background:#fff}
       </div>
       <div class="api-status" id="uzum-status"></div>
     </div>
+
+    <div class="row api-row">
+      <div class="row-lbl">
+        <strong>Wildberries API tokeni</strong>
+        <span>
+          seller.wildberries.ru → Nastroyki → Dostup k API → Sozdat' novy klyuch
+          <br/><span style="color:#f59e0b">⚠️ Token IP-ro'yxatiga bog'liq — uy/ofis tarmoqingizdan tekshiring</span>
+        </span>
+      </div>
+      <div class="api-field-wrap">
+        <input class="api-in" id="o-wb-token" type="password" placeholder="WB tokenini kiriting..."/>
+        <button class="test-btn" id="test-wb">Tekshirish</button>
+        <button class="clear-btn" id="clear-wb" title="O'chirish">✕</button>
+      </div>
+      <div class="api-status" id="wb-status"></div>
+    </div>
   </div>
 
   <div class="save-wrap">
@@ -179,10 +195,12 @@ document.getElementById('save-btn').onclick = async () => {
   }});
 
   // Persist any newly-typed API keys (skip placeholder mask)
-  const yKey   = document.getElementById('o-yandex-key').value.trim();
-  const uToken = document.getElementById('o-uzum-token').value.trim();
-  if (yKey && !yKey.startsWith('●'))   await chrome.storage.local.set({ yandexApiKey: yKey });
+  const yKey    = document.getElementById('o-yandex-key').value.trim();
+  const uToken  = document.getElementById('o-uzum-token').value.trim();
+  const wbTok   = document.getElementById('o-wb-token').value.trim();
+  if (yKey && !yKey.startsWith('●'))    await chrome.storage.local.set({ yandexApiKey: yKey });
   if (uToken && !uToken.startsWith('●')) await chrome.storage.local.set({ uzumSellerToken: uToken });
+  if (wbTok && !wbTok.startsWith('●'))  await chrome.storage.local.set({ wbToken: wbTok });
 
   const msg = document.getElementById('saved-msg');
   msg.style.display = 'block';
@@ -231,11 +249,13 @@ document.getElementById('clear-drm').onclick = async () => {
 async function loadApiKeys() {
   const { daromadchi_token,
           yandexApiKey, yandexCampaignId, yandexConnected,
-          uzumSellerToken, uzumConnected } =
+          uzumSellerToken, uzumConnected,
+          wbToken, wbConnected, wbSellerInfo } =
     await chrome.storage.local.get([
       'daromadchi_token',
       'yandexApiKey', 'yandexCampaignId', 'yandexConnected',
-      'uzumSellerToken', 'uzumConnected'
+      'uzumSellerToken', 'uzumConnected',
+      'wbToken', 'wbConnected', 'wbSellerInfo'
     ]);
 
   if (daromadchi_token) {
@@ -264,6 +284,13 @@ async function loadApiKeys() {
     document.getElementById('o-uzum-token').value = '●'.repeat(24);
     document.getElementById('uzum-status').innerHTML = uzumConnected
       ? `<span style="color:#22c55e">✅ Ulangan</span>`
+      : `<span style="color:#f59e0b">⚠️ Saqlangan, lekin tekshirilmagan</span>`;
+  }
+  if (wbToken) {
+    document.getElementById('o-wb-token').value = '●'.repeat(24);
+    const wbName = wbSellerInfo?.supplierName || wbSellerInfo?.name || '';
+    document.getElementById('wb-status').innerHTML = wbConnected
+      ? `<span style="color:#22c55e">✅ Ulangan${wbName ? ` · ${wbName}` : ''}</span>`
       : `<span style="color:#f59e0b">⚠️ Saqlangan, lekin tekshirilmagan</span>`;
   }
 }
@@ -362,6 +389,55 @@ document.getElementById('clear-uzum').onclick = async () => {
                                       'uzumDirectStats', 'uzumProducts']);
   document.getElementById('o-uzum-token').value = '';
   document.getElementById('uzum-status').innerHTML =
+    `<span style="color:#64748b">O'chirildi</span>`;
+};
+
+// ── Wildberries API token ─────────────────────────────────────────────────────
+document.getElementById('test-wb').onclick = async () => {
+  const token = document.getElementById('o-wb-token').value.trim();
+  if (!token || token.startsWith('●')) {
+    document.getElementById('wb-status').innerHTML =
+      `<span style="color:#f59e0b">Yangi token kiriting</span>`;
+    return;
+  }
+  const btn = document.getElementById('test-wb');
+  btn.textContent = '⏳';
+  btn.disabled = true;
+  try {
+    // WB auth: no "Bearer" prefix — raw token in Authorization header
+    const res = await fetch('https://common-api.wildberries.ru/api/v1/seller-info', {
+      headers: { 'Authorization': token }
+    });
+    if (res.ok) {
+      const data = await res.json();
+      const name = data?.supplierName || data?.name || data?.tradeMark || 'WB sotuvchi';
+      await chrome.storage.local.set({ wbToken: token, wbConnected: true, wbSellerInfo: data });
+      document.getElementById('wb-status').innerHTML =
+        `<span style="color:#22c55e">✅ Ulandi! Sotuvchi: ${name}</span>`;
+      document.getElementById('o-wb-token').value = '●'.repeat(24);
+    } else if (res.status === 401) {
+      document.getElementById('wb-status').innerHTML =
+        `<span style="color:#ef4444">❌ Token yaroqsiz (401)</span>`;
+    } else if (res.status === 403) {
+      document.getElementById('wb-status').innerHTML =
+        `<span style="color:#f59e0b">⚠️ IP-whitelist xatosi (403) — uy/ofis tarmoqingizdan urinib ko'ring</span>`;
+    } else {
+      document.getElementById('wb-status').innerHTML =
+        `<span style="color:#ef4444">❌ Xato: HTTP ${res.status}</span>`;
+    }
+  } catch {
+    document.getElementById('wb-status').innerHTML =
+      `<span style="color:#ef4444">❌ Ulanish xatosi. Tarmoqni tekshiring.</span>`;
+  }
+  btn.textContent = 'Tekshirish';
+  btn.disabled = false;
+};
+
+document.getElementById('clear-wb').onclick = async () => {
+  await chrome.storage.local.remove(['wbToken', 'wbConnected', 'wbStats',
+                                      'wbProducts', 'wbSellerInfo', 'wbStatsTime']);
+  document.getElementById('o-wb-token').value = '';
+  document.getElementById('wb-status').innerHTML =
     `<span style="color:#64748b">O'chirildi</span>`;
 };
 
