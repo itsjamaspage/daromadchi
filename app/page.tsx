@@ -296,19 +296,6 @@ export default function LandingPage() {
             : 'radial-gradient(ellipse 70% 50% at 50% 0%, rgba(124,58,237,0.07) 0%, transparent 65%)' }} />
 
         <div className="relative z-10 max-w-2xl mx-auto">
-          <motion.div {...fade(0.1)}
-            className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 mb-6 border text-xs"
-            style={{ background: 'rgba(0,212,255,0.06)', borderColor: 'var(--border2)', color: 'var(--text-muted)' }}>
-            <div className="flex items-center -space-x-1.5">
-              {['#f97316','#06b6d4','#22c55e','#a78bfa'].map((c, i) => (
-                <div key={i} className="w-5 h-5 rounded-full border-2 flex items-center justify-center text-[7px] font-bold text-white"
-                  style={{ background: c, borderColor: isDark ? '#0d0e14' : 'var(--bg-base)' }}>
-                  {['J','M','O','A'][i]}
-                </div>
-              ))}
-            </div>
-            500+ sotuvchilar Uzum Market&apos;da
-          </motion.div>
 
           <motion.h1 {...fade(0.2)}
             className="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight tracking-tight mb-4 text-white">
