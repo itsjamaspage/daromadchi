@@ -8,9 +8,9 @@ const T = {
   uz: {
     back: 'Yordam markazi',
     breadcrumb: 'Yordam',
-    useful: 'Bu maqola foydali bo'ldimi?',
+    useful: "Bu maqola foydali bo'ldimi?",
     yes: '👍 Ha, foydali',
-    no: '👎 Yo'q',
+    no: "👎 Yo'q",
     related: 'Shu mavzudagi maqolalar',
   },
   ru: {
