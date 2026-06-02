@@ -59,7 +59,7 @@ export default async function MarketPage({ searchParams }: Props) {
       </div>
 
       {/* Marketplace tabs */}
-      <div className="flex items-center gap-1.5 p-1 bg-[#13131f] border border-white/[0.06] rounded-xl w-fit">
+      <div className="flex items-center gap-1.5 p-1 bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl w-fit">
         <Link
           href="/dashboard/market?tab=uzum"
           className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
@@ -122,7 +122,7 @@ export default async function MarketPage({ searchParams }: Props) {
               />
             </>
           ) : (
-            <div className="bg-[#13131f] border border-dashed border-amber-500/30 rounded-2xl p-10 text-center">
+            <div className="bg-[var(--bg-card2)] border border-dashed border-amber-500/30 rounded-2xl p-10 text-center">
               <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mx-auto mb-4">
                 <Globe2 className="w-7 h-7 text-amber-400" />
               </div>

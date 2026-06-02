@@ -21,7 +21,6 @@ const storeNavItems: NavItem[] = [
   { href: '/dashboard/orders',         key: 'orders',        icon: ShoppingCart    },
   { href: '/dashboard/analytics',      key: 'analytics',     icon: BarChart2       },
   { href: '/dashboard/advertising',    key: 'advertising',   icon: Megaphone       },
-  { href: '/dashboard/search-phrases', key: 'searchPhrases', icon: Search          },
   { href: '/dashboard/unit-economics', key: 'unitEconomics', icon: Layers          },
   { href: '/dashboard/pnl',            key: 'pnl',           icon: FileText        },
   { href: '/dashboard/calculator',     key: 'calculator',    icon: Calculator      },

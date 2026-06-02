@@ -28,7 +28,7 @@ const ABC_CFG = {
 const XYZ_CFG = {
   X: { bg: 'bg-blue-500/10',   border: 'border-blue-500/20',   text: 'text-blue-400'   },
   Y: { bg: 'bg-amber-500/10',  border: 'border-amber-500/20',  text: 'text-amber-400'  },
-  Z: { bg: 'bg-slate-500/10',  border: 'border-slate-500/20',  text: 'text-slate-400'  },
+  Z: { bg: 'bg-slate-500/10',  border: 'border-slate-500/20',  text: 'text-[var(--text-muted)]'  },
 }
 
 export default function AbcXyzClient({ products }: { products: ClassifiedProduct[] }) {
@@ -69,14 +69,14 @@ export default function AbcXyzClient({ products }: { products: ClassifiedProduct
         ]).map(({ label, count, cfg }) => (
           <div key={label} className={`${cfg.bg} border ${cfg.border} rounded-2xl p-5`}>
             <p className={`text-3xl font-bold ${cfg.text}`}>{count}</p>
-            <p className="text-slate-400 text-xs mt-1.5 leading-snug">{label}</p>
+            <p className="text-[var(--text-muted)] text-xs mt-1.5 leading-snug">{label}</p>
           </div>
         ))}
       </div>
 
       {/* Interpretation panel */}
       <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl p-5">
-        <p className="text-white font-semibold text-sm mb-3">{t.interpretation}</p>
+        <p className="text-[var(--text-base)] font-semibold text-sm mb-3">{t.interpretation}</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {([
             { cls: 'AX', desc: t.axDesc, color: 'text-emerald-400' },
@@ -86,7 +86,7 @@ export default function AbcXyzClient({ products }: { products: ClassifiedProduct
           ]).map(({ cls, desc, color }) => (
             <div key={cls} className="flex items-start gap-2.5">
               <span className={`text-xs font-bold ${color} w-6 flex-shrink-0 pt-0.5`}>{cls}</span>
-              <span className="text-slate-400 text-xs leading-relaxed">{desc}</span>
+              <span className="text-[var(--text-muted)] text-xs leading-relaxed">{desc}</span>
             </div>
           ))}
         </div>
@@ -100,8 +100,8 @@ export default function AbcXyzClient({ products }: { products: ClassifiedProduct
             onClick={() => setFilter(id)}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 ${
               filter === id
-                ? 'bg-violet-600 text-white shadow-sm'
-                : 'bg-[var(--bg-card2)] border border-[var(--border)] text-slate-400 hover:text-white'
+                ? 'bg-violet-600 text-[var(--text-base)] shadow-sm'
+                : 'bg-[var(--bg-card2)] border border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text-base)]'
             }`}
           >
             {label}
@@ -117,7 +117,7 @@ export default function AbcXyzClient({ products }: { products: ClassifiedProduct
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-slate-500 text-xs border-b border-[var(--border)] bg-white/[0.01]">
+              <tr className="text-[var(--text-muted)] text-xs border-b border-[var(--border)] bg-white/[0.01]">
                 <th className="text-left font-medium px-5 py-3">{t.product}</th>
                 <th className="text-right font-medium px-5 py-3">{t.revenue}</th>
                 <th className="text-right font-medium px-5 py-3">{t.revenueShare}</th>
@@ -130,7 +130,7 @@ export default function AbcXyzClient({ products }: { products: ClassifiedProduct
             <tbody className="divide-y divide-white/[0.03]">
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-5 py-10 text-center text-slate-500 text-sm">{t.noData}</td>
+                  <td colSpan={7} className="px-5 py-10 text-center text-[var(--text-muted)] text-sm">{t.noData}</td>
                 </tr>
               ) : filtered.map(p => {
                 const abcCfg = ABC_CFG[p.abc as keyof typeof ABC_CFG]
@@ -138,12 +138,12 @@ export default function AbcXyzClient({ products }: { products: ClassifiedProduct
                 return (
                   <tr key={p.id} className="hover:bg-white/[0.02] transition-colors">
                     <td className="px-5 py-3">
-                      <p className="text-white font-medium text-xs truncate max-w-[220px]">{p.title}</p>
-                      {p.sku && <p className="text-slate-500 text-xs mt-0.5">{p.sku}</p>}
+                      <p className="text-[var(--text-base)] font-medium text-xs truncate max-w-[220px]">{p.title}</p>
+                      {p.sku && <p className="text-[var(--text-muted)] text-xs mt-0.5">{p.sku}</p>}
                     </td>
-                    <td className="px-5 py-3 text-right text-white text-xs font-semibold">{fmt(p.revenue)}</td>
-                    <td className="px-5 py-3 text-right text-slate-400 text-xs">{p.revenueShare.toFixed(1)}%</td>
-                    <td className="px-5 py-3 text-right text-slate-300 text-xs">{p.sold}</td>
+                    <td className="px-5 py-3 text-right text-[var(--text-base)] text-xs font-semibold">{fmt(p.revenue)}</td>
+                    <td className="px-5 py-3 text-right text-[var(--text-muted)] text-xs">{p.revenueShare.toFixed(1)}%</td>
+                    <td className="px-5 py-3 text-right text-[var(--text-dim)] text-xs">{p.sold}</td>
                     <td className="px-5 py-3 text-center">
                       <span className={`inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-lg border ${abcCfg.bg} ${abcCfg.text} ${abcCfg.border}`}>
                         <span className={`w-1.5 h-1.5 rounded-full ${abcCfg.dot}`} />

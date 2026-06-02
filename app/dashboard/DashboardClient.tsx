@@ -36,7 +36,7 @@ interface Props {
 }
 
 const STATUS_CLASS: Record<string, string> = {
-  pending:   'bg-slate-500/10 text-slate-400',
+  pending:   'bg-slate-500/10 text-[var(--text-muted)]',
   confirmed: 'bg-blue-500/10 text-blue-400',
   delivered: 'bg-emerald-500/10 text-emerald-400',
   cancelled: 'bg-red-500/10 text-red-400',
@@ -78,12 +78,12 @@ export default function DashboardClient({ kpis, recentOrders, allProducts, chart
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <div className="flex items-center gap-3 mb-0.5">
-            <h1 className="text-2xl font-bold text-white">{d.title}</h1>
+            <h1 className="text-2xl font-bold text-[var(--text-base)]">{d.title}</h1>
             <span className="text-[10px] font-semibold px-2 py-1 rounded-full bg-violet-500/10 border border-violet-500/25 text-violet-400">
               {d.badge}
             </span>
           </div>
-          <p className="text-slate-400 text-sm">{d.subtitle}</p>
+          <p className="text-[var(--text-muted)] text-sm">{d.subtitle}</p>
         </div>
         <div className="flex items-center gap-2">
           <SyncButton />
@@ -95,7 +95,7 @@ export default function DashboardClient({ kpis, recentOrders, allProducts, chart
             className={`hidden sm:flex items-center gap-2 text-xs font-medium px-3 py-2 rounded-xl border transition-all ${
               showCustomize
                 ? 'bg-violet-500/10 border-violet-500/20 text-violet-400'
-                : 'bg-[var(--bg-input)] border-[var(--border2)] text-slate-400 hover:text-white'
+                : 'bg-[var(--bg-input)] border-[var(--border2)] text-[var(--text-muted)] hover:text-[var(--text-base)]'
             }`}
           >
             <LayoutDashboard className="w-3.5 h-3.5" />
@@ -124,7 +124,7 @@ export default function DashboardClient({ kpis, recentOrders, allProducts, chart
                     : color === 'purple'
                     ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
                     : 'bg-violet-600/20 text-violet-300 border border-violet-500/30'
-                  : 'text-slate-500 hover:text-slate-300'
+                  : 'text-[var(--text-muted)] hover:text-[var(--text-dim)]'
               }`}
             >
               {label}
@@ -136,7 +136,7 @@ export default function DashboardClient({ kpis, recentOrders, allProducts, chart
       {/* Customize panel */}
       {showCustomize && (
         <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl p-4">
-          <p className="text-white font-semibold text-sm mb-3">{d.customize ?? 'Customize widgets'}</p>
+          <p className="text-[var(--text-base)] font-semibold text-sm mb-3">{d.customize ?? 'Customize widgets'}</p>
           <div className="flex flex-wrap gap-3">
             {([
               { id: 'kpis',       label: d.widgetKpis       ?? 'KPI Cards'       },
@@ -152,7 +152,7 @@ export default function DashboardClient({ kpis, recentOrders, allProducts, chart
                   className={`flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-lg border transition-all ${
                     visible
                       ? 'bg-violet-500/10 border-violet-500/25 text-violet-300'
-                      : 'bg-white/[0.03] border-[var(--border2)] text-slate-500'
+                      : 'bg-white/[0.03] border-[var(--border2)] text-[var(--text-muted)]'
                   }`}
                 >
                   <span className={`w-2 h-2 rounded-full ${visible ? 'bg-violet-400' : 'bg-slate-600'}`} />
@@ -170,15 +170,15 @@ export default function DashboardClient({ kpis, recentOrders, allProducts, chart
           <div className="w-14 h-14 rounded-2xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center mx-auto mb-4">
             <RefreshCw className="w-7 h-7 text-violet-400" />
           </div>
-          <h2 className="text-white font-bold text-lg mb-2">{d.noData}</h2>
-          <p className="text-slate-400 text-sm mb-6 max-w-sm mx-auto">{d.noDataDesc}</p>
+          <h2 className="text-[var(--text-base)] font-bold text-lg mb-2">{d.noData}</h2>
+          <p className="text-[var(--text-muted)] text-sm mb-6 max-w-sm mx-auto">{d.noDataDesc}</p>
           <div className="flex items-center justify-center gap-3">
             <Link href="/dashboard/settings"
-              className="inline-flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors shadow-lg shadow-violet-500/20">
+              className="inline-flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-[var(--text-base)] text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors shadow-lg shadow-violet-500/20">
               <Settings className="w-4 h-4" /> {d.goSettings}
             </Link>
             <Link href="https://seller.uzum.uz" target="_blank" rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-slate-400 hover:text-white text-sm font-medium px-5 py-2.5 rounded-xl border border-[var(--border2)] hover:bg-white/[0.04] transition-all">
+              className="inline-flex items-center gap-2 text-[var(--text-muted)] hover:text-[var(--text-base)] text-sm font-medium px-5 py-2.5 rounded-xl border border-[var(--border2)] hover:bg-[var(--bg-card2)] transition-all">
               seller.uzum.uz <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
@@ -207,7 +207,7 @@ export default function DashboardClient({ kpis, recentOrders, allProducts, chart
             <RevenueChart data={chartData} days={days} />
           </div>
           <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl p-6">
-            <h3 className="text-white font-semibold mb-4">{d.recentOrders}</h3>
+            <h3 className="text-[var(--text-base)] font-semibold mb-4">{d.recentOrders}</h3>
             <div className="space-y-3">
               {recentOrders.map(order => (
                 <div key={order.id} className="flex items-start gap-3 pb-3 border-b border-[var(--border)] last:border-0 last:pb-0">
@@ -215,10 +215,10 @@ export default function DashboardClient({ kpis, recentOrders, allProducts, chart
                     <ShoppingBag className="w-4 h-4 text-violet-400" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-white font-medium truncate font-mono">{order.order_id_external ?? order.id.slice(0, 8)}</p>
-                    <p className="text-xs text-slate-500 truncate">{{ uzum: 'Uzum Market', yandex_market: 'Yandex Market', wildberries: 'Wildberries' }[order.marketplace] ?? order.marketplace}</p>
+                    <p className="text-sm text-[var(--text-base)] font-medium truncate font-mono">{order.order_id_external ?? order.id.slice(0, 8)}</p>
+                    <p className="text-xs text-[var(--text-muted)] truncate">{{ uzum: 'Uzum Market', yandex_market: 'Yandex Market', wildberries: 'Wildberries' }[order.marketplace] ?? order.marketplace}</p>
                   </div>
-                  <span className={`text-[11px] font-medium px-2 py-0.5 rounded-lg flex-shrink-0 ${STATUS_CLASS[order.status] ?? 'bg-slate-500/10 text-slate-400'}`}>
+                  <span className={`text-[11px] font-medium px-2 py-0.5 rounded-lg flex-shrink-0 ${STATUS_CLASS[order.status] ?? 'bg-slate-500/10 text-[var(--text-muted)]'}`}>
                     {s[order.status as keyof typeof s] ?? order.status}
                   </span>
                 </div>
@@ -234,7 +234,7 @@ export default function DashboardClient({ kpis, recentOrders, allProducts, chart
           <CategoryChart data={categoryData} />
           <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-white font-semibold">{d.topProducts}</h3>
+              <h3 className="text-[var(--text-base)] font-semibold">{d.topProducts}</h3>
               <a href="/dashboard/products" className="text-xs text-violet-400 hover:text-violet-300 transition-colors">
                 {d.viewAll} &rarr;
               </a>
@@ -242,7 +242,7 @@ export default function DashboardClient({ kpis, recentOrders, allProducts, chart
             <div className="overflow-x-auto">
             <table className="w-full text-sm min-w-[280px]">
               <thead>
-                <tr className="text-slate-500 text-xs border-b border-[var(--border)]">
+                <tr className="text-[var(--text-muted)] text-xs border-b border-[var(--border)]">
                   <th className="text-left font-medium pb-3 pr-4">{d.product}</th>
                   <th className="text-right font-medium pb-3 pr-4">{d.profit2}</th>
                   <th className="text-right font-medium pb-3">{d.sold}</th>
@@ -252,13 +252,13 @@ export default function DashboardClient({ kpis, recentOrders, allProducts, chart
                 {allProducts.slice(0, 5).map(p => (
                   <tr key={p.id} className="hover:bg-white/[0.02] transition-colors">
                     <td className="py-3 pr-4">
-                      <p className="text-white font-medium text-xs">{p.title}</p>
-                      <p className="text-slate-500 text-xs">{p.sku}</p>
+                      <p className="text-[var(--text-base)] font-medium text-xs">{p.title}</p>
+                      <p className="text-[var(--text-muted)] text-xs">{p.sku}</p>
                     </td>
                     <td className="py-3 pr-4 text-right">
                       <span className="text-emerald-400 font-medium text-xs">{formatSum(p.profit)}</span>
                     </td>
-                    <td className="py-3 text-right text-slate-300 text-xs">{p.sold ?? 0}</td>
+                    <td className="py-3 text-right text-[var(--text-dim)] text-xs">{p.sold ?? 0}</td>
                   </tr>
                 ))}
               </tbody>

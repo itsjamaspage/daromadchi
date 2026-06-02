@@ -34,10 +34,10 @@ function Section({ title, icon: Icon, children }: {
   children: React.ReactNode
 }) {
   return (
-    <div className="bg-[#13131f] border border-white/[0.06] rounded-2xl overflow-hidden">
+    <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
       <div className="px-5 py-4 border-b border-white/[0.05] flex items-center gap-2">
         <Icon className="w-4 h-4 text-violet-400" />
-        <h2 className="text-white font-semibold text-sm">{title}</h2>
+        <h2 className="text-[var(--text-base)] font-semibold text-sm">{title}</h2>
       </div>
       {children}
     </div>
@@ -88,8 +88,8 @@ export default function NotificationsPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-white">Bildirishnomalar</h1>
-        <p className="text-slate-400 text-sm mt-1">
+        <h1 className="text-2xl font-bold text-[var(--text-base)]">Bildirishnomalar</h1>
+        <p className="text-[var(--text-muted)] text-sm mt-1">
           Muhim hodisalar haqida Telegram orqali xabar oling
         </p>
       </div>
@@ -102,13 +102,13 @@ export default function NotificationsPage() {
               ? 'bg-emerald-500/15 border border-emerald-500/25'
               : 'bg-slate-500/10 border border-slate-500/20'
           }`}>
-            <MessageCircle className={`w-5 h-5 ${TELEGRAM_CONNECTED ? 'text-emerald-400' : 'text-slate-500'}`} />
+            <MessageCircle className={`w-5 h-5 ${TELEGRAM_CONNECTED ? 'text-emerald-400' : 'text-[var(--text-muted)]'}`} />
           </div>
           <div className="flex-1">
-            <p className="text-white font-semibold text-sm">
+            <p className="text-[var(--text-base)] font-semibold text-sm">
               {TELEGRAM_CONNECTED ? 'Telegram ulangan' : 'Telegram ulanmagan'}
             </p>
-            <p className="text-slate-500 text-xs mt-0.5">
+            <p className="text-[var(--text-muted)] text-xs mt-0.5">
               {TELEGRAM_CONNECTED
                 ? '@daromadchi_bot orqali xabar olasiz'
                 : 'Bildirishnomalar olish uchun Telegram botini ulang'}
@@ -121,7 +121,7 @@ export default function NotificationsPage() {
           ) : (
             <Link
               href="/dashboard/settings"
-              className="flex items-center gap-1.5 text-xs font-semibold px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white transition-colors"
+              className="flex items-center gap-1.5 text-xs font-semibold px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-[var(--text-base)] transition-colors"
             >
               Ulash <ExternalLink className="w-3 h-3" />
             </Link>
@@ -141,22 +141,22 @@ export default function NotificationsPage() {
                 onChange={v => update('lowStock', { enabled: v })}
               />
               <div className="flex-1">
-                <p className="text-white text-sm font-medium">Qoldiq tugamoqda</p>
-                <p className="text-slate-500 text-xs mt-0.5">
+                <p className="text-[var(--text-base)] text-sm font-medium">Qoldiq tugamoqda</p>
+                <p className="text-[var(--text-muted)] text-xs mt-0.5">
                   Mahsulot zahirasi belgilangan kun sonidan kam bo'lganda xabar berish
                 </p>
                 {settings.lowStock.enabled && (
                   <div className="mt-3 flex items-center gap-2">
-                    <label className="text-xs text-slate-400">Chegara (kun):</label>
+                    <label className="text-xs text-[var(--text-muted)]">Chegara (kun):</label>
                     <input
                       type="number"
                       min={1}
                       max={60}
                       value={settings.lowStock.days}
                       onChange={e => update('lowStock', { days: Number(e.target.value) })}
-                      className="w-20 bg-[#1c1c2e] border border-white/[0.08] rounded-lg px-2.5 py-1 text-xs text-white focus:outline-none focus:border-violet-500/60 transition-all"
+                      className="w-20 bg-[var(--bg-input)] border border-[var(--border2)] rounded-lg px-2.5 py-1 text-xs text-[var(--text-base)] focus:outline-none focus:border-violet-500/60 transition-all"
                     />
-                    <span className="text-xs text-slate-500">kundan kam</span>
+                    <span className="text-xs text-[var(--text-muted)]">kundan kam</span>
                   </div>
                 )}
               </div>
@@ -169,22 +169,22 @@ export default function NotificationsPage() {
                 onChange={v => update('adOverspend', { enabled: v })}
               />
               <div className="flex-1">
-                <p className="text-white text-sm font-medium">Reklama ko'p sarf qilmoqda</p>
-                <p className="text-slate-500 text-xs mt-0.5">
+                <p className="text-[var(--text-base)] text-sm font-medium">Reklama ko'p sarf qilmoqda</p>
+                <p className="text-[var(--text-muted)] text-xs mt-0.5">
                   DRR belgilangan chegaradan oshganda ogohlantirish yuborish
                 </p>
                 {settings.adOverspend.enabled && (
                   <div className="mt-3 flex items-center gap-2">
-                    <label className="text-xs text-slate-400">DRR chegara:</label>
+                    <label className="text-xs text-[var(--text-muted)]">DRR chegara:</label>
                     <input
                       type="number"
                       min={5}
                       max={100}
                       value={settings.adOverspend.drrThreshold}
                       onChange={e => update('adOverspend', { drrThreshold: Number(e.target.value) })}
-                      className="w-20 bg-[#1c1c2e] border border-white/[0.08] rounded-lg px-2.5 py-1 text-xs text-white focus:outline-none focus:border-violet-500/60 transition-all"
+                      className="w-20 bg-[var(--bg-input)] border border-[var(--border2)] rounded-lg px-2.5 py-1 text-xs text-[var(--text-base)] focus:outline-none focus:border-violet-500/60 transition-all"
                     />
-                    <span className="text-xs text-slate-500">% dan yuqori</span>
+                    <span className="text-xs text-[var(--text-muted)]">% dan yuqori</span>
                   </div>
                 )}
               </div>
@@ -197,22 +197,22 @@ export default function NotificationsPage() {
                 onChange={v => update('salesDrop', { enabled: v })}
               />
               <div className="flex-1">
-                <p className="text-white text-sm font-medium">Savdo tushishi</p>
-                <p className="text-slate-500 text-xs mt-0.5">
+                <p className="text-[var(--text-base)] text-sm font-medium">Savdo tushishi</p>
+                <p className="text-[var(--text-muted)] text-xs mt-0.5">
                   Haftalik savdo o'tgan haftaga nisbatan belgilangan foizga tushganda xabar berish
                 </p>
                 {settings.salesDrop.enabled && (
                   <div className="mt-3 flex items-center gap-2">
-                    <label className="text-xs text-slate-400">Tushish chegara:</label>
+                    <label className="text-xs text-[var(--text-muted)]">Tushish chegara:</label>
                     <input
                       type="number"
                       min={5}
                       max={90}
                       value={settings.salesDrop.pctThreshold}
                       onChange={e => update('salesDrop', { pctThreshold: Number(e.target.value) })}
-                      className="w-20 bg-[#1c1c2e] border border-white/[0.08] rounded-lg px-2.5 py-1 text-xs text-white focus:outline-none focus:border-violet-500/60 transition-all"
+                      className="w-20 bg-[var(--bg-input)] border border-[var(--border2)] rounded-lg px-2.5 py-1 text-xs text-[var(--text-base)] focus:outline-none focus:border-violet-500/60 transition-all"
                     />
-                    <span className="text-xs text-slate-500">% dan ko'p tushsa</span>
+                    <span className="text-xs text-[var(--text-muted)]">% dan ko'p tushsa</span>
                   </div>
                 )}
               </div>
@@ -225,8 +225,8 @@ export default function NotificationsPage() {
                 onChange={v => update('newOrders', { enabled: v })}
               />
               <div className="flex-1">
-                <p className="text-white text-sm font-medium">Yangi buyurtmalar</p>
-                <p className="text-slate-500 text-xs mt-0.5">
+                <p className="text-[var(--text-base)] text-sm font-medium">Yangi buyurtmalar</p>
+                <p className="text-[var(--text-muted)] text-xs mt-0.5">
                   Har bir yangi buyurtma kelganda darhol xabar berish
                 </p>
               </div>
@@ -239,14 +239,14 @@ export default function NotificationsPage() {
                 onChange={v => update('dailySummary', { enabled: v })}
               />
               <div className="flex-1">
-                <p className="text-white text-sm font-medium">Kunlik hisobot</p>
-                <p className="text-slate-500 text-xs mt-0.5">
+                <p className="text-[var(--text-base)] text-sm font-medium">Kunlik hisobot</p>
+                <p className="text-[var(--text-muted)] text-xs mt-0.5">
                   Daromad, buyurtmalar va qoldiq haqida kunlik xulosa
                 </p>
                 {settings.dailySummary.enabled && (
                   <div className="mt-3 flex items-center gap-2">
-                    <label className="text-xs text-slate-400">Vaqt:</label>
-                    <div className="flex items-center gap-1 p-0.5 bg-[#1c1c2e] border border-white/[0.08] rounded-lg">
+                    <label className="text-xs text-[var(--text-muted)]">Vaqt:</label>
+                    <div className="flex items-center gap-1 p-0.5 bg-[var(--bg-input)] border border-[var(--border2)] rounded-lg">
                       {(['morning', 'evening'] as const).map(t => (
                         <button
                           key={t}
@@ -255,7 +255,7 @@ export default function NotificationsPage() {
                           className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
                             settings.dailySummary.time === t
                               ? 'bg-violet-600/20 text-violet-300 border border-violet-500/30'
-                              : 'text-slate-500 hover:text-slate-300'
+                              : 'text-[var(--text-muted)] hover:text-[var(--text-dim)]'
                           }`}
                         >
                           {t === 'morning' ? '🌅 Ertalab (08:00)' : '🌆 Kechqurun (20:00)'}
@@ -274,7 +274,7 @@ export default function NotificationsPage() {
           <button
             type="submit"
             disabled={saving}
-            className="flex items-center gap-2 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors shadow-lg shadow-violet-500/20"
+            className="flex items-center gap-2 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-[var(--text-base)] text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors shadow-lg shadow-violet-500/20"
           >
             {saving
               ? <span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />

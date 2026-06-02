@@ -12,7 +12,7 @@ function fmt(n: number) {
 
 const CATEGORY_RATES = [5, 5, 6, 8, 8, 9, 7, 10, 10, 10, 11, 9, 12, 10, 6, 10]
 
-const inputCls = "w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/30 transition-all"
+const inputCls = "w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/30 transition-all"
 
 export default function CalculatorPage() {
   const { lang } = useLang()
@@ -74,57 +74,57 @@ export default function CalculatorPage() {
     <div className="space-y-6 max-w-5xl">
       <div>
         <div className="flex items-center gap-2 mb-0.5">
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-[var(--text-base)] flex items-center gap-2">
             <Calculator className="w-6 h-6 text-violet-400" />
             {t.title}
           </h1>
           <HelpTooltip section="calculator" />
         </div>
-        <p className="text-slate-400 text-sm">
-          {t.subtitlePre} <strong className="text-white">{t.subtitleStrong}</strong> {t.subtitlePost}
+        <p className="text-[var(--text-muted)] text-sm">
+          {t.subtitlePre} <strong className="text-[var(--text-base)]">{t.subtitleStrong}</strong> {t.subtitlePost}
         </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* ── Inputs ──────────────────────────────────────────────────── */}
         <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl p-6 space-y-4">
-          <h2 className="text-white font-semibold text-sm">{t.productInfo}</h2>
+          <h2 className="text-[var(--text-base)] font-semibold text-sm">{t.productInfo}</h2>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs text-slate-400 mb-1.5">{t.sellPrice}</label>
+              <label className="block text-xs text-[var(--text-muted)] mb-1.5">{t.sellPrice}</label>
               <input value={price} onChange={e => setPrice(e.target.value)} type="number"
                 placeholder="890 000" className={inputCls} />
             </div>
             <div>
-              <label className="block text-xs text-slate-400 mb-1.5">{t.cost}</label>
+              <label className="block text-xs text-[var(--text-muted)] mb-1.5">{t.cost}</label>
               <input value={cost} onChange={e => setCost(e.target.value)} type="number"
                 placeholder="520 000" className={inputCls} />
             </div>
             <div>
-              <label className="block text-xs text-slate-400 mb-1.5">{t.logistics}</label>
+              <label className="block text-xs text-[var(--text-muted)] mb-1.5">{t.logistics}</label>
               <input value={logistics} onChange={e => setLogistics(e.target.value)} type="number"
                 placeholder="25 000" className={inputCls} />
             </div>
             <div>
-              <label className="block text-xs text-slate-400 mb-1.5">{t.adSpend}</label>
+              <label className="block text-xs text-[var(--text-muted)] mb-1.5">{t.adSpend}</label>
               <input value={adSpend} onChange={e => setAdSpend(e.target.value)} type="number"
                 placeholder="0" className={inputCls} />
             </div>
             <div>
-              <label className="block text-xs text-slate-400 mb-1.5">{t.returnRate}</label>
+              <label className="block text-xs text-[var(--text-muted)] mb-1.5">{t.returnRate}</label>
               <input value={returnRate} onChange={e => setReturnRate(e.target.value)} type="number"
                 placeholder="5" min="0" max="100" className={inputCls} />
             </div>
             <div>
-              <label className="block text-xs text-slate-400 mb-1.5">{t.monthlyUnits}</label>
+              <label className="block text-xs text-[var(--text-muted)] mb-1.5">{t.monthlyUnits}</label>
               <input value={units} onChange={e => setUnits(e.target.value)} type="number"
                 placeholder="100" min="1" className={inputCls} />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs text-slate-400 mb-1.5">{t.category}</label>
+            <label className="block text-xs text-[var(--text-muted)] mb-1.5">{t.category}</label>
             <select value={catIdx} onChange={e => setCatIdx(Number(e.target.value))} className={inputCls}>
               {CATEGORIES.map((c, i) => (
                 <option key={c.name} value={i}>{c.name} — {c.rate}% {t.commissionSuffix}</option>
@@ -134,7 +134,7 @@ export default function CalculatorPage() {
 
           <div className="flex items-center gap-2 bg-violet-500/[0.07] border border-violet-500/10 rounded-xl px-4 py-2.5">
             <Info className="w-4 h-4 text-violet-400 flex-shrink-0" />
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-[var(--text-muted)]">
               {t.uzumCommission} <span className="text-violet-400 font-semibold">{commission}%</span> · {CATEGORIES[catIdx].name}
             </p>
           </div>
@@ -145,7 +145,7 @@ export default function CalculatorPage() {
           {!result ? (
             <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl p-6 flex flex-col items-center justify-center min-h-[220px] gap-3">
               <Calculator className="w-10 h-10 text-slate-700" />
-              <p className="text-slate-500 text-sm text-center">{t.enterToSee}<br/>{t.enterPriceCost}</p>
+              <p className="text-[var(--text-muted)] text-sm text-center">{t.enterToSee}<br/>{t.enterPriceCost}</p>
             </div>
           ) : (
             <>
@@ -153,23 +153,23 @@ export default function CalculatorPage() {
               <div className="rounded-2xl overflow-hidden border border-[var(--border2)]">
                 <div className="bg-gradient-to-r from-violet-600/20 to-indigo-600/10 px-5 py-3 border-b border-[var(--border)] flex items-center gap-2">
                   <Zap className="w-4 h-4 text-violet-400" />
-                  <span className="text-white font-bold text-sm">{t.realityCheck}</span>
+                  <span className="text-[var(--text-base)] font-bold text-sm">{t.realityCheck}</span>
                 </div>
 
                 <div className="bg-[var(--bg-card2)] p-5 space-y-4">
                   {/* Two-column comparison */}
                   <div className="grid grid-cols-2 gap-3">
                     <div className="bg-white/[0.03] border border-[var(--border)] rounded-xl p-4">
-                      <p className="text-slate-500 text-[11px] mb-1">{t.youThink}</p>
-                      <p className="text-white font-bold text-xl">{fmt(result.naiveProfit)}</p>
-                      <p className="text-slate-600 text-[10px] mt-0.5">so'm</p>
+                      <p className="text-[var(--text-muted)] text-[11px] mb-1">{t.youThink}</p>
+                      <p className="text-[var(--text-base)] font-bold text-xl">{fmt(result.naiveProfit)}</p>
+                      <p className="text-[var(--text-muted)] text-[10px] mt-0.5">so'm</p>
                     </div>
                     <div className={`border rounded-xl p-4 ${result.realProfit > 0 ? 'bg-emerald-500/[0.08] border-emerald-500/25' : 'bg-red-500/[0.08] border-red-500/25'}`}>
-                      <p className="text-slate-400 text-[11px] mb-1">{t.yourReal}</p>
+                      <p className="text-[var(--text-muted)] text-[11px] mb-1">{t.yourReal}</p>
                       <p className={`font-bold text-xl ${result.realProfit > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                         {fmt(result.realProfit)}
                       </p>
-                      <p className="text-slate-600 text-[10px] mt-0.5">so'm</p>
+                      <p className="text-[var(--text-muted)] text-[10px] mt-0.5">so'm</p>
                     </div>
                   </div>
 
@@ -195,7 +195,7 @@ export default function CalculatorPage() {
 
                   {/* Cost breakdown per unit */}
                   <div className="space-y-1.5">
-                    <p className="text-slate-500 text-xs font-medium">{t.breakdownTitle}</p>
+                    <p className="text-[var(--text-muted)] text-xs font-medium">{t.breakdownTitle}</p>
                     {[
                       { label: `${t.bdCommission} (${commission}%)`, value: result.commAmt,     color: 'bg-red-500' },
                       { label: t.bdCost,                            value: result.cost,         color: 'bg-orange-500' },
@@ -207,9 +207,9 @@ export default function CalculatorPage() {
                       return (
                         <div key={r.label} className="flex items-center gap-2 text-xs">
                           <div className={`w-2 h-2 rounded-full flex-shrink-0 ${r.color}`} />
-                          <span className="text-slate-400 flex-1">{r.label}</span>
-                          <span className="text-slate-300 tabular-nums">{fmt(r.value)} so'm</span>
-                          <span className="text-slate-600 w-10 text-right tabular-nums">{pct.toFixed(1)}%</span>
+                          <span className="text-[var(--text-muted)] flex-1">{r.label}</span>
+                          <span className="text-[var(--text-dim)] tabular-nums">{fmt(r.value)} so'm</span>
+                          <span className="text-[var(--text-muted)] w-10 text-right tabular-nums">{pct.toFixed(1)}%</span>
                         </div>
                       )
                     })}
@@ -236,7 +236,7 @@ export default function CalculatorPage() {
                   { label: t.breakeven, value: `${fmt(result.breakeven)} s'm`, good: result.price > result.breakeven, bad: result.price <= result.breakeven },
                 ].map(({ label, value, good, bad }) => (
                   <div key={label} className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl p-3">
-                    <p className="text-slate-500 text-[10px] mb-0.5">{label}</p>
+                    <p className="text-[var(--text-muted)] text-[10px] mb-0.5">{label}</p>
                     <p className={`text-base font-bold ${good ? 'text-emerald-400' : bad ? 'text-red-400' : 'text-amber-400'}`}>{value}</p>
                   </div>
                 ))}

@@ -36,18 +36,18 @@ export default function HelpTooltip({ section, className = '' }: Props) {
           />
 
           {/* Modal */}
-          <div className="relative w-full max-w-sm bg-[#0f0f1e] border border-white/[0.08] rounded-2xl shadow-2xl shadow-black/60 overflow-hidden">
+          <div className="relative w-full max-w-sm bg-[var(--bg-card)] border border-[var(--border2)] rounded-2xl shadow-2xl shadow-black/60 overflow-hidden">
             {/* Header */}
-            <div className="px-5 py-4 border-b border-white/[0.06] flex items-center justify-between gap-3">
+            <div className="px-5 py-4 border-b border-[var(--border)] flex items-center justify-between gap-3">
               <div className="flex items-center gap-2.5">
                 <div className="w-7 h-7 rounded-lg bg-violet-500/15 border border-violet-500/25 flex items-center justify-center flex-shrink-0">
                   <HelpCircle className="w-3.5 h-3.5 text-violet-400" />
                 </div>
-                <h2 className="text-white font-semibold text-sm">{content.title}</h2>
+                <h2 className="text-[var(--text-base)] font-semibold text-sm">{content.title}</h2>
               </div>
               <button
                 onClick={() => setOpen(false)}
-                className="text-slate-500 hover:text-white transition-colors p-1 rounded-lg hover:bg-white/[0.05]"
+                className="text-[var(--text-muted)] hover:text-[var(--text-base)] transition-colors p-1 rounded-lg hover:bg-white/[0.05]"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -57,17 +57,17 @@ export default function HelpTooltip({ section, className = '' }: Props) {
             <div className="px-5 py-4 space-y-4 max-h-[70vh] overflow-y-auto">
               {/* What it does */}
               <Section label={sectionLabel(lang, 'what')} color="violet">
-                <p className="text-slate-300 text-xs leading-relaxed">{content.what}</p>
+                <p className="text-[var(--text-dim)] text-xs leading-relaxed">{content.what}</p>
               </Section>
 
               {/* How it helps */}
               <Section label={sectionLabel(lang, 'why')} color="emerald">
-                <p className="text-slate-300 text-xs leading-relaxed">{content.why}</p>
+                <p className="text-[var(--text-dim)] text-xs leading-relaxed">{content.why}</p>
               </Section>
 
               {/* How to use */}
               <Section label={sectionLabel(lang, 'how')} color="amber">
-                <p className="text-slate-300 text-xs leading-relaxed">{content.how}</p>
+                <p className="text-[var(--text-dim)] text-xs leading-relaxed">{content.how}</p>
               </Section>
 
               {/* Data collection steps */}
@@ -78,7 +78,7 @@ export default function HelpTooltip({ section, className = '' }: Props) {
                       <span className="flex-shrink-0 w-5 h-5 rounded-full bg-cyan-500/15 border border-cyan-500/25 text-cyan-400 text-[10px] font-bold flex items-center justify-center mt-0.5">
                         {s.step}
                       </span>
-                      <span className="text-slate-300 text-xs leading-relaxed">{s.text}</span>
+                      <span className="text-[var(--text-dim)] text-xs leading-relaxed">{s.text}</span>
                     </li>
                   ))}
                 </ol>

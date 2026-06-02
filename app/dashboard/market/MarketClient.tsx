@@ -32,7 +32,7 @@ function UzumProductTable({ products, userCategories, t }: { products: UzumPubli
           { label: t.totalOrders, value: fmt(totalO),          color: 'text-cyan-400'    },
         ].map(({ label, value, color }) => (
           <div key={label} className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl p-4">
-            <p className="text-slate-500 text-xs mb-1">{label}</p>
+            <p className="text-[var(--text-muted)] text-xs mb-1">{label}</p>
             <p className={`font-bold text-sm ${color}`}>{value}</p>
           </div>
         ))}
@@ -40,12 +40,12 @@ function UzumProductTable({ products, userCategories, t }: { products: UzumPubli
       <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
         <div className="px-5 py-4 border-b border-[var(--border)] flex items-center gap-2">
           <TrendingUp className="w-4 h-4 text-violet-400" />
-          <h3 className="text-white font-semibold text-sm">{t.topProducts}</h3>
+          <h3 className="text-[var(--text-base)] font-semibold text-sm">{t.topProducts}</h3>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-slate-500 text-xs border-b border-[var(--border)] bg-white/[0.01]">
+              <tr className="text-[var(--text-muted)] text-xs border-b border-[var(--border)] bg-white/[0.01]">
                 <th className="text-left px-5 py-3 font-medium">#</th>
                 <th className="text-left px-4 py-3 font-medium">{t.product}</th>
                 <th className="text-right px-4 py-3 font-medium">{t.price}</th>
@@ -61,27 +61,27 @@ function UzumProductTable({ products, userCategories, t }: { products: UzumPubli
                 )
                 return (
                   <tr key={p.id} className={`hover:bg-white/[0.02] transition-colors ${mine ? 'bg-violet-500/[0.03]' : ''}`}>
-                    <td className="px-5 py-3.5 text-slate-500 text-xs">{i + 1}</td>
+                    <td className="px-5 py-3.5 text-[var(--text-muted)] text-xs">{i + 1}</td>
                     <td className="px-4 py-3.5">
-                      <p className="text-white text-xs font-medium leading-snug max-w-xs">
+                      <p className="text-[var(--text-base)] text-xs font-medium leading-snug max-w-xs">
                         {p.title}
                         {mine && <span className="ml-2 text-[9px] bg-violet-500/20 text-violet-400 px-1.5 py-0.5 rounded-full border border-violet-500/20">{t.yourCategory}</span>}
                       </p>
-                      {p.shopTitle && <p className="text-slate-500 text-[10px] mt-0.5">{p.shopTitle}</p>}
+                      {p.shopTitle && <p className="text-[var(--text-muted)] text-[10px] mt-0.5">{p.shopTitle}</p>}
                     </td>
                     <td className="px-4 py-3.5 text-right">
-                      <p className="text-slate-300 text-xs font-medium">{fmt(p.minSellPrice)} so'm</p>
-                      {p.minFullPrice > p.minSellPrice && <p className="text-slate-600 text-[10px] line-through">{fmt(p.minFullPrice)} so'm</p>}
+                      <p className="text-[var(--text-dim)] text-xs font-medium">{fmt(p.minSellPrice)} so'm</p>
+                      {p.minFullPrice > p.minSellPrice && <p className="text-[var(--text-muted)] text-[10px] line-through">{fmt(p.minFullPrice)} so'm</p>}
                     </td>
                     <td className="px-4 py-3.5 text-right">
-                      <span className={`font-bold text-xs ${p.ordersAmount > 1000 ? 'text-emerald-400' : p.ordersAmount > 100 ? 'text-amber-400' : 'text-slate-400'}`}>
+                      <span className={`font-bold text-xs ${p.ordersAmount > 1000 ? 'text-emerald-400' : p.ordersAmount > 100 ? 'text-amber-400' : 'text-[var(--text-muted)]'}`}>
                         {fmt(p.ordersAmount)}
                       </span>
                     </td>
                     <td className="px-4 py-3.5 text-right">
                       <div className="flex items-center justify-end gap-1">
                         <Star className="w-3 h-3 text-amber-400" />
-                        <span className="text-slate-300 text-xs">{p.rating?.toFixed(1) ?? '—'}</span>
+                        <span className="text-[var(--text-dim)] text-xs">{p.rating?.toFixed(1) ?? '—'}</span>
                       </div>
                     </td>
                   </tr>
@@ -121,7 +121,7 @@ function YandexModelTable({ models, t }: { models: YandexModel[]; t: MarketT }) 
           { label: t.maxPrice, value: `${fmt(maxP)} ${cur}`, color: 'text-red-400'     },
         ].map(({ label, value, color }) => (
           <div key={label} className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl p-4">
-            <p className="text-slate-500 text-xs mb-1">{label}</p>
+            <p className="text-[var(--text-muted)] text-xs mb-1">{label}</p>
             <p className={`font-bold text-sm ${color}`}>{value}</p>
           </div>
         ))}
@@ -129,12 +129,12 @@ function YandexModelTable({ models, t }: { models: YandexModel[]; t: MarketT }) 
       <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
         <div className="px-5 py-4 border-b border-[var(--border)] flex items-center gap-2">
           <TrendingUp className="w-4 h-4 text-amber-400" />
-          <h3 className="text-white font-semibold text-sm">{t.topModels}</h3>
+          <h3 className="text-[var(--text-base)] font-semibold text-sm">{t.topModels}</h3>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-slate-500 text-xs border-b border-[var(--border)] bg-white/[0.01]">
+              <tr className="text-[var(--text-muted)] text-xs border-b border-[var(--border)] bg-white/[0.01]">
                 <th className="text-left px-5 py-3 font-medium">#</th>
                 <th className="text-left px-4 py-3 font-medium">{t.model}</th>
                 <th className="text-right px-4 py-3 font-medium">{t.priceRange}</th>
@@ -146,19 +146,19 @@ function YandexModelTable({ models, t }: { models: YandexModel[]; t: MarketT }) 
             <tbody className="divide-y divide-white/[0.03]">
               {models.map((m, i) => (
                 <tr key={m.id} className="hover:bg-white/[0.02] transition-colors">
-                  <td className="px-5 py-3.5 text-slate-500 text-xs">{i + 1}</td>
-                  <td className="px-4 py-3.5 text-white text-xs font-medium max-w-xs">{m.name}</td>
-                  <td className="px-4 py-3.5 text-right text-xs text-slate-300">
+                  <td className="px-5 py-3.5 text-[var(--text-muted)] text-xs">{i + 1}</td>
+                  <td className="px-4 py-3.5 text-[var(--text-base)] text-xs font-medium max-w-xs">{m.name}</td>
+                  <td className="px-4 py-3.5 text-right text-xs text-[var(--text-dim)]">
                     {m.prices ? `${fmt(m.prices.min)}–${fmt(m.prices.max)} ${cur}` : '—'}
                   </td>
                   <td className="px-4 py-3.5 text-right">
                     <div className="flex items-center justify-end gap-1">
                       <Star className="w-3 h-3 text-amber-400" />
-                      <span className="text-slate-300 text-xs">{m.rating?.toFixed(1) ?? '—'}</span>
+                      <span className="text-[var(--text-dim)] text-xs">{m.rating?.toFixed(1) ?? '—'}</span>
                     </div>
                   </td>
-                  <td className="px-4 py-3.5 text-right text-slate-500 text-xs">{m.reviewCount ?? '—'}</td>
-                  <td className="px-4 py-3.5 text-right text-slate-500 text-xs">{m.offersCount ?? '—'}</td>
+                  <td className="px-4 py-3.5 text-right text-[var(--text-muted)] text-xs">{m.reviewCount ?? '—'}</td>
+                  <td className="px-4 py-3.5 text-right text-[var(--text-muted)] text-xs">{m.offersCount ?? '—'}</td>
                 </tr>
               ))}
             </tbody>
@@ -260,7 +260,7 @@ export default function MarketClient({ marketplace, initialCategories, userCateg
   ]
 
   const accentActive  = marketplace === 'yandex' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-violet-600/20 text-violet-300 border border-violet-500/30'
-  const accentHover   = 'text-slate-500 hover:text-slate-300'
+  const accentHover   = 'text-[var(--text-muted)] hover:text-[var(--text-dim)]'
   const searchBorder  = marketplace === 'yandex' ? 'focus:border-amber-500/40' : 'focus:border-violet-500/40'
   const btnColor      = marketplace === 'yandex' ? 'bg-amber-600 hover:bg-amber-500' : 'bg-violet-600 hover:bg-violet-500'
   const cats          = marketplace === 'uzum' ? initialCategories : yandexCats
@@ -273,18 +273,18 @@ export default function MarketClient({ marketplace, initialCategories, userCateg
       {marketplace === 'uzum' && (
         <div className="flex gap-2">
           <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
             <input
               type="text"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSearch()}
               placeholder={t.searchPlaceholder}
-              className={`w-full bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder:text-slate-500 focus:outline-none ${searchBorder} transition-colors`}
+              className={`w-full bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl pl-9 pr-4 py-2.5 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none ${searchBorder} transition-colors`}
             />
           </div>
           <button onClick={handleSearch}
-            className={`${btnColor} text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors flex items-center gap-2`}>
+            className={`${btnColor} text-[var(--text-base)] text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors flex items-center gap-2`}>
             {isPending && mode === 'search' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
             {t.search}
           </button>
@@ -293,9 +293,9 @@ export default function MarketClient({ marketplace, initialCategories, userCateg
 
       {/* Category grid */}
       <div>
-        <p className="text-slate-500 text-xs font-medium mb-3 uppercase tracking-wide">{t.categories}</p>
+        <p className="text-[var(--text-muted)] text-xs font-medium mb-3 uppercase tracking-wide">{t.categories}</p>
         {isPending && !selectedCat && marketplace === 'yandex' ? (
-          <div className="flex items-center gap-2 text-slate-500 text-sm py-4">
+          <div className="flex items-center gap-2 text-[var(--text-muted)] text-sm py-4">
             <Loader2 className="w-4 h-4 animate-spin" /> {t.loading}
           </div>
         ) : (
@@ -310,13 +310,13 @@ export default function MarketClient({ marketplace, initialCategories, userCateg
                     ? loadUzumCategory({ id, title })
                     : loadYandexCategory({ id, name: title })}
                   className={`flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl border text-left text-xs font-medium transition-all ${
-                    active ? accentActive : `bg-[var(--bg-card2)] border-[var(--border)] text-slate-300 hover:text-white ${accentHover}`
+                    active ? accentActive : `bg-[var(--bg-card2)] border-[var(--border)] text-[var(--text-dim)] hover:text-[var(--text-base)] ${accentHover}`
                   }`}
                 >
                   <span className="truncate">{title}</span>
                   {isPending && active
                     ? <Loader2 className="w-3 h-3 shrink-0 animate-spin" />
-                    : <ChevronRight className="w-3 h-3 shrink-0 text-slate-600" />
+                    : <ChevronRight className="w-3 h-3 shrink-0 text-[var(--text-muted)]" />
                   }
                 </button>
               )
@@ -329,22 +329,22 @@ export default function MarketClient({ marketplace, initialCategories, userCateg
       {hasResults && !isPending && (
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-white font-semibold text-sm">
+            <p className="text-[var(--text-base)] font-semibold text-sm">
               {mode === 'category' ? selectedCat?.title : `"${searchQuery}" ${t.resultsSuffix}`}
             </p>
             {marketplace === 'uzum' && (
-              <p className="text-slate-500 text-xs mt-0.5">{fmt(total)} {t.productsCount}</p>
+              <p className="text-[var(--text-muted)] text-xs mt-0.5">{fmt(total)} {t.productsCount}</p>
             )}
           </div>
           <div className="flex items-center gap-2">
-            <ArrowUpDown className="w-3.5 h-3.5 text-slate-500" />
+            <ArrowUpDown className="w-3.5 h-3.5 text-[var(--text-muted)]" />
             {marketplace === 'uzum' ? (
               <select value={sortUzum}
                 onChange={e => {
                   const s = e.target.value as SortUzum; setSortUzum(s)
                   if (selectedCat) loadUzumCategory(selectedCat, s)
                 }}
-                className="bg-[var(--bg-card2)] border border-[var(--border)] text-slate-300 text-xs rounded-lg px-3 py-1.5 focus:outline-none">
+                className="bg-[var(--bg-card2)] border border-[var(--border)] text-[var(--text-dim)] text-xs rounded-lg px-3 py-1.5 focus:outline-none">
                 {UZUM_SORTS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
             ) : (
@@ -353,7 +353,7 @@ export default function MarketClient({ marketplace, initialCategories, userCateg
                   const s = e.target.value as SortYandex; setSortYandex(s)
                   if (selectedCat) loadYandexCategory({ id: selectedCat.id, name: selectedCat.title }, s)
                 }}
-                className="bg-[var(--bg-card2)] border border-[var(--border)] text-slate-300 text-xs rounded-lg px-3 py-1.5 focus:outline-none">
+                className="bg-[var(--bg-card2)] border border-[var(--border)] text-[var(--text-dim)] text-xs rounded-lg px-3 py-1.5 focus:outline-none">
                 {YANDEX_SORTS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
             )}
@@ -363,7 +363,7 @@ export default function MarketClient({ marketplace, initialCategories, userCateg
 
       {/* Loading */}
       {isPending && selectedCat && (
-        <div className="flex items-center justify-center py-12 gap-3 text-slate-400">
+        <div className="flex items-center justify-center py-12 gap-3 text-[var(--text-muted)]">
           <Loader2 className="w-5 h-5 animate-spin text-violet-400" />
           <span className="text-sm">{t.loading}</span>
         </div>
@@ -379,7 +379,7 @@ export default function MarketClient({ marketplace, initialCategories, userCateg
 
       {/* Empty */}
       {!isPending && !hasResults && selectedCat && (
-        <div className="text-center py-12 text-slate-500 text-sm">
+        <div className="text-center py-12 text-[var(--text-muted)] text-sm">
           <ShoppingBag className="w-8 h-8 mx-auto mb-3 text-slate-700" />
           {t.notFound}
         </div>

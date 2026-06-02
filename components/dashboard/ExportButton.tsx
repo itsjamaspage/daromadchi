@@ -112,7 +112,7 @@ export default function ExportButton({ data, filename = 'hisobot', targetRef, la
       <button
         onClick={() => setOpen(v => !v)}
         disabled={!!loading}
-        className="flex items-center gap-2 bg-[#1c1c2e] hover:bg-white/[0.06] border border-white/[0.08] text-slate-300 text-sm font-medium px-4 py-2.5 rounded-xl transition-colors disabled:opacity-60"
+        className="flex items-center gap-2 bg-[var(--bg-input)] hover:bg-[var(--bg-card2)] border border-[var(--border2)] text-[var(--text-dim)] text-sm font-medium px-4 py-2.5 rounded-xl transition-colors disabled:opacity-60"
       >
         {loading ? (
           <span className="w-4 h-4 border-2 border-violet-400/40 border-t-violet-400 rounded-full animate-spin" />
@@ -124,11 +124,11 @@ export default function ExportButton({ data, filename = 'hisobot', targetRef, la
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-1.5 z-50 bg-[#13131f] border border-white/[0.08] rounded-xl shadow-2xl shadow-black/60 overflow-hidden min-w-[170px]">
+        <div className="absolute right-0 top-full mt-1.5 z-50 bg-[var(--bg-card2)] border border-[var(--border2)] rounded-xl shadow-2xl shadow-black/60 overflow-hidden min-w-[170px]">
           {hasXlsx && (
             <button
               onClick={handleXlsx}
-              className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-slate-300 hover:bg-white/[0.05] hover:text-white transition-colors"
+              className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-[var(--text-dim)] hover:bg-white/[0.05] hover:text-[var(--text-base)] transition-colors"
             >
               <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
               Excel (.xlsx)
@@ -137,7 +137,7 @@ export default function ExportButton({ data, filename = 'hisobot', targetRef, la
           {hasPdf && (
             <button
               onClick={handlePdf}
-              className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-slate-300 hover:bg-white/[0.05] hover:text-white transition-colors"
+              className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-[var(--text-dim)] hover:bg-white/[0.05] hover:text-[var(--text-base)] transition-colors"
             >
               <FileText className="w-4 h-4 text-red-400" />
               PDF
@@ -146,7 +146,7 @@ export default function ExportButton({ data, filename = 'hisobot', targetRef, la
           {hasCsv && (
             <button
               onClick={handleCsv}
-              className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-slate-300 hover:bg-white/[0.05] hover:text-white transition-colors"
+              className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-[var(--text-dim)] hover:bg-white/[0.05] hover:text-[var(--text-base)] transition-colors"
             >
               <FileDown className="w-4 h-4 text-sky-400" />
               CSV

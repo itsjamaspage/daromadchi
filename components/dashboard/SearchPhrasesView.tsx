@@ -64,13 +64,13 @@ export default function SearchPhrasesView({ phrases }: Props) {
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
         <div className="relative w-full sm:flex-1 sm:max-w-xs">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
           <input value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Ibora qidirish..."
-            className="w-full pl-9 pr-3 py-2 bg-[#13131f] border border-white/[0.06] rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-violet-500/50" />
+            className="w-full pl-9 pr-3 py-2 bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl text-sm text-[var(--text-base)] placeholder-[var(--text-muted)] focus:outline-none focus:border-violet-500/50" />
         </div>
         <select value={productFilter} onChange={e => setProductFilter(e.target.value)}
-          className="w-full sm:w-auto px-3 py-2 bg-[#13131f] border border-white/[0.06] rounded-xl text-sm text-white focus:outline-none focus:border-violet-500/50">
+          className="w-full sm:w-auto px-3 py-2 bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl text-sm text-[var(--text-base)] focus:outline-none focus:border-violet-500/50">
           <option value="all">Barcha mahsulotlar</option>
           {products.slice(1).map(p => <option key={p} value={p}>{p}</option>)}
         </select>
@@ -87,21 +87,21 @@ export default function SearchPhrasesView({ phrases }: Props) {
           { label: 'O\'rtacha CTR',  value: filtered.length ? (filtered.reduce((s,p)=>s+p.ctr,0)/filtered.length).toFixed(2)+'%' : '—' },
           { label: 'Jami sarflar',   value: fs(filtered.reduce((s,p)=>s+p.spend,0)) },
         ].map(({ label, value }) => (
-          <div key={label} className="bg-[#13131f] border border-white/[0.06] rounded-xl px-4 py-3">
-            <p className="text-xs text-slate-500 mb-1">{label}</p>
-            <p className="text-sm font-bold text-white">{value}</p>
+          <div key={label} className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl px-4 py-3">
+            <p className="text-xs text-[var(--text-muted)] mb-1">{label}</p>
+            <p className="text-sm font-bold text-[var(--text-base)]">{value}</p>
           </div>
         ))}
       </div>
 
       {/* Table */}
-      <div className="bg-[#13131f] border border-white/[0.06] rounded-2xl overflow-hidden">
+      <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-white/[0.06]">
-                <th className="px-3 py-3 text-left text-xs font-semibold text-slate-500">Ibora</th>
-                <th className="px-3 py-3 text-left text-xs font-semibold text-slate-500">Mahsulot</th>
+              <tr className="border-b border-[var(--border)]">
+                <th className="px-3 py-3 text-left text-xs font-semibold text-[var(--text-muted)]">Ibora</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold text-[var(--text-muted)]">Mahsulot</th>
                 {([
                   ['impressions', "Ko'rsatuvlar"],
                   ['clicks',      'Kliklar'],
@@ -110,7 +110,7 @@ export default function SearchPhrasesView({ phrases }: Props) {
                   ['spend',       'Sarflar'],
                 ] as [SortKey, string][]).map(([key, label]) => (
                   <th key={key} onClick={() => toggleSort(key)}
-                    className="px-3 py-3 text-left text-xs font-semibold text-slate-500 cursor-pointer hover:text-slate-300 whitespace-nowrap transition-colors">
+                    className="px-3 py-3 text-left text-xs font-semibold text-[var(--text-muted)] cursor-pointer hover:text-[var(--text-dim)] whitespace-nowrap transition-colors">
                     <span className="flex items-center gap-1">{label}<SortIcon col={key} /></span>
                   </th>
                 ))}
@@ -120,13 +120,13 @@ export default function SearchPhrasesView({ phrases }: Props) {
               {filtered.map(p => (
                 <tr key={p.id} className="hover:bg-white/[0.02] transition-colors">
                   <td className="px-3 py-3">
-                    <span className="text-white text-xs font-medium">{p.phrase}</span>
+                    <span className="text-[var(--text-base)] text-xs font-medium">{p.phrase}</span>
                   </td>
                   <td className="px-3 py-3">
-                    <span className="text-slate-400 text-xs truncate max-w-[160px] block">{p.productTitle}</span>
+                    <span className="text-[var(--text-muted)] text-xs truncate max-w-[160px] block">{p.productTitle}</span>
                   </td>
-                  <td className="px-3 py-3 text-slate-300 text-xs">{p.impressions.toLocaleString('uz-UZ')}</td>
-                  <td className="px-3 py-3 text-slate-300 text-xs">{p.clicks.toLocaleString('uz-UZ')}</td>
+                  <td className="px-3 py-3 text-[var(--text-dim)] text-xs">{p.impressions.toLocaleString('uz-UZ')}</td>
+                  <td className="px-3 py-3 text-[var(--text-dim)] text-xs">{p.clicks.toLocaleString('uz-UZ')}</td>
                   <td className="px-3 py-3">
                     <span className={`text-xs font-semibold ${p.ctr >= 2.5 ? 'text-emerald-400' : p.ctr >= 1.5 ? 'text-amber-400' : 'text-red-400'}`}>
                       {p.ctr.toFixed(2)}%
@@ -134,7 +134,7 @@ export default function SearchPhrasesView({ phrases }: Props) {
                   </td>
                   <td className="px-3 py-3">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-white text-xs font-semibold">{p.orders}</span>
+                      <span className="text-[var(--text-base)] text-xs font-semibold">{p.orders}</span>
                       {p.orders === 0 && p.spend > 0 && (
                         <span className="w-1.5 h-1.5 rounded-full bg-red-500 flex-shrink-0" title="Sotuv yo'q" />
                       )}

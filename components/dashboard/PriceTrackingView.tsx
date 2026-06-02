@@ -7,6 +7,8 @@ import {
 } from 'recharts'
 import type { CompetitorPrice } from '@/lib/mock-data'
 import ExportButton from '@/components/dashboard/ExportButton'
+import { useLang } from '@/app/providers'
+import { dashT } from '@/lib/dashT'
 
 interface Props {
   prices: CompetitorPrice[]
@@ -25,18 +27,20 @@ function positionBg(p: CompetitorPrice['pricePosition']) {
   }
 }
 
-function positionLabel(p: CompetitorPrice['pricePosition']) {
+function positionLabel(p: CompetitorPrice['pricePosition'], t: { posLowest: string; posCompetitive: string; posHigh: string; posHighest: string }) {
   switch (p) {
-    case 'lowest':      return 'Eng arzon'
-    case 'competitive': return 'Raqobatbardosh'
-    case 'high':        return 'Qimmatroq'
-    case 'highest':     return 'Eng qimmat'
+    case 'lowest':      return t.posLowest
+    case 'competitive': return t.posCompetitive
+    case 'high':        return t.posHigh
+    case 'highest':     return t.posHighest
   }
 }
 
 type Filter = 'all' | 'lowest' | 'competitive' | 'high-highest'
 
 export default function PriceTrackingView({ prices }: Props) {
+  const { lang } = useLang()
+  const t = dashT[lang].priceTracking
   const [filter, setFilter] = useState<Filter>('all')
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const printRef = useRef<HTMLDivElement>(null)
@@ -57,7 +61,7 @@ export default function PriceTrackingView({ prices }: Props) {
 
   function formatGap(diff: number, pct: number) {
     const sign   = diff >= 0 ? '+' : ''
-    const color  = diff > 0 ? 'text-red-400' : diff < 0 ? 'text-emerald-400' : 'text-slate-400'
+    const color  = diff > 0 ? 'text-red-400' : diff < 0 ? 'text-emerald-400' : 'text-[var(--text-muted)]'
     const amount = new Intl.NumberFormat('uz-UZ').format(Math.abs(Math.round(diff)))
     return (
       <span className={`text-sm font-semibold tabular-nums ${color}`}>
@@ -73,43 +77,43 @@ export default function PriceTrackingView({ prices }: Props) {
   }
 
   const tabs: { key: Filter; label: string }[] = [
-    { key: 'all',          label: 'Barchasi' },
-    { key: 'lowest',       label: 'Eng arzon' },
-    { key: 'competitive',  label: 'Raqobatbardosh' },
-    { key: 'high-highest', label: 'Qimmat' },
+    { key: 'all',          label: t.tabAll         },
+    { key: 'lowest',       label: t.tabLowest       },
+    { key: 'competitive',  label: t.tabCompetitive  },
+    { key: 'high-highest', label: t.tabHigh         },
   ]
 
   const exportData = prices.map(p => ({
-    'Mahsulot':             p.productTitle,
-    "Mening narxim (so'm)": p.myPrice,
-    "Min raqobatchi (so'm)": p.minCompetitorPrice,
-    "O'rt. raqobatchi (so'm)": p.avgCompetitorPrice,
-    "Narx farqi (so'm)":    p.priceDiff,
-    'Farq (%)':             p.priceDiffPct.toFixed(1),
-    'Pozitsiya':            positionLabel(p.pricePosition),
-    'Raqobatchilar':        p.competitorCount,
+    [t.colProduct]:                    p.productTitle,
+    [`${t.colMyPrice} (so'm)`]:        p.myPrice,
+    [`${t.colMinComp} (so'm)`]:        p.minCompetitorPrice,
+    [`${t.colAvgMarket} (so'm)`]:      p.avgCompetitorPrice,
+    [`${t.colGap} (so'm)`]:            p.priceDiff,
+    [`${t.colGap} (%)`]:               p.priceDiffPct.toFixed(1),
+    [t.colPosition]:                   positionLabel(p.pricePosition, t),
+    [t.colCompetitors]:                p.competitorCount,
   }))
 
   return (
     <div className="space-y-4" ref={printRef}>
       {/* Summary row */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="bg-[#13131f] border border-white/[0.06] rounded-2xl px-4 py-3">
-          <p className="text-slate-400 text-xs mb-1">Kuzatilayotgan mahsulotlar</p>
-          <p className="text-white text-2xl font-bold">{prices.length}</p>
+        <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl px-4 py-3">
+          <p className="text-[var(--text-muted)] text-xs mb-1">{t.kpiProducts}</p>
+          <p className="text-[var(--text-base)] text-2xl font-bold">{prices.length}</p>
         </div>
-        <div className="bg-[#13131f] border border-emerald-500/20 rounded-2xl px-4 py-3">
-          <p className="text-slate-400 text-xs mb-1">Eng arzon narx</p>
+        <div className="bg-[var(--bg-card2)] border border-emerald-500/20 rounded-2xl px-4 py-3">
+          <p className="text-[var(--text-muted)] text-xs mb-1">{t.kpiLowest}</p>
           <p className="text-emerald-400 text-2xl font-bold">{lowestCount}</p>
-          <p className="text-slate-500 text-xs mt-0.5">mahsulot</p>
+          <p className="text-[var(--text-muted)] text-xs mt-0.5">{t.kpiProductSub}</p>
         </div>
-        <div className="bg-[#13131f] border border-red-500/20 rounded-2xl px-4 py-3">
-          <p className="text-slate-400 text-xs mb-1">Qimmat / Eng qimmat</p>
+        <div className="bg-[var(--bg-card2)] border border-red-500/20 rounded-2xl px-4 py-3">
+          <p className="text-[var(--text-muted)] text-xs mb-1">{t.kpiHighest}</p>
           <p className="text-red-400 text-2xl font-bold">{highCount}</p>
-          <p className="text-slate-500 text-xs mt-0.5">mahsulot</p>
+          <p className="text-[var(--text-muted)] text-xs mt-0.5">{t.kpiProductSub}</p>
         </div>
-        <div className="bg-[#13131f] border border-white/[0.06] rounded-2xl px-4 py-3">
-          <p className="text-slate-400 text-xs mb-1">O&apos;rtacha narx farqi</p>
+        <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl px-4 py-3">
+          <p className="text-[var(--text-muted)] text-xs mb-1">{t.kpiAvgGap}</p>
           <p className={`text-2xl font-bold ${avgGapPct > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>
             {avgGapPct > 0 ? '+' : ''}{avgGapPct.toFixed(1)}%
           </p>
@@ -124,8 +128,8 @@ export default function PriceTrackingView({ prices }: Props) {
             onClick={() => setFilter(tab.key)}
             className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
               filter === tab.key
-                ? 'bg-violet-600 text-white'
-                : 'bg-[#13131f] border border-white/[0.06] text-slate-400 hover:text-white hover:border-white/10'
+                ? 'bg-violet-600 text-[var(--text-base)]'
+                : 'bg-[var(--bg-card2)] border border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text-base)] hover:border-white/10'
             }`}
           >
             {tab.label}
@@ -137,11 +141,11 @@ export default function PriceTrackingView({ prices }: Props) {
       </div>
 
       {/* Table */}
-      <div className="bg-[#13131f] border border-white/[0.06] rounded-2xl overflow-hidden">
+      <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
         <div className="px-5 py-4 border-b border-white/[0.05] flex items-center gap-3">
           <TrendingDown className="w-4 h-4 text-violet-400" />
-          <h2 className="text-white font-semibold text-sm flex-1">Raqobat narxlari</h2>
-          <RefreshCw className="w-4 h-4 text-slate-500" />
+          <h2 className="text-[var(--text-base)] font-semibold text-sm flex-1">{t.tableTitle}</h2>
+          <RefreshCw className="w-4 h-4 text-[var(--text-muted)]" />
         </div>
 
         <div className="overflow-x-auto">
@@ -149,13 +153,13 @@ export default function PriceTrackingView({ prices }: Props) {
             <thead>
               <tr className="border-b border-white/[0.04]">
                 {[
-                  'Mahsulot', 'Mening narxim', 'Min raqobatchi',
-                  'O\'rt. bozor', 'Farq', 'Pozitsiya',
-                  'Raqobatchilar', 'So\'nggi tekshiruv',
+                  t.colProduct, t.colMyPrice, t.colMinComp,
+                  t.colAvgMarket, t.colGap, t.colPosition,
+                  t.colCompetitors, t.colLastCheck,
                 ].map(h => (
                   <th
                     key={h}
-                    className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap"
+                    className="px-4 py-3 text-left text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider whitespace-nowrap"
                   >
                     {h}
                   </th>
@@ -174,17 +178,17 @@ export default function PriceTrackingView({ prices }: Props) {
                     >
                       <td className="px-4 py-3.5">
                         <div>
-                          <p className="text-white text-sm font-medium">{item.productTitle}</p>
-                          <p className="text-slate-500 text-xs font-mono mt-0.5">{item.sku}</p>
+                          <p className="text-[var(--text-base)] text-sm font-medium">{item.productTitle}</p>
+                          <p className="text-[var(--text-muted)] text-xs font-mono mt-0.5">{item.sku}</p>
                         </div>
                       </td>
-                      <td className="px-4 py-3.5 text-white text-sm font-semibold tabular-nums whitespace-nowrap">
+                      <td className="px-4 py-3.5 text-[var(--text-base)] text-sm font-semibold tabular-nums whitespace-nowrap">
                         {fs(item.myPrice)}
                       </td>
-                      <td className="px-4 py-3.5 text-slate-300 text-sm tabular-nums whitespace-nowrap">
+                      <td className="px-4 py-3.5 text-[var(--text-dim)] text-sm tabular-nums whitespace-nowrap">
                         {fs(item.minCompetitorPrice)}
                       </td>
-                      <td className="px-4 py-3.5 text-slate-400 text-sm tabular-nums whitespace-nowrap">
+                      <td className="px-4 py-3.5 text-[var(--text-muted)] text-sm tabular-nums whitespace-nowrap">
                         {fs(item.avgCompetitorPrice)}
                       </td>
                       <td className="px-4 py-3.5 whitespace-nowrap">
@@ -192,13 +196,13 @@ export default function PriceTrackingView({ prices }: Props) {
                       </td>
                       <td className="px-4 py-3.5">
                         <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold border ${positionBg(item.pricePosition)}`}>
-                          {positionLabel(item.pricePosition)}
+                          {positionLabel(item.pricePosition, t)}
                         </span>
                       </td>
-                      <td className="px-4 py-3.5 text-slate-400 text-sm text-center">
+                      <td className="px-4 py-3.5 text-[var(--text-muted)] text-sm text-center">
                         {item.competitorCount}
                       </td>
-                      <td className="px-4 py-3.5 text-slate-500 text-xs whitespace-nowrap">
+                      <td className="px-4 py-3.5 text-[var(--text-muted)] text-xs whitespace-nowrap">
                         {formatLastChecked(item.lastChecked)}
                       </td>
                     </tr>
@@ -208,7 +212,7 @@ export default function PriceTrackingView({ prices }: Props) {
                         <td colSpan={8} className="px-6 py-5">
                           <div className="flex items-center gap-2 mb-3">
                             <TrendingDown className="w-4 h-4 text-violet-400" />
-                            <span className="text-white text-sm font-semibold">Narx dinamikasi — {item.productTitle}</span>
+                            <span className="text-[var(--text-base)] text-sm font-semibold">{t.priceDynamics} — {item.productTitle}</span>
                           </div>
                           <ResponsiveContainer width="100%" height={200}>
                             <LineChart data={item.history} margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
@@ -227,20 +231,20 @@ export default function PriceTrackingView({ prices }: Props) {
                               />
                               <Tooltip
                                 contentStyle={{
-                                  backgroundColor: '#0d0d1a',
-                                  border: '1px solid rgba(255,255,255,0.08)',
+                                  backgroundColor: 'var(--bg-base)',
+                                  border: '1px solid var(--border)',
                                   borderRadius: '12px',
                                   fontSize: 12,
-                                  color: '#f1f5f9',
+                                  color: 'var(--text-base)',
                                 }}
                                 formatter={(value, name) => [
                                   fs(Number(value)),
-                                  name === 'myPrice' ? 'Mening narxim' : 'Min raqobatchi',
+                                  name === 'myPrice' ? t.myPrice : t.minComp,
                                 ]}
                               />
                               <Legend
                                 formatter={(value) =>
-                                  value === 'myPrice' ? 'Mening narxim' : 'Min raqobatchi'
+                                  value === 'myPrice' ? t.myPrice : t.minComp
                                 }
                                 wrapperStyle={{ fontSize: 12, color: '#94a3b8' }}
                               />
@@ -272,7 +276,7 @@ export default function PriceTrackingView({ prices }: Props) {
               {filtered.length === 0 && (
                 <tr>
                   <td colSpan={8} className="px-4 py-12 text-center">
-                    <p className="text-slate-500 text-sm">Bu filtrdagi mahsulotlar topilmadi</p>
+                    <p className="text-[var(--text-muted)] text-sm">{t.emptyMsg}</p>
                   </td>
                 </tr>
               )}
@@ -282,11 +286,9 @@ export default function PriceTrackingView({ prices }: Props) {
       </div>
 
       {/* Info box */}
-      <div className="flex items-start gap-3 bg-[#13131f] border border-violet-500/20 rounded-2xl px-5 py-4">
+      <div className="flex items-start gap-3 bg-[var(--bg-card2)] border border-violet-500/20 rounded-2xl px-5 py-4">
         <AlertTriangle className="w-4 h-4 text-violet-400 flex-shrink-0 mt-0.5" />
-        <p className="text-slate-400 text-sm">
-          Ma&apos;lumotlar har 6 soatda yangilanadi. Uzum API orqali real narxlar sinxronlanadi.
-        </p>
+        <p className="text-[var(--text-muted)] text-sm">{t.infoText}</p>
       </div>
     </div>
   )

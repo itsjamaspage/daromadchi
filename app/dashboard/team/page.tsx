@@ -58,7 +58,7 @@ function RoleBadge({ role }: { role: Role }) {
   const config: Record<Role, { label: string; cls: string; icon: React.ReactNode }> = {
     owner:  { label: 'Egasi',  cls: 'bg-violet-500/15 border-violet-500/30 text-violet-300',  icon: <Crown  className="w-3 h-3" /> },
     admin:  { label: 'Admin',  cls: 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300', icon: <Shield className="w-3 h-3" /> },
-    viewer: { label: 'Viewer', cls: 'bg-slate-500/15 border-slate-500/20 text-slate-400',      icon: <Eye    className="w-3 h-3" /> },
+    viewer: { label: 'Viewer', cls: 'bg-slate-500/15 border-slate-500/20 text-[var(--text-muted)]',      icon: <Eye    className="w-3 h-3" /> },
   }
   const c = config[role]
   return (
@@ -105,16 +105,16 @@ function InviteModal({ onClose }: { onClose: () => void }) {
       />
 
       {/* Modal */}
-      <div className="relative w-full max-w-md bg-[#13131f] border border-white/[0.08] rounded-2xl shadow-2xl shadow-black/60 overflow-hidden">
+      <div className="relative w-full max-w-md bg-[var(--bg-card2)] border border-[var(--border2)] rounded-2xl shadow-2xl shadow-black/60 overflow-hidden">
         {/* Header */}
         <div className="px-6 py-4 border-b border-white/[0.05] flex items-center justify-between">
           <div className="flex items-center gap-2">
             <UserPlus className="w-4 h-4 text-violet-400" />
-            <h2 className="text-white font-semibold text-sm">Jamoa a&apos;zosini qo&apos;shish</h2>
+            <h2 className="text-[var(--text-base)] font-semibold text-sm">Jamoa a&apos;zosini qo&apos;shish</h2>
           </div>
           <button
             onClick={onClose}
-            className="text-slate-500 hover:text-white transition-colors p-1"
+            className="text-[var(--text-muted)] hover:text-[var(--text-base)] transition-colors p-1"
           >
             <X className="w-4 h-4" />
           </button>
@@ -124,7 +124,7 @@ function InviteModal({ onClose }: { onClose: () => void }) {
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {/* Email */}
           <div>
-            <label className="block text-xs font-medium text-slate-400 mb-2">
+            <label className="block text-xs font-medium text-[var(--text-muted)] mb-2">
               Email manzil
             </label>
             <input
@@ -133,13 +133,13 @@ function InviteModal({ onClose }: { onClose: () => void }) {
               onChange={e => setEmail(e.target.value)}
               placeholder="example@email.com"
               required
-              className="w-full bg-[#1c1c2e] border border-white/[0.08] rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-violet-500/60 transition-all"
+              className="w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-violet-500/60 transition-all"
             />
           </div>
 
           {/* Role */}
           <div>
-            <label className="block text-xs font-medium text-slate-400 mb-2">
+            <label className="block text-xs font-medium text-[var(--text-muted)] mb-2">
               Rol
             </label>
             <div className="space-y-2">
@@ -154,7 +154,7 @@ function InviteModal({ onClose }: { onClose: () => void }) {
                   className={`w-full flex items-start gap-3 px-4 py-3 rounded-xl border text-left transition-all ${
                     role === opt.value
                       ? 'bg-violet-600/15 border-violet-500/40'
-                      : 'bg-white/[0.02] border-white/[0.06] hover:border-white/[0.12]'
+                      : 'bg-white/[0.02] border-[var(--border)] hover:border-white/[0.12]'
                   }`}
                 >
                   <div className={`mt-0.5 w-3.5 h-3.5 rounded-full border-2 flex-shrink-0 ${
@@ -163,10 +163,10 @@ function InviteModal({ onClose }: { onClose: () => void }) {
                       : 'border-slate-600'
                   }`} />
                   <div>
-                    <p className={`text-xs font-semibold ${role === opt.value ? 'text-violet-300' : 'text-slate-300'}`}>
+                    <p className={`text-xs font-semibold ${role === opt.value ? 'text-violet-300' : 'text-[var(--text-dim)]'}`}>
                       {opt.label}
                     </p>
-                    <p className="text-[11px] text-slate-500 mt-0.5">{opt.desc}</p>
+                    <p className="text-[11px] text-[var(--text-muted)] mt-0.5">{opt.desc}</p>
                   </div>
                 </button>
               ))}
@@ -181,7 +181,7 @@ function InviteModal({ onClose }: { onClose: () => void }) {
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex items-center justify-center gap-2 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white text-sm font-medium px-4 py-2.5 rounded-xl transition-colors"
+              className="w-full flex items-center justify-center gap-2 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-[var(--text-base)] text-sm font-medium px-4 py-2.5 rounded-xl transition-colors"
             >
               {loading ? (
                 <span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
@@ -214,10 +214,10 @@ export default function TeamPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <div className="flex items-center gap-2 mb-0.5">
-            <h1 className="text-2xl font-bold text-white">Jamoa</h1>
+            <h1 className="text-2xl font-bold text-[var(--text-base)]">Jamoa</h1>
             <HelpTooltip section="team" />
           </div>
-          <p className="text-slate-400 text-sm">
+          <p className="text-[var(--text-muted)] text-sm">
             Do&apos;koningizga kirish huquqini boshqaruvchi a&apos;zolar ro&apos;yxati
           </p>
         </div>
@@ -232,7 +232,7 @@ export default function TeamPage() {
             onClick={() => setShowModal(true)}
             disabled={!isPro}
             title={!isPro ? 'Pro+ tarifiga o\'ting' : ''}
-            className="flex items-center gap-2 bg-violet-600 hover:bg-violet-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors"
+            className="flex items-center gap-2 bg-violet-600 hover:bg-violet-500 disabled:opacity-40 disabled:cursor-not-allowed text-[var(--text-base)] text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors"
           >
             <UserPlus className="w-4 h-4" />
             A'zo qo'shish
@@ -245,24 +245,24 @@ export default function TeamPage() {
         {[
           { icon: <Crown  className="w-4 h-4 text-violet-400" />, label: 'Egasi',  desc: 'To\'liq nazorat, tarif boshqaruvi, a\'zo qo\'shish' },
           { icon: <Shield className="w-4 h-4 text-emerald-400" />, label: 'Admin', desc: 'Mahsulot, buyurtma, sozlamalar — to\'liq kirish' },
-          { icon: <Eye    className="w-4 h-4 text-slate-400" />,  label: 'Viewer', desc: 'Tahlil va hisobotlarni faqat ko\'rish' },
+          { icon: <Eye    className="w-4 h-4 text-[var(--text-muted)]" />,  label: 'Viewer', desc: 'Tahlil va hisobotlarni faqat ko\'rish' },
         ].map(r => (
-          <div key={r.label} className="bg-[#13131f] border border-white/[0.06] rounded-xl px-4 py-3 flex items-start gap-3">
+          <div key={r.label} className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl px-4 py-3 flex items-start gap-3">
             <div className="mt-0.5">{r.icon}</div>
             <div>
-              <p className="text-white text-xs font-semibold">{r.label}</p>
-              <p className="text-slate-500 text-[11px] mt-0.5">{r.desc}</p>
+              <p className="text-[var(--text-base)] text-xs font-semibold">{r.label}</p>
+              <p className="text-[var(--text-muted)] text-[11px] mt-0.5">{r.desc}</p>
             </div>
           </div>
         ))}
       </div>
 
       {/* Members list */}
-      <div className="bg-[#13131f] border border-white/[0.06] rounded-2xl overflow-hidden">
+      <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
         <div className="px-5 py-4 border-b border-white/[0.05] flex items-center gap-2">
           <Users className="w-4 h-4 text-violet-400" />
-          <h2 className="text-white font-semibold text-sm">Jamoa a&apos;zolari</h2>
-          <span className="ml-auto text-xs text-slate-500">{members.length} ta a'zo</span>
+          <h2 className="text-[var(--text-base)] font-semibold text-sm">Jamoa a&apos;zolari</h2>
+          <span className="ml-auto text-xs text-[var(--text-muted)]">{members.length} ta a'zo</span>
         </div>
 
         <div className="divide-y divide-white/[0.03]">
@@ -270,16 +270,16 @@ export default function TeamPage() {
             <div key={member.id} className="px-5 py-4 flex items-center gap-4 hover:bg-white/[0.02] transition-colors">
               {/* Avatar */}
               <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${member.color} flex items-center justify-center flex-shrink-0`}>
-                <span className="text-white font-bold text-sm">{member.initials}</span>
+                <span className="text-[var(--text-base)] font-bold text-sm">{member.initials}</span>
               </div>
 
               {/* Info */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <p className="text-white font-semibold text-sm">{member.name}</p>
+                  <p className="text-[var(--text-base)] font-semibold text-sm">{member.name}</p>
                   <RoleBadge role={member.role} />
                 </div>
-                <p className="text-slate-500 text-xs mt-0.5">{member.email}</p>
+                <p className="text-[var(--text-muted)] text-xs mt-0.5">{member.email}</p>
               </div>
 
               {/* Status */}
@@ -288,7 +288,7 @@ export default function TeamPage() {
               </div>
 
               {/* Joined */}
-              <div className="hidden md:block text-slate-600 text-xs">
+              <div className="hidden md:block text-[var(--text-muted)] text-xs">
                 {new Date(member.joinedAt).toLocaleDateString('uz-UZ')}
               </div>
 
@@ -298,7 +298,7 @@ export default function TeamPage() {
                   onClick={() => handleRemove(member.id)}
                   disabled={!isPro}
                   title={!isPro ? 'Pro+ tarifida mavjud' : 'Olib tashlash'}
-                  className="text-slate-600 hover:text-red-400 disabled:opacity-30 disabled:cursor-not-allowed transition-colors p-1.5 rounded-lg hover:bg-red-500/[0.08]"
+                  className="text-[var(--text-muted)] hover:text-red-400 disabled:opacity-30 disabled:cursor-not-allowed transition-colors p-1.5 rounded-lg hover:bg-red-500/[0.08]"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -310,13 +310,13 @@ export default function TeamPage() {
 
       {/* Pro upsell */}
       {!isPro && (
-        <div className="bg-[#13131f] border border-dashed border-violet-500/30 rounded-2xl p-6 flex items-start gap-4">
+        <div className="bg-[var(--bg-card2)] border border-dashed border-violet-500/30 rounded-2xl p-6 flex items-start gap-4">
           <div className="w-10 h-10 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center flex-shrink-0">
             <Lock className="w-5 h-5 text-violet-400" />
           </div>
           <div>
-            <p className="text-white font-semibold text-sm mb-1">Jamoa boshqaruvi — Pro+ tarifida</p>
-            <p className="text-slate-400 text-xs leading-relaxed">
+            <p className="text-[var(--text-base)] font-semibold text-sm mb-1">Jamoa boshqaruvi — Pro+ tarifida</p>
+            <p className="text-[var(--text-muted)] text-xs leading-relaxed">
               Pro+ tarifiga o'ting va do'koningizga 5 tagacha a'zo qo'shing.
               Har bir a'zo uchun alohida rol va huquqlar belgilang.
             </p>
