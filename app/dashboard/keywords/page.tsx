@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import { Search, TrendingUp, TrendingDown, Minus } from 'lucide-react'
+import HelpTooltip from '@/components/dashboard/HelpTooltip'
 
 // ── Mock data ──────────────────────────────────────────────────────────────────
 
@@ -146,8 +147,11 @@ export default function KeywordsPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-white">Qidiruv iboralari</h1>
-        <p className="text-slate-400 text-sm mt-1">
+        <div className="flex items-center gap-2 mb-0.5">
+          <h1 className="text-2xl font-bold text-white">Qidiruv iboralari</h1>
+          <HelpTooltip section="keywords" />
+        </div>
+        <p className="text-slate-400 text-sm">
           Har bir mahsulotingiz qaysi kalit so'zlar orqali topilayotgani, nechta taassurot va
           bosish olayotgani haqidagi ma'lumotlar. CTR va o'rtacha pozitsiyani kuzatib boring.
         </p>

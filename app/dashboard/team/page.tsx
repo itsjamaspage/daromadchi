@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Users, UserPlus, X, Crown, Eye, Trash2, Shield, Lock } from 'lucide-react'
+import HelpTooltip from '@/components/dashboard/HelpTooltip'
 
 // ── Types & mock data ──────────────────────────────────────────────────────────
 
@@ -199,7 +200,7 @@ function InviteModal({ onClose }: { onClose: () => void }) {
 // ── Page ───────────────────────────────────────────────────────────────────────
 
 export default function TeamPage() {
-  const [members, setMembers] = useState<TeamMember[]>(MOCK_MEMBERS)
+  const [members, setMembers] = useState<TeamMember[]>([])
   const [showModal, setShowModal] = useState(false)
   const isPro = false  // mock: not on Pro+
 
@@ -212,9 +213,12 @@ export default function TeamPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-white">Jamoa</h1>
-          <p className="text-slate-400 text-sm mt-1">
-            Do'koningizga kirish huquqini boshqaruvchi a'zolar ro'yxati
+          <div className="flex items-center gap-2 mb-0.5">
+            <h1 className="text-2xl font-bold text-white">Jamoa</h1>
+            <HelpTooltip section="team" />
+          </div>
+          <p className="text-slate-400 text-sm">
+            Do&apos;koningizga kirish huquqini boshqaruvchi a&apos;zolar ro&apos;yxati
           </p>
         </div>
         <div className="flex items-center gap-2">

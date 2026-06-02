@@ -1,4 +1,5 @@
 import { FileText, Link2, Settings } from 'lucide-react'
+import HelpTooltip from '@/components/dashboard/HelpTooltip'
 import Link from 'next/link'
 import { getMonthlyPnl } from '@/lib/db/pnl'
 import PnlChart from './PnlChart'
@@ -34,11 +35,14 @@ export default async function PnlPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-            <FileText className="w-6 h-6 text-violet-400" />
-            {d.pnlTitle}
-          </h1>
-          <p className="text-slate-400 text-sm mt-1">
+          <div className="flex items-center gap-2 mb-0.5">
+            <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+              <FileText className="w-6 h-6 text-violet-400" />
+              {d.pnlTitle}
+            </h1>
+            <HelpTooltip section="pnl" />
+          </div>
+          <p className="text-slate-400 text-sm">
             {isEmpty ? d.pnlSubtitleEmpty : d.pnlSubtitle}
           </p>
         </div>

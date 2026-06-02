@@ -1,4 +1,5 @@
 import { BarChart2, Settings, TrendingUp, Package, Link2 } from 'lucide-react'
+import HelpTooltip from '@/components/dashboard/HelpTooltip'
 import Link from 'next/link'
 import { getProducts } from '@/lib/db/products'
 import { getKpis } from '@/lib/db/kpis'
@@ -50,11 +51,14 @@ export default async function AnalyticsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-          <BarChart2 className="w-6 h-6 text-violet-400" />
-          {d.analyticsTitle}
-        </h1>
-        <p className="text-slate-400 text-sm mt-1">{d.analyticsSubtitle}</p>
+        <div className="flex items-center gap-2 mb-0.5">
+          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+            <BarChart2 className="w-6 h-6 text-violet-400" />
+            {d.analyticsTitle}
+          </h1>
+          <HelpTooltip section="analytics" />
+        </div>
+        <p className="text-slate-400 text-sm">{d.analyticsSubtitle}</p>
       </div>
 
       {isEmpty ? (

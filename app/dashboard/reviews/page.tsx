@@ -1,6 +1,7 @@
 import { getT } from '@/lib/server-i18n'
 import { reviewEntries } from '@/lib/mock-reviews-seasonality'
 import ReviewsView from '@/components/dashboard/ReviewsView'
+import HelpTooltip from '@/components/dashboard/HelpTooltip'
 
 export default async function ReviewsPage() {
   const t       = await getT()
@@ -18,6 +19,7 @@ export default async function ReviewsPage() {
               {unread} {d.unanswered}
             </span>
           )}
+          <HelpTooltip section="reviews" />
         </div>
         <p className="text-slate-400 text-sm">{d.reviewsSubtitle}</p>
       </div>
