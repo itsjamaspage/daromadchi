@@ -159,7 +159,7 @@ export const translations = {
       settingsTitle: 'Sozlamalar',
       settingsSubtitle: 'Marketplace integratsiyalari va standart sozlamalar',
       // Unit economics page
-      unitEcoTitle: 'Yuнit-Ekonomika',
+      unitEcoTitle: 'Birlik iqtisodiyoti',
       unitEcoSubtitle: "Kengaytmadan mahsulot qo'shing — barcha xarajatlar avtomatik hisoblanadi",
       openUzum: "Uzumga o'tish",
       unitEcoNote: "Uzum.uz sahifasida mahsulot kartasini oching → kengaytmadagi «Unit-ekonomikaga qo'shish» tugmasini bosing → mahsulot fotosurat va to'liq ma'lumotlar bilan shu sahifaga avtomatik qo'shiladi. Ta'minotchi havolasini qo'shib, buyurtma berishga tayyor bo'ling.",
