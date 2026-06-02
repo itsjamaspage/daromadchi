@@ -220,7 +220,8 @@ export default async function DashboardPage({ searchParams }: Props) {
               {d.viewAll} &rarr;
             </a>
           </div>
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+          <table className="w-full text-sm min-w-[280px]">
             <thead>
               <tr className="text-slate-500 text-xs border-b border-white/[0.04]">
                 <th className="text-left font-medium pb-3 pr-4">{d.product}</th>
@@ -243,6 +244,7 @@ export default async function DashboardPage({ searchParams }: Props) {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       </div>
 

@@ -26,10 +26,10 @@ export default function BottomNav() {
           const active = pathname === href
           return (
             <Link key={href} href={href}
-              className={`flex-1 flex flex-col items-center justify-center gap-1 text-[10px] font-medium transition-all ${
-                active ? 'text-violet-400' : 'text-slate-500 hover:text-slate-300'
-              }`}>
-              <div className={`w-8 h-6 flex items-center justify-center rounded-lg transition-all ${active ? 'bg-violet-500/15' : ''}`}>
+              className="flex-1 flex flex-col items-center justify-center gap-1 text-[10px] font-medium transition-all"
+              style={{ color: active ? 'var(--c1)' : 'var(--text-muted)' }}>
+              <div className="w-8 h-6 flex items-center justify-center rounded-lg transition-all"
+                style={{ background: active ? 'rgba(0,0,0,0.06)' : 'transparent' }}>
                 <Icon className="w-4 h-4" />
               </div>
               {label}

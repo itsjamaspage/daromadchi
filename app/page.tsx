@@ -266,12 +266,12 @@ export default function LandingPage() {
               style={{ borderColor: 'var(--border)', background: 'var(--nav-bg)' }}>
               <div className="px-5 py-3 flex flex-col gap-1">
                 {[
-                  lang === 'uz' ? 'Imkoniyatlar' : t.nav.features,
-                  lang === 'uz' ? 'Qanday ishlaydi' : t.nav.how,
-                  lang === 'uz' ? 'Narxlar' : lang === 'ru' ? 'Цены' : 'Pricing',
-                  helpLabel,
-                ].map(label => (
-                  <a key={label} href="#" onClick={() => setMenuOpen(false)}
+                  { label: lang === 'uz' ? 'Imkoniyatlar' : t.nav.features,                              href: '#features' },
+                  { label: lang === 'uz' ? 'Qanday ishlaydi' : t.nav.how,                                href: '#how'      },
+                  { label: lang === 'uz' ? 'Narxlar' : lang === 'ru' ? 'Цены' : 'Pricing',               href: '#pricing'  },
+                  { label: helpLabel,                                                                      href: '/help'     },
+                ].map(({ label, href }) => (
+                  <a key={label} href={href} onClick={() => setMenuOpen(false)}
                     className="text-sm py-2 opacity-70" style={{ color: 'var(--text-base)' }}>
                     {label}
                   </a>

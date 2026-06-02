@@ -239,7 +239,8 @@ export default function DashboardClient({ kpis, recentOrders, allProducts, chart
                 {d.viewAll} &rarr;
               </a>
             </div>
-            <table className="w-full text-sm">
+            <div className="overflow-x-auto">
+            <table className="w-full text-sm min-w-[280px]">
               <thead>
                 <tr className="text-slate-500 text-xs border-b border-[var(--border)]">
                   <th className="text-left font-medium pb-3 pr-4">{d.product}</th>
@@ -262,6 +263,7 @@ export default function DashboardClient({ kpis, recentOrders, allProducts, chart
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
         </div>
       )}
