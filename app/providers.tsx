@@ -1,6 +1,7 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import type { Lang } from '@/lib/i18n'
 
 /* ── Theme ─────────────────────────────────────────────────────────────────── */
@@ -18,24 +19,31 @@ interface Props {
 }
 
 export default function Providers({ children, initialLang = 'uz' }: Props) {
+  const router = useRouter()
   const [theme, setTheme] = useState<Theme>('dark')
   const [lang,  setLangState] = useState<Lang>(initialLang)
 
   useEffect(() => {
-    // Always force dark — reset any accidentally stored 'light' preference
-    document.documentElement.setAttribute('data-theme', 'dark')
-    localStorage.setItem('theme', 'dark')
+    // Restore saved theme
+    const savedTheme = localStorage.getItem('theme') as Theme | null
+    if (savedTheme) setTheme(savedTheme)
 
-    // Sync language: if localStorage has a different (newer) preference, use it
+    // Sync language: if localStorage differs from cookie/initialLang, update cookie
     const savedLang = localStorage.getItem('lang') as Lang | null
-    if (savedLang && savedLang !== lang) {
+    if (savedLang && savedLang !== initialLang) {
       setLangState(savedLang)
       document.cookie = `lang=${savedLang};path=/;max-age=31536000`
+      // Refresh server components so they re-render in the correct language
+      router.refresh()
     } else if (!savedLang) {
-      // Write current lang to localStorage for backwards compat
-      localStorage.setItem('lang', lang)
+      localStorage.setItem('lang', initialLang)
     }
   }, [])
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme)
+    localStorage.setItem('theme', theme)
+  }, [theme])
 
   function toggle() {
     setTheme(t => t === 'dark' ? 'light' : 'dark')
@@ -45,6 +53,8 @@ export default function Providers({ children, initialLang = 'uz' }: Props) {
     setLangState(l)
     localStorage.setItem('lang', l)
     document.cookie = `lang=${l};path=/;max-age=31536000`
+    // Re-run server components so page titles/content update immediately
+    router.refresh()
   }
 
   return (

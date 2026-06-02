@@ -28,8 +28,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <link rel="icon" href="/icon.svg" type="image/svg+xml" />
         <link rel="apple-touch-icon" href="/icon.svg" />
         <meta name="theme-color" content="#00d4ff" />
-        {/* Always force dark theme — reset any accidentally stored light preference */}
-        <script dangerouslySetInnerHTML={{ __html: `(function(){try{var t=localStorage.getItem('theme');if(t==='light'){localStorage.setItem('theme','dark');}document.documentElement.setAttribute('data-theme','dark');}catch(e){document.documentElement.setAttribute('data-theme','dark');}})()` }} />
+        {/* Apply saved theme before first paint to avoid flash */}
+        <script dangerouslySetInnerHTML={{ __html: `(function(){try{var t=localStorage.getItem('theme');document.documentElement.setAttribute('data-theme',t||'dark');}catch(e){document.documentElement.setAttribute('data-theme','dark');}})()` }} />
       </head>
       <body className="antialiased">
         <Providers initialLang={lang}>{children}</Providers>
