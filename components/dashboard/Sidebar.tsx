@@ -7,7 +7,7 @@ import {
   LayoutDashboard, Package, ShoppingCart,
   LogOut, ChevronRight, X, Settings, BarChart2, Calculator, FileText, Globe2,
   Sun, Moon, Megaphone, Search, Database, Layers, Bell, CreditCard, Tag,
-  MessageSquare, CalendarDays, Users, HelpCircle, UserCircle, Monitor,
+  CalendarDays, Users, HelpCircle, UserCircle, Monitor,
 } from 'lucide-react'
 import { useTheme, useLang } from '@/app/providers'
 import { translations } from '@/lib/i18n'
@@ -31,7 +31,6 @@ const storeNavItems: NavItem[] = [
   { href: '/dashboard/price-tracking', key: 'priceTracking', icon: Tag             },
   { href: '/dashboard/alerts',         key: 'alerts',        icon: Bell            },
   { href: '/dashboard/payouts',        key: 'payouts',       icon: CreditCard      },
-  { href: '/dashboard/reviews',        key: 'reviews',       icon: MessageSquare   },
   { href: '/dashboard/seasonality',    key: 'seasonality',   icon: CalendarDays    },
 ]
 
