@@ -1,6 +1,7 @@
 import Sidebar from '@/components/dashboard/Sidebar'
 import MobileNav from '@/components/dashboard/MobileNav'
 import BottomNav from '@/components/dashboard/BottomNav'
+import FeedbackWidget from '@/components/dashboard/FeedbackWidget'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -22,6 +23,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* Mobile bottom tab bar */}
       <BottomNav />
+
+      {/* Feedback widget — right side */}
+      <FeedbackWidget />
     </div>
   )
 }
