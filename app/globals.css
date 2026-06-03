@@ -95,6 +95,46 @@ h1, h2, h3, h4, h5, h6 {
   box-shadow: 0 1px 4px rgba(80,50,160,0.07), 0 8px 24px rgba(80,50,160,0.05);
 }
 
+/* Hardcoded dark surfaces → map to light card colors */
+[data-theme="light"] .bg-\[\#13131f\],
+[data-theme="light"] .bg-\[\#1c1c2e\],
+[data-theme="light"] .bg-\[\#0d0d1a\],
+[data-theme="light"] .bg-\[\#0f0f1e\],
+[data-theme="light"] .bg-\[\#0e0e1a\],
+[data-theme="light"] .bg-\[\#07070f\] {
+  background-color: var(--bg-card2) !important;
+}
+[data-theme="light"] .bg-black,
+[data-theme="light"] .bg-slate-900,
+[data-theme="light"] .bg-slate-800 {
+  background-color: var(--bg-card) !important;
+}
+
+/* White-opacity borders/fills are invisible on light bg → use theme tokens */
+[data-theme="light"] .border-white\/\[0\.03\],
+[data-theme="light"] .border-white\/\[0\.04\],
+[data-theme="light"] .border-white\/\[0\.05\],
+[data-theme="light"] .border-white\/\[0\.06\],
+[data-theme="light"] .border-white\/\[0\.07\],
+[data-theme="light"] .border-white\/\[0\.08\],
+[data-theme="light"] .border-white\/\[0\.12\],
+[data-theme="light"] .border-white\/\[0\.14\],
+[data-theme="light"] .border-white\/\[0\.15\],
+[data-theme="light"] .border-white\/\[0\.18\] {
+  border-color: var(--border) !important;
+}
+[data-theme="light"] .bg-white\/\[0\.01\],
+[data-theme="light"] .bg-white\/\[0\.015\],
+[data-theme="light"] .bg-white\/\[0\.02\],
+[data-theme="light"] .bg-white\/\[0\.03\],
+[data-theme="light"] .bg-white\/\[0\.04\],
+[data-theme="light"] .bg-white\/\[0\.05\],
+[data-theme="light"] .bg-white\/\[0\.06\],
+[data-theme="light"] .bg-white\/\[0\.08\],
+[data-theme="light"] .bg-white\/\[0\.12\] {
+  background-color: rgba(124,58,237,0.04) !important;
+}
+
 /* ═══════════════════════════════════════════════════════════════════
    GRADIENT TEXT UTILITY
 ═══════════════════════════════════════════════════════════════════ */
