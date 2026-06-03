@@ -5,18 +5,21 @@ import { useState } from 'react'
 import {
   Check, X, Zap, Shield, Star,
   TrendingUp, ChevronRight, MessageCircle, ChevronDown,
-  Lock, Users, FileText, Cpu, Clock, Globe2, BarChart2,
+  Lock, Users, FileText, Cpu, Clock, Mail,
 } from 'lucide-react'
 
 interface Feature { label: string; free: boolean | string; pro: boolean | string; proplus: boolean | string }
 interface FaqItem  { q: string; a: string }
 
-/* ── Shared Pro features (both Pro and Pro+) ─────────────────────────── */
+/* ── Pro features (Pro AND Pro+) ────────────────────────────────────────
+   Everything a seller needs day-to-day lives here.
+   Wildberries, custom reports, deep analytics — all in Pro.
+   ─────────────────────────────────────────────────────────────────────── */
 const PRO_FEATURES = [
   "Unlimited do'konlar",
   'Unlimited mahsulotlar',
   '12 oylik tarix',
-  'Uzum + Yandex Market',
+  'Uzum + Yandex Market + Wildberries',
   'Unit-ekonomika',
   'Reklama tahlili',
   'Qidiruv iboralari',
@@ -24,16 +27,23 @@ const PRO_FEATURES = [
   'F&Z (P&L) hisobot',
   'Mavsumiylik tahlili',
   'Narx kuzatuvi',
+  'Maxsus hisobotlar',
 ]
 
-/* ── Pro+ exclusive extras ───────────────────────────────────────────── */
+/* ── Pro+ exclusive extras ───────────────────────────────────────────────
+   These are power-user features most solo sellers never need:
+   – API: only devs integrating with their own systems
+   – Team accounts: only agencies / large ops with multiple managers
+   – Scheduled email reports: convenience, not core analytics
+   – Priority support: support speed tier, not a product feature
+   – White-label PDF: branding cosmetic for resellers/agencies
+   ─────────────────────────────────────────────────────────────────────── */
 const PROPLUS_EXTRAS = [
-  { icon: Cpu,       label: 'API kirish',                  desc: "Tizimingizga ulang" },
-  { icon: Users,     label: 'Jamoa kirishlari (5 foydalanuvchi)', desc: "Ko'p foydalanuvchi boshqaruvi" },
-  { icon: FileText,  label: 'Maxsus hisobotlar',            desc: "Brend hisoboti PDF" },
-  { icon: Globe2,    label: 'Wildberries integratsiya',     desc: "3-bozor qo'llab-quvvatlash" },
-  { icon: BarChart2, label: 'Raqobatchi chuqur tahlili',    desc: "Raqobatchining narx tarixi" },
-  { icon: Clock,     label: "Prioritet qo'llab-quvvatlash", desc: "15 daqiqa ichida javob" },
+  { icon: Cpu,      label: 'API kirish',                        desc: "O'z tizimingizga to'liq integratsiya" },
+  { icon: Users,    label: 'Jamoa (5 foydalanuvchi)',            desc: "Rol va ruxsat boshqaruvi" },
+  { icon: Mail,     label: 'Avtomatik hisobot emailga',          desc: "Kunlik/haftalik yetkazib berish" },
+  { icon: Clock,    label: "Prioritet qo'llab-quvvatlash",       desc: "15 daqiqa ichida javob (Pro: standart navbat)" },
+  { icon: FileText, label: 'White-label PDF (brend logosi bilan)', desc: "Hisobotlarda o'z logoyingiz" },
 ]
 
 const plans = [
@@ -88,26 +98,28 @@ const plans = [
 ] as const
 
 const comparisonFeatures: Feature[] = [
-  { label: "Do'konlar soni",                free: '1',        pro: 'Cheksiz',  proplus: 'Cheksiz'  },
-  { label: 'Mahsulotlar soni',              free: '100',      pro: 'Cheksiz',  proplus: 'Cheksiz'  },
-  { label: 'Tarix chuqurligi',              free: '30 kun',   pro: '12 oy',    proplus: '12 oy'    },
-  { label: 'Uzum integratsiya',             free: true,       pro: true,       proplus: true       },
-  { label: 'Yandex Market',                free: false,      pro: true,       proplus: true       },
-  { label: 'Wildberries',                  free: false,      pro: false,      proplus: true       },
-  { label: 'Kengaytma (extension)',         free: true,       pro: true,       proplus: true       },
-  { label: 'Unit-ekonomika',               free: false,      pro: true,       proplus: true       },
-  { label: 'Reklama tahlili',              free: false,      pro: true,       proplus: true       },
-  { label: 'Qidiruv iboralari',            free: false,      pro: true,       proplus: true       },
-  { label: 'Eksport Excel / PDF',          free: false,      pro: true,       proplus: true       },
-  { label: 'F&Z (P&L) hisobot',           free: false,      pro: true,       proplus: true       },
-  { label: 'Mavsumiylik tahlili',          free: false,      pro: true,       proplus: true       },
-  { label: 'Narx kuzatuvi',               free: false,      pro: true,       proplus: true       },
-  { label: 'API kirish',                   free: false,      pro: false,      proplus: true       },
-  { label: 'Jamoa (5 foydalanuvchi)',       free: false,      pro: false,      proplus: true       },
-  { label: 'Maxsus hisobotlar',            free: false,      pro: false,      proplus: true       },
-  { label: 'Wildberries integratsiya',     free: false,      pro: false,      proplus: true       },
-  { label: 'Raqobatchi chuqur tahlili',   free: false,      pro: false,      proplus: true       },
-  { label: "Prioritet qo'llab-quvvatlash", free: false,      pro: false,      proplus: true       },
+  // ── Core (both Pro & Pro+) ────────────────────────────────────────────
+  { label: "Do'konlar soni",                     free: '1',      pro: 'Cheksiz', proplus: 'Cheksiz' },
+  { label: 'Mahsulotlar soni',                   free: '100',    pro: 'Cheksiz', proplus: 'Cheksiz' },
+  { label: 'Tarix chuqurligi',                   free: '30 kun', pro: '12 oy',   proplus: '12 oy'   },
+  { label: 'Uzum integratsiya',                  free: true,     pro: true,      proplus: true      },
+  { label: 'Yandex Market',                     free: false,    pro: true,      proplus: true      },
+  { label: 'Wildberries',                        free: false,    pro: true,      proplus: true      },
+  { label: 'Kengaytma (extension)',              free: true,     pro: true,      proplus: true      },
+  { label: 'Unit-ekonomika',                     free: false,    pro: true,      proplus: true      },
+  { label: 'Reklama tahlili',                    free: false,    pro: true,      proplus: true      },
+  { label: 'Qidiruv iboralari',                  free: false,    pro: true,      proplus: true      },
+  { label: 'Eksport Excel / PDF',                free: false,    pro: true,      proplus: true      },
+  { label: 'F&Z (P&L) hisobot',                 free: false,    pro: true,      proplus: true      },
+  { label: 'Mavsumiylik tahlili',                free: false,    pro: true,      proplus: true      },
+  { label: 'Narx kuzatuvi',                      free: false,    pro: true,      proplus: true      },
+  { label: 'Maxsus hisobotlar',                  free: false,    pro: true,      proplus: true      },
+  // ── Pro+ exclusive (power-user extras) ───────────────────────────────
+  { label: 'API kirish',                         free: false,    pro: false,     proplus: true      },
+  { label: 'Jamoa (5 foydalanuvchi)',             free: false,    pro: false,     proplus: true      },
+  { label: 'Avtomatik hisobot emailga',           free: false,    pro: false,     proplus: true      },
+  { label: "Prioritet qo'llab-quvvatlash",        free: false,    pro: false,     proplus: true      },
+  { label: 'White-label PDF',                    free: false,    pro: false,     proplus: true      },
 ]
 
 const faqs: FaqItem[] = [
@@ -363,9 +375,9 @@ export default function PricingPage() {
               <Star className="w-5 h-5" style={{ color: '#eab308' }} />
             </div>
             <div className="flex-1">
-              <p className="font-bold text-sm" style={{ color: 'var(--text-base)' }}>Pro+ nima beradi?</p>
+              <p className="font-bold text-sm" style={{ color: 'var(--text-base)' }}>Pro+ nima qo&rsquo;shadi?</p>
               <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
-                Pro tarifdagi barcha imkoniyatlar + <span style={{ color: '#eab308' }}>Wildberries, API, 5 jamoa a&rsquo;zosi, maxsus hisobotlar va prioritet qo&rsquo;llab-quvvatlash</span> — bularning barchasi faqat Pro+ da.
+                Pro dagi hamma narsa bor. Pro+ faqat katta jamoalar va agentliklar uchun qo&rsquo;shimcha beradi: <span style={{ color: '#eab308' }}>API kirish, 5 foydalanuvchi, avtomatik email hisobot, prioritet qo&rsquo;llab-quvvatlash va white-label PDF</span>.
               </p>
             </div>
             <Link href="/login?plan=proplus" className="flex-shrink-0 text-xs font-bold px-4 py-2 rounded-xl text-white transition-all"
