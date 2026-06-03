@@ -7,6 +7,8 @@ import {
 } from 'lucide-react'
 import type { UnitEconomicsItem, UnitEcoSettings } from '@/lib/types'
 import ExportButton from '@/components/dashboard/ExportButton'
+import { useLang } from '@/app/providers'
+import { translations } from '@/lib/i18n'
 
 function fs(n: number) {
   return new Intl.NumberFormat('uz-UZ').format(Math.round(n)) + " so'm"
@@ -65,6 +67,8 @@ interface Props {
 }
 
 export default function UnitEconomicsTable({ items: initialItems, defaultSettings }: Props) {
+  const { lang } = useLang()
+  const d = translations[lang].dashboard
   const initSettings = defaultSettings ?? DEFAULT_SETTINGS
   const [items, setItems]               = useState(initialItems)
   const [search, setSearch]             = useState('')
@@ -163,7 +167,7 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
           <input
             value={search} onChange={e => setSearch(e.target.value)}
-            placeholder="Qidirish..."
+            placeholder={d.ueSearch}
             className="w-full pl-9 pr-3 py-2 bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl text-sm text-[var(--text-base)] placeholder-[var(--text-muted)] focus:outline-none focus:border-violet-500/50"
           />
         </div>
@@ -177,11 +181,11 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
           )}
           <button onClick={() => { setShowColPicker(v => !v); setShowSettings(false) }}
             className="flex items-center gap-1.5 px-3 py-2 bg-[var(--bg-card2)] hover:bg-[var(--bg-card2)] text-[var(--text-muted)] hover:text-[var(--text-base)] text-xs font-semibold rounded-xl border border-[var(--border)] transition-all">
-            <Package className="w-3.5 h-3.5" /> Ustunlar
+            <Package className="w-3.5 h-3.5" /> {d.ueColumns}
           </button>
           <button onClick={() => { setShowSettings(v => !v); setShowColPicker(false); setDraftSettings(settings) }}
             className="flex items-center gap-1.5 px-3 py-2 bg-[var(--bg-card2)] hover:bg-[var(--bg-card2)] text-[var(--text-muted)] hover:text-[var(--text-base)] text-xs font-semibold rounded-xl border border-[var(--border)] transition-all">
-            <Settings2 className="w-3.5 h-3.5" /> Sozlamalar
+            <Settings2 className="w-3.5 h-3.5" /> {d.ueSettings}
           </button>
           <ExportButton data={exportData} filename="unit-ekonomika" targetRef={printRef} />
         </div>
@@ -265,10 +269,10 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
       {/* Summary indicators */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: 'Jami mahsulot',   value: `${filtered.length} ta` },
-          { label: 'O\'rtacha ROI',   value: filtered.length ? `${Math.round(filtered.reduce((s,i)=>s+i.roi,0)/filtered.length)}%` : '—' },
-          { label: 'O\'rtacha marja', value: filtered.length ? `${Math.round(filtered.reduce((s,i)=>s+i.margin,0)/filtered.length)}%` : '—' },
-          { label: 'Jami foyda',      value: filtered.length ? fs(filtered.reduce((s,i)=>s+i.netProfit,0)) : '—' },
+          { label: d.ueTotalProducts, value: `${filtered.length}` },
+          { label: d.ueAvgRoi,        value: filtered.length ? `${Math.round(filtered.reduce((s,i)=>s+i.roi,0)/filtered.length)}%` : '—' },
+          { label: d.ueAvgMargin,     value: filtered.length ? `${Math.round(filtered.reduce((s,i)=>s+i.margin,0)/filtered.length)}%` : '—' },
+          { label: d.ueTotalProfit,   value: filtered.length ? fs(filtered.reduce((s,i)=>s+i.netProfit,0)) : '—' },
         ].map(({ label, value }) => (
           <div key={label} className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl px-4 py-3">
             <p className="text-xs text-[var(--text-muted)] mb-1">{label}</p>
@@ -281,8 +285,8 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
       {filtered.length === 0 ? (
         <div className="bg-[var(--bg-card2)] border border-dashed border-violet-500/30 rounded-2xl p-10 text-center">
           <Plus className="w-8 h-8 text-violet-400/50 mx-auto mb-3" />
-          <p className="text-[var(--text-base)] font-semibold mb-1">Mahsulot qo&apos;shilmagan</p>
-          <p className="text-[var(--text-muted)] text-sm">Uzum sahifasida kengaytmadan &quot;Unit-ekonomikaga qo&apos;shish&quot; tugmasini bosing</p>
+          <p className="text-[var(--text-base)] font-semibold mb-1">{d.ueNoProducts}</p>
+          <p className="text-[var(--text-muted)] text-sm">{d.ueNoProductsHint}</p>
         </div>
       ) : (
         <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
@@ -409,7 +413,7 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
       )}
 
       <p className="text-xs text-[var(--text-muted)] text-center">
-        Taxminiy hisob · Barcha narxlar so&apos;mda
+        {d.ueNote}
       </p>
     </div>
   )

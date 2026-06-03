@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import { RefreshCw, AlertCircle, CheckCircle2, Clock, AlertTriangle } from 'lucide-react'
 import type { SyncDay } from '@/lib/types'
+import { useLang } from '@/app/providers'
+import { translations } from '@/lib/i18n'
 
 function fs(n: number | undefined) {
   if (n === undefined) return '—'
@@ -29,18 +31,21 @@ function statusIcon(s: SyncDay['status']) {
   }
 }
 
-function statusLabel(s: SyncDay['status']) {
-  switch (s) {
-    case 'ready':    return 'Tayyor'
-    case 'degraded': return 'Degradatsiya'
-    case 'error':    return 'Xato'
-    case 'pending':  return 'Kutilmoqda'
-  }
-}
-
 interface Props { days: SyncDay[] }
 
 export default function DataStateView({ days }: Props) {
+  const { lang } = useLang()
+  const d = translations[lang].dashboard
+
+  function statusLabel(s: SyncDay['status']) {
+    switch (s) {
+      case 'ready':    return d.dsReady
+      case 'degraded': return d.dsDegraded
+      case 'error':    return d.dsError
+      case 'pending':  return d.dsPending
+    }
+  }
+
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [resyncing, setResyncing] = useState<Set<string>>(new Set())
   const [hoveredDay, setHoveredDay] = useState<SyncDay | null>(null)
@@ -77,17 +82,17 @@ export default function DataStateView({ days }: Props) {
       {/* Status summary */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {([
-          ['ready',    'Tayyor',        counts.ready,    'text-emerald-400', 'bg-emerald-500/10 border-emerald-500/20'],
-          ['degraded', 'Degradatsiya',  counts.degraded, 'text-amber-400',   'bg-amber-500/10 border-amber-500/20'   ],
-          ['error',    'Xato',          counts.error,    'text-red-400',     'bg-red-500/10 border-red-500/20'       ],
-          ['pending',  'Kutilmoqda',    counts.pending,  'text-[var(--text-muted)]',   'bg-[var(--bg-card2)] border-[var(--border)]'  ],
+          ['ready',    d.dsReady,     counts.ready,    'text-emerald-400', 'bg-emerald-500/10 border-emerald-500/20'],
+          ['degraded', d.dsDegraded,  counts.degraded, 'text-amber-400',   'bg-amber-500/10 border-amber-500/20'   ],
+          ['error',    d.dsError,     counts.error,    'text-red-400',     'bg-red-500/10 border-red-500/20'       ],
+          ['pending',  d.dsPending,   counts.pending,  'text-[var(--text-muted)]',   'bg-[var(--bg-card2)] border-[var(--border)]'  ],
         ] as [SyncDay['status'], string, number, string, string][]).map(([status, label, count, textCls, bgCls]) => (
           <button key={status}
             onClick={() => selectAll(status)}
             className={`text-left px-4 py-3 rounded-xl border transition-all ${bgCls} hover:scale-[1.01]`}>
             <p className="text-xs text-[var(--text-muted)] mb-1">{label}</p>
-            <p className={`text-xl font-bold ${textCls}`}>{count} kun</p>
-            <p className="text-[10px] text-[var(--text-muted)] mt-0.5">Tanlash uchun bosing</p>
+            <p className={`text-xl font-bold ${textCls}`}>{count} {d.dsDaysUnit}</p>
+            <p className="text-[10px] text-[var(--text-muted)] mt-0.5">{d.dsSelectToClick}</p>
           </button>
         ))}
       </div>
@@ -95,19 +100,19 @@ export default function DataStateView({ days }: Props) {
       {/* Actions */}
       {selected.size > 0 && (
         <div className="flex items-center gap-3 bg-violet-500/5 border border-violet-500/20 rounded-xl px-4 py-3">
-          <span className="text-xs text-violet-300 font-semibold">{selected.size} kun tanlangan</span>
+          <span className="text-xs text-violet-300 font-semibold">{selected.size} {d.dsSelectedSuffix}</span>
           <button onClick={resyncSelected}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-violet-600 hover:bg-violet-500 text-[var(--text-base)] text-xs font-semibold rounded-lg transition-colors ml-auto">
-            <RefreshCw className="w-3.5 h-3.5" /> Qayta yuklash
+            <RefreshCw className="w-3.5 h-3.5" /> {d.dsResync}
           </button>
           <button onClick={() => setSelected(new Set())}
-            className="text-xs text-[var(--text-muted)] hover:text-[var(--text-dim)] transition-colors">Bekor</button>
+            className="text-xs text-[var(--text-muted)] hover:text-[var(--text-dim)] transition-colors">{d.dsCancel}</button>
         </div>
       )}
 
       {/* Day grid */}
       <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl p-4">
-        <p className="text-xs font-semibold text-[var(--text-muted)] mb-4">So&apos;nggi 30 kun</p>
+        <p className="text-xs font-semibold text-[var(--text-muted)] mb-4">{d.dsLast30}</p>
         <div className="grid grid-cols-5 sm:grid-cols-7 lg:grid-cols-10 gap-2">
           {days.map(day => {
             const { bg } = statusStyle(day.status)
@@ -143,11 +148,11 @@ export default function DataStateView({ days }: Props) {
       {hoveredDay && (
         <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl p-4 grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div>
-            <p className="text-xs text-[var(--text-muted)] mb-1">Sana</p>
+            <p className="text-xs text-[var(--text-muted)] mb-1">{d.dsDate}</p>
             <p className="text-sm font-bold text-[var(--text-base)]">{hoveredDay.date}</p>
           </div>
           <div>
-            <p className="text-xs text-[var(--text-muted)] mb-1">Holat</p>
+            <p className="text-xs text-[var(--text-muted)] mb-1">{d.dsStatus}</p>
             <div className="flex items-center gap-1.5">
               {statusIcon(hoveredDay.status)}
               <span className={`text-sm font-semibold ${statusStyle(hoveredDay.status).text}`}>
@@ -156,18 +161,18 @@ export default function DataStateView({ days }: Props) {
             </div>
           </div>
           <div>
-            <p className="text-xs text-[var(--text-muted)] mb-1">Mahsulotlar</p>
+            <p className="text-xs text-[var(--text-muted)] mb-1">{d.dsProducts}</p>
             <p className="text-sm font-bold text-[var(--text-base)]">{hoveredDay.productsCount ?? '—'}</p>
           </div>
           <div>
-            <p className="text-xs text-[var(--text-muted)] mb-1">Daromad</p>
+            <p className="text-xs text-[var(--text-muted)] mb-1">{d.dsRevenue}</p>
             <p className="text-sm font-bold text-emerald-400">
               {hoveredDay.revenue !== undefined ? `${fs(hoveredDay.revenue)} so'm` : '—'}
             </p>
           </div>
           {hoveredDay.errorMessage && (
             <div className="col-span-full">
-              <p className="text-xs text-[var(--text-muted)] mb-1">Xato</p>
+              <p className="text-xs text-[var(--text-muted)] mb-1">{d.dsError}</p>
               <p className="text-xs text-red-400">{hoveredDay.errorMessage}</p>
             </div>
           )}
@@ -176,10 +181,10 @@ export default function DataStateView({ days }: Props) {
 
       {/* Legend */}
       <div className="flex flex-wrap gap-4 text-xs text-[var(--text-muted)]">
-        <span>Kun ustiga bosib tanlang → &quot;Qayta yuklash&quot; tugmasi paydo bo&apos;ladi</span>
-        <span className="flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Tayyor</span>
-        <span className="flex items-center gap-1.5"><AlertTriangle className="w-3.5 h-3.5 text-amber-400" /> Degradatsiya</span>
-        <span className="flex items-center gap-1.5"><AlertCircle className="w-3.5 h-3.5 text-red-400" /> Xato</span>
+        <span>{d.dsHint}</span>
+        <span className="flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> {d.dsReady}</span>
+        <span className="flex items-center gap-1.5"><AlertTriangle className="w-3.5 h-3.5 text-amber-400" /> {d.dsDegraded}</span>
+        <span className="flex items-center gap-1.5"><AlertCircle className="w-3.5 h-3.5 text-red-400" /> {d.dsError}</span>
       </div>
     </div>
   )
