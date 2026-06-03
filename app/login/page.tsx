@@ -144,29 +144,34 @@ function LoginForm() {
       router.push('/dashboard'); router.refresh(); return
     }
 
-    const supabase = createClient()
+    try {
+      const supabase = createClient()
 
-    if (mode === 'login') {
-      const { error } = await supabase.auth.signInWithPassword({ email, password })
-      if (error) { setError(error.message); setLoading(false) }
-      else { router.push('/dashboard'); router.refresh() }
-    } else {
-      const { data, error } = await supabase.auth.signUp({
-        email, password,
-        options: { data: { full_name: name } },
-      })
-      if (error) { setError(error.message); setLoading(false) }
-      else {
-        if (refCode && data.user) {
-          await fetch('/api/referral/track', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ refCode, newUserId: data.user.id }),
-          }).catch(() => {})
+      if (mode === 'login') {
+        const { error } = await supabase.auth.signInWithPassword({ email, password })
+        if (error) { setError(error.message); setLoading(false) }
+        else { router.push('/dashboard'); router.refresh() }
+      } else {
+        const { data, error } = await supabase.auth.signUp({
+          email, password,
+          options: { data: { full_name: name } },
+        })
+        if (error) { setError(error.message); setLoading(false) }
+        else {
+          if (refCode && data.user) {
+            await fetch('/api/referral/track', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ refCode, newUserId: data.user.id }),
+            }).catch(() => {})
+          }
+          if (data.session) { router.push('/dashboard'); router.refresh() }
+          else { setSuccess(true); setLoading(false) }
         }
-        if (data.session) { router.push('/dashboard'); router.refresh() }
-        else { setSuccess(true); setLoading(false) }
       }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred')
+      setLoading(false)
     }
   }
 
