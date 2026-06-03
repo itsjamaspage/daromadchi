@@ -8,6 +8,7 @@ import SyncButton from '@/components/dashboard/SyncButton'
 import StockAlerts from '@/components/dashboard/StockAlerts'
 import CategoryChart from '@/components/dashboard/CategoryChart'
 import DynamicsChart from '@/components/dashboard/DynamicsChart'
+import AnalyticsBoard from '@/components/dashboard/AnalyticsBoard'
 import { getKpis } from '@/lib/db/kpis'
 import { getOrders } from '@/lib/db/orders'
 import { getProducts } from '@/lib/db/products'
@@ -214,6 +215,16 @@ export default async function DashboardPage({ searchParams }: Props) {
 
       {/* Dynamics chart */}
       {!isEmpty && <DynamicsChart data={dynamicsData} />}
+
+      {/* Analytics board — channel trends, customer mix, funnel, category bubbles */}
+      {!isEmpty && (
+        <AnalyticsBoard
+          chartData={chartData}
+          categoryData={categoryData}
+          products={allProducts}
+          kpis={kpis}
+        />
+      )}
 
       {/* Category chart + top products */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
