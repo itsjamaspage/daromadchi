@@ -38,7 +38,7 @@ export default function MobileNav() {
         >
           <Menu className="w-5 h-5" />
         </button>
-        <Link href="/" className="font-bold text-sm tracking-tight flex-1 transition-colors"
+        <Link href="/dashboard" className="font-bold text-sm tracking-tight flex-1 transition-colors"
           style={{ color: 'var(--text-base)' }}>
           Daromadchi
         </Link>
