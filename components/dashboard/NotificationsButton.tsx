@@ -1,26 +1,42 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { Bell, X } from 'lucide-react'
+import { Bell, X, Package } from 'lucide-react'
+import type { StockAlert } from '@/lib/types'
 
 interface Alert {
   id: string
-  type: 'stock' | 'drr' | 'spend'
   title: string
   desc: string
-  color: string
-  icon: React.ElementType
 }
 
-// Real notifications are sourced from the user's synced data.
-// Until that pipeline is wired in, no fabricated alerts are shown.
-const ALL_ALERTS: Alert[] = []
+function alertFromStock(a: StockAlert): Alert {
+  const urgency = a.daysLeft <= 3 ? '🔴' : a.daysLeft <= 7 ? '🟡' : '🟠'
+  return {
+    id:    a.productId,
+    title: `${urgency} ${a.productTitle}`,
+    desc:  `Zaxira: ${a.currentStock} dona — ${a.daysLeft === 999 ? 'sotuv yo\'q' : `~${a.daysLeft} kun qoldi`}`,
+  }
+}
 
 export default function NotificationsButton() {
   const [open, setOpen]       = useState(false)
-  const [unread, setUnread]   = useState(ALL_ALERTS.length)
-  const [alerts, setAlerts]   = useState(ALL_ALERTS)
+  const [alerts, setAlerts]   = useState<Alert[]>([])
+  const [unread, setUnread]   = useState(0)
+  const [loaded, setLoaded]   = useState(false)
   const panelRef              = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    fetch('/api/alerts')
+      .then(r => r.json())
+      .then(({ alerts: stockAlerts }: { alerts: StockAlert[] }) => {
+        const mapped = (stockAlerts ?? []).map(alertFromStock)
+        setAlerts(mapped)
+        setUnread(mapped.length)
+        setLoaded(true)
+      })
+      .catch(() => setLoaded(true))
+  }, [])
 
   function openPanel() {
     setOpen(true)
@@ -31,7 +47,6 @@ export default function NotificationsButton() {
     setAlerts(prev => prev.filter(a => a.id !== id))
   }
 
-  // Close on outside click
   useEffect(() => {
     function onClickOutside(e: MouseEvent) {
       if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
@@ -64,7 +79,11 @@ export default function NotificationsButton() {
             <span className="text-xs text-[var(--text-muted)]">{alerts.length} ta</span>
           </div>
 
-          {alerts.length === 0 ? (
+          {!loaded ? (
+            <div className="px-4 py-8 text-center">
+              <p className="text-[var(--text-muted)] text-sm">Yuklanmoqda...</p>
+            </div>
+          ) : alerts.length === 0 ? (
             <div className="px-4 py-8 text-center">
               <Bell className="w-8 h-8 text-[var(--text-muted)] mx-auto mb-2" />
               <p className="text-[var(--text-muted)] text-sm">Hamma narsa yaxshi!</p>
@@ -72,13 +91,9 @@ export default function NotificationsButton() {
           ) : (
             <div className="max-h-80 overflow-y-auto divide-y divide-[var(--border)]">
               {alerts.map(alert => (
-                <div key={alert.id} className="flex items-start gap-3 px-4 py-3 hover:bg-[var(--bg-card2)] group transition-colors">
-                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 ${
-                    alert.type === 'stock' ? 'bg-amber-500/10' :
-                    alert.type === 'drr'   ? 'bg-red-500/10'   :
-                                             'bg-amber-500/10'
-                  }`}>
-                    <alert.icon className={`w-3.5 h-3.5 ${alert.color}`} />
+                <div key={alert.id} className="flex items-start gap-3 px-4 py-3 hover:bg-[var(--bg-input)] group transition-colors">
+                  <div className="w-7 h-7 rounded-lg bg-amber-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <Package className="w-3.5 h-3.5 text-amber-400" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-[var(--text-base)] text-xs font-medium truncate">{alert.title}</p>
@@ -86,7 +101,7 @@ export default function NotificationsButton() {
                   </div>
                   <button
                     onClick={() => dismiss(alert.id)}
-                    className="text-[var(--text-muted)] hover:text-[var(--text-muted)] transition-colors opacity-0 group-hover:opacity-100 flex-shrink-0 mt-0.5"
+                    className="text-[var(--text-muted)] hover:text-[var(--text-dim)] transition-colors opacity-0 group-hover:opacity-100 flex-shrink-0 mt-0.5"
                     aria-label="O'chirish"
                   >
                     <X className="w-3.5 h-3.5" />

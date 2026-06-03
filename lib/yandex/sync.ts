@@ -100,6 +100,54 @@ export async function syncFromYandex(
 
     const newOrderRows = orderRows
 
+    // ── Order items (best-effort) ─────────────────────────────────────────────
+    try {
+      const { data: dbProducts } = await supabase
+        .from('products')
+        .select('id, sku')
+        .eq('shop_id', shopId)
+      const skuMap = new Map<string, string>()
+      for (const p of dbProducts ?? []) {
+        if (p.sku) skuMap.set(p.sku as string, p.id as string)
+      }
+
+      const extIds = yandexOrders.map(o => String(o.id))
+      const { data: dbOrders } = await supabase
+        .from('orders')
+        .select('id, order_id_external')
+        .eq('shop_id', shopId)
+        .in('order_id_external', extIds)
+      const orderIdMap = new Map<string, string>()
+      for (const o of dbOrders ?? []) {
+        orderIdMap.set(o.order_id_external as string, o.id as string)
+      }
+
+      const itemRows: {
+        order_id: string; product_id: string | null;
+        quantity: number; price_per_unit: number
+      }[] = []
+      for (const o of yandexOrders) {
+        const dbOrderId = orderIdMap.get(String(o.id))
+        if (!dbOrderId) continue
+        for (const it of o.items ?? []) {
+          itemRows.push({
+            order_id:       dbOrderId,
+            product_id:     skuMap.get(it.offerId) ?? null,
+            quantity:       it.count,
+            price_per_unit: it.prices?.buyerPrice ?? 0,
+          })
+        }
+      }
+
+      if (itemRows.length > 0) {
+        const dbOrderIds = [...new Set(itemRows.map(r => r.order_id))]
+        await supabase.from('order_items').delete().in('order_id', dbOrderIds)
+        for (let i = 0; i < itemRows.length; i += 500) {
+          await supabase.from('order_items').insert(itemRows.slice(i, i + 500))
+        }
+      }
+    } catch { /* order items sync is best-effort */ }
+
     // ── SKU stats → ad_campaigns proxy (best-effort) ──────────────────────────
     // Yandex doesn't expose a simple "campaign list" endpoint in v2.
     // We derive ad campaign records from SKU-level stats as a best approximation.

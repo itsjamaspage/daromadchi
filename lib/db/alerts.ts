@@ -22,17 +22,47 @@ export async function getStockAlerts(): Promise<StockAlert[]> {
 
   const threshold = settings?.alert_stock_threshold ?? 15
 
+  // Products are scoped to shops, not users directly — join through shops
+  const { data: shopRows } = await supabase
+    .from('shops')
+    .select('id, marketplace')
+    .eq('user_id', user.id)
+  const shopIds = (shopRows ?? []).map((s: { id: string }) => s.id)
+  if (shopIds.length === 0) return []
+
+  const shopMarketplace = new Map<string, string>()
+  for (const s of shopRows ?? []) shopMarketplace.set(s.id as string, s.marketplace as string)
+
   const { data, error } = await supabase
     .from('products')
-    .select('id, title, sku, stock_quantity, sold, marketplace')
-    .eq('user_id', user.id)
+    .select('id, title, sku, stock_quantity, shop_id')
+    .in('shop_id', shopIds)
     .lte('stock_quantity', threshold)
 
-  if (error || !data) return []
+  if (error || !data || data.length === 0) return []
+
+  // Estimate daily sales from order_items over the last 30 days
+  const since30 = new Date()
+  since30.setDate(since30.getDate() - 30)
+  const productIds = (data as { id: string }[]).map(p => p.id)
+
+  const salesMap = new Map<string, number>()
+  try {
+    const { data: salesData } = await supabase
+      .from('order_items')
+      .select('product_id, quantity, orders!inner(ordered_at)')
+      .in('product_id', productIds)
+      .gte('orders.ordered_at', since30.toISOString())
+    for (const row of salesData ?? []) {
+      const pid = row.product_id as string
+      salesMap.set(pid, (salesMap.get(pid) ?? 0) + Number(row.quantity))
+    }
+  } catch { /* best-effort */ }
 
   const PERIOD_DAYS = 30
-  return data.map((row: Record<string, unknown>) => {
-    const dailySales = Number(row.sold ?? 0) / PERIOD_DAYS
+  return (data as Record<string, unknown>[]).map(row => {
+    const totalSold = salesMap.get(String(row.id)) ?? 0
+    const dailySales = totalSold / PERIOD_DAYS
     const daysLeft = dailySales > 0
       ? Math.floor(Number(row.stock_quantity) / dailySales)
       : 999
@@ -44,7 +74,7 @@ export async function getStockAlerts(): Promise<StockAlert[]> {
       threshold,
       daysLeft,
       dailySales:   Math.round(dailySales * 10) / 10,
-      marketplace:  (row.marketplace as 'uzum' | 'yandex_market') ?? 'uzum',
+      marketplace:  (shopMarketplace.get(String(row.shop_id)) ?? 'uzum') as 'uzum' | 'yandex_market',
     }
   }).sort((a, b) => a.daysLeft - b.daysLeft)
 }
