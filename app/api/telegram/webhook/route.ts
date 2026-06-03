@@ -36,6 +36,70 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    // Onboarding: toggle a notification type on/off
+    if (data.startsWith('notif_toggle:')) {
+      const [, field, val] = data.split(':')
+      const colMap: Record<string, string> = {
+        low_stock:      'notif_low_stock',
+        daily_summary:  'notif_daily_summary',
+        new_orders:     'notif_new_orders',
+        weekly_report:  'notif_weekly_report',
+      }
+      const col = colMap[field]
+      if (col) {
+        const newVal = val === '1'
+        await supabaseAdmin
+          .from('user_settings')
+          .update({ [col]: newVal, updated_at: new Date().toISOString() })
+          .eq('telegram_chat_id', chatId)
+
+        const emoji = newVal ? '✅' : '❌'
+        const labelMap: Record<string, string> = {
+          low_stock:     '📦 Kam zaxira ogohlantirishlari',
+          daily_summary: '📊 Kunlik savdo xulosasi',
+          new_orders:    '🛒 Yangi buyurtmalar',
+          weekly_report: '📈 Haftalik hisobot',
+        }
+        await answerCallbackQuery(cb.id, `${emoji} ${labelMap[field] ?? field}`)
+
+        // Re-show the notification menu with updated toggle states
+        const { data: settings } = await supabaseAdmin
+          .from('user_settings')
+          .select('notif_low_stock, notif_daily_summary, notif_new_orders, notif_weekly_report')
+          .eq('telegram_chat_id', chatId)
+          .maybeSingle()
+
+        const s = settings ?? {}
+        const e = (v: boolean | null | undefined) => v ? '✅' : '❌'
+
+        await sendTelegramKeyboard(
+          chatId,
+          `📋 Bildirishnomalarni sozlang:`,
+          [
+            [{ text: `📦 Kam zaxira  ${e(s.notif_low_stock)}`,     callback_data: `notif_toggle:low_stock:${s.notif_low_stock ? 0 : 1}` }],
+            [{ text: `📊 Kunlik xulosa  ${e(s.notif_daily_summary)}`, callback_data: `notif_toggle:daily_summary:${s.notif_daily_summary ? 0 : 1}` }],
+            [{ text: `🛒 Yangi buyurtmalar  ${e(s.notif_new_orders)}`,  callback_data: `notif_toggle:new_orders:${s.notif_new_orders ? 0 : 1}` }],
+            [{ text: `📈 Haftalik hisobot  ${e(s.notif_weekly_report)}`, callback_data: `notif_toggle:weekly_report:${s.notif_weekly_report ? 0 : 1}` }],
+            [{ text: '✅ Tayyor — vaqtni sozlash →', callback_data: 'notif_step:time' }],
+          ]
+        )
+      }
+    }
+
+    // Onboarding: next step — choose notification time
+    if (data === 'notif_step:time') {
+      await answerCallbackQuery(cb.id)
+      await sendTelegramKeyboard(
+        chatId,
+        `🕐 Kunlik xulosani qaysi vaqtda olishni xohlaysiz?`,
+        [[
+          { text: '🌅 Ertalab 8:00',    callback_data: 'notif_time:morning' },
+          { text: '☀️ Kunduzi 13:00',   callback_data: 'notif_time:noon'    },
+          { text: '🌆 Kechqurun 20:00', callback_data: 'notif_time:evening' },
+        ]]
+      )
+    }
+
     return NextResponse.json({ ok: true })
   }
 
@@ -82,14 +146,32 @@ export async function POST(req: NextRequest) {
       })
       .eq('user_id', settings.user_id)
 
+    // Step 1: confirm link
+    await sendTelegramMessage(
+      chatId,
+      `✅ <b>Daromadchi hisobingiz ulandi!</b>\n\nEndi qaysi bildirishnomalarni olishni sozlaylik 👇`
+    )
+    // Step 2: ask which notification types they want
     await sendTelegramKeyboard(
       chatId,
-      `✅ <b>Muvaffaqiyatli ulandi!</b>\n\nKunlik hisobotni qaysi vaqtda olishni xohlaysiz?`,
-      [[
-        { text: '🌅 Ertalab 8:00',    callback_data: 'notif_time:morning' },
-        { text: '☀️ Kunduzi 13:00',   callback_data: 'notif_time:noon'    },
-        { text: '🌆 Kechqurun 20:00', callback_data: 'notif_time:evening' },
-      ]]
+      `📦 Qaysi bildirishnomalarni olishni xohlaysiz?\n\n(Har birini alohida yoqing)`,
+      [
+        [
+          { text: '📦 Kam zaxira ogohlantirishlari ✅', callback_data: 'notif_toggle:low_stock:1' },
+        ],
+        [
+          { text: '📊 Kunlik savdo xulosasi ✅',        callback_data: 'notif_toggle:daily_summary:1' },
+        ],
+        [
+          { text: '🛒 Yangi buyurtmalar ❌',            callback_data: 'notif_toggle:new_orders:0' },
+        ],
+        [
+          { text: '📈 Haftalik hisobot ❌',             callback_data: 'notif_toggle:weekly_report:0' },
+        ],
+        [
+          { text: '✅ Tayyor — vaqtni sozlash →',       callback_data: 'notif_step:time' },
+        ],
+      ]
     )
     return NextResponse.json({ ok: true })
   }
