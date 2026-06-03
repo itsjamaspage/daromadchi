@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import { Users, UserPlus, X, Crown, Eye, Trash2, Shield, Lock } from 'lucide-react'
 import HelpTooltip from '@/components/dashboard/HelpTooltip'
+import { useLang } from '@/app/providers'
+import { translations } from '@/lib/i18n'
 
 // ── Types & mock data ──────────────────────────────────────────────────────────
 
@@ -54,11 +56,13 @@ const MOCK_MEMBERS: TeamMember[] = [
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
-function RoleBadge({ role }: { role: Role }) {
+type T = typeof translations['uz']['dashboard']
+
+function RoleBadge({ role, d }: { role: Role; d: T }) {
   const config: Record<Role, { label: string; cls: string; icon: React.ReactNode }> = {
-    owner:  { label: 'Egasi',  cls: 'bg-violet-500/15 border-violet-500/30 text-violet-300',  icon: <Crown  className="w-3 h-3" /> },
-    admin:  { label: 'Admin',  cls: 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300', icon: <Shield className="w-3 h-3" /> },
-    viewer: { label: 'Viewer', cls: 'bg-[var(--bg-card2)] border-[var(--border)] text-[var(--text-muted)]',      icon: <Eye    className="w-3 h-3" /> },
+    owner:  { label: d.roleOwner,  cls: 'bg-violet-500/15 border-violet-500/30 text-violet-300',  icon: <Crown  className="w-3 h-3" /> },
+    admin:  { label: d.roleAdmin,  cls: 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300', icon: <Shield className="w-3 h-3" /> },
+    viewer: { label: d.roleViewer, cls: 'bg-[var(--bg-card2)] border-[var(--border)] text-[var(--text-muted)]',      icon: <Eye    className="w-3 h-3" /> },
   }
   const c = config[role]
   return (
@@ -68,18 +72,18 @@ function RoleBadge({ role }: { role: Role }) {
   )
 }
 
-function StatusDot({ status }: { status: 'active' | 'pending' }) {
+function StatusDot({ status, d }: { status: 'active' | 'pending'; d: T }) {
   return (
     <span className={`inline-flex items-center gap-1.5 text-xs ${status === 'active' ? 'text-emerald-400' : 'text-amber-400'}`}>
       <span className={`w-1.5 h-1.5 rounded-full ${status === 'active' ? 'bg-emerald-400' : 'bg-amber-400'}`} />
-      {status === 'active' ? 'Faol' : 'Kutilmoqda'}
+      {status === 'active' ? d.teamActive : d.teamPending}
     </span>
   )
 }
 
 // ── Invite Modal ───────────────────────────────────────────────────────────────
 
-function InviteModal({ onClose }: { onClose: () => void }) {
+function InviteModal({ onClose, d }: { onClose: () => void; d: T }) {
   const [email, setEmail]   = useState('')
   const [role, setRole]     = useState<'admin' | 'viewer'>('viewer')
   const [loading, setLoading] = useState(false)
@@ -110,7 +114,7 @@ function InviteModal({ onClose }: { onClose: () => void }) {
         <div className="px-6 py-4 border-b border-[var(--border)] flex items-center justify-between">
           <div className="flex items-center gap-2">
             <UserPlus className="w-4 h-4 text-violet-400" />
-            <h2 className="text-[var(--text-base)] font-semibold text-sm">Jamoa a&apos;zosini qo&apos;shish</h2>
+            <h2 className="text-[var(--text-base)] font-semibold text-sm">{d.teamInviteTitle}</h2>
           </div>
           <button
             onClick={onClose}
@@ -125,7 +129,7 @@ function InviteModal({ onClose }: { onClose: () => void }) {
           {/* Email */}
           <div>
             <label className="block text-xs font-medium text-[var(--text-muted)] mb-2">
-              Email manzil
+              {d.teamEmailLabel}
             </label>
             <input
               type="email"
@@ -140,12 +144,12 @@ function InviteModal({ onClose }: { onClose: () => void }) {
           {/* Role */}
           <div>
             <label className="block text-xs font-medium text-[var(--text-muted)] mb-2">
-              Rol
+              {d.teamRoleLabel}
             </label>
             <div className="space-y-2">
               {([
-                { value: 'admin',  label: 'Admin',  desc: 'To\'liq kirish: mahsulotlar, buyurtmalar, sozlamalar' },
-                { value: 'viewer', label: 'Viewer', desc: 'Faqat o\'qish: tahlil va hisobotlarni ko\'rish' },
+                { value: 'admin',  label: d.roleAdmin,  desc: d.roleAdminDesc },
+                { value: 'viewer', label: d.roleViewer, desc: d.roleViewerDesc },
               ] as { value: 'admin' | 'viewer'; label: string; desc: string }[]).map(opt => (
                 <button
                   key={opt.value}
@@ -175,7 +179,7 @@ function InviteModal({ onClose }: { onClose: () => void }) {
 
           {success ? (
             <div className="flex items-center gap-2 text-sm px-4 py-2.5 rounded-xl bg-emerald-500/10 text-emerald-400">
-              Taklif yuborildi!
+              {d.teamInviteSent}
             </div>
           ) : (
             <button
@@ -188,7 +192,7 @@ function InviteModal({ onClose }: { onClose: () => void }) {
               ) : (
                 <UserPlus className="w-4 h-4" />
               )}
-              Taklif yuborish
+              {d.teamSendInvite}
             </button>
           )}
         </form>
@@ -200,6 +204,8 @@ function InviteModal({ onClose }: { onClose: () => void }) {
 // ── Page ───────────────────────────────────────────────────────────────────────
 
 export default function TeamPage() {
+  const { lang } = useLang()
+  const d = translations[lang].dashboard
   const [members, setMembers] = useState<TeamMember[]>([])
   const [showModal, setShowModal] = useState(false)
   const isPro = false  // mock: not on Pro+
@@ -214,28 +220,28 @@ export default function TeamPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <div className="flex items-center gap-2 mb-0.5">
-            <h1 className="text-2xl font-bold text-[var(--text-base)]">Jamoa</h1>
+            <h1 className="text-2xl font-bold text-[var(--text-base)]">{d.teamTitle}</h1>
             <HelpTooltip section="team" />
           </div>
           <p className="text-[var(--text-muted)] text-sm">
-            Do&apos;koningizga kirish huquqini boshqaruvchi a&apos;zolar ro&apos;yxati
+            {d.teamSubtitle}
           </p>
         </div>
         <div className="flex items-center gap-2">
           {!isPro && (
             <span className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400">
               <Lock className="w-3 h-3" />
-              Pro+ tarifida mavjud
+              {d.teamProBadge}
             </span>
           )}
           <button
             onClick={() => setShowModal(true)}
             disabled={!isPro}
-            title={!isPro ? 'Pro+ tarifiga o\'ting' : ''}
+            title={!isPro ? d.teamUpgrade : ''}
             className="flex items-center gap-2 bg-violet-600 hover:bg-violet-500 disabled:opacity-40 disabled:cursor-not-allowed text-[var(--text-base)] text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors"
           >
             <UserPlus className="w-4 h-4" />
-            A'zo qo'shish
+            {d.teamAddMember}
           </button>
         </div>
       </div>
@@ -243,9 +249,9 @@ export default function TeamPage() {
       {/* Role legend */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {[
-          { icon: <Crown  className="w-4 h-4 text-violet-400" />, label: 'Egasi',  desc: 'To\'liq nazorat, tarif boshqaruvi, a\'zo qo\'shish' },
-          { icon: <Shield className="w-4 h-4 text-emerald-400" />, label: 'Admin', desc: 'Mahsulot, buyurtma, sozlamalar — to\'liq kirish' },
-          { icon: <Eye    className="w-4 h-4 text-[var(--text-muted)]" />,  label: 'Viewer', desc: 'Tahlil va hisobotlarni faqat ko\'rish' },
+          { icon: <Crown  className="w-4 h-4 text-violet-400" />, label: d.roleOwner,  desc: d.roleOwnerDesc },
+          { icon: <Shield className="w-4 h-4 text-emerald-400" />, label: d.roleAdmin, desc: d.roleAdminDesc },
+          { icon: <Eye    className="w-4 h-4 text-[var(--text-muted)]" />,  label: d.roleViewer, desc: d.roleViewerDesc },
         ].map(r => (
           <div key={r.label} className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl px-4 py-3 flex items-start gap-3">
             <div className="mt-0.5">{r.icon}</div>
@@ -261,8 +267,8 @@ export default function TeamPage() {
       <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
         <div className="px-5 py-4 border-b border-[var(--border)] flex items-center gap-2">
           <Users className="w-4 h-4 text-violet-400" />
-          <h2 className="text-[var(--text-base)] font-semibold text-sm">Jamoa a&apos;zolari</h2>
-          <span className="ml-auto text-xs text-[var(--text-muted)]">{members.length} ta a'zo</span>
+          <h2 className="text-[var(--text-base)] font-semibold text-sm">{d.teamMembers}</h2>
+          <span className="ml-auto text-xs text-[var(--text-muted)]">{members.length} {d.teamMembersCount}</span>
         </div>
 
         <div className="divide-y divide-[var(--border)]">
@@ -277,14 +283,14 @@ export default function TeamPage() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <p className="text-[var(--text-base)] font-semibold text-sm">{member.name}</p>
-                  <RoleBadge role={member.role} />
+                  <RoleBadge role={member.role} d={d} />
                 </div>
                 <p className="text-[var(--text-muted)] text-xs mt-0.5">{member.email}</p>
               </div>
 
               {/* Status */}
               <div className="hidden sm:block">
-                <StatusDot status={member.status} />
+                <StatusDot status={member.status} d={d} />
               </div>
 
               {/* Joined */}
@@ -297,7 +303,7 @@ export default function TeamPage() {
                 <button
                   onClick={() => handleRemove(member.id)}
                   disabled={!isPro}
-                  title={!isPro ? 'Pro+ tarifida mavjud' : 'Olib tashlash'}
+                  title={!isPro ? d.teamProBadge : d.teamRemove}
                   className="text-[var(--text-muted)] hover:text-red-400 disabled:opacity-30 disabled:cursor-not-allowed transition-colors p-1.5 rounded-lg hover:bg-red-500/[0.08]"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -315,16 +321,15 @@ export default function TeamPage() {
             <Lock className="w-5 h-5 text-violet-400" />
           </div>
           <div>
-            <p className="text-[var(--text-base)] font-semibold text-sm mb-1">Jamoa boshqaruvi — Pro+ tarifida</p>
+            <p className="text-[var(--text-base)] font-semibold text-sm mb-1">{d.teamLockedTitle}</p>
             <p className="text-[var(--text-muted)] text-xs leading-relaxed">
-              Pro+ tarifiga o'ting va do'koningizga 5 tagacha a'zo qo'shing.
-              Har bir a'zo uchun alohida rol va huquqlar belgilang.
+              {d.teamLockedDesc}
             </p>
           </div>
         </div>
       )}
 
-      {showModal && <InviteModal onClose={() => setShowModal(false)} />}
+      {showModal && <InviteModal onClose={() => setShowModal(false)} d={d} />}
     </div>
   )
 }
