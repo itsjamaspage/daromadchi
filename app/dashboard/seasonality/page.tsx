@@ -12,13 +12,13 @@ export default async function SeasonalityPage() {
     <div className="space-y-6">
       <div>
         <div className="flex items-center gap-3 mb-0.5">
-          <h1 className="text-2xl font-bold text-white flex items-center gap-3">
+          <h1 className="text-2xl font-bold text-[var(--text-base)] flex items-center gap-3">
             <CalendarDays className="w-6 h-6 text-violet-400" />
             {d.seasonalityTitle}
           </h1>
           <HelpTooltip section="seasonality" />
         </div>
-        <p className="text-slate-400 text-sm">{d.seasonalitySubtitle}</p>
+        <p className="text-[var(--text-muted)] text-sm">{d.seasonalitySubtitle}</p>
       </div>
       <SeasonalityView data={seasonalityData} />
     </div>

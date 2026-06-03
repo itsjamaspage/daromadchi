@@ -1,5 +1,5 @@
 export function SkeletonBox({ className = '', style }: { className?: string; style?: React.CSSProperties }) {
-  return <div className={`animate-pulse bg-white/[0.05] rounded-xl ${className}`} style={style} />
+  return <div className={`animate-pulse bg-[var(--bg-card2)] rounded-xl ${className}`} style={style} />
 }
 
 export function KpiSkeleton() {
@@ -25,7 +25,7 @@ export function TableSkeleton({ rows = 6 }: { rows?: number }) {
       <div className="px-5 py-4 border-b border-[var(--border)]">
         <SkeletonBox className="w-40 h-4" />
       </div>
-      <div className="divide-y divide-white/[0.03]">
+      <div className="divide-y divide-[var(--border)]">
         {Array.from({ length: rows }).map((_, i) => (
           <div key={i} className="px-5 py-4 flex items-center gap-4">
             <SkeletonBox className="w-8 h-8 rounded-lg flex-shrink-0" />

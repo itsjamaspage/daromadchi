@@ -109,7 +109,7 @@ function fmt(n: number) {
 function TrendIcon({ trend }: { trend: 'up' | 'down' | 'stable' }) {
   if (trend === 'up')     return <TrendingUp   className="w-3.5 h-3.5 text-emerald-400" />
   if (trend === 'down')   return <TrendingDown className="w-3.5 h-3.5 text-red-400" />
-  return <Minus className="w-3.5 h-3.5 text-slate-500" />
+  return <Minus className="w-3.5 h-3.5 text-[var(--text-muted)]" />
 }
 
 // ── Page ───────────────────────────────────────────────────────────────────────
@@ -148,10 +148,10 @@ export default function KeywordsPage() {
       {/* Header */}
       <div>
         <div className="flex items-center gap-2 mb-0.5">
-          <h1 className="text-2xl font-bold text-white">Qidiruv iboralari</h1>
+          <h1 className="text-2xl font-bold text-[var(--text-base)]">Qidiruv iboralari</h1>
           <HelpTooltip section="keywords" />
         </div>
-        <p className="text-slate-400 text-sm">
+        <p className="text-[var(--text-muted)] text-sm">
           Har bir mahsulotingiz qaysi kalit so'zlar orqali topilayotgani, nechta taassurot va
           bosish olayotgani haqidagi ma'lumotlar. CTR va o'rtacha pozitsiyani kuzatib boring.
         </p>
@@ -175,30 +175,30 @@ export default function KeywordsPage() {
           { label: "O'rtacha CTR",      value: (mockKeywords.reduce((s, r) => s + r.ctr, 0) / mockKeywords.length).toFixed(2) + '%' },
           { label: "O'sib borayotgan",  value: mockKeywords.filter(r => r.trend === 'up').length + ' ta' },
         ].map(c => (
-          <div key={c.label} className="bg-[#13131f] border border-white/[0.06] rounded-2xl p-4">
-            <p className="text-slate-500 text-[10px] uppercase tracking-wide mb-1">{c.label}</p>
-            <p className="font-bold text-lg text-white">{c.value}</p>
+          <div key={c.label} className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl p-4">
+            <p className="text-[var(--text-muted)] text-[10px] uppercase tracking-wide mb-1">{c.label}</p>
+            <p className="font-bold text-lg text-[var(--text-base)]">{c.value}</p>
           </div>
         ))}
       </div>
 
       {/* Filters */}
-      <div className="bg-[#13131f] border border-white/[0.06] rounded-2xl overflow-hidden">
-        <div className="px-5 py-4 border-b border-white/[0.05] flex flex-col sm:flex-row sm:items-center gap-3">
+      <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
+        <div className="px-5 py-4 border-b border-[var(--border)] flex flex-col sm:flex-row sm:items-center gap-3">
           {/* Search */}
           <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
             <input
               type="text"
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Mahsulot yoki kalit so'z..."
-              className="w-full bg-[#1c1c2e] border border-white/[0.08] rounded-xl pl-9 pr-4 py-2 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-violet-500/60 transition-all"
+              className="w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl pl-9 pr-4 py-2 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-violet-500/60 transition-all"
             />
           </div>
 
           {/* Tabs */}
-          <div className="flex items-center gap-1 p-1 bg-[#1c1c2e] border border-white/[0.06] rounded-xl w-fit">
+          <div className="flex items-center gap-1 p-1 bg-[var(--bg-input)] border border-[var(--border)] rounded-xl w-fit">
             {tabs.map(t => (
               <button
                 key={t.key}
@@ -206,7 +206,7 @@ export default function KeywordsPage() {
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                   activeTab === t.key
                     ? 'bg-violet-600/20 text-violet-300 border border-violet-500/30'
-                    : 'text-slate-500 hover:text-slate-300'
+                    : 'text-[var(--text-muted)] hover:text-[var(--text-dim)]'
                 }`}
               >
                 {t.label}
@@ -219,7 +219,7 @@ export default function KeywordsPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-slate-500 text-xs border-b border-white/[0.05] bg-white/[0.01]">
+              <tr className="text-[var(--text-muted)] text-xs border-b border-[var(--border)] bg-[var(--bg-card2)]">
                 <th className="text-left font-medium px-5 py-3">Mahsulot nomi</th>
                 <th className="text-left font-medium px-4 py-3">Kalit so'zlar</th>
                 <th className="text-right font-medium px-4 py-3">Taassurotlar</th>
@@ -229,17 +229,17 @@ export default function KeywordsPage() {
                 <th className="text-right font-medium px-4 py-3">Trend</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/[0.03]">
+            <tbody className="divide-y divide-[var(--border)]">
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-5 py-10 text-center text-slate-500 text-sm">
+                  <td colSpan={7} className="px-5 py-10 text-center text-[var(--text-muted)] text-sm">
                     Natija topilmadi
                   </td>
                 </tr>
               ) : filtered.map(row => (
-                <tr key={row.id} className="hover:bg-white/[0.02] transition-colors">
+                <tr key={row.id} className="hover:bg-[var(--bg-card2)] transition-colors">
                   <td className="px-5 py-3.5">
-                    <p className="text-white font-medium text-xs">{row.productName}</p>
+                    <p className="text-[var(--text-base)] font-medium text-xs">{row.productName}</p>
                   </td>
                   <td className="px-4 py-3.5">
                     <div className="flex flex-wrap gap-1">
@@ -253,10 +253,10 @@ export default function KeywordsPage() {
                       ))}
                     </div>
                   </td>
-                  <td className="px-4 py-3.5 text-right text-slate-300 text-xs font-medium">
+                  <td className="px-4 py-3.5 text-right text-[var(--text-dim)] text-xs font-medium">
                     {fmt(row.impressions)}
                   </td>
-                  <td className="px-4 py-3.5 text-right text-slate-300 text-xs font-medium">
+                  <td className="px-4 py-3.5 text-right text-[var(--text-dim)] text-xs font-medium">
                     {fmt(row.clicks)}
                   </td>
                   <td className="px-4 py-3.5 text-right">
@@ -287,7 +287,7 @@ export default function KeywordsPage() {
         </div>
 
         {filtered.length > 0 && (
-          <div className="px-5 py-3 border-t border-white/[0.04] text-xs text-slate-600">
+          <div className="px-5 py-3 border-t border-[var(--border)] text-xs text-[var(--text-muted)]">
             {filtered.length} ta mahsulot ko'rsatilmoqda
           </div>
         )}

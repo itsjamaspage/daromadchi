@@ -32,12 +32,12 @@ export default async function SettingsPage() {
     <div className="space-y-6 max-w-2xl">
       <div>
         <div className="flex items-center gap-3 mb-0.5">
-          <h1 className="text-2xl font-bold text-white">{d.settingsTitle}</h1>
+          <h1 className="text-2xl font-bold text-[var(--text-base)]">{d.settingsTitle}</h1>
           <span className="text-[10px] font-semibold px-2 py-1 rounded-full bg-violet-500/10 border border-violet-500/25 text-violet-400">
             {d.yourData}
           </span>
         </div>
-        <p className="text-slate-400 text-sm">{d.settingsSubtitle}</p>
+        <p className="text-[var(--text-muted)] text-sm">{d.settingsSubtitle}</p>
       </div>
       <SettingsForm
         uzumShop={uzumShop}

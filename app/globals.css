@@ -84,6 +84,7 @@ h1, h2, h3, h4, h5, h6 {
 /* ═══════════════════════════════════════════════════════════════════
    LIGHT MODE OVERRIDES
 ═══════════════════════════════════════════════════════════════════ */
+/* Safety net for any remaining hardcoded dark classes on 3rd-party or login pages */
 [data-theme="light"] .text-white     { color: var(--text-base) !important; }
 [data-theme="light"] .text-slate-200 { color: var(--text-base) !important; }
 [data-theme="light"] .text-slate-300 { color: var(--text-dim)   !important; }
@@ -98,48 +99,6 @@ h1, h2, h3, h4, h5, h6 {
 [data-theme="light"] .bg-\[var\(--bg-card\)\],
 [data-theme="light"] .bg-\[var\(--bg-card2\)\] {
   box-shadow: 0 1px 4px rgba(80,50,160,0.07), 0 8px 24px rgba(80,50,160,0.05);
-}
-
-/* Hardcoded dark surfaces → map to light card colors */
-[data-theme="light"] .bg-\[\#13131f\],
-[data-theme="light"] .bg-\[\#1c1c2e\],
-[data-theme="light"] .bg-\[\#0d0d1a\],
-[data-theme="light"] .bg-\[\#0f0f1e\],
-[data-theme="light"] .bg-\[\#0e0e1a\],
-[data-theme="light"] .bg-\[\#07070f\] {
-  background-color: var(--bg-card2) !important;
-}
-[data-theme="light"] .bg-slate-900,
-[data-theme="light"] .bg-slate-800,
-[data-theme="light"] .bg-slate-700 {
-  background-color: var(--bg-card) !important;
-}
-/* Solid slate accents → neutral light gray */
-[data-theme="light"] .bg-slate-600,
-[data-theme="light"] .bg-slate-500,
-[data-theme="light"] .bg-slate-400 {
-  background-color: #c7c7d6 !important;
-}
-
-/* Slate borders → theme border */
-[data-theme="light"] .border-slate-700,
-[data-theme="light"] .border-slate-600,
-[data-theme="light"] [class*="border-slate-700/"],
-[data-theme="light"] [class*="border-slate-600/"],
-[data-theme="light"] [class*="border-slate-500/"] {
-  border-color: var(--border) !important;
-}
-
-/* White-opacity borders/fills are invisible on light bg → use theme tokens */
-[data-theme="light"] [class*="border-white/"] {
-  border-color: var(--border) !important;
-}
-[data-theme="light"] [class*="bg-white/[0."],
-[data-theme="light"] .hover\:bg-white\/\[0\.02\]:hover,
-[data-theme="light"] .hover\:bg-white\/\[0\.04\]:hover,
-[data-theme="light"] .hover\:bg-white\/\[0\.05\]:hover,
-[data-theme="light"] .hover\:bg-white\/\[0\.06\]:hover {
-  background-color: rgba(124,58,237,0.04) !important;
 }
 
 /* ═══════════════════════════════════════════════════════════════════

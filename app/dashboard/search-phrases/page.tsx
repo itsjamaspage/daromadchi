@@ -11,10 +11,10 @@ export default async function SearchPhrasesPage() {
     <div className="space-y-6">
       <div>
         <div className="flex items-center gap-2 mb-0.5">
-          <h1 className="text-2xl font-bold text-white">{d.searchPhrasesTitle}</h1>
+          <h1 className="text-2xl font-bold text-[var(--text-base)]">{d.searchPhrasesTitle}</h1>
           <HelpTooltip section="searchPhrases" />
         </div>
-        <p className="text-slate-400 text-sm">{d.searchPhrasesSubtitle}</p>
+        <p className="text-[var(--text-muted)] text-sm">{d.searchPhrasesSubtitle}</p>
       </div>
       <SearchPhrasesView phrases={phrases} />
     </div>

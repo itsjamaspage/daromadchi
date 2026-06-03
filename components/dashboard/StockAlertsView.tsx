@@ -77,31 +77,31 @@ export default function StockAlertsView({ alerts, settings: initialSettings }: P
       )}
       {/* Summary row */}
       <div className="grid grid-cols-3 gap-3">
-        <div className="bg-[#13131f] border border-white/[0.06] rounded-2xl px-4 py-3">
-          <p className="text-slate-400 text-xs mb-1">Jami ogohlantirishlar</p>
-          <p className="text-white text-2xl font-bold">{alerts.length}</p>
+        <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl px-4 py-3">
+          <p className="text-[var(--text-muted)] text-xs mb-1">Jami ogohlantirishlar</p>
+          <p className="text-[var(--text-base)] text-2xl font-bold">{alerts.length}</p>
         </div>
-        <div className="bg-[#13131f] border border-red-500/20 rounded-2xl px-4 py-3">
-          <p className="text-slate-400 text-xs mb-1">Kritik (≤ 3 kun)</p>
+        <div className="bg-[var(--bg-card2)] border border-red-500/20 rounded-2xl px-4 py-3">
+          <p className="text-[var(--text-muted)] text-xs mb-1">Kritik (≤ 3 kun)</p>
           <p className="text-red-400 text-2xl font-bold">{critical}</p>
         </div>
-        <div className="bg-[#13131f] border border-amber-500/20 rounded-2xl px-4 py-3">
-          <p className="text-slate-400 text-xs mb-1">Ogohlantirish (≤ 7 kun)</p>
+        <div className="bg-[var(--bg-card2)] border border-amber-500/20 rounded-2xl px-4 py-3">
+          <p className="text-[var(--text-muted)] text-xs mb-1">Ogohlantirish (≤ 7 kun)</p>
           <p className="text-amber-400 text-2xl font-bold">{warning}</p>
         </div>
       </div>
 
       {/* Table card */}
-      <div className="bg-[#13131f] border border-white/[0.06] rounded-2xl overflow-hidden">
-        <div className="px-5 py-4 border-b border-white/[0.05] flex items-center gap-3">
+      <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
+        <div className="px-5 py-4 border-b border-[var(--border)] flex items-center gap-3">
           <AlertTriangle className="w-4 h-4 text-amber-400" />
-          <h2 className="text-white font-semibold text-sm flex-1">Ombor holati</h2>
+          <h2 className="text-[var(--text-base)] font-semibold text-sm flex-1">Ombor holati</h2>
           <button
             onClick={() => setShowSettings(s => !s)}
             className={`p-2 rounded-xl transition-all ${
               showSettings
                 ? 'bg-violet-600/20 text-violet-400 border border-violet-500/20'
-                : 'text-slate-400 hover:text-white hover:bg-white/[0.05]'
+                : 'text-[var(--text-muted)] hover:text-[var(--text-base)] hover:bg-[var(--bg-card2)]'
             }`}
             title="Sozlamalar"
           >
@@ -111,37 +111,37 @@ export default function StockAlertsView({ alerts, settings: initialSettings }: P
 
         {/* Settings panel */}
         {showSettings && (
-          <div className="px-5 py-4 border-b border-white/[0.05] bg-white/[0.015] space-y-4">
-            <h3 className="text-white text-sm font-semibold">Ogohlantirish sozlamalari</h3>
+          <div className="px-5 py-4 border-b border-[var(--border)] bg-[var(--bg-card2)] space-y-4">
+            <h3 className="text-[var(--text-base)] text-sm font-semibold">Ogohlantirish sozlamalari</h3>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="space-y-1">
-                <label className="text-slate-400 text-xs">Kritik zaxira chegarasi (dona)</label>
+                <label className="text-[var(--text-muted)] text-xs">Kritik zaxira chegarasi (dona)</label>
                 <input
                   type="number"
                   min={1}
                   value={settings.stockThreshold}
                   onChange={e => setSettings(s => ({ ...s, stockThreshold: Number(e.target.value) }))}
-                  className="w-full bg-[#0d0d1a] border border-white/[0.08] rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-500/50 transition-colors"
+                  className="w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-3 py-2 text-sm text-[var(--text-base)] focus:outline-none focus:border-violet-500/50 transition-colors"
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-slate-400 text-xs">Telegram Bot Token</label>
+                <label className="text-[var(--text-muted)] text-xs">Telegram Bot Token</label>
                 <input
                   type="password"
                   value={settings.telegramBotToken}
                   onChange={e => setSettings(s => ({ ...s, telegramBotToken: e.target.value }))}
                   placeholder="1234567890:AAF..."
-                  className="w-full bg-[#0d0d1a] border border-white/[0.08] rounded-xl px-3 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-violet-500/50 transition-colors"
+                  className="w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-3 py-2 text-sm text-[var(--text-base)] placeholder-[var(--text-muted)] focus:outline-none focus:border-violet-500/50 transition-colors"
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-slate-400 text-xs">Telegram Chat ID</label>
+                <label className="text-[var(--text-muted)] text-xs">Telegram Chat ID</label>
                 <input
                   type="text"
                   value={settings.telegramChatId}
                   onChange={e => setSettings(s => ({ ...s, telegramChatId: e.target.value }))}
                   placeholder="-1001234567890"
-                  className="w-full bg-[#0d0d1a] border border-white/[0.08] rounded-xl px-3 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-violet-500/50 transition-colors"
+                  className="w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-3 py-2 text-sm text-[var(--text-base)] placeholder-[var(--text-muted)] focus:outline-none focus:border-violet-500/50 transition-colors"
                 />
               </div>
             </div>
@@ -149,11 +149,11 @@ export default function StockAlertsView({ alerts, settings: initialSettings }: P
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="bg-violet-600 hover:bg-violet-500 disabled:opacity-60 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors"
+                className="bg-violet-600 hover:bg-violet-500 disabled:opacity-60 text-[var(--text-base)] text-sm font-semibold px-4 py-2 rounded-xl transition-colors"
               >
                 {saving ? 'Saqlanmoqda…' : saved ? 'Saqlandi ✓' : 'Saqlash'}
               </button>
-              <p className="text-slate-500 text-xs">
+              <p className="text-[var(--text-muted)] text-xs">
                 Telegram botini yaratish uchun{' '}
                 <span className="text-violet-400 font-medium">@BotFather</span> ga murojaat qiling
               </p>
@@ -166,49 +166,49 @@ export default function StockAlertsView({ alerts, settings: initialSettings }: P
             <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center">
               <Package className="w-6 h-6 text-emerald-400" />
             </div>
-            <p className="text-white font-medium">Barcha mahsulotlar yetarli</p>
-            <p className="text-slate-500 text-sm">Kritik zaxira darajasiga yetgan mahsulotlar yo&apos;q</p>
+            <p className="text-[var(--text-base)] font-medium">Barcha mahsulotlar yetarli</p>
+            <p className="text-[var(--text-muted)] text-sm">Kritik zaxira darajasiga yetgan mahsulotlar yo&apos;q</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-white/[0.04]">
+                <tr className="border-b border-[var(--border)]">
                   {['Mahsulot', 'SKU', 'Zaxira', 'Chegara', 'Qolgan kunlar', "Kunlik sotuv", 'Holat'].map(h => (
-                    <th key={h} className="px-5 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                    <th key={h} className="px-5 py-3 text-left text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
                       {h}
                     </th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/[0.03]">
+              <tbody className="divide-y divide-[var(--border)]">
                 {alerts.map(alert => {
                   const isCritical = alert.daysLeft <= 3
                   const isWarning  = alert.daysLeft <= 7
                   return (
                     <tr
                       key={alert.productId}
-                      className="hover:bg-white/[0.02] transition-colors"
+                      className="hover:bg-[var(--bg-card2)] transition-colors"
                     >
                       <td className="px-5 py-3.5">
                         <div className="flex items-center gap-2">
                           <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
                             isCritical ? 'bg-red-500' : isWarning ? 'bg-amber-500' : 'bg-emerald-500'
                           }`} />
-                          <span className="text-white text-sm font-medium">{alert.productTitle}</span>
+                          <span className="text-[var(--text-base)] text-sm font-medium">{alert.productTitle}</span>
                         </div>
                       </td>
-                      <td className="px-5 py-3.5 text-slate-400 text-sm font-mono">{alert.sku}</td>
+                      <td className="px-5 py-3.5 text-[var(--text-muted)] text-sm font-mono">{alert.sku}</td>
                       <td className="px-5 py-3.5">
                         <span className={`text-sm font-bold ${
-                          isCritical ? 'text-red-400' : isWarning ? 'text-amber-400' : 'text-white'
+                          isCritical ? 'text-red-400' : isWarning ? 'text-amber-400' : 'text-[var(--text-base)]'
                         }`}>
                           {alert.currentStock} dona
                         </span>
                       </td>
-                      <td className="px-5 py-3.5 text-slate-400 text-sm">{alert.threshold} dona</td>
+                      <td className="px-5 py-3.5 text-[var(--text-muted)] text-sm">{alert.threshold} dona</td>
                       <td className="px-5 py-3.5">{daysLeftBadge(alert.daysLeft)}</td>
-                      <td className="px-5 py-3.5 text-slate-300 text-sm">{alert.dailySales}/kun</td>
+                      <td className="px-5 py-3.5 text-[var(--text-dim)] text-sm">{alert.dailySales}/kun</td>
                       <td className="px-5 py-3.5">
                         {isCritical ? (
                           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-red-500/15 text-red-400 border border-red-500/20">
@@ -219,7 +219,7 @@ export default function StockAlertsView({ alerts, settings: initialSettings }: P
                             <AlertTriangle className="w-3 h-3" /> Ogohlantirish
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-500/15 text-slate-400 border border-slate-500/20">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-[var(--bg-card2)] text-[var(--text-muted)] border border-[var(--border)]">
                             Kuzatuv
                           </span>
                         )}

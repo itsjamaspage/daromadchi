@@ -25,7 +25,7 @@ function marginColor(m: number) {
   return m >= 20 ? 'text-emerald-400' : m >= 10 ? 'text-amber-400' : 'text-red-400'
 }
 function stockColor(s: number | undefined) {
-  if (s === undefined) return 'text-slate-500'
+  if (s === undefined) return 'text-[var(--text-muted)]'
   return s >= 30 ? 'text-emerald-400' : s >= 10 ? 'text-amber-400' : 'text-red-400'
 }
 
@@ -160,11 +160,11 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
       {/* Toolbar */}
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
         <div className="relative flex-1 max-w-xs">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
           <input
             value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Qidirish..."
-            className="w-full pl-9 pr-3 py-2 bg-[#13131f] border border-white/[0.06] rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-violet-500/50"
+            className="w-full pl-9 pr-3 py-2 bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl text-sm text-[var(--text-base)] placeholder-[var(--text-muted)] focus:outline-none focus:border-violet-500/50"
           />
         </div>
 
@@ -176,11 +176,11 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
             </button>
           )}
           <button onClick={() => { setShowColPicker(v => !v); setShowSettings(false) }}
-            className="flex items-center gap-1.5 px-3 py-2 bg-[#13131f] hover:bg-white/[0.04] text-slate-400 hover:text-white text-xs font-semibold rounded-xl border border-white/[0.06] transition-all">
+            className="flex items-center gap-1.5 px-3 py-2 bg-[var(--bg-card2)] hover:bg-[var(--bg-card2)] text-[var(--text-muted)] hover:text-[var(--text-base)] text-xs font-semibold rounded-xl border border-[var(--border)] transition-all">
             <Package className="w-3.5 h-3.5" /> Ustunlar
           </button>
           <button onClick={() => { setShowSettings(v => !v); setShowColPicker(false); setDraftSettings(settings) }}
-            className="flex items-center gap-1.5 px-3 py-2 bg-[#13131f] hover:bg-white/[0.04] text-slate-400 hover:text-white text-xs font-semibold rounded-xl border border-white/[0.06] transition-all">
+            className="flex items-center gap-1.5 px-3 py-2 bg-[var(--bg-card2)] hover:bg-[var(--bg-card2)] text-[var(--text-muted)] hover:text-[var(--text-base)] text-xs font-semibold rounded-xl border border-[var(--border)] transition-all">
             <Settings2 className="w-3.5 h-3.5" /> Sozlamalar
           </button>
           <ExportButton data={exportData} filename="unit-ekonomika" targetRef={printRef} />
@@ -189,8 +189,8 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
 
       {/* Column picker */}
       {showColPicker && (
-        <div className="bg-[#13131f] border border-white/[0.06] rounded-2xl p-4">
-          <p className="text-xs font-semibold text-slate-400 mb-3">Ko&apos;rsatiladigan ustunlar</p>
+        <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl p-4">
+          <p className="text-xs font-semibold text-[var(--text-muted)] mb-3">Ko&apos;rsatiladigan ustunlar</p>
           <div className="flex flex-wrap gap-2">
             {ALL_COLUMNS.map(col => (
               <button key={col.key}
@@ -199,7 +199,7 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                   visibleCols.has(col.key) || col.always
                     ? 'bg-violet-600/20 text-violet-300 border border-violet-500/30'
-                    : 'bg-white/[0.03] text-slate-500 border border-white/[0.06] hover:text-slate-300'
+                    : 'bg-[var(--bg-card2)] text-[var(--text-muted)] border border-[var(--border)] hover:text-[var(--text-dim)]'
                 } ${col.always ? 'opacity-60 cursor-default' : 'cursor-pointer'}`}>
                 {col.always ? '🔒 ' : ''}{col.label}
               </button>
@@ -210,8 +210,8 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
 
       {/* Settings panel */}
       {showSettings && (
-        <div className="bg-[#13131f] border border-white/[0.06] rounded-2xl p-4">
-          <p className="text-xs font-semibold text-slate-400 mb-4">Standart xarajatlar</p>
+        <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl p-4">
+          <p className="text-xs font-semibold text-[var(--text-muted)] mb-4">Standart xarajatlar</p>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             {[
               { key: 'acquiringPct',       label: 'Ekvayring (%)',       step: '0.1', min: 0, max: 5  },
@@ -221,21 +221,21 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
               { key: 'lastMilePct',        label: 'Oxirgi milya (%)',     step: '0.5', min: 0, max: 10 },
             ].map(({ key, label, step, min, max }) => (
               <label key={key} className="flex flex-col gap-1.5">
-                <span className="text-xs text-slate-500">{label}</span>
+                <span className="text-xs text-[var(--text-muted)]">{label}</span>
                 <input
                   type="number" step={step} min={min} max={max}
                   value={draftSettings[key as keyof UnitEcoSettings] as number}
                   onChange={e => setDraftSettings(prev => ({ ...prev, [key]: parseFloat(e.target.value) || 0 }))}
-                  className="w-full px-3 py-2 bg-[#0d0d1a] border border-white/[0.06] rounded-lg text-sm text-white focus:outline-none focus:border-violet-500/50"
+                  className="w-full px-3 py-2 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg text-sm text-[var(--text-base)] focus:outline-none focus:border-violet-500/50"
                 />
               </label>
             ))}
             <label className="flex flex-col gap-1.5">
-              <span className="text-xs text-slate-500">Soliq turi</span>
+              <span className="text-xs text-[var(--text-muted)]">Soliq turi</span>
               <select
                 value={draftSettings.taxType}
                 onChange={e => setDraftSettings(prev => ({ ...prev, taxType: e.target.value as UnitEcoSettings['taxType'] }))}
-                className="w-full px-3 py-2 bg-[#0d0d1a] border border-white/[0.06] rounded-lg text-sm text-white focus:outline-none focus:border-violet-500/50">
+                className="w-full px-3 py-2 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg text-sm text-[var(--text-base)] focus:outline-none focus:border-violet-500/50">
                 <option value="income">Daromad (6%)</option>
                 <option value="income_minus_expense">Daromad − xarajat (15%)</option>
               </select>
@@ -251,11 +251,11 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
                   body: JSON.stringify(draftSettings),
                 }).catch(() => {})
               }}
-              className="px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold rounded-xl transition-colors">
+              className="px-4 py-2 bg-violet-600 hover:bg-violet-500 text-[var(--text-base)] text-xs font-semibold rounded-xl transition-colors">
               Saqlash
             </button>
             <button onClick={() => setShowSettings(false)}
-              className="px-4 py-2 bg-white/[0.04] hover:bg-white/[0.06] text-slate-400 text-xs font-semibold rounded-xl transition-colors">
+              className="px-4 py-2 bg-[var(--bg-card2)] hover:bg-[var(--bg-input)] text-[var(--text-muted)] text-xs font-semibold rounded-xl transition-colors">
               Bekor
             </button>
           </div>
@@ -270,36 +270,36 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
           { label: 'O\'rtacha marja', value: filtered.length ? `${Math.round(filtered.reduce((s,i)=>s+i.margin,0)/filtered.length)}%` : '—' },
           { label: 'Jami foyda',      value: filtered.length ? fs(filtered.reduce((s,i)=>s+i.netProfit,0)) : '—' },
         ].map(({ label, value }) => (
-          <div key={label} className="bg-[#13131f] border border-white/[0.06] rounded-xl px-4 py-3">
-            <p className="text-xs text-slate-500 mb-1">{label}</p>
-            <p className="text-sm font-bold text-white">{value}</p>
+          <div key={label} className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl px-4 py-3">
+            <p className="text-xs text-[var(--text-muted)] mb-1">{label}</p>
+            <p className="text-sm font-bold text-[var(--text-base)]">{value}</p>
           </div>
         ))}
       </div>
 
       {/* Table */}
       {filtered.length === 0 ? (
-        <div className="bg-[#13131f] border border-dashed border-violet-500/30 rounded-2xl p-10 text-center">
+        <div className="bg-[var(--bg-card2)] border border-dashed border-violet-500/30 rounded-2xl p-10 text-center">
           <Plus className="w-8 h-8 text-violet-400/50 mx-auto mb-3" />
-          <p className="text-white font-semibold mb-1">Mahsulot qo&apos;shilmagan</p>
-          <p className="text-slate-500 text-sm">Uzum sahifasida kengaytmadan &quot;Unit-ekonomikaga qo&apos;shish&quot; tugmasini bosing</p>
+          <p className="text-[var(--text-base)] font-semibold mb-1">Mahsulot qo&apos;shilmagan</p>
+          <p className="text-[var(--text-muted)] text-sm">Uzum sahifasida kengaytmadan &quot;Unit-ekonomikaga qo&apos;shish&quot; tugmasini bosing</p>
         </div>
       ) : (
-        <div className="bg-[#13131f] border border-white/[0.06] rounded-2xl overflow-hidden">
+        <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-white/[0.06]">
+                <tr className="border-b border-[var(--border)]">
                   <th className="w-10 px-4 py-3">
                     <input type="checkbox"
                       checked={selected.size === filtered.length && filtered.length > 0}
                       onChange={toggleAll}
-                      className="rounded border-slate-600 bg-transparent accent-violet-500" />
+                      className="rounded border-[var(--border2)] bg-transparent accent-violet-500" />
                   </th>
                   {shownCols.map(col => (
                     <th key={col.key}
                       onClick={() => toggleSort(col.key)}
-                      className="px-3 py-3 text-left text-xs font-semibold text-slate-500 cursor-pointer hover:text-slate-300 whitespace-nowrap transition-colors">
+                      className="px-3 py-3 text-left text-xs font-semibold text-[var(--text-muted)] cursor-pointer hover:text-[var(--text-dim)] whitespace-nowrap transition-colors">
                       <span className="flex items-center gap-1">
                         {col.label} <SortIcon col={col.key} />
                       </span>
@@ -307,15 +307,15 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/[0.03]">
+              <tbody className="divide-y divide-[var(--border)]">
                 {filtered.map(item => (
                   <tr key={item.id}
-                    className={`hover:bg-white/[0.02] transition-colors ${selected.has(item.id) ? 'bg-violet-500/5' : ''}`}>
+                    className={`hover:bg-[var(--bg-card2)] transition-colors ${selected.has(item.id) ? 'bg-violet-500/5' : ''}`}>
                     <td className="px-4 py-3">
                       <input type="checkbox"
                         checked={selected.has(item.id)}
                         onChange={() => toggleRow(item.id)}
-                        className="rounded border-slate-600 bg-transparent accent-violet-500" />
+                        className="rounded border-[var(--border2)] bg-transparent accent-violet-500" />
                     </td>
 
                     {shownCols.map(col => {
@@ -326,22 +326,22 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
                               <Package className="w-4 h-4 text-violet-400" />
                             </div>
                             <div>
-                              <p className="text-white font-medium text-xs leading-tight max-w-[180px] truncate">{item.title}</p>
-                              <p className="text-slate-500 text-[10px] mt-0.5">{item.category || item.marketplace}</p>
+                              <p className="text-[var(--text-base)] font-medium text-xs leading-tight max-w-[180px] truncate">{item.title}</p>
+                              <p className="text-[var(--text-muted)] text-[10px] mt-0.5">{item.category || item.marketplace}</p>
                             </div>
                             {item.productUrl && (
                               <a href={item.productUrl} target="_blank" rel="noreferrer"
-                                className="text-slate-600 hover:text-violet-400 transition-colors flex-shrink-0">
+                                className="text-[var(--text-muted)] hover:text-violet-400 transition-colors flex-shrink-0">
                                 <ExternalLink className="w-3 h-3" />
                               </a>
                             )}
                           </div>
                         </td>
                       )
-                      if (col.key === 'sku') return <td key="sku" className="px-3 py-3 text-slate-500 text-xs font-mono">{item.sku || '—'}</td>
-                      if (col.key === 'sellingPrice') return <td key="sellingPrice" className="px-3 py-3 text-white text-xs">{fs(item.sellingPrice)}</td>
-                      if (col.key === 'costPrice') return <td key="costPrice" className="px-3 py-3 text-slate-400 text-xs">{fs(item.costPrice)}</td>
-                      if (col.key === 'commission') return <td key="commission" className="px-3 py-3 text-xs"><span className="text-red-400">−{fs(item.commission)}</span><span className="text-slate-600 text-[10px] ml-1">({item.commissionPct}%)</span></td>
+                      if (col.key === 'sku') return <td key="sku" className="px-3 py-3 text-[var(--text-muted)] text-xs font-mono">{item.sku || '—'}</td>
+                      if (col.key === 'sellingPrice') return <td key="sellingPrice" className="px-3 py-3 text-[var(--text-base)] text-xs">{fs(item.sellingPrice)}</td>
+                      if (col.key === 'costPrice') return <td key="costPrice" className="px-3 py-3 text-[var(--text-muted)] text-xs">{fs(item.costPrice)}</td>
+                      if (col.key === 'commission') return <td key="commission" className="px-3 py-3 text-xs"><span className="text-red-400">−{fs(item.commission)}</span><span className="text-[var(--text-muted)] text-[10px] ml-1">({item.commissionPct}%)</span></td>
                       if (col.key === 'delivery') return <td key="delivery" className="px-3 py-3 text-red-400 text-xs">−{fs(item.delivery)}</td>
                       if (col.key === 'lastMile') return <td key="lastMile" className="px-3 py-3 text-red-400 text-xs">{item.lastMile > 0 ? `−${fs(item.lastMile)}` : '—'}</td>
                       if (col.key === 'acquiring') return <td key="acquiring" className="px-3 py-3 text-red-400 text-xs">−{fs(item.acquiring)}</td>
@@ -379,21 +379,21 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
                                   if (e.key === 'Enter') saveSupplier(item.id, supplierRef.current?.value || '')
                                   if (e.key === 'Escape') setEditingSupplier(null)
                                 }}
-                                className="w-32 px-2 py-1 bg-[#0d0d1a] border border-violet-500/50 rounded text-xs text-white focus:outline-none"
+                                className="w-32 px-2 py-1 bg-[var(--bg-input)] border border-violet-500/50 rounded text-xs text-[var(--text-base)] focus:outline-none"
                                 autoFocus />
                               <button onClick={() => saveSupplier(item.id, supplierRef.current?.value || '')}
                                 className="text-emerald-400 hover:text-emerald-300"><Check className="w-3 h-3" /></button>
                               <button onClick={() => setEditingSupplier(null)}
-                                className="text-slate-500 hover:text-slate-300"><X className="w-3 h-3" /></button>
+                                className="text-[var(--text-muted)] hover:text-[var(--text-dim)]"><X className="w-3 h-3" /></button>
                             </div>
                           ) : (
                             <button onClick={() => setEditingSupplier(item.id)}
-                              className="text-xs text-slate-500 hover:text-violet-400 transition-colors truncate max-w-[100px] block">
+                              className="text-xs text-[var(--text-muted)] hover:text-violet-400 transition-colors truncate max-w-[100px] block">
                               {item.supplierUrl ? (
                                 <span className="text-violet-400 flex items-center gap-1">
                                   <ExternalLink className="w-3 h-3" /> Havola
                                 </span>
-                              ) : <span className="border-b border-dashed border-slate-700">+ Qo&apos;shish</span>}
+                              ) : <span className="border-b border-dashed border-[var(--border2)]">+ Qo&apos;shish</span>}
                             </button>
                           )}
                         </td>
@@ -408,7 +408,7 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
         </div>
       )}
 
-      <p className="text-xs text-slate-600 text-center">
+      <p className="text-xs text-[var(--text-muted)] text-center">
         Taxminiy hisob · Barcha narxlar so&apos;mda
       </p>
     </div>

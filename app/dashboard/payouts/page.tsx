@@ -17,10 +17,10 @@ export default async function PayoutsPage() {
         </div>
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold text-white">{d.payoutsTitle}</h1>
+            <h1 className="text-2xl font-bold text-[var(--text-base)]">{d.payoutsTitle}</h1>
             <HelpTooltip section="payouts" />
           </div>
-          <p className="text-slate-400 text-sm">{d.payoutsSubtitle}</p>
+          <p className="text-[var(--text-muted)] text-sm">{d.payoutsSubtitle}</p>
         </div>
       </div>
 

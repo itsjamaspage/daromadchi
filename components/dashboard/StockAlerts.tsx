@@ -75,8 +75,8 @@ export default function StockAlerts({ products }: { products: Product[] }) {
         })}
       </div>
 
-      <div className="px-5 py-3 border-t border-[var(--border)] bg-white/[0.01]">
-        <p className="text-slate-500 text-xs">
+      <div className="px-5 py-3 border-t border-[var(--border)] bg-[var(--bg-card2)]">
+        <p className="text-[var(--text-muted)] text-xs">
           Hisoblash: so&apos;nggi 30 kunlik savdo tezligiga asoslangan · Buyurtma: 45 kunlik zaxira
         </p>
       </div>

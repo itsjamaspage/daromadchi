@@ -275,11 +275,11 @@ export default async function DashboardPage({ searchParams }: Props) {
             { href: '/dashboard/data-state',     icon: '🗂️', label: d.dataStateTitle,         sub: d.syncStatus },
           ].map(({ href, icon, label, sub }) => (
             <Link key={href} href={href}
-              className="bg-[#13131f] border border-white/[0.06] hover:border-violet-500/30 rounded-2xl p-4 flex items-center gap-3 transition-all group">
+              className="bg-[var(--bg-card2)] border border-[var(--border)] hover:border-violet-500/30 rounded-2xl p-4 flex items-center gap-3 transition-all group">
               <span className="text-2xl">{icon}</span>
               <div>
-                <p className="text-white text-xs font-semibold group-hover:text-violet-300 transition-colors">{label}</p>
-                <p className="text-slate-500 text-[10px] mt-0.5">{sub}</p>
+                <p className="text-[var(--text-base)] text-xs font-semibold group-hover:text-violet-300 transition-colors">{label}</p>
+                <p className="text-[var(--text-muted)] text-[10px] mt-0.5">{sub}</p>
               </div>
             </Link>
           ))}

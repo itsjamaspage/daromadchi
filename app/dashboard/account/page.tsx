@@ -27,7 +27,7 @@ export default async function AccountPage() {
     : 0
 
   const planLabel: Record<string, { label: string; color: string }> = {
-    free:     { label: t.planFree,    color: 'text-slate-400 bg-slate-500/10 border-slate-500/20' },
+    free:     { label: t.planFree,    color: 'text-[var(--text-muted)] bg-slate-500/10 border-[var(--border)]' },
     pro:      { label: t.planPro,     color: 'text-violet-400 bg-violet-500/10 border-violet-500/20' },
     pro_plus: { label: t.planProPlus, color: 'text-amber-400 bg-amber-500/10 border-amber-500/20' },
   }
@@ -38,27 +38,27 @@ export default async function AccountPage() {
       {/* Header */}
       <div>
         <div className="flex items-center gap-3 mb-0.5">
-          <h1 className="text-2xl font-bold text-white">{t.title}</h1>
+          <h1 className="text-2xl font-bold text-[var(--text-base)]">{t.title}</h1>
           <span className={`text-[10px] font-semibold px-2 py-1 rounded-full border ${planInfo.color}`}>
             {planInfo.label}
           </span>
         </div>
-        <p className="text-slate-400 text-sm">{t.subtitle}</p>
+        <p className="text-[var(--text-muted)] text-sm">{t.subtitle}</p>
       </div>
 
       {/* Avatar + name */}
       <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl p-6 flex items-center gap-5">
         <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-violet-500/20 flex-shrink-0">
-          <User className="w-8 h-8 text-white" />
+          <User className="w-8 h-8 text-[var(--text-base)]" />
         </div>
         <div>
-          <p className="text-white font-bold text-lg">
+          <p className="text-[var(--text-base)] font-bold text-lg">
             {user.user_metadata?.full_name ?? t.defaultUser}
           </p>
-          <p className="text-slate-400 text-sm flex items-center gap-1.5 mt-0.5">
+          <p className="text-[var(--text-muted)] text-sm flex items-center gap-1.5 mt-0.5">
             <Mail className="w-3.5 h-3.5" /> {user.email}
           </p>
-          <p className="text-slate-500 text-xs flex items-center gap-1.5 mt-1">
+          <p className="text-[var(--text-muted)] text-xs flex items-center gap-1.5 mt-1">
             <Calendar className="w-3 h-3" /> {t.joined} {joinedAt}
           </p>
         </div>
@@ -67,8 +67,8 @@ export default async function AccountPage() {
       {/* Plan */}
       <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
         <div className="px-6 py-4 border-b border-[var(--border)] flex items-center gap-3">
-          <CreditCard className="w-4 h-4 text-slate-400" />
-          <p className="text-white font-semibold text-sm">{t.planTitle}</p>
+          <CreditCard className="w-4 h-4 text-[var(--text-muted)]" />
+          <p className="text-[var(--text-base)] font-semibold text-sm">{t.planTitle}</p>
         </div>
 
         {/* Trial active banner */}
@@ -78,7 +78,7 @@ export default async function AccountPage() {
               Pro tarifni 3 kun bepul sinayapsiz. {trialDaysLeft} kun qoldi.
             </p>
             <Link href="/pricing"
-              className="bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap">
+              className="bg-violet-600 hover:bg-violet-500 text-[var(--text-base)] text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap">
               {t.upgradePro}
             </Link>
           </div>
@@ -91,7 +91,7 @@ export default async function AccountPage() {
               Bepul sinov tugadi. Pro tarifga o&apos;tib barcha imkoniyatlardan foydalaning.
             </p>
             <Link href="/pricing"
-              className="bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap">
+              className="bg-violet-600 hover:bg-violet-500 text-[var(--text-base)] text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap">
               {t.upgradePro}
             </Link>
           </div>
@@ -103,21 +103,21 @@ export default async function AccountPage() {
               {planInfo.label}
             </span>
             {expiresAt && (
-              <p className="text-slate-500 text-xs mt-2">{t.expires} {expiresAt}</p>
+              <p className="text-[var(--text-muted)] text-xs mt-2">{t.expires} {expiresAt}</p>
             )}
             {effectivePlan === 'free' && !isOnTrial && (
-              <p className="text-slate-500 text-xs mt-2">{t.freeDesc}</p>
+              <p className="text-[var(--text-muted)] text-xs mt-2">{t.freeDesc}</p>
             )}
             {effectivePlan === 'pro' && !isOnTrial && (
-              <p className="text-slate-500 text-xs mt-2">{t.proDesc}</p>
+              <p className="text-[var(--text-muted)] text-xs mt-2">{t.proDesc}</p>
             )}
             {effectivePlan === 'pro_plus' && (
-              <p className="text-slate-500 text-xs mt-2">{t.proPlusDesc}</p>
+              <p className="text-[var(--text-muted)] text-xs mt-2">{t.proPlusDesc}</p>
             )}
           </div>
           {effectivePlan === 'free' && !isOnTrial && (
             <Link href="/pricing"
-              className="bg-violet-600 hover:bg-violet-500 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors">
+              className="bg-violet-600 hover:bg-violet-500 text-[var(--text-base)] text-sm font-semibold px-4 py-2 rounded-xl transition-colors">
               {t.upgradePro}
             </Link>
           )}
@@ -127,14 +127,14 @@ export default async function AccountPage() {
       {/* Security */}
       <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
         <div className="px-6 py-4 border-b border-[var(--border)] flex items-center gap-3">
-          <Shield className="w-4 h-4 text-slate-400" />
-          <p className="text-white font-semibold text-sm">{t.security}</p>
+          <Shield className="w-4 h-4 text-[var(--text-muted)]" />
+          <p className="text-[var(--text-base)] font-semibold text-sm">{t.security}</p>
         </div>
         <div className="p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-white text-sm font-medium">{t.password}</p>
-              <p className="text-slate-500 text-xs mt-0.5">{t.passwordDesc}</p>
+              <p className="text-[var(--text-base)] text-sm font-medium">{t.password}</p>
+              <p className="text-[var(--text-muted)] text-xs mt-0.5">{t.passwordDesc}</p>
             </div>
             <Link href="/login?forgot=1"
               className="text-violet-400 hover:text-violet-300 text-sm font-medium transition-colors border border-violet-500/20 px-3 py-1.5 rounded-xl hover:bg-violet-500/10">

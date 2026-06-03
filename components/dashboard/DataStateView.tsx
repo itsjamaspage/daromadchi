@@ -16,7 +16,7 @@ function statusStyle(s: SyncDay['status']) {
     case 'ready':    return { bg: 'bg-emerald-500/20 hover:bg-emerald-500/30 border-emerald-500/30',  text: 'text-emerald-400' }
     case 'degraded': return { bg: 'bg-amber-500/20 hover:bg-amber-500/30 border-amber-500/30',        text: 'text-amber-400'   }
     case 'error':    return { bg: 'bg-red-500/20 hover:bg-red-500/30 border-red-500/30',              text: 'text-red-400'     }
-    case 'pending':  return { bg: 'bg-slate-700/30 hover:bg-slate-700/40 border-slate-700/50',        text: 'text-slate-500'   }
+    case 'pending':  return { bg: 'bg-[var(--bg-card2)] hover:bg-[var(--bg-card2)] border-[var(--border2)]',        text: 'text-[var(--text-muted)]'   }
   }
 }
 
@@ -25,7 +25,7 @@ function statusIcon(s: SyncDay['status']) {
     case 'ready':    return <CheckCircle2  className="w-3.5 h-3.5 text-emerald-400" />
     case 'degraded': return <AlertTriangle className="w-3.5 h-3.5 text-amber-400"   />
     case 'error':    return <AlertCircle   className="w-3.5 h-3.5 text-red-400"     />
-    case 'pending':  return <Clock         className="w-3.5 h-3.5 text-slate-500"   />
+    case 'pending':  return <Clock         className="w-3.5 h-3.5 text-[var(--text-muted)]"   />
   }
 }
 
@@ -80,14 +80,14 @@ export default function DataStateView({ days }: Props) {
           ['ready',    'Tayyor',        counts.ready,    'text-emerald-400', 'bg-emerald-500/10 border-emerald-500/20'],
           ['degraded', 'Degradatsiya',  counts.degraded, 'text-amber-400',   'bg-amber-500/10 border-amber-500/20'   ],
           ['error',    'Xato',          counts.error,    'text-red-400',     'bg-red-500/10 border-red-500/20'       ],
-          ['pending',  'Kutilmoqda',    counts.pending,  'text-slate-400',   'bg-slate-700/20 border-slate-700/30'  ],
+          ['pending',  'Kutilmoqda',    counts.pending,  'text-[var(--text-muted)]',   'bg-[var(--bg-card2)] border-[var(--border)]'  ],
         ] as [SyncDay['status'], string, number, string, string][]).map(([status, label, count, textCls, bgCls]) => (
           <button key={status}
             onClick={() => selectAll(status)}
             className={`text-left px-4 py-3 rounded-xl border transition-all ${bgCls} hover:scale-[1.01]`}>
-            <p className="text-xs text-slate-500 mb-1">{label}</p>
+            <p className="text-xs text-[var(--text-muted)] mb-1">{label}</p>
             <p className={`text-xl font-bold ${textCls}`}>{count} kun</p>
-            <p className="text-[10px] text-slate-600 mt-0.5">Tanlash uchun bosing</p>
+            <p className="text-[10px] text-[var(--text-muted)] mt-0.5">Tanlash uchun bosing</p>
           </button>
         ))}
       </div>
@@ -97,17 +97,17 @@ export default function DataStateView({ days }: Props) {
         <div className="flex items-center gap-3 bg-violet-500/5 border border-violet-500/20 rounded-xl px-4 py-3">
           <span className="text-xs text-violet-300 font-semibold">{selected.size} kun tanlangan</span>
           <button onClick={resyncSelected}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold rounded-lg transition-colors ml-auto">
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-violet-600 hover:bg-violet-500 text-[var(--text-base)] text-xs font-semibold rounded-lg transition-colors ml-auto">
             <RefreshCw className="w-3.5 h-3.5" /> Qayta yuklash
           </button>
           <button onClick={() => setSelected(new Set())}
-            className="text-xs text-slate-500 hover:text-slate-300 transition-colors">Bekor</button>
+            className="text-xs text-[var(--text-muted)] hover:text-[var(--text-dim)] transition-colors">Bekor</button>
         </div>
       )}
 
       {/* Day grid */}
-      <div className="bg-[#13131f] border border-white/[0.06] rounded-2xl p-4">
-        <p className="text-xs font-semibold text-slate-400 mb-4">So&apos;nggi 30 kun</p>
+      <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl p-4">
+        <p className="text-xs font-semibold text-[var(--text-muted)] mb-4">So&apos;nggi 30 kun</p>
         <div className="grid grid-cols-5 sm:grid-cols-7 lg:grid-cols-10 gap-2">
           {days.map(day => {
             const { bg } = statusStyle(day.status)
@@ -123,15 +123,15 @@ export default function DataStateView({ days }: Props) {
                 onMouseEnter={() => setHoveredDay(day)}
                 onMouseLeave={() => setHoveredDay(null)}
                 className={`relative flex flex-col items-center gap-1 p-2 rounded-xl border transition-all cursor-pointer
-                  ${isSelected ? 'ring-2 ring-violet-500 ring-offset-1 ring-offset-[#13131f]' : ''}
+                  ${isSelected ? 'ring-2 ring-violet-500 ring-offset-1 ring-offset-[var(--bg-card2)]' : ''}
                   ${isResyncing ? 'animate-pulse' : ''}
                   ${bg}`}
               >
                 {isResyncing && (
                   <RefreshCw className="absolute top-1 right-1 w-2.5 h-2.5 text-violet-400 animate-spin" />
                 )}
-                <span className="text-[10px] text-slate-500">{monthShort}</span>
-                <span className="text-sm font-bold text-white">{dayNum}</span>
+                <span className="text-[10px] text-[var(--text-muted)]">{monthShort}</span>
+                <span className="text-sm font-bold text-[var(--text-base)]">{dayNum}</span>
                 <span className="scale-75">{statusIcon(day.status)}</span>
               </button>
             )
@@ -141,13 +141,13 @@ export default function DataStateView({ days }: Props) {
 
       {/* Hovered day detail */}
       {hoveredDay && (
-        <div className="bg-[#13131f] border border-white/[0.06] rounded-2xl p-4 grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl p-4 grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div>
-            <p className="text-xs text-slate-500 mb-1">Sana</p>
-            <p className="text-sm font-bold text-white">{hoveredDay.date}</p>
+            <p className="text-xs text-[var(--text-muted)] mb-1">Sana</p>
+            <p className="text-sm font-bold text-[var(--text-base)]">{hoveredDay.date}</p>
           </div>
           <div>
-            <p className="text-xs text-slate-500 mb-1">Holat</p>
+            <p className="text-xs text-[var(--text-muted)] mb-1">Holat</p>
             <div className="flex items-center gap-1.5">
               {statusIcon(hoveredDay.status)}
               <span className={`text-sm font-semibold ${statusStyle(hoveredDay.status).text}`}>
@@ -156,18 +156,18 @@ export default function DataStateView({ days }: Props) {
             </div>
           </div>
           <div>
-            <p className="text-xs text-slate-500 mb-1">Mahsulotlar</p>
-            <p className="text-sm font-bold text-white">{hoveredDay.productsCount ?? '—'}</p>
+            <p className="text-xs text-[var(--text-muted)] mb-1">Mahsulotlar</p>
+            <p className="text-sm font-bold text-[var(--text-base)]">{hoveredDay.productsCount ?? '—'}</p>
           </div>
           <div>
-            <p className="text-xs text-slate-500 mb-1">Daromad</p>
+            <p className="text-xs text-[var(--text-muted)] mb-1">Daromad</p>
             <p className="text-sm font-bold text-emerald-400">
               {hoveredDay.revenue !== undefined ? `${fs(hoveredDay.revenue)} so'm` : '—'}
             </p>
           </div>
           {hoveredDay.errorMessage && (
             <div className="col-span-full">
-              <p className="text-xs text-slate-500 mb-1">Xato</p>
+              <p className="text-xs text-[var(--text-muted)] mb-1">Xato</p>
               <p className="text-xs text-red-400">{hoveredDay.errorMessage}</p>
             </div>
           )}
@@ -175,7 +175,7 @@ export default function DataStateView({ days }: Props) {
       )}
 
       {/* Legend */}
-      <div className="flex flex-wrap gap-4 text-xs text-slate-500">
+      <div className="flex flex-wrap gap-4 text-xs text-[var(--text-muted)]">
         <span>Kun ustiga bosib tanlang → &quot;Qayta yuklash&quot; tugmasi paydo bo&apos;ladi</span>
         <span className="flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Tayyor</span>
         <span className="flex items-center gap-1.5"><AlertTriangle className="w-3.5 h-3.5 text-amber-400" /> Degradatsiya</span>
