@@ -34,20 +34,20 @@
    LIGHT THEME — Soft Gray
 ═══════════════════════════════════════════════════════════════════ */
 [data-theme="light"] {
-  --bg-base:    #E9E8F0;
-  --bg-card:    #F2F1F7;
-  --bg-card2:   #ECEAF3;
-  --bg-input:   #E4E2EE;
-  --border:     rgba(124, 58, 237, 0.14);
-  --border2:    rgba(124, 58, 237, 0.22);
-  --text-base:  #1A1A2E;
-  --text-muted: #60607A;
-  --text-dim:   #44445E;
-  --nav-bg:     rgba(236, 234, 243, 0.97);
+  --bg-base:    #DCDCE1;
+  --bg-card:    #E7E7EB;
+  --bg-card2:   #E2E2E7;
+  --bg-input:   #D5D5DB;
+  --border:     rgba(38, 40, 58, 0.12);
+  --border2:    rgba(38, 40, 58, 0.20);
+  --text-base:  #1B1C26;
+  --text-muted: #595B68;
+  --text-dim:   #3F404D;
+  --nav-bg:     rgba(226, 226, 231, 0.97);
   --c1:         #7C3AED;
   --c2:         #DB2777;
-  --scrollbar-track: #E4E2EE;
-  --scrollbar-thumb: #C4BAE0;
+  --scrollbar-track: #D5D5DB;
+  --scrollbar-thumb: #BCBCC6;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -76,9 +76,9 @@ h1, h2, h3, h4, h5, h6 {
   background-attachment: fixed;
 }
 
-/* Light: soft gray */
+/* Light: neutral soft gray */
 [data-theme="light"] body {
-  background: #E9E8F0;
+  background: var(--bg-base);
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -100,6 +100,19 @@ h1, h2, h3, h4, h5, h6 {
 [data-theme="light"] .bg-\[var\(--bg-card2\)\] {
   box-shadow: 0 1px 4px rgba(80,50,160,0.07), 0 8px 24px rgba(80,50,160,0.05);
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   PRIMARY BUTTON — brand accent, per-theme contrast
+   Dark: cyan fill + dark text · Light: purple fill + white text
+═══════════════════════════════════════════════════════════════════ */
+.btn-primary {
+  background: var(--c1);
+  color: #fff;
+  transition: filter 0.2s ease, opacity 0.2s ease;
+}
+.btn-primary:hover { filter: brightness(1.08); }
+.btn-primary:disabled { opacity: 0.6; filter: none; }
+[data-theme="dark"] .btn-primary { color: #021018; }
 
 /* ═══════════════════════════════════════════════════════════════════
    GRADIENT TEXT UTILITY

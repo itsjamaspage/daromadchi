@@ -48,7 +48,7 @@ function PlanModal({ current, onClose, d }: { current: PlanType; onClose: () => 
       <div className="relative w-full max-w-2xl bg-[var(--bg-card2)] border border-[var(--border2)] rounded-2xl shadow-2xl shadow-black/60 overflow-hidden">
         <div className="px-6 py-4 border-b border-[var(--border)] flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Star className="w-4 h-4 text-cyan-400" />
+            <Star className="w-4 h-4" style={{ color: 'var(--c1)' }} />
             <h2 className="text-[var(--text-base)] font-semibold text-sm">{d.billingChangePlanTitle}</h2>
           </div>
           <button onClick={onClose} className="text-[var(--text-muted)] hover:text-[var(--text-base)] transition-colors p-1">
@@ -62,23 +62,21 @@ function PlanModal({ current, onClose, d }: { current: PlanType; onClose: () => 
             return (
               <div
                 key={plan}
-                className={`rounded-xl border p-4 flex flex-col gap-3 transition-all ${
-                  isCurrent
-                    ? 'border-cyan-500/50 bg-cyan-500/[0.06]'
-                    : 'border-[var(--border)] bg-[var(--bg-card2)] hover:border-[var(--border2)]'
-                }`}
+                className="rounded-xl border p-4 flex flex-col gap-3 transition-all"
+                style={isCurrent
+                  ? { borderColor: 'color-mix(in srgb, var(--c1) 50%, transparent)', background: 'color-mix(in srgb, var(--c1) 6%, transparent)' }
+                  : { borderColor: 'var(--border)', background: 'var(--bg-card2)' }}
               >
                 <div className="flex items-center justify-between">
-                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-                    isCurrent
-                      ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
-                      : 'bg-[var(--bg-input)] text-[var(--text-muted)] border border-[var(--border)]'
-                  }`}>
+                  <span className="text-xs font-bold px-2 py-0.5 rounded-full"
+                    style={isCurrent
+                      ? { background: 'color-mix(in srgb, var(--c1) 18%, transparent)', border: '1px solid color-mix(in srgb, var(--c1) 30%, transparent)', color: 'var(--c1)' }
+                      : { background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text-muted)' }}>
                     {planLabel(plan, d)}
                   </span>
-                  {isCurrent && <CheckCircle className="w-4 h-4 text-cyan-400" />}
+                  {isCurrent && <CheckCircle className="w-4 h-4" style={{ color: 'var(--c1)' }} />}
                 </div>
-                <p className={`font-bold text-base ${isCurrent ? 'text-cyan-300' : 'text-[var(--text-base)]'}`}>
+                <p className="font-bold text-base" style={{ color: isCurrent ? 'var(--c1)' : 'var(--text-base)' }}>
                   {PLAN_PRICES[plan]}{plan !== 'free' && <span className="text-[var(--text-muted)] font-normal text-xs">{d.billingPerMonth}</span>}
                 </p>
                 <ul className="space-y-1.5 flex-1">
@@ -90,11 +88,11 @@ function PlanModal({ current, onClose, d }: { current: PlanType; onClose: () => 
                   ))}
                 </ul>
                 {!isCurrent ? (
-                  <a href="/pricing" className="mt-2 w-full bg-violet-600 hover:bg-violet-500 text-[var(--text-base)] text-xs font-semibold py-2 rounded-lg transition-colors text-center">
+                  <a href="/pricing" className="mt-2 w-full btn-primary text-xs font-semibold py-2 rounded-lg transition-colors text-center">
                     {d.billingSelectPlan}
                   </a>
                 ) : (
-                  <div className="mt-2 w-full text-center text-xs text-cyan-400/70 font-medium py-2">
+                  <div className="mt-2 w-full text-center text-xs font-medium py-2" style={{ color: 'color-mix(in srgb, var(--c1) 75%, transparent)' }}>
                     {d.billingCurrentPlanLabel}
                   </div>
                 )}
@@ -161,7 +159,7 @@ function InvoiceModal({ onClose, d }: { onClose: () => void; d: T }) {
           ) : (
             <button
               type="submit"
-              className="w-full bg-violet-600 hover:bg-violet-500 text-[var(--text-base)] text-sm font-semibold py-2.5 rounded-xl transition-colors"
+              className="w-full btn-primary text-sm font-semibold py-2.5 rounded-xl transition-colors"
             >
               {d.billingSend}
             </button>
@@ -207,15 +205,16 @@ export default function BillingClient({ billing }: { billing: BillingInfo }) {
       </div>
 
       {/* Current Plan Card */}
-      <div className="bg-[var(--bg-card2)] border border-cyan-500/30 rounded-2xl overflow-hidden">
+      <div className="bg-[var(--bg-card2)] rounded-2xl overflow-hidden" style={{ border: '1px solid var(--border2)' }}>
         <div className="px-5 py-4 border-b border-[var(--border)] flex items-center gap-2">
-          <Zap className="w-4 h-4 text-cyan-400" />
+          <Zap className="w-4 h-4" style={{ color: 'var(--c1)' }} />
           <h2 className="text-[var(--text-base)] font-semibold text-sm">{d.billingCurrentPlan}</h2>
         </div>
         <div className="p-6 flex flex-col sm:flex-row sm:items-start gap-6">
           <div className="flex-1 space-y-4">
             <div className="flex items-center gap-3">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-bold bg-gradient-to-r from-cyan-500/20 to-violet-500/20 border border-cyan-500/40 text-cyan-300">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-bold"
+                style={{ background: 'color-mix(in srgb, var(--c1) 14%, transparent)', border: '1px solid color-mix(in srgb, var(--c1) 35%, transparent)', color: 'var(--c1)' }}>
                 <Star className="w-3.5 h-3.5" />
                 {planLabel(plan, d)}
               </span>
@@ -234,7 +233,7 @@ export default function BillingClient({ billing }: { billing: BillingInfo }) {
             <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {PLAN_FEATURES[plan].map(f => (
                 <li key={f} className="flex items-center gap-2 text-sm text-[var(--text-dim)]">
-                  <CheckCircle className="w-3.5 h-3.5 text-cyan-400 flex-shrink-0" />
+                  <CheckCircle className="w-3.5 h-3.5 flex-shrink-0" style={{ color: 'var(--c1)' }} />
                   {f}
                 </li>
               ))}
@@ -243,7 +242,7 @@ export default function BillingClient({ billing }: { billing: BillingInfo }) {
           <div className="flex-shrink-0">
             <button
               onClick={() => setShowPlanModal(true)}
-              className="flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-[var(--text-base)] text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors shadow-lg shadow-violet-500/20"
+              className="flex items-center gap-2 btn-primary text-sm font-semibold px-5 py-2.5 rounded-xl shadow-lg"
             >
               <Package className="w-4 h-4" />
               {isFree ? d.billingUpgrade : d.billingChangePlan}

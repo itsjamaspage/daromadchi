@@ -69,7 +69,7 @@ export default function ReferralView({ stats, entries }: Props) {
             className={`flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
               copied
                 ? 'bg-emerald-600/20 text-emerald-400 border border-emerald-500/30'
-                : 'bg-violet-600 hover:bg-violet-500 text-[var(--text-base)]'
+                : 'btn-primary'
             }`}>
             {copied ? <><Check className="w-4 h-4" /> Nusxalandi!</> : <><Copy className="w-4 h-4" /> Nusxalash</>}
           </button>

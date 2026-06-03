@@ -44,7 +44,7 @@ function buildCategoryData(products: Awaited<ReturnType<typeof getProducts>>) {
 
 import type { MarketplaceType } from '@/lib/types'
 
-const VALID_MARKETPLACES = ['uzum', 'yandex_market'] as const
+const VALID_MARKETPLACES = ['uzum', 'yandex_market', 'wildberries'] as const
 
 function parseMarketplace(params: Record<string, string> | undefined): MarketplaceType | undefined {
   const v = params?.mp
@@ -106,10 +106,11 @@ export default async function DashboardPage({ searchParams }: Props) {
       {/* Marketplace tabs */}
       <div className="flex items-center gap-1.5 p-1 rounded-xl w-fit" style={{ background: 'var(--bg-card2)', border: '1px solid var(--border)' }}>
         {([
-          { label: d.all,           mp: undefined,          color: 'violet' },
-          { label: 'Uzum',          mp: 'uzum',             color: 'violet' },
-          { label: 'Yandex Market', mp: 'yandex_market',    color: 'amber'  },
-        ] as { label: string; mp: string | undefined; color: string }[]).map(({ label, mp, color }) => {
+          { label: d.all,           mp: undefined,          accent: 'var(--c1)' },
+          { label: 'Uzum',          mp: 'uzum',             accent: 'var(--c1)' },
+          { label: 'Yandex Market', mp: 'yandex_market',    accent: '#f59e0b'   },
+          { label: 'Wildberries',   mp: 'wildberries',      accent: '#cb11ab'   },
+        ] as { label: string; mp: string | undefined; accent: string }[]).map(({ label, mp, accent }) => {
           const active = (marketplace ?? undefined) === mp
           return (
             <Link
@@ -117,9 +118,9 @@ export default async function DashboardPage({ searchParams }: Props) {
               href={mp ? `/dashboard?mp=${mp}&days=${daysStr}` : `/dashboard?days=${daysStr}`}
               className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border"
               style={active ? {
-                background: color === 'amber' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(124, 58, 237, 0.2)',
-                color: color === 'amber' ? '#fcd34d' : '#a78bfa',
-                borderColor: color === 'amber' ? 'rgba(245, 158, 11, 0.3)' : 'rgba(124, 58, 237, 0.3)',
+                background: `color-mix(in srgb, ${accent} 16%, transparent)`,
+                color: accent,
+                borderColor: `color-mix(in srgb, ${accent} 35%, transparent)`,
               } : {
                 color: 'var(--text-muted)',
                 borderColor: 'transparent',
@@ -185,7 +186,7 @@ export default async function DashboardPage({ searchParams }: Props) {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate font-mono" style={{ color: 'var(--text-base)' }}>{order.order_id_external ?? order.id.slice(0, 8)}</p>
-                    <p className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>{order.marketplace === 'uzum' ? 'Uzum Market' : 'Yandex Market'}</p>
+                    <p className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>{({ uzum: 'Uzum Market', yandex_market: 'Yandex Market', wildberries: 'Wildberries' } as Record<string, string>)[order.marketplace] ?? order.marketplace}</p>
                   </div>
                   <span className="text-[11px] font-medium px-2 py-0.5 rounded-lg flex-shrink-0" style={{ background: s.bgColor, color: s.textColor }}>
                     {s.label}
