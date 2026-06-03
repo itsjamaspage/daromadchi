@@ -5,6 +5,10 @@ import {
   UserCircle, Shield, BookOpen, CheckCircle, Eye, EyeOff,
   Monitor, Smartphone, X, LogOut, Save,
 } from 'lucide-react'
+import { useLang } from '@/app/providers'
+import { translations } from '@/lib/i18n'
+
+type T = typeof translations['uz']['dashboard']
 
 // ── Toggle component ───────────────────────────────────────────────────────────
 
@@ -66,7 +70,7 @@ const MOCK_LOGS: LogRow[] = [
 
 // ── Tab: Profil ────────────────────────────────────────────────────────────────
 
-function ProfileTab() {
+function ProfileTab({ d }: { d: T }) {
   const [name,  setName]   = useState('Bobur Toshmatov')
   const [email, setEmail]  = useState('bobur@example.uz')
   const [phone, setPhone]  = useState('+998 90 123 45 67')
@@ -91,14 +95,14 @@ function ProfileTab() {
             <span className="text-[var(--text-base)] font-bold text-2xl">BT</span>
           </div>
           <button className="text-xs font-medium text-[var(--text-muted)] hover:text-[var(--text-base)] border border-[var(--border2)] hover:border-[var(--border2)] px-3 py-1.5 rounded-lg transition-all">
-            + Rasm yuklash
+            {d.profileUploadPhoto}
           </button>
         </div>
         <div>
           <p className="text-[var(--text-base)] font-bold text-lg">{name}</p>
           <p className="text-[var(--text-muted)] text-sm mt-0.5">{email}</p>
           <span className="inline-flex items-center gap-1 mt-2 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400">
-            <CheckCircle className="w-3 h-3" /> Pro tarif
+            <CheckCircle className="w-3 h-3" /> {d.profilePlanPro}
           </span>
         </div>
       </div>
@@ -107,12 +111,12 @@ function ProfileTab() {
       <form onSubmit={handleSave} className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
         <div className="px-5 py-4 border-b border-[var(--border)] flex items-center gap-2">
           <UserCircle className="w-4 h-4 text-violet-400" />
-          <h2 className="text-[var(--text-base)] font-semibold text-sm">Shaxsiy ma&apos;lumotlar</h2>
+          <h2 className="text-[var(--text-base)] font-semibold text-sm">{d.profilePersonalInfo}</h2>
         </div>
         <div className="p-6 space-y-4">
           {/* Name */}
           <div>
-            <label className="block text-xs font-medium text-[var(--text-muted)] mb-2">Ism va familiya</label>
+            <label className="block text-xs font-medium text-[var(--text-muted)] mb-2">{d.profileFullName}</label>
             <input
               type="text"
               value={name}
@@ -123,7 +127,7 @@ function ProfileTab() {
 
           {/* Email */}
           <div>
-            <label className="block text-xs font-medium text-[var(--text-muted)] mb-2">Email manzil</label>
+            <label className="block text-xs font-medium text-[var(--text-muted)] mb-2">{d.profileEmail}</label>
             <div className="relative">
               <input
                 type="email"
@@ -132,14 +136,14 @@ function ProfileTab() {
                 className="w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-violet-500/60 transition-all pr-36"
               />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
-                <CheckCircle className="w-3 h-3" /> Tasdiqlangan
+                <CheckCircle className="w-3 h-3" /> {d.profileVerified}
               </span>
             </div>
           </div>
 
           {/* Phone */}
           <div>
-            <label className="block text-xs font-medium text-[var(--text-muted)] mb-2">Telefon raqami</label>
+            <label className="block text-xs font-medium text-[var(--text-muted)] mb-2">{d.profilePhone}</label>
             <input
               type="tel"
               value={phone}
@@ -160,12 +164,12 @@ function ProfileTab() {
                 ? <span className="w-4 h-4 rounded-full border-2 border-[var(--border2)] border-t-white animate-spin" />
                 : <Save className="w-4 h-4" />
               }
-              Saqlash
+              {d.save}
             </button>
             {saved && (
               <span className="flex items-center gap-1.5 text-sm text-emerald-400">
                 <CheckCircle className="w-4 h-4" />
-                Saqlandi
+                {d.profileSaved}
               </span>
             )}
           </div>
@@ -177,7 +181,7 @@ function ProfileTab() {
 
 // ── Tab: Xavfsizlik ────────────────────────────────────────────────────────────
 
-function SecurityTab() {
+function SecurityTab({ d }: { d: T }) {
   const [currentPw,  setCurrentPw]  = useState('')
   const [newPw,      setNewPw]      = useState('')
   const [confirmPw,  setConfirmPw]  = useState('')
@@ -211,7 +215,7 @@ function SecurityTab() {
       <form onSubmit={handlePwSubmit} className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
         <div className="px-5 py-4 border-b border-[var(--border)] flex items-center gap-2">
           <Shield className="w-4 h-4 text-violet-400" />
-          <h2 className="text-[var(--text-base)] font-semibold text-sm">Parolni o&apos;zgartirish</h2>
+          <h2 className="text-[var(--text-base)] font-semibold text-sm">{d.profileChangePassword}</h2>
         </div>
         <div className="p-6 space-y-4">
           {/* Toggle show passwords */}
@@ -222,14 +226,14 @@ function SecurityTab() {
               className="flex items-center gap-1.5 text-xs text-[var(--text-muted)] hover:text-[var(--text-dim)] transition-colors"
             >
               {showPws ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-              {showPws ? "Yashirish" : "Ko'rsatish"}
+              {showPws ? d.profileHide : d.profileShow}
             </button>
           </div>
 
           {[
-            { label: 'Joriy parol',  value: currentPw,  setter: setCurrentPw  },
-            { label: 'Yangi parol',  value: newPw,      setter: setNewPw      },
-            { label: 'Tasdiqlash',   value: confirmPw,  setter: setConfirmPw  },
+            { label: d.profileCurrentPw,  value: currentPw,  setter: setCurrentPw  },
+            { label: d.profileNewPw,      value: newPw,      setter: setNewPw      },
+            { label: d.profileConfirmPw,  value: confirmPw,  setter: setConfirmPw  },
           ].map(field => (
             <div key={field.label}>
               <label className="block text-xs font-medium text-[var(--text-muted)] mb-2">{field.label}</label>
@@ -253,11 +257,11 @@ function SecurityTab() {
                 ? <span className="w-4 h-4 rounded-full border-2 border-[var(--border2)] border-t-white animate-spin" />
                 : <Shield className="w-4 h-4" />
               }
-              Parolni o&apos;zgartirish
+              {d.profileChangePassword}
             </button>
             {pwSaved && (
               <span className="flex items-center gap-1.5 text-sm text-emerald-400">
-                <CheckCircle className="w-4 h-4" /> Saqlandi
+                <CheckCircle className="w-4 h-4" /> {d.profileSaved}
               </span>
             )}
           </div>
@@ -268,14 +272,14 @@ function SecurityTab() {
       <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
         <div className="px-5 py-4 border-b border-[var(--border)] flex items-center gap-2">
           <Shield className="w-4 h-4 text-cyan-400" />
-          <h2 className="text-[var(--text-base)] font-semibold text-sm">Ikki faktorli autentifikatsiya</h2>
+          <h2 className="text-[var(--text-base)] font-semibold text-sm">{d.profile2faTitle}</h2>
         </div>
         <div className="p-6">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <p className="text-[var(--text-base)] text-sm font-medium">2FA holati</p>
+              <p className="text-[var(--text-base)] text-sm font-medium">{d.profile2faStatus}</p>
               <p className="text-[var(--text-muted)] text-xs mt-0.5">
-                {twoFA ? 'Yoqilgan — Google Authenticator bilan himoyalangan' : 'O\'chirilgan'}
+                {twoFA ? d.profile2faOn : d.profile2faOff}
               </p>
             </div>
             <Toggle checked={twoFA} onChange={setTwoFA} />
@@ -297,13 +301,13 @@ function SecurityTab() {
                   <p className="text-[var(--text-muted)] text-[10px] text-center px-2">Google Authenticator</p>
                 </div>
                 <p className="text-[var(--text-muted)] text-xs text-center max-w-xs">
-                  Google Authenticator ilovasini oching va QR kodni skanerlang
+                  {d.profile2faScan}
                 </p>
               </div>
 
               {/* OTP input */}
               <div>
-                <label className="block text-xs font-medium text-[var(--text-muted)] mb-2">Kodni kiriting</label>
+                <label className="block text-xs font-medium text-[var(--text-muted)] mb-2">{d.profileEnterCode}</label>
                 <div className="flex gap-2">
                   <input
                     type="text"
@@ -318,7 +322,7 @@ function SecurityTab() {
                     className="flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-[var(--text-base)] text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors"
                   >
                     <CheckCircle className="w-4 h-4" />
-                    Tasdiqlash
+                    {d.profileConfirm}
                   </button>
                 </div>
               </div>
@@ -331,8 +335,8 @@ function SecurityTab() {
       <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
         <div className="px-5 py-4 border-b border-[var(--border)] flex items-center gap-2">
           <Monitor className="w-4 h-4 text-violet-400" />
-          <h2 className="text-[var(--text-base)] font-semibold text-sm">Faol seanslar</h2>
-          <span className="ml-auto text-xs text-[var(--text-muted)]">{sessions.length} ta</span>
+          <h2 className="text-[var(--text-base)] font-semibold text-sm">{d.profileActiveSessions}</h2>
+          <span className="ml-auto text-xs text-[var(--text-muted)]">{sessions.length}</span>
         </div>
         <div className="divide-y divide-[var(--border)]">
           {sessions.map(session => (
@@ -349,7 +353,7 @@ function SecurityTab() {
               </div>
               <div className="text-right">
                 <p className={`text-xs font-medium ${session.lastActive === 'Hozir' ? 'text-emerald-400' : 'text-[var(--text-muted)]'}`}>
-                  {session.lastActive}
+                  {session.lastActive === 'Hozir' ? d.profileNow : session.lastActive}
                 </p>
               </div>
               {session.id !== 1 && (
@@ -370,7 +374,7 @@ function SecurityTab() {
             className="flex items-center gap-2 text-red-400 hover:text-red-300 border border-red-500/20 hover:border-red-500/40 text-sm font-medium px-4 py-2 rounded-xl transition-all hover:bg-red-500/[0.06]"
           >
             <LogOut className="w-4 h-4" />
-            Barchadan chiqish
+            {d.profileLogoutAll}
           </button>
         </div>
       </div>
@@ -380,7 +384,7 @@ function SecurityTab() {
 
 // ── Tab: Xavfsizlik jurnali ────────────────────────────────────────────────────
 
-function SecurityLogTab() {
+function SecurityLogTab({ d }: { d: T }) {
   function eventColor(type: LogRow['type']) {
     if (type === 'login')    return 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20'
     if (type === 'password') return 'text-amber-400 bg-amber-500/10 border-amber-500/20'
@@ -392,16 +396,16 @@ function SecurityLogTab() {
     <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
       <div className="px-5 py-4 border-b border-[var(--border)] flex items-center gap-2">
         <BookOpen className="w-4 h-4 text-violet-400" />
-        <h2 className="text-[var(--text-base)] font-semibold text-sm">Xavfsizlik jurnali</h2>
+        <h2 className="text-[var(--text-base)] font-semibold text-sm">{d.profileSecurityLog}</h2>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="text-[var(--text-muted)] text-xs border-b border-[var(--border)] bg-[var(--bg-card2)]">
-              <th className="text-left font-medium px-5 py-3">Vaqt</th>
-              <th className="text-left font-medium px-4 py-3">Hodisa</th>
-              <th className="text-left font-medium px-4 py-3">IP manzil</th>
-              <th className="text-left font-medium px-4 py-3">Qurilma</th>
+              <th className="text-left font-medium px-5 py-3">{d.profileColTime}</th>
+              <th className="text-left font-medium px-4 py-3">{d.profileColEvent}</th>
+              <th className="text-left font-medium px-4 py-3">{d.profileColIp}</th>
+              <th className="text-left font-medium px-4 py-3">{d.profileColDevice}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--border)]">
@@ -429,21 +433,23 @@ function SecurityLogTab() {
 type Tab = 'profil' | 'xavfsizlik' | 'jurnal'
 
 export default function ProfilePage() {
+  const { lang } = useLang()
+  const d = translations[lang].dashboard
   const [activeTab, setActiveTab] = useState<Tab>('profil')
 
   const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
-    { key: 'profil',      label: 'Profil',              icon: <UserCircle className="w-3.5 h-3.5" /> },
-    { key: 'xavfsizlik',  label: 'Xavfsizlik',          icon: <Shield     className="w-3.5 h-3.5" /> },
-    { key: 'jurnal',      label: 'Xavfsizlik jurnali',  icon: <BookOpen   className="w-3.5 h-3.5" /> },
+    { key: 'profil',      label: d.profileTabProfile,   icon: <UserCircle className="w-3.5 h-3.5" /> },
+    { key: 'xavfsizlik',  label: d.profileTabSecurity,  icon: <Shield     className="w-3.5 h-3.5" /> },
+    { key: 'jurnal',      label: d.profileTabLog,       icon: <BookOpen   className="w-3.5 h-3.5" /> },
   ]
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-[var(--text-base)]">Profil</h1>
+        <h1 className="text-2xl font-bold text-[var(--text-base)]">{d.profileTitle}</h1>
         <p className="text-[var(--text-muted)] text-sm mt-1">
-          Shaxsiy ma&apos;lumotlar va xavfsizlik sozlamalari
+          {d.profileSubtitle}
         </p>
       </div>
 
@@ -466,9 +472,9 @@ export default function ProfilePage() {
       </div>
 
       {/* Tab content */}
-      {activeTab === 'profil'     && <ProfileTab />}
-      {activeTab === 'xavfsizlik' && <SecurityTab />}
-      {activeTab === 'jurnal'     && <SecurityLogTab />}
+      {activeTab === 'profil'     && <ProfileTab d={d} />}
+      {activeTab === 'xavfsizlik' && <SecurityTab d={d} />}
+      {activeTab === 'jurnal'     && <SecurityLogTab d={d} />}
     </div>
   )
 }

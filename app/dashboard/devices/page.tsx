@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 import { Monitor, Smartphone, Globe, Eye, EyeOff, RefreshCw, LogOut, ToggleLeft, ToggleRight, ExternalLink, AlertTriangle } from 'lucide-react'
+import { useLang } from '@/app/providers'
+import { translations } from '@/lib/i18n'
 
 const MOCK_DEVICES = [
   {
@@ -35,13 +37,16 @@ const MOCK_DEVICES = [
 
 type ToggleKey = 'widget' | 'drr' | 'competitor'
 
-const EXTENSION_SETTINGS: { key: ToggleKey; label: string; desc: string }[] = [
-  { key: 'widget',     label: 'Widget avtomatik ko\'rsatish',        desc: 'Mahsulot sahifalarida Daromadchi widget\'ini avtomatik ko\'rsatish' },
-  { key: 'drr',        label: 'Mahsulot sahifasida DRR ko\'rsatish', desc: 'Har bir mahsulot uchun DRR (reklama xarajati ulushi) ko\'rsatish'   },
-  { key: 'competitor', label: 'Raqobatchi narxlarini ko\'rsatish',   desc: 'Boshqa sotuvchilarning narxlarini taqqoslash uchun ko\'rsatish'      },
-]
-
 export default function DevicesPage() {
+  const { lang } = useLang()
+  const d = translations[lang].dashboard
+
+  const EXTENSION_SETTINGS: { key: ToggleKey; label: string; desc: string }[] = [
+    { key: 'widget',     label: d.devicesExtWidget,     desc: d.devicesExtWidgetDesc },
+    { key: 'drr',        label: d.devicesExtDrr,        desc: d.devicesExtDrrDesc },
+    { key: 'competitor', label: d.devicesExtCompetitor, desc: d.devicesExtCompetitorDesc },
+  ]
+
   const [tokenVisible, setTokenVisible] = useState(false)
   const [token, setToken] = useState('drm_••••••••••••xyz')
   const [realToken] = useState('drm_s8kL2pQ9mNxR7vT3')
@@ -90,17 +95,17 @@ export default function DevicesPage() {
       <div>
         <h1 className="text-2xl font-bold text-[var(--text-base)] flex items-center gap-2">
           <Monitor className="w-6 h-6 text-violet-400" />
-          Qurilmalar boshqaruvi
+          {d.devicesManageTitle}
         </h1>
-        <p className="text-[var(--text-muted)] text-sm mt-0.5">Chrome kengaytmasi ulangan qurilmalar</p>
+        <p className="text-[var(--text-muted)] text-sm mt-0.5">{d.devicesManageSubtitle}</p>
       </div>
 
       {/* Chrome Web Store banner */}
       <div className="flex items-center gap-4 bg-gradient-to-r from-cyan-500/10 to-blue-500/10 border border-cyan-500/20 rounded-2xl px-5 py-4">
         <Globe className="w-8 h-8 text-cyan-400 shrink-0" />
         <div className="flex-1">
-          <p className="text-[var(--text-base)] font-semibold text-sm">Chrome kengaytmasini o&apos;rnating</p>
-          <p className="text-[var(--text-muted)] text-xs mt-0.5">Chrome kengaytmasini o&apos;rnatish uchun Chrome Web Store&apos;ga o&apos;ting</p>
+          <p className="text-[var(--text-base)] font-semibold text-sm">{d.devicesInstallExt}</p>
+          <p className="text-[var(--text-muted)] text-xs mt-0.5">{d.devicesInstallExtDesc}</p>
         </div>
         <a
           href="https://chrome.google.com/webstore"
@@ -117,16 +122,16 @@ export default function DevicesPage() {
         <div className="px-5 py-4 border-b border-[var(--border)] flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Monitor className="w-4 h-4 text-violet-400" />
-            <h2 className="text-[var(--text-base)] font-semibold text-sm">Ulangan qurilmalar</h2>
+            <h2 className="text-[var(--text-base)] font-semibold text-sm">{d.devicesConnected}</h2>
             <span className="text-xs text-[var(--text-muted)] bg-[var(--bg-card2)] px-2 py-0.5 rounded-full border border-[var(--border)]">
-              {devices.length} ta
+              {devices.length}
             </span>
           </div>
         </div>
 
         {devices.length === 0 ? (
           <div className="py-10 text-center text-[var(--text-muted)] text-sm">
-            Hech qanday qurilma ulanmagan
+            {d.devicesNoneConnected}
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -134,11 +139,11 @@ export default function DevicesPage() {
               <thead>
                 <tr className="text-[var(--text-muted)] text-xs border-b border-[var(--border)] bg-[var(--bg-card2)]">
                   <th className="text-left font-medium px-5 py-3">#</th>
-                  <th className="text-left font-medium px-4 py-3">Qurilma</th>
-                  <th className="text-left font-medium px-4 py-3">Brauzer</th>
-                  <th className="text-left font-medium px-4 py-3">Oxirgi faollik</th>
-                  <th className="text-left font-medium px-4 py-3">Holat</th>
-                  <th className="text-right font-medium px-4 py-3">Amal</th>
+                  <th className="text-left font-medium px-4 py-3">{d.devicesColDevice}</th>
+                  <th className="text-left font-medium px-4 py-3">{d.devicesColBrowser}</th>
+                  <th className="text-left font-medium px-4 py-3">{d.devicesColLastActive}</th>
+                  <th className="text-left font-medium px-4 py-3">{d.devicesColStatus}</th>
+                  <th className="text-right font-medium px-4 py-3">{d.devicesColAction}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--border)]">
@@ -155,7 +160,7 @@ export default function DevicesPage() {
                             {device.unsupported && (
                               <span className="inline-flex items-center gap-1 text-[10px] text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded mt-0.5">
                                 <AlertTriangle className="w-2.5 h-2.5" />
-                                Qo&apos;llab-quvvatlanmaydi
+                                {d.devicesUnsupported}
                               </span>
                             )}
                           </div>
@@ -167,12 +172,12 @@ export default function DevicesPage() {
                         {device.status === 'active' ? (
                           <span className="flex items-center gap-1.5 text-xs text-emerald-400">
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                            Aktiv
+                            {d.devicesActive}
                           </span>
                         ) : (
                           <span className="flex items-center gap-1.5 text-xs text-[var(--text-muted)]">
                             <span className="w-1.5 h-1.5 rounded-full bg-slate-600" />
-                            Nofaol
+                            {d.devicesInactive}
                           </span>
                         )}
                       </td>
@@ -181,7 +186,7 @@ export default function DevicesPage() {
                           onClick={() => handleRemoveDevice(device.id)}
                           className="text-xs text-red-400/70 hover:text-red-400 border border-red-500/20 hover:border-red-500/40 px-2.5 py-1 rounded-lg transition-all"
                         >
-                          O&apos;chirish
+                          {d.devicesDelete}
                         </button>
                       </td>
                     </tr>
@@ -199,7 +204,7 @@ export default function DevicesPage() {
               className="flex items-center gap-2 text-xs text-red-400 border border-red-500/30 hover:border-red-500/60 hover:bg-red-500/[0.06] px-3 py-2 rounded-xl transition-all"
             >
               <LogOut className="w-3.5 h-3.5" />
-              Barchadan chiqish
+              {d.devicesSignOutAll}
             </button>
           </div>
         )}
@@ -209,7 +214,7 @@ export default function DevicesPage() {
       <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
         <div className="px-5 py-4 border-b border-[var(--border)] flex items-center gap-2">
           <Globe className="w-4 h-4 text-violet-400" />
-          <h2 className="text-[var(--text-base)] font-semibold text-sm">API Token (Kengaytma uchun)</h2>
+          <h2 className="text-[var(--text-base)] font-semibold text-sm">{d.devicesApiToken}</h2>
         </div>
         <div className="p-5 space-y-3">
           <div className="flex items-center gap-3">
@@ -219,10 +224,10 @@ export default function DevicesPage() {
             <button
               onClick={handleReveal}
               className="flex items-center gap-1.5 text-xs text-[var(--text-muted)] hover:text-[var(--text-base)] border border-[var(--border2)] hover:border-[var(--border2)] px-3 py-3 rounded-xl transition-all"
-              title={tokenVisible ? "Yashirish" : "Ko'rsatish"}
+              title={tokenVisible ? d.profileHide : d.profileShow}
             >
               {tokenVisible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              {tokenVisible ? 'Yashirish' : "Ko'rsatish"}
+              {tokenVisible ? d.profileHide : d.profileShow}
             </button>
             <button
               onClick={handleRefreshToken}
@@ -230,13 +235,13 @@ export default function DevicesPage() {
               className="flex items-center gap-1.5 text-xs text-[var(--text-muted)] hover:text-[var(--text-base)] border border-[var(--border2)] hover:border-[var(--border2)] px-3 py-3 rounded-xl transition-all disabled:opacity-50"
             >
               <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-              Yangilash
+              {d.devicesRefresh}
             </button>
           </div>
           <div className="flex items-start gap-2 bg-amber-500/[0.07] border border-amber-500/20 rounded-xl px-4 py-3">
             <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
             <p className="text-amber-400/80 text-xs">
-              <strong className="text-amber-300">Ogohlantirish:</strong> Token yangilansa eski qurilmalarda kengaytma uziladi
+              <strong className="text-amber-300">{d.devicesTokenWarning}</strong> {d.devicesTokenWarningText}
             </p>
           </div>
         </div>
@@ -246,7 +251,7 @@ export default function DevicesPage() {
       <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
         <div className="px-5 py-4 border-b border-[var(--border)] flex items-center gap-2">
           <Monitor className="w-4 h-4 text-violet-400" />
-          <h2 className="text-[var(--text-base)] font-semibold text-sm">Kengaytma sozlamalari</h2>
+          <h2 className="text-[var(--text-base)] font-semibold text-sm">{d.devicesExtSettings}</h2>
         </div>
         <div className="divide-y divide-[var(--border)]">
           {EXTENSION_SETTINGS.map(({ key, label, desc }) => (
@@ -258,7 +263,7 @@ export default function DevicesPage() {
               <button
                 onClick={() => toggleSetting(key)}
                 className="shrink-0 transition-all"
-                aria-label={settings[key] ? 'O\'chirish' : 'Yoqish'}
+                aria-label={settings[key] ? d.profileHide : d.profileShow}
               >
                 {settings[key] ? (
                   <ToggleRight className="w-8 h-8 text-violet-400" />

@@ -4,6 +4,10 @@ import { useState } from 'react'
 import {
   CreditCard, CheckCircle, X, Star, Zap, Package, Receipt, FileText,
 } from 'lucide-react'
+import { useLang } from '@/app/providers'
+import { translations } from '@/lib/i18n'
+
+type T = typeof translations['uz']['dashboard']
 
 // ── Types & mock data ──────────────────────────────────────────────────────────
 
@@ -25,10 +29,12 @@ const MOCK_PAYMENTS: PaymentRow[] = [
   { id: 5, date: '2026-01-01', description: "Pro tarif — yanvar 2026", amount: "249,000 so'm", status: 'success' },
 ]
 
-const PLAN_FEATURES: Record<Plan, string[]> = {
-  bepul:    ["1 do'kon", "7 kun tarixi", "Asosiy statistika"],
-  standard: ["2 do'kon", "30 kun tarixi", "P&L hisobot", "Telegram"],
-  pro:      ["3 do'kon", "90 kun tarixi", "P&L hisobot", "Reklama tahlili", "Telegram", "Chrome kengaytma"],
+function planFeatures(d: T): Record<Plan, string[]> {
+  return {
+    bepul:    [`1 ${d.billingFeat1Store}`, d.billingFeatHistory7, d.billingFeatBasicStats],
+    standard: [`2 ${d.billingFeatStores}`, d.billingFeatHistory30, d.billingFeatPnl, d.billingFeatTelegram],
+    pro:      [`3 ${d.billingFeatStores}`, d.billingFeatHistory90, d.billingFeatPnl, d.billingFeatAds, d.billingFeatTelegram, d.billingFeatExtension],
+  }
 }
 
 const PLAN_PRICES: Record<Plan, string> = {
@@ -37,16 +43,20 @@ const PLAN_PRICES: Record<Plan, string> = {
   pro:      "249,000 so'm/oy",
 }
 
-const PLAN_LABELS: Record<Plan, string> = {
-  bepul:    "Bepul",
-  standard: "Standard",
-  pro:      "Pro",
+function planLabels(d: T): Record<Plan, string> {
+  return {
+    bepul:    d.billingFree,
+    standard: 'Standard',
+    pro:      d.billingPro,
+  }
 }
 
 // ── Plan Modal ─────────────────────────────────────────────────────────────────
 
-function PlanModal({ current, onClose }: { current: Plan; onClose: () => void }) {
+function PlanModal({ current, onClose, d }: { current: Plan; onClose: () => void; d: T }) {
   const plans: Plan[] = ['bepul', 'standard', 'pro']
+  const PLAN_LABELS = planLabels(d)
+  const PLAN_FEATURES = planFeatures(d)
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -56,7 +66,7 @@ function PlanModal({ current, onClose }: { current: Plan; onClose: () => void })
         <div className="px-6 py-4 border-b border-[var(--border)] flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Star className="w-4 h-4 text-cyan-400" />
-            <h2 className="text-[var(--text-base)] font-semibold text-sm">Tarifni o&apos;zgartirish</h2>
+            <h2 className="text-[var(--text-base)] font-semibold text-sm">{d.billingChangePlanTitle}</h2>
           </div>
           <button onClick={onClose} className="text-[var(--text-muted)] hover:text-[var(--text-base)] transition-colors p-1">
             <X className="w-4 h-4" />
@@ -101,12 +111,12 @@ function PlanModal({ current, onClose }: { current: Plan; onClose: () => void })
                 </ul>
                 {!isCurrent && (
                   <button className="mt-2 w-full bg-violet-600 hover:bg-violet-500 text-[var(--text-base)] text-xs font-semibold py-2 rounded-lg transition-colors">
-                    Tanlash
+                    {d.billingSelectPlan}
                   </button>
                 )}
                 {isCurrent && (
                   <div className="mt-2 w-full text-center text-xs text-cyan-400/70 font-medium py-2">
-                    Joriy tarif
+                    {d.billingCurrentPlanLabel}
                   </div>
                 )}
               </div>
@@ -120,7 +130,7 @@ function PlanModal({ current, onClose }: { current: Plan; onClose: () => void })
 
 // ── Invoice Modal ──────────────────────────────────────────────────────────────
 
-function InvoiceModal({ onClose }: { onClose: () => void }) {
+function InvoiceModal({ onClose, d }: { onClose: () => void; d: T }) {
   const [company, setCompany] = useState('')
   const [inn, setInn]         = useState('')
   const [sent, setSent]       = useState(false)
@@ -138,7 +148,7 @@ function InvoiceModal({ onClose }: { onClose: () => void }) {
         <div className="px-6 py-4 border-b border-[var(--border)] flex items-center justify-between">
           <div className="flex items-center gap-2">
             <FileText className="w-4 h-4 text-violet-400" />
-            <h2 className="text-[var(--text-base)] font-semibold text-sm">Hisob-faktura so&apos;rash</h2>
+            <h2 className="text-[var(--text-base)] font-semibold text-sm">{d.billingInvoiceTitle}</h2>
           </div>
           <button onClick={onClose} className="text-[var(--text-muted)] hover:text-[var(--text-base)] transition-colors p-1">
             <X className="w-4 h-4" />
@@ -146,7 +156,7 @@ function InvoiceModal({ onClose }: { onClose: () => void }) {
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
-            <label className="block text-xs font-medium text-[var(--text-muted)] mb-2">Kompaniya nomi</label>
+            <label className="block text-xs font-medium text-[var(--text-muted)] mb-2">{d.billingCompanyName}</label>
             <input
               type="text"
               value={company}
@@ -157,7 +167,7 @@ function InvoiceModal({ onClose }: { onClose: () => void }) {
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-[var(--text-muted)] mb-2">INN raqami</label>
+            <label className="block text-xs font-medium text-[var(--text-muted)] mb-2">{d.billingInn}</label>
             <input
               type="text"
               value={inn}
@@ -169,14 +179,14 @@ function InvoiceModal({ onClose }: { onClose: () => void }) {
           </div>
           {sent ? (
             <div className="flex items-center gap-2 text-sm px-4 py-2.5 rounded-xl bg-emerald-500/10 text-emerald-400">
-              <CheckCircle className="w-4 h-4" /> Hisob-faktura yuborildi!
+              <CheckCircle className="w-4 h-4" /> {d.billingInvoiceSent}
             </div>
           ) : (
             <button
               type="submit"
               className="w-full bg-violet-600 hover:bg-violet-500 text-[var(--text-base)] text-sm font-semibold py-2.5 rounded-xl transition-colors"
             >
-              Yuborish
+              {d.billingSend}
             </button>
           )}
         </form>
@@ -188,7 +198,10 @@ function InvoiceModal({ onClose }: { onClose: () => void }) {
 // ── Page ───────────────────────────────────────────────────────────────────────
 
 export default function BillingPage() {
+  const { lang } = useLang()
+  const d = translations[lang].dashboard
   const currentPlan: Plan = 'pro'
+  const PLAN_FEATURES = planFeatures(d)
   const [showPlanModal, setShowPlanModal]       = useState(false)
   const [showInvoiceModal, setShowInvoiceModal] = useState(false)
 
@@ -196,9 +209,9 @@ export default function BillingPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-[var(--text-base)]">Tarif va to&apos;lov</h1>
+        <h1 className="text-2xl font-bold text-[var(--text-base)]">{d.billingTitle}</h1>
         <p className="text-[var(--text-muted)] text-sm mt-1">
-          Obuna, to&apos;lov usullari va tarix
+          {d.billingSubtitle}
         </p>
       </div>
 
@@ -206,7 +219,7 @@ export default function BillingPage() {
       <div className="bg-[var(--bg-card2)] border border-cyan-500/30 rounded-2xl overflow-hidden">
         <div className="px-5 py-4 border-b border-[var(--border)] flex items-center gap-2">
           <Zap className="w-4 h-4 text-cyan-400" />
-          <h2 className="text-[var(--text-base)] font-semibold text-sm">Joriy tarif</h2>
+          <h2 className="text-[var(--text-base)] font-semibold text-sm">{d.billingCurrentPlan}</h2>
         </div>
         <div className="p-6 flex flex-col sm:flex-row sm:items-start gap-6">
           {/* Plan badge + info */}
@@ -217,10 +230,10 @@ export default function BillingPage() {
                 Pro
               </span>
               <span className="text-xs text-[var(--text-muted)]">
-                Muddati: <span className="text-[var(--text-dim)]">2026-07-01</span>
+                {d.billingExpiry} <span className="text-[var(--text-dim)]">2026-07-01</span>
               </span>
             </div>
-            <p className="text-[var(--text-base)] font-bold text-xl">249,000 so&apos;m<span className="text-[var(--text-muted)] font-normal text-sm">/oy</span></p>
+            <p className="text-[var(--text-base)] font-bold text-xl">249,000 so&apos;m<span className="text-[var(--text-muted)] font-normal text-sm">{d.billingPerMonth}</span></p>
             <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {PLAN_FEATURES.pro.map(f => (
                 <li key={f} className="flex items-center gap-2 text-sm text-[var(--text-dim)]">
@@ -237,7 +250,7 @@ export default function BillingPage() {
               className="flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-[var(--text-base)] text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors shadow-lg shadow-violet-500/20"
             >
               <Package className="w-4 h-4" />
-              Tarifni o&apos;zgartirish
+              {d.billingChangePlan}
             </button>
           </div>
         </div>
@@ -247,7 +260,7 @@ export default function BillingPage() {
       <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
         <div className="px-5 py-4 border-b border-[var(--border)] flex items-center gap-2">
           <CreditCard className="w-4 h-4 text-violet-400" />
-          <h2 className="text-[var(--text-base)] font-semibold text-sm">To&apos;lov usullari</h2>
+          <h2 className="text-[var(--text-base)] font-semibold text-sm">{d.billingPaymentMethods}</h2>
         </div>
         <div className="p-5 space-y-3">
           {/* Saved card */}
@@ -257,10 +270,10 @@ export default function BillingPage() {
             </div>
             <div className="flex-1">
               <p className="text-[var(--text-base)] text-sm font-semibold">Uzcard **** 4242</p>
-              <p className="text-[var(--text-muted)] text-xs mt-0.5">Muddati: 12/27</p>
+              <p className="text-[var(--text-muted)] text-xs mt-0.5">{d.billingCardExpiry}</p>
             </div>
             <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
-              Asosiy
+              {d.billingPrimary}
             </span>
           </div>
 
@@ -268,14 +281,14 @@ export default function BillingPage() {
           <div className="flex flex-wrap gap-2 pt-1">
             <button className="flex items-center gap-2 text-sm font-medium text-[var(--text-dim)] hover:text-[var(--text-base)] border border-[var(--border2)] hover:border-[var(--border2)] px-4 py-2 rounded-xl transition-all bg-[var(--bg-card2)] hover:bg-[var(--bg-card2)]">
               <span className="text-violet-400 font-bold text-base leading-none">+</span>
-              To&apos;lov usuli qo&apos;shish
+              {d.billingAddPayment}
             </button>
             <button
               onClick={() => setShowInvoiceModal(true)}
               className="flex items-center gap-2 text-sm font-medium text-[var(--text-dim)] hover:text-[var(--text-base)] border border-[var(--border2)] hover:border-[var(--border2)] px-4 py-2 rounded-xl transition-all bg-[var(--bg-card2)] hover:bg-[var(--bg-card2)]"
             >
               <Receipt className="w-4 h-4 text-[var(--text-muted)]" />
-              Hisob-faktura so&apos;rash
+              {d.billingRequestInvoice}
             </button>
           </div>
         </div>
@@ -285,17 +298,17 @@ export default function BillingPage() {
       <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
         <div className="px-5 py-4 border-b border-[var(--border)] flex items-center gap-2">
           <FileText className="w-4 h-4 text-violet-400" />
-          <h2 className="text-[var(--text-base)] font-semibold text-sm">To&apos;lov tarixi</h2>
+          <h2 className="text-[var(--text-base)] font-semibold text-sm">{d.billingPaymentHistory}</h2>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="text-[var(--text-muted)] text-xs border-b border-[var(--border)] bg-[var(--bg-card2)]">
-                <th className="text-left font-medium px-5 py-3">Sana</th>
-                <th className="text-left font-medium px-4 py-3">Tavsif</th>
-                <th className="text-right font-medium px-4 py-3">Summa</th>
-                <th className="text-center font-medium px-4 py-3">Holat</th>
-                <th className="text-center font-medium px-4 py-3">Chek</th>
+                <th className="text-left font-medium px-5 py-3">{d.billingColDate}</th>
+                <th className="text-left font-medium px-4 py-3">{d.billingColDesc}</th>
+                <th className="text-right font-medium px-4 py-3">{d.billingColAmount}</th>
+                <th className="text-center font-medium px-4 py-3">{d.billingColStatus}</th>
+                <th className="text-center font-medium px-4 py-3">{d.billingColReceipt}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--border)]">
@@ -309,12 +322,12 @@ export default function BillingPage() {
                   <td className="px-4 py-3.5 text-center">
                     <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
                       <CheckCircle className="w-3 h-3" />
-                      Muvaffaqiyatli
+                      {d.billingSuccess}
                     </span>
                   </td>
                   <td className="px-4 py-3.5 text-center">
                     <button className="text-xs font-medium text-[var(--text-muted)] hover:text-[var(--text-base)] border border-[var(--border2)] hover:border-[var(--border2)] px-3 py-1 rounded-lg transition-all">
-                      Chek
+                      {d.billingReceipt}
                     </button>
                   </td>
                 </tr>
@@ -325,8 +338,8 @@ export default function BillingPage() {
       </div>
 
       {/* Modals */}
-      {showPlanModal    && <PlanModal    current={currentPlan} onClose={() => setShowPlanModal(false)} />}
-      {showInvoiceModal && <InvoiceModal onClose={() => setShowInvoiceModal(false)} />}
+      {showPlanModal    && <PlanModal    current={currentPlan} onClose={() => setShowPlanModal(false)} d={d} />}
+      {showInvoiceModal && <InvoiceModal onClose={() => setShowInvoiceModal(false)} d={d} />}
     </div>
   )
 }
