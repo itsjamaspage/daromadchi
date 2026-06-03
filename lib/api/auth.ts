@@ -1,10 +1,27 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import type { User } from '@supabase/supabase-js'
 
-export const supabaseAdmin: SupabaseClient = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// Built lazily on first access so that simply importing this module (e.g. during
+// Next.js build-time page-data collection) never throws when the Supabase env
+// vars are absent. The real client is created the first time a property is read.
+let _supabaseAdmin: SupabaseClient | null = null
+function getSupabaseAdmin(): SupabaseClient {
+  if (!_supabaseAdmin) {
+    _supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+  }
+  return _supabaseAdmin
+}
+
+export const supabaseAdmin: SupabaseClient = new Proxy({} as SupabaseClient, {
+  get(_target, prop) {
+    const client = getSupabaseAdmin()
+    const value = Reflect.get(client as object, prop)
+    return typeof value === 'function' ? value.bind(client) : value
+  },
+})
 
 export async function getAuthUser(authHeader: string | null): Promise<User | null> {
   const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null
