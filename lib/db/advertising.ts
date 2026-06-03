@@ -1,5 +1,4 @@
 import { createClient } from '@/lib/supabase/server'
-import { adCampaigns as mockCampaigns } from '@/lib/mock-data'
 import type { AdCampaign, MarketplaceType } from '@/lib/types'
 
 const supabaseConfigured =
@@ -17,7 +16,7 @@ async function getShopIds(marketplace?: MarketplaceType): Promise<string[]> {
 }
 
 export async function getAdCampaigns(marketplace?: MarketplaceType): Promise<AdCampaign[]> {
-  if (!supabaseConfigured) return mockCampaigns
+  if (!supabaseConfigured) return []
 
   const shopIds = await getShopIds(marketplace)
   if (shopIds.length === 0) return []

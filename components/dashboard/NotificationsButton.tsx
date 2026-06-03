@@ -1,8 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { Bell, AlertTriangle, TrendingDown, Package, X } from 'lucide-react'
-import { products, productAds } from '@/lib/mock-data'
+import { Bell, X } from 'lucide-react'
 
 interface Alert {
   id: string
@@ -13,64 +12,9 @@ interface Alert {
   icon: React.ElementType
 }
 
-function buildAlerts(): Alert[] {
-  const alerts: Alert[] = []
-
-  for (const p of products) {
-    const velocity = p.sold / 30
-    const daysLeft = velocity > 0 ? Math.floor(p.stock / velocity) : 999
-
-    if (daysLeft <= 7) {
-      alerts.push({
-        id: `stock-${p.id}`,
-        type: 'stock',
-        title: `${p.name}`,
-        desc: `Faqat ${daysLeft} kun zaxira qoldi — tezda buyurtma bering`,
-        color: 'text-red-400',
-        icon: Package,
-      })
-    } else if (daysLeft <= 14) {
-      alerts.push({
-        id: `stock-${p.id}`,
-        type: 'stock',
-        title: `${p.name}`,
-        desc: `${daysLeft} kun zaxira qoldi — zaxira kamaymoqda`,
-        color: 'text-amber-400',
-        icon: Package,
-      })
-    }
-
-    const ad = productAds[p.id]
-    if (ad) {
-      const revenue = p.price * p.sold
-      const drr = revenue > 0 ? (ad.adSpend / revenue) * 100 : 0
-
-      if (ad.adOrders === 0 && ad.adSpend > 0) {
-        alerts.push({
-          id: `spend-${p.id}`,
-          type: 'spend',
-          title: `${p.name}`,
-          desc: `Reklamaga ${new Intl.NumberFormat('uz-UZ').format(Math.round(ad.adSpend / 1000))}K so'm sarflandi, lekin sotuvga ta'sir yo'q`,
-          color: 'text-amber-400',
-          icon: TrendingDown,
-        })
-      } else if (drr > 25) {
-        alerts.push({
-          id: `drr-${p.id}`,
-          type: 'drr',
-          title: `${p.name}`,
-          desc: `DRR ${drr.toFixed(1)}% — reklama byudjetini kamaytiring`,
-          color: 'text-red-400',
-          icon: AlertTriangle,
-        })
-      }
-    }
-  }
-
-  return alerts
-}
-
-const ALL_ALERTS = buildAlerts()
+// Real notifications are sourced from the user's synced data.
+// Until that pipeline is wired in, no fabricated alerts are shown.
+const ALL_ALERTS: Alert[] = []
 
 export default function NotificationsButton() {
   const [open, setOpen]       = useState(false)

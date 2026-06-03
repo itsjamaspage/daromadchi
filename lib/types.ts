@@ -153,3 +153,51 @@ export interface Kpis {
   change_profit?: number | null
   change_orders?: number | null
 }
+
+// ── Stock alerts ──────────────────────────────────────────────────────────────
+export interface StockAlert {
+  productId: string
+  productTitle: string
+  sku: string
+  currentStock: number
+  threshold: number
+  daysLeft: number      // estimated days until stockout at current sales rate
+  dailySales: number    // avg daily sales
+  marketplace: 'uzum' | 'yandex_market'
+}
+
+// ── Payouts ───────────────────────────────────────────────────────────────────
+export interface PayoutEntry {
+  id: string
+  period: string
+  grossRevenue: number
+  commission: number
+  delivery: number
+  returns: number
+  adSpend: number
+  acquiring: number
+  tax: number
+  otherDeductions: number
+  netPayout: number
+  ordersCount: number
+  status: 'paid' | 'pending' | 'processing'
+  payoutDate: string | null
+}
+
+// ── Competitor price tracking ─────────────────────────────────────────────────
+export interface CompetitorPrice {
+  id: string
+  productId: string
+  productTitle: string
+  sku: string
+  myPrice: number
+  minCompetitorPrice: number
+  avgCompetitorPrice: number
+  maxCompetitorPrice: number
+  competitorCount: number
+  pricePosition: 'lowest' | 'competitive' | 'high' | 'highest'
+  priceDiff: number
+  priceDiffPct: number
+  lastChecked: string
+  history: { date: string; myPrice: number; minPrice: number }[]
+}

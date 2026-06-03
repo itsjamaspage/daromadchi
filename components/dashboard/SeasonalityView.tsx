@@ -6,7 +6,7 @@ import {
   CartesianGrid, Cell,
 } from 'recharts'
 import { TrendingUp, Package } from 'lucide-react'
-import type { ProductSeasonality } from '@/lib/mock-reviews-seasonality'
+import type { ProductSeasonality } from '@/lib/db/seasonality'
 import ExportButton from '@/components/dashboard/ExportButton'
 
 function fs(n: number) {

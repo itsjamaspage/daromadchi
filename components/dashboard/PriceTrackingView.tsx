@@ -5,7 +5,7 @@ import { TrendingUp, TrendingDown, Minus, RefreshCw, AlertTriangle } from 'lucid
 import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend,
 } from 'recharts'
-import type { CompetitorPrice } from '@/lib/mock-data'
+import type { CompetitorPrice } from '@/lib/types'
 import ExportButton from '@/components/dashboard/ExportButton'
 
 interface Props {

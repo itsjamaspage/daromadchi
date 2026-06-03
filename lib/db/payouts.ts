@@ -1,6 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { payoutEntries as mockEntries } from '@/lib/mock-data'
-import type { PayoutEntry } from '@/lib/mock-data'
+import type { PayoutEntry } from '@/lib/types'
 
 export type { PayoutEntry }
 
@@ -28,7 +27,7 @@ function mapRow(row: Record<string, unknown>): PayoutEntry {
 }
 
 export async function getPayoutEntries(): Promise<PayoutEntry[]> {
-  if (!supabaseConfigured) return mockEntries
+  if (!supabaseConfigured) return []
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()

@@ -1,6 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { stockAlerts as mockAlerts } from '@/lib/mock-data'
-import type { StockAlert } from '@/lib/mock-data'
+import type { StockAlert } from '@/lib/types'
 
 export type { StockAlert }
 
@@ -9,7 +8,7 @@ const supabaseConfigured =
   !process.env.NEXT_PUBLIC_SUPABASE_URL.includes('your-project')
 
 export async function getStockAlerts(): Promise<StockAlert[]> {
-  if (!supabaseConfigured) return mockAlerts
+  if (!supabaseConfigured) return []
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()

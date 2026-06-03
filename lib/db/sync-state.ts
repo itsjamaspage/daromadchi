@@ -1,5 +1,4 @@
 import { createClient } from '@/lib/supabase/server'
-import { syncDays as mockDays } from '@/lib/mock-data'
 import type { SyncDay } from '@/lib/types'
 
 const supabaseConfigured =
@@ -20,7 +19,7 @@ async function getFirstShopId(): Promise<string | null> {
 }
 
 export async function getSyncDays(days = 30): Promise<SyncDay[]> {
-  if (!supabaseConfigured) return mockDays
+  if (!supabaseConfigured) return []
 
   const shopId = await getFirstShopId()
   if (!shopId) return []
