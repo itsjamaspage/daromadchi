@@ -5,7 +5,7 @@ import { useState } from 'react'
 import {
   Check, X, Zap, Shield, Star,
   TrendingUp, ChevronRight, MessageCircle, ChevronDown,
-  Lock, Users, FileText, Cpu, Clock, Mail,
+  Lock, Users, FileText, Clock, Mail,
 } from 'lucide-react'
 
 interface Feature { label: string; free: boolean | string; pro: boolean | string; proplus: boolean | string }
@@ -28,18 +28,17 @@ const PRO_FEATURES = [
   'Mavsumiylik tahlili',
   'Narx kuzatuvi',
   'Maxsus hisobotlar',
+  'API kirish',
 ]
 
 /* ── Pro+ exclusive extras ───────────────────────────────────────────────
    These are power-user features most solo sellers never need:
-   – API: only devs integrating with their own systems
    – Team accounts: only agencies / large ops with multiple managers
    – Scheduled email reports: convenience, not core analytics
    – Priority support: support speed tier, not a product feature
    – White-label PDF: branding cosmetic for resellers/agencies
    ─────────────────────────────────────────────────────────────────────── */
 const PROPLUS_EXTRAS = [
-  { icon: Cpu,      label: 'API kirish',                        desc: "O'z tizimingizga to'liq integratsiya" },
   { icon: Users,    label: 'Jamoa (5 foydalanuvchi)',            desc: "Rol va ruxsat boshqaruvi" },
   { icon: Mail,     label: 'Avtomatik hisobot emailga',          desc: "Kunlik/haftalik yetkazib berish" },
   { icon: Clock,    label: "Prioritet qo'llab-quvvatlash",       desc: "15 daqiqa ichida javob (Pro: standart navbat)" },
@@ -114,8 +113,8 @@ const comparisonFeatures: Feature[] = [
   { label: 'Mavsumiylik tahlili',                free: false,    pro: true,      proplus: true      },
   { label: 'Narx kuzatuvi',                      free: false,    pro: true,      proplus: true      },
   { label: 'Maxsus hisobotlar',                  free: false,    pro: true,      proplus: true      },
+  { label: 'API kirish',                         free: false,    pro: true,      proplus: true      },
   // ── Pro+ exclusive (power-user extras) ───────────────────────────────
-  { label: 'API kirish',                         free: false,    pro: false,     proplus: true      },
   { label: 'Jamoa (5 foydalanuvchi)',             free: false,    pro: false,     proplus: true      },
   { label: 'Avtomatik hisobot emailga',           free: false,    pro: false,     proplus: true      },
   { label: "Prioritet qo'llab-quvvatlash",        free: false,    pro: false,     proplus: true      },
@@ -377,7 +376,7 @@ export default function PricingPage() {
             <div className="flex-1">
               <p className="font-bold text-sm" style={{ color: 'var(--text-base)' }}>Pro+ nima qo&rsquo;shadi?</p>
               <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
-                Pro dagi hamma narsa bor. Pro+ faqat katta jamoalar va agentliklar uchun qo&rsquo;shimcha beradi: <span style={{ color: '#eab308' }}>API kirish, 5 foydalanuvchi, avtomatik email hisobot, prioritet qo&rsquo;llab-quvvatlash va white-label PDF</span>.
+                Pro dagi hamma narsa bor. Pro+ faqat katta jamoalar va agentliklar uchun qo&rsquo;shimcha beradi: <span style={{ color: '#eab308' }}>5 foydalanuvchi jamoa, avtomatik email hisobot, prioritet qo&rsquo;llab-quvvatlash va white-label PDF</span>.
               </p>
             </div>
             <Link href="/login?plan=proplus" className="flex-shrink-0 text-xs font-bold px-4 py-2 rounded-xl text-white transition-all"
