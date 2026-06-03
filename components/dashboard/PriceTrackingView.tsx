@@ -227,11 +227,11 @@ export default function PriceTrackingView({ prices }: Props) {
                               />
                               <Tooltip
                                 contentStyle={{
-                                  backgroundColor: '#0d0d1a',
-                                  border: '1px solid rgba(255,255,255,0.08)',
+                                  backgroundColor: 'var(--bg-input)',
+                                  border: '1px solid var(--border2)',
                                   borderRadius: '12px',
                                   fontSize: 12,
-                                  color: '#f1f5f9',
+                                  color: 'var(--text-base)',
                                 }}
                                 formatter={(value, name) => [
                                   fs(Number(value)),
