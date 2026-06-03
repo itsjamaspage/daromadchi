@@ -6,7 +6,7 @@ import HelpTooltip from '@/components/dashboard/HelpTooltip'
 import { useLang } from '@/app/providers'
 import { translations } from '@/lib/i18n'
 
-// ── Types & mock data ──────────────────────────────────────────────────────────
+// ── Types ───────────────────────────────────────────────────────────────────────
 
 type Role = 'owner' | 'admin' | 'viewer'
 
@@ -20,39 +20,6 @@ type TeamMember = {
   initials: string
   color: string
 }
-
-const MOCK_MEMBERS: TeamMember[] = [
-  {
-    id: 1,
-    name: 'Bobur Toshmatov',
-    email: 'bobur@example.uz',
-    role: 'owner',
-    status: 'active',
-    joinedAt: '2025-01-15',
-    initials: 'BT',
-    color: 'from-violet-600 to-indigo-600',
-  },
-  {
-    id: 2,
-    name: 'Malika Yusupova',
-    email: 'malika@example.uz',
-    role: 'admin',
-    status: 'active',
-    joinedAt: '2025-03-22',
-    initials: 'MY',
-    color: 'from-emerald-600 to-teal-600',
-  },
-  {
-    id: 3,
-    name: 'Jasur Nazarov',
-    email: 'jasur@example.uz',
-    role: 'viewer',
-    status: 'active',
-    joinedAt: '2025-05-10',
-    initials: 'JN',
-    color: 'from-amber-600 to-orange-600',
-  },
-]
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 

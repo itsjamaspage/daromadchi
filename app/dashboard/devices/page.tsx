@@ -1,39 +1,21 @@
 'use client'
 
 import { useState } from 'react'
-import { Monitor, Smartphone, Globe, Eye, EyeOff, RefreshCw, LogOut, ToggleLeft, ToggleRight, ExternalLink, AlertTriangle } from 'lucide-react'
+import { Monitor, Smartphone, Globe, LogOut, ToggleLeft, ToggleRight, ExternalLink, AlertTriangle } from 'lucide-react'
 import { useLang } from '@/app/providers'
 import { translations } from '@/lib/i18n'
 
-const MOCK_DEVICES = [
-  {
-    id: 1,
-    name: 'MacBook Pro',
-    browser: 'Chrome 124',
-    lastActive: 'Hozir aktiv',
-    status: 'active' as const,
-    icon: Monitor,
-    unsupported: false,
-  },
-  {
-    id: 2,
-    name: 'Windows PC',
-    browser: 'Chrome 122',
-    lastActive: '2 kun oldin',
-    status: 'inactive' as const,
-    icon: Monitor,
-    unsupported: false,
-  },
-  {
-    id: 3,
-    name: 'iPhone (Safari)',
-    browser: 'Safari 17',
-    lastActive: '1 hafta oldin',
-    status: 'inactive' as const,
-    icon: Smartphone,
-    unsupported: true,
-  },
-]
+// Connected-device tracking requires a server-side session registry that isn't
+// built yet, so the list shows an honest empty state instead of fabricated rows.
+type Device = {
+  id: number
+  name: string
+  browser: string
+  lastActive: string
+  status: 'active' | 'inactive'
+  icon: typeof Monitor
+  unsupported: boolean
+}
 
 type ToggleKey = 'widget' | 'drr' | 'competitor'
 
@@ -47,35 +29,12 @@ export default function DevicesPage() {
     { key: 'competitor', label: d.devicesExtCompetitor, desc: d.devicesExtCompetitorDesc },
   ]
 
-  const [tokenVisible, setTokenVisible] = useState(false)
-  const [token, setToken] = useState('drm_••••••••••••xyz')
-  const [realToken] = useState('drm_s8kL2pQ9mNxR7vT3')
-  const [refreshing, setRefreshing] = useState(false)
   const [settings, setSettings] = useState<Record<ToggleKey, boolean>>({
     widget: true,
     drr: true,
     competitor: false,
   })
-  const [devices, setDevices] = useState(MOCK_DEVICES)
-
-  function handleReveal() {
-    if (tokenVisible) {
-      setToken('drm_••••••••••••xyz')
-      setTokenVisible(false)
-    } else {
-      setToken(realToken)
-      setTokenVisible(true)
-    }
-  }
-
-  function handleRefreshToken() {
-    setRefreshing(true)
-    setTokenVisible(false)
-    setTimeout(() => {
-      setToken('drm_••••••••••••xyz')
-      setRefreshing(false)
-    }, 1200)
-  }
+  const [devices, setDevices] = useState<Device[]>([])
 
   function handleRemoveDevice(id: number) {
     setDevices(prev => prev.filter(d => d.id !== id))
@@ -208,43 +167,6 @@ export default function DevicesPage() {
             </button>
           </div>
         )}
-      </div>
-
-      {/* API Token */}
-      <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
-        <div className="px-5 py-4 border-b border-[var(--border)] flex items-center gap-2">
-          <Globe className="w-4 h-4 text-violet-400" />
-          <h2 className="text-[var(--text-base)] font-semibold text-sm">{d.devicesApiToken}</h2>
-        </div>
-        <div className="p-5 space-y-3">
-          <div className="flex items-center gap-3">
-            <code className="flex-1 bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-3 text-sm text-cyan-300 font-mono tracking-wide">
-              {token}
-            </code>
-            <button
-              onClick={handleReveal}
-              className="flex items-center gap-1.5 text-xs text-[var(--text-muted)] hover:text-[var(--text-base)] border border-[var(--border2)] hover:border-[var(--border2)] px-3 py-3 rounded-xl transition-all"
-              title={tokenVisible ? d.profileHide : d.profileShow}
-            >
-              {tokenVisible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              {tokenVisible ? d.profileHide : d.profileShow}
-            </button>
-            <button
-              onClick={handleRefreshToken}
-              disabled={refreshing}
-              className="flex items-center gap-1.5 text-xs text-[var(--text-muted)] hover:text-[var(--text-base)] border border-[var(--border2)] hover:border-[var(--border2)] px-3 py-3 rounded-xl transition-all disabled:opacity-50"
-            >
-              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-              {d.devicesRefresh}
-            </button>
-          </div>
-          <div className="flex items-start gap-2 bg-amber-500/[0.07] border border-amber-500/20 rounded-xl px-4 py-3">
-            <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-            <p className="text-amber-400/80 text-xs">
-              <strong className="text-amber-300">{d.devicesTokenWarning}</strong> {d.devicesTokenWarningText}
-            </p>
-          </div>
-        </div>
       </div>
 
       {/* Extension settings */}

@@ -100,6 +100,8 @@ export const translations = {
       profileColEvent: 'Hodisa',
       profileColIp: 'IP manzil',
       profileColDevice: 'Qurilma',
+      profileNoSessions: 'Faol seanslar yoʻq',
+      profileNoLog: 'Xavfsizlik jurnali boʻsh',
       // Devices page
       devicesTitle: 'Qurilmalar',
       devicesSubtitle: 'Hisobingizga ulangan qurilmalar va brauzerlar',
@@ -816,6 +818,8 @@ export const translations = {
       profileColEvent: 'Event',
       profileColIp: 'IP address',
       profileColDevice: 'Device',
+      profileNoSessions: 'No active sessions',
+      profileNoLog: 'Security log is empty',
       // Devices page
       devicesTitle: 'Devices',
       devicesSubtitle: 'Devices and browsers connected to your account',
@@ -1532,6 +1536,8 @@ export const translations = {
       profileColEvent: 'Событие',
       profileColIp: 'IP адрес',
       profileColDevice: 'Устройство',
+      profileNoSessions: 'Нет активных сессий',
+      profileNoLog: 'Журнал безопасности пуст',
       // Devices page
       devicesTitle: 'Устройства',
       devicesSubtitle: 'Устройства и браузеры, подключённые к вашему аккаунту',
