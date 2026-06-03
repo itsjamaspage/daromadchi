@@ -93,26 +93,26 @@ function ShopCard({ shop }: { shop: Shop }) {
           <span className={`text-sm font-bold ${col.text}`}>{cfg.letter}</span>
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-white font-semibold text-sm">{cfg.label}</p>
-          <p className="text-slate-500 text-xs">{shop.name}</p>
+          <p className="text-[var(--text-base)] font-semibold text-sm">{cfg.label}</p>
+          <p className="text-[var(--text-muted)] text-xs">{shop.name}</p>
         </div>
-        <span className={`text-[10px] font-semibold px-2 py-1 rounded-full border ${hasKey ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-400' : 'bg-slate-500/10 border-slate-500/20 text-slate-500'}`}>
+        <span className={`text-[10px] font-semibold px-2 py-1 rounded-full border ${hasKey ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-400' : 'bg-slate-500/10 border-[var(--border)] text-[var(--text-muted)]'}`}>
           {hasKey ? t.connected : t.notConnected}
         </span>
       </div>
 
       <div className="px-6 py-4 grid grid-cols-3 gap-4">
         <div>
-          <p className="text-slate-500 text-xs mb-0.5">{t.lastSync}</p>
-          <p className="text-white text-sm font-medium">{lastSync ?? t.notSynced}</p>
+          <p className="text-[var(--text-muted)] text-xs mb-0.5">{t.lastSync}</p>
+          <p className="text-[var(--text-base)] text-sm font-medium">{lastSync ?? t.notSynced}</p>
         </div>
         <div>
-          <p className="text-slate-500 text-xs mb-0.5">{t.products}</p>
-          <p className="text-white text-sm font-semibold">{shop.productCount.toLocaleString()}</p>
+          <p className="text-[var(--text-muted)] text-xs mb-0.5">{t.products}</p>
+          <p className="text-[var(--text-base)] text-sm font-semibold">{shop.productCount.toLocaleString()}</p>
         </div>
         <div>
-          <p className="text-slate-500 text-xs mb-0.5">{t.orders}</p>
-          <p className="text-white text-sm font-semibold">{shop.orderCount.toLocaleString()}</p>
+          <p className="text-[var(--text-muted)] text-xs mb-0.5">{t.orders}</p>
+          <p className="text-[var(--text-base)] text-sm font-semibold">{shop.orderCount.toLocaleString()}</p>
         </div>
       </div>
 
@@ -121,7 +121,7 @@ function ShopCard({ shop }: { shop: Shop }) {
           <button
             onClick={handleSync}
             disabled={syncState === 'syncing' || !hasKey}
-            className="flex items-center gap-2 bg-[var(--bg-input)] hover:bg-white/[0.06] border border-[var(--border2)] disabled:opacity-40 disabled:cursor-not-allowed text-slate-200 text-sm font-medium px-4 py-2 rounded-xl transition-colors"
+            className="flex items-center gap-2 bg-[var(--bg-input)] hover:bg-[var(--bg-input)] border border-[var(--border2)] disabled:opacity-40 disabled:cursor-not-allowed text-[var(--text-base)] text-sm font-medium px-4 py-2 rounded-xl transition-colors"
           >
             {syncState === 'syncing' ? <Loader2 className="w-4 h-4 animate-spin" /> : syncState === 'ok' ? <CheckCircle className="w-4 h-4 text-emerald-400" /> : syncState === 'err' ? <XCircle className="w-4 h-4 text-red-400" /> : <RefreshCw className="w-4 h-4" />}
             {syncState === 'syncing' ? t.syncing : t.syncNow}
@@ -170,10 +170,10 @@ export default function SyncStatusClient({ shops }: { shops: Shop[] }) {
   if (shops.length === 0) {
     return (
       <div className="bg-[var(--bg-card2)] border border-dashed border-violet-500/30 rounded-2xl p-10 text-center">
-        <p className="text-white font-bold mb-2">{t.noShops}</p>
-        <p className="text-slate-400 text-sm mb-4">{t.noShopsDesc}</p>
+        <p className="text-[var(--text-base)] font-bold mb-2">{t.noShops}</p>
+        <p className="text-[var(--text-muted)] text-sm mb-4">{t.noShopsDesc}</p>
         <Link href="/dashboard/settings"
-          className="inline-flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors">
+          className="inline-flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-[var(--text-base)] text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors">
           <Settings className="w-4 h-4" /> Settings
         </Link>
       </div>
@@ -186,7 +186,7 @@ export default function SyncStatusClient({ shops }: { shops: Shop[] }) {
         <button
           onClick={handleSyncAll}
           disabled={syncingAll}
-          className="flex items-center gap-2 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors"
+          className="flex items-center gap-2 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-[var(--text-base)] text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors"
         >
           {syncingAll ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
           {syncingAll ? t.syncing : t.syncAll}

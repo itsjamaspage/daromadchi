@@ -1,5 +1,4 @@
 import { createClient } from '@/lib/supabase/server'
-import { unitEconomicsItems as mockItems } from '@/lib/mock-data'
 import type { UnitEconomicsItem, UnitEcoSettings } from '@/lib/types'
 
 const supabaseConfigured =
@@ -35,7 +34,7 @@ function mapRow(row: Record<string, unknown>): UnitEconomicsItem {
 }
 
 export async function getUnitEconomicsItems(): Promise<UnitEconomicsItem[]> {
-  if (!supabaseConfigured) return mockItems
+  if (!supabaseConfigured) return []
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()

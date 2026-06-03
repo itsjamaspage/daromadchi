@@ -69,14 +69,14 @@ export default function AdvertisingView({ campaigns }: Props) {
       <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3">
         {[
           { label: 'Jami sarflar',    value: fsFull(totals.spend),            sub: undefined,             color: 'text-red-400'     },
-          { label: 'Ko\'rsatuvlar',   value: totals.impressions.toLocaleString('uz-UZ'), sub: undefined,  color: 'text-white'       },
-          { label: 'Kliklar',         value: totals.clicks.toLocaleString('uz-UZ'),      sub: undefined,  color: 'text-white'       },
-          { label: 'Buyurtmalar',     value: String(totals.orders),            sub: undefined,             color: 'text-white'       },
+          { label: 'Ko\'rsatuvlar',   value: totals.impressions.toLocaleString('uz-UZ'), sub: undefined,  color: 'text-[var(--text-base)]'       },
+          { label: 'Kliklar',         value: totals.clicks.toLocaleString('uz-UZ'),      sub: undefined,  color: 'text-[var(--text-base)]'       },
+          { label: 'Buyurtmalar',     value: String(totals.orders),            sub: undefined,             color: 'text-[var(--text-base)]'       },
           { label: 'Daromad',         value: fsFull(totals.revenue),           sub: undefined,             color: 'text-emerald-400' },
           { label: 'O\'rtacha DRR',   value: totals.drr > 0 ? `${totals.drr.toFixed(1)}%` : '—', sub: undefined, color: drrColor(totals.drr) },
         ].map(({ label, value, color }) => (
-          <div key={label} className="bg-[#13131f] border border-white/[0.06] rounded-xl px-4 py-3">
-            <p className="text-xs text-slate-500 mb-1">{label}</p>
+          <div key={label} className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl px-4 py-3">
+            <p className="text-xs text-[var(--text-muted)] mb-1">{label}</p>
             <p className={`text-sm font-bold ${color}`}>{value}</p>
           </div>
         ))}
@@ -84,11 +84,11 @@ export default function AdvertisingView({ campaigns }: Props) {
 
       {/* Tabs + Export */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-        <div className="flex flex-wrap items-center gap-1 p-1 bg-[#13131f] border border-white/[0.06] rounded-xl w-fit">
+        <div className="flex flex-wrap items-center gap-1 p-1 bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl w-fit">
           {([['all','Hammasi'],['cpc','CPC'],['cpo','CPO']] as const).map(([v, label]) => (
             <button key={v} onClick={() => setTab(v)}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                tab === v ? 'bg-violet-600/20 text-violet-300 border border-violet-500/30' : 'text-slate-500 hover:text-slate-300'
+                tab === v ? 'bg-violet-600/20 text-violet-300 border border-violet-500/30' : 'text-[var(--text-muted)] hover:text-[var(--text-dim)]'
               }`}>
               {label}
             </button>
@@ -100,22 +100,22 @@ export default function AdvertisingView({ campaigns }: Props) {
       </div>
 
       {/* Table */}
-      <div className="bg-[#13131f] border border-white/[0.06] rounded-2xl overflow-hidden">
+      <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-white/[0.06]">
+              <tr className="border-b border-[var(--border)]">
                 {['Kampaniya','Tur','Holat','Sarflar','Ko\'rs.','Kliklar','CTR','Buyurtma','Daromad','DRR'].map(h => (
-                  <th key={h} className="px-3 py-3 text-left text-xs font-semibold text-slate-500 whitespace-nowrap">{h}</th>
+                  <th key={h} className="px-3 py-3 text-left text-xs font-semibold text-[var(--text-muted)] whitespace-nowrap">{h}</th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/[0.03]">
+            <tbody className="divide-y divide-[var(--border)]">
               {filtered.map(c => (
-                <tr key={c.id} className="hover:bg-white/[0.02] transition-colors">
+                <tr key={c.id} className="hover:bg-[var(--bg-card2)] transition-colors">
                   <td className="px-3 py-3">
-                    <p className="text-white text-xs font-medium max-w-[200px] truncate">{c.name}</p>
-                    <p className="text-slate-500 text-[10px] mt-0.5 truncate max-w-[200px]">{c.productTitle}</p>
+                    <p className="text-[var(--text-base)] text-xs font-medium max-w-[200px] truncate">{c.name}</p>
+                    <p className="text-[var(--text-muted)] text-[10px] mt-0.5 truncate max-w-[200px]">{c.productTitle}</p>
                   </td>
                   <td className="px-3 py-3">
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${
@@ -125,16 +125,16 @@ export default function AdvertisingView({ campaigns }: Props) {
                   <td className="px-3 py-3">
                     <div className="flex items-center gap-1.5">
                       <span className={`w-1.5 h-1.5 rounded-full ${statusDot(c.status)}`} />
-                      <span className="text-xs text-slate-400">{statusLabel(c.status)}</span>
+                      <span className="text-xs text-[var(--text-muted)]">{statusLabel(c.status)}</span>
                     </div>
                   </td>
                   <td className="px-3 py-3 text-red-400 text-xs">{fs(c.spend)}</td>
-                  <td className="px-3 py-3 text-slate-400 text-xs">{c.impressions.toLocaleString('uz-UZ')}</td>
-                  <td className="px-3 py-3 text-slate-300 text-xs">{c.clicks.toLocaleString('uz-UZ')}</td>
-                  <td className="px-3 py-3 text-slate-300 text-xs">{c.ctr.toFixed(2)}%</td>
+                  <td className="px-3 py-3 text-[var(--text-muted)] text-xs">{c.impressions.toLocaleString('uz-UZ')}</td>
+                  <td className="px-3 py-3 text-[var(--text-dim)] text-xs">{c.clicks.toLocaleString('uz-UZ')}</td>
+                  <td className="px-3 py-3 text-[var(--text-dim)] text-xs">{c.ctr.toFixed(2)}%</td>
                   <td className="px-3 py-3">
                     <div className="flex items-center gap-1">
-                      <span className="text-white text-xs font-semibold">{c.orders}</span>
+                      <span className="text-[var(--text-base)] text-xs font-semibold">{c.orders}</span>
                       {c.orders === 0 && c.spend > 0 && (
                         <span className="w-2 h-2 rounded-full bg-red-500 flex-shrink-0" title="Sarflar bor, sotuv yo'q" />
                       )}
@@ -147,7 +147,7 @@ export default function AdvertisingView({ campaigns }: Props) {
                         {c.drr.toFixed(1)}%
                       </span>
                     ) : (
-                      <span className="text-slate-600 text-xs">—</span>
+                      <span className="text-[var(--text-muted)] text-xs">—</span>
                     )}
                   </td>
                 </tr>
@@ -158,7 +158,7 @@ export default function AdvertisingView({ campaigns }: Props) {
       </div>
 
       {/* Legend */}
-      <div className="flex flex-wrap gap-4 text-xs text-slate-500">
+      <div className="flex flex-wrap gap-4 text-xs text-[var(--text-muted)]">
         <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-red-500" />Sarflar bor, sotuv yo&apos;q</span>
         <span className="flex items-center gap-1.5"><span className="w-8 h-3 rounded bg-emerald-500/10 border border-emerald-500/20" /><span className="text-emerald-400">DRR &lt; 10%</span></span>
         <span className="flex items-center gap-1.5"><span className="w-8 h-3 rounded bg-amber-500/10 border border-amber-500/20" /><span className="text-amber-400">DRR 10–20%</span></span>

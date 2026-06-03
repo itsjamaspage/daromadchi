@@ -1,5 +1,4 @@
 import { createClient } from '@/lib/supabase/server'
-import { searchPhrases as mockPhrases } from '@/lib/mock-data'
 import type { SearchPhrase, MarketplaceType } from '@/lib/types'
 
 const supabaseConfigured =
@@ -17,7 +16,7 @@ async function getShopIds(marketplace?: MarketplaceType): Promise<string[]> {
 }
 
 export async function getSearchPhrases(marketplace?: MarketplaceType): Promise<SearchPhrase[]> {
-  if (!supabaseConfigured) return mockPhrases
+  if (!supabaseConfigured) return []
 
   const shopIds = await getShopIds(marketplace)
   if (shopIds.length === 0) return []

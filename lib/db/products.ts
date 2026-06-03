@@ -1,5 +1,4 @@
 import { createClient } from '@/lib/supabase/server'
-import { products as mockProducts } from '@/lib/mock-data'
 import type { Product, MarketplaceType } from '@/lib/types'
 
 const supabaseConfigured =
@@ -7,25 +6,7 @@ const supabaseConfigured =
   !process.env.NEXT_PUBLIC_SUPABASE_URL.includes('your-project')
 
 export async function getProducts(marketplace?: MarketplaceType): Promise<Product[]> {
-  if (!supabaseConfigured) {
-    return mockProducts.map(p => ({
-      id: String(p.id),
-      shop_id: 'mock',
-      sku: p.sku,
-      title: p.name,
-      cost_price: p.cost,
-      selling_price: p.price,
-      stock_quantity: p.stock,
-      physical_stock: null,
-      available_stock: p.stock,
-      category: p.category,
-      marketplace_product_id: null,
-      updated_at: '',
-      profit: p.profit,
-      sold: p.sold ?? 0,
-      is_shared: false,
-    }))
-  }
+  if (!supabaseConfigured) return []
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()

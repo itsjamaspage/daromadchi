@@ -134,7 +134,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
     <aside className="h-full w-60 flex flex-col" style={{ background: 'var(--bg-card)', borderRight: '1px solid var(--border)' }}>
       {/* Logo row */}
       <div className="p-5 flex items-center justify-between" style={{ borderBottom: '1px solid var(--border)' }}>
-        <Link href="/" className="flex items-center gap-3 group">
+        <Link href="/dashboard" className="flex items-center gap-3 group">
           <img src="/icon.svg" alt="Daromadchi" className="w-9 h-9 rounded-xl shadow-md" />
           <div>
             <span className="font-bold text-base tracking-tight transition-colors" style={{ color: 'var(--text-base)' }}>Daromadchi</span>

@@ -44,7 +44,7 @@ export default async function MarketPage({ searchParams }: Props) {
       {/* Header */}
       <div>
         <div className="flex items-center gap-3 mb-0.5">
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-[var(--text-base)] flex items-center gap-2">
             <Globe2 className="w-6 h-6 text-cyan-400" />
             {d.marketTitle}
           </h1>
@@ -53,19 +53,19 @@ export default async function MarketPage({ searchParams }: Props) {
             {d.publicData}
           </span>
         </div>
-        <p className="text-slate-400 text-sm">
+        <p className="text-[var(--text-muted)] text-sm">
           {d.marketSubtitle}
         </p>
       </div>
 
       {/* Marketplace tabs */}
-      <div className="flex items-center gap-1.5 p-1 bg-[#13131f] border border-white/[0.06] rounded-xl w-fit">
+      <div className="flex items-center gap-1.5 p-1 bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl w-fit">
         <Link
           href="/dashboard/market?tab=uzum"
           className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
             tab === 'uzum'
               ? 'bg-violet-600/20 text-violet-300 border border-violet-500/30'
-              : 'text-slate-500 hover:text-slate-300'
+              : 'text-[var(--text-muted)] hover:text-[var(--text-dim)]'
           }`}
         >
           <span className="w-4 h-4 rounded bg-violet-500/20 flex items-center justify-center text-[9px] font-bold text-violet-400">U</span>
@@ -76,7 +76,7 @@ export default async function MarketPage({ searchParams }: Props) {
           className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
             tab === 'yandex'
               ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-              : 'text-slate-500 hover:text-slate-300'
+              : 'text-[var(--text-muted)] hover:text-[var(--text-dim)]'
           }`}
         >
           <span className="w-4 h-4 rounded bg-amber-500/20 flex items-center justify-center text-[9px] font-bold text-amber-400">Y</span>
@@ -122,17 +122,17 @@ export default async function MarketPage({ searchParams }: Props) {
               />
             </>
           ) : (
-            <div className="bg-[#13131f] border border-dashed border-amber-500/30 rounded-2xl p-10 text-center">
+            <div className="bg-[var(--bg-card2)] border border-dashed border-amber-500/30 rounded-2xl p-10 text-center">
               <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mx-auto mb-4">
                 <Globe2 className="w-7 h-7 text-amber-400" />
               </div>
-              <h2 className="text-white font-bold text-lg mb-2">{d.yandexNotConnected}</h2>
-              <p className="text-slate-400 text-sm mb-6 max-w-sm mx-auto">
+              <h2 className="text-[var(--text-base)] font-bold text-lg mb-2">{d.yandexNotConnected}</h2>
+              <p className="text-[var(--text-muted)] text-sm mb-6 max-w-sm mx-auto">
                 {d.yandexNotConnectedDesc}
               </p>
               <Link
                 href="/dashboard/settings"
-                className="inline-flex items-center gap-2 bg-amber-600 hover:bg-amber-500 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors"
+                className="inline-flex items-center gap-2 bg-amber-600 hover:bg-amber-500 text-[var(--text-base)] text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors"
               >
                 <Settings className="w-4 h-4" /> {d.connectYandex}
               </Link>

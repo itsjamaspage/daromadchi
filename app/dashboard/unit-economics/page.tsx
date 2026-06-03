@@ -17,17 +17,17 @@ export default async function UnitEconomicsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <div className="flex items-center gap-2 mb-0.5">
-            <h1 className="text-2xl font-bold text-white">{d.unitEcoTitle}</h1>
+            <h1 className="text-2xl font-bold text-[var(--text-base)]">{d.unitEcoTitle}</h1>
             <span className="text-[10px] font-semibold px-2 py-1 rounded-full bg-violet-500/10 border border-violet-500/25 text-violet-400">
               {items.length} {d.productCount}
             </span>
             <HelpTooltip section="unitEconomics" />
           </div>
-          <p className="text-slate-400 text-sm">{d.unitEcoSubtitle}</p>
+          <p className="text-[var(--text-muted)] text-sm">{d.unitEcoSubtitle}</p>
         </div>
         <div className="flex items-center gap-2">
           <a href="https://uzum.uz" target="_blank" rel="noreferrer"
-            className="inline-flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors shadow-lg shadow-violet-500/20">
+            className="inline-flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-[var(--text-base)] text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors shadow-lg shadow-violet-500/20">
             <Calculator className="w-4 h-4" /> {d.openUzum}
           </a>
         </div>

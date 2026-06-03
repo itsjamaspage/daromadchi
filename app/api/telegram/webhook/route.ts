@@ -12,6 +12,14 @@ const NOTIF_LABELS: Record<string, string> = {
 }
 
 export async function POST(req: NextRequest) {
+  // Optional anti-spoofing: if TELEGRAM_WEBHOOK_SECRET is set, Telegram must
+  // echo it back in this header (configured via setWebhook?secret_token=...).
+  const expectedSecret = process.env.TELEGRAM_WEBHOOK_SECRET
+  if (expectedSecret) {
+    const got = req.headers.get('x-telegram-bot-api-secret-token')
+    if (got !== expectedSecret) return NextResponse.json({ ok: true })
+  }
+
   const body = await req.json().catch(() => null)
   if (!body) return NextResponse.json({ ok: true })
 

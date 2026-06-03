@@ -12,12 +12,12 @@ export default async function ReferralPage() {
       <div className="flex items-center gap-3">
         <div>
           <div className="flex items-center gap-3 mb-0.5">
-            <h1 className="text-2xl font-bold text-white">{d.referralTitle}</h1>
+            <h1 className="text-2xl font-bold text-[var(--text-base)]">{d.referralTitle}</h1>
             <span className="text-[10px] font-semibold px-2 py-1 rounded-full bg-violet-500/10 border border-violet-500/25 text-violet-400">
               {stats.totalReferred} {d.friends}
             </span>
           </div>
-          <p className="text-slate-400 text-sm">{d.referralSubtitle}</p>
+          <p className="text-[var(--text-muted)] text-sm">{d.referralSubtitle}</p>
         </div>
         <Gift className="w-8 h-8 text-violet-400/50 ml-auto hidden sm:block" />
       </div>

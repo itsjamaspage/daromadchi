@@ -1,22 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
-import { dailyRevenue as mockRevenue } from '@/lib/mock-data'
 import type { DailyRevenue, MarketplaceType } from '@/lib/types'
 
 const supabaseConfigured =
   process.env.NEXT_PUBLIC_SUPABASE_URL &&
   !process.env.NEXT_PUBLIC_SUPABASE_URL.includes('your-project')
-
-function buildMockRevenue(days: number): DailyRevenue[] {
-  const result: DailyRevenue[] = []
-  for (let i = days - 1; i >= 0; i--) {
-    const d = new Date()
-    d.setDate(d.getDate() - i)
-    const label = d.toLocaleDateString('uz-UZ', { month: 'short', day: 'numeric' })
-    const base = mockRevenue[i % mockRevenue.length]
-    result.push({ date: label, revenue: base.revenue, order_count: 0 })
-  }
-  return result
-}
 
 async function getShopIds(marketplace?: MarketplaceType): Promise<string[] | null> {
   const supabase = await createClient()
@@ -29,7 +16,7 @@ async function getShopIds(marketplace?: MarketplaceType): Promise<string[] | nul
 }
 
 export async function getDailyRevenue(days = 7, marketplace?: MarketplaceType): Promise<DailyRevenue[]> {
-  if (!supabaseConfigured) return buildMockRevenue(days)
+  if (!supabaseConfigured) return []
 
   const shopIds = await getShopIds(marketplace)
   if (!shopIds || shopIds.length === 0) return []

@@ -22,7 +22,7 @@ export default function OrdersTable({ orders }: { orders: Order[] }) {
   const s = d.status
 
   const statusConfig: Record<OrderStatus, { label: string; className: string; dot: string }> = {
-    pending:   { label: s.pending,   className: 'bg-slate-500/10 text-slate-400 border border-slate-500/20',       dot: 'bg-slate-400'   },
+    pending:   { label: s.pending,   className: 'bg-slate-500/10 text-[var(--text-muted)] border border-[var(--border)]',       dot: 'bg-slate-400'   },
     confirmed: { label: s.confirmed, className: 'bg-blue-500/10 text-blue-400 border border-blue-500/20',          dot: 'bg-blue-400'    },
     delivered: { label: s.delivered, className: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20', dot: 'bg-emerald-400' },
     cancelled: { label: s.cancelled, className: 'bg-red-500/10 text-red-400 border border-red-500/20',             dot: 'bg-red-400'     },
@@ -71,18 +71,18 @@ export default function OrdersTable({ orders }: { orders: Order[] }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-1 bg-[#13131f] border border-white/[0.06] rounded-xl p-1 w-fit flex-wrap">
+      <div className="flex items-center gap-1 bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl p-1 w-fit flex-wrap">
         {STATUS_TABS.map(tab => (
           <button
             key={tab.value}
             onClick={() => setStatus(tab.value)}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 ${
-              status === tab.value ? 'bg-violet-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
+              status === tab.value ? 'bg-violet-600 text-[var(--text-base)] shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-base)]'
             }`}
           >
             {tab.label}
             {tab.value !== 'all' && (
-              <span className={`text-[10px] px-1.5 py-0.5 rounded-md ${status === tab.value ? 'bg-white/20' : 'bg-white/[0.06]'}`}>
+              <span className={`text-[10px] px-1.5 py-0.5 rounded-md ${status === tab.value ? 'bg-white/20' : 'bg-[var(--bg-input)]'}`}>
                 {statusCounts[tab.value] ?? 0}
               </span>
             )}
@@ -92,25 +92,25 @@ export default function OrdersTable({ orders }: { orders: Order[] }) {
 
       <div className="flex items-center gap-3">
         <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
           <input
             type="text"
             value={query}
             onChange={e => setQuery(e.target.value)}
             placeholder={d.searchOrderPlaceholder}
-            className="w-full bg-[#13131f] border border-white/[0.08] rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/30 transition-all"
+            className="w-full bg-[var(--bg-card2)] border border-[var(--border2)] rounded-xl pl-9 pr-4 py-2.5 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/30 transition-all"
           />
         </div>
         <ExportButton data={exportData} filename="buyurtmalar" />
       </div>
 
-      <p className="text-slate-500 text-xs">{filtered.length} {d.orderCount}</p>
+      <p className="text-[var(--text-muted)] text-xs">{filtered.length} {d.orderCount}</p>
 
-      <div className="bg-[#13131f] border border-white/[0.06] rounded-2xl overflow-hidden">
+      <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-slate-500 text-xs border-b border-white/[0.05] bg-white/[0.01]">
+              <tr className="text-[var(--text-muted)] text-xs border-b border-[var(--border)] bg-[var(--bg-card2)]">
                 <th className="text-left font-medium px-5 py-3">{d.orderId}</th>
                 <th className="text-left font-medium px-5 py-3">{d.marketplace}</th>
                 <th className="text-left font-medium px-5 py-3">{d.date}</th>
@@ -120,13 +120,13 @@ export default function OrdersTable({ orders }: { orders: Order[] }) {
                 <th className="text-center font-medium px-5 py-3">{d.state}</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/[0.03]">
+            <tbody className="divide-y divide-[var(--border)]">
               {filtered.length === 0 ? (
-                <tr><td colSpan={7} className="px-5 py-10 text-center text-slate-500 text-sm">{d.noOrdersTitle}</td></tr>
+                <tr><td colSpan={7} className="px-5 py-10 text-center text-[var(--text-muted)] text-sm">{d.noOrdersTitle}</td></tr>
               ) : filtered.map(order => {
                 const sc = statusConfig[order.status]
                 return (
-                  <tr key={order.id} className="hover:bg-white/[0.02] transition-colors">
+                  <tr key={order.id} className="hover:bg-[var(--bg-card2)] transition-colors">
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-2">
                         <div className="w-7 h-7 rounded-lg bg-violet-500/10 flex items-center justify-center flex-shrink-0">
@@ -135,11 +135,11 @@ export default function OrdersTable({ orders }: { orders: Order[] }) {
                         <span className="text-violet-400 font-mono text-xs font-medium">{order.order_id_external ?? order.id.slice(0, 8)}</span>
                       </div>
                     </td>
-                    <td className="px-5 py-4 text-slate-300 text-xs">{marketplaceLabel[order.marketplace] ?? order.marketplace}</td>
-                    <td className="px-5 py-4 text-slate-500 text-xs">{new Date(order.ordered_at).toLocaleDateString('uz-UZ')}</td>
-                    <td className="px-5 py-4 text-right text-white font-semibold">{order.revenue != null ? fmt(order.revenue) : '—'}</td>
+                    <td className="px-5 py-4 text-[var(--text-dim)] text-xs">{marketplaceLabel[order.marketplace] ?? order.marketplace}</td>
+                    <td className="px-5 py-4 text-[var(--text-muted)] text-xs">{new Date(order.ordered_at).toLocaleDateString('uz-UZ')}</td>
+                    <td className="px-5 py-4 text-right text-[var(--text-base)] font-semibold">{order.revenue != null ? fmt(order.revenue) : '—'}</td>
                     <td className="px-5 py-4 text-right text-red-400/70 text-xs">{order.marketplace_fee != null ? fmt(order.marketplace_fee) : '—'}</td>
-                    <td className="px-5 py-4 text-right text-slate-300">{order.items_count}</td>
+                    <td className="px-5 py-4 text-right text-[var(--text-dim)]">{order.items_count}</td>
                     <td className="px-5 py-4 text-center">
                       <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg ${sc.className}`}>
                         <div className={`w-1.5 h-1.5 rounded-full ${sc.dot}`} />

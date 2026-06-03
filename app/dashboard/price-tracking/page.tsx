@@ -11,10 +11,10 @@ export default async function PriceTrackingPage() {
     <div className="space-y-6">
       <div>
         <div className="flex items-center gap-2 mb-0.5">
-          <h1 className="text-2xl font-bold text-white">{d.priceTrackingTitle}</h1>
+          <h1 className="text-2xl font-bold text-[var(--text-base)]">{d.priceTrackingTitle}</h1>
           <HelpTooltip section="priceTracking" />
         </div>
-        <p className="text-slate-400 text-sm">{d.priceTrackingSubtitle}</p>
+        <p className="text-[var(--text-muted)] text-sm">{d.priceTrackingSubtitle}</p>
       </div>
       <PriceTrackingView prices={prices} />
     </div>

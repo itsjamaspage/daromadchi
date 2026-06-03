@@ -29,8 +29,8 @@ export default async function SyncStatusPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-white">{t.title}</h1>
-        <p className="text-slate-400 text-sm mt-1">{t.subtitle}</p>
+        <h1 className="text-2xl font-bold text-[var(--text-base)]">{t.title}</h1>
+        <p className="text-[var(--text-muted)] text-sm mt-1">{t.subtitle}</p>
       </div>
       <SyncStatusClient shops={shopsWithCounts} />
     </div>

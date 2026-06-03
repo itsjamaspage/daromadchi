@@ -83,37 +83,127 @@ export async function POST() {
     errors.push(`Products sync failed: ${e}`)
   }
 
+  // ─── Stocks (Marketplace API v1) — update selling_price + stock_quantity ───
+  try {
+    const stocksRes = await fetch(
+      'https://marketplace-api.wildberries.ru/api/v3/stocks/0?limit=1000&offset=0',
+      { headers: bearerHeaders(token) },
+    )
+    if (stocksRes.ok) {
+      const stocksData = await stocksRes.json()
+      const stocks: any[] = stocksData?.stocks ?? stocksData ?? []
+      // Map nmId → stock quantity
+      const stockMap = new Map<string, number>()
+      for (const s of stocks) {
+        if (s.nmId) stockMap.set(String(s.nmId), (stockMap.get(String(s.nmId)) ?? 0) + (s.amount ?? 0))
+      }
+      // Update stock_quantity for each product
+      for (const [nmId, qty] of stockMap) {
+        await supabase
+          .from('products')
+          .update({ stock_quantity: qty, updated_at: new Date().toISOString() })
+          .eq('shop_id', shopId)
+          .eq('marketplace_product_id', nmId)
+      }
+    }
+  } catch { /* stocks sync is best-effort */ }
+
   // ─── Orders (Statistics API) ────────────────────────────────────────────────
+  // WB statistics API: each row is a single item. Group by gNumber to form parent orders.
   // Note: Statistics API does NOT use Bearer prefix
   try {
-    const dateFrom = new Date()
-    dateFrom.setDate(dateFrom.getDate() - 30)
-    const df = dateFrom.toISOString().split('T')[0]
+    const { data: shopRow } = await supabase
+      .from('shops')
+      .select('last_synced_at')
+      .eq('id', shopId)
+      .single()
+    const sinceDt = shopRow?.last_synced_at
+      ? new Date(shopRow.last_synced_at)
+      : (() => { const d = new Date(); d.setDate(d.getDate() - 90); return d })()
+    const df = sinceDt.toISOString().split('T')[0]
 
     const res = await fetch(
       `${WB_STATS}/api/v1/supplier/orders?dateFrom=${df}&flag=0`,
       { headers: statsHeaders(token) },
     )
     if (res.ok) {
-      const orders: any[] = await res.json()
-      if (Array.isArray(orders) && orders.length > 0) {
-        const rows = orders.map(o => ({
-          shop_id:           shopId,
-          order_id_external: o.srid ?? o.gNumber ?? String(o.odid ?? ''),
-          marketplace:       'wildberries' as const,
-          status:            o.isCancel ? 'cancelled' : 'delivered',
-          revenue:           o.finishedPrice ?? o.priceWithDisc ?? 0,
-          marketplace_fee:   0,
-          delivery_cost:     0,
-          items_count:       1,
-          ordered_at:        o.date ?? new Date().toISOString(),
-        }))
+      const rawLines: any[] = await res.json()
+      if (Array.isArray(rawLines) && rawLines.length > 0) {
+        // Group by gNumber (parent order) — each line = one item
+        const grouped = new Map<string, any[]>()
+        for (const line of rawLines) {
+          const key = line.gNumber ?? line.srid ?? String(line.odid ?? Math.random())
+          if (!grouped.has(key)) grouped.set(key, [])
+          grouped.get(key)!.push(line)
+        }
+
+        const orderRows = []
+        for (const [gNumber, lines] of grouped) {
+          const first = lines[0]
+          const totalRevenue = lines.reduce((s, l) => s + (l.finishedPrice ?? l.priceWithDisc ?? 0), 0)
+          orderRows.push({
+            shop_id:           shopId,
+            order_id_external: gNumber,
+            marketplace:       'wildberries' as const,
+            status:            (first.isCancel ? 'cancelled' : 'delivered') as 'cancelled' | 'delivered',
+            revenue:           totalRevenue,
+            marketplace_fee:   0,
+            delivery_cost:     0,
+            items_count:       lines.length,
+            ordered_at:        first.date ?? new Date().toISOString(),
+          })
+        }
 
         const { error } = await supabase
           .from('orders')
-          .upsert(rows, { onConflict: 'shop_id,order_id_external' })
+          .upsert(orderRows, { onConflict: 'shop_id,order_id_external' })
         if (error) errors.push(error.message)
-        else ordersUpserted = rows.length
+        else ordersUpserted = orderRows.length
+
+        // ── Order items (best-effort) ─────────────────────────────────────────
+        try {
+          const { data: dbProducts } = await supabase
+            .from('products')
+            .select('id, marketplace_product_id')
+            .eq('shop_id', shopId)
+          const pidMap = new Map<string, string>()
+          for (const p of dbProducts ?? []) {
+            if (p.marketplace_product_id) pidMap.set(String(p.marketplace_product_id), p.id as string)
+          }
+
+          const gNumbers = [...grouped.keys()]
+          const { data: dbOrders } = await supabase
+            .from('orders')
+            .select('id, order_id_external')
+            .eq('shop_id', shopId)
+            .in('order_id_external', gNumbers)
+          const orderIdMap = new Map<string, string>()
+          for (const o of dbOrders ?? []) {
+            orderIdMap.set(o.order_id_external as string, o.id as string)
+          }
+
+          const itemRows: { order_id: string; product_id: string | null; quantity: number; price_per_unit: number }[] = []
+          for (const [gNumber, lines] of grouped) {
+            const dbOrderId = orderIdMap.get(gNumber)
+            if (!dbOrderId) continue
+            for (const line of lines) {
+              itemRows.push({
+                order_id:       dbOrderId,
+                product_id:     line.nmId ? (pidMap.get(String(line.nmId)) ?? null) : null,
+                quantity:       1,
+                price_per_unit: line.finishedPrice ?? line.priceWithDisc ?? 0,
+              })
+            }
+          }
+
+          if (itemRows.length > 0) {
+            const dbOrderIds = [...new Set(itemRows.map(r => r.order_id))]
+            await supabase.from('order_items').delete().in('order_id', dbOrderIds)
+            for (let i = 0; i < itemRows.length; i += 500) {
+              await supabase.from('order_items').insert(itemRows.slice(i, i + 500))
+            }
+          }
+        } catch { /* best-effort */ }
       }
     } else {
       errors.push(`Orders API ${res.status}: ${await res.text()}`)

@@ -1,19 +1,17 @@
 import { Suspense } from 'react'
 import Link from 'next/link'
-import { DollarSign, TrendingUp, ShoppingBag, Package, Settings, ArrowRight, RefreshCw, Megaphone, BarChart2 } from 'lucide-react'
+import { DollarSign, TrendingUp, ShoppingBag, Package, Settings, ArrowRight, RefreshCw } from 'lucide-react'
 import KpiCard from '@/components/dashboard/KpiCard'
 import RevenueChart from '@/components/dashboard/RevenueChart'
 import DateFilter from '@/components/dashboard/DateFilter'
 import SyncButton from '@/components/dashboard/SyncButton'
 import StockAlerts from '@/components/dashboard/StockAlerts'
 import CategoryChart from '@/components/dashboard/CategoryChart'
-import DynamicsChart from '@/components/dashboard/DynamicsChart'
 import AnalyticsBoard from '@/components/dashboard/AnalyticsBoard'
 import { getKpis } from '@/lib/db/kpis'
 import { getOrders } from '@/lib/db/orders'
 import { getProducts } from '@/lib/db/products'
 import { getDailyRevenue } from '@/lib/db/revenue'
-import { adCampaigns, dynamicsData, productAds } from '@/lib/mock-data'
 import { getT } from '@/lib/server-i18n'
 import HelpTooltip from '@/components/dashboard/HelpTooltip'
 
@@ -166,20 +164,6 @@ export default async function DashboardPage({ searchParams }: Props) {
         <KpiCard title={d.stockInWarehouse} value={kpis.total_stock.toLocaleString('uz-UZ')}    change={isEmpty ? null : undefined} icon={Package}     color="amber" />
       </div>
 
-      {/* Ad KPI summary */}
-      {!isEmpty && (() => {
-        const totalAdSpend = Object.values(productAds).reduce((s, a) => s + a.adSpend, 0)
-        const totalRevenue = allProducts.reduce((s, p) => s + Number(p.selling_price ?? 0) * (p.sold ?? 0), 0)
-        const drr = totalRevenue > 0 ? ((totalAdSpend / totalRevenue) * 100).toFixed(1) : '—'
-        const totalClicks = Object.values(productAds).reduce((s, a) => s + a.clicks, 0)
-        return (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <KpiCard title={d.adSpend} value={formatSum(totalAdSpend)} change={undefined} icon={Megaphone} color="violet" />
-            <KpiCard title="DRR" value={`${drr}%`} change={undefined} icon={BarChart2} color="amber" />
-            <KpiCard title={d.totalClicks} value={totalClicks.toLocaleString('uz-UZ')} change={undefined} icon={TrendingUp} color="blue" />
-          </div>
-        )
-      })()}
 
       {/* Stock alerts — shown when relevant */}
       <StockAlerts products={allProducts} />
@@ -212,9 +196,6 @@ export default async function DashboardPage({ searchParams }: Props) {
           </div>
         </div>
       </div>
-
-      {/* Dynamics chart */}
-      {!isEmpty && <DynamicsChart data={dynamicsData} />}
 
       {/* Analytics board — channel trends, customer mix, funnel, category bubbles */}
       {!isEmpty && (
@@ -269,17 +250,17 @@ export default async function DashboardPage({ searchParams }: Props) {
       {!isEmpty && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { href: '/dashboard/advertising',    icon: '📢', label: d.advertisingTitle,       sub: `${adCampaigns.filter(c=>c.status==='active').length} ${d.activeCampaigns}` },
+            { href: '/dashboard/advertising',    icon: '📢', label: d.advertisingTitle,       sub: d.activeCampaigns },
             { href: '/dashboard/search-phrases', icon: '🔍', label: d.searchPhrasesTitle,     sub: d.trafficSource },
             { href: '/dashboard/unit-economics', icon: '📊', label: d.unitEcoTitle,            sub: d.costAnalysis },
             { href: '/dashboard/data-state',     icon: '🗂️', label: d.dataStateTitle,         sub: d.syncStatus },
           ].map(({ href, icon, label, sub }) => (
             <Link key={href} href={href}
-              className="bg-[#13131f] border border-white/[0.06] hover:border-violet-500/30 rounded-2xl p-4 flex items-center gap-3 transition-all group">
+              className="bg-[var(--bg-card2)] border border-[var(--border)] hover:border-violet-500/30 rounded-2xl p-4 flex items-center gap-3 transition-all group">
               <span className="text-2xl">{icon}</span>
               <div>
-                <p className="text-white text-xs font-semibold group-hover:text-violet-300 transition-colors">{label}</p>
-                <p className="text-slate-500 text-[10px] mt-0.5">{sub}</p>
+                <p className="text-[var(--text-base)] text-xs font-semibold group-hover:text-violet-300 transition-colors">{label}</p>
+                <p className="text-[var(--text-muted)] text-[10px] mt-0.5">{sub}</p>
               </div>
             </Link>
           ))}

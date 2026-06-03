@@ -22,32 +22,24 @@ function generateCode(userId: string): string {
   return `DR${hash}`
 }
 
-const MOCK_CODE = 'DRTEST123'
-const MOCK_STATS: ReferralStats = {
-  code:            MOCK_CODE,
-  totalReferred:   5,
-  activeReferred:  3,
-  pendingReferred: 2,
-  totalReward:     150_000,
+const EMPTY_STATS: ReferralStats = {
+  code:            '',
+  totalReferred:   0,
+  activeReferred:  0,
+  pendingReferred: 0,
+  totalReward:     0,
 }
-const MOCK_ENTRIES: ReferralEntry[] = [
-  { id: '1', status: 'active',  rewardAmount: 50_000, createdAt: '2026-04-15T10:00:00Z', activatedAt: '2026-04-16T08:00:00Z' },
-  { id: '2', status: 'active',  rewardAmount: 50_000, createdAt: '2026-04-20T12:00:00Z', activatedAt: '2026-04-21T09:00:00Z' },
-  { id: '3', status: 'active',  rewardAmount: 50_000, createdAt: '2026-05-01T14:00:00Z', activatedAt: '2026-05-02T07:00:00Z' },
-  { id: '4', status: 'pending', rewardAmount: 0,      createdAt: '2026-05-05T16:00:00Z', activatedAt: null },
-  { id: '5', status: 'pending', rewardAmount: 0,      createdAt: '2026-05-06T18:00:00Z', activatedAt: null },
-]
 
 const supabaseConfigured =
   process.env.NEXT_PUBLIC_SUPABASE_URL &&
   !process.env.NEXT_PUBLIC_SUPABASE_URL.includes('your-project')
 
 export async function getReferralStats(): Promise<{ stats: ReferralStats; entries: ReferralEntry[] }> {
-  if (!supabaseConfigured) return { stats: MOCK_STATS, entries: MOCK_ENTRIES }
+  if (!supabaseConfigured) return { stats: EMPTY_STATS, entries: [] }
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { stats: { ...MOCK_STATS, totalReferred: 0, activeReferred: 0, pendingReferred: 0, totalReward: 0 }, entries: [] }
+  if (!user) return { stats: EMPTY_STATS, entries: [] }
 
   // Ensure referral code exists
   const { data: settings } = await supabase

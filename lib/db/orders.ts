@@ -1,5 +1,4 @@
 import { createClient } from '@/lib/supabase/server'
-import { orders as mockOrders } from '@/lib/mock-data'
 import type { Order, MarketplaceType } from '@/lib/types'
 
 const supabaseConfigured =
@@ -17,21 +16,7 @@ async function getShopIds(marketplace?: MarketplaceType): Promise<string[] | nul
 }
 
 export async function getOrders(limit?: number, marketplace?: MarketplaceType): Promise<Order[]> {
-  if (!supabaseConfigured) {
-    const rows = limit ? mockOrders.slice(0, limit) : mockOrders
-    return rows.map(o => ({
-      id: String(o.id),
-      shop_id: 'mock',
-      order_id_external: o.id,
-      marketplace: 'uzum' as const,
-      status: 'delivered' as const,
-      revenue: o.amount,
-      marketplace_fee: null,
-      delivery_cost: null,
-      items_count: 1,
-      ordered_at: o.date,
-    }))
-  }
+  if (!supabaseConfigured) return []
 
   const shopIds = await getShopIds(marketplace)
   if (!shopIds || shopIds.length === 0) return []

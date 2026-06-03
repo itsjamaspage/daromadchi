@@ -35,7 +35,7 @@ function StatusBadge({ status }: { status: PayoutEntry['status'] }) {
     )
   }
   return (
-    <span className="inline-flex px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-500/15 text-slate-400 border border-slate-500/20">
+    <span className="inline-flex px-2.5 py-1 rounded-lg text-xs font-semibold bg-[var(--bg-card2)] text-[var(--text-muted)] border border-[var(--border)]">
       Kutilmoqda
     </span>
   )
@@ -56,8 +56,8 @@ function DeductionBar({ entry }: { entry: PayoutEntry }) {
   ].filter(s => s.value > 0)
 
   return (
-    <div className="px-5 py-4 bg-white/[0.015] border-t border-white/[0.04] space-y-3">
-      <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider">Chegirmalar tafsiloti</p>
+    <div className="px-5 py-4 bg-[var(--bg-card2)] border-t border-[var(--border)] space-y-3">
+      <p className="text-[var(--text-muted)] text-xs font-semibold uppercase tracking-wider">Chegirmalar tafsiloti</p>
 
       {/* Proportional bar */}
       <div className="flex h-3 rounded-full overflow-hidden gap-px">
@@ -76,15 +76,15 @@ function DeductionBar({ entry }: { entry: PayoutEntry }) {
         {segments.map(seg => (
           <div key={seg.label} className="flex items-center gap-2">
             <div className={`w-2.5 h-2.5 rounded-sm flex-shrink-0 ${seg.color} opacity-80`} />
-            <span className="text-slate-400 text-xs truncate">{seg.label}</span>
-            <span className="text-slate-300 text-xs font-medium ml-auto">{fmtShort(seg.value)}</span>
+            <span className="text-[var(--text-muted)] text-xs truncate">{seg.label}</span>
+            <span className="text-[var(--text-dim)] text-xs font-medium ml-auto">{fmtShort(seg.value)}</span>
           </div>
         ))}
       </div>
 
-      <div className="flex items-center justify-between pt-1 border-t border-white/[0.04]">
-        <span className="text-slate-400 text-xs">Jami chegirmalar</span>
-        <span className="text-white text-sm font-bold">{fmt(total)}</span>
+      <div className="flex items-center justify-between pt-1 border-t border-[var(--border)]">
+        <span className="text-[var(--text-muted)] text-xs">Jami chegirmalar</span>
+        <span className="text-[var(--text-base)] text-sm font-bold">{fmt(total)}</span>
       </div>
     </div>
   )
@@ -125,46 +125,46 @@ export default function PayoutsView({ entries }: Props) {
 
       {/* Summary cards */}
       <div className="grid grid-cols-3 gap-3">
-        <div className="bg-[#13131f] border border-white/[0.06] rounded-2xl px-4 py-3">
-          <p className="text-slate-400 text-xs mb-1">Jami to&apos;langan</p>
-          <p className="text-white text-xl font-bold">{fmtShort(totalPaid)}</p>
-          <p className="text-slate-500 text-xs mt-0.5">{paidEntries.length} ta davr</p>
+        <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl px-4 py-3">
+          <p className="text-[var(--text-muted)] text-xs mb-1">Jami to&apos;langan</p>
+          <p className="text-[var(--text-base)] text-xl font-bold">{fmtShort(totalPaid)}</p>
+          <p className="text-[var(--text-muted)] text-xs mt-0.5">{paidEntries.length} ta davr</p>
         </div>
-        <div className="bg-[#13131f] border border-amber-500/20 rounded-2xl px-4 py-3">
-          <p className="text-slate-400 text-xs mb-1">Kutilayotgan</p>
+        <div className="bg-[var(--bg-card2)] border border-amber-500/20 rounded-2xl px-4 py-3">
+          <p className="text-[var(--text-muted)] text-xs mb-1">Kutilayotgan</p>
           <p className="text-amber-400 text-xl font-bold">{fmtShort(pending)}</p>
-          <p className="text-slate-500 text-xs mt-0.5">{entries.filter(e => e.status !== 'paid').length} ta davr</p>
+          <p className="text-[var(--text-muted)] text-xs mt-0.5">{entries.filter(e => e.status !== 'paid').length} ta davr</p>
         </div>
-        <div className="bg-[#13131f] border border-white/[0.06] rounded-2xl px-4 py-3">
-          <p className="text-slate-400 text-xs mb-1">O&apos;rtacha to&apos;lov</p>
-          <p className="text-white text-xl font-bold">{fmtShort(avgPaid)}</p>
-          <p className="text-slate-500 text-xs mt-0.5">har bir davr</p>
+        <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl px-4 py-3">
+          <p className="text-[var(--text-muted)] text-xs mb-1">O&apos;rtacha to&apos;lov</p>
+          <p className="text-[var(--text-base)] text-xl font-bold">{fmtShort(avgPaid)}</p>
+          <p className="text-[var(--text-muted)] text-xs mt-0.5">har bir davr</p>
         </div>
       </div>
 
       {/* Table */}
-      <div className="bg-[#13131f] border border-white/[0.06] rounded-2xl overflow-hidden">
+      <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-white/[0.05]">
-                <th className="px-5 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Davr</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Buyurtmalar</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Brutto</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Komissiya</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Yetkazish</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Qaytarish</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Reklama</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Soliq</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">
+              <tr className="border-b border-[var(--border)]">
+                <th className="px-5 py-3 text-left text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Davr</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Buyurtmalar</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Brutto</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Komissiya</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Yetkazish</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Qaytarish</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Reklama</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Soliq</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
                   <span className="inline-flex items-center gap-1">
                     Sof to&apos;lov
                     <span title="Nima uchun bu miqdor? Brutto daromaddan barcha chegirmalar: komissiya, yetkazish, qaytarishlar, reklama xarajatlari, ekvayring va soliq ayiriladi.">
-                      <HelpCircle className="w-3.5 h-3.5 text-slate-600 cursor-help" />
+                      <HelpCircle className="w-3.5 h-3.5 text-[var(--text-muted)] cursor-help" />
                     </span>
                   </span>
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Holat</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Holat</th>
                 <th className="px-3 py-3" />
               </tr>
             </thead>
@@ -174,26 +174,26 @@ export default function PayoutsView({ entries }: Props) {
                   <tr
                     key={entry.id}
                     onClick={() => toggle(entry.id)}
-                    className="border-b border-white/[0.03] hover:bg-white/[0.02] transition-colors cursor-pointer"
+                    className="border-b border-[var(--border)] hover:bg-[var(--bg-card2)] transition-colors cursor-pointer"
                   >
                     <td className="px-5 py-3.5">
-                      <p className="text-white text-sm font-medium">{entry.period}</p>
+                      <p className="text-[var(--text-base)] text-sm font-medium">{entry.period}</p>
                       {entry.payoutDate && (
-                        <p className="text-slate-500 text-xs">{entry.payoutDate}</p>
+                        <p className="text-[var(--text-muted)] text-xs">{entry.payoutDate}</p>
                       )}
                     </td>
-                    <td className="px-4 py-3.5 text-right text-slate-300 text-sm">{entry.ordersCount}</td>
-                    <td className="px-4 py-3.5 text-right text-slate-300 text-sm">{fmtShort(entry.grossRevenue)}</td>
+                    <td className="px-4 py-3.5 text-right text-[var(--text-dim)] text-sm">{entry.ordersCount}</td>
+                    <td className="px-4 py-3.5 text-right text-[var(--text-dim)] text-sm">{fmtShort(entry.grossRevenue)}</td>
                     <td className="px-4 py-3.5 text-right text-red-400 text-sm">-{fmtShort(entry.commission)}</td>
                     <td className="px-4 py-3.5 text-right text-red-400 text-sm">-{fmtShort(entry.delivery)}</td>
                     <td className="px-4 py-3.5 text-right text-red-400 text-sm">-{fmtShort(entry.returns)}</td>
                     <td className="px-4 py-3.5 text-right text-red-400 text-sm">-{fmtShort(entry.adSpend)}</td>
                     <td className="px-4 py-3.5 text-right text-red-400 text-sm">-{fmtShort(entry.tax)}</td>
                     <td className="px-4 py-3.5 text-right">
-                      <span className="text-white font-bold text-sm">{fmtShort(entry.netPayout)}</span>
+                      <span className="text-[var(--text-base)] font-bold text-sm">{fmtShort(entry.netPayout)}</span>
                     </td>
                     <td className="px-4 py-3.5"><StatusBadge status={entry.status} /></td>
-                    <td className="px-3 py-3.5 text-slate-500">
+                    <td className="px-3 py-3.5 text-[var(--text-muted)]">
                       {expandedId === entry.id
                         ? <ChevronUp className="w-4 h-4" />
                         : <ChevronDown className="w-4 h-4" />
@@ -201,7 +201,7 @@ export default function PayoutsView({ entries }: Props) {
                     </td>
                   </tr>
                   {expandedId === entry.id && (
-                    <tr key={`${entry.id}-detail`} className="border-b border-white/[0.03]">
+                    <tr key={`${entry.id}-detail`} className="border-b border-[var(--border)]">
                       <td colSpan={11} className="p-0">
                         <DeductionBar entry={entry} />
                       </td>

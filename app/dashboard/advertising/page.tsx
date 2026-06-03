@@ -12,10 +12,10 @@ export default async function AdvertisingPage() {
     <div className="space-y-6">
       <div>
         <div className="flex items-center gap-2 mb-0.5">
-          <h1 className="text-2xl font-bold text-white">{d.advertisingTitle}</h1>
+          <h1 className="text-2xl font-bold text-[var(--text-base)]">{d.advertisingTitle}</h1>
           <HelpTooltip section="advertising" />
         </div>
-        <p className="text-slate-400 text-sm">{d.advertisingSubtitle}</p>
+        <p className="text-[var(--text-muted)] text-sm">{d.advertisingSubtitle}</p>
       </div>
       <AdvertisingView campaigns={campaigns} />
     </div>

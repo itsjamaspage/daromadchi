@@ -6,7 +6,6 @@ import ExportButton from './ExportButton'
 import { useLang } from '@/app/providers'
 import { translations } from '@/lib/i18n'
 import type { Product } from '@/lib/types'
-import { productAds } from '@/lib/mock-data'
 
 function fmt(n: number) {
   return new Intl.NumberFormat('uz-UZ').format(n) + " so'm"
@@ -52,14 +51,10 @@ export default function ProductsTable({ products }: { products: Product[] }) {
   }, [products, allLabel])
   const [category, setCategory] = useState(allLabel)
 
-  // Enrich products with ad data + DRR
-  const enriched = useMemo(() => products.map((p, idx) => {
-    const adKey = (idx + 1) as keyof typeof productAds
-    const ad = productAds[adKey] || { adSpend: 0, clicks: 0, adOrders: 0 }
-    const revenue = Number(p.selling_price ?? 0) * (p.sold ?? 0)
-    const drr = revenue > 0 ? (ad.adSpend / revenue) * 100 : 0
-    return { ...p, adSpend: ad.adSpend, adOrders: ad.adOrders, adClicks: ad.clicks, drr }
-  }), [products])
+  // Ad metrics come from real ad-sync data; until connected they are 0.
+  const enriched = useMemo(() => products.map((p) => ({
+    ...p, adSpend: 0, adOrders: 0, adClicks: 0, drr: 0,
+  })), [products])
 
   const filtered = useMemo(() => {
     let rows = [...enriched]

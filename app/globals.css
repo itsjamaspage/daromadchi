@@ -84,11 +84,17 @@ h1, h2, h3, h4, h5, h6 {
 /* ═══════════════════════════════════════════════════════════════════
    LIGHT MODE OVERRIDES
 ═══════════════════════════════════════════════════════════════════ */
+/* Safety net for any remaining hardcoded dark classes on 3rd-party or login pages */
 [data-theme="light"] .text-white     { color: var(--text-base) !important; }
+[data-theme="light"] .text-slate-200 { color: var(--text-base) !important; }
+[data-theme="light"] .text-slate-300 { color: var(--text-dim)   !important; }
 [data-theme="light"] .text-slate-400 { color: var(--text-muted) !important; }
 [data-theme="light"] .text-slate-500 { color: var(--text-muted) !important; }
-[data-theme="light"] .text-slate-300 { color: var(--text-dim)   !important; }
 [data-theme="light"] .text-slate-600 { color: var(--text-muted) !important; }
+[data-theme="light"] .text-slate-700 { color: var(--text-dim)   !important; }
+[data-theme="light"] .text-gray-300  { color: var(--text-dim)   !important; }
+[data-theme="light"] .text-gray-400  { color: var(--text-muted) !important; }
+[data-theme="light"] .text-gray-500  { color: var(--text-muted) !important; }
 
 [data-theme="light"] .bg-\[var\(--bg-card\)\],
 [data-theme="light"] .bg-\[var\(--bg-card2\)\] {

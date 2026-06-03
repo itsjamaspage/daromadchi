@@ -16,18 +16,18 @@ export default async function AbcXyzPage() {
       <div className="space-y-6">
         <div>
           <div className="flex items-center gap-3 mb-0.5">
-            <h1 className="text-2xl font-bold text-white">{t.title}</h1>
+            <h1 className="text-2xl font-bold text-[var(--text-base)]">{t.title}</h1>
             <span className="text-[10px] font-semibold px-2 py-1 rounded-full bg-violet-500/10 border border-violet-500/25 text-violet-400">
               {t.badge}
             </span>
           </div>
-          <p className="text-slate-400 text-sm">{t.subtitle}</p>
+          <p className="text-[var(--text-muted)] text-sm">{t.subtitle}</p>
         </div>
         <div className="bg-[var(--bg-card2)] border border-dashed border-violet-500/30 rounded-2xl p-10 text-center">
-          <p className="text-white font-bold text-lg mb-2">{t.noData}</p>
-          <p className="text-slate-400 text-sm mb-6">{t.noDataDesc}</p>
+          <p className="text-[var(--text-base)] font-bold text-lg mb-2">{t.noData}</p>
+          <p className="text-[var(--text-muted)] text-sm mb-6">{t.noDataDesc}</p>
           <Link href="/dashboard/settings"
-            className="inline-flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors">
+            className="inline-flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-[var(--text-base)] text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors">
             <Settings className="w-4 h-4" /> {t.goSettings}
           </Link>
         </div>
@@ -66,12 +66,12 @@ export default async function AbcXyzPage() {
     <div className="space-y-6">
       <div>
         <div className="flex items-center gap-3 mb-0.5">
-          <h1 className="text-2xl font-bold text-white">{t.title}</h1>
+          <h1 className="text-2xl font-bold text-[var(--text-base)]">{t.title}</h1>
           <span className="text-[10px] font-semibold px-2 py-1 rounded-full bg-violet-500/10 border border-violet-500/25 text-violet-400">
             {t.badge}
           </span>
         </div>
-        <p className="text-slate-400 text-sm">{t.subtitle}</p>
+        <p className="text-[var(--text-muted)] text-sm">{t.subtitle}</p>
       </div>
       <AbcXyzClient products={classified} />
     </div>

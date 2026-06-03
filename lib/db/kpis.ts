@@ -1,5 +1,4 @@
 import { createClient } from '@/lib/supabase/server'
-import { kpiData, orders as mockOrders, products as mockProducts } from '@/lib/mock-data'
 import type { Kpis, MarketplaceType } from '@/lib/types'
 
 const supabaseConfigured =
@@ -23,22 +22,7 @@ function pct(curr: number, prev: number): number | null {
 
 export async function getKpis(days = 30, marketplace?: MarketplaceType): Promise<Kpis> {
   if (!supabaseConfigured) {
-    const scale = days === 7 ? 0.25 : days === 30 ? 1 : days === 90 ? 2.8 : 1
-    const prevScale = scale * 0.88
-    const filtered = mockOrders.filter(o => o.status !== 'cancelled')
-    const curr_rev = Math.round(kpiData.revenue.value * scale)
-    const curr_pro = Math.round(kpiData.profit.value  * scale)
-    const curr_ord = Math.round(filtered.length * scale)
-    const prev_rev = Math.round(kpiData.revenue.value * prevScale)
-    const prev_pro = Math.round(kpiData.profit.value  * prevScale)
-    const prev_ord = Math.round(filtered.length * prevScale)
-    return {
-      total_revenue: curr_rev, total_profit: curr_pro, total_orders: curr_ord,
-      total_stock:   mockProducts.reduce((s, p) => s + p.stock, 0),
-      change_revenue: pct(curr_rev, prev_rev),
-      change_profit:  pct(curr_pro, prev_pro),
-      change_orders:  pct(curr_ord, prev_ord),
-    }
+    return { total_revenue: 0, total_profit: 0, total_orders: 0, total_stock: 0 }
   }
 
   const shopIds = await getShopIds(marketplace)

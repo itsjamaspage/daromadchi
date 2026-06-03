@@ -13,17 +13,8 @@ export interface MonthlyPnl {
   order_count: number
 }
 
-const MOCK: MonthlyPnl[] = [
-  { month: 'Noy', revenue: 68_000_000, marketplace_fee: 5_100_000, delivery_cost: 2_040_000, net: 60_860_000, order_count: 312 },
-  { month: 'Dek', revenue: 84_000_000, marketplace_fee: 6_300_000, delivery_cost: 2_520_000, net: 75_180_000, order_count: 398 },
-  { month: 'Yan', revenue: 72_000_000, marketplace_fee: 5_400_000, delivery_cost: 2_160_000, net: 64_440_000, order_count: 341 },
-  { month: 'Fev', revenue: 91_000_000, marketplace_fee: 6_825_000, delivery_cost: 2_730_000, net: 81_445_000, order_count: 421 },
-  { month: 'Mar', revenue: 108_000_000, marketplace_fee: 8_100_000, delivery_cost: 3_240_000, net: 96_660_000, order_count: 503 },
-  { month: 'Apr', revenue: 124_500_000, marketplace_fee: 9_337_500, delivery_cost: 3_735_000, net: 111_427_500, order_count: 578 },
-]
-
 export async function getMonthlyPnl(months = 6): Promise<MonthlyPnl[]> {
-  if (!supabaseConfigured) return MOCK
+  if (!supabaseConfigured) return []
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()

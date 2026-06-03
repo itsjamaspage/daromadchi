@@ -35,8 +35,8 @@ export default function DateFilter({ current }: { current: string }) {
           onClick={() => setRange(opt.value)}
           className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
             current === opt.value
-              ? 'bg-violet-600 text-white shadow-sm'
-              : 'text-slate-400 hover:text-white'
+              ? 'bg-violet-600 text-[var(--text-base)] shadow-sm'
+              : 'text-[var(--text-muted)] hover:text-[var(--text-base)]'
           }`}
         >
           {opt.label}

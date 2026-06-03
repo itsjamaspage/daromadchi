@@ -11,10 +11,10 @@ export default async function DataStatePage() {
     <div className="space-y-6">
       <div>
         <div className="flex items-center gap-2 mb-0.5">
-          <h1 className="text-2xl font-bold text-white">{d.dataStateTitle}</h1>
+          <h1 className="text-2xl font-bold text-[var(--text-base)]">{d.dataStateTitle}</h1>
           <HelpTooltip section="dataState" />
         </div>
-        <p className="text-slate-400 text-sm">{d.dataStateSubtitle}</p>
+        <p className="text-[var(--text-muted)] text-sm">{d.dataStateSubtitle}</p>
       </div>
       <DataStateView days={days} />
     </div>

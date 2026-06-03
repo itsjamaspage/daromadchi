@@ -99,6 +99,57 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
 
     const newOrderRows = orderRows
 
+    // ── Order items (best-effort) ─────────────────────────────────────────────
+    // Build a map: marketplace_product_id → products.id for fast lookup
+    try {
+      const { data: dbProducts } = await supabase
+        .from('products')
+        .select('id, marketplace_product_id')
+        .eq('shop_id', shopId)
+      const pidMap = new Map<string, string>()
+      for (const p of dbProducts ?? []) {
+        if (p.marketplace_product_id) pidMap.set(String(p.marketplace_product_id), p.id as string)
+      }
+
+      // Map order_id_external → orders.id
+      const extIds = uzumOrders.map(o => o.orderId)
+      const { data: dbOrders } = await supabase
+        .from('orders')
+        .select('id, order_id_external')
+        .eq('shop_id', shopId)
+        .in('order_id_external', extIds)
+      const orderIdMap = new Map<string, string>()
+      for (const o of dbOrders ?? []) {
+        orderIdMap.set(o.order_id_external as string, o.id as string)
+      }
+
+      const itemRows: {
+        order_id: string; product_id: string | null;
+        quantity: number; price_per_unit: number
+      }[] = []
+      for (const o of uzumOrders) {
+        const dbOrderId = orderIdMap.get(o.orderId)
+        if (!dbOrderId) continue
+        for (const it of o.items ?? []) {
+          itemRows.push({
+            order_id:       dbOrderId,
+            product_id:     pidMap.get(String(it.productId)) ?? null,
+            quantity:       it.quantity,
+            price_per_unit: it.price,
+          })
+        }
+      }
+
+      // Delete old items for these orders then re-insert (simpler than upsert without unique key)
+      if (itemRows.length > 0) {
+        const dbOrderIds = [...new Set(itemRows.map(r => r.order_id))]
+        await supabase.from('order_items').delete().in('order_id', dbOrderIds)
+        for (let i = 0; i < itemRows.length; i += 500) {
+          await supabase.from('order_items').insert(itemRows.slice(i, i + 500))
+        }
+      }
+    } catch { /* order items sync is best-effort */ }
+
     // ── Ad campaigns (best-effort — gracefully skipped if endpoint 404s) ──────
     let campaignsUpserted = 0
     try {

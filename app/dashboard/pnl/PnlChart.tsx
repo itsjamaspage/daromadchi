@@ -15,14 +15,14 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null
   return (
     <div className="bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-3 shadow-xl text-xs space-y-1.5 min-w-[160px]">
-      <p className="text-slate-300 font-medium mb-2">{label}</p>
+      <p className="text-[var(--text-dim)] font-medium mb-2">{label}</p>
       {payload.map((p: any) => (
         <div key={p.dataKey} className="flex items-center justify-between gap-4">
-          <span className="flex items-center gap-1.5 text-slate-400">
+          <span className="flex items-center gap-1.5 text-[var(--text-muted)]">
             <span className="w-2 h-2 rounded-full" style={{ background: p.stroke }} />
             {p.name}
           </span>
-          <span className="font-semibold text-white">{fmtM(p.value)} so'm</span>
+          <span className="font-semibold text-[var(--text-base)]">{fmtM(p.value)} so'm</span>
         </div>
       ))}
     </div>
@@ -35,8 +35,8 @@ export default function PnlChart({ data, title, subtitle, revenueLabel, profitLa
 }) {
   return (
     <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl p-6">
-      <h3 className="text-white font-semibold mb-1">{title}</h3>
-      <p className="text-slate-500 text-xs mb-5">{subtitle}</p>
+      <h3 className="text-[var(--text-base)] font-semibold mb-1">{title}</h3>
+      <p className="text-[var(--text-muted)] text-xs mb-5">{subtitle}</p>
       <ResponsiveContainer width="100%" height={260}>
         <AreaChart data={data} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
           <defs>
@@ -53,7 +53,7 @@ export default function PnlChart({ data, title, subtitle, revenueLabel, profitLa
           <XAxis dataKey="month" tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} />
           <YAxis tickFormatter={fmtM} tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} width={42} />
           <Tooltip content={<CustomTooltip />} />
-          <Legend wrapperStyle={{ fontSize: 12, color: '#94a3b8', paddingTop: 12 }} formatter={v => <span style={{ color: '#94a3b8' }}>{v}</span>} />
+          <Legend wrapperStyle={{ fontSize: 12, color: 'var(--text-muted)', paddingTop: 12 }} formatter={v => <span style={{ color: '#94a3b8' }}>{v}</span>} />
           <Area type="monotone" dataKey="revenue"  name={revenueLabel} stroke="#7c3aed" fill="url(#gRevenue)" strokeWidth={2} dot={false} />
           <Area type="monotone" dataKey="profit"   name={profitLabel} stroke="#10b981" fill="url(#gProfit)"  strokeWidth={2} dot={false} />
         </AreaChart>
