@@ -28,6 +28,13 @@ const ui = {
     back: 'Bosh sahifaga',
     demo: 'Demo: demo@daromadchi.uz / demo1234',
     forgotPw: 'Parolni unutdingizmi?',
+    resetTitle: 'Parolni tiklash',
+    resetDesc: 'Emailingizni kiriting — tiklash havolasini yuboramiz.',
+    resetBtn: 'Havola yuborish',
+    resetSending: 'Yuborilmoqda...',
+    resetSuccess: 'Parolni tiklash havolasi emailingizga yuborildi.',
+    backToLogin: 'Kirishga qaytish',
+    verifyFailed: 'Havola yaroqsiz yoki muddati tugagan. Qaytadan urinib koʻring.',
   },
   en: {
     tagline: 'Sales analytics platform',
@@ -43,6 +50,13 @@ const ui = {
     back: 'Back to home',
     demo: 'Demo: demo@daromadchi.uz / demo1234',
     forgotPw: 'Forgot password?',
+    resetTitle: 'Reset password',
+    resetDesc: 'Enter your email — we’ll send you a reset link.',
+    resetBtn: 'Send link',
+    resetSending: 'Sending...',
+    resetSuccess: 'A password reset link has been sent to your email.',
+    backToLogin: 'Back to sign in',
+    verifyFailed: 'The link is invalid or expired. Please try again.',
   },
   ru: {
     tagline: 'Платформа аналитики продаж',
@@ -58,6 +72,13 @@ const ui = {
     back: 'На главную',
     demo: 'Демо: demo@daromadchi.uz / demo1234',
     forgotPw: 'Забыли пароль?',
+    resetTitle: 'Сброс пароля',
+    resetDesc: 'Введите email — мы отправим ссылку для сброса.',
+    resetBtn: 'Отправить ссылку',
+    resetSending: 'Отправка...',
+    resetSuccess: 'Ссылка для сброса пароля отправлена на ваш email.',
+    backToLogin: 'Вернуться ко входу',
+    verifyFailed: 'Ссылка недействительна или устарела. Попробуйте снова.',
   },
 }
 
@@ -112,7 +133,7 @@ function LoginForm() {
   const searchParams = useSearchParams()
   const refCode = searchParams.get('ref') ?? ''
 
-  const [mode, setMode] = useState<'login' | 'signup'>('login')
+  const [mode, setMode] = useState<'login' | 'signup' | 'forgot'>('login')
   const [email,    setEmail]    = useState('')
   const [password, setPassword] = useState('')
   const [name,     setName]     = useState('')
@@ -120,7 +141,16 @@ function LoginForm() {
   const [loading,  setLoading]  = useState(false)
   const [error,    setError]    = useState('')
   const [success,  setSuccess]  = useState(false)
+  const [resetSent, setResetSent] = useState(false)
   const router = useRouter()
+
+  // Surface verification failures bounced back from /auth/confirm
+  useEffect(() => {
+    if (searchParams.get('error') === 'verification_failed') {
+      setError(t.verifyFailed)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const isDark = theme === 'dark'
   const bg     = isDark ? '#07070f'  : '#f3f3fa'
@@ -132,8 +162,26 @@ function LoginForm() {
   const textMuted = isDark ? '#64748b' : '#6b7280'
   const labelColor = isDark ? '#94a3b8' : '#4b5563'
 
-  function switchMode(m: 'login' | 'signup') {
-    setMode(m); setError(''); setSuccess(false)
+  function switchMode(m: 'login' | 'signup' | 'forgot') {
+    setMode(m); setError(''); setSuccess(false); setResetSent(false)
+  }
+
+  async function handleReset(e: React.FormEvent) {
+    e.preventDefault()
+    setLoading(true); setError('')
+    if (!supabaseConfigured) { setResetSent(true); setLoading(false); return }
+    try {
+      const supabase = createClient()
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth/callback?next=/auth/update-password`,
+      })
+      if (error) setError(error.message)
+      else setResetSent(true)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred')
+    } finally {
+      setLoading(false)
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -219,6 +267,7 @@ function LoginForm() {
           <div className="absolute top-0 left-1/4 right-1/4 h-px bg-gradient-to-r from-transparent via-violet-500 to-transparent rounded-full" />
 
           {/* Tabs */}
+          {mode !== 'forgot' && (
           <div className="flex rounded-xl p-1 mb-6 gap-1" style={{ background: isDark ? '#13131f' : '#e8e8f8' }}>
             {(['login','signup'] as const).map(m => (
               <button key={m} onClick={() => switchMode(m)}
@@ -233,9 +282,57 @@ function LoginForm() {
               </button>
             ))}
           </div>
+          )}
 
-          {/* Success state */}
-          {success ? (
+          {/* Forgot-password flow */}
+          {mode === 'forgot' ? (
+            resetSent ? (
+              <div className="text-center py-6 space-y-4">
+                <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-emerald-500/10 border border-emerald-500/20 mb-2">
+                  <CheckCircle className="w-7 h-7 text-emerald-400" />
+                </div>
+                <p className="font-semibold" style={{ color: textBase }}>{t.resetSuccess}</p>
+                <button onClick={() => switchMode('login')}
+                  className="text-sm text-violet-400 hover:text-violet-300 underline underline-offset-2 transition-colors">
+                  {t.backToLogin} →
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleReset} className="space-y-4">
+                <div className="mb-2">
+                  <h2 className="text-base font-bold mb-1" style={{ color: textBase }}>{t.resetTitle}</h2>
+                  <p className="text-xs" style={{ color: textMuted }}>{t.resetDesc}</p>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium mb-2" style={{ color: labelColor }}>{t.email}</label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: textMuted }} />
+                    <input type="email" value={email} onChange={e => setEmail(e.target.value)} required
+                      placeholder={t.emailPh}
+                      className={inputCls}
+                      style={{ background: inputBg, border: `1px solid ${inputBorder}`, color: textBase }}
+                    />
+                  </div>
+                </div>
+                {error && (
+                  <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 text-sm text-red-400">
+                    {error}
+                  </div>
+                )}
+                <button type="submit" disabled={loading}
+                  className="w-full text-white font-bold rounded-xl py-3 text-sm transition-all flex items-center justify-center gap-2 mt-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{ background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', boxShadow: '0 8px 24px rgba(124,58,237,0.3)' }}>
+                  {loading ? <><Loader2 className="w-4 h-4 animate-spin" />{t.resetSending}</> : t.resetBtn}
+                </button>
+                <p className="text-center text-xs pt-1">
+                  <button type="button" onClick={() => switchMode('login')}
+                    className="text-violet-400 hover:text-violet-300 font-semibold transition-colors underline underline-offset-2">
+                    {t.backToLogin}
+                  </button>
+                </p>
+              </form>
+            )
+          ) : success ? (
             <div className="text-center py-6 space-y-4">
               <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-emerald-500/10 border border-emerald-500/20 mb-2">
                 <CheckCircle className="w-7 h-7 text-emerald-400" />
@@ -281,7 +378,8 @@ function LoginForm() {
                 <div className="flex items-center justify-between mb-2">
                   <label className="text-xs font-medium" style={{ color: labelColor }}>{t.password}</label>
                   {mode === 'login' && (
-                    <span className="text-xs text-violet-400 hover:text-violet-300 cursor-pointer transition-colors">{t.forgotPw}</span>
+                    <button type="button" onClick={() => switchMode('forgot')}
+                      className="text-xs text-violet-400 hover:text-violet-300 cursor-pointer transition-colors">{t.forgotPw}</button>
                   )}
                 </div>
                 <div className="relative">

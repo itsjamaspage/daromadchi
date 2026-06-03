@@ -49,25 +49,29 @@ export default function TelegramConnect() {
 
   async function connect() {
     setLinking(true)
+    // Open the window synchronously before any await so browsers don't block the popup
+    const win = window.open('', '_blank')
     try {
       const res = await fetch('/api/telegram/link', { method: 'POST' })
       const json = await res.json()
-      if (json.url) {
-        window.open(json.url, '_blank')
+      if (json.url && win) {
+        win.location.href = json.url
         // Poll for linked status for ~2 minutes
         const started = Date.now()
         const timer = setInterval(async () => {
           const s = await fetch('/api/telegram/status').then(r => r.json()).catch(() => null)
           if (s?.linked || Date.now() - started > 120_000) {
             clearInterval(timer)
-            if (s?.linked) { setLinked(true); setUsername(s.username ?? null) }
+            if (s?.linked) { setLinked(true); setUsername(s.username ?? null); if (s.prefs) setPrefs(s.prefs) }
             setLinking(false)
           }
         }, 3000)
       } else {
+        win?.close()
         setLinking(false)
       }
     } catch {
+      win?.close()
       setLinking(false)
     }
   }
