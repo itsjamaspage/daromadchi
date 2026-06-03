@@ -32,9 +32,21 @@ export async function POST(req: NextRequest) {
     if (data.startsWith('notif_time:')) {
       const notifTime = data.replace('notif_time:', '')
 
+      // Map the legacy label to an HH:MM value for the digest cron
+      const sendTimeMap: Record<string, string> = {
+        morning: '08:00',
+        noon:    '13:00',
+        evening: '20:00',
+      }
+      const sendTime = sendTimeMap[notifTime] ?? '09:00'
+
       await supabaseAdmin
         .from('user_settings')
-        .update({ notification_time: notifTime, updated_at: new Date().toISOString() })
+        .update({
+          notification_time: notifTime,
+          notif_send_time:   sendTime,
+          updated_at:        new Date().toISOString(),
+        })
         .eq('telegram_chat_id', chatId)
 
       await answerCallbackQuery(cb.id, '✅ Saqlandi!')
@@ -77,7 +89,7 @@ export async function POST(req: NextRequest) {
           .eq('telegram_chat_id', chatId)
           .maybeSingle()
 
-        const s = settings ?? {}
+        const s = settings ?? { notif_low_stock: true, notif_daily_summary: true, notif_new_orders: false, notif_weekly_report: false }
         const e = (v: boolean | null | undefined) => v ? '✅' : '❌'
 
         await sendTelegramKeyboard(
