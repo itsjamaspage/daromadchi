@@ -25,21 +25,34 @@ export async function getProducts(marketplace?: MarketplaceType): Promise<Produc
     : allShopIds
   if (targetShopIds.length === 0) return []
 
-  // Fetch target products
-  const { data: products, error } = await supabase
-    .from('products')
-    .select('id, shop_id, sku, title, cost_price, selling_price, stock_quantity, physical_stock, category, marketplace_product_id, updated_at')
-    .in('shop_id', targetShopIds)
-    .order('title')
+  // These three queries are independent of each other — run them in parallel:
+  //  • target products (the rows we return)
+  //  • all user products (for SKU mapping across marketplaces)
+  //  • valid order IDs (to attribute sold counts)
+  const [
+    { data: products, error },
+    { data: allUserProducts },
+    { data: validOrders },
+  ] = await Promise.all([
+    supabase
+      .from('products')
+      .select('id, shop_id, sku, title, cost_price, selling_price, stock_quantity, physical_stock, category, marketplace_product_id, updated_at')
+      .in('shop_id', targetShopIds)
+      .order('title'),
+    supabase
+      .from('products')
+      .select('id, sku')
+      .in('shop_id', allShopIds),
+    supabase
+      .from('orders')
+      .select('id')
+      .in('shop_id', allShopIds)
+      .in('status', ['pending', 'confirmed', 'delivered']),
+  ])
   if (error || !products) return []
 
   // Build sold counts from order_items across ALL user shops
   // This fixes the sold=0 bug and enables cross-marketplace shared inventory.
-  const { data: allUserProducts } = await supabase
-    .from('products')
-    .select('id, sku')
-    .in('shop_id', allShopIds)
-
   const productSkuMap = new Map((allUserProducts ?? []).map(p => [p.id, p.sku as string | null]))
   const allProductIds = (allUserProducts ?? []).map(p => p.id)
 
@@ -47,13 +60,6 @@ export async function getProducts(marketplace?: MarketplaceType): Promise<Produc
   const soldBySku = new Map<string, number>()
 
   if (allProductIds.length > 0) {
-    // Valid (non-cancelled, non-returned) order IDs for this user
-    const { data: validOrders } = await supabase
-      .from('orders')
-      .select('id')
-      .in('shop_id', allShopIds)
-      .in('status', ['pending', 'confirmed', 'delivered'])
-
     const validOrderIds = (validOrders ?? []).map(o => o.id)
 
     if (validOrderIds.length > 0) {
