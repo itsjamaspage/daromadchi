@@ -40,8 +40,8 @@ export const helpContent: HelpDB = {
       how: 'Kartochkalardagi raqamlarni oldingi davr bilan solishtiring. O\'sish yashil, tushish qizil rang bilan ko\'rsatiladi. Grafikda tendensiyani kuzating.',
       steps: [
         { step: 1, text: 'Uzum Market hisobingiz API orqali ulangan' },
-        { step: 2, text: 'Sinxronizatsiya har 6 soatda avtomatik ishlaydi' },
-        { step: 3, text: 'Ma\'lumotlar real vaqtda yangilanadi va saqlanadi' },
+        { step: 2, text: 'Sinxronizatsiya kuniga bir marta avtomatik ishlaydi' },
+        { step: 3, text: 'Ma\'lumotlar har kuni yangilanadi va saqlanadi' },
         { step: 4, text: 'Tarixiy ma\'lumotlar 12 oygacha saqlanadi' },
       ],
     },
@@ -52,8 +52,8 @@ export const helpContent: HelpDB = {
       how: 'Сравнивайте цифры в карточках с предыдущим периодом. Рост — зелёный, падение — красный. Следите за тенденцией на графике.',
       steps: [
         { step: 1, text: 'Ваш аккаунт Uzum Market подключён через API' },
-        { step: 2, text: 'Синхронизация происходит автоматически каждые 6 часов' },
-        { step: 3, text: 'Данные обновляются и сохраняются в реальном времени' },
+        { step: 2, text: 'Синхронизация происходит автоматически раз в день' },
+        { step: 3, text: 'Данные обновляются и сохраняются ежедневно' },
         { step: 4, text: 'История данных хранится до 12 месяцев' },
       ],
     },
@@ -64,8 +64,8 @@ export const helpContent: HelpDB = {
       how: 'Compare the card numbers with the previous period. Growth is green, decline is red. Track the trend on the chart.',
       steps: [
         { step: 1, text: 'Your Uzum Market account is connected via API' },
-        { step: 2, text: 'Sync runs automatically every 6 hours' },
-        { step: 3, text: 'Data is updated and stored in real time' },
+        { step: 2, text: 'Sync runs automatically once a day' },
+        { step: 3, text: 'Data is updated and stored daily' },
         { step: 4, text: 'Historical data is kept for up to 12 months' },
       ],
     },
@@ -469,7 +469,7 @@ export const helpContent: HelpDB = {
       how: 'Yashil holat — hamma yaxshi. Qizil xato — API kaliti muammo yoki sinxronizatsiya bajarilmagan.',
       steps: [
         { step: 1, text: 'Uzum API orqali ma\'lumotlar so\'raladi' },
-        { step: 2, text: 'Har 6 soatda avtomatik sinxronizatsiya ishlaydi' },
+        { step: 2, text: 'Kuniga bir marta avtomatik sinxronizatsiya ishlaydi' },
         { step: 3, text: 'Xato bo\'lsa — sabab va vaqt qayd etiladi' },
         { step: 4, text: 'Qo\'lda sinxronizatsiya ham mumkin' },
       ],
@@ -481,7 +481,7 @@ export const helpContent: HelpDB = {
       how: 'Зелёный статус — всё в порядке. Красная ошибка — проблема с ключом API или синхронизация не выполнена.',
       steps: [
         { step: 1, text: 'Данные запрашиваются через API Uzum' },
-        { step: 2, text: 'Автоматическая синхронизация каждые 6 часов' },
+        { step: 2, text: 'Автоматическая синхронизация раз в день' },
         { step: 3, text: 'При ошибке фиксируется причина и время' },
         { step: 4, text: 'Ручная синхронизация также доступна' },
       ],
@@ -493,7 +493,7 @@ export const helpContent: HelpDB = {
       how: 'Green = all good. Red error = API key problem or sync failed.',
       steps: [
         { step: 1, text: 'Data is requested via Uzum API' },
-        { step: 2, text: 'Auto-sync runs every 6 hours' },
+        { step: 2, text: 'Auto-sync runs once a day' },
         { step: 3, text: 'Errors are logged with reason and timestamp' },
         { step: 4, text: 'Manual sync is also available' },
       ],

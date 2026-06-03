@@ -285,7 +285,7 @@ export default function PriceTrackingView({ prices }: Props) {
       <div className="flex items-start gap-3 bg-[var(--bg-card2)] border border-violet-500/20 rounded-2xl px-5 py-4">
         <AlertTriangle className="w-4 h-4 text-violet-400 flex-shrink-0 mt-0.5" />
         <p className="text-[var(--text-muted)] text-sm">
-          Ma&apos;lumotlar har 6 soatda yangilanadi. Uzum API orqali real narxlar sinxronlanadi.
+          Ma&apos;lumotlar kuniga bir marta yangilanadi. Uzum API orqali real narxlar sinxronlanadi.
         </p>
       </div>
     </div>
