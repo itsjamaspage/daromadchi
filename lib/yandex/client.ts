@@ -104,7 +104,10 @@ export interface YandexOfferMappingEntry {
 
 export interface YandexOffersResponse {
   result: {
-    offerMappingEntries: YandexOfferMappingEntry[]
+    // v2 offer-mappings (current)
+    offerMappings?: YandexOfferMappingEntry[]
+    // v2 offer-mapping-entries (legacy, may still work on some campaigns)
+    offerMappingEntries?: YandexOfferMappingEntry[]
     paging?: { nextPageToken?: string }
   }
 }
@@ -192,13 +195,24 @@ export async function fetchYandexProducts(
   pageToken?: string,
   limit = 200,
 ): Promise<YandexOffersResponse> {
-  return withRetry(() => {
+  return withRetry(async () => {
     const params = new URLSearchParams({ limit: String(limit) })
     if (pageToken) params.set('page_token', pageToken)
-    return request<YandexOffersResponse>(
-      `/v2/campaigns/${campaignId}/offer-mapping-entries?${params}`,
-      token,
-    )
+    // Try current endpoint first, fall back to legacy if 404
+    try {
+      return await request<YandexOffersResponse>(
+        `/v2/campaigns/${campaignId}/offer-mappings?${params}`,
+        token,
+      )
+    } catch (e) {
+      if (e instanceof YandexApiError && e.status === 404) {
+        return request<YandexOffersResponse>(
+          `/v2/campaigns/${campaignId}/offer-mapping-entries?${params}`,
+          token,
+        )
+      }
+      throw e
+    }
   })
 }
 
@@ -304,7 +318,8 @@ export async function fetchAllYandexProducts(
   const all: YandexOfferMappingEntry[] = []
   do {
     const res = await withRetry(() => fetchYandexProducts(token, campaignId, pageToken))
-    all.push(...res.result.offerMappingEntries)
+    const entries = res.result.offerMappings ?? res.result.offerMappingEntries ?? []
+    all.push(...entries)
     pageToken = res.result.paging?.nextPageToken
   } while (pageToken)
   return all

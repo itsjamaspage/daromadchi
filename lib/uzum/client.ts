@@ -40,7 +40,7 @@ async function request<T>(
   const res = await fetch(`${UZUM_API_BASE}${path}`, {
     ...options,
     headers: {
-      Authorization: `Token ${token}`,
+      Authorization: `Bearer ${token.trim()}`,
       'Content-Type': 'application/json',
       Accept: 'application/json',
       ...options?.headers,
