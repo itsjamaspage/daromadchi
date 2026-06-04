@@ -125,7 +125,7 @@ function UzumCard({ shop, userId: _userId }: { shop: Shop | null; userId: string
             <a href="https://seller.uzum.uz" target="_blank" rel="noopener noreferrer" className="text-violet-400 hover:text-violet-300 flex items-center gap-0.5">
               seller.uzum.uz <ExternalLink className="w-3 h-3" />
             </a>
-            → Sozlamalar → API integratsiya → Token nusxalang
+            → Mening profilim → API kalitlari → Maxfiy kalitni nusxalang
           </p>
         </div>
         <StatusMsg msg={saveMsg} />
