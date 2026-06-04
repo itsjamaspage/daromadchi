@@ -189,30 +189,41 @@ export async function fetchYandexOrders(
   })
 }
 
+// GET /v2/campaigns/{campaignId} — get campaign details including businessId
+export async function fetchCampaignInfo(token: string, campaignId: string): Promise<{ businessId: number; campaign: YandexCampaign }> {
+  const data = await request<{ campaign: YandexCampaign & { business?: { id: number } } }>(`/v2/campaigns/${campaignId}`, token)
+  return { businessId: data.campaign.business?.id ?? 0, campaign: data.campaign }
+}
+
 export async function fetchYandexProducts(
   token: string,
   campaignId: string,
   pageToken?: string,
   limit = 200,
+  businessId?: number,
 ): Promise<YandexOffersResponse> {
   return withRetry(async () => {
     const params = new URLSearchParams({ limit: String(limit) })
     if (pageToken) params.set('page_token', pageToken)
-    // Try current endpoint first, fall back to legacy if 404
-    try {
-      return await request<YandexOffersResponse>(
-        `/v2/campaigns/${campaignId}/offer-mappings?${params}`,
-        token,
-      )
-    } catch (e) {
-      if (e instanceof YandexApiError && e.status === 404) {
-        return request<YandexOffersResponse>(
-          `/v2/campaigns/${campaignId}/offer-mapping-entries?${params}`,
-          token,
-        )
+
+    // 1. Try business-level endpoint (works even when campaign integration is toggled off)
+    if (businessId) {
+      try {
+        return await request<YandexOffersResponse>(`/v2/businesses/${businessId}/offer-mappings?${params}`, token)
+      } catch (e) {
+        if (!(e instanceof YandexApiError && (e.status === 404 || e.status === 403))) throw e
       }
-      throw e
     }
+
+    // 2. Try campaign-level offer-mappings
+    try {
+      return await request<YandexOffersResponse>(`/v2/campaigns/${campaignId}/offer-mappings?${params}`, token)
+    } catch (e) {
+      if (!(e instanceof YandexApiError && e.status === 404)) throw e
+    }
+
+    // 3. Legacy fallback
+    return request<YandexOffersResponse>(`/v2/campaigns/${campaignId}/offer-mapping-entries?${params}`, token)
   })
 }
 
@@ -313,11 +324,12 @@ export async function fetchAllYandexOrders(
 export async function fetchAllYandexProducts(
   token: string,
   campaignId: string,
+  businessId?: number,
 ): Promise<YandexOfferMappingEntry[]> {
   let pageToken: string | undefined
   const all: YandexOfferMappingEntry[] = []
   do {
-    const res = await withRetry(() => fetchYandexProducts(token, campaignId, pageToken))
+    const res = await withRetry(() => fetchYandexProducts(token, campaignId, pageToken, 200, businessId))
     const entries = res.result.offerMappings ?? res.result.offerMappingEntries ?? []
     all.push(...entries)
     pageToken = res.result.paging?.nextPageToken

@@ -4,6 +4,7 @@ import {
   fetchAllYandexProducts,
   fetchAllYandexStocks,
   fetchAllYandexSkuStats,
+  fetchCampaignInfo,
   YandexApiError,
 } from './client'
 
@@ -32,13 +33,21 @@ export async function syncFromYandex(
   const supabase = await createClient()
 
   try {
+    // Auto-discover businessId (enables business-level offer-mappings endpoint
+    // which works even when the campaign integration toggle is off in Yandex portal)
+    let businessId: number | undefined
+    try {
+      const info = await fetchCampaignInfo(token, campaignId)
+      if (info.businessId) businessId = info.businessId
+    } catch { /* best-effort */ }
+
     // ── Products (best-effort — don't fail the whole sync if endpoint 404s) ──
     let productRows: {
       shop_id: string; marketplace_product_id: string; title: string; sku: string
       category: string | null; selling_price: number | null; cost_price: null; stock_quantity: number
     }[] = []
     try {
-      const entries = await fetchAllYandexProducts(token, campaignId)
+      const entries = await fetchAllYandexProducts(token, campaignId, businessId)
       const allSkus = entries.map(e => e.offer.shopSku).filter(Boolean)
       const stockMap = await fetchAllYandexStocks(token, campaignId, allSkus)
       productRows = entries.map(e => ({
