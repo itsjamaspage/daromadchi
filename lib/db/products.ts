@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getCurrentUserId, getUserShops } from '@/lib/db/shop-context'
 import type { Product, MarketplaceType } from '@/lib/types'
 
 const supabaseConfigured =
@@ -8,17 +9,15 @@ const supabaseConfigured =
 export async function getProducts(marketplace?: MarketplaceType): Promise<Product[]> {
   if (!supabaseConfigured) return []
 
+  const userId = await getCurrentUserId()
+  if (!userId) return []
+
+  // All shops for this user (needed for cross-marketplace sold computation).
+  // Shared, request-memoized — no extra auth or shops round-trip here.
+  const allShops = await getUserShops()
+  if (allShops.length === 0) return []
+
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return []
-
-  // All shops for this user (needed for cross-marketplace sold computation)
-  const { data: allShops } = await supabase
-    .from('shops')
-    .select('id, marketplace')
-    .eq('user_id', user.id)
-  if (!allShops || allShops.length === 0) return []
-
   const allShopIds = allShops.map(s => s.id)
   const targetShopIds = marketplace
     ? allShops.filter(s => s.marketplace === marketplace).map(s => s.id)
