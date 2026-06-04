@@ -251,7 +251,7 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
                   body: JSON.stringify(draftSettings),
                 }).catch(() => {})
               }}
-              className="px-4 py-2 bg-violet-600 hover:bg-violet-500 text-[var(--text-base)] text-xs font-semibold rounded-xl transition-colors">
+              className="px-4 py-2 btn-primary text-xs font-semibold rounded-xl transition-colors">
               Saqlash
             </button>
             <button onClick={() => setShowSettings(false)}

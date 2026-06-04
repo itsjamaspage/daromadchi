@@ -27,7 +27,7 @@ export default async function UnitEconomicsPage() {
         </div>
         <div className="flex items-center gap-2">
           <a href="https://uzum.uz" target="_blank" rel="noreferrer"
-            className="inline-flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-[var(--text-base)] text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors shadow-lg shadow-violet-500/20">
+            className="inline-flex items-center gap-2 btn-primary text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors shadow-lg shadow-violet-500/20">
             <Calculator className="w-4 h-4" /> {d.openUzum}
           </a>
         </div>

@@ -97,7 +97,7 @@ export default function DataStateView({ days }: Props) {
         <div className="flex items-center gap-3 bg-violet-500/5 border border-violet-500/20 rounded-xl px-4 py-3">
           <span className="text-xs text-violet-300 font-semibold">{selected.size} kun tanlangan</span>
           <button onClick={resyncSelected}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-violet-600 hover:bg-violet-500 text-[var(--text-base)] text-xs font-semibold rounded-lg transition-colors ml-auto">
+            className="flex items-center gap-1.5 px-3 py-1.5 btn-primary text-xs font-semibold rounded-lg transition-colors ml-auto">
             <RefreshCw className="w-3.5 h-3.5" /> Qayta yuklash
           </button>
           <button onClick={() => setSelected(new Set())}

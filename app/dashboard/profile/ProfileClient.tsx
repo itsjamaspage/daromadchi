@@ -313,7 +313,7 @@ function SecurityTab({ d }: { d: T }) {
                   />
                   <button
                     type="button"
-                    className="flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-[var(--text-base)] text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors"
+                    className="flex items-center gap-2 btn-primary text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors"
                   >
                     <CheckCircle className="w-4 h-4" />
                     {d.profileConfirm}

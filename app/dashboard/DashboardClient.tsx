@@ -174,7 +174,7 @@ export default function DashboardClient({ kpis, recentOrders, allProducts, chart
           <p className="text-[var(--text-muted)] text-sm mb-6 max-w-sm mx-auto">{d.noDataDesc}</p>
           <div className="flex items-center justify-center gap-3">
             <Link href="/dashboard/settings"
-              className="inline-flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-[var(--text-base)] text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors shadow-lg shadow-violet-500/20">
+              className="inline-flex items-center gap-2 btn-primary text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors shadow-lg shadow-violet-500/20">
               <Settings className="w-4 h-4" /> {d.goSettings}
             </Link>
             <Link href="https://seller.uzum.uz" target="_blank" rel="noopener noreferrer"

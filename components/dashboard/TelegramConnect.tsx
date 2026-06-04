@@ -115,7 +115,24 @@ export default function TelegramConnect() {
   const dayLabels = [d.daySun, d.dayMon, d.dayTue, d.dayWed, d.dayThu, d.dayFri, d.daySat]
   const dayOrder  = [1, 2, 3, 4, 5, 6, 0]
 
-  if (loading) return null
+  if (loading) {
+    // Skeleton placeholder — same footprint as the real card so it doesn't pop in late
+    return (
+      <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden animate-pulse">
+        <div className="px-5 py-4 border-b border-[var(--border)] flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-[var(--bg-input)]" />
+          <div className="flex-1 space-y-2">
+            <div className="h-3.5 w-32 rounded bg-[var(--bg-input)]" />
+            <div className="h-2.5 w-48 rounded bg-[var(--bg-input)]" />
+          </div>
+        </div>
+        <div className="p-5 space-y-3">
+          <div className="h-10 w-44 rounded-xl bg-[var(--bg-input)]" />
+          <div className="h-2.5 w-64 rounded bg-[var(--bg-input)]" />
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">

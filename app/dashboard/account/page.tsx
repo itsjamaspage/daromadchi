@@ -78,7 +78,7 @@ export default async function AccountPage() {
               Pro tarifni 3 kun bepul sinayapsiz. {trialDaysLeft} kun qoldi.
             </p>
             <Link href="/pricing"
-              className="bg-violet-600 hover:bg-violet-500 text-[var(--text-base)] text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap">
+              className="btn-primary text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap">
               {t.upgradePro}
             </Link>
           </div>
@@ -91,7 +91,7 @@ export default async function AccountPage() {
               Bepul sinov tugadi. Pro tarifga o&apos;tib barcha imkoniyatlardan foydalaning.
             </p>
             <Link href="/pricing"
-              className="bg-violet-600 hover:bg-violet-500 text-[var(--text-base)] text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap">
+              className="btn-primary text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap">
               {t.upgradePro}
             </Link>
           </div>
@@ -117,7 +117,7 @@ export default async function AccountPage() {
           </div>
           {effectivePlan === 'free' && !isOnTrial && (
             <Link href="/pricing"
-              className="bg-violet-600 hover:bg-violet-500 text-[var(--text-base)] text-sm font-semibold px-4 py-2 rounded-xl transition-colors">
+              className="btn-primary text-sm font-semibold px-4 py-2 rounded-xl transition-colors">
               {t.upgradePro}
             </Link>
           )}

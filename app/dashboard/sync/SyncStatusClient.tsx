@@ -173,7 +173,7 @@ export default function SyncStatusClient({ shops }: { shops: Shop[] }) {
         <p className="text-[var(--text-base)] font-bold mb-2">{t.noShops}</p>
         <p className="text-[var(--text-muted)] text-sm mb-4">{t.noShopsDesc}</p>
         <Link href="/dashboard/settings"
-          className="inline-flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-[var(--text-base)] text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors">
+          className="inline-flex items-center gap-2 btn-primary text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors">
           <Settings className="w-4 h-4" /> Settings
         </Link>
       </div>
