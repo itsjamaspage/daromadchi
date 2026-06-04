@@ -408,9 +408,9 @@
       await buildWidget();
       const w = document.getElementById('drm-widget');
       if (w && Date.now() - (widgetClosed||0) < 1800000) w.classList.add('drm-gone');
-    } else if (IS_SELLER) {
-      buildSellerBar();
     }
+    // Seller-cabinet top bar disabled: it sat fixed at top:0 and covered the
+    // marketplace's own navbar. buildSellerBar() is kept for reference only.
   }
 
   if (document.readyState === 'loading') {
