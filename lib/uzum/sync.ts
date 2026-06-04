@@ -2,7 +2,8 @@ import { createClient } from '@/lib/supabase/server'
 import {
   fetchAllPages,
   fetchUzumOrders,
-  fetchUzumProducts,
+  fetchUzumShops,
+  fetchUzumShopProducts,
   fetchUzumAdCampaigns,
   UzumApiError,
 } from './client'
@@ -35,19 +36,44 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
   const supabase = await createClient()
 
   try {
-    // ── Products (full refresh — Uzum doesn't paginate deltas) ────────────────
-    const uzumProducts = await fetchAllPages(page => fetchUzumProducts(token, page))
+    // ── Products: resolve shop(s), then pull product/SKU data ─────────────────
+    // Uzum seller API is shop-scoped: GET /v1/shops → shopId, then
+    // GET /v1/product/shop/{shopId} returns products with their SKUs (price,
+    // purchasePrice = cost, quantityActive = stock, quantitySold).
+    const uzumShops = await fetchUzumShops(token)
+    if (uzumShops.length === 0) {
+      throw new Error("Uzum do'kon topilmadi (/v1/shops bo'sh qaytdi)")
+    }
 
-    const productRows = uzumProducts.map(p => ({
-      shop_id: shopId,
-      marketplace_product_id: String(p.productId),
-      title: p.name,
-      sku: p.sku || String(p.productId),
-      category: p.categoryName,
-      selling_price: p.price,
-      cost_price: p.purchasePrice || null,
-      stock_quantity: p.stock ?? 0,
-    }))
+    const productRows: {
+      shop_id: string; marketplace_product_id: string; title: string; sku: string
+      category: string | null; selling_price: number | null; cost_price: number | null
+      stock_quantity: number
+    }[] = []
+
+    for (const uShop of uzumShops) {
+      const size = 100
+      for (let page = 0; page < 100; page++) {
+        const res = await fetchUzumShopProducts(token, uShop.id, page, size)
+        const list = res.productList ?? []
+        for (const card of list) {
+          for (const sku of card.skuList ?? []) {
+            productRows.push({
+              shop_id: shopId,
+              marketplace_product_id: String(sku.skuId),
+              title: sku.skuTitle || sku.productTitle || card.title || 'Mahsulot',
+              sku: sku.sellerItemCode || sku.article || String(sku.skuId),
+              category: card.category ?? null,
+              selling_price: sku.price ?? null,
+              cost_price: sku.purchasePrice || null,
+              stock_quantity: sku.quantityActive ?? 0,
+            })
+          }
+        }
+        const total = res.totalProductsAmount ?? 0
+        if (list.length < size || (page + 1) * size >= total) break
+      }
+    }
 
     // Upsert — safer than delete+insert; existing cost_price edits are preserved
     if (productRows.length > 0) {
@@ -70,9 +96,11 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
 
     const fromDate = since.toISOString().slice(0, 10)
 
+    // Best-effort: the real seller-openapi orders endpoint path is still being
+    // confirmed. A failure here must not block the (working) product sync.
     const uzumOrders = await fetchAllPages(page =>
       fetchUzumOrders(token, page, 100, fromDate),
-    )
+    ).catch(() => [] as Awaited<ReturnType<typeof fetchUzumOrders>>['data'])
 
     const orderRows = uzumOrders.map(o => ({
       shop_id: shopId,

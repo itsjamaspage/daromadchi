@@ -1,9 +1,10 @@
 // Uzum Market Seller API client
-// Base URL: https://api-seller.uzum.uz/api
+// Base URL: https://api-seller.uzum.uz/api/seller-openapi
 // Auth: Bearer token from seller.uzum.uz → Settings → API
+// Products: GET /v1/shops → shopId, then GET /v1/product/shop/{shopId}
 // Swagger (requires login): https://api-seller.uzum.uz/api/seller-openapi/swagger/swagger-ui/webjars/swagger-ui/index.html
 
-export const UZUM_API_BASE = 'https://api-seller.uzum.uz/api'
+export const UZUM_API_BASE = 'https://api-seller.uzum.uz/api/seller-openapi'
 
 export class UzumApiError extends Error {
   constructor(
@@ -86,21 +87,39 @@ export interface UzumOrdersResponse {
   pageSize: number
 }
 
-export interface UzumProduct {
-  productId: number
-  name: string
-  sku: string
-  categoryName: string
-  price: number
-  purchasePrice: number // cost / tannarx
-  stock: number
+// GET /v1/shops
+export interface UzumShop {
+  id: number
+  name?: string
+  title?: string
 }
 
-export interface UzumProductsResponse {
-  data: UzumProduct[]
-  totalCount: number
-  page: number
-  pageSize: number
+// One sellable SKU inside a product card (GET /v1/product/shop/{shopId})
+export interface UzumSku {
+  skuId: number
+  skuTitle?: string
+  productTitle?: string
+  price: number              // current sell price, so'm
+  purchasePrice: number      // cost / tannarx, so'm
+  quantityActive?: number    // available stock
+  quantityFbs?: number
+  quantitySold?: number
+  commission?: number
+  article?: string
+  sellerItemCode?: string
+  barcode?: number
+}
+
+export interface UzumProductCard {
+  productId: number
+  category?: string
+  title?: string
+  skuList: UzumSku[]
+}
+
+export interface UzumShopProductsResponse {
+  productList: UzumProductCard[]
+  totalProductsAmount: number
 }
 
 export interface UzumAdCampaign {
@@ -143,14 +162,31 @@ export async function fetchUzumOrders(
   })
 }
 
-export async function fetchUzumProducts(
+// GET /v1/shops — the seller's own shops (we need the shopId for product calls)
+export async function fetchUzumShops(token: string): Promise<UzumShop[]> {
+  return withRetry(async () => {
+    const data = await request<UzumShop[] | { shops?: UzumShop[]; data?: UzumShop[] }>('/v1/shops', token)
+    if (Array.isArray(data)) return data
+    return data.shops ?? data.data ?? []
+  })
+}
+
+// GET /v1/product/shop/{shopId} — products + SKUs (stock, price, cost, sold)
+export async function fetchUzumShopProducts(
   token: string,
+  shopId: number,
   page = 0,
-  pageSize = 100,
-): Promise<UzumProductsResponse> {
+  size = 100,
+): Promise<UzumShopProductsResponse> {
   return withRetry(() => {
-    const params = new URLSearchParams({ page: String(page), size: String(pageSize) })
-    return request<UzumProductsResponse>(`/v1/products?${params}`, token)
+    const params = new URLSearchParams({
+      page: String(page),
+      size: String(size),
+      sortBy: 'DEFAULT',
+      order: 'ASC',
+      filter: 'ALL',
+    })
+    return request<UzumShopProductsResponse>(`/v1/product/shop/${shopId}?${params}`, token)
   })
 }
 
