@@ -28,6 +28,7 @@ export async function POST(req: NextRequest) {
     .select('id')
     .eq('user_id', user.id)
     .eq('marketplace', marketplace)
+    .eq('is_active', true)
     .maybeSingle()
 
   const update: Record<string, unknown> = {}
