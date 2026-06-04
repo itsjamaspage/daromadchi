@@ -1,6 +1,8 @@
 // Yandex Market Partner API client
 // Base URL: https://api.partner.market.yandex.ru
-// Auth: OAuth token from partner.market.yandex.ru → Settings → API
+// Auth: API key (header `Api-Key: <token>`) from partner.market.yandex.ru →
+//   Settings → API → Authorization tokens. Yandex migrated off OAuth Bearer to
+//   Api-Key; sending such a key as Bearer returns FORBIDDEN "OAuth token is invalid".
 // Docs: https://yandex.ru/dev/market/partner-api/doc/
 
 export const YANDEX_API_BASE = 'https://api.partner.market.yandex.ru'
@@ -35,7 +37,7 @@ async function request<T>(path: string, token: string, options?: RequestInit): P
   const res = await fetch(`${YANDEX_API_BASE}${path}`, {
     ...options,
     headers: {
-      Authorization: `Bearer ${token}`,
+      'Api-Key': token,
       'Content-Type': 'application/json',
       Accept: 'application/json',
       ...options?.headers,
