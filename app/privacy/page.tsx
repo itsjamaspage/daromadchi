@@ -36,8 +36,8 @@ const t: Record<Lang, {
         body: `• Dashboard ko\'rsatkichlarini, hisobotlarni va ogohlantirishlarni yaratish.\n• Marketplace API bilan sinxronizatsiya (faqat o\'qish rejimi — biz sizning do\'koningizda hech narsa o\'zgartirmaymiz).\n• Xavfsizlik: ruxsatsiz kirishni aniqlash va oldini olish.\n• Xizmat yaxshilash: anonim foydalanish statistikasi.\n\nBiz sizning ma\'lumotlaringizni uchinchi shaxslarga sotmaymiz va reklama maqsadida foydalanmaymiz.`,
       },
       {
-        heading: '4. Ma\'lumotlar saqlash va xavfsizlik',
-        body: `Ma\'lumotlar Supabase (PostgreSQL) ma\'lumotlar bazasida saqlanadi. API kalitlari AES-256-CBC algoritmi bilan shifrlangan. Server infratuzilmasi xavfsizlik standartlariga mos keladigan provayderda joylashgan.\n\nO\'zbekiston Respublikasining "Shaxsiy ma\'lumotlar to\'g\'risida"gi Qonuni (ZRU-547) talablariga ko\'ra, shaxsiy ma\'lumotlar faqat zarur muddat davomida, lekin eng ko\'pi bilan hisob o\'chirilgandan keyin 1 yil saqlanadi.`,
+        heading: '4. Ma\'lumotlar saqlash, xavfsizlik va uchinchi shaxslarga uzatish',
+        body: `Ma\'lumotlar Supabase Inc. (infrastruktura provayderi, AQSh) PostgreSQL ma\'lumotlar bazasida saqlanadi. API kalitlari AES-256-CBC algoritmi bilan shifrlangan holda saqlanadi. Barcha uzatmalar HTTPS orqali amalga oshiriladi.\n\nXalqaro uzatish: ZRU-547 Qonuniga 2026-yil 26-martda kiritilgan o\'zgarishlarga muvofiq, xorijiy bulut xizmatlaridan foydalanish axborot xavfsizligi talablariga rioya etilgan taqdirda ruxsat etiladi. Biz Supabase'ning SOC 2 sertifikatiga asoslanib ushbu talabga muvofiq ekanligini e'lon qilamiz.\n\nUchinchi shaxslar: Supabase (ma\'lumotlar bazasi infratuzilmasi) — ma\'lumotlarga faqat texnik xizmat ko\'rsatish doirasida kirish huquqiga ega. Boshqa uchinchi shaxslarga ma\'lumot uzatilmaydi.\n\nZRU-547 Qonuni talablariga ko\'ra, shaxsiy ma\'lumotlar faqat zarur muddat davomida, lekin eng ko\'pi bilan hisob o\'chirilgandan keyin 1 yil saqlanadi.`,
       },
       {
         heading: '5. Foydalanuvchi huquqlari',
@@ -56,8 +56,12 @@ const t: Record<Lang, {
         body: `Daromadchi — ma\'lumot ko\'rsatish vositasi. Biz marketplace API\'laridan olingan ma\'lumotlarning to\'liqligi yoki dolzarbligi uchun javob bermaymiz. Platformadagi tahlillar asosida qabul qilingan tijorat qarorlar uchun javobgarlik foydalanuvchida qoladi.`,
       },
       {
-        heading: '9. Aloqa',
-        body: `Savollar, shikoyatlar yoki huquqiy so\'rovlar uchun:\nElektron pochta: ${COMPANY_EMAIL}\n\nO\'zbekiston Respublikasida shikoyat qilish uchun: Axborot texnologiyalari va kommunikatsiyalarini rivojlantirish vazirligi (AKVV) yoki sudga murojaat qilishingiz mumkin.`,
+        heading: '9. Rozilik va ro\'yxatdan o\'tish',
+        body: `Platformadan ro\'yxatdan o\'tish paytida siz ushbu maxfiylik siyosatini o\'qib chiqqaningiz va qabul qilganingizni tasdiqlaysiz — bu ZRU-547 Qonuni talab etgan elektron rozilik hisoblanadi.\n\nDaromadchi shaxsiy ma\'lumotlar bazasi O\'zbekiston Respublikasi Hukumati huzuridagi Davlat shaxslashtirish markazi tomonidan yuritiluvchi Shaxsiy ma\'lumotlar bazalarining Davlat reestriga kiritilishi ko\'zda tutilmoqda.`,
+      },
+      {
+        heading: '10. Aloqa',
+        body: `Savollar, shikoyatlar yoki huquqiy so\'rovlar uchun:\nElektron pochta: ${COMPANY_EMAIL}\n\nO\'zbekiston Respublikasida shikoyat qilish uchun: Raqamli texnologiyalar vazirligi yoki sudga murojaat qilishingiz mumkin.`,
       },
     ],
   },
@@ -80,8 +84,8 @@ const t: Record<Lang, {
         body: `• Формирование показателей панели управления, отчётов и уведомлений.\n• Синхронизация с API маркетплейса (только режим чтения — мы не изменяем ничего в вашем магазине).\n• Безопасность: обнаружение и предотвращение несанкционированного доступа.\n• Улучшение сервиса: анонимная статистика использования.\n\nМы не продаём ваши данные третьим лицам и не используем их в рекламных целях.`,
       },
       {
-        heading: '4. Хранение данных и безопасность',
-        body: `Данные хранятся в базе данных Supabase (PostgreSQL). API-ключи шифруются алгоритмом AES-256-CBC. Серверная инфраструктура размещена у провайдера, соответствующего стандартам безопасности.\n\nВ соответствии с Законом ЗРУ-547 персональные данные хранятся только в течение необходимого срока, но не более 1 года после удаления аккаунта.`,
+        heading: '4. Хранение данных, безопасность и передача третьим лицам',
+        body: `Данные хранятся в базе данных Supabase Inc. (провайдер инфраструктуры, США), PostgreSQL. API-ключи шифруются алгоритмом AES-256-CBC. Все передачи осуществляются по протоколу HTTPS.\n\nМеждународная передача: поправки к Закону ЗРУ-547 от 26 марта 2026 г. разрешают использование иностранных облачных сервисов при соблюдении требований информационной безопасности. Мы ссылаемся на сертификацию Supabase SOC 2 как подтверждение соответствия этим требованиям.\n\nТретьи лица: Supabase (инфраструктура базы данных) — доступ к данным только в рамках технического обслуживания. Данные не передаются иным третьим лицам.\n\nВ соответствии с Законом ЗРУ-547 персональные данные хранятся только в течение необходимого срока, но не более 1 года после удаления аккаунта.`,
       },
       {
         heading: '5. Права пользователей',
@@ -100,8 +104,12 @@ const t: Record<Lang, {
         body: `Daromadchi является инструментом отображения данных. Мы не несём ответственности за полноту или актуальность данных, полученных через API маркетплейсов. Ответственность за коммерческие решения, принятые на основе аналитики платформы, лежит на пользователе.`,
       },
       {
-        heading: '9. Контакты',
-        body: `По вопросам, жалобам или юридическим запросам:\nЭлектронная почта: ${COMPANY_EMAIL}\n\nДля подачи жалобы в Республике Узбекистан: Министерство по развитию информационных технологий и коммуникаций (МИТК) или суд.`,
+        heading: '9. Согласие и регистрация',
+        body: `При регистрации на платформе вы подтверждаете, что ознакомились с настоящей политикой и принимаете её — это является электронным согласием в соответствии с требованиями Закона ЗРУ-547.\n\nБаза персональных данных Daromadchi планируется к включению в Государственный реестр баз персональных данных, ведомый Государственным центром персонализации при Правительстве Республики Узбекистан.`,
+      },
+      {
+        heading: '10. Контакты',
+        body: `По вопросам, жалобам или юридическим запросам:\nЭлектронная почта: ${COMPANY_EMAIL}\n\nДля подачи жалобы в Республике Узбекистан: Министерство цифровых технологий или суд.`,
       },
     ],
   },
@@ -124,8 +132,8 @@ const t: Record<Lang, {
         body: `• Generating dashboard metrics, reports and alerts.\n• Marketplace API synchronisation (read-only — we never modify anything in your store).\n• Security: detecting and preventing unauthorised access.\n• Service improvement: anonymous usage statistics.\n\nWe do not sell your data to third parties or use it for advertising purposes.`,
       },
       {
-        heading: '4. Data storage and security',
-        body: `Data is stored in a Supabase (PostgreSQL) database. API keys are encrypted with AES-256-CBC. Server infrastructure is hosted with a provider meeting applicable security standards.\n\nUnder Law ZRU-547, personal data is retained only as long as necessary, and for no more than 1 year after account deletion.`,
+        heading: '4. Data storage, security & third-party transfers',
+        body: `Data is stored with Supabase Inc. (infrastructure provider, USA) in a PostgreSQL database. API keys are encrypted with AES-256-CBC. All data in transit is protected by HTTPS.\n\nInternational transfer: amendments to Law ZRU-547 (26 March 2026) permit use of foreign cloud services where information security requirements are met. We rely on Supabase's SOC 2 certification as evidence of compliance with these requirements.\n\nThird parties: Supabase (database infrastructure) — access limited to technical operations only. No data is sold or shared with any other third parties.\n\nUnder Law ZRU-547, personal data is retained only as long as necessary, and for no more than 1 year after account deletion.`,
       },
       {
         heading: '5. User rights',
@@ -144,8 +152,12 @@ const t: Record<Lang, {
         body: `Daromadchi is a data display tool. We are not responsible for the completeness or accuracy of data obtained via marketplace APIs. Commercial decisions made based on platform analytics remain the user's responsibility.`,
       },
       {
-        heading: '9. Contact',
-        body: `For questions, complaints or legal requests:\nEmail: ${COMPANY_EMAIL}\n\nTo file a complaint in the Republic of Uzbekistan: Ministry of Digital Technologies (MDT) or the relevant court.`,
+        heading: '9. Consent & registration',
+        body: `By registering on the platform you confirm you have read and accept this policy — this constitutes electronic consent as required by Law ZRU-547.\n\nThe Daromadchi personal data database is intended to be included in the State Register of Personal Data Bases maintained by the State Personalisation Centre under the Cabinet of Ministers of the Republic of Uzbekistan.`,
+      },
+      {
+        heading: '10. Contact',
+        body: `For questions, complaints or legal requests:\nEmail: ${COMPANY_EMAIL}\n\nTo file a complaint in the Republic of Uzbekistan: Ministry of Digital Technologies or the relevant court.`,
       },
     ],
   },
