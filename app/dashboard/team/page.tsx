@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { Users, UserPlus, X, Crown, Eye, Trash2, Shield, Lock } from 'lucide-react'
-import HelpTooltip from '@/components/dashboard/HelpTooltip'
 import { useLang } from '@/app/providers'
 import { translations } from '@/lib/i18n'
 
@@ -188,7 +187,6 @@ export default function TeamPage() {
         <div>
           <div className="flex items-center gap-2 mb-0.5">
             <h1 className="text-2xl font-bold text-[var(--text-base)]">{d.teamTitle}</h1>
-            <HelpTooltip section="team" />
           </div>
           <p className="text-[var(--text-muted)] text-sm">
             {d.teamSubtitle}

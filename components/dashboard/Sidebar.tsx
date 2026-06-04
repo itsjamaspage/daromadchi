@@ -12,6 +12,9 @@ import {
 import { useTheme, useLang } from '@/app/providers'
 import { translations } from '@/lib/i18n'
 import type { Lang } from '@/lib/i18n'
+import HelpTooltip from '@/components/dashboard/HelpTooltip'
+import { helpContent, type HelpSection } from '@/lib/help-tooltips'
+import Glossary from '@/components/dashboard/Glossary'
 
 type NavItem = { href: string; key: string; icon: React.ElementType }
 
@@ -78,25 +81,28 @@ function NavSection({
         {items.map(({ href, key, icon: Icon }) => {
           const active = pathname === href
           const itemLabel = navT[key] ?? fallbackLabels?.[key] ?? key
+          const hasHelp = key in helpContent
           return (
-            <Link
-              key={href}
-              href={href}
-              onClick={onNavClick}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all"
-              style={active ? {
-                background: 'rgba(124,58,237,0.12)',
-                color: 'var(--c1)',
-                border: '1px solid rgba(124,58,237,0.2)',
-              } : {
-                color: 'var(--text-muted)',
-                border: '1px solid transparent',
-              }}
-            >
-              <Icon className="w-4 h-4 flex-shrink-0" style={{ color: active ? 'var(--c1)' : 'var(--text-muted)' }} />
-              {itemLabel}
-              {active && <ChevronRight className="w-3 h-3 ml-auto" style={{ color: 'var(--c1)' }} />}
-            </Link>
+            <div key={href} className="flex items-center gap-0.5">
+              <Link
+                href={href}
+                onClick={onNavClick}
+                className="flex-1 min-w-0 flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all"
+                style={active ? {
+                  background: 'rgba(124,58,237,0.12)',
+                  color: 'var(--c1)',
+                  border: '1px solid rgba(124,58,237,0.2)',
+                } : {
+                  color: 'var(--text-muted)',
+                  border: '1px solid transparent',
+                }}
+              >
+                <Icon className="w-4 h-4 flex-shrink-0" style={{ color: active ? 'var(--c1)' : 'var(--text-muted)' }} />
+                <span className="truncate">{itemLabel}</span>
+                {active && <ChevronRight className="w-3 h-3 ml-auto flex-shrink-0" style={{ color: 'var(--c1)' }} />}
+              </Link>
+              {hasHelp && <HelpTooltip section={key as HelpSection} variant="plain" />}
+            </div>
           )
         })}
       </div>
@@ -211,6 +217,8 @@ export default function Sidebar({ onClose }: SidebarProps) {
             ))}
           </div>
         </div>
+
+        <Glossary />
 
         <Link
           href="/dashboard/settings"

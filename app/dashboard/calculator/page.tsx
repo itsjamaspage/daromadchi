@@ -4,7 +4,6 @@ import { useState, useMemo } from 'react'
 import { Calculator, TrendingUp, TrendingDown, AlertTriangle, Info, Zap } from 'lucide-react'
 import { useLang } from '@/app/providers'
 import { dashT } from '@/lib/dashT'
-import HelpTooltip from '@/components/dashboard/HelpTooltip'
 
 function fmt(n: number) {
   return new Intl.NumberFormat('uz-UZ').format(Math.round(n))
@@ -78,7 +77,6 @@ export default function CalculatorPage() {
             <Calculator className="w-6 h-6 text-violet-400" />
             {t.title}
           </h1>
-          <HelpTooltip section="calculator" />
         </div>
         <p className="text-[var(--text-muted)] text-sm">
           {t.subtitlePre} <strong className="text-[var(--text-base)]">{t.subtitleStrong}</strong> {t.subtitlePost}

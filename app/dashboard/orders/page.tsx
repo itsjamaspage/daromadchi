@@ -1,5 +1,4 @@
 import { ShoppingCart, Settings } from 'lucide-react'
-import HelpTooltip from '@/components/dashboard/HelpTooltip'
 import Link from 'next/link'
 import { getOrders } from '@/lib/db/orders'
 import OrdersTable from '@/components/dashboard/OrdersTable'
@@ -40,7 +39,6 @@ export default async function OrdersPage() {
       <div>
         <div className="flex items-center gap-2 mb-0.5">
           <h1 className="text-2xl font-bold" style={{ color: 'var(--text-base)' }}>{d.ordersTitle}</h1>
-          <HelpTooltip section="orders" />
         </div>
         <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{orders.length} {d.orderCount}</p>
       </div>

@@ -1,7 +1,6 @@
 import { Bell, Package, AlertTriangle } from 'lucide-react'
 import { getT } from '@/lib/server-i18n'
 import { getStockAlerts } from '@/lib/db/alerts'
-import HelpTooltip from '@/components/dashboard/HelpTooltip'
 
 export default async function NotificationsPage() {
   const [t, alerts] = await Promise.all([getT(), getStockAlerts()])
@@ -16,7 +15,6 @@ export default async function NotificationsPage() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-bold text-[var(--text-base)]">{d.notificationsTitle}</h1>
-            <HelpTooltip section="alerts" />
           </div>
           <p className="text-[var(--text-muted)] text-sm">{d.notificationsSubtitle}</p>
         </div>
