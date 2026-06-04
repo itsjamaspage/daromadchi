@@ -56,7 +56,7 @@ export async function GET() {
     const res = await fetch(
       `https://api.partner.market.yandex.ru/v2/campaigns/${shop.shop_id_external}/orders?pageSize=1`,
       {
-        headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+        headers: { 'Api-Key': token, Accept: 'application/json' },
         next: { revalidate: 0 },
       },
     )
