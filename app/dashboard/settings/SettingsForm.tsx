@@ -125,7 +125,7 @@ function UzumCard({ shop, userId: _userId }: { shop: Shop | null; userId: string
             <a href="https://seller.uzum.uz" target="_blank" rel="noopener noreferrer" className="text-violet-400 hover:text-violet-300 flex items-center gap-0.5">
               seller.uzum.uz <ExternalLink className="w-3 h-3" />
             </a>
-            → Sozlamalar → API integratsiya
+            → Sozlamalar → API integratsiya → Token nusxalang
           </p>
         </div>
         <StatusMsg msg={saveMsg} />
@@ -271,13 +271,13 @@ function YandexCard({ shop, userId: _userId }: { shop: Shop | null; userId: stri
       <form onSubmit={handleSave} className="p-6 space-y-4">
         <div>
           <label className="flex items-center gap-1.5 text-xs font-medium text-[var(--text-muted)] mb-2">
-            <Key className="w-3.5 h-3.5" /> OAuth Token
+            <Key className="w-3.5 h-3.5" /> API Token
           </label>
           <input
             type="password"
             value={apiKey}
             onChange={e => setApiKey(e.target.value)}
-            placeholder={hasKey ? '••••••••  (yangilash uchun kiriting)' : 'OAuth token kiriting…'}
+            placeholder={hasKey ? '••••••••  (yangilash uchun kiriting)' : 'API token kiriting…'}
             className="w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-amber-500/40 transition-all font-mono"
           />
         </div>
@@ -298,7 +298,7 @@ function YandexCard({ shop, userId: _userId }: { shop: Shop | null; userId: stri
               className="text-amber-400 hover:text-amber-300 flex items-center gap-0.5">
               partner.market.yandex.ru <ExternalLink className="w-3 h-3" />
             </a>
-            → API → OAuth token va Campaign ID
+            → Nastroyki → API → Sozdat&apos; token
           </p>
         </div>
 

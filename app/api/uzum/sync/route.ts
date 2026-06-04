@@ -58,7 +58,7 @@ export async function GET() {
     if (!res.ok) {
       const body = await res.text().catch(() => '')
       return NextResponse.json(
-        { ok: false, error: `Token noto'g'ri yoki muddati o'tgan (${res.status})`, detail: body.slice(0, 200) },
+        { ok: false, error: `Uzum token noto'g'ri (${res.status}). seller.uzum.uz → Sozlamalar → API integratsiya sahifasidan yangi token oling va qayta saqlang.`, detail: body.slice(0, 200) },
       )
     }
     return NextResponse.json({ ok: true, message: "Uzum token ishlayapti — sinxronizatsiyani boshlashingiz mumkin" })

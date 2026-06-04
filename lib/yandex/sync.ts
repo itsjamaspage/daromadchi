@@ -32,29 +32,34 @@ export async function syncFromYandex(
   const supabase = await createClient()
 
   try {
-    // ── Products ──────────────────────────────────────────────────────────────
-    const entries = await fetchAllYandexProducts(token, campaignId)
-    const allSkus = entries.map(e => e.offer.shopSku).filter(Boolean)
-
-    // Fetch FBS stock quantities (best-effort)
-    const stockMap = await fetchAllYandexStocks(token, campaignId, allSkus)
-
-    const productRows = entries.map(e => ({
-      shop_id: shopId,
-      marketplace_product_id: String(e.mapping?.marketSku ?? e.offer.shopSku),
-      title: e.offer.name,
-      sku: e.offer.shopSku,
-      category: e.offer.category ?? null,
-      selling_price: e.offer.price?.value ?? null,
-      cost_price: null, // not provided by Yandex offer mapping API
-      stock_quantity: stockMap.get(e.offer.shopSku) ?? 0,
-    }))
-
-    if (productRows.length > 0) {
-      const { error } = await supabase
-        .from('products')
-        .upsert(productRows, { onConflict: 'shop_id,marketplace_product_id', ignoreDuplicates: false })
-      if (error) throw new Error(`Mahsulot xato: ${error.message}`)
+    // ── Products (best-effort — don't fail the whole sync if endpoint 404s) ──
+    let productRows: {
+      shop_id: string; marketplace_product_id: string; title: string; sku: string
+      category: string | null; selling_price: number | null; cost_price: null; stock_quantity: number
+    }[] = []
+    try {
+      const entries = await fetchAllYandexProducts(token, campaignId)
+      const allSkus = entries.map(e => e.offer.shopSku).filter(Boolean)
+      const stockMap = await fetchAllYandexStocks(token, campaignId, allSkus)
+      productRows = entries.map(e => ({
+        shop_id: shopId,
+        marketplace_product_id: String(e.mapping?.marketSku ?? e.offer.shopSku),
+        title: e.offer.name,
+        sku: e.offer.shopSku,
+        category: e.offer.category ?? null,
+        selling_price: e.offer.price?.value ?? null,
+        cost_price: null,
+        stock_quantity: stockMap.get(e.offer.shopSku) ?? 0,
+      }))
+      if (productRows.length > 0) {
+        const { error } = await supabase
+          .from('products')
+          .upsert(productRows, { onConflict: 'shop_id,marketplace_product_id', ignoreDuplicates: false })
+        if (error) throw new Error(`Mahsulot xato: ${error.message}`)
+      }
+    } catch (prodErr) {
+      // Product sync failure must not block order sync
+      console.error('Yandex product sync skipped:', prodErr)
     }
 
     // ── Orders (incremental since last sync, fallback 90 days) ───────────────
