@@ -32,33 +32,65 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 3, baseMs = 500): Pr
   throw new Error('unreachable')
 }
 
+// Auth header formats to try in order (Uzum's seller-openapi docs are not public;
+// we probe until one works and remember it for the session).
+const AUTH_FORMATS = [
+  (t: string) => ({ Authorization: `Bearer ${t}` }),
+  (t: string) => ({ Authorization: `Token ${t}` }),
+  (t: string) => ({ token: t }),
+  (t: string) => ({ 'X-Api-Key': t }),
+] as const
+
+// Remembered working format index (resets per cold start — fine for serverless)
+let workingAuthIdx = 0
+
 async function request<T>(
   path: string,
   token: string,
   options?: RequestInit,
 ): Promise<T> {
-  const res = await fetch(`${UZUM_API_BASE}${path}`, {
-    ...options,
-    headers: {
-      Authorization: `Bearer ${token.trim()}`,
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-      ...options?.headers,
-    },
-    next: { revalidate: 0 },
-  })
+  const t = token.trim()
 
-  if (!res.ok) {
+  // Try from the last known working format first, then fall through the rest
+  const order = [workingAuthIdx, ...AUTH_FORMATS.map((_, i) => i).filter(i => i !== workingAuthIdx)]
+
+  for (const idx of order) {
+    const authHeaders = AUTH_FORMATS[idx](t)
+    const res = await fetch(`${UZUM_API_BASE}${path}`, {
+      ...options,
+      headers: {
+        ...authHeaders,
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        ...options?.headers,
+      },
+      next: { revalidate: 0 },
+    })
+
+    if (res.ok) {
+      workingAuthIdx = idx // remember for next call
+      return res.json() as Promise<T>
+    }
+
+    if (res.status === 401 || res.status === 403) {
+      continue // try next auth format
+    }
+
+    // Non-auth error — throw immediately
     let body = ''
     try { body = await res.text() } catch { /* ignore */ }
-    throw new UzumApiError(
-      res.status,
-      `Uzum API error: ${res.status} ${res.statusText} (${path})`,
-      body,
-    )
+    throw new UzumApiError(res.status, `Uzum API error: ${res.status} ${res.statusText} (${path})`, body)
   }
 
-  return res.json() as Promise<T>
+  // All auth formats failed — throw with last response
+  const res = await fetch(`${UZUM_API_BASE}${path}`, {
+    ...options,
+    headers: { ...AUTH_FORMATS[0](t), 'Content-Type': 'application/json', Accept: 'application/json' },
+    next: { revalidate: 0 },
+  })
+  let body = ''
+  try { body = await res.text() } catch { /* ignore */ }
+  throw new UzumApiError(res.status, `Uzum API error: ${res.status} ${res.statusText} (${path})`, body)
 }
 
 // ─── Response shapes ──────────────────────────────────────────────────────────

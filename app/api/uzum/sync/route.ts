@@ -51,17 +51,32 @@ export async function GET() {
 
   try {
     const token = decrypt(shop.api_key_encrypted)
-    const res = await fetch('https://api-seller.uzum.uz/api/seller-openapi/v1/shops', {
+    const url = 'https://api-seller.uzum.uz/api/seller-openapi/v1/shops'
+    // Try multiple auth formats to find what Uzum accepts
+    const attempts: { label: string; headers: Record<string, string> }[] = [
+      { label: 'Bearer',    headers: { Authorization: `Bearer ${token.trim()}` } },
+      { label: 'Token',     headers: { Authorization: `Token ${token.trim()}` } },
+      { label: 'token hdr', headers: { token: token.trim() } },
+      { label: 'X-Api-Key', headers: { 'X-Api-Key': token.trim() } },
+    ]
+    for (const attempt of attempts) {
+      const res = await fetch(url, {
+        headers: { ...attempt.headers, Accept: 'application/json' },
+        next: { revalidate: 0 },
+      })
+      if (res.ok) {
+        // Record which format worked so we can bake it in
+        return NextResponse.json({ ok: true, message: `Uzum token ishlayapti (${attempt.label}) — sinxronizatsiyani boshlashingiz mumkin` })
+      }
+      if (res.status !== 403 && res.status !== 401) break // unexpected error
+    }
+    const body = await fetch(url, {
       headers: { Authorization: `Bearer ${token.trim()}`, Accept: 'application/json' },
       next: { revalidate: 0 },
-    })
-    if (!res.ok) {
-      const body = await res.text().catch(() => '')
-      return NextResponse.json(
-        { ok: false, error: `Uzum token noto'g'ri (${res.status}). seller.uzum.uz → Sozlamalar → API integratsiya sahifasidan yangi token oling va qayta saqlang.`, detail: body.slice(0, 200) },
-      )
-    }
-    return NextResponse.json({ ok: true, message: "Uzum token ishlayapti — sinxronizatsiyani boshlashingiz mumkin" })
+    }).then(r => r.text()).catch(() => '')
+    return NextResponse.json(
+      { ok: false, error: `Uzum token noto'g'ri yoki muddati o'tgan. seller.uzum.uz → Sozlamalar → API integratsiya sahifasidan tokenni qayta nusxalab saqlang.`, detail: body.slice(0, 300) },
+    )
   } catch (err) {
     return NextResponse.json({ ok: false, error: `Tarmoq xatosi: ${String(err)}` })
   }
