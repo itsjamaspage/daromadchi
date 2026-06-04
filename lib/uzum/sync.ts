@@ -6,6 +6,7 @@ import {
   fetchUzumShopProducts,
   fetchUzumAdCampaigns,
   UzumApiError,
+  type UzumFbsOrder,
 } from './client'
 
 const STATUS_MAP: Record<string, string> = {
@@ -96,26 +97,35 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
 
     const fromDate = since.toISOString().slice(0, 10)
 
-    // Best-effort: the real seller-openapi orders endpoint path is still being
-    // confirmed. A failure here must not block the (working) product sync.
-    const uzumOrders = await fetchAllPages(page =>
-      fetchUzumOrders(token, page, 100, fromDate),
+    // Orders — /v2/fbs/orders requires shopIds (int64[]) and epoch-ms dates
+    const uzumShopIds = uzumShops.map(s => s.id)
+    const fromDateMs = since.getTime()
+
+    const uzumOrders: UzumFbsOrder[] = await fetchAllPages(page =>
+      fetchUzumOrders(token, uzumShopIds, page, 100, fromDateMs),
     ).catch(() => [])
 
-    const orderRows = uzumOrders.map(o => ({
-      shop_id: shopId,
-      order_id_external: String(o.orderId),
-      marketplace: 'uzum' as const,
-      status: (STATUS_MAP[o.status] ?? 'pending') as
-        | 'pending'
-        | 'confirmed'
-        | 'delivered'
-        | 'cancelled'
-        | 'returned',
-      revenue: o.totalPrice,
-      items_count: o.items?.length ?? 1,
-      ordered_at: o.createdAt,
-    }))
+    const orderRows = uzumOrders.map(o => {
+      // Support both new (id/dateCreated/price/orderItems) and legacy field names
+      const extId = String(o.id ?? o.orderId)
+      const orderedAt = o.dateCreated ?? o.createdAt ?? new Date().toISOString()
+      const revenue = o.price ?? o.totalPrice ?? 0
+      const allItems = o.orderItems ?? o.items ?? []
+      return {
+        shop_id: shopId,
+        order_id_external: extId,
+        marketplace: 'uzum' as const,
+        status: (STATUS_MAP[o.status] ?? 'pending') as
+          | 'pending'
+          | 'confirmed'
+          | 'delivered'
+          | 'cancelled'
+          | 'returned',
+        revenue,
+        items_count: allItems.length || 1,
+        ordered_at: orderedAt,
+      }
+    })
 
     // Upsert: inserts new orders AND updates status of existing ones
     if (orderRows.length > 0) {
@@ -140,7 +150,7 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
       }
 
       // Map order_id_external → orders.id
-      const extIds = uzumOrders.map(o => o.orderId)
+      const extIds = uzumOrders.map(o => String(o.id ?? o.orderId))
       const { data: dbOrders } = await supabase
         .from('orders')
         .select('id, order_id_external')
@@ -156,9 +166,10 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
         quantity: number; price_per_unit: number
       }[] = []
       for (const o of uzumOrders) {
-        const dbOrderId = orderIdMap.get(o.orderId)
+        const extId = String(o.id ?? o.orderId)
+        const dbOrderId = orderIdMap.get(extId)
         if (!dbOrderId) continue
-        for (const it of o.items ?? []) {
+        for (const it of (o.orderItems ?? o.items ?? [])) {
           itemRows.push({
             order_id:       dbOrderId,
             product_id:     pidMap.get(String(it.skuId)) ?? null,

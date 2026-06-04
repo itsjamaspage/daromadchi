@@ -51,31 +51,19 @@ export async function GET() {
 
   try {
     const token = decrypt(shop.api_key_encrypted)
+    // Auth: raw token value in Authorization header (no Bearer prefix) per Uzum swagger
     const url = 'https://api-seller.uzum.uz/api/seller-openapi/v1/shops'
-    // Try multiple auth formats to find what Uzum accepts
-    const attempts: { label: string; headers: Record<string, string> }[] = [
-      { label: 'Bearer',    headers: { Authorization: `Bearer ${token.trim()}` } },
-      { label: 'Token',     headers: { Authorization: `Token ${token.trim()}` } },
-      { label: 'token hdr', headers: { token: token.trim() } },
-      { label: 'X-Api-Key', headers: { 'X-Api-Key': token.trim() } },
-    ]
-    for (const attempt of attempts) {
-      const res = await fetch(url, {
-        headers: { ...attempt.headers, Accept: 'application/json' },
-        next: { revalidate: 0 },
-      })
-      if (res.ok) {
-        // Record which format worked so we can bake it in
-        return NextResponse.json({ ok: true, message: `Uzum token ishlayapti (${attempt.label}) — sinxronizatsiyani boshlashingiz mumkin` })
-      }
-      if (res.status !== 403 && res.status !== 401) break // unexpected error
-    }
-    const body = await fetch(url, {
-      headers: { Authorization: `Bearer ${token.trim()}`, Accept: 'application/json' },
+    const res = await fetch(url, {
+      headers: { Authorization: token.trim(), Accept: 'application/json' },
       next: { revalidate: 0 },
-    }).then(r => r.text()).catch(() => '')
+    })
+    if (res.ok) {
+      return NextResponse.json({ ok: true, message: `Uzum token ishlayapti — sinxronizatsiyani boshlashingiz mumkin` })
+    }
+    let body = ''
+    try { body = await res.text() } catch { /* ignore */ }
     return NextResponse.json(
-      { ok: false, error: `Uzum token noto'g'ri yoki muddati o'tgan. seller.uzum.uz → Sozlamalar → API integratsiya sahifasidan tokenni qayta nusxalab saqlang.`, detail: body.slice(0, 300) },
+      { ok: false, error: `Uzum token noto'g'ri (${res.status}). seller.uzum.uz → Sozlamalar → API integratsiya sahifasidan API kalitini qayta nusxalab saqlang.`, detail: body.slice(0, 300) },
     )
   } catch (err) {
     return NextResponse.json({ ok: false, error: `Tarmoq xatosi: ${String(err)}` })

@@ -32,65 +32,30 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 3, baseMs = 500): Pr
   throw new Error('unreachable')
 }
 
-// Auth header formats to try in order (Uzum's seller-openapi docs are not public;
-// we probe until one works and remember it for the session).
-const AUTH_FORMATS = [
-  (t: string) => ({ Authorization: `Bearer ${t}` }),
-  (t: string) => ({ Authorization: `Token ${t}` }),
-  (t: string) => ({ token: t }),
-  (t: string) => ({ 'X-Api-Key': t }),
-] as const
-
-// Remembered working format index (resets per cold start — fine for serverless)
-let workingAuthIdx = 0
-
+// Auth: apiKey in Authorization header WITHOUT any prefix ("без префикса Bearer")
+// Per Uzum swagger securitySchemes.TokenAuth.description
 async function request<T>(
   path: string,
   token: string,
   options?: RequestInit,
 ): Promise<T> {
   const t = token.trim()
-
-  // Try from the last known working format first, then fall through the rest
-  const order = [workingAuthIdx, ...AUTH_FORMATS.map((_, i) => i).filter(i => i !== workingAuthIdx)]
-
-  for (const idx of order) {
-    const authHeaders = AUTH_FORMATS[idx](t)
-    const res = await fetch(`${UZUM_API_BASE}${path}`, {
-      ...options,
-      headers: {
-        ...authHeaders,
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-        ...options?.headers,
-      },
-      next: { revalidate: 0 },
-    })
-
-    if (res.ok) {
-      workingAuthIdx = idx // remember for next call
-      return res.json() as Promise<T>
-    }
-
-    if (res.status === 401 || res.status === 403) {
-      continue // try next auth format
-    }
-
-    // Non-auth error — throw immediately
+  const res = await fetch(`${UZUM_API_BASE}${path}`, {
+    ...options,
+    headers: {
+      Authorization: t,
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      ...options?.headers,
+    },
+    next: { revalidate: 0 },
+  })
+  if (!res.ok) {
     let body = ''
     try { body = await res.text() } catch { /* ignore */ }
     throw new UzumApiError(res.status, `Uzum API error: ${res.status} ${res.statusText} (${path})`, body)
   }
-
-  // All auth formats failed — throw with last response
-  const res = await fetch(`${UZUM_API_BASE}${path}`, {
-    ...options,
-    headers: { ...AUTH_FORMATS[0](t), 'Content-Type': 'application/json', Accept: 'application/json' },
-    next: { revalidate: 0 },
-  })
-  let body = ''
-  try { body = await res.text() } catch { /* ignore */ }
-  throw new UzumApiError(res.status, `Uzum API error: ${res.status} ${res.statusText} (${path})`, body)
+  return res.json() as Promise<T>
 }
 
 // ─── Response shapes ──────────────────────────────────────────────────────────
@@ -179,6 +144,8 @@ export interface UzumAdCampaignsResponse {
 // ─── API calls ────────────────────────────────────────────────────────────────
 
 // ─── FBS Orders (GET /v2/fbs/orders) ─────────────────────────────────────────
+// Swagger: GenericResponseSellerOrdersDto → payload.orders[]
+// Required: shopIds (array of int64). dateFrom/dateTo = Unix epoch ms (int64)
 
 export interface UzumFbsOrderItem {
   skuId: number
@@ -188,37 +155,55 @@ export interface UzumFbsOrderItem {
 }
 
 export interface UzumFbsOrder {
-  orderId: string
+  id: string          // SellerOrderDto.id
   status: string
-  createdAt: string
-  totalPrice: number
+  dateCreated: string // ISO or epoch string
+  price: number
+  shopId?: number
+  orderItems?: UzumFbsOrderItem[]
+  // legacy aliases (keep for backward compat)
+  orderId?: string
+  createdAt?: string
+  totalPrice?: number
   items?: UzumFbsOrderItem[]
 }
 
 export interface UzumFbsOrdersResponse {
+  payload?: {
+    orders?: UzumFbsOrder[]
+    totalCount?: number
+  }
+  // fallback keys some versions return
   data?: UzumFbsOrder[]
-  orders?: UzumFbsOrder[]  // alternate key
+  orders?: UzumFbsOrder[]
   totalCount?: number
 }
 
-// GET /v2/fbs/orders — correct FBS orders endpoint (swagger confirmed)
+// GET /v2/fbs/orders — shopIds required; dates are Unix epoch ms
 export async function fetchUzumOrders(
   token: string,
+  shopIds: number[],
   page = 0,
   pageSize = 100,
-  fromDate?: string,
+  fromDateMs?: number,
+  toDateMs?: number,
 ): Promise<{ data: UzumFbsOrder[]; totalCount: number; pageSize: number }> {
   return withRetry(() => {
     const params = new URLSearchParams({
       page: String(page),
       size: String(pageSize),
-      ...(fromDate ? { dateFrom: fromDate } : {}),
     })
-    return request<UzumFbsOrdersResponse>(`/v2/fbs/orders?${params}`, token).then(r => ({
-      data: r.data ?? r.orders ?? [],
-      totalCount: r.totalCount ?? 0,
-      pageSize,
-    }))
+    for (const id of shopIds) params.append('shopIds', String(id))
+    if (fromDateMs != null) params.set('dateFrom', String(fromDateMs))
+    if (toDateMs != null) params.set('dateTo', String(toDateMs))
+    return request<UzumFbsOrdersResponse>(`/v2/fbs/orders?${params}`, token).then(r => {
+      const orders = r.payload?.orders ?? r.data ?? r.orders ?? []
+      return {
+        data: orders,
+        totalCount: r.payload?.totalCount ?? r.totalCount ?? 0,
+        pageSize,
+      }
+    })
   })
 }
 
