@@ -21,6 +21,7 @@ export async function POST(req: Request) {
     .select('id')
     .eq('user_id', user.id)
     .eq('marketplace', marketplace)
+    .eq('is_active', true)
     .maybeSingle()
 
   if (existing) {

@@ -1,11 +1,16 @@
 import AdvertisingView from '@/components/dashboard/AdvertisingView'
-import { getAdCampaigns } from '@/lib/db/advertising'
+import { getAdCampaigns, getWbAdCampaigns } from '@/lib/db/advertising'
 import { getT } from '@/lib/server-i18n'
 
 export default async function AdvertisingPage() {
   const t = await getT()
   const d = t.dashboard
-  const campaigns = await getAdCampaigns()
+  // Uzum campaigns (ad_campaigns) + Wildberries per-product ad stats
+  const [uzumCampaigns, wbCampaigns] = await Promise.all([
+    getAdCampaigns(),
+    getWbAdCampaigns(),
+  ])
+  const campaigns = [...uzumCampaigns, ...wbCampaigns]
 
   return (
     <div className="space-y-6">
