@@ -1,4 +1,5 @@
 import { getProducts } from '@/lib/db/products'
+import { getDemandVariability } from '@/lib/db/demand'
 import { getLang } from '@/lib/lang'
 import { dashT } from '@/lib/dashT'
 import AbcXyzClient from './AbcXyzClient'
@@ -9,7 +10,10 @@ export default async function AbcXyzPage() {
   const lang = await getLang()
   const t = dashT[lang].abcxyz
 
-  const products = await getProducts()
+  const [products, variability] = await Promise.all([
+    getProducts(),
+    getDemandVariability(),
+  ])
 
   if (products.length === 0) {
     return (
@@ -48,7 +52,10 @@ export default async function AbcXyzPage() {
     const share = totalRevenue > 0 ? cumulative / totalRevenue : 1
     const abc = share <= 0.80 ? 'A' : share <= 0.95 ? 'B' : 'C'
     const sold = p.sold ?? 0
-    const xyz = sold >= 10 ? 'X' : sold > 0 ? 'Y' : 'Z'
+    // XYZ by demand stability: coefficient of variation of monthly unit sales.
+    // X = steady (CV ≤ 10%), Y = variable (≤ 25%), Z = erratic / no history.
+    const v = variability.get(p.id)
+    const xyz = !v || v.totalUnits === 0 ? 'Z' : v.cv <= 0.10 ? 'X' : v.cv <= 0.25 ? 'Y' : 'Z'
     return {
       id: p.id,
       title: p.title,

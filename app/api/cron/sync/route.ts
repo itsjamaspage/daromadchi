@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { syncFromUzum } from '@/lib/uzum/sync'
 import { syncFromYandex } from '@/lib/yandex/sync'
+import { syncFromWildberries } from '@/lib/wildberries/sync'
 import { decrypt } from '@/lib/crypto'
 
 export const runtime    = 'nodejs'
@@ -35,6 +36,9 @@ export async function GET(req: Request) {
       } else if (shop.marketplace === 'yandex_market' && shop.shop_id_external) {
         const r = await syncFromYandex(shop.id, token, shop.shop_id_external)
         results.push({ shopId: shop.id, marketplace: 'yandex_market', ...r })
+      } else if (shop.marketplace === 'wildberries') {
+        const r = await syncFromWildberries(supabase, shop.id, token)
+        results.push({ shopId: shop.id, marketplace: 'wildberries', ...r })
       }
     } catch (err) {
       results.push({ shopId: shop.id, ok: false, error: String(err) })
