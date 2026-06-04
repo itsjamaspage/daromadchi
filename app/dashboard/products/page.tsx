@@ -1,5 +1,4 @@
 import { Package, Settings } from 'lucide-react'
-import HelpTooltip from '@/components/dashboard/HelpTooltip'
 import Link from 'next/link'
 import { getProducts } from '@/lib/db/products'
 import ProductsTable from '@/components/dashboard/ProductsTable'
@@ -40,7 +39,6 @@ export default async function ProductsPage() {
       <div>
         <div className="flex items-center gap-2 mb-0.5">
           <h1 className="text-2xl font-bold" style={{ color: 'var(--text-base)' }}>{d.productsTitle}</h1>
-          <HelpTooltip section="products" />
         </div>
         <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{products.length} {d.productCount}</p>
       </div>

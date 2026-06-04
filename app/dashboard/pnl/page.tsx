@@ -1,5 +1,4 @@
 import { FileText, Link2, Settings } from 'lucide-react'
-import HelpTooltip from '@/components/dashboard/HelpTooltip'
 import Link from 'next/link'
 import { getMonthlyPnl } from '@/lib/db/pnl'
 import PnlChart from './PnlChart'
@@ -40,7 +39,6 @@ export default async function PnlPage() {
               <FileText className="w-6 h-6 text-violet-400" />
               {d.pnlTitle}
             </h1>
-            <HelpTooltip section="pnl" />
           </div>
           <p className="text-[var(--text-muted)] text-sm">
             {isEmpty ? d.pnlSubtitleEmpty : d.pnlSubtitle}

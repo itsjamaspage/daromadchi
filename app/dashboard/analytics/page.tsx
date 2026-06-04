@@ -1,5 +1,4 @@
 import { BarChart2, Settings, TrendingUp, Package, Link2 } from 'lucide-react'
-import HelpTooltip from '@/components/dashboard/HelpTooltip'
 import Link from 'next/link'
 import { getProducts } from '@/lib/db/products'
 import { getKpis } from '@/lib/db/kpis'
@@ -56,7 +55,6 @@ export default async function AnalyticsPage() {
             <BarChart2 className="w-6 h-6" style={{ color: '#7c3aed' }} />
             {d.analyticsTitle}
           </h1>
-          <HelpTooltip section="analytics" />
         </div>
         <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{d.analyticsSubtitle}</p>
       </div>

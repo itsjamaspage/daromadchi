@@ -2,7 +2,6 @@ import { getT } from '@/lib/server-i18n'
 import { CalendarDays } from 'lucide-react'
 import { getSeasonality } from '@/lib/db/seasonality'
 import SeasonalityView from '@/components/dashboard/SeasonalityView'
-import HelpTooltip from '@/components/dashboard/HelpTooltip'
 
 export default async function SeasonalityPage() {
   const t = await getT()
@@ -17,7 +16,6 @@ export default async function SeasonalityPage() {
             <CalendarDays className="w-6 h-6 text-violet-400" />
             {d.seasonalityTitle}
           </h1>
-          <HelpTooltip section="seasonality" />
         </div>
         <p className="text-[var(--text-muted)] text-sm">{d.seasonalitySubtitle}</p>
       </div>

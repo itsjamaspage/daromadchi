@@ -13,7 +13,6 @@ import { getOrders } from '@/lib/db/orders'
 import { getProducts } from '@/lib/db/products'
 import { getDailyRevenue } from '@/lib/db/revenue'
 import { getT } from '@/lib/server-i18n'
-import HelpTooltip from '@/components/dashboard/HelpTooltip'
 
 function formatSum(n: number) {
   return new Intl.NumberFormat('uz-UZ').format(n) + " so'm"
@@ -91,7 +90,6 @@ export default async function DashboardPage({ searchParams }: Props) {
             <span className="text-[10px] font-semibold px-2 py-1 rounded-full border" style={{ background: 'rgba(124, 58, 237, 0.1)', borderColor: 'rgba(124, 58, 237, 0.25)', color: '#7c3aed' }}>
               {d.yourData}
             </span>
-            <HelpTooltip section="dashboard" />
           </div>
           <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{d.welcome}</p>
         </div>

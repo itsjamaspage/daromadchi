@@ -2,7 +2,6 @@ import { Bell } from 'lucide-react'
 import { getStockAlerts, getAlertSettings } from '@/lib/db/alerts'
 import StockAlertsView from '@/components/dashboard/StockAlertsView'
 import { getT } from '@/lib/server-i18n'
-import HelpTooltip from '@/components/dashboard/HelpTooltip'
 
 export default async function AlertsPage() {
   const t = await getT()
@@ -21,7 +20,6 @@ export default async function AlertsPage() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-bold text-[var(--text-base)]">{d.alertsTitle}</h1>
-            <HelpTooltip section="alerts" />
           </div>
           <p className="text-[var(--text-muted)] text-sm">{d.alertsSubtitle}</p>
         </div>

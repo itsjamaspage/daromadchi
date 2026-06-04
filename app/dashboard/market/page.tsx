@@ -1,5 +1,4 @@
 import { Globe2, Settings } from 'lucide-react'
-import HelpTooltip from '@/components/dashboard/HelpTooltip'
 import Link from 'next/link'
 import { getRootCategories } from '@/lib/uzum/public'
 import { getProducts } from '@/lib/db/products'
@@ -48,7 +47,6 @@ export default async function MarketPage({ searchParams }: Props) {
             <Globe2 className="w-6 h-6 text-cyan-400" />
             {d.marketTitle}
           </h1>
-          <HelpTooltip section="marketResearch" className="ml-1" />
           <span className="text-[10px] font-semibold px-2 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/25 text-cyan-400">
             {d.publicData}
           </span>

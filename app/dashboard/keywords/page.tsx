@@ -2,7 +2,6 @@ import { getT } from '@/lib/server-i18n'
 import { Search } from 'lucide-react'
 import { getSearchPhrases } from '@/lib/db/search-phrases'
 import KeywordsView from '@/components/dashboard/KeywordsView'
-import HelpTooltip from '@/components/dashboard/HelpTooltip'
 
 export default async function KeywordsPage() {
   const [t, phrases] = await Promise.all([getT(), getSearchPhrases()])
@@ -13,7 +12,6 @@ export default async function KeywordsPage() {
       <div>
         <div className="flex items-center gap-2 mb-0.5">
           <h1 className="text-2xl font-bold text-[var(--text-base)]">{d.keywordsTitle}</h1>
-          <HelpTooltip section="keywords" />
         </div>
         <p className="text-[var(--text-muted)] text-sm">{d.keywordsSubtitle}</p>
       </div>
