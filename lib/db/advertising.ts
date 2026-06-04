@@ -60,10 +60,16 @@ export async function getWbAdCampaigns(days = 30): Promise<AdCampaign[]> {
 
   const { data: rows } = await supabase
     .from('product_ads_stats')
-    .select('sku, impressions, clicks, spend, orders_from_ads, revenue_from_ads')
+    .select('sku, date, impressions, clicks, spend, orders_from_ads, revenue_from_ads')
     .in('shop_id', shopIds)
     .gte('date', since.toISOString().slice(0, 10))
   if (!rows || rows.length === 0) return []
+
+  // "Active" = had ad spend in the last few days; otherwise we can't claim it's
+  // running (product_ads_stats is historical and has no live campaign state).
+  const recentCutoff = new Date()
+  recentCutoff.setDate(recentCutoff.getDate() - 3)
+  const recentStr = recentCutoff.toISOString().slice(0, 10)
 
   const skus = [...new Set(rows.map(r => String(r.sku)))]
   const titleBySku = new Map<string, string>()
@@ -74,15 +80,17 @@ export async function getWbAdCampaigns(days = 30): Promise<AdCampaign[]> {
     .in('marketplace_product_id', skus)
   for (const p of prods ?? []) titleBySku.set(String(p.marketplace_product_id), p.title as string)
 
-  const agg = new Map<string, { imp: number; clicks: number; spend: number; orders: number; revenue: number }>()
+  const agg = new Map<string, { imp: number; clicks: number; spend: number; orders: number; revenue: number; lastSpendDate: string }>()
   for (const r of rows) {
     const sku = String(r.sku)
-    const a = agg.get(sku) ?? { imp: 0, clicks: 0, spend: 0, orders: 0, revenue: 0 }
+    const a = agg.get(sku) ?? { imp: 0, clicks: 0, spend: 0, orders: 0, revenue: 0, lastSpendDate: '' }
     a.imp     += Number(r.impressions)
     a.clicks  += Number(r.clicks)
     a.spend   += Number(r.spend)
     a.orders  += Number(r.orders_from_ads)
     a.revenue += Number(r.revenue_from_ads)
+    const date = String(r.date)
+    if (Number(r.spend) > 0 && date > a.lastSpendDate) a.lastSpendDate = date
     agg.set(sku, a)
   }
 
@@ -91,7 +99,8 @@ export async function getWbAdCampaigns(days = 30): Promise<AdCampaign[]> {
       id:           `wb-${sku}`,
       name:         titleBySku.get(sku) ?? `WB nmID ${sku}`,
       type:         'cpc' as const,
-      status:       'active' as const,
+      // Derived from spend recency rather than asserted: recent spend ⇒ active.
+      status:       (a.lastSpendDate >= recentStr ? 'active' : 'paused') as 'active' | 'paused' | 'stopped',
       productTitle: titleBySku.get(sku) ?? `nmID ${sku}`,
       spend:        a.spend,
       impressions:  a.imp,
