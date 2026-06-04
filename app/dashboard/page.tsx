@@ -7,7 +7,6 @@ import DateFilter from '@/components/dashboard/DateFilter'
 import SyncButton from '@/components/dashboard/SyncButton'
 import StockAlerts from '@/components/dashboard/StockAlerts'
 import CategoryChart from '@/components/dashboard/CategoryChart'
-import AnalyticsBoard from '@/components/dashboard/AnalyticsBoard'
 import { getKpis } from '@/lib/db/kpis'
 import { getOrders } from '@/lib/db/orders'
 import { getProducts } from '@/lib/db/products'
@@ -196,15 +195,9 @@ export default async function DashboardPage({ searchParams }: Props) {
         </div>
       </div>
 
-      {/* Analytics board — channel trends, customer mix, funnel, category bubbles */}
-      {!isEmpty && (
-        <AnalyticsBoard
-          chartData={chartData}
-          categoryData={categoryData}
-          products={allProducts}
-          kpis={kpis}
-        />
-      )}
+      {/* Analytics board temporarily disabled: its funnel/conversion/channel-split
+          metrics were fabricated (no real traffic data source). To be rebuilt on
+          the real Wildberries Sales-Funnel API + per-marketplace revenue. */}
 
       {/* Category chart + top products */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">

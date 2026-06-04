@@ -158,7 +158,7 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
       if (uzumCampaigns.length > 0) {
         const campaignRows = uzumCampaigns.map(c => ({
           shop_id: shopId,
-          marketplace_campaign_id: c.campaignId,
+          external_id: c.campaignId,
           name: c.name,
           type: c.type === 'CPC' ? 'cpc' : 'cpo',
           status: AD_STATUS_MAP[c.status] ?? 'stopped',
@@ -175,9 +175,10 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
 
         const { error: adErr } = await supabase
           .from('ad_campaigns')
-          .upsert(campaignRows, { onConflict: 'shop_id,marketplace_campaign_id', ignoreDuplicates: false })
+          .upsert(campaignRows, { onConflict: 'shop_id,external_id', ignoreDuplicates: false })
 
-        if (!adErr) campaignsUpserted = campaignRows.length
+        if (adErr) throw adErr
+        campaignsUpserted = campaignRows.length
       }
     } catch {
       // Ad sync is best-effort — don't fail the whole sync

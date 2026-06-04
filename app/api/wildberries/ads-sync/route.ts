@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { decrypt } from '@/lib/crypto'
 
 const WB_ADV = 'https://advert-api.wildberries.ru'
 
@@ -23,7 +24,7 @@ export async function POST() {
     return NextResponse.json({ error: 'No Wildberries API token' }, { status: 400 })
   }
 
-  const token  = shop.api_key_encrypted
+  const token  = decrypt(shop.api_key_encrypted)
   const shopId = shop.id
   let statsUpserted = 0
 

@@ -148,43 +148,14 @@ export async function syncFromYandex(
       }
     } catch { /* order items sync is best-effort */ }
 
-    // ── SKU stats → ad_campaigns proxy (best-effort) ──────────────────────────
-    // Yandex doesn't expose a simple "campaign list" endpoint in v2.
-    // We derive ad campaign records from SKU-level stats as a best approximation.
-    let campaignsUpserted = 0
-    try {
-      const skuStats = await fetchAllYandexSkuStats(token, campaignId, fromDate, toDate)
-
-      if (skuStats.length > 0) {
-        const statsRows = skuStats
-          .filter(s => s.ordersCount > 0 || s.grossRevenue > 0)
-          .map(s => ({
-            shop_id: shopId,
-            marketplace_campaign_id: `ym-sku-${s.shopSku}`,
-            name: s.name ?? s.shopSku,
-            type: 'cpo',
-            status: 'active',
-            product_title: s.name ?? s.shopSku,
-            spend: s.commissionRevenue ?? 0,
-            impressions: 0,
-            clicks: 0,
-            ctr: 0,
-            orders: s.ordersCount ?? 0,
-            revenue: s.grossRevenue ?? 0,
-            drr: s.grossRevenue > 0 ? ((s.commissionRevenue ?? 0) / s.grossRevenue) * 100 : 0,
-            start_date: fromDate,
-          }))
-
-        if (statsRows.length > 0) {
-          const { error } = await supabase
-            .from('ad_campaigns')
-            .upsert(statsRows, { onConflict: 'shop_id,marketplace_campaign_id', ignoreDuplicates: false })
-          if (!error) campaignsUpserted = statsRows.length
-        }
-      }
-    } catch {
-      // Stats sync is best-effort
-    }
+    // ── Advertising ───────────────────────────────────────────────────────────
+    // Yandex Market's Partner API does NOT expose advertising statistics — ads
+    // are managed in Yandex Direct, a separate product/API. We deliberately do
+    // not synthesize ad campaigns from SKU/commission data, because labeling
+    // commission as "ad spend" produces misleading DRR/CTR numbers. Real
+    // commission and delivery costs are already captured on each order above
+    // (marketplace_fee / delivery_cost) and feed the P&L.
+    const campaignsUpserted = 0
 
     // ── Update sync metadata ──────────────────────────────────────────────────
     await supabase
