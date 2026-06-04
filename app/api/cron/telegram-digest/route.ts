@@ -5,9 +5,10 @@ import { sendTelegramMessage } from '@/lib/telegram'
 export const runtime     = 'nodejs'
 export const maxDuration  = 120
 
-// Runs hourly (see vercel.json). Sends each linked user their daily summary /
-// weekly report / low-stock digest when the current Uzbekistan time matches the
-// hour they chose and today is one of their selected days.
+// Runs once a day at 05:00 UTC = 10:00 Uzbekistan time (see vercel.json).
+// Every linked user receives a single digest — daily summary + low-stock, plus
+// the weekly report on Mondays — regardless of any per-user time/day setting.
+// (Vercel's Hobby plan only allows once-a-day cron schedules.)
 //
 // Uzbekistan is UTC+5 (no DST).
 const UZ_OFFSET_MIN = 5 * 60
@@ -36,11 +37,7 @@ export async function GET(req: Request) {
     return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 })
   }
 
-  // Current Uzbekistan local time
-  const nowUtcMin = new Date().getUTCHours() * 60 + new Date().getUTCMinutes()
-  const uzMin     = (nowUtcMin + UZ_OFFSET_MIN) % (24 * 60)
-  const uzHour    = Math.floor(uzMin / 60)
-  // Day-of-week in UZ time (0=Sun … 6=Sat)
+  // Day-of-week in UZ time (0=Sun … 6=Sat) — used only to gate the weekly report
   const uzDay = new Date(Date.now() + UZ_OFFSET_MIN * 60_000).getUTCDay()
 
   const supabase = createAdminClient()
@@ -54,16 +51,8 @@ export async function GET(req: Request) {
   const sent: { userId: string; parts: string[] }[] = []
 
   for (const s of (rows ?? []) as SettingsRow[]) {
-    // Match the chosen hour
-    const sendTime = s.notif_send_time ?? '09:00'
-    const sendHour = parseInt(sendTime.split(':')[0] ?? '9', 10)
-    if (sendHour !== uzHour) continue
-
-    // Match the chosen day
-    const days = s.notif_send_days ?? [1, 2, 3, 4, 5, 6, 0]
-    if (!days.includes(uzDay)) continue
-
-    // Weekly report only fires on Mondays
+    // Every linked user gets one digest per day at 10:00 UZ — no per-user
+    // time/day gating. Weekly report still only fires on Mondays.
     const isWeeklyDay = uzDay === 1
 
     const parts: string[] = []
@@ -114,7 +103,7 @@ export async function GET(req: Request) {
     sent.push({ userId: s.user_id, parts: parts.map(p => p.split('\n')[0]) })
   }
 
-  return NextResponse.json({ ok: true, uzHour, uzDay, sent: sent.length, details: sent })
+  return NextResponse.json({ ok: true, uzDay, sent: sent.length, details: sent })
 }
 
 // Aggregates revenue + order count over the last `days` days for the given shops.
