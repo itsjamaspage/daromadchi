@@ -16,6 +16,7 @@ export async function POST() {
     .select('id, api_key_encrypted')
     .eq('user_id', user.id)
     .eq('marketplace', 'uzum')
+    .eq('is_active', true)
     .single()
 
   if (!shop?.api_key_encrypted) {
@@ -41,6 +42,7 @@ export async function GET() {
     .select('api_key_encrypted')
     .eq('user_id', user.id)
     .eq('marketplace', 'uzum')
+    .eq('is_active', true)
     .single()
 
   if (!shop?.api_key_encrypted) {

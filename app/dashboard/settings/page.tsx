@@ -20,6 +20,7 @@ export default async function SettingsPage() {
       .eq('user_id', user.id)
 
     for (const row of data ?? []) {
+      if (row.shop_id_external === 'DEMO') continue   // skip the sample-data shop
       if (row.marketplace === 'uzum')          uzumShop   = row as Shop
       if (row.marketplace === 'yandex_market') yandexShop = row as Shop
       if (row.marketplace === 'wildberries')   wbShop     = row as Shop
