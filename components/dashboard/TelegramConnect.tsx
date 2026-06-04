@@ -97,23 +97,12 @@ export default function TelegramConnect() {
     }
   }
 
-  function toggleDay(day: number) {
-    setPrefs(p => ({
-      ...p,
-      sendDays: p.sendDays.includes(day)
-        ? p.sendDays.filter(x => x !== day)
-        : [...p.sendDays, day].sort(),
-    }))
-  }
-
   const notifTypes = [
     { key: 'lowStock'     as const, label: d.tgNotifLowStock,     icon: Package },
     { key: 'dailySummary' as const, label: d.tgNotifDailySummary, icon: FileText },
     { key: 'newOrders'    as const, label: d.tgNotifNewOrders,    icon: ShoppingCart },
     { key: 'weeklyReport' as const, label: d.tgNotifWeeklyReport, icon: FileText },
   ]
-  const dayLabels = [d.daySun, d.dayMon, d.dayTue, d.dayWed, d.dayThu, d.dayFri, d.daySat]
-  const dayOrder  = [1, 2, 3, 4, 5, 6, 0]
 
   if (loading) {
     // Skeleton placeholder — same footprint as the real card so it doesn't pop in late
@@ -196,38 +185,17 @@ export default function TelegramConnect() {
               </div>
             </div>
 
-            {/* Schedule */}
-            <div className="space-y-3 pt-2 border-t border-[var(--border)]">
-              <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                <label className="text-[var(--text-base)] text-sm font-semibold flex items-center gap-2 sm:w-40">
-                  <Clock className="w-4 h-4 text-violet-400" /> {d.tgScheduleTime}
-                </label>
-                <input
-                  type="time"
-                  value={prefs.sendTime}
-                  onChange={e => setPrefs(p => ({ ...p, sendTime: e.target.value }))}
-                  className="bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-3 py-2 text-sm text-[var(--text-base)] focus:outline-none focus:border-violet-500/50 transition-colors"
-                />
+            {/* Delivery schedule — fixed daily at 10:00 for all users */}
+            <div className="space-y-2 pt-2 border-t border-[var(--border)]">
+              <p className="text-[var(--text-base)] text-sm font-semibold flex items-center gap-2">
+                <Clock className="w-4 h-4 text-violet-400" /> {d.tgScheduleLabel}
+              </p>
+              <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border)]">
+                <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--text-base)]">
+                  <Clock className="w-4 h-4 text-violet-400" /> {d.tgScheduleFixed}
+                </span>
               </div>
-
-              <div className="space-y-2">
-                <p className="text-[var(--text-muted)] text-xs">{d.tgScheduleDays}</p>
-                <div className="flex flex-wrap gap-2">
-                  {dayOrder.map(day => (
-                    <button
-                      key={day}
-                      onClick={() => toggleDay(day)}
-                      className={`w-11 h-9 rounded-xl text-xs font-semibold border transition-all ${
-                        prefs.sendDays.includes(day)
-                          ? 'bg-violet-600/20 border-violet-500/40 text-violet-300'
-                          : 'bg-[var(--bg-input)] border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border2)]'
-                      }`}
-                    >
-                      {dayLabels[day]}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              <p className="text-[var(--text-muted)] text-xs">{d.tgScheduleFixedHint}</p>
             </div>
 
             <div className="flex items-center gap-3 pt-2">
