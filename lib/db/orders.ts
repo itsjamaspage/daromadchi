@@ -1,19 +1,10 @@
 import { createClient } from '@/lib/supabase/server'
+import { getShopIds } from '@/lib/db/shop-context'
 import type { Order, MarketplaceType } from '@/lib/types'
 
 const supabaseConfigured =
   process.env.NEXT_PUBLIC_SUPABASE_URL &&
   !process.env.NEXT_PUBLIC_SUPABASE_URL.includes('your-project')
-
-async function getShopIds(marketplace?: MarketplaceType): Promise<string[] | null> {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return null
-  let q = supabase.from('shops').select('id').eq('user_id', user.id)
-  if (marketplace) q = q.eq('marketplace', marketplace)
-  const { data } = await q
-  return (data ?? []).map((s: { id: string }) => s.id)
-}
 
 export async function getOrders(limit?: number, marketplace?: MarketplaceType): Promise<Order[]> {
   if (!supabaseConfigured) return []

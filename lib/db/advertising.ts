@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getShopIds as resolveShopIds } from '@/lib/db/shop-context'
 import type { AdCampaign, MarketplaceType } from '@/lib/types'
 
 const supabaseConfigured =
@@ -6,13 +7,7 @@ const supabaseConfigured =
   !process.env.NEXT_PUBLIC_SUPABASE_URL.includes('your-project')
 
 async function getShopIds(marketplace?: MarketplaceType): Promise<string[]> {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return []
-  let q = supabase.from('shops').select('id').eq('user_id', user.id)
-  if (marketplace) q = q.eq('marketplace', marketplace)
-  const { data } = await q
-  return (data ?? []).map((s: { id: string }) => s.id)
+  return (await resolveShopIds(marketplace)) ?? []
 }
 
 export async function getAdCampaigns(marketplace?: MarketplaceType): Promise<AdCampaign[]> {

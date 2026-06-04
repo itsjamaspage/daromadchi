@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getShopIds as resolveShopIds } from '@/lib/db/shop-context'
 import type { MarketplaceType } from '@/lib/types'
 
 const supabaseConfigured =
@@ -25,13 +26,7 @@ export interface ProductSeasonality {
 const MONTHS_UZ = ['Yan', 'Fev', 'Mar', 'Apr', 'May', 'Iyn', 'Iyl', 'Avg', 'Sen', 'Okt', 'Noy', 'Dek']
 
 async function getShopIds(marketplace?: MarketplaceType): Promise<string[]> {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return []
-  let q = supabase.from('shops').select('id').eq('user_id', user.id)
-  if (marketplace) q = q.eq('marketplace', marketplace)
-  const { data } = await q
-  return (data ?? []).map((s: { id: string }) => s.id)
+  return (await resolveShopIds(marketplace)) ?? []
 }
 
 /**
