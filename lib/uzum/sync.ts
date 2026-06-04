@@ -100,11 +100,11 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
     // confirmed. A failure here must not block the (working) product sync.
     const uzumOrders = await fetchAllPages(page =>
       fetchUzumOrders(token, page, 100, fromDate),
-    ).catch(() => [] as Awaited<ReturnType<typeof fetchUzumOrders>>['data'])
+    ).catch(() => [])
 
     const orderRows = uzumOrders.map(o => ({
       shop_id: shopId,
-      order_id_external: o.orderId,
+      order_id_external: String(o.orderId),
       marketplace: 'uzum' as const,
       status: (STATUS_MAP[o.status] ?? 'pending') as
         | 'pending'
@@ -161,7 +161,7 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
         for (const it of o.items ?? []) {
           itemRows.push({
             order_id:       dbOrderId,
-            product_id:     pidMap.get(String(it.productId)) ?? null,
+            product_id:     pidMap.get(String(it.skuId)) ?? null,
             quantity:       it.quantity,
             price_per_unit: it.price,
           })

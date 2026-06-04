@@ -178,19 +178,47 @@ export interface UzumAdCampaignsResponse {
 
 // ─── API calls ────────────────────────────────────────────────────────────────
 
+// ─── FBS Orders (GET /v2/fbs/orders) ─────────────────────────────────────────
+
+export interface UzumFbsOrderItem {
+  skuId: number
+  productTitle?: string
+  quantity: number
+  price: number
+}
+
+export interface UzumFbsOrder {
+  orderId: string
+  status: string
+  createdAt: string
+  totalPrice: number
+  items?: UzumFbsOrderItem[]
+}
+
+export interface UzumFbsOrdersResponse {
+  data?: UzumFbsOrder[]
+  orders?: UzumFbsOrder[]  // alternate key
+  totalCount?: number
+}
+
+// GET /v2/fbs/orders — correct FBS orders endpoint (swagger confirmed)
 export async function fetchUzumOrders(
   token: string,
   page = 0,
   pageSize = 100,
   fromDate?: string,
-): Promise<UzumOrdersResponse> {
+): Promise<{ data: UzumFbsOrder[]; totalCount: number; pageSize: number }> {
   return withRetry(() => {
     const params = new URLSearchParams({
       page: String(page),
       size: String(pageSize),
       ...(fromDate ? { dateFrom: fromDate } : {}),
     })
-    return request<UzumOrdersResponse>(`/v1/orders?${params}`, token)
+    return request<UzumFbsOrdersResponse>(`/v2/fbs/orders?${params}`, token).then(r => ({
+      data: r.data ?? r.orders ?? [],
+      totalCount: r.totalCount ?? 0,
+      pageSize,
+    }))
   })
 }
 
