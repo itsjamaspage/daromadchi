@@ -1,0 +1,95 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0d0e1a"/>
+      <stop offset="100%" style="stop-color:#12172e"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#00d4ff"/>
+      <stop offset="100%" style="stop-color:#a855f7"/>
+    </linearGradient>
+    <linearGradient id="bar1" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#00d4ff"/>
+      <stop offset="100%" style="stop-color:#0ea5e9"/>
+    </linearGradient>
+    <linearGradient id="bar2" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#a855f7"/>
+      <stop offset="100%" style="stop-color:#7c3aed"/>
+    </linearGradient>
+    <linearGradient id="bar3" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#00d4ff"/>
+      <stop offset="100%" style="stop-color:#a855f7"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="glow-sm">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+
+  <!-- Subtle grid lines -->
+  <line x1="0" y1="170" x2="512" y2="170" stroke="#ffffff" stroke-opacity="0.03" stroke-width="1"/>
+  <line x1="0" y1="256" x2="512" y2="256" stroke="#ffffff" stroke-opacity="0.03" stroke-width="1"/>
+  <line x1="0" y1="342" x2="512" y2="342" stroke="#ffffff" stroke-opacity="0.03" stroke-width="1"/>
+
+  <!-- Glow orb behind chart -->
+  <ellipse cx="256" cy="290" rx="160" ry="80" fill="#00d4ff" fill-opacity="0.06"/>
+
+  <!-- Bar chart -->
+  <!-- Bar 1 -->
+  <rect x="108" y="240" width="60" height="110" rx="10" fill="url(#bar1)" filter="url(#glow-sm)" opacity="0.9"/>
+  <!-- Bar 2 -->
+  <rect x="196" y="185" width="60" height="165" rx="10" fill="url(#bar2)" filter="url(#glow-sm)" opacity="0.9"/>
+  <!-- Bar 3 (tallest) -->
+  <rect x="284" y="148" width="60" height="202" rx="10" fill="url(#bar3)" filter="url(#glow)" opacity="1"/>
+  <!-- Bar 4 -->
+  <rect x="372" y="200" width="60" height="150" rx="10" fill="url(#bar1)" filter="url(#glow-sm)" opacity="0.9"/>
+
+  <!-- Trend line -->
+  <polyline points="138,235 226,178 314,142 402,196"
+    fill="none" stroke="url(#accent)" stroke-width="4"
+    stroke-linecap="round" stroke-linejoin="round"
+    filter="url(#glow)" opacity="0.85"/>
+
+  <!-- Dots on trend line -->
+  <circle cx="138" cy="235" r="7" fill="#00d4ff" filter="url(#glow-sm)"/>
+  <circle cx="226" cy="178" r="7" fill="#7c3aed" filter="url(#glow-sm)"/>
+  <circle cx="314" cy="142" r="9" fill="#00d4ff" filter="url(#glow)"/>
+  <circle cx="402" cy="196" r="7" fill="#a855f7" filter="url(#glow-sm)"/>
+
+  <!-- "D" wordmark -->
+  <text x="256" y="118"
+    font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+    font-weight="800"
+    font-size="62"
+    text-anchor="middle"
+    fill="url(#accent)"
+    filter="url(#glow-sm)"
+    letter-spacing="-2">D</text>
+
+  <!-- Bottom label -->
+  <text x="256" y="400"
+    font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+    font-weight="700"
+    font-size="38"
+    text-anchor="middle"
+    fill="#ffffff"
+    opacity="0.92"
+    letter-spacing="1">daromadchi</text>
+
+  <!-- Subtitle -->
+  <text x="256" y="436"
+    font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+    font-weight="400"
+    font-size="19"
+    text-anchor="middle"
+    fill="#00d4ff"
+    opacity="0.7"
+    letter-spacing="2">ANALYTICS</text>
+</svg>
