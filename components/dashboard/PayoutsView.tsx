@@ -39,13 +39,8 @@ function StatusBadge({ status }: { status: PayoutEntry['status'] }) {
     )
   }
   return (
-<<<<<<< HEAD
     <span className="inline-flex px-2.5 py-1 rounded-lg text-xs font-semibold bg-[var(--bg-card2)] text-[var(--text-muted)] border border-[var(--border)]">
       Kutilmoqda
-=======
-    <span className="inline-flex px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-500/15 text-[var(--text-muted)] border border-slate-500/20">
-      {t.statusPending}
->>>>>>> origin/claude/friendly-rubin-IkT6S
     </span>
   )
 }
@@ -67,13 +62,8 @@ function DeductionBar({ entry }: { entry: PayoutEntry }) {
   ].filter(s => s.value > 0)
 
   return (
-<<<<<<< HEAD
     <div className="px-5 py-4 bg-[var(--bg-card2)] border-t border-[var(--border)] space-y-3">
       <p className="text-[var(--text-muted)] text-xs font-semibold uppercase tracking-wider">Chegirmalar tafsiloti</p>
-=======
-    <div className="px-5 py-4 bg-white/[0.015] border-t border-white/[0.04] space-y-3">
-      <p className="text-[var(--text-muted)] text-xs font-semibold uppercase tracking-wider">{t.deductionsTitle}</p>
->>>>>>> origin/claude/friendly-rubin-IkT6S
 
       {/* Proportional bar */}
       <div className="flex h-3 rounded-full overflow-hidden gap-px">
@@ -98,13 +88,8 @@ function DeductionBar({ entry }: { entry: PayoutEntry }) {
         ))}
       </div>
 
-<<<<<<< HEAD
       <div className="flex items-center justify-between pt-1 border-t border-[var(--border)]">
         <span className="text-[var(--text-muted)] text-xs">Jami chegirmalar</span>
-=======
-      <div className="flex items-center justify-between pt-1 border-t border-white/[0.04]">
-        <span className="text-[var(--text-muted)] text-xs">{t.totalDeductions}</span>
->>>>>>> origin/claude/friendly-rubin-IkT6S
         <span className="text-[var(--text-base)] text-sm font-bold">{fmt(total)}</span>
       </div>
     </div>
@@ -149,7 +134,6 @@ export default function PayoutsView({ entries }: Props) {
       {/* Summary cards */}
       <div className="grid grid-cols-3 gap-3">
         <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl px-4 py-3">
-<<<<<<< HEAD
           <p className="text-[var(--text-muted)] text-xs mb-1">Jami to&apos;langan</p>
           <p className="text-[var(--text-base)] text-xl font-bold">{fmtShort(totalPaid)}</p>
           <p className="text-[var(--text-muted)] text-xs mt-0.5">{paidEntries.length} ta davr</p>
@@ -163,21 +147,6 @@ export default function PayoutsView({ entries }: Props) {
           <p className="text-[var(--text-muted)] text-xs mb-1">O&apos;rtacha to&apos;lov</p>
           <p className="text-[var(--text-base)] text-xl font-bold">{fmtShort(avgPaid)}</p>
           <p className="text-[var(--text-muted)] text-xs mt-0.5">har bir davr</p>
-=======
-          <p className="text-[var(--text-muted)] text-xs mb-1">{t.kpiTotalPaid}</p>
-          <p className="text-[var(--text-base)] text-xl font-bold">{fmtShort(totalPaid)}</p>
-          <p className="text-[var(--text-muted)] text-xs mt-0.5">{paidEntries.length} {t.periods}</p>
-        </div>
-        <div className="bg-[var(--bg-card2)] border border-amber-500/20 rounded-2xl px-4 py-3">
-          <p className="text-[var(--text-muted)] text-xs mb-1">{t.kpiPending}</p>
-          <p className="text-amber-400 text-xl font-bold">{fmtShort(pending)}</p>
-          <p className="text-[var(--text-muted)] text-xs mt-0.5">{entries.filter(e => e.status !== 'paid').length} {t.periods}</p>
-        </div>
-        <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl px-4 py-3">
-          <p className="text-[var(--text-muted)] text-xs mb-1">{t.kpiAvg}</p>
-          <p className="text-[var(--text-base)] text-xl font-bold">{fmtShort(avgPaid)}</p>
-          <p className="text-[var(--text-muted)] text-xs mt-0.5">{t.perPeriod}</p>
->>>>>>> origin/claude/friendly-rubin-IkT6S
         </div>
       </div>
 
@@ -186,7 +155,6 @@ export default function PayoutsView({ entries }: Props) {
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-<<<<<<< HEAD
               <tr className="border-b border-[var(--border)]">
                 <th className="px-5 py-3 text-left text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Davr</th>
                 <th className="px-4 py-3 text-right text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Buyurtmalar</th>
@@ -200,30 +168,11 @@ export default function PayoutsView({ entries }: Props) {
                   <span className="inline-flex items-center gap-1">
                     Sof to&apos;lov
                     <span title="Nima uchun bu miqdor? Brutto daromaddan barcha chegirmalar: komissiya, yetkazish, qaytarishlar, reklama xarajatlari, ekvayring va soliq ayiriladi.">
-=======
-              <tr className="border-b border-white/[0.05]">
-                <th className="px-5 py-3 text-left text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">{t.colPeriod}</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">{t.colOrders}</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">{t.colGross}</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">{t.colCommission}</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">{t.colDelivery}</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">{t.colReturns}</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">{t.colAd}</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">{t.colTax}</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
-                  <span className="inline-flex items-center gap-1">
-                    {t.colNet}
-                    <span>
->>>>>>> origin/claude/friendly-rubin-IkT6S
                       <HelpCircle className="w-3.5 h-3.5 text-[var(--text-muted)] cursor-help" />
                     </span>
                   </span>
                 </th>
-<<<<<<< HEAD
                 <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Holat</th>
-=======
-                <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">{t.colStatus}</th>
->>>>>>> origin/claude/friendly-rubin-IkT6S
                 <th className="px-3 py-3" />
               </tr>
             </thead>

@@ -18,11 +18,7 @@ function statusCls(s: ReferralEntry['status']) {
     ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
     : s === 'paid'
     ? 'bg-violet-500/10 text-violet-400 border-violet-500/20'
-<<<<<<< HEAD
     : 'bg-[var(--bg-card2)] text-[var(--text-muted)] border-[var(--border)]'
-=======
-    : 'bg-slate-700/30 text-[var(--text-muted)] border-slate-700/40'
->>>>>>> origin/claude/friendly-rubin-IkT6S
 }
 
 interface Props {
@@ -68,55 +64,33 @@ export default function ReferralView({ stats, entries }: Props) {
 
       {/* Referral link card */}
       <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl p-6 space-y-4">
-<<<<<<< HEAD
         <p className="text-xs font-semibold text-[var(--text-muted)]">Sizning referal havolangiz</p>
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="flex-1 px-4 py-3 bg-[var(--bg-input)] border border-[var(--border)] rounded-xl font-mono text-sm text-violet-300 truncate">
-=======
-        <p className="text-xs font-semibold text-[var(--text-muted)]">{t.yourLink}</p>
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="flex-1 px-4 py-3 bg-[var(--bg-base)] border border-[var(--border)] rounded-xl font-mono text-sm text-violet-300 truncate">
->>>>>>> origin/claude/friendly-rubin-IkT6S
             {referralUrl}
           </div>
           <button onClick={copyLink}
             className={`flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
               copied
                 ? 'bg-emerald-600/20 text-emerald-400 border border-emerald-500/30'
-<<<<<<< HEAD
                 : 'btn-primary'
-=======
-                : 'bg-violet-600 hover:bg-violet-500 text-[var(--text-base)]'
->>>>>>> origin/claude/friendly-rubin-IkT6S
             }`}>
             {copied ? <><Check className="w-4 h-4" /> {t.copiedBtn}</> : <><Copy className="w-4 h-4" /> {t.copyBtn}</>}
           </button>
         </div>
         <div className="flex items-center gap-2 text-xs text-[var(--text-muted)]">
-<<<<<<< HEAD
           <span className="px-2 py-1 bg-[var(--bg-card2)] rounded-lg font-mono text-violet-400 font-semibold">{stats.code}</span>
           <span>— sizning kodingiz</span>
-=======
-          <span className="px-2 py-1 bg-white/[0.04] rounded-lg font-mono text-violet-400 font-semibold">{stats.code}</span>
-          <span>{t.yourCode}</span>
->>>>>>> origin/claude/friendly-rubin-IkT6S
         </div>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-<<<<<<< HEAD
           { label: 'Jami taklif',    value: String(stats.totalReferred),  icon: Users,      color: 'text-[var(--text-base)]'       },
           { label: 'Faol',           value: String(stats.activeReferred),  icon: TrendingUp, color: 'text-emerald-400' },
           { label: 'Kutilmoqda',     value: String(stats.pendingReferred), icon: Clock,      color: 'text-amber-400'   },
           { label: 'Jami mukofot',   value: fs(stats.totalReward),         icon: Gift,       color: 'text-violet-400'  },
-=======
-          { label: t.kpiTotal,   value: String(stats.totalReferred),  icon: Users,      color: 'text-[var(--text-base)]' },
-          { label: t.kpiActive,  value: String(stats.activeReferred),  icon: TrendingUp, color: 'text-emerald-400' },
-          { label: t.kpiPending, value: String(stats.pendingReferred), icon: Clock,      color: 'text-amber-400'   },
-          { label: t.kpiReward,  value: fs(stats.totalReward),         icon: Gift,       color: 'text-violet-400'  },
->>>>>>> origin/claude/friendly-rubin-IkT6S
         ].map(({ label, value, icon: Icon, color }) => (
           <div key={label} className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl px-4 py-4">
             <div className="flex items-center justify-between mb-2">
@@ -131,40 +105,23 @@ export default function ReferralView({ stats, entries }: Props) {
       {/* Entries table */}
       {entries.length > 0 && (
         <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
-<<<<<<< HEAD
           <div className="px-4 py-3 border-b border-[var(--border)]">
             <p className="text-xs font-semibold text-[var(--text-muted)]">Taklif qilingan foydalanuvchilar</p>
-=======
-          <div className="px-4 py-3 border-b border-white/[0.05]">
-            <p className="text-xs font-semibold text-[var(--text-muted)]">{t.tableTitle}</p>
->>>>>>> origin/claude/friendly-rubin-IkT6S
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-[var(--border)]">
-<<<<<<< HEAD
                   <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--text-muted)]">#</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--text-muted)]">Sana</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--text-muted)]">Holat</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--text-muted)]">Faollashdi</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--text-muted)]">Mukofot</th>
-=======
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--text-muted)]">{t.colNum}</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--text-muted)]">{t.colDate}</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--text-muted)]">{t.colStatus}</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--text-muted)]">{t.colActivated}</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--text-muted)]">{t.colReward}</th>
->>>>>>> origin/claude/friendly-rubin-IkT6S
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--border)]">
                 {entries.map((entry, i) => (
-<<<<<<< HEAD
                   <tr key={entry.id} className="hover:bg-[var(--bg-card2)] transition-colors">
-=======
-                  <tr key={entry.id} className="hover:bg-white/[0.02] transition-colors">
->>>>>>> origin/claude/friendly-rubin-IkT6S
                     <td className="px-4 py-3 text-[var(--text-muted)] text-xs">#{i + 1}</td>
                     <td className="px-4 py-3 text-[var(--text-muted)] text-xs">
                       {new Date(entry.createdAt).toLocaleDateString('uz-UZ')}
@@ -193,13 +150,8 @@ export default function ReferralView({ stats, entries }: Props) {
       {entries.length === 0 && (
         <div className="bg-[var(--bg-card2)] border border-dashed border-violet-500/30 rounded-2xl p-10 text-center">
           <Gift className="w-8 h-8 text-violet-400/50 mx-auto mb-3" />
-<<<<<<< HEAD
           <p className="text-[var(--text-base)] font-semibold mb-1">Hali hech kim taklif qilinmagan</p>
           <p className="text-[var(--text-muted)] text-sm">Yuqoridagi havolani ulashing va mukofot oling</p>
-=======
-          <p className="text-[var(--text-base)] font-semibold mb-1">{t.emptyTitle}</p>
-          <p className="text-[var(--text-muted)] text-sm">{t.emptyDesc}</p>
->>>>>>> origin/claude/friendly-rubin-IkT6S
         </div>
       )}
     </div>

@@ -26,15 +26,9 @@ type T = typeof translations['uz']['dashboard']
 
 function RoleBadge({ role, d }: { role: Role; d: T }) {
   const config: Record<Role, { label: string; cls: string; icon: React.ReactNode }> = {
-<<<<<<< HEAD
     owner:  { label: d.roleOwner,  cls: 'bg-violet-500/15 border-violet-500/30 text-violet-300',  icon: <Crown  className="w-3 h-3" /> },
     admin:  { label: d.roleAdmin,  cls: 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300', icon: <Shield className="w-3 h-3" /> },
     viewer: { label: d.roleViewer, cls: 'bg-[var(--bg-card2)] border-[var(--border)] text-[var(--text-muted)]',      icon: <Eye    className="w-3 h-3" /> },
-=======
-    owner:  { label: 'Egasi',  cls: 'bg-violet-500/15 border-violet-500/30 text-violet-300',  icon: <Crown  className="w-3 h-3" /> },
-    admin:  { label: 'Admin',  cls: 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300', icon: <Shield className="w-3 h-3" /> },
-    viewer: { label: 'Viewer', cls: 'bg-slate-500/15 border-slate-500/20 text-[var(--text-muted)]',      icon: <Eye    className="w-3 h-3" /> },
->>>>>>> origin/claude/friendly-rubin-IkT6S
   }
   const c = config[role]
   return (
@@ -86,11 +80,7 @@ function InviteModal({ onClose, d }: { onClose: () => void; d: T }) {
         <div className="px-6 py-4 border-b border-[var(--border)] flex items-center justify-between">
           <div className="flex items-center gap-2">
             <UserPlus className="w-4 h-4 text-violet-400" />
-<<<<<<< HEAD
             <h2 className="text-[var(--text-base)] font-semibold text-sm">{d.teamInviteTitle}</h2>
-=======
-            <h2 className="text-[var(--text-base)] font-semibold text-sm">Jamoa a&apos;zosini qo&apos;shish</h2>
->>>>>>> origin/claude/friendly-rubin-IkT6S
           </div>
           <button
             onClick={onClose}
@@ -105,11 +95,7 @@ function InviteModal({ onClose, d }: { onClose: () => void; d: T }) {
           {/* Email */}
           <div>
             <label className="block text-xs font-medium text-[var(--text-muted)] mb-2">
-<<<<<<< HEAD
               {d.teamEmailLabel}
-=======
-              Email manzil
->>>>>>> origin/claude/friendly-rubin-IkT6S
             </label>
             <input
               type="email"
@@ -124,11 +110,7 @@ function InviteModal({ onClose, d }: { onClose: () => void; d: T }) {
           {/* Role */}
           <div>
             <label className="block text-xs font-medium text-[var(--text-muted)] mb-2">
-<<<<<<< HEAD
               {d.teamRoleLabel}
-=======
-              Rol
->>>>>>> origin/claude/friendly-rubin-IkT6S
             </label>
             <div className="space-y-2">
               {([
@@ -142,11 +124,7 @@ function InviteModal({ onClose, d }: { onClose: () => void; d: T }) {
                   className={`w-full flex items-start gap-3 px-4 py-3 rounded-xl border text-left transition-all ${
                     role === opt.value
                       ? 'bg-violet-600/15 border-violet-500/40'
-<<<<<<< HEAD
                       : 'bg-[var(--bg-card2)] border-[var(--border)] hover:border-[var(--border2)]'
-=======
-                      : 'bg-white/[0.02] border-[var(--border)] hover:border-white/[0.12]'
->>>>>>> origin/claude/friendly-rubin-IkT6S
                   }`}
                 >
                   <div className={`mt-0.5 w-3.5 h-3.5 rounded-full border-2 flex-shrink-0 ${
@@ -208,18 +186,10 @@ export default function TeamPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <div className="flex items-center gap-2 mb-0.5">
-<<<<<<< HEAD
             <h1 className="text-2xl font-bold text-[var(--text-base)]">{d.teamTitle}</h1>
           </div>
           <p className="text-[var(--text-muted)] text-sm">
             {d.teamSubtitle}
-=======
-            <h1 className="text-2xl font-bold text-[var(--text-base)]">Jamoa</h1>
-            <HelpTooltip section="team" />
-          </div>
-          <p className="text-[var(--text-muted)] text-sm">
-            Do&apos;koningizga kirish huquqini boshqaruvchi a&apos;zolar ro&apos;yxati
->>>>>>> origin/claude/friendly-rubin-IkT6S
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -232,11 +202,7 @@ export default function TeamPage() {
           <button
             onClick={() => setShowModal(true)}
             disabled={!isPro}
-<<<<<<< HEAD
             title={!isPro ? d.teamUpgrade : ''}
-=======
-            title={!isPro ? 'Pro+ tarifiga o\'ting' : ''}
->>>>>>> origin/claude/friendly-rubin-IkT6S
             className="flex items-center gap-2 bg-violet-600 hover:bg-violet-500 disabled:opacity-40 disabled:cursor-not-allowed text-[var(--text-base)] text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors"
           >
             <UserPlus className="w-4 h-4" />
@@ -248,15 +214,9 @@ export default function TeamPage() {
       {/* Role legend */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {[
-<<<<<<< HEAD
           { icon: <Crown  className="w-4 h-4 text-violet-400" />, label: d.roleOwner,  desc: d.roleOwnerDesc },
           { icon: <Shield className="w-4 h-4 text-emerald-400" />, label: d.roleAdmin, desc: d.roleAdminDesc },
           { icon: <Eye    className="w-4 h-4 text-[var(--text-muted)]" />,  label: d.roleViewer, desc: d.roleViewerDesc },
-=======
-          { icon: <Crown  className="w-4 h-4 text-violet-400" />, label: 'Egasi',  desc: 'To\'liq nazorat, tarif boshqaruvi, a\'zo qo\'shish' },
-          { icon: <Shield className="w-4 h-4 text-emerald-400" />, label: 'Admin', desc: 'Mahsulot, buyurtma, sozlamalar — to\'liq kirish' },
-          { icon: <Eye    className="w-4 h-4 text-[var(--text-muted)]" />,  label: 'Viewer', desc: 'Tahlil va hisobotlarni faqat ko\'rish' },
->>>>>>> origin/claude/friendly-rubin-IkT6S
         ].map(r => (
           <div key={r.label} className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl px-4 py-3 flex items-start gap-3">
             <div className="mt-0.5">{r.icon}</div>
@@ -270,17 +230,10 @@ export default function TeamPage() {
 
       {/* Members list */}
       <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
-<<<<<<< HEAD
         <div className="px-5 py-4 border-b border-[var(--border)] flex items-center gap-2">
           <Users className="w-4 h-4 text-violet-400" />
           <h2 className="text-[var(--text-base)] font-semibold text-sm">{d.teamMembers}</h2>
           <span className="ml-auto text-xs text-[var(--text-muted)]">{members.length} {d.teamMembersCount}</span>
-=======
-        <div className="px-5 py-4 border-b border-white/[0.05] flex items-center gap-2">
-          <Users className="w-4 h-4 text-violet-400" />
-          <h2 className="text-[var(--text-base)] font-semibold text-sm">Jamoa a&apos;zolari</h2>
-          <span className="ml-auto text-xs text-[var(--text-muted)]">{members.length} ta a'zo</span>
->>>>>>> origin/claude/friendly-rubin-IkT6S
         </div>
 
         <div className="divide-y divide-[var(--border)]">
@@ -295,11 +248,7 @@ export default function TeamPage() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <p className="text-[var(--text-base)] font-semibold text-sm">{member.name}</p>
-<<<<<<< HEAD
                   <RoleBadge role={member.role} d={d} />
-=======
-                  <RoleBadge role={member.role} />
->>>>>>> origin/claude/friendly-rubin-IkT6S
                 </div>
                 <p className="text-[var(--text-muted)] text-xs mt-0.5">{member.email}</p>
               </div>
@@ -319,11 +268,7 @@ export default function TeamPage() {
                 <button
                   onClick={() => handleRemove(member.id)}
                   disabled={!isPro}
-<<<<<<< HEAD
                   title={!isPro ? d.teamProBadge : d.teamRemove}
-=======
-                  title={!isPro ? 'Pro+ tarifida mavjud' : 'Olib tashlash'}
->>>>>>> origin/claude/friendly-rubin-IkT6S
                   className="text-[var(--text-muted)] hover:text-red-400 disabled:opacity-30 disabled:cursor-not-allowed transition-colors p-1.5 rounded-lg hover:bg-red-500/[0.08]"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -341,16 +286,9 @@ export default function TeamPage() {
             <Lock className="w-5 h-5 text-violet-400" />
           </div>
           <div>
-<<<<<<< HEAD
             <p className="text-[var(--text-base)] font-semibold text-sm mb-1">{d.teamLockedTitle}</p>
             <p className="text-[var(--text-muted)] text-xs leading-relaxed">
               {d.teamLockedDesc}
-=======
-            <p className="text-[var(--text-base)] font-semibold text-sm mb-1">Jamoa boshqaruvi — Pro+ tarifida</p>
-            <p className="text-[var(--text-muted)] text-xs leading-relaxed">
-              Pro+ tarifiga o'ting va do'koningizga 5 tagacha a'zo qo'shing.
-              Har bir a'zo uchun alohida rol va huquqlar belgilang.
->>>>>>> origin/claude/friendly-rubin-IkT6S
             </p>
           </div>
         </div>

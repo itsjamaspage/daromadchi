@@ -48,19 +48,11 @@ export default function SeasonalityView({ data }: Props) {
     if (!active || !payload?.length) return null
     const d = payload[0].payload
     return (
-<<<<<<< HEAD
       <div className="bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl p-3 shadow-xl text-xs">
         <p className="text-[var(--text-base)] font-semibold mb-2">{label}</p>
         <p className="text-violet-400">Daromad: <span className="font-bold">{formatSom(payload[0].value)}</span></p>
         <p className="text-[var(--text-muted)]">Buyurtmalar: <span className="text-[var(--text-base)] font-semibold">{d.orders} ta</span></p>
         <p className="text-[var(--text-muted)]">O&apos;rtacha chek: <span className="text-[var(--text-base)] font-semibold">{formatSom(d.avgCheck)}</span></p>
-=======
-      <div className="bg-[var(--bg-base)] border border-[var(--border2)] rounded-xl p-3 shadow-xl text-xs">
-        <p className="text-[var(--text-base)] font-semibold mb-2">{label}</p>
-        <p className="text-violet-400">{t.tooltipRevenue} <span className="font-bold">{formatSom(payload[0].value)}</span></p>
-        <p className="text-[var(--text-muted)]">{t.tooltipOrders} <span className="text-[var(--text-base)] font-semibold">{d.orders}</span></p>
-        <p className="text-[var(--text-muted)]">{t.tooltipAvgCheck} <span className="text-[var(--text-base)] font-semibold">{formatSom(d.avgCheck)}</span></p>
->>>>>>> origin/claude/friendly-rubin-IkT6S
       </div>
     )
   }
@@ -82,11 +74,7 @@ export default function SeasonalityView({ data }: Props) {
               className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border transition-all ${
                 selectedIdx === i
                   ? 'bg-violet-600/20 border-violet-500/30 text-violet-300'
-<<<<<<< HEAD
                   : 'bg-[var(--bg-card2)] border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text-base)] hover:border-[var(--border)]'
-=======
-                  : 'bg-[var(--bg-card2)] border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text-base)] hover:border-white/10'
->>>>>>> origin/claude/friendly-rubin-IkT6S
               }`}>
               <Package className="w-3.5 h-3.5" />
               {p.productTitle}
@@ -99,17 +87,10 @@ export default function SeasonalityView({ data }: Props) {
       {/* Insight cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-<<<<<<< HEAD
           { label: 'Eng yaxshi oy',   value: product.peakMonth,        color: 'text-violet-400', sub: 'Ko\'proq zaxira oling' },
           { label: 'Eng past oy',     value: product.lowMonth,         color: 'text-[var(--text-muted)]',  sub: 'Zaxirani kamaytiring' },
           { label: 'O\'sish',          value: `+${product.growthPct}%`, color: 'text-emerald-400',sub: 'Yillik trend' },
           { label: 'Kategoriya',      value: product.category,         color: 'text-[var(--text-base)]',      sub: product.productTitle },
-=======
-          { label: t.insightBest,     value: product.peakMonth,        color: 'text-violet-400',            sub: t.insightBestSub },
-          { label: t.insightLow,      value: product.lowMonth,         color: 'text-[var(--text-muted)]',   sub: t.insightLowSub  },
-          { label: t.insightGrowth,   value: `+${product.growthPct}%`, color: 'text-emerald-400',           sub: t.insightGrowthSub },
-          { label: t.insightCategory, value: product.category,         color: 'text-[var(--text-base)]',    sub: product.productTitle },
->>>>>>> origin/claude/friendly-rubin-IkT6S
         ].map(({ label, value, color, sub }) => (
           <div key={label} className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl px-4 py-3">
             <p className="text-xs text-[var(--text-muted)] mb-1">{label}</p>
@@ -124,11 +105,7 @@ export default function SeasonalityView({ data }: Props) {
         <div className="flex items-center justify-between mb-5">
           <div>
             <p className="text-[var(--text-base)] font-semibold text-sm">{product.productTitle}</p>
-<<<<<<< HEAD
             <p className="text-[var(--text-muted)] text-xs mt-0.5">12 oylik sotuv daromadi</p>
-=======
-            <p className="text-[var(--text-muted)] text-xs mt-0.5">{t.chartSubtitle}</p>
->>>>>>> origin/claude/friendly-rubin-IkT6S
           </div>
           <div className="flex items-center gap-1.5 text-xs text-emerald-400 font-semibold">
             <TrendingUp className="w-4 h-4" />
@@ -151,11 +128,7 @@ export default function SeasonalityView({ data }: Props) {
         </ResponsiveContainer>
 
         {/* Legend */}
-<<<<<<< HEAD
         <div className="flex flex-wrap gap-4 mt-4 pt-4 border-t border-[var(--border)]">
-=======
-        <div className="flex flex-wrap gap-4 mt-4 pt-4 border-t border-white/[0.05]">
->>>>>>> origin/claude/friendly-rubin-IkT6S
           <span className="flex items-center gap-2 text-xs text-[var(--text-muted)]">
             <span className="w-3 h-3 rounded-sm" style={{ background: PEAK_COLOR }} />
             {t.legendPeak}
@@ -173,19 +146,11 @@ export default function SeasonalityView({ data }: Props) {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-[var(--border)]">
-<<<<<<< HEAD
                 <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--text-muted)]">Oy</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--text-muted)]">Daromad</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--text-muted)]">Buyurtmalar</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--text-muted)]">O&apos;rtacha chek</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--text-muted)]">Faollik</th>
-=======
-                <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--text-muted)]">{t.colMonth}</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--text-muted)]">{t.colRevenue}</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--text-muted)]">{t.colOrders}</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--text-muted)]">{t.colAvgCheck}</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--text-muted)]">{t.colActivity}</th>
->>>>>>> origin/claude/friendly-rubin-IkT6S
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--border)]">
@@ -197,13 +162,8 @@ export default function SeasonalityView({ data }: Props) {
                   <tr key={i} className={`hover:bg-[var(--bg-card2)] transition-colors ${isPeak ? 'bg-violet-500/5' : ''}`}>
                     <td className="px-4 py-3">
                       <span className="text-[var(--text-base)] text-xs font-medium">{d.month}</span>
-<<<<<<< HEAD
                       {isPeak && <span className="ml-2 text-[10px] text-violet-400 bg-violet-500/10 px-1.5 py-0.5 rounded">Eng yaxshi</span>}
                       {isLow  && <span className="ml-2 text-[10px] text-[var(--text-muted)] bg-[var(--bg-card2)] px-1.5 py-0.5 rounded">Eng past</span>}
-=======
-                      {isPeak && <span className="ml-2 text-[10px] text-violet-400 bg-violet-500/10 px-1.5 py-0.5 rounded">{t.tagBest}</span>}
-                      {isLow  && <span className="ml-2 text-[10px] text-[var(--text-muted)] bg-slate-700/20 px-1.5 py-0.5 rounded">{t.tagLow}</span>}
->>>>>>> origin/claude/friendly-rubin-IkT6S
                     </td>
                     <td className="px-4 py-3 text-[var(--text-base)] text-xs font-semibold">{formatSom(d.revenue)}</td>
                     <td className="px-4 py-3 text-[var(--text-dim)] text-xs">{d.orders} ta</td>
@@ -226,21 +186,12 @@ export default function SeasonalityView({ data }: Props) {
 
       {/* Recommendation box */}
       <div className="bg-violet-500/5 border border-violet-500/15 rounded-2xl px-5 py-4">
-<<<<<<< HEAD
         <p className="text-violet-300 font-semibold text-sm mb-2">Tavsiya</p>
         <p className="text-[var(--text-muted)] text-xs leading-relaxed">
           <strong className="text-[var(--text-base)]">{product.peakMonth}</strong> oyida eng yuqori sotuv kuzatiladi.
           Shu oydan <strong className="text-[var(--text-base)]">1–2 oy oldin</strong> yetarli zaxira to&apos;plang.
           {product.lowMonth !== product.peakMonth && (
             <> <strong className="text-[var(--text-base)]">{product.lowMonth}</strong> oyida sotuv pasayadi — bu davrda reklama xarajatini kamaytiring.</>
-=======
-        <p className="text-violet-300 font-semibold text-sm mb-2">{t.recTitle}</p>
-        <p className="text-[var(--text-muted)] text-xs leading-relaxed">
-          <strong className="text-[var(--text-base)]">{product.peakMonth}</strong> {t.recPeak1}{' '}
-          <strong className="text-[var(--text-base)]">{t.recPeak2}</strong> {t.recPeak3}
-          {product.lowMonth !== product.peakMonth && (
-            <> <strong className="text-[var(--text-base)]">{product.lowMonth}</strong> {t.recLow1}</>
->>>>>>> origin/claude/friendly-rubin-IkT6S
           )}
         </p>
       </div>

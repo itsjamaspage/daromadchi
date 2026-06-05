@@ -28,11 +28,7 @@ const ABC_CFG = {
 const XYZ_CFG = {
   X: { bg: 'bg-blue-500/10',   border: 'border-blue-500/20',   text: 'text-blue-400'   },
   Y: { bg: 'bg-amber-500/10',  border: 'border-amber-500/20',  text: 'text-amber-400'  },
-<<<<<<< HEAD
   Z: { bg: 'bg-slate-500/10',  border: 'border-[var(--border)]',  text: 'text-[var(--text-muted)]'  },
-=======
-  Z: { bg: 'bg-slate-500/10',  border: 'border-slate-500/20',  text: 'text-[var(--text-muted)]'  },
->>>>>>> origin/claude/friendly-rubin-IkT6S
 }
 
 export default function AbcXyzClient({ products }: { products: ClassifiedProduct[] }) {
@@ -121,11 +117,7 @@ export default function AbcXyzClient({ products }: { products: ClassifiedProduct
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-<<<<<<< HEAD
               <tr className="text-[var(--text-muted)] text-xs border-b border-[var(--border)] bg-[var(--bg-card2)]">
-=======
-              <tr className="text-[var(--text-muted)] text-xs border-b border-[var(--border)] bg-white/[0.01]">
->>>>>>> origin/claude/friendly-rubin-IkT6S
                 <th className="text-left font-medium px-5 py-3">{t.product}</th>
                 <th className="text-right font-medium px-5 py-3">{t.revenue}</th>
                 <th className="text-right font-medium px-5 py-3">{t.revenueShare}</th>

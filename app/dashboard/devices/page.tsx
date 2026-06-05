@@ -56,24 +56,15 @@ export default function DevicesPage() {
           <Monitor className="w-6 h-6 text-violet-400" />
           {d.devicesManageTitle}
         </h1>
-<<<<<<< HEAD
         <p className="text-[var(--text-muted)] text-sm mt-0.5">{d.devicesManageSubtitle}</p>
-=======
-        <p className="text-[var(--text-muted)] text-sm mt-0.5">Chrome kengaytmasi ulangan qurilmalar</p>
->>>>>>> origin/claude/friendly-rubin-IkT6S
       </div>
 
       {/* Chrome Web Store banner */}
       <div className="flex items-center gap-4 bg-gradient-to-r from-cyan-500/10 to-blue-500/10 border border-cyan-500/20 rounded-2xl px-5 py-4">
         <Globe className="w-8 h-8 text-cyan-400 shrink-0" />
         <div className="flex-1">
-<<<<<<< HEAD
           <p className="text-[var(--text-base)] font-semibold text-sm">{d.devicesInstallExt}</p>
           <p className="text-[var(--text-muted)] text-xs mt-0.5">{d.devicesInstallExtDesc}</p>
-=======
-          <p className="text-[var(--text-base)] font-semibold text-sm">Chrome kengaytmasini o&apos;rnating</p>
-          <p className="text-[var(--text-muted)] text-xs mt-0.5">Chrome kengaytmasini o&apos;rnatish uchun Chrome Web Store&apos;ga o&apos;ting</p>
->>>>>>> origin/claude/friendly-rubin-IkT6S
         </div>
         <a
           href="https://chrome.google.com/webstore"
@@ -87,42 +78,25 @@ export default function DevicesPage() {
 
       {/* Connected devices table */}
       <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
-<<<<<<< HEAD
         <div className="px-5 py-4 border-b border-[var(--border)] flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Monitor className="w-4 h-4 text-violet-400" />
             <h2 className="text-[var(--text-base)] font-semibold text-sm">{d.devicesConnected}</h2>
             <span className="text-xs text-[var(--text-muted)] bg-[var(--bg-card2)] px-2 py-0.5 rounded-full border border-[var(--border)]">
               {devices.length}
-=======
-        <div className="px-5 py-4 border-b border-white/[0.05] flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Monitor className="w-4 h-4 text-violet-400" />
-            <h2 className="text-[var(--text-base)] font-semibold text-sm">Ulangan qurilmalar</h2>
-            <span className="text-xs text-[var(--text-muted)] bg-white/[0.04] px-2 py-0.5 rounded-full border border-[var(--border)]">
-              {devices.length} ta
->>>>>>> origin/claude/friendly-rubin-IkT6S
             </span>
           </div>
         </div>
 
         {devices.length === 0 ? (
           <div className="py-10 text-center text-[var(--text-muted)] text-sm">
-<<<<<<< HEAD
             {d.devicesNoneConnected}
-=======
-            Hech qanday qurilma ulanmagan
->>>>>>> origin/claude/friendly-rubin-IkT6S
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-<<<<<<< HEAD
                 <tr className="text-[var(--text-muted)] text-xs border-b border-[var(--border)] bg-[var(--bg-card2)]">
-=======
-                <tr className="text-[var(--text-muted)] text-xs border-b border-white/[0.05] bg-white/[0.01]">
->>>>>>> origin/claude/friendly-rubin-IkT6S
                   <th className="text-left font-medium px-5 py-3">#</th>
                   <th className="text-left font-medium px-4 py-3">{d.devicesColDevice}</th>
                   <th className="text-left font-medium px-4 py-3">{d.devicesColBrowser}</th>
@@ -135,11 +109,7 @@ export default function DevicesPage() {
                 {devices.map((device, idx) => {
                   const Icon = device.icon
                   return (
-<<<<<<< HEAD
                     <tr key={device.id} className="hover:bg-[var(--bg-card2)] transition-colors">
-=======
-                    <tr key={device.id} className="hover:bg-white/[0.02] transition-colors">
->>>>>>> origin/claude/friendly-rubin-IkT6S
                       <td className="px-5 py-3.5 text-[var(--text-muted)] text-xs">{idx + 1}</td>
                       <td className="px-4 py-3.5">
                         <div className="flex items-center gap-2">
@@ -199,56 +169,11 @@ export default function DevicesPage() {
         )}
       </div>
 
-<<<<<<< HEAD
       {/* Extension settings */}
       <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
         <div className="px-5 py-4 border-b border-[var(--border)] flex items-center gap-2">
           <Monitor className="w-4 h-4 text-violet-400" />
           <h2 className="text-[var(--text-base)] font-semibold text-sm">{d.devicesExtSettings}</h2>
-=======
-      {/* API Token */}
-      <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
-        <div className="px-5 py-4 border-b border-white/[0.05] flex items-center gap-2">
-          <Globe className="w-4 h-4 text-violet-400" />
-          <h2 className="text-[var(--text-base)] font-semibold text-sm">API Token (Kengaytma uchun)</h2>
-        </div>
-        <div className="p-5 space-y-3">
-          <div className="flex items-center gap-3">
-            <code className="flex-1 bg-[var(--bg-base)] border border-[var(--border2)] rounded-xl px-4 py-3 text-sm text-cyan-300 font-mono tracking-wide">
-              {token}
-            </code>
-            <button
-              onClick={handleReveal}
-              className="flex items-center gap-1.5 text-xs text-[var(--text-muted)] hover:text-[var(--text-base)] border border-[var(--border2)] hover:border-white/[0.15] px-3 py-3 rounded-xl transition-all"
-              title={tokenVisible ? "Yashirish" : "Ko'rsatish"}
-            >
-              {tokenVisible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              {tokenVisible ? 'Yashirish' : "Ko'rsatish"}
-            </button>
-            <button
-              onClick={handleRefreshToken}
-              disabled={refreshing}
-              className="flex items-center gap-1.5 text-xs text-[var(--text-muted)] hover:text-[var(--text-base)] border border-[var(--border2)] hover:border-white/[0.15] px-3 py-3 rounded-xl transition-all disabled:opacity-50"
-            >
-              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-              Yangilash
-            </button>
-          </div>
-          <div className="flex items-start gap-2 bg-amber-500/[0.07] border border-amber-500/20 rounded-xl px-4 py-3">
-            <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-            <p className="text-amber-400/80 text-xs">
-              <strong className="text-amber-300">Ogohlantirish:</strong> Token yangilansa eski qurilmalarda kengaytma uziladi
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Extension settings */}
-      <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
-        <div className="px-5 py-4 border-b border-white/[0.05] flex items-center gap-2">
-          <Monitor className="w-4 h-4 text-violet-400" />
-          <h2 className="text-[var(--text-base)] font-semibold text-sm">Kengaytma sozlamalari</h2>
->>>>>>> origin/claude/friendly-rubin-IkT6S
         </div>
         <div className="divide-y divide-[var(--border)]">
           {EXTENSION_SETTINGS.map(({ key, label, desc }) => (

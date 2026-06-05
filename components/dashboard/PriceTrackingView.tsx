@@ -99,7 +99,6 @@ export default function PriceTrackingView({ prices }: Props) {
       {/* Summary row */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl px-4 py-3">
-<<<<<<< HEAD
           <p className="text-[var(--text-muted)] text-xs mb-1">Kuzatilayotgan mahsulotlar</p>
           <p className="text-[var(--text-base)] text-2xl font-bold">{prices.length}</p>
         </div>
@@ -115,23 +114,6 @@ export default function PriceTrackingView({ prices }: Props) {
         </div>
         <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl px-4 py-3">
           <p className="text-[var(--text-muted)] text-xs mb-1">O&apos;rtacha narx farqi</p>
-=======
-          <p className="text-[var(--text-muted)] text-xs mb-1">{t.kpiProducts}</p>
-          <p className="text-[var(--text-base)] text-2xl font-bold">{prices.length}</p>
-        </div>
-        <div className="bg-[var(--bg-card2)] border border-emerald-500/20 rounded-2xl px-4 py-3">
-          <p className="text-[var(--text-muted)] text-xs mb-1">{t.kpiLowest}</p>
-          <p className="text-emerald-400 text-2xl font-bold">{lowestCount}</p>
-          <p className="text-[var(--text-muted)] text-xs mt-0.5">{t.kpiProductSub}</p>
-        </div>
-        <div className="bg-[var(--bg-card2)] border border-red-500/20 rounded-2xl px-4 py-3">
-          <p className="text-[var(--text-muted)] text-xs mb-1">{t.kpiHighest}</p>
-          <p className="text-red-400 text-2xl font-bold">{highCount}</p>
-          <p className="text-[var(--text-muted)] text-xs mt-0.5">{t.kpiProductSub}</p>
-        </div>
-        <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl px-4 py-3">
-          <p className="text-[var(--text-muted)] text-xs mb-1">{t.kpiAvgGap}</p>
->>>>>>> origin/claude/friendly-rubin-IkT6S
           <p className={`text-2xl font-bold ${avgGapPct > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>
             {avgGapPct > 0 ? '+' : ''}{avgGapPct.toFixed(1)}%
           </p>
@@ -147,11 +129,7 @@ export default function PriceTrackingView({ prices }: Props) {
             className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
               filter === tab.key
                 ? 'bg-violet-600 text-[var(--text-base)]'
-<<<<<<< HEAD
                 : 'bg-[var(--bg-card2)] border border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text-base)] hover:border-[var(--border)]'
-=======
-                : 'bg-[var(--bg-card2)] border border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text-base)] hover:border-white/10'
->>>>>>> origin/claude/friendly-rubin-IkT6S
             }`}
           >
             {tab.label}
@@ -164,15 +142,9 @@ export default function PriceTrackingView({ prices }: Props) {
 
       {/* Table */}
       <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
-<<<<<<< HEAD
         <div className="px-5 py-4 border-b border-[var(--border)] flex items-center gap-3">
           <TrendingDown className="w-4 h-4 text-violet-400" />
           <h2 className="text-[var(--text-base)] font-semibold text-sm flex-1">Raqobat narxlari</h2>
-=======
-        <div className="px-5 py-4 border-b border-white/[0.05] flex items-center gap-3">
-          <TrendingDown className="w-4 h-4 text-violet-400" />
-          <h2 className="text-[var(--text-base)] font-semibold text-sm flex-1">{t.tableTitle}</h2>
->>>>>>> origin/claude/friendly-rubin-IkT6S
           <RefreshCw className="w-4 h-4 text-[var(--text-muted)]" />
         </div>
 
@@ -240,11 +212,7 @@ export default function PriceTrackingView({ prices }: Props) {
                         <td colSpan={8} className="px-6 py-5">
                           <div className="flex items-center gap-2 mb-3">
                             <TrendingDown className="w-4 h-4 text-violet-400" />
-<<<<<<< HEAD
                             <span className="text-[var(--text-base)] text-sm font-semibold">Narx dinamikasi — {item.productTitle}</span>
-=======
-                            <span className="text-[var(--text-base)] text-sm font-semibold">{t.priceDynamics} — {item.productTitle}</span>
->>>>>>> origin/claude/friendly-rubin-IkT6S
                           </div>
                           <ResponsiveContainer width="100%" height={200}>
                             <LineChart data={item.history} margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
@@ -263,13 +231,8 @@ export default function PriceTrackingView({ prices }: Props) {
                               />
                               <Tooltip
                                 contentStyle={{
-<<<<<<< HEAD
                                   backgroundColor: 'var(--bg-input)',
                                   border: '1px solid var(--border2)',
-=======
-                                  backgroundColor: 'var(--bg-base)',
-                                  border: '1px solid var(--border)',
->>>>>>> origin/claude/friendly-rubin-IkT6S
                                   borderRadius: '12px',
                                   fontSize: 12,
                                   color: 'var(--text-base)',
@@ -313,11 +276,7 @@ export default function PriceTrackingView({ prices }: Props) {
               {filtered.length === 0 && (
                 <tr>
                   <td colSpan={8} className="px-4 py-12 text-center">
-<<<<<<< HEAD
                     <p className="text-[var(--text-muted)] text-sm">Bu filtrdagi mahsulotlar topilmadi</p>
-=======
-                    <p className="text-[var(--text-muted)] text-sm">{t.emptyMsg}</p>
->>>>>>> origin/claude/friendly-rubin-IkT6S
                   </td>
                 </tr>
               )}
@@ -329,13 +288,9 @@ export default function PriceTrackingView({ prices }: Props) {
       {/* Info box */}
       <div className="flex items-start gap-3 bg-[var(--bg-card2)] border border-violet-500/20 rounded-2xl px-5 py-4">
         <AlertTriangle className="w-4 h-4 text-violet-400 flex-shrink-0 mt-0.5" />
-<<<<<<< HEAD
         <p className="text-[var(--text-muted)] text-sm">
           Ma&apos;lumotlar kuniga bir marta yangilanadi. Uzum API orqali real narxlar sinxronlanadi.
         </p>
-=======
-        <p className="text-[var(--text-muted)] text-sm">{t.infoText}</p>
->>>>>>> origin/claude/friendly-rubin-IkT6S
       </div>
     </div>
   )
