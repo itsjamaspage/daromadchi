@@ -51,10 +51,15 @@ export async function GET() {
 
   try {
     const token = decrypt(shop.api_key_encrypted)
+<<<<<<< HEAD
     // Auth: raw token value in Authorization header (no Bearer prefix) per Uzum swagger
     const url = 'https://api-seller.uzum.uz/api/seller-openapi/v1/shops'
     const res = await fetch(url, {
       headers: { Authorization: token.trim(), Accept: 'application/json' },
+=======
+    const res = await fetch('https://api-seller.uzum.uz/api/seller-openapi/v1/shops', {
+      headers: { Authorization: `Token ${token}`, Accept: 'application/json' },
+>>>>>>> origin/claude/intelligent-carson-CIAPv
       next: { revalidate: 0 },
     })
     if (res.ok) {
