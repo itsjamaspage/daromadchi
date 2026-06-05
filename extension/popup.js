@@ -403,7 +403,31 @@ async function renderSettings(token, settings, tgStatus) {
   };
 }
 
-// ─── TELEGRAM JOIN GATE ──────────────────────────────────────────────────────
+// ─── TELEGRAM CHANNEL SOFT CTA (shown inside stats panel, not a hard gate) ───
+function maybeShowChannelCta() {
+  chrome.storage.local.get('channelCtaDismissed', ({ channelCtaDismissed }) => {
+    if (channelCtaDismissed) return;
+    const panel = document.getElementById('panel-stats');
+    if (!panel) return;
+    const cta = document.createElement('div');
+    cta.style.cssText = 'margin:8px 12px;background:#0ea5e915;border:1px solid #0ea5e930;border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:10px';
+    cta.innerHTML = `
+      <span style="font-size:18px">📢</span>
+      <div style="flex:1">
+        <p style="font-size:11.5px;font-weight:600;color:#e2e8f0;margin-bottom:2px">@daromadchi_uz kanalga a'zo bo'ling</p>
+        <a href="https://t.me/daromadchi_uz" target="_blank" style="font-size:10.5px;color:#38bdf8;text-decoration:none">Yangiliklar va maslahatlar →</a>
+      </div>
+      <button id="cta-dismiss" style="background:none;border:none;color:#475569;cursor:pointer;font-size:16px;padding:0">×</button>
+    `;
+    panel.prepend(cta);
+    document.getElementById('cta-dismiss').onclick = () => {
+      cta.remove();
+      chrome.storage.local.set({ channelCtaDismissed: true });
+    };
+  });
+}
+
+// ─── (kept for reference, no longer used as a gate) ──────────────────────────
 function showJoinGate() {
   document.querySelector('.tabs').style.display = 'none'
   document.querySelectorAll('.panel').forEach(p => { p.style.display = 'none' })
@@ -602,6 +626,7 @@ async function loadAll() {
   renderStats(daromadchi_token, stats);
   renderAlerts(activeAlerts, plan);
   renderSettings(daromadchi_token, alertSettings, tgStatus);
+  maybeShowChannelCta();
 
   // Inject marketplace API status at the bottom of the stats panel
   const statsPanel = document.getElementById('panel-stats');
@@ -610,11 +635,5 @@ async function loadAll() {
   }
 }
 
-// Check activation gate before loading anything
-chrome.storage.local.get('tg_activated', ({ tg_activated }) => {
-  if (!tg_activated) {
-    showJoinGate()
-  } else {
-    loadAll()
-  }
-})
+// Simply load — login gate is handled inside loadAll() via showLoginGate()
+loadAll()

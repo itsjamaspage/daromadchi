@@ -219,14 +219,11 @@
       document.body.appendChild(wrap);
     }
 
-    chrome.storage.local.get('tg_activated', ({ tg_activated }) => {
-      if (!tg_activated) return;
-      // Retry a few times since WB renders prices lazily
-      setTimeout(buildWbUEWidget, 1500);
-      setTimeout(() => {
-        if (!document.getElementById('drm-wb-ue')) buildWbUEWidget();
-      }, 3500);
-    });
+    // Retry a few times since WB renders prices lazily
+    setTimeout(buildWbUEWidget, 1500);
+    setTimeout(() => {
+      if (!document.getElementById('drm-wb-ue')) buildWbUEWidget();
+    }, 3500);
 
     // SPA nav
     let lastUrl = location.href;

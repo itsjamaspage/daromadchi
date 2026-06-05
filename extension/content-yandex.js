@@ -406,14 +406,11 @@
     }
   }).observe(document, { subtree: true, childList: true });
 
-  // Initial load (only if activated)
-  chrome.storage.local.get('tg_activated', ({ tg_activated }) => {
-    if (!tg_activated) return;
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', () => scheduleInit());
-    } else {
-      scheduleInit();
-    }
-  });
+  // Initial load
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => scheduleInit());
+  } else {
+    scheduleInit();
+  }
 
 })();

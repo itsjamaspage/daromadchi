@@ -413,14 +413,11 @@
     // marketplace's own navbar. buildSellerBar() is kept for reference only.
   }
 
-  chrome.storage.local.get('tg_activated', ({ tg_activated }) => {
-    if (!tg_activated) return;
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', () => setTimeout(init, 1200));
-    } else {
-      setTimeout(init, 1200);
-    }
-  });
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => setTimeout(init, 1200));
+  } else {
+    setTimeout(init, 1200);
+  }
 
   // SPA nav handler
   let lastUrl = location.href;
