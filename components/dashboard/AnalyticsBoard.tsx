@@ -114,15 +114,25 @@ export default function AnalyticsBoard({ chartData, categoryData, products, kpis
     ]
   }, [kpis.total_orders, t])
 
-  /* Category bubble — x: margin %, y: revenue, z: units sold */
+  /* Category bubble — x: margin %, y: revenue, z: units sold.
+     Pre-bucket products by category once (O(n)) instead of filtering the full
+     product list for every category (O(n*m)). */
+  const soldByCategory = useMemo(() => {
+    const map = new Map<string, number>()
+    for (const p of products) {
+      const cat = p.category ?? 'Boshqa'
+      map.set(cat, (map.get(cat) ?? 0) + (p.sold ?? 0))
+    }
+    return map
+  }, [products])
+
   const bubbleData = useMemo(() => {
     return categoryData.slice(0, 7).map((c, i) => {
-      const catProducts = products.filter(p => (p.category ?? 'Boshqa') === c.name)
-      const units = catProducts.reduce((s, p) => s + (p.sold ?? 0), 0) || Math.round(c.revenue / 500_000)
+      const units = (soldByCategory.get(c.name) ?? 0) || Math.round(c.revenue / 500_000)
       const margin = c.revenue > 0 ? Math.min(60, Math.max(4, (c.profit / c.revenue) * 100)) : 10
       return { name: c.name, x: Number(margin.toFixed(1)), y: c.revenue, z: Math.max(units, 5), fill: PALETTE[i % PALETTE.length] }
     })
-  }, [categoryData, products])
+  }, [categoryData, soldByCategory])
 
   /* Sparkline KPI tiles */
   const spark = useMemo(() => chartData.map(d => ({ v: d.revenue })), [chartData])

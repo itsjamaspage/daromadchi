@@ -8,30 +8,50 @@ import { helpContent, type HelpSection } from '@/lib/help-tooltips'
 interface Props {
   section: HelpSection
   className?: string
+<<<<<<< HEAD
   /** 'badge' = violet circle (page headers); 'plain' = subtle icon (sidebar). */
   variant?: 'badge' | 'plain'
 }
 
 export default function HelpTooltip({ section, className = '', variant = 'badge' }: Props) {
+=======
+  variant?: 'default' | 'sidebar'
+}
+
+export default function HelpTooltip({ section, className = '', variant = 'default' }: Props) {
+>>>>>>> origin/claude/fix-sync-frequency-text
   const [open, setOpen] = useState(false)
   const { lang } = useLang()
 
   const content = helpContent[section]?.[lang] ?? helpContent[section]?.uz
   if (!content) return null
 
+<<<<<<< HEAD
   const triggerClass = variant === 'plain'
     ? `inline-flex items-center justify-center w-5 h-5 rounded-md text-[var(--text-muted)] hover:text-violet-400 hover:bg-violet-500/10 transition-all flex-shrink-0 ${className}`
+=======
+  const triggerCls = variant === 'sidebar'
+    ? `inline-flex items-center justify-center w-5 h-5 rounded-full text-[var(--text-muted)] hover:text-violet-400 hover:bg-violet-500/15 transition-all flex-shrink-0 ${className}`
+>>>>>>> origin/claude/fix-sync-frequency-text
     : `inline-flex items-center justify-center w-6 h-6 rounded-full border border-violet-500/40 bg-violet-500/10 text-violet-400 hover:border-violet-400/70 hover:bg-violet-500/20 hover:text-violet-300 transition-all flex-shrink-0 ${className}`
 
   return (
     <>
       <button
+<<<<<<< HEAD
         onClick={e => { e.preventDefault(); e.stopPropagation(); setOpen(true) }}
         title={content.title}
         aria-label={content.title}
         className={triggerClass}
       >
         <HelpCircle className={variant === 'plain' ? 'w-3 h-3' : 'w-3.5 h-3.5'} />
+=======
+        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpen(true) }}
+        title={content.title}
+        className={triggerCls}
+      >
+        <HelpCircle className={variant === 'sidebar' ? 'w-3 h-3' : 'w-3.5 h-3.5'} />
+>>>>>>> origin/claude/fix-sync-frequency-text
       </button>
 
       {open && (

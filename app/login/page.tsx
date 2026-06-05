@@ -35,6 +35,9 @@ const ui = {
     resetSuccess: 'Parolni tiklash havolasi emailingizga yuborildi.',
     backToLogin: 'Kirishga qaytish',
     verifyFailed: 'Havola yaroqsiz yoki muddati tugagan. Qaytadan urinib koʻring.',
+    invalidCreds: 'Email yoki parol notoʻgʻri. Hisobingiz boʻlmasa, avval roʻyxatdan oʻting.',
+    emailNotConfirmed: 'Email tasdiqlanmagan. Pochtangizdagi tasdiqlash havolasini bosing.',
+    goSignup: 'Roʻyxatdan oʻtish',
   },
   en: {
     tagline: 'Sales analytics platform',
@@ -57,6 +60,9 @@ const ui = {
     resetSuccess: 'A password reset link has been sent to your email.',
     backToLogin: 'Back to sign in',
     verifyFailed: 'The link is invalid or expired. Please try again.',
+    invalidCreds: 'Incorrect email or password. If you don’t have an account, sign up first.',
+    emailNotConfirmed: 'Email not confirmed. Click the confirmation link we sent to your inbox.',
+    goSignup: 'Sign up',
   },
   ru: {
     tagline: 'Платформа аналитики продаж',
@@ -79,6 +85,9 @@ const ui = {
     resetSuccess: 'Ссылка для сброса пароля отправлена на ваш email.',
     backToLogin: 'Вернуться ко входу',
     verifyFailed: 'Ссылка недействительна или устарела. Попробуйте снова.',
+    invalidCreds: 'Неверный email или пароль. Если у вас нет аккаунта, сначала зарегистрируйтесь.',
+    emailNotConfirmed: 'Email не подтверждён. Откройте письмо и нажмите на ссылку подтверждения.',
+    goSignup: 'Зарегистрироваться',
   },
 }
 
@@ -142,6 +151,7 @@ function LoginForm() {
   const [error,    setError]    = useState('')
   const [success,  setSuccess]  = useState(false)
   const [resetSent, setResetSent] = useState(false)
+  const [showSignupHint, setShowSignupHint] = useState(false)
   const router = useRouter()
 
   // Surface verification failures bounced back from /auth/confirm
@@ -163,7 +173,7 @@ function LoginForm() {
   const labelColor = isDark ? '#94a3b8' : '#4b5563'
 
   function switchMode(m: 'login' | 'signup' | 'forgot') {
-    setMode(m); setError(''); setSuccess(false); setResetSent(false)
+    setMode(m); setError(''); setSuccess(false); setResetSent(false); setShowSignupHint(false)
   }
 
   async function handleReset(e: React.FormEvent) {
@@ -197,7 +207,18 @@ function LoginForm() {
 
       if (mode === 'login') {
         const { error } = await supabase.auth.signInWithPassword({ email, password })
-        if (error) { setError(error.message); setLoading(false) }
+        if (error) {
+          const msg = error.message.toLowerCase()
+          if (msg.includes('email not confirmed')) {
+            setError(t.emailNotConfirmed)
+          } else if (msg.includes('invalid login credentials')) {
+            setError(t.invalidCreds)
+            setShowSignupHint(true)
+          } else {
+            setError(error.message)
+          }
+          setLoading(false)
+        }
         else { router.push('/dashboard'); router.refresh() }
       } else {
         const { data, error } = await supabase.auth.signUp({
@@ -404,6 +425,12 @@ function LoginForm() {
               {error && (
                 <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 text-sm text-red-400">
                   {error}
+                  {showSignupHint && (
+                    <button type="button" onClick={() => switchMode('signup')}
+                      className="block mt-2 text-violet-400 hover:text-violet-300 font-semibold underline underline-offset-2 transition-colors">
+                      {t.goSignup} →
+                    </button>
+                  )}
                 </div>
               )}
 
