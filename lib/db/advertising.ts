@@ -71,6 +71,7 @@ export async function getWbAdCampaigns(days = 30): Promise<AdCampaign[]> {
   recentCutoff.setDate(recentCutoff.getDate() - 3)
   const recentStr = recentCutoff.toISOString().slice(0, 10)
 
+
   const skus = [...new Set(rows.map(r => String(r.sku)))]
   const titleBySku = new Map<string, string>()
   const { data: prods } = await supabase
