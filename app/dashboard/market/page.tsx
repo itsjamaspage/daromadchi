@@ -58,6 +58,7 @@ export default async function MarketPage({ searchParams }: Props) {
 
       {/* Marketplace tabs */}
       <div className="flex items-center gap-1.5 p-1 bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl w-fit">
+<<<<<<< HEAD
         {([
           { id: 'uzum',        label: 'Uzum Market',   letter: 'U', accent: 'var(--c1)' },
           { id: 'yandex',      label: 'Yandex Market', letter: 'Y', accent: '#f59e0b'   },
@@ -86,6 +87,30 @@ export default async function MarketPage({ searchParams }: Props) {
             </Link>
           )
         })}
+=======
+        <Link
+          href="/dashboard/market?tab=uzum"
+          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
+            tab === 'uzum'
+              ? 'bg-violet-600/20 text-violet-300 border border-violet-500/30'
+              : 'text-slate-500 hover:text-slate-300'
+          }`}
+        >
+          <span className="w-4 h-4 rounded bg-violet-500/20 flex items-center justify-center text-[9px] font-bold text-violet-400">U</span>
+          Uzum Market
+        </Link>
+        <Link
+          href="/dashboard/market?tab=yandex"
+          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
+            tab === 'yandex'
+              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+              : 'text-slate-500 hover:text-slate-300'
+          }`}
+        >
+          <span className="w-4 h-4 rounded bg-amber-500/20 flex items-center justify-center text-[9px] font-bold text-amber-400">Y</span>
+          Yandex Market
+        </Link>
+>>>>>>> origin/claude/friendly-rubin-IkT6S
       </div>
 
       {/* Tab content */}
@@ -110,6 +135,7 @@ export default async function MarketPage({ searchParams }: Props) {
             userCategories={userUzumCategories}
           />
         </>
+<<<<<<< HEAD
       )}
 
       {tab === 'yandex' && (
@@ -119,6 +145,39 @@ export default async function MarketPage({ searchParams }: Props) {
               style={{ background: 'rgba(245, 158, 11, 0.07)', border: '1px solid rgba(245, 158, 11, 0.22)' }}>
               <Globe2 className="w-4 h-4 mt-0.5 shrink-0 text-amber-500" />
               <span>{d.yandexApiNote}</span>
+=======
+      ) : (
+        <>
+          {yandexConnected ? (
+            <>
+              <div className="flex items-start gap-3 bg-amber-500/[0.06] border border-amber-500/20 rounded-xl px-4 py-3 text-xs text-amber-300/80">
+                <Globe2 className="w-4 h-4 mt-0.5 shrink-0 text-amber-400" />
+                <span>
+                  {d.yandexApiNote}
+                </span>
+              </div>
+              <MarketClient
+                marketplace="yandex"
+                initialCategories={[]}
+                userCategories={[]}
+              />
+            </>
+          ) : (
+            <div className="bg-[var(--bg-card2)] border border-dashed border-amber-500/30 rounded-2xl p-10 text-center">
+              <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mx-auto mb-4">
+                <Globe2 className="w-7 h-7 text-amber-400" />
+              </div>
+              <h2 className="text-white font-bold text-lg mb-2">{d.yandexNotConnected}</h2>
+              <p className="text-slate-400 text-sm mb-6 max-w-sm mx-auto">
+                {d.yandexNotConnectedDesc}
+              </p>
+              <Link
+                href="/dashboard/settings"
+                className="inline-flex items-center gap-2 bg-amber-600 hover:bg-amber-500 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors"
+              >
+                <Settings className="w-4 h-4" /> {d.connectYandex}
+              </Link>
+>>>>>>> origin/claude/friendly-rubin-IkT6S
             </div>
             <MarketClient marketplace="yandex" initialCategories={[]} userCategories={[]} />
           </>

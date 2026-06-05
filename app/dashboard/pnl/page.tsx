@@ -57,7 +57,11 @@ export default async function PnlPage() {
             {d.noDataPnlDesc}
           </p>
           <Link href="/dashboard/settings"
+<<<<<<< HEAD
             className="inline-flex items-center gap-2 btn-primary text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors shadow-lg shadow-violet-500/20">
+=======
+            className="inline-flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-[var(--text-base)] text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors shadow-lg shadow-violet-500/20">
+>>>>>>> origin/claude/friendly-rubin-IkT6S
             <Settings className="w-4 h-4" /> {d.goToSettings}
           </Link>
         </div>
@@ -100,7 +104,11 @@ export default async function PnlPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
+<<<<<<< HEAD
                   <tr className="text-[var(--text-muted)] text-xs border-b border-[var(--border)] bg-[var(--bg-card2)]">
+=======
+                  <tr className="text-[var(--text-muted)] text-xs border-b border-white/[0.05] bg-white/[0.01]">
+>>>>>>> origin/claude/friendly-rubin-IkT6S
                     <th className="text-left font-medium px-5 py-3">{d.month}</th>
                     <th className="text-right font-medium px-5 py-3">{d.ordersCol}</th>
                     <th className="text-right font-medium px-5 py-3">{d.revenue}</th>
@@ -114,7 +122,11 @@ export default async function PnlPage() {
                   {monthlyData.map((m, i) => {
                     const margin = m.revenue > 0 ? (m.net / m.revenue) * 100 : 0
                     return (
+<<<<<<< HEAD
                       <tr key={m.month} className={`hover:bg-[var(--bg-card2)] transition-colors ${i === monthlyData.length - 1 ? 'bg-[var(--bg-card2)]' : ''}`}>
+=======
+                      <tr key={m.month} className={`hover:bg-white/[0.02] transition-colors ${i === monthlyData.length - 1 ? 'bg-white/[0.01]' : ''}`}>
+>>>>>>> origin/claude/friendly-rubin-IkT6S
                         <td className="px-5 py-4 text-[var(--text-base)] font-medium">
                           {m.month}
                           {i === monthlyData.length - 1 && (
@@ -137,7 +149,11 @@ export default async function PnlPage() {
                     )
                   })}
                   {/* Totals */}
+<<<<<<< HEAD
                   <tr className="bg-[var(--bg-card2)] border-t border-[var(--border2)]">
+=======
+                  <tr className="bg-white/[0.03] border-t border-[var(--border2)]">
+>>>>>>> origin/claude/friendly-rubin-IkT6S
                     <td className="px-5 py-4 text-[var(--text-base)] font-bold text-xs uppercase tracking-wide">{d.total}</td>
                     <td className="px-5 py-4 text-right text-[var(--text-dim)] font-bold">{monthlyData.reduce((s, m) => s + m.order_count, 0)}</td>
                     <td className="px-5 py-4 text-right text-[var(--text-base)] font-bold">{fmt(totalRevenue)}</td>

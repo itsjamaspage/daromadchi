@@ -103,7 +103,11 @@ function UzumCard({ shop, userId: _userId }: { shop: Shop | null; userId: string
           <p className="text-[var(--text-base)] font-semibold text-sm">Uzum Market</p>
           <p className="text-[var(--text-muted)] text-xs">seller.uzum.uz</p>
         </div>
+<<<<<<< HEAD
         <span className={`ml-auto text-[10px] font-semibold px-2 py-1 rounded-full border ${hasKey ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-400' : 'bg-slate-500/10 border-[var(--border)] text-[var(--text-muted)]'}`}>
+=======
+        <span className={`ml-auto text-[10px] font-semibold px-2 py-1 rounded-full border ${hasKey ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-400' : 'bg-slate-500/10 border-slate-500/20 text-[var(--text-muted)]'}`}>
+>>>>>>> origin/claude/friendly-rubin-IkT6S
           {hasKey ? 'Ulangan' : 'Ulanmagan'}
         </span>
       </div>
@@ -154,7 +158,11 @@ function UzumCard({ shop, userId: _userId }: { shop: Shop | null; userId: string
           <div className="flex gap-2 flex-wrap">
           <button onClick={handleTest} disabled={testing || syncing || !hasKey}
             title={!hasKey ? 'Avval token saqlang' : ''}
+<<<<<<< HEAD
             className="flex items-center gap-2 bg-[var(--bg-input)] hover:bg-[var(--bg-input)] border border-[var(--border2)] disabled:opacity-40 disabled:cursor-not-allowed text-[var(--text-dim)] text-sm font-medium px-4 py-2 rounded-xl transition-colors">
+=======
+            className="flex items-center gap-2 bg-[var(--bg-input)] hover:bg-[var(--bg-card2)] border border-[var(--border2)] disabled:opacity-40 disabled:cursor-not-allowed text-[var(--text-dim)] text-sm font-medium px-4 py-2 rounded-xl transition-colors">
+>>>>>>> origin/claude/friendly-rubin-IkT6S
             {testing ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4 text-emerald-400" />}
             Tekshirish
           </button>
@@ -262,7 +270,11 @@ function YandexCard({ shop, userId: _userId }: { shop: Shop | null; userId: stri
           <p className="text-[var(--text-base)] font-semibold text-sm">Yandex Market</p>
           <p className="text-[var(--text-muted)] text-xs">partner.market.yandex.ru</p>
         </div>
+<<<<<<< HEAD
         <span className={`ml-auto text-[10px] font-semibold px-2 py-1 rounded-full border ${connected ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-400' : 'bg-slate-500/10 border-[var(--border)] text-[var(--text-muted)]'}`}>
+=======
+        <span className={`ml-auto text-[10px] font-semibold px-2 py-1 rounded-full border ${connected ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-400' : 'bg-slate-500/10 border-slate-500/20 text-[var(--text-muted)]'}`}>
+>>>>>>> origin/claude/friendly-rubin-IkT6S
           {connected ? 'Ulangan' : 'Ulanmagan'}
         </span>
       </div>
@@ -271,13 +283,21 @@ function YandexCard({ shop, userId: _userId }: { shop: Shop | null; userId: stri
       <form onSubmit={handleSave} className="p-6 space-y-4">
         <div>
           <label className="flex items-center gap-1.5 text-xs font-medium text-[var(--text-muted)] mb-2">
+<<<<<<< HEAD
             <Key className="w-3.5 h-3.5" /> API Token
+=======
+            <Key className="w-3.5 h-3.5" /> OAuth Token
+>>>>>>> origin/claude/friendly-rubin-IkT6S
           </label>
           <input
             type="password"
             value={apiKey}
             onChange={e => setApiKey(e.target.value)}
+<<<<<<< HEAD
             placeholder={hasKey ? '••••••••  (yangilash uchun kiriting)' : 'API token kiriting…'}
+=======
+            placeholder={hasKey ? '••••••••  (yangilash uchun kiriting)' : 'OAuth token kiriting…'}
+>>>>>>> origin/claude/friendly-rubin-IkT6S
             className="w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-amber-500/40 transition-all font-mono"
           />
         </div>
@@ -312,7 +332,11 @@ function YandexCard({ shop, userId: _userId }: { shop: Shop | null; userId: stri
 
       {/* Sync */}
       {shop && (
+<<<<<<< HEAD
         <div className="px-6 pb-6 space-y-3 border-t border-[var(--border)] pt-4">
+=======
+        <div className="px-6 pb-6 space-y-3 border-t border-white/[0.04] pt-4">
+>>>>>>> origin/claude/friendly-rubin-IkT6S
           <p className="text-[var(--text-muted)] text-xs">
             {lastSync ? <>Oxirgi sinxr: <span className="text-[var(--text-dim)]">{lastSync}</span></> : 'Hali sinxronlanmagan'}
           </p>
@@ -326,7 +350,11 @@ function YandexCard({ shop, userId: _userId }: { shop: Shop | null; userId: stri
           <div className="flex gap-2 flex-wrap">
             <button onClick={handleTest} disabled={testing || syncing || !connected}
               title={!connected ? 'Avval token va Campaign ID saqlang' : ''}
+<<<<<<< HEAD
               className="flex items-center gap-2 bg-[var(--bg-input)] hover:bg-[var(--bg-input)] border border-[var(--border2)] disabled:opacity-40 disabled:cursor-not-allowed text-[var(--text-dim)] text-sm font-medium px-4 py-2 rounded-xl transition-colors">
+=======
+              className="flex items-center gap-2 bg-[var(--bg-input)] hover:bg-[var(--bg-card2)] border border-[var(--border2)] disabled:opacity-40 disabled:cursor-not-allowed text-[var(--text-dim)] text-sm font-medium px-4 py-2 rounded-xl transition-colors">
+>>>>>>> origin/claude/friendly-rubin-IkT6S
               {testing ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4 text-emerald-400" />}
               Tekshirish
             </button>
@@ -425,7 +453,11 @@ function WildberriesCard({ shop, userId: _userId }: { shop: Shop | null; userId:
           <p className="text-[var(--text-base)] font-semibold text-sm">Wildberries</p>
           <p className="text-[var(--text-muted)] text-xs">seller.wildberries.ru</p>
         </div>
+<<<<<<< HEAD
         <span className={`ml-auto text-[10px] font-semibold px-2 py-1 rounded-full border ${hasKey ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-400' : 'bg-slate-500/10 border-[var(--border)] text-[var(--text-muted)]'}`}>
+=======
+        <span className={`ml-auto text-[10px] font-semibold px-2 py-1 rounded-full border ${hasKey ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-400' : 'bg-slate-500/10 border-slate-500/20 text-[var(--text-muted)]'}`}>
+>>>>>>> origin/claude/friendly-rubin-IkT6S
           {hasKey ? 'Ulangan' : 'Ulanmagan'}
         </span>
       </div>
@@ -464,7 +496,11 @@ function WildberriesCard({ shop, userId: _userId }: { shop: Shop | null; userId:
 
       {/* Sync */}
       {shop && (
+<<<<<<< HEAD
         <div className="px-6 pb-6 space-y-3 border-t border-[var(--border)] pt-4">
+=======
+        <div className="px-6 pb-6 space-y-3 border-t border-white/[0.04] pt-4">
+>>>>>>> origin/claude/friendly-rubin-IkT6S
           <p className="text-[var(--text-muted)] text-xs">
             {lastSync ? <>Oxirgi sinxr: <span className="text-[var(--text-dim)]">{lastSync}</span></> : 'Hali sinxronlanmagan'}
           </p>
@@ -478,7 +514,11 @@ function WildberriesCard({ shop, userId: _userId }: { shop: Shop | null; userId:
           <div className="flex gap-2 flex-wrap">
             <button onClick={handleTest} disabled={testing || syncing || !hasKey}
               title={!hasKey ? 'Avval token saqlang' : ''}
+<<<<<<< HEAD
               className="flex items-center gap-2 bg-[var(--bg-input)] hover:bg-[var(--bg-input)] border border-[var(--border2)] disabled:opacity-40 disabled:cursor-not-allowed text-[var(--text-dim)] text-sm font-medium px-4 py-2 rounded-xl transition-colors">
+=======
+              className="flex items-center gap-2 bg-[var(--bg-input)] hover:bg-[var(--bg-card2)] border border-[var(--border2)] disabled:opacity-40 disabled:cursor-not-allowed text-[var(--text-dim)] text-sm font-medium px-4 py-2 rounded-xl transition-colors">
+>>>>>>> origin/claude/friendly-rubin-IkT6S
               {testing ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4 text-emerald-400" />}
               Tekshirish
             </button>
@@ -534,7 +574,11 @@ function UnitEcoDefaultsCard({ initial }: { initial: UnitEcoSettings }) {
 
   return (
     <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
+<<<<<<< HEAD
       <div className="px-6 py-4 border-b border-[var(--border)] flex items-center gap-3">
+=======
+      <div className="px-6 py-4 border-b border-white/[0.05] flex items-center gap-3">
+>>>>>>> origin/claude/friendly-rubin-IkT6S
         <div className="w-8 h-8 rounded-lg bg-violet-500/15 border border-violet-500/25 flex items-center justify-center">
           <Calculator className="w-4 h-4 text-violet-400" />
         </div>

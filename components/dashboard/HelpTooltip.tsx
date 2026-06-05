@@ -74,7 +74,11 @@ export default function HelpTooltip({ section, className = '', variant = 'defaul
               </div>
               <button
                 onClick={() => setOpen(false)}
+<<<<<<< HEAD
                 className="text-[var(--text-muted)] hover:text-[var(--text-base)] transition-colors p-1 rounded-lg hover:bg-[var(--bg-card2)]"
+=======
+                className="text-[var(--text-muted)] hover:text-[var(--text-base)] transition-colors p-1 rounded-lg hover:bg-white/[0.05]"
+>>>>>>> origin/claude/friendly-rubin-IkT6S
               >
                 <X className="w-4 h-4" />
               </button>

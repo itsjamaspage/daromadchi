@@ -4,6 +4,8 @@ import { useState, useRef } from 'react'
 import { ChevronDown, ChevronUp, HelpCircle } from 'lucide-react'
 import type { PayoutEntry } from '@/lib/db/payouts'
 import ExportButton from '@/components/dashboard/ExportButton'
+import { useLang } from '@/app/providers'
+import { dashT } from '@/lib/dashT'
 
 interface Props {
   entries: PayoutEntry[]
@@ -20,44 +22,58 @@ function fmtShort(n: number) {
 }
 
 function StatusBadge({ status }: { status: PayoutEntry['status'] }) {
+  const { lang } = useLang()
+  const t = dashT[lang].payouts
   if (status === 'paid') {
     return (
       <span className="inline-flex px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">
-        To&apos;langan
+        {t.statusPaid}
       </span>
     )
   }
   if (status === 'processing') {
     return (
       <span className="inline-flex px-2.5 py-1 rounded-lg text-xs font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/20">
-        Jarayonda
+        {t.statusProcessing}
       </span>
     )
   }
   return (
+<<<<<<< HEAD
     <span className="inline-flex px-2.5 py-1 rounded-lg text-xs font-semibold bg-[var(--bg-card2)] text-[var(--text-muted)] border border-[var(--border)]">
       Kutilmoqda
+=======
+    <span className="inline-flex px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-500/15 text-[var(--text-muted)] border border-slate-500/20">
+      {t.statusPending}
+>>>>>>> origin/claude/friendly-rubin-IkT6S
     </span>
   )
 }
 
 function DeductionBar({ entry }: { entry: PayoutEntry }) {
+  const { lang } = useLang()
+  const t = dashT[lang].payouts
   const total = entry.commission + entry.delivery + entry.returns + entry.adSpend + entry.acquiring + entry.tax + entry.otherDeductions
   if (total === 0) return null
 
   const segments = [
-    { label: 'Komissiya',    value: entry.commission,      color: 'bg-violet-500' },
-    { label: 'Yetkazish',    value: entry.delivery,        color: 'bg-blue-500'   },
-    { label: 'Qaytarishlar', value: entry.returns,         color: 'bg-red-500'    },
-    { label: 'Reklama',      value: entry.adSpend,         color: 'bg-amber-500'  },
-    { label: 'Ekvayring',    value: entry.acquiring,       color: 'bg-cyan-500'   },
-    { label: 'Soliq',        value: entry.tax,             color: 'bg-pink-500'   },
-    { label: 'Boshqa',       value: entry.otherDeductions, color: 'bg-slate-500'  },
+    { label: t.segCommission, value: entry.commission,      color: 'bg-violet-500' },
+    { label: t.segDelivery,   value: entry.delivery,        color: 'bg-blue-500'   },
+    { label: t.segReturns,    value: entry.returns,         color: 'bg-red-500'    },
+    { label: t.segAd,         value: entry.adSpend,         color: 'bg-amber-500'  },
+    { label: t.segAcquiring,  value: entry.acquiring,       color: 'bg-cyan-500'   },
+    { label: t.segTax,        value: entry.tax,             color: 'bg-pink-500'   },
+    { label: t.segOther,      value: entry.otherDeductions, color: 'bg-slate-500'  },
   ].filter(s => s.value > 0)
 
   return (
+<<<<<<< HEAD
     <div className="px-5 py-4 bg-[var(--bg-card2)] border-t border-[var(--border)] space-y-3">
       <p className="text-[var(--text-muted)] text-xs font-semibold uppercase tracking-wider">Chegirmalar tafsiloti</p>
+=======
+    <div className="px-5 py-4 bg-white/[0.015] border-t border-white/[0.04] space-y-3">
+      <p className="text-[var(--text-muted)] text-xs font-semibold uppercase tracking-wider">{t.deductionsTitle}</p>
+>>>>>>> origin/claude/friendly-rubin-IkT6S
 
       {/* Proportional bar */}
       <div className="flex h-3 rounded-full overflow-hidden gap-px">
@@ -82,8 +98,13 @@ function DeductionBar({ entry }: { entry: PayoutEntry }) {
         ))}
       </div>
 
+<<<<<<< HEAD
       <div className="flex items-center justify-between pt-1 border-t border-[var(--border)]">
         <span className="text-[var(--text-muted)] text-xs">Jami chegirmalar</span>
+=======
+      <div className="flex items-center justify-between pt-1 border-t border-white/[0.04]">
+        <span className="text-[var(--text-muted)] text-xs">{t.totalDeductions}</span>
+>>>>>>> origin/claude/friendly-rubin-IkT6S
         <span className="text-[var(--text-base)] text-sm font-bold">{fmt(total)}</span>
       </div>
     </div>
@@ -91,6 +112,8 @@ function DeductionBar({ entry }: { entry: PayoutEntry }) {
 }
 
 export default function PayoutsView({ entries }: Props) {
+  const { lang } = useLang()
+  const t = dashT[lang].payouts
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const printRef = useRef<HTMLDivElement>(null)
 
@@ -104,16 +127,16 @@ export default function PayoutsView({ entries }: Props) {
   }
 
   const exportData = entries.map(e => ({
-    'Davr':            e.period,
-    'Buyurtmalar':     e.ordersCount,
-    "Brutto (so'm)":   e.grossRevenue,
-    "Komissiya (so'm)": e.commission,
-    "Yetkazish (so'm)": e.delivery,
-    "Qaytarish (so'm)": e.returns,
-    "Reklama (so'm)":  e.adSpend,
-    "Soliq (so'm)":    e.tax,
-    "Sof to'lov (so'm)": e.netPayout,
-    'Holat': e.status === 'paid' ? "To'langan" : e.status === 'processing' ? 'Jarayonda' : 'Kutilmoqda',
+    [t.colPeriod]:              e.period,
+    [t.colOrders]:              e.ordersCount,
+    [`${t.colGross} (so'm)`]:   e.grossRevenue,
+    [`${t.colCommission} (so'm)`]: e.commission,
+    [`${t.colDelivery} (so'm)`]: e.delivery,
+    [`${t.colReturns} (so'm)`]: e.returns,
+    [`${t.colAd} (so'm)`]:      e.adSpend,
+    [`${t.colTax} (so'm)`]:     e.tax,
+    [`${t.colNet} (so'm)`]:     e.netPayout,
+    [t.colStatus]: e.status === 'paid' ? t.statusPaid : e.status === 'processing' ? t.statusProcessing : t.statusPending,
   }))
 
   return (
@@ -126,6 +149,7 @@ export default function PayoutsView({ entries }: Props) {
       {/* Summary cards */}
       <div className="grid grid-cols-3 gap-3">
         <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl px-4 py-3">
+<<<<<<< HEAD
           <p className="text-[var(--text-muted)] text-xs mb-1">Jami to&apos;langan</p>
           <p className="text-[var(--text-base)] text-xl font-bold">{fmtShort(totalPaid)}</p>
           <p className="text-[var(--text-muted)] text-xs mt-0.5">{paidEntries.length} ta davr</p>
@@ -139,6 +163,21 @@ export default function PayoutsView({ entries }: Props) {
           <p className="text-[var(--text-muted)] text-xs mb-1">O&apos;rtacha to&apos;lov</p>
           <p className="text-[var(--text-base)] text-xl font-bold">{fmtShort(avgPaid)}</p>
           <p className="text-[var(--text-muted)] text-xs mt-0.5">har bir davr</p>
+=======
+          <p className="text-[var(--text-muted)] text-xs mb-1">{t.kpiTotalPaid}</p>
+          <p className="text-[var(--text-base)] text-xl font-bold">{fmtShort(totalPaid)}</p>
+          <p className="text-[var(--text-muted)] text-xs mt-0.5">{paidEntries.length} {t.periods}</p>
+        </div>
+        <div className="bg-[var(--bg-card2)] border border-amber-500/20 rounded-2xl px-4 py-3">
+          <p className="text-[var(--text-muted)] text-xs mb-1">{t.kpiPending}</p>
+          <p className="text-amber-400 text-xl font-bold">{fmtShort(pending)}</p>
+          <p className="text-[var(--text-muted)] text-xs mt-0.5">{entries.filter(e => e.status !== 'paid').length} {t.periods}</p>
+        </div>
+        <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl px-4 py-3">
+          <p className="text-[var(--text-muted)] text-xs mb-1">{t.kpiAvg}</p>
+          <p className="text-[var(--text-base)] text-xl font-bold">{fmtShort(avgPaid)}</p>
+          <p className="text-[var(--text-muted)] text-xs mt-0.5">{t.perPeriod}</p>
+>>>>>>> origin/claude/friendly-rubin-IkT6S
         </div>
       </div>
 
@@ -147,6 +186,7 @@ export default function PayoutsView({ entries }: Props) {
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
+<<<<<<< HEAD
               <tr className="border-b border-[var(--border)]">
                 <th className="px-5 py-3 text-left text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Davr</th>
                 <th className="px-4 py-3 text-right text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Buyurtmalar</th>
@@ -160,11 +200,30 @@ export default function PayoutsView({ entries }: Props) {
                   <span className="inline-flex items-center gap-1">
                     Sof to&apos;lov
                     <span title="Nima uchun bu miqdor? Brutto daromaddan barcha chegirmalar: komissiya, yetkazish, qaytarishlar, reklama xarajatlari, ekvayring va soliq ayiriladi.">
+=======
+              <tr className="border-b border-white/[0.05]">
+                <th className="px-5 py-3 text-left text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">{t.colPeriod}</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">{t.colOrders}</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">{t.colGross}</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">{t.colCommission}</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">{t.colDelivery}</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">{t.colReturns}</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">{t.colAd}</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">{t.colTax}</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
+                  <span className="inline-flex items-center gap-1">
+                    {t.colNet}
+                    <span>
+>>>>>>> origin/claude/friendly-rubin-IkT6S
                       <HelpCircle className="w-3.5 h-3.5 text-[var(--text-muted)] cursor-help" />
                     </span>
                   </span>
                 </th>
+<<<<<<< HEAD
                 <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Holat</th>
+=======
+                <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">{t.colStatus}</th>
+>>>>>>> origin/claude/friendly-rubin-IkT6S
                 <th className="px-3 py-3" />
               </tr>
             </thead>

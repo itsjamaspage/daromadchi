@@ -142,7 +142,11 @@ export default function CalculatorPage() {
         <div className="space-y-4">
           {!result ? (
             <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl p-6 flex flex-col items-center justify-center min-h-[220px] gap-3">
+<<<<<<< HEAD
               <Calculator className="w-10 h-10 text-[var(--text-dim)]" />
+=======
+              <Calculator className="w-10 h-10 text-slate-700" />
+>>>>>>> origin/claude/friendly-rubin-IkT6S
               <p className="text-[var(--text-muted)] text-sm text-center">{t.enterToSee}<br/>{t.enterPriceCost}</p>
             </div>
           ) : (
@@ -157,7 +161,11 @@ export default function CalculatorPage() {
                 <div className="bg-[var(--bg-card2)] p-5 space-y-4">
                   {/* Two-column comparison */}
                   <div className="grid grid-cols-2 gap-3">
+<<<<<<< HEAD
                     <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl p-4">
+=======
+                    <div className="bg-white/[0.03] border border-[var(--border)] rounded-xl p-4">
+>>>>>>> origin/claude/friendly-rubin-IkT6S
                       <p className="text-[var(--text-muted)] text-[11px] mb-1">{t.youThink}</p>
                       <p className="text-[var(--text-base)] font-bold text-xl">{fmt(result.naiveProfit)}</p>
                       <p className="text-[var(--text-muted)] text-[10px] mt-0.5">so'm</p>

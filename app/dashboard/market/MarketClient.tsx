@@ -46,7 +46,11 @@ function UzumProductTable({ products, userCategories, t }: { products: UzumPubli
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
+<<<<<<< HEAD
               <tr className="text-[var(--text-muted)] text-xs border-b border-[var(--border)] bg-[var(--bg-card2)]">
+=======
+              <tr className="text-[var(--text-muted)] text-xs border-b border-[var(--border)] bg-white/[0.01]">
+>>>>>>> origin/claude/friendly-rubin-IkT6S
                 <th className="text-left px-5 py-3 font-medium">#</th>
                 <th className="text-left px-4 py-3 font-medium">{t.product}</th>
                 <th className="text-right px-4 py-3 font-medium">{t.price}</th>
@@ -61,7 +65,11 @@ function UzumProductTable({ products, userCategories, t }: { products: UzumPubli
                   (p.category?.title ?? '').toLowerCase().includes(c.toLowerCase())
                 )
                 return (
+<<<<<<< HEAD
                   <tr key={p.id} className={`hover:bg-[var(--bg-card2)] transition-colors ${mine ? 'bg-violet-500/[0.03]' : ''}`}>
+=======
+                  <tr key={p.id} className={`hover:bg-white/[0.02] transition-colors ${mine ? 'bg-violet-500/[0.03]' : ''}`}>
+>>>>>>> origin/claude/friendly-rubin-IkT6S
                     <td className="px-5 py-3.5 text-[var(--text-muted)] text-xs">{i + 1}</td>
                     <td className="px-4 py-3.5">
                       <p className="text-[var(--text-base)] text-xs font-medium leading-snug max-w-xs">
@@ -135,7 +143,11 @@ function YandexModelTable({ models, t }: { models: YandexModel[]; t: MarketT }) 
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
+<<<<<<< HEAD
               <tr className="text-[var(--text-muted)] text-xs border-b border-[var(--border)] bg-[var(--bg-card2)]">
+=======
+              <tr className="text-[var(--text-muted)] text-xs border-b border-[var(--border)] bg-white/[0.01]">
+>>>>>>> origin/claude/friendly-rubin-IkT6S
                 <th className="text-left px-5 py-3 font-medium">#</th>
                 <th className="text-left px-4 py-3 font-medium">{t.model}</th>
                 <th className="text-right px-4 py-3 font-medium">{t.priceRange}</th>
@@ -146,7 +158,11 @@ function YandexModelTable({ models, t }: { models: YandexModel[]; t: MarketT }) 
             </thead>
             <tbody className="divide-y divide-[var(--border)]">
               {models.map((m, i) => (
+<<<<<<< HEAD
                 <tr key={m.id} className="hover:bg-[var(--bg-card2)] transition-colors">
+=======
+                <tr key={m.id} className="hover:bg-white/[0.02] transition-colors">
+>>>>>>> origin/claude/friendly-rubin-IkT6S
                   <td className="px-5 py-3.5 text-[var(--text-muted)] text-xs">{i + 1}</td>
                   <td className="px-4 py-3.5 text-[var(--text-base)] text-xs font-medium max-w-xs">{m.name}</td>
                   <td className="px-4 py-3.5 text-right text-xs text-[var(--text-dim)]">
@@ -160,6 +176,7 @@ function YandexModelTable({ models, t }: { models: YandexModel[]; t: MarketT }) 
                   </td>
                   <td className="px-4 py-3.5 text-right text-[var(--text-muted)] text-xs">{m.reviewCount ?? '—'}</td>
                   <td className="px-4 py-3.5 text-right text-[var(--text-muted)] text-xs">{m.offersCount ?? '—'}</td>
+<<<<<<< HEAD
                 </tr>
               ))}
             </tbody>
@@ -228,6 +245,8 @@ function WbProductTable({ products, t }: { products: WbPublicProduct[]; t: Marke
                     </div>
                   </td>
                   <td className="px-4 py-3.5 text-right text-[var(--text-muted)] text-xs">{fmt(p.feedbacks)}</td>
+=======
+>>>>>>> origin/claude/friendly-rubin-IkT6S
                 </tr>
               ))}
             </tbody>
@@ -348,6 +367,7 @@ export default function MarketClient({ marketplace, initialCategories, userCateg
     { value: 'rate',      label: t.sortRating    },
   ]
 
+<<<<<<< HEAD
   const accent: string = marketplace === 'yandex' ? '#f59e0b' : marketplace === 'wildberries' ? '#cb11ab' : 'var(--c1)'
   const accentActiveStyle = {
     background: `color-mix(in srgb, ${accent} 16%, transparent)`,
@@ -357,6 +377,13 @@ export default function MarketClient({ marketplace, initialCategories, userCateg
   const cats          = marketplace === 'uzum' ? initialCategories : marketplace === 'yandex' ? yandexCats : []
   const showSearch    = marketplace === 'uzum' || marketplace === 'wildberries'
   const showCategories = marketplace === 'uzum' || marketplace === 'yandex'
+=======
+  const accentActive  = marketplace === 'yandex' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-violet-600/20 text-violet-300 border border-violet-500/30'
+  const accentHover   = 'text-[var(--text-muted)] hover:text-[var(--text-dim)]'
+  const searchBorder  = marketplace === 'yandex' ? 'focus:border-amber-500/40' : 'focus:border-violet-500/40'
+  const btnColor      = marketplace === 'yandex' ? 'bg-amber-600 hover:bg-amber-500' : 'bg-violet-600 hover:bg-violet-500'
+  const cats          = marketplace === 'uzum' ? initialCategories : yandexCats
+>>>>>>> origin/claude/friendly-rubin-IkT6S
 
   const hasResults = marketplace === 'uzum'
     ? uzumProducts.length > 0
@@ -377,18 +404,27 @@ export default function MarketClient({ marketplace, initialCategories, userCateg
               onChange={e => setSearchQuery(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSearch()}
               placeholder={t.searchPlaceholder}
+<<<<<<< HEAD
               className="w-full bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl pl-9 pr-4 py-2.5 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none transition-colors"
             />
           </div>
           <button onClick={() => handleSearch()}
             className="text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-all hover:brightness-110 flex items-center gap-2"
             style={{ background: accent }}>
+=======
+              className={`w-full bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl pl-9 pr-4 py-2.5 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none ${searchBorder} transition-colors`}
+            />
+          </div>
+          <button onClick={handleSearch}
+            className={`${btnColor} text-[var(--text-base)] text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors flex items-center gap-2`}>
+>>>>>>> origin/claude/friendly-rubin-IkT6S
             {isPending && mode === 'search' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
             {t.search}
           </button>
         </div>
       )}
 
+<<<<<<< HEAD
       {/* Category grid — Uzum & Yandex */}
       {showCategories && (
         <div>
@@ -423,6 +459,41 @@ export default function MarketClient({ marketplace, initialCategories, userCateg
           )}
         </div>
       )}
+=======
+      {/* Category grid */}
+      <div>
+        <p className="text-[var(--text-muted)] text-xs font-medium mb-3 uppercase tracking-wide">{t.categories}</p>
+        {isPending && !selectedCat && marketplace === 'yandex' ? (
+          <div className="flex items-center gap-2 text-[var(--text-muted)] text-sm py-4">
+            <Loader2 className="w-4 h-4 animate-spin" /> {t.loading}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+            {cats.slice(0, 20).map(cat => {
+              const id    = cat.id
+              const title = 'title' in cat ? cat.title : (cat as { name: string }).name
+              const active = selectedCat?.id === id
+              return (
+                <button key={id}
+                  onClick={() => marketplace === 'uzum'
+                    ? loadUzumCategory({ id, title })
+                    : loadYandexCategory({ id, name: title })}
+                  className={`flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl border text-left text-xs font-medium transition-all ${
+                    active ? accentActive : `bg-[var(--bg-card2)] border-[var(--border)] text-[var(--text-dim)] hover:text-[var(--text-base)] ${accentHover}`
+                  }`}
+                >
+                  <span className="truncate">{title}</span>
+                  {isPending && active
+                    ? <Loader2 className="w-3 h-3 shrink-0 animate-spin" />
+                    : <ChevronRight className="w-3 h-3 shrink-0 text-[var(--text-muted)]" />
+                  }
+                </button>
+              )
+            })}
+          </div>
+        )}
+      </div>
+>>>>>>> origin/claude/friendly-rubin-IkT6S
 
       {/* Results header */}
       {hasResults && !isPending && (
@@ -431,13 +502,21 @@ export default function MarketClient({ marketplace, initialCategories, userCateg
             <p className="text-[var(--text-base)] font-semibold text-sm">
               {mode === 'category' ? selectedCat?.title : `"${searchQuery}" ${t.resultsSuffix}`}
             </p>
+<<<<<<< HEAD
             {(marketplace === 'uzum' || marketplace === 'wildberries') && (
+=======
+            {marketplace === 'uzum' && (
+>>>>>>> origin/claude/friendly-rubin-IkT6S
               <p className="text-[var(--text-muted)] text-xs mt-0.5">{fmt(total)} {t.productsCount}</p>
             )}
           </div>
           <div className="flex items-center gap-2">
             <ArrowUpDown className="w-3.5 h-3.5 text-[var(--text-muted)]" />
+<<<<<<< HEAD
             {marketplace === 'uzum' && (
+=======
+            {marketplace === 'uzum' ? (
+>>>>>>> origin/claude/friendly-rubin-IkT6S
               <select value={sortUzum}
                 onChange={e => {
                   const s = e.target.value as SortUzum; setSortUzum(s)
@@ -473,9 +552,15 @@ export default function MarketClient({ marketplace, initialCategories, userCateg
       )}
 
       {/* Loading */}
+<<<<<<< HEAD
       {isPending && (selectedCat || mode === 'search') && (
         <div className="flex items-center justify-center py-12 gap-3 text-[var(--text-muted)]">
           <Loader2 className="w-5 h-5 animate-spin" style={{ color: accent }} />
+=======
+      {isPending && selectedCat && (
+        <div className="flex items-center justify-center py-12 gap-3 text-[var(--text-muted)]">
+          <Loader2 className="w-5 h-5 animate-spin text-violet-400" />
+>>>>>>> origin/claude/friendly-rubin-IkT6S
           <span className="text-sm">{t.loading}</span>
         </div>
       )}
@@ -492,9 +577,15 @@ export default function MarketClient({ marketplace, initialCategories, userCateg
       )}
 
       {/* Empty */}
+<<<<<<< HEAD
       {!isPending && !hasResults && (selectedCat || mode === 'search') && (
         <div className="text-center py-12 text-[var(--text-muted)] text-sm">
           <ShoppingBag className="w-8 h-8 mx-auto mb-3 text-[var(--text-dim)]" />
+=======
+      {!isPending && !hasResults && selectedCat && (
+        <div className="text-center py-12 text-[var(--text-muted)] text-sm">
+          <ShoppingBag className="w-8 h-8 mx-auto mb-3 text-slate-700" />
+>>>>>>> origin/claude/friendly-rubin-IkT6S
           {t.notFound}
         </div>
       )}

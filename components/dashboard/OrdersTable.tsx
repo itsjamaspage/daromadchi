@@ -22,7 +22,11 @@ export default function OrdersTable({ orders }: { orders: Order[] }) {
   const s = d.status
 
   const statusConfig: Record<OrderStatus, { label: string; className: string; dot: string }> = {
+<<<<<<< HEAD
     pending:   { label: s.pending,   className: 'bg-slate-500/10 text-[var(--text-muted)] border border-[var(--border)]',       dot: 'bg-slate-400'   },
+=======
+    pending:   { label: s.pending,   className: 'bg-slate-500/10 text-[var(--text-muted)] border border-slate-500/20',       dot: 'bg-slate-400'   },
+>>>>>>> origin/claude/friendly-rubin-IkT6S
     confirmed: { label: s.confirmed, className: 'bg-blue-500/10 text-blue-400 border border-blue-500/20',          dot: 'bg-blue-400'    },
     delivered: { label: s.delivered, className: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20', dot: 'bg-emerald-400' },
     cancelled: { label: s.cancelled, className: 'bg-red-500/10 text-red-400 border border-red-500/20',             dot: 'bg-red-400'     },
@@ -110,7 +114,11 @@ export default function OrdersTable({ orders }: { orders: Order[] }) {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
+<<<<<<< HEAD
               <tr className="text-[var(--text-muted)] text-xs border-b border-[var(--border)] bg-[var(--bg-card2)]">
+=======
+              <tr className="text-[var(--text-muted)] text-xs border-b border-white/[0.05] bg-white/[0.01]">
+>>>>>>> origin/claude/friendly-rubin-IkT6S
                 <th className="text-left font-medium px-5 py-3">{d.orderId}</th>
                 <th className="text-left font-medium px-5 py-3">{d.marketplace}</th>
                 <th className="text-left font-medium px-5 py-3">{d.date}</th>

@@ -4,6 +4,8 @@ import { useState, useMemo, useRef } from 'react'
 import { TrendingUp, TrendingDown, CircleDot } from 'lucide-react'
 import type { AdCampaign, AdType } from '@/lib/types'
 import ExportButton from '@/components/dashboard/ExportButton'
+import { useLang } from '@/app/providers'
+import { dashT } from '@/lib/dashT'
 
 function fs(n: number) {
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + ' mln'
@@ -23,13 +25,15 @@ function drrBg(drr: number) {
 function statusDot(s: AdCampaign['status']) {
   return s === 'active' ? 'bg-emerald-400' : s === 'paused' ? 'bg-amber-400' : 'bg-slate-500'
 }
-function statusLabel(s: AdCampaign['status']) {
-  return s === 'active' ? 'Faol' : s === 'paused' ? 'To\'xtatilgan' : 'Yakunlangan'
+function statusLabel(s: AdCampaign['status'], t: { statusActive: string; statusPaused: string; statusEnded: string }) {
+  return s === 'active' ? t.statusActive : s === 'paused' ? t.statusPaused : t.statusEnded
 }
 
 interface Props { campaigns: AdCampaign[] }
 
 export default function AdvertisingView({ campaigns }: Props) {
+  const { lang } = useLang()
+  const t = dashT[lang].advertising
   const [tab, setTab] = useState<AdType | 'all'>('all')
   const printRef = useRef<HTMLDivElement>(null)
 
@@ -50,17 +54,17 @@ export default function AdvertisingView({ campaigns }: Props) {
   }), [filtered])
 
   const exportData = filtered.map(c => ({
-    'Kampaniya':     c.name,
-    'Tur':           c.type.toUpperCase(),
-    'Holat':         statusLabel(c.status),
-    'Mahsulot':      c.productTitle,
-    "Sarflar (so'm)": Math.round(c.spend),
-    "Ko'rsatuvlar":  c.impressions,
-    'Kliklar':       c.clicks,
-    'CTR (%)':       c.ctr.toFixed(2),
-    'Buyurtmalar':   c.orders,
-    "Daromad (so'm)": Math.round(c.revenue),
-    'DRR (%)':       c.drr.toFixed(1),
+    [t.colCampaign]:              c.name,
+    [t.colType]:                  c.type.toUpperCase(),
+    [t.colStatus]:                statusLabel(c.status, t),
+    "Mahsulot":                   c.productTitle,
+    [`${t.colSpend} (so'm)`]:     Math.round(c.spend),
+    [t.colImpressions]:           c.impressions,
+    [t.colClicks]:                c.clicks,
+    [`${t.colCtr} (%)`]:          c.ctr.toFixed(2),
+    [t.colOrders]:                c.orders,
+    [`${t.colRevenue} (so'm)`]:   Math.round(c.revenue),
+    [`${t.colDrr} (%)`]:          c.drr.toFixed(1),
   }))
 
   return (
@@ -68,12 +72,21 @@ export default function AdvertisingView({ campaigns }: Props) {
       {/* Summary KPIs */}
       <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3">
         {[
+<<<<<<< HEAD
           { label: 'Jami sarflar',    value: fsFull(totals.spend),            sub: undefined,             color: 'text-red-400'     },
           { label: 'Ko\'rsatuvlar',   value: totals.impressions.toLocaleString('uz-UZ'), sub: undefined,  color: 'text-[var(--text-base)]'       },
           { label: 'Kliklar',         value: totals.clicks.toLocaleString('uz-UZ'),      sub: undefined,  color: 'text-[var(--text-base)]'       },
           { label: 'Buyurtmalar',     value: String(totals.orders),            sub: undefined,             color: 'text-[var(--text-base)]'       },
           { label: 'Daromad',         value: fsFull(totals.revenue),           sub: undefined,             color: 'text-emerald-400' },
           { label: 'O\'rtacha DRR',   value: totals.drr > 0 ? `${totals.drr.toFixed(1)}%` : '—', sub: undefined, color: drrColor(totals.drr) },
+=======
+          { label: t.kpiSpend,       value: fsFull(totals.spend),            color: 'text-red-400'     },
+          { label: t.kpiImpressions, value: totals.impressions.toLocaleString('uz-UZ'), color: 'text-[var(--text-base)]' },
+          { label: t.kpiClicks,      value: totals.clicks.toLocaleString('uz-UZ'),      color: 'text-[var(--text-base)]' },
+          { label: t.kpiOrders,      value: String(totals.orders),           color: 'text-[var(--text-base)]' },
+          { label: t.kpiRevenue,     value: fsFull(totals.revenue),          color: 'text-emerald-400' },
+          { label: t.kpiDrr,         value: totals.drr > 0 ? `${totals.drr.toFixed(1)}%` : '—', color: drrColor(totals.drr) },
+>>>>>>> origin/claude/friendly-rubin-IkT6S
         ].map(({ label, value, color }) => (
           <div key={label} className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl px-4 py-3">
             <p className="text-xs text-[var(--text-muted)] mb-1">{label}</p>
@@ -85,7 +98,11 @@ export default function AdvertisingView({ campaigns }: Props) {
       {/* Tabs + Export */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-3">
         <div className="flex flex-wrap items-center gap-1 p-1 bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl w-fit">
+<<<<<<< HEAD
           {([['all','Hammasi'],['cpc','CPC'],['cpo','CPO']] as const).map(([v, label]) => (
+=======
+          {([['all', t.tabAll],['cpc','CPC'],['cpo','CPO']] as [AdType | 'all', string][]).map(([v, label]) => (
+>>>>>>> origin/claude/friendly-rubin-IkT6S
             <button key={v} onClick={() => setTab(v)}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                 tab === v ? 'bg-violet-600/20 text-violet-300 border border-violet-500/30' : 'text-[var(--text-muted)] hover:text-[var(--text-dim)]'
@@ -105,7 +122,11 @@ export default function AdvertisingView({ campaigns }: Props) {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-[var(--border)]">
+<<<<<<< HEAD
                 {['Kampaniya','Tur','Holat','Sarflar','Ko\'rs.','Kliklar','CTR','Buyurtma','Daromad','DRR'].map(h => (
+=======
+                {[t.colCampaign,t.colType,t.colStatus,t.colSpend,t.colImpressions,t.colClicks,t.colCtr,t.colOrders,t.colRevenue,t.colDrr].map(h => (
+>>>>>>> origin/claude/friendly-rubin-IkT6S
                   <th key={h} className="px-3 py-3 text-left text-xs font-semibold text-[var(--text-muted)] whitespace-nowrap">{h}</th>
                 ))}
               </tr>
@@ -125,7 +146,11 @@ export default function AdvertisingView({ campaigns }: Props) {
                   <td className="px-3 py-3">
                     <div className="flex items-center gap-1.5">
                       <span className={`w-1.5 h-1.5 rounded-full ${statusDot(c.status)}`} />
+<<<<<<< HEAD
                       <span className="text-xs text-[var(--text-muted)]">{statusLabel(c.status)}</span>
+=======
+                      <span className="text-xs text-[var(--text-muted)]">{statusLabel(c.status, t)}</span>
+>>>>>>> origin/claude/friendly-rubin-IkT6S
                     </div>
                   </td>
                   <td className="px-3 py-3 text-red-400 text-xs">{fs(c.spend)}</td>
@@ -136,7 +161,7 @@ export default function AdvertisingView({ campaigns }: Props) {
                     <div className="flex items-center gap-1">
                       <span className="text-[var(--text-base)] text-xs font-semibold">{c.orders}</span>
                       {c.orders === 0 && c.spend > 0 && (
-                        <span className="w-2 h-2 rounded-full bg-red-500 flex-shrink-0" title="Sarflar bor, sotuv yo'q" />
+                        <span className="w-2 h-2 rounded-full bg-red-500 flex-shrink-0" title={t.legendNoSale} />
                       )}
                     </div>
                   </td>
@@ -159,7 +184,11 @@ export default function AdvertisingView({ campaigns }: Props) {
 
       {/* Legend */}
       <div className="flex flex-wrap gap-4 text-xs text-[var(--text-muted)]">
+<<<<<<< HEAD
         <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-red-500" />Sarflar bor, sotuv yo&apos;q</span>
+=======
+        <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-red-500" />{t.legendNoSale}</span>
+>>>>>>> origin/claude/friendly-rubin-IkT6S
         <span className="flex items-center gap-1.5"><span className="w-8 h-3 rounded bg-emerald-500/10 border border-emerald-500/20" /><span className="text-emerald-400">DRR &lt; 10%</span></span>
         <span className="flex items-center gap-1.5"><span className="w-8 h-3 rounded bg-amber-500/10 border border-amber-500/20" /><span className="text-amber-400">DRR 10–20%</span></span>
         <span className="flex items-center gap-1.5"><span className="w-8 h-3 rounded bg-red-500/10 border border-red-500/20" /><span className="text-red-400">DRR &gt; 20%</span></span>

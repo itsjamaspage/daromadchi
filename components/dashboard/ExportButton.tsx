@@ -112,7 +112,11 @@ export default function ExportButton({ data, filename = 'hisobot', targetRef, la
       <button
         onClick={() => setOpen(v => !v)}
         disabled={!!loading}
+<<<<<<< HEAD
         className="flex items-center gap-2 bg-[var(--bg-input)] hover:bg-[var(--bg-input)] border border-[var(--border2)] text-[var(--text-dim)] text-sm font-medium px-4 py-2.5 rounded-xl transition-colors disabled:opacity-60"
+=======
+        className="flex items-center gap-2 bg-[var(--bg-input)] hover:bg-[var(--bg-card2)] border border-[var(--border2)] text-[var(--text-dim)] text-sm font-medium px-4 py-2.5 rounded-xl transition-colors disabled:opacity-60"
+>>>>>>> origin/claude/friendly-rubin-IkT6S
       >
         {loading ? (
           <span className="w-4 h-4 border-2 border-violet-400/40 border-t-violet-400 rounded-full animate-spin" />
@@ -128,7 +132,11 @@ export default function ExportButton({ data, filename = 'hisobot', targetRef, la
           {hasXlsx && (
             <button
               onClick={handleXlsx}
+<<<<<<< HEAD
               className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-[var(--text-dim)] hover:bg-[var(--bg-card2)] hover:text-[var(--text-base)] transition-colors"
+=======
+              className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-[var(--text-dim)] hover:bg-white/[0.05] hover:text-[var(--text-base)] transition-colors"
+>>>>>>> origin/claude/friendly-rubin-IkT6S
             >
               <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
               Excel (.xlsx)
@@ -137,7 +145,11 @@ export default function ExportButton({ data, filename = 'hisobot', targetRef, la
           {hasPdf && (
             <button
               onClick={handlePdf}
+<<<<<<< HEAD
               className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-[var(--text-dim)] hover:bg-[var(--bg-card2)] hover:text-[var(--text-base)] transition-colors"
+=======
+              className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-[var(--text-dim)] hover:bg-white/[0.05] hover:text-[var(--text-base)] transition-colors"
+>>>>>>> origin/claude/friendly-rubin-IkT6S
             >
               <FileText className="w-4 h-4 text-red-400" />
               PDF
@@ -146,7 +158,11 @@ export default function ExportButton({ data, filename = 'hisobot', targetRef, la
           {hasCsv && (
             <button
               onClick={handleCsv}
+<<<<<<< HEAD
               className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-[var(--text-dim)] hover:bg-[var(--bg-card2)] hover:text-[var(--text-base)] transition-colors"
+=======
+              className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-[var(--text-dim)] hover:bg-white/[0.05] hover:text-[var(--text-base)] transition-colors"
+>>>>>>> origin/claude/friendly-rubin-IkT6S
             >
               <FileDown className="w-4 h-4 text-sky-400" />
               CSV

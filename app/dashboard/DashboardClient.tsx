@@ -152,7 +152,11 @@ export default function DashboardClient({ kpis, recentOrders, allProducts, chart
                   className={`flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-lg border transition-all ${
                     visible
                       ? 'bg-violet-500/10 border-violet-500/25 text-violet-300'
+<<<<<<< HEAD
                       : 'bg-[var(--bg-card2)] border-[var(--border2)] text-[var(--text-muted)]'
+=======
+                      : 'bg-white/[0.03] border-[var(--border2)] text-[var(--text-muted)]'
+>>>>>>> origin/claude/friendly-rubin-IkT6S
                   }`}
                 >
                   <span className={`w-2 h-2 rounded-full ${visible ? 'bg-violet-400' : 'bg-slate-600'}`} />
@@ -174,7 +178,11 @@ export default function DashboardClient({ kpis, recentOrders, allProducts, chart
           <p className="text-[var(--text-muted)] text-sm mb-6 max-w-sm mx-auto">{d.noDataDesc}</p>
           <div className="flex items-center justify-center gap-3">
             <Link href="/dashboard/settings"
+<<<<<<< HEAD
               className="inline-flex items-center gap-2 btn-primary text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors shadow-lg shadow-violet-500/20">
+=======
+              className="inline-flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-[var(--text-base)] text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors shadow-lg shadow-violet-500/20">
+>>>>>>> origin/claude/friendly-rubin-IkT6S
               <Settings className="w-4 h-4" /> {d.goSettings}
             </Link>
             <Link href="https://seller.uzum.uz" target="_blank" rel="noopener noreferrer"
