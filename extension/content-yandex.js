@@ -44,14 +44,48 @@
   }
 
   function parsePrice() {
-    // Try data-auto="price" first
-    const autoPrice = document.querySelector('[data-auto="price"]');
-    if (autoPrice) {
-      const raw = autoPrice.innerText.replace(/[^\d]/g, '');
-      if (raw.length >= 2 && raw.length <= 12) return parseInt(raw);
+    // Yandex Market price selectors (market.yandex.ru + market.yandex.uz)
+    const specificSelectors = [
+      '[data-auto="price"]',
+      '[data-auto="snippet-price-current"]',
+      '[data-zone-name="price"]',
+      '[class*="YpcPrice"]',
+      '[class*="ypcPrice"]',
+      '[class*="priceView"]',
+      '[class*="PriceView"]',
+      '[class*="priceBlock"]',
+      '[class*="PriceBlock"]',
+      '[class*="price-value"]',
+      '[class*="priceValue"]',
+      'span[class*="price"]:not([class*="old"]):not([class*="Old"]):not([class*="cross"])',
+      'div[class*="price"]:not([class*="old"]):not([class*="Old"]):not([class*="cross"])',
+    ];
+    for (const sel of specificSelectors) {
+      try {
+        const el = document.querySelector(sel);
+        if (el) {
+          const raw = el.innerText.replace(/[^\d]/g, '');
+          if (raw.length >= 2 && raw.length <= 12) return parseInt(raw);
+        }
+      } catch (_) {}
     }
 
-    // Fallback: class-based price selectors, skip old/crossed prices
+    // Fallback: scan ALL elements for "сум" / "₽" / "руб" near digits
+    const allSpans = document.querySelectorAll('span, div, p, strong, b');
+    for (const el of allSpans) {
+      if (el.children.length > 3) continue; // skip containers
+      const text = el.innerText || '';
+      if (/сум|₽|руб/i.test(text)) {
+        const raw = text.replace(/[^\d]/g, '');
+        if (raw.length >= 2 && raw.length <= 12) {
+          const cls = (el.className || '').toLowerCase();
+          if (cls.includes('old') || cls.includes('cross') || cls.includes('strike') || cls.includes('prev')) continue;
+          return parseInt(raw);
+        }
+      }
+    }
+
+    // Last resort: class-based price selectors, skip old/crossed prices
     const priceEls = document.querySelectorAll(
       '[class*="price"], [class*="Price"], [class*="cost"], [class*="amount"]'
     );
