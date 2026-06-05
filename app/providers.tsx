@@ -1,6 +1,7 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import type { Lang } from '@/lib/i18n'
 
 /* ── Theme ─────────────────────────────────────────────────────────────────── */
@@ -18,6 +19,7 @@ interface Props {
 }
 
 export default function Providers({ children, initialLang = 'uz' }: Props) {
+  const router = useRouter()
   const [theme, setTheme] = useState<Theme>('dark')
   const [lang,  setLangState] = useState<Lang>(initialLang)
 
@@ -46,10 +48,10 @@ export default function Providers({ children, initialLang = 'uz' }: Props) {
   }
 
   function setLang(l: Lang) {
+    setLangState(l)
     localStorage.setItem('lang', l)
     document.cookie = `lang=${l};path=/;max-age=31536000`
-    // Full page reload ensures server reads new cookie immediately
-    window.location.reload()
+    router.refresh()
   }
 
   return (
