@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition, useCallback } from 'react'
-import { Search, TrendingUp, Star, ShoppingBag, ChevronRight, ArrowUpDown, Loader2 } from 'lucide-react'
+import { Search, TrendingUp, Star, ShoppingBag, ChevronRight, ArrowUpDown, Loader2, Flame, DollarSign } from 'lucide-react'
 import type { UzumPublicCategory, UzumPublicProduct } from '@/lib/uzum/public'
 import type { WbPublicProduct } from '@/lib/wildberries/public'
 import { useLang } from '@/app/providers'
@@ -15,6 +15,13 @@ function fmt(n: number) {
 
 // ─── Uzum product table ───────────────────────────────────────────────────────
 
+function fmtRevenue(n: number, unit: string) {
+  if (n >= 1_000_000_000) return `${(n / 1_000_000_000).toFixed(1)}B ${unit}`
+  if (n >= 1_000_000)     return `${(n / 1_000_000).toFixed(1)}M ${unit}`
+  if (n >= 1_000)         return `${(n / 1_000).toFixed(0)}K ${unit}`
+  return `${fmt(n)} ${unit}`
+}
+
 function UzumProductTable({ products, userCategories, t }: { products: UzumPublicProduct[]; userCategories: string[]; t: MarketT }) {
   if (!products.length) return null
   const prices = products.map(p => p.minSellPrice).filter(Boolean)
@@ -23,14 +30,20 @@ function UzumProductTable({ products, userCategories, t }: { products: UzumPubli
   const avgP   = prices.reduce((s, v) => s + v, 0) / (prices.length || 1)
   const totalO = products.reduce((s, p) => s + (p.ordersAmount || 0), 0)
 
+  // Revenue = ordersAmount × minSellPrice (real cumulative data from Uzum)
+  const withRev = products.map(p => ({ ...p, revenue: p.ordersAmount * p.minSellPrice }))
+  const topRevenue = [...withRev].sort((a, b) => b.revenue - a.revenue)
+  const totalRev = withRev.reduce((s, p) => s + p.revenue, 0)
+  const maxRev = topRevenue[0]?.revenue ?? 1
+
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: t.minPrice,    value: `${fmt(minP)} so'm`, color: 'text-emerald-400' },
-          { label: t.avgPrice,    value: `${fmt(avgP)} so'm`, color: 'text-violet-400'  },
-          { label: t.maxPrice,    value: `${fmt(maxP)} so'm`, color: 'text-amber-400'   },
-          { label: t.totalOrders, value: fmt(totalO),          color: 'text-cyan-400'    },
+          { label: t.minPrice,    value: `${fmt(minP)} so'm`,           color: 'text-emerald-400' },
+          { label: t.avgPrice,    value: `${fmt(avgP)} so'm`,           color: 'text-violet-400'  },
+          { label: t.maxPrice,    value: `${fmt(maxP)} so'm`,           color: 'text-amber-400'   },
+          { label: t.totalOrders, value: fmt(totalO),                   color: 'text-cyan-400'    },
         ].map(({ label, value, color }) => (
           <div key={label} className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl p-4">
             <p className="text-[var(--text-muted)] text-xs mb-1">{label}</p>
@@ -38,6 +51,30 @@ function UzumProductTable({ products, userCategories, t }: { products: UzumPubli
           </div>
         ))}
       </div>
+
+      {/* Revenue analysis card */}
+      <div className="bg-[var(--bg-card2)] border border-emerald-500/20 rounded-2xl p-5"
+        style={{ background: 'color-mix(in srgb, #10b981 5%, var(--bg-card2))' }}>
+        <div className="flex items-center gap-2 mb-4">
+          <DollarSign className="w-4 h-4 text-emerald-400" />
+          <h3 className="text-[var(--text-base)] font-semibold text-sm">{t.topRevenueProducts}</h3>
+          <span className="ml-auto text-xs text-emerald-400 font-bold">{fmtRevenue(totalRev, "so'm")}</span>
+        </div>
+        <div className="space-y-2">
+          {topRevenue.slice(0, 5).map(p => (
+            <div key={p.id} className="flex items-center gap-3">
+              <p className="text-[var(--text-dim)] text-xs truncate flex-1 min-w-0">{p.title}</p>
+              <div className="flex items-center gap-2 shrink-0">
+                <div className="w-20 h-1.5 bg-[var(--border)] rounded-full overflow-hidden">
+                  <div className="h-full bg-emerald-400 rounded-full" style={{ width: `${Math.round((p.revenue / maxRev) * 100)}%` }} />
+                </div>
+                <span className="text-emerald-400 text-xs font-bold w-20 text-right">{fmtRevenue(p.revenue, "so'm")}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
       <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
         <div className="px-5 py-4 border-b border-[var(--border)] flex items-center gap-2">
           <TrendingUp className="w-4 h-4 text-violet-400" />
@@ -51,22 +88,25 @@ function UzumProductTable({ products, userCategories, t }: { products: UzumPubli
                 <th className="text-left px-4 py-3 font-medium">{t.product}</th>
                 <th className="text-right px-4 py-3 font-medium">{t.price}</th>
                 <th className="text-right px-4 py-3 font-medium">{t.orders}</th>
+                <th className="text-right px-4 py-3 font-medium">{t.revenueCol}</th>
                 <th className="text-right px-4 py-3 font-medium">{t.rating}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--border)]">
-              {products.map((p, i) => {
+              {withRev.map((p, i) => {
                 const mine = userCategories.some(c =>
                   c.toLowerCase().includes((p.category?.title ?? '').toLowerCase()) ||
                   (p.category?.title ?? '').toLowerCase().includes(c.toLowerCase())
                 )
+                const isTrending = p.ordersAmount > 500
                 return (
                   <tr key={p.id} className={`hover:bg-[var(--bg-card2)] transition-colors ${mine ? 'bg-violet-500/[0.03]' : ''}`}>
                     <td className="px-5 py-3.5 text-[var(--text-muted)] text-xs">{i + 1}</td>
                     <td className="px-4 py-3.5">
-                      <p className="text-[var(--text-base)] text-xs font-medium leading-snug max-w-xs">
+                      <p className="text-[var(--text-base)] text-xs font-medium leading-snug max-w-xs flex items-center gap-1.5 flex-wrap">
+                        {isTrending && <Flame className="w-3 h-3 text-orange-400 shrink-0" />}
                         {p.title}
-                        {mine && <span className="ml-2 text-[9px] bg-violet-500/20 text-violet-400 px-1.5 py-0.5 rounded-full border border-violet-500/20">{t.yourCategory}</span>}
+                        {mine && <span className="text-[9px] bg-violet-500/20 text-violet-400 px-1.5 py-0.5 rounded-full border border-violet-500/20">{t.yourCategory}</span>}
                       </p>
                       {p.shopTitle && <p className="text-[var(--text-muted)] text-[10px] mt-0.5">{p.shopTitle}</p>}
                     </td>
@@ -78,6 +118,9 @@ function UzumProductTable({ products, userCategories, t }: { products: UzumPubli
                       <span className={`font-bold text-xs ${p.ordersAmount > 1000 ? 'text-emerald-400' : p.ordersAmount > 100 ? 'text-amber-400' : 'text-[var(--text-muted)]'}`}>
                         {fmt(p.ordersAmount)}
                       </span>
+                    </td>
+                    <td className="px-4 py-3.5 text-right">
+                      <span className="text-emerald-400 text-xs font-semibold">{fmtRevenue(p.revenue, "so'm")}</span>
                     </td>
                     <td className="px-4 py-3.5 text-right">
                       <div className="flex items-center justify-end gap-1">
@@ -179,6 +222,12 @@ function WbProductTable({ products, t }: { products: WbPublicProduct[]; t: Marke
   const maxP   = prices.length ? Math.max(...prices) : 0
   const avgP   = prices.length ? prices.reduce((s, v) => s + v, 0) / prices.length : 0
 
+  // Revenue estimate: feedbacks × 15 × price (industry: ~1 review per 15 purchases)
+  const withRev = products.map(p => ({ ...p, revenue: p.feedbacks * 15 * p.sellPrice }))
+  const topRevenue = [...withRev].sort((a, b) => b.revenue - a.revenue)
+  const totalRev = withRev.reduce((s, p) => s + p.revenue, 0)
+  const maxRev = topRevenue[0]?.revenue ?? 1
+
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -193,6 +242,31 @@ function WbProductTable({ products, t }: { products: WbPublicProduct[]; t: Marke
           </div>
         ))}
       </div>
+
+      {/* Revenue analysis card */}
+      <div className="bg-[var(--bg-card2)] border border-pink-500/20 rounded-2xl p-5"
+        style={{ background: 'color-mix(in srgb, #cb11ab 5%, var(--bg-card2))' }}>
+        <div className="flex items-center gap-2 mb-4">
+          <DollarSign className="w-4 h-4" style={{ color: '#cb11ab' }} />
+          <h3 className="text-[var(--text-base)] font-semibold text-sm">{t.topRevenueProducts}</h3>
+          <span className="ml-auto text-xs font-bold" style={{ color: '#cb11ab' }}>{fmtRevenue(totalRev, '₽')}</span>
+        </div>
+        <div className="space-y-2">
+          {topRevenue.slice(0, 5).map(p => (
+            <div key={p.id} className="flex items-center gap-3">
+              <p className="text-[var(--text-dim)] text-xs truncate flex-1 min-w-0">{p.name}</p>
+              <div className="flex items-center gap-2 shrink-0">
+                <div className="w-20 h-1.5 bg-[var(--border)] rounded-full overflow-hidden">
+                  <div className="h-full rounded-full" style={{ width: `${Math.round((p.revenue / maxRev) * 100)}%`, background: '#cb11ab' }} />
+                </div>
+                <span className="text-xs font-bold w-20 text-right" style={{ color: '#cb11ab' }}>{fmtRevenue(p.revenue, '₽')}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+        <p className="text-[var(--text-muted)] text-[10px] mt-3">{t.estRevenueNote}</p>
+      </div>
+
       <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
         <div className="px-5 py-4 border-b border-[var(--border)] flex items-center gap-2">
           <TrendingUp className="w-4 h-4" style={{ color: '#cb11ab' }} />
@@ -205,31 +279,41 @@ function WbProductTable({ products, t }: { products: WbPublicProduct[]; t: Marke
                 <th className="text-left px-5 py-3 font-medium">#</th>
                 <th className="text-left px-4 py-3 font-medium">{t.product}</th>
                 <th className="text-right px-4 py-3 font-medium">{t.price}</th>
-                <th className="text-right px-4 py-3 font-medium">{t.rating}</th>
                 <th className="text-right px-4 py-3 font-medium">{t.reviews}</th>
+                <th className="text-right px-4 py-3 font-medium">{t.revenueCol}</th>
+                <th className="text-right px-4 py-3 font-medium">{t.rating}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--border)]">
-              {products.map((p, i) => (
-                <tr key={p.id} className="hover:bg-[var(--bg-card2)] transition-colors">
-                  <td className="px-5 py-3.5 text-[var(--text-muted)] text-xs">{i + 1}</td>
-                  <td className="px-4 py-3.5">
-                    <p className="text-[var(--text-base)] text-xs font-medium leading-snug max-w-xs">{p.name}</p>
-                    {p.brand && <p className="text-[var(--text-muted)] text-[10px] mt-0.5">{p.brand}</p>}
-                  </td>
-                  <td className="px-4 py-3.5 text-right">
-                    <p className="text-[var(--text-dim)] text-xs font-medium">{fmt(p.sellPrice)} ₽</p>
-                    {p.fullPrice > p.sellPrice && <p className="text-[var(--text-muted)] text-[10px] line-through">{fmt(p.fullPrice)} ₽</p>}
-                  </td>
-                  <td className="px-4 py-3.5 text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      <Star className="w-3 h-3 text-amber-400" />
-                      <span className="text-[var(--text-dim)] text-xs">{p.rating ? p.rating.toFixed(1) : '—'}</span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3.5 text-right text-[var(--text-muted)] text-xs">{fmt(p.feedbacks)}</td>
-                </tr>
-              ))}
+              {withRev.map((p, i) => {
+                const isTrending = p.feedbacks > 200
+                return (
+                  <tr key={p.id} className="hover:bg-[var(--bg-card2)] transition-colors">
+                    <td className="px-5 py-3.5 text-[var(--text-muted)] text-xs">{i + 1}</td>
+                    <td className="px-4 py-3.5">
+                      <p className="text-[var(--text-base)] text-xs font-medium leading-snug max-w-xs flex items-center gap-1.5 flex-wrap">
+                        {isTrending && <Flame className="w-3 h-3 text-orange-400 shrink-0" />}
+                        {p.name}
+                      </p>
+                      {p.brand && <p className="text-[var(--text-muted)] text-[10px] mt-0.5">{p.brand}</p>}
+                    </td>
+                    <td className="px-4 py-3.5 text-right">
+                      <p className="text-[var(--text-dim)] text-xs font-medium">{fmt(p.sellPrice)} ₽</p>
+                      {p.fullPrice > p.sellPrice && <p className="text-[var(--text-muted)] text-[10px] line-through">{fmt(p.fullPrice)} ₽</p>}
+                    </td>
+                    <td className="px-4 py-3.5 text-right text-[var(--text-muted)] text-xs">{fmt(p.feedbacks)}</td>
+                    <td className="px-4 py-3.5 text-right">
+                      <span className="text-xs font-semibold" style={{ color: '#cb11ab' }}>{fmtRevenue(p.revenue, '₽')}</span>
+                    </td>
+                    <td className="px-4 py-3.5 text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <Star className="w-3 h-3 text-amber-400" />
+                        <span className="text-[var(--text-dim)] text-xs">{p.rating ? p.rating.toFixed(1) : '—'}</span>
+                      </div>
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>

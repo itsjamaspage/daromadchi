@@ -242,6 +242,9 @@ export const dashT = {
       resultsSuffix: 'natijalari', productsCount: 'mahsulot', notFound: "Ma'lumot topilmadi",
       sortOrders: 'Buyurtmalar ↓', sortPriceAsc: 'Narx ↑', sortPriceDesc: 'Narx ↓', sortRating: 'Reyting ↓',
       sortOpinions: 'Fikrlar ↓', sortPrice: 'Narx', sortQuality: 'Sifat',
+      estRevenue: 'Taxminiy daromad', estRevenueNote: '* WB uchun: sharhlar × 15 × narx (sanoat hisob-kitobi)',
+      sortRevenue: 'Daromad ↓', topRevenueProducts: 'Raqobatchilar daromadi',
+      revenueCol: 'Taxm. daromad', trending: 'Trend',
     },
     advertising: {
       kpiSpend: 'Jami sarflar', kpiImpressions: "Ko'rsatuvlar", kpiClicks: 'Kliklar',
@@ -583,6 +586,9 @@ export const dashT = {
       resultsSuffix: 'results', productsCount: 'products', notFound: 'No data found',
       sortOrders: 'Orders ↓', sortPriceAsc: 'Price ↑', sortPriceDesc: 'Price ↓', sortRating: 'Rating ↓',
       sortOpinions: 'Reviews ↓', sortPrice: 'Price', sortQuality: 'Quality',
+      estRevenue: 'Est. Revenue', estRevenueNote: '* WB: reviews × 15 × price (industry estimate)',
+      sortRevenue: 'Revenue ↓', topRevenueProducts: 'Competitor Revenue',
+      revenueCol: 'Est. Revenue', trending: 'Trending',
     },
     abcxyz: {
       title: 'ABC-XYZ Analysis',
@@ -942,6 +948,9 @@ export const dashT = {
       resultsSuffix: 'результаты', productsCount: 'товаров', notFound: 'Данные не найдены',
       sortOrders: 'Заказы ↓', sortPriceAsc: 'Цена ↑', sortPriceDesc: 'Цена ↓', sortRating: 'Рейтинг ↓',
       sortOpinions: 'Отзывы ↓', sortPrice: 'Цена', sortQuality: 'Качество',
+      estRevenue: 'Прогноз выручки', estRevenueNote: '* WB: отзывы × 15 × цена (отраслевая оценка)',
+      sortRevenue: 'Выручка ↓', topRevenueProducts: 'Выручка конкурентов',
+      revenueCol: 'Прогн. выручка', trending: 'Тренд',
     },
     abcxyz: {
       title: 'ABC-XYZ Анализ',
