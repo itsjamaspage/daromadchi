@@ -16,11 +16,14 @@
     /\/business\/\d+\//.test(pathname)
   )) || (IS_BUYER && (
     pathname.includes('/product--') ||
-    /\/product\/\d+/.test(pathname) ||
-    pathname.includes('/offer/')
+    pathname.includes('/product/') ||
+    /\/product\b/.test(pathname) ||
+    pathname.includes('/offer/') ||
+    /\/sku\//.test(pathname)
   ));
 
-  if (!IS_PRODUCT_PAGE) return;
+  // On buyer pages: always try — Yandex is a SPA and URL may not match on first load
+  if (!IS_PARTNER && !IS_BUYER) return;
 
   // ── DATA EXTRACTION ───────────────────────────────────────────────────────
 
@@ -255,13 +258,39 @@
 
         `}
 
+        <!-- COMPETITOR ANALYSIS -->
+        ${price ? (() => {
+          const reviewEl = document.querySelector('[class*="rating"], [class*="Rating"], [class*="reviewCount"], [data-auto="reviewCount"]');
+          const reviewRaw = reviewEl ? parseInt(reviewEl.innerText.replace(/[^\d]/g,'')) : 0;
+          const estMonthlySales = reviewRaw > 0 ? Math.round(reviewRaw * 30 / 12) : null;
+          const estRevenue = estMonthlySales ? estMonthlySales * price : null;
+          return estRevenue ? `
+          <div style="background:#0f172a;border:1px solid #1e293b;border-radius:10px;padding:10px 12px;">
+            <div style="font-size:10px;color:#475569;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">🔥 Raqib tahlili</div>
+            <div style="display:flex;justify-content:space-between;font-size:11.5px;margin-bottom:4px;">
+              <span style="color:#94a3b8;">Taxminiy oylik daromad</span>
+              <span style="color:#38bdf8;font-weight:700;">${fp(estRevenue)}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:11.5px;">
+              <span style="color:#94a3b8;">Taxminiy oylik sotuv</span>
+              <span style="color:#94a3b8;">${estMonthlySales} dona</span>
+            </div>
+          </div>` : '';
+        })() : ''}
+
         <!-- ACTIONS -->
         <div style="display:flex;flex-direction:column;gap:6px;">
           <button id="drm-ym-ue"
             style="border:none;border-radius:8px;padding:9px 12px;font-size:12px;
                    font-weight:600;cursor:pointer;background:#7c3aed;color:#fff;
                    font-family:inherit;transition:opacity .15s;">
-            📊 Добавить в Unit Economics
+            📊 Unit-ekonomikaga qo'shish
+          </button>
+          <button id="drm-ym-market"
+            style="border:1px solid rgba(56,189,248,0.3);border-radius:8px;padding:9px 12px;font-size:12px;
+                   font-weight:600;cursor:pointer;background:rgba(56,189,248,0.1);color:#38bdf8;
+                   font-family:inherit;transition:opacity .15s;">
+            🔍 Bozor tahlili →
           </button>
           <button id="drm-ym-dash"
             style="border:1px solid #334155;border-radius:8px;padding:9px 12px;font-size:12px;
@@ -320,6 +349,10 @@
       window.open('https://daromadchi.uz/dashboard', '_blank');
     };
 
+    wrap.querySelector('#drm-ym-market')?.addEventListener('click', () => {
+      window.open(`https://daromadchi.uz/dashboard/market?q=${encodeURIComponent(title || '')}&source=yandex`, '_blank');
+    });
+
     wrap.querySelector('#drm-ym-ue').onclick = () => {
       const params = new URLSearchParams({
         source: 'yandex_market',
@@ -364,10 +397,12 @@
       const isNowProduct = (
         newPathname.includes('/products/') ||
         newPathname.includes('/offer') ||
-        /\/business\/\d+\//.test(newPathname)
+        newPathname.includes('/product') ||
+        /\/business\/\d+\//.test(newPathname) ||
+        /\/sku\//.test(newPathname)
       );
       removeExisting();
-      if (isNowProduct) scheduleInit();
+      if (isNowProduct || IS_BUYER) scheduleInit();
     }
   }).observe(document, { subtree: true, childList: true });
 
