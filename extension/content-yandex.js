@@ -9,11 +9,16 @@
   const pathname = window.location.pathname;
 
   const IS_PARTNER = hostname === 'partner.market.yandex.ru';
-  const IS_PRODUCT_PAGE = IS_PARTNER && (
+  const IS_BUYER   = hostname === 'market.yandex.ru' || hostname === 'market.yandex.uz';
+  const IS_PRODUCT_PAGE = (IS_PARTNER && (
     pathname.includes('/products/') ||
     pathname.includes('/offer') ||
     /\/business\/\d+\//.test(pathname)
-  );
+  )) || (IS_BUYER && (
+    pathname.includes('/product--') ||
+    /\/product\/\d+/.test(pathname) ||
+    pathname.includes('/offer/')
+  ));
 
   if (!IS_PRODUCT_PAGE) return;
 
@@ -366,11 +371,14 @@
     }
   }).observe(document, { subtree: true, childList: true });
 
-  // Initial load
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => scheduleInit());
-  } else {
-    scheduleInit();
-  }
+  // Initial load (only if activated)
+  chrome.storage.local.get('tg_activated', ({ tg_activated }) => {
+    if (!tg_activated) return;
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => scheduleInit());
+    } else {
+      scheduleInit();
+    }
+  });
 
 })();

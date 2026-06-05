@@ -196,11 +196,62 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true })
   }
 
+  // /start ext_activate — extension free activation gate
+  if (text === '/start ext_activate' || text === '/activate') {
+    const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
+    const CHANNEL   = '@daromadchi_uz'
+
+    // Check channel membership
+    let isMember = false
+    try {
+      const r = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getChatMember`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: CHANNEL, user_id: message.from.id }),
+      })
+      const d = await r.json()
+      isMember = ['member', 'administrator', 'creator'].includes(d?.result?.status)
+    } catch {}
+
+    if (!isMember) {
+      await sendTelegramMessage(chatId,
+        `❌ Siz hali <b>${CHANNEL}</b> kanaliga a'zo emassiz.\n\n` +
+        `1. Kanalga a'zo bo'ling: https://t.me/daromadchi_uz\n` +
+        `2. Keyin yana /activate yuboring.`
+      )
+      return NextResponse.json({ ok: true })
+    }
+
+    // Generate 8-char code, store in DB
+    const code = Math.random().toString(36).slice(2, 6).toUpperCase() +
+                 '-' + Math.random().toString(36).slice(2, 6).toUpperCase()
+    const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString() // 30 min
+
+    await supabaseAdmin.from('ext_activation_codes').upsert({
+      code,
+      chat_id: chatId,
+      used: false,
+      expires_at: expiresAt,
+    })
+
+    await sendTelegramMessage(chatId,
+      `✅ <b>Daromadchi kengaytmasi uchun aktivatsiya kodi:</b>\n\n` +
+      `<code>${code}</code>\n\n` +
+      `Kodni kengaytmadagi aktivatsiya oynasiga kiriting.\n` +
+      `<i>Kod 30 daqiqa amal qiladi.</i>`
+    )
+    return NextResponse.json({ ok: true })
+  }
+
   // /start with no token
   if (text === '/start') {
     await sendTelegramMessage(
       chatId,
-      '👋 Daromadchi botiga xush kelibsiz!\nUlanish uchun kengaytmadan "Telegram ulash" tugmasini bosing.'
+      '👋 Daromadchi botiga xush kelibsiz!\n\n' +
+      '🔑 Kengaytmani faollashtirish uchun:\n' +
+      '1. @daromadchi_uz kanaliga a\'zo bo\'ling\n' +
+      '2. /activate yuboring\n\n' +
+      '📊 Hisobingizni ulash uchun kengaytmadan "Telegram ulash" tugmasini bosing.'
     )
   }
 

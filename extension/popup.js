@@ -403,6 +403,106 @@ async function renderSettings(token, settings, tgStatus) {
   };
 }
 
+// ─── TELEGRAM JOIN GATE ──────────────────────────────────────────────────────
+function showJoinGate() {
+  document.querySelector('.tabs').style.display = 'none'
+  document.querySelectorAll('.panel').forEach(p => { p.style.display = 'none' })
+  document.getElementById('status-badge').className = 'badge badge-off'
+  document.getElementById('status-badge').textContent = 'Faollanmagan'
+
+  const gate = document.createElement('div')
+  gate.id = 'join-gate'
+  gate.style.cssText = 'padding:24px 18px;text-align:center'
+  gate.innerHTML = `
+    <div style="width:52px;height:52px;background:linear-gradient(135deg,#0ea5e9,#6366f1);border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:24px">📊</div>
+    <p style="font-weight:700;font-size:14px;color:#f1f5f9;margin-bottom:6px">Daromadchi kengaytmasi</p>
+    <p style="color:#64748b;font-size:11.5px;line-height:1.6;margin-bottom:18px">
+      Kengaytma <b style="color:#38bdf8">bepul</b>.<br>
+      Foydalanish uchun Telegram kanalimizga<br>a'zo bo'lish kifoya.
+    </p>
+
+    <div style="background:#1e293b;border-radius:10px;padding:14px;margin-bottom:16px;text-align:left">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+        <div style="width:28px;height:28px;background:#0ea5e920;border:1px solid #0ea5e940;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">1</div>
+        <div>
+          <p style="font-size:12px;font-weight:600;color:#e2e8f0">Kanalga a'zo bo'ling</p>
+          <p style="font-size:10.5px;color:#64748b">@daromadchi_uz</p>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+        <div style="width:28px;height:28px;background:#6366f120;border:1px solid #6366f140;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">2</div>
+        <div>
+          <p style="font-size:12px;font-weight:600;color:#e2e8f0">Botga /activate yuboring</p>
+          <p style="font-size:10.5px;color:#64748b">Aktivatsiya kodi keladi</p>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="width:28px;height:28px;background:#22c55e20;border:1px solid #22c55e40;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">3</div>
+        <div>
+          <p style="font-size:12px;font-weight:600;color:#e2e8f0">Kodni kiriting</p>
+          <p style="font-size:10.5px;color:#64748b">Quyidagi maydonga</p>
+        </div>
+      </div>
+    </div>
+
+    <a href="https://t.me/daromadchi_uz" target="_blank"
+      style="display:block;width:100%;padding:10px;background:#0ea5e9;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;margin-bottom:10px">
+      📢 Kanalga o'tish
+    </a>
+
+    <input id="gate-code" type="text" placeholder="Masalan: AB12-CD34" maxlength="9"
+      style="width:100%;padding:10px 12px;background:#1e293b;border:1px solid #334155;border-radius:8px;color:#e2e8f0;font-size:14px;text-align:center;font-family:monospace;letter-spacing:2px;margin-bottom:8px;box-sizing:border-box"/>
+    <button id="gate-verify"
+      style="width:100%;padding:10px;background:#6366f1;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">
+      ✅ Tekshirish
+    </button>
+    <p id="gate-error" style="font-size:11px;color:#f87171;margin-top:8px;min-height:16px"></p>
+  `
+  document.querySelector('body').appendChild(gate)
+
+  // Auto-uppercase and dash formatting
+  document.getElementById('gate-code').addEventListener('input', e => {
+    let v = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '')
+    if (v.length > 4) v = v.slice(0, 4) + '-' + v.slice(4, 8)
+    e.target.value = v
+  })
+
+  document.getElementById('gate-verify').addEventListener('click', async () => {
+    const code = document.getElementById('gate-code').value.trim()
+    const errEl = document.getElementById('gate-error')
+    const btn   = document.getElementById('gate-verify')
+    if (!code) { errEl.textContent = 'Kodni kiriting'; return }
+
+    btn.textContent = '⏳ Tekshirilmoqda...'
+    btn.disabled = true
+    errEl.textContent = ''
+
+    try {
+      const res  = await fetch('https://daromadchi.uz/api/extension/activate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code }),
+      })
+      const data = await res.json()
+      if (data.ok) {
+        await chrome.storage.local.set({ tg_activated: true })
+        gate.remove()
+        document.querySelector('.tabs').style.display = 'flex'
+        document.querySelectorAll('.panel').forEach((p, i) => { if (i === 0) p.style.display = 'block' })
+        loadAll()
+      } else {
+        errEl.textContent = data.error || 'Xato yuz berdi'
+        btn.textContent = '✅ Tekshirish'
+        btn.disabled = false
+      }
+    } catch {
+      errEl.textContent = 'Internet xatosi. Qayta urinib ko\'ring'
+      btn.textContent = '✅ Tekshirish'
+      btn.disabled = false
+    }
+  })
+}
+
 // ─── LOGIN GATE ───────────────────────────────────────────────────────────────
 function showLoginGate() {
   document.querySelector('.tabs').style.display = 'none';
@@ -510,4 +610,11 @@ async function loadAll() {
   }
 }
 
-loadAll();
+// Check activation gate before loading anything
+chrome.storage.local.get('tg_activated', ({ tg_activated }) => {
+  if (!tg_activated) {
+    showJoinGate()
+  } else {
+    loadAll()
+  }
+})

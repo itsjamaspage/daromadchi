@@ -32,7 +32,9 @@
     },
     {
       "matches": [
-        "https://partner.market.yandex.ru/*"
+        "https://partner.market.yandex.ru/*",
+        "https://market.yandex.ru/*",
+        "https://market.yandex.uz/*"
       ],
       "js": ["content-yandex.js"],
       "css": ["content.css"],
@@ -41,7 +43,11 @@
     {
       "matches": [
         "https://seller.wildberries.ru/*",
-        "https://seller-weekly-report.wildberries.ru/*"
+        "https://seller-weekly-report.wildberries.ru/*",
+        "https://www.wildberries.uz/*",
+        "https://wildberries.uz/*",
+        "https://www.wildberries.ru/*",
+        "https://wildberries.ru/*"
       ],
       "js": ["content-wb.js"],
       "css": ["content.css"],
@@ -53,12 +59,18 @@
     "*://*.uzum.uz/*",
     "https://uzum.uz/*",
     "https://partner.market.yandex.ru/*",
+    "https://market.yandex.ru/*",
+    "https://market.yandex.uz/*",
     "https://api.partner.market.yandex.ru/*",
     "https://daromadchi.uz/*",
     "https://common-api.wildberries.ru/*",
     "https://statistics-api.wildberries.ru/*",
     "https://suppliers-api.wildberries.ru/*",
-    "https://seller.wildberries.ru/*"
+    "https://seller.wildberries.ru/*",
+    "https://www.wildberries.uz/*",
+    "https://wildberries.uz/*",
+    "https://www.wildberries.ru/*",
+    "https://wildberries.ru/*"
   ],
   "background": {
     "service_worker": "background.js"
