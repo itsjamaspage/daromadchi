@@ -298,7 +298,7 @@ export default function LandingPage() {
               style={{ background: 'var(--c1)', color: '#0d0e14', boxShadow: '0 4px 20px rgba(0,212,255,0.25)' }}>
               {t.trialFreeStart}
             </Link>
-            <Link href="/dashboard"
+            <Link href="/help"
               className="inline-flex items-center justify-center gap-2 font-medium px-6 py-2.5 rounded-xl text-sm border transition-all"
               style={{ borderColor: 'var(--border2)', color: 'var(--text-dim)' }}>
               {t.nav.explorePlatform}
@@ -567,7 +567,7 @@ export default function LandingPage() {
                 {t.hero.cta}
                 <ArrowRight className="w-3.5 h-3.5" />
               </Link>
-              <Link href="/dashboard"
+              <Link href="/help"
                 className="inline-flex items-center justify-center font-medium px-7 py-2.5 rounded-xl text-sm border transition-all"
                 style={{ borderColor: 'var(--border2)', color: 'var(--text-dim)' }}>
                 {t.hero.demo}
