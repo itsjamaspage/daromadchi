@@ -23,8 +23,10 @@
 
     // Aggressive price parser — tries many WB Uzbekistan selectors
     function parseWbPrice() {
-      // WB renders current price inside <ins> tags within .price-block
-      // Try most specific selectors first
+      // WB shows 3 prices: original (del/s), sale (ins in .price-block__final-price),
+      // and wallet/card price (ins in .price-block__wallet or similar — always lower).
+      // We want the MAIN sale price = the largest <ins> value on the page.
+      // Try specific selectors that point to main price block first.
       const specific = [
         '.price-block__final-price',
         '[class*="price-block__final"]',
@@ -32,26 +34,28 @@
         '[class*="price__lower"]',
         '.product-page__price-block ins',
         '[data-link="text{:currentPrice}"]',
-        '.price-block ins',
-        '[class*="priceWithSale"]',
-        '[class*="price-block"] ins',
-        '.product-page__price',
       ];
       for (const sel of specific) {
         const el = document.querySelector(sel);
         if (el) {
+          const cn = (el.className || '') + (el.closest('[class]')?.className || '');
+          if (/wallet|card|bonus|cashback/i.test(cn)) continue;
           const raw = el.innerText.replace(/[^\d]/g, '');
-          if (raw.length >= 3 && raw.length <= 12) return parseInt(raw);
+          if (raw.length >= 4 && raw.length <= 9) return parseInt(raw);
         }
       }
-      // Fallback: scan all <ins> tags — WB uses <ins> exclusively for current price
+      // Fallback: collect ALL <ins> values and return the LARGEST
+      // (main sale price > wallet price, so max wins)
       const insTags = document.querySelectorAll('ins');
+      let best = 0;
       for (const el of insTags) {
         const raw = el.innerText.replace(/[^\d]/g, '');
-        // Valid price: 4–8 digits (1,000 – 99,999,999 som)
-        if (raw.length >= 4 && raw.length <= 8) return parseInt(raw);
+        if (raw.length >= 4 && raw.length <= 9) {
+          const n = parseInt(raw);
+          if (n > best) best = n;
+        }
       }
-      return null;
+      return best || null;
     }
 
     function parseWbOldPrice() {
