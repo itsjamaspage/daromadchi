@@ -1,360 +1,413 @@
-// Daromadchi — Wildberries overlay
-// Seller portal: stats widget. Buyer product pages: unit economics calculator.
-
+// Daromadchi — Wildberries content script (Yoolip style v3)
 (function () {
   'use strict';
 
-  if (document.getElementById('drm-wb-widget') || document.getElementById('drm-wb-ue')) return;
+  const IS_PRODUCT = /\/catalog\/\d+/.test(location.pathname) && !location.hostname.includes('seller.');
+  if (!IS_PRODUCT) return;
+  if (document.getElementById('drm-wb-widget')) return;
 
-  const IS_SELLER  = location.hostname.includes('seller.wildberries');
-  const IS_PRODUCT = !IS_SELLER && (
-    /\/catalog\/\d+\/detail/.test(location.pathname) ||
-    /\/catalog\/\d+$/.test(location.pathname)
-  );
+  const LANGS = {
+    uz: {
+      fby:'FBY', fbs:'FBS',
+      params:'HISOB PARAMETRLARI',
+      costLabel:"Tannarx (so'm)", packLabel:"Qadoqlash (so'm)", volLabel:'Hajm (litr)', adLabel:'Reklama %',
+      breakdown:'XARAJATLAR TAQSIMOTI',
+      narx:'Narx', comm:'Komissiya', delivery:'Yetkazib berish (FBY)',
+      returns:'Qaytarishlar (~3%)', acquiring:'Ekvayring (1.5%)',
+      reklama:'Reklama', tax:'Soliq (6%)',
+      totalMkt:'Jami Wildberries', totalCost:'Jami xarajat',
+      profitLabel:'TAXMINIY SOF FOYDA', marja:'marja',
+      ueBtn:"+ Unit-ekonomikaga qo'shish", marketBtn:'🔍 Bozor tahlili →',
+      noPrice:'Narx aniqlanmadi. Sahifani yangilang.',
+      footer:'Taxminiy hisob · daromadchi.uz', taxminiy:'taxminiy',
+    },
+    ru: {
+      fby:'FBY', fbs:'FBS',
+      params:'ПАРАМЕТРЫ РАСЧЁТА',
+      costLabel:'Себестоимость (сум)', packLabel:'Упаковка (сум)', volLabel:'Объём (л)', adLabel:'Реклама %',
+      breakdown:'СТРУКТУРА ЗАТРАТ',
+      narx:'Цена', comm:'Комиссия', delivery:'Доставка (FBY)',
+      returns:'Возвраты (~3%)', acquiring:'Эквайринг (1.5%)',
+      reklama:'Реклама', tax:'Налог (6%)',
+      totalMkt:'Итого Wildberries', totalCost:'Всего расходов',
+      profitLabel:'ОЦ. ЧИСТАЯ ПРИБЫЛЬ', marja:'маржа',
+      ueBtn:'+ В юнит-экономику', marketBtn:'🔍 Анализ рынка →',
+      noPrice:'Цена не определена.',
+      footer:'Примерный расчёт · daromadchi.uz', taxminiy:'прибл.',
+    },
+    en: {
+      fby:'FBY', fbs:'FBS',
+      params:'CALCULATION PARAMS',
+      costLabel:'Cost price (som)', packLabel:'Packaging (som)', volLabel:'Volume (L)', adLabel:'Ad %',
+      breakdown:'COST BREAKDOWN',
+      narx:'Price', comm:'Commission', delivery:'Delivery (FBY)',
+      returns:'Returns (~3%)', acquiring:'Acquiring (1.5%)',
+      reklama:'Advertising', tax:'Tax (6%)',
+      totalMkt:'Total WB fees', totalCost:'Total costs',
+      profitLabel:'EST. NET PROFIT', marja:'margin',
+      ueBtn:'+ Add to unit economics', marketBtn:'🔍 Market analysis →',
+      noPrice:'Price not found.',
+      footer:'Estimated · daromadchi.uz', taxminiy:'approx.',
+    },
+  };
 
-  if (!IS_SELLER && !IS_PRODUCT) return;
+  // WB commission by category (from breadcrumbs)
+  const WB_COMM = [
+    [/smartfon|iphone|telefon/i, 3],
+    [/noutbuk|kompyuter|planshet/i, 5],
+    [/elektronika/i, 7],
+    [/kiyim|paltо|ko.ylak|jinsi|sho.rt/i, 23],
+    [/ayollar|erkaklar|bolalar.*kiyim/i, 20],
+    [/poyabzal|tufli|botinka|krossovka/i, 15],
+    [/sumka|aksessuar/i, 15],
+    [/sport/i, 13],
+    [/go.zallik|parfyum|kosmetik/i, 12],
+    [/oziq|ovqat|mahsulot/i, 10],
+    [/uy|maishiy|mebel/i, 12],
+  ];
+  const WB_DEFAULT_COMM = 15;
 
-  // ── PRODUCT PAGE: unit economics + competitor widget ─────────────────────────
-  if (IS_PRODUCT) {
-    function fpUZ(n) {
-      if (!n && n !== 0) return '—';
-      return n.toLocaleString('ru-RU') + ' сум';
+  const THEME = {
+    dark:  {bg:'#0f1117',card:'#1a1f2e',border:'#2a3040',text:'#e2e8f0',muted:'#94a3b8',red:'#f87171',green:'#4ade80',amber:'#f59e0b'},
+    light: {bg:'#f8fafc',card:'#ffffff',border:'#e2e8f0',text:'#0f172a',muted:'#64748b',red:'#dc2626',green:'#16a34a',amber:'#d97706'},
+  };
+
+  let langKey = 'uz', theme = 'dark';
+  function L() { return LANGS[langKey]; }
+  function T() { return THEME[theme]; }
+
+  function getWbCommission() {
+    const bc = document.querySelector('[class*="breadcrumb"],[class*="Breadcrumb"],[class*="ategory"]');
+    if (bc) {
+      const t = bc.innerText;
+      for (const [re, pct] of WB_COMM) if (re.test(t)) return pct;
     }
+    return WB_DEFAULT_COMM;
+  }
 
-    // Aggressive price parser — tries many WB Uzbekistan selectors
-    function parseWbPrice() {
-      // WB shows 3 prices: original (del/s), sale (ins in .price-block__final-price),
-      // and wallet/card price (ins in .price-block__wallet or similar — always lower).
-      // We want the MAIN sale price = the largest <ins> value on the page.
-      // Try specific selectors that point to main price block first.
-      const specific = [
-        '.price-block__final-price',
-        '[class*="price-block__final"]',
-        'ins.price__lower-price',
-        '[class*="price__lower"]',
-        '.product-page__price-block ins',
-        '[data-link="text{:currentPrice}"]',
-      ];
-      for (const sel of specific) {
-        const el = document.querySelector(sel);
-        if (el) {
-          const cn = (el.className || '') + (el.closest('[class]')?.className || '');
-          if (/wallet|card|bonus|cashback/i.test(cn)) continue;
-          const raw = el.innerText.replace(/[^\d]/g, '');
-          if (raw.length >= 4 && raw.length <= 9) return parseInt(raw);
-        }
+  function parseWbPrice() {
+    // Specific selectors for WB price block
+    const specific = [
+      '.price-block__final-price',
+      '[class*="price-block__final"]',
+      'ins.price__lower-price',
+      '[class*="price__lower"]',
+      '.product-page__price-block ins',
+      '[data-link="text{:currentPrice}"]',
+    ];
+    for (const sel of specific) {
+      const el = document.querySelector(sel);
+      if (el) {
+        const pClass = el.closest('[class]')?.className || '';
+        if (/wallet|card|cashback|credit/i.test(pClass)) continue;
+        const raw = el.innerText.replace(/[^\d]/g,'');
+        if (raw.length>=4 && raw.length<=9) return parseInt(raw);
       }
-      // Fallback: collect ALL <ins> values and return the LARGEST
-      // (main sale price > wallet price, so max wins)
-      const insTags = document.querySelectorAll('ins');
-      let best = 0;
-      for (const el of insTags) {
-        const raw = el.innerText.replace(/[^\d]/g, '');
-        if (raw.length >= 4 && raw.length <= 9) {
-          const n = parseInt(raw);
-          if (n > best) best = n;
-        }
-      }
-      return best || null;
     }
+    // Fallback: find <ins> closest to top of page (main price always at top, carousels further down)
+    let best = null, bestTop = Infinity;
+    document.querySelectorAll('ins').forEach(el => {
+      const raw = el.innerText.replace(/[^\d]/g,'');
+      if (raw.length<4 || raw.length>9) return;
+      const pClass = el.closest('[class]')?.className || '';
+      if (/wallet|card|cashback|credit/i.test(pClass)) return;
+      const top = el.getBoundingClientRect().top + window.scrollY;
+      if (top < bestTop) { bestTop = top; best = parseInt(raw); }
+    });
+    return best;
+  }
 
-    function parseWbOldPrice() {
-      const sel = document.querySelector('[class*="price__old"], [class*="priceOld"], del, s, [class*="old-price"], .price-block__old-price');
-      if (!sel) return null;
-      const raw = sel.innerText.replace(/[^\d]/g, '');
-      return raw.length >= 3 ? parseInt(raw) : null;
-    }
+  function parseWbTitle() {
+    return (document.querySelector('h1')||{}).innerText?.trim().slice(0,70) || 'Mahsulot';
+  }
 
-    function parseWbTitle() {
-      return (document.querySelector('h1') || {}).innerText?.trim().slice(0, 70) || 'Mahsulot';
-    }
-
-    function parseWbRating() {
-      const el = document.querySelector('[class*="rating__count"], [class*="product-review__count"], [class*="reviewCount"]');
-      return el ? el.innerText.trim() : null;
-    }
-
-    function parseWbBrand() {
-      const el = document.querySelector('[class*="brand__name"], [class*="breadcrumb"] a:last-child, [data-link="text{:brand}"]');
-      return el ? el.innerText.trim().slice(0, 30) : null;
-    }
-
-    function parseWbArticle() {
-      const m = location.pathname.match(/\/catalog\/(\d+)/);
-      return m ? m[1] : null;
-    }
-
-    function calcWb(price, opts = {}) {
-      const { commPct = 15, adPct = 5, taxPct = 6, costPrice = 0 } = opts;
-      const comm      = Math.round(price * commPct / 100);
-      const delivery  = Math.round(price * 0.06);
-      const returns   = Math.round(price * 0.03);
-      const acquiring = Math.round(price * 0.015);
-      const adSpend   = Math.round(price * adPct / 100);
-      const preTax    = price - comm - delivery - returns - acquiring - adSpend - costPrice;
-      const tax       = Math.round(Math.max(0, preTax) * taxPct / 100);
-      const profit    = preTax - tax;
-      const pct       = Math.round((profit / price) * 100);
-      const roi       = costPrice > 0 ? Math.round((profit / costPrice) * 100) : null;
-      const total     = comm + delivery + returns + acquiring + adSpend + tax + costPrice;
-      return { commPct, comm, delivery, returns, acquiring, adSpend, tax, costPrice, total, profit, pct, roi };
-    }
-
-    function mc(pct) { return pct >= 25 ? '#22c55e' : pct >= 12 ? '#f59e0b' : '#ef4444'; }
-
-    // Estimate monthly revenue from review count (industry heuristic)
-    function estimateMonthlyRevenue(price, reviewCount) {
-      if (!price || !reviewCount) return null;
-      const reviews = parseInt(String(reviewCount).replace(/[^\d]/g, '')) || 0;
-      // ~1 review per 20-50 sales; assume avg 30
-      const estMonthlySales = Math.round(reviews * 30 / 12);
-      return estMonthlySales * price;
-    }
-
-    async function buildWbUEWidget() {
-      const price    = parseWbPrice();
-      const oldPrice = parseWbOldPrice();
-      const title    = parseWbTitle();
-      const rating   = parseWbRating();
-      const brand    = parseWbBrand();
-      const article  = parseWbArticle();
-      const discount = (oldPrice && price) ? Math.round((1 - price / oldPrice) * 100) : null;
-      const estRev   = rating ? estimateMonthlyRevenue(price, rating) : null;
-
-      const settings = await chrome.storage.local.get(['ueSettings']).then(d => d.ueSettings || {});
-      const { adPct = 5, taxPct = 6, costPrice = 0 } = settings;
-      const eco   = price ? calcWb(price, { adPct, taxPct, costPrice }) : null;
-      const color = eco ? mc(eco.pct) : '#64748b';
-
-      const wrap = document.createElement('div');
-      wrap.id = 'drm-wb-ue';
-      wrap.style.cssText = `position:fixed;bottom:24px;right:24px;z-index:999999;width:280px;
-        background:#0d0d19;border:1px solid rgba(168,85,247,0.35);border-radius:14px;
-        font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:12px;
-        color:#e2e8f0;box-shadow:0 8px 32px rgba(0,0,0,0.5);overflow:hidden;max-height:90vh;overflow-y:auto`;
-
-      wrap.innerHTML = `
-        <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid #1e293b;position:sticky;top:0;background:#0d0d19;z-index:1">
-          <img src="${chrome.runtime.getURL('icons/icon16.png')}" style="width:16px;height:16px;border-radius:4px"/>
-          <span style="font-weight:700;font-size:13px;background:linear-gradient(135deg,#c084fc,#38bdf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent">Daromadchi</span>
-          <span style="margin-left:auto;font-size:10px;color:#a855f7">WB</span>
-          <button id="drm-wb-close" style="background:none;border:none;color:#64748b;cursor:pointer;font-size:16px;padding:0 0 0 4px">×</button>
-        </div>
-
-        ${price ? `
-        <!-- PRICE + DISCOUNT -->
-        <div style="padding:10px 12px 0">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
-            <span style="color:#64748b">Sotuv narxi</span>
-            <div>
-              <span style="font-weight:700;font-size:14px">${fpUZ(price)}</span>
-              ${discount ? `<span style="font-size:10px;color:#22c55e;margin-left:6px">−${discount}%</span>` : ''}
-            </div>
-          </div>
-          ${rating ? `<div style="display:flex;justify-content:space-between;color:#94a3b8;font-size:11px;margin-bottom:2px"><span>Sharhlar</span><span>⭐ ${rating}</span></div>` : ''}
-          ${brand  ? `<div style="display:flex;justify-content:space-between;color:#94a3b8;font-size:11px;margin-bottom:2px"><span>Brend</span><span>${brand}</span></div>` : ''}
-          ${article? `<div style="display:flex;justify-content:space-between;color:#94a3b8;font-size:11px;margin-bottom:2px"><span>Artikul</span><span style="font-family:monospace">${article}</span></div>` : ''}
-        </div>
-
-        <!-- COMPETITOR ANALYSIS -->
-        ${estRev ? `
-        <div style="margin:8px 12px;background:#0f172a;border:1px solid #1e293b;border-radius:8px;padding:8px">
-          <div style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">🔥 Raqib tahlili</div>
-          <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px">
-            <span style="color:#94a3b8">Taxminiy oylik daromad</span>
-            <span style="color:#38bdf8;font-weight:700">${fpUZ(estRev)}</span>
-          </div>
-          <div style="display:flex;justify-content:space-between;font-size:11px">
-            <span style="color:#94a3b8">Taxminiy oylik sotuv</span>
-            <span style="color:#94a3b8">${Math.round(parseInt(String(rating).replace(/[^\d]/g,''))*30/12)} dona</span>
-          </div>
-        </div>` : ''}
-
-        <!-- COST BREAKDOWN -->
-        <div style="padding:0 12px">
-          <div style="font-size:10px;color:#64748b;margin-bottom:6px;padding-top:6px;border-top:1px solid #1e293b">Xarajatlar taqsimoti</div>
-          <div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="color:#94a3b8">WB komissiyasi (${eco.commPct}%)</span><span style="color:#f87171">−${fpUZ(eco.comm)}</span></div>
-          <div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="color:#94a3b8">Yetkazib berish (~6%)</span><span style="color:#f87171">−${fpUZ(eco.delivery)}</span></div>
-          <div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="color:#94a3b8">Qaytarishlar (~3%)</span><span style="color:#f87171">−${fpUZ(eco.returns)}</span></div>
-          <div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="color:#94a3b8">Ekvayring (1.5%)</span><span style="color:#f87171">−${fpUZ(eco.acquiring)}</span></div>
-          <div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="color:#94a3b8">Reklama (${adPct}%)</span><span style="color:#f87171">−${fpUZ(eco.adSpend)}</span></div>
-          <div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="color:#94a3b8">Soliq (${taxPct}%)</span><span style="color:#f87171">−${fpUZ(eco.tax)}</span></div>
-          <div style="display:flex;justify-content:space-between;font-weight:700;border-top:1px solid #1e293b;padding-top:6px;margin-top:4px">
-            <span>Jami xarajat</span><span style="color:#f87171">−${fpUZ(eco.total)}</span>
-          </div>
-        </div>
-
-        <!-- PROFIT -->
-        <div style="margin:10px 12px;background:${color}0d;border:1px solid ${color}30;border-radius:8px;padding:10px;text-align:center">
-          <div style="font-size:10px;color:#94a3b8;margin-bottom:4px">Taxminiy sof foyda</div>
-          <div style="font-size:18px;font-weight:800;color:${color}">${fpUZ(eco.profit)}</div>
-          <div style="background:#1e293b;border-radius:4px;height:4px;margin:6px 0">
-            <div style="height:4px;border-radius:4px;background:${color};width:${Math.max(0,Math.min(100,eco.pct))}%"></div>
-          </div>
-          <div style="font-size:11px;color:${color};font-weight:700">${eco.pct}% marja${eco.roi !== null ? ` · ROI ${eco.roi}%` : ''}</div>
-        </div>
-
-        <!-- ACTIONS -->
-        <div style="padding:0 12px 12px;display:flex;flex-direction:column;gap:6px">
-          <a href="https://daromadchi.uz/dashboard/unit-economics?source=wb&title=${encodeURIComponent(title)}&price=${price}&commPct=${eco.commPct}" target="_blank"
-            style="display:block;text-align:center;background:rgba(168,85,247,0.15);border:1px solid rgba(168,85,247,0.3);border-radius:8px;padding:6px;color:#c084fc;text-decoration:none;font-size:11px;font-weight:600">
-            📊 Unit-ekonomikaga qo'shish →
-          </a>
-          <a href="https://daromadchi.uz/dashboard/market?q=${encodeURIComponent(title)}&source=wb" target="_blank"
-            style="display:block;text-align:center;background:rgba(56,189,248,0.1);border:1px solid rgba(56,189,248,0.2);border-radius:8px;padding:6px;color:#38bdf8;text-decoration:none;font-size:11px;font-weight:600">
-            🔍 Bozor tahlili →
-          </a>
-        </div>
-        ` : `
-        <div style="padding:20px 16px;text-align:center">
-          <div style="color:#64748b;font-size:12px;margin-bottom:12px">Narx aniqlanmadi.<br>Sahifani yangilang.</div>
-          <button id="drm-wb-retry" style="background:#6366f1;color:#fff;border:none;border-radius:8px;padding:7px 16px;font-size:12px;cursor:pointer">🔄 Qayta urinish</button>
-        </div>
-        `}
-      `;
-
-      wrap.querySelector('#drm-wb-close').onclick = () => {
-        wrap.remove();
-        chrome.storage.local.set({ wbWidgetClosed: Date.now() });
-      };
-      wrap.querySelector('#drm-wb-retry')?.addEventListener('click', () => {
-        wrap.remove();
-        setTimeout(buildWbUEWidget, 800);
-      });
-      document.body.appendChild(wrap);
-    }
-
-    // Retry a few times since WB renders prices lazily
-    setTimeout(buildWbUEWidget, 1500);
-    setTimeout(() => {
-      if (!document.getElementById('drm-wb-ue')) buildWbUEWidget();
-    }, 3500);
-
-    // SPA nav
-    let lastUrl = location.href;
-    new MutationObserver(() => {
-      if (location.href !== lastUrl) {
-        lastUrl = location.href;
-        setTimeout(() => {
-          document.getElementById('drm-wb-ue')?.remove();
-          if (/\/catalog\/\d+/.test(location.pathname)) buildWbUEWidget();
-        }, 1800);
-      }
-    }).observe(document, { subtree: true, childList: true });
-
-    return; // don't run seller code below
+  function parseWbArticle() {
+    const m = location.pathname.match(/\/catalog\/(\d+)/);
+    return m ? m[1] : null;
   }
 
   function fp(n) {
-    if (!n && n !== 0) return '—';
-    if (n >= 1000000) return (n / 1000000).toFixed(1) + ' mln ₽';
-    if (n >= 1000) return (n / 1000).toFixed(0) + ' ming ₽';
-    return n.toLocaleString('ru-RU') + ' ₽';
+    if (n===null||n===undefined) return '—';
+    return Math.round(n).toLocaleString('uz-UZ') + " so'm";
   }
 
-  function createWidget(stats, sellerInfo) {
-    const w = document.createElement('div');
-    w.id = 'drm-wb-widget';
-    w.style.cssText = `
-      position: fixed;
-      bottom: 24px;
-      right: 24px;
-      z-index: 999999;
-      background: #0d0d19;
-      border: 1px solid rgba(168,85,247,0.35);
-      border-radius: 14px;
-      padding: 14px 16px;
-      min-width: 220px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(168,85,247,0.1);
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      font-size: 12px;
-      color: #e2e8f0;
-      cursor: default;
-      transition: opacity .2s;
-    `;
+  function calcWbFull(price, { commPct, adPct=5, costPrice=0, packaging=0, volume=0.5, fby=true }={}) {
+    const commission = Math.round(price * commPct / 100);
+    const delivery   = fby ? (volume ? Math.round(volume*20000) : 8000) : (volume ? Math.round(volume*10000) : 5000);
+    const returns    = Math.round(price * 0.03);
+    const acquiring  = Math.round(price * 0.015);
+    const adSpend    = Math.round(price * adPct / 100);
+    const tax        = Math.round(price * 0.06);
+    const mktTotal   = commission + delivery + returns + acquiring;
+    const jamiTotal  = mktTotal + adSpend + tax + packaging + costPrice;
+    const netProfit  = price - jamiTotal;
+    const margin     = Math.round((netProfit / price) * 100);
+    const roi        = costPrice > 0 ? Math.round((netProfit / costPrice) * 100) : null;
+    return { commPct, commission, delivery, returns, acquiring, adSpend, tax, packaging, costPrice, mktTotal, jamiTotal, netProfit, margin, roi };
+  }
 
-    const name = sellerInfo?.supplierName || sellerInfo?.name || 'WB';
+  function profitColor(margin) {
+    const t = T();
+    return margin >= 25 ? t.green : margin >= 10 ? t.amber : t.red;
+  }
 
-    w.innerHTML = `
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-        <img src="${chrome.runtime.getURL('icons/icon16.png')}" style="width:16px;height:16px;border-radius:4px"/>
-        <span style="font-weight:700;font-size:13px;background:linear-gradient(135deg,#c084fc,#38bdf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent">
-          Daromadchi
-        </span>
-        <span style="margin-left:auto;font-size:10px;color:#a855f7">WB</span>
-        <button id="drm-wb-close" style="background:none;border:none;color:#64748b;cursor:pointer;font-size:14px;line-height:1;padding:0 0 0 4px">×</button>
-      </div>
-      ${stats ? `
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-          <div style="background:#1e293b;border-radius:8px;padding:8px">
-            <div style="color:#64748b;font-size:10px;margin-bottom:2px">Bugungi daromad</div>
-            <div style="font-weight:700;color:#c084fc">${fp(stats.todayRevenue)}</div>
+  function buildWidget() {
+    let fby = true, costPrice = 0, packaging = 0, volume = 0.5, adPct = 5;
+
+    chrome.storage.local.get(['ueSettings','drmLang','drmTheme'], data => {
+      if (data.ueSettings) {
+        costPrice = data.ueSettings.costPrice || 0;
+        packaging = data.ueSettings.packaging || 0;
+        volume    = data.ueSettings.volume    || 0.5;
+        adPct     = data.ueSettings.adPct     || 5;
+        fby       = data.ueSettings.fby !== undefined ? data.ueSettings.fby : true;
+      }
+      if (data.drmLang)  langKey = data.drmLang;
+      if (data.drmTheme) theme   = data.drmTheme;
+      render();
+    });
+
+    const wrap = document.createElement('div');
+    wrap.id = 'drm-wb-widget';
+    Object.assign(wrap.style, { position:'fixed', bottom:'24px', right:'24px', zIndex:'2147483647' });
+    document.body.appendChild(wrap);
+
+    const title   = parseWbTitle();
+    const article = parseWbArticle();
+    const commPct = getWbCommission();
+
+    function getInputs() {
+      return {
+        costPrice: parseFloat(wrap.querySelector('#drm-wb-cost')?.value) || 0,
+        packaging: parseFloat(wrap.querySelector('#drm-wb-pack')?.value) || 0,
+        volume:    parseFloat(wrap.querySelector('#drm-wb-vol')?.value)  || 0.5,
+        adPct:     parseFloat(wrap.querySelector('#drm-wb-ad')?.value)   || 5,
+      };
+    }
+
+    function liveRecalc() {
+      const price = parseWbPrice();
+      if (!price) return;
+      const eco = calcWbFull(price, { commPct, ...getInputs(), fby });
+      const color = profitColor(eco.margin);
+      const set = (id,v) => { const e=wrap.querySelector('#drm-v-'+id); if(e) e.textContent=v; };
+      set('comm',    `−${fp(eco.commission)}`);
+      set('delivery',`−${fp(eco.delivery)}`);
+      set('returns', `−${fp(eco.returns)}`);
+      set('acq',     `−${fp(eco.acquiring)}`);
+      set('ad',      `−${fp(eco.adSpend)}`);
+      set('tax',     `−${fp(eco.tax)}`);
+      set('mkt',     `−${fp(eco.mktTotal)}`);
+      set('total',   `−${fp(eco.jamiTotal)}`);
+      set('profit',  fp(eco.netProfit));
+      set('margin',  `${eco.margin}% ${L().marja}`);
+      const profEl = wrap.querySelector('#drm-v-profit');
+      const mrgEl  = wrap.querySelector('#drm-v-margin');
+      if (profEl) profEl.style.color = color;
+      if (mrgEl)  mrgEl.style.color  = color;
+      const bar = wrap.querySelector('#drm-profit-bar');
+      if (bar) { bar.style.width=Math.max(0,Math.min(100,eco.margin))+'%'; bar.style.background=color; }
+    }
+
+    function render() {
+      const price = parseWbPrice();
+      const t = T(), l = L();
+      const eco   = price ? calcWbFull(price, { commPct, costPrice, packaging, volume, adPct, fby }) : null;
+      const color = eco ? profitColor(eco.margin) : t.muted;
+      const barW  = eco ? Math.max(0,Math.min(100,eco.margin)) : 0;
+
+      const inp = (id,val,ph='0',step='1') =>
+        `<input id="${id}" type="number" step="${step}" value="${val||''}" placeholder="${ph}"
+         style="width:90px;background:${t.card};border:1px solid ${t.border};border-radius:6px;
+                padding:4px 8px;color:${t.text};font-size:12px;text-align:right;outline:none"/>`;
+      const row = (label,id,val,extra='') =>
+        `<div style="display:flex;justify-content:space-between;align-items:center;font-size:12px">
+           <span style="color:${t.muted}">${label}${extra}</span>
+           <span id="drm-v-${id}" style="color:${t.red}">${val}</span>
+         </div>`;
+
+      wrap.innerHTML = `
+        <div style="width:360px;max-height:92vh;overflow-y:auto;background:${t.bg};border:1px solid ${t.border};
+             border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.5);
+             font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;color:${t.text};
+             scrollbar-width:thin">
+
+          <!-- HEADER -->
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;
+               border-bottom:1px solid ${t.border};position:sticky;top:0;background:${t.bg};z-index:1">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-weight:700;font-size:14px">Daromadchi</span>
+              <span style="font-size:10px;font-weight:600;padding:2px 7px;background:#7c3aed;color:#fff;border-radius:20px">WB</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:3px">
+              ${['uz','ru','en'].map(k=>`<button id="drm-lang-${k}" style="padding:2px 5px;border-radius:4px;border:1px solid ${langKey===k?'#7c3aed':t.border};background:${langKey===k?'#7c3aed':'transparent'};color:${langKey===k?'#fff':t.muted};font-size:10px;cursor:pointer">${k.toUpperCase()}</button>`).join('')}
+              <button id="drm-theme" style="padding:3px 7px;border-radius:5px;border:1px solid ${t.border};background:transparent;color:${t.muted};font-size:13px;cursor:pointer">${theme==='dark'?'☀️':'🌙'}</button>
+              <button id="drm-refresh" style="padding:3px 7px;border-radius:5px;border:1px solid ${t.border};background:transparent;color:${t.muted};cursor:pointer">↻</button>
+              <button id="drm-close" style="padding:3px 7px;border-radius:5px;border:1px solid ${t.border};background:transparent;color:${t.muted};cursor:pointer">✕</button>
+            </div>
           </div>
-          <div style="background:#1e293b;border-radius:8px;padding:8px">
-            <div style="color:#64748b;font-size:10px;margin-bottom:2px">Buyurtmalar</div>
-            <div style="font-weight:700;color:#38bdf8">${stats.todayOrders || 0}</div>
-          </div>
-          <div style="background:#1e293b;border-radius:8px;padding:8px">
-            <div style="color:#64748b;font-size:10px;margin-bottom:2px">Kam zaxira</div>
-            <div style="font-weight:700;color:${stats.lowStock > 0 ? '#f87171' : '#4ade80'}">${stats.lowStock || 0}</div>
-          </div>
-          <div style="background:#1e293b;border-radius:8px;padding:8px">
-            <div style="color:#64748b;font-size:10px;margin-bottom:2px">Bekor</div>
-            <div style="font-weight:700;color:#94a3b8">${stats.todayReturns || 0}</div>
+
+          <div style="padding:14px 16px;display:flex;flex-direction:column;gap:10px">
+
+            <!-- TITLE + PRICE -->
+            <div>
+              <div style="font-weight:600;font-size:13px;margin-bottom:2px">${title}</div>
+              ${article ? `<div style="font-size:11px;color:${t.muted};margin-bottom:4px">Artikul #${article}</div>` : ''}
+              ${price
+                ? `<div style="font-size:22px;font-weight:800;color:#a78bfa">${fp(price)}</div>`
+                : `<div style="color:${t.red};font-size:12px">${l.noPrice}</div>`}
+            </div>
+
+            <!-- FBY/FBS TOGGLE -->
+            <div style="display:flex;gap:6px">
+              <button id="drm-fby" style="flex:1;padding:7px;border-radius:8px;border:1px solid ${fby?'#7c3aed':t.border};background:${fby?'#7c3aed':'transparent'};color:${fby?'#fff':t.muted};font-size:12px;font-weight:600;cursor:pointer">${l.fby}</button>
+              <button id="drm-fbs" style="flex:1;padding:7px;border-radius:8px;border:1px solid ${!fby?'#7c3aed':t.border};background:${!fby?'#7c3aed':'transparent'};color:${!fby?'#fff':t.muted};font-size:12px;font-weight:600;cursor:pointer">${l.fbs}</button>
+            </div>
+
+            <!-- PARAMS -->
+            <div>
+              <div style="font-size:10px;font-weight:600;color:${t.muted};letter-spacing:.7px;margin-bottom:8px">${l.params}</div>
+              <div style="display:flex;flex-direction:column;gap:7px">
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                  <span style="font-size:12px;color:${t.muted}">${l.costLabel}</span>
+                  ${inp('drm-wb-cost',costPrice)}
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                  <span style="font-size:12px;color:${t.muted}">${l.packLabel}</span>
+                  ${inp('drm-wb-pack',packaging)}
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                  <span style="font-size:12px;color:${t.muted}">${l.volLabel}</span>
+                  ${inp('drm-wb-vol',volume,'0.5','0.1')}
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                  <span style="font-size:12px;color:${t.muted}">${l.adLabel}</span>
+                  ${inp('drm-wb-ad',adPct,'5','0.5')}
+                </div>
+              </div>
+            </div>
+
+            ${!eco ? '' : `
+            <!-- BREAKDOWN -->
+            <div>
+              <div style="font-size:10px;font-weight:600;color:${t.muted};letter-spacing:.7px;margin-bottom:8px">${l.breakdown}</div>
+              <div style="display:flex;flex-direction:column;gap:5px">
+                <div style="display:flex;justify-content:space-between;font-size:12px">
+                  <span style="color:${t.muted}">${l.narx}</span>
+                  <span style="color:${t.text};font-weight:600">${fp(price)}</span>
+                </div>
+                ${row(l.comm+` (${commPct}%)`,'comm',`−${fp(eco.commission)}`)}
+                ${row(l.delivery,'delivery',`−${fp(eco.delivery)}`,` <span style="color:${t.amber};font-size:11px">${l.taxminiy}</span>`)}
+                ${row(l.returns,'returns',`−${fp(eco.returns)}`,` <span style="color:${t.amber};font-size:11px">${l.taxminiy}</span>`)}
+                ${row(l.acquiring,'acq',`−${fp(eco.acquiring)}`)}
+                ${row(l.reklama+` (${adPct}%)`,'ad',`−${fp(eco.adSpend)}`)}
+                ${row(l.tax,'tax',`−${fp(eco.tax)}`)}
+                <div style="height:1px;background:${t.border}"></div>
+                <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600">
+                  <span style="color:${t.muted}">${l.totalMkt}</span>
+                  <span id="drm-v-mkt" style="color:${t.red}">−${fp(eco.mktTotal)}</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600">
+                  <span style="color:${t.muted}">${l.totalCost}</span>
+                  <span id="drm-v-total" style="color:${t.red}">−${fp(eco.jamiTotal)}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- PROFIT BOX -->
+            <div style="background:${t.card};border:1px solid ${t.border};border-radius:12px;padding:14px;text-align:center">
+              <div style="font-size:10px;font-weight:600;color:${t.muted};letter-spacing:.7px;margin-bottom:6px">${l.profitLabel}</div>
+              <div id="drm-v-profit" style="font-size:26px;font-weight:800;color:${color};margin-bottom:6px">${fp(eco.netProfit)}</div>
+              <div style="height:4px;background:${t.border};border-radius:4px;margin-bottom:6px">
+                <div id="drm-profit-bar" style="height:4px;border-radius:4px;background:${color};width:${barW}%;transition:width .3s"></div>
+              </div>
+              <div id="drm-v-margin" style="color:${color};font-size:13px;font-weight:600">${eco.margin}% ${l.marja}</div>
+            </div>
+            `}
+
+            <!-- ACTIONS -->
+            <button id="drm-wb-ue" style="width:100%;padding:11px;background:#16a34a;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer">
+              ${l.ueBtn}
+            </button>
+            <button id="drm-wb-market" style="width:100%;padding:10px;background:${t.card};color:${t.text};border:1px solid ${t.border};border-radius:10px;font-size:13px;cursor:pointer">
+              ${l.marketBtn}
+            </button>
+
+            <div style="text-align:center;font-size:10px;color:${t.muted}">${l.footer}</div>
           </div>
         </div>
-        <div style="color:#334155;font-size:10px;margin-top:8px;text-align:right">
-          ${stats.lastSynced ? `Yangilangan: ${stats.lastSynced}` : ''}
-        </div>
-      ` : `
-        <div style="color:#64748b;font-size:11px;text-align:center;padding:8px 0">
-          Ma'lumot yuklanmoqda...
-        </div>
-      `}
-      <a href="https://daromadchi.uz/dashboard" target="_blank"
-        style="display:block;margin-top:10px;text-align:center;background:rgba(168,85,247,0.15);border:1px solid rgba(168,85,247,0.3);border-radius:8px;padding:6px;color:#c084fc;text-decoration:none;font-size:11px;font-weight:600">
-        To'liq dashboard →
-      </a>
-    `;
+      `;
 
-    document.body.appendChild(w);
+      wrap.querySelector('#drm-close').onclick   = () => { wrap.remove(); chrome.storage.local.set({wbWidgetClosed:Date.now()}); };
+      wrap.querySelector('#drm-refresh').onclick = () => { wrap.remove(); setTimeout(init,300); };
 
-    document.getElementById('drm-wb-close').onclick = (e) => {
-      e.stopPropagation();
-      w.style.opacity = '0';
-      setTimeout(() => w.remove(), 200);
-      // Remember closed state for this session
-      try { sessionStorage.setItem('drm-wb-closed', '1'); } catch {}
-    };
+      wrap.querySelector('#drm-theme').onclick = () => {
+        theme = theme==='dark'?'light':'dark';
+        chrome.storage.local.set({drmTheme:theme});
+        render();
+      };
+
+      ['uz','ru','en'].forEach(k => {
+        wrap.querySelector(`#drm-lang-${k}`)?.addEventListener('click', () => {
+          langKey = k; chrome.storage.local.set({drmLang:k}); render();
+        });
+      });
+
+      wrap.querySelector('#drm-fby').onclick = () => { fby=true;  render(); };
+      wrap.querySelector('#drm-fbs').onclick = () => { fby=false; render(); };
+
+      ['#drm-wb-cost','#drm-wb-pack','#drm-wb-vol','#drm-wb-ad'].forEach(id => {
+        wrap.querySelector(id)?.addEventListener('input', liveRecalc);
+      });
+
+      wrap.querySelector('#drm-wb-ue')?.addEventListener('click', async () => {
+        const vals = getInputs();
+        const p2 = parseWbPrice();
+        const eco2 = p2 ? calcWbFull(p2, { commPct, ...vals, fby }) : null;
+        await chrome.storage.local.set({ ueSettings: { ...vals, fby } });
+        const params = new URLSearchParams({
+          source:'wb', title, url:location.href,
+          price:      String(p2    || ''),
+          commPct:    String(commPct),
+          commission: String(eco2?.commission || ''),
+          delivery:   String(eco2?.delivery   || ''),
+          acquiring:  String(eco2?.acquiring  || ''),
+          adSpend:    String(eco2?.adSpend    || ''),
+          tax:        String(eco2?.tax        || ''),
+          packaging:  String(eco2?.packaging  || ''),
+          profit:     String(eco2?.netProfit  ?? ''),
+          margin:     String(eco2?.margin     ?? ''),
+          roi:        String(eco2?.roi        ?? ''),
+        });
+        if (article) params.set('article', article);
+        window.open(`https://daromadchi.uz/dashboard/unit-economics?${params}`, '_blank');
+      });
+
+      wrap.querySelector('#drm-wb-market')?.addEventListener('click', () => {
+        window.open(`https://daromadchi.uz/dashboard/market?q=${encodeURIComponent(title)}&source=wb`, '_blank');
+      });
+    }
   }
 
   async function init() {
-    try {
-      if (sessionStorage.getItem('drm-wb-closed')) return;
-    } catch {}
-
-    const data = await chrome.storage.local.get(['wbStats', 'wbConnected', 'wbSellerInfo']);
-    if (!data.wbConnected && !data.wbStats) return;
-
-    createWidget(data.wbStats || null, data.wbSellerInfo || null);
+    if (document.getElementById('drm-wb-widget')) return;
+    const { wbWidgetClosed } = await chrome.storage.local.get('wbWidgetClosed');
+    if (Date.now() - (wbWidgetClosed||0) < 1800000) return;
+    buildWidget();
   }
 
-  // Wait for page load, then show (only if activated)
-  chrome.storage.local.get('tg_activated', ({ tg_activated }) => {
-    if (!tg_activated) return;
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', init);
-    } else {
-      setTimeout(init, 1500);
-    }
-  });
+  if (document.readyState==='loading') {
+    document.addEventListener('DOMContentLoaded', () => setTimeout(init, 1500));
+  } else {
+    setTimeout(init, 1500);
+  }
+  setTimeout(() => { if (!document.getElementById('drm-wb-widget')) init(); }, 3500);
 
-  // Listen for storage updates (e.g., after background sync completes)
-  chrome.storage.onChanged.addListener((changes) => {
-    if (changes.wbStats && document.getElementById('drm-wb-widget')) {
-      const existing = document.getElementById('drm-wb-widget');
-      if (existing) existing.remove();
-      init();
+  let lastUrl = location.href;
+  new MutationObserver(() => {
+    if (location.href !== lastUrl) {
+      lastUrl = location.href;
+      setTimeout(() => { document.getElementById('drm-wb-widget')?.remove(); init(); }, 1800);
     }
-  });
+  }).observe(document, { subtree:true, childList:true });
 })();

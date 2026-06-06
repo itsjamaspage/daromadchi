@@ -1,450 +1,402 @@
-// Daromadchi Extension — Yandex Market Content Script v1
-
+// Daromadchi — Yandex Market content script (Yoolip style v3)
 (function () {
   'use strict';
 
-  // ── URL DETECTION ─────────────────────────────────────────────────────────
-
   const hostname = window.location.hostname;
-  const pathname = window.location.pathname;
+  const IS_UZ = hostname.includes('yandex.uz');
+  const IS_BUYER = hostname.includes('market.yandex.');
+  const IS_PRODUCT = IS_BUYER && (
+    location.pathname.includes('/product--') ||
+    location.pathname.includes('/product/') ||
+    /\/product\b/.test(location.pathname) ||
+    location.pathname.includes('/offer/') ||
+    /\/sku\//.test(location.pathname)
+  );
 
-  const IS_PARTNER = hostname === 'partner.market.yandex.ru';
-  const IS_BUYER   = hostname === 'market.yandex.ru' || hostname === 'market.yandex.uz';
-  const IS_PRODUCT_PAGE = (IS_PARTNER && (
-    pathname.includes('/products/') ||
-    pathname.includes('/offer') ||
-    /\/business\/\d+\//.test(pathname)
-  )) || (IS_BUYER && (
-    pathname.includes('/product--') ||
-    pathname.includes('/product/') ||
-    /\/product\b/.test(pathname) ||
-    pathname.includes('/offer/') ||
-    /\/sku\//.test(pathname)
-  ));
+  if (!IS_BUYER) return;
 
-  // On buyer pages: always try — Yandex is a SPA and URL may not match on first load
-  if (!IS_PARTNER && !IS_BUYER) return;
+  const LANGS = {
+    uz: {
+      fby:'FBY', fbs:'FBS',
+      params:'HISOB PARAMETRLARI',
+      costLabel:"Tannarx (so'm)", packLabel:"Qadoqlash (so'm)", volLabel:'Hajm (litr)', adLabel:'Reklama %',
+      breakdown:'XARAJATLAR TAQSIMOTI',
+      narx:'Narx', comm:'Komissiya (15%)', delivery:'Yetkazib berish (FBY)',
+      acquiring:'Ekvayring (0.5%)',
+      reklama:'Reklama', tax:'Soliq (6%)',
+      totalMkt:'Jami Yandex Market', totalCost:'Jami xarajat',
+      profitLabel:'TAXMINIY SOF FOYDA', marja:'marja',
+      ueBtn:"+ Unit-ekonomikaga qo'shish", marketBtn:'🔍 Bozor tahlili →',
+      noPrice:'Narx aniqlanmadi. Sahifani yangilang.',
+      footer:'Taxminiy hisob · daromadchi.uz', taxminiy:'taxminiy',
+    },
+    ru: {
+      fby:'FBY', fbs:'FBS',
+      params:'ПАРАМЕТРЫ РАСЧЁТА',
+      costLabel:'Себестоимость', packLabel:'Упаковка', volLabel:'Объём (л)', adLabel:'Реклама %',
+      breakdown:'СТРУКТУРА ЗАТРАТ',
+      narx:'Цена', comm:'Комиссия (15%)', delivery:'Доставка (FBY)',
+      acquiring:'Эквайринг (0.5%)',
+      reklama:'Реклама', tax:'Налог (6%)',
+      totalMkt:'Итого Яндекс Маркет', totalCost:'Всего расходов',
+      profitLabel:'ОЦ. ЧИСТАЯ ПРИБЫЛЬ', marja:'маржа',
+      ueBtn:'+ В юнит-экономику', marketBtn:'🔍 Анализ рынка →',
+      noPrice:'Цена не определена.',
+      footer:'Примерный расчёт · daromadchi.uz', taxminiy:'прибл.',
+    },
+    en: {
+      fby:'FBY', fbs:'FBS',
+      params:'CALCULATION PARAMS',
+      costLabel:'Cost price', packLabel:'Packaging', volLabel:'Volume (L)', adLabel:'Ad %',
+      breakdown:'COST BREAKDOWN',
+      narx:'Price', comm:'Commission (15%)', delivery:'Delivery (FBY)',
+      acquiring:'Acquiring (0.5%)',
+      reklama:'Advertising', tax:'Tax (6%)',
+      totalMkt:'Total YM fees', totalCost:'Total costs',
+      profitLabel:'EST. NET PROFIT', marja:'margin',
+      ueBtn:'+ Add to unit economics', marketBtn:'🔍 Market analysis →',
+      noPrice:'Price not found.',
+      footer:'Estimated · daromadchi.uz', taxminiy:'approx.',
+    },
+  };
 
-  // ── DATA EXTRACTION ───────────────────────────────────────────────────────
+  const THEME = {
+    dark:  {bg:'#0f1117',card:'#1a1f2e',border:'#2a3040',text:'#e2e8f0',muted:'#94a3b8',red:'#f87171',green:'#4ade80',amber:'#f59e0b'},
+    light: {bg:'#f8fafc',card:'#ffffff',border:'#e2e8f0',text:'#0f172a',muted:'#64748b',red:'#dc2626',green:'#16a34a',amber:'#d97706'},
+  };
 
-  function parseTitle() {
-    const selectors = [
-      '[data-auto="offerTitle"]',
-      'h1',
-      '[class*="title"]',
-      '[class*="Title"]',
-    ];
-    for (const sel of selectors) {
-      const el = document.querySelector(sel);
-      if (el && el.innerText && el.innerText.trim().length > 2) {
-        return el.innerText.trim().slice(0, 80);
-      }
-    }
-    return null;
-  }
+  let langKey = 'uz', theme = 'dark';
+  function L() { return LANGS[langKey]; }
+  function T() { return THEME[theme]; }
 
-  function parsePrice() {
-    // Yandex Market price selectors (market.yandex.ru + market.yandex.uz)
-    const specificSelectors = [
+  const commPct = 15;
+
+  function parseYmPrice() {
+    const specific = [
       '[data-auto="price"]',
       '[data-auto="snippet-price-current"]',
       '[data-zone-name="price"]',
       '[class*="YpcPrice"]',
-      '[class*="ypcPrice"]',
       '[class*="priceView"]',
       '[class*="PriceView"]',
       '[class*="priceBlock"]',
-      '[class*="PriceBlock"]',
       '[class*="price-value"]',
-      '[class*="priceValue"]',
-      'span[class*="price"]:not([class*="old"]):not([class*="Old"]):not([class*="cross"])',
-      'div[class*="price"]:not([class*="old"]):not([class*="Old"]):not([class*="cross"])',
     ];
-    for (const sel of specificSelectors) {
+    for (const sel of specific) {
       try {
         const el = document.querySelector(sel);
-        if (el) {
-          const raw = el.innerText.replace(/[^\d]/g, '');
-          if (raw.length >= 2 && raw.length <= 12) return parseInt(raw);
+        if (el && el.children.length <= 3) {
+          const raw = el.innerText.replace(/[^\d]/g,'');
+          if (raw.length>=2 && raw.length<=12) return parseInt(raw);
         }
-      } catch (_) {}
+      } catch(_) {}
     }
-
-    // Fallback: scan ALL elements for "сум" / "₽" / "руб" near digits
-    const allSpans = document.querySelectorAll('span, div, p, strong, b');
-    for (const el of allSpans) {
-      if (el.children.length > 3) continue; // skip containers
-      const text = el.innerText || '';
+    // Text scan for currency symbols
+    for (const el of document.querySelectorAll('span,div,p,strong')) {
+      if (el.children.length>3) continue;
+      const text = el.innerText||'';
       if (/сум|₽|руб/i.test(text)) {
-        const raw = text.replace(/[^\d]/g, '');
-        if (raw.length >= 2 && raw.length <= 12) {
-          const cls = (el.className || '').toLowerCase();
-          if (cls.includes('old') || cls.includes('cross') || cls.includes('strike') || cls.includes('prev')) continue;
-          return parseInt(raw);
-        }
-      }
-    }
-
-    // Last resort: class-based price selectors, skip old/crossed prices
-    const priceEls = document.querySelectorAll(
-      '[class*="price"], [class*="Price"], [class*="cost"], [class*="amount"]'
-    );
-    for (const el of priceEls) {
-      const cls = el.className.toLowerCase();
-      if (cls.includes('old') || cls.includes('cross') || cls.includes('strike') || cls.includes('prev')) continue;
-      const raw = el.innerText.replace(/[^\d]/g, '');
-      if (raw.length >= 2 && raw.length <= 12) return parseInt(raw);
-    }
-    return null;
-  }
-
-  function parseSku() {
-    // Try data-auto="sku"
-    const autoSku = document.querySelector('[data-auto="sku"]');
-    if (autoSku) return autoSku.innerText.trim();
-
-    // Look for text nodes / spans containing "SKU" or "Артикул"
-    const allEls = document.querySelectorAll('span, div, td, p');
-    for (const el of allEls) {
-      const text = el.innerText || '';
-      if (/артикул|sku/i.test(text) && text.length < 120) {
-        const match = text.match(/(?:артикул|sku)[:\s]*([^\s,\n]+)/i);
-        if (match && match[1]) return match[1].trim();
+        const raw = text.replace(/[^\d]/g,'');
+        if (raw.length>=2 && raw.length<=12) return parseInt(raw);
       }
     }
     return null;
   }
 
-  // ── SETTINGS ──────────────────────────────────────────────────────────────
-
-  async function loadSettings() {
-    const data = await chrome.storage.local.get(['ueSettings']);
-    return data.ueSettings || { costPrice: 0, adPct: 5, taxPct: 6, lastMile: 0 };
+  function parseYmTitle() {
+    for (const sel of ['[data-auto="offerTitle"]','h1','[class*="title"],[class*="Title"]']) {
+      const el = document.querySelector(sel);
+      if (el?.innerText?.trim().length > 2) return el.innerText.trim().slice(0,70);
+    }
+    return 'Mahsulot';
   }
 
-  // ── PROFIT CALCULATION ────────────────────────────────────────────────────
-
-  // Yandex Market commission is approximately 15% (varies by category)
-  const YM_COMMISSION_PCT = 15;
-
-  function calcProfit(sellingPrice, costPrice) {
-    const commission = Math.round(sellingPrice * YM_COMMISSION_PCT / 100);
-    const profit = sellingPrice - commission - costPrice;
-    const marginPct = Math.round((profit / sellingPrice) * 100);
-    const roi = costPrice > 0 ? Math.round((profit / costPrice) * 100) : null;
-    return { commission, profit, marginPct, roi };
+  function parseYmSku() {
+    const m = location.pathname.match(/\/product--[^/]+\/(\d+)/);
+    return m ? m[1] : null;
   }
 
-  function marginColor(pct) {
-    return pct >= 25 ? '#22c55e' : pct >= 10 ? '#f59e0b' : '#ef4444';
-  }
-
-  function roiColor(roi) {
-    if (roi === null) return '#64748b';
-    return roi >= 80 ? '#22c55e' : roi >= 30 ? '#f59e0b' : '#ef4444';
-  }
-
+  // Currency: so'm on .uz, ₽ on .ru
   function fp(n) {
-    if (!n && n !== 0) return '—';
-    return n.toLocaleString('ru-RU') + ' ₽';
+    if (n===null||n===undefined) return '—';
+    const v = Math.round(n);
+    return IS_UZ
+      ? v.toLocaleString('uz-UZ') + " so'm"
+      : v.toLocaleString('ru-RU') + ' ₽';
   }
 
-  // ── WIDGET ────────────────────────────────────────────────────────────────
-
-  function removeExisting() {
-    document.getElementById('drm-ym-widget')?.remove();
+  function calcYm(price, { adPct=5, costPrice=0, packaging=0, volume=0.5, fby=true }={}) {
+    const commission = Math.round(price * commPct / 100);
+    const delivery   = fby ? (volume ? Math.round(volume*15000) : 8000) : (volume ? Math.round(volume*10000) : 5000);
+    const acquiring  = Math.round(price * 0.005);
+    const adSpend    = Math.round(price * adPct / 100);
+    const tax        = Math.round(price * 0.06);
+    const mktTotal   = commission + delivery + acquiring;
+    const jamiTotal  = mktTotal + adSpend + tax + packaging + costPrice;
+    const netProfit  = price - jamiTotal;
+    const margin     = Math.round((netProfit / price) * 100);
+    const roi        = costPrice > 0 ? Math.round((netProfit / costPrice) * 100) : null;
+    return { commPct, commission, delivery, acquiring, adSpend, tax, packaging, costPrice, mktTotal, jamiTotal, netProfit, margin, roi };
   }
 
-  async function buildWidget() {
-    removeExisting();
+  function profitColor(margin) {
+    const t = T();
+    return margin >= 25 ? t.green : margin >= 10 ? t.amber : t.red;
+  }
 
-    const title = parseTitle();
-    const price = parsePrice();
-    const sku   = parseSku();
-    const settings = await loadSettings();
-    const { costPrice = 0 } = settings;
+  function buildWidget() {
+    let fby = true, costPrice = 0, packaging = 0, volume = 0.5, adPct = 5;
 
-    const eco = price ? calcProfit(price, costPrice) : null;
-    const mColor = eco ? marginColor(eco.marginPct) : '#64748b';
-    const rColor = eco?.roi !== null && eco?.roi !== undefined ? roiColor(eco.roi) : '#64748b';
+    chrome.storage.local.get(['ueSettings','drmLang','drmTheme'], data => {
+      if (data.ueSettings) {
+        costPrice = data.ueSettings.costPrice || 0;
+        packaging = data.ueSettings.packaging || 0;
+        volume    = data.ueSettings.volume    || 0.5;
+        adPct     = data.ueSettings.adPct     || 5;
+        fby       = data.ueSettings.fby !== undefined ? data.ueSettings.fby : true;
+      }
+      if (data.drmLang)  langKey = data.drmLang;
+      if (data.drmTheme) theme   = data.drmTheme;
+      render();
+    });
 
     const wrap = document.createElement('div');
     wrap.id = 'drm-ym-widget';
-
-    // Inline styles to avoid CSS class conflicts with Yandex Market page styles.
-    // We reuse the same dark palette as the Uzum widget.
-    Object.assign(wrap.style, {
-      position: 'fixed',
-      bottom: '20px',
-      right: '20px',
-      width: '300px',
-      background: '#13131f',
-      border: '1px solid #1e293b',
-      borderRadius: '14px',
-      boxShadow: '0 24px 64px rgba(0,0,0,.7)',
-      fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-      fontSize: '12.5px',
-      color: '#e2e8f0',
-      zIndex: '2147483647',
-      overflow: 'hidden',
-      maxHeight: '85vh',
-      transition: 'opacity .2s, transform .2s',
-    });
-
-    wrap.innerHTML = `
-      <!-- HEADER -->
-      <div style="display:flex;align-items:center;justify-content:space-between;
-                  padding:10px 14px;background:#1e293b;border-bottom:1px solid #334155;">
-        <div style="display:flex;align-items:center;gap:8px;font-weight:700;font-size:13px;color:#f1f5f9;">
-          <span style="width:8px;height:8px;border-radius:50%;background:#7c3aed;
-                       box-shadow:0 0 8px #7c3aed;display:inline-block;
-                       animation:drm-ym-blink 2s infinite;"></span>
-          Daromadchi
-          <span style="font-size:10px;color:#64748b;font-weight:400;margin-left:2px;">Yandex Market</span>
-        </div>
-        <div style="display:flex;gap:4px;">
-          <button id="drm-ym-cfg-toggle" title="Настройки"
-            style="background:none;border:none;color:#64748b;cursor:pointer;font-size:14px;
-                   padding:2px 5px;border-radius:4px;">⚙</button>
-          <button id="drm-ym-refresh" title="Обновить"
-            style="background:none;border:none;color:#64748b;cursor:pointer;font-size:14px;
-                   padding:2px 5px;border-radius:4px;">↻</button>
-          <button id="drm-ym-close" title="Закрыть"
-            style="background:none;border:none;color:#64748b;cursor:pointer;font-size:14px;
-                   padding:2px 5px;border-radius:4px;">✕</button>
-        </div>
-      </div>
-
-      <!-- INLINE SETTINGS -->
-      <div id="drm-ym-cfg-panel" style="display:none;padding:10px 12px;
-           border-bottom:1px solid #1e293b;background:#0a0f1e;">
-        <div style="font-size:10px;color:#64748b;text-transform:uppercase;
-                    letter-spacing:.7px;margin-bottom:8px;">Настройки расчёта</div>
-        <div style="display:flex;flex-direction:column;gap:6px;">
-          <div style="display:flex;justify-content:space-between;align-items:center;">
-            <span style="font-size:11px;color:#94a3b8;">Себестоимость (₽)</span>
-            <input id="drm-ym-cost" type="number" value="${costPrice || ''}" placeholder="0"
-              style="width:80px;background:#1e293b;border:1px solid #334155;border-radius:5px;
-                     padding:3px 6px;color:#e2e8f0;font-size:11px;text-align:right;"/>
-          </div>
-          <button id="drm-ym-cfg-save"
-            style="width:100%;padding:7px;background:#7c3aed;color:#fff;border:none;
-                   border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;margin-top:2px;">
-            Пересчитать
-          </button>
-        </div>
-      </div>
-
-      <!-- BODY -->
-      <div style="padding:12px;display:flex;flex-direction:column;gap:8px;
-                  max-height:calc(85vh - 44px);overflow-y:auto;">
-
-        ${title ? `
-        <div style="background:#1e293b;border-radius:10px;padding:10px 12px;">
-          <div style="font-size:10px;text-transform:uppercase;letter-spacing:.7px;
-                      color:#475569;margin-bottom:4px;">Товар</div>
-          <div style="font-size:12px;color:#f1f5f9;line-height:1.4;">${title}</div>
-          ${sku ? `<div style="font-size:11px;color:#64748b;margin-top:4px;">Артикул: ${sku}</div>` : ''}
-        </div>` : ''}
-
-        ${!price ? `
-        <div style="color:#64748b;text-align:center;padding:16px 0;font-size:12px;line-height:1.6;">
-          Цена не найдена.<br>Обновите страницу или перейдите на страницу товара.
-        </div>` : `
-
-        <!-- PRICE BLOCK -->
-        <div style="background:#1e293b;border-radius:10px;padding:10px 12px;
-                    display:flex;flex-direction:column;gap:5px;">
-          <div style="display:flex;justify-content:space-between;align-items:center;">
-            <span style="color:#94a3b8;font-size:11.5px;">Цена продажи</span>
-            <span style="font-size:13.5px;font-weight:700;color:#e2e8f0;">${fp(price)}</span>
-          </div>
-          <div style="display:flex;justify-content:space-between;align-items:center;">
-            <span style="color:#94a3b8;font-size:11.5px;">Комиссия YM (${YM_COMMISSION_PCT}%)</span>
-            <span style="font-size:12px;color:#f87171;">−${fp(eco.commission)}</span>
-          </div>
-          ${costPrice ? `
-          <div style="display:flex;justify-content:space-between;align-items:center;">
-            <span style="color:#94a3b8;font-size:11.5px;">Себестоимость</span>
-            <span style="font-size:12px;color:#f87171;">−${fp(costPrice)}</span>
-          </div>` : ''}
-        </div>
-
-        <!-- PROFIT BOX -->
-        <div style="border:1px solid ${mColor}30;background:${mColor}0d;border-radius:10px;
-                    padding:12px;text-align:center;">
-          <div style="font-size:10px;color:#94a3b8;text-transform:uppercase;
-                      letter-spacing:.5px;margin-bottom:4px;">Прибыль с продажи</div>
-          <div style="font-size:20px;font-weight:800;color:${mColor};line-height:1;">${fp(eco.profit)}</div>
-          <div style="background:#1e293b;border-radius:4px;height:4px;margin:8px 0 4px;overflow:hidden;">
-            <div style="height:100%;border-radius:4px;background:${mColor};
-                        width:${Math.max(0, Math.min(100, eco.marginPct))}%;
-                        transition:width .6s;"></div>
-          </div>
-          <div style="display:flex;justify-content:center;gap:16px;">
-            <div style="font-size:12px;opacity:.8;color:${mColor};">${eco.marginPct}% маржа</div>
-            ${eco.roi !== null ? `<div style="font-size:12px;opacity:.8;color:${rColor};">ROI ${eco.roi}%</div>` : ''}
-          </div>
-          ${!costPrice ? `<div style="font-size:10px;color:#64748b;margin-top:6px;">
-            Укажите себестоимость для точного расчёта ROI
-          </div>` : ''}
-        </div>
-
-        `}
-
-        <!-- COMPETITOR ANALYSIS -->
-        ${price ? (() => {
-          const reviewEl = document.querySelector('[class*="rating"], [class*="Rating"], [class*="reviewCount"], [data-auto="reviewCount"]');
-          const reviewRaw = reviewEl ? parseInt(reviewEl.innerText.replace(/[^\d]/g,'')) : 0;
-          const estMonthlySales = reviewRaw > 0 ? Math.round(reviewRaw * 30 / 12) : null;
-          const estRevenue = estMonthlySales ? estMonthlySales * price : null;
-          return estRevenue ? `
-          <div style="background:#0f172a;border:1px solid #1e293b;border-radius:10px;padding:10px 12px;">
-            <div style="font-size:10px;color:#475569;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">🔥 Raqib tahlili</div>
-            <div style="display:flex;justify-content:space-between;font-size:11.5px;margin-bottom:4px;">
-              <span style="color:#94a3b8;">Taxminiy oylik daromad</span>
-              <span style="color:#38bdf8;font-weight:700;">${fp(estRevenue)}</span>
-            </div>
-            <div style="display:flex;justify-content:space-between;font-size:11.5px;">
-              <span style="color:#94a3b8;">Taxminiy oylik sotuv</span>
-              <span style="color:#94a3b8;">${estMonthlySales} dona</span>
-            </div>
-          </div>` : '';
-        })() : ''}
-
-        <!-- ACTIONS -->
-        <div style="display:flex;flex-direction:column;gap:6px;">
-          <button id="drm-ym-ue"
-            style="border:none;border-radius:8px;padding:9px 12px;font-size:12px;
-                   font-weight:600;cursor:pointer;background:#7c3aed;color:#fff;
-                   font-family:inherit;transition:opacity .15s;">
-            📊 Unit-ekonomikaga qo'shish
-          </button>
-          <button id="drm-ym-market"
-            style="border:1px solid rgba(56,189,248,0.3);border-radius:8px;padding:9px 12px;font-size:12px;
-                   font-weight:600;cursor:pointer;background:rgba(56,189,248,0.1);color:#38bdf8;
-                   font-family:inherit;transition:opacity .15s;">
-            🔍 Bozor tahlili →
-          </button>
-          <button id="drm-ym-dash"
-            style="border:1px solid #334155;border-radius:8px;padding:9px 12px;font-size:12px;
-                   font-weight:600;cursor:pointer;background:#1e293b;color:#94a3b8;
-                   font-family:inherit;transition:opacity .15s;">
-            Dashboard →
-          </button>
-        </div>
-
-        <div style="font-size:10px;color:#475569;text-align:center;">
-          Приблизительный расчёт. <a href="https://daromadchi.uz" target="_blank"
-            style="color:#7c3aed;text-decoration:none;">Точный анализ →</a>
-        </div>
-      </div>
-
-      <style>
-        @keyframes drm-ym-blink { 0%,100% { opacity:1 } 50% { opacity:.4 } }
-        #drm-ym-widget button:hover { opacity: .85; }
-        #drm-ym-cfg-toggle:hover,
-        #drm-ym-refresh:hover,
-        #drm-ym-close:hover { background:#334155 !important; color:#e2e8f0 !important; }
-        #drm-ym-widget div::-webkit-scrollbar { width:3px; }
-        #drm-ym-widget div::-webkit-scrollbar-thumb { background:#334155;border-radius:2px; }
-      </style>
-    `;
-
-    // ── EVENTS ────────────────────────────────────────────────────────────────
-
-    wrap.querySelector('#drm-ym-close').onclick = () => {
-      wrap.style.opacity = '0';
-      wrap.style.transform = 'translateY(10px)';
-      wrap.style.pointerEvents = 'none';
-      chrome.storage.local.set({ ymWidgetClosed: Date.now() });
-    };
-
-    wrap.querySelector('#drm-ym-refresh').onclick = () => {
-      wrap.remove();
-      setTimeout(init, 400);
-    };
-
-    const cfgPanel = wrap.querySelector('#drm-ym-cfg-panel');
-    wrap.querySelector('#drm-ym-cfg-toggle').onclick = () => {
-      cfgPanel.style.display = cfgPanel.style.display === 'none' ? 'block' : 'none';
-    };
-
-    wrap.querySelector('#drm-ym-cfg-save').onclick = async () => {
-      const newSettings = {
-        ...(await loadSettings()),
-        costPrice: parseFloat(wrap.querySelector('#drm-ym-cost').value) || 0,
-      };
-      await chrome.storage.local.set({ ueSettings: newSettings });
-      buildWidget();
-    };
-
-    wrap.querySelector('#drm-ym-dash').onclick = () => {
-      window.open('https://daromadchi.uz/dashboard', '_blank');
-    };
-
-    wrap.querySelector('#drm-ym-market')?.addEventListener('click', () => {
-      window.open(`https://daromadchi.uz/dashboard/market?q=${encodeURIComponent(title || '')}&source=yandex`, '_blank');
-    });
-
-    wrap.querySelector('#drm-ym-ue').onclick = () => {
-      const params = new URLSearchParams({
-        source: 'yandex_market',
-        title: title || '',
-        price: String(price || ''),
-        url: location.href,
-        costPrice: String(costPrice || ''),
-        margin: String(eco?.marginPct ?? ''),
-        roi: String(eco?.roi ?? ''),
-      });
-      if (sku) params.set('sku', sku);
-      window.open(`https://daromadchi.uz/dashboard/unit-economics?${params}`, '_blank');
-    };
-
+    Object.assign(wrap.style, { position:'fixed', bottom:'24px', right:'24px', zIndex:'2147483647' });
     document.body.appendChild(wrap);
-  }
 
-  // ── INIT ──────────────────────────────────────────────────────────────────
+    const title = parseYmTitle();
+    const sku   = parseYmSku();
+
+    function getInputs() {
+      return {
+        costPrice: parseFloat(wrap.querySelector('#drm-ym-cost')?.value) || 0,
+        packaging: parseFloat(wrap.querySelector('#drm-ym-pack')?.value) || 0,
+        volume:    parseFloat(wrap.querySelector('#drm-ym-vol')?.value)  || 0.5,
+        adPct:     parseFloat(wrap.querySelector('#drm-ym-ad')?.value)   || 5,
+      };
+    }
+
+    function liveRecalc() {
+      const price = parseYmPrice();
+      if (!price) return;
+      const eco = calcYm(price, { ...getInputs(), fby });
+      const color = profitColor(eco.margin);
+      const set = (id,v) => { const e=wrap.querySelector('#drm-v-'+id); if(e) e.textContent=v; };
+      set('comm',    `−${fp(eco.commission)}`);
+      set('delivery',`−${fp(eco.delivery)}`);
+      set('acq',     `−${fp(eco.acquiring)}`);
+      set('ad',      `−${fp(eco.adSpend)}`);
+      set('tax',     `−${fp(eco.tax)}`);
+      set('mkt',     `−${fp(eco.mktTotal)}`);
+      set('total',   `−${fp(eco.jamiTotal)}`);
+      set('profit',  fp(eco.netProfit));
+      set('margin',  `${eco.margin}% ${L().marja}`);
+      const profEl = wrap.querySelector('#drm-v-profit');
+      const mrgEl  = wrap.querySelector('#drm-v-margin');
+      if (profEl) profEl.style.color = color;
+      if (mrgEl)  mrgEl.style.color  = color;
+      const bar = wrap.querySelector('#drm-profit-bar');
+      if (bar) { bar.style.width=Math.max(0,Math.min(100,eco.margin))+'%'; bar.style.background=color; }
+    }
+
+    function render() {
+      const price = parseYmPrice();
+      const t = T(), l = L();
+      const eco   = price ? calcYm(price, { costPrice, packaging, volume, adPct, fby }) : null;
+      const color = eco ? profitColor(eco.margin) : t.muted;
+      const barW  = eco ? Math.max(0,Math.min(100,eco.margin)) : 0;
+
+      const inp = (id,val,ph='0',step='1') =>
+        `<input id="${id}" type="number" step="${step}" value="${val||''}" placeholder="${ph}"
+         style="width:90px;background:${t.card};border:1px solid ${t.border};border-radius:6px;
+                padding:4px 8px;color:${t.text};font-size:12px;text-align:right;outline:none"/>`;
+      const row = (label,id,val,extra='') =>
+        `<div style="display:flex;justify-content:space-between;align-items:center;font-size:12px">
+           <span style="color:${t.muted}">${label}${extra}</span>
+           <span id="drm-v-${id}" style="color:${t.red}">${val}</span>
+         </div>`;
+
+      wrap.innerHTML = `
+        <div style="width:360px;max-height:92vh;overflow-y:auto;background:${t.bg};border:1px solid ${t.border};
+             border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.5);
+             font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;color:${t.text};
+             scrollbar-width:thin">
+
+          <!-- HEADER -->
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;
+               border-bottom:1px solid ${t.border};position:sticky;top:0;background:${t.bg};z-index:1">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-weight:700;font-size:14px">Daromadchi</span>
+              <span style="font-size:10px;font-weight:600;padding:2px 7px;background:#f59e0b;color:#000;border-radius:20px">YM</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:3px">
+              ${['uz','ru','en'].map(k=>`<button id="drm-lang-${k}" style="padding:2px 5px;border-radius:4px;border:1px solid ${langKey===k?'#7c3aed':t.border};background:${langKey===k?'#7c3aed':'transparent'};color:${langKey===k?'#fff':t.muted};font-size:10px;cursor:pointer">${k.toUpperCase()}</button>`).join('')}
+              <button id="drm-theme" style="padding:3px 7px;border-radius:5px;border:1px solid ${t.border};background:transparent;color:${t.muted};font-size:13px;cursor:pointer">${theme==='dark'?'☀️':'🌙'}</button>
+              <button id="drm-refresh" style="padding:3px 7px;border-radius:5px;border:1px solid ${t.border};background:transparent;color:${t.muted};cursor:pointer">↻</button>
+              <button id="drm-close" style="padding:3px 7px;border-radius:5px;border:1px solid ${t.border};background:transparent;color:${t.muted};cursor:pointer">✕</button>
+            </div>
+          </div>
+
+          <div style="padding:14px 16px;display:flex;flex-direction:column;gap:10px">
+
+            <!-- TITLE + PRICE -->
+            <div>
+              <div style="font-weight:600;font-size:13px;margin-bottom:4px">${title}</div>
+              ${price
+                ? `<div style="font-size:22px;font-weight:800;color:#a78bfa">${fp(price)}</div>`
+                : `<div style="color:${t.red};font-size:12px">${l.noPrice}</div>`}
+            </div>
+
+            <!-- FBY/FBS TOGGLE -->
+            <div style="display:flex;gap:6px">
+              <button id="drm-fby" style="flex:1;padding:7px;border-radius:8px;border:1px solid ${fby?'#7c3aed':t.border};background:${fby?'#7c3aed':'transparent'};color:${fby?'#fff':t.muted};font-size:12px;font-weight:600;cursor:pointer">${l.fby}</button>
+              <button id="drm-fbs" style="flex:1;padding:7px;border-radius:8px;border:1px solid ${!fby?'#7c3aed':t.border};background:${!fby?'#7c3aed':'transparent'};color:${!fby?'#fff':t.muted};font-size:12px;font-weight:600;cursor:pointer">${l.fbs}</button>
+            </div>
+
+            <!-- PARAMS -->
+            <div>
+              <div style="font-size:10px;font-weight:600;color:${t.muted};letter-spacing:.7px;margin-bottom:8px">${l.params}</div>
+              <div style="display:flex;flex-direction:column;gap:7px">
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                  <span style="font-size:12px;color:${t.muted}">${l.costLabel}</span>
+                  ${inp('drm-ym-cost',costPrice)}
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                  <span style="font-size:12px;color:${t.muted}">${l.packLabel}</span>
+                  ${inp('drm-ym-pack',packaging)}
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                  <span style="font-size:12px;color:${t.muted}">${l.volLabel}</span>
+                  ${inp('drm-ym-vol',volume,'0.5','0.1')}
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                  <span style="font-size:12px;color:${t.muted}">${l.adLabel}</span>
+                  ${inp('drm-ym-ad',adPct,'5','0.5')}
+                </div>
+              </div>
+            </div>
+
+            ${!eco ? '' : `
+            <!-- BREAKDOWN -->
+            <div>
+              <div style="font-size:10px;font-weight:600;color:${t.muted};letter-spacing:.7px;margin-bottom:8px">${l.breakdown}</div>
+              <div style="display:flex;flex-direction:column;gap:5px">
+                <div style="display:flex;justify-content:space-between;font-size:12px">
+                  <span style="color:${t.muted}">${l.narx}</span>
+                  <span style="color:${t.text};font-weight:600">${fp(price)}</span>
+                </div>
+                ${row(l.comm,'comm',`−${fp(eco.commission)}`)}
+                ${row(l.delivery,'delivery',`−${fp(eco.delivery)}`,` <span style="color:${t.amber};font-size:11px">${l.taxminiy}</span>`)}
+                ${row(l.acquiring,'acq',`−${fp(eco.acquiring)}`)}
+                ${row(l.reklama+` (${adPct}%)`,'ad',`−${fp(eco.adSpend)}`)}
+                ${row(l.tax,'tax',`−${fp(eco.tax)}`)}
+                <div style="height:1px;background:${t.border}"></div>
+                <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600">
+                  <span style="color:${t.muted}">${l.totalMkt}</span>
+                  <span id="drm-v-mkt" style="color:${t.red}">−${fp(eco.mktTotal)}</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600">
+                  <span style="color:${t.muted}">${l.totalCost}</span>
+                  <span id="drm-v-total" style="color:${t.red}">−${fp(eco.jamiTotal)}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- PROFIT BOX -->
+            <div style="background:${t.card};border:1px solid ${t.border};border-radius:12px;padding:14px;text-align:center">
+              <div style="font-size:10px;font-weight:600;color:${t.muted};letter-spacing:.7px;margin-bottom:6px">${l.profitLabel}</div>
+              <div id="drm-v-profit" style="font-size:26px;font-weight:800;color:${color};margin-bottom:6px">${fp(eco.netProfit)}</div>
+              <div style="height:4px;background:${t.border};border-radius:4px;margin-bottom:6px">
+                <div id="drm-profit-bar" style="height:4px;border-radius:4px;background:${color};width:${barW}%;transition:width .3s"></div>
+              </div>
+              <div id="drm-v-margin" style="color:${color};font-size:13px;font-weight:600">${eco.margin}% ${l.marja}</div>
+            </div>
+            `}
+
+            <!-- ACTIONS -->
+            <button id="drm-ym-ue" style="width:100%;padding:11px;background:#16a34a;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer">
+              ${l.ueBtn}
+            </button>
+            <button id="drm-ym-market" style="width:100%;padding:10px;background:${t.card};color:${t.text};border:1px solid ${t.border};border-radius:10px;font-size:13px;cursor:pointer">
+              ${l.marketBtn}
+            </button>
+
+            <div style="text-align:center;font-size:10px;color:${t.muted}">${l.footer}</div>
+          </div>
+        </div>
+      `;
+
+      wrap.querySelector('#drm-close').onclick   = () => { wrap.remove(); chrome.storage.local.set({ymWidgetClosed:Date.now()}); };
+      wrap.querySelector('#drm-refresh').onclick = () => { wrap.remove(); setTimeout(init,300); };
+
+      wrap.querySelector('#drm-theme').onclick = () => {
+        theme = theme==='dark'?'light':'dark';
+        chrome.storage.local.set({drmTheme:theme});
+        render();
+      };
+
+      ['uz','ru','en'].forEach(k => {
+        wrap.querySelector(`#drm-lang-${k}`)?.addEventListener('click', () => {
+          langKey = k; chrome.storage.local.set({drmLang:k}); render();
+        });
+      });
+
+      wrap.querySelector('#drm-fby').onclick = () => { fby=true;  render(); };
+      wrap.querySelector('#drm-fbs').onclick = () => { fby=false; render(); };
+
+      ['#drm-ym-cost','#drm-ym-pack','#drm-ym-vol','#drm-ym-ad'].forEach(id => {
+        wrap.querySelector(id)?.addEventListener('input', liveRecalc);
+      });
+
+      wrap.querySelector('#drm-ym-ue')?.addEventListener('click', async () => {
+        const vals = getInputs();
+        const p2 = parseYmPrice();
+        const eco2 = p2 ? calcYm(p2, { ...vals, fby }) : null;
+        await chrome.storage.local.set({ ueSettings: { ...vals, fby } });
+        const params = new URLSearchParams({
+          source:'yandex_market', title, url:location.href,
+          price:      String(p2    || ''),
+          commPct:    String(commPct),
+          commission: String(eco2?.commission || ''),
+          delivery:   String(eco2?.delivery   || ''),
+          acquiring:  String(eco2?.acquiring  || ''),
+          adSpend:    String(eco2?.adSpend    || ''),
+          tax:        String(eco2?.tax        || ''),
+          packaging:  String(eco2?.packaging  || ''),
+          profit:     String(eco2?.netProfit  ?? ''),
+          margin:     String(eco2?.margin     ?? ''),
+          roi:        String(eco2?.roi        ?? ''),
+        });
+        if (sku) params.set('sku', sku);
+        window.open(`https://daromadchi.uz/dashboard/unit-economics?${params}`, '_blank');
+      });
+
+      wrap.querySelector('#drm-ym-market')?.addEventListener('click', () => {
+        window.open(`https://daromadchi.uz/dashboard/market?q=${encodeURIComponent(title)}&source=yandex`, '_blank');
+      });
+    }
+  }
 
   async function init() {
-    // Respect close state for 30 minutes
+    if (document.getElementById('drm-ym-widget')) return;
+    if (!IS_PRODUCT) return;
     const { ymWidgetClosed } = await chrome.storage.local.get('ymWidgetClosed');
-    if (ymWidgetClosed && Date.now() - ymWidgetClosed < 1800000) return;
-
-    await buildWidget();
+    if (Date.now() - (ymWidgetClosed||0) < 1800000) return;
+    buildWidget();
   }
 
-  // Use MutationObserver to handle SPA navigation on Yandex Market
+  if (document.readyState==='loading') {
+    document.addEventListener('DOMContentLoaded', () => setTimeout(init, 1500));
+  } else {
+    setTimeout(init, 1500);
+  }
+
   let lastUrl = location.href;
-  let initTimer = null;
-
-  function scheduleInit(delay = 1800) {
-    clearTimeout(initTimer);
-    initTimer = setTimeout(init, delay);
-  }
-
   new MutationObserver(() => {
     if (location.href !== lastUrl) {
       lastUrl = location.href;
-      // Check if the new URL is a product page
-      const newPathname = window.location.pathname;
-      const isNowProduct = (
-        newPathname.includes('/products/') ||
-        newPathname.includes('/offer') ||
-        newPathname.includes('/product') ||
-        /\/business\/\d+\//.test(newPathname) ||
-        /\/sku\//.test(newPathname)
-      );
-      removeExisting();
-      if (isNowProduct || IS_BUYER) scheduleInit();
+      setTimeout(() => { document.getElementById('drm-ym-widget')?.remove(); init(); }, 1800);
     }
-  }).observe(document, { subtree: true, childList: true });
-
-  // Initial load
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => scheduleInit());
-  } else {
-    scheduleInit();
-  }
-
+  }).observe(document, { subtree:true, childList:true });
 })();
