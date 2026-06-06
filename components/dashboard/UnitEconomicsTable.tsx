@@ -61,12 +61,20 @@ const DEFAULT_SETTINGS: UnitEcoSettings = {
   defaultCommissionPct: 10,
 }
 
+interface FromExtension {
+  source: string; title: string; price: number; commPct: number
+  commission: number; delivery: number; acquiring: number; adSpend: number
+  tax: number; packaging: number; profit: number; margin: number; roi: number
+  url: string; productId: string
+}
+
 interface Props {
   items: UnitEconomicsItem[]
   defaultSettings?: UnitEcoSettings
+  fromExtension?: FromExtension | null
 }
 
-export default function UnitEconomicsTable({ items: initialItems, defaultSettings }: Props) {
+export default function UnitEconomicsTable({ items: initialItems, defaultSettings, fromExtension }: Props) {
   const { lang } = useLang()
   const d = translations[lang].dashboard
   const initSettings = defaultSettings ?? DEFAULT_SETTINGS
@@ -83,6 +91,44 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
   const [editingSupplier, setEditingSupplier] = useState<string|null>(null)
   const supplierRef = useRef<HTMLInputElement>(null)
   const printRef    = useRef<HTMLDivElement>(null)
+  const [extPending, setExtPending] = useState<FromExtension | null>(fromExtension ?? null)
+  const [extSaving, setExtSaving]   = useState(false)
+
+  async function saveFromExtension() {
+    if (!extPending) return
+    setExtSaving(true)
+    const marketplace = extPending.source === 'wb' ? 'wildberries'
+      : extPending.source === 'yandex_market' ? 'yandex' : 'uzum'
+    try {
+      const res = await fetch('/api/unit-economics', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title:         extPending.title || 'Mahsulot',
+          marketplace,
+          sellingPrice:  extPending.price,
+          costPrice:     extPending.packaging || 0,
+          commissionPct: extPending.commPct,
+          commission:    extPending.commission,
+          delivery:      extPending.delivery,
+          acquiring:     extPending.acquiring,
+          adSpend:       extPending.adSpend,
+          tax:           extPending.tax,
+          netProfit:     extPending.profit,
+          roi:           extPending.roi,
+          margin:        extPending.margin,
+          productUrl:    extPending.url || undefined,
+        }),
+      })
+      if (res.ok) {
+        const newItem = await res.json()
+        setItems(prev => [newItem, ...prev])
+        setExtPending(null)
+      }
+    } finally {
+      setExtSaving(false)
+    }
+  }
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase()
@@ -161,6 +207,25 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
 
   return (
     <div className="space-y-4" ref={printRef}>
+      {/* Extension import banner */}
+      {extPending && (
+        <div className="flex items-center justify-between gap-3 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl px-4 py-3">
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-emerald-400 truncate">{extPending.title || 'Mahsulot'}</p>
+            <p className="text-xs text-slate-300 mt-0.5">
+              {extPending.source?.toUpperCase()} · {new Intl.NumberFormat('uz-UZ').format(extPending.price)} so&apos;m · {extPending.margin}% marja
+            </p>
+          </div>
+          <button onClick={() => setExtPending(null)}
+            className="flex items-center gap-1 px-3 py-1.5 bg-[var(--bg-card2)] hover:bg-red-500/10 text-[var(--text-muted)] hover:text-red-400 text-xs rounded-xl border border-[var(--border)] transition-colors">
+            <X className="w-3.5 h-3.5" /> Bekor
+          </button>
+          <button onClick={saveFromExtension} disabled={extSaving}
+            className="flex items-center gap-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-semibold rounded-xl transition-colors">
+            <Check className="w-3.5 h-3.5" /> {extSaving ? 'Saqlanmoqda...' : "Qo'shish"}
+          </button>
+        </div>
+      )}
       {/* Toolbar */}
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
         <div className="relative flex-1 max-w-xs">
