@@ -31,9 +31,20 @@
   function parsePrice() {
     const els = document.querySelectorAll('[class*="price"], [class*="Price"], [class*="cost"], [class*="amount"]');
     for (const el of els) {
-      if (el.className.toLowerCase().includes('old') || el.className.toLowerCase().includes('cross')) continue;
-      const raw = el.innerText.replace(/[^\d]/g, '');
-      if (raw.length >= 4 && raw.length <= 12) return parseInt(raw);
+      const cn = el.className.toLowerCase();
+      if (cn.includes('old') || cn.includes('cross') || cn.includes('credit') || cn.includes('installment') || cn.includes('kartasiz')) continue;
+      // Use textContent of direct text nodes only to avoid concatenating child elements
+      const directText = Array.from(el.childNodes)
+        .filter(n => n.nodeType === Node.TEXT_NODE)
+        .map(n => n.textContent)
+        .join('');
+      const fromDirect = directText.replace(/[^\d]/g, '');
+      if (fromDirect.length >= 4 && fromDirect.length <= 9) return parseInt(fromDirect);
+      // Only use full innerText if element has no significant children
+      if (el.children.length === 0) {
+        const raw = el.innerText.replace(/[^\d]/g, '');
+        if (raw.length >= 4 && raw.length <= 9) return parseInt(raw);
+      }
     }
     return null;
   }

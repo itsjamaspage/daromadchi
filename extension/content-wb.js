@@ -23,7 +23,8 @@
 
     // Aggressive price parser — tries many WB Uzbekistan selectors
     function parseWbPrice() {
-      // Try specific WB price selectors first
+      // WB renders current price inside <ins> tags within .price-block
+      // Try most specific selectors first
       const specific = [
         '.price-block__final-price',
         '[class*="price-block__final"]',
@@ -43,12 +44,12 @@
           if (raw.length >= 3 && raw.length <= 12) return parseInt(raw);
         }
       }
-      // Fallback: find largest number near "сум" or "₽" text on page
-      const allText = document.body.innerText;
-      const matches = allText.match(/(\d[\d\s]{2,10}\d)\s*(?:сум|₽)/g);
-      if (matches && matches.length > 0) {
-        const nums = matches.map(m => parseInt(m.replace(/[^\d]/g, ''))).filter(n => n > 1000 && n < 100000000);
-        if (nums.length > 0) return Math.min(...nums); // lowest price = sale price
+      // Fallback: scan all <ins> tags — WB uses <ins> exclusively for current price
+      const insTags = document.querySelectorAll('ins');
+      for (const el of insTags) {
+        const raw = el.innerText.replace(/[^\d]/g, '');
+        // Valid price: 4–8 digits (1,000 – 99,999,999 som)
+        if (raw.length >= 4 && raw.length <= 8) return parseInt(raw);
       }
       return null;
     }
