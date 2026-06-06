@@ -93,10 +93,12 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
   const printRef    = useRef<HTMLDivElement>(null)
   const [extPending, setExtPending] = useState<FromExtension | null>(fromExtension ?? null)
   const [extSaving, setExtSaving]   = useState(false)
+  const [extError, setExtError]     = useState<string | null>(null)
 
   async function saveFromExtension() {
     if (!extPending) return
     setExtSaving(true)
+    setExtError(null)
     const marketplace: 'uzum' | 'yandex_market' | 'wildberries' =
       extPending.source === 'wb' ? 'wildberries'
       : extPending.source === 'yandex_market' ? 'yandex_market' : 'uzum'
@@ -132,7 +134,14 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
         }
         setItems(prev => [newItem, ...prev])
         setExtPending(null)
+        setExtError(null)
+      } else if (res.status === 401 || json.error === 'auth') {
+        setExtError('Kirish talab qilinadi. Sahifani yangilang yoki qayta kiring.')
+      } else {
+        setExtError(json.error || `Xato: ${res.status}`)
       }
+    } catch (e) {
+      setExtError('Tarmoq xatosi. Qayta urinib ko\'ring.')
     } finally {
       setExtSaving(false)
     }
@@ -220,9 +229,10 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
         <div className="flex items-center justify-between gap-3 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl px-4 py-3">
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-emerald-400 truncate">{extPending.title || 'Mahsulot'}</p>
-            <p className="text-xs text-slate-300 mt-0.5">
+              <p className="text-xs text-slate-300 mt-0.5">
               {extPending.source?.toUpperCase()} · {new Intl.NumberFormat('uz-UZ').format(extPending.price)} so&apos;m · {extPending.margin}% marja
             </p>
+            {extError && <p className="text-xs text-red-400 mt-1">{extError}</p>}
           </div>
           <button onClick={() => setExtPending(null)}
             className="flex items-center gap-1 px-3 py-1.5 bg-[var(--bg-card2)] hover:bg-red-500/10 text-[var(--text-muted)] hover:text-red-400 text-xs rounded-xl border border-[var(--border)] transition-colors">
