@@ -97,31 +97,39 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
   async function saveFromExtension() {
     if (!extPending) return
     setExtSaving(true)
-    const marketplace = extPending.source === 'wb' ? 'wildberries'
-      : extPending.source === 'yandex_market' ? 'yandex' : 'uzum'
+    const marketplace: 'uzum' | 'yandex_market' | 'wildberries' =
+      extPending.source === 'wb' ? 'wildberries'
+      : extPending.source === 'yandex_market' ? 'yandex_market' : 'uzum'
+    const payload = {
+      title:         extPending.title || 'Mahsulot',
+      marketplace,
+      sellingPrice:  extPending.price,
+      costPrice:     extPending.packaging || 0,
+      commissionPct: extPending.commPct,
+      commission:    extPending.commission,
+      delivery:      extPending.delivery,
+      lastMile:      0,
+      acquiring:     extPending.acquiring,
+      adSpend:       extPending.adSpend,
+      tax:           extPending.tax,
+      netProfit:     extPending.profit,
+      roi:           extPending.roi,
+      margin:        extPending.margin,
+      productUrl:    extPending.url || undefined,
+    }
     try {
       const res = await fetch('/api/unit-economics', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title:         extPending.title || 'Mahsulot',
-          marketplace,
-          sellingPrice:  extPending.price,
-          costPrice:     extPending.packaging || 0,
-          commissionPct: extPending.commPct,
-          commission:    extPending.commission,
-          delivery:      extPending.delivery,
-          acquiring:     extPending.acquiring,
-          adSpend:       extPending.adSpend,
-          tax:           extPending.tax,
-          netProfit:     extPending.profit,
-          roi:           extPending.roi,
-          margin:        extPending.margin,
-          productUrl:    extPending.url || undefined,
-        }),
+        body: JSON.stringify(payload),
       })
-      if (res.ok) {
-        const newItem = await res.json()
+      const json = await res.json()
+      if (res.ok && json.id) {
+        const newItem: import('@/lib/types').UnitEconomicsItem = {
+          ...payload,
+          id: json.id,
+          addedAt: new Date().toISOString(),
+        }
         setItems(prev => [newItem, ...prev])
         setExtPending(null)
       }
