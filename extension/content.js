@@ -135,21 +135,23 @@
       }
     }
 
-    // 2. Fallback: scan all leaf elements for "so'm" text, take topmost on page
+    // 2. Fallback: scan all leaf elements for "so'm" text
+    function inInstallCtx(el) {
+      let node = el;
+      for (let i = 0; i < 10; i++) {
+        if (!node.parentElement) break;
+        node = node.parentElement;
+        const t = node.innerText || '';
+        if (t.length < 500 && /×\s*\d+\s*oy|\d+\s*oy\b|kartasiz|\d+\s*месяц|рассрочк|muddatli/i.test(t)) return true;
+      }
+      return false;
+    }
     const candidates = [];
     for (const el of document.querySelectorAll('span,div,p,strong,b')) {
       if (el.children.length > 2) continue;
       const text = el.innerText || '';
       if (!/so[`']?m|сум/i.test(text)) continue;
-      // Skip installment context: parent element contains "× N oy"
-      let node = el;
-      let inInstall = false;
-      for (let i=0;i<5;i++) {
-        node = node.parentElement;
-        if (!node) break;
-        if (/×\s*\d+\s*oy|kartasiz|\d+\s*oy/i.test(node.innerText||'') && node.innerText.length < 200) { inInstall=true; break; }
-      }
-      if (inInstall) continue;
+      if (inInstallCtx(el)) continue;
       const cn = (el.className||'').toLowerCase();
       if (/old|cross|strike|prev|origin/.test(cn)) continue;
       const raw = text.replace(/[^\d]/g,'');
@@ -158,11 +160,12 @@
         if (rect.width > 0) candidates.push({ price:parseInt(raw), top:rect.top+window.scrollY });
       }
     }
-    if (candidates.length>0) {
-      candidates.sort((a,b)=>a.top-b.top);
-      return candidates[0].price;
-    }
-    return null;
+    if (candidates.length === 0) return null;
+    // Filter out installment outliers: remove prices < 15% of the max
+    const maxP = Math.max(...candidates.map(c=>c.price));
+    const filtered = candidates.filter(c => c.price >= maxP * 0.15);
+    filtered.sort((a,b)=>a.top-b.top);
+    return filtered[0].price;
   }
 
   function parseTitle() { return (document.querySelector('h1')||{}).innerText?.trim().slice(0,70)||'Mahsulot'; }

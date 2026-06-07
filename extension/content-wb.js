@@ -176,7 +176,7 @@
       toggleBtn.id = 'drm-wb-toggle';
       toggleBtn.title = 'Daromadchi';
       toggleBtn.textContent = 'D';
-      toggleBtn.style.cssText = 'position:fixed!important;bottom:24px!important;right:24px!important;z-index:2147483647!important;width:44px!important;height:44px!important;border-radius:50%!important;background:#7c3aed!important;border:none!important;cursor:pointer!important;box-shadow:0 4px 20px rgba(124,58,237,.5)!important;font-size:20px!important;color:#fff!important;font-family:-apple-system,sans-serif!important;';
+      toggleBtn.style.cssText = 'position:fixed!important;bottom:24px!important;right:24px!important;z-index:2147483647!important;width:44px!important;height:44px!important;border-radius:50%!important;background:#7c3aed!important;border:none!important;cursor:pointer!important;box-shadow:0 4px 20px rgba(124,58,237,.5)!important;font-size:20px!important;color:#fff!important;font-family:-apple-system,sans-serif!important;align-items:center!important;justify-content:center!important;';
       toggleBtn.style.setProperty('display','none','important');
       document.body.appendChild(toggleBtn);
       toggleBtn.onclick = () => { wrap.style.display='block'; toggleBtn.style.setProperty('display','none','important'); };
