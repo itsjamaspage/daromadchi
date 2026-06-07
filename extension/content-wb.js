@@ -215,10 +215,10 @@
           <div style="display:flex;align-items:center;justify-content:space-between;padding:11px 14px;border-bottom:1px solid ${t.border};position:sticky;top:0;background:${t.bg};z-index:1">
             <div style="display:flex;align-items:center;gap:7px">
               <span style="font-weight:700;font-size:14px;color:${t.text}">Daromadchi</span>
-              <span style="font-size:10px;font-weight:600;padding:2px 7px;background:#9f1239;color:#fff;border-radius:20px;display:inline-block">WB</span>
+              <span style="font-size:10px;font-weight:600;padding:2px 7px;background:#7c3aed;color:#fff;border-radius:20px;display:inline-block">WB</span>
             </div>
             <div style="display:flex;align-items:center;gap:3px">
-              ${['uz','ru','en'].map(k=>`<button id="drm-wb-lang-${k}" style="padding:2px 5px;border-radius:4px;border:1px solid ${langKey===k?'#9f1239':t.border};background:${langKey===k?'#9f1239':'transparent'};color:${langKey===k?'#fff':t.muted};font-size:10px">${k.toUpperCase()}</button>`).join('')}
+              ${['uz','ru','en'].map(k=>`<button id="drm-wb-lang-${k}" style="padding:2px 5px;border-radius:4px;border:1px solid ${langKey===k?'#7c3aed':t.border};background:${langKey===k?'#7c3aed':'transparent'};color:${langKey===k?'#fff':t.muted};font-size:10px">${k.toUpperCase()}</button>`).join('')}
               <button id="drm-wb-theme" style="padding:3px 6px;border-radius:5px;border:1px solid ${t.border};background:transparent;color:${t.muted};font-size:13px">${theme==='dark'?'☀️':'🌙'}</button>
               <button id="drm-wb-refresh" style="padding:3px 6px;border-radius:5px;border:1px solid ${t.border};background:transparent;color:${t.muted};font-size:14px">↻</button>
               <button id="drm-wb-close" style="padding:3px 6px;border-radius:5px;border:1px solid ${t.border};background:transparent;color:${t.muted};font-size:14px">✕</button>
@@ -234,8 +234,8 @@
             </div>
 
             <div style="display:flex;gap:6px">
-              <button id="drm-wb-fby" style="flex:1;padding:7px;border-radius:8px;border:1px solid ${fby?'#9f1239':t.border};background:${fby?'#9f1239':'transparent'};color:${fby?'#fff':t.muted};font-size:12px;font-weight:600">${l.fby}</button>
-              <button id="drm-wb-fbs" style="flex:1;padding:7px;border-radius:8px;border:1px solid ${!fby?'#9f1239':t.border};background:${!fby?'#9f1239':'transparent'};color:${!fby?'#fff':t.muted};font-size:12px;font-weight:600">${l.fbs}</button>
+              <button id="drm-wb-fby" style="flex:1;padding:7px;border-radius:8px;border:1px solid ${fby?'#7c3aed':t.border};background:${fby?'#7c3aed':'transparent'};color:${fby?'#fff':t.muted};font-size:12px;font-weight:600">${l.fby}</button>
+              <button id="drm-wb-fbs" style="flex:1;padding:7px;border-radius:8px;border:1px solid ${!fby?'#7c3aed':t.border};background:${!fby?'#7c3aed':'transparent'};color:${!fby?'#fff':t.muted};font-size:12px;font-weight:600">${l.fbs}</button>
             </div>
 
             <div>

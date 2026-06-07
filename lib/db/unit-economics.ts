@@ -72,11 +72,11 @@ export async function updateUnitEconomicsSupplier(id: string, supplierUrl: strin
 
 export async function addUnitEconomicsItem(
   item: Omit<UnitEconomicsItem, 'id' | 'addedAt'>
-): Promise<{ id: string } | null> {
+): Promise<{ id: string } | null | false> {
   if (!supabaseConfigured) return { id: `mock-${Date.now()}` }
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return null
+  if (!user) return null   // null = not authenticated
 
   const { data, error } = await supabase
     .from('unit_economics_items')
@@ -107,7 +107,7 @@ export async function addUnitEconomicsItem(
     .select('id')
     .single()
 
-  if (error || !data) return null
+  if (error || !data) return false  // false = insert failed (DB error)
   return { id: data.id as string }
 }
 

@@ -195,21 +195,21 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
     <div className="space-y-4" ref={printRef}>
       {/* Extension banner */}
       {extPending && (
-        <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-3">
+        <div className="bg-violet-500/10 border border-violet-500/30 rounded-2xl px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-3">
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-emerald-300 truncate">{extPending.title}</p>
-            <p className="text-xs text-emerald-400/70 mt-0.5">
+            <p className="text-sm font-semibold text-violet-300 truncate">{extPending.title}</p>
+            <p className="text-xs text-violet-400/70 mt-0.5">
               {extPending.marketplace?.toUpperCase()} · {extPending.sellingPrice ? `${new Intl.NumberFormat('uz-UZ').format(Math.round(extPending.sellingPrice))} so'm` : ''} · {extPending.margin ? `${Math.round(extPending.margin)}% marja` : ''}
             </p>
             {extError && <p className="text-xs text-red-400 mt-1">{extError}</p>}
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
             <button onClick={() => setExtPending(null)}
-              className="px-3 py-1.5 text-xs font-semibold text-emerald-400/70 hover:text-emerald-300 border border-emerald-500/20 rounded-lg transition-colors">
+              className="px-3 py-1.5 text-xs font-semibold text-violet-400/70 hover:text-violet-300 border border-violet-500/20 rounded-lg transition-colors">
               Bekor
             </button>
             <button onClick={saveFromExtension} disabled={extSaving}
-              className="px-4 py-1.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-lg transition-colors">
+              className="px-4 py-1.5 text-xs font-semibold btn-primary disabled:opacity-50 rounded-lg transition-colors">
               {extSaving ? 'Saqlanmoqda…' : "Qo'shish"}
             </button>
           </div>

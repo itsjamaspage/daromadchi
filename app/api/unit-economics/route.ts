@@ -7,7 +7,8 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json() as Omit<UnitEconomicsItem, 'id' | 'addedAt'>
     const result = await addUnitEconomicsItem(body)
-    if (!result) return NextResponse.json({ ok: false, error: 'auth' }, { status: 401 })
+    if (result === null) return NextResponse.json({ ok: false, error: 'auth' }, { status: 401 })
+    if (result === false) return NextResponse.json({ ok: false, error: 'Saqlashda xato yuz berdi' }, { status: 500 })
     return NextResponse.json({ ok: true, id: result.id })
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Server xatosi'
