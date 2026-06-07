@@ -20,9 +20,8 @@
         bottom: 24px !important;
         right: 24px !important;
         z-index: 2147483647 !important;
-        display: block !important;
         width: 360px !important;
-        max-height: 92vh !important;
+        max-height: 72vh !important;
         overflow-y: auto !important;
         border-radius: 16px !important;
         box-shadow: 0 20px 60px rgba(0,0,0,.5) !important;
@@ -158,10 +157,13 @@
     return `<div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:1px 0"><span style="color:${t.muted}">${label}${extra}</span><span id="drm-ym-v-${id}" style="color:${t.red}">${val}</span></div>`;
   }
 
-  function buildYmWidget() {
+  function buildYmWidget(attempt=0) {
     const price = parseYmPrice();
     const title = parseYmTitle();
-    if (!price) return; // not a product page, exit silently
+    if (!price) {
+      if (attempt < 6) setTimeout(()=>{ if(!document.getElementById('drm-ym-ue')) buildYmWidget(attempt+1); }, 800);
+      return;
+    }
 
     let fby=true, costPrice=0, packaging=0, adPct=5, volume=1;
 
@@ -315,7 +317,7 @@
   }
 
   let lastUrl=location.href, initTimer=null;
-  function scheduleInit(delay=1800) { clearTimeout(initTimer); initTimer=setTimeout(tryInit,delay); }
+  function scheduleInit(delay=2500) { clearTimeout(initTimer); initTimer=setTimeout(tryInit,delay); }
 
   new MutationObserver(()=>{
     if(location.href!==lastUrl){ lastUrl=location.href; document.getElementById('drm-ym-ue')?.remove(); document.getElementById('drm-ym-toggle')?.remove(); scheduleInit(); }

@@ -24,9 +24,8 @@
           bottom: 24px !important;
           right: 24px !important;
           z-index: 2147483647 !important;
-          display: block !important;
-          width: 360px !important;
-          max-height: 92vh !important;
+            width: 360px !important;
+          max-height: 72vh !important;
           overflow-y: auto !important;
           border-radius: 16px !important;
           box-shadow: 0 20px 60px rgba(0,0,0,.5) !important;
@@ -158,9 +157,12 @@
       return `<div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:1px 0"><span style="color:${t.muted}">${label}${extra}</span><span id="drm-wb-v-${id}" style="color:${t.red}">${val}</span></div>`;
     }
 
-    function buildWbWidget() {
+    function buildWbWidget(attempt=0) {
       const price   = parseWbPrice();
-      if (!price) { setTimeout(()=>{ if(!document.getElementById('drm-wb-ue')) buildWbWidget(); },1500); return; }
+      if (!price) {
+        if (attempt < 6) setTimeout(()=>{ if(!document.getElementById('drm-wb-ue')) buildWbWidget(attempt+1); }, 800);
+        return;
+      }
       const title   = parseWbTitle();
       const article = getArticle();
 
@@ -322,13 +324,12 @@
       buildWbWidget();
     }
 
-    setTimeout(tryInit,1500);
-    setTimeout(()=>{ if(!document.getElementById('drm-wb-ue')) tryInit(); },3500);
+    setTimeout(tryInit,2500);
 
     let lastUrl=location.href;
     new MutationObserver(()=>{
       if(location.href!==lastUrl){ lastUrl=location.href;
-        setTimeout(()=>{ document.getElementById('drm-wb-ue')?.remove(); document.getElementById('drm-wb-toggle')?.remove(); if(/\/catalog\/\d+/.test(location.pathname)) tryInit(); },1800); }
+        setTimeout(()=>{ document.getElementById('drm-wb-ue')?.remove(); document.getElementById('drm-wb-toggle')?.remove(); if(/\/catalog\/\d+/.test(location.pathname)) tryInit(); },2500); }
     }).observe(document,{subtree:true,childList:true});
 
     return;
