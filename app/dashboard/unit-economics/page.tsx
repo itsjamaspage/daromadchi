@@ -40,7 +40,7 @@ export default async function UnitEconomicsPage({
     tax:           num(sp.tax),
     netProfit:     num(sp.profit),
     margin:        num(sp.margin),
-    roi:           num(sp.roi),
+    roi:           str(sp.roi) ? num(sp.roi) : null,
     sku:           str(sp.productId) || undefined,
   } : null
 
