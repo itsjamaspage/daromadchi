@@ -395,15 +395,51 @@ export default function MarketClient({ marketplace, initialCategories, userCateg
       setMode('search'); setSelectedCat(null)
       startTransition(async () => {
         try {
-          console.log('[handleSearch] calling /api/market/products?q=', query)
-          const res = await fetch(`/api/market/products?q=${encodeURIComponent(query)}&sort=${su}`)
-          console.log('[handleSearch] api response status:', res.status)
+          const gql = `query MakeSearch($text:String!,$limit:Int!){makeSearch(query:{text:$text,pagination:{offset:0,limit:$limit},showAdultContent:NONE}){total items{catalogCard{id title minSellPrice minFullPrice feedbackQuantity rating photos{key link{high low}}}}}}`
+          const res = await fetch('https://graphql.uzum.uz', {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+              'apollographql-client-name': 'web',
+            },
+            body: JSON.stringify({ operationName: 'MakeSearch', query: gql, variables: { text: query, limit: 40 } }),
+          })
           if (res.ok) {
-            const d = await res.json() as { products: UzumPublicProduct[]; total: number }
-            console.log('[handleSearch] uzum products:', d.products?.length)
-            setUzumProducts(d.products); setTotal(d.total)
+            const data = await res.json() as { data?: { makeSearch?: { total?: number; items?: Array<{ catalogCard: Record<string, unknown> }> } } }
+            const items = data?.data?.makeSearch?.items ?? []
+            const products: UzumPublicProduct[] = items.map(item => {
+              const c = item.catalogCard
+              return {
+                id: c.id as number, title: c.title as string,
+                minSellPrice: c.minSellPrice as number, minFullPrice: c.minFullPrice as number,
+                maxSellPrice: c.minSellPrice as number, maxFullPrice: c.minFullPrice as number,
+                ordersAmount: Math.round((c.feedbackQuantity as number) * 15),
+                reviewsAmount: c.feedbackQuantity as number,
+                rating: c.rating as number,
+                photos: (c.photos as Array<{ key: string }>)?.map(p => ({ photoKey: p.key })),
+              }
+            })
+            setUzumProducts(products); setTotal(data?.data?.makeSearch?.total ?? products.length)
+          } else {
+            // Fallback to server proxy
+            const r2 = await fetch(`/api/market/products?q=${encodeURIComponent(query)}&sort=${su}`)
+            if (r2.ok) {
+              const d = await r2.json() as { products: UzumPublicProduct[]; total: number }
+              setUzumProducts(d.products); setTotal(d.total)
+            }
           }
-        } catch (err) { console.error('[handleSearch] uzum fetch error:', err) }
+        } catch {
+          // Fallback to server proxy on CORS or network error
+          try {
+            const r2 = await fetch(`/api/market/products?q=${encodeURIComponent(query)}&sort=${su}`)
+            if (r2.ok) {
+              const d = await r2.json() as { products: UzumPublicProduct[]; total: number }
+              setUzumProducts(d.products); setTotal(d.total)
+            }
+          } catch { /* noop */ }
+        }
       })
     } else if (marketplace === 'wildberries') {
       setMode('search'); setSelectedCat(null)
