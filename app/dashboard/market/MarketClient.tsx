@@ -395,32 +395,27 @@ export default function MarketClient({ marketplace, initialCategories, userCateg
       setMode('search'); setSelectedCat(null)
       startTransition(async () => {
         try {
-          const gql = `query MakeSearch($text:String!,$limit:Int!){makeSearch(query:{text:$text,pagination:{offset:0,limit:$limit},showAdultContent:NONE}){total items{catalogCard{id title minSellPrice minFullPrice feedbackQuantity rating photos{key link{high low}}}}}}`
-          const res = await fetch('https://graphql.uzum.uz', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json',
-              'apollographql-client-name': 'web',
-            },
-            body: JSON.stringify({ operationName: 'MakeSearch', query: gql, variables: { text: query, limit: 40 } }),
+          // Try Uzum REST search API directly from browser (UZ IP, no geo-block)
+          const params = new URLSearchParams({ text: query, page: '0', size: '40', showAdultContent: 'true' })
+          const res = await fetch(`https://api.uzum.uz/api/v2/search/products?${params}`, {
+            headers: { 'Accept': 'application/json' },
           })
           if (res.ok) {
-            const data = await res.json() as { data?: { makeSearch?: { total?: number; items?: Array<{ catalogCard: Record<string, unknown> }> } } }
-            const items = data?.data?.makeSearch?.items ?? []
-            const products: UzumPublicProduct[] = items.map(item => {
-              const c = item.catalogCard
-              return {
-                id: c.id as number, title: c.title as string,
-                minSellPrice: c.minSellPrice as number, minFullPrice: c.minFullPrice as number,
-                maxSellPrice: c.minSellPrice as number, maxFullPrice: c.minFullPrice as number,
-                ordersAmount: Math.round((c.feedbackQuantity as number) * 15),
-                reviewsAmount: c.feedbackQuantity as number,
-                rating: c.rating as number,
-                photos: (c.photos as Array<{ key: string }>)?.map(p => ({ photoKey: p.key })),
-              }
-            })
-            setUzumProducts(products); setTotal(data?.data?.makeSearch?.total ?? products.length)
+            type UzumItem = { id: number; title: string; minSellPrice: number; minFullPrice: number; ordersAmount?: number; feedbackQuantity?: number; reviewsAmount?: number; rating: number; photos?: { key?: string; photoKey?: string }[] }
+            type UzumSearchResp = { payload?: { products?: UzumItem[]; total?: number; totalElements?: number }; products?: UzumItem[]; total?: number }
+            const data = await res.json() as UzumSearchResp
+            const raw = data.payload?.products ?? data.products ?? []
+            const total = data.payload?.total ?? data.payload?.totalElements ?? data.total ?? raw.length
+            const products: UzumPublicProduct[] = raw.map(p => ({
+              id: p.id, title: p.title,
+              minSellPrice: p.minSellPrice, minFullPrice: p.minFullPrice,
+              maxSellPrice: p.minSellPrice, maxFullPrice: p.minFullPrice,
+              ordersAmount: p.ordersAmount ?? Math.round((p.feedbackQuantity ?? 0) * 15),
+              reviewsAmount: p.reviewsAmount ?? p.feedbackQuantity ?? 0,
+              rating: p.rating,
+              photos: p.photos?.map(ph => ({ photoKey: ph.key ?? ph.photoKey ?? '' })),
+            }))
+            setUzumProducts(products); setTotal(total)
           } else {
             // Fallback to server proxy
             const r2 = await fetch(`/api/market/products?q=${encodeURIComponent(query)}&sort=${su}`)
