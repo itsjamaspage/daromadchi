@@ -102,8 +102,13 @@ export async function searchMarketProducts(
       body: JSON.stringify({ query: gql, variables: { text: query, limit: size } }),
       next: { revalidate: 60 },
     })
-    if (!res.ok) throw new Error(`Uzum GraphQL ${res.status}`)
-    const data = await res.json() as { data?: { makeSearch?: { total?: number; items?: Array<{ catalogCard: Record<string, unknown> }> } } }
+    if (!res.ok) {
+      console.error('[searchMarketProducts] GraphQL HTTP error:', res.status, await res.text().catch(() => ''))
+      throw new Error(`Uzum GraphQL ${res.status}`)
+    }
+    const data = await res.json() as { data?: { makeSearch?: { total?: number; items?: Array<{ catalogCard: Record<string, unknown> }> } }; errors?: unknown }
+    if (data.errors) console.error('[searchMarketProducts] GraphQL errors:', JSON.stringify(data.errors))
+    console.log('[searchMarketProducts] total:', data?.data?.makeSearch?.total, 'items:', data?.data?.makeSearch?.items?.length)
     const items = data?.data?.makeSearch?.items ?? []
     const products: UzumPublicProduct[] = items.map(item => {
       const c = item.catalogCard
@@ -121,7 +126,8 @@ export async function searchMarketProducts(
       }
     })
     return { products, total: data?.data?.makeSearch?.total ?? products.length }
-  } catch {
+  } catch (err) {
+    console.error('[searchMarketProducts] caught error:', err)
     return { products: [], total: 0 }
   }
 }
