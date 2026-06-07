@@ -1,484 +1,379 @@
-// Daromadchi — Wildberries content script (Yoolip style v4)
+// Daromadchi — Wildberries content script (Yoolip style v2)
 (function () {
   'use strict';
 
-  /* ── URL detection ───────────────────────────────────────────────── */
-  if (location.hostname.includes('seller.')) return;
-  if (!/\/catalog\/\d+/.test(location.pathname)) return;
+  const IS_SELLER  = location.hostname.includes('seller.wildberries');
+  const IS_PRODUCT = !IS_SELLER && (
+    /\/catalog\/\d+\/detail/.test(location.pathname) ||
+    /\/catalog\/\d+$/.test(location.pathname)
+  );
 
-  const WIDGET_ID  = 'drm-wb-widget';
-  const CLOSED_KEY = 'widgetClosed';
+  if (!IS_SELLER && !IS_PRODUCT) return;
+  if (document.getElementById('drm-wb-widget') || document.getElementById('drm-wb-ue')) return;
 
-  /* ── CSS isolation ───────────────────────────────────────────────── */
-  function injectStyles(id) {
-    if (document.getElementById('drm-style-' + id)) return;
-    const s = document.createElement('style');
-    s.id = 'drm-style-' + id;
-    s.textContent = `
-      #${id}, #${id} * {
-        all: initial !important;
-        box-sizing: border-box !important;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
-      }
-      #${id} {
-        position: fixed !important;
-        bottom: 24px !important;
-        right: 24px !important;
-        z-index: 2147483647 !important;
-      }
-    `;
-    (document.head || document.documentElement).appendChild(s);
-  }
+  // ── PRODUCT PAGE ────────────────────────────────────────────────────────────
+  if (IS_PRODUCT) {
 
-  /* ── i18n ────────────────────────────────────────────────────────── */
-  const LANGS = {
-    uz: {
-      fby: 'FBY', fbs: 'FBS',
-      params: 'HISOB PARAMETRLARI',
-      costLabel: "Tannarx (so'm)", packLabel: "Qadoqlash (so'm)", volLabel: 'Hajm (litr)', adLabel: 'Reklama %',
-      breakdown: 'XARAJATLAR TAQSIMOTI',
-      narx: 'Narx', comm: 'Komissiya', delivery: 'Yetkazib berish',
-      returns: 'Qaytarishlar (~3%)', acquiring: 'Ekvayring (1.5%)',
-      reklama: 'Reklama', tax: 'Soliq (6%)',
-      totalMkt: 'Jami Wildberries', totalCost: 'Jami xarajat',
-      profitLabel: 'TAXMINIY SOF FOYDA', marja: 'marja',
-      ueBtn: "+ Unit-ekonomikaga qo'shish", marketBtn: '🔍 Bozor tahlili →',
-      noPrice: 'Narx aniqlanmadi. Sahifani yangilang.',
-      footer: 'Taxminiy hisob \xb7 daromadchi.uz', taxminiy: 'taxminiy',
-    },
-    ru: {
-      fby: 'FBY', fbs: 'FBS',
-      params: 'ПАРАМЕТРЫ РАСЧЁТА',
-      costLabel: 'Себестоимость (сум)', packLabel: 'Упаковка (сум)', volLabel: 'Объём (л)', adLabel: 'Реклама %',
-      breakdown: 'СТРУКТУРА ЗАТРАТ',
-      narx: 'Цена', comm: 'Комиссия', delivery: 'Доставка',
-      returns: 'Возвраты (~3%)', acquiring: 'Эквайринг (1.5%)',
-      reklama: 'Реклама', tax: 'Налог (6%)',
-      totalMkt: 'Итого Wildberries', totalCost: 'Всего расходов',
-      profitLabel: 'ОЦ. ЧИСТАЯ ПРИБЫЛЬ', marja: 'маржа',
-      ueBtn: '+ В юнит-экономику', marketBtn: '🔍 Анализ рынка →',
-      noPrice: 'Цена не определена.',
-      footer: 'Примерный расчёт \xb7 daromadchi.uz', taxminiy: 'прибл.',
-    },
-    en: {
-      fby: 'FBY', fbs: 'FBS',
-      params: 'CALCULATION PARAMS',
-      costLabel: 'Cost price (som)', packLabel: 'Packaging (som)', volLabel: 'Volume (L)', adLabel: 'Ad %',
-      breakdown: 'COST BREAKDOWN',
-      narx: 'Price', comm: 'Commission', delivery: 'Delivery',
-      returns: 'Returns (~3%)', acquiring: 'Acquiring (1.5%)',
-      reklama: 'Advertising', tax: 'Tax (6%)',
-      totalMkt: 'Total WB fees', totalCost: 'Total costs',
-      profitLabel: 'EST. NET PROFIT', marja: 'margin',
-      ueBtn: '+ Add to unit economics', marketBtn: '🔍 Market analysis →',
-      noPrice: 'Price not found.',
-      footer: 'Estimated \xb7 daromadchi.uz', taxminiy: 'approx.',
-    },
-  };
+    (function injectCSS() {
+      if (document.getElementById('drm-wb-style')) return;
+      const s = document.createElement('style');
+      s.id = 'drm-wb-style';
+      s.textContent = `
+        #drm-wb-ue {
+          position: fixed !important;
+          bottom: 24px !important;
+          right: 24px !important;
+          z-index: 2147483647 !important;
+          display: block !important;
+          width: 360px !important;
+          max-height: 92vh !important;
+          overflow-y: auto !important;
+          border-radius: 16px !important;
+          box-shadow: 0 20px 60px rgba(0,0,0,.5) !important;
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+          font-size: 13px !important;
+          line-height: 1.4 !important;
+          background: #0f1117 !important;
+          border: 1px solid #2a3040 !important;
+          color: #e2e8f0 !important;
+        }
+        #drm-wb-ue * { box-sizing: border-box !important; font-family: inherit !important; }
+        #drm-wb-ue input, #drm-wb-ue button, #drm-wb-ue a { all: revert; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; cursor: pointer; }
+        #drm-wb-ue input { cursor: text; }
+      `;
+      (document.head || document.documentElement).appendChild(s);
+    })();
 
-  /* ── Commission by category ──────────────────────────────────────── */
-  const WB_COMM = [
-    [/smartfon|iphone|telefon/i,               3],
-    [/noutbuk|kompyuter|planshet/i,             5],
-    [/elektronika/i,                            7],
-    [/kiyim|palto|ko['']ylak|jinsi|sho['']rt/i, 23],
-    [/poyabzal|tufli|botinka|krossovka/i,      15],
-    [/sport/i,                                 13],
-    [/go['']zallik|parfyum|kosmetika/i,        12],
-    [/oziq|ovqat/i,                            10],
-    [/uy|maishiy|mebel/i,                      12],
-  ];
-  const WB_DEFAULT_COMM = 15;
-
-  /* ── Theme ───────────────────────────────────────────────────────── */
-  const THEME = {
-    dark:  { bg: '#0f1117', card: '#1a1f2e', border: '#2a3040', text: '#e2e8f0', muted: '#94a3b8', red: '#f87171', green: '#4ade80', amber: '#f59e0b' },
-    light: { bg: '#f8fafc', card: '#ffffff', border: '#e2e8f0', text: '#0f172a', muted: '#64748b', red: '#dc2626', green: '#16a34a', amber: '#d97706' },
-  };
-
-  let langKey = 'uz', theme = 'dark';
-  function L() { return LANGS[langKey]; }
-  function T() { return THEME[theme]; }
-
-  /* ── Helpers ─────────────────────────────────────────────────────── */
-  function getWbCommission() {
-    const bc = document.querySelector('[class*="breadcrumb"],[class*="Breadcrumb"],[class*="ategory"]');
-    if (bc) {
-      const txt = bc.innerText;
-      for (const [re, pct] of WB_COMM) if (re.test(txt)) return pct;
-    }
-    return WB_DEFAULT_COMM;
-  }
-
-  function parseWbPrice() {
-    // Preferred specific selectors
-    const selectors = [
-      '.price-block__final-price',
-      '[class*="price-block__final"]',
-      'ins.price__lower-price',
-      '[class*="price__lower"]',
-      '.product-page__price-block ins',
-      '[data-link="text{:currentPrice}"]',
+    const COMM_MAP = [
+      [/smartfon|telefon|iphone|samsung/i, 3],
+      [/noutbuk|laptop|macbook/i, 5],
+      [/elektronika|kompyuter|aksesuar|plansh/i, 7],
+      [/kiyim|libos|futbolka|ko.ylak|platye|zhilyet/i, 23],
+      [/poyabzal|botinok|sandal|krossovk/i, 15],
+      [/sport|trenaj/i, 13],
+      [/gozellik|parfyum|kosmetika|beauty|uhod/i, 12],
+      [/oziq|ovqat|mahsulot|produkty/i, 10],
+      [/uy|mebel|maishiy|interior/i, 12],
     ];
-    for (const sel of selectors) {
-      const el = document.querySelector(sel);
-      if (!el) continue;
-      // Skip if inside wallet/card/cashback/credit ancestor
-      let anc = el.parentElement;
-      let skip = false;
-      while (anc) {
-        if (/wallet|card|cashback|credit/i.test(anc.className || '')) { skip = true; break; }
-        anc = anc.parentElement;
+
+    const THEME = { bg:'#0f1117', card:'#1a1f2e', border:'#2a3040', text:'#e2e8f0', muted:'#94a3b8', red:'#f87171', green:'#4ade80', amber:'#f59e0b' };
+
+    function fp(n) { if (n===null||n===undefined) return '—'; return Math.round(n).toLocaleString('ru-RU') + ' сум'; }
+    function T() { return THEME; }
+
+    function getCommission() {
+      const bc = document.querySelector('[class*="readcrumb"],[class*="ategory"],[class*="Breadcrumb"]');
+      if (bc) {
+        const t = bc.innerText;
+        for (const [re, pct] of COMM_MAP) if (re.test(t)) return pct;
       }
-      if (skip) continue;
-      const raw = (el.innerText || '').replace(/[^\d]/g, '');
-      if (raw.length >= 4 && raw.length <= 9) return parseInt(raw, 10);
-    }
-    // Fallback: scan ALL <ins> tags; take the one closest to top of page
-    let best = null, bestTop = Infinity;
-    document.querySelectorAll('ins').forEach(el => {
-      const raw = (el.innerText || '').replace(/[^\d]/g, '');
-      if (raw.length < 4 || raw.length > 9) return;
-      let anc = el.parentElement;
-      while (anc) {
-        if (/wallet|card|cashback|credit/i.test(anc.className || '')) return;
-        anc = anc.parentElement;
-      }
-      const top = el.getBoundingClientRect().top + window.scrollY;
-      if (top < bestTop) { bestTop = top; best = parseInt(raw, 10); }
-    });
-    return best;
-  }
-
-  function parseWbTitle() {
-    return (document.querySelector('h1') || {}).innerText?.trim().slice(0, 70) || 'Mahsulot';
-  }
-
-  function parseWbArticle() {
-    const m = location.pathname.match(/\/catalog\/(\d+)/);
-    return m ? m[1] : null;
-  }
-
-  function fp(n) {
-    if (n === null || n === undefined) return '—';
-    return Math.round(n).toLocaleString('uz-UZ') + " so'm";
-  }
-
-  function profitColor(margin) {
-    const t = T();
-    return margin >= 25 ? t.green : margin >= 10 ? t.amber : t.red;
-  }
-
-  /* ── Calculation ─────────────────────────────────────────────────── */
-  function calcWb(price, { commPct, adPct = 5, costPrice = 0, packaging = 0, volume = 0.5, fby = true } = {}) {
-    const commission = Math.round(price * commPct / 100);
-    const delivery   = fby
-      ? (volume ? Math.round(volume * 20000) : 8000)
-      : (volume ? Math.round(volume * 10000) : 5000);
-    const returns    = Math.round(price * 0.03);
-    const acquiring  = Math.round(price * 0.015);
-    const adSpend    = Math.round(price * adPct / 100);
-    const tax        = Math.round(price * 0.06);
-    const mktTotal   = commission + delivery + returns + acquiring;
-    const jamiTotal  = mktTotal + adSpend + tax + packaging + costPrice;
-    const netProfit  = price - jamiTotal;
-    const margin     = Math.round((netProfit / price) * 100);
-    const roi        = costPrice > 0 ? Math.round((netProfit / costPrice) * 100) : null;
-    return { commPct, commission, delivery, returns, acquiring, adSpend, tax, packaging, costPrice, mktTotal, jamiTotal, netProfit, margin, roi };
-  }
-
-  /* ── Widget ──────────────────────────────────────────────────────── */
-  function buildWidget() {
-    let fby = true, costPrice = 0, packaging = 0, volume = 0.5, adPct = 5;
-
-    injectStyles(WIDGET_ID);
-
-    const wrap = document.createElement('div');
-    wrap.id = WIDGET_ID;
-    document.body.appendChild(wrap);
-
-    const title   = parseWbTitle();
-    const article = parseWbArticle();
-    const commPct = getWbCommission();
-
-    chrome.storage.local.get(['ueSettings', 'drmLang', 'drmTheme'], data => {
-      if (data.ueSettings) {
-        costPrice = data.ueSettings.costPrice || 0;
-        packaging = data.ueSettings.packaging || 0;
-        volume    = data.ueSettings.volume    || 0.5;
-        adPct     = data.ueSettings.adPct     || 5;
-        fby       = data.ueSettings.fby !== undefined ? data.ueSettings.fby : true;
-      }
-      if (data.drmLang)  langKey = data.drmLang;
-      if (data.drmTheme) theme   = data.drmTheme;
-      render();
-    });
-
-    function getInputs() {
-      return {
-        costPrice: parseFloat(wrap.querySelector('#drm-wb-cost')?.value) || 0,
-        packaging: parseFloat(wrap.querySelector('#drm-wb-pack')?.value) || 0,
-        volume:    parseFloat(wrap.querySelector('#drm-wb-vol')?.value)  || 0.5,
-        adPct:     parseFloat(wrap.querySelector('#drm-wb-ad')?.value)   || 5,
-      };
+      return 15;
     }
 
-    function liveRecalc() {
+    function parseWbPrice() {
+      const specific = [
+        '.price-block__final-price',
+        '[class*="price-block__final"]',
+        'ins.price__lower-price',
+        '[class*="price__lower"]',
+        '.product-page__price-block ins',
+        '[data-link="text{:currentPrice}"]',
+        '.price-block ins',
+        '[class*="priceWithSale"]',
+        '[class*="price-block"] ins',
+      ];
+      for (const sel of specific) {
+        const el = document.querySelector(sel);
+        if (el) {
+          const raw = el.innerText.replace(/[^\d]/g, '');
+          if (raw.length >= 3 && raw.length <= 12) return parseInt(raw);
+        }
+      }
+      // Fallback: all <ins> tags sorted by top position (main price is highest on page)
+      const insTags = Array.from(document.querySelectorAll('ins'));
+      if (insTags.length > 0) {
+        insTags.sort((a, b) => (a.getBoundingClientRect().top + window.scrollY) - (b.getBoundingClientRect().top + window.scrollY));
+        for (const el of insTags) {
+          const raw = el.innerText.replace(/[^\d]/g, '');
+          if (raw.length >= 3 && raw.length <= 12) return parseInt(raw);
+        }
+      }
+      return null;
+    }
+
+    function parseWbTitle() {
+      return (document.querySelector('h1')||{}).innerText?.trim().slice(0, 70) || 'Mahsulot';
+    }
+
+    function getArticle() {
+      const m = location.pathname.match(/\/catalog\/(\d+)/);
+      return m ? m[1] : null;
+    }
+
+    function calcWb(price, { costPrice=0, packaging=0, adPct=5, volume=1, fby=true }={}) {
+      const commPct   = getCommission();
+      const commission = Math.round(price * commPct / 100);
+      const delivery  = fby ? Math.round(volume * 20000) : Math.round(volume * 10000);
+      const returns   = Math.round(price * 0.03);
+      const acquiring = Math.round(price * 0.015);
+      const adSpend   = Math.round(price * adPct / 100);
+      const tax       = Math.round(price * 0.06);
+      const mktTotal  = commission + delivery + returns + acquiring;
+      const jamiTotal = mktTotal + adSpend + tax + packaging + costPrice;
+      const netProfit = price - jamiTotal;
+      const margin    = Math.round((netProfit / price) * 100);
+      const roi       = costPrice > 0 ? Math.round((netProfit / costPrice) * 100) : null;
+      return { commPct, commission, delivery, returns, acquiring, adSpend, tax, packaging, costPrice, mktTotal, jamiTotal, netProfit, margin, roi };
+    }
+
+    function pColor(m) { const t=T(); return m>=25?t.green:m>=10?t.amber:t.red; }
+
+    function inp(id, val, ph='0', step='1') {
+      const t=T();
+      return `<input id="${id}" type="number" step="${step}" value="${val||''}" placeholder="${ph}" style="width:88px;background:${t.card};border:1px solid ${t.border};border-radius:6px;padding:5px 8px;color:${t.text};font-size:12px;text-align:right;outline:none;display:block">`;
+    }
+
+    function row(label, id, val, extra='') {
+      const t=T();
+      return `<div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:1px 0"><span style="color:${t.muted}">${label}${extra}</span><span id="drm-wb-v-${id}" style="color:${t.red}">${val}</span></div>`;
+    }
+
+    function buildWbWidget() {
       const price = parseWbPrice();
-      if (!price) return;
-      const eco   = calcWb(price, { commPct, ...getInputs(), fby });
-      const color = profitColor(eco.margin);
-      const set   = (id, v) => { const e = wrap.querySelector('#drm-v-' + id); if (e) e.textContent = v; };
-      const recolor = (id, c) => { const e = wrap.querySelector('#drm-v-' + id); if (e) e.style.color = c; };
+      const title = parseWbTitle();
+      const article = getArticle();
 
-      set('comm',     '−' + fp(eco.commission));
-      set('delivery', '−' + fp(eco.delivery));
-      set('returns',  '−' + fp(eco.returns));
-      set('acq',      '−' + fp(eco.acquiring));
-      set('ad',       '−' + fp(eco.adSpend));
-      set('tax',      '−' + fp(eco.tax));
-      set('mkt',      '−' + fp(eco.mktTotal));
-      set('total',    '−' + fp(eco.jamiTotal));
-      set('profit',   fp(eco.netProfit));
-      set('margin',   eco.margin + '% ' + L().marja);
-      recolor('profit', color);
-      recolor('margin', color);
+      let fby=true, costPrice=0, packaging=0, adPct=5, volume=1;
 
-      const bar = wrap.querySelector('#drm-profit-bar');
-      if (bar) {
-        bar.style.width      = Math.max(0, Math.min(100, eco.margin)) + '%';
-        bar.style.background = color;
+      const wrap = document.createElement('div');
+      wrap.id = 'drm-wb-ue';
+      document.body.appendChild(wrap);
+
+      chrome.storage.local.get(['ueSettings'], data => {
+        if (data.ueSettings) {
+          costPrice = data.ueSettings.costPrice || 0;
+          packaging = data.ueSettings.packaging || 0;
+          adPct     = data.ueSettings.adPct     || 5;
+          volume    = data.ueSettings.volume     || 1;
+          fby       = data.ueSettings.fby !== undefined ? data.ueSettings.fby : true;
+        }
+        render();
+      });
+
+      function gi() {
+        return {
+          costPrice: parseFloat(wrap.querySelector('#drm-wb-cost')?.value) || 0,
+          packaging: parseFloat(wrap.querySelector('#drm-wb-pack')?.value) || 0,
+          adPct:     parseFloat(wrap.querySelector('#drm-wb-ad')?.value)   || 5,
+          volume:    parseFloat(wrap.querySelector('#drm-wb-vol')?.value)  || 1,
+        };
       }
-    }
 
-    function render() {
-      const price = parseWbPrice();
-      const t = T(), l = L();
-      const eco   = price ? calcWb(price, { commPct, costPrice, packaging, volume, adPct, fby }) : null;
-      const color = eco ? profitColor(eco.margin) : t.muted;
-      const barW  = eco ? Math.max(0, Math.min(100, eco.margin)) : 0;
+      function liveRecalc() {
+        if (!price) return;
+        const eco = calcWb(price, { ...gi(), fby });
+        const c = pColor(eco.margin);
+        const S = (id, v) => { const e=wrap.querySelector('#drm-wb-v-'+id); if(e) e.textContent=v; };
+        const C = (id, col) => { const e=wrap.querySelector('#drm-wb-v-'+id); if(e) e.style.color=col; };
+        S('comm',   `−${fp(eco.commission)}`);
+        S('delivery',`−${fp(eco.delivery)}`);
+        S('returns', `−${fp(eco.returns)}`);
+        S('acq',     `−${fp(eco.acquiring)}`);
+        S('ad',      `−${fp(eco.adSpend)}`);
+        S('tax',     `−${fp(eco.tax)}`);
+        S('mkt',     `−${fp(eco.mktTotal)}`);
+        S('total',   `−${fp(eco.jamiTotal)}`);
+        S('profit',  fp(eco.netProfit));
+        S('margin',  `${eco.margin}% marja`);
+        C('profit',c); C('margin',c);
+        const bar=wrap.querySelector('#drm-wb-bar');
+        if(bar){bar.style.width=Math.max(0,Math.min(100,eco.margin))+'%';bar.style.background=c;}
+      }
 
-      const inp = (id, val, ph, step) =>
-        `<input id="${id}" type="number" step="${step || '1'}" value="${val || ''}" placeholder="${ph || '0'}"
-          style="display:block;width:90px;background:${t.card};border:1px solid ${t.border};
-                 border-radius:6px;padding:4px 8px;color:${t.text};font-size:12px;
-                 text-align:right;outline:none"/>`;
+      function render() {
+        const t = T();
+        const eco = price ? calcWb(price, { costPrice, packaging, adPct, volume, fby }) : null;
+        const color = eco ? pColor(eco.margin) : t.muted;
+        const barW  = eco ? Math.max(0, Math.min(100, eco.margin)) : 0;
+        const commPct = getCommission();
 
-      const amberBadge = `<span style="display:inline;color:${t.amber};font-size:10px;margin-left:3px">${l.taxminiy}</span>`;
-
-      const row = (label, id, val, badge) =>
-        `<div style="display:flex;justify-content:space-between;align-items:center;font-size:12px">
-           <span style="color:${t.muted}">${label}${badge || ''}</span>
-           <span id="drm-v-${id}" style="color:${t.red};font-weight:500">${val}</span>
-         </div>`;
-
-      wrap.innerHTML = `
-        <div style="display:block;width:360px;max-height:92vh;overflow-y:auto;background:${t.bg};
-             border:1px solid ${t.border};border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.55);
-             font-size:13px;color:${t.text};scrollbar-width:thin">
-
-          <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;
-               border-bottom:1px solid ${t.border};position:sticky;top:0;background:${t.bg};z-index:1">
-            <div style="display:flex;align-items:center;gap:8px">
+        wrap.innerHTML = `
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:11px 14px;border-bottom:1px solid ${t.border};position:sticky;top:0;background:${t.bg};z-index:1">
+            <div style="display:flex;align-items:center;gap:7px">
               <span style="font-weight:700;font-size:14px;color:${t.text}">Daromadchi</span>
-              <span style="display:inline-block;font-size:10px;font-weight:600;padding:2px 7px;background:#cb11ab;color:#fff;border-radius:20px">WB</span>
+              <span style="font-size:10px;font-weight:600;padding:2px 7px;background:#9f1239;color:#fff;border-radius:20px;display:inline-block">WB</span>
             </div>
             <div style="display:flex;align-items:center;gap:3px">
-              ${['uz', 'ru', 'en'].map(k =>
-                `<button id="drm-lang-${k}" style="display:inline-block;padding:2px 5px;border-radius:4px;
-                  border:1px solid ${langKey === k ? '#cb11ab' : t.border};
-                  background:${langKey === k ? '#cb11ab' : 'transparent'};
-                  color:${langKey === k ? '#fff' : t.muted};font-size:10px;cursor:pointer;font-weight:600">
-                  ${k.toUpperCase()}</button>`
-              ).join('')}
-              <button id="drm-theme" style="display:inline-block;padding:3px 7px;border-radius:5px;border:1px solid ${t.border};background:transparent;color:${t.muted};font-size:14px;cursor:pointer">${theme === 'dark' ? '☀️' : '🌙'}</button>
-              <button id="drm-refresh" style="display:inline-block;padding:3px 7px;border-radius:5px;border:1px solid ${t.border};background:transparent;color:${t.muted};font-size:14px;cursor:pointer">↻</button>
-              <button id="drm-close" style="display:inline-block;padding:3px 7px;border-radius:5px;border:1px solid ${t.border};background:transparent;color:${t.muted};font-size:14px;cursor:pointer">✕</button>
+              <button id="drm-wb-refresh" style="padding:3px 6px;border-radius:5px;border:1px solid ${t.border};background:transparent;color:${t.muted};font-size:14px">↻</button>
+              <button id="drm-wb-close" style="padding:3px 6px;border-radius:5px;border:1px solid ${t.border};background:transparent;color:${t.muted};font-size:14px">✕</button>
             </div>
           </div>
 
-          <div style="padding:14px 16px;display:flex;flex-direction:column;gap:10px">
-
+          <div style="padding:13px 14px;display:flex;flex-direction:column;gap:11px">
             <div>
-              <div style="font-weight:600;font-size:13px;margin-bottom:2px;color:${t.text}">${title}</div>
-              ${article ? `<div style="font-size:11px;color:${t.muted};margin-bottom:4px">Artikul #${article}</div>` : ''}
+              <div style="font-weight:600;font-size:13px;color:${t.text};margin-bottom:4px">${title}${article ? `<span style="font-size:10px;color:${t.muted};margin-left:6px">#${article}</span>` : ''}</div>
               ${price
-                ? `<div style="font-size:22px;font-weight:800;color:#a78bfa">${fp(price)}</div>`
-                : `<div style="color:${t.red};font-size:12px">${l.noPrice}</div>`}
+                ? `<div style="font-size:22px;font-weight:800;color:#fb7185;display:block">${fp(price)}</div>`
+                : `<div style="color:${t.red};font-size:12px">Narx aniqlanmadi. Sahifani yangilang.</div>`}
             </div>
 
             <div style="display:flex;gap:6px">
-              <button id="drm-fby" style="flex:1;padding:7px;border-radius:8px;
-                border:1px solid ${fby ? '#cb11ab' : t.border};
-                background:${fby ? '#cb11ab' : 'transparent'};
-                color:${fby ? '#fff' : t.muted};font-size:12px;font-weight:600;cursor:pointer">${l.fby}</button>
-              <button id="drm-fbs" style="flex:1;padding:7px;border-radius:8px;
-                border:1px solid ${!fby ? '#cb11ab' : t.border};
-                background:${!fby ? '#cb11ab' : 'transparent'};
-                color:${!fby ? '#fff' : t.muted};font-size:12px;font-weight:600;cursor:pointer">${l.fbs}</button>
+              <button id="drm-wb-fby" style="flex:1;padding:7px;border-radius:8px;border:1px solid ${fby?'#9f1239':t.border};background:${fby?'#9f1239':'transparent'};color:${fby?'#fff':t.muted};font-size:12px;font-weight:600">FBY</button>
+              <button id="drm-wb-fbs" style="flex:1;padding:7px;border-radius:8px;border:1px solid ${!fby?'#9f1239':t.border};background:${!fby?'#9f1239':'transparent'};color:${!fby?'#fff':t.muted};font-size:12px;font-weight:600">FBS</button>
             </div>
 
             <div>
-              <div style="font-size:10px;font-weight:600;color:${t.muted};letter-spacing:.7px;margin-bottom:8px">${l.params}</div>
+              <div style="font-size:10px;font-weight:600;color:${t.muted};letter-spacing:.7px;margin-bottom:8px">HISOB PARAMETRLARI</div>
               <div style="display:flex;flex-direction:column;gap:7px">
-                <div style="display:flex;justify-content:space-between;align-items:center">
-                  <span style="font-size:12px;color:${t.muted}">${l.costLabel}</span>
-                  ${inp('drm-wb-cost', costPrice)}
-                </div>
-                <div style="display:flex;justify-content:space-between;align-items:center">
-                  <span style="font-size:12px;color:${t.muted}">${l.packLabel}</span>
-                  ${inp('drm-wb-pack', packaging)}
-                </div>
-                <div style="display:flex;justify-content:space-between;align-items:center">
-                  <span style="font-size:12px;color:${t.muted}">${l.volLabel}</span>
-                  ${inp('drm-wb-vol', volume, '0.5', '0.1')}
-                </div>
-                <div style="display:flex;justify-content:space-between;align-items:center">
-                  <span style="font-size:12px;color:${t.muted}">${l.adLabel}</span>
-                  ${inp('drm-wb-ad', adPct, '5', '0.5')}
-                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:${t.muted}">Tannarx (сум)</span>${inp('drm-wb-cost',costPrice)}</div>
+                <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:${t.muted}">Qadoqlash (сум)</span>${inp('drm-wb-pack',packaging)}</div>
+                <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:${t.muted}">Reklama %</span>${inp('drm-wb-ad',adPct,'5','0.5')}</div>
+                <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:${t.muted}">Hajm (litr)</span>${inp('drm-wb-vol',volume,'1','0.1')}</div>
               </div>
             </div>
 
             ${!eco ? '' : `
             <div>
-              <div style="font-size:10px;font-weight:600;color:${t.muted};letter-spacing:.7px;margin-bottom:8px">${l.breakdown}</div>
-              <div style="display:flex;flex-direction:column;gap:5px">
-                <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px">
-                  <span style="color:${t.muted}">${l.narx}</span>
-                  <span style="color:${t.text};font-weight:600">${fp(price)}</span>
-                </div>
-                ${row(l.comm + ' (' + commPct + '%)', 'comm', '−' + fp(eco.commission))}
-                ${row(l.delivery + ' (' + (fby ? 'FBY' : 'FBS') + ')', 'delivery', '−' + fp(eco.delivery), amberBadge)}
-                ${row(l.returns, 'returns', '−' + fp(eco.returns), amberBadge)}
-                ${row(l.acquiring, 'acq', '−' + fp(eco.acquiring))}
-                ${row(l.reklama + ' (' + adPct + '%)', 'ad', '−' + fp(eco.adSpend))}
-                ${row(l.tax, 'tax', '−' + fp(eco.tax))}
+              <div style="font-size:10px;font-weight:600;color:${t.muted};letter-spacing:.7px;margin-bottom:8px">XARAJATLAR TAQSIMOTI</div>
+              <div style="display:flex;flex-direction:column;gap:4px">
+                <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:${t.muted}">Narx</span><span style="color:${t.text};font-weight:600">${fp(price)}</span></div>
+                ${row(`Komissiya (${commPct}%)`, 'comm', `−${fp(eco.commission)}`)}
+                ${row(`Yetkazib berish (${fby?'FBY':'FBS'})`, 'delivery', `−${fp(eco.delivery)}`, ` <span style="color:${t.amber};font-size:10px">taxminiy</span>`)}
+                ${row('Qaytarishlar (~3%)', 'returns', `−${fp(eco.returns)}`, ` <span style="color:${t.amber};font-size:10px">taxminiy</span>`)}
+                ${row('Ekvayring (1.5%)', 'acq', `−${fp(eco.acquiring)}`)}
+                ${row(`Reklama (${adPct}%)`, 'ad', `−${fp(eco.adSpend)}`)}
+                ${row('Soliq (6%)', 'tax', `−${fp(eco.tax)}`)}
                 <div style="height:1px;background:${t.border};margin:2px 0"></div>
-                <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:600">
-                  <span style="color:${t.muted}">${l.totalMkt}</span>
-                  <span id="drm-v-mkt" style="color:${t.red}">−${fp(eco.mktTotal)}</span>
-                </div>
-                <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:600">
-                  <span style="color:${t.muted}">${l.totalCost}</span>
-                  <span id="drm-v-total" style="color:${t.red}">−${fp(eco.jamiTotal)}</span>
-                </div>
+                <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600"><span style="color:${t.muted}">Jami WB</span><span id="drm-wb-v-mkt" style="color:${t.red}">−${fp(eco.mktTotal)}</span></div>
+                <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600"><span style="color:${t.muted}">Jami xarajat</span><span id="drm-wb-v-total" style="color:${t.red}">−${fp(eco.jamiTotal)}</span></div>
               </div>
             </div>
 
-            <div style="background:${t.card};border:1px solid ${t.border};border-radius:12px;padding:14px;text-align:center">
-              <div style="font-size:10px;font-weight:600;color:${t.muted};letter-spacing:.7px;margin-bottom:6px">${l.profitLabel}</div>
-              <div id="drm-v-profit" style="font-size:26px;font-weight:800;color:${color};margin-bottom:6px">${fp(eco.netProfit)}</div>
-              <div style="height:4px;background:${t.border};border-radius:4px;margin-bottom:6px;overflow:hidden">
-                <div id="drm-profit-bar" style="height:4px;border-radius:4px;background:${color};width:${barW}%;transition:width .3s"></div>
-              </div>
-              <div id="drm-v-margin" style="color:${color};font-size:13px;font-weight:600">${eco.margin}% ${l.marja}</div>
+            <div style="background:${t.card};border:1px solid ${t.border};border-radius:12px;padding:13px;text-align:center">
+              <div style="font-size:10px;font-weight:600;color:${t.muted};letter-spacing:.7px;margin-bottom:5px">TAXMINIY SOF FOYDA</div>
+              <div id="drm-wb-v-profit" style="font-size:26px;font-weight:800;color:${color};margin-bottom:5px;display:block">${fp(eco.netProfit)}</div>
+              <div style="height:4px;background:${t.border};border-radius:4px;margin-bottom:5px"><div id="drm-wb-bar" style="height:4px;border-radius:4px;background:${color};width:${barW}%;display:block"></div></div>
+              <div id="drm-wb-v-margin" style="color:${color};font-size:13px;font-weight:600">${eco.margin}% marja</div>
             </div>
             `}
 
-            <button id="drm-wb-ue"
-              style="display:block;width:100%;padding:11px;background:#16a34a;color:#fff;border:none;
-                     border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;text-align:center">
-              ${l.ueBtn}
-            </button>
-            <button id="drm-wb-market"
-              style="display:block;width:100%;padding:10px;background:${t.card};color:${t.text};
-                     border:1px solid ${t.border};border-radius:10px;font-size:13px;cursor:pointer;text-align:center">
-              ${l.marketBtn}
-            </button>
-
-            <div style="text-align:center;font-size:10px;color:${t.muted}">${l.footer}</div>
+            <button id="drm-wb-ue-btn" style="display:block;width:100%;padding:11px;background:#16a34a;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:600;text-align:center">+ Unit-ekonomikaga qo'shish</button>
+            <button id="drm-wb-market" style="display:block;width:100%;padding:10px;background:${t.card};color:${t.text};border:1px solid ${t.border};border-radius:10px;font-size:13px;text-align:center">🛒 Bozor tahlili →</button>
+            <div style="text-align:center;font-size:10px;color:${t.muted}">Taxminiy hisob · daromadchi.uz</div>
           </div>
-        </div>
-      `;
+        `;
 
-      wrap.querySelector('#drm-close').onclick = () => {
-        wrap.remove();
-        chrome.storage.local.set({ [CLOSED_KEY]: Date.now() });
-      };
-
-      wrap.querySelector('#drm-refresh').onclick = () => {
-        wrap.remove();
-        setTimeout(init, 400);
-      };
-
-      wrap.querySelector('#drm-theme').onclick = () => {
-        theme = theme === 'dark' ? 'light' : 'dark';
-        chrome.storage.local.set({ drmTheme: theme });
-        render();
-      };
-
-      ['uz', 'ru', 'en'].forEach(k => {
-        wrap.querySelector('#drm-lang-' + k)?.addEventListener('click', () => {
-          langKey = k;
-          chrome.storage.local.set({ drmLang: k });
-          render();
+        wrap.querySelector('#drm-wb-close').onclick   = () => { wrap.remove(); chrome.storage.local.set({ wbWidgetClosed: Date.now() }); };
+        wrap.querySelector('#drm-wb-refresh').onclick = () => { wrap.remove(); setTimeout(buildWbWidget, 300); };
+        wrap.querySelector('#drm-wb-fby').onclick     = () => { fby=true;  render(); };
+        wrap.querySelector('#drm-wb-fbs').onclick     = () => { fby=false; render(); };
+        ['#drm-wb-cost','#drm-wb-pack','#drm-wb-ad','#drm-wb-vol'].forEach(id => {
+          wrap.querySelector(id)?.addEventListener('input', liveRecalc);
         });
-      });
 
-      wrap.querySelector('#drm-fby').onclick = () => { fby = true;  render(); };
-      wrap.querySelector('#drm-fbs').onclick = () => { fby = false; render(); };
-
-      ['#drm-wb-cost', '#drm-wb-pack', '#drm-wb-vol', '#drm-wb-ad'].forEach(id => {
-        wrap.querySelector(id)?.addEventListener('input', liveRecalc);
-      });
-
-      wrap.querySelector('#drm-wb-ue')?.addEventListener('click', async () => {
-        const vals  = getInputs();
-        const p2    = parseWbPrice();
-        const eco2  = p2 ? calcWb(p2, { commPct, ...vals, fby }) : null;
-        await chrome.storage.local.set({ ueSettings: { ...vals, fby } });
-        const params = new URLSearchParams({
-          source:     'wb',
-          title,
-          url:        location.href,
-          price:      String(p2              || ''),
-          commPct:    String(commPct),
-          commission: String(eco2?.commission || ''),
-          delivery:   String(eco2?.delivery   || ''),
-          acquiring:  String(eco2?.acquiring  || ''),
-          adSpend:    String(eco2?.adSpend    || ''),
-          tax:        String(eco2?.tax        || ''),
-          packaging:  String(eco2?.packaging  || ''),
-          profit:     String(eco2?.netProfit  ?? ''),
-          margin:     String(eco2?.margin     ?? ''),
-          roi:        String(eco2?.roi        ?? ''),
+        wrap.querySelector('#drm-wb-ue-btn')?.addEventListener('click', async () => {
+          const vals  = gi();
+          const eco2  = price ? calcWb(price, { ...vals, fby }) : null;
+          await chrome.storage.local.set({ ueSettings: { ...vals, fby } });
+          const params = new URLSearchParams({
+            source: 'wb', title, url: location.href,
+            price:      String(price || ''),
+            commPct:    String(eco2?.commPct    || ''),
+            commission: String(eco2?.commission || ''),
+            delivery:   String(eco2?.delivery   || ''),
+            acquiring:  String(eco2?.acquiring  || ''),
+            adSpend:    String(eco2?.adSpend    || ''),
+            tax:        String(eco2?.tax        || ''),
+            packaging:  String(eco2?.packaging  || ''),
+            profit:     String(eco2?.netProfit  ?? ''),
+            margin:     String(eco2?.margin     ?? ''),
+            roi:        String(eco2?.roi        ?? ''),
+          });
+          if (article) params.set('productId', article);
+          window.open(`https://daromadchi.uz/dashboard/unit-economics?${params}`, '_blank');
         });
-        if (article) params.set('article', article);
-        window.open('https://daromadchi.uz/dashboard/unit-economics?' + params, '_blank');
-      });
 
-      wrap.querySelector('#drm-wb-market')?.addEventListener('click', () => {
-        window.open('https://daromadchi.uz/dashboard/market?q=' + encodeURIComponent(title) + '&source=wb', '_blank');
-      });
-    } // end render()
-  } // end buildWidget()
+        wrap.querySelector('#drm-wb-market')?.addEventListener('click', () => {
+          window.open(`https://daromadchi.uz/dashboard/market?q=${encodeURIComponent(title)}&source=wb`, '_blank');
+        });
+      }
+    }
 
-  /* ── Init & SPA navigation ───────────────────────────────────────── */
+    async function tryInit() {
+      if (document.getElementById('drm-wb-ue')) return;
+      const { wbWidgetClosed } = await chrome.storage.local.get('wbWidgetClosed');
+      if (Date.now() - (wbWidgetClosed||0) < 1800000) return;
+      buildWbWidget();
+    }
+
+    setTimeout(tryInit, 1500);
+    setTimeout(() => { if (!document.getElementById('drm-wb-ue')) tryInit(); }, 3500);
+
+    let lastUrl = location.href;
+    new MutationObserver(() => {
+      if (location.href !== lastUrl) {
+        lastUrl = location.href;
+        setTimeout(() => {
+          document.getElementById('drm-wb-ue')?.remove();
+          if (/\/catalog\/\d+/.test(location.pathname)) tryInit();
+        }, 1800);
+      }
+    }).observe(document, { subtree: true, childList: true });
+
+    return;
+  }
+
+  // ── SELLER PORTAL ──────────────────────────────────────────────────────────
+  function fp(n) {
+    if (!n && n !== 0) return '—';
+    if (n >= 1000000) return (n/1000000).toFixed(1)+' mln ₽';
+    if (n >= 1000)    return (n/1000).toFixed(0)+' ming ₽';
+    return n.toLocaleString('ru-RU')+' ₽';
+  }
+
+  function createWidget(stats, sellerInfo) {
+    const w = document.createElement('div');
+    w.id = 'drm-wb-widget';
+    w.style.cssText = `position:fixed;bottom:24px;right:24px;z-index:999999;background:#0d0d19;border:1px solid rgba(168,85,247,.35);border-radius:14px;padding:14px 16px;min-width:220px;box-shadow:0 8px 32px rgba(0,0,0,.5);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:12px;color:#e2e8f0;cursor:default;transition:opacity .2s`;
+    w.innerHTML = `
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        <span style="font-weight:700;font-size:13px;background:linear-gradient(135deg,#c084fc,#38bdf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent">Daromadchi</span>
+        <span style="margin-left:auto;font-size:10px;color:#a855f7">WB</span>
+        <button id="drm-wb-close" style="background:none;border:none;color:#64748b;cursor:pointer;font-size:14px;line-height:1;padding:0 0 0 4px">×</button>
+      </div>
+      ${stats ? `
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+          <div style="background:#1e293b;border-radius:8px;padding:8px"><div style="color:#64748b;font-size:10px;margin-bottom:2px">Bugungi daromad</div><div style="font-weight:700;color:#c084fc">${fp(stats.todayRevenue)}</div></div>
+          <div style="background:#1e293b;border-radius:8px;padding:8px"><div style="color:#64748b;font-size:10px;margin-bottom:2px">Buyurtmalar</div><div style="font-weight:700;color:#38bdf8">${stats.todayOrders||0}</div></div>
+          <div style="background:#1e293b;border-radius:8px;padding:8px"><div style="color:#64748b;font-size:10px;margin-bottom:2px">Kam zaxira</div><div style="font-weight:700;color:${stats.lowStock>0?'#f87171':'#4ade80'}">${stats.lowStock||0}</div></div>
+          <div style="background:#1e293b;border-radius:8px;padding:8px"><div style="color:#64748b;font-size:10px;margin-bottom:2px">Bekor</div><div style="font-weight:700;color:#94a3b8">${stats.todayReturns||0}</div></div>
+        </div>` : `<div style="color:#64748b;font-size:11px;text-align:center;padding:8px 0">Ma'lumot yuklanmoqda...</div>`}
+      <a href="https://daromadchi.uz/dashboard" target="_blank" style="display:block;margin-top:10px;text-align:center;background:rgba(168,85,247,.15);border:1px solid rgba(168,85,247,.3);border-radius:8px;padding:6px;color:#c084fc;text-decoration:none;font-size:11px;font-weight:600">To'liq dashboard →</a>
+    `;
+    document.body.appendChild(w);
+    document.getElementById('drm-wb-close').onclick = (e) => {
+      e.stopPropagation(); w.style.opacity='0'; setTimeout(()=>w.remove(),200);
+      try { sessionStorage.setItem('drm-wb-closed','1'); } catch {}
+    };
+  }
+
   async function init() {
-    if (document.getElementById(WIDGET_ID)) return;
-    const data = await chrome.storage.local.get(CLOSED_KEY);
-    if (Date.now() - (data[CLOSED_KEY] || 0) < 1800000) return;
-    buildWidget();
+    try { if (sessionStorage.getItem('drm-wb-closed')) return; } catch {}
+    const data = await chrome.storage.local.get(['wbStats','wbConnected','wbSellerInfo']);
+    if (!data.wbConnected && !data.wbStats) return;
+    createWidget(data.wbStats||null, data.wbSellerInfo||null);
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => setTimeout(init, 1500));
-  } else {
-    setTimeout(init, 1500);
-  }
-  // Second attempt for slow WB pages
-  setTimeout(() => { if (!document.getElementById(WIDGET_ID)) init(); }, 3500);
+  chrome.storage.local.get('tg_activated', ({ tg_activated }) => {
+    if (!tg_activated) return;
+    if (document.readyState==='loading') { document.addEventListener('DOMContentLoaded', init); }
+    else { setTimeout(init, 1500); }
+  });
 
-  let lastUrl = location.href;
-  new MutationObserver(() => {
-    if (location.href === lastUrl) return;
-    lastUrl = location.href;
-    const isP = /\/catalog\/\d+/.test(location.pathname);
-    setTimeout(() => {
-      document.getElementById(WIDGET_ID)?.remove();
-      if (isP) init();
-    }, 1800);
-  }).observe(document, { subtree: true, childList: true });
-
+  chrome.storage.onChanged.addListener((changes) => {
+    if (changes.wbStats && document.getElementById('drm-wb-widget')) {
+      document.getElementById('drm-wb-widget')?.remove();
+      init();
+    }
+  });
 })();
