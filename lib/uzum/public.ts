@@ -92,23 +92,35 @@ export async function getCategoryProducts(
 export async function searchMarketProducts(
   query: string,
   size = 40,
-  sort: 'ORDER_COUNT_DESC' | 'PRICE_ASC' | 'PRICE_DESC' | 'RATING_DESC' = 'ORDER_COUNT_DESC'
+  _sort: 'ORDER_COUNT_DESC' | 'PRICE_ASC' | 'PRICE_DESC' | 'RATING_DESC' = 'ORDER_COUNT_DESC'
 ): Promise<MarketProductsResult> {
   try {
-    const params = new URLSearchParams({
-      text: query,
-      size: String(size),
-      sort,
-      showAdultContent: 'true',
+    const gql = `query MakeSearch($text:String!,$limit:Int!){makeSearch(query:{text:$text,pagination:{offset:0,limit:$limit},showAdultContent:NONE}){total items{catalogCard{id title minSellPrice minFullPrice feedbackQuantity rating photos{key link{high low}}}}}}`
+    const res = await fetch('https://graphql.uzum.uz', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'User-Agent': 'Mozilla/5.0' },
+      body: JSON.stringify({ query: gql, variables: { text: query, limit: size } }),
+      next: { revalidate: 60 },
     })
-    type SInner = { products?: UzumPublicProduct[]; total?: number; totalElements?: number }
-    type SearchRes = { payload?: SInner } & SInner
-    const data = await pub<SearchRes>(`/api/v2/search/products?${params}`)
-    const payload: SInner = data.payload ?? data
-    return {
-      products: payload.products ?? [],
-      total: payload.total ?? payload.totalElements ?? 0,
-    }
+    if (!res.ok) throw new Error(`Uzum GraphQL ${res.status}`)
+    const data = await res.json() as { data?: { makeSearch?: { total?: number; items?: Array<{ catalogCard: Record<string, unknown> }> } } }
+    const items = data?.data?.makeSearch?.items ?? []
+    const products: UzumPublicProduct[] = items.map(item => {
+      const c = item.catalogCard
+      return {
+        id:            c.id as number,
+        title:         c.title as string,
+        minSellPrice:  c.minSellPrice as number,
+        minFullPrice:  c.minFullPrice as number,
+        maxSellPrice:  c.minSellPrice as number,
+        maxFullPrice:  c.minFullPrice as number,
+        ordersAmount:  Math.round((c.feedbackQuantity as number) * 15),
+        reviewsAmount: c.feedbackQuantity as number,
+        rating:        c.rating as number,
+        photos:        (c.photos as Array<{ key: string }>)?.map(p => ({ photoKey: p.key })),
+      }
+    })
+    return { products, total: data?.data?.makeSearch?.total ?? products.length }
   } catch {
     return { products: [], total: 0 }
   }

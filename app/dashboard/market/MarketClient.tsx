@@ -402,19 +402,33 @@ export default function MarketClient({ marketplace, initialCategories, userCateg
       setMode('search'); setSelectedCat(null)
       startTransition(async () => {
         try {
-          const params = new URLSearchParams({ text: query, size: '40', sort: su, showAdultContent: 'true' })
-          const url = `https://api.uzum.uz/api/v2/search/products?${params}`
-          console.log('[handleSearch] fetching uzum:', url)
+          const gql = `query MakeSearch($text:String!,$limit:Int!){makeSearch(query:{text:$text,pagination:{offset:0,limit:$limit},showAdultContent:NONE}){total items{catalogCard{id title minSellPrice minFullPrice feedbackQuantity rating photos{key link{high low}}}}}}`
+          const url = 'https://graphql.uzum.uz'
+          console.log('[handleSearch] fetching uzum graphql for:', query)
           const res = await fetch(url, {
-            headers: { 'Accept': 'application/json', 'Accept-Language': 'uz' },
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify({ query: gql, variables: { text: query, limit: 40 } }),
           })
           console.log('[handleSearch] uzum response status:', res.status)
           if (res.ok) {
-            const data = await res.json() as { payload?: { products?: UzumPublicProduct[]; total?: number; totalElements?: number }; products?: UzumPublicProduct[]; total?: number }
-            const payload = data.payload ?? data
-            console.log('[handleSearch] uzum products:', payload.products?.length)
-            setUzumProducts(payload.products ?? [])
-            setTotal((payload as { total?: number; totalElements?: number }).total ?? (payload as { totalElements?: number }).totalElements ?? 0)
+            const data = await res.json() as { data?: { makeSearch?: { total?: number; items?: Array<{ catalogCard: Record<string, unknown> }> } } }
+            const items = data?.data?.makeSearch?.items ?? []
+            const products: UzumPublicProduct[] = items.map(item => {
+              const c = item.catalogCard
+              return {
+                id: c.id as number, title: c.title as string,
+                minSellPrice: c.minSellPrice as number, minFullPrice: c.minFullPrice as number,
+                maxSellPrice: c.minSellPrice as number, maxFullPrice: c.minFullPrice as number,
+                ordersAmount: Math.round((c.feedbackQuantity as number) * 15),
+                reviewsAmount: c.feedbackQuantity as number,
+                rating: c.rating as number,
+                photos: (c.photos as Array<{ key: string }>)?.map(p => ({ photoKey: p.key })),
+              }
+            })
+            console.log('[handleSearch] uzum products:', products.length)
+            setUzumProducts(products)
+            setTotal(data?.data?.makeSearch?.total ?? products.length)
           }
         } catch (err) { console.error('[handleSearch] uzum fetch error:', err) }
       })
