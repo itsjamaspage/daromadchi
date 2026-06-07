@@ -396,31 +396,39 @@ export default function MarketClient({ marketplace, initialCategories, userCateg
   }, [sortYandex])
 
   const handleSearch = useCallback((sw: SortWb = sortWb, su: SortUzum = sortUzum, query = searchQuery) => {
-    if (!query.trim()) return
+    console.log('[handleSearch] called', { query, marketplace })
+    if (!query.trim()) { console.log('[handleSearch] empty query, returning'); return }
     if (marketplace === 'uzum') {
       setMode('search'); setSelectedCat(null)
       startTransition(async () => {
         try {
           const params = new URLSearchParams({ text: query, size: '40', sort: su, showAdultContent: 'true' })
-          const res = await fetch(`https://api.uzum.uz/api/v2/search/products?${params}`, {
+          const url = `https://api.uzum.uz/api/v2/search/products?${params}`
+          console.log('[handleSearch] fetching uzum:', url)
+          const res = await fetch(url, {
             headers: { 'Accept': 'application/json', 'Accept-Language': 'uz' },
           })
+          console.log('[handleSearch] uzum response status:', res.status)
           if (res.ok) {
             const data = await res.json() as { payload?: { products?: UzumPublicProduct[]; total?: number; totalElements?: number }; products?: UzumPublicProduct[]; total?: number }
             const payload = data.payload ?? data
+            console.log('[handleSearch] uzum products:', payload.products?.length)
             setUzumProducts(payload.products ?? [])
             setTotal((payload as { total?: number; totalElements?: number }).total ?? (payload as { totalElements?: number }).totalElements ?? 0)
           }
-        } catch { /* network error */ }
+        } catch (err) { console.error('[handleSearch] uzum fetch error:', err) }
       })
     } else if (marketplace === 'wildberries') {
       setMode('search'); setSelectedCat(null)
       startTransition(async () => {
         try {
           const params = new URLSearchParams({ appType: '1', curr: 'rub', dest: '-1257786', query, resultset: 'catalog', sort: sw, spp: '30' })
-          const res = await fetch(`https://search.wb.ru/exactmatch/ru/common/v5/search?${params}`, {
+          const url = `https://search.wb.ru/exactmatch/ru/common/v5/search?${params}`
+          console.log('[handleSearch] fetching wb:', url)
+          const res = await fetch(url, {
             headers: { 'Accept': 'application/json' },
           })
+          console.log('[handleSearch] wb response status:', res.status)
           if (res.ok) {
             const data = await res.json() as { data?: { products?: unknown[] }; products?: unknown[] }
             const raw = (data.data?.products ?? data.products ?? []) as Array<{
@@ -437,9 +445,10 @@ export default function MarketClient({ marketplace, initialCategories, userCateg
                 : p.priceU ? Math.round(p.priceU / 100) : 0
               return { id: p.id, name: p.name ?? '', brand: p.brand ?? '', sellPrice, fullPrice, rating: p.reviewRating ?? p.rating ?? 0, feedbacks: p.feedbacks ?? 0, supplierId: p.supplierId }
             })
+            console.log('[handleSearch] wb products:', products.length)
             setWbProducts(products); setTotal(products.length)
           }
-        } catch { /* network error */ }
+        } catch (err) { console.error('[handleSearch] wb fetch error:', err) }
       })
     }
   }, [searchQuery, sortUzum, sortWb, marketplace])
