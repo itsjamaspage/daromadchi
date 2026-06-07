@@ -13,6 +13,7 @@ interface Props {
 export default async function MarketPage({ searchParams }: Props) {
   const params = await searchParams
   const tab    = params.tab === 'yandex' ? 'yandex' : params.tab === 'wildberries' ? 'wildberries' : 'uzum'
+  const q      = params.q ?? ''
   const t = await getT()
   const d = t.dashboard
 
@@ -108,6 +109,7 @@ export default async function MarketPage({ searchParams }: Props) {
             marketplace="uzum"
             initialCategories={uzumCategories}
             userCategories={userUzumCategories}
+            initialQuery={q}
           />
         </>
       )}
@@ -120,7 +122,7 @@ export default async function MarketPage({ searchParams }: Props) {
               <Globe2 className="w-4 h-4 mt-0.5 shrink-0 text-amber-500" />
               <span>{d.yandexApiNote}</span>
             </div>
-            <MarketClient marketplace="yandex" initialCategories={[]} userCategories={[]} />
+            <MarketClient marketplace="yandex" initialCategories={[]} userCategories={[]} initialQuery={q} />
           </>
         ) : (
           <div className="bg-[var(--bg-card2)] border border-dashed border-amber-500/30 rounded-2xl p-10 text-center">
@@ -144,7 +146,7 @@ export default async function MarketPage({ searchParams }: Props) {
             <Globe2 className="w-4 h-4 mt-0.5 shrink-0" style={{ color: '#cb11ab' }} />
             <span>{d.wbApiNote}</span>
           </div>
-          <MarketClient marketplace="wildberries" initialCategories={[]} userCategories={[]} />
+          <MarketClient marketplace="wildberries" initialCategories={[]} userCategories={[]} initialQuery={q} />
         </>
       )}
     </div>

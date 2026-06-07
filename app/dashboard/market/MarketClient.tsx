@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition, useCallback } from 'react'
+import { useState, useTransition, useCallback, useEffect, useRef } from 'react'
 import { Search, TrendingUp, Star, ShoppingBag, ChevronRight, ArrowUpDown, Loader2, Flame, DollarSign } from 'lucide-react'
 import type { UzumPublicCategory, UzumPublicProduct } from '@/lib/uzum/public'
 import type { WbPublicProduct } from '@/lib/wildberries/public'
@@ -332,9 +332,10 @@ interface Props {
   marketplace:       'uzum' | 'yandex' | 'wildberries'
   initialCategories: UzumPublicCategory[]
   userCategories:    string[]
+  initialQuery?:     string
 }
 
-export default function MarketClient({ marketplace, initialCategories, userCategories }: Props) {
+export default function MarketClient({ marketplace, initialCategories, userCategories, initialQuery }: Props) {
   const { lang } = useLang()
   const t = dashT[lang].market
   const [selectedCat,  setSelectedCat]  = useState<{ id: number; title: string } | null>(null)
@@ -343,13 +344,14 @@ export default function MarketClient({ marketplace, initialCategories, userCateg
   const [yandexCats,   setYandexCats]   = useState<{ id: number; name: string }[]>([])
   const [yandexModels, setYandexModels] = useState<YandexModel[]>([])
   const [total,        setTotal]        = useState(0)
-  const [searchQuery,  setSearchQuery]  = useState('')
+  const [searchQuery,  setSearchQuery]  = useState(initialQuery ?? '')
   const [sortUzum,     setSortUzum]     = useState<SortUzum>('ORDER_COUNT_DESC')
   const [sortYandex,   setSortYandex]   = useState<SortYandex>('OPINIONS')
   const [sortWb,       setSortWb]       = useState<SortWb>('popular')
   const [mode,         setMode]         = useState<'category' | 'search'>('category')
   const [catsLoaded,   setCatsLoaded]   = useState(false)
   const [isPending,    startTransition] = useTransition()
+  const didAutoSearch  = useRef(false)
 
   // Load Yandex categories on first render
   const loadYandexCats = useCallback(() => {
@@ -367,11 +369,18 @@ export default function MarketClient({ marketplace, initialCategories, userCateg
   const loadUzumCategory = useCallback((cat: { id: number; title: string }, s: SortUzum = sortUzum) => {
     setSelectedCat(cat); setMode('category')
     startTransition(async () => {
-      const res = await fetch(`/api/market/products?categoryId=${cat.id}&sort=${s}`)
-      if (res.ok) {
-        const d = await res.json() as { products: UzumPublicProduct[]; total: number }
-        setUzumProducts(d.products); setTotal(d.total)
-      }
+      try {
+        const params = new URLSearchParams({ page: '0', size: '40', sort: s, showAdultContent: 'true' })
+        const res = await fetch(`https://api.uzum.uz/api/category/${cat.id}/products?${params}`, {
+          headers: { 'Accept': 'application/json', 'Accept-Language': 'uz' },
+        })
+        if (res.ok) {
+          const data = await res.json() as { payload?: { products?: UzumPublicProduct[]; total?: number; totalElements?: number }; products?: UzumPublicProduct[]; total?: number }
+          const payload = data.payload ?? data
+          setUzumProducts(payload.products ?? [])
+          setTotal((payload as { total?: number; totalElements?: number }).total ?? (payload as { totalElements?: number }).totalElements ?? 0)
+        }
+      } catch { /* network error */ }
     })
   }, [sortUzum])
 
@@ -386,28 +395,62 @@ export default function MarketClient({ marketplace, initialCategories, userCateg
     })
   }, [sortYandex])
 
-  const handleSearch = useCallback((sw: SortWb = sortWb, su: SortUzum = sortUzum) => {
-    if (!searchQuery.trim()) return
+  const handleSearch = useCallback((sw: SortWb = sortWb, su: SortUzum = sortUzum, query = searchQuery) => {
+    if (!query.trim()) return
     if (marketplace === 'uzum') {
       setMode('search'); setSelectedCat(null)
       startTransition(async () => {
-        const res = await fetch(`/api/market/products?q=${encodeURIComponent(searchQuery)}&sort=${su}`)
-        if (res.ok) {
-          const d = await res.json() as { products: UzumPublicProduct[]; total: number }
-          setUzumProducts(d.products); setTotal(d.total)
-        }
+        try {
+          const params = new URLSearchParams({ text: query, size: '40', sort: su, showAdultContent: 'true' })
+          const res = await fetch(`https://api.uzum.uz/api/v2/search/products?${params}`, {
+            headers: { 'Accept': 'application/json', 'Accept-Language': 'uz' },
+          })
+          if (res.ok) {
+            const data = await res.json() as { payload?: { products?: UzumPublicProduct[]; total?: number; totalElements?: number }; products?: UzumPublicProduct[]; total?: number }
+            const payload = data.payload ?? data
+            setUzumProducts(payload.products ?? [])
+            setTotal((payload as { total?: number; totalElements?: number }).total ?? (payload as { totalElements?: number }).totalElements ?? 0)
+          }
+        } catch { /* network error */ }
       })
     } else if (marketplace === 'wildberries') {
       setMode('search'); setSelectedCat(null)
       startTransition(async () => {
-        const res = await fetch(`/api/market/wildberries?q=${encodeURIComponent(searchQuery)}&sort=${sw}`)
-        if (res.ok) {
-          const d = await res.json() as { products: WbPublicProduct[]; total: number }
-          setWbProducts(d.products); setTotal(d.total)
-        }
+        try {
+          const params = new URLSearchParams({ appType: '1', curr: 'rub', dest: '-1257786', query, resultset: 'catalog', sort: sw, spp: '30' })
+          const res = await fetch(`https://search.wb.ru/exactmatch/ru/common/v5/search?${params}`, {
+            headers: { 'Accept': 'application/json' },
+          })
+          if (res.ok) {
+            const data = await res.json() as { data?: { products?: unknown[] }; products?: unknown[] }
+            const raw = (data.data?.products ?? data.products ?? []) as Array<{
+              id: number; name?: string; brand?: string; reviewRating?: number; rating?: number
+              feedbacks?: number; supplierId?: number
+              salePriceU?: number; priceU?: number
+              sizes?: { price?: { product?: number; basic?: number } }[]
+            }>
+            const products: WbPublicProduct[] = raw.slice(0, 40).map(p => {
+              const sizePrice = p.sizes?.[0]?.price
+              const sellPrice = sizePrice?.product ? Math.round(sizePrice.product / 100)
+                : p.salePriceU ? Math.round(p.salePriceU / 100) : 0
+              const fullPrice = sizePrice?.basic ? Math.round(sizePrice.basic / 100)
+                : p.priceU ? Math.round(p.priceU / 100) : 0
+              return { id: p.id, name: p.name ?? '', brand: p.brand ?? '', sellPrice, fullPrice, rating: p.reviewRating ?? p.rating ?? 0, feedbacks: p.feedbacks ?? 0, supplierId: p.supplierId }
+            })
+            setWbProducts(products); setTotal(products.length)
+          }
+        } catch { /* network error */ }
       })
     }
   }, [searchQuery, sortUzum, sortWb, marketplace])
+
+  // Auto-search when opened from extension
+  useEffect(() => {
+    if (didAutoSearch.current || !initialQuery?.trim()) return
+    didAutoSearch.current = true
+    handleSearch(sortWb, sortUzum, initialQuery)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Auto-load Yandex categories when tab is yandex
   if (marketplace === 'yandex' && !catsLoaded && typeof window !== 'undefined') {
