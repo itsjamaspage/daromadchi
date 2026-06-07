@@ -46,7 +46,6 @@
         cursor: pointer !important;
         box-shadow: 0 4px 20px rgba(124,58,237,.5) !important;
         font-size: 20px !important;
-        display: flex !important;
         align-items: center !important;
         justify-content: center !important;
         color: #fff !important;
@@ -190,6 +189,7 @@
   function pColor(m) { const t=T(); return m>=25?t.green:m>=10?t.amber:t.red; }
 
   function buildWidget() {
+    if (!parsePrice()) { setTimeout(()=>{ if(!document.getElementById('drm-widget')) buildWidget(); },1500); return; }
     let fbo=true, costPrice=0, packaging=0, adPct=5;
     const title=parseTitle(), productId=getProductId();
 
@@ -202,9 +202,9 @@
     toggleBtn.id='drm-toggle';
     toggleBtn.title='Daromadchi';
     toggleBtn.textContent='D';
-    toggleBtn.style.display='none';
+    toggleBtn.style.setProperty('display','none','important');
     document.body.appendChild(toggleBtn);
-    toggleBtn.onclick=()=>{ wrap.style.display='block'; toggleBtn.style.display='none'; };
+    toggleBtn.onclick=()=>{ wrap.style.display='block'; toggleBtn.style.setProperty('display','none','important'); };
 
     chrome.storage.local.get(['ueSettings','drmLang','drmTheme'],data=>{
       if(data.ueSettings){costPrice=data.ueSettings.costPrice||0;packaging=data.ueSettings.packaging||0;adPct=data.ueSettings.adPct||5;fbo=data.ueSettings.fbo!==undefined?data.ueSettings.fbo:true;}
@@ -257,7 +257,7 @@
       wrap.style.color=t.text;
 
       wrap.innerHTML=`
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:11px 14px;border-bottom:1px solid ${t.border};position:sticky;top:0;background:${t.bg};z-index:1">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid ${t.border};position:sticky;top:0;background:${t.bg};z-index:1">
           <div style="display:flex;align-items:center;gap:7px">
             <span style="font-weight:700;font-size:14px;color:${t.text}">Daromadchi</span>
             <span style="font-size:10px;font-weight:600;padding:2px 7px;background:#7c3aed;color:#fff;border-radius:20px;display:inline-block">Uzum</span>
@@ -270,7 +270,7 @@
           </div>
         </div>
 
-        <div style="padding:13px 14px;display:flex;flex-direction:column;gap:11px">
+        <div style="padding:10px 12px;display:flex;flex-direction:column;gap:8px">
           <div>
             <div style="font-weight:600;font-size:13px;color:${t.text};margin-bottom:4px">${title}</div>
             ${price?`<div style="font-size:22px;font-weight:800;color:#a78bfa;display:block">${fp(price)}</div>`:`<div style="color:${t.red};font-size:12px">${l.noPrice}</div>`}
@@ -308,15 +308,15 @@
             </div>
           </div>
 
-          <div style="background:${t.card};border:1px solid ${t.border};border-radius:12px;padding:13px;text-align:center">
+          <div style="background:${t.card};border:1px solid ${t.border};border-radius:12px;padding:9px;text-align:center">
             <div style="font-size:10px;font-weight:600;color:${t.muted};letter-spacing:.7px;margin-bottom:5px">${l.profitLabel}</div>
-            <div id="drm-v-profit" style="font-size:26px;font-weight:800;color:${color};margin-bottom:5px;display:block">${fp(eco.netProfit)}</div>
+            <div id="drm-v-profit" style="font-size:22px;font-weight:800;color:${color};margin-bottom:5px;display:block">${fp(eco.netProfit)}</div>
             <div style="height:4px;background:${t.border};border-radius:4px;margin-bottom:5px"><div id="drm-profit-bar" style="height:4px;border-radius:4px;background:${color};width:${barW}%;display:block"></div></div>
             <div id="drm-v-margin" style="color:${color};font-size:13px;font-weight:600">${eco.margin}% ${l.marja}</div>
           </div>
           `}
 
-          <button id="drm-ue" style="display:block;width:100%;padding:11px;background:#7c3aed;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:600;text-align:center">${l.ueBtn}</button>
+          <button id="drm-ue" style="display:block;width:100%;padding:9px;background:#7c3aed;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:600;text-align:center">${l.ueBtn}</button>
           <button id="drm-market" style="display:block;width:100%;padding:10px;background:${t.card};color:${t.text};border:1px solid ${t.border};border-radius:10px;font-size:13px;text-align:center">${l.marketBtn}</button>
           <div style="text-align:center;font-size:10px;color:${t.muted}">${l.footer}</div>
         </div>
@@ -324,7 +324,7 @@
 
       wrap.querySelector('#drm-close').onclick=()=>{
         wrap.style.display='none';
-        toggleBtn.style.display='flex';
+        toggleBtn.style.setProperty('display','flex','important');
         chrome.storage.local.set({widgetClosed:Date.now()});
       };
       wrap.querySelector('#drm-refresh').onclick=()=>{wrap.remove();toggleBtn.remove();setTimeout(init,300);};
@@ -363,7 +363,7 @@
       setTimeout(()=>{
         const w=document.getElementById('drm-widget');
         const t=document.getElementById('drm-toggle');
-        if(w&&t){w.style.display='none';t.style.display='flex';}
+        if(w&&t){w.style.display='none';t.style.setProperty('display','flex','important');}
       },100);
     }
   }

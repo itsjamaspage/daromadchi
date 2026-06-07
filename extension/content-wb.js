@@ -160,6 +160,7 @@
 
     function buildWbWidget() {
       const price   = parseWbPrice();
+      if (!price) { setTimeout(()=>{ if(!document.getElementById('drm-wb-ue')) buildWbWidget(); },1500); return; }
       const title   = parseWbTitle();
       const article = getArticle();
 
@@ -168,6 +169,15 @@
       const wrap = document.createElement('div');
       wrap.id = 'drm-wb-ue';
       document.body.appendChild(wrap);
+
+      const toggleBtn = document.createElement('button');
+      toggleBtn.id = 'drm-wb-toggle';
+      toggleBtn.title = 'Daromadchi';
+      toggleBtn.textContent = 'D';
+      toggleBtn.style.cssText = 'position:fixed!important;bottom:24px!important;right:24px!important;z-index:2147483647!important;width:44px!important;height:44px!important;border-radius:50%!important;background:#7c3aed!important;border:none!important;cursor:pointer!important;box-shadow:0 4px 20px rgba(124,58,237,.5)!important;font-size:20px!important;color:#fff!important;font-family:-apple-system,sans-serif!important;';
+      toggleBtn.style.setProperty('display','none','important');
+      document.body.appendChild(toggleBtn);
+      toggleBtn.onclick = () => { wrap.style.display='block'; toggleBtn.style.setProperty('display','none','important'); };
 
       chrome.storage.local.get(['ueSettings','drmLang','drmTheme'], data => {
         if (data.ueSettings) { costPrice=data.ueSettings.costPrice||0; packaging=data.ueSettings.packaging||0; adPct=data.ueSettings.adPct||5; volume=data.ueSettings.volume||1; fby=data.ueSettings.fby!==undefined?data.ueSettings.fby:true; }
@@ -212,7 +222,7 @@
         wrap.style.color=t.text;
 
         wrap.innerHTML = `
-          <div style="display:flex;align-items:center;justify-content:space-between;padding:11px 14px;border-bottom:1px solid ${t.border};position:sticky;top:0;background:${t.bg};z-index:1">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid ${t.border};position:sticky;top:0;background:${t.bg};z-index:1">
             <div style="display:flex;align-items:center;gap:7px">
               <span style="font-weight:700;font-size:14px;color:${t.text}">Daromadchi</span>
               <span style="font-size:10px;font-weight:600;padding:2px 7px;background:#7c3aed;color:#fff;border-radius:20px;display:inline-block">WB</span>
@@ -225,7 +235,7 @@
             </div>
           </div>
 
-          <div style="padding:13px 14px;display:flex;flex-direction:column;gap:11px">
+          <div style="padding:10px 12px;display:flex;flex-direction:column;gap:8px">
             <div>
               <div style="font-weight:600;font-size:13px;color:${t.text};margin-bottom:4px">${title}${article?`<span style="font-size:10px;color:${t.muted};margin-left:6px">#${article}</span>`:''}</div>
               ${price
@@ -265,22 +275,22 @@
               </div>
             </div>
 
-            <div style="background:${t.card};border:1px solid ${t.border};border-radius:12px;padding:13px;text-align:center">
+            <div style="background:${t.card};border:1px solid ${t.border};border-radius:12px;padding:9px;text-align:center">
               <div style="font-size:10px;font-weight:600;color:${t.muted};letter-spacing:.7px;margin-bottom:5px">${l.profitLabel}</div>
-              <div id="drm-wb-v-profit" style="font-size:26px;font-weight:800;color:${color};margin-bottom:5px;display:block">${fp(eco.netProfit)}</div>
+              <div id="drm-wb-v-profit" style="font-size:22px;font-weight:800;color:${color};margin-bottom:5px;display:block">${fp(eco.netProfit)}</div>
               <div style="height:4px;background:${t.border};border-radius:4px;margin-bottom:5px"><div id="drm-wb-bar" style="height:4px;border-radius:4px;background:${color};width:${barW}%;display:block"></div></div>
               <div id="drm-wb-v-margin" style="color:${color};font-size:13px;font-weight:600">${eco.margin}% ${l.marja}</div>
             </div>
             `}
 
-            <button id="drm-wb-ue-btn" style="display:block;width:100%;padding:11px;background:#7c3aed;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:600;text-align:center">${l.ueBtn}</button>
+            <button id="drm-wb-ue-btn" style="display:block;width:100%;padding:9px;background:#7c3aed;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:600;text-align:center">${l.ueBtn}</button>
             <button id="drm-wb-market" style="display:block;width:100%;padding:10px;background:${t.card};color:${t.text};border:1px solid ${t.border};border-radius:10px;font-size:13px;text-align:center">${l.marketBtn}</button>
             <div style="text-align:center;font-size:10px;color:${t.muted}">${l.footer}</div>
           </div>
         `;
 
-        wrap.querySelector('#drm-wb-close').onclick   = () => { wrap.remove(); chrome.storage.local.set({wbWidgetClosed:Date.now()}); };
-        wrap.querySelector('#drm-wb-refresh').onclick = () => { wrap.remove(); setTimeout(buildWbWidget,300); };
+        wrap.querySelector('#drm-wb-close').onclick   = () => { wrap.style.display='none'; toggleBtn.style.setProperty('display','flex','important'); chrome.storage.local.set({wbWidgetClosed:Date.now()}); };
+        wrap.querySelector('#drm-wb-refresh').onclick = () => { wrap.remove(); toggleBtn.remove(); setTimeout(buildWbWidget,300); };
         wrap.querySelector('#drm-wb-theme').onclick   = () => { theme=theme==='dark'?'light':'dark'; chrome.storage.local.set({drmTheme:theme}); render(); };
         wrap.querySelector('#drm-wb-fby').onclick     = () => { fby=true; render(); };
         wrap.querySelector('#drm-wb-fbs').onclick     = () => { fby=false; render(); };
@@ -318,7 +328,7 @@
     let lastUrl=location.href;
     new MutationObserver(()=>{
       if(location.href!==lastUrl){ lastUrl=location.href;
-        setTimeout(()=>{ document.getElementById('drm-wb-ue')?.remove(); if(/\/catalog\/\d+/.test(location.pathname)) tryInit(); },1800); }
+        setTimeout(()=>{ document.getElementById('drm-wb-ue')?.remove(); document.getElementById('drm-wb-toggle')?.remove(); if(/\/catalog\/\d+/.test(location.pathname)) tryInit(); },1800); }
     }).observe(document,{subtree:true,childList:true});
 
     return;
