@@ -398,7 +398,6 @@ export default function MarketClient({ marketplace, initialCategories, userCateg
           const gql = `query MakeSearch($text:String!,$limit:Int!){makeSearch(query:{text:$text,pagination:{offset:0,limit:$limit},showAdultContent:NONE}){total items{catalogCard{id title minSellPrice minFullPrice feedbackQuantity rating photos{key link{high low}}}}}}`
           const res = await fetch('https://graphql.uzum.uz', {
             method: 'POST',
-            credentials: 'include',
             headers: {
               'Content-Type': 'application/json',
               'Accept': 'application/json',
