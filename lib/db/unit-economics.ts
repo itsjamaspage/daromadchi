@@ -12,7 +12,7 @@ function mapRow(row: Record<string, unknown>): UnitEconomicsItem {
     image:         (row.image as string) ?? undefined,
     sku:           (row.sku as string) ?? undefined,
     category:      (row.category as string) ?? undefined,
-    marketplace:   row.marketplace as 'uzum' | 'yandex_market',
+    marketplace:   row.marketplace as MarketplaceType,
     sellingPrice:  Number(row.selling_price),
     costPrice:     Number(row.cost_price),
     commissionPct: Number(row.commission_pct),
@@ -76,7 +76,7 @@ export async function addUnitEconomicsItem(
   if (!supabaseConfigured) return { id: `mock-${Date.now()}` }
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return null   // null = not authenticated
+  if (!user) return null   // null = not authenticated → 401
 
   const { data, error } = await supabase
     .from('unit_economics_items')
@@ -107,7 +107,7 @@ export async function addUnitEconomicsItem(
     .select('id')
     .single()
 
-  if (error || !data) return false  // false = insert failed (DB error)
+  if (error || !data) return false  // false = DB error → 500
   return { id: data.id as string }
 }
 
