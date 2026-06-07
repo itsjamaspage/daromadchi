@@ -107,7 +107,10 @@ export async function addUnitEconomicsItem(
     .select('id')
     .single()
 
-  if (error || !data) return false  // false = DB error → 500
+  if (error || !data) {
+    console.error('[addUnitEconomicsItem] DB error:', error?.message, error?.details, error?.code)
+    return false
+  }
   return { id: data.id as string }
 }
 
