@@ -1,4 +1,4 @@
-// Daromadchi — Uzum content script (Yoolip style v5)
+// Daromadchi — Uzum content script (Yoolip style v6)
 (function () {
   'use strict';
 
@@ -8,9 +8,8 @@
     /\/[a-z]{2,3}\/[^/]+-\d+/.test(window.location.pathname)
   );
   if (!IS_PRODUCT) return;
-  if (document.getElementById('drm-widget')) return;
+  if (document.getElementById('drm-widget') || document.getElementById('drm-toggle')) return;
 
-  // Inject targeted CSS resets only for the widget root + form elements
   (function injectCSS() {
     if (document.getElementById('drm-style')) return;
     const s = document.createElement('style');
@@ -34,6 +33,25 @@
       #drm-widget * { box-sizing: border-box !important; font-family: inherit !important; }
       #drm-widget input, #drm-widget button, #drm-widget a { all: revert; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; cursor: pointer; }
       #drm-widget input { cursor: text; }
+      #drm-toggle {
+        position: fixed !important;
+        bottom: 24px !important;
+        right: 24px !important;
+        z-index: 2147483647 !important;
+        width: 44px !important;
+        height: 44px !important;
+        border-radius: 50% !important;
+        background: #7c3aed !important;
+        border: none !important;
+        cursor: pointer !important;
+        box-shadow: 0 4px 20px rgba(124,58,237,.5) !important;
+        font-size: 20px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        color: #fff !important;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+      }
     `;
     (document.head || document.documentElement).appendChild(s);
   })();
@@ -92,105 +110,143 @@
     light: {bg:'#f8fafc',card:'#ffffff',border:'#e2e8f0',text:'#0f172a',muted:'#64748b',red:'#dc2626',green:'#16a34a',amber:'#d97706'},
   };
 
-  let langKey = 'uz', theme = 'dark';
+  let langKey='uz', theme='dark';
   function L() { return LANGS[langKey]; }
   function T() { return THEME[theme]; }
 
   function getCommission() {
     const bc = document.querySelector('[class*="readcrumb"],[class*="ategory"],[class*="Breadcrumb"]');
-    if (bc) {
-      const t = bc.innerText;
-      for (const [re, pct] of COMM_MAP) if (re.test(t)) return pct;
-    }
+    if (bc) { const t=bc.innerText; for (const [re,pct] of COMM_MAP) if (re.test(t)) return pct; }
     return 15;
   }
 
   function parsePrice() {
-    const els = document.querySelectorAll('[class*="price"],[class*="Price"],[class*="cost"],[class*="amount"]');
-    for (const el of els) {
+    // 1. Class-based selectors — direct text nodes only to avoid installment concatenation
+    const priceEls = document.querySelectorAll(
+      '[class*="price"],[class*="Price"],[class*="currentPrice"],[class*="salePrice"],[class*="finalPrice"],[class*="product-price"],[class*="productPrice"]'
+    );
+    for (const el of priceEls) {
       const cn = el.className.toLowerCase();
-      if (cn.includes('old')||cn.includes('cross')||cn.includes('credit')||cn.includes('installment')||cn.includes('kartasiz')) continue;
+      if (/old|cross|credit|install|kartasiz|strike|prev|origin|discount-price/.test(cn)) continue;
       const direct = Array.from(el.childNodes).filter(n=>n.nodeType===Node.TEXT_NODE).map(n=>n.textContent).join('');
       const raw = direct.replace(/[^\d]/g,'');
-      if (raw.length>=4 && raw.length<=9) return parseInt(raw);
+      if (raw.length>=4&&raw.length<=9) return parseInt(raw);
       if (el.children.length===0) {
         const r2 = el.innerText.replace(/[^\d]/g,'');
-        if (r2.length>=4 && r2.length<=9) return parseInt(r2);
+        if (r2.length>=4&&r2.length<=9) return parseInt(r2);
       }
+    }
+
+    // 2. Fallback: scan all leaf elements for "so'm" text, take topmost on page
+    const candidates = [];
+    for (const el of document.querySelectorAll('span,div,p,strong,b')) {
+      if (el.children.length > 2) continue;
+      const text = el.innerText || '';
+      if (!/so[`']?m|сум/i.test(text)) continue;
+      // Skip installment context: parent element contains "× N oy"
+      let node = el;
+      let inInstall = false;
+      for (let i=0;i<5;i++) {
+        node = node.parentElement;
+        if (!node) break;
+        if (/×\s*\d+\s*oy|kartasiz|\d+\s*oy/i.test(node.innerText||'') && node.innerText.length < 200) { inInstall=true; break; }
+      }
+      if (inInstall) continue;
+      const cn = (el.className||'').toLowerCase();
+      if (/old|cross|strike|prev|origin/.test(cn)) continue;
+      const raw = text.replace(/[^\d]/g,'');
+      if (raw.length>=4&&raw.length<=9) {
+        const rect = el.getBoundingClientRect();
+        if (rect.width > 0) candidates.push({ price:parseInt(raw), top:rect.top+window.scrollY });
+      }
+    }
+    if (candidates.length>0) {
+      candidates.sort((a,b)=>a.top-b.top);
+      return candidates[0].price;
     }
     return null;
   }
 
-  function parseTitle() { return (document.querySelector('h1')||{}).innerText?.trim().slice(0,70) || 'Mahsulot'; }
-  function getProductId() { const m = window.location.pathname.match(/-(\d{5,})/); return m ? m[1] : null; }
-  function fp(n) { if (n===null||n===undefined) return '—'; return Math.round(n).toLocaleString('uz-UZ') + " so'm"; }
+  function parseTitle() { return (document.querySelector('h1')||{}).innerText?.trim().slice(0,70)||'Mahsulot'; }
+  function getProductId() { const m=window.location.pathname.match(/-(\d{5,})/); return m?m[1]:null; }
+  function fp(n) { if(n===null||n===undefined) return '—'; return Math.round(n).toLocaleString('uz-UZ')+" so'm"; }
 
-  function calcUzum(price, { costPrice=0, packaging=0, adPct=5, fbo=true }={}) {
+  function calcUzum(price,{costPrice=0,packaging=0,adPct=5,fbo=true}={}) {
     const commPct    = getCommission();
-    const commission = Math.round(price * commPct / 100);
-    const delivery   = fbo ? 10000 : 0;
-    const returns    = Math.round(price * 0.02);
-    const acquiring  = Math.round(price * 0.015);
-    const adSpend    = Math.round(price * adPct / 100);
-    const tax        = Math.round(price * 0.06);
-    const mktTotal   = commission + delivery + returns + acquiring;
-    const jamiTotal  = mktTotal + adSpend + tax + packaging + costPrice;
-    const netProfit  = price - jamiTotal;
-    const margin     = Math.round((netProfit / price) * 100);
-    const roi        = costPrice > 0 ? Math.round((netProfit / costPrice) * 100) : null;
-    return { commPct, commission, delivery, returns, acquiring, adSpend, tax, packaging, costPrice, mktTotal, jamiTotal, netProfit, margin, roi };
+    const commission = Math.round(price*commPct/100);
+    const delivery   = fbo?10000:0;
+    const returns    = Math.round(price*0.02);
+    const acquiring  = Math.round(price*0.015);
+    const adSpend    = Math.round(price*adPct/100);
+    const tax        = Math.round(price*0.06);
+    const mktTotal   = commission+delivery+returns+acquiring;
+    const jamiTotal  = mktTotal+adSpend+tax+packaging+costPrice;
+    const netProfit  = price-jamiTotal;
+    const margin     = Math.round((netProfit/price)*100);
+    const roi        = costPrice>0?Math.round((netProfit/costPrice)*100):null;
+    return {commPct,commission,delivery,returns,acquiring,adSpend,tax,packaging,costPrice,mktTotal,jamiTotal,netProfit,margin,roi};
   }
 
   function pColor(m) { const t=T(); return m>=25?t.green:m>=10?t.amber:t.red; }
 
   function buildWidget() {
     let fbo=true, costPrice=0, packaging=0, adPct=5;
-    const title = parseTitle();
-    const productId = getProductId();
+    const title=parseTitle(), productId=getProductId();
 
-    const wrap = document.createElement('div');
-    wrap.id = 'drm-widget';
+    const wrap=document.createElement('div');
+    wrap.id='drm-widget';
     document.body.appendChild(wrap);
 
-    chrome.storage.local.get(['ueSettings','drmLang','drmTheme'], data => {
-      if (data.ueSettings) { costPrice=data.ueSettings.costPrice||0; packaging=data.ueSettings.packaging||0; adPct=data.ueSettings.adPct||5; fbo=data.ueSettings.fbo!==undefined?data.ueSettings.fbo:true; }
-      if (data.drmLang) langKey=data.drmLang;
-      if (data.drmTheme) theme=data.drmTheme;
+    // Toggle button (shown when widget is hidden)
+    const toggleBtn=document.createElement('button');
+    toggleBtn.id='drm-toggle';
+    toggleBtn.title='Daromadchi';
+    toggleBtn.textContent='D';
+    toggleBtn.style.display='none';
+    document.body.appendChild(toggleBtn);
+    toggleBtn.onclick=()=>{ wrap.style.display='block'; toggleBtn.style.display='none'; };
+
+    chrome.storage.local.get(['ueSettings','drmLang','drmTheme'],data=>{
+      if(data.ueSettings){costPrice=data.ueSettings.costPrice||0;packaging=data.ueSettings.packaging||0;adPct=data.ueSettings.adPct||5;fbo=data.ueSettings.fbo!==undefined?data.ueSettings.fbo:true;}
+      if(data.drmLang)langKey=data.drmLang;
+      if(data.drmTheme)theme=data.drmTheme;
       render();
     });
 
-    function gi() {
-      return {
-        costPrice: parseFloat(wrap.querySelector('#drm-inp-cost')?.value)||0,
-        packaging: parseFloat(wrap.querySelector('#drm-inp-pack')?.value)||0,
-        adPct:     parseFloat(wrap.querySelector('#drm-inp-ad')?.value)||5,
+    function gi(){
+      return{
+        costPrice:parseFloat(wrap.querySelector('#drm-inp-cost')?.value)||0,
+        packaging:parseFloat(wrap.querySelector('#drm-inp-pack')?.value)||0,
+        adPct:parseFloat(wrap.querySelector('#drm-inp-ad')?.value)||5,
       };
     }
 
-    function liveRecalc() {
-      const price=parsePrice(); if(!price) return;
-      const eco=calcUzum(price,{...gi(),fbo}); const c=pColor(eco.margin);
+    function liveRecalc(){
+      const price=parsePrice();if(!price)return;
+      const eco=calcUzum(price,{...gi(),fbo});const c=pColor(eco.margin);
       const S=(id,v)=>{const e=wrap.querySelector('#drm-v-'+id);if(e)e.textContent=v;};
       const C=(id,col)=>{const e=wrap.querySelector('#drm-v-'+id);if(e)e.style.color=col;};
-      S('comm',`−${fp(eco.commission)}`); S('delivery',`−${fp(eco.delivery)}`);
-      S('returns',`−${fp(eco.returns)}`); S('acq',`−${fp(eco.acquiring)}`);
-      S('ad',`−${fp(eco.adSpend)}`); S('tax',`−${fp(eco.tax)}`);
-      S('mkt',`−${fp(eco.mktTotal)}`); S('total',`−${fp(eco.jamiTotal)}`);
-      S('profit',fp(eco.netProfit)); S('margin',`${eco.margin}% ${L().marja}`);
-      C('profit',c); C('margin',c);
+      S('comm',`−${fp(eco.commission)}`);S('delivery',`−${fp(eco.delivery)}`);
+      S('returns',`−${fp(eco.returns)}`);S('acq',`−${fp(eco.acquiring)}`);
+      S('ad',`−${fp(eco.adSpend)}`);S('tax',`−${fp(eco.tax)}`);
+      S('mkt',`−${fp(eco.mktTotal)}`);S('total',`−${fp(eco.jamiTotal)}`);
+      S('profit',fp(eco.netProfit));S('margin',`${eco.margin}% ${L().marja}`);
+      C('profit',c);C('margin',c);
       const bar=wrap.querySelector('#drm-profit-bar');
       if(bar){bar.style.width=Math.max(0,Math.min(100,eco.margin))+'%';bar.style.background=c;}
     }
 
-    function inp(id,val,ph='0',step='1') {
-      return `<input id="${id}" type="number" step="${step}" value="${val||''}" placeholder="${ph}" style="width:88px;background:${T().card};border:1px solid ${T().border};border-radius:6px;padding:5px 8px;color:${T().text};font-size:12px;text-align:right;outline:none;display:block">`;
+    function inp(id,val,ph='0',step='1'){
+      const t=T();
+      return `<input id="${id}" type="number" step="${step}" value="${val||''}" placeholder="${ph}" style="width:88px;background:${t.card};border:1px solid ${t.border};border-radius:6px;padding:5px 8px;color:${t.text};font-size:12px;text-align:right;outline:none;display:block">`;
     }
-    function row(label,id,val,extra='') {
-      return `<div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:1px 0"><span style="color:${T().muted}">${label}${extra}</span><span id="drm-v-${id}" style="color:${T().red}">${val}</span></div>`;
+    function row(label,id,val,extra=''){
+      const t=T();
+      return `<div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:1px 0"><span style="color:${t.muted}">${label}${extra}</span><span id="drm-v-${id}" style="color:${t.red}">${val}</span></div>`;
     }
 
-    function render() {
-      const price=parsePrice(); const t=T(); const l=L();
+    function render(){
+      const price=parsePrice();const t=T();const l=L();
       const eco=price?calcUzum(price,{costPrice,packaging,adPct,fbo}):null;
       const color=eco?pColor(eco.margin):t.muted;
       const barW=eco?Math.max(0,Math.min(100,eco.margin)):0;
@@ -200,7 +256,7 @@
       wrap.style.border=`1px solid ${t.border}`;
       wrap.style.color=t.text;
 
-      wrap.innerHTML = `
+      wrap.innerHTML=`
         <div style="display:flex;align-items:center;justify-content:space-between;padding:11px 14px;border-bottom:1px solid ${t.border};position:sticky;top:0;background:${t.bg};z-index:1">
           <div style="display:flex;align-items:center;gap:7px">
             <span style="font-weight:700;font-size:14px;color:${t.text}">Daromadchi</span>
@@ -266,43 +322,57 @@
         </div>
       `;
 
-      wrap.querySelector('#drm-close').onclick  = () => { wrap.remove(); chrome.storage.local.set({widgetClosed:Date.now()}); };
-      wrap.querySelector('#drm-refresh').onclick = () => { wrap.remove(); setTimeout(init,300); };
-      wrap.querySelector('#drm-theme').onclick   = () => { theme=theme==='dark'?'light':'dark'; chrome.storage.local.set({drmTheme:theme}); render(); };
-      wrap.querySelector('#drm-fbo').onclick     = () => { fbo=true;  render(); };
-      wrap.querySelector('#drm-fbs').onclick     = () => { fbo=false; render(); };
-      ['uz','ru','en'].forEach(k => { wrap.querySelector(`#drm-lang-${k}`)?.addEventListener('click',()=>{ langKey=k; chrome.storage.local.set({drmLang:k}); render(); }); });
-      ['#drm-inp-cost','#drm-inp-pack','#drm-inp-ad'].forEach(id => { wrap.querySelector(id)?.addEventListener('input',liveRecalc); });
+      wrap.querySelector('#drm-close').onclick=()=>{
+        wrap.style.display='none';
+        toggleBtn.style.display='flex';
+        chrome.storage.local.set({widgetClosed:Date.now()});
+      };
+      wrap.querySelector('#drm-refresh').onclick=()=>{wrap.remove();toggleBtn.remove();setTimeout(init,300);};
+      wrap.querySelector('#drm-theme').onclick=()=>{theme=theme==='dark'?'light':'dark';chrome.storage.local.set({drmTheme:theme});render();};
+      wrap.querySelector('#drm-fbo').onclick=()=>{fbo=true;render();};
+      wrap.querySelector('#drm-fbs').onclick=()=>{fbo=false;render();};
+      ['uz','ru','en'].forEach(k=>{wrap.querySelector(`#drm-lang-${k}`)?.addEventListener('click',()=>{langKey=k;chrome.storage.local.set({drmLang:k});render();});});
+      ['#drm-inp-cost','#drm-inp-pack','#drm-inp-ad'].forEach(id=>{wrap.querySelector(id)?.addEventListener('input',liveRecalc);});
 
-      wrap.querySelector('#drm-ue')?.addEventListener('click', async () => {
-        const vals=gi(); const price2=parsePrice();
+      wrap.querySelector('#drm-ue')?.addEventListener('click',async()=>{
+        const vals=gi();const price2=parsePrice();
         const eco2=price2?calcUzum(price2,{...vals,fbo}):null;
         await chrome.storage.local.set({ueSettings:{...vals,fbo}});
         const params=new URLSearchParams({
           source:'uzum',title,url:location.href,
-          price:String(price2||''), commPct:String(eco2?.commPct||''),
-          commission:String(eco2?.commission||''), delivery:String(eco2?.delivery||''),
-          acquiring:String(eco2?.acquiring||''), adSpend:String(eco2?.adSpend||''),
-          tax:String(eco2?.tax||''), packaging:String(eco2?.packaging||''),
-          profit:String(eco2?.netProfit??''), margin:String(eco2?.margin??''), roi:String(eco2?.roi??''),
+          price:String(price2||''),commPct:String(eco2?.commPct||''),
+          commission:String(eco2?.commission||''),delivery:String(eco2?.delivery||''),
+          acquiring:String(eco2?.acquiring||''),adSpend:String(eco2?.adSpend||''),
+          tax:String(eco2?.tax||''),packaging:String(eco2?.packaging||''),
+          profit:String(eco2?.netProfit??''),margin:String(eco2?.margin??''),roi:String(eco2?.roi??''),
         });
-        if(productId) params.set('productId',productId);
+        if(productId)params.set('productId',productId);
         window.open(`https://daromadchi.uz/dashboard/unit-economics?${params}`,'_blank');
       });
-      wrap.querySelector('#drm-market')?.addEventListener('click',()=>{ window.open(`https://daromadchi.uz/dashboard/market?q=${encodeURIComponent(title)}&source=uzum`,'_blank'); });
+      wrap.querySelector('#drm-market')?.addEventListener('click',()=>{window.open(`https://daromadchi.uz/dashboard/market?q=${encodeURIComponent(title)}&source=uzum`,'_blank');});
     }
   }
 
-  async function init() {
-    if (document.getElementById('drm-widget')) return;
-    const { widgetClosed } = await chrome.storage.local.get('widgetClosed');
-    if (Date.now() - (widgetClosed||0) < 1800000) return;
+  async function init(){
+    if(document.getElementById('drm-widget'))return;
+    const{widgetClosed}=await chrome.storage.local.get('widgetClosed');
+    const closed=Date.now()-(widgetClosed||0)<1800000;
     buildWidget();
+    if(closed){
+      // Widget was recently closed — start hidden with toggle button visible
+      setTimeout(()=>{
+        const w=document.getElementById('drm-widget');
+        const t=document.getElementById('drm-toggle');
+        if(w&&t){w.style.display='none';t.style.display='flex';}
+      },100);
+    }
   }
 
-  if (document.readyState==='loading') { document.addEventListener('DOMContentLoaded',()=>setTimeout(init,1200)); }
-  else { setTimeout(init,1200); }
+  if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',()=>setTimeout(init,1200));}
+  else{setTimeout(init,1200);}
 
   let lastUrl=location.href;
-  new MutationObserver(()=>{ if(location.href!==lastUrl){ lastUrl=location.href; setTimeout(()=>{ document.getElementById('drm-widget')?.remove(); init(); },1500); } }).observe(document,{subtree:true,childList:true});
+  new MutationObserver(()=>{
+    if(location.href!==lastUrl){lastUrl=location.href;setTimeout(()=>{document.getElementById('drm-widget')?.remove();document.getElementById('drm-toggle')?.remove();init();},1500);}
+  }).observe(document,{subtree:true,childList:true});
 })();
