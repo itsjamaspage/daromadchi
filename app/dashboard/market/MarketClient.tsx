@@ -369,18 +369,11 @@ export default function MarketClient({ marketplace, initialCategories, userCateg
   const loadUzumCategory = useCallback((cat: { id: number; title: string }, s: SortUzum = sortUzum) => {
     setSelectedCat(cat); setMode('category')
     startTransition(async () => {
-      try {
-        const params = new URLSearchParams({ page: '0', size: '40', sort: s, showAdultContent: 'true' })
-        const res = await fetch(`https://api.uzum.uz/api/category/${cat.id}/products?${params}`, {
-          headers: { 'Accept': 'application/json', 'Accept-Language': 'uz' },
-        })
-        if (res.ok) {
-          const data = await res.json() as { payload?: { products?: UzumPublicProduct[]; total?: number; totalElements?: number }; products?: UzumPublicProduct[]; total?: number }
-          const payload = data.payload ?? data
-          setUzumProducts(payload.products ?? [])
-          setTotal((payload as { total?: number; totalElements?: number }).total ?? (payload as { totalElements?: number }).totalElements ?? 0)
-        }
-      } catch { /* network error */ }
+      const res = await fetch(`/api/market/products?categoryId=${cat.id}&sort=${s}`)
+      if (res.ok) {
+        const d = await res.json() as { products: UzumPublicProduct[]; total: number }
+        setUzumProducts(d.products); setTotal(d.total)
+      }
     })
   }, [sortUzum])
 
@@ -402,33 +395,13 @@ export default function MarketClient({ marketplace, initialCategories, userCateg
       setMode('search'); setSelectedCat(null)
       startTransition(async () => {
         try {
-          const gql = `query MakeSearch($text:String!,$limit:Int!){makeSearch(query:{text:$text,pagination:{offset:0,limit:$limit},showAdultContent:NONE}){total items{catalogCard{id title minSellPrice minFullPrice feedbackQuantity rating photos{key link{high low}}}}}}`
-          const url = 'https://graphql.uzum.uz'
-          console.log('[handleSearch] fetching uzum graphql for:', query)
-          const res = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-            body: JSON.stringify({ query: gql, variables: { text: query, limit: 40 } }),
-          })
-          console.log('[handleSearch] uzum response status:', res.status)
+          console.log('[handleSearch] calling /api/market/products?q=', query)
+          const res = await fetch(`/api/market/products?q=${encodeURIComponent(query)}&sort=${su}`)
+          console.log('[handleSearch] api response status:', res.status)
           if (res.ok) {
-            const data = await res.json() as { data?: { makeSearch?: { total?: number; items?: Array<{ catalogCard: Record<string, unknown> }> } } }
-            const items = data?.data?.makeSearch?.items ?? []
-            const products: UzumPublicProduct[] = items.map(item => {
-              const c = item.catalogCard
-              return {
-                id: c.id as number, title: c.title as string,
-                minSellPrice: c.minSellPrice as number, minFullPrice: c.minFullPrice as number,
-                maxSellPrice: c.minSellPrice as number, maxFullPrice: c.minFullPrice as number,
-                ordersAmount: Math.round((c.feedbackQuantity as number) * 15),
-                reviewsAmount: c.feedbackQuantity as number,
-                rating: c.rating as number,
-                photos: (c.photos as Array<{ key: string }>)?.map(p => ({ photoKey: p.key })),
-              }
-            })
-            console.log('[handleSearch] uzum products:', products.length)
-            setUzumProducts(products)
-            setTotal(data?.data?.makeSearch?.total ?? products.length)
+            const d = await res.json() as { products: UzumPublicProduct[]; total: number }
+            console.log('[handleSearch] uzum products:', d.products?.length)
+            setUzumProducts(d.products); setTotal(d.total)
           }
         } catch (err) { console.error('[handleSearch] uzum fetch error:', err) }
       })
