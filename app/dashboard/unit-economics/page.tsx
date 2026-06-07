@@ -2,6 +2,7 @@ import { getT } from '@/lib/server-i18n'
 import { Calculator, Info } from 'lucide-react'
 import UnitEconomicsTable from '@/components/dashboard/UnitEconomicsTable'
 import { getUnitEconomicsItems, getUnitEcoSettings } from '@/lib/db/unit-economics'
+import type { MarketplaceType } from '@/lib/types'
 
 export default async function UnitEconomicsPage({
   searchParams,
@@ -16,22 +17,31 @@ export default async function UnitEconomicsPage({
   ])
   const d = t.dashboard
 
-  const fromExtension = sp.source ? {
-    source:     String(sp.source     || ''),
-    title:      String(sp.title      || ''),
-    price:      Number(sp.price      || 0),
-    commPct:    Number(sp.commPct    || 0),
-    commission: Number(sp.commission || 0),
-    delivery:   Number(sp.delivery   || 0),
-    acquiring:  Number(sp.acquiring  || 0),
-    adSpend:    Number(sp.adSpend    || 0),
-    tax:        Number(sp.tax        || 0),
-    packaging:  Number(sp.packaging  || 0),
-    profit:     Number(sp.profit     || 0),
-    margin:     Number(sp.margin     || 0),
-    roi:        Number(sp.roi        || 0),
-    url:        String(sp.url        || ''),
-    productId:  String(sp.productId  || ''),
+  function str(v: string | string[] | undefined) { return v ? String(v) : '' }
+  function num(v: string | string[] | undefined) { return parseFloat(str(v)) || 0 }
+
+  const sourceRaw = str(sp.source)
+  const marketplace: MarketplaceType =
+    sourceRaw === 'wb' ? 'wildberries' :
+    sourceRaw === 'yandex_market' ? 'yandex_market' : 'uzum'
+
+  const fromExtension = sourceRaw ? {
+    title:         str(sp.title) || 'Mahsulot',
+    productUrl:    str(sp.url),
+    marketplace,
+    sellingPrice:  num(sp.price),
+    costPrice:     0,
+    commissionPct: num(sp.commPct),
+    commission:    num(sp.commission),
+    delivery:      num(sp.delivery),
+    lastMile:      0,
+    acquiring:     num(sp.acquiring),
+    adSpend:       num(sp.adSpend),
+    tax:           num(sp.tax),
+    netProfit:     num(sp.profit),
+    margin:        num(sp.margin),
+    roi:           num(sp.roi),
+    sku:           str(sp.productId) || undefined,
   } : null
 
   return (
@@ -54,9 +64,9 @@ export default async function UnitEconomicsPage({
         </div>
       </div>
 
-      <div className="flex items-start gap-3 bg-blue-500/10 border border-blue-500/30 rounded-2xl px-4 py-3">
+      <div className="flex items-start gap-3 bg-blue-500/5 border border-blue-500/20 rounded-2xl px-4 py-3">
         <Info className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
-        <p className="text-xs text-slate-300 leading-relaxed">{d.unitEcoNote}</p>
+        <p className="text-xs text-blue-300/80 leading-relaxed">{d.unitEcoNote}</p>
       </div>
 
       <UnitEconomicsTable items={items} defaultSettings={settings} fromExtension={fromExtension} />

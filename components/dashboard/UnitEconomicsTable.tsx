@@ -61,12 +61,7 @@ const DEFAULT_SETTINGS: UnitEcoSettings = {
   defaultCommissionPct: 10,
 }
 
-interface FromExtension {
-  source: string; title: string; price: number; commPct: number
-  commission: number; delivery: number; acquiring: number; adSpend: number
-  tax: number; packaging: number; profit: number; margin: number; roi: number
-  url: string; productId: string
-}
+type FromExtension = Omit<UnitEconomicsItem, 'id' | 'addedAt'>
 
 interface Props {
   items: UnitEconomicsItem[]
@@ -91,58 +86,32 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
   const [editingSupplier, setEditingSupplier] = useState<string|null>(null)
   const supplierRef = useRef<HTMLInputElement>(null)
   const printRef    = useRef<HTMLDivElement>(null)
-  const [extPending, setExtPending] = useState<FromExtension | null>(fromExtension ?? null)
-  const [extSaving, setExtSaving]   = useState(false)
-  const [extError, setExtError]     = useState<string | null>(null)
+
+  const [extPending, setExtPending]   = useState<FromExtension | null>(fromExtension ?? null)
+  const [extSaving, setExtSaving]     = useState(false)
+  const [extError, setExtError]       = useState<string | null>(null)
 
   async function saveFromExtension() {
     if (!extPending) return
     setExtSaving(true)
     setExtError(null)
-    const marketplace: 'uzum' | 'yandex_market' | 'wildberries' =
-      extPending.source === 'wb' ? 'wildberries'
-      : extPending.source === 'yandex_market' ? 'yandex_market' : 'uzum'
-    const payload = {
-      title:         extPending.title || 'Mahsulot',
-      marketplace,
-      sellingPrice:  extPending.price,
-      costPrice:     extPending.packaging || 0,
-      commissionPct: extPending.commPct,
-      commission:    extPending.commission,
-      delivery:      extPending.delivery,
-      lastMile:      0,
-      acquiring:     extPending.acquiring,
-      adSpend:       extPending.adSpend,
-      tax:           extPending.tax,
-      netProfit:     extPending.profit,
-      roi:           extPending.roi,
-      margin:        extPending.margin,
-      productUrl:    extPending.url || undefined,
-    }
     try {
       const res = await fetch('/api/unit-economics', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(extPending),
       })
       const json = await res.json()
-      if (res.ok && json.id) {
-        const newItem: import('@/lib/types').UnitEconomicsItem = {
-          ...payload,
-          id: json.id,
-          addedAt: new Date().toISOString(),
-        }
-        setItems(prev => [newItem, ...prev])
-        setExtPending(null)
-        setExtError(null)
-      } else if (res.status === 401 || json.error === 'auth') {
-        setExtError('Kirish talab qilinadi. Sahifani yangilang yoki qayta kiring.')
-      } else {
-        setExtError(json.error || `Xato: ${res.status}`)
+      if (!res.ok || !json.ok) {
+        setExtError(json.error === 'auth' ? 'Kirish talab qilinadi. Sahifani yangilang yoki qayta kiring.' : (json.error || 'Xatolik yuz berdi'))
+        setExtSaving(false)
+        return
       }
-    } catch (e) {
+      const newItem: UnitEconomicsItem = { ...extPending, id: json.id, addedAt: new Date().toISOString() }
+      setItems(prev => [newItem, ...prev])
+      setExtPending(null)
+    } catch {
       setExtError('Tarmoq xatosi. Qayta urinib ko\'ring.')
-    } finally {
       setExtSaving(false)
     }
   }
@@ -224,26 +193,29 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
 
   return (
     <div className="space-y-4" ref={printRef}>
-      {/* Extension import banner */}
+      {/* Extension banner */}
       {extPending && (
-        <div className="flex items-center justify-between gap-3 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl px-4 py-3">
+        <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-3">
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-emerald-400 truncate">{extPending.title || 'Mahsulot'}</p>
-              <p className="text-xs text-slate-300 mt-0.5">
-              {extPending.source?.toUpperCase()} · {new Intl.NumberFormat('uz-UZ').format(extPending.price)} so&apos;m · {extPending.margin}% marja
+            <p className="text-sm font-semibold text-emerald-300 truncate">{extPending.title}</p>
+            <p className="text-xs text-emerald-400/70 mt-0.5">
+              {extPending.marketplace?.toUpperCase()} · {extPending.sellingPrice ? `${new Intl.NumberFormat('uz-UZ').format(Math.round(extPending.sellingPrice))} so'm` : ''} · {extPending.margin ? `${Math.round(extPending.margin)}% marja` : ''}
             </p>
             {extError && <p className="text-xs text-red-400 mt-1">{extError}</p>}
           </div>
-          <button onClick={() => setExtPending(null)}
-            className="flex items-center gap-1 px-3 py-1.5 bg-[var(--bg-card2)] hover:bg-red-500/10 text-[var(--text-muted)] hover:text-red-400 text-xs rounded-xl border border-[var(--border)] transition-colors">
-            <X className="w-3.5 h-3.5" /> Bekor
-          </button>
-          <button onClick={saveFromExtension} disabled={extSaving}
-            className="flex items-center gap-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-semibold rounded-xl transition-colors">
-            <Check className="w-3.5 h-3.5" /> {extSaving ? 'Saqlanmoqda...' : "Qo'shish"}
-          </button>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <button onClick={() => setExtPending(null)}
+              className="px-3 py-1.5 text-xs font-semibold text-emerald-400/70 hover:text-emerald-300 border border-emerald-500/20 rounded-lg transition-colors">
+              Bekor
+            </button>
+            <button onClick={saveFromExtension} disabled={extSaving}
+              className="px-4 py-1.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-lg transition-colors">
+              {extSaving ? 'Saqlanmoqda…' : "Qo'shish"}
+            </button>
+          </div>
         </div>
       )}
+
       {/* Toolbar */}
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
         <div className="relative flex-1 max-w-xs">

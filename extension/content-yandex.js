@@ -1,4 +1,4 @@
-// Daromadchi — Yandex Market content script (Yoolip style v2)
+// Daromadchi — Yandex Market content script (Yoolip style v3)
 (function () {
   'use strict';
 
@@ -29,9 +29,6 @@
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
         font-size: 13px !important;
         line-height: 1.4 !important;
-        background: #0f1117 !important;
-        border: 1px solid #2a3040 !important;
-        color: #e2e8f0 !important;
       }
       #drm-ym-ue * { box-sizing: border-box !important; font-family: inherit !important; }
       #drm-ym-ue input, #drm-ym-ue button, #drm-ym-ue a { all: revert; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; cursor: pointer; }
@@ -40,7 +37,56 @@
     (document.head || document.documentElement).appendChild(s);
   })();
 
-  const THEME = { bg:'#0f1117', card:'#1a1f2e', border:'#2a3040', text:'#e2e8f0', muted:'#94a3b8', red:'#f87171', green:'#4ade80', amber:'#f59e0b' };
+  const LANGS = {
+    uz: {
+      fby:'FBY', fbs:'FBS', params:'HISOB PARAMETRLARI',
+      costLabel: v => `Tannarx (${v?"so'm":'so\'m'})`,
+      packLabel: v => `Qadoqlash (${v?"so'm":'so\'m'})`,
+      volLabel:'Hajm (litr)', adLabel:'Reklama %',
+      breakdown:'XARAJATLAR TAQSIMOTI', narx:'Narx', comm:'Komissiya (15%)', delivery:'Yetkazib berish',
+      returns:'Qaytarishlar (~2%)', acquiring:'Ekvayring (0.5%)', reklama:'Reklama', tax:'Soliq (6%)',
+      totalMkt:'Jami Yandex Market', totalCost:'Jami xarajat',
+      profitLabel:'TAXMINIY SOF FOYDA', marja:'marja',
+      ueBtn:"+ Unit-ekonomikaga qo'shish", marketBtn:'🛒 Bozor tahlili →',
+      noPrice:'Narx aniqlanmadi. Sahifani yangilang.',
+      footer:'Taxminiy hisob \xb7 daromadchi.uz', taxminiy:'taxminiy',
+    },
+    ru: {
+      fby:'FBY', fbs:'FBS', params:'ПАРАМЕТРЫ РАСЧЁТА',
+      costLabel: () => 'Себестоимость (₽)',
+      packLabel: () => 'Упаковка (₽)',
+      volLabel:'Объём (л)', adLabel:'Реклама %',
+      breakdown:'СТРУКТУРА ЗАТРАТ', narx:'Цена', comm:'Комиссия (15%)', delivery:'Доставка',
+      returns:'Возвраты (~2%)', acquiring:'Эквайринг (0.5%)', reklama:'Реклама', tax:'Налог (6%)',
+      totalMkt:'Итого Яндекс Маркет', totalCost:'Всего расходов',
+      profitLabel:'ОЦ. ЧИСТАЯ ПРИБЫЛЬ', marja:'маржа',
+      ueBtn:'+ В юнит-экономику', marketBtn:'🛒 Анализ рынка →',
+      noPrice:'Цена не определена.',
+      footer:'Примерный расчёт \xb7 daromadchi.uz', taxminiy:'прибл.',
+    },
+    en: {
+      fby:'FBY', fbs:'FBS', params:'CALCULATION PARAMS',
+      costLabel: () => 'Cost price',
+      packLabel: () => 'Packaging',
+      volLabel:'Volume (L)', adLabel:'Ad %',
+      breakdown:'COST BREAKDOWN', narx:'Price', comm:'Commission (15%)', delivery:'Delivery',
+      returns:'Returns (~2%)', acquiring:'Acquiring (0.5%)', reklama:'Advertising', tax:'Tax (6%)',
+      totalMkt:'Total YM fees', totalCost:'Total costs',
+      profitLabel:'EST. NET PROFIT', marja:'margin',
+      ueBtn:'+ Add to unit economics', marketBtn:'🛒 Market analysis →',
+      noPrice:'Price not found.',
+      footer:'Estimated \xb7 daromadchi.uz', taxminiy:'approx.',
+    },
+  };
+
+  const THEME = {
+    dark:  { bg:'#0f1117', card:'#1a1f2e', border:'#2a3040', text:'#e2e8f0', muted:'#94a3b8', red:'#f87171', green:'#4ade80', amber:'#f59e0b' },
+    light: { bg:'#f8fafc', card:'#ffffff',  border:'#e2e8f0', text:'#0f172a', muted:'#64748b', red:'#dc2626', green:'#16a34a', amber:'#d97706' },
+  };
+
+  let langKey = 'uz', theme = 'dark';
+  function L() { return LANGS[langKey]; }
+  function T() { return THEME[theme]; }
 
   function fp(n) {
     if (n===null||n===undefined) return '—';
@@ -48,42 +94,28 @@
     return Math.round(n).toLocaleString('ru-RU') + ' ₽';
   }
 
-  function T() { return THEME; }
-
   function parseYmPrice() {
     const selectors = [
-      '[data-auto="price"]',
-      '[data-auto="snippet-price-current"]',
-      '[data-zone-name="price"]',
-      '[class*="YpcPrice"]',
-      '[class*="ypcPrice"]',
-      '[class*="priceView"]',
-      '[class*="PriceView"]',
-      '[class*="priceBlock"]',
-      '[class*="PriceBlock"]',
-      '[class*="price-value"]',
-      '[class*="priceValue"]',
+      '[data-auto="price"]', '[data-auto="snippet-price-current"]',
+      '[data-zone-name="price"]', '[class*="YpcPrice"]', '[class*="ypcPrice"]',
+      '[class*="priceView"]', '[class*="PriceView"]', '[class*="priceBlock"]',
+      '[class*="PriceBlock"]', '[class*="price-value"]', '[class*="priceValue"]',
       'span[class*="price"]:not([class*="old"]):not([class*="Old"]):not([class*="cross"])',
     ];
     for (const sel of selectors) {
       try {
         const el = document.querySelector(sel);
-        if (el) {
-          const raw = el.innerText.replace(/[^\d]/g, '');
-          if (raw.length >= 2 && raw.length <= 12) return parseInt(raw);
-        }
-      } catch (_) {}
+        if (el) { const raw=el.innerText.replace(/[^\d]/g,''); if(raw.length>=2&&raw.length<=12) return parseInt(raw); }
+      } catch(_) {}
     }
-    // Fallback: scan spans for currency symbol
     const currency = IS_UZ ? /сум|so'm/i : /₽|руб/i;
-    const allEls = document.querySelectorAll('span, div, p, strong, b');
-    for (const el of allEls) {
-      if (el.children.length > 3) continue;
-      const text = el.innerText || '';
+    for (const el of document.querySelectorAll('span,div,p,strong,b')) {
+      if (el.children.length>3) continue;
+      const text=el.innerText||'';
       if (currency.test(text)) {
-        const raw = text.replace(/[^\d]/g, '');
-        if (raw.length >= 2 && raw.length <= 12) {
-          const cls = (el.className || '').toLowerCase();
+        const raw=text.replace(/[^\d]/g,'');
+        if (raw.length>=2&&raw.length<=12) {
+          const cls=(el.className||'').toLowerCase();
           if (cls.includes('old')||cls.includes('cross')||cls.includes('strike')||cls.includes('prev')) continue;
           return parseInt(raw);
         }
@@ -93,17 +125,15 @@
   }
 
   function parseYmTitle() {
-    const sels = ['[data-auto="offerTitle"]', 'h1', '[class*="title"]', '[class*="Title"]'];
-    for (const sel of sels) {
-      const el = document.querySelector(sel);
-      if (el && el.innerText && el.innerText.trim().length > 2) return el.innerText.trim().slice(0, 80);
+    for (const sel of ['[data-auto="offerTitle"]','h1','[class*="title"]','[class*="Title"]']) {
+      const el=document.querySelector(sel);
+      if (el&&el.innerText&&el.innerText.trim().length>2) return el.innerText.trim().slice(0,80);
     }
     return null;
   }
 
   function calcYm(price, { costPrice=0, packaging=0, adPct=5, volume=1, fby=true }={}) {
-    const commPct    = 15;
-    const commission = Math.round(price * commPct / 100);
+    const commission = Math.round(price * 0.15);
     const delivery   = fby ? Math.round(volume * 15000) : Math.round(volume * 10000);
     const returns    = Math.round(price * 0.02);
     const acquiring  = Math.round(price * 0.005);
@@ -114,7 +144,7 @@
     const netProfit  = price - jamiTotal;
     const margin     = Math.round((netProfit / price) * 100);
     const roi        = costPrice > 0 ? Math.round((netProfit / costPrice) * 100) : null;
-    return { commPct, commission, delivery, returns, acquiring, adSpend, tax, packaging, costPrice, mktTotal, jamiTotal, netProfit, margin, roi };
+    return { commission, delivery, returns, acquiring, adSpend, tax, packaging, costPrice, mktTotal, jamiTotal, netProfit, margin, roi };
   }
 
   function pColor(m) { const t=T(); return m>=25?t.green:m>=10?t.amber:t.red; }
@@ -123,7 +153,6 @@
     const t=T();
     return `<input id="${id}" type="number" step="${step}" value="${val||''}" placeholder="${ph}" style="width:88px;background:${t.card};border:1px solid ${t.border};border-radius:6px;padding:5px 8px;color:${t.text};font-size:12px;text-align:right;outline:none;display:block">`;
   }
-
   function row(label, id, val, extra='') {
     const t=T();
     return `<div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:1px 0"><span style="color:${t.muted}">${label}${extra}</span><span id="drm-ym-v-${id}" style="color:${t.red}">${val}</span></div>`;
@@ -132,7 +161,7 @@
   function buildYmWidget() {
     const price = parseYmPrice();
     const title = parseYmTitle();
-    if (!price) return; // no price = not a product page, exit silently
+    if (!price) return; // not a product page, exit silently
 
     let fby=true, costPrice=0, packaging=0, adPct=5, volume=1;
 
@@ -140,52 +169,45 @@
     wrap.id = 'drm-ym-ue';
     document.body.appendChild(wrap);
 
-    chrome.storage.local.get(['ueSettings'], data => {
-      if (data.ueSettings) {
-        costPrice = data.ueSettings.costPrice || 0;
-        packaging = data.ueSettings.packaging || 0;
-        adPct     = data.ueSettings.adPct     || 5;
-        volume    = data.ueSettings.volume     || 1;
-        fby       = data.ueSettings.fby !== undefined ? data.ueSettings.fby : true;
-      }
+    chrome.storage.local.get(['ueSettings','drmLang','drmTheme'], data => {
+      if (data.ueSettings) { costPrice=data.ueSettings.costPrice||0; packaging=data.ueSettings.packaging||0; adPct=data.ueSettings.adPct||5; volume=data.ueSettings.volume||1; fby=data.ueSettings.fby!==undefined?data.ueSettings.fby:true; }
+      if (data.drmLang) langKey=data.drmLang;
+      if (data.drmTheme) theme=data.drmTheme;
       render();
     });
 
     function gi() {
       return {
-        costPrice: parseFloat(wrap.querySelector('#drm-ym-cost')?.value) || 0,
-        packaging: parseFloat(wrap.querySelector('#drm-ym-pack')?.value) || 0,
-        adPct:     parseFloat(wrap.querySelector('#drm-ym-ad')?.value)   || 5,
-        volume:    parseFloat(wrap.querySelector('#drm-ym-vol')?.value)  || 1,
+        costPrice: parseFloat(wrap.querySelector('#drm-ym-cost')?.value)||0,
+        packaging: parseFloat(wrap.querySelector('#drm-ym-pack')?.value)||0,
+        adPct:     parseFloat(wrap.querySelector('#drm-ym-ad')?.value)||5,
+        volume:    parseFloat(wrap.querySelector('#drm-ym-vol')?.value)||1,
       };
     }
 
     function liveRecalc() {
-      if (!price) return;
-      const eco = calcYm(price, { ...gi(), fby });
-      const c = pColor(eco.margin);
-      const S = (id, v) => { const e=wrap.querySelector('#drm-ym-v-'+id); if(e) e.textContent=v; };
-      const C = (id, col) => { const e=wrap.querySelector('#drm-ym-v-'+id); if(e) e.style.color=col; };
-      S('comm',    `−${fp(eco.commission)}`);
-      S('delivery',`−${fp(eco.delivery)}`);
-      S('returns', `−${fp(eco.returns)}`);
-      S('acq',     `−${fp(eco.acquiring)}`);
-      S('ad',      `−${fp(eco.adSpend)}`);
-      S('tax',     `−${fp(eco.tax)}`);
-      S('mkt',     `−${fp(eco.mktTotal)}`);
-      S('total',   `−${fp(eco.jamiTotal)}`);
-      S('profit',  fp(eco.netProfit));
-      S('margin',  `${eco.margin}% marja`);
+      const eco=calcYm(price,{...gi(),fby}); const c=pColor(eco.margin);
+      const S=(id,v)=>{const e=wrap.querySelector('#drm-ym-v-'+id);if(e)e.textContent=v;};
+      const C=(id,col)=>{const e=wrap.querySelector('#drm-ym-v-'+id);if(e)e.style.color=col;};
+      S('comm',`−${fp(eco.commission)}`); S('delivery',`−${fp(eco.delivery)}`);
+      S('returns',`−${fp(eco.returns)}`); S('acq',`−${fp(eco.acquiring)}`);
+      S('ad',`−${fp(eco.adSpend)}`); S('tax',`−${fp(eco.tax)}`);
+      S('mkt',`−${fp(eco.mktTotal)}`); S('total',`−${fp(eco.jamiTotal)}`);
+      S('profit',fp(eco.netProfit)); S('margin',`${eco.margin}% ${L().marja}`);
       C('profit',c); C('margin',c);
       const bar=wrap.querySelector('#drm-ym-bar');
       if(bar){bar.style.width=Math.max(0,Math.min(100,eco.margin))+'%';bar.style.background=c;}
     }
 
     function render() {
-      const t = T();
-      const eco = calcYm(price, { costPrice, packaging, adPct, volume, fby });
-      const color = pColor(eco.margin);
-      const barW  = Math.max(0, Math.min(100, eco.margin));
+      const t=T(); const l=L();
+      const eco=calcYm(price,{costPrice,packaging,adPct,volume,fby});
+      const color=pColor(eco.margin);
+      const barW=Math.max(0,Math.min(100,eco.margin));
+
+      wrap.style.background=t.bg;
+      wrap.style.border=`1px solid ${t.border}`;
+      wrap.style.color=t.text;
 
       wrap.innerHTML = `
         <div style="display:flex;align-items:center;justify-content:space-between;padding:11px 14px;border-bottom:1px solid ${t.border};position:sticky;top:0;background:${t.bg};z-index:1">
@@ -194,6 +216,8 @@
             <span style="font-size:10px;font-weight:600;padding:2px 7px;background:#f59e0b;color:#000;border-radius:20px;display:inline-block">YM</span>
           </div>
           <div style="display:flex;align-items:center;gap:3px">
+            ${['uz','ru','en'].map(k=>`<button id="drm-ym-lang-${k}" style="padding:2px 5px;border-radius:4px;border:1px solid ${langKey===k?'#f59e0b':t.border};background:${langKey===k?'#f59e0b':'transparent'};color:${langKey===k?'#000':t.muted};font-size:10px">${k.toUpperCase()}</button>`).join('')}
+            <button id="drm-ym-theme" style="padding:3px 6px;border-radius:5px;border:1px solid ${t.border};background:transparent;color:${t.muted};font-size:13px">${theme==='dark'?'☀️':'🌙'}</button>
             <button id="drm-ym-refresh" style="padding:3px 6px;border-radius:5px;border:1px solid ${t.border};background:transparent;color:${t.muted};font-size:14px">↻</button>
             <button id="drm-ym-close" style="padding:3px 6px;border-radius:5px;border:1px solid ${t.border};background:transparent;color:${t.muted};font-size:14px">✕</button>
           </div>
@@ -201,115 +225,93 @@
 
         <div style="padding:13px 14px;display:flex;flex-direction:column;gap:11px">
           <div>
-            <div style="font-weight:600;font-size:13px;color:${t.text};margin-bottom:4px">${title || 'Mahsulot'}</div>
+            <div style="font-weight:600;font-size:13px;color:${t.text};margin-bottom:4px">${title||'Mahsulot'}</div>
             <div style="font-size:22px;font-weight:800;color:#fbbf24;display:block">${fp(price)}</div>
           </div>
 
           <div style="display:flex;gap:6px">
-            <button id="drm-ym-fby" style="flex:1;padding:7px;border-radius:8px;border:1px solid ${fby?'#f59e0b':t.border};background:${fby?'#f59e0b':'transparent'};color:${fby?'#000':t.muted};font-size:12px;font-weight:600">FBY</button>
-            <button id="drm-ym-fbs" style="flex:1;padding:7px;border-radius:8px;border:1px solid ${!fby?'#f59e0b':t.border};background:${!fby?'#f59e0b':'transparent'};color:${!fby?'#000':t.muted};font-size:12px;font-weight:600">FBS</button>
+            <button id="drm-ym-fby" style="flex:1;padding:7px;border-radius:8px;border:1px solid ${fby?'#f59e0b':t.border};background:${fby?'#f59e0b':'transparent'};color:${fby?'#000':t.muted};font-size:12px;font-weight:600">${l.fby}</button>
+            <button id="drm-ym-fbs" style="flex:1;padding:7px;border-radius:8px;border:1px solid ${!fby?'#f59e0b':t.border};background:${!fby?'#f59e0b':'transparent'};color:${!fby?'#000':t.muted};font-size:12px;font-weight:600">${l.fbs}</button>
           </div>
 
           <div>
-            <div style="font-size:10px;font-weight:600;color:${t.muted};letter-spacing:.7px;margin-bottom:8px">HISOB PARAMETRLARI</div>
+            <div style="font-size:10px;font-weight:600;color:${t.muted};letter-spacing:.7px;margin-bottom:8px">${l.params}</div>
             <div style="display:flex;flex-direction:column;gap:7px">
-              <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:${t.muted}">Tannarx (${IS_UZ?"so'm":'₽'})</span>${inp('drm-ym-cost',costPrice)}</div>
-              <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:${t.muted}">Qadoqlash (${IS_UZ?"so'm":'₽'})</span>${inp('drm-ym-pack',packaging)}</div>
-              <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:${t.muted}">Reklama %</span>${inp('drm-ym-ad',adPct,'5','0.5')}</div>
-              <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:${t.muted}">Hajm (litr)</span>${inp('drm-ym-vol',volume,'1','0.1')}</div>
+              <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:${t.muted}">${l.costLabel(IS_UZ)}</span>${inp('drm-ym-cost',costPrice)}</div>
+              <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:${t.muted}">${l.packLabel(IS_UZ)}</span>${inp('drm-ym-pack',packaging)}</div>
+              <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:${t.muted}">${l.adLabel}</span>${inp('drm-ym-ad',adPct,'5','0.5')}</div>
+              <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:${t.muted}">${l.volLabel}</span>${inp('drm-ym-vol',volume,'1','0.1')}</div>
             </div>
           </div>
 
           <div>
-            <div style="font-size:10px;font-weight:600;color:${t.muted};letter-spacing:.7px;margin-bottom:8px">XARAJATLAR TAQSIMOTI</div>
+            <div style="font-size:10px;font-weight:600;color:${t.muted};letter-spacing:.7px;margin-bottom:8px">${l.breakdown}</div>
             <div style="display:flex;flex-direction:column;gap:4px">
-              <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:${t.muted}">Narx</span><span style="color:${t.text};font-weight:600">${fp(price)}</span></div>
-              ${row('Komissiya (15%)', 'comm', `−${fp(eco.commission)}`)}
-              ${row(`Yetkazib berish (${fby?'FBY':'FBS'})`, 'delivery', `−${fp(eco.delivery)}`, ` <span style="color:${t.amber};font-size:10px">taxminiy</span>`)}
-              ${row('Qaytarishlar (~2%)', 'returns', `−${fp(eco.returns)}`, ` <span style="color:${t.amber};font-size:10px">taxminiy</span>`)}
-              ${row('Ekvayring (0.5%)', 'acq', `−${fp(eco.acquiring)}`)}
-              ${row(`Reklama (${adPct}%)`, 'ad', `−${fp(eco.adSpend)}`)}
-              ${row('Soliq (6%)', 'tax', `−${fp(eco.tax)}`)}
+              <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:${t.muted}">${l.narx}</span><span style="color:${t.text};font-weight:600">${fp(price)}</span></div>
+              ${row(l.comm,'comm',`−${fp(eco.commission)}`)}
+              ${row(l.delivery+` (${fby?'FBY':'FBS'})`,'delivery',`−${fp(eco.delivery)}`,` <span style="color:${t.amber};font-size:10px">${l.taxminiy}</span>`)}
+              ${row(l.returns,'returns',`−${fp(eco.returns)}`,` <span style="color:${t.amber};font-size:10px">${l.taxminiy}</span>`)}
+              ${row(l.acquiring,'acq',`−${fp(eco.acquiring)}`)}
+              ${row(l.reklama+` (${adPct}%)`,'ad',`−${fp(eco.adSpend)}`)}
+              ${row(l.tax,'tax',`−${fp(eco.tax)}`)}
               <div style="height:1px;background:${t.border};margin:2px 0"></div>
-              <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600"><span style="color:${t.muted}">Jami YM</span><span id="drm-ym-v-mkt" style="color:${t.red}">−${fp(eco.mktTotal)}</span></div>
-              <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600"><span style="color:${t.muted}">Jami xarajat</span><span id="drm-ym-v-total" style="color:${t.red}">−${fp(eco.jamiTotal)}</span></div>
+              <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600"><span style="color:${t.muted}">${l.totalMkt}</span><span id="drm-ym-v-mkt" style="color:${t.red}">−${fp(eco.mktTotal)}</span></div>
+              <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600"><span style="color:${t.muted}">${l.totalCost}</span><span id="drm-ym-v-total" style="color:${t.red}">−${fp(eco.jamiTotal)}</span></div>
             </div>
           </div>
 
           <div style="background:${t.card};border:1px solid ${t.border};border-radius:12px;padding:13px;text-align:center">
-            <div style="font-size:10px;font-weight:600;color:${t.muted};letter-spacing:.7px;margin-bottom:5px">TAXMINIY SOF FOYDA</div>
+            <div style="font-size:10px;font-weight:600;color:${t.muted};letter-spacing:.7px;margin-bottom:5px">${l.profitLabel}</div>
             <div id="drm-ym-v-profit" style="font-size:26px;font-weight:800;color:${color};margin-bottom:5px;display:block">${fp(eco.netProfit)}</div>
             <div style="height:4px;background:${t.border};border-radius:4px;margin-bottom:5px"><div id="drm-ym-bar" style="height:4px;border-radius:4px;background:${color};width:${barW}%;display:block"></div></div>
-            <div id="drm-ym-v-margin" style="color:${color};font-size:13px;font-weight:600">${eco.margin}% marja</div>
+            <div id="drm-ym-v-margin" style="color:${color};font-size:13px;font-weight:600">${eco.margin}% ${l.marja}</div>
           </div>
 
-          <button id="drm-ym-ue-btn" style="display:block;width:100%;padding:11px;background:#16a34a;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:600;text-align:center">+ Unit-ekonomikaga qo'shish</button>
-          <button id="drm-ym-market" style="display:block;width:100%;padding:10px;background:${t.card};color:${t.text};border:1px solid ${t.border};border-radius:10px;font-size:13px;text-align:center">🛒 Bozor tahlili →</button>
-          <div style="text-align:center;font-size:10px;color:${t.muted}">Taxminiy hisob · daromadchi.uz</div>
+          <button id="drm-ym-ue-btn" style="display:block;width:100%;padding:11px;background:#16a34a;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:600;text-align:center">${l.ueBtn}</button>
+          <button id="drm-ym-market" style="display:block;width:100%;padding:10px;background:${t.card};color:${t.text};border:1px solid ${t.border};border-radius:10px;font-size:13px;text-align:center">${l.marketBtn}</button>
+          <div style="text-align:center;font-size:10px;color:${t.muted}">${l.footer}</div>
         </div>
       `;
 
-      wrap.querySelector('#drm-ym-close').onclick   = () => { wrap.remove(); chrome.storage.local.set({ ymWidgetClosed: Date.now() }); };
-      wrap.querySelector('#drm-ym-refresh').onclick = () => { wrap.remove(); setTimeout(tryInit, 300); };
-      wrap.querySelector('#drm-ym-fby').onclick     = () => { fby=true;  render(); };
+      wrap.querySelector('#drm-ym-close').onclick   = () => { wrap.remove(); chrome.storage.local.set({ymWidgetClosed:Date.now()}); };
+      wrap.querySelector('#drm-ym-refresh').onclick = () => { wrap.remove(); setTimeout(tryInit,300); };
+      wrap.querySelector('#drm-ym-theme').onclick   = () => { theme=theme==='dark'?'light':'dark'; chrome.storage.local.set({drmTheme:theme}); render(); };
+      wrap.querySelector('#drm-ym-fby').onclick     = () => { fby=true; render(); };
       wrap.querySelector('#drm-ym-fbs').onclick     = () => { fby=false; render(); };
-      ['#drm-ym-cost','#drm-ym-pack','#drm-ym-ad','#drm-ym-vol'].forEach(id => {
-        wrap.querySelector(id)?.addEventListener('input', liveRecalc);
-      });
+      ['uz','ru','en'].forEach(k => { wrap.querySelector(`#drm-ym-lang-${k}`)?.addEventListener('click',()=>{ langKey=k; chrome.storage.local.set({drmLang:k}); render(); }); });
+      ['#drm-ym-cost','#drm-ym-pack','#drm-ym-ad','#drm-ym-vol'].forEach(id => { wrap.querySelector(id)?.addEventListener('input',liveRecalc); });
 
       wrap.querySelector('#drm-ym-ue-btn')?.addEventListener('click', async () => {
-        const vals  = gi();
-        const eco2  = calcYm(price, { ...vals, fby });
-        await chrome.storage.local.set({ ueSettings: { ...vals, fby } });
-        const params = new URLSearchParams({
-          source: 'yandex_market', title: title || '', url: location.href,
-          price:      String(price || ''),
-          commPct:    String(eco2?.commPct    || ''),
-          commission: String(eco2?.commission || ''),
-          delivery:   String(eco2?.delivery   || ''),
-          acquiring:  String(eco2?.acquiring  || ''),
-          adSpend:    String(eco2?.adSpend    || ''),
-          tax:        String(eco2?.tax        || ''),
-          packaging:  String(eco2?.packaging  || ''),
-          profit:     String(eco2?.netProfit  ?? ''),
-          margin:     String(eco2?.margin     ?? ''),
-          roi:        String(eco2?.roi        ?? ''),
+        const vals=gi(); const eco2=calcYm(price,{...vals,fby});
+        await chrome.storage.local.set({ueSettings:{...vals,fby}});
+        const params=new URLSearchParams({
+          source:'yandex_market', title:title||'', url:location.href,
+          price:String(price||''), commPct:'15',
+          commission:String(eco2.commission||''), delivery:String(eco2.delivery||''),
+          acquiring:String(eco2.acquiring||''), adSpend:String(eco2.adSpend||''),
+          tax:String(eco2.tax||''), packaging:String(eco2.packaging||''),
+          profit:String(eco2.netProfit??''), margin:String(eco2.margin??''), roi:String(eco2.roi??''),
         });
-        window.open(`https://daromadchi.uz/dashboard/unit-economics?${params}`, '_blank');
+        window.open(`https://daromadchi.uz/dashboard/unit-economics?${params}`,'_blank');
       });
-
-      wrap.querySelector('#drm-ym-market')?.addEventListener('click', () => {
-        window.open(`https://daromadchi.uz/dashboard/market?q=${encodeURIComponent(title||'')}&source=yandex_market`, '_blank');
-      });
+      wrap.querySelector('#drm-ym-market')?.addEventListener('click',()=>{ window.open(`https://daromadchi.uz/dashboard/market?q=${encodeURIComponent(title||'')}&source=yandex_market`,'_blank'); });
     }
   }
 
   async function tryInit() {
     if (document.getElementById('drm-ym-ue')) return;
-    const { ymWidgetClosed } = await chrome.storage.local.get('ymWidgetClosed');
-    if (Date.now() - (ymWidgetClosed||0) < 1800000) return;
+    const {ymWidgetClosed}=await chrome.storage.local.get('ymWidgetClosed');
+    if (Date.now()-(ymWidgetClosed||0)<1800000) return;
     buildYmWidget();
   }
 
-  // SPA navigation
-  let lastUrl = location.href;
-  let initTimer = null;
-  function scheduleInit(delay=1800) {
-    clearTimeout(initTimer);
-    initTimer = setTimeout(tryInit, delay);
-  }
+  let lastUrl=location.href, initTimer=null;
+  function scheduleInit(delay=1800) { clearTimeout(initTimer); initTimer=setTimeout(tryInit,delay); }
 
-  new MutationObserver(() => {
-    if (location.href !== lastUrl) {
-      lastUrl = location.href;
-      document.getElementById('drm-ym-ue')?.remove();
-      scheduleInit();
-    }
-  }).observe(document, { subtree: true, childList: true });
+  new MutationObserver(()=>{
+    if(location.href!==lastUrl){ lastUrl=location.href; document.getElementById('drm-ym-ue')?.remove(); scheduleInit(); }
+  }).observe(document,{subtree:true,childList:true});
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => scheduleInit());
-  } else {
-    scheduleInit();
-  }
+  if (document.readyState==='loading') { document.addEventListener('DOMContentLoaded',()=>scheduleInit()); }
+  else { scheduleInit(); }
 })();
