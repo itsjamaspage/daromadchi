@@ -98,15 +98,26 @@ export async function searchMarketProducts(
     const gql = `query MakeSearch($text:String!,$limit:Int!){makeSearch(query:{text:$text,pagination:{offset:0,limit:$limit},showAdultContent:NONE}){total items{catalogCard{id title minSellPrice minFullPrice feedbackQuantity rating photos{key link{high low}}}}}}`
     const res = await fetch('https://graphql.uzum.uz', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'User-Agent': 'Mozilla/5.0' },
-      body: JSON.stringify({ query: gql, variables: { text: query, limit: size } }),
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        'Origin': 'https://uzum.uz',
+        'Referer': 'https://uzum.uz/',
+        'Accept-Language': 'uz-UZ,uz;q=0.9,ru;q=0.8,en;q=0.7',
+        'apollographql-client-name': 'web',
+        'apollographql-client-version': '1.26.0',
+      },
+      body: JSON.stringify({ operationName: 'MakeSearch', query: gql, variables: { text: query, limit: size } }),
       next: { revalidate: 60 },
     })
     if (!res.ok) {
       console.error('[searchMarketProducts] GraphQL HTTP error:', res.status, await res.text().catch(() => ''))
       throw new Error(`Uzum GraphQL ${res.status}`)
     }
-    const data = await res.json() as { data?: { makeSearch?: { total?: number; items?: Array<{ catalogCard: Record<string, unknown> }> } }; errors?: unknown }
+    const rawText = await res.text()
+    console.log('[searchMarketProducts] raw response (first 500):', rawText.slice(0, 500))
+    const data = JSON.parse(rawText) as { data?: { makeSearch?: { total?: number; items?: Array<{ catalogCard: Record<string, unknown> }> } }; errors?: unknown }
     if (data.errors) console.error('[searchMarketProducts] GraphQL errors:', JSON.stringify(data.errors))
     console.log('[searchMarketProducts] total:', data?.data?.makeSearch?.total, 'items:', data?.data?.makeSearch?.items?.length)
     const items = data?.data?.makeSearch?.items ?? []
