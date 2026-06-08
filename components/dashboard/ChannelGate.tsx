@@ -1,10 +1,9 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { useLang } from '@/lib/useLang'
+import { useLang } from '@/app/providers'
 
 const CHANNEL_URL = 'https://t.me/daromadchi_uz'
-const BOT_LINK_URL = '/api/extension/telegram-link'
 
 const labels = {
   uz: {
@@ -52,7 +51,6 @@ export default function ChannelGate({ children }: { children: React.ReactNode })
   const [status, setStatus] = useState<'loading' | 'ok' | 'no_telegram' | 'not_subscribed'>('loading')
   const [checking, setChecking] = useState(false)
   const [notYet, setNotYet] = useState(false)
-  const [tgLinkUrl, setTgLinkUrl] = useState<string | null>(null)
   const [linking, setLinking] = useState(false)
 
   const check = useCallback(async (showNotYet = false) => {
@@ -81,12 +79,10 @@ export default function ChannelGate({ children }: { children: React.ReactNode })
   async function handleConnectTelegram() {
     setLinking(true)
     try {
-      const res = await fetch(BOT_LINK_URL, { method: 'POST' })
+      const res = await fetch('/api/telegram-link', { method: 'POST' })
       const data = await res.json()
       if (data.url) {
-        setTgLinkUrl(data.url)
         window.open(data.url, '_blank')
-        // Poll for telegram link completion
         const interval = setInterval(async () => {
           const r = await fetch('/api/channel-check')
           const d = await r.json()
