@@ -554,7 +554,7 @@ function showLoginGate() {
 // ─── LOAD ALL ─────────────────────────────────────────────────────────────────
 async function loadAll() {
   const data = await chrome.storage.local.get([
-    'daromadchi_connected', 'daromadchi_email', 'daromadchi_plan', 'cachedStats', 'cacheTime',
+    'daromadchi_token', 'daromadchi_connected', 'daromadchi_email', 'daromadchi_plan', 'cachedStats', 'cacheTime',
     'activeAlerts', 'alertSettings', 'tgStatus',
     'yandexStats', 'yandexStatsTime', 'yandexConnected', 'yandexCampaignId',
     'uzumDirectStats', 'uzumDirectStatsTime', 'uzumConnected', 'uzumShopName',
@@ -562,25 +562,52 @@ async function loadAll() {
   ]);
 
   const {
-    daromadchi_connected, daromadchi_plan = 'free', cachedStats, cacheTime,
+    daromadchi_token, daromadchi_connected, daromadchi_email, daromadchi_plan = 'free', cachedStats, cacheTime,
     activeAlerts = [], alertSettings = {}, tgStatus = {},
     yandexStats, yandexConnected, yandexCampaignId,
     uzumDirectStats, uzumConnected, uzumShopName,
     wbStats, wbConnected, wbSellerInfo
   } = data;
 
-  // Not connected → full-screen login gate
-  if (!daromadchi_connected) {
+  // No token → full-screen login gate
+  if (!daromadchi_connected && !daromadchi_token) {
     showLoginGate();
     return;
   }
 
-  const plan = daromadchi_plan;
-  const stats = cachedStats || null;
+  let plan = daromadchi_plan;
 
-  renderStats(true, stats);
+  // Use Daromadchi backend stats if connected, refreshing when stale
+  let stats = cachedStats;
+  const stale = Date.now() - (cacheTime || 0) > 300000;
+
+  if (stale) {
+    try {
+      const res = await fetch(`${API}/extension/stats`, {
+        headers: { 'Authorization': `Bearer ${daromadchi_token}` }
+      });
+      if (res.ok) {
+        stats = await res.json();
+        chrome.storage.local.set({ cachedStats: stats, cacheTime: Date.now() });
+      }
+    } catch {}
+
+    try {
+      const res = await fetch(`${API}/extension/telegram-status`, {
+        headers: { 'Authorization': `Bearer ${daromadchi_token}` }
+      });
+      if (res.ok) {
+        const tg = await res.json();
+        chrome.storage.local.set({ tgStatus: tg });
+        tgStatus.connected = tg.connected;
+        tgStatus.username  = tg.username;
+      }
+    } catch {}
+  }
+
+  renderStats(daromadchi_token || (daromadchi_connected ? "connected" : null), stats);
   renderAlerts(activeAlerts, plan);
-  renderSettings(null, alertSettings, tgStatus);
+  renderSettings(daromadchi_token || (daromadchi_connected ? "connected" : null), alertSettings, tgStatus);
   maybeShowChannelCta();
 
   // Inject marketplace API status at the bottom of the stats panel
@@ -593,9 +620,9 @@ async function loadAll() {
 // Simply load — login gate is handled inside loadAll() via showLoginGate()
 loadAll()
 
-// Re-run when content script confirms user is logged in on daromadchi.uz
+// Re-run when the background stores a fresh token from the content script
 chrome.storage.onChanged.addListener((changes, area) => {
-  if (area === 'local' && changes.daromadchi_connected?.newValue) {
+  if (area === 'local' && (changes.daromadchi_token?.newValue || changes.daromadchi_connected?.newValue)) {
     loadAll()
   }
 })
