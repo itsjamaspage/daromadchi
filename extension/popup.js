@@ -545,10 +545,41 @@ function showLoginGate() {
       Daromadchiga kirish →
     </a>
     <p style="font-size:10px;color:#475569;margin-top:12px;line-height:1.4">
-      Kirganingizdan so'ng <a href="options.html" target="_blank" style="color:#6366f1">Sozlamalar</a>dan tokenni qo'shing
+      Kirganingizdan so'ng kengaytma <b style="color:#94a3b8">avtomatik ulanadi</b>
     </p>
   `;
   document.querySelector('body').appendChild(gate);
+}
+
+// ─── AUTO-AUTH: grab token from open daromadchi.uz tab ───────────────────────
+async function tryGrabTokenFromTab() {
+  try {
+    const tabs = await chrome.tabs.query({ url: 'https://daromadchi.uz/*' });
+    for (const tab of tabs) {
+      if (!tab.id) continue;
+      const results = await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        func: () => {
+          for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && key.startsWith('sb-') && key.endsWith('-auth-token')) {
+              try {
+                const parsed = JSON.parse(localStorage.getItem(key) || '');
+                if (parsed?.access_token) return parsed.access_token;
+              } catch (_) {}
+            }
+          }
+          return null;
+        },
+      });
+      const token = results?.[0]?.result;
+      if (token) {
+        await chrome.storage.local.set({ daromadchi_token: token });
+        return true;
+      }
+    }
+  } catch (_) {}
+  return false;
 }
 
 // ─── LOAD ALL ─────────────────────────────────────────────────────────────────
@@ -569,8 +600,10 @@ async function loadAll() {
     wbStats, wbConnected, wbSellerInfo
   } = data;
 
-  // No token → full-screen login gate
+  // No token → try to grab it from an open daromadchi.uz tab first
   if (!daromadchi_token) {
+    const grabbed = await tryGrabTokenFromTab();
+    if (grabbed) { loadAll(); return; }  // restart with token now saved
     showLoginGate();
     return;
   }
