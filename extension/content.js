@@ -21,7 +21,7 @@
         right: 24px !important;
         z-index: 2147483647 !important;
         width: 360px !important;
-        max-height: 72vh !important;
+        max-height: 55vh !important;
         overflow-y: auto !important;
         border-radius: 16px !important;
         box-shadow: 0 20px 60px rgba(0,0,0,.5) !important;
@@ -34,17 +34,19 @@
       #drm-widget input { cursor: text; }
       #drm-toggle {
         position: fixed !important;
-        bottom: 24px !important;
-        right: 24px !important;
+        bottom: 80px !important;
+        right: 16px !important;
         z-index: 2147483647 !important;
-        width: 44px !important;
-        height: 44px !important;
+        width: 40px !important;
+        height: 40px !important;
         border-radius: 50% !important;
         background: #7c3aed !important;
         border: none !important;
         cursor: pointer !important;
         box-shadow: 0 4px 20px rgba(124,58,237,.5) !important;
-        font-size: 20px !important;
+        font-size: 16px !important;
+        font-weight: 900 !important;
+        display: flex !important;
         align-items: center !important;
         justify-content: center !important;
         color: #fff !important;
@@ -119,55 +121,51 @@
   }
 
   function parsePrice() {
-    // 1. Class-based selectors — direct text nodes only to avoid installment concatenation
-    const priceEls = document.querySelectorAll(
-      '[class*="price"],[class*="Price"],[class*="currentPrice"],[class*="salePrice"],[class*="finalPrice"],[class*="product-price"],[class*="productPrice"]'
-    );
-    for (const el of priceEls) {
-      const cn = el.className.toLowerCase();
-      if (/old|cross|credit|install|kartasiz|strike|prev|origin|discount-price/.test(cn)) continue;
-      const direct = Array.from(el.childNodes).filter(n=>n.nodeType===Node.TEXT_NODE).map(n=>n.textContent).join('');
-      const raw = direct.replace(/[^\d]/g,'');
-      if (raw.length>=4&&raw.length<=9) return parseInt(raw);
-      if (el.children.length===0) {
-        const r2 = el.innerText.replace(/[^\d]/g,'');
-        if (r2.length>=4&&r2.length<=9) return parseInt(r2);
-      }
+    // Priority 1: exact class confirmed from live Uzum DOM
+    const priority = [
+      '.u-currency.sell-price',
+      '[class*="sell-price"]',
+      '[class*="sellPrice"]',
+      '[class*="current-price"]',
+      '[class*="currentPrice"]',
+      '[class*="final-price"]',
+      '[class*="finalPrice"]',
+    ];
+    for (const sel of priority) {
+      const el = document.querySelector(sel);
+      if (!el) continue;
+      const raw = el.innerText.replace(/[^\d]/g,'');
+      if (raw.length >= 4 && raw.length <= 9) return parseInt(raw);
     }
-
-    // 2. Fallback: scan all leaf elements for "so'm" text
-    function inInstallCtx(el) {
-      let node = el;
-      for (let i = 0; i < 10; i++) {
-        if (!node.parentElement) break;
-        node = node.parentElement;
-        const t = node.innerText || '';
-        if (t.length < 500 && /×\s*\d+\s*oy|\d+\s*oy\b|kartasiz|\d+\s*месяц|рассрочк|muddatli/i.test(t)) return true;
-      }
-      return false;
-    }
+    // Priority 2: scan visible elements with so'm text, skip installment context
     const candidates = [];
     for (const el of document.querySelectorAll('span,div,p,strong,b')) {
-      if (el.children.length > 2) continue;
-      const text = el.innerText || '';
-      if (!/so[`']?m|сум/i.test(text)) continue;
-      if (inInstallCtx(el)) continue;
-      const cn = (el.className||'').toLowerCase();
-      if (/old|cross|strike|prev|origin/.test(cn)) continue;
+      if (el.children.length > 1) continue;
+      const text = (el.innerText || '').trim();
       const raw = text.replace(/[^\d]/g,'');
-      if (raw.length>=4&&raw.length<=9) {
-        const rect = el.getBoundingClientRect();
-        if (rect.width > 0) candidates.push({ price:parseInt(raw), top:rect.top+window.scrollY });
+      if (raw.length < 4 || raw.length > 9) continue;
+      if (!/so[`'.]?m|сум/i.test(text)) continue;
+      // Skip installment: parent contains "× N oy"
+      let node = el, skip = false;
+      for (let i=0;i<5;i++) {
+        node = node.parentElement;
+        if (!node) break;
+        const pt = node.innerText || '';
+        if (/×\s*\d+\s*oy|per-month|installment|kartasiz/i.test(pt) && pt.length < 300) { skip=true; break; }
       }
+      if (skip) continue;
+      const cn = (el.className||'').toLowerCase();
+      if (/old|cross|strike|prev|origin|per-month|month|oy/.test(cn)) continue;
+      const rect = el.getBoundingClientRect();
+      if (rect.width > 0 && rect.top > 0 && rect.top < window.innerHeight)
+        candidates.push({ price:parseInt(raw), top:rect.top });
     }
-    if (candidates.length === 0) return null;
-    // Filter out installment outliers: remove prices < 15% of the max
-    const maxP = Math.max(...candidates.map(c=>c.price));
-    const filtered = candidates.filter(c => c.price >= maxP * 0.15);
-    filtered.sort((a,b)=>a.top-b.top);
-    return filtered[0].price;
+    if (candidates.length > 0) {
+      candidates.sort((a,b)=>a.top-b.top);
+      return candidates[0].price;
+    }
+    return null;
   }
-
   function parseTitle() { return (document.querySelector('h1')||{}).innerText?.trim().slice(0,70)||'Mahsulot'; }
   function getProductId() { const m=window.location.pathname.match(/-(\d{5,})/); return m?m[1]:null; }
   function fp(n) { if(n===null||n===undefined) return '—'; return Math.round(n).toLocaleString('uz-UZ')+" so'm"; }
@@ -189,6 +187,25 @@
   }
 
   function pColor(m) { const t=T(); return m>=25?t.green:m>=10?t.amber:t.red; }
+
+  function waitForPriceAndBuild(maxWait=8000) {
+    const targetUrl = location.href;
+    setTimeout(() => {
+      if (location.href !== targetUrl) return;
+      if (document.getElementById('drm-widget')) return;
+      if (parsePrice()) { buildWidget(); return; }
+      const deadline = Date.now() + maxWait;
+      const obs = new MutationObserver(() => {
+        if (location.href !== targetUrl || document.getElementById('drm-widget')) { obs.disconnect(); return; }
+        if (parsePrice() || Date.now() > deadline) {
+          obs.disconnect();
+          if (parsePrice()) buildWidget();
+        }
+      });
+      obs.observe(document.body, { subtree: true, childList: true, characterData: true });
+      setTimeout(() => obs.disconnect(), maxWait + 500);
+    }, 400);
+  }
 
   function buildWidget(attempt=0) {
     if (!parsePrice()) {
@@ -362,7 +379,7 @@
     if(document.getElementById('drm-widget'))return;
     const{widgetClosed}=await chrome.storage.local.get('widgetClosed');
     const closed=Date.now()-(widgetClosed||0)<1800000;
-    buildWidget();
+    waitForPriceAndBuild();
     if(closed){
       // Widget was recently closed — start hidden with toggle button visible
       setTimeout(()=>{
@@ -373,11 +390,16 @@
     }
   }
 
-  if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',()=>setTimeout(init,2500));}
-  else{setTimeout(init,2500);}
+  if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',init);}
+  else{init();}
 
   let lastUrl=location.href;
   new MutationObserver(()=>{
-    if(location.href!==lastUrl){lastUrl=location.href;setTimeout(()=>{document.getElementById('drm-widget')?.remove();document.getElementById('drm-toggle')?.remove();init();},2500);}
+    if(location.href!==lastUrl){lastUrl=location.href;
+      document.getElementById('drm-widget')?.remove();
+      document.getElementById('drm-toggle')?.remove();
+      chrome.storage.local.remove('widgetClosed');
+      waitForPriceAndBuild();
+    }
   }).observe(document,{subtree:true,childList:true});
 })();

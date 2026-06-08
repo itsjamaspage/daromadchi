@@ -29,7 +29,7 @@ const t: Record<Lang, {
       },
       {
         heading: '2. Qanday ma\'lumotlar to\'planadi',
-        body: `• Hisob ma\'lumotlari: elektron pochta manzili va shifrlangan parol (Supabase Auth orqali).\n• Do\'kon ma\'lumotlari: siz kiritgan marketplace API kaliti (AES-256 bilan shifrlangan holda saqlanadi).\n• Savdo ma\'lumotlari: marketplace API orqali olingan buyurtmalar, mahsulotlar, zaxira va reklama statistikasi.\n• Texnik ma\'lumotlar: brauzer turi, IP-manzil (xavfsizlik maqsadida), tizim jurnallari.\n\nBiz to\'lov kartasi ma\'lumotlari, hujjat nusxalari yoki boshqa maxsus kategoriyali shaxsiy ma\'lumotlarni to\'plamaymiz.`,
+        body: `• Hisob ma\'lumotlari: elektron pochta manzili va shifrlangan parol (Supabase Auth orqali).\n• Do\'kon ma\'lumotlari: siz kiritgan marketplace API kaliti (AES-256 bilan shifrlangan holda saqlanadi).\n• Savdo ma\'lumotlari: marketplace API orqali olingan buyurtmalar, mahsulotlar, zaxira va reklama statistikasi.\n• Brauzer kengaytmasi ma\'lumotlari: kengaytma o\'rnatilsa, marketplace sahifalaridan (Uzum, Wildberries, Yandex Market) narx va mahsulot ma\'lumotlari to\'planadi — faqat siz kirgan hisob doirasida.\n• Telegram ma\'lumotlari: ogohlantirishlar yoqilganda foydalanuvchining Telegram chat ID si saqlanadi — faqat xabarnoma yuborish uchun.\n• Texnik ma\'lumotlar: brauzer turi, IP-manzil (xavfsizlik maqsadida), tizim jurnallari.\n\nBiz to\'lov kartasi ma\'lumotlari, hujjat nusxalari yoki boshqa maxsus kategoriyali shaxsiy ma\'lumotlarni to\'plamaymiz.`,
       },
       {
         heading: '3. Ma\'lumotlar qanday ishlatiladi',
@@ -49,7 +49,7 @@ const t: Record<Lang, {
       },
       {
         heading: '7. Foydalanish shartlari',
-        body: `Platformadan foydalanish uchun:\n• 18 yoshdan katta bo\'lishingiz kerak.\n• Faqat o\'zingizga tegishli yoki vakolatli bo\'lgan marketplace hisobi API kalitlarini kiritishingiz mumkin.\n• Platformani buzish, qayta sotish yoki ruxsatsiz maqsadlarda foydalanish taqiqlanadi.\n• Hisob ma\'lumotlarini maxfiy saqlash va ularga ruxsatsiz kirishni darhol bizga xabar qilish majburiydir.`,
+        body: `Platformadan foydalanish uchun:\n• Faqat o\'zingizga tegishli yoki vakolatli bo\'lgan marketplace hisobi API kalitlarini kiritishingiz mumkin.\n• Platformani buzish, qayta sotish yoki ruxsatsiz maqsadlarda foydalanish taqiqlanadi.\n• Hisob ma\'lumotlarini maxfiy saqlash va ularga ruxsatsiz kirishni darhol bizga xabar qilish majburiydir.`,
       },
       {
         heading: '8. Javobgarlilik chegarasi',
@@ -57,7 +57,7 @@ const t: Record<Lang, {
       },
       {
         heading: '9. Rozilik va ro\'yxatdan o\'tish',
-        body: `Platformadan ro\'yxatdan o\'tish paytida siz ushbu maxfiylik siyosatini o\'qib chiqqaningiz va qabul qilganingizni tasdiqlaysiz — bu ZRU-547 Qonuni talab etgan elektron rozilik hisoblanadi.\n\nDaromadchi shaxsiy ma\'lumotlar bazasi O\'zbekiston Respublikasi Hukumati huzuridagi Davlat shaxslashtirish markazi tomonidan yuritiluvchi Shaxsiy ma\'lumotlar bazalarining Davlat reestriga kiritilishi ko\'zda tutilmoqda.`,
+        body: `Platformadan ro\'yxatdan o\'tish paytida siz ushbu maxfiylik siyosatini o\'qib chiqqaningiz va qabul qilganingizni tasdiqlaysiz — bu ZRU-547 Qonuni talab etgan elektron rozilik hisoblanadi.\n\nDaromadchi shaxsiy ma\'lumotlar bazasi O\'zbekiston Respublikasi Hukumati huzuridagi Davlat shaxslashtirish markazi tomonidan yuritiluvchi Shaxsiy ma\'lumotlar bazalarining Davlat reestriga kiritish bo\'yicha ro\'yxatdan o\'tish jarayoni olib borilmoqda.`,
       },
       {
         heading: '10. Aloqa',
@@ -77,7 +77,7 @@ const t: Record<Lang, {
       },
       {
         heading: '2. Какие данные собираются',
-        body: `• Учётные данные: адрес электронной почты и зашифрованный пароль (через Supabase Auth).\n• Данные магазина: API-ключ маркетплейса, введённый вами (хранится в зашифрованном виде AES-256).\n• Торговые данные: заказы, товары, запасы и рекламная статистика, полученные через API маркетплейса.\n• Технические данные: тип браузера, IP-адрес (в целях безопасности), системные журналы.\n\nМы не собираем данные платёжных карт, копии документов или иные специальные категории персональных данных.`,
+        body: `• Учётные данные: адрес электронной почты и зашифрованный пароль (через Supabase Auth).\n• Данные магазина: API-ключ маркетплейса, введённый вами (хранится в зашифрованном виде AES-256).\n• Торговые данные: заказы, товары, запасы и рекламная статистика, полученные через API маркетплейса.\n• Данные браузерного расширения: при установке расширения со страниц маркетплейсов (Uzum, Wildberries, Yandex Market) собираются цены и данные о товарах — только в рамках вашей учётной записи.\n• Данные Telegram: при включении уведомлений сохраняется Telegram chat ID пользователя — исключительно для отправки уведомлений.\n• Технические данные: тип браузера, IP-адрес (в целях безопасности), системные журналы.\n\nМы не собираем данные платёжных карт, копии документов или иные специальные категории персональных данных.`,
       },
       {
         heading: '3. Как используются данные',
@@ -97,7 +97,7 @@ const t: Record<Lang, {
       },
       {
         heading: '7. Условия использования',
-        body: `Для использования платформы:\n• Вам должно быть не менее 18 лет.\n• Вы можете вводить только API-ключи аккаунтов маркетплейса, которые принадлежат вам или на использование которых вы уполномочены.\n• Запрещается взлом, перепродажа или использование платформы в несанкционированных целях.\n• Вы обязаны хранить учётные данные в тайне и незамедлительно сообщать нам о несанкционированном доступе.`,
+        body: `Для использования платформы:\n• Вы можете вводить только API-ключи аккаунтов маркетплейса, которые принадлежат вам или на использование которых вы уполномочены.\n• Запрещается взлом, перепродажа или использование платформы в несанкционированных целях.\n• Вы обязаны хранить учётные данные в тайне и незамедлительно сообщать нам о несанкционированном доступе.`,
       },
       {
         heading: '8. Ограничение ответственности',
@@ -105,7 +105,7 @@ const t: Record<Lang, {
       },
       {
         heading: '9. Согласие и регистрация',
-        body: `При регистрации на платформе вы подтверждаете, что ознакомились с настоящей политикой и принимаете её — это является электронным согласием в соответствии с требованиями Закона ЗРУ-547.\n\nБаза персональных данных Daromadchi планируется к включению в Государственный реестр баз персональных данных, ведомый Государственным центром персонализации при Правительстве Республики Узбекистан.`,
+        body: `При регистрации на платформе вы подтверждаете, что ознакомились с настоящей политикой и принимаете её — это является электронным согласием в соответствии с требованиями Закона ЗРУ-547.\n\nПо базе персональных данных Daromadchi ведётся процедура включения в Государственный реестр баз персональных данных, ведомый Государственным центром персонализации при Правительстве Республики Узбекистан.`,
       },
       {
         heading: '10. Контакты',
@@ -125,7 +125,7 @@ const t: Record<Lang, {
       },
       {
         heading: '2. What data we collect',
-        body: `• Account data: email address and encrypted password (via Supabase Auth).\n• Shop data: the marketplace API key you provide (stored encrypted with AES-256).\n• Trading data: orders, products, stock levels and ad statistics fetched via the marketplace API.\n• Technical data: browser type, IP address (for security purposes), system logs.\n\nWe do not collect payment card details, identity document copies, or other special-category personal data.`,
+        body: `• Account data: email address and encrypted password (via Supabase Auth).\n• Shop data: the marketplace API key you provide (stored encrypted with AES-256).\n• Trading data: orders, products, stock levels and ad statistics fetched via the marketplace API.\n• Browser extension data: if the extension is installed, price and product data is collected from marketplace pages (Uzum, Wildberries, Yandex Market) — only within your logged-in account.\n• Telegram data: when alerts are enabled, your Telegram chat ID is stored solely for sending notifications.\n• Technical data: browser type, IP address (for security purposes), system logs.\n\nWe do not collect payment card details, identity document copies, or other special-category personal data.`,
       },
       {
         heading: '3. How data is used',
@@ -145,7 +145,7 @@ const t: Record<Lang, {
       },
       {
         heading: '7. Terms of use',
-        body: `To use the platform:\n• You must be at least 18 years old.\n• You may only enter API keys for marketplace accounts you own or are authorised to use.\n• Hacking, reselling or using the platform for unauthorised purposes is prohibited.\n• You must keep your credentials confidential and immediately notify us of any unauthorised access.`,
+        body: `To use the platform:\n• You may only enter API keys for marketplace accounts you own or are authorised to use.\n• Hacking, reselling or using the platform for unauthorised purposes is prohibited.\n• You must keep your credentials confidential and immediately notify us of any unauthorised access.`,
       },
       {
         heading: '8. Limitation of liability',
@@ -153,7 +153,7 @@ const t: Record<Lang, {
       },
       {
         heading: '9. Consent & registration',
-        body: `By registering on the platform you confirm you have read and accept this policy — this constitutes electronic consent as required by Law ZRU-547.\n\nThe Daromadchi personal data database is intended to be included in the State Register of Personal Data Bases maintained by the State Personalisation Centre under the Cabinet of Ministers of the Republic of Uzbekistan.`,
+        body: `By registering on the platform you confirm you have read and accept this policy — this constitutes electronic consent as required by Law ZRU-547.\n\nThe Daromadchi personal data database is currently undergoing registration for inclusion in the State Register of Personal Data Bases maintained by the State Personalisation Centre under the Cabinet of Ministers of the Republic of Uzbekistan.`,
       },
       {
         heading: '10. Contact',

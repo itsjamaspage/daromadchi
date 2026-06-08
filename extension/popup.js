@@ -545,52 +545,10 @@ function showLoginGate() {
       Daromadchiga kirish →
     </a>
     <p style="font-size:10px;color:#475569;margin-top:12px;line-height:1.4">
-      Kirganingizdan so'ng kengaytma <b style="color:#94a3b8">avtomatik ulanadi</b>
+      Kirganingizdan so'ng <a href="options.html" target="_blank" style="color:#6366f1">Sozlamalar</a>dan tokenni qo'shing
     </p>
   `;
   document.querySelector('body').appendChild(gate);
-}
-
-// ─── AUTO-AUTH: grab token from open daromadchi.uz tab ───────────────────────
-async function tryGrabTokenFromTab() {
-  try {
-    const tabs = await Promise.race([
-      chrome.tabs.query({ url: ['https://daromadchi.uz/*', 'https://www.daromadchi.uz/*'] }),
-      new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 1500)),
-    ]);
-    for (const tab of tabs) {
-      if (!tab.id) continue;
-      const results = await chrome.scripting.executeScript({
-        target: { tabId: tab.id },
-        func: () => {
-          for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i);
-            if (key && key.startsWith('sb-') && key.endsWith('-auth-token')) {
-              try {
-                const parsed = JSON.parse(localStorage.getItem(key) || '');
-                if (parsed?.access_token) return parsed.access_token;
-              } catch (_) {}
-            }
-          }
-          return null;
-        },
-      });
-      const token = results?.[0]?.result;
-      if (token) {
-        await chrome.storage.local.set({ daromadchi_token: token });
-        return true;
-      }
-    }
-  } catch (_) {}
-  return false;
-}
-
-// ─── FETCH WITH TIMEOUT ───────────────────────────────────────────────────────
-function fetchWithTimeout(url, opts, ms = 4000) {
-  const controller = new AbortController();
-  const tid = setTimeout(() => controller.abort(), ms);
-  return fetch(url, { ...opts, signal: controller.signal })
-    .finally(() => clearTimeout(tid));
 }
 
 // ─── LOAD ALL ─────────────────────────────────────────────────────────────────
@@ -611,23 +569,18 @@ async function loadAll() {
     wbStats, wbConnected, wbSellerInfo
   } = data;
 
-  // No token → try to grab it from an open daromadchi.uz tab first
+  // No token → full-screen login gate
   if (!daromadchi_token) {
-    const grabbed = await tryGrabTokenFromTab();
-    if (grabbed) {
-      await loadAll(); // await so the outer promise only resolves after full load
-      return;
-    }
     showLoginGate();
     return;
   }
 
-  // Validate token — only block on explicit 401; pass through on network/timeout errors
+  // Validate token — only block on explicit 401; pass through on network errors
   let plan = daromadchi_plan;
   try {
-    const vRes = await fetchWithTimeout(`${API}/extension/validate`, {
+    const vRes = await fetch(`${API}/extension/validate`, {
       headers: { 'Authorization': `Bearer ${daromadchi_token}` }
-    }, 4000);
+    });
     if (vRes.status === 401) {
       chrome.storage.local.remove('daromadchi_token');
       showLoginGate();
@@ -640,7 +593,7 @@ async function loadAll() {
         chrome.storage.local.set({ daromadchi_plan: vData.plan });
       }
     }
-  } catch { /* offline or timeout — proceed with cached data */ }
+  } catch { /* offline — proceed */ }
 
   // Use Daromadchi backend stats if connected, refreshing when stale
   let stats = cachedStats;
@@ -648,9 +601,9 @@ async function loadAll() {
 
   if (stale) {
     try {
-      const res = await fetchWithTimeout(`${API}/extension/stats`, {
+      const res = await fetch(`${API}/extension/stats`, {
         headers: { 'Authorization': `Bearer ${daromadchi_token}` }
-      }, 4000);
+      });
       if (res.ok) {
         stats = await res.json();
         chrome.storage.local.set({ cachedStats: stats, cacheTime: Date.now() });
@@ -658,9 +611,9 @@ async function loadAll() {
     } catch {}
 
     try {
-      const res = await fetchWithTimeout(`${API}/extension/telegram-status`, {
+      const res = await fetch(`${API}/extension/telegram-status`, {
         headers: { 'Authorization': `Bearer ${daromadchi_token}` }
-      }, 4000);
+      });
       if (res.ok) {
         const tg = await res.json();
         chrome.storage.local.set({ tgStatus: tg });
@@ -682,9 +635,12 @@ async function loadAll() {
   }
 }
 
-// Hard 10s safety net — all fetches already have 4s timeouts so this is last resort
-const loadTimeout = setTimeout(() => showLoginGate(), 10000);
-loadAll().then(() => clearTimeout(loadTimeout)).catch(() => {
-  clearTimeout(loadTimeout);
-  showLoginGate();
-});
+// Simply load — login gate is handled inside loadAll() via showLoginGate()
+loadAll()
+
+// Re-run when the background stores a fresh token from the content script
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === 'local' && changes.daromadchi_token?.newValue) {
+    loadAll()
+  }
+})

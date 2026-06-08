@@ -5,9 +5,8 @@ import ProductsTable from '@/components/dashboard/ProductsTable'
 import { getT } from '@/lib/server-i18n'
 
 export default async function ProductsPage() {
-  const t = await getT()
+  const [t, products] = await Promise.all([getT(), getProducts()])
   const d = t.dashboard
-  const products = await getProducts()
 
   if (products.length === 0) {
     return (

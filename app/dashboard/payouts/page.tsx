@@ -4,9 +4,8 @@ import PayoutsView from '@/components/dashboard/PayoutsView'
 import { getT } from '@/lib/server-i18n'
 
 export default async function PayoutsPage() {
-  const t = await getT()
+  const [t, entries] = await Promise.all([getT(), getPayoutEntries()])
   const d = t.dashboard
-  const entries = await getPayoutEntries()
 
   return (
     <div className="space-y-6">

@@ -1,38 +1,32 @@
-// Content script running on daromadchi.uz
-// Reads Supabase session from localStorage and passes token to extension storage
-
+// content-daromadchi.js — fetches session token from daromadchi.uz API and sends to background
 (function () {
-  function extractToken() {
-    try {
-      // Supabase stores session as: sb-<project-ref>-auth-token
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i)
-        if (key && key.startsWith('sb-') && key.endsWith('-auth-token')) {
-          const raw = localStorage.getItem(key)
-          if (!raw) continue
-          const parsed = JSON.parse(raw)
-          const token = parsed?.access_token
-          if (token) return token
-        }
-      }
-    } catch (_) {}
-    return null
-  }
-
   function sync() {
-    const token = extractToken()
-    if (token) {
-      chrome.runtime.sendMessage({ action: 'daromadchi_authed', token })
-    }
+    console.log('[Daromadchi] Fetching token from /api/extension/token');
+    fetch('https://www.daromadchi.uz/api/extension/token', {
+      credentials: 'include',
+    })
+      .then(r => {
+        console.log('[Daromadchi] /api/extension/token status:', r.status);
+        return r.json();
+      })
+      .then(data => {
+        if (data.token) {
+          console.log('[Daromadchi] Got token, sending to background');
+          chrome.runtime.sendMessage({ action: 'daromadchi_authed', token: data.token }, (resp) => {
+            if (chrome.runtime.lastError) {
+              console.log('[Daromadchi] sendMessage error:', chrome.runtime.lastError.message);
+            } else {
+              console.log('[Daromadchi] background replied:', resp);
+            }
+          });
+        } else {
+          console.log('[Daromadchi] Not authenticated:', data.error);
+        }
+      })
+      .catch(err => {
+        console.log('[Daromadchi] fetch error:', err);
+      });
   }
 
-  // Run immediately (user navigated to the page already logged in)
-  sync()
-
-  // Also listen for storage changes (user just logged in on this tab)
-  window.addEventListener('storage', (e) => {
-    if (e.key && e.key.startsWith('sb-') && e.key.endsWith('-auth-token')) {
-      sync()
-    }
-  })
-})()
+  sync();
+})();

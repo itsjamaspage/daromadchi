@@ -4,12 +4,8 @@ import StockAlertsView from '@/components/dashboard/StockAlertsView'
 import { getT } from '@/lib/server-i18n'
 
 export default async function AlertsPage() {
-  const t = await getT()
+  const [t, alerts, settings] = await Promise.all([getT(), getStockAlerts(), getAlertSettings()])
   const d = t.dashboard
-  const [alerts, settings] = await Promise.all([
-    getStockAlerts(),
-    getAlertSettings(),
-  ])
 
   return (
     <div className="space-y-6">

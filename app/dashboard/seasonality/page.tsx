@@ -4,9 +4,8 @@ import { getSeasonality } from '@/lib/db/seasonality'
 import SeasonalityView from '@/components/dashboard/SeasonalityView'
 
 export default async function SeasonalityPage() {
-  const t = await getT()
+  const [t, data] = await Promise.all([getT(), getSeasonality()])
   const d = t.dashboard
-  const data = await getSeasonality()
 
   return (
     <div className="space-y-6">

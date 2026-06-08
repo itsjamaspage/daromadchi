@@ -5,9 +5,8 @@ import OrdersTable from '@/components/dashboard/OrdersTable'
 import { getT } from '@/lib/server-i18n'
 
 export default async function OrdersPage() {
-  const t = await getT()
+  const [t, orders] = await Promise.all([getT(), getOrders()])
   const d = t.dashboard
-  const orders = await getOrders()
 
   if (orders.length === 0) {
     return (

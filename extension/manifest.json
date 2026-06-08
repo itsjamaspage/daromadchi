@@ -22,14 +22,6 @@
   "content_scripts": [
     {
       "matches": [
-        "https://daromadchi.uz/*",
-        "https://www.daromadchi.uz/*"
-      ],
-      "js": ["content-daromadchi.js"],
-      "run_at": "document_idle"
-    },
-    {
-      "matches": [
         "https://uzum.uz/*",
         "https://www.uzum.uz/*",
         "*://*.uzum.uz/*"
@@ -46,6 +38,14 @@
       ],
       "js": ["content-yandex.js"],
       "css": ["content.css"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://daromadchi.uz/*",
+        "https://www.daromadchi.uz/*"
+      ],
+      "js": ["content-daromadchi.js"],
       "run_at": "document_idle"
     },
     {

@@ -25,7 +25,7 @@
           right: 24px !important;
           z-index: 2147483647 !important;
             width: 360px !important;
-          max-height: 72vh !important;
+          max-height: 55vh !important;
           overflow-y: auto !important;
           border-radius: 16px !important;
           box-shadow: 0 20px 60px rgba(0,0,0,.5) !important;
@@ -108,26 +108,59 @@
     }
 
     function parseWbPrice() {
-      const specific = [
-        '.price-block__final-price', '[class*="price-block__final"]',
-        'ins.price__lower-price', '[class*="price__lower"]',
-        '.product-page__price-block ins', '[data-link="text{:currentPrice}"]',
-        '.price-block ins', '[class*="priceWithSale"]', '[class*="price-block"] ins',
+      // Priority 1: exact class names confirmed from live WB DOM (hashed but stable pattern)
+      // priceBlockFinalPrice and priceBlockPrice are the real product price elements
+      const priority = [
+        '[class*="priceBlockFinalPrice"]',
+        '[class*="priceBlockPrice--"]',
+        'ins[class*="priceBlock"]',
+        '[class*="price-block__final-price"]',
+        '[class*="price__lower-price"]',
       ];
-      for (const sel of specific) {
+      for (const sel of priority) {
         const el = document.querySelector(sel);
-        if (el) { const raw = el.innerText.replace(/[^\d]/g,''); if (raw.length>=3&&raw.length<=12) return parseInt(raw); }
+        if (!el) continue;
+        // Skip old/strikethrough prices
+        if (/[Oo]ld|[Cc]ross|[Ss]trike|[Pp]rev/.test(el.className)) continue;
+        const raw = el.innerText.replace(/[^\d]/g,'');
+        if (raw.length >= 3 && raw.length <= 12) return parseInt(raw);
       }
-      // Fallback: all <ins> tags sorted by top position (main price is highest on page)
+      // Priority 2: <ins> tags — WB uses <ins> for sale prices, skip empty-class DIVs
       const insTags = Array.from(document.querySelectorAll('ins'));
-      if (insTags.length > 0) {
-        insTags.sort((a,b)=>(a.getBoundingClientRect().top+window.scrollY)-(b.getBoundingClientRect().top+window.scrollY));
-        for (const el of insTags) { const raw=el.innerText.replace(/[^\d]/g,''); if (raw.length>=3&&raw.length<=12) return parseInt(raw); }
+      const visibleIns = insTags.filter(el => {
+        if (/[Oo]ld|[Cc]ross|[Ss]trike/.test(el.className)) return false;
+        const rect = el.getBoundingClientRect();
+        return rect.width > 0 && rect.top > 0 && rect.top < window.innerHeight * 1.5;
+      });
+      visibleIns.sort((a,b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top);
+      for (const el of visibleIns) {
+        const raw = el.innerText.replace(/[^\d]/g,'');
+        if (raw.length >= 3 && raw.length <= 12) return parseInt(raw);
       }
       return null;
     }
 
-    function parseWbTitle() { return (document.querySelector('h1')||{}).innerText?.trim().slice(0,70)||'Mahsulot'; }
+    function parseWbTitle() {
+      // Priority 1: page title tag — always has product name on WB
+      const pageTitle = document.title || "";
+      if (pageTitle.length > 5) {
+        const clean = pageTitle.split(" купить")[0].split(" - ")[0].trim();
+        if (clean.length > 5 && /[а-яА-ЯёЁa-zA-Z]/.test(clean)) return clean.slice(0, 120);
+      }
+      // Priority 2: og:title meta
+      const ogTitle = document.querySelector("meta[property='og:title']")?.content || "";
+      if (ogTitle.length > 5) {
+        const clean = ogTitle.split(" купить")[0].split(" - ")[0].trim();
+        if (clean.length > 5) return clean.slice(0, 120);
+      }
+      // Priority 3: specific selectors
+      for (const sel of ["[class*=product-page__title]","[class*=productCard__title]","[class*=goods-name__title]"]) {
+        const el = document.querySelector(sel);
+        const text = el?.innerText?.trim();
+        if (text && text.length > 5) return text.slice(0, 120);
+      }
+      return "Mahsulot";
+    }
     function getArticle() { const m=location.pathname.match(/\/catalog\/(\d+)/); return m?m[1]:null; }
 
     function calcWb(price, { costPrice=0, packaging=0, adPct=5, volume=1, fby=true }={}) {
@@ -157,6 +190,33 @@
       return `<div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:1px 0"><span style="color:${t.muted}">${label}${extra}</span><span id="drm-wb-v-${id}" style="color:${t.red}">${val}</span></div>`;
     }
 
+    function waitForWbPriceAndBuild(maxWait=8000) {
+      // Record the URL at the moment we start waiting
+      const targetUrl = location.href;
+      // Small initial pause to let SPA tear down old product DOM first
+      setTimeout(() => {
+        if (location.href !== targetUrl) return; // URL changed again, abort
+        if (document.getElementById('drm-wb-ue')) return; // Already built
+        const tryBuild = () => {
+          if (location.href !== targetUrl) return; // navigated away
+          if (document.getElementById('drm-wb-ue')) return;
+          if (parseWbPrice()) { buildWbWidget(); return; }
+        };
+        tryBuild();
+        if (document.getElementById('drm-wb-ue')) return;
+        const deadline = Date.now() + maxWait;
+        const obs = new MutationObserver(() => {
+          if (location.href !== targetUrl || document.getElementById('drm-wb-ue')) { obs.disconnect(); return; }
+          if (parseWbPrice() || Date.now() > deadline) {
+            obs.disconnect();
+            if (parseWbPrice()) buildWbWidget();
+          }
+        });
+        obs.observe(document.body, { subtree: true, childList: true, characterData: true });
+        setTimeout(() => obs.disconnect(), maxWait + 500);
+      }, 400);
+    }
+
     function buildWbWidget(attempt=0) {
       const price   = parseWbPrice();
       if (!price) {
@@ -176,7 +236,7 @@
       toggleBtn.id = 'drm-wb-toggle';
       toggleBtn.title = 'Daromadchi';
       toggleBtn.textContent = 'D';
-      toggleBtn.style.cssText = 'position:fixed!important;bottom:24px!important;right:24px!important;z-index:2147483647!important;width:44px!important;height:44px!important;border-radius:50%!important;background:#7c3aed!important;border:none!important;cursor:pointer!important;box-shadow:0 4px 20px rgba(124,58,237,.5)!important;font-size:20px!important;color:#fff!important;font-family:-apple-system,sans-serif!important;align-items:center!important;justify-content:center!important;';
+      toggleBtn.style.cssText = 'position:fixed!important;bottom:80px!important;right:16px!important;z-index:2147483647!important;width:40px!important;height:40px!important;border-radius:50%!important;background:#7c3aed!important;border:none!important;cursor:pointer!important;box-shadow:0 4px 20px rgba(124,58,237,.5)!important;font-size:16px!important;font-weight:900!important;color:#fff!important;font-family:-apple-system,sans-serif!important;display:flex!important;align-items:center!important;justify-content:center!important;';
       toggleBtn.style.setProperty('display','none','important');
       document.body.appendChild(toggleBtn);
       toggleBtn.onclick = () => { wrap.style.display='block'; toggleBtn.style.setProperty('display','none','important'); };
@@ -302,8 +362,10 @@
         wrap.querySelector('#drm-wb-ue-btn')?.addEventListener('click', async () => {
           const vals=gi(); const eco2=price?calcWb(price,{...vals,fby}):null;
           await chrome.storage.local.set({ueSettings:{...vals,fby}});
+          // Re-read title at click time in case SPA rendered it after widget built
+          const liveTitle = parseWbTitle() !== 'Mahsulot' ? parseWbTitle() : title;
           const params=new URLSearchParams({
-            source:'wb', title, url:location.href,
+            source:'wb', title:liveTitle, url:location.href,
             price:String(price||''), commPct:String(eco2?.commPct||''),
             commission:String(eco2?.commission||''), delivery:String(eco2?.delivery||''),
             acquiring:String(eco2?.acquiring||''), adSpend:String(eco2?.adSpend||''),
@@ -321,15 +383,19 @@
       if (document.getElementById('drm-wb-ue')) return;
       const {wbWidgetClosed}=await chrome.storage.local.get('wbWidgetClosed');
       if (Date.now()-(wbWidgetClosed||0)<1800000) return;
-      buildWbWidget();
+      waitForWbPriceAndBuild();
     }
 
-    setTimeout(tryInit,2500);
+    tryInit();
 
     let lastUrl=location.href;
     new MutationObserver(()=>{
       if(location.href!==lastUrl){ lastUrl=location.href;
-        setTimeout(()=>{ document.getElementById('drm-wb-ue')?.remove(); document.getElementById('drm-wb-toggle')?.remove(); if(/\/catalog\/\d+/.test(location.pathname)) tryInit(); },2500); }
+        document.getElementById('drm-wb-ue')?.remove();
+        document.getElementById('drm-wb-toggle')?.remove();
+        chrome.storage.local.remove('wbWidgetClosed');
+        if(/\/catalog\/\d+/.test(location.pathname)) waitForWbPriceAndBuild();
+      }
     }).observe(document,{subtree:true,childList:true});
 
     return;

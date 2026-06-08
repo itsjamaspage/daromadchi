@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo, useRef } from 'react'
-import { TrendingUp, TrendingDown, CircleDot } from 'lucide-react'
+import { TrendingUp, TrendingDown, CircleDot, ExternalLink } from 'lucide-react'
 import type { AdCampaign, AdType } from '@/lib/types'
 import ExportButton from '@/components/dashboard/ExportButton'
 import { useLang } from '@/app/providers'
@@ -67,6 +67,29 @@ export default function AdvertisingView({ campaigns }: Props) {
     [`${t.colDrr} (%)`]:          c.drr.toFixed(1),
   }))
 
+  if (campaigns.length === 0) {
+    return (
+      <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl p-8 text-center space-y-4">
+        <p className="text-[var(--text-base)] font-semibold text-lg">{t.noData}</p>
+        <p className="text-[var(--text-muted)] text-sm max-w-md mx-auto">{t.noDataDesc}</p>
+        <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
+          <a href="https://seller.uzum.uz" target="_blank" rel="noreferrer"
+            className="inline-flex items-center gap-2 btn-primary text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors shadow-lg shadow-violet-500/20">
+            <ExternalLink className="w-4 h-4" /> {t.goUzum}
+          </a>
+          <a href="https://seller.wildberries.ru" target="_blank" rel="noreferrer"
+            className="inline-flex items-center gap-2 bg-[var(--bg-input)] hover:bg-[var(--bg-card2)] border border-[var(--border2)] text-[var(--text-dim)] text-sm font-medium px-4 py-2.5 rounded-xl transition-colors">
+            <ExternalLink className="w-4 h-4" /> {t.goWb}
+          </a>
+          <a href="https://partner.market.yandex.ru" target="_blank" rel="noreferrer"
+            className="inline-flex items-center gap-2 bg-[var(--bg-input)] hover:bg-[var(--bg-card2)] border border-[var(--border2)] text-[var(--text-dim)] text-sm font-medium px-4 py-2.5 rounded-xl transition-colors">
+            <ExternalLink className="w-4 h-4" /> {t.goYandex}
+          </a>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-4" ref={printRef}>
       {/* Summary KPIs */}
@@ -89,7 +112,7 @@ export default function AdvertisingView({ campaigns }: Props) {
       {/* Tabs + Export */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-3">
         <div className="flex flex-wrap items-center gap-1 p-1 bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl w-fit">
-          {([['all','Hammasi'],['cpc','CPC'],['cpo','CPO']] as const).map(([v, label]) => (
+          {([['all', t.tabAll],['cpc','CPC'],['cpo','CPO']] as const).map(([v, label]) => (
             <button key={v} onClick={() => setTab(v)}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                 tab === v ? 'bg-violet-600/20 text-violet-300 border border-violet-500/30' : 'text-[var(--text-muted)] hover:text-[var(--text-dim)]'
@@ -109,7 +132,7 @@ export default function AdvertisingView({ campaigns }: Props) {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-[var(--border)]">
-                {['Kampaniya','Tur','Holat','Sarflar','Ko\'rs.','Kliklar','CTR','Buyurtma','Daromad','DRR'].map(h => (
+                {[t.colCampaign, t.colType, t.colStatus, t.colSpend, t.colImpressions, t.colClicks, t.colCtr, t.colOrders, t.colRevenue, t.colDrr].map(h => (
                   <th key={h} className="px-3 py-3 text-left text-xs font-semibold text-[var(--text-muted)] whitespace-nowrap">{h}</th>
                 ))}
               </tr>
@@ -163,7 +186,7 @@ export default function AdvertisingView({ campaigns }: Props) {
 
       {/* Legend */}
       <div className="flex flex-wrap gap-4 text-xs text-[var(--text-muted)]">
-        <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-red-500" />Sarflar bor, sotuv yo&apos;q</span>
+        <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-red-500" />{t.legendNoSale}</span>
         <span className="flex items-center gap-1.5"><span className="w-8 h-3 rounded bg-emerald-500/10 border border-emerald-500/20" /><span className="text-emerald-400">DRR &lt; 10%</span></span>
         <span className="flex items-center gap-1.5"><span className="w-8 h-3 rounded bg-amber-500/10 border border-amber-500/20" /><span className="text-amber-400">DRR 10–20%</span></span>
         <span className="flex items-center gap-1.5"><span className="w-8 h-3 rounded bg-red-500/10 border border-red-500/20" /><span className="text-red-400">DRR &gt; 20%</span></span>

@@ -10,9 +10,8 @@ function fmt(n: number) {
 }
 
 export default async function AnalyticsPage() {
-  const t = await getT()
+  const [t, products, kpis] = await Promise.all([getT(), getProducts(), getKpis(30)])
   const d = t.dashboard
-  const [products, kpis] = await Promise.all([getProducts(), getKpis(30)])
   const isEmpty = products.length === 0
 
   const avgMargin = products.length > 0

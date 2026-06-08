@@ -38,11 +38,6 @@ const ui = {
     invalidCreds: 'Email yoki parol notoʻgʻri. Hisobingiz boʻlmasa, avval roʻyxatdan oʻting.',
     emailNotConfirmed: 'Email tasdiqlanmagan. Pochtangizdagi tasdiqlash havolasini bosing.',
     goSignup: 'Roʻyxatdan oʻtish',
-    agreeLabel: 'Men quyidagilarni qabul qilaman: ',
-    agreePrivacy: 'Maxfiylik siyosati',
-    agreeAnd: ' va ',
-    agreeTerms: 'Foydalanish shartlari',
-    agreeRequired: "Ro'yxatdan o'tish uchun shartlarni qabul qilishingiz kerak.",
   },
   en: {
     tagline: 'Sales analytics platform',
@@ -68,11 +63,6 @@ const ui = {
     invalidCreds: 'Incorrect email or password. If you don’t have an account, sign up first.',
     emailNotConfirmed: 'Email not confirmed. Click the confirmation link we sent to your inbox.',
     goSignup: 'Sign up',
-    agreeLabel: 'I agree to the ',
-    agreePrivacy: 'Privacy Policy',
-    agreeAnd: ' and ',
-    agreeTerms: 'Terms of Use',
-    agreeRequired: 'You must agree to the terms to create an account.',
   },
   ru: {
     tagline: 'Платформа аналитики продаж',
@@ -98,11 +88,6 @@ const ui = {
     invalidCreds: 'Неверный email или пароль. Если у вас нет аккаунта, сначала зарегистрируйтесь.',
     emailNotConfirmed: 'Email не подтверждён. Откройте письмо и нажмите на ссылку подтверждения.',
     goSignup: 'Зарегистрироваться',
-    agreeLabel: 'Я принимаю ',
-    agreePrivacy: 'Политику конфиденциальности',
-    agreeAnd: ' и ',
-    agreeTerms: 'Условия использования',
-    agreeRequired: 'Для регистрации необходимо принять условия.',
   },
 }
 
@@ -167,7 +152,6 @@ function LoginForm() {
   const [success,  setSuccess]  = useState(false)
   const [resetSent, setResetSent] = useState(false)
   const [showSignupHint, setShowSignupHint] = useState(false)
-  const [agreed, setAgreed] = useState(false)
   const router = useRouter()
 
   // Surface verification failures bounced back from /auth/confirm
@@ -189,7 +173,7 @@ function LoginForm() {
   const labelColor = isDark ? '#94a3b8' : '#4b5563'
 
   function switchMode(m: 'login' | 'signup' | 'forgot') {
-    setMode(m); setError(''); setSuccess(false); setResetSent(false); setShowSignupHint(false); setAgreed(false)
+    setMode(m); setError(''); setSuccess(false); setResetSent(false); setShowSignupHint(false)
   }
 
   async function handleReset(e: React.FormEvent) {
@@ -212,10 +196,6 @@ function LoginForm() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (mode === 'signup' && !agreed) {
-      setError(t.agreeRequired)
-      return
-    }
     setLoading(true); setError('')
 
     if (!supabaseConfigured) {
@@ -452,24 +432,6 @@ function LoginForm() {
                     </button>
                   )}
                 </div>
-              )}
-
-              {/* Agree to terms (signup only) */}
-              {mode === 'signup' && (
-                <label className="flex items-start gap-2.5 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={agreed}
-                    onChange={e => { setAgreed(e.target.checked); setError('') }}
-                    className="mt-0.5 w-4 h-4 rounded border accent-violet-500 cursor-pointer flex-shrink-0"
-                  />
-                  <span className="text-xs leading-relaxed" style={{ color: textMuted }}>
-                    {t.agreeLabel}
-                    <Link href="/privacy" target="_blank" className="text-violet-400 hover:text-violet-300 underline underline-offset-2 transition-colors">{t.agreePrivacy}</Link>
-                    {t.agreeAnd}
-                    <Link href="/terms" target="_blank" className="text-violet-400 hover:text-violet-300 underline underline-offset-2 transition-colors">{t.agreeTerms}</Link>
-                  </span>
-                </label>
               )}
 
               {/* Submit */}

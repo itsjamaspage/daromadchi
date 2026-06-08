@@ -24,6 +24,10 @@ export const dashT = {
       last: "So'nggi", daysSuffix: 'kun',
       yesterday: 'Kecha', thisMonth: 'Bu oy', vsPrev: 'o\'tgan davrga nisbatan',
       customize: 'Moslash', widgetKpis: 'KPI Kartalar', widgetAlerts: 'Ombor ogohlantirishlari', widgetChart: 'Daromad grafigi', widgetCategories: 'Kategoriyalar',
+      noProducts: "Mahsulotlar yo'q", noProductsDesc: "Do'koningizni sinxronlang yoki mahsulot qo'shing.",
+    },
+    export: {
+      download: 'Yuklab olish', xlsx: 'Excel (.xlsx)', csv: 'CSV', pdf: 'PDF (chop etish)',
     },
     status: {
       pending: 'Kutilmoqda', confirmed: 'Tasdiqlandi', delivered: 'Yetkazildi',
@@ -256,6 +260,9 @@ export const dashT = {
       statusActive: 'Faol', statusPaused: "To'xtatilgan", statusEnded: 'Yakunlangan',
       legendNoSale: "Sarflar bor, sotuv yo'q",
       myPrice: 'Mening narxim', minComp: 'Min raqobatchi',
+      pageTitle: 'Reklama', pageSubtitle: 'CPC va CPO reklama kampaniyalari tahlili',
+      noData: "Reklama ma'lumotlari yo'q", noDataDesc: "Ma'lumotlar ko'rsatilishi uchun do'konni sinxronlang. Siz quyidagi savdo maydonchalarida reklama boshqarish kabinetiga o'tishingiz mumkin:",
+      goUzum: "Uzum seller kabinetiga o'tish", goWb: 'Wildberries kabinetiga o\'tish', goYandex: 'Yandex Market kabinetiga o\'tish',
     },
     reviews: {
       kpiTotal: 'Jami izohlar', kpiAvgRating: "O'rtacha reyting",
@@ -389,6 +396,10 @@ export const dashT = {
       last: 'Last', daysSuffix: 'days',
       yesterday: 'Yesterday', thisMonth: 'This month', vsPrev: 'vs prior period',
       customize: 'Customize', widgetKpis: 'KPI Cards', widgetAlerts: 'Stock Alerts', widgetChart: 'Revenue Chart', widgetCategories: 'Categories',
+      noProducts: 'No products', noProductsDesc: 'Sync your store or add products.',
+    },
+    export: {
+      download: 'Download', xlsx: 'Excel (.xlsx)', csv: 'CSV', pdf: 'PDF (print)',
     },
     status: {
       pending: 'Pending', confirmed: 'Confirmed', delivered: 'Delivered',
@@ -621,6 +632,9 @@ export const dashT = {
       statusActive: 'Active', statusPaused: 'Paused', statusEnded: 'Ended',
       legendNoSale: 'Spend with no sales',
       myPrice: 'My price', minComp: 'Min competitor',
+      pageTitle: 'Advertising', pageSubtitle: 'CPC and CPO ad campaign analytics',
+      noData: 'No advertising data', noDataDesc: 'Sync your store to see ad data. You can also manage your campaigns directly in the marketplace seller portals:',
+      goUzum: 'Go to Uzum seller portal', goWb: 'Go to Wildberries portal', goYandex: 'Go to Yandex Market portal',
     },
     reviews: {
       kpiTotal: 'Total reviews', kpiAvgRating: 'Avg rating',
@@ -751,6 +765,10 @@ export const dashT = {
       last: 'Последние', daysSuffix: 'дн.',
       yesterday: 'Вчера', thisMonth: 'Тек. месяц', vsPrev: 'к прошлому периоду',
       customize: 'Настроить', widgetKpis: 'KPI Карточки', widgetAlerts: 'Уведомления о запасах', widgetChart: 'График выручки', widgetCategories: 'Категории',
+      noProducts: 'Нет товаров', noProductsDesc: 'Синхронизируйте магазин или добавьте товары.',
+    },
+    export: {
+      download: 'Скачать', xlsx: 'Excel (.xlsx)', csv: 'CSV', pdf: 'PDF (печать)',
     },
     status: {
       pending: 'Ожидает', confirmed: 'Подтверждён', delivered: 'Доставлен',
@@ -983,6 +1001,9 @@ export const dashT = {
       statusActive: 'Активна', statusPaused: 'Приостановлена', statusEnded: 'Завершена',
       legendNoSale: 'Расход без продаж',
       myPrice: 'Моя цена', minComp: 'Мин. конкурент',
+      pageTitle: 'Реклама', pageSubtitle: 'Аналитика рекламных кампаний CPC и CPO',
+      noData: 'Нет данных по рекламе', noDataDesc: 'Синхронизируйте магазин для отображения рекламных данных. Вы также можете управлять кампаниями напрямую в кабинетах продавца:',
+      goUzum: 'Перейти в кабинет Uzum', goWb: 'Перейти в кабинет Wildberries', goYandex: 'Перейти в кабинет Яндекс.Маркет',
     },
     reviews: {
       kpiTotal: 'Всего отзывов', kpiAvgRating: 'Средний рейтинг',

@@ -249,7 +249,14 @@ export default function DashboardClient({ kpis, recentOrders, allProducts, chart
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--border)]">
-                {allProducts.slice(0, 5).map(p => (
+                {allProducts.length === 0 ? (
+                  <tr>
+                    <td colSpan={3} className="py-8 text-center">
+                      <p className="text-[var(--text-muted)] text-xs">{d.noProducts}</p>
+                      <p className="text-[var(--text-muted)] text-[10px] mt-1">{d.noProductsDesc}</p>
+                    </td>
+                  </tr>
+                ) : allProducts.slice(0, 5).map(p => (
                   <tr key={p.id} className="hover:bg-[var(--bg-card2)] transition-colors">
                     <td className="py-3 pr-4">
                       <p className="text-[var(--text-base)] font-medium text-xs">{p.title}</p>

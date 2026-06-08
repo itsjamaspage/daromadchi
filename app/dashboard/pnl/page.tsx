@@ -10,9 +10,8 @@ function fmt(n: number) {
 }
 
 export default async function PnlPage() {
-  const t = await getT()
+  const [t, monthlyData] = await Promise.all([getT(), getMonthlyPnl(6)])
   const d = t.dashboard
-  const monthlyData = await getMonthlyPnl(6)
   const isEmpty = monthlyData.length === 0
 
   const totalRevenue  = monthlyData.reduce((s, m) => s + m.revenue, 0)

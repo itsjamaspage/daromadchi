@@ -666,13 +666,18 @@ chrome.alarms.onAlarm.addListener((alarm) => {
 // ─── MESSAGES ─────────────────────────────────────────────────────────────────
 
 chrome.runtime.onMessage.addListener((msg, sender, reply) => {
-  // Auto-auth: content script on daromadchi.uz detected a logged-in session
   if (msg.action === 'daromadchi_authed' && msg.token) {
+    console.log('[Daromadchi BG] Received daromadchi_authed from content script, sender:', sender?.url);
     chrome.storage.local.get('daromadchi_token', ({ daromadchi_token }) => {
       if (daromadchi_token !== msg.token) {
-        chrome.storage.local.set({ daromadchi_token: msg.token })
+        console.log('[Daromadchi BG] Token changed, saving new token');
+        chrome.storage.local.set({ daromadchi_token: msg.token });
+      } else {
+        console.log('[Daromadchi BG] Token unchanged');
       }
-    })
+    });
+    reply({ ok: true });
+    return true;
   }
   if (msg.action === 'sync') runSync().then(() => reply({ ok: true }));
   if (msg.action === 'clearAlerts') {
