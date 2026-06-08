@@ -69,7 +69,7 @@ const plans = [
   {
     key: 'pro',
     name: 'Pro',
-    price: '99 000',
+    price: '300 000',
     period: '/oy',
     desc: "O'sib kelayotgan biznes uchun to'liq analitika vositalari",
     icon: Shield,
@@ -83,7 +83,7 @@ const plans = [
   {
     key: 'proplus',
     name: 'Pro+',
-    price: '249 000',
+    price: '600 000',
     period: '/oy',
     desc: "Yirik biznes uchun — Pro imkoniyatlari + eksklyuziv funksiyalar",
     icon: Star,
@@ -409,7 +409,7 @@ export default function PricingPage() {
                 }}>
                   <div className="font-bold text-sm sm:text-base" style={{ color: idx === 1 ? '#a78bfa' : idx === 2 ? '#eab308' : 'var(--text-base)' }}>{name}</div>
                   <div className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
-                    {idx === 0 ? "0 so'm" : idx === 1 ? "99 000 so'm" : "249 000 so'm"}
+                    {idx === 0 ? "0 so'm" : idx === 1 ? "300 000 so'm" : "600 000 so'm"}
                   </div>
                   {idx === 2 && (
                     <div className="mt-1.5">
