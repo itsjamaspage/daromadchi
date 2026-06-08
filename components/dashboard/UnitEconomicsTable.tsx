@@ -419,6 +419,7 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
                       </span>
                     </th>
                   ))}
+                  <th className="px-3 py-3" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--border)]">
@@ -435,7 +436,7 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
                     {shownCols.map(col => {
                       if (col.key === 'title') return (
                         <td key="title" className="px-3 py-3">
-                          <div className="flex items-center gap-2.5 group">
+                          <div className="flex items-center gap-2.5">
                             <div className="w-8 h-8 rounded-lg bg-violet-500/10 flex items-center justify-center flex-shrink-0 overflow-hidden">
                               {item.image
                                 ? <img src={item.image} alt="" className="w-full h-full object-cover" />
@@ -452,10 +453,6 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
                                   <ExternalLink className="w-3 h-3" />
                                 </a>
                               )}
-                              <button onClick={() => openEdit(item)}
-                                className="opacity-0 group-hover:opacity-100 text-[var(--text-muted)] hover:text-violet-400 transition-all">
-                                <Pencil className="w-3 h-3" />
-                              </button>
                             </div>
                           </div>
                         </td>
@@ -522,6 +519,13 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
                       )
                       return null
                     })}
+                    {/* Always-visible edit button */}
+                    <td className="px-3 py-3">
+                      <button onClick={() => openEdit(item)}
+                        className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium bg-violet-500/10 hover:bg-violet-500/20 text-violet-400 hover:text-violet-300 transition-colors border border-violet-500/20">
+                        <Pencil className="w-3 h-3" /> Tahrir
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
