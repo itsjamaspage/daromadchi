@@ -57,6 +57,23 @@ export async function answerCallbackQuery(callbackQueryId: string, text?: string
   }).catch(() => {})
 }
 
+const CHANNEL_USERNAME = '@daromadchi_uz'
+
+export async function checkChannelMember(telegramChatId: string): Promise<boolean> {
+  if (!BOT_TOKEN) return false
+  try {
+    const res = await fetch(
+      `https://api.telegram.org/bot${BOT_TOKEN}/getChatMember?chat_id=${encodeURIComponent(CHANNEL_USERNAME)}&user_id=${telegramChatId}`
+    )
+    if (!res.ok) return false
+    const data = await res.json()
+    const status = data?.result?.status
+    return ['member', 'administrator', 'creator'].includes(status)
+  } catch {
+    return false
+  }
+}
+
 // Uzbekistan is UTC+5. Returns true when current UTC time is within ±30 min of user's chosen window.
 export function isInNotificationWindow(notificationTime: string | null): boolean {
   const utcMinutes = new Date().getUTCHours() * 60 + new Date().getUTCMinutes()
