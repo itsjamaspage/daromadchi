@@ -349,10 +349,9 @@ async function renderSettings(token, settings, tgStatus) {
 
   // Telegram connect/disconnect
   document.getElementById('tg-btn').onclick = async () => {
-    if (!token) { window.open('https://daromadchi.uz/login', '_blank'); return; }
     if (tgConnected) {
-      await fetch(`${API}/extension/telegram-unlink`, {
-        method: 'POST', headers: { 'Authorization': `Bearer ${token}` }
+      await fetch(`${API}/telegram-unlink`, {
+        method: 'POST', credentials: 'include'
       }).catch(()=>{});
       chrome.storage.local.set({ tgStatus: { connected: false } });
       loadAll();
@@ -361,8 +360,8 @@ async function renderSettings(token, settings, tgStatus) {
       btn.textContent = '⏳ Havola yaratilmoqda...';
       btn.disabled = true;
       try {
-        const res = await fetch(`${API}/extension/telegram-link`, {
-          method: 'POST', headers: { 'Authorization': `Bearer ${token}` }
+        const res = await fetch(`${API}/telegram-link`, {
+          method: 'POST', credentials: 'include'
         });
         const data = await res.json();
         if (data.url) {

@@ -476,11 +476,11 @@ export default function LandingPage() {
                 features: t.pricingFreeFeatures,
               },
               {
-                name: 'Pro', price: '300 000', highlight: true,
+                name: 'Pro', price: '99 000', highlight: true,
                 features: t.pricingProFeatures,
               },
               {
-                name: 'Pro+', price: '600 000', highlight: false,
+                name: 'Pro+', price: '249 000', highlight: false,
                 features: t.pricingProPlusFeatures,
               },
             ] as const).map((plan, i) => (

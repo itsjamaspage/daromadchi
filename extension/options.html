@@ -53,25 +53,6 @@ input:checked+.slider:before{transform:translateX(18px);background:#fff}
   </div>
 
   <div class="section">
-    <div class="section-title">🔐 Daromadchi Hisobi</div>
-    <div class="row api-row">
-      <div class="row-lbl">
-        <strong>Daromadchi Token</strong>
-        <span>
-          <a href="https://daromadchi.uz/login" target="_blank" style="color:#6366f1">Daromadchi.uz</a>
-          ga kiring → Sozlamalar → Kengaytma bo'limidan tokenni oling
-        </span>
-      </div>
-      <div class="api-field-wrap">
-        <input class="api-in" id="o-drm-token" type="password" placeholder="Tokenni kiriting..."/>
-        <button class="test-btn" id="test-drm">Tekshirish</button>
-        <button class="clear-btn" id="clear-drm" title="O'chirish">✕</button>
-      </div>
-      <div class="api-status" id="drm-status"></div>
-    </div>
-  </div>
-
-  <div class="section">
     <div class="section-title">🎛️ Ogohlantirish Chegaralari</div>
     <div class="row">
       <div class="row-lbl"><strong>Kam zaxira (dona)</strong><span>Nechta qolganda ogohlantirish yuborilsin</span></div>
@@ -97,25 +78,42 @@ input:checked+.slider:before{transform:translateX(18px);background:#fff}
 
   <div class="section">
     <div class="section-title">🔔 Xabarnoma Turlari</div>
-    ${[
-      ['low_stock_with_ad','🚨 Reklama + Kam zaxira','Eng muhim: reklama ishlayapti lekin zaxira kam. Kritik.'],
-      ['out_of_stock','📦 Mahsulot tugadi','Omborda birorta ham qolmasa xabar beradi'],
-      ['low_stock','⚠️ Kam zaxira','Chegara miqdoridan kamroq qolganda xabar beradi'],
-      ['sales_drop','📉 Savdo pasaydi','Kunlik sotuv sezilarli kamaysa xabar beradi'],
-      ['ad_no_sales','💸 Reklama bepusht','Reklama puli sarflanmoqda, lekin sotuv yo\'q'],
-      ['high_return_rate','↩️ Yuqori qaytarish','Qaytarish foizi haddan oshsa xabar beradi'],
-      ['competitor_price_cut','🏷️ Raqib narx tushirdi','Kategoriyada raqib narxini tushirsa xabar beradi'],
-      ['new_review','⭐ Yangi sharh','Mahsulotga yangi sharh qoldirilsa xabar beradi'],
-      ['daily_summary','📊 Kunlik hisobot','Har kuni soat 20:00 da umumiy hisobot yuboriladi']
-    ].map(([id,label,desc]) => `
-      <div class="row">
-        <div class="row-lbl"><strong>${label}</strong><span>${desc}</span></div>
-        <label class="toggle">
-          <input type="checkbox" data-alert-id="${id}" checked/>
-          <span class="slider"></span>
-        </label>
-      </div>
-    `).join('')}
+    <div class="row">
+      <div class="row-lbl"><strong>🚨 Reklama + Kam zaxira</strong><span>Eng muhim: reklama ishlayapti lekin zaxira kam. Kritik.</span></div>
+      <label class="toggle"><input type="checkbox" data-alert-id="low_stock_with_ad" checked/><span class="slider"></span></label>
+    </div>
+    <div class="row">
+      <div class="row-lbl"><strong>📦 Mahsulot tugadi</strong><span>Omborda birorta ham qolmasa xabar beradi</span></div>
+      <label class="toggle"><input type="checkbox" data-alert-id="out_of_stock" checked/><span class="slider"></span></label>
+    </div>
+    <div class="row">
+      <div class="row-lbl"><strong>⚠️ Kam zaxira</strong><span>Chegara miqdoridan kamroq qolganda xabar beradi</span></div>
+      <label class="toggle"><input type="checkbox" data-alert-id="low_stock" checked/><span class="slider"></span></label>
+    </div>
+    <div class="row">
+      <div class="row-lbl"><strong>📉 Savdo pasaydi</strong><span>Kunlik sotuv sezilarli kamaysa xabar beradi</span></div>
+      <label class="toggle"><input type="checkbox" data-alert-id="sales_drop" checked/><span class="slider"></span></label>
+    </div>
+    <div class="row">
+      <div class="row-lbl"><strong>💸 Reklama bepusht</strong><span>Reklama puli sarflanmoqda, lekin sotuv yo'q</span></div>
+      <label class="toggle"><input type="checkbox" data-alert-id="ad_no_sales" checked/><span class="slider"></span></label>
+    </div>
+    <div class="row">
+      <div class="row-lbl"><strong>↩️ Yuqori qaytarish</strong><span>Qaytarish foizi haddan oshsa xabar beradi</span></div>
+      <label class="toggle"><input type="checkbox" data-alert-id="high_return_rate" checked/><span class="slider"></span></label>
+    </div>
+    <div class="row">
+      <div class="row-lbl"><strong>🏷️ Raqib narx tushirdi</strong><span>Kategoriyada raqib narxini tushirsa xabar beradi</span></div>
+      <label class="toggle"><input type="checkbox" data-alert-id="competitor_price_cut" checked/><span class="slider"></span></label>
+    </div>
+    <div class="row">
+      <div class="row-lbl"><strong>⭐ Yangi sharh</strong><span>Mahsulotga yangi sharh qoldirilsa xabar beradi</span></div>
+      <label class="toggle"><input type="checkbox" data-alert-id="new_review" checked/><span class="slider"></span></label>
+    </div>
+    <div class="row">
+      <div class="row-lbl"><strong>📊 Kunlik hisobot</strong><span>Har kuni soat 20:00 da umumiy hisobot yuboriladi</span></div>
+      <label class="toggle"><input type="checkbox" data-alert-id="daily_summary" checked/><span class="slider"></span></label>
+    </div>
   </div>
 
   <div class="section">
