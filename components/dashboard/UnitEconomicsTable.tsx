@@ -573,56 +573,56 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
                 {/* Selling price */}
                 <label className="flex flex-col gap-1.5">
                   <span className="text-xs font-medium text-[var(--text-muted)]">Sotuv narxi (so&apos;m)</span>
-                  <input type="number" min={0} value={editDraft.sellingPrice ?? 0}
+                  <input type="number" min={0} value={editDraft.sellingPrice || ''}
                     onChange={e => setDraftField('sellingPrice', parseFloat(e.target.value) || 0)}
                     className="w-full px-3 py-2 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg text-sm text-[var(--text-base)] focus:outline-none focus:border-violet-500/50" />
                 </label>
                 {/* Cost price */}
                 <label className="flex flex-col gap-1.5">
                   <span className="text-xs font-medium text-[var(--text-muted)]">Tannarx (so&apos;m) <span className="text-violet-400">*ROI uchun</span></span>
-                  <input type="number" min={0} value={editDraft.costPrice ?? 0}
+                  <input type="number" min={0} value={editDraft.costPrice || ''}
                     onChange={e => setDraftField('costPrice', parseFloat(e.target.value) || 0)}
                     className="w-full px-3 py-2 bg-[var(--bg-input)] border border-violet-500/50 rounded-lg text-sm text-[var(--text-base)] focus:outline-none focus:border-violet-500" />
                 </label>
                 {/* Commission % */}
                 <label className="flex flex-col gap-1.5">
                   <span className="text-xs font-medium text-[var(--text-muted)]">Komissiya (%)</span>
-                  <input type="number" min={0} max={100} step={0.5} value={editDraft.commissionPct ?? 0}
+                  <input type="number" min={0} max={100} step={0.5} value={editDraft.commissionPct || ''}
                     onChange={e => setDraftField('commissionPct', parseFloat(e.target.value) || 0)}
                     className="w-full px-3 py-2 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg text-sm text-[var(--text-base)] focus:outline-none focus:border-violet-500/50" />
                 </label>
                 {/* Delivery */}
                 <label className="flex flex-col gap-1.5">
                   <span className="text-xs font-medium text-[var(--text-muted)]">Yetkazib berish (so&apos;m)</span>
-                  <input type="number" min={0} value={editDraft.delivery ?? 0}
+                  <input type="number" min={0} value={editDraft.delivery || ''}
                     onChange={e => setDraftField('delivery', parseFloat(e.target.value) || 0)}
                     className="w-full px-3 py-2 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg text-sm text-[var(--text-base)] focus:outline-none focus:border-violet-500/50" />
                 </label>
                 {/* Ad spend */}
                 <label className="flex flex-col gap-1.5">
                   <span className="text-xs font-medium text-[var(--text-muted)]">Reklama (so&apos;m)</span>
-                  <input type="number" min={0} value={editDraft.adSpend ?? 0}
+                  <input type="number" min={0} value={editDraft.adSpend || ''}
                     onChange={e => setDraftField('adSpend', parseFloat(e.target.value) || 0)}
                     className="w-full px-3 py-2 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg text-sm text-[var(--text-base)] focus:outline-none focus:border-violet-500/50" />
                 </label>
                 {/* Tax */}
                 <label className="flex flex-col gap-1.5">
                   <span className="text-xs font-medium text-[var(--text-muted)]">Soliq (so&apos;m)</span>
-                  <input type="number" min={0} value={editDraft.tax ?? 0}
+                  <input type="number" min={0} value={editDraft.tax || ''}
                     onChange={e => setDraftField('tax', parseFloat(e.target.value) || 0)}
                     className="w-full px-3 py-2 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg text-sm text-[var(--text-base)] focus:outline-none focus:border-violet-500/50" />
                 </label>
                 {/* Acquiring */}
                 <label className="flex flex-col gap-1.5">
                   <span className="text-xs font-medium text-[var(--text-muted)]">Ekvayring (so&apos;m)</span>
-                  <input type="number" min={0} value={editDraft.acquiring ?? 0}
+                  <input type="number" min={0} value={editDraft.acquiring || ''}
                     onChange={e => setDraftField('acquiring', parseFloat(e.target.value) || 0)}
                     className="w-full px-3 py-2 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg text-sm text-[var(--text-base)] focus:outline-none focus:border-violet-500/50" />
                 </label>
                 {/* Last mile */}
                 <label className="flex flex-col gap-1.5">
                   <span className="text-xs font-medium text-[var(--text-muted)]">Oxirgi milya (so&apos;m)</span>
-                  <input type="number" min={0} value={editDraft.lastMile ?? 0}
+                  <input type="number" min={0} value={editDraft.lastMile || ''}
                     onChange={e => setDraftField('lastMile', parseFloat(e.target.value) || 0)}
                     className="w-full px-3 py-2 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg text-sm text-[var(--text-base)] focus:outline-none focus:border-violet-500/50" />
                 </label>

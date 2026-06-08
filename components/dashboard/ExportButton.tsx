@@ -20,9 +20,9 @@ function exportCsv(data: ExportRow[], filename: string) {
       const s = String(v ?? '')
       return s.includes(',') || s.includes('"') || s.includes('\n')
         ? `"${s.replace(/"/g, '""')}"` : s
-    }).join(',')
+    }).join(';')  // semicolon separator for better Excel compatibility
   )
-  const csv = [headers.join(','), ...rows].join('\n')
+  const csv = [headers.join(';'), ...rows].join('\n')
   const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
@@ -34,77 +34,108 @@ function exportCsv(data: ExportRow[], filename: string) {
 
 async function exportXlsx(data: ExportRow[], filename: string) {
   const XLSX = await import('xlsx')
-  const ws = XLSX.utils.json_to_sheet(data)
+  // Build worksheet with header styling
+  const headers = Object.keys(data[0])
+  const wsData = [headers, ...data.map(row => headers.map(h => row[h] ?? ''))]
+  const ws = XLSX.utils.aoa_to_sheet(wsData)
+
+  // Column widths
+  ws['!cols'] = headers.map(h => ({
+    wch: Math.max(h.length + 2, ...data.map(r => String(r[h] ?? '').length)) + 2,
+  }))
+
+  // Bold header row
+  headers.forEach((_, ci) => {
+    const cell = XLSX.utils.encode_cell({ r: 0, c: ci })
+    if (ws[cell]) {
+      ws[cell].s = {
+        font: { bold: true, color: { rgb: 'FFFFFF' } },
+        fill: { fgColor: { rgb: '5B21B6' } },
+        alignment: { horizontal: 'center' },
+      }
+    }
+  })
+
   const wb = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(wb, ws, 'Hisobot')
-  // Auto-size columns
-  const colWidths = Object.keys(data[0]).map(key => ({
-    wch: Math.max(key.length, ...data.map(r => String(r[key] ?? '').length)) + 2
-  }))
-  ws['!cols'] = colWidths
   XLSX.writeFile(wb, `${filename}.xlsx`)
 }
 
-async function exportPdf(data: ExportRow[], filename: string) {
-  const { jsPDF } = await import('jspdf')
-  const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' })
-
-  const pageW = pdf.internal.pageSize.getWidth()
-  const margin = 12
-  const usableW = pageW - margin * 2
-
-  // Title
-  pdf.setFontSize(14)
-  pdf.setTextColor(40, 40, 40)
-  pdf.text(filename, margin, margin + 4)
-  pdf.setFontSize(9)
-  pdf.setTextColor(120, 120, 120)
-  pdf.text(new Date().toLocaleDateString('ru-RU'), pageW - margin, margin + 4, { align: 'right' })
-
+function exportPdf(data: ExportRow[], filename: string) {
+  // Use browser print — handles Cyrillic/Unicode perfectly, no font embedding needed
   const headers = Object.keys(data[0])
-  const colW = usableW / headers.length
+  const date = new Date().toLocaleDateString('ru-RU')
 
-  let y = margin + 14
+  const rows = data.map((row, ri) => `
+    <tr style="background:${ri % 2 === 0 ? '#f8f7ff' : '#ffffff'}">
+      ${headers.map(h => {
+        const v = row[h]
+        const s = String(v ?? '')
+        const isNum = typeof v === 'number'
+        const isNeg = isNum && v < 0
+        const isProfit = h === 'Foyda' || h === 'ROI' || h === 'Marja'
+        let color = '#1a1a2e'
+        if (isProfit && isNum && v > 0) color = '#059669'
+        if (isProfit && isNum && v <= 0) color = '#dc2626'
+        if (!isProfit && isNeg) color = '#dc2626'
+        return `<td style="padding:7px 10px;font-size:11px;color:${color};text-align:${isNum ? 'right' : 'left'};white-space:nowrap">${s}</td>`
+      }).join('')}
+    </tr>`).join('')
 
-  // Header row
-  pdf.setFillColor(88, 28, 220)
-  pdf.setTextColor(255, 255, 255)
-  pdf.setFontSize(8)
-  pdf.rect(margin, y, usableW, 7, 'F')
-  headers.forEach((h, i) => {
-    pdf.text(String(h).slice(0, 14), margin + i * colW + 2, y + 5)
-  })
-  y += 7
-
-  // Data rows
-  data.forEach((row, ri) => {
-    if (y > pdf.internal.pageSize.getHeight() - 15) {
-      pdf.addPage()
-      y = margin
+  const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>${filename}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; padding: 20px; color: #1a1a2e; }
+    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+    .title { font-size: 18px; font-weight: 700; color: #4c1d95; }
+    .date { font-size: 12px; color: #6b7280; }
+    table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    thead tr { background: #5b21b6; }
+    thead th { padding: 9px 10px; color: #fff; font-weight: 600; text-align: left; font-size: 11px; white-space: nowrap; }
+    tbody tr:hover { background: #ede9fe !important; }
+    td, th { border-bottom: 1px solid #e5e7eb; }
+    .footer { margin-top: 14px; font-size: 10px; color: #9ca3af; text-align: center; }
+    @media print {
+      body { padding: 10px; }
+      @page { margin: 10mm; size: landscape; }
     }
-    pdf.setFillColor(ri % 2 === 0 ? 248 : 255, ri % 2 === 0 ? 248 : 255, ri % 2 === 0 ? 252 : 255)
-    pdf.setTextColor(30, 30, 30)
-    pdf.rect(margin, y, usableW, 6.5, 'F')
-    headers.forEach((h, i) => {
-      const val = String(row[h] ?? '').slice(0, 18)
-      pdf.text(val, margin + i * colW + 2, y + 4.5)
-    })
-    y += 6.5
-  })
+  </style>
+</head>
+<body>
+  <div class="header">
+    <span class="title">Daromadchi — ${filename}</span>
+    <span class="date">${date}</span>
+  </div>
+  <table>
+    <thead>
+      <tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>
+    </thead>
+    <tbody>${rows}</tbody>
+  </table>
+  <div class="footer">Daromadchi · unit-ekonomika hisoboti · ${date}</div>
+  <script>window.onload = () => { window.print(); }<\/script>
+</body>
+</html>`
 
-  pdf.save(`${filename}.pdf`)
+  const win = window.open('', '_blank')
+  if (win) {
+    win.document.write(html)
+    win.document.close()
+  }
 }
 
 export default function ExportButton({ data, filename = 'hisobot', targetRef, label }: ExportButtonProps) {
   const [open, setOpen] = useState(false)
-  const [loading, setLoading] = useState<'xlsx' | 'pdf' | null>(null)
+  const [loading, setLoading] = useState<'xlsx' | null>(null)
   const menuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     function onClickOutside(e: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setOpen(false)
-      }
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setOpen(false)
     }
     if (open) document.addEventListener('mousedown', onClickOutside)
     return () => document.removeEventListener('mousedown', onClickOutside)
@@ -117,11 +148,10 @@ export default function ExportButton({ data, filename = 'hisobot', targetRef, la
     try { await exportXlsx(data, filename) } finally { setLoading(null) }
   }
 
-  async function handlePdf() {
+  function handlePdf() {
     if (!data?.length) return
     setOpen(false)
-    setLoading('pdf')
-    try { await exportPdf(data, filename) } finally { setLoading(null) }
+    exportPdf(data, filename)
   }
 
   function handleCsv() {
@@ -130,9 +160,7 @@ export default function ExportButton({ data, filename = 'hisobot', targetRef, la
     exportCsv(data, filename)
   }
 
-  const hasCsv = !!data?.length
-  const hasXlsx = !!data?.length
-  const hasPdf = !!data?.length
+  const has = !!data?.length
 
   return (
     <div className="relative" ref={menuRef}>
@@ -152,29 +180,23 @@ export default function ExportButton({ data, filename = 'hisobot', targetRef, la
 
       {open && (
         <div className="absolute right-0 top-full mt-1.5 z-50 bg-[var(--bg-card2)] border border-[var(--border2)] rounded-xl shadow-2xl shadow-black/60 overflow-hidden min-w-[170px]">
-          {hasXlsx && (
-            <button
-              onClick={handleXlsx}
-              className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-[var(--text-dim)] hover:bg-[var(--bg-card2)] hover:text-[var(--text-base)] transition-colors"
-            >
+          {has && (
+            <button onClick={handleXlsx}
+              className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-[var(--text-dim)] hover:bg-[var(--bg-card2)] hover:text-[var(--text-base)] transition-colors">
               <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
               Excel (.xlsx)
             </button>
           )}
-          {hasPdf && (
-            <button
-              onClick={handlePdf}
-              className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-[var(--text-dim)] hover:bg-[var(--bg-card2)] hover:text-[var(--text-base)] transition-colors"
-            >
+          {has && (
+            <button onClick={handlePdf}
+              className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-[var(--text-dim)] hover:bg-[var(--bg-card2)] hover:text-[var(--text-base)] transition-colors">
               <FileText className="w-4 h-4 text-red-400" />
-              PDF
+              PDF (chop etish)
             </button>
           )}
-          {hasCsv && (
-            <button
-              onClick={handleCsv}
-              className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-[var(--text-dim)] hover:bg-[var(--bg-card2)] hover:text-[var(--text-base)] transition-colors"
-            >
+          {has && (
+            <button onClick={handleCsv}
+              className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-[var(--text-dim)] hover:bg-[var(--bg-card2)] hover:text-[var(--text-base)] transition-colors">
               <FileDown className="w-4 h-4 text-sky-400" />
               CSV
             </button>
