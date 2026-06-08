@@ -405,8 +405,8 @@ async function renderSettings(token, settings, tgStatus) {
 
 // ─── TELEGRAM CHANNEL SOFT CTA (shown inside stats panel, not a hard gate) ───
 function maybeShowChannelCta() {
-  chrome.storage.local.get('channelCtaDismissed', ({ channelCtaDismissed }) => {
-    if (channelCtaDismissed) return;
+  chrome.storage.local.get(['channelCtaDismissed', 'daromadchi_connected'], ({ channelCtaDismissed, daromadchi_connected }) => {
+    if (channelCtaDismissed || daromadchi_connected) return;
     const panel = document.getElementById('panel-stats');
     if (!panel) return;
     const cta = document.createElement('div');
