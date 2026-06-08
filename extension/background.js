@@ -666,16 +666,8 @@ chrome.alarms.onAlarm.addListener((alarm) => {
 // ─── MESSAGES ─────────────────────────────────────────────────────────────────
 
 chrome.runtime.onMessage.addListener((msg, sender, reply) => {
-  if (msg.action === 'daromadchi_authed' && msg.token) {
-    console.log('[Daromadchi BG] Received daromadchi_authed from content script, sender:', sender?.url);
-    chrome.storage.local.get('daromadchi_token', ({ daromadchi_token }) => {
-      if (daromadchi_token !== msg.token) {
-        console.log('[Daromadchi BG] Token changed, saving new token');
-        chrome.storage.local.set({ daromadchi_token: msg.token });
-      } else {
-        console.log('[Daromadchi BG] Token unchanged');
-      }
-    });
+  if (msg.action === 'daromadchi_connected') {
+    chrome.storage.local.set({ daromadchi_connected: true, daromadchi_email: msg.email || '' });
     reply({ ok: true });
     return true;
   }
