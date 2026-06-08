@@ -70,6 +70,41 @@ export async function updateUnitEconomicsSupplier(id: string, supplierUrl: strin
     .eq('user_id', user.id)
 }
 
+export async function updateUnitEconomicsItem(
+  id: string,
+  fields: Partial<Omit<UnitEconomicsItem, 'id' | 'addedAt'>>,
+): Promise<boolean> {
+  if (!supabaseConfigured) return true
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return false
+
+  const update: Record<string, unknown> = { updated_at: new Date().toISOString() }
+  if (fields.title         !== undefined) update.title          = fields.title
+  if (fields.costPrice     !== undefined) update.cost_price     = fields.costPrice
+  if (fields.sellingPrice  !== undefined) update.selling_price  = fields.sellingPrice
+  if (fields.commissionPct !== undefined) update.commission_pct = fields.commissionPct
+  if (fields.commission    !== undefined) update.commission     = fields.commission
+  if (fields.delivery      !== undefined) update.delivery       = fields.delivery
+  if (fields.lastMile      !== undefined) update.last_mile      = fields.lastMile
+  if (fields.acquiring     !== undefined) update.acquiring      = fields.acquiring
+  if (fields.adSpend       !== undefined) update.ad_spend       = fields.adSpend
+  if (fields.tax           !== undefined) update.tax            = fields.tax
+  if (fields.netProfit     !== undefined) update.net_profit     = fields.netProfit
+  if (fields.roi           !== undefined) update.roi            = fields.roi
+  if (fields.margin        !== undefined) update.margin         = fields.margin
+  if (fields.stock         !== undefined) update.stock          = fields.stock
+  if (fields.supplierUrl   !== undefined) update.supplier_url   = fields.supplierUrl
+
+  const { error } = await supabase
+    .from('unit_economics_items')
+    .update(update)
+    .eq('id', id)
+    .eq('user_id', user.id)
+
+  return !error
+}
+
 export async function addUnitEconomicsItem(
   item: Omit<UnitEconomicsItem, 'id' | 'addedAt'>
 ): Promise<{ id: string } | null | false> {

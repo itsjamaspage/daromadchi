@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { addUnitEconomicsItem, deleteUnitEconomicsItems, updateUnitEconomicsSupplier } from '@/lib/db/unit-economics'
+import { addUnitEconomicsItem, deleteUnitEconomicsItems, updateUnitEconomicsSupplier, updateUnitEconomicsItem } from '@/lib/db/unit-economics'
 import type { UnitEconomicsItem } from '@/lib/types'
 
 // POST /api/unit-economics — add item (called from extension or UI)
@@ -27,12 +27,19 @@ export async function DELETE(req: NextRequest) {
   }
 }
 
-// PATCH /api/unit-economics — update supplier URL for one item
+// PATCH /api/unit-economics — update item fields (supplierUrl only, or full edit)
 export async function PATCH(req: NextRequest) {
   try {
-    const { id, supplierUrl } = await req.json() as { id: string; supplierUrl: string }
-    await updateUnitEconomicsSupplier(id, supplierUrl)
-    return NextResponse.json({ ok: true })
+    const body = await req.json() as { id: string } & Record<string, unknown>
+    const { id, ...fields } = body
+    if (!id) return NextResponse.json({ ok: false, error: 'id talab etiladi' }, { status: 400 })
+    // Legacy path: only supplierUrl passed
+    if (Object.keys(fields).length === 1 && 'supplierUrl' in fields) {
+      await updateUnitEconomicsSupplier(id, fields.supplierUrl as string)
+      return NextResponse.json({ ok: true })
+    }
+    const ok = await updateUnitEconomicsItem(id, fields as Parameters<typeof updateUnitEconomicsItem>[1])
+    return NextResponse.json({ ok })
   } catch {
     return NextResponse.json({ ok: false, error: 'Server xatosi' }, { status: 500 })
   }

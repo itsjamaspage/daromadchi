@@ -3,7 +3,7 @@
 import { useState, useMemo, useRef } from 'react'
 import {
   Search, Trash2, Settings2, ExternalLink, ChevronUp, ChevronDown,
-  Package, Plus, X, Check,
+  Package, Plus, X, Check, Pencil,
 } from 'lucide-react'
 import type { UnitEconomicsItem, UnitEcoSettings } from '@/lib/types'
 import ExportButton from '@/components/dashboard/ExportButton'
@@ -90,6 +90,61 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
   const [extPending, setExtPending]   = useState<FromExtension | null>(fromExtension ?? null)
   const [extSaving, setExtSaving]     = useState(false)
   const [extError, setExtError]       = useState<string | null>(null)
+
+  // Edit modal
+  const [editingItem, setEditingItem] = useState<UnitEconomicsItem | null>(null)
+  const [editDraft, setEditDraft]     = useState<Partial<UnitEconomicsItem>>({})
+  const [editSaving, setEditSaving]   = useState(false)
+
+  function openEdit(item: UnitEconomicsItem) {
+    setEditingItem(item)
+    setEditDraft({
+      title:         item.title,
+      costPrice:     item.costPrice,
+      sellingPrice:  item.sellingPrice,
+      commissionPct: item.commissionPct,
+      delivery:      item.delivery,
+      lastMile:      item.lastMile,
+      acquiring:     item.acquiring,
+      adSpend:       item.adSpend,
+      tax:           item.tax,
+      stock:         item.stock,
+      supplierUrl:   item.supplierUrl,
+    })
+  }
+
+  function recalc(draft: Partial<UnitEconomicsItem>): Partial<UnitEconomicsItem> {
+    const sp  = draft.sellingPrice  ?? 0
+    const cp  = draft.costPrice     ?? 0
+    const com = sp * (draft.commissionPct ?? 0) / 100
+    const del = draft.delivery  ?? 0
+    const lm  = draft.lastMile  ?? 0
+    const acq = draft.acquiring ?? 0
+    const ad  = draft.adSpend   ?? 0
+    const tax = draft.tax       ?? 0
+    const np  = sp - cp - com - del - lm - acq - ad - tax
+    const margin = sp > 0 ? (np / sp) * 100 : 0
+    const roi    = cp > 0 ? (np / cp) * 100 : 0
+    return { ...draft, commission: com, netProfit: np, margin, roi }
+  }
+
+  function setDraftField(key: keyof UnitEconomicsItem, value: unknown) {
+    setEditDraft(prev => recalc({ ...prev, [key]: value }))
+  }
+
+  async function saveEdit() {
+    if (!editingItem) return
+    const final = recalc(editDraft)
+    setEditSaving(true)
+    await fetch('/api/unit-economics', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: editingItem.id, ...final }),
+    }).catch(() => {})
+    setItems(prev => prev.map(i => i.id === editingItem.id ? { ...i, ...final } : i))
+    setEditSaving(false)
+    setEditingItem(null)
+  }
 
   async function saveFromExtension() {
     if (!extPending) return
@@ -380,20 +435,28 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
                     {shownCols.map(col => {
                       if (col.key === 'title') return (
                         <td key="title" className="px-3 py-3">
-                          <div className="flex items-center gap-2.5">
-                            <div className="w-8 h-8 rounded-lg bg-violet-500/10 flex items-center justify-center flex-shrink-0">
-                              <Package className="w-4 h-4 text-violet-400" />
+                          <div className="flex items-center gap-2.5 group">
+                            <div className="w-8 h-8 rounded-lg bg-violet-500/10 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                              {item.image
+                                ? <img src={item.image} alt="" className="w-full h-full object-cover" />
+                                : <Package className="w-4 h-4 text-violet-400" />}
                             </div>
-                            <div>
+                            <div className="min-w-0">
                               <p className="text-[var(--text-base)] font-medium text-xs leading-tight max-w-[180px] truncate">{item.title}</p>
                               <p className="text-[var(--text-muted)] text-[10px] mt-0.5">{item.category || item.marketplace}</p>
                             </div>
-                            {item.productUrl && (
-                              <a href={item.productUrl} target="_blank" rel="noreferrer"
-                                className="text-[var(--text-muted)] hover:text-violet-400 transition-colors flex-shrink-0">
-                                <ExternalLink className="w-3 h-3" />
-                              </a>
-                            )}
+                            <div className="flex items-center gap-1 flex-shrink-0">
+                              {item.productUrl && (
+                                <a href={item.productUrl} target="_blank" rel="noreferrer"
+                                  className="text-[var(--text-muted)] hover:text-violet-400 transition-colors">
+                                  <ExternalLink className="w-3 h-3" />
+                                </a>
+                              )}
+                              <button onClick={() => openEdit(item)}
+                                className="opacity-0 group-hover:opacity-100 text-[var(--text-muted)] hover:text-violet-400 transition-all">
+                                <Pencil className="w-3 h-3" />
+                              </button>
+                            </div>
                           </div>
                         </td>
                       )
@@ -470,6 +533,154 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
       <p className="text-xs text-[var(--text-muted)] text-center">
         {d.ueNote}
       </p>
+
+      {/* Edit modal */}
+      {editingItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
+          onClick={e => { if (e.target === e.currentTarget) setEditingItem(null) }}>
+          <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl">
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--border)]">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-8 h-8 rounded-lg bg-violet-500/10 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                  {editingItem.image
+                    ? <img src={editingItem.image} alt="" className="w-full h-full object-cover" />
+                    : <Package className="w-4 h-4 text-violet-400" />}
+                </div>
+                <p className="text-sm font-semibold text-[var(--text-base)] truncate">{editingItem.title}</p>
+              </div>
+              <button onClick={() => setEditingItem(null)} className="text-[var(--text-muted)] hover:text-[var(--text-base)] transition-colors flex-shrink-0 ml-2">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Fields */}
+            <div className="p-5 space-y-4">
+              {/* Title */}
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-medium text-[var(--text-muted)]">Mahsulot nomi</span>
+                <input type="text" value={editDraft.title ?? ''}
+                  onChange={e => setDraftField('title', e.target.value)}
+                  className="w-full px-3 py-2 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg text-sm text-[var(--text-base)] focus:outline-none focus:border-violet-500/50" />
+              </label>
+
+              <div className="grid grid-cols-2 gap-3">
+                {/* Selling price */}
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-xs font-medium text-[var(--text-muted)]">Sotuv narxi (so&apos;m)</span>
+                  <input type="number" min={0} value={editDraft.sellingPrice ?? 0}
+                    onChange={e => setDraftField('sellingPrice', parseFloat(e.target.value) || 0)}
+                    className="w-full px-3 py-2 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg text-sm text-[var(--text-base)] focus:outline-none focus:border-violet-500/50" />
+                </label>
+                {/* Cost price */}
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-xs font-medium text-[var(--text-muted)]">Tannarx (so&apos;m) <span className="text-violet-400">*ROI uchun</span></span>
+                  <input type="number" min={0} value={editDraft.costPrice ?? 0}
+                    onChange={e => setDraftField('costPrice', parseFloat(e.target.value) || 0)}
+                    className="w-full px-3 py-2 bg-[var(--bg-input)] border border-violet-500/50 rounded-lg text-sm text-[var(--text-base)] focus:outline-none focus:border-violet-500" />
+                </label>
+                {/* Commission % */}
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-xs font-medium text-[var(--text-muted)]">Komissiya (%)</span>
+                  <input type="number" min={0} max={100} step={0.5} value={editDraft.commissionPct ?? 0}
+                    onChange={e => setDraftField('commissionPct', parseFloat(e.target.value) || 0)}
+                    className="w-full px-3 py-2 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg text-sm text-[var(--text-base)] focus:outline-none focus:border-violet-500/50" />
+                </label>
+                {/* Delivery */}
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-xs font-medium text-[var(--text-muted)]">Yetkazib berish (so&apos;m)</span>
+                  <input type="number" min={0} value={editDraft.delivery ?? 0}
+                    onChange={e => setDraftField('delivery', parseFloat(e.target.value) || 0)}
+                    className="w-full px-3 py-2 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg text-sm text-[var(--text-base)] focus:outline-none focus:border-violet-500/50" />
+                </label>
+                {/* Ad spend */}
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-xs font-medium text-[var(--text-muted)]">Reklama (so&apos;m)</span>
+                  <input type="number" min={0} value={editDraft.adSpend ?? 0}
+                    onChange={e => setDraftField('adSpend', parseFloat(e.target.value) || 0)}
+                    className="w-full px-3 py-2 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg text-sm text-[var(--text-base)] focus:outline-none focus:border-violet-500/50" />
+                </label>
+                {/* Tax */}
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-xs font-medium text-[var(--text-muted)]">Soliq (so&apos;m)</span>
+                  <input type="number" min={0} value={editDraft.tax ?? 0}
+                    onChange={e => setDraftField('tax', parseFloat(e.target.value) || 0)}
+                    className="w-full px-3 py-2 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg text-sm text-[var(--text-base)] focus:outline-none focus:border-violet-500/50" />
+                </label>
+                {/* Acquiring */}
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-xs font-medium text-[var(--text-muted)]">Ekvayring (so&apos;m)</span>
+                  <input type="number" min={0} value={editDraft.acquiring ?? 0}
+                    onChange={e => setDraftField('acquiring', parseFloat(e.target.value) || 0)}
+                    className="w-full px-3 py-2 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg text-sm text-[var(--text-base)] focus:outline-none focus:border-violet-500/50" />
+                </label>
+                {/* Last mile */}
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-xs font-medium text-[var(--text-muted)]">Oxirgi milya (so&apos;m)</span>
+                  <input type="number" min={0} value={editDraft.lastMile ?? 0}
+                    onChange={e => setDraftField('lastMile', parseFloat(e.target.value) || 0)}
+                    className="w-full px-3 py-2 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg text-sm text-[var(--text-base)] focus:outline-none focus:border-violet-500/50" />
+                </label>
+                {/* Stock */}
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-xs font-medium text-[var(--text-muted)]">Zaxira (dona)</span>
+                  <input type="number" min={0} value={editDraft.stock ?? ''}
+                    onChange={e => setDraftField('stock', e.target.value ? parseInt(e.target.value) : undefined)}
+                    className="w-full px-3 py-2 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg text-sm text-[var(--text-base)] focus:outline-none focus:border-violet-500/50" />
+                </label>
+                {/* Supplier URL */}
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-xs font-medium text-[var(--text-muted)]">Ta&apos;minotchi havolasi</span>
+                  <input type="url" value={editDraft.supplierUrl ?? ''}
+                    onChange={e => setDraftField('supplierUrl', e.target.value)}
+                    placeholder="https://..."
+                    className="w-full px-3 py-2 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg text-sm text-[var(--text-base)] focus:outline-none focus:border-violet-500/50" />
+                </label>
+              </div>
+
+              {/* Live preview */}
+              {(() => {
+                const calc = recalc(editDraft)
+                return (
+                  <div className="grid grid-cols-3 gap-2 pt-2 border-t border-[var(--border)]">
+                    <div className="bg-[var(--bg-card2)] rounded-xl px-3 py-2 text-center">
+                      <p className="text-[10px] text-[var(--text-muted)] mb-0.5">Foyda</p>
+                      <p className={`text-xs font-bold ${(calc.netProfit ?? 0) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                        {(calc.netProfit ?? 0) >= 0 ? '+' : ''}{new Intl.NumberFormat('uz-UZ').format(Math.round(calc.netProfit ?? 0))} so&apos;m
+                      </p>
+                    </div>
+                    <div className="bg-[var(--bg-card2)] rounded-xl px-3 py-2 text-center">
+                      <p className="text-[10px] text-[var(--text-muted)] mb-0.5">ROI</p>
+                      <p className={`text-xs font-bold ${(calc.roi ?? 0) >= 30 ? 'text-emerald-400' : 'text-amber-400'}`}>
+                        {Math.round(calc.roi ?? 0)}%
+                      </p>
+                    </div>
+                    <div className="bg-[var(--bg-card2)] rounded-xl px-3 py-2 text-center">
+                      <p className="text-[10px] text-[var(--text-muted)] mb-0.5">Marja</p>
+                      <p className={`text-xs font-bold ${(calc.margin ?? 0) >= 20 ? 'text-emerald-400' : 'text-amber-400'}`}>
+                        {(calc.margin ?? 0).toFixed(1)}%
+                      </p>
+                    </div>
+                  </div>
+                )
+              })()}
+            </div>
+
+            {/* Footer */}
+            <div className="flex gap-2 px-5 py-4 border-t border-[var(--border)]">
+              <button onClick={saveEdit} disabled={editSaving}
+                className="flex-1 btn-primary py-2.5 text-sm font-semibold rounded-xl disabled:opacity-50 transition-colors">
+                {editSaving ? 'Saqlanmoqda…' : 'Saqlash'}
+              </button>
+              <button onClick={() => setEditingItem(null)}
+                className="px-5 py-2.5 bg-[var(--bg-card2)] hover:bg-[var(--bg-input)] text-[var(--text-muted)] text-sm font-semibold rounded-xl transition-colors">
+                Bekor
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
