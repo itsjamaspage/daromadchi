@@ -554,7 +554,10 @@ function showLoginGate() {
 // ─── AUTO-AUTH: grab token from open daromadchi.uz tab ───────────────────────
 async function tryGrabTokenFromTab() {
   try {
-    const tabs = await chrome.tabs.query({ url: ['https://daromadchi.uz/*', 'https://www.daromadchi.uz/*'] });
+    const tabs = await Promise.race([
+      chrome.tabs.query({ url: ['https://daromadchi.uz/*', 'https://www.daromadchi.uz/*'] }),
+      new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 1500)),
+    ]);
     for (const tab of tabs) {
       if (!tab.id) continue;
       const results = await chrome.scripting.executeScript({
@@ -668,5 +671,13 @@ async function loadAll() {
   }
 }
 
-// Simply load — login gate is handled inside loadAll() via showLoginGate()
-loadAll()
+// Simply load — with a 3-second safety net so popup never stays stuck
+const loadTimeout = setTimeout(() => {
+  console.warn('Daromadchi: popup load timed out, showing disconnected state');
+  showLoginGate();
+}, 3000);
+
+loadAll().then(() => clearTimeout(loadTimeout)).catch(() => {
+  clearTimeout(loadTimeout);
+  showLoginGate();
+});
