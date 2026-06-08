@@ -191,11 +191,11 @@ export const helpContent: HelpDB = {
   advertising: {
     uz: {
       title: 'Reklama',
-      what: 'Uzum reklamasiga sarflangan mablag\', klik soni, ko\'rishlar va DRR (reklama samaradorligi) ko\'rsatkichlari.',
+      what: 'Uzum, Wildberries va Yandex Market reklamalariga sarflangan mablag\', klik soni, ko\'rishlar va DRR (reklama samaradorligi) ko\'rsatkichlari.',
       why: 'Reklama budjetingizni to\'g\'ri boshqaring: nima foydali, nima zararga ishlayotganini aniqlang.',
       how: 'DRR 15-20% dan past bo\'lishi ideal. Yuqori DRR — reklama qimmat. Effektiv kampaniyalarni ko\'paytiring.',
       steps: [
-        { step: 1, text: 'Uzum reklama tizimidan xarajatlar olinadi' },
+        { step: 1, text: 'Uzum, Wildberries va Yandex Market reklama tizimlaridan xarajatlar olinadi' },
         { step: 2, text: 'Har bir kampaniya bo\'yicha klik va ko\'rishlar sanaldi' },
         { step: 3, text: 'Daromad bilan solishtirilib DRR hisoblanadi' },
         { step: 4, text: 'Kunlik va haftalik yangilanadi' },
@@ -203,11 +203,11 @@ export const helpContent: HelpDB = {
     },
     ru: {
       title: 'Реклама',
-      what: 'Затраты на рекламу Uzum, количество кликов, показы и показатель ДРР (эффективность рекламы).',
+      what: 'Затраты на рекламу Uzum, Wildberries и Yandex Market, количество кликов, показы и показатель ДРР (эффективность рекламы).',
       why: 'Правильно управляйте рекламным бюджетом: определите, что работает в плюс, а что — в минус.',
       how: 'Идеальный ДРР — ниже 15–20%. Высокий ДРР означает дорогую рекламу. Масштабируйте эффективные кампании.',
       steps: [
-        { step: 1, text: 'Расходы получены из рекламной системы Uzum' },
+        { step: 1, text: 'Расходы получены из рекламных систем Uzum, Wildberries и Yandex Market' },
         { step: 2, text: 'Клики и показы подсчитаны по каждой кампании' },
         { step: 3, text: 'ДРР рассчитывается в сравнении с выручкой' },
         { step: 4, text: 'Обновляется ежедневно и еженедельно' },
@@ -215,11 +215,11 @@ export const helpContent: HelpDB = {
     },
     en: {
       title: 'Advertising',
-      what: 'Uzum ad spend, clicks, impressions, and DRR (ad efficiency metric).',
+      what: 'Ad spend, clicks, impressions and DRR (ad efficiency metric) across Uzum, Wildberries and Yandex Market.',
       why: 'Manage your ad budget effectively: find what\'s profitable and what\'s losing money.',
       how: 'Ideal DRR is below 15–20%. High DRR = expensive ads. Scale up the campaigns that work.',
       steps: [
-        { step: 1, text: 'Spend data pulled from Uzum ad system' },
+        { step: 1, text: 'Spend data pulled from Uzum, Wildberries and Yandex Market ad systems' },
         { step: 2, text: 'Clicks and impressions counted per campaign' },
         { step: 3, text: 'DRR calculated vs revenue' },
         { step: 4, text: 'Updated daily and weekly' },
