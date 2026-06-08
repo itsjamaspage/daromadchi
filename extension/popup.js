@@ -244,7 +244,7 @@ function renderMarketplaceStatus(panel, yandexStats, uzumDirectStats, yandexConn
     panel.insertAdjacentHTML('beforeend', `
       <div class="mkt-empty">
         <span>API ulanishlari sozlanmagan</span>
-        <a href="options.html" target="_blank" class="mkt-cfg-link" style="background:#6366f1;color:#fff;padding:5px 14px;border-radius:7px;font-size:11px;font-weight:600">Sozlash →</a>
+        <a href="options.html" target="_blank" class="mkt-cfg-link" style="background:linear-gradient(135deg,#7c3aed,#2563eb);color:#fff;padding:5px 16px;border-radius:7px;font-size:11px;font-weight:600">Sozlash →</a>
       </div>`);
   } else {
     panel.insertAdjacentHTML('beforeend', `
