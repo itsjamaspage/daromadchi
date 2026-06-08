@@ -554,7 +554,7 @@ function showLoginGate() {
 // ─── AUTO-AUTH: grab token from open daromadchi.uz tab ───────────────────────
 async function tryGrabTokenFromTab() {
   try {
-    const tabs = await chrome.tabs.query({ url: 'https://daromadchi.uz/*' });
+    const tabs = await chrome.tabs.query({ url: ['https://daromadchi.uz/*', 'https://www.daromadchi.uz/*'] });
     for (const tab of tabs) {
       if (!tab.id) continue;
       const results = await chrome.scripting.executeScript({

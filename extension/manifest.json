@@ -22,7 +22,8 @@
   "content_scripts": [
     {
       "matches": [
-        "https://daromadchi.uz/*"
+        "https://daromadchi.uz/*",
+        "https://www.daromadchi.uz/*"
       ],
       "js": ["content-daromadchi.js"],
       "run_at": "document_idle"
@@ -70,6 +71,7 @@
     "https://market.yandex.uz/*",
     "https://api.partner.market.yandex.ru/*",
     "https://daromadchi.uz/*",
+    "https://www.daromadchi.uz/*",
     "https://common-api.wildberries.ru/*",
     "https://statistics-api.wildberries.ru/*",
     "https://suppliers-api.wildberries.ru/*",
