@@ -585,6 +585,14 @@ async function tryGrabTokenFromTab() {
   return false;
 }
 
+// ─── FETCH WITH TIMEOUT ───────────────────────────────────────────────────────
+function fetchWithTimeout(url, opts, ms = 4000) {
+  const controller = new AbortController();
+  const tid = setTimeout(() => controller.abort(), ms);
+  return fetch(url, { ...opts, signal: controller.signal })
+    .finally(() => clearTimeout(tid));
+}
+
 // ─── LOAD ALL ─────────────────────────────────────────────────────────────────
 async function loadAll() {
   const data = await chrome.storage.local.get([
@@ -606,17 +614,20 @@ async function loadAll() {
   // No token → try to grab it from an open daromadchi.uz tab first
   if (!daromadchi_token) {
     const grabbed = await tryGrabTokenFromTab();
-    if (grabbed) { loadAll(); return; }  // restart with token now saved
+    if (grabbed) {
+      await loadAll(); // await so the outer promise only resolves after full load
+      return;
+    }
     showLoginGate();
     return;
   }
 
-  // Validate token — only block on explicit 401; pass through on network errors
+  // Validate token — only block on explicit 401; pass through on network/timeout errors
   let plan = daromadchi_plan;
   try {
-    const vRes = await fetch(`${API}/extension/validate`, {
+    const vRes = await fetchWithTimeout(`${API}/extension/validate`, {
       headers: { 'Authorization': `Bearer ${daromadchi_token}` }
-    });
+    }, 4000);
     if (vRes.status === 401) {
       chrome.storage.local.remove('daromadchi_token');
       showLoginGate();
@@ -629,7 +640,7 @@ async function loadAll() {
         chrome.storage.local.set({ daromadchi_plan: vData.plan });
       }
     }
-  } catch { /* offline — proceed */ }
+  } catch { /* offline or timeout — proceed with cached data */ }
 
   // Use Daromadchi backend stats if connected, refreshing when stale
   let stats = cachedStats;
@@ -637,9 +648,9 @@ async function loadAll() {
 
   if (stale) {
     try {
-      const res = await fetch(`${API}/extension/stats`, {
+      const res = await fetchWithTimeout(`${API}/extension/stats`, {
         headers: { 'Authorization': `Bearer ${daromadchi_token}` }
-      });
+      }, 4000);
       if (res.ok) {
         stats = await res.json();
         chrome.storage.local.set({ cachedStats: stats, cacheTime: Date.now() });
@@ -647,9 +658,9 @@ async function loadAll() {
     } catch {}
 
     try {
-      const res = await fetch(`${API}/extension/telegram-status`, {
+      const res = await fetchWithTimeout(`${API}/extension/telegram-status`, {
         headers: { 'Authorization': `Bearer ${daromadchi_token}` }
-      });
+      }, 4000);
       if (res.ok) {
         const tg = await res.json();
         chrome.storage.local.set({ tgStatus: tg });
@@ -671,12 +682,8 @@ async function loadAll() {
   }
 }
 
-// Simply load — with a 3-second safety net so popup never stays stuck
-const loadTimeout = setTimeout(() => {
-  console.warn('Daromadchi: popup load timed out, showing disconnected state');
-  showLoginGate();
-}, 3000);
-
+// Hard 10s safety net — all fetches already have 4s timeouts so this is last resort
+const loadTimeout = setTimeout(() => showLoginGate(), 10000);
 loadAll().then(() => clearTimeout(loadTimeout)).catch(() => {
   clearTimeout(loadTimeout);
   showLoginGate();
