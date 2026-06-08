@@ -315,7 +315,7 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
                     ? 'bg-violet-600/20 text-violet-300 border border-violet-500/30'
                     : 'bg-[var(--bg-card2)] text-[var(--text-muted)] border border-[var(--border)] hover:text-[var(--text-dim)]'
                 } ${col.always ? 'opacity-60 cursor-default' : 'cursor-pointer'}`}>
-                {col.always ? '🔒 ' : ''}{col.label}
+                {col.label}{col.always ? <span className="ml-1 text-[9px] opacity-50 font-normal">fixed</span> : ''}
               </button>
             ))}
           </div>

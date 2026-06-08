@@ -45,25 +45,53 @@ async function exportXlsx(data: ExportRow[], filename: string) {
   XLSX.writeFile(wb, `${filename}.xlsx`)
 }
 
-async function exportPdf(target: HTMLElement, filename: string) {
-  const html2canvas = (await import('html2canvas')).default
+async function exportPdf(data: ExportRow[], filename: string) {
   const { jsPDF } = await import('jspdf')
-  const canvas = await html2canvas(target, {
-    backgroundColor: '#0d0d1a',
-    scale: 2,
-    useCORS: true,
-    logging: false,
-  })
-  const imgData = canvas.toDataURL('image/png')
   const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' })
+
   const pageW = pdf.internal.pageSize.getWidth()
-  const pageH = pdf.internal.pageSize.getHeight()
-  const ratio = Math.min(pageW / canvas.width, pageH / canvas.height)
-  const imgW = canvas.width * ratio
-  const imgH = canvas.height * ratio
-  const x = (pageW - imgW) / 2
-  const y = 10
-  pdf.addImage(imgData, 'PNG', x, y, imgW, imgH)
+  const margin = 12
+  const usableW = pageW - margin * 2
+
+  // Title
+  pdf.setFontSize(14)
+  pdf.setTextColor(40, 40, 40)
+  pdf.text(filename, margin, margin + 4)
+  pdf.setFontSize(9)
+  pdf.setTextColor(120, 120, 120)
+  pdf.text(new Date().toLocaleDateString('ru-RU'), pageW - margin, margin + 4, { align: 'right' })
+
+  const headers = Object.keys(data[0])
+  const colW = usableW / headers.length
+
+  let y = margin + 14
+
+  // Header row
+  pdf.setFillColor(88, 28, 220)
+  pdf.setTextColor(255, 255, 255)
+  pdf.setFontSize(8)
+  pdf.rect(margin, y, usableW, 7, 'F')
+  headers.forEach((h, i) => {
+    pdf.text(String(h).slice(0, 14), margin + i * colW + 2, y + 5)
+  })
+  y += 7
+
+  // Data rows
+  data.forEach((row, ri) => {
+    if (y > pdf.internal.pageSize.getHeight() - 15) {
+      pdf.addPage()
+      y = margin
+    }
+    pdf.setFillColor(ri % 2 === 0 ? 248 : 255, ri % 2 === 0 ? 248 : 255, ri % 2 === 0 ? 252 : 255)
+    pdf.setTextColor(30, 30, 30)
+    pdf.rect(margin, y, usableW, 6.5, 'F')
+    headers.forEach((h, i) => {
+      const val = String(row[h] ?? '').slice(0, 18)
+      pdf.text(val, margin + i * colW + 2, y + 4.5)
+    })
+    y += 6.5
+  })
+
   pdf.save(`${filename}.pdf`)
 }
 
@@ -90,11 +118,10 @@ export default function ExportButton({ data, filename = 'hisobot', targetRef, la
   }
 
   async function handlePdf() {
-    const target = targetRef?.current
-    if (!target) return
+    if (!data?.length) return
     setOpen(false)
     setLoading('pdf')
-    try { await exportPdf(target, filename) } finally { setLoading(null) }
+    try { await exportPdf(data, filename) } finally { setLoading(null) }
   }
 
   function handleCsv() {
@@ -105,7 +132,7 @@ export default function ExportButton({ data, filename = 'hisobot', targetRef, la
 
   const hasCsv = !!data?.length
   const hasXlsx = !!data?.length
-  const hasPdf = !!targetRef
+  const hasPdf = !!data?.length
 
   return (
     <div className="relative" ref={menuRef}>
