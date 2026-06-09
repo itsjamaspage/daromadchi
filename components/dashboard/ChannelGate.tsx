@@ -79,10 +79,10 @@ export default function ChannelGate({ children }: { children: React.ReactNode })
   async function handleConnectTelegram() {
     setLinking(true)
     try {
-      const res = await fetch('/api/telegram-link', { method: 'POST' })
+      const res = await fetch('/api/telegram/link', { method: 'POST' })
       const data = await res.json()
       if (data.url) {
-        window.open(data.url, '_blank')
+        if (win) win.location.href = data.url
         const interval = setInterval(async () => {
           const r = await fetch('/api/channel-check')
           const d = await r.json()
