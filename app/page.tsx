@@ -45,7 +45,7 @@ function DashboardMockup({ p }: { p: typeof translations.en.preview }) {
   const isDark = theme === 'dark'
   const bg = isDark ? '#071425' : '#ffffff'
   const bg2 = isDark ? '#0b1c34' : '#f0f4ff'
-  const border = isDark ? 'rgba(0,210,255,0.12)' : 'rgba(100,100,200,0.15)'
+  const border = isDark ? 'rgba(0,210,255,0.14)' : 'rgba(100,100,200,0.18)'
   const muted = isDark ? '#4a7a9b' : '#6b7a9b'
   const c1 = isDark ? '#00d4ff' : '#7c3aed'
   const c2 = isDark ? '#ff2d9b' : '#db2777'
@@ -58,43 +58,48 @@ function DashboardMockup({ p }: { p: typeof translations.en.preview }) {
   ]
 
   return (
-    <div className="rounded-2xl overflow-hidden shadow-2xl border" style={{ background: bg, borderColor: border }}>
+    <div className="rounded-2xl overflow-hidden border" style={{ background: bg, borderColor: border }}>
+      {/* Browser bar */}
       <div className="flex items-center gap-2 px-4 py-3 border-b" style={{ background: bg2, borderColor: border }}>
         <div className="flex gap-1.5">
           <div className="w-3 h-3 rounded-full bg-red-400/80" />
           <div className="w-3 h-3 rounded-full bg-amber-400/80" />
           <div className="w-3 h-3 rounded-full bg-green-400/80" />
         </div>
-        <div className="flex-1 h-5 mx-3 rounded-md border flex items-center px-3" style={{ background: isDark ? '#0f2040' : '#e8eeff', borderColor: border }}>
+        <div className="flex-1 h-5 mx-3 rounded-md border flex items-center px-3"
+          style={{ background: isDark ? '#0f2040' : '#e8eeff', borderColor: border }}>
           <span className="text-[10px]" style={{ color: muted }}>daromadchi.uz/dashboard</span>
         </div>
         <Activity className="w-3 h-3 text-green-400" />
       </div>
-      <div className="p-4 space-y-3">
-        <div className="grid grid-cols-4 gap-2">
+      {/* Content */}
+      <div className="p-5 space-y-4">
+        {/* KPI cards */}
+        <div className="grid grid-cols-4 gap-3">
           {kpis.map(k => (
             <div key={k.l} className="rounded-xl p-3 border" style={{ background: bg2, borderColor: border }}>
               <p className="text-[9px] mb-1" style={{ color: muted }}>{k.l}</p>
-              <p className="font-bold text-[12px]" style={{ color: k.color }}>{k.v}</p>
-              <p className="text-green-400 text-[9px] mt-0.5">up 12.4%</p>
+              <p className="font-bold text-sm" style={{ color: k.color }}>{k.v}</p>
+              <p className="text-green-400 text-[9px] mt-0.5">↑ 12.4%</p>
             </div>
           ))}
         </div>
-        <div className="grid grid-cols-3 gap-2">
-          <div className="col-span-2 rounded-xl p-3 border" style={{ background: bg2, borderColor: border }}>
-            <p className="text-[9px] mb-2" style={{ color: muted }}>{p.dailyRevenue}</p>
-            <div className="flex items-end gap-0.5 h-16">
+        {/* Charts */}
+        <div className="grid grid-cols-3 gap-3">
+          <div className="col-span-2 rounded-xl p-4 border" style={{ background: bg2, borderColor: border }}>
+            <p className="text-[10px] mb-3 font-medium" style={{ color: muted }}>{p.dailyRevenue}</p>
+            <div className="flex items-end gap-1 h-20">
               {[30,50,38,70,45,82,60,88,72,55,78,92,65,80].map((h, i) => (
                 <div key={i} className="flex-1 rounded-t" style={{
                   height: `${h}%`,
-                  background: isDark ? 'linear-gradient(to top,#00d4ff99,#00d4ff22)' : 'linear-gradient(to top,#7c3aed99,#7c3aed22)'
+                  background: isDark ? 'linear-gradient(to top,#00d4ffcc,#00d4ff22)' : 'linear-gradient(to top,#7c3aedcc,#7c3aed22)'
                 }} />
               ))}
             </div>
           </div>
-          <div className="rounded-xl p-3 border flex flex-col" style={{ background: bg2, borderColor: border }}>
-            <p className="text-[9px] mb-2" style={{ color: muted }}>{p.categories}</p>
-            <div className="relative w-12 h-12 mx-auto mt-1">
+          <div className="rounded-xl p-4 border flex flex-col" style={{ background: bg2, borderColor: border }}>
+            <p className="text-[10px] mb-3 font-medium" style={{ color: muted }}>{p.categories}</p>
+            <div className="relative w-16 h-16 mx-auto">
               <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
                 <circle cx="18" cy="18" r="14" fill="none" stroke={isDark ? 'rgba(0,210,255,0.15)' : 'rgba(124,58,237,0.15)'} strokeWidth="4" />
                 <circle cx="18" cy="18" r="14" fill="none" stroke={c1} strokeWidth="4" strokeDasharray="38 50" strokeLinecap="round" />
@@ -103,6 +108,18 @@ function DashboardMockup({ p }: { p: typeof translations.en.preview }) {
               </svg>
             </div>
           </div>
+        </div>
+        {/* Mini table */}
+        <div className="rounded-xl border overflow-hidden" style={{ borderColor: border }}>
+          <div className="flex items-center justify-between px-4 py-2 border-b text-[9px] font-semibold" style={{ background: bg2, borderColor: border, color: muted }}>
+            <span>Recent Orders</span><span>Status</span>
+          </div>
+          {[['DEMO-183','Delivered','#22c55e'],['DEMO-184','Processing','#f59e0b'],['DEMO-185','Delivered','#22c55e']].map(([id, st, col]) => (
+            <div key={id} className="flex items-center justify-between px-4 py-2 border-b text-[9px]" style={{ borderColor: border, color: muted }}>
+              <span style={{ color: isDark ? '#a8c8e0' : '#3b3f6e' }}>{id}</span>
+              <span style={{ color: col as string }}>{st}</span>
+            </div>
+          ))}
         </div>
       </div>
     </div>
@@ -115,16 +132,9 @@ export default function LandingPage() {
   const t = translations[lang]
   const isDark = theme === 'dark'
 
-  const [showBar, setShowBar] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [langOpen, setLangOpen] = useState(false)
   const langRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    const onScroll = () => setShowBar(window.scrollY > 400)
-    window.addEventListener('scroll', onScroll)
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [])
 
   useEffect(() => {
     const h = (e: MouseEvent) => { if (langRef.current && !langRef.current.contains(e.target as Node)) setLangOpen(false) }
@@ -143,6 +153,14 @@ export default function LandingPage() {
 
   const langs: Lang[] = ['uz', 'ru', 'en']
   const card = isDark ? 'var(--bg-card)' : '#ffffff'
+
+  const wordAnim = {
+    hidden: { opacity: 0, y: 30 },
+    visible: (i: number) => ({
+      opacity: 1, y: 0,
+      transition: { delay: i * 0.08, duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }
+    })
+  }
 
   return (
     <div className="min-h-screen overflow-x-hidden" style={{ background: 'var(--bg-base)', color: 'var(--text-base)' }}>
@@ -215,8 +233,7 @@ export default function LandingPage() {
         <AnimatePresence>
           {menuOpen && (
             <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.18 }}
-              className="md:hidden border-t overflow-hidden"
+              transition={{ duration: 0.18 }} className="md:hidden border-t overflow-hidden"
               style={{ borderColor: 'var(--border)', background: 'var(--nav-bg)' }}>
               <div className="px-6 py-4 flex flex-col gap-1">
                 {[
@@ -241,44 +258,107 @@ export default function LandingPage() {
         </AnimatePresence>
       </header>
 
-      {/* HERO: mockup LEFT, text RIGHT */}
-      <section className="relative min-h-screen flex items-center pt-16 pb-16 px-6 overflow-hidden">
+      {/* HERO: mockup LEFT (bigger), text RIGHT */}
+      <section className="relative min-h-screen flex items-center pt-16 pb-0 overflow-hidden">
+        {/* BG gradient */}
         <div className="absolute inset-0 pointer-events-none" style={{
           background: isDark
-            ? 'radial-gradient(ellipse 55% 70% at 10% 50%, rgba(0,212,255,0.09) 0%, transparent 65%)'
-            : 'radial-gradient(ellipse 55% 70% at 10% 50%, rgba(124,58,237,0.07) 0%, transparent 65%)'
+            ? 'radial-gradient(ellipse 60% 80% at 0% 50%, rgba(0,212,255,0.10) 0%, transparent 60%), radial-gradient(ellipse 40% 50% at 100% 80%, rgba(255,45,155,0.07) 0%, transparent 55%)'
+            : 'radial-gradient(ellipse 60% 80% at 0% 50%, rgba(124,58,237,0.08) 0%, transparent 60%)'
         }} />
-        <div className="relative z-10 max-w-6xl mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-          {/* LEFT col: Dashboard */}
+
+        <div className="relative z-10 max-w-7xl mx-auto w-full px-6 grid grid-cols-1 lg:grid-cols-[1.15fr_0.85fr] gap-10 items-center py-12">
+          {/* LEFT: Dashboard (bigger) */}
           <motion.div
-            initial={{ opacity: 0, x: -40 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.7, delay: 0.1 }}
+            initial={{ opacity: 0, x: -50, scale: 0.95 }}
+            animate={{ opacity: 1, x: 0, scale: 1 }}
+            transition={{ duration: 0.8, delay: 0.1, ease: [0.25, 0.46, 0.45, 0.94] }}
             className="relative order-2 lg:order-1"
           >
-            <div className="absolute -inset-6 rounded-3xl blur-3xl opacity-20 pointer-events-none"
+            {/* Glow blob behind */}
+            <div className="absolute -inset-8 rounded-3xl blur-3xl opacity-30 pointer-events-none animate-pulse-glow"
               style={{ background: isDark ? 'radial-gradient(ellipse at 40% 50%, #00d4ff, transparent 65%)' : 'radial-gradient(ellipse at 40% 50%, #7c3aed, transparent 65%)' }} />
-            <DashboardMockup p={t.preview} />
-          </motion.div>
-          {/* RIGHT col: copy */}
-          <div className="flex flex-col gap-7 order-1 lg:order-2">
-            <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }}>
-              <span className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold mb-5 border"
-                style={{ background: isDark ? 'rgba(0,212,255,0.08)' : 'rgba(124,58,237,0.07)', borderColor: 'var(--border2)', color: 'var(--c1)' }}>
-                <Sparkles className="w-3 h-3" /> Uzum · Yandex Market · Wildberries
-              </span>
-              <h1 className="text-4xl sm:text-5xl font-extrabold leading-tight tracking-tight mb-5" style={{ color: 'var(--text-base)' }}>
-                {t.hero.landingTitle}
-              </h1>
-              <p className="text-base sm:text-lg leading-relaxed" style={{ color: 'var(--text-muted)' }}>
-                {t.hero.landingSubtitle}
-              </p>
+            {/* Floating wrapper */}
+            <div className="animate-float">
+              <DashboardMockup p={t.preview} />
+            </div>
+            {/* Floating stat badge */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              transition={{ delay: 0.9, duration: 0.5 }}
+              className="absolute -bottom-4 -right-4 rounded-2xl px-4 py-3 border shadow-xl hidden md:block"
+              style={{ background: isDark ? '#0b1c34' : '#fff', borderColor: isDark ? 'rgba(0,212,255,0.2)' : 'rgba(124,58,237,0.2)' }}>
+              <p className="text-[10px] font-medium mb-0.5" style={{ color: 'var(--text-muted)' }}>Monthly revenue</p>
+              <p className="font-extrabold text-lg" style={{ color: 'var(--c1)' }}>↑ 38.4%</p>
             </motion.div>
-            <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.35 }}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8, y: -20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              transition={{ delay: 1.1, duration: 0.5 }}
+              className="absolute -top-4 -right-2 rounded-2xl px-3 py-2 border shadow-xl hidden md:block"
+              style={{ background: isDark ? '#0b1c34' : '#fff', borderColor: isDark ? 'rgba(0,212,255,0.2)' : 'rgba(124,58,237,0.2)' }}>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                <p className="text-[10px] font-semibold" style={{ color: 'var(--text-base)' }}>Live sync</p>
+              </div>
+            </motion.div>
+          </motion.div>
+
+          {/* RIGHT: Copy */}
+          <div className="flex flex-col gap-6 order-1 lg:order-2">
+            <motion.div
+              initial="hidden"
+              animate="visible"
+              variants={{ visible: { transition: { staggerChildren: 0.06 } } }}
+            >
+              <motion.div variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { duration: 0.5 } } }}>
+                <span className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold mb-5 border"
+                  style={{ background: isDark ? 'rgba(0,212,255,0.08)' : 'rgba(124,58,237,0.07)', borderColor: 'var(--border2)', color: 'var(--c1)' }}>
+                  <Sparkles className="w-3 h-3" /> Uzum · Yandex Market · Wildberries
+                </span>
+              </motion.div>
+
+              {/* Animated headline word-by-word */}
+              <div className="text-4xl sm:text-5xl font-extrabold leading-tight tracking-tight mb-5 overflow-hidden"
+                style={{ color: 'var(--text-base)' }}>
+                {t.hero.landingTitle.split(' ').map((word, i) => (
+                  <motion.span
+                    key={i}
+                    custom={i}
+                    variants={wordAnim}
+                    initial="hidden"
+                    animate="visible"
+                    className="inline-block mr-[0.25em]"
+                  >
+                    {word}
+                  </motion.span>
+                ))}
+              </div>
+
+              <motion.p
+                variants={{ hidden: { opacity: 0, y: 16 }, visible: { opacity: 1, y: 0, transition: { duration: 0.5, delay: 0.4 } } }}
+                className="text-base sm:text-lg leading-relaxed mb-2"
+                style={{ color: 'var(--text-muted)' }}>
+                {t.hero.landingSubtitle}
+              </motion.p>
+              <motion.p
+                variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0, transition: { duration: 0.4, delay: 0.5 } } }}
+                className="text-sm leading-relaxed"
+                style={{ color: 'var(--text-muted)', opacity: 0.8 }}>
+                {lang === 'uz'
+                  ? "Har kuni 5 daqiqada sotuvlaringizni nazorat qiling. Raqiblar narxini kuzating, DRR hisobini avtomatlashtiring va foydani oshiring."
+                  : lang === 'ru'
+                  ? "5 минут в день — и вы контролируете все продажи. Следите за ценами конкурентов, автоматизируйте DRR и увеличивайте прибыль."
+                  : "5 minutes a day keeps you in full control. Monitor competitor prices, automate DRR calculations and grow your margins."}
+              </motion.p>
+            </motion.div>
+
+            <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.6 }}
               className="flex flex-col sm:flex-row gap-3">
               <Link href="/login"
                 className="inline-flex items-center justify-center gap-2 font-bold px-8 py-3.5 rounded-xl text-sm text-white"
-                style={{ background: 'var(--c1)', boxShadow: isDark ? '0 6px 28px rgba(0,212,255,0.35)' : '0 6px 28px rgba(124,58,237,0.3)' }}>
+                style={{ background: 'var(--c1)', boxShadow: isDark ? '0 6px 28px rgba(0,212,255,0.4)' : '0 6px 28px rgba(124,58,237,0.35)' }}>
                 {t.trialFreeStart} <ArrowRight className="w-4 h-4" />
               </Link>
               <Link href="/help"
@@ -287,23 +367,23 @@ export default function LandingPage() {
                 {t.nav.explorePlatform}
               </Link>
             </motion.div>
-            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}
-              className="text-xs -mt-3" style={{ color: 'var(--text-muted)', opacity: 0.7 }}>
-              {t.trialFree}
-            </motion.p>
-            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.55 }}
+
+            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.75 }}
               className="flex items-center gap-10 pt-4 border-t" style={{ borderColor: 'var(--border)' }}>
               {[
                 { value: 6, suffix: '+', label: t.stats[0].label },
                 { value: 30, suffix: 's', label: t.stats[1].label },
                 { value: 100, suffix: '%', label: t.stats[2].label },
-              ].map(s => (
-                <div key={s.label}>
+              ].map((s, i) => (
+                <motion.div key={s.label}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.8 + i * 0.1, type: 'spring', stiffness: 200 }}>
                   <div className="text-2xl font-extrabold" style={{ color: 'var(--text-base)' }}>
                     <StatNum value={s.value} suffix={s.suffix} />
                   </div>
                   <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{s.label}</p>
-                </div>
+                </motion.div>
               ))}
             </motion.div>
           </div>
@@ -337,9 +417,10 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
             {t.valueProps.map((c, i) => (
               <motion.div key={c.title}
-                initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }} transition={{ delay: i * 0.1 }}
-                className="rounded-2xl p-7 border" style={{ background: card, borderColor: 'var(--border)' }}>
+                initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }} transition={{ delay: i * 0.12, duration: 0.5 }}
+                whileHover={{ y: -4, transition: { duration: 0.2 } }}
+                className="rounded-2xl p-7 border cursor-default" style={{ background: card, borderColor: 'var(--border)' }}>
                 <div className="text-4xl mb-4">{c.icon}</div>
                 <h3 className="font-bold text-base mb-2" style={{ color: 'var(--text-base)' }}>{c.title}</h3>
                 <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>{c.desc}</p>
@@ -369,7 +450,8 @@ export default function LandingPage() {
                 <motion.div key={f.title}
                   initial={{ opacity: 0, y: 24 }} animate={featuresInView ? { opacity: 1, y: 0 } : {}}
                   transition={{ delay: i * 0.07 }}
-                  className="rounded-2xl p-7 border hover:border-[var(--c1)] transition-colors"
+                  whileHover={{ y: -5, transition: { duration: 0.2 } }}
+                  className="rounded-2xl p-7 border hover:border-[var(--c1)] transition-colors cursor-default"
                   style={{ background: card, borderColor: 'var(--border)' }}>
                   <div className="w-11 h-11 rounded-xl flex items-center justify-center mb-5"
                     style={{ background: isDark ? 'rgba(0,212,255,0.08)' : 'rgba(124,58,237,0.08)', border: '1px solid var(--border2)' }}>
@@ -401,8 +483,9 @@ export default function LandingPage() {
             {t.steps.map((s, i) => (
               <motion.div key={s.title}
                 initial={{ opacity: 0, y: 20 }} animate={howInView ? { opacity: 1, y: 0 } : {}}
-                transition={{ delay: i * 0.1 }}
-                className="rounded-2xl p-7 border" style={{ background: card, borderColor: 'var(--border)' }}>
+                transition={{ delay: i * 0.12 }}
+                whileHover={{ scale: 1.03, transition: { duration: 0.2 } }}
+                className="rounded-2xl p-7 border cursor-default" style={{ background: card, borderColor: 'var(--border)' }}>
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-extrabold mb-5 text-white"
                   style={{ background: 'linear-gradient(135deg, var(--c1), var(--c2))' }}>
                   0{i + 1}
@@ -431,7 +514,8 @@ export default function LandingPage() {
               <motion.div key={plan.name}
                 initial={{ opacity: 0, y: 20 }} animate={pricingInView ? { opacity: 1, y: 0 } : {}}
                 transition={{ delay: i * 0.1 }}
-                className="rounded-2xl p-7 border relative"
+                whileHover={{ y: -6, transition: { duration: 0.2 } }}
+                className="rounded-2xl p-7 border relative cursor-default"
                 style={{ background: plan.highlight ? (isDark ? 'rgba(0,212,255,0.05)' : 'rgba(124,58,237,0.05)') : card, borderColor: plan.highlight ? 'var(--c1)' : 'var(--border)' }}>
                 {plan.highlight && (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-xs font-bold text-white"
@@ -510,8 +594,25 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* PRE-FOOTER FREE TRIAL BANNER */}
+      <div className="py-12 px-6 border-t" style={{ background: isDark ? '#020c1a' : '#1a1a2e', borderColor: 'rgba(255,255,255,0.06)' }}>
+        <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
+          <div>
+            <p className="text-xl font-extrabold text-white mb-1">{t.trialFree}</p>
+            <p className="text-sm" style={{ color: '#6b8199' }}>
+              {lang === 'uz' ? "Hech qanday kredit karta talab qilinmaydi." : lang === 'ru' ? "Кредитная карта не требуется." : "No credit card required."}
+            </p>
+          </div>
+          <Link href="/login"
+            className="shrink-0 inline-flex items-center gap-2 font-bold px-8 py-3.5 rounded-xl text-sm text-white"
+            style={{ background: 'linear-gradient(135deg, var(--c1), var(--c2))' }}>
+            {t.nav.start} <ArrowRight className="w-4 h-4" />
+          </Link>
+        </div>
+      </div>
+
       {/* FOOTER */}
-      <footer style={{ background: '#0a0a14', color: '#7a8fa8' }}>
+      <footer style={{ background: '#0a0a14' }}>
         <div className="max-w-6xl mx-auto px-6 py-16">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-10 mb-12">
             <div className="col-span-2 lg:col-span-1">
@@ -536,7 +637,7 @@ export default function LandingPage() {
                   { href: '#pricing', label: t.nav.pricing },
                   { href: '/login', label: t.nav.start },
                 ].map(l => (
-                  <a key={l.href} href={l.href} className="block text-sm hover:text-white transition-colors" style={{ color: '#4a6275' }}>
+                  <a key={l.href} href={l.href} className="block text-sm hover:text-white transition-colors" style={{ color: '#6b8299' }}>
                     {l.label}
                   </a>
                 ))}
@@ -552,7 +653,7 @@ export default function LandingPage() {
                   { href: '/pricing', label: lang === 'uz' ? 'Narxlar' : lang === 'ru' ? 'Тарифы' : 'Pricing' },
                   { href: '/privacy', label: t.nav.privacy ?? 'Privacy Policy' },
                 ].map(l => (
-                  <Link key={l.href} href={l.href} className="block text-sm hover:text-white transition-colors" style={{ color: '#4a6275' }}>
+                  <Link key={l.href} href={l.href} className="block text-sm hover:text-white transition-colors" style={{ color: '#6b8299' }}>
                     {l.label}
                   </Link>
                 ))}
@@ -564,22 +665,22 @@ export default function LandingPage() {
               </p>
               <div className="space-y-3">
                 {['Uzum Market', 'Yandex Market', 'Wildberries'].map(m => (
-                  <span key={m} className="block text-sm" style={{ color: '#4a6275' }}>{m}</span>
+                  <span key={m} className="block text-sm" style={{ color: '#6b8299' }}>{m}</span>
                 ))}
               </div>
             </div>
           </div>
           <div className="border-t pt-8 flex flex-col sm:flex-row items-center justify-between gap-4"
             style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
-            <p className="text-sm" style={{ color: '#2e3d4d' }}>© 2026 Daromadchi. {t.footer}</p>
+            <p className="text-sm" style={{ color: '#4a6275' }}>© 2026 Daromadchi. {t.footer}</p>
             <div className="flex items-center gap-6">
-              <Link href="/privacy" className="text-sm hover:text-white transition-colors" style={{ color: '#2e3d4d' }}>
+              <Link href="/privacy" className="text-sm hover:text-white transition-colors" style={{ color: '#4a6275' }}>
                 {t.nav.privacy ?? 'Privacy Policy'}
               </Link>
               <div className="flex items-center gap-3">
                 {langs.map(l => (
-                  <button key={l} onClick={() => setLang(l)} className="text-xs font-bold uppercase"
-                    style={{ color: lang === l ? '#ffffff' : '#2e3d4d' }}>
+                  <button key={l} onClick={() => setLang(l)} className="text-xs font-bold uppercase transition-colors"
+                    style={{ color: lang === l ? '#ffffff' : '#4a6275' }}>
                     {l}
                   </button>
                 ))}
@@ -588,24 +689,6 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
-
-      {/* STICKY BAR */}
-      <AnimatePresence>
-        {showBar && (
-          <motion.div initial={{ y: 80, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 80, opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            className="fixed bottom-0 left-0 right-0 z-50 border-t"
-            style={{ background: isDark ? 'rgba(2,12,26,0.97)' : 'rgba(240,248,255,0.97)', borderColor: 'var(--border)', backdropFilter: 'blur(16px)' }}>
-            <div className="max-w-4xl mx-auto px-6 py-3 flex items-center justify-between gap-3">
-              <p className="text-sm font-medium" style={{ color: 'var(--text-base)' }}>{t.stickyBarText}</p>
-              <Link href="/login" className="shrink-0 text-sm font-bold px-6 py-2.5 rounded-xl text-white"
-                style={{ background: 'linear-gradient(135deg, var(--c1), var(--c2))' }}>
-                {t.hero.cta} ↗
-              </Link>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   )
 }

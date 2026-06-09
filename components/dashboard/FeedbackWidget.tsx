@@ -58,10 +58,16 @@ export default function FeedbackWidget() {
   const [sent, setSent] = useState(false)
   const textRef = useRef<HTMLTextAreaElement>(null)
 
-  // Open by default on first dashboard visit per session
+  // Open on first visit, auto-close after 2s
   useEffect(() => {
     const closed = sessionStorage.getItem('feedback-closed')
-    if (!closed) setOpen(true)
+    if (!closed) {
+      setOpen(true)
+      setTimeout(() => {
+        setOpen(false)
+        sessionStorage.setItem('feedback-closed', '1')
+      }, 2000)
+    }
   }, [])
 
   const handleClose = () => {
