@@ -305,17 +305,12 @@ input:checked + .slider:before { transform: translateX(16px); }
 .mkt-on   { color: #22c55e; }
 .mkt-off  { color: #64748b; }
 .mkt-rev  { font-size: 11px; color: #94a3b8; width: 100%; padding-left: 4px; }
-.mkt-cfg-link {
-  font-size: 11px;
-  color: #6366f1;
-  text-decoration: none;
-}
 .mkt-empty {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  padding: 14px 16px;
+  gap: 10px;
+  padding: 18px 16px;
   margin: 8px 12px;
   background: rgba(139,92,246,0.08);
   border: 1px solid rgba(139,92,246,0.2);
@@ -325,15 +320,4 @@ input:checked + .slider:before { transform: translateX(16px); }
   text-align: center;
 }
 .mkt-cfg-link:hover { text-decoration: underline; }
-.mkt-empty {
-  margin-top: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 9px 12px;
-  background: #1e293b;
-  border-radius: 10px;
-  font-size: 12px;
-  color: #64748b;
-}
 .mkt-empty .mkt-cfg-link { margin-top: 0; }
