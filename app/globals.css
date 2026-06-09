@@ -231,3 +231,10 @@ h1, h2, h3, h4, h5, h6 {
 .prose-custom table.prose-table { width: 100%; font-size: 0.8rem; border-collapse: collapse; margin-bottom: 1rem; }
 .prose-custom table.prose-table th { text-align: left; color: var(--text-muted); font-weight: 600; padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border); }
 .prose-custom table.prose-table td { color: var(--text-muted); padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border); }
+
+@keyframes bounce-in {
+  0% { transform: scale(0.5); opacity: 0; }
+  70% { transform: scale(1.1); opacity: 1; }
+  100% { transform: scale(1); }
+}
+.animate-bounce-in { animation: bounce-in 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards; }
