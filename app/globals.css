@@ -238,3 +238,27 @@ h1, h2, h3, h4, h5, h6 {
   100% { transform: scale(1); }
 }
 .animate-bounce-in { animation: bounce-in 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards; }
+
+/* ─── Collapsible sidebar ────────────────────────────────────────────────── */
+.sidebar-collapse {
+  width: 56px;
+  transition: width 220ms cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: width;
+}
+.sidebar-collapse:hover {
+  width: 240px;
+}
+.sidebar-collapse .sidebar-label {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 150ms ease 30ms;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.sidebar-collapse:hover .sidebar-label {
+  opacity: 1;
+  pointer-events: auto;
+}
+.sidebar-logo-row {
+  padding: 14px 12px;
+}
