@@ -121,7 +121,7 @@ export default function ChannelGate({ children }: { children: React.ReactNode })
         <p className="text-sm text-[var(--text-muted)] mb-8">{t.desc}</p>
 
         <div className="space-y-4 text-left">
-          <div className={\`rounded-xl border p-4 \${status !== 'no_telegram' ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-[var(--border2)]'}\`}>
+          <div className={`rounded-xl border p-4 ${status !== 'no_telegram' ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-[var(--border2)]'}`}>
             <p className="text-xs font-semibold text-[var(--text-dim)] mb-3">{t.step1}</p>
             {status !== 'no_telegram' ? (
               <p className="text-sm text-emerald-400">{t.connected}</p>
@@ -136,7 +136,7 @@ export default function ChannelGate({ children }: { children: React.ReactNode })
             )}
           </div>
 
-          <div className={\`rounded-xl border p-4 \${status === 'no_telegram' ? 'opacity-40 pointer-events-none' : 'border-[var(--border2)]'}\`}>
+          <div className={`rounded-xl border p-4 ${status === 'no_telegram' ? 'opacity-40 pointer-events-none' : 'border-[var(--border2)]'}`}>
             <p className="text-xs font-semibold text-[var(--text-dim)] mb-3">{t.step2}</p>
             <a
               href={CHANNEL_URL}
