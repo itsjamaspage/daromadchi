@@ -450,9 +450,8 @@ export default function LandingPage() {
                 <motion.div key={f.title}
                   initial={{ opacity: 0, y: 24 }} animate={featuresInView ? { opacity: 1, y: 0 } : {}}
                   transition={{ delay: i * 0.07 }}
-                  whileHover={{ y: -5, transition: { duration: 0.2 } }}
-                  className="rounded-2xl p-7 border hover:border-[var(--c1)] transition-colors cursor-default"
-                  style={{ background: card, borderColor: 'var(--border)' }}>
+                  className="animate-float rounded-2xl p-9 border hover:border-[var(--c1)] transition-colors cursor-default"
+                  style={{ background: card, borderColor: 'var(--border)', animationDelay: `${i * 0.6}s` }}>
                   <div className="w-11 h-11 rounded-xl flex items-center justify-center mb-5"
                     style={{ background: isDark ? 'rgba(0,212,255,0.08)' : 'rgba(124,58,237,0.08)', border: '1px solid var(--border2)' }}>
                     <Icon className="w-5 h-5" style={{ color: 'var(--c1)' }} />
@@ -482,10 +481,10 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {t.steps.map((s, i) => (
               <motion.div key={s.title}
-                initial={{ opacity: 0, y: 20 }} animate={howInView ? { opacity: 1, y: 0 } : {}}
-                transition={{ delay: i * 0.12 }}
-                whileHover={{ scale: 1.03, transition: { duration: 0.2 } }}
-                className="rounded-2xl p-7 border cursor-default" style={{ background: card, borderColor: 'var(--border)' }}>
+                initial={{ opacity: 0, x: i % 2 === 0 ? -60 : 60 }} animate={howInView ? { opacity: 1, x: 0 } : {}}
+                transition={{ delay: i * 0.12, duration: 0.5, ease: 'easeOut' }}
+                whileHover={{ scale: 1.04, transition: { duration: 0.2 } }}
+                className="rounded-2xl p-9 border cursor-default" style={{ background: card, borderColor: 'var(--border)' }}>
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-extrabold mb-5 text-white"
                   style={{ background: 'linear-gradient(135deg, var(--c1), var(--c2))' }}>
                   0{i + 1}
