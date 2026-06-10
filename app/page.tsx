@@ -215,18 +215,50 @@ function FeaturesScrollSection({
 }) {
   const sectionRef = useRef(null)
   const inView = useInView(sectionRef, { once: true, margin: '-80px' })
+  const containerRef = useRef<HTMLDivElement>(null)
+  const progressBarRef = useRef<HTMLDivElement>(null)
   const [activeStep, setActiveStep] = useState(0)
   const dirRef = useRef(1)
+  const prevScrollStepRef = useRef(-1)
 
+  // Click: any direction
   const goTo = (i: number) => {
     if (i === activeStep) return
     dirRef.current = i > activeStep ? 1 : -1
     setActiveStep(i)
   }
 
+  // Scroll: only advance, never reverse
+  useEffect(() => {
+    let rafId: number
+    const loop = () => {
+      if (containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect()
+        const scrolled = Math.max(0, -rect.top)
+        const scrollable = containerRef.current.offsetHeight - window.innerHeight
+        if (scrollable > 0) {
+          const p = Math.min(scrolled / scrollable, 1)
+          if (progressBarRef.current) progressBarRef.current.style.height = `${p * 100}%`
+          if (p <= 0) {
+            prevScrollStepRef.current = -1
+          } else {
+            const s = Math.min(Math.floor(p * features.length), features.length - 1)
+            if (s > prevScrollStepRef.current) {
+              prevScrollStepRef.current = s
+              dirRef.current = 1
+              setActiveStep(s)
+            }
+          }
+        }
+      }
+      rafId = requestAnimationFrame(loop)
+    }
+    rafId = requestAnimationFrame(loop)
+    return () => cancelAnimationFrame(rafId)
+  }, [features.length])
+
   const ICONS = [BarChart2, Calculator, AlertTriangle, TrendingUp, RefreshCw, DollarSign]
   const ActiveIcon = ICONS[activeStep]
-  const progressPct = ((activeStep + 0.5) / features.length) * 100
 
   return (
     <section id="features" ref={sectionRef} style={{ background: 'var(--bg-base)' }}>
@@ -248,12 +280,15 @@ function FeaturesScrollSection({
         </div>
       </div>
 
-      {/* Feature explorer */}
-      <div className="max-w-5xl mx-auto px-6 pb-28">
+      {/* Sticky scroll container — scrolling down advances steps */}
+      <div ref={containerRef} style={{ height: `${features.length * 80}vh` }}>
+        <div className="sticky top-0 h-screen flex items-center overflow-hidden"
+          style={{ background: 'var(--bg-base)' }}>
+        <div className="max-w-5xl mx-auto w-full px-6">
 
         {/* Desktop: 3-column */}
-        <div className="hidden md:grid gap-12 items-stretch"
-          style={{ gridTemplateColumns: '1.15fr 44px 1fr', minHeight: '440px' }}>
+        <div className="hidden md:grid gap-12 items-center"
+          style={{ gridTemplateColumns: '1.15fr 44px 1fr' }}>
 
           {/* LEFT: large icon */}
           <motion.div
@@ -296,13 +331,13 @@ function FeaturesScrollSection({
               {/* Track */}
               <div className="absolute inset-x-1/2 top-0 bottom-0 w-px -translate-x-1/2"
                 style={{ background: 'var(--border)' }} />
-              {/* Animated fill */}
+              {/* Animated fill — DOM-driven by RAF, perfectly smooth */}
               <div
+                ref={progressBarRef}
                 className="absolute inset-x-1/2 top-0 w-px -translate-x-1/2 origin-top"
                 style={{
                   background: 'linear-gradient(to bottom, var(--c1), var(--c2))',
-                  height: `${progressPct}%`,
-                  transition: 'height 0.55s cubic-bezier(0.22, 1, 0.36, 1)',
+                  height: '0%',
                 }}
               />
               {/* Clickable dots */}
@@ -457,7 +492,9 @@ function FeaturesScrollSection({
           </div>
         </div>
 
-      </div>
+        </div>{/* /inner px-6 */}
+        </div>{/* /sticky */}
+      </div>{/* /containerRef 480vh */}
     </section>
   )
 }
