@@ -181,8 +181,8 @@ function MockupInteractive({ children }: { children: React.ReactNode }) {
 type FeatureItem = { id: string; title: string; desc: string; iconIndex: number }
 
 function SortableFeatureCard({
-  item, isDark, card, overlay = false
-}: { item: FeatureItem; isDark: boolean; card: string; overlay?: boolean }) {
+  item, isDark, card, overlay = false, inView = true, index = 0
+}: { item: FeatureItem; isDark: boolean; card: string; overlay?: boolean; inView?: boolean; index?: number }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id })
   const icons = [BarChart2, Calculator, AlertTriangle, FileText, RefreshCw, DollarSign]
   const Icon = icons[item.iconIndex]
@@ -214,12 +214,19 @@ function SortableFeatureCard({
           animation: 'shimmerSweep 0.6s ease forwards',
         }}
       />
-      <div className="w-11 h-11 rounded-xl flex items-center justify-center mb-5"
-        style={{ background: isDark ? 'rgba(0,212,255,0.08)' : 'rgba(124,58,237,0.08)', border: '1px solid var(--border2)' }}>
-        <Icon className="w-5 h-5" style={{ color: 'var(--c1)' }} />
-      </div>
-      <h3 className="font-bold text-base mb-2" style={{ color: 'var(--text-base)' }}>{item.title}</h3>
-      <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>{item.desc}</p>
+      {/* Stagger entry animation wrapper */}
+      <motion.div
+        initial={{ opacity: 0, y: 28 }}
+        animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 28 }}
+        transition={{ delay: index * 0.08, duration: 0.5, ease: 'easeOut' }}
+      >
+        <div className="w-11 h-11 rounded-xl flex items-center justify-center mb-5"
+          style={{ background: isDark ? 'rgba(0,212,255,0.08)' : 'rgba(124,58,237,0.08)', border: '1px solid var(--border2)' }}>
+          <Icon className="w-5 h-5" style={{ color: 'var(--c1)' }} />
+        </div>
+        <h3 className="font-bold text-base mb-2" style={{ color: 'var(--text-base)' }}>{item.title}</h3>
+        <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>{item.desc}</p>
+      </motion.div>
     </div>
   )
 }
@@ -243,7 +250,7 @@ export default function LandingPage() {
   const featuresRef = useRef(null)
   const featuresInView = useInView(featuresRef, { once: true, margin: '-80px' })
   const howRef = useRef(null)
-  const howInView = useInView(howRef, { once: true, margin: '-80px' })
+  const howInView = useInView(howRef, { once: true, amount: 0.45 })
   const pricingRef = useRef(null)
   const pricingInView = useInView(pricingRef, { once: true, margin: '-80px' })
   const ctaRef = useRef(null)
@@ -620,7 +627,7 @@ export default function LandingPage() {
             <SortableContext items={featureItems.map(i => i.id)} strategy={rectSortingStrategy}>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                 {featureItems.map(item => (
-                  <SortableFeatureCard key={item.id} item={item} isDark={isDark} card={card} />
+                  <SortableFeatureCard key={item.id} item={item} isDark={isDark} card={card} inView={featuresInView} index={featureItems.indexOf(item)} />
                 ))}
               </div>
             </SortableContext>
