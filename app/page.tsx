@@ -219,19 +219,23 @@ function FeaturesScrollSection({
   const [activeStep, setActiveStep] = useState(0)
 
   useEffect(() => {
-    const el = containerRef.current
-    if (!el) return
-    const onScroll = () => {
-      const rect = el.getBoundingClientRect()
-      const scrolled = Math.max(0, -rect.top)
-      const scrollable = el.offsetHeight - window.innerHeight
-      if (scrollable <= 0) return
-      const progress = Math.min(scrolled / scrollable, 1)
-      setActiveStep(Math.min(Math.floor(progress * features.length), features.length - 1))
+    let rafId: number
+    let prev = -1
+    const loop = () => {
+      if (containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect()
+        const scrolled = Math.max(0, -rect.top)
+        const scrollable = containerRef.current.offsetHeight - window.innerHeight
+        if (scrollable > 0) {
+          const p = Math.min(scrolled / scrollable, 1)
+          const s = Math.min(Math.floor(p * features.length), features.length - 1)
+          if (s !== prev) { prev = s; setActiveStep(s) }
+        }
+      }
+      rafId = requestAnimationFrame(loop)
     }
-    window.addEventListener('scroll', onScroll, { passive: true })
-    onScroll()
-    return () => window.removeEventListener('scroll', onScroll)
+    rafId = requestAnimationFrame(loop)
+    return () => cancelAnimationFrame(rafId)
   }, [features.length])
 
   const ICONS = [BarChart2, Calculator, AlertTriangle, FileText, RefreshCw, DollarSign]
@@ -526,7 +530,7 @@ export default function LandingPage() {
   }
 
   return (
-    <div className="min-h-screen overflow-x-hidden" style={{ background: 'var(--bg-base)', color: 'var(--text-base)' }}>
+    <div className="min-h-screen" style={{ overflowX: 'clip', background: 'var(--bg-base)', color: 'var(--text-base)' }}>
 
       {/* NAVBAR */}
       <header className="fixed top-0 left-0 right-0 z-50 border-b backdrop-blur-md"
