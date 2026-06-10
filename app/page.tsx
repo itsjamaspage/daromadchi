@@ -215,11 +215,12 @@ function FeaturesScrollSection({
 }) {
   const sectionRef = useRef(null)
   const inView = useInView(sectionRef, { once: true, margin: '-80px' })
-  const containerRef = useRef<HTMLDivElement>(null)
+  const sectionElRef = useRef<HTMLDivElement>(null)
   const progressBarRef = useRef<HTMLDivElement>(null)
   const [activeStep, setActiveStep] = useState(0)
   const dirRef = useRef(1)
-  const prevScrollStepRef = useRef(-1)
+  const stepDoneRef = useRef(false)
+  const cooldownRef = useRef(false)
 
   // Click: any direction
   const goTo = (i: number) => {
@@ -228,33 +229,35 @@ function FeaturesScrollSection({
     setActiveStep(i)
   }
 
-  // Scroll: only advance, never reverse
+  // Sync progress bar to active step (DOM write, no re-render)
   useEffect(() => {
-    let rafId: number
-    const loop = () => {
-      if (containerRef.current) {
-        const rect = containerRef.current.getBoundingClientRect()
-        const scrolled = Math.max(0, -rect.top)
-        const scrollable = containerRef.current.offsetHeight - window.innerHeight
-        if (scrollable > 0) {
-          const p = Math.min(scrolled / scrollable, 1)
-          if (progressBarRef.current) progressBarRef.current.style.height = `${p * 100}%`
-          if (p <= 0) {
-            prevScrollStepRef.current = -1
-          } else {
-            const s = Math.min(Math.floor(p * features.length), features.length - 1)
-            if (s > prevScrollStepRef.current) {
-              prevScrollStepRef.current = s
-              dirRef.current = 1
-              setActiveStep(s)
-            }
-          }
-        }
-      }
-      rafId = requestAnimationFrame(loop)
+    if (progressBarRef.current) {
+      const pct = features.length > 1 ? (activeStep / (features.length - 1)) * 100 : 100
+      progressBarRef.current.style.height = `${pct}%`
     }
-    rafId = requestAnimationFrame(loop)
-    return () => cancelAnimationFrame(rafId)
+  }, [activeStep, features.length])
+
+  // Wheel intercept: capture downward scroll to advance steps; upward = normal page scroll
+  useEffect(() => {
+    const onWheel = (e: WheelEvent) => {
+      const el = sectionElRef.current
+      if (!el || stepDoneRef.current || e.deltaY <= 0) return
+      const rect = el.getBoundingClientRect()
+      // Only intercept when the interactive panel is at the top of the viewport (±60px)
+      if (rect.top > 60 || rect.top < -60) return
+      e.preventDefault()
+      if (cooldownRef.current) return
+      cooldownRef.current = true
+      setTimeout(() => { cooldownRef.current = false }, 480)
+      dirRef.current = 1
+      setActiveStep(prev => {
+        const next = prev + 1
+        if (next >= features.length - 1) stepDoneRef.current = true
+        return Math.min(next, features.length - 1)
+      })
+    }
+    window.addEventListener('wheel', onWheel, { passive: false })
+    return () => window.removeEventListener('wheel', onWheel)
   }, [features.length])
 
   const ICONS = [BarChart2, Calculator, AlertTriangle, TrendingUp, RefreshCw, DollarSign]
@@ -280,10 +283,9 @@ function FeaturesScrollSection({
         </div>
       </div>
 
-      {/* Sticky scroll container — scrolling down advances steps */}
-      <div ref={containerRef} style={{ height: `${features.length * 80}vh` }}>
-        <div className="sticky top-0 h-screen flex items-center overflow-hidden"
-          style={{ background: 'var(--bg-base)' }}>
+      {/* Wheel-driven panel — scroll down advances steps, scroll up = normal page scroll */}
+      <div ref={sectionElRef} className="h-screen flex items-center overflow-hidden"
+        style={{ background: 'var(--bg-base)' }}>
         <div className="max-w-5xl mx-auto w-full px-6">
 
         {/* Desktop: 3-column */}
@@ -493,8 +495,7 @@ function FeaturesScrollSection({
         </div>
 
         </div>{/* /inner px-6 */}
-        </div>{/* /sticky */}
-      </div>{/* /containerRef 480vh */}
+      </div>{/* /sectionElRef */}
     </section>
   )
 }
@@ -519,7 +520,7 @@ export default function LandingPage() {
   const howRef = useRef(null)
   const howInView = useInView(howRef, { once: true, amount: 0.45 })
   const pricingRef = useRef(null)
-  const pricingInView = useInView(pricingRef, { once: true, margin: '-80px' })
+  const pricingInView = useInView(pricingRef, { once: true, amount: 0.25 })
   const ctaRef = useRef(null)
   const ctaInView = useInView(ctaRef, { once: true, margin: '-80px' })
 
