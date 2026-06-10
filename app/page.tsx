@@ -5,6 +5,13 @@ import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 import { motion, useInView, AnimatePresence, useMotionValue, useSpring } from 'framer-motion'
 import {
+  DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent, DragOverlay, DragStartEvent
+} from '@dnd-kit/core'
+import {
+  SortableContext, useSortable, rectSortingStrategy, arrayMove
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+import {
   BarChart2, Calculator, FileText,
   Zap, ArrowRight, RefreshCw, AlertTriangle, DollarSign,
   Sparkles, Sun, Moon, Globe, X, Menu,
@@ -171,6 +178,52 @@ function MockupInteractive({ children }: { children: React.ReactNode }) {
   )
 }
 
+type FeatureItem = { id: string; title: string; desc: string; iconIndex: number }
+
+function SortableFeatureCard({
+  item, isDark, card, overlay = false
+}: { item: FeatureItem; isDark: boolean; card: string; overlay?: boolean }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id })
+  const icons = [BarChart2, Calculator, AlertTriangle, FileText, RefreshCw, DollarSign]
+  const Icon = icons[item.iconIndex]
+
+  return (
+    <div
+      ref={setNodeRef}
+      {...attributes}
+      {...listeners}
+      className="feature-card group relative rounded-2xl p-9 border overflow-hidden select-none"
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging && !overlay ? 0.35 : 1,
+        cursor: isDragging ? 'grabbing' : 'grab',
+        touchAction: 'none',
+        background: card,
+        borderColor: isDragging ? 'var(--c1)' : 'var(--border)',
+        boxShadow: isDragging ? '0 20px 60px rgba(0,0,0,0.4)' : undefined,
+      }}
+    >
+      {/* shimmer sweep on hover */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+        style={{
+          background: 'linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.07) 50%, transparent 60%)',
+          backgroundSize: '200% 100%',
+          animation: 'shimmerSweep 0.6s ease forwards',
+        }}
+      />
+      <div className="w-11 h-11 rounded-xl flex items-center justify-center mb-5"
+        style={{ background: isDark ? 'rgba(0,212,255,0.08)' : 'rgba(124,58,237,0.08)', border: '1px solid var(--border2)' }}>
+        <Icon className="w-5 h-5" style={{ color: 'var(--c1)' }} />
+      </div>
+      <h3 className="font-bold text-base mb-2" style={{ color: 'var(--text-base)' }}>{item.title}</h3>
+      <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>{item.desc}</p>
+    </div>
+  )
+}
+
 export default function LandingPage() {
   const { theme, toggle } = useTheme()
   const { lang, setLang } = useLang()
@@ -198,6 +251,28 @@ export default function LandingPage() {
 
   const langs: Lang[] = ['uz', 'ru', 'en']
   const card = isDark ? 'var(--bg-card)' : '#ffffff'
+
+  const [featureItems, setFeatureItems] = useState<FeatureItem[]>(() =>
+    t.features.map((f: { title: string; desc: string }, i: number) => ({ id: `feat-${i}`, title: f.title, desc: f.desc, iconIndex: i }))
+  )
+  const [activeDragId, setActiveDragId] = useState<string | null>(null)
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } })
+  )
+
+  const handleDragStart = (e: DragStartEvent) => setActiveDragId(e.active.id as string)
+  const handleDragEnd = (e: DragEndEvent) => {
+    setActiveDragId(null)
+    const { active, over } = e
+    if (over && active.id !== over.id) {
+      setFeatureItems(items => {
+        const oldIndex = items.findIndex(i => i.id === active.id)
+        const newIndex = items.findIndex(i => i.id === over.id)
+        return arrayMove(items, oldIndex, newIndex)
+      })
+    }
+  }
 
   const wordAnim = {
     hidden: { opacity: 0, y: 30 },
@@ -487,26 +562,30 @@ export default function LandingPage() {
             <h2 className="text-3xl sm:text-4xl font-extrabold mb-4" style={{ color: 'var(--text-base)' }}>{t.featuresTitle}</h2>
             <p className="text-base max-w-lg mx-auto" style={{ color: 'var(--text-muted)' }}>{t.featuresSubtitle}</p>
           </motion.div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {t.features.map((f, i) => {
-              const icons = [BarChart2, Calculator, AlertTriangle, FileText, RefreshCw, DollarSign]
-              const Icon = icons[i]
-              return (
-                <motion.div key={f.title}
-                  initial={{ opacity: 0, y: 24 }} animate={featuresInView ? { opacity: 1, y: 0 } : {}}
-                  transition={{ delay: i * 0.07 }}
-                  className="animate-float rounded-2xl p-9 border hover:border-[var(--c1)] transition-colors cursor-default"
-                  style={{ background: card, borderColor: 'var(--border)', animationDelay: `${i * 0.6}s` }}>
-                  <div className="w-11 h-11 rounded-xl flex items-center justify-center mb-5"
-                    style={{ background: isDark ? 'rgba(0,212,255,0.08)' : 'rgba(124,58,237,0.08)', border: '1px solid var(--border2)' }}>
-                    <Icon className="w-5 h-5" style={{ color: 'var(--c1)' }} />
-                  </div>
-                  <h3 className="font-bold text-base mb-2" style={{ color: 'var(--text-base)' }}>{f.title}</h3>
-                  <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>{f.desc}</p>
-                </motion.div>
-              )
-            })}
-          </div>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext items={featureItems.map(i => i.id)} strategy={rectSortingStrategy}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                {featureItems.map(item => (
+                  <SortableFeatureCard key={item.id} item={item} isDark={isDark} card={card} />
+                ))}
+              </div>
+            </SortableContext>
+            <DragOverlay>
+              {activeDragId ? (
+                <SortableFeatureCard
+                  item={featureItems.find(i => i.id === activeDragId)!}
+                  isDark={isDark}
+                  card={card}
+                  overlay
+                />
+              ) : null}
+            </DragOverlay>
+          </DndContext>
         </div>
       </section>
 
