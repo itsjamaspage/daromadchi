@@ -204,7 +204,7 @@ function SlotPrice({ value, trigger, delay = 0 }: { value: string; trigger: bool
 }
 
 function FeaturesScrollSection({
-  features, isDark, card, badge, title, subtitle,
+  features, isDark, badge, title, subtitle,
 }: {
   features: Array<{ title: string; desc: string }>
   isDark: boolean
@@ -213,55 +213,29 @@ function FeaturesScrollSection({
   title: string
   subtitle: string
 }) {
-  const headingRef = useRef(null)
-  const headingInView = useInView(headingRef, { once: true, margin: '-60px' })
-  const containerRef = useRef<HTMLDivElement>(null)
-  const progressBarRef = useRef<HTMLDivElement>(null)
+  const sectionRef = useRef(null)
+  const inView = useInView(sectionRef, { once: true, margin: '-80px' })
   const [activeStep, setActiveStep] = useState(0)
+  const dirRef = useRef(1)
 
-  useEffect(() => {
-    let rafId: number
-    let prevStep = -1
-    const loop = () => {
-      if (containerRef.current) {
-        const rect = containerRef.current.getBoundingClientRect()
-        const scrolled = Math.max(0, -rect.top)
-        const scrollable = containerRef.current.offsetHeight - window.innerHeight
-        if (scrollable > 0) {
-          const p = Math.min(scrolled / scrollable, 1)
-
-          // Progress bar: direct DOM mutation, 60fps smooth
-          if (progressBarRef.current) {
-            progressBarRef.current.style.height = `${p * 100}%`
-          }
-
-          if (p <= 0) {
-            // Section not yet reached — reset so animation plays fresh on next entry
-            prevStep = -1
-          } else {
-            // Only advance, never reverse
-            const s = Math.min(Math.floor(p * features.length), features.length - 1)
-            if (s > prevStep) { prevStep = s; setActiveStep(s) }
-          }
-        }
-      }
-      rafId = requestAnimationFrame(loop)
-    }
-    rafId = requestAnimationFrame(loop)
-    return () => cancelAnimationFrame(rafId)
-  }, [features.length])
+  const goTo = (i: number) => {
+    if (i === activeStep) return
+    dirRef.current = i > activeStep ? 1 : -1
+    setActiveStep(i)
+  }
 
   const ICONS = [BarChart2, Calculator, AlertTriangle, TrendingUp, RefreshCw, DollarSign]
   const ActiveIcon = ICONS[activeStep]
+  const progressPct = ((activeStep + 0.5) / features.length) * 100
 
   return (
-    <section id="features" style={{ background: 'var(--bg-base)' }}>
+    <section id="features" ref={sectionRef} style={{ background: 'var(--bg-base)' }}>
       {/* Section heading */}
-      <div ref={headingRef} className="pt-24 pb-14 px-6">
+      <div className="pt-24 pb-14 px-6">
         <div className="max-w-5xl mx-auto text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
-            animate={headingInView ? { opacity: 1, y: 0 } : {}}
+            animate={inView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.5 }}
           >
             <span className="inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-bold mb-4 border"
@@ -274,84 +248,104 @@ function FeaturesScrollSection({
         </div>
       </div>
 
-      {/* Scroll-driven sticky timeline */}
-      <div ref={containerRef} style={{ height: `${features.length * 80}vh` }}>
-        <div className="sticky top-0 h-screen flex items-center overflow-hidden"
-          style={{ background: 'var(--bg-base)' }}>
+      {/* Feature explorer */}
+      <div className="max-w-5xl mx-auto px-6 pb-28">
 
-          {/* Desktop 3-column layout */}
-          <div className="max-w-5xl mx-auto w-full px-6 hidden md:grid gap-10 items-center"
-            style={{ gridTemplateColumns: '1.15fr 44px 1fr' }}>
+        {/* Desktop: 3-column */}
+        <div className="hidden md:grid gap-12 items-stretch"
+          style={{ gridTemplateColumns: '1.15fr 44px 1fr', minHeight: '440px' }}>
 
-            {/* LEFT: large icon only — no text */}
-            <div className="flex items-center justify-center">
-              <div className="relative p-3">
-                {/* Cyan bracket corners */}
-                <div className="absolute top-0 left-0 w-7 h-7 border-t-2 border-l-2 rounded-tl" style={{ borderColor: 'var(--c1)' }} />
-                <div className="absolute top-0 right-0 w-7 h-7 border-t-2 border-r-2 rounded-tr" style={{ borderColor: 'var(--c1)' }} />
-                <div className="absolute bottom-0 left-0 w-7 h-7 border-b-2 border-l-2 rounded-bl" style={{ borderColor: 'var(--c1)' }} />
-                <div className="absolute bottom-0 right-0 w-7 h-7 border-b-2 border-r-2 rounded-br" style={{ borderColor: 'var(--c1)' }} />
+          {/* LEFT: large icon */}
+          <motion.div
+            initial={{ opacity: 0, x: -28 }}
+            animate={inView ? { opacity: 1, x: 0 } : {}}
+            transition={{ duration: 0.55, delay: 0.15 }}
+            className="flex items-center justify-center"
+          >
+            <div className="relative p-3">
+              <div className="absolute top-0 left-0 w-7 h-7 border-t-2 border-l-2 rounded-tl" style={{ borderColor: 'var(--c1)' }} />
+              <div className="absolute top-0 right-0 w-7 h-7 border-t-2 border-r-2 rounded-tr" style={{ borderColor: 'var(--c1)' }} />
+              <div className="absolute bottom-0 left-0 w-7 h-7 border-b-2 border-l-2 rounded-bl" style={{ borderColor: 'var(--c1)' }} />
+              <div className="absolute bottom-0 right-0 w-7 h-7 border-b-2 border-r-2 rounded-br" style={{ borderColor: 'var(--c1)' }} />
 
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={activeStep}
-                    initial={{ opacity: 0, scale: 0.68, rotateY: -80 }}
-                    animate={{ opacity: 1, scale: 1, rotateY: 0 }}
-                    exit={{ opacity: 0, scale: 0.68, rotateY: 80 }}
-                    transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
-                    className="w-56 h-56 rounded-3xl flex items-center justify-center"
-                    style={{
-                      background: isDark ? 'rgba(0,212,255,0.07)' : 'rgba(124,58,237,0.07)',
-                      border: '2px solid var(--c1)',
-                      boxShadow: isDark
-                        ? '0 0 70px rgba(0,212,255,0.22), inset 0 0 40px rgba(0,212,255,0.05)'
-                        : '0 0 70px rgba(124,58,237,0.22), inset 0 0 40px rgba(124,58,237,0.05)',
-                    }}
-                  >
-                    <ActiveIcon className="w-28 h-28" style={{ color: 'var(--c1)' }} />
-                  </motion.div>
-                </AnimatePresence>
-              </div>
-            </div>
-
-            {/* CENTER: vertical timeline */}
-            <div className="flex justify-center" style={{ height: '62vh' }}>
-              <div className="relative flex flex-col items-center justify-between py-3 w-3">
-                <div className="absolute inset-x-1/2 top-3 bottom-3 w-px -translate-x-1/2"
-                  style={{ background: 'var(--border)' }} />
-                <div
-                  ref={progressBarRef}
-                  className="absolute inset-x-1/2 top-3 w-px -translate-x-1/2 origin-top"
-                  style={{ background: 'linear-gradient(to bottom, var(--c1), var(--c2))', height: '0%' }}
-                />
-                {features.map((_, i) => (
-                  <div key={i} className="relative z-10 rounded-full border-2 transition-all duration-300"
-                    style={{
-                      width: i === activeStep ? '14px' : '10px',
-                      height: i === activeStep ? '14px' : '10px',
-                      background: i <= activeStep ? 'var(--c1)' : 'var(--bg-base)',
-                      borderColor: i <= activeStep ? 'var(--c1)' : 'var(--border)',
-                      boxShadow: i === activeStep
-                        ? isDark ? '0 0 10px rgba(0,212,255,0.7)' : '0 0 10px rgba(124,58,237,0.7)'
-                        : undefined,
-                    }}
-                  />
-                ))}
-              </div>
-            </div>
-
-            {/* RIGHT: big animated text + compact option list */}
-            <div className="flex flex-col gap-6 justify-center">
               <AnimatePresence mode="wait">
                 <motion.div
                   key={activeStep}
-                  initial={{ opacity: 0, x: 44, y: 8 }}
-                  animate={{ opacity: 1, x: 0, y: 0 }}
-                  exit={{ opacity: 0, x: -24 }}
+                  initial={{ opacity: 0, scale: 0.68, rotateY: dirRef.current * -80 }}
+                  animate={{ opacity: 1, scale: 1, rotateY: 0 }}
+                  exit={{ opacity: 0, scale: 0.68, rotateY: dirRef.current * 80 }}
+                  transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
+                  className="w-56 h-56 rounded-3xl flex items-center justify-center"
+                  style={{
+                    background: isDark ? 'rgba(0,212,255,0.07)' : 'rgba(124,58,237,0.07)',
+                    border: '2px solid var(--c1)',
+                    boxShadow: isDark
+                      ? '0 0 70px rgba(0,212,255,0.22), inset 0 0 40px rgba(0,212,255,0.05)'
+                      : '0 0 70px rgba(124,58,237,0.22), inset 0 0 40px rgba(124,58,237,0.05)',
+                  }}
+                >
+                  <ActiveIcon className="w-28 h-28" style={{ color: 'var(--c1)' }} />
+                </motion.div>
+              </AnimatePresence>
+            </div>
+          </motion.div>
+
+          {/* CENTER: clickable timeline */}
+          <div className="flex justify-center py-8">
+            <div className="relative flex flex-col items-center justify-between w-4 h-full">
+              {/* Track */}
+              <div className="absolute inset-x-1/2 top-0 bottom-0 w-px -translate-x-1/2"
+                style={{ background: 'var(--border)' }} />
+              {/* Animated fill */}
+              <div
+                className="absolute inset-x-1/2 top-0 w-px -translate-x-1/2 origin-top"
+                style={{
+                  background: 'linear-gradient(to bottom, var(--c1), var(--c2))',
+                  height: `${progressPct}%`,
+                  transition: 'height 0.55s cubic-bezier(0.22, 1, 0.36, 1)',
+                }}
+              />
+              {/* Clickable dots */}
+              {features.map((f, i) => (
+                <button
+                  key={i}
+                  onClick={() => goTo(i)}
+                  title={f.title}
+                  className="relative z-10 rounded-full border-2 transition-all duration-300 hover:scale-125 focus:outline-none"
+                  style={{
+                    width: i === activeStep ? '16px' : '11px',
+                    height: i === activeStep ? '16px' : '11px',
+                    background: i <= activeStep ? 'var(--c1)' : 'var(--bg-base)',
+                    borderColor: i <= activeStep ? 'var(--c1)' : 'var(--border)',
+                    cursor: 'pointer',
+                    boxShadow: i === activeStep
+                      ? isDark ? '0 0 14px rgba(0,212,255,0.85)' : '0 0 14px rgba(124,58,237,0.85)'
+                      : undefined,
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* RIGHT: big animated text + clickable list */}
+          <motion.div
+            initial={{ opacity: 0, x: 28 }}
+            animate={inView ? { opacity: 1, x: 0 } : {}}
+            transition={{ duration: 0.55, delay: 0.25 }}
+            className="flex flex-col gap-7 justify-center py-8"
+          >
+            {/* Active step text — slides in from direction of travel */}
+            <div style={{ minHeight: '140px' }}>
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={activeStep}
+                  initial={{ opacity: 0, x: dirRef.current * 48 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: dirRef.current * -28 }}
                   transition={{ duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
                 >
                   <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: 'var(--c1)' }}>
-                    {String(activeStep + 1).padStart(2, '0')} / {String(features.length).padStart(2, '0')}
+                    {String(activeStep + 1).padStart(2, '0')}&nbsp;/&nbsp;{String(features.length).padStart(2, '0')}
                   </p>
                   <h3 className="text-3xl font-extrabold mb-3 leading-tight" style={{ color: 'var(--text-base)' }}>
                     {features[activeStep].title}
@@ -361,77 +355,113 @@ function FeaturesScrollSection({
                   </p>
                 </motion.div>
               </AnimatePresence>
+            </div>
 
-              {/* Option list */}
-              <div className="flex flex-col gap-0.5">
-                {features.map((f, i) => {
-                  const Li = ICONS[i]
-                  const isActive = i === activeStep
-                  return (
-                    <motion.div key={i}
-                      animate={{ opacity: isActive ? 1 : 0.32 }}
-                      transition={{ duration: 0.2 }}
-                      className="flex items-center gap-3 py-2 px-3 rounded-lg"
-                      style={{ background: isActive ? (isDark ? 'rgba(0,212,255,0.06)' : 'rgba(124,58,237,0.06)') : 'transparent' }}
+            {/* Clickable option list */}
+            <div className="flex flex-col gap-1">
+              {features.map((f, i) => {
+                const Li = ICONS[i]
+                const isActive = i === activeStep
+                return (
+                  <motion.button
+                    key={i}
+                    onClick={() => goTo(i)}
+                    className="flex items-center gap-3 py-2.5 px-3 rounded-xl text-left w-full focus:outline-none"
+                    animate={{
+                      opacity: isActive ? 1 : 0.38,
+                      background: isActive
+                        ? isDark ? 'rgba(0,212,255,0.08)' : 'rgba(124,58,237,0.08)'
+                        : 'rgba(0,0,0,0)',
+                    }}
+                    whileHover={{ opacity: isActive ? 1 : 0.7 }}
+                    transition={{ duration: 0.2 }}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <div
+                      className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-colors duration-200"
+                      style={{
+                        background: isActive
+                          ? isDark ? 'rgba(0,212,255,0.16)' : 'rgba(124,58,237,0.16)'
+                          : 'transparent',
+                      }}
                     >
-                      <Li className="w-4 h-4 shrink-0" style={{ color: isActive ? 'var(--c1)' : 'var(--text-dim)' }} />
-                      <span className="text-sm font-medium" style={{ color: isActive ? 'var(--text-base)' : 'var(--text-muted)' }}>
-                        {f.title}
-                      </span>
-                      {isActive && (
-                        <div className="ml-auto w-2 h-2 rounded-full animate-pulse" style={{ background: 'var(--c1)' }} />
-                      )}
-                    </motion.div>
-                  )
-                })}
-              </div>
+                      <Li className="w-3.5 h-3.5" style={{ color: isActive ? 'var(--c1)' : 'var(--text-dim)' }} />
+                    </div>
+                    <span className="text-sm font-medium transition-colors duration-200"
+                      style={{ color: isActive ? 'var(--text-base)' : 'var(--text-muted)' }}>
+                      {f.title}
+                    </span>
+                    {isActive && (
+                      <motion.div
+                        layoutId="feature-active-dot"
+                        className="ml-auto w-2 h-2 rounded-full"
+                        style={{ background: 'var(--c1)' }}
+                        transition={{ type: 'spring', stiffness: 400, damping: 28 }}
+                      />
+                    )}
+                  </motion.button>
+                )
+              })}
             </div>
-          </div>
+          </motion.div>
+        </div>
 
-          {/* Mobile: single column step display */}
-          <div className="md:hidden max-w-sm mx-auto px-6 w-full flex flex-col items-center gap-8">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={activeStep}
-                initial={{ opacity: 0, y: 24 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -24 }}
-                transition={{ duration: 0.35 }}
-                className="flex flex-col items-center gap-5 text-center"
-              >
-                <div className="w-24 h-24 rounded-2xl flex items-center justify-center border-2"
-                  style={{
-                    borderColor: 'var(--c1)',
-                    background: isDark ? 'rgba(0,212,255,0.08)' : 'rgba(124,58,237,0.08)',
-                    boxShadow: isDark ? '0 0 30px rgba(0,212,255,0.15)' : '0 0 30px rgba(124,58,237,0.15)',
-                  }}>
-                  <ActiveIcon className="w-12 h-12" style={{ color: 'var(--c1)' }} />
-                </div>
-                <h3 className="font-extrabold text-2xl" style={{ color: 'var(--text-base)' }}>
-                  {features[activeStep].title}
-                </h3>
-                <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>
-                  {features[activeStep].desc}
-                </p>
-              </motion.div>
-            </AnimatePresence>
+        {/* Mobile */}
+        <div className="md:hidden flex flex-col items-center gap-8">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeStep}
+              initial={{ opacity: 0, scale: 0.78 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.78 }}
+              transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+              className="w-36 h-36 rounded-2xl flex items-center justify-center border-2"
+              style={{
+                borderColor: 'var(--c1)',
+                background: isDark ? 'rgba(0,212,255,0.08)' : 'rgba(124,58,237,0.08)',
+                boxShadow: isDark ? '0 0 40px rgba(0,212,255,0.2)' : '0 0 40px rgba(124,58,237,0.2)',
+              }}
+            >
+              <ActiveIcon className="w-18 h-18" style={{ color: 'var(--c1)', width: '4.5rem', height: '4.5rem' }} />
+            </motion.div>
+          </AnimatePresence>
 
-            <div className="flex gap-2 items-center">
-              {features.map((_, i) => (
-                <div key={i} className="rounded-full transition-all duration-400"
-                  style={{
-                    width: i === activeStep ? '24px' : '8px',
-                    height: '8px',
+          <AnimatePresence mode="wait">
+            <motion.div key={activeStep}
+              initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -18 }}
+              transition={{ duration: 0.32 }} className="text-center px-4"
+            >
+              <h3 className="text-2xl font-extrabold mb-2" style={{ color: 'var(--text-base)' }}>
+                {features[activeStep].title}
+              </h3>
+              <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>
+                {features[activeStep].desc}
+              </p>
+            </motion.div>
+          </AnimatePresence>
+
+          {/* Clickable pill dots */}
+          <div className="flex gap-2 items-center flex-wrap justify-center">
+            {features.map((_, i) => (
+              <button key={i} onClick={() => goTo(i)} className="focus:outline-none">
+                <motion.div
+                  animate={{
+                    width: i === activeStep ? '28px' : '9px',
                     background: i <= activeStep ? 'var(--c1)' : 'var(--border)',
-                  }} />
-              ))}
-            </div>
+                  }}
+                  transition={{ duration: 0.3 }}
+                  className="h-2 rounded-full"
+                />
+              </button>
+            ))}
           </div>
         </div>
+
       </div>
     </section>
   )
 }
+
 
 export default function LandingPage() {
   const { theme, toggle } = useTheme()
