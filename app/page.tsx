@@ -215,7 +215,7 @@ function FeaturesScrollSection({
 }) {
   const sectionRef = useRef(null)
   const sectionElRef = useRef<HTMLDivElement>(null)
-  const inView = useInView(sectionElRef, { once: true, amount: 0.3 })
+  const inView = useInView(sectionRef, { once: true, margin: '-80px' })
   const progressBarRef = useRef<HTMLDivElement>(null)
   const [activeStep, setActiveStep] = useState(0)
   const dirRef = useRef(1)
@@ -237,23 +237,36 @@ function FeaturesScrollSection({
     }
   }, [activeStep, features.length])
 
-  // Combined IO + wheel handler — shared closure avoids state-update lag
+  // IO + wheel: snap to panel as soon as it enters viewport, then advance steps
   useEffect(() => {
     const el = sectionElRef.current
     if (!el) return
 
-    // Closure var: true while the panel is ≥10% visible in viewport
-    let isVisible = false
+    // isApproaching: panel partially visible but not yet filling viewport
+    // isReady: panel ≥95% visible — step advancement allowed
+    let isApproaching = false
+    let isReady = false
+    let snapDone = false // only snap once per approach
 
     const obs = new IntersectionObserver(
       ([entry]) => {
-        // isVisible only when panel ≥95% in viewport (fully in view)
-        isVisible = entry.intersectionRatio >= 0.95
-        // Panel fully left viewport downward (user scrolled up past it) → reset
-        if (!entry.isIntersecting && entry.boundingClientRect.top > 0) {
-          stepDoneRef.current = false
-          cooldownRef.current = false
-          setActiveStep(0)
+        const ratio = entry.intersectionRatio
+        if (ratio >= 0.95) {
+          isApproaching = false
+          isReady = true
+        } else if (entry.isIntersecting) {
+          isApproaching = true
+          isReady = false
+        } else {
+          isApproaching = false
+          isReady = false
+          // Panel left viewport from below (user scrolled up) → full reset
+          if (entry.boundingClientRect.top > 0) {
+            snapDone = false
+            stepDoneRef.current = false
+            cooldownRef.current = false
+            setActiveStep(0)
+          }
         }
       },
       { threshold: [0, 0.95] },
@@ -261,8 +274,20 @@ function FeaturesScrollSection({
     obs.observe(el)
 
     const onWheel = (e: WheelEvent) => {
-      if (e.deltaY <= 0 || !isVisible || stepDoneRef.current) return
+      if (e.deltaY <= 0 || stepDoneRef.current) return
+      if (!isApproaching && !isReady) return
+      // Always block default so the page never scrolls through the section
       e.preventDefault()
+      if (isApproaching) {
+        // Snap panel to fill viewport on the first downward scroll
+        if (!snapDone) {
+          snapDone = true
+          const y = Math.round(el.getBoundingClientRect().top + window.scrollY)
+          window.scrollTo({ top: y, behavior: 'smooth' })
+        }
+        return
+      }
+      // Panel is ready — advance steps
       if (cooldownRef.current) return
       cooldownRef.current = true
       setTimeout(() => { cooldownRef.current = false }, 500)
@@ -286,28 +311,27 @@ function FeaturesScrollSection({
 
   return (
     <section id="features" ref={sectionRef} style={{ background: 'var(--bg-base)' }}>
-      {/* Single viewport panel: heading + content grouped, no gap between them */}
-      <div ref={sectionElRef} className="h-screen flex flex-col justify-center"
-        style={{ background: 'var(--bg-base)', overflow: 'clip' }}>
-
-        {/* Heading sits directly above the content as one centered group */}
-        <div className="pb-8 px-6">
-          <div className="max-w-5xl mx-auto text-center">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={inView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.5 }}
-            >
-              <span className="inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-bold mb-4 border"
-                style={{ background: isDark ? 'rgba(0,212,255,0.06)' : 'rgba(124,58,237,0.06)', borderColor: 'var(--border2)', color: 'var(--c1)' }}>
-                <Sparkles className="w-3 h-3" /> {badge}
-              </span>
-              <h2 className="text-3xl sm:text-4xl font-extrabold mb-4" style={{ color: 'var(--text-base)' }}>{title}</h2>
-              <p className="text-base max-w-lg mx-auto" style={{ color: 'var(--text-muted)' }}>{subtitle}</p>
-            </motion.div>
-          </div>
+      {/* Section heading */}
+      <div className="pt-16 pb-6 px-6">
+        <div className="max-w-5xl mx-auto text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={inView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.5 }}
+          >
+            <span className="inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-bold mb-4 border"
+              style={{ background: isDark ? 'rgba(0,212,255,0.06)' : 'rgba(124,58,237,0.06)', borderColor: 'var(--border2)', color: 'var(--c1)' }}>
+              <Sparkles className="w-3 h-3" /> {badge}
+            </span>
+            <h2 className="text-3xl sm:text-4xl font-extrabold mb-4" style={{ color: 'var(--text-base)' }}>{title}</h2>
+            <p className="text-base max-w-lg mx-auto" style={{ color: 'var(--text-muted)' }}>{subtitle}</p>
+          </motion.div>
         </div>
+      </div>
 
+      {/* Wheel-driven panel — snaps into view, then advances steps on scroll */}
+      <div ref={sectionElRef} className="h-screen flex items-center"
+        style={{ background: 'var(--bg-base)', overflow: 'clip' }}>
         <div className="max-w-5xl mx-auto w-full px-6">
 
         {/* Desktop: 3-column */}
