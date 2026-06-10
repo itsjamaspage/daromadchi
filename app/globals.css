@@ -247,11 +247,41 @@ h1, h2, h3, h4, h5, h6 {
   will-change: width;
 }
 
+/* OPTION 1 (current): float up/down with slight rotation */
 @keyframes float {
   0%, 100% { transform: translateY(0px) rotate(-1deg); }
   50% { transform: translateY(-14px) rotate(1deg); }
 }
 .animate-float { animation: float 5s ease-in-out infinite; }
+
+/* OPTION 2: 3D perspective tilt */
+@keyframes tilt3d {
+  0%, 100% { transform: perspective(900px) rotateY(0deg) rotateX(0deg); }
+  33%       { transform: perspective(900px) rotateY(5deg) rotateX(-2deg); }
+  66%       { transform: perspective(900px) rotateY(-4deg) rotateX(2deg); }
+}
+.animate-tilt3d { animation: tilt3d 6s ease-in-out infinite; }
+
+/* OPTION 3: gentle scale breathe */
+@keyframes breathe {
+  0%, 100% { transform: scale(1); }
+  50%       { transform: scale(1.03); }
+}
+.animate-breathe { animation: breathe 4s ease-in-out infinite; }
+
+/* OPTION 4: entrance only — slide up once, then static */
+@keyframes slideUpIn {
+  from { opacity: 0; transform: translateY(40px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-entrance { animation: slideUpIn 0.8s cubic-bezier(0.22,1,0.36,1) both; }
+
+/* OPTION 5: shadow glow pulse (mockup stays still) */
+@keyframes shadowPulse {
+  0%, 100% { box-shadow: 0 8px 40px rgba(99,102,241,0.25); }
+  50%       { box-shadow: 0 8px 80px rgba(99,102,241,0.55), 0 0 120px rgba(99,102,241,0.2); }
+}
+.animate-shadowpulse { animation: shadowPulse 3.5s ease-in-out infinite; border-radius: 1rem; }
 
 @keyframes pulse-glow {
   0%, 100% { box-shadow: 0 0 30px rgba(0,212,255,0.15); }
