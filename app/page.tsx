@@ -724,9 +724,9 @@ export default function LandingPage() {
               { name: 'Pro+', price: '600 000', highlight: false, features: t.pricingProPlusFeatures },
             ] as const).map((plan, i) => (
               <motion.div key={plan.name}
-                initial={{ opacity: 0, y: 60, scale: 0.88 }}
+                initial={{ opacity: 0, y: -180, scale: 0.85 }}
                 animate={pricingInView ? { opacity: 1, y: 0, scale: 1 } : {}}
-                transition={{ delay: i * 0.22, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                transition={{ delay: i * 0.28, type: 'spring', stiffness: 160, damping: 18, mass: 1.1 }}
                 whileHover={{ y: -8, transition: { duration: 0.2 } }}
                 className="rounded-2xl p-7 border relative cursor-default"
                 style={{ background: plan.highlight ? (isDark ? 'rgba(0,212,255,0.05)' : 'rgba(124,58,237,0.05)') : card, borderColor: plan.highlight ? 'var(--c1)' : 'var(--border)' }}>
@@ -734,7 +734,7 @@ export default function LandingPage() {
                   <motion.div
                     initial={{ opacity: 0, scale: 0.5 }}
                     animate={pricingInView ? { opacity: 1, scale: 1 } : {}}
-                    transition={{ delay: i * 0.22 + 0.4, type: 'spring', stiffness: 400, damping: 15 }}
+                    transition={{ delay: i * 0.28 + 0.65, type: 'spring', stiffness: 400, damping: 15 }}
                     className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-xs font-bold text-white"
                     style={{ background: 'linear-gradient(135deg, var(--c1), var(--c2))' }}>
                     {t.pricingPopular}
@@ -743,7 +743,7 @@ export default function LandingPage() {
                 <h3 className="font-extrabold text-lg mb-1" style={{ color: 'var(--text-base)' }}>{plan.name}</h3>
                 <div className="flex items-baseline gap-1 mb-6">
                   <span className="text-3xl font-extrabold" style={{ color: plan.highlight ? 'var(--c1)' : 'var(--text-base)' }}>
-                    <SlotPrice value={plan.price} trigger={pricingInView} delay={i * 0.22 + 0.15} />
+                    <SlotPrice value={plan.price} trigger={pricingInView} delay={i * 0.28 + 0.7} />
                   </span>
                   <span className="text-sm" style={{ color: 'var(--text-muted)' }}>so&apos;m/oy</span>
                 </div>
@@ -753,7 +753,7 @@ export default function LandingPage() {
                       key={f}
                       initial={{ opacity: 0, x: -10 }}
                       animate={pricingInView ? { opacity: 1, x: 0 } : {}}
-                      transition={{ delay: i * 0.22 + 0.3 + fi * 0.05, duration: 0.3 }}
+                      transition={{ delay: i * 0.28 + 0.8 + fi * 0.05, duration: 0.3 }}
                       className="flex items-start gap-2 text-sm" style={{ color: 'var(--text-muted)' }}>
                       <CheckCircle className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: 'var(--c1)' }} />
                       {f}
