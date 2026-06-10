@@ -216,11 +216,13 @@ function FeaturesScrollSection({
   const headingRef = useRef(null)
   const headingInView = useInView(headingRef, { once: true, margin: '-60px' })
   const containerRef = useRef<HTMLDivElement>(null)
+  const progressBarRef = useRef<HTMLDivElement>(null)
   const [activeStep, setActiveStep] = useState(0)
 
   useEffect(() => {
     let rafId: number
-    let prev = -1
+    let prevProgress = -1
+    let prevStep = 0
     const loop = () => {
       if (containerRef.current) {
         const rect = containerRef.current.getBoundingClientRect()
@@ -228,8 +230,18 @@ function FeaturesScrollSection({
         const scrollable = containerRef.current.offsetHeight - window.innerHeight
         if (scrollable > 0) {
           const p = Math.min(scrolled / scrollable, 1)
-          const s = Math.min(Math.floor(p * features.length), features.length - 1)
-          if (s !== prev) { prev = s; setActiveStep(s) }
+
+          // Smooth line — write directly to DOM, never triggers React re-render
+          if (progressBarRef.current) {
+            progressBarRef.current.style.height = `${p * 100}%`
+          }
+
+          // Steps only advance when scrolling down, never reverse
+          if (p > prevProgress) {
+            const s = Math.min(Math.floor(p * features.length), features.length - 1)
+            if (s !== prevStep) { prevStep = s; setActiveStep(s) }
+          }
+          prevProgress = p
         }
       }
       rafId = requestAnimationFrame(loop)
@@ -240,8 +252,6 @@ function FeaturesScrollSection({
 
   const ICONS = [BarChart2, Calculator, AlertTriangle, FileText, RefreshCw, DollarSign]
   const ActiveIcon = ICONS[activeStep]
-
-  const progressPct = ((activeStep + 0.5) / features.length) * 100
 
   return (
     <section id="features" style={{ background: 'var(--bg-base)' }}>
@@ -331,13 +341,13 @@ function FeaturesScrollSection({
                 {/* Track line */}
                 <div className="absolute inset-x-1/2 top-3 bottom-3 w-px -translate-x-1/2"
                   style={{ background: 'var(--border)' }} />
-                {/* Progress fill */}
+                {/* Progress fill — DOM-driven, updates every RAF frame */}
                 <div
+                  ref={progressBarRef}
                   className="absolute inset-x-1/2 top-3 w-px -translate-x-1/2 origin-top"
                   style={{
                     background: 'linear-gradient(to bottom, var(--c1), var(--c2))',
-                    height: `${progressPct}%`,
-                    transition: 'height 0.45s cubic-bezier(0.22,1,0.36,1)',
+                    height: '0%',
                   }}
                 />
                 {/* Dots */}
