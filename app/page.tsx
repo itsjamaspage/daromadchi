@@ -237,57 +237,43 @@ function FeaturesScrollSection({
     }
   }, [activeStep, features.length])
 
-  // IO + wheel: snap to panel as soon as it enters viewport, then advance steps
+  // Wheel intercept — all decisions based on live getBoundingClientRect(), no cached state
   useEffect(() => {
     const el = sectionElRef.current
     if (!el) return
 
-    // isApproaching: panel partially visible but not yet filling viewport
-    // isReady: panel ≥95% visible — step advancement allowed
-    let isApproaching = false
-    let isReady = false
-    let snapDone = false // only snap once per approach
+    let snapDone = false
 
-    const obs = new IntersectionObserver(
-      ([entry]) => {
-        const ratio = entry.intersectionRatio
-        if (ratio >= 0.95) {
-          isApproaching = false
-          isReady = true
-        } else if (entry.isIntersecting) {
-          isApproaching = true
-          isReady = false
-        } else {
-          isApproaching = false
-          isReady = false
-          // Panel left viewport from below (user scrolled up) → full reset
-          if (entry.boundingClientRect.top > 0) {
-            snapDone = false
-            stepDoneRef.current = false
-            cooldownRef.current = false
-            setActiveStep(0)
-          }
-        }
-      },
-      { threshold: [0, 0.95] },
-    )
+    // IO only for reset: when panel leaves viewport from below (user scrolled up past it)
+    const obs = new IntersectionObserver(([entry]) => {
+      if (!entry.isIntersecting && entry.boundingClientRect.top > 0) {
+        snapDone = false
+        stepDoneRef.current = false
+        cooldownRef.current = false
+        setActiveStep(0)
+      }
+    }, { threshold: 0 })
     obs.observe(el)
 
     const onWheel = (e: WheelEvent) => {
       if (e.deltaY <= 0 || stepDoneRef.current) return
-      if (!isApproaching && !isReady) return
-      // Always block default so the page never scrolls through the section
+      const rect = el.getBoundingClientRect()
+      const vh = window.innerHeight
+      // Panel fully above viewport (steps done, user scrolled past) — never block
+      if (rect.bottom <= 0) return
+      // Panel fully below viewport — not reached yet, don't block
+      if (rect.top >= vh) return
+      // Panel is (partially or fully) in viewport — block downward scroll
       e.preventDefault()
-      if (isApproaching) {
-        // Snap panel to fill viewport on the first downward scroll
+      // Panel entering from below: snap it to fill viewport
+      if (rect.top > 10) {
         if (!snapDone) {
           snapDone = true
-          const y = Math.round(el.getBoundingClientRect().top + window.scrollY)
-          window.scrollTo({ top: y, behavior: 'smooth' })
+          window.scrollTo({ top: Math.round(rect.top + window.scrollY), behavior: 'smooth' })
         }
         return
       }
-      // Panel is ready — advance steps
+      // Panel at viewport top — advance steps
       if (cooldownRef.current) return
       cooldownRef.current = true
       setTimeout(() => { cooldownRef.current = false }, 500)
