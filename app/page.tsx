@@ -279,7 +279,7 @@ export default function LandingPage() {
             <div className="absolute -inset-8 rounded-3xl blur-3xl opacity-30 pointer-events-none animate-pulse-glow"
               style={{ background: isDark ? 'radial-gradient(ellipse at 40% 50%, #00d4ff, transparent 65%)' : 'radial-gradient(ellipse at 40% 50%, #7c3aed, transparent 65%)' }} />
             {/* Floating wrapper */}
-            <div className="animate-float">
+            <div className="animate-tilt3d">
               <DashboardMockup p={t.preview} />
             </div>
             {/* Floating stat badge */}
