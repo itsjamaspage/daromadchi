@@ -3,14 +3,7 @@
 import React from 'react'
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
-import { motion, useInView, AnimatePresence, useMotionValue, useSpring } from 'framer-motion'
-import {
-  DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent, DragOverlay, DragStartEvent
-} from '@dnd-kit/core'
-import {
-  SortableContext, useSortable, rectSortingStrategy, arrayMove
-} from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
+import { motion, useInView, AnimatePresence, useMotionValue, useSpring, useScroll, useMotionValueEvent } from 'framer-motion'
 import {
   BarChart2, Calculator, FileText,
   Zap, ArrowRight, RefreshCw, AlertTriangle, DollarSign,
@@ -210,57 +203,231 @@ function SlotPrice({ value, trigger, delay = 0 }: { value: string; trigger: bool
   return <span className="tabular-nums">{display}</span>
 }
 
-type FeatureItem = { id: string; title: string; desc: string; iconIndex: number }
+function FeaturesScrollSection({
+  features, isDark, card, badge, title, subtitle,
+}: {
+  features: Array<{ title: string; desc: string }>
+  isDark: boolean
+  card: string
+  badge: string
+  title: string
+  subtitle: string
+}) {
+  const headingRef = useRef(null)
+  const headingInView = useInView(headingRef, { once: true, margin: '-60px' })
+  const containerRef = useRef<HTMLDivElement>(null)
+  const { scrollYProgress } = useScroll({ target: containerRef, offset: ['start start', 'end end'] })
+  const [activeStep, setActiveStep] = useState(0)
 
-function SortableFeatureCard({
-  item, isDark, card, overlay = false, inView = true, index = 0
-}: { item: FeatureItem; isDark: boolean; card: string; overlay?: boolean; inView?: boolean; index?: number }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id })
-  const icons = [BarChart2, Calculator, AlertTriangle, FileText, RefreshCw, DollarSign]
-  const Icon = icons[item.iconIndex]
+  useMotionValueEvent(scrollYProgress, 'change', (v) => {
+    setActiveStep(Math.min(Math.floor(v * features.length), features.length - 1))
+  })
+
+  const ICONS = [BarChart2, Calculator, AlertTriangle, FileText, RefreshCw, DollarSign]
+  const ActiveIcon = ICONS[activeStep]
+
+  const progressPct = ((activeStep + 0.5) / features.length) * 100
 
   return (
-    <div
-      ref={setNodeRef}
-      {...attributes}
-      {...listeners}
-      className="feature-card group relative rounded-2xl p-9 border overflow-hidden select-none"
-      style={{
-        transform: CSS.Transform.toString(transform),
-        transition,
-        opacity: isDragging && !overlay ? 0.35 : 1,
-        cursor: isDragging ? 'grabbing' : 'grab',
-        touchAction: 'none',
-        background: card,
-        borderColor: isDragging ? 'var(--c1)' : 'var(--border)',
-        boxShadow: isDragging ? '0 20px 60px rgba(0,0,0,0.4)' : undefined,
-      }}
-    >
-      {/* shimmer sweep on hover */}
-      <span
-        aria-hidden
-        className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-        style={{
-          background: 'linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.07) 50%, transparent 60%)',
-          backgroundSize: '200% 100%',
-          animation: 'shimmerSweep 0.6s ease forwards',
-        }}
-      />
-      {/* Stagger entry animation wrapper */}
-      <motion.div
-        initial={{ opacity: 0, y: 40, scale: 0.96 }}
-        whileInView={{ opacity: 1, y: 0, scale: 1 }}
-        viewport={{ once: true, amount: 0.25 }}
-        transition={{ delay: index * 0.09, duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-      >
-        <div className="w-11 h-11 rounded-xl flex items-center justify-center mb-5"
-          style={{ background: isDark ? 'rgba(0,212,255,0.08)' : 'rgba(124,58,237,0.08)', border: '1px solid var(--border2)' }}>
-          <Icon className="w-5 h-5" style={{ color: 'var(--c1)' }} />
+    <section id="features" style={{ background: 'var(--bg-base)' }}>
+      {/* Section heading */}
+      <div ref={headingRef} className="pt-24 pb-14 px-6">
+        <div className="max-w-5xl mx-auto text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={headingInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.5 }}
+          >
+            <span className="inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-bold mb-4 border"
+              style={{ background: isDark ? 'rgba(0,212,255,0.06)' : 'rgba(124,58,237,0.06)', borderColor: 'var(--border2)', color: 'var(--c1)' }}>
+              <Sparkles className="w-3 h-3" /> {badge}
+            </span>
+            <h2 className="text-3xl sm:text-4xl font-extrabold mb-4" style={{ color: 'var(--text-base)' }}>{title}</h2>
+            <p className="text-base max-w-lg mx-auto" style={{ color: 'var(--text-muted)' }}>{subtitle}</p>
+          </motion.div>
         </div>
-        <h3 className="font-bold text-base mb-2" style={{ color: 'var(--text-base)' }}>{item.title}</h3>
-        <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>{item.desc}</p>
-      </motion.div>
-    </div>
+      </div>
+
+      {/* Scroll-driven sticky timeline */}
+      <div ref={containerRef} style={{ height: `${features.length * 100}vh` }}>
+        <div className="sticky top-0 h-screen flex items-center overflow-hidden"
+          style={{ background: 'var(--bg-base)' }}>
+
+          {/* Desktop 3-column layout */}
+          <div className="max-w-5xl mx-auto w-full px-6 hidden md:grid gap-10 items-center"
+            style={{ gridTemplateColumns: '1fr 48px 1fr' }}>
+
+            {/* LEFT: icon showcase */}
+            <div className="flex flex-col items-center gap-7">
+              {/* Icon box with bracket corners */}
+              <div className="relative p-2">
+                <div className="absolute top-0 left-0 w-5 h-5 border-t-2 border-l-2 rounded-tl" style={{ borderColor: 'var(--c1)' }} />
+                <div className="absolute top-0 right-0 w-5 h-5 border-t-2 border-r-2 rounded-tr" style={{ borderColor: 'var(--c1)' }} />
+                <div className="absolute bottom-0 left-0 w-5 h-5 border-b-2 border-l-2 rounded-bl" style={{ borderColor: 'var(--c1)' }} />
+                <div className="absolute bottom-0 right-0 w-5 h-5 border-b-2 border-r-2 rounded-br" style={{ borderColor: 'var(--c1)' }} />
+
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={activeStep}
+                    initial={{ opacity: 0, scale: 0.72, rotateY: -70 }}
+                    animate={{ opacity: 1, scale: 1, rotateY: 0 }}
+                    exit={{ opacity: 0, scale: 0.72, rotateY: 70 }}
+                    transition={{ duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
+                    className="w-40 h-40 rounded-2xl flex items-center justify-center"
+                    style={{
+                      background: isDark ? 'rgba(0,212,255,0.07)' : 'rgba(124,58,237,0.07)',
+                      border: '2px solid var(--c1)',
+                      boxShadow: isDark
+                        ? '0 0 50px rgba(0,212,255,0.18), inset 0 0 30px rgba(0,212,255,0.04)'
+                        : '0 0 50px rgba(124,58,237,0.18), inset 0 0 30px rgba(124,58,237,0.04)',
+                    }}
+                  >
+                    <ActiveIcon className="w-20 h-20" style={{ color: 'var(--c1)' }} />
+                  </motion.div>
+                </AnimatePresence>
+              </div>
+
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={activeStep}
+                  initial={{ opacity: 0, y: 18 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -18 }}
+                  transition={{ duration: 0.32 }}
+                  className="text-center max-w-xs"
+                >
+                  <h3 className="font-extrabold text-xl mb-2" style={{ color: 'var(--text-base)' }}>
+                    {features[activeStep].title}
+                  </h3>
+                  <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>
+                    {features[activeStep].desc}
+                  </p>
+                </motion.div>
+              </AnimatePresence>
+
+              <span className="text-xs font-semibold tabular-nums" style={{ color: 'var(--text-dim)' }}>
+                {String(activeStep + 1).padStart(2, '0')} / {String(features.length).padStart(2, '0')}
+              </span>
+            </div>
+
+            {/* CENTER: vertical timeline */}
+            <div className="flex justify-center" style={{ height: '60vh' }}>
+              <div className="relative flex flex-col items-center justify-between py-3 w-3">
+                {/* Track line */}
+                <div className="absolute inset-x-1/2 top-3 bottom-3 w-px -translate-x-1/2"
+                  style={{ background: 'var(--border)' }} />
+                {/* Progress fill */}
+                <div
+                  className="absolute inset-x-1/2 top-3 w-px -translate-x-1/2 origin-top"
+                  style={{
+                    background: 'linear-gradient(to bottom, var(--c1), var(--c2))',
+                    height: `${progressPct}%`,
+                    transition: 'height 0.45s cubic-bezier(0.22,1,0.36,1)',
+                  }}
+                />
+                {/* Dots */}
+                {features.map((_, i) => (
+                  <div
+                    key={i}
+                    className="relative z-10 rounded-full border-2 transition-all duration-300"
+                    style={{
+                      width: i === activeStep ? '14px' : '10px',
+                      height: i === activeStep ? '14px' : '10px',
+                      background: i <= activeStep ? 'var(--c1)' : 'var(--bg-base)',
+                      borderColor: i <= activeStep ? 'var(--c1)' : 'var(--border)',
+                      boxShadow: i === activeStep
+                        ? isDark ? '0 0 10px rgba(0,212,255,0.7)' : '0 0 10px rgba(124,58,237,0.7)'
+                        : undefined,
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* RIGHT: feature cards */}
+            <div className="flex flex-col gap-2">
+              {features.map((f, i) => {
+                const CardIcon = ICONS[i]
+                const isActive = i === activeStep
+                return (
+                  <motion.div
+                    key={i}
+                    animate={{ opacity: isActive ? 1 : 0.3, scale: isActive ? 1 : 0.975 }}
+                    transition={{ duration: 0.25 }}
+                    className="rounded-xl px-4 py-3 border"
+                    style={{
+                      background: isActive
+                        ? isDark ? 'rgba(0,212,255,0.06)' : 'rgba(124,58,237,0.06)'
+                        : card,
+                      borderColor: isActive ? 'var(--c1)' : 'var(--border)',
+                      boxShadow: isActive
+                        ? isDark ? '0 0 18px rgba(0,212,255,0.10)' : '0 0 18px rgba(124,58,237,0.10)'
+                        : 'none',
+                    }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                        style={{
+                          background: isActive
+                            ? isDark ? 'rgba(0,212,255,0.14)' : 'rgba(124,58,237,0.14)'
+                            : 'transparent',
+                        }}>
+                        <CardIcon className="w-4 h-4"
+                          style={{ color: isActive ? 'var(--c1)' : 'var(--text-dim)' }} />
+                      </div>
+                      <span className="font-semibold text-sm"
+                        style={{ color: isActive ? 'var(--text-base)' : 'var(--text-muted)' }}>
+                        {f.title}
+                      </span>
+                    </div>
+                  </motion.div>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Mobile: single column step display */}
+          <div className="md:hidden max-w-sm mx-auto px-6 w-full flex flex-col items-center gap-8">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeStep}
+                initial={{ opacity: 0, y: 24 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -24 }}
+                transition={{ duration: 0.35 }}
+                className="flex flex-col items-center gap-5 text-center"
+              >
+                <div className="w-24 h-24 rounded-2xl flex items-center justify-center border-2"
+                  style={{
+                    borderColor: 'var(--c1)',
+                    background: isDark ? 'rgba(0,212,255,0.08)' : 'rgba(124,58,237,0.08)',
+                    boxShadow: isDark ? '0 0 30px rgba(0,212,255,0.15)' : '0 0 30px rgba(124,58,237,0.15)',
+                  }}>
+                  <ActiveIcon className="w-12 h-12" style={{ color: 'var(--c1)' }} />
+                </div>
+                <h3 className="font-extrabold text-2xl" style={{ color: 'var(--text-base)' }}>
+                  {features[activeStep].title}
+                </h3>
+                <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>
+                  {features[activeStep].desc}
+                </p>
+              </motion.div>
+            </AnimatePresence>
+
+            <div className="flex gap-2 items-center">
+              {features.map((_, i) => (
+                <div key={i} className="rounded-full transition-all duration-400"
+                  style={{
+                    width: i === activeStep ? '24px' : '8px',
+                    height: '8px',
+                    background: i <= activeStep ? 'var(--c1)' : 'var(--border)',
+                  }} />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
   )
 }
 
@@ -280,8 +447,6 @@ export default function LandingPage() {
     return () => document.removeEventListener('mousedown', h)
   }, [])
 
-  const featuresRef = useRef(null)
-  const featuresInView = useInView(featuresRef, { once: true, margin: '-80px' })
   const howRef = useRef(null)
   const howInView = useInView(howRef, { once: true, amount: 0.45 })
   const pricingRef = useRef(null)
@@ -339,28 +504,6 @@ export default function LandingPage() {
       ru: "Тогда давайте начнём",
       en: "Then let's get started",
     },
-  }
-
-  const [featureItems, setFeatureItems] = useState<FeatureItem[]>(() =>
-    t.features.map((f: { title: string; desc: string }, i: number) => ({ id: `feat-${i}`, title: f.title, desc: f.desc, iconIndex: i }))
-  )
-  const [activeDragId, setActiveDragId] = useState<string | null>(null)
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } })
-  )
-
-  const handleDragStart = (e: DragStartEvent) => setActiveDragId(e.active.id as string)
-  const handleDragEnd = (e: DragEndEvent) => {
-    setActiveDragId(null)
-    const { active, over } = e
-    if (over && active.id !== over.id) {
-      setFeatureItems(items => {
-        const oldIndex = items.findIndex(i => i.id === active.id)
-        const newIndex = items.findIndex(i => i.id === over.id)
-        return arrayMove(items, oldIndex, newIndex)
-      })
-    }
   }
 
   const wordAnim = {
@@ -640,43 +783,14 @@ export default function LandingPage() {
       </section>
 
       {/* FEATURES */}
-      <section id="features" ref={featuresRef} className="py-24 px-6" style={{ background: 'var(--bg-base)' }}>
-        <div className="max-w-5xl mx-auto">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={featuresInView ? { opacity: 1, y: 0 } : {}}
-            className="text-center mb-14">
-            <span className="inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-bold mb-4 border"
-              style={{ background: isDark ? 'rgba(0,212,255,0.06)' : 'rgba(124,58,237,0.06)', borderColor: 'var(--border2)', color: 'var(--c1)' }}>
-              <Sparkles className="w-3 h-3" /> {t.featuresBadge}
-            </span>
-            <h2 className="text-3xl sm:text-4xl font-extrabold mb-4" style={{ color: 'var(--text-base)' }}>{t.featuresTitle}</h2>
-            <p className="text-base max-w-lg mx-auto" style={{ color: 'var(--text-muted)' }}>{t.featuresSubtitle}</p>
-          </motion.div>
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragStart={handleDragStart}
-            onDragEnd={handleDragEnd}
-          >
-            <SortableContext items={featureItems.map(i => i.id)} strategy={rectSortingStrategy}>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                {featureItems.map(item => (
-                  <SortableFeatureCard key={item.id} item={item} isDark={isDark} card={card} inView={featuresInView} index={featureItems.indexOf(item)} />
-                ))}
-              </div>
-            </SortableContext>
-            <DragOverlay>
-              {activeDragId ? (
-                <SortableFeatureCard
-                  item={featureItems.find(i => i.id === activeDragId)!}
-                  isDark={isDark}
-                  card={card}
-                  overlay
-                />
-              ) : null}
-            </DragOverlay>
-          </DndContext>
-        </div>
-      </section>
+      <FeaturesScrollSection
+        features={t.features}
+        isDark={isDark}
+        card={card}
+        badge={t.featuresBadge}
+        title={t.featuresTitle}
+        subtitle={t.featuresSubtitle}
+      />
 
       {/* HOW IT WORKS */}
       <section id="how" ref={howRef} className="py-24 px-6" style={{ background: isDark ? '#041020' : 'var(--bg-card2)' }}>
