@@ -3,7 +3,7 @@
 import React from 'react'
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
-import { motion, useInView, AnimatePresence, useMotionValue, useSpring, useScroll, useMotionValueEvent } from 'framer-motion'
+import { motion, useInView, AnimatePresence, useMotionValue, useSpring } from 'framer-motion'
 import {
   BarChart2, Calculator, FileText,
   Zap, ArrowRight, RefreshCw, AlertTriangle, DollarSign,
@@ -216,12 +216,23 @@ function FeaturesScrollSection({
   const headingRef = useRef(null)
   const headingInView = useInView(headingRef, { once: true, margin: '-60px' })
   const containerRef = useRef<HTMLDivElement>(null)
-  const { scrollYProgress } = useScroll({ target: containerRef, offset: ['start start', 'end end'] })
   const [activeStep, setActiveStep] = useState(0)
 
-  useMotionValueEvent(scrollYProgress, 'change', (v) => {
-    setActiveStep(Math.min(Math.floor(v * features.length), features.length - 1))
-  })
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+    const onScroll = () => {
+      const rect = el.getBoundingClientRect()
+      const scrolled = Math.max(0, -rect.top)
+      const scrollable = el.offsetHeight - window.innerHeight
+      if (scrollable <= 0) return
+      const progress = Math.min(scrolled / scrollable, 1)
+      setActiveStep(Math.min(Math.floor(progress * features.length), features.length - 1))
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    onScroll()
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [features.length])
 
   const ICONS = [BarChart2, Calculator, AlertTriangle, FileText, RefreshCw, DollarSign]
   const ActiveIcon = ICONS[activeStep]
@@ -249,7 +260,7 @@ function FeaturesScrollSection({
       </div>
 
       {/* Scroll-driven sticky timeline */}
-      <div ref={containerRef} style={{ height: `${features.length * 100}vh` }}>
+      <div ref={containerRef} style={{ height: `${features.length * 80}vh` }}>
         <div className="sticky top-0 h-screen flex items-center overflow-hidden"
           style={{ background: 'var(--bg-base)' }}>
 
