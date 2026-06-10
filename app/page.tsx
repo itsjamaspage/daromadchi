@@ -255,7 +255,7 @@ function FeaturesScrollSection({
           setActiveStep(0)
         }
       },
-      { threshold: 0.1 },
+      { threshold: 0.95 },
     )
     obs.observe(el)
 
@@ -286,7 +286,7 @@ function FeaturesScrollSection({
   return (
     <section id="features" ref={sectionRef} style={{ background: 'var(--bg-base)' }}>
       {/* Section heading */}
-      <div className="pt-24 pb-14 px-6">
+      <div className="pt-24 pb-6 px-6">
         <div className="max-w-5xl mx-auto text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
