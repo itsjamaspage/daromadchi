@@ -1,8 +1,9 @@
 'use client'
 
+import React from 'react'
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
-import { motion, useInView, AnimatePresence } from 'framer-motion'
+import { motion, useInView, AnimatePresence, useMotionValue, useSpring } from 'framer-motion'
 import {
   BarChart2, Calculator, FileText,
   Zap, ArrowRight, RefreshCw, AlertTriangle, DollarSign,
@@ -123,6 +124,50 @@ function DashboardMockup({ p }: { p: typeof translations.en.preview }) {
         </div>
       </div>
     </div>
+  )
+}
+
+function MockupInteractive({ children }: { children: React.ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [hovering, setHovering] = useState(false)
+  const rotateX = useMotionValue(0)
+  const rotateY = useMotionValue(0)
+  const springX = useSpring(rotateX, { stiffness: 180, damping: 22 })
+  const springY = useSpring(rotateY, { stiffness: 180, damping: 22 })
+
+  useEffect(() => {
+    if (hovering) return
+    let frame: number
+    let t = 0
+    const loop = () => {
+      t += 0.007
+      rotateY.set(Math.sin(t) * 13)
+      rotateX.set(Math.cos(t * 1.5) * 7)
+      frame = requestAnimationFrame(loop)
+    }
+    frame = requestAnimationFrame(loop)
+    return () => cancelAnimationFrame(frame)
+  }, [hovering, rotateX, rotateY])
+
+  const onMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = ref.current?.getBoundingClientRect()
+    if (!rect) return
+    const cx = rect.left + rect.width / 2
+    const cy = rect.top + rect.height / 2
+    rotateY.set(((e.clientX - cx) / (rect.width / 2)) * 22)
+    rotateX.set(-((e.clientY - cy) / (rect.height / 2)) * 16)
+  }
+
+  return (
+    <motion.div
+      ref={ref}
+      onMouseMove={onMouseMove}
+      onMouseEnter={() => setHovering(true)}
+      onMouseLeave={() => setHovering(false)}
+      style={{ rotateX: springX, rotateY: springY, transformPerspective: 900, cursor: 'crosshair' }}
+    >
+      {children}
+    </motion.div>
   )
 }
 
@@ -278,10 +323,10 @@ export default function LandingPage() {
             {/* Glow blob behind */}
             <div className="absolute -inset-8 rounded-3xl blur-3xl opacity-30 pointer-events-none animate-pulse-glow"
               style={{ background: isDark ? 'radial-gradient(ellipse at 40% 50%, #00d4ff, transparent 65%)' : 'radial-gradient(ellipse at 40% 50%, #7c3aed, transparent 65%)' }} />
-            {/* Floating wrapper */}
-            <div className="animate-tilt3d">
+            {/* Interactive 3D mockup */}
+            <MockupInteractive>
               <DashboardMockup p={t.preview} />
-            </div>
+            </MockupInteractive>
             {/* Floating stat badge */}
             <motion.div
               initial={{ opacity: 0, scale: 0.8, y: 20 }}
