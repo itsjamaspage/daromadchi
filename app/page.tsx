@@ -241,10 +241,13 @@ function FeaturesScrollSection({
   useEffect(() => {
     const onWheel = (e: WheelEvent) => {
       const el = sectionElRef.current
-      if (!el || stepDoneRef.current || e.deltaY <= 0) return
+      if (!el) return
       const rect = el.getBoundingClientRect()
-      // Only intercept when the interactive panel is at the top of the viewport (±60px)
-      if (rect.top > 60 || rect.top < -60) return
+      if (e.deltaY <= 0) return // never intercept upward scroll
+      if (stepDoneRef.current) return // all steps shown, let page scroll
+      // Only active while the panel is at/near the viewport top (±80px tolerance)
+      if (rect.top > 80 || rect.top < -80) return
+      // Always prevent page scroll while steps remain — cooldown events must not scroll through
       e.preventDefault()
       if (cooldownRef.current) return
       cooldownRef.current = true
@@ -259,6 +262,20 @@ function FeaturesScrollSection({
     window.addEventListener('wheel', onWheel, { passive: false })
     return () => window.removeEventListener('wheel', onWheel)
   }, [features.length])
+
+  // Reset steps when user scrolls back up and section leaves viewport from below
+  useEffect(() => {
+    const el = sectionElRef.current
+    if (!el) return
+    const obs = new IntersectionObserver(([entry]) => {
+      if (!entry.isIntersecting && entry.boundingClientRect.top > 0) {
+        stepDoneRef.current = false
+        setActiveStep(0)
+      }
+    })
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [])
 
   const ICONS = [BarChart2, Calculator, AlertTriangle, TrendingUp, RefreshCw, DollarSign]
   const ActiveIcon = ICONS[activeStep]
@@ -312,16 +329,16 @@ function FeaturesScrollSection({
                   animate={{ opacity: 1, scale: 1, rotateY: 0 }}
                   exit={{ opacity: 0, scale: 0.68, rotateY: dirRef.current * 80 }}
                   transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
-                  className="w-56 h-56 rounded-3xl flex items-center justify-center"
+                  className="w-72 h-72 rounded-3xl flex items-center justify-center"
                   style={{
                     background: isDark ? 'rgba(0,212,255,0.07)' : 'rgba(124,58,237,0.07)',
                     border: '2px solid var(--c1)',
                     boxShadow: isDark
-                      ? '0 0 70px rgba(0,212,255,0.22), inset 0 0 40px rgba(0,212,255,0.05)'
-                      : '0 0 70px rgba(124,58,237,0.22), inset 0 0 40px rgba(124,58,237,0.05)',
+                      ? '0 0 90px rgba(0,212,255,0.26), inset 0 0 50px rgba(0,212,255,0.06)'
+                      : '0 0 90px rgba(124,58,237,0.26), inset 0 0 50px rgba(124,58,237,0.06)',
                   }}
                 >
-                  <ActiveIcon className="w-28 h-28" style={{ color: 'var(--c1)' }} />
+                  <ActiveIcon className="w-36 h-36" style={{ color: 'var(--c1)' }} />
                 </motion.div>
               </AnimatePresence>
             </div>
@@ -372,7 +389,7 @@ function FeaturesScrollSection({
             className="flex flex-col gap-7 justify-center py-8"
           >
             {/* Active step text — slides in from direction of travel */}
-            <div style={{ minHeight: '140px' }}>
+            <div style={{ minHeight: '170px' }}>
               <AnimatePresence mode="wait">
                 <motion.div
                   key={activeStep}
@@ -381,13 +398,13 @@ function FeaturesScrollSection({
                   exit={{ opacity: 0, x: dirRef.current * -28 }}
                   transition={{ duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
                 >
-                  <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: 'var(--c1)' }}>
+                  <p className="text-sm font-bold uppercase tracking-widest mb-3" style={{ color: 'var(--c1)' }}>
                     {String(activeStep + 1).padStart(2, '0')}&nbsp;/&nbsp;{String(features.length).padStart(2, '0')}
                   </p>
-                  <h3 className="text-3xl font-extrabold mb-3 leading-tight" style={{ color: 'var(--text-base)' }}>
+                  <h3 className="text-4xl font-extrabold mb-4 leading-tight" style={{ color: 'var(--text-base)' }}>
                     {features[activeStep].title}
                   </h3>
-                  <p className="text-base leading-relaxed" style={{ color: 'var(--text-muted)' }}>
+                  <p className="text-lg leading-relaxed" style={{ color: 'var(--text-muted)' }}>
                     {features[activeStep].desc}
                   </p>
                 </motion.div>
