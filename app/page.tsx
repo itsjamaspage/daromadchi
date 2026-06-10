@@ -386,12 +386,12 @@ function FeaturesScrollSection({
                     onClick={() => goTo(i)}
                     className="flex items-center gap-3 py-2.5 px-3 rounded-xl text-left w-full focus:outline-none"
                     animate={{
-                      opacity: isActive ? 1 : (isDark ? 0.38 : 0.65),
+                      opacity: isDark ? (isActive ? 1 : 0.38) : 1,
                       background: isActive
                         ? isDark ? 'rgba(0,212,255,0.08)' : 'rgba(124,58,237,0.08)'
                         : 'rgba(0,0,0,0)',
                     }}
-                    whileHover={{ opacity: isActive ? 1 : (isDark ? 0.7 : 0.85) }}
+                    whileHover={{ opacity: 1 }}
                     transition={{ duration: 0.2 }}
                     style={{ cursor: 'pointer' }}
                   >
@@ -1063,22 +1063,22 @@ export default function LandingPage() {
       </section>
 
       {/* FOOTER */}
-      <footer style={{ background: isDark ? '#0a0a14' : '#1B1C26' }}>
+      <footer style={{ background: isDark ? '#0a0a14' : 'var(--bg-card)' }}>
         <div className="max-w-6xl mx-auto px-6 py-16">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-10 mb-12">
             <div className="col-span-2 lg:col-span-1">
               <Link href="/" className="flex items-center gap-2.5 mb-5">
                 <img src="/icon.svg" alt="Daromadchi" className="w-10 h-10 rounded-xl" />
-                <span className="font-extrabold text-lg text-white">Daromadchi</span>
+                <span className="font-extrabold text-lg" style={{ color: 'var(--text-base)' }}>Daromadchi</span>
               </Link>
-              <p className="text-sm leading-relaxed" style={{ color: '#4a6275' }}>
+              <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>
                 {lang === 'uz' ? "Uzum Market, Yandex Market va Wildberries sotuvchilari uchun analitika platformasi." :
                   lang === 'ru' ? "Платформа аналитики для продавцов Uzum Market, Yandex Market и Wildberries." :
                     "Analytics platform for Uzum Market, Yandex Market and Wildberries sellers."}
               </p>
             </div>
             <div>
-              <p className="text-xs font-extrabold uppercase tracking-widest mb-5 text-white">
+              <p className="text-xs font-extrabold uppercase tracking-widest mb-5" style={{ color: 'var(--text-base)' }}>
                 {lang === 'uz' ? 'Platforma' : lang === 'ru' ? 'Платформа' : 'Platform'}
               </p>
               <div className="space-y-3">
@@ -1088,14 +1088,14 @@ export default function LandingPage() {
                   { href: '#pricing', label: t.nav.pricing },
                   { href: '/login', label: t.nav.start },
                 ].map(l => (
-                  <a key={l.href} href={l.href} className="block text-sm hover:text-white transition-colors" style={{ color: '#6b8299' }}>
+                  <a key={l.href} href={l.href} className="block text-sm transition-colors" style={{ color: 'var(--text-muted)' }}>
                     {l.label}
                   </a>
                 ))}
               </div>
             </div>
             <div>
-              <p className="text-xs font-extrabold uppercase tracking-widest mb-5 text-white">
+              <p className="text-xs font-extrabold uppercase tracking-widest mb-5" style={{ color: 'var(--text-base)' }}>
                 {lang === 'uz' ? 'Resurslar' : lang === 'ru' ? 'Ресурсы' : 'Resources'}
               </p>
               <div className="space-y-3">
@@ -1104,34 +1104,34 @@ export default function LandingPage() {
                   { href: '/pricing', label: lang === 'uz' ? 'Narxlar' : lang === 'ru' ? 'Тарифы' : 'Pricing' },
                   { href: '/privacy', label: t.nav.privacy ?? 'Privacy Policy' },
                 ].map(l => (
-                  <Link key={l.href} href={l.href} className="block text-sm hover:text-white transition-colors" style={{ color: '#6b8299' }}>
+                  <Link key={l.href} href={l.href} className="block text-sm transition-colors" style={{ color: 'var(--text-muted)' }}>
                     {l.label}
                   </Link>
                 ))}
               </div>
             </div>
             <div>
-              <p className="text-xs font-extrabold uppercase tracking-widest mb-5 text-white">
+              <p className="text-xs font-extrabold uppercase tracking-widest mb-5" style={{ color: 'var(--text-base)' }}>
                 {lang === 'uz' ? 'Bozorlar' : lang === 'ru' ? 'Маркетплейсы' : 'Marketplaces'}
               </p>
               <div className="space-y-3">
                 {['Uzum Market', 'Yandex Market', 'Wildberries'].map(m => (
-                  <span key={m} className="block text-sm" style={{ color: '#6b8299' }}>{m}</span>
+                  <span key={m} className="block text-sm" style={{ color: 'var(--text-muted)' }}>{m}</span>
                 ))}
               </div>
             </div>
           </div>
           <div className="border-t pt-8 flex flex-col sm:flex-row items-center justify-between gap-4"
-            style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
-            <p className="text-sm" style={{ color: '#4a6275' }}>© 2026 Daromadchi. {t.footer}</p>
+            style={{ borderColor: 'var(--border)' }}>
+            <p className="text-sm" style={{ color: 'var(--text-muted)' }}>© 2026 Daromadchi. {t.footer}</p>
             <div className="flex items-center gap-6">
-              <Link href="/privacy" className="text-sm hover:text-white transition-colors" style={{ color: '#4a6275' }}>
+              <Link href="/privacy" className="text-sm transition-colors" style={{ color: 'var(--text-muted)' }}>
                 {t.nav.privacy ?? 'Privacy Policy'}
               </Link>
               <div className="flex items-center gap-3">
                 {langs.map(l => (
                   <button key={l} onClick={() => setLang(l)} className="text-xs font-bold uppercase transition-colors"
-                    style={{ color: lang === l ? '#ffffff' : '#4a6275' }}>
+                    style={{ color: lang === l ? 'var(--text-base)' : 'var(--text-muted)' }}>
                     {l}
                   </button>
                 ))}
