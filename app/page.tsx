@@ -237,21 +237,34 @@ function FeaturesScrollSection({
     }
   }, [activeStep, features.length])
 
-  // Wheel intercept: capture downward scroll to advance steps; upward = normal page scroll
+  // Combined IO + wheel handler — shared closure avoids state-update lag
   useEffect(() => {
+    const el = sectionElRef.current
+    if (!el) return
+
+    // Closure var: true while the panel is ≥10% visible in viewport
+    let isVisible = false
+
+    const obs = new IntersectionObserver(
+      ([entry]) => {
+        isVisible = entry.isIntersecting
+        // Panel left viewport downward (user scrolled up past it) → reset for next visit
+        if (!entry.isIntersecting && entry.boundingClientRect.top > window.innerHeight * 0.3) {
+          stepDoneRef.current = false
+          cooldownRef.current = false
+          setActiveStep(0)
+        }
+      },
+      { threshold: 0.1 },
+    )
+    obs.observe(el)
+
     const onWheel = (e: WheelEvent) => {
-      const el = sectionElRef.current
-      if (!el) return
-      const rect = el.getBoundingClientRect()
-      if (e.deltaY <= 0) return // never intercept upward scroll
-      if (stepDoneRef.current) return // all steps shown, let page scroll
-      // Only active while the panel is at/near the viewport top (±80px tolerance)
-      if (rect.top > 80 || rect.top < -80) return
-      // Always prevent page scroll while steps remain — cooldown events must not scroll through
+      if (e.deltaY <= 0 || !isVisible || stepDoneRef.current) return
       e.preventDefault()
       if (cooldownRef.current) return
       cooldownRef.current = true
-      setTimeout(() => { cooldownRef.current = false }, 480)
+      setTimeout(() => { cooldownRef.current = false }, 500)
       dirRef.current = 1
       setActiveStep(prev => {
         const next = prev + 1
@@ -259,23 +272,13 @@ function FeaturesScrollSection({
         return Math.min(next, features.length - 1)
       })
     }
-    window.addEventListener('wheel', onWheel, { passive: false })
-    return () => window.removeEventListener('wheel', onWheel)
-  }, [features.length])
 
-  // Reset steps when user scrolls back up and section leaves viewport from below
-  useEffect(() => {
-    const el = sectionElRef.current
-    if (!el) return
-    const obs = new IntersectionObserver(([entry]) => {
-      if (!entry.isIntersecting && entry.boundingClientRect.top > 0) {
-        stepDoneRef.current = false
-        setActiveStep(0)
-      }
-    })
-    obs.observe(el)
-    return () => obs.disconnect()
-  }, [])
+    window.addEventListener('wheel', onWheel, { passive: false })
+    return () => {
+      window.removeEventListener('wheel', onWheel)
+      obs.disconnect()
+    }
+  }, [features.length])
 
   const ICONS = [BarChart2, Calculator, AlertTriangle, TrendingUp, RefreshCw, DollarSign]
   const ActiveIcon = ICONS[activeStep]
@@ -301,8 +304,8 @@ function FeaturesScrollSection({
       </div>
 
       {/* Wheel-driven panel — scroll down advances steps, scroll up = normal page scroll */}
-      <div ref={sectionElRef} className="h-screen flex items-center overflow-hidden"
-        style={{ background: 'var(--bg-base)' }}>
+      <div ref={sectionElRef} className="h-screen flex items-center"
+        style={{ background: 'var(--bg-base)', overflow: 'clip' }}>
         <div className="max-w-5xl mx-auto w-full px-6">
 
         {/* Desktop: 3-column */}
