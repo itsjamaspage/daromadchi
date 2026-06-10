@@ -252,6 +252,44 @@ export default function LandingPage() {
   const langs: Lang[] = ['uz', 'ru', 'en']
   const card = isDark ? 'var(--bg-card)' : '#ffffff'
 
+  // Step popup
+  const [stepPopup, setStepPopup] = useState<number | null>(null)
+  const stepPopupShown = useRef(false)
+  useEffect(() => {
+    if (howInView && !stepPopupShown.current) {
+      stepPopupShown.current = true
+      setTimeout(() => setStepPopup(0), 500)
+    }
+  }, [howInView])
+
+  // CTA animated text phases: 0 = question, 1 = answer + buttons
+  const [ctaPhase, setCtaPhase] = useState<0 | 1>(0)
+  const ctaStarted = useRef(false)
+  useEffect(() => {
+    if (!ctaInView || ctaStarted.current) return
+    ctaStarted.current = true
+    const t2 = setTimeout(() => setCtaPhase(1), 2800)
+    return () => clearTimeout(t2)
+  }, [ctaInView])
+
+  const stepLabels = {
+    gotIt: { uz: 'Tushundim', ru: 'Понятно', en: 'Got it' },
+    letsGo: { uz: 'Boshlaylik →', ru: 'Начнём →', en: "Let's go →" },
+    stepOf: { uz: '/4 qadam', ru: '/4 шага', en: ' of 4' },
+  }
+  const ctaTexts = {
+    question: {
+      uz: 'Bizimla savdongizni oshirishga tayyormisiz?',
+      ru: 'Готовы увеличить свои продажи вместе с нами?',
+      en: 'Are you ready to grow your sales with us?',
+    },
+    answer: {
+      uz: "Unda boshlaylik",
+      ru: "Тогда давайте начнём",
+      en: "Then let's get started",
+    },
+  }
+
   const [featureItems, setFeatureItems] = useState<FeatureItem[]>(() =>
     t.features.map((f: { title: string; desc: string }, i: number) => ({ id: `feat-${i}`, title: f.title, desc: f.desc, iconIndex: i }))
   )
@@ -694,26 +732,76 @@ export default function LandingPage() {
       </section>
 
       {/* CTA */}
-      <section ref={ctaRef} className="py-24 px-6 border-t" style={{ background: 'var(--bg-base)', borderColor: 'var(--border)' }}>
-        <div className="max-w-xl mx-auto text-center">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={ctaInView ? { opacity: 1, y: 0 } : {}}>
-            <h2 className="text-3xl sm:text-4xl font-extrabold mb-5" style={{ color: 'var(--text-base)' }}>
-              {t.ctaTitle1} <span className="grad-text">{t.ctaTitle2}</span>
-            </h2>
-            <p className="text-base mb-9 leading-relaxed" style={{ color: 'var(--text-muted)' }}>{t.ctaSubtitle}</p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Link href="/login"
-                className="inline-flex items-center justify-center gap-2 text-white font-bold px-9 py-3.5 rounded-xl text-sm"
-                style={{ background: 'linear-gradient(135deg, var(--c1), var(--c2))' }}>
-                {t.hero.cta} <ArrowRight className="w-4 h-4" />
-              </Link>
-              <Link href="/help"
-                className="inline-flex items-center justify-center font-medium px-9 py-3.5 rounded-xl text-sm border"
-                style={{ borderColor: 'var(--border2)', color: 'var(--text-dim)' }}>
-                {t.hero.demo}
-              </Link>
-            </div>
-          </motion.div>
+      <section ref={ctaRef} className="py-28 px-6 border-t overflow-hidden" style={{ background: 'var(--bg-base)', borderColor: 'var(--border)' }}>
+        <div className="max-w-2xl mx-auto text-center min-h-[220px] flex flex-col items-center justify-center">
+          <AnimatePresence mode="wait">
+            {ctaPhase === 0 ? (
+              <motion.div key="question" className="flex flex-col items-center gap-4">
+                <motion.p
+                  className="text-xs font-bold uppercase tracking-widest mb-2"
+                  style={{ color: 'var(--c1)' }}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 }}
+                >
+                  {t.ctaBadge}
+                </motion.p>
+                <div className="flex flex-wrap justify-center gap-x-2 gap-y-1">
+                  {ctaTexts.question[lang].split(' ').map((word, i) => (
+                    <motion.span
+                      key={i}
+                      className="text-3xl sm:text-4xl font-extrabold"
+                      style={{ color: 'var(--text-base)' }}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.15 + i * 0.08, duration: 0.4, ease: 'easeOut' }}
+                    >
+                      {word}
+                    </motion.span>
+                  ))}
+                </div>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="answer"
+                className="flex flex-col items-center gap-7"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.5 }}
+              >
+                <div className="flex flex-wrap justify-center gap-x-2 gap-y-1">
+                  {ctaTexts.answer[lang].split(' ').map((word, i) => (
+                    <motion.span
+                      key={i}
+                      className="text-3xl sm:text-5xl font-extrabold grad-text"
+                      initial={{ opacity: 0, y: 24 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.1, duration: 0.5, ease: 'easeOut' }}
+                    >
+                      {word}
+                    </motion.span>
+                  ))}
+                </div>
+                <motion.div
+                  className="flex flex-col sm:flex-row gap-3 justify-center"
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5, duration: 0.4 }}
+                >
+                  <Link href="/login"
+                    className="inline-flex items-center justify-center gap-2 text-white font-bold px-9 py-3.5 rounded-xl text-sm"
+                    style={{ background: 'linear-gradient(135deg, var(--c1), var(--c2))' }}>
+                    {t.hero.cta} <ArrowRight className="w-4 h-4" />
+                  </Link>
+                  <Link href="/help"
+                    className="inline-flex items-center justify-center font-medium px-9 py-3.5 rounded-xl text-sm border"
+                    style={{ borderColor: 'var(--border2)', color: 'var(--text-dim)' }}>
+                    {t.hero.demo}
+                  </Link>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </section>
 
@@ -812,6 +900,80 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
+
+      {/* STEP-BY-STEP POPUP OVERLAY */}
+      <AnimatePresence>
+        {stepPopup !== null && stepPopup < t.steps.length && (
+          <motion.div
+            key="popup-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center px-4"
+            style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(3px)' }}
+            onClick={() => setStepPopup(null)}
+          >
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={stepPopup}
+                initial={{ scale: 0.88, y: 28, opacity: 0 }}
+                animate={{ scale: 1, y: 0, opacity: 1 }}
+                exit={{ scale: 0.88, y: -20, opacity: 0 }}
+                transition={{ type: 'spring', damping: 22, stiffness: 320 }}
+                onClick={e => e.stopPropagation()}
+                className="rounded-2xl p-8 max-w-sm w-full border shadow-2xl"
+                style={{ background: isDark ? '#0b1c34' : '#ffffff', borderColor: 'var(--border)' }}
+              >
+                {/* Step number */}
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center text-sm font-extrabold mb-5 text-white"
+                  style={{ background: 'linear-gradient(135deg, var(--c1), var(--c2))' }}>
+                  0{stepPopup + 1}
+                </div>
+                {/* Progress bar */}
+                <div className="flex gap-1.5 mb-6">
+                  {t.steps.map((_: unknown, i: number) => (
+                    <motion.div
+                      key={i}
+                      className="h-1 rounded-full flex-1"
+                      animate={{ background: i <= stepPopup ? 'var(--c1)' : 'var(--border)' }}
+                      transition={{ duration: 0.3 }}
+                    />
+                  ))}
+                </div>
+                {/* Content */}
+                <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: 'var(--c1)' }}>
+                  {stepPopup + 1}{stepLabels.stepOf[lang]}
+                </p>
+                <h3 className="font-extrabold text-xl mb-3" style={{ color: 'var(--text-base)' }}>
+                  {t.steps[stepPopup].title}
+                </h3>
+                <p className="text-sm leading-relaxed mb-7" style={{ color: 'var(--text-muted)' }}>
+                  {t.steps[stepPopup].desc}
+                </p>
+                {/* Buttons */}
+                <div className="flex gap-3">
+                  {stepPopup > 0 && (
+                    <button
+                      onClick={() => setStepPopup(stepPopup - 1)}
+                      className="flex-1 py-3 rounded-xl font-semibold text-sm border transition-colors"
+                      style={{ borderColor: 'var(--border2)', color: 'var(--text-muted)' }}
+                    >
+                      ←
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setStepPopup(stepPopup < t.steps.length - 1 ? stepPopup + 1 : null)}
+                    className="flex-[3] py-3 rounded-xl font-bold text-sm text-white"
+                    style={{ background: 'linear-gradient(135deg, var(--c1), var(--c2))' }}
+                  >
+                    {stepPopup < t.steps.length - 1 ? `${stepLabels.gotIt[lang]} →` : stepLabels.letsGo[lang]}
+                  </button>
+                </div>
+              </motion.div>
+            </AnimatePresence>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
