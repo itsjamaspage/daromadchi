@@ -252,7 +252,7 @@ export default function LandingPage() {
   const langs: Lang[] = ['uz', 'ru', 'en']
   const card = isDark ? 'var(--bg-card)' : '#ffffff'
 
-  // Step popup
+  // Step popup — lock scroll while open
   const [stepPopup, setStepPopup] = useState<number | null>(null)
   const stepPopupShown = useRef(false)
   useEffect(() => {
@@ -261,15 +261,26 @@ export default function LandingPage() {
       setTimeout(() => setStepPopup(0), 500)
     }
   }, [howInView])
+  useEffect(() => {
+    document.body.style.overflow = stepPopup !== null ? 'hidden' : ''
+    return () => { document.body.style.overflow = '' }
+  }, [stepPopup])
 
-  // CTA animated text phases: 0 = question, 1 = answer + buttons
+  // CTA animated text phases — loops forever: 0=question → 1=answer → 0=question …
   const [ctaPhase, setCtaPhase] = useState<0 | 1>(0)
   const ctaStarted = useRef(false)
+  const ctaTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   useEffect(() => {
     if (!ctaInView || ctaStarted.current) return
     ctaStarted.current = true
-    const t2 = setTimeout(() => setCtaPhase(1), 2800)
-    return () => clearTimeout(t2)
+    const schedule = (nextPhase: 0 | 1, delay: number) => {
+      ctaTimerRef.current = setTimeout(() => {
+        setCtaPhase(nextPhase)
+        schedule(nextPhase === 0 ? 1 : 0, nextPhase === 1 ? 3800 : 2800)
+      }, delay)
+    }
+    schedule(1, 2800)
+    return () => { if (ctaTimerRef.current) clearTimeout(ctaTimerRef.current) }
   }, [ctaInView])
 
   const stepLabels = {
@@ -732,95 +743,107 @@ export default function LandingPage() {
       </section>
 
       {/* CTA */}
-      <section ref={ctaRef} className="py-28 px-6 border-t overflow-hidden" style={{ background: 'var(--bg-base)', borderColor: 'var(--border)' }}>
-        <div className="max-w-2xl mx-auto text-center min-h-[220px] flex flex-col items-center justify-center">
-          <AnimatePresence mode="wait">
-            {ctaPhase === 0 ? (
-              <motion.div key="question" className="flex flex-col items-center gap-4">
-                <motion.p
-                  className="text-xs font-bold uppercase tracking-widest mb-2"
-                  style={{ color: 'var(--c1)' }}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1 }}
-                >
-                  {t.ctaBadge}
-                </motion.p>
-                <div className="flex flex-wrap justify-center gap-x-2 gap-y-1">
+      <section ref={ctaRef} className="relative py-28 px-6 border-t overflow-hidden" style={{ background: 'var(--bg-base)', borderColor: 'var(--border)' }}>
+        {/* Lane beam animations */}
+        <div className="absolute inset-0 pointer-events-none" aria-hidden>
+          {[
+            { top: '18%', dur: 6,   delay: 0,   w: '55%', opacity: 0.18 },
+            { top: '35%', dur: 9,   delay: 2.2, w: '40%', opacity: 0.12 },
+            { top: '52%', dur: 7,   delay: 0.8, w: '65%', opacity: 0.15 },
+            { top: '68%', dur: 8,   delay: 3.5, w: '45%', opacity: 0.10 },
+            { top: '82%', dur: 5.5, delay: 1.4, w: '50%', opacity: 0.13 },
+          ].map((b, i) => (
+            <div key={i} className="absolute h-px"
+              style={{
+                top: b.top, width: b.w, left: '-10%',
+                background: `linear-gradient(90deg, transparent 0%, var(--c1) 40%, var(--c2) 60%, transparent 100%)`,
+                animation: `laneBeam ${b.dur}s ${b.delay}s ease-in-out infinite`,
+                opacity: b.opacity,
+              }}
+            />
+          ))}
+          {/* Ambient glow orbs */}
+          <div className="absolute rounded-full blur-3xl opacity-10 animate-pulse-glow"
+            style={{ width: 400, height: 400, top: '-10%', left: '10%', background: 'var(--c1)' }} />
+          <div className="absolute rounded-full blur-3xl opacity-8"
+            style={{ width: 300, height: 300, bottom: '-5%', right: '15%', background: 'var(--c2)', animation: 'pulse-glow 4s 1.5s ease-in-out infinite' }} />
+        </div>
+
+        <div className="relative z-10 max-w-2xl mx-auto text-center flex flex-col items-center gap-6">
+          {/* 3 days free badge — always visible at top */}
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={ctaInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.5 }}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full border text-xs font-bold"
+            style={{ background: isDark ? 'rgba(0,212,255,0.06)' : 'rgba(124,58,237,0.06)', borderColor: 'var(--border2)', color: 'var(--c1)' }}
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+            {t.trialFree} ·&nbsp;
+            <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>
+              {lang === 'uz' ? 'Karta shart emas' : lang === 'ru' ? 'Карта не нужна' : 'No card required'}
+            </span>
+          </motion.div>
+
+          {/* Animated cycling text */}
+          <div className="min-h-[120px] flex items-center justify-center">
+            <AnimatePresence mode="wait">
+              {ctaPhase === 0 ? (
+                <motion.div key="question" className="flex flex-wrap justify-center gap-x-2 gap-y-1">
                   {ctaTexts.question[lang].split(' ').map((word, i) => (
                     <motion.span
                       key={i}
                       className="text-3xl sm:text-4xl font-extrabold"
                       style={{ color: 'var(--text-base)' }}
-                      initial={{ opacity: 0, y: 20 }}
+                      initial={{ opacity: 0, y: 22 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.15 + i * 0.08, duration: 0.4, ease: 'easeOut' }}
+                      exit={{ opacity: 0, y: -16 }}
+                      transition={{ delay: i * 0.07, duration: 0.35, ease: 'easeOut' }}
                     >
                       {word}
                     </motion.span>
                   ))}
-                </div>
-              </motion.div>
-            ) : (
-              <motion.div
-                key="answer"
-                className="flex flex-col items-center gap-7"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.5 }}
-              >
-                <div className="flex flex-wrap justify-center gap-x-2 gap-y-1">
-                  {ctaTexts.answer[lang].split(' ').map((word, i) => (
-                    <motion.span
-                      key={i}
-                      className="text-3xl sm:text-5xl font-extrabold grad-text"
-                      initial={{ opacity: 0, y: 24 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: i * 0.1, duration: 0.5, ease: 'easeOut' }}
-                    >
-                      {word}
-                    </motion.span>
-                  ))}
-                </div>
-                <motion.div
-                  className="flex flex-col sm:flex-row gap-3 justify-center"
-                  initial={{ opacity: 0, y: 16 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.5, duration: 0.4 }}
-                >
-                  <Link href="/login"
-                    className="inline-flex items-center justify-center gap-2 text-white font-bold px-9 py-3.5 rounded-xl text-sm"
-                    style={{ background: 'linear-gradient(135deg, var(--c1), var(--c2))' }}>
-                    {t.hero.cta} <ArrowRight className="w-4 h-4" />
-                  </Link>
-                  <Link href="/help"
-                    className="inline-flex items-center justify-center font-medium px-9 py-3.5 rounded-xl text-sm border"
-                    style={{ borderColor: 'var(--border2)', color: 'var(--text-dim)' }}>
-                    {t.hero.demo}
-                  </Link>
                 </motion.div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+              ) : (
+                <motion.div key="answer" className="flex flex-col items-center gap-7">
+                  <div className="flex flex-wrap justify-center gap-x-2 gap-y-1">
+                    {ctaTexts.answer[lang].split(' ').map((word, i) => (
+                      <motion.span
+                        key={i}
+                        className="text-3xl sm:text-5xl font-extrabold grad-text"
+                        initial={{ opacity: 0, y: 24 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -16 }}
+                        transition={{ delay: i * 0.1, duration: 0.45, ease: 'easeOut' }}
+                      >
+                        {word}
+                      </motion.span>
+                    ))}
+                  </div>
+                  <motion.div
+                    className="flex flex-col sm:flex-row gap-3 justify-center"
+                    initial={{ opacity: 0, y: 16 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ delay: 0.4, duration: 0.4 }}
+                  >
+                    <Link href="/login"
+                      className="inline-flex items-center justify-center gap-2 text-white font-bold px-9 py-3.5 rounded-xl text-sm"
+                      style={{ background: 'linear-gradient(135deg, var(--c1), var(--c2))' }}>
+                      {t.hero.cta} <ArrowRight className="w-4 h-4" />
+                    </Link>
+                    <Link href="/help"
+                      className="inline-flex items-center justify-center font-medium px-9 py-3.5 rounded-xl text-sm border"
+                      style={{ borderColor: 'var(--border2)', color: 'var(--text-dim)' }}>
+                      {t.hero.demo}
+                    </Link>
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
       </section>
-
-      {/* PRE-FOOTER FREE TRIAL BANNER */}
-      <div className="py-12 px-6 border-t" style={{ background: isDark ? '#020c1a' : '#1a1a2e', borderColor: 'rgba(255,255,255,0.06)' }}>
-        <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
-          <div>
-            <p className="text-xl font-extrabold text-white mb-1">{t.trialFree}</p>
-            <p className="text-sm" style={{ color: '#6b8199' }}>
-              {lang === 'uz' ? "Hech qanday kredit karta talab qilinmaydi." : lang === 'ru' ? "Кредитная карта не требуется." : "No credit card required."}
-            </p>
-          </div>
-          <Link href="/login"
-            className="shrink-0 inline-flex items-center gap-2 font-bold px-8 py-3.5 rounded-xl text-sm text-white"
-            style={{ background: 'linear-gradient(135deg, var(--c1), var(--c2))' }}>
-            {t.nav.start} <ArrowRight className="w-4 h-4" />
-          </Link>
-        </div>
-      </div>
 
       {/* FOOTER */}
       <footer style={{ background: '#0a0a14' }}>

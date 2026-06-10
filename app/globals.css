@@ -247,6 +247,14 @@ h1, h2, h3, h4, h5, h6 {
   will-change: width;
 }
 
+/* CTA lane beam animation */
+@keyframes laneBeam {
+  0%   { transform: translateX(-120%); opacity: 0; }
+  8%   { opacity: 1; }
+  92%  { opacity: 0.7; }
+  100% { transform: translateX(280%); opacity: 0; }
+}
+
 /* OPTION 1 (current): float up/down with slight rotation */
 @keyframes float {
   0%, 100% { transform: translateY(0px) rotate(-1deg); }
