@@ -178,6 +178,38 @@ function MockupInteractive({ children }: { children: React.ReactNode }) {
   )
 }
 
+/* ── Slot-machine price scramble ────────────────────────────────────────── */
+function SlotPrice({ value, trigger, delay = 0 }: { value: string; trigger: boolean; delay?: number }) {
+  const DIGITS = '0123456789'
+  const blank = value.replace(/\d/g, '-')
+  const [display, setDisplay] = useState(blank)
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    if (!trigger) return
+    const plainLen = value.replace(/ /g, '').length
+    timerRef.current = setTimeout(() => {
+      let frame = 0
+      const total = 22 + plainLen * 3
+      const iv = setInterval(() => {
+        if (frame >= total) { setDisplay(value); clearInterval(iv); return }
+        setDisplay(
+          value.split('').map((ch, i) => {
+            if (ch === ' ') return ' '
+            const charIdx = value.slice(0, i + 1).replace(/ /g, '').length - 1
+            const revealFrame = Math.floor(total * 0.55 * ((charIdx + 1) / plainLen))
+            return frame > revealFrame ? ch : DIGITS[Math.floor(Math.random() * 10)]
+          }).join('')
+        )
+        frame++
+      }, 48)
+    }, delay * 1000)
+    return () => { if (timerRef.current) clearTimeout(timerRef.current) }
+  }, [trigger, value, delay])
+
+  return <span className="tabular-nums">{display}</span>
+}
+
 type FeatureItem = { id: string; title: string; desc: string; iconIndex: number }
 
 function SortableFeatureCard({
@@ -216,9 +248,10 @@ function SortableFeatureCard({
       />
       {/* Stagger entry animation wrapper */}
       <motion.div
-        initial={{ opacity: 0, y: 28 }}
-        animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 28 }}
-        transition={{ delay: index * 0.08, duration: 0.5, ease: 'easeOut' }}
+        initial={{ opacity: 0, y: 40, scale: 0.96 }}
+        whileInView={{ opacity: 1, y: 0, scale: 1 }}
+        viewport={{ once: true, amount: 0.25 }}
+        transition={{ delay: index * 0.09, duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
       >
         <div className="w-11 h-11 rounded-xl flex items-center justify-center mb-5"
           style={{ background: isDark ? 'rgba(0,212,255,0.08)' : 'rgba(124,58,237,0.08)', border: '1px solid var(--border2)' }}>
@@ -691,28 +724,40 @@ export default function LandingPage() {
               { name: 'Pro+', price: '600 000', highlight: false, features: t.pricingProPlusFeatures },
             ] as const).map((plan, i) => (
               <motion.div key={plan.name}
-                initial={{ opacity: 0, y: 20 }} animate={pricingInView ? { opacity: 1, y: 0 } : {}}
-                transition={{ delay: i * 0.1 }}
-                whileHover={{ y: -6, transition: { duration: 0.2 } }}
+                initial={{ opacity: 0, y: 60, scale: 0.88 }}
+                animate={pricingInView ? { opacity: 1, y: 0, scale: 1 } : {}}
+                transition={{ delay: i * 0.22, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                whileHover={{ y: -8, transition: { duration: 0.2 } }}
                 className="rounded-2xl p-7 border relative cursor-default"
                 style={{ background: plan.highlight ? (isDark ? 'rgba(0,212,255,0.05)' : 'rgba(124,58,237,0.05)') : card, borderColor: plan.highlight ? 'var(--c1)' : 'var(--border)' }}>
                 {plan.highlight && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-xs font-bold text-white"
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.5 }}
+                    animate={pricingInView ? { opacity: 1, scale: 1 } : {}}
+                    transition={{ delay: i * 0.22 + 0.4, type: 'spring', stiffness: 400, damping: 15 }}
+                    className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-xs font-bold text-white"
                     style={{ background: 'linear-gradient(135deg, var(--c1), var(--c2))' }}>
                     {t.pricingPopular}
-                  </div>
+                  </motion.div>
                 )}
                 <h3 className="font-extrabold text-lg mb-1" style={{ color: 'var(--text-base)' }}>{plan.name}</h3>
                 <div className="flex items-baseline gap-1 mb-6">
-                  <span className="text-3xl font-extrabold" style={{ color: 'var(--text-base)' }}>{plan.price}</span>
+                  <span className="text-3xl font-extrabold" style={{ color: plan.highlight ? 'var(--c1)' : 'var(--text-base)' }}>
+                    <SlotPrice value={plan.price} trigger={pricingInView} delay={i * 0.22 + 0.15} />
+                  </span>
                   <span className="text-sm" style={{ color: 'var(--text-muted)' }}>so&apos;m/oy</span>
                 </div>
                 <ul className="space-y-2.5 mb-7">
-                  {plan.features.map(f => (
-                    <li key={f} className="flex items-start gap-2 text-sm" style={{ color: 'var(--text-muted)' }}>
+                  {plan.features.map((f, fi) => (
+                    <motion.li
+                      key={f}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={pricingInView ? { opacity: 1, x: 0 } : {}}
+                      transition={{ delay: i * 0.22 + 0.3 + fi * 0.05, duration: 0.3 }}
+                      className="flex items-start gap-2 text-sm" style={{ color: 'var(--text-muted)' }}>
                       <CheckCircle className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: 'var(--c1)' }} />
                       {f}
-                    </li>
+                    </motion.li>
                   ))}
                 </ul>
                 <Link href="/login" className="block w-full text-center py-3 rounded-xl text-sm font-bold"
