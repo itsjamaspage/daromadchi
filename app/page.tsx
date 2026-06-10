@@ -214,8 +214,8 @@ function FeaturesScrollSection({
   subtitle: string
 }) {
   const sectionRef = useRef(null)
-  const inView = useInView(sectionRef, { once: true, margin: '-80px' })
   const sectionElRef = useRef<HTMLDivElement>(null)
+  const inView = useInView(sectionElRef, { once: true, amount: 0.3 })
   const progressBarRef = useRef<HTMLDivElement>(null)
   const [activeStep, setActiveStep] = useState(0)
   const dirRef = useRef(1)
@@ -247,15 +247,16 @@ function FeaturesScrollSection({
 
     const obs = new IntersectionObserver(
       ([entry]) => {
-        isVisible = entry.isIntersecting
-        // Panel left viewport downward (user scrolled up past it) → reset for next visit
-        if (!entry.isIntersecting && entry.boundingClientRect.top > window.innerHeight * 0.3) {
+        // isVisible only when panel ≥95% in viewport (fully in view)
+        isVisible = entry.intersectionRatio >= 0.95
+        // Panel fully left viewport downward (user scrolled up past it) → reset
+        if (!entry.isIntersecting && entry.boundingClientRect.top > 0) {
           stepDoneRef.current = false
           cooldownRef.current = false
           setActiveStep(0)
         }
       },
-      { threshold: 0.95 },
+      { threshold: [0, 0.95] },
     )
     obs.observe(el)
 
@@ -285,27 +286,28 @@ function FeaturesScrollSection({
 
   return (
     <section id="features" ref={sectionRef} style={{ background: 'var(--bg-base)' }}>
-      {/* Section heading */}
-      <div className="pt-24 pb-6 px-6">
-        <div className="max-w-5xl mx-auto text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={inView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.5 }}
-          >
-            <span className="inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-bold mb-4 border"
-              style={{ background: isDark ? 'rgba(0,212,255,0.06)' : 'rgba(124,58,237,0.06)', borderColor: 'var(--border2)', color: 'var(--c1)' }}>
-              <Sparkles className="w-3 h-3" /> {badge}
-            </span>
-            <h2 className="text-3xl sm:text-4xl font-extrabold mb-4" style={{ color: 'var(--text-base)' }}>{title}</h2>
-            <p className="text-base max-w-lg mx-auto" style={{ color: 'var(--text-muted)' }}>{subtitle}</p>
-          </motion.div>
-        </div>
-      </div>
-
-      {/* Wheel-driven panel — scroll down advances steps, scroll up = normal page scroll */}
-      <div ref={sectionElRef} className="h-screen flex items-center"
+      {/* Single viewport panel: heading + content grouped, no gap between them */}
+      <div ref={sectionElRef} className="h-screen flex flex-col justify-center"
         style={{ background: 'var(--bg-base)', overflow: 'clip' }}>
+
+        {/* Heading sits directly above the content as one centered group */}
+        <div className="pb-8 px-6">
+          <div className="max-w-5xl mx-auto text-center">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={inView ? { opacity: 1, y: 0 } : {}}
+              transition={{ duration: 0.5 }}
+            >
+              <span className="inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-bold mb-4 border"
+                style={{ background: isDark ? 'rgba(0,212,255,0.06)' : 'rgba(124,58,237,0.06)', borderColor: 'var(--border2)', color: 'var(--c1)' }}>
+                <Sparkles className="w-3 h-3" /> {badge}
+              </span>
+              <h2 className="text-3xl sm:text-4xl font-extrabold mb-4" style={{ color: 'var(--text-base)' }}>{title}</h2>
+              <p className="text-base max-w-lg mx-auto" style={{ color: 'var(--text-muted)' }}>{subtitle}</p>
+            </motion.div>
+          </div>
+        </div>
+
         <div className="max-w-5xl mx-auto w-full px-6">
 
         {/* Desktop: 3-column */}
@@ -580,7 +582,7 @@ export default function LandingPage() {
 
   const stepLabels = {
     gotIt: { uz: 'Tushundim', ru: 'Понятно', en: 'Got it' },
-    letsGo: { uz: 'Boshlaylik →', ru: 'Начнём →', en: "Let's go →" },
+    letsGo: { uz: 'Kettik →', ru: 'Начнём →', en: "Let's go →" },
     stepOf: { uz: '/4 qadam', ru: '/4 шага', en: ' of 4' },
   }
   const ctaTexts = {
@@ -590,7 +592,7 @@ export default function LandingPage() {
       en: 'Are you ready to grow your sales with us?',
     },
     answer: {
-      uz: "Unda boshlaylik",
+      uz: "Unda kettik",
       ru: "Тогда давайте начнём",
       en: "Then let's get started",
     },
