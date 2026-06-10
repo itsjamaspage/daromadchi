@@ -214,13 +214,10 @@ function FeaturesScrollSection({
   subtitle: string
 }) {
   const sectionRef = useRef(null)
-  const sectionElRef = useRef<HTMLDivElement>(null)
   const inView = useInView(sectionRef, { once: true, margin: '-80px' })
   const progressBarRef = useRef<HTMLDivElement>(null)
   const [activeStep, setActiveStep] = useState(0)
   const dirRef = useRef(1)
-  const stepDoneRef = useRef(false)
-  const cooldownRef = useRef(false)
 
   // Click: any direction
   const goTo = (i: number) => {
@@ -237,59 +234,13 @@ function FeaturesScrollSection({
     }
   }, [activeStep, features.length])
 
-  // Wheel intercept — all decisions based on live getBoundingClientRect(), no cached state
+  // Auto-advance every 2.5 seconds, loops through all options
   useEffect(() => {
-    const el = sectionElRef.current
-    if (!el) return
-
-    let snapDone = false
-
-    // IO only for reset: when panel leaves viewport from below (user scrolled up past it)
-    const obs = new IntersectionObserver(([entry]) => {
-      if (!entry.isIntersecting && entry.boundingClientRect.top > 0) {
-        snapDone = false
-        stepDoneRef.current = false
-        cooldownRef.current = false
-        setActiveStep(0)
-      }
-    }, { threshold: 0 })
-    obs.observe(el)
-
-    const onWheel = (e: WheelEvent) => {
-      if (e.deltaY <= 0 || stepDoneRef.current) return
-      const rect = el.getBoundingClientRect()
-      const vh = window.innerHeight
-      // Panel fully above viewport (steps done, user scrolled past) — never block
-      if (rect.bottom <= 0) return
-      // Panel fully below viewport — not reached yet, don't block
-      if (rect.top >= vh) return
-      // Panel is (partially or fully) in viewport — block downward scroll
-      e.preventDefault()
-      // Panel entering from below: snap it to fill viewport
-      if (rect.top > 10) {
-        if (!snapDone) {
-          snapDone = true
-          window.scrollTo({ top: Math.round(rect.top + window.scrollY), behavior: 'smooth' })
-        }
-        return
-      }
-      // Panel at viewport top — advance steps
-      if (cooldownRef.current) return
-      cooldownRef.current = true
-      setTimeout(() => { cooldownRef.current = false }, 500)
+    const timer = setInterval(() => {
       dirRef.current = 1
-      setActiveStep(prev => {
-        const next = prev + 1
-        if (next >= features.length - 1) stepDoneRef.current = true
-        return Math.min(next, features.length - 1)
-      })
-    }
-
-    window.addEventListener('wheel', onWheel, { passive: false })
-    return () => {
-      window.removeEventListener('wheel', onWheel)
-      obs.disconnect()
-    }
+      setActiveStep(prev => (prev + 1) % features.length)
+    }, 2500)
+    return () => clearInterval(timer)
   }, [features.length])
 
   const ICONS = [BarChart2, Calculator, AlertTriangle, TrendingUp, RefreshCw, DollarSign]
@@ -298,7 +249,7 @@ function FeaturesScrollSection({
   return (
     <section id="features" ref={sectionRef} style={{ background: 'var(--bg-base)' }}>
       {/* Section heading */}
-      <div className="pt-16 pb-6 px-6">
+      <div className="pt-6 pb-6 px-6">
         <div className="max-w-5xl mx-auto text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -315,10 +266,8 @@ function FeaturesScrollSection({
         </div>
       </div>
 
-      {/* Wheel-driven panel — snaps into view, then advances steps on scroll */}
-      <div ref={sectionElRef} className="h-screen flex items-center"
-        style={{ background: 'var(--bg-base)', overflow: 'clip' }}>
-        <div className="max-w-5xl mx-auto w-full px-6">
+      <div className="pb-16 px-6">
+        <div className="max-w-5xl mx-auto w-full">
 
         {/* Desktop: 3-column */}
         <div className="hidden md:grid gap-12 items-center"
@@ -437,12 +386,12 @@ function FeaturesScrollSection({
                     onClick={() => goTo(i)}
                     className="flex items-center gap-3 py-2.5 px-3 rounded-xl text-left w-full focus:outline-none"
                     animate={{
-                      opacity: isActive ? 1 : 0.38,
+                      opacity: isActive ? 1 : (isDark ? 0.38 : 0.65),
                       background: isActive
                         ? isDark ? 'rgba(0,212,255,0.08)' : 'rgba(124,58,237,0.08)'
                         : 'rgba(0,0,0,0)',
                     }}
-                    whileHover={{ opacity: isActive ? 1 : 0.7 }}
+                    whileHover={{ opacity: isActive ? 1 : (isDark ? 0.7 : 0.85) }}
                     transition={{ duration: 0.2 }}
                     style={{ cursor: 'pointer' }}
                   >
@@ -526,8 +475,8 @@ function FeaturesScrollSection({
           </div>
         </div>
 
-        </div>{/* /inner px-6 */}
-      </div>{/* /sectionElRef */}
+        </div>
+      </div>
     </section>
   )
 }
