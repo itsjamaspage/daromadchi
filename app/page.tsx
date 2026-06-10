@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 import { motion, useInView, AnimatePresence, useMotionValue, useSpring } from 'framer-motion'
 import {
-  BarChart2, Calculator, FileText,
+  BarChart2, Calculator, TrendingUp,
   Zap, ArrowRight, RefreshCw, AlertTriangle, DollarSign,
   Sparkles, Sun, Moon, Globe, X, Menu,
   Star, CheckCircle, Activity,
@@ -221,8 +221,7 @@ function FeaturesScrollSection({
 
   useEffect(() => {
     let rafId: number
-    let prevProgress = -1
-    let prevStep = 0
+    let prevStep = -1
     const loop = () => {
       if (containerRef.current) {
         const rect = containerRef.current.getBoundingClientRect()
@@ -231,17 +230,19 @@ function FeaturesScrollSection({
         if (scrollable > 0) {
           const p = Math.min(scrolled / scrollable, 1)
 
-          // Smooth line — write directly to DOM, never triggers React re-render
+          // Progress bar: direct DOM mutation, 60fps smooth
           if (progressBarRef.current) {
             progressBarRef.current.style.height = `${p * 100}%`
           }
 
-          // Steps only advance when scrolling down, never reverse
-          if (p > prevProgress) {
+          if (p <= 0) {
+            // Section not yet reached — reset so animation plays fresh on next entry
+            prevStep = -1
+          } else {
+            // Only advance, never reverse
             const s = Math.min(Math.floor(p * features.length), features.length - 1)
-            if (s !== prevStep) { prevStep = s; setActiveStep(s) }
+            if (s > prevStep) { prevStep = s; setActiveStep(s) }
           }
-          prevProgress = p
         }
       }
       rafId = requestAnimationFrame(loop)
@@ -250,7 +251,7 @@ function FeaturesScrollSection({
     return () => cancelAnimationFrame(rafId)
   }, [features.length])
 
-  const ICONS = [BarChart2, Calculator, AlertTriangle, FileText, RefreshCw, DollarSign]
+  const ICONS = [BarChart2, Calculator, AlertTriangle, TrendingUp, RefreshCw, DollarSign]
   const ActiveIcon = ICONS[activeStep]
 
   return (
@@ -280,81 +281,51 @@ function FeaturesScrollSection({
 
           {/* Desktop 3-column layout */}
           <div className="max-w-5xl mx-auto w-full px-6 hidden md:grid gap-10 items-center"
-            style={{ gridTemplateColumns: '1fr 48px 1fr' }}>
+            style={{ gridTemplateColumns: '1.15fr 44px 1fr' }}>
 
-            {/* LEFT: icon showcase */}
-            <div className="flex flex-col items-center gap-7">
-              {/* Icon box with bracket corners */}
-              <div className="relative p-2">
-                <div className="absolute top-0 left-0 w-5 h-5 border-t-2 border-l-2 rounded-tl" style={{ borderColor: 'var(--c1)' }} />
-                <div className="absolute top-0 right-0 w-5 h-5 border-t-2 border-r-2 rounded-tr" style={{ borderColor: 'var(--c1)' }} />
-                <div className="absolute bottom-0 left-0 w-5 h-5 border-b-2 border-l-2 rounded-bl" style={{ borderColor: 'var(--c1)' }} />
-                <div className="absolute bottom-0 right-0 w-5 h-5 border-b-2 border-r-2 rounded-br" style={{ borderColor: 'var(--c1)' }} />
+            {/* LEFT: large icon only — no text */}
+            <div className="flex items-center justify-center">
+              <div className="relative p-3">
+                {/* Cyan bracket corners */}
+                <div className="absolute top-0 left-0 w-7 h-7 border-t-2 border-l-2 rounded-tl" style={{ borderColor: 'var(--c1)' }} />
+                <div className="absolute top-0 right-0 w-7 h-7 border-t-2 border-r-2 rounded-tr" style={{ borderColor: 'var(--c1)' }} />
+                <div className="absolute bottom-0 left-0 w-7 h-7 border-b-2 border-l-2 rounded-bl" style={{ borderColor: 'var(--c1)' }} />
+                <div className="absolute bottom-0 right-0 w-7 h-7 border-b-2 border-r-2 rounded-br" style={{ borderColor: 'var(--c1)' }} />
 
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={activeStep}
-                    initial={{ opacity: 0, scale: 0.72, rotateY: -70 }}
+                    initial={{ opacity: 0, scale: 0.68, rotateY: -80 }}
                     animate={{ opacity: 1, scale: 1, rotateY: 0 }}
-                    exit={{ opacity: 0, scale: 0.72, rotateY: 70 }}
-                    transition={{ duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
-                    className="w-40 h-40 rounded-2xl flex items-center justify-center"
+                    exit={{ opacity: 0, scale: 0.68, rotateY: 80 }}
+                    transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
+                    className="w-56 h-56 rounded-3xl flex items-center justify-center"
                     style={{
                       background: isDark ? 'rgba(0,212,255,0.07)' : 'rgba(124,58,237,0.07)',
                       border: '2px solid var(--c1)',
                       boxShadow: isDark
-                        ? '0 0 50px rgba(0,212,255,0.18), inset 0 0 30px rgba(0,212,255,0.04)'
-                        : '0 0 50px rgba(124,58,237,0.18), inset 0 0 30px rgba(124,58,237,0.04)',
+                        ? '0 0 70px rgba(0,212,255,0.22), inset 0 0 40px rgba(0,212,255,0.05)'
+                        : '0 0 70px rgba(124,58,237,0.22), inset 0 0 40px rgba(124,58,237,0.05)',
                     }}
                   >
-                    <ActiveIcon className="w-20 h-20" style={{ color: 'var(--c1)' }} />
+                    <ActiveIcon className="w-28 h-28" style={{ color: 'var(--c1)' }} />
                   </motion.div>
                 </AnimatePresence>
               </div>
-
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={activeStep}
-                  initial={{ opacity: 0, y: 18 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -18 }}
-                  transition={{ duration: 0.32 }}
-                  className="text-center max-w-xs"
-                >
-                  <h3 className="font-extrabold text-xl mb-2" style={{ color: 'var(--text-base)' }}>
-                    {features[activeStep].title}
-                  </h3>
-                  <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>
-                    {features[activeStep].desc}
-                  </p>
-                </motion.div>
-              </AnimatePresence>
-
-              <span className="text-xs font-semibold tabular-nums" style={{ color: 'var(--text-dim)' }}>
-                {String(activeStep + 1).padStart(2, '0')} / {String(features.length).padStart(2, '0')}
-              </span>
             </div>
 
             {/* CENTER: vertical timeline */}
-            <div className="flex justify-center" style={{ height: '60vh' }}>
+            <div className="flex justify-center" style={{ height: '62vh' }}>
               <div className="relative flex flex-col items-center justify-between py-3 w-3">
-                {/* Track line */}
                 <div className="absolute inset-x-1/2 top-3 bottom-3 w-px -translate-x-1/2"
                   style={{ background: 'var(--border)' }} />
-                {/* Progress fill — DOM-driven, updates every RAF frame */}
                 <div
                   ref={progressBarRef}
                   className="absolute inset-x-1/2 top-3 w-px -translate-x-1/2 origin-top"
-                  style={{
-                    background: 'linear-gradient(to bottom, var(--c1), var(--c2))',
-                    height: '0%',
-                  }}
+                  style={{ background: 'linear-gradient(to bottom, var(--c1), var(--c2))', height: '0%' }}
                 />
-                {/* Dots */}
                 {features.map((_, i) => (
-                  <div
-                    key={i}
-                    className="relative z-10 rounded-full border-2 transition-all duration-300"
+                  <div key={i} className="relative z-10 rounded-full border-2 transition-all duration-300"
                     style={{
                       width: i === activeStep ? '14px' : '10px',
                       height: i === activeStep ? '14px' : '10px',
@@ -369,45 +340,51 @@ function FeaturesScrollSection({
               </div>
             </div>
 
-            {/* RIGHT: feature cards */}
-            <div className="flex flex-col gap-2">
-              {features.map((f, i) => {
-                const CardIcon = ICONS[i]
-                const isActive = i === activeStep
-                return (
-                  <motion.div
-                    key={i}
-                    animate={{ opacity: isActive ? 1 : 0.3, scale: isActive ? 1 : 0.975 }}
-                    transition={{ duration: 0.25 }}
-                    className="rounded-xl px-4 py-3 border"
-                    style={{
-                      background: isActive
-                        ? isDark ? 'rgba(0,212,255,0.06)' : 'rgba(124,58,237,0.06)'
-                        : card,
-                      borderColor: isActive ? 'var(--c1)' : 'var(--border)',
-                      boxShadow: isActive
-                        ? isDark ? '0 0 18px rgba(0,212,255,0.10)' : '0 0 18px rgba(124,58,237,0.10)'
-                        : 'none',
-                    }}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-                        style={{
-                          background: isActive
-                            ? isDark ? 'rgba(0,212,255,0.14)' : 'rgba(124,58,237,0.14)'
-                            : 'transparent',
-                        }}>
-                        <CardIcon className="w-4 h-4"
-                          style={{ color: isActive ? 'var(--c1)' : 'var(--text-dim)' }} />
-                      </div>
-                      <span className="font-semibold text-sm"
-                        style={{ color: isActive ? 'var(--text-base)' : 'var(--text-muted)' }}>
+            {/* RIGHT: big animated text + compact option list */}
+            <div className="flex flex-col gap-6 justify-center">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={activeStep}
+                  initial={{ opacity: 0, x: 44, y: 8 }}
+                  animate={{ opacity: 1, x: 0, y: 0 }}
+                  exit={{ opacity: 0, x: -24 }}
+                  transition={{ duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
+                >
+                  <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: 'var(--c1)' }}>
+                    {String(activeStep + 1).padStart(2, '0')} / {String(features.length).padStart(2, '0')}
+                  </p>
+                  <h3 className="text-3xl font-extrabold mb-3 leading-tight" style={{ color: 'var(--text-base)' }}>
+                    {features[activeStep].title}
+                  </h3>
+                  <p className="text-base leading-relaxed" style={{ color: 'var(--text-muted)' }}>
+                    {features[activeStep].desc}
+                  </p>
+                </motion.div>
+              </AnimatePresence>
+
+              {/* Option list */}
+              <div className="flex flex-col gap-0.5">
+                {features.map((f, i) => {
+                  const Li = ICONS[i]
+                  const isActive = i === activeStep
+                  return (
+                    <motion.div key={i}
+                      animate={{ opacity: isActive ? 1 : 0.32 }}
+                      transition={{ duration: 0.2 }}
+                      className="flex items-center gap-3 py-2 px-3 rounded-lg"
+                      style={{ background: isActive ? (isDark ? 'rgba(0,212,255,0.06)' : 'rgba(124,58,237,0.06)') : 'transparent' }}
+                    >
+                      <Li className="w-4 h-4 shrink-0" style={{ color: isActive ? 'var(--c1)' : 'var(--text-dim)' }} />
+                      <span className="text-sm font-medium" style={{ color: isActive ? 'var(--text-base)' : 'var(--text-muted)' }}>
                         {f.title}
                       </span>
-                    </div>
-                  </motion.div>
-                )
-              })}
+                      {isActive && (
+                        <div className="ml-auto w-2 h-2 rounded-full animate-pulse" style={{ background: 'var(--c1)' }} />
+                      )}
+                    </motion.div>
+                  )
+                })}
+              </div>
             </div>
           </div>
 
