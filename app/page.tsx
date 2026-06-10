@@ -512,7 +512,7 @@ export default function LandingPage() {
   const [stepPopup, setStepPopup] = useState<number | null>(null)
   const stepPopupShown = useRef(false)
   useEffect(() => {
-    if (howInView && !stepPopupShown.current) {
+    if (howInView && !stepPopupShown.current && window.scrollY > 200) {
       stepPopupShown.current = true
       setTimeout(() => setStepPopup(0), 500)
     }
@@ -546,7 +546,7 @@ export default function LandingPage() {
   }
   const ctaTexts = {
     question: {
-      uz: 'Bizimla savdongizni oshirishga tayyormisiz?',
+      uz: 'Biz bilan savdongizni oshirishga tayyormisiz?',
       ru: 'Готовы увеличить свои продажи вместе с нами?',
       en: 'Are you ready to grow your sales with us?',
     },
@@ -1063,7 +1063,7 @@ export default function LandingPage() {
       </section>
 
       {/* FOOTER */}
-      <footer style={{ background: '#0a0a14' }}>
+      <footer style={{ background: isDark ? '#0a0a14' : '#1B1C26' }}>
         <div className="max-w-6xl mx-auto px-6 py-16">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-10 mb-12">
             <div className="col-span-2 lg:col-span-1">
