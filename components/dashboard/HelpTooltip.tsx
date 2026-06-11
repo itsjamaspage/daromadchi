@@ -43,7 +43,7 @@ export default function HelpTooltip({ section, className = '', variant = 'badge'
           />
 
           {/* Modal */}
-          <div className="relative w-full max-w-sm bg-[var(--bg-card)] border border-[var(--border2)] rounded-2xl shadow-2xl shadow-black/60 overflow-hidden">
+          <div className="relative w-full max-w-sm bg-[var(--bg-card)] border border-[var(--border2)] rounded-2xl shadow-2xl shadow-black/60 overflow-hidden" style={{ whiteSpace: 'normal' }}>
             {/* Header */}
             <div className="px-5 py-4 border-b border-[var(--border)] flex items-center justify-between gap-3">
               <div className="flex items-center gap-2.5">
