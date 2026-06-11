@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   RefreshCw, Save, Key, CheckCircle, XCircle, ExternalLink,
-  Loader2, Hash, Calculator, Sparkles, Trash2, Copy, Puzzle,
+  Loader2, Hash, Calculator, Sparkles, Trash2, Copy, Puzzle, Send, LinkIcon,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import type { Shop, UnitEcoSettings } from '@/lib/types'
@@ -578,22 +578,125 @@ function UnitEcoDefaultsCard({ initial }: { initial: UnitEcoSettings }) {
 // ─── Main export ──────────────────────────────────────────────────────────────
 
 interface Props {
-  uzumShop:   Shop | null
-  yandexShop: Shop | null
-  wbShop:     Shop | null
-  userId:     string
-  ueSettings: UnitEcoSettings
+  uzumShop:          Shop | null
+  yandexShop:        Shop | null
+  wbShop:            Shop | null
+  userId:            string
+  ueSettings:        UnitEcoSettings
+  telegramChatId?:   string | null
+  telegramUsername?: string | null
 }
 
-export default function SettingsForm({ uzumShop, yandexShop, wbShop, userId, ueSettings }: Props) {
+export default function SettingsForm({ uzumShop, yandexShop, wbShop, userId, ueSettings, telegramChatId, telegramUsername }: Props) {
   return (
     <div className="space-y-4">
       <UzumCard              shop={uzumShop}   userId={userId} />
       <YandexCard            shop={yandexShop} userId={userId} />
       <WildberriesCard       shop={wbShop}     userId={userId} />
       <UnitEcoDefaultsCard   initial={ueSettings} />
+      <TelegramCard          chatId={telegramChatId ?? null} username={telegramUsername ?? null} />
       <ExtensionTokenCard />
       <DemoCard />
+    </div>
+  )
+}
+
+// ─── Telegram link section ────────────────────────────────────────────────────
+
+function TelegramCard({ chatId, username }: { chatId: string | null; username: string | null }) {
+  const router  = useRouter()
+  const [link,    setLink]    = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [msg,     setMsg]     = useState<{ ok: boolean; text: string } | null>(null)
+
+  const connected = !!chatId
+
+  async function handleConnect() {
+    setLoading(true); setMsg(null)
+    try {
+      const res  = await fetch('/api/telegram/link', { method: 'POST' })
+      const data = await res.json()
+      if (data.url) setLink(data.url)
+      else setMsg({ ok: false, text: data.error ?? 'Xato' })
+    } catch {
+      setMsg({ ok: false, text: "Tarmoq xatosi" })
+    }
+    setLoading(false)
+  }
+
+  async function handleDisconnect() {
+    setLoading(true); setMsg(null)
+    try {
+      const res = await fetch('/api/telegram/disconnect', { method: 'POST' })
+      if (res.ok) { setLink(null); router.refresh() }
+      else setMsg({ ok: false, text: 'Xato' })
+    } catch {
+      setMsg({ ok: false, text: "Tarmoq xatosi" })
+    }
+    setLoading(false)
+  }
+
+  return (
+    <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
+      <div className="p-5 flex items-center gap-3 border-b border-[var(--border)]">
+        <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'rgba(41,182,246,0.12)', border: '1px solid rgba(41,182,246,0.25)' }}>
+          <Send className="w-4 h-4 text-sky-400" />
+        </div>
+        <div className="flex-1">
+          <p className="text-[var(--text-base)] font-semibold text-sm">Telegram</p>
+          <p className="text-[var(--text-muted)] text-xs">
+            {connected
+              ? `Ulangan${username ? ': @' + username : ''}`
+              : "Ogohlantirishlar va kunlik hisobotlarni Telegram orqali oling"}
+          </p>
+        </div>
+        {connected && (
+          <span className="text-[10px] font-semibold px-2 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+            Ulangan ✓
+          </span>
+        )}
+      </div>
+      <div className="p-5 space-y-3">
+        {connected ? (
+          <button
+            onClick={handleDisconnect}
+            disabled={loading}
+            className="inline-flex items-center gap-2 text-sm font-medium px-4 py-2.5 rounded-xl border border-[var(--border2)] text-[var(--text-muted)] hover:text-red-400 hover:border-red-500/40 transition-all disabled:opacity-60"
+          >
+            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}
+            Telegram uzish
+          </button>
+        ) : link ? (
+          <div className="space-y-3">
+            <p className="text-[var(--text-muted)] text-xs">
+              Quyidagi tugmani bosing — bot ochiladi va hisob avtomatik ulanadi:
+            </p>
+            <a
+              href={link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 text-sm font-semibold px-4 py-2.5 rounded-xl text-white transition-all"
+              style={{ background: 'linear-gradient(135deg, #29b6f6, #0288d1)' }}
+            >
+              <Send className="w-4 h-4" /> Telegram botini ochish →
+            </a>
+            <p className="text-[var(--text-muted)] text-xs">Havola 10 daqiqa amal qiladi. Bog&apos;langandan so&apos;ng sahifani yangilang.</p>
+            <button onClick={() => router.refresh()} className="text-xs underline" style={{ color: 'var(--c1)' }}>
+              Sahifani yangilash
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={handleConnect}
+            disabled={loading}
+            className="inline-flex items-center gap-2 btn-primary text-sm font-semibold px-4 py-2.5 rounded-xl disabled:opacity-60"
+          >
+            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <LinkIcon className="w-4 h-4" />}
+            Telegram ulash
+          </button>
+        )}
+        <StatusMsg msg={msg} />
+      </div>
     </div>
   )
 }

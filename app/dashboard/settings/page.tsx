@@ -29,6 +29,18 @@ export default async function SettingsPage() {
 
   const ueSettings = await getUnitEcoSettings()
 
+  let telegramChatId:   string | null = null
+  let telegramUsername: string | null = null
+  if (user) {
+    const { data: tg } = await supabase
+      .from('user_settings')
+      .select('telegram_chat_id, telegram_username')
+      .eq('user_id', user.id)
+      .maybeSingle()
+    telegramChatId   = tg?.telegram_chat_id   ?? null
+    telegramUsername = tg?.telegram_username  ?? null
+  }
+
   return (
     <div className="space-y-6 max-w-2xl">
       <div>
@@ -46,6 +58,8 @@ export default async function SettingsPage() {
         wbShop={wbShop}
         userId={user?.id ?? ''}
         ueSettings={ueSettings}
+        telegramChatId={telegramChatId}
+        telegramUsername={telegramUsername}
       />
     </div>
   )
