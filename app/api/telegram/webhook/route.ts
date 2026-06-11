@@ -142,14 +142,20 @@ async function sendLangSelect(chatId: string) {
 }
 
 export async function POST(req: NextRequest) {
+  console.log('[webhook] POST received')
+
   const expectedSecret = process.env.TELEGRAM_WEBHOOK_SECRET
   if (expectedSecret) {
     const got = req.headers.get('x-telegram-bot-api-secret-token')
-    if (got !== expectedSecret) return NextResponse.json({ ok: true })
+    if (got !== expectedSecret) {
+      console.log('[webhook] secret mismatch, ignoring')
+      return NextResponse.json({ ok: true })
+    }
   }
 
-  const body = await req.json().catch(() => null)
+  const body = await req.json().catch((e: unknown) => { console.error('[webhook] body parse error', e); return null })
   if (!body) return NextResponse.json({ ok: true })
+  console.log('[webhook] update type:', body.callback_query ? 'callback_query' : body.message ? 'message:' + body.message.text : 'other')
 
   // ── callback_query ─────────────────────────────────────────────────────────
   if (body.callback_query) {
