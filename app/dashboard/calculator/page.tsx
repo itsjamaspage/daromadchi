@@ -9,14 +9,50 @@ function fmt(n: number) {
   return new Intl.NumberFormat('uz-UZ').format(Math.round(n))
 }
 
-const CATEGORY_RATES = [5, 5, 6, 8, 8, 9, 7, 10, 10, 10, 11, 9, 12, 10, 6, 10]
+const UZUM_RATES = [5, 5, 6, 8, 8, 9, 7, 10, 10, 10, 11, 9, 12, 10, 6, 10]
+
+// Approximate rates for Yandex Market UZ — marked with ~ in UI
+const YANDEX_CATS: { name: Record<string, string>; rate: number }[] = [
+  { name: { uz: 'Elektronika', ru: 'Электроника', en: 'Electronics' }, rate: 3 },
+  { name: { uz: 'Telefon va gadjetlar', ru: 'Телефоны и гаджеты', en: 'Phones & gadgets' }, rate: 5 },
+  { name: { uz: 'Kiyim', ru: 'Одежда', en: 'Clothing' }, rate: 10 },
+  { name: { uz: 'Poyabzal', ru: 'Обувь', en: 'Footwear' }, rate: 8 },
+  { name: { uz: "Go'zallik va parvarish", ru: 'Красота и уход', en: 'Beauty & care' }, rate: 12 },
+  { name: { uz: 'Sport', ru: 'Спорт', en: 'Sports' }, rate: 8 },
+  { name: { uz: "Uy-joy va bog'", ru: 'Дом и сад', en: 'Home & garden' }, rate: 8 },
+  { name: { uz: 'Avtomobil', ru: 'Автотовары', en: 'Automotive' }, rate: 6 },
+  { name: { uz: "O'yinchoqlar", ru: 'Игрушки', en: 'Toys' }, rate: 8 },
+  { name: { uz: 'Oziq-ovqat', ru: 'Продукты', en: 'Groceries' }, rate: 8 },
+  { name: { uz: 'Boshqa', ru: 'Другое', en: 'Other' }, rate: 10 },
+]
+
+// Approximate rates for Wildberries UZ — marked with ~ in UI
+const WB_CATS: { name: Record<string, string>; rate: number }[] = [
+  { name: { uz: 'Kiyim', ru: 'Одежда', en: 'Clothing' }, rate: 18 },
+  { name: { uz: 'Poyabzal', ru: 'Обувь', en: 'Footwear' }, rate: 15 },
+  { name: { uz: 'Elektronika', ru: 'Электроника', en: 'Electronics' }, rate: 6 },
+  { name: { uz: "Go'zallik va parvarish", ru: 'Красота и уход', en: 'Beauty & care' }, rate: 14 },
+  { name: { uz: 'Sport', ru: 'Спорт', en: 'Sports' }, rate: 13 },
+  { name: { uz: "Uy-joy va bog'", ru: 'Дом и сад', en: 'Home & garden' }, rate: 12 },
+  { name: { uz: 'Avtomobil', ru: 'Автотовары', en: 'Automotive' }, rate: 10 },
+  { name: { uz: "O'yinchoqlar", ru: 'Игрушки', en: 'Toys' }, rate: 12 },
+  { name: { uz: 'Oziq-ovqat', ru: 'Продукты питания', en: 'Groceries' }, rate: 15 },
+  { name: { uz: 'Boshqa', ru: 'Другое', en: 'Other' }, rate: 14 },
+]
+
+type MP = 'uzum' | 'yandex' | 'wildberries'
 
 const inputCls = "w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/30 transition-all"
 
 export default function CalculatorPage() {
   const { lang } = useLang()
   const t = dashT[lang].calculator
-  const CATEGORIES = t.categories.map((name, i) => ({ name, rate: CATEGORY_RATES[i] }))
+  const [mp, setMp] = useState<MP>('uzum')
+  const UZUM_CATEGORIES = t.categories.map((name, i) => ({ name, rate: UZUM_RATES[i], approx: false }))
+  const YANDEX_CATEGORIES = YANDEX_CATS.map(c => ({ name: c.name[lang] ?? c.name.uz, rate: c.rate, approx: true }))
+  const WB_CATEGORIES = WB_CATS.map(c => ({ name: c.name[lang] ?? c.name.uz, rate: c.rate, approx: true }))
+  const CATEGORIES = mp === 'uzum' ? UZUM_CATEGORIES : mp === 'yandex' ? YANDEX_CATEGORIES : WB_CATEGORIES
+  const isApprox = mp !== 'uzum'
   const [price,      setPrice]      = useState('')
   const [cost,       setCost]       = useState('')
   const [logistics,  setLogistics]  = useState('')
@@ -88,6 +124,27 @@ export default function CalculatorPage() {
         <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl p-6 space-y-4">
           <h2 className="text-[var(--text-base)] font-semibold text-sm">{t.productInfo}</h2>
 
+          {/* Marketplace selector */}
+          <div className="flex items-center gap-1 p-1 bg-[var(--bg-input)] border border-[var(--border)] rounded-xl w-fit">
+            {([
+              { id: 'uzum',        label: 'Uzum Market' },
+              { id: 'yandex',      label: 'Yandex Market' },
+              { id: 'wildberries', label: 'Wildberries' },
+            ] as { id: MP; label: string }[]).map(m => (
+              <button
+                key={m.id}
+                onClick={() => { setMp(m.id); setCatIdx(0) }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  mp === m.id
+                    ? 'bg-violet-600/20 text-violet-700 border border-violet-500/30 dark:text-violet-300'
+                    : 'text-[var(--text-muted)] hover:text-[var(--text-dim)]'
+                }`}
+              >
+                {m.label}
+              </button>
+            ))}
+          </div>
+
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs text-[var(--text-muted)] mb-1.5">{t.sellPrice}</label>
@@ -133,7 +190,9 @@ export default function CalculatorPage() {
           <div className="flex items-center gap-2 bg-violet-500/[0.07] border border-violet-500/10 rounded-xl px-4 py-2.5">
             <Info className="w-4 h-4 text-violet-400 flex-shrink-0" />
             <p className="text-xs text-[var(--text-muted)]">
-              {t.uzumCommission} <span className="text-violet-400 font-semibold">{commission}%</span> · {CATEGORIES[catIdx].name}
+              {mp === 'uzum' ? 'Uzum' : mp === 'yandex' ? 'Yandex Market' : 'Wildberries'} {lang === 'ru' ? 'комиссия:' : lang === 'en' ? 'commission:' : 'komissiyasi:'}
+              {' '}<span className="text-violet-400 font-semibold">{isApprox ? '~' : ''}{commission}%</span> · {CATEGORIES[catIdx].name}
+              {isApprox && <span className="text-amber-400 ml-1">({lang === 'ru' ? 'приблизительно' : lang === 'en' ? 'approximate' : 'taxminiy'})</span>}
             </p>
           </div>
         </div>

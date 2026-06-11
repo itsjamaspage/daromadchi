@@ -124,7 +124,7 @@ export default function KeywordsView({ phrases }: Props) {
                 onClick={() => setActiveTab(t.key)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                   activeTab === t.key
-                    ? 'bg-violet-600/20 text-violet-300 border border-violet-500/30'
+                    ? 'bg-violet-600/20 text-violet-700 border border-violet-500/30 dark:text-violet-300'
                     : 'text-[var(--text-muted)] hover:text-[var(--text-dim)]'
                 }`}
               >
@@ -162,7 +162,7 @@ export default function KeywordsView({ phrases }: Props) {
                   <td className="px-4 py-3.5">
                     <div className="flex flex-wrap gap-1">
                       {row.keywords.slice(0, 5).map(kw => (
-                        <span key={kw} className="text-[10px] px-2 py-0.5 rounded-full bg-violet-500/10 border border-violet-500/20 text-violet-300">
+                        <span key={kw} className="text-[10px] px-2 py-0.5 rounded-full bg-violet-500/10 border border-violet-500/20 text-violet-700 dark:text-violet-300">
                           {kw}
                         </span>
                       ))}

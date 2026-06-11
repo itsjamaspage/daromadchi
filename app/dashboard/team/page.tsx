@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Users, UserPlus, X, Crown, Eye, Trash2, Shield, Lock } from 'lucide-react'
 import { useLang } from '@/app/providers'
 import { translations } from '@/lib/i18n'
+import { inviteTeamMember } from './actions'
 
 // ── Types ───────────────────────────────────────────────────────────────────────
 
@@ -54,16 +55,22 @@ function InviteModal({ onClose, d }: { onClose: () => void; d: T }) {
   const [role, setRole]     = useState<'admin' | 'viewer'>('viewer')
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!email.trim()) return
     setLoading(true)
-    setTimeout(() => {
-      setLoading(false)
+    setError(null)
+    try {
+      await inviteTeamMember(email, role)
       setSuccess(true)
-      setTimeout(onClose, 1200)
-    }, 800)
+      setTimeout(onClose, 1500)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error sending invite')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -133,7 +140,7 @@ function InviteModal({ onClose, d }: { onClose: () => void; d: T }) {
                       : 'border-[var(--border2)]'
                   }`} />
                   <div>
-                    <p className={`text-xs font-semibold ${role === opt.value ? 'text-violet-300' : 'text-[var(--text-dim)]'}`}>
+                    <p className={`text-xs font-semibold ${role === opt.value ? 'text-violet-700 dark:text-violet-300' : 'text-[var(--text-dim)]'}`}>
                       {opt.label}
                     </p>
                     <p className="text-[11px] text-[var(--text-muted)] mt-0.5">{opt.desc}</p>
@@ -143,6 +150,9 @@ function InviteModal({ onClose, d }: { onClose: () => void; d: T }) {
             </div>
           </div>
 
+          {error && (
+            <p className="text-xs text-red-400 px-1">{error}</p>
+          )}
           {success ? (
             <div className="flex items-center gap-2 text-sm px-4 py-2.5 rounded-xl bg-emerald-500/10 text-emerald-400">
               {d.teamInviteSent}
@@ -151,7 +161,7 @@ function InviteModal({ onClose, d }: { onClose: () => void; d: T }) {
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex items-center justify-center gap-2 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-[var(--text-base)] text-sm font-medium px-4 py-2.5 rounded-xl transition-colors"
+              className="w-full flex items-center justify-center gap-2 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white text-sm font-medium px-4 py-2.5 rounded-xl transition-colors"
             >
               {loading ? (
                 <span className="w-4 h-4 rounded-full border-2 border-[var(--border2)] border-t-white animate-spin" />
@@ -201,9 +211,7 @@ export default function TeamPage() {
           )}
           <button
             onClick={() => setShowModal(true)}
-            disabled={!isPro}
-            title={!isPro ? d.teamUpgrade : ''}
-            className="flex items-center gap-2 bg-violet-600 hover:bg-violet-500 disabled:opacity-40 disabled:cursor-not-allowed text-[var(--text-base)] text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors"
+            className="flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors"
           >
             <UserPlus className="w-4 h-4" />
             {d.teamAddMember}

@@ -198,7 +198,7 @@ export const helpContent: HelpDB = {
         { step: 1, text: 'Uzum, Wildberries va Yandex Market reklama tizimlaridan xarajatlar olinadi' },
         { step: 2, text: 'Har bir kampaniya bo\'yicha klik va ko\'rishlar sanaldi' },
         { step: 3, text: 'Daromad bilan solishtirilib DRR hisoblanadi' },
-        { step: 4, text: 'Kunlik va haftalik yangilanadi' },
+        { step: 4, text: 'Har kuni yangilanadi' },
       ],
     },
     ru: {
@@ -210,7 +210,7 @@ export const helpContent: HelpDB = {
         { step: 1, text: 'Расходы получены из рекламных систем Uzum, Wildberries и Yandex Market' },
         { step: 2, text: 'Клики и показы подсчитаны по каждой кампании' },
         { step: 3, text: 'ДРР рассчитывается в сравнении с выручкой' },
-        { step: 4, text: 'Обновляется ежедневно и еженедельно' },
+        { step: 4, text: 'Обновляется ежедневно' },
       ],
     },
     en: {
@@ -222,7 +222,7 @@ export const helpContent: HelpDB = {
         { step: 1, text: 'Spend data pulled from Uzum, Wildberries and Yandex Market ad systems' },
         { step: 2, text: 'Clicks and impressions counted per campaign' },
         { step: 3, text: 'DRR calculated vs revenue' },
-        { step: 4, text: 'Updated daily and weekly' },
+        { step: 4, text: 'Updated daily' },
       ],
     },
   },
@@ -271,7 +271,7 @@ export const helpContent: HelpDB = {
       title: 'Birlik iqtisodiyoti',
       what: 'Har bir mahsulot yoki buyurtma bo\'yicha haqiqiy foyda: narxdan barcha xarajatlar (komissiya, yetkazish, soliq) ayirilgandan keyingi holat.',
       why: 'Qaysi mahsulotlar sof foyda keltiradi, qaysilari aslida zararli ekanini bilib oling.',
-      how: 'Foyda marjasi manfiy bo\'lsa — bu mahsulot narxini oshirish yoki xarajatlarni kamaytirish kerak. 20%+ marja ideal.',
+      how: 'Foyda marjasi manfiy bo\'lsa — mahsulot narxini oshirish yoki xarajatlarni kamaytirish kerak.',
       steps: [
         { step: 1, text: 'Sotish narxi va sotuv hajmi olinadi' },
         { step: 2, text: 'Komissiya, yetkazish, qaytarishlar ayiriladi' },
@@ -283,7 +283,7 @@ export const helpContent: HelpDB = {
       title: 'Юнит-экономика',
       what: 'Реальная прибыль на единицу товара или заказ: цена минус все расходы (комиссия, доставка, налоги).',
       why: 'Узнайте, какие товары приносят чистую прибыль, а какие на самом деле убыточны.',
-      how: 'Отрицательная маржа — нужно поднять цену или снизить расходы. Маржа 20%+ считается идеальной.',
+      how: 'Отрицательная маржа — нужно поднять цену или снизить расходы.',
       steps: [
         { step: 1, text: 'Берётся цена продажи и объём продаж' },
         { step: 2, text: 'Вычитаются комиссия, доставка, возвраты' },
@@ -295,7 +295,7 @@ export const helpContent: HelpDB = {
       title: 'Unit Economics',
       what: 'Real profit per product or order: price minus all costs (commission, delivery, taxes).',
       why: 'Find out which products generate real profit and which are actually losing money.',
-      how: 'Negative margin = raise price or cut costs. 20%+ margin is considered ideal.',
+      how: 'Negative margin = raise price or cut costs.',
       steps: [
         { step: 1, text: 'Sale price and sales volume are taken' },
         { step: 2, text: 'Commission, delivery, and returns are subtracted' },
