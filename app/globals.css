@@ -247,8 +247,12 @@ h1, h2, h3, h4, h5, h6 {
   will-change: width;
 }
 
-/* Center icons when collapsed — small square, not full-width */
+/* Center icons when collapsed — small square centered in sidebar */
+.sidebar-collapse:not(:hover) nav > div {
+  justify-content: center;
+}
 .sidebar-collapse:not(:hover) nav a,
+.sidebar-collapse:not(:hover) nav > div > a,
 .sidebar-collapse:not(:hover) nav button:not([title]) {
   flex: none;
   width: 34px;
@@ -256,8 +260,6 @@ h1, h2, h3, h4, h5, h6 {
   padding: 0;
   justify-content: center;
   align-items: center;
-  margin-left: auto;
-  margin-right: auto;
 }
 
 /* CTA lane beam animation */
