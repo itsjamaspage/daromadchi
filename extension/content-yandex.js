@@ -42,7 +42,7 @@
       costLabel: v => `Tannarx (${v?"so'm":'so\'m'})`,
       packLabel: v => `Qadoqlash (${v?"so'm":'so\'m'})`,
       volLabel:'Hajm (litr)', adLabel:'Reklama %',
-      breakdown:'XARAJATLAR TAQSIMOTI', narx:'Narx', comm:'Komissiya (15%)', delivery:'Yetkazib berish',
+      breakdown:'XARAJATLAR TAQSIMOTI', narx:'Narx', comm:'Komissiya', delivery:'Yetkazib berish',
       returns:'Qaytarishlar (~2%)', acquiring:'Ekvayring (0.5%)', reklama:'Reklama', tax:'Soliq (6%)',
       totalMkt:'Jami Yandex Market', totalCost:'Jami xarajat',
       profitLabel:'TAXMINIY SOF FOYDA', marja:'marja',
@@ -55,7 +55,7 @@
       costLabel: () => 'Себестоимость (₽)',
       packLabel: () => 'Упаковка (₽)',
       volLabel:'Объём (л)', adLabel:'Реклама %',
-      breakdown:'СТРУКТУРА ЗАТРАТ', narx:'Цена', comm:'Комиссия (15%)', delivery:'Доставка',
+      breakdown:'СТРУКТУРА ЗАТРАТ', narx:'Цена', comm:'Комиссия', delivery:'Доставка',
       returns:'Возвраты (~2%)', acquiring:'Эквайринг (0.5%)', reklama:'Реклама', tax:'Налог (6%)',
       totalMkt:'Итого Яндекс Маркет', totalCost:'Всего расходов',
       profitLabel:'ОЦ. ЧИСТАЯ ПРИБЫЛЬ', marja:'маржа',
@@ -68,7 +68,7 @@
       costLabel: () => 'Cost price',
       packLabel: () => 'Packaging',
       volLabel:'Volume (L)', adLabel:'Ad %',
-      breakdown:'COST BREAKDOWN', narx:'Price', comm:'Commission (15%)', delivery:'Delivery',
+      breakdown:'COST BREAKDOWN', narx:'Price', comm:'Commission', delivery:'Delivery',
       returns:'Returns (~2%)', acquiring:'Acquiring (0.5%)', reklama:'Advertising', tax:'Tax (6%)',
       totalMkt:'Total YM fees', totalCost:'Total costs',
       profitLabel:'EST. NET PROFIT', marja:'margin',
@@ -131,8 +131,29 @@
     return null;
   }
 
+  // Yandex Market Go UZ — category commissions (partner.market.yandex.uz official tariff table)
+  // Apple products: 1.5% (stated explicitly). Others: midpoint of official band per category.
+  const YM_COMM_MAP = [
+    [/apple|iphone|ipad|macbook|airpods/i, 1.5],
+    [/smartfon|telefon|phone|samsung|xiaomi|redmi/i, 4],
+    [/noutbuk|laptop|macbook|kompyuter|computer|notebook/i, 4],
+    [/elektronika|smart.home|aqlli.uy|aksesuar|gadjet|gadget|plansh/i, 5],
+    [/maishiy.tex|bytovaya|appliance|xolodilnik|refrig|vakuum|vacuum|konditsioner/i, 6],
+    [/avto|mashina|avtomobil|automotive|shina|tire|zapchast/i, 8],
+    [/gozellik|kosmetika|parfyum|beauty|uhod|volos|makiyaj|skincare/i, 10],
+    [/uy.va.bog|dom.i.sad|kitchen|oshxona|mebel|tekstil|textile|posuda|cookware/i, 11],
+    [/kiyim|libos|odejda|shoes|poyabzal|sumka|bag|fashion|aksessuarlar|yuvelirnye/i, 12],
+  ];
+
+  function getYmCommission() {
+    const bc = document.querySelector('[class*="readcrumb"],[class*="ategory"],[class*="Breadcrumb"],[data-auto="breadcrumb"],[class*="navigation"],[class*="Navigation"]');
+    if (bc) { const t = bc.innerText; for (const [re, pct] of YM_COMM_MAP) if (re.test(t)) return pct; }
+    return 10;
+  }
+
   function calcYm(price, { costPrice=0, packaging=0, adPct=5, volume=1, fby=true }={}) {
-    const commission = Math.round(price * 0.15);
+    const commPct    = getYmCommission();
+    const commission = Math.round(price * commPct / 100);
     const delivery   = fby ? Math.round(volume * 15000) : Math.round(volume * 10000);
     const returns    = Math.round(price * 0.02);
     const acquiring  = Math.round(price * 0.005);
@@ -143,7 +164,7 @@
     const netProfit  = price - jamiTotal;
     const margin     = Math.round((netProfit / price) * 100);
     const roi        = costPrice > 0 ? Math.round((netProfit / costPrice) * 100) : null;
-    return { commission, delivery, returns, acquiring, adSpend, tax, packaging, costPrice, mktTotal, jamiTotal, netProfit, margin, roi };
+    return { commPct, commission, delivery, returns, acquiring, adSpend, tax, packaging, costPrice, mktTotal, jamiTotal, netProfit, margin, roi };
   }
 
   function pColor(m) { const t=T(); return m>=25?t.green:m>=10?t.amber:t.red; }
@@ -259,7 +280,7 @@
             <div style="font-size:10px;font-weight:600;color:${t.muted};letter-spacing:.7px;margin-bottom:8px">${l.breakdown}</div>
             <div style="display:flex;flex-direction:column;gap:4px">
               <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:${t.muted}">${l.narx}</span><span style="color:${t.text};font-weight:600">${fp(price)}</span></div>
-              ${row(l.comm,'comm',`−${fp(eco.commission)}`)}
+              ${row(l.comm+` (${eco.commPct}%)`,'comm',`−${fp(eco.commission)}`)}
               ${row(l.delivery+` (${fby?'FBY':'FBS'})`,'delivery',`−${fp(eco.delivery)}`,` <span style="color:${t.amber};font-size:10px">${l.taxminiy}</span>`)}
               ${row(l.returns,'returns',`−${fp(eco.returns)}`,` <span style="color:${t.amber};font-size:10px">${l.taxminiy}</span>`)}
               ${row(l.acquiring,'acq',`−${fp(eco.acquiring)}`)}

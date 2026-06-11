@@ -25,9 +25,18 @@ const WB_CATS: { name: Record<string, string>; rate: number }[] = [
   { name: { uz: 'Boshqa', ru: 'Другое', en: 'Other' }, rate: 15 },
 ]
 
-// Yandex Market UZ — flat 15% commission (from extension content-yandex.js)
+// Yandex Market Go UZ — category commissions (partner.market.yandex.uz official tariff table)
+// Apple: 1.5% (explicit). Others: midpoint of official band per category.
 const YANDEX_CATS: { name: Record<string, string>; rate: number }[] = [
-  { name: { uz: 'Barcha toifalar', ru: 'Все категории', en: 'All categories' }, rate: 15 },
+  { name: { uz: 'Apple mahsulotlari', ru: 'Продукция Apple', en: 'Apple products' }, rate: 1.5 },
+  { name: { uz: 'Smartfonlar va telefonlar', ru: 'Смартфоны и телефоны', en: 'Smartphones & phones' }, rate: 4 },
+  { name: { uz: 'Noutbuk va kompyuterlar', ru: 'Ноутбуки и компьютеры', en: 'Laptops & computers' }, rate: 4 },
+  { name: { uz: 'Elektronika va aksessuarlar', ru: 'Электроника и аксессуары', en: 'Electronics & accessories' }, rate: 5 },
+  { name: { uz: 'Maishiy texnika', ru: 'Бытовая техника', en: 'Home appliances' }, rate: 6 },
+  { name: { uz: 'Avtomobil va ehtiyot qismlar', ru: 'Автотовары и запчасти', en: 'Automotive & parts' }, rate: 8 },
+  { name: { uz: "Go'zallik va parvarish", ru: 'Красота и уход', en: 'Beauty & care' }, rate: 10 },
+  { name: { uz: 'Uy, oshxona va mebel', ru: 'Дом, кухня и мебель', en: 'Home, kitchen & furniture' }, rate: 11 },
+  { name: { uz: 'Kiyim, poyabzal va sumkalar', ru: 'Одежда, обувь и сумки', en: 'Apparel, shoes & bags' }, rate: 12 },
 ]
 
 type MP = 'uzum' | 'yandex' | 'wildberries'
@@ -40,7 +49,7 @@ export default function CalculatorPage() {
   const [mp, setMp] = useState<MP>('uzum')
   const UZUM_CATEGORIES = t.categories.map((name, i) => ({ name, rate: UZUM_RATES[i], approx: false }))
   const YANDEX_CATEGORIES = YANDEX_CATS.map(c => ({ name: c.name[lang] ?? c.name.uz, rate: c.rate, approx: true }))
-  const WB_CATEGORIES = WB_CATS.map(c => ({ name: c.name[lang] ?? c.name.uz, rate: c.rate, approx: true }))
+  const WB_CATEGORIES = WB_CATS.map(c => ({ name: c.name[lang] ?? c.name.uz, rate: c.rate, approx: false }))
   const CATEGORIES = mp === 'uzum' ? UZUM_CATEGORIES : mp === 'yandex' ? YANDEX_CATEGORIES : WB_CATEGORIES
   const isApprox = mp !== 'uzum'
   const [price,      setPrice]      = useState('')
