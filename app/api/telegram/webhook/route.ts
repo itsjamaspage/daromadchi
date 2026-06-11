@@ -243,6 +243,50 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true })
   }
 
+  // /start chancheck_{nonce} — extension channel gate verification
+  if (text.startsWith('/start chancheck_')) {
+    const nonce = text.replace('/start chancheck_', '').trim()
+    const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
+    const CHANNEL   = '@daromadchi_uz'
+
+    let isMember = false
+    try {
+      const r = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getChatMember`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: CHANNEL, user_id: message.from.id }),
+      })
+      const d = await r.json()
+      isMember = ['member', 'administrator', 'creator'].includes(d?.result?.status)
+    } catch {}
+
+    if (!isMember) {
+      await sendTelegramMessage(chatId,
+        `❌ Siz hali <b>${CHANNEL}</b> kanaliga a'zo emassiz.\n\n` +
+        `Kanalga a'zo bo'ling: https://t.me/daromadchi_uz\n` +
+        `Keyin kengaytmadagi "Tekshirish" tugmasini bosing.`
+      )
+      return NextResponse.json({ ok: true })
+    }
+
+    // Mark nonce as verified
+    const { error } = await supabaseAdmin
+      .from('channel_nonces')
+      .update({ verified: true, telegram_id: String(message.from.id) })
+      .eq('nonce', nonce)
+      .gt('expires_at', new Date().toISOString())
+
+    if (error || !nonce) {
+      await sendTelegramMessage(chatId, '⚠️ Tekshirish kodi noto\'g\'ri yoki muddati tugagan. Kengaytmani qayta oching.')
+    } else {
+      await sendTelegramMessage(chatId,
+        `✅ <b>Tasdiqlandi!</b> Siz @daromadchi_uz kanaliga a'zo ekansiz.\n\n` +
+        `Kengaytmaga qayting va "Tekshirish" tugmasini bosing.`
+      )
+    }
+    return NextResponse.json({ ok: true })
+  }
+
   // /start with no token
   if (text === '/start') {
     await sendTelegramMessage(
