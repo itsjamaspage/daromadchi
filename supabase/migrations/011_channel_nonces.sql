@@ -6,5 +6,6 @@ create table if not exists channel_nonces (
   expires_at  timestamptz not null,
   created_at  timestamptz not null default now()
 );
+alter table channel_nonces enable row level security;
 create index if not exists idx_channel_nonces_user on channel_nonces(user_id);
 create index if not exists idx_channel_nonces_exp  on channel_nonces(expires_at);
