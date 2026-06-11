@@ -60,7 +60,8 @@
     uz: {
       fbo:'FBO', fbs:'FBS', params:'HISOB PARAMETRLARI',
       costLabel:"Tannarx (so'm)", packLabel:"Qadoqlash (so'm)", adLabel:'Reklama %',
-      breakdown:'XARAJATLAR TAQSIMOTI', narx:'Narx', comm:'Komissiya', delivery:'Yetkazib berish (FBO)',
+      volLabel:'Hajm (litr)',
+      breakdown:'XARAJATLAR TAQSIMOTI', narx:'Narx', comm:'Komissiya', delivery:'Yetkazib berish',
       returns:'Qaytarishlar (~2%)', acquiring:'Ekvayring (1.5%)',
       reklama:'Reklama', tax:'Soliq (6%)', saqlash:'Saqlash narxi alohida',
       totalMkt:'Jami Uzum', totalCost:'Jami xarajat',
@@ -72,7 +73,8 @@
     ru: {
       fbo:'FBO', fbs:'FBS', params:'ПАРАМЕТРЫ РАСЧЁТА',
       costLabel:'Себестоимость (сум)', packLabel:'Упаковка (сум)', adLabel:'Реклама %',
-      breakdown:'СТРУКТУРА ЗАТРАТ', narx:'Цена', comm:'Комиссия', delivery:'Доставка (FBO)',
+      volLabel:'Объём (л)',
+      breakdown:'СТРУКТУРА ЗАТРАТ', narx:'Цена', comm:'Комиссия', delivery:'Доставка',
       returns:'Возвраты (~2%)', acquiring:'Эквайринг (1.5%)',
       reklama:'Реклама', tax:'Налог (6%)', saqlash:'Хранение отдельно',
       totalMkt:'Итого Uzum', totalCost:'Всего расходов',
@@ -84,7 +86,8 @@
     en: {
       fbo:'FBO', fbs:'FBS', params:'CALCULATION PARAMS',
       costLabel:'Cost price (som)', packLabel:'Packaging (som)', adLabel:'Ad %',
-      breakdown:'COST BREAKDOWN', narx:'Price', comm:'Commission', delivery:'Delivery (FBO)',
+      volLabel:'Volume (L)',
+      breakdown:'COST BREAKDOWN', narx:'Price', comm:'Commission', delivery:'Delivery',
       returns:'Returns (~2%)', acquiring:'Acquiring (1.5%)',
       reklama:'Advertising', tax:'Tax (6%)', saqlash:'Storage billed separately',
       totalMkt:'Total Uzum fees', totalCost:'Total costs',
@@ -170,10 +173,10 @@
   function getProductId() { const m=window.location.pathname.match(/-(\d{5,})/); return m?m[1]:null; }
   function fp(n) { if(n===null||n===undefined) return '—'; return Math.round(n).toLocaleString('uz-UZ')+" so'm"; }
 
-  function calcUzum(price,{costPrice=0,packaging=0,adPct=5,fbo=true}={}) {
+  function calcUzum(price,{costPrice=0,packaging=0,adPct=5,fbo=true,volume=1}={}) {
     const commPct    = getCommission();
     const commission = Math.round(price*commPct/100);
-    const delivery   = fbo?10000:0;
+    const delivery   = fbo ? Math.min(50000, volume<=1 ? 5250 : 5250 + (Math.ceil(volume)-1)*250) : 0;
     const returns    = Math.round(price*0.02);
     const acquiring  = Math.round(price*0.015);
     const adSpend    = Math.round(price*adPct/100);
@@ -212,7 +215,7 @@
       if (attempt < 6) setTimeout(()=>{ if(!document.getElementById('drm-widget')) buildWidget(attempt+1); }, 800);
       return;
     }
-    let fbo=true, costPrice=0, packaging=0, adPct=5;
+    let fbo=true, costPrice=0, packaging=0, adPct=5, volume=1;
     const title=parseTitle(), productId=getProductId();
 
     const wrap=document.createElement('div');
@@ -229,7 +232,7 @@
     toggleBtn.onclick=()=>{ wrap.style.display='block'; toggleBtn.style.setProperty('display','none','important'); };
 
     chrome.storage.local.get(['ueSettings','drmLang','drmTheme'],data=>{
-      if(data.ueSettings){costPrice=data.ueSettings.costPrice||0;packaging=data.ueSettings.packaging||0;adPct=data.ueSettings.adPct||5;fbo=data.ueSettings.fbo!==undefined?data.ueSettings.fbo:true;}
+      if(data.ueSettings){costPrice=data.ueSettings.costPrice||0;packaging=data.ueSettings.packaging||0;adPct=data.ueSettings.adPct||5;fbo=data.ueSettings.fbo!==undefined?data.ueSettings.fbo:true;volume=data.ueSettings.volume||1;}
       if(data.drmLang)langKey=data.drmLang;
       if(data.drmTheme)theme=data.drmTheme;
       render();
@@ -240,6 +243,7 @@
         costPrice:parseFloat(wrap.querySelector('#drm-inp-cost')?.value)||0,
         packaging:parseFloat(wrap.querySelector('#drm-inp-pack')?.value)||0,
         adPct:parseFloat(wrap.querySelector('#drm-inp-ad')?.value)||5,
+        volume:parseFloat(wrap.querySelector('#drm-cost-vol')?.value)||1,
       };
     }
 
@@ -309,6 +313,7 @@
               <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:${t.muted}">${l.costLabel}</span>${inp('drm-inp-cost',costPrice)}</div>
               <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:${t.muted}">${l.packLabel}</span>${inp('drm-inp-pack',packaging)}</div>
               <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:${t.muted}">${l.adLabel}</span>${inp('drm-inp-ad',adPct,'5','0.5')}</div>
+              <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:${t.muted}">${l.volLabel}</span>${inp('drm-cost-vol',volume,'1','0.1')}</div>
             </div>
           </div>
 
@@ -354,12 +359,12 @@
       wrap.querySelector('#drm-fbo').onclick=()=>{fbo=true;render();};
       wrap.querySelector('#drm-fbs').onclick=()=>{fbo=false;render();};
       ['uz','ru','en'].forEach(k=>{wrap.querySelector(`#drm-lang-${k}`)?.addEventListener('click',()=>{langKey=k;chrome.storage.local.set({drmLang:k});render();});});
-      ['#drm-inp-cost','#drm-inp-pack','#drm-inp-ad'].forEach(id=>{wrap.querySelector(id)?.addEventListener('input',liveRecalc);});
+      ['#drm-inp-cost','#drm-inp-pack','#drm-inp-ad','#drm-cost-vol'].forEach(id=>{wrap.querySelector(id)?.addEventListener('input',liveRecalc);});
 
       wrap.querySelector('#drm-ue')?.addEventListener('click',async()=>{
         const vals=gi();const price2=parsePrice();
         const eco2=price2?calcUzum(price2,{...vals,fbo}):null;
-        await chrome.storage.local.set({ueSettings:{...vals,fbo}});
+        await chrome.storage.local.set({ueSettings:{...vals,fbo,volume:vals.volume}});
         const params=new URLSearchParams({
           source:'uzum',title,url:location.href,
           price:String(price2||''),commPct:String(eco2?.commPct||''),

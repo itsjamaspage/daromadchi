@@ -68,6 +68,8 @@ export default function CalculatorPage() {
   const [returnRate, setReturnRate] = useState('5')
   const [units,      setUnits]      = useState('100')
   const [catIdx,     setCatIdx]     = useState(0)
+  const [volume,        setVolume]        = useState('')     // liters, for Uzum logistics fee
+  const [payoutSched,   setPayoutSched]   = useState<'monthly'|'biweekly'|'weekly'|'daily'>('biweekly')
 
   const commission = CATEGORIES[catIdx].rate
 
@@ -80,6 +82,18 @@ export default function CalculatorPage() {
     const u  = Math.max(1, parseInt(units) || 1)
     if (p <= 0 || c <= 0) return null
 
+    // Uzum platform logistics fee (volume-based, from 01.06.2026)
+    const vol = parseFloat(volume) || 0
+    const uzumLogFee = (mp === 'uzum' && vol > 0)
+      ? Math.min(50000, vol <= 1 ? 5250 : 5250 + (Math.ceil(vol) - 1) * 250)
+      : 0
+
+    // Uzum payout schedule fee (charged on each withdrawal)
+    const payoutRate = mp === 'uzum'
+      ? ({ daily: 0.015, weekly: 0.01, biweekly: 0, monthly: 0 } as Record<string,number>)[payoutSched] ?? 0
+      : 0
+    const payoutFeeAmt = p * payoutRate
+
     // What the seller THINKS they made (naive)
     const naiveProfit      = (p - c) * u
     const naiveProfitUnit  = p - c
@@ -90,7 +104,7 @@ export default function CalculatorPage() {
     const returnLogist = l * rr                          // extra logistics for returns
     const netRevenue   = p * (1 - rr) - commAmt
 
-    const realProfitUnit = netRevenue - c - l - (ad / u)
+    const realProfitUnit = netRevenue - c - l - (ad / u) - uzumLogFee - payoutFeeAmt
     const realProfit     = realProfitUnit * u
 
     const stolen         = naiveProfit - realProfit       // what Uzum/costs "steal"
@@ -100,7 +114,7 @@ export default function CalculatorPage() {
     const margin         = p > 0 ? (realProfitUnit / p) * 100 : 0
     const drr            = p * u > 0 ? (ad / (p * u)) * 100 : 0
     const roi            = c > 0 ? (realProfitUnit / c) * 100 : 0
-    const breakeven      = c + l + commAmt + (ad / u) + (p * rr * 0.05)
+    const breakeven      = c + l + commAmt + (ad / u) + (p * rr * 0.05) + uzumLogFee + payoutFeeAmt
 
     return {
       naiveProfitUnit, naiveProfit,
@@ -110,8 +124,9 @@ export default function CalculatorPage() {
       adPerUnit: ad / u,
       margin, drr, roi, breakeven,
       units: u, price: p, cost: c, logistics: l, adSpend: ad,
+      uzumLogFee, payoutFeeAmt,
     }
-  }, [price, cost, logistics, adSpend, returnRate, units, commission])
+  }, [price, cost, logistics, adSpend, returnRate, units, commission, volume, payoutSched, mp])
 
   return (
     <div className="space-y-6 max-w-5xl">
@@ -185,6 +200,35 @@ export default function CalculatorPage() {
                 placeholder="100" min="1" className={inputCls} />
             </div>
           </div>
+
+          {mp === 'uzum' && (
+            <>
+              <div>
+                <label className="block text-xs text-[var(--text-muted)] mb-1.5">
+                  {lang === 'ru' ? 'Объём товара (литры)' : lang === 'en' ? 'Product volume (litres)' : 'Tovar hajmi (litr)'}
+                </label>
+                <input value={volume} onChange={e => setVolume(e.target.value)} type="number"
+                  step="0.1" placeholder="1.5" className={inputCls} />
+                {volume && parseFloat(volume) > 0 && (
+                  <p className="text-[10px] text-amber-400 mt-1">
+                    {lang === 'ru' ? 'Логистика Uzum: ' : lang === 'en' ? 'Uzum logistics: ' : 'Uzum logistika: '}
+                    {fmt(Math.min(50000, parseFloat(volume) <= 1 ? 5250 : 5250 + (Math.ceil(parseFloat(volume)) - 1) * 250))} so&apos;m
+                  </p>
+                )}
+              </div>
+              <div>
+                <label className="block text-xs text-[var(--text-muted)] mb-1.5">
+                  {lang === 'ru' ? 'График выплат' : lang === 'en' ? 'Payout schedule' : 'Chiqarish grafigi'}
+                </label>
+                <select value={payoutSched} onChange={e => setPayoutSched(e.target.value as typeof payoutSched)} className={inputCls}>
+                  <option value="monthly">{lang === 'ru' ? 'Ежемесячно — 0%' : lang === 'en' ? 'Monthly — 0%' : 'Oyda bir — 0%'}</option>
+                  <option value="biweekly">{lang === 'ru' ? 'Раз в 2 нед — 0%' : lang === 'en' ? 'Bi-weekly — 0%' : 'Har 2 haftada — 0%'}</option>
+                  <option value="weekly">{lang === 'ru' ? 'Еженедельно — 1%' : lang === 'en' ? 'Weekly — 1%' : 'Har hafta — 1%'}</option>
+                  <option value="daily">{lang === 'ru' ? 'Ежедневно — 1.5%' : lang === 'en' ? 'Daily — 1.5%' : 'Har kuni — 1.5%'}</option>
+                </select>
+              </div>
+            </>
+          )}
 
           <div>
             <label className="block text-xs text-[var(--text-muted)] mb-1.5">{t.category}</label>
@@ -265,6 +309,8 @@ export default function CalculatorPage() {
                       { label: `${t.bdCommission} (${commission}%)`, value: result.commAmt,     color: 'bg-red-500' },
                       { label: t.bdCost,                            value: result.cost,         color: 'bg-orange-500' },
                       { label: t.bdLogistics,                       value: result.logistics,    color: 'bg-amber-500' },
+                      ...(result.uzumLogFee > 0 ? [{ label: lang === 'ru' ? 'Логистика Uzum' : lang === 'en' ? 'Uzum logistics' : 'Uzum logistika', value: result.uzumLogFee, color: 'bg-orange-500' }] : []),
+                      ...(result.payoutFeeAmt > 0 ? [{ label: lang === 'ru' ? 'Услуга вывода' : lang === 'en' ? 'Payout fee' : 'Chiqarish xizmati', value: result.payoutFeeAmt, color: 'bg-pink-500' }] : []),
                       { label: t.bdReturnLoss,                      value: result.returnLoss * (parseFloat(returnRate)/100), color: 'bg-rose-500' },
                       { label: t.bdAd,                              value: result.adPerUnit,    color: 'bg-purple-500' },
                     ].filter(r => r.value > 0).map(r => {
