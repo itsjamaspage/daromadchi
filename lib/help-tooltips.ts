@@ -193,7 +193,7 @@ export const helpContent: HelpDB = {
       title: 'Reklama',
       what: 'Uzum, Wildberries va Yandex Market reklamalariga sarflangan mablag\', klik soni, ko\'rishlar va DRR (reklama samaradorligi) ko\'rsatkichlari.',
       why: 'Reklama budjetingizni to\'g\'ri boshqaring: nima foydali, nima zararga ishlayotganini aniqlang.',
-      how: 'DRR 15-20% dan past bo\'lishi ideal. Yuqori DRR — reklama qimmat. Effektiv kampaniyalarni ko\'paytiring.',
+      how: 'Yuqori DRR — reklama qimmat. Effektiv kampaniyalarni ko\'paytiring, samarasizlarini to\'xtating.',
       steps: [
         { step: 1, text: 'Uzum, Wildberries va Yandex Market reklama tizimlaridan xarajatlar olinadi' },
         { step: 2, text: 'Har bir kampaniya bo\'yicha klik va ko\'rishlar sanaldi' },
@@ -205,7 +205,7 @@ export const helpContent: HelpDB = {
       title: 'Реклама',
       what: 'Затраты на рекламу Uzum, Wildberries и Yandex Market, количество кликов, показы и показатель ДРР (эффективность рекламы).',
       why: 'Правильно управляйте рекламным бюджетом: определите, что работает в плюс, а что — в минус.',
-      how: 'Идеальный ДРР — ниже 15–20%. Высокий ДРР означает дорогую рекламу. Масштабируйте эффективные кампании.',
+      how: 'Высокий ДРР означает дорогую рекламу. Масштабируйте эффективные кампании, останавливайте неэффективные.',
       steps: [
         { step: 1, text: 'Расходы получены из рекламных систем Uzum, Wildberries и Yandex Market' },
         { step: 2, text: 'Клики и показы подсчитаны по каждой кампании' },
@@ -217,7 +217,7 @@ export const helpContent: HelpDB = {
       title: 'Advertising',
       what: 'Ad spend, clicks, impressions and DRR (ad efficiency metric) across Uzum, Wildberries and Yandex Market.',
       why: 'Manage your ad budget effectively: find what\'s profitable and what\'s losing money.',
-      how: 'Ideal DRR is below 15–20%. High DRR = expensive ads. Scale up the campaigns that work.',
+      how: 'High DRR = expensive ads. Scale up the campaigns that work, stop the ones that don\'t.',
       steps: [
         { step: 1, text: 'Spend data pulled from Uzum, Wildberries and Yandex Market ad systems' },
         { step: 2, text: 'Clicks and impressions counted per campaign' },

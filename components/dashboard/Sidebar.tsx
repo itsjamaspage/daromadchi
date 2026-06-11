@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import {
   LayoutDashboard, Package, ShoppingCart,
   LogOut, ChevronRight, X, Settings, BarChart2, Calculator, FileText, Globe2,
-  Sun, Moon, Megaphone, Search, Database, Layers, Bell, CreditCard, Tag,
+  Sun, Moon, Megaphone, Database, Layers, Bell, CreditCard, Tag,
   CalendarDays, Users, HelpCircle, UserCircle, Monitor,
 } from 'lucide-react'
 import { useTheme, useLang } from '@/app/providers'
@@ -27,7 +27,6 @@ const storeNavItems: NavItem[] = [
   { href: '/dashboard/unit-economics', key: 'unitEconomics', icon: Layers          },
   { href: '/dashboard/pnl',            key: 'pnl',           icon: FileText        },
   { href: '/dashboard/calculator',     key: 'calculator',    icon: Calculator      },
-  { href: '/dashboard/keywords',       key: 'keywords',      icon: Search          },
   { href: '/dashboard/team',           key: 'team',          icon: Users           },
   { href: '/dashboard/data-state',     key: 'dataState',     icon: Database        },
   { href: '/dashboard/price-tracking', key: 'priceTracking', icon: Tag             },

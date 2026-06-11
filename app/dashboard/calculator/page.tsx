@@ -11,33 +11,23 @@ function fmt(n: number) {
 
 const UZUM_RATES = [5, 5, 6, 8, 8, 9, 7, 10, 10, 10, 11, 9, 12, 10, 6, 10]
 
-// Approximate rates for Yandex Market UZ — marked with ~ in UI
-const YANDEX_CATS: { name: Record<string, string>; rate: number }[] = [
-  { name: { uz: 'Elektronika', ru: 'Электроника', en: 'Electronics' }, rate: 3 },
-  { name: { uz: 'Telefon va gadjetlar', ru: 'Телефоны и гаджеты', en: 'Phones & gadgets' }, rate: 5 },
-  { name: { uz: 'Kiyim', ru: 'Одежда', en: 'Clothing' }, rate: 10 },
-  { name: { uz: 'Poyabzal', ru: 'Обувь', en: 'Footwear' }, rate: 8 },
+// Wildberries UZ — rates from extension COMM_MAP (content-wb.js)
+const WB_CATS: { name: Record<string, string>; rate: number }[] = [
+  { name: { uz: 'Telefon, iPhone, Samsung', ru: 'Телефоны, iPhone, Samsung', en: 'Phones, iPhone, Samsung' }, rate: 3 },
+  { name: { uz: 'Noutbuk va kompyuter', ru: 'Ноутбуки и компьютеры', en: 'Laptops & computers' }, rate: 5 },
+  { name: { uz: 'Elektronika va aksessuarlar', ru: 'Электроника и аксессуары', en: 'Electronics & accessories' }, rate: 7 },
+  { name: { uz: 'Kiyim va liboslar', ru: 'Одежда', en: 'Clothing' }, rate: 23 },
+  { name: { uz: 'Poyabzal', ru: 'Обувь', en: 'Footwear' }, rate: 15 },
+  { name: { uz: 'Sport va trenajyorlar', ru: 'Спорт', en: 'Sports & fitness' }, rate: 13 },
   { name: { uz: "Go'zallik va parvarish", ru: 'Красота и уход', en: 'Beauty & care' }, rate: 12 },
-  { name: { uz: 'Sport', ru: 'Спорт', en: 'Sports' }, rate: 8 },
-  { name: { uz: "Uy-joy va bog'", ru: 'Дом и сад', en: 'Home & garden' }, rate: 8 },
-  { name: { uz: 'Avtomobil', ru: 'Автотовары', en: 'Automotive' }, rate: 6 },
-  { name: { uz: "O'yinchoqlar", ru: 'Игрушки', en: 'Toys' }, rate: 8 },
-  { name: { uz: 'Oziq-ovqat', ru: 'Продукты', en: 'Groceries' }, rate: 8 },
-  { name: { uz: 'Boshqa', ru: 'Другое', en: 'Other' }, rate: 10 },
+  { name: { uz: 'Oziq-ovqat mahsulotlari', ru: 'Продукты питания', en: 'Groceries' }, rate: 10 },
+  { name: { uz: 'Uy va mebel', ru: 'Дом и мебель', en: 'Home & furniture' }, rate: 12 },
+  { name: { uz: 'Boshqa', ru: 'Другое', en: 'Other' }, rate: 15 },
 ]
 
-// Approximate rates for Wildberries UZ — marked with ~ in UI
-const WB_CATS: { name: Record<string, string>; rate: number }[] = [
-  { name: { uz: 'Kiyim', ru: 'Одежда', en: 'Clothing' }, rate: 18 },
-  { name: { uz: 'Poyabzal', ru: 'Обувь', en: 'Footwear' }, rate: 15 },
-  { name: { uz: 'Elektronika', ru: 'Электроника', en: 'Electronics' }, rate: 6 },
-  { name: { uz: "Go'zallik va parvarish", ru: 'Красота и уход', en: 'Beauty & care' }, rate: 14 },
-  { name: { uz: 'Sport', ru: 'Спорт', en: 'Sports' }, rate: 13 },
-  { name: { uz: "Uy-joy va bog'", ru: 'Дом и сад', en: 'Home & garden' }, rate: 12 },
-  { name: { uz: 'Avtomobil', ru: 'Автотовары', en: 'Automotive' }, rate: 10 },
-  { name: { uz: "O'yinchoqlar", ru: 'Игрушки', en: 'Toys' }, rate: 12 },
-  { name: { uz: 'Oziq-ovqat', ru: 'Продукты питания', en: 'Groceries' }, rate: 15 },
-  { name: { uz: 'Boshqa', ru: 'Другое', en: 'Other' }, rate: 14 },
+// Yandex Market UZ — flat 15% commission (from extension content-yandex.js)
+const YANDEX_CATS: { name: Record<string, string>; rate: number }[] = [
+  { name: { uz: 'Barcha toifalar', ru: 'Все категории', en: 'All categories' }, rate: 15 },
 ]
 
 type MP = 'uzum' | 'yandex' | 'wildberries'
