@@ -499,7 +499,7 @@ export default function LandingPage() {
   }, [])
 
   const howRef = useRef(null)
-  const howInView = useInView(howRef, { once: true, amount: 0.45 })
+  const howInView = useInView(howRef, { once: true, amount: 0.75 })
   const pricingRef = useRef(null)
   const pricingInView = useInView(pricingRef, { once: true, amount: 0.25 })
   const ctaRef = useRef(null)
@@ -512,9 +512,9 @@ export default function LandingPage() {
   const [stepPopup, setStepPopup] = useState<number | null>(null)
   const stepPopupShown = useRef(false)
   useEffect(() => {
-    if (howInView && !stepPopupShown.current && window.scrollY > 200) {
+    if (howInView && !stepPopupShown.current) {
       stepPopupShown.current = true
-      setTimeout(() => setStepPopup(0), 500)
+      setTimeout(() => setStepPopup(0), 900)
     }
   }, [howInView])
   useEffect(() => {
