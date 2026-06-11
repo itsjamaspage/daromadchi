@@ -247,6 +247,14 @@ h1, h2, h3, h4, h5, h6 {
   will-change: width;
 }
 
+/* Center icons when collapsed */
+.sidebar-collapse:not(:hover) nav a,
+.sidebar-collapse:not(:hover) nav button:not([title]) {
+  justify-content: center;
+  padding-left: 0;
+  padding-right: 0;
+}
+
 /* CTA lane beam animation */
 @keyframes laneBeam {
   0%   { transform: translateX(-120%); opacity: 0; }

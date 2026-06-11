@@ -9,7 +9,7 @@ import DateFilter from '@/components/dashboard/DateFilter'
 import SyncButton from '@/components/dashboard/SyncButton'
 import StockAlerts from '@/components/dashboard/StockAlerts'
 import CategoryChart from '@/components/dashboard/CategoryChart'
-import { useLang } from '@/app/providers'
+import { useLang, useTheme } from '@/app/providers'
 import { dashT } from '@/lib/dashT'
 import type { Kpis, Order, Product, DailyRevenue, MarketplaceType } from '@/lib/types'
 
@@ -45,6 +45,8 @@ const STATUS_CLASS: Record<string, string> = {
 
 export default function DashboardClient({ kpis, recentOrders, allProducts, chartData, categoryData, days, period, marketplace }: Props) {
   const { lang } = useLang()
+  const { theme } = useTheme()
+  const isDark = theme === 'dark'
   const t = dashT[lang]
   const d = t.dashboard
   const s = t.status
@@ -120,10 +122,10 @@ export default function DashboardClient({ kpis, recentOrders, allProducts, chart
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                 active
                   ? color === 'amber'
-                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                    ? isDark ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-amber-500/15 text-amber-700 border border-amber-500/30'
                     : color === 'purple'
-                    ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
-                    : 'bg-violet-600/20 text-violet-300 border border-violet-500/30'
+                    ? isDark ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' : 'bg-purple-500/15 text-purple-700 border border-purple-500/30'
+                    : isDark ? 'bg-violet-600/20 text-violet-300 border border-violet-500/30' : 'bg-violet-600/15 text-violet-700 border border-violet-500/30'
                   : 'text-[var(--text-muted)] hover:text-[var(--text-dim)]'
               }`}
             >
