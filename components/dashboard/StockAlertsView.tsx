@@ -68,7 +68,7 @@ export default function StockAlertsView({ alerts, settings: initialSettings }: P
     }
     return (
       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">
-        {daysLeft} {t.daysSuffix}
+        {daysLeft} {d.daysSuffix}
       </span>
     )
   }

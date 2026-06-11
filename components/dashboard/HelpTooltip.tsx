@@ -96,7 +96,8 @@ export default function HelpTooltip({ section, className = '', variant = 'badge'
             <div className="px-5 py-3 border-t border-[var(--border)]">
               <button
                 onClick={() => setOpen(false)}
-                className="w-full py-2 rounded-xl bg-violet-600/20 border border-violet-500/30 text-violet-300 text-xs font-semibold hover:bg-violet-600/30 transition-all"
+                className="w-full py-2 rounded-xl bg-violet-600/20 border border-violet-500/30 text-xs font-semibold hover:bg-violet-600/30 transition-all"
+                style={{ color: 'var(--c1)' }}
               >
                 {lang === 'ru' ? 'Понятно' : lang === 'en' ? 'Got it' : 'Tushunarli'}
               </button>

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { X, Bug, Lightbulb, Send, ChevronLeft, ChevronRight, CheckCircle } from 'lucide-react'
+import { X, Bug, Lightbulb, Send, ChevronLeft, ChevronRight, CheckCircle, Paperclip } from 'lucide-react'
 import { useLang } from '@/app/providers'
 
 type Mode = 'bug' | 'idea' | null
@@ -19,6 +19,8 @@ const LABELS = {
     sending: 'Yuborilmoqda...',
     thanks: 'Rahmat! Xabaringiz qabul qilindi.',
     back: 'Orqaga',
+    attach: 'Rasm biriktirish',
+    removeImg: "Rasmni o'chirish",
   },
   ru: {
     tab: 'Отзыв',
@@ -32,6 +34,8 @@ const LABELS = {
     sending: 'Отправка...',
     thanks: 'Спасибо! Ваше сообщение получено.',
     back: 'Назад',
+    attach: 'Прикрепить скриншот',
+    removeImg: 'Удалить изображение',
   },
   en: {
     tab: 'Feedback',
@@ -45,6 +49,8 @@ const LABELS = {
     sending: 'Sending...',
     thanks: 'Thank you! Your message was received.',
     back: 'Back',
+    attach: 'Attach screenshot',
+    removeImg: 'Remove image',
   },
 }
 
@@ -54,9 +60,11 @@ export default function FeedbackWidget() {
   const [open, setOpen] = useState(false)
   const [mode, setMode] = useState<Mode>(null)
   const [text, setText] = useState('')
+  const [image, setImage] = useState<string | null>(null)
   const [sending, setSending] = useState(false)
   const [sent, setSent] = useState(false)
   const textRef = useRef<HTMLTextAreaElement>(null)
+  const fileRef = useRef<HTMLInputElement>(null)
 
   // Open on first visit, auto-close after 2s
   useEffect(() => {
@@ -83,8 +91,18 @@ export default function FeedbackWidget() {
   const handleSelectMode = (m: Mode) => {
     setMode(m)
     setText('')
+    setImage(null)
     setSent(false)
     setTimeout(() => textRef.current?.focus(), 50)
+  }
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = ev => setImage(ev.target?.result as string)
+    reader.readAsDataURL(file)
+    e.target.value = ''
   }
 
   const handleSubmit = async () => {
@@ -94,7 +112,7 @@ export default function FeedbackWidget() {
       await fetch('/api/feedback', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: mode, message: text.trim() }),
+        body: JSON.stringify({ type: mode, message: text.trim(), image }),
       })
     } catch {}
     setSending(false)
@@ -102,6 +120,7 @@ export default function FeedbackWidget() {
     setTimeout(() => {
       setSent(false)
       setText('')
+      setImage(null)
       setMode(null)
     }, 2500)
   }
@@ -198,6 +217,34 @@ export default function FeedbackWidget() {
                     color: 'var(--text-base)',
                   }}
                 />
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleFileChange}
+                />
+                {image ? (
+                  <div className="relative rounded-xl overflow-hidden border" style={{ borderColor: 'var(--border2)' }}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={image} alt="screenshot" className="w-full max-h-32 object-cover" />
+                    <button
+                      onClick={() => setImage(null)}
+                      title={t.removeImg}
+                      className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/60 flex items-center justify-center"
+                    >
+                      <X className="w-3 h-3 text-white" />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => fileRef.current?.click()}
+                    className="flex items-center gap-1.5 text-xs transition-colors py-1"
+                    style={{ color: 'var(--text-muted)' }}
+                  >
+                    <Paperclip className="w-3.5 h-3.5" /> {t.attach}
+                  </button>
+                )}
                 <button
                   onClick={handleSubmit}
                   disabled={!text.trim() || sending}

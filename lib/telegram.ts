@@ -9,6 +9,29 @@ export function telegramDeepLink(token: string): string {
   return `https://t.me/${BOT_USERNAME}?start=${token}`
 }
 
+export async function sendTelegramPhoto(chatId: string, imageDataUrl: string, caption: string): Promise<boolean> {
+  if (!BOT_TOKEN) return false
+  try {
+    const base64 = imageDataUrl.split(',')[1]
+    const mimeMatch = imageDataUrl.match(/data:([^;]+);/)
+    const mime = mimeMatch?.[1] ?? 'image/png'
+    const ext = mime.split('/')[1] ?? 'png'
+    const buffer = Buffer.from(base64, 'base64')
+    const formData = new FormData()
+    formData.append('chat_id', chatId)
+    formData.append('caption', caption)
+    formData.append('parse_mode', 'HTML')
+    formData.append('photo', new Blob([buffer], { type: mime }), `screenshot.${ext}`)
+    const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
+      method: 'POST',
+      body: formData,
+    })
+    return res.ok
+  } catch {
+    return false
+  }
+}
+
 export async function sendTelegramMessage(chatId: string, text: string): Promise<boolean> {
   if (!BOT_TOKEN) return false
   try {
