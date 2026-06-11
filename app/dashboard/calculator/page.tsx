@@ -11,18 +11,27 @@ function fmt(n: number) {
 
 const UZUM_RATES = [5, 5, 6, 8, 8, 9, 7, 10, 10, 10, 11, 9, 12, 10, 6, 10]
 
-// Wildberries UZ — rates from extension COMM_MAP (content-wb.js)
+// Wildberries UZ — exact rates from official WB commission table (commission.xlsx, WB warehouse / FBY)
 const WB_CATS: { name: Record<string, string>; rate: number }[] = [
-  { name: { uz: 'Telefon, iPhone, Samsung', ru: 'Телефоны, iPhone, Samsung', en: 'Phones, iPhone, Samsung' }, rate: 3 },
-  { name: { uz: 'Noutbuk va kompyuter', ru: 'Ноутбуки и компьютеры', en: 'Laptops & computers' }, rate: 5 },
-  { name: { uz: 'Elektronika va aksessuarlar', ru: 'Электроника и аксессуары', en: 'Electronics & accessories' }, rate: 7 },
-  { name: { uz: 'Kiyim va liboslar', ru: 'Одежда', en: 'Clothing' }, rate: 23 },
-  { name: { uz: 'Poyabzal', ru: 'Обувь', en: 'Footwear' }, rate: 15 },
-  { name: { uz: 'Sport va trenajyorlar', ru: 'Спорт', en: 'Sports & fitness' }, rate: 13 },
-  { name: { uz: "Go'zallik va parvarish", ru: 'Красота и уход', en: 'Beauty & care' }, rate: 12 },
-  { name: { uz: 'Oziq-ovqat mahsulotlari', ru: 'Продукты питания', en: 'Groceries' }, rate: 10 },
-  { name: { uz: 'Uy va mebel', ru: 'Дом и мебель', en: 'Home & furniture' }, rate: 12 },
-  { name: { uz: 'Boshqa', ru: 'Другое', en: 'Other' }, rate: 15 },
+  { name: { uz: 'Smartfonlar',                    ru: 'Смартфоны',                         en: 'Smartphones'                     }, rate: 3    },
+  { name: { uz: 'Planshetlar',                    ru: 'Планшеты',                          en: 'Tablets'                         }, rate: 5    },
+  { name: { uz: 'Noutbuklar',                     ru: 'Ноутбуки',                          en: 'Laptops'                         }, rate: 5    },
+  { name: { uz: 'Kompyuterlar',                   ru: 'Компьютеры',                        en: 'Desktop computers'               }, rate: 9.5  },
+  { name: { uz: 'Aqlli soat va fitness',          ru: 'Смарт-часы и фитнес-трекеры',       en: 'Smartwatches & fitness trackers' }, rate: 14.5 },
+  { name: { uz: 'Elektronika aksessuarlari',      ru: 'Аксессуары для электроники',        en: 'Electronic accessories'          }, rate: 20   },
+  { name: { uz: 'Maishiy texnika',                ru: 'Бытовая техника',                   en: 'Home appliances'                 }, rate: 14   },
+  { name: { uz: 'Kiyim',                          ru: 'Одежда',                            en: 'Clothing'                       }, rate: 23   },
+  { name: { uz: 'Ichki kiyim',                    ru: 'Нижнее бельё',                      en: 'Underwear'                      }, rate: 23   },
+  { name: { uz: 'Sport kiyimi',                   ru: 'Спортивная одежда',                 en: 'Sportswear'                     }, rate: 23   },
+  { name: { uz: 'Poyabzal',                       ru: 'Обувь',                             en: 'Footwear'                       }, rate: 18   },
+  { name: { uz: 'Sport jihozlari va aksessuarlar',ru: 'Спорттовары и аксессуары',          en: 'Sports equipment & accessories'  }, rate: 18   },
+  { name: { uz: "Go'zallik va parvarish",         ru: 'Красота и уход',                    en: 'Beauty & care'                  }, rate: 18   },
+  { name: { uz: 'Uy tekstili va interer',         ru: 'Текстиль для дома и декор',         en: 'Home textiles & interior decor'  }, rate: 19   },
+  { name: { uz: "O'yinchoqlar",                   ru: 'Игрушки',                           en: 'Toys'                           }, rate: 18   },
+  { name: { uz: 'Oziq-ovqat',                     ru: 'Продукты питания',                  en: 'Groceries'                      }, rate: 11   },
+  { name: { uz: 'Avtomobil qismlari',             ru: 'Автозапчасти',                      en: 'Car parts & accessories'         }, rate: 8    },
+  { name: { uz: 'Bolalar kiyimi va mahsulotlari', ru: 'Детская одежда и товары',           en: 'Baby clothing & products'        }, rate: 8    },
+  { name: { uz: 'Boshqa',                         ru: 'Другое',                            en: 'Other'                          }, rate: 17   },
 ]
 
 // Yandex Market Go UZ — category commissions (partner.market.yandex.uz official tariff table)

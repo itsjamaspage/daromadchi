@@ -84,16 +84,25 @@
       light: { bg:'#f8fafc', card:'#ffffff',  border:'#e2e8f0', text:'#0f172a', muted:'#64748b', red:'#dc2626', green:'#16a34a', amber:'#d97706' },
     };
 
+    // Exact rates from official WB commission table (WB warehouse / FBY model)
     const COMM_MAP = [
-      [/smartfon|telefon|iphone|samsung/i, 3],
-      [/noutbuk|laptop|macbook/i, 5],
-      [/elektronika|kompyuter|aksesuar|plansh/i, 7],
-      [/kiyim|libos|futbolka|ko.ylak|platye|zhilyet/i, 23],
-      [/poyabzal|botinok|sandal|krossovk/i, 15],
-      [/sport|trenaj/i, 13],
-      [/gozellik|parfyum|kosmetika|beauty|uhod/i, 12],
-      [/oziq|ovqat|mahsulot|produkty/i, 10],
-      [/uy|mebel|maishiy|interior/i, 12],
+      [/smartfon|iphone|samsung|xiaomi|redmi/i,               3   ],
+      [/planshet|tablet/i,                                     5   ],
+      [/noutbuk|laptop|macbook/i,                              5   ],
+      [/kompyuter|desktop|sistemny/i,                          9.5 ],
+      [/aqlli.soat|smart.?watch|fitnes.?bras|bracelet/i,       14.5],
+      [/kiyim|libos|futbolka|ko.ylak|platye|zhilyet|bluzka/i,  23  ],
+      [/ichki.kiyim|byole|korset|underwear/i,                  23  ],
+      [/poyabzal|botinok|sandal|krossovk|tufli/i,              18  ],
+      [/sport.?kiyim|sportivn|sportswear/i,                    23  ],
+      [/gozellik|kosmetika|parfyum|beauty|uhod|volos/i,        18  ],
+      [/maishiy.tex|bytovaya|xolodilnik|refrig/i,              14  ],
+      [/sport|trenaj|fitnes/i,                                 18  ],
+      [/oziq|ovqat|produkty/i,                                 11  ],
+      [/uy.tekst|interyer|interior|mebel|dekor/i,              19  ],
+      [/oyinchoq|toy|igrushk/i,                                18  ],
+      [/avto|zapchast|mashina/i,                                8  ],
+      [/bola|baby|detsk/i,                                      8  ],
     ];
 
     let langKey = 'uz', theme = 'dark';
