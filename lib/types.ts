@@ -184,6 +184,17 @@ export interface PayoutEntry {
   payoutDate: string | null
 }
 
+export interface WatchlistItem {
+  id: string
+  label: string
+  competitor_url: string | null
+  my_product_title: string | null
+  my_price: number | null
+  last_competitor_price: number | null
+  last_checked_at: string | null
+  created_at: string
+}
+
 // ── Competitor price tracking ─────────────────────────────────────────────────
 export interface CompetitorPrice {
   id: string

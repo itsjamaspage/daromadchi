@@ -1,9 +1,8 @@
 import { getT } from '@/lib/server-i18n'
-import { getCompetitorPrices } from '@/lib/db/price-tracking'
 import PriceTrackingView from '@/components/dashboard/PriceTrackingView'
 
 export default async function PriceTrackingPage() {
-  const [t, prices] = await Promise.all([getT(), getCompetitorPrices()])
+  const t = await getT()
   const d = t.dashboard
 
   return (
@@ -14,7 +13,7 @@ export default async function PriceTrackingPage() {
         </div>
         <p className="text-[var(--text-muted)] text-sm">{d.priceTrackingSubtitle}</p>
       </div>
-      <PriceTrackingView prices={prices} />
+      <PriceTrackingView />
     </div>
   )
 }
