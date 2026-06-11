@@ -313,13 +313,15 @@ h1, h2, h3, h4, h5, h6 {
 .sidebar-collapse .sidebar-label {
   opacity: 0;
   pointer-events: none;
-  transition: opacity 150ms ease 30ms;
+  transition: opacity 150ms ease 30ms, max-width 150ms ease 30ms;
   overflow: hidden;
   white-space: nowrap;
+  max-width: 0;
 }
 .sidebar-collapse:hover .sidebar-label {
   opacity: 1;
   pointer-events: auto;
+  max-width: 500px;
 }
 .sidebar-logo-row {
   padding: 14px 12px;
