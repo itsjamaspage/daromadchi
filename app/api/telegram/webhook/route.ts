@@ -5,6 +5,15 @@ import { sendTelegramMessage, sendTelegramKeyboard, answerCallbackQuery } from '
 // Register via: GET https://api.telegram.org/bot{TOKEN}/setWebhook?url=https://daromadchi.uz/api/telegram/webhook
 // Always return 200 so Telegram doesn't retry.
 
+export async function GET() {
+  const token = process.env.TELEGRAM_BOT_TOKEN
+  return NextResponse.json({
+    ok: true,
+    bot_token_set: !!token,
+    token_preview: token ? token.split(':')[0] + ':***' : null,
+  })
+}
+
 const NOTIF_LABELS: Record<string, string> = {
   morning: '🌅 Ertalab 8:00',
   noon:    '☀️ Kunduzi 13:00',
