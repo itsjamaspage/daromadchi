@@ -105,7 +105,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
 
         {/* Store section */}
         <p className="sidebar-label px-2 pt-1 pb-1.5 text-[9px] font-semibold uppercase tracking-widest truncate"
-          style={{ color: 'var(--c1)', opacity: 0.6 }}>
+          style={{ color: 'var(--c1)' }}>
           {d.nav.store}
         </p>
         {storeNavItems.map(({ href, key, icon: Icon }) => {
@@ -144,7 +144,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
 
         {/* Market */}
         <p className="sidebar-label px-2 pb-1.5 text-[9px] font-semibold uppercase tracking-widest truncate"
-          style={{ color: 'var(--c1)', opacity: 0.6 }}>
+          style={{ color: 'var(--c1)' }}>
           {d.nav.market}
         </p>
         {[{ href: '/dashboard/market', key: 'marketResearch', icon: Globe2 }].map(({ href, key, icon: Icon }) => {
@@ -176,7 +176,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
 
         {/* Settings section */}
         <p className="sidebar-label px-2 pb-1.5 text-[9px] font-semibold uppercase tracking-widest truncate"
-          style={{ color: 'var(--c1)', opacity: 0.6 }}>
+          style={{ color: 'var(--c1)' }}>
           {d.nav.settings ?? 'Sozlamalar'}
         </p>
         {settingsNavItems.map(({ href, key, icon: Icon }) => {
