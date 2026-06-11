@@ -181,6 +181,26 @@ export async function POST(req: NextRequest) {
       await upsertSession(chatId, { marketplace, step: 'done' })
       await answerCallbackQuery(cb.id, '✅')
       await sendTelegramMessage(chatId, DONE_MSG[lang]?.(shopName) ?? DONE_MSG.uz(shopName))
+      // Check if account is already linked → show notification setup
+      const { data: linked } = await supabaseAdmin
+        .from('user_settings')
+        .select('user_id')
+        .eq('telegram_chat_id', chatId)
+        .maybeSingle()
+      if (linked) {
+        const notifQ = lang === 'ru'
+          ? '📦 Какие уведомления вы хотите получать?'
+          : lang === 'en'
+          ? '📦 Which notifications do you want to receive?'
+          : '📦 Qaysi bildirishnomalarni olishni xohlaysiz?'
+        await sendTelegramKeyboard(chatId, notifQ, [
+          [{ text: '📦 Kam zaxira ogohlantirishlari ✅', callback_data: 'notif_toggle:low_stock:1' }],
+          [{ text: '📊 Kunlik savdo xulosasi ✅',        callback_data: 'notif_toggle:daily_summary:1' }],
+          [{ text: '🛒 Yangi buyurtmalar ❌',            callback_data: 'notif_toggle:new_orders:0' }],
+          [{ text: '📈 Haftalik hisobot ❌',             callback_data: 'notif_toggle:weekly_report:0' }],
+          [{ text: '✅ Tayyor — vaqtni sozlash →',       callback_data: 'notif_step:time' }],
+        ])
+      }
       return NextResponse.json({ ok: true })
     }
 
@@ -334,14 +354,22 @@ export async function POST(req: NextRequest) {
       })
       .eq('user_id', settings.user_id)
 
-    await sendTelegramMessage(chatId, `✅ <b>Daromadchi hisobingiz ulandi!</b>\n\nEndi qaysi bildirishnomalarni olishni sozlaylik 👇`)
-    await sendTelegramKeyboard(chatId, `📦 Qaysi bildirishnomalarni olishni xohlaysiz?`, [
-      [{ text: '📦 Kam zaxira ogohlantirishlari ✅', callback_data: 'notif_toggle:low_stock:1' }],
-      [{ text: '📊 Kunlik savdo xulosasi ✅',        callback_data: 'notif_toggle:daily_summary:1' }],
-      [{ text: '🛒 Yangi buyurtmalar ❌',            callback_data: 'notif_toggle:new_orders:0' }],
-      [{ text: '📈 Haftalik hisobot ❌',             callback_data: 'notif_toggle:weekly_report:0' }],
-      [{ text: '✅ Tayyor — vaqtni sozlash →',       callback_data: 'notif_step:time' }],
-    ])
+    await sendTelegramMessage(chatId, `✅ <b>Daromadchi hisobingiz ulandi!</b>\n\nDavom etamiz 👇`)
+    // Check if onboarding is already done
+    const existingSession = await getSession(chatId)
+    if (existingSession?.step === 'done') {
+      // Already onboarded — go straight to notification setup
+      await sendTelegramKeyboard(chatId, `📦 Qaysi bildirishnomalarni olishni xohlaysiz?`, [
+        [{ text: '📦 Kam zaxira ogohlantirishlari ✅', callback_data: 'notif_toggle:low_stock:1' }],
+        [{ text: '📊 Kunlik savdo xulosasi ✅',        callback_data: 'notif_toggle:daily_summary:1' }],
+        [{ text: '🛒 Yangi buyurtmalar ❌',            callback_data: 'notif_toggle:new_orders:0' }],
+        [{ text: '📈 Haftalik hisobot ❌',             callback_data: 'notif_toggle:weekly_report:0' }],
+        [{ text: '✅ Tayyor — vaqtni sozlash →',       callback_data: 'notif_step:time' }],
+      ])
+    } else {
+      // Start onboarding: language → shop name → marketplace → notification setup
+      await sendLangSelect(chatId)
+    }
     return NextResponse.json({ ok: true })
   }
 
