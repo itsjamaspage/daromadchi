@@ -546,7 +546,7 @@ export default function LandingPage() {
   }
   const ctaTexts = {
     question: {
-      uz: 'Biz bilan savdongizni oshirishga tayyormisiz?',
+      uz: 'Biz bilan savdolaringizni oshirmoqchimisiz?',
       ru: 'Готовы увеличить свои продажи вместе с нами?',
       en: 'Are you ready to grow your sales with us?',
     },
