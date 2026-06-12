@@ -135,8 +135,14 @@
     }
 
     function parseWbPrice() {
-      // Priority 1: exact class names confirmed from live WB DOM (hashed but stable pattern)
-      // priceBlockFinalPrice and priceBlockPrice are the real product price elements
+      // Helper: accept only 4–9 digit strings (10 000 – 999 999 999 sum)
+      function extractPrice(text) {
+        const raw = text.replace(/[^\d]/g, '');
+        if (raw.length < 4 || raw.length > 9) return null;
+        return parseInt(raw, 10);
+      }
+
+      // Priority 1: known WB class name fragments (hashed but contain these substrings)
       const priority = [
         '[class*="priceBlockFinalPrice"]',
         '[class*="priceBlockPrice--"]',
@@ -147,22 +153,36 @@
       for (const sel of priority) {
         const el = document.querySelector(sel);
         if (!el) continue;
-        // Skip old/strikethrough prices
         if (/[Oo]ld|[Cc]ross|[Ss]trike|[Pp]rev/.test(el.className)) continue;
-        const raw = el.innerText.replace(/[^\d]/g,'');
-        if (raw.length >= 3 && raw.length <= 12) return parseInt(raw);
+        const p = extractPrice(el.innerText);
+        if (p) return p;
       }
-      // Priority 2: <ins> tags — WB uses <ins> for sale prices, skip empty-class DIVs
+
+      // Priority 2: <ins> tags — WB uses <ins> for discounted prices
       const insTags = Array.from(document.querySelectorAll('ins'));
       const visibleIns = insTags.filter(el => {
         if (/[Oo]ld|[Cc]ross|[Ss]trike/.test(el.className)) return false;
         const rect = el.getBoundingClientRect();
         return rect.width > 0 && rect.top > 0 && rect.top < window.innerHeight * 1.5;
       });
-      visibleIns.sort((a,b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top);
+      visibleIns.sort((a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top);
       for (const el of visibleIns) {
-        const raw = el.innerText.replace(/[^\d]/g,'');
-        if (raw.length >= 3 && raw.length <= 12) return parseInt(raw);
+        const p = extractPrice(el.innerText);
+        if (p) return p;
+      }
+
+      // Priority 3: currency-text scan — finds the price even if class names change.
+      // Skip elements that contain "сум" more than once (current + old price combined).
+      const currencyRe = /сум|so'm/i;
+      for (const el of document.querySelectorAll('span,ins,strong,b,div,p')) {
+        if (el.children.length > 4) continue;
+        const text = el.innerText || '';
+        if (!currencyRe.test(text)) continue;
+        if ((text.match(/сум|so'm/gi) || []).length > 1) continue;
+        const cls = (el.className || '').toLowerCase();
+        if (cls.includes('old') || cls.includes('cross') || cls.includes('strike') || cls.includes('prev')) continue;
+        const p = extractPrice(text);
+        if (p) return p;
       }
       return null;
     }
@@ -217,7 +237,7 @@
       return `<div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:1px 0"><span style="color:${t.muted}">${label}${extra}</span><span id="drm-wb-v-${id}" style="color:${t.red}">${val}</span></div>`;
     }
 
-    function waitForWbPriceAndBuild(maxWait=8000) {
+    function waitForWbPriceAndBuild(maxWait=12000) {
       // Record the URL at the moment we start waiting
       const targetUrl = location.href;
       // Small initial pause to let SPA tear down old product DOM first
@@ -247,7 +267,7 @@
     function buildWbWidget(attempt=0) {
       const price   = parseWbPrice();
       if (!price) {
-        if (attempt < 6) setTimeout(()=>{ if(!document.getElementById('drm-wb-ue')) buildWbWidget(attempt+1); }, 800);
+        if (attempt < 10) setTimeout(()=>{ if(!document.getElementById('drm-wb-ue')) buildWbWidget(attempt+1); }, 700);
         return;
       }
       const title   = parseWbTitle();
