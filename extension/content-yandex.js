@@ -321,7 +321,7 @@
         </div>
       `;
 
-      wrap.querySelector('#drm-ym-close').onclick   = () => { wrap.style.display='none'; toggleBtn.style.setProperty('display','flex','important'); chrome.storage.local.set({ymWidgetClosed:Date.now()}); };
+      wrap.querySelector('#drm-ym-close').onclick   = () => { wrap.style.display='none'; toggleBtn.style.setProperty('display','flex','important'); widgetClosed=true; };
       wrap.querySelector('#drm-ym-refresh').onclick = () => { wrap.remove(); toggleBtn.remove(); setTimeout(tryInit,300); };
       wrap.querySelector('#drm-ym-theme').onclick   = () => { theme=theme==='dark'?'light':'dark'; chrome.storage.local.set({drmTheme:theme}); render(); };
       wrap.querySelector('#drm-ym-fby').onclick     = () => { fby=true; render(); };
@@ -356,18 +356,17 @@
     }
   }
 
-  async function tryInit() {
+  function tryInit() {
     if (document.getElementById('drm-ym-ue')) return;
-    const {ymWidgetClosed}=await chrome.storage.local.get('ymWidgetClosed');
-    if (Date.now()-(ymWidgetClosed||0)<1800000) return;
+    if (widgetClosed) return;
     buildYmWidget();
   }
 
-  let lastUrl=location.href, initTimer=null;
+  let lastUrl=location.href, initTimer=null, widgetClosed=false;
   function scheduleInit(delay=2500) { clearTimeout(initTimer); initTimer=setTimeout(tryInit,delay); }
 
   new MutationObserver(()=>{
-    if(location.href!==lastUrl){ lastUrl=location.href; document.getElementById('drm-ym-ue')?.remove(); document.getElementById('drm-ym-toggle')?.remove(); scheduleInit(); }
+    if(location.href!==lastUrl){ lastUrl=location.href; document.getElementById('drm-ym-ue')?.remove(); document.getElementById('drm-ym-toggle')?.remove(); widgetClosed=false; scheduleInit(); }
   }).observe(document,{subtree:true,childList:true});
 
   if (document.readyState==='loading') { document.addEventListener('DOMContentLoaded',()=>scheduleInit()); }

@@ -117,7 +117,7 @@
       [/одежда|рубашка|платье|футболка|kiyim|libos/i,                                23  ],
     ];
 
-    let langKey = 'uz', theme = 'dark';
+    let langKey = 'uz', theme = 'dark', widgetClosed = false;
     function L() { return LANGS[langKey]; }
     function T() { return THEME[theme]; }
     function fp(n) { if (n===null||n===undefined) return '—'; return L().currency(n); }
@@ -381,7 +381,7 @@
           </div>
         `;
 
-        wrap.querySelector('#drm-wb-close').onclick   = () => { wrap.style.display='none'; toggleBtn.style.setProperty('display','flex','important'); chrome.storage.local.set({wbWidgetClosed:Date.now()}); };
+        wrap.querySelector('#drm-wb-close').onclick   = () => { wrap.style.display='none'; toggleBtn.style.setProperty('display','flex','important'); widgetClosed=true; };
         wrap.querySelector('#drm-wb-refresh').onclick = () => { wrap.remove(); toggleBtn.remove(); setTimeout(buildWbWidget,300); };
         wrap.querySelector('#drm-wb-theme').onclick   = () => { theme=theme==='dark'?'light':'dark'; chrome.storage.local.set({drmTheme:theme}); render(); };
         wrap.querySelector('#drm-wb-fby').onclick     = () => { fby=true; render(); };
@@ -419,10 +419,9 @@
       }
     }
 
-    async function tryInit() {
+    function tryInit() {
       if (document.getElementById('drm-wb-ue')) return;
-      const {wbWidgetClosed}=await chrome.storage.local.get('wbWidgetClosed');
-      if (Date.now()-(wbWidgetClosed||0)<1800000) return;
+      if (widgetClosed) return;
       waitForWbPriceAndBuild();
     }
 
@@ -433,7 +432,7 @@
       if(location.href!==lastUrl){ lastUrl=location.href;
         document.getElementById('drm-wb-ue')?.remove();
         document.getElementById('drm-wb-toggle')?.remove();
-        chrome.storage.local.remove('wbWidgetClosed');
+        widgetClosed=false;
         if(/\/catalog\/\d+/.test(location.pathname)) waitForWbPriceAndBuild();
       }
     }).observe(document,{subtree:true,childList:true});
