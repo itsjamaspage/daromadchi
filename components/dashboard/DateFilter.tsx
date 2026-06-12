@@ -24,7 +24,7 @@ export default function DateFilter({ current }: { current: string }) {
   function setRange(value: string) {
     const params = new URLSearchParams(searchParams.toString())
     params.set('days', value)
-    startTransition(() => router.push(`${pathname}?${params.toString()}`))
+    startTransition(() => router.push(`${pathname}?${params.toString()}`, { scroll: false }))
   }
 
   return (

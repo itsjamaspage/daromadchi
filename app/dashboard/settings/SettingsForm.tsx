@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   RefreshCw, Save, Key, CheckCircle, XCircle, ExternalLink,
-  Loader2, Hash, Calculator, Sparkles, Trash2, Copy, Puzzle, Send, LinkIcon,
+  Loader2, Hash, Calculator, Sparkles, Trash2, Send, LinkIcon,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import type { Shop, UnitEcoSettings } from '@/lib/types'
@@ -595,7 +595,6 @@ export default function SettingsForm({ uzumShop, yandexShop, wbShop, userId, ueS
       <WildberriesCard       shop={wbShop}     userId={userId} />
       <UnitEcoDefaultsCard   initial={ueSettings} />
       <TelegramCard          chatId={telegramChatId ?? null} username={telegramUsername ?? null} />
-      <ExtensionTokenCard />
       <DemoCard />
     </div>
   )
@@ -696,82 +695,6 @@ function TelegramCard({ chatId, username }: { chatId: string | null; username: s
           </button>
         )}
         <StatusMsg msg={msg} />
-      </div>
-    </div>
-  )
-}
-
-// ─── Extension token section ──────────────────────────────────────────────────
-
-function ExtensionTokenCard() {
-  const [token, setToken] = useState<string | null>(null)
-  const [copied, setCopied] = useState(false)
-  const [loading, setLoading] = useState(false)
-
-  async function revealToken() {
-    setLoading(true)
-    try {
-      const supabase = createClient()
-      const { data } = await supabase.auth.getSession()
-      setToken(data.session?.access_token ?? null)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  async function copyToken() {
-    if (!token) return
-    await navigator.clipboard.writeText(token)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
-
-  return (
-    <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
-      <div className="p-5 flex items-center gap-3 border-b border-[var(--border)]">
-        <div className="w-9 h-9 rounded-xl bg-violet-500/15 border border-violet-500/25 flex items-center justify-center">
-          <Puzzle className="w-4 h-4 text-violet-400" />
-        </div>
-        <div>
-          <p className="text-[var(--text-base)] font-semibold text-sm">Kengaytma tokeni</p>
-          <p className="text-[var(--text-muted)] text-xs">Chrome kengaytmasini Daromadchi hisobingizga ulash uchun</p>
-        </div>
-      </div>
-      <div className="p-5 space-y-3">
-        <ol className="text-xs text-[var(--text-muted)] space-y-1 list-decimal list-inside leading-relaxed">
-          <li>Quyidagi tugmani bosib tokenni oling</li>
-          <li>Chrome kengaytmasini oching → &ldquo;Sozlamalar&rdquo; sahifasini oching</li>
-          <li>&ldquo;Daromadchi tokeni&rdquo; maydoniga tokenni joylashtiring va &ldquo;Saqlash&rdquo; tugmasini bosing</li>
-        </ol>
-        {!token ? (
-          <button
-            onClick={revealToken}
-            disabled={loading}
-            className="inline-flex items-center gap-2 btn-primary text-sm font-semibold px-4 py-2.5 rounded-xl disabled:opacity-60"
-          >
-            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Key className="w-4 h-4" />}
-            Tokenni ko&apos;rsatish
-          </button>
-        ) : (
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <input
-                readOnly
-                value={token}
-                type="password"
-                className="flex-1 bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-3 py-2 text-xs font-mono text-[var(--text-dim)] min-w-0"
-              />
-              <button
-                onClick={copyToken}
-                className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-colors ${copied ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' : 'btn-primary'}`}
-              >
-                {copied ? <CheckCircle className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                {copied ? 'Nusxalandi!' : 'Nusxalash'}
-              </button>
-            </div>
-            <p className="text-[10px] text-amber-400/80">⚠️ Tokenni hech kim bilan ulashmang — bu hisobingizga kirish kaliti.</p>
-          </div>
-        )}
       </div>
     </div>
   )

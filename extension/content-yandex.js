@@ -131,24 +131,36 @@
     return null;
   }
 
-  // Yandex Market Go UZ — category commissions (partner.market.yandex.uz official tariff table)
-  // Apple products: 1.5% (stated explicitly). Others: midpoint of official band per category.
+  // Yandex Market — category commissions. Includes both Latin/Uzbek and Russian Cyrillic breadcrumb/title text.
   const YM_COMM_MAP = [
     [/apple|iphone|ipad|macbook|airpods/i, 1.5],
-    [/smartfon|telefon|phone|samsung|xiaomi|redmi/i, 4],
-    [/noutbuk|laptop|macbook|kompyuter|computer|notebook/i, 4],
-    [/elektronika|smart.home|aqlli.uy|aksesuar|gadjet|gadget|plansh/i, 5],
-    [/maishiy.tex|bytovaya|appliance|xolodilnik|refrig|vakuum|vacuum|konditsioner/i, 6],
-    [/avto|mashina|avtomobil|automotive|shina|tire|zapchast/i, 8],
-    [/gozellik|kosmetika|parfyum|beauty|uhod|volos|makiyaj|skincare/i, 10],
-    [/uy.va.bog|dom.i.sad|kitchen|oshxona|mebel|tekstil|textile|posuda|cookware/i, 11],
-    [/kiyim|libos|odejda|shoes|poyabzal|sumka|bag|fashion|aksessuarlar|yuvelirnye/i, 12],
+    [/smartfon|telefon|samsung|xiaomi|redmi|смартфон|телефон/i, 4],
+    [/noutbuk|laptop|notebook|ноутбук|компьютер/i, 4],
+    [/elektronika|электроника|наушник|naushnik|gadget|гаджет|планшет|телевизор|aksesuar/i, 5],
+    [/бытовая техника|холодильник|стиральн|пылесос|кондиционер|maishiy|bytovaya/i, 6],
+    [/авто|автотовар|шина|запчаст|avto|mashina/i, 8],
+    [/парфюм|духи|красота|косметик|уход за|макияж|parfyum|gozellik|kosmetika|beauty/i, 10],
+    [/дом и сад|кухня|мебел|текстил|посуд|oshxona|mebel|dom.i.sad/i, 11],
+    [/одежда|обувь|сумк|ювелирн|kiyim|odejda|shoes|fashion/i, 12],
   ];
 
   function getYmCommission() {
-    const bc = document.querySelector('[class*="readcrumb"],[class*="ategory"],[class*="Breadcrumb"],[data-auto="breadcrumb"],[class*="navigation"],[class*="Navigation"]');
-    if (bc) { const t = bc.innerText; for (const [re, pct] of YM_COMM_MAP) if (re.test(t)) return pct; }
+    // Check breadcrumbs + product title (h1) + page title for category detection
+    const parts = [];
+    const bcEl = document.querySelector('[data-auto="breadcrumb"],[class*="Breadcrumb"],[class*="breadcrumb"],[class*="readcrumb"],[class*="navigation"]');
+    if (bcEl) parts.push(bcEl.innerText);
+    const h1El = document.querySelector('h1,[data-auto="offerTitle"]');
+    if (h1El) parts.push(h1El.innerText);
+    if (document.title) parts.push(document.title);
+    const text = parts.join(' ');
+    for (const [re, pct] of YM_COMM_MAP) if (re.test(text)) return pct;
     return 10;
+  }
+
+  function isYmProductPage() {
+    const path = window.location.pathname;
+    // Only activate on product detail pages (not catalog, search, or home)
+    return /\/product(--|\/|\d)/i.test(path) || /\/sku\//i.test(path);
   }
 
   function calcYm(price, { costPrice=0, packaging=0, adPct=5, volume=1, fby=true }={}) {
@@ -179,6 +191,7 @@
   }
 
   function buildYmWidget(attempt=0) {
+    if (!isYmProductPage()) return; // Skip catalog/home/search pages
     const price = parseYmPrice();
     const title = parseYmTitle();
     if (!price) {

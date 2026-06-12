@@ -119,6 +119,7 @@ export default function DashboardClient({ kpis, recentOrders, allProducts, chart
             <Link
               key={label}
               href={mp ? `/dashboard?mp=${mp}&days=${period}` : `/dashboard?days=${period}`}
+              scroll={false}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                 active
                   ? color === 'amber'
