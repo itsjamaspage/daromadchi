@@ -43,7 +43,7 @@
     const LANGS = {
       uz: {
         fby:'FBY', fbs:'FBS', params:'HISOB PARAMETRLARI',
-        costLabel:"Tannarx (so'm)", packLabel:"Qadoqlash (so'm)", volLabel:'Hajm (litr)', adLabel:'Reklama %',
+        costLabel:"Tannarx (so'm)", packLabel:"Qadoqlash (so'm)", commLabel:'Komissiya %', volLabel:'Hajm (litr)', adLabel:'Reklama %',
         breakdown:'XARAJATLAR TAQSIMOTI', narx:'Narx', comm:'Komissiya', delivery:'Yetkazib berish',
         returns:'Qaytarishlar (~3%)', acquiring:'Ekvayring (1.5%)', reklama:'Reklama', tax:'Soliq (6%)',
         totalMkt:'Jami Wildberries', totalCost:'Jami xarajat',
@@ -55,7 +55,7 @@
       },
       ru: {
         fby:'FBY', fbs:'FBS', params:'ПАРАМЕТРЫ РАСЧЁТА',
-        costLabel:'Себестоимость (сум)', packLabel:'Упаковка (сум)', volLabel:'Объём (л)', adLabel:'Реклама %',
+        costLabel:'Себестоимость (сум)', packLabel:'Упаковка (сум)', commLabel:'Комиссия %', volLabel:'Объём (л)', adLabel:'Реклама %',
         breakdown:'СТРУКТУРА ЗАТРАТ', narx:'Цена', comm:'Комиссия', delivery:'Доставка',
         returns:'Возвраты (~3%)', acquiring:'Эквайринг (1.5%)', reklama:'Реклама', tax:'Налог (6%)',
         totalMkt:'Итого WB', totalCost:'Всего расходов',
@@ -67,7 +67,7 @@
       },
       en: {
         fby:'FBY', fbs:'FBS', params:'CALCULATION PARAMS',
-        costLabel:'Cost price (som)', packLabel:'Packaging (som)', volLabel:'Volume (L)', adLabel:'Ad %',
+        costLabel:'Cost price (som)', packLabel:'Packaging (som)', commLabel:'Commission %', volLabel:'Volume (L)', adLabel:'Ad %',
         breakdown:'COST BREAKDOWN', narx:'Price', comm:'Commission', delivery:'Delivery',
         returns:'Returns (~3%)', acquiring:'Acquiring (1.5%)', reklama:'Advertising', tax:'Tax (6%)',
         totalMkt:'Total WB fees', totalCost:'Total costs',
@@ -190,8 +190,8 @@
     }
     function getArticle() { const m=location.pathname.match(/\/catalog\/(\d+)/); return m?m[1]:null; }
 
-    function calcWb(price, { costPrice=0, packaging=0, adPct=5, volume=1, fby=true }={}) {
-      const commPct    = getCommission();
+    function calcWb(price, { costPrice=0, packaging=0, adPct=5, volume=1, fby=true, commPct=undefined }={}) {
+      if(commPct===undefined) commPct=getCommission();
       const commission = Math.round(price * commPct / 100);
       const delivery   = fby ? Math.round(volume * 20000) : Math.round(volume * 10000);
       const returns    = Math.round(price * 0.03);
@@ -253,7 +253,7 @@
       const title   = parseWbTitle();
       const article = getArticle();
 
-      let fby=true, costPrice=0, packaging=0, adPct=5, volume=1;
+      let fby=true, costPrice=0, packaging=0, adPct=5, volume=1, commPct=null;
 
       const wrap = document.createElement('div');
       wrap.id = 'drm-wb-ue';
@@ -268,10 +268,11 @@
       document.body.appendChild(toggleBtn);
       toggleBtn.onclick = () => { wrap.style.display='block'; toggleBtn.style.setProperty('display','none','important'); };
 
-      chrome.storage.local.get(['ueSettings','drmLang','drmTheme'], data => {
+      chrome.storage.local.get(['ueSettings','drmLang','drmTheme','drmCommOverride_wb'], data => {
         if (data.ueSettings) { costPrice=data.ueSettings.costPrice||0; packaging=data.ueSettings.packaging||0; adPct=data.ueSettings.adPct||5; volume=data.ueSettings.volume||1; fby=data.ueSettings.fby!==undefined?data.ueSettings.fby:true; }
         if (data.drmLang) langKey=data.drmLang;
         if (data.drmTheme) theme=data.drmTheme;
+        commPct=data.drmCommOverride_wb!=null?data.drmCommOverride_wb:getCommission();
         render();
       });
 
@@ -281,6 +282,7 @@
           packaging: parseFloat(wrap.querySelector('#drm-wb-pack')?.value)||0,
           adPct:     parseFloat(wrap.querySelector('#drm-wb-ad')?.value)||5,
           volume:    parseFloat(wrap.querySelector('#drm-wb-vol')?.value)||1,
+          commPct:   parseFloat(wrap.querySelector('#drm-wb-comm')?.value)||commPct||getCommission(),
         };
       }
 
@@ -289,7 +291,7 @@
         const eco=calcWb(price,{...gi(),fby}); const c=pColor(eco.margin);
         const S=(id,v)=>{const e=wrap.querySelector('#drm-wb-v-'+id);if(e)e.textContent=v;};
         const C=(id,col)=>{const e=wrap.querySelector('#drm-wb-v-'+id);if(e)e.style.color=col;};
-        S('comm',`−${fp(eco.commission)}`); S('delivery',`−${fp(eco.delivery)}`);
+        S('comm',`−${fp(eco.commission)}`); S('comm-pct',String(eco.commPct)); S('delivery',`−${fp(eco.delivery)}`);
         S('returns',`−${fp(eco.returns)}`); S('acq',`−${fp(eco.acquiring)}`);
         S('ad',`−${fp(eco.adSpend)}`); S('tax',`−${fp(eco.tax)}`);
         S('mkt',`−${fp(eco.mktTotal)}`); S('total',`−${fp(eco.jamiTotal)}`);
@@ -301,10 +303,10 @@
 
       function render() {
         const t=T(); const l=L();
-        const eco=price?calcWb(price,{costPrice,packaging,adPct,volume,fby}):null;
+        const _commPct=commPct!==null?commPct:getCommission();
+        const eco=price?calcWb(price,{costPrice,packaging,adPct,volume,fby,commPct:_commPct}):null;
         const color=eco?pColor(eco.margin):t.muted;
         const barW=eco?Math.max(0,Math.min(100,eco.margin)):0;
-        const commPct=getCommission();
 
         wrap.style.background=t.bg;
         wrap.style.border=`1px solid ${t.border}`;
@@ -342,6 +344,7 @@
               <div style="display:flex;flex-direction:column;gap:7px">
                 <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:${t.muted}">${l.costLabel}</span>${inp('drm-wb-cost',costPrice)}</div>
                 <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:${t.muted}">${l.packLabel}</span>${inp('drm-wb-pack',packaging)}</div>
+                <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:${t.muted}">${l.commLabel}</span>${inp('drm-wb-comm',_commPct,'17','0.5')}</div>
                 <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:${t.muted}">${l.adLabel}</span>${inp('drm-wb-ad',adPct,'5','0.5')}</div>
                 <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:${t.muted}">${l.volLabel}</span>${inp('drm-wb-vol',volume,'1','0.1')}</div>
               </div>
@@ -352,7 +355,7 @@
               <div style="font-size:10px;font-weight:600;color:${t.muted};letter-spacing:.7px;margin-bottom:8px">${l.breakdown}</div>
               <div style="display:flex;flex-direction:column;gap:4px">
                 <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:${t.muted}">${l.narx}</span><span style="color:${t.text};font-weight:600">${fp(price)}</span></div>
-                ${row(l.comm+` (${commPct}%)`,'comm',`−${fp(eco.commission)}`)}
+                ${row(`${l.comm} (<span id="drm-wb-v-comm-pct">${_commPct}</span>%)`,'comm',`−${fp(eco.commission)}`)}
                 ${row(l.delivery+` (${fby?'FBY':'FBS'})`,'delivery',`−${fp(eco.delivery)}`,` <span style="color:${t.amber};font-size:10px">${l.taxminiy}</span>`)}
                 ${row(l.returns,'returns',`−${fp(eco.returns)}`,` <span style="color:${t.amber};font-size:10px">${l.taxminiy}</span>`)}
                 ${row(l.acquiring,'acq',`−${fp(eco.acquiring)}`)}
@@ -385,6 +388,16 @@
         wrap.querySelector('#drm-wb-fbs').onclick     = () => { fby=false; render(); };
         ['uz','ru','en'].forEach(k => { wrap.querySelector(`#drm-wb-lang-${k}`)?.addEventListener('click',()=>{ langKey=k; chrome.storage.local.set({drmLang:k}); render(); }); });
         ['#drm-wb-cost','#drm-wb-pack','#drm-wb-ad','#drm-wb-vol'].forEach(id => { wrap.querySelector(id)?.addEventListener('input',liveRecalc); });
+        wrap.querySelector('#drm-wb-comm')?.addEventListener('input',()=>{
+          const v=parseFloat(wrap.querySelector('#drm-wb-comm')?.value);
+          if(v>0){commPct=v;}
+          liveRecalc();
+        });
+        wrap.querySelector('#drm-wb-comm')?.addEventListener('change',()=>{
+          const v=parseFloat(wrap.querySelector('#drm-wb-comm')?.value);
+          if(v>0){commPct=v;chrome.storage.local.set({drmCommOverride_wb:v});}
+          else{commPct=getCommission();chrome.storage.local.remove('drmCommOverride_wb');}
+        });
 
         wrap.querySelector('#drm-wb-ue-btn')?.addEventListener('click', async () => {
           const vals=gi(); const eco2=price?calcWb(price,{...vals,fby}):null;
