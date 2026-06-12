@@ -667,7 +667,9 @@ chrome.alarms.onAlarm.addListener((alarm) => {
 
 chrome.runtime.onMessage.addListener((msg, sender, reply) => {
   if (msg.action === 'daromadchi_connected') {
-    chrome.storage.local.set({ daromadchi_connected: true, daromadchi_email: msg.email || '' });
+    const updates = { daromadchi_connected: true, daromadchi_email: msg.email || '' };
+    if (msg.tg) updates.tgStatus = msg.tg;
+    chrome.storage.local.set(updates);
     reply({ ok: true });
     return true;
   }

@@ -562,23 +562,8 @@ async function loadAll() {
   const statsPanel = document.getElementById('panel-stats');
   if (statsPanel) renderMarketplaceStatus(statsPanel, yandexStats, uzumDirectStats, yandexConnected, uzumConnected, yandexCampaignId, uzumShopName, wbStats, wbConnected, wbSellerInfo);
 
-  // Always refresh TG status on every popup open — lightweight call, non-blocking
-  if (daromadchi_token) {
-    (async () => {
-      try {
-        const res = await fetch(`${API}/extension/telegram-status`, { headers: { 'Authorization': `Bearer ${daromadchi_token}` } });
-        if (res.ok) {
-          const tg = await res.json();
-          chrome.storage.local.set({ tgStatus: tg });
-          if (tg.connected !== tgStatus.connected || tg.username !== tgStatus.username) {
-            renderSettings(token, alertSettings, tg, lang);
-          }
-        }
-      } catch {}
-    })();
-  }
-
   // Background refresh stats when cache is stale — does not block UI
+  // TG status is kept fresh via content-daromadchi.js focus re-sync on the daromadchi.uz tab
   const stale = Date.now() - (cacheTime || 0) > 300000;
   if (stale && daromadchi_token) {
     (async () => {

@@ -9,5 +9,18 @@ export async function GET() {
     return NextResponse.json({ ok: false }, { status: 401 })
   }
 
-  return NextResponse.json({ ok: true, email: user.email })
+  const { data: settings } = await supabase
+    .from('user_settings')
+    .select('telegram_chat_id, telegram_username')
+    .eq('user_id', user.id)
+    .maybeSingle()
+
+  return NextResponse.json({
+    ok: true,
+    email: user.email,
+    tg: {
+      connected: !!settings?.telegram_chat_id,
+      username: settings?.telegram_username ?? null,
+    },
+  })
 }
