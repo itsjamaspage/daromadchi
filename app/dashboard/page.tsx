@@ -4,6 +4,8 @@ import { getKpis } from '@/lib/db/kpis'
 import { getOrders } from '@/lib/db/orders'
 import { getProducts } from '@/lib/db/products'
 import { getDailyRevenue } from '@/lib/db/revenue'
+import { getUserShops } from '@/lib/db/shop-context'
+import WelcomePopup from '@/components/dashboard/WelcomePopup'
 import type { MarketplaceType, Product } from '@/lib/types'
 
 function parseDays(params: Record<string, string> | undefined): number {
@@ -43,17 +45,20 @@ export default async function DashboardPage({ searchParams }: Props) {
   const days        = parseDays(params)
   const marketplace = parseMarketplace(params)
 
-  const [kpis, recentOrders, allProducts, chartData] = await Promise.all([
+  const [kpis, recentOrders, allProducts, chartData, allShops] = await Promise.all([
     getKpis(days, marketplace),
     getOrders(5, marketplace),
     getProducts(marketplace),
     getDailyRevenue(days, marketplace),
+    getUserShops(),
   ])
+  const hasShops = allShops.length > 0
 
   const categoryData = buildCategoryData(allProducts)
 
   return (
     <Suspense>
+      <WelcomePopup hasShops={hasShops} />
       <DashboardClient
         kpis={kpis}
         recentOrders={recentOrders}
