@@ -57,7 +57,7 @@ async function renderStats(token, stats) {
   document.getElementById('status-badge').textContent = '● Ulangan';
 
   if (!stats) {
-    panel.innerHTML = `<div style="padding:20px;text-align:center;color:#64748b;font-size:12px">Ma'lumot yuklanmadi. Internet yoki API tekshiring.</div>`;
+    panel.innerHTML = `<div style="padding:20px;text-align:center;color:#94a3b8;font-size:12px">Ma'lumot yuklanmadi. Internet yoki API tekshiring.</div>`;
     return;
   }
 
