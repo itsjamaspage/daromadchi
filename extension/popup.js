@@ -401,234 +401,6 @@ async function renderSettings(token, settings, tgStatus) {
   };
 }
 
-// ─── TELEGRAM CHANNEL SOFT CTA (shown inside stats panel, not a hard gate) ───
-function maybeShowChannelCta() {
-  chrome.storage.local.get(['channelCtaDismissed', 'daromadchi_connected'], ({ channelCtaDismissed, daromadchi_connected }) => {
-    if (channelCtaDismissed || daromadchi_connected) return;
-    const panel = document.getElementById('panel-stats');
-    if (!panel) return;
-    const cta = document.createElement('div');
-    cta.style.cssText = 'margin:8px 12px;background:#0ea5e915;border:1px solid #0ea5e930;border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:10px';
-    cta.innerHTML = `
-      <span style="font-size:18px">📢</span>
-      <div style="flex:1">
-        <p style="font-size:11.5px;font-weight:600;color:#e2e8f0;margin-bottom:2px">@daromadchi_uz kanalga a'zo bo'ling</p>
-        <a href="https://t.me/daromadchi_uz" target="_blank" style="font-size:10.5px;color:#38bdf8;text-decoration:none">Yangiliklar va maslahatlar →</a>
-      </div>
-      <button id="cta-dismiss" style="background:none;border:none;color:#475569;cursor:pointer;font-size:16px;padding:0">×</button>
-    `;
-    panel.prepend(cta);
-    document.getElementById('cta-dismiss').onclick = () => {
-      cta.remove();
-      chrome.storage.local.set({ channelCtaDismissed: true });
-    };
-  });
-}
-
-// ─── (kept for reference, no longer used as a gate) ──────────────────────────
-function showJoinGate() {
-  document.querySelector('.tabs').style.display = 'none'
-  document.querySelectorAll('.panel').forEach(p => { p.style.display = 'none' })
-  document.getElementById('status-badge').className = 'badge badge-off'
-  document.getElementById('status-badge').textContent = 'Faollanmagan'
-
-  const gate = document.createElement('div')
-  gate.id = 'join-gate'
-  gate.style.cssText = 'padding:24px 18px;text-align:center'
-  gate.innerHTML = `
-    <div style="width:52px;height:52px;background:linear-gradient(135deg,#0ea5e9,#6366f1);border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:24px">📊</div>
-    <p style="font-weight:700;font-size:14px;color:#f1f5f9;margin-bottom:6px">Daromadchi kengaytmasi</p>
-    <p style="color:#64748b;font-size:11.5px;line-height:1.6;margin-bottom:18px">
-      Kengaytma <b style="color:#38bdf8">bepul</b>.<br>
-      Foydalanish uchun Telegram kanalimizga<br>a'zo bo'lish kifoya.
-    </p>
-
-    <div style="background:#1e293b;border-radius:10px;padding:14px;margin-bottom:16px;text-align:left">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
-        <div style="width:28px;height:28px;background:#0ea5e920;border:1px solid #0ea5e940;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">1</div>
-        <div>
-          <p style="font-size:12px;font-weight:600;color:#e2e8f0">Kanalga a'zo bo'ling</p>
-          <p style="font-size:10.5px;color:#64748b">@daromadchi_uz</p>
-        </div>
-      </div>
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
-        <div style="width:28px;height:28px;background:#6366f120;border:1px solid #6366f140;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">2</div>
-        <div>
-          <p style="font-size:12px;font-weight:600;color:#e2e8f0">Botga /activate yuboring</p>
-          <p style="font-size:10.5px;color:#64748b">Aktivatsiya kodi keladi</p>
-        </div>
-      </div>
-      <div style="display:flex;align-items:center;gap:10px">
-        <div style="width:28px;height:28px;background:#22c55e20;border:1px solid #22c55e40;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">3</div>
-        <div>
-          <p style="font-size:12px;font-weight:600;color:#e2e8f0">Kodni kiriting</p>
-          <p style="font-size:10.5px;color:#64748b">Quyidagi maydonga</p>
-        </div>
-      </div>
-    </div>
-
-    <a href="https://t.me/daromadchi_uz" target="_blank"
-      style="display:block;width:100%;padding:10px;background:#0ea5e9;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;margin-bottom:10px">
-      📢 Kanalga o'tish
-    </a>
-
-    <input id="gate-code" type="text" placeholder="Masalan: AB12-CD34" maxlength="9"
-      style="width:100%;padding:10px 12px;background:#1e293b;border:1px solid #334155;border-radius:8px;color:#e2e8f0;font-size:14px;text-align:center;font-family:monospace;letter-spacing:2px;margin-bottom:8px;box-sizing:border-box"/>
-    <button id="gate-verify"
-      style="width:100%;padding:10px;background:#6366f1;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">
-      ✅ Tekshirish
-    </button>
-    <p id="gate-error" style="font-size:11px;color:#f87171;margin-top:8px;min-height:16px"></p>
-  `
-  document.querySelector('body').appendChild(gate)
-
-  // Auto-uppercase and dash formatting
-  document.getElementById('gate-code').addEventListener('input', e => {
-    let v = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '')
-    if (v.length > 4) v = v.slice(0, 4) + '-' + v.slice(4, 8)
-    e.target.value = v
-  })
-
-  document.getElementById('gate-verify').addEventListener('click', async () => {
-    const code = document.getElementById('gate-code').value.trim()
-    const errEl = document.getElementById('gate-error')
-    const btn   = document.getElementById('gate-verify')
-    if (!code) { errEl.textContent = 'Kodni kiriting'; return }
-
-    btn.textContent = '⏳ Tekshirilmoqda...'
-    btn.disabled = true
-    errEl.textContent = ''
-
-    try {
-      const res  = await fetch('https://daromadchi.uz/api/extension/activate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code }),
-      })
-      const data = await res.json()
-      if (data.ok) {
-        await chrome.storage.local.set({ tg_activated: true })
-        gate.remove()
-        document.querySelector('.tabs').style.display = 'flex'
-        document.querySelectorAll('.panel').forEach((p, i) => { if (i === 0) p.style.display = 'block' })
-        loadAll()
-      } else {
-        errEl.textContent = data.error || 'Xato yuz berdi'
-        btn.textContent = '✅ Tekshirish'
-        btn.disabled = false
-      }
-    } catch {
-      errEl.textContent = 'Internet xatosi. Qayta urinib ko\'ring'
-      btn.textContent = '✅ Tekshirish'
-      btn.disabled = false
-    }
-  })
-}
-
-// ─── CHANNEL GATE ────────────────────────────────────────────────────────────
-function showChannelGate(token) {
-  document.querySelector('.tabs').style.display = 'none';
-  document.querySelectorAll('.panel').forEach(p => { p.style.display = 'none'; });
-  document.getElementById('status-badge').className = 'badge badge-off';
-  document.getElementById('status-badge').textContent = 'Kanal kerak';
-
-  let nonce = null;
-  let botUsername = '';
-
-  const gate = document.createElement('div');
-  gate.id = 'channel-gate';
-  gate.style.cssText = 'padding:24px 18px;text-align:center';
-  gate.innerHTML = `
-    <div style="font-size:28px;margin-bottom:10px">📣</div>
-    <p style="color:#e2e8f0;font-size:13px;font-weight:600;margin-bottom:6px">Kanalga a'zo bo'ling</p>
-    <p style="color:#64748b;font-size:11px;line-height:1.5;margin-bottom:16px">
-      Daromadchidan foydalanish uchun Telegram kanalimizga a'zo bo'ling va botdan tasdiqlang
-    </p>
-    <div style="background:#1e293b;border-radius:10px;padding:12px;margin-bottom:14px;text-align:left">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-        <span style="width:22px;height:22px;background:#0ea5e920;border:1px solid #0ea5e940;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0">1</span>
-        <a href="https://t.me/daromadchi_uz" target="_blank" style="color:#38bdf8;font-size:12px;font-weight:600;text-decoration:none">@daromadchi_uz kanalga a'zo bo'ling →</a>
-      </div>
-      <div style="display:flex;align-items:center;gap:10px">
-        <span style="width:22px;height:22px;background:#6366f120;border:1px solid #6366f140;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0">2</span>
-        <a id="bot-link" href="#" target="_blank" style="color:#a78bfa;font-size:12px;font-weight:600;text-decoration:none">Botdan tasdiqlang →</a>
-      </div>
-    </div>
-    <button id="channel-check-btn" style="width:100%;padding:9px;background:#6366f1;border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:600;cursor:pointer">
-      ✅ A'zo bo'ldim — tekshirish
-    </button>
-    <p id="channel-err" style="font-size:10px;color:#ef4444;margin-top:8px;display:none">Hali a'zo bo'lmadingiz yoki bot orqali tasdiqlanmadi.</p>
-  `;
-  document.querySelector('body').appendChild(gate);
-
-  // Fetch bot username + create nonce
-  (async () => {
-    try {
-      const [cfgRes, nonceRes] = await Promise.all([
-        fetch('https://daromadchi.uz/api/ext/config'),
-        fetch('https://daromadchi.uz/api/ext/channel-nonce', {
-          method: 'POST',
-          headers: token ? { 'Authorization': `Bearer ${token}` } : {},
-        }),
-      ]);
-      if (cfgRes.ok) {
-        const cfg = await cfgRes.json();
-        botUsername = cfg.botUsername || '';
-      }
-      if (nonceRes.ok) {
-        const nd = await nonceRes.json();
-        nonce = nd.nonce;
-      }
-    } catch {}
-    // Update bot link
-    const botLink = document.getElementById('bot-link');
-    if (botLink && botUsername && nonce) {
-      botLink.href = `https://t.me/${botUsername}?start=chancheck_${nonce}`;
-      botLink.textContent = `@${botUsername} botni boshlang →`;
-    } else if (botLink) {
-      botLink.textContent = 'Botni ishga tushiring →';
-    }
-  })();
-
-  document.getElementById('channel-check-btn').onclick = async () => {
-    const btn = document.getElementById('channel-check-btn');
-    const err = document.getElementById('channel-err');
-    btn.textContent = '⏳ Tekshirilmoqda...';
-    btn.disabled = true;
-    err.style.display = 'none';
-
-    let verified = false;
-    try {
-      // Try nonce-based verification first (bot deep-link flow)
-      if (nonce) {
-        const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-        const nr = await fetch(`https://daromadchi.uz/api/ext/channel-nonce?nonce=${nonce}`, { headers });
-        const nd = await nr.json();
-        verified = nd.verified === true;
-      }
-      // Fallback: direct channel check (for users who linked Telegram in dashboard)
-      if (!verified) {
-        const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-        const cr = await fetch('https://daromadchi.uz/api/channel-check', { headers });
-        const cd = await cr.json();
-        verified = cd.subscribed === true;
-      }
-    } catch {}
-
-    if (verified) {
-      await chrome.storage.local.set({ channel_subscribed: true });
-      gate.remove();
-      document.querySelector('.tabs').style.display = 'flex';
-      document.querySelectorAll('.panel').forEach((p, i) => { if (i === 0) p.classList.add('active'); });
-      loadAll();
-    } else {
-      err.style.display = 'block';
-      btn.textContent = '✅ A\'zo bo\'ldim — tekshirish';
-      btn.disabled = false;
-    }
-  };
-}
-
 // ─── LOGIN GATE ───────────────────────────────────────────────────────────────
 function showLoginGate() {
   document.querySelector('.tabs').style.display = 'none';
@@ -657,7 +429,7 @@ function showLoginGate() {
 async function loadAll() {
   const data = await chrome.storage.local.get([
     'daromadchi_token', 'daromadchi_connected', 'daromadchi_email', 'daromadchi_plan', 'cachedStats', 'cacheTime',
-    'activeAlerts', 'alertSettings', 'tgStatus', 'channel_subscribed',
+    'activeAlerts', 'alertSettings', 'tgStatus',
     'yandexStats', 'yandexStatsTime', 'yandexConnected', 'yandexCampaignId',
     'uzumDirectStats', 'uzumDirectStatsTime', 'uzumConnected', 'uzumShopName',
     'wbStats', 'wbStatsTime', 'wbConnected', 'wbSellerInfo'
@@ -665,7 +437,7 @@ async function loadAll() {
 
   const {
     daromadchi_token, daromadchi_connected, daromadchi_email, daromadchi_plan = 'free', cachedStats, cacheTime,
-    activeAlerts = [], alertSettings = {}, tgStatus = {}, channel_subscribed,
+    activeAlerts = [], alertSettings = {}, tgStatus = {},
     yandexStats, yandexConnected, yandexCampaignId,
     uzumDirectStats, uzumConnected, uzumShopName,
     wbStats, wbConnected, wbSellerInfo
@@ -675,24 +447,6 @@ async function loadAll() {
   if (!daromadchi_connected && !daromadchi_token) {
     showLoginGate();
     return;
-  }
-
-  // Not subscribed to channel → check with Bearer token, show gate if needed
-  if (!channel_subscribed) {
-    try {
-      const headers = {};
-      if (daromadchi_token) headers['Authorization'] = `Bearer ${daromadchi_token}`;
-      const res = await fetch('https://daromadchi.uz/api/channel-check', { headers });
-      const d = await res.json();
-      if (d.subscribed) {
-        await chrome.storage.local.set({ channel_subscribed: true });
-      } else {
-        showChannelGate(daromadchi_token);
-        return;
-      }
-    } catch {
-      // If check fails (offline), let them through so extension isn't broken offline
-    }
   }
 
   let plan = daromadchi_plan;
@@ -728,7 +482,6 @@ async function loadAll() {
   renderStats(daromadchi_token || (daromadchi_connected ? "connected" : null), stats);
   renderAlerts(activeAlerts, plan);
   renderSettings(daromadchi_token || (daromadchi_connected ? "connected" : null), alertSettings, tgStatus);
-  maybeShowChannelCta();
 
   // Inject marketplace API status at the bottom of the stats panel
   const statsPanel = document.getElementById('panel-stats');
