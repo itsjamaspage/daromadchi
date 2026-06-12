@@ -94,31 +94,64 @@
   }
 
   function parseYmPrice() {
-    const selectors = [
-      '[data-auto="price"]', '[data-auto="snippet-price-current"]',
-      '[data-zone-name="price"]', '[class*="YpcPrice"]', '[class*="ypcPrice"]',
-      '[class*="priceView"]', '[class*="PriceView"]', '[class*="priceBlock"]',
-      '[class*="PriceBlock"]', '[class*="price-value"]', '[class*="priceValue"]',
-      'span[class*="price"]:not([class*="old"]):not([class*="Old"]):not([class*="cross"])',
+    // Helper: extract a clean price from text — returns null if digits look
+    // like a combined current+old price (too many digits)
+    function extractPrice(text) {
+      const raw = text.replace(/[^\d]/g, '');
+      // UZ prices: 4–9 digits (10 000 – 999 999 999 sum). Reject combined strings.
+      if (raw.length < 4 || raw.length > 9) return null;
+      return parseInt(raw, 10);
+    }
+
+    // Strategy 1: data-auto selectors — most specific first
+    const specificSelectors = [
+      '[data-auto="price-value"]',
+      '[data-auto="snippet-price-current"]',
+      // Narrow sub-element inside the price block (avoid old-price siblings)
+      '[data-auto="price"] > span:first-child',
+      '[data-auto="price"] [class*="value"]',
+      '[data-auto="price"] [class*="Value"]',
     ];
-    for (const sel of selectors) {
+    for (const sel of specificSelectors) {
       try {
         const el = document.querySelector(sel);
-        if (el) { const raw=el.innerText.replace(/[^\d]/g,''); if(raw.length>=2&&raw.length<=12) return parseInt(raw); }
-      } catch(_) {}
+        if (!el) continue;
+        const p = extractPrice(el.innerText);
+        if (p) return p;
+      } catch (_) {}
     }
+
+    // Strategy 2: class-based selectors (hashed names, so substring match)
+    const classSelectors = [
+      '[class*="YpcPrice"]', '[class*="ypcPrice"]',
+      '[class*="priceView"]', '[class*="PriceView"]',
+      '[class*="priceBlock"]:not([class*="old"]):not([class*="Old"])',
+      '[class*="PriceBlock"]:not([class*="old"]):not([class*="Old"])',
+      '[class*="price-value"]', '[class*="priceValue"]',
+      'span[class*="price"]:not([class*="old"]):not([class*="Old"]):not([class*="cross"])',
+    ];
+    for (const sel of classSelectors) {
+      try {
+        const el = document.querySelector(sel);
+        if (!el) continue;
+        const p = extractPrice(el.innerText);
+        if (p) return p;
+      } catch (_) {}
+    }
+
+    // Strategy 3: scan leaf-ish elements containing the currency word.
+    // Skip any element whose text has "сум" more than once — those include the old price.
     const currency = IS_UZ ? /сум|so'm/i : /₽|руб/i;
     for (const el of document.querySelectorAll('span,div,p,strong,b')) {
-      if (el.children.length>3) continue;
-      const text=el.innerText||'';
-      if (currency.test(text)) {
-        const raw=text.replace(/[^\d]/g,'');
-        if (raw.length>=2&&raw.length<=12) {
-          const cls=(el.className||'').toLowerCase();
-          if (cls.includes('old')||cls.includes('cross')||cls.includes('strike')||cls.includes('prev')) continue;
-          return parseInt(raw);
-        }
-      }
+      if (el.children.length > 5) continue;
+      const text = el.innerText || '';
+      if (!currency.test(text)) continue;
+      const occurrences = (text.match(/сум|so'm/gi) || []).length;
+      if (occurrences > 1) continue; // has both current + old price
+      const cls = (el.className || '').toLowerCase();
+      if (cls.includes('old') || cls.includes('cross') || cls.includes('strike') || cls.includes('prev')) continue;
+      const p = extractPrice(text);
+      if (p) return p;
     }
     return null;
   }
@@ -194,7 +227,7 @@
     const price = parseYmPrice();
     const title = parseYmTitle();
     if (!price) {
-      if (attempt < 6) setTimeout(()=>{ if(!document.getElementById('drm-ym-ue')) buildYmWidget(attempt+1); }, 800);
+      if (attempt < 10) setTimeout(()=>{ if(!document.getElementById('drm-ym-ue')) buildYmWidget(attempt+1); }, 700);
       return;
     }
 
@@ -363,7 +396,7 @@
   }
 
   let lastUrl=location.href, initTimer=null, widgetClosed=false;
-  function scheduleInit(delay=2500) { clearTimeout(initTimer); initTimer=setTimeout(tryInit,delay); }
+  function scheduleInit(delay=1200) { clearTimeout(initTimer); initTimer=setTimeout(tryInit,delay); }
 
   new MutationObserver(()=>{
     if(location.href!==lastUrl){ lastUrl=location.href; document.getElementById('drm-ym-ue')?.remove(); document.getElementById('drm-ym-toggle')?.remove(); widgetClosed=false; scheduleInit(); }
