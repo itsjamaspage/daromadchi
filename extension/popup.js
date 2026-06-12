@@ -125,13 +125,13 @@ function renderAlerts(alerts, plan) {
   // Free plan: show Telegram upgrade CTA, then local alerts below
   if (plan === 'free') {
     panel.innerHTML = `
-      <div style="padding:20px 16px;text-align:center;border-bottom:1px solid #e2e8f0;margin-bottom:8px">
+      <div style="padding:20px 16px;text-align:center;border-bottom:1px solid #1e293b;margin-bottom:8px">
         <div style="font-size:28px;margin-bottom:10px">📱</div>
-        <p style="font-size:13px;font-weight:600;color:#1e293b;margin-bottom:6px">Telegram ogohlantirishlari</p>
-        <p style="font-size:11px;color:#64748b;line-height:1.5;margin-bottom:14px">
+        <p style="font-size:13px;font-weight:600;color:#f1f5f9;margin-bottom:6px">Telegram ogohlantirishlari</p>
+        <p style="font-size:11px;color:#94a3b8;line-height:1.5;margin-bottom:14px">
           Pro tarifida mavjud.<br>Kam zaxira, savdo pasayishi va boshqa<br>ogohlantirishlar Telegramga yuboriladi.
         </p>
-        <a href="https://daromadchi.uz/pricing" target="_blank" class="btn-login">Pro ga o'tish →</a>
+        <a href="https://daromadchi.uz/pricing" target="_blank" class="btn-login" style="display:block;text-align:center">Pro ga o'tish →</a>
       </div>
     `;
 
@@ -244,7 +244,7 @@ function renderMarketplaceStatus(panel, yandexStats, uzumDirectStats, yandexConn
     panel.insertAdjacentHTML('beforeend', `
       <div class="mkt-empty">
         <span>API ulanishlari sozlanmagan</span>
-        <a href="options.html" target="_blank" class="mkt-cfg-link" style="background:linear-gradient(135deg,#7c3aed,#2563eb);color:#fff;padding:5px 16px;border-radius:7px;font-size:11px;font-weight:600">Sozlash →</a>
+        <a href="options.html" target="_blank" class="mkt-cfg-link" style="background:linear-gradient(135deg,#7c3aed,#2563eb);color:#fff;padding:5px 16px;border-radius:7px;font-size:11px;font-weight:600;display:inline-block;text-align:center">Sozlash →</a>
       </div>`);
   } else {
     panel.insertAdjacentHTML('beforeend', `
@@ -344,6 +344,22 @@ async function renderSettings(token, settings, tgStatus) {
 
       <button class="save-btn" id="save-settings">💾 Saqlash</button>
       <div class="saved-msg" id="saved-msg">✅ Saqlandi!</div>
+
+      <!-- CHANNEL -->
+      <div class="s-section">
+        <div class="s-section-title">📢 Daromadchi kanali</div>
+        <div class="tg-box" style="display:flex;align-items:center;gap:12px">
+          <span style="font-size:22px;flex-shrink:0">📣</span>
+          <div style="flex:1">
+            <p style="font-size:12px;font-weight:600;color:#e2e8f0;margin-bottom:3px">@daromadchi_uz</p>
+            <p style="font-size:10.5px;color:#64748b;line-height:1.4;margin-bottom:8px">Yangiliklar, tahlillar va maslahatlar</p>
+            <a href="https://t.me/daromadchi_uz" target="_blank"
+              style="display:inline-block;background:#0ea5e9;color:#fff;padding:5px 14px;border-radius:7px;font-size:11px;font-weight:600;text-decoration:none;text-align:center">
+              Kanalga o'tish →
+            </a>
+          </div>
+        </div>
+      </div>
     </div>
   `;
 
