@@ -192,7 +192,7 @@
 
   function isYmProductPage() {
     const path = window.location.pathname;
-    return /\/product(--|\/|\d)/i.test(path) || /\/sku\//i.test(path);
+    return /\/product(--|\/|\d)/i.test(path) || /\/sku\//i.test(path) || /\/card\//i.test(path);
   }
 
   function calcYm(price, { costPrice=0, packaging=0, adPct=5, volume=1, fby=true, commPct=undefined }={}) {
