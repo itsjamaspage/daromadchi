@@ -41,7 +41,7 @@
       fby:'FBY', fbs:'FBS', params:'HISOB PARAMETRLARI',
       costLabel: v => `Tannarx (${v?"so'm":'so\'m'})`,
       packLabel: v => `Qadoqlash (${v?"so'm":'so\'m'})`,
-      volLabel:'Hajm (litr)', adLabel:'Reklama %',
+      commLabel:'Komissiya %', volLabel:'Hajm (litr)', adLabel:'Reklama %',
       breakdown:'XARAJATLAR TAQSIMOTI', narx:'Narx', comm:'Komissiya', delivery:'Yetkazib berish',
       returns:'Qaytarishlar (~2%)', acquiring:'Ekvayring (0.5%)', reklama:'Reklama', tax:'Soliq (6%)',
       totalMkt:'Jami Yandex Market', totalCost:'Jami xarajat',
@@ -54,7 +54,7 @@
       fby:'FBY', fbs:'FBS', params:'ПАРАМЕТРЫ РАСЧЁТА',
       costLabel: () => 'Себестоимость (₽)',
       packLabel: () => 'Упаковка (₽)',
-      volLabel:'Объём (л)', adLabel:'Реклама %',
+      commLabel:'Комиссия %', volLabel:'Объём (л)', adLabel:'Реклама %',
       breakdown:'СТРУКТУРА ЗАТРАТ', narx:'Цена', comm:'Комиссия', delivery:'Доставка',
       returns:'Возвраты (~2%)', acquiring:'Эквайринг (0.5%)', reklama:'Реклама', tax:'Налог (6%)',
       totalMkt:'Итого Яндекс Маркет', totalCost:'Всего расходов',
@@ -67,7 +67,7 @@
       fby:'FBY', fbs:'FBS', params:'CALCULATION PARAMS',
       costLabel: () => 'Cost price',
       packLabel: () => 'Packaging',
-      volLabel:'Volume (L)', adLabel:'Ad %',
+      commLabel:'Commission %', volLabel:'Volume (L)', adLabel:'Ad %',
       breakdown:'COST BREAKDOWN', narx:'Price', comm:'Commission', delivery:'Delivery',
       returns:'Returns (~2%)', acquiring:'Acquiring (0.5%)', reklama:'Advertising', tax:'Tax (6%)',
       totalMkt:'Total YM fees', totalCost:'Total costs',
@@ -151,8 +151,13 @@
     return 10;
   }
 
-  function calcYm(price, { costPrice=0, packaging=0, adPct=5, volume=1, fby=true }={}) {
-    const commPct    = getYmCommission();
+  function isYmProductPage() {
+    const path = window.location.pathname;
+    return /\/product(--|\/|\d)/i.test(path) || /\/sku\//i.test(path);
+  }
+
+  function calcYm(price, { costPrice=0, packaging=0, adPct=5, volume=1, fby=true, commPct=undefined }={}) {
+    if(commPct===undefined) commPct=getYmCommission();
     const commission = Math.round(price * commPct / 100);
     const delivery   = fby ? Math.round(volume * 15000) : Math.round(volume * 10000);
     const returns    = Math.round(price * 0.02);
@@ -179,6 +184,7 @@
   }
 
   function buildYmWidget(attempt=0) {
+    if (!isYmProductPage()) return;
     const price = parseYmPrice();
     const title = parseYmTitle();
     if (!price) {
@@ -186,7 +192,7 @@
       return;
     }
 
-    let fby=true, costPrice=0, packaging=0, adPct=5, volume=1;
+    let fby=true, costPrice=0, packaging=0, adPct=5, volume=1, commPct=null;
 
     const wrap = document.createElement('div');
     wrap.id = 'drm-ym-ue';
@@ -205,6 +211,7 @@
       if (data.ueSettings) { costPrice=data.ueSettings.costPrice||0; packaging=data.ueSettings.packaging||0; adPct=data.ueSettings.adPct||5; volume=data.ueSettings.volume||1; fby=data.ueSettings.fby!==undefined?data.ueSettings.fby:true; }
       if (data.drmLang) langKey=data.drmLang;
       if (data.drmTheme) theme=data.drmTheme;
+      commPct=getYmCommission();
       render();
     });
 
@@ -214,6 +221,7 @@
         packaging: parseFloat(wrap.querySelector('#drm-ym-pack')?.value)||0,
         adPct:     parseFloat(wrap.querySelector('#drm-ym-ad')?.value)||5,
         volume:    parseFloat(wrap.querySelector('#drm-ym-vol')?.value)||1,
+        commPct:   parseFloat(wrap.querySelector('#drm-ym-comm')?.value)||commPct||getYmCommission(),
       };
     }
 
@@ -221,7 +229,7 @@
       const eco=calcYm(price,{...gi(),fby}); const c=pColor(eco.margin);
       const S=(id,v)=>{const e=wrap.querySelector('#drm-ym-v-'+id);if(e)e.textContent=v;};
       const C=(id,col)=>{const e=wrap.querySelector('#drm-ym-v-'+id);if(e)e.style.color=col;};
-      S('comm',`−${fp(eco.commission)}`); S('delivery',`−${fp(eco.delivery)}`);
+      S('comm',`−${fp(eco.commission)}`); S('comm-pct',String(eco.commPct)); S('delivery',`−${fp(eco.delivery)}`);
       S('returns',`−${fp(eco.returns)}`); S('acq',`−${fp(eco.acquiring)}`);
       S('ad',`−${fp(eco.adSpend)}`); S('tax',`−${fp(eco.tax)}`);
       S('mkt',`−${fp(eco.mktTotal)}`); S('total',`−${fp(eco.jamiTotal)}`);
@@ -233,7 +241,8 @@
 
     function render() {
       const t=T(); const l=L();
-      const eco=calcYm(price,{costPrice,packaging,adPct,volume,fby});
+      const _commPct=commPct!==null?commPct:getYmCommission();
+      const eco=calcYm(price,{costPrice,packaging,adPct,volume,fby,commPct:_commPct});
       const color=pColor(eco.margin);
       const barW=Math.max(0,Math.min(100,eco.margin));
 
@@ -271,6 +280,7 @@
             <div style="display:flex;flex-direction:column;gap:7px">
               <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:${t.muted}">${l.costLabel(IS_UZ)}</span>${inp('drm-ym-cost',costPrice)}</div>
               <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:${t.muted}">${l.packLabel(IS_UZ)}</span>${inp('drm-ym-pack',packaging)}</div>
+              <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:${t.muted}">${l.commLabel}</span>${inp('drm-ym-comm',_commPct,'10','0.5')}</div>
               <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:${t.muted}">${l.adLabel}</span>${inp('drm-ym-ad',adPct,'5','0.5')}</div>
               <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:${t.muted}">${l.volLabel}</span>${inp('drm-ym-vol',volume,'1','0.1')}</div>
             </div>
@@ -280,7 +290,7 @@
             <div style="font-size:10px;font-weight:600;color:${t.muted};letter-spacing:.7px;margin-bottom:8px">${l.breakdown}</div>
             <div style="display:flex;flex-direction:column;gap:4px">
               <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:${t.muted}">${l.narx}</span><span style="color:${t.text};font-weight:600">${fp(price)}</span></div>
-              ${row(l.comm+` (${eco.commPct}%)`,'comm',`−${fp(eco.commission)}`)}
+              ${row(`${l.comm} (<span id="drm-ym-v-comm-pct">${_commPct}</span>%)`,'comm',`−${fp(eco.commission)}`)}
               ${row(l.delivery+` (${fby?'FBY':'FBS'})`,'delivery',`−${fp(eco.delivery)}`,` <span style="color:${t.amber};font-size:10px">${l.taxminiy}</span>`)}
               ${row(l.returns,'returns',`−${fp(eco.returns)}`,` <span style="color:${t.amber};font-size:10px">${l.taxminiy}</span>`)}
               ${row(l.acquiring,'acq',`−${fp(eco.acquiring)}`)}
@@ -311,14 +321,14 @@
       wrap.querySelector('#drm-ym-fby').onclick     = () => { fby=true; render(); };
       wrap.querySelector('#drm-ym-fbs').onclick     = () => { fby=false; render(); };
       ['uz','ru','en'].forEach(k => { wrap.querySelector(`#drm-ym-lang-${k}`)?.addEventListener('click',()=>{ langKey=k; chrome.storage.local.set({drmLang:k}); render(); }); });
-      ['#drm-ym-cost','#drm-ym-pack','#drm-ym-ad','#drm-ym-vol'].forEach(id => { wrap.querySelector(id)?.addEventListener('input',liveRecalc); });
+      ['#drm-ym-cost','#drm-ym-pack','#drm-ym-comm','#drm-ym-ad','#drm-ym-vol'].forEach(id => { wrap.querySelector(id)?.addEventListener('input',liveRecalc); });
 
       wrap.querySelector('#drm-ym-ue-btn')?.addEventListener('click', async () => {
         const vals=gi(); const eco2=calcYm(price,{...vals,fby});
         await chrome.storage.local.set({ueSettings:{...vals,fby}});
         const params=new URLSearchParams({
           source:'yandex_market', title:title||'', url:location.href,
-          price:String(price||''), commPct:'15',
+          price:String(price||''), commPct:String(eco2.commPct||''),
           commission:String(eco2.commission||''), delivery:String(eco2.delivery||''),
           acquiring:String(eco2.acquiring||''), adSpend:String(eco2.adSpend||''),
           tax:String(eco2.tax||''), packaging:String(eco2.packaging||''),

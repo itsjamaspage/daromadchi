@@ -43,7 +43,7 @@
     const LANGS = {
       uz: {
         fby:'FBY', fbs:'FBS', params:'HISOB PARAMETRLARI',
-        costLabel:"Tannarx (so'm)", packLabel:"Qadoqlash (so'm)", volLabel:'Hajm (litr)', adLabel:'Reklama %',
+        costLabel:"Tannarx (so'm)", packLabel:"Qadoqlash (so'm)", commLabel:'Komissiya %', volLabel:'Hajm (litr)', adLabel:'Reklama %',
         breakdown:'XARAJATLAR TAQSIMOTI', narx:'Narx', comm:'Komissiya', delivery:'Yetkazib berish',
         returns:'Qaytarishlar (~3%)', acquiring:'Ekvayring (1.5%)', reklama:'Reklama', tax:'Soliq (6%)',
         totalMkt:'Jami Wildberries', totalCost:'Jami xarajat',
@@ -55,7 +55,7 @@
       },
       ru: {
         fby:'FBY', fbs:'FBS', params:'ПАРАМЕТРЫ РАСЧЁТА',
-        costLabel:'Себестоимость (сум)', packLabel:'Упаковка (сум)', volLabel:'Объём (л)', adLabel:'Реклама %',
+        costLabel:'Себестоимость (сум)', packLabel:'Упаковка (сум)', commLabel:'Комиссия %', volLabel:'Объём (л)', adLabel:'Реклама %',
         breakdown:'СТРУКТУРА ЗАТРАТ', narx:'Цена', comm:'Комиссия', delivery:'Доставка',
         returns:'Возвраты (~3%)', acquiring:'Эквайринг (1.5%)', reklama:'Реклама', tax:'Налог (6%)',
         totalMkt:'Итого WB', totalCost:'Всего расходов',
@@ -67,7 +67,7 @@
       },
       en: {
         fby:'FBY', fbs:'FBS', params:'CALCULATION PARAMS',
-        costLabel:'Cost price (som)', packLabel:'Packaging (som)', volLabel:'Volume (L)', adLabel:'Ad %',
+        costLabel:'Cost price (som)', packLabel:'Packaging (som)', commLabel:'Commission %', volLabel:'Volume (L)', adLabel:'Ad %',
         breakdown:'COST BREAKDOWN', narx:'Price', comm:'Commission', delivery:'Delivery',
         returns:'Returns (~3%)', acquiring:'Acquiring (1.5%)', reklama:'Advertising', tax:'Tax (6%)',
         totalMkt:'Total WB fees', totalCost:'Total costs',
@@ -85,24 +85,37 @@
     };
 
     // Exact rates from official WB commission table (WB warehouse / FBY model)
+    // Exact rates from official WB commission table (docs/marketplace-tariffs.md)
     const COMM_MAP = [
-      [/smartfon|iphone|samsung|xiaomi|redmi/i,               3   ],
-      [/planshet|tablet/i,                                     5   ],
-      [/noutbuk|laptop|macbook/i,                              5   ],
-      [/kompyuter|desktop|sistemny/i,                          9.5 ],
-      [/aqlli.soat|smart.?watch|fitnes.?bras|bracelet/i,       14.5],
-      [/kiyim|libos|futbolka|ko.ylak|platye|zhilyet|bluzka/i,  23  ],
-      [/ichki.kiyim|byole|korset|underwear/i,                  23  ],
-      [/poyabzal|botinok|sandal|krossovk|tufli/i,              18  ],
-      [/sport.?kiyim|sportivn|sportswear/i,                    23  ],
-      [/gozellik|kosmetika|parfyum|beauty|uhod|volos/i,        18  ],
-      [/maishiy.tex|bytovaya|xolodilnik|refrig/i,              14  ],
-      [/sport|trenaj|fitnes/i,                                 18  ],
-      [/oziq|ovqat|produkty/i,                                 11  ],
-      [/uy.tekst|interyer|interior|mebel|dekor/i,              19  ],
-      [/oyinchoq|toy|igrushk/i,                                18  ],
-      [/avto|zapchast|mashina/i,                                8  ],
-      [/bola|baby|detsk/i,                                      8  ],
+      // 3% — Smartfonlar
+      [/смартфон|smartfon|iphone|samsung.*phone|xiaomi.*phone|редми|redmi.*phone/i,  3   ],
+      // 5% — Planshetlar / Noutbuklar
+      [/планшет|planshet|tablet/i,                                                    5   ],
+      [/ноутбук|noutbuk|laptop|macbook/i,                                             5   ],
+      // 8% — Avtomobil / Bolalar
+      [/автозапчаст|автомобильн|zapchast.*avto|avto.*zapchast/i,                      8   ],
+      [/детская одежда|детские товар|детск.*кийим|bolalar.*kiyim|kiyim.*bolalar/i,    8   ],
+      // 9.5% — Kompyuterlar
+      [/компьютер|sistemny|kompyuter|desktop/i,                                       9.5 ],
+      // 11% — Oziq-ovqat
+      [/продукт|питание|еда|oziq|ovqat/i,                                            11  ],
+      // 14% — Maishiy texnika
+      [/бытовая техника|крупная бытовая|maishiy.*tex|холодильник|стиральн|посудомо/i, 14  ],
+      // 14.5% — Aqlli soat va fitness
+      [/смарт-часы|умные часы|фитнес-браслет|smart.?watch|fitnes.?bras/i,            14.5],
+      // 18% — Poyabzal / Go'zallik / Sport / O'yinchoqlar
+      [/обувь|ботинок|кроссовк|туфли|сапог|poyabzal|botinok/i,                      18  ],
+      [/красота|косметик|парфюм|уход за|макияж|gozellik|kosmetika|parfyum|beauty/i,  18  ],
+      [/спортивный инвент|спорттовар|тренажер|fitnes(?!-бр)|sport(?! kiyim|ivn)/i,   18  ],
+      [/игрушк|oyinchoq/i,                                                            18  ],
+      // 19% — Uy tekstili
+      [/текстиль|постельн|полотенц|uy.tekst|интерьер|dekor/i,                        19  ],
+      // 20% — Elektronika aksessuarlari (must precede generic elektronika)
+      [/аксессуар.*электрон|электрон.*аксессуар|aksessu.*elektron/i,                 20  ],
+      // 23% — Kiyim (ichki, sport, generic — specific first)
+      [/нижнее бельё|бюстгальт|трусы|ichki.kiyim|underwear/i,                       23  ],
+      [/спортивная одежда|sport.?kiyim/i,                                             23  ],
+      [/одежда|рубашка|платье|футболка|kiyim|libos/i,                                23  ],
     ];
 
     let langKey = 'uz', theme = 'dark';
@@ -111,9 +124,15 @@
     function fp(n) { if (n===null||n===undefined) return '—'; return L().currency(n); }
 
     function getCommission() {
-      const bc = document.querySelector('[class*="readcrumb"],[class*="ategory"],[class*="Breadcrumb"]');
-      if (bc) { const t = bc.innerText; for (const [re, pct] of COMM_MAP) if (re.test(t)) return pct; }
-      return 15;
+      const parts = [];
+      const bcEl = document.querySelector('[class*="readcrumb"],[class*="ategory"],[class*="Breadcrumb"]');
+      if (bcEl) parts.push(bcEl.innerText);
+      const h1El = document.querySelector('h1');
+      if (h1El) parts.push(h1El.innerText);
+      if (document.title) parts.push(document.title);
+      const text = parts.join(' ');
+      for (const [re, pct] of COMM_MAP) if (re.test(text)) return pct;
+      return 17; // Boshqa: 17%
     }
 
     function parseWbPrice() {
@@ -172,8 +191,8 @@
     }
     function getArticle() { const m=location.pathname.match(/\/catalog\/(\d+)/); return m?m[1]:null; }
 
-    function calcWb(price, { costPrice=0, packaging=0, adPct=5, volume=1, fby=true }={}) {
-      const commPct    = getCommission();
+    function calcWb(price, { costPrice=0, packaging=0, adPct=5, volume=1, fby=true, commPct=undefined }={}) {
+      if(commPct===undefined) commPct=getCommission();
       const commission = Math.round(price * commPct / 100);
       const delivery   = fby ? Math.round(volume * 20000) : Math.round(volume * 10000);
       const returns    = Math.round(price * 0.03);
@@ -235,7 +254,7 @@
       const title   = parseWbTitle();
       const article = getArticle();
 
-      let fby=true, costPrice=0, packaging=0, adPct=5, volume=1;
+      let fby=true, costPrice=0, packaging=0, adPct=5, volume=1, commPct=null;
 
       const wrap = document.createElement('div');
       wrap.id = 'drm-wb-ue';
@@ -254,6 +273,7 @@
         if (data.ueSettings) { costPrice=data.ueSettings.costPrice||0; packaging=data.ueSettings.packaging||0; adPct=data.ueSettings.adPct||5; volume=data.ueSettings.volume||1; fby=data.ueSettings.fby!==undefined?data.ueSettings.fby:true; }
         if (data.drmLang) langKey=data.drmLang;
         if (data.drmTheme) theme=data.drmTheme;
+        commPct=getCommission();
         render();
       });
 
@@ -263,6 +283,7 @@
           packaging: parseFloat(wrap.querySelector('#drm-wb-pack')?.value)||0,
           adPct:     parseFloat(wrap.querySelector('#drm-wb-ad')?.value)||5,
           volume:    parseFloat(wrap.querySelector('#drm-wb-vol')?.value)||1,
+          commPct:   parseFloat(wrap.querySelector('#drm-wb-comm')?.value)||commPct||getCommission(),
         };
       }
 
@@ -271,7 +292,7 @@
         const eco=calcWb(price,{...gi(),fby}); const c=pColor(eco.margin);
         const S=(id,v)=>{const e=wrap.querySelector('#drm-wb-v-'+id);if(e)e.textContent=v;};
         const C=(id,col)=>{const e=wrap.querySelector('#drm-wb-v-'+id);if(e)e.style.color=col;};
-        S('comm',`−${fp(eco.commission)}`); S('delivery',`−${fp(eco.delivery)}`);
+        S('comm',`−${fp(eco.commission)}`); S('comm-pct',String(eco.commPct)); S('delivery',`−${fp(eco.delivery)}`);
         S('returns',`−${fp(eco.returns)}`); S('acq',`−${fp(eco.acquiring)}`);
         S('ad',`−${fp(eco.adSpend)}`); S('tax',`−${fp(eco.tax)}`);
         S('mkt',`−${fp(eco.mktTotal)}`); S('total',`−${fp(eco.jamiTotal)}`);
@@ -283,10 +304,10 @@
 
       function render() {
         const t=T(); const l=L();
-        const eco=price?calcWb(price,{costPrice,packaging,adPct,volume,fby}):null;
+        const _commPct=commPct!==null?commPct:getCommission();
+        const eco=price?calcWb(price,{costPrice,packaging,adPct,volume,fby,commPct:_commPct}):null;
         const color=eco?pColor(eco.margin):t.muted;
         const barW=eco?Math.max(0,Math.min(100,eco.margin)):0;
-        const commPct=getCommission();
 
         wrap.style.background=t.bg;
         wrap.style.border=`1px solid ${t.border}`;
@@ -324,6 +345,7 @@
               <div style="display:flex;flex-direction:column;gap:7px">
                 <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:${t.muted}">${l.costLabel}</span>${inp('drm-wb-cost',costPrice)}</div>
                 <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:${t.muted}">${l.packLabel}</span>${inp('drm-wb-pack',packaging)}</div>
+                <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:${t.muted}">${l.commLabel}</span>${inp('drm-wb-comm',_commPct,'17','0.5')}</div>
                 <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:${t.muted}">${l.adLabel}</span>${inp('drm-wb-ad',adPct,'5','0.5')}</div>
                 <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:${t.muted}">${l.volLabel}</span>${inp('drm-wb-vol',volume,'1','0.1')}</div>
               </div>
@@ -334,7 +356,7 @@
               <div style="font-size:10px;font-weight:600;color:${t.muted};letter-spacing:.7px;margin-bottom:8px">${l.breakdown}</div>
               <div style="display:flex;flex-direction:column;gap:4px">
                 <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:${t.muted}">${l.narx}</span><span style="color:${t.text};font-weight:600">${fp(price)}</span></div>
-                ${row(l.comm+` (${commPct}%)`,'comm',`−${fp(eco.commission)}`)}
+                ${row(`${l.comm} (<span id="drm-wb-v-comm-pct">${_commPct}</span>%)`,'comm',`−${fp(eco.commission)}`)}
                 ${row(l.delivery+` (${fby?'FBY':'FBS'})`,'delivery',`−${fp(eco.delivery)}`,` <span style="color:${t.amber};font-size:10px">${l.taxminiy}</span>`)}
                 ${row(l.returns,'returns',`−${fp(eco.returns)}`,` <span style="color:${t.amber};font-size:10px">${l.taxminiy}</span>`)}
                 ${row(l.acquiring,'acq',`−${fp(eco.acquiring)}`)}
@@ -366,7 +388,7 @@
         wrap.querySelector('#drm-wb-fby').onclick     = () => { fby=true; render(); };
         wrap.querySelector('#drm-wb-fbs').onclick     = () => { fby=false; render(); };
         ['uz','ru','en'].forEach(k => { wrap.querySelector(`#drm-wb-lang-${k}`)?.addEventListener('click',()=>{ langKey=k; chrome.storage.local.set({drmLang:k}); render(); }); });
-        ['#drm-wb-cost','#drm-wb-pack','#drm-wb-ad','#drm-wb-vol'].forEach(id => { wrap.querySelector(id)?.addEventListener('input',liveRecalc); });
+        ['#drm-wb-cost','#drm-wb-pack','#drm-wb-comm','#drm-wb-ad','#drm-wb-vol'].forEach(id => { wrap.querySelector(id)?.addEventListener('input',liveRecalc); });
 
         wrap.querySelector('#drm-wb-ue-btn')?.addEventListener('click', async () => {
           const vals=gi(); const eco2=price?calcWb(price,{...vals,fby}):null;

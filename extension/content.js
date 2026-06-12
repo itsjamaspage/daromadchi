@@ -59,7 +59,7 @@
   const LANGS = {
     uz: {
       fbo:'FBO', fbs:'FBS', params:'HISOB PARAMETRLARI',
-      costLabel:"Tannarx (so'm)", packLabel:"Qadoqlash (so'm)", adLabel:'Reklama %',
+      costLabel:"Tannarx (so'm)", packLabel:"Qadoqlash (so'm)", commLabel:'Komissiya %', adLabel:'Reklama %',
       volLabel:'Hajm (litr)',
       breakdown:'XARAJATLAR TAQSIMOTI', narx:'Narx', comm:'Komissiya', delivery:'Yetkazib berish',
       returns:'Qaytarishlar (~2%)', acquiring:'Ekvayring (1.5%)',
@@ -72,7 +72,7 @@
     },
     ru: {
       fbo:'FBO', fbs:'FBS', params:'ПАРАМЕТРЫ РАСЧЁТА',
-      costLabel:'Себестоимость (сум)', packLabel:'Упаковка (сум)', adLabel:'Реклама %',
+      costLabel:'Себестоимость (сум)', packLabel:'Упаковка (сум)', commLabel:'Комиссия %', adLabel:'Реклама %',
       volLabel:'Объём (л)',
       breakdown:'СТРУКТУРА ЗАТРАТ', narx:'Цена', comm:'Комиссия', delivery:'Доставка',
       returns:'Возвраты (~2%)', acquiring:'Эквайринг (1.5%)',
@@ -85,7 +85,7 @@
     },
     en: {
       fbo:'FBO', fbs:'FBS', params:'CALCULATION PARAMS',
-      costLabel:'Cost price (som)', packLabel:'Packaging (som)', adLabel:'Ad %',
+      costLabel:'Cost price (som)', packLabel:'Packaging (som)', commLabel:'Commission %', adLabel:'Ad %',
       volLabel:'Volume (L)',
       breakdown:'COST BREAKDOWN', narx:'Price', comm:'Commission', delivery:'Delivery',
       returns:'Returns (~2%)', acquiring:'Acquiring (1.5%)',
@@ -98,14 +98,29 @@
     },
   };
 
+  // Uzum Market official category commissions (docs/marketplace-tariffs.md)
   const COMM_MAP = [
-    [/kozmetika|parfyum|gozellik|beauty/i, 12],
-    [/elektronika|telefon|kompyuter/i, 10],
-    [/oziq|ovqat/i, 8],
-    [/kiyim|ayollar|erkaklar|bolalar/i, 13],
-    [/uy|maishiy|mebel/i, 14],
-    [/sport/i, 13],
-    [/avto/i, 11],
+    // 5% — Telefon va gadjetlar / Kompyuter va noutbuklar
+    [/telefon|gadjet|smartfon|iphone|samsung|xiaomi|redmi|kompyuter|noutbuk|laptop|notebook/i, 5],
+    // 6% — Elektronika / O'yinchoqlar
+    [/o.yinchoq|oyinchoq|игрушк/i, 6],
+    [/elektronika|электроника/i, 6],
+    // 7% — Poyabzal
+    [/poyabzal|botinok|sandal|krossovk|обувь/i, 7],
+    // 9% — Kiyim (bolalar) — must be before generic kiyim
+    [/kiyim.*bolalar|bolalar.*kiyim|детская одежда/i, 9],
+    // 9% — Sport va turizm
+    [/sport|turizm|спорт/i, 9],
+    // 8% — Kiyim (erkaklar / ayollar)
+    [/kiyim|libos|одежда|платье|рубашка|футболка/i, 8],
+    // 10% — Go'zallik / Maishiy texnika / Oziq-ovqat
+    [/gozellik|gozallik|kosmetika|parfyum|parvarish|красота|косметик|парфюм|уход/i, 10],
+    [/maishiy.*texnika|maishiy.*tex|бытовая техника|холодильник/i, 10],
+    [/oziq|ovqat|продукт|питание/i, 10],
+    // 11% — Uy va bog'
+    [/uy.*bog|oshxona|mebel|uy.*jihozlar|дом.*сад|мебел|кухн/i, 11],
+    // 12% — Avtomobil tovarlari
+    [/avto|mashina|zapchast|автотовар|запчаст/i, 12],
   ];
 
   const THEME = {
@@ -118,9 +133,15 @@
   function T() { return THEME[theme]; }
 
   function getCommission() {
-    const bc = document.querySelector('[class*="readcrumb"],[class*="ategory"],[class*="Breadcrumb"]');
-    if (bc) { const t=bc.innerText; for (const [re,pct] of COMM_MAP) if (re.test(t)) return pct; }
-    return 15;
+    const parts = [];
+    const bcEl = document.querySelector('[class*="readcrumb"],[class*="ategory"],[class*="Breadcrumb"]');
+    if (bcEl) parts.push(bcEl.innerText);
+    const h1El = document.querySelector('h1');
+    if (h1El) parts.push(h1El.innerText);
+    if (document.title) parts.push(document.title);
+    const text = parts.join(' ');
+    for (const [re, pct] of COMM_MAP) if (re.test(text)) return pct;
+    return 10; // Boshqa toifalar: 10%
   }
 
   function parsePrice() {
@@ -173,8 +194,8 @@
   function getProductId() { const m=window.location.pathname.match(/-(\d{5,})/); return m?m[1]:null; }
   function fp(n) { if(n===null||n===undefined) return '—'; return Math.round(n).toLocaleString('uz-UZ')+" so'm"; }
 
-  function calcUzum(price,{costPrice=0,packaging=0,adPct=5,fbo=true,volume=1}={}) {
-    const commPct    = getCommission();
+  function calcUzum(price,{costPrice=0,packaging=0,adPct=5,fbo=true,volume=1,commPct=undefined}={}) {
+    if(commPct===undefined) commPct=getCommission();
     const commission = Math.round(price*commPct/100);
     const delivery   = fbo ? Math.min(50000, volume<=1 ? 5250 : 5250 + (Math.ceil(volume)-1)*250) : 0;
     const returns    = Math.round(price*0.02);
@@ -215,7 +236,7 @@
       if (attempt < 6) setTimeout(()=>{ if(!document.getElementById('drm-widget')) buildWidget(attempt+1); }, 800);
       return;
     }
-    let fbo=true, costPrice=0, packaging=0, adPct=5, volume=1;
+    let fbo=true, costPrice=0, packaging=0, adPct=5, volume=1, commPct=null;
     const title=parseTitle(), productId=getProductId();
 
     const wrap=document.createElement('div');
@@ -235,6 +256,7 @@
       if(data.ueSettings){costPrice=data.ueSettings.costPrice||0;packaging=data.ueSettings.packaging||0;adPct=data.ueSettings.adPct||5;fbo=data.ueSettings.fbo!==undefined?data.ueSettings.fbo:true;volume=data.ueSettings.volume||1;}
       if(data.drmLang)langKey=data.drmLang;
       if(data.drmTheme)theme=data.drmTheme;
+      commPct=getCommission();
       render();
     });
 
@@ -244,6 +266,7 @@
         packaging:parseFloat(wrap.querySelector('#drm-inp-pack')?.value)||0,
         adPct:parseFloat(wrap.querySelector('#drm-inp-ad')?.value)||5,
         volume:parseFloat(wrap.querySelector('#drm-cost-vol')?.value)||1,
+        commPct:parseFloat(wrap.querySelector('#drm-inp-comm')?.value)||commPct||getCommission(),
       };
     }
 
@@ -252,7 +275,7 @@
       const eco=calcUzum(price,{...gi(),fbo});const c=pColor(eco.margin);
       const S=(id,v)=>{const e=wrap.querySelector('#drm-v-'+id);if(e)e.textContent=v;};
       const C=(id,col)=>{const e=wrap.querySelector('#drm-v-'+id);if(e)e.style.color=col;};
-      S('comm',`−${fp(eco.commission)}`);S('delivery',`−${fp(eco.delivery)}`);
+      S('comm',`−${fp(eco.commission)}`);S('comm-pct',String(eco.commPct));S('delivery',`−${fp(eco.delivery)}`);
       S('returns',`−${fp(eco.returns)}`);S('acq',`−${fp(eco.acquiring)}`);
       S('ad',`−${fp(eco.adSpend)}`);S('tax',`−${fp(eco.tax)}`);
       S('mkt',`−${fp(eco.mktTotal)}`);S('total',`−${fp(eco.jamiTotal)}`);
@@ -273,10 +296,10 @@
 
     function render(){
       const price=parsePrice();const t=T();const l=L();
-      const eco=price?calcUzum(price,{costPrice,packaging,adPct,fbo}):null;
+      const _commPct=commPct!==null?commPct:getCommission();
+      const eco=price?calcUzum(price,{costPrice,packaging,adPct,fbo,volume,commPct:_commPct}):null;
       const color=eco?pColor(eco.margin):t.muted;
       const barW=eco?Math.max(0,Math.min(100,eco.margin)):0;
-      const commPct=getCommission();
 
       wrap.style.background=t.bg;
       wrap.style.border=`1px solid ${t.border}`;
@@ -312,6 +335,7 @@
             <div style="display:flex;flex-direction:column;gap:7px">
               <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:${t.muted}">${l.costLabel}</span>${inp('drm-inp-cost',costPrice)}</div>
               <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:${t.muted}">${l.packLabel}</span>${inp('drm-inp-pack',packaging)}</div>
+              <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:${t.muted}">${l.commLabel}</span>${inp('drm-inp-comm',_commPct,'10','0.5')}</div>
               <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:${t.muted}">${l.adLabel}</span>${inp('drm-inp-ad',adPct,'5','0.5')}</div>
               <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:${t.muted}">${l.volLabel}</span>${inp('drm-cost-vol',volume,'1','0.1')}</div>
             </div>
@@ -322,7 +346,7 @@
             <div style="font-size:10px;font-weight:600;color:${t.muted};letter-spacing:.7px;margin-bottom:8px">${l.breakdown}</div>
             <div style="display:flex;flex-direction:column;gap:4px">
               <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:${t.muted}">${l.narx}</span><span style="color:${t.text};font-weight:600">${fp(price)}</span></div>
-              ${row(l.comm+` (${commPct}%)`,'comm',`−${fp(eco.commission)}`)}
+              ${row(`${l.comm} (<span id="drm-v-comm-pct">${_commPct}</span>%)`,'comm',`−${fp(eco.commission)}`)}
               ${row(l.delivery,'delivery',`−${fp(eco.delivery)}`,` <span style="color:${t.amber};font-size:10px">${l.taxminiy}</span>`)}
               ${row(l.returns,'returns',`−${fp(eco.returns)}`,` <span style="color:${t.amber};font-size:10px">${l.taxminiy}</span>`)}
               ${row(l.acquiring,'acq',`−${fp(eco.acquiring)}`)}
@@ -359,7 +383,7 @@
       wrap.querySelector('#drm-fbo').onclick=()=>{fbo=true;render();};
       wrap.querySelector('#drm-fbs').onclick=()=>{fbo=false;render();};
       ['uz','ru','en'].forEach(k=>{wrap.querySelector(`#drm-lang-${k}`)?.addEventListener('click',()=>{langKey=k;chrome.storage.local.set({drmLang:k});render();});});
-      ['#drm-inp-cost','#drm-inp-pack','#drm-inp-ad','#drm-cost-vol'].forEach(id=>{wrap.querySelector(id)?.addEventListener('input',liveRecalc);});
+      ['#drm-inp-cost','#drm-inp-pack','#drm-inp-comm','#drm-inp-ad','#drm-cost-vol'].forEach(id=>{wrap.querySelector(id)?.addEventListener('input',liveRecalc);});
 
       wrap.querySelector('#drm-ue')?.addEventListener('click',async()=>{
         const vals=gi();const price2=parsePrice();
