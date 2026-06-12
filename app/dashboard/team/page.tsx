@@ -66,8 +66,8 @@ function InviteModal({ onClose, d }: { onClose: () => void; d: T }) {
       await inviteTeamMember(email, role)
       setSuccess(true)
       setTimeout(onClose, 1500)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error sending invite')
+    } catch {
+      setError(d.teamInviteError)
     } finally {
       setLoading(false)
     }
@@ -140,7 +140,7 @@ function InviteModal({ onClose, d }: { onClose: () => void; d: T }) {
                       : 'border-[var(--border2)]'
                   }`} />
                   <div>
-                    <p className={`text-xs font-semibold ${role === opt.value ? 'text-violet-700 dark:text-violet-300' : 'text-[var(--text-dim)]'}`}>
+                    <p className={`text-xs font-semibold ${role === opt.value ? 'text-[var(--text-base)]' : 'text-[var(--text-dim)]'}`}>
                       {opt.label}
                     </p>
                     <p className="text-[11px] text-[var(--text-muted)] mt-0.5">{opt.desc}</p>
