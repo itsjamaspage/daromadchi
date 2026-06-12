@@ -167,7 +167,14 @@ export default function DashboardClient({ kpis, recentOrders, allProducts, chart
       )}
 
       {/* Empty state */}
-      {isEmpty && (
+      {isEmpty && (() => {
+        const mpLinks: Record<string, { url: string; label: string }> = {
+          uzum:          { url: 'https://seller.uzum.uz',         label: 'seller.uzum.uz'         },
+          yandex_market: { url: 'https://partner.market.yandex.ru', label: 'partner.market.yandex.ru' },
+          wildberries:   { url: 'https://seller.wildberries.ru',  label: 'seller.wildberries.ru'  },
+        }
+        const mpLink = mpLinks[marketplace ?? ''] ?? mpLinks.uzum
+        return (
         <div className="bg-[var(--bg-card2)] border border-dashed border-violet-500/30 rounded-2xl p-10 text-center">
           <div className="w-14 h-14 rounded-2xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center mx-auto mb-4">
             <RefreshCw className="w-7 h-7 text-violet-400" />
@@ -179,13 +186,14 @@ export default function DashboardClient({ kpis, recentOrders, allProducts, chart
               className="inline-flex items-center gap-2 btn-primary text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors shadow-lg shadow-violet-500/20">
               <Settings className="w-4 h-4" /> {d.goSettings}
             </Link>
-            <Link href="https://seller.uzum.uz" target="_blank" rel="noopener noreferrer"
+            <Link href={mpLink.url} target="_blank" rel="noopener noreferrer"
               className="inline-flex items-center gap-2 text-[var(--text-muted)] hover:text-[var(--text-base)] text-sm font-medium px-5 py-2.5 rounded-xl border border-[var(--border2)] hover:bg-[var(--bg-card2)] transition-all">
-              seller.uzum.uz <ArrowRight className="w-3.5 h-3.5" />
+              {mpLink.label} <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
         </div>
-      )}
+        )
+      })()}
 
       {/* KPI cards */}
       {!hiddenWidgets.has('kpis') && (
