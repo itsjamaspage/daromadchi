@@ -204,7 +204,7 @@ export default function TeamPage() {
         </div>
         <div className="flex items-center gap-2">
           {!isPro && (
-            <span className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400">
+            <span className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-400">
               <Lock className="w-3 h-3" />
               {d.teamProBadge}
             </span>
