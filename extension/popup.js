@@ -338,9 +338,12 @@ async function renderSettings(token, settings, tgStatus, lang = 'uz') {
     document.getElementById('status-badge').textContent = s.tgBadge;
   }
 
-  const pill = (active) => active
-    ? 'padding:4px 14px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;background:#6366f1;color:#fff;border:none'
-    : 'padding:4px 14px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;background:#1e293b;color:#94a3b8;border:1px solid #334155';
+  const pill = (active) => {
+    if (active) return 'padding:4px 14px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;background:#6366f1;color:#fff;border:none';
+    return theme === 'light'
+      ? 'padding:4px 14px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;background:#e2e8f0;color:#475569;border:1px solid #cbd5e1'
+      : 'padding:4px 14px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;background:#1e293b;color:#94a3b8;border:1px solid #334155';
+  };
 
   panel.innerHTML = `
     <div class="settings">
@@ -372,7 +375,7 @@ async function renderSettings(token, settings, tgStatus, lang = 'uz') {
         <div class="tg-box" style="display:flex;align-items:center;gap:12px">
           <span style="font-size:22px;flex-shrink:0">📣</span>
           <div style="flex:1">
-            <p style="font-size:12px;font-weight:600;color:#e2e8f0;margin-bottom:3px">@daromadchi_uz</p>
+            <p style="font-size:12px;font-weight:600;color:${theme==='light'?'#1e293b':'#e2e8f0'};margin-bottom:3px">@daromadchi_uz</p>
             <p style="font-size:10.5px;color:#94a3b8;line-height:1.4;margin-bottom:8px">${s.channelSub}</p>
             <a href="https://t.me/daromadchi_uz" target="_blank"
               style="display:inline-block;background:#0ea5e9;color:#fff;padding:5px 14px;border-radius:7px;font-size:11px;font-weight:600;text-decoration:none">
@@ -549,44 +552,39 @@ async function loadAll() {
     return;
   }
 
-  let plan = daromadchi_plan;
+  const plan = daromadchi_plan;
+  const token = daromadchi_token || (daromadchi_connected ? 'connected' : null);
 
-  // Use Daromadchi backend stats if connected, refreshing when stale
-  let stats = cachedStats;
-  const stale = Date.now() - (cacheTime || 0) > 300000;
-
-  if (stale) {
-    try {
-      const res = await fetch(`${API}/extension/stats`, {
-        headers: { 'Authorization': `Bearer ${daromadchi_token}` }
-      });
-      if (res.ok) {
-        stats = await res.json();
-        chrome.storage.local.set({ cachedStats: stats, cacheTime: Date.now() });
-      }
-    } catch {}
-
-    try {
-      const res = await fetch(`${API}/extension/telegram-status`, {
-        headers: { 'Authorization': `Bearer ${daromadchi_token}` }
-      });
-      if (res.ok) {
-        const tg = await res.json();
-        chrome.storage.local.set({ tgStatus: tg });
-        tgStatus.connected = tg.connected;
-        tgStatus.username  = tg.username;
-      }
-    } catch {}
-  }
-
-  renderStats(daromadchi_token || (daromadchi_connected ? "connected" : null), stats, lang);
+  // Render immediately from cache — popup shows content instantly
+  renderStats(token, cachedStats, lang);
   renderAlerts(activeAlerts, plan);
-  renderSettings(daromadchi_token || (daromadchi_connected ? "connected" : null), alertSettings, tgStatus, lang);
-
-  // Inject marketplace API status at the bottom of the stats panel
+  renderSettings(token, alertSettings, tgStatus, lang);
   const statsPanel = document.getElementById('panel-stats');
-  if (statsPanel) {
-    renderMarketplaceStatus(statsPanel, yandexStats, uzumDirectStats, yandexConnected, uzumConnected, yandexCampaignId, uzumShopName, wbStats, wbConnected, wbSellerInfo);
+  if (statsPanel) renderMarketplaceStatus(statsPanel, yandexStats, uzumDirectStats, yandexConnected, uzumConnected, yandexCampaignId, uzumShopName, wbStats, wbConnected, wbSellerInfo);
+
+  // Background refresh when cache is stale — does not block UI
+  const stale = Date.now() - (cacheTime || 0) > 300000;
+  if (stale && daromadchi_token) {
+    (async () => {
+      try {
+        const res = await fetch(`${API}/extension/stats`, { headers: { 'Authorization': `Bearer ${daromadchi_token}` } });
+        if (res.ok) {
+          const fresh = await res.json();
+          chrome.storage.local.set({ cachedStats: fresh, cacheTime: Date.now() });
+          renderStats(token, fresh, lang);
+          const sp = document.getElementById('panel-stats');
+          if (sp) renderMarketplaceStatus(sp, yandexStats, uzumDirectStats, yandexConnected, uzumConnected, yandexCampaignId, uzumShopName, wbStats, wbConnected, wbSellerInfo);
+        }
+      } catch {}
+      try {
+        const res = await fetch(`${API}/extension/telegram-status`, { headers: { 'Authorization': `Bearer ${daromadchi_token}` } });
+        if (res.ok) {
+          const tg = await res.json();
+          chrome.storage.local.set({ tgStatus: tg });
+          if (tg.connected !== tgStatus.connected) renderSettings(token, alertSettings, tg, lang);
+        }
+      } catch {}
+    })();
   }
 }
 
