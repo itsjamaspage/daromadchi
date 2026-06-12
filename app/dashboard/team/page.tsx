@@ -63,9 +63,13 @@ function InviteModal({ onClose, d }: { onClose: () => void; d: T }) {
     setLoading(true)
     setError(null)
     try {
-      await inviteTeamMember(email, role)
-      setSuccess(true)
-      setTimeout(onClose, 1500)
+      const result = await inviteTeamMember(email, role)
+      if (!result.success) {
+        setError(result.reason === 'already_registered' ? d.teamInviteErrorAlreadyRegistered : d.teamInviteError)
+      } else {
+        setSuccess(true)
+        setTimeout(onClose, 1500)
+      }
     } catch {
       setError(d.teamInviteError)
     } finally {

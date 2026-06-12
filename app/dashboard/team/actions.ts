@@ -3,7 +3,14 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 
-export async function inviteTeamMember(email: string, role: 'admin' | 'viewer') {
+type InviteResult =
+  | { success: true }
+  | { success: false; reason: 'already_registered' | 'error' }
+
+export async function inviteTeamMember(
+  email: string,
+  role: 'admin' | 'viewer',
+): Promise<InviteResult> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Not authenticated')
@@ -15,6 +22,11 @@ export async function inviteTeamMember(email: string, role: 'admin' | 'viewer') 
     data: { invited_by: user.id, team_role: role },
   })
 
-  if (error) throw new Error(error.message)
+  if (error) {
+    if (error.message.toLowerCase().includes('already been registered')) {
+      return { success: false, reason: 'already_registered' }
+    }
+    return { success: false, reason: 'error' }
+  }
   return { success: true }
 }
