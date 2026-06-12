@@ -84,25 +84,37 @@
       light: { bg:'#f8fafc', card:'#ffffff',  border:'#e2e8f0', text:'#0f172a', muted:'#64748b', red:'#dc2626', green:'#16a34a', amber:'#d97706' },
     };
 
-    // Exact rates from official WB commission table (WB warehouse / FBY model)
+    // Exact rates from official WB commission table (docs/marketplace-tariffs.md)
     const COMM_MAP = [
-      [/smartfon|iphone|samsung|xiaomi|redmi/i,               3   ],
-      [/planshet|tablet/i,                                     5   ],
-      [/noutbuk|laptop|macbook/i,                              5   ],
-      [/kompyuter|desktop|sistemny/i,                          9.5 ],
-      [/aqlli.soat|smart.?watch|fitnes.?bras|bracelet/i,       14.5],
-      [/kiyim|libos|futbolka|ko.ylak|platye|zhilyet|bluzka/i,  23  ],
-      [/ichki.kiyim|byole|korset|underwear/i,                  23  ],
-      [/poyabzal|botinok|sandal|krossovk|tufli/i,              18  ],
-      [/sport.?kiyim|sportivn|sportswear/i,                    23  ],
-      [/gozellik|kosmetika|parfyum|beauty|uhod|volos/i,        18  ],
-      [/maishiy.tex|bytovaya|xolodilnik|refrig/i,              14  ],
-      [/sport|trenaj|fitnes/i,                                 18  ],
-      [/oziq|ovqat|produkty/i,                                 11  ],
-      [/uy.tekst|interyer|interior|mebel|dekor/i,              19  ],
-      [/oyinchoq|toy|igrushk/i,                                18  ],
-      [/avto|zapchast|mashina/i,                                8  ],
-      [/bola|baby|detsk/i,                                      8  ],
+      // 3% — Smartfonlar
+      [/смартфон|smartfon|iphone|samsung.*phone|xiaomi.*phone|редми|redmi.*phone/i,  3   ],
+      // 5% — Planshetlar / Noutbuklar
+      [/планшет|planshet|tablet/i,                                                    5   ],
+      [/ноутбук|noutbuk|laptop|macbook/i,                                             5   ],
+      // 8% — Avtomobil / Bolalar
+      [/автозапчаст|автомобильн|zapchast.*avto|avto.*zapchast/i,                      8   ],
+      [/детская одежда|детские товар|детск.*кийим|bolalar.*kiyim|kiyim.*bolalar/i,    8   ],
+      // 9.5% — Kompyuterlar
+      [/компьютер|sistemny|kompyuter|desktop/i,                                       9.5 ],
+      // 11% — Oziq-ovqat
+      [/продукт|питание|еда|oziq|ovqat/i,                                            11  ],
+      // 14% — Maishiy texnika
+      [/бытовая техника|крупная бытовая|maishiy.*tex|холодильник|стиральн|посудомо/i, 14  ],
+      // 14.5% — Aqlli soat va fitness
+      [/смарт-часы|умные часы|фитнес-браслет|smart.?watch|fitnes.?bras/i,            14.5],
+      // 18% — Poyabzal / Go'zallik / Sport / O'yinchoqlar
+      [/обувь|ботинок|кроссовк|туфли|сапог|poyabzal|botinok/i,                      18  ],
+      [/красота|косметик|парфюм|уход за|макияж|gozellik|kosmetika|parfyum|beauty/i,  18  ],
+      [/спортивный инвент|спорттовар|тренажер|fitnes(?!-бр)|sport(?! kiyim|ivn)/i,   18  ],
+      [/игрушк|oyinchoq/i,                                                            18  ],
+      // 19% — Uy tekstili
+      [/текстиль|постельн|полотенц|uy.tekst|интерьер|dekor/i,                        19  ],
+      // 20% — Elektronika aksessuarlari (must precede generic elektronika)
+      [/аксессуар.*электрон|электрон.*аксессуар|aksessu.*elektron/i,                 20  ],
+      // 23% — Kiyim (ichki, sport, generic — specific first)
+      [/нижнее бельё|бюстгальт|трусы|ichki.kiyim|underwear/i,                       23  ],
+      [/спортивная одежда|sport.?kiyim/i,                                             23  ],
+      [/одежда|рубашка|платье|футболка|kiyim|libos/i,                                23  ],
     ];
 
     let langKey = 'uz', theme = 'dark';
@@ -111,9 +123,15 @@
     function fp(n) { if (n===null||n===undefined) return '—'; return L().currency(n); }
 
     function getCommission() {
-      const bc = document.querySelector('[class*="readcrumb"],[class*="ategory"],[class*="Breadcrumb"]');
-      if (bc) { const t = bc.innerText; for (const [re, pct] of COMM_MAP) if (re.test(t)) return pct; }
-      return 15;
+      const parts = [];
+      const bcEl = document.querySelector('[class*="readcrumb"],[class*="ategory"],[class*="Breadcrumb"]');
+      if (bcEl) parts.push(bcEl.innerText);
+      const h1El = document.querySelector('h1');
+      if (h1El) parts.push(h1El.innerText);
+      if (document.title) parts.push(document.title);
+      const text = parts.join(' ');
+      for (const [re, pct] of COMM_MAP) if (re.test(text)) return pct;
+      return 17; // Boshqa: 17%
     }
 
     function parseWbPrice() {

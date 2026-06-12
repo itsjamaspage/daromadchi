@@ -98,14 +98,29 @@
     },
   };
 
+  // Uzum Market official category commissions (docs/marketplace-tariffs.md)
   const COMM_MAP = [
-    [/kozmetika|parfyum|gozellik|beauty/i, 12],
-    [/elektronika|telefon|kompyuter/i, 10],
-    [/oziq|ovqat/i, 8],
-    [/kiyim|ayollar|erkaklar|bolalar/i, 13],
-    [/uy|maishiy|mebel/i, 14],
-    [/sport/i, 13],
-    [/avto/i, 11],
+    // 5% — Telefon va gadjetlar / Kompyuter va noutbuklar
+    [/telefon|gadjet|smartfon|iphone|samsung|xiaomi|redmi|kompyuter|noutbuk|laptop|notebook/i, 5],
+    // 6% — Elektronika / O'yinchoqlar
+    [/o.yinchoq|oyinchoq|игрушк/i, 6],
+    [/elektronika|электроника/i, 6],
+    // 7% — Poyabzal
+    [/poyabzal|botinok|sandal|krossovk|обувь/i, 7],
+    // 9% — Kiyim (bolalar) — must be before generic kiyim
+    [/kiyim.*bolalar|bolalar.*kiyim|детская одежда/i, 9],
+    // 9% — Sport va turizm
+    [/sport|turizm|спорт/i, 9],
+    // 8% — Kiyim (erkaklar / ayollar)
+    [/kiyim|libos|одежда|платье|рубашка|футболка/i, 8],
+    // 10% — Go'zallik / Maishiy texnika / Oziq-ovqat
+    [/gozellik|gozallik|kosmetika|parfyum|parvarish|красота|косметик|парфюм|уход/i, 10],
+    [/maishiy.*texnika|maishiy.*tex|бытовая техника|холодильник/i, 10],
+    [/oziq|ovqat|продукт|питание/i, 10],
+    // 11% — Uy va bog'
+    [/uy.*bog|oshxona|mebel|uy.*jihozlar|дом.*сад|мебел|кухн/i, 11],
+    // 12% — Avtomobil tovarlari
+    [/avto|mashina|zapchast|автотовар|запчаст/i, 12],
   ];
 
   const THEME = {
@@ -118,9 +133,15 @@
   function T() { return THEME[theme]; }
 
   function getCommission() {
-    const bc = document.querySelector('[class*="readcrumb"],[class*="ategory"],[class*="Breadcrumb"]');
-    if (bc) { const t=bc.innerText; for (const [re,pct] of COMM_MAP) if (re.test(t)) return pct; }
-    return 15;
+    const parts = [];
+    const bcEl = document.querySelector('[class*="readcrumb"],[class*="ategory"],[class*="Breadcrumb"]');
+    if (bcEl) parts.push(bcEl.innerText);
+    const h1El = document.querySelector('h1');
+    if (h1El) parts.push(h1El.innerText);
+    if (document.title) parts.push(document.title);
+    const text = parts.join(' ');
+    for (const [re, pct] of COMM_MAP) if (re.test(text)) return pct;
+    return 10; // Boshqa toifalar: 10%
   }
 
   function parsePrice() {
