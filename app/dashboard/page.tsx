@@ -53,6 +53,9 @@ export default async function DashboardPage({ searchParams }: Props) {
     getUserShops(),
   ])
   const hasShops = allShops.length > 0
+  const hasConnectedShop = marketplace
+    ? allShops.some(s => s.marketplace === marketplace)
+    : hasShops
 
   const categoryData = buildCategoryData(allProducts)
 
@@ -68,6 +71,7 @@ export default async function DashboardPage({ searchParams }: Props) {
         days={days}
         period={String(days)}
         marketplace={marketplace}
+        hasConnectedShop={hasConnectedShop}
       />
     </Suspense>
   )

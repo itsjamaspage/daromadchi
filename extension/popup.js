@@ -17,7 +17,7 @@ const LANG = {
     quietStart:'Boshlanishi (soat)', quietEnd:'Tugashi (soat)',
     saveBtn:'💾 Saqlash', savedMsg:'✅ Saqlandi!',
     channelSection:'📢 Daromadchi kanali', channelSub:'Yangiliklar, tahlillar va maslahatlar', channelBtn:"Kanalga o'tish →",
-    langSection:'🌐 Til', themeSection:'🎨 Mavzu', themeDark:'🌙 Qoʻngʻir', themeLight:'☀️ Yorqin',
+    langSection:'🌐 Til', themeSection:'🎨 Mavzu', themeDark:'🌙', themeLight:'☀️',
     alertLabels:{
       low_stock_with_ad:'🚨 Reklama + Kam zaxira (kritik)', out_of_stock:'📦 Mahsulot tugadi',
       low_stock:'⚠️ Kam zaxira', sales_drop:'📉 Savdo pasaydi', ad_no_sales:'💸 Reklama bepusht',
@@ -39,7 +39,7 @@ const LANG = {
     quietStart:'Начало (час)', quietEnd:'Конец (час)',
     saveBtn:'💾 Сохранить', savedMsg:'✅ Сохранено!',
     channelSection:'📢 Канал Daromadchi', channelSub:'Новости, аналитика и советы', channelBtn:'Перейти в канал →',
-    langSection:'🌐 Язык', themeSection:'🎨 Тема', themeDark:'🌙 Тёмная', themeLight:'☀️ Светлая',
+    langSection:'🌐 Язык', themeSection:'🎨 Тема', themeDark:'🌙', themeLight:'☀️',
     alertLabels:{
       low_stock_with_ad:'🚨 Реклама + Мало товара (критично)', out_of_stock:'📦 Товар закончился',
       low_stock:'⚠️ Мало товара', sales_drop:'📉 Падение продаж', ad_no_sales:'💸 Реклама без продаж',
@@ -61,7 +61,7 @@ const LANG = {
     quietStart:'Start (hour)', quietEnd:'End (hour)',
     saveBtn:'💾 Save', savedMsg:'✅ Saved!',
     channelSection:'📢 Daromadchi channel', channelSub:'News, analytics and tips', channelBtn:'Open channel →',
-    langSection:'🌐 Language', themeSection:'🎨 Theme', themeDark:'🌙 Dark', themeLight:'☀️ Light',
+    langSection:'🌐 Language', themeSection:'🎨 Theme', themeDark:'🌙', themeLight:'☀️',
     alertLabels:{
       low_stock_with_ad:'🚨 Ad + Low stock (critical)', out_of_stock:'📦 Out of stock',
       low_stock:'⚠️ Low stock', sales_drop:'📉 Sales drop', ad_no_sales:'💸 Ad no sales',
