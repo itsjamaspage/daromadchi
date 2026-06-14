@@ -517,9 +517,10 @@ export default function MarketClient({ marketplace, initialCategories, userCateg
   }, [])
 
   // Auto-load Yandex categories when tab is yandex
-  if (marketplace === 'yandex' && !catsLoaded && typeof window !== 'undefined') {
-    loadYandexCats()
-  }
+  useEffect(() => {
+    if (marketplace === 'yandex') loadYandexCats()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const UZUM_SORTS: { value: SortUzum; label: string }[] = [
     { value: 'ORDER_COUNT_DESC', label: t.sortOrders   },
