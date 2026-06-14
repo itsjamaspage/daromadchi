@@ -167,7 +167,7 @@ export default function Glossary() {
               </button>
             </div>
 
-            <div className="px-5 py-4 space-y-3 max-h-[70vh] overflow-y-auto overflow-x-hidden">
+            <div className="px-5 py-4 space-y-3 max-h-[70vh] overflow-y-auto overflow-x-hidden select-none">
               {TERMS.map(term => (
                 <div key={term.abbr} className="w-full rounded-xl border border-[var(--border)] bg-[var(--bg-card2)] px-3.5 py-3">
                   <div className="flex items-baseline gap-1.5 flex-wrap min-w-0">
