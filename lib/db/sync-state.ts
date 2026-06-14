@@ -40,14 +40,22 @@ export async function getSyncDays(marketplace: MarketplaceType, days = 30): Prom
 
   if (error || !data) return []
 
-  return data.map(row => ({
-    date:          row.sync_date as string,
-    status:        row.status as SyncDay['status'],
-    productsCount: row.products_count !== null ? Number(row.products_count) : undefined,
-    revenue:       row.revenue !== null ? Number(row.revenue) : undefined,
-    adSpend:       row.ad_spend !== null ? Number(row.ad_spend) : undefined,
-    errorMessage:  (row.error_message as string) ?? undefined,
-  }))
+  return data.map(row => {
+    const raw = row.status as string
+    const status: SyncDay['status'] =
+      raw === 'success' ? 'ready' :
+      raw === 'ready' || raw === 'degraded' || raw === 'error' || raw === 'pending'
+        ? raw as SyncDay['status']
+        : 'pending'
+    return {
+      date:          row.sync_date as string,
+      status,
+      productsCount: row.products_count !== null ? Number(row.products_count) : undefined,
+      revenue:       row.revenue !== null ? Number(row.revenue) : undefined,
+      adSpend:       row.ad_spend !== null ? Number(row.ad_spend) : undefined,
+      errorMessage:  (row.error_message as string) ?? undefined,
+    }
+  })
 }
 
 export async function resyncDays(marketplace: MarketplaceType, dates: string[]): Promise<void> {
