@@ -2,6 +2,8 @@
 
 import { useState, useRef, useEffect, RefObject } from 'react'
 import { Download, ChevronDown, FileSpreadsheet, FileText, FileDown } from 'lucide-react'
+import { useLang } from '@/app/providers'
+import { dashT } from '@/lib/dashT'
 
 export type ExportRow = Record<string, string | number>
 
@@ -82,6 +84,8 @@ function exportPdf(data: ExportRow[], filename: string) {
 }
 
 export default function ExportButton({ data, filename = 'hisobot', targetRef, label }: ExportButtonProps) {
+  const { lang } = useLang()
+  const t = dashT[lang].export
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState<'xlsx' | null>(null)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -131,7 +135,7 @@ export default function ExportButton({ data, filename = 'hisobot', targetRef, la
         ) : (
           <Download className="w-4 h-4" />
         )}
-        {label ?? 'Yuklab olish'}
+        {label ?? t.download}
         <ChevronDown className={`w-3 h-3 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
 
