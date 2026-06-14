@@ -7,7 +7,7 @@ import {
   LayoutDashboard, Package, ShoppingCart,
   LogOut, ChevronRight, X, Settings, BarChart2, Calculator, FileText, Globe2,
   Sun, Moon, Megaphone, Database, Layers, Bell, BellRing, AlertTriangle, CreditCard,
-  CalendarDays, Users, HelpCircle, UserCircle, Monitor,
+  CalendarDays, Users, HelpCircle, UserCircle,
 } from 'lucide-react'
 import { useTheme, useLang } from '@/app/providers'
 import { translations } from '@/lib/i18n'
@@ -38,7 +38,6 @@ const settingsNavItems: NavItem[] = [
   { href: '/dashboard/notifications', key: 'notifications', icon: BellRing    },
   { href: '/dashboard/billing',       key: 'billing',       icon: CreditCard  },
   { href: '/dashboard/profile',       key: 'profile',       icon: UserCircle  },
-  { href: '/dashboard/devices',       key: 'devices',       icon: Monitor     },
   { href: '/help',                    key: 'help',          icon: HelpCircle  },
 ]
 
@@ -46,7 +45,6 @@ const SETTINGS_LABELS: Record<string, string> = {
   notifications: 'Bildirishnomalar',
   billing:       "Tarif va to'lov",
   profile:       'Profil',
-  devices:       'Qurilmalar',
   help:          'Yordam markazi',
 }
 
