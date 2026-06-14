@@ -45,52 +45,33 @@ async function exportXlsx(data: ExportRow[], filename: string) {
   XLSX.writeFile(wb, `${filename}.xlsx`)
 }
 
-async function exportPdf(data: ExportRow[], filename: string) {
+async function exportPdf(filename: string, targetRef?: RefObject<HTMLElement | null>) {
+  const el = targetRef?.current
+  if (!el) return
+
+  const html2canvas = (await import('html2canvas')).default
   const { jsPDF } = await import('jspdf')
+
+  const canvas = await html2canvas(el, {
+    scale: 2,
+    useCORS: true,
+    backgroundColor: '#ffffff',
+    logging: false,
+  })
+
+  const imgData = canvas.toDataURL('image/png')
   const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' })
-
   const pageW = pdf.internal.pageSize.getWidth()
-  const margin = 12
-  const usableW = pageW - margin * 2
+  const pageH = pdf.internal.pageSize.getHeight()
+  const imgW = pageW
+  const imgH = (canvas.height * imgW) / canvas.width
 
-  // Title
-  pdf.setFontSize(14)
-  pdf.setTextColor(40, 40, 40)
-  pdf.text(filename, margin, margin + 4)
-  pdf.setFontSize(9)
-  pdf.setTextColor(120, 120, 120)
-  pdf.text(new Date().toLocaleDateString('ru-RU'), pageW - margin, margin + 4, { align: 'right' })
-
-  const headers = Object.keys(data[0])
-  const colW = usableW / headers.length
-
-  let y = margin + 14
-
-  // Header row
-  pdf.setFillColor(88, 28, 220)
-  pdf.setTextColor(255, 255, 255)
-  pdf.setFontSize(8)
-  pdf.rect(margin, y, usableW, 7, 'F')
-  headers.forEach((h, i) => {
-    pdf.text(String(h).slice(0, 14), margin + i * colW + 2, y + 5)
-  })
-  y += 7
-
-  // Data rows
-  data.forEach((row, ri) => {
-    if (y > pdf.internal.pageSize.getHeight() - 15) {
-      pdf.addPage()
-      y = margin
-    }
-    pdf.setFillColor(ri % 2 === 0 ? 248 : 255, ri % 2 === 0 ? 248 : 255, ri % 2 === 0 ? 252 : 255)
-    pdf.setTextColor(30, 30, 30)
-    pdf.rect(margin, y, usableW, 6.5, 'F')
-    headers.forEach((h, i) => {
-      const val = String(row[h] ?? '').slice(0, 18)
-      pdf.text(val, margin + i * colW + 2, y + 4.5)
-    })
-    y += 6.5
-  })
+  let posY = 0
+  while (posY < imgH) {
+    if (posY > 0) pdf.addPage()
+    pdf.addImage(imgData, 'PNG', 0, -posY, imgW, imgH)
+    posY += pageH
+  }
 
   pdf.save(`${filename}.pdf`)
 }
@@ -121,7 +102,7 @@ export default function ExportButton({ data, filename = 'hisobot', targetRef, la
     if (!data?.length) return
     setOpen(false)
     setLoading('pdf')
-    try { await exportPdf(data, filename) } finally { setLoading(null) }
+    try { await exportPdf(filename, targetRef) } finally { setLoading(null) }
   }
 
   function handleCsv() {
