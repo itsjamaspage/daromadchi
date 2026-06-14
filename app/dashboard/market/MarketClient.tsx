@@ -339,20 +339,22 @@ interface Props {
 export default function MarketClient({ marketplace, initialCategories, userCategories, initialQuery, yandexConnected }: Props) {
   const { lang } = useLang()
   const t = dashT[lang].market
-  const [selectedCat,  setSelectedCat]  = useState<{ id: number; title: string } | null>(null)
-  const [uzumProducts, setUzumProducts] = useState<UzumPublicProduct[]>([])
-  const [wbProducts,   setWbProducts]   = useState<WbPublicProduct[]>([])
-  const [yandexCats,   setYandexCats]   = useState<{ id: number; name: string }[]>([])
-  const [yandexModels, setYandexModels] = useState<YandexModel[]>([])
-  const [total,        setTotal]        = useState(0)
-  const [searchQuery,  setSearchQuery]  = useState(initialQuery ?? '')
-  const [sortUzum,     setSortUzum]     = useState<SortUzum>('ORDER_COUNT_DESC')
-  const [sortYandex,   setSortYandex]   = useState<SortYandex>('OPINIONS')
-  const [sortWb,       setSortWb]       = useState<SortWb>('popular')
-  const [mode,         setMode]         = useState<'category' | 'search'>('category')
-  const [catsLoaded,   setCatsLoaded]   = useState(false)
-  const [isPending,    startTransition] = useTransition()
-  const didAutoSearch  = useRef(false)
+  const [selectedCat,       setSelectedCat]       = useState<{ id: number; title: string } | null>(null)
+  const [uzumProducts,      setUzumProducts]      = useState<UzumPublicProduct[]>([])
+  const [uzumCatsBrowser,   setUzumCatsBrowser]   = useState<UzumPublicCategory[]>([])
+  const [wbProducts,        setWbProducts]        = useState<WbPublicProduct[]>([])
+  const [yandexCats,        setYandexCats]        = useState<{ id: number; name: string }[]>([])
+  const [yandexModels,      setYandexModels]      = useState<YandexModel[]>([])
+  const [total,             setTotal]             = useState(0)
+  const [searchQuery,       setSearchQuery]       = useState(initialQuery ?? '')
+  const [sortUzum,          setSortUzum]          = useState<SortUzum>('ORDER_COUNT_DESC')
+  const [sortYandex,        setSortYandex]        = useState<SortYandex>('OPINIONS')
+  const [sortWb,            setSortWb]            = useState<SortWb>('popular')
+  const [mode,              setMode]              = useState<'category' | 'search'>('category')
+  const [catsLoaded,        setCatsLoaded]        = useState(false)
+  const [isPending,         startTransition]      = useTransition()
+  const didAutoSearch       = useRef(false)
+  const didLoadUzumCats     = useRef(false)
 
   // Load Yandex categories on first render
   const loadYandexCats = useCallback(() => {
@@ -485,6 +487,24 @@ export default function MarketClient({ marketplace, initialCategories, userCateg
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // Load Uzum categories from browser when server-side fetch returned empty
+  // (server IPs are often geo-blocked by Uzum; browser UZ IP works fine)
+  useEffect(() => {
+    if (marketplace !== 'uzum' || initialCategories.length > 0 || didLoadUzumCats.current) return
+    didLoadUzumCats.current = true
+    fetch('https://api.uzum.uz/api/main/root-categories', { headers: { Accept: 'application/json' } })
+      .then(r => r.ok ? r.json() : null)
+      .then((data: unknown) => {
+        if (!data) return
+        const cats: UzumPublicCategory[] = Array.isArray(data)
+          ? (data as UzumPublicCategory[])
+          : ((data as { payload?: { categories?: UzumPublicCategory[] } }).payload?.categories ?? [])
+        if (cats.length > 0) setUzumCatsBrowser(cats)
+      })
+      .catch(() => {})
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   // Auto-load Yandex categories when tab is yandex
   if (marketplace === 'yandex' && !catsLoaded && typeof window !== 'undefined') {
     loadYandexCats()
@@ -514,7 +534,8 @@ export default function MarketClient({ marketplace, initialCategories, userCateg
     color: accent,
     border: `1px solid color-mix(in srgb, ${accent} 35%, transparent)`,
   }
-  const cats          = marketplace === 'uzum' ? initialCategories : marketplace === 'yandex' ? yandexCats : []
+  const uzumCats      = initialCategories.length > 0 ? initialCategories : uzumCatsBrowser
+  const cats          = marketplace === 'uzum' ? uzumCats : marketplace === 'yandex' ? yandexCats : []
   const showSearch    = marketplace === 'uzum' || marketplace === 'wildberries'
   const showCategories = marketplace === 'uzum' || marketplace === 'yandex'
 
@@ -547,6 +568,13 @@ export default function MarketClient({ marketplace, initialCategories, userCateg
             {t.search}
           </button>
         </div>
+      )}
+
+      {/* Uzum search language hint */}
+      {marketplace === 'uzum' && (
+        <p className="text-[10px] text-[var(--text-muted)] -mt-2">
+          {t.uzumSearchHint}
+        </p>
       )}
 
       {/* Category grid — Uzum & Yandex */}
