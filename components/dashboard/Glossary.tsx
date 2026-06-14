@@ -167,14 +167,14 @@ export default function Glossary() {
               </button>
             </div>
 
-            <div className="px-5 py-4 space-y-3 max-h-[70vh] overflow-y-auto">
+            <div className="px-5 py-4 space-y-3 max-h-[70vh] overflow-y-auto overflow-x-hidden">
               {TERMS.map(term => (
-                <div key={term.abbr} className="rounded-xl border border-[var(--border)] bg-[var(--bg-card2)] px-3.5 py-3 overflow-hidden">
-                  <div className="flex items-baseline gap-2 flex-wrap">
+                <div key={term.abbr} className="w-full rounded-xl border border-[var(--border)] bg-[var(--bg-card2)] px-3.5 py-3">
+                  <div className="flex items-baseline gap-1.5 flex-wrap min-w-0">
                     <span className="text-violet-400 font-bold text-xs shrink-0">{term.abbr}</span>
-                    <span className="text-[var(--text-base)] text-xs font-medium break-words min-w-0">{term.full[lang] ?? term.full.uz}</span>
+                    <span className="text-[var(--text-base)] text-xs font-medium" style={{ overflowWrap: 'break-word', wordBreak: 'break-word' }}>{term.full[lang] ?? term.full.uz}</span>
                   </div>
-                  <p className="text-[var(--text-muted)] text-xs leading-relaxed mt-1 break-words">{term.desc[lang] ?? term.desc.uz}</p>
+                  <p className="text-[var(--text-muted)] text-xs leading-relaxed mt-1" style={{ overflowWrap: 'break-word', wordBreak: 'break-word' }}>{term.desc[lang] ?? term.desc.uz}</p>
                 </div>
               ))}
             </div>
