@@ -285,9 +285,9 @@ export default function AdvertisingView({ uzumCampaigns, wbCampaigns }: Props) {
           {/* Legend */}
           <div className="flex flex-wrap gap-4 text-xs text-[var(--text-muted)]">
             <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-red-500" />{t.legendNoSale}</span>
-            <span className="flex items-center gap-1.5"><span className="w-8 h-3 rounded bg-emerald-500/10 border border-emerald-500/20" /><span className="text-emerald-400">DRR &lt; 10%</span></span>
-            <span className="flex items-center gap-1.5"><span className="w-8 h-3 rounded bg-amber-500/10 border border-amber-500/20" /><span className="text-amber-400">DRR 10–20%</span></span>
-            <span className="flex items-center gap-1.5"><span className="w-8 h-3 rounded bg-red-500/10 border border-red-500/20" /><span className="text-red-400">DRR &gt; 20%</span></span>
+            <span className="flex items-center gap-1.5"><span className="w-8 h-3 rounded bg-emerald-500/30 border border-emerald-500/50" /><span className="text-emerald-500">DRR &lt; 10%</span></span>
+            <span className="flex items-center gap-1.5"><span className="w-8 h-3 rounded bg-amber-500/30 border border-amber-500/50" /><span className="text-amber-500">DRR 10–20%</span></span>
+            <span className="flex items-center gap-1.5"><span className="w-8 h-3 rounded bg-red-500/30 border border-red-500/50" /><span className="text-red-500">DRR &gt; 20%</span></span>
             <span className="flex items-center gap-1.5">
               <span className="text-emerald-400 font-bold">ROAS ≥ 3x</span>
               = {lang === 'ru' ? 'отличная отдача' : lang === 'en' ? 'great return' : 'yaxshi qaytish'}
