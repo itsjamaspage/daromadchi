@@ -1,4 +1,4 @@
-import { Globe2, Settings } from 'lucide-react'
+import { Globe2 } from 'lucide-react'
 import Link from 'next/link'
 import { getRootCategories } from '@/lib/uzum/public'
 import { getProducts } from '@/lib/db/products'
@@ -115,28 +115,20 @@ export default async function MarketPage({ searchParams }: Props) {
       )}
 
       {tab === 'yandex' && (
-        yandexConnected ? (
-          <>
-            <div className="flex items-start gap-3 rounded-xl px-4 py-3 text-xs text-[var(--text-dim)]"
-              style={{ background: 'rgba(245, 158, 11, 0.07)', border: '1px solid rgba(245, 158, 11, 0.22)' }}>
-              <Globe2 className="w-4 h-4 mt-0.5 shrink-0 text-amber-500" />
-              <span>{d.yandexApiNote}</span>
-            </div>
-            <MarketClient marketplace="yandex" initialCategories={[]} userCategories={[]} initialQuery={q} />
-          </>
-        ) : (
-          <div className="bg-[var(--bg-card2)] border border-dashed border-amber-500/30 rounded-2xl p-10 text-center">
-            <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mx-auto mb-4">
-              <Globe2 className="w-7 h-7 text-amber-500" />
-            </div>
-            <h2 className="text-[var(--text-base)] font-bold text-lg mb-2">{d.yandexNotConnected}</h2>
-            <p className="text-[var(--text-muted)] text-sm mb-6 max-w-sm mx-auto">{d.yandexNotConnectedDesc}</p>
-            <Link href="/dashboard/settings"
-              className="inline-flex items-center gap-2 bg-amber-600 hover:bg-amber-500 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors">
-              <Settings className="w-4 h-4" /> {d.connectYandex}
-            </Link>
+        <>
+          <div className="flex items-start gap-3 rounded-xl px-4 py-3 text-xs text-[var(--text-dim)]"
+            style={{ background: 'rgba(245, 158, 11, 0.07)', border: '1px solid rgba(245, 158, 11, 0.22)' }}>
+            <Globe2 className="w-4 h-4 mt-0.5 shrink-0 text-amber-500" />
+            <span>{d.yandexApiNote}</span>
+            {!yandexConnected && (
+              <Link href="/dashboard/settings"
+                className="ml-auto shrink-0 underline text-amber-500 font-semibold hover:text-amber-400 transition-colors">
+                {d.connectYandex} →
+              </Link>
+            )}
           </div>
-        )
+          <MarketClient marketplace="yandex" initialCategories={[]} userCategories={[]} initialQuery={q} yandexConnected={yandexConnected} />
+        </>
       )}
 
       {tab === 'wildberries' && (

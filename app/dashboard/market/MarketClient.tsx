@@ -333,9 +333,10 @@ interface Props {
   initialCategories: UzumPublicCategory[]
   userCategories:    string[]
   initialQuery?:     string
+  yandexConnected?:  boolean
 }
 
-export default function MarketClient({ marketplace, initialCategories, userCategories, initialQuery }: Props) {
+export default function MarketClient({ marketplace, initialCategories, userCategories, initialQuery, yandexConnected }: Props) {
   const { lang } = useLang()
   const t = dashT[lang].market
   const [selectedCat,  setSelectedCat]  = useState<{ id: number; title: string } | null>(null)
@@ -439,13 +440,11 @@ export default function MarketClient({ marketplace, initialCategories, userCateg
       setMode('search'); setSelectedCat(null)
       startTransition(async () => {
         try {
+          // Try direct browser call first; WB often blocks CORS so fall through to proxy
           const params = new URLSearchParams({ appType: '1', curr: 'rub', dest: '-1257786', query, resultset: 'catalog', sort: sw, spp: '30' })
-          const url = `https://search.wb.ru/exactmatch/ru/common/v5/search?${params}`
-          console.log('[handleSearch] fetching wb:', url)
-          const res = await fetch(url, {
+          const res = await fetch(`https://search.wb.ru/exactmatch/ru/common/v5/search?${params}`, {
             headers: { 'Accept': 'application/json' },
           })
-          console.log('[handleSearch] wb response status:', res.status)
           if (res.ok) {
             const data = await res.json() as { data?: { products?: unknown[] }; products?: unknown[] }
             const raw = (data.data?.products ?? data.products ?? []) as Array<{
@@ -462,10 +461,18 @@ export default function MarketClient({ marketplace, initialCategories, userCateg
                 : p.priceU ? Math.round(p.priceU / 100) : 0
               return { id: p.id, name: p.name ?? '', brand: p.brand ?? '', sellPrice, fullPrice, rating: p.reviewRating ?? p.rating ?? 0, feedbacks: p.feedbacks ?? 0, supplierId: p.supplierId }
             })
-            console.log('[handleSearch] wb products:', products.length)
             setWbProducts(products); setTotal(products.length)
+            return
           }
-        } catch (err) { console.error('[handleSearch] wb fetch error:', err) }
+        } catch { /* CORS blocked — fall through to server proxy */ }
+        // Server-side proxy (avoids CORS)
+        try {
+          const r2 = await fetch(`/api/market/wildberries?q=${encodeURIComponent(query)}&sort=${sw}`)
+          if (r2.ok) {
+            const d = await r2.json() as { products: WbPublicProduct[]; total: number }
+            setWbProducts(d.products); setTotal(d.total)
+          }
+        } catch { /* noop */ }
       })
     }
   }, [searchQuery, sortUzum, sortWb, marketplace])
@@ -546,7 +553,12 @@ export default function MarketClient({ marketplace, initialCategories, userCateg
       {showCategories && (
         <div>
           <p className="text-[var(--text-muted)] text-xs font-medium mb-3 uppercase tracking-wide">{t.categories}</p>
-          {isPending && !selectedCat && marketplace === 'yandex' ? (
+          {marketplace === 'yandex' && !yandexConnected ? (
+            <div className="bg-[var(--bg-card2)] border border-dashed border-amber-500/30 rounded-2xl px-5 py-6 text-center text-sm text-[var(--text-muted)]">
+              <p className="font-semibold text-amber-500 mb-1">{t.ymNeedAccount}</p>
+              <p className="text-xs">{t.ymNeedAccountDesc}</p>
+            </div>
+          ) : isPending && !selectedCat && marketplace === 'yandex' ? (
             <div className="flex items-center gap-2 text-[var(--text-muted)] text-sm py-4">
               <Loader2 className="w-4 h-4 animate-spin" /> {t.loading}
             </div>

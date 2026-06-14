@@ -251,6 +251,8 @@ export const dashT = {
       estRevenue: 'Taxminiy daromad', estRevenueNote: '* WB uchun: sharhlar × 15 × narx (sanoat hisob-kitobi)',
       sortRevenue: 'Daromad ↓', topRevenueProducts: 'Raqobatchilar daromadi',
       revenueCol: 'Taxm. daromad', trending: 'Trend',
+      ymNeedAccount: 'Yandex Market ulanmagan',
+      ymNeedAccountDesc: "Kategoriyalarni ko'rish uchun Sozlamalarda Yandex Partner API kalitini saqlang.",
     },
     advertising: {
       kpiSpend: 'Jami sarflar', kpiImpressions: "Ko'rsatuvlar", kpiClicks: 'Kliklar',
@@ -589,6 +591,8 @@ export const dashT = {
       estRevenue: 'Est. Revenue', estRevenueNote: '* WB: reviews × 15 × price (industry estimate)',
       sortRevenue: 'Revenue ↓', topRevenueProducts: 'Competitor Revenue',
       revenueCol: 'Est. Revenue', trending: 'Trending',
+      ymNeedAccount: 'Yandex Market not connected',
+      ymNeedAccountDesc: 'To browse categories, save your Yandex Partner API key in Settings.',
     },
     abcxyz: {
       title: 'ABC-XYZ Analysis',
@@ -945,6 +949,8 @@ export const dashT = {
       estRevenue: 'Прогноз выручки', estRevenueNote: '* WB: отзывы × 15 × цена (отраслевая оценка)',
       sortRevenue: 'Выручка ↓', topRevenueProducts: 'Выручка конкурентов',
       revenueCol: 'Прогн. выручка', trending: 'Тренд',
+      ymNeedAccount: 'Yandex Market не подключён',
+      ymNeedAccountDesc: 'Для просмотра категорий сохраните ключ Yandex Partner API в Настройках.',
     },
     abcxyz: {
       title: 'ABC-XYZ Анализ',
