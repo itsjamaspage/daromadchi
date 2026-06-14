@@ -45,40 +45,45 @@ async function exportXlsx(data: ExportRow[], filename: string) {
   XLSX.writeFile(wb, `${filename}.xlsx`)
 }
 
-async function exportPdf(filename: string, targetRef?: RefObject<HTMLElement | null>) {
-  const el = targetRef?.current
-  if (!el) return
+function exportPdf(data: ExportRow[], filename: string) {
+  const headers = Object.keys(data[0])
+  const tableRows = data.map(row =>
+    `<tr>${headers.map(h => `<td>${String(row[h] ?? '')}</td>`).join('')}</tr>`
+  ).join('')
 
-  const html2canvas = (await import('html2canvas')).default
-  const { jsPDF } = await import('jspdf')
+  const html = `<!DOCTYPE html>
+<html><head>
+<meta charset="UTF-8">
+<title>${filename}</title>
+<style>
+  body { font-family: Arial, sans-serif; font-size: 11px; margin: 10mm; }
+  h1 { font-size: 14px; margin-bottom: 4px; }
+  p  { font-size: 10px; color: #666; margin-bottom: 10px; }
+  table { width: 100%; border-collapse: collapse; }
+  th { background: #5b21b6; color: #fff; padding: 5px 6px; text-align: left; font-size: 10px; white-space: nowrap; }
+  td { padding: 4px 6px; border-bottom: 1px solid #e5e7eb; font-size: 10px; }
+  tr:nth-child(even) td { background: #f8f8fc; }
+  @media print { @page { size: A4 landscape; margin: 10mm; } }
+</style>
+</head><body>
+<h1>${filename}</h1>
+<p>${new Date().toLocaleDateString('ru-RU')}</p>
+<table>
+  <thead><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead>
+  <tbody>${tableRows}</tbody>
+</table>
+<script>window.onload=function(){window.print();}<\/script>
+</body></html>`
 
-  const canvas = await html2canvas(el, {
-    scale: 2,
-    useCORS: true,
-    backgroundColor: '#ffffff',
-    logging: false,
-  })
-
-  const imgData = canvas.toDataURL('image/png')
-  const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' })
-  const pageW = pdf.internal.pageSize.getWidth()
-  const pageH = pdf.internal.pageSize.getHeight()
-  const imgW = pageW
-  const imgH = (canvas.height * imgW) / canvas.width
-
-  let posY = 0
-  while (posY < imgH) {
-    if (posY > 0) pdf.addPage()
-    pdf.addImage(imgData, 'PNG', 0, -posY, imgW, imgH)
-    posY += pageH
-  }
-
-  pdf.save(`${filename}.pdf`)
+  const win = window.open('', '_blank')
+  if (!win) return
+  win.document.write(html)
+  win.document.close()
 }
 
 export default function ExportButton({ data, filename = 'hisobot', targetRef, label }: ExportButtonProps) {
   const [open, setOpen] = useState(false)
-  const [loading, setLoading] = useState<'xlsx' | 'pdf' | null>(null)
+  const [loading, setLoading] = useState<'xlsx' | null>(null)
   const menuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -98,11 +103,10 @@ export default function ExportButton({ data, filename = 'hisobot', targetRef, la
     try { await exportXlsx(data, filename) } finally { setLoading(null) }
   }
 
-  async function handlePdf() {
+  function handlePdf() {
     if (!data?.length) return
     setOpen(false)
-    setLoading('pdf')
-    try { await exportPdf(filename, targetRef) } finally { setLoading(null) }
+    exportPdf(data, filename)
   }
 
   function handleCsv() {
