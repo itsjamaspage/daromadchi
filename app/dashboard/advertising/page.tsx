@@ -7,12 +7,11 @@ export default async function AdvertisingPage() {
     getAdCampaigns(),
     getWbAdCampaigns(),
   ])
-  const campaigns = [...uzumCampaigns, ...wbCampaigns]
 
   return (
     <div className="space-y-6">
       <AdvertisingHeader />
-      <AdvertisingView campaigns={campaigns} />
+      <AdvertisingView uzumCampaigns={uzumCampaigns} wbCampaigns={wbCampaigns} />
     </div>
   )
 }
