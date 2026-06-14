@@ -96,9 +96,10 @@ export default function AdvertisingView({ uzumCampaigns, wbCampaigns }: Props) {
           <button key={mp} onClick={() => setMarketplace(mp)}
             className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${
               marketplace === mp
-                ? 'bg-violet-600/20 text-violet-300 border border-violet-500/30'
+                ? 'bg-violet-600/20 border border-violet-500/30'
                 : 'text-[var(--text-muted)] hover:text-[var(--text-dim)]'
-            }`}>
+            }`}
+            style={marketplace === mp ? { color: 'var(--c1)' } : {}}>
             {mp === 'uzum' ? 'Uzum' : mp === 'wb' ? 'Wildberries' : 'Yandex Market'}
           </button>
         ))}
@@ -196,9 +197,10 @@ export default function AdvertisingView({ uzumCampaigns, wbCampaigns }: Props) {
                 <button key={v} onClick={() => setTypeTab(v)}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                     typeTab === v
-                      ? 'bg-violet-600/20 text-violet-300 border border-violet-500/30'
+                      ? 'bg-violet-600/20 border border-violet-500/30'
                       : 'text-[var(--text-muted)] hover:text-[var(--text-dim)]'
-                  }`}>
+                  }`}
+                  style={typeTab === v ? { color: 'var(--c1)' } : {}}>
                   {label}
                 </button>
               ))}
