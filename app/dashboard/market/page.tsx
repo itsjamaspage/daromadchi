@@ -12,7 +12,12 @@ interface Props {
 
 export default async function MarketPage({ searchParams }: Props) {
   const params = await searchParams
-  const tab    = params.tab === 'yandex' ? 'yandex' : params.tab === 'wildberries' ? 'wildberries' : 'uzum'
+  const tab =
+    params.tab === 'yandex'      ? 'yandex'      :
+    params.tab === 'wildberries' ? 'wildberries'  :
+    params.source === 'yandex_market' ? 'yandex' :
+    params.source === 'wb'            ? 'wildberries' :
+    'uzum'
   const q      = params.q ?? ''
   const t = await getT()
   const d = t.dashboard

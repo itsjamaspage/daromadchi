@@ -303,6 +303,28 @@ export async function fetchCategoryModels(
   }
 }
 
+export async function searchYandexModels(
+  token: string,
+  query: string,
+  count = 30,
+  sort: 'OPINIONS' | 'PRICE' | 'QUALITY' = 'OPINIONS',
+): Promise<YandexModel[]> {
+  try {
+    const params = new URLSearchParams({
+      query,
+      count: String(count),
+      sort,
+      how: 'DESC',
+      fields: 'PRICES,RATING,OFFERS_COUNT,REVIEW_COUNT',
+      regionId: '213', // Moscow region — broadest coverage
+    })
+    const data = await request<{ models: YandexModel[] }>(`/v2/models?${params}`, token)
+    return data.models ?? []
+  } catch {
+    return []
+  }
+}
+
 // Pagination helpers
 export async function fetchAllYandexOrders(
   token: string,

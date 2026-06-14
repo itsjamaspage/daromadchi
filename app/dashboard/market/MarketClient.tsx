@@ -476,8 +476,19 @@ export default function MarketClient({ marketplace, initialCategories, userCateg
           }
         } catch { /* noop */ }
       })
+    } else if (marketplace === 'yandex' && yandexConnected) {
+      setMode('search'); setSelectedCat(null)
+      startTransition(async () => {
+        try {
+          const res = await fetch(`/api/market/yandex?action=search&q=${encodeURIComponent(query)}&sort=${sortYandex}`)
+          if (res.ok) {
+            const d = await res.json() as { models: YandexModel[] }
+            setYandexModels(d.models ?? [])
+          }
+        } catch { /* noop */ }
+      })
     }
-  }, [searchQuery, sortUzum, sortWb, marketplace])
+  }, [searchQuery, sortUzum, sortWb, sortYandex, yandexConnected, marketplace])
 
   // Auto-search when opened from extension
   useEffect(() => {
@@ -536,7 +547,7 @@ export default function MarketClient({ marketplace, initialCategories, userCateg
   }
   const uzumCats      = initialCategories.length > 0 ? initialCategories : uzumCatsBrowser
   const cats          = marketplace === 'uzum' ? uzumCats : marketplace === 'yandex' ? yandexCats : []
-  const showSearch    = marketplace === 'uzum' || marketplace === 'wildberries'
+  const showSearch    = marketplace === 'uzum' || marketplace === 'wildberries' || (marketplace === 'yandex' && !!yandexConnected)
   const showCategories = marketplace === 'uzum' || marketplace === 'yandex'
 
   const hasResults = marketplace === 'uzum'

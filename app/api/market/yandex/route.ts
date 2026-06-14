@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { fetchYandexCategories, fetchCategoryModels } from '@/lib/yandex/client'
+import { fetchYandexCategories, fetchCategoryModels, searchYandexModels } from '@/lib/yandex/client'
 import { decrypt as decryptKey } from '@/lib/crypto'
 
 export async function GET(req: NextRequest) {
@@ -46,6 +46,15 @@ export async function GET(req: NextRequest) {
       const models = await fetchCategoryModels(token, id, 30, sort)
       return NextResponse.json({ models }, {
         headers: { 'Cache-Control': 'public, s-maxage=300' },
+      })
+    }
+
+    if (action === 'search') {
+      const q    = searchParams.get('q') ?? ''
+      const sort = (searchParams.get('sort') ?? 'OPINIONS') as 'OPINIONS' | 'PRICE' | 'QUALITY'
+      const models = await searchYandexModels(token, q, 30, sort)
+      return NextResponse.json({ models }, {
+        headers: { 'Cache-Control': 'public, s-maxage=120' },
       })
     }
 
