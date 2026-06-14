@@ -15,10 +15,10 @@ function fs(n: number | undefined) {
 
 function statusStyle(s: SyncDay['status']) {
   switch (s) {
-    case 'ready':    return { bg: 'bg-emerald-500/20 hover:bg-emerald-500/30 border-emerald-500/30',  text: 'text-emerald-400' }
-    case 'degraded': return { bg: 'bg-amber-500/20 hover:bg-amber-500/30 border-amber-500/30',        text: 'text-amber-400'   }
-    case 'error':    return { bg: 'bg-red-500/20 hover:bg-red-500/30 border-red-500/30',              text: 'text-red-400'     }
-    case 'pending':  return { bg: 'bg-[var(--bg-card2)] hover:bg-[var(--bg-card2)] border-[var(--border2)]',        text: 'text-[var(--text-muted)]'   }
+    case 'ready':    return { bg: 'bg-emerald-500/20 hover:bg-emerald-500/30 border-emerald-500/30', text: 'text-emerald-400' }
+    case 'degraded': return { bg: 'bg-amber-500/20 hover:bg-amber-500/30 border-amber-500/30',       text: 'text-amber-400'   }
+    case 'error':    return { bg: 'bg-red-500/20 hover:bg-red-500/30 border-red-500/30',             text: 'text-red-400'     }
+    case 'pending':  return { bg: 'bg-[var(--bg-card2)] hover:bg-[var(--bg-card2)] border-[var(--border2)]', text: 'text-[var(--text-muted)]' }
   }
 }
 
@@ -27,15 +27,27 @@ function statusIcon(s: SyncDay['status']) {
     case 'ready':    return <CheckCircle2  className="w-3.5 h-3.5 text-emerald-400" />
     case 'degraded': return <AlertTriangle className="w-3.5 h-3.5 text-amber-400"   />
     case 'error':    return <AlertCircle   className="w-3.5 h-3.5 text-red-400"     />
-    case 'pending':  return <Clock         className="w-3.5 h-3.5 text-[var(--text-muted)]"   />
+    case 'pending':  return <Clock         className="w-3.5 h-3.5 text-[var(--text-muted)]" />
   }
 }
 
-interface Props { days: SyncDay[] }
+type MP = 'uzum' | 'yandex' | 'wb'
 
-export default function DataStateView({ days }: Props) {
+interface Props {
+  uzumDays:   SyncDay[]
+  yandexDays: SyncDay[]
+  wbDays:     SyncDay[]
+}
+
+export default function DataStateView({ uzumDays, yandexDays, wbDays }: Props) {
   const { lang } = useLang()
   const d = translations[lang].dashboard
+  const [mp, setMp] = useState<MP>('uzum')
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [resyncing, setResyncing] = useState<Set<string>>(new Set())
+  const [hoveredDay, setHoveredDay] = useState<SyncDay | null>(null)
+
+  const days = mp === 'uzum' ? uzumDays : mp === 'yandex' ? yandexDays : wbDays
 
   function statusLabel(s: SyncDay['status']) {
     switch (s) {
@@ -45,10 +57,6 @@ export default function DataStateView({ days }: Props) {
       case 'pending':  return d.dsPending
     }
   }
-
-  const [selected, setSelected] = useState<Set<string>>(new Set())
-  const [resyncing, setResyncing] = useState<Set<string>>(new Set())
-  const [hoveredDay, setHoveredDay] = useState<SyncDay | null>(null)
 
   function toggleDay(date: string) {
     setSelected(prev => {
@@ -63,10 +71,15 @@ export default function DataStateView({ days }: Props) {
     setSelected(new Set(toSelect))
   }
 
-  function resyncSelected() {
+  async function resyncSelected() {
+    const marketplace = mp === 'uzum' ? 'uzum' : mp === 'yandex' ? 'yandex_market' : 'wildberries'
     setResyncing(new Set(selected))
     setSelected(new Set())
-    // Simulate resync completing after 2s
+    await fetch('/api/sync/resync-days', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ marketplace, dates: [...selected] }),
+    })
     setTimeout(() => setResyncing(new Set()), 2000)
   }
 
@@ -77,115 +90,148 @@ export default function DataStateView({ days }: Props) {
     pending:  days.filter(d => d.status === 'pending').length,
   }
 
+  const noShop = days.length === 0
+
   return (
     <div className="space-y-4">
-      {/* Status summary */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      {/* Marketplace tabs */}
+      <div className="flex items-center gap-1 p-1 bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl w-fit">
         {([
-          ['ready',    d.dsReady,     counts.ready,    'text-emerald-400', 'bg-emerald-500/10 border-emerald-500/20'],
-          ['degraded', d.dsDegraded,  counts.degraded, 'text-amber-400',   'bg-amber-500/10 border-amber-500/20'   ],
-          ['error',    d.dsError,     counts.error,    'text-red-400',     'bg-red-500/10 border-red-500/20'       ],
-          ['pending',  d.dsPending,   counts.pending,  'text-[var(--text-muted)]',   'bg-[var(--bg-card2)] border-[var(--border)]'  ],
-        ] as [SyncDay['status'], string, number, string, string][]).map(([status, label, count, textCls, bgCls]) => (
-          <button key={status}
-            onClick={() => selectAll(status)}
-            className={`text-left px-4 py-3 rounded-xl border transition-all ${bgCls} hover:scale-[1.01]`}>
-            <p className="text-xs text-[var(--text-muted)] mb-1">{label}</p>
-            <p className={`text-xl font-bold ${textCls}`}>{count} {d.dsDaysUnit}</p>
-            <p className="text-[10px] text-[var(--text-muted)] mt-0.5">{d.dsSelectToClick}</p>
+          { id: 'uzum',   label: 'Uzum' },
+          { id: 'yandex', label: 'Yandex Market' },
+          { id: 'wb',     label: 'Wildberries' },
+        ] as { id: MP; label: string }[]).map(m => (
+          <button key={m.id}
+            onClick={() => { setMp(m.id); setSelected(new Set()); setHoveredDay(null) }}
+            className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              mp === m.id ? 'bg-violet-600/20 border border-violet-500/30' : 'text-[var(--text-muted)] hover:text-[var(--text-dim)]'
+            }`}
+            style={mp === m.id ? { color: 'var(--c1)' } : {}}>
+            {m.label}
           </button>
         ))}
       </div>
 
-      {/* Actions */}
-      {selected.size > 0 && (
-        <div className="flex items-center gap-3 bg-violet-500/5 border border-violet-500/20 rounded-xl px-4 py-3">
-          <span className="text-xs text-violet-300 font-semibold">{selected.size} {d.dsSelectedSuffix}</span>
-          <button onClick={resyncSelected}
-            className="flex items-center gap-1.5 px-3 py-1.5 btn-primary text-xs font-semibold rounded-lg transition-colors ml-auto">
-            <RefreshCw className="w-3.5 h-3.5" /> Qayta yuklash
-          </button>
-          <button onClick={() => setSelected(new Set())}
-            className="text-xs text-[var(--text-muted)] hover:text-[var(--text-dim)] transition-colors">{d.dsCancel}</button>
+      {/* No shop connected */}
+      {noShop ? (
+        <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl p-8 text-center">
+          <p className="text-[var(--text-base)] font-semibold text-sm mb-1">
+            {lang === 'ru' ? 'Магазин не подключён' : lang === 'en' ? 'No shop connected' : "Do'kon ulanmagan"}
+          </p>
+          <p className="text-[var(--text-muted)] text-xs">
+            {lang === 'ru' ? 'Подключите магазин в настройках, чтобы увидеть историю синхронизации.' :
+             lang === 'en' ? 'Connect a shop in Settings to see sync history.' :
+             "Sinxronizatsiya tarixini ko'rish uchun Sozlamalarda do'kon ulang."}
+          </p>
         </div>
-      )}
-
-      {/* Day grid */}
-      <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl p-4">
-        <p className="text-xs font-semibold text-[var(--text-muted)] mb-4">{d.dsLast30}</p>
-        <div className="grid grid-cols-5 sm:grid-cols-7 lg:grid-cols-10 gap-2">
-          {days.map(day => {
-            const { bg } = statusStyle(day.status)
-            const isSelected = selected.has(day.date)
-            const isResyncing = resyncing.has(day.date)
-            const dayNum = new Date(day.date).getDate()
-            const monthShort = new Date(day.date).toLocaleDateString('uz-UZ', { month: 'short' })
-
-            return (
-              <button
-                key={day.date}
-                onClick={() => toggleDay(day.date)}
-                onMouseEnter={() => setHoveredDay(day)}
-                onMouseLeave={() => setHoveredDay(null)}
-                className={`relative flex flex-col items-center gap-1 p-2 rounded-xl border transition-all cursor-pointer
-                  ${isSelected ? 'ring-2 ring-violet-500 ring-offset-1 ring-offset-[var(--bg-card2)]' : ''}
-                  ${isResyncing ? 'animate-pulse' : ''}
-                  ${bg}`}
-              >
-                {isResyncing && (
-                  <RefreshCw className="absolute top-1 right-1 w-2.5 h-2.5 text-violet-400 animate-spin" />
-                )}
-                <span className="text-[10px] text-[var(--text-muted)]">{monthShort}</span>
-                <span className="text-sm font-bold text-[var(--text-base)]">{dayNum}</span>
-                <span className="scale-75">{statusIcon(day.status)}</span>
+      ) : (
+        <>
+          {/* Status summary */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {([
+              ['ready',    d.dsReady,    counts.ready,    'text-emerald-400', 'bg-emerald-500/10 border-emerald-500/20'],
+              ['degraded', d.dsDegraded, counts.degraded, 'text-amber-400',   'bg-amber-500/10 border-amber-500/20'   ],
+              ['error',    d.dsError,    counts.error,    'text-red-400',     'bg-red-500/10 border-red-500/20'       ],
+              ['pending',  d.dsPending,  counts.pending,  'text-[var(--text-muted)]', 'bg-[var(--bg-card2)] border-[var(--border)]'],
+            ] as [SyncDay['status'], string, number, string, string][]).map(([status, label, count, textCls, bgCls]) => (
+              <button key={status} onClick={() => selectAll(status)}
+                className={`text-left px-4 py-3 rounded-xl border transition-all ${bgCls} hover:scale-[1.01]`}>
+                <p className="text-xs text-[var(--text-muted)] mb-1">{label}</p>
+                <p className={`text-xl font-bold ${textCls}`}>{count} {d.dsDaysUnit}</p>
+                <p className="text-[10px] text-[var(--text-muted)] mt-0.5">{d.dsSelectToClick}</p>
               </button>
-            )
-          })}
-        </div>
-      </div>
+            ))}
+          </div>
 
-      {/* Hovered day detail */}
-      {hoveredDay && (
-        <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl p-4 grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <div>
-            <p className="text-xs text-[var(--text-muted)] mb-1">{d.dsDate}</p>
-            <p className="text-sm font-bold text-[var(--text-base)]">{hoveredDay.date}</p>
-          </div>
-          <div>
-            <p className="text-xs text-[var(--text-muted)] mb-1">{d.dsStatus}</p>
-            <div className="flex items-center gap-1.5">
-              {statusIcon(hoveredDay.status)}
-              <span className={`text-sm font-semibold ${statusStyle(hoveredDay.status).text}`}>
-                {statusLabel(hoveredDay.status, t)}
-              </span>
-            </div>
-          </div>
-          <div>
-            <p className="text-xs text-[var(--text-muted)] mb-1">{d.dsProducts}</p>
-            <p className="text-sm font-bold text-[var(--text-base)]">{hoveredDay.productsCount ?? '—'}</p>
-          </div>
-          <div>
-            <p className="text-xs text-[var(--text-muted)] mb-1">{d.dsRevenue}</p>
-            <p className="text-sm font-bold text-emerald-400">
-              {hoveredDay.revenue !== undefined ? `${fs(hoveredDay.revenue)} so'm` : '—'}
-            </p>
-          </div>
-          {hoveredDay.errorMessage && (
-            <div className="col-span-full">
-              <p className="text-xs text-[var(--text-muted)] mb-1">{d.dsError}</p>
-              <p className="text-xs text-red-400">{hoveredDay.errorMessage}</p>
+          {/* Actions */}
+          {selected.size > 0 && (
+            <div className="flex items-center gap-3 bg-violet-500/5 border border-violet-500/20 rounded-xl px-4 py-3">
+              <span className="text-xs font-semibold" style={{ color: 'var(--c1)' }}>{selected.size} {d.dsSelectedSuffix}</span>
+              <button onClick={resyncSelected}
+                className="flex items-center gap-1.5 px-3 py-1.5 btn-primary text-xs font-semibold rounded-lg transition-colors ml-auto">
+                <RefreshCw className="w-3.5 h-3.5" />
+                {lang === 'ru' ? 'Пересинхронизировать' : lang === 'en' ? 'Resync' : 'Qayta yuklash'}
+              </button>
+              <button onClick={() => setSelected(new Set())}
+                className="text-xs text-[var(--text-muted)] hover:text-[var(--text-dim)] transition-colors">{d.dsCancel}</button>
             </div>
           )}
-        </div>
-      )}
 
-      {/* Legend */}
-      <div className="flex flex-wrap gap-4 text-xs text-[var(--text-muted)]">
-        <span>{d.dsHint}</span>
-        <span className="flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> {d.dsReady}</span>
-        <span className="flex items-center gap-1.5"><AlertTriangle className="w-3.5 h-3.5 text-amber-400" /> {d.dsDegraded}</span>
-        <span className="flex items-center gap-1.5"><AlertCircle className="w-3.5 h-3.5 text-red-400" /> {d.dsError}</span>
-      </div>
+          {/* Day grid */}
+          <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl p-4">
+            <p className="text-xs font-semibold text-[var(--text-muted)] mb-4">{d.dsLast30}</p>
+            <div className="grid grid-cols-5 sm:grid-cols-7 lg:grid-cols-10 gap-2">
+              {days.map(day => {
+                const { bg } = statusStyle(day.status)
+                const isSelected  = selected.has(day.date)
+                const isResyncing = resyncing.has(day.date)
+                const dayNum     = new Date(day.date).getDate()
+                const monthShort = new Date(day.date).toLocaleDateString('uz-UZ', { month: 'short' })
+                return (
+                  <button key={day.date}
+                    onClick={() => toggleDay(day.date)}
+                    onMouseEnter={() => setHoveredDay(day)}
+                    onMouseLeave={() => setHoveredDay(null)}
+                    className={`relative flex flex-col items-center gap-1 p-2 rounded-xl border transition-all cursor-pointer
+                      ${isSelected  ? 'ring-2 ring-violet-500 ring-offset-1 ring-offset-[var(--bg-card2)]' : ''}
+                      ${isResyncing ? 'animate-pulse' : ''}
+                      ${bg}`}>
+                    {isResyncing && (
+                      <RefreshCw className="absolute top-1 right-1 w-2.5 h-2.5 text-violet-400 animate-spin" />
+                    )}
+                    <span className="text-[10px] text-[var(--text-muted)]">{monthShort}</span>
+                    <span className="text-sm font-bold text-[var(--text-base)]">{dayNum}</span>
+                    <span className="scale-75">{statusIcon(day.status)}</span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Hovered day detail */}
+          {hoveredDay && (
+            <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl p-4 grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <div>
+                <p className="text-xs text-[var(--text-muted)] mb-1">{d.dsDate}</p>
+                <p className="text-sm font-bold text-[var(--text-base)]">{hoveredDay.date}</p>
+              </div>
+              <div>
+                <p className="text-xs text-[var(--text-muted)] mb-1">{d.dsStatus}</p>
+                <div className="flex items-center gap-1.5">
+                  {statusIcon(hoveredDay.status)}
+                  <span className={`text-sm font-semibold ${statusStyle(hoveredDay.status).text}`}>
+                    {statusLabel(hoveredDay.status)}
+                  </span>
+                </div>
+              </div>
+              <div>
+                <p className="text-xs text-[var(--text-muted)] mb-1">{d.dsProducts}</p>
+                <p className="text-sm font-bold text-[var(--text-base)]">{hoveredDay.productsCount ?? '—'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-[var(--text-muted)] mb-1">{d.dsRevenue}</p>
+                <p className="text-sm font-bold text-emerald-400">
+                  {hoveredDay.revenue !== undefined ? `${fs(hoveredDay.revenue)} so'm` : '—'}
+                </p>
+              </div>
+              {hoveredDay.errorMessage && (
+                <div className="col-span-full">
+                  <p className="text-xs text-[var(--text-muted)] mb-1">{d.dsError}</p>
+                  <p className="text-xs text-red-400">{hoveredDay.errorMessage}</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Legend */}
+          <div className="flex flex-wrap gap-4 text-xs text-[var(--text-muted)]">
+            <span>{d.dsHint}</span>
+            <span className="flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> {d.dsReady}</span>
+            <span className="flex items-center gap-1.5"><AlertTriangle className="w-3.5 h-3.5 text-amber-400" /> {d.dsDegraded}</span>
+            <span className="flex items-center gap-1.5"><AlertCircle className="w-3.5 h-3.5 text-red-400" /> {d.dsError}</span>
+          </div>
+        </>
+      )}
     </div>
   )
 }

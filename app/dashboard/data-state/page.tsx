@@ -3,7 +3,12 @@ import DataStateView from '@/components/dashboard/DataStateView'
 import { getSyncDays } from '@/lib/db/sync-state'
 
 export default async function DataStatePage() {
-  const [t, days] = await Promise.all([getT(), getSyncDays(30)])
+  const [t, uzumDays, yandexDays, wbDays] = await Promise.all([
+    getT(),
+    getSyncDays('uzum', 30),
+    getSyncDays('yandex_market', 30),
+    getSyncDays('wildberries', 30),
+  ])
   const d = t.dashboard
 
   return (
@@ -14,7 +19,11 @@ export default async function DataStatePage() {
         </div>
         <p className="text-[var(--text-muted)] text-sm">{d.dataStateSubtitle}</p>
       </div>
-      <DataStateView days={days} />
+      <DataStateView
+        uzumDays={uzumDays}
+        yandexDays={yandexDays}
+        wbDays={wbDays}
+      />
     </div>
   )
 }
