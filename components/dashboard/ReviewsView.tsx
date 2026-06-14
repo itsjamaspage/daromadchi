@@ -116,13 +116,15 @@ export default function ReviewsView({ reviews }: Props) {
           {TABS.map(({ key, label, count }) => (
             <button key={key} onClick={() => setFilter(key)}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
-                filter === key ? 'bg-violet-600/20 text-violet-300 border border-violet-500/30' : 'text-[var(--text-muted)] hover:text-[var(--text-dim)]'
-              }`}>
+                filter === key ? 'bg-violet-600/20 border border-violet-500/30' : 'text-[var(--text-muted)] hover:text-[var(--text-dim)]'
+              }`}
+              style={filter === key ? { color: 'var(--c1)' } : {}}>
               {label}
               {count !== undefined && (
                 <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
-                  filter === key ? 'bg-violet-500/20 text-violet-300' : 'bg-white/[0.06] text-[var(--text-muted)]'
-                }`}>{count}</span>
+                  filter === key ? 'bg-violet-500/20' : 'bg-white/[0.06] text-[var(--text-muted)]'
+                }`}
+                style={filter === key ? { color: 'var(--c1)' } : {}}>{count}</span>
               )}
             </button>
           ))}

@@ -73,9 +73,10 @@ export default function SeasonalityView({ data }: Props) {
             <button key={p.productId} onClick={() => setSelectedIdx(i)}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border transition-all ${
                 selectedIdx === i
-                  ? 'bg-violet-600/20 border-violet-500/30 text-violet-300'
+                  ? 'bg-violet-600/20 border-violet-500/30'
                   : 'bg-[var(--bg-card2)] border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text-base)] hover:border-[var(--border)]'
-              }`}>
+              }`}
+              style={selectedIdx === i ? { color: 'var(--c1)' } : {}}>
               <Package className="w-3.5 h-3.5" />
               {p.productTitle}
             </button>
@@ -186,7 +187,7 @@ export default function SeasonalityView({ data }: Props) {
 
       {/* Recommendation box */}
       <div className="bg-violet-500/5 border border-violet-500/15 rounded-2xl px-5 py-4">
-        <p className="text-violet-300 font-semibold text-sm mb-2">Tavsiya</p>
+        <p className="font-semibold text-sm mb-2" style={{ color: 'var(--c1)' }}>Tavsiya</p>
         <p className="text-[var(--text-muted)] text-xs leading-relaxed">
           <strong className="text-[var(--text-base)]">{product.peakMonth}</strong> oyida eng yuqori sotuv kuzatiladi.
           Shu oydan <strong className="text-[var(--text-base)]">1–2 oy oldin</strong> yetarli zaxira to&apos;plang.
