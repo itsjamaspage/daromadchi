@@ -252,7 +252,7 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
       {extPending && (
         <div className="bg-violet-500/10 border border-violet-500/30 rounded-2xl px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-3">
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-violet-300 truncate">{extPending.title}</p>
+            <p className="text-sm font-semibold truncate" style={{ color: 'var(--c1)' }}>{extPending.title}</p>
             <p className="text-xs text-violet-400/70 mt-0.5">
               {extPending.marketplace?.toUpperCase()} · {extPending.sellingPrice ? `${new Intl.NumberFormat('uz-UZ').format(Math.round(extPending.sellingPrice))} so'm` : ''} · {extPending.margin ? `${Math.round(extPending.margin)}% marja` : ''}
             </p>
@@ -306,18 +306,22 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
         <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl p-4">
           <p className="text-xs font-semibold text-[var(--text-muted)] mb-3">Ko&apos;rsatiladigan ustunlar</p>
           <div className="flex flex-wrap gap-2">
-            {ALL_COLUMNS.map(col => (
-              <button key={col.key}
-                disabled={col.always}
-                onClick={() => !col.always && toggleCol(col.key)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                  visibleCols.has(col.key) || col.always
-                    ? 'bg-violet-600/20 text-violet-300 border border-violet-500/30'
-                    : 'bg-[var(--bg-card2)] text-[var(--text-muted)] border border-[var(--border)] hover:text-[var(--text-dim)]'
-                } ${col.always ? 'opacity-60 cursor-default' : 'cursor-pointer'}`}>
-                {col.label}{col.always ? <span className="ml-1 text-[9px] opacity-50 font-normal">fixed</span> : ''}
-              </button>
-            ))}
+            {ALL_COLUMNS.map(col => {
+              const active = visibleCols.has(col.key) || col.always
+              return (
+                <button key={col.key}
+                  disabled={col.always}
+                  onClick={() => !col.always && toggleCol(col.key)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                    active
+                      ? 'bg-violet-600/20 border border-violet-500/30'
+                      : 'bg-[var(--bg-card2)] text-[var(--text-muted)] border border-[var(--border)] hover:text-[var(--text-dim)]'
+                  } ${col.always ? 'opacity-60 cursor-default' : 'cursor-pointer'}`}
+                  style={active ? { color: 'var(--c1)' } : {}}>
+                  {col.label}{col.always ? <span className="ml-1 text-[9px] opacity-50 font-normal">fixed</span> : ''}
+                </button>
+              )
+            })}
           </div>
         </div>
       )}
@@ -473,9 +477,17 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
                       )
                       if (col.key === 'roi') return (
                         <td key="roi" className="px-3 py-3">
-                          <span className={`text-xs font-bold px-2 py-0.5 rounded-lg ${roiBg(item.roi)}`}>
-                            {item.roi}%
-                          </span>
+                          {item.costPrice === 0 ? (
+                            <button onClick={() => openEdit(item)}
+                              className="text-xs text-amber-400 border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 rounded-lg hover:bg-amber-500/20 transition-colors"
+                              title="Tannarx kiritilmagan — ROI hisoblanmadi">
+                              —
+                            </button>
+                          ) : (
+                            <span className={`text-xs font-bold px-2 py-0.5 rounded-lg ${roiBg(item.roi)}`}>
+                              {item.roi.toFixed(0)}%
+                            </span>
+                          )}
                         </td>
                       )
                       if (col.key === 'margin') return (
