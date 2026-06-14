@@ -169,12 +169,12 @@ export default function Glossary() {
 
             <div className="px-5 py-4 space-y-3 max-h-[70vh] overflow-y-auto">
               {TERMS.map(term => (
-                <div key={term.abbr} className="rounded-xl border border-[var(--border)] bg-[var(--bg-card2)] px-3.5 py-3">
+                <div key={term.abbr} className="rounded-xl border border-[var(--border)] bg-[var(--bg-card2)] px-3.5 py-3 overflow-hidden">
                   <div className="flex items-baseline gap-2 flex-wrap">
-                    <span className="text-violet-400 font-bold text-xs">{term.abbr}</span>
-                    <span className="text-[var(--text-base)] text-xs font-medium">{term.full[lang] ?? term.full.uz}</span>
+                    <span className="text-violet-400 font-bold text-xs shrink-0">{term.abbr}</span>
+                    <span className="text-[var(--text-base)] text-xs font-medium break-words min-w-0">{term.full[lang] ?? term.full.uz}</span>
                   </div>
-                  <p className="text-[var(--text-muted)] text-xs leading-relaxed mt-1">{term.desc[lang] ?? term.desc.uz}</p>
+                  <p className="text-[var(--text-muted)] text-xs leading-relaxed mt-1 break-words">{term.desc[lang] ?? term.desc.uz}</p>
                 </div>
               ))}
             </div>
