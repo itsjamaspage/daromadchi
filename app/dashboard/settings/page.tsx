@@ -1,6 +1,5 @@
 import { getT } from '@/lib/server-i18n'
 import { createClient } from '@/lib/supabase/server'
-import { getUnitEcoSettings } from '@/lib/db/unit-economics'
 import SettingsForm from './SettingsForm'
 import type { Shop } from '@/lib/types'
 
@@ -20,14 +19,12 @@ export default async function SettingsPage() {
       .eq('user_id', user.id)
 
     for (const row of data ?? []) {
-      if (row.shop_id_external === 'DEMO') continue   // skip the sample-data shop
+      if (row.shop_id_external === 'DEMO') continue
       if (row.marketplace === 'uzum')          uzumShop   = row as Shop
       if (row.marketplace === 'yandex_market') yandexShop = row as Shop
       if (row.marketplace === 'wildberries')   wbShop     = row as Shop
     }
   }
-
-  const ueSettings = await getUnitEcoSettings()
 
   let telegramChatId:   string | null = null
   let telegramUsername: string | null = null
@@ -57,7 +54,6 @@ export default async function SettingsPage() {
         yandexShop={yandexShop}
         wbShop={wbShop}
         userId={user?.id ?? ''}
-        ueSettings={ueSettings}
         telegramChatId={telegramChatId}
         telegramUsername={telegramUsername}
       />
