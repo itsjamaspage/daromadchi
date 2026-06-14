@@ -21,7 +21,6 @@ export type HelpSection =
   | 'keywords'
   | 'team'
   | 'dataState'
-  | 'priceTracking'
   | 'alerts'
   | 'payouts'
   | 'reviews'
@@ -496,45 +495,6 @@ export const helpContent: HelpDB = {
         { step: 2, text: 'Auto-sync runs once a day' },
         { step: 3, text: 'Errors are logged with reason and timestamp' },
         { step: 4, text: 'Manual sync is also available' },
-      ],
-    },
-  },
-
-  priceTracking: {
-    uz: {
-      title: 'Narx kuzatuvi',
-      what: 'Raqobatchilarnig narxlari bilan o\'zingizning narxingizni taqqoslash. Bozordagi pozitsiyangizni ko\'rsatadi.',
-      why: 'Narxingiz raqobatbardosh bo\'lishi uchun bozor narxlarini kuzatib boring va kerakli o\'zgartirishlar kiriting.',
-      how: '"Eng arzon" — sizning narxingiz eng past. "Eng qimmat" — narxni pasaytirish kerak bo\'lishi mumkin. Farq foizini kuzating.',
-      steps: [
-        { step: 1, text: 'Mahsulotlaringiz Uzumdagi raqobatchilar bilan solishtiriladi' },
-        { step: 2, text: 'Minimal va o\'rtacha raqobat narxlari hisoblanadi' },
-        { step: 3, text: 'Narx farqi (so\'m va foizda) chiqariladi' },
-        { step: 4, text: 'Narx tarixi grafikda ko\'rsatiladi' },
-      ],
-    },
-    ru: {
-      title: 'Отслеживание цен',
-      what: 'Сравнение ваших цен с ценами конкурентов. Показывает вашу позицию на рынке.',
-      why: 'Следите за рыночными ценами, чтобы ваши цены оставались конкурентоспособными.',
-      how: '"Самая низкая" — ваша цена наименьшая. "Самая высокая" — возможно, нужно снизить цену. Следите за разницей в процентах.',
-      steps: [
-        { step: 1, text: 'Ваши товары сравниваются с конкурентами на Uzum' },
-        { step: 2, text: 'Рассчитываются минимальная и средняя цены конкурентов' },
-        { step: 3, text: 'Выводится разница в цене (в сумах и процентах)' },
-        { step: 4, text: 'История цен отображается на графике' },
-      ],
-    },
-    en: {
-      title: 'Price Tracking',
-      what: 'Compare your prices against competitors. Shows your market position.',
-      why: 'Monitor market prices to keep your pricing competitive.',
-      how: '"Lowest" = your price is the cheapest. "Highest" = you may need to lower the price. Watch the % difference.',
-      steps: [
-        { step: 1, text: 'Your products are compared to Uzum competitors' },
-        { step: 2, text: 'Min and avg competitor prices are calculated' },
-        { step: 3, text: 'Price difference is shown in UZS and %' },
-        { step: 4, text: 'Price history is shown on a chart' },
       ],
     },
   },
