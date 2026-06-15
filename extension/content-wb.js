@@ -135,35 +135,47 @@
     }
 
     function parseWbPrice() {
-      // Helper: accept only 4–9 digit strings (10 000 – 999 999 999 sum)
       function extractPrice(text) {
         const raw = text.replace(/[^\d]/g, '');
-        if (raw.length < 4 || raw.length > 9) return null;
-        return parseInt(raw, 10);
+        if (raw.length < 3 || raw.length > 10) return null;
+        const n = parseInt(raw, 10);
+        return n >= 100 ? n : null;
       }
 
-      // Priority 1: known WB class name fragments (hashed but contain these substrings)
+      // Priority 0: structured data / meta tags (most reliable, never changes)
+      for (const attr of [['meta[itemprop="price"]','content'], ['meta[property="product:price:amount"]','content'], ['[itemprop="price"]','content']]) {
+        const el = document.querySelector(attr[0]);
+        const val = el?.getAttribute(attr[1]);
+        if (val) { const p = parseInt(val.replace(/[^\d]/g,''), 10); if (p >= 100) return p; }
+      }
+
+      // Priority 1: known WB class fragments (hashed but stable substrings)
       const priority = [
         '[class*="priceBlockFinalPrice"]',
         '[class*="priceBlockPrice--"]',
         'ins[class*="priceBlock"]',
         '[class*="price-block__final-price"]',
         '[class*="price__lower-price"]',
+        '[class*="price-block__wallet-price"]',
+        '[class*="priceWithoutParams"]',
+        '[class*="finalPrice"]',
+        '[class*="price--active"]',
+        '[class*="current-price"]',
       ];
       for (const sel of priority) {
         const el = document.querySelector(sel);
         if (!el) continue;
-        if (/[Oo]ld|[Cc]ross|[Ss]trike|[Pp]rev/.test(el.className)) continue;
+        if (/[Oo]ld|[Cc]ross|[Ss]trike|[Pp]rev|through/.test(el.className)) continue;
         const p = extractPrice(el.innerText);
         if (p) return p;
       }
 
-      // Priority 2: <ins> tags — WB uses <ins> for discounted prices
+      // Priority 2: <ins> tags (WB uses ins for current price, del/s for old)
       const insTags = Array.from(document.querySelectorAll('ins'));
       const visibleIns = insTags.filter(el => {
         if (/[Oo]ld|[Cc]ross|[Ss]trike/.test(el.className)) return false;
         const rect = el.getBoundingClientRect();
-        return rect.width > 0 && rect.top > 0 && rect.top < window.innerHeight * 1.5;
+        return rect.width > 0 && rect.top > 0 && rect.top < window.innerHeight * 2;
       });
       visibleIns.sort((a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top);
       for (const el of visibleIns) {
@@ -171,19 +183,25 @@
         if (p) return p;
       }
 
-      // Priority 3: currency-text scan — finds the price even if class names change.
-      // Skip elements that contain "сум" more than once (current + old price combined).
-      const currencyRe = /сум|so'm/i;
-      for (const el of document.querySelectorAll('span,ins,strong,b,div,p')) {
-        if (el.children.length > 4) continue;
-        const text = el.innerText || '';
+      // Priority 3: collect ALL currency prices and return the minimum (= current price,
+      // since strikethrough old price is always higher). Works even when class names are
+      // fully obfuscated and different between WB RU and WB UZ.
+      const currencyRe = /сум|so['']m|₽|руб/i;
+      const prices = [];
+      for (const el of document.querySelectorAll('span,ins,strong,b,div,p,del,s')) {
+        const text = el.innerText?.trim() || '';
         if (!currencyRe.test(text)) continue;
-        if ((text.match(/сум|so'm/gi) || []).length > 1) continue;
+        // Skip if this element is explicitly the old/strikethrough price
+        const tag = el.tagName.toLowerCase();
+        if (tag === 'del' || tag === 's') continue;
         const cls = (el.className || '').toLowerCase();
-        if (cls.includes('old') || cls.includes('cross') || cls.includes('strike') || cls.includes('prev')) continue;
+        if (cls.includes('old') || cls.includes('cross') || cls.includes('strike') || cls.includes('prev') || cls.includes('through')) continue;
         const p = extractPrice(text);
-        if (p) return p;
+        if (p) prices.push(p);
       }
+      // The minimum is the discounted current price
+      if (prices.length > 0) return Math.min(...prices);
+
       return null;
     }
 
