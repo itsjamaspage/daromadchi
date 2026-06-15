@@ -4,6 +4,7 @@ import { useState, useTransition, useCallback, useEffect, useRef } from 'react'
 import { Search, TrendingUp, Star, ShoppingBag, ChevronRight, ArrowUpDown, Loader2, Flame, DollarSign } from 'lucide-react'
 import type { UzumPublicCategory, UzumPublicProduct } from '@/lib/uzum/public'
 import type { WbPublicProduct } from '@/lib/wildberries/public'
+import type { Product } from '@/lib/types'
 import { useLang } from '@/app/providers'
 import { dashT } from '@/lib/dashT'
 
@@ -139,80 +140,6 @@ function UzumProductTable({ products, userCategories, t }: { products: UzumPubli
   )
 }
 
-// ─── Yandex model table ───────────────────────────────────────────────────────
-
-interface YandexModel {
-  id: number; name: string
-  prices?: { min: number; max: number; avg: number; cur: string }
-  rating?: number; reviewCount?: number; offersCount?: number
-}
-
-function YandexModelTable({ models, t }: { models: YandexModel[]; t: MarketT }) {
-  if (!models.length) return null
-  const withPrices = models.filter(m => m.prices?.avg)
-  const avgP = withPrices.length
-    ? withPrices.reduce((s, m) => s + (m.prices?.avg ?? 0), 0) / withPrices.length : 0
-  const minP = withPrices.length ? Math.min(...withPrices.map(m => m.prices?.min ?? 0)) : 0
-  const maxP = withPrices.length ? Math.max(...withPrices.map(m => m.prices?.max ?? 0)) : 0
-  const cur  = withPrices[0]?.prices?.cur ?? '₽'
-
-  return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-        {[
-          { label: t.minPrice, value: `${fmt(minP)} ${cur}`, color: 'text-emerald-400' },
-          { label: t.avgPrice, value: `${fmt(avgP)} ${cur}`, color: 'text-amber-400'   },
-          { label: t.maxPrice, value: `${fmt(maxP)} ${cur}`, color: 'text-red-400'     },
-        ].map(({ label, value, color }) => (
-          <div key={label} className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl p-4">
-            <p className="text-[var(--text-muted)] text-xs mb-1">{label}</p>
-            <p className={`font-bold text-sm ${color}`}>{value}</p>
-          </div>
-        ))}
-      </div>
-      <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
-        <div className="px-5 py-4 border-b border-[var(--border)] flex items-center gap-2">
-          <TrendingUp className="w-4 h-4 text-amber-400" />
-          <h3 className="text-[var(--text-base)] font-semibold text-sm">{t.topModels}</h3>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-[var(--text-muted)] text-xs border-b border-[var(--border)] bg-[var(--bg-card2)]">
-                <th className="text-left px-5 py-3 font-medium">#</th>
-                <th className="text-left px-4 py-3 font-medium">{t.model}</th>
-                <th className="text-right px-4 py-3 font-medium">{t.priceRange}</th>
-                <th className="text-right px-4 py-3 font-medium">{t.rating}</th>
-                <th className="text-right px-4 py-3 font-medium">{t.reviews}</th>
-                <th className="text-right px-4 py-3 font-medium">{t.offers}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[var(--border)]">
-              {models.map((m, i) => (
-                <tr key={m.id} className="hover:bg-[var(--bg-card2)] transition-colors">
-                  <td className="px-5 py-3.5 text-[var(--text-muted)] text-xs">{i + 1}</td>
-                  <td className="px-4 py-3.5 text-[var(--text-base)] text-xs font-medium max-w-xs">{m.name}</td>
-                  <td className="px-4 py-3.5 text-right text-xs text-[var(--text-dim)]">
-                    {m.prices ? `${fmt(m.prices.min)}–${fmt(m.prices.max)} ${cur}` : '—'}
-                  </td>
-                  <td className="px-4 py-3.5 text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      <Star className="w-3 h-3 text-amber-400" />
-                      <span className="text-[var(--text-dim)] text-xs">{m.rating?.toFixed(1) ?? '—'}</span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3.5 text-right text-[var(--text-muted)] text-xs">{m.reviewCount ?? '—'}</td>
-                  <td className="px-4 py-3.5 text-right text-[var(--text-muted)] text-xs">{m.offersCount ?? '—'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 // ─── Wildberries product table ────────────────────────────────────────────────
 
 function WbProductTable({ products, t }: { products: WbPublicProduct[]; t: MarketT }) {
@@ -322,10 +249,98 @@ function WbProductTable({ products, t }: { products: WbPublicProduct[]; t: Marke
   )
 }
 
+// ─── Yandex own-products table ────────────────────────────────────────────────
+
+function YmOwnProductTable({ products, t }: { products: Product[]; t: MarketT }) {
+  if (!products.length) return null
+  const withPrice = products.filter(p => p.selling_price)
+  const totalStock = products.reduce((s, p) => s + p.stock_quantity, 0)
+  const totalSold  = products.reduce((s, p) => s + p.sold, 0)
+  const avgMargin  = withPrice.length
+    ? withPrice.reduce((s, p) => {
+        const margin = p.selling_price && p.cost_price ? ((p.selling_price - p.cost_price) / p.selling_price) * 100 : 0
+        return s + margin
+      }, 0) / withPrice.length
+    : 0
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {[
+          { label: t.productsCount, value: String(products.length),          color: 'text-amber-400'   },
+          { label: t.totalOrders,   value: fmt(totalSold),                   color: 'text-cyan-400'    },
+          { label: t.stock,         value: fmt(totalStock),                  color: 'text-emerald-400' },
+          { label: t.margin,        value: `${avgMargin.toFixed(0)}%`,       color: 'text-violet-400'  },
+        ].map(({ label, value, color }) => (
+          <div key={label} className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl p-4">
+            <p className="text-[var(--text-muted)] text-xs mb-1">{label}</p>
+            <p className={`font-bold text-sm ${color}`}>{value}</p>
+          </div>
+        ))}
+      </div>
+      <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
+        <div className="px-5 py-4 border-b border-[var(--border)] flex items-center gap-2">
+          <TrendingUp className="w-4 h-4 text-amber-400" />
+          <h3 className="text-[var(--text-base)] font-semibold text-sm">{t.ymOwnProducts}</h3>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-[var(--text-muted)] text-xs border-b border-[var(--border)] bg-[var(--bg-card2)]">
+                <th className="text-left px-5 py-3 font-medium">#</th>
+                <th className="text-left px-4 py-3 font-medium">{t.product}</th>
+                <th className="text-right px-4 py-3 font-medium">{t.price}</th>
+                <th className="text-right px-4 py-3 font-medium">{t.cost}</th>
+                <th className="text-right px-4 py-3 font-medium">{t.margin}</th>
+                <th className="text-right px-4 py-3 font-medium">{t.stock}</th>
+                <th className="text-right px-4 py-3 font-medium">{t.sold}</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[var(--border)]">
+              {products.map((p, i) => {
+                const margin = p.selling_price && p.cost_price
+                  ? ((p.selling_price - p.cost_price) / p.selling_price) * 100 : null
+                return (
+                  <tr key={p.id} className="hover:bg-[var(--bg-card2)] transition-colors">
+                    <td className="px-5 py-3.5 text-[var(--text-muted)] text-xs">{i + 1}</td>
+                    <td className="px-4 py-3.5">
+                      <p className="text-[var(--text-base)] text-xs font-medium leading-snug max-w-xs">{p.title}</p>
+                      {p.sku && <p className="text-[var(--text-muted)] text-[10px] mt-0.5">{t.sku}: {p.sku}</p>}
+                      {p.category && <p className="text-[var(--text-muted)] text-[10px]">{p.category}</p>}
+                    </td>
+                    <td className="px-4 py-3.5 text-right text-[var(--text-dim)] text-xs font-medium">
+                      {p.selling_price ? `${fmt(p.selling_price)} ₽` : '—'}
+                    </td>
+                    <td className="px-4 py-3.5 text-right text-[var(--text-muted)] text-xs">
+                      {p.cost_price ? `${fmt(p.cost_price)} ₽` : '—'}
+                    </td>
+                    <td className="px-4 py-3.5 text-right">
+                      {margin !== null ? (
+                        <span className={`text-xs font-bold ${margin >= 30 ? 'text-emerald-400' : margin >= 15 ? 'text-amber-400' : 'text-red-400'}`}>
+                          {margin.toFixed(0)}%
+                        </span>
+                      ) : <span className="text-[var(--text-muted)] text-xs">—</span>}
+                    </td>
+                    <td className="px-4 py-3.5 text-right">
+                      <span className={`text-xs font-bold ${p.stock_quantity <= 0 ? 'text-red-400' : p.stock_quantity <= 5 ? 'text-amber-400' : 'text-emerald-400'}`}>
+                        {p.stock_quantity}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3.5 text-right text-[var(--text-muted)] text-xs">{p.sold}</td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── Main client component ────────────────────────────────────────────────────
 
 type SortUzum = 'ORDER_COUNT_DESC' | 'PRICE_ASC' | 'PRICE_DESC' | 'RATING_DESC'
-type SortYandex = 'OPINIONS' | 'PRICE' | 'QUALITY'
 type SortWb = 'popular' | 'priceup' | 'pricedown' | 'rate'
 
 interface Props {
@@ -334,44 +349,24 @@ interface Props {
   userCategories:    string[]
   initialQuery?:     string
   yandexConnected?:  boolean
+  ymProducts?:       Product[]
 }
 
-export default function MarketClient({ marketplace, initialCategories, userCategories, initialQuery, yandexConnected }: Props) {
+export default function MarketClient({ marketplace, initialCategories, userCategories, initialQuery, yandexConnected, ymProducts = [] }: Props) {
   const { lang } = useLang()
   const t = dashT[lang].market
   const [selectedCat,       setSelectedCat]       = useState<{ id: number; title: string } | null>(null)
   const [uzumProducts,      setUzumProducts]      = useState<UzumPublicProduct[]>([])
   const [uzumCatsBrowser,   setUzumCatsBrowser]   = useState<UzumPublicCategory[]>([])
   const [wbProducts,        setWbProducts]        = useState<WbPublicProduct[]>([])
-  const [yandexCats,        setYandexCats]        = useState<{ id: number; name: string }[]>([])
-  const [yandexModels,      setYandexModels]      = useState<YandexModel[]>([])
   const [total,             setTotal]             = useState(0)
   const [searchQuery,       setSearchQuery]       = useState(initialQuery ?? '')
   const [sortUzum,          setSortUzum]          = useState<SortUzum>('ORDER_COUNT_DESC')
-  const [sortYandex,        setSortYandex]        = useState<SortYandex>('OPINIONS')
   const [sortWb,            setSortWb]            = useState<SortWb>('popular')
   const [mode,              setMode]              = useState<'category' | 'search'>('category')
-  const [yandexError,       setYandexError]       = useState<string | null>(null)
-  const [catsLoaded,        setCatsLoaded]        = useState(false)
   const [isPending,         startTransition]      = useTransition()
   const didAutoSearch       = useRef(false)
   const didLoadUzumCats     = useRef(false)
-
-  // Load Yandex categories on first render
-  const loadYandexCats = useCallback(() => {
-    if (catsLoaded) return
-    setCatsLoaded(true)
-    setYandexError(null)
-    startTransition(async () => {
-      const res = await fetch('/api/market/yandex?action=categories')
-      const data = await res.json() as { categories?: { id: number; name: string }[]; error?: string; detail?: string }
-      if (res.ok) {
-        setYandexCats(data.categories ?? [])
-      } else {
-        setYandexError(data.detail ?? data.error ?? `HTTP ${res.status}`)
-      }
-    })
-  }, [catsLoaded])
 
   const loadUzumCategory = useCallback((cat: { id: number; title: string }, s: SortUzum = sortUzum) => {
     setSelectedCat(cat); setMode('category')
@@ -384,23 +379,8 @@ export default function MarketClient({ marketplace, initialCategories, userCateg
     })
   }, [sortUzum])
 
-  const loadYandexCategory = useCallback((cat: { id: number; name: string }, s: SortYandex = sortYandex) => {
-    setSelectedCat({ id: cat.id, title: cat.name }); setMode('category')
-    setYandexError(null)
-    startTransition(async () => {
-      const res = await fetch(`/api/market/yandex?action=models&categoryId=${cat.id}&sort=${s}`)
-      const d = await res.json() as { models?: YandexModel[]; error?: string; detail?: string }
-      if (res.ok) {
-        setYandexModels(d.models ?? [])
-      } else {
-        setYandexError(d.detail ?? d.error ?? `HTTP ${res.status}`)
-      }
-    })
-  }, [sortYandex])
-
   const handleSearch = useCallback((sw: SortWb = sortWb, su: SortUzum = sortUzum, query = searchQuery) => {
-    console.log('[handleSearch] called', { query, marketplace })
-    if (!query.trim()) { console.log('[handleSearch] empty query, returning'); return }
+    if (!query.trim()) return
     if (marketplace === 'uzum') {
       setMode('search'); setSelectedCat(null)
       startTransition(async () => {
@@ -483,20 +463,11 @@ export default function MarketClient({ marketplace, initialCategories, userCateg
           }
         } catch { /* noop */ }
       })
-    } else if (marketplace === 'yandex' && yandexConnected) {
-      setMode('search'); setSelectedCat(null)
-      setYandexError(null)
-      startTransition(async () => {
-        const res = await fetch(`/api/market/yandex?action=search&q=${encodeURIComponent(query)}&sort=${sortYandex}`)
-        const d = await res.json() as { models?: YandexModel[]; error?: string; detail?: string }
-        if (res.ok) {
-          setYandexModels(d.models ?? [])
-        } else {
-          setYandexError(d.detail ?? d.error ?? `HTTP ${res.status}`)
-        }
-      })
+    } else if (marketplace === 'yandex') {
+      // YM catalog search unavailable via Partner API; filter own products client-side
+      setMode('search')
     }
-  }, [searchQuery, sortUzum, sortWb, sortYandex, yandexConnected, marketplace])
+  }, [searchQuery, sortUzum, sortWb, marketplace])
 
   // Auto-search when opened from extension
   useEffect(() => {
@@ -524,22 +495,11 @@ export default function MarketClient({ marketplace, initialCategories, userCateg
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Auto-load Yandex categories when tab is yandex
-  useEffect(() => {
-    if (marketplace === 'yandex') loadYandexCats()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
   const UZUM_SORTS: { value: SortUzum; label: string }[] = [
     { value: 'ORDER_COUNT_DESC', label: t.sortOrders   },
     { value: 'PRICE_ASC',        label: t.sortPriceAsc  },
     { value: 'PRICE_DESC',       label: t.sortPriceDesc },
     { value: 'RATING_DESC',      label: t.sortRating    },
-  ]
-  const YANDEX_SORTS: { value: SortYandex; label: string }[] = [
-    { value: 'OPINIONS', label: t.sortOpinions },
-    { value: 'PRICE',    label: t.sortPrice    },
-    { value: 'QUALITY',  label: t.sortQuality  },
   ]
   const WB_SORTS: { value: SortWb; label: string }[] = [
     { value: 'popular',   label: t.sortOrders    },
@@ -554,16 +514,26 @@ export default function MarketClient({ marketplace, initialCategories, userCateg
     color: accent,
     border: `1px solid color-mix(in srgb, ${accent} 35%, transparent)`,
   }
-  const uzumCats      = initialCategories.length > 0 ? initialCategories : uzumCatsBrowser
-  const cats          = marketplace === 'uzum' ? uzumCats : marketplace === 'yandex' ? yandexCats : []
-  const showSearch    = marketplace === 'uzum' || marketplace === 'wildberries' || (marketplace === 'yandex' && !!yandexConnected)
-  const showCategories = marketplace === 'uzum' || marketplace === 'yandex'
+  const uzumCats       = initialCategories.length > 0 ? initialCategories : uzumCatsBrowser
+  const showSearch     = marketplace === 'uzum' || marketplace === 'wildberries' || (marketplace === 'yandex' && !!yandexConnected)
+  const showCategories = marketplace === 'uzum'
+
+  // YM: filter own products client-side by search query
+  const ymFiltered = marketplace === 'yandex'
+    ? (searchQuery.trim()
+        ? ymProducts.filter(p =>
+            p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (p.sku ?? '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (p.category ?? '').toLowerCase().includes(searchQuery.toLowerCase())
+          )
+        : ymProducts)
+    : []
 
   const hasResults = marketplace === 'uzum'
     ? uzumProducts.length > 0
     : marketplace === 'wildberries'
       ? wbProducts.length > 0
-      : yandexModels.length > 0
+      : false
 
   return (
     <div className="space-y-6">
@@ -597,64 +567,68 @@ export default function MarketClient({ marketplace, initialCategories, userCateg
         </p>
       )}
 
-      {/* Category grid — Uzum & Yandex */}
+      {/* Category grid — Uzum only */}
       {showCategories && (
         <div>
           <p className="text-[var(--text-muted)] text-xs font-medium mb-3 uppercase tracking-wide">{t.categories}</p>
-          {marketplace === 'yandex' && !yandexConnected ? (
-            <div className="bg-[var(--bg-card2)] border border-dashed border-amber-500/30 rounded-2xl px-5 py-6 text-center text-sm text-[var(--text-muted)]">
-              <p className="font-semibold text-amber-500 mb-1">{t.ymNeedAccount}</p>
-              <p className="text-xs">{t.ymNeedAccountDesc}</p>
-            </div>
-          ) : isPending && !selectedCat && marketplace === 'yandex' ? (
-            <div className="flex items-center gap-2 text-[var(--text-muted)] text-sm py-4">
-              <Loader2 className="w-4 h-4 animate-spin" /> {t.loading}
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-              {cats.slice(0, 20).map(cat => {
-                const id    = cat.id
-                const title = 'title' in cat ? cat.title : (cat as { name: string }).name
-                const active = selectedCat?.id === id
-                return (
-                  <button key={id}
-                    onClick={() => marketplace === 'uzum'
-                      ? loadUzumCategory({ id, title })
-                      : loadYandexCategory({ id, name: title })}
-                    className="flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl border text-left text-xs font-medium transition-all bg-[var(--bg-card2)] border-[var(--border)] text-[var(--text-dim)] hover:text-[var(--text-base)]"
-                    style={active ? accentActiveStyle : undefined}
-                  >
-                    <span className="truncate">{title}</span>
-                    {isPending && active
-                      ? <Loader2 className="w-3 h-3 shrink-0 animate-spin" />
-                      : <ChevronRight className="w-3 h-3 shrink-0 text-[var(--text-muted)]" />
-                    }
-                  </button>
-                )
-              })}
-            </div>
-          )}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+            {uzumCats.slice(0, 20).map(cat => {
+              const id    = cat.id
+              const title = cat.title
+              const active = selectedCat?.id === id
+              return (
+                <button key={id}
+                  onClick={() => loadUzumCategory({ id, title })}
+                  className="flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl border text-left text-xs font-medium transition-all bg-[var(--bg-card2)] border-[var(--border)] text-[var(--text-dim)] hover:text-[var(--text-base)]"
+                  style={active ? accentActiveStyle : undefined}
+                >
+                  <span className="truncate">{title}</span>
+                  {isPending && active
+                    ? <Loader2 className="w-3 h-3 shrink-0 animate-spin" />
+                    : <ChevronRight className="w-3 h-3 shrink-0 text-[var(--text-muted)]" />
+                  }
+                </button>
+              )
+            })}
+          </div>
         </div>
       )}
 
-      {/* Yandex API error */}
-      {marketplace === 'yandex' && yandexError && !isPending && (
-        <div className="rounded-xl border border-red-500/30 bg-red-500/8 px-4 py-3 text-xs text-red-400 space-y-1">
-          <p className="font-semibold">Yandex API xatosi:</p>
-          <p className="font-mono break-all">{yandexError}</p>
+      {/* Yandex — own synced products */}
+      {marketplace === 'yandex' && yandexConnected && (
+        <div className="space-y-4">
+          <div className="flex items-start gap-2 rounded-xl px-4 py-3 text-xs text-amber-600"
+            style={{ background: 'rgba(245,158,11,0.07)', border: '1px solid rgba(245,158,11,0.2)' }}>
+            <span>{t.ymCatalogNote}</span>
+          </div>
+          {ymFiltered.length > 0
+            ? <YmOwnProductTable products={ymFiltered} t={t} />
+            : (
+              <div className="text-center py-12 text-[var(--text-muted)] text-sm">
+                <ShoppingBag className="w-8 h-8 mx-auto mb-3 text-[var(--text-dim)]" />
+                {searchQuery.trim() ? t.notFound : t.ymNoProducts}
+              </div>
+            )
+          }
         </div>
       )}
 
-      {/* Results header */}
+      {/* Yandex — not connected */}
+      {marketplace === 'yandex' && !yandexConnected && (
+        <div className="bg-[var(--bg-card2)] border border-dashed border-amber-500/30 rounded-2xl px-5 py-8 text-center">
+          <p className="font-semibold text-amber-500 mb-1 text-sm">{t.ymNeedAccount}</p>
+          <p className="text-xs text-[var(--text-muted)]">{t.ymNeedAccountDesc}</p>
+        </div>
+      )}
+
+      {/* Results header — Uzum & WB */}
       {hasResults && !isPending && (
         <div className="flex items-center justify-between">
           <div>
             <p className="text-[var(--text-base)] font-semibold text-sm">
               {mode === 'category' ? selectedCat?.title : `"${searchQuery}" ${t.resultsSuffix}`}
             </p>
-            {(marketplace === 'uzum' || marketplace === 'wildberries') && (
-              <p className="text-[var(--text-muted)] text-xs mt-0.5">{fmt(total)} {t.productsCount}</p>
-            )}
+            <p className="text-[var(--text-muted)] text-xs mt-0.5">{fmt(total)} {t.productsCount}</p>
           </div>
           <div className="flex items-center gap-2">
             <ArrowUpDown className="w-3.5 h-3.5 text-[var(--text-muted)]" />
@@ -667,16 +641,6 @@ export default function MarketClient({ marketplace, initialCategories, userCateg
                 }}
                 className="bg-[var(--bg-card2)] border border-[var(--border)] text-[var(--text-dim)] text-xs rounded-lg px-3 py-1.5 focus:outline-none">
                 {UZUM_SORTS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-              </select>
-            )}
-            {marketplace === 'yandex' && (
-              <select value={sortYandex}
-                onChange={e => {
-                  const s = e.target.value as SortYandex; setSortYandex(s)
-                  if (selectedCat) loadYandexCategory({ id: selectedCat.id, name: selectedCat.title }, s)
-                }}
-                className="bg-[var(--bg-card2)] border border-[var(--border)] text-[var(--text-dim)] text-xs rounded-lg px-3 py-1.5 focus:outline-none">
-                {YANDEX_SORTS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
             )}
             {marketplace === 'wildberries' && (
@@ -693,27 +657,24 @@ export default function MarketClient({ marketplace, initialCategories, userCateg
         </div>
       )}
 
-      {/* Loading */}
-      {isPending && (selectedCat || mode === 'search') && (
+      {/* Loading — Uzum & WB */}
+      {isPending && (selectedCat || mode === 'search') && marketplace !== 'yandex' && (
         <div className="flex items-center justify-center py-12 gap-3 text-[var(--text-muted)]">
           <Loader2 className="w-5 h-5 animate-spin" style={{ color: accent }} />
           <span className="text-sm">{t.loading}</span>
         </div>
       )}
 
-      {/* Results */}
+      {/* Results — Uzum & WB */}
       {!isPending && marketplace === 'uzum' && uzumProducts.length > 0 && (
         <UzumProductTable products={uzumProducts} userCategories={userCategories} t={t} />
-      )}
-      {!isPending && marketplace === 'yandex' && yandexModels.length > 0 && (
-        <YandexModelTable models={yandexModels} t={t} />
       )}
       {!isPending && marketplace === 'wildberries' && wbProducts.length > 0 && (
         <WbProductTable products={wbProducts} t={t} />
       )}
 
-      {/* Empty */}
-      {!isPending && !hasResults && (selectedCat || mode === 'search') && (
+      {/* Empty — Uzum & WB */}
+      {!isPending && marketplace !== 'yandex' && !hasResults && (selectedCat || mode === 'search') && (
         <div className="text-center py-12 text-[var(--text-muted)] text-sm">
           <ShoppingBag className="w-8 h-8 mx-auto mb-3 text-[var(--text-dim)]" />
           {t.notFound}

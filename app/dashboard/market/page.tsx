@@ -38,9 +38,11 @@ export default async function MarketPage({ searchParams }: Props) {
   }
 
   // Uzum tab: public categories + user's synced product categories
-  const [uzumCategories, myProducts] = tab === 'uzum'
-    ? await Promise.all([getRootCategories(), getProducts('uzum')])
-    : [[], []]
+  const [uzumCategories, myProducts, ymProducts] = await Promise.all([
+    tab === 'uzum' ? getRootCategories() : Promise.resolve([]),
+    tab === 'uzum' ? getProducts('uzum') : Promise.resolve([]),
+    tab === 'yandex' && yandexConnected ? getProducts('yandex_market') : Promise.resolve([]),
+  ])
 
   const userUzumCategories = [...new Set(myProducts.map(p => p.category).filter(Boolean))] as string[]
 
@@ -132,7 +134,7 @@ export default async function MarketPage({ searchParams }: Props) {
               </Link>
             )}
           </div>
-          <MarketClient marketplace="yandex" initialCategories={[]} userCategories={[]} initialQuery={q} yandexConnected={yandexConnected} />
+          <MarketClient marketplace="yandex" initialCategories={[]} userCategories={[]} initialQuery={q} yandexConnected={yandexConnected} ymProducts={ymProducts} />
         </>
       )}
 
