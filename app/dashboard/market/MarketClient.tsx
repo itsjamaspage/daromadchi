@@ -351,6 +351,7 @@ export default function MarketClient({ marketplace, initialCategories, userCateg
   const [sortYandex,        setSortYandex]        = useState<SortYandex>('OPINIONS')
   const [sortWb,            setSortWb]            = useState<SortWb>('popular')
   const [mode,              setMode]              = useState<'category' | 'search'>('category')
+  const [yandexError,       setYandexError]       = useState<string | null>(null)
   const [catsLoaded,        setCatsLoaded]        = useState(false)
   const [isPending,         startTransition]      = useTransition()
   const didAutoSearch       = useRef(false)
@@ -360,11 +361,14 @@ export default function MarketClient({ marketplace, initialCategories, userCateg
   const loadYandexCats = useCallback(() => {
     if (catsLoaded) return
     setCatsLoaded(true)
+    setYandexError(null)
     startTransition(async () => {
       const res = await fetch('/api/market/yandex?action=categories')
+      const data = await res.json() as { categories?: { id: number; name: string }[]; error?: string; detail?: string }
       if (res.ok) {
-        const data = await res.json() as { categories: { id: number; name: string }[] }
         setYandexCats(data.categories ?? [])
+      } else {
+        setYandexError(data.detail ?? data.error ?? `HTTP ${res.status}`)
       }
     })
   }, [catsLoaded])
@@ -382,11 +386,14 @@ export default function MarketClient({ marketplace, initialCategories, userCateg
 
   const loadYandexCategory = useCallback((cat: { id: number; name: string }, s: SortYandex = sortYandex) => {
     setSelectedCat({ id: cat.id, title: cat.name }); setMode('category')
+    setYandexError(null)
     startTransition(async () => {
       const res = await fetch(`/api/market/yandex?action=models&categoryId=${cat.id}&sort=${s}`)
+      const d = await res.json() as { models?: YandexModel[]; error?: string; detail?: string }
       if (res.ok) {
-        const d = await res.json() as { models: YandexModel[] }
         setYandexModels(d.models ?? [])
+      } else {
+        setYandexError(d.detail ?? d.error ?? `HTTP ${res.status}`)
       }
     })
   }, [sortYandex])
@@ -478,14 +485,15 @@ export default function MarketClient({ marketplace, initialCategories, userCateg
       })
     } else if (marketplace === 'yandex' && yandexConnected) {
       setMode('search'); setSelectedCat(null)
+      setYandexError(null)
       startTransition(async () => {
-        try {
-          const res = await fetch(`/api/market/yandex?action=search&q=${encodeURIComponent(query)}&sort=${sortYandex}`)
-          if (res.ok) {
-            const d = await res.json() as { models: YandexModel[] }
-            setYandexModels(d.models ?? [])
-          }
-        } catch { /* noop */ }
+        const res = await fetch(`/api/market/yandex?action=search&q=${encodeURIComponent(query)}&sort=${sortYandex}`)
+        const d = await res.json() as { models?: YandexModel[]; error?: string; detail?: string }
+        if (res.ok) {
+          setYandexModels(d.models ?? [])
+        } else {
+          setYandexError(d.detail ?? d.error ?? `HTTP ${res.status}`)
+        }
       })
     }
   }, [searchQuery, sortUzum, sortWb, sortYandex, yandexConnected, marketplace])
@@ -626,6 +634,14 @@ export default function MarketClient({ marketplace, initialCategories, userCateg
               })}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Yandex API error */}
+      {marketplace === 'yandex' && yandexError && !isPending && (
+        <div className="rounded-xl border border-red-500/30 bg-red-500/8 px-4 py-3 text-xs text-red-400 space-y-1">
+          <p className="font-semibold">Yandex API xatosi:</p>
+          <p className="font-mono break-all">{yandexError}</p>
         </div>
       )}
 

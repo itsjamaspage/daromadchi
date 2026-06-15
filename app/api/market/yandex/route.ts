@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { fetchYandexCategories, fetchCategoryModels, searchYandexModels } from '@/lib/yandex/client'
+import { fetchYandexCategories, fetchCategoryModels, searchYandexModels, YandexApiError } from '@/lib/yandex/client'
 import { decrypt as decryptKey } from '@/lib/crypto'
 
 export async function GET(req: NextRequest) {
@@ -60,6 +60,12 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ error: 'action veya categoryId talab etiladi' }, { status: 400 })
   } catch (err) {
+    if (err instanceof YandexApiError) {
+      return NextResponse.json(
+        { error: err.message, detail: err.body, httpStatus: err.status },
+        { status: err.status >= 400 ? err.status : 500 },
+      )
+    }
     const message = err instanceof Error ? err.message : 'Unknown error'
     return NextResponse.json({ error: message }, { status: 500 })
   }

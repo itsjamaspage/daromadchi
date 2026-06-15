@@ -270,14 +270,10 @@ export async function fetchYandexSkuStats(
   })
 }
 
-// Market research APIs (no auth required beyond campaign access)
+// Market research APIs — errors propagate so callers can surface them to the UI
 export async function fetchYandexCategories(token: string): Promise<YandexCategory[]> {
-  try {
-    const data = await request<{ categories: YandexCategory[] }>('/v2/categories/tree', token)
-    return data.categories ?? []
-  } catch {
-    return []
-  }
+  const data = await request<{ categories: YandexCategory[] }>('/v2/categories/tree', token)
+  return data.categories ?? []
 }
 
 export async function fetchCategoryModels(
@@ -286,21 +282,17 @@ export async function fetchCategoryModels(
   count = 30,
   sort: 'OPINIONS' | 'PRICE' | 'QUALITY' = 'OPINIONS',
 ): Promise<YandexModel[]> {
-  try {
-    const params = new URLSearchParams({
-      count: String(count),
-      sort,
-      how: 'DESC',
-      fields: 'PRICES,RATING,OFFERS_COUNT,REVIEW_COUNT',
-    })
-    const data = await request<{ models: YandexModel[] }>(
-      `/v2/categories/${categoryId}/models?${params}`,
-      token,
-    )
-    return data.models ?? []
-  } catch {
-    return []
-  }
+  const params = new URLSearchParams({
+    count: String(count),
+    sort,
+    how: 'DESC',
+    fields: 'PRICES,RATING,OFFERS_COUNT,REVIEW_COUNT',
+  })
+  const data = await request<{ models: YandexModel[] }>(
+    `/v2/categories/${categoryId}/models?${params}`,
+    token,
+  )
+  return data.models ?? []
 }
 
 export async function searchYandexModels(
@@ -309,20 +301,16 @@ export async function searchYandexModels(
   count = 30,
   sort: 'OPINIONS' | 'PRICE' | 'QUALITY' = 'OPINIONS',
 ): Promise<YandexModel[]> {
-  try {
-    const params = new URLSearchParams({
-      query,
-      count: String(count),
-      sort,
-      how: 'DESC',
-      fields: 'PRICES,RATING,OFFERS_COUNT,REVIEW_COUNT',
-      regionId: '213', // Moscow region — broadest coverage
-    })
-    const data = await request<{ models: YandexModel[] }>(`/v2/models?${params}`, token)
-    return data.models ?? []
-  } catch {
-    return []
-  }
+  const params = new URLSearchParams({
+    query,
+    count: String(count),
+    sort,
+    how: 'DESC',
+    fields: 'PRICES,RATING,OFFERS_COUNT,REVIEW_COUNT',
+    regionId: '213', // Moscow region — broadest coverage
+  })
+  const data = await request<{ models: YandexModel[] }>(`/v2/models?${params}`, token)
+  return data.models ?? []
 }
 
 // Pagination helpers
