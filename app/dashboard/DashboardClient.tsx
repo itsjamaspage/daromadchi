@@ -179,7 +179,7 @@ export default function DashboardClient({ slices, days, period, initialMarketpla
                   onClick={() => toggleWidget(id)}
                   className={`flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-lg border transition-all ${
                     visible
-                      ? 'bg-violet-500/10 border-violet-500/25 text-violet-300'
+                      ? `bg-violet-500/10 border-violet-500/25 ${isDark ? 'text-violet-300' : 'text-violet-700'}`
                       : 'bg-[var(--bg-card2)] border-[var(--border2)] text-[var(--text-muted)]'
                   }`}
                 >
