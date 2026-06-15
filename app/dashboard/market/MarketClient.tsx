@@ -606,7 +606,7 @@ export default function MarketClient({ marketplace, initialCategories, userCateg
             : (
               <div className="text-center py-12 text-[var(--text-muted)] text-sm">
                 <ShoppingBag className="w-8 h-8 mx-auto mb-3 text-[var(--text-dim)]" />
-                {searchQuery.trim() ? t.notFound : t.ymNoProducts}
+                {ymProducts.length === 0 ? t.ymNoProducts : t.notFound}
               </div>
             )
           }
