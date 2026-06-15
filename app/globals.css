@@ -14,6 +14,8 @@
 ═══════════════════════════════════════════════════════════════════ */
 :root,
 [data-theme="dark"] {
+  --color-info:  rgba(96, 165, 250, 0.85);
+  --color-warn:  rgba(251, 191, 36, 0.85);
   --bg-base:    #020c1a;
   --bg-card:    #071425;
   --bg-card2:   #0b1c34;
@@ -34,6 +36,8 @@
    LIGHT THEME — Soft Gray
 ═══════════════════════════════════════════════════════════════════ */
 [data-theme="light"] {
+  --color-info:  rgba(37, 99, 235, 0.9);
+  --color-warn:  rgba(146, 64, 14, 0.9);
   --bg-base:    #DCDCE1;
   --bg-card:    #E7E7EB;
   --bg-card2:   #E2E2E7;

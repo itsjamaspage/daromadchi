@@ -14,7 +14,16 @@ function fmt(n: number) {
 const marketplaceLabel: Record<string, string> = {
   uzum: 'Uzum',
   yandex_market: 'Yandex Market',
+  wildberries: 'Wildberries',
 }
+
+const MP_TABS = [
+  { value: 'all',           label: 'Barchasi' },
+  { value: 'uzum',          label: 'Uzum'          },
+  { value: 'yandex_market', label: 'Yandex Market' },
+  { value: 'wildberries',   label: 'Wildberries'   },
+] as const
+type MpFilter = typeof MP_TABS[number]['value']
 
 export default function OrdersTable({ orders }: { orders: Order[] }) {
   const { lang } = useLang()
@@ -40,6 +49,7 @@ export default function OrdersTable({ orders }: { orders: Order[] }) {
 
   const [query,  setQuery]  = useState('')
   const [status, setStatus] = useState<OrderStatus | 'all'>('all')
+  const [mp,     setMp]     = useState<MpFilter>('all')
 
   const statusCounts = useMemo(() =>
     orders.reduce((acc, o) => { acc[o.status] = (acc[o.status] || 0) + 1; return acc }, {} as Record<string, number>)
@@ -47,6 +57,7 @@ export default function OrdersTable({ orders }: { orders: Order[] }) {
 
   const filtered = useMemo(() => {
     let rows = [...orders]
+    if (mp !== 'all') rows = rows.filter(o => o.marketplace === mp)
     if (status !== 'all') rows = rows.filter(o => o.status === status)
     if (query.trim()) {
       const q = query.toLowerCase()
@@ -56,7 +67,7 @@ export default function OrdersTable({ orders }: { orders: Order[] }) {
       )
     }
     return rows
-  }, [orders, status, query])
+  }, [orders, status, query, mp])
 
   const exportData = filtered.map(o => ({
     [d.orderId]: o.order_id_external ?? o.id,
@@ -71,6 +82,24 @@ export default function OrdersTable({ orders }: { orders: Order[] }) {
 
   return (
     <div className="space-y-4">
+      {/* Marketplace filter */}
+      <div className="flex items-center gap-1.5 p-1 bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl w-fit">
+        {MP_TABS.map(tab => (
+          <button
+            key={tab.value}
+            onClick={() => setMp(tab.value)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              mp === tab.value
+                ? 'bg-violet-600/20 text-[var(--c1)] border border-violet-500/30'
+                : 'text-[var(--text-muted)] hover:text-[var(--text-dim)]'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Status filter */}
       <div className="flex items-center gap-1 bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl p-1 w-fit flex-wrap">
         {STATUS_TABS.map(tab => (
           <button

@@ -1,4 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
+import { getShopIds } from '@/lib/db/shop-context'
+import type { MarketplaceType } from '@/lib/types'
 
 const supabaseConfigured =
   process.env.NEXT_PUBLIC_SUPABASE_URL &&
@@ -13,19 +15,20 @@ export interface MonthlyPnl {
   order_count: number
 }
 
-export async function getMonthlyPnl(months = 6): Promise<MonthlyPnl[]> {
+export async function getMonthlyPnl(months = 6, marketplace?: MarketplaceType): Promise<MonthlyPnl[]> {
   if (!supabaseConfigured) return []
 
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return []
+  const shopIds = await getShopIds(marketplace)
+  if (!shopIds || shopIds.length === 0) return []
 
+  const supabase = await createClient()
   const since = new Date()
   since.setMonth(since.getMonth() - months)
 
   const { data, error } = await supabase
     .from('orders')
     .select('ordered_at, revenue, marketplace_fee, delivery_cost')
+    .in('shop_id', shopIds)
     .neq('status', 'cancelled')
     .gte('ordered_at', since.toISOString())
     .order('ordered_at', { ascending: true })

@@ -47,10 +47,15 @@ async function exportXlsx(data: ExportRow[], filename: string) {
   XLSX.writeFile(wb, `${filename}.xlsx`)
 }
 
+function fmtPdfVal(v: string | number): string {
+  if (typeof v === 'number') return new Intl.NumberFormat('uz-UZ').format(Math.round(v))
+  return String(v ?? '')
+}
+
 function exportPdf(data: ExportRow[], filename: string) {
   const headers = Object.keys(data[0])
   const tableRows = data.map(row =>
-    `<tr>${headers.map(h => `<td>${String(row[h] ?? '')}</td>`).join('')}</tr>`
+    `<tr>${headers.map(h => `<td>${fmtPdfVal(row[h])}</td>`).join('')}</tr>`
   ).join('')
 
   const html = `<!DOCTYPE html>

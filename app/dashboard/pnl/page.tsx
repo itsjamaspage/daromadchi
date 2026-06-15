@@ -1,16 +1,30 @@
 import { FileText, Link2, Settings } from 'lucide-react'
 import Link from 'next/link'
+import { Suspense } from 'react'
 import { getMonthlyPnl } from '@/lib/db/pnl'
 import PnlChart from './PnlChart'
 import ExportButton from '@/components/dashboard/ExportButton'
+import MarketplaceTabs from '@/components/dashboard/MarketplaceTabs'
 import { getT } from '@/lib/server-i18n'
+import type { MarketplaceType } from '@/lib/types'
 
 function fmt(n: number) {
   return new Intl.NumberFormat('uz-UZ').format(Math.round(n)) + " so'm"
 }
 
-export default async function PnlPage() {
-  const [t, monthlyData] = await Promise.all([getT(), getMonthlyPnl(6)])
+const VALID_MP = ['uzum', 'yandex_market', 'wildberries'] as const
+function parseMp(v: string | undefined): MarketplaceType | undefined {
+  return (VALID_MP as readonly string[]).includes(v ?? '') ? v as MarketplaceType : undefined
+}
+
+interface Props {
+  searchParams: Promise<Record<string, string>>
+}
+
+export default async function PnlPage({ searchParams }: Props) {
+  const params = await searchParams
+  const marketplace = parseMp(params.mp)
+  const [t, monthlyData] = await Promise.all([getT(), getMonthlyPnl(6, marketplace)])
   const d = t.dashboard
   const isEmpty = monthlyData.length === 0
 
@@ -46,6 +60,10 @@ export default async function PnlPage() {
         {!isEmpty && <ExportButton data={exportData} filename="pnl-hisoboti" />}
       </div>
 
+      <Suspense>
+        <MarketplaceTabs current={marketplace} />
+      </Suspense>
+
       {isEmpty ? (
         <div className="bg-[var(--bg-card2)] border border-dashed border-violet-500/30 rounded-2xl p-10 text-center">
           <div className="w-14 h-14 rounded-2xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center mx-auto mb-4">
@@ -78,7 +96,7 @@ export default async function PnlPage() {
           </div>
 
           {/* Note about COGS */}
-          <div className="flex items-start gap-3 bg-amber-500/[0.06] border border-amber-500/20 rounded-xl px-4 py-3 text-xs text-amber-400/80">
+          <div className="flex items-start gap-3 bg-amber-500/[0.06] border border-amber-500/20 rounded-xl px-4 py-3 text-xs" style={{ color: 'var(--color-warn)' }}>
             <Link2 className="w-4 h-4 mt-0.5 flex-shrink-0" />
             <span>
               {d.cogsNote}

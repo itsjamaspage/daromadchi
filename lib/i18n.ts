@@ -244,12 +244,12 @@ export const translations = {
       // Orders page
       ordersTitle: 'Buyurtmalar',
       noOrdersTitle: "Buyurtmalar yo'q",
-      noOrdersDesc: "Uzum do'koningizni ulab, sinxronizatsiyani boshlang — buyurtmalar avtomatik import qilinadi.",
+      noOrdersDesc: "Do'koningizni (Uzum, Yandex Market yoki Wildberries) ulab, sinxronizatsiyani boshlang — buyurtmalar avtomatik import qilinadi.",
       orderCount: 'ta buyurtma',
       // Products page
       productsTitle: 'Mahsulotlar',
       noProductsTitle: "Mahsulotlar yo'q",
-      noProductsDesc: "Uzum do'koningizni ulab, sinxronizatsiyani boshlang — mahsulotlar avtomatik import qilinadi.",
+      noProductsDesc: "Do'koningizni (Uzum, Yandex Market yoki Wildberries) ulab, sinxronizatsiyani boshlang — mahsulotlar avtomatik import qilinadi.",
       productCount: 'ta mahsulot',
       // Advertising page
       advertisingTitle: 'Reklama',
@@ -959,12 +959,12 @@ export const translations = {
       // Orders page
       ordersTitle: 'Orders',
       noOrdersTitle: 'No orders',
-      noOrdersDesc: 'Connect your Uzum store and start sync — orders will be imported automatically.',
+      noOrdersDesc: 'Connect your store (Uzum, Yandex Market or Wildberries) and start sync — orders will be imported automatically.',
       orderCount: 'orders',
       // Products page
       productsTitle: 'Products',
       noProductsTitle: 'No products',
-      noProductsDesc: 'Connect your Uzum store and start sync — products will be imported automatically.',
+      noProductsDesc: 'Connect your store (Uzum, Yandex Market or Wildberries) and start sync — products will be imported automatically.',
       productCount: 'products',
       // Advertising page
       advertisingTitle: 'Advertising',
@@ -1674,12 +1674,12 @@ export const translations = {
       // Orders page
       ordersTitle: 'Заказы',
       noOrdersTitle: 'Заказов нет',
-      noOrdersDesc: 'Подключите магазин Uzum и запустите синхронизацию — заказы импортируются автоматически.',
+      noOrdersDesc: 'Подключите магазин (Uzum, Yandex Market или Wildberries) и запустите синхронизацию — заказы импортируются автоматически.',
       orderCount: 'заказов',
       // Products page
       productsTitle: 'Товары',
       noProductsTitle: 'Товаров нет',
-      noProductsDesc: 'Подключите магазин Uzum и запустите синхронизацию — товары импортируются автоматически.',
+      noProductsDesc: 'Подключите магазин (Uzum, Yandex Market или Wildberries) и запустите синхронизацию — товары импортируются автоматически.',
       productCount: 'товаров',
       // Advertising page
       advertisingTitle: 'Реклама',

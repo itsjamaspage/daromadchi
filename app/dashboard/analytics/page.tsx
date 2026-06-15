@@ -1,16 +1,30 @@
 import { BarChart2, Settings, TrendingUp, Package, Link2 } from 'lucide-react'
 import Link from 'next/link'
+import { Suspense } from 'react'
 import { getProducts } from '@/lib/db/products'
 import { getKpis } from '@/lib/db/kpis'
 import AdDrrChart from './AdDrrChart'
+import MarketplaceTabs from '@/components/dashboard/MarketplaceTabs'
 import { getT } from '@/lib/server-i18n'
+import type { MarketplaceType } from '@/lib/types'
 
 function fmt(n: number) {
   return new Intl.NumberFormat('uz-UZ').format(Math.round(n))
 }
 
-export default async function AnalyticsPage() {
-  const [t, products, kpis] = await Promise.all([getT(), getProducts(), getKpis(30)])
+const VALID_MP = ['uzum', 'yandex_market', 'wildberries'] as const
+function parseMp(v: string | undefined): MarketplaceType | undefined {
+  return (VALID_MP as readonly string[]).includes(v ?? '') ? v as MarketplaceType : undefined
+}
+
+interface Props {
+  searchParams: Promise<Record<string, string>>
+}
+
+export default async function AnalyticsPage({ searchParams }: Props) {
+  const params = await searchParams
+  const marketplace = parseMp(params.mp)
+  const [t, products, kpis] = await Promise.all([getT(), getProducts(marketplace), getKpis(30, marketplace)])
   const d = t.dashboard
   const isEmpty = products.length === 0
 
@@ -57,6 +71,10 @@ export default async function AnalyticsPage() {
         </div>
         <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{d.analyticsSubtitle}</p>
       </div>
+
+      <Suspense>
+        <MarketplaceTabs current={marketplace} />
+      </Suspense>
 
       {isEmpty ? (
         <div className="border border-dashed rounded-2xl p-10 text-center" style={{ background: 'var(--bg-card2)', borderColor: 'rgba(124, 58, 237, 0.3)' }}>
@@ -114,7 +132,7 @@ export default async function AnalyticsPage() {
           <AdDrrChart rows={chartRows} />
 
           {/* Ad data notice */}
-          <div className="flex items-start gap-3 border rounded-xl px-4 py-3 text-xs" style={{ background: 'rgba(59, 130, 246, 0.06)', borderColor: 'rgba(59, 130, 246, 0.2)', color: 'rgba(59, 130, 246, 0.8)' }}>
+          <div className="flex items-start gap-3 border rounded-xl px-4 py-3 text-xs" style={{ background: 'rgba(59, 130, 246, 0.06)', borderColor: 'rgba(59, 130, 246, 0.2)', color: 'var(--color-info)' }}>
             <Link2 className="w-4 h-4 mt-0.5 flex-shrink-0" />
             <span>
               <strong style={{ color: 'rgba(59, 130, 246, 0.9)' }}>{d.adAnalyticsNote}</strong> {d.adAnalyticsNoteSuffix}
