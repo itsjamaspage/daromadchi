@@ -1,6 +1,8 @@
 'use client'
 
-import { Suspense, useState } from 'react'
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { Suspense } from 'react'
 import Link from 'next/link'
 import { DollarSign, TrendingUp, ShoppingBag, Package, Settings, ArrowRight, RefreshCw, LayoutDashboard } from 'lucide-react'
 import KpiCard from '@/components/dashboard/KpiCard'
@@ -24,16 +26,26 @@ interface CategoryData {
   percent: number
 }
 
-interface Props {
+export interface MarketplaceSlice {
   kpis: Kpis
   recentOrders: Order[]
   allProducts: Product[]
   chartData: DailyRevenue[]
   categoryData: CategoryData[]
+  hasConnectedShop: boolean
+}
+
+interface Props {
+  slices: {
+    all: MarketplaceSlice
+    uzum: MarketplaceSlice
+    yandex_market: MarketplaceSlice
+    wildberries: MarketplaceSlice
+  }
   days: number
   period: string
-  marketplace: MarketplaceType | undefined
-  hasConnectedShop: boolean
+  initialMarketplace: MarketplaceType | undefined
+  hasShops: boolean
 }
 
 const STATUS_CLASS: Record<string, string> = {
@@ -44,13 +56,26 @@ const STATUS_CLASS: Record<string, string> = {
   returned:  'bg-amber-500/10 text-amber-400',
 }
 
-export default function DashboardClient({ kpis, recentOrders, allProducts, chartData, categoryData, days, period, marketplace, hasConnectedShop }: Props) {
+export default function DashboardClient({ slices, days, period, initialMarketplace, hasShops }: Props) {
   const { lang } = useLang()
   const { theme } = useTheme()
   const isDark = theme === 'dark'
   const t = dashT[lang]
   const d = t.dashboard
   const s = t.status
+  const router = useRouter()
+
+  const [marketplace, setMarketplace] = useState<MarketplaceType | undefined>(initialMarketplace)
+
+  function switchTab(mp: MarketplaceType | undefined) {
+    setMarketplace(mp)
+    const url = mp ? `/dashboard?mp=${mp}&days=${period}` : `/dashboard?days=${period}`
+    router.replace(url, { scroll: false })
+  }
+
+  const sliceKey = marketplace ?? 'all'
+  const { kpis, recentOrders, allProducts, chartData, categoryData, hasConnectedShop } =
+    slices[sliceKey as keyof typeof slices]
 
   const isEmpty = kpis.total_orders === 0 && allProducts.length === 0
 
@@ -107,20 +132,19 @@ export default function DashboardClient({ kpis, recentOrders, allProducts, chart
         </div>
       </div>
 
-      {/* Marketplace tabs */}
+      {/* Marketplace tabs — client-side switching, no page reload */}
       <div className="flex items-center gap-1.5 p-1 bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl w-fit">
         {([
           { label: d.all,           mp: undefined,       color: 'violet'  },
           { label: 'Uzum',          mp: 'uzum',          color: 'violet'  },
           { label: 'Yandex Market', mp: 'yandex_market', color: 'amber'   },
           { label: 'Wildberries',   mp: 'wildberries',   color: 'purple'  },
-        ] as { label: string; mp: string | undefined; color: string }[]).map(({ label, mp, color }) => {
-          const active = (marketplace ?? undefined) === mp
+        ] as { label: string; mp: MarketplaceType | undefined; color: string }[]).map(({ label, mp, color }) => {
+          const active = marketplace === mp
           return (
-            <Link
+            <button
               key={label}
-              href={mp ? `/dashboard?mp=${mp}&days=${period}` : `/dashboard?days=${period}`}
-              scroll={false}
+              onClick={() => switchTab(mp)}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                 active
                   ? color === 'amber'
@@ -132,7 +156,7 @@ export default function DashboardClient({ kpis, recentOrders, allProducts, chart
               }`}
             >
               {label}
-            </Link>
+            </button>
           )
         })}
       </div>

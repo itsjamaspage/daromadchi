@@ -1,5 +1,6 @@
 import { Suspense } from 'react'
 import DashboardClient from './DashboardClient'
+import type { MarketplaceSlice } from './DashboardClient'
 import { getKpis } from '@/lib/db/kpis'
 import { getOrders } from '@/lib/db/orders'
 import { getProducts } from '@/lib/db/products'
@@ -36,42 +37,59 @@ function buildCategoryData(products: Product[]) {
     .sort((a, b) => b.revenue - a.revenue)
 }
 
+async function fetchSlice(
+  days: number,
+  marketplace: MarketplaceType | undefined,
+  hasConnectedShop: boolean,
+): Promise<MarketplaceSlice> {
+  const [kpis, recentOrders, allProducts, chartData] = await Promise.all([
+    getKpis(days, marketplace),
+    getOrders(5, marketplace),
+    getProducts(marketplace),
+    getDailyRevenue(days, marketplace),
+  ])
+  return {
+    kpis,
+    recentOrders,
+    allProducts,
+    chartData,
+    categoryData: buildCategoryData(allProducts),
+    hasConnectedShop,
+  }
+}
+
 interface Props {
   searchParams: Promise<Record<string, string>>
 }
 
 export default async function DashboardPage({ searchParams }: Props) {
-  const params      = await searchParams
-  const days        = parseDays(params)
-  const marketplace = parseMarketplace(params)
+  const params             = await searchParams
+  const days               = parseDays(params)
+  const initialMarketplace = parseMarketplace(params)
 
-  const [kpis, recentOrders, allProducts, chartData, allShops] = await Promise.all([
-    getKpis(days, marketplace),
-    getOrders(5, marketplace),
-    getProducts(marketplace),
-    getDailyRevenue(days, marketplace),
-    getUserShops(),
+  const allShops   = await getUserShops()
+  const hasShops   = allShops.length > 0
+  const hasUzum    = allShops.some(s => s.marketplace === 'uzum')
+  const hasYM      = allShops.some(s => s.marketplace === 'yandex_market')
+  const hasWB      = allShops.some(s => s.marketplace === 'wildberries')
+
+  // Fetch all 4 marketplace slices in parallel — tab switching is instant client-side.
+  const [allSlice, uzumSlice, ymSlice, wbSlice] = await Promise.all([
+    fetchSlice(days, undefined,       hasShops),
+    fetchSlice(days, 'uzum',          hasUzum),
+    fetchSlice(days, 'yandex_market', hasYM),
+    fetchSlice(days, 'wildberries',   hasWB),
   ])
-  const hasShops = allShops.length > 0
-  const hasConnectedShop = marketplace
-    ? allShops.some(s => s.marketplace === marketplace)
-    : hasShops
-
-  const categoryData = buildCategoryData(allProducts)
 
   return (
     <Suspense>
       <WelcomePopup hasShops={hasShops} />
       <DashboardClient
-        kpis={kpis}
-        recentOrders={recentOrders}
-        allProducts={allProducts}
-        chartData={chartData}
-        categoryData={categoryData}
+        slices={{ all: allSlice, uzum: uzumSlice, yandex_market: ymSlice, wildberries: wbSlice }}
         days={days}
         period={String(days)}
-        marketplace={marketplace}
-        hasConnectedShop={hasConnectedShop}
+        initialMarketplace={initialMarketplace}
+        hasShops={hasShops}
       />
     </Suspense>
   )
