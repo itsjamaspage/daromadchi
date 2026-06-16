@@ -440,7 +440,7 @@ export default function LandingPage() {
   const howWrapperRef = useRef<HTMLDivElement>(null)
   const [howStep, setHowStep] = useState(1)
   const pricingRef = useRef(null)
-  const pricingInView = useInView(pricingRef, { once: true, amount: 0.25 })
+  const pricingInView = useInView(pricingRef, { once: true, amount: 0.6 })
   const ctaRef = useRef(null)
   const ctaInView = useInView(ctaRef, { once: true, margin: '-80px' })
 
@@ -789,6 +789,12 @@ export default function LandingPage() {
             const panelMeta = [
               {
                 accentBg: 'var(--c1)',
+                inactiveBg: isDark ? 'rgba(0,212,255,0.07)' : 'rgba(0,212,255,0.08)',
+                inactiveBorder: isDark ? 'rgba(0,212,255,0.18)' : 'rgba(0,180,220,0.22)',
+                hoverBg: isDark ? 'rgba(0,212,255,0.13)' : 'rgba(0,212,255,0.13)',
+                hoverBorder: isDark ? 'rgba(0,212,255,0.35)' : 'rgba(0,180,220,0.4)',
+                hoverScale: 1.0,
+                hoverY: -3,
                 textColor: isDark ? '#001a2c' : '#001520',
                 contentInit: { x: -60, opacity: 0 },
                 contentAnimate: { x: 0, opacity: 1 },
@@ -797,6 +803,12 @@ export default function LandingPage() {
               },
               {
                 accentBg: '#7c3aed',
+                inactiveBg: isDark ? 'rgba(124,58,237,0.08)' : 'rgba(124,58,237,0.07)',
+                inactiveBorder: isDark ? 'rgba(124,58,237,0.22)' : 'rgba(124,58,237,0.2)',
+                hoverBg: isDark ? 'rgba(124,58,237,0.16)' : 'rgba(124,58,237,0.13)',
+                hoverBorder: isDark ? 'rgba(124,58,237,0.45)' : 'rgba(124,58,237,0.4)',
+                hoverScale: 1.03,
+                hoverY: 0,
                 textColor: '#ffffff',
                 contentInit: { y: 50, scale: 0.84, opacity: 0 },
                 contentAnimate: { y: 0, scale: 1, opacity: 1 },
@@ -805,6 +817,12 @@ export default function LandingPage() {
               },
               {
                 accentBg: 'var(--c2)',
+                inactiveBg: isDark ? 'rgba(255,45,155,0.07)' : 'rgba(255,45,155,0.06)',
+                inactiveBorder: isDark ? 'rgba(255,45,155,0.2)' : 'rgba(255,45,155,0.18)',
+                hoverBg: isDark ? 'rgba(255,45,155,0.13)' : 'rgba(255,45,155,0.11)',
+                hoverBorder: isDark ? 'rgba(255,45,155,0.42)' : 'rgba(255,45,155,0.38)',
+                hoverScale: 1.0,
+                hoverY: 3,
                 textColor: '#ffffff',
                 contentInit: { rotate: 6, y: -30, opacity: 0 },
                 contentAnimate: { rotate: 0, y: 0, opacity: 1 },
@@ -826,9 +844,16 @@ export default function LandingPage() {
                       className="relative overflow-hidden rounded-3xl cursor-pointer select-none"
                       animate={{ flex: isActive ? 3 : 0.85 }}
                       transition={{ type: 'spring', stiffness: 220, damping: 30 }}
+                      whileHover={!isActive ? {
+                        background: meta.hoverBg,
+                        borderColor: meta.hoverBorder,
+                        scale: meta.hoverScale,
+                        y: meta.hoverY,
+                        transition: { duration: 0.2 },
+                      } : {}}
                       style={{
-                        background: isActive ? meta.accentBg : isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)',
-                        border: `1px solid ${isActive ? 'transparent' : 'var(--border)'}`,
+                        background: isActive ? meta.accentBg : meta.inactiveBg,
+                        border: `1px solid ${isActive ? 'transparent' : meta.inactiveBorder}`,
                         minWidth: 72,
                         minHeight: 200,
                       }}
