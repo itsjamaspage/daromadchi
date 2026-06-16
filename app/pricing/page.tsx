@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   Check, X, Zap, Shield, Star,
   TrendingUp, ChevronRight, MessageCircle, ChevronDown,
@@ -11,10 +11,6 @@ import {
 interface Feature { label: string; free: boolean | string; pro: boolean | string; proplus: boolean | string }
 interface FaqItem  { q: string; a: string }
 
-/* ── Pro features (Pro AND Pro+) ────────────────────────────────────────
-   Everything a seller needs day-to-day lives here.
-   Wildberries, custom reports, deep analytics — all in Pro.
-   ─────────────────────────────────────────────────────────────────────── */
 const PRO_FEATURES = [
   "Unlimited do'konlar",
   'Unlimited mahsulotlar',
@@ -31,13 +27,6 @@ const PRO_FEATURES = [
   'API kirish',
 ]
 
-/* ── Pro+ exclusive extras ───────────────────────────────────────────────
-   These are power-user features most solo sellers never need:
-   – Team accounts: only agencies / large ops with multiple managers
-   – Scheduled email reports: convenience, not core analytics
-   – Priority support: support speed tier, not a product feature
-   – White-label PDF: branding cosmetic for resellers/agencies
-   ─────────────────────────────────────────────────────────────────────── */
 const PROPLUS_EXTRAS = [
   { icon: Users,    label: 'Jamoa (5 foydalanuvchi)',            desc: "Rol va ruxsat boshqaruvi" },
   { icon: Mail,     label: 'Avtomatik hisobot emailga',          desc: "Kunlik/haftalik yetkazib berish" },
@@ -50,6 +39,7 @@ const plans = [
     key: 'free',
     name: 'Bepul',
     price: '0',
+    numericPrice: 0,
     period: '/oy',
     desc: "Boshlash uchun ideal — hech qanday to'lov talab etilmaydi",
     icon: Zap,
@@ -70,6 +60,7 @@ const plans = [
     key: 'pro',
     name: 'Pro',
     price: '300 000',
+    numericPrice: 300000,
     period: '/oy',
     desc: "O'sib kelayotgan biznes uchun to'liq analitika vositalari",
     icon: Shield,
@@ -84,6 +75,7 @@ const plans = [
     key: 'proplus',
     name: 'Pro+',
     price: '600 000',
+    numericPrice: 600000,
     period: '/oy',
     desc: "Yirik biznes uchun — Pro imkoniyatlari + eksklyuziv funksiyalar",
     icon: Star,
@@ -97,7 +89,6 @@ const plans = [
 ] as const
 
 const comparisonFeatures: Feature[] = [
-  // ── Core (both Pro & Pro+) ────────────────────────────────────────────
   { label: "Do'konlar soni",                     free: '1',      pro: 'Cheksiz', proplus: 'Cheksiz' },
   { label: 'Mahsulotlar soni',                   free: '100',    pro: 'Cheksiz', proplus: 'Cheksiz' },
   { label: 'Tarix chuqurligi',                   free: '30 kun', pro: '12 oy',   proplus: '12 oy'   },
@@ -114,7 +105,6 @@ const comparisonFeatures: Feature[] = [
   { label: 'Narx kuzatuvi',                      free: false,    pro: true,      proplus: true      },
   { label: 'Maxsus hisobotlar',                  free: false,    pro: true,      proplus: true      },
   { label: 'API kirish',                         free: false,    pro: true,      proplus: true      },
-  // ── Pro+ exclusive (power-user extras) ───────────────────────────────
   { label: 'Jamoa (5 foydalanuvchi)',             free: false,    pro: false,     proplus: true      },
   { label: 'Avtomatik hisobot emailga',           free: false,    pro: false,     proplus: true      },
   { label: "Prioritet qo'llab-quvvatlash",        free: false,    pro: false,     proplus: true      },
@@ -144,7 +134,6 @@ const faqs: FaqItem[] = [
   },
 ]
 
-/* ── helpers ──────────────────────────────────────────────────────────── */
 function FeatureValue({ value, col }: { value: boolean | string; col: 'free' | 'pro' | 'proplus' }) {
   const isProplus = col === 'proplus'
   if (typeof value === 'string') {
@@ -189,10 +178,51 @@ function FaqRow({ item }: { item: FaqItem }) {
   )
 }
 
-/* ── main ─────────────────────────────────────────────────────────────── */
 export default function PricingPage() {
+  const pricingSectionRef                   = useRef<HTMLDivElement>(null)
+  const [hasAnimated,    setHasAnimated]    = useState(false)
+  const [counts,         setCounts]         = useState([0, 0, 0])
+
+  useEffect(() => {
+    const el = pricingSectionRef.current
+    if (!el) return
+    const obs = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting || hasAnimated) return
+        setHasAnimated(true)
+        const duration = 1500
+        const targets = plans.map(p => p.numericPrice)
+        const start = performance.now()
+        const tick = (now: number) => {
+          const t = Math.min((now - start) / duration, 1)
+          const ease = 1 - Math.pow(1 - t, 3)
+          setCounts(targets.map(v => Math.round(v * ease)))
+          if (t < 1) requestAnimationFrame(tick)
+        }
+        requestAnimationFrame(tick)
+      },
+      { threshold: 0.15 },
+    )
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [hasAnimated])
+
+  function fmtCount(n: number) {
+    return new Intl.NumberFormat('uz-UZ').format(n)
+  }
+
   return (
     <div className="min-h-screen overflow-x-hidden" style={{ background: 'var(--bg-base)', color: 'var(--text-base)' }}>
+      <style>{`
+        @keyframes drm-drop {
+          0%   { opacity: 0; transform: translateY(-110px) scale(0.93); }
+          52%  { opacity: 1; transform: translateY(16px) scale(1.01); }
+          68%  { transform: translateY(-10px) scale(1); }
+          82%  { transform: translateY(7px); }
+          92%  { transform: translateY(-4px); }
+          100% { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
 
       {/* Nav */}
       <header className="fixed top-0 left-0 right-0 z-50">
@@ -241,14 +271,17 @@ export default function PricingPage() {
       </section>
 
       {/* Pricing cards */}
-      <section className="py-4 pb-24 px-4 sm:px-6">
+      <section ref={pricingSectionRef} className="py-4 pb-24 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
-            {plans.map((plan) => {
+            {plans.map((plan, cardIdx) => {
               const Icon = plan.icon
               const isProplus = plan.key === 'proplus'
+              const displayPrice = plan.numericPrice === 0 ? '0' : fmtCount(counts[cardIdx])
               return (
-                <div key={plan.key} className="relative flex flex-col rounded-3xl border overflow-hidden transition-all"
+                <div
+                  key={plan.key}
+                  className="relative flex flex-col rounded-3xl border overflow-hidden"
                   style={{
                     background: plan.highlighted
                       ? 'linear-gradient(145deg, var(--bg-card2), var(--bg-input))'
@@ -265,7 +298,12 @@ export default function PricingPage() {
                       : isProplus
                       ? '0 0 40px rgba(234,179,8,0.1)'
                       : undefined,
-                  }}>
+                    opacity: hasAnimated ? undefined : 0,
+                    animation: hasAnimated
+                      ? `drm-drop 0.8s cubic-bezier(0.22,0.61,0.36,1) ${cardIdx * 130}ms both`
+                      : undefined,
+                  }}
+                >
                   {/* top accent line */}
                   {plan.highlighted && <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-violet-500 to-transparent" />}
                   {isProplus && <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-yellow-400 to-transparent" />}
@@ -303,7 +341,7 @@ export default function PricingPage() {
                       <div className="flex items-end gap-1.5">
                         <span className="text-4xl font-black tabular-nums" style={{
                           color: plan.highlighted ? '#a78bfa' : isProplus ? '#eab308' : 'var(--text-base)',
-                        }}>{plan.price}</span>
+                        }}>{displayPrice}</span>
                         <span className="text-sm font-medium pb-1.5" style={{ color: 'var(--text-muted)' }}>so&rsquo;m{plan.period}</span>
                       </div>
                     </div>
@@ -399,7 +437,6 @@ export default function PricingPage() {
           </div>
 
           <div className="rounded-3xl border overflow-hidden" style={{ borderColor: 'var(--border)', background: 'var(--bg-card2)' }}>
-            {/* header */}
             <div className="grid grid-cols-4 border-b" style={{ borderColor: 'var(--border)' }}>
               <div className="p-5 col-span-1" />
               {(['Bepul', 'Pro', 'Pro+'] as const).map((name, idx) => (
@@ -420,19 +457,17 @@ export default function PricingPage() {
               ))}
             </div>
 
-            {/* Pro+ exclusive section label */}
             <div className="grid grid-cols-4 border-b" style={{ borderColor: 'var(--border)', background: 'var(--bg-card)' }}>
               <div className="px-5 py-2 col-span-4 flex items-center gap-2">
                 <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Asosiy imkoniyatlar</span>
               </div>
             </div>
 
-            {/* rows — split into shared and proplus-only */}
             {comparisonFeatures.map((feat, i) => {
               const isProplusOnly = !feat.pro && feat.proplus
               return (
                 <div key={feat.label}
-                  className={`grid grid-cols-4 border-b last:border-b-0 ${isProplusOnly ? '' : ''}`}
+                  className="grid grid-cols-4 border-b last:border-b-0"
                   style={{
                     borderColor: 'var(--border)',
                     background: isProplusOnly ? 'rgba(234,179,8,0.03)' : i % 2 === 0 ? 'transparent' : 'var(--bg-card2)',
