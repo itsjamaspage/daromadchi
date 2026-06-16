@@ -9,9 +9,13 @@ import { getUserShops } from '@/lib/db/shop-context'
 import WelcomePopup from '@/components/dashboard/WelcomePopup'
 import type { MarketplaceType, Product } from '@/lib/types'
 
-function parseDays(params: Record<string, string> | undefined): number {
-  const v = params?.days
-  return v === '7' || v === '90' ? Number(v) : 30
+function parseDays(v: string | undefined): number {
+  if (v === '1')     return 1
+  if (v === '7')     return 7
+  if (v === '30')    return 30
+  if (v === '90')    return 90
+  if (v === 'month') return new Date().getDate() // days elapsed since 1st of current month
+  return 30
 }
 
 const VALID_MARKETPLACES = ['uzum', 'yandex_market', 'wildberries'] as const
@@ -64,7 +68,8 @@ interface Props {
 
 export default async function DashboardPage({ searchParams }: Props) {
   const params             = await searchParams
-  const days               = parseDays(params)
+  const period             = params?.days ?? '30'
+  const days               = parseDays(period)
   const initialMarketplace = parseMarketplace(params)
 
   const allShops   = await getUserShops()
@@ -87,7 +92,7 @@ export default async function DashboardPage({ searchParams }: Props) {
       <DashboardClient
         slices={{ all: allSlice, uzum: uzumSlice, yandex_market: ymSlice, wildberries: wbSlice }}
         days={days}
-        period={String(days)}
+        period={period}
         initialMarketplace={initialMarketplace}
         hasShops={hasShops}
       />
