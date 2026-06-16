@@ -932,276 +932,133 @@ export default function LandingPage() {
       />
 
       {/* ── HOW IT WORKS ─────────────────────────────────────────────────────── */}
+      {/* 500vh wrapper = scroll lock: user must travel 400vh to see all 4 steps */}
       <div id="how" ref={howWrapperRef} style={{ height: '500vh', position: 'relative' }}>
-        <section className="sticky top-0 overflow-hidden flex flex-col" style={{ height: '100svh', background: 'var(--bg-base)' }}>
+        <section className="sticky top-0 overflow-hidden" style={{ height: '100svh', background: '#07070f' }}>
+
+          {/* Ambient radial glow that shifts with active step */}
+          {(() => {
+            const glowColors = ['#ff5c00','#cb11ab','#fc3f1d','#00d4ff']
+            return (
+              <div className="absolute inset-0 pointer-events-none transition-all duration-700"
+                style={{ background: `radial-gradient(ellipse 60% 50% at 50% 55%, ${glowColors[howStep-1]}18, transparent)` }} />
+            )
+          })()}
 
           {/* Header */}
-          <div className="flex-shrink-0 pt-28 pb-5 text-center px-6">
-            <p className="text-[10px] font-bold uppercase tracking-[0.22em] mb-2" style={{ color: 'var(--c1)' }}>{t.howBadge}</p>
-            <h2 className="text-2xl sm:text-3xl font-black" style={{ color: 'var(--text-base)' }}>
-              {t.howTitle1} <span style={{ color: 'var(--c1)' }}>{t.howTitle2}</span>
+          <div className="absolute top-0 left-0 right-0 text-center pt-20 z-10 pointer-events-none">
+            <p className="text-[10px] font-bold uppercase tracking-[0.22em] mb-2" style={{ color: '#00d4ff' }}>{t.howBadge}</p>
+            <h2 className="text-2xl sm:text-3xl font-black text-white">
+              {t.howTitle1} <span style={{ color: '#00d4ff' }}>{t.howTitle2}</span>
             </h2>
           </div>
 
-          {/* Main: step list + visual */}
-          <div className="flex-1 flex flex-col sm:flex-row gap-5 px-6 max-w-6xl mx-auto w-full pb-4 min-h-0">
-
-            {/* Left: numbered steps */}
-            <div className="sm:w-72 flex flex-col justify-center gap-1.5 flex-shrink-0">
-              {t.steps.map((step, i) => {
-                const isActive = howStep === i + 1
-                const isDone = howStep > i + 1
-                return (
-                  <motion.div
-                    key={i}
-                    animate={{ opacity: isActive ? 1 : isDone ? 0.6 : 0.32 }}
-                    transition={{ duration: 0.35 }}
-                    className="flex items-start gap-3 p-4 rounded-2xl"
-                    style={{
-                      background: isActive
-                        ? (isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)')
-                        : 'transparent',
-                      border: `1px solid ${isActive ? 'var(--border)' : 'transparent'}`,
-                      transition: 'background 0.3s, border-color 0.3s',
-                    }}
-                  >
-                    <motion.div
-                      className="flex-shrink-0 w-9 h-9 rounded-xl flex items-center justify-center text-xs font-black"
-                      animate={{
-                        background: isActive
-                          ? 'var(--c1)'
-                          : isDone
-                            ? 'transparent'
-                            : (isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'),
-                      }}
-                      style={{
-                        color: isActive ? '#001828' : isDone ? 'var(--c1)' : 'var(--text-muted)',
-                        border: isDone ? '2px solid var(--c1)' : '2px solid transparent',
-                      }}
-                    >
-                      {isDone ? '✓' : String(i + 1).padStart(2, '0')}
-                    </motion.div>
-                    <div className="min-w-0">
-                      <h3 className="font-bold text-sm mb-0.5" style={{ color: 'var(--text-base)' }}>{step.title}</h3>
-                      <AnimatePresence>
-                        {isActive && (
-                          <motion.p
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: 'auto' }}
-                            exit={{ opacity: 0, height: 0 }}
-                            transition={{ duration: 0.22 }}
-                            className="text-xs leading-relaxed overflow-hidden"
-                            style={{ color: 'var(--text-muted)' }}
-                          >
-                            {step.desc}
-                          </motion.p>
-                        )}
-                      </AnimatePresence>
-                    </div>
-                  </motion.div>
-                )
-              })}
-            </div>
-
-            {/* Right: animated visual per step */}
-            <div
-              className="flex-1 relative rounded-3xl overflow-hidden min-h-[200px]"
-              style={{
-                background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.025)',
-                border: '1px solid var(--border)',
-              }}
-            >
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={howStep}
-                  initial={{ opacity: 0, y: 22 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -16 }}
-                  transition={{ type: 'spring', stiffness: 300, damping: 28 }}
-                  className="absolute inset-0 flex items-center justify-center p-8"
-                >
-                  {howStep === 1 && (
-                    <div className="w-full max-w-[280px] space-y-3">
-                      <p className="text-xs font-semibold mb-4" style={{ color: 'var(--text-muted)' }}>
-                        {lang === 'uz' ? 'Akkaunt yaratish' : lang === 'ru' ? 'Создание аккаунта' : 'Create your account'}
-                      </p>
-                      <div className="h-11 rounded-xl border px-4 flex items-center text-sm"
-                        style={{ borderColor: 'var(--border)', color: 'var(--text-muted)', background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)' }}>
-                        your@email.com
-                      </div>
-                      <div className="h-11 rounded-xl border px-4 flex items-center gap-1.5"
-                        style={{ borderColor: 'var(--border)', background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)' }}>
-                        {Array(8).fill(0).map((_, j) => (
-                          <div key={j} className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--text-muted)', opacity: 0.45 }} />
-                        ))}
-                      </div>
-                      <motion.div
-                        initial={{ scale: 0.92, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        transition={{ delay: 0.28, type: 'spring', stiffness: 260, damping: 22 }}
-                        className="h-11 rounded-xl flex items-center justify-center font-bold text-sm"
-                        style={{ background: 'var(--c1)', color: '#001828' }}
-                      >
-                        {lang === 'uz' ? 'Bepul boshlash →' : lang === 'ru' ? 'Начать бесплатно →' : 'Get started for free →'}
-                      </motion.div>
-                    </div>
-                  )}
-
-                  {howStep === 2 && (
-                    <div className="w-full max-w-[300px] space-y-3">
-                      <p className="text-xs font-semibold mb-4" style={{ color: 'var(--text-muted)' }}>
-                        {lang === 'uz' ? 'Bozorni ulash' : lang === 'ru' ? 'Подключить маркетплейс' : 'Connect your marketplace'}
-                      </p>
-                      {[
-                        { name: 'Uzum Market', color: '#ff5c00', done: true },
-                        { name: 'Wildberries', color: '#cb11ab', done: false },
-                        { name: 'Yandex Market', color: '#fc3f1d', done: false },
-                      ].map((m, j) => (
-                        <motion.div
-                          key={m.name}
-                          initial={{ opacity: 0, x: -18 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: j * 0.13, type: 'spring', stiffness: 280, damping: 26 }}
-                          className="flex items-center gap-3 p-3 rounded-xl border"
-                          style={{ borderColor: m.done ? 'rgba(34,197,94,0.35)' : 'var(--border)', background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)' }}
-                        >
-                          <div className="w-8 h-8 rounded-lg flex-shrink-0" style={{ background: m.color, opacity: 0.9 }} />
-                          <span className="flex-1 text-sm font-medium" style={{ color: 'var(--text-base)' }}>{m.name}</span>
-                          <div className="text-[10px] font-bold px-2 py-1 rounded-lg"
-                            style={m.done
-                              ? { background: 'rgba(34,197,94,0.12)', color: '#22c55e' }
-                              : { background: 'rgba(0,212,255,0.1)', color: 'var(--c1)' }}>
-                            {m.done
-                              ? (lang === 'uz' ? '✓ Ulandi' : lang === 'ru' ? '✓ Подключён' : '✓ Connected')
-                              : (lang === 'uz' ? 'Ulash' : lang === 'ru' ? 'Подключить' : 'Connect')}
-                          </div>
-                        </motion.div>
-                      ))}
-                    </div>
-                  )}
-
-                  {howStep === 3 && (
-                    <div className="w-full max-w-[280px]">
-                      <p className="text-xs font-semibold mb-5 text-center" style={{ color: 'var(--text-muted)' }}>
-                        {lang === 'uz' ? "Ma'lumotlar import qilinmoqda..." : lang === 'ru' ? 'Импорт данных...' : 'Importing your data...'}
-                      </p>
-                      <div className="space-y-4">
-                        {[
-                          { label: lang === 'uz' ? 'Mahsulotlar' : lang === 'ru' ? 'Товары' : 'Products', pct: 100, delay: 0 },
-                          { label: lang === 'uz' ? 'Buyurtmalar' : lang === 'ru' ? 'Заказы' : 'Orders', pct: 78, delay: 0.18 },
-                          { label: lang === 'uz' ? 'Reklamalar' : lang === 'ru' ? 'Кампании' : 'Campaigns', pct: 45, delay: 0.34 },
-                        ].map(item => (
-                          <div key={item.label}>
-                            <div className="flex justify-between text-xs mb-1.5" style={{ color: 'var(--text-muted)' }}>
-                              <span>{item.label}</span>
-                              <span>{item.pct}%</span>
-                            </div>
-                            <div className="h-2 rounded-full overflow-hidden" style={{ background: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)' }}>
-                              <motion.div
-                                className="h-full rounded-full"
-                                initial={{ width: 0 }}
-                                animate={{ width: `${item.pct}%` }}
-                                transition={{ duration: 0.85, delay: item.delay, ease: 'easeOut' }}
-                                style={{ background: item.pct === 100 ? '#22c55e' : 'var(--c1)' }}
-                              />
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                      <motion.p
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 1.2 }}
-                        className="text-center text-xs mt-5 font-semibold"
-                        style={{ color: '#22c55e' }}
-                      >
-                        ✓ {lang === 'uz' ? "Mahsulotlar sinxronlashdi" : lang === 'ru' ? 'Товары синхронизированы' : 'Products synced successfully'}
-                      </motion.p>
-                    </div>
-                  )}
-
-                  {howStep === 4 && (
-                    <div className="w-full max-w-[320px]">
-                      <div className="flex gap-2 mb-4">
-                        {[
-                          { label: lang === 'uz' ? 'Daromad' : lang === 'ru' ? 'Выручка' : 'Revenue', val: '12.4M', change: '+18%' },
-                          { label: lang === 'uz' ? 'Foyda' : lang === 'ru' ? 'Прибыль' : 'Profit', val: '2.1M', change: '+9%' },
-                          { label: lang === 'uz' ? 'Buyurtma' : lang === 'ru' ? 'Заказы' : 'Orders', val: '342', change: '+24%' },
-                        ].map((stat, j) => (
-                          <motion.div
-                            key={stat.label}
-                            initial={{ opacity: 0, y: 14 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: j * 0.1, type: 'spring', stiffness: 280, damping: 24 }}
-                            className="flex-1 p-2.5 rounded-xl"
-                            style={{ background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)', border: '1px solid var(--border)' }}
-                          >
-                            <p className="text-[8px] uppercase tracking-wider mb-1" style={{ color: 'var(--text-muted)' }}>{stat.label}</p>
-                            <p className="text-sm font-black" style={{ color: 'var(--text-base)' }}>{stat.val}</p>
-                            <p className="text-[10px] font-bold" style={{ color: '#22c55e' }}>{stat.change}</p>
-                          </motion.div>
-                        ))}
-                      </div>
-                      <div className="rounded-xl p-3" style={{ background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)', border: '1px solid var(--border)' }}>
-                        <p className="text-[9px] uppercase tracking-wider mb-3" style={{ color: 'var(--text-muted)' }}>
-                          {lang === 'uz' ? 'Haftalik daromad' : lang === 'ru' ? 'Выручка за неделю' : 'Weekly revenue'}
-                        </p>
-                        <div className="flex items-end gap-1.5" style={{ height: 52 }}>
-                          {[45, 62, 50, 78, 58, 92, 74].map((h, j) => (
-                            <motion.div
-                              key={j}
-                              className="flex-1 rounded-t-sm"
-                              initial={{ scaleY: 0, originY: 1 }}
-                              animate={{ scaleY: 1 }}
-                              transition={{ delay: j * 0.07, duration: 0.45, ease: 'easeOut' }}
-                              style={{
-                                height: `${h}%`,
-                                background: j === 5 ? 'var(--c1)' : isDark ? 'rgba(255,255,255,0.11)' : 'rgba(0,0,0,0.1)',
-                                transformOrigin: 'bottom',
-                              }}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </motion.div>
-              </AnimatePresence>
-
-              {/* Step counter badge */}
-              <div className="absolute bottom-4 right-5 pointer-events-none">
-                <p className="text-[10px] font-bold uppercase tracking-[0.2em]" style={{ color: 'var(--text-muted)' }}>
-                  {String(howStep).padStart(2, '0')} / 04
-                </p>
-              </div>
-            </div>
+          {/* Faint orbit ring */}
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div style={{
+              width: 'min(72vw, 420px)', height: 'min(72vw, 420px)',
+              borderRadius: '50%', border: '1px dashed rgba(255,255,255,0.06)',
+            }} />
           </div>
 
-          {/* Bottom: progress + scroll hint */}
-          <div className="flex-shrink-0 flex items-center justify-center gap-3 pb-6">
-            {[1, 2, 3, 4].map(n => (
-              <motion.div
-                key={n}
-                animate={{ width: n === howStep ? 28 : 7, opacity: n <= howStep ? 1 : 0.25 }}
-                transition={{ duration: 0.3 }}
-                className="h-1.5 rounded-full"
-                style={{ background: n <= howStep ? 'var(--c1)' : (isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.14)') }}
-              />
-            ))}
+          {/* 4 floating marketplace circles */}
+          {[
+            { step: 1, label: 'Uzum',        letter: 'U',  color: '#ff5c00', top: 'calc(50% - 200px)', left: 'calc(50% - 55px)', animClass: 'how-float-1' },
+            { step: 2, label: 'Wildberries', letter: 'WB', color: '#cb11ab', top: 'calc(50% - 55px)',  left: 'calc(50% + 145px)', animClass: 'how-float-2' },
+            { step: 3, label: 'Yandex',      letter: 'YM', color: '#fc3f1d', top: 'calc(50% + 90px)',  left: 'calc(50% - 55px)', animClass: 'how-float-3' },
+            { step: 4, label: 'Daromadchi',  letter: 'D',  color: '#00d4ff', top: 'calc(50% - 55px)',  left: 'calc(50% - 255px)', animClass: 'how-float-4' },
+          ].map(item => {
+            const isActive = howStep === item.step
+            const isDone   = howStep > item.step
+            return (
+              <div
+                key={item.step}
+                className={`absolute ${item.animClass}`}
+                style={{ top: item.top, left: item.left }}
+              >
+                <motion.div
+                  className="flex flex-col items-center gap-2"
+                  animate={{
+                    opacity: isActive ? 1 : isDone ? 0.55 : 0.22,
+                    scale:   isActive ? 1.15 : 0.88,
+                  }}
+                  transition={{ type: 'spring', stiffness: 200, damping: 22 }}
+                >
+                  <div
+                    className="w-[100px] h-[100px] sm:w-[110px] sm:h-[110px] rounded-full flex items-center justify-center font-black text-xl"
+                    style={{
+                      background: isActive
+                        ? `radial-gradient(circle at 38% 35%, ${item.color}ee, ${item.color}77)`
+                        : 'rgba(255,255,255,0.04)',
+                      border: `2px solid ${isActive ? item.color : 'rgba(255,255,255,0.07)'}`,
+                      color: isActive ? '#fff' : 'rgba(255,255,255,0.35)',
+                      boxShadow: isActive
+                        ? `0 0 40px ${item.color}55, 0 0 90px ${item.color}1a, inset 0 1px 0 rgba(255,255,255,0.18)`
+                        : isDone ? `0 0 12px ${item.color}22` : 'none',
+                    }}
+                  >
+                    {isDone ? '✓' : item.letter}
+                  </div>
+                  <span className="text-[10px] font-bold uppercase tracking-widest whitespace-nowrap"
+                    style={{ color: isActive ? item.color : 'rgba(255,255,255,0.22)' }}>
+                    {item.label}
+                  </span>
+                </motion.div>
+              </div>
+            )
+          })}
+
+          {/* Center: current step info */}
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <AnimatePresence mode="wait">
-              <motion.span
-                key={howStep === 4 ? 'continue' : 'next'}
+              <motion.div
+                key={howStep}
+                initial={{ opacity: 0, scale: 0.88, y: 14 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 1.06, y: -12 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 26 }}
+                className="text-center max-w-[220px] px-4"
+              >
+                <p className="text-[9px] font-black uppercase tracking-[0.3em] mb-3" style={{ color: '#00d4ff' }}>
+                  {String(howStep).padStart(2, '0')} / 04
+                </p>
+                <h3 className="text-xl sm:text-2xl font-black text-white mb-2 leading-tight">
+                  {t.steps[howStep - 1]?.title}
+                </h3>
+                <p className="text-xs leading-relaxed" style={{ color: 'rgba(255,255,255,0.45)' }}>
+                  {t.steps[howStep - 1]?.desc}
+                </p>
+              </motion.div>
+            </AnimatePresence>
+          </div>
+
+          {/* Bottom: progress pills + hint */}
+          <div className="absolute bottom-8 left-0 right-0 flex flex-col items-center gap-2.5">
+            <div className="flex gap-2">
+              {[1, 2, 3, 4].map(n => (
+                <motion.div
+                  key={n}
+                  animate={{ width: n === howStep ? 28 : 7, opacity: n <= howStep ? 1 : 0.2 }}
+                  transition={{ duration: 0.3 }}
+                  className="h-1.5 rounded-full"
+                  style={{ background: n <= howStep ? '#00d4ff' : 'rgba(255,255,255,0.2)' }}
+                />
+              ))}
+            </div>
+            <AnimatePresence mode="wait">
+              <motion.p
+                key={howStep === 4 ? 'done' : 'next'}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.25 }}
-                className="ml-1 text-[10px] font-medium"
-                style={{ color: 'var(--text-muted)' }}
+                className="text-[10px] font-medium"
+                style={{ color: 'rgba(255,255,255,0.28)' }}
               >
                 {howStep < 4
                   ? (lang === 'uz' ? 'Keyingi qadam uchun pastga aylantiring ↓' : lang === 'ru' ? 'Прокрутите вниз для следующего шага ↓' : 'Scroll down for next step ↓')
                   : (lang === 'uz' ? 'Davom etish uchun aylantiring ↓' : lang === 'ru' ? 'Прокрутите вниз, чтобы продолжить ↓' : 'Scroll to continue ↓')}
-              </motion.span>
+              </motion.p>
             </AnimatePresence>
           </div>
         </section>
