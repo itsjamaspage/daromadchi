@@ -13,7 +13,7 @@ export async function POST() {
 
   const { data: shop } = await supabase
     .from('shops')
-    .select('id, api_key_encrypted, shop_id_external')
+    .select('id, api_key_encrypted, shop_id_external, last_synced_at')
     .eq('user_id', user.id)
     .eq('marketplace', 'yandex_market')
     .single()
@@ -24,6 +24,17 @@ export async function POST() {
 
   if (!shop?.shop_id_external) {
     return NextResponse.json({ ok: false, error: 'Yandex Campaign ID topilmadi. Avval sozlamalarda Campaign ID saqlang.' }, { status: 400 })
+  }
+
+  if (shop.last_synced_at) {
+    const minsAgo = (Date.now() - new Date(shop.last_synced_at).getTime()) / 60000
+    if (minsAgo < 5) {
+      const waitMins = Math.ceil(5 - minsAgo)
+      return NextResponse.json(
+        { ok: false, error: `Sinxronizatsiya ${waitMins} daqiqadan keyin bajarilishi mumkin` },
+        { status: 429 },
+      )
+    }
   }
 
   const token  = decrypt(shop.api_key_encrypted)

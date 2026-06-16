@@ -688,39 +688,20 @@ export default function LandingPage() {
       </header>
 
       {/* ── HERO ─────────────────────────────────────────────────────────────── */}
-      <section className="relative flex items-center pt-24 overflow-hidden" style={{ minHeight: '100svh' }}>
-        <div className="relative z-10 max-w-7xl mx-auto w-full px-6 grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-12 items-center py-16">
+      <section className="relative flex flex-col items-center pt-28 pb-0 overflow-hidden" style={{ minHeight: '100svh' }}>
 
-          {/* LEFT: mockup */}
-          <motion.div
-            initial={{ opacity: 0, x: -40, scale: 0.97 }}
-            animate={{ opacity: 1, x: 0, scale: 1 }}
-            transition={{ duration: 0.75, delay: 0.1, ease: [0.25, 0.46, 0.45, 0.94] }}
-            className="relative order-2 lg:order-1"
-          >
-            <MockupInteractive>
-              <DashboardMockup p={t.preview} />
-            </MockupInteractive>
-          </motion.div>
+        {/* Text + CTAs — centered column */}
+        <div className="relative z-10 w-full max-w-3xl mx-auto px-6 flex flex-col items-center text-center gap-7 pb-12">
 
-          {/* RIGHT: copy */}
-          <div className="flex flex-col gap-7 order-1 lg:order-2 rounded-2xl px-6 py-8 lg:px-8"
-            style={{
-              background: isDark ? 'rgba(7,9,26,0.70)' : 'rgba(248,248,252,0.78)',
-              backdropFilter: 'blur(18px)',
-              WebkitBackdropFilter: 'blur(18px)',
-              border: isDark ? '1px solid rgba(255,255,255,0.05)' : '1px solid rgba(0,0,0,0.07)',
-            }}>
-
-            {/* Marketplace chips — small, factual */}
+            {/* Marketplace chips */}
             <motion.div
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4 }}
-              className="flex items-center gap-2 flex-wrap"
+              className="flex items-center justify-center gap-2 flex-wrap"
             >
               {['Uzum', 'Yandex Market', 'Wildberries'].map(mp => (
-                <span key={mp} className="text-[11px] font-semibold px-2.5 py-1 rounded-md border"
+                <span key={mp} className="text-[11px] font-semibold px-3 py-1.5 rounded-full border"
                   style={{ borderColor: 'var(--border2)', color: 'var(--text-muted)', background: 'var(--bg-input)' }}>
                   {mp}
                 </span>
@@ -751,10 +732,10 @@ export default function LandingPage() {
               transition={{ duration: 0.5, delay: 0.45 }}
               className="space-y-2"
             >
-              <p className="text-lg leading-relaxed font-medium" style={{ color: 'var(--text-muted)' }}>
+              <p className="text-lg leading-relaxed font-medium max-w-xl" style={{ color: 'var(--text-muted)' }}>
                 {t.hero.landingSubtitle}
               </p>
-              <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)', opacity: 0.7 }}>
+              <p className="text-sm leading-relaxed max-w-lg" style={{ color: 'var(--text-muted)', opacity: 0.7 }}>
                 {lang === 'uz'
                   ? "Har kuni 5 daqiqada sotuvlaringizni nazorat qiling. Raqiblar narxini kuzating, DRR hisobini avtomatlashtiring va foydani oshiring."
                   : lang === 'ru'
@@ -768,7 +749,7 @@ export default function LandingPage() {
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.6 }}
-              className="flex flex-col sm:flex-row gap-3"
+              className="flex flex-col sm:flex-row gap-3 justify-center"
             >
               <Link href="/login"
                 className="inline-flex items-center justify-center gap-2 font-bold px-7 py-3.5 rounded-xl text-sm text-white"
@@ -787,7 +768,7 @@ export default function LandingPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.8 }}
-              className="pt-5 border-t grid grid-cols-3 gap-0"
+              className="pt-5 border-t w-full grid grid-cols-3"
               style={{ borderColor: 'var(--border)' }}
             >
               {[
@@ -799,18 +780,28 @@ export default function LandingPage() {
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.85 + i * 0.08 }}
-                  className={`pr-6 ${i > 0 ? 'pl-6 border-l' : ''}`}
-                  style={{ borderColor: 'var(--border)' }}>
+                  className="flex flex-col items-center">
                   <div className="text-3xl font-black" style={{ color: 'var(--text-base)' }}>
                     <StatNum value={s.value} suffix={s.suffix} />
                   </div>
-                  <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>{s.label}</p>
+                  <p className="text-xs mt-1 text-center" style={{ color: 'var(--text-muted)' }}>{s.label}</p>
                 </motion.div>
               ))}
             </motion.div>
-
-          </div>
         </div>
+
+        {/* Mockup — full-width showcase below the hero text */}
+        <motion.div
+          initial={{ opacity: 0, y: 48 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
+          className="relative z-10 w-full max-w-5xl mx-auto px-6"
+        >
+          <MockupInteractive>
+            <DashboardMockup p={t.preview} />
+          </MockupInteractive>
+        </motion.div>
+
       </section>
 
       {/* ── TICKER ───────────────────────────────────────────────────────────── */}

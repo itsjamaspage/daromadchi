@@ -4,10 +4,29 @@ import { createAdminClient } from '@/lib/supabase/admin'
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
 const CHANNEL   = '@daromadchi_uz'
 
+// IP-based rate limit: max 10 activation attempts per 15 minutes per IP
+const activateRateMap = new Map<string, { count: number; resetAt: number }>()
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now()
+  const entry = activateRateMap.get(ip)
+  if (!entry || now > entry.resetAt) {
+    activateRateMap.set(ip, { count: 1, resetAt: now + 15 * 60 * 1000 })
+    return true
+  }
+  if (entry.count >= 10) return false
+  entry.count++
+  return true
+}
+
 // POST /api/extension/activate
 // Body: { code: string }
 // Returns: { ok: true } or { ok: false, error: string }
 export async function POST(req: NextRequest) {
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() ?? '0.0.0.0'
+  if (!checkRateLimit(ip)) {
+    return NextResponse.json({ ok: false, error: 'Juda ko\'p urinish. 15 daqiqadan keyin qayta urining.' }, { status: 429 })
+  }
+
   try {
     const { code } = await req.json()
     if (!code?.trim()) return NextResponse.json({ ok: false, error: 'Kod kiritilmadi' }, { status: 400 })

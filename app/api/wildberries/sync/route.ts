@@ -10,13 +10,24 @@ export async function POST() {
 
   const { data: shop } = await supabase
     .from('shops')
-    .select('id, api_key_encrypted')
+    .select('id, api_key_encrypted, last_synced_at')
     .eq('user_id', user.id)
     .eq('marketplace', 'wildberries')
     .maybeSingle()
 
   if (!shop?.api_key_encrypted) {
     return NextResponse.json({ error: 'No Wildberries API token saved' }, { status: 400 })
+  }
+
+  if (shop.last_synced_at) {
+    const minsAgo = (Date.now() - new Date(shop.last_synced_at).getTime()) / 60000
+    if (minsAgo < 5) {
+      const waitMins = Math.ceil(5 - minsAgo)
+      return NextResponse.json(
+        { ok: false, error: `Sinxronizatsiya ${waitMins} daqiqadan keyin bajarilishi mumkin` },
+        { status: 429 },
+      )
+    }
   }
 
   const result = await syncFromWildberries(supabase, shop.id, decrypt(shop.api_key_encrypted))
