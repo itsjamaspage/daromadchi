@@ -60,7 +60,6 @@ function DashboardMockup({ p }: { p: typeof translations.en.preview }) {
 
   return (
     <div className="rounded-2xl overflow-hidden border" style={{ background: bg, borderColor: border }}>
-      {/* Browser bar */}
       <div className="flex items-center gap-2 px-4 py-3 border-b" style={{ background: bg2, borderColor: border }}>
         <div className="flex gap-1.5">
           <div className="w-3 h-3 rounded-full bg-red-400/80" />
@@ -73,9 +72,7 @@ function DashboardMockup({ p }: { p: typeof translations.en.preview }) {
         </div>
         <Activity className="w-3 h-3 text-green-400" />
       </div>
-      {/* Content */}
       <div className="p-5 space-y-4">
-        {/* KPI cards */}
         <div className="grid grid-cols-4 gap-3">
           {kpis.map(k => (
             <div key={k.l} className="rounded-xl p-3 border" style={{ background: bg2, borderColor: border }}>
@@ -85,7 +82,6 @@ function DashboardMockup({ p }: { p: typeof translations.en.preview }) {
             </div>
           ))}
         </div>
-        {/* Charts */}
         <div className="grid grid-cols-3 gap-3">
           <div className="col-span-2 rounded-xl p-4 border" style={{ background: bg2, borderColor: border }}>
             <p className="text-[10px] mb-3 font-medium" style={{ color: muted }}>{p.dailyRevenue}</p>
@@ -110,7 +106,6 @@ function DashboardMockup({ p }: { p: typeof translations.en.preview }) {
             </div>
           </div>
         </div>
-        {/* Mini table */}
         <div className="rounded-xl border overflow-hidden" style={{ borderColor: border }}>
           <div className="flex items-center justify-between px-4 py-2 border-b text-[9px] font-semibold" style={{ background: bg2, borderColor: border, color: muted }}>
             <span>Recent Orders</span><span>Status</span>
@@ -171,7 +166,6 @@ function MockupInteractive({ children }: { children: React.ReactNode }) {
   )
 }
 
-/* ── Slot-machine price scramble ────────────────────────────────────────── */
 function SlotPrice({ value, trigger, delay = 0 }: { value: string; trigger: boolean; delay?: number }) {
   const DIGITS = '0123456789'
   const blank = value.replace(/\d/g, '-')
@@ -188,7 +182,7 @@ function SlotPrice({ value, trigger, delay = 0 }: { value: string; trigger: bool
         if (frame >= total) { setDisplay(value); clearInterval(iv); return }
         setDisplay(
           value.split('').map((ch, i) => {
-            if (ch === ' ') return ' '
+            if (ch === ' ') return ' '
             const charIdx = value.slice(0, i + 1).replace(/ /g, '').length - 1
             const revealFrame = Math.floor(total * 0.55 * ((charIdx + 1) / plainLen))
             return frame > revealFrame ? ch : DIGITS[Math.floor(Math.random() * 10)]
@@ -219,14 +213,12 @@ function FeaturesScrollSection({
   const [activeStep, setActiveStep] = useState(0)
   const dirRef = useRef(1)
 
-  // Click: any direction
   const goTo = (i: number) => {
     if (i === activeStep) return
     dirRef.current = i > activeStep ? 1 : -1
     setActiveStep(i)
   }
 
-  // Sync progress bar to active step (DOM write, no re-render)
   useEffect(() => {
     if (progressBarRef.current) {
       const pct = features.length > 1 ? (activeStep / (features.length - 1)) * 100 : 100
@@ -234,7 +226,6 @@ function FeaturesScrollSection({
     }
   }, [activeStep, features.length])
 
-  // Auto-advance every 2.5 seconds, loops through all options
   useEffect(() => {
     const timer = setInterval(() => {
       dirRef.current = 1
@@ -247,83 +238,59 @@ function FeaturesScrollSection({
   const ActiveIcon = ICONS[activeStep]
 
   return (
-    <section id="features" ref={sectionRef} style={{ background: 'var(--bg-base)' }}>
-      {/* Section heading */}
-      <div className="pt-6 pb-6 px-6">
-        <div className="max-w-5xl mx-auto text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={inView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.5 }}
-          >
-            <span className="inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-bold mb-4 border"
-              style={{ background: isDark ? 'rgba(0,212,255,0.06)' : 'rgba(124,58,237,0.06)', borderColor: 'var(--border2)', color: 'var(--c1)' }}>
-              <Sparkles className="w-3 h-3" /> {badge}
-            </span>
-            <h2 className="text-3xl sm:text-4xl font-extrabold mb-4" style={{ color: 'var(--text-base)' }}>{title}</h2>
-            <p className="text-base max-w-lg mx-auto" style={{ color: 'var(--text-muted)' }}>{subtitle}</p>
-          </motion.div>
-        </div>
-      </div>
+    <section id="features" ref={sectionRef} className="py-24 px-6" style={{ background: 'var(--bg-base)' }}>
+      <div className="max-w-5xl mx-auto">
 
-      <div className="pb-16 px-6">
-        <div className="max-w-5xl mx-auto w-full">
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={inView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.45 }}
+          className="mb-16"
+        >
+          <p className="text-xs font-bold uppercase tracking-[0.18em] mb-3" style={{ color: 'var(--c1)' }}>{badge}</p>
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+            <h2 className="text-3xl sm:text-4xl font-black leading-tight" style={{ color: 'var(--text-base)' }}>{title}</h2>
+            <p className="text-sm max-w-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>{subtitle}</p>
+          </div>
+          <div className="mt-6 h-px" style={{ background: 'var(--border)' }} />
+        </motion.div>
 
-        {/* Desktop: 3-column */}
-        <div className="hidden md:grid gap-12 items-center"
-          style={{ gridTemplateColumns: '1.15fr 44px 1fr' }}>
+        {/* Desktop layout */}
+        <div className="hidden md:grid gap-16 items-center" style={{ gridTemplateColumns: '1.15fr 44px 1fr' }}>
 
-          {/* LEFT: large icon */}
           <motion.div
             initial={{ opacity: 0, x: -28 }}
             animate={inView ? { opacity: 1, x: 0 } : {}}
             transition={{ duration: 0.55, delay: 0.15 }}
             className="flex items-center justify-center"
           >
-            <div className="relative p-3">
-              <div className="absolute top-0 left-0 w-7 h-7 border-t-2 border-l-2 rounded-tl" style={{ borderColor: 'var(--c1)' }} />
-              <div className="absolute top-0 right-0 w-7 h-7 border-t-2 border-r-2 rounded-tr" style={{ borderColor: 'var(--c1)' }} />
-              <div className="absolute bottom-0 left-0 w-7 h-7 border-b-2 border-l-2 rounded-bl" style={{ borderColor: 'var(--c1)' }} />
-              <div className="absolute bottom-0 right-0 w-7 h-7 border-b-2 border-r-2 rounded-br" style={{ borderColor: 'var(--c1)' }} />
-
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={activeStep}
-                  initial={{ opacity: 0, scale: 0.68, rotateY: dirRef.current * -80 }}
-                  animate={{ opacity: 1, scale: 1, rotateY: 0 }}
-                  exit={{ opacity: 0, scale: 0.68, rotateY: dirRef.current * 80 }}
-                  transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
-                  className="w-72 h-72 rounded-3xl flex items-center justify-center"
-                  style={{
-                    background: isDark ? 'rgba(0,212,255,0.07)' : 'rgba(124,58,237,0.07)',
-                    border: '2px solid var(--c1)',
-                    boxShadow: isDark
-                      ? '0 0 90px rgba(0,212,255,0.26), inset 0 0 50px rgba(0,212,255,0.06)'
-                      : '0 0 90px rgba(124,58,237,0.26), inset 0 0 50px rgba(124,58,237,0.06)',
-                  }}
-                >
-                  <ActiveIcon className="w-36 h-36" style={{ color: 'var(--c1)' }} />
-                </motion.div>
-              </AnimatePresence>
-            </div>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeStep}
+                initial={{ opacity: 0, scale: 0.68, rotateY: dirRef.current * -80 }}
+                animate={{ opacity: 1, scale: 1, rotateY: 0 }}
+                exit={{ opacity: 0, scale: 0.68, rotateY: dirRef.current * 80 }}
+                transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
+                className="w-72 h-72 rounded-3xl flex items-center justify-center border"
+                style={{
+                  background: isDark ? 'rgba(0,212,255,0.04)' : 'rgba(124,58,237,0.04)',
+                  borderColor: 'var(--border)',
+                }}
+              >
+                <ActiveIcon className="w-28 h-28" style={{ color: 'var(--c1)', opacity: 0.85 }} />
+              </motion.div>
+            </AnimatePresence>
           </motion.div>
 
-          {/* CENTER: clickable timeline */}
+          {/* Timeline */}
           <div className="flex justify-center py-8">
             <div className="relative flex flex-col items-center justify-between w-4 h-full">
-              {/* Track */}
-              <div className="absolute inset-x-1/2 top-0 bottom-0 w-px -translate-x-1/2"
-                style={{ background: 'var(--border)' }} />
-              {/* Animated fill — DOM-driven by RAF, perfectly smooth */}
+              <div className="absolute inset-x-1/2 top-0 bottom-0 w-px -translate-x-1/2" style={{ background: 'var(--border)' }} />
               <div
                 ref={progressBarRef}
                 className="absolute inset-x-1/2 top-0 w-px -translate-x-1/2 origin-top"
-                style={{
-                  background: 'linear-gradient(to bottom, var(--c1), var(--c2))',
-                  height: '0%',
-                }}
+                style={{ background: 'linear-gradient(to bottom, var(--c1), var(--c2))', height: '0%' }}
               />
-              {/* Clickable dots */}
               {features.map((f, i) => (
                 <button
                   key={i}
@@ -336,23 +303,19 @@ function FeaturesScrollSection({
                     background: i <= activeStep ? 'var(--c1)' : 'var(--bg-base)',
                     borderColor: i <= activeStep ? 'var(--c1)' : 'var(--border)',
                     cursor: 'pointer',
-                    boxShadow: i === activeStep
-                      ? isDark ? '0 0 14px rgba(0,212,255,0.85)' : '0 0 14px rgba(124,58,237,0.85)'
-                      : undefined,
+                    boxShadow: i === activeStep ? (isDark ? '0 0 14px rgba(0,212,255,0.85)' : '0 0 14px rgba(124,58,237,0.85)') : undefined,
                   }}
                 />
               ))}
             </div>
           </div>
 
-          {/* RIGHT: big animated text + clickable list */}
           <motion.div
             initial={{ opacity: 0, x: 28 }}
             animate={inView ? { opacity: 1, x: 0 } : {}}
             transition={{ duration: 0.55, delay: 0.25 }}
             className="flex flex-col gap-7 justify-center py-8"
           >
-            {/* Active step text — slides in from direction of travel */}
             <div style={{ minHeight: '170px' }}>
               <AnimatePresence mode="wait">
                 <motion.div
@@ -362,7 +325,7 @@ function FeaturesScrollSection({
                   exit={{ opacity: 0, x: dirRef.current * -28 }}
                   transition={{ duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
                 >
-                  <p className="text-sm font-bold uppercase tracking-widest mb-3" style={{ color: 'var(--c1)' }}>
+                  <p className="text-xs font-bold uppercase tracking-[0.15em] mb-3" style={{ color: 'var(--c1)' }}>
                     {String(activeStep + 1).padStart(2, '0')}&nbsp;/&nbsp;{String(features.length).padStart(2, '0')}
                   </p>
                   <h3 className="text-4xl font-extrabold mb-4 leading-tight" style={{ color: 'var(--text-base)' }}>
@@ -375,8 +338,7 @@ function FeaturesScrollSection({
               </AnimatePresence>
             </div>
 
-            {/* Clickable option list */}
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-0.5">
               {features.map((f, i) => {
                 const Li = ICONS[i]
                 const isActive = i === activeStep
@@ -384,25 +346,17 @@ function FeaturesScrollSection({
                   <motion.button
                     key={i}
                     onClick={() => goTo(i)}
-                    className="flex items-center gap-3 py-2.5 px-3 rounded-xl text-left w-full focus:outline-none"
+                    className="flex items-center gap-3 py-2.5 px-3 rounded-lg text-left w-full focus:outline-none"
                     animate={{
                       opacity: isDark ? (isActive ? 1 : 0.38) : 1,
-                      background: isActive
-                        ? isDark ? 'rgba(0,212,255,0.08)' : 'rgba(124,58,237,0.08)'
-                        : 'rgba(0,0,0,0)',
+                      background: isActive ? (isDark ? 'rgba(0,212,255,0.07)' : 'rgba(124,58,237,0.07)') : 'rgba(0,0,0,0)',
                     }}
                     whileHover={{ opacity: 1 }}
                     transition={{ duration: 0.2 }}
                     style={{ cursor: 'pointer' }}
                   >
-                    <div
-                      className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-colors duration-200"
-                      style={{
-                        background: isActive
-                          ? isDark ? 'rgba(0,212,255,0.16)' : 'rgba(124,58,237,0.16)'
-                          : 'transparent',
-                      }}
-                    >
+                    <div className="w-7 h-7 rounded-md flex items-center justify-center shrink-0 transition-colors duration-200"
+                      style={{ background: isActive ? (isDark ? 'rgba(0,212,255,0.14)' : 'rgba(124,58,237,0.14)') : 'transparent' }}>
                       <Li className="w-3.5 h-3.5" style={{ color: isActive ? 'var(--c1)' : 'var(--text-dim)' }} />
                     </div>
                     <span className="text-sm font-medium transition-colors duration-200"
@@ -412,7 +366,7 @@ function FeaturesScrollSection({
                     {isActive && (
                       <motion.div
                         layoutId="feature-active-dot"
-                        className="ml-auto w-2 h-2 rounded-full"
+                        className="ml-auto w-1.5 h-1.5 rounded-full"
                         style={{ background: 'var(--c1)' }}
                         transition={{ type: 'spring', stiffness: 400, damping: 28 }}
                       />
@@ -433,48 +387,32 @@ function FeaturesScrollSection({
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.78 }}
               transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-              className="w-36 h-36 rounded-2xl flex items-center justify-center border-2"
-              style={{
-                borderColor: 'var(--c1)',
-                background: isDark ? 'rgba(0,212,255,0.08)' : 'rgba(124,58,237,0.08)',
-                boxShadow: isDark ? '0 0 40px rgba(0,212,255,0.2)' : '0 0 40px rgba(124,58,237,0.2)',
-              }}
+              className="w-36 h-36 rounded-2xl flex items-center justify-center border"
+              style={{ borderColor: 'var(--border)', background: isDark ? 'rgba(0,212,255,0.05)' : 'rgba(124,58,237,0.05)' }}
             >
               <ActiveIcon className="w-18 h-18" style={{ color: 'var(--c1)', width: '4.5rem', height: '4.5rem' }} />
             </motion.div>
           </AnimatePresence>
-
           <AnimatePresence mode="wait">
             <motion.div key={activeStep}
               initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -18 }}
               transition={{ duration: 0.32 }} className="text-center px-4"
             >
-              <h3 className="text-2xl font-extrabold mb-2" style={{ color: 'var(--text-base)' }}>
-                {features[activeStep].title}
-              </h3>
-              <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>
-                {features[activeStep].desc}
-              </p>
+              <h3 className="text-2xl font-extrabold mb-2" style={{ color: 'var(--text-base)' }}>{features[activeStep].title}</h3>
+              <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>{features[activeStep].desc}</p>
             </motion.div>
           </AnimatePresence>
-
-          {/* Clickable pill dots */}
           <div className="flex gap-2 items-center flex-wrap justify-center">
             {features.map((_, i) => (
               <button key={i} onClick={() => goTo(i)} className="focus:outline-none">
                 <motion.div
-                  animate={{
-                    width: i === activeStep ? '28px' : '9px',
-                    background: i <= activeStep ? 'var(--c1)' : 'var(--border)',
-                  }}
+                  animate={{ width: i === activeStep ? '28px' : '9px', background: i <= activeStep ? 'var(--c1)' : 'var(--border)' }}
                   transition={{ duration: 0.3 }}
                   className="h-2 rounded-full"
                 />
               </button>
             ))}
           </div>
-        </div>
-
         </div>
       </div>
     </section>
@@ -508,7 +446,6 @@ export default function LandingPage() {
   const langs: Lang[] = ['uz', 'ru', 'en']
   const card = isDark ? 'var(--bg-card)' : '#ffffff'
 
-  // Step popup — lock scroll while open
   const [stepPopup, setStepPopup] = useState<number | null>(null)
   const stepPopupShown = useRef(false)
   useEffect(() => {
@@ -522,7 +459,6 @@ export default function LandingPage() {
     return () => { document.body.style.overflow = '' }
   }, [stepPopup])
 
-  // CTA animated text phases — loops forever: 0=question → 1=answer → 0=question …
   const [ctaPhase, setCtaPhase] = useState<0 | 1>(0)
   const ctaStarted = useRef(false)
   const ctaTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -568,15 +504,15 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen" style={{ overflowX: 'clip', background: 'var(--bg-base)', color: 'var(--text-base)' }}>
 
-      {/* NAVBAR */}
-      <header className="fixed top-0 left-0 right-0 z-50 border-b backdrop-blur-md"
-        style={{ background: 'var(--nav-bg)', borderColor: 'var(--border)' }}>
-        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+      {/* ── NAVBAR ───────────────────────────────────────────────────────────── */}
+      <header className="fixed top-0 left-0 right-0 z-50"
+        style={{ background: 'var(--nav-bg)', borderBottom: '1px solid var(--border)' }}>
+        <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5 shrink-0">
-            <img src="/icon.svg" alt="Daromadchi" className="w-8 h-8 rounded-xl" />
-            <span className="font-bold text-base" style={{ color: 'var(--text-base)' }}>Daromadchi</span>
+            <img src="/icon.svg" alt="Daromadchi" className="w-7 h-7 rounded-lg" />
+            <span className="font-bold text-sm" style={{ color: 'var(--text-base)' }}>Daromadchi</span>
           </Link>
-          <nav className="hidden md:flex items-center gap-8">
+          <nav className="hidden md:flex items-center gap-7">
             {[
               { href: '#features', label: t.nav.features },
               { href: '#how', label: t.nav.how },
@@ -584,8 +520,10 @@ export default function LandingPage() {
               { href: '/help', label: t.nav.help },
             ].map(item => (
               <a key={item.label} href={item.href}
-                className="text-sm font-medium transition-opacity opacity-60 hover:opacity-100"
-                style={{ color: 'var(--text-base)' }}>
+                className="text-sm transition-colors"
+                style={{ color: 'var(--text-muted)' }}
+                onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-base)')}
+                onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}>
                 {item.label}
               </a>
             ))}
@@ -593,7 +531,7 @@ export default function LandingPage() {
           <div className="flex items-center gap-2">
             <div ref={langRef} className="relative">
               <button onClick={() => setLangOpen(o => !o)}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold border"
                 style={{ background: 'var(--bg-input)', borderColor: 'var(--border2)', color: 'var(--text-dim)' }}>
                 <Globe className="w-3 h-3" /> {lang.toUpperCase()}
               </button>
@@ -619,11 +557,11 @@ export default function LandingPage() {
               style={{ background: 'var(--bg-input)', borderColor: 'var(--border2)', color: 'var(--text-dim)' }}>
               {theme === 'dark' ? <Sun className="w-3.5 h-3.5 text-amber-400" /> : <Moon className="w-3.5 h-3.5 text-blue-500" />}
             </button>
-            <Link href="/login" className="hidden sm:block text-sm font-medium px-4 py-1.5 opacity-60 hover:opacity-100"
-              style={{ color: 'var(--text-base)' }}>
+            <Link href="/login" className="hidden sm:block text-sm font-medium px-4 py-1.5"
+              style={{ color: 'var(--text-muted)' }}>
               {t.nav.login}
             </Link>
-            <Link href="/login" className="text-sm font-bold px-5 py-2 rounded-xl text-white"
+            <Link href="/login" className="text-sm font-bold px-4 py-2 rounded-lg text-white"
               style={{ background: 'var(--c1)' }}>
               {t.nav.start}
             </Link>
@@ -646,7 +584,7 @@ export default function LandingPage() {
                   { label: t.nav.help, href: '/help' },
                 ].map(({ label, href }) => (
                   <a key={label} href={href} onClick={() => setMenuOpen(false)}
-                    className="text-sm py-2.5 font-medium opacity-70" style={{ color: 'var(--text-base)' }}>
+                    className="text-sm py-2.5 font-medium" style={{ color: 'var(--text-muted)' }}>
                     {label}
                   </a>
                 ))}
@@ -661,170 +599,156 @@ export default function LandingPage() {
         </AnimatePresence>
       </header>
 
-      {/* HERO: mockup LEFT (bigger), text RIGHT */}
-      <section className="relative min-h-screen flex items-center pt-16 pb-0 overflow-hidden">
-        {/* BG gradient */}
-        <div className="absolute inset-0 pointer-events-none" style={{
-          background: isDark
-            ? 'radial-gradient(ellipse 60% 80% at 0% 50%, rgba(0,212,255,0.10) 0%, transparent 60%), radial-gradient(ellipse 40% 50% at 100% 80%, rgba(255,45,155,0.07) 0%, transparent 55%)'
-            : 'radial-gradient(ellipse 60% 80% at 0% 50%, rgba(124,58,237,0.08) 0%, transparent 60%)'
-        }} />
+      {/* ── HERO ─────────────────────────────────────────────────────────────── */}
+      <section className="relative flex items-center pt-14 overflow-hidden" style={{ minHeight: '100svh' }}>
+        <div className="relative z-10 max-w-7xl mx-auto w-full px-6 grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-12 items-center py-16">
 
-        <div className="relative z-10 max-w-7xl mx-auto w-full px-6 grid grid-cols-1 lg:grid-cols-[1.15fr_0.85fr] gap-10 items-center py-12">
-          {/* LEFT: Dashboard (bigger) */}
+          {/* LEFT: mockup */}
           <motion.div
-            initial={{ opacity: 0, x: -50, scale: 0.95 }}
+            initial={{ opacity: 0, x: -40, scale: 0.97 }}
             animate={{ opacity: 1, x: 0, scale: 1 }}
-            transition={{ duration: 0.8, delay: 0.1, ease: [0.25, 0.46, 0.45, 0.94] }}
+            transition={{ duration: 0.75, delay: 0.1, ease: [0.25, 0.46, 0.45, 0.94] }}
             className="relative order-2 lg:order-1"
           >
-            {/* Glow blob behind */}
-            <div className="absolute -inset-8 rounded-3xl blur-3xl opacity-30 pointer-events-none animate-pulse-glow"
-              style={{ background: isDark ? 'radial-gradient(ellipse at 40% 50%, #00d4ff, transparent 65%)' : 'radial-gradient(ellipse at 40% 50%, #7c3aed, transparent 65%)' }} />
-            {/* Interactive 3D mockup */}
             <MockupInteractive>
               <DashboardMockup p={t.preview} />
             </MockupInteractive>
-            {/* Floating stat badge */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              transition={{ delay: 0.9, duration: 0.5 }}
-              className="absolute -bottom-4 -right-4 rounded-2xl px-4 py-3 border shadow-xl hidden md:block"
-              style={{ background: isDark ? '#0b1c34' : '#fff', borderColor: isDark ? 'rgba(0,212,255,0.2)' : 'rgba(124,58,237,0.2)' }}>
-              <p className="text-[10px] font-medium mb-0.5" style={{ color: 'var(--text-muted)' }}>Monthly revenue</p>
-              <p className="font-extrabold text-lg" style={{ color: 'var(--c1)' }}>↑ 38.4%</p>
-            </motion.div>
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8, y: -20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              transition={{ delay: 1.1, duration: 0.5 }}
-              className="absolute -top-4 -right-2 rounded-2xl px-3 py-2 border shadow-xl hidden md:block"
-              style={{ background: isDark ? '#0b1c34' : '#fff', borderColor: isDark ? 'rgba(0,212,255,0.2)' : 'rgba(124,58,237,0.2)' }}>
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-                <p className="text-[10px] font-semibold" style={{ color: 'var(--text-base)' }}>Live sync</p>
-              </div>
-            </motion.div>
           </motion.div>
 
-          {/* RIGHT: Copy */}
-          <div className="flex flex-col gap-6 order-1 lg:order-2">
+          {/* RIGHT: copy */}
+          <div className="flex flex-col gap-7 order-1 lg:order-2">
+
+            {/* Marketplace chips — small, factual */}
             <motion.div
-              initial="hidden"
-              animate="visible"
-              variants={{ visible: { transition: { staggerChildren: 0.06 } } }}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
+              className="flex items-center gap-2 flex-wrap"
             >
-              <motion.div variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { duration: 0.5 } } }}>
-                <span className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold mb-5 border"
-                  style={{ background: isDark ? 'rgba(0,212,255,0.08)' : 'rgba(124,58,237,0.07)', borderColor: 'var(--border2)', color: 'var(--c1)' }}>
-                  <Sparkles className="w-3 h-3" /> Uzum · Yandex Market · Wildberries
+              {['Uzum', 'Yandex Market', 'Wildberries'].map(mp => (
+                <span key={mp} className="text-[11px] font-semibold px-2.5 py-1 rounded-md border"
+                  style={{ borderColor: 'var(--border2)', color: 'var(--text-muted)', background: 'var(--bg-input)' }}>
+                  {mp}
                 </span>
-              </motion.div>
+              ))}
+            </motion.div>
 
-              {/* Animated headline word-by-word */}
-              <div className="text-4xl sm:text-5xl font-extrabold leading-tight tracking-tight mb-5 overflow-hidden"
-                style={{ color: 'var(--text-base)' }}>
-                {t.hero.landingTitle.split(' ').map((word, i) => (
-                  <motion.span
-                    key={i}
-                    custom={i}
-                    variants={wordAnim}
-                    initial="hidden"
-                    animate="visible"
-                    className="inline-block mr-[0.25em]"
-                  >
-                    {word}
-                  </motion.span>
-                ))}
-              </div>
+            {/* Headline */}
+            <div className="text-5xl sm:text-6xl xl:text-7xl font-black leading-[1.0] tracking-tighter"
+              style={{ color: 'var(--text-base)' }}>
+              {t.hero.landingTitle.split(' ').map((word, i) => (
+                <motion.span
+                  key={i}
+                  custom={i}
+                  variants={wordAnim}
+                  initial="hidden"
+                  animate="visible"
+                  className="inline-block mr-[0.2em]"
+                >
+                  {word}
+                </motion.span>
+              ))}
+            </div>
 
-              <motion.p
-                variants={{ hidden: { opacity: 0, y: 16 }, visible: { opacity: 1, y: 0, transition: { duration: 0.5, delay: 0.4 } } }}
-                className="text-base sm:text-lg leading-relaxed mb-2"
-                style={{ color: 'var(--text-muted)' }}>
+            {/* Subtext */}
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.45 }}
+              className="space-y-2"
+            >
+              <p className="text-lg leading-relaxed font-medium" style={{ color: 'var(--text-muted)' }}>
                 {t.hero.landingSubtitle}
-              </motion.p>
-              <motion.p
-                variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0, transition: { duration: 0.4, delay: 0.5 } } }}
-                className="text-sm leading-relaxed"
-                style={{ color: 'var(--text-muted)', opacity: 0.8 }}>
+              </p>
+              <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)', opacity: 0.7 }}>
                 {lang === 'uz'
                   ? "Har kuni 5 daqiqada sotuvlaringizni nazorat qiling. Raqiblar narxini kuzating, DRR hisobini avtomatlashtiring va foydani oshiring."
                   : lang === 'ru'
                   ? "5 минут в день — и вы контролируете все продажи. Следите за ценами конкурентов, автоматизируйте DRR и увеличивайте прибыль."
                   : "5 minutes a day keeps you in full control. Monitor competitor prices, automate DRR calculations and grow your margins."}
-              </motion.p>
+              </p>
             </motion.div>
 
-            <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.6 }}
-              className="flex flex-col sm:flex-row gap-3">
+            {/* CTAs */}
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.6 }}
+              className="flex flex-col sm:flex-row gap-3"
+            >
               <Link href="/login"
-                className="inline-flex items-center justify-center gap-2 font-bold px-8 py-3.5 rounded-xl text-sm text-white"
-                style={{ background: 'var(--c1)', boxShadow: isDark ? '0 6px 28px rgba(0,212,255,0.4)' : '0 6px 28px rgba(124,58,237,0.35)' }}>
+                className="inline-flex items-center justify-center gap-2 font-bold px-7 py-3.5 rounded-xl text-sm text-white"
+                style={{ background: 'var(--c1)' }}>
                 {t.trialFreeStart} <ArrowRight className="w-4 h-4" />
               </Link>
               <Link href="/help"
-                className="inline-flex items-center justify-center gap-2 font-medium px-8 py-3.5 rounded-xl text-sm border"
+                className="inline-flex items-center justify-center gap-2 font-medium px-7 py-3.5 rounded-xl text-sm border"
                 style={{ borderColor: 'var(--border2)', color: 'var(--text-dim)' }}>
                 {t.nav.explorePlatform}
               </Link>
             </motion.div>
 
-            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.75 }}
-              className="flex items-center gap-10 pt-4 border-t" style={{ borderColor: 'var(--border)' }}>
+            {/* Stats */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.8 }}
+              className="pt-5 border-t grid grid-cols-3 gap-0"
+              style={{ borderColor: 'var(--border)' }}
+            >
               {[
                 { value: 6, suffix: '+', label: t.stats[0].label },
                 { value: 30, suffix: 's', label: t.stats[1].label },
                 { value: 100, suffix: '%', label: t.stats[2].label },
               ].map((s, i) => (
                 <motion.div key={s.label}
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.8 + i * 0.1, type: 'spring', stiffness: 200 }}>
-                  <div className="text-2xl font-extrabold" style={{ color: 'var(--text-base)' }}>
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.85 + i * 0.08 }}
+                  className={`pr-6 ${i > 0 ? 'pl-6 border-l' : ''}`}
+                  style={{ borderColor: 'var(--border)' }}>
+                  <div className="text-3xl font-black" style={{ color: 'var(--text-base)' }}>
                     <StatNum value={s.value} suffix={s.suffix} />
                   </div>
-                  <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{s.label}</p>
+                  <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>{s.label}</p>
                 </motion.div>
               ))}
             </motion.div>
+
           </div>
         </div>
       </section>
 
-      {/* TICKER */}
-      <div className="py-3 overflow-hidden border-y"
-        style={{ borderColor: 'var(--border)', background: isDark ? 'rgba(0,212,255,0.02)' : 'rgba(124,58,237,0.02)' }}>
-        <div className="animate-ticker flex gap-12 whitespace-nowrap text-xs font-medium">
+      {/* ── TICKER ───────────────────────────────────────────────────────────── */}
+      <div className="py-3 overflow-hidden border-y" style={{ borderColor: 'var(--border)' }}>
+        <div className="animate-ticker flex gap-10 whitespace-nowrap text-xs font-medium" style={{ color: 'var(--text-muted)' }}>
           {Array(4).fill(null).flatMap((_, gi) => [
-            <span key={`${gi}a`} style={{ color: 'var(--c1)' }}>● Uzum Market API</span>,
-            <span key={`${gi}b`} style={{ color: 'var(--text-muted)' }}>&nbsp;·&nbsp;{t.tickerItems[0]}&nbsp;·&nbsp;</span>,
-            <span key={`${gi}c`} style={{ color: 'var(--c2)' }}>● Wildberries</span>,
-            <span key={`${gi}d`} style={{ color: 'var(--text-muted)' }}>&nbsp;·&nbsp;{t.tickerItems[1]}&nbsp;·&nbsp;</span>,
-            <span key={`${gi}e`} style={{ color: 'var(--c1)' }}>● Yandex Market</span>,
-            <span key={`${gi}f`} style={{ color: 'var(--text-muted)' }}>&nbsp;·&nbsp;{t.tickerItems[2]}&nbsp;·&nbsp;</span>,
+            <span key={`${gi}a`} className="font-semibold" style={{ color: 'var(--c1)' }}>Uzum Market</span>,
+            <span key={`${gi}b`}>&nbsp;·&nbsp;{t.tickerItems[0]}&nbsp;·&nbsp;</span>,
+            <span key={`${gi}c`} className="font-semibold" style={{ color: 'var(--c2)' }}>Wildberries</span>,
+            <span key={`${gi}d`}>&nbsp;·&nbsp;{t.tickerItems[1]}&nbsp;·&nbsp;</span>,
+            <span key={`${gi}e`} className="font-semibold" style={{ color: 'var(--c1)' }}>Yandex Market</span>,
+            <span key={`${gi}f`}>&nbsp;·&nbsp;{t.tickerItems[2]}&nbsp;·&nbsp;</span>,
           ])}
         </div>
       </div>
 
-      {/* VALUE PROP */}
-      <section className="py-24 px-6" style={{ background: isDark ? '#041020' : 'var(--bg-card2)' }}>
+      {/* ── VALUE PROPS ──────────────────────────────────────────────────────── */}
+      <section className="px-6 py-20 border-b" style={{ background: isDark ? 'rgba(255,255,255,0.015)' : 'rgba(0,0,0,0.015)', borderColor: 'var(--border)' }}>
         <div className="max-w-5xl mx-auto">
-          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
-            className="text-center mb-14">
-            <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: 'var(--c1)' }}>{t.valuePropBadge}</p>
-            <h2 className="text-3xl sm:text-4xl font-extrabold mb-4" style={{ color: 'var(--text-base)' }}>{t.valuePropTitle}</h2>
-            <p className="text-base max-w-xl mx-auto leading-relaxed" style={{ color: 'var(--text-muted)' }}>{t.valuePropSubtitle}</p>
+          <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+            className="mb-12">
+            <p className="text-xs font-bold uppercase tracking-[0.18em] mb-2" style={{ color: 'var(--c1)' }}>{t.valuePropBadge}</p>
+            <h2 className="text-2xl sm:text-3xl font-black" style={{ color: 'var(--text-base)' }}>{t.valuePropTitle}</h2>
           </motion.div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x" style={{ '--tw-divide-color': 'var(--border)' } as React.CSSProperties}>
             {t.valueProps.map((c, i) => (
               <motion.div key={c.title}
-                initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }} transition={{ delay: i * 0.12, duration: 0.5 }}
-                whileHover={{ y: -4, transition: { duration: 0.2 } }}
-                className="rounded-2xl p-7 border cursor-default" style={{ background: card, borderColor: 'var(--border)' }}>
-                <div className="text-4xl mb-4">{c.icon}</div>
+                initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }} transition={{ delay: i * 0.1, duration: 0.45 }}
+                className="py-8 sm:px-8 first:pt-0 sm:first:pt-8 first:pb-8 sm:first:pl-0 last:pb-0 sm:last:pb-8 sm:last:pr-0"
+              >
+                <p className="text-4xl font-black mb-4" style={{ color: 'var(--border)' }}>0{i + 1}</p>
                 <h3 className="font-bold text-base mb-2" style={{ color: 'var(--text-base)' }}>{c.title}</h3>
                 <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>{c.desc}</p>
               </motion.div>
@@ -833,7 +757,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* FEATURES */}
+      {/* ── FEATURES ─────────────────────────────────────────────────────────── */}
       <FeaturesScrollSection
         features={t.features}
         isDark={isDark}
@@ -843,46 +767,51 @@ export default function LandingPage() {
         subtitle={t.featuresSubtitle}
       />
 
-      {/* HOW IT WORKS */}
-      <section id="how" ref={howRef} className="py-24 px-6" style={{ background: isDark ? '#041020' : 'var(--bg-card2)' }}>
+      {/* ── HOW IT WORKS ─────────────────────────────────────────────────────── */}
+      <section id="how" ref={howRef} className="py-24 px-6 border-t" style={{ borderColor: 'var(--border)', background: isDark ? 'rgba(255,255,255,0.015)' : 'rgba(0,0,0,0.015)' }}>
         <div className="max-w-5xl mx-auto">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={howInView ? { opacity: 1, y: 0 } : {}}
-            className="text-center mb-14">
-            <span className="inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-bold mb-4 border"
-              style={{ background: isDark ? 'rgba(255,45,155,0.06)' : 'rgba(219,39,119,0.06)', borderColor: 'var(--c2)', color: 'var(--c2)' }}>
-              <Zap className="w-3 h-3" /> {t.howBadge}
-            </span>
-            <h2 className="text-3xl sm:text-4xl font-extrabold" style={{ color: 'var(--text-base)' }}>
+          <motion.div initial={{ opacity: 0, y: 16 }} animate={howInView ? { opacity: 1, y: 0 } : {}}
+            className="mb-16">
+            <p className="text-xs font-bold uppercase tracking-[0.18em] mb-2" style={{ color: 'var(--c2)' }}>{t.howBadge}</p>
+            <h2 className="text-2xl sm:text-3xl font-black" style={{ color: 'var(--text-base)' }}>
               {t.howTitle1} <span className="grad-text">{t.howTitle2}</span>
             </h2>
           </motion.div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-px" style={{ background: 'var(--border)' }}>
             {t.steps.map((s, i) => (
               <motion.div key={s.title}
-                initial={{ opacity: 0, x: i % 2 === 0 ? -60 : 60 }} animate={howInView ? { opacity: 1, x: 0 } : {}}
-                transition={{ delay: i * 0.12, duration: 0.5, ease: 'easeOut' }}
-                whileHover={{ scale: 1.04, transition: { duration: 0.2 } }}
-                className="rounded-2xl p-9 border cursor-default" style={{ background: card, borderColor: 'var(--border)' }}>
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-extrabold mb-5 text-white"
-                  style={{ background: 'linear-gradient(135deg, var(--c1), var(--c2))' }}>
+                initial={{ opacity: 0, y: 30 }}
+                animate={howInView ? { opacity: 1, y: 0 } : {}}
+                transition={{ delay: i * 0.1, duration: 0.45, ease: 'easeOut' }}
+                className="p-8 flex flex-col gap-4"
+                style={{ background: 'var(--bg-base)' }}
+              >
+                <span className="text-5xl font-black" style={{ color: 'var(--border)', lineHeight: 1 }}>
                   0{i + 1}
+                </span>
+                <div>
+                  <h3 className="font-bold text-sm mb-2" style={{ color: 'var(--text-base)' }}>{s.title}</h3>
+                  <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>{s.desc}</p>
                 </div>
-                <h3 className="font-bold text-base mb-2" style={{ color: 'var(--text-base)' }}>{s.title}</h3>
-                <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>{s.desc}</p>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* PRICING */}
-      <section id="pricing" ref={pricingRef} className="py-24 px-6" style={{ background: 'var(--bg-base)' }}>
+      {/* ── PRICING ──────────────────────────────────────────────────────────── */}
+      <section id="pricing" ref={pricingRef} className="py-24 px-6 border-t" style={{ borderColor: 'var(--border)' }}>
         <div className="max-w-4xl mx-auto">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={pricingInView ? { opacity: 1, y: 0 } : {}}
-            className="text-center mb-14">
-            <h2 className="text-3xl sm:text-4xl font-extrabold" style={{ color: 'var(--text-base)' }}>{t.nav.pricing}</h2>
+          <motion.div initial={{ opacity: 0, y: 16 }} animate={pricingInView ? { opacity: 1, y: 0 } : {}}
+            className="mb-16">
+            <p className="text-xs font-bold uppercase tracking-[0.18em] mb-2" style={{ color: 'var(--c1)' }}>{t.nav.pricing}</p>
+            <h2 className="text-2xl sm:text-3xl font-black" style={{ color: 'var(--text-base)' }}>
+              {lang === 'uz' ? "Sizning biznesingizga mos tarif" : lang === 'ru' ? "Тариф под ваш бизнес" : "A plan that fits your business"}
+            </h2>
           </motion.div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-px" style={{ background: 'var(--border)' }}>
             {([
               { name: t.pricingFree, price: '0', highlight: false, features: t.pricingFreeFeatures },
               { name: 'Pro', price: '300 000', highlight: true, features: t.pricingProFeatures },
@@ -892,43 +821,44 @@ export default function LandingPage() {
                 initial={{ opacity: 0, y: -180, scale: 0.85 }}
                 animate={pricingInView ? { opacity: 1, y: 0, scale: 1 } : {}}
                 transition={{ delay: i * 0.28, type: 'spring', stiffness: 160, damping: 18, mass: 1.1 }}
-                whileHover={{ y: -8, transition: { duration: 0.2 } }}
-                className="rounded-2xl p-7 border relative cursor-default"
-                style={{ background: plan.highlight ? (isDark ? 'rgba(0,212,255,0.05)' : 'rgba(124,58,237,0.05)') : card, borderColor: plan.highlight ? 'var(--c1)' : 'var(--border)' }}>
+                className="p-8 flex flex-col relative"
+                style={{ background: plan.highlight ? (isDark ? 'rgba(0,212,255,0.04)' : 'rgba(124,58,237,0.04)') : 'var(--bg-base)' }}
+              >
                 {plan.highlight && (
                   <motion.div
                     initial={{ opacity: 0, scale: 0.5 }}
                     animate={pricingInView ? { opacity: 1, scale: 1 } : {}}
                     transition={{ delay: i * 0.28 + 0.65, type: 'spring', stiffness: 400, damping: 15 }}
-                    className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-xs font-bold text-white"
-                    style={{ background: 'linear-gradient(135deg, var(--c1), var(--c2))' }}>
+                    className="absolute top-4 right-4 px-2.5 py-1 rounded-md text-[10px] font-bold text-white"
+                    style={{ background: 'var(--c1)' }}>
                     {t.pricingPopular}
                   </motion.div>
                 )}
-                <h3 className="font-extrabold text-lg mb-1" style={{ color: 'var(--text-base)' }}>{plan.name}</h3>
+                <p className="text-xs font-bold uppercase tracking-widest mb-4" style={{ color: plan.highlight ? 'var(--c1)' : 'var(--text-muted)' }}>
+                  {plan.name}
+                </p>
                 <div className="flex items-baseline gap-1 mb-6">
-                  <span className="text-3xl font-extrabold" style={{ color: plan.highlight ? 'var(--c1)' : 'var(--text-base)' }}>
+                  <span className="text-4xl font-black" style={{ color: 'var(--text-base)' }}>
                     <SlotPrice value={plan.price} trigger={pricingInView} delay={i * 0.28 + 0.7} />
                   </span>
                   <span className="text-sm" style={{ color: 'var(--text-muted)' }}>so&apos;m/oy</span>
                 </div>
-                <ul className="space-y-2.5 mb-7">
+                <ul className="space-y-3 mb-8 flex-1">
                   {plan.features.map((f, fi) => (
-                    <motion.li
-                      key={f}
+                    <motion.li key={f}
                       initial={{ opacity: 0, x: -10 }}
                       animate={pricingInView ? { opacity: 1, x: 0 } : {}}
                       transition={{ delay: i * 0.28 + 0.8 + fi * 0.05, duration: 0.3 }}
-                      className="flex items-start gap-2 text-sm" style={{ color: 'var(--text-muted)' }}>
+                      className="flex items-start gap-2.5 text-sm" style={{ color: 'var(--text-muted)' }}>
                       <CheckCircle className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: 'var(--c1)' }} />
                       {f}
                     </motion.li>
                   ))}
                 </ul>
-                <Link href="/login" className="block w-full text-center py-3 rounded-xl text-sm font-bold"
+                <Link href="/login" className="block w-full text-center py-3 rounded-lg text-sm font-bold border transition-colors"
                   style={plan.highlight
-                    ? { background: 'linear-gradient(135deg, var(--c1), var(--c2))', color: '#fff' }
-                    : { background: 'var(--bg-input)', color: 'var(--text-dim)', border: '1px solid var(--border2)' }}>
+                    ? { background: 'var(--c1)', color: '#fff', borderColor: 'transparent' }
+                    : { background: 'transparent', color: 'var(--text-dim)', borderColor: 'var(--border2)' }}>
                   {t.nav.start}
                 </Link>
               </motion.div>
@@ -937,80 +867,54 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* TESTIMONIALS */}
-      <section className="py-24" style={{ background: isDark ? '#041020' : 'var(--bg-card2)' }}>
-        <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
-          className="text-center mb-12 px-6">
-          <h2 className="text-3xl sm:text-4xl font-extrabold" style={{ color: 'var(--text-base)' }}>{t.testimonialsTitle}</h2>
+      {/* ── TESTIMONIALS ─────────────────────────────────────────────────────── */}
+      <section className="py-20 border-t overflow-hidden" style={{ borderColor: 'var(--border)', background: isDark ? 'rgba(255,255,255,0.015)' : 'rgba(0,0,0,0.015)' }}>
+        <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+          className="text-center mb-10 px-6">
+          <h2 className="text-2xl sm:text-3xl font-black" style={{ color: 'var(--text-base)' }}>{t.testimonialsTitle}</h2>
         </motion.div>
         <div className="overflow-hidden">
           <div className="animate-ticker-cards flex gap-5 w-max px-6">
             {[...(t.testimonialsList ?? []), ...(t.testimonialsList ?? [])].map((review, i) => (
-              <div key={i} className="flex-shrink-0 w-80 rounded-2xl p-7 border" style={{ background: card, borderColor: 'var(--border)' }}>
+              <div key={i} className="flex-shrink-0 w-72 rounded-xl p-6 border" style={{ background: card, borderColor: 'var(--border)' }}>
                 <div className="flex items-center gap-0.5 mb-4">
-                  {Array(5).fill(0).map((_, j) => <Star key={j} className="w-4 h-4 fill-amber-400 text-amber-400" />)}
+                  {Array(5).fill(0).map((_, j) => <Star key={j} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />)}
                 </div>
                 <p className="text-sm leading-relaxed mb-5" style={{ color: 'var(--text-muted)' }}>&ldquo;{review.text}&rdquo;</p>
-                <p className="font-bold text-sm" style={{ color: 'var(--text-base)' }}>{review.name}</p>
-                <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{review.role}</p>
+                <div className="pt-4 border-t" style={{ borderColor: 'var(--border)' }}>
+                  <p className="font-bold text-sm" style={{ color: 'var(--text-base)' }}>{review.name}</p>
+                  <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{review.role}</p>
+                </div>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* CTA */}
-      <section ref={ctaRef} className="relative py-28 px-6 border-t overflow-hidden" style={{ background: 'var(--bg-base)', borderColor: 'var(--border)' }}>
-        {/* Lane beam animations */}
-        <div className="absolute inset-0 pointer-events-none" aria-hidden>
-          {[
-            { top: '18%', dur: 6,   delay: 0,   w: '55%', opacity: 0.18 },
-            { top: '35%', dur: 9,   delay: 2.2, w: '40%', opacity: 0.12 },
-            { top: '52%', dur: 7,   delay: 0.8, w: '65%', opacity: 0.15 },
-            { top: '68%', dur: 8,   delay: 3.5, w: '45%', opacity: 0.10 },
-            { top: '82%', dur: 5.5, delay: 1.4, w: '50%', opacity: 0.13 },
-          ].map((b, i) => (
-            <div key={i} className="absolute h-px"
-              style={{
-                top: b.top, width: b.w, left: '-10%',
-                background: `linear-gradient(90deg, transparent 0%, var(--c1) 40%, var(--c2) 60%, transparent 100%)`,
-                animation: `laneBeam ${b.dur}s ${b.delay}s ease-in-out infinite`,
-                opacity: b.opacity,
-              }}
-            />
-          ))}
-          {/* Ambient glow orbs */}
-          <div className="absolute rounded-full blur-3xl opacity-10 animate-pulse-glow"
-            style={{ width: 400, height: 400, top: '-10%', left: '10%', background: 'var(--c1)' }} />
-          <div className="absolute rounded-full blur-3xl opacity-8"
-            style={{ width: 300, height: 300, bottom: '-5%', right: '15%', background: 'var(--c2)', animation: 'pulse-glow 4s 1.5s ease-in-out infinite' }} />
-        </div>
-
-        <div className="relative z-10 max-w-2xl mx-auto text-center flex flex-col items-center gap-6">
-          {/* 3 days free badge — always visible at top */}
+      {/* ── CTA ──────────────────────────────────────────────────────────────── */}
+      <section ref={ctaRef} className="relative py-32 px-6 border-t border-b" style={{ background: 'var(--bg-base)', borderColor: 'var(--border)' }}>
+        <div className="relative z-10 max-w-2xl mx-auto text-center flex flex-col items-center gap-8">
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={ctaInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.5 }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full border text-xs font-bold"
-            style={{ background: isDark ? 'rgba(0,212,255,0.06)' : 'rgba(124,58,237,0.06)', borderColor: 'var(--border2)', color: 'var(--c1)' }}
+            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-semibold"
+            style={{ borderColor: 'var(--border2)', color: 'var(--text-muted)' }}
           >
             <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-            {t.trialFree} ·&nbsp;
-            <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>
-              {lang === 'uz' ? 'Karta shart emas' : lang === 'ru' ? 'Карта не нужна' : 'No card required'}
-            </span>
+            {t.trialFree}
+            <span style={{ color: 'var(--border2)' }}>·</span>
+            {lang === 'uz' ? 'Karta shart emas' : lang === 'ru' ? 'Карта не нужна' : 'No card required'}
           </motion.div>
 
-          {/* Animated cycling text */}
-          <div className="min-h-[120px] flex items-center justify-center">
+          <div className="min-h-[120px] flex items-center justify-center w-full">
             <AnimatePresence mode="wait">
               {ctaPhase === 0 ? (
-                <motion.div key="question" className="flex flex-wrap justify-center gap-x-2 gap-y-1">
+                <motion.div key="question" className="flex flex-wrap justify-center gap-x-2.5 gap-y-1">
                   {ctaTexts.question[lang].split(' ').map((word, i) => (
                     <motion.span
                       key={i}
-                      className="text-3xl sm:text-4xl font-extrabold"
+                      className="text-3xl sm:text-4xl font-black"
                       style={{ color: 'var(--text-base)' }}
                       initial={{ opacity: 0, y: 22 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -1023,11 +927,11 @@ export default function LandingPage() {
                 </motion.div>
               ) : (
                 <motion.div key="answer" className="flex flex-col items-center gap-7">
-                  <div className="flex flex-wrap justify-center gap-x-2 gap-y-1">
+                  <div className="flex flex-wrap justify-center gap-x-2.5 gap-y-1">
                     {ctaTexts.answer[lang].split(' ').map((word, i) => (
                       <motion.span
                         key={i}
-                        className="text-3xl sm:text-5xl font-extrabold grad-text"
+                        className="text-3xl sm:text-5xl font-black grad-text"
                         initial={{ opacity: 0, y: 24 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -16 }}
@@ -1062,14 +966,14 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* FOOTER */}
-      <footer style={{ background: isDark ? '#0a0a14' : 'var(--bg-card)' }}>
-        <div className="max-w-6xl mx-auto px-6 py-16">
+      {/* ── FOOTER ───────────────────────────────────────────────────────────── */}
+      <footer style={{ background: 'var(--bg-card)', borderTop: '1px solid var(--border)' }}>
+        <div className="max-w-6xl mx-auto px-6 py-14">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-10 mb-12">
             <div className="col-span-2 lg:col-span-1">
               <Link href="/" className="flex items-center gap-2.5 mb-5">
-                <img src="/icon.svg" alt="Daromadchi" className="w-10 h-10 rounded-xl" />
-                <span className="font-extrabold text-lg" style={{ color: 'var(--text-base)' }}>Daromadchi</span>
+                <img src="/icon.svg" alt="Daromadchi" className="w-8 h-8 rounded-lg" />
+                <span className="font-bold text-sm" style={{ color: 'var(--text-base)' }}>Daromadchi</span>
               </Link>
               <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>
                 {lang === 'uz' ? "Uzum Market, Yandex Market va Wildberries sotuvchilari uchun analitika platformasi." :
@@ -1078,7 +982,7 @@ export default function LandingPage() {
               </p>
             </div>
             <div>
-              <p className="text-xs font-extrabold uppercase tracking-widest mb-5" style={{ color: 'var(--text-base)' }}>
+              <p className="text-xs font-bold uppercase tracking-widest mb-5" style={{ color: 'var(--text-muted)' }}>
                 {lang === 'uz' ? 'Platforma' : lang === 'ru' ? 'Платформа' : 'Platform'}
               </p>
               <div className="space-y-3">
@@ -1095,7 +999,7 @@ export default function LandingPage() {
               </div>
             </div>
             <div>
-              <p className="text-xs font-extrabold uppercase tracking-widest mb-5" style={{ color: 'var(--text-base)' }}>
+              <p className="text-xs font-bold uppercase tracking-widest mb-5" style={{ color: 'var(--text-muted)' }}>
                 {lang === 'uz' ? 'Resurslar' : lang === 'ru' ? 'Ресурсы' : 'Resources'}
               </p>
               <div className="space-y-3">
@@ -1111,7 +1015,7 @@ export default function LandingPage() {
               </div>
             </div>
             <div>
-              <p className="text-xs font-extrabold uppercase tracking-widest mb-5" style={{ color: 'var(--text-base)' }}>
+              <p className="text-xs font-bold uppercase tracking-widest mb-5" style={{ color: 'var(--text-muted)' }}>
                 {lang === 'uz' ? 'Bozorlar' : lang === 'ru' ? 'Маркетплейсы' : 'Marketplaces'}
               </p>
               <div className="space-y-3">
@@ -1121,11 +1025,10 @@ export default function LandingPage() {
               </div>
             </div>
           </div>
-          <div className="border-t pt-8 flex flex-col sm:flex-row items-center justify-between gap-4"
-            style={{ borderColor: 'var(--border)' }}>
-            <p className="text-sm" style={{ color: 'var(--text-muted)' }}>© 2026 Daromadchi. {t.footer}</p>
+          <div className="border-t pt-8 flex flex-col sm:flex-row items-center justify-between gap-4" style={{ borderColor: 'var(--border)' }}>
+            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>© 2026 Daromadchi. {t.footer}</p>
             <div className="flex items-center gap-6">
-              <Link href="/privacy" className="text-sm transition-colors" style={{ color: 'var(--text-muted)' }}>
+              <Link href="/privacy" className="text-xs transition-colors" style={{ color: 'var(--text-muted)' }}>
                 {t.nav.privacy ?? 'Privacy Policy'}
               </Link>
               <div className="flex items-center gap-3">
@@ -1141,7 +1044,7 @@ export default function LandingPage() {
         </div>
       </footer>
 
-      {/* STEP-BY-STEP POPUP OVERLAY */}
+      {/* ── STEP POPUP ───────────────────────────────────────────────────────── */}
       <AnimatePresence>
         {stepPopup !== null && stepPopup < t.steps.length && (
           <motion.div
@@ -1150,7 +1053,7 @@ export default function LandingPage() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[100] flex items-center justify-center px-4"
-            style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(3px)' }}
+            style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)' }}
             onClick={() => setStepPopup(null)}
           >
             <AnimatePresence mode="wait">
@@ -1164,33 +1067,25 @@ export default function LandingPage() {
                 className="rounded-2xl p-8 max-w-sm w-full border shadow-2xl"
                 style={{ background: isDark ? '#0b1c34' : '#ffffff', borderColor: 'var(--border)' }}
               >
-                {/* Step number */}
-                <div className="w-12 h-12 rounded-xl flex items-center justify-center text-sm font-extrabold mb-5 text-white"
-                  style={{ background: 'linear-gradient(135deg, var(--c1), var(--c2))' }}>
-                  0{stepPopup + 1}
-                </div>
-                {/* Progress bar */}
-                <div className="flex gap-1.5 mb-6">
+                <div className="flex items-center gap-1.5 mb-6">
                   {t.steps.map((_: unknown, i: number) => (
                     <motion.div
                       key={i}
-                      className="h-1 rounded-full flex-1"
+                      className="h-0.5 rounded-full flex-1"
                       animate={{ background: i <= stepPopup ? 'var(--c1)' : 'var(--border)' }}
                       transition={{ duration: 0.3 }}
                     />
                   ))}
                 </div>
-                {/* Content */}
-                <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: 'var(--c1)' }}>
+                <p className="text-xs font-bold uppercase tracking-[0.15em] mb-3" style={{ color: 'var(--c1)' }}>
                   {stepPopup + 1}{stepLabels.stepOf[lang]}
                 </p>
-                <h3 className="font-extrabold text-xl mb-3" style={{ color: 'var(--text-base)' }}>
+                <h3 className="font-black text-xl mb-3" style={{ color: 'var(--text-base)' }}>
                   {t.steps[stepPopup].title}
                 </h3>
                 <p className="text-sm leading-relaxed mb-7" style={{ color: 'var(--text-muted)' }}>
                   {t.steps[stepPopup].desc}
                 </p>
-                {/* Buttons */}
                 <div className="flex gap-3">
                   {stepPopup > 0 && (
                     <button
