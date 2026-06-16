@@ -741,16 +741,40 @@ export default function LandingPage() {
       </section>
 
       {/* ── TICKER ───────────────────────────────────────────────────────────── */}
-      <div className="py-3 overflow-hidden border-y" style={{ borderColor: 'var(--border)' }}>
-        <div className="animate-ticker flex gap-10 whitespace-nowrap text-xs font-medium" style={{ color: 'var(--text-muted)' }}>
-          {Array(4).fill(null).flatMap((_, gi) => [
-            <span key={`${gi}a`} className="font-semibold" style={{ color: 'var(--c1)' }}>Uzum Market</span>,
-            <span key={`${gi}b`}>&nbsp;·&nbsp;{t.tickerItems[0]}&nbsp;·&nbsp;</span>,
-            <span key={`${gi}c`} className="font-semibold" style={{ color: 'var(--c2)' }}>Wildberries</span>,
-            <span key={`${gi}d`}>&nbsp;·&nbsp;{t.tickerItems[1]}&nbsp;·&nbsp;</span>,
-            <span key={`${gi}e`} className="font-semibold" style={{ color: 'var(--c1)' }}>Yandex Market</span>,
-            <span key={`${gi}f`}>&nbsp;·&nbsp;{t.tickerItems[2]}&nbsp;·&nbsp;</span>,
-          ])}
+      <div className="flex items-stretch border-y overflow-hidden" style={{ borderColor: 'var(--border)', minHeight: '100px' }}>
+
+        {/* Fixed left label */}
+        <div className="hidden sm:flex flex-shrink-0 items-center px-8 border-r" style={{ borderColor: 'var(--border)' }}>
+          <p className="text-[10px] font-bold uppercase tracking-[0.18em] leading-loose"
+            style={{ color: 'var(--text-muted)', whiteSpace: 'pre-line', maxWidth: '110px' }}>
+            {lang === 'uz' ? 'Integratsiya\nqilingan\nbozorlar' : lang === 'ru' ? 'Подключённые\nмаркетплейсы' : 'Integrated\nMarketplaces'}
+          </p>
+        </div>
+
+        {/* Scrolling logos */}
+        <div className="flex-1 overflow-hidden relative">
+          <div className="absolute left-0 top-0 bottom-0 w-20 z-10 pointer-events-none"
+            style={{ background: 'linear-gradient(to right, var(--bg-base), transparent)' }} />
+          <div className="absolute right-0 top-0 bottom-0 w-20 z-10 pointer-events-none"
+            style={{ background: 'linear-gradient(to left, var(--bg-base), transparent)' }} />
+
+          <div className="animate-ticker flex items-center gap-16 whitespace-nowrap py-8"
+            style={{ animationDuration: '48s' }}>
+            {Array(4).fill(null).flatMap((_, gi) => [
+              <span key={`${gi}a`} className="text-2xl font-black tracking-tight"
+                style={{ color: isDark ? 'rgba(255,255,255,0.82)' : '#0f172a' }}>Uzum Market</span>,
+              <span key={`${gi}s1`} className="text-[10px] font-bold uppercase tracking-[0.2em]"
+                style={{ color: 'var(--text-muted)', opacity: 0.55 }}>{t.tickerItems[0]}</span>,
+              <span key={`${gi}b`} className="text-2xl font-black tracking-tight"
+                style={{ color: isDark ? 'rgba(255,255,255,0.82)' : '#0f172a' }}>Wildberries</span>,
+              <span key={`${gi}s2`} className="text-[10px] font-bold uppercase tracking-[0.2em]"
+                style={{ color: 'var(--text-muted)', opacity: 0.55 }}>{t.tickerItems[1]}</span>,
+              <span key={`${gi}c`} className="text-2xl font-black tracking-tight"
+                style={{ color: isDark ? 'rgba(255,255,255,0.82)' : '#0f172a' }}>Yandex Market</span>,
+              <span key={`${gi}s3`} className="text-[10px] font-bold uppercase tracking-[0.2em]"
+                style={{ color: 'var(--text-muted)', opacity: 0.55 }}>{t.tickerItems[2]}</span>,
+            ])}
+          </div>
         </div>
       </div>
 
