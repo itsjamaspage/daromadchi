@@ -57,8 +57,10 @@ export async function POST(req: NextRequest) {
     if (p.status === 'paid') return rpc(id, { perform_time: Date.now(), transaction: p.id, state: STATE.PAID })
 
     const now = Date.now()
-    await supabaseAdmin.from('payments').update({ status: 'paid', updated_at: new Date().toISOString() }).eq('id', p.id)
-    await supabaseAdmin.from('users').update({ plan: p.plan, plan_expires_at: planExpiresAt(p.period_months) }).eq('id', p.user_id)
+    await Promise.all([
+      supabaseAdmin.from('payments').update({ status: 'paid', updated_at: new Date().toISOString() }).eq('id', p.id),
+      supabaseAdmin.from('users').update({ plan: p.plan, plan_expires_at: planExpiresAt(p.period_months) }).eq('id', p.user_id),
+    ])
     return rpc(id, { perform_time: now, transaction: p.id, state: STATE.PAID })
   }
 

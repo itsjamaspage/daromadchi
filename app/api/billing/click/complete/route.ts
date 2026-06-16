@@ -37,11 +37,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ...base, error: 0, error_note: 'Cancelled' })
   }
 
-  await supabaseAdmin.from('payments').update({ status: 'paid', updated_at: new Date().toISOString() }).eq('id', payment.id)
-  await supabaseAdmin.from('users').update({
-    plan:            payment.plan,
-    plan_expires_at: planExpiresAt(payment.period_months),
-  }).eq('id', payment.user_id)
+  await Promise.all([
+    supabaseAdmin.from('payments').update({ status: 'paid', updated_at: new Date().toISOString() }).eq('id', payment.id),
+    supabaseAdmin.from('users').update({
+      plan:            payment.plan,
+      plan_expires_at: planExpiresAt(payment.period_months),
+    }).eq('id', payment.user_id),
+  ])
 
   return NextResponse.json({ ...base, error: 0, error_note: 'Success' })
 }

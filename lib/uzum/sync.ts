@@ -223,25 +223,22 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
       // Ad sync is best-effort — don't fail the whole sync
     }
 
-    // ── Update last_synced_at ─────────────────────────────────────────────────
-    await supabase
-      .from('shops')
-      .update({ last_synced_at: new Date().toISOString() })
-      .eq('id', shopId)
-
-    // Update sync_days record for today
+    // ── Update sync metadata ──────────────────────────────────────────────────
     const today = new Date().toISOString().slice(0, 10)
-    await supabase.from('sync_days').upsert(
-      {
-        shop_id: shopId,
-        sync_date: today,
-        status: 'success',
-        products_count: productRows.length,
-        revenue: newOrderRows.reduce((s, o) => s + (o.revenue ?? 0), 0),
-        synced_at: new Date().toISOString(),
-      },
-      { onConflict: 'shop_id,sync_date' },
-    )
+    await Promise.all([
+      supabase.from('shops').update({ last_synced_at: new Date().toISOString() }).eq('id', shopId),
+      supabase.from('sync_days').upsert(
+        {
+          shop_id: shopId,
+          sync_date: today,
+          status: 'success',
+          products_count: productRows.length,
+          revenue: newOrderRows.reduce((s, o) => s + (o.revenue ?? 0), 0),
+          synced_at: new Date().toISOString(),
+        },
+        { onConflict: 'shop_id,sync_date' },
+      ),
+    ])
 
     return {
       ok: true,

@@ -14,19 +14,12 @@ export async function getStockAlerts(): Promise<StockAlert[]> {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return []
 
-  const { data: settings } = await supabase
-    .from('user_settings')
-    .select('alert_stock_threshold')
-    .eq('user_id', user.id)
-    .single()
+  const [{ data: settings }, { data: shopRows }] = await Promise.all([
+    supabase.from('user_settings').select('alert_stock_threshold').eq('user_id', user.id).single(),
+    supabase.from('shops').select('id, marketplace').eq('user_id', user.id),
+  ])
 
   const threshold = settings?.alert_stock_threshold ?? 15
-
-  // Products are scoped to shops, not users directly — join through shops
-  const { data: shopRows } = await supabase
-    .from('shops')
-    .select('id, marketplace')
-    .eq('user_id', user.id)
   const shopIds = (shopRows ?? []).map((s: { id: string }) => s.id)
   if (shopIds.length === 0) return []
 

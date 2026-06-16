@@ -209,20 +209,21 @@ export async function syncFromWildberries(
   }
 
   // ─── Sync metadata ────────────────────────────────────────────────────────
-  await supabase.from('shops').update({ last_synced_at: new Date().toISOString() }).eq('id', shopId)
-
   const today = new Date().toISOString().slice(0, 10)
-  await supabase.from('sync_days').upsert(
-    {
-      shop_id: shopId,
-      sync_date: today,
-      status: errors.length === 0 ? 'success' : 'error',
-      products_count: productsUpserted,
-      revenue: revenueTotal,
-      synced_at: new Date().toISOString(),
-    },
-    { onConflict: 'shop_id,sync_date' },
-  )
+  await Promise.all([
+    supabase.from('shops').update({ last_synced_at: new Date().toISOString() }).eq('id', shopId),
+    supabase.from('sync_days').upsert(
+      {
+        shop_id: shopId,
+        sync_date: today,
+        status: errors.length === 0 ? 'success' : 'error',
+        products_count: productsUpserted,
+        revenue: revenueTotal,
+        synced_at: new Date().toISOString(),
+      },
+      { onConflict: 'shop_id,sync_date' },
+    ),
+  ])
 
   return {
     ok: errors.length === 0,
