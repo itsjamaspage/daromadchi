@@ -465,27 +465,41 @@ export default function LandingPage() {
     return () => clearTimeout(timer)
   }, [tttPopup, tttWon])
 
-  // Scroll-lock: prevent scrolling past the How It Works section until game is won or dead.
-  // Only locks once the section is fully stuck at top (rect.top <= 0).
+  // Ref tracks whether we've applied the overflow:hidden lock so cleanup is idempotent.
+  const tttLockRef = useRef(false)
+
+  // Scroll-lock: set overflow:hidden on <html> when the game section sticks to the top.
+  // This blocks ALL scroll methods (wheel, keyboard, trackpad inertia, scrollbar drag).
+  // Lifted on win, dead, or component unmount.
   useEffect(() => {
-    if (tttWon || tttDead) return
-    const onWheel = (e: WheelEvent) => {
+    const unlock = () => {
+      if (!tttLockRef.current) return
+      document.documentElement.style.overflow = ''
+      document.documentElement.style.paddingRight = ''
+      tttLockRef.current = false
+    }
+
+    if (tttWon || tttDead) { unlock(); return }
+
+    const tryLock = () => {
+      if (tttLockRef.current) return
       const section = document.getElementById('how')
       if (!section) return
-      const rect = section.getBoundingClientRect()
-      if (rect.top <= 0 && e.deltaY > 0) e.preventDefault()
+      if (section.getBoundingClientRect().top <= 1) {
+        // Compensate scrollbar width so layout doesn't jump
+        const sw = window.innerWidth - document.documentElement.clientWidth
+        if (sw > 0) document.documentElement.style.paddingRight = `${sw}px`
+        document.documentElement.style.overflow = 'hidden'
+        tttLockRef.current = true
+      }
     }
-    const onTouch = (e: TouchEvent) => {
-      const section = document.getElementById('how')
-      if (!section) return
-      const rect = section.getBoundingClientRect()
-      if (rect.top <= 0) e.preventDefault()
-    }
-    window.addEventListener('wheel', onWheel, { passive: false })
-    window.addEventListener('touchmove', onTouch, { passive: false })
+
+    window.addEventListener('scroll', tryLock, { passive: true })
+    tryLock() // in case section is already in view on mount
+
     return () => {
-      window.removeEventListener('wheel', onWheel)
-      window.removeEventListener('touchmove', onTouch)
+      window.removeEventListener('scroll', tryLock)
+      unlock()
     }
   }, [tttWon, tttDead])
 
