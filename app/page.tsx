@@ -442,7 +442,11 @@ export default function LandingPage() {
   const [tttOCount, setTttOCount] = useState(0)
   const [tttPopup, setTttPopup] = useState<number | null>(null)
   const [tttWon, setTttWon] = useState(false)
+  const [tttDead, setTttDead] = useState(false)
   const [tttXBusy, setTttXBusy] = useState(false)
+  const TTT_LINES = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]]
+  const tttCheckWin = (b: (null|'O'|'X')[]) => TTT_LINES.some(l => l.every(i => b[i]==='O'))
+  const tttCheckDead = (b: (null|'O'|'X')[]) => TTT_LINES.every(l => l.some(i => b[i]==='X'))
 
   const pricingRef = useRef(null)
   const pricingInView = useInView(pricingRef, { once: true, amount: 0.6 })
@@ -461,10 +465,10 @@ export default function LandingPage() {
     return () => clearTimeout(timer)
   }, [tttPopup, tttWon])
 
-  // Scroll-lock: prevent scrolling past the How It Works section until game is won.
+  // Scroll-lock: prevent scrolling past the How It Works section until game is won or dead.
   // Only locks once the section is fully stuck at top (rect.top <= 0).
   useEffect(() => {
-    if (tttWon) return
+    if (tttWon || tttDead) return
     const onWheel = (e: WheelEvent) => {
       const section = document.getElementById('how')
       if (!section) return
@@ -483,30 +487,29 @@ export default function LandingPage() {
       window.removeEventListener('wheel', onWheel)
       window.removeEventListener('touchmove', onTouch)
     }
-  }, [tttWon])
+  }, [tttWon, tttDead])
 
   const handleTttClick = (idx: number) => {
-    if (tttBoard[idx] || tttWon || tttOCount >= 3) return
+    if (tttBoard[idx] || tttWon || tttDead) return
     const newBoard = [...tttBoard]
     newBoard[idx] = 'O'
     const newCount = tttOCount + 1
     setTttBoard(newBoard)
     setTttOCount(newCount)
-    if (newCount === 3) {
-      setTttWon(true)
-      setTttPopup(3)
-      return
-    }
-    setTttPopup(newCount)
+    // Show step popup for first 3 O placements
+    if (newCount <= 3) setTttPopup(newCount)
+    // Real win: 3 O's in a line
+    if (tttCheckWin(newBoard)) { setTttWon(true); return }
     setTttXBusy(true)
     setTimeout(() => {
       setTttBoard(prev => {
-        // Skip X placement if user already placed 3rd O (game won)
-        if (prev.filter(v => v === 'O').length >= 3) return prev
+        if (tttCheckWin(prev)) return prev // already won between timer and now
         const empty = prev.map((v, i) => v === null ? i : -1).filter(i => i >= 0)
+        if (!empty.length) { setTttDead(true); return prev }
         const pick = empty[Math.floor(Math.random() * empty.length)]
-        if (pick === undefined) return prev
-        const b = [...prev]; b[pick] = 'X'; return b
+        const b = [...prev]; b[pick] = 'X'
+        if (tttCheckDead(b)) setTttDead(true)
+        return b
       })
       setTttXBusy(false)
     }, 600)
@@ -994,9 +997,9 @@ export default function LandingPage() {
               <h2 className="text-2xl sm:text-3xl font-black" style={{ color: 'var(--text-base)' }}>
                 {t.howTitle1} <span style={{ color: 'var(--c1)' }}>{t.howTitle2}</span>
               </h2>
-              {!tttWon && (
+              {!tttWon && !tttDead && (
                 <p className="text-sm mt-1.5" style={{ color: 'var(--text-muted)' }}>
-                  {lang === 'uz' ? "O qo'ying va qoidalarni oching 👇" : lang === 'ru' ? "Ставьте O и открывайте правила 👇" : "Place O's to reveal the steps 👇"}
+                  {lang === 'uz' ? "3 ta O ni bir qatorga qo'ying va yuting 👇" : lang === 'ru' ? "Поставьте 3 O в ряд — и победите 👇" : "Get 3 O's in a row to win 👇"}
                 </p>
               )}
             </div>
@@ -1053,14 +1056,14 @@ export default function LandingPage() {
                 {tttBoard.map((cell, idx) => (
                   <motion.button
                     key={idx}
-                    whileHover={!cell && tttOCount < 3 ? { scale: 1.04 } : {}}
-                    whileTap={!cell && tttOCount < 3 ? { scale: 0.96 } : {}}
+                    whileHover={!cell && !tttDead ? { scale: 1.04 } : {}}
+                    whileTap={!cell && !tttDead ? { scale: 0.96 } : {}}
                     onClick={() => handleTttClick(idx)}
                     className="aspect-square rounded-2xl flex items-center justify-center text-4xl font-black select-none"
                     style={{
                       background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)',
                       border: `2px solid ${cell === 'O' ? 'var(--c1)' : cell === 'X' ? 'var(--border)' : 'var(--border)'}`,
-                      cursor: cell || tttOCount >= 3 ? 'default' : 'pointer',
+                      cursor: cell || tttDead ? 'default' : 'pointer',
                       color: cell === 'O' ? 'var(--c1)' : 'var(--text-muted)',
                       boxShadow: cell === 'O' ? `0 0 18px ${isDark ? 'rgba(0,212,255,0.25)' : 'rgba(124,58,237,0.2)'}` : 'none',
                     }}
@@ -1079,8 +1082,32 @@ export default function LandingPage() {
                   </motion.button>
                 ))}
               </div>
+            ) : tttDead ? (
+              /* Dead state — no winning line possible */
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ type: 'spring', stiffness: 260, damping: 24 }}
+                className="rounded-3xl p-8 text-center w-full"
+                style={{ background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)', border: '1px solid var(--border)' }}
+              >
+                <div className="text-5xl mb-4">😅</div>
+                <h3 className="text-xl font-black mb-2" style={{ color: 'var(--text-base)' }}>
+                  {lang === 'uz' ? "Yutib bo'lmaydi!" : lang === 'ru' ? "Выиграть невозможно!" : "No winning move left!"}
+                </h3>
+                <p className="text-sm leading-relaxed mb-6" style={{ color: 'var(--text-muted)' }}>
+                  {lang === 'uz' ? "Barcha qatorlar X bilan to'sib qo'yildi. Qayta urinib ko'ring." : lang === 'ru' ? "Все линии заблокированы крестиками. Попробуйте снова." : "All lines are blocked by X. Give it another shot."}
+                </p>
+                <button
+                  onClick={() => { setTttBoard(Array(9).fill(null)); setTttOCount(0); setTttWon(false); setTttDead(false); setTttPopup(null) }}
+                  className="text-sm font-bold px-8 py-3 rounded-full"
+                  style={{ background: 'var(--c1)', color: isDark ? '#001828' : '#fff' }}
+                >
+                  {lang === 'uz' ? "Qayta o'ynash →" : lang === 'ru' ? "Попробовать снова →" : "Try again →"}
+                </button>
+              </motion.div>
             ) : (
-              /* Win state with 4th rule */
+              /* Win state with 4th rule — scroll lock releases automatically */
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -1099,27 +1126,20 @@ export default function LandingPage() {
                 <h3 className="text-2xl font-black mb-3" style={{ color: 'var(--text-base)' }}>
                   {t.steps[3]?.title}
                 </h3>
-                <p className="text-sm leading-relaxed mb-6" style={{ color: 'var(--text-muted)' }}>
+                <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>
                   {t.steps[3]?.desc}
                 </p>
-                <button
-                  onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })}
-                  className="text-sm font-bold px-8 py-3 rounded-full"
-                  style={{ background: 'var(--c1)', color: isDark ? '#001828' : '#fff' }}
-                >
-                  {lang === 'uz' ? "Tariflarni ko'rish →" : lang === 'ru' ? "Смотреть тарифы →" : "See pricing →"}
-                </button>
               </motion.div>
             )}
 
             {/* Step counter dots */}
-            {!tttWon && (
+            {!tttWon && !tttDead && (
               <div className="flex justify-center gap-2 mt-2">
                 {[1,2,3,4].map(n => (
                   <div key={n} className="rounded-full transition-all duration-300"
                     style={{
-                      width: n <= tttOCount ? 24 : 8, height: 8,
-                      background: n <= tttOCount ? 'var(--c1)' : 'var(--border)',
+                      width: n <= Math.min(tttOCount, 4) ? 24 : 8, height: 8,
+                      background: n <= Math.min(tttOCount, 4) ? 'var(--c1)' : 'var(--border)',
                     }} />
                 ))}
               </div>
