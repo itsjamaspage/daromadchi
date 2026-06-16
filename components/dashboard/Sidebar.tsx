@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import {
   LayoutDashboard, Package, ShoppingCart,
-  LogOut, ChevronRight, X, Settings, BarChart2, Calculator, FileText, Globe2,
+  LogOut, ChevronRight, X, Settings, BarChart2, Calculator, FileText,
   Sun, Moon, Megaphone, Database, Layers, Bell, BellRing, AlertTriangle, CreditCard,
   CalendarDays, Users, HelpCircle, UserCircle,
 } from 'lucide-react'
@@ -133,38 +133,6 @@ export default function Sidebar({ onClose }: SidebarProps) {
                 </span>
               )}
             </div>
-          )
-        })}
-
-        <div className="my-2 mx-2" style={{ borderTop: '1px solid var(--border)' }} />
-
-        {/* Market */}
-        <p className="sidebar-label px-2 pb-1.5 text-[9px] font-semibold uppercase tracking-widest truncate"
-          style={{ color: 'var(--c1)' }}>
-          {d.nav.market}
-        </p>
-        {[{ href: '/dashboard/market', key: 'marketResearch', icon: Globe2 }].map(({ href, key, icon: Icon }) => {
-          const active = pathname === href
-          const label = (d.nav as unknown as Record<string, string>)[key] ?? key
-          return (
-            <Link
-              key={href}
-              href={href}
-              onClick={handleNavClick}
-              title={label}
-              className="flex items-center gap-3 px-2 py-2 rounded-xl text-sm font-medium transition-all"
-              style={active ? {
-                background: 'rgba(124,58,237,0.12)',
-                color: 'var(--c1)',
-                border: '1px solid rgba(124,58,237,0.2)',
-              } : {
-                color: 'var(--text-muted)',
-                border: '1px solid transparent',
-              }}
-            >
-              <Icon className="w-4 h-4 flex-shrink-0" style={{ color: active ? 'var(--c1)' : 'var(--text-muted)' }} />
-              <span className="sidebar-label truncate">{label}</span>
-            </Link>
           )
         })}
 

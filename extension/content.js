@@ -368,7 +368,6 @@
           `}
 
           <button id="drm-ue" style="display:block;width:100%;padding:9px;background:#7c3aed;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:600;text-align:center">${l.ueBtn}</button>
-          <button id="drm-market" style="display:block;width:100%;padding:10px;background:${t.card};color:${t.text};border:1px solid ${t.border};border-radius:10px;font-size:13px;text-align:center">${l.marketBtn}</button>
           <div style="text-align:center;font-size:10px;color:${t.muted}">${l.footer}</div>
         </div>
       `;
@@ -410,7 +409,6 @@
         if(productId)params.set('productId',productId);
         window.open(`https://daromadchi.uz/dashboard/unit-economics?${params}`,'_blank');
       });
-      wrap.querySelector('#drm-market')?.addEventListener('click',()=>{window.open(`https://daromadchi.uz/dashboard/market?q=${encodeURIComponent(title)}&source=uzum`,'_blank');});
     }
   }
 
