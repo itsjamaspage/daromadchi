@@ -486,7 +486,7 @@ export default function LandingPage() {
   }, [tttWon])
 
   const handleTttClick = (idx: number) => {
-    if (tttBoard[idx] || tttWon || tttXBusy || tttOCount >= 3) return
+    if (tttBoard[idx] || tttWon || tttOCount >= 3) return
     const newBoard = [...tttBoard]
     newBoard[idx] = 'O'
     const newCount = tttOCount + 1
@@ -501,6 +501,8 @@ export default function LandingPage() {
     setTttXBusy(true)
     setTimeout(() => {
       setTttBoard(prev => {
+        // Skip X placement if user already placed 3rd O (game won)
+        if (prev.filter(v => v === 'O').length >= 3) return prev
         const empty = prev.map((v, i) => v === null ? i : -1).filter(i => i >= 0)
         const pick = empty[Math.floor(Math.random() * empty.length)]
         if (pick === undefined) return prev
@@ -1051,14 +1053,14 @@ export default function LandingPage() {
                 {tttBoard.map((cell, idx) => (
                   <motion.button
                     key={idx}
-                    whileHover={!cell && !tttXBusy && tttOCount < 3 ? { scale: 1.04 } : {}}
-                    whileTap={!cell && !tttXBusy && tttOCount < 3 ? { scale: 0.96 } : {}}
+                    whileHover={!cell && tttOCount < 3 ? { scale: 1.04 } : {}}
+                    whileTap={!cell && tttOCount < 3 ? { scale: 0.96 } : {}}
                     onClick={() => handleTttClick(idx)}
                     className="aspect-square rounded-2xl flex items-center justify-center text-4xl font-black select-none"
                     style={{
                       background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)',
                       border: `2px solid ${cell === 'O' ? 'var(--c1)' : cell === 'X' ? 'var(--border)' : 'var(--border)'}`,
-                      cursor: cell || tttXBusy || tttOCount >= 3 ? 'default' : 'pointer',
+                      cursor: cell || tttOCount >= 3 ? 'default' : 'pointer',
                       color: cell === 'O' ? 'var(--c1)' : 'var(--text-muted)',
                       boxShadow: cell === 'O' ? `0 0 18px ${isDark ? 'rgba(0,212,255,0.25)' : 'rgba(124,58,237,0.2)'}` : 'none',
                     }}
