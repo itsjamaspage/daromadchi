@@ -461,22 +461,21 @@ export default function LandingPage() {
     return () => clearTimeout(timer)
   }, [tttPopup, tttWon])
 
-  // Scroll-lock: prevent scrolling past the How It Works section until game is won
+  // Scroll-lock: prevent scrolling past the How It Works section until game is won.
+  // Only locks once the section is fully stuck at top (rect.top <= 0).
   useEffect(() => {
     if (tttWon) return
     const onWheel = (e: WheelEvent) => {
       const section = document.getElementById('how')
       if (!section) return
       const rect = section.getBoundingClientRect()
-      const inView = rect.top < window.innerHeight * 0.5 && rect.bottom > window.innerHeight * 0.5
-      if (inView && e.deltaY > 0) e.preventDefault()
+      if (rect.top <= 0 && e.deltaY > 0) e.preventDefault()
     }
     const onTouch = (e: TouchEvent) => {
       const section = document.getElementById('how')
       if (!section) return
       const rect = section.getBoundingClientRect()
-      const inView = rect.top < window.innerHeight * 0.5 && rect.bottom > window.innerHeight * 0.5
-      if (inView) e.preventDefault()
+      if (rect.top <= 0) e.preventDefault()
     }
     window.addEventListener('wheel', onWheel, { passive: false })
     window.addEventListener('touchmove', onTouch, { passive: false })
@@ -502,19 +501,13 @@ export default function LandingPage() {
     setTttXBusy(true)
     setTimeout(() => {
       setTttBoard(prev => {
-        const oPositions = prev.map((v, i) => v === 'O' ? i : -1).filter(i => i >= 0)
         const empty = prev.map((v, i) => v === null ? i : -1).filter(i => i >= 0)
-        const lines = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]]
-        const safe = empty.filter(cell =>
-          !lines.some(line => line.includes(cell) && oPositions.filter(o => line.includes(o)).length >= 1)
-        )
-        const pool = safe.length ? safe : empty
-        const pick = pool[Math.floor(Math.random() * pool.length)]
+        const pick = empty[Math.floor(Math.random() * empty.length)]
         if (pick === undefined) return prev
         const b = [...prev]; b[pick] = 'X'; return b
       })
       setTttXBusy(false)
-    }, 900)
+    }, 600)
   }
 
   const [ctaPhase, setCtaPhase] = useState<0 | 1>(0)
@@ -992,7 +985,7 @@ export default function LandingPage() {
       <div style={{ height: '100svh' }}>
       <section id="how" className="sticky top-0 flex flex-col items-center justify-center border-t overflow-hidden"
         style={{ height: '100svh', borderColor: 'var(--border)', background: 'var(--bg-base)', paddingTop: 'calc(72px + 12px)' }}>
-          <div className="w-full max-w-md px-6 flex flex-col items-center gap-5">
+          <div className="w-full max-w-lg px-4 flex flex-col items-center gap-4">
             {/* Header */}
             <div className="text-center">
               <p className="text-xs font-bold uppercase tracking-[0.18em] mb-1" style={{ color: 'var(--c1)' }}>{t.howBadge}</p>
@@ -1054,14 +1047,14 @@ export default function LandingPage() {
 
             {/* Tic-tac-toe grid */}
             {!tttWon ? (
-              <div className="grid grid-cols-3 gap-3 w-full" style={{ maxWidth: 340 }}>
+              <div className="grid grid-cols-3 gap-3 w-full" style={{ maxWidth: 'min(90vw, 420px)' }}>
                 {tttBoard.map((cell, idx) => (
                   <motion.button
                     key={idx}
                     whileHover={!cell && !tttXBusy && tttOCount < 3 ? { scale: 1.04 } : {}}
                     whileTap={!cell && !tttXBusy && tttOCount < 3 ? { scale: 0.96 } : {}}
                     onClick={() => handleTttClick(idx)}
-                    className="aspect-square rounded-2xl flex items-center justify-center text-3xl font-black select-none"
+                    className="aspect-square rounded-2xl flex items-center justify-center text-4xl font-black select-none"
                     style={{
                       background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)',
                       border: `2px solid ${cell === 'O' ? 'var(--c1)' : cell === 'X' ? 'var(--border)' : 'var(--border)'}`,
