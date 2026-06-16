@@ -815,15 +815,15 @@ export default function LandingPage() {
             style={{ animationDuration: '48s' }}>
             {Array(4).fill(null).flatMap((_, gi) => [
               <span key={`${gi}a`} className="text-2xl font-black tracking-tight"
-                style={{ color: isDark ? 'rgba(255,255,255,0.82)' : '#0f172a' }}>Uzum Market</span>,
+                style={{ color: '#ff5c00' }}>Uzum Market</span>,
               <span key={`${gi}s1`} className="text-[10px] font-bold uppercase tracking-[0.2em]"
                 style={{ color: 'var(--text-muted)', opacity: 0.55 }}>{t.tickerItems[0]}</span>,
               <span key={`${gi}b`} className="text-2xl font-black tracking-tight"
-                style={{ color: isDark ? 'rgba(255,255,255,0.82)' : '#0f172a' }}>Wildberries</span>,
+                style={{ color: '#cb11ab' }}>Wildberries</span>,
               <span key={`${gi}s2`} className="text-[10px] font-bold uppercase tracking-[0.2em]"
                 style={{ color: 'var(--text-muted)', opacity: 0.55 }}>{t.tickerItems[1]}</span>,
               <span key={`${gi}c`} className="text-2xl font-black tracking-tight"
-                style={{ color: isDark ? 'rgba(255,255,255,0.82)' : '#0f172a' }}>Yandex Market</span>,
+                style={{ color: '#fc3f1d' }}>Yandex Market</span>,
               <span key={`${gi}s3`} className="text-[10px] font-bold uppercase tracking-[0.2em]"
                 style={{ color: 'var(--text-muted)', opacity: 0.55 }}>{t.tickerItems[2]}</span>,
             ])}
