@@ -506,7 +506,7 @@ export default function LandingPage() {
 
       {/* ── NAVBAR ───────────────────────────────────────────────────────────── */}
       <header className="fixed top-0 left-0 right-0 z-50 px-4 pt-3">
-        <div className="max-w-6xl mx-auto rounded-2xl px-5 h-14 flex items-center justify-between"
+        <div className="max-w-6xl mx-auto rounded-2xl px-7 h-[72px] flex items-center justify-between"
           style={{
             background: isDark ? 'rgba(12,12,24,0.90)' : '#ffffff',
             backdropFilter: 'blur(16px)',
@@ -514,11 +514,11 @@ export default function LandingPage() {
             border: `1px solid ${isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)'}`,
             boxShadow: isDark ? '0 4px 24px rgba(0,0,0,0.45)' : '0 4px 24px rgba(0,0,0,0.08)',
           }}>
-          <Link href="/" className="flex items-center gap-2.5 shrink-0">
-            <img src="/icon.svg" alt="Daromadchi" className="w-7 h-7 rounded-lg" />
-            <span className="font-bold text-sm" style={{ color: isDark ? '#fff' : '#0f172a' }}>Daromadchi</span>
+          <Link href="/" className="flex items-center gap-3 shrink-0">
+            <img src="/icon.svg" alt="Daromadchi" className="w-8 h-8 rounded-xl" />
+            <span className="font-bold text-base" style={{ color: isDark ? '#fff' : '#0f172a' }}>Daromadchi</span>
           </Link>
-          <nav className="hidden md:flex items-center gap-7">
+          <nav className="hidden md:flex items-center gap-8">
             {[
               { href: '#features', label: t.nav.features },
               { href: '#how', label: t.nav.how },
@@ -526,7 +526,7 @@ export default function LandingPage() {
               { href: '/help', label: t.nav.help },
             ].map(item => (
               <a key={item.label} href={item.href}
-                className="text-sm font-medium transition-colors"
+                className="text-[15px] font-medium transition-colors"
                 style={{ color: isDark ? 'rgba(255,255,255,0.55)' : '#64748b' }}
                 onMouseEnter={e => (e.currentTarget.style.color = isDark ? '#fff' : '#0f172a')}
                 onMouseLeave={e => (e.currentTarget.style.color = isDark ? 'rgba(255,255,255,0.55)' : '#64748b')}>
@@ -534,16 +534,16 @@ export default function LandingPage() {
               </a>
             ))}
           </nav>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <div ref={langRef} className="relative">
               <button onClick={() => setLangOpen(o => !o)}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold"
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold"
                 style={{
                   background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
                   border: `1px solid ${isDark ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.09)'}`,
                   color: isDark ? 'rgba(255,255,255,0.65)' : '#475569',
                 }}>
-                <Globe className="w-3 h-3" /> {lang.toUpperCase()}
+                <Globe className="w-3.5 h-3.5" /> {lang.toUpperCase()}
               </button>
               <AnimatePresence>
                 {langOpen && (
@@ -563,26 +563,26 @@ export default function LandingPage() {
               </AnimatePresence>
             </div>
             <button onClick={toggle}
-              className="w-8 h-8 rounded-lg flex items-center justify-center"
+              className="w-9 h-9 rounded-lg flex items-center justify-center"
               style={{
                 background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
                 border: `1px solid ${isDark ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.09)'}`,
               }}>
-              {theme === 'dark' ? <Sun className="w-3.5 h-3.5 text-amber-400" /> : <Moon className="w-3.5 h-3.5 text-blue-500" />}
+              {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-blue-500" />}
             </button>
-            <Link href="/login" className="hidden sm:block text-sm font-medium px-3 py-1.5 transition-colors"
+            <Link href="/login" className="hidden sm:block text-[15px] font-medium px-4 py-2 transition-colors"
               style={{ color: isDark ? 'rgba(255,255,255,0.6)' : '#475569' }}
               onMouseEnter={e => (e.currentTarget.style.color = isDark ? '#fff' : '#0f172a')}
               onMouseLeave={e => (e.currentTarget.style.color = isDark ? 'rgba(255,255,255,0.6)' : '#475569')}>
               {t.nav.login}
             </Link>
-            <Link href="/login" className="text-sm font-bold px-5 py-2 rounded-full text-white transition-opacity hover:opacity-90"
+            <Link href="/login" className="text-[15px] font-bold px-6 py-2.5 rounded-full text-white transition-opacity hover:opacity-90"
               style={{ background: 'var(--c1)' }}>
               {t.nav.start}
             </Link>
-            <button className="md:hidden p-1.5 rounded-lg" onClick={() => setMenuOpen(v => !v)}
+            <button className="md:hidden p-2 rounded-lg" onClick={() => setMenuOpen(v => !v)}
               style={{ color: isDark ? 'rgba(255,255,255,0.65)' : '#475569' }}>
-              {menuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+              {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
           </div>
         </div>
@@ -621,7 +621,7 @@ export default function LandingPage() {
       </header>
 
       {/* ── HERO ─────────────────────────────────────────────────────────────── */}
-      <section className="relative flex items-center pt-20 overflow-hidden" style={{ minHeight: '100svh' }}>
+      <section className="relative flex items-center pt-24 overflow-hidden" style={{ minHeight: '100svh' }}>
         <div className="relative z-10 max-w-7xl mx-auto w-full px-6 grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-12 items-center py-16">
 
           {/* LEFT: mockup */}
