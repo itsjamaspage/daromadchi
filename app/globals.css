@@ -16,9 +16,9 @@
 [data-theme="dark"] {
   --color-info:  rgba(96, 165, 250, 0.85);
   --color-warn:  rgba(251, 191, 36, 0.85);
-  --bg-base:    #020c1a;
-  --bg-card:    #071425;
-  --bg-card2:   #0b1c34;
+  --bg-base:    #07091a;
+  --bg-card:    #0c0f24;
+  --bg-card2:   #10142e;
   --bg-input:   #0f2040;
   --border:     rgba(0, 210, 255, 0.10);
   --border2:    rgba(0, 210, 255, 0.20);
@@ -70,13 +70,9 @@ h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-display);
 }
 
-/* Dark: deep-space gradient + grain */
+/* Dark: deep-space solid — geometric decor layer provides visual depth */
 [data-theme="dark"] body {
-  background:
-    radial-gradient(ellipse 100% 60% at 15% -5%,  rgba(0,180,255,0.12) 0%, transparent 55%),
-    radial-gradient(ellipse 70%  50% at 88% 105%, rgba(255,45,155,0.08) 0%, transparent 55%),
-    radial-gradient(ellipse 60%  40% at 50% 50%,  rgba(0,40,100,0.3)   0%, transparent 70%),
-    #020c1a;
+  background: #07091a;
   background-attachment: fixed;
 }
 
@@ -348,6 +344,44 @@ h1, h2, h3, h4, h5, h6 {
 .how-float-2 { animation: howFloat2 3.8s ease-in-out infinite; animation-delay: -1.3s; }
 .how-float-3 { animation: howFloat3 5.2s ease-in-out infinite; animation-delay: -2.2s; }
 .how-float-4 { animation: howFloat4 4.1s ease-in-out infinite; animation-delay: -0.8s; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   DARK BG DECOR — geometric animated background (DarkBgDecor.tsx)
+═══════════════════════════════════════════════════════════════════ */
+
+/* Filled circles: slow vertical drift */
+@keyframes bgCf1 { 0%,100% { transform:translateY(0px); } 50% { transform:translateY(-20px); } }
+@keyframes bgCf2 { 0%,100% { transform:translateY(0px); } 50% { transform:translateY(16px); }  }
+@keyframes bgCf3 { 0%,100% { transform:translateY(0px); } 50% { transform:translateY(-14px); } }
+.bg-cf1 { animation:bgCf1 9s  ease-in-out infinite; transform-box:fill-box; transform-origin:center; }
+.bg-cf2 { animation:bgCf2 11s ease-in-out infinite; animation-delay:-4s;  transform-box:fill-box; transform-origin:center; }
+.bg-cf3 { animation:bgCf3 8s  ease-in-out infinite; animation-delay:-6s;  transform-box:fill-box; transform-origin:center; }
+
+/* Lines: drift diagonally */
+@keyframes bgL1 { 0%,100% { transform:translate(0px,0px); } 50% { transform:translate(-18px,-24px); } }
+@keyframes bgL2 { 0%,100% { transform:translate(0px,0px); } 50% { transform:translate(22px,-12px); } }
+@keyframes bgL3 { 0%,100% { transform:translate(0px,0px); } 50% { transform:translate(-10px,16px); } }
+@keyframes bgL4 { 0%,100% { transform:translate(0px,0px); } 50% { transform:translate(14px,-20px); } }
+@keyframes bgL5 { 0%,100% { transform:translate(0px,0px); } 50% { transform:translate(-20px,10px); } }
+.bg-l1 { animation:bgL1 10s ease-in-out infinite;             transform-box:fill-box; transform-origin:center; }
+.bg-l2 { animation:bgL2 13s ease-in-out infinite; animation-delay:-3s;  transform-box:fill-box; transform-origin:center; }
+.bg-l3 { animation:bgL3 8s  ease-in-out infinite; animation-delay:-1s;  transform-box:fill-box; transform-origin:center; }
+.bg-l4 { animation:bgL4 11s ease-in-out infinite; animation-delay:-5s;  transform-box:fill-box; transform-origin:center; }
+.bg-l5 { animation:bgL5 14s ease-in-out infinite; animation-delay:-7s;  transform-box:fill-box; transform-origin:center; }
+
+/* Neon rings: float + pulse glow */
+@keyframes bgR1 { 0%,100% { transform:translate(0px,0px); opacity:.55; } 50% { transform:translate(8px,-14px);  opacity:1; } }
+@keyframes bgR2 { 0%,100% { transform:translate(0px,0px); opacity:.50; } 50% { transform:translate(-12px,16px); opacity:.9; } }
+@keyframes bgR3 { 0%,100% { transform:translate(0px,0px); opacity:.60; } 50% { transform:translate(10px,-10px); opacity:1; } }
+.bg-r1 { animation:bgR1 8s  ease-in-out infinite;            transform-box:fill-box; transform-origin:center; }
+.bg-r2 { animation:bgR2 12s ease-in-out infinite; animation-delay:-4s; transform-box:fill-box; transform-origin:center; }
+.bg-r3 { animation:bgR3 7s  ease-in-out infinite; animation-delay:-2s; transform-box:fill-box; transform-origin:center; }
+
+/* Dot grid: slow shimmer */
+@keyframes bgDots { 0%,100% { opacity:.65; } 50% { opacity:.25; } }
+.bg-dots { animation:bgDots 4s ease-in-out infinite; }
+.bg-dots:nth-child(odd)  { animation-delay:-1.2s; }
+.bg-dots:nth-child(even) { animation-delay:-2.8s; }
 
 .sidebar-collapse:hover {
   width: 240px;
