@@ -505,12 +505,18 @@ export default function LandingPage() {
     <div className="min-h-screen" style={{ overflowX: 'clip', background: 'var(--bg-base)', color: 'var(--text-base)' }}>
 
       {/* ── NAVBAR ───────────────────────────────────────────────────────────── */}
-      <header className="fixed top-0 left-0 right-0 z-50"
-        style={{ background: 'var(--nav-bg)', borderBottom: '1px solid var(--border)' }}>
-        <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
+      <header className="fixed top-0 left-0 right-0 z-50 px-4 pt-3">
+        <div className="max-w-6xl mx-auto rounded-2xl px-5 h-14 flex items-center justify-between"
+          style={{
+            background: isDark ? 'rgba(12,12,24,0.90)' : '#ffffff',
+            backdropFilter: 'blur(16px)',
+            WebkitBackdropFilter: 'blur(16px)',
+            border: `1px solid ${isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)'}`,
+            boxShadow: isDark ? '0 4px 24px rgba(0,0,0,0.45)' : '0 4px 24px rgba(0,0,0,0.08)',
+          }}>
           <Link href="/" className="flex items-center gap-2.5 shrink-0">
             <img src="/icon.svg" alt="Daromadchi" className="w-7 h-7 rounded-lg" />
-            <span className="font-bold text-sm" style={{ color: 'var(--text-base)' }}>Daromadchi</span>
+            <span className="font-bold text-sm" style={{ color: isDark ? '#fff' : '#0f172a' }}>Daromadchi</span>
           </Link>
           <nav className="hidden md:flex items-center gap-7">
             {[
@@ -520,10 +526,10 @@ export default function LandingPage() {
               { href: '/help', label: t.nav.help },
             ].map(item => (
               <a key={item.label} href={item.href}
-                className="text-sm transition-colors"
-                style={{ color: 'var(--text-muted)' }}
-                onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-base)')}
-                onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}>
+                className="text-sm font-medium transition-colors"
+                style={{ color: isDark ? 'rgba(255,255,255,0.55)' : '#64748b' }}
+                onMouseEnter={e => (e.currentTarget.style.color = isDark ? '#fff' : '#0f172a')}
+                onMouseLeave={e => (e.currentTarget.style.color = isDark ? 'rgba(255,255,255,0.55)' : '#64748b')}>
                 {item.label}
               </a>
             ))}
@@ -531,8 +537,12 @@ export default function LandingPage() {
           <div className="flex items-center gap-2">
             <div ref={langRef} className="relative">
               <button onClick={() => setLangOpen(o => !o)}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold border"
-                style={{ background: 'var(--bg-input)', borderColor: 'var(--border2)', color: 'var(--text-dim)' }}>
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold"
+                style={{
+                  background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
+                  border: `1px solid ${isDark ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.09)'}`,
+                  color: isDark ? 'rgba(255,255,255,0.65)' : '#475569',
+                }}>
                 <Globe className="w-3 h-3" /> {lang.toUpperCase()}
               </button>
               <AnimatePresence>
@@ -553,29 +563,39 @@ export default function LandingPage() {
               </AnimatePresence>
             </div>
             <button onClick={toggle}
-              className="w-8 h-8 rounded-lg flex items-center justify-center border"
-              style={{ background: 'var(--bg-input)', borderColor: 'var(--border2)', color: 'var(--text-dim)' }}>
+              className="w-8 h-8 rounded-lg flex items-center justify-center"
+              style={{
+                background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
+                border: `1px solid ${isDark ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.09)'}`,
+              }}>
               {theme === 'dark' ? <Sun className="w-3.5 h-3.5 text-amber-400" /> : <Moon className="w-3.5 h-3.5 text-blue-500" />}
             </button>
-            <Link href="/login" className="hidden sm:block text-sm font-medium px-4 py-1.5"
-              style={{ color: 'var(--text-muted)' }}>
+            <Link href="/login" className="hidden sm:block text-sm font-medium px-3 py-1.5 transition-colors"
+              style={{ color: isDark ? 'rgba(255,255,255,0.6)' : '#475569' }}
+              onMouseEnter={e => (e.currentTarget.style.color = isDark ? '#fff' : '#0f172a')}
+              onMouseLeave={e => (e.currentTarget.style.color = isDark ? 'rgba(255,255,255,0.6)' : '#475569')}>
               {t.nav.login}
             </Link>
-            <Link href="/login" className="text-sm font-bold px-4 py-2 rounded-lg text-white"
+            <Link href="/login" className="text-sm font-bold px-5 py-2 rounded-full text-white transition-opacity hover:opacity-90"
               style={{ background: 'var(--c1)' }}>
               {t.nav.start}
             </Link>
             <button className="md:hidden p-1.5 rounded-lg" onClick={() => setMenuOpen(v => !v)}
-              style={{ color: 'var(--text-muted)' }}>
+              style={{ color: isDark ? 'rgba(255,255,255,0.65)' : '#475569' }}>
               {menuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
             </button>
           </div>
         </div>
         <AnimatePresence>
           {menuOpen && (
-            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.18 }} className="md:hidden border-t overflow-hidden"
-              style={{ borderColor: 'var(--border)', background: 'var(--nav-bg)' }}>
+            <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.18 }}
+              className="md:hidden max-w-6xl mx-auto mt-1.5 rounded-2xl overflow-hidden"
+              style={{
+                background: isDark ? 'rgba(12,12,24,0.96)' : '#ffffff',
+                border: `1px solid ${isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)'}`,
+                boxShadow: isDark ? '0 8px 32px rgba(0,0,0,0.5)' : '0 8px 32px rgba(0,0,0,0.1)',
+              }}>
               <div className="px-6 py-4 flex flex-col gap-1">
                 {[
                   { label: t.nav.features, href: '#features' },
@@ -584,12 +604,13 @@ export default function LandingPage() {
                   { label: t.nav.help, href: '/help' },
                 ].map(({ label, href }) => (
                   <a key={label} href={href} onClick={() => setMenuOpen(false)}
-                    className="text-sm py-2.5 font-medium" style={{ color: 'var(--text-muted)' }}>
+                    className="text-sm py-2.5 font-medium"
+                    style={{ color: isDark ? 'rgba(255,255,255,0.65)' : '#475569' }}>
                     {label}
                   </a>
                 ))}
                 <Link href="/login" onClick={() => setMenuOpen(false)}
-                  className="mt-3 text-sm font-bold py-3 text-center rounded-xl text-white"
+                  className="mt-3 text-sm font-bold py-3 text-center rounded-full text-white"
                   style={{ background: 'var(--c1)' }}>
                   {t.nav.start}
                 </Link>
@@ -600,7 +621,7 @@ export default function LandingPage() {
       </header>
 
       {/* ── HERO ─────────────────────────────────────────────────────────────── */}
-      <section className="relative flex items-center pt-14 overflow-hidden" style={{ minHeight: '100svh' }}>
+      <section className="relative flex items-center pt-20 overflow-hidden" style={{ minHeight: '100svh' }}>
         <div className="relative z-10 max-w-7xl mx-auto w-full px-6 grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-12 items-center py-16">
 
           {/* LEFT: mockup */}
