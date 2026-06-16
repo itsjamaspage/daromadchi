@@ -581,7 +581,7 @@ export default function LandingPage() {
             border: `1px solid ${isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)'}`,
             boxShadow: isDark ? '0 4px 24px rgba(0,0,0,0.45)' : '0 4px 24px rgba(0,0,0,0.08)',
           }}>
-          <Link href="/" className="flex items-center gap-3 shrink-0">
+          <Link href="/" className="flex items-center gap-3 shrink-0" onClick={e => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }) }}>
             <img src="/icon.svg" alt="Daromadchi" className="w-8 h-8 rounded-xl" />
             <span className="font-bold text-base" style={{ color: isDark ? '#fff' : '#0f172a' }}>Daromadchi</span>
           </Link>
@@ -1005,7 +1005,7 @@ export default function LandingPage() {
       {/* ── HOW IT WORKS — tic-tac-toe tutorial ─────────────────────────────── */}
       <div style={{ height: '100svh' }}>
       <section id="how" className="sticky top-0 flex flex-col items-center justify-center border-t overflow-hidden"
-        style={{ height: '100svh', borderColor: 'var(--border)', paddingTop: 'calc(72px + 12px)' }}>
+        style={{ height: '100svh', borderColor: 'var(--border)', background: 'var(--bg-base)', paddingTop: 'calc(72px + 12px)' }}>
           <div className="w-full max-w-lg px-4 flex flex-col items-center gap-4">
             {/* Header */}
             <div className="text-center">
