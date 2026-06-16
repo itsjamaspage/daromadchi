@@ -13,8 +13,7 @@ import {
 import { useTheme, useLang } from './providers'
 import { translations } from '@/lib/i18n'
 import type { Lang } from '@/lib/i18n'
-import { DarkBgDecor } from '@/components/DarkBgDecor'
-import { LightBgDecor } from '@/components/LightBgDecor'
+import { PageBgDecor } from '@/components/PageBgDecor'
 
 function useCounter(target: number, duration = 2000, start = false) {
   const [count, setCount] = useState(0)
@@ -570,6 +569,7 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen" style={{ overflowX: 'clip', background: 'var(--bg-base)', color: 'var(--text-base)' }}>
+      <PageBgDecor isDark={isDark} />
 
       {/* ── NAVBAR ───────────────────────────────────────────────────────────── */}
       <header className="fixed top-0 left-0 right-0 z-50 px-4 pt-3">
@@ -689,7 +689,6 @@ export default function LandingPage() {
 
       {/* ── HERO ─────────────────────────────────────────────────────────────── */}
       <section className="relative flex items-center pt-24 overflow-hidden" style={{ minHeight: '100svh' }}>
-        {isDark ? <DarkBgDecor /> : <LightBgDecor />}
         <div className="relative z-10 max-w-7xl mx-auto w-full px-6 grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-12 items-center py-16">
 
           {/* LEFT: mockup */}
