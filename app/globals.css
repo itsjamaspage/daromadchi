@@ -349,39 +349,94 @@ h1, h2, h3, h4, h5, h6 {
    DARK BG DECOR — geometric animated background (DarkBgDecor.tsx)
 ═══════════════════════════════════════════════════════════════════ */
 
-/* Filled circles: slow vertical drift */
-@keyframes bgCf1 { 0%,100% { transform:translateY(0px); } 50% { transform:translateY(-20px); } }
-@keyframes bgCf2 { 0%,100% { transform:translateY(0px); } 50% { transform:translateY(16px); }  }
-@keyframes bgCf3 { 0%,100% { transform:translateY(0px); } 50% { transform:translateY(-14px); } }
+/* ── Filled circles: slow vertical drift ───────────────────────── */
+@keyframes bgCf1 { 0%,100% { transform:translateY(0px); } 50% { transform:translateY(-22px); } }
+@keyframes bgCf2 { 0%,100% { transform:translateY(0px); } 50% { transform:translateY(18px);  } }
+@keyframes bgCf3 { 0%,100% { transform:translateY(0px); } 50% { transform:translateY(-16px); } }
 .bg-cf1 { animation:bgCf1 9s  ease-in-out infinite; transform-box:fill-box; transform-origin:center; }
 .bg-cf2 { animation:bgCf2 11s ease-in-out infinite; animation-delay:-4s;  transform-box:fill-box; transform-origin:center; }
 .bg-cf3 { animation:bgCf3 8s  ease-in-out infinite; animation-delay:-6s;  transform-box:fill-box; transform-origin:center; }
 
-/* Lines: drift diagonally */
-@keyframes bgL1 { 0%,100% { transform:translate(0px,0px); } 50% { transform:translate(-18px,-24px); } }
-@keyframes bgL2 { 0%,100% { transform:translate(0px,0px); } 50% { transform:translate(22px,-12px); } }
-@keyframes bgL3 { 0%,100% { transform:translate(0px,0px); } 50% { transform:translate(-10px,16px); } }
-@keyframes bgL4 { 0%,100% { transform:translate(0px,0px); } 50% { transform:translate(14px,-20px); } }
-@keyframes bgL5 { 0%,100% { transform:translate(0px,0px); } 50% { transform:translate(-20px,10px); } }
-.bg-l1 { animation:bgL1 10s ease-in-out infinite;             transform-box:fill-box; transform-origin:center; }
-.bg-l2 { animation:bgL2 13s ease-in-out infinite; animation-delay:-3s;  transform-box:fill-box; transform-origin:center; }
-.bg-l3 { animation:bgL3 8s  ease-in-out infinite; animation-delay:-1s;  transform-box:fill-box; transform-origin:center; }
-.bg-l4 { animation:bgL4 11s ease-in-out infinite; animation-delay:-5s;  transform-box:fill-box; transform-origin:center; }
-.bg-l5 { animation:bgL5 14s ease-in-out infinite; animation-delay:-7s;  transform-box:fill-box; transform-origin:center; }
-
-/* Neon rings: float + pulse glow */
-@keyframes bgR1 { 0%,100% { transform:translate(0px,0px); opacity:.55; } 50% { transform:translate(8px,-14px);  opacity:1; } }
-@keyframes bgR2 { 0%,100% { transform:translate(0px,0px); opacity:.50; } 50% { transform:translate(-12px,16px); opacity:.9; } }
-@keyframes bgR3 { 0%,100% { transform:translate(0px,0px); opacity:.60; } 50% { transform:translate(10px,-10px); opacity:1; } }
-.bg-r1 { animation:bgR1 8s  ease-in-out infinite;            transform-box:fill-box; transform-origin:center; }
+/* ── Neon rings: float + pulse glow ────────────────────────────── */
+@keyframes bgR1 { 0%,100% { transform:translate(0,0); opacity:.55; } 50% { transform:translate(10px,-16px);  opacity:1; } }
+@keyframes bgR2 { 0%,100% { transform:translate(0,0); opacity:.50; } 50% { transform:translate(-14px,18px); opacity:.95; } }
+@keyframes bgR3 { 0%,100% { transform:translate(0,0); opacity:.60; } 50% { transform:translate(12px,-12px); opacity:1; } }
+.bg-r1 { animation:bgR1 8s  ease-in-out infinite;           transform-box:fill-box; transform-origin:center; }
 .bg-r2 { animation:bgR2 12s ease-in-out infinite; animation-delay:-4s; transform-box:fill-box; transform-origin:center; }
 .bg-r3 { animation:bgR3 7s  ease-in-out infinite; animation-delay:-2s; transform-box:fill-box; transform-origin:center; }
 
-/* Dot grid: slow shimmer */
-@keyframes bgDots { 0%,100% { opacity:.65; } 50% { opacity:.25; } }
+/* ── Lines: TRAVEL across the full viewport ─────────────────────
+   Each line translates from off-screen on one side to off-screen
+   on the other, fading in/out at the edges. Different durations &
+   directions so they never move in sync.
+──────────────────────────────────────────────────────────────── */
+/* Line A — travels down-right (diagonal direction of the line itself) */
+@keyframes bgLtA {
+  0%   { transform:translate(-700px,-450px); opacity:0; }
+  8%   { opacity:1; }
+  88%  { opacity:1; }
+  100% { transform:translate(700px, 450px); opacity:0; }
+}
+/* Line B — travels upward along its own lean */
+@keyframes bgLtB {
+  0%   { transform:translate(80px, 380px); opacity:0; }
+  8%   { opacity:.85; }
+  88%  { opacity:.85; }
+  100% { transform:translate(-80px,-380px); opacity:0; }
+}
+/* Line C — small bottom-left line, sweeps down-right */
+@keyframes bgLtC {
+  0%   { transform:translate(-260px,-260px); opacity:0; }
+  10%  { opacity:1; }
+  85%  { opacity:1; }
+  100% { transform:translate(260px, 260px); opacity:0; }
+}
+/* Line D — right-side, travels downward */
+@keyframes bgLtD {
+  0%   { transform:translate(0,-480px); opacity:0; }
+  8%   { opacity:.9; }
+  88%  { opacity:.9; }
+  100% { transform:translate(0, 480px); opacity:0; }
+}
+/* Line E — purple, sweeps rightward */
+@keyframes bgLtE {
+  0%   { transform:translate(-500px,0); opacity:0; }
+  8%   { opacity:.9; }
+  88%  { opacity:.9; }
+  100% { transform:translate(500px, 0); opacity:0; }
+}
+
+.bg-lt-a { animation:bgLtA 16s linear infinite;            transform-box:fill-box; transform-origin:center; }
+.bg-lt-b { animation:bgLtB 20s linear infinite; animation-delay:-7s;  transform-box:fill-box; transform-origin:center; }
+.bg-lt-c { animation:bgLtC 11s linear infinite; animation-delay:-3s;  transform-box:fill-box; transform-origin:center; }
+.bg-lt-d { animation:bgLtD 18s linear infinite; animation-delay:-11s; transform-box:fill-box; transform-origin:center; }
+.bg-lt-e { animation:bgLtE 22s linear infinite; animation-delay:-5s;  transform-box:fill-box; transform-origin:center; }
+
+/* ── Dot grid: slow shimmer ─────────────────────────────────────── */
+@keyframes bgDots  { 0%,100% { opacity:.65; } 50% { opacity:.2; } }
+@keyframes ltDots  { 0%,100% { opacity:.30; } 50% { opacity:.10; } }
 .bg-dots { animation:bgDots 4s ease-in-out infinite; }
 .bg-dots:nth-child(odd)  { animation-delay:-1.2s; }
 .bg-dots:nth-child(even) { animation-delay:-2.8s; }
+.lt-dots { animation:ltDots 4s ease-in-out infinite; }
+.lt-dots:nth-child(odd)  { animation-delay:-1.5s; }
+.lt-dots:nth-child(even) { animation-delay:-3s; }
+
+/* ── Light-theme circles ────────────────────────────────────────── */
+@keyframes ltCf1 { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-18px); } }
+@keyframes ltCf2 { 0%,100% { transform:translateY(0); } 50% { transform:translateY(14px);  } }
+@keyframes ltCf3 { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-12px); } }
+.lt-cf1 { animation:ltCf1 10s ease-in-out infinite; transform-box:fill-box; transform-origin:center; }
+.lt-cf2 { animation:ltCf2 13s ease-in-out infinite; animation-delay:-5s;  transform-box:fill-box; transform-origin:center; }
+.lt-cf3 { animation:ltCf3 9s  ease-in-out infinite; animation-delay:-7s;  transform-box:fill-box; transform-origin:center; }
+
+/* Light-theme rings */
+@keyframes ltR1 { 0%,100% { transform:translate(0,0); opacity:.2; } 50% { transform:translate(8px,-12px);  opacity:.45; } }
+@keyframes ltR2 { 0%,100% { transform:translate(0,0); opacity:.18;} 50% { transform:translate(-10px,14px); opacity:.40; } }
+@keyframes ltR3 { 0%,100% { transform:translate(0,0); opacity:.22;} 50% { transform:translate(8px,-8px);   opacity:.50; } }
+.lt-r1 { animation:ltR1 9s  ease-in-out infinite; transform-box:fill-box; transform-origin:center; }
+.lt-r2 { animation:ltR2 14s ease-in-out infinite; animation-delay:-5s; transform-box:fill-box; transform-origin:center; }
+.lt-r3 { animation:ltR3 8s  ease-in-out infinite; animation-delay:-3s; transform-box:fill-box; transform-origin:center; }
 
 .sidebar-collapse:hover {
   width: 240px;

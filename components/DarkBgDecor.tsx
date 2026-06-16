@@ -1,7 +1,7 @@
 'use client'
-// Animated geometric background for dark mode.
-// Recreates the reference image: filled dark circles, neon rings, glowing diagonal lines, dot grid, corner rectangle.
-// All elements are SVG with CSS keyframe animations defined in globals.css (.bg-* classes).
+// Dark-mode animated geometric background.
+// Lines travel across the full screen; circles drift slowly.
+// Keyframes live in globals.css (.bg-* classes).
 
 export function DarkBgDecor() {
   return (
@@ -15,66 +15,63 @@ export function DarkBgDecor() {
         preserveAspectRatio="xMidYMid slice"
       >
         <defs>
-          <filter id="glowBlue" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="5" result="blur" />
-            <feMerge>
-              <feMergeNode in="blur" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
+          <filter id="glowBlue" x="-60%" y="-60%" width="220%" height="220%">
+            <feGaussianBlur stdDeviation="6" result="blur" />
+            <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
           </filter>
-          <filter id="glowPurple" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="7" result="blur" />
-            <feMerge>
-              <feMergeNode in="blur" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
+          <filter id="glowPurple" x="-60%" y="-60%" width="220%" height="220%">
+            <feGaussianBlur stdDeviation="8" result="blur" />
+            <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
           </filter>
-          <filter id="glowBlueStrong" x="-60%" y="-60%" width="220%" height="220%">
-            <feGaussianBlur stdDeviation="10" result="blur" />
-            <feMerge>
-              <feMergeNode in="blur" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
+          <filter id="glowStrong" x="-80%" y="-80%" width="260%" height="260%">
+            <feGaussianBlur stdDeviation="12" result="blur" />
+            <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
           </filter>
         </defs>
 
-        {/* ── Filled dark circles ───────────────────────────────────── */}
+        {/* Filled dark circles — slow vertical drift */}
         <circle cx="58"   cy="125"  r="168" fill="#0b1020" className="bg-cf1" />
         <circle cx="115"  cy="400"  r="122" fill="#0b1020" className="bg-cf2" />
         <circle cx="1405" cy="715"  r="215" fill="#0a0f1e" className="bg-cf3" />
 
-        {/* ── Electric-blue diagonal lines ─────────────────────────── */}
-        {/* Top centre pair (crossing) */}
-        <line x1="492" y1="-8"  x2="640" y2="215" stroke="#3B82F6" strokeWidth="3.5" strokeLinecap="round" filter="url(#glowBlue)"       className="bg-l1" />
-        <line x1="375" y1="105" x2="290" y2="365" stroke="#2563EB" strokeWidth="2.5" strokeLinecap="round" filter="url(#glowBlue)"       className="bg-l2" />
-        {/* Bottom-left short line */}
-        <line x1="52"  y1="635" x2="138" y2="725" stroke="#3B82F6" strokeWidth="2"   strokeLinecap="round" filter="url(#glowBlue)"       className="bg-l3" />
-        {/* Right-side line */}
-        <line x1="1145" y1="245" x2="1295" y2="540" stroke="#3B82F6" strokeWidth="2.5" strokeLinecap="round" filter="url(#glowBlue)"     className="bg-l4" />
+        {/* Neon rings — float + pulse */}
+        <circle cx="90"   cy="278"  r="56"  fill="none" stroke="#7C3AED" strokeWidth="2"   filter="url(#glowPurple)" className="bg-r1" />
+        <circle cx="1238" cy="428"  r="140" fill="none" stroke="#7C3AED" strokeWidth="2"   filter="url(#glowStrong)" className="bg-r2" />
+        <circle cx="1198" cy="792"  r="43"  fill="none" stroke="#7C3AED" strokeWidth="1.5" filter="url(#glowPurple)" className="bg-r3" />
 
-        {/* ── Indigo/purple diagonal line ───────────────────────────── */}
-        <line x1="148" y1="228" x2="335" y2="548" stroke="#6366F1" strokeWidth="2.5" strokeLinecap="round" filter="url(#glowPurple)"     className="bg-l5" />
+        {/* Travelling lines — each moves across the full viewport */}
+        {/* Line A: upper area, down-right sweep */}
+        <line x1="350" y1="-60" x2="580" y2="260"
+          stroke="#3B82F6" strokeWidth="3.5" strokeLinecap="round"
+          filter="url(#glowBlue)" className="bg-lt-a" />
 
-        {/* ── Neon ring circles (outline + glow) ───────────────────── */}
-        <circle cx="90"   cy="278"  r="56"  fill="none" stroke="#7C3AED" strokeWidth="2"   filter="url(#glowPurple)"     className="bg-r1" />
-        <circle cx="1238" cy="428"  r="140" fill="none" stroke="#7C3AED" strokeWidth="2"   filter="url(#glowBlueStrong)" className="bg-r2" />
-        <circle cx="1198" cy="792"  r="43"  fill="none" stroke="#7C3AED" strokeWidth="1.5" filter="url(#glowPurple)"     className="bg-r3" />
+        {/* Line B: left cluster, vertical sweep */}
+        <line x1="310" y1="80" x2="230" y2="400"
+          stroke="#2563EB" strokeWidth="2.5" strokeLinecap="round"
+          filter="url(#glowBlue)" className="bg-lt-b" />
 
-        {/* ── Dot grid (top-right) ─────────────────────────────────── */}
+        {/* Line C: bottom-left, short diagonal sweep */}
+        <line x1="40"  y1="620" x2="130" y2="720"
+          stroke="#3B82F6" strokeWidth="2" strokeLinecap="round"
+          filter="url(#glowBlue)" className="bg-lt-c" />
+
+        {/* Line D: right side, longer travel */}
+        <line x1="1110" y1="210" x2="1270" y2="520"
+          stroke="#3B82F6" strokeWidth="2.5" strokeLinecap="round"
+          filter="url(#glowBlue)" className="bg-lt-d" />
+
+        {/* Line E: left, purple/indigo sweep */}
+        <line x1="120" y1="200" x2="310" y2="540"
+          stroke="#6366F1" strokeWidth="2.5" strokeLinecap="round"
+          filter="url(#glowPurple)" className="bg-lt-e" />
+
+        {/* Dot grid (top-right) */}
         {Array.from({ length: 12 }).map((_, i) => (
-          <rect
-            key={i}
-            x={1088 + i * 20}
-            y={44}
-            width={7}
-            height={7}
-            rx={1}
-            fill="#2563EB"
-            className="bg-dots"
-          />
+          <rect key={i} x={1088 + i * 20} y={44} width={7} height={7} rx={1}
+            fill="#2563EB" className="bg-dots" />
         ))}
 
-        {/* ── Corner rectangle accent ──────────────────────────────── */}
+        {/* Corner rectangle accent */}
         <rect x="1318" y="0" width="122" height="148" fill="#5B21B6" opacity={0.80} />
       </svg>
     </div>
