@@ -1085,33 +1085,26 @@ export default function LandingPage() {
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ type: 'spring', stiffness: 260, damping: 24 }}
-                className="rounded-3xl p-6 text-center w-full"
+                className="rounded-3xl p-8 text-center w-full"
                 style={{ background: isDark ? 'rgba(0,212,255,0.07)' : 'rgba(124,58,237,0.06)', border: '1px solid var(--c1)' }}
               >
                 <motion.div
                   animate={{ rotate: [0, -8, 8, -6, 6, 0] }}
                   transition={{ duration: 0.5, delay: 0.2 }}
-                  className="text-5xl mb-4"
+                  className="text-6xl mb-5"
                 >🎉</motion.div>
-                <p className="text-xs font-bold uppercase tracking-[0.2em] mb-1" style={{ color: 'var(--c1)' }}>
+                <p className="text-xs font-bold uppercase tracking-[0.2em] mb-2" style={{ color: 'var(--c1)' }}>
                   {lang === 'uz' ? "Siz yutdingiz! Va nihoyat..." : lang === 'ru' ? "Вы победили! И наконец..." : "You won! And finally..."}
                 </p>
-                <h3 className="text-xl font-black mb-2" style={{ color: 'var(--text-base)' }}>
+                <h3 className="text-2xl font-black mb-3" style={{ color: 'var(--text-base)' }}>
                   {t.steps[3]?.title}
                 </h3>
-                <p className="text-sm leading-relaxed mb-5" style={{ color: 'var(--text-muted)' }}>
+                <p className="text-sm leading-relaxed mb-6" style={{ color: 'var(--text-muted)' }}>
                   {t.steps[3]?.desc}
                 </p>
                 <button
-                  onClick={() => { setTttBoard(Array(9).fill(null)); setTttOCount(0); setTttWon(false); setTttPopup(null) }}
-                  className="text-xs font-bold px-5 py-2.5 rounded-full mr-3"
-                  style={{ background: 'var(--border)', color: 'var(--text-muted)' }}
-                >
-                  {lang === 'uz' ? "Qayta o'ynash" : lang === 'ru' ? "Сыграть снова" : "Play again"}
-                </button>
-                <button
                   onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })}
-                  className="text-xs font-bold px-5 py-2.5 rounded-full"
+                  className="text-sm font-bold px-8 py-3 rounded-full"
                   style={{ background: 'var(--c1)', color: isDark ? '#001828' : '#fff' }}
                 >
                   {lang === 'uz' ? "Tariflarni ko'rish →" : lang === 'ru' ? "Смотреть тарифы →" : "See pricing →"}
