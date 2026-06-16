@@ -437,8 +437,8 @@ export default function LandingPage() {
     return () => document.removeEventListener('mousedown', h)
   }, [])
 
-  const howRef = useRef(null)
-  const howInView = useInView(howRef, { once: true, amount: 0.75 })
+  const howWrapperRef = useRef<HTMLDivElement>(null)
+  const [howStep, setHowStep] = useState(1)
   const pricingRef = useRef(null)
   const pricingInView = useInView(pricingRef, { once: true, amount: 0.25 })
   const ctaRef = useRef(null)
@@ -447,18 +447,19 @@ export default function LandingPage() {
   const langs: Lang[] = ['uz', 'ru', 'en']
   const card = isDark ? 'var(--bg-card)' : '#ffffff'
 
-  const [stepPopup, setStepPopup] = useState<number | null>(null)
-  const stepPopupShown = useRef(false)
+  const stepAccents = ['#00d4ff', '#7c3aed', '#ff2d9b', '#f59e0b']
+
   useEffect(() => {
-    if (howInView && !stepPopupShown.current) {
-      stepPopupShown.current = true
-      setTimeout(() => setStepPopup(0), 900)
+    const onScroll = () => {
+      const el = howWrapperRef.current
+      if (!el) return
+      const scrolledIn = Math.max(0, -el.getBoundingClientRect().top)
+      const step = Math.min(4, Math.max(1, Math.floor(scrolledIn / window.innerHeight) + 1))
+      setHowStep(step)
     }
-  }, [howInView])
-  useEffect(() => {
-    document.body.style.overflow = stepPopup !== null ? 'hidden' : ''
-    return () => { document.body.style.overflow = '' }
-  }, [stepPopup])
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
 
   const [ctaPhase, setCtaPhase] = useState<0 | 1>(0)
   const ctaStarted = useRef(false)
@@ -476,11 +477,6 @@ export default function LandingPage() {
     return () => { if (ctaTimerRef.current) clearTimeout(ctaTimerRef.current) }
   }, [ctaInView])
 
-  const stepLabels = {
-    gotIt: { uz: 'Tushundim', ru: 'Понятно', en: 'Got it' },
-    letsGo: { uz: 'Kettik →', ru: 'Начнём →', en: "Let's go →" },
-    stepOf: { uz: '/4 qadam', ru: '/4 шага', en: ' of 4' },
-  }
   const ctaTexts = {
     question: {
       uz: 'Biz bilan savdolaringizni oshirmoqchimisiz?',
@@ -914,37 +910,156 @@ export default function LandingPage() {
       />
 
       {/* ── HOW IT WORKS ─────────────────────────────────────────────────────── */}
-      <section id="how" ref={howRef} className="py-24 px-6 border-t" style={{ borderColor: 'var(--border)', background: isDark ? 'rgba(255,255,255,0.015)' : 'rgba(0,0,0,0.015)' }}>
-        <div className="max-w-5xl mx-auto">
-          <motion.div initial={{ opacity: 0, y: 16 }} animate={howInView ? { opacity: 1, y: 0 } : {}}
-            className="mb-16">
-            <p className="text-xs font-bold uppercase tracking-[0.18em] mb-2" style={{ color: 'var(--c2)' }}>{t.howBadge}</p>
-            <h2 className="text-2xl sm:text-3xl font-black" style={{ color: 'var(--text-base)' }}>
-              {t.howTitle1} <span className="grad-text">{t.howTitle2}</span>
-            </h2>
-          </motion.div>
+      {/* 500vh wrapper: sticky inner pins for 400vh of scroll = 4 steps × 100vh */}
+      <div id="how" ref={howWrapperRef} style={{ height: '500vh', position: 'relative' }}>
+        <section className="sticky top-0 overflow-hidden" style={{ height: '100svh', background: '#07070f' }}>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-px" style={{ background: 'var(--border)' }}>
-            {t.steps.map((s, i) => (
-              <motion.div key={s.title}
-                initial={{ opacity: 0, y: 30 }}
-                animate={howInView ? { opacity: 1, y: 0 } : {}}
-                transition={{ delay: i * 0.1, duration: 0.45, ease: 'easeOut' }}
-                className="p-8 flex flex-col gap-4"
-                style={{ background: 'var(--bg-base)' }}
-              >
-                <span className="text-5xl font-black" style={{ color: 'var(--text-muted)', lineHeight: 1 }}>
-                  0{i + 1}
-                </span>
-                <div>
-                  <h3 className="font-bold text-sm mb-2" style={{ color: 'var(--text-base)' }}>{s.title}</h3>
-                  <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>{s.desc}</p>
-                </div>
-              </motion.div>
-            ))}
+          {/* Ambient glow shifts color with step */}
+          <motion.div
+            className="absolute inset-0 pointer-events-none"
+            animate={{ opacity: 1 }}
+            style={{
+              background: `radial-gradient(ellipse 70% 55% at 50% 65%, ${stepAccents[howStep - 1]}14, transparent)`,
+              transition: 'background 0.9s ease',
+            }}
+          />
+
+          {/* Section header */}
+          <div className="absolute top-10 left-0 right-0 text-center z-10 px-6">
+            <motion.p
+              animate={{ color: stepAccents[howStep - 1] }}
+              transition={{ duration: 0.6 }}
+              className="text-[10px] font-bold uppercase tracking-[0.22em] mb-2"
+            >
+              {t.howBadge}
+            </motion.p>
+            <h2 className="text-xl sm:text-2xl font-black text-white">
+              {t.howTitle1} <motion.span animate={{ color: stepAccents[howStep - 1] }} transition={{ duration: 0.6 }}>{t.howTitle2}</motion.span>
+            </h2>
           </div>
-        </div>
-      </section>
+
+          {/* Orbit + center */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="relative" style={{ width: 440, height: 440 }}>
+
+              {/* Faint orbit ring */}
+              <div className="absolute rounded-full pointer-events-none"
+                style={{ inset: 20, border: '1px solid rgba(255,255,255,0.05)', borderRadius: '50%' }} />
+
+              {/* Rotating ring carrying the 4 circles */}
+              <motion.div
+                className="absolute"
+                style={{ top: '50%', left: '50%', width: 0, height: 0 }}
+                animate={{ rotate: 360 }}
+                transition={{ duration: 22, repeat: Infinity, ease: 'linear' }}
+              >
+                {t.steps.map((_, i) => {
+                  const a = (i * 90 - 90) * (Math.PI / 180)
+                  const r = 185
+                  const px = Math.cos(a) * r
+                  const py = Math.sin(a) * r
+                  const isActive = howStep === i + 1
+                  return (
+                    <motion.div
+                      key={i}
+                      style={{ position: 'absolute', left: px, top: py, marginLeft: -30, marginTop: -30 }}
+                      animate={{ rotate: -360 }}
+                      transition={{ duration: 22, repeat: Infinity, ease: 'linear' }}
+                    >
+                      <motion.div
+                        animate={{
+                          scale: isActive ? 1.35 : 0.75,
+                          opacity: isActive ? 1 : 0.18,
+                        }}
+                        transition={{ type: 'spring', stiffness: 180, damping: 18 }}
+                        className="w-[60px] h-[60px] rounded-full flex items-center justify-center text-sm font-black"
+                        style={{
+                          background: isActive
+                            ? `radial-gradient(circle at 38% 38%, ${stepAccents[i]}ee, ${stepAccents[i]}88)`
+                            : 'rgba(255,255,255,0.05)',
+                          border: `1.5px solid ${isActive ? stepAccents[i] : 'rgba(255,255,255,0.1)'}`,
+                          color: isActive ? (i === 0 ? '#001828' : '#fff') : 'rgba(255,255,255,0.3)',
+                          boxShadow: isActive ? `0 0 32px ${stepAccents[i]}55, 0 0 12px ${stepAccents[i]}22` : 'none',
+                        }}
+                      >
+                        {String(i + 1).padStart(2, '0')}
+                      </motion.div>
+                    </motion.div>
+                  )
+                })}
+              </motion.div>
+
+              {/* Center: step content */}
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={howStep}
+                    initial={{ opacity: 0, scale: 0.85, y: 18 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 1.08, y: -14 }}
+                    transition={{ type: 'spring', stiffness: 300, damping: 26 }}
+                    className="text-center px-8 max-w-[240px]"
+                  >
+                    <motion.p
+                      className="text-[9px] font-black uppercase tracking-[0.28em] mb-3"
+                      animate={{ color: stepAccents[howStep - 1] }}
+                      transition={{ duration: 0.4 }}
+                    >
+                      {String(howStep).padStart(2, '0')} / 04
+                    </motion.p>
+                    <h3 className="text-lg font-black mb-2.5 text-white leading-snug">
+                      {t.steps[howStep - 1]?.title}
+                    </h3>
+                    <p className="text-xs leading-relaxed" style={{ color: 'rgba(255,255,255,0.5)' }}>
+                      {t.steps[howStep - 1]?.desc}
+                    </p>
+                  </motion.div>
+                </AnimatePresence>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom: progress pills + hint */}
+          <div className="absolute bottom-10 left-0 right-0 flex flex-col items-center gap-3">
+            <div className="flex gap-2 items-center">
+              {[1, 2, 3, 4].map(n => (
+                <motion.div
+                  key={n}
+                  animate={{ width: n === howStep ? 32 : 8, opacity: n <= howStep ? 1 : 0.18 }}
+                  transition={{ duration: 0.3 }}
+                  className="h-1.5 rounded-full"
+                  style={{ background: n <= howStep ? stepAccents[n - 1] : 'rgba(255,255,255,0.25)' }}
+                />
+              ))}
+            </div>
+            <AnimatePresence mode="wait">
+              {howStep === 4 ? (
+                <motion.p
+                  key="done"
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="text-[11px] flex items-center gap-1.5"
+                  style={{ color: 'rgba(255,255,255,0.35)' }}
+                >
+                  {lang === 'uz' ? 'Davom etish uchun aylantiring' : lang === 'ru' ? 'Прокрутите вниз' : 'Scroll to continue'}
+                  <motion.span animate={{ y: [0, 5, 0] }} transition={{ repeat: Infinity, duration: 1.1 }}>↓</motion.span>
+                </motion.p>
+              ) : (
+                <motion.p
+                  key="next"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="text-[11px]"
+                  style={{ color: 'rgba(255,255,255,0.22)' }}
+                >
+                  {lang === 'uz' ? 'Keyingi qadam ↓' : lang === 'ru' ? 'Следующий шаг ↓' : 'Next step ↓'}
+                </motion.p>
+              )}
+            </AnimatePresence>
+          </div>
+        </section>
+      </div>
 
       {/* ── PRICING ──────────────────────────────────────────────────────────── */}
       <section id="pricing" ref={pricingRef} className="py-24 px-6 border-t" style={{ borderColor: 'var(--border)' }}>
@@ -1190,71 +1305,6 @@ export default function LandingPage() {
         </div>
       </footer>
 
-      {/* ── STEP POPUP ───────────────────────────────────────────────────────── */}
-      <AnimatePresence>
-        {stepPopup !== null && stepPopup < t.steps.length && (
-          <motion.div
-            key="popup-backdrop"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center px-4"
-            style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)' }}
-            onClick={() => setStepPopup(null)}
-          >
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={stepPopup}
-                initial={{ scale: 0.88, y: 28, opacity: 0 }}
-                animate={{ scale: 1, y: 0, opacity: 1 }}
-                exit={{ scale: 0.88, y: -20, opacity: 0 }}
-                transition={{ type: 'spring', damping: 22, stiffness: 320 }}
-                onClick={e => e.stopPropagation()}
-                className="rounded-2xl p-8 max-w-sm w-full border shadow-2xl"
-                style={{ background: isDark ? '#0b1c34' : '#ffffff', borderColor: 'var(--border)' }}
-              >
-                <div className="flex items-center gap-1.5 mb-6">
-                  {t.steps.map((_: unknown, i: number) => (
-                    <motion.div
-                      key={i}
-                      className="h-0.5 rounded-full flex-1"
-                      animate={{ background: i <= stepPopup ? 'var(--c1)' : 'var(--border)' }}
-                      transition={{ duration: 0.3 }}
-                    />
-                  ))}
-                </div>
-                <p className="text-xs font-bold uppercase tracking-[0.15em] mb-3" style={{ color: 'var(--c1)' }}>
-                  {stepPopup + 1}{stepLabels.stepOf[lang]}
-                </p>
-                <h3 className="font-black text-xl mb-3" style={{ color: 'var(--text-base)' }}>
-                  {t.steps[stepPopup].title}
-                </h3>
-                <p className="text-sm leading-relaxed mb-7" style={{ color: 'var(--text-muted)' }}>
-                  {t.steps[stepPopup].desc}
-                </p>
-                <div className="flex gap-3">
-                  {stepPopup > 0 && (
-                    <button
-                      onClick={() => setStepPopup(stepPopup - 1)}
-                      className="flex-1 py-3 rounded-xl font-semibold text-sm border transition-colors"
-                      style={{ borderColor: 'var(--border2)', color: 'var(--text-muted)' }}
-                    >
-                      ←
-                    </button>
-                  )}
-                  <button
-                    onClick={() => setStepPopup(stepPopup < t.steps.length - 1 ? stepPopup + 1 : null)}
-                    className="flex-[3] py-3 rounded-xl font-bold text-sm text-white"
-                    style={{ background: 'linear-gradient(135deg, var(--c1), var(--c2))' }}
-                  >
-                    {stepPopup < t.steps.length - 1 ? `${stepLabels.gotIt[lang]} →` : stepLabels.letsGo[lang]}
-                  </button>
-                </div>
-              </motion.div>
-            </AnimatePresence>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   )
 }
