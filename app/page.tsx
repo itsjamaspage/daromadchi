@@ -461,6 +461,31 @@ export default function LandingPage() {
     return () => clearTimeout(timer)
   }, [tttPopup, tttWon])
 
+  // Scroll-lock: prevent scrolling past the How It Works section until game is won
+  useEffect(() => {
+    if (tttWon) return
+    const onWheel = (e: WheelEvent) => {
+      const section = document.getElementById('how')
+      if (!section) return
+      const rect = section.getBoundingClientRect()
+      const inView = rect.top < window.innerHeight * 0.5 && rect.bottom > window.innerHeight * 0.5
+      if (inView && e.deltaY > 0) e.preventDefault()
+    }
+    const onTouch = (e: TouchEvent) => {
+      const section = document.getElementById('how')
+      if (!section) return
+      const rect = section.getBoundingClientRect()
+      const inView = rect.top < window.innerHeight * 0.5 && rect.bottom > window.innerHeight * 0.5
+      if (inView) e.preventDefault()
+    }
+    window.addEventListener('wheel', onWheel, { passive: false })
+    window.addEventListener('touchmove', onTouch, { passive: false })
+    return () => {
+      window.removeEventListener('wheel', onWheel)
+      window.removeEventListener('touchmove', onTouch)
+    }
+  }, [tttWon])
+
   const handleTttClick = (idx: number) => {
     if (tttBoard[idx] || tttWon || tttXBusy || tttOCount >= 3) return
     const newBoard = [...tttBoard]
@@ -979,31 +1004,48 @@ export default function LandingPage() {
               )}
             </div>
 
-            {/* Rule popup */}
+            {/* Rule popup — fixed centered overlay */}
             <AnimatePresence>
               {tttPopup !== null && !tttWon && (
                 <motion.div
-                  key={tttPopup}
-                  initial={{ opacity: 0, y: -12, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -8, scale: 0.96 }}
-                  transition={{ type: 'spring', stiffness: 300, damping: 26 }}
-                  className="mb-6 rounded-2xl p-5 flex items-start gap-4"
-                  style={{ background: isDark ? 'rgba(0,212,255,0.07)' : 'rgba(124,58,237,0.07)', border: '1px solid var(--border)' }}
+                  key={`backdrop-${tttPopup}`}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="fixed inset-0 z-50 flex items-center justify-center px-6"
+                  style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(4px)' }}
+                  onClick={() => setTttPopup(null)}
                 >
-                  <div className="flex-shrink-0 w-9 h-9 rounded-xl flex items-center justify-center text-xs font-black"
-                    style={{ background: 'var(--c1)', color: isDark ? '#001828' : '#fff' }}>
-                    {String(tttPopup).padStart(2,'0')}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-bold text-sm mb-0.5" style={{ color: 'var(--text-base)' }}>{t.steps[tttPopup-1]?.title}</h3>
-                    <p className="text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>{t.steps[tttPopup-1]?.desc}</p>
-                  </div>
-                  <button onClick={() => setTttPopup(null)}
-                    className="flex-shrink-0 text-xs font-bold px-3 py-1.5 rounded-lg cursor-pointer"
-                    style={{ background: 'var(--c1)', color: isDark ? '#001828' : '#fff' }}>
-                    {lang === 'uz' ? "Tushunarli" : lang === 'ru' ? "Понятно" : "Got it"}
-                  </button>
+                  <motion.div
+                    key={`card-${tttPopup}`}
+                    initial={{ opacity: 0, scale: 0.88, y: 20 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.92, y: 12 }}
+                    transition={{ type: 'spring', stiffness: 320, damping: 26 }}
+                    onClick={e => e.stopPropagation()}
+                    className="w-full max-w-sm rounded-3xl p-7 shadow-2xl"
+                    style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}
+                  >
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-black flex-shrink-0"
+                        style={{ background: 'var(--c1)', color: isDark ? '#001828' : '#fff' }}>
+                        {String(tttPopup).padStart(2,'0')}
+                      </div>
+                      <h3 className="font-black text-lg leading-tight" style={{ color: 'var(--text-base)' }}>
+                        {t.steps[tttPopup-1]?.title}
+                      </h3>
+                    </div>
+                    <p className="text-sm leading-relaxed mb-6" style={{ color: 'var(--text-muted)' }}>
+                      {t.steps[tttPopup-1]?.desc}
+                    </p>
+                    <button
+                      onClick={() => setTttPopup(null)}
+                      className="w-full py-3 rounded-xl font-bold text-sm cursor-pointer"
+                      style={{ background: 'var(--c1)', color: isDark ? '#001828' : '#fff' }}
+                    >
+                      {lang === 'uz' ? "Tushunarli 👍" : lang === 'ru' ? "Понятно 👍" : "Got it 👍"}
+                    </button>
+                  </motion.div>
                 </motion.div>
               )}
             </AnimatePresence>
