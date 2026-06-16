@@ -808,11 +808,11 @@ export default function LandingPage() {
             style={{ animationDuration: '48s' }}>
             {Array(4).fill(null).flatMap((_, gi) => [
               <span key={`${gi}a`} className="text-2xl font-black tracking-tight"
-                style={{ color: '#ff5c00' }}>Uzum Market</span>,
+                style={{ color: '#7C3AED' }}>Uzum Market</span>,
               <span key={`${gi}s1`} className="text-[10px] font-bold uppercase tracking-[0.2em]"
                 style={{ color: 'var(--text-muted)', opacity: 0.55 }}>{t.tickerItems[0]}</span>,
               <span key={`${gi}b`} className="text-2xl font-black tracking-tight"
-                style={{ color: '#cb11ab' }}>Wildberries</span>,
+                style={{ color: '#FF3C78' }}>Wildberries</span>,
               <span key={`${gi}s2`} className="text-[10px] font-bold uppercase tracking-[0.2em]"
                 style={{ color: 'var(--text-muted)', opacity: 0.55 }}>{t.tickerItems[1]}</span>,
               <span key={`${gi}c`} className="text-2xl font-black tracking-tight"
