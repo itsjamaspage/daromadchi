@@ -375,24 +375,30 @@ h1, h2, h3, h4, h5, h6 {
 .pbl-c { animation: pblUp   23s linear infinite; animation-delay:-8s;  transform-box:fill-box; transform-origin:center; }
 .pbl-d { animation: pblUp   29s linear infinite; animation-delay:-19s; transform-box:fill-box; transform-origin:center; }
 
-/* ── Circle pairs: RIGHT ZONE (cx=1080, bounce ±330px → x:750–1410)
-   alternate-reverse: both start at their extremes (750 and 1410),
-   converge at cx=1080 (midpoint / "collision"), then bounce back.
-   ease-in-out: decelerate on approach, accelerate after collision. */
-@keyframes pbcGoLeft  { 0% { transform: translateX(0); } 100% { transform: translateX(-330px); } }
-@keyframes pbcGoRight { 0% { transform: translateX(0); } 100% { transform: translateX( 330px); } }
+/* ── Circle pairs: RIGHT ZONE, edge-touch collision at x=1080 ───────
+   Each circle starts AT ITS WALL (A at left wall x=720, B at right
+   wall x=1440) and travels until its edge reaches x=1080. At that
+   moment both circles touch edge-to-edge — a real collision point —
+   then spring back to their walls. animate: alternate (not reverse)
+   so 0% = wall position, 100% = collision position.
+   Travel = 360 - 2×r  for each circle.                            */
 
-/* Pair 1 (Y=200) – 12 s per full cycle */
-.pbc-1a { animation: pbcGoLeft  12s ease-in-out infinite alternate-reverse; transform-box:fill-box; transform-origin:center; }
-.pbc-1b { animation: pbcGoRight 12s ease-in-out infinite alternate-reverse; transform-box:fill-box; transform-origin:center; }
+/* Pair 1 (r=55 left / r=35 right) → travel +250 / -290 px */
+@keyframes pbc1a { 0% { transform:translateX(0); } 100% { transform:translateX( 250px); } }
+@keyframes pbc1b { 0% { transform:translateX(0); } 100% { transform:translateX(-290px); } }
+/* Pair 2 (r=70 left / r=42 right) → travel +220 / -276 px */
+@keyframes pbc2a { 0% { transform:translateX(0); } 100% { transform:translateX( 220px); } }
+@keyframes pbc2b { 0% { transform:translateX(0); } 100% { transform:translateX(-276px); } }
+/* Pair 3 (r=46 left / r=62 right) → travel +268 / -236 px */
+@keyframes pbc3a { 0% { transform:translateX(0); } 100% { transform:translateX( 268px); } }
+@keyframes pbc3b { 0% { transform:translateX(0); } 100% { transform:translateX(-236px); } }
 
-/* Pair 2 (Y=460) – 16 s per full cycle */
-.pbc-2a { animation: pbcGoLeft  16s ease-in-out infinite alternate-reverse; transform-box:fill-box; transform-origin:center; }
-.pbc-2b { animation: pbcGoRight 16s ease-in-out infinite alternate-reverse; transform-box:fill-box; transform-origin:center; }
-
-/* Pair 3 (Y=720) – 10 s per full cycle */
-.pbc-3a { animation: pbcGoLeft  10s ease-in-out infinite alternate-reverse; transform-box:fill-box; transform-origin:center; }
-.pbc-3b { animation: pbcGoRight 10s ease-in-out infinite alternate-reverse; transform-box:fill-box; transform-origin:center; }
+.pbc-1a { animation: pbc1a 12s ease-in-out infinite alternate; transform-box:fill-box; transform-origin:center; }
+.pbc-1b { animation: pbc1b 12s ease-in-out infinite alternate; transform-box:fill-box; transform-origin:center; }
+.pbc-2a { animation: pbc2a 16s ease-in-out infinite alternate; transform-box:fill-box; transform-origin:center; }
+.pbc-2b { animation: pbc2b 16s ease-in-out infinite alternate; transform-box:fill-box; transform-origin:center; }
+.pbc-3a { animation: pbc3a 10s ease-in-out infinite alternate; transform-box:fill-box; transform-origin:center; }
+.pbc-3b { animation: pbc3b 10s ease-in-out infinite alternate; transform-box:fill-box; transform-origin:center; }
 
 /* ── Dot grids ──────────────────────────────────────────────────── */
 @keyframes bgDots { 0%,100% { opacity:.65; } 50% { opacity:.2; } }

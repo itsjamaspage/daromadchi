@@ -55,17 +55,23 @@ export function PageBgDecor({ isDark }: Props) {
                 (1a at x=750, 1b at x=1410), converges to cx=1080,
                 bounces back — clean elastic-collision visual.        */}
 
-            {/* Pair 1 — Y=200, cyan r=55 + magenta r=35 */}
-            <circle cx="1080" cy="200" r="55" fill="none" stroke="#00D4FF" strokeWidth="2"   filter="url(#gCyan)" className="pbc-1a" />
-            <circle cx="1080" cy="200" r="35" fill="none" stroke="#FF2D9B" strokeWidth="2"   filter="url(#gMag)"  className="pbc-1b" />
+            {/* Pair 1 — Y=200
+                1a: cx=775 (left wall, r=55 left-edge at x=720) travels +250px → right-edge touches x=1080
+                1b: cx=1405 (right wall, r=35 right-edge at x=1440) travels -290px → left-edge touches x=1080 */}
+            <circle cx="775"  cy="200" r="55" fill="none" stroke="#00D4FF" strokeWidth="2"   filter="url(#gCyan)" className="pbc-1a" />
+            <circle cx="1405" cy="200" r="35" fill="none" stroke="#FF2D9B" strokeWidth="2"   filter="url(#gMag)"  className="pbc-1b" />
 
-            {/* Pair 2 — Y=460, blue r=70 + purple r=42 */}
-            <circle cx="1080" cy="460" r="70" fill="none" stroke="#3B82F6" strokeWidth="2"   filter="url(#gBlue)" className="pbc-2a" />
-            <circle cx="1080" cy="460" r="42" fill="none" stroke="#A855F7" strokeWidth="1.5" filter="url(#gPurp)" className="pbc-2b" />
+            {/* Pair 2 — Y=460
+                1a: cx=790 (r=70 left-edge at x=720) travels +220px → right-edge at x=1080
+                1b: cx=1398 (r=42 right-edge at x=1440) travels -276px → left-edge at x=1080 */}
+            <circle cx="790"  cy="460" r="70" fill="none" stroke="#3B82F6" strokeWidth="2"   filter="url(#gBlue)" className="pbc-2a" />
+            <circle cx="1398" cy="460" r="42" fill="none" stroke="#A855F7" strokeWidth="1.5" filter="url(#gPurp)" className="pbc-2b" />
 
-            {/* Pair 3 — Y=720, teal r=46 + magenta r=62 */}
-            <circle cx="1080" cy="720" r="46" fill="none" stroke="#00FFB3" strokeWidth="1.5" filter="url(#gTeal)" className="pbc-3a" />
-            <circle cx="1080" cy="720" r="62" fill="none" stroke="#FF2D9B" strokeWidth="2"   filter="url(#gMag)"  className="pbc-3b" />
+            {/* Pair 3 — Y=720
+                3a: cx=766 (r=46 left-edge at x=720) travels +268px → right-edge at x=1080
+                3b: cx=1378 (r=62 right-edge at x=1440) travels -236px → left-edge at x=1080 */}
+            <circle cx="766"  cy="720" r="46" fill="none" stroke="#00FFB3" strokeWidth="1.5" filter="url(#gTeal)" className="pbc-3a" />
+            <circle cx="1378" cy="720" r="62" fill="none" stroke="#FF2D9B" strokeWidth="2"   filter="url(#gMag)"  className="pbc-3b" />
 
             {/* Corner accent + dot grid (top-right) */}
             <rect x="1318" y="0" width="122" height="148" fill="#5B21B6" opacity={0.80} />
@@ -87,14 +93,14 @@ export function PageBgDecor({ isDark }: Props) {
             <line x1="490" y1="-10" x2="510" y2="300" stroke="#6366F1" strokeWidth="1.5" opacity={0.16} strokeLinecap="round" filter="url(#lgP)" className="pbl-d" />
 
             {/* ── Circle pairs: RIGHT ZONE, soft palette ──────────── */}
-            <circle cx="1080" cy="200" r="55" fill="none" stroke="#7C3AED" strokeWidth="1.5" opacity={0.28} filter="url(#lgP)" className="pbc-1a" />
-            <circle cx="1080" cy="200" r="35" fill="none" stroke="#DB2777" strokeWidth="1.5" opacity={0.24} filter="url(#lgP)" className="pbc-1b" />
+            <circle cx="775"  cy="200" r="55" fill="none" stroke="#7C3AED" strokeWidth="1.5" opacity={0.28} filter="url(#lgP)" className="pbc-1a" />
+            <circle cx="1405" cy="200" r="35" fill="none" stroke="#DB2777" strokeWidth="1.5" opacity={0.24} filter="url(#lgP)" className="pbc-1b" />
 
-            <circle cx="1080" cy="460" r="70" fill="none" stroke="#3B82F6" strokeWidth="1.5" opacity={0.22} filter="url(#lgB)" className="pbc-2a" />
-            <circle cx="1080" cy="460" r="42" fill="none" stroke="#8B5CF6" strokeWidth="1.5" opacity={0.26} filter="url(#lgP)" className="pbc-2b" />
+            <circle cx="790"  cy="460" r="70" fill="none" stroke="#3B82F6" strokeWidth="1.5" opacity={0.22} filter="url(#lgB)" className="pbc-2a" />
+            <circle cx="1398" cy="460" r="42" fill="none" stroke="#8B5CF6" strokeWidth="1.5" opacity={0.26} filter="url(#lgP)" className="pbc-2b" />
 
-            <circle cx="1080" cy="720" r="46" fill="none" stroke="#0D9488" strokeWidth="1.5" opacity={0.22} filter="url(#lgB)" className="pbc-3a" />
-            <circle cx="1080" cy="720" r="62" fill="none" stroke="#DB2777" strokeWidth="1.5" opacity={0.20} filter="url(#lgP)" className="pbc-3b" />
+            <circle cx="766"  cy="720" r="46" fill="none" stroke="#0D9488" strokeWidth="1.5" opacity={0.22} filter="url(#lgB)" className="pbc-3a" />
+            <circle cx="1378" cy="720" r="62" fill="none" stroke="#DB2777" strokeWidth="1.5" opacity={0.20} filter="url(#lgP)" className="pbc-3b" />
 
             {/* Corner accent + dot grid */}
             <rect x="1318" y="0" width="122" height="148" fill="#7C3AED" opacity={0.10} />

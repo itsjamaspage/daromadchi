@@ -704,7 +704,13 @@ export default function LandingPage() {
           </motion.div>
 
           {/* RIGHT: copy */}
-          <div className="flex flex-col gap-7 order-1 lg:order-2">
+          <div className="flex flex-col gap-7 order-1 lg:order-2 rounded-2xl px-6 py-8 lg:px-8"
+            style={{
+              background: isDark ? 'rgba(7,9,26,0.70)' : 'rgba(248,248,252,0.78)',
+              backdropFilter: 'blur(18px)',
+              WebkitBackdropFilter: 'blur(18px)',
+              border: isDark ? '1px solid rgba(255,255,255,0.05)' : '1px solid rgba(0,0,0,0.07)',
+            }}>
 
             {/* Marketplace chips — small, factual */}
             <motion.div
