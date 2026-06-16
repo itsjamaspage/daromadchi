@@ -428,6 +428,7 @@ export default function LandingPage() {
 
   const [menuOpen, setMenuOpen] = useState(false)
   const [langOpen, setLangOpen] = useState(false)
+  const [activePanel, setActivePanel] = useState(0)
   const langRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -747,7 +748,7 @@ export default function LandingPage() {
         <div className="hidden sm:flex flex-shrink-0 items-center px-8 border-r" style={{ borderColor: 'var(--border)' }}>
           <p className="text-[10px] font-bold uppercase tracking-[0.18em] leading-loose"
             style={{ color: 'var(--text-muted)', whiteSpace: 'pre-line', maxWidth: '110px' }}>
-            {lang === 'uz' ? 'Integratsiya\nqilingan\nbozorlar' : lang === 'ru' ? 'Подключённые\nмаркетплейсы' : 'Integrated\nMarketplaces'}
+            {lang === 'uz' ? 'Integratsiya\nqilingan\nbozorlar\nva funksiyalar' : lang === 'ru' ? 'Подключённые\nмаркетплейсы\nи функции' : 'Integrated\nMarketplaces\nand Features'}
           </p>
         </div>
 
@@ -782,23 +783,123 @@ export default function LandingPage() {
       <section className="px-6 py-20 border-b" style={{ background: isDark ? 'rgba(255,255,255,0.015)' : 'rgba(0,0,0,0.015)', borderColor: 'var(--border)' }}>
         <div className="max-w-5xl mx-auto">
           <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
-            className="mb-12">
+            className="mb-10">
             <p className="text-xs font-bold uppercase tracking-[0.18em] mb-2" style={{ color: 'var(--c1)' }}>{t.valuePropBadge}</p>
             <h2 className="text-2xl sm:text-3xl font-black" style={{ color: 'var(--text-base)' }}>{t.valuePropTitle}</h2>
           </motion.div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x" style={{ '--tw-divide-color': 'var(--border)' } as React.CSSProperties}>
-            {t.valueProps.map((c, i) => (
-              <motion.div key={c.title}
-                initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }} transition={{ delay: i * 0.1, duration: 0.45 }}
-                className="py-8 sm:px-8 first:pt-0 sm:first:pt-8 first:pb-8 sm:first:pl-0 last:pb-0 sm:last:pb-8 sm:last:pr-0"
-              >
-                <p className="text-4xl font-black mb-4" style={{ color: 'var(--text-muted)' }}>0{i + 1}</p>
-                <h3 className="font-bold text-base mb-2" style={{ color: 'var(--text-base)' }}>{c.title}</h3>
-                <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>{c.desc}</p>
-              </motion.div>
-            ))}
-          </div>
+
+          {/* Interactive accordion panels */}
+          {(() => {
+            const panelMeta = [
+              {
+                accentBg: 'var(--c1)',
+                textColor: isDark ? '#001a2c' : '#001520',
+                contentInit: { x: -60, opacity: 0 },
+                contentAnimate: { x: 0, opacity: 1 },
+                contentTransition: { type: 'spring' as const, stiffness: 300, damping: 28 },
+                contentExit: { x: -40, opacity: 0, transition: { duration: 0.18 } },
+              },
+              {
+                accentBg: '#7c3aed',
+                textColor: '#ffffff',
+                contentInit: { y: 50, scale: 0.84, opacity: 0 },
+                contentAnimate: { y: 0, scale: 1, opacity: 1 },
+                contentTransition: { type: 'spring' as const, stiffness: 320, damping: 24 },
+                contentExit: { y: 30, scale: 0.92, opacity: 0, transition: { duration: 0.16 } },
+              },
+              {
+                accentBg: 'var(--c2)',
+                textColor: '#ffffff',
+                contentInit: { rotate: 6, y: -30, opacity: 0 },
+                contentAnimate: { rotate: 0, y: 0, opacity: 1 },
+                contentTransition: { type: 'spring' as const, stiffness: 260, damping: 22 },
+                contentExit: { rotate: -4, y: -20, opacity: 0, transition: { duration: 0.18 } },
+              },
+            ]
+
+            return (
+              <div className="flex flex-col sm:flex-row gap-3" style={{ minHeight: 340 }}>
+                {t.valueProps.map((c, i) => {
+                  const meta = panelMeta[i]
+                  const isActive = activePanel === i
+                  return (
+                    <motion.div
+                      key={c.title}
+                      layout
+                      onClick={() => setActivePanel(i)}
+                      className="relative overflow-hidden rounded-3xl cursor-pointer select-none"
+                      animate={{ flex: isActive ? 3 : 0.85 }}
+                      transition={{ type: 'spring', stiffness: 220, damping: 30 }}
+                      style={{
+                        background: isActive ? meta.accentBg : isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)',
+                        border: `1px solid ${isActive ? 'transparent' : 'var(--border)'}`,
+                        minWidth: 72,
+                        minHeight: 200,
+                      }}
+                    >
+                      {/* Active content */}
+                      <AnimatePresence mode="wait">
+                        {isActive && (
+                          <motion.div
+                            key={`active-${i}`}
+                            initial={meta.contentInit}
+                            animate={meta.contentAnimate}
+                            exit={meta.contentExit}
+                            transition={meta.contentTransition}
+                            className="absolute inset-0 p-8 flex flex-col justify-end"
+                          >
+                            <span className="absolute top-5 right-7 text-[7rem] font-black leading-none pointer-events-none select-none"
+                              style={{ color: meta.textColor, opacity: 0.08 }}>
+                              {String(i + 1).padStart(2, '0')}
+                            </span>
+                            <p className="text-[10px] font-bold uppercase tracking-[0.2em] mb-4"
+                              style={{ color: meta.textColor, opacity: 0.6 }}>
+                              {String(i + 1).padStart(2, '0')}
+                            </p>
+                            <h3 className="text-2xl font-black mb-2 leading-tight" style={{ color: meta.textColor }}>
+                              {c.title}
+                            </h3>
+                            <p className="text-sm font-semibold mb-3 leading-relaxed"
+                              style={{ color: meta.textColor, opacity: 0.85 }}>
+                              {c.desc}
+                            </p>
+                            <p className="text-sm leading-relaxed"
+                              style={{ color: meta.textColor, opacity: 0.65 }}>
+                              {(c as typeof c & { body?: string }).body}
+                            </p>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+
+                      {/* Inactive label */}
+                      <AnimatePresence>
+                        {!isActive && (
+                          <motion.div
+                            key={`inactive-${i}`}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="absolute inset-0 p-6 flex flex-col justify-between"
+                          >
+                            <p className="text-3xl font-black" style={{ color: 'var(--text-muted)' }}>
+                              {String(i + 1).padStart(2, '0')}
+                            </p>
+                            <div>
+                              <h3 className="font-bold text-sm leading-snug mb-2" style={{ color: 'var(--text-base)' }}>
+                                {c.title}
+                              </h3>
+                              <span className="text-xs font-bold" style={{ color: 'var(--text-muted)' }}>+</span>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </motion.div>
+                  )
+                })}
+              </div>
+            )
+          })()}
         </div>
       </section>
 
