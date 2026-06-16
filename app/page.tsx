@@ -748,7 +748,7 @@ export default function LandingPage() {
                 viewport={{ once: true }} transition={{ delay: i * 0.1, duration: 0.45 }}
                 className="py-8 sm:px-8 first:pt-0 sm:first:pt-8 first:pb-8 sm:first:pl-0 last:pb-0 sm:last:pb-8 sm:last:pr-0"
               >
-                <p className="text-4xl font-black mb-4" style={{ color: 'var(--border)' }}>0{i + 1}</p>
+                <p className="text-4xl font-black mb-4" style={{ color: 'var(--text-muted)' }}>0{i + 1}</p>
                 <h3 className="font-bold text-base mb-2" style={{ color: 'var(--text-base)' }}>{c.title}</h3>
                 <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>{c.desc}</p>
               </motion.div>
@@ -787,7 +787,7 @@ export default function LandingPage() {
                 className="p-8 flex flex-col gap-4"
                 style={{ background: 'var(--bg-base)' }}
               >
-                <span className="text-5xl font-black" style={{ color: 'var(--border)', lineHeight: 1 }}>
+                <span className="text-5xl font-black" style={{ color: 'var(--text-muted)', lineHeight: 1 }}>
                   0{i + 1}
                 </span>
                 <div>
