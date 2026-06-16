@@ -437,8 +437,13 @@ export default function LandingPage() {
     return () => document.removeEventListener('mousedown', h)
   }, [])
 
-  const howWrapperRef = useRef<HTMLDivElement>(null)
-  const [howStep, setHowStep] = useState(1)
+  // Tic-tac-toe "How It Works" game state
+  const [tttBoard, setTttBoard] = useState<(null | 'O' | 'X')[]>(Array(9).fill(null))
+  const [tttOCount, setTttOCount] = useState(0)
+  const [tttPopup, setTttPopup] = useState<number | null>(null)
+  const [tttWon, setTttWon] = useState(false)
+  const [tttXBusy, setTttXBusy] = useState(false)
+
   const pricingRef = useRef(null)
   const pricingInView = useInView(pricingRef, { once: true, amount: 0.6 })
   const ctaRef = useRef(null)
@@ -448,17 +453,44 @@ export default function LandingPage() {
   const card = isDark ? 'var(--bg-card)' : '#ffffff'
 
 
+
+  // Auto-dismiss ttt rule popup after 2.5s
   useEffect(() => {
-    const onScroll = () => {
-      const el = howWrapperRef.current
-      if (!el) return
-      const scrolledIn = Math.max(0, -el.getBoundingClientRect().top)
-      const step = Math.min(4, Math.max(1, Math.floor(scrolledIn / window.innerHeight) + 1))
-      setHowStep(step)
+    if (tttPopup === null || tttWon) return
+    const timer = setTimeout(() => setTttPopup(null), 2500)
+    return () => clearTimeout(timer)
+  }, [tttPopup, tttWon])
+
+  const handleTttClick = (idx: number) => {
+    if (tttBoard[idx] || tttWon || tttXBusy || tttOCount >= 3) return
+    const newBoard = [...tttBoard]
+    newBoard[idx] = 'O'
+    const newCount = tttOCount + 1
+    setTttBoard(newBoard)
+    setTttOCount(newCount)
+    if (newCount === 3) {
+      setTttWon(true)
+      setTttPopup(3)
+      return
     }
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [])
+    setTttPopup(newCount)
+    setTttXBusy(true)
+    setTimeout(() => {
+      setTttBoard(prev => {
+        const oPositions = prev.map((v, i) => v === 'O' ? i : -1).filter(i => i >= 0)
+        const empty = prev.map((v, i) => v === null ? i : -1).filter(i => i >= 0)
+        const lines = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]]
+        const safe = empty.filter(cell =>
+          !lines.some(line => line.includes(cell) && oPositions.filter(o => line.includes(o)).length >= 1)
+        )
+        const pool = safe.length ? safe : empty
+        const pick = pool[Math.floor(Math.random() * pool.length)]
+        if (pick === undefined) return prev
+        const b = [...prev]; b[pick] = 'X'; return b
+      })
+      setTttXBusy(false)
+    }, 900)
+  }
 
   const [ctaPhase, setCtaPhase] = useState<0 | 1>(0)
   const ctaStarted = useRef(false)
@@ -931,138 +963,138 @@ export default function LandingPage() {
         subtitle={t.featuresSubtitle}
       />
 
-      {/* ── HOW IT WORKS ─────────────────────────────────────────────────────── */}
-      {/* 500vh wrapper = scroll lock: user must travel 400vh to see all 4 steps */}
-      <div id="how" ref={howWrapperRef} style={{ height: '500vh', position: 'relative' }}>
-        <section className="sticky top-0 overflow-hidden" style={{ height: '100svh', background: '#07070f' }}>
+      {/* ── HOW IT WORKS — tic-tac-toe tutorial ─────────────────────────────── */}
+      <section id="how" className="py-24 px-6 border-t" style={{ borderColor: 'var(--border)' }}>
+          <div className="max-w-xl mx-auto relative">
+            {/* Header */}
+            <div className="text-center mb-12">
+              <p className="text-xs font-bold uppercase tracking-[0.18em] mb-2" style={{ color: 'var(--c1)' }}>{t.howBadge}</p>
+              <h2 className="text-2xl sm:text-3xl font-black" style={{ color: 'var(--text-base)' }}>
+                {t.howTitle1} <span style={{ color: 'var(--c1)' }}>{t.howTitle2}</span>
+              </h2>
+              {!tttWon && (
+                <p className="text-sm mt-3" style={{ color: 'var(--text-muted)' }}>
+                  {lang === 'uz' ? "O qo'ying va qoidalarni oching 👇" : lang === 'ru' ? "Ставьте O и открывайте правила 👇" : "Place O's to reveal the steps 👇"}
+                </p>
+              )}
+            </div>
 
-          {/* Ambient radial glow that shifts with active step */}
-          {(() => {
-            const glowColors = ['#ff5c00','#cb11ab','#fc3f1d','#00d4ff']
-            return (
-              <div className="absolute inset-0 pointer-events-none transition-all duration-700"
-                style={{ background: `radial-gradient(ellipse 60% 50% at 50% 55%, ${glowColors[howStep-1]}18, transparent)` }} />
-            )
-          })()}
-
-          {/* Header */}
-          <div className="absolute top-0 left-0 right-0 text-center pt-20 z-10 pointer-events-none">
-            <p className="text-[10px] font-bold uppercase tracking-[0.22em] mb-2" style={{ color: '#00d4ff' }}>{t.howBadge}</p>
-            <h2 className="text-2xl sm:text-3xl font-black text-white">
-              {t.howTitle1} <span style={{ color: '#00d4ff' }}>{t.howTitle2}</span>
-            </h2>
-          </div>
-
-          {/* Faint orbit ring */}
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div style={{
-              width: 'min(72vw, 420px)', height: 'min(72vw, 420px)',
-              borderRadius: '50%', border: '1px dashed rgba(255,255,255,0.06)',
-            }} />
-          </div>
-
-          {/* 4 floating marketplace circles */}
-          {[
-            { step: 1, label: 'Uzum',        letter: 'U',  color: '#ff5c00', top: 'calc(50% - 200px)', left: 'calc(50% - 55px)', animClass: 'how-float-1' },
-            { step: 2, label: 'Wildberries', letter: 'WB', color: '#cb11ab', top: 'calc(50% - 55px)',  left: 'calc(50% + 145px)', animClass: 'how-float-2' },
-            { step: 3, label: 'Yandex',      letter: 'YM', color: '#fc3f1d', top: 'calc(50% + 90px)',  left: 'calc(50% - 55px)', animClass: 'how-float-3' },
-            { step: 4, label: 'Daromadchi',  letter: 'D',  color: '#00d4ff', top: 'calc(50% - 55px)',  left: 'calc(50% - 255px)', animClass: 'how-float-4' },
-          ].map(item => {
-            const isActive = howStep === item.step
-            const isDone   = howStep > item.step
-            return (
-              <div
-                key={item.step}
-                className={`absolute ${item.animClass}`}
-                style={{ top: item.top, left: item.left }}
-              >
+            {/* Rule popup */}
+            <AnimatePresence>
+              {tttPopup !== null && !tttWon && (
                 <motion.div
-                  className="flex flex-col items-center gap-2"
-                  animate={{
-                    opacity: isActive ? 1 : isDone ? 0.55 : 0.22,
-                    scale:   isActive ? 1.15 : 0.88,
-                  }}
-                  transition={{ type: 'spring', stiffness: 200, damping: 22 }}
+                  key={tttPopup}
+                  initial={{ opacity: 0, y: -12, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -8, scale: 0.96 }}
+                  transition={{ type: 'spring', stiffness: 300, damping: 26 }}
+                  className="mb-6 rounded-2xl p-5 flex items-start gap-4"
+                  style={{ background: isDark ? 'rgba(0,212,255,0.07)' : 'rgba(124,58,237,0.07)', border: '1px solid var(--border)' }}
                 >
-                  <div
-                    className="w-[100px] h-[100px] sm:w-[110px] sm:h-[110px] rounded-full flex items-center justify-center font-black text-xl"
+                  <div className="flex-shrink-0 w-9 h-9 rounded-xl flex items-center justify-center text-xs font-black"
+                    style={{ background: 'var(--c1)', color: isDark ? '#001828' : '#fff' }}>
+                    {String(tttPopup).padStart(2,'0')}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-bold text-sm mb-0.5" style={{ color: 'var(--text-base)' }}>{t.steps[tttPopup-1]?.title}</h3>
+                    <p className="text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>{t.steps[tttPopup-1]?.desc}</p>
+                  </div>
+                  <button onClick={() => setTttPopup(null)}
+                    className="flex-shrink-0 text-xs font-bold px-3 py-1.5 rounded-lg cursor-pointer"
+                    style={{ background: 'var(--c1)', color: isDark ? '#001828' : '#fff' }}>
+                    {lang === 'uz' ? "Tushunarli" : lang === 'ru' ? "Понятно" : "Got it"}
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Tic-tac-toe grid */}
+            {!tttWon ? (
+              <div className="grid grid-cols-3 gap-3 mb-6"
+                style={{ maxWidth: 360, margin: '0 auto 24px' }}>
+                {tttBoard.map((cell, idx) => (
+                  <motion.button
+                    key={idx}
+                    whileHover={!cell && !tttXBusy && tttOCount < 3 ? { scale: 1.04 } : {}}
+                    whileTap={!cell && !tttXBusy && tttOCount < 3 ? { scale: 0.96 } : {}}
+                    onClick={() => handleTttClick(idx)}
+                    className="aspect-square rounded-2xl flex items-center justify-center text-3xl font-black select-none"
                     style={{
-                      background: isActive
-                        ? `radial-gradient(circle at 38% 35%, ${item.color}ee, ${item.color}77)`
-                        : 'rgba(255,255,255,0.04)',
-                      border: `2px solid ${isActive ? item.color : 'rgba(255,255,255,0.07)'}`,
-                      color: isActive ? '#fff' : 'rgba(255,255,255,0.35)',
-                      boxShadow: isActive
-                        ? `0 0 40px ${item.color}55, 0 0 90px ${item.color}1a, inset 0 1px 0 rgba(255,255,255,0.18)`
-                        : isDone ? `0 0 12px ${item.color}22` : 'none',
+                      background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)',
+                      border: `2px solid ${cell === 'O' ? 'var(--c1)' : cell === 'X' ? 'var(--border)' : 'var(--border)'}`,
+                      cursor: cell || tttXBusy || tttOCount >= 3 ? 'default' : 'pointer',
+                      color: cell === 'O' ? 'var(--c1)' : 'var(--text-muted)',
+                      boxShadow: cell === 'O' ? `0 0 18px ${isDark ? 'rgba(0,212,255,0.25)' : 'rgba(124,58,237,0.2)'}` : 'none',
                     }}
                   >
-                    {isDone ? '✓' : item.letter}
-                  </div>
-                  <span className="text-[10px] font-bold uppercase tracking-widest whitespace-nowrap"
-                    style={{ color: isActive ? item.color : 'rgba(255,255,255,0.22)' }}>
-                    {item.label}
-                  </span>
-                </motion.div>
+                    <AnimatePresence>
+                      {cell && (
+                        <motion.span
+                          initial={{ scale: 0, rotate: -15 }}
+                          animate={{ scale: 1, rotate: 0 }}
+                          transition={{ type: 'spring', stiffness: 400, damping: 22 }}
+                        >
+                          {cell}
+                        </motion.span>
+                      )}
+                    </AnimatePresence>
+                  </motion.button>
+                ))}
               </div>
-            )
-          })}
-
-          {/* Center: current step info */}
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <AnimatePresence mode="wait">
+            ) : (
+              /* Win state with 4th rule */
               <motion.div
-                key={howStep}
-                initial={{ opacity: 0, scale: 0.88, y: 14 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 1.06, y: -12 }}
-                transition={{ type: 'spring', stiffness: 300, damping: 26 }}
-                className="text-center max-w-[220px] px-4"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ type: 'spring', stiffness: 260, damping: 24 }}
+                className="rounded-3xl p-8 text-center mb-6"
+                style={{ background: isDark ? 'rgba(0,212,255,0.07)' : 'rgba(124,58,237,0.06)', border: '1px solid var(--c1)' }}
               >
-                <p className="text-[9px] font-black uppercase tracking-[0.3em] mb-3" style={{ color: '#00d4ff' }}>
-                  {String(howStep).padStart(2, '0')} / 04
-                </p>
-                <h3 className="text-xl sm:text-2xl font-black text-white mb-2 leading-tight">
-                  {t.steps[howStep - 1]?.title}
-                </h3>
-                <p className="text-xs leading-relaxed" style={{ color: 'rgba(255,255,255,0.45)' }}>
-                  {t.steps[howStep - 1]?.desc}
-                </p>
-              </motion.div>
-            </AnimatePresence>
-          </div>
-
-          {/* Bottom: progress pills + hint */}
-          <div className="absolute bottom-8 left-0 right-0 flex flex-col items-center gap-2.5">
-            <div className="flex gap-2">
-              {[1, 2, 3, 4].map(n => (
                 <motion.div
-                  key={n}
-                  animate={{ width: n === howStep ? 28 : 7, opacity: n <= howStep ? 1 : 0.2 }}
-                  transition={{ duration: 0.3 }}
-                  className="h-1.5 rounded-full"
-                  style={{ background: n <= howStep ? '#00d4ff' : 'rgba(255,255,255,0.2)' }}
-                />
-              ))}
-            </div>
-            <AnimatePresence mode="wait">
-              <motion.p
-                key={howStep === 4 ? 'done' : 'next'}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.25 }}
-                className="text-[10px] font-medium"
-                style={{ color: 'rgba(255,255,255,0.28)' }}
-              >
-                {howStep < 4
-                  ? (lang === 'uz' ? 'Keyingi qadam uchun pastga aylantiring ↓' : lang === 'ru' ? 'Прокрутите вниз для следующего шага ↓' : 'Scroll down for next step ↓')
-                  : (lang === 'uz' ? 'Davom etish uchun aylantiring ↓' : lang === 'ru' ? 'Прокрутите вниз, чтобы продолжить ↓' : 'Scroll to continue ↓')}
-              </motion.p>
-            </AnimatePresence>
+                  animate={{ rotate: [0, -8, 8, -6, 6, 0] }}
+                  transition={{ duration: 0.5, delay: 0.2 }}
+                  className="text-5xl mb-4"
+                >🎉</motion.div>
+                <p className="text-xs font-bold uppercase tracking-[0.2em] mb-1" style={{ color: 'var(--c1)' }}>
+                  {lang === 'uz' ? "Siz yutdingiz! Va nihoyat..." : lang === 'ru' ? "Вы победили! И наконец..." : "You won! And finally..."}
+                </p>
+                <h3 className="text-xl font-black mb-2" style={{ color: 'var(--text-base)' }}>
+                  {t.steps[3]?.title}
+                </h3>
+                <p className="text-sm leading-relaxed mb-5" style={{ color: 'var(--text-muted)' }}>
+                  {t.steps[3]?.desc}
+                </p>
+                <button
+                  onClick={() => { setTttBoard(Array(9).fill(null)); setTttOCount(0); setTttWon(false); setTttPopup(null) }}
+                  className="text-xs font-bold px-5 py-2.5 rounded-full mr-3"
+                  style={{ background: 'var(--border)', color: 'var(--text-muted)' }}
+                >
+                  {lang === 'uz' ? "Qayta o'ynash" : lang === 'ru' ? "Сыграть снова" : "Play again"}
+                </button>
+                <button
+                  onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })}
+                  className="text-xs font-bold px-5 py-2.5 rounded-full"
+                  style={{ background: 'var(--c1)', color: isDark ? '#001828' : '#fff' }}
+                >
+                  {lang === 'uz' ? "Tariflarni ko'rish →" : lang === 'ru' ? "Смотреть тарифы →" : "See pricing →"}
+                </button>
+              </motion.div>
+            )}
+
+            {/* Step counter dots */}
+            {!tttWon && (
+              <div className="flex justify-center gap-2 mt-2">
+                {[1,2,3,4].map(n => (
+                  <div key={n} className="rounded-full transition-all duration-300"
+                    style={{
+                      width: n <= tttOCount ? 24 : 8, height: 8,
+                      background: n <= tttOCount ? 'var(--c1)' : 'var(--border)',
+                    }} />
+                ))}
+              </div>
+            )}
           </div>
-        </section>
-      </div>
+      </section>
 
       {/* ── PRICING ──────────────────────────────────────────────────────────── */}
       <section id="pricing" ref={pricingRef} className="py-24 px-6 border-t" style={{ borderColor: 'var(--border)' }}>
