@@ -179,16 +179,19 @@ function FaqRow({ item }: { item: FaqItem }) {
 }
 
 export default function PricingPage() {
-  const pricingSectionRef                   = useRef<HTMLDivElement>(null)
+  const cardsGridRef                        = useRef<HTMLDivElement>(null)
+  const firedRef                            = useRef(false)
   const [hasAnimated,    setHasAnimated]    = useState(false)
   const [counts,         setCounts]         = useState([0, 0, 0])
 
   useEffect(() => {
-    const el = pricingSectionRef.current
+    const el = cardsGridRef.current
     if (!el) return
-    const obs = new IntersectionObserver(
-      ([entry]) => {
-        if (!entry.isIntersecting || hasAnimated) return
+
+    const startAnimation = () => {
+      if (firedRef.current) return
+      firedRef.current = true
+      setTimeout(() => {
         setHasAnimated(true)
         const duration = 1500
         const targets = plans.map(p => p.numericPrice)
@@ -200,12 +203,18 @@ export default function PricingPage() {
           if (t < 1) requestAnimationFrame(tick)
         }
         requestAnimationFrame(tick)
+      }, 400)
+    }
+
+    const obs = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) { obs.disconnect(); startAnimation() }
       },
-      { threshold: 0.15 },
+      { threshold: 0.2 },
     )
     obs.observe(el)
     return () => obs.disconnect()
-  }, [hasAnimated])
+  }, [])
 
   function fmtCount(n: number) {
     return new Intl.NumberFormat('uz-UZ').format(n)
@@ -215,11 +224,11 @@ export default function PricingPage() {
     <div className="min-h-screen overflow-x-hidden" style={{ background: 'var(--bg-base)', color: 'var(--text-base)' }}>
       <style>{`
         @keyframes drm-drop {
-          0%   { opacity: 0; transform: translateY(-110px) scale(0.93); }
-          52%  { opacity: 1; transform: translateY(16px) scale(1.01); }
-          68%  { transform: translateY(-10px) scale(1); }
-          82%  { transform: translateY(7px); }
-          92%  { transform: translateY(-4px); }
+          0%   { opacity: 0; transform: translateY(-140px) scale(0.9); }
+          50%  { opacity: 1; transform: translateY(18px) scale(1.02); }
+          65%  { transform: translateY(-12px) scale(1); }
+          80%  { transform: translateY(8px); }
+          90%  { transform: translateY(-5px); }
           100% { opacity: 1; transform: translateY(0); }
         }
       `}</style>
@@ -271,9 +280,9 @@ export default function PricingPage() {
       </section>
 
       {/* Pricing cards */}
-      <section ref={pricingSectionRef} className="py-4 pb-24 px-4 sm:px-6">
+      <section className="py-4 pb-24 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+          <div ref={cardsGridRef} className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
             {plans.map((plan, cardIdx) => {
               const Icon = plan.icon
               const isProplus = plan.key === 'proplus'
@@ -300,7 +309,7 @@ export default function PricingPage() {
                       : undefined,
                     opacity: hasAnimated ? undefined : 0,
                     animation: hasAnimated
-                      ? `drm-drop 0.8s cubic-bezier(0.22,0.61,0.36,1) ${cardIdx * 130}ms both`
+                      ? `drm-drop 1s cubic-bezier(0.22,0.61,0.36,1) ${cardIdx * 180}ms both`
                       : undefined,
                   }}
                 >
