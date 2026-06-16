@@ -2,11 +2,16 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
 export async function POST(req: NextRequest) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ ok: false }, { status: 401 })
+
   try {
     const { refCode, newUserId } = await req.json() as { refCode: string; newUserId: string }
     if (!refCode || !newUserId) return NextResponse.json({ ok: false })
 
-    const supabase = await createClient()
+    // Caller can only track their own referral
+    if (newUserId !== user.id) return NextResponse.json({ ok: false }, { status: 403 })
 
     // Find the referrer by their code
     const { data: settings } = await supabase
@@ -17,6 +22,9 @@ export async function POST(req: NextRequest) {
 
     if (!settings) return NextResponse.json({ ok: false, error: 'Code not found' })
 
+    // Prevent self-referral
+    if (settings.user_id === user.id) return NextResponse.json({ ok: false, error: 'Self-referral not allowed' })
+
     // Record the referral
     await supabase.from('referrals').insert({
       referrer_user_id: settings.user_id,
@@ -26,7 +34,6 @@ export async function POST(req: NextRequest) {
       reward_amount: 0,
     })
 
-    // Store which code the new user used (for chaining)
     await supabase.from('user_settings').upsert({
       user_id: newUserId,
       referred_by: refCode,

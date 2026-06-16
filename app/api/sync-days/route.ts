@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
 import { resyncDays } from '@/lib/db/sync-state'
 
-// POST /api/sync-days — trigger resync for specified dates
 export async function POST(req: NextRequest) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ ok: false }, { status: 401 })
+
   try {
     const { dates } = await req.json() as { dates: string[] }
     await resyncDays(dates ?? [])

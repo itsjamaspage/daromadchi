@@ -785,29 +785,22 @@ export default function LandingPage() {
 
           {/* Interactive accordion panels */}
           {(() => {
+            // Each panel gets a truly distinct RGB so inactive tints are clearly different
             const panelMeta = [
               {
                 accentBg: 'var(--c1)',
-                inactiveBg: isDark ? 'rgba(0,212,255,0.07)' : 'rgba(0,212,255,0.08)',
-                inactiveBorder: isDark ? 'rgba(0,212,255,0.18)' : 'rgba(0,180,220,0.22)',
-                hoverBg: isDark ? 'rgba(0,212,255,0.13)' : 'rgba(0,212,255,0.13)',
-                hoverBorder: isDark ? 'rgba(0,212,255,0.35)' : 'rgba(0,180,220,0.4)',
-                hoverScale: 1.0,
-                hoverY: -3,
-                textColor: isDark ? '#001a2c' : '#001520',
+                // dark: cyan #00d4ff · light: purple #7C3AED
+                rgb: isDark ? ([0,212,255] as [number,number,number]) : ([124,58,237] as [number,number,number]),
+                textColor: isDark ? '#001a2c' : '#ffffff',
                 contentInit: { x: -60, opacity: 0 },
                 contentAnimate: { x: 0, opacity: 1 },
                 contentTransition: { type: 'spring' as const, stiffness: 300, damping: 28 },
                 contentExit: { x: -40, opacity: 0, transition: { duration: 0.18 } },
               },
               {
-                accentBg: '#7c3aed',
-                inactiveBg: isDark ? 'rgba(124,58,237,0.08)' : 'rgba(124,58,237,0.07)',
-                inactiveBorder: isDark ? 'rgba(124,58,237,0.22)' : 'rgba(124,58,237,0.2)',
-                hoverBg: isDark ? 'rgba(124,58,237,0.16)' : 'rgba(124,58,237,0.13)',
-                hoverBorder: isDark ? 'rgba(124,58,237,0.45)' : 'rgba(124,58,237,0.4)',
-                hoverScale: 1.03,
-                hoverY: 0,
+                // Sky-blue — clearly distinct from cyan and pink
+                accentBg: '#0ea5e9',
+                rgb: [14,165,233] as [number,number,number],
                 textColor: '#ffffff',
                 contentInit: { y: 50, scale: 0.84, opacity: 0 },
                 contentAnimate: { y: 0, scale: 1, opacity: 1 },
@@ -816,19 +809,24 @@ export default function LandingPage() {
               },
               {
                 accentBg: 'var(--c2)',
-                inactiveBg: isDark ? 'rgba(255,45,155,0.07)' : 'rgba(255,45,155,0.06)',
-                inactiveBorder: isDark ? 'rgba(255,45,155,0.2)' : 'rgba(255,45,155,0.18)',
-                hoverBg: isDark ? 'rgba(255,45,155,0.13)' : 'rgba(255,45,155,0.11)',
-                hoverBorder: isDark ? 'rgba(255,45,155,0.42)' : 'rgba(255,45,155,0.38)',
-                hoverScale: 1.0,
-                hoverY: 3,
+                // dark: hot pink #ff2d9b · light: deep pink #DB2777
+                rgb: isDark ? ([255,45,155] as [number,number,number]) : ([219,39,119] as [number,number,number]),
                 textColor: '#ffffff',
                 contentInit: { rotate: 6, y: -30, opacity: 0 },
                 contentAnimate: { rotate: 0, y: 0, opacity: 1 },
                 contentTransition: { type: 'spring' as const, stiffness: 260, damping: 22 },
                 contentExit: { rotate: -4, y: -20, opacity: 0, transition: { duration: 0.18 } },
               },
-            ]
+            ].map(m => ({
+              ...m,
+              inactiveBg:     `rgba(${m.rgb.join(',')},${isDark ? 0.14 : 0.11})`,
+              inactiveBorder: `rgba(${m.rgb.join(',')},${isDark ? 0.32 : 0.26})`,
+              hoverBg:        `rgba(${m.rgb.join(',')},${isDark ? 0.22 : 0.18})`,
+              hoverBorder:    `rgba(${m.rgb.join(',')},${isDark ? 0.50 : 0.42})`,
+              numColor:       `rgba(${m.rgb.join(',')},0.75)`,
+              hoverScale: m.rgb[0] === 14 ? 1.03 : 1.0,
+              hoverY: m.rgb[0] === 14 ? 0 : m.rgb[0] === 0 || m.rgb[0] === 124 ? -3 : 3,
+            }))
 
             return (
               <div className="flex flex-col sm:flex-row gap-3" style={{ minHeight: 340 }}>
@@ -902,7 +900,7 @@ export default function LandingPage() {
                             transition={{ duration: 0.2 }}
                             className="absolute inset-0 p-6 flex flex-col justify-between"
                           >
-                            <p className="text-3xl font-black" style={{ color: 'var(--text-muted)' }}>
+                            <p className="text-3xl font-black" style={{ color: meta.numColor }}>
                               {String(i + 1).padStart(2, '0')}
                             </p>
                             <div>
