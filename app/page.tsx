@@ -239,7 +239,7 @@ function FeaturesScrollSection({
   const ActiveIcon = ICONS[activeStep]
 
   return (
-    <section id="features" ref={sectionRef} className="py-24 px-6" style={{ background: 'var(--bg-base)' }}>
+    <section id="features" ref={sectionRef} className="py-24 px-6">
       <div className="max-w-5xl mx-auto">
 
         <motion.div
@@ -568,7 +568,7 @@ export default function LandingPage() {
   }
 
   return (
-    <div className="min-h-screen" style={{ overflowX: 'clip', background: 'var(--bg-base)', color: 'var(--text-base)' }}>
+    <div className="min-h-screen" style={{ overflowX: 'clip', color: 'var(--text-base)' }}>
       <PageBgDecor isDark={isDark} />
 
       {/* ── NAVBAR ───────────────────────────────────────────────────────────── */}
@@ -1005,7 +1005,7 @@ export default function LandingPage() {
       {/* ── HOW IT WORKS — tic-tac-toe tutorial ─────────────────────────────── */}
       <div style={{ height: '100svh' }}>
       <section id="how" className="sticky top-0 flex flex-col items-center justify-center border-t overflow-hidden"
-        style={{ height: '100svh', borderColor: 'var(--border)', background: 'var(--bg-base)', paddingTop: 'calc(72px + 12px)' }}>
+        style={{ height: '100svh', borderColor: 'var(--border)', paddingTop: 'calc(72px + 12px)' }}>
           <div className="w-full max-w-lg px-4 flex flex-col items-center gap-4">
             {/* Header */}
             <div className="text-center">
@@ -1256,7 +1256,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── CTA ──────────────────────────────────────────────────────────────── */}
-      <section ref={ctaRef} className="relative py-32 px-6 border-t border-b" style={{ background: 'var(--bg-base)', borderColor: 'var(--border)' }}>
+      <section ref={ctaRef} className="relative py-32 px-6 border-t border-b" style={{ borderColor: 'var(--border)' }}>
         <div className="relative z-10 max-w-2xl mx-auto text-center flex flex-col items-center gap-8">
           <motion.div
             initial={{ opacity: 0, y: -10 }}
