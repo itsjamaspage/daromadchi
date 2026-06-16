@@ -8,11 +8,12 @@
     /\/catalog\/\d+$/.test(location.pathname)
   );
 
-  if (!IS_SELLER && !IS_PRODUCT) return;
   if (document.getElementById('drm-wb-widget') || document.getElementById('drm-wb-ue')) return;
 
   // ── PRODUCT PAGE ────────────────────────────────────────────────────────────
-  if (IS_PRODUCT) {
+  // Run for ALL buyer-side WB pages so the URL observer is always active.
+  // tryInit() is only called immediately when we start on a product URL.
+  if (!IS_SELLER) {
 
     (function injectCSS() {
       if (document.getElementById('drm-wb-style')) return;
@@ -36,6 +37,21 @@
         #drm-wb-ue * { box-sizing: border-box !important; font-family: inherit !important; }
         #drm-wb-ue input, #drm-wb-ue button, #drm-wb-ue a { all: revert; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; cursor: pointer; }
         #drm-wb-ue input { cursor: text; }
+        @keyframes drm-glow {
+          0%   { box-shadow: 0 0 14px 5px rgba(124,58,237,.8), 0 0 28px 8px rgba(124,58,237,.4); }
+          25%  { box-shadow: 0 0 14px 5px rgba(6,182,212,.8),  0 0 28px 8px rgba(6,182,212,.4); }
+          50%  { box-shadow: 0 0 14px 5px rgba(236,72,153,.8), 0 0 28px 8px rgba(236,72,153,.4); }
+          75%  { box-shadow: 0 0 14px 5px rgba(16,185,129,.8), 0 0 28px 8px rgba(16,185,129,.4); }
+          100% { box-shadow: 0 0 14px 5px rgba(124,58,237,.8), 0 0 28px 8px rgba(124,58,237,.4); }
+        }
+        @keyframes drm-pulse-bg {
+          0%   { background: #7c3aed; }
+          25%  { background: #06b6d4; }
+          50%  { background: #ec4899; }
+          75%  { background: #10b981; }
+          100% { background: #7c3aed; }
+        }
+        #drm-wb-toggle { animation: drm-glow 3s ease-in-out infinite, drm-pulse-bg 3s ease-in-out infinite !important; }
       `;
       (document.head || document.documentElement).appendChild(s);
     })();
@@ -301,7 +317,7 @@
       toggleBtn.id = 'drm-wb-toggle';
       toggleBtn.title = 'Daromadchi';
       toggleBtn.textContent = 'D';
-      toggleBtn.style.cssText = 'position:fixed!important;bottom:80px!important;right:16px!important;z-index:2147483647!important;width:40px!important;height:40px!important;border-radius:50%!important;background:#7c3aed!important;border:none!important;cursor:pointer!important;box-shadow:0 4px 20px rgba(124,58,237,.5)!important;font-size:16px!important;font-weight:900!important;color:#fff!important;font-family:-apple-system,sans-serif!important;display:flex!important;align-items:center!important;justify-content:center!important;';
+      toggleBtn.style.cssText = 'position:fixed!important;bottom:80px!important;right:16px!important;z-index:2147483647!important;width:56px!important;height:56px!important;border-radius:50%!important;border:none!important;cursor:pointer!important;font-size:20px!important;font-weight:900!important;color:#fff!important;font-family:-apple-system,sans-serif!important;display:flex!important;align-items:center!important;justify-content:center!important;transition:transform .15s ease!important;';
       toggleBtn.style.setProperty('display','none','important');
       document.body.appendChild(toggleBtn);
       toggleBtn.onclick = () => { wrap.style.display='block'; toggleBtn.style.setProperty('display','none','important'); };
@@ -461,7 +477,7 @@
       waitForWbPriceAndBuild();
     }
 
-    tryInit();
+    if (IS_PRODUCT) tryInit();
 
     let lastUrl=location.href;
     new MutationObserver(()=>{
