@@ -989,16 +989,18 @@ export default function LandingPage() {
       />
 
       {/* ── HOW IT WORKS — tic-tac-toe tutorial ─────────────────────────────── */}
-      <section id="how" className="py-24 px-6 border-t" style={{ borderColor: 'var(--border)' }}>
-          <div className="max-w-xl mx-auto relative">
+      <div style={{ height: '100svh' }}>
+      <section id="how" className="sticky top-0 flex flex-col items-center justify-center border-t overflow-hidden"
+        style={{ height: '100svh', borderColor: 'var(--border)', background: 'var(--bg-base)', paddingTop: 'calc(72px + 12px)' }}>
+          <div className="w-full max-w-md px-6 flex flex-col items-center gap-5">
             {/* Header */}
-            <div className="text-center mb-12">
-              <p className="text-xs font-bold uppercase tracking-[0.18em] mb-2" style={{ color: 'var(--c1)' }}>{t.howBadge}</p>
+            <div className="text-center">
+              <p className="text-xs font-bold uppercase tracking-[0.18em] mb-1" style={{ color: 'var(--c1)' }}>{t.howBadge}</p>
               <h2 className="text-2xl sm:text-3xl font-black" style={{ color: 'var(--text-base)' }}>
                 {t.howTitle1} <span style={{ color: 'var(--c1)' }}>{t.howTitle2}</span>
               </h2>
               {!tttWon && (
-                <p className="text-sm mt-3" style={{ color: 'var(--text-muted)' }}>
+                <p className="text-sm mt-1.5" style={{ color: 'var(--text-muted)' }}>
                   {lang === 'uz' ? "O qo'ying va qoidalarni oching 👇" : lang === 'ru' ? "Ставьте O и открывайте правила 👇" : "Place O's to reveal the steps 👇"}
                 </p>
               )}
@@ -1052,8 +1054,7 @@ export default function LandingPage() {
 
             {/* Tic-tac-toe grid */}
             {!tttWon ? (
-              <div className="grid grid-cols-3 gap-3 mb-6"
-                style={{ maxWidth: 360, margin: '0 auto 24px' }}>
+              <div className="grid grid-cols-3 gap-3 w-full" style={{ maxWidth: 340 }}>
                 {tttBoard.map((cell, idx) => (
                   <motion.button
                     key={idx}
@@ -1089,7 +1090,7 @@ export default function LandingPage() {
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ type: 'spring', stiffness: 260, damping: 24 }}
-                className="rounded-3xl p-8 text-center mb-6"
+                className="rounded-3xl p-6 text-center w-full"
                 style={{ background: isDark ? 'rgba(0,212,255,0.07)' : 'rgba(124,58,237,0.06)', border: '1px solid var(--c1)' }}
               >
                 <motion.div
@@ -1137,6 +1138,7 @@ export default function LandingPage() {
             )}
           </div>
       </section>
+      </div>
 
       {/* ── PRICING ──────────────────────────────────────────────────────────── */}
       <section id="pricing" ref={pricingRef} className="py-24 px-6 border-t" style={{ borderColor: 'var(--border)' }}>
