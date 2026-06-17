@@ -89,7 +89,7 @@ export async function syncFromYandex(
 
     const yandexOrders = await fetchAllYandexOrders(token, campaignId, fromDate)
 
-    const orderRows = yandexOrders.map(o => ({
+    const orderRows = yandexOrders.filter(o => o.createdAt || o.updatedAt).map(o => ({
       shop_id: shopId,
       order_id_external: String(o.id),
       marketplace: 'yandex_market' as const,
@@ -103,7 +103,7 @@ export async function syncFromYandex(
       marketplace_fee: o.commissionTotal ?? null,
       delivery_cost: o.deliveryTotal ?? null,
       items_count: o.items?.length ?? 1,
-      ordered_at: o.createdAt,
+      ordered_at: o.createdAt ?? o.updatedAt,
     }))
 
     // Upsert: inserts new orders AND updates status of existing ones

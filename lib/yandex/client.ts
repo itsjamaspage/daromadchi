@@ -74,8 +74,8 @@ export interface YandexOrderItem {
 export interface YandexOrder {
   id: number
   status: string // CANCELLED, DELIVERED, DELIVERY, PENDING, PROCESSING, RETURNED
-  createdAt: string
-  updatedAt: string
+  createdAt?: string
+  updatedAt?: string
   itemsTotal: number
   buyerTotal: number
   deliveryTotal: number
