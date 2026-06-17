@@ -8,7 +8,7 @@ import {
   BarChart2, Calculator, TrendingUp,
   Zap, ArrowRight, RefreshCw, AlertTriangle, DollarSign,
   Sparkles, Sun, Moon, Globe, X, Menu,
-  CheckCircle, Activity,
+  CheckCircle, Activity, ChevronRight,
 } from 'lucide-react'
 import { useTheme, useLang } from './providers'
 import { translations } from '@/lib/i18n'
@@ -45,12 +45,12 @@ function StatNum({ value, suffix }: { value: number; suffix: string }) {
 function DashboardMockup({ p }: { p: typeof translations.en.preview }) {
   const { theme } = useTheme()
   const isDark = theme === 'dark'
-  const bg = isDark ? '#071425' : '#ffffff'
-  const bg2 = isDark ? '#0b1c34' : '#f0f4ff'
-  const border = isDark ? 'rgba(0,210,255,0.14)' : 'rgba(100,100,200,0.18)'
-  const muted = isDark ? '#4a7a9b' : '#6b7a9b'
-  const c1 = isDark ? '#00d4ff' : '#7c3aed'
-  const c2 = isDark ? '#ff2d9b' : '#db2777'
+  const bg = isDark ? '#0F2035' : '#ffffff'
+  const bg2 = isDark ? '#132840' : '#f5f0ff'
+  const border = isDark ? 'rgba(14,165,233,0.14)' : 'rgba(124,58,237,0.14)'
+  const muted = isDark ? '#8EAFC8' : '#6b7a9b'
+  const c1 = isDark ? '#0EA5E9' : '#7c3aed'
+  const c2 = isDark ? '#8B5CF6' : '#db2777'
 
   const kpis = [
     { l: p.revenue, v: '124.5M', color: c1 },
@@ -90,7 +90,7 @@ function DashboardMockup({ p }: { p: typeof translations.en.preview }) {
               {[30,50,38,70,45,82,60,88,72,55,78,92,65,80].map((h, i) => (
                 <div key={i} className="flex-1 rounded-t" style={{
                   height: `${h}%`,
-                  background: isDark ? 'linear-gradient(to top,#00d4ffcc,#00d4ff22)' : 'linear-gradient(to top,#7c3aedcc,#7c3aed22)'
+                  background: isDark ? 'linear-gradient(to top,#0EA5E9cc,#0EA5E922)' : 'linear-gradient(to top,#7c3aedcc,#7c3aed22)'
                 }} />
               ))}
             </div>
@@ -99,7 +99,7 @@ function DashboardMockup({ p }: { p: typeof translations.en.preview }) {
             <p className="text-[10px] mb-3 font-medium" style={{ color: muted }}>{p.categories}</p>
             <div className="relative w-16 h-16 mx-auto">
               <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
-                <circle cx="18" cy="18" r="14" fill="none" stroke={isDark ? 'rgba(0,210,255,0.15)' : 'rgba(124,58,237,0.15)'} strokeWidth="4" />
+                <circle cx="18" cy="18" r="14" fill="none" stroke={isDark ? 'rgba(14,165,233,0.15)' : 'rgba(124,58,237,0.15)'} strokeWidth="4" />
                 <circle cx="18" cy="18" r="14" fill="none" stroke={c1} strokeWidth="4" strokeDasharray="38 50" strokeLinecap="round" />
                 <circle cx="18" cy="18" r="14" fill="none" stroke={c2} strokeWidth="4" strokeDasharray="22 66" strokeDashoffset="-38" strokeLinecap="round" />
                 <circle cx="18" cy="18" r="14" fill="none" stroke="#f59e0b" strokeWidth="4" strokeDasharray="14 74" strokeDashoffset="-60" strokeLinecap="round" />
@@ -430,7 +430,10 @@ export default function LandingPage() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [langOpen, setLangOpen] = useState(false)
   const [activePanel, setActivePanel] = useState(0)
+  const [isLandingYearly, setIsLandingYearly] = useState(false)
   const langRef = useRef<HTMLDivElement>(null)
+  const tttSectionRef = useRef<HTMLDivElement>(null)
+  const [tttSectionVisible, setTttSectionVisible] = useState(false)
 
   useEffect(() => {
     const h = (e: MouseEvent) => { if (langRef.current && !langRef.current.contains(e.target as Node)) setLangOpen(false) }
@@ -449,8 +452,29 @@ export default function LandingPage() {
   const tttCheckWin = (b: (null|'O'|'X')[]) => TTT_LINES.some(l => l.every(i => b[i]==='O'))
   const tttCheckDead = (b: (null|'O'|'X')[]) => TTT_LINES.every(l => l.some(i => b[i]==='X'))
 
+  // Scroll lock — prevent page scroll while tic-tac-toe section is active
+  useEffect(() => {
+    const el = tttSectionRef.current
+    if (!el) return
+    const observer = new IntersectionObserver(
+      ([entry]) => setTttSectionVisible(entry.isIntersecting),
+      { threshold: 0.5 }
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
+
+  useEffect(() => {
+    if (tttSectionVisible && !tttWon && !tttDead) {
+      document.documentElement.style.overflow = 'hidden'
+    } else {
+      document.documentElement.style.overflow = ''
+    }
+    return () => { document.documentElement.style.overflow = '' }
+  }, [tttSectionVisible, tttWon, tttDead])
+
   const pricingRef = useRef(null)
-  const pricingInView = useInView(pricingRef, { once: true, amount: 0.6 })
+  const pricingInView = useInView(pricingRef, { once: true, amount: 0.4, margin: '0px 0px -20% 0px' })
   const ctaRef = useRef(null)
   const ctaInView = useInView(ctaRef, { once: true, margin: '-80px' })
 
@@ -538,10 +562,10 @@ export default function LandingPage() {
       <header className="fixed top-0 left-0 right-0 z-50 px-4 pt-3">
         <div className="max-w-6xl mx-auto rounded-2xl px-7 h-[72px] flex items-center justify-between"
           style={{
-            background: isDark ? 'rgba(12,12,24,0.90)' : '#ffffff',
+            background: isDark ? 'rgba(8,18,36,0.92)' : '#ffffff',
             backdropFilter: 'blur(16px)',
             WebkitBackdropFilter: 'blur(16px)',
-            border: `1px solid ${isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)'}`,
+            border: `1px solid ${isDark ? 'rgba(14,165,233,0.10)' : 'rgba(109,40,217,0.10)'}`,
             boxShadow: isDark ? '0 4px 24px rgba(0,0,0,0.45)' : '0 4px 24px rgba(0,0,0,0.08)',
           }}>
           <Link href="/" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="flex items-center gap-3 shrink-0">
@@ -622,8 +646,8 @@ export default function LandingPage() {
               transition={{ duration: 0.18 }}
               className="md:hidden max-w-6xl mx-auto mt-1.5 rounded-2xl overflow-hidden"
               style={{
-                background: isDark ? 'rgba(12,12,24,0.96)' : '#ffffff',
-                border: `1px solid ${isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)'}`,
+                background: isDark ? 'rgba(10,22,40,0.96)' : '#ffffff',
+                border: `1px solid ${isDark ? 'rgba(14,165,233,0.10)' : 'rgba(109,40,217,0.10)'}`,
                 boxShadow: isDark ? '0 8px 32px rgba(0,0,0,0.5)' : '0 8px 32px rgba(0,0,0,0.1)',
               }}>
               <div className="px-6 py-4 flex flex-col gap-1">
@@ -966,7 +990,7 @@ export default function LandingPage() {
       />
 
       {/* ── HOW IT WORKS — tic-tac-toe tutorial ─────────────────────────────── */}
-      <div style={{ height: '100svh' }}>
+      <div ref={tttSectionRef} style={{ height: '100svh' }}>
       <section id="how" className="sticky top-0 flex flex-col items-center justify-center border-t overflow-hidden"
         style={{ height: '100svh', borderColor: 'var(--border)', paddingTop: 'calc(72px + 12px)' }}>
           <div className="w-full max-w-lg px-4 flex flex-col items-center gap-4">
@@ -1129,68 +1153,137 @@ export default function LandingPage() {
 
       {/* ── PRICING ──────────────────────────────────────────────────────────── */}
       <section id="pricing" ref={pricingRef} className="py-24 px-6 border-t" style={{ borderColor: 'var(--border)' }}>
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-5xl mx-auto">
           <motion.div initial={{ opacity: 0, y: 16 }} animate={pricingInView ? { opacity: 1, y: 0 } : {}}
-            className="mb-16">
-            <p className="text-xs font-bold uppercase tracking-[0.18em] mb-2" style={{ color: 'var(--c1)' }}>{t.nav.pricing}</p>
-            <h2 className="text-2xl sm:text-3xl font-black" style={{ color: 'var(--text-base)' }}>
+            transition={{ duration: 0.5 }}
+            className="text-center mb-12">
+            <p className="text-xs font-bold uppercase tracking-[0.18em] mb-3" style={{ color: 'var(--c1)' }}>{t.nav.pricing}</p>
+            <h2 className="text-3xl sm:text-4xl font-black mb-8" style={{ color: 'var(--text-base)' }}>
               {lang === 'uz' ? "Sizning biznesingizga mos tarif" : lang === 'ru' ? "Тариф под ваш бизнес" : "A plan that fits your business"}
             </h2>
+
+            {/* Yearly / Monthly toggle */}
+            <div className="flex items-center justify-center gap-4">
+              <span className="text-sm font-medium" style={{ color: isLandingYearly ? 'var(--text-muted)' : 'var(--text-base)' }}>
+                {lang === 'uz' ? 'Oylik' : lang === 'ru' ? 'Ежемесячно' : 'Monthly'}
+              </span>
+              <button
+                onClick={() => setIsLandingYearly(y => !y)}
+                className="relative w-14 h-7 rounded-full transition-all duration-300 flex-shrink-0"
+                style={{ background: isLandingYearly ? 'var(--c1)' : 'var(--border2)' }}
+              >
+                <span
+                  className="absolute top-1 w-5 h-5 rounded-full bg-white shadow-sm transition-all duration-300"
+                  style={{ left: isLandingYearly ? '30px' : '4px' }}
+                />
+              </button>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium" style={{ color: isLandingYearly ? 'var(--text-base)' : 'var(--text-muted)' }}>
+                  {lang === 'uz' ? 'Yillik' : lang === 'ru' ? 'Ежегодно' : 'Yearly'}
+                </span>
+                <span className="text-xs font-bold px-2.5 py-1 rounded-full"
+                  style={{ background: 'rgba(124,58,237,0.12)', color: '#a78bfa', border: '1px solid rgba(124,58,237,0.2)' }}>
+                  {lang === 'uz' ? '3 oy bepul' : '-25%'}
+                </span>
+              </div>
+            </div>
           </motion.div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-px" style={{ background: 'var(--border)' }}>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 items-stretch">
             {([
-              { name: t.pricingFree, price: '0', highlight: false, features: t.pricingFreeFeatures },
-              { name: 'Pro', price: '300 000', highlight: true, features: t.pricingProFeatures },
-              { name: 'Pro+', price: '600 000', highlight: false, features: t.pricingProPlusFeatures },
-            ] as const).map((plan, i) => (
+              { name: t.pricingFree,  monthlyPrice: '0',       yearlyPrice: '0',       highlight: false, badge: null,           features: t.pricingFreeFeatures    },
+              { name: 'Pro',          monthlyPrice: '300 000', yearlyPrice: '225 000', highlight: true,  badge: t.pricingPopular, features: t.pricingProFeatures     },
+              { name: 'Pro+',         monthlyPrice: '600 000', yearlyPrice: '450 000', highlight: false, badge: null,           features: t.pricingProPlusFeatures },
+            ]).map((plan, i) => (
               <motion.div key={plan.name}
-                initial={{ opacity: 0, y: -180, scale: 0.85 }}
-                animate={pricingInView ? { opacity: 1, y: 0, scale: 1 } : {}}
-                transition={{ delay: i * 0.28, type: 'spring', stiffness: 160, damping: 18, mass: 1.1 }}
-                className="p-8 flex flex-col relative"
-                style={{ background: plan.highlight ? (isDark ? 'rgba(0,212,255,0.04)' : 'rgba(124,58,237,0.04)') : 'var(--bg-base)' }}
+                initial={{ opacity: 0, y: -160, scale: 0.88 }}
+                animate={pricingInView ? { opacity: 1, y: 0, scale: plan.highlight ? 1.02 : 1 } : {}}
+                transition={{ delay: i * 0.22, type: 'spring', stiffness: 160, damping: 18 }}
+                className="relative flex flex-col rounded-3xl border overflow-hidden"
+                style={{
+                  background: plan.highlight ? 'linear-gradient(160deg, #1e1040 0%, #0f0a2a 100%)' : 'var(--bg-card)',
+                  borderColor: plan.highlight ? 'rgba(139,92,246,0.5)' : 'var(--border)',
+                  boxShadow: plan.highlight ? '0 8px 40px rgba(124,58,237,0.2), 0 2px 8px rgba(0,0,0,0.3)' : undefined,
+                }}
               >
                 {plan.highlight && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.5 }}
-                    animate={pricingInView ? { opacity: 1, scale: 1 } : {}}
-                    transition={{ delay: i * 0.28 + 0.65, type: 'spring', stiffness: 400, damping: 15 }}
-                    className="absolute top-4 right-4 px-2.5 py-1 rounded-md text-[10px] font-bold text-white"
-                    style={{ background: 'var(--c1)' }}>
-                    {t.pricingPopular}
-                  </motion.div>
+                  <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-violet-500 via-indigo-400 to-violet-500" />
                 )}
-                <p className="text-xs font-bold uppercase tracking-widest mb-4" style={{ color: plan.highlight ? 'var(--c1)' : 'var(--text-muted)' }}>
-                  {plan.name}
-                </p>
-                <div className="flex items-baseline gap-1 mb-6">
-                  <span className="text-4xl font-black" style={{ color: 'var(--text-base)' }}>
-                    <SlotPrice value={plan.price} trigger={pricingInView} delay={i * 0.28 + 0.7} />
-                  </span>
-                  <span className="text-sm" style={{ color: 'var(--text-muted)' }}>so&apos;m/oy</span>
+                {plan.badge && (
+                  <div className="absolute top-4 right-4">
+                    <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full text-white"
+                      style={{ background: 'linear-gradient(to right, #7c3aed, #4f46e5)', boxShadow: '0 4px 12px rgba(124,58,237,0.3)' }}>
+                      <span className="w-1.5 h-1.5 rounded-full bg-white" />
+                      {plan.badge}
+                    </span>
+                  </div>
+                )}
+
+                <div className="p-7 flex flex-col flex-1 gap-5">
+                  <h3 className="font-bold text-xl" style={{ color: plan.highlight ? '#ffffff' : 'var(--text-base)' }}>{plan.name}</h3>
+
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-5xl font-black tabular-nums leading-none"
+                      style={{ color: plan.highlight ? '#c4b5fd' : 'var(--text-base)' }}>
+                      <SlotPrice
+                        value={isLandingYearly ? plan.yearlyPrice : plan.monthlyPrice}
+                        trigger={pricingInView}
+                        delay={i * 0.22 + 0.5}
+                      />
+                    </span>
+                    {plan.monthlyPrice !== '0' && (
+                      <span className="text-sm font-medium pb-1"
+                        style={{ color: plan.highlight ? 'rgba(196,181,253,0.7)' : 'var(--text-muted)' }}>
+                        so&apos;m/oy
+                      </span>
+                    )}
+                  </div>
+
+                  <Link href="/login"
+                    className="flex items-center justify-center gap-2 font-bold py-3.5 rounded-2xl text-sm transition-all"
+                    style={plan.highlight
+                      ? { background: 'linear-gradient(to right, #7c3aed, #4f46e5)', color: '#fff', boxShadow: '0 4px 20px rgba(124,58,237,0.4)' }
+                      : { background: 'var(--bg-input)', color: 'var(--text-base)', border: '1px solid var(--border2)' }}>
+                    {t.nav.start} <ChevronRight className="w-4 h-4" />
+                  </Link>
+
+                  <div className="h-px" style={{ background: plan.highlight ? 'rgba(255,255,255,0.1)' : 'var(--border)' }} />
+
+                  <ul className="space-y-2.5 flex-1">
+                    {plan.features.map((f, fi) => (
+                      <motion.li key={f}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={pricingInView ? { opacity: 1, x: 0 } : {}}
+                        transition={{ delay: i * 0.22 + 0.8 + fi * 0.04, duration: 0.28 }}
+                        className="flex items-start gap-2.5">
+                        <span className="mt-0.5 shrink-0 w-5 h-5 rounded-full flex items-center justify-center"
+                          style={{
+                            background: plan.highlight ? 'rgba(167,139,250,0.2)' : 'var(--bg-input)',
+                            border: `1px solid ${plan.highlight ? 'rgba(167,139,250,0.35)' : 'var(--border2)'}`,
+                          }}>
+                          <CheckCircle className="w-3 h-3" style={{ color: plan.highlight ? '#c4b5fd' : 'var(--c1)' }} />
+                        </span>
+                        <span className="text-sm leading-relaxed"
+                          style={{ color: plan.highlight ? 'rgba(255,255,255,0.75)' : 'var(--text-muted)' }}>
+                          {f}
+                        </span>
+                      </motion.li>
+                    ))}
+                  </ul>
                 </div>
-                <ul className="space-y-3 mb-8 flex-1">
-                  {plan.features.map((f, fi) => (
-                    <motion.li key={f}
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={pricingInView ? { opacity: 1, x: 0 } : {}}
-                      transition={{ delay: i * 0.28 + 0.8 + fi * 0.05, duration: 0.3 }}
-                      className="flex items-start gap-2.5 text-sm" style={{ color: 'var(--text-muted)' }}>
-                      <CheckCircle className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: 'var(--c1)' }} />
-                      {f}
-                    </motion.li>
-                  ))}
-                </ul>
-                <Link href="/login" className="block w-full text-center py-3 rounded-lg text-sm font-bold border transition-colors"
-                  style={plan.highlight
-                    ? { background: 'var(--c1)', color: '#fff', borderColor: 'transparent' }
-                    : { background: 'transparent', color: 'var(--text-dim)', borderColor: 'var(--border2)' }}>
-                  {t.nav.start}
-                </Link>
               </motion.div>
             ))}
           </div>
+
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={pricingInView ? { opacity: 1 } : {}}
+            transition={{ delay: 1.4 }}
+            className="mt-8 text-center">
+            <Link href="/pricing" className="text-sm font-semibold" style={{ color: 'var(--c1)' }}>
+              {lang === 'uz' ? "Tariflarni batafsil ko'rish →" : lang === 'ru' ? "Подробнее о тарифах →" : "See full pricing details →"}
+            </Link>
+          </motion.div>
         </div>
       </section>
 
