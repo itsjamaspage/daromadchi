@@ -21,9 +21,14 @@ function parseMp(v: string | undefined): MarketplaceType | undefined {
 
 const VALID_DAYS = [30, 90, 180, 365, 730] as const
 function parseDays(v: string | undefined): number | null {
-  if (v === 'all') return null
+  if (!v || v === 'all') return null          // default = all-time, no filter
   const n = Number(v)
-  return (VALID_DAYS as readonly number[]).includes(n) ? n : 30
+  return (VALID_DAYS as readonly number[]).includes(n) ? n : null
+}
+
+function parseDate(v: string | undefined): string | null {
+  if (!v || !/^\d{4}-\d{2}-\d{2}$/.test(v)) return null
+  return v
 }
 
 interface Props {
@@ -34,12 +39,14 @@ export default async function AnalyticsPage({ searchParams }: Props) {
   const params = await searchParams
   const marketplace = parseMp(params.mp)
   const days = parseDays(params.days)
+  const from = parseDate(params.from)
+  const to   = parseDate(params.to)
 
   const [t, products, kpis, periodSales] = await Promise.all([
     getT(),
     getProducts(marketplace),
-    getKpis(days ?? 3650, marketplace),
-    getProductSales(days, marketplace),
+    getKpis(days ?? 0, marketplace, from ?? undefined, to ?? undefined),
+    getProductSales(days, marketplace, from ?? undefined, to ?? undefined),
   ])
   const d = t.dashboard
   const hasProducts = products.length > 0
@@ -95,11 +102,17 @@ export default async function AnalyticsPage({ searchParams }: Props) {
           <MarketplaceTabs current={marketplace} />
         </Suspense>
         <Suspense>
-          <PeriodSelector current={days} labels={{
-            label: d.periodLabel,
-            p30: d.period30, p90: d.period90, p180: d.period180,
-            p365: d.period365, p730: d.period730, pAll: d.periodAll,
-          }} />
+          <PeriodSelector
+            currentDays={days}
+            currentFrom={from}
+            currentTo={to}
+            labels={{
+              label: d.periodLabel,
+              p30: d.period30, p90: d.period90, p180: d.period180,
+              p365: d.period365, p730: d.period730, pAll: d.periodAll,
+              apply: d.periodApply, clear: d.periodClear,
+            }}
+          />
         </Suspense>
       </div>
 

@@ -107,8 +107,10 @@ export interface ProductSalesRow {
 // ordered_at within the window. Does NOT touch the lifetime `sold` field
 // in getProducts() — stock math stays intact.
 export async function getProductSales(
-  days: number | null,
+  days: number | null,      // null = all-time; > 0 = last N days
   marketplace?: MarketplaceType,
+  from?: string,            // "YYYY-MM-DD" custom start, overrides days
+  to?: string,              // "YYYY-MM-DD" custom end (inclusive)
 ): Promise<ProductSalesRow[]> {
   if (!supabaseConfigured) return []
 
@@ -116,24 +118,33 @@ export async function getProductSales(
   if (!shopIds || shopIds.length === 0) return []
 
   const supabase = await createClient()
-  const since = days === null
-    ? null
-    : (() => { const d = new Date(); d.setDate(d.getDate() - days); return d.toISOString() })()
 
-  // Fetch orders in the window
+  // Resolve the date window
+  let sinceIso: string | null = null
+  let untilIso: string | null = null
+
+  if (from && to) {
+    sinceIso = new Date(from).toISOString()
+    const toDate = new Date(to); toDate.setHours(23, 59, 59, 999)
+    untilIso = toDate.toISOString()
+  } else if (days !== null && days > 0) {
+    const d = new Date(); d.setDate(d.getDate() - days)
+    sinceIso = d.toISOString()
+  }
+
   let ordersQuery = supabase
     .from('orders')
     .select('id')
     .in('shop_id', shopIds)
     .neq('status', 'cancelled')
-  if (since) ordersQuery = ordersQuery.gte('ordered_at', since)
+  if (sinceIso) ordersQuery = ordersQuery.gte('ordered_at', sinceIso)
+  if (untilIso) ordersQuery = ordersQuery.lte('ordered_at', untilIso)
 
   const { data: ordersInWindow } = await ordersQuery
   if (!ordersInWindow || ordersInWindow.length === 0) return []
 
   const orderIds = ordersInWindow.map(o => o.id)
 
-  // Fetch order_items for those orders + join product title/sku
   const { data: items } = await supabase
     .from('order_items')
     .select('product_id, quantity, price_per_unit, products(title, sku)')
