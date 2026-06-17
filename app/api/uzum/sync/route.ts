@@ -5,7 +5,7 @@ import { decrypt } from '@/lib/crypto'
 
 function fromDaysToDate(fromDays: unknown): Date | undefined {
   if (typeof fromDays !== 'number') return undefined
-  if (fromDays === 0) return new Date('2019-01-01')
+  if (fromDays === 0) return new Date('2022-10-01') // Uzum launched Oct 2022
   const d = new Date(); d.setDate(d.getDate() - fromDays); return d
 }
 

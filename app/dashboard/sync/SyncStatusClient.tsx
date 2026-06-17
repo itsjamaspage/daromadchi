@@ -43,6 +43,9 @@ function ShopCard({ shop }: { shop: Shop }) {
 
   const cfg = MP_CONFIG[shop.marketplace]
   const col = COLOR_CLASSES[cfg?.color ?? 'violet']
+  const LAUNCH_YEAR: Record<string, string> = {
+    uzum: 'okt 2022', yandex_market: 'apr 2025', wildberries: 'fev 2022',
+  }
   const hasKey = !!shop.api_key_encrypted
   const lastSync = shop.last_synced_at ? new Date(shop.last_synced_at).toLocaleString() : null
 
@@ -136,7 +139,7 @@ function ShopCard({ shop }: { shop: Shop }) {
             <option value="180">{t.days180}</option>
             <option value="365">{t.days365}</option>
             <option value="730">{t.days730}</option>
-            <option value="0">{t.daysAll}</option>
+            <option value="0">{t.daysAll} ({LAUNCH_YEAR[shop.marketplace] ?? '2022'})</option>
           </select>
         </div>
         <div className="flex flex-wrap gap-2">

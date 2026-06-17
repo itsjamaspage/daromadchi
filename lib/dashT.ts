@@ -201,7 +201,7 @@ export const dashT = {
       days180: 'Oxirgi 6 oy',
       days365: 'Oxirgi 1 yil',
       days730: 'Oxirgi 2 yil',
-      daysAll: 'Barchasi (2019 yildan)',
+      daysAll: 'Barchasi (boshidan)',
     },
     account: {
       title: 'Profil', subtitle: 'Akkaunt ma\'lumotlari va tarif rejasi',
@@ -576,7 +576,7 @@ export const dashT = {
       days180: 'Last 6 months',
       days365: 'Last 1 year',
       days730: 'Last 2 years',
-      daysAll: 'All time (from 2019)',
+      daysAll: 'All time (from launch)',
     },
     account: {
       title: 'Profile', subtitle: 'Account information and subscription plan',
@@ -948,7 +948,7 @@ export const dashT = {
       days180: 'Последние 6 месяцев',
       days365: 'Последний год',
       days730: 'Последние 2 года',
-      daysAll: 'Всё время (с 2019)',
+      daysAll: 'Всё время (с запуска)',
     },
     account: {
       title: 'Профиль', subtitle: 'Информация об аккаунте и тарифный план',

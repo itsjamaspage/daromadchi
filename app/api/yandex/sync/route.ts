@@ -5,7 +5,7 @@ import { decrypt } from '@/lib/crypto'
 
 function fromDaysToDate(fromDays: unknown): Date | undefined {
   if (typeof fromDays !== 'number') return undefined
-  if (fromDays === 0) return new Date('2019-01-01')
+  if (fromDays === 0) return new Date('2025-04-07') // YM Uzbekistan launched Apr 7 2025
   const d = new Date(); d.setDate(d.getDate() - fromDays); return d
 }
 

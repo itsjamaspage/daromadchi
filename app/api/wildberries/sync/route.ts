@@ -5,7 +5,7 @@ import { syncFromWildberries } from '@/lib/wildberries/sync'
 
 function fromDaysToDate(fromDays: unknown): Date | undefined {
   if (typeof fromDays !== 'number') return undefined
-  if (fromDays === 0) return new Date('2019-01-01')
+  if (fromDays === 0) return new Date('2022-02-01') // WB Uzbekistan launched Feb 2022
   const d = new Date(); d.setDate(d.getDate() - fromDays); return d
 }
 
