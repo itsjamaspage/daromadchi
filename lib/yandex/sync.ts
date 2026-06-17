@@ -23,6 +23,7 @@ export interface YandexSyncResult {
   productsUpserted: number
   campaignsUpserted: number
   error?: string
+  details?: string
 }
 
 export async function syncFromYandex(
@@ -32,6 +33,7 @@ export async function syncFromYandex(
   fromDateOverride?: Date,
 ): Promise<YandexSyncResult> {
   const supabase = await createClient()
+  const warnings: string[] = []
 
   try {
     // Auto-discover businessId (enables business-level offer-mappings endpoint
@@ -68,8 +70,11 @@ export async function syncFromYandex(
         if (error) throw new Error(`Mahsulot xato: ${error.message}`)
       }
     } catch (prodErr) {
-      // Product sync failure must not block order sync
-      console.error('Yandex product sync skipped:', prodErr)
+      warnings.push(
+        `Products: ${prodErr instanceof YandexApiError
+          ? `${prodErr.status} ${prodErr.body?.slice(0, 200) ?? prodErr.message}`
+          : String(prodErr)}`
+      )
     }
 
     // ── Orders (incremental since last sync, fallback 90 days) ───────────────
@@ -207,6 +212,7 @@ export async function syncFromYandex(
       ordersUpserted: newOrderRows.length,
       productsUpserted: productRows.length,
       campaignsUpserted,
+      details: warnings.length ? warnings.join(' | ') : undefined,
     }
   } catch (err) {
     const msg =

@@ -203,27 +203,42 @@ export async function fetchYandexProducts(
   businessId?: number,
 ): Promise<YandexOffersResponse> {
   return withRetry(async () => {
-    const params = new URLSearchParams({ limit: String(limit) })
-    if (pageToken) params.set('page_token', pageToken)
+    // Yandex offer-mappings endpoints require POST — GET returns 405
+    const body: Record<string, unknown> = { limit }
+    if (pageToken) body.pageToken = pageToken
+    const postOpts = { method: 'POST', body: JSON.stringify(body) }
 
-    // 1. Try business-level endpoint (works even when campaign integration is toggled off)
+    // 1. Business-level POST (bypasses campaign integration toggle)
     if (businessId) {
       try {
-        return await request<YandexOffersResponse>(`/v2/businesses/${businessId}/offer-mappings?${params}`, token)
+        return await request<YandexOffersResponse>(
+          `/v2/businesses/${businessId}/offer-mappings`,
+          token,
+          postOpts,
+        )
       } catch (e) {
-        if (!(e instanceof YandexApiError && (e.status === 404 || e.status === 403))) throw e
+        if (!(e instanceof YandexApiError && (e.status === 404 || e.status === 403 || e.status === 405))) throw e
       }
     }
 
-    // 2. Try campaign-level offer-mappings
+    // 2. Campaign-level POST
     try {
-      return await request<YandexOffersResponse>(`/v2/campaigns/${campaignId}/offer-mappings?${params}`, token)
+      return await request<YandexOffersResponse>(
+        `/v2/campaigns/${campaignId}/offer-mappings`,
+        token,
+        postOpts,
+      )
     } catch (e) {
-      if (!(e instanceof YandexApiError && e.status === 404)) throw e
+      if (!(e instanceof YandexApiError && (e.status === 404 || e.status === 405))) throw e
     }
 
-    // 3. Legacy fallback
-    return request<YandexOffersResponse>(`/v2/campaigns/${campaignId}/offer-mapping-entries?${params}`, token)
+    // 3. Legacy fallback (GET — older endpoint, kept as last resort)
+    const params = new URLSearchParams({ limit: String(limit) })
+    if (pageToken) params.set('page_token', pageToken)
+    return request<YandexOffersResponse>(
+      `/v2/campaigns/${campaignId}/offer-mapping-entries?${params}`,
+      token,
+    )
   })
 }
 

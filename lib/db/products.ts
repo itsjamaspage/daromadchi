@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { getCurrentUserId, getUserShops } from '@/lib/db/shop-context'
+import { getCurrentUserId, getUserShops, getShopIds } from '@/lib/db/shop-context'
 import type { Product, MarketplaceType } from '@/lib/types'
 
 const supabaseConfigured =
@@ -93,4 +93,84 @@ export async function getProducts(marketplace?: MarketplaceType): Promise<Produc
       is_shared: hasSharedPool,
     }
   })
+}
+
+export interface ProductSalesRow {
+  product_id: string
+  title: string
+  sku: string | null
+  qty_sold: number
+  revenue: number
+}
+
+// Period-bound per-product sales: joins order_items → orders filtered by
+// ordered_at within the window. Does NOT touch the lifetime `sold` field
+// in getProducts() — stock math stays intact.
+export async function getProductSales(
+  days: number | null,      // null = all-time; > 0 = last N days
+  marketplace?: MarketplaceType,
+  from?: string,            // "YYYY-MM-DD" custom start, overrides days
+  to?: string,              // "YYYY-MM-DD" custom end (inclusive)
+): Promise<ProductSalesRow[]> {
+  if (!supabaseConfigured) return []
+
+  const shopIds = await getShopIds(marketplace)
+  if (!shopIds || shopIds.length === 0) return []
+
+  const supabase = await createClient()
+
+  // Resolve the date window
+  let sinceIso: string | null = null
+  let untilIso: string | null = null
+
+  if (from && to) {
+    sinceIso = new Date(from).toISOString()
+    const toDate = new Date(to); toDate.setHours(23, 59, 59, 999)
+    untilIso = toDate.toISOString()
+  } else if (days !== null && days > 0) {
+    const d = new Date(); d.setDate(d.getDate() - days)
+    sinceIso = d.toISOString()
+  }
+
+  let ordersQuery = supabase
+    .from('orders')
+    .select('id')
+    .in('shop_id', shopIds)
+    .neq('status', 'cancelled')
+  if (sinceIso) ordersQuery = ordersQuery.gte('ordered_at', sinceIso)
+  if (untilIso) ordersQuery = ordersQuery.lte('ordered_at', untilIso)
+
+  const { data: ordersInWindow } = await ordersQuery
+  if (!ordersInWindow || ordersInWindow.length === 0) return []
+
+  const orderIds = ordersInWindow.map(o => o.id)
+
+  const { data: items } = await supabase
+    .from('order_items')
+    .select('product_id, quantity, price_per_unit, products(title, sku)')
+    .in('order_id', orderIds)
+    .not('product_id', 'is', null)
+
+  if (!items || items.length === 0) return []
+
+  const byProduct = new Map<string, ProductSalesRow>()
+  for (const item of items) {
+    if (!item.product_id) continue
+    const prod = Array.isArray(item.products) ? item.products[0] : item.products
+    const existing = byProduct.get(item.product_id)
+    if (existing) {
+      existing.qty_sold += item.quantity ?? 0
+      existing.revenue  += (item.quantity ?? 0) * (item.price_per_unit ?? 0)
+    } else {
+      byProduct.set(item.product_id, {
+        product_id: item.product_id,
+        title:      prod?.title ?? 'Unknown',
+        sku:        prod?.sku   ?? null,
+        qty_sold:   item.quantity ?? 0,
+        revenue:    (item.quantity ?? 0) * (item.price_per_unit ?? 0),
+      })
+    }
+  }
+
+  return [...byProduct.values()].sort((a, b) => b.qty_sold - a.qty_sold)
 }
