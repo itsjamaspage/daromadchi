@@ -879,15 +879,15 @@ export default function LandingPage() {
             style={{ animationDuration: '48s' }}>
             {Array(4).fill(null).flatMap((_, gi) => [
               <span key={`${gi}a`} className="text-2xl font-black tracking-tight"
-                style={{ color: '#7C3AED' }}>Uzum Market</span>,
+                style={{ color: 'var(--c1)' }}>Uzum Market</span>,
               <span key={`${gi}s1`} className="text-[10px] font-bold uppercase tracking-[0.2em]"
                 style={{ color: 'var(--text-muted)', opacity: 0.55 }}>{t.tickerItems[0]}</span>,
               <span key={`${gi}b`} className="text-2xl font-black tracking-tight"
-                style={{ color: '#FF3C78' }}>Wildberries</span>,
+                style={{ color: 'var(--c2)' }}>Wildberries</span>,
               <span key={`${gi}s2`} className="text-[10px] font-bold uppercase tracking-[0.2em]"
                 style={{ color: 'var(--text-muted)', opacity: 0.55 }}>{t.tickerItems[1]}</span>,
               <span key={`${gi}c`} className="text-2xl font-black tracking-tight"
-                style={{ color: '#fc3f1d' }}>Yandex Market</span>,
+                style={{ color: 'var(--c1)' }}>Yandex Market</span>,
               <span key={`${gi}s3`} className="text-[10px] font-bold uppercase tracking-[0.2em]"
                 style={{ color: 'var(--text-muted)', opacity: 0.55 }}>{t.tickerItems[2]}</span>,
             ])}
@@ -906,12 +906,19 @@ export default function LandingPage() {
 
           {/* Interactive accordion panels */}
           {(() => {
-            // Each panel gets a truly distinct RGB so inactive tints are clearly different
+            const c1v = isDark ? '#00C8E8' : '#7C3AED'
+            const c2v = isDark ? '#7B61FF' : '#EC4899'
+            const c1rgb = (isDark ? [0, 200, 232] : [124, 58, 237]) as [number,number,number]
+            const c2rgb = (isDark ? [123, 97, 255] : [236, 72, 153]) as [number,number,number]
+            const cmidRgb = (isDark ? [62, 148, 244] : [180, 65, 195]) as [number,number,number]
+            const cmidBg = isDark
+              ? 'linear-gradient(135deg, #00C8E8 0%, #7B61FF 100%)'
+              : 'linear-gradient(135deg, #7C3AED 0%, #EC4899 100%)'
+
             const panelMeta = [
               {
-                // Card 1: Uzum — purple
-                accentBg: '#7C3AED',
-                rgb: [124, 58, 237] as [number,number,number],
+                accentBg: c1v,
+                rgb: c1rgb,
                 textColor: '#ffffff',
                 contentInit: { x: -60, opacity: 0 },
                 contentAnimate: { x: 0, opacity: 1 },
@@ -919,9 +926,8 @@ export default function LandingPage() {
                 contentExit: { x: -40, opacity: 0, transition: { duration: 0.18 } },
               },
               {
-                // Card 2: Yandex Market — orange
-                accentBg: '#f97316',
-                rgb: [249, 115, 22] as [number,number,number],
+                accentBg: cmidBg,
+                rgb: cmidRgb,
                 textColor: '#ffffff',
                 contentInit: { y: 50, scale: 0.84, opacity: 0 },
                 contentAnimate: { y: 0, scale: 1, opacity: 1 },
@@ -929,9 +935,8 @@ export default function LandingPage() {
                 contentExit: { y: 30, scale: 0.92, opacity: 0, transition: { duration: 0.16 } },
               },
               {
-                // Card 3: Wildberries — fuchsia/purple
-                accentBg: '#d946ef',
-                rgb: [217, 70, 239] as [number,number,number],
+                accentBg: c2v,
+                rgb: c2rgb,
                 textColor: '#ffffff',
                 contentInit: { rotate: 6, y: -30, opacity: 0 },
                 contentAnimate: { rotate: 0, y: 0, opacity: 1 },
@@ -945,8 +950,8 @@ export default function LandingPage() {
               hoverBg:        `rgba(${m.rgb.join(',')},${isDark ? 0.22 : 0.18})`,
               hoverBorder:    `rgba(${m.rgb.join(',')},${isDark ? 0.50 : 0.42})`,
               numColor:       `rgba(${m.rgb.join(',')},0.75)`,
-              hoverScale: m.rgb[0] === 249 ? 1.03 : 1.0,
-              hoverY: m.rgb[0] === 124 ? -3 : m.rgb[0] === 249 ? 0 : 3,
+              hoverScale: 1.0,
+              hoverY: 0,
             }))
 
             return (
