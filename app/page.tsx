@@ -45,12 +45,12 @@ function StatNum({ value, suffix }: { value: number; suffix: string }) {
 function DashboardMockup({ p }: { p: typeof translations.en.preview }) {
   const { theme } = useTheme()
   const isDark = theme === 'dark'
-  const bg = isDark ? '#0C2640' : '#ffffff'
-  const bg2 = isDark ? '#0F3050' : '#F3EBFF'
-  const border = isDark ? 'rgba(0,200,232,0.14)' : 'rgba(124,58,237,0.14)'
-  const muted = isDark ? '#7BB8D4' : '#6b7a9b'
-  const c1 = isDark ? '#00C8E8' : '#7c3aed'
-  const c2 = isDark ? '#7B61FF' : '#ec4899'
+  const bg = isDark ? '#1C1235' : '#ffffff'
+  const bg2 = isDark ? '#241840' : '#FFF0DC'
+  const border = isDark ? 'rgba(147,90,240,0.14)' : 'rgba(249,115,22,0.14)'
+  const muted = isDark ? '#9B85CC' : '#7A4F2A'
+  const c1 = isDark ? '#9B5CF6' : '#F97316'
+  const c2 = isDark ? '#C084FC' : '#EAB308'
 
   const kpis = [
     { l: p.revenue, v: '124.5M', color: c1 },
@@ -68,7 +68,7 @@ function DashboardMockup({ p }: { p: typeof translations.en.preview }) {
           <div className="w-3 h-3 rounded-full bg-green-400/80" />
         </div>
         <div className="flex-1 h-5 mx-3 rounded-md border flex items-center px-3"
-          style={{ background: isDark ? '#0f2040' : '#e8eeff', borderColor: border }}>
+          style={{ background: isDark ? '#1a1040' : '#FFE8CC', borderColor: border }}>
           <span className="text-[10px]" style={{ color: muted }}>daromadchi.uz/dashboard</span>
         </div>
         <Activity className="w-3 h-3 text-green-400" />
@@ -90,7 +90,7 @@ function DashboardMockup({ p }: { p: typeof translations.en.preview }) {
               {[30,50,38,70,45,82,60,88,72,55,78,92,65,80].map((h, i) => (
                 <div key={i} className="flex-1 rounded-t" style={{
                   height: `${h}%`,
-                  background: isDark ? 'linear-gradient(to top,#00C8E8cc,#00C8E822)' : 'linear-gradient(to top,#7c3aedcc,#7c3aed22)'
+                  background: isDark ? 'linear-gradient(to top,#9B5CF6cc,#9B5CF622)' : 'linear-gradient(to top,#F97316cc,#F9731622)'
                 }} />
               ))}
             </div>
@@ -274,7 +274,7 @@ function FeaturesScrollSection({
                 transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
                 className="w-72 h-72 rounded-3xl flex items-center justify-center border"
                 style={{
-                  background: isDark ? 'rgba(0,200,232,0.04)' : 'rgba(124,58,237,0.04)',
+                  background: isDark ? 'rgba(155,92,246,0.06)' : 'rgba(249,115,22,0.05)',
                   borderColor: 'var(--border)',
                 }}
               >
@@ -304,7 +304,7 @@ function FeaturesScrollSection({
                     background: i <= activeStep ? 'var(--c1)' : 'var(--bg-base)',
                     borderColor: i <= activeStep ? 'var(--c1)' : 'var(--border)',
                     cursor: 'pointer',
-                    boxShadow: i === activeStep ? (isDark ? '0 0 14px rgba(0,200,232,0.85)' : '0 0 14px rgba(124,58,237,0.85)') : undefined,
+                    boxShadow: i === activeStep ? (isDark ? '0 0 14px rgba(155,92,246,0.85)' : '0 0 14px rgba(249,115,22,0.85)') : undefined,
                   }}
                 />
               ))}
@@ -350,14 +350,14 @@ function FeaturesScrollSection({
                     className="flex items-center gap-3 py-2.5 px-3 rounded-lg text-left w-full focus:outline-none"
                     animate={{
                       opacity: isDark ? (isActive ? 1 : 0.38) : 1,
-                      background: isActive ? (isDark ? 'rgba(0,200,232,0.09)' : 'rgba(124,58,237,0.07)') : 'rgba(0,0,0,0)',
+                      background: isActive ? (isDark ? 'rgba(155,92,246,0.10)' : 'rgba(249,115,22,0.08)') : 'rgba(0,0,0,0)',
                     }}
                     whileHover={{ opacity: 1 }}
                     transition={{ duration: 0.2 }}
                     style={{ cursor: 'pointer' }}
                   >
                     <div className="w-7 h-7 rounded-md flex items-center justify-center shrink-0 transition-colors duration-200"
-                      style={{ background: isActive ? (isDark ? 'rgba(0,200,232,0.14)' : 'rgba(124,58,237,0.14)') : 'transparent' }}>
+                      style={{ background: isActive ? (isDark ? 'rgba(155,92,246,0.14)' : 'rgba(249,115,22,0.12)') : 'transparent' }}>
                       <Li className="w-3.5 h-3.5" style={{ color: isActive ? 'var(--c1)' : 'var(--text-dim)' }} />
                     </div>
                     <span className="text-sm font-medium transition-colors duration-200"
@@ -466,13 +466,13 @@ export default function LandingPage() {
   }, [])
 
   useEffect(() => {
-    if (tttSectionVisible && !tttWon && !tttDead) {
+    if (tttSectionVisible && !tttWon) {
       document.documentElement.style.overflow = 'hidden'
     } else {
       document.documentElement.style.overflow = ''
     }
     return () => { document.documentElement.style.overflow = '' }
-  }, [tttSectionVisible, tttWon, tttDead])
+  }, [tttSectionVisible, tttWon])
 
   const pricingRef = useRef(null)
   const pricingInView = useInView(pricingRef, { once: true, amount: 0.4, margin: '0px 0px -20% 0px' })
@@ -563,10 +563,10 @@ export default function LandingPage() {
       <header className="fixed top-0 left-0 right-0 z-50 px-4 pt-3">
         <div className="max-w-6xl mx-auto rounded-2xl px-7 h-[72px] flex items-center justify-between"
           style={{
-            background: isDark ? 'rgba(5,20,44,0.92)' : '#ffffff',
+            background: isDark ? 'rgba(17,10,32,0.92)' : 'rgba(255,248,235,0.97)',
             backdropFilter: 'blur(16px)',
             WebkitBackdropFilter: 'blur(16px)',
-            border: `1px solid ${isDark ? 'rgba(0,200,232,0.12)' : 'rgba(124,58,237,0.12)'}`,
+            border: `1px solid ${isDark ? 'rgba(147,90,240,0.18)' : 'rgba(249,115,22,0.18)'}`,
             boxShadow: isDark ? '0 4px 24px rgba(0,0,0,0.45)' : '0 4px 24px rgba(0,0,0,0.08)',
           }}>
           <Link href="/" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="flex items-center gap-3 shrink-0">
@@ -647,8 +647,8 @@ export default function LandingPage() {
               transition={{ duration: 0.18 }}
               className="md:hidden max-w-6xl mx-auto mt-1.5 rounded-2xl overflow-hidden"
               style={{
-                background: isDark ? 'rgba(5,20,44,0.96)' : '#ffffff',
-                border: `1px solid ${isDark ? 'rgba(0,200,232,0.12)' : 'rgba(124,58,237,0.12)'}`,
+                background: isDark ? 'rgba(17,10,32,0.96)' : 'rgba(255,248,235,0.97)',
+                border: `1px solid ${isDark ? 'rgba(147,90,240,0.18)' : 'rgba(249,115,22,0.18)'}`,
                 boxShadow: isDark ? '0 8px 32px rgba(0,0,0,0.5)' : '0 8px 32px rgba(0,0,0,0.1)',
               }}>
               <div className="px-6 py-4 flex flex-col gap-1">
@@ -681,32 +681,32 @@ export default function LandingPage() {
         {/* Dark theme: solid organic wave zone (right) + glow layers + sparkle dots */}
         {isDark && (
           <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden>
-            {/* Main organic wave — visible lighter-blue zone on the right, like the coffee-shop reference */}
+            {/* Main organic wave — visible lighter-purple zone on the right */}
             <div style={{ position: 'absolute', right: '-12%', top: '-20%', width: '68%', height: '140%',
-              background: 'linear-gradient(148deg, #0E3D70 0%, #0C4880 30%, #0D5090 58%, #0A3D78 80%, #083468 100%)',
+              background: 'linear-gradient(148deg, #2A1660 0%, #361A80 30%, #3E1E95 58%, #2C1470 80%, #1E0E50 100%)',
               borderRadius: '62% 38% 55% 45% / 40% 32% 68% 60%' }} />
-            {/* Inner teal glow on top of the wave */}
+            {/* Inner purple glow on top of the wave */}
             <div style={{ position: 'absolute', right: '-2%', top: '5%', width: '58%', height: '80%',
-              background: 'radial-gradient(ellipse 65% 60% at 65% 42%, rgba(0,180,230,0.28) 0%, transparent 70%)',
+              background: 'radial-gradient(ellipse 65% 60% at 65% 42%, rgba(155,92,246,0.32) 0%, transparent 70%)',
               filter: 'blur(18px)' }} />
-            {/* Lower teal sweep */}
+            {/* Lower purple sweep */}
             <div style={{ position: 'absolute', right: '5%', bottom: '0%', width: '50%', height: '55%',
-              background: 'radial-gradient(ellipse 70% 65% at 70% 75%, rgba(0,200,232,0.18) 0%, transparent 68%)',
+              background: 'radial-gradient(ellipse 70% 65% at 70% 75%, rgba(147,90,240,0.20) 0%, transparent 68%)',
               filter: 'blur(22px)' }} />
-            {/* Violet accent */}
+            {/* Lighter violet accent */}
             <div style={{ position: 'absolute', right: '12%', bottom: '20%', width: '32%', height: '40%',
-              background: 'radial-gradient(ellipse at center, rgba(123,97,255,0.16) 0%, transparent 72%)',
+              background: 'radial-gradient(ellipse at center, rgba(192,132,252,0.18) 0%, transparent 72%)',
               filter: 'blur(18px)' }} />
             {/* Sparkle dots */}
             {([
-              { x: '58%', y: '12%', r: 2.5, c: '#00C8E8' },
-              { x: '74%', y: '26%', r: 1.5, c: '#7B61FF' },
-              { x: '83%', y: '50%', r: 2,   c: '#00C8E8' },
+              { x: '58%', y: '12%', r: 2.5, c: '#9B5CF6' },
+              { x: '74%', y: '26%', r: 1.5, c: '#C084FC' },
+              { x: '83%', y: '50%', r: 2,   c: '#9B5CF6' },
               { x: '89%', y: '70%', r: 1.5, c: '#fff' },
-              { x: '66%', y: '78%', r: 2,   c: '#7B61FF' },
-              { x: '51%', y: '60%', r: 1,   c: '#00C8E8' },
+              { x: '66%', y: '78%', r: 2,   c: '#C084FC' },
+              { x: '51%', y: '60%', r: 1,   c: '#9B5CF6' },
               { x: '93%', y: '36%', r: 1.5, c: '#fff' },
-              { x: '43%', y: '18%', r: 1,   c: '#7B61FF' },
+              { x: '43%', y: '18%', r: 1,   c: '#C084FC' },
             ] as {x:string;y:string;r:number;c:string}[]).map((d, i) => (
               <div key={i} style={{ position: 'absolute', left: d.x, top: d.y,
                 width: d.r * 2, height: d.r * 2,
@@ -716,16 +716,16 @@ export default function LandingPage() {
           </div>
         )}
 
-        {/* Light theme: right curved purple panel */}
+        {/* Light theme: right curved orange panel */}
         {!isDark && (
           <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden>
             <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: '52%',
-              background: 'linear-gradient(150deg, #C8A8FF 0%, #BC98F8 45%, #AE8CF0 100%)',
+              background: 'linear-gradient(150deg, #FFB067 0%, #FF8C3A 45%, #F97316 100%)',
               borderTopLeftRadius: '50% 100%', borderBottomLeftRadius: '50% 100%' }}>
               <div style={{ position: 'absolute', inset: 0,
-                background: 'radial-gradient(ellipse 72% 60% at 68% 38%, rgba(255,255,255,0.24) 0%, transparent 72%)' }} />
+                background: 'radial-gradient(ellipse 72% 60% at 68% 38%, rgba(255,255,255,0.18) 0%, transparent 72%)' }} />
               <div style={{ position: 'absolute', right: '-8%', bottom: '12%', width: '55%', height: '42%',
-                background: 'radial-gradient(ellipse at center, rgba(236,72,153,0.22) 0%, transparent 72%)',
+                background: 'radial-gradient(ellipse at center, rgba(234,179,8,0.28) 0%, transparent 72%)',
                 filter: 'blur(22px)' }} />
             </div>
           </div>
@@ -849,7 +849,7 @@ export default function LandingPage() {
             {/* Dark theme: glowing halo behind the dashboard */}
             {isDark && (
               <div style={{ position: 'absolute', inset: '-18%', zIndex: 0,
-                background: 'radial-gradient(ellipse at center, rgba(0,180,230,0.22) 0%, rgba(0,100,200,0.12) 50%, transparent 75%)',
+                background: 'radial-gradient(ellipse at center, rgba(155,92,246,0.26) 0%, rgba(100,50,200,0.12) 50%, transparent 75%)',
                 filter: 'blur(18px)' }} />
             )}
             <div style={{ position: 'relative', zIndex: 1 }}>
@@ -892,7 +892,7 @@ export default function LandingPage() {
               <span key={`${gi}s2`} className="text-[10px] font-bold uppercase tracking-[0.2em]"
                 style={{ color: 'var(--text-muted)', opacity: 0.55 }}>{t.tickerItems[1]}</span>,
               <span key={`${gi}c`} className="text-2xl font-black tracking-tight"
-                style={{ color: 'var(--c1)' }}>Yandex Market</span>,
+                style={{ color: isDark ? '#FBBF24' : '#DC4E00' }}>Yandex Market</span>,
               <span key={`${gi}s3`} className="text-[10px] font-bold uppercase tracking-[0.2em]"
                 style={{ color: 'var(--text-muted)', opacity: 0.55 }}>{t.tickerItems[2]}</span>,
             ])}
@@ -911,14 +911,14 @@ export default function LandingPage() {
 
           {/* Interactive accordion panels */}
           {(() => {
-            const c1v = isDark ? '#00C8E8' : '#7C3AED'
-            const c2v = isDark ? '#7B61FF' : '#EC4899'
-            const c1rgb = (isDark ? [0, 200, 232] : [124, 58, 237]) as [number,number,number]
-            const c2rgb = (isDark ? [123, 97, 255] : [236, 72, 153]) as [number,number,number]
-            const cmidRgb = (isDark ? [62, 148, 244] : [180, 65, 195]) as [number,number,number]
+            const c1v = isDark ? '#9B5CF6' : '#F97316'
+            const c2v = isDark ? '#C084FC' : '#EAB308'
+            const c1rgb = (isDark ? [155, 92, 246] : [249, 115, 22]) as [number,number,number]
+            const c2rgb = (isDark ? [192, 132, 252] : [234, 179, 8]) as [number,number,number]
+            const cmidRgb = (isDark ? [174, 112, 249] : [241, 147, 15]) as [number,number,number]
             const cmidBg = isDark
-              ? 'linear-gradient(135deg, #00C8E8 0%, #7B61FF 100%)'
-              : 'linear-gradient(135deg, #7C3AED 0%, #EC4899 100%)'
+              ? 'linear-gradient(135deg, #9B5CF6 0%, #C084FC 100%)'
+              : 'linear-gradient(135deg, #F97316 0%, #EAB308 100%)'
 
             const panelMeta = [
               {
@@ -1104,7 +1104,7 @@ export default function LandingPage() {
                   >
                     <div className="flex items-center gap-3 mb-4">
                       <div className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-black flex-shrink-0"
-                        style={{ background: 'var(--c1)', color: isDark ? '#001828' : '#fff' }}>
+                        style={{ background: 'var(--c1)', color: '#fff' }}>
                         {String(tttPopup).padStart(2,'0')}
                       </div>
                       <h3 className="font-black text-lg leading-tight" style={{ color: 'var(--text-base)' }}>
@@ -1117,9 +1117,60 @@ export default function LandingPage() {
                     <button
                       onClick={() => setTttPopup(null)}
                       className="w-full py-3 rounded-xl font-bold text-sm cursor-pointer"
-                      style={{ background: 'var(--c1)', color: isDark ? '#001828' : '#fff' }}
+                      style={{ background: 'var(--c1)', color: '#fff' }}
                     >
                       {lang === 'uz' ? "Tushunarli" : lang === 'ru' ? "Понятно" : "Got it"}
+                    </button>
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Dead-state popup overlay — shows when all lines blocked; scroll stays locked until user wins */}
+            <AnimatePresence>
+              {tttDead && !tttWon && (
+                <motion.div
+                  key="dead-backdrop"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="fixed inset-0 z-50 flex items-center justify-center px-6"
+                  style={{ background: 'rgba(0,0,0,0.60)', backdropFilter: 'blur(6px)' }}
+                >
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.88, y: 24 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.92, y: 16 }}
+                    transition={{ type: 'spring', stiffness: 320, damping: 26 }}
+                    className="w-full max-w-sm rounded-3xl p-7 shadow-2xl text-center"
+                    style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}
+                  >
+                    <div className="text-5xl mb-4">😅</div>
+                    <p className="text-xs font-bold uppercase tracking-[0.2em] mb-3" style={{ color: 'var(--c1)' }}>
+                      {lang === 'uz' ? 'Yutib bo\'lmaydi' : lang === 'ru' ? 'Невозможно выиграть' : 'No winning move'}
+                    </p>
+                    <h3 className="text-xl font-black mb-3" style={{ color: 'var(--text-base)' }}>
+                      {lang === 'uz' ? "Barcha qatorlar to'sib qo'yildi!" : lang === 'ru' ? "Все линии заблокированы!" : "All lines are blocked!"}
+                    </h3>
+                    <p className="text-sm leading-relaxed mb-6" style={{ color: 'var(--text-muted)' }}>
+                      {lang === 'uz'
+                        ? "Qayta o'ynang va g'alaba qozonib, barcha 4 ta qadamni o'rganing."
+                        : lang === 'ru'
+                        ? "Сыграйте снова и победите, чтобы увидеть все 4 шага."
+                        : "Play again and win to see all 4 steps."}
+                    </p>
+                    <button
+                      onClick={() => {
+                        setTttBoard(Array(9).fill(null))
+                        setTttOCount(0)
+                        setTttWon(false)
+                        setTttDead(false)
+                        setTttPopup(null)
+                      }}
+                      className="w-full py-3 rounded-xl font-bold text-sm cursor-pointer"
+                      style={{ background: 'var(--c1)', color: '#fff' }}
+                    >
+                      {lang === 'uz' ? "Qayta o'ynash →" : lang === 'ru' ? "Попробовать снова →" : "Try again →"}
                     </button>
                   </motion.div>
                 </motion.div>
@@ -1141,7 +1192,7 @@ export default function LandingPage() {
                       border: `2px solid ${cell === 'O' ? 'var(--c1)' : cell === 'X' ? 'var(--border)' : 'var(--border)'}`,
                       cursor: cell || tttDead ? 'default' : 'pointer',
                       color: cell === 'O' ? 'var(--c1)' : 'var(--text-muted)',
-                      boxShadow: cell === 'O' ? `0 0 18px ${isDark ? 'rgba(0,200,232,0.25)' : 'rgba(124,58,237,0.2)'}` : 'none',
+                      boxShadow: cell === 'O' ? `0 0 18px ${isDark ? 'rgba(155,92,246,0.32)' : 'rgba(249,115,22,0.25)'}` : 'none',
                     }}
                   >
                     <AnimatePresence>
@@ -1177,7 +1228,7 @@ export default function LandingPage() {
                 <button
                   onClick={() => { setTttBoard(Array(9).fill(null)); setTttOCount(0); setTttWon(false); setTttDead(false); setTttPopup(null) }}
                   className="text-sm font-bold px-8 py-3 rounded-full"
-                  style={{ background: 'var(--c1)', color: isDark ? '#001828' : '#fff' }}
+                  style={{ background: 'var(--c1)', color: '#fff' }}
                 >
                   {lang === 'uz' ? "Qayta o'ynash →" : lang === 'ru' ? "Попробовать снова →" : "Try again →"}
                 </button>
@@ -1189,7 +1240,7 @@ export default function LandingPage() {
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ type: 'spring', stiffness: 260, damping: 24 }}
                 className="rounded-3xl p-8 text-center w-full"
-                style={{ background: isDark ? 'rgba(0,200,232,0.09)' : 'rgba(124,58,237,0.06)', border: '1px solid var(--c1)' }}
+                style={{ background: isDark ? 'rgba(155,92,246,0.10)' : 'rgba(249,115,22,0.08)', border: '1px solid var(--c1)' }}
               >
                 <motion.div
                   animate={{ rotate: [0, -8, 8, -6, 6, 0] }}

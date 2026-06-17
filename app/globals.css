@@ -9,52 +9,50 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   DARK THEME — Coffee-Shop Ocean Navy + Bright Teal
-   Deep navy blues (#071B30 → #0A2444) with electric teal (#00C8E8)
-   and soft violet secondary (#7B61FF) — two-color gradient aesthetic
+   DARK THEME — Deep Purple (iOS purple lockscreen)
+   Very dark purple-black (#110A20) with violet/purple accents
 ═══════════════════════════════════════════════════════════════════ */
 :root,
 [data-theme="dark"] {
-  --color-info:  rgba(96, 165, 250, 0.85);
+  --color-info:  rgba(155, 92, 246, 0.85);
   --color-warn:  rgba(251, 191, 36, 0.85);
-  --bg-base:    #071B30;
-  --bg-card:    #0C2640;
-  --bg-card2:   #0F3050;
-  --bg-input:   #0D3A60;
-  --border:     rgba(0, 200, 232, 0.12);
-  --border2:    rgba(0, 200, 232, 0.30);
-  --text-base:  #E0F4FF;
-  --text-muted: #7BB8D4;
-  --text-dim:   #AACFE6;
-  --nav-bg:     rgba(5, 20, 44, 0.93);
-  --c1:         #00C8E8;   /* bright teal — coffee-shop accent */
-  --c2:         #7B61FF;   /* soft violet — secondary mix     */
-  --scrollbar-track: #051220;
-  --scrollbar-thumb: #0D3459;
+  --bg-base:    #110A20;
+  --bg-card:    #1C1235;
+  --bg-card2:   #241840;
+  --bg-input:   #2E2050;
+  --border:     rgba(147, 90, 240, 0.14);
+  --border2:    rgba(147, 90, 240, 0.34);
+  --text-base:  #F0EAFF;
+  --text-muted: #9B85CC;
+  --text-dim:   #C4AEFF;
+  --nav-bg:     rgba(17, 10, 32, 0.92);
+  --c1:         #9B5CF6;   /* medium purple */
+  --c2:         #C084FC;   /* lighter violet */
+  --scrollbar-track: #0C0618;
+  --scrollbar-thumb: #2E1A5A;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   LIGHT THEME — Starbucks-Clean White + Bold Purple
-   Near-white (#FAFAFA) base, pure white cards, strong purple (#7C3AED)
-   replacing green, with rose-pink secondary (#EC4899)
+   LIGHT THEME — Warm Orange (iOS orange lockscreen)
+   Warm cream (#FFF3E0) with orange/amber accents
 ═══════════════════════════════════════════════════════════════════ */
 [data-theme="light"] {
-  --color-info:  rgba(124, 58, 237, 0.9);
-  --color-warn:  rgba(146, 64, 14, 0.9);
-  --bg-base:    #E8D8FF;
+  --color-info:  rgba(249, 115, 22, 0.9);
+  --color-warn:  rgba(220, 78, 0, 0.9);
+  --bg-base:    #FFF3E0;
   --bg-card:    #FFFFFF;
-  --bg-card2:   #F0E6FF;
-  --bg-input:   #EDE5FF;
-  --border:     rgba(124, 58, 237, 0.10);
-  --border2:    rgba(124, 58, 237, 0.22);
-  --text-base:  #0F172A;
-  --text-muted: #4B5563;
-  --text-dim:   #374151;
-  --nav-bg:     rgba(255, 255, 255, 0.97);
-  --c1:         #7C3AED;
-  --c2:         #EC4899;
-  --scrollbar-track: #EDE5FF;
-  --scrollbar-thumb: #D8B4FE;
+  --bg-card2:   #FFF0DC;
+  --bg-input:   #FFE8CC;
+  --border:     rgba(249, 115, 22, 0.14);
+  --border2:    rgba(249, 115, 22, 0.30);
+  --text-base:  #1C0A00;
+  --text-muted: #7A4F2A;
+  --text-dim:   #5A3010;
+  --nav-bg:     rgba(255, 248, 235, 0.97);
+  --c1:         #F97316;   /* orange - primary */
+  --c2:         #EAB308;   /* amber - secondary */
+  --scrollbar-track: #FFE8CC;
+  --scrollbar-thumb: #FDBA74;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -73,23 +71,23 @@ h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-display);
 }
 
-/* Dark: deep navy with radial glow blobs — coffee-shop ocean depth */
+/* Dark: layered purple glows over very dark base — iOS purple wallpaper */
 [data-theme="dark"] body {
   background:
-    radial-gradient(ellipse 80% 60% at 72% 10%, rgba(0, 90, 170, 0.55) 0%, transparent 68%),
-    radial-gradient(ellipse 55% 50% at 8%  78%, rgba(0, 180, 220, 0.22) 0%, transparent 65%),
-    radial-gradient(ellipse 40% 35% at 85% 85%, rgba(123, 97, 255, 0.14) 0%, transparent 60%),
-    #071B30;
+    radial-gradient(ellipse 80% 65% at 72% 12%, rgba(100, 50, 200, 0.42) 0%, transparent 66%),
+    radial-gradient(ellipse 55% 50% at 8%  78%, rgba(120, 70, 220, 0.22) 0%, transparent 65%),
+    radial-gradient(ellipse 40% 35% at 85% 85%, rgba(90, 40, 180, 0.16)  0%, transparent 60%),
+    #110A20;
   background-attachment: fixed;
 }
 
-/* Light: saturated lavender base with purple + pink radial glows */
+/* Light: warm orange/amber glows over cream base — iOS orange wallpaper */
 [data-theme="light"] body {
   background:
-    radial-gradient(ellipse 70% 55% at 60% 20%, rgba(124, 58, 237, 0.18) 0%, transparent 68%),
-    radial-gradient(ellipse 50% 40% at 90% 80%, rgba(236, 72, 153, 0.13) 0%, transparent 62%),
-    radial-gradient(ellipse 45% 40% at 5%  60%, rgba(124, 58, 237, 0.10) 0%, transparent 60%),
-    linear-gradient(180deg, #E8D8FF 0%, #DEC8FF 100%);
+    radial-gradient(ellipse 70% 55% at 62% 22%, rgba(249, 115, 22, 0.22) 0%, transparent 68%),
+    radial-gradient(ellipse 50% 40% at 92% 78%, rgba(234, 179, 8,  0.18) 0%, transparent 62%),
+    radial-gradient(ellipse 45% 40% at 5%  58%, rgba(249, 115, 22, 0.12) 0%, transparent 60%),
+    linear-gradient(180deg, #FFF3E0 0%, #FFE8C2 100%);
   background-attachment: fixed;
 }
 
@@ -110,7 +108,7 @@ h1, h2, h3, h4, h5, h6 {
 
 [data-theme="light"] .bg-\[var\(--bg-card\)\],
 [data-theme="light"] .bg-\[var\(--bg-card2\)\] {
-  box-shadow: 0 1px 4px rgba(124,58,237,0.06), 0 8px 24px rgba(124,58,237,0.05);
+  box-shadow: 0 1px 4px rgba(249,115,22,0.06), 0 8px 24px rgba(249,115,22,0.05);
 }
 
 /* ═══════════════════════════════════════════════════════════════════
