@@ -8,7 +8,7 @@ import {
   BarChart2, Calculator, TrendingUp,
   Zap, ArrowRight, RefreshCw, AlertTriangle, DollarSign,
   Sparkles, Sun, Moon, Globe, X, Menu,
-  Star, CheckCircle, Activity,
+  CheckCircle, Activity,
 } from 'lucide-react'
 import { useTheme, useLang } from './providers'
 import { translations } from '@/lib/i18n'
@@ -1232,25 +1232,71 @@ export default function LandingPage() {
       </section>
 
       {/* ── TESTIMONIALS ─────────────────────────────────────────────────────── */}
-      <section className="py-20 border-t overflow-hidden" style={{ borderColor: 'var(--border)', background: isDark ? 'rgba(255,255,255,0.015)' : 'rgba(0,0,0,0.015)' }}>
+      <section className="py-20 border-t overflow-hidden" style={{ borderColor: 'var(--border)', background: isDark ? 'rgba(255,255,255,0.015)' : 'rgba(0,0,0,0.02)' }}>
         <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
           className="text-center mb-10 px-6">
           <h2 className="text-2xl sm:text-3xl font-black" style={{ color: 'var(--text-base)' }}>{t.testimonialsTitle}</h2>
         </motion.div>
         <div className="overflow-hidden">
           <div className="animate-ticker-cards flex gap-5 w-max px-6">
-            {[...(t.testimonialsList ?? []), ...(t.testimonialsList ?? [])].map((review, i) => (
-              <div key={i} className="flex-shrink-0 w-72 rounded-xl p-6 border" style={{ background: card, borderColor: 'var(--border)' }}>
-                <div className="flex items-center gap-0.5 mb-4">
-                  {Array(5).fill(0).map((_, j) => <Star key={j} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />)}
+            {[...(t.testimonialsList ?? []), ...(t.testimonialsList ?? [])].map((review, i) => {
+              const role = review.role.toLowerCase()
+              const hasWB = role.includes('wildberr')
+              const hasYM = role.includes('yandex')
+              const hasUM = role.includes('uzum')
+              const badges: { label: string; bg: string }[] = []
+              if (hasUM) badges.push({ label: 'UM', bg: '#7C3AED' })
+              if (hasYM) badges.push({ label: 'YM', bg: '#f97316' })
+              if (hasWB) badges.push({ label: 'WB', bg: '#d946ef' })
+              if (badges.length === 0) badges.push({ label: 'UM', bg: '#7C3AED' })
+
+              const cleanRole = review.role
+                .replace(/Wildberries\s*&\s*Uzum(\s*Market)?/gi, '')
+                .replace(/Uzum Market/gi, '').replace(/Yandex Market/gi, '').replace(/Wildberries/gi, '')
+                .replace(/\bUzum\b/gi, '').replace(/^\s*,\s*/, '').replace(/,\s*$/, '').trim()
+
+              const quoteColors = ['#7C3AED','#f97316','#d946ef','#0ea5e9','#22c55e','#f59e0b','#ef4444','#06b6d4','#8b5cf6']
+              const quoteColor = quoteColors[i % quoteColors.length]
+
+              return (
+                <div key={i} className="flex-shrink-0 w-72 rounded-3xl p-6 flex flex-col gap-4"
+                  style={{
+                    background: isDark ? 'var(--bg-card)' : '#ffffff',
+                    border: `1px solid ${isDark ? 'var(--border)' : 'rgba(99,102,241,0.08)'}`,
+                    boxShadow: isDark ? undefined : '0 4px 20px rgba(67,97,238,0.07), 0 1px 4px rgba(0,0,0,0.04)',
+                  }}>
+                  {/* Quote icon */}
+                  <div className="w-11 h-11 rounded-2xl flex items-center justify-center text-white font-black shrink-0 select-none"
+                    style={{ background: quoteColor, fontSize: '1.6rem', lineHeight: 1 }}>
+                    &ldquo;
+                  </div>
+                  {/* Review text */}
+                  <p className="text-sm leading-relaxed flex-1" style={{ color: 'var(--text-muted)' }}>
+                    {review.text}
+                  </p>
+                  {/* Divider */}
+                  <div className="h-px" style={{ background: 'var(--border)' }} />
+                  {/* Client info + marketplace badges */}
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="font-bold text-sm truncate" style={{ color: 'var(--text-base)' }}>{review.name}</p>
+                      {cleanRole && (
+                        <p className="text-xs mt-0.5 truncate" style={{ color: 'var(--text-muted)' }}>{cleanRole}</p>
+                      )}
+                    </div>
+                    <div className="flex gap-1 shrink-0">
+                      {badges.map(b => (
+                        <div key={b.label}
+                          className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-black text-white shrink-0"
+                          style={{ background: b.bg }}>
+                          {b.label}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-                <p className="text-sm leading-relaxed mb-5" style={{ color: 'var(--text-muted)' }}>&ldquo;{review.text}&rdquo;</p>
-                <div className="pt-4 border-t" style={{ borderColor: 'var(--border)' }}>
-                  <p className="font-bold text-sm" style={{ color: 'var(--text-base)' }}>{review.name}</p>
-                  <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{review.role}</p>
-                </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       </section>
