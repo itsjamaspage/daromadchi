@@ -1,5 +1,7 @@
 'use client'
-import { useEffect, useRef } from 'react'
+interface Props { isDark: boolean }
+export function PageBgDecor(_: Props) { return null }
+
 
 interface Props { isDark: boolean }
 
