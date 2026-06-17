@@ -104,13 +104,20 @@ export async function syncFromUzum(shopId: string, token: string, fromDateOverri
 
     const fromDate = since.toISOString().slice(0, 10)
 
-    // Orders — /v2/fbs/orders requires shopIds (int64[]) and epoch-ms dates
+    // Orders — fetch both FBS (/v2/fbs/orders) and FBO (/v2/fbo/orders).
+    // Many Uzum sellers use FBO (Uzum warehouse), so FBS alone returns 0.
     const uzumShopIds = uzumShops.map(s => s.id)
     const fromDateMs = since.getTime()
 
-    const uzumOrders: UzumFbsOrder[] = await fetchAllPages(page =>
-      fetchUzumOrders(token, uzumShopIds, page, 100, fromDateMs),
-    ).catch(() => [])
+    const [fbsOrders, fboOrders] = await Promise.all([
+      fetchAllPages(page => fetchUzumOrders(token, uzumShopIds, page, 100, fromDateMs)).catch(() => []),
+      fetchAllPages(page => fetchUzumOrders(token, uzumShopIds, page, 100, fromDateMs, undefined, 'fbo')).catch(() => []),
+    ])
+    const uzumOrders: UzumFbsOrder[] = [
+      ...fbsOrders,
+      // Deduplicate by id in case FBO endpoint overlaps with FBS
+      ...fboOrders.filter(o => !fbsOrders.some(f => String(f.id) === String(o.id))),
+    ]
 
     const orderRows = uzumOrders.map(o => {
       // Support both new (id/dateCreated/price/orderItems) and legacy field names
