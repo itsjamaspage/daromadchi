@@ -785,8 +785,8 @@ export default function LandingPage() {
               style={{ borderColor: 'var(--border)' }}
             >
               {[
-                { value: 6, suffix: '+', label: t.stats[0].label },
-                { value: 30, suffix: 's', label: t.stats[1].label },
+                { value: 3, suffix: '+', label: t.stats[0].label },
+                { value: 5, suffix: '', label: t.stats[1].label },
                 { value: 100, suffix: '%', label: t.stats[2].label },
               ].map((s, i) => (
                 <motion.div key={s.label}
@@ -859,19 +859,19 @@ export default function LandingPage() {
             // Each panel gets a truly distinct RGB so inactive tints are clearly different
             const panelMeta = [
               {
-                accentBg: 'var(--c1)',
-                // dark: cyan #00d4ff · light: purple #7C3AED
-                rgb: isDark ? ([0,212,255] as [number,number,number]) : ([124,58,237] as [number,number,number]),
-                textColor: isDark ? '#001a2c' : '#ffffff',
+                // Card 1: Uzum — purple
+                accentBg: '#7C3AED',
+                rgb: [124, 58, 237] as [number,number,number],
+                textColor: '#ffffff',
                 contentInit: { x: -60, opacity: 0 },
                 contentAnimate: { x: 0, opacity: 1 },
                 contentTransition: { type: 'spring' as const, stiffness: 300, damping: 28 },
                 contentExit: { x: -40, opacity: 0, transition: { duration: 0.18 } },
               },
               {
-                // Sky-blue — clearly distinct from cyan and pink
-                accentBg: '#0ea5e9',
-                rgb: [14,165,233] as [number,number,number],
+                // Card 2: Yandex Market — orange
+                accentBg: '#f97316',
+                rgb: [249, 115, 22] as [number,number,number],
                 textColor: '#ffffff',
                 contentInit: { y: 50, scale: 0.84, opacity: 0 },
                 contentAnimate: { y: 0, scale: 1, opacity: 1 },
@@ -879,9 +879,9 @@ export default function LandingPage() {
                 contentExit: { y: 30, scale: 0.92, opacity: 0, transition: { duration: 0.16 } },
               },
               {
-                accentBg: 'var(--c2)',
-                // dark: hot pink #ff2d9b · light: deep pink #DB2777
-                rgb: isDark ? ([255,45,155] as [number,number,number]) : ([219,39,119] as [number,number,number]),
+                // Card 3: Wildberries — fuchsia/purple
+                accentBg: '#d946ef',
+                rgb: [217, 70, 239] as [number,number,number],
                 textColor: '#ffffff',
                 contentInit: { rotate: 6, y: -30, opacity: 0 },
                 contentAnimate: { rotate: 0, y: 0, opacity: 1 },
@@ -895,8 +895,8 @@ export default function LandingPage() {
               hoverBg:        `rgba(${m.rgb.join(',')},${isDark ? 0.22 : 0.18})`,
               hoverBorder:    `rgba(${m.rgb.join(',')},${isDark ? 0.50 : 0.42})`,
               numColor:       `rgba(${m.rgb.join(',')},0.75)`,
-              hoverScale: m.rgb[0] === 14 ? 1.03 : 1.0,
-              hoverY: m.rgb[0] === 14 ? 0 : m.rgb[0] === 0 || m.rgb[0] === 124 ? -3 : 3,
+              hoverScale: m.rgb[0] === 249 ? 1.03 : 1.0,
+              hoverY: m.rgb[0] === 124 ? -3 : m.rgb[0] === 249 ? 0 : 3,
             }))
 
             return (
@@ -1015,7 +1015,7 @@ export default function LandingPage() {
               </h2>
               {!tttWon && !tttDead && (
                 <p className="text-sm mt-1.5" style={{ color: 'var(--text-muted)' }}>
-                  {lang === 'uz' ? "3 ta O ni bir qatorga qo'ying va yuting 👇" : lang === 'ru' ? "Поставьте 3 O в ряд — и победите 👇" : "Get 3 O's in a row to win 👇"}
+                  {lang === 'uz' ? "3 ta O ni bir qatorga qo'ying va yuting" : lang === 'ru' ? "Поставьте 3 O в ряд — и победите" : "Get 3 O's in a row to win"}
                 </p>
               )}
             </div>
@@ -1059,7 +1059,7 @@ export default function LandingPage() {
                       className="w-full py-3 rounded-xl font-bold text-sm cursor-pointer"
                       style={{ background: 'var(--c1)', color: isDark ? '#001828' : '#fff' }}
                     >
-                      {lang === 'uz' ? "Tushunarli 👍" : lang === 'ru' ? "Понятно 👍" : "Got it 👍"}
+                      {lang === 'uz' ? "Tushunarli" : lang === 'ru' ? "Понятно" : "Got it"}
                     </button>
                   </motion.div>
                 </motion.div>
