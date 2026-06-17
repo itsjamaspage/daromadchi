@@ -6,7 +6,7 @@ import {
   LayoutDashboard, Package, ShoppingCart,
   ChevronRight, X, BarChart2, Calculator, FileText,
   Megaphone, Database, Layers, AlertTriangle, CreditCard,
-  CalendarDays, Users,
+  CalendarDays, Users, RefreshCw,
 } from 'lucide-react'
 import { useLang } from '@/app/providers'
 import { translations } from '@/lib/i18n'
@@ -26,6 +26,7 @@ const storeNavItems: NavItem[] = [
   { href: '/dashboard/calculator',     key: 'calculator',    icon: Calculator      },
   { href: '/dashboard/team',           key: 'team',          icon: Users           },
   { href: '/dashboard/data-state',     key: 'dataState',     icon: Database        },
+  { href: '/dashboard/sync',           key: 'sync',          icon: RefreshCw       },
   { href: '/dashboard/alerts',         key: 'alerts',        icon: AlertTriangle   },
   { href: '/dashboard/payouts',        key: 'payouts',       icon: CreditCard      },
   { href: '/dashboard/seasonality',    key: 'seasonality',   icon: CalendarDays    },
