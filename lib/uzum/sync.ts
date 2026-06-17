@@ -52,36 +52,42 @@ export async function syncFromUzum(shopId: string, token: string, fromDateOverri
       stock_quantity: number
     }[] = []
 
-    for (const uShop of uzumShops) {
-      const size = 100
-      for (let page = 0; page < 100; page++) {
-        const res = await fetchUzumShopProducts(token, uShop.id, page, size)
-        const list = res.productList ?? []
-        for (const card of list) {
-          for (const sku of card.skuList ?? []) {
-            productRows.push({
-              shop_id: shopId,
-              marketplace_product_id: String(sku.skuId),
-              title: sku.skuTitle || sku.productTitle || card.title || 'Mahsulot',
-              sku: sku.sellerItemCode || sku.article || String(sku.skuId),
-              category: card.category ?? null,
-              selling_price: sku.price ?? null,
-              cost_price: sku.purchasePrice || null,
-              stock_quantity: sku.quantityActive ?? 0,
-            })
+    // Product sync is best-effort: shops with 0 active listings return 403.
+    // We still want to fetch orders for such shops, so catch and continue.
+    try {
+      for (const uShop of uzumShops) {
+        const size = 100
+        for (let page = 0; page < 100; page++) {
+          const res = await fetchUzumShopProducts(token, uShop.id, page, size)
+          const list = res.productList ?? []
+          for (const card of list) {
+            for (const sku of card.skuList ?? []) {
+              productRows.push({
+                shop_id: shopId,
+                marketplace_product_id: String(sku.skuId),
+                title: sku.skuTitle || sku.productTitle || card.title || 'Mahsulot',
+                sku: sku.sellerItemCode || sku.article || String(sku.skuId),
+                category: card.category ?? null,
+                selling_price: sku.price ?? null,
+                cost_price: sku.purchasePrice || null,
+                stock_quantity: sku.quantityActive ?? 0,
+              })
+            }
           }
+          const total = res.totalProductsAmount ?? 0
+          if (list.length < size || (page + 1) * size >= total) break
         }
-        const total = res.totalProductsAmount ?? 0
-        if (list.length < size || (page + 1) * size >= total) break
       }
-    }
 
-    // Upsert — safer than delete+insert; existing cost_price edits are preserved
-    if (productRows.length > 0) {
-      const { error: prodErr } = await supabase
-        .from('products')
-        .upsert(productRows, { onConflict: 'shop_id,marketplace_product_id', ignoreDuplicates: false })
-      if (prodErr) throw new Error(`Mahsulotlarni saqlashda xato: ${prodErr.message}`)
+      if (productRows.length > 0) {
+        const { error: prodErr } = await supabase
+          .from('products')
+          .upsert(productRows, { onConflict: 'shop_id,marketplace_product_id', ignoreDuplicates: false })
+        if (prodErr) throw new Error(`Mahsulotlarni saqlashda xato: ${prodErr.message}`)
+      }
+    } catch (prodSyncErr) {
+      // Non-fatal: 403 means shop has no active listings. Continue to orders.
+      console.warn('Uzum product sync skipped:', prodSyncErr)
     }
 
     // ── Orders (incremental: since last sync, or caller-supplied override) ──────
