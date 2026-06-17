@@ -466,43 +466,6 @@ export default function LandingPage() {
     return () => clearTimeout(timer)
   }, [tttPopup, tttWon])
 
-  // Ref tracks whether we've applied the overflow:hidden lock so cleanup is idempotent.
-  const tttLockRef = useRef(false)
-
-  // Scroll-lock: set overflow:hidden on <html> when the game section sticks to the top.
-  // This blocks ALL scroll methods (wheel, keyboard, trackpad inertia, scrollbar drag).
-  // Lifted on win, dead, or component unmount.
-  useEffect(() => {
-    const unlock = () => {
-      if (!tttLockRef.current) return
-      document.documentElement.style.overflow = ''
-      document.documentElement.style.paddingRight = ''
-      tttLockRef.current = false
-    }
-
-    if (tttWon || tttDead) { unlock(); return }
-
-    const tryLock = () => {
-      if (tttLockRef.current) return
-      const section = document.getElementById('how')
-      if (!section) return
-      if (section.getBoundingClientRect().top <= 1) {
-        // Compensate scrollbar width so layout doesn't jump
-        const sw = window.innerWidth - document.documentElement.clientWidth
-        if (sw > 0) document.documentElement.style.paddingRight = `${sw}px`
-        document.documentElement.style.overflow = 'hidden'
-        tttLockRef.current = true
-      }
-    }
-
-    window.addEventListener('scroll', tryLock, { passive: true })
-    tryLock() // in case section is already in view on mount
-
-    return () => {
-      window.removeEventListener('scroll', tryLock)
-      unlock()
-    }
-  }, [tttWon, tttDead])
 
   const handleTttClick = (idx: number) => {
     if (tttBoard[idx] || tttWon || tttDead) return
@@ -581,7 +544,7 @@ export default function LandingPage() {
             border: `1px solid ${isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)'}`,
             boxShadow: isDark ? '0 4px 24px rgba(0,0,0,0.45)' : '0 4px 24px rgba(0,0,0,0.08)',
           }}>
-          <Link href="/" className="flex items-center gap-3 shrink-0">
+          <Link href="/" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="flex items-center gap-3 shrink-0">
             <img src="/icon.svg" alt="Daromadchi" className="w-8 h-8 rounded-xl" />
             <span className="font-bold text-base" style={{ color: isDark ? '#fff' : '#0f172a' }}>Daromadchi</span>
           </Link>
