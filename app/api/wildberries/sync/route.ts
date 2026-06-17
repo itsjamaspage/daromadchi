@@ -28,16 +28,6 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}))
   const fromDate = fromDaysToDate(body?.fromDays)
 
-  if (shop.last_synced_at && !fromDate) {
-    const minsAgo = (Date.now() - new Date(shop.last_synced_at).getTime()) / 60000
-    if (minsAgo < 5) {
-      const waitMins = Math.ceil(5 - minsAgo)
-      return NextResponse.json(
-        { ok: false, error: `Sinxronizatsiya ${waitMins} daqiqadan keyin bajarilishi mumkin` },
-        { status: 429 },
-      )
-    }
-  }
   const result = await syncFromWildberries(supabase, shop.id, decrypt(shop.api_key_encrypted), fromDate)
   return NextResponse.json(result)
 }
