@@ -107,7 +107,7 @@ export function PageBgDecor({ isDark }: Props) {
         if (l.dir === -1 && l.y < -SEG - 300) l.y =  H + 300
 
         const midY = l.y + SEG / 2
-        let alpha = isDark ? 0.70 : 0.22
+        let alpha = isDark ? 0.70 : 0.38
         if (midY < FADE)      alpha *= Math.max(0, midY / FADE)
         if (midY > H - FADE)  alpha *= Math.max(0, (H - midY) / FADE)
         if (alpha < 0.01) continue
@@ -145,7 +145,7 @@ export function PageBgDecor({ isDark }: Props) {
         if (isDark) { ctx.shadowColor = b.color; ctx.shadowBlur = 22 }
         ctx.strokeStyle = b.color
         ctx.lineWidth   = b.sw
-        ctx.globalAlpha = isDark ? 0.60 : 0.24
+        ctx.globalAlpha = isDark ? 0.60 : 0.40
         ctx.beginPath()
         ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2)
         ctx.stroke()

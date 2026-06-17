@@ -688,7 +688,7 @@ export default function LandingPage() {
       </header>
 
       {/* ── HERO ─────────────────────────────────────────────────────────────── */}
-      <section className="relative flex flex-col items-center pt-28 pb-0 overflow-hidden" style={{ minHeight: '100svh' }}>
+      <section className="relative flex flex-col items-center pt-28 pb-16">
 
         {/* Text + CTAs — centered column */}
         <div className="relative z-10 w-full max-w-3xl mx-auto px-6 flex flex-col items-center text-center gap-7 pb-12">
