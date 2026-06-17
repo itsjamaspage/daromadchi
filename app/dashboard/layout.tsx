@@ -1,4 +1,5 @@
 import Sidebar from '@/components/dashboard/Sidebar'
+import DashboardTopBar from '@/components/dashboard/DashboardTopBar'
 import MobileNav from '@/components/dashboard/MobileNav'
 import BottomNav from '@/components/dashboard/BottomNav'
 import FeedbackWidget from '@/components/dashboard/FeedbackWidget'
@@ -13,11 +14,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <Sidebar />
         </div>
 
+        {/* Desktop top bar — profile pill + dropdown */}
+        <DashboardTopBar />
+
         {/* Mobile: top bar with hamburger + slide-in drawer */}
         <MobileNav />
 
         {/* Main content — offset by collapsed sidebar width only */}
-        <main className="lg:ml-14 pt-14 lg:pt-0 pb-20 lg:pb-0 min-w-0">
+        <main className="lg:ml-14 pt-14 pb-20 lg:pb-0 min-w-0">
           <div className="p-4 sm:p-6 lg:p-8">
             {children}
           </div>

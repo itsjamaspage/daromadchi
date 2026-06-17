@@ -8,7 +8,7 @@ import {
   BarChart2, Calculator, TrendingUp,
   Zap, ArrowRight, RefreshCw, AlertTriangle, DollarSign,
   Sparkles, Sun, Moon, Globe, X, Menu,
-  Star, CheckCircle, Activity,
+  CheckCircle, Activity,
 } from 'lucide-react'
 import { useTheme, useLang } from './providers'
 import { translations } from '@/lib/i18n'
@@ -466,43 +466,6 @@ export default function LandingPage() {
     return () => clearTimeout(timer)
   }, [tttPopup, tttWon])
 
-  // Ref tracks whether we've applied the overflow:hidden lock so cleanup is idempotent.
-  const tttLockRef = useRef(false)
-
-  // Scroll-lock: set overflow:hidden on <html> when the game section sticks to the top.
-  // This blocks ALL scroll methods (wheel, keyboard, trackpad inertia, scrollbar drag).
-  // Lifted on win, dead, or component unmount.
-  useEffect(() => {
-    const unlock = () => {
-      if (!tttLockRef.current) return
-      document.documentElement.style.overflow = ''
-      document.documentElement.style.paddingRight = ''
-      tttLockRef.current = false
-    }
-
-    if (tttWon || tttDead) { unlock(); return }
-
-    const tryLock = () => {
-      if (tttLockRef.current) return
-      const section = document.getElementById('how')
-      if (!section) return
-      if (section.getBoundingClientRect().top <= 1) {
-        // Compensate scrollbar width so layout doesn't jump
-        const sw = window.innerWidth - document.documentElement.clientWidth
-        if (sw > 0) document.documentElement.style.paddingRight = `${sw}px`
-        document.documentElement.style.overflow = 'hidden'
-        tttLockRef.current = true
-      }
-    }
-
-    window.addEventListener('scroll', tryLock, { passive: true })
-    tryLock() // in case section is already in view on mount
-
-    return () => {
-      window.removeEventListener('scroll', tryLock)
-      unlock()
-    }
-  }, [tttWon, tttDead])
 
   const handleTttClick = (idx: number) => {
     if (tttBoard[idx] || tttWon || tttDead) return
@@ -581,7 +544,7 @@ export default function LandingPage() {
             border: `1px solid ${isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)'}`,
             boxShadow: isDark ? '0 4px 24px rgba(0,0,0,0.45)' : '0 4px 24px rgba(0,0,0,0.08)',
           }}>
-          <Link href="/" className="flex items-center gap-3 shrink-0" onClick={e => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }) }}>
+          <Link href="/" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="flex items-center gap-3 shrink-0">
             <img src="/icon.svg" alt="Daromadchi" className="w-8 h-8 rounded-xl" />
             <span className="font-bold text-base" style={{ color: isDark ? '#fff' : '#0f172a' }}>Daromadchi</span>
           </Link>
@@ -703,10 +666,10 @@ export default function LandingPage() {
             </MockupInteractive>
           </motion.div>
 
-          {/* RIGHT: copy — no frosted glass, text sits directly on background */}
+          {/* RIGHT: copy */}
           <div className="flex flex-col gap-7 order-1 lg:order-2">
 
-            {/* Marketplace chips */}
+            {/* Marketplace chips — small, factual */}
             <motion.div
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
@@ -785,15 +748,15 @@ export default function LandingPage() {
               style={{ borderColor: 'var(--border)' }}
             >
               {[
-                { value: 6, suffix: '+', label: t.stats[0].label },
-                { value: 30, suffix: 's', label: t.stats[1].label },
+                { value: 3, suffix: '+', label: t.stats[0].label },
+                { value: 5, suffix: '', label: t.stats[1].label },
                 { value: 100, suffix: '%', label: t.stats[2].label },
               ].map((s, i) => (
                 <motion.div key={s.label}
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.85 + i * 0.08 }}
-                  className={`${i > 0 ? 'pl-6 border-l' : ''}`}
+                  className={`pr-6 ${i > 0 ? 'pl-6 border-l' : ''}`}
                   style={{ borderColor: 'var(--border)' }}>
                   <div className="text-3xl font-black" style={{ color: 'var(--text-base)' }}>
                     <StatNum value={s.value} suffix={s.suffix} />
@@ -859,19 +822,19 @@ export default function LandingPage() {
             // Each panel gets a truly distinct RGB so inactive tints are clearly different
             const panelMeta = [
               {
-                accentBg: 'var(--c1)',
-                // dark: cyan #00d4ff · light: purple #7C3AED
-                rgb: isDark ? ([0,212,255] as [number,number,number]) : ([124,58,237] as [number,number,number]),
-                textColor: isDark ? '#001a2c' : '#ffffff',
+                // Card 1: Uzum — purple
+                accentBg: '#7C3AED',
+                rgb: [124, 58, 237] as [number,number,number],
+                textColor: '#ffffff',
                 contentInit: { x: -60, opacity: 0 },
                 contentAnimate: { x: 0, opacity: 1 },
                 contentTransition: { type: 'spring' as const, stiffness: 300, damping: 28 },
                 contentExit: { x: -40, opacity: 0, transition: { duration: 0.18 } },
               },
               {
-                // Sky-blue — clearly distinct from cyan and pink
-                accentBg: '#0ea5e9',
-                rgb: [14,165,233] as [number,number,number],
+                // Card 2: Yandex Market — orange
+                accentBg: '#f97316',
+                rgb: [249, 115, 22] as [number,number,number],
                 textColor: '#ffffff',
                 contentInit: { y: 50, scale: 0.84, opacity: 0 },
                 contentAnimate: { y: 0, scale: 1, opacity: 1 },
@@ -879,9 +842,9 @@ export default function LandingPage() {
                 contentExit: { y: 30, scale: 0.92, opacity: 0, transition: { duration: 0.16 } },
               },
               {
-                accentBg: 'var(--c2)',
-                // dark: hot pink #ff2d9b · light: deep pink #DB2777
-                rgb: isDark ? ([255,45,155] as [number,number,number]) : ([219,39,119] as [number,number,number]),
+                // Card 3: Wildberries — fuchsia/purple
+                accentBg: '#d946ef',
+                rgb: [217, 70, 239] as [number,number,number],
                 textColor: '#ffffff',
                 contentInit: { rotate: 6, y: -30, opacity: 0 },
                 contentAnimate: { rotate: 0, y: 0, opacity: 1 },
@@ -895,8 +858,8 @@ export default function LandingPage() {
               hoverBg:        `rgba(${m.rgb.join(',')},${isDark ? 0.22 : 0.18})`,
               hoverBorder:    `rgba(${m.rgb.join(',')},${isDark ? 0.50 : 0.42})`,
               numColor:       `rgba(${m.rgb.join(',')},0.75)`,
-              hoverScale: m.rgb[0] === 14 ? 1.03 : 1.0,
-              hoverY: m.rgb[0] === 14 ? 0 : m.rgb[0] === 0 || m.rgb[0] === 124 ? -3 : 3,
+              hoverScale: m.rgb[0] === 249 ? 1.03 : 1.0,
+              hoverY: m.rgb[0] === 124 ? -3 : m.rgb[0] === 249 ? 0 : 3,
             }))
 
             return (
@@ -1005,7 +968,7 @@ export default function LandingPage() {
       {/* ── HOW IT WORKS — tic-tac-toe tutorial ─────────────────────────────── */}
       <div style={{ height: '100svh' }}>
       <section id="how" className="sticky top-0 flex flex-col items-center justify-center border-t overflow-hidden"
-        style={{ height: '100svh', borderColor: 'var(--border)', background: 'var(--bg-base)', paddingTop: 'calc(72px + 12px)' }}>
+        style={{ height: '100svh', borderColor: 'var(--border)', paddingTop: 'calc(72px + 12px)' }}>
           <div className="w-full max-w-lg px-4 flex flex-col items-center gap-4">
             {/* Header */}
             <div className="text-center">
@@ -1015,7 +978,7 @@ export default function LandingPage() {
               </h2>
               {!tttWon && !tttDead && (
                 <p className="text-sm mt-1.5" style={{ color: 'var(--text-muted)' }}>
-                  {lang === 'uz' ? "3 ta O ni bir qatorga qo'ying va yuting 👇" : lang === 'ru' ? "Поставьте 3 O в ряд — и победите 👇" : "Get 3 O's in a row to win 👇"}
+                  {lang === 'uz' ? "3 ta O ni bir qatorga qo'ying va yuting" : lang === 'ru' ? "Поставьте 3 O в ряд — и победите" : "Get 3 O's in a row to win"}
                 </p>
               )}
             </div>
@@ -1059,7 +1022,7 @@ export default function LandingPage() {
                       className="w-full py-3 rounded-xl font-bold text-sm cursor-pointer"
                       style={{ background: 'var(--c1)', color: isDark ? '#001828' : '#fff' }}
                     >
-                      {lang === 'uz' ? "Tushunarli 👍" : lang === 'ru' ? "Понятно 👍" : "Got it 👍"}
+                      {lang === 'uz' ? "Tushunarli" : lang === 'ru' ? "Понятно" : "Got it"}
                     </button>
                   </motion.div>
                 </motion.div>
@@ -1232,25 +1195,71 @@ export default function LandingPage() {
       </section>
 
       {/* ── TESTIMONIALS ─────────────────────────────────────────────────────── */}
-      <section className="py-20 border-t overflow-hidden" style={{ borderColor: 'var(--border)', background: isDark ? 'rgba(255,255,255,0.015)' : 'rgba(0,0,0,0.015)' }}>
+      <section className="py-20 border-t overflow-hidden" style={{ borderColor: 'var(--border)', background: isDark ? 'rgba(255,255,255,0.015)' : 'rgba(0,0,0,0.02)' }}>
         <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
           className="text-center mb-10 px-6">
           <h2 className="text-2xl sm:text-3xl font-black" style={{ color: 'var(--text-base)' }}>{t.testimonialsTitle}</h2>
         </motion.div>
         <div className="overflow-hidden">
           <div className="animate-ticker-cards flex gap-5 w-max px-6">
-            {[...(t.testimonialsList ?? []), ...(t.testimonialsList ?? [])].map((review, i) => (
-              <div key={i} className="flex-shrink-0 w-72 rounded-xl p-6 border" style={{ background: card, borderColor: 'var(--border)' }}>
-                <div className="flex items-center gap-0.5 mb-4">
-                  {Array(5).fill(0).map((_, j) => <Star key={j} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />)}
+            {[...(t.testimonialsList ?? []), ...(t.testimonialsList ?? [])].map((review, i) => {
+              const role = review.role.toLowerCase()
+              const hasWB = role.includes('wildberr')
+              const hasYM = role.includes('yandex')
+              const hasUM = role.includes('uzum')
+              const badges: { label: string; bg: string }[] = []
+              if (hasUM) badges.push({ label: 'UM', bg: '#7C3AED' })
+              if (hasYM) badges.push({ label: 'YM', bg: '#f97316' })
+              if (hasWB) badges.push({ label: 'WB', bg: '#d946ef' })
+              if (badges.length === 0) badges.push({ label: 'UM', bg: '#7C3AED' })
+
+              const cleanRole = review.role
+                .replace(/Wildberries\s*&\s*Uzum(\s*Market)?/gi, '')
+                .replace(/Uzum Market/gi, '').replace(/Yandex Market/gi, '').replace(/Wildberries/gi, '')
+                .replace(/\bUzum\b/gi, '').replace(/^\s*,\s*/, '').replace(/,\s*$/, '').trim()
+
+              const quoteColors = ['#7C3AED','#f97316','#d946ef','#0ea5e9','#22c55e','#f59e0b','#ef4444','#06b6d4','#8b5cf6']
+              const quoteColor = quoteColors[i % quoteColors.length]
+
+              return (
+                <div key={i} className="flex-shrink-0 w-72 rounded-3xl p-6 flex flex-col gap-4"
+                  style={{
+                    background: isDark ? 'var(--bg-card)' : '#ffffff',
+                    border: `1px solid ${isDark ? 'var(--border)' : 'rgba(99,102,241,0.08)'}`,
+                    boxShadow: isDark ? undefined : '0 4px 20px rgba(67,97,238,0.07), 0 1px 4px rgba(0,0,0,0.04)',
+                  }}>
+                  {/* Quote icon */}
+                  <div className="w-11 h-11 rounded-2xl flex items-center justify-center text-white font-black shrink-0 select-none"
+                    style={{ background: quoteColor, fontSize: '1.6rem', lineHeight: 1 }}>
+                    &ldquo;
+                  </div>
+                  {/* Review text */}
+                  <p className="text-sm leading-relaxed flex-1" style={{ color: 'var(--text-muted)' }}>
+                    {review.text}
+                  </p>
+                  {/* Divider */}
+                  <div className="h-px" style={{ background: 'var(--border)' }} />
+                  {/* Client info + marketplace badges */}
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="font-bold text-sm truncate" style={{ color: 'var(--text-base)' }}>{review.name}</p>
+                      {cleanRole && (
+                        <p className="text-xs mt-0.5 truncate" style={{ color: 'var(--text-muted)' }}>{cleanRole}</p>
+                      )}
+                    </div>
+                    <div className="flex gap-1 shrink-0">
+                      {badges.map(b => (
+                        <div key={b.label}
+                          className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-black text-white shrink-0"
+                          style={{ background: b.bg }}>
+                          {b.label}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-                <p className="text-sm leading-relaxed mb-5" style={{ color: 'var(--text-muted)' }}>&ldquo;{review.text}&rdquo;</p>
-                <div className="pt-4 border-t" style={{ borderColor: 'var(--border)' }}>
-                  <p className="font-bold text-sm" style={{ color: 'var(--text-base)' }}>{review.name}</p>
-                  <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{review.role}</p>
-                </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       </section>

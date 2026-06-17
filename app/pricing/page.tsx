@@ -28,9 +28,9 @@ const PRO_FEATURES = [
 ]
 
 const PROPLUS_EXTRAS = [
-  { icon: Users,    label: 'Jamoa (5 foydalanuvchi)',            desc: "Rol va ruxsat boshqaruvi" },
-  { icon: Mail,     label: 'Avtomatik hisobot emailga',          desc: "Kunlik/haftalik yetkazib berish" },
-  { icon: Clock,    label: "Prioritet qo'llab-quvvatlash",       desc: "15 daqiqa ichida javob (Pro: standart navbat)" },
+  { icon: Users,    label: 'Jamoa (5 foydalanuvchi)',            desc: 'Rol va ruxsat boshqaruvi' },
+  { icon: Mail,     label: 'Avtomatik hisobot emailga',          desc: 'Kunlik/haftalik yetkazib berish' },
+  { icon: Clock,    label: "Prioritet qo'llab-quvvatlash",       desc: '15 daqiqa ichida javob' },
   { icon: FileText, label: 'White-label PDF (brend logosi bilan)', desc: "Hisobotlarda o'z logoyingiz" },
 ]
 
@@ -38,8 +38,8 @@ const plans = [
   {
     key: 'free',
     name: 'Bepul',
-    price: '0',
-    numericPrice: 0,
+    monthlyPrice: 0,
+    yearlyPrice: 0,
     period: '/oy',
     desc: "Boshlash uchun ideal — hech qanday to'lov talab etilmaydi",
     icon: Zap,
@@ -59,8 +59,8 @@ const plans = [
   {
     key: 'pro',
     name: 'Pro',
-    price: '300 000',
-    numericPrice: 300000,
+    monthlyPrice: 300000,
+    yearlyPrice: 225000,
     period: '/oy',
     desc: "O'sib kelayotgan biznes uchun to'liq analitika vositalari",
     icon: Shield,
@@ -74,14 +74,14 @@ const plans = [
   {
     key: 'proplus',
     name: 'Pro+',
-    price: '600 000',
-    numericPrice: 600000,
+    monthlyPrice: 600000,
+    yearlyPrice: 450000,
     period: '/oy',
-    desc: "Yirik biznes uchun — Pro imkoniyatlari + eksklyuziv funksiyalar",
+    desc: 'Yirik biznes uchun — Pro imkoniyatlari + eksklyuziv funksiyalar',
     icon: Star,
     highlighted: false,
     badge: 'Maksimal',
-    cta: "Pro+ ni boshlash",
+    cta: 'Pro+ ni boshlash',
     href: '/login?plan=proplus',
     features: PRO_FEATURES,
     extras: PROPLUS_EXTRAS,
@@ -93,7 +93,7 @@ const comparisonFeatures: Feature[] = [
   { label: 'Mahsulotlar soni',                   free: '100',    pro: 'Cheksiz', proplus: 'Cheksiz' },
   { label: 'Tarix chuqurligi',                   free: '30 kun', pro: '12 oy',   proplus: '12 oy'   },
   { label: 'Uzum integratsiya',                  free: true,     pro: true,      proplus: true      },
-  { label: 'Yandex Market',                     free: false,    pro: true,      proplus: true      },
+  { label: 'Yandex Market',                      free: false,    pro: true,      proplus: true      },
   { label: 'Wildberries',                        free: false,    pro: true,      proplus: true      },
   { label: 'Kengaytma (extension)',              free: true,     pro: true,      proplus: true      },
   { label: 'Unit-ekonomika',                     free: false,    pro: true,      proplus: true      },
@@ -131,6 +131,10 @@ const faqs: FaqItem[] = [
   {
     q: "Ma'lumotlarim xavfsizmi?",
     a: "Ha. Barcha ma'lumotlar shifrlangan holda saqlanadi va faqat sizga tegishli. Hech qachon uchinchi shaxslarga ma'lumot berilmaydi.",
+  },
+  {
+    q: "Yillik tarifda qanday chegirma bo'ladi?",
+    a: "Yillik tarifda 3 oy bepul olasiz — ya'ni 12 oy uchun faqat 9 oylik to'lov. Pro uchun 225,000 so'm/oy, Pro+ uchun 450,000 so'm/oy (yillik to'lov).",
   },
 ]
 
@@ -183,6 +187,7 @@ export default function PricingPage() {
   const firedRef                            = useRef(false)
   const [hasAnimated,    setHasAnimated]    = useState(false)
   const [counts,         setCounts]         = useState([0, 0, 0])
+  const [isYearly,       setIsYearly]       = useState(false)
 
   useEffect(() => {
     const el = cardsGridRef.current
@@ -194,7 +199,7 @@ export default function PricingPage() {
       setTimeout(() => {
         setHasAnimated(true)
         const duration = 1500
-        const targets = plans.map(p => p.numericPrice)
+        const targets = plans.map(p => isYearly ? p.yearlyPrice : p.monthlyPrice)
         const start = performance.now()
         const tick = (now: number) => {
           const t = Math.min((now - start) / duration, 1)
@@ -216,9 +221,30 @@ export default function PricingPage() {
     return () => obs.disconnect()
   }, [])
 
+  useEffect(() => {
+    if (!hasAnimated) return
+    const targets = plans.map(p => isYearly ? p.yearlyPrice : p.monthlyPrice)
+    const duration = 600
+    const start = performance.now()
+    const startCounts = [...counts]
+    const tick = (now: number) => {
+      const t = Math.min((now - start) / duration, 1)
+      const ease = 1 - Math.pow(1 - t, 3)
+      setCounts(targets.map((v, i) => Math.round(startCounts[i] + (v - startCounts[i]) * ease)))
+      if (t < 1) requestAnimationFrame(tick)
+    }
+    requestAnimationFrame(tick)
+  }, [isYearly])
+
   function fmtCount(n: number) {
     return new Intl.NumberFormat('uz-UZ').format(n)
   }
+
+  const trustBadges = [
+    "3 kun bepul sinov",
+    "Bir nechta do'kon",
+    "Istalgan vaqt bekor qilish",
+  ]
 
   return (
     <div className="min-h-screen overflow-x-hidden" style={{ background: 'var(--bg-base)', color: 'var(--text-base)' }}>
@@ -260,72 +286,114 @@ export default function PricingPage() {
       </header>
 
       {/* Hero */}
-      <section className="relative pt-36 pb-20 px-4 sm:px-6 overflow-hidden">
+      <section className="relative pt-36 pb-12 px-4 sm:px-6">
         <div className="absolute inset-0 overflow-hidden pointer-events-none select-none">
           <svg className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
             <defs><pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse">
-              <path d="M 60 0 L 0 0 0 60" fill="none" stroke="rgba(139,92,246,0.1)" strokeWidth="0.5" />
+              <path d="M 60 0 L 0 0 0 60" fill="none" stroke="rgba(139,92,246,0.07)" strokeWidth="0.5" />
             </pattern></defs>
             <rect width="100%" height="100%" fill="url(#grid)" />
           </svg>
         </div>
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] rounded-full bg-violet-600/8 blur-3xl pointer-events-none" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[260px] rounded-full bg-violet-600/6 blur-3xl pointer-events-none" />
+
         <div className="relative max-w-3xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 bg-violet-500/10 border border-violet-500/20 rounded-full px-4 py-1.5 text-xs text-violet-400 font-medium mb-6">
-            <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse" /> Shaffof narxlar
+          <h1 className="text-4xl sm:text-5xl xl:text-6xl font-black leading-[1.1] tracking-tight mb-6"
+            style={{ color: 'var(--text-base)' }}>
+            Barcha imkoniyatlar.<br />
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-violet-500 to-indigo-500">
+              Bir joyda.
+            </span>
+          </h1>
+
+          {/* Trust badges */}
+          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 mb-10">
+            {trustBadges.map(b => (
+              <span key={b} className="flex items-center gap-1.5 text-sm" style={{ color: 'var(--text-muted)' }}>
+                <Check className="w-4 h-4 flex-shrink-0" style={{ color: '#a78bfa' }} />
+                {b}
+              </span>
+            ))}
           </div>
-          <h1 className="text-4xl sm:text-5xl xl:text-6xl font-black leading-[1.1] tracking-tight mb-5" style={{ color: 'var(--text-base)' }}>Tariflar</h1>
-          <p className="text-lg sm:text-xl leading-relaxed" style={{ color: 'var(--text-muted)' }}>Biznesingiz o&rsquo;sishi bilan birga o&rsquo;sing</p>
+
+          {/* Yearly / Monthly toggle */}
+          <div className="flex items-center justify-center gap-4">
+            <span className="text-sm font-medium" style={{ color: isYearly ? 'var(--text-muted)' : 'var(--text-base)' }}>
+              Oylik
+            </span>
+            <button
+              onClick={() => setIsYearly(y => !y)}
+              className="relative w-14 h-7 rounded-full transition-all duration-300 flex-shrink-0"
+              style={{ background: isYearly ? '#7c3aed' : 'var(--border)' }}
+            >
+              <span
+                className="absolute top-1 w-5 h-5 rounded-full bg-white shadow-sm transition-all duration-300"
+                style={{ left: isYearly ? '30px' : '4px' }}
+              />
+            </button>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium" style={{ color: isYearly ? 'var(--text-base)' : 'var(--text-muted)' }}>
+                Yillik
+              </span>
+              <span className="text-xs font-bold px-2.5 py-1 rounded-full"
+                style={{ background: 'rgba(124,58,237,0.12)', color: '#a78bfa', border: '1px solid rgba(124,58,237,0.2)' }}>
+                3 oy bepul
+              </span>
+            </div>
+          </div>
         </div>
       </section>
 
       {/* Pricing cards */}
-      <section className="py-4 pb-24 px-4 sm:px-6">
-        <div className="max-w-6xl mx-auto">
-          <div ref={cardsGridRef} className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+      <section className="pb-24 px-4 sm:px-6">
+        <div className="max-w-5xl mx-auto">
+          <div ref={cardsGridRef} className="grid grid-cols-1 md:grid-cols-3 gap-5 items-stretch">
             {plans.map((plan, cardIdx) => {
               const Icon = plan.icon
               const isProplus = plan.key === 'proplus'
-              const displayPrice = plan.numericPrice === 0 ? '0' : fmtCount(counts[cardIdx])
+              const currentPrice = isYearly ? plan.yearlyPrice : plan.monthlyPrice
+              const displayPrice = currentPrice === 0 ? '0' : fmtCount(counts[cardIdx])
+
               return (
                 <div
                   key={plan.key}
                   className="relative flex flex-col rounded-3xl border overflow-hidden"
                   style={{
                     background: plan.highlighted
-                      ? 'linear-gradient(145deg, var(--bg-card2), var(--bg-input))'
-                      : isProplus
-                      ? 'linear-gradient(145deg, var(--bg-card2), var(--bg-input))'
+                      ? 'linear-gradient(160deg, #1e1040 0%, #0f0a2a 100%)'
                       : 'var(--bg-card2)',
                     borderColor: plan.highlighted
                       ? 'rgba(139,92,246,0.5)'
                       : isProplus
-                      ? 'rgba(234,179,8,0.4)'
+                      ? 'rgba(234,179,8,0.35)'
                       : 'var(--border)',
                     boxShadow: plan.highlighted
-                      ? '0 0 40px rgba(139,92,246,0.15)'
-                      : isProplus
-                      ? '0 0 40px rgba(234,179,8,0.1)'
+                      ? '0 8px 40px rgba(124,58,237,0.2), 0 2px 8px rgba(0,0,0,0.3)'
                       : undefined,
                     opacity: hasAnimated ? undefined : 0,
                     animation: hasAnimated
                       ? `drm-drop 1s cubic-bezier(0.22,0.61,0.36,1) ${cardIdx * 180}ms both`
                       : undefined,
+                    transform: plan.highlighted ? 'scale(1.02)' : undefined,
                   }}
                 >
-                  {/* top accent line */}
-                  {plan.highlighted && <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-violet-500 to-transparent" />}
-                  {isProplus && <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-yellow-400 to-transparent" />}
+                  {/* Top accent line */}
+                  {plan.highlighted && (
+                    <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-violet-500 via-indigo-400 to-violet-500" />
+                  )}
+                  {isProplus && (
+                    <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-yellow-400 to-transparent" />
+                  )}
 
-                  {/* badge */}
+                  {/* Badge */}
                   {plan.badge && (
                     <div className="absolute top-4 right-4">
-                      <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full shadow-lg text-white"
+                      <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full text-white"
                         style={{
                           background: isProplus
                             ? 'linear-gradient(to right, #ca8a04, #eab308)'
                             : 'linear-gradient(to right, #7c3aed, #4f46e5)',
-                          boxShadow: isProplus ? '0 4px 12px rgba(234,179,8,0.3)' : '0 4px 12px rgba(139,92,246,0.3)',
+                          boxShadow: isProplus ? '0 4px 12px rgba(234,179,8,0.3)' : '0 4px 12px rgba(124,58,237,0.3)',
                         }}>
                         <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
                         {plan.badge}
@@ -333,59 +401,93 @@ export default function PricingPage() {
                     </div>
                   )}
 
-                  <div className="p-7 flex flex-col flex-1">
-                    {/* icon + name */}
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="w-10 h-10 rounded-xl flex items-center justify-center border" style={{
-                        background: plan.highlighted ? 'rgba(139,92,246,0.15)' : isProplus ? 'rgba(234,179,8,0.12)' : 'var(--bg-input)',
-                        borderColor: plan.highlighted ? 'rgba(139,92,246,0.3)' : isProplus ? 'rgba(234,179,8,0.3)' : 'var(--border2)',
+                  <div className="p-7 flex flex-col flex-1 gap-5">
+                    {/* Plan name + icon */}
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl flex items-center justify-center border shrink-0" style={{
+                        background: plan.highlighted ? 'rgba(139,92,246,0.2)' : isProplus ? 'rgba(234,179,8,0.12)' : 'var(--bg-input)',
+                        borderColor: plan.highlighted ? 'rgba(139,92,246,0.4)' : isProplus ? 'rgba(234,179,8,0.3)' : 'var(--border2)',
                       }}>
-                        <Icon className="w-5 h-5" style={{ color: plan.highlighted ? '#a78bfa' : isProplus ? '#eab308' : 'var(--text-muted)' }} />
+                        <Icon className="w-5 h-5" style={{ color: plan.highlighted ? '#c4b5fd' : isProplus ? '#eab308' : 'var(--text-muted)' }} />
                       </div>
-                      <h3 className="font-bold text-lg leading-tight" style={{ color: 'var(--text-base)' }}>{plan.name}</h3>
+                      <h3 className="font-bold text-xl" style={{ color: plan.highlighted ? '#ffffff' : 'var(--text-base)' }}>{plan.name}</h3>
                     </div>
 
-                    {/* price */}
-                    <div className="mb-4">
+                    {/* Price */}
+                    <div>
                       <div className="flex items-end gap-1.5">
-                        <span className="text-4xl font-black tabular-nums" style={{
-                          color: plan.highlighted ? '#a78bfa' : isProplus ? '#eab308' : 'var(--text-base)',
-                        }}>{displayPrice}</span>
-                        <span className="text-sm font-medium pb-1.5" style={{ color: 'var(--text-muted)' }}>so&rsquo;m{plan.period}</span>
+                        <span className="text-5xl font-black tabular-nums leading-none" style={{
+                          color: plan.highlighted ? '#c4b5fd' : isProplus ? '#eab308' : 'var(--text-base)',
+                        }}>
+                          {displayPrice}
+                        </span>
+                        {currentPrice > 0 && (
+                          <span className="text-sm font-medium pb-1" style={{ color: plan.highlighted ? 'rgba(196,181,253,0.7)' : 'var(--text-muted)' }}>
+                            so&rsquo;m/oy
+                          </span>
+                        )}
                       </div>
+                      {currentPrice === 0 && (
+                        <p className="text-sm mt-1" style={{ color: plan.highlighted ? 'rgba(255,255,255,0.6)' : 'var(--text-muted)' }}>
+                          Hamisha bepul
+                        </p>
+                      )}
+                      {isYearly && currentPrice > 0 && (
+                        <p className="text-xs mt-1" style={{ color: '#a78bfa' }}>
+                          Yillik: {fmtCount(currentPrice * 12)} so&rsquo;m
+                        </p>
+                      )}
                     </div>
 
-                    {/* desc */}
-                    <p className="text-sm leading-relaxed mb-5" style={{ color: 'var(--text-muted)' }}>{plan.desc}</p>
+                    {/* Desc */}
+                    <p className="text-sm leading-relaxed -mt-1" style={{ color: plan.highlighted ? 'rgba(255,255,255,0.65)' : 'var(--text-muted)' }}>
+                      {plan.desc}
+                    </p>
 
-                    {/* features */}
-                    <ul className="space-y-2.5 mb-5 flex-1">
+                    {/* CTA */}
+                    <Link href={plan.href}
+                      className="flex items-center justify-center gap-2 font-bold py-3.5 rounded-2xl transition-all text-sm"
+                      style={
+                        plan.highlighted
+                          ? { background: 'linear-gradient(to right, #7c3aed, #4f46e5)', color: '#fff', boxShadow: '0 4px 20px rgba(124,58,237,0.4)' }
+                          : isProplus
+                          ? { background: 'linear-gradient(to right, #ca8a04, #eab308)', color: '#1a1000', boxShadow: '0 4px 20px rgba(234,179,8,0.25)' }
+                          : { background: 'var(--bg-input)', color: 'var(--text-base)', border: '1px solid var(--border2)' }
+                      }>
+                      {plan.cta} <ChevronRight className="w-4 h-4" />
+                    </Link>
+
+                    {/* Divider */}
+                    <div className="h-px" style={{ background: plan.highlighted ? 'rgba(255,255,255,0.1)' : 'var(--border)' }} />
+
+                    {/* Features */}
+                    <ul className="space-y-2.5 flex-1">
                       {plan.features.map((feat) => (
                         <li key={feat} className="flex items-start gap-2.5">
-                          <span className="mt-0.5 flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center border" style={{
-                            background: plan.highlighted ? 'rgba(139,92,246,0.15)' : 'var(--bg-input)',
-                            borderColor: plan.highlighted ? 'rgba(139,92,246,0.3)' : 'var(--border2)',
+                          <span className="mt-0.5 shrink-0 w-5 h-5 rounded-full flex items-center justify-center" style={{
+                            background: plan.highlighted ? 'rgba(167,139,250,0.2)' : isProplus ? 'rgba(234,179,8,0.12)' : 'var(--bg-input)',
+                            border: `1px solid ${plan.highlighted ? 'rgba(167,139,250,0.35)' : isProplus ? 'rgba(234,179,8,0.3)' : 'var(--border2)'}`,
                           }}>
-                            <Check className="w-3 h-3" style={{ color: plan.highlighted ? '#a78bfa' : 'var(--text-muted)' }} />
+                            <Check className="w-3 h-3" style={{ color: plan.highlighted ? '#c4b5fd' : isProplus ? '#eab308' : 'var(--text-muted)' }} />
                           </span>
-                          <span className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>{feat}</span>
+                          <span className="text-sm leading-relaxed" style={{ color: plan.highlighted ? 'rgba(255,255,255,0.75)' : 'var(--text-muted)' }}>
+                            {feat}
+                          </span>
                         </li>
                       ))}
                     </ul>
 
-                    {/* Pro+ exclusive block */}
+                    {/* Pro+ exclusives */}
                     {isProplus && plan.extras.length > 0 && (
-                      <div className="mb-6 rounded-2xl p-4 border" style={{ background: 'rgba(234,179,8,0.06)', borderColor: 'rgba(234,179,8,0.25)' }}>
+                      <div className="rounded-2xl p-4 border" style={{ background: 'rgba(234,179,8,0.06)', borderColor: 'rgba(234,179,8,0.2)' }}>
                         <div className="flex items-center gap-2 mb-3">
                           <Lock className="w-3.5 h-3.5" style={{ color: '#eab308' }} />
-                          <span className="text-xs font-bold uppercase tracking-widest" style={{ color: '#eab308' }}>
-                            Faqat Pro+ da
-                          </span>
+                          <span className="text-xs font-bold uppercase tracking-widest" style={{ color: '#eab308' }}>Faqat Pro+ da</span>
                         </div>
                         <ul className="space-y-2.5">
                           {plan.extras.map(({ icon: ExtraIcon, label, desc }) => (
                             <li key={label} className="flex items-start gap-2.5">
-                              <span className="mt-0.5 flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center border" style={{ background: 'rgba(234,179,8,0.15)', borderColor: 'rgba(234,179,8,0.35)' }}>
+                              <span className="mt-0.5 shrink-0 w-5 h-5 rounded-full flex items-center justify-center border" style={{ background: 'rgba(234,179,8,0.15)', borderColor: 'rgba(234,179,8,0.35)' }}>
                                 <ExtraIcon className="w-3 h-3" style={{ color: '#eab308' }} />
                               </span>
                               <div>
@@ -397,36 +499,26 @@ export default function PricingPage() {
                         </ul>
                       </div>
                     )}
-
-                    {/* CTA */}
-                    <Link href={plan.href}
-                      className="flex items-center justify-center gap-2 font-bold py-3.5 rounded-2xl transition-all text-sm"
-                      style={
-                        plan.highlighted ? { background: 'linear-gradient(to right, #7c3aed, #4f46e5)', color: '#fff', boxShadow: '0 4px 24px rgba(139,92,246,0.35)' }
-                        : isProplus ? { background: 'linear-gradient(to right, #ca8a04, #eab308)', color: '#1a1000', boxShadow: '0 4px 24px rgba(234,179,8,0.3)' }
-                        : { background: 'var(--bg-input)', color: 'var(--text-muted)', border: '1px solid var(--border2)' }
-                      }>
-                      {plan.cta} <ChevronRight className="w-4 h-4" />
-                    </Link>
                   </div>
                 </div>
               )
             })}
           </div>
 
-          {/* Pro vs Pro+ callout banner */}
-          <div className="mt-8 rounded-2xl border p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4"
-            style={{ background: 'rgba(234,179,8,0.05)', borderColor: 'rgba(234,179,8,0.2)' }}>
-            <div className="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'rgba(234,179,8,0.12)', border: '1px solid rgba(234,179,8,0.3)' }}>
+          {/* Callout */}
+          <div className="mt-6 rounded-2xl border p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4"
+            style={{ background: 'rgba(234,179,8,0.04)', borderColor: 'rgba(234,179,8,0.18)' }}>
+            <div className="shrink-0 w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'rgba(234,179,8,0.12)', border: '1px solid rgba(234,179,8,0.3)' }}>
               <Star className="w-5 h-5" style={{ color: '#eab308' }} />
             </div>
             <div className="flex-1">
               <p className="font-bold text-sm" style={{ color: 'var(--text-base)' }}>Pro+ nima qo&rsquo;shadi?</p>
               <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
-                Pro dagi hamma narsa bor. Pro+ faqat katta jamoalar va agentliklar uchun qo&rsquo;shimcha beradi: <span style={{ color: '#eab308' }}>5 foydalanuvchi jamoa, avtomatik email hisobot, prioritet qo&rsquo;llab-quvvatlash va white-label PDF</span>.
+                Pro dagi hamma narsa bor. Pro+ faqat katta jamoalar va agentliklar uchun qo&rsquo;shimcha beradi:{' '}
+                <span style={{ color: '#eab308' }}>5 foydalanuvchi jamoa, avtomatik email hisobot, prioritet qo&rsquo;llab-quvvatlash va white-label PDF</span>.
               </p>
             </div>
-            <Link href="/login?plan=proplus" className="flex-shrink-0 text-xs font-bold px-4 py-2 rounded-xl text-white transition-all"
+            <Link href="/login?plan=proplus" className="shrink-0 text-xs font-bold px-4 py-2 rounded-xl text-white transition-all"
               style={{ background: 'linear-gradient(to right, #ca8a04, #eab308)', color: '#1a1000' }}>
               Pro+ ni ko&rsquo;rish →
             </Link>
@@ -467,7 +559,7 @@ export default function PricingPage() {
             </div>
 
             <div className="grid grid-cols-4 border-b" style={{ borderColor: 'var(--border)', background: 'var(--bg-card)' }}>
-              <div className="px-5 py-2 col-span-4 flex items-center gap-2">
+              <div className="px-5 py-2 col-span-4">
                 <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Asosiy imkoniyatlar</span>
               </div>
             </div>
@@ -482,7 +574,7 @@ export default function PricingPage() {
                     background: isProplusOnly ? 'rgba(234,179,8,0.03)' : i % 2 === 0 ? 'transparent' : 'var(--bg-card2)',
                   }}>
                   <div className="px-5 py-4 flex items-center gap-2 text-sm" style={{ color: 'var(--text-muted)' }}>
-                    {isProplusOnly && <Lock className="w-3 h-3 flex-shrink-0" style={{ color: '#eab308' }} />}
+                    {isProplusOnly && <Lock className="w-3 h-3 shrink-0" style={{ color: '#eab308' }} />}
                     {feat.label}
                   </div>
                   {(['free', 'pro', 'proplus'] as const).map((col, idx) => (
