@@ -52,7 +52,7 @@ export async function GET() {
   try {
     const token = decrypt(shop.api_key_encrypted)
     const res = await fetch('https://api-seller.uzum.uz/api/seller-openapi/v1/shops', {
-      headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+      headers: { Authorization: token, Accept: 'application/json' },
       next: { revalidate: 0 },
     })
     if (res.ok) {
