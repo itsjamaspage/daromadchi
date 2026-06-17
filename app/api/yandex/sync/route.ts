@@ -1,9 +1,15 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { syncFromYandex } from '@/lib/yandex/sync'
 import { decrypt } from '@/lib/crypto'
 
-export async function POST() {
+function fromDaysToDate(fromDays: unknown): Date | undefined {
+  if (typeof fromDays !== 'number') return undefined
+  if (fromDays === 0) return new Date('2025-04-07') // YM Uzbekistan launched Apr 7 2025
+  const d = new Date(); d.setDate(d.getDate() - fromDays); return d
+}
+
+export async function POST(req: NextRequest) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -13,7 +19,7 @@ export async function POST() {
 
   const { data: shop } = await supabase
     .from('shops')
-    .select('id, api_key_encrypted, shop_id_external')
+    .select('id, api_key_encrypted, shop_id_external, last_synced_at')
     .eq('user_id', user.id)
     .eq('marketplace', 'yandex_market')
     .single()
@@ -26,8 +32,21 @@ export async function POST() {
     return NextResponse.json({ ok: false, error: 'Yandex Campaign ID topilmadi. Avval sozlamalarda Campaign ID saqlang.' }, { status: 400 })
   }
 
+  const body = await req.json().catch(() => ({}))
+  const fromDate = fromDaysToDate(body?.fromDays)
+
+  if (shop.last_synced_at && !fromDate) {
+    const minsAgo = (Date.now() - new Date(shop.last_synced_at).getTime()) / 60000
+    if (minsAgo < 5) {
+      const waitMins = Math.ceil(5 - minsAgo)
+      return NextResponse.json(
+        { ok: false, error: `Sinxronizatsiya ${waitMins} daqiqadan keyin bajarilishi mumkin` },
+        { status: 429 },
+      )
+    }
+  }
   const token  = decrypt(shop.api_key_encrypted)
-  const result = await syncFromYandex(shop.id, token, shop.shop_id_external)
+  const result = await syncFromYandex(shop.id, token, shop.shop_id_external, fromDate)
   return NextResponse.json(result, { status: result.ok ? 200 : 500 })
 }
 

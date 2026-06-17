@@ -33,8 +33,9 @@ export interface SyncResult {
   details?: string
 }
 
-export async function syncFromUzum(shopId: string, token: string): Promise<SyncResult> {
+export async function syncFromUzum(shopId: string, token: string, fromDateOverride?: Date): Promise<SyncResult> {
   const supabase = await createClient()
+  const warnings: string[] = []
 
   try {
     // ── Products: resolve shop(s), then pull product/SKU data ─────────────────
@@ -52,58 +53,74 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
       stock_quantity: number
     }[] = []
 
-    for (const uShop of uzumShops) {
-      const size = 100
-      for (let page = 0; page < 100; page++) {
-        const res = await fetchUzumShopProducts(token, uShop.id, page, size)
-        const list = res.productList ?? []
-        for (const card of list) {
-          for (const sku of card.skuList ?? []) {
-            productRows.push({
-              shop_id: shopId,
-              marketplace_product_id: String(sku.skuId),
-              title: sku.skuTitle || sku.productTitle || card.title || 'Mahsulot',
-              sku: sku.sellerItemCode || sku.article || String(sku.skuId),
-              category: card.category ?? null,
-              selling_price: sku.price ?? null,
-              cost_price: sku.purchasePrice || null,
-              stock_quantity: sku.quantityActive ?? 0,
-            })
+    // Product sync is best-effort: shops with 0 active listings return 403.
+    // We still want to fetch orders for such shops, so catch and continue.
+    try {
+      for (const uShop of uzumShops) {
+        const size = 100
+        for (let page = 0; page < 100; page++) {
+          const res = await fetchUzumShopProducts(token, uShop.id, page, size)
+          const list = res.productList ?? []
+          for (const card of list) {
+            for (const sku of card.skuList ?? []) {
+              productRows.push({
+                shop_id: shopId,
+                marketplace_product_id: String(sku.skuId),
+                title: sku.skuTitle || sku.productTitle || card.title || 'Mahsulot',
+                sku: sku.sellerItemCode || sku.article || String(sku.skuId),
+                category: card.category ?? null,
+                selling_price: sku.price ?? null,
+                cost_price: sku.purchasePrice || null,
+                stock_quantity: sku.quantityActive ?? 0,
+              })
+            }
           }
+          const total = res.totalProductsAmount ?? 0
+          if (list.length < size || (page + 1) * size >= total) break
         }
-        const total = res.totalProductsAmount ?? 0
-        if (list.length < size || (page + 1) * size >= total) break
       }
+
+      if (productRows.length > 0) {
+        const { error: prodErr } = await supabase
+          .from('products')
+          .upsert(productRows, { onConflict: 'shop_id,marketplace_product_id', ignoreDuplicates: false })
+        if (prodErr) throw new Error(`Mahsulotlarni saqlashda xato: ${prodErr.message}`)
+      }
+    } catch (prodSyncErr) {
+      // Non-fatal: 403 means shop has no active listings. Continue to orders.
+      warnings.push(`Products: ${prodSyncErr instanceof UzumApiError ? `${prodSyncErr.status} ${prodSyncErr.body?.slice(0, 150) ?? ''}` : String(prodSyncErr)}`)
     }
 
-    // Upsert — safer than delete+insert; existing cost_price edits are preserved
-    if (productRows.length > 0) {
-      const { error: prodErr } = await supabase
-        .from('products')
-        .upsert(productRows, { onConflict: 'shop_id,marketplace_product_id', ignoreDuplicates: false })
-      if (prodErr) throw new Error(`Mahsulotlarni saqlashda xato: ${prodErr.message}`)
-    }
-
-    // ── Orders (incremental: since last sync, fallback 90 days) ───────────────
+    // ── Orders (incremental: since last sync, or caller-supplied override) ──────
     const { data: shopRow } = await supabase
       .from('shops')
       .select('last_synced_at')
       .eq('id', shopId)
       .single()
 
-    const since = shopRow?.last_synced_at
-      ? new Date(shopRow.last_synced_at)
-      : (() => { const d = new Date(); d.setDate(d.getDate() - 90); return d })()
+    const since = fromDateOverride
+      ?? (shopRow?.last_synced_at
+        ? new Date(shopRow.last_synced_at)
+        : (() => { const d = new Date(); d.setDate(d.getDate() - 365); return d })())
 
     const fromDate = since.toISOString().slice(0, 10)
 
-    // Orders — /v2/fbs/orders requires shopIds (int64[]) and epoch-ms dates
+    // Orders — fetch both FBS (/v2/fbs/orders) and FBO (/v2/fbo/orders).
+    // Many Uzum sellers use FBO (Uzum warehouse), so FBS alone returns 0.
     const uzumShopIds = uzumShops.map(s => s.id)
     const fromDateMs = since.getTime()
 
-    const uzumOrders: UzumFbsOrder[] = await fetchAllPages(page =>
-      fetchUzumOrders(token, uzumShopIds, page, 100, fromDateMs),
-    ).catch(() => [])
+    const [fbsOrders, fboOrders] = await Promise.all([
+      fetchAllPages(page => fetchUzumOrders(token, uzumShopIds, page, 100, fromDateMs))
+        .catch(e => { warnings.push(`FBS: ${e instanceof UzumApiError ? `${e.status} ${e.body?.slice(0, 150) ?? ''}` : String(e)}`); return [] as UzumFbsOrder[] }),
+      fetchAllPages(page => fetchUzumOrders(token, uzumShopIds, page, 100, fromDateMs, undefined, 'fbo'))
+        .catch(e => { warnings.push(`FBO: ${e instanceof UzumApiError ? `${e.status} ${e.body?.slice(0, 150) ?? ''}` : String(e)}`); return [] as UzumFbsOrder[] }),
+    ])
+    const uzumOrders: UzumFbsOrder[] = [
+      ...fbsOrders,
+      // Deduplicate by id in case FBO endpoint overlaps with FBS
+      ...fboOrders.filter(o => !fbsOrders.some(f => String(f.id) === String(o.id))),
+    ]
 
     const orderRows = uzumOrders.map(o => {
       // Support both new (id/dateCreated/price/orderItems) and legacy field names
@@ -223,31 +240,29 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
       // Ad sync is best-effort — don't fail the whole sync
     }
 
-    // ── Update last_synced_at ─────────────────────────────────────────────────
-    await supabase
-      .from('shops')
-      .update({ last_synced_at: new Date().toISOString() })
-      .eq('id', shopId)
-
-    // Update sync_days record for today
+    // ── Update sync metadata ──────────────────────────────────────────────────
     const today = new Date().toISOString().slice(0, 10)
-    await supabase.from('sync_days').upsert(
-      {
-        shop_id: shopId,
-        sync_date: today,
-        status: 'success',
-        products_count: productRows.length,
-        revenue: newOrderRows.reduce((s, o) => s + (o.revenue ?? 0), 0),
-        synced_at: new Date().toISOString(),
-      },
-      { onConflict: 'shop_id,sync_date' },
-    )
+    await Promise.all([
+      supabase.from('shops').update({ last_synced_at: new Date().toISOString() }).eq('id', shopId),
+      supabase.from('sync_days').upsert(
+        {
+          shop_id: shopId,
+          sync_date: today,
+          status: 'success',
+          products_count: productRows.length,
+          revenue: newOrderRows.reduce((s, o) => s + (o.revenue ?? 0), 0),
+          synced_at: new Date().toISOString(),
+        },
+        { onConflict: 'shop_id,sync_date' },
+      ),
+    ])
 
     return {
       ok: true,
       ordersUpserted: newOrderRows.length,
       productsUpserted: productRows.length,
       campaignsUpserted,
+      details: warnings.length ? warnings.join(' | ') : undefined,
     }
   } catch (err) {
     const msg =

@@ -30,6 +30,7 @@ export async function syncFromWildberries(
   supabase: SupabaseClient,
   shopId: string,
   token: string,
+  fromDateOverride?: Date,
 ): Promise<WbSyncResult> {
   let productsUpserted = 0
   let ordersUpserted   = 0
@@ -113,9 +114,10 @@ export async function syncFromWildberries(
       .select('last_synced_at')
       .eq('id', shopId)
       .single()
-    const sinceDt = shopRow?.last_synced_at
-      ? new Date(shopRow.last_synced_at)
-      : (() => { const d = new Date(); d.setDate(d.getDate() - 90); return d })()
+    const sinceDt = fromDateOverride
+      ?? (shopRow?.last_synced_at
+        ? new Date(shopRow.last_synced_at)
+        : (() => { const d = new Date(); d.setDate(d.getDate() - 365); return d })())
     const df = sinceDt.toISOString().split('T')[0]
 
     const res = await fetch(
@@ -209,20 +211,21 @@ export async function syncFromWildberries(
   }
 
   // ─── Sync metadata ────────────────────────────────────────────────────────
-  await supabase.from('shops').update({ last_synced_at: new Date().toISOString() }).eq('id', shopId)
-
   const today = new Date().toISOString().slice(0, 10)
-  await supabase.from('sync_days').upsert(
-    {
-      shop_id: shopId,
-      sync_date: today,
-      status: errors.length === 0 ? 'success' : 'error',
-      products_count: productsUpserted,
-      revenue: revenueTotal,
-      synced_at: new Date().toISOString(),
-    },
-    { onConflict: 'shop_id,sync_date' },
-  )
+  await Promise.all([
+    supabase.from('shops').update({ last_synced_at: new Date().toISOString() }).eq('id', shopId),
+    supabase.from('sync_days').upsert(
+      {
+        shop_id: shopId,
+        sync_date: today,
+        status: errors.length === 0 ? 'success' : 'error',
+        products_count: productsUpserted,
+        revenue: revenueTotal,
+        synced_at: new Date().toISOString(),
+      },
+      { onConflict: 'shop_id,sync_date' },
+    ),
+  ])
 
   return {
     ok: errors.length === 0,

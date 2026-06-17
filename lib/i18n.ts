@@ -196,6 +196,19 @@ export const translations = {
       belowMarginNote: '15% dan past) · tannarx yoki narxni ko\'rib chiqing',
       adAnalyticsNote: 'Reklama tahlili (DRR, CPC, CPO)',
       adAnalyticsNoteSuffix: "— Uzum Ads API integratsiyasi yaqinda qo'shiladi. Hozircha mahsulot narxi va tannarxi asosida margin tahlili ko'rsatilmoqda.",
+      // Period selector
+      periodLabel: 'Davr',
+      period30: 'Oxirgi 30 kun',
+      period90: 'Oxirgi 90 kun',
+      period180: 'Oxirgi 6 oy',
+      period365: 'Oxirgi 1 yil',
+      period730: 'Oxirgi 2 yil',
+      periodAll: 'Barchasi',
+      // Top products by period
+      topSoldTitle: 'Tanlangan davrda eng ko\'p sotilgan',
+      topSoldQty: 'Soni',
+      topSoldRevenue: 'Daromad',
+      noSalesInPeriod: 'Bu davrda sotuv ma\'lumoti topilmadi',
       // Table columns (analytics)
       price: 'Narx',
       costPrice: 'Tannarx',
@@ -914,6 +927,19 @@ export const translations = {
       belowMarginNote: 'below 15%) · review cost or price',
       adAnalyticsNote: 'Ad analytics (DRR, CPC, CPO)',
       adAnalyticsNoteSuffix: '— Uzum Ads API integration coming soon. Currently showing margin analysis based on product price and cost.',
+      // Period selector
+      periodLabel: 'Period',
+      period30: 'Last 30 days',
+      period90: 'Last 90 days',
+      period180: 'Last 6 months',
+      period365: 'Last 1 year',
+      period730: 'Last 2 years',
+      periodAll: 'All time',
+      // Top products by period
+      topSoldTitle: 'Top sold in selected period',
+      topSoldQty: 'Qty',
+      topSoldRevenue: 'Revenue',
+      noSalesInPeriod: 'No sales data found for this period',
       // Table columns (analytics)
       price: 'Price',
       costPrice: 'Cost',
@@ -1632,6 +1658,19 @@ export const translations = {
       belowMarginNote: 'ниже 15%) · проверьте себестоимость или цену',
       adAnalyticsNote: 'Аналитика рекламы (DRR, CPC, CPO)',
       adAnalyticsNoteSuffix: '— интеграция с Uzum Ads API скоро появится. Пока отображается анализ маржи на основе цены и себестоимости.',
+      // Period selector
+      periodLabel: 'Период',
+      period30: 'Последние 30 дней',
+      period90: 'Последние 90 дней',
+      period180: 'Последние 6 месяцев',
+      period365: 'Последний год',
+      period730: 'Последние 2 года',
+      periodAll: 'Всё время',
+      // Top products by period
+      topSoldTitle: 'Топ продаж за выбранный период',
+      topSoldQty: 'Кол-во',
+      topSoldRevenue: 'Выручка',
+      noSalesInPeriod: 'Данные о продажах за этот период не найдены',
       // Table columns (analytics)
       price: 'Цена',
       costPrice: 'Себестоимость',

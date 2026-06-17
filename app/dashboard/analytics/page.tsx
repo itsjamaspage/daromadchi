@@ -1,10 +1,12 @@
-import { BarChart2, Settings, TrendingUp, Package, Link2, RefreshCw } from 'lucide-react'
+import { BarChart2, Settings, Package, Link2, RefreshCw, TrendingUp } from 'lucide-react'
 import Link from 'next/link'
 import { Suspense } from 'react'
 import { getProducts } from '@/lib/db/products'
+import { getProductSales } from '@/lib/db/products'
 import { getKpis } from '@/lib/db/kpis'
 import AdDrrChart from './AdDrrChart'
 import MarketplaceTabs from '@/components/dashboard/MarketplaceTabs'
+import PeriodSelector from './PeriodSelector'
 import { getT } from '@/lib/server-i18n'
 import type { MarketplaceType } from '@/lib/types'
 
@@ -17,6 +19,13 @@ function parseMp(v: string | undefined): MarketplaceType | undefined {
   return (VALID_MP as readonly string[]).includes(v ?? '') ? v as MarketplaceType : undefined
 }
 
+const VALID_DAYS = [30, 90, 180, 365, 730] as const
+function parseDays(v: string | undefined): number | null {
+  if (v === 'all') return null
+  const n = Number(v)
+  return (VALID_DAYS as readonly number[]).includes(n) ? n : 30
+}
+
 interface Props {
   searchParams: Promise<Record<string, string>>
 }
@@ -24,7 +33,14 @@ interface Props {
 export default async function AnalyticsPage({ searchParams }: Props) {
   const params = await searchParams
   const marketplace = parseMp(params.mp)
-  const [t, products, kpis] = await Promise.all([getT(), getProducts(marketplace), getKpis(30, marketplace)])
+  const days = parseDays(params.days)
+
+  const [t, products, kpis, periodSales] = await Promise.all([
+    getT(),
+    getProducts(marketplace),
+    getKpis(days ?? 3650, marketplace),
+    getProductSales(days, marketplace),
+  ])
   const d = t.dashboard
   const hasProducts = products.length > 0
   const hasOrders = kpis.total_orders > 0
@@ -74,9 +90,18 @@ export default async function AnalyticsPage({ searchParams }: Props) {
         <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{d.analyticsSubtitle}</p>
       </div>
 
-      <Suspense>
-        <MarketplaceTabs current={marketplace} />
-      </Suspense>
+      <div className="flex flex-wrap items-center gap-3">
+        <Suspense>
+          <MarketplaceTabs current={marketplace} />
+        </Suspense>
+        <Suspense>
+          <PeriodSelector current={days} labels={{
+            label: d.periodLabel,
+            p30: d.period30, p90: d.period90, p180: d.period180,
+            p365: d.period365, p730: d.period730, pAll: d.periodAll,
+          }} />
+        </Suspense>
+      </div>
 
       {isEmpty ? (
         <div className="border border-dashed rounded-2xl p-10 text-center" style={{ background: 'var(--bg-card2)', borderColor: 'rgba(124, 58, 237, 0.3)' }}>
@@ -136,6 +161,41 @@ export default async function AnalyticsPage({ searchParams }: Props) {
                 <p className="text-xl font-bold" style={{ color }}>{value}</p>
               </div>
             ))}
+          </div>
+
+          {/* Top sold in selected period */}
+          <div className="border rounded-2xl overflow-hidden" style={{ background: 'var(--bg-card2)', borderColor: 'var(--border)' }}>
+            <div className="px-5 py-4 flex items-center gap-2" style={{ borderBottom: '1px solid var(--border)' }}>
+              <TrendingUp className="w-4 h-4" style={{ color: '#7c3aed' }} />
+              <h2 className="font-semibold text-sm" style={{ color: 'var(--text-base)' }}>{d.topSoldTitle}</h2>
+            </div>
+            {periodSales.length === 0 ? (
+              <p className="px-5 py-6 text-sm" style={{ color: 'var(--text-muted)' }}>{d.noSalesInPeriod}</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-xs" style={{ color: 'var(--text-muted)', borderBottom: '1px solid var(--border)', background: 'rgba(255,255,255,0.01)' }}>
+                      <th className="text-left font-medium px-5 py-3">{d.product}</th>
+                      <th className="text-right font-medium px-4 py-3">{d.topSoldQty}</th>
+                      <th className="text-right font-medium px-4 py-3">{d.topSoldRevenue}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {periodSales.slice(0, 20).map((row, idx) => (
+                      <tr key={row.product_id} style={{ borderBottom: idx < Math.min(periodSales.length, 20) - 1 ? '1px solid var(--border)' : 'none' }}>
+                        <td className="px-5 py-3.5">
+                          <p className="font-medium" style={{ color: 'var(--text-base)' }}>{row.title}</p>
+                          {row.sku && <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{row.sku}</p>}
+                        </td>
+                        <td className="px-4 py-3.5 text-right font-semibold" style={{ color: '#7c3aed' }}>{row.qty_sold}</td>
+                        <td className="px-4 py-3.5 text-right" style={{ color: 'var(--text-dim)' }}>{fmt(row.revenue)} so'm</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
 
           {/* Low-margin alerts */}

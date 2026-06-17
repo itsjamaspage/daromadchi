@@ -74,8 +74,8 @@ export interface YandexOrderItem {
 export interface YandexOrder {
   id: number
   status: string // CANCELLED, DELIVERED, DELIVERY, PENDING, PROCESSING, RETURNED
-  createdAt: string
-  updatedAt: string
+  creationDate?: string  // "dd-MM-yyyy HH:mm:ss" — Yandex actual field name
+  updatedAt?: string     // same format
   itemsTotal: number
   buyerTotal: number
   deliveryTotal: number

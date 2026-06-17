@@ -39,9 +39,13 @@ function ShopCard({ shop }: { shop: Shop }) {
   const [adsSyncState, setAdsSyncState] = useState<'idle' | 'syncing' | 'ok' | 'err'>('idle')
   const [syncMsg, setSyncMsg]   = useState<string | null>(null)
   const [adsSyncMsg, setAdsSyncMsg] = useState<string | null>(null)
+  const [fromDays, setFromDays] = useState<number | null>(null)
 
   const cfg = MP_CONFIG[shop.marketplace]
   const col = COLOR_CLASSES[cfg?.color ?? 'violet']
+  const LAUNCH_YEAR: Record<string, string> = {
+    uzum: 'okt 2022', yandex_market: 'apr 2025', wildberries: 'fev 2022',
+  }
   const hasKey = !!shop.api_key_encrypted
   const lastSync = shop.last_synced_at ? new Date(shop.last_synced_at).toLocaleString() : null
 
@@ -49,11 +53,16 @@ function ShopCard({ shop }: { shop: Shop }) {
     if (!cfg) return
     setSyncState('syncing'); setSyncMsg(null)
     try {
-      const res = await fetch(cfg.syncUrl, { method: 'POST' })
+      const res = await fetch(cfg.syncUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(fromDays !== null ? { fromDays } : {}),
+      })
       const data = await res.json()
       if (data.ok) {
         setSyncState('ok')
-        setSyncMsg(`${data.productsUpserted ?? 0} ${t.products}, ${data.ordersUpserted ?? 0} ${t.orders}`)
+        const base = `${data.productsUpserted ?? 0} ${t.products}, ${data.ordersUpserted ?? 0} ${t.orders}`
+        setSyncMsg(data.details ? `${base} · ${data.details}` : base)
         router.refresh()
         setTimeout(() => { setSyncState('idle'); setSyncMsg(null) }, 4000)
       } else {
@@ -116,7 +125,24 @@ function ShopCard({ shop }: { shop: Shop }) {
         </div>
       </div>
 
-      <div className="px-6 pb-5 space-y-2 border-t border-[var(--border)] pt-4">
+      <div className="px-6 pb-5 space-y-3 border-t border-[var(--border)] pt-4">
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-[var(--text-muted)] shrink-0">{t.historyLabel}:</span>
+          <select
+            value={fromDays ?? ''}
+            onChange={e => setFromDays(e.target.value === '' ? null : Number(e.target.value))}
+            disabled={syncState === 'syncing'}
+            className="flex-1 text-xs bg-[var(--bg-input)] border border-[var(--border)] text-[var(--text-base)] rounded-lg px-2 py-1.5 appearance-none cursor-pointer disabled:opacity-40"
+          >
+            <option value="">{t.fromLastSync}</option>
+            <option value="30">{t.days30}</option>
+            <option value="90">{t.days90}</option>
+            <option value="180">{t.days180}</option>
+            <option value="365">{t.days365}</option>
+            <option value="730">{t.days730}</option>
+            <option value="0">{t.daysAll} ({LAUNCH_YEAR[shop.marketplace] ?? '2022'})</option>
+          </select>
+        </div>
         <div className="flex flex-wrap gap-2">
           <button
             onClick={handleSync}

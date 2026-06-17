@@ -179,7 +179,7 @@ export interface UzumFbsOrdersResponse {
   totalCount?: number
 }
 
-// GET /v2/fbs/orders — shopIds required; dates are Unix epoch ms
+// GET /v2/fbs/orders or /v2/fbo/orders — shopIds required; dates are Unix epoch ms
 export async function fetchUzumOrders(
   token: string,
   shopIds: number[],
@@ -187,6 +187,7 @@ export async function fetchUzumOrders(
   pageSize = 100,
   fromDateMs?: number,
   toDateMs?: number,
+  orderType: 'fbs' | 'fbo' = 'fbs',
 ): Promise<{ data: UzumFbsOrder[]; totalCount: number; pageSize: number }> {
   return withRetry(() => {
     const params = new URLSearchParams({
@@ -196,7 +197,7 @@ export async function fetchUzumOrders(
     for (const id of shopIds) params.append('shopIds', String(id))
     if (fromDateMs != null) params.set('dateFrom', String(fromDateMs))
     if (toDateMs != null) params.set('dateTo', String(toDateMs))
-    return request<UzumFbsOrdersResponse>(`/v2/fbs/orders?${params}`, token).then(r => {
+    return request<UzumFbsOrdersResponse>(`/v2/${orderType}/orders?${params}`, token).then(r => {
       const orders = r.payload?.orders ?? r.data ?? r.orders ?? []
       return {
         data: orders,
@@ -217,14 +218,15 @@ export async function fetchUzumShops(token: string): Promise<UzumShop[]> {
 }
 
 // GET /v1/product/shop/{shopId} — products + SKUs (stock, price, cost, sold)
-// Tries filter=ALL first, then ACTIVE, then no filter — some shop states reject ALL.
+// Tries every known filter value including inactive/archived so we capture
+// quantitySold even for shops with 0 active listings.
 export async function fetchUzumShopProducts(
   token: string,
   shopId: number,
   page = 0,
   size = 100,
 ): Promise<UzumShopProductsResponse> {
-  const filtersToTry = ['ALL', 'ACTIVE', undefined] as const
+  const filtersToTry = ['ALL', 'ACTIVE', 'NOT_FOR_SALE', 'ARCHIVED', 'BLOCKED', undefined] as const
   let lastError: unknown
 
   for (const filter of filtersToTry) {
