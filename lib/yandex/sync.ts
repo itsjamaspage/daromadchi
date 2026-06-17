@@ -80,7 +80,7 @@ export async function syncFromYandex(
 
     const since = shopRow?.last_synced_at
       ? new Date(shopRow.last_synced_at)
-      : (() => { const d = new Date(); d.setDate(d.getDate() - 90); return d })()
+      : (() => { const d = new Date(); d.setDate(d.getDate() - 365); return d })()
 
     const fromDate = since.toISOString().slice(0, 10)
     const toDate   = new Date().toISOString().slice(0, 10)

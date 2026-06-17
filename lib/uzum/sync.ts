@@ -84,7 +84,7 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
       if (prodErr) throw new Error(`Mahsulotlarni saqlashda xato: ${prodErr.message}`)
     }
 
-    // ── Orders (incremental: since last sync, fallback 90 days) ───────────────
+    // ── Orders (incremental: since last sync, fallback 365 days for first sync) ─
     const { data: shopRow } = await supabase
       .from('shops')
       .select('last_synced_at')
@@ -93,7 +93,7 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
 
     const since = shopRow?.last_synced_at
       ? new Date(shopRow.last_synced_at)
-      : (() => { const d = new Date(); d.setDate(d.getDate() - 90); return d })()
+      : (() => { const d = new Date(); d.setDate(d.getDate() - 365); return d })()
 
     const fromDate = since.toISOString().slice(0, 10)
 
