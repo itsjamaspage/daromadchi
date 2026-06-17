@@ -678,34 +678,39 @@ export default function LandingPage() {
       {/* ── HERO ─────────────────────────────────────────────────────────────── */}
       <section className="relative flex items-center pt-24 overflow-hidden" style={{ minHeight: '100svh' }}>
 
-        {/* Dark theme: flowing ocean wave blobs + sparkle dots */}
+        {/* Dark theme: solid organic wave zone (right) + glow layers + sparkle dots */}
         {isDark && (
-          <div className="absolute inset-0 pointer-events-none" aria-hidden>
-            <div style={{ position: 'absolute', right: '-8%', top: '-20%', width: '70%', height: '95%',
-              background: 'radial-gradient(ellipse 65% 75% at 72% 38%, rgba(0,110,200,0.32) 0%, rgba(0,70,155,0.14) 55%, transparent 78%)',
-              borderRadius: '42% 58% 68% 32% / 38% 52% 58% 52%', filter: 'blur(28px)' }} />
-            <div style={{ position: 'absolute', right: '-4%', top: '25%', width: '58%', height: '68%',
-              background: 'radial-gradient(ellipse 62% 68% at 78% 58%, rgba(0,165,225,0.24) 0%, rgba(0,130,205,0.10) 58%, transparent 78%)',
-              borderRadius: '58% 42% 38% 62% / 52% 58% 42% 50%', filter: 'blur(22px)' }} />
-            <div style={{ position: 'absolute', left: '-6%', bottom: '-8%', width: '48%', height: '58%',
-              background: 'radial-gradient(ellipse 78% 68% at 22% 78%, rgba(0,195,225,0.18) 0%, transparent 68%)',
-              filter: 'blur(30px)' }} />
-            <div style={{ position: 'absolute', right: '18%', bottom: '18%', width: '36%', height: '42%',
-              background: 'radial-gradient(ellipse at center, rgba(123,97,255,0.13) 0%, transparent 72%)',
+          <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden>
+            {/* Main organic wave — visible lighter-blue zone on the right, like the coffee-shop reference */}
+            <div style={{ position: 'absolute', right: '-12%', top: '-20%', width: '68%', height: '140%',
+              background: 'linear-gradient(148deg, #0E3D70 0%, #0C4880 30%, #0D5090 58%, #0A3D78 80%, #083468 100%)',
+              borderRadius: '62% 38% 55% 45% / 40% 32% 68% 60%' }} />
+            {/* Inner teal glow on top of the wave */}
+            <div style={{ position: 'absolute', right: '-2%', top: '5%', width: '58%', height: '80%',
+              background: 'radial-gradient(ellipse 65% 60% at 65% 42%, rgba(0,180,230,0.28) 0%, transparent 70%)',
+              filter: 'blur(18px)' }} />
+            {/* Lower teal sweep */}
+            <div style={{ position: 'absolute', right: '5%', bottom: '0%', width: '50%', height: '55%',
+              background: 'radial-gradient(ellipse 70% 65% at 70% 75%, rgba(0,200,232,0.18) 0%, transparent 68%)',
               filter: 'blur(22px)' }} />
+            {/* Violet accent */}
+            <div style={{ position: 'absolute', right: '12%', bottom: '20%', width: '32%', height: '40%',
+              background: 'radial-gradient(ellipse at center, rgba(123,97,255,0.16) 0%, transparent 72%)',
+              filter: 'blur(18px)' }} />
+            {/* Sparkle dots */}
             {([
-              { x: '58%', y: '15%', r: 2.5, c: '#00C8E8' },
-              { x: '74%', y: '28%', r: 1.5, c: '#7B61FF' },
-              { x: '82%', y: '52%', r: 2, c: '#00C8E8' },
-              { x: '88%', y: '72%', r: 1.5, c: '#fff' },
-              { x: '65%', y: '80%', r: 2, c: '#7B61FF' },
-              { x: '50%', y: '62%', r: 1, c: '#00C8E8' },
-              { x: '92%', y: '38%', r: 1.5, c: '#fff' },
-              { x: '42%', y: '20%', r: 1, c: '#7B61FF' },
+              { x: '58%', y: '12%', r: 2.5, c: '#00C8E8' },
+              { x: '74%', y: '26%', r: 1.5, c: '#7B61FF' },
+              { x: '83%', y: '50%', r: 2,   c: '#00C8E8' },
+              { x: '89%', y: '70%', r: 1.5, c: '#fff' },
+              { x: '66%', y: '78%', r: 2,   c: '#7B61FF' },
+              { x: '51%', y: '60%', r: 1,   c: '#00C8E8' },
+              { x: '93%', y: '36%', r: 1.5, c: '#fff' },
+              { x: '43%', y: '18%', r: 1,   c: '#7B61FF' },
             ] as {x:string;y:string;r:number;c:string}[]).map((d, i) => (
               <div key={i} style={{ position: 'absolute', left: d.x, top: d.y,
                 width: d.r * 2, height: d.r * 2,
-                background: d.c, borderRadius: '50%', opacity: 0.6,
+                background: d.c, borderRadius: '50%', opacity: 0.65,
                 boxShadow: `0 0 ${d.r * 5}px ${d.r * 1.5}px ${d.c === '#fff' ? 'rgba(255,255,255,0.4)' : d.c + '88'}` }} />
             ))}
           </div>
@@ -1502,79 +1507,110 @@ export default function LandingPage() {
 
       {/* ── FOOTER ───────────────────────────────────────────────────────────── */}
       <footer style={{ background: 'var(--bg-card)', borderTop: '1px solid var(--border)' }}>
-        <div className="max-w-6xl mx-auto px-6 py-14">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-10 mb-12">
-            <div className="col-span-2 lg:col-span-1">
-              <Link href="/" className="flex items-center gap-2.5 mb-5">
-                <img src="/icon.svg" alt="Daromadchi" className="w-8 h-8 rounded-lg" />
-                <span className="font-bold text-sm" style={{ color: 'var(--text-base)' }}>Daromadchi</span>
-              </Link>
-              <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>
-                {lang === 'uz' ? "Uzum Market, Yandex Market va Wildberries sotuvchilari uchun analitika platformasi." :
-                  lang === 'ru' ? "Платформа аналитики для продавцов Uzum Market, Yandex Market и Wildberries." :
-                    "Analytics platform for Uzum Market, Yandex Market and Wildberries sellers."}
-              </p>
+        <div className="max-w-6xl mx-auto px-6 py-12">
+
+          {/* Brand + 4 columns */}
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-8 mb-10 items-start">
+
+            {/* Brand */}
+            <div className="col-span-2 md:col-span-1 flex items-center gap-2">
+              <img src="/icon.svg" alt="Daromadchi" className="w-8 h-8 rounded-xl" />
+              <span className="font-black text-xl" style={{ color: 'var(--c1)' }}>Daromadchi</span>
             </div>
+
+            {/* Col 1 — Platform */}
             <div>
-              <p className="text-xs font-bold uppercase tracking-widest mb-5" style={{ color: 'var(--text-muted)' }}>
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] mb-4" style={{ color: 'var(--text-muted)' }}>
                 {lang === 'uz' ? 'Platforma' : lang === 'ru' ? 'Платформа' : 'Platform'}
               </p>
-              <div className="space-y-3">
+              <div className="space-y-2.5">
                 {[
                   { href: '#features', label: t.nav.features },
                   { href: '#how', label: t.nav.how },
                   { href: '#pricing', label: t.nav.pricing },
                   { href: '/login', label: t.nav.start },
                 ].map(l => (
-                  <a key={l.href} href={l.href} className="block text-sm transition-colors" style={{ color: 'var(--text-muted)' }}>
+                  <a key={l.href} href={l.href} className="block text-sm transition-colors hover:opacity-100"
+                    style={{ color: 'var(--text-muted)' }}>
                     {l.label}
                   </a>
                 ))}
               </div>
             </div>
+
+            {/* Col 2 — Resources */}
             <div>
-              <p className="text-xs font-bold uppercase tracking-widest mb-5" style={{ color: 'var(--text-muted)' }}>
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] mb-4" style={{ color: 'var(--text-muted)' }}>
                 {lang === 'uz' ? 'Resurslar' : lang === 'ru' ? 'Ресурсы' : 'Resources'}
               </p>
-              <div className="space-y-3">
+              <div className="space-y-2.5">
                 {[
                   { href: '/help', label: t.nav.help },
                   { href: '/pricing', label: lang === 'uz' ? 'Narxlar' : lang === 'ru' ? 'Тарифы' : 'Pricing' },
-                  { href: '/privacy', label: t.nav.privacy ?? 'Privacy Policy' },
+                  { href: '/privacy', label: t.nav.privacy ?? 'Privacy' },
                 ].map(l => (
-                  <Link key={l.href} href={l.href} className="block text-sm transition-colors" style={{ color: 'var(--text-muted)' }}>
+                  <Link key={l.href} href={l.href} className="block text-sm transition-colors hover:opacity-100"
+                    style={{ color: 'var(--text-muted)' }}>
                     {l.label}
                   </Link>
                 ))}
               </div>
             </div>
+
+            {/* Col 3 — Marketplaces */}
             <div>
-              <p className="text-xs font-bold uppercase tracking-widest mb-5" style={{ color: 'var(--text-muted)' }}>
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] mb-4" style={{ color: 'var(--text-muted)' }}>
                 {lang === 'uz' ? 'Bozorlar' : lang === 'ru' ? 'Маркетплейсы' : 'Marketplaces'}
               </p>
-              <div className="space-y-3">
+              <div className="space-y-2.5">
                 {['Uzum Market', 'Yandex Market', 'Wildberries'].map(m => (
                   <span key={m} className="block text-sm" style={{ color: 'var(--text-muted)' }}>{m}</span>
                 ))}
               </div>
             </div>
-          </div>
-          <div className="border-t pt-8 flex flex-col sm:flex-row items-center justify-between gap-4" style={{ borderColor: 'var(--border)' }}>
-            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>© 2026 Daromadchi. {t.footer}</p>
-            <div className="flex items-center gap-6">
-              <Link href="/privacy" className="text-xs transition-colors" style={{ color: 'var(--text-muted)' }}>
-                {t.nav.privacy ?? 'Privacy Policy'}
-              </Link>
-              <div className="flex items-center gap-3">
-                {langs.map(l => (
-                  <button key={l} onClick={() => setLang(l)} className="text-xs font-bold uppercase transition-colors"
-                    style={{ color: lang === l ? 'var(--text-base)' : 'var(--text-muted)' }}>
-                    {l}
-                  </button>
+
+            {/* Col 4 — Company */}
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] mb-4" style={{ color: 'var(--text-muted)' }}>
+                {lang === 'uz' ? 'Kompaniya' : lang === 'ru' ? 'Компания' : 'Company'}
+              </p>
+              <div className="space-y-2.5">
+                {[
+                  { href: '/login', label: lang === 'uz' ? 'Kirish' : lang === 'ru' ? 'Войти' : 'Sign in' },
+                  { href: '/login', label: lang === 'uz' ? "Ro'yxatdan o'tish" : lang === 'ru' ? 'Регистрация' : 'Register' },
+                  { href: '/help', label: lang === 'uz' ? 'Yordam' : lang === 'ru' ? 'Поддержка' : 'Support' },
+                ].map(l => (
+                  <Link key={l.label} href={l.href} className="block text-sm transition-colors hover:opacity-100"
+                    style={{ color: 'var(--text-muted)' }}>
+                    {l.label}
+                  </Link>
                 ))}
               </div>
             </div>
+
           </div>
+
+          {/* Bottom bar */}
+          <div className="border-t pt-6 flex flex-col sm:flex-row items-center justify-between gap-3"
+            style={{ borderColor: 'var(--border)' }}>
+            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+              © 2026 Daromadchi. {t.footer}
+            </p>
+            <div className="flex items-center gap-5 flex-wrap justify-center">
+              {[
+                { href: '#features', label: t.nav.features },
+                { href: '#pricing',  label: t.nav.pricing },
+                { href: '/help',     label: t.nav.help },
+                { href: '/privacy',  label: t.nav.privacy ?? 'Privacy' },
+              ].map(l => (
+                <a key={l.href} href={l.href} className="text-xs transition-colors hover:opacity-100"
+                  style={{ color: 'var(--text-muted)' }}>
+                  {l.label}
+                </a>
+              ))}
+            </div>
+          </div>
+
         </div>
       </footer>
 
