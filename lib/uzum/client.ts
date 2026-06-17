@@ -217,22 +217,35 @@ export async function fetchUzumShops(token: string): Promise<UzumShop[]> {
 }
 
 // GET /v1/product/shop/{shopId} — products + SKUs (stock, price, cost, sold)
+// Tries filter=ALL first, then ACTIVE, then no filter — some shop states reject ALL.
 export async function fetchUzumShopProducts(
   token: string,
   shopId: number,
   page = 0,
   size = 100,
 ): Promise<UzumShopProductsResponse> {
-  return withRetry(() => {
-    const params = new URLSearchParams({
-      page: String(page),
-      size: String(size),
-      sortBy: 'DEFAULT',
-      order: 'ASC',
-      filter: 'ALL',
-    })
-    return request<UzumShopProductsResponse>(`/v1/product/shop/${shopId}?${params}`, token)
-  })
+  const filtersToTry = ['ALL', 'ACTIVE', undefined] as const
+  let lastError: unknown
+
+  for (const filter of filtersToTry) {
+    try {
+      return await withRetry(() => {
+        const params = new URLSearchParams({
+          page: String(page),
+          size: String(size),
+          sortBy: 'DEFAULT',
+          order: 'ASC',
+        })
+        if (filter) params.set('filter', filter)
+        return request<UzumShopProductsResponse>(`/v1/product/shop/${shopId}?${params}`, token)
+      })
+    } catch (e) {
+      lastError = e
+      // Only retry with next filter on 403 — other errors are not filter-related
+      if (!(e instanceof UzumApiError && e.status === 403)) throw e
+    }
+  }
+  throw lastError
 }
 
 export async function fetchUzumAdCampaigns(
