@@ -30,6 +30,7 @@ export async function syncFromWildberries(
   supabase: SupabaseClient,
   shopId: string,
   token: string,
+  fromDateOverride?: Date,
 ): Promise<WbSyncResult> {
   let productsUpserted = 0
   let ordersUpserted   = 0
@@ -113,9 +114,10 @@ export async function syncFromWildberries(
       .select('last_synced_at')
       .eq('id', shopId)
       .single()
-    const sinceDt = shopRow?.last_synced_at
-      ? new Date(shopRow.last_synced_at)
-      : (() => { const d = new Date(); d.setDate(d.getDate() - 90); return d })()
+    const sinceDt = fromDateOverride
+      ?? (shopRow?.last_synced_at
+        ? new Date(shopRow.last_synced_at)
+        : (() => { const d = new Date(); d.setDate(d.getDate() - 365); return d })())
     const df = sinceDt.toISOString().split('T')[0]
 
     const res = await fetch(

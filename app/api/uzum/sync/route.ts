@@ -1,9 +1,15 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { syncFromUzum } from '@/lib/uzum/sync'
 import { createClient } from '@/lib/supabase/server'
 import { decrypt } from '@/lib/crypto'
 
-export async function POST() {
+function fromDaysToDate(fromDays: unknown): Date | undefined {
+  if (typeof fromDays !== 'number') return undefined
+  if (fromDays === 0) return new Date('2019-01-01')
+  const d = new Date(); d.setDate(d.getDate() - fromDays); return d
+}
+
+export async function POST(req: NextRequest) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -37,8 +43,10 @@ export async function POST() {
     }
   }
 
+  const body = await req.json().catch(() => ({}))
+  const fromDate = fromDaysToDate(body?.fromDays)
   const token = decrypt(shop.api_key_encrypted)
-  const result = await syncFromUzum(shop.id, token)
+  const result = await syncFromUzum(shop.id, token, fromDate)
   return NextResponse.json(result, { status: result.ok ? 200 : 500 })
 }
 

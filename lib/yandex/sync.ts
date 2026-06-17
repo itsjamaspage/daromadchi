@@ -29,6 +29,7 @@ export async function syncFromYandex(
   shopId: string,
   token: string,
   campaignId: string,
+  fromDateOverride?: Date,
 ): Promise<YandexSyncResult> {
   const supabase = await createClient()
 
@@ -78,9 +79,10 @@ export async function syncFromYandex(
       .eq('id', shopId)
       .single()
 
-    const since = shopRow?.last_synced_at
-      ? new Date(shopRow.last_synced_at)
-      : (() => { const d = new Date(); d.setDate(d.getDate() - 365); return d })()
+    const since = fromDateOverride
+      ?? (shopRow?.last_synced_at
+        ? new Date(shopRow.last_synced_at)
+        : (() => { const d = new Date(); d.setDate(d.getDate() - 365); return d })())
 
     const fromDate = since.toISOString().slice(0, 10)
     const toDate   = new Date().toISOString().slice(0, 10)

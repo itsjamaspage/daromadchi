@@ -1,9 +1,15 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { decrypt } from '@/lib/crypto'
 import { syncFromWildberries } from '@/lib/wildberries/sync'
 
-export async function POST() {
+function fromDaysToDate(fromDays: unknown): Date | undefined {
+  if (typeof fromDays !== 'number') return undefined
+  if (fromDays === 0) return new Date('2019-01-01')
+  const d = new Date(); d.setDate(d.getDate() - fromDays); return d
+}
+
+export async function POST(req: NextRequest) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -30,7 +36,9 @@ export async function POST() {
     }
   }
 
-  const result = await syncFromWildberries(supabase, shop.id, decrypt(shop.api_key_encrypted))
+  const body = await req.json().catch(() => ({}))
+  const fromDate = fromDaysToDate(body?.fromDays)
+  const result = await syncFromWildberries(supabase, shop.id, decrypt(shop.api_key_encrypted), fromDate)
   return NextResponse.json(result)
 }
 
