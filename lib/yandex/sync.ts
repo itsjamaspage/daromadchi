@@ -89,22 +89,34 @@ export async function syncFromYandex(
 
     const yandexOrders = await fetchAllYandexOrders(token, campaignId, fromDate)
 
-    const orderRows = yandexOrders.filter(o => o.createdAt || o.updatedAt).map(o => ({
-      shop_id: shopId,
-      order_id_external: String(o.id),
-      marketplace: 'yandex_market' as const,
-      status: (STATUS_MAP[o.status] ?? 'pending') as
-        | 'pending'
-        | 'confirmed'
-        | 'delivered'
-        | 'cancelled'
-        | 'returned',
-      revenue: o.buyerTotal ?? o.itemsTotal ?? 0,
-      marketplace_fee: o.commissionTotal ?? null,
-      delivery_cost: o.deliveryTotal ?? null,
-      items_count: o.items?.length ?? 1,
-      ordered_at: o.createdAt ?? o.updatedAt,
-    }))
+    // Yandex returns dates as "dd-MM-yyyy HH:mm:ss" — convert to ISO for Postgres
+    function parseYandexDate(raw?: string): string | null {
+      if (!raw) return null
+      const m = raw.match(/^(\d{2})-(\d{2})-(\d{4}) (\d{2}):(\d{2}):(\d{2})$/)
+      if (!m) return null
+      const d = new Date(+m[3], +m[2] - 1, +m[1], +m[4], +m[5], +m[6])
+      return isNaN(d.getTime()) ? null : d.toISOString()
+    }
+
+    const orderRows = yandexOrders
+      .map(o => ({ o, orderedAt: parseYandexDate(o.creationDate) ?? parseYandexDate(o.updatedAt) }))
+      .filter((row): row is typeof row & { orderedAt: string } => row.orderedAt !== null)
+      .map(({ o, orderedAt }) => ({
+        shop_id: shopId,
+        order_id_external: String(o.id),
+        marketplace: 'yandex_market' as const,
+        status: (STATUS_MAP[o.status] ?? 'pending') as
+          | 'pending'
+          | 'confirmed'
+          | 'delivered'
+          | 'cancelled'
+          | 'returned',
+        revenue: o.buyerTotal ?? o.itemsTotal ?? 0,
+        marketplace_fee: o.commissionTotal ?? null,
+        delivery_cost: o.deliveryTotal ?? null,
+        items_count: o.items?.length ?? 1,
+        ordered_at: orderedAt,
+      }))
 
     // Upsert: inserts new orders AND updates status of existing ones
     if (orderRows.length > 0) {

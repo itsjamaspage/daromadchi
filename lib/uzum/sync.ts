@@ -35,6 +35,7 @@ export interface SyncResult {
 
 export async function syncFromUzum(shopId: string, token: string, fromDateOverride?: Date): Promise<SyncResult> {
   const supabase = await createClient()
+  const warnings: string[] = []
 
   try {
     // ── Products: resolve shop(s), then pull product/SKU data ─────────────────
@@ -87,7 +88,7 @@ export async function syncFromUzum(shopId: string, token: string, fromDateOverri
       }
     } catch (prodSyncErr) {
       // Non-fatal: 403 means shop has no active listings. Continue to orders.
-      console.warn('Uzum product sync skipped:', prodSyncErr)
+      warnings.push(`Products: ${prodSyncErr instanceof UzumApiError ? `${prodSyncErr.status} ${prodSyncErr.body?.slice(0, 150) ?? ''}` : String(prodSyncErr)}`)
     }
 
     // ── Orders (incremental: since last sync, or caller-supplied override) ──────
@@ -110,8 +111,10 @@ export async function syncFromUzum(shopId: string, token: string, fromDateOverri
     const fromDateMs = since.getTime()
 
     const [fbsOrders, fboOrders] = await Promise.all([
-      fetchAllPages(page => fetchUzumOrders(token, uzumShopIds, page, 100, fromDateMs)).catch(() => []),
-      fetchAllPages(page => fetchUzumOrders(token, uzumShopIds, page, 100, fromDateMs, undefined, 'fbo')).catch(() => []),
+      fetchAllPages(page => fetchUzumOrders(token, uzumShopIds, page, 100, fromDateMs))
+        .catch(e => { warnings.push(`FBS: ${e instanceof UzumApiError ? `${e.status} ${e.body?.slice(0, 150) ?? ''}` : String(e)}`); return [] as UzumFbsOrder[] }),
+      fetchAllPages(page => fetchUzumOrders(token, uzumShopIds, page, 100, fromDateMs, undefined, 'fbo'))
+        .catch(e => { warnings.push(`FBO: ${e instanceof UzumApiError ? `${e.status} ${e.body?.slice(0, 150) ?? ''}` : String(e)}`); return [] as UzumFbsOrder[] }),
     ])
     const uzumOrders: UzumFbsOrder[] = [
       ...fbsOrders,
@@ -259,6 +262,7 @@ export async function syncFromUzum(shopId: string, token: string, fromDateOverri
       ordersUpserted: newOrderRows.length,
       productsUpserted: productRows.length,
       campaignsUpserted,
+      details: warnings.length ? warnings.join(' | ') : undefined,
     }
   } catch (err) {
     const msg =

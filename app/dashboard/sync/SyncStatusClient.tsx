@@ -61,7 +61,8 @@ function ShopCard({ shop }: { shop: Shop }) {
       const data = await res.json()
       if (data.ok) {
         setSyncState('ok')
-        setSyncMsg(`${data.productsUpserted ?? 0} ${t.products}, ${data.ordersUpserted ?? 0} ${t.orders}`)
+        const base = `${data.productsUpserted ?? 0} ${t.products}, ${data.ordersUpserted ?? 0} ${t.orders}`
+        setSyncMsg(data.details ? `${base} · ${data.details}` : base)
         router.refresh()
         setTimeout(() => { setSyncState('idle'); setSyncMsg(null) }, 4000)
       } else {
