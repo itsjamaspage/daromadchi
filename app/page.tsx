@@ -45,12 +45,12 @@ function StatNum({ value, suffix }: { value: number; suffix: string }) {
 function DashboardMockup({ p }: { p: typeof translations.en.preview }) {
   const { theme } = useTheme()
   const isDark = theme === 'dark'
-  const bg = isDark ? '#0F2035' : '#ffffff'
-  const bg2 = isDark ? '#132840' : '#f5f0ff'
-  const border = isDark ? 'rgba(14,165,233,0.14)' : 'rgba(124,58,237,0.14)'
-  const muted = isDark ? '#8EAFC8' : '#6b7a9b'
-  const c1 = isDark ? '#0EA5E9' : '#7c3aed'
-  const c2 = isDark ? '#8B5CF6' : '#db2777'
+  const bg = isDark ? '#0C2640' : '#ffffff'
+  const bg2 = isDark ? '#0F3050' : '#F3EBFF'
+  const border = isDark ? 'rgba(0,200,232,0.14)' : 'rgba(124,58,237,0.14)'
+  const muted = isDark ? '#7BB8D4' : '#6b7a9b'
+  const c1 = isDark ? '#00C8E8' : '#7c3aed'
+  const c2 = isDark ? '#7B61FF' : '#ec4899'
 
   const kpis = [
     { l: p.revenue, v: '124.5M', color: c1 },
@@ -90,7 +90,7 @@ function DashboardMockup({ p }: { p: typeof translations.en.preview }) {
               {[30,50,38,70,45,82,60,88,72,55,78,92,65,80].map((h, i) => (
                 <div key={i} className="flex-1 rounded-t" style={{
                   height: `${h}%`,
-                  background: isDark ? 'linear-gradient(to top,#0EA5E9cc,#0EA5E922)' : 'linear-gradient(to top,#7c3aedcc,#7c3aed22)'
+                  background: isDark ? 'linear-gradient(to top,#00C8E8cc,#00C8E822)' : 'linear-gradient(to top,#7c3aedcc,#7c3aed22)'
                 }} />
               ))}
             </div>
@@ -99,7 +99,7 @@ function DashboardMockup({ p }: { p: typeof translations.en.preview }) {
             <p className="text-[10px] mb-3 font-medium" style={{ color: muted }}>{p.categories}</p>
             <div className="relative w-16 h-16 mx-auto">
               <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
-                <circle cx="18" cy="18" r="14" fill="none" stroke={isDark ? 'rgba(14,165,233,0.15)' : 'rgba(124,58,237,0.15)'} strokeWidth="4" />
+                <circle cx="18" cy="18" r="14" fill="none" stroke={isDark ? 'rgba(0,200,232,0.15)' : 'rgba(124,58,237,0.15)'} strokeWidth="4" />
                 <circle cx="18" cy="18" r="14" fill="none" stroke={c1} strokeWidth="4" strokeDasharray="38 50" strokeLinecap="round" />
                 <circle cx="18" cy="18" r="14" fill="none" stroke={c2} strokeWidth="4" strokeDasharray="22 66" strokeDashoffset="-38" strokeLinecap="round" />
                 <circle cx="18" cy="18" r="14" fill="none" stroke="#f59e0b" strokeWidth="4" strokeDasharray="14 74" strokeDashoffset="-60" strokeLinecap="round" />
@@ -274,7 +274,7 @@ function FeaturesScrollSection({
                 transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
                 className="w-72 h-72 rounded-3xl flex items-center justify-center border"
                 style={{
-                  background: isDark ? 'rgba(0,212,255,0.04)' : 'rgba(124,58,237,0.04)',
+                  background: isDark ? 'rgba(0,200,232,0.04)' : 'rgba(124,58,237,0.04)',
                   borderColor: 'var(--border)',
                 }}
               >
@@ -304,7 +304,7 @@ function FeaturesScrollSection({
                     background: i <= activeStep ? 'var(--c1)' : 'var(--bg-base)',
                     borderColor: i <= activeStep ? 'var(--c1)' : 'var(--border)',
                     cursor: 'pointer',
-                    boxShadow: i === activeStep ? (isDark ? '0 0 14px rgba(0,212,255,0.85)' : '0 0 14px rgba(124,58,237,0.85)') : undefined,
+                    boxShadow: i === activeStep ? (isDark ? '0 0 14px rgba(0,200,232,0.85)' : '0 0 14px rgba(124,58,237,0.85)') : undefined,
                   }}
                 />
               ))}
@@ -350,14 +350,14 @@ function FeaturesScrollSection({
                     className="flex items-center gap-3 py-2.5 px-3 rounded-lg text-left w-full focus:outline-none"
                     animate={{
                       opacity: isDark ? (isActive ? 1 : 0.38) : 1,
-                      background: isActive ? (isDark ? 'rgba(0,212,255,0.07)' : 'rgba(124,58,237,0.07)') : 'rgba(0,0,0,0)',
+                      background: isActive ? (isDark ? 'rgba(0,200,232,0.09)' : 'rgba(124,58,237,0.07)') : 'rgba(0,0,0,0)',
                     }}
                     whileHover={{ opacity: 1 }}
                     transition={{ duration: 0.2 }}
                     style={{ cursor: 'pointer' }}
                   >
                     <div className="w-7 h-7 rounded-md flex items-center justify-center shrink-0 transition-colors duration-200"
-                      style={{ background: isActive ? (isDark ? 'rgba(0,212,255,0.14)' : 'rgba(124,58,237,0.14)') : 'transparent' }}>
+                      style={{ background: isActive ? (isDark ? 'rgba(0,200,232,0.14)' : 'rgba(124,58,237,0.14)') : 'transparent' }}>
                       <Li className="w-3.5 h-3.5" style={{ color: isActive ? 'var(--c1)' : 'var(--text-dim)' }} />
                     </div>
                     <span className="text-sm font-medium transition-colors duration-200"
@@ -389,7 +389,7 @@ function FeaturesScrollSection({
               exit={{ opacity: 0, scale: 0.78 }}
               transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
               className="w-36 h-36 rounded-2xl flex items-center justify-center border"
-              style={{ borderColor: 'var(--border)', background: isDark ? 'rgba(0,212,255,0.05)' : 'rgba(124,58,237,0.05)' }}
+              style={{ borderColor: 'var(--border)', background: isDark ? 'rgba(0,200,232,0.05)' : 'rgba(124,58,237,0.05)' }}
             >
               <ActiveIcon className="w-18 h-18" style={{ color: 'var(--c1)', width: '4.5rem', height: '4.5rem' }} />
             </motion.div>
@@ -452,16 +452,17 @@ export default function LandingPage() {
   const tttCheckWin = (b: (null|'O'|'X')[]) => TTT_LINES.some(l => l.every(i => b[i]==='O'))
   const tttCheckDead = (b: (null|'O'|'X')[]) => TTT_LINES.every(l => l.some(i => b[i]==='X'))
 
-  // Scroll lock — prevent page scroll while tic-tac-toe section is active
+  // Scroll lock — fire only when section top reaches viewport top (fully visible)
   useEffect(() => {
-    const el = tttSectionRef.current
-    if (!el) return
-    const observer = new IntersectionObserver(
-      ([entry]) => setTttSectionVisible(entry.isIntersecting),
-      { threshold: 0.5 }
-    )
-    observer.observe(el)
-    return () => observer.disconnect()
+    const checkVisible = () => {
+      const el = tttSectionRef.current
+      if (!el) return
+      const rect = el.getBoundingClientRect()
+      setTttSectionVisible(rect.top <= 5 && rect.bottom > 0)
+    }
+    window.addEventListener('scroll', checkVisible, { passive: true })
+    checkVisible()
+    return () => window.removeEventListener('scroll', checkVisible)
   }, [])
 
   useEffect(() => {
@@ -562,10 +563,10 @@ export default function LandingPage() {
       <header className="fixed top-0 left-0 right-0 z-50 px-4 pt-3">
         <div className="max-w-6xl mx-auto rounded-2xl px-7 h-[72px] flex items-center justify-between"
           style={{
-            background: isDark ? 'rgba(8,18,36,0.92)' : '#ffffff',
+            background: isDark ? 'rgba(5,20,44,0.92)' : '#ffffff',
             backdropFilter: 'blur(16px)',
             WebkitBackdropFilter: 'blur(16px)',
-            border: `1px solid ${isDark ? 'rgba(14,165,233,0.10)' : 'rgba(109,40,217,0.10)'}`,
+            border: `1px solid ${isDark ? 'rgba(0,200,232,0.12)' : 'rgba(124,58,237,0.12)'}`,
             boxShadow: isDark ? '0 4px 24px rgba(0,0,0,0.45)' : '0 4px 24px rgba(0,0,0,0.08)',
           }}>
           <Link href="/" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="flex items-center gap-3 shrink-0">
@@ -608,7 +609,7 @@ export default function LandingPage() {
                     {langs.map(l => (
                       <button key={l} onClick={() => { setLang(l); setLangOpen(false) }}
                         className="w-full px-3 py-2 text-xs font-semibold uppercase text-left"
-                        style={{ background: lang === l ? 'rgba(0,212,255,0.08)' : 'transparent', color: lang === l ? 'var(--c1)' : 'var(--text-muted)' }}>
+                        style={{ background: lang === l ? 'rgba(0,200,232,0.08)' : 'transparent', color: lang === l ? 'var(--c1)' : 'var(--text-muted)' }}>
                         {l}
                       </button>
                     ))}
@@ -646,8 +647,8 @@ export default function LandingPage() {
               transition={{ duration: 0.18 }}
               className="md:hidden max-w-6xl mx-auto mt-1.5 rounded-2xl overflow-hidden"
               style={{
-                background: isDark ? 'rgba(10,22,40,0.96)' : '#ffffff',
-                border: `1px solid ${isDark ? 'rgba(14,165,233,0.10)' : 'rgba(109,40,217,0.10)'}`,
+                background: isDark ? 'rgba(5,20,44,0.96)' : '#ffffff',
+                border: `1px solid ${isDark ? 'rgba(0,200,232,0.12)' : 'rgba(124,58,237,0.12)'}`,
                 boxShadow: isDark ? '0 8px 32px rgba(0,0,0,0.5)' : '0 8px 32px rgba(0,0,0,0.1)',
               }}>
               <div className="px-6 py-4 flex flex-col gap-1">
@@ -1068,7 +1069,7 @@ export default function LandingPage() {
                       border: `2px solid ${cell === 'O' ? 'var(--c1)' : cell === 'X' ? 'var(--border)' : 'var(--border)'}`,
                       cursor: cell || tttDead ? 'default' : 'pointer',
                       color: cell === 'O' ? 'var(--c1)' : 'var(--text-muted)',
-                      boxShadow: cell === 'O' ? `0 0 18px ${isDark ? 'rgba(0,212,255,0.25)' : 'rgba(124,58,237,0.2)'}` : 'none',
+                      boxShadow: cell === 'O' ? `0 0 18px ${isDark ? 'rgba(0,200,232,0.25)' : 'rgba(124,58,237,0.2)'}` : 'none',
                     }}
                   >
                     <AnimatePresence>
@@ -1116,7 +1117,7 @@ export default function LandingPage() {
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ type: 'spring', stiffness: 260, damping: 24 }}
                 className="rounded-3xl p-8 text-center w-full"
-                style={{ background: isDark ? 'rgba(0,212,255,0.07)' : 'rgba(124,58,237,0.06)', border: '1px solid var(--c1)' }}
+                style={{ background: isDark ? 'rgba(0,200,232,0.09)' : 'rgba(124,58,237,0.06)', border: '1px solid var(--c1)' }}
               >
                 <motion.div
                   animate={{ rotate: [0, -8, 8, -6, 6, 0] }}
@@ -1201,9 +1202,9 @@ export default function LandingPage() {
                 transition={{ delay: i * 0.22, type: 'spring', stiffness: 160, damping: 18 }}
                 className="relative flex flex-col rounded-3xl border overflow-hidden"
                 style={{
-                  background: plan.highlight ? 'linear-gradient(160deg, #1e1040 0%, #0f0a2a 100%)' : 'var(--bg-card)',
-                  borderColor: plan.highlight ? 'rgba(139,92,246,0.5)' : 'var(--border)',
-                  boxShadow: plan.highlight ? '0 8px 40px rgba(124,58,237,0.2), 0 2px 8px rgba(0,0,0,0.3)' : undefined,
+                  background: plan.highlight ? 'linear-gradient(160deg, #5b21b6 0%, #4338ca 100%)' : 'var(--bg-card)',
+                  borderColor: plan.highlight ? 'rgba(139,92,246,0.6)' : 'var(--border)',
+                  boxShadow: plan.highlight ? '0 8px 48px rgba(91,33,182,0.45), 0 2px 12px rgba(0,0,0,0.3)' : undefined,
                 }}
               >
                 {plan.highlight && (

@@ -360,15 +360,15 @@ export default function PricingPage() {
                   className="relative flex flex-col rounded-3xl border overflow-hidden"
                   style={{
                     background: plan.highlighted
-                      ? 'linear-gradient(160deg, #1e1040 0%, #0f0a2a 100%)'
+                      ? 'linear-gradient(160deg, #5b21b6 0%, #4338ca 100%)'
                       : 'var(--bg-card2)',
                     borderColor: plan.highlighted
-                      ? 'rgba(139,92,246,0.5)'
+                      ? 'rgba(139,92,246,0.6)'
                       : isProplus
                       ? 'rgba(234,179,8,0.35)'
                       : 'var(--border)',
                     boxShadow: plan.highlighted
-                      ? '0 8px 40px rgba(124,58,237,0.2), 0 2px 8px rgba(0,0,0,0.3)'
+                      ? '0 8px 48px rgba(91,33,182,0.45), 0 2px 12px rgba(0,0,0,0.3)'
                       : undefined,
                     opacity: hasAnimated ? undefined : 0,
                     animation: hasAnimated
