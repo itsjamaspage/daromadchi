@@ -677,24 +677,61 @@ export default function LandingPage() {
 
       {/* ── HERO ─────────────────────────────────────────────────────────────── */}
       <section className="relative flex items-center pt-24 overflow-hidden" style={{ minHeight: '100svh' }}>
-        <div className="relative z-10 max-w-7xl mx-auto w-full px-6 grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-12 items-center py-16">
 
-          {/* LEFT: mockup */}
-          <motion.div
-            initial={{ opacity: 0, x: -40, scale: 0.97 }}
-            animate={{ opacity: 1, x: 0, scale: 1 }}
-            transition={{ duration: 0.75, delay: 0.1, ease: [0.25, 0.46, 0.45, 0.94] }}
-            className="relative order-2 lg:order-1"
-          >
-            <MockupInteractive>
-              <DashboardMockup p={t.preview} />
-            </MockupInteractive>
-          </motion.div>
+        {/* Dark theme: flowing ocean wave blobs + sparkle dots */}
+        {isDark && (
+          <div className="absolute inset-0 pointer-events-none" aria-hidden>
+            <div style={{ position: 'absolute', right: '-8%', top: '-20%', width: '70%', height: '95%',
+              background: 'radial-gradient(ellipse 65% 75% at 72% 38%, rgba(0,110,200,0.32) 0%, rgba(0,70,155,0.14) 55%, transparent 78%)',
+              borderRadius: '42% 58% 68% 32% / 38% 52% 58% 52%', filter: 'blur(28px)' }} />
+            <div style={{ position: 'absolute', right: '-4%', top: '25%', width: '58%', height: '68%',
+              background: 'radial-gradient(ellipse 62% 68% at 78% 58%, rgba(0,165,225,0.24) 0%, rgba(0,130,205,0.10) 58%, transparent 78%)',
+              borderRadius: '58% 42% 38% 62% / 52% 58% 42% 50%', filter: 'blur(22px)' }} />
+            <div style={{ position: 'absolute', left: '-6%', bottom: '-8%', width: '48%', height: '58%',
+              background: 'radial-gradient(ellipse 78% 68% at 22% 78%, rgba(0,195,225,0.18) 0%, transparent 68%)',
+              filter: 'blur(30px)' }} />
+            <div style={{ position: 'absolute', right: '18%', bottom: '18%', width: '36%', height: '42%',
+              background: 'radial-gradient(ellipse at center, rgba(123,97,255,0.13) 0%, transparent 72%)',
+              filter: 'blur(22px)' }} />
+            {([
+              { x: '58%', y: '15%', r: 2.5, c: '#00C8E8' },
+              { x: '74%', y: '28%', r: 1.5, c: '#7B61FF' },
+              { x: '82%', y: '52%', r: 2, c: '#00C8E8' },
+              { x: '88%', y: '72%', r: 1.5, c: '#fff' },
+              { x: '65%', y: '80%', r: 2, c: '#7B61FF' },
+              { x: '50%', y: '62%', r: 1, c: '#00C8E8' },
+              { x: '92%', y: '38%', r: 1.5, c: '#fff' },
+              { x: '42%', y: '20%', r: 1, c: '#7B61FF' },
+            ] as {x:string;y:string;r:number;c:string}[]).map((d, i) => (
+              <div key={i} style={{ position: 'absolute', left: d.x, top: d.y,
+                width: d.r * 2, height: d.r * 2,
+                background: d.c, borderRadius: '50%', opacity: 0.6,
+                boxShadow: `0 0 ${d.r * 5}px ${d.r * 1.5}px ${d.c === '#fff' ? 'rgba(255,255,255,0.4)' : d.c + '88'}` }} />
+            ))}
+          </div>
+        )}
 
-          {/* RIGHT: copy */}
-          <div className="flex flex-col gap-7 order-1 lg:order-2">
+        {/* Light theme: right curved purple panel */}
+        {!isDark && (
+          <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden>
+            <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: '52%',
+              background: 'linear-gradient(150deg, #C8A8FF 0%, #BC98F8 45%, #AE8CF0 100%)',
+              borderTopLeftRadius: '50% 100%', borderBottomLeftRadius: '50% 100%' }}>
+              <div style={{ position: 'absolute', inset: 0,
+                background: 'radial-gradient(ellipse 72% 60% at 68% 38%, rgba(255,255,255,0.24) 0%, transparent 72%)' }} />
+              <div style={{ position: 'absolute', right: '-8%', bottom: '12%', width: '55%', height: '42%',
+                background: 'radial-gradient(ellipse at center, rgba(236,72,153,0.22) 0%, transparent 72%)',
+                filter: 'blur(22px)' }} />
+            </div>
+          </div>
+        )}
 
-            {/* Marketplace chips — small, factual */}
+        <div className="relative z-10 max-w-7xl mx-auto w-full px-6 grid grid-cols-1 lg:grid-cols-[0.9fr_1.1fr] gap-12 items-center py-16">
+
+          {/* LEFT: copy */}
+          <div className="flex flex-col gap-7 order-1">
+
+            {/* Marketplace chips */}
             <motion.div
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
@@ -703,7 +740,7 @@ export default function LandingPage() {
             >
               {['Uzum', 'Yandex Market', 'Wildberries'].map(mp => (
                 <span key={mp} className="text-[11px] font-semibold px-2.5 py-1 rounded-md border"
-                  style={{ borderColor: 'var(--border2)', color: 'var(--text-muted)', background: 'var(--bg-input)' }}>
+                  style={{ borderColor: 'var(--border2)', color: 'var(--text-muted)', background: isDark ? 'var(--bg-input)' : 'rgba(255,255,255,0.75)' }}>
                   {mp}
                 </span>
               ))}
@@ -759,7 +796,11 @@ export default function LandingPage() {
               </Link>
               <Link href="/help"
                 className="inline-flex items-center justify-center gap-2 font-medium px-7 py-3.5 rounded-xl text-sm border"
-                style={{ borderColor: 'var(--border2)', color: 'var(--text-dim)' }}>
+                style={{
+                  borderColor: isDark ? 'var(--border2)' : 'rgba(124,58,237,0.35)',
+                  color: 'var(--text-dim)',
+                  background: isDark ? 'transparent' : 'rgba(255,255,255,0.6)',
+                }}>
                 {t.nav.explorePlatform}
               </Link>
             </motion.div>
@@ -770,7 +811,7 @@ export default function LandingPage() {
               animate={{ opacity: 1 }}
               transition={{ delay: 0.8 }}
               className="pt-5 border-t grid grid-cols-3 gap-0"
-              style={{ borderColor: 'var(--border)' }}
+              style={{ borderColor: isDark ? 'var(--border)' : 'rgba(124,58,237,0.18)' }}
             >
               {[
                 { value: 3, suffix: '+', label: t.stats[0].label },
@@ -782,7 +823,7 @@ export default function LandingPage() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.85 + i * 0.08 }}
                   className={`pr-6 ${i > 0 ? 'pl-6 border-l' : ''}`}
-                  style={{ borderColor: 'var(--border)' }}>
+                  style={{ borderColor: isDark ? 'var(--border)' : 'rgba(124,58,237,0.18)' }}>
                   <div className="text-3xl font-black" style={{ color: 'var(--text-base)' }}>
                     <StatNum value={s.value} suffix={s.suffix} />
                   </div>
@@ -792,6 +833,27 @@ export default function LandingPage() {
             </motion.div>
 
           </div>
+
+          {/* RIGHT: mockup */}
+          <motion.div
+            initial={{ opacity: 0, x: 40, scale: 0.97 }}
+            animate={{ opacity: 1, x: 0, scale: 1 }}
+            transition={{ duration: 0.75, delay: 0.1, ease: [0.25, 0.46, 0.45, 0.94] }}
+            className="relative order-2"
+          >
+            {/* Dark theme: glowing halo behind the dashboard */}
+            {isDark && (
+              <div style={{ position: 'absolute', inset: '-18%', zIndex: 0,
+                background: 'radial-gradient(ellipse at center, rgba(0,180,230,0.22) 0%, rgba(0,100,200,0.12) 50%, transparent 75%)',
+                filter: 'blur(18px)' }} />
+            )}
+            <div style={{ position: 'relative', zIndex: 1 }}>
+              <MockupInteractive>
+                <DashboardMockup p={t.preview} />
+              </MockupInteractive>
+            </div>
+          </motion.div>
+
         </div>
       </section>
 
