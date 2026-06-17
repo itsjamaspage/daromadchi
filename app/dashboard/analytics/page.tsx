@@ -1,4 +1,4 @@
-import { BarChart2, Settings, TrendingUp, Package, Link2 } from 'lucide-react'
+import { BarChart2, Settings, TrendingUp, Package, Link2, RefreshCw } from 'lucide-react'
 import Link from 'next/link'
 import { Suspense } from 'react'
 import { getProducts } from '@/lib/db/products'
@@ -26,7 +26,9 @@ export default async function AnalyticsPage({ searchParams }: Props) {
   const marketplace = parseMp(params.mp)
   const [t, products, kpis] = await Promise.all([getT(), getProducts(marketplace), getKpis(30, marketplace)])
   const d = t.dashboard
-  const isEmpty = products.length === 0
+  const hasProducts = products.length > 0
+  const hasOrders = kpis.total_orders > 0
+  const isEmpty = !hasProducts && !hasOrders
 
   const avgMargin = products.length > 0
     ? products.reduce((s, p) => {
@@ -91,6 +93,34 @@ export default async function AnalyticsPage({ searchParams }: Props) {
             <Settings className="w-4 h-4" /> {d.goToSettings}
           </Link>
         </div>
+      ) : !hasProducts ? (
+        <>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {[
+              { label: d.totalOrders,      value: kpis.total_orders.toLocaleString(),           color: '#7c3aed' },
+              { label: d.totalRevenue,     value: `${fmt(kpis.total_revenue)} so'm`,             color: '#10b981' },
+              { label: d.netProfit,        value: `${fmt(kpis.total_profit)} so'm`,              color: kpis.total_profit >= 0 ? '#10b981' : '#ef4444' },
+              { label: d.stockInWarehouse, value: kpis.total_stock.toLocaleString(),             color: '#f59e0b' },
+            ].map(({ label, value, color }) => (
+              <div key={label} className="border rounded-2xl p-5" style={{ background: 'var(--bg-card2)', borderColor: 'var(--border)' }}>
+                <p className="text-xs mb-2" style={{ color: 'var(--text-muted)' }}>{label}</p>
+                <p className="text-xl font-bold" style={{ color }}>{value}</p>
+              </div>
+            ))}
+          </div>
+          <div className="border border-dashed rounded-2xl p-8 text-center" style={{ background: 'var(--bg-card2)', borderColor: 'rgba(245, 158, 11, 0.3)' }}>
+            <div className="w-12 h-12 rounded-2xl border flex items-center justify-center mx-auto mb-3" style={{ background: 'rgba(245, 158, 11, 0.1)', borderColor: 'rgba(245, 158, 11, 0.25)', color: '#f59e0b' }}>
+              <RefreshCw className="w-6 h-6" />
+            </div>
+            <h2 className="font-bold text-base mb-1" style={{ color: 'var(--text-base)' }}>{d.ordersOnlyTitle}</h2>
+            <p className="text-sm mb-5 max-w-md mx-auto" style={{ color: 'var(--text-muted)' }}>{d.ordersOnlyDesc}</p>
+            <Link href="/dashboard/sync"
+              className="inline-flex items-center gap-2 text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors"
+              style={{ background: '#f59e0b', color: 'white' }}>
+              <RefreshCw className="w-4 h-4" /> {d.goToSync}
+            </Link>
+          </div>
+        </>
       ) : (
         <>
           {/* KPI cards */}

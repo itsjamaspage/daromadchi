@@ -1,6 +1,7 @@
 'use client'
 
-import { useRouter, usePathname, useSearchParams } from 'next/navigation'
+import Link from 'next/link'
+import { usePathname, useSearchParams } from 'next/navigation'
 import type { MarketplaceType } from '@/lib/types'
 
 const TABS = [
@@ -11,23 +12,25 @@ const TABS = [
 ] as { mp: MarketplaceType | undefined; label: string }[]
 
 export default function MarketplaceTabs({ current }: { current: MarketplaceType | undefined }) {
-  const router       = useRouter()
   const pathname     = usePathname()
   const searchParams = useSearchParams()
 
-  function go(mp: MarketplaceType | undefined) {
+  function tabHref(mp: MarketplaceType | undefined) {
     const p = new URLSearchParams(searchParams.toString())
     if (mp) p.set('mp', mp)
     else p.delete('mp')
-    router.push(`${pathname}?${p.toString()}`, { scroll: false })
+    const q = p.toString()
+    return q ? `${pathname}?${q}` : pathname
   }
 
   return (
     <div className="flex items-center gap-1.5 p-1 bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl w-fit">
       {TABS.map(({ mp, label }) => (
-        <button
+        <Link
           key={label}
-          onClick={() => go(mp)}
+          href={tabHref(mp)}
+          scroll={false}
+          prefetch={true}
           className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
             current === mp
               ? 'bg-violet-600/20 text-[var(--c1)] border border-violet-500/30'
@@ -35,7 +38,7 @@ export default function MarketplaceTabs({ current }: { current: MarketplaceType 
           }`}
         >
           {label}
-        </button>
+        </Link>
       ))}
     </div>
   )
