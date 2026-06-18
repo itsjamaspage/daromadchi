@@ -31,11 +31,15 @@ export default function MarketplaceTabs({ current }: { current: MarketplaceType 
           href={tabHref(mp)}
           scroll={false}
           prefetch={true}
-          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-            current === mp
-              ? 'bg-violet-600/20 text-[var(--c1)] border border-violet-500/30'
-              : 'text-[var(--text-muted)] hover:text-[var(--text-dim)]'
-          }`}
+          className="px-3 py-1.5 rounded-full text-xs font-semibold transition-all"
+          style={current === mp ? {
+            background: 'rgba(73,79,223,0.1)',
+            color: 'var(--c1)',
+            border: '1px solid rgba(73,79,223,0.2)',
+          } : {
+            color: 'var(--text-muted)',
+            border: '1px solid transparent',
+          }}
         >
           {label}
         </Link>
