@@ -6,7 +6,7 @@ import Image from 'next/image'
 import { motion, AnimatePresence, useInView } from 'framer-motion'
 import {
   BarChart2, TrendingUp, TrendingDown, AlertTriangle,
-  Package, Bell, Chrome, DollarSign,
+  Package, Bell, Globe, DollarSign,
   ArrowRight, Menu, X, Check, ChevronRight,
 } from 'lucide-react'
 import { useTheme, useLang } from './providers'
@@ -760,7 +760,7 @@ export default function Page() {
                 <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:20 }}>
                   <div style={{ width:36, height:36, borderRadius:9, background:P.greenBg,
                     display:'flex', alignItems:'center', justifyContent:'center' }}>
-                    <Chrome size={18} style={{ color:P.green }}/>
+                    <Globe size={18} style={{ color:P.green }}/>
                   </div>
                   <div>
                     <p style={{ fontSize:11, fontWeight:600, color:muted, textTransform:'uppercase', letterSpacing:'0.07em' }}>
