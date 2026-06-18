@@ -45,12 +45,12 @@ function StatNum({ value, suffix }: { value: number; suffix: string }) {
 function DashboardMockup({ p }: { p: typeof translations.en.preview }) {
   const { theme } = useTheme()
   const isDark = theme === 'dark'
-  const bg = isDark ? '#071425' : '#ffffff'
-  const bg2 = isDark ? '#0b1c34' : '#f0f4ff'
-  const border = isDark ? 'rgba(0,210,255,0.14)' : 'rgba(100,100,200,0.18)'
-  const muted = isDark ? '#4a7a9b' : '#6b7a9b'
-  const c1 = isDark ? '#00d4ff' : '#7c3aed'
-  const c2 = isDark ? '#ff2d9b' : '#db2777'
+  const bg = isDark ? '#16181a' : '#ffffff'
+  const bg2 = isDark ? '#0a0a0a' : '#f4f4f4'
+  const border = isDark ? 'rgba(255,255,255,0.08)' : '#e2e2e7'
+  const muted = isDark ? 'rgba(255,255,255,0.45)' : '#505a63'
+  const c1 = '#494fdf'
+  const c2 = '#4f55f1'
 
   const kpis = [
     { l: p.revenue, v: '124.5M', color: c1 },
@@ -68,7 +68,7 @@ function DashboardMockup({ p }: { p: typeof translations.en.preview }) {
           <div className="w-3 h-3 rounded-full bg-green-400/80" />
         </div>
         <div className="flex-1 h-5 mx-3 rounded-md border flex items-center px-3"
-          style={{ background: isDark ? '#0f2040' : '#e8eeff', borderColor: border }}>
+          style={{ background: isDark ? '#111316' : '#ebebf0', borderColor: border }}>
           <span className="text-[10px]" style={{ color: muted }}>daromadchi.uz/dashboard</span>
         </div>
         <Activity className="w-3 h-3 text-green-400" />
@@ -90,7 +90,7 @@ function DashboardMockup({ p }: { p: typeof translations.en.preview }) {
               {[30,50,38,70,45,82,60,88,72,55,78,92,65,80].map((h, i) => (
                 <div key={i} className="flex-1 rounded-t" style={{
                   height: `${h}%`,
-                  background: isDark ? 'linear-gradient(to top,#00d4ffcc,#00d4ff22)' : 'linear-gradient(to top,#7c3aedcc,#7c3aed22)'
+                  background: 'linear-gradient(to top,#494fdfcc,#494fdf22)'
                 }} />
               ))}
             </div>
@@ -99,7 +99,7 @@ function DashboardMockup({ p }: { p: typeof translations.en.preview }) {
             <p className="text-[10px] mb-3 font-medium" style={{ color: muted }}>{p.categories}</p>
             <div className="relative w-16 h-16 mx-auto">
               <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
-                <circle cx="18" cy="18" r="14" fill="none" stroke={isDark ? 'rgba(0,210,255,0.15)' : 'rgba(124,58,237,0.15)'} strokeWidth="4" />
+                <circle cx="18" cy="18" r="14" fill="none" stroke={'rgba(73,79,223,0.15)'} strokeWidth="4" />
                 <circle cx="18" cy="18" r="14" fill="none" stroke={c1} strokeWidth="4" strokeDasharray="38 50" strokeLinecap="round" />
                 <circle cx="18" cy="18" r="14" fill="none" stroke={c2} strokeWidth="4" strokeDasharray="22 66" strokeDashoffset="-38" strokeLinecap="round" />
                 <circle cx="18" cy="18" r="14" fill="none" stroke="#f59e0b" strokeWidth="4" strokeDasharray="14 74" strokeDashoffset="-60" strokeLinecap="round" />
@@ -113,7 +113,7 @@ function DashboardMockup({ p }: { p: typeof translations.en.preview }) {
           </div>
           {[['DEMO-183','Delivered','#22c55e'],['DEMO-184','Processing','#f59e0b'],['DEMO-185','Delivered','#22c55e']].map(([id, st, col]) => (
             <div key={id} className="flex items-center justify-between px-4 py-2 border-b text-[9px]" style={{ borderColor: border, color: muted }}>
-              <span style={{ color: isDark ? '#a8c8e0' : '#3b3f6e' }}>{id}</span>
+              <span style={{ color: isDark ? 'rgba(255,255,255,0.65)' : '#505a63' }}>{id}</span>
               <span style={{ color: col as string }}>{st}</span>
             </div>
           ))}
@@ -274,7 +274,7 @@ function FeaturesScrollSection({
                 transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
                 className="w-72 h-72 rounded-3xl flex items-center justify-center border"
                 style={{
-                  background: isDark ? 'rgba(0,212,255,0.04)' : 'rgba(124,58,237,0.04)',
+                  background: 'rgba(73,79,223,0.06)',
                   borderColor: 'var(--border)',
                 }}
               >
@@ -304,7 +304,7 @@ function FeaturesScrollSection({
                     background: i <= activeStep ? 'var(--c1)' : 'var(--bg-base)',
                     borderColor: i <= activeStep ? 'var(--c1)' : 'var(--border)',
                     cursor: 'pointer',
-                    boxShadow: i === activeStep ? (isDark ? '0 0 14px rgba(0,212,255,0.85)' : '0 0 14px rgba(124,58,237,0.85)') : undefined,
+                    boxShadow: i === activeStep ? '0 0 14px rgba(73,79,223,0.6)' : undefined,
                   }}
                 />
               ))}
@@ -350,14 +350,14 @@ function FeaturesScrollSection({
                     className="flex items-center gap-3 py-2.5 px-3 rounded-lg text-left w-full focus:outline-none"
                     animate={{
                       opacity: isDark ? (isActive ? 1 : 0.38) : 1,
-                      background: isActive ? (isDark ? 'rgba(0,212,255,0.07)' : 'rgba(124,58,237,0.07)') : 'rgba(0,0,0,0)',
+                      background: isActive ? 'rgba(73,79,223,0.08)' : 'rgba(0,0,0,0)',
                     }}
                     whileHover={{ opacity: 1 }}
                     transition={{ duration: 0.2 }}
                     style={{ cursor: 'pointer' }}
                   >
                     <div className="w-7 h-7 rounded-md flex items-center justify-center shrink-0 transition-colors duration-200"
-                      style={{ background: isActive ? (isDark ? 'rgba(0,212,255,0.14)' : 'rgba(124,58,237,0.14)') : 'transparent' }}>
+                      style={{ background: isActive ? 'rgba(73,79,223,0.10)' : 'transparent' }}>
                       <Li className="w-3.5 h-3.5" style={{ color: isActive ? 'var(--c1)' : 'var(--text-dim)' }} />
                     </div>
                     <span className="text-sm font-medium transition-colors duration-200"
@@ -389,7 +389,7 @@ function FeaturesScrollSection({
               exit={{ opacity: 0, scale: 0.78 }}
               transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
               className="w-36 h-36 rounded-2xl flex items-center justify-center border"
-              style={{ borderColor: 'var(--border)', background: isDark ? 'rgba(0,212,255,0.05)' : 'rgba(124,58,237,0.05)' }}
+              style={{ borderColor: 'var(--border)', background: 'rgba(73,79,223,0.06)' }}
             >
               <ActiveIcon className="w-18 h-18" style={{ color: 'var(--c1)', width: '4.5rem', height: '4.5rem' }} />
             </motion.div>
@@ -538,10 +538,10 @@ export default function LandingPage() {
       <header className="fixed top-0 left-0 right-0 z-50 px-4 pt-3">
         <div className="max-w-6xl mx-auto rounded-2xl px-7 h-[72px] flex items-center justify-between"
           style={{
-            background: isDark ? 'rgba(12,12,24,0.90)' : '#ffffff',
+            background: isDark ? 'rgba(0,0,0,0.92)' : 'rgba(255,255,255,0.97)',
             backdropFilter: 'blur(16px)',
             WebkitBackdropFilter: 'blur(16px)',
-            border: `1px solid ${isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)'}`,
+            border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : '#e2e2e7'}`,
             boxShadow: isDark ? '0 4px 24px rgba(0,0,0,0.45)' : '0 4px 24px rgba(0,0,0,0.08)',
           }}>
           <Link href="/" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="flex items-center gap-3 shrink-0">
@@ -584,7 +584,7 @@ export default function LandingPage() {
                     {langs.map(l => (
                       <button key={l} onClick={() => { setLang(l); setLangOpen(false) }}
                         className="w-full px-3 py-2 text-xs font-semibold uppercase text-left"
-                        style={{ background: lang === l ? 'rgba(0,212,255,0.08)' : 'transparent', color: lang === l ? 'var(--c1)' : 'var(--text-muted)' }}>
+                        style={{ background: lang === l ? 'rgba(73,79,223,0.08)' : 'transparent', color: lang === l ? 'var(--c1)' : 'var(--text-muted)' }}>
                         {l}
                       </button>
                     ))}
@@ -622,8 +622,8 @@ export default function LandingPage() {
               transition={{ duration: 0.18 }}
               className="md:hidden max-w-6xl mx-auto mt-1.5 rounded-2xl overflow-hidden"
               style={{
-                background: isDark ? 'rgba(12,12,24,0.96)' : '#ffffff',
-                border: `1px solid ${isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)'}`,
+                background: isDark ? 'rgba(0,0,0,0.92)' : 'rgba(255,255,255,0.97)',
+                border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : '#e2e2e7'}`,
                 boxShadow: isDark ? '0 8px 32px rgba(0,0,0,0.5)' : '0 8px 32px rgba(0,0,0,0.1)',
               }}>
               <div className="px-6 py-4 flex flex-col gap-1">
@@ -800,7 +800,7 @@ export default function LandingPage() {
               <span key={`${gi}s2`} className="text-[10px] font-bold uppercase tracking-[0.2em]"
                 style={{ color: 'var(--text-muted)', opacity: 0.55 }}>{t.tickerItems[1]}</span>,
               <span key={`${gi}c`} className="text-2xl font-black tracking-tight"
-                style={{ color: '#fc3f1d' }}>Yandex Market</span>,
+                style={{ color: 'var(--text-base)' }}>Yandex Market</span>,
               <span key={`${gi}s3`} className="text-[10px] font-bold uppercase tracking-[0.2em]"
                 style={{ color: 'var(--text-muted)', opacity: 0.55 }}>{t.tickerItems[2]}</span>,
             ])}
@@ -820,11 +820,19 @@ export default function LandingPage() {
           {/* Interactive accordion panels */}
           {(() => {
             // Each panel gets a truly distinct RGB so inactive tints are clearly different
+            const c1v = '#494fdf'
+            const c2v = '#4f55f1'
+            const c1rgb = [73, 79, 223] as [number,number,number]
+            const c2rgb = [79, 85, 241] as [number,number,number]
+            const cmidRgb = [76, 82, 232] as [number,number,number]
+            const cmidBg = 'linear-gradient(135deg, #494fdf 0%, #4f55f1 100%)'
+            void c1v; void c2v; void cmidBg
+
             const panelMeta = [
               {
-                // Card 1: Uzum — purple
-                accentBg: '#7C3AED',
-                rgb: [124, 58, 237] as [number,number,number],
+                // Card 1: Uzum — cobalt
+                accentBg: `linear-gradient(135deg, ${c1v} 0%, ${c2v} 100%)`,
+                rgb: c1rgb,
                 textColor: '#ffffff',
                 contentInit: { x: -60, opacity: 0 },
                 contentAnimate: { x: 0, opacity: 1 },
@@ -832,9 +840,9 @@ export default function LandingPage() {
                 contentExit: { x: -40, opacity: 0, transition: { duration: 0.18 } },
               },
               {
-                // Card 2: Yandex Market — orange
-                accentBg: '#f97316',
-                rgb: [249, 115, 22] as [number,number,number],
+                // Card 2: Yandex Market — cobalt mid
+                accentBg: `linear-gradient(135deg, ${c2v} 0%, ${c1v} 100%)`,
+                rgb: cmidRgb,
                 textColor: '#ffffff',
                 contentInit: { y: 50, scale: 0.84, opacity: 0 },
                 contentAnimate: { y: 0, scale: 1, opacity: 1 },
@@ -842,9 +850,9 @@ export default function LandingPage() {
                 contentExit: { y: 30, scale: 0.92, opacity: 0, transition: { duration: 0.16 } },
               },
               {
-                // Card 3: Wildberries — fuchsia/purple
-                accentBg: '#d946ef',
-                rgb: [217, 70, 239] as [number,number,number],
+                // Card 3: Wildberries — cobalt
+                accentBg: `linear-gradient(135deg, ${c1v} 0%, ${c2v} 100%)`,
+                rgb: c2rgb,
                 textColor: '#ffffff',
                 contentInit: { rotate: 6, y: -30, opacity: 0 },
                 contentAnimate: { rotate: 0, y: 0, opacity: 1 },
@@ -858,8 +866,8 @@ export default function LandingPage() {
               hoverBg:        `rgba(${m.rgb.join(',')},${isDark ? 0.22 : 0.18})`,
               hoverBorder:    `rgba(${m.rgb.join(',')},${isDark ? 0.50 : 0.42})`,
               numColor:       `rgba(${m.rgb.join(',')},0.75)`,
-              hoverScale: m.rgb[0] === 249 ? 1.03 : 1.0,
-              hoverY: m.rgb[0] === 124 ? -3 : m.rgb[0] === 249 ? 0 : 3,
+              hoverScale: m.rgb[0] === cmidRgb[0] ? 1.03 : 1.0,
+              hoverY: m.rgb[0] === c1rgb[0] ? -3 : m.rgb[0] === cmidRgb[0] ? 0 : 3,
             }))
 
             return (
@@ -1044,7 +1052,7 @@ export default function LandingPage() {
                       border: `2px solid ${cell === 'O' ? 'var(--c1)' : cell === 'X' ? 'var(--border)' : 'var(--border)'}`,
                       cursor: cell || tttDead ? 'default' : 'pointer',
                       color: cell === 'O' ? 'var(--c1)' : 'var(--text-muted)',
-                      boxShadow: cell === 'O' ? `0 0 18px ${isDark ? 'rgba(0,212,255,0.25)' : 'rgba(124,58,237,0.2)'}` : 'none',
+                      boxShadow: cell === 'O' ? '0 0 18px rgba(73,79,223,0.35)' : 'none',
                     }}
                   >
                     <AnimatePresence>
@@ -1092,7 +1100,7 @@ export default function LandingPage() {
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ type: 'spring', stiffness: 260, damping: 24 }}
                 className="rounded-3xl p-8 text-center w-full"
-                style={{ background: isDark ? 'rgba(0,212,255,0.07)' : 'rgba(124,58,237,0.06)', border: '1px solid var(--c1)' }}
+                style={{ background: 'rgba(73,79,223,0.08)', border: '1px solid var(--c1)' }}
               >
                 <motion.div
                   animate={{ rotate: [0, -8, 8, -6, 6, 0] }}
@@ -1149,7 +1157,7 @@ export default function LandingPage() {
                 animate={pricingInView ? { opacity: 1, y: 0, scale: 1 } : {}}
                 transition={{ delay: i * 0.28, type: 'spring', stiffness: 160, damping: 18, mass: 1.1 }}
                 className="p-8 flex flex-col relative"
-                style={{ background: plan.highlight ? (isDark ? 'rgba(0,212,255,0.04)' : 'rgba(124,58,237,0.04)') : 'var(--bg-base)' }}
+                style={{ background: plan.highlight ? 'linear-gradient(160deg, #3d43c8 0%, #494fdf 50%, #5056e8 100%)' : 'var(--bg-base)' }}
               >
                 {plan.highlight && (
                   <motion.div
@@ -1157,18 +1165,18 @@ export default function LandingPage() {
                     animate={pricingInView ? { opacity: 1, scale: 1 } : {}}
                     transition={{ delay: i * 0.28 + 0.65, type: 'spring', stiffness: 400, damping: 15 }}
                     className="absolute top-4 right-4 px-2.5 py-1 rounded-md text-[10px] font-bold text-white"
-                    style={{ background: 'var(--c1)' }}>
+                    style={{ background: '#494fdf', boxShadow: '0 4px 12px rgba(73,79,223,0.3)' }}>
                     {t.pricingPopular}
                   </motion.div>
                 )}
-                <p className="text-xs font-bold uppercase tracking-widest mb-4" style={{ color: plan.highlight ? 'var(--c1)' : 'var(--text-muted)' }}>
+                <p className="text-xs font-bold uppercase tracking-widest mb-4" style={{ color: plan.highlight ? 'rgba(255,255,255,0.92)' : 'var(--text-muted)' }}>
                   {plan.name}
                 </p>
                 <div className="flex items-baseline gap-1 mb-6">
-                  <span className="text-4xl font-black" style={{ color: 'var(--text-base)' }}>
+                  <span className="text-4xl font-black" style={{ color: plan.highlight ? 'rgba(255,255,255,0.92)' : 'var(--text-base)' }}>
                     <SlotPrice value={plan.price} trigger={pricingInView} delay={i * 0.28 + 0.7} />
                   </span>
-                  <span className="text-sm" style={{ color: 'var(--text-muted)' }}>so&apos;m/oy</span>
+                  <span className="text-sm" style={{ color: plan.highlight ? 'rgba(255,255,255,0.65)' : 'var(--text-muted)' }}>so&apos;m/oy</span>
                 </div>
                 <ul className="space-y-3 mb-8 flex-1">
                   {plan.features.map((f, fi) => (
@@ -1176,15 +1184,15 @@ export default function LandingPage() {
                       initial={{ opacity: 0, x: -10 }}
                       animate={pricingInView ? { opacity: 1, x: 0 } : {}}
                       transition={{ delay: i * 0.28 + 0.8 + fi * 0.05, duration: 0.3 }}
-                      className="flex items-start gap-2.5 text-sm" style={{ color: 'var(--text-muted)' }}>
-                      <CheckCircle className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: 'var(--c1)' }} />
+                      className="flex items-start gap-2.5 text-sm" style={{ color: plan.highlight ? 'rgba(255,255,255,0.8)' : 'var(--text-muted)' }}>
+                      <CheckCircle className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: plan.highlight ? 'rgba(255,255,255,0.9)' : 'var(--c1)' }} />
                       {f}
                     </motion.li>
                   ))}
                 </ul>
                 <Link href="/login" className="block w-full text-center py-3 rounded-lg text-sm font-bold border transition-colors"
                   style={plan.highlight
-                    ? { background: 'var(--c1)', color: '#fff', borderColor: 'transparent' }
+                    ? { background: 'rgba(255,255,255,0.15)', color: '#fff', border: '1px solid rgba(255,255,255,0.25)' }
                     : { background: 'transparent', color: 'var(--text-dim)', borderColor: 'var(--border2)' }}>
                   {t.nav.start}
                 </Link>
@@ -1208,17 +1216,17 @@ export default function LandingPage() {
               const hasYM = role.includes('yandex')
               const hasUM = role.includes('uzum')
               const badges: { label: string; bg: string }[] = []
-              if (hasUM) badges.push({ label: 'UM', bg: '#7C3AED' })
-              if (hasYM) badges.push({ label: 'YM', bg: '#f97316' })
-              if (hasWB) badges.push({ label: 'WB', bg: '#d946ef' })
-              if (badges.length === 0) badges.push({ label: 'UM', bg: '#7C3AED' })
+              if (hasUM) badges.push({ label: 'UM', bg: '#494fdf' })
+              if (hasYM) badges.push({ label: 'YM', bg: '#505a63' })
+              if (hasWB) badges.push({ label: 'WB', bg: '#4f55f1' })
+              if (badges.length === 0) badges.push({ label: 'UM', bg: '#494fdf' })
 
               const cleanRole = review.role
                 .replace(/Wildberries\s*&\s*Uzum(\s*Market)?/gi, '')
                 .replace(/Uzum Market/gi, '').replace(/Yandex Market/gi, '').replace(/Wildberries/gi, '')
                 .replace(/\bUzum\b/gi, '').replace(/^\s*,\s*/, '').replace(/,\s*$/, '').trim()
 
-              const quoteColors = ['#7C3AED','#f97316','#d946ef','#0ea5e9','#22c55e','#f59e0b','#ef4444','#06b6d4','#8b5cf6']
+              const quoteColors = ['#494fdf','#22c55e','#0ea5e9','#f59e0b','#ef4444','#06b6d4','#4f55f1','#16a34a','#3b82f6']
               const quoteColor = quoteColors[i % quoteColors.length]
 
               return (
