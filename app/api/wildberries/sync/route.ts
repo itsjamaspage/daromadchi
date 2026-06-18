@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { decrypt } from '@/lib/crypto'
 import { syncFromWildberries } from '@/lib/wildberries/sync'
+import { logger } from '@/lib/logger'
 
 function fromDaysToDate(fromDays: unknown): Date | undefined {
   if (typeof fromDays !== 'number') return undefined
@@ -28,8 +29,14 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}))
   const fromDate = fromDaysToDate(body?.fromDays)
 
-  const result = await syncFromWildberries(supabase, shop.id, decrypt(shop.api_key_encrypted), fromDate)
-  return NextResponse.json(result)
+  try {
+    const result = await syncFromWildberries(supabase, shop.id, decrypt(shop.api_key_encrypted), fromDate)
+    if (!result.ok) logger.warn('wb_sync_error', { shopId: shop.id, error: result.error })
+    return NextResponse.json(result)
+  } catch (err) {
+    logger.error('wb_sync_unhandled', { shopId: shop.id, error: String(err) })
+    return NextResponse.json({ ok: false, error: 'Sync xatosi yuz berdi' }, { status: 500 })
+  }
 }
 
 // GET /api/wildberries/sync — lightweight token test, no data written

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { encrypt } from '@/lib/crypto'
+import { logger } from '@/lib/logger'
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient()
@@ -31,6 +32,16 @@ export async function POST(req: NextRequest) {
     .eq('is_active', true)
     .maybeSingle()
 
+  if (apiKey && apiKey.trim().length > 2000) {
+    return NextResponse.json({ error: 'apiKey juda uzun' }, { status: 400 })
+  }
+  if (shopIdExternal && shopIdExternal.trim().length > 200) {
+    return NextResponse.json({ error: 'shopIdExternal juda uzun' }, { status: 400 })
+  }
+  if (shopName && shopName.trim().length > 200) {
+    return NextResponse.json({ error: 'shopName juda uzun' }, { status: 400 })
+  }
+
   const update: Record<string, unknown> = {}
   if (apiKey?.trim())        update.api_key_encrypted = encrypt(apiKey.trim())
   if (shopIdExternal?.trim()) update.shop_id_external  = shopIdExternal.trim()
@@ -40,7 +51,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true, message: 'O\'zgartirish yo\'q' })
     }
     const { error } = await supabase.from('shops').update(update).eq('id', existing.id)
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) {
+      logger.error('settings_save_update_failed', { userId: user.id, marketplace, code: error.code })
+      return NextResponse.json({ error: 'Saqlashda xato yuz berdi' }, { status: 500 })
+    }
     return NextResponse.json({ ok: true })
   }
 
@@ -52,6 +66,9 @@ export async function POST(req: NextRequest) {
     is_active:   true,
     ...update,
   })
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) {
+    logger.error('settings_save_insert_failed', { userId: user.id, marketplace, code: error.code })
+    return NextResponse.json({ error: 'Saqlashda xato yuz berdi' }, { status: 500 })
+  }
   return NextResponse.json({ ok: true, created: true })
 }

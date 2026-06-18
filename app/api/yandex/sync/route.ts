@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { syncFromYandex } from '@/lib/yandex/sync'
 import { decrypt } from '@/lib/crypto'
+import { logger } from '@/lib/logger'
 
 function fromDaysToDate(fromDays: unknown): Date | undefined {
   if (typeof fromDays !== 'number') return undefined
@@ -35,9 +36,15 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}))
   const fromDate = fromDaysToDate(body?.fromDays)
 
-  const token  = decrypt(shop.api_key_encrypted)
-  const result = await syncFromYandex(shop.id, token, shop.shop_id_external, fromDate)
-  return NextResponse.json(result, { status: result.ok ? 200 : 500 })
+  try {
+    const token  = decrypt(shop.api_key_encrypted)
+    const result = await syncFromYandex(shop.id, token, shop.shop_id_external, fromDate)
+    if (!result.ok) logger.warn('yandex_sync_error', { shopId: shop.id, error: result.error })
+    return NextResponse.json(result, { status: result.ok ? 200 : 500 })
+  } catch (err) {
+    logger.error('yandex_sync_unhandled', { shopId: shop.id, error: String(err) })
+    return NextResponse.json({ ok: false, error: 'Sync xatosi yuz berdi' }, { status: 500 })
+  }
 }
 
 // GET /api/yandex/sync — lightweight token test

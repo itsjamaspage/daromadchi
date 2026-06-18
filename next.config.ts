@@ -4,10 +4,22 @@ const nextConfig: NextConfig = {
   typescript: { ignoreBuildErrors: true },
   eslint:     { ignoreDuringBuilds: true },
   productionBrowserSourceMaps: false,
-  // Tree-shake large named-export libraries so only the used modules ship.
-  // lucide-react is auto-optimized by Next.js; recharts/date-fns are not.
   experimental: {
     optimizePackageImports: ['recharts', 'date-fns', 'lucide-react'],
+  },
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          { key: 'X-Frame-Options',           value: 'DENY' },
+          { key: 'X-Content-Type-Options',     value: 'nosniff' },
+          { key: 'X-XSS-Protection',           value: '1; mode=block' },
+          { key: 'Referrer-Policy',            value: 'strict-origin-when-cross-origin' },
+          { key: 'Permissions-Policy',         value: 'camera=(), microphone=(), geolocation=()' },
+        ],
+      },
+    ]
   },
 };
 

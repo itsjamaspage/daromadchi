@@ -22,6 +22,7 @@ enable_refresh_token_rotation = true
 enable_signup = true
 double_confirm_changes = true
 enable_confirmations = false
+otp_expiry = 1800
 
 [functions.uzum-sync]
 enabled = true
