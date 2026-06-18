@@ -896,55 +896,25 @@ export default function LandingPage() {
 
           {/* Interactive accordion panels */}
           {(() => {
-            // Each panel gets a truly distinct RGB so inactive tints are clearly different
-            const c1v = '#494fdf'
-            const c2v = '#4f55f1'
-            const c1rgb = [73, 79, 223] as [number,number,number]
-            const c2rgb = [79, 85, 241] as [number,number,number]
-            const cmidRgb = [76, 82, 232] as [number,number,number]
-            const cmidBg = 'linear-gradient(135deg, #494fdf 0%, #4f55f1 100%)'
-            void cmidBg
+            // Each panel has a distinct color identity
+            const panels = [
+              { hex: '#494fdf', rgb: [73, 79, 223] as [number,number,number],  contentInit: { x: -60, opacity: 0 }, contentAnimate: { x: 0, opacity: 1 }, contentTransition: { type: 'spring' as const, stiffness: 300, damping: 28 }, contentExit: { x: -40, opacity: 0, transition: { duration: 0.18 } } },
+              { hex: '#428619', rgb: [66, 134, 25] as [number,number,number],  contentInit: { y: 50, scale: 0.84, opacity: 0 }, contentAnimate: { y: 0, scale: 1, opacity: 1 }, contentTransition: { type: 'spring' as const, stiffness: 320, damping: 24 }, contentExit: { y: 30, scale: 0.92, opacity: 0, transition: { duration: 0.16 } } },
+              { hex: '#ec7e00', rgb: [236, 126, 0] as [number,number,number],  contentInit: { rotate: 6, y: -30, opacity: 0 }, contentAnimate: { rotate: 0, y: 0, opacity: 1 }, contentTransition: { type: 'spring' as const, stiffness: 260, damping: 22 }, contentExit: { rotate: -4, y: -20, opacity: 0, transition: { duration: 0.18 } } },
+            ]
 
-            const panelMeta = [
-              {
-                // Card 1: Uzum — cobalt
-                accentBg: `linear-gradient(135deg, ${c1v} 0%, ${c2v} 100%)`,
-                rgb: c1rgb,
-                textColor: '#ffffff',
-                contentInit: { x: -60, opacity: 0 },
-                contentAnimate: { x: 0, opacity: 1 },
-                contentTransition: { type: 'spring' as const, stiffness: 300, damping: 28 },
-                contentExit: { x: -40, opacity: 0, transition: { duration: 0.18 } },
-              },
-              {
-                // Card 2: Yandex Market — cobalt mid
-                accentBg: `linear-gradient(135deg, ${c2v} 0%, ${c1v} 100%)`,
-                rgb: cmidRgb,
-                textColor: '#ffffff',
-                contentInit: { y: 50, scale: 0.84, opacity: 0 },
-                contentAnimate: { y: 0, scale: 1, opacity: 1 },
-                contentTransition: { type: 'spring' as const, stiffness: 320, damping: 24 },
-                contentExit: { y: 30, scale: 0.92, opacity: 0, transition: { duration: 0.16 } },
-              },
-              {
-                // Card 3: Wildberries — cobalt
-                accentBg: `linear-gradient(135deg, ${c1v} 0%, ${c2v} 100%)`,
-                rgb: c2rgb,
-                textColor: '#ffffff',
-                contentInit: { rotate: 6, y: -30, opacity: 0 },
-                contentAnimate: { rotate: 0, y: 0, opacity: 1 },
-                contentTransition: { type: 'spring' as const, stiffness: 260, damping: 22 },
-                contentExit: { rotate: -4, y: -20, opacity: 0, transition: { duration: 0.18 } },
-              },
-            ].map(m => ({
-              ...m,
-              inactiveBg:     `rgba(${m.rgb.join(',')},${isDark ? 0.14 : 0.11})`,
-              inactiveBorder: `rgba(${m.rgb.join(',')},${isDark ? 0.32 : 0.26})`,
-              hoverBg:        `rgba(${m.rgb.join(',')},${isDark ? 0.22 : 0.18})`,
-              hoverBorder:    `rgba(${m.rgb.join(',')},${isDark ? 0.50 : 0.42})`,
-              numColor:       `rgba(${m.rgb.join(',')},0.75)`,
-              hoverScale: m.rgb[0] === cmidRgb[0] ? 1.03 : 1.0,
-              hoverY: m.rgb[0] === c1rgb[0] ? -3 : m.rgb[0] === cmidRgb[0] ? 0 : 3,
+            const panelMeta = panels.map((p, idx) => ({
+              ...p,
+              accentBg:       isDark ? '#16181a' : '#ffffff',
+              accentBorder:   p.hex,
+              textColor:      isDark ? '#ffffff' : '#191c1f',
+              inactiveBg:     isDark ? '#0d0d0e' : '#f4f4f4',
+              inactiveBorder: isDark ? 'rgba(255,255,255,0.07)' : '#e2e2e7',
+              hoverBg:        `rgba(${p.rgb.join(',')},${isDark ? 0.08 : 0.05})`,
+              hoverBorder:    `rgba(${p.rgb.join(',')},${isDark ? 0.35 : 0.28})`,
+              numColor:       p.hex,
+              hoverScale: idx === 1 ? 1.02 : 1.0,
+              hoverY: idx === 0 ? -2 : idx === 1 ? 0 : 2,
             }))
 
             return (
@@ -969,7 +939,8 @@ export default function LandingPage() {
                       } : {}}
                       style={{
                         background: isActive ? meta.accentBg : meta.inactiveBg,
-                        border: `1px solid ${isActive ? 'transparent' : meta.inactiveBorder}`,
+                        border: `1px solid ${isActive ? meta.accentBorder : meta.inactiveBorder}`,
+                        borderTop: isActive ? `3px solid ${meta.accentBorder}` : undefined,
                         minWidth: 72,
                         minHeight: 200,
                       }}
@@ -986,22 +957,22 @@ export default function LandingPage() {
                             className="absolute inset-0 p-8 flex flex-col justify-end"
                           >
                             <span className="absolute top-5 right-7 text-[7rem] font-black leading-none pointer-events-none select-none"
-                              style={{ color: meta.textColor, opacity: 0.08 }}>
+                              style={{ color: meta.accentBorder, opacity: 0.08 }}>
                               {String(i + 1).padStart(2, '0')}
                             </span>
                             <p className="text-[10px] font-bold uppercase tracking-[0.2em] mb-4"
-                              style={{ color: meta.textColor, opacity: 0.6 }}>
+                              style={{ color: meta.accentBorder }}>
                               {String(i + 1).padStart(2, '0')}
                             </p>
-                            <h3 className="text-2xl font-black mb-2 leading-tight" style={{ color: meta.textColor }}>
+                            <h3 className="text-2xl font-black mb-2 leading-tight" style={{ color: 'var(--text-base)' }}>
                               {c.title}
                             </h3>
                             <p className="text-sm font-semibold mb-3 leading-relaxed"
-                              style={{ color: meta.textColor, opacity: 0.85 }}>
+                              style={{ color: 'var(--text-base)', opacity: 0.85 }}>
                               {c.desc}
                             </p>
                             <p className="text-sm leading-relaxed"
-                              style={{ color: meta.textColor, opacity: 0.65 }}>
+                              style={{ color: 'var(--text-muted)' }}>
                               {(c as typeof c & { body?: string }).body}
                             </p>
                           </motion.div>
