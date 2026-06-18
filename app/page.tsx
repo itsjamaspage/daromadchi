@@ -792,7 +792,7 @@ export default function LandingPage() {
             style={{ animationDuration: '48s' }}>
             {Array(4).fill(null).flatMap((_, gi) => [
               <span key={`${gi}a`} className="text-2xl font-black tracking-tight"
-                style={{ color: '#7C3AED' }}>Uzum Market</span>,
+                style={{ color: '#494fdf' }}>Uzum Market</span>,
               <span key={`${gi}s1`} className="text-[10px] font-bold uppercase tracking-[0.2em]"
                 style={{ color: 'var(--text-muted)', opacity: 0.55 }}>{t.tickerItems[0]}</span>,
               <span key={`${gi}b`} className="text-2xl font-black tracking-tight"
@@ -826,7 +826,7 @@ export default function LandingPage() {
             const c2rgb = [79, 85, 241] as [number,number,number]
             const cmidRgb = [76, 82, 232] as [number,number,number]
             const cmidBg = 'linear-gradient(135deg, #494fdf 0%, #4f55f1 100%)'
-            void c1v; void c2v; void cmidBg
+            void cmidBg
 
             const panelMeta = [
               {

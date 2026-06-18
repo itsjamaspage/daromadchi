@@ -109,7 +109,7 @@ function LangDropdown({ lang, setLang, inputBg, inputBorder, textMuted, card }: 
     <div ref={ref} className="relative">
       <button onClick={() => setOpen(o => !o)}
         className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold uppercase transition-all border"
-        style={{ background: inputBg, borderColor: inputBorder, color: '#a78bfa' }}>
+        style={{ background: inputBg, borderColor: inputBorder, color: '#494fdf' }}>
         {lang}
         <svg className={`w-3 h-3 transition-transform ${open ? 'rotate-180' : ''}`} viewBox="0 0 12 12" fill="none">
           <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -122,8 +122,8 @@ function LangDropdown({ lang, setLang, inputBg, inputBorder, textMuted, card }: 
             <button key={l} onClick={() => { setLang(l); setOpen(false) }}
               className="w-full px-3 py-2 text-xs font-bold uppercase text-left transition-all"
               style={{
-                background: lang === l ? 'rgba(139,92,246,0.15)' : 'transparent',
-                color: lang === l ? '#a78bfa' : textMuted,
+                background: lang === l ? 'rgba(73,79,223,0.08)' : 'transparent',
+                color: lang === l ? '#494fdf' : textMuted,
               }}>
               {l}
             </button>
