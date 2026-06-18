@@ -111,7 +111,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
 
   function SortIcon({ col }: { col: typeof sortBy }) {
     if (sortBy !== col) return <span className="ml-1" style={{ color: 'var(--text-muted)' }}>↕</span>
-    return <span className="ml-1" style={{ color: '#7c3aed' }}>{sortDir === 'desc' ? '↓' : '↑'}</span>
+    return <span className="ml-1" style={{ color: 'var(--c1)' }}>{sortDir === 'desc' ? '↓' : '↑'}</span>
   }
 
   const tabCounts = {
@@ -129,17 +129,17 @@ export default function ProductsTable({ products }: { products: Product[] }) {
           <button key={key} onClick={() => setTab(key)}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border"
             style={tab === key ? {
-              background: 'rgba(124, 58, 237, 0.2)',
-              color: '#a78bfa',
-              borderColor: 'rgba(124, 58, 237, 0.3)',
+              background: 'rgba(73,79,223,0.12)',
+              color: 'var(--c1)',
+              borderColor: 'rgba(73,79,223,0.2)',
             } : {
               color: 'var(--text-muted)',
               borderColor: 'transparent',
             }}>
             {label}
             <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={tab === key ? {
-              background: 'rgba(124, 58, 237, 0.2)',
-              color: '#7c3aed',
+              background: 'rgba(73,79,223,0.12)',
+              color: 'var(--c1)',
             } : {
               background: 'rgba(255, 255, 255, 0.04)',
               color: 'var(--text-muted)',
@@ -190,9 +190,9 @@ export default function ProductsTable({ products }: { products: Product[] }) {
             <button key={c} onClick={() => setCategory(c)}
               className="px-3 py-2 rounded-xl text-xs font-medium transition-all border"
               style={category === c ? {
-                background: 'rgba(124, 58, 237, 0.2)',
-                color: '#a78bfa',
-                borderColor: 'rgba(124, 58, 237, 0.3)',
+                background: 'rgba(73,79,223,0.12)',
+                color: 'var(--c1)',
+                borderColor: 'rgba(73,79,223,0.2)',
               } : {
                 color: 'var(--text-muted)',
                 borderColor: 'var(--border)',
@@ -272,7 +272,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
                       <div className="flex items-center justify-end gap-2">
                         <div className="w-16 h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255, 255, 255, 0.06)' }}>
                           <div className="h-full rounded-full"
-                            style={{ width: `${Math.min(margin, 100)}%`, background: 'linear-gradient(to right, #7c3aed, #10b981)' }} />
+                            style={{ width: `${Math.min(margin, 100)}%`, background: 'linear-gradient(to right, var(--c1), #428619)' }} />
                         </div>
                         <span className="text-xs font-medium" style={{ color: marginColor }}>
                           {margin}%

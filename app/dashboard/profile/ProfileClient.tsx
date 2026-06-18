@@ -21,7 +21,7 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
       aria-checked={checked}
       onClick={() => onChange(!checked)}
       className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-        checked ? 'bg-violet-600' : 'bg-[var(--bg-input)]'
+        checked ? 'bg-[var(--c1)]' : 'bg-[var(--bg-input)]'
       }`}
     >
       <span
@@ -85,7 +85,7 @@ function ProfileTab({ d, profile }: { d: T; profile: UserProfile }) {
       {/* Avatar */}
       <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl p-6 flex flex-col sm:flex-row items-center gap-6">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-violet-500/30">
+          <div className="w-20 h-20 rounded-2xl flex items-center justify-center shadow-lg" style={{ background: 'var(--c1)' }}>
             <span className="text-[var(--text-base)] font-bold text-2xl">{initialsFrom(name, email)}</span>
           </div>
           <button className="text-xs font-medium text-[var(--text-muted)] hover:text-[var(--text-base)] border border-[var(--border2)] hover:border-[var(--border2)] px-3 py-1.5 rounded-lg transition-all">
@@ -104,7 +104,7 @@ function ProfileTab({ d, profile }: { d: T; profile: UserProfile }) {
       {/* Form */}
       <form onSubmit={handleSave} className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
         <div className="px-5 py-4 border-b border-[var(--border)] flex items-center gap-2">
-          <UserCircle className="w-4 h-4 text-violet-400" />
+          <UserCircle className="w-4 h-4" style={{ color: 'var(--c1)' }} />
           <h2 className="text-[var(--text-base)] font-semibold text-sm">{d.profilePersonalInfo}</h2>
         </div>
         <div className="p-6 space-y-4">
@@ -115,7 +115,7 @@ function ProfileTab({ d, profile }: { d: T; profile: UserProfile }) {
               type="text"
               value={name}
               onChange={e => setName(e.target.value)}
-              className="w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-violet-500/60 transition-all"
+              className="w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[rgba(73,79,223,0.6)] transition-all"
             />
           </div>
 
@@ -127,7 +127,7 @@ function ProfileTab({ d, profile }: { d: T; profile: UserProfile }) {
                 type="email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                className="w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-violet-500/60 transition-all pr-36"
+                className="w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[rgba(73,79,223,0.6)] transition-all pr-36"
               />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
                 <CheckCircle className="w-3 h-3" /> {d.profileVerified}
@@ -143,7 +143,7 @@ function ProfileTab({ d, profile }: { d: T; profile: UserProfile }) {
               value={phone}
               onChange={e => setPhone(e.target.value)}
               placeholder="+998"
-              className="w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-violet-500/60 transition-all"
+              className="w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[rgba(73,79,223,0.6)] transition-all"
             />
           </div>
 
@@ -152,7 +152,8 @@ function ProfileTab({ d, profile }: { d: T; profile: UserProfile }) {
             <button
               type="submit"
               disabled={saving}
-              className="flex items-center gap-2 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-[var(--text-base)] text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors shadow-lg shadow-violet-500/20"
+              className="flex items-center gap-2 disabled:opacity-50 text-[var(--text-base)] text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors shadow-lg"
+              style={{ background: 'var(--c1)' }}
             >
               {saving
                 ? <span className="w-4 h-4 rounded-full border-2 border-[var(--border2)] border-t-white animate-spin" />
@@ -208,7 +209,7 @@ function SecurityTab({ d }: { d: T }) {
       {/* Password change */}
       <form onSubmit={handlePwSubmit} className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
         <div className="px-5 py-4 border-b border-[var(--border)] flex items-center gap-2">
-          <Shield className="w-4 h-4 text-violet-400" />
+          <Shield className="w-4 h-4" style={{ color: 'var(--c1)' }} />
           <h2 className="text-[var(--text-base)] font-semibold text-sm">{d.profileChangePassword}</h2>
         </div>
         <div className="p-6 space-y-4">
@@ -236,7 +237,7 @@ function SecurityTab({ d }: { d: T }) {
                 value={field.value}
                 onChange={e => field.setter(e.target.value)}
                 required
-                className="w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-violet-500/60 transition-all"
+                className="w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[rgba(73,79,223,0.6)] transition-all"
               />
             </div>
           ))}
@@ -245,7 +246,8 @@ function SecurityTab({ d }: { d: T }) {
             <button
               type="submit"
               disabled={pwSaving}
-              className="flex items-center gap-2 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-[var(--text-base)] text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors shadow-lg shadow-violet-500/20"
+              className="flex items-center gap-2 disabled:opacity-50 text-[var(--text-base)] text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors shadow-lg"
+              style={{ background: 'var(--c1)' }}
             >
               {pwSaving
                 ? <span className="w-4 h-4 rounded-full border-2 border-[var(--border2)] border-t-white animate-spin" />
@@ -309,7 +311,7 @@ function SecurityTab({ d }: { d: T }) {
                     onChange={e => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                     placeholder="000000"
                     maxLength={6}
-                    className="flex-1 bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-violet-500/60 transition-all tracking-widest font-mono"
+                    className="flex-1 bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[rgba(73,79,223,0.6)] transition-all tracking-widest font-mono"
                   />
                   <button
                     type="button"
@@ -328,7 +330,7 @@ function SecurityTab({ d }: { d: T }) {
       {/* Active Sessions */}
       <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
         <div className="px-5 py-4 border-b border-[var(--border)] flex items-center gap-2">
-          <Monitor className="w-4 h-4 text-violet-400" />
+          <Monitor className="w-4 h-4" style={{ color: 'var(--c1)' }} />
           <h2 className="text-[var(--text-base)] font-semibold text-sm">{d.profileActiveSessions}</h2>
           <span className="ml-auto text-xs text-[var(--text-muted)]">{sessions.length}</span>
         </div>
@@ -390,7 +392,7 @@ function SecurityLogTab({ d }: { d: T }) {
   return (
     <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
       <div className="px-5 py-4 border-b border-[var(--border)] flex items-center gap-2">
-        <BookOpen className="w-4 h-4 text-violet-400" />
+        <BookOpen className="w-4 h-4" style={{ color: 'var(--c1)' }} />
         <h2 className="text-[var(--text-base)] font-semibold text-sm">{d.profileSecurityLog}</h2>
       </div>
       {logs.length === 0 ? (
@@ -456,9 +458,10 @@ export default function ProfileClient({ profile }: { profile: UserProfile }) {
             onClick={() => setActiveTab(t.key)}
             className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${
               activeTab === t.key
-                ? 'bg-violet-600/20 text-violet-300 border border-violet-500/30'
+                ? 'border border-[rgba(73,79,223,0.3)]'
                 : 'text-[var(--text-muted)] hover:text-[var(--text-dim)]'
             }`}
+            style={activeTab === t.key ? { background: 'rgba(73,79,223,0.12)', color: 'var(--c1)' } : {}}
           >
             {t.icon}
             {t.label}

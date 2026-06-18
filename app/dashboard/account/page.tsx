@@ -28,7 +28,7 @@ export default async function AccountPage() {
 
   const planLabel: Record<string, { label: string; color: string }> = {
     free:     { label: t.planFree,    color: 'text-[var(--text-muted)] bg-slate-500/10 border-[var(--border)]' },
-    pro:      { label: t.planPro,     color: 'text-violet-400 bg-violet-500/10 border-violet-500/20' },
+    pro:      { label: t.planPro,     color: 'text-[#494fdf] bg-[rgba(73,79,223,0.1)] border-[rgba(73,79,223,0.2)]' },
     pro_plus: { label: t.planProPlus, color: 'text-amber-400 bg-amber-500/10 border-amber-500/20' },
   }
   const planInfo = planLabel[effectivePlan] ?? planLabel.free
