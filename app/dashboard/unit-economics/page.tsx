@@ -50,7 +50,7 @@ export default async function UnitEconomicsPage({
         <div>
           <div className="flex items-center gap-2 mb-0.5">
             <h1 className="text-2xl font-bold text-[var(--text-base)]">{d.unitEcoTitle}</h1>
-            <span className="text-[10px] font-semibold px-2 py-1 rounded-full bg-violet-500/10 border border-violet-500/25 text-violet-400">
+            <span className="text-[10px] font-semibold px-2 py-1 rounded-full border" style={{ background: 'rgba(73,79,223,0.1)', borderColor: 'rgba(73,79,223,0.25)', color: 'var(--c1)' }}>
               {items.length} {d.productCount}
             </span>
           </div>
@@ -58,7 +58,7 @@ export default async function UnitEconomicsPage({
         </div>
         <div className="flex items-center gap-2">
           <a href="https://uzum.uz" target="_blank" rel="noreferrer"
-            className="inline-flex items-center gap-2 btn-primary text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors shadow-lg shadow-violet-500/20">
+            className="inline-flex items-center gap-2 btn-primary text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors shadow-lg">
             <Calculator className="w-4 h-4" /> {d.openUzum}
           </a>
         </div>

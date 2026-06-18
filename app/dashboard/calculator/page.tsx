@@ -50,7 +50,7 @@ const YANDEX_CATS: { name: Record<string, string>; rate: number }[] = [
 
 type MP = 'uzum' | 'yandex' | 'wildberries'
 
-const inputCls = "w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/30 transition-all"
+const inputCls = "w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[rgba(73,79,223,0.6)] focus:ring-1 focus:ring-[rgba(73,79,223,0.3)] transition-all"
 
 export default function CalculatorPage() {
   const { lang } = useLang()
@@ -133,7 +133,7 @@ export default function CalculatorPage() {
       <div>
         <div className="flex items-center gap-2 mb-0.5">
           <h1 className="text-2xl font-bold text-[var(--text-base)] flex items-center gap-2">
-            <Calculator className="w-6 h-6 text-violet-400" />
+            <Calculator className="w-6 h-6" style={{ color: 'var(--c1)' }} />
             {t.title}
           </h1>
         </div>
@@ -159,9 +159,10 @@ export default function CalculatorPage() {
                 onClick={() => { setMp(m.id); setCatIdx(0) }}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                   mp === m.id
-                    ? 'bg-violet-600/20 text-violet-700 border border-violet-500/30 dark:text-violet-300'
+                    ? 'border border-[rgba(73,79,223,0.3)]'
                     : 'text-[var(--text-muted)] hover:text-[var(--text-dim)]'
                 }`}
+                style={mp === m.id ? { background: 'rgba(73,79,223,0.12)', color: 'var(--c1)' } : {}}
               >
                 {m.label}
               </button>
@@ -239,11 +240,11 @@ export default function CalculatorPage() {
             </select>
           </div>
 
-          <div className="flex items-center gap-2 bg-violet-500/[0.07] border border-violet-500/10 rounded-xl px-4 py-2.5">
-            <Info className="w-4 h-4 text-violet-400 flex-shrink-0" />
+          <div className="flex items-center gap-2 border rounded-xl px-4 py-2.5" style={{ background: 'rgba(73,79,223,0.07)', borderColor: 'rgba(73,79,223,0.1)' }}>
+            <Info className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--c1)' }} />
             <p className="text-xs text-[var(--text-muted)]">
               {mp === 'uzum' ? 'Uzum' : mp === 'yandex' ? 'Yandex Market' : 'Wildberries'} {lang === 'ru' ? 'комиссия:' : lang === 'en' ? 'commission:' : 'komissiyasi:'}
-              {' '}<span className="text-violet-400 font-semibold">{isApprox ? '~' : ''}{commission}%</span> · {CATEGORIES[catIdx].name}
+              {' '}<span className="font-semibold" style={{ color: 'var(--c1)' }}>{isApprox ? '~' : ''}{commission}%</span> · {CATEGORIES[catIdx].name}
               {isApprox && <span className="text-amber-400 ml-1">({lang === 'ru' ? 'приблизительно' : lang === 'en' ? 'approximate' : 'taxminiy'})</span>}
             </p>
           </div>
@@ -260,8 +261,8 @@ export default function CalculatorPage() {
             <>
               {/* ── REALITY CHECK ─────────────────────────────────────── */}
               <div className="rounded-2xl overflow-hidden border border-[var(--border2)]">
-                <div className="bg-gradient-to-r from-violet-600/20 to-indigo-600/10 px-5 py-3 border-b border-[var(--border)] flex items-center gap-2">
-                  <Zap className="w-4 h-4 text-violet-400" />
+                <div className="px-5 py-3 border-b border-[var(--border)] flex items-center gap-2" style={{ background: 'rgba(73,79,223,0.08)' }}>
+                  <Zap className="w-4 h-4" style={{ color: 'var(--c1)' }} />
                   <span className="text-[var(--text-base)] font-bold text-sm">{t.realityCheck}</span>
                 </div>
 
