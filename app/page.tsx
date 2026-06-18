@@ -606,7 +606,7 @@ export default function LandingPage() {
               onMouseLeave={e => (e.currentTarget.style.color = isDark ? 'rgba(255,255,255,0.6)' : '#475569')}>
               {t.nav.login}
             </Link>
-            <Link href="/login" className="text-[15px] font-bold px-6 py-2.5 rounded-full text-white transition-opacity hover:opacity-90"
+            <Link href="/login" className="text-sm sm:text-[15px] font-bold px-4 sm:px-6 py-2 sm:py-2.5 rounded-full text-white transition-opacity hover:opacity-90"
               style={{ background: 'var(--c1)' }}>
               {t.nav.start}
             </Link>
@@ -651,25 +651,50 @@ export default function LandingPage() {
       </header>
 
       {/* ── HERO ─────────────────────────────────────────────────────────────── */}
-      <section className="relative flex items-center pt-24 overflow-hidden" style={{ minHeight: '100svh' }}>
-        <div className="relative z-10 max-w-7xl mx-auto w-full px-6 grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-12 items-center py-16">
+      <section className="relative flex items-center pt-20 overflow-hidden" style={{ minHeight: '100svh' }}>
 
-          {/* LEFT: mockup */}
+        {/* Subtle cobalt hero background */}
+        {isDark ? (
+          <div className="absolute inset-0 pointer-events-none" aria-hidden>
+            <div style={{
+              position: 'absolute', right: 0, top: 0, bottom: 0, width: '55%',
+              background: 'linear-gradient(to left, rgba(73,79,223,0.18) 0%, transparent 100%)',
+            }} />
+            <div style={{
+              position: 'absolute', right: '10%', top: '10%', width: '40%', height: '60%',
+              background: 'radial-gradient(ellipse at center, rgba(73,79,223,0.12) 0%, transparent 70%)',
+              filter: 'blur(40px)',
+            }} />
+          </div>
+        ) : (
+          <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden>
+            <div style={{
+              position: 'absolute', top: 0, right: 0, bottom: 0, width: '50%',
+              background: 'linear-gradient(150deg, #d4d6ff 0%, #b8bcfd 45%, #9fa4fa 100%)',
+              borderTopLeftRadius: '50% 100%', borderBottomLeftRadius: '50% 100%',
+              opacity: 0.55,
+            }} />
+          </div>
+        )}
+
+        <div className="relative z-10 max-w-7xl mx-auto w-full px-5 sm:px-6 grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-8 lg:gap-12 items-center py-8 lg:py-16">
+
+          {/* Mockup — desktop only */}
           <motion.div
             initial={{ opacity: 0, x: -40, scale: 0.97 }}
             animate={{ opacity: 1, x: 0, scale: 1 }}
             transition={{ duration: 0.75, delay: 0.1, ease: [0.25, 0.46, 0.45, 0.94] }}
-            className="relative order-2 lg:order-1"
+            className="relative order-2 lg:order-1 hidden lg:block"
           >
             <MockupInteractive>
               <DashboardMockup p={t.preview} />
             </MockupInteractive>
           </motion.div>
 
-          {/* RIGHT: copy */}
-          <div className="flex flex-col gap-7 order-1 lg:order-2">
+          {/* Copy */}
+          <div className="flex flex-col gap-6 order-1 lg:order-2">
 
-            {/* Marketplace chips — small, factual */}
+            {/* Marketplace chips */}
             <motion.div
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
@@ -677,7 +702,7 @@ export default function LandingPage() {
               className="flex items-center gap-2 flex-wrap"
             >
               {['Uzum', 'Yandex Market', 'Wildberries'].map(mp => (
-                <span key={mp} className="text-[11px] font-semibold px-2.5 py-1 rounded-md border"
+                <span key={mp} className="text-[11px] font-semibold px-2.5 py-1 rounded-full border"
                   style={{ borderColor: 'var(--border2)', color: 'var(--text-muted)', background: 'var(--bg-input)' }}>
                   {mp}
                 </span>
@@ -685,7 +710,7 @@ export default function LandingPage() {
             </motion.div>
 
             {/* Headline */}
-            <div className="text-5xl sm:text-6xl xl:text-7xl font-black leading-[1.0] tracking-tighter"
+            <div className="text-[2.5rem] sm:text-5xl lg:text-6xl xl:text-7xl font-black leading-[1.04] tracking-tighter"
               style={{ color: 'var(--text-base)' }}>
               {t.hero.landingTitle.split(' ').map((word, i) => (
                 <motion.span
@@ -706,17 +731,9 @@ export default function LandingPage() {
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.45 }}
-              className="space-y-2"
             >
-              <p className="text-lg leading-relaxed font-medium" style={{ color: 'var(--text-muted)' }}>
+              <p className="text-base sm:text-lg leading-relaxed font-medium" style={{ color: 'var(--text-muted)' }}>
                 {t.hero.landingSubtitle}
-              </p>
-              <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)', opacity: 0.7 }}>
-                {lang === 'uz'
-                  ? "Har kuni 5 daqiqada sotuvlaringizni nazorat qiling. Raqiblar narxini kuzating, DRR hisobini avtomatlashtiring va foydani oshiring."
-                  : lang === 'ru'
-                  ? "5 минут в день — и вы контролируете все продажи. Следите за ценами конкурентов, автоматизируйте DRR и увеличивайте прибыль."
-                  : "5 minutes a day keeps you in full control. Monitor competitor prices, automate DRR calculations and grow your margins."}
               </p>
             </motion.div>
 
@@ -728,12 +745,12 @@ export default function LandingPage() {
               className="flex flex-col sm:flex-row gap-3"
             >
               <Link href="/login"
-                className="inline-flex items-center justify-center gap-2 font-bold px-7 py-3.5 rounded-xl text-sm text-white"
+                className="flex items-center justify-center gap-2 font-bold px-7 py-4 rounded-full text-sm text-white"
                 style={{ background: 'var(--c1)' }}>
                 {t.trialFreeStart} <ArrowRight className="w-4 h-4" />
               </Link>
               <Link href="/help"
-                className="inline-flex items-center justify-center gap-2 font-medium px-7 py-3.5 rounded-xl text-sm border"
+                className="flex items-center justify-center gap-2 font-medium px-7 py-4 rounded-full text-sm border"
                 style={{ borderColor: 'var(--border2)', color: 'var(--text-dim)' }}>
                 {t.nav.explorePlatform}
               </Link>
@@ -756,14 +773,25 @@ export default function LandingPage() {
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.85 + i * 0.08 }}
-                  className={`pr-6 ${i > 0 ? 'pl-6 border-l' : ''}`}
+                  className={`pr-4 sm:pr-6 ${i > 0 ? 'pl-4 sm:pl-6 border-l' : ''}`}
                   style={{ borderColor: 'var(--border)' }}>
-                  <div className="text-3xl font-black" style={{ color: 'var(--text-base)' }}>
+                  <div className="text-2xl sm:text-3xl font-black" style={{ color: 'var(--text-base)' }}>
                     <StatNum value={s.value} suffix={s.suffix} />
                   </div>
-                  <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>{s.label}</p>
+                  <p className="text-[11px] sm:text-xs mt-1 leading-tight" style={{ color: 'var(--text-muted)' }}>{s.label}</p>
                 </motion.div>
               ))}
+            </motion.div>
+
+            {/* Mockup — mobile only, compact */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.7 }}
+              className="lg:hidden mt-2 rounded-2xl overflow-hidden border max-h-[260px]"
+              style={{ borderColor: 'var(--border)' }}
+            >
+              <DashboardMockup p={t.preview} />
             </motion.div>
 
           </div>
