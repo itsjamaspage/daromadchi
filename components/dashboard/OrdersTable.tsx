@@ -90,9 +90,13 @@ export default function OrdersTable({ orders }: { orders: Order[] }) {
             onClick={() => setMp(tab.value)}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
               mp === tab.value
-                ? 'bg-violet-600/20 text-[var(--c1)] border border-violet-500/30'
+                ? 'text-[var(--c1)]'
                 : 'text-[var(--text-muted)] hover:text-[var(--text-dim)]'
             }`}
+            style={mp === tab.value ? {
+              background: 'rgba(73,79,223,0.12)',
+              border: '1px solid rgba(73,79,223,0.2)',
+            } : undefined}
           >
             {tab.label}
           </button>
@@ -106,8 +110,9 @@ export default function OrdersTable({ orders }: { orders: Order[] }) {
             key={tab.value}
             onClick={() => setStatus(tab.value)}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 ${
-              status === tab.value ? 'bg-violet-600 text-[var(--text-base)] shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-base)]'
+              status === tab.value ? 'text-[var(--text-base)]' : 'text-[var(--text-muted)] hover:text-[var(--text-base)]'
             }`}
+            style={status === tab.value ? { background: 'var(--c1)' } : undefined}
           >
             {tab.label}
             {tab.value !== 'all' && (
@@ -127,7 +132,7 @@ export default function OrdersTable({ orders }: { orders: Order[] }) {
             value={query}
             onChange={e => setQuery(e.target.value)}
             placeholder={d.searchOrderPlaceholder}
-            className="w-full bg-[var(--bg-card2)] border border-[var(--border2)] rounded-xl pl-9 pr-4 py-2.5 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/30 transition-all"
+            className="w-full bg-[var(--bg-card2)] border border-[var(--border2)] rounded-xl pl-9 pr-4 py-2.5 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[#494fdf]/60 focus:ring-1 focus:ring-[#494fdf]/30 transition-all"
           />
         </div>
         <ExportButton data={exportData} filename="buyurtmalar" />
@@ -158,10 +163,10 @@ export default function OrdersTable({ orders }: { orders: Order[] }) {
                   <tr key={order.id} className="hover:bg-[var(--bg-card2)] transition-colors">
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-lg bg-violet-500/10 flex items-center justify-center flex-shrink-0">
-                          <ShoppingCart className="w-3.5 h-3.5 text-violet-400" />
+                        <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(73,79,223,0.08)' }}>
+                          <ShoppingCart className="w-3.5 h-3.5" style={{ color: 'var(--c1)' }} />
                         </div>
-                        <span className="text-violet-400 font-mono text-xs font-medium">{order.order_id_external ?? order.id.slice(0, 8)}</span>
+                        <span className="font-mono text-xs font-medium" style={{ color: 'var(--c1)' }}>{order.order_id_external ?? order.id.slice(0, 8)}</span>
                       </div>
                     </td>
                     <td className="px-5 py-4 text-[var(--text-dim)] text-xs">{marketplaceLabel[order.marketplace] ?? order.marketplace}</td>

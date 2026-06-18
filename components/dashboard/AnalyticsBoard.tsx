@@ -45,7 +45,7 @@ const L = {
   },
 } as const
 
-const PALETTE = ['#7c3aed', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#a78bfa', '#3b82f6']
+const PALETTE = ['#494fdf', '#428619', '#10b981', '#ec7e00', '#e23b4a', '#4f55f1', '#376cd5']
 
 function fmtCompact(n: number) {
   if (Math.abs(n) >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`

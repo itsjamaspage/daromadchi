@@ -96,10 +96,10 @@ export default function AdvertisingView({ uzumCampaigns, wbCampaigns }: Props) {
           <button key={mp} onClick={() => setMarketplace(mp)}
             className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${
               marketplace === mp
-                ? 'bg-violet-600/20 border border-violet-500/30'
+                ? 'border border-[rgba(73,79,223,0.3)]'
                 : 'text-[var(--text-muted)] hover:text-[var(--text-dim)]'
             }`}
-            style={marketplace === mp ? { color: 'var(--c1)' } : {}}>
+            style={marketplace === mp ? { color: 'var(--c1)', background: 'rgba(73,79,223,0.12)' } : {}}>
             {mp === 'uzum' ? 'Uzum' : mp === 'wb' ? 'Wildberries' : 'Yandex Market'}
           </button>
         ))}
@@ -132,7 +132,7 @@ export default function AdvertisingView({ uzumCampaigns, wbCampaigns }: Props) {
           <div className="flex justify-center pt-2">
             <a href={marketplace === 'uzum' ? 'https://seller.uzum.uz' : 'https://seller.wildberries.ru'}
               target="_blank" rel="noreferrer"
-              className="inline-flex items-center gap-2 btn-primary text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors shadow-lg shadow-violet-500/20">
+              className="inline-flex items-center gap-2 btn-primary text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors shadow-lg">
               <ExternalLink className="w-4 h-4" />
               {marketplace === 'uzum' ? t.goUzum : t.goWb}
             </a>
@@ -197,10 +197,10 @@ export default function AdvertisingView({ uzumCampaigns, wbCampaigns }: Props) {
                 <button key={v} onClick={() => setTypeTab(v)}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                     typeTab === v
-                      ? 'bg-violet-600/20 border border-violet-500/30'
+                      ? 'border border-[rgba(73,79,223,0.3)]'
                       : 'text-[var(--text-muted)] hover:text-[var(--text-dim)]'
                   }`}
-                  style={typeTab === v ? { color: 'var(--c1)' } : {}}>
+                  style={typeTab === v ? { color: 'var(--c1)', background: 'rgba(73,79,223,0.12)' } : {}}>
                   {label}
                 </button>
               ))}
@@ -233,9 +233,10 @@ export default function AdvertisingView({ uzumCampaigns, wbCampaigns }: Props) {
                           <p className="text-[var(--text-muted)] text-[10px] mt-0.5 truncate max-w-[200px]">{c.productTitle}</p>
                         </td>
                         <td className="px-3 py-3">
-                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${
-                            c.type === 'cpc' ? 'bg-blue-500/10 text-blue-400' : 'bg-violet-500/10 text-violet-400'
-                          }`}>{c.type.toUpperCase()}</span>
+                          <span
+                            className={`text-[10px] font-bold px-2 py-0.5 rounded ${c.type === 'cpc' ? 'bg-blue-500/10 text-blue-400' : ''}`}
+                            style={c.type !== 'cpc' ? { background: 'rgba(73,79,223,0.1)', color: 'var(--c1)' } : {}}
+                          >{c.type.toUpperCase()}</span>
                         </td>
                         <td className="px-3 py-3">
                           <div className="flex items-center gap-1.5">

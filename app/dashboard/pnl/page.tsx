@@ -49,7 +49,7 @@ export default async function PnlPage({ searchParams }: Props) {
         <div>
           <div className="flex items-center gap-2 mb-0.5">
             <h1 className="text-2xl font-bold text-[var(--text-base)] flex items-center gap-2">
-              <FileText className="w-6 h-6 text-violet-400" />
+              <FileText className="w-6 h-6" style={{ color: 'var(--c1)' }} />
               {d.pnlTitle}
             </h1>
           </div>
@@ -65,16 +65,16 @@ export default async function PnlPage({ searchParams }: Props) {
       </Suspense>
 
       {isEmpty ? (
-        <div className="bg-[var(--bg-card2)] border border-dashed border-violet-500/30 rounded-2xl p-10 text-center">
-          <div className="w-14 h-14 rounded-2xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center mx-auto mb-4">
-            <FileText className="w-7 h-7 text-violet-400" />
+        <div className="bg-[var(--bg-card2)] rounded-2xl p-10 text-center" style={{ border: '1px dashed rgba(73,79,223,0.3)' }}>
+          <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: 'rgba(73,79,223,0.1)', borderWidth: '1px', borderStyle: 'solid', borderColor: 'rgba(73,79,223,0.2)' }}>
+            <FileText className="w-7 h-7" style={{ color: 'var(--c1)' }} />
           </div>
           <h2 className="text-[var(--text-base)] font-bold text-lg mb-2">{d.noData}</h2>
           <p className="text-[var(--text-muted)] text-sm mb-6 max-w-sm mx-auto">
             {d.noDataPnlDesc}
           </p>
           <Link href="/dashboard/settings"
-            className="inline-flex items-center gap-2 btn-primary text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors shadow-lg shadow-violet-500/20">
+            className="inline-flex items-center gap-2 btn-primary text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors shadow-lg">
             <Settings className="w-4 h-4" /> {d.goToSettings}
           </Link>
         </div>
@@ -83,7 +83,7 @@ export default async function PnlPage({ searchParams }: Props) {
           {/* Summary */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {[
-              { label: d.totalRevenuePnl,   value: fmt(totalRevenue), color: 'text-violet-400' },
+              { label: d.totalRevenuePnl,   value: fmt(totalRevenue), color: 'text-[#494fdf]' },
               { label: d.commission2,        value: fmt(totalFees),    color: 'text-red-400' },
               { label: d.delivery,           value: fmt(totalDelivery),color: 'text-amber-400' },
               { label: d.netNoCommission,    value: fmt(totalNet),     color: totalNet > 0 ? 'text-emerald-400' : 'text-red-400' },
@@ -135,7 +135,7 @@ export default async function PnlPage({ searchParams }: Props) {
                         <td className="px-5 py-4 text-[var(--text-base)] font-medium">
                           {m.month}
                           {i === monthlyData.length - 1 && (
-                            <span className="ml-2 text-[10px] text-violet-400 bg-violet-500/10 px-1.5 py-0.5 rounded">{d.current}</span>
+                            <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded" style={{ color: 'var(--c1)', background: 'rgba(73,79,223,0.1)' }}>{d.current}</span>
                           )}
                         </td>
                         <td className="px-5 py-4 text-right text-[var(--text-muted)]">{m.order_count}</td>
