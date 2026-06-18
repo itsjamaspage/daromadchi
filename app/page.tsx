@@ -49,18 +49,29 @@ function DashboardMockup({ p }: { p: typeof translations.en.preview }) {
   const bg2 = isDark ? '#0a0a0a' : '#f4f4f4'
   const border = isDark ? 'rgba(255,255,255,0.08)' : '#e2e2e7'
   const muted = isDark ? 'rgba(255,255,255,0.45)' : '#505a63'
+  const textBase = isDark ? 'rgba(255,255,255,0.9)' : '#191c1f'
   const c1 = '#494fdf'
   const c2 = '#4f55f1'
 
   const kpis = [
-    { l: p.revenue, v: '124.5M', color: c1 },
-    { l: p.profit, v: '38.2M', color: '#22c55e' },
-    { l: p.orders, v: '1,842', color: c2 },
-    { l: p.stock, v: '3,410', color: '#f59e0b' },
+    { l: p.revenue, v: '124.5M', accent: c1,      change: '+12.4%', pos: true },
+    { l: p.profit,  v: '38.2M',  accent: '#22c55e', change: '+8.1%',  pos: true },
+    { l: p.orders,  v: '1,842',  accent: c2,       change: '+5.7%',  pos: true },
+    { l: p.stock,   v: '3,410',  accent: '#f59e0b', change: '-2.3%',  pos: false },
+  ]
+
+  const bars = [30,50,38,70,45,82,60,88,72,55,78,92,65,80]
+  const hi = bars.length - 3
+
+  const orders = [
+    { mp: 'Uzum',   dot: c1,       id: 'DEMO-183', ok: true },
+    { mp: 'Yandex', dot: '#f59e0b', id: 'DEMO-184', ok: false },
+    { mp: 'WB',     dot: '#cb11ab', id: 'DEMO-185', ok: true },
   ]
 
   return (
     <div className="rounded-2xl overflow-hidden border" style={{ background: bg, borderColor: border }}>
+      {/* Browser chrome */}
       <div className="flex items-center gap-2 px-4 py-3 border-b" style={{ background: bg2, borderColor: border }}>
         <div className="flex gap-1.5">
           <div className="w-3 h-3 rounded-full bg-red-400/80" />
@@ -73,50 +84,82 @@ function DashboardMockup({ p }: { p: typeof translations.en.preview }) {
         </div>
         <Activity className="w-3 h-3 text-green-400" />
       </div>
-      <div className="p-5 space-y-4">
-        <div className="grid grid-cols-4 gap-3">
-          {kpis.map(k => (
-            <div key={k.l} className="rounded-xl p-3 border" style={{ background: bg2, borderColor: border }}>
-              <p className="text-[9px] mb-1" style={{ color: muted }}>{k.l}</p>
-              <p className="font-bold text-sm" style={{ color: k.color }}>{k.v}</p>
-              <p className="text-green-400 text-[9px] mt-0.5">↑ 12.4%</p>
-            </div>
+
+      {/* App body: sidebar + content */}
+      <div className="flex">
+        {/* Mini sidebar */}
+        <div className="flex flex-col items-center gap-3 py-4 px-2 border-r" style={{ background: bg2, borderColor: border, minWidth: '40px' }}>
+          <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: c1 }}>
+            <BarChart2 className="w-3.5 h-3.5 text-white" />
+          </div>
+          {[TrendingUp, Calculator, DollarSign].map((Icon, idx) => (
+            <Icon key={idx} className="w-4 h-4" style={{ color: muted, opacity: 0.55 }} />
           ))}
         </div>
-        <div className="grid grid-cols-3 gap-3">
-          <div className="col-span-2 rounded-xl p-4 border" style={{ background: bg2, borderColor: border }}>
-            <p className="text-[10px] mb-3 font-medium" style={{ color: muted }}>{p.dailyRevenue}</p>
-            <div className="flex items-end gap-1 h-20">
-              {[30,50,38,70,45,82,60,88,72,55,78,92,65,80].map((h, i) => (
-                <div key={i} className="flex-1 rounded-t" style={{
-                  height: `${h}%`,
-                  background: 'linear-gradient(to top,#494fdfcc,#494fdf22)'
-                }} />
-              ))}
+
+        {/* Main content */}
+        <div className="flex-1 p-4 space-y-3 overflow-hidden">
+
+          {/* KPI grid with colored top borders */}
+          <div className="grid grid-cols-4 gap-2">
+            {kpis.map(k => (
+              <div key={k.l} className="rounded-xl p-2.5 border" style={{ background: bg, borderColor: border, borderTop: `2px solid ${k.accent}` }}>
+                <p className="text-[8px] mb-1.5 truncate" style={{ color: muted }}>{k.l}</p>
+                <p className="font-bold text-[11px]" style={{ color: textBase }}>{k.v}</p>
+                <p className="text-[8px] mt-0.5" style={{ color: k.pos ? '#22c55e' : '#e23b4a' }}>{k.change}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Charts row */}
+          <div className="grid grid-cols-3 gap-2">
+            <div className="col-span-2 rounded-xl p-3 border" style={{ background: bg2, borderColor: border }}>
+              <p className="text-[9px] mb-2 font-medium" style={{ color: muted }}>{p.dailyRevenue}</p>
+              <div className="flex items-end gap-[3px] h-16">
+                {bars.map((h, i) => (
+                  <div key={i} className="flex-1 rounded-t-sm" style={{
+                    height: `${h}%`,
+                    background: i >= hi ? c1 : isDark ? 'rgba(73,79,223,0.22)' : 'rgba(73,79,223,0.14)'
+                  }} />
+                ))}
+              </div>
+            </div>
+            <div className="rounded-xl p-3 border flex flex-col" style={{ background: bg2, borderColor: border }}>
+              <p className="text-[9px] mb-2 font-medium" style={{ color: muted }}>{p.categories}</p>
+              <div className="relative w-14 h-14 mx-auto">
+                <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
+                  <circle cx="18" cy="18" r="14" fill="none" stroke="rgba(73,79,223,0.15)" strokeWidth="4" />
+                  <circle cx="18" cy="18" r="14" fill="none" stroke={c1} strokeWidth="4" strokeDasharray="38 50" strokeLinecap="round" />
+                  <circle cx="18" cy="18" r="14" fill="none" stroke={c2} strokeWidth="4" strokeDasharray="22 66" strokeDashoffset="-38" strokeLinecap="round" />
+                  <circle cx="18" cy="18" r="14" fill="none" stroke="#f59e0b" strokeWidth="4" strokeDasharray="14 74" strokeDashoffset="-60" strokeLinecap="round" />
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="text-[9px] font-bold" style={{ color: textBase }}>76%</span>
+                </div>
+              </div>
             </div>
           </div>
-          <div className="rounded-xl p-4 border flex flex-col" style={{ background: bg2, borderColor: border }}>
-            <p className="text-[10px] mb-3 font-medium" style={{ color: muted }}>{p.categories}</p>
-            <div className="relative w-16 h-16 mx-auto">
-              <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
-                <circle cx="18" cy="18" r="14" fill="none" stroke={'rgba(73,79,223,0.15)'} strokeWidth="4" />
-                <circle cx="18" cy="18" r="14" fill="none" stroke={c1} strokeWidth="4" strokeDasharray="38 50" strokeLinecap="round" />
-                <circle cx="18" cy="18" r="14" fill="none" stroke={c2} strokeWidth="4" strokeDasharray="22 66" strokeDashoffset="-38" strokeLinecap="round" />
-                <circle cx="18" cy="18" r="14" fill="none" stroke="#f59e0b" strokeWidth="4" strokeDasharray="14 74" strokeDashoffset="-60" strokeLinecap="round" />
-              </svg>
+
+          {/* Orders table */}
+          <div className="rounded-xl border overflow-hidden" style={{ borderColor: border }}>
+            <div className="flex items-center justify-between px-3 py-1.5 border-b" style={{ background: bg2, borderColor: border }}>
+              <span className="text-[8px] font-semibold" style={{ color: muted }}>Recent Orders</span>
+              <span className="text-[7px] font-semibold" style={{ color: c1 }}>View all →</span>
             </div>
+            {orders.map(o => (
+              <div key={o.id} className="flex items-center justify-between px-3 py-1.5 border-b last:border-b-0" style={{ borderColor: border }}>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: o.dot }} />
+                  <span className="text-[8px]" style={{ color: isDark ? 'rgba(255,255,255,0.7)' : '#505a63' }}>{o.mp} · {o.id}</span>
+                </div>
+                <span className="text-[7px] px-1.5 py-0.5 rounded-full font-medium"
+                  style={{ background: o.ok ? 'rgba(34,197,94,0.12)' : 'rgba(245,158,11,0.12)', color: o.ok ? '#22c55e' : '#f59e0b' }}>
+                  {o.ok ? 'Delivered' : 'Processing'}
+                </span>
+              </div>
+            ))}
           </div>
-        </div>
-        <div className="rounded-xl border overflow-hidden" style={{ borderColor: border }}>
-          <div className="flex items-center justify-between px-4 py-2 border-b text-[9px] font-semibold" style={{ background: bg2, borderColor: border, color: muted }}>
-            <span>Recent Orders</span><span>Status</span>
-          </div>
-          {[['DEMO-183','Delivered','#22c55e'],['DEMO-184','Processing','#f59e0b'],['DEMO-185','Delivered','#22c55e']].map(([id, st, col]) => (
-            <div key={id} className="flex items-center justify-between px-4 py-2 border-b text-[9px]" style={{ borderColor: border, color: muted }}>
-              <span style={{ color: isDark ? 'rgba(255,255,255,0.65)' : '#505a63' }}>{id}</span>
-              <span style={{ color: col as string }}>{st}</span>
-            </div>
-          ))}
+
         </div>
       </div>
     </div>
@@ -712,18 +755,24 @@ export default function LandingPage() {
             {/* Headline */}
             <div className="text-[2.5rem] sm:text-5xl lg:text-6xl xl:text-7xl font-black leading-[1.04] tracking-tighter"
               style={{ color: 'var(--text-base)' }}>
-              {t.hero.landingTitle.split(' ').map((word, i) => (
-                <motion.span
-                  key={i}
-                  custom={i}
-                  variants={wordAnim}
-                  initial="hidden"
-                  animate="visible"
-                  className="inline-block mr-[0.2em]"
-                >
-                  {word}
-                </motion.span>
-              ))}
+              {(() => {
+                const [first, second] = t.hero.landingTitle.split(' — ')
+                const firstWords = (first ?? '').split(' ').map(w => ({ w, grad: false }))
+                const dash = [{ w: '—', grad: false }]
+                const secondWords = (second ?? '').split(' ').map(w => ({ w, grad: true }))
+                return [...firstWords, ...dash, ...secondWords].map(({ w, grad }, i) => (
+                  <motion.span
+                    key={i}
+                    custom={i}
+                    variants={wordAnim}
+                    initial="hidden"
+                    animate="visible"
+                    className={`inline-block mr-[0.2em]${grad ? ' grad-text' : ''}`}
+                  >
+                    {w}
+                  </motion.span>
+                ))
+              })()}
             </div>
 
             {/* Subtext */}

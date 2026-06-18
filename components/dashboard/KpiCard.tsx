@@ -8,12 +8,11 @@ interface KpiCardProps {
   color: 'violet' | 'emerald' | 'blue' | 'amber'
 }
 
-// Revolut accent palette — matches DESIGN.md semantic tokens
 const colorMap = {
-  violet:  { bg: 'rgba(73,79,223,0.08)',   icon: '#494fdf' },
-  emerald: { bg: 'rgba(66,134,25,0.08)',   icon: '#428619' },
-  blue:    { bg: 'rgba(55,108,213,0.08)',  icon: '#376cd5' },
-  amber:   { bg: 'rgba(236,126,0,0.08)',   icon: '#ec7e00' },
+  violet:  { bgRgba: 'rgba(73,79,223,0.08)',   color: '#494fdf' },
+  emerald: { bgRgba: 'rgba(66,134,25,0.08)',   color: '#428619' },
+  blue:    { bgRgba: 'rgba(55,108,213,0.08)',  color: '#376cd5' },
+  amber:   { bgRgba: 'rgba(236,126,0,0.08)',   color: '#ec7e00' },
 }
 
 export default function KpiCard({ title, value, change, icon: Icon, color }: KpiCardProps) {
@@ -23,16 +22,12 @@ export default function KpiCard({ title, value, change, icon: Icon, color }: Kpi
   return (
     <div
       className="rounded-[20px] p-5 transition-all"
-      style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}
+      style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderTop: `2px solid ${c.color}` }}
     >
       <div className="flex items-start justify-between mb-4">
-        <div
-          className="w-10 h-10 rounded-xl flex items-center justify-center"
-          style={{ background: c.bg }}
-        >
-          <Icon className="w-5 h-5" style={{ color: c.icon }} />
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: c.bgRgba }}>
+          <Icon className="w-5 h-5" style={{ color: c.color }} />
         </div>
-
         {change != null && (
           <span
             title="vs prior period"
@@ -47,7 +42,6 @@ export default function KpiCard({ title, value, change, icon: Icon, color }: Kpi
           </span>
         )}
       </div>
-
       <p className="text-xs font-medium mb-1 tracking-wide" style={{ color: 'var(--text-muted)' }}>
         {title}
       </p>
