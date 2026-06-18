@@ -48,7 +48,7 @@ export default async function AccountPage() {
 
       {/* Avatar + name */}
       <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl p-6 flex items-center gap-5">
-        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-violet-500/20 flex-shrink-0">
+        <div className="w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0" style={{ background: 'var(--c1)' }}>
           <User className="w-8 h-8 text-[var(--text-base)]" />
         </div>
         <div>
@@ -137,7 +137,8 @@ export default async function AccountPage() {
               <p className="text-[var(--text-muted)] text-xs mt-0.5">{t.passwordDesc}</p>
             </div>
             <Link href="/login?forgot=1"
-              className="text-violet-400 hover:text-violet-300 text-sm font-medium transition-colors border border-violet-500/20 px-3 py-1.5 rounded-xl hover:bg-violet-500/10">
+              className="text-sm font-medium transition-colors border border-[rgba(73,79,223,0.2)] px-3 py-1.5 rounded-xl hover:bg-[rgba(73,79,223,0.08)]"
+              style={{ color: 'var(--c1)' }}
               {t.change}
             </Link>
           </div>
