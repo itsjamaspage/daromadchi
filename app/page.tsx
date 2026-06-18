@@ -8,7 +8,7 @@ import {
   BarChart2, Calculator, TrendingUp,
   Zap, ArrowRight, RefreshCw, AlertTriangle, DollarSign,
   Sparkles, Sun, Moon, Globe, X, Menu,
-  CheckCircle, Activity, ChevronRight,
+  CheckCircle, Activity,
 } from 'lucide-react'
 import { useTheme, useLang } from './providers'
 import { translations } from '@/lib/i18n'
@@ -45,12 +45,12 @@ function StatNum({ value, suffix }: { value: number; suffix: string }) {
 function DashboardMockup({ p }: { p: typeof translations.en.preview }) {
   const { theme } = useTheme()
   const isDark = theme === 'dark'
-  const bg = isDark ? '#1C1235' : '#ffffff'
-  const bg2 = isDark ? '#241840' : '#FFF0DC'
-  const border = isDark ? 'rgba(147,90,240,0.14)' : 'rgba(249,115,22,0.14)'
-  const muted = isDark ? '#9B85CC' : '#7A4F2A'
-  const c1 = isDark ? '#9B5CF6' : '#F97316'
-  const c2 = isDark ? '#C084FC' : '#EAB308'
+  const bg = isDark ? '#16181a' : '#ffffff'
+  const bg2 = isDark ? '#0a0a0a' : '#f4f4f4'
+  const border = isDark ? 'rgba(255,255,255,0.08)' : '#e2e2e7'
+  const muted = isDark ? 'rgba(255,255,255,0.45)' : '#505a63'
+  const c1 = '#494fdf'
+  const c2 = '#4f55f1'
 
   const kpis = [
     { l: p.revenue, v: '124.5M', color: c1 },
@@ -68,7 +68,7 @@ function DashboardMockup({ p }: { p: typeof translations.en.preview }) {
           <div className="w-3 h-3 rounded-full bg-green-400/80" />
         </div>
         <div className="flex-1 h-5 mx-3 rounded-md border flex items-center px-3"
-          style={{ background: isDark ? '#1a1040' : '#FFE8CC', borderColor: border }}>
+          style={{ background: isDark ? '#111316' : '#ebebf0', borderColor: border }}>
           <span className="text-[10px]" style={{ color: muted }}>daromadchi.uz/dashboard</span>
         </div>
         <Activity className="w-3 h-3 text-green-400" />
@@ -90,7 +90,7 @@ function DashboardMockup({ p }: { p: typeof translations.en.preview }) {
               {[30,50,38,70,45,82,60,88,72,55,78,92,65,80].map((h, i) => (
                 <div key={i} className="flex-1 rounded-t" style={{
                   height: `${h}%`,
-                  background: isDark ? 'linear-gradient(to top,#9B5CF6cc,#9B5CF622)' : 'linear-gradient(to top,#F97316cc,#F9731622)'
+                  background: 'linear-gradient(to top,#494fdfcc,#494fdf22)'
                 }} />
               ))}
             </div>
@@ -99,7 +99,7 @@ function DashboardMockup({ p }: { p: typeof translations.en.preview }) {
             <p className="text-[10px] mb-3 font-medium" style={{ color: muted }}>{p.categories}</p>
             <div className="relative w-16 h-16 mx-auto">
               <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
-                <circle cx="18" cy="18" r="14" fill="none" stroke={isDark ? 'rgba(0,200,232,0.15)' : 'rgba(124,58,237,0.15)'} strokeWidth="4" />
+                <circle cx="18" cy="18" r="14" fill="none" stroke={'rgba(73,79,223,0.15)'} strokeWidth="4" />
                 <circle cx="18" cy="18" r="14" fill="none" stroke={c1} strokeWidth="4" strokeDasharray="38 50" strokeLinecap="round" />
                 <circle cx="18" cy="18" r="14" fill="none" stroke={c2} strokeWidth="4" strokeDasharray="22 66" strokeDashoffset="-38" strokeLinecap="round" />
                 <circle cx="18" cy="18" r="14" fill="none" stroke="#f59e0b" strokeWidth="4" strokeDasharray="14 74" strokeDashoffset="-60" strokeLinecap="round" />
@@ -113,7 +113,7 @@ function DashboardMockup({ p }: { p: typeof translations.en.preview }) {
           </div>
           {[['DEMO-183','Delivered','#22c55e'],['DEMO-184','Processing','#f59e0b'],['DEMO-185','Delivered','#22c55e']].map(([id, st, col]) => (
             <div key={id} className="flex items-center justify-between px-4 py-2 border-b text-[9px]" style={{ borderColor: border, color: muted }}>
-              <span style={{ color: isDark ? '#a8c8e0' : '#3b3f6e' }}>{id}</span>
+              <span style={{ color: isDark ? 'rgba(255,255,255,0.65)' : '#505a63' }}>{id}</span>
               <span style={{ color: col as string }}>{st}</span>
             </div>
           ))}
@@ -274,7 +274,7 @@ function FeaturesScrollSection({
                 transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
                 className="w-72 h-72 rounded-3xl flex items-center justify-center border"
                 style={{
-                  background: isDark ? 'rgba(155,92,246,0.06)' : 'rgba(249,115,22,0.05)',
+                  background: 'rgba(73,79,223,0.06)',
                   borderColor: 'var(--border)',
                 }}
               >
@@ -304,7 +304,7 @@ function FeaturesScrollSection({
                     background: i <= activeStep ? 'var(--c1)' : 'var(--bg-base)',
                     borderColor: i <= activeStep ? 'var(--c1)' : 'var(--border)',
                     cursor: 'pointer',
-                    boxShadow: i === activeStep ? (isDark ? '0 0 14px rgba(155,92,246,0.85)' : '0 0 14px rgba(249,115,22,0.85)') : undefined,
+                    boxShadow: i === activeStep ? '0 0 14px rgba(73,79,223,0.6)' : undefined,
                   }}
                 />
               ))}
@@ -350,14 +350,14 @@ function FeaturesScrollSection({
                     className="flex items-center gap-3 py-2.5 px-3 rounded-lg text-left w-full focus:outline-none"
                     animate={{
                       opacity: isDark ? (isActive ? 1 : 0.38) : 1,
-                      background: isActive ? (isDark ? 'rgba(155,92,246,0.10)' : 'rgba(249,115,22,0.08)') : 'rgba(0,0,0,0)',
+                      background: isActive ? 'rgba(73,79,223,0.08)' : 'rgba(0,0,0,0)',
                     }}
                     whileHover={{ opacity: 1 }}
                     transition={{ duration: 0.2 }}
                     style={{ cursor: 'pointer' }}
                   >
                     <div className="w-7 h-7 rounded-md flex items-center justify-center shrink-0 transition-colors duration-200"
-                      style={{ background: isActive ? (isDark ? 'rgba(155,92,246,0.14)' : 'rgba(249,115,22,0.12)') : 'transparent' }}>
+                      style={{ background: isActive ? 'rgba(73,79,223,0.10)' : 'transparent' }}>
                       <Li className="w-3.5 h-3.5" style={{ color: isActive ? 'var(--c1)' : 'var(--text-dim)' }} />
                     </div>
                     <span className="text-sm font-medium transition-colors duration-200"
@@ -389,7 +389,7 @@ function FeaturesScrollSection({
               exit={{ opacity: 0, scale: 0.78 }}
               transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
               className="w-36 h-36 rounded-2xl flex items-center justify-center border"
-              style={{ borderColor: 'var(--border)', background: isDark ? 'rgba(0,200,232,0.05)' : 'rgba(124,58,237,0.05)' }}
+              style={{ borderColor: 'var(--border)', background: 'rgba(73,79,223,0.06)' }}
             >
               <ActiveIcon className="w-18 h-18" style={{ color: 'var(--c1)', width: '4.5rem', height: '4.5rem' }} />
             </motion.div>
@@ -430,10 +430,7 @@ export default function LandingPage() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [langOpen, setLangOpen] = useState(false)
   const [activePanel, setActivePanel] = useState(0)
-  const [isLandingYearly, setIsLandingYearly] = useState(false)
   const langRef = useRef<HTMLDivElement>(null)
-  const tttSectionRef = useRef<HTMLDivElement>(null)
-  const [tttSectionVisible, setTttSectionVisible] = useState(false)
 
   useEffect(() => {
     const h = (e: MouseEvent) => { if (langRef.current && !langRef.current.contains(e.target as Node)) setLangOpen(false) }
@@ -452,30 +449,8 @@ export default function LandingPage() {
   const tttCheckWin = (b: (null|'O'|'X')[]) => TTT_LINES.some(l => l.every(i => b[i]==='O'))
   const tttCheckDead = (b: (null|'O'|'X')[]) => TTT_LINES.every(l => l.some(i => b[i]==='X'))
 
-  // Scroll lock — fire only when section top reaches viewport top (fully visible)
-  useEffect(() => {
-    const checkVisible = () => {
-      const el = tttSectionRef.current
-      if (!el) return
-      const rect = el.getBoundingClientRect()
-      setTttSectionVisible(rect.top <= 5 && rect.bottom > 0)
-    }
-    window.addEventListener('scroll', checkVisible, { passive: true })
-    checkVisible()
-    return () => window.removeEventListener('scroll', checkVisible)
-  }, [])
-
-  useEffect(() => {
-    if (tttSectionVisible && !tttWon) {
-      document.documentElement.style.overflow = 'hidden'
-    } else {
-      document.documentElement.style.overflow = ''
-    }
-    return () => { document.documentElement.style.overflow = '' }
-  }, [tttSectionVisible, tttWon])
-
   const pricingRef = useRef(null)
-  const pricingInView = useInView(pricingRef, { once: true, amount: 0.4, margin: '0px 0px -20% 0px' })
+  const pricingInView = useInView(pricingRef, { once: true, amount: 0.6 })
   const ctaRef = useRef(null)
   const ctaInView = useInView(ctaRef, { once: true, margin: '-80px' })
 
@@ -563,10 +538,10 @@ export default function LandingPage() {
       <header className="fixed top-0 left-0 right-0 z-50 px-4 pt-3">
         <div className="max-w-6xl mx-auto rounded-2xl px-7 h-[72px] flex items-center justify-between"
           style={{
-            background: isDark ? 'rgba(17,10,32,0.92)' : 'rgba(255,248,235,0.97)',
+            background: isDark ? 'rgba(0,0,0,0.92)' : 'rgba(255,255,255,0.97)',
             backdropFilter: 'blur(16px)',
             WebkitBackdropFilter: 'blur(16px)',
-            border: `1px solid ${isDark ? 'rgba(147,90,240,0.18)' : 'rgba(249,115,22,0.18)'}`,
+            border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : '#e2e2e7'}`,
             boxShadow: isDark ? '0 4px 24px rgba(0,0,0,0.45)' : '0 4px 24px rgba(0,0,0,0.08)',
           }}>
           <Link href="/" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="flex items-center gap-3 shrink-0">
@@ -609,7 +584,7 @@ export default function LandingPage() {
                     {langs.map(l => (
                       <button key={l} onClick={() => { setLang(l); setLangOpen(false) }}
                         className="w-full px-3 py-2 text-xs font-semibold uppercase text-left"
-                        style={{ background: lang === l ? 'rgba(0,200,232,0.08)' : 'transparent', color: lang === l ? 'var(--c1)' : 'var(--text-muted)' }}>
+                        style={{ background: lang === l ? 'rgba(73,79,223,0.08)' : 'transparent', color: lang === l ? 'var(--c1)' : 'var(--text-muted)' }}>
                         {l}
                       </button>
                     ))}
@@ -631,7 +606,7 @@ export default function LandingPage() {
               onMouseLeave={e => (e.currentTarget.style.color = isDark ? 'rgba(255,255,255,0.6)' : '#475569')}>
               {t.nav.login}
             </Link>
-            <Link href="/login" className="text-[15px] font-bold px-6 py-2.5 rounded-full text-white transition-opacity hover:opacity-90"
+            <Link href="/login" className="text-sm sm:text-[15px] font-bold px-4 sm:px-6 py-2 sm:py-2.5 rounded-full text-white transition-opacity hover:opacity-90"
               style={{ background: 'var(--c1)' }}>
               {t.nav.start}
             </Link>
@@ -647,8 +622,8 @@ export default function LandingPage() {
               transition={{ duration: 0.18 }}
               className="md:hidden max-w-6xl mx-auto mt-1.5 rounded-2xl overflow-hidden"
               style={{
-                background: isDark ? 'rgba(17,10,32,0.96)' : 'rgba(255,248,235,0.97)',
-                border: `1px solid ${isDark ? 'rgba(147,90,240,0.18)' : 'rgba(249,115,22,0.18)'}`,
+                background: isDark ? 'rgba(0,0,0,0.92)' : 'rgba(255,255,255,0.97)',
+                border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : '#e2e2e7'}`,
                 boxShadow: isDark ? '0 8px 32px rgba(0,0,0,0.5)' : '0 8px 32px rgba(0,0,0,0.1)',
               }}>
               <div className="px-6 py-4 flex flex-col gap-1">
@@ -676,65 +651,48 @@ export default function LandingPage() {
       </header>
 
       {/* ── HERO ─────────────────────────────────────────────────────────────── */}
-      <section className="relative flex items-center pt-24 overflow-hidden" style={{ minHeight: '100svh' }}>
+      <section className="relative flex items-center pt-20 overflow-hidden" style={{ minHeight: '100svh' }}>
 
-        {/* Dark theme: solid organic wave zone (right) + glow layers + sparkle dots */}
-        {isDark && (
+        {/* Subtle cobalt hero background */}
+        {isDark ? (
+          <div className="absolute inset-0 pointer-events-none" aria-hidden>
+            <div style={{
+              position: 'absolute', right: 0, top: 0, bottom: 0, width: '55%',
+              background: 'linear-gradient(to left, rgba(73,79,223,0.18) 0%, transparent 100%)',
+            }} />
+            <div style={{
+              position: 'absolute', right: '10%', top: '10%', width: '40%', height: '60%',
+              background: 'radial-gradient(ellipse at center, rgba(73,79,223,0.12) 0%, transparent 70%)',
+              filter: 'blur(40px)',
+            }} />
+          </div>
+        ) : (
           <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden>
-            {/* Main organic wave — visible lighter-purple zone on the right */}
-            <div style={{ position: 'absolute', right: '-12%', top: '-20%', width: '68%', height: '140%',
-              background: 'linear-gradient(148deg, #2A1660 0%, #361A80 30%, #3E1E95 58%, #2C1470 80%, #1E0E50 100%)',
-              borderRadius: '62% 38% 55% 45% / 40% 32% 68% 60%' }} />
-            {/* Inner purple glow on top of the wave */}
-            <div style={{ position: 'absolute', right: '-2%', top: '5%', width: '58%', height: '80%',
-              background: 'radial-gradient(ellipse 65% 60% at 65% 42%, rgba(155,92,246,0.32) 0%, transparent 70%)',
-              filter: 'blur(18px)' }} />
-            {/* Lower purple sweep */}
-            <div style={{ position: 'absolute', right: '5%', bottom: '0%', width: '50%', height: '55%',
-              background: 'radial-gradient(ellipse 70% 65% at 70% 75%, rgba(147,90,240,0.20) 0%, transparent 68%)',
-              filter: 'blur(22px)' }} />
-            {/* Lighter violet accent */}
-            <div style={{ position: 'absolute', right: '12%', bottom: '20%', width: '32%', height: '40%',
-              background: 'radial-gradient(ellipse at center, rgba(192,132,252,0.18) 0%, transparent 72%)',
-              filter: 'blur(18px)' }} />
-            {/* Sparkle dots */}
-            {([
-              { x: '58%', y: '12%', r: 2.5, c: '#9B5CF6' },
-              { x: '74%', y: '26%', r: 1.5, c: '#C084FC' },
-              { x: '83%', y: '50%', r: 2,   c: '#9B5CF6' },
-              { x: '89%', y: '70%', r: 1.5, c: '#fff' },
-              { x: '66%', y: '78%', r: 2,   c: '#C084FC' },
-              { x: '51%', y: '60%', r: 1,   c: '#9B5CF6' },
-              { x: '93%', y: '36%', r: 1.5, c: '#fff' },
-              { x: '43%', y: '18%', r: 1,   c: '#C084FC' },
-            ] as {x:string;y:string;r:number;c:string}[]).map((d, i) => (
-              <div key={i} style={{ position: 'absolute', left: d.x, top: d.y,
-                width: d.r * 2, height: d.r * 2,
-                background: d.c, borderRadius: '50%', opacity: 0.65,
-                boxShadow: `0 0 ${d.r * 5}px ${d.r * 1.5}px ${d.c === '#fff' ? 'rgba(255,255,255,0.4)' : d.c + '88'}` }} />
-            ))}
+            <div style={{
+              position: 'absolute', top: 0, right: 0, bottom: 0, width: '50%',
+              background: 'linear-gradient(150deg, #d4d6ff 0%, #b8bcfd 45%, #9fa4fa 100%)',
+              borderTopLeftRadius: '50% 100%', borderBottomLeftRadius: '50% 100%',
+              opacity: 0.55,
+            }} />
           </div>
         )}
 
-        {/* Light theme: right curved orange panel */}
-        {!isDark && (
-          <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden>
-            <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: '52%',
-              background: 'linear-gradient(150deg, #FFB067 0%, #FF8C3A 45%, #F97316 100%)',
-              borderTopLeftRadius: '50% 100%', borderBottomLeftRadius: '50% 100%' }}>
-              <div style={{ position: 'absolute', inset: 0,
-                background: 'radial-gradient(ellipse 72% 60% at 68% 38%, rgba(255,255,255,0.18) 0%, transparent 72%)' }} />
-              <div style={{ position: 'absolute', right: '-8%', bottom: '12%', width: '55%', height: '42%',
-                background: 'radial-gradient(ellipse at center, rgba(234,179,8,0.28) 0%, transparent 72%)',
-                filter: 'blur(22px)' }} />
-            </div>
-          </div>
-        )}
+        <div className="relative z-10 max-w-7xl mx-auto w-full px-5 sm:px-6 grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-8 lg:gap-12 items-center py-8 lg:py-16">
 
-        <div className="relative z-10 max-w-7xl mx-auto w-full px-6 grid grid-cols-1 lg:grid-cols-[0.9fr_1.1fr] gap-12 items-center py-16">
+          {/* Mockup — desktop only */}
+          <motion.div
+            initial={{ opacity: 0, x: -40, scale: 0.97 }}
+            animate={{ opacity: 1, x: 0, scale: 1 }}
+            transition={{ duration: 0.75, delay: 0.1, ease: [0.25, 0.46, 0.45, 0.94] }}
+            className="relative order-2 lg:order-1 hidden lg:block"
+          >
+            <MockupInteractive>
+              <DashboardMockup p={t.preview} />
+            </MockupInteractive>
+          </motion.div>
 
-          {/* LEFT: copy */}
-          <div className="flex flex-col gap-7 order-1">
+          {/* Copy */}
+          <div className="flex flex-col gap-6 order-1 lg:order-2">
 
             {/* Marketplace chips */}
             <motion.div
@@ -744,15 +702,15 @@ export default function LandingPage() {
               className="flex items-center gap-2 flex-wrap"
             >
               {['Uzum', 'Yandex Market', 'Wildberries'].map(mp => (
-                <span key={mp} className="text-[11px] font-semibold px-2.5 py-1 rounded-md border"
-                  style={{ borderColor: 'var(--border2)', color: 'var(--text-muted)', background: isDark ? 'var(--bg-input)' : 'rgba(255,255,255,0.75)' }}>
+                <span key={mp} className="text-[11px] font-semibold px-2.5 py-1 rounded-full border"
+                  style={{ borderColor: 'var(--border2)', color: 'var(--text-muted)', background: 'var(--bg-input)' }}>
                   {mp}
                 </span>
               ))}
             </motion.div>
 
             {/* Headline */}
-            <div className="text-5xl sm:text-6xl xl:text-7xl font-black leading-[1.0] tracking-tighter"
+            <div className="text-[2.5rem] sm:text-5xl lg:text-6xl xl:text-7xl font-black leading-[1.04] tracking-tighter"
               style={{ color: 'var(--text-base)' }}>
               {t.hero.landingTitle.split(' ').map((word, i) => (
                 <motion.span
@@ -773,17 +731,9 @@ export default function LandingPage() {
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.45 }}
-              className="space-y-2"
             >
-              <p className="text-lg leading-relaxed font-medium" style={{ color: 'var(--text-muted)' }}>
+              <p className="text-base sm:text-lg leading-relaxed font-medium" style={{ color: 'var(--text-muted)' }}>
                 {t.hero.landingSubtitle}
-              </p>
-              <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)', opacity: 0.7 }}>
-                {lang === 'uz'
-                  ? "Har kuni 5 daqiqada sotuvlaringizni nazorat qiling. Raqiblar narxini kuzating, DRR hisobini avtomatlashtiring va foydani oshiring."
-                  : lang === 'ru'
-                  ? "5 минут в день — и вы контролируете все продажи. Следите за ценами конкурентов, автоматизируйте DRR и увеличивайте прибыль."
-                  : "5 minutes a day keeps you in full control. Monitor competitor prices, automate DRR calculations and grow your margins."}
               </p>
             </motion.div>
 
@@ -795,17 +745,13 @@ export default function LandingPage() {
               className="flex flex-col sm:flex-row gap-3"
             >
               <Link href="/login"
-                className="inline-flex items-center justify-center gap-2 font-bold px-7 py-3.5 rounded-xl text-sm text-white"
+                className="flex items-center justify-center gap-2 font-bold px-7 py-4 rounded-full text-sm text-white"
                 style={{ background: 'var(--c1)' }}>
                 {t.trialFreeStart} <ArrowRight className="w-4 h-4" />
               </Link>
               <Link href="/help"
-                className="inline-flex items-center justify-center gap-2 font-medium px-7 py-3.5 rounded-xl text-sm border"
-                style={{
-                  borderColor: isDark ? 'var(--border2)' : 'rgba(124,58,237,0.35)',
-                  color: 'var(--text-dim)',
-                  background: isDark ? 'transparent' : 'rgba(255,255,255,0.6)',
-                }}>
+                className="flex items-center justify-center gap-2 font-medium px-7 py-4 rounded-full text-sm border"
+                style={{ borderColor: 'var(--border2)', color: 'var(--text-dim)' }}>
                 {t.nav.explorePlatform}
               </Link>
             </motion.div>
@@ -816,7 +762,7 @@ export default function LandingPage() {
               animate={{ opacity: 1 }}
               transition={{ delay: 0.8 }}
               className="pt-5 border-t grid grid-cols-3 gap-0"
-              style={{ borderColor: isDark ? 'var(--border)' : 'rgba(124,58,237,0.18)' }}
+              style={{ borderColor: 'var(--border)' }}
             >
               {[
                 { value: 3, suffix: '+', label: t.stats[0].label },
@@ -827,38 +773,28 @@ export default function LandingPage() {
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.85 + i * 0.08 }}
-                  className={`pr-6 ${i > 0 ? 'pl-6 border-l' : ''}`}
-                  style={{ borderColor: isDark ? 'var(--border)' : 'rgba(124,58,237,0.18)' }}>
-                  <div className="text-3xl font-black" style={{ color: 'var(--text-base)' }}>
+                  className={`pr-4 sm:pr-6 ${i > 0 ? 'pl-4 sm:pl-6 border-l' : ''}`}
+                  style={{ borderColor: 'var(--border)' }}>
+                  <div className="text-2xl sm:text-3xl font-black" style={{ color: 'var(--text-base)' }}>
                     <StatNum value={s.value} suffix={s.suffix} />
                   </div>
-                  <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>{s.label}</p>
+                  <p className="text-[11px] sm:text-xs mt-1 leading-tight" style={{ color: 'var(--text-muted)' }}>{s.label}</p>
                 </motion.div>
               ))}
             </motion.div>
 
+            {/* Mockup — mobile only, compact */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.7 }}
+              className="lg:hidden mt-2 rounded-2xl overflow-hidden border max-h-[260px]"
+              style={{ borderColor: 'var(--border)' }}
+            >
+              <DashboardMockup p={t.preview} />
+            </motion.div>
+
           </div>
-
-          {/* RIGHT: mockup */}
-          <motion.div
-            initial={{ opacity: 0, x: 40, scale: 0.97 }}
-            animate={{ opacity: 1, x: 0, scale: 1 }}
-            transition={{ duration: 0.75, delay: 0.1, ease: [0.25, 0.46, 0.45, 0.94] }}
-            className="relative order-2"
-          >
-            {/* Dark theme: glowing halo behind the dashboard */}
-            {isDark && (
-              <div style={{ position: 'absolute', inset: '-18%', zIndex: 0,
-                background: 'radial-gradient(ellipse at center, rgba(155,92,246,0.26) 0%, rgba(100,50,200,0.12) 50%, transparent 75%)',
-                filter: 'blur(18px)' }} />
-            )}
-            <div style={{ position: 'relative', zIndex: 1 }}>
-              <MockupInteractive>
-                <DashboardMockup p={t.preview} />
-              </MockupInteractive>
-            </div>
-          </motion.div>
-
         </div>
       </section>
 
@@ -884,15 +820,15 @@ export default function LandingPage() {
             style={{ animationDuration: '48s' }}>
             {Array(4).fill(null).flatMap((_, gi) => [
               <span key={`${gi}a`} className="text-2xl font-black tracking-tight"
-                style={{ color: 'var(--c1)' }}>Uzum Market</span>,
+                style={{ color: '#494fdf' }}>Uzum Market</span>,
               <span key={`${gi}s1`} className="text-[10px] font-bold uppercase tracking-[0.2em]"
                 style={{ color: 'var(--text-muted)', opacity: 0.55 }}>{t.tickerItems[0]}</span>,
               <span key={`${gi}b`} className="text-2xl font-black tracking-tight"
-                style={{ color: 'var(--c2)' }}>Wildberries</span>,
+                style={{ color: '#FF3C78' }}>Wildberries</span>,
               <span key={`${gi}s2`} className="text-[10px] font-bold uppercase tracking-[0.2em]"
                 style={{ color: 'var(--text-muted)', opacity: 0.55 }}>{t.tickerItems[1]}</span>,
               <span key={`${gi}c`} className="text-2xl font-black tracking-tight"
-                style={{ color: isDark ? '#FBBF24' : '#DC4E00' }}>Yandex Market</span>,
+                style={{ color: 'var(--text-base)' }}>Yandex Market</span>,
               <span key={`${gi}s3`} className="text-[10px] font-bold uppercase tracking-[0.2em]"
                 style={{ color: 'var(--text-muted)', opacity: 0.55 }}>{t.tickerItems[2]}</span>,
             ])}
@@ -911,18 +847,19 @@ export default function LandingPage() {
 
           {/* Interactive accordion panels */}
           {(() => {
-            const c1v = isDark ? '#9B5CF6' : '#F97316'
-            const c2v = isDark ? '#C084FC' : '#EAB308'
-            const c1rgb = (isDark ? [155, 92, 246] : [249, 115, 22]) as [number,number,number]
-            const c2rgb = (isDark ? [192, 132, 252] : [234, 179, 8]) as [number,number,number]
-            const cmidRgb = (isDark ? [174, 112, 249] : [241, 147, 15]) as [number,number,number]
-            const cmidBg = isDark
-              ? 'linear-gradient(135deg, #9B5CF6 0%, #C084FC 100%)'
-              : 'linear-gradient(135deg, #F97316 0%, #EAB308 100%)'
+            // Each panel gets a truly distinct RGB so inactive tints are clearly different
+            const c1v = '#494fdf'
+            const c2v = '#4f55f1'
+            const c1rgb = [73, 79, 223] as [number,number,number]
+            const c2rgb = [79, 85, 241] as [number,number,number]
+            const cmidRgb = [76, 82, 232] as [number,number,number]
+            const cmidBg = 'linear-gradient(135deg, #494fdf 0%, #4f55f1 100%)'
+            void cmidBg
 
             const panelMeta = [
               {
-                accentBg: c1v,
+                // Card 1: Uzum — cobalt
+                accentBg: `linear-gradient(135deg, ${c1v} 0%, ${c2v} 100%)`,
                 rgb: c1rgb,
                 textColor: '#ffffff',
                 contentInit: { x: -60, opacity: 0 },
@@ -931,7 +868,8 @@ export default function LandingPage() {
                 contentExit: { x: -40, opacity: 0, transition: { duration: 0.18 } },
               },
               {
-                accentBg: cmidBg,
+                // Card 2: Yandex Market — cobalt mid
+                accentBg: `linear-gradient(135deg, ${c2v} 0%, ${c1v} 100%)`,
                 rgb: cmidRgb,
                 textColor: '#ffffff',
                 contentInit: { y: 50, scale: 0.84, opacity: 0 },
@@ -940,7 +878,8 @@ export default function LandingPage() {
                 contentExit: { y: 30, scale: 0.92, opacity: 0, transition: { duration: 0.16 } },
               },
               {
-                accentBg: c2v,
+                // Card 3: Wildberries — cobalt
+                accentBg: `linear-gradient(135deg, ${c1v} 0%, ${c2v} 100%)`,
                 rgb: c2rgb,
                 textColor: '#ffffff',
                 contentInit: { rotate: 6, y: -30, opacity: 0 },
@@ -955,8 +894,8 @@ export default function LandingPage() {
               hoverBg:        `rgba(${m.rgb.join(',')},${isDark ? 0.22 : 0.18})`,
               hoverBorder:    `rgba(${m.rgb.join(',')},${isDark ? 0.50 : 0.42})`,
               numColor:       `rgba(${m.rgb.join(',')},0.75)`,
-              hoverScale: 1.0,
-              hoverY: 0,
+              hoverScale: m.rgb[0] === cmidRgb[0] ? 1.03 : 1.0,
+              hoverY: m.rgb[0] === c1rgb[0] ? -3 : m.rgb[0] === cmidRgb[0] ? 0 : 3,
             }))
 
             return (
@@ -1063,7 +1002,7 @@ export default function LandingPage() {
       />
 
       {/* ── HOW IT WORKS — tic-tac-toe tutorial ─────────────────────────────── */}
-      <div ref={tttSectionRef} style={{ height: '100svh' }}>
+      <div style={{ height: '100svh' }}>
       <section id="how" className="sticky top-0 flex flex-col items-center justify-center border-t overflow-hidden"
         style={{ height: '100svh', borderColor: 'var(--border)', paddingTop: 'calc(72px + 12px)' }}>
           <div className="w-full max-w-lg px-4 flex flex-col items-center gap-4">
@@ -1104,7 +1043,7 @@ export default function LandingPage() {
                   >
                     <div className="flex items-center gap-3 mb-4">
                       <div className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-black flex-shrink-0"
-                        style={{ background: 'var(--c1)', color: '#fff' }}>
+                        style={{ background: 'var(--c1)', color: isDark ? '#001828' : '#fff' }}>
                         {String(tttPopup).padStart(2,'0')}
                       </div>
                       <h3 className="font-black text-lg leading-tight" style={{ color: 'var(--text-base)' }}>
@@ -1117,60 +1056,9 @@ export default function LandingPage() {
                     <button
                       onClick={() => setTttPopup(null)}
                       className="w-full py-3 rounded-xl font-bold text-sm cursor-pointer"
-                      style={{ background: 'var(--c1)', color: '#fff' }}
+                      style={{ background: 'var(--c1)', color: isDark ? '#001828' : '#fff' }}
                     >
                       {lang === 'uz' ? "Tushunarli" : lang === 'ru' ? "Понятно" : "Got it"}
-                    </button>
-                  </motion.div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {/* Dead-state popup overlay — shows when all lines blocked; scroll stays locked until user wins */}
-            <AnimatePresence>
-              {tttDead && !tttWon && (
-                <motion.div
-                  key="dead-backdrop"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="fixed inset-0 z-50 flex items-center justify-center px-6"
-                  style={{ background: 'rgba(0,0,0,0.60)', backdropFilter: 'blur(6px)' }}
-                >
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.88, y: 24 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.92, y: 16 }}
-                    transition={{ type: 'spring', stiffness: 320, damping: 26 }}
-                    className="w-full max-w-sm rounded-3xl p-7 shadow-2xl text-center"
-                    style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}
-                  >
-                    <div className="text-5xl mb-4">😅</div>
-                    <p className="text-xs font-bold uppercase tracking-[0.2em] mb-3" style={{ color: 'var(--c1)' }}>
-                      {lang === 'uz' ? 'Yutib bo\'lmaydi' : lang === 'ru' ? 'Невозможно выиграть' : 'No winning move'}
-                    </p>
-                    <h3 className="text-xl font-black mb-3" style={{ color: 'var(--text-base)' }}>
-                      {lang === 'uz' ? "Barcha qatorlar to'sib qo'yildi!" : lang === 'ru' ? "Все линии заблокированы!" : "All lines are blocked!"}
-                    </h3>
-                    <p className="text-sm leading-relaxed mb-6" style={{ color: 'var(--text-muted)' }}>
-                      {lang === 'uz'
-                        ? "Qayta o'ynang va g'alaba qozonib, barcha 4 ta qadamni o'rganing."
-                        : lang === 'ru'
-                        ? "Сыграйте снова и победите, чтобы увидеть все 4 шага."
-                        : "Play again and win to see all 4 steps."}
-                    </p>
-                    <button
-                      onClick={() => {
-                        setTttBoard(Array(9).fill(null))
-                        setTttOCount(0)
-                        setTttWon(false)
-                        setTttDead(false)
-                        setTttPopup(null)
-                      }}
-                      className="w-full py-3 rounded-xl font-bold text-sm cursor-pointer"
-                      style={{ background: 'var(--c1)', color: '#fff' }}
-                    >
-                      {lang === 'uz' ? "Qayta o'ynash →" : lang === 'ru' ? "Попробовать снова →" : "Try again →"}
                     </button>
                   </motion.div>
                 </motion.div>
@@ -1192,7 +1080,7 @@ export default function LandingPage() {
                       border: `2px solid ${cell === 'O' ? 'var(--c1)' : cell === 'X' ? 'var(--border)' : 'var(--border)'}`,
                       cursor: cell || tttDead ? 'default' : 'pointer',
                       color: cell === 'O' ? 'var(--c1)' : 'var(--text-muted)',
-                      boxShadow: cell === 'O' ? `0 0 18px ${isDark ? 'rgba(155,92,246,0.32)' : 'rgba(249,115,22,0.25)'}` : 'none',
+                      boxShadow: cell === 'O' ? '0 0 18px rgba(73,79,223,0.35)' : 'none',
                     }}
                   >
                     <AnimatePresence>
@@ -1228,7 +1116,7 @@ export default function LandingPage() {
                 <button
                   onClick={() => { setTttBoard(Array(9).fill(null)); setTttOCount(0); setTttWon(false); setTttDead(false); setTttPopup(null) }}
                   className="text-sm font-bold px-8 py-3 rounded-full"
-                  style={{ background: 'var(--c1)', color: '#fff' }}
+                  style={{ background: 'var(--c1)', color: isDark ? '#001828' : '#fff' }}
                 >
                   {lang === 'uz' ? "Qayta o'ynash →" : lang === 'ru' ? "Попробовать снова →" : "Try again →"}
                 </button>
@@ -1240,7 +1128,7 @@ export default function LandingPage() {
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ type: 'spring', stiffness: 260, damping: 24 }}
                 className="rounded-3xl p-8 text-center w-full"
-                style={{ background: isDark ? 'rgba(155,92,246,0.10)' : 'rgba(249,115,22,0.08)', border: '1px solid var(--c1)' }}
+                style={{ background: 'rgba(73,79,223,0.08)', border: '1px solid var(--c1)' }}
               >
                 <motion.div
                   animate={{ rotate: [0, -8, 8, -6, 6, 0] }}
@@ -1277,137 +1165,68 @@ export default function LandingPage() {
 
       {/* ── PRICING ──────────────────────────────────────────────────────────── */}
       <section id="pricing" ref={pricingRef} className="py-24 px-6 border-t" style={{ borderColor: 'var(--border)' }}>
-        <div className="max-w-5xl mx-auto">
+        <div className="max-w-4xl mx-auto">
           <motion.div initial={{ opacity: 0, y: 16 }} animate={pricingInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.5 }}
-            className="text-center mb-12">
-            <p className="text-xs font-bold uppercase tracking-[0.18em] mb-3" style={{ color: 'var(--c1)' }}>{t.nav.pricing}</p>
-            <h2 className="text-3xl sm:text-4xl font-black mb-8" style={{ color: 'var(--text-base)' }}>
+            className="mb-16">
+            <p className="text-xs font-bold uppercase tracking-[0.18em] mb-2" style={{ color: 'var(--c1)' }}>{t.nav.pricing}</p>
+            <h2 className="text-2xl sm:text-3xl font-black" style={{ color: 'var(--text-base)' }}>
               {lang === 'uz' ? "Sizning biznesingizga mos tarif" : lang === 'ru' ? "Тариф под ваш бизнес" : "A plan that fits your business"}
             </h2>
-
-            {/* Yearly / Monthly toggle */}
-            <div className="flex items-center justify-center gap-4">
-              <span className="text-sm font-medium" style={{ color: isLandingYearly ? 'var(--text-muted)' : 'var(--text-base)' }}>
-                {lang === 'uz' ? 'Oylik' : lang === 'ru' ? 'Ежемесячно' : 'Monthly'}
-              </span>
-              <button
-                onClick={() => setIsLandingYearly(y => !y)}
-                className="relative w-14 h-7 rounded-full transition-all duration-300 flex-shrink-0"
-                style={{ background: isLandingYearly ? 'var(--c1)' : 'var(--border2)' }}
-              >
-                <span
-                  className="absolute top-1 w-5 h-5 rounded-full bg-white shadow-sm transition-all duration-300"
-                  style={{ left: isLandingYearly ? '30px' : '4px' }}
-                />
-              </button>
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium" style={{ color: isLandingYearly ? 'var(--text-base)' : 'var(--text-muted)' }}>
-                  {lang === 'uz' ? 'Yillik' : lang === 'ru' ? 'Ежегодно' : 'Yearly'}
-                </span>
-                <span className="text-xs font-bold px-2.5 py-1 rounded-full"
-                  style={{ background: 'rgba(124,58,237,0.12)', color: '#a78bfa', border: '1px solid rgba(124,58,237,0.2)' }}>
-                  {lang === 'uz' ? '3 oy bepul' : '-25%'}
-                </span>
-              </div>
-            </div>
           </motion.div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 items-stretch">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-px" style={{ background: 'var(--border)' }}>
             {([
-              { name: t.pricingFree,  monthlyPrice: '0',       yearlyPrice: '0',       highlight: false, badge: null,           features: t.pricingFreeFeatures    },
-              { name: 'Pro',          monthlyPrice: '300 000', yearlyPrice: '225 000', highlight: true,  badge: t.pricingPopular, features: t.pricingProFeatures     },
-              { name: 'Pro+',         monthlyPrice: '600 000', yearlyPrice: '450 000', highlight: false, badge: null,           features: t.pricingProPlusFeatures },
-            ]).map((plan, i) => (
+              { name: t.pricingFree, price: '0', highlight: false, features: t.pricingFreeFeatures },
+              { name: 'Pro', price: '300 000', highlight: true, features: t.pricingProFeatures },
+              { name: 'Pro+', price: '600 000', highlight: false, features: t.pricingProPlusFeatures },
+            ] as const).map((plan, i) => (
               <motion.div key={plan.name}
-                initial={{ opacity: 0, y: -160, scale: 0.88 }}
-                animate={pricingInView ? { opacity: 1, y: 0, scale: plan.highlight ? 1.02 : 1 } : {}}
-                transition={{ delay: i * 0.22, type: 'spring', stiffness: 160, damping: 18 }}
-                className="relative flex flex-col rounded-3xl border overflow-hidden"
-                style={{
-                  background: plan.highlight ? 'linear-gradient(160deg, #5b21b6 0%, #4338ca 100%)' : 'var(--bg-card)',
-                  borderColor: plan.highlight ? 'rgba(139,92,246,0.6)' : 'var(--border)',
-                  boxShadow: plan.highlight ? '0 8px 48px rgba(91,33,182,0.45), 0 2px 12px rgba(0,0,0,0.3)' : undefined,
-                }}
+                initial={{ opacity: 0, y: -180, scale: 0.85 }}
+                animate={pricingInView ? { opacity: 1, y: 0, scale: 1 } : {}}
+                transition={{ delay: i * 0.28, type: 'spring', stiffness: 160, damping: 18, mass: 1.1 }}
+                className="p-8 flex flex-col relative"
+                style={{ background: plan.highlight ? 'linear-gradient(160deg, #3d43c8 0%, #494fdf 50%, #5056e8 100%)' : 'var(--bg-base)' }}
               >
                 {plan.highlight && (
-                  <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-violet-500 via-indigo-400 to-violet-500" />
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.5 }}
+                    animate={pricingInView ? { opacity: 1, scale: 1 } : {}}
+                    transition={{ delay: i * 0.28 + 0.65, type: 'spring', stiffness: 400, damping: 15 }}
+                    className="absolute top-4 right-4 px-2.5 py-1 rounded-md text-[10px] font-bold text-white"
+                    style={{ background: '#494fdf', boxShadow: '0 4px 12px rgba(73,79,223,0.3)' }}>
+                    {t.pricingPopular}
+                  </motion.div>
                 )}
-                {plan.badge && (
-                  <div className="absolute top-4 right-4">
-                    <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full text-white"
-                      style={{ background: 'linear-gradient(to right, #7c3aed, #4f46e5)', boxShadow: '0 4px 12px rgba(124,58,237,0.3)' }}>
-                      <span className="w-1.5 h-1.5 rounded-full bg-white" />
-                      {plan.badge}
-                    </span>
-                  </div>
-                )}
-
-                <div className="p-7 flex flex-col flex-1 gap-5">
-                  <h3 className="font-bold text-xl" style={{ color: plan.highlight ? '#ffffff' : 'var(--text-base)' }}>{plan.name}</h3>
-
-                  <div className="flex items-baseline gap-1.5">
-                    <span className="text-5xl font-black tabular-nums leading-none"
-                      style={{ color: plan.highlight ? '#c4b5fd' : 'var(--text-base)' }}>
-                      <SlotPrice
-                        value={isLandingYearly ? plan.yearlyPrice : plan.monthlyPrice}
-                        trigger={pricingInView}
-                        delay={i * 0.22 + 0.5}
-                      />
-                    </span>
-                    {plan.monthlyPrice !== '0' && (
-                      <span className="text-sm font-medium pb-1"
-                        style={{ color: plan.highlight ? 'rgba(196,181,253,0.7)' : 'var(--text-muted)' }}>
-                        so&apos;m/oy
-                      </span>
-                    )}
-                  </div>
-
-                  <Link href="/login"
-                    className="flex items-center justify-center gap-2 font-bold py-3.5 rounded-2xl text-sm transition-all"
-                    style={plan.highlight
-                      ? { background: 'linear-gradient(to right, #7c3aed, #4f46e5)', color: '#fff', boxShadow: '0 4px 20px rgba(124,58,237,0.4)' }
-                      : { background: 'var(--bg-input)', color: 'var(--text-base)', border: '1px solid var(--border2)' }}>
-                    {t.nav.start} <ChevronRight className="w-4 h-4" />
-                  </Link>
-
-                  <div className="h-px" style={{ background: plan.highlight ? 'rgba(255,255,255,0.1)' : 'var(--border)' }} />
-
-                  <ul className="space-y-2.5 flex-1">
-                    {plan.features.map((f, fi) => (
-                      <motion.li key={f}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={pricingInView ? { opacity: 1, x: 0 } : {}}
-                        transition={{ delay: i * 0.22 + 0.8 + fi * 0.04, duration: 0.28 }}
-                        className="flex items-start gap-2.5">
-                        <span className="mt-0.5 shrink-0 w-5 h-5 rounded-full flex items-center justify-center"
-                          style={{
-                            background: plan.highlight ? 'rgba(167,139,250,0.2)' : 'var(--bg-input)',
-                            border: `1px solid ${plan.highlight ? 'rgba(167,139,250,0.35)' : 'var(--border2)'}`,
-                          }}>
-                          <CheckCircle className="w-3 h-3" style={{ color: plan.highlight ? '#c4b5fd' : 'var(--c1)' }} />
-                        </span>
-                        <span className="text-sm leading-relaxed"
-                          style={{ color: plan.highlight ? 'rgba(255,255,255,0.75)' : 'var(--text-muted)' }}>
-                          {f}
-                        </span>
-                      </motion.li>
-                    ))}
-                  </ul>
+                <p className="text-xs font-bold uppercase tracking-widest mb-4" style={{ color: plan.highlight ? 'rgba(255,255,255,0.92)' : 'var(--text-muted)' }}>
+                  {plan.name}
+                </p>
+                <div className="flex items-baseline gap-1 mb-6">
+                  <span className="text-4xl font-black" style={{ color: plan.highlight ? 'rgba(255,255,255,0.92)' : 'var(--text-base)' }}>
+                    <SlotPrice value={plan.price} trigger={pricingInView} delay={i * 0.28 + 0.7} />
+                  </span>
+                  <span className="text-sm" style={{ color: plan.highlight ? 'rgba(255,255,255,0.65)' : 'var(--text-muted)' }}>so&apos;m/oy</span>
                 </div>
+                <ul className="space-y-3 mb-8 flex-1">
+                  {plan.features.map((f, fi) => (
+                    <motion.li key={f}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={pricingInView ? { opacity: 1, x: 0 } : {}}
+                      transition={{ delay: i * 0.28 + 0.8 + fi * 0.05, duration: 0.3 }}
+                      className="flex items-start gap-2.5 text-sm" style={{ color: plan.highlight ? 'rgba(255,255,255,0.8)' : 'var(--text-muted)' }}>
+                      <CheckCircle className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: plan.highlight ? 'rgba(255,255,255,0.9)' : 'var(--c1)' }} />
+                      {f}
+                    </motion.li>
+                  ))}
+                </ul>
+                <Link href="/login" className="block w-full text-center py-3 rounded-lg text-sm font-bold border transition-colors"
+                  style={plan.highlight
+                    ? { background: 'rgba(255,255,255,0.15)', color: '#fff', border: '1px solid rgba(255,255,255,0.25)' }
+                    : { background: 'transparent', color: 'var(--text-dim)', borderColor: 'var(--border2)' }}>
+                  {t.nav.start}
+                </Link>
               </motion.div>
             ))}
           </div>
-
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={pricingInView ? { opacity: 1 } : {}}
-            transition={{ delay: 1.4 }}
-            className="mt-8 text-center">
-            <Link href="/pricing" className="text-sm font-semibold" style={{ color: 'var(--c1)' }}>
-              {lang === 'uz' ? "Tariflarni batafsil ko'rish →" : lang === 'ru' ? "Подробнее о тарифах →" : "See full pricing details →"}
-            </Link>
-          </motion.div>
         </div>
       </section>
 
@@ -1425,17 +1244,17 @@ export default function LandingPage() {
               const hasYM = role.includes('yandex')
               const hasUM = role.includes('uzum')
               const badges: { label: string; bg: string }[] = []
-              if (hasUM) badges.push({ label: 'UM', bg: '#7C3AED' })
-              if (hasYM) badges.push({ label: 'YM', bg: '#f97316' })
-              if (hasWB) badges.push({ label: 'WB', bg: '#d946ef' })
-              if (badges.length === 0) badges.push({ label: 'UM', bg: '#7C3AED' })
+              if (hasUM) badges.push({ label: 'UM', bg: '#494fdf' })
+              if (hasYM) badges.push({ label: 'YM', bg: '#505a63' })
+              if (hasWB) badges.push({ label: 'WB', bg: '#4f55f1' })
+              if (badges.length === 0) badges.push({ label: 'UM', bg: '#494fdf' })
 
               const cleanRole = review.role
                 .replace(/Wildberries\s*&\s*Uzum(\s*Market)?/gi, '')
                 .replace(/Uzum Market/gi, '').replace(/Yandex Market/gi, '').replace(/Wildberries/gi, '')
                 .replace(/\bUzum\b/gi, '').replace(/^\s*,\s*/, '').replace(/,\s*$/, '').trim()
 
-              const quoteColors = ['#7C3AED','#f97316','#d946ef','#0ea5e9','#22c55e','#f59e0b','#ef4444','#06b6d4','#8b5cf6']
+              const quoteColors = ['#494fdf','#22c55e','#0ea5e9','#f59e0b','#ef4444','#06b6d4','#4f55f1','#16a34a','#3b82f6']
               const quoteColor = quoteColors[i % quoteColors.length]
 
               return (
@@ -1558,110 +1377,79 @@ export default function LandingPage() {
 
       {/* ── FOOTER ───────────────────────────────────────────────────────────── */}
       <footer style={{ background: 'var(--bg-card)', borderTop: '1px solid var(--border)' }}>
-        <div className="max-w-6xl mx-auto px-6 py-12">
-
-          {/* Brand + 4 columns */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-8 mb-10 items-start">
-
-            {/* Brand */}
-            <div className="col-span-2 md:col-span-1 flex items-center gap-2">
-              <img src="/icon.svg" alt="Daromadchi" className="w-8 h-8 rounded-xl" />
-              <span className="font-black text-xl" style={{ color: 'var(--c1)' }}>Daromadchi</span>
+        <div className="max-w-6xl mx-auto px-6 py-14">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-10 mb-12">
+            <div className="col-span-2 lg:col-span-1">
+              <Link href="/" className="flex items-center gap-2.5 mb-5">
+                <img src="/icon.svg" alt="Daromadchi" className="w-8 h-8 rounded-lg" />
+                <span className="font-bold text-sm" style={{ color: 'var(--text-base)' }}>Daromadchi</span>
+              </Link>
+              <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>
+                {lang === 'uz' ? "Uzum Market, Yandex Market va Wildberries sotuvchilari uchun analitika platformasi." :
+                  lang === 'ru' ? "Платформа аналитики для продавцов Uzum Market, Yandex Market и Wildberries." :
+                    "Analytics platform for Uzum Market, Yandex Market and Wildberries sellers."}
+              </p>
             </div>
-
-            {/* Col 1 — Platform */}
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.18em] mb-4" style={{ color: 'var(--text-muted)' }}>
+              <p className="text-xs font-bold uppercase tracking-widest mb-5" style={{ color: 'var(--text-muted)' }}>
                 {lang === 'uz' ? 'Platforma' : lang === 'ru' ? 'Платформа' : 'Platform'}
               </p>
-              <div className="space-y-2.5">
+              <div className="space-y-3">
                 {[
                   { href: '#features', label: t.nav.features },
                   { href: '#how', label: t.nav.how },
                   { href: '#pricing', label: t.nav.pricing },
                   { href: '/login', label: t.nav.start },
                 ].map(l => (
-                  <a key={l.href} href={l.href} className="block text-sm transition-colors hover:opacity-100"
-                    style={{ color: 'var(--text-muted)' }}>
+                  <a key={l.href} href={l.href} className="block text-sm transition-colors" style={{ color: 'var(--text-muted)' }}>
                     {l.label}
                   </a>
                 ))}
               </div>
             </div>
-
-            {/* Col 2 — Resources */}
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.18em] mb-4" style={{ color: 'var(--text-muted)' }}>
+              <p className="text-xs font-bold uppercase tracking-widest mb-5" style={{ color: 'var(--text-muted)' }}>
                 {lang === 'uz' ? 'Resurslar' : lang === 'ru' ? 'Ресурсы' : 'Resources'}
               </p>
-              <div className="space-y-2.5">
+              <div className="space-y-3">
                 {[
                   { href: '/help', label: t.nav.help },
                   { href: '/pricing', label: lang === 'uz' ? 'Narxlar' : lang === 'ru' ? 'Тарифы' : 'Pricing' },
-                  { href: '/privacy', label: t.nav.privacy ?? 'Privacy' },
+                  { href: '/privacy', label: t.nav.privacy ?? 'Privacy Policy' },
                 ].map(l => (
-                  <Link key={l.href} href={l.href} className="block text-sm transition-colors hover:opacity-100"
-                    style={{ color: 'var(--text-muted)' }}>
+                  <Link key={l.href} href={l.href} className="block text-sm transition-colors" style={{ color: 'var(--text-muted)' }}>
                     {l.label}
                   </Link>
                 ))}
               </div>
             </div>
-
-            {/* Col 3 — Marketplaces */}
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.18em] mb-4" style={{ color: 'var(--text-muted)' }}>
+              <p className="text-xs font-bold uppercase tracking-widest mb-5" style={{ color: 'var(--text-muted)' }}>
                 {lang === 'uz' ? 'Bozorlar' : lang === 'ru' ? 'Маркетплейсы' : 'Marketplaces'}
               </p>
-              <div className="space-y-2.5">
+              <div className="space-y-3">
                 {['Uzum Market', 'Yandex Market', 'Wildberries'].map(m => (
                   <span key={m} className="block text-sm" style={{ color: 'var(--text-muted)' }}>{m}</span>
                 ))}
               </div>
             </div>
-
-            {/* Col 4 — Company */}
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.18em] mb-4" style={{ color: 'var(--text-muted)' }}>
-                {lang === 'uz' ? 'Kompaniya' : lang === 'ru' ? 'Компания' : 'Company'}
-              </p>
-              <div className="space-y-2.5">
-                {[
-                  { href: '/login', label: lang === 'uz' ? 'Kirish' : lang === 'ru' ? 'Войти' : 'Sign in' },
-                  { href: '/login', label: lang === 'uz' ? "Ro'yxatdan o'tish" : lang === 'ru' ? 'Регистрация' : 'Register' },
-                  { href: '/help', label: lang === 'uz' ? 'Yordam' : lang === 'ru' ? 'Поддержка' : 'Support' },
-                ].map(l => (
-                  <Link key={l.label} href={l.href} className="block text-sm transition-colors hover:opacity-100"
-                    style={{ color: 'var(--text-muted)' }}>
-                    {l.label}
-                  </Link>
+          </div>
+          <div className="border-t pt-8 flex flex-col sm:flex-row items-center justify-between gap-4" style={{ borderColor: 'var(--border)' }}>
+            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>© 2026 Daromadchi. {t.footer}</p>
+            <div className="flex items-center gap-6">
+              <Link href="/privacy" className="text-xs transition-colors" style={{ color: 'var(--text-muted)' }}>
+                {t.nav.privacy ?? 'Privacy Policy'}
+              </Link>
+              <div className="flex items-center gap-3">
+                {langs.map(l => (
+                  <button key={l} onClick={() => setLang(l)} className="text-xs font-bold uppercase transition-colors"
+                    style={{ color: lang === l ? 'var(--text-base)' : 'var(--text-muted)' }}>
+                    {l}
+                  </button>
                 ))}
               </div>
             </div>
-
           </div>
-
-          {/* Bottom bar */}
-          <div className="border-t pt-6 flex flex-col sm:flex-row items-center justify-between gap-3"
-            style={{ borderColor: 'var(--border)' }}>
-            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-              © 2026 Daromadchi. {t.footer}
-            </p>
-            <div className="flex items-center gap-5 flex-wrap justify-center">
-              {[
-                { href: '#features', label: t.nav.features },
-                { href: '#pricing',  label: t.nav.pricing },
-                { href: '/help',     label: t.nav.help },
-                { href: '/privacy',  label: t.nav.privacy ?? 'Privacy' },
-              ].map(l => (
-                <a key={l.href} href={l.href} className="text-xs transition-colors hover:opacity-100"
-                  style={{ color: 'var(--text-muted)' }}>
-                  {l.label}
-                </a>
-              ))}
-            </div>
-          </div>
-
         </div>
       </footer>
 

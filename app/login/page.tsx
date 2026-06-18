@@ -109,7 +109,7 @@ function LangDropdown({ lang, setLang, inputBg, inputBorder, textMuted, card }: 
     <div ref={ref} className="relative">
       <button onClick={() => setOpen(o => !o)}
         className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold uppercase transition-all border"
-        style={{ background: inputBg, borderColor: inputBorder, color: cobalt }}>
+        style={{ background: inputBg, borderColor: inputBorder, color: '#494fdf' }}>
         {lang}
         <svg className={`w-3 h-3 transition-transform ${open ? 'rotate-180' : ''}`} viewBox="0 0 12 12" fill="none">
           <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -122,8 +122,8 @@ function LangDropdown({ lang, setLang, inputBg, inputBorder, textMuted, card }: 
             <button key={l} onClick={() => { setLang(l); setOpen(false) }}
               className="w-full px-3 py-2 text-xs font-bold uppercase text-left transition-all"
               style={{
-                background: lang === l ? 'rgba(73,79,223,0.1)' : 'transparent',
-                color: lang === l ? cobalt : textMuted,
+                background: lang === l ? 'rgba(73,79,223,0.08)' : 'transparent',
+                color: lang === l ? '#494fdf' : textMuted,
               }}>
               {l}
             </button>
@@ -163,16 +163,14 @@ function LoginForm() {
   }, [])
 
   const isDark = theme === 'dark'
-  // Revolut canvas tokens
-  const bg          = isDark ? '#000000'              : '#ffffff'
-  const card        = isDark ? '#16181a'              : '#ffffff'
-  const border      = isDark ? 'rgba(255,255,255,0.08)' : '#e2e2e7'
-  const inputBg     = isDark ? '#1f2226'              : '#f4f4f4'
-  const inputBorder = isDark ? 'rgba(255,255,255,0.08)' : '#e2e2e7'
-  const textBase    = isDark ? '#ffffff'              : '#191c1f'
-  const textMuted   = isDark ? 'rgba(255,255,255,0.55)' : '#505a63'
-  const labelColor  = isDark ? 'rgba(255,255,255,0.72)' : '#505a63'
-  const cobalt      = '#494fdf'
+  const bg     = isDark ? '#07070f'  : '#f3f3fa'
+  const card   = isDark ? '#0e0e1a'  : '#ffffff'
+  const border = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(139,92,246,0.15)'
+  const inputBg = isDark ? '#1c1c2e' : '#eeeefc'
+  const inputBorder = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(139,92,246,0.2)'
+  const textBase  = isDark ? '#e2e8f0' : '#1a1a2e'
+  const textMuted = isDark ? '#64748b' : '#6b7280'
+  const labelColor = isDark ? '#94a3b8' : '#4b5563'
 
   function switchMode(m: 'login' | 'signup' | 'forgot') {
     setMode(m); setError(''); setSuccess(false); setResetSent(false); setShowSignupHint(false)
@@ -252,7 +250,9 @@ function LoginForm() {
     <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden"
       style={{ background: bg }}>
 
-      {/* clean canvas — no orbs per Revolut principle */}
+      {/* background orbs */}
+      <div className="absolute top-1/4 left-1/4 w-80 h-80 rounded-full bg-violet-600/10 blur-3xl pointer-events-none" />
+      <div className="absolute bottom-1/4 right-1/4 w-64 h-64 rounded-full bg-indigo-600/8 blur-3xl pointer-events-none" />
 
       {/* top bar */}
       <div className="fixed top-0 left-0 right-0 flex items-center justify-between px-5 py-4 z-10">
@@ -284,17 +284,20 @@ function LoginForm() {
 
         {/* Card */}
         <div className="rounded-2xl p-8 shadow-2xl border" style={{ background: card, borderColor: border }}>
+          {/* top neon line */}
+          <div className="absolute top-0 left-1/4 right-1/4 h-px bg-gradient-to-r from-transparent via-violet-500 to-transparent rounded-full" />
 
           {/* Tabs */}
           {mode !== 'forgot' && (
-          <div className="flex rounded-full p-1 mb-6 gap-1" style={{ background: isDark ? '#1f2226' : '#f4f4f4' }}>
+          <div className="flex rounded-xl p-1 mb-6 gap-1" style={{ background: isDark ? '#13131f' : '#e8e8f8' }}>
             {(['login','signup'] as const).map(m => (
               <button key={m} onClick={() => switchMode(m)}
-                className="flex-1 py-2.5 rounded-full text-sm font-semibold transition-all"
+                className="flex-1 py-2.5 rounded-lg text-sm font-bold transition-all"
                 style={{
-                  background: mode === m ? cobalt : 'transparent',
-                  color: mode === m ? '#ffffff' : textMuted,
-                  border: 'none',
+                  background: mode === m ? 'linear-gradient(135deg,#7c3aed,#4f46e5)' : isDark ? 'rgba(255,255,255,0.04)' : 'rgba(139,92,246,0.08)',
+                  color: mode === m ? '#ffffff' : isDark ? '#94a3b8' : '#6b7280',
+                  boxShadow: mode === m ? '0 4px 12px rgba(124,58,237,0.35)' : undefined,
+                  border: mode === m ? 'none' : `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(139,92,246,0.12)'}`,
                 }}>
                 {t.tabs[m]}
               </button>
@@ -311,7 +314,7 @@ function LoginForm() {
                 </div>
                 <p className="font-semibold" style={{ color: textBase }}>{t.resetSuccess}</p>
                 <button onClick={() => switchMode('login')}
-                  className="text-sm underline underline-offset-2 transition-colors" style={{ color: cobalt }}>
+                  className="text-sm text-violet-400 hover:text-violet-300 underline underline-offset-2 transition-colors">
                   {t.backToLogin} →
                 </button>
               </div>
@@ -338,13 +341,13 @@ function LoginForm() {
                   </div>
                 )}
                 <button type="submit" disabled={loading}
-                  className="w-full text-white font-semibold rounded-full py-3 text-sm transition-all flex items-center justify-center gap-2 mt-1 disabled:opacity-50 disabled:cursor-not-allowed"
-                  style={{ background: '#494fdf', boxShadow: 'none' }}>
+                  className="w-full text-white font-bold rounded-xl py-3 text-sm transition-all flex items-center justify-center gap-2 mt-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{ background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', boxShadow: '0 8px 24px rgba(124,58,237,0.3)' }}>
                   {loading ? <><Loader2 className="w-4 h-4 animate-spin" />{t.resetSending}</> : t.resetBtn}
                 </button>
                 <p className="text-center text-xs pt-1">
                   <button type="button" onClick={() => switchMode('login')}
-                    className="font-semibold underline underline-offset-2 transition-opacity hover:opacity-70" style={{ color: cobalt }}>
+                    className="text-violet-400 hover:text-violet-300 font-semibold transition-colors underline underline-offset-2">
                     {t.backToLogin}
                   </button>
                 </p>
@@ -357,7 +360,7 @@ function LoginForm() {
               </div>
               <p className="font-semibold" style={{ color: textBase }}>{t.success}</p>
               <button onClick={() => switchMode('login')}
-                className="text-sm underline underline-offset-2 transition-colors" style={{ color: cobalt }}>
+                className="text-sm text-violet-400 hover:text-violet-300 underline underline-offset-2 transition-colors">
                 {t.loginLink} →
               </button>
             </div>
@@ -397,7 +400,7 @@ function LoginForm() {
                   <label className="text-xs font-medium" style={{ color: labelColor }}>{t.password}</label>
                   {mode === 'login' && (
                     <button type="button" onClick={() => switchMode('forgot')}
-                      className="text-xs cursor-pointer transition-opacity hover:opacity-70" style={{ color: cobalt }}>{t.forgotPw}</button>
+                      className="text-xs text-violet-400 hover:text-violet-300 cursor-pointer transition-colors">{t.forgotPw}</button>
                   )}
                 </div>
                 <div className="relative">
@@ -433,8 +436,8 @@ function LoginForm() {
 
               {/* Submit */}
               <button type="submit" disabled={loading}
-                className="w-full text-white font-semibold rounded-full py-3 text-sm transition-all flex items-center justify-center gap-2 mt-1 disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{ background: '#494fdf', boxShadow: 'none' }}>
+                className="w-full text-white font-bold rounded-xl py-3 text-sm transition-all flex items-center justify-center gap-2 mt-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', boxShadow: '0 8px 24px rgba(124,58,237,0.3)' }}>
                 {loading
                   ? <><Loader2 className="w-4 h-4 animate-spin" />{mode === 'login' ? t.loggingIn : t.signingUp}</>
                   : mode === 'login' ? t.loginBtn : t.signupBtn
@@ -445,7 +448,7 @@ function LoginForm() {
               <p className="text-center text-xs pt-1" style={{ color: textMuted }}>
                 {mode === 'login' ? t.noAccount : t.hasAccount}{' '}
                 <button type="button" onClick={() => switchMode(mode === 'login' ? 'signup' : 'login')}
-                  className="font-semibold underline underline-offset-2 transition-opacity hover:opacity-70" style={{ color: cobalt }}>
+                  className="text-violet-400 hover:text-violet-300 font-semibold transition-colors underline underline-offset-2">
                   {mode === 'login' ? t.signupLink : t.loginLink}
                 </button>
               </p>
@@ -459,8 +462,8 @@ function LoginForm() {
             <span key={mp}
               className="px-2.5 py-1 rounded-lg text-[11px] font-medium border"
               style={{
-                background: isDark ? 'rgba(255,255,255,0.04)' : '#f4f4f4',
-                borderColor: isDark ? 'rgba(255,255,255,0.08)' : '#e2e2e7',
+                background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(139,92,246,0.06)',
+                borderColor: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(139,92,246,0.14)',
                 color: textMuted,
               }}>
               {mp}
