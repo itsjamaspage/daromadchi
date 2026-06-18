@@ -7,6 +7,20 @@ const nextConfig: NextConfig = {
   experimental: {
     optimizePackageImports: ['recharts', 'date-fns', 'lucide-react'],
   },
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'plus.unsplash.com',
+        pathname: '/**',
+      },
+    ],
+  },
   async headers() {
     return [
       {

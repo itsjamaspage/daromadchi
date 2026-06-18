@@ -1,16 +1,31 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
+import { Inter, Golos_Text, JetBrains_Mono } from 'next/font/google'
 import { cookies } from 'next/headers'
 import './globals.css'
 import Providers from './providers'
 import type { Lang } from '@/lib/i18n'
 
-// Self-hosted (next/font) — no render-blocking request to fonts.googleapis.com
-// and no layout shift. Cyrillic subset covers the Russian UI.
 const inter = Inter({
   subsets: ['latin', 'cyrillic'],
   display: 'swap',
   variable: '--font-inter',
+})
+
+// Golos Text — designed by Paratype for Russian-language interfaces.
+// Full Cyrillic coverage, weights 400–900.
+const golos = Golos_Text({
+  subsets: ['latin', 'cyrillic'],
+  display: 'swap',
+  variable: '--font-golos',
+  weight: ['400', '500', '600', '700', '800', '900'],
+})
+
+// JetBrains Mono — for numeric/data displays on the landing page only.
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-mono-landing',
+  weight: ['400', '500', '600', '700'],
 })
 
 export const metadata: Metadata = {
@@ -28,7 +43,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const lang = (cookieStore.get('lang')?.value ?? 'uz') as Lang
 
   return (
-    <html lang={lang} className={inter.variable} suppressHydrationWarning>
+    <html lang={lang} className={`${inter.variable} ${golos.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
       <head>
         <link rel="manifest" href="/manifest.json" />
         <link rel="icon" href="/icon.svg" type="image/svg+xml" />
