@@ -694,157 +694,186 @@ export default function LandingPage() {
       </header>
 
       {/* ── HERO ─────────────────────────────────────────────────────────────── */}
-      <section className="relative flex items-center pt-20 overflow-hidden" style={{ minHeight: '100svh' }}>
+      <section className="relative overflow-hidden" style={{ paddingTop: '88px' }}>
 
-        {/* Subtle cobalt hero background */}
-        {isDark ? (
-          <div className="absolute inset-0 pointer-events-none" aria-hidden>
-            <div style={{
-              position: 'absolute', right: 0, top: 0, bottom: 0, width: '55%',
-              background: 'linear-gradient(to left, rgba(73,79,223,0.18) 0%, transparent 100%)',
-            }} />
-            <div style={{
-              position: 'absolute', right: '10%', top: '10%', width: '40%', height: '60%',
-              background: 'radial-gradient(ellipse at center, rgba(73,79,223,0.12) 0%, transparent 70%)',
-              filter: 'blur(40px)',
-            }} />
-          </div>
-        ) : (
-          <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden>
-            <div style={{
-              position: 'absolute', top: 0, right: 0, bottom: 0, width: '50%',
-              background: 'linear-gradient(150deg, #d4d6ff 0%, #b8bcfd 45%, #9fa4fa 100%)',
-              borderTopLeftRadius: '50% 100%', borderBottomLeftRadius: '50% 100%',
-              opacity: 0.55,
-            }} />
-          </div>
-        )}
+        {/* Background: dot grid + spotlight glow */}
+        <div className="absolute inset-0 pointer-events-none" aria-hidden>
+          <div className="absolute inset-0" style={{
+            backgroundImage: `radial-gradient(circle, ${isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)'} 1px, transparent 1px)`,
+            backgroundSize: '28px 28px',
+          }} />
+          <div className="absolute inset-0" style={{
+            background: isDark
+              ? 'radial-gradient(ellipse 90% 55% at 50% -10%, rgba(73,79,223,0.22) 0%, transparent 68%)'
+              : 'radial-gradient(ellipse 90% 55% at 50% -10%, rgba(73,79,223,0.1) 0%, transparent 68%)',
+          }} />
+          <div className="absolute bottom-0 left-0 right-0 h-48" style={{
+            background: `linear-gradient(to top, var(--bg-base), transparent)`,
+          }} />
+        </div>
 
-        <div className="relative z-10 max-w-7xl mx-auto w-full px-5 sm:px-6 grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-8 lg:gap-12 items-center py-8 lg:py-16">
+        {/* Centered copy */}
+        <div className="relative z-10 max-w-4xl mx-auto px-5 sm:px-6 pt-14 sm:pt-20 pb-0 flex flex-col items-center text-center">
 
-          {/* Mockup — desktop only */}
+          {/* Announcement pill */}
           <motion.div
-            initial={{ opacity: 0, x: -40, scale: 0.97 }}
-            animate={{ opacity: 1, x: 0, scale: 1 }}
-            transition={{ duration: 0.75, delay: 0.1, ease: [0.25, 0.46, 0.45, 0.94] }}
-            className="relative order-2 lg:order-1 hidden lg:block"
+            initial={{ opacity: 0, y: -10, scale: 0.94 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.38 }}
+            className="mb-7"
           >
-            <MockupInteractive>
-              <DashboardMockup p={t.preview} />
-            </MockupInteractive>
+            <a href="#features"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full border text-xs font-semibold transition-opacity hover:opacity-80"
+              style={{
+                borderColor: isDark ? 'rgba(73,79,223,0.35)' : 'rgba(73,79,223,0.22)',
+                background: isDark ? 'rgba(73,79,223,0.1)' : 'rgba(73,79,223,0.06)',
+                color: 'var(--c1)',
+              }}>
+              <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: 'var(--c1)' }} />
+              {lang === 'uz' ? 'Wildberries integratsiyasi tayyor' : lang === 'ru' ? 'Wildberries интеграция готова' : 'Wildberries integration live'}
+              <ArrowRight className="w-3 h-3" />
+            </a>
           </motion.div>
 
-          {/* Copy */}
-          <div className="flex flex-col gap-6 order-1 lg:order-2">
+          {/* Headline */}
+          <div className="text-5xl sm:text-6xl lg:text-7xl xl:text-[82px] font-black leading-[1.02] tracking-tighter mb-6"
+            style={{ color: 'var(--text-base)' }}>
+            {(() => {
+              const [first, second] = t.hero.landingTitle.split(' — ')
+              const firstWords = (first ?? '').split(' ').map(w => ({ w, grad: false }))
+              const dash = [{ w: '—', grad: false }]
+              const secondWords = (second ?? '').split(' ').map(w => ({ w, grad: true }))
+              return [...firstWords, ...dash, ...secondWords].map(({ w, grad }, i) => (
+                <motion.span
+                  key={i}
+                  custom={i}
+                  variants={wordAnim}
+                  initial="hidden"
+                  animate="visible"
+                  className={`inline-block mr-[0.22em]${grad ? ' grad-text' : ''}`}
+                >
+                  {w}
+                </motion.span>
+              ))
+            })()}
+          </div>
 
-            {/* Marketplace chips */}
-            <motion.div
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4 }}
-              className="flex items-center gap-2 flex-wrap"
-            >
-              {['Uzum', 'Yandex Market', 'Wildberries'].map(mp => (
-                <span key={mp} className="text-[11px] font-semibold px-2.5 py-1 rounded-full border"
-                  style={{ borderColor: 'var(--border2)', color: 'var(--text-muted)', background: 'var(--bg-input)' }}>
-                  {mp}
-                </span>
-              ))}
-            </motion.div>
+          {/* Subtext */}
+          <motion.p
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.45 }}
+            className="text-base sm:text-lg leading-relaxed max-w-xl mb-8"
+            style={{ color: 'var(--text-muted)' }}
+          >
+            {t.hero.landingSubtitle}
+          </motion.p>
 
-            {/* Headline */}
-            <div className="text-[2.5rem] sm:text-5xl lg:text-6xl xl:text-7xl font-black leading-[1.04] tracking-tighter"
-              style={{ color: 'var(--text-base)' }}>
-              {(() => {
-                const [first, second] = t.hero.landingTitle.split(' — ')
-                const firstWords = (first ?? '').split(' ').map(w => ({ w, grad: false }))
-                const dash = [{ w: '—', grad: false }]
-                const secondWords = (second ?? '').split(' ').map(w => ({ w, grad: true }))
-                return [...firstWords, ...dash, ...secondWords].map(({ w, grad }, i) => (
-                  <motion.span
-                    key={i}
-                    custom={i}
-                    variants={wordAnim}
-                    initial="hidden"
-                    animate="visible"
-                    className={`inline-block mr-[0.2em]${grad ? ' grad-text' : ''}`}
-                  >
-                    {w}
-                  </motion.span>
-                ))
-              })()}
+          {/* CTAs */}
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.58 }}
+            className="flex flex-col sm:flex-row gap-3 mb-10 w-full sm:w-auto"
+          >
+            <Link href="/login"
+              className="flex items-center justify-center gap-2 font-bold px-8 py-4 rounded-full text-sm text-white"
+              style={{ background: 'var(--c1)' }}>
+              {t.trialFreeStart} <ArrowRight className="w-4 h-4" />
+            </Link>
+            <Link href="/help"
+              className="flex items-center justify-center gap-2 font-medium px-8 py-4 rounded-full text-sm border"
+              style={{ borderColor: 'var(--border2)', color: 'var(--text-dim)' }}>
+              {t.nav.explorePlatform}
+            </Link>
+          </motion.div>
+
+          {/* Trust row: avatar stack + stats */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.78 }}
+            className="flex flex-col sm:flex-row items-center gap-5 sm:gap-8 mb-16 sm:mb-20"
+          >
+            {/* Avatar stack */}
+            <div className="flex items-center gap-3">
+              <div className="flex -space-x-2.5">
+                {[
+                  { i: 'JA', c: '#494fdf' },
+                  { i: 'MK', c: '#428619' },
+                  { i: 'DU', c: '#ec7e00' },
+                  { i: 'RS', c: '#376cd5' },
+                  { i: '99+', c: isDark ? '#23252a' : '#e2e2e7' },
+                ].map((av, idx) => (
+                  <motion.div
+                    key={idx}
+                    initial={{ opacity: 0, x: -8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.82 + idx * 0.06 }}
+                    className="w-8 h-8 rounded-full flex items-center justify-center border-2 flex-shrink-0 text-[9px] font-bold"
+                    style={{
+                      background: av.c,
+                      color: av.i === '99+' ? 'var(--text-muted)' : '#fff',
+                      borderColor: isDark ? 'var(--bg-base)' : '#fff',
+                    }}>
+                    {av.i}
+                  </motion.div>
+                ))}
+              </div>
+              <div className="text-left">
+                <p className="text-xs font-bold" style={{ color: 'var(--text-base)' }}>
+                  100+ {lang === 'uz' ? 'sotuvchi' : lang === 'ru' ? 'продавцов' : 'sellers'}
+                </p>
+                <div className="flex items-center gap-0.5 mt-0.5">
+                  {Array(5).fill(0).map((_, i) => (
+                    <svg key={i} className="w-2.5 h-2.5" fill="#f59e0b" viewBox="0 0 24 24">
+                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                    </svg>
+                  ))}
+                </div>
+              </div>
             </div>
 
-            {/* Subtext */}
-            <motion.div
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.45 }}
-            >
-              <p className="text-base sm:text-lg leading-relaxed font-medium" style={{ color: 'var(--text-muted)' }}>
-                {t.hero.landingSubtitle}
-              </p>
-            </motion.div>
-
-            {/* CTAs */}
-            <motion.div
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.6 }}
-              className="flex flex-col sm:flex-row gap-3"
-            >
-              <Link href="/login"
-                className="flex items-center justify-center gap-2 font-bold px-7 py-4 rounded-full text-sm text-white"
-                style={{ background: 'var(--c1)' }}>
-                {t.trialFreeStart} <ArrowRight className="w-4 h-4" />
-              </Link>
-              <Link href="/help"
-                className="flex items-center justify-center gap-2 font-medium px-7 py-4 rounded-full text-sm border"
-                style={{ borderColor: 'var(--border2)', color: 'var(--text-dim)' }}>
-                {t.nav.explorePlatform}
-              </Link>
-            </motion.div>
+            <div className="hidden sm:block w-px h-10" style={{ background: 'var(--border)' }} />
 
             {/* Stats */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.8 }}
-              className="pt-5 border-t grid grid-cols-3 gap-0"
-              style={{ borderColor: 'var(--border)' }}
-            >
+            <div className="flex items-center gap-6">
               {[
                 { value: 3, suffix: '+', label: t.stats[0].label },
                 { value: 5, suffix: '', label: t.stats[1].label },
                 { value: 100, suffix: '%', label: t.stats[2].label },
               ].map((s, i) => (
-                <motion.div key={s.label}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.85 + i * 0.08 }}
-                  className={`pr-4 sm:pr-6 ${i > 0 ? 'pl-4 sm:pl-6 border-l' : ''}`}
-                  style={{ borderColor: 'var(--border)' }}>
-                  <div className="text-2xl sm:text-3xl font-black" style={{ color: 'var(--text-base)' }}>
+                <div key={s.label} className={i > 0 ? 'pl-6 border-l' : ''} style={{ borderColor: 'var(--border)' }}>
+                  <div className="text-xl font-black" style={{ color: 'var(--text-base)' }}>
                     <StatNum value={s.value} suffix={s.suffix} />
                   </div>
-                  <p className="text-[11px] sm:text-xs mt-1 leading-tight" style={{ color: 'var(--text-muted)' }}>{s.label}</p>
-                </motion.div>
+                  <p className="text-[10px] mt-0.5" style={{ color: 'var(--text-muted)' }}>{s.label}</p>
+                </div>
               ))}
-            </motion.div>
-
-            {/* Mockup — mobile only, compact */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.7 }}
-              className="lg:hidden mt-2 rounded-2xl overflow-hidden border max-h-[260px]"
-              style={{ borderColor: 'var(--border)' }}
-            >
-              <DashboardMockup p={t.preview} />
-            </motion.div>
-
-          </div>
+            </div>
+          </motion.div>
         </div>
+
+        {/* Full-width product mockup */}
+        <motion.div
+          initial={{ opacity: 0, y: 48 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.85, delay: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
+          className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 pb-0"
+        >
+          <div className="relative">
+            <div className="absolute -inset-x-8 bottom-0 h-32 pointer-events-none" style={{
+              background: 'radial-gradient(ellipse at 50% 100%, rgba(73,79,223,0.28) 0%, transparent 70%)',
+              filter: 'blur(24px)',
+            }} />
+            <div className="rounded-2xl sm:rounded-3xl overflow-hidden border" style={{ borderColor: 'var(--border)', boxShadow: isDark ? '0 0 0 1px rgba(73,79,223,0.15), 0 32px 80px rgba(0,0,0,0.6)' : '0 0 0 1px rgba(73,79,223,0.1), 0 32px 80px rgba(0,0,0,0.12)' }}>
+              <MockupInteractive>
+                <DashboardMockup p={t.preview} />
+              </MockupInteractive>
+            </div>
+          </div>
+        </motion.div>
+
       </section>
 
       {/* ── TICKER ───────────────────────────────────────────────────────────── */}
