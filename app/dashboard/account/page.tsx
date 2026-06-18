@@ -138,7 +138,7 @@ export default async function AccountPage() {
             </div>
             <Link href="/login?forgot=1"
               className="text-sm font-medium transition-colors border border-[rgba(73,79,223,0.2)] px-3 py-1.5 rounded-xl hover:bg-[rgba(73,79,223,0.08)]"
-              style={{ color: 'var(--c1)' }}
+              style={{ color: 'var(--c1)' }}>
               {t.change}
             </Link>
           </div>
