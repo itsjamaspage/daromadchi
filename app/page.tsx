@@ -67,10 +67,13 @@ function useIsDark() { return useTheme().theme === 'dark' }
 function useAccent() {
   const isDark = useIsDark()
   return {
-    color: isDark ? A.dark   : A.light,
-    dk:    isDark ? A.darkDk : A.lightDk,
-    bg:    isDark ? A.darkBg : A.lightBg,
-    tint:  isDark ? A.dark   : '#0369a1',
+    color:  isDark ? A.dark   : A.light,
+    dk:     isDark ? A.darkDk : A.lightDk,
+    bg:     isDark ? A.darkBg : A.lightBg,
+    tint:   isDark ? A.dark   : '#0369a1',
+    btn:    isDark ? A.dark    : '#131321',
+    btnTxt: isDark ? '#131321' : '#ffffff',
+    btnHov: isDark ? A.darkDk  : '#0e1a2e',
   }
 }
 
@@ -211,10 +214,10 @@ function Navbar({ lang }: { lang: string }) {
           </Link>
 
           <Link href="/login" className="hidden sm:block"
-            style={{ fontSize: 14, fontWeight: 700, background: acc.color, color: '#131321',
+            style={{ fontSize: 14, fontWeight: 700, background: acc.btn, color: acc.btnTxt,
               padding: '10px 22px', borderRadius: 8, textDecoration: 'none', transition: 'background 0.15s', whiteSpace: 'nowrap' }}
-            onMouseEnter={e => (e.currentTarget.style.background = acc.dk)}
-            onMouseLeave={e => (e.currentTarget.style.background = acc.color)}>
+            onMouseEnter={e => (e.currentTarget.style.background = acc.btnHov)}
+            onMouseLeave={e => (e.currentTarget.style.background = acc.btn)}>
             {tx(lang,'Начать бесплатно','Bepul boshlash','Start free')}
           </Link>
 
@@ -237,7 +240,7 @@ function Navbar({ lang }: { lang: string }) {
                 </a>
               ))}
               <Link href="/login"
-                style={{ marginTop: 8, fontSize: 15, fontWeight: 700, background: acc.color, color: '#131321',
+                style={{ marginTop: 8, fontSize: 15, fontWeight: 700, background: acc.btn, color: acc.btnTxt,
                   padding: '13px 24px', borderRadius: 8, textDecoration: 'none', textAlign: 'center', display: 'block' }}>
                 {tx(lang,'Начать бесплатно','Bepul boshlash','Start free')}
               </Link>
@@ -483,10 +486,10 @@ function HeroSection({ lang }: { lang: string }) {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.30, duration: 0.55 }}
           style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, flexWrap: 'wrap', marginBottom: 56 }}>
           <Link href="/login"
-            style={{ fontSize: 15, fontWeight: 700, background: acc.color, color: '#131321',
+            style={{ fontSize: 15, fontWeight: 700, background: acc.btn, color: acc.btnTxt,
               padding: '14px 34px', borderRadius: 10, textDecoration: 'none', transition: 'all 0.15s', display: 'inline-block' }}
-            onMouseEnter={e => { e.currentTarget.style.background = acc.dk; e.currentTarget.style.transform = 'translateY(-2px)' }}
-            onMouseLeave={e => { e.currentTarget.style.background = acc.color; e.currentTarget.style.transform = 'translateY(0)' }}>
+            onMouseEnter={e => { e.currentTarget.style.background = acc.btnHov; e.currentTarget.style.transform = 'translateY(-2px)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = acc.btn; e.currentTarget.style.transform = 'translateY(0)' }}>
             {tx(lang,'Начать бесплатно','Bepul boshlash','Start for free')}
           </Link>
           <a href="#how"
@@ -586,10 +589,10 @@ function ComparisonSection({ lang }: { lang: string }) {
         </FadeUp>
         <FadeUp delay={0.2} style={{ textAlign: 'center', marginTop: 36 }}>
           <Link href="/login"
-            style={{ display: 'inline-block', fontSize: 15, fontWeight: 700, background: acc.color, color: '#131321',
+            style={{ display: 'inline-block', fontSize: 15, fontWeight: 700, background: acc.btn, color: acc.btnTxt,
               padding: '14px 36px', borderRadius: 10, textDecoration: 'none', transition: 'all 0.15s' }}
-            onMouseEnter={e => { e.currentTarget.style.background = acc.dk; e.currentTarget.style.transform = 'translateY(-1px)' }}
-            onMouseLeave={e => { e.currentTarget.style.background = acc.color; e.currentTarget.style.transform = 'translateY(0)' }}>
+            onMouseEnter={e => { e.currentTarget.style.background = acc.btnHov; e.currentTarget.style.transform = 'translateY(-1px)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = acc.btn; e.currentTarget.style.transform = 'translateY(0)' }}>
             {tx(lang,'Попробовать бесплатно','Bepul sinab ko\'ring','Try for free')}
           </Link>
         </FadeUp>
@@ -782,10 +785,10 @@ function FeaturesSection({ lang }: { lang: string }) {
               </div>
               <Link href="/login"
                 style={{ display: 'inline-flex', alignItems: 'center', gap: 6,
-                  fontSize: 13, fontWeight: 700, background: acc.color, color: '#131321',
+                  fontSize: 13, fontWeight: 700, background: acc.btn, color: acc.btnTxt,
                   padding: '10px 20px', borderRadius: 8, textDecoration: 'none' }}
-                onMouseEnter={e => (e.currentTarget.style.background = acc.dk)}
-                onMouseLeave={e => (e.currentTarget.style.background = acc.color)}>
+                onMouseEnter={e => (e.currentTarget.style.background = acc.btnHov)}
+                onMouseLeave={e => (e.currentTarget.style.background = acc.btn)}>
                 {tx(lang,'Скачать отчёт','Hisobotni yuklab olish','Download report')} <ArrowRight size={14}/>
               </Link>
             </div>
@@ -960,10 +963,10 @@ function HowItWorksSection({ lang }: { lang: string }) {
 
             <div style={{ paddingLeft: 20, marginTop: 8 }}>
               <Link href="/login"
-                style={{ display: 'inline-block', fontSize: 14, fontWeight: 700, background: acc.color, color: '#131321',
+                style={{ display: 'inline-block', fontSize: 14, fontWeight: 700, background: acc.btn, color: acc.btnTxt,
                   padding: '13px 32px', borderRadius: 10, textDecoration: 'none', transition: 'all 0.15s' }}
-                onMouseEnter={e => { e.currentTarget.style.background = acc.dk; e.currentTarget.style.transform = 'translateY(-1px)' }}
-                onMouseLeave={e => { e.currentTarget.style.background = acc.color; e.currentTarget.style.transform = 'translateY(0)' }}>
+                onMouseEnter={e => { e.currentTarget.style.background = acc.btnHov; e.currentTarget.style.transform = 'translateY(-1px)' }}
+                onMouseLeave={e => { e.currentTarget.style.background = acc.btn; e.currentTarget.style.transform = 'translateY(0)' }}>
                 {tx(lang,'Подключить бесплатно','Bepul ulash','Connect for free')}
               </Link>
             </div>
@@ -1244,10 +1247,10 @@ function PricingSection({ lang }: { lang: string }) {
 
               <Link href={t.ctaHref}
                 style={{ display: 'block', textAlign: 'center', fontSize: 14, fontWeight: 700,
-                  background: acc.color, color: '#131321', padding: '13px 24px', borderRadius: 10,
+                  background: acc.btn, color: acc.btnTxt, padding: '13px 24px', borderRadius: 10,
                   textDecoration: 'none', transition: 'all 0.15s' }}
-                onMouseEnter={e => { e.currentTarget.style.background = acc.dk }}
-                onMouseLeave={e => { e.currentTarget.style.background = acc.color }}>
+                onMouseEnter={e => { e.currentTarget.style.background = acc.btnHov }}
+                onMouseLeave={e => { e.currentTarget.style.background = acc.btn }}>
                 {t.cta}
               </Link>
             </motion.div>
@@ -1471,11 +1474,10 @@ function CtaSection({ lang }: { lang: string }) {
           </p>
           <Link href="/login"
             style={{ display: 'inline-block', fontSize: 16, fontWeight: 700,
-              background: isDark ? acc.color : '#131321',
-              color: isDark ? '#131321' : '#ffffff',
+              background: acc.btn, color: acc.btnTxt,
               padding: '16px 44px', borderRadius: 10, textDecoration: 'none', transition: 'all 0.15s', marginBottom: 20 }}
-            onMouseEnter={e => { e.currentTarget.style.background = isDark ? acc.dk : '#0e1a2e'; e.currentTarget.style.transform = 'translateY(-2px)' }}
-            onMouseLeave={e => { e.currentTarget.style.background = isDark ? acc.color : '#131321'; e.currentTarget.style.transform = 'translateY(0)' }}>
+            onMouseEnter={e => { e.currentTarget.style.background = acc.btnHov; e.currentTarget.style.transform = 'translateY(-2px)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = acc.btn; e.currentTarget.style.transform = 'translateY(0)' }}>
             {tx(lang,'Начать бесплатно','Bepul boshlash','Start for free')}
           </Link>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 24, flexWrap: 'wrap' }}>
