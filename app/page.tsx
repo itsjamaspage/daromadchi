@@ -15,7 +15,7 @@ import type { Lang } from '@/lib/i18n'
 // ── Palette ───────────────────────────────────────────────────────────────────
 const P = {
   ink:       '#0E2233',
-  parchment: '#c5e8fe',
+  parchment: '#a0d4fc',
   card:      '#FFFFFF',
   stone:     '#4A7090',
   muted:     '#7AACC7',
@@ -42,12 +42,12 @@ const P = {
 
 // Accent colours per theme
 const A = {
-  light:    '#c5e8fe',   // sky blue for light mode buttons/accents
-  lightDk:  '#a0d4fc',
-  lightBg:  'rgba(197,232,254,0.15)',
-  dark:     '#c5e8fe',   // sky blue for dark mode
-  darkDk:   '#a0d4fc',
-  darkBg:   'rgba(197,232,254,0.12)',
+  light:    '#a0d4fc',   // sky blue for light mode buttons/accents
+  lightDk:  '#7bbaf7',
+  lightBg:  'rgba(160,212,252,0.15)',
+  dark:     '#a0d4fc',   // sky blue for dark mode — stable button color
+  darkDk:   '#7bbaf7',
+  darkBg:   'rgba(160,212,252,0.12)',
 }
 
 // Real dashboard KPI colours — matches KpiCard.tsx
@@ -428,7 +428,7 @@ function HeroSection({ lang }: { lang: string }) {
   const acc = useAccent()
 
   // Light mode: light blue gradient hero  /  Dark mode: deep purple-navy hero
-  const heroBg    = isDark ? P.dCanvas : 'linear-gradient(160deg, #c5e8fe 0%, #a0d4fc 45%, #a0d4fc 80%)'
+  const heroBg    = isDark ? P.dCanvas : 'linear-gradient(160deg, #a0d4fc 0%, #7bbaf7 45%, #7bbaf7 80%)'
   const glowColor = isDark ? 'rgba(197,232,254,0.12)' : 'rgba(144,213,255,0.55)'
   const headCol   = isDark ? P.dText   : P.ink
   const subCol    = isDark ? P.dMuted  : P.stone
@@ -1433,7 +1433,7 @@ function FaqSection({ lang }: { lang: string }) {
 function CtaSection({ lang }: { lang: string }) {
   const isDark = useIsDark()
   const acc = useAccent()
-  const secBg   = isDark ? P.dCanvas : 'linear-gradient(160deg, #c5e8fe 0%, #a0d4fc 55%, #a0d4fc 100%)'
+  const secBg   = isDark ? P.dCanvas : 'linear-gradient(160deg, #a0d4fc 0%, #7bbaf7 55%, #7bbaf7 100%)'
   const headCol = isDark ? P.dText   : P.ink
   const subCol  = isDark ? P.dMuted  : P.stone
   const badgeCol = isDark ? 'rgba(255,255,255,0.45)' : P.stone

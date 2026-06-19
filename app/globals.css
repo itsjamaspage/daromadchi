@@ -47,8 +47,8 @@ button, input, select, textarea, a {
 
   --nav-bg:     rgba(19, 19, 33, 0.96);
 
-  --c1:         #c5e8fe;   /* sky blue — brand primary */
-  --c2:         #a0d4fc;   /* sky blue dark */
+  --c1:         #a0d4fc;   /* sky blue — brand primary */
+  --c2:         #7bbaf7;   /* sky blue dark */
 
   --scrollbar-track: #101020;
   --scrollbar-thumb: #3a3d50;
@@ -79,8 +79,8 @@ button, input, select, textarea, a {
 
   --nav-bg:     rgba(255, 255, 255, 0.97);
 
-  --c1:         #c5e8fe;   /* sky blue */
-  --c2:         #a0d4fc;   /* sky blue dark */
+  --c1:         #a0d4fc;   /* sky blue */
+  --c2:         #7bbaf7;   /* sky blue dark */
 
   --scrollbar-track: #f4f4f4;
   --scrollbar-thumb: #c9c9cd;
