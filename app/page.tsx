@@ -45,7 +45,7 @@ const A = {
   light:    '#a0d4fc',   // sky blue for light mode buttons/accents
   lightDk:  '#7bbaf7',
   lightBg:  'rgba(160,212,252,0.15)',
-  dark:     '#a0d4fc',   // sky blue for dark mode — stable button color
+  dark:     '#c5e8fe',   // sky blue for dark mode — stable button color
   darkDk:   '#7bbaf7',
   darkBg:   'rgba(160,212,252,0.12)',
 }
@@ -519,7 +519,7 @@ function HeroSection({ lang }: { lang: string }) {
 function ComparisonSection({ lang }: { lang: string }) {
   const isDark = useIsDark()
   const acc = useAccent()
-  const secBg  = isDark ? P.dCanvas : P.card
+  const secBg  = isDark ? '#1d1c2e' : P.card
   const cardBg = isDark ? P.dCard   : P.card
   const headBg = isDark ? P.dCard : P.parchment
   const bdr    = isDark ? P.dHair   : P.hair
@@ -1132,7 +1132,7 @@ function PricingSection({ lang }: { lang: string }) {
   const sectionRef = useRef(null)
   const inView = useInView(sectionRef, { once: true, amount: 0.3 })
 
-  const secBg  = isDark ? P.dCanvas : P.card
+  const secBg  = isDark ? '#1d1c2e' : P.card
   const ink    = isDark ? P.dText   : P.ink
   const muted  = isDark ? P.dMuted  : P.stone
   const bdr    = isDark ? P.dHair   : P.hair
@@ -1496,7 +1496,7 @@ function CtaSection({ lang }: { lang: string }) {
 // ── FOOTER ────────────────────────────────────────────────────────────────────
 function FooterSection({ lang }: { lang: string }) {
   const isDark = useIsDark()
-  const footBg  = isDark ? P.dCanvas  : '#c5e8fe'
+  const footBg  = isDark ? '#1d1c2e'  : '#c5e8fe'
   const bdr     = isDark ? P.dHair    : P.hair
   const txt     = isDark ? P.dText    : P.ink
   const muted   = isDark ? P.dMuted   : P.stone
