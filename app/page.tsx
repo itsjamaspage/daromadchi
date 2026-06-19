@@ -15,7 +15,7 @@ import type { Lang } from '@/lib/i18n'
 // ── Palette ───────────────────────────────────────────────────────────────────
 const P = {
   ink:       '#0E2233',
-  parchment: '#46F0D2',
+  parchment: '#dbeaff',
   card:      '#FFFFFF',
   stone:     '#4A7090',
   muted:     '#7AACC7',
@@ -31,8 +31,8 @@ const P = {
   dCanvas:   '#131321',
   dCard:     '#1C1C2E',
   dCard2:    '#23233A',
-  dHair:     'rgba(70,240,210,0.18)',
-  dMuted:    'rgba(180,255,240,0.55)',
+  dHair:     'rgba(219,234,255,0.18)',
+  dMuted:    'rgba(219,234,255,0.55)',
   dText:     '#E8FFF8',
   // marketplace
   uzum:      '#494fdf',
@@ -42,12 +42,12 @@ const P = {
 
 // Accent colours per theme
 const A = {
-  light:    '#131321',   // dark for light mode buttons/accents
-  lightDk:  '#000000',
-  lightBg:  'rgba(19,19,33,0.07)',
-  dark:     '#46F0D2',   // mint for dark mode
-  darkDk:   '#2DD4B8',
-  darkBg:   'rgba(70,240,210,0.12)',
+  light:    '#dbeaff',   // sky blue for light mode buttons/accents
+  lightDk:  '#b8d0f5',
+  lightBg:  'rgba(219,234,255,0.15)',
+  dark:     '#dbeaff',   // sky blue for dark mode
+  darkDk:   '#b8d0f5',
+  darkBg:   'rgba(219,234,255,0.12)',
 }
 
 // Real dashboard KPI colours — matches KpiCard.tsx
@@ -210,7 +210,7 @@ function Navbar({ lang }: { lang: string }) {
           </Link>
 
           <Link href="/login" className="hidden sm:block"
-            style={{ fontSize: 14, fontWeight: 700, background: acc.color, color: '#fff',
+            style={{ fontSize: 14, fontWeight: 700, background: acc.color, color: '#131321',
               padding: '10px 22px', borderRadius: 8, textDecoration: 'none', transition: 'background 0.15s', whiteSpace: 'nowrap' }}
             onMouseEnter={e => (e.currentTarget.style.background = acc.dk)}
             onMouseLeave={e => (e.currentTarget.style.background = acc.color)}>
@@ -236,7 +236,7 @@ function Navbar({ lang }: { lang: string }) {
                 </a>
               ))}
               <Link href="/login"
-                style={{ marginTop: 8, fontSize: 15, fontWeight: 700, background: acc.color, color: '#fff',
+                style={{ marginTop: 8, fontSize: 15, fontWeight: 700, background: acc.color, color: '#131321',
                   padding: '13px 24px', borderRadius: 8, textDecoration: 'none', textAlign: 'center', display: 'block' }}>
                 {tx(lang,'Начать бесплатно','Bepul boshlash','Start free')}
               </Link>
@@ -269,10 +269,10 @@ function FloatCard({ mp, mpColor, metric, value, change, up, delay, floatDur = 3
           background: isDark ? 'rgba(28,28,46,0.96)' : 'rgba(255,255,255,0.97)',
           borderRadius: 14, padding: '12px 16px', minWidth: 162,
           boxShadow: isDark
-            ? '0 10px 40px rgba(70,240,210,0.12), 0 2px 8px rgba(0,0,0,0.40)'
+            ? '0 10px 40px rgba(219,234,255,0.12), 0 2px 8px rgba(0,0,0,0.40)'
             : '0 10px 36px rgba(0,0,0,0.14), 0 2px 8px rgba(0,0,0,0.06)',
           fontFamily: "'Space Grotesk', system-ui, sans-serif",
-          border: isDark ? '1px solid rgba(70,240,210,0.18)' : '1px solid rgba(186,230,253,0.8)',
+          border: isDark ? '1px solid rgba(219,234,255,0.18)' : '1px solid rgba(186,230,253,0.8)',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 5 }}>
             <div style={{ width: 7, height: 7, borderRadius: '50%', background: mpColor }} />
@@ -427,8 +427,8 @@ function HeroSection({ lang }: { lang: string }) {
   const acc = useAccent()
 
   // Light mode: light blue gradient hero  /  Dark mode: deep purple-navy hero
-  const heroBg    = isDark ? P.dCanvas : 'linear-gradient(160deg, #46F0D2 0%, #2DD4BF 45%, #14B8A6 80%)'
-  const glowColor = isDark ? 'rgba(70,240,210,0.12)' : 'rgba(144,213,255,0.55)'
+  const heroBg    = isDark ? P.dCanvas : 'linear-gradient(160deg, #dbeaff 0%, #c5d9f5 45%, #b8d0f5 80%)'
+  const glowColor = isDark ? 'rgba(219,234,255,0.12)' : 'rgba(144,213,255,0.55)'
   const headCol   = isDark ? P.dText   : P.ink
   const subCol    = isDark ? P.dMuted  : P.stone
   const secLinkCol = isDark ? 'rgba(255,255,255,0.62)' : P.stone
@@ -441,7 +441,7 @@ function HeroSection({ lang }: { lang: string }) {
       <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none',
         background: `radial-gradient(ellipse 90% 55% at 50% -5%, ${glowColor} 0%, transparent 65%)` }} />
       <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none',
-        background: `radial-gradient(ellipse 45% 30% at 50% 0%, ${isDark ? 'rgba(70,240,210,0.06)' : 'rgba(14,116,144,0.08)'} 0%, transparent 55%)` }} />
+        background: `radial-gradient(ellipse 45% 30% at 50% 0%, ${isDark ? 'rgba(219,234,255,0.06)' : 'rgba(14,116,144,0.08)'} 0%, transparent 55%)` }} />
 
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '130px 100px 0',
         position: 'relative', zIndex: 10, textAlign: 'center' }}>
@@ -482,7 +482,7 @@ function HeroSection({ lang }: { lang: string }) {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.30, duration: 0.55 }}
           style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, flexWrap: 'wrap', marginBottom: 56 }}>
           <Link href="/login"
-            style={{ fontSize: 15, fontWeight: 700, background: acc.color, color: '#fff',
+            style={{ fontSize: 15, fontWeight: 700, background: acc.color, color: '#131321',
               padding: '14px 34px', borderRadius: 10, textDecoration: 'none', transition: 'all 0.15s', display: 'inline-block' }}
             onMouseEnter={e => { e.currentTarget.style.background = acc.dk; e.currentTarget.style.transform = 'translateY(-2px)' }}
             onMouseLeave={e => { e.currentTarget.style.background = acc.color; e.currentTarget.style.transform = 'translateY(0)' }}>
@@ -546,7 +546,7 @@ function ComparisonSection({ lang }: { lang: string }) {
         />
         <FadeUp delay={0.1}>
           <div style={{ background: cardBg, borderRadius: 20, overflow: 'hidden',
-            border: `1px solid ${bdr}`, boxShadow: isDark ? '0 4px 24px rgba(70,240,210,0.06)' : '0 4px 24px rgba(0,0,0,0.06)' }}>
+            border: `1px solid ${bdr}`, boxShadow: isDark ? '0 4px 24px rgba(219,234,255,0.06)' : '0 4px 24px rgba(0,0,0,0.06)' }}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr',
               background: headBg, borderBottom: `1px solid ${bdr}` }}>
               <div style={{ padding: '16px 24px' }}/>
@@ -556,7 +556,7 @@ function ComparisonSection({ lang }: { lang: string }) {
                 </p>
               </div>
               <div style={{ padding: '16px 24px', textAlign: 'center',
-                background: isDark ? 'rgba(70,240,210,0.08)' : acc.bg, borderLeft: `1px solid ${bdr}` }}>
+                background: isDark ? 'rgba(219,234,255,0.08)' : acc.bg, borderLeft: `1px solid ${bdr}` }}>
                 <p style={{ fontSize: 14, fontWeight: 800, color: acc.color }}>Daromadchi</p>
               </div>
             </div>
@@ -573,8 +573,8 @@ function ComparisonSection({ lang }: { lang: string }) {
                   </div>
                 </div>
                 <div style={{ padding: '15px 24px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  background: isDark ? 'rgba(70,240,210,0.06)' : acc.bg, borderLeft: `1px solid ${bdr}` }}>
-                  <div style={{ width: 26, height: 26, borderRadius: '50%', background: isDark ? 'rgba(70,240,210,0.15)' : `${acc.color}22`,
+                  background: isDark ? 'rgba(219,234,255,0.06)' : acc.bg, borderLeft: `1px solid ${bdr}` }}>
+                  <div style={{ width: 26, height: 26, borderRadius: '50%', background: isDark ? 'rgba(219,234,255,0.15)' : `${acc.color}22`,
                     display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <Check size={13} color={acc.color}/>
                   </div>
@@ -585,7 +585,7 @@ function ComparisonSection({ lang }: { lang: string }) {
         </FadeUp>
         <FadeUp delay={0.2} style={{ textAlign: 'center', marginTop: 36 }}>
           <Link href="/login"
-            style={{ display: 'inline-block', fontSize: 15, fontWeight: 700, background: acc.color, color: '#fff',
+            style={{ display: 'inline-block', fontSize: 15, fontWeight: 700, background: acc.color, color: '#131321',
               padding: '14px 36px', borderRadius: 10, textDecoration: 'none', transition: 'all 0.15s' }}
             onMouseEnter={e => { e.currentTarget.style.background = acc.dk; e.currentTarget.style.transform = 'translateY(-1px)' }}
             onMouseLeave={e => { e.currentTarget.style.background = acc.color; e.currentTarget.style.transform = 'translateY(0)' }}>
@@ -781,7 +781,7 @@ function FeaturesSection({ lang }: { lang: string }) {
               </div>
               <Link href="/login"
                 style={{ display: 'inline-flex', alignItems: 'center', gap: 6,
-                  fontSize: 13, fontWeight: 700, background: acc.color, color: '#fff',
+                  fontSize: 13, fontWeight: 700, background: acc.color, color: '#131321',
                   padding: '10px 20px', borderRadius: 8, textDecoration: 'none' }}
                 onMouseEnter={e => (e.currentTarget.style.background = acc.dk)}
                 onMouseLeave={e => (e.currentTarget.style.background = acc.color)}>
@@ -819,7 +819,7 @@ function HowItWorksSection({ lang }: { lang: string }) {
       ),
       ui: (
         <div style={{ background: uiBg, borderRadius: 16, padding: '20px',
-          border: `1px solid ${uiBdr}`, boxShadow: isDark ? '0 8px 32px rgba(70,240,210,0.08)' : '0 8px 32px rgba(0,0,0,0.10)' }}>
+          border: `1px solid ${uiBdr}`, boxShadow: isDark ? '0 8px 32px rgba(219,234,255,0.08)' : '0 8px 32px rgba(0,0,0,0.10)' }}>
           {[{l:'Email',v:'seller@example.com'},{l:tx(lang,'Пароль','Parol','Password'),v:'••••••••••'}].map(f => (
             <div key={f.l} style={{ marginBottom: 12 }}>
               <p style={{ fontSize: 11, color: sub, marginBottom: 5 }}>{f.l}</p>
@@ -829,7 +829,7 @@ function HowItWorksSection({ lang }: { lang: string }) {
             </div>
           ))}
           <div style={{ background: acc.color, borderRadius: 8, padding: '11px', textAlign: 'center', marginTop: 6 }}>
-            <span style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>{tx(lang,'Зарегистрироваться','Ro\'yxatdan o\'tish','Sign up')}</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: '#131321' }}>{tx(lang,'Зарегистрироваться','Ro\'yxatdan o\'tish','Sign up')}</span>
           </div>
         </div>
       ),
@@ -844,7 +844,7 @@ function HowItWorksSection({ lang }: { lang: string }) {
       ),
       ui: (
         <div style={{ background: uiBg, borderRadius: 16, padding: '20px',
-          border: `1px solid ${uiBdr}`, boxShadow: isDark ? '0 8px 32px rgba(70,240,210,0.08)' : '0 8px 32px rgba(0,0,0,0.10)' }}>
+          border: `1px solid ${uiBdr}`, boxShadow: isDark ? '0 8px 32px rgba(219,234,255,0.08)' : '0 8px 32px rgba(0,0,0,0.10)' }}>
           <p style={{ fontSize: 11, fontWeight: 700, color: sub, marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
             {tx(lang,'Ваши магазины','Do\'konlaringiz','Your stores')}
           </p>
@@ -869,7 +869,7 @@ function HowItWorksSection({ lang }: { lang: string }) {
       ),
       ui: (
         <div style={{ background: uiBg, borderRadius: 16, padding: '20px',
-          border: `1px solid ${uiBdr}`, boxShadow: isDark ? '0 8px 32px rgba(70,240,210,0.08)' : '0 8px 32px rgba(0,0,0,0.10)' }}>
+          border: `1px solid ${uiBdr}`, boxShadow: isDark ? '0 8px 32px rgba(219,234,255,0.08)' : '0 8px 32px rgba(0,0,0,0.10)' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
             {[{l:'Заказы',v:'1 842',d:'+300%',c:acc.color},{l:'ДРР',v:'8.2%',d:'-20.9%',c:acc.color}].map(k => (
               <div key={k.l} style={{ background: fldBg, borderRadius: 10, padding: '14px',
@@ -917,13 +917,13 @@ function HowItWorksSection({ lang }: { lang: string }) {
                 <div key={i}
                   onClick={() => setActive(i)}
                   style={{ cursor: isActive ? 'default' : 'pointer',
-                    borderLeft: `3px solid ${isActive ? s.color : (isDark ? 'rgba(70,240,210,0.15)' : P.hair)}`,
+                    borderLeft: `3px solid ${isActive ? s.color : (isDark ? 'rgba(219,234,255,0.15)' : P.hair)}`,
                     padding: '0 0 0 20px', marginBottom: 4,
                     transition: 'border-color 0.2s' }}>
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '18px 0' }}>
                     <div style={{ width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
-                      background: isActive ? s.color : (isDark ? 'rgba(70,240,210,0.10)' : P.hair),
+                      background: isActive ? s.color : (isDark ? 'rgba(219,234,255,0.10)' : P.hair),
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       fontSize: 14, fontWeight: 800,
                       color: isActive ? '#fff' : (isDark ? P.dMuted : P.stone),
@@ -959,7 +959,7 @@ function HowItWorksSection({ lang }: { lang: string }) {
 
             <div style={{ paddingLeft: 20, marginTop: 8 }}>
               <Link href="/login"
-                style={{ display: 'inline-block', fontSize: 14, fontWeight: 700, background: acc.color, color: '#fff',
+                style={{ display: 'inline-block', fontSize: 14, fontWeight: 700, background: acc.color, color: '#131321',
                   padding: '13px 32px', borderRadius: 10, textDecoration: 'none', transition: 'all 0.15s' }}
                 onMouseEnter={e => { e.currentTarget.style.background = acc.dk; e.currentTarget.style.transform = 'translateY(-1px)' }}
                 onMouseLeave={e => { e.currentTarget.style.background = acc.color; e.currentTarget.style.transform = 'translateY(0)' }}>
@@ -1065,7 +1065,7 @@ function WhoSection({ lang }: { lang: string }) {
               <div style={{ background: cardBg, borderRadius: 20, padding: '32px 28px',
                 border: `1px solid ${bdr}`, textAlign: 'center', transition: 'transform 0.2s, box-shadow 0.2s' }}
                 onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-4px)';
-                  (e.currentTarget as HTMLDivElement).style.boxShadow = isDark ? '0 12px 36px rgba(70,240,210,0.10)' : '0 12px 36px rgba(0,0,0,0.10)' }}
+                  (e.currentTarget as HTMLDivElement).style.boxShadow = isDark ? '0 12px 36px rgba(219,234,255,0.10)' : '0 12px 36px rgba(0,0,0,0.10)' }}
                 onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)';
                   (e.currentTarget as HTMLDivElement).style.boxShadow = 'none' }}>
                 <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>{c.avatar}</div>
@@ -1214,7 +1214,7 @@ function PricingSection({ lang }: { lang: string }) {
                 </p>
                 {(t as any).badge && (
                   <span style={{ background: acc.color, borderRadius: 100, padding: '3px 12px',
-                    fontSize: 10, fontWeight: 800, color: '#fff', letterSpacing: '0.04em' }}>
+                    fontSize: 10, fontWeight: 800, color: '#131321', letterSpacing: '0.04em' }}>
                     {(t as any).badge}
                   </span>
                 )}
@@ -1243,7 +1243,7 @@ function PricingSection({ lang }: { lang: string }) {
 
               <Link href={t.ctaHref}
                 style={{ display: 'block', textAlign: 'center', fontSize: 14, fontWeight: 700,
-                  background: acc.color, color: '#fff', padding: '13px 24px', borderRadius: 10,
+                  background: acc.color, color: '#131321', padding: '13px 24px', borderRadius: 10,
                   textDecoration: 'none', transition: 'all 0.15s' }}
                 onMouseEnter={e => { e.currentTarget.style.background = acc.dk }}
                 onMouseLeave={e => { e.currentTarget.style.background = acc.color }}>
@@ -1432,11 +1432,11 @@ function FaqSection({ lang }: { lang: string }) {
 function CtaSection({ lang }: { lang: string }) {
   const isDark = useIsDark()
   const acc = useAccent()
-  const secBg   = isDark ? P.dCanvas : 'linear-gradient(160deg, #46F0D2 0%, #2DD4BF 55%, #14B8A6 100%)'
+  const secBg   = isDark ? P.dCanvas : 'linear-gradient(160deg, #dbeaff 0%, #c5d9f5 55%, #b8d0f5 100%)'
   const headCol = isDark ? P.dText   : P.ink
   const subCol  = isDark ? P.dMuted  : P.stone
   const badgeCol = isDark ? 'rgba(255,255,255,0.45)' : P.stone
-  const glowColor = isDark ? 'rgba(70,240,210,0.12)' : 'rgba(144,213,255,0.45)'
+  const glowColor = isDark ? 'rgba(219,234,255,0.12)' : 'rgba(144,213,255,0.45)'
 
   return (
     <section style={{ position: 'relative', background: secBg, overflow: 'hidden',
@@ -1469,7 +1469,7 @@ function CtaSection({ lang }: { lang: string }) {
               'Connect your store in minutes. Free plan, no credit card required')}
           </p>
           <Link href="/login"
-            style={{ display: 'inline-block', fontSize: 16, fontWeight: 700, background: acc.color, color: '#fff',
+            style={{ display: 'inline-block', fontSize: 16, fontWeight: 700, background: acc.color, color: '#131321',
               padding: '16px 44px', borderRadius: 10, textDecoration: 'none', transition: 'all 0.15s', marginBottom: 20 }}
             onMouseEnter={e => { e.currentTarget.style.background = acc.dk; e.currentTarget.style.transform = 'translateY(-2px)' }}
             onMouseLeave={e => { e.currentTarget.style.background = acc.color; e.currentTarget.style.transform = 'translateY(0)' }}>

@@ -31,7 +31,7 @@ button, input, select, textarea, a {
 ═══════════════════════════════════════════════════════════════════ */
 :root,
 [data-theme="dark"] {
-  --color-info:  rgba(70, 240, 210, 0.85);
+  --color-info:  rgba(219, 234, 255, 0.85);
 
   --bg-base:    #131321;                    /* canvas-dark */
   --bg-card:    #1C1C2E;                    /* surface-elevated */
@@ -47,8 +47,8 @@ button, input, select, textarea, a {
 
   --nav-bg:     rgba(19, 19, 33, 0.96);
 
-  --c1:         #46F0D2;   /* mint — brand primary */
-  --c2:         #2DD4B8;   /* mint dark */
+  --c1:         #dbeaff;   /* sky blue — brand primary */
+  --c2:         #b8d0f5;   /* sky blue dark */
 
   --scrollbar-track: #101020;
   --scrollbar-thumb: #3a3d50;
@@ -62,7 +62,7 @@ button, input, select, textarea, a {
    canvas-light #ffffff · surface-soft #f4f4f4 · cobalt #494fdf
 ═══════════════════════════════════════════════════════════════════ */
 [data-theme="light"] {
-  --color-info:  rgba(73, 79, 223, 0.9);
+  --color-info:  rgba(219, 234, 255, 0.9);
   --color-warn:  rgba(236, 126, 0, 0.9);
 
   --bg-base:    #ffffff;                    /* canvas-light */
@@ -79,8 +79,8 @@ button, input, select, textarea, a {
 
   --nav-bg:     rgba(255, 255, 255, 0.97);
 
-  --c1:         #494fdf;   /* cobalt violet */
-  --c2:         #4f55f1;   /* cobalt bright */
+  --c1:         #dbeaff;   /* sky blue */
+  --c2:         #b8d0f5;   /* sky blue dark */
 
   --scrollbar-track: #f4f4f4;
   --scrollbar-thumb: #c9c9cd;
@@ -114,7 +114,7 @@ h1, h2, h3, h4, h5, h6 {
 ═══════════════════════════════════════════════════════════════════ */
 .btn-primary {
   background: var(--c1);
-  color: #ffffff;
+  color: #131321;
   font-weight: 600;
   font-size: 0.875rem;
   letter-spacing: 0.015em;
