@@ -27,17 +27,16 @@ button, input, select, textarea, a {
 
 /* ═══════════════════════════════════════════════════════════════════
    DARK THEME — Revolut black canvas
-   canvas-dark #000000 · surface-elevated #16181a · cobalt #494fdf
+   canvas-dark #131321 · surface-elevated #1C1C2E · mint #46F0D2
 ═══════════════════════════════════════════════════════════════════ */
 :root,
 [data-theme="dark"] {
-  --color-info:  rgba(73, 79, 223, 0.85);   /* cobalt tint */
-  --color-warn:  rgba(236, 126, 0, 0.85);   /* accent-warning */
+  --color-info:  rgba(70, 240, 210, 0.85);
 
-  --bg-base:    #000000;                    /* canvas-dark */
-  --bg-card:    #16181a;                    /* surface-elevated */
-  --bg-card2:   #0a0a0a;                    /* surface-deep */
-  --bg-input:   #1f2226;                    /* body */
+  --bg-base:    #131321;                    /* canvas-dark */
+  --bg-card:    #1C1C2E;                    /* surface-elevated */
+  --bg-card2:   #101020;                    /* surface-deep */
+  --bg-input:   #23233A;                    /* input bg */
 
   --border:     rgba(255, 255, 255, 0.08);  /* hairline-dark */
   --border2:    rgba(255, 255, 255, 0.18);  /* hairline-dark strong */
@@ -46,16 +45,16 @@ button, input, select, textarea, a {
   --text-muted: rgba(255, 255, 255, 0.72);  /* on-dark-mute */
   --text-dim:   #8d969e;                    /* stone */
 
-  --nav-bg:     rgba(0, 0, 0, 0.94);
+  --nav-bg:     rgba(19, 19, 33, 0.96);
 
-  --c1:         #494fdf;   /* cobalt violet — brand primary */
-  --c2:         #4f55f1;   /* cobalt bright */
+  --c1:         #46F0D2;   /* mint — brand primary */
+  --c2:         #2DD4B8;   /* mint dark */
 
-  --scrollbar-track: #0a0a0a;
-  --scrollbar-thumb: #3a3d40;
+  --scrollbar-track: #101020;
+  --scrollbar-thumb: #3a3d50;
 
   --hairline:   rgba(255, 255, 255, 0.08);
-  --surface-soft: #f4f4f4;
+  --surface-soft: #1C1C2E;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
