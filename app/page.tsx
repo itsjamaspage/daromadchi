@@ -144,7 +144,7 @@ function Navbar({ lang }: { lang: string }) {
       borderBottom: `1px solid ${scrolled ? (isDark ? P.dHair : P.hair) : 'transparent'}`,
       backdropFilter: scrolled ? 'blur(16px)' : 'none',
       transition: 'all 0.25s ease',
-      fontFamily: 'var(--font-golos), sans-serif',
+      fontFamily: "'Golos Text', system-ui, sans-serif",
     }}>
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 28px', height: 76,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -269,7 +269,7 @@ function FloatCard({ mp, mpColor, metric, value, change, up, delay, floatDur = 3
           boxShadow: isDark
             ? '0 10px 40px rgba(108,88,239,0.25), 0 2px 8px rgba(0,0,0,0.40)'
             : '0 10px 36px rgba(0,0,0,0.14), 0 2px 8px rgba(0,0,0,0.06)',
-          fontFamily: 'var(--font-golos), sans-serif',
+          fontFamily: "'Golos Text', system-ui, sans-serif",
           border: isDark ? '1px solid rgba(108,88,239,0.25)' : '1px solid rgba(186,230,253,0.8)',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 5 }}>
@@ -277,7 +277,7 @@ function FloatCard({ mp, mpColor, metric, value, change, up, delay, floatDur = 3
             <span style={{ fontSize: 10, fontWeight: 700, color: isDark ? P.dMuted : P.stone, letterSpacing: '0.02em' }}>{mp}</span>
           </div>
           <p style={{ fontSize: 10, color: isDark ? 'rgba(198,187,255,0.5)' : P.muted, marginBottom: 2 }}>{metric}</p>
-          <p style={{ fontSize: 17, fontWeight: 800, color: isDark ? P.dText : P.ink, fontFamily: 'var(--font-golos), sans-serif', lineHeight: 1.1 }}>
+          <p style={{ fontSize: 17, fontWeight: 800, color: isDark ? P.dText : P.ink, fontFamily: "'Golos Text', system-ui, sans-serif", lineHeight: 1.1 }}>
             {value}
           </p>
           <div style={{ display: 'flex', alignItems: 'center', gap: 3, marginTop: 5 }}>
@@ -433,7 +433,7 @@ function HeroSection({ lang }: { lang: string }) {
 
   return (
     <section style={{ position: 'relative', background: heroBg, overflow: 'hidden',
-      fontFamily: 'var(--font-golos), sans-serif', paddingBottom: 0 }}>
+      fontFamily: "'Golos Text', system-ui, sans-serif", paddingBottom: 0 }}>
       {/* Ambient glow */}
       <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none',
         background: `radial-gradient(ellipse 90% 55% at 50% -5%, ${glowColor} 0%, transparent 65%)` }} />
@@ -530,7 +530,7 @@ function ComparisonSection({ lang }: { lang: string }) {
 
   return (
     <section id="comparison" style={{ background: secBg, padding: '88px 24px',
-      fontFamily: 'var(--font-golos), sans-serif', transition: 'background 0.3s' }}>
+      fontFamily: "'Golos Text', system-ui, sans-serif", transition: 'background 0.3s' }}>
       <div style={{ maxWidth: 860, margin: '0 auto' }}>
         <SectionHead dark={isDark}
           title={tx(lang,'Сейчас вы видите только половину данных','Hozir siz ma\'lumotlarning yarmini ko\'ryapsiz','You\'re only seeing half the data')}
@@ -608,7 +608,7 @@ function FeaturesSection({ lang }: { lang: string }) {
 
   return (
     <section id="features" style={{ background: secBg, padding: '88px 24px',
-      fontFamily: 'var(--font-golos), sans-serif', transition: 'background 0.3s' }}>
+      fontFamily: "'Golos Text', system-ui, sans-serif", transition: 'background 0.3s' }}>
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
         <SectionHead dark={isDark}
           title={tx(lang,'Главный инструмент для роста прибыли','Foyda o\'sishi uchun asosiy vosita','The main tool for profit growth')}
@@ -895,7 +895,7 @@ function HowItWorksSection({ lang }: { lang: string }) {
 
   return (
     <section id="how" style={{ background: secBg, padding: '88px 24px',
-      fontFamily: 'var(--font-golos), sans-serif', transition: 'background 0.3s' }}>
+      fontFamily: "'Golos Text', system-ui, sans-serif", transition: 'background 0.3s' }}>
       <div style={{ maxWidth: 1000, margin: '0 auto' }}>
         <SectionHead dark={isDark}
           title={tx(lang,'Настройте магазин за 5 минут','Do\'koningizni 5 daqiqada sozlang','Set up your store in 5 minutes')}
@@ -1053,7 +1053,7 @@ function WhoSection({ lang }: { lang: string }) {
 
   return (
     <section style={{ background: secBg, padding: '88px 24px',
-      fontFamily: 'var(--font-golos), sans-serif', transition: 'background 0.3s' }}>
+      fontFamily: "'Golos Text', system-ui, sans-serif", transition: 'background 0.3s' }}>
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
         <SectionHead dark={isDark}
           title={tx(lang,'Кому подходит Daromadchi','Daromadchi kimga mos keladi','Who is Daromadchi for')}
@@ -1142,7 +1142,7 @@ function PricingSection({ lang }: { lang: string }) {
 
   return (
     <section id="pricing" style={{ background: secBg, padding: '88px 24px',
-      fontFamily: 'var(--font-golos), sans-serif', transition: 'background 0.3s' }}>
+      fontFamily: "'Golos Text', system-ui, sans-serif", transition: 'background 0.3s' }}>
       <div style={{ maxWidth: 1000, margin: '0 auto', position: 'relative' }}>
         <FadeUp>
           <div style={{ textAlign: 'center', marginBottom: 56 }}>
@@ -1268,7 +1268,7 @@ function ResourcesSection({ lang }: { lang: string }) {
 
   return (
     <section id="resources" style={{ background: secBg, padding: '88px 24px',
-      fontFamily: 'var(--font-golos), sans-serif', transition: 'background 0.3s' }}>
+      fontFamily: "'Golos Text', system-ui, sans-serif", transition: 'background 0.3s' }}>
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
         <SectionHead dark={isDark}
           title={tx(lang,'Ресурсы и развитие','Resurslar va rivojlanish','Resources & development')}
@@ -1350,7 +1350,7 @@ function FaqSection({ lang }: { lang: string }) {
 
   return (
     <section id="faq" style={{ background: secBg, padding: '88px 24px',
-      fontFamily: 'var(--font-golos), sans-serif', transition: 'background 0.3s' }}>
+      fontFamily: "'Golos Text', system-ui, sans-serif", transition: 'background 0.3s' }}>
       <div style={{ maxWidth: 760, margin: '0 auto' }}>
         <SectionHead dark={isDark}
           title={tx(lang,'Частые вопросы','Tez-tez so\'raladigan savollar','Frequently asked questions')}
@@ -1409,7 +1409,7 @@ function CtaSection({ lang }: { lang: string }) {
 
   return (
     <section style={{ position: 'relative', background: secBg, overflow: 'hidden',
-      padding: '100px 24px', fontFamily: 'var(--font-golos), sans-serif', transition: 'background 0.3s' }}>
+      padding: '100px 24px', fontFamily: "'Golos Text', system-ui, sans-serif", transition: 'background 0.3s' }}>
       <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none',
         background: `radial-gradient(ellipse 80% 55% at 50% 120%, ${glowColor} 0%, transparent 65%)` }} />
 
@@ -1483,7 +1483,7 @@ function FooterSection({ lang }: { lang: string }) {
 
   return (
     <footer style={{ background: footBg, padding: '64px 24px 32px',
-      fontFamily: 'var(--font-golos), sans-serif', borderTop: `1px solid ${bdr}`,
+      fontFamily: "'Golos Text', system-ui, sans-serif", borderTop: `1px solid ${bdr}`,
       transition: 'background 0.3s' }}>
       <div style={{ maxWidth: 1200, margin: '0 auto' }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr 1fr 1fr', gap: 40, marginBottom: 56 }}>
@@ -1549,7 +1549,7 @@ function FooterSection({ lang }: { lang: string }) {
 export default function Page() {
   const { lang } = useLang()
   return (
-    <div style={{ fontFamily: 'var(--font-golos), sans-serif' }}>
+    <div style={{ fontFamily: "'Golos Text', system-ui, sans-serif" }}>
       <Navbar lang={lang} />
       <HeroSection lang={lang} />
       <ComparisonSection lang={lang} />

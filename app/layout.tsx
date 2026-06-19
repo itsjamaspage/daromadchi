@@ -1,15 +1,9 @@
 import type { Metadata } from 'next'
-import { Inter, Golos_Text, JetBrains_Mono } from 'next/font/google'
+import { Golos_Text, JetBrains_Mono } from 'next/font/google'
 import { cookies } from 'next/headers'
 import './globals.css'
 import Providers from './providers'
 import type { Lang } from '@/lib/i18n'
-
-const inter = Inter({
-  subsets: ['latin', 'cyrillic'],
-  display: 'swap',
-  variable: '--font-inter',
-})
 
 const golos = Golos_Text({
   subsets: ['latin', 'cyrillic'],
@@ -40,7 +34,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const lang = (cookieStore.get('lang')?.value ?? 'uz') as Lang
 
   return (
-    <html lang={lang} className={`${inter.variable} ${golos.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
+    <html lang={lang} className={`${golos.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
       <head>
         <link rel="manifest" href="/manifest.json" />
         <link rel="icon" href="/icon.svg" type="image/svg+xml" />
