@@ -42,9 +42,9 @@ const P = {
 
 // Accent colours per theme
 const A = {
-  light:    '#0E7490',   // teal for light mode
-  lightDk:  '#155E75',
-  lightBg:  'rgba(14,116,144,0.09)',
+  light:    '#131321',   // dark for light mode buttons/accents
+  lightDk:  '#000000',
+  lightBg:  'rgba(19,19,33,0.07)',
   dark:     '#46F0D2',   // mint for dark mode
   darkDk:   '#2DD4B8',
   darkBg:   'rgba(70,240,210,0.12)',
@@ -1491,7 +1491,7 @@ function CtaSection({ lang }: { lang: string }) {
 // ── FOOTER ────────────────────────────────────────────────────────────────────
 function FooterSection({ lang }: { lang: string }) {
   const isDark = useIsDark()
-  const footBg  = isDark ? P.dCanvas  : P.parchment
+  const footBg  = isDark ? P.dCanvas  : P.card
   const bdr     = isDark ? P.dHair    : P.hair
   const txt     = isDark ? P.dText    : P.ink
   const muted   = isDark ? P.dMuted   : P.stone
