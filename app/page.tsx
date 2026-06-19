@@ -800,10 +800,10 @@ function HowItWorksSection({ lang }: { lang: string }) {
   const acc = useAccent()
   const [active, setActive] = useState(0)
 
-  const secBg  = isDark ? '#13102E' : P.parchment
+  const secBg  = isDark ? '#13102E' : P.card
   const ink    = isDark ? P.dText   : P.ink
   const sub    = isDark ? P.dMuted  : P.stone
-  const uiBg   = isDark ? 'rgba(26,22,64,0.95)' : 'rgba(255,255,255,0.95)'
+  const uiBg   = isDark ? 'rgba(26,22,64,0.95)' : P.parchment
   const uiBdr  = isDark ? P.dHair   : P.hair
   const fldBg  = isDark ? '#1E1A40' : '#fff'
 
