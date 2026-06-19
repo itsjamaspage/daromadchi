@@ -862,9 +862,9 @@ function HowItWorksSection({ lang }: { lang: string }) {
       color: acc.color,
       title: tx(lang,'Данные готовы','Ma\'lumotlar tayyor','Data is ready'),
       desc: tx(lang,
-        'Через 15 минут — полная аналитика за последние 7 дней. Далее обновление автоматически каждые 15 минут',
-        '15 daqiqadan keyin — so\'nggi 7 kun uchun to\'liq tahlil. Keyin har 15 daqiqada avtomatik yangilanadi',
-        'In 15 minutes — full analytics for the past 7 days. Then updates automatically every 15 minutes'
+        'Через 5 минут — полная аналитика за последние 7 дней. Далее обновление автоматически каждые 15 минут',
+        '5 daqiqadan keyin — so\'nggi 7 kun uchun to\'liq tahlil. Keyin har 15 daqiqada avtomatik yangilanadi',
+        'In 5 minutes — full analytics for the past 7 days. Then updates automatically every 15 minutes'
       ),
       ui: (
         <div style={{ background: uiBg, borderRadius: 16, padding: '20px',
@@ -1312,9 +1312,9 @@ function FaqSection({ lang }: { lang: string }) {
         'Ha. Biz faqat Read Only kalitlaridan foydalanamiz — biz do\'kongingizdagi ma\'lumotlarni o\'qiy olamiz, lekin narxlar, mahsulotlar yoki buyurtmalarni hech qachon o\'zgartira olmaymiz.',
         'Yes. We only use Read Only keys — we can read data from your store but can never modify prices, products or orders. The key is stored encrypted.') },
     { q: tx(lang,'Как быстро появляются данные после подключения?','Ulanganidan keyin ma\'lumotlar qanchalik tez paydo bo\'ladi?','How quickly does data appear after connecting?'),
-      a: tx(lang,'Первая синхронизация занимает 15–35 минут и подтягивает историю за последние 7 дней. Далее данные обновляются автоматически каждые 15 минут для заказов и каждые 4 часа для статистики.',
-        'Birinchi sinxronizatsiya 15–35 daqiqa davom etadi va so\'nggi 7 kunlik tarixni tortib oladi. Keyin buyurtmalar uchun har 15 daqiqada, statistika uchun har 4 soatda avtomatik yangilanadi.',
-        'First sync takes 15–35 minutes and pulls 7 days of history. After that, orders update every 15 minutes and statistics every 4 hours.') },
+      a: tx(lang,'Первая синхронизация занимает до 5 минут и подтягивает историю за последние 7 дней. Далее данные обновляются автоматически каждые 15 минут для заказов и каждые 4 часа для статистики.',
+        'Birinchi sinxronizatsiya 5 daqiqagacha davom etadi va so\'nggi 7 kunlik tarixni tortib oladi. Keyin buyurtmalar uchun har 15 daqiqada, statistika uchun har 4 soatda avtomatik yangilanadi.',
+        'First sync takes up to 5 minutes and pulls 7 days of history. After that, orders update every 15 minutes and statistics every 4 hours.') },
     { q: tx(lang,'Поддерживаете ли все три маркетплейса?','Uchala marketpleysni ham qo\'llayapsizmi?','Do you support all three marketplaces?'),
       a: tx(lang,'Да — Uzum Market, Wildberries и Yandex Market полностью поддерживаются. Данные из всех трёх платформ объединяются в единую таблицу с разбивкой по площадкам.',
         'Ha — Uzum Market, Wildberries va Yandex Market to\'liq qo\'llaniladi.',
