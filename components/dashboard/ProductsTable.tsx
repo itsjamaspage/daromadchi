@@ -5,7 +5,14 @@ import { Search } from 'lucide-react'
 import ExportButton from './ExportButton'
 import { useLang } from '@/app/providers'
 import { translations } from '@/lib/i18n'
-import type { Product } from '@/lib/types'
+import type { Product, MarketplaceType } from '@/lib/types'
+
+const MP_TABS: { mp: MarketplaceType | undefined; label: string }[] = [
+  { mp: undefined,       label: 'Barchasi'      },
+  { mp: 'uzum',          label: 'Uzum'          },
+  { mp: 'yandex_market', label: 'Yandex Market' },
+  { mp: 'wildberries',   label: 'Wildberries'   },
+]
 
 function fmt(n: number) {
   return new Intl.NumberFormat('uz-UZ').format(n) + " so'm"
@@ -38,6 +45,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
 
   const allLabel = d.status.all
 
+  const [mp,       setMp]       = useState<MarketplaceType | undefined>(undefined)
   const [query,    setQuery]    = useState('')
   const [sortBy,   setSortBy]   = useState<'title' | 'profit' | 'margin' | 'stock_quantity' | 'drr'>('profit')
   const [sortDir,  setSortDir]  = useState<'asc' | 'desc'>('desc')
@@ -52,9 +60,11 @@ export default function ProductsTable({ products }: { products: Product[] }) {
   const [category, setCategory] = useState(allLabel)
 
   // Ad metrics come from real ad-sync data; until connected they are 0.
-  const enriched = useMemo(() => products.map((p) => ({
-    ...p, adSpend: 0, adOrders: 0, adClicks: 0, drr: 0,
-  })), [products])
+  const enriched = useMemo(() => products
+    .filter(p => !mp || p.marketplace === mp)
+    .map((p) => ({
+      ...p, adSpend: 0, adOrders: 0, adClicks: 0, drr: 0,
+    })), [products, mp])
 
   const filtered = useMemo(() => {
     let rows = [...enriched]
@@ -123,7 +133,25 @@ export default function ProductsTable({ products }: { products: Product[] }) {
 
   return (
     <div className="space-y-4">
-      {/* Tabs */}
+      {/* Marketplace tabs — instant client-side filter */}
+      <div className="flex items-center gap-1.5 p-1 rounded-xl w-fit border" style={{ background: 'var(--bg-card2)', borderColor: 'var(--border)' }}>
+        {MP_TABS.map(({ mp: m, label }) => (
+          <button key={label} onClick={() => setMp(m)}
+            className="px-3 py-1.5 rounded-full text-xs font-semibold transition-all"
+            style={mp === m ? {
+              background: 'rgba(73,79,223,0.1)',
+              color: 'var(--c1)',
+              border: '1px solid rgba(73,79,223,0.2)',
+            } : {
+              color: 'var(--text-muted)',
+              border: '1px solid transparent',
+            }}>
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* Filter tabs */}
       <div className="flex items-center gap-1 p-1 rounded-xl w-fit border" style={{ background: 'var(--bg-card2)', borderColor: 'var(--border)' }}>
         {TABS.map(({ key, label }) => (
           <button key={key} onClick={() => setTab(key)}

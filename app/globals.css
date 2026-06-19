@@ -2,12 +2,25 @@
 
 /* ═══════════════════════════════════════════════════════════════════
    FONTS
-   Display: Inter with tight letter-spacing (Aeonik Pro substitute)
-   Body:    Inter 400 — matches Revolut body stack exactly
+   Display + Body: Golos Text (Cyrillic-first, weights 400–900)
+   Mono:           JetBrains Mono (numbers & code)
 ═══════════════════════════════════════════════════════════════════ */
+
+/* Override Tailwind v4's built-in font-sans so every utility class
+   and default body font uses Golos Text */
+@theme {
+  --font-sans: var(--font-golos), 'Golos Text', system-ui, sans-serif;
+  --font-mono: var(--font-mono-landing), 'JetBrains Mono', monospace;
+}
+
 :root {
-  --font-display: var(--font-inter), 'Inter', system-ui, sans-serif;
-  --font-body:    var(--font-inter), 'Inter', system-ui, sans-serif;
+  --font-display: var(--font-golos), 'Golos Text', system-ui, sans-serif;
+  --font-body:    var(--font-golos), 'Golos Text', system-ui, sans-serif;
+}
+
+/* Belt-and-suspenders: force Golos Text on html/body so nothing overrides it */
+html, body {
+  font-family: var(--font-golos), 'Golos Text', system-ui, sans-serif !important;
 }
 
 /* ═══════════════════════════════════════════════════════════════════

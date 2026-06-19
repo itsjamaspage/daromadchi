@@ -5,36 +5,56 @@ import Link from 'next/link'
 import { motion, AnimatePresence, useInView } from 'framer-motion'
 import {
   TrendingUp, TrendingDown, ArrowRight, Menu, X, Check,
-  ChevronDown, BarChart2, DollarSign, Package, Calculator,
-  Bell, Globe, Activity, Zap, AlertTriangle, CheckCircle, RefreshCw,
+  ChevronDown, BarChart2, Package, Bell,
+  LayoutDashboard, ShoppingCart, Megaphone, Layers,
 } from 'lucide-react'
 import { useTheme, useLang } from './providers'
 import type { Lang } from '@/lib/i18n'
 
-// ── Palette ──────────────────────────────────────────────────────────────────
+// ── Palette ───────────────────────────────────────────────────────────────────
 const P = {
-  ink:       '#1C1917',
-  parchment: '#F9F8F5',
+  ink:       '#0E2233',
+  parchment: '#EFF8FF',
   card:      '#FFFFFF',
-  stone:     '#78716C',
-  muted:     '#A8A29E',
-  green:     '#16A34A',
-  greenDk:   '#15803D',
-  greenBg:   'rgba(22,163,74,0.09)',
+  stone:     '#4A7090',
+  muted:     '#7AACC7',
+  green:     '#0E7490',
+  greenDk:   '#155E75',
+  greenBg:   'rgba(14,116,144,0.09)',
   amber:     '#CA8A04',
   amberBg:   'rgba(202,138,4,0.09)',
   red:       '#DC2626',
   redBg:     'rgba(220,38,38,0.09)',
-  hair:      '#E5E1D8',
-  dCanvas:   '#0C0A08',
-  dCard:     '#161412',
-  dCard2:    '#201D19',
-  dHair:     'rgba(255,255,255,0.07)',
-  dMuted:    'rgba(255,255,255,0.48)',
-  dText:     '#F2EFE8',
+  hair:      '#BAE6FD',
+  // dark surfaces
+  dCanvas:   '#0D0A22',
+  dCard:     '#13102E',
+  dCard2:    '#1E1A40',
+  dHair:     'rgba(108,88,239,0.18)',
+  dMuted:    'rgba(198,187,255,0.65)',
+  dText:     '#EDE8FF',
+  // marketplace
   uzum:      '#494fdf',
   wb:        '#CB11AB',
   yandex:    '#E8A000',
+}
+
+// Accent colours per theme
+const A = {
+  light:    '#0E7490',   // teal for light mode
+  lightDk:  '#155E75',
+  lightBg:  'rgba(14,116,144,0.09)',
+  dark:     '#6c58ef',   // purple for dark mode
+  darkDk:   '#5845d6',
+  darkBg:   'rgba(108,88,239,0.10)',
+}
+
+// Real dashboard KPI colours — matches KpiCard.tsx
+const KPI = {
+  violet:  '#494fdf',
+  emerald: '#428619',
+  blue:    '#376cd5',
+  amber:   '#ec7e00',
 }
 
 function tx(lang: string, ru: string, uz: string, en: string) {
@@ -43,7 +63,16 @@ function tx(lang: string, ru: string, uz: string, en: string) {
 
 function useIsDark() { return useTheme().theme === 'dark' }
 
-// ── Scroll-triggered fade-up ─────────────────────────────────────────────────
+function useAccent() {
+  const isDark = useIsDark()
+  return {
+    color: isDark ? A.dark   : A.light,
+    dk:    isDark ? A.darkDk : A.lightDk,
+    bg:    isDark ? A.darkBg : A.lightBg,
+  }
+}
+
+// ── Scroll-triggered fade-up ──────────────────────────────────────────────────
 function FadeUp({ children, delay = 0, style }: { children: React.ReactNode; delay?: number; style?: React.CSSProperties }) {
   const ref = useRef(null)
   const inView = useInView(ref, { once: true, margin: '-48px' })
@@ -57,29 +86,32 @@ function FadeUp({ children, delay = 0, style }: { children: React.ReactNode; del
   )
 }
 
-// ── Section heading ──────────────────────────────────────────────────────────
+// ── Section heading ───────────────────────────────────────────────────────────
 function SectionHead({ title, accent, sub, dark = false }: {
   title: string; accent?: string; sub?: string; dark?: boolean
 }) {
+  const acc = useAccent()
+  const isDark = useIsDark()
   const parts = accent ? title.split(accent) : [title]
   return (
     <FadeUp>
       <div style={{ textAlign: 'center', marginBottom: 56 }}>
-        <h2 style={{ fontSize: 'clamp(28px, 4vw, 46px)', fontWeight: 800, lineHeight: 1.1,
-          color: dark ? P.dText : P.ink, letterSpacing: '-0.022em', marginBottom: sub ? 16 : 0 }}>
+        <h2 style={{ fontSize: 'clamp(26px, 3.5vw, 42px)', fontWeight: 800, lineHeight: 1.1,
+          color: dark ? P.dText : (isDark ? P.dText : P.ink), letterSpacing: '-0.022em', marginBottom: sub ? 16 : 0 }}>
           {accent ? (
-            <>{parts[0]}<span style={{ color: P.green }}>{accent}</span>{parts[1]}</>
+            <>{parts[0]}<span style={{ color: acc.color }}>{accent}</span>{parts[1]}</>
           ) : title}
         </h2>
-        {sub && <p style={{ fontSize: 17, color: dark ? P.dMuted : P.stone, maxWidth: 520, margin: '0 auto', lineHeight: 1.65 }}>{sub}</p>}
+        {sub && <p style={{ fontSize: 16, color: dark ? P.dMuted : (isDark ? P.dMuted : P.stone), maxWidth: 520, margin: '0 auto', lineHeight: 1.65 }}>{sub}</p>}
       </div>
     </FadeUp>
   )
 }
 
-// ── Navbar ───────────────────────────────────────────────────────────────────
+// ── Navbar ────────────────────────────────────────────────────────────────────
 function Navbar({ lang }: { lang: string }) {
   const isDark = useIsDark()
+  const acc = useAccent()
   const { toggle, theme } = useTheme()
   const { setLang } = useLang()
   const [scrolled, setScrolled] = useState(false)
@@ -99,29 +131,33 @@ function Navbar({ lang }: { lang: string }) {
     { label: tx(lang,'Вопросы','Savollar','FAQ'), href: '#faq' },
   ]
 
-  const lnk = scrolled ? (isDark ? P.dMuted : P.stone) : 'rgba(255,255,255,0.72)'
-  const lnkH = scrolled ? (isDark ? P.dText : P.ink) : '#fff'
+  const scrolledBg = isDark ? 'rgba(13,10,34,0.96)' : 'rgba(255,255,255,0.95)'
+  // On non-scrolled: light hero → dark links; dark hero → white links
+  const lnk = scrolled ? (isDark ? P.dMuted : P.stone) : (isDark ? 'rgba(255,255,255,0.78)' : P.stone)
+  const lnkH = scrolled ? (isDark ? P.dText : P.ink)   : (isDark ? '#fff' : P.ink)
+  const borderCol = scrolled ? (isDark ? P.dHair : P.hair) : (isDark ? 'rgba(255,255,255,0.15)' : P.hair)
 
   return (
     <header style={{
       position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
-      background: scrolled ? (isDark ? 'rgba(12,10,8,0.94)' : 'rgba(255,255,255,0.94)') : 'transparent',
+      background: scrolled ? scrolledBg : 'transparent',
       borderBottom: `1px solid ${scrolled ? (isDark ? P.dHair : P.hair) : 'transparent'}`,
       backdropFilter: scrolled ? 'blur(16px)' : 'none',
       transition: 'all 0.25s ease',
       fontFamily: 'var(--font-golos), sans-serif',
     }}>
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 24px', height: 68,
+      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 28px', height: 76,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
 
         <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
-          <img src="/icon.svg" alt="" style={{ width: 30, height: 30, borderRadius: 7 }} />
-          <span style={{ fontWeight: 700, fontSize: 17, color: scrolled ? (isDark ? P.dText : P.ink) : '#fff' }}>
+          <img src="/icon.svg" alt="" style={{ width: 32, height: 32, borderRadius: 8 }} />
+          <span style={{ fontWeight: 800, fontSize: 18, letterSpacing: '-0.01em',
+            color: scrolled ? (isDark ? P.dText : P.ink) : (isDark ? '#fff' : P.ink) }}>
             Daromadchi
           </span>
         </Link>
 
-        <nav className="hidden md:flex" style={{ alignItems: 'center', gap: 24 }}>
+        <nav className="hidden md:flex" style={{ alignItems: 'center', gap: 28 }}>
           {links.map(n => (
             <a key={n.href} href={n.href}
               style={{ fontSize: 14, fontWeight: 500, color: lnk, textDecoration: 'none', transition: 'color 0.12s' }}
@@ -136,8 +172,8 @@ function Navbar({ lang }: { lang: string }) {
           <div style={{ position: 'relative' }}>
             <button onClick={() => setLangOpen(v => !v)}
               style={{ fontSize: 12, fontWeight: 600, cursor: 'pointer', background: 'transparent',
-                border: `1px solid ${scrolled ? (isDark ? P.dHair : P.hair) : 'rgba(255,255,255,0.18)'}`,
-                borderRadius: 6, padding: '5px 10px', color: lnk }}>
+                border: `1px solid ${borderCol}`,
+                borderRadius: 6, padding: '6px 10px', color: lnk, transition: 'all 0.12s' }}>
               {lang.toUpperCase()}
             </button>
             <AnimatePresence>
@@ -149,8 +185,8 @@ function Navbar({ lang }: { lang: string }) {
                   {(['uz','ru','en'] as Lang[]).map(l => (
                     <button key={l} onClick={() => { setLang(l); setLangOpen(false) }}
                       style={{ width: '100%', padding: '8px 12px', textAlign: 'left', fontSize: 13, fontWeight: 600,
-                        background: lang === l ? P.greenBg : 'transparent',
-                        color: lang === l ? P.green : (isDark ? P.dMuted : P.stone), cursor: 'pointer', border: 'none' }}>
+                        background: lang === l ? acc.bg : 'transparent',
+                        color: lang === l ? acc.color : (isDark ? P.dMuted : P.stone), cursor: 'pointer', border: 'none' }}>
                       {l.toUpperCase()}
                     </button>
                   ))}
@@ -160,23 +196,22 @@ function Navbar({ lang }: { lang: string }) {
           </div>
 
           <button onClick={toggle}
-            style={{ width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: 'transparent',
-              border: `1px solid ${scrolled ? (isDark ? P.dHair : P.hair) : 'rgba(255,255,255,0.18)'}`,
-              borderRadius: 6, cursor: 'pointer', fontSize: 15, color: lnk }}>
+            style={{ width: 38, height: 38, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: 'transparent', border: `1px solid ${borderCol}`,
+              borderRadius: 6, cursor: 'pointer', fontSize: 15, color: lnk, transition: 'all 0.12s' }}>
             {theme === 'dark' ? '☀' : '☾'}
           </button>
 
-          <Link href="/login" className="hidden sm:block"
-            style={{ fontSize: 14, fontWeight: 500, textDecoration: 'none', padding: '8px 12px', color: lnk }}>
+          <Link href="/login" className="hidden md:block"
+            style={{ fontSize: 14, fontWeight: 500, textDecoration: 'none', padding: '9px 14px', color: lnk, transition: 'color 0.12s' }}>
             {tx(lang,'Войти','Kirish','Sign in')}
           </Link>
 
-          <Link href="/login"
-            style={{ fontSize: 14, fontWeight: 600, background: P.green, color: '#fff',
-              padding: '10px 22px', borderRadius: 8, textDecoration: 'none', transition: 'background 0.15s' }}
-            onMouseEnter={e => (e.currentTarget.style.background = P.greenDk)}
-            onMouseLeave={e => (e.currentTarget.style.background = P.green)}>
+          <Link href="/login" className="hidden sm:block"
+            style={{ fontSize: 14, fontWeight: 700, background: acc.color, color: '#fff',
+              padding: '10px 22px', borderRadius: 8, textDecoration: 'none', transition: 'background 0.15s', whiteSpace: 'nowrap' }}
+            onMouseEnter={e => (e.currentTarget.style.background = acc.dk)}
+            onMouseLeave={e => (e.currentTarget.style.background = acc.color)}>
             {tx(lang,'Начать бесплатно','Bepul boshlash','Start free')}
           </Link>
 
@@ -191,7 +226,7 @@ function Navbar({ lang }: { lang: string }) {
         {menuOpen && (
           <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
             style={{ background: isDark ? P.dCanvas : '#fff', borderTop: `1px solid ${isDark ? P.dHair : P.hair}`, overflow: 'hidden' }}>
-            <div style={{ padding: '16px 24px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ padding: '16px 28px', display: 'flex', flexDirection: 'column', gap: 12 }}>
               {links.map(n => (
                 <a key={n.href} href={n.href} onClick={() => setMenuOpen(false)}
                   style={{ fontSize: 16, fontWeight: 500, color: isDark ? P.dText : P.ink, textDecoration: 'none' }}>
@@ -199,8 +234,8 @@ function Navbar({ lang }: { lang: string }) {
                 </a>
               ))}
               <Link href="/login"
-                style={{ marginTop: 8, fontSize: 15, fontWeight: 600, background: P.green, color: '#fff',
-                  padding: '12px 24px', borderRadius: 8, textDecoration: 'none', textAlign: 'center', display: 'block' }}>
+                style={{ marginTop: 8, fontSize: 15, fontWeight: 700, background: acc.color, color: '#fff',
+                  padding: '13px 24px', borderRadius: 8, textDecoration: 'none', textAlign: 'center', display: 'block' }}>
                 {tx(lang,'Начать бесплатно','Bepul boshlash','Start free')}
               </Link>
             </div>
@@ -211,206 +246,219 @@ function Navbar({ lang }: { lang: string }) {
   )
 }
 
-// ── Floating stat card (hero) ─────────────────────────────────────────────────
-function FloatCard({ mp, mpColor, metric, value, change, up, delay, style }: {
+// ── Floating stat card — with continuous bob animation ────────────────────────
+function FloatCard({ mp, mpColor, metric, value, change, up, delay, floatDur = 3.5, style }: {
   mp: string; mpColor: string; metric: string; value: string
-  change: string; up: boolean; delay: number; style: React.CSSProperties
+  change: string; up: boolean; delay: number; floatDur?: number
+  style: React.CSSProperties
 }) {
+  const isDark = useIsDark()
+  const acc = useAccent()
   return (
+    // Outer div: entry animation + absolute position
     <motion.div
-      initial={{ opacity: 0, y: 18, scale: 0.93 }}
+      initial={{ opacity: 0, y: 20, scale: 0.92 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ delay, duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
-      style={{
-        position: 'absolute',
-        background: 'rgba(255,255,255,0.97)',
-        borderRadius: 14, padding: '13px 17px', minWidth: 155,
-        boxShadow: '0 10px 40px rgba(0,0,0,0.30), 0 2px 8px rgba(0,0,0,0.18)',
-        fontFamily: 'var(--font-golos), sans-serif',
-        border: '1px solid rgba(255,255,255,0.55)',
-        ...style,
-      }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 5 }}>
-        <div style={{ width: 7, height: 7, borderRadius: '50%', background: mpColor }} />
-        <span style={{ fontSize: 10, fontWeight: 700, color: P.stone, letterSpacing: '0.02em' }}>{mp}</span>
-      </div>
-      <p style={{ fontSize: 10, color: P.muted, marginBottom: 2 }}>{metric}</p>
-      <p style={{ fontSize: 21, fontWeight: 700, color: P.ink, fontFamily: 'var(--font-mono-landing), monospace', lineHeight: 1.1 }}>
-        {value}
-      </p>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 3, marginTop: 5 }}>
-        {up ? <TrendingUp size={11} color={P.green}/> : <TrendingDown size={11} color={P.red}/>}
-        <span style={{ fontSize: 11, fontWeight: 700, color: up ? P.green : P.red }}>{change}</span>
+      transition={{ delay, duration: 0.65, ease: [0.25, 0.46, 0.45, 0.94] }}
+      style={{ position: 'absolute', ...style }}>
+      {/* CSS animation — GPU-accelerated, no JS per frame */}
+      <div className="animate-float" style={{ animationDuration: `${floatDur}s`, animationDelay: `${delay * 0.3}s` }}>
+        <div style={{
+          background: isDark ? 'rgba(20,16,50,0.96)' : 'rgba(255,255,255,0.97)',
+          borderRadius: 14, padding: '12px 16px', minWidth: 162,
+          boxShadow: isDark
+            ? '0 10px 40px rgba(108,88,239,0.25), 0 2px 8px rgba(0,0,0,0.40)'
+            : '0 10px 36px rgba(0,0,0,0.14), 0 2px 8px rgba(0,0,0,0.06)',
+          fontFamily: 'var(--font-golos), sans-serif',
+          border: isDark ? '1px solid rgba(108,88,239,0.25)' : '1px solid rgba(186,230,253,0.8)',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 5 }}>
+            <div style={{ width: 7, height: 7, borderRadius: '50%', background: mpColor }} />
+            <span style={{ fontSize: 10, fontWeight: 700, color: isDark ? P.dMuted : P.stone, letterSpacing: '0.02em' }}>{mp}</span>
+          </div>
+          <p style={{ fontSize: 10, color: isDark ? 'rgba(198,187,255,0.5)' : P.muted, marginBottom: 2 }}>{metric}</p>
+          <p style={{ fontSize: 17, fontWeight: 800, color: isDark ? P.dText : P.ink, fontFamily: 'var(--font-golos), sans-serif', lineHeight: 1.1 }}>
+            {value}
+          </p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 3, marginTop: 5 }}>
+            {up ? <TrendingUp size={11} color={acc.color}/> : <TrendingDown size={11} color={P.red}/>}
+            <span style={{ fontSize: 11, fontWeight: 700, color: up ? acc.color : P.red }}>{change}</span>
+          </div>
+        </div>
       </div>
     </motion.div>
   )
 }
 
-// ── Dashboard mockup — no browser chrome ─────────────────────────────────────
+// ── Dashboard mockup — matches real app ───────────────────────────────────────
 function DashMockup() {
-  const c1 = P.uzum
-  const border = '#E5E1D8'
-  const bg2 = '#F5F4F1'
-  const muted = '#A8A29E'
-  const ink = '#1C1917'
+  const border = '#E2E8F0'
+  const bg2    = '#F8FAFD'
+  const muted  = '#94A3B8'
+  const ink    = '#0F172A'
 
   const kpis = [
-    { l: 'Выручка',  v: '124 540 000', u: 'сум', d: '+12.4%', pos: true,  c: c1 },
-    { l: 'Заказы',   v: '1 842',        u: '',    d: '+8.1%',  pos: true,  c: P.green },
-    { l: 'ДРР',      v: '8.2%',         u: '',    d: '-1.4%',  pos: true,  c: P.yandex },
-    { l: 'Прибыль',  v: '38 200 000',   u: 'сум', d: '+15.7%', pos: true,  c: P.wb },
+    { l: 'Выручка',  v: '124 540 000', u: 'сум', d: '+12.4%', pos: true,  c: KPI.violet },
+    { l: 'Заказы',   v: '1 842',        u: '',    d: '+8.1%',  pos: true,  c: KPI.emerald },
+    { l: 'Расход',   v: '10 200 000',   u: 'сум', d: '+3.2%',  pos: false, c: KPI.blue },
+    { l: 'Прибыль',  v: '38 200 000',   u: 'сум', d: '+15.7%', pos: true,  c: KPI.amber },
   ]
+
+  const sideIcons = [LayoutDashboard, Package, ShoppingCart, BarChart2, Megaphone, Layers, Bell]
   const bars = [28,44,36,62,48,74,56,82,66,52,76,90,62,78]
-  const hi = bars.length - 4
+  const hi   = bars.length - 4
+
   const rows = [
-    { name: 'Куртка зимняя мужская L',  sku: 'UZ-00312', rev: '18 240 000', drr: 7.2,  ok: true,  mp: c1 },
-    { name: 'Кроссовки Nike Air Force',  sku: 'WB-01847', rev: '12 590 000', drr: 11.4, ok: false, mp: P.wb },
-    { name: 'Рюкзак туристический 40L',  sku: 'YM-00951', rev: '9 870 000',  drr: 9.8,  ok: true,  mp: P.yandex },
-    { name: 'Наушники Sony WH-1000XM5',  sku: 'UZ-00488', rev: '8 340 000',  drr: 6.1,  ok: true,  mp: c1 },
+    { name: 'Куртка зимняя мужская',  sku: 'UZ-00312', rev: '18 240 000', drr: 7.2,  ok: true,  mp: P.uzum },
+    { name: 'Кроссовки Nike Air',      sku: 'WB-01847', rev: '12 590 000', drr: 11.4, ok: false, mp: P.wb   },
+    { name: 'Рюкзак туристический',    sku: 'YM-00951', rev: '9 870 000',  drr: 9.8,  ok: true,  mp: P.yandex },
+    { name: 'Наушники Sony WH-1000',   sku: 'UZ-00488', rev: '8 340 000',  drr: 6.1,  ok: true,  mp: P.uzum },
   ]
 
   return (
-    <div style={{ background: '#fff', borderRadius: 16, overflow: 'hidden',
+    <div style={{ background: '#fff', borderRadius: 16, overflow: 'hidden', display: 'flex',
       border: `1px solid ${border}`,
-      boxShadow: '0 32px 80px rgba(0,0,0,0.22), 0 8px 24px rgba(0,0,0,0.10)' }}>
+      boxShadow: '0 24px 64px rgba(0,0,0,0.18), 0 6px 20px rgba(0,0,0,0.08)' }}>
 
-      {/* Tab bar */}
-      <div style={{ background: bg2, borderBottom: `1px solid ${border}`, padding: '10px 16px',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-        <div style={{ display: 'flex', gap: 4 }}>
-          {['Все','Uzum','Wildberries','Yandex Market'].map((tab, i) => (
-            <div key={tab} style={{ fontSize: 11, fontWeight: 600, padding: '4px 10px', borderRadius: 6, cursor: 'pointer',
-              background: i === 0 ? c1 : 'transparent', color: i === 0 ? '#fff' : muted }}>
-              {tab}
-            </div>
-          ))}
-        </div>
-        <span style={{ fontSize: 11, color: muted }}>17 мар — 30 мар 2026</span>
-      </div>
-
-      {/* KPIs */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', borderBottom: `1px solid ${border}` }}>
-        {kpis.map((k, i) => (
-          <div key={k.l} style={{ padding: '11px 15px',
-            borderRight: i < 3 ? `1px solid ${border}` : 'none',
-            borderTop: `2px solid ${k.c}` }}>
-            <p style={{ fontSize: 9, color: muted, marginBottom: 3, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{k.l}</p>
-            <p style={{ fontSize: 15, fontWeight: 700, color: ink, fontFamily: 'monospace', lineHeight: 1 }}>
-              {k.v}<span style={{ fontSize: 9, fontWeight: 400, color: muted }}> {k.u}</span>
-            </p>
-            <p style={{ fontSize: 9, marginTop: 3, fontWeight: 700, color: k.pos ? P.green : P.red }}>{k.d}</p>
+      {/* Mini sidebar */}
+      <div style={{ width: 42, background: bg2, borderRight: `1px solid ${border}`,
+        display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '10px 0', gap: 2, flexShrink: 0 }}>
+        <img src="/icon.svg" alt="" style={{ width: 22, height: 22, borderRadius: 5, marginBottom: 8 }} />
+        <div style={{ width: '70%', height: 1, background: border, marginBottom: 6 }} />
+        {sideIcons.map((Icon, i) => (
+          <div key={i} style={{ width: 30, height: 30, borderRadius: 7,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: i === 0 ? 'rgba(73,79,223,0.12)' : 'transparent', marginBottom: 2 }}>
+            <Icon size={13} color={i === 0 ? KPI.violet : muted} />
           </div>
         ))}
       </div>
 
-      {/* Chart + breakdown */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 120px', borderBottom: `1px solid ${border}` }}>
-        <div style={{ padding: '12px 16px', borderRight: `1px solid ${border}` }}>
-          <p style={{ fontSize: 9, color: muted, marginBottom: 7, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-            Выручка по дням
-          </p>
-          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2, height: 48 }}>
-            {bars.map((h, i) => (
-              <div key={i} style={{ flex: 1, borderRadius: '2px 2px 0 0',
-                background: i >= hi ? c1 : 'rgba(73,79,223,0.16)', height: `${h}%` }} />
+      {/* Main content */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ background: bg2, borderBottom: `1px solid ${border}`, padding: '8px 12px',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 3 }}>
+            {['Все','Uzum','Wildberries','Yandex Market'].map((tab, i) => (
+              <div key={tab} style={{ fontSize: 10, fontWeight: 600, padding: '4px 9px', borderRadius: 6, cursor: 'pointer',
+                background: i === 0 ? KPI.violet : 'transparent', color: i === 0 ? '#fff' : muted }}>
+                {tab}
+              </div>
+            ))}
+          </div>
+          <span style={{ fontSize: 10, color: muted }}>17 мар — 30 мар 2026</span>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', borderBottom: `1px solid ${border}` }}>
+          {kpis.map((k, i) => (
+            <div key={k.l} style={{ padding: '10px 12px',
+              borderRight: i < 3 ? `1px solid ${border}` : 'none',
+              borderTop: `2px solid ${k.c}` }}>
+              <p style={{ fontSize: 9, color: muted, marginBottom: 3, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{k.l}</p>
+              <p style={{ fontSize: 13, fontWeight: 700, color: ink, fontFamily: 'monospace', lineHeight: 1 }}>
+                {k.v}<span style={{ fontSize: 8, fontWeight: 400, color: muted }}> {k.u}</span>
+              </p>
+              <p style={{ fontSize: 9, marginTop: 3, fontWeight: 700, color: k.pos ? KPI.emerald : P.red }}>{k.d}</p>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 100px', borderBottom: `1px solid ${border}` }}>
+          <div style={{ padding: '10px 12px', borderRight: `1px solid ${border}` }}>
+            <p style={{ fontSize: 8, color: muted, marginBottom: 6, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+              Выручка по дням
+            </p>
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2, height: 40 }}>
+              {bars.map((h, i) => (
+                <div key={i} style={{ flex: 1, borderRadius: '2px 2px 0 0',
+                  background: i >= hi ? KPI.violet : 'rgba(73,79,223,0.15)', height: `${h}%` }} />
+              ))}
+            </div>
+          </div>
+          <div style={{ padding: '10px 12px' }}>
+            <p style={{ fontSize: 8, color: muted, marginBottom: 8, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+              Площадки
+            </p>
+            {[{mp:'Uzum',c:P.uzum,pct:'48%'},{mp:'WB',c:P.wb,pct:'32%'},{mp:'YM',c:P.yandex,pct:'20%'}].map(m => (
+              <div key={m.mp} style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 6 }}>
+                <div style={{ width: 5, height: 5, borderRadius: '50%', background: m.c }} />
+                <span style={{ fontSize: 9, color: ink, flex: 1 }}>{m.mp}</span>
+                <span style={{ fontSize: 9, fontWeight: 700, color: ink, fontFamily: 'monospace' }}>{m.pct}</span>
+              </div>
             ))}
           </div>
         </div>
-        <div style={{ padding: '12px 14px' }}>
-          <p style={{ fontSize: 9, color: muted, marginBottom: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-            Площадки
-          </p>
-          {[{mp:'Uzum',c:c1,pct:'48%'},{mp:'WB',c:P.wb,pct:'32%'},{mp:'YM',c:P.yandex,pct:'20%'}].map(m => (
-            <div key={m.mp} style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 7 }}>
-              <div style={{ width: 6, height: 6, borderRadius: '50%', background: m.c }} />
-              <span style={{ fontSize: 10, color: ink, flex: 1 }}>{m.mp}</span>
-              <span style={{ fontSize: 10, fontWeight: 700, color: ink, fontFamily: 'monospace' }}>{m.pct}</span>
-            </div>
-          ))}
-        </div>
-      </div>
 
-      {/* Table */}
-      <div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 88px 104px 48px 54px',
-          padding: '5px 16px', background: bg2, borderBottom: `1px solid ${border}` }}>
-          {['Товар','Артикул','Выручка, сум','ДРР%','Статус'].map(h => (
-            <span key={h} style={{ fontSize: 9, fontWeight: 700, color: muted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</span>
+        <div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 72px 88px 44px 46px',
+            padding: '5px 12px', background: bg2, borderBottom: `1px solid ${border}` }}>
+            {['Товар','Артикул','Выручка, сум','ДРР%','Статус'].map(h => (
+              <span key={h} style={{ fontSize: 8, fontWeight: 700, color: muted, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{h}</span>
+            ))}
+          </div>
+          {rows.map(r => (
+            <div key={r.sku} style={{ display: 'grid', gridTemplateColumns: '1fr 72px 88px 44px 46px',
+              padding: '6px 12px', borderBottom: `1px solid ${border}`, alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <div style={{ width: 4, height: 4, borderRadius: '50%', background: r.mp, flexShrink: 0 }} />
+                <span style={{ fontSize: 9, color: ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</span>
+              </div>
+              <span style={{ fontSize: 8, color: muted, fontFamily: 'monospace' }}>{r.sku}</span>
+              <span style={{ fontSize: 9, color: ink, fontFamily: 'monospace', fontWeight: 600 }}>{r.rev}</span>
+              <span style={{ fontSize: 9, fontWeight: 700, color: r.drr > 10 ? P.red : r.drr > 8 ? P.amber : KPI.emerald }}>{r.drr}%</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                <div style={{ width: 5, height: 5, borderRadius: '50%', background: r.ok ? KPI.emerald : P.amber }} />
+                <span style={{ fontSize: 8, color: muted }}>{r.ok ? 'Норма' : 'Мало'}</span>
+              </div>
+            </div>
           ))}
         </div>
-        {rows.map(r => (
-          <div key={r.sku} style={{ display: 'grid', gridTemplateColumns: '1fr 88px 104px 48px 54px',
-            padding: '7px 16px', borderBottom: `1px solid ${border}`, alignItems: 'center' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-              <div style={{ width: 5, height: 5, borderRadius: '50%', background: r.mp, flexShrink: 0 }} />
-              <span style={{ fontSize: 10, color: ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</span>
-            </div>
-            <span style={{ fontSize: 9, color: muted, fontFamily: 'monospace' }}>{r.sku}</span>
-            <span style={{ fontSize: 10, color: ink, fontFamily: 'monospace', fontWeight: 600 }}>{r.rev}</span>
-            <span style={{ fontSize: 10, fontWeight: 700,
-              color: r.drr > 10 ? P.red : r.drr > 8 ? P.amber : P.green }}>{r.drr}%</span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-              <div style={{ width: 6, height: 6, borderRadius: '50%', background: r.ok ? P.green : P.amber }} />
-              <span style={{ fontSize: 9, color: muted }}>{r.ok ? 'Норма' : 'Мало'}</span>
-            </div>
-          </div>
-        ))}
       </div>
     </div>
   )
 }
 
-// ── 1. HERO ──────────────────────────────────────────────────────────────────
+// ── 1. HERO ───────────────────────────────────────────────────────────────────
 function HeroSection({ lang }: { lang: string }) {
-  return (
-    <section style={{ position: 'relative', background: P.dCanvas, overflow: 'hidden',
-      fontFamily: 'var(--font-golos), sans-serif', paddingBottom: 0 }}>
-      {/* Radial green glow */}
-      <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none',
-        background: 'radial-gradient(ellipse 90% 60% at 50% -10%, rgba(22,163,74,0.25) 0%, transparent 65%)' }} />
-      <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none',
-        background: 'radial-gradient(ellipse 50% 35% at 50% 0%, rgba(22,163,74,0.10) 0%, transparent 55%)' }} />
+  const isDark = useIsDark()
+  const acc = useAccent()
 
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '148px 120px 0',
+  // Light mode: light blue gradient hero  /  Dark mode: deep purple-navy hero
+  const heroBg    = isDark ? P.dCanvas : 'linear-gradient(160deg, #DBEAFE 0%, #BAE6FD 45%, #90D5FF 80%)'
+  const glowColor = isDark ? 'rgba(108,88,239,0.30)' : 'rgba(144,213,255,0.55)'
+  const headCol   = isDark ? P.dText   : P.ink
+  const subCol    = isDark ? P.dMuted  : P.stone
+  const secLinkCol = isDark ? 'rgba(255,255,255,0.62)' : P.stone
+  const fadeTarget = isDark ? '#0D0A22' : '#EFF8FF'
+
+  return (
+    <section style={{ position: 'relative', background: heroBg, overflow: 'hidden',
+      fontFamily: 'var(--font-golos), sans-serif', paddingBottom: 0 }}>
+      {/* Ambient glow */}
+      <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none',
+        background: `radial-gradient(ellipse 90% 55% at 50% -5%, ${glowColor} 0%, transparent 65%)` }} />
+      <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none',
+        background: `radial-gradient(ellipse 45% 30% at 50% 0%, ${isDark ? 'rgba(108,88,239,0.12)' : 'rgba(14,116,144,0.08)'} 0%, transparent 55%)` }} />
+
+      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '130px 100px 0',
         position: 'relative', zIndex: 10, textAlign: 'center' }}>
 
         {/* Floating stat cards — desktop only */}
         <div className="hidden lg:block">
-          <FloatCard mp="Uzum" mpColor={P.uzum} metric="Выручка" value="24.5M" change="+12%" up delay={0.35}
-            style={{ left: '-52px', top: '68px', transform: 'rotate(-4deg)', zIndex: 5 }} />
-          <FloatCard mp="Wildberries" mpColor={P.wb} metric="Заказы" value="1 842" change="+8.1%" up delay={0.5}
-            style={{ right: '-52px', top: '44px', transform: 'rotate(3.5deg)', zIndex: 15 }} />
-          <FloatCard mp="Yandex Market" mpColor={P.yandex} metric="ДРР" value="8.2%" change="-1.4%" up={false} delay={0.65}
-            style={{ left: '-72px', top: '240px', transform: 'rotate(-2deg)', zIndex: 15 }} />
-          <FloatCard mp="Uzum" mpColor={P.uzum} metric="Прибыль" value="6.8M" change="+15%" up delay={0.8}
-            style={{ right: '-72px', top: '228px', transform: 'rotate(4.5deg)', zIndex: 5 }} />
-          <FloatCard mp="Wildberries" mpColor={P.wb} metric="Остатки" value="3 410 шт" change="-2%" up={false} delay={0.28}
-            style={{ right: '52px', top: '-24px', transform: 'rotate(6deg)', zIndex: 3, opacity: 0.75 }} />
+          <FloatCard mp="Uzum" mpColor={P.uzum} metric="Выручка" value="24.5M сум" change="+12%" up delay={0.35} floatDur={3.6}
+            style={{ left: '-40px', top: '170px', transform: 'rotate(-4deg)', zIndex: 5 }} />
+          <FloatCard mp="Wildberries" mpColor={P.wb} metric="Заказы" value="1 842" change="+8.1%" up delay={0.5} floatDur={4.1}
+            style={{ right: '-40px', top: '150px', transform: 'rotate(3.5deg)', zIndex: 15 }} />
+          <FloatCard mp="Yandex Market" mpColor={P.yandex} metric="ДРР" value="8.2%" change="-1.4%" up={false} delay={0.65} floatDur={3.9}
+            style={{ left: '-60px', top: '340px', transform: 'rotate(-2deg)', zIndex: 15 }} />
+          <FloatCard mp="Uzum" mpColor={P.uzum} metric="Прибыль" value="6.8M сум" change="+15%" up delay={0.8} floatDur={4.4}
+            style={{ right: '-60px', top: '320px', transform: 'rotate(4.5deg)', zIndex: 5 }} />
         </div>
 
-        {/* Social proof pill */}
-        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.5 }}
-          style={{ display: 'inline-flex', alignItems: 'center', gap: 10, marginBottom: 28,
-            background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.10)',
-            borderRadius: 100, padding: '8px 20px' }}>
-          <div style={{ display: 'flex' }}>
-            {[P.uzum, P.wb, P.yandex].map((c, i) => (
-              <div key={i} style={{ width: 22, height: 22, borderRadius: '50%', background: c,
-                border: '2px solid rgba(12,10,8,0.7)', marginLeft: i > 0 ? -7 : 0, position: 'relative', zIndex: 3 - i,
-                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 8, color: '#fff', fontWeight: 800 }}>
-                {['U','W','Y'][i]}
-              </div>
-            ))}
-          </div>
-          <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.70)', fontWeight: 500 }}>
-            {tx(lang,'1 200+ продавцов уже используют','1 200+ sotuvchi allaqachon foydalanmoqda','1,200+ sellers already using')}
-          </span>
-        </motion.div>
-
         {/* Headline */}
-        <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18, duration: 0.6 }}
-          style={{ fontSize: 'clamp(34px, 5.5vw, 68px)', fontWeight: 800, lineHeight: 1.06,
-            color: P.dText, marginBottom: 20, letterSpacing: '-0.024em' }}>
+        <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.14, duration: 0.6 }}
+          style={{ fontSize: 'clamp(28px, 4vw, 52px)', fontWeight: 800, lineHeight: 1.08,
+            color: headCol, marginBottom: 18, letterSpacing: '-0.024em' }}>
           {tx(lang,
             <>Аналитика трёх маркетплейсов —<br/>всё на одном экране</>,
             <>Uch marketpleysning analitikasi —<br/>hammasi bitta ekranda</>,
@@ -418,64 +466,73 @@ function HeroSection({ lang }: { lang: string }) {
           )}
         </motion.h1>
 
-        <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.26, duration: 0.6 }}
-          style={{ fontSize: 'clamp(16px, 1.8vw, 18px)', color: P.dMuted, marginBottom: 40,
-            maxWidth: 530, margin: '0 auto 40px', lineHeight: 1.65 }}>
+        <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.22, duration: 0.6 }}
+          style={{ fontSize: 'clamp(14px, 1.6vw, 17px)', color: subCol, marginBottom: 36,
+            maxWidth: 500, margin: '0 auto 36px', lineHeight: 1.65 }}>
           {tx(lang,
-            'Выручка, ДРР, остатки и юнит-экономика по Uzum, Wildberries и Yandex Market — в одной таблице, обновление каждые 15 минут',
-            'Uzum, Wildberries va Yandex Market bo\'yicha daromad, DRR, qoldiqlar va birlik-iqtisod — bitta jadvalda, har 15 daqiqada yangilanadi',
-            'Revenue, ad spend, stock and unit economics across Uzum, Wildberries and Yandex Market — one table, updated every 15 minutes'
+            'Выручка, ДРР, остатки и юнит-экономика по Uzum, Wildberries и Yandex Market — всё в одной таблице с автообновлением',
+            'Uzum, Wildberries va Yandex Market bo\'yicha daromad, DRR, qoldiqlar va birlik-iqtisod — barchasi bitta jadvalda',
+            'Revenue, ad spend, stock and unit economics across Uzum, Wildberries and Yandex Market — all in one place'
           )}
         </motion.p>
 
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.34, duration: 0.55 }}
-          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, flexWrap: 'wrap', marginBottom: 72 }}>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.30, duration: 0.55 }}
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, flexWrap: 'wrap', marginBottom: 56 }}>
           <Link href="/login"
-            style={{ fontSize: 16, fontWeight: 700, background: P.green, color: '#fff',
-              padding: '15px 36px', borderRadius: 10, textDecoration: 'none', transition: 'all 0.15s', display: 'inline-block' }}
-            onMouseEnter={e => { e.currentTarget.style.background = P.greenDk; e.currentTarget.style.transform = 'translateY(-2px)' }}
-            onMouseLeave={e => { e.currentTarget.style.background = P.green; e.currentTarget.style.transform = 'translateY(0)' }}>
+            style={{ fontSize: 15, fontWeight: 700, background: acc.color, color: '#fff',
+              padding: '14px 34px', borderRadius: 10, textDecoration: 'none', transition: 'all 0.15s', display: 'inline-block' }}
+            onMouseEnter={e => { e.currentTarget.style.background = acc.dk; e.currentTarget.style.transform = 'translateY(-2px)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = acc.color; e.currentTarget.style.transform = 'translateY(0)' }}>
             {tx(lang,'Начать бесплатно','Bepul boshlash','Start for free')}
           </Link>
           <a href="#how"
-            style={{ fontSize: 15, fontWeight: 600, color: 'rgba(255,255,255,0.62)', textDecoration: 'none',
+            style={{ fontSize: 14, fontWeight: 600, color: secLinkCol, textDecoration: 'none',
               display: 'inline-flex', alignItems: 'center', gap: 6, transition: 'color 0.15s' }}
-            onMouseEnter={e => (e.currentTarget.style.color = '#fff')}
-            onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.62)')}>
-            {tx(lang,'Как это работает','Qanday ishlaydi','How it works')} <ArrowRight size={15}/>
+            onMouseEnter={e => (e.currentTarget.style.color = isDark ? '#fff' : P.ink)}
+            onMouseLeave={e => (e.currentTarget.style.color = secLinkCol)}>
+            {tx(lang,'Как это работает','Qanday ishlaydi','How it works')} <ArrowRight size={14}/>
           </a>
         </motion.div>
 
-        {/* Dashboard mockup below CTAs */}
-        <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.45, duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
-          style={{ position: 'relative', zIndex: 20 }}>
+        {/* Dashboard mockup — constrained width */}
+        <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.40, duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
+          style={{ maxWidth: 840, margin: '0 auto', position: 'relative', zIndex: 20 }}>
           <DashMockup />
         </motion.div>
       </div>
 
-      {/* Fade into light section */}
-      <div style={{ height: 64, background: 'linear-gradient(to bottom, transparent, #F9F8F5)', position: 'relative', zIndex: 5 }} />
+      <div style={{ height: 64, background: `linear-gradient(to bottom, transparent, ${fadeTarget})`,
+        position: 'relative', zIndex: 5 }} />
     </section>
   )
 }
 
 // ── 2. COMPARISON TABLE ───────────────────────────────────────────────────────
 function ComparisonSection({ lang }: { lang: string }) {
+  const isDark = useIsDark()
+  const acc = useAccent()
+  const secBg  = isDark ? '#0D0A22' : P.parchment
+  const cardBg = isDark ? P.dCard   : P.card
+  const headBg = isDark ? '#1A1640' : P.parchment
+  const bdr    = isDark ? P.dHair   : P.hair
+  const txt    = isDark ? P.dText   : P.ink
+  const sub    = isDark ? P.dMuted  : P.stone
+
   const rows = [
-    { feature: tx(lang,'Выручка по всем площадкам','Barcha saytlar bo\'yicha daromad','Revenue across all platforms'), without: false, with: true },
-    { feature: tx(lang,'ДРР в реальном времени','Real vaqt DRR','Real-time ad spend ratio'), without: false, with: true },
-    { feature: tx(lang,'Остатки по складам','Ombor qoldiqlari','Stock by warehouse'), without: false, with: true },
-    { feature: tx(lang,'Юнит-экономика','Birlik-iqtisod','Unit economics'), without: false, with: true },
-    { feature: tx(lang,'Уведомления в Telegram','Telegram bildirishnomalari','Telegram notifications'), without: false, with: true },
-    { feature: tx(lang,'Экспорт в Excel','Excel ga eksport','Excel export'), without: false, with: true },
+    tx(lang,'Выручка по всем площадкам','Barcha saytlar bo\'yicha daromad','Revenue across all platforms'),
+    tx(lang,'ДРР в реальном времени','Real vaqt DRR','Real-time ad spend ratio'),
+    tx(lang,'Остатки по складам','Ombor qoldiqlari','Stock by warehouse'),
+    tx(lang,'Юнит-экономика','Birlik-iqtisod','Unit economics'),
+    tx(lang,'Уведомления в Telegram','Telegram bildirishnomalari','Telegram notifications'),
+    tx(lang,'Экспорт в Excel','Excel ga eksport','Excel export'),
   ]
 
   return (
-    <section id="comparison" style={{ background: P.parchment, padding: '88px 24px',
-      fontFamily: 'var(--font-golos), sans-serif' }}>
+    <section id="comparison" style={{ background: secBg, padding: '88px 24px',
+      fontFamily: 'var(--font-golos), sans-serif', transition: 'background 0.3s' }}>
       <div style={{ maxWidth: 860, margin: '0 auto' }}>
-        <SectionHead
+        <SectionHead dark={isDark}
           title={tx(lang,'Сейчас вы видите только половину данных','Hozir siz ma\'lumotlarning yarmini ko\'ryapsiz','You\'re only seeing half the data')}
           accent={tx(lang,'половину данных','yarmini','half the data')}
           sub={tx(lang,
@@ -484,58 +541,51 @@ function ComparisonSection({ lang }: { lang: string }) {
             'Three separate dashboards give no unified view — you switch tabs and add up numbers by hand'
           )}
         />
-
-        {/* Table */}
         <FadeUp delay={0.1}>
-          <div style={{ background: P.card, borderRadius: 20, overflow: 'hidden',
-            border: `1px solid ${P.hair}`, boxShadow: '0 4px 24px rgba(0,0,0,0.06)' }}>
-
-            {/* Header */}
+          <div style={{ background: cardBg, borderRadius: 20, overflow: 'hidden',
+            border: `1px solid ${bdr}`, boxShadow: isDark ? '0 4px 24px rgba(108,88,239,0.10)' : '0 4px 24px rgba(0,0,0,0.06)' }}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr',
-              background: P.parchment, borderBottom: `1px solid ${P.hair}` }}>
-              <div style={{ padding: '16px 24px' }}></div>
-              <div style={{ padding: '16px 24px', textAlign: 'center', borderLeft: `1px solid ${P.hair}` }}>
-                <p style={{ fontSize: 13, fontWeight: 700, color: P.stone }}>
+              background: headBg, borderBottom: `1px solid ${bdr}` }}>
+              <div style={{ padding: '16px 24px' }}/>
+              <div style={{ padding: '16px 24px', textAlign: 'center', borderLeft: `1px solid ${bdr}` }}>
+                <p style={{ fontSize: 13, fontWeight: 700, color: sub }}>
                   {tx(lang,'3 кабинета по отдельности','3 ta alohida kabinet','3 separate dashboards')}
                 </p>
               </div>
-              <div style={{ padding: '16px 24px', textAlign: 'center', background: P.greenBg,
-                borderLeft: `1px solid ${P.hair}` }}>
-                <p style={{ fontSize: 14, fontWeight: 800, color: P.green }}>Daromadchi</p>
+              <div style={{ padding: '16px 24px', textAlign: 'center',
+                background: isDark ? 'rgba(108,88,239,0.12)' : acc.bg, borderLeft: `1px solid ${bdr}` }}>
+                <p style={{ fontSize: 14, fontWeight: 800, color: acc.color }}>Daromadchi</p>
               </div>
             </div>
-
-            {rows.map((r, i) => (
-              <div key={r.feature} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr',
-                borderBottom: i < rows.length - 1 ? `1px solid ${P.hair}` : 'none' }}>
-                <div style={{ padding: '16px 24px', display: 'flex', alignItems: 'center' }}>
-                  <span style={{ fontSize: 14, fontWeight: 500, color: P.ink }}>{r.feature}</span>
+            {rows.map((feature, i) => (
+              <div key={feature} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr',
+                borderBottom: i < rows.length - 1 ? `1px solid ${bdr}` : 'none' }}>
+                <div style={{ padding: '15px 24px', display: 'flex', alignItems: 'center' }}>
+                  <span style={{ fontSize: 14, fontWeight: 500, color: txt }}>{feature}</span>
                 </div>
-                <div style={{ padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  borderLeft: `1px solid ${P.hair}` }}>
-                  <div style={{ width: 28, height: 28, borderRadius: '50%', background: P.redBg,
+                <div style={{ padding: '15px 24px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderLeft: `1px solid ${bdr}` }}>
+                  <div style={{ width: 26, height: 26, borderRadius: '50%', background: isDark ? 'rgba(220,38,38,0.15)' : P.redBg,
                     display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <X size={14} color={P.red}/>
+                    <X size={13} color={P.red}/>
                   </div>
                 </div>
-                <div style={{ padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  background: P.greenBg, borderLeft: `1px solid ${P.hair}` }}>
-                  <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(22,163,74,0.15)',
+                <div style={{ padding: '15px 24px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: isDark ? 'rgba(108,88,239,0.08)' : acc.bg, borderLeft: `1px solid ${bdr}` }}>
+                  <div style={{ width: 26, height: 26, borderRadius: '50%', background: isDark ? 'rgba(108,88,239,0.20)' : `${acc.color}22`,
                     display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Check size={14} color={P.green}/>
+                    <Check size={13} color={acc.color}/>
                   </div>
                 </div>
               </div>
             ))}
           </div>
         </FadeUp>
-
         <FadeUp delay={0.2} style={{ textAlign: 'center', marginTop: 36 }}>
           <Link href="/login"
-            style={{ display: 'inline-block', fontSize: 15, fontWeight: 700, background: P.green, color: '#fff',
+            style={{ display: 'inline-block', fontSize: 15, fontWeight: 700, background: acc.color, color: '#fff',
               padding: '14px 36px', borderRadius: 10, textDecoration: 'none', transition: 'all 0.15s' }}
-            onMouseEnter={e => { e.currentTarget.style.background = P.greenDk; e.currentTarget.style.transform = 'translateY(-1px)' }}
-            onMouseLeave={e => { e.currentTarget.style.background = P.green; e.currentTarget.style.transform = 'translateY(0)' }}>
+            onMouseEnter={e => { e.currentTarget.style.background = acc.dk; e.currentTarget.style.transform = 'translateY(-1px)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = acc.color; e.currentTarget.style.transform = 'translateY(0)' }}>
             {tx(lang,'Попробовать бесплатно','Bepul sinab ko\'ring','Try for free')}
           </Link>
         </FadeUp>
@@ -544,157 +594,148 @@ function ComparisonSection({ lang }: { lang: string }) {
   )
 }
 
-// ── 3. FEATURES — real UI fragments ──────────────────────────────────────────
+// ── 3. FEATURES ───────────────────────────────────────────────────────────────
 function FeaturesSection({ lang }: { lang: string }) {
-  const border = '#E5E1D8'
-  const bg2 = '#F5F4F1'
-  const muted = '#A8A29E'
-  const ink = '#1C1917'
+  const isDark = useIsDark()
+  const acc = useAccent()
+  const secBg   = isDark ? '#0D0A22' : P.card
+  const bentoBg = isDark ? P.dCard   : P.parchment
+  const cardBg  = isDark ? '#1A1640' : P.card
+  const border  = isDark ? P.dHair   : '#E5E1D8'
+  const bg2     = isDark ? '#110E28' : '#F5F4F1'
+  const muted   = isDark ? P.dMuted  : '#A8A29E'
+  const ink     = isDark ? P.dText   : '#1C1917'
 
   return (
-    <section id="features" style={{ background: P.card, padding: '88px 24px',
-      fontFamily: 'var(--font-golos), sans-serif' }}>
+    <section id="features" style={{ background: secBg, padding: '88px 24px',
+      fontFamily: 'var(--font-golos), sans-serif', transition: 'background 0.3s' }}>
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-        <SectionHead
+        <SectionHead dark={isDark}
           title={tx(lang,'Главный инструмент для роста прибыли','Foyda o\'sishi uchun asosiy vosita','The main tool for profit growth')}
           accent={tx(lang,'роста прибыли','o\'sishi','profit growth')}
           sub={tx(lang,'Один экран вместо десяти вкладок','O\'nta yorliq o\'rniga bitta ekran','One screen instead of ten tabs')}
         />
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
 
-        {/* Bento grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: 'auto auto', gap: 16 }}>
-
-          {/* Card 1 — Products table */}
           <FadeUp delay={0.05}>
-            <div style={{ background: P.parchment, borderRadius: 20, padding: '24px',
+            <div style={{ background: bentoBg, borderRadius: 20, padding: '24px',
               border: `1px solid ${border}`, height: '100%', minHeight: 340 }}>
-              <p style={{ fontSize: 13, fontWeight: 700, color: P.green, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              <p style={{ fontSize: 12, fontWeight: 700, color: acc.color, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 {tx(lang,'Таблица товаров','Mahsulotlar jadvali','Products table')}
               </p>
               <p style={{ fontSize: 15, fontWeight: 600, color: ink, marginBottom: 16 }}>
                 {tx(lang,'ДРР, расходы и остатки — всё в одном месте','DRR, xarajatlar va qoldiqlar — barchasi bir joyda','DRR, costs and stock — all in one place')}
               </p>
-              {/* Mini products table */}
-              <div style={{ background: P.card, borderRadius: 12, overflow: 'hidden', border: `1px solid ${border}` }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 55px 65px 42px',
+              <div style={{ background: cardBg, borderRadius: 12, overflow: 'hidden', border: `1px solid ${border}` }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 55px 60px 42px',
                   padding: '6px 12px', background: bg2, borderBottom: `1px solid ${border}` }}>
                   {['Товар','Выручка','ДРР%','Склад'].map(h => (
                     <span key={h} style={{ fontSize: 9, fontWeight: 700, color: muted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</span>
                   ))}
                 </div>
                 {[
-                  { n:'Куртка зимняя', mp: P.uzum,  rev:'18.2M', drr:7.2,  ok:true },
-                  { n:'Кроссовки Nike', mp: P.wb,   rev:'12.6M', drr:11.4, ok:false },
-                  { n:'Рюкзак 40L',    mp: P.yandex,rev:'9.9M',  drr:9.8,  ok:true },
-                  { n:'Наушники Sony', mp: P.uzum,  rev:'8.3M',  drr:6.1,  ok:true },
-                  { n:'Кроссовки Puma',mp: P.wb,    rev:'7.1M',  drr:13.2, ok:false },
+                  { n:'Куртка зимняя', mp: P.uzum,   rev:'18.2M', drr:7.2,  ok:true  },
+                  { n:'Кроссовки Nike',mp: P.wb,     rev:'12.6M', drr:11.4, ok:false },
+                  { n:'Рюкзак 40L',    mp: P.yandex, rev:'9.9M',  drr:9.8,  ok:true  },
+                  { n:'Наушники Sony', mp: P.uzum,   rev:'8.3M',  drr:6.1,  ok:true  },
+                  { n:'Кроссовки Puma',mp: P.wb,     rev:'7.1M',  drr:13.2, ok:false },
                 ].map((r,i) => (
-                  <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 55px 65px 42px',
+                  <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 55px 60px 42px',
                     padding: '7px 12px', borderBottom: i < 4 ? `1px solid ${border}` : 'none', alignItems: 'center' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                       <div style={{ width: 5, height: 5, borderRadius: '50%', background: r.mp, flexShrink: 0 }} />
                       <span style={{ fontSize: 10, color: ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.n}</span>
                     </div>
                     <span style={{ fontSize: 10, fontFamily: 'monospace', fontWeight: 600, color: ink }}>{r.rev}</span>
-                    <span style={{ fontSize: 10, fontWeight: 700,
-                      color: r.drr > 11 ? P.red : r.drr > 9 ? P.amber : P.green }}>{r.drr}%</span>
-                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: r.ok ? P.green : P.amber }} />
+                    <span style={{ fontSize: 10, fontWeight: 700, color: r.drr > 11 ? P.red : r.drr > 9 ? P.amber : KPI.emerald }}>{r.drr}%</span>
+                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: r.ok ? KPI.emerald : P.amber }} />
                   </div>
                 ))}
               </div>
             </div>
           </FadeUp>
 
-          {/* Card 2 — Dashboard KPIs */}
           <FadeUp delay={0.1}>
-            <div style={{ background: P.parchment, borderRadius: 20, padding: '24px',
+            <div style={{ background: bentoBg, borderRadius: 20, padding: '24px',
               border: `1px solid ${border}`, height: '100%', minHeight: 340 }}>
-              <p style={{ fontSize: 13, fontWeight: 700, color: P.green, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              <p style={{ fontSize: 12, fontWeight: 700, color: acc.color, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 {tx(lang,'Дашборд','Dashboard','Dashboard')}
               </p>
               <p style={{ fontSize: 15, fontWeight: 600, color: ink, marginBottom: 16 }}>
-                {tx(lang,'Выручка, заказы, расход и ДРР — за любой период','Daromad, buyurtmalar, xarajatlar va DRR — istalgan davr uchun','Revenue, orders, spend and DRR — for any period')}
+                {tx(lang,'Выручка, заказы, расход и прибыль — за любой период','Daromad, buyurtmalar, xarajatlar — istalgan davr uchun','Revenue, orders, spend and profit — for any period')}
               </p>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
                 {[
-                  { l:'Выручка', v:'124.5M сум', d:'+12.4%', c: P.uzum },
-                  { l:'Заказы',  v:'1 842',       d:'+8.1%',  c: P.green },
-                  { l:'Расход',  v:'10.2M сум',   d:'+3.2%',  c: P.wb },
-                  { l:'ДРР',     v:'8.2%',         d:'-1.4%',  c: P.yandex },
+                  { l:'Выручка', v:'124.5M сум', d:'+12.4%', c: KPI.violet,  pos: true  },
+                  { l:'Заказы',  v:'1 842',       d:'+8.1%',  c: KPI.emerald, pos: true  },
+                  { l:'Расход',  v:'10.2M сум',   d:'+3.2%',  c: KPI.blue,    pos: false },
+                  { l:'Прибыль', v:'38.2M сум',   d:'+15.7%', c: KPI.amber,   pos: true  },
                 ].map(k => (
-                  <div key={k.l} style={{ background: P.card, borderRadius: 10, padding: '12px',
-                    borderTop: `2px solid ${k.c}` }}>
+                  <div key={k.l} style={{ background: cardBg, borderRadius: 10, padding: '12px', borderTop: `2px solid ${k.c}` }}>
                     <p style={{ fontSize: 10, color: muted, marginBottom: 3 }}>{k.l}</p>
-                    <p style={{ fontSize: 16, fontWeight: 700, color: ink, fontFamily: 'monospace', lineHeight: 1.1 }}>{k.v}</p>
-                    <p style={{ fontSize: 10, fontWeight: 700, color: P.green, marginTop: 3 }}>{k.d}</p>
+                    <p style={{ fontSize: 15, fontWeight: 700, color: ink, fontFamily: 'monospace', lineHeight: 1.1 }}>{k.v}</p>
+                    <p style={{ fontSize: 10, fontWeight: 700, color: k.pos ? KPI.emerald : P.red, marginTop: 2 }}>{k.d}</p>
                   </div>
                 ))}
               </div>
-              {/* Sparkline */}
-              <div style={{ background: P.card, borderRadius: 10, padding: '10px 12px', border: `1px solid ${border}` }}>
+              <div style={{ background: cardBg, borderRadius: 10, padding: '10px 12px', border: `1px solid ${border}` }}>
                 <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2, height: 36 }}>
                   {[30,48,38,65,52,78,60,82,70,55,75,92,66,80].map((h, i) => (
                     <div key={i} style={{ flex: 1, borderRadius: '2px 2px 0 0', height: `${h}%`,
-                      background: i >= 10 ? P.uzum : 'rgba(73,79,223,0.16)' }} />
+                      background: i >= 10 ? KPI.violet : 'rgba(73,79,223,0.16)' }} />
                   ))}
                 </div>
               </div>
             </div>
           </FadeUp>
 
-          {/* Card 3 — Unit economics */}
           <FadeUp delay={0.15}>
-            <div style={{ background: P.parchment, borderRadius: 20, padding: '24px',
+            <div style={{ background: bentoBg, borderRadius: 20, padding: '24px',
               border: `1px solid ${border}`, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
               <div>
-                <p style={{ fontSize: 13, fontWeight: 700, color: P.green, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                <p style={{ fontSize: 12, fontWeight: 700, color: acc.color, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   {tx(lang,'Юнит-экономика','Birlik-iqtisod','Unit economics')}
                 </p>
-                <p style={{ fontSize: 15, fontWeight: 600, color: ink, marginBottom: 14 }}>
+                <p style={{ fontSize: 14, fontWeight: 600, color: ink, marginBottom: 14 }}>
                   {tx(lang,'Рентабельность по каждому товару','Har bir mahsulot bo\'yicha rentabellik','Profitability per product')}
                 </p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
                   {[
-                    { l: tx(lang,'Закупка','Sotib olish','Purchase'), v: '12 000 сум', c: muted },
-                    { l: tx(lang,'Логистика','Logistika','Logistics'), v: '1 800 сум', c: muted },
-                    { l: tx(lang,'Реклама (ДРР)','Reklama (DRR)','Ad spend (DRR)'), v: '2 350 сум', c: muted },
-                    { l: tx(lang,'Цена продажи','Sotish narxi','Sale price'), v: '28 500 сум', c: ink },
+                    { l: tx(lang,'Закупка','Sotib olish','Purchase'), v: '12 000 сум' },
+                    { l: tx(lang,'Логистика','Logistika','Logistics'), v: '1 800 сум' },
+                    { l: tx(lang,'Реклама','Reklama','Ad spend'), v: '2 350 сум' },
+                    { l: tx(lang,'Цена продажи','Sotish narxi','Sale price'), v: '28 500 сум' },
                   ].map(row => (
                     <div key={row.l} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                      padding: '8px 12px', background: P.card, borderRadius: 8, border: `1px solid ${border}` }}>
-                      <span style={{ fontSize: 11, color: row.c }}>{row.l}</span>
-                      <span style={{ fontSize: 11, fontWeight: 700, color: row.c, fontFamily: 'monospace' }}>{row.v}</span>
+                      padding: '7px 10px', background: cardBg, borderRadius: 8, border: `1px solid ${border}` }}>
+                      <span style={{ fontSize: 11, color: muted }}>{row.l}</span>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: ink, fontFamily: 'monospace' }}>{row.v}</span>
                     </div>
                   ))}
-                  <div style={{ padding: '10px 12px', background: P.greenBg, borderRadius: 8, border: `1px solid rgba(22,163,74,0.2)`,
+                  <div style={{ padding: '9px 10px', background: acc.bg, borderRadius: 8,
+                    border: `1px solid ${isDark ? P.dHair : `${acc.color}25`}`,
                     display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: P.greenDk }}>
-                      {tx(lang,'Маржа','Marja','Margin')}
-                    </span>
-                    <span style={{ fontSize: 14, fontWeight: 800, color: P.green, fontFamily: 'monospace' }}>52.6% ↑</span>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: acc.dk }}>{tx(lang,'Маржа','Marja','Margin')}</span>
+                    <span style={{ fontSize: 14, fontWeight: 800, color: acc.color, fontFamily: 'monospace' }}>52.6% ↑</span>
                   </div>
                 </div>
               </div>
-
-              {/* Telegram alerts */}
               <div>
-                <p style={{ fontSize: 13, fontWeight: 700, color: P.uzum, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                <p style={{ fontSize: 12, fontWeight: 700, color: P.uzum, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   {tx(lang,'Уведомления','Bildirishnomalar','Notifications')}
                 </p>
-                <p style={{ fontSize: 15, fontWeight: 600, color: ink, marginBottom: 14 }}>
+                <p style={{ fontSize: 14, fontWeight: 600, color: ink, marginBottom: 14 }}>
                   {tx(lang,'Алерты в Telegram каждые 15 мин','Har 15 daqiqada Telegram xabarlari','Telegram alerts every 15 min')}
                 </p>
-                <div style={{ background: '#F1F3F4', borderRadius: 12, padding: '12px',
-                  border: `1px solid ${border}`, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div style={{ background: isDark ? '#110E28' : '#F1F3F4', borderRadius: 12, padding: '10px',
+                  border: `1px solid ${border}`, display: 'flex', flexDirection: 'column', gap: 7 }}>
                   {[
-                    { icon: '🔔', text: tx(lang,'Остатки «Куртка» — 12 шт, хватит на 3 дня','«Jacket» qoldiqlari — 12 ta, 3 kunga yetadi','«Jacket» stock — 12 pcs, 3 days left'), time: '09:15', color: P.amber },
-                    { icon: '📈', text: tx(lang,'Uzum: ДРР превысил 15% по 3 товарам','Uzum: 3 ta mahsulot bo\'yicha DRR 15% dan oshdi','Uzum: DRR exceeded 15% on 3 products'), time: '09:15', color: P.red },
-                    { icon: '✅', text: tx(lang,'WB: новый заказ #WB-48291 — 28 500 сум','WB: yangi buyurtma #WB-48291 — 28 500 so\'m','WB: new order #WB-48291 — 28,500 sum'), time: '09:16', color: P.green },
+                    { icon: '🔔', text: tx(lang,'Остатки «Куртка» — 12 шт, 3 дня','Qoldiqlar — 12 ta, 3 kun','Stock low — 12 pcs, 3 days'), color: P.amber },
+                    { icon: '📈', text: tx(lang,'ДРР превысил 15% по 3 товарам','3 ta mahsulot DRR 15% dan oshdi','DRR exceeded 15% on 3 products'), color: P.red },
+                    { icon: '✅', text: tx(lang,'WB: новый заказ #WB-48291','WB: yangi buyurtma #WB-48291','WB: new order #WB-48291'), color: KPI.emerald },
                   ].map((n, i) => (
-                    <div key={i} style={{ background: P.card, borderRadius: 8, padding: '8px 10px',
-                      borderLeft: `3px solid ${n.color}` }}>
+                    <div key={i} style={{ background: cardBg, borderRadius: 8, padding: '8px 10px', borderLeft: `3px solid ${n.color}` }}>
                       <p style={{ fontSize: 10, color: ink, lineHeight: 1.4 }}>{n.icon} {n.text}</p>
-                      <p style={{ fontSize: 9, color: muted, marginTop: 3 }}>{n.time}</p>
                     </div>
                   ))}
                 </div>
@@ -702,50 +743,45 @@ function FeaturesSection({ lang }: { lang: string }) {
             </div>
           </FadeUp>
 
-          {/* Card 4 — Excel export */}
           <FadeUp delay={0.2}>
-            <div style={{ background: P.parchment, borderRadius: 20, padding: '24px',
-              border: `1px solid ${border}` }}>
-              <p style={{ fontSize: 13, fontWeight: 700, color: P.green, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            <div style={{ background: bentoBg, borderRadius: 20, padding: '24px', border: `1px solid ${border}` }}>
+              <p style={{ fontSize: 12, fontWeight: 700, color: acc.color, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 {tx(lang,'Экспорт в Excel','Excel ga eksport','Excel export')}
               </p>
               <p style={{ fontSize: 15, fontWeight: 600, color: ink, marginBottom: 16 }}>
-                {tx(lang,'Скачайте отчёт в один клик — все данные как в таблице','Hisobotni bir marta bosish bilan yuklab oling','Download report in one click — all data as in the table')}
+                {tx(lang,'Скачайте отчёт в один клик — все данные как в таблице','Hisobotni bir marta bosish bilan yuklab oling','Download report in one click')}
               </p>
-              <div style={{ background: P.card, borderRadius: 12, overflow: 'hidden',
-                border: `1px solid ${border}`, marginBottom: 14 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px',
-                  background: '#217346', borderBottom: `1px solid ${border}` }}>
+              <div style={{ background: cardBg, borderRadius: 12, overflow: 'hidden', border: `1px solid ${border}`, marginBottom: 14 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', background: '#217346' }}>
                   <div style={{ width: 16, height: 16, background: 'rgba(255,255,255,0.2)', borderRadius: 3,
                     display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, color: '#fff', fontWeight: 700 }}>X</div>
                   <span style={{ fontSize: 11, fontWeight: 600, color: '#fff' }}>daromadchi_report_2026.xlsx</span>
                 </div>
                 <div style={{ padding: '8px 14px' }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 60px 60px 40px', gap: 0 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 60px 60px 40px' }}>
                     {['A','B','C','D'].map(h => (
                       <div key={h} style={{ background: '#217346', padding: '3px 6px', textAlign: 'center' }}>
                         <span style={{ fontSize: 9, color: '#fff', fontWeight: 700 }}>{h}</span>
                       </div>
                     ))}
-                    {[
-                      ['Куртка зимняя','18 240 000','7.2%','120'],
-                      ['Кроссовки','12 590 000','11.4%','84'],
-                      ['Рюкзак 40L','9 870 000','9.8%','67'],
-                    ].map((row, ri) => row.map((cell, ci) => (
-                      <div key={`${ri}-${ci}`} style={{ padding: '4px 6px', border: '1px solid #E2E8E0',
-                        borderTop: 'none', borderLeft: ci > 0 ? 'none' : '1px solid #E2E8E0' }}>
-                        <span style={{ fontSize: 9, color: ink, fontFamily: ci > 0 ? 'monospace' : 'inherit' }}>{cell}</span>
-                      </div>
-                    )))}
+                    {[['Куртка зимняя','18 240 000','7.2%','120'],['Кроссовки','12 590 000','11.4%','84'],['Рюкзак 40L','9 870 000','9.8%','67']].map((row,ri) =>
+                      row.map((cell,ci) => (
+                        <div key={`${ri}-${ci}`} style={{ padding: '4px 6px',
+                          border: `1px solid ${isDark ? '#2A2050' : '#E2E8E0'}`,
+                          borderTop: 'none', borderLeft: ci > 0 ? 'none' : `1px solid ${isDark ? '#2A2050' : '#E2E8E0'}` }}>
+                          <span style={{ fontSize: 9, color: ink, fontFamily: ci > 0 ? 'monospace' : 'inherit' }}>{cell}</span>
+                        </div>
+                      ))
+                    )}
                   </div>
                 </div>
               </div>
               <Link href="/login"
                 style={{ display: 'inline-flex', alignItems: 'center', gap: 6,
-                  fontSize: 13, fontWeight: 700, background: P.green, color: '#fff',
-                  padding: '10px 20px', borderRadius: 8, textDecoration: 'none', transition: 'background 0.15s' }}
-                onMouseEnter={e => (e.currentTarget.style.background = P.greenDk)}
-                onMouseLeave={e => (e.currentTarget.style.background = P.green)}>
+                  fontSize: 13, fontWeight: 700, background: acc.color, color: '#fff',
+                  padding: '10px 20px', borderRadius: 8, textDecoration: 'none' }}
+                onMouseEnter={e => (e.currentTarget.style.background = acc.dk)}
+                onMouseLeave={e => (e.currentTarget.style.background = acc.color)}>
                 {tx(lang,'Скачать отчёт','Hisobotni yuklab olish','Download report')} <ArrowRight size={14}/>
               </Link>
             </div>
@@ -756,12 +792,21 @@ function FeaturesSection({ lang }: { lang: string }) {
   )
 }
 
-// ── 4. HOW IT WORKS — 3 steps ────────────────────────────────────────────────
+// ── 4. HOW IT WORKS — interactive accordion ───────────────────────────────────
 function HowItWorksSection({ lang }: { lang: string }) {
+  const isDark = useIsDark()
+  const acc = useAccent()
+  const [active, setActive] = useState(0)
+
+  const secBg  = isDark ? '#13102E' : P.parchment
+  const ink    = isDark ? P.dText   : P.ink
+  const sub    = isDark ? P.dMuted  : P.stone
+  const uiBg   = isDark ? 'rgba(26,22,64,0.95)' : 'rgba(255,255,255,0.95)'
+  const uiBdr  = isDark ? P.dHair   : P.hair
+  const fldBg  = isDark ? '#1E1A40' : '#fff'
+
   const steps = [
     {
-      num: '01',
-      icon: '👤',
       color: P.green,
       title: tx(lang,'Регистрация','Ro\'yxatdan o\'tish','Register'),
       desc: tx(lang,
@@ -770,87 +815,76 @@ function HowItWorksSection({ lang }: { lang: string }) {
         'Just email and password. Under 30 seconds and you\'re in'
       ),
       ui: (
-        <div style={{ background: 'rgba(255,255,255,0.9)', borderRadius: 12, padding: '14px',
-          border: `1px solid rgba(255,255,255,0.6)`, boxShadow: '0 4px 16px rgba(0,0,0,0.08)' }}>
-          {[
-            { l: 'Email', v: 'seller@example.com' },
-            { l: 'Пароль', v: '••••••••••' },
-          ].map(f => (
-            <div key={f.l} style={{ marginBottom: 8 }}>
-              <p style={{ fontSize: 9, color: P.muted, marginBottom: 3 }}>{f.l}</p>
-              <div style={{ background: '#fff', border: `1px solid ${P.hair}`, borderRadius: 6, padding: '6px 10px' }}>
-                <span style={{ fontSize: 11, color: P.ink }}>{f.v}</span>
+        <div style={{ background: uiBg, borderRadius: 16, padding: '20px',
+          border: `1px solid ${uiBdr}`, boxShadow: isDark ? '0 8px 32px rgba(108,88,239,0.15)' : '0 8px 32px rgba(0,0,0,0.10)' }}>
+          {[{l:'Email',v:'seller@example.com'},{l:tx(lang,'Пароль','Parol','Password'),v:'••••••••••'}].map(f => (
+            <div key={f.l} style={{ marginBottom: 12 }}>
+              <p style={{ fontSize: 11, color: sub, marginBottom: 5 }}>{f.l}</p>
+              <div style={{ background: fldBg, border: `1px solid ${uiBdr}`, borderRadius: 8, padding: '10px 14px' }}>
+                <span style={{ fontSize: 13, color: ink }}>{f.v}</span>
               </div>
             </div>
           ))}
-          <div style={{ background: P.green, borderRadius: 6, padding: '8px', textAlign: 'center', marginTop: 4 }}>
-            <span style={{ fontSize: 11, fontWeight: 700, color: '#fff' }}>
-              {tx(lang,'Зарегистрироваться','Ro\'yxatdan o\'tish','Sign up')}
-            </span>
+          <div style={{ background: acc.color, borderRadius: 8, padding: '11px', textAlign: 'center', marginTop: 6 }}>
+            <span style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>{tx(lang,'Зарегистрироваться','Ro\'yxatdan o\'tish','Sign up')}</span>
           </div>
         </div>
       ),
     },
     {
-      num: '02',
-      icon: '🔗',
       color: P.amber,
       title: tx(lang,'Подключите магазин','Do\'koningizni ulang','Connect your store'),
       desc: tx(lang,
         'Вставьте API-ключ из кабинета Uzum, WB или Яндекс — мы не можем менять данные в вашем магазине, только читать',
-        'Uzum, WB yoki Yandex kabinetidan API kalitini kiriting — biz faqat o\'qiy olamiz, o\'zgartira olmaymiz',
+        'Uzum, WB yoki Yandex kabinetidan API kalitini kiriting — biz faqat o\'qiy olamiz',
         'Paste API key from Uzum, WB or Yandex — we can only read data, never modify your store'
       ),
       ui: (
-        <div style={{ background: 'rgba(255,255,255,0.9)', borderRadius: 12, padding: '14px',
-          border: `1px solid rgba(255,255,255,0.6)`, boxShadow: '0 4px 16px rgba(0,0,0,0.08)' }}>
-          {[
-            { mp: 'Uzum', color: P.uzum, status: '✅' },
-            { mp: 'Wildberries', color: P.wb, status: '✅' },
-            { mp: 'Yandex Market', color: P.yandex, status: '⏳' },
-          ].map(m => (
-            <div key={m.mp} style={{ display: 'flex', alignItems: 'center', gap: 8,
-              padding: '7px 10px', background: '#fff', borderRadius: 8, border: `1px solid ${P.hair}`, marginBottom: 6 }}>
-              <div style={{ width: 8, height: 8, borderRadius: '50%', background: m.color }} />
-              <span style={{ fontSize: 10, fontWeight: 600, color: P.ink, flex: 1 }}>{m.mp}</span>
-              <span style={{ fontSize: 12 }}>{m.status}</span>
+        <div style={{ background: uiBg, borderRadius: 16, padding: '20px',
+          border: `1px solid ${uiBdr}`, boxShadow: isDark ? '0 8px 32px rgba(108,88,239,0.15)' : '0 8px 32px rgba(0,0,0,0.10)' }}>
+          <p style={{ fontSize: 11, fontWeight: 700, color: sub, marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            {tx(lang,'Ваши магазины','Do\'konlaringiz','Your stores')}
+          </p>
+          {[{mp:'Uzum',c:P.uzum,status:'✅'},{mp:'Wildberries',c:P.wb,status:'✅'},{mp:'Yandex Market',c:P.yandex,status:'⏳'}].map(m => (
+            <div key={m.mp} style={{ display: 'flex', alignItems: 'center', gap: 10,
+              padding: '12px 14px', background: fldBg, borderRadius: 10, border: `1px solid ${uiBdr}`, marginBottom: 8 }}>
+              <div style={{ width: 9, height: 9, borderRadius: '50%', background: m.c }} />
+              <span style={{ fontSize: 13, fontWeight: 600, color: ink, flex: 1 }}>{m.mp}</span>
+              <span style={{ fontSize: 16 }}>{m.status}</span>
             </div>
           ))}
         </div>
       ),
     },
     {
-      num: '03',
-      icon: '📊',
-      color: P.green,
+      color: acc.color,
       title: tx(lang,'Данные готовы','Ma\'lumotlar tayyor','Data is ready'),
       desc: tx(lang,
-        'Через 15 минут — полная аналитика за последние 7 дней. Далее обновление автоматически каждые 15 минут',
-        '15 daqiqadan keyin — so\'nggi 7 kun uchun to\'liq tahlil. Keyin har 15 daqiqada avtomatik yangilanadi',
-        'In 15 minutes — full analytics for the past 7 days. Then updates automatically every 15 minutes'
+        'Данные синхронизируются автоматически — вся история продаж с момента подключения, без ручного ввода',
+        'Ma\'lumotlar avtomatik sinxronlanadi — do\'koningizni ulagan paytdan boshlab barcha sotuv tarixi',
+        'Data syncs automatically — full sales history from the moment you connect, no manual entry needed'
       ),
       ui: (
-        <div style={{ background: 'rgba(255,255,255,0.9)', borderRadius: 12, padding: '14px',
-          border: `1px solid rgba(255,255,255,0.6)`, boxShadow: '0 4px 16px rgba(0,0,0,0.08)' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-            {[
-              { l:'Заказы', v:'1 842', d:'+300%', c:P.green },
-              { l:'ДРР',    v:'8.2%',  d:'-20.9%',c:P.green },
-            ].map(k => (
-              <div key={k.l} style={{ background: '#fff', borderRadius: 8, padding: '10px',
-                border: `1px solid ${P.hair}`, borderTop: `2px solid ${k.c}` }}>
-                <p style={{ fontSize: 9, color: P.muted, marginBottom: 2 }}>{k.l}</p>
-                <p style={{ fontSize: 16, fontWeight: 700, color: P.ink, fontFamily: 'monospace' }}>{k.v}</p>
-                <p style={{ fontSize: 9, fontWeight: 700, color: k.c }}>{k.d}</p>
+        <div style={{ background: uiBg, borderRadius: 16, padding: '20px',
+          border: `1px solid ${uiBdr}`, boxShadow: isDark ? '0 8px 32px rgba(108,88,239,0.15)' : '0 8px 32px rgba(0,0,0,0.10)' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
+            {[{l:'Заказы',v:'1 842',d:'+300%',c:KPI.emerald},{l:'ДРР',v:'8.2%',d:'-20.9%',c:acc.color}].map(k => (
+              <div key={k.l} style={{ background: fldBg, borderRadius: 10, padding: '14px',
+                border: `1px solid ${uiBdr}`, borderTop: `2px solid ${k.c}` }}>
+                <p style={{ fontSize: 11, color: sub, marginBottom: 4 }}>{k.l}</p>
+                <p style={{ fontSize: 20, fontWeight: 800, color: ink, fontFamily: 'monospace' }}>{k.v}</p>
+                <p style={{ fontSize: 11, fontWeight: 700, color: k.c, marginTop: 3 }}>{k.d}</p>
               </div>
             ))}
           </div>
-          <div style={{ marginTop: 8, background: '#fff', borderRadius: 8, padding: '8px 10px',
-            border: `1px solid ${P.hair}` }}>
-            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 1.5, height: 28 }}>
+          <div style={{ background: fldBg, borderRadius: 10, padding: '12px 14px', border: `1px solid ${uiBdr}` }}>
+            <p style={{ fontSize: 10, color: sub, marginBottom: 8, fontWeight: 600 }}>
+              {tx(lang,'Выручка по дням','Kunlik daromad','Daily revenue')}
+            </p>
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2, height: 36 }}>
               {[40,55,48,70,62,80,72,90,76,60,84,96,70,88].map((h, i) => (
-                <div key={i} style={{ flex: 1, borderRadius: '1px 1px 0 0', height: `${h}%`,
-                  background: i >= 10 ? P.green : 'rgba(22,163,74,0.18)' }} />
+                <div key={i} style={{ flex: 1, borderRadius: '2px 2px 0 0', height: `${h}%`,
+                  background: i >= 10 ? acc.color : (isDark ? `${acc.color}30` : 'rgba(14,116,144,0.15)') }} />
               ))}
             </div>
           </div>
@@ -860,105 +894,144 @@ function HowItWorksSection({ lang }: { lang: string }) {
   ]
 
   return (
-    <section id="how" style={{ background: P.parchment, padding: '88px 24px',
-      fontFamily: 'var(--font-golos), sans-serif' }}>
-      <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-        <SectionHead
+    <section id="how" style={{ background: secBg, padding: '88px 24px',
+      fontFamily: 'var(--font-golos), sans-serif', transition: 'background 0.3s' }}>
+      <div style={{ maxWidth: 1000, margin: '0 auto' }}>
+        <SectionHead dark={isDark}
           title={tx(lang,'Настройте магазин за 5 минут','Do\'koningizni 5 daqiqada sozlang','Set up your store in 5 minutes')}
           accent={tx(lang,'за 5 минут','5 daqiqada','in 5 minutes')}
           sub={tx(lang,'Три шага до полной аналитики','To\'liq tahlilgacha uch qadam','Three steps to full analytics')}
         />
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 24 }}>
-          {steps.map((s, i) => (
-            <FadeUp key={s.num} delay={i * 0.12}>
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
-                {/* UI illustration */}
-                <div style={{ width: '100%', marginBottom: 20 }}>
-                  {s.ui}
-                </div>
+        {/* Two-column: accordion tabs left, active UI right */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.1fr', gap: 48, alignItems: 'start' }}>
 
-                {/* Numbered badge */}
-                <div style={{ width: 36, height: 36, borderRadius: '50%', background: s.color,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 14, fontWeight: 800, color: '#fff', marginBottom: 14,
-                  boxShadow: `0 4px 16px ${s.color}50` }}>
-                  {i + 1}
-                </div>
+          {/* Left: accordion */}
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            {steps.map((s, i) => {
+              const isActive = active === i
+              return (
+                <div key={i}
+                  onClick={() => setActive(i)}
+                  style={{ cursor: isActive ? 'default' : 'pointer',
+                    borderLeft: `3px solid ${isActive ? s.color : (isDark ? 'rgba(108,88,239,0.15)' : P.hair)}`,
+                    padding: '0 0 0 20px', marginBottom: 4,
+                    transition: 'border-color 0.2s' }}>
 
-                <h3 style={{ fontSize: 18, fontWeight: 700, color: P.ink, marginBottom: 8 }}>{s.title}</h3>
-                <p style={{ fontSize: 14, color: P.stone, lineHeight: 1.6 }}>{s.desc}</p>
-              </div>
-            </FadeUp>
-          ))}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '18px 0' }}>
+                    <div style={{ width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
+                      background: isActive ? s.color : (isDark ? 'rgba(108,88,239,0.15)' : P.hair),
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 14, fontWeight: 800,
+                      color: isActive ? '#fff' : (isDark ? P.dMuted : P.stone),
+                      transition: 'all 0.2s',
+                      boxShadow: isActive ? `0 4px 14px ${s.color}50` : 'none' }}>
+                      {i + 1}
+                    </div>
+                    <h3 style={{ fontSize: 16, fontWeight: 700, margin: 0,
+                      color: isActive ? (isDark ? P.dText : P.ink) : (isDark ? P.dMuted : P.stone),
+                      transition: 'color 0.2s' }}>
+                      {s.title}
+                    </h3>
+                  </div>
+
+                  <AnimatePresence initial={false}>
+                    {isActive && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.28, ease: 'easeInOut' }}
+                        style={{ overflow: 'hidden' }}>
+                        <p style={{ fontSize: 14, color: sub, lineHeight: 1.65,
+                          paddingBottom: 18, paddingLeft: 50, paddingRight: 8 }}>
+                          {s.desc}
+                        </p>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              )
+            })}
+
+            <div style={{ paddingLeft: 20, marginTop: 8 }}>
+              <Link href="/login"
+                style={{ display: 'inline-block', fontSize: 14, fontWeight: 700, background: acc.color, color: '#fff',
+                  padding: '13px 32px', borderRadius: 10, textDecoration: 'none', transition: 'all 0.15s' }}
+                onMouseEnter={e => { e.currentTarget.style.background = acc.dk; e.currentTarget.style.transform = 'translateY(-1px)' }}
+                onMouseLeave={e => { e.currentTarget.style.background = acc.color; e.currentTarget.style.transform = 'translateY(0)' }}>
+                {tx(lang,'Подключить бесплатно','Bepul ulash','Connect for free')}
+              </Link>
+            </div>
+          </div>
+
+          {/* Right: active UI illustration */}
+          <AnimatePresence mode="wait">
+            <motion.div key={active}
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -16 }}
+              transition={{ duration: 0.28, ease: 'easeOut' }}>
+              {steps[active].ui}
+            </motion.div>
+          </AnimatePresence>
         </div>
-
-        <FadeUp delay={0.4} style={{ textAlign: 'center', marginTop: 48 }}>
-          <Link href="/login"
-            style={{ display: 'inline-block', fontSize: 15, fontWeight: 700, background: P.green, color: '#fff',
-              padding: '14px 40px', borderRadius: 10, textDecoration: 'none', transition: 'all 0.15s' }}
-            onMouseEnter={e => { e.currentTarget.style.background = P.greenDk; e.currentTarget.style.transform = 'translateY(-1px)' }}
-            onMouseLeave={e => { e.currentTarget.style.background = P.green; e.currentTarget.style.transform = 'translateY(0)' }}>
-            {tx(lang,'Подключить бесплатно','Bepul ulash','Connect for free')}
-          </Link>
-        </FadeUp>
       </div>
     </section>
   )
 }
 
-// ── 5. WHO IS IT FOR ─────────────────────────────────────────────────────────
+// ── 5. WHO IS IT FOR ──────────────────────────────────────────────────────────
 function WhoSection({ lang }: { lang: string }) {
+  const isDark = useIsDark()
+  const acc = useAccent()
+  const secBg  = isDark ? '#0D0A22' : P.card
+  const cardBg = isDark ? P.dCard   : P.parchment
+  const bdr    = isDark ? P.dHair   : P.hair
+  const ink    = isDark ? P.dText   : P.ink
+  const sub    = isDark ? P.dMuted  : P.stone
+
   const cards = [
     {
-      num: '01', color: P.uzum,
+      color: P.uzum,
       avatar: (
         <svg width="72" height="72" viewBox="0 0 72 72" fill="none">
           <circle cx="36" cy="36" r="36" fill="rgba(73,79,223,0.10)"/>
           <circle cx="36" cy="28" r="12" fill="#494fdf" opacity="0.85"/>
           <ellipse cx="36" cy="56" rx="18" ry="12" fill="#494fdf" opacity="0.65"/>
-          <rect x="28" y="32" width="16" height="3" rx="1.5" fill="rgba(255,255,255,0.5)"/>
           <circle cx="44" cy="42" r="8" fill="rgba(73,79,223,0.9)"/>
           <text x="44" y="45.5" textAnchor="middle" fill="white" fontSize="9" fontWeight="700">📦</text>
         </svg>
       ),
       title: tx(lang,'Начинающий продавец','Yangi sotuvchi','New seller'),
-      desc: tx(lang,
-        'Подбираете первый товар? UNIT-экономика покажет реальную маржу до закупки — без Excel и формул',
+      desc: tx(lang,'Подбираете первый товар? UNIT-экономика покажет реальную маржу до закупки — без Excel и формул',
         'Birinchi mahsulotni tanlayapsizmi? UNIT-iqtisod sotib olishdan oldin haqiqiy marjani ko\'rsatadi',
-        'Picking your first product? Unit economics shows real margin before purchase — no Excel needed'
-      ),
-      features: [
-        tx(lang,'Калькулятор маржи','Marja kalkulyatori','Margin calculator'),
-        tx(lang,'Анализ конкурентов','Raqobatchilarni tahlil qilish','Competitor analysis'),
-        tx(lang,'Подбор ниши','Nishani tanlash','Niche selection'),
-      ],
+        'Picking your first product? Unit economics shows real margin before purchase — no Excel needed'),
+      features: [tx(lang,'Калькулятор маржи','Marja kalkulyatori','Margin calculator'),
+        tx(lang,'Анализ конкурентов','Raqobatchilarni tahlil','Competitor analysis'),
+        tx(lang,'Подбор ниши','Nishani tanlash','Niche selection')],
     },
     {
-      num: '02', color: P.green,
+      color: acc.color,
       avatar: (
         <svg width="72" height="72" viewBox="0 0 72 72" fill="none">
-          <circle cx="36" cy="36" r="36" fill="rgba(22,163,74,0.10)"/>
-          <circle cx="36" cy="28" r="12" fill="#16A34A" opacity="0.85"/>
-          <ellipse cx="36" cy="56" rx="18" ry="12" fill="#16A34A" opacity="0.65"/>
-          <circle cx="50" cy="26" r="10" fill="rgba(22,163,74,0.9)"/>
+          <circle cx="36" cy="36" r="36" fill="rgba(14,116,144,0.10)"/>
+          <circle cx="36" cy="28" r="12" fill="#0E7490" opacity="0.85"/>
+          <ellipse cx="36" cy="56" rx="18" ry="12" fill="#0E7490" opacity="0.65"/>
+          <circle cx="50" cy="26" r="10" fill="rgba(14,116,144,0.9)"/>
           <text x="50" y="29.5" textAnchor="middle" fill="white" fontSize="10" fontWeight="700">📈</text>
         </svg>
       ),
       title: tx(lang,'Растущий магазин','O\'sib borayotgan do\'kon','Growing store'),
-      desc: tx(lang,
-        'Тратите на рекламу, но не понимаете, окупается ли? Таблица покажет ДРР по каждому товару в реальном времени',
-        'Reklamaga xarajat qilyapsizmi, lekin to\'layaptimi yoqmi bilmayapsizmi? Jadval har bir mahsulot uchun DRR ni ko\'rsatadi',
-        'Spending on ads but unsure of ROI? The table shows DRR per product in real time'
-      ),
-      features: [
-        tx(lang,'ДРР по товарам','Mahsulotlar bo\'yicha DRR','DRR per product'),
-        tx(lang,'Контроль остатков','Qoldiqlarni nazorat qilish','Stock control'),
-        tx(lang,'Уведомления Telegram','Telegram bildirishnomalari','Telegram alerts'),
-      ],
+      desc: tx(lang,'Тратите на рекламу, но не понимаете, окупается ли? Таблица покажет ДРР по каждому товару в реальном времени',
+        'Reklamaga xarajat qilyapsizmi, lekin to\'layaptimi bilmayapsizmi? Jadval DRR ni ko\'rsatadi',
+        'Spending on ads but unsure of ROI? The table shows DRR per product in real time'),
+      features: [tx(lang,'ДРР по товарам','Mahsulotlar bo\'yicha DRR','DRR per product'),
+        tx(lang,'Контроль остатков','Qoldiqlarni nazorat','Stock control'),
+        tx(lang,'Уведомления Telegram','Telegram bildirishnomalari','Telegram alerts')],
     },
     {
-      num: '03', color: P.amber,
+      color: P.amber,
       avatar: (
         <svg width="72" height="72" viewBox="0 0 72 72" fill="none">
           <circle cx="36" cy="36" r="36" fill="rgba(202,138,4,0.10)"/>
@@ -969,55 +1042,45 @@ function WhoSection({ lang }: { lang: string }) {
         </svg>
       ),
       title: tx(lang,'Менеджер магазинов','Do\'konlar menejeri','Store manager'),
-      desc: tx(lang,
-        'Ведёте несколько магазинов клиентов? Настройте пресеты, каждое утро открывайте дашборд — и всё под контролем',
+      desc: tx(lang,'Ведёте несколько магазинов клиентов? Настройте пресеты, каждое утро открывайте дашборд — и всё под контролем',
         'Bir nechta mijoz do\'konini boshqaryapsizmi? Presetlarni sozlang, har ertalab dashbordni oching',
-        'Managing multiple client stores? Set presets, open the dashboard each morning — everything under control'
-      ),
-      features: [
-        tx(lang,'Несколько магазинов','Bir nechta do\'kon','Multiple stores'),
+        'Managing multiple client stores? Set presets, open the dashboard each morning — everything under control'),
+      features: [tx(lang,'Несколько магазинов','Bir nechta do\'kon','Multiple stores'),
         tx(lang,'Пресеты колонок','Ustunlar presetlari','Column presets'),
-        tx(lang,'Сводный отчёт','Yig\'ma hisobot','Summary report'),
-      ],
+        tx(lang,'Сводный отчёт','Yig\'ma hisobot','Summary report')],
     },
   ]
 
   return (
-    <section style={{ background: P.card, padding: '88px 24px',
-      fontFamily: 'var(--font-golos), sans-serif' }}>
+    <section style={{ background: secBg, padding: '88px 24px',
+      fontFamily: 'var(--font-golos), sans-serif', transition: 'background 0.3s' }}>
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-        <SectionHead
+        <SectionHead dark={isDark}
           title={tx(lang,'Кому подходит Daromadchi','Daromadchi kimga mos keladi','Who is Daromadchi for')}
           accent={tx(lang,'подходит','mos keladi','for')}
           sub={tx(lang,'Для продавцов на Uzum, Wildberries и Yandex Market в Узбекистане',
             'O\'zbekistondagi Uzum, Wildberries va Yandex Market sotuvchilari uchun',
             'For sellers on Uzum, Wildberries and Yandex Market in Uzbekistan')}
         />
-
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 24 }}>
           {cards.map((c, i) => (
-            <FadeUp key={c.num} delay={i * 0.1}>
-              <div style={{ background: P.parchment, borderRadius: 20, padding: '32px 28px',
-                border: `1px solid ${P.hair}`, textAlign: 'center',
-                transition: 'transform 0.2s, box-shadow 0.2s' }}
-                onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-4px)'; (e.currentTarget as HTMLDivElement).style.boxShadow = '0 12px 36px rgba(0,0,0,0.10)' }}
-                onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)'; (e.currentTarget as HTMLDivElement).style.boxShadow = 'none' }}>
-
-                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
-                  {c.avatar}
-                </div>
-
-                <span style={{ fontSize: 32, fontWeight: 900, color: c.color, fontFamily: 'var(--font-mono-landing), monospace',
-                  display: 'block', marginBottom: 10, letterSpacing: '-0.02em' }}>{c.num}</span>
-
-                <h3 style={{ fontSize: 18, fontWeight: 700, color: P.ink, marginBottom: 10 }}>{c.title}</h3>
-                <p style={{ fontSize: 14, color: P.stone, lineHeight: 1.65, marginBottom: 20 }}>{c.desc}</p>
-
+            <FadeUp key={i} delay={i * 0.1}>
+              <div style={{ background: cardBg, borderRadius: 20, padding: '32px 28px',
+                border: `1px solid ${bdr}`, textAlign: 'center', transition: 'transform 0.2s, box-shadow 0.2s' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-4px)';
+                  (e.currentTarget as HTMLDivElement).style.boxShadow = isDark ? '0 12px 36px rgba(108,88,239,0.12)' : '0 12px 36px rgba(0,0,0,0.10)' }}
+                onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)';
+                  (e.currentTarget as HTMLDivElement).style.boxShadow = 'none' }}>
+                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>{c.avatar}</div>
+                <span style={{ fontSize: 30, fontWeight: 900, color: c.color, fontFamily: 'var(--font-mono-landing), monospace',
+                  display: 'block', marginBottom: 10 }}>{String(i+1).padStart(2,'0')}</span>
+                <h3 style={{ fontSize: 17, fontWeight: 700, color: ink, marginBottom: 10 }}>{c.title}</h3>
+                <p style={{ fontSize: 14, color: sub, lineHeight: 1.65, marginBottom: 20 }}>{c.desc}</p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   {c.features.map(f => (
                     <div key={f} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <Check size={13} color={c.color}/>
-                      <span style={{ fontSize: 13, color: P.stone }}>{f}</span>
+                      <span style={{ fontSize: 13, color: sub }}>{f}</span>
                     </div>
                   ))}
                 </div>
@@ -1030,125 +1093,128 @@ function WhoSection({ lang }: { lang: string }) {
   )
 }
 
-// ── 6. PRICING ───────────────────────────────────────────────────────────────
+// ── 6. PRICING — theme-aware ──────────────────────────────────────────────────
 function PricingSection({ lang }: { lang: string }) {
+  const isDark = useIsDark()
+  const acc = useAccent()
+
+  const secBg  = isDark ? P.dCanvas : '#F8FAFF'
+  const ink    = isDark ? P.dText   : P.ink
+  const muted  = isDark ? P.dMuted  : P.stone
+  const bdr    = isDark ? P.dHair   : '#D6DCFF'
+  const cardBg = isDark ? '#13102E' : '#FFFFFF'
+
   const tiers = [
     {
-      name: tx(lang,'Бесплатно','Bepul','Free'),
-      price: '0',
-      sub: tx(lang,'Навсегда','Abadiy','Forever'),
-      highlight: false,
+      name: tx(lang,'Бесплатно','Bepul','Free'), price: '0',
+      sub: tx(lang,'навсегда','abadiy','forever'), highlight: false,
       features: [
+        tx(lang,'Демо-данные','Demo ma\'lumotlar','Demo data'),
         tx(lang,'1 магазин','1 do\'kon','1 store'),
-        tx(lang,'Топ-50 товаров','Top-50 mahsulot','Top 50 products'),
-        tx(lang,'Обновление раз в сутки','Kunlik yangilanish','Daily updates'),
-        tx(lang,'Базовая выручка и заказы','Asosiy daromad va buyurtmalar','Basic revenue & orders'),
+        tx(lang,'6 страниц аналитики','6 tahlil sahifasi','6 analytics pages'),
       ],
-      absent: [
-        tx(lang,'ДРР и юнит-экономика','DRR va birlik-iqtisod','DRR & unit economics'),
-        tx(lang,'Уведомления Telegram','Telegram bildirishnomalari','Telegram alerts'),
-        tx(lang,'Экспорт в Excel','Excel ga eksport','Excel export'),
-      ],
-      cta: tx(lang,'Начать бесплатно','Bepul boshlash','Start free'),
-      ctaHref: '/login',
+      cta: tx(lang,'Начать бесплатно','Bepul boshlash','Start free'), ctaHref: '/login',
     },
     {
-      name: 'Pro',
-      price: '149 000',
-      badge: tx(lang,'Популярный','Ommabop','Popular'),
-      sub: tx(lang,'сум / месяц','so\'m / oy','sum / month'),
-      highlight: true,
+      name: 'Pro', price: '300 000', badge: tx(lang,'Популярный','Ommabop','Popular'),
+      sub: tx(lang,'сум / месяц','so\'m / oy','sum / month'), highlight: true,
       features: [
         tx(lang,'До 3 магазинов','3 ta do\'kongacha','Up to 3 stores'),
-        tx(lang,'Все товары без лимита','Limit yo\'q barcha mahsulotlar','Unlimited products'),
-        tx(lang,'Обновление каждые 15 мин','Har 15 daqiqada yangilanish','Updates every 15 min'),
-        tx(lang,'ДРР и юнит-экономика','DRR va birlik-iqtisod','DRR & unit economics'),
-        tx(lang,'Уведомления в Telegram','Telegram bildirishnomalari','Telegram alerts'),
-        tx(lang,'Экспорт в Excel','Excel ga eksport','Excel export'),
+        tx(lang,'Вся аналитика','Barcha tahlillar','All analytics'),
+        tx(lang,'Автосинхронизация','Avto-sinxronizatsiya','Auto-sync'),
+        tx(lang,'P&L отчёт','P&L hisobot','P&L report'),
+        tx(lang,'Email-уведомления','Email ogohlantirishlar','Email notifications'),
       ],
-      absent: [],
-      cta: tx(lang,'Попробовать Pro','Pro ni sinash','Try Pro'),
-      ctaHref: '/login',
+      cta: tx(lang,'Попробовать Pro','Pro ni sinab ko\'rish','Try Pro'), ctaHref: '/login',
     },
     {
-      name: 'Pro+',
-      price: '349 000',
-      sub: tx(lang,'сум / месяц','so\'m / oy','sum / month'),
-      highlight: false,
+      name: 'Pro+', price: '600 000',
+      sub: tx(lang,'сум / месяц','so\'m / oy','sum / month'), highlight: false,
       features: [
-        tx(lang,'Неограниченно магазинов','Cheksiz do\'konlar','Unlimited stores'),
-        tx(lang,'Всё из Pro','Pro dagi hammasi','Everything in Pro'),
-        tx(lang,'API-доступ','API-kirish','API access'),
+        tx(lang,'5+ магазинов','5+ do\'konlar','5+ stores'),
+        tx(lang,'Всё из Pro','Barcha Pro imkoniyatlar','Everything in Pro'),
+        tx(lang,'API-доступ','API kirish','API access'),
         tx(lang,'Приоритетная поддержка','Ustuvor yordam','Priority support'),
-        tx(lang,'Настраиваемые пресеты','Moslashtirilgan presetlar','Custom presets'),
-        tx(lang,'Белый лейбл для агентств','Agentliklar uchun oq yorliq','White label for agencies'),
       ],
-      absent: [],
-      cta: tx(lang,'Подключить Pro+','Pro+ ulash','Get Pro+'),
-      ctaHref: '/login',
+      cta: tx(lang,'Подключить Pro+','Pro+ ulash','Get Pro+'), ctaHref: '/login',
     },
   ]
 
   return (
-    <section id="pricing" style={{ background: P.parchment, padding: '88px 24px',
-      fontFamily: 'var(--font-golos), sans-serif' }}>
-      <div style={{ maxWidth: 1000, margin: '0 auto' }}>
-        <SectionHead
-          title={tx(lang,'Тарифы','Tariflar','Pricing')}
-          sub={tx(lang,'Начните бесплатно, масштабируйтесь по мере роста','Bepul boshlang, o\'sish bilan kengaytiring','Start free, scale as you grow')}
-        />
+    <section id="pricing" style={{ background: secBg, padding: '88px 24px',
+      fontFamily: 'var(--font-golos), sans-serif', transition: 'background 0.3s' }}>
+      <div style={{ maxWidth: 1000, margin: '0 auto', position: 'relative' }}>
+        <FadeUp>
+          <div style={{ textAlign: 'center', marginBottom: 56 }}>
+            <p style={{ fontSize: 11, fontWeight: 700, color: acc.color, marginBottom: 10,
+              textTransform: 'uppercase', letterSpacing: '0.12em' }}>
+              {tx(lang,'ТАРИФЫ','TARIFLAR','PRICING')}
+            </p>
+            <h2 style={{ fontSize: 'clamp(26px, 3.5vw, 42px)', fontWeight: 800, color: ink,
+              letterSpacing: '-0.022em', marginBottom: 16 }}>
+              {tx(lang,'Тариф для вашего бизнеса','Biznesingizga mos tarif','A plan for your business')}
+            </h2>
+            <p style={{ fontSize: 16, color: muted, maxWidth: 400, margin: '0 auto' }}>
+              {tx(lang,'Начните бесплатно, масштабируйтесь по мере роста',
+                'Bepul boshlang, o\'sish bilan kengaytiring','Start free, scale as you grow')}
+            </p>
+          </div>
+        </FadeUp>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 20 }}>
           {tiers.map((t, i) => (
             <FadeUp key={t.name} delay={i * 0.1}>
-              <div style={{ background: t.highlight ? P.green : P.card, borderRadius: 20, padding: '28px 24px',
-                border: t.highlight ? 'none' : `1px solid ${P.hair}`,
-                boxShadow: t.highlight ? '0 12px 40px rgba(22,163,74,0.25)' : '0 2px 12px rgba(0,0,0,0.05)',
-                position: 'relative', height: '100%', display: 'flex', flexDirection: 'column' }}>
+              <div style={{
+                background: t.highlight ? acc.color : cardBg,
+                borderRadius: 20, padding: '28px 24px',
+                border: t.highlight ? 'none' : `1px solid ${bdr}`,
+                boxShadow: t.highlight
+                  ? `0 16px 48px ${acc.color}40`
+                  : isDark ? 'none' : '0 4px 20px rgba(0,0,0,0.05)',
+                position: 'relative', height: '100%', display: 'flex', flexDirection: 'column',
+              }}>
 
-                {t.badge && (
-                  <div style={{ position: 'absolute', top: -12, left: '50%', transform: 'translateX(-50%)',
-                    background: P.amber, borderRadius: 100, padding: '4px 16px',
-                    fontSize: 11, fontWeight: 800, color: '#fff', letterSpacing: '0.04em' }}>
-                    {t.badge}
-                  </div>
-                )}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                  <p style={{ fontSize: 13, fontWeight: 700,
+                    color: t.highlight ? 'rgba(255,255,255,0.75)' : muted }}>
+                    {t.name}
+                  </p>
+                  {(t as any).badge && (
+                    <span style={{ background: P.amber, borderRadius: 100, padding: '3px 12px',
+                      fontSize: 10, fontWeight: 800, color: '#fff', letterSpacing: '0.04em' }}>
+                      {(t as any).badge}
+                    </span>
+                  )}
+                </div>
 
-                <p style={{ fontSize: 14, fontWeight: 700, color: t.highlight ? 'rgba(255,255,255,0.7)' : P.stone, marginBottom: 8 }}>
-                  {t.name}
-                </p>
                 <div style={{ marginBottom: 4 }}>
-                  <span style={{ fontSize: 32, fontWeight: 800, color: t.highlight ? '#fff' : P.ink,
+                  <span style={{ fontSize: 34, fontWeight: 800,
+                    color: t.highlight ? '#fff' : ink,
                     fontFamily: 'var(--font-mono-landing), monospace' }}>
                     {t.price}
                   </span>
                 </div>
-                <p style={{ fontSize: 13, color: t.highlight ? 'rgba(255,255,255,0.6)' : P.muted, marginBottom: 24 }}>
-                  {t.sub}
-                </p>
+                <p style={{ fontSize: 13, color: t.highlight ? 'rgba(255,255,255,0.55)' : muted,
+                  marginBottom: 24 }}>{t.sub}</p>
 
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
                   {t.features.map(f => (
                     <div key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-                      <Check size={14} color={t.highlight ? 'rgba(255,255,255,0.9)' : P.green} style={{ marginTop: 2, flexShrink: 0 }}/>
-                      <span style={{ fontSize: 13, color: t.highlight ? 'rgba(255,255,255,0.85)' : P.ink, lineHeight: 1.4 }}>{f}</span>
-                    </div>
-                  ))}
-                  {t.absent.map(f => (
-                    <div key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-                      <X size={14} color={P.muted} style={{ marginTop: 2, flexShrink: 0 }}/>
-                      <span style={{ fontSize: 13, color: P.muted, lineHeight: 1.4 }}>{f}</span>
+                      <Check size={14} color={t.highlight ? 'rgba(255,255,255,0.9)' : acc.color}
+                        style={{ marginTop: 2, flexShrink: 0 }}/>
+                      <span style={{ fontSize: 13,
+                        color: t.highlight ? 'rgba(255,255,255,0.85)' : ink, lineHeight: 1.4 }}>{f}</span>
                     </div>
                   ))}
                 </div>
 
                 <Link href={t.ctaHref}
                   style={{ display: 'block', textAlign: 'center', fontSize: 14, fontWeight: 700,
-                    background: t.highlight ? 'rgba(255,255,255,0.15)' : P.green, color: t.highlight ? '#fff' : '#fff',
-                    padding: '13px 24px', borderRadius: 10, textDecoration: 'none',
-                    border: t.highlight ? '1px solid rgba(255,255,255,0.25)' : 'none',
+                    background: t.highlight ? 'rgba(255,255,255,0.18)' : acc.color,
+                    color: '#fff', padding: '13px 24px', borderRadius: 10, textDecoration: 'none',
+                    border: t.highlight ? '1px solid rgba(255,255,255,0.30)' : 'none',
                     transition: 'all 0.15s' }}
-                  onMouseEnter={e => { e.currentTarget.style.background = t.highlight ? 'rgba(255,255,255,0.22)' : P.greenDk }}
-                  onMouseLeave={e => { e.currentTarget.style.background = t.highlight ? 'rgba(255,255,255,0.15)' : P.green }}>
+                  onMouseEnter={e => { e.currentTarget.style.background = t.highlight ? 'rgba(255,255,255,0.26)' : acc.dk }}
+                  onMouseLeave={e => { e.currentTarget.style.background = t.highlight ? 'rgba(255,255,255,0.18)' : acc.color }}>
                   {t.cta}
                 </Link>
               </div>
@@ -1160,49 +1226,51 @@ function PricingSection({ lang }: { lang: string }) {
   )
 }
 
-// ── 7. RESOURCES STRIP ───────────────────────────────────────────────────────
+// ── 7. RESOURCES ──────────────────────────────────────────────────────────────
 function ResourcesSection({ lang }: { lang: string }) {
+  const isDark = useIsDark()
+  const acc = useAccent()
+  const secBg  = isDark ? '#0D0A22' : P.card
+  const cardBg = isDark ? P.dCard   : P.parchment
+  const bdr    = isDark ? P.dHair   : P.hair
+  const ink    = isDark ? P.dText   : P.ink
+  const muted  = isDark ? P.dMuted  : P.stone
+
   const cards = [
     {
-      icon: '📖',
-      title: tx(lang,'Справка','Yordam markazi','Help center'),
+      icon: '📖', title: tx(lang,'Справка','Yordam markazi','Help center'),
       items: [
-        { t: tx(lang,'Быстрый старт за 5 минут','5 daqiqada tez boshlash','Quick start in 5 minutes'), sub: tx(lang,'Пошаговое руководство от подключения до первого отчёта','Ulashdan birinchi hisobotgacha bosqichma-bosqich qo\'llanma','Step-by-step guide from connecting to first report') },
-        { t: tx(lang,'Как работает ДРР','DRR qanday ishlaydi','How DRR works'), sub: tx(lang,'Формула расчёта и примеры интерпретации','Hisoblash formulasi va talqin misollari','Calculation formula and interpretation examples') },
-        { t: tx(lang,'Настройка юнит-экономики','Birlik-iqtisodni sozlash','Setting up unit economics'), sub: tx(lang,'Укажите закупочные цены и логистику — Daromadchi сделает остальное','Xarid narxlari va logistikani kiriting — Daromadchi qolganini qiladi','Enter purchase prices and logistics — Daromadchi does the rest') },
+        { t: tx(lang,'Быстрый старт за 5 минут','5 daqiqada tez boshlash','Quick start in 5 minutes'), sub: tx(lang,'Пошаговое руководство','Bosqichma-bosqich qo\'llanma','Step-by-step guide') },
+        { t: tx(lang,'Как работает ДРР','DRR qanday ishlaydi','How DRR works'), sub: tx(lang,'Формула и примеры','Formula va misollar','Formula and examples') },
+        { t: tx(lang,'Настройка юнит-экономики','Birlik-iqtisodni sozlash','Setting up unit economics'), sub: tx(lang,'Укажите закупку и логистику','Xarid va logistikani kiriting','Enter purchase costs and logistics') },
       ],
-      link: tx(lang,'Все статьи →','Barcha maqolalar →','All articles →'),
-      linkColor: P.green,
+      link: tx(lang,'Все статьи →','Barcha maqolalar →','All articles →'), linkColor: acc.color, href: '/help',
     },
     {
-      icon: '🗺️',
-      title: tx(lang,'Дорожная карта','Yo\'l xaritasi','Roadmap'),
+      icon: '🗺️', title: tx(lang,'Дорожная карта','Yo\'l xaritasi','Roadmap'),
       items: [
         { t: tx(lang,'AI-прогноз остатков','AI-qoldiq bashorati','AI stock forecast'), sub: 'июль 2026', dot: P.amber },
         { t: tx(lang,'Мобильное приложение','Mobil ilova','Mobile app'), sub: 'август 2026', dot: P.amber },
-        { t: tx(lang,'Сравнение по категориям','Toifalar bo\'yicha taqqoslash','Category comparison'), sub: tx(lang,'В разработке','Ishlanmoqda','In development'), dot: P.green },
+        { t: tx(lang,'Сравнение по категориям','Toifalar bo\'yicha taqqoslash','Category comparison'), sub: tx(lang,'В разработке','Ishlanmoqda','In development'), dot: acc.color },
       ],
-      link: tx(lang,'Смотреть все →','Barchasini ko\'rish →','See all →'),
-      linkColor: P.amber,
+      link: tx(lang,'Смотреть все →','Barchasini ko\'rish →','See all →'), linkColor: P.amber, href: '/help',
     },
     {
-      icon: '🕐',
-      title: tx(lang,'Обновления','Yangilanishlar','Changelog'),
+      icon: '🕐', title: tx(lang,'Обновления','Yangilanishlar','Changelog'),
       items: [
-        { t: tx(lang,'Ускорена синхронизация Yandex Market','Yandex Market sinxronizatsiyasi tezlashtirildi','Yandex Market sync speed improved'), sub: '1.4.2 · 15 июня', dot: P.green },
-        { t: tx(lang,'Добавлен экспорт по каждой площадке','Har bir sayt bo\'yicha eksport qo\'shildi','Added per-platform export'), sub: '1.4.1 · 2 июня', dot: P.green },
+        { t: tx(lang,'Ускорена синхронизация Yandex Market','Yandex Market sinxronizatsiyasi tezlashtirildi','Yandex Market sync improved'), sub: '1.4.2 · 15 июня', dot: acc.color },
+        { t: tx(lang,'Добавлен экспорт по каждой площадке','Har bir sayt bo\'yicha eksport qo\'shildi','Per-platform export added'), sub: '1.4.1 · 2 июня', dot: acc.color },
         { t: tx(lang,'Новый раздел юнит-экономики','Yangi birlik-iqtisod bo\'limi','New unit economics section'), sub: '1.4.0 · 20 мая', dot: P.uzum },
       ],
-      link: tx(lang,'Все обновления →','Barcha yangilanishlar →','All updates →'),
-      linkColor: P.uzum,
+      link: tx(lang,'Все обновления →','Barcha yangilanishlar →','All updates →'), linkColor: P.uzum, href: '/help',
     },
   ]
 
   return (
-    <section id="resources" style={{ background: P.card, padding: '88px 24px',
-      fontFamily: 'var(--font-golos), sans-serif' }}>
+    <section id="resources" style={{ background: secBg, padding: '88px 24px',
+      fontFamily: 'var(--font-golos), sans-serif', transition: 'background 0.3s' }}>
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-        <SectionHead
+        <SectionHead dark={isDark}
           title={tx(lang,'Ресурсы и развитие','Resurslar va rivojlanish','Resources & development')}
           accent={tx(lang,'развитие','rivojlanish','development')}
           sub={tx(lang,'Справочные материалы, планы развития и история обновлений',
@@ -1212,32 +1280,28 @@ function ResourcesSection({ lang }: { lang: string }) {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 20 }}>
           {cards.map((c, i) => (
             <FadeUp key={c.title} delay={i * 0.1}>
-              <div style={{ background: P.parchment, borderRadius: 20, padding: '24px',
-                border: `1px solid ${P.hair}`, height: '100%', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ background: cardBg, borderRadius: 20, padding: '24px',
+                border: `1px solid ${bdr}`, height: '100%', display: 'flex', flexDirection: 'column' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
                   <span style={{ fontSize: 20 }}>{c.icon}</span>
-                  <h3 style={{ fontSize: 16, fontWeight: 700, color: P.ink }}>{c.title}</h3>
+                  <h3 style={{ fontSize: 16, fontWeight: 700, color: ink }}>{c.title}</h3>
                 </div>
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 12 }}>
                   {c.items.map((item, j) => (
                     <div key={j} style={{ display: 'flex', gap: 10, cursor: 'pointer' }}>
-                      {('dot' in item) ? (
-                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: item.dot as string,
-                          marginTop: 5, flexShrink: 0 }} />
-                      ) : null}
+                      {('dot' in item) && <div style={{ width: 8, height: 8, borderRadius: '50%', background: item.dot as string, marginTop: 5, flexShrink: 0 }} />}
                       <div>
-                        <p style={{ fontSize: 13, fontWeight: 600, color: P.ink, marginBottom: 2, lineHeight: 1.4 }}>{item.t}</p>
-                        <p style={{ fontSize: 11, color: P.muted }}>{item.sub}</p>
+                        <p style={{ fontSize: 13, fontWeight: 600, color: ink, marginBottom: 2, lineHeight: 1.4 }}>{item.t}</p>
+                        <p style={{ fontSize: 11, color: muted }}>{item.sub}</p>
                       </div>
                     </div>
                   ))}
                 </div>
-                <a href="#" style={{ fontSize: 13, fontWeight: 700, color: c.linkColor, textDecoration: 'none', marginTop: 20,
-                  display: 'block', transition: 'opacity 0.15s' }}
+                <Link href={(c as any).href ?? '/help'} style={{ fontSize: 13, fontWeight: 700, color: c.linkColor, textDecoration: 'none', marginTop: 20, display: 'block' }}
                   onMouseEnter={e => (e.currentTarget.style.opacity = '0.7')}
                   onMouseLeave={e => (e.currentTarget.style.opacity = '1')}>
                   {c.link}
-                </a>
+                </Link>
               </div>
             </FadeUp>
           ))}
@@ -1247,92 +1311,70 @@ function ResourcesSection({ lang }: { lang: string }) {
   )
 }
 
-// ── 8. FAQ ───────────────────────────────────────────────────────────────────
+// ── 8. FAQ ────────────────────────────────────────────────────────────────────
 function FaqSection({ lang }: { lang: string }) {
-  const [open, setOpen] = useState<number | null>(null)
+  const isDark = useIsDark()
+  const acc = useAccent()
+  const [open, setOpen] = useState<number | null>(0)
+  const secBg = isDark ? '#13102E' : P.parchment
+  const bdr   = isDark ? P.dHair   : P.hair
+  const ink   = isDark ? P.dText   : P.ink
+  const sub   = isDark ? P.dMuted  : P.stone
 
   const faqs = [
-    {
-      q: tx(lang,'Безопасно ли подключать API-ключ?','API kalitini ulash xavfsizmi?','Is it safe to connect my API key?'),
-      a: tx(lang,
-        'Да. Мы используем только Read Only ключи — мы можем читать данные из вашего магазина, но никогда не можем изменять цены, товары или заказы. Ключ хранится в зашифрованном виде.',
-        'Ha. Biz faqat Read Only kalitlaridan foydalanamiz — biz do\'kongingizdagi ma\'lumotlarni o\'qiy olamiz, lekin narxlar, mahsulotlar yoki buyurtmalarni hech qachon o\'zgartira olmaymiz. Kalit shifrlanib saqlanadi.',
-        'Yes. We only use Read Only keys — we can read data from your store but can never modify prices, products or orders. The key is stored encrypted.'
-      ),
-    },
-    {
-      q: tx(lang,'Как быстро появляются данные после подключения?','Ulanganidan keyin ma\'lumotlar qanchalik tez paydo bo\'ladi?','How quickly does data appear after connecting?'),
-      a: tx(lang,
-        'Первая синхронизация занимает 15–35 минут и подтягивает историю за последние 7 дней. Далее данные обновляются автоматически каждые 15 минут для заказов и каждые 4 часа для статистики.',
-        'Birinchi sinxronizatsiya 15–35 daqiqa davom etadi va so\'nggi 7 kunlik tarixni tortib oladi. Keyin buyurtmalar uchun har 15 daqiqada, statistika uchun har 4 soatda avtomatik yangilanadi.',
-        'First sync takes 15–35 minutes and pulls 7 days of history. After that, data updates automatically every 15 minutes for orders and every 4 hours for statistics.'
-      ),
-    },
-    {
-      q: tx(lang,'Поддерживаете ли все три маркетплейса?','Uchala marketpleysni ham qo\'llayapsizmi?','Do you support all three marketplaces?'),
-      a: tx(lang,
-        'Да — Uzum Market, Wildberries и Yandex Market полностью поддерживаются. Данные из всех трёх платформ объединяются в единую таблицу с разбивкой по площадкам.',
-        'Ha — Uzum Market, Wildberries va Yandex Market to\'liq qo\'llaniladi. Uchala platformadagi ma\'lumotlar maydonlar bo\'yicha taqsimlangan holda bitta jadvalda birlashtiriladi.',
-        'Yes — Uzum Market, Wildberries and Yandex Market are fully supported. Data from all three platforms is merged into one table with per-platform breakdown.'
-      ),
-    },
-    {
-      q: tx(lang,'Как работает юнит-экономика?','Birlik-iqtisod qanday ishlaydi?','How does unit economics work?'),
-      a: tx(lang,
-        'Вы вводите закупочную цену, логистику и прочие расходы по каждому товару. Daromadchi автоматически рассчитывает маржу, ROI и минимальную цену продажи для безубыточности.',
-        'Har bir mahsulot uchun xarid narxi, logistika va boshqa xarajatlarni kiritasiz. Daromadchi avtomatik ravishda marja, ROI va zarardan chiqadigan minimal sotish narxini hisoblaydi.',
-        'You enter purchase price, logistics and other costs per product. Daromadchi automatically calculates margin, ROI and minimum break-even price.'
-      ),
-    },
-    {
-      q: tx(lang,'Есть ли мобильная версия?','Mobil versiya bormi?','Is there a mobile version?'),
-      a: tx(lang,
-        'Веб-версия адаптирована для мобильных устройств и работает в любом браузере. Нативное мобильное приложение в дорожной карте на август 2026 года.',
-        'Veb-versiya mobil qurilmalar uchun moslashtirilgan va istalgan brauzerda ishlaydi. Mahalliy mobil ilova avgust 2026 yo\'l xaritasida.',
-        'The web version is mobile-responsive and works in any browser. A native mobile app is on the roadmap for August 2026.'
-      ),
-    },
-    {
-      q: tx(lang,'Можно ли попробовать перед оплатой?','To\'lovdan oldin sinab ko\'rsa bo\'ladimi?','Can I try before paying?'),
-      a: tx(lang,
-        'Да, есть бесплатный тариф без ограничения по времени: до 1 магазина, топ-50 товаров, ежедневные обновления. Для доступа ко всем функциям — Pro от 149 000 сум/мес.',
-        'Ha, vaqt cheklovisiz bepul tarif mavjud: 1 do\'kongacha, top-50 mahsulot, kunlik yangilanishlar. Barcha funksiyalarga kirish uchun — oyiga 149 000 so\'mdan Pro.',
-        'Yes, there\'s a free tier with no time limit: up to 1 store, top 50 products, daily updates. For all features — Pro from 149,000 sum/month.'
-      ),
-    },
+    { q: tx(lang,'Безопасно ли подключать API-ключ?','API kalitini ulash xavfsizmi?','Is it safe to connect my API key?'),
+      a: tx(lang,'Да. Мы используем только Read Only ключи — мы можем читать данные из вашего магазина, но никогда не можем изменять цены, товары или заказы. Ключ хранится в зашифрованном виде.',
+        'Ha. Biz faqat Read Only kalitlaridan foydalanamiz — biz do\'kongingizdagi ma\'lumotlarni o\'qiy olamiz, lekin narxlar, mahsulotlar yoki buyurtmalarni hech qachon o\'zgartira olmaymiz.',
+        'Yes. We only use Read Only keys — we can read data from your store but can never modify prices, products or orders. The key is stored encrypted.') },
+    { q: tx(lang,'Как быстро появляются данные после подключения?','Ulanganidan keyin ma\'lumotlar qanchalik tez paydo bo\'ladi?','How quickly does data appear after connecting?'),
+      a: tx(lang,'Первая синхронизация занимает до 5 минут и подтягивает историю за последние 7 дней. Далее данные обновляются автоматически каждые 15 минут для заказов и каждые 4 часа для статистики.',
+        'Birinchi sinxronizatsiya 5 daqiqagacha davom etadi va so\'nggi 7 kunlik tarixni tortib oladi. Keyin buyurtmalar uchun har 15 daqiqada, statistika uchun har 4 soatda avtomatik yangilanadi.',
+        'First sync takes up to 5 minutes and pulls 7 days of history. After that, orders update every 15 minutes and statistics every 4 hours.') },
+    { q: tx(lang,'Поддерживаете ли все три маркетплейса?','Uchala marketpleysni ham qo\'llayapsizmi?','Do you support all three marketplaces?'),
+      a: tx(lang,'Да — Uzum Market, Wildberries и Yandex Market полностью поддерживаются. Данные из всех трёх платформ объединяются в единую таблицу с разбивкой по площадкам.',
+        'Ha — Uzum Market, Wildberries va Yandex Market to\'liq qo\'llaniladi.',
+        'Yes — Uzum Market, Wildberries and Yandex Market are fully supported. Data from all three platforms is merged into one table with per-platform breakdown.') },
+    { q: tx(lang,'Как работает юнит-экономика?','Birlik-iqtisod qanday ishlaydi?','How does unit economics work?'),
+      a: tx(lang,'Вы вводите закупочную цену, логистику и прочие расходы по каждому товару. Daromadchi автоматически рассчитывает маржу, ROI и минимальную цену продажи для безубыточности.',
+        'Har bir mahsulot uchun xarid narxi, logistika va boshqa xarajatlarni kiritasiz. Daromadchi avtomatik ravishda marja, ROI va minimal sotish narxini hisoblaydi.',
+        'You enter purchase price, logistics and other costs per product. Daromadchi automatically calculates margin, ROI and minimum break-even price.') },
+    { q: tx(lang,'Есть ли мобильная версия?','Mobil versiya bormi?','Is there a mobile version?'),
+      a: tx(lang,'Веб-версия адаптирована для мобильных устройств и работает в любом браузере. Нативное мобильное приложение в дорожной карте на август 2026 года.',
+        'Veb-versiya mobil qurilmalar uchun moslashtirilgan. Mahalliy mobil ilova avgust 2026 yo\'l xaritasida.',
+        'The web version is mobile-responsive and works in any browser. A native mobile app is on the roadmap for August 2026.') },
+    { q: tx(lang,'Можно ли попробовать перед оплатой?','To\'lovdan oldin sinab ko\'rsa bo\'ladimi?','Can I try before paying?'),
+      a: tx(lang,'Да, есть бесплатный тариф без ограничения по времени: до 1 магазина, топ-50 товаров, ежедневные обновления. Для доступа ко всем функциям — Pro от 149 000 сум/мес.',
+        'Ha, vaqt cheklovisiz bepul tarif mavjud: 1 do\'kongacha, top-50 mahsulot, kunlik yangilanishlar.',
+        'Yes, there\'s a free tier with no time limit: up to 1 store, top 50 products, daily updates. For all features — Pro from 149,000 sum/month.') },
   ]
 
   return (
-    <section id="faq" style={{ background: P.parchment, padding: '88px 24px',
-      fontFamily: 'var(--font-golos), sans-serif' }}>
+    <section id="faq" style={{ background: secBg, padding: '88px 24px',
+      fontFamily: 'var(--font-golos), sans-serif', transition: 'background 0.3s' }}>
       <div style={{ maxWidth: 760, margin: '0 auto' }}>
-        <SectionHead
+        <SectionHead dark={isDark}
           title={tx(lang,'Частые вопросы','Tez-tez so\'raladigan savollar','Frequently asked questions')}
           accent={tx(lang,'вопросы','savollar','questions')}
         />
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
           {faqs.map((f, i) => (
             <FadeUp key={i} delay={i * 0.06}>
-              <div style={{ borderBottom: `1px solid ${P.hair}` }}>
-                <button
-                  onClick={() => setOpen(open === i ? null : i)}
+              <div style={{ borderBottom: `1px solid ${bdr}` }}>
+                <button onClick={() => setOpen(open === i ? null : i)}
                   style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    padding: '20px 0', background: 'transparent', border: 'none', cursor: 'pointer',
-                    textAlign: 'left', gap: 16 }}>
+                    padding: '20px 0', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', gap: 16 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: P.green, fontFamily: 'var(--font-mono-landing), monospace',
-                      minWidth: 20 }}>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: acc.color,
+                      fontFamily: 'var(--font-mono-landing), monospace', minWidth: 20 }}>
                       {String(i + 1).padStart(2, '0')}
                     </span>
-                    <span style={{ fontSize: 16, fontWeight: 600, color: P.ink }}>{f.q}</span>
+                    <span style={{ fontSize: 15, fontWeight: 600, color: ink }}>{f.q}</span>
                   </div>
                   <motion.div animate={{ rotate: open === i ? 180 : 0 }} transition={{ duration: 0.2 }}>
-                    <ChevronDown size={18} color={P.muted}/>
+                    <ChevronDown size={18} color={sub}/>
                   </motion.div>
                 </button>
-
-                <AnimatePresence>
+                <AnimatePresence initial={false}>
                   {open === i && (
                     <motion.div
                       initial={{ height: 0, opacity: 0 }}
@@ -1340,7 +1382,7 @@ function FaqSection({ lang }: { lang: string }) {
                       exit={{ height: 0, opacity: 0 }}
                       transition={{ duration: 0.25, ease: 'easeInOut' }}
                       style={{ overflow: 'hidden' }}>
-                      <p style={{ fontSize: 15, color: P.stone, lineHeight: 1.7, paddingBottom: 20, paddingLeft: 34 }}>
+                      <p style={{ fontSize: 14, color: sub, lineHeight: 1.7, paddingBottom: 20, paddingLeft: 34 }}>
                         {f.a}
                       </p>
                     </motion.div>
@@ -1355,62 +1397,58 @@ function FaqSection({ lang }: { lang: string }) {
   )
 }
 
-// ── 9. CTA — dark mirror of hero ─────────────────────────────────────────────
+// ── 9. CTA ────────────────────────────────────────────────────────────────────
 function CtaSection({ lang }: { lang: string }) {
-  return (
-    <section style={{ position: 'relative', background: P.dCanvas, overflow: 'hidden',
-      padding: '100px 24px', fontFamily: 'var(--font-golos), sans-serif' }}>
-      {/* Green glow — mirrors hero */}
-      <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none',
-        background: 'radial-gradient(ellipse 80% 60% at 50% 120%, rgba(22,163,74,0.22) 0%, transparent 65%)' }} />
-      <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none',
-        background: 'radial-gradient(ellipse 50% 40% at 50% 100%, rgba(22,163,74,0.09) 0%, transparent 55%)' }} />
+  const isDark = useIsDark()
+  const acc = useAccent()
+  const secBg   = isDark ? P.dCanvas : 'linear-gradient(160deg, #DBEAFE 0%, #BAE6FD 55%, #90D5FF 100%)'
+  const headCol = isDark ? P.dText   : P.ink
+  const subCol  = isDark ? P.dMuted  : P.stone
+  const badgeCol = isDark ? 'rgba(255,255,255,0.45)' : P.stone
+  const glowColor = isDark ? 'rgba(108,88,239,0.22)' : 'rgba(144,213,255,0.45)'
 
-      {/* Floating cards (desktop) */}
+  return (
+    <section style={{ position: 'relative', background: secBg, overflow: 'hidden',
+      padding: '100px 24px', fontFamily: 'var(--font-golos), sans-serif', transition: 'background 0.3s' }}>
+      <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none',
+        background: `radial-gradient(ellipse 80% 55% at 50% 120%, ${glowColor} 0%, transparent 65%)` }} />
+
       <div className="hidden lg:block">
-        <FloatCard mp="Uzum" mpColor={P.uzum} metric="Выручка" value="24.5M" change="+12%" up delay={0}
+        <FloatCard mp="Uzum" mpColor={P.uzum} metric="Выручка" value="24.5M сум" change="+12%" up delay={0} floatDur={3.8}
           style={{ left: '4%', top: '20%', transform: 'rotate(-3.5deg)', zIndex: 5, opacity: 0.9 }} />
-        <FloatCard mp="Wildberries" mpColor={P.wb} metric="Заказы" value="1 842" change="+8%" up delay={0.1}
+        <FloatCard mp="Wildberries" mpColor={P.wb} metric="Заказы" value="1 842" change="+8%" up delay={0.1} floatDur={4.3}
           style={{ right: '3%', top: '18%', transform: 'rotate(4deg)', zIndex: 5, opacity: 0.9 }} />
-        <FloatCard mp="Yandex Market" mpColor={P.yandex} metric="ДРР" value="8.2%" change="-1.4%" up={false} delay={0.15}
+        <FloatCard mp="Yandex Market" mpColor={P.yandex} metric="ДРР" value="8.2%" change="-1.4%" up={false} delay={0.15} floatDur={3.6}
           style={{ left: '6%', bottom: '20%', transform: 'rotate(-2deg)', zIndex: 5, opacity: 0.9 }} />
-        <FloatCard mp="Uzum" mpColor={P.uzum} metric="Прибыль" value="6.8M" change="+15%" up delay={0.2}
+        <FloatCard mp="Uzum" mpColor={P.uzum} metric="Прибыль" value="6.8M сум" change="+15%" up delay={0.2} floatDur={4.1}
           style={{ right: '5%', bottom: '22%', transform: 'rotate(3deg)', zIndex: 5, opacity: 0.9 }} />
       </div>
 
       <div style={{ maxWidth: 680, margin: '0 auto', textAlign: 'center', position: 'relative', zIndex: 10 }}>
         <FadeUp>
-          <h2 style={{ fontSize: 'clamp(30px, 4.5vw, 56px)', fontWeight: 800, color: P.dText,
+          <h2 style={{ fontSize: 'clamp(28px, 4vw, 52px)', fontWeight: 800, color: headCol,
             lineHeight: 1.08, letterSpacing: '-0.024em', marginBottom: 20 }}>
-            {tx(lang,
-              'Хватит работать вслепую — начните видеть цифры',
+            {tx(lang,'Хватит работать вслепую — начните видеть цифры',
               'Ko\'r-ko\'rona ishlamayin — raqamlarni ko\'ra boshlang',
-              'Stop flying blind — start seeing the numbers'
-            )}
+              'Stop flying blind — start seeing the numbers')}
           </h2>
-          <p style={{ fontSize: 17, color: P.dMuted, lineHeight: 1.65, marginBottom: 40, maxWidth: 500, margin: '0 auto 40px' }}>
-            {tx(lang,
-              'Подключите магазин за 5 минут. Бесплатный пробный период, без привязки карты',
-              'Do\'koningizni 5 daqiqada ulang. Bepul sinov davri, karta bog\'lanmaydi',
-              'Connect your store in 5 minutes. Free trial, no credit card required'
-            )}
+          <p style={{ fontSize: 16, color: subCol, lineHeight: 1.65, marginBottom: 40, maxWidth: 500, margin: '0 auto 40px' }}>
+            {tx(lang,'Подключите магазин за несколько минут. Бесплатный тариф, без привязки карты',
+              'Do\'koningizni bir necha daqiqada ulang. Bepul tarif, karta bog\'lanmaydi',
+              'Connect your store in minutes. Free plan, no credit card required')}
           </p>
-
           <Link href="/login"
-            style={{ display: 'inline-block', fontSize: 16, fontWeight: 700, background: P.green, color: '#fff',
+            style={{ display: 'inline-block', fontSize: 16, fontWeight: 700, background: acc.color, color: '#fff',
               padding: '16px 44px', borderRadius: 10, textDecoration: 'none', transition: 'all 0.15s', marginBottom: 20 }}
-            onMouseEnter={e => { e.currentTarget.style.background = P.greenDk; e.currentTarget.style.transform = 'translateY(-2px)' }}
-            onMouseLeave={e => { e.currentTarget.style.background = P.green; e.currentTarget.style.transform = 'translateY(0)' }}>
+            onMouseEnter={e => { e.currentTarget.style.background = acc.dk; e.currentTarget.style.transform = 'translateY(-2px)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = acc.color; e.currentTarget.style.transform = 'translateY(0)' }}>
             {tx(lang,'Начать бесплатно','Bepul boshlash','Start for free')}
           </Link>
-
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 24, flexWrap: 'wrap' }}>
-            {[
-              tx(lang,'✓ 14 дней бесплатно','✓ 14 kun bepul','✓ 14 days free'),
+            {[tx(lang,'✓ 14 дней бесплатно','✓ 14 kun bepul','✓ 14 days free'),
               tx(lang,'✓ Без карты','✓ Kartasiz','✓ No card'),
-              tx(lang,'✓ Настройка 5 минут','✓ Sozlash 5 daqiqa','✓ 5-min setup'),
-            ].map(s => (
-              <span key={s} style={{ fontSize: 13, color: 'rgba(255,255,255,0.50)', fontWeight: 500 }}>{s}</span>
+              tx(lang,'✓ Быстрое подключение','✓ Tez ulanish','✓ Quick setup')].map(s => (
+              <span key={s} style={{ fontSize: 13, color: badgeCol, fontWeight: 500 }}>{s}</span>
             ))}
           </div>
         </FadeUp>
@@ -1419,101 +1457,84 @@ function CtaSection({ lang }: { lang: string }) {
   )
 }
 
-// ── FOOTER ───────────────────────────────────────────────────────────────────
+// ── FOOTER ────────────────────────────────────────────────────────────────────
 function FooterSection({ lang }: { lang: string }) {
+  const isDark = useIsDark()
+  const footBg  = isDark ? P.dCanvas  : P.parchment
+  const bdr     = isDark ? P.dHair    : P.hair
+  const txt     = isDark ? P.dText    : P.ink
+  const muted   = isDark ? P.dMuted   : P.stone
+  const subtle  = isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.32)'
+
   const cols = [
-    {
-      head: tx(lang,'Продукт','Mahsulot','Product'),
-      links: [
-        { label: tx(lang,'Войти','Kirish','Sign in'), href: '/login' },
-        { label: tx(lang,'Регистрация','Ro\'yxatdan o\'tish','Register'), href: '/login' },
-        { label: tx(lang,'Тарифы','Tariflar','Pricing'), href: '#pricing' },
-        { label: tx(lang,'Возможности','Imkoniyatlar','Features'), href: '#features' },
-      ],
-    },
-    {
-      head: tx(lang,'Маркетплейсы','Marketpleyslar','Marketplaces'),
-      links: [
-        { label: 'Uzum Market', href: '#' },
-        { label: 'Wildberries', href: '#' },
-        { label: 'Yandex Market', href: '#' },
-      ],
-    },
-    {
-      head: tx(lang,'Контакты','Aloqa','Contact'),
-      links: [
-        { label: 'Telegram', href: 'https://t.me/daromadchi' },
-        { label: 'support@daromadchi.uz', href: 'mailto:support@daromadchi.uz' },
-      ],
-    },
+    { head: tx(lang,'Продукт','Mahsulot','Product'), links: [
+      { label: tx(lang,'Войти','Kirish','Sign in'), href: '/login' },
+      { label: tx(lang,'Регистрация','Ro\'yxatdan o\'tish','Register'), href: '/login' },
+      { label: tx(lang,'Тарифы','Tariflar','Pricing'), href: '#pricing' },
+      { label: tx(lang,'Возможности','Imkoniyatlar','Features'), href: '#features' },
+    ]},
+    { head: tx(lang,'Маркетплейсы','Marketpleyslar','Marketplaces'), links: [
+      { label: 'Uzum Market', href: '#' }, { label: 'Wildberries', href: '#' }, { label: 'Yandex Market', href: '#' },
+    ]},
+    { head: tx(lang,'Контакты','Aloqa','Contact'), links: [
+      { label: 'Telegram', href: 'https://t.me/daromadchi' }, { label: 'support@daromadchi.uz', href: 'mailto:support@daromadchi.uz' },
+    ]},
   ]
 
   return (
-    <footer style={{ background: P.dCanvas, padding: '64px 24px 32px',
-      fontFamily: 'var(--font-golos), sans-serif', borderTop: `1px solid ${P.dHair}` }}>
+    <footer style={{ background: footBg, padding: '64px 24px 32px',
+      fontFamily: 'var(--font-golos), sans-serif', borderTop: `1px solid ${bdr}`,
+      transition: 'background 0.3s' }}>
       <div style={{ maxWidth: 1200, margin: '0 auto' }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr 1fr 1fr', gap: 40, marginBottom: 56 }}>
-          {/* Brand col */}
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
               <img src="/icon.svg" alt="" style={{ width: 30, height: 30, borderRadius: 7 }} />
-              <span style={{ fontWeight: 700, fontSize: 17, color: P.dText }}>Daromadchi</span>
+              <span style={{ fontWeight: 700, fontSize: 17, color: txt }}>Daromadchi</span>
             </div>
-            <p style={{ fontSize: 13, color: P.dMuted, lineHeight: 1.65, maxWidth: 240 }}>
-              {tx(lang,
-                'Аналитика Uzum, Wildberries и Yandex Market для продавцов из Узбекистана',
+            <p style={{ fontSize: 13, color: muted, lineHeight: 1.65, maxWidth: 240 }}>
+              {tx(lang,'Аналитика Uzum, Wildberries и Yandex Market для продавцов из Узбекистана',
                 'O\'zbekistondagi sotuvchilar uchun Uzum, Wildberries va Yandex Market tahlili',
-                'Analytics for Uzum, Wildberries and Yandex Market sellers in Uzbekistan'
-              )}
+                'Analytics for Uzum, Wildberries and Yandex Market sellers in Uzbekistan')}
             </p>
             <div style={{ display: 'flex', gap: 8, marginTop: 20 }}>
               {[{mp:'Uzum',c:P.uzum},{mp:'WB',c:P.wb},{mp:'YM',c:P.yandex}].map(m => (
-                <div key={m.mp} style={{ fontSize: 10, fontWeight: 700, color: m.c,
-                  background: `${m.c}18`, borderRadius: 4, padding: '3px 7px' }}>
+                <div key={m.mp} style={{ fontSize: 10, fontWeight: 700, color: m.c, background: `${m.c}18`, borderRadius: 4, padding: '3px 7px' }}>
                   {m.mp}
                 </div>
               ))}
             </div>
           </div>
-
           {cols.map(col => (
             <div key={col.head}>
-              <p style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.3)',
+              <p style={{ fontSize: 11, fontWeight: 700, color: subtle,
                 textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 16 }}>
                 {col.head}
               </p>
               {col.links.map(l => (
                 <a key={l.label} href={l.href}
-                  style={{ display: 'block', fontSize: 14, color: P.dMuted, textDecoration: 'none',
-                    marginBottom: 10, transition: 'color 0.12s' }}
-                  onMouseEnter={e => (e.currentTarget.style.color = P.dText)}
-                  onMouseLeave={e => (e.currentTarget.style.color = P.dMuted)}>
+                  style={{ display: 'block', fontSize: 14, color: muted, textDecoration: 'none', marginBottom: 10, transition: 'color 0.12s' }}
+                  onMouseEnter={e => (e.currentTarget.style.color = txt)}
+                  onMouseLeave={e => (e.currentTarget.style.color = muted)}>
                   {l.label}
                 </a>
               ))}
             </div>
           ))}
         </div>
-
-        {/* Bottom bar */}
-        <div style={{ borderTop: `1px solid ${P.dHair}`, paddingTop: 24,
+        <div style={{ borderTop: `1px solid ${bdr}`, paddingTop: 24,
           display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
-          <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.28)' }}>
-            © 2025 Daromadchi. {tx(lang,
-              'ООО «Daromadchi» · ИНН: 123456789 · г. Ташкент, Узбекистан',
+          <p style={{ fontSize: 12, color: subtle }}>
+            © 2025 Daromadchi. {tx(lang,'ООО «Daromadchi» · ИНН: 123456789 · г. Ташкент, Узбекистан',
               'MChJ «Daromadchi» · INN: 123456789 · Toshkent shahri, O\'zbekiston',
-              'LLC «Daromadchi» · TIN: 123456789 · Tashkent, Uzbekistan'
-            )}
+              'LLC «Daromadchi» · TIN: 123456789 · Tashkent, Uzbekistan')}
           </p>
           <div style={{ display: 'flex', gap: 20 }}>
-            {[
-              tx(lang,'Политика конфиденциальности','Maxfiylik siyosati','Privacy policy'),
-              tx(lang,'Публичная оферта','Ommaviy oferta','Terms of service'),
-            ].map(l => (
-              <a key={l} href="#" style={{ fontSize: 12, color: 'rgba(255,255,255,0.28)', textDecoration: 'none',
-                transition: 'color 0.12s' }}
-                onMouseEnter={e => (e.currentTarget.style.color = P.dMuted)}
-                onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.28)')}>
+            {[tx(lang,'Политика конфиденциальности','Maxfiylik siyosati','Privacy policy'),
+              tx(lang,'Публичная оферта','Ommaviy oferta','Terms of service')].map(l => (
+              <a key={l} href="#" style={{ fontSize: 12, color: subtle, textDecoration: 'none', transition: 'color 0.12s' }}
+                onMouseEnter={e => (e.currentTarget.style.color = muted)}
+                onMouseLeave={e => (e.currentTarget.style.color = subtle)}>
                 {l}
               </a>
             ))}
@@ -1524,7 +1545,7 @@ function FooterSection({ lang }: { lang: string }) {
   )
 }
 
-// ── PAGE ROOT ────────────────────────────────────────────────────────────────
+// ── PAGE ROOT ─────────────────────────────────────────────────────────────────
 export default function Page() {
   const { lang } = useLang()
   return (

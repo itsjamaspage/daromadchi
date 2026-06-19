@@ -72,9 +72,19 @@ export default function DashboardTopBar() {
 
   return (
     <header
-      className="hidden lg:flex fixed top-0 left-14 right-0 h-14 z-30 items-center justify-end px-6 border-b"
+      className="hidden lg:flex fixed top-0 left-14 right-0 h-14 z-30 items-center justify-end px-6 border-b gap-3"
       style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}
     >
+      {/* Theme toggle — always visible in header */}
+      <button
+        onClick={toggle}
+        className="w-9 h-9 flex items-center justify-center rounded-xl border transition-all"
+        style={{ background: 'var(--bg-input)', borderColor: 'var(--border)', color: 'var(--text-muted)' }}
+        title={theme === 'dark' ? d.lightMode : d.darkMode}
+      >
+        {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+      </button>
+
       <div className="relative" ref={dropRef}>
         {/* Profile pill */}
         <button
