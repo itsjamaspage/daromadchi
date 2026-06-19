@@ -14,7 +14,7 @@ import type { Lang } from '@/lib/i18n'
 // ── Palette ───────────────────────────────────────────────────────────────────
 const P = {
   ink:       '#0E2233',
-  parchment: '#EFF8FF',
+  parchment: '#DBEAFE',
   card:      '#FFFFFF',
   stone:     '#4A7090',
   muted:     '#7AACC7',
@@ -25,7 +25,7 @@ const P = {
   amberBg:   'rgba(202,138,4,0.09)',
   red:       '#DC2626',
   redBg:     'rgba(220,38,38,0.09)',
-  hair:      '#BAE6FD',
+  hair:      '#93C5FD',
   // dark surfaces
   dCanvas:   '#0D0A22',
   dCard:     '#13102E',
@@ -431,7 +431,7 @@ function HeroSection({ lang }: { lang: string }) {
   const headCol   = isDark ? P.dText   : P.ink
   const subCol    = isDark ? P.dMuted  : P.stone
   const secLinkCol = isDark ? 'rgba(255,255,255,0.62)' : P.stone
-  const fadeTarget = isDark ? '#0D0A22' : '#EFF8FF'
+  const fadeTarget = isDark ? '#0D0A22' : P.parchment
 
   return (
     <section style={{ position: 'relative', background: heroBg, overflow: 'hidden',
@@ -604,7 +604,7 @@ function FeaturesSection({ lang }: { lang: string }) {
   const bentoBg = isDark ? P.dCard   : P.card
   const cardBg  = isDark ? '#1A1640' : P.parchment
   const border  = isDark ? P.dHair   : P.hair
-  const bg2     = isDark ? '#110E28' : '#E8F4FB'
+  const bg2     = isDark ? '#110E28' : '#EFF8FF'
   const muted   = isDark ? P.dMuted  : '#A8A29E'
   const ink     = isDark ? P.dText   : '#1C1917'
 
