@@ -70,6 +70,7 @@ function useAccent() {
     color: isDark ? A.dark   : A.light,
     dk:    isDark ? A.darkDk : A.lightDk,
     bg:    isDark ? A.darkBg : A.lightBg,
+    tint:  isDark ? A.dark   : '#0369a1',
   }
 }
 
@@ -100,7 +101,7 @@ function SectionHead({ title, accent, sub, dark = false }: {
         <h2 style={{ fontSize: 'clamp(26px, 3.5vw, 42px)', fontWeight: 800, lineHeight: 1.1,
           color: dark ? P.dText : (isDark ? P.dText : P.ink), letterSpacing: '-0.022em', marginBottom: sub ? 16 : 0 }}>
           {accent ? (
-            <>{parts[0]}<span style={{ color: acc.color }}>{accent}</span>{parts[1]}</>
+            <>{parts[0]}<span style={{ color: acc.tint }}>{accent}</span>{parts[1]}</>
           ) : title}
         </h2>
         {sub && <p style={{ fontSize: 16, color: dark ? P.dMuted : (isDark ? P.dMuted : P.stone), maxWidth: 520, margin: '0 auto', lineHeight: 1.65 }}>{sub}</p>}
@@ -188,7 +189,7 @@ function Navbar({ lang }: { lang: string }) {
                     <button key={l} onClick={() => { setLang(l); setLangOpen(false) }}
                       style={{ width: '100%', padding: '8px 12px', textAlign: 'left', fontSize: 13, fontWeight: 600,
                         background: lang === l ? acc.bg : 'transparent',
-                        color: lang === l ? acc.color : (isDark ? P.dMuted : P.stone), cursor: 'pointer', border: 'none' }}>
+                        color: lang === l ? acc.tint : (isDark ? P.dMuted : P.stone), cursor: 'pointer', border: 'none' }}>
                       {l.toUpperCase()}
                     </button>
                   ))}
@@ -283,8 +284,8 @@ function FloatCard({ mp, mpColor, metric, value, change, up, delay, floatDur = 3
             {value}
           </p>
           <div style={{ display: 'flex', alignItems: 'center', gap: 3, marginTop: 5 }}>
-            {up ? <TrendingUp size={11} color={acc.color}/> : <TrendingDown size={11} color={P.red}/>}
-            <span style={{ fontSize: 11, fontWeight: 700, color: up ? acc.color : P.red }}>{change}</span>
+            {up ? <TrendingUp size={11} color={acc.tint}/> : <TrendingDown size={11} color={P.red}/>}
+            <span style={{ fontSize: 11, fontWeight: 700, color: up ? acc.tint : P.red }}>{change}</span>
           </div>
         </div>
       </div>
@@ -557,7 +558,7 @@ function ComparisonSection({ lang }: { lang: string }) {
               </div>
               <div style={{ padding: '16px 24px', textAlign: 'center',
                 background: isDark ? 'rgba(197,232,254,0.08)' : acc.bg, borderLeft: `1px solid ${bdr}` }}>
-                <p style={{ fontSize: 14, fontWeight: 800, color: acc.color }}>Daromadchi</p>
+                <p style={{ fontSize: 14, fontWeight: 800, color: acc.tint }}>Daromadchi</p>
               </div>
             </div>
             {rows.map((feature, i) => (
@@ -576,7 +577,7 @@ function ComparisonSection({ lang }: { lang: string }) {
                   background: isDark ? 'rgba(197,232,254,0.06)' : acc.bg, borderLeft: `1px solid ${bdr}` }}>
                   <div style={{ width: 26, height: 26, borderRadius: '50%', background: isDark ? 'rgba(197,232,254,0.15)' : `${acc.color}22`,
                     display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Check size={13} color={acc.color}/>
+                    <Check size={13} color={acc.tint}/>
                   </div>
                 </div>
               </div>
@@ -623,7 +624,7 @@ function FeaturesSection({ lang }: { lang: string }) {
           <FadeUp delay={0.05}>
             <div style={{ background: bentoBg, borderRadius: 20, padding: '24px',
               border: `1px solid ${border}`, height: '100%', minHeight: 340, boxShadow: '0 4px 20px rgba(0,0,0,0.07)' }}>
-              <p style={{ fontSize: 12, fontWeight: 700, color: acc.color, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              <p style={{ fontSize: 12, fontWeight: 700, color: acc.tint, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 {tx(lang,'Таблица товаров','Mahsulotlar jadvali','Products table')}
               </p>
               <p style={{ fontSize: 15, fontWeight: 600, color: ink, marginBottom: 16 }}>
@@ -650,7 +651,7 @@ function FeaturesSection({ lang }: { lang: string }) {
                       <span style={{ fontSize: 10, color: ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.n}</span>
                     </div>
                     <span style={{ fontSize: 10, fontFamily: 'monospace', fontWeight: 600, color: ink }}>{r.rev}</span>
-                    <span style={{ fontSize: 10, fontWeight: 700, color: r.drr > 11 ? P.red : acc.color }}>{r.drr}%</span>
+                    <span style={{ fontSize: 10, fontWeight: 700, color: r.drr > 11 ? P.red : acc.tint }}>{r.drr}%</span>
                     <div style={{ width: 6, height: 6, borderRadius: '50%', background: r.ok ? acc.color : P.red }} />
                   </div>
                 ))}
@@ -661,7 +662,7 @@ function FeaturesSection({ lang }: { lang: string }) {
           <FadeUp delay={0.1}>
             <div style={{ background: bentoBg, borderRadius: 20, padding: '24px',
               border: `1px solid ${border}`, height: '100%', minHeight: 340, boxShadow: '0 4px 20px rgba(0,0,0,0.07)' }}>
-              <p style={{ fontSize: 12, fontWeight: 700, color: acc.color, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              <p style={{ fontSize: 12, fontWeight: 700, color: acc.tint, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 {tx(lang,'Дашборд','Dashboard','Dashboard')}
               </p>
               <p style={{ fontSize: 15, fontWeight: 600, color: ink, marginBottom: 16 }}>
@@ -677,7 +678,7 @@ function FeaturesSection({ lang }: { lang: string }) {
                   <div key={k.l} style={{ background: cardBg, borderRadius: 10, padding: '12px', borderTop: `2px solid ${acc.color}` }}>
                     <p style={{ fontSize: 10, color: muted, marginBottom: 3 }}>{k.l}</p>
                     <p style={{ fontSize: 15, fontWeight: 700, color: ink, fontFamily: 'monospace', lineHeight: 1.1 }}>{k.v}</p>
-                    <p style={{ fontSize: 10, fontWeight: 700, color: k.pos ? acc.color : P.red, marginTop: 2 }}>{k.d}</p>
+                    <p style={{ fontSize: 10, fontWeight: 700, color: k.pos ? acc.tint : P.red, marginTop: 2 }}>{k.d}</p>
                   </div>
                 ))}
               </div>
@@ -696,7 +697,7 @@ function FeaturesSection({ lang }: { lang: string }) {
             <div style={{ background: bentoBg, borderRadius: 20, padding: '24px',
               border: `1px solid ${border}`, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
               <div>
-                <p style={{ fontSize: 12, fontWeight: 700, color: acc.color, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                <p style={{ fontSize: 12, fontWeight: 700, color: acc.tint, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   {tx(lang,'Юнит-экономика','Birlik-iqtisod','Unit economics')}
                 </p>
                 <p style={{ fontSize: 14, fontWeight: 600, color: ink, marginBottom: 14 }}>
@@ -719,12 +720,12 @@ function FeaturesSection({ lang }: { lang: string }) {
                     border: `1px solid ${isDark ? P.dHair : `${acc.color}25`}`,
                     display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ fontSize: 12, fontWeight: 700, color: acc.dk }}>{tx(lang,'Маржа','Marja','Margin')}</span>
-                    <span style={{ fontSize: 14, fontWeight: 800, color: acc.color, fontFamily: 'monospace' }}>52.6% ↑</span>
+                    <span style={{ fontSize: 14, fontWeight: 800, color: acc.tint, fontFamily: 'monospace' }}>52.6% ↑</span>
                   </div>
                 </div>
               </div>
               <div>
-                <p style={{ fontSize: 12, fontWeight: 700, color: acc.color, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                <p style={{ fontSize: 12, fontWeight: 700, color: acc.tint, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   {tx(lang,'Уведомления','Bildirishnomalar','Notifications')}
                 </p>
                 <p style={{ fontSize: 14, fontWeight: 600, color: ink, marginBottom: 14 }}>
@@ -748,7 +749,7 @@ function FeaturesSection({ lang }: { lang: string }) {
 
           <FadeUp delay={0.2}>
             <div style={{ background: bentoBg, borderRadius: 20, padding: '24px', border: `1px solid ${border}` }}>
-              <p style={{ fontSize: 12, fontWeight: 700, color: acc.color, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              <p style={{ fontSize: 12, fontWeight: 700, color: acc.tint, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 {tx(lang,'Экспорт в Excel','Excel ga eksport','Excel export')}
               </p>
               <p style={{ fontSize: 15, fontWeight: 600, color: ink, marginBottom: 16 }}>
@@ -810,7 +811,7 @@ function HowItWorksSection({ lang }: { lang: string }) {
 
   const steps = [
     {
-      color: P.green,
+      color: acc.tint,
       title: tx(lang,'Регистрация','Ro\'yxatdan o\'tish','Register'),
       desc: tx(lang,
         'Только email и пароль. Менее 30 секунд — и вы внутри',
@@ -835,7 +836,7 @@ function HowItWorksSection({ lang }: { lang: string }) {
       ),
     },
     {
-      color: acc.color,
+      color: acc.tint,
       title: tx(lang,'Подключите магазин','Do\'koningizni ulang','Connect your store'),
       desc: tx(lang,
         'Вставьте API-ключ из кабинета Uzum, WB или Яндекс — мы не можем менять данные в вашем магазине, только читать',
@@ -860,7 +861,7 @@ function HowItWorksSection({ lang }: { lang: string }) {
       ),
     },
     {
-      color: acc.color,
+      color: acc.tint,
       title: tx(lang,'Данные готовы','Ma\'lumotlar tayyor','Data is ready'),
       desc: tx(lang,
         'Данные синхронизируются автоматически — вся история продаж с момента подключения, без ручного ввода',
@@ -926,7 +927,7 @@ function HowItWorksSection({ lang }: { lang: string }) {
                       background: isActive ? s.color : (isDark ? 'rgba(197,232,254,0.10)' : P.hair),
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       fontSize: 14, fontWeight: 800,
-                      color: isActive ? '#fff' : (isDark ? P.dMuted : P.stone),
+                      color: isActive ? '#131321' : (isDark ? P.dMuted : P.stone),
                       transition: 'all 0.2s',
                       boxShadow: isActive ? `0 4px 14px ${s.color}50` : 'none' }}>
                       {i + 1}
@@ -996,7 +997,7 @@ function WhoSection({ lang }: { lang: string }) {
 
   const cards = [
     {
-      color: acc.color,
+      color: acc.tint,
       avatar: (
         <svg width="72" height="72" viewBox="0 0 72 72" fill="none">
           <circle cx="36" cy="36" r="36" fill="rgba(14,116,144,0.10)"/>
@@ -1013,7 +1014,7 @@ function WhoSection({ lang }: { lang: string }) {
         tx(lang,'Подбор ниши','Nishani tanlash','Niche selection')],
     },
     {
-      color: acc.color,
+      color: acc.tint,
       avatar: (
         <svg width="72" height="72" viewBox="0 0 72 72" fill="none">
           <circle cx="36" cy="36" r="36" fill="rgba(14,116,144,0.10)"/>
@@ -1030,7 +1031,7 @@ function WhoSection({ lang }: { lang: string }) {
         tx(lang,'Уведомления Telegram','Telegram bildirishnomalari','Telegram alerts')],
     },
     {
-      color: acc.color,
+      color: acc.tint,
       avatar: (
         <svg width="72" height="72" viewBox="0 0 72 72" fill="none">
           <circle cx="36" cy="36" r="36" fill="rgba(14,116,144,0.10)"/>
@@ -1179,7 +1180,7 @@ function PricingSection({ lang }: { lang: string }) {
           animate={inView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.5 }}
           style={{ textAlign: 'center', marginBottom: 56 }}>
-          <p style={{ fontSize: 11, fontWeight: 700, color: acc.color, marginBottom: 10,
+          <p style={{ fontSize: 11, fontWeight: 700, color: acc.tint, marginBottom: 10,
             textTransform: 'uppercase', letterSpacing: '0.12em' }}>
             {tx(lang,'ТАРИФЫ','TARIFLAR','PRICING')}
           </p>
@@ -1235,7 +1236,7 @@ function PricingSection({ lang }: { lang: string }) {
                     animate={inView ? { opacity: 1, x: 0 } : {}}
                     transition={{ delay: i * 0.18 + 0.7 + fi * 0.05, duration: 0.25 }}
                     style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-                    <Check size={14} color={acc.color} style={{ marginTop: 2, flexShrink: 0 }}/>
+                    <Check size={14} color={acc.tint} style={{ marginTop: 2, flexShrink: 0 }}/>
                     <span style={{ fontSize: 13, color: ink, lineHeight: 1.4 }}>{f}</span>
                   </motion.div>
                 ))}
@@ -1269,31 +1270,31 @@ function ResourcesSection({ lang }: { lang: string }) {
 
   const cards = [
     {
-      icon: <BookOpen size={20} color={acc.color} />, title: tx(lang,'Справка','Yordam markazi','Help center'),
+      icon: <BookOpen size={20} color={acc.tint} />, title: tx(lang,'Справка','Yordam markazi','Help center'),
       items: [
         { t: tx(lang,'Быстрый старт за 5 минут','5 daqiqada tez boshlash','Quick start in 5 minutes'), sub: tx(lang,'Пошаговое руководство','Bosqichma-bosqich qo\'llanma','Step-by-step guide') },
         { t: tx(lang,'Как работает ДРР','DRR qanday ishlaydi','How DRR works'), sub: tx(lang,'Формула и примеры','Formula va misollar','Formula and examples') },
         { t: tx(lang,'Настройка юнит-экономики','Birlik-iqtisodni sozlash','Setting up unit economics'), sub: tx(lang,'Укажите закупку и логистику','Xarid va logistikani kiriting','Enter purchase costs and logistics') },
       ],
-      link: tx(lang,'Все статьи →','Barcha maqolalar →','All articles →'), linkColor: acc.color, href: '/help',
+      link: tx(lang,'Все статьи →','Barcha maqolalar →','All articles →'), linkColor: acc.tint, href: '/help',
     },
     {
-      icon: <MessageCircle size={20} color={acc.color} />, title: 'Telegram',
+      icon: <MessageCircle size={20} color={acc.tint} />, title: 'Telegram',
       items: [
-        { t: tx(lang,'Канал с обновлениями','Yangilanishlar kanali','Updates channel'), sub: tx(lang,'Новые функции и релизы','Yangi funksiyalar va relizlar','New features & releases'), dot: acc.color },
-        { t: tx(lang,'Чат поддержки','Qo\'llab-quvvatlash chati','Support chat'), sub: tx(lang,'Ответ в течение часа','Bir soat ichida javob','Reply within an hour'), dot: acc.color },
-        { t: tx(lang,'Сообщество продавцов','Sotuvchilar hamjamiyati','Sellers community'), sub: tx(lang,'Советы и кейсы','Maslahatlar va holatlar','Tips & case studies'), dot: acc.color },
+        { t: tx(lang,'Канал с обновлениями','Yangilanishlar kanali','Updates channel'), sub: tx(lang,'Новые функции и релизы','Yangi funksiyalar va relizlar','New features & releases'), dot: acc.tint },
+        { t: tx(lang,'Чат поддержки','Qo\'llab-quvvatlash chati','Support chat'), sub: tx(lang,'Ответ в течение часа','Bir soat ichida javob','Reply within an hour'), dot: acc.tint },
+        { t: tx(lang,'Сообщество продавцов','Sotuvchilar hamjamiyati','Sellers community'), sub: tx(lang,'Советы и кейсы','Maslahatlar va holatlar','Tips & case studies'), dot: acc.tint },
       ],
-      link: tx(lang,'Открыть Telegram →','Telegramni ochish →','Open Telegram →'), linkColor: acc.color, href: 'https://t.me/daromadchi',
+      link: tx(lang,'Открыть Telegram →','Telegramni ochish →','Open Telegram →'), linkColor: acc.tint, href: 'https://t.me/daromadchi',
     },
     {
-      icon: <Plug2 size={20} color={acc.color} />, title: tx(lang,'Интеграции','Integratsiyalar','Integrations'),
+      icon: <Plug2 size={20} color={acc.tint} />, title: tx(lang,'Интеграции','Integratsiyalar','Integrations'),
       items: [
-        { t: 'Uzum Market', sub: tx(lang,'Подключение через API-ключ','API kalit orqali ulash','Connect via API key'), dot: acc.color },
-        { t: 'Wildberries', sub: tx(lang,'Подключение через токен WB','WB token orqali ulash','Connect via WB token'), dot: acc.color },
-        { t: 'Yandex Market', sub: tx(lang,'OAuth-авторизация','OAuth-avtorizatsiya','OAuth authorisation'), dot: acc.color },
+        { t: 'Uzum Market', sub: tx(lang,'Подключение через API-ключ','API kalit orqali ulash','Connect via API key'), dot: acc.tint },
+        { t: 'Wildberries', sub: tx(lang,'Подключение через токен WB','WB token orqali ulash','Connect via WB token'), dot: acc.tint },
+        { t: 'Yandex Market', sub: tx(lang,'OAuth-авторизация','OAuth-avtorizatsiya','OAuth authorisation'), dot: acc.tint },
       ],
-      link: tx(lang,'Инструкция по подключению →','Ulash yo\'riqnomasi →','Connection guide →'), linkColor: acc.color, href: '/help',
+      link: tx(lang,'Инструкция по подключению →','Ulash yo\'riqnomasi →','Connection guide →'), linkColor: acc.tint, href: '/help',
     },
   ]
 
@@ -1395,7 +1396,7 @@ function FaqSection({ lang }: { lang: string }) {
                   style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                     padding: '20px 0', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', gap: 16 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: acc.color,
+                    <span style={{ fontSize: 13, fontWeight: 700, color: acc.tint,
                       fontFamily: 'var(--font-mono-landing), monospace', minWidth: 20 }}>
                       {String(i + 1).padStart(2, '0')}
                     </span>
@@ -1469,10 +1470,12 @@ function CtaSection({ lang }: { lang: string }) {
               'Connect your store in minutes. Free plan, no credit card required')}
           </p>
           <Link href="/login"
-            style={{ display: 'inline-block', fontSize: 16, fontWeight: 700, background: acc.color, color: '#131321',
+            style={{ display: 'inline-block', fontSize: 16, fontWeight: 700,
+              background: isDark ? acc.color : '#131321',
+              color: isDark ? '#131321' : '#ffffff',
               padding: '16px 44px', borderRadius: 10, textDecoration: 'none', transition: 'all 0.15s', marginBottom: 20 }}
-            onMouseEnter={e => { e.currentTarget.style.background = acc.dk; e.currentTarget.style.transform = 'translateY(-2px)' }}
-            onMouseLeave={e => { e.currentTarget.style.background = acc.color; e.currentTarget.style.transform = 'translateY(0)' }}>
+            onMouseEnter={e => { e.currentTarget.style.background = isDark ? acc.dk : '#0e1a2e'; e.currentTarget.style.transform = 'translateY(-2px)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = isDark ? acc.color : '#131321'; e.currentTarget.style.transform = 'translateY(0)' }}>
             {tx(lang,'Начать бесплатно','Bepul boshlash','Start for free')}
           </Link>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 24, flexWrap: 'wrap' }}>
