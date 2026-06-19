@@ -15,7 +15,7 @@ import type { Lang } from '@/lib/i18n'
 // ── Palette ───────────────────────────────────────────────────────────────────
 const P = {
   ink:       '#0E2233',
-  parchment: '#C5E8FE',
+  parchment: '#46F0D2',
   card:      '#FFFFFF',
   stone:     '#4A7090',
   muted:     '#7AACC7',
@@ -45,9 +45,9 @@ const A = {
   light:    '#0E7490',   // teal for light mode
   lightDk:  '#155E75',
   lightBg:  'rgba(14,116,144,0.09)',
-  dark:     '#6c58ef',   // purple for dark mode
-  darkDk:   '#5845d6',
-  darkBg:   'rgba(108,88,239,0.10)',
+  dark:     '#46F0D2',   // mint for dark mode
+  darkDk:   '#2DD4B8',
+  darkBg:   'rgba(70,240,210,0.12)',
 }
 
 // Real dashboard KPI colours — matches KpiCard.tsx
@@ -427,7 +427,7 @@ function HeroSection({ lang }: { lang: string }) {
   const acc = useAccent()
 
   // Light mode: light blue gradient hero  /  Dark mode: deep purple-navy hero
-  const heroBg    = isDark ? P.dCanvas : 'linear-gradient(160deg, #C5E8FE 0%, #BAE6FD 45%, #90D5FF 80%)'
+  const heroBg    = isDark ? P.dCanvas : 'linear-gradient(160deg, #46F0D2 0%, #2DD4BF 45%, #14B8A6 80%)'
   const glowColor = isDark ? 'rgba(108,88,239,0.30)' : 'rgba(144,213,255,0.55)'
   const headCol   = isDark ? P.dText   : P.ink
   const subCol    = isDark ? P.dMuted  : P.stone
@@ -1432,7 +1432,7 @@ function FaqSection({ lang }: { lang: string }) {
 function CtaSection({ lang }: { lang: string }) {
   const isDark = useIsDark()
   const acc = useAccent()
-  const secBg   = isDark ? P.dCanvas : 'linear-gradient(160deg, #C5E8FE 0%, #BAE6FD 55%, #90D5FF 100%)'
+  const secBg   = isDark ? P.dCanvas : 'linear-gradient(160deg, #46F0D2 0%, #2DD4BF 55%, #14B8A6 100%)'
   const headCol = isDark ? P.dText   : P.ink
   const subCol  = isDark ? P.dMuted  : P.stone
   const badgeCol = isDark ? 'rgba(255,255,255,0.45)' : P.stone
