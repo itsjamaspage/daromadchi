@@ -600,11 +600,11 @@ function ComparisonSection({ lang }: { lang: string }) {
 function FeaturesSection({ lang }: { lang: string }) {
   const isDark = useIsDark()
   const acc = useAccent()
-  const secBg   = isDark ? '#0D0A22' : P.card
-  const bentoBg = isDark ? P.dCard   : P.parchment
-  const cardBg  = isDark ? '#1A1640' : P.card
-  const border  = isDark ? P.dHair   : '#E5E1D8'
-  const bg2     = isDark ? '#110E28' : '#F5F4F1'
+  const secBg   = isDark ? '#0D0A22' : P.parchment
+  const bentoBg = isDark ? P.dCard   : P.card
+  const cardBg  = isDark ? '#1A1640' : P.parchment
+  const border  = isDark ? P.dHair   : P.hair
+  const bg2     = isDark ? '#110E28' : '#E8F4FB'
   const muted   = isDark ? P.dMuted  : '#A8A29E'
   const ink     = isDark ? P.dText   : '#1C1917'
 
@@ -723,18 +723,18 @@ function FeaturesSection({ lang }: { lang: string }) {
                 </div>
               </div>
               <div>
-                <p style={{ fontSize: 12, fontWeight: 700, color: P.uzum, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                <p style={{ fontSize: 12, fontWeight: 700, color: acc.color, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   {tx(lang,'Уведомления','Bildirishnomalar','Notifications')}
                 </p>
                 <p style={{ fontSize: 14, fontWeight: 600, color: ink, marginBottom: 14 }}>
                   {tx(lang,'Алерты в Telegram каждые 15 мин','Har 15 daqiqada Telegram xabarlari','Telegram alerts every 15 min')}
                 </p>
-                <div style={{ background: isDark ? '#110E28' : '#F1F3F4', borderRadius: 12, padding: '10px',
+                <div style={{ background: isDark ? '#110E28' : P.parchment, borderRadius: 12, padding: '10px',
                   border: `1px solid ${border}`, display: 'flex', flexDirection: 'column', gap: 7 }}>
                   {[
-                    { icon: '🔔', text: tx(lang,'Остатки «Куртка» — 12 шт, 3 дня','Qoldiqlar — 12 ta, 3 kun','Stock low — 12 pcs, 3 days'), color: P.amber },
+                    { icon: '🔔', text: tx(lang,'Остатки «Куртка» — 12 шт, 3 дня','Qoldiqlar — 12 ta, 3 kun','Stock low — 12 pcs, 3 days'), color: acc.color },
                     { icon: '📈', text: tx(lang,'ДРР превысил 15% по 3 товарам','3 ta mahsulot DRR 15% dan oshdi','DRR exceeded 15% on 3 products'), color: P.red },
-                    { icon: '✅', text: tx(lang,'WB: новый заказ #WB-48291','WB: yangi buyurtma #WB-48291','WB: new order #WB-48291'), color: KPI.emerald },
+                    { icon: '✅', text: tx(lang,'WB: новый заказ #WB-48291','WB: yangi buyurtma #WB-48291','WB: new order #WB-48291'), color: acc.color },
                   ].map((n, i) => (
                     <div key={i} style={{ background: cardBg, borderRadius: 8, padding: '8px 10px', borderLeft: `3px solid ${n.color}` }}>
                       <p style={{ fontSize: 10, color: ink, lineHeight: 1.4 }}>{n.icon} {n.text}</p>
@@ -987,8 +987,8 @@ function HowItWorksSection({ lang }: { lang: string }) {
 function WhoSection({ lang }: { lang: string }) {
   const isDark = useIsDark()
   const acc = useAccent()
-  const secBg  = isDark ? '#0D0A22' : P.card
-  const cardBg = isDark ? P.dCard   : P.parchment
+  const secBg  = isDark ? '#0D0A22' : P.parchment
+  const cardBg = isDark ? P.dCard   : P.card
   const bdr    = isDark ? P.dHair   : P.hair
   const ink    = isDark ? P.dText   : P.ink
   const sub    = isDark ? P.dMuted  : P.stone
@@ -1100,7 +1100,7 @@ function PricingSection({ lang }: { lang: string }) {
   const isDark = useIsDark()
   const acc = useAccent()
 
-  const secBg  = isDark ? P.dCanvas : '#F8FAFF'
+  const secBg  = isDark ? P.dCanvas : P.parchment
   const ink    = isDark ? P.dText   : P.ink
   const muted  = isDark ? P.dMuted  : P.stone
   const bdr    = isDark ? P.dHair   : '#D6DCFF'
@@ -1233,8 +1233,8 @@ function PricingSection({ lang }: { lang: string }) {
 function ResourcesSection({ lang }: { lang: string }) {
   const isDark = useIsDark()
   const acc = useAccent()
-  const secBg  = isDark ? '#0D0A22' : P.card
-  const cardBg = isDark ? P.dCard   : P.parchment
+  const secBg  = isDark ? '#0D0A22' : P.parchment
+  const cardBg = isDark ? P.dCard   : P.card
   const bdr    = isDark ? P.dHair   : P.hair
   const ink    = isDark ? P.dText   : P.ink
   const muted  = isDark ? P.dMuted  : P.stone
@@ -1501,9 +1501,9 @@ function FooterSection({ lang }: { lang: string }) {
                 'Analytics for Uzum, Wildberries and Yandex Market sellers in Uzbekistan')}
             </p>
             <div style={{ display: 'flex', gap: 8, marginTop: 20 }}>
-              {[{mp:'Uzum',c:P.uzum},{mp:'WB',c:P.wb},{mp:'YM',c:P.yandex}].map(m => (
-                <div key={m.mp} style={{ fontSize: 10, fontWeight: 700, color: m.c, background: `${m.c}18`, borderRadius: 4, padding: '3px 7px' }}>
-                  {m.mp}
+              {['Uzum','WB','YM'].map(mp => (
+                <div key={mp} style={{ fontSize: 10, fontWeight: 700, color: isDark ? A.dark : A.light, background: isDark ? A.darkBg : A.lightBg, borderRadius: 4, padding: '3px 7px' }}>
+                  {mp}
                 </div>
               ))}
             </div>
