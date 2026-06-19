@@ -129,6 +129,7 @@ function Navbar({ lang }: { lang: string }) {
     { label: tx(lang,'Как работает','Qanday ishlaydi','How it works'), href: '#how' },
     { label: tx(lang,'Тарифы','Tariflar','Pricing'), href: '#pricing' },
     { label: tx(lang,'Вопросы','Savollar','FAQ'), href: '#faq' },
+    { label: tx(lang,'Помощь','Yordam','Help'), href: '/help' },
   ]
 
   const scrolledBg = isDark ? 'rgba(13,10,34,0.96)' : 'rgba(255,255,255,0.95)'
@@ -1247,22 +1248,22 @@ function ResourcesSection({ lang }: { lang: string }) {
       link: tx(lang,'Все статьи →','Barcha maqolalar →','All articles →'), linkColor: acc.color, href: '/help',
     },
     {
-      icon: '🗺️', title: tx(lang,'Дорожная карта','Yo\'l xaritasi','Roadmap'),
+      icon: '💬', title: 'Telegram',
       items: [
-        { t: tx(lang,'AI-прогноз остатков','AI-qoldiq bashorati','AI stock forecast'), sub: 'июль 2026', dot: P.amber },
-        { t: tx(lang,'Мобильное приложение','Mobil ilova','Mobile app'), sub: 'август 2026', dot: P.amber },
-        { t: tx(lang,'Сравнение по категориям','Toifalar bo\'yicha taqqoslash','Category comparison'), sub: tx(lang,'В разработке','Ishlanmoqda','In development'), dot: acc.color },
+        { t: tx(lang,'Канал с обновлениями','Yangilanishlar kanali','Updates channel'), sub: tx(lang,'Новые функции и релизы','Yangi funksiyalar va relizlar','New features & releases'), dot: P.uzum },
+        { t: tx(lang,'Чат поддержки','Qo\'llab-quvvatlash chati','Support chat'), sub: tx(lang,'Ответ в течение часа','Bir soat ichida javob','Reply within an hour'), dot: acc.color },
+        { t: tx(lang,'Сообщество продавцов','Sotuvchilar hamjamiyati','Sellers community'), sub: tx(lang,'Советы и кейсы','Maslahatlar va holatlar','Tips & case studies'), dot: P.amber },
       ],
-      link: tx(lang,'Смотреть все →','Barchasini ko\'rish →','See all →'), linkColor: P.amber, href: '/help',
+      link: tx(lang,'Открыть Telegram →','Telegramni ochish →','Open Telegram →'), linkColor: P.uzum, href: 'https://t.me/daromadchi',
     },
     {
-      icon: '🕐', title: tx(lang,'Обновления','Yangilanishlar','Changelog'),
+      icon: '🔌', title: tx(lang,'Интеграции','Integratsiyalar','Integrations'),
       items: [
-        { t: tx(lang,'Ускорена синхронизация Yandex Market','Yandex Market sinxronizatsiyasi tezlashtirildi','Yandex Market sync improved'), sub: '1.4.2 · 15 июня', dot: acc.color },
-        { t: tx(lang,'Добавлен экспорт по каждой площадке','Har bir sayt bo\'yicha eksport qo\'shildi','Per-platform export added'), sub: '1.4.1 · 2 июня', dot: acc.color },
-        { t: tx(lang,'Новый раздел юнит-экономики','Yangi birlik-iqtisod bo\'limi','New unit economics section'), sub: '1.4.0 · 20 мая', dot: P.uzum },
+        { t: 'Uzum Market', sub: tx(lang,'Подключение через API-ключ','API kalit orqali ulash','Connect via API key'), dot: P.uzum },
+        { t: 'Wildberries', sub: tx(lang,'Подключение через токен WB','WB token orqali ulash','Connect via WB token'), dot: P.wb },
+        { t: 'Yandex Market', sub: tx(lang,'OAuth-авторизация','OAuth-avtorizatsiya','OAuth authorisation'), dot: P.yandex },
       ],
-      link: tx(lang,'Все обновления →','Barcha yangilanishlar →','All updates →'), linkColor: P.uzum, href: '/help',
+      link: tx(lang,'Инструкция по подключению →','Ulash yo\'riqnomasi →','Connection guide →'), linkColor: acc.color, href: '/help',
     },
   ]
 
@@ -1271,11 +1272,11 @@ function ResourcesSection({ lang }: { lang: string }) {
       fontFamily: "'Space Grotesk', system-ui, sans-serif", transition: 'background 0.3s' }}>
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
         <SectionHead dark={isDark}
-          title={tx(lang,'Ресурсы и развитие','Resurslar va rivojlanish','Resources & development')}
-          accent={tx(lang,'развитие','rivojlanish','development')}
-          sub={tx(lang,'Справочные материалы, планы развития и история обновлений',
-            'Ma\'lumot materiallari, rivojlanish rejalari va yangilanishlar tarixi',
-            'Reference materials, development plans and update history')}
+          title={tx(lang,'Помощь и интеграции','Yordam va integratsiyalar','Help & integrations')}
+          accent={tx(lang,'интеграции','integratsiyalar','integrations')}
+          sub={tx(lang,'Документация, Telegram-сообщество и подключение площадок',
+            'Hujjatlar, Telegram-hamjamiyat va maydonchalarni ulash',
+            'Documentation, Telegram community and marketplace connections')}
         />
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 20 }}>
           {cards.map((c, i) => (
