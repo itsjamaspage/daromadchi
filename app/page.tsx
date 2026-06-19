@@ -15,7 +15,7 @@ import type { Lang } from '@/lib/i18n'
 // ── Palette ───────────────────────────────────────────────────────────────────
 const P = {
   ink:       '#0E2233',
-  parchment: '#c5e8fe',
+  parchment: '#a0d4fc',
   card:      '#FFFFFF',
   stone:     '#4A7090',
   muted:     '#7AACC7',
@@ -431,7 +431,7 @@ function HeroSection({ lang }: { lang: string }) {
   const acc = useAccent()
 
   // Light mode: light blue gradient hero  /  Dark mode: deep purple-navy hero
-  const heroBg    = isDark ? P.dCanvas : 'linear-gradient(160deg, #c5e8fe 0%, #a0d4fc 40%, #a0d4fc 100%)'
+  const heroBg    = isDark ? P.dCanvas : 'linear-gradient(160deg, #a0d4fc 0%, #7bbaf7 45%, #7bbaf7 80%)'
   const glowColor = isDark ? 'rgba(197,232,254,0.12)' : 'rgba(144,213,255,0.55)'
   const headCol   = isDark ? P.dText   : P.ink
   const subCol    = isDark ? P.dMuted  : P.stone
@@ -519,7 +519,7 @@ function HeroSection({ lang }: { lang: string }) {
 function ComparisonSection({ lang }: { lang: string }) {
   const isDark = useIsDark()
   const acc = useAccent()
-  const secBg  = isDark ? P.dCanvas : P.parchment
+  const secBg  = isDark ? P.dCanvas : P.card
   const cardBg = isDark ? P.dCard   : P.card
   const headBg = isDark ? P.dCard : P.parchment
   const bdr    = isDark ? P.dHair   : P.hair
@@ -805,7 +805,7 @@ function HowItWorksSection({ lang }: { lang: string }) {
   const acc = useAccent()
   const [active, setActive] = useState(0)
 
-  const secBg  = isDark ? P.dCard : P.parchment
+  const secBg  = isDark ? P.dCard : P.card
   const ink    = isDark ? P.dText   : P.ink
   const sub    = isDark ? P.dMuted  : P.stone
   const uiBg   = isDark ? 'rgba(28,28,46,0.95)' : P.parchment
@@ -1132,7 +1132,7 @@ function PricingSection({ lang }: { lang: string }) {
   const sectionRef = useRef(null)
   const inView = useInView(sectionRef, { once: true, amount: 0.3 })
 
-  const secBg  = isDark ? P.dCanvas : P.parchment
+  const secBg  = isDark ? P.dCanvas : P.card
   const ink    = isDark ? P.dText   : P.ink
   const muted  = isDark ? P.dMuted  : P.stone
   const bdr    = isDark ? P.dHair   : P.hair
@@ -1351,7 +1351,7 @@ function FaqSection({ lang }: { lang: string }) {
   const isDark = useIsDark()
   const acc = useAccent()
   const [open, setOpen] = useState<number | null>(0)
-  const secBg = isDark ? P.dCard : P.parchment
+  const secBg = isDark ? P.dCard : P.card
   const bdr   = isDark ? P.dHair   : P.hair
   const ink   = isDark ? P.dText   : P.ink
   const sub   = isDark ? P.dMuted  : P.stone
@@ -1436,7 +1436,7 @@ function FaqSection({ lang }: { lang: string }) {
 function CtaSection({ lang }: { lang: string }) {
   const isDark = useIsDark()
   const acc = useAccent()
-  const secBg   = isDark ? P.dCanvas : 'linear-gradient(160deg, #c5e8fe 0%, #a0d4fc 55%, #a0d4fc 100%)'
+  const secBg   = isDark ? P.dCanvas : 'linear-gradient(160deg, #a0d4fc 0%, #7bbaf7 55%, #7bbaf7 100%)'
   const headCol = isDark ? P.dText   : P.ink
   const subCol  = isDark ? P.dMuted  : P.stone
   const badgeCol = isDark ? 'rgba(255,255,255,0.45)' : P.stone
