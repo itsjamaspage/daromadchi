@@ -446,13 +446,13 @@ function HeroSection({ lang }: { lang: string }) {
 
         {/* Floating stat cards — desktop only */}
         <div className="hidden lg:block">
-          <FloatCard mp="Uzum" mpColor={P.uzum} metric="Выручка" value="24.5M сум" change="+12%" up delay={0.35} floatDur={3.6}
+          <FloatCard mp="Uzum" mpColor={acc.color} metric="Выручка" value="24.5M сум" change="+12%" up delay={0.35} floatDur={3.6}
             style={{ left: '-40px', top: '170px', transform: 'rotate(-4deg)', zIndex: 5 }} />
-          <FloatCard mp="Wildberries" mpColor={P.wb} metric="Заказы" value="1 842" change="+8.1%" up delay={0.5} floatDur={4.1}
+          <FloatCard mp="Wildberries" mpColor={acc.color} metric="Заказы" value="1 842" change="+8.1%" up delay={0.5} floatDur={4.1}
             style={{ right: '-40px', top: '150px', transform: 'rotate(3.5deg)', zIndex: 15 }} />
-          <FloatCard mp="Yandex Market" mpColor={P.yandex} metric="ДРР" value="8.2%" change="-1.4%" up={false} delay={0.65} floatDur={3.9}
+          <FloatCard mp="Yandex Market" mpColor={acc.color} metric="ДРР" value="8.2%" change="-1.4%" up={false} delay={0.65} floatDur={3.9}
             style={{ left: '-60px', top: '340px', transform: 'rotate(-2deg)', zIndex: 15 }} />
-          <FloatCard mp="Uzum" mpColor={P.uzum} metric="Прибыль" value="6.8M сум" change="+15%" up delay={0.8} floatDur={4.4}
+          <FloatCard mp="Uzum" mpColor={acc.color} metric="Прибыль" value="6.8M сум" change="+15%" up delay={0.8} floatDur={4.4}
             style={{ right: '-60px', top: '320px', transform: 'rotate(4.5deg)', zIndex: 5 }} />
         </div>
 
@@ -833,7 +833,7 @@ function HowItWorksSection({ lang }: { lang: string }) {
       ),
     },
     {
-      color: P.amber,
+      color: acc.color,
       title: tx(lang,'Подключите магазин','Do\'koningizni ulang','Connect your store'),
       desc: tx(lang,
         'Вставьте API-ключ из кабинета Uzum, WB или Яндекс — мы не можем менять данные в вашем магазине, только читать',
@@ -846,7 +846,7 @@ function HowItWorksSection({ lang }: { lang: string }) {
           <p style={{ fontSize: 11, fontWeight: 700, color: sub, marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
             {tx(lang,'Ваши магазины','Do\'konlaringiz','Your stores')}
           </p>
-          {[{mp:'Uzum',c:P.uzum,status:'✅'},{mp:'Wildberries',c:P.wb,status:'✅'},{mp:'Yandex Market',c:P.yandex,status:'⏳'}].map(m => (
+          {[{mp:'Uzum',c:acc.color,status:'✅'},{mp:'Wildberries',c:acc.color,status:'✅'},{mp:'Yandex Market',c:acc.color,status:'⏳'}].map(m => (
             <div key={m.mp} style={{ display: 'flex', alignItems: 'center', gap: 10,
               padding: '12px 14px', background: fldBg, borderRadius: 10, border: `1px solid ${uiBdr}`, marginBottom: 8 }}>
               <div style={{ width: 9, height: 9, borderRadius: '50%', background: m.c }} />
@@ -869,7 +869,7 @@ function HowItWorksSection({ lang }: { lang: string }) {
         <div style={{ background: uiBg, borderRadius: 16, padding: '20px',
           border: `1px solid ${uiBdr}`, boxShadow: isDark ? '0 8px 32px rgba(108,88,239,0.15)' : '0 8px 32px rgba(0,0,0,0.10)' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
-            {[{l:'Заказы',v:'1 842',d:'+300%',c:KPI.emerald},{l:'ДРР',v:'8.2%',d:'-20.9%',c:acc.color}].map(k => (
+            {[{l:'Заказы',v:'1 842',d:'+300%',c:acc.color},{l:'ДРР',v:'8.2%',d:'-20.9%',c:acc.color}].map(k => (
               <div key={k.l} style={{ background: fldBg, borderRadius: 10, padding: '14px',
                 border: `1px solid ${uiBdr}`, borderTop: `2px solid ${k.c}` }}>
                 <p style={{ fontSize: 11, color: sub, marginBottom: 4 }}>{k.l}</p>
@@ -1180,7 +1180,8 @@ function PricingSection({ lang }: { lang: string }) {
                     {t.name}
                   </p>
                   {(t as any).badge && (
-                    <span style={{ background: P.amber, borderRadius: 100, padding: '3px 12px',
+                    <span style={{ background: 'rgba(255,255,255,0.22)', border: '1px solid rgba(255,255,255,0.40)',
+                      borderRadius: 100, padding: '3px 12px',
                       fontSize: 10, fontWeight: 800, color: '#fff', letterSpacing: '0.04em' }}>
                       {(t as any).badge}
                     </span>
@@ -1250,18 +1251,18 @@ function ResourcesSection({ lang }: { lang: string }) {
     {
       icon: '💬', title: 'Telegram',
       items: [
-        { t: tx(lang,'Канал с обновлениями','Yangilanishlar kanali','Updates channel'), sub: tx(lang,'Новые функции и релизы','Yangi funksiyalar va relizlar','New features & releases'), dot: P.uzum },
+        { t: tx(lang,'Канал с обновлениями','Yangilanishlar kanali','Updates channel'), sub: tx(lang,'Новые функции и релизы','Yangi funksiyalar va relizlar','New features & releases'), dot: acc.color },
         { t: tx(lang,'Чат поддержки','Qo\'llab-quvvatlash chati','Support chat'), sub: tx(lang,'Ответ в течение часа','Bir soat ichida javob','Reply within an hour'), dot: acc.color },
-        { t: tx(lang,'Сообщество продавцов','Sotuvchilar hamjamiyati','Sellers community'), sub: tx(lang,'Советы и кейсы','Maslahatlar va holatlar','Tips & case studies'), dot: P.amber },
+        { t: tx(lang,'Сообщество продавцов','Sotuvchilar hamjamiyati','Sellers community'), sub: tx(lang,'Советы и кейсы','Maslahatlar va holatlar','Tips & case studies'), dot: acc.color },
       ],
-      link: tx(lang,'Открыть Telegram →','Telegramni ochish →','Open Telegram →'), linkColor: P.uzum, href: 'https://t.me/daromadchi',
+      link: tx(lang,'Открыть Telegram →','Telegramni ochish →','Open Telegram →'), linkColor: acc.color, href: 'https://t.me/daromadchi',
     },
     {
       icon: '🔌', title: tx(lang,'Интеграции','Integratsiyalar','Integrations'),
       items: [
-        { t: 'Uzum Market', sub: tx(lang,'Подключение через API-ключ','API kalit orqali ulash','Connect via API key'), dot: P.uzum },
-        { t: 'Wildberries', sub: tx(lang,'Подключение через токен WB','WB token orqali ulash','Connect via WB token'), dot: P.wb },
-        { t: 'Yandex Market', sub: tx(lang,'OAuth-авторизация','OAuth-avtorizatsiya','OAuth authorisation'), dot: P.yandex },
+        { t: 'Uzum Market', sub: tx(lang,'Подключение через API-ключ','API kalit orqali ulash','Connect via API key'), dot: acc.color },
+        { t: 'Wildberries', sub: tx(lang,'Подключение через токен WB','WB token orqali ulash','Connect via WB token'), dot: acc.color },
+        { t: 'Yandex Market', sub: tx(lang,'OAuth-авторизация','OAuth-avtorizatsiya','OAuth authorisation'), dot: acc.color },
       ],
       link: tx(lang,'Инструкция по подключению →','Ulash yo\'riqnomasi →','Connection guide →'), linkColor: acc.color, href: '/help',
     },
@@ -1415,13 +1416,13 @@ function CtaSection({ lang }: { lang: string }) {
         background: `radial-gradient(ellipse 80% 55% at 50% 120%, ${glowColor} 0%, transparent 65%)` }} />
 
       <div className="hidden lg:block">
-        <FloatCard mp="Uzum" mpColor={P.uzum} metric="Выручка" value="24.5M сум" change="+12%" up delay={0} floatDur={3.8}
+        <FloatCard mp="Uzum" mpColor={acc.color} metric="Выручка" value="24.5M сум" change="+12%" up delay={0} floatDur={3.8}
           style={{ left: '4%', top: '20%', transform: 'rotate(-3.5deg)', zIndex: 5, opacity: 0.9 }} />
-        <FloatCard mp="Wildberries" mpColor={P.wb} metric="Заказы" value="1 842" change="+8%" up delay={0.1} floatDur={4.3}
+        <FloatCard mp="Wildberries" mpColor={acc.color} metric="Заказы" value="1 842" change="+8%" up delay={0.1} floatDur={4.3}
           style={{ right: '3%', top: '18%', transform: 'rotate(4deg)', zIndex: 5, opacity: 0.9 }} />
-        <FloatCard mp="Yandex Market" mpColor={P.yandex} metric="ДРР" value="8.2%" change="-1.4%" up={false} delay={0.15} floatDur={3.6}
+        <FloatCard mp="Yandex Market" mpColor={acc.color} metric="ДРР" value="8.2%" change="-1.4%" up={false} delay={0.15} floatDur={3.6}
           style={{ left: '6%', bottom: '20%', transform: 'rotate(-2deg)', zIndex: 5, opacity: 0.9 }} />
-        <FloatCard mp="Uzum" mpColor={P.uzum} metric="Прибыль" value="6.8M сум" change="+15%" up delay={0.2} floatDur={4.1}
+        <FloatCard mp="Uzum" mpColor={acc.color} metric="Прибыль" value="6.8M сум" change="+15%" up delay={0.2} floatDur={4.1}
           style={{ right: '5%', bottom: '22%', transform: 'rotate(3deg)', zIndex: 5, opacity: 0.9 }} />
       </div>
 
