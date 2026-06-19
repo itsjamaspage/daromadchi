@@ -514,7 +514,7 @@ function HeroSection({ lang }: { lang: string }) {
 function ComparisonSection({ lang }: { lang: string }) {
   const isDark = useIsDark()
   const acc = useAccent()
-  const secBg  = isDark ? '#0D0A22' : P.parchment
+  const secBg  = isDark ? '#0D0A22' : P.card
   const cardBg = isDark ? P.dCard   : P.card
   const headBg = isDark ? '#1A1640' : P.parchment
   const bdr    = isDark ? P.dHair   : P.hair
@@ -636,21 +636,21 @@ function FeaturesSection({ lang }: { lang: string }) {
                   ))}
                 </div>
                 {[
-                  { n:'Куртка зимняя', mp: P.uzum,   rev:'18.2M', drr:7.2,  ok:true  },
-                  { n:'Кроссовки Nike',mp: P.wb,     rev:'12.6M', drr:11.4, ok:false },
-                  { n:'Рюкзак 40L',    mp: P.yandex, rev:'9.9M',  drr:9.8,  ok:true  },
-                  { n:'Наушники Sony', mp: P.uzum,   rev:'8.3M',  drr:6.1,  ok:true  },
-                  { n:'Кроссовки Puma',mp: P.wb,     rev:'7.1M',  drr:13.2, ok:false },
+                  { n:'Куртка зимняя', rev:'18.2M', drr:7.2,  ok:true  },
+                  { n:'Кроссовки Nike',rev:'12.6M', drr:11.4, ok:false },
+                  { n:'Рюкзак 40L',    rev:'9.9M',  drr:9.8,  ok:true  },
+                  { n:'Наушники Sony', rev:'8.3M',  drr:6.1,  ok:true  },
+                  { n:'Кроссовки Puma',rev:'7.1M',  drr:13.2, ok:false },
                 ].map((r,i) => (
                   <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 55px 60px 42px',
                     padding: '7px 12px', borderBottom: i < 4 ? `1px solid ${border}` : 'none', alignItems: 'center' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                      <div style={{ width: 5, height: 5, borderRadius: '50%', background: r.mp, flexShrink: 0 }} />
+                      <div style={{ width: 5, height: 5, borderRadius: '50%', background: acc.color, flexShrink: 0 }} />
                       <span style={{ fontSize: 10, color: ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.n}</span>
                     </div>
                     <span style={{ fontSize: 10, fontFamily: 'monospace', fontWeight: 600, color: ink }}>{r.rev}</span>
-                    <span style={{ fontSize: 10, fontWeight: 700, color: r.drr > 11 ? P.red : r.drr > 9 ? P.amber : KPI.emerald }}>{r.drr}%</span>
-                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: r.ok ? KPI.emerald : P.amber }} />
+                    <span style={{ fontSize: 10, fontWeight: 700, color: r.drr > 11 ? P.red : acc.color }}>{r.drr}%</span>
+                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: r.ok ? acc.color : P.red }} />
                   </div>
                 ))}
               </div>
@@ -668,15 +668,15 @@ function FeaturesSection({ lang }: { lang: string }) {
               </p>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
                 {[
-                  { l:'Выручка', v:'124.5M сум', d:'+12.4%', c: KPI.violet,  pos: true  },
-                  { l:'Заказы',  v:'1 842',       d:'+8.1%',  c: KPI.emerald, pos: true  },
-                  { l:'Расход',  v:'10.2M сум',   d:'+3.2%',  c: KPI.blue,    pos: false },
-                  { l:'Прибыль', v:'38.2M сум',   d:'+15.7%', c: KPI.amber,   pos: true  },
+                  { l:'Выручка', v:'124.5M сум', d:'+12.4%', pos: true  },
+                  { l:'Заказы',  v:'1 842',       d:'+8.1%',  pos: true  },
+                  { l:'Расход',  v:'10.2M сум',   d:'+3.2%',  pos: false },
+                  { l:'Прибыль', v:'38.2M сум',   d:'+15.7%', pos: true  },
                 ].map(k => (
-                  <div key={k.l} style={{ background: cardBg, borderRadius: 10, padding: '12px', borderTop: `2px solid ${k.c}` }}>
+                  <div key={k.l} style={{ background: cardBg, borderRadius: 10, padding: '12px', borderTop: `2px solid ${acc.color}` }}>
                     <p style={{ fontSize: 10, color: muted, marginBottom: 3 }}>{k.l}</p>
                     <p style={{ fontSize: 15, fontWeight: 700, color: ink, fontFamily: 'monospace', lineHeight: 1.1 }}>{k.v}</p>
-                    <p style={{ fontSize: 10, fontWeight: 700, color: k.pos ? KPI.emerald : P.red, marginTop: 2 }}>{k.d}</p>
+                    <p style={{ fontSize: 10, fontWeight: 700, color: k.pos ? acc.color : P.red, marginTop: 2 }}>{k.d}</p>
                   </div>
                 ))}
               </div>
@@ -684,7 +684,7 @@ function FeaturesSection({ lang }: { lang: string }) {
                 <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2, height: 36 }}>
                   {[30,48,38,65,52,78,60,82,70,55,75,92,66,80].map((h, i) => (
                     <div key={i} style={{ flex: 1, borderRadius: '2px 2px 0 0', height: `${h}%`,
-                      background: i >= 10 ? KPI.violet : 'rgba(73,79,223,0.16)' }} />
+                      background: i >= 10 ? acc.color : `${acc.color}28` }} />
                   ))}
                 </div>
               </div>
@@ -995,13 +995,13 @@ function WhoSection({ lang }: { lang: string }) {
 
   const cards = [
     {
-      color: P.uzum,
+      color: acc.color,
       avatar: (
         <svg width="72" height="72" viewBox="0 0 72 72" fill="none">
-          <circle cx="36" cy="36" r="36" fill="rgba(73,79,223,0.10)"/>
-          <circle cx="36" cy="28" r="12" fill="#494fdf" opacity="0.85"/>
-          <ellipse cx="36" cy="56" rx="18" ry="12" fill="#494fdf" opacity="0.65"/>
-          <circle cx="44" cy="42" r="8" fill="rgba(73,79,223,0.9)"/>
+          <circle cx="36" cy="36" r="36" fill="rgba(14,116,144,0.10)"/>
+          <circle cx="36" cy="28" r="12" fill="#0E7490" opacity="0.85"/>
+          <ellipse cx="36" cy="56" rx="18" ry="12" fill="#0E7490" opacity="0.65"/>
+          <circle cx="44" cy="42" r="8" fill="rgba(14,116,144,0.9)"/>
           <text x="44" y="45.5" textAnchor="middle" fill="white" fontSize="9" fontWeight="700">📦</text>
         </svg>
       ),
@@ -1033,13 +1033,13 @@ function WhoSection({ lang }: { lang: string }) {
         tx(lang,'Уведомления Telegram','Telegram bildirishnomalari','Telegram alerts')],
     },
     {
-      color: P.amber,
+      color: acc.color,
       avatar: (
         <svg width="72" height="72" viewBox="0 0 72 72" fill="none">
-          <circle cx="36" cy="36" r="36" fill="rgba(202,138,4,0.10)"/>
-          <circle cx="36" cy="28" r="12" fill="#CA8A04" opacity="0.85"/>
-          <ellipse cx="36" cy="56" rx="18" ry="12" fill="#CA8A04" opacity="0.65"/>
-          <circle cx="52" cy="34" r="10" fill="rgba(202,138,4,0.9)"/>
+          <circle cx="36" cy="36" r="36" fill="rgba(14,116,144,0.10)"/>
+          <circle cx="36" cy="28" r="12" fill="#0E7490" opacity="0.85"/>
+          <ellipse cx="36" cy="56" rx="18" ry="12" fill="#0E7490" opacity="0.65"/>
+          <circle cx="52" cy="34" r="10" fill="rgba(14,116,144,0.9)"/>
           <text x="52" y="37.5" textAnchor="middle" fill="white" fontSize="10" fontWeight="700">🏢</text>
         </svg>
       ),
@@ -1100,11 +1100,11 @@ function PricingSection({ lang }: { lang: string }) {
   const isDark = useIsDark()
   const acc = useAccent()
 
-  const secBg  = isDark ? P.dCanvas : P.parchment
+  const secBg  = isDark ? P.dCanvas : P.card
   const ink    = isDark ? P.dText   : P.ink
   const muted  = isDark ? P.dMuted  : P.stone
-  const bdr    = isDark ? P.dHair   : '#D6DCFF'
-  const cardBg = isDark ? '#13102E' : '#FFFFFF'
+  const bdr    = isDark ? P.dHair   : P.hair
+  const cardBg = isDark ? '#13102E' : P.parchment
 
   const tiers = [
     {
@@ -1319,7 +1319,7 @@ function FaqSection({ lang }: { lang: string }) {
   const isDark = useIsDark()
   const acc = useAccent()
   const [open, setOpen] = useState<number | null>(0)
-  const secBg = isDark ? '#13102E' : P.parchment
+  const secBg = isDark ? '#13102E' : P.card
   const bdr   = isDark ? P.dHair   : P.hair
   const ink   = isDark ? P.dText   : P.ink
   const sub   = isDark ? P.dMuted  : P.stone
