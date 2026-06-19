@@ -15,7 +15,7 @@ import type { Lang } from '@/lib/i18n'
 // ── Palette ───────────────────────────────────────────────────────────────────
 const P = {
   ink:       '#0E2233',
-  parchment: '#c5e8fe',
+  parchment: '#83c0f9',
   card:      '#FFFFFF',
   stone:     '#4A7090',
   muted:     '#7AACC7',
@@ -1436,7 +1436,7 @@ function FaqSection({ lang }: { lang: string }) {
 function CtaSection({ lang }: { lang: string }) {
   const isDark = useIsDark()
   const acc = useAccent()
-  const secBg   = isDark ? P.dCanvas : '#c5e8fe'
+  const secBg   = isDark ? P.dCanvas : '#83c0f9'
   const headCol = isDark ? P.dText   : P.ink
   const subCol  = isDark ? P.dMuted  : P.stone
   const badgeCol = isDark ? 'rgba(255,255,255,0.45)' : P.stone
@@ -1496,7 +1496,7 @@ function CtaSection({ lang }: { lang: string }) {
 // ── FOOTER ────────────────────────────────────────────────────────────────────
 function FooterSection({ lang }: { lang: string }) {
   const isDark = useIsDark()
-  const footBg  = isDark ? '#1d1c2e'  : '#c5e8fe'
+  const footBg  = isDark ? '#1d1c2e'  : '#83c0f9'
   const bdr     = isDark ? P.dHair    : P.hair
   const txt     = isDark ? P.dText    : P.ink
   const muted   = isDark ? P.dMuted   : P.stone
