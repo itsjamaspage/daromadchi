@@ -1491,7 +1491,7 @@ function CtaSection({ lang }: { lang: string }) {
 // ── FOOTER ────────────────────────────────────────────────────────────────────
 function FooterSection({ lang }: { lang: string }) {
   const isDark = useIsDark()
-  const footBg  = isDark ? P.dCanvas  : P.card
+  const footBg  = isDark ? P.dCanvas  : P.parchment
   const bdr     = isDark ? P.dHair    : P.hair
   const txt     = isDark ? P.dText    : P.ink
   const muted   = isDark ? P.dMuted   : P.stone
