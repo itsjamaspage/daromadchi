@@ -1091,9 +1091,42 @@ function WhoSection({ lang }: { lang: string }) {
 }
 
 // ── 6. PRICING — theme-aware ──────────────────────────────────────────────────
+function SlotPrice({ value, trigger, delay = 0 }: { value: string; trigger: boolean; delay?: number }) {
+  const DIGITS = '0123456789'
+  const blank = value.replace(/\d/g, '-')
+  const [display, setDisplay] = useState(blank)
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    if (!trigger) return
+    const plainLen = value.replace(/ /g, '').length
+    timerRef.current = setTimeout(() => {
+      let frame = 0
+      const total = 22 + plainLen * 3
+      const iv = setInterval(() => {
+        if (frame >= total) { setDisplay(value); clearInterval(iv); return }
+        setDisplay(
+          value.split('').map((ch, i) => {
+            if (ch === ' ') return ' '
+            const charIdx = value.slice(0, i + 1).replace(/ /g, '').length - 1
+            const revealFrame = Math.floor(total * 0.55 * ((charIdx + 1) / plainLen))
+            return frame > revealFrame ? ch : DIGITS[Math.floor(Math.random() * 10)]
+          }).join('')
+        )
+        frame++
+      }, 48)
+    }, delay * 1000)
+    return () => { if (timerRef.current) clearTimeout(timerRef.current) }
+  }, [trigger, value, delay])
+
+  return <span className="tabular-nums">{display}</span>
+}
+
 function PricingSection({ lang }: { lang: string }) {
   const isDark = useIsDark()
   const acc = useAccent()
+  const sectionRef = useRef(null)
+  const inView = useInView(sectionRef, { once: true, amount: 0.3 })
 
   const secBg  = isDark ? P.dCanvas : P.card
   const ink    = isDark ? P.dText   : P.ink
@@ -1138,77 +1171,85 @@ function PricingSection({ lang }: { lang: string }) {
   ]
 
   return (
-    <section id="pricing" style={{ background: secBg, padding: '88px 24px',
+    <section id="pricing" ref={sectionRef} style={{ background: secBg, padding: '88px 24px',
       fontFamily: "'Space Grotesk', system-ui, sans-serif", transition: 'background 0.3s' }}>
       <div style={{ maxWidth: 1000, margin: '0 auto', position: 'relative' }}>
-        <FadeUp>
-          <div style={{ textAlign: 'center', marginBottom: 56 }}>
-            <p style={{ fontSize: 11, fontWeight: 700, color: acc.color, marginBottom: 10,
-              textTransform: 'uppercase', letterSpacing: '0.12em' }}>
-              {tx(lang,'ТАРИФЫ','TARIFLAR','PRICING')}
-            </p>
-            <h2 style={{ fontSize: 'clamp(26px, 3.5vw, 42px)', fontWeight: 800, color: ink,
-              letterSpacing: '-0.022em', marginBottom: 16 }}>
-              {tx(lang,'Тариф для вашего бизнеса','Biznesingizga mos tarif','A plan for your business')}
-            </h2>
-            <p style={{ fontSize: 16, color: muted, maxWidth: 400, margin: '0 auto' }}>
-              {tx(lang,'Начните бесплатно, масштабируйтесь по мере роста',
-                'Bepul boshlang, o\'sish bilan kengaytiring','Start free, scale as you grow')}
-            </p>
-          </div>
-        </FadeUp>
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={inView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.5 }}
+          style={{ textAlign: 'center', marginBottom: 56 }}>
+          <p style={{ fontSize: 11, fontWeight: 700, color: acc.color, marginBottom: 10,
+            textTransform: 'uppercase', letterSpacing: '0.12em' }}>
+            {tx(lang,'ТАРИФЫ','TARIFLAR','PRICING')}
+          </p>
+          <h2 style={{ fontSize: 'clamp(26px, 3.5vw, 42px)', fontWeight: 800, color: ink,
+            letterSpacing: '-0.022em', marginBottom: 16 }}>
+            {tx(lang,'Тариф для вашего бизнеса','Biznesingizga mos tarif','A plan for your business')}
+          </h2>
+          <p style={{ fontSize: 16, color: muted, maxWidth: 400, margin: '0 auto' }}>
+            {tx(lang,'Начните бесплатно, масштабируйтесь по мере роста',
+              'Bepul boshlang, o\'sish bilan kengaytiring','Start free, scale as you grow')}
+          </p>
+        </motion.div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 20 }}>
           {tiers.map((t, i) => (
-            <FadeUp key={t.name} delay={i * 0.1}>
-              <div style={{
+            <motion.div key={t.name}
+              initial={{ opacity: 0, y: -140, scale: 0.9 }}
+              animate={inView ? { opacity: 1, y: 0, scale: t.highlight ? 1.02 : 1 } : {}}
+              transition={{ delay: i * 0.18, type: 'spring', stiffness: 160, damping: 18 }}
+              style={{
                 background: t.highlight ? P.parchment : cardBg,
                 borderRadius: 20, padding: '28px 24px',
                 border: `1px solid ${t.highlight ? acc.color : bdr}`,
                 boxShadow: t.highlight
                   ? `0 16px 48px ${acc.color}30`
                   : isDark ? 'none' : '0 4px 20px rgba(0,0,0,0.05)',
-                position: 'relative', height: '100%', display: 'flex', flexDirection: 'column',
+                position: 'relative', display: 'flex', flexDirection: 'column',
               }}>
 
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                  <p style={{ fontSize: 13, fontWeight: 700, color: t.highlight ? acc.dk : muted }}>
-                    {t.name}
-                  </p>
-                  {(t as any).badge && (
-                    <span style={{ background: acc.color, borderRadius: 100, padding: '3px 12px',
-                      fontSize: 10, fontWeight: 800, color: '#fff', letterSpacing: '0.04em' }}>
-                      {(t as any).badge}
-                    </span>
-                  )}
-                </div>
-
-                <div style={{ marginBottom: 4 }}>
-                  <span style={{ fontSize: 34, fontWeight: 800, color: ink,
-                    fontFamily: 'var(--font-mono-landing), monospace' }}>
-                    {t.price}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                <p style={{ fontSize: 13, fontWeight: 700, color: t.highlight ? acc.dk : muted }}>
+                  {t.name}
+                </p>
+                {(t as any).badge && (
+                  <span style={{ background: acc.color, borderRadius: 100, padding: '3px 12px',
+                    fontSize: 10, fontWeight: 800, color: '#fff', letterSpacing: '0.04em' }}>
+                    {(t as any).badge}
                   </span>
-                </div>
-                <p style={{ fontSize: 13, color: muted, marginBottom: 24 }}>{t.sub}</p>
-
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
-                  {t.features.map(f => (
-                    <div key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-                      <Check size={14} color={acc.color} style={{ marginTop: 2, flexShrink: 0 }}/>
-                      <span style={{ fontSize: 13, color: ink, lineHeight: 1.4 }}>{f}</span>
-                    </div>
-                  ))}
-                </div>
-
-                <Link href={t.ctaHref}
-                  style={{ display: 'block', textAlign: 'center', fontSize: 14, fontWeight: 700,
-                    background: acc.color, color: '#fff', padding: '13px 24px', borderRadius: 10,
-                    textDecoration: 'none', transition: 'all 0.15s' }}
-                  onMouseEnter={e => { e.currentTarget.style.background = acc.dk }}
-                  onMouseLeave={e => { e.currentTarget.style.background = acc.color }}>
-                  {t.cta}
-                </Link>
+                )}
               </div>
-            </FadeUp>
+
+              <div style={{ marginBottom: 4 }}>
+                <span style={{ fontSize: 34, fontWeight: 800, color: ink,
+                  fontFamily: 'var(--font-mono-landing), monospace' }}>
+                  {t.price === '0' ? '0' : <SlotPrice value={t.price} trigger={inView} delay={i * 0.18 + 0.4} />}
+                </span>
+              </div>
+              <p style={{ fontSize: 13, color: muted, marginBottom: 24 }}>{t.sub}</p>
+
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
+                {t.features.map((f, fi) => (
+                  <motion.div key={f}
+                    initial={{ opacity: 0, x: -8 }}
+                    animate={inView ? { opacity: 1, x: 0 } : {}}
+                    transition={{ delay: i * 0.18 + 0.7 + fi * 0.05, duration: 0.25 }}
+                    style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                    <Check size={14} color={acc.color} style={{ marginTop: 2, flexShrink: 0 }}/>
+                    <span style={{ fontSize: 13, color: ink, lineHeight: 1.4 }}>{f}</span>
+                  </motion.div>
+                ))}
+              </div>
+
+              <Link href={t.ctaHref}
+                style={{ display: 'block', textAlign: 'center', fontSize: 14, fontWeight: 700,
+                  background: acc.color, color: '#fff', padding: '13px 24px', borderRadius: 10,
+                  textDecoration: 'none', transition: 'all 0.15s' }}
+                onMouseEnter={e => { e.currentTarget.style.background = acc.dk }}
+                onMouseLeave={e => { e.currentTarget.style.background = acc.color }}>
+                {t.cta}
+              </Link>
+            </motion.div>
           ))}
         </div>
       </div>

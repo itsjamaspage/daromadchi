@@ -6,7 +6,7 @@ import Providers from './providers'
 import type { Lang } from '@/lib/i18n'
 
 const spaceGrotesk = Space_Grotesk({
-  subsets: ['latin', 'cyrillic'],
+  subsets: ['latin'],
   display: 'swap',
   variable: '--font-space',
   weight: ['300', '400', '500', '600', '700'],
