@@ -603,9 +603,9 @@ function FeaturesSection({ lang }: { lang: string }) {
   const acc = useAccent()
   const secBg   = isDark ? '#0D0A22' : P.parchment
   const bentoBg = isDark ? P.dCard   : P.card
-  const cardBg  = isDark ? '#1A1640' : P.parchment
+  const cardBg  = isDark ? '#1A1640' : P.card
   const border  = isDark ? P.dHair   : P.hair
-  const bg2     = isDark ? '#110E28' : '#EFF8FF'
+  const bg2     = isDark ? '#110E28' : '#F8FAFD'
   const muted   = isDark ? P.dMuted  : '#A8A29E'
   const ink     = isDark ? P.dText   : '#1C1917'
 
