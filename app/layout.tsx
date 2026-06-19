@@ -1,15 +1,15 @@
 import type { Metadata } from 'next'
-import { Golos_Text, JetBrains_Mono } from 'next/font/google'
+import { Space_Grotesk, JetBrains_Mono } from 'next/font/google'
 import { cookies } from 'next/headers'
 import './globals.css'
 import Providers from './providers'
 import type { Lang } from '@/lib/i18n'
 
-const golos = Golos_Text({
-  subsets: ['latin', 'cyrillic'],
+const spaceGrotesk = Space_Grotesk({
+  subsets: ['latin'],
   display: 'swap',
-  variable: '--font-golos',
-  weight: ['400', '500', '600', '700', '800', '900'],
+  variable: '--font-space',
+  weight: ['300', '400', '500', '600', '700'],
 })
 
 const jetbrainsMono = JetBrains_Mono({
@@ -34,7 +34,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const lang = (cookieStore.get('lang')?.value ?? 'uz') as Lang
 
   return (
-    <html lang={lang} className={`${golos.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
+    <html lang={lang} className={`${spaceGrotesk.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
       <head>
         <link rel="manifest" href="/manifest.json" />
         <link rel="icon" href="/icon.svg" type="image/svg+xml" />

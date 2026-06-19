@@ -2,25 +2,25 @@
 
 /* ═══════════════════════════════════════════════════════════════════
    FONTS
-   Display + Body: Golos Text (Cyrillic-first, weights 400–900)
+   Display + Body: Space Grotesk (weights 300–700)
    Mono:           JetBrains Mono (numbers & code)
 ═══════════════════════════════════════════════════════════════════ */
 
 /* Override Tailwind v4's built-in font-sans so every utility class
-   uses Golos Text. Literal names so @theme tokens resolve at build time. */
+   uses Space Grotesk. Literal names so @theme tokens resolve at build time. */
 @theme {
-  --font-sans: 'Golos Text', system-ui, sans-serif;
+  --font-sans: 'Space Grotesk', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 }
 
 :root {
-  --font-display: 'Golos Text', system-ui, sans-serif;
-  --font-body:    'Golos Text', system-ui, sans-serif;
+  --font-display: 'Space Grotesk', system-ui, sans-serif;
+  --font-body:    'Space Grotesk', system-ui, sans-serif;
 }
 
-/* Force Golos Text as the inherited base — literal name, not a CSS variable */
+/* Force Space Grotesk as the inherited base — literal name, not a CSS variable */
 html, body {
-  font-family: 'Golos Text', system-ui, sans-serif !important;
+  font-family: 'Space Grotesk', system-ui, sans-serif !important;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
