@@ -133,7 +133,7 @@ function Navbar({ lang }: { lang: string }) {
     { label: tx(lang,'Помощь','Yordam','Help'), href: '/help' },
   ]
 
-  const scrolledBg = isDark ? 'rgba(13,10,34,0.96)' : 'rgba(255,255,255,0.95)'
+  const scrolledBg = isDark ? 'rgba(19,19,33,0.96)' : 'rgba(255,255,255,0.95)'
   // On non-scrolled: light hero → dark links; dark hero → white links
   const lnk = scrolled ? (isDark ? P.dMuted : P.stone) : (isDark ? 'rgba(255,255,255,0.78)' : P.stone)
   const lnkH = scrolled ? (isDark ? P.dText : P.ink)   : (isDark ? '#fff' : P.ink)
@@ -266,13 +266,13 @@ function FloatCard({ mp, mpColor, metric, value, change, up, delay, floatDur = 3
       {/* CSS animation — GPU-accelerated, no JS per frame */}
       <div className="animate-float" style={{ animationDuration: `${floatDur}s`, animationDelay: `${delay * 0.3}s` }}>
         <div style={{
-          background: isDark ? 'rgba(20,16,50,0.96)' : 'rgba(255,255,255,0.97)',
+          background: isDark ? 'rgba(28,28,46,0.96)' : 'rgba(255,255,255,0.97)',
           borderRadius: 14, padding: '12px 16px', minWidth: 162,
           boxShadow: isDark
-            ? '0 10px 40px rgba(108,88,239,0.25), 0 2px 8px rgba(0,0,0,0.40)'
+            ? '0 10px 40px rgba(70,240,210,0.12), 0 2px 8px rgba(0,0,0,0.40)'
             : '0 10px 36px rgba(0,0,0,0.14), 0 2px 8px rgba(0,0,0,0.06)',
           fontFamily: "'Space Grotesk', system-ui, sans-serif",
-          border: isDark ? '1px solid rgba(108,88,239,0.25)' : '1px solid rgba(186,230,253,0.8)',
+          border: isDark ? '1px solid rgba(70,240,210,0.18)' : '1px solid rgba(186,230,253,0.8)',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 5 }}>
             <div style={{ width: 7, height: 7, borderRadius: '50%', background: mpColor }} />
@@ -428,7 +428,7 @@ function HeroSection({ lang }: { lang: string }) {
 
   // Light mode: light blue gradient hero  /  Dark mode: deep purple-navy hero
   const heroBg    = isDark ? P.dCanvas : 'linear-gradient(160deg, #46F0D2 0%, #2DD4BF 45%, #14B8A6 80%)'
-  const glowColor = isDark ? 'rgba(108,88,239,0.30)' : 'rgba(144,213,255,0.55)'
+  const glowColor = isDark ? 'rgba(70,240,210,0.12)' : 'rgba(144,213,255,0.55)'
   const headCol   = isDark ? P.dText   : P.ink
   const subCol    = isDark ? P.dMuted  : P.stone
   const secLinkCol = isDark ? 'rgba(255,255,255,0.62)' : P.stone
@@ -441,7 +441,7 @@ function HeroSection({ lang }: { lang: string }) {
       <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none',
         background: `radial-gradient(ellipse 90% 55% at 50% -5%, ${glowColor} 0%, transparent 65%)` }} />
       <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none',
-        background: `radial-gradient(ellipse 45% 30% at 50% 0%, ${isDark ? 'rgba(108,88,239,0.12)' : 'rgba(14,116,144,0.08)'} 0%, transparent 55%)` }} />
+        background: `radial-gradient(ellipse 45% 30% at 50% 0%, ${isDark ? 'rgba(70,240,210,0.06)' : 'rgba(14,116,144,0.08)'} 0%, transparent 55%)` }} />
 
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '130px 100px 0',
         position: 'relative', zIndex: 10, textAlign: 'center' }}>
@@ -546,7 +546,7 @@ function ComparisonSection({ lang }: { lang: string }) {
         />
         <FadeUp delay={0.1}>
           <div style={{ background: cardBg, borderRadius: 20, overflow: 'hidden',
-            border: `1px solid ${bdr}`, boxShadow: isDark ? '0 4px 24px rgba(108,88,239,0.10)' : '0 4px 24px rgba(0,0,0,0.06)' }}>
+            border: `1px solid ${bdr}`, boxShadow: isDark ? '0 4px 24px rgba(70,240,210,0.06)' : '0 4px 24px rgba(0,0,0,0.06)' }}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr',
               background: headBg, borderBottom: `1px solid ${bdr}` }}>
               <div style={{ padding: '16px 24px' }}/>
@@ -556,7 +556,7 @@ function ComparisonSection({ lang }: { lang: string }) {
                 </p>
               </div>
               <div style={{ padding: '16px 24px', textAlign: 'center',
-                background: isDark ? 'rgba(108,88,239,0.12)' : acc.bg, borderLeft: `1px solid ${bdr}` }}>
+                background: isDark ? 'rgba(70,240,210,0.08)' : acc.bg, borderLeft: `1px solid ${bdr}` }}>
                 <p style={{ fontSize: 14, fontWeight: 800, color: acc.color }}>Daromadchi</p>
               </div>
             </div>
@@ -573,8 +573,8 @@ function ComparisonSection({ lang }: { lang: string }) {
                   </div>
                 </div>
                 <div style={{ padding: '15px 24px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  background: isDark ? 'rgba(108,88,239,0.08)' : acc.bg, borderLeft: `1px solid ${bdr}` }}>
-                  <div style={{ width: 26, height: 26, borderRadius: '50%', background: isDark ? 'rgba(108,88,239,0.20)' : `${acc.color}22`,
+                  background: isDark ? 'rgba(70,240,210,0.06)' : acc.bg, borderLeft: `1px solid ${bdr}` }}>
+                  <div style={{ width: 26, height: 26, borderRadius: '50%', background: isDark ? 'rgba(70,240,210,0.15)' : `${acc.color}22`,
                     display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <Check size={13} color={acc.color}/>
                   </div>
@@ -804,7 +804,7 @@ function HowItWorksSection({ lang }: { lang: string }) {
   const secBg  = isDark ? P.dCard : P.card
   const ink    = isDark ? P.dText   : P.ink
   const sub    = isDark ? P.dMuted  : P.stone
-  const uiBg   = isDark ? 'rgba(26,22,64,0.95)' : P.parchment
+  const uiBg   = isDark ? 'rgba(28,28,46,0.95)' : P.parchment
   const uiBdr  = isDark ? P.dHair   : P.hair
   const fldBg  = isDark ? P.dCard2 : '#fff'
 
@@ -819,7 +819,7 @@ function HowItWorksSection({ lang }: { lang: string }) {
       ),
       ui: (
         <div style={{ background: uiBg, borderRadius: 16, padding: '20px',
-          border: `1px solid ${uiBdr}`, boxShadow: isDark ? '0 8px 32px rgba(108,88,239,0.15)' : '0 8px 32px rgba(0,0,0,0.10)' }}>
+          border: `1px solid ${uiBdr}`, boxShadow: isDark ? '0 8px 32px rgba(70,240,210,0.08)' : '0 8px 32px rgba(0,0,0,0.10)' }}>
           {[{l:'Email',v:'seller@example.com'},{l:tx(lang,'Пароль','Parol','Password'),v:'••••••••••'}].map(f => (
             <div key={f.l} style={{ marginBottom: 12 }}>
               <p style={{ fontSize: 11, color: sub, marginBottom: 5 }}>{f.l}</p>
@@ -844,7 +844,7 @@ function HowItWorksSection({ lang }: { lang: string }) {
       ),
       ui: (
         <div style={{ background: uiBg, borderRadius: 16, padding: '20px',
-          border: `1px solid ${uiBdr}`, boxShadow: isDark ? '0 8px 32px rgba(108,88,239,0.15)' : '0 8px 32px rgba(0,0,0,0.10)' }}>
+          border: `1px solid ${uiBdr}`, boxShadow: isDark ? '0 8px 32px rgba(70,240,210,0.08)' : '0 8px 32px rgba(0,0,0,0.10)' }}>
           <p style={{ fontSize: 11, fontWeight: 700, color: sub, marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
             {tx(lang,'Ваши магазины','Do\'konlaringiz','Your stores')}
           </p>
@@ -869,7 +869,7 @@ function HowItWorksSection({ lang }: { lang: string }) {
       ),
       ui: (
         <div style={{ background: uiBg, borderRadius: 16, padding: '20px',
-          border: `1px solid ${uiBdr}`, boxShadow: isDark ? '0 8px 32px rgba(108,88,239,0.15)' : '0 8px 32px rgba(0,0,0,0.10)' }}>
+          border: `1px solid ${uiBdr}`, boxShadow: isDark ? '0 8px 32px rgba(70,240,210,0.08)' : '0 8px 32px rgba(0,0,0,0.10)' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
             {[{l:'Заказы',v:'1 842',d:'+300%',c:acc.color},{l:'ДРР',v:'8.2%',d:'-20.9%',c:acc.color}].map(k => (
               <div key={k.l} style={{ background: fldBg, borderRadius: 10, padding: '14px',
@@ -917,13 +917,13 @@ function HowItWorksSection({ lang }: { lang: string }) {
                 <div key={i}
                   onClick={() => setActive(i)}
                   style={{ cursor: isActive ? 'default' : 'pointer',
-                    borderLeft: `3px solid ${isActive ? s.color : (isDark ? 'rgba(108,88,239,0.15)' : P.hair)}`,
+                    borderLeft: `3px solid ${isActive ? s.color : (isDark ? 'rgba(70,240,210,0.15)' : P.hair)}`,
                     padding: '0 0 0 20px', marginBottom: 4,
                     transition: 'border-color 0.2s' }}>
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '18px 0' }}>
                     <div style={{ width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
-                      background: isActive ? s.color : (isDark ? 'rgba(108,88,239,0.15)' : P.hair),
+                      background: isActive ? s.color : (isDark ? 'rgba(70,240,210,0.10)' : P.hair),
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       fontSize: 14, fontWeight: 800,
                       color: isActive ? '#fff' : (isDark ? P.dMuted : P.stone),
@@ -1065,7 +1065,7 @@ function WhoSection({ lang }: { lang: string }) {
               <div style={{ background: cardBg, borderRadius: 20, padding: '32px 28px',
                 border: `1px solid ${bdr}`, textAlign: 'center', transition: 'transform 0.2s, box-shadow 0.2s' }}
                 onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-4px)';
-                  (e.currentTarget as HTMLDivElement).style.boxShadow = isDark ? '0 12px 36px rgba(108,88,239,0.12)' : '0 12px 36px rgba(0,0,0,0.10)' }}
+                  (e.currentTarget as HTMLDivElement).style.boxShadow = isDark ? '0 12px 36px rgba(70,240,210,0.10)' : '0 12px 36px rgba(0,0,0,0.10)' }}
                 onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)';
                   (e.currentTarget as HTMLDivElement).style.boxShadow = 'none' }}>
                 <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>{c.avatar}</div>
@@ -1436,7 +1436,7 @@ function CtaSection({ lang }: { lang: string }) {
   const headCol = isDark ? P.dText   : P.ink
   const subCol  = isDark ? P.dMuted  : P.stone
   const badgeCol = isDark ? 'rgba(255,255,255,0.45)' : P.stone
-  const glowColor = isDark ? 'rgba(108,88,239,0.22)' : 'rgba(144,213,255,0.45)'
+  const glowColor = isDark ? 'rgba(70,240,210,0.12)' : 'rgba(144,213,255,0.45)'
 
   return (
     <section style={{ position: 'relative', background: secBg, overflow: 'hidden',
