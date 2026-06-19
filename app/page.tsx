@@ -45,7 +45,7 @@ const A = {
   light:    '#a0d4fc',   // sky blue for light mode buttons/accents
   lightDk:  '#7bbaf7',
   lightBg:  'rgba(160,212,252,0.15)',
-  dark:     '#c5e8fe',   // sky blue for dark mode — stable button color
+  dark:     '#83c0f9',   // sky blue for dark mode — stable button color
   darkDk:   '#7bbaf7',
   darkBg:   'rgba(160,212,252,0.12)',
 }
@@ -1497,10 +1497,10 @@ function CtaSection({ lang }: { lang: string }) {
 function FooterSection({ lang }: { lang: string }) {
   const isDark = useIsDark()
   const footBg  = isDark ? '#1d1c2e'  : '#83c0f9'
-  const bdr     = isDark ? P.dHair    : P.hair
+  const bdr     = isDark ? P.dHair    : 'rgba(14,34,51,0.2)'
   const txt     = isDark ? P.dText    : P.ink
-  const muted   = isDark ? P.dMuted   : P.stone
-  const subtle  = isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.32)'
+  const muted   = isDark ? P.dMuted   : P.ink
+  const subtle  = isDark ? 'rgba(255,255,255,0.28)' : 'rgba(14,34,51,0.65)'
 
   const cols = [
     { head: tx(lang,'Продукт','Mahsulot','Product'), links: [
@@ -1535,7 +1535,7 @@ function FooterSection({ lang }: { lang: string }) {
             </p>
             <div style={{ display: 'flex', gap: 8, marginTop: 20 }}>
               {['Uzum','WB','YM'].map(mp => (
-                <div key={mp} style={{ fontSize: 10, fontWeight: 700, color: isDark ? A.dark : A.light, background: isDark ? A.darkBg : A.lightBg, borderRadius: 4, padding: '3px 7px' }}>
+                <div key={mp} style={{ fontSize: 10, fontWeight: 700, color: isDark ? A.dark : P.ink, background: isDark ? A.darkBg : 'rgba(14,34,51,0.12)', borderRadius: 4, padding: '3px 7px' }}>
                   {mp}
                 </div>
               ))}
