@@ -732,11 +732,11 @@ function FeaturesSection({ lang }: { lang: string }) {
                 <div style={{ background: isDark ? '#110E28' : P.parchment, borderRadius: 12, padding: '10px',
                   border: `1px solid ${border}`, display: 'flex', flexDirection: 'column', gap: 7 }}>
                   {[
-                    { icon: '🔔', text: tx(lang,'Остатки «Куртка» — 12 шт, 3 дня','Qoldiqlar — 12 ta, 3 kun','Stock low — 12 pcs, 3 days'), color: acc.color },
-                    { icon: '📈', text: tx(lang,'ДРР превысил 15% по 3 товарам','3 ta mahsulot DRR 15% dan oshdi','DRR exceeded 15% on 3 products'), color: P.red },
-                    { icon: '✅', text: tx(lang,'WB: новый заказ #WB-48291','WB: yangi buyurtma #WB-48291','WB: new order #WB-48291'), color: acc.color },
+                    { icon: '🔔', text: tx(lang,'Остатки «Куртка» — 12 шт, 3 дня','Qoldiqlar — 12 ta, 3 kun','Stock low — 12 pcs, 3 days') },
+                    { icon: '📈', text: tx(lang,'ДРР превысил 15% по 3 товарам','3 ta mahsulot DRR 15% dan oshdi','DRR exceeded 15% on 3 products') },
+                    { icon: '✅', text: tx(lang,'WB: новый заказ #WB-48291','WB: yangi buyurtma #WB-48291','WB: new order #WB-48291') },
                   ].map((n, i) => (
-                    <div key={i} style={{ background: cardBg, borderRadius: 8, padding: '8px 10px', borderLeft: `3px solid ${n.color}` }}>
+                    <div key={i} style={{ background: cardBg, borderRadius: 8, padding: '8px 10px', borderLeft: `3px solid ${acc.color}` }}>
                       <p style={{ fontSize: 10, color: ink, lineHeight: 1.4 }}>{n.icon} {n.text}</p>
                     </div>
                   ))}
