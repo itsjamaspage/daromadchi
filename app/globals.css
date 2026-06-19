@@ -31,7 +31,7 @@ button, input, select, textarea, a {
 ═══════════════════════════════════════════════════════════════════ */
 :root,
 [data-theme="dark"] {
-  --color-info:  rgba(219, 234, 255, 0.85);
+  --color-info:  rgba(197, 232, 254, 0.85);
 
   --bg-base:    #131321;                    /* canvas-dark */
   --bg-card:    #1C1C2E;                    /* surface-elevated */
@@ -47,8 +47,8 @@ button, input, select, textarea, a {
 
   --nav-bg:     rgba(19, 19, 33, 0.96);
 
-  --c1:         #dbeaff;   /* sky blue — brand primary */
-  --c2:         #b8d0f5;   /* sky blue dark */
+  --c1:         #c5e8fe;   /* sky blue — brand primary */
+  --c2:         #a0d4fc;   /* sky blue dark */
 
   --scrollbar-track: #101020;
   --scrollbar-thumb: #3a3d50;
@@ -62,7 +62,7 @@ button, input, select, textarea, a {
    canvas-light #ffffff · surface-soft #f4f4f4 · cobalt #494fdf
 ═══════════════════════════════════════════════════════════════════ */
 [data-theme="light"] {
-  --color-info:  rgba(219, 234, 255, 0.9);
+  --color-info:  rgba(197, 232, 254, 0.9);
   --color-warn:  rgba(236, 126, 0, 0.9);
 
   --bg-base:    #ffffff;                    /* canvas-light */
@@ -79,8 +79,8 @@ button, input, select, textarea, a {
 
   --nav-bg:     rgba(255, 255, 255, 0.97);
 
-  --c1:         #dbeaff;   /* sky blue */
-  --c2:         #b8d0f5;   /* sky blue dark */
+  --c1:         #c5e8fe;   /* sky blue */
+  --c2:         #a0d4fc;   /* sky blue dark */
 
   --scrollbar-track: #f4f4f4;
   --scrollbar-thumb: #c9c9cd;
