@@ -298,11 +298,12 @@ function DashMockup() {
   const muted  = '#94A3B8'
   const ink    = '#0F172A'
 
+  const teal = '#0E7490'
   const kpis = [
-    { l: 'Выручка',  v: '124 540 000', u: 'сум', d: '+12.4%', pos: true,  c: KPI.violet },
-    { l: 'Заказы',   v: '1 842',        u: '',    d: '+8.1%',  pos: true,  c: KPI.emerald },
-    { l: 'Расход',   v: '10 200 000',   u: 'сум', d: '+3.2%',  pos: false, c: KPI.blue },
-    { l: 'Прибыль',  v: '38 200 000',   u: 'сум', d: '+15.7%', pos: true,  c: KPI.amber },
+    { l: 'Выручка',  v: '124 540 000', u: 'сум', d: '+12.4%', pos: true,  c: teal },
+    { l: 'Заказы',   v: '1 842',        u: '',    d: '+8.1%',  pos: true,  c: teal },
+    { l: 'Расход',   v: '10 200 000',   u: 'сум', d: '+3.2%',  pos: false, c: teal },
+    { l: 'Прибыль',  v: '38 200 000',   u: 'сум', d: '+15.7%', pos: true,  c: teal },
   ]
 
   const sideIcons = [LayoutDashboard, Package, ShoppingCart, BarChart2, Megaphone, Layers, Bell]
@@ -310,10 +311,10 @@ function DashMockup() {
   const hi   = bars.length - 4
 
   const rows = [
-    { name: 'Куртка зимняя мужская',  sku: 'UZ-00312', rev: '18 240 000', drr: 7.2,  ok: true,  mp: P.uzum },
-    { name: 'Кроссовки Nike Air',      sku: 'WB-01847', rev: '12 590 000', drr: 11.4, ok: false, mp: P.wb   },
-    { name: 'Рюкзак туристический',    sku: 'YM-00951', rev: '9 870 000',  drr: 9.8,  ok: true,  mp: P.yandex },
-    { name: 'Наушники Sony WH-1000',   sku: 'UZ-00488', rev: '8 340 000',  drr: 6.1,  ok: true,  mp: P.uzum },
+    { name: 'Куртка зимняя мужская',  sku: 'UZ-00312', rev: '18 240 000', drr: 7.2,  ok: true,  mp: teal },
+    { name: 'Кроссовки Nike Air',      sku: 'WB-01847', rev: '12 590 000', drr: 11.4, ok: false, mp: teal },
+    { name: 'Рюкзак туристический',    sku: 'YM-00951', rev: '9 870 000',  drr: 9.8,  ok: true,  mp: teal },
+    { name: 'Наушники Sony WH-1000',   sku: 'UZ-00488', rev: '8 340 000',  drr: 6.1,  ok: true,  mp: teal },
   ]
 
   return (
@@ -329,8 +330,8 @@ function DashMockup() {
         {sideIcons.map((Icon, i) => (
           <div key={i} style={{ width: 30, height: 30, borderRadius: 7,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: i === 0 ? 'rgba(73,79,223,0.12)' : 'transparent', marginBottom: 2 }}>
-            <Icon size={13} color={i === 0 ? KPI.violet : muted} />
+            background: i === 0 ? 'rgba(14,116,144,0.12)' : 'transparent', marginBottom: 2 }}>
+            <Icon size={13} color={i === 0 ? teal : muted} />
           </div>
         ))}
       </div>
@@ -342,7 +343,7 @@ function DashMockup() {
           <div style={{ display: 'flex', gap: 3 }}>
             {['Все','Uzum','Wildberries','Yandex Market'].map((tab, i) => (
               <div key={tab} style={{ fontSize: 10, fontWeight: 600, padding: '4px 9px', borderRadius: 6, cursor: 'pointer',
-                background: i === 0 ? KPI.violet : 'transparent', color: i === 0 ? '#fff' : muted }}>
+                background: i === 0 ? teal : 'transparent', color: i === 0 ? '#fff' : muted }}>
                 {tab}
               </div>
             ))}
@@ -359,7 +360,7 @@ function DashMockup() {
               <p style={{ fontSize: 13, fontWeight: 700, color: ink, fontFamily: 'monospace', lineHeight: 1 }}>
                 {k.v}<span style={{ fontSize: 8, fontWeight: 400, color: muted }}> {k.u}</span>
               </p>
-              <p style={{ fontSize: 9, marginTop: 3, fontWeight: 700, color: k.pos ? KPI.emerald : P.red }}>{k.d}</p>
+              <p style={{ fontSize: 9, marginTop: 3, fontWeight: 700, color: k.pos ? teal : P.red }}>{k.d}</p>
             </div>
           ))}
         </div>
@@ -372,7 +373,7 @@ function DashMockup() {
             <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2, height: 40 }}>
               {bars.map((h, i) => (
                 <div key={i} style={{ flex: 1, borderRadius: '2px 2px 0 0',
-                  background: i >= hi ? KPI.violet : 'rgba(73,79,223,0.15)', height: `${h}%` }} />
+                  background: i >= hi ? teal : 'rgba(14,116,144,0.15)', height: `${h}%` }} />
               ))}
             </div>
           </div>
@@ -380,7 +381,7 @@ function DashMockup() {
             <p style={{ fontSize: 8, color: muted, marginBottom: 8, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
               Площадки
             </p>
-            {[{mp:'Uzum',c:P.uzum,pct:'48%'},{mp:'WB',c:P.wb,pct:'32%'},{mp:'YM',c:P.yandex,pct:'20%'}].map(m => (
+            {[{mp:'Uzum',c:teal,pct:'48%'},{mp:'WB',c:teal,pct:'32%'},{mp:'YM',c:teal,pct:'20%'}].map(m => (
               <div key={m.mp} style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 6 }}>
                 <div style={{ width: 5, height: 5, borderRadius: '50%', background: m.c }} />
                 <span style={{ fontSize: 9, color: ink, flex: 1 }}>{m.mp}</span>
@@ -406,9 +407,9 @@ function DashMockup() {
               </div>
               <span style={{ fontSize: 8, color: muted, fontFamily: 'monospace' }}>{r.sku}</span>
               <span style={{ fontSize: 9, color: ink, fontFamily: 'monospace', fontWeight: 600 }}>{r.rev}</span>
-              <span style={{ fontSize: 9, fontWeight: 700, color: r.drr > 10 ? P.red : r.drr > 8 ? P.amber : KPI.emerald }}>{r.drr}%</span>
+              <span style={{ fontSize: 9, fontWeight: 700, color: r.drr > 10 ? P.red : teal }}>{r.drr}%</span>
               <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-                <div style={{ width: 5, height: 5, borderRadius: '50%', background: r.ok ? KPI.emerald : P.amber }} />
+                <div style={{ width: 5, height: 5, borderRadius: '50%', background: r.ok ? teal : P.red }} />
                 <span style={{ fontSize: 8, color: muted }}>{r.ok ? 'Норма' : 'Мало'}</span>
               </div>
             </div>
