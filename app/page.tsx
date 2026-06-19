@@ -222,7 +222,7 @@ function Navbar({ lang }: { lang: string }) {
           </Link>
 
           <button className="md:hidden" onClick={() => setMenuOpen(v => !v)}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: lnk, padding: 4 }}>
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: lnk, padding: 4, display: 'none' }}>
             {menuOpen ? <X size={22}/> : <Menu size={22}/>}
           </button>
         </div>
@@ -1581,12 +1581,67 @@ function FooterSection({ lang }: { lang: string }) {
   )
 }
 
-// ── PAGE ROOT ─────────────────────────────────────────────────────────────────
+// ── Mobile Bottom Navigation ──────────────────────────────────────────────────
+function MobileBottomNav({ lang }: { lang: string }) {
+  const isDark = useIsDark()
+  const acc = useAccent()
+  const navBg   = isDark ? 'rgba(19,19,33,0.97)'    : 'rgba(255,255,255,0.97)'
+  const border   = isDark ? P.dHair                 : P.hair
+  const iconCol  = isDark ? 'rgba(197,232,254,0.45)': P.stone
+  const activeCol = isDark ? acc.color              : '#0369a1'
+
+  const items = [
+    { label: tx(lang,'Главная','Bosh sahifa','Home'),       href: '#top',      Icon: LayoutDashboard },
+    { label: tx(lang,'Функции','Imkoniyatlar','Features'),  href: '#features', Icon: Layers },
+    { label: tx(lang,'Тарифы','Tariflar','Pricing'),        href: '#pricing',  Icon: Package },
+    { label: tx(lang,'Вопросы','Savollar','FAQ'),           href: '#faq',      Icon: MessageCircle },
+    { label: tx(lang,'Войти','Kirish','Sign in'),           href: '/login',    Icon: BookOpen },
+  ]
+
+  return (
+    <nav
+      className="md:hidden"
+      style={{
+        position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 100,
+        background: navBg, borderTop: `1px solid ${border}`,
+        backdropFilter: 'blur(20px)',
+        paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+        fontFamily: "'Space Grotesk', system-ui, sans-serif",
+      }}
+    >
+      <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center', height: 60 }}>
+        {items.map(({ label, href, Icon }) => {
+          const isActive = href === '#top'
+          return (
+            <a
+              key={href}
+              href={href}
+              style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center',
+                gap: 3, textDecoration: 'none', padding: '6px 12px',
+                color: isActive ? activeCol : iconCol,
+                transition: 'color 0.15s',
+              }}
+              onMouseEnter={e => (e.currentTarget.style.color = activeCol)}
+              onMouseLeave={e => (e.currentTarget.style.color = isActive ? activeCol : iconCol)}
+            >
+              <Icon size={20} />
+              <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.01em' }}>{label}</span>
+            </a>
+          )
+        })}
+      </div>
+    </nav>
+  )
+}
+
+
 export default function Page() {
   const { lang } = useLang()
   return (
     <div style={{ fontFamily: "'Space Grotesk', system-ui, sans-serif" }}>
       <Navbar lang={lang} />
+      <div id="top" />
       <HeroSection lang={lang} />
       <ComparisonSection lang={lang} />
       <FeaturesSection lang={lang} />
@@ -1596,7 +1651,9 @@ export default function Page() {
       <ResourcesSection lang={lang} />
       <FaqSection lang={lang} />
       <CtaSection lang={lang} />
+      <div className="md:hidden" style={{ height: 60 }} />
       <FooterSection lang={lang} />
+      <MobileBottomNav lang={lang} />
     </div>
   )
 }
