@@ -28,12 +28,12 @@ const P = {
   redBg:     'rgba(220,38,38,0.09)',
   hair:      '#93C5FD',
   // dark surfaces
-  dCanvas:   '#0D0A22',
-  dCard:     '#13102E',
-  dCard2:    '#1E1A40',
-  dHair:     'rgba(108,88,239,0.18)',
-  dMuted:    'rgba(198,187,255,0.65)',
-  dText:     '#EDE8FF',
+  dCanvas:   '#131321',
+  dCard:     '#1C1C2E',
+  dCard2:    '#23233A',
+  dHair:     'rgba(70,240,210,0.18)',
+  dMuted:    'rgba(180,255,240,0.55)',
+  dText:     '#E8FFF8',
   // marketplace
   uzum:      '#494fdf',
   wb:        '#CB11AB',
@@ -432,7 +432,7 @@ function HeroSection({ lang }: { lang: string }) {
   const headCol   = isDark ? P.dText   : P.ink
   const subCol    = isDark ? P.dMuted  : P.stone
   const secLinkCol = isDark ? 'rgba(255,255,255,0.62)' : P.stone
-  const fadeTarget = isDark ? '#0D0A22' : P.parchment
+  const fadeTarget = isDark ? P.dCanvas : P.parchment
 
   return (
     <section style={{ position: 'relative', background: heroBg, overflow: 'hidden',
@@ -515,9 +515,9 @@ function HeroSection({ lang }: { lang: string }) {
 function ComparisonSection({ lang }: { lang: string }) {
   const isDark = useIsDark()
   const acc = useAccent()
-  const secBg  = isDark ? '#0D0A22' : P.card
+  const secBg  = isDark ? P.dCanvas : P.card
   const cardBg = isDark ? P.dCard   : P.card
-  const headBg = isDark ? '#1A1640' : P.parchment
+  const headBg = isDark ? P.dCard : P.parchment
   const bdr    = isDark ? P.dHair   : P.hair
   const txt    = isDark ? P.dText   : P.ink
   const sub    = isDark ? P.dMuted  : P.stone
@@ -601,11 +601,11 @@ function ComparisonSection({ lang }: { lang: string }) {
 function FeaturesSection({ lang }: { lang: string }) {
   const isDark = useIsDark()
   const acc = useAccent()
-  const secBg   = isDark ? '#0D0A22' : P.parchment
+  const secBg   = isDark ? P.dCanvas : P.parchment
   const bentoBg = isDark ? P.dCard   : P.card
-  const cardBg  = isDark ? '#1A1640' : P.card
+  const cardBg  = isDark ? P.dCard : P.card
   const border  = isDark ? P.dHair   : '#E2E8F0'
-  const bg2     = isDark ? '#110E28' : '#F8FAFD'
+  const bg2     = isDark ? P.dCanvas : '#F8FAFD'
   const muted   = isDark ? P.dMuted  : '#94A3B8'
   const ink     = isDark ? P.dText   : '#0F172A'
 
@@ -730,7 +730,7 @@ function FeaturesSection({ lang }: { lang: string }) {
                 <p style={{ fontSize: 14, fontWeight: 600, color: ink, marginBottom: 14 }}>
                   {tx(lang,'Алерты в Telegram каждые 15 мин','Har 15 daqiqada Telegram xabarlari','Telegram alerts every 15 min')}
                 </p>
-                <div style={{ background: isDark ? '#110E28' : P.parchment, borderRadius: 12, padding: '10px',
+                <div style={{ background: isDark ? P.dCanvas : P.parchment, borderRadius: 12, padding: '10px',
                   border: `1px solid ${border}`, display: 'flex', flexDirection: 'column', gap: 7 }}>
                   {[
                     { icon: '🔔', text: tx(lang,'Остатки «Куртка» — 12 шт, 3 дня','Qoldiqlar — 12 ta, 3 kun','Stock low — 12 pcs, 3 days') },
@@ -801,12 +801,12 @@ function HowItWorksSection({ lang }: { lang: string }) {
   const acc = useAccent()
   const [active, setActive] = useState(0)
 
-  const secBg  = isDark ? '#13102E' : P.card
+  const secBg  = isDark ? P.dCard : P.card
   const ink    = isDark ? P.dText   : P.ink
   const sub    = isDark ? P.dMuted  : P.stone
   const uiBg   = isDark ? 'rgba(26,22,64,0.95)' : P.parchment
   const uiBdr  = isDark ? P.dHair   : P.hair
-  const fldBg  = isDark ? '#1E1A40' : '#fff'
+  const fldBg  = isDark ? P.dCard2 : '#fff'
 
   const steps = [
     {
@@ -988,7 +988,7 @@ function HowItWorksSection({ lang }: { lang: string }) {
 function WhoSection({ lang }: { lang: string }) {
   const isDark = useIsDark()
   const acc = useAccent()
-  const secBg  = isDark ? '#0D0A22' : P.parchment
+  const secBg  = isDark ? P.dCanvas : P.parchment
   const cardBg = isDark ? P.dCard   : P.card
   const bdr    = isDark ? P.dHair   : P.hair
   const ink    = isDark ? P.dText   : P.ink
@@ -1132,7 +1132,7 @@ function PricingSection({ lang }: { lang: string }) {
   const ink    = isDark ? P.dText   : P.ink
   const muted  = isDark ? P.dMuted  : P.stone
   const bdr    = isDark ? P.dHair   : P.hair
-  const cardBg = isDark ? '#13102E' : P.card
+  const cardBg = isDark ? P.dCard : P.card
 
   const tiers = [
     {
@@ -1261,7 +1261,7 @@ function PricingSection({ lang }: { lang: string }) {
 function ResourcesSection({ lang }: { lang: string }) {
   const isDark = useIsDark()
   const acc = useAccent()
-  const secBg  = isDark ? '#0D0A22' : P.parchment
+  const secBg  = isDark ? P.dCanvas : P.parchment
   const cardBg = isDark ? P.dCard   : P.card
   const bdr    = isDark ? P.dHair   : P.hair
   const ink    = isDark ? P.dText   : P.ink
@@ -1347,7 +1347,7 @@ function FaqSection({ lang }: { lang: string }) {
   const isDark = useIsDark()
   const acc = useAccent()
   const [open, setOpen] = useState<number | null>(0)
-  const secBg = isDark ? '#13102E' : P.card
+  const secBg = isDark ? P.dCard : P.card
   const bdr   = isDark ? P.dHair   : P.hair
   const ink   = isDark ? P.dText   : P.ink
   const sub   = isDark ? P.dMuted  : P.stone
