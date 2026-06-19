@@ -7,6 +7,7 @@ import {
   TrendingUp, TrendingDown, ArrowRight, Menu, X, Check,
   ChevronDown, BarChart2, Package, Bell,
   LayoutDashboard, ShoppingCart, Megaphone, Layers,
+  BookOpen, MessageCircle, Plug2,
 } from 'lucide-react'
 import { useTheme, useLang } from './providers'
 import type { Lang } from '@/lib/i18n'
@@ -1001,8 +1002,6 @@ function WhoSection({ lang }: { lang: string }) {
           <circle cx="36" cy="36" r="36" fill="rgba(14,116,144,0.10)"/>
           <circle cx="36" cy="28" r="12" fill="#0E7490" opacity="0.85"/>
           <ellipse cx="36" cy="56" rx="18" ry="12" fill="#0E7490" opacity="0.65"/>
-          <circle cx="44" cy="42" r="8" fill="rgba(14,116,144,0.9)"/>
-          <text x="44" y="45.5" textAnchor="middle" fill="white" fontSize="9" fontWeight="700">📦</text>
         </svg>
       ),
       title: tx(lang,'Начинающий продавец','Yangi sotuvchi','New seller'),
@@ -1020,8 +1019,6 @@ function WhoSection({ lang }: { lang: string }) {
           <circle cx="36" cy="36" r="36" fill="rgba(14,116,144,0.10)"/>
           <circle cx="36" cy="28" r="12" fill="#0E7490" opacity="0.85"/>
           <ellipse cx="36" cy="56" rx="18" ry="12" fill="#0E7490" opacity="0.65"/>
-          <circle cx="50" cy="26" r="10" fill="rgba(14,116,144,0.9)"/>
-          <text x="50" y="29.5" textAnchor="middle" fill="white" fontSize="10" fontWeight="700">📈</text>
         </svg>
       ),
       title: tx(lang,'Растущий магазин','O\'sib borayotgan do\'kon','Growing store'),
@@ -1039,8 +1036,6 @@ function WhoSection({ lang }: { lang: string }) {
           <circle cx="36" cy="36" r="36" fill="rgba(14,116,144,0.10)"/>
           <circle cx="36" cy="28" r="12" fill="#0E7490" opacity="0.85"/>
           <ellipse cx="36" cy="56" rx="18" ry="12" fill="#0E7490" opacity="0.65"/>
-          <circle cx="52" cy="34" r="10" fill="rgba(14,116,144,0.9)"/>
-          <text x="52" y="37.5" textAnchor="middle" fill="white" fontSize="10" fontWeight="700">🏢</text>
         </svg>
       ),
       title: tx(lang,'Менеджер магазинов','Do\'konlar menejeri','Store manager'),
@@ -1104,7 +1099,7 @@ function PricingSection({ lang }: { lang: string }) {
   const ink    = isDark ? P.dText   : P.ink
   const muted  = isDark ? P.dMuted  : P.stone
   const bdr    = isDark ? P.dHair   : P.hair
-  const cardBg = isDark ? '#13102E' : P.parchment
+  const cardBg = isDark ? '#13102E' : P.card
 
   const tiers = [
     {
@@ -1166,23 +1161,21 @@ function PricingSection({ lang }: { lang: string }) {
           {tiers.map((t, i) => (
             <FadeUp key={t.name} delay={i * 0.1}>
               <div style={{
-                background: t.highlight ? acc.color : cardBg,
+                background: t.highlight ? P.parchment : cardBg,
                 borderRadius: 20, padding: '28px 24px',
-                border: t.highlight ? 'none' : `1px solid ${bdr}`,
+                border: `1px solid ${t.highlight ? acc.color : bdr}`,
                 boxShadow: t.highlight
-                  ? `0 16px 48px ${acc.color}40`
+                  ? `0 16px 48px ${acc.color}30`
                   : isDark ? 'none' : '0 4px 20px rgba(0,0,0,0.05)',
                 position: 'relative', height: '100%', display: 'flex', flexDirection: 'column',
               }}>
 
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                  <p style={{ fontSize: 13, fontWeight: 700,
-                    color: t.highlight ? 'rgba(255,255,255,0.75)' : muted }}>
+                  <p style={{ fontSize: 13, fontWeight: 700, color: t.highlight ? acc.dk : muted }}>
                     {t.name}
                   </p>
                   {(t as any).badge && (
-                    <span style={{ background: 'rgba(255,255,255,0.22)', border: '1px solid rgba(255,255,255,0.40)',
-                      borderRadius: 100, padding: '3px 12px',
+                    <span style={{ background: acc.color, borderRadius: 100, padding: '3px 12px',
                       fontSize: 10, fontWeight: 800, color: '#fff', letterSpacing: '0.04em' }}>
                       {(t as any).badge}
                     </span>
@@ -1190,34 +1183,28 @@ function PricingSection({ lang }: { lang: string }) {
                 </div>
 
                 <div style={{ marginBottom: 4 }}>
-                  <span style={{ fontSize: 34, fontWeight: 800,
-                    color: t.highlight ? '#fff' : ink,
+                  <span style={{ fontSize: 34, fontWeight: 800, color: ink,
                     fontFamily: 'var(--font-mono-landing), monospace' }}>
                     {t.price}
                   </span>
                 </div>
-                <p style={{ fontSize: 13, color: t.highlight ? 'rgba(255,255,255,0.55)' : muted,
-                  marginBottom: 24 }}>{t.sub}</p>
+                <p style={{ fontSize: 13, color: muted, marginBottom: 24 }}>{t.sub}</p>
 
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
                   {t.features.map(f => (
                     <div key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-                      <Check size={14} color={t.highlight ? 'rgba(255,255,255,0.9)' : acc.color}
-                        style={{ marginTop: 2, flexShrink: 0 }}/>
-                      <span style={{ fontSize: 13,
-                        color: t.highlight ? 'rgba(255,255,255,0.85)' : ink, lineHeight: 1.4 }}>{f}</span>
+                      <Check size={14} color={acc.color} style={{ marginTop: 2, flexShrink: 0 }}/>
+                      <span style={{ fontSize: 13, color: ink, lineHeight: 1.4 }}>{f}</span>
                     </div>
                   ))}
                 </div>
 
                 <Link href={t.ctaHref}
                   style={{ display: 'block', textAlign: 'center', fontSize: 14, fontWeight: 700,
-                    background: t.highlight ? 'rgba(255,255,255,0.18)' : acc.color,
-                    color: '#fff', padding: '13px 24px', borderRadius: 10, textDecoration: 'none',
-                    border: t.highlight ? '1px solid rgba(255,255,255,0.30)' : 'none',
-                    transition: 'all 0.15s' }}
-                  onMouseEnter={e => { e.currentTarget.style.background = t.highlight ? 'rgba(255,255,255,0.26)' : acc.dk }}
-                  onMouseLeave={e => { e.currentTarget.style.background = t.highlight ? 'rgba(255,255,255,0.18)' : acc.color }}>
+                    background: acc.color, color: '#fff', padding: '13px 24px', borderRadius: 10,
+                    textDecoration: 'none', transition: 'all 0.15s' }}
+                  onMouseEnter={e => { e.currentTarget.style.background = acc.dk }}
+                  onMouseLeave={e => { e.currentTarget.style.background = acc.color }}>
                   {t.cta}
                 </Link>
               </div>
@@ -1241,7 +1228,7 @@ function ResourcesSection({ lang }: { lang: string }) {
 
   const cards = [
     {
-      icon: '📖', title: tx(lang,'Справка','Yordam markazi','Help center'),
+      icon: <BookOpen size={20} color={acc.color} />, title: tx(lang,'Справка','Yordam markazi','Help center'),
       items: [
         { t: tx(lang,'Быстрый старт за 5 минут','5 daqiqada tez boshlash','Quick start in 5 minutes'), sub: tx(lang,'Пошаговое руководство','Bosqichma-bosqich qo\'llanma','Step-by-step guide') },
         { t: tx(lang,'Как работает ДРР','DRR qanday ishlaydi','How DRR works'), sub: tx(lang,'Формула и примеры','Formula va misollar','Formula and examples') },
@@ -1250,7 +1237,7 @@ function ResourcesSection({ lang }: { lang: string }) {
       link: tx(lang,'Все статьи →','Barcha maqolalar →','All articles →'), linkColor: acc.color, href: '/help',
     },
     {
-      icon: '💬', title: 'Telegram',
+      icon: <MessageCircle size={20} color={acc.color} />, title: 'Telegram',
       items: [
         { t: tx(lang,'Канал с обновлениями','Yangilanishlar kanali','Updates channel'), sub: tx(lang,'Новые функции и релизы','Yangi funksiyalar va relizlar','New features & releases'), dot: acc.color },
         { t: tx(lang,'Чат поддержки','Qo\'llab-quvvatlash chati','Support chat'), sub: tx(lang,'Ответ в течение часа','Bir soat ichida javob','Reply within an hour'), dot: acc.color },
@@ -1259,7 +1246,7 @@ function ResourcesSection({ lang }: { lang: string }) {
       link: tx(lang,'Открыть Telegram →','Telegramni ochish →','Open Telegram →'), linkColor: acc.color, href: 'https://t.me/daromadchi',
     },
     {
-      icon: '🔌', title: tx(lang,'Интеграции','Integratsiyalar','Integrations'),
+      icon: <Plug2 size={20} color={acc.color} />, title: tx(lang,'Интеграции','Integratsiyalar','Integrations'),
       items: [
         { t: 'Uzum Market', sub: tx(lang,'Подключение через API-ключ','API kalit orqali ulash','Connect via API key'), dot: acc.color },
         { t: 'Wildberries', sub: tx(lang,'Подключение через токен WB','WB token orqali ulash','Connect via WB token'), dot: acc.color },
@@ -1286,7 +1273,7 @@ function ResourcesSection({ lang }: { lang: string }) {
               <div style={{ background: cardBg, borderRadius: 20, padding: '24px',
                 border: `1px solid ${bdr}`, height: '100%', display: 'flex', flexDirection: 'column' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
-                  <span style={{ fontSize: 20 }}>{c.icon}</span>
+                  {c.icon}
                   <h3 style={{ fontSize: 16, fontWeight: 700, color: ink }}>{c.title}</h3>
                 </div>
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -1463,7 +1450,7 @@ function CtaSection({ lang }: { lang: string }) {
 // ── FOOTER ────────────────────────────────────────────────────────────────────
 function FooterSection({ lang }: { lang: string }) {
   const isDark = useIsDark()
-  const footBg  = isDark ? P.dCanvas  : P.parchment
+  const footBg  = isDark ? P.dCanvas  : P.card
   const bdr     = isDark ? P.dHair    : P.hair
   const txt     = isDark ? P.dText    : P.ink
   const muted   = isDark ? P.dMuted   : P.stone
