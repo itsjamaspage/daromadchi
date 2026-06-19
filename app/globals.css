@@ -18,8 +18,10 @@
   --font-body:    'Space Grotesk', system-ui, sans-serif;
 }
 
-/* Force Space Grotesk as the inherited base — literal name, not a CSS variable */
-html, body {
+/* Force Space Grotesk everywhere — buttons and inputs have browser UA stylesheets
+   that block font inheritance, so they need to be targeted explicitly */
+html, body,
+button, input, select, textarea, a {
   font-family: 'Space Grotesk', system-ui, sans-serif !important;
 }
 
