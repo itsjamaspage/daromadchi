@@ -604,10 +604,10 @@ function FeaturesSection({ lang }: { lang: string }) {
   const secBg   = isDark ? '#0D0A22' : P.parchment
   const bentoBg = isDark ? P.dCard   : P.card
   const cardBg  = isDark ? '#1A1640' : P.card
-  const border  = isDark ? P.dHair   : P.hair
+  const border  = isDark ? P.dHair   : '#E2E8F0'
   const bg2     = isDark ? '#110E28' : '#F8FAFD'
-  const muted   = isDark ? P.dMuted  : '#A8A29E'
-  const ink     = isDark ? P.dText   : '#1C1917'
+  const muted   = isDark ? P.dMuted  : '#94A3B8'
+  const ink     = isDark ? P.dText   : '#0F172A'
 
   return (
     <section id="features" style={{ background: secBg, padding: '88px 24px',
@@ -622,7 +622,7 @@ function FeaturesSection({ lang }: { lang: string }) {
 
           <FadeUp delay={0.05}>
             <div style={{ background: bentoBg, borderRadius: 20, padding: '24px',
-              border: `1px solid ${border}`, height: '100%', minHeight: 340 }}>
+              border: `1px solid ${border}`, height: '100%', minHeight: 340, boxShadow: '0 4px 20px rgba(0,0,0,0.07)' }}>
               <p style={{ fontSize: 12, fontWeight: 700, color: acc.color, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 {tx(lang,'Таблица товаров','Mahsulotlar jadvali','Products table')}
               </p>
@@ -660,7 +660,7 @@ function FeaturesSection({ lang }: { lang: string }) {
 
           <FadeUp delay={0.1}>
             <div style={{ background: bentoBg, borderRadius: 20, padding: '24px',
-              border: `1px solid ${border}`, height: '100%', minHeight: 340 }}>
+              border: `1px solid ${border}`, height: '100%', minHeight: 340, boxShadow: '0 4px 20px rgba(0,0,0,0.07)' }}>
               <p style={{ fontSize: 12, fontWeight: 700, color: acc.color, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 {tx(lang,'Дашборд','Dashboard','Dashboard')}
               </p>
