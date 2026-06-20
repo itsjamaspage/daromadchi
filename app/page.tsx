@@ -28,9 +28,9 @@ const P = {
   redBg:     'rgba(220,38,38,0.09)',
   hair:      '#93C5FD',
   // dark surfaces
-  dCanvas:   '#131321',
-  dCard:     '#1C1C2E',
-  dCard2:    '#23233A',
+  dCanvas:   '#161616',
+  dCard:     '#1e1e1e',
+  dCard2:    '#252525',
   dHair:     'rgba(197,232,254,0.18)',
   dMuted:    'rgba(197,232,254,0.55)',
   dText:     '#E8FFF8',
@@ -519,7 +519,7 @@ function HeroSection({ lang }: { lang: string }) {
 function ComparisonSection({ lang }: { lang: string }) {
   const isDark = useIsDark()
   const acc = useAccent()
-  const secBg  = isDark ? '#1d1c2e' : '#e8f0fd'
+  const secBg  = isDark ? '#1e1e1e' : '#e8f0fd'
   const cardBg = isDark ? P.dCard   : P.card
   const headBg = isDark ? P.dCard : P.parchment
   const bdr    = isDark ? P.dHair   : P.hair
@@ -1132,7 +1132,7 @@ function PricingSection({ lang }: { lang: string }) {
   const sectionRef = useRef(null)
   const inView = useInView(sectionRef, { once: true, amount: 0.3 })
 
-  const secBg  = isDark ? '#1d1c2e' : P.card
+  const secBg  = isDark ? '#1e1e1e' : P.card
   const ink    = isDark ? P.dText   : P.ink
   const muted  = isDark ? P.dMuted  : P.stone
   const bdr    = isDark ? P.dHair   : P.hair
@@ -1496,7 +1496,7 @@ function CtaSection({ lang }: { lang: string }) {
 // ── FOOTER ────────────────────────────────────────────────────────────────────
 function FooterSection({ lang }: { lang: string }) {
   const isDark = useIsDark()
-  const footBg  = isDark ? '#1d1c2e'  : '#83c0f9'
+  const footBg  = isDark ? '#1e1e1e'  : '#83c0f9'
   const bdr     = isDark ? P.dHair    : 'rgba(14,34,51,0.2)'
   const txt     = isDark ? P.dText    : P.ink
   const muted   = isDark ? P.dMuted   : P.ink

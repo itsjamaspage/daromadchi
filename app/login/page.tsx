@@ -163,8 +163,8 @@ function LoginForm() {
   }, [])
 
   const isDark = theme === 'dark'
-  const bg     = isDark ? '#0d0d1a'  : '#e8f4fe'
-  const card   = isDark ? '#131321'  : '#ffffff'
+  const bg     = isDark ? '#161616'  : '#e8f4fe'
+  const card   = isDark ? '#1e1e1e'  : '#ffffff'
   const border = isDark ? 'rgba(131,192,249,0.12)' : 'rgba(131,192,249,0.35)'
   const inputBg = isDark ? '#1c1c2e' : '#d6ecfc'
   const inputBorder = isDark ? 'rgba(131,192,249,0.15)' : 'rgba(131,192,249,0.45)'
