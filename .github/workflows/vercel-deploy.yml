@@ -1,0 +1,33 @@
+name: Forward-push to main for Vercel
+
+# Triggers on every push to the dev branch (including force-pushes from rebase).
+# Creates a clean forward commit on main with the same code tree so Vercel's
+# native GitHub integration fires (it ignores force-pushes but picks up normal ones).
+
+on:
+  push:
+    branches: [claude/serene-euler-ytywcb]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create forward commit on main
+        run: |
+          git config user.email "action@github.com"
+          git config user.name "GitHub Actions"
+
+          TREE=$(git rev-parse HEAD^{tree})
+          MSG=$(git log -1 --format=%s)
+
+          git fetch origin main
+          PARENT=$(git rev-parse origin/main)
+
+          NEW_COMMIT=$(git commit-tree "$TREE" -p "$PARENT" -m "$MSG")
+          git push origin "${NEW_COMMIT}:refs/heads/main"
