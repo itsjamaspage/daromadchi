@@ -519,7 +519,7 @@ function HeroSection({ lang }: { lang: string }) {
 function ComparisonSection({ lang }: { lang: string }) {
   const isDark = useIsDark()
   const acc = useAccent()
-  const secBg  = isDark ? '#1d1c2e' : P.card
+  const secBg  = isDark ? '#1d1c2e' : '#e8f0fd'
   const cardBg = isDark ? P.dCard   : P.card
   const headBg = isDark ? P.dCard : P.parchment
   const bdr    = isDark ? P.dHair   : P.hair
