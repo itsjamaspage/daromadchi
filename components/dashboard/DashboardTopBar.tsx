@@ -71,12 +71,12 @@ export default function DashboardTopBar() {
   ]
 
   const isDark = theme === 'dark'
-  const topBg  = isDark ? 'var(--bg-card)' : '#83c0f9'
-  const topBdr = isDark ? 'var(--border)'  : 'rgba(14,34,51,0.15)'
-  const topTxt = isDark ? 'var(--text-base)'  : '#0e2233'
-  const topMut = isDark ? 'var(--text-muted)' : 'rgba(14,34,51,0.7)'
-  const topBtn = isDark ? 'var(--bg-input)'   : 'rgba(14,34,51,0.08)'
-  const topBtnBdr = isDark ? 'var(--border)'  : 'rgba(14,34,51,0.2)'
+  const topBg     = isDark ? 'var(--bg-card)' : '#ffffff'
+  const topBdr    = 'var(--border)'
+  const topTxt    = 'var(--text-base)'
+  const topMut    = 'var(--text-muted)'
+  const topBtn    = 'var(--bg-input)'
+  const topBtnBdr = 'var(--border)'
 
   return (
     <header

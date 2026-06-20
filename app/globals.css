@@ -65,8 +65,8 @@ button, input, select, textarea, a {
   --color-info:  rgba(197, 232, 254, 0.9);
   --color-warn:  rgba(236, 126, 0, 0.9);
 
-  --bg-base:    #ffffff;                    /* canvas-light */
-  --bg-card:    #f4f4f4;                    /* surface-soft */
+  --bg-base:    #83c0f9;                    /* canvas-light */
+  --bg-card:    #ffffff;                    /* surface-soft */
   --bg-card2:   #ffffff;                    /* surface-card */
   --bg-input:   #ffffff;
 

@@ -29,23 +29,17 @@ export default function MobileNav() {
   return (
     <>
       {/* Top bar — mobile only */}
-      <header
-        className="lg:hidden fixed top-0 left-0 right-0 z-40 h-14 border-b flex items-center px-4 gap-2"
-        style={{
-          background: theme === 'dark' ? 'var(--bg-card)' : '#83c0f9',
-          borderColor: theme === 'dark' ? 'var(--border)' : 'rgba(14,34,51,0.15)',
-        }}
-      >
+      <header className="lg:hidden fixed top-0 left-0 right-0 z-40 h-14 bg-[var(--bg-card)] border-b border-[var(--border)] flex items-center px-4 gap-2">
         <button
           onClick={() => setOpen(true)}
           className="p-1 transition-colors"
-          style={{ color: theme === 'dark' ? 'var(--text-muted)' : 'rgba(14,34,51,0.7)' }}
+          style={{ color: 'var(--text-muted)' }}
           aria-label="Menyuni ochish"
         >
           <Menu className="w-5 h-5" />
         </button>
         <Link href="/dashboard" className="font-bold text-sm tracking-tight flex-1 transition-colors"
-          style={{ color: theme === 'dark' ? 'var(--text-base)' : '#0e2233' }}>
+          style={{ color: 'var(--text-base)' }}>
           Daromadchi
         </Link>
 
@@ -71,7 +65,7 @@ export default function MobileNav() {
         <button
           onClick={toggle}
           className="p-1.5 rounded-lg transition-colors"
-          style={{ color: theme === 'dark' ? 'var(--text-muted)' : 'rgba(14,34,51,0.7)' }}
+          style={{ color: 'var(--text-muted)' }}
         >
           {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-blue-500" />}
         </button>
