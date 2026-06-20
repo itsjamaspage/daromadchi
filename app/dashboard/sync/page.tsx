@@ -15,6 +15,7 @@ export default async function SyncStatusPage() {
     .from('shops')
     .select('id, name, marketplace, api_key_encrypted, last_synced_at')
     .eq('user_id', user.id)
+    .neq('shop_id_external', 'DEMO')
 
   const shopsWithCounts = await Promise.all(
     (shops ?? []).map(async shop => {
