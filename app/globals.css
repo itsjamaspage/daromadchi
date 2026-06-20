@@ -66,12 +66,12 @@ button, input, select, textarea, a {
   --color-info:  rgba(197, 232, 254, 0.9);
   --color-warn:  rgba(236, 126, 0, 0.9);
 
-  --bg-base:    #e8f0fd;                    /* canvas-light */
-  --bg-card:    #ffffff;                    /* surface-soft */
-  --bg-card2:   #ffffff;                    /* surface-card */
-  --bg-input:   #ffffff;
+  --bg-base:    #dce8fb;                    /* canvas-light */
+  --bg-card:    #f0f6ff;                    /* surface-soft */
+  --bg-card2:   #eaf2fe;                    /* surface-card */
+  --bg-input:   #f0f6ff;
 
-  --border:     #e2e2e7;                    /* hairline-light */
+  --border:     #cddaf0;                    /* hairline-light */
   --border2:    #191c1f;                    /* hairline-strong */
 
   --text-base:  #191c1f;                    /* ink */
