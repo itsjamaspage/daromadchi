@@ -2,7 +2,7 @@
 // v3
 import React, { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { motion, AnimatePresence, useInView } from 'framer-motion'
+import { motion, AnimatePresence, useInView, useMotionValue, useTransform, useSpring } from 'framer-motion'
 import {
   TrendingUp, TrendingDown, ArrowRight, Menu, X, Check,
   ChevronDown, BarChart2, Package, Bell,
@@ -675,6 +675,11 @@ function FeaturesSection({ lang }: { lang: string }) {
     { l: tx(lang,'Buyurtmalar','Buyurtmalar','Orders'), v: '1,842', d: '+12.4%', col: '#60a5fa' },
     { l: tx(lang,'Qoldiq','Qoldiq','Stock'),         v: '3,410',  d: '+12.4%', col: '#f59e0b' },
   ]
+  const mouseX = useMotionValue(0)
+  const mouseY = useMotionValue(0)
+  const rotX = useSpring(useTransform(mouseY, [-0.5, 0.5], [8, -8]), { stiffness: 200, damping: 20 })
+  const rotY = useSpring(useTransform(mouseX, [-0.5, 0.5], [-10, 10]), { stiffness: 200, damping: 20 })
+
   const bars  = [18,26,22,38,30,44,35,52,40,32,46,60,38,50]
   const hiIdx = bars.length - 4
   const orders = [
@@ -708,15 +713,17 @@ function FeaturesSection({ lang }: { lang: string }) {
           transition={{ duration: 0.85, ease: [0.25, 0.46, 0.45, 0.94] }}
           style={{ position: 'relative' }}>
 
-          {/* Floating left-right wrapper — also draggable */}
+          {/* 3D tilt on hover wrapper */}
           <motion.div
-            drag="x"
-            dragConstraints={{ left: -30, right: 30 }}
-            dragElastic={0.25}
             animate={{ x: [0, 10, 0, -10, 0] }}
             transition={{ repeat: Infinity, duration: 7, ease: 'easeInOut', delay: 0.9 }}
-            style={{ cursor: 'grab' }}
-            whileDrag={{ cursor: 'grabbing' }}>
+            style={{ rotateX: rotX, rotateY: rotY, transformPerspective: 900, cursor: 'pointer' }}
+            onMouseMove={e => {
+              const r = e.currentTarget.getBoundingClientRect()
+              mouseX.set((e.clientX - r.left) / r.width - 0.5)
+              mouseY.set((e.clientY - r.top) / r.height - 0.5)
+            }}
+            onMouseLeave={() => { mouseX.set(0); mouseY.set(0) }}>
 
           {/* Browser chrome */}
           <div style={{ borderRadius: 14, overflow: 'hidden', border: `1px solid ${bdr}`,
