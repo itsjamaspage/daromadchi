@@ -104,13 +104,19 @@ export default async function PnlPage({ searchParams }: Props) {
           </div>
 
           {/* Chart */}
-          <PnlChart data={monthlyData.map(m => ({
-            month:    m.month,
-            revenue:  m.revenue,
-            cost:     m.marketplace_fee + m.delivery_cost,
-            adSpend:  0,
-            profit:   m.net,
-          }))} />
+          <PnlChart
+            data={monthlyData.map(m => ({
+              month:   m.month,
+              revenue: m.revenue,
+              cost:    m.marketplace_fee + m.delivery_cost,
+              profit:  m.net,
+              orders:  m.order_count,
+            }))}
+            revenueLabel={d.revenue}
+            costLabel={d.commission2}
+            profitLabel={d.net}
+            ordersLabel={d.ordersCol}
+          />
 
           {/* Monthly table */}
           <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
