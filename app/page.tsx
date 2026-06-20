@@ -653,192 +653,131 @@ function MarqueeSection({ lang }: { lang: string }) {
 function FeaturesSection({ lang }: { lang: string }) {
   const isDark = useIsDark()
   const acc = useAccent()
-  const secBg   = isDark ? P.dCanvas : P.parchment
-  const bentoBg = isDark ? P.dCard   : P.card
-  const cardBg  = isDark ? P.dCard : P.card
-  const border  = isDark ? P.dHair   : '#E2E8F0'
-  const bg2     = isDark ? P.dCanvas : '#F8FAFD'
-  const muted   = isDark ? P.dMuted  : '#94A3B8'
-  const ink     = isDark ? P.dText   : '#0F172A'
+  const ref = useRef<HTMLDivElement>(null)
+  const inView = useInView(ref, { once: true, margin: '-80px' })
+
+  const secBg = isDark ? P.dCanvas : P.parchment
+  const ink   = isDark ? P.dText   : P.ink
+  const sub   = isDark ? P.dMuted  : P.stone
+  const bdr   = isDark ? P.dHair   : P.hair
+  const badgeBg  = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)'
+  const badgeTxt = isDark ? '#e2e8f0' : '#334155'
 
   return (
-    <section id="features" style={{ background: secBg, padding: '88px 24px',
-      fontFamily: "'Space Grotesk', system-ui, sans-serif", transition: 'background 0.3s' }}>
-      <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-        <SectionHead dark={isDark}
-          title={tx(lang,'Главный инструмент для роста прибыли','Foyda o\'sishi uchun asosiy vosita','The main tool for profit growth')}
-          accent={tx(lang,'роста прибыли','o\'sishi','profit growth')}
-          sub={tx(lang,'Один экран вместо десяти вкладок','O\'nta yorliq o\'rniga bitta ekran','One screen instead of ten tabs')}
-        />
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+    <section id="features" style={{ background: secBg, padding: '96px 24px',
+      fontFamily: "'Space Grotesk', system-ui, sans-serif", transition: 'background 0.3s', overflow: 'hidden' }}>
+      <div style={{ maxWidth: 1200, margin: '0 auto', display: 'grid',
+        gridTemplateColumns: '1fr 1fr', gap: '64px', alignItems: 'center' }}>
 
-          <FadeUp delay={0.05}>
-            <div style={{ background: bentoBg, borderRadius: 20, padding: '24px',
-              border: `1px solid ${border}`, height: '100%', minHeight: 340, boxShadow: '0 4px 20px rgba(0,0,0,0.07)' }}>
-              <p style={{ fontSize: 12, fontWeight: 700, color: acc.tint, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                {tx(lang,'Таблица товаров','Mahsulotlar jadvali','Products table')}
-              </p>
-              <p style={{ fontSize: 15, fontWeight: 600, color: ink, marginBottom: 16 }}>
-                {tx(lang,'ДРР, расходы и остатки — всё в одном месте','DRR, xarajatlar va qoldiqlar — barchasi bir joyda','DRR, costs and stock — all in one place')}
-              </p>
-              <div style={{ background: cardBg, borderRadius: 12, overflow: 'hidden', border: `1px solid ${border}` }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 55px 60px 42px',
-                  padding: '6px 12px', background: bg2, borderBottom: `1px solid ${border}` }}>
-                  {['Товар','Выручка','ДРР%','Склад'].map(h => (
-                    <span key={h} style={{ fontSize: 9, fontWeight: 700, color: muted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</span>
-                  ))}
-                </div>
-                {[
-                  { n:'Куртка зимняя', rev:'18.2M', drr:7.2,  ok:true  },
-                  { n:'Кроссовки Nike',rev:'12.6M', drr:11.4, ok:false },
-                  { n:'Рюкзак 40L',    rev:'9.9M',  drr:9.8,  ok:true  },
-                  { n:'Наушники Sony', rev:'8.3M',  drr:6.1,  ok:true  },
-                  { n:'Кроссовки Puma',rev:'7.1M',  drr:13.2, ok:false },
-                ].map((r,i) => (
-                  <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 55px 60px 42px',
-                    padding: '7px 12px', borderBottom: i < 4 ? `1px solid ${border}` : 'none', alignItems: 'center' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                      <div style={{ width: 5, height: 5, borderRadius: '50%', background: acc.color, flexShrink: 0 }} />
-                      <span style={{ fontSize: 10, color: ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.n}</span>
-                    </div>
-                    <span style={{ fontSize: 10, fontFamily: 'monospace', fontWeight: 600, color: ink }}>{r.rev}</span>
-                    <span style={{ fontSize: 10, fontWeight: 700, color: r.drr > 11 ? P.red : acc.tint }}>{r.drr}%</span>
-                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: r.ok ? acc.color : P.red }} />
-                  </div>
+        {/* Left: animated dashboard mockup */}
+        <motion.div ref={ref}
+          initial={{ opacity: 0, y: 44 }}
+          animate={inView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.85, ease: [0.25, 0.46, 0.45, 0.94] }}
+          style={{ position: 'relative' }}>
+
+          {/* Floating KPI cards */}
+          <div className="hidden lg:block">
+            <FloatCard mp="Uzum" mpColor={acc.color}
+              metric={tx(lang,'Выручка','Daromad','Revenue')} value="24.5M" change="+12%" up
+              delay={0.7} floatDur={3.6}
+              style={{ right: '-28px', top: '36px', transform: 'rotate(3deg)', zIndex: 5 }} />
+            <FloatCard mp="Wildberries" mpColor={acc.color}
+              metric={tx(lang,'Прибыль','Foyda','Profit')} value="38.2M" change="+15.7%" up
+              delay={0.9} floatDur={4.3}
+              style={{ left: '-24px', bottom: '70px', transform: 'rotate(-2.5deg)', zIndex: 5 }} />
+          </div>
+
+          {/* Browser chrome */}
+          <div style={{ borderRadius: 14, overflow: 'hidden', border: `1px solid ${bdr}`,
+            boxShadow: isDark
+              ? '0 32px 80px rgba(0,0,0,0.55), 0 8px 24px rgba(0,0,0,0.35)'
+              : '0 32px 80px rgba(0,0,0,0.18), 0 8px 24px rgba(0,0,0,0.1)' }}>
+            {/* Chrome bar */}
+            <div style={{ padding: '10px 14px', background: isDark ? '#0f172a' : '#e2e8f0',
+              borderBottom: `1px solid ${bdr}`, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ display: 'flex', gap: 5, flexShrink: 0 }}>
+                {['#ff5f57','#febc2e','#28c840'].map(c => (
+                  <div key={c} style={{ width: 10, height: 10, borderRadius: '50%', background: c }} />
                 ))}
               </div>
+              <div style={{ flex: 1, background: isDark ? '#1e293b' : '#fff', borderRadius: 5,
+                padding: '4px 10px', fontSize: 10, color: isDark ? '#94a3b8' : '#64748b',
+                border: `1px solid ${bdr}`, textAlign: 'center', maxWidth: 220, margin: '0 auto' }}>
+                daromadchi.uz/dashboard
+              </div>
+              <span style={{ fontSize: 12, color: isDark ? '#94a3b8' : '#64748b', flexShrink: 0 }}>↻</span>
             </div>
-          </FadeUp>
+            <DashMockup />
+          </div>
+        </motion.div>
 
+        {/* Right: text content with staggered FadeUp */}
+        <div>
           <FadeUp delay={0.1}>
-            <div style={{ background: bentoBg, borderRadius: 20, padding: '24px',
-              border: `1px solid ${border}`, height: '100%', minHeight: 340, boxShadow: '0 4px 20px rgba(0,0,0,0.07)' }}>
-              <p style={{ fontSize: 12, fontWeight: 700, color: acc.tint, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                {tx(lang,'Дашборд','Dashboard','Dashboard')}
-              </p>
-              <p style={{ fontSize: 15, fontWeight: 600, color: ink, marginBottom: 16 }}>
-                {tx(lang,'Выручка, заказы, расход и прибыль — за любой период','Daromad, buyurtmalar, xarajatlar — istalgan davr uchun','Revenue, orders, spend and profit — for any period')}
-              </p>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
-                {[
-                  { l:'Выручка', v:'124.5M сум', d:'+12.4%', pos: true  },
-                  { l:'Заказы',  v:'1 842',       d:'+8.1%',  pos: true  },
-                  { l:'Расход',  v:'10.2M сум',   d:'+3.2%',  pos: false },
-                  { l:'Прибыль', v:'38.2M сум',   d:'+15.7%', pos: true  },
-                ].map(k => (
-                  <div key={k.l} style={{ background: cardBg, borderRadius: 10, padding: '12px', borderTop: `2px solid ${acc.color}` }}>
-                    <p style={{ fontSize: 10, color: muted, marginBottom: 3 }}>{k.l}</p>
-                    <p style={{ fontSize: 15, fontWeight: 700, color: ink, fontFamily: 'monospace', lineHeight: 1.1 }}>{k.v}</p>
-                    <p style={{ fontSize: 10, fontWeight: 700, color: k.pos ? acc.tint : P.red, marginTop: 2 }}>{k.d}</p>
-                  </div>
-                ))}
-              </div>
-              <div style={{ background: cardBg, borderRadius: 10, padding: '10px 12px', border: `1px solid ${border}` }}>
-                <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2, height: 36 }}>
-                  {[30,48,38,65,52,78,60,82,70,55,75,92,66,80].map((h, i) => (
-                    <div key={i} style={{ flex: 1, borderRadius: '2px 2px 0 0', height: `${h}%`,
-                      background: i >= 10 ? acc.color : `${acc.color}28` }} />
-                  ))}
-                </div>
-              </div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 22 }}>
+              {['Uzum','Yandex Market','Wildberries'].map(mp => (
+                <span key={mp} style={{ fontSize: 12, fontWeight: 600, padding: '5px 13px', borderRadius: 100,
+                  background: badgeBg, color: badgeTxt, border: `1px solid ${bdr}` }}>{mp}</span>
+              ))}
             </div>
           </FadeUp>
 
-          <FadeUp delay={0.15}>
-            <div style={{ background: bentoBg, borderRadius: 20, padding: '24px',
-              border: `1px solid ${border}`, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-              <div>
-                <p style={{ fontSize: 12, fontWeight: 700, color: acc.tint, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  {tx(lang,'Юнит-экономика','Birlik-iqtisod','Unit economics')}
-                </p>
-                <p style={{ fontSize: 14, fontWeight: 600, color: ink, marginBottom: 14 }}>
-                  {tx(lang,'Рентабельность по каждому товару','Har bir mahsulot bo\'yicha rentabellik','Profitability per product')}
-                </p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-                  {[
-                    { l: tx(lang,'Закупка','Sotib olish','Purchase'), v: '12 000 сум' },
-                    { l: tx(lang,'Логистика','Logistika','Logistics'), v: '1 800 сум' },
-                    { l: tx(lang,'Реклама','Reklama','Ad spend'), v: '2 350 сум' },
-                    { l: tx(lang,'Цена продажи','Sotish narxi','Sale price'), v: '28 500 сум' },
-                  ].map(row => (
-                    <div key={row.l} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                      padding: '7px 10px', background: cardBg, borderRadius: 8, border: `1px solid ${border}` }}>
-                      <span style={{ fontSize: 11, color: muted }}>{row.l}</span>
-                      <span style={{ fontSize: 11, fontWeight: 700, color: ink, fontFamily: 'monospace' }}>{row.v}</span>
-                    </div>
-                  ))}
-                  <div style={{ padding: '9px 10px', background: acc.bg, borderRadius: 8,
-                    border: `1px solid ${isDark ? P.dHair : `${acc.color}25`}`,
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: acc.dk }}>{tx(lang,'Маржа','Marja','Margin')}</span>
-                    <span style={{ fontSize: 14, fontWeight: 800, color: acc.tint, fontFamily: 'monospace' }}>52.6% ↑</span>
-                  </div>
-                </div>
-              </div>
-              <div>
-                <p style={{ fontSize: 12, fontWeight: 700, color: acc.tint, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  {tx(lang,'Уведомления','Bildirishnomalar','Notifications')}
-                </p>
-                <p style={{ fontSize: 14, fontWeight: 600, color: ink, marginBottom: 14 }}>
-                  {tx(lang,'Алерты в Telegram каждые 15 мин','Har 15 daqiqada Telegram xabarlari','Telegram alerts every 15 min')}
-                </p>
-                <div style={{ background: isDark ? P.dCanvas : P.parchment, borderRadius: 12, padding: '10px',
-                  border: `1px solid ${border}`, display: 'flex', flexDirection: 'column', gap: 7 }}>
-                  {[
-                    { icon: '🔔', text: tx(lang,'Остатки «Куртка» — 12 шт, 3 дня','Qoldiqlar — 12 ta, 3 kun','Stock low — 12 pcs, 3 days') },
-                    { icon: '📈', text: tx(lang,'ДРР превысил 15% по 3 товарам','3 ta mahsulot DRR 15% dan oshdi','DRR exceeded 15% on 3 products') },
-                    { icon: '✅', text: tx(lang,'WB: новый заказ #WB-48291','WB: yangi buyurtma #WB-48291','WB: new order #WB-48291') },
-                  ].map((n, i) => (
-                    <div key={i} style={{ background: cardBg, borderRadius: 8, padding: '8px 10px', borderLeft: `3px solid ${acc.color}` }}>
-                      <p style={{ fontSize: 10, color: ink, lineHeight: 1.4 }}>{n.icon} {n.text}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
+          <FadeUp delay={0.18}>
+            <h2 style={{ fontSize: 'clamp(26px, 3vw, 44px)', fontWeight: 800, lineHeight: 1.08,
+              color: ink, letterSpacing: '-0.022em', marginBottom: 18 }}>
+              {tx(lang,
+                <>{`Savdo va analitika — `}<span style={{ color: acc.tint }}>{`hammasi bitta ekranda`}</span></>,
+                <>{`Savdo va analitika — `}<span style={{ color: acc.tint }}>{`hammasi bitta ekranda`}</span></>,
+                <>{`Sales & analytics — `}<span style={{ color: acc.tint }}>{`all on one screen`}</span></>
+              )}
+            </h2>
           </FadeUp>
 
-          <FadeUp delay={0.2}>
-            <div style={{ background: bentoBg, borderRadius: 20, padding: '24px', border: `1px solid ${border}` }}>
-              <p style={{ fontSize: 12, fontWeight: 700, color: acc.tint, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                {tx(lang,'Экспорт в Excel','Excel ga eksport','Excel export')}
-              </p>
-              <p style={{ fontSize: 15, fontWeight: 600, color: ink, marginBottom: 16 }}>
-                {tx(lang,'Скачайте отчёт в один клик — все данные как в таблице','Hisobotni bir marta bosish bilan yuklab oling','Download report in one click')}
-              </p>
-              <div style={{ background: cardBg, borderRadius: 12, overflow: 'hidden', border: `1px solid ${border}`, marginBottom: 14 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', background: '#217346' }}>
-                  <div style={{ width: 16, height: 16, background: 'rgba(255,255,255,0.2)', borderRadius: 3,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, color: '#fff', fontWeight: 700 }}>X</div>
-                  <span style={{ fontSize: 11, fontWeight: 600, color: '#fff' }}>daromadchi_report_2026.xlsx</span>
-                </div>
-                <div style={{ padding: '8px 14px' }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 60px 60px 40px' }}>
-                    {['A','B','C','D'].map(h => (
-                      <div key={h} style={{ background: '#217346', padding: '3px 6px', textAlign: 'center' }}>
-                        <span style={{ fontSize: 9, color: '#fff', fontWeight: 700 }}>{h}</span>
-                      </div>
-                    ))}
-                    {[['Куртка зимняя','18 240 000','7.2%','120'],['Кроссовки','12 590 000','11.4%','84'],['Рюкзак 40L','9 870 000','9.8%','67']].map((row,ri) =>
-                      row.map((cell,ci) => (
-                        <div key={`${ri}-${ci}`} style={{ padding: '4px 6px',
-                          border: `1px solid ${isDark ? '#2A2050' : '#E2E8E0'}`,
-                          borderTop: 'none', borderLeft: ci > 0 ? 'none' : `1px solid ${isDark ? '#2A2050' : '#E2E8E0'}` }}>
-                          <span style={{ fontSize: 9, color: ink, fontFamily: ci > 0 ? 'monospace' : 'inherit' }}>{cell}</span>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-              </div>
+          <FadeUp delay={0.26}>
+            <p style={{ fontSize: 16, color: sub, lineHeight: 1.65, marginBottom: 34 }}>
+              {tx(lang,
+                'DRR, qoldiq, narx va birlik iqtisodiyoti. Savdoni kuniga 5 daqiqada boshqaring.',
+                'DRR, qoldiq, narx va birlik iqtisodiyoti. Savdoni kuniga 5 daqiqada boshqaring.',
+                'DRR, stock, pricing and unit economics. Manage your sales in 5 minutes a day.'
+              )}
+            </p>
+          </FadeUp>
+
+          <FadeUp delay={0.34}>
+            <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginBottom: 40 }}>
               <Link href="/login"
-                style={{ display: 'inline-flex', alignItems: 'center', gap: 6,
-                  fontSize: 13, fontWeight: 700, background: acc.btn, color: acc.btnTxt,
-                  padding: '10px 20px', borderRadius: 8, textDecoration: 'none' }}
-                onMouseEnter={e => (e.currentTarget.style.background = acc.btnHov)}
-                onMouseLeave={e => (e.currentTarget.style.background = acc.btn)}>
-                {tx(lang,'Скачать отчёт','Hisobotni yuklab olish','Download report')} <ArrowRight size={14}/>
+                style={{ fontSize: 15, fontWeight: 700, background: acc.btn, color: acc.btnTxt,
+                  padding: '13px 28px', borderRadius: 10, textDecoration: 'none',
+                  transition: 'all 0.15s', display: 'inline-block' }}
+                onMouseEnter={e => { e.currentTarget.style.background = acc.btnHov; e.currentTarget.style.transform = 'translateY(-2px)' }}
+                onMouseLeave={e => { e.currentTarget.style.background = acc.btn; e.currentTarget.style.transform = 'translateY(0)' }}>
+                {tx(lang,'3 kun bepul boshlash →','3 kun bepul boshlash →','Start free 3 days →')}
               </Link>
+              <a href="#how"
+                style={{ fontSize: 14, fontWeight: 600, color: sub, textDecoration: 'none',
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                  transition: 'color 0.15s', padding: '13px 0' }}
+                onMouseEnter={e => (e.currentTarget.style.color = isDark ? '#fff' : P.ink)}
+                onMouseLeave={e => (e.currentTarget.style.color = sub)}>
+                {tx(lang,'Platformani o\'rganish →','Platformani o\'rganish →','Explore platform →')}
+              </a>
+            </div>
+          </FadeUp>
+
+          <FadeUp delay={0.42}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 20,
+              paddingTop: 28, borderTop: `1px solid ${bdr}` }}>
+              {[
+                { v: '3+',   l: tx(lang,'Marketplace','Marketplace','Marketplace') },
+                { v: '5',    l: tx(lang,'daqiqa / kun','daqiqa / kun','minutes / day') },
+                { v: '100%', l: tx(lang,'Avtomatik sinxronizatsiya','Avtomatik sinxronizatsiya','Auto sync') },
+              ].map(s => (
+                <div key={String(s.l)}>
+                  <p style={{ fontSize: 30, fontWeight: 900, color: ink, fontFamily: 'monospace', lineHeight: 1 }}>{s.v}</p>
+                  <p style={{ fontSize: 12, color: sub, marginTop: 5 }}>{s.l}</p>
+                </div>
+              ))}
             </div>
           </FadeUp>
         </div>
@@ -1653,39 +1592,39 @@ function PricingSection({ lang }: { lang: string }) {
 function ResourcesSection({ lang }: { lang: string }) {
   const isDark = useIsDark()
   const acc = useAccent()
+  const [expanded, setExpanded] = useState<number | null>(null)
   const secBg  = isDark ? P.dCanvas : P.parchment
   const cardBg = isDark ? P.dCard   : P.card
   const bdr    = isDark ? P.dHair   : P.hair
   const ink    = isDark ? P.dText   : P.ink
-  const muted  = isDark ? P.dMuted  : P.stone
+  const sub    = isDark ? P.dMuted  : P.stone
+  const muted  = isDark ? P.dMuted  : '#94A3B8'
+  const bg2    = isDark ? P.dCanvas : '#F8FAFD'
 
-  const cards = [
+  const rightItems = [
     {
-      icon: <BookOpen size={20} color={acc.tint} />, title: tx(lang,'Справка','Yordam markazi','Help center'),
+      num: '02',
+      title: 'Telegram',
+      icon: <MessageCircle size={18} color={acc.tint} />,
       items: [
-        { t: tx(lang,'Быстрый старт за 5 минут','5 daqiqada tez boshlash','Quick start in 5 minutes'), sub: tx(lang,'Пошаговое руководство','Bosqichma-bosqich qo\'llanma','Step-by-step guide') },
-        { t: tx(lang,'Как работает ДРР','DRR qanday ishlaydi','How DRR works'), sub: tx(lang,'Формула и примеры','Formula va misollar','Formula and examples') },
-        { t: tx(lang,'Настройка юнит-экономики','Birlik-iqtisodni sozlash','Setting up unit economics'), sub: tx(lang,'Укажите закупку и логистику','Xarid va logistikani kiriting','Enter purchase costs and logistics') },
+        { t: tx(lang,'Канал с обновлениями','Yangilanishlar kanali','Updates channel'), d: tx(lang,'Новые функции и релизы','Yangi funksiyalar va relizlar','New features & releases') },
+        { t: tx(lang,'Чат поддержки','Qo\'llab-quvvatlash chati','Support chat'), d: tx(lang,'Ответ в течение часа','Bir soat ichida javob','Reply within an hour') },
+        { t: tx(lang,'Сообщество продавцов','Sotuvchilar hamjamiyati','Sellers community'), d: tx(lang,'Советы и кейсы','Maslahatlar va holatlar','Tips & case studies') },
       ],
-      link: tx(lang,'Все статьи →','Barcha maqolalar →','All articles →'), linkColor: acc.tint, href: '/help',
+      link: tx(lang,'Открыть Telegram →','Telegramni ochish →','Open Telegram →'),
+      href: 'https://t.me/daromadchi',
     },
     {
-      icon: <MessageCircle size={20} color={acc.tint} />, title: 'Telegram',
+      num: '03',
+      title: tx(lang,'Интеграции','Integratsiyalar','Integrations'),
+      icon: <Plug2 size={18} color={acc.tint} />,
       items: [
-        { t: tx(lang,'Канал с обновлениями','Yangilanishlar kanali','Updates channel'), sub: tx(lang,'Новые функции и релизы','Yangi funksiyalar va relizlar','New features & releases'), dot: acc.tint },
-        { t: tx(lang,'Чат поддержки','Qo\'llab-quvvatlash chati','Support chat'), sub: tx(lang,'Ответ в течение часа','Bir soat ichida javob','Reply within an hour'), dot: acc.tint },
-        { t: tx(lang,'Сообщество продавцов','Sotuvchilar hamjamiyati','Sellers community'), sub: tx(lang,'Советы и кейсы','Maslahatlar va holatlar','Tips & case studies'), dot: acc.tint },
+        { t: 'Uzum Market',   d: tx(lang,'Подключение через API-ключ','API kalit orqali ulash','Connect via API key') },
+        { t: 'Wildberries',   d: tx(lang,'Подключение через токен WB','WB token orqali ulash','Connect via WB token') },
+        { t: 'Yandex Market', d: tx(lang,'OAuth-авторизация','OAuth-avtorizatsiya','OAuth authorisation') },
       ],
-      link: tx(lang,'Открыть Telegram →','Telegramni ochish →','Open Telegram →'), linkColor: acc.tint, href: 'https://t.me/daromadchi',
-    },
-    {
-      icon: <Plug2 size={20} color={acc.tint} />, title: tx(lang,'Интеграции','Integratsiyalar','Integrations'),
-      items: [
-        { t: 'Uzum Market', sub: tx(lang,'Подключение через API-ключ','API kalit orqali ulash','Connect via API key'), dot: acc.tint },
-        { t: 'Wildberries', sub: tx(lang,'Подключение через токен WB','WB token orqali ulash','Connect via WB token'), dot: acc.tint },
-        { t: 'Yandex Market', sub: tx(lang,'OAuth-авторизация','OAuth-avtorizatsiya','OAuth authorisation'), dot: acc.tint },
-      ],
-      link: tx(lang,'Инструкция по подключению →','Ulash yo\'riqnomasi →','Connection guide →'), linkColor: acc.tint, href: '/help',
+      link: tx(lang,'Инструкция по подключению →','Ulash yo\'riqnomasi →','Connection guide →'),
+      href: '/help',
     },
   ]
 
@@ -1700,34 +1639,124 @@ function ResourcesSection({ lang }: { lang: string }) {
             'Hujjatlar, Telegram-hamjamiyat va maydonchalarni ulash',
             'Documentation, Telegram community and marketplace connections')}
         />
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 20 }}>
-          {cards.map((c, i) => (
-            <FadeUp key={c.title} delay={i * 0.1}>
-              <div style={{ background: cardBg, borderRadius: 20, padding: '24px',
-                border: `1px solid ${bdr}`, height: '100%', display: 'flex', flexDirection: 'column' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
-                  {c.icon}
-                  <h3 style={{ fontSize: 16, fontWeight: 700, color: ink }}>{c.title}</h3>
-                </div>
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  {c.items.map((item, j) => (
-                    <div key={j} style={{ display: 'flex', gap: 10, cursor: 'pointer' }}>
-                      {('dot' in item) && <div style={{ width: 8, height: 8, borderRadius: '50%', background: item.dot as string, marginTop: 5, flexShrink: 0 }} />}
-                      <div>
-                        <p style={{ fontSize: 13, fontWeight: 600, color: ink, marginBottom: 2, lineHeight: 1.4 }}>{item.t}</p>
-                        <p style={{ fontSize: 11, color: muted }}>{item.sub}</p>
+        <div style={{ display: 'grid', gridTemplateColumns: '1.35fr 0.65fr', gap: 16 }}>
+
+          {/* Large card — 01: Help center */}
+          <FadeUp delay={0.05}>
+            <div style={{ background: cardBg, borderRadius: 24, padding: '32px',
+              border: `1px solid ${bdr}`, display: 'flex', flexDirection: 'column', minHeight: 420,
+              boxShadow: isDark ? '0 4px 24px rgba(197,232,254,0.06)' : '0 4px 24px rgba(0,0,0,0.06)',
+              position: 'relative', overflow: 'hidden' }}>
+              <div style={{ position: 'absolute', right: 12, top: 4, fontSize: 120, fontWeight: 900,
+                color: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)', lineHeight: 1,
+                userSelect: 'none', fontFamily: 'monospace', pointerEvents: 'none' }}>01</div>
+              <p style={{ fontSize: 10, fontWeight: 700, color: acc.tint, marginBottom: 8,
+                textTransform: 'uppercase', letterSpacing: '0.08em' }}>01</p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 12 }}>
+                <BookOpen size={22} color={acc.tint} />
+                <h3 style={{ fontSize: 22, fontWeight: 800, color: ink, letterSpacing: '-0.01em' }}>
+                  {tx(lang,'Справка','Yordam markazi','Help center')}
+                </h3>
+              </div>
+              <p style={{ fontSize: 14, color: sub, lineHeight: 1.65, marginBottom: 28, maxWidth: 420 }}>
+                {tx(lang,
+                  'Пошаговые руководства по настройке, формулам DRR и юнит-экономике — всё в одном месте',
+                  'Sozlash, DRR formulalari va birlik-iqtisod bo\'yicha bosqichma-bosqich qo\'llanmalar',
+                  'Step-by-step guides on setup, DRR formulas and unit economics — all in one place'
+                )}
+              </p>
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {[
+                  { t: tx(lang,'Быстрый старт за 5 минут','5 daqiqada tez boshlash','Quick start in 5 min'), d: tx(lang,'Пошаговое руководство','Bosqichma-bosqich qo\'llanma','Step-by-step guide') },
+                  { t: tx(lang,'Как работает ДРР','DRR qanday ishlaydi','How DRR works'), d: tx(lang,'Формула и примеры','Formula va misollar','Formula and examples') },
+                  { t: tx(lang,'Настройка юнит-экономики','Birlik-iqtisodni sozlash','Setting up unit economics'), d: tx(lang,'Укажите закупку и логистику','Xarid va logistikani kiriting','Enter purchase costs & logistics') },
+                ].map((item, i) => (
+                  <div key={i}
+                    style={{ padding: '11px 14px', background: bg2, borderRadius: 12,
+                      border: `1px solid ${bdr}`, cursor: 'pointer', transition: 'border-color 0.15s' }}
+                    onMouseEnter={e => (e.currentTarget.style.borderColor = acc.color)}
+                    onMouseLeave={e => (e.currentTarget.style.borderColor = bdr)}>
+                    <p style={{ fontSize: 13, fontWeight: 600, color: ink, marginBottom: 2 }}>{item.t}</p>
+                    <p style={{ fontSize: 11, color: muted }}>{item.d}</p>
+                  </div>
+                ))}
+              </div>
+              <Link href="/help"
+                style={{ fontSize: 13, fontWeight: 700, color: acc.tint, textDecoration: 'none', marginTop: 20, display: 'inline-block' }}
+                onMouseEnter={e => (e.currentTarget.style.opacity = '0.7')}
+                onMouseLeave={e => (e.currentTarget.style.opacity = '1')}>
+                {tx(lang,'Все статьи →','Barcha maqolalar →','All articles →')}
+              </Link>
+            </div>
+          </FadeUp>
+
+          {/* Right: 2 stacked accordion cards */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {rightItems.map((item, idx) => (
+              <FadeUp key={item.num} delay={0.1 + idx * 0.08}>
+                <div
+                  style={{ background: cardBg, borderRadius: 24, border: `1px solid ${bdr}`,
+                    overflow: 'hidden', cursor: 'pointer',
+                    boxShadow: isDark ? '0 4px 24px rgba(197,232,254,0.06)' : '0 4px 24px rgba(0,0,0,0.06)',
+                    transition: 'box-shadow 0.2s' }}
+                  onClick={() => setExpanded(expanded === idx ? null : idx)}>
+                  {/* Header */}
+                  <div style={{ padding: '22px 24px', display: 'flex', alignItems: 'center',
+                    justifyContent: 'space-between', position: 'relative', overflow: 'hidden' }}>
+                    <div style={{ position: 'absolute', right: 8, top: -10, fontSize: 80, fontWeight: 900,
+                      color: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)', lineHeight: 1,
+                      userSelect: 'none', fontFamily: 'monospace', pointerEvents: 'none' }}>{item.num}</div>
+                    <div>
+                      <p style={{ fontSize: 10, fontWeight: 700, color: acc.tint, marginBottom: 5,
+                        textTransform: 'uppercase', letterSpacing: '0.08em' }}>{item.num}</p>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                        {item.icon}
+                        <h3 style={{ fontSize: 15, fontWeight: 800, color: ink, letterSpacing: '-0.01em' }}>{item.title}</h3>
                       </div>
                     </div>
-                  ))}
+                    <motion.div
+                      animate={{ rotate: expanded === idx ? 45 : 0 }}
+                      transition={{ duration: 0.2 }}
+                      style={{ width: 30, height: 30, borderRadius: 9, background: bg2,
+                        border: `1px solid ${bdr}`, display: 'flex', alignItems: 'center',
+                        justifyContent: 'center', flexShrink: 0, fontSize: 18, color: ink,
+                        fontWeight: 500, lineHeight: 1 }}>
+                      +
+                    </motion.div>
+                  </div>
+
+                  {/* Expandable body */}
+                  <AnimatePresence initial={false}>
+                    {expanded === idx && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}>
+                        <div style={{ padding: '0 24px 22px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                          {item.items.map((it, j) => (
+                            <div key={j} style={{ padding: '9px 12px', background: bg2,
+                              borderRadius: 10, border: `1px solid ${bdr}` }}>
+                              <p style={{ fontSize: 12, fontWeight: 600, color: ink, marginBottom: 2 }}>{it.t}</p>
+                              <p style={{ fontSize: 10, color: muted }}>{it.d}</p>
+                            </div>
+                          ))}
+                          <Link href={item.href}
+                            style={{ fontSize: 12, fontWeight: 700, color: acc.tint,
+                              textDecoration: 'none', marginTop: 6, display: 'inline-block' }}
+                            onMouseEnter={e => (e.currentTarget.style.opacity = '0.7')}
+                            onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
+                            onClick={e => e.stopPropagation()}>
+                            {item.link}
+                          </Link>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
-                <Link href={(c as any).href ?? '/help'} style={{ fontSize: 13, fontWeight: 700, color: c.linkColor, textDecoration: 'none', marginTop: 20, display: 'block' }}
-                  onMouseEnter={e => (e.currentTarget.style.opacity = '0.7')}
-                  onMouseLeave={e => (e.currentTarget.style.opacity = '1')}>
-                  {c.link}
-                </Link>
-              </div>
-            </FadeUp>
-          ))}
+              </FadeUp>
+            ))}
+          </div>
         </div>
       </div>
     </section>
