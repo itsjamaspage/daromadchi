@@ -1,8 +1,11 @@
 name: Deploy to Vercel
+# Disabled — Vercel CLI deploys count against the 100/day API quota on the free tier.
+# Deployments are triggered via the native Vercel GitHub integration instead,
+# which uses a separate (unthrottled) path. To trigger a deploy, push any
+# forward commit to main (e.g. update public/version.txt via the GitHub API).
 
 on:
-  push:
-    branches: [main]
+  workflow_dispatch:
 
 jobs:
   deploy:
