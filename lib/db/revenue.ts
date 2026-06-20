@@ -1,5 +1,5 @@
 import { unstable_cache } from 'next/cache'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { getCurrentUserId } from '@/lib/db/shop-context'
 import type { DailyRevenue, MarketplaceType } from '@/lib/types'
 
@@ -9,7 +9,7 @@ const supabaseConfigured =
 
 const _fetchRevenue = unstable_cache(
   async (userId: string, mp: string, days: number, from: string, to: string): Promise<DailyRevenue[]> => {
-    const supabase = await createClient()
+    const supabase = createAdminClient()
     const { data: shopsData } = await supabase.from('shops').select('id, marketplace').eq('user_id', userId)
     const allShops = shopsData ?? []
     const shopIds = mp

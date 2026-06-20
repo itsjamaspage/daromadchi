@@ -1,6 +1,7 @@
 import { cache } from 'react'
 import { unstable_cache } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import type { MarketplaceType } from '@/lib/types'
 
 const supabaseConfigured =
@@ -23,7 +24,7 @@ export const getCurrentUserId = cache(async (): Promise<string | null> => {
 // every page navigation. getUserShops() still validates auth on every request.
 const _fetchShopsByUser = unstable_cache(
   async (userId: string): Promise<ShopRef[]> => {
-    const supabase = await createClient()
+    const supabase = createAdminClient()
     const { data } = await supabase
       .from('shops')
       .select('id, marketplace')

@@ -1,5 +1,6 @@
 import { unstable_cache } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { getCurrentUserId, getShopIds } from '@/lib/db/shop-context'
 import type { Product, MarketplaceType } from '@/lib/types'
 
@@ -11,7 +12,7 @@ const supabaseConfigured =
 // products, sku map, and sold counts via orders join — no serial waterfall.
 const _fetchProducts = unstable_cache(
   async (userId: string, mp: string): Promise<Product[]> => {
-    const supabase = await createClient()
+    const supabase = createAdminClient()
     const { data: shopsData } = await supabase.from('shops').select('id, marketplace').eq('user_id', userId)
     const allShops = shopsData ?? []
     if (allShops.length === 0) return []

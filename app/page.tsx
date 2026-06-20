@@ -601,7 +601,55 @@ function ComparisonSection({ lang }: { lang: string }) {
   )
 }
 
-// ── 3. FEATURES ───────────────────────────────────────────────────────────────
+// ── 3. MARQUEE ────────────────────────────────────────────────────────────────
+function MarqueeSection({ lang }: { lang: string }) {
+  const isDark = useIsDark()
+  const bg = isDark ? '#1e1e1e' : '#0e1b2e'
+  const items = [
+    'Wildberries',
+    tx(lang, 'Аналитика продаж', 'Savdo tahlili', 'Sales analytics'),
+    'P&L hisobot',
+    'Yandex Market',
+    tx(lang, 'Юнит-экономика', 'Birlik iqtisodiyoti', 'Unit economics'),
+    'Uzum Market',
+    tx(lang, 'ДРР контроль', 'DRR nazorat', 'DRR control'),
+    tx(lang, 'Excel экспорт', 'Excel eksport', 'Excel export'),
+  ]
+  return (
+    <div style={{
+      background: bg, overflow: 'hidden', display: 'flex', alignItems: 'stretch',
+      borderTop: '1px solid rgba(255,255,255,0.08)',
+      borderBottom: '1px solid rgba(255,255,255,0.08)',
+      fontFamily: "'Space Grotesk', system-ui, sans-serif",
+    }}>
+      <div style={{
+        padding: '14px 24px', borderRight: '1px solid rgba(255,255,255,0.12)',
+        flexShrink: 0, display: 'flex', alignItems: 'center',
+      }}>
+        <p style={{
+          fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.5)',
+          letterSpacing: '0.1em', textTransform: 'uppercase', lineHeight: 1.5, whiteSpace: 'nowrap',
+        }}>
+          INTEGRATSIYA QILINGAN<br />BOZORLAR VA FUNKSIYALAR
+        </p>
+      </div>
+      <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
+        <div className="animate-ticker" style={{ display: 'flex', width: 'max-content' }}>
+          {[...items, ...items].map((item, i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+              <span style={{ padding: '14px 28px', fontSize: 13, fontWeight: 600, color: '#ffffff', whiteSpace: 'nowrap' }}>
+                {item}
+              </span>
+              <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: 18, lineHeight: 1 }}>·</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── 4. FEATURES ───────────────────────────────────────────────────────────────
 function FeaturesSection({ lang }: { lang: string }) {
   const isDark = useIsDark()
   const acc = useAccent()
@@ -988,8 +1036,8 @@ function HowItWorksSection({ lang }: { lang: string }) {
   )
 }
 
-// ── 5. WHO IS IT FOR ──────────────────────────────────────────────────────────
-function WhoSection({ lang }: { lang: string }) {
+// ── 5. BENTO ──────────────────────────────────────────────────────────────────
+function BentoSection({ lang }: { lang: string }) {
   const isDark = useIsDark()
   const acc = useAccent()
   const secBg  = isDark ? P.dCanvas : P.parchment
@@ -997,97 +1045,138 @@ function WhoSection({ lang }: { lang: string }) {
   const bdr    = isDark ? P.dHair   : P.hair
   const ink    = isDark ? P.dText   : P.ink
   const sub    = isDark ? P.dMuted  : P.stone
-
-  const cards = [
-    {
-      color: acc.tint,
-      avatar: (
-        <svg width="72" height="72" viewBox="0 0 72 72" fill="none">
-          <circle cx="36" cy="36" r="36" fill="rgba(14,116,144,0.10)"/>
-          <circle cx="36" cy="28" r="12" fill="#0E7490" opacity="0.85"/>
-          <ellipse cx="36" cy="56" rx="18" ry="12" fill="#0E7490" opacity="0.65"/>
-        </svg>
-      ),
-      title: tx(lang,'Начинающий продавец','Yangi sotuvchi','New seller'),
-      desc: tx(lang,'Подбираете первый товар? UNIT-экономика покажет реальную маржу до закупки — без Excel и формул',
-        'Birinchi mahsulotni tanlayapsizmi? UNIT-iqtisod sotib olishdan oldin haqiqiy marjani ko\'rsatadi',
-        'Picking your first product? Unit economics shows real margin before purchase — no Excel needed'),
-      features: [tx(lang,'Калькулятор маржи','Marja kalkulyatori','Margin calculator'),
-        tx(lang,'Анализ конкурентов','Raqobatchilarni tahlil','Competitor analysis'),
-        tx(lang,'Подбор ниши','Nishani tanlash','Niche selection')],
-    },
-    {
-      color: acc.tint,
-      avatar: (
-        <svg width="72" height="72" viewBox="0 0 72 72" fill="none">
-          <circle cx="36" cy="36" r="36" fill="rgba(14,116,144,0.10)"/>
-          <circle cx="36" cy="28" r="12" fill="#0E7490" opacity="0.85"/>
-          <ellipse cx="36" cy="56" rx="18" ry="12" fill="#0E7490" opacity="0.65"/>
-        </svg>
-      ),
-      title: tx(lang,'Растущий магазин','O\'sib borayotgan do\'kon','Growing store'),
-      desc: tx(lang,'Тратите на рекламу, но не понимаете, окупается ли? Таблица покажет ДРР по каждому товару в реальном времени',
-        'Reklamaga xarajat qilyapsizmi, lekin to\'layaptimi bilmayapsizmi? Jadval DRR ni ko\'rsatadi',
-        'Spending on ads but unsure of ROI? The table shows DRR per product in real time'),
-      features: [tx(lang,'ДРР по товарам','Mahsulotlar bo\'yicha DRR','DRR per product'),
-        tx(lang,'Контроль остатков','Qoldiqlarni nazorat','Stock control'),
-        tx(lang,'Уведомления Telegram','Telegram bildirishnomalari','Telegram alerts')],
-    },
-    {
-      color: acc.tint,
-      avatar: (
-        <svg width="72" height="72" viewBox="0 0 72 72" fill="none">
-          <circle cx="36" cy="36" r="36" fill="rgba(14,116,144,0.10)"/>
-          <circle cx="36" cy="28" r="12" fill="#0E7490" opacity="0.85"/>
-          <ellipse cx="36" cy="56" rx="18" ry="12" fill="#0E7490" opacity="0.65"/>
-        </svg>
-      ),
-      title: tx(lang,'Менеджер магазинов','Do\'konlar menejeri','Store manager'),
-      desc: tx(lang,'Ведёте несколько магазинов клиентов? Настройте пресеты, каждое утро открывайте дашборд — и всё под контролем',
-        'Bir nechta mijoz do\'konini boshqaryapsizmi? Presetlarni sozlang, har ertalab dashbordni oching',
-        'Managing multiple client stores? Set presets, open the dashboard each morning — everything under control'),
-      features: [tx(lang,'Несколько магазинов','Bir nechta do\'kon','Multiple stores'),
-        tx(lang,'Пресеты колонок','Ustunlar presetlari','Column presets'),
-        tx(lang,'Сводный отчёт','Yig\'ma hisobot','Summary report')],
-    },
-  ]
+  const muted  = isDark ? P.dMuted  : '#94A3B8'
+  const bg2    = isDark ? P.dCanvas : '#F8FAFD'
 
   return (
     <section style={{ background: secBg, padding: '88px 24px',
       fontFamily: "'Space Grotesk', system-ui, sans-serif", transition: 'background 0.3s' }}>
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
         <SectionHead dark={isDark}
-          title={tx(lang,'Кому подходит Daromadchi','Daromadchi kimga mos keladi','Who is Daromadchi for')}
-          accent={tx(lang,'подходит','mos keladi','for')}
-          sub={tx(lang,'Для продавцов на Uzum, Wildberries и Yandex Market в Узбекистане',
-            'O\'zbekistondagi Uzum, Wildberries va Yandex Market sotuvchilari uchun',
-            'For sellers on Uzum, Wildberries and Yandex Market in Uzbekistan')}
+          title={tx(lang,'Всё необходимое для роста','O\'sish uchun kerak bo\'lgan hamma narsa','Everything you need to grow')}
+          accent={tx(lang,'роста','o\'sish','grow')}
+          sub={tx(lang,'Аналитика, контроль запасов и финансы в одном месте',
+            'Tahlil, zaxira nazorati va moliya bir joyda',
+            'Analytics, inventory control and financials in one place')}
         />
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 24 }}>
-          {cards.map((c, i) => (
-            <FadeUp key={i} delay={i * 0.1}>
-              <div style={{ background: cardBg, borderRadius: 20, padding: '32px 28px',
-                border: `1px solid ${bdr}`, textAlign: 'center', transition: 'transform 0.2s, box-shadow 0.2s' }}
-                onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-4px)';
-                  (e.currentTarget as HTMLDivElement).style.boxShadow = isDark ? '0 12px 36px rgba(197,232,254,0.10)' : '0 12px 36px rgba(0,0,0,0.10)' }}
-                onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)';
-                  (e.currentTarget as HTMLDivElement).style.boxShadow = 'none' }}>
-                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>{c.avatar}</div>
-                <span style={{ fontSize: 30, fontWeight: 900, color: c.color, fontFamily: 'var(--font-mono-landing), monospace',
-                  display: 'block', marginBottom: 10 }}>{String(i+1).padStart(2,'0')}</span>
-                <h3 style={{ fontSize: 17, fontWeight: 700, color: ink, marginBottom: 10 }}>{c.title}</h3>
-                <p style={{ fontSize: 14, color: sub, lineHeight: 1.65, marginBottom: 20 }}>{c.desc}</p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  {c.features.map(f => (
-                    <div key={f} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <Check size={13} color={c.color}/>
-                      <span style={{ fontSize: 13, color: sub }}>{f}</span>
+        <div style={{ display: 'grid', gridTemplateColumns: '1.35fr 0.65fr', gap: 16 }}>
+
+          {/* Large featured card — Analytics hub */}
+          <FadeUp delay={0.05}>
+            <div style={{ background: cardBg, borderRadius: 24, padding: '32px',
+              border: `1px solid ${bdr}`, display: 'flex', flexDirection: 'column', minHeight: 480,
+              boxShadow: isDark ? '0 4px 24px rgba(197,232,254,0.06)' : '0 4px 24px rgba(0,0,0,0.06)' }}>
+              <p style={{ fontSize: 11, fontWeight: 700, color: acc.tint, marginBottom: 6,
+                textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                {tx(lang,'АНАЛИТИКА','TAHLIL','ANALYTICS')}
+              </p>
+              <h3 style={{ fontSize: 22, fontWeight: 800, color: ink, marginBottom: 10, letterSpacing: '-0.01em' }}>
+                {tx(lang,'Аналитика маркетплейсов','Analitika markazi','Analytics hub')}
+              </h3>
+              <p style={{ fontSize: 14, color: sub, lineHeight: 1.65, marginBottom: 24, maxWidth: 400 }}>
+                {tx(lang,
+                  'Все ключевые метрики по Uzum, Wildberries и Yandex Market в одном дашборде с автообновлением каждые 15 минут',
+                  'Barcha asosiy ko\'rsatkichlar — Uzum, Wildberries va Yandex Market bo\'yicha bitta dashboardda har 15 daqiqada yangilanadi',
+                  'All key metrics across Uzum, Wildberries and Yandex Market in one dashboard, updated every 15 minutes'
+                )}
+              </p>
+              <div style={{ flex: 1, background: bg2, borderRadius: 16, padding: '16px', border: `1px solid ${bdr}` }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8, marginBottom: 14 }}>
+                  {[
+                    { l: tx(lang,'Выручка','Daromad','Revenue'), v: '124.5M', d: '+12%' },
+                    { l: tx(lang,'Заказы','Buyurtmalar','Orders'), v: '1 842', d: '+8%' },
+                    { l: tx(lang,'ДРР','DRR','DRR'), v: '8.2%', d: '-1.4%' },
+                    { l: tx(lang,'Прибыль','Foyda','Profit'), v: '38.2M', d: '+15%' },
+                  ].map(k => (
+                    <div key={k.l} style={{ background: cardBg, borderRadius: 10, padding: '10px 12px',
+                      borderTop: `2px solid ${acc.color}` }}>
+                      <p style={{ fontSize: 9, color: muted, marginBottom: 2 }}>{k.l}</p>
+                      <p style={{ fontSize: 13, fontWeight: 700, color: ink, fontFamily: 'monospace', lineHeight: 1.1 }}>{k.v}</p>
+                      <p style={{ fontSize: 9, fontWeight: 700, color: acc.tint, marginTop: 1 }}>{k.d}</p>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ background: cardBg, borderRadius: 10, padding: '10px 12px', border: `1px solid ${bdr}` }}>
+                  <p style={{ fontSize: 9, color: muted, marginBottom: 8, fontWeight: 600,
+                    textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    {tx(lang,'Выручка по дням','Kunlik daromad','Daily revenue')}
+                  </p>
+                  <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2, height: 52 }}>
+                    {[32,45,38,62,55,78,65,85,72,58,80,95,68,82].map((h, i) => (
+                      <div key={i} style={{ flex: 1, borderRadius: '2px 2px 0 0', height: `${h}%`,
+                        background: i >= 10 ? acc.color : `${acc.color}28` }} />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </FadeUp>
+
+          {/* Right column: 2 smaller cards */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+            {/* Inventory control */}
+            <FadeUp delay={0.1}>
+              <div style={{ background: cardBg, borderRadius: 24, padding: '24px',
+                border: `1px solid ${bdr}`, flex: 1,
+                boxShadow: isDark ? '0 4px 24px rgba(197,232,254,0.06)' : '0 4px 24px rgba(0,0,0,0.06)' }}>
+                <p style={{ fontSize: 11, fontWeight: 700, color: '#f59e0b', marginBottom: 6,
+                  textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                  {tx(lang,'ЗАПАСЫ','ZAXIRA','INVENTORY')}
+                </p>
+                <h3 style={{ fontSize: 16, fontWeight: 800, color: ink, marginBottom: 14, letterSpacing: '-0.01em' }}>
+                  {tx(lang,'Zaxira nazorati','Zaxira nazorati','Stock control')}
+                </h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+                  {[
+                    { name: tx(lang,'Куртка','Qishki kurtka','Jacket'), stock: 120, low: false },
+                    { name: tx(lang,'Кроссовки','Krossovka','Sneakers'), stock: 8, low: true },
+                    { name: tx(lang,'Рюкзак','Ryuksak','Backpack'), stock: 45, low: false },
+                  ].map(item => (
+                    <div key={item.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      padding: '7px 10px', background: bg2, borderRadius: 8, border: `1px solid ${bdr}` }}>
+                      <span style={{ fontSize: 11, color: ink, fontWeight: 500 }}>{item.name}</span>
+                      <span style={{ fontSize: 11, fontWeight: 700,
+                        color: item.low ? '#f87171' : '#10b981',
+                        background: item.low ? 'rgba(248,113,113,0.1)' : 'rgba(16,185,129,0.1)',
+                        padding: '2px 8px', borderRadius: 100 }}>
+                        {item.stock} {tx(lang,'шт','ta','pcs')}
+                      </span>
                     </div>
                   ))}
                 </div>
               </div>
             </FadeUp>
-          ))}
+
+            {/* P&L card */}
+            <FadeUp delay={0.15}>
+              <div style={{ background: cardBg, borderRadius: 24, padding: '24px',
+                border: `1px solid ${bdr}`, flex: 1,
+                boxShadow: isDark ? '0 4px 24px rgba(197,232,254,0.06)' : '0 4px 24px rgba(0,0,0,0.06)' }}>
+                <p style={{ fontSize: 11, fontWeight: 700, color: '#10b981', marginBottom: 6,
+                  textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                  {tx(lang,'ФИНАНСЫ','MOLIYA','FINANCE')}
+                </p>
+                <h3 style={{ fontSize: 16, fontWeight: 800, color: ink, marginBottom: 14, letterSpacing: '-0.01em' }}>
+                  {tx(lang,'Foyda hisobi','Foyda hisobi','Profit report')}
+                </h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                  {[
+                    { l: tx(lang,'Выручка','Daromad','Revenue'), v: '124.5M', col: ink },
+                    { l: tx(lang,'Комиссия','Komissiya','Commission'), v: '-12.2M', col: '#f87171' },
+                    { l: tx(lang,'Доставка','Yetkazib berish','Delivery'), v: '-3.8M', col: '#f59e0b' },
+                    { l: tx(lang,'Прибыль','Foyda','Profit'), v: '108.5M', col: '#10b981' },
+                  ].map((row, i, arr) => (
+                    <div key={row.l} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      padding: '7px 0', borderBottom: i < arr.length - 1 ? `1px solid ${bdr}` : 'none' }}>
+                      <span style={{ fontSize: 11, color: sub }}>{row.l}</span>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: row.col, fontFamily: 'monospace' }}>{row.v}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </FadeUp>
+          </div>
         </div>
       </div>
     </section>
@@ -1247,10 +1336,12 @@ function PricingSection({ lang }: { lang: string }) {
 
               <Link href={t.ctaHref}
                 style={{ display: 'block', textAlign: 'center', fontSize: 14, fontWeight: 700,
-                  background: acc.btn, color: acc.btnTxt, padding: '13px 24px', borderRadius: 10,
+                  background: t.highlight ? '#0e1b2e' : acc.btn,
+                  color: t.highlight ? '#ffffff' : acc.btnTxt,
+                  padding: '13px 24px', borderRadius: 10,
                   textDecoration: 'none', transition: 'all 0.15s' }}
-                onMouseEnter={e => { e.currentTarget.style.background = acc.btnHov }}
-                onMouseLeave={e => { e.currentTarget.style.background = acc.btn }}>
+                onMouseEnter={e => { e.currentTarget.style.background = t.highlight ? '#1a2f4a' : acc.btnHov }}
+                onMouseLeave={e => { e.currentTarget.style.background = t.highlight ? '#0e1b2e' : acc.btn }}>
                 {t.cta}
               </Link>
             </motion.div>
@@ -1643,10 +1734,11 @@ export default function Page() {
       <Navbar lang={lang} />
       <div id="top" />
       <HeroSection lang={lang} />
+      <MarqueeSection lang={lang} />
       <ComparisonSection lang={lang} />
       <FeaturesSection lang={lang} />
       <HowItWorksSection lang={lang} />
-      <WhoSection lang={lang} />
+      <BentoSection lang={lang} />
       <PricingSection lang={lang} />
       <ResourcesSection lang={lang} />
       <FaqSection lang={lang} />
