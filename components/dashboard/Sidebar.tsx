@@ -43,14 +43,14 @@ export default function Sidebar({ onClose }: SidebarProps) {
   const isDark = theme === 'dark'
   const d = translations[lang].dashboard
 
-  const sideBg     = isDark ? 'var(--bg-card)'                  : '#0e1b2e'
-  const sideBdr    = isDark ? 'var(--border)'                   : 'rgba(255,255,255,0.08)'
-  const sideLabel  = isDark ? 'var(--c1)'                       : 'rgba(255,255,255,0.45)'
-  const sideText   = isDark ? 'var(--text-muted)'               : 'rgba(255,255,255,0.7)'
-  const sideTitle  = isDark ? 'var(--text-base)'                : '#ffffff'
-  const activeCol  = isDark ? 'var(--c1)'                       : '#ffffff'
-  const activeBg   = isDark ? 'rgba(131,192,249,0.15)'          : 'rgba(255,255,255,0.12)'
-  const activeBdr  = isDark ? '1px solid rgba(131,192,249,0.3)' : '1px solid rgba(255,255,255,0.2)'
+  const sideBg     = isDark ? 'var(--bg-card)'                  : '#e8f0fd'
+  const sideBdr    = isDark ? 'var(--border)'                   : 'rgba(14,34,51,0.1)'
+  const sideLabel  = isDark ? 'var(--c1)'                       : 'rgba(14,34,51,0.5)'
+  const sideText   = isDark ? 'var(--text-muted)'               : 'rgba(14,34,51,0.75)'
+  const sideTitle  = isDark ? 'var(--text-base)'                : '#0e1b2e'
+  const activeCol  = isDark ? 'var(--c1)'                       : '#0e1b2e'
+  const activeBg   = isDark ? 'rgba(131,192,249,0.15)'          : 'rgba(14,27,46,0.1)'
+  const activeBdr  = isDark ? '1px solid rgba(131,192,249,0.3)' : '1px solid rgba(14,27,46,0.18)'
 
   function handleNavClick() {
     onClose?.()
