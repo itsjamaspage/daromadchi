@@ -809,7 +809,7 @@ function FeaturesSection({ lang }: { lang: string }) {
               {tx(lang,
                 <>Savdo va analitika —<br/><span style={{ color: acc.tint }}>hammasi bitta ekranda</span></>,
                 <>Savdo va analitika —<br/><span style={{ color: acc.tint }}>hammasi bitta ekranda</span></>,
-                <>Sales & analytics —<br/><span style={{ color: acc.tint }}>all on one screen</>
+                <>Your store, fully visible —<br/><span style={{ color: acc.tint }}>every number, one place</span></>
               )}
             </h2>
           </FadeUp>
