@@ -657,129 +657,225 @@ function FeaturesSection({ lang }: { lang: string }) {
   const inView = useInView(ref, { once: true, margin: '-80px' })
 
   const secBg = isDark ? P.dCanvas : P.parchment
-  const ink   = isDark ? P.dText   : P.ink
-  const sub   = isDark ? P.dMuted  : P.stone
   const bdr   = isDark ? P.dHair   : P.hair
-  const badgeBg  = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)'
-  const badgeTxt = isDark ? '#e2e8f0' : '#334155'
+
+  // Dark dashboard palette (matches photo 1 — always dark regardless of site theme)
+  const dBg    = '#0c1120'
+  const dCard  = '#151c2e'
+  const dBdr   = '#1e2a42'
+  const dMuted = '#6b7a99'
+  const dText  = '#e2e8f0'
+
+  const kpis = [
+    { l: tx(lang,'Tushum','Tushum','Revenue'),      v: '124.5M', d: '+12.4%', col: '#22c4b8' },
+    { l: tx(lang,'Foyda','Foyda','Profit'),          v: '38.2M',  d: '+12.4%', col: '#22c55e' },
+    { l: tx(lang,'Buyurtmalar','Buyurtmalar','Orders'), v: '1,842', d: '+12.4%', col: '#60a5fa' },
+    { l: tx(lang,'Qoldiq','Qoldiq','Stock'),         v: '3,410',  d: '+12.4%', col: '#f59e0b' },
+  ]
+  const bars  = [18,26,22,38,30,44,35,52,40,32,46,60,38,50]
+  const hiIdx = bars.length - 4
+  const orders = [
+    { id: 'DEMO-183', status: tx(lang,'Delivered','Delivered','Delivered'),   col: '#22c55e' },
+    { id: 'DEMO-184', status: tx(lang,'Processing','Processing','Processing'), col: '#f59e0b' },
+    { id: 'DEMO-185', status: tx(lang,'Delivered','Delivered','Delivered'),   col: '#22c55e' },
+  ]
+
+  const screenCard = (children: React.ReactNode, rotate: number, zIdx: number, style: React.CSSProperties) => (
+    <motion.div
+      initial={{ opacity: 0, y: 32, rotate }}
+      animate={inView ? { opacity: 1, y: 0, rotate } : {}}
+      transition={{ duration: 0.75, ease: [0.25, 0.46, 0.45, 0.94] }}
+      style={{ position: 'absolute', background: dCard, borderRadius: 16, overflow: 'hidden',
+        border: `1px solid ${dBdr}`, zIndex: zIdx,
+        boxShadow: '0 20px 60px rgba(0,0,0,0.55), 0 4px 16px rgba(0,0,0,0.35)', ...style }}>
+      {children}
+    </motion.div>
+  )
 
   return (
-    <section id="features" style={{ background: secBg, padding: '96px 24px',
+    <section id="features" ref={ref} style={{ background: secBg, padding: '96px 24px',
       fontFamily: "'Space Grotesk', system-ui, sans-serif", transition: 'background 0.3s', overflow: 'hidden' }}>
       <div style={{ maxWidth: 1200, margin: '0 auto', display: 'grid',
         gridTemplateColumns: '1fr 1fr', gap: '64px', alignItems: 'center' }}>
 
-        {/* Left: animated dashboard mockup */}
-        <motion.div ref={ref}
+        {/* Left: dark dashboard mockup — matches photo 1 */}
+        <motion.div
           initial={{ opacity: 0, y: 44 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.85, ease: [0.25, 0.46, 0.45, 0.94] }}
           style={{ position: 'relative' }}>
 
-          {/* Floating KPI cards */}
-          <div className="hidden lg:block">
-            <FloatCard mp="Uzum" mpColor={acc.color}
-              metric={tx(lang,'Выручка','Daromad','Revenue')} value="24.5M" change="+12%" up
-              delay={0.7} floatDur={3.6}
-              style={{ right: '-28px', top: '36px', transform: 'rotate(3deg)', zIndex: 5 }} />
-            <FloatCard mp="Wildberries" mpColor={acc.color}
-              metric={tx(lang,'Прибыль','Foyda','Profit')} value="38.2M" change="+15.7%" up
-              delay={0.9} floatDur={4.3}
-              style={{ left: '-24px', bottom: '70px', transform: 'rotate(-2.5deg)', zIndex: 5 }} />
-          </div>
-
           {/* Browser chrome */}
           <div style={{ borderRadius: 14, overflow: 'hidden', border: `1px solid ${bdr}`,
             boxShadow: isDark
-              ? '0 32px 80px rgba(0,0,0,0.55), 0 8px 24px rgba(0,0,0,0.35)'
-              : '0 32px 80px rgba(0,0,0,0.18), 0 8px 24px rgba(0,0,0,0.1)' }}>
+              ? '0 32px 80px rgba(0,0,0,0.6), 0 8px 24px rgba(0,0,0,0.4)'
+              : '0 32px 80px rgba(0,0,0,0.22), 0 8px 24px rgba(0,0,0,0.12)' }}>
+
             {/* Chrome bar */}
-            <div style={{ padding: '10px 14px', background: isDark ? '#0f172a' : '#e2e8f0',
-              borderBottom: `1px solid ${bdr}`, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ padding: '10px 14px', background: '#1c1c1e',
+              display: 'flex', alignItems: 'center', gap: 8 }}>
               <div style={{ display: 'flex', gap: 5, flexShrink: 0 }}>
                 {['#ff5f57','#febc2e','#28c840'].map(c => (
                   <div key={c} style={{ width: 10, height: 10, borderRadius: '50%', background: c }} />
                 ))}
               </div>
-              <div style={{ flex: 1, background: isDark ? '#1e293b' : '#fff', borderRadius: 5,
-                padding: '4px 10px', fontSize: 10, color: isDark ? '#94a3b8' : '#64748b',
-                border: `1px solid ${bdr}`, textAlign: 'center', maxWidth: 220, margin: '0 auto' }}>
+              <div style={{ flex: 1, background: '#2c2c2e', borderRadius: 5,
+                padding: '4px 10px', fontSize: 10, color: '#6b7a99', textAlign: 'center',
+                maxWidth: 240, margin: '0 auto' }}>
                 daromadchi.uz/dashboard
               </div>
-              <span style={{ fontSize: 12, color: isDark ? '#94a3b8' : '#64748b', flexShrink: 0 }}>↻</span>
+              <span style={{ fontSize: 12, color: '#22c4b8', flexShrink: 0 }}>↗</span>
             </div>
-            <DashMockup />
+
+            {/* Dark dashboard */}
+            <div style={{ background: dBg, padding: '14px' }}>
+              {/* KPI row */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8, marginBottom: 12 }}>
+                {kpis.map(k => (
+                  <div key={k.l} style={{ background: dCard, borderRadius: 10, padding: '10px 10px 8px',
+                    border: `1px solid ${dBdr}` }}>
+                    <p style={{ fontSize: 9, color: dMuted, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{k.l}</p>
+                    <p style={{ fontSize: 15, fontWeight: 800, color: k.col, fontFamily: 'monospace', lineHeight: 1 }}>{k.v}</p>
+                    <p style={{ fontSize: 9, color: k.col, marginTop: 3 }}>↑ {k.d}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Chart row */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 100px', gap: 8, marginBottom: 12 }}>
+                {/* Bar chart */}
+                <div style={{ background: dCard, borderRadius: 10, padding: '10px 12px',
+                  border: `1px solid ${dBdr}` }}>
+                  <p style={{ fontSize: 9, color: dMuted, marginBottom: 8, fontWeight: 600 }}>
+                    {tx(lang,'Kunlik tushum','Kunlik tushum','Daily revenue')}
+                  </p>
+                  <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2, height: 52 }}>
+                    {bars.map((h, i) => (
+                      <div key={i} style={{ flex: 1, borderRadius: '2px 2px 0 0', height: `${h}%`,
+                        background: i >= hiIdx
+                          ? `linear-gradient(to top, #494fdf, #7c83f0)`
+                          : 'rgba(73,79,223,0.2)' }} />
+                    ))}
+                  </div>
+                </div>
+                {/* Donut */}
+                <div style={{ background: dCard, borderRadius: 10, padding: '10px 12px',
+                  border: `1px solid ${dBdr}`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                  <p style={{ fontSize: 9, color: dMuted, fontWeight: 600, alignSelf: 'flex-start' }}>
+                    {tx(lang,'Kategoriyalar','Kategoriyalar','Categories')}
+                  </p>
+                  <svg width={52} height={52} viewBox="0 0 52 52">
+                    <circle cx="26" cy="26" r="18" fill="none" stroke={dBdr} strokeWidth="8"/>
+                    <circle cx="26" cy="26" r="18" fill="none" stroke="#494fdf" strokeWidth="8"
+                      strokeDasharray="68 45" strokeLinecap="round" strokeDashoffset="-14" transform="rotate(-90 26 26)"/>
+                    <circle cx="26" cy="26" r="18" fill="none" stroke="#f59e0b" strokeWidth="8"
+                      strokeDasharray="28 85" strokeLinecap="round" strokeDashoffset="-82" transform="rotate(-90 26 26)"/>
+                    <circle cx="26" cy="26" r="18" fill="none" stroke="#22c55e" strokeWidth="8"
+                      strokeDasharray="17 96" strokeLinecap="round" strokeDashoffset="-110" transform="rotate(-90 26 26)"/>
+                  </svg>
+                </div>
+              </div>
+
+              {/* Orders table */}
+              <div style={{ background: dCard, borderRadius: 10, overflow: 'hidden', border: `1px solid ${dBdr}` }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px',
+                  borderBottom: `1px solid ${dBdr}` }}>
+                  <span style={{ fontSize: 9, fontWeight: 700, color: dMuted, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    {tx(lang,'Recent Orders','Recent Orders','Recent Orders')}
+                  </span>
+                  <span style={{ fontSize: 9, fontWeight: 700, color: dMuted, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Status</span>
+                </div>
+                {orders.map((o, i) => (
+                  <div key={o.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    padding: '7px 12px', borderBottom: i < orders.length - 1 ? `1px solid ${dBdr}` : 'none' }}>
+                    <span style={{ fontSize: 10, color: dText, fontFamily: 'monospace' }}>{o.id}</span>
+                    <span style={{ fontSize: 10, fontWeight: 600, color: o.col }}>{o.status}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </motion.div>
 
-        {/* Right: text content with staggered FadeUp */}
-        <div>
-          <FadeUp delay={0.1}>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 22 }}>
-              {['Uzum','Yandex Market','Wildberries'].map(mp => (
-                <span key={mp} style={{ fontSize: 12, fontWeight: 600, padding: '5px 13px', borderRadius: 100,
-                  background: badgeBg, color: badgeTxt, border: `1px solid ${bdr}` }}>{mp}</span>
-              ))}
-            </div>
-          </FadeUp>
+        {/* Right: floating scattered app screens */}
+        <div style={{ position: 'relative', height: 520 }}>
 
-          <FadeUp delay={0.18}>
-            <h2 style={{ fontSize: 'clamp(26px, 3vw, 44px)', fontWeight: 800, lineHeight: 1.08,
-              color: ink, letterSpacing: '-0.022em', marginBottom: 18 }}>
-              {tx(lang,
-                <>{`Savdo va analitika — `}<span style={{ color: acc.tint }}>{`hammasi bitta ekranda`}</span></>,
-                <>{`Savdo va analitika — `}<span style={{ color: acc.tint }}>{`hammasi bitta ekranda`}</span></>,
-                <>{`Sales & analytics — `}<span style={{ color: acc.tint }}>{`all on one screen`}</span></>
-              )}
-            </h2>
-          </FadeUp>
+          {/* Screen 1 — KPI overview, top left, slight tilt */}
+          {screenCard(
+            <div style={{ background: dBg, padding: '14px' }}>
+              <p style={{ fontSize: 9, color: dMuted, marginBottom: 8, fontWeight: 600,
+                textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                {tx(lang,'Tahlil · Barcha platformalar','Tahlil · Barcha platformalar','Analytics · All platforms')}
+              </p>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+                {kpis.map(k => (
+                  <div key={k.l} style={{ background: dCard, borderRadius: 8, padding: '8px 10px', border: `1px solid ${dBdr}` }}>
+                    <p style={{ fontSize: 8, color: dMuted, marginBottom: 3 }}>{k.l}</p>
+                    <p style={{ fontSize: 13, fontWeight: 800, color: k.col, fontFamily: 'monospace', lineHeight: 1 }}>{k.v}</p>
+                    <p style={{ fontSize: 8, color: k.col, marginTop: 2 }}>↑ {k.d}</p>
+                  </div>
+                ))}
+              </div>
+              <div style={{ marginTop: 10, display: 'flex', alignItems: 'flex-end', gap: 2, height: 36 }}>
+                {bars.map((h, i) => (
+                  <div key={i} style={{ flex: 1, borderRadius: '2px 2px 0 0', height: `${h}%`,
+                    background: i >= hiIdx ? 'linear-gradient(to top, #494fdf, #7c83f0)' : 'rgba(73,79,223,0.18)' }} />
+                ))}
+              </div>
+            </div>,
+            -2, 10,
+            { top: 0, left: 0, width: '80%', transition: { delay: 0.2 } as any }
+          )}
 
-          <FadeUp delay={0.26}>
-            <p style={{ fontSize: 16, color: sub, lineHeight: 1.65, marginBottom: 34 }}>
-              {tx(lang,
-                'DRR, qoldiq, narx va birlik iqtisodiyoti. Savdoni kuniga 5 daqiqada boshqaring.',
-                'DRR, qoldiq, narx va birlik iqtisodiyoti. Savdoni kuniga 5 daqiqada boshqaring.',
-                'DRR, stock, pricing and unit economics. Manage your sales in 5 minutes a day.'
-              )}
-            </p>
-          </FadeUp>
-
-          <FadeUp delay={0.34}>
-            <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginBottom: 40 }}>
-              <Link href="/login"
-                style={{ fontSize: 15, fontWeight: 700, background: acc.btn, color: acc.btnTxt,
-                  padding: '13px 28px', borderRadius: 10, textDecoration: 'none',
-                  transition: 'all 0.15s', display: 'inline-block' }}
-                onMouseEnter={e => { e.currentTarget.style.background = acc.btnHov; e.currentTarget.style.transform = 'translateY(-2px)' }}
-                onMouseLeave={e => { e.currentTarget.style.background = acc.btn; e.currentTarget.style.transform = 'translateY(0)' }}>
-                {tx(lang,'3 kun bepul boshlash →','3 kun bepul boshlash →','Start free 3 days →')}
-              </Link>
-              <a href="#how"
-                style={{ fontSize: 14, fontWeight: 600, color: sub, textDecoration: 'none',
-                  display: 'inline-flex', alignItems: 'center', gap: 6,
-                  transition: 'color 0.15s', padding: '13px 0' }}
-                onMouseEnter={e => (e.currentTarget.style.color = isDark ? '#fff' : P.ink)}
-                onMouseLeave={e => (e.currentTarget.style.color = sub)}>
-                {tx(lang,'Platformani o\'rganish →','Platformani o\'rganish →','Explore platform →')}
-              </a>
-            </div>
-          </FadeUp>
-
-          <FadeUp delay={0.42}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 20,
-              paddingTop: 28, borderTop: `1px solid ${bdr}` }}>
+          {/* Screen 2 — Orders table, bottom right, opposite tilt */}
+          {screenCard(
+            <div style={{ background: dBg, padding: '12px' }}>
+              <p style={{ fontSize: 9, color: dMuted, marginBottom: 8, fontWeight: 600,
+                textTransform: 'uppercase', letterSpacing: '0.05em' }}>Recent Orders</p>
               {[
-                { v: '3+',   l: tx(lang,'Marketplace','Marketplace','Marketplace') },
-                { v: '5',    l: tx(lang,'daqiqa / kun','daqiqa / kun','minutes / day') },
-                { v: '100%', l: tx(lang,'Avtomatik sinxronizatsiya','Avtomatik sinxronizatsiya','Auto sync') },
-              ].map(s => (
-                <div key={String(s.l)}>
-                  <p style={{ fontSize: 30, fontWeight: 900, color: ink, fontFamily: 'monospace', lineHeight: 1 }}>{s.v}</p>
-                  <p style={{ fontSize: 12, color: sub, marginTop: 5 }}>{s.l}</p>
+                { id: 'DEMO-183', mp: 'Uzum',   col: '#494fdf', st: 'Delivered',   sc: '#22c55e' },
+                { id: 'DEMO-184', mp: 'WB',     col: '#CB11AB', st: 'Processing',  sc: '#f59e0b' },
+                { id: 'DEMO-185', mp: 'YM',     col: '#E8A000', st: 'Delivered',   sc: '#22c55e' },
+                { id: 'DEMO-186', mp: 'Uzum',   col: '#494fdf', st: 'Delivered',   sc: '#22c55e' },
+              ].map((o, i, arr) => (
+                <div key={o.id} style={{ display: 'flex', alignItems: 'center', gap: 8,
+                  padding: '6px 0', borderBottom: i < arr.length - 1 ? `1px solid ${dBdr}` : 'none' }}>
+                  <span style={{ fontSize: 8, fontWeight: 700, padding: '2px 5px', borderRadius: 4,
+                    background: `${o.col}22`, color: o.col }}>{o.mp}</span>
+                  <span style={{ flex: 1, fontSize: 9, color: dText, fontFamily: 'monospace' }}>{o.id}</span>
+                  <span style={{ fontSize: 9, fontWeight: 600, color: o.sc }}>{o.st}</span>
                 </div>
               ))}
-            </div>
-          </FadeUp>
+            </div>,
+            3, 20,
+            { bottom: 0, right: 0, width: '72%', transition: { delay: 0.35 } as any }
+          )}
+
+          {/* Screen 3 — Donut + P&L mini, mid-left floating */}
+          {screenCard(
+            <div style={{ background: dBg, padding: '12px', display: 'flex', gap: 10, alignItems: 'center' }}>
+              <svg width={44} height={44} viewBox="0 0 44 44" style={{ flexShrink: 0 }}>
+                <circle cx="22" cy="22" r="15" fill="none" stroke={dBdr} strokeWidth="7"/>
+                <circle cx="22" cy="22" r="15" fill="none" stroke="#494fdf" strokeWidth="7"
+                  strokeDasharray="57 37" strokeLinecap="round" strokeDashoffset="-12" transform="rotate(-90 22 22)"/>
+                <circle cx="22" cy="22" r="15" fill="none" stroke="#f59e0b" strokeWidth="7"
+                  strokeDasharray="24 70" strokeLinecap="round" strokeDashoffset="-69" transform="rotate(-90 22 22)"/>
+                <circle cx="22" cy="22" r="15" fill="none" stroke="#22c55e" strokeWidth="7"
+                  strokeDasharray="13 81" strokeLinecap="round" strokeDashoffset="-93" transform="rotate(-90 22 22)"/>
+              </svg>
+              <div>
+                {[{l:'Uzum',c:'#494fdf',p:'48%'},{l:'WB',c:'#CB11AB',p:'31%'},{l:'YM',c:'#E8A000',p:'21%'}].map(m => (
+                  <div key={m.l} style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 3 }}>
+                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: m.c }} />
+                    <span style={{ fontSize: 9, color: dMuted, width: 24 }}>{m.l}</span>
+                    <span style={{ fontSize: 9, fontWeight: 700, color: dText, fontFamily: 'monospace' }}>{m.p}</span>
+                  </div>
+                ))}
+              </div>
+            </div>,
+            -1, 30,
+            { top: '38%', left: '10%', transition: { delay: 0.5 } as any }
+          )}
         </div>
       </div>
     </section>
@@ -1211,65 +1307,93 @@ function ExtensionSection({ lang }: { lang: string }) {
             overflow: 'hidden', boxShadow: isDark ? '0 8px 40px rgba(0,0,0,0.4)' : '0 8px 40px rgba(0,0,0,0.1)' }}>
 
             {/* Fake browser chrome */}
-            <div style={{ background: isDark ? '#1e2233' : '#f1f5f9', padding: '10px 16px',
-              borderBottom: `1px solid ${bdr}`, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ background: '#1c1c1e', padding: '10px 16px',
+              display: 'flex', alignItems: 'center', gap: 8 }}>
               <div style={{ display: 'flex', gap: 5 }}>
-                {['#f87171','#fbbf24','#4ade80'].map(c => (
+                {['#ff5f57','#febc2e','#28c840'].map(c => (
                   <div key={c} style={{ width: 10, height: 10, borderRadius: '50%', background: c }} />
                 ))}
               </div>
-              <div style={{ flex: 1, background: isDark ? '#0f172a' : '#e2e8f0',
-                borderRadius: 6, padding: '4px 10px', fontSize: 11, color: muted, fontFamily: 'monospace' }}>
-                uzum.uz/product/smartfon-samsung-galaxy-s25-...
+              <div style={{ flex: 1, background: '#2c2c2e', borderRadius: 6,
+                padding: '4px 10px', fontSize: 11, color: '#6b7a99', textAlign: 'center', maxWidth: 280, margin: '0 auto' }}>
+                daromadchi.uz/dashboard
               </div>
             </div>
 
             {/* Page content + floating extension panel */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', minHeight: 500 }}>
 
-              {/* Left: generic product page mockup */}
-              <div style={{ padding: '24px 28px', borderRight: `1px solid ${bdr}` }}>
-                <div style={{ display: 'flex', gap: 20 }}>
-                  {/* Product image placeholder */}
-                  <div style={{ width: 200, height: 200, borderRadius: 12, flexShrink: 0,
-                    background: isDark ? '#1e293b' : '#e8f0fd',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    border: `1px solid ${bdr}` }}>
-                    <Package size={48} color={muted} />
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <p style={{ fontSize: 11, color: muted, marginBottom: 6 }}>Uzum Market</p>
-                    <h2 style={{ fontSize: 18, fontWeight: 700, color: ink, marginBottom: 12, lineHeight: 1.3 }}>
-                      Samsung Galaxy S25 256GB
-                    </h2>
-                    {/* Rating */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 14 }}>
-                      <div style={{ display: 'flex', gap: 2 }}>
-                        {[1,2,3,4].map(s => (
-                          <div key={s} style={{ width: 12, height: 12, background: '#fbbf24', borderRadius: 2 }} />
-                        ))}
-                        <div style={{ width: 12, height: 12, background: isDark ? '#334155' : '#e2e8f0', borderRadius: 2 }} />
-                      </div>
-                      <span style={{ fontSize: 11, color: muted }}>4.4 · 124 {tx(lang,'отзывов','sharh','reviews')}</span>
+              {/* Left: Daromadchi dashboard */}
+              <div style={{ background: '#0c1120', padding: '16px', borderRight: `1px solid #1e2a42` }}>
+                {/* Mini tab bar */}
+                <div style={{ display: 'flex', gap: 4, marginBottom: 12, background: '#151c2e',
+                  padding: '6px 8px', borderRadius: 8, border: '1px solid #1e2a42' }}>
+                  {[tx(lang,'Все','Barchasi','All'),'Uzum','Wildberries','Yandex Market'].map((t,i) => (
+                    <div key={t} style={{ fontSize: 9, fontWeight: 600, padding: '3px 8px', borderRadius: 5,
+                      background: i===0 ? '#22c4b8' : 'transparent', color: i===0 ? '#fff' : '#6b7a99' }}>{t}</div>
+                  ))}
+                </div>
+                {/* KPI row */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 6, marginBottom: 10 }}>
+                  {[
+                    { l: tx(lang,'Tushum','Tushum','Revenue'),       v: '124.5M', d: '+12.4%', col: '#22c4b8' },
+                    { l: tx(lang,'Foyda','Foyda','Profit'),           v: '38.2M',  d: '+12.4%', col: '#22c55e' },
+                    { l: tx(lang,'Buyurtmalar','Buyurtmalar','Orders'), v: '1,842', d: '+12.4%', col: '#60a5fa' },
+                    { l: tx(lang,'Qoldiq','Qoldiq','Stock'),          v: '3,410',  d: '+12.4%', col: '#f59e0b' },
+                  ].map(k => (
+                    <div key={k.l} style={{ background: '#151c2e', borderRadius: 8, padding: '8px 8px 6px', border: '1px solid #1e2a42' }}>
+                      <p style={{ fontSize: 8, color: '#6b7a99', marginBottom: 3, textTransform: 'uppercase', letterSpacing: '0.03em' }}>{k.l}</p>
+                      <p style={{ fontSize: 13, fontWeight: 800, color: k.col, fontFamily: 'monospace', lineHeight: 1 }}>{k.v}</p>
+                      <p style={{ fontSize: 8, color: k.col, marginTop: 2 }}>↑ {k.d}</p>
                     </div>
-                    {/* Price */}
-                    <div style={{ fontSize: 26, fontWeight: 800, color: '#494fdf', marginBottom: 4 }}>
-                      5 200 000 so'm
-                    </div>
-                    <p style={{ fontSize: 12, color: muted, marginBottom: 16 }}>
-                      {tx(lang,'В рассрочку от 433 333 сум/мес','Bo\'lib to\'lash: 433 333 so\'m/oy','Installment from 433,333 sum/month')}
+                  ))}
+                </div>
+                {/* Chart row */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px', gap: 8, marginBottom: 10 }}>
+                  <div style={{ background: '#151c2e', borderRadius: 8, padding: '8px 10px', border: '1px solid #1e2a42' }}>
+                    <p style={{ fontSize: 8, color: '#6b7a99', marginBottom: 6, fontWeight: 600 }}>
+                      {tx(lang,'Kunlik tushum','Kunlik tushum','Daily revenue')}
                     </p>
-                    <div style={{ display: 'flex', gap: 8 }}>
-                      <div style={{ padding: '8px 20px', background: '#494fdf', color: '#fff',
-                        borderRadius: 8, fontSize: 13, fontWeight: 600 }}>
-                        {tx(lang,'Купить','Sotib olish','Buy')}
-                      </div>
-                      <div style={{ padding: '8px 20px', border: `1px solid ${bdr}`,
-                        borderRadius: 8, fontSize: 13, color: sub }}>
-                        {tx(lang,'В корзину','Savatga','Add to cart')}
-                      </div>
+                    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2, height: 38 }}>
+                      {[18,26,22,38,30,44,35,52,40,32,46,60,38,50].map((h, i) => (
+                        <div key={i} style={{ flex: 1, borderRadius: '2px 2px 0 0', height: `${h}%`,
+                          background: i >= 10 ? 'linear-gradient(to top, #494fdf, #7c83f0)' : 'rgba(73,79,223,0.18)' }} />
+                      ))}
                     </div>
                   </div>
+                  <div style={{ background: '#151c2e', borderRadius: 8, padding: '8px 10px', border: '1px solid #1e2a42',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+                    <p style={{ fontSize: 8, color: '#6b7a99', fontWeight: 600, alignSelf: 'flex-start' }}>
+                      {tx(lang,'Kategoriyalar','Kategoriyalar','Categories')}
+                    </p>
+                    <svg width={40} height={40} viewBox="0 0 40 40">
+                      <circle cx="20" cy="20" r="13" fill="none" stroke="#1e2a42" strokeWidth="6"/>
+                      <circle cx="20" cy="20" r="13" fill="none" stroke="#494fdf" strokeWidth="6"
+                        strokeDasharray="52 30" strokeLinecap="round" strokeDashoffset="-10" transform="rotate(-90 20 20)"/>
+                      <circle cx="20" cy="20" r="13" fill="none" stroke="#f59e0b" strokeWidth="6"
+                        strokeDasharray="21 61" strokeLinecap="round" strokeDashoffset="-62" transform="rotate(-90 20 20)"/>
+                      <circle cx="20" cy="20" r="13" fill="none" stroke="#22c55e" strokeWidth="6"
+                        strokeDasharray="13 69" strokeLinecap="round" strokeDashoffset="-83" transform="rotate(-90 20 20)"/>
+                    </svg>
+                  </div>
+                </div>
+                {/* Orders */}
+                <div style={{ background: '#151c2e', borderRadius: 8, overflow: 'hidden', border: '1px solid #1e2a42' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 10px', borderBottom: '1px solid #1e2a42' }}>
+                    <span style={{ fontSize: 8, fontWeight: 700, color: '#6b7a99', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Recent Orders</span>
+                    <span style={{ fontSize: 8, fontWeight: 700, color: '#6b7a99', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Status</span>
+                  </div>
+                  {[
+                    { id: 'DEMO-183', st: 'Delivered',  col: '#22c55e' },
+                    { id: 'DEMO-184', st: 'Processing', col: '#f59e0b' },
+                    { id: 'DEMO-185', st: 'Delivered',  col: '#22c55e' },
+                  ].map((o, i, arr) => (
+                    <div key={o.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                      padding: '6px 10px', borderBottom: i < arr.length - 1 ? '1px solid #1e2a42' : 'none' }}>
+                      <span style={{ fontSize: 9, color: '#e2e8f0', fontFamily: 'monospace' }}>{o.id}</span>
+                      <span style={{ fontSize: 9, fontWeight: 600, color: o.col }}>{o.st}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
 
