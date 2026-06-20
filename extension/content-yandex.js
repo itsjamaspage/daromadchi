@@ -241,7 +241,7 @@
     toggleBtn.id = 'drm-ym-toggle';
     toggleBtn.title = 'Daromadchi';
     toggleBtn.textContent = 'D';
-    toggleBtn.style.cssText = 'position:fixed!important;bottom:24px!important;right:24px!important;z-index:2147483647!important;width:44px!important;height:44px!important;border-radius:50%!important;background:#7c3aed!important;border:none!important;cursor:pointer!important;box-shadow:0 4px 20px rgba(124,58,237,.5)!important;font-size:20px!important;color:#fff!important;font-family:-apple-system,sans-serif!important;align-items:center!important;justify-content:center!important;';
+    toggleBtn.style.cssText = 'position:fixed!important;bottom:24px!important;right:24px!important;z-index:2147483647!important;width:44px!important;height:44px!important;border-radius:50%!important;background:#E8A000!important;border:none!important;cursor:pointer!important;box-shadow:0 4px 20px rgba(232,160,0,.5)!important;font-size:20px!important;color:#fff!important;font-family:-apple-system,sans-serif!important;align-items:center!important;justify-content:center!important;';
     toggleBtn.style.setProperty('display','none','important');
     document.body.appendChild(toggleBtn);
     toggleBtn.onclick = () => { wrap.style.display='block'; toggleBtn.style.setProperty('display','none','important'); };
@@ -293,10 +293,10 @@
         <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid ${t.border};position:sticky;top:0;background:${t.bg};z-index:1">
           <div style="display:flex;align-items:center;gap:7px">
             <span style="font-weight:700;font-size:14px;color:${t.text}">Daromadchi</span>
-            <span style="font-size:10px;font-weight:600;padding:2px 7px;background:#7c3aed;color:#fff;border-radius:20px;display:inline-block">YM</span>
+            <span style="font-size:10px;font-weight:600;padding:2px 7px;background:#E8A000;color:#fff;border-radius:20px;display:inline-block">YM</span>
           </div>
           <div style="display:flex;align-items:center;gap:3px">
-            ${['uz','ru','en'].map(k=>`<button id="drm-ym-lang-${k}" style="padding:2px 5px;border-radius:4px;border:1px solid ${langKey===k?'#7c3aed':t.border};background:${langKey===k?'#7c3aed':'transparent'};color:${langKey===k?'#fff':t.muted};font-size:10px">${k.toUpperCase()}</button>`).join('')}
+            ${['uz','ru','en'].map(k=>`<button id="drm-ym-lang-${k}" style="padding:2px 5px;border-radius:4px;border:1px solid ${langKey===k?'#E8A000':t.border};background:${langKey===k?'#E8A000':'transparent'};color:${langKey===k?'#fff':t.muted};font-size:10px">${k.toUpperCase()}</button>`).join('')}
             <button id="drm-ym-theme" style="padding:3px 6px;border-radius:5px;border:1px solid ${t.border};background:transparent;color:${t.muted};font-size:13px">${theme==='dark'?'☀️':'🌙'}</button>
             <button id="drm-ym-refresh" style="padding:3px 6px;border-radius:5px;border:1px solid ${t.border};background:transparent;color:${t.muted};font-size:14px">↻</button>
             <button id="drm-ym-close" style="padding:3px 6px;border-radius:5px;border:1px solid ${t.border};background:transparent;color:${t.muted};font-size:14px">✕</button>
@@ -310,8 +310,8 @@
           </div>
 
           <div style="display:flex;gap:6px">
-            <button id="drm-ym-fby" style="flex:1;padding:7px;border-radius:8px;border:1px solid ${fby?'#7c3aed':t.border};background:${fby?'#7c3aed':'transparent'};color:${fby?'#fff':t.muted};font-size:12px;font-weight:600">${l.fby}</button>
-            <button id="drm-ym-fbs" style="flex:1;padding:7px;border-radius:8px;border:1px solid ${!fby?'#7c3aed':t.border};background:${!fby?'#7c3aed':'transparent'};color:${!fby?'#fff':t.muted};font-size:12px;font-weight:600">${l.fbs}</button>
+            <button id="drm-ym-fby" style="flex:1;padding:7px;border-radius:8px;border:1px solid ${fby?'#E8A000':t.border};background:${fby?'#E8A000':'transparent'};color:${fby?'#fff':t.muted};font-size:12px;font-weight:600">${l.fby}</button>
+            <button id="drm-ym-fbs" style="flex:1;padding:7px;border-radius:8px;border:1px solid ${!fby?'#E8A000':t.border};background:${!fby?'#E8A000':'transparent'};color:${!fby?'#fff':t.muted};font-size:12px;font-weight:600">${l.fbs}</button>
           </div>
 
           <div>
@@ -348,7 +348,7 @@
             <div id="drm-ym-v-margin" style="color:${color};font-size:13px;font-weight:600">${eco.margin}% ${l.marja}</div>
           </div>
 
-          <button id="drm-ym-ue-btn" style="display:block;width:100%;padding:9px;background:#7c3aed;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:600;text-align:center">${l.ueBtn}</button>
+          <button id="drm-ym-ue-btn" style="display:block;width:100%;padding:9px;background:#E8A000;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:600;text-align:center">${l.ueBtn}</button>
           <div style="text-align:center;font-size:10px;color:${t.muted}">${l.footer}</div>
         </div>
       `;

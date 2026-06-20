@@ -38,18 +38,18 @@
         #drm-wb-ue input, #drm-wb-ue button, #drm-wb-ue a { all: revert; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; cursor: pointer; }
         #drm-wb-ue input { cursor: text; }
         @keyframes drm-glow {
-          0%   { box-shadow: 0 0 14px 5px rgba(124,58,237,.8), 0 0 28px 8px rgba(124,58,237,.4); }
+          0%   { box-shadow: 0 0 14px 5px rgba(203,17,171,.8), 0 0 28px 8px rgba(203,17,171,.4); }
           25%  { box-shadow: 0 0 14px 5px rgba(6,182,212,.8),  0 0 28px 8px rgba(6,182,212,.4); }
           50%  { box-shadow: 0 0 14px 5px rgba(236,72,153,.8), 0 0 28px 8px rgba(236,72,153,.4); }
           75%  { box-shadow: 0 0 14px 5px rgba(16,185,129,.8), 0 0 28px 8px rgba(16,185,129,.4); }
-          100% { box-shadow: 0 0 14px 5px rgba(124,58,237,.8), 0 0 28px 8px rgba(124,58,237,.4); }
+          100% { box-shadow: 0 0 14px 5px rgba(203,17,171,.8), 0 0 28px 8px rgba(203,17,171,.4); }
         }
         @keyframes drm-pulse-bg {
-          0%   { background: #7c3aed; }
+          0%   { background: #CB11AB; }
           25%  { background: #06b6d4; }
           50%  { background: #ec4899; }
           75%  { background: #10b981; }
-          100% { background: #7c3aed; }
+          100% { background: #CB11AB; }
         }
         #drm-wb-toggle { animation: drm-glow 3s ease-in-out infinite, drm-pulse-bg 3s ease-in-out infinite !important; }
       `;
@@ -370,10 +370,10 @@
           <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid ${t.border};position:sticky;top:0;background:${t.bg};z-index:1">
             <div style="display:flex;align-items:center;gap:7px">
               <span style="font-weight:700;font-size:14px;color:${t.text}">Daromadchi</span>
-              <span style="font-size:10px;font-weight:600;padding:2px 7px;background:#7c3aed;color:#fff;border-radius:20px;display:inline-block">WB</span>
+              <span style="font-size:10px;font-weight:600;padding:2px 7px;background:#CB11AB;color:#fff;border-radius:20px;display:inline-block">WB</span>
             </div>
             <div style="display:flex;align-items:center;gap:3px">
-              ${['uz','ru','en'].map(k=>`<button id="drm-wb-lang-${k}" style="padding:2px 5px;border-radius:4px;border:1px solid ${langKey===k?'#7c3aed':t.border};background:${langKey===k?'#7c3aed':'transparent'};color:${langKey===k?'#fff':t.muted};font-size:10px">${k.toUpperCase()}</button>`).join('')}
+              ${['uz','ru','en'].map(k=>`<button id="drm-wb-lang-${k}" style="padding:2px 5px;border-radius:4px;border:1px solid ${langKey===k?'#CB11AB':t.border};background:${langKey===k?'#CB11AB':'transparent'};color:${langKey===k?'#fff':t.muted};font-size:10px">${k.toUpperCase()}</button>`).join('')}
               <button id="drm-wb-theme" style="padding:3px 6px;border-radius:5px;border:1px solid ${t.border};background:transparent;color:${t.muted};font-size:13px">${theme==='dark'?'☀️':'🌙'}</button>
               <button id="drm-wb-refresh" style="padding:3px 6px;border-radius:5px;border:1px solid ${t.border};background:transparent;color:${t.muted};font-size:14px">↻</button>
               <button id="drm-wb-close" style="padding:3px 6px;border-radius:5px;border:1px solid ${t.border};background:transparent;color:${t.muted};font-size:14px">✕</button>
@@ -389,8 +389,8 @@
             </div>
 
             <div style="display:flex;gap:6px">
-              <button id="drm-wb-fby" style="flex:1;padding:7px;border-radius:8px;border:1px solid ${fby?'#7c3aed':t.border};background:${fby?'#7c3aed':'transparent'};color:${fby?'#fff':t.muted};font-size:12px;font-weight:600">${l.fby}</button>
-              <button id="drm-wb-fbs" style="flex:1;padding:7px;border-radius:8px;border:1px solid ${!fby?'#7c3aed':t.border};background:${!fby?'#7c3aed':'transparent'};color:${!fby?'#fff':t.muted};font-size:12px;font-weight:600">${l.fbs}</button>
+              <button id="drm-wb-fby" style="flex:1;padding:7px;border-radius:8px;border:1px solid ${fby?'#CB11AB':t.border};background:${fby?'#CB11AB':'transparent'};color:${fby?'#fff':t.muted};font-size:12px;font-weight:600">${l.fby}</button>
+              <button id="drm-wb-fbs" style="flex:1;padding:7px;border-radius:8px;border:1px solid ${!fby?'#CB11AB':t.border};background:${!fby?'#CB11AB':'transparent'};color:${!fby?'#fff':t.muted};font-size:12px;font-weight:600">${l.fbs}</button>
             </div>
 
             <div>
@@ -429,7 +429,7 @@
             </div>
             `}
 
-            <button id="drm-wb-ue-btn" style="display:block;width:100%;padding:9px;background:#7c3aed;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:600;text-align:center">${l.ueBtn}</button>
+            <button id="drm-wb-ue-btn" style="display:block;width:100%;padding:9px;background:#CB11AB;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:600;text-align:center">${l.ueBtn}</button>
             <div style="text-align:center;font-size:10px;color:${t.muted}">${l.footer}</div>
           </div>
         `;

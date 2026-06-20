@@ -31,7 +31,7 @@ body {
   width: 28px;
   height: 28px;
   border-radius: 8px;
-  background: linear-gradient(135deg, #7c3aed, #2563eb);
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -80,7 +80,7 @@ body {
 }
 
 .field input:focus {
-  border-color: rgba(139,92,246,0.5);
+  border-color: rgba(59,130,246,0.5);
 }
 
 .field input::placeholder { color: #475569; }
@@ -100,7 +100,7 @@ body {
 /* Buttons */
 .btn-primary {
   width: 100%;
-  background: linear-gradient(135deg, #7c3aed, #2563eb);
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
   border: none;
   border-radius: 8px;
   padding: 9px;
@@ -123,8 +123,8 @@ body {
 
 .btn-secondary {
   flex: 1;
-  background: rgba(139,92,246,0.15);
-  border: 1px solid rgba(139,92,246,0.3);
+  background: rgba(59,130,246,0.15);
+  border: 1px solid rgba(59,130,246,0.3);
   border-radius: 8px;
   padding: 8px 10px;
   color: #a78bfa;
@@ -135,7 +135,7 @@ body {
   transition: background 0.15s;
 }
 
-.btn-secondary:hover { background: rgba(139,92,246,0.25); }
+.btn-secondary:hover { background: rgba(59,130,246,0.25); }
 
 .btn-outline {
   flex: 1;
@@ -246,7 +246,7 @@ body {
   border-radius: 50%;
   transition: transform 0.2s;
 }
-input:checked + .slider { background: #7c3aed; }
+input:checked + .slider { background: #3b82f6; }
 input:checked + .slider:before { transform: translateX(16px); }
 
 /* Spinner */
@@ -260,8 +260,8 @@ input:checked + .slider:before { transform: translateX(16px); }
 .spinner {
   width: 24px;
   height: 24px;
-  border: 3px solid rgba(139,92,246,0.2);
-  border-top-color: #7c3aed;
+  border: 3px solid rgba(59,130,246,0.2);
+  border-top-color: #3b82f6;
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
 }
@@ -312,8 +312,8 @@ input:checked + .slider:before { transform: translateX(16px); }
   gap: 10px;
   padding: 18px 16px;
   margin: 8px 12px;
-  background: rgba(139,92,246,0.08);
-  border: 1px solid rgba(139,92,246,0.2);
+  background: rgba(59,130,246,0.08);
+  border: 1px solid rgba(59,130,246,0.2);
   border-radius: 10px;
   font-size: 12px;
   color: #94a3b8;

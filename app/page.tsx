@@ -1183,7 +1183,304 @@ function BentoSection({ lang }: { lang: string }) {
   )
 }
 
-// ── 6. PRICING — theme-aware ──────────────────────────────────────────────────
+// ── 6. EXTENSION SHOWCASE ────────────────────────────────────────────────────
+function ExtensionSection({ lang }: { lang: string }) {
+  const isDark = useIsDark()
+  const acc = useAccent()
+  const secBg  = isDark ? P.dCard   : P.card
+  const cardBg = isDark ? P.dCard2  : '#f8fafc'
+  const bdr    = isDark ? P.dHair   : P.hair
+  const ink    = isDark ? P.dText   : P.ink
+  const sub    = isDark ? P.dMuted  : P.stone
+  const muted  = isDark ? '#475569' : '#94a3b8'
+  const wBg    = isDark ? '#0f1117' : '#f8fafc'
+  const wCard  = isDark ? '#1a1f2e' : '#ffffff'
+  const wBdr   = isDark ? '#2a3040' : '#e2e8f0'
+  const wText  = isDark ? '#e2e8f0' : '#0f172a'
+  const wMuted = isDark ? '#94a3b8' : '#64748b'
+  const wRed   = '#f87171'
+  const wGreen = '#4ade80'
+
+  const marketCards = [
+    {
+      name: 'Uzum Market', color: '#494fdf', bg: '#494fdf18',
+      label: tx(lang,'Мгновенный расчёт маржи и комиссий прямо на странице товара',
+        'Mahsulot sahifasida bir zumda marja va komissiya hisobi',
+        'Instant margin and commission calculation on any product page'),
+    },
+    {
+      name: 'Wildberries', color: '#CB11AB', bg: '#CB11AB18',
+      label: tx(lang,'Тарифы FBW / FBS, стоимость хранения и возвратов',
+        'FBW / FBS tariflari, saqlash va qaytarish narxlari',
+        'FBW / FBS rates, storage and return costs'),
+    },
+    {
+      name: 'Yandex Market', color: '#E8A000', bg: '#E8A00018',
+      label: tx(lang,'Расчёт DBS / FBY с учётом комиссий и доставки',
+        'DBS / FBY komissiyalari va yetkazib berish hisobi',
+        'DBS / FBY calculation including commissions and delivery'),
+    },
+    {
+      name: tx(lang,'Бесплатно','Bepul','Free'),
+      color: acc.tint, bg: isDark ? 'rgba(131,192,249,0.1)' : 'rgba(131,192,249,0.15)',
+      label: tx(lang,'Устанавливается из Chrome Web Store за несколько секунд',
+        'Chrome Web Store dan bir necha soniyada o\'rnatiladi',
+        'Install from Chrome Web Store in seconds'),
+    },
+  ]
+
+  return (
+    <section style={{ background: secBg, padding: '88px 24px',
+      fontFamily: "'Space Grotesk', system-ui, sans-serif", transition: 'background 0.3s' }}>
+      <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+        <SectionHead dark={isDark}
+          title={tx(lang,'Расширение для браузера','Brauzer kengaytmasi','Browser extension')}
+          accent={tx(lang,'Расширение','kengaytmasi','extension')}
+          sub={tx(lang,
+            'Рассчитайте маржу, комиссию и прибыль прямо на странице товара — без переключения вкладок',
+            'Mahsulot sahifasida marjani, komissiyani va foydani hisoblang — yorliqlarni almashtirmasdan',
+            'Calculate margin, commission and profit right on the product page — no tab switching'
+          )}
+        />
+
+        {/* 4 marketplace cards */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14, marginBottom: 48 }}>
+          {marketCards.map((c, i) => (
+            <FadeUp key={c.name} delay={i * 0.08}>
+              <motion.div
+                whileHover={{ y: -4, scale: 1.02 }}
+                transition={{ duration: 0.2 }}
+                style={{ background: c.bg, border: `1px solid ${c.color}35`,
+                  borderRadius: 18, padding: '22px 18px', height: '100%',
+                  cursor: 'default' }}>
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: `${c.color}20`,
+                  border: `1px solid ${c.color}40`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  marginBottom: 14 }}>
+                  <div style={{ width: 12, height: 12, borderRadius: '50%', background: c.color }} />
+                </div>
+                <p style={{ fontSize: 13, fontWeight: 700, color: c.color, marginBottom: 8 }}>{c.name}</p>
+                <p style={{ fontSize: 12, color: sub, lineHeight: 1.6 }}>{c.label}</p>
+              </motion.div>
+            </FadeUp>
+          ))}
+        </div>
+
+        {/* Extension widget mockup + product page context */}
+        <FadeUp delay={0.1}>
+          <div style={{ background: cardBg, border: `1px solid ${bdr}`, borderRadius: 24,
+            overflow: 'hidden', boxShadow: isDark ? '0 8px 40px rgba(0,0,0,0.4)' : '0 8px 40px rgba(0,0,0,0.1)' }}>
+
+            {/* Fake browser chrome */}
+            <div style={{ background: isDark ? '#1e2233' : '#f1f5f9', padding: '10px 16px',
+              borderBottom: `1px solid ${bdr}`, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ display: 'flex', gap: 5 }}>
+                {['#f87171','#fbbf24','#4ade80'].map(c => (
+                  <div key={c} style={{ width: 10, height: 10, borderRadius: '50%', background: c }} />
+                ))}
+              </div>
+              <div style={{ flex: 1, background: isDark ? '#0f172a' : '#e2e8f0',
+                borderRadius: 6, padding: '4px 10px', fontSize: 11, color: muted, fontFamily: 'monospace' }}>
+                uzum.uz/product/smartfon-samsung-galaxy-s25-...
+              </div>
+            </div>
+
+            {/* Page content + floating extension panel */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', minHeight: 500 }}>
+
+              {/* Left: generic product page mockup */}
+              <div style={{ padding: '24px 28px', borderRight: `1px solid ${bdr}` }}>
+                <div style={{ display: 'flex', gap: 20 }}>
+                  {/* Product image placeholder */}
+                  <div style={{ width: 200, height: 200, borderRadius: 12, flexShrink: 0,
+                    background: isDark ? '#1e293b' : '#e8f0fd',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    border: `1px solid ${bdr}` }}>
+                    <Package size={48} color={muted} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <p style={{ fontSize: 11, color: muted, marginBottom: 6 }}>Uzum Market</p>
+                    <h2 style={{ fontSize: 18, fontWeight: 700, color: ink, marginBottom: 12, lineHeight: 1.3 }}>
+                      Samsung Galaxy S25 256GB
+                    </h2>
+                    {/* Rating */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 14 }}>
+                      <div style={{ display: 'flex', gap: 2 }}>
+                        {[1,2,3,4].map(s => (
+                          <div key={s} style={{ width: 12, height: 12, background: '#fbbf24', borderRadius: 2 }} />
+                        ))}
+                        <div style={{ width: 12, height: 12, background: isDark ? '#334155' : '#e2e8f0', borderRadius: 2 }} />
+                      </div>
+                      <span style={{ fontSize: 11, color: muted }}>4.4 · 124 {tx(lang,'отзывов','sharh','reviews')}</span>
+                    </div>
+                    {/* Price */}
+                    <div style={{ fontSize: 26, fontWeight: 800, color: '#494fdf', marginBottom: 4 }}>
+                      5 200 000 so'm
+                    </div>
+                    <p style={{ fontSize: 12, color: muted, marginBottom: 16 }}>
+                      {tx(lang,'В рассрочку от 433 333 сум/мес','Bo\'lib to\'lash: 433 333 so\'m/oy','Installment from 433,333 sum/month')}
+                    </p>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <div style={{ padding: '8px 20px', background: '#494fdf', color: '#fff',
+                        borderRadius: 8, fontSize: 13, fontWeight: 600 }}>
+                        {tx(lang,'Купить','Sotib olish','Buy')}
+                      </div>
+                      <div style={{ padding: '8px 20px', border: `1px solid ${bdr}`,
+                        borderRadius: 8, fontSize: 13, color: sub }}>
+                        {tx(lang,'В корзину','Savatga','Add to cart')}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right: Daromadchi extension panel */}
+              <div style={{ background: wBg, padding: '0', display: 'flex', flexDirection: 'column',
+                fontSize: 12, fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif' }}>
+                {/* Panel header */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: '10px 12px', borderBottom: `1px solid ${wBdr}`,
+                  background: wBg, position: 'sticky', top: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                    <span style={{ fontWeight: 700, fontSize: 14, color: wText }}>Daromadchi</span>
+                    <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 7px',
+                      background: '#494fdf', color: '#fff', borderRadius: 20 }}>Uzum</span>
+                  </div>
+                  <div style={{ display: 'flex', gap: 3 }}>
+                    {['UZ','RU','EN'].map((l,li) => (
+                      <span key={l} style={{ padding: '2px 5px', borderRadius: 4, fontSize: 10,
+                        color: li===1 ? '#fff' : wMuted,
+                        background: li===1 ? '#494fdf' : 'transparent',
+                        border: `1px solid ${li===1 ? '#494fdf' : wBdr}` }}>{l}</span>
+                    ))}
+                    <span style={{ padding: '3px 6px', borderRadius: 5, border: `1px solid ${wBdr}`,
+                      color: wMuted, fontSize: 13 }}>✕</span>
+                  </div>
+                </div>
+
+                <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 10, overflowY: 'auto' }}>
+                  {/* Product + price */}
+                  <div>
+                    <div style={{ fontWeight: 600, fontSize: 13, color: wText, marginBottom: 4 }}>
+                      Samsung Galaxy S25 256GB
+                    </div>
+                    <div style={{ fontSize: 20, fontWeight: 800, color: '#a78bfa' }}>5 200 000 so'm</div>
+                  </div>
+
+                  {/* FBO/FBS */}
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    {['FBO','FBS'].map((t,ti) => (
+                      <div key={t} style={{ flex: 1, padding: '7px', borderRadius: 8, textAlign: 'center',
+                        border: `1px solid ${ti===0 ? '#494fdf' : wBdr}`,
+                        background: ti===0 ? '#494fdf' : 'transparent',
+                        color: ti===0 ? '#fff' : wMuted, fontSize: 12, fontWeight: 600 }}>{t}</div>
+                    ))}
+                  </div>
+
+                  {/* Params */}
+                  <div>
+                    <div style={{ fontSize: 9, fontWeight: 600, color: wMuted,
+                      letterSpacing: '0.7px', marginBottom: 7, textTransform: 'uppercase' }}>
+                      {tx(lang,'ПАРАМЕТРЫ РАСЧЁТА','HISOB PARAMETRLARI','CALCULATION PARAMS')}
+                    </div>
+                    {[
+                      [tx(lang,'Себестоимость (сум)','Tannarx (so\'m)','Cost (sum)'), '0'],
+                      [tx(lang,'Комиссия %','Komissiya %','Commission %'), '5'],
+                      [tx(lang,'Реклама %','Reklama %','Ad %'), '5'],
+                    ].map(([label, val]) => (
+                      <div key={label as string} style={{ display: 'flex', justifyContent: 'space-between',
+                        alignItems: 'center', padding: '4px 0', borderBottom: `1px solid ${wBdr}` }}>
+                        <span style={{ color: wMuted, fontSize: 11 }}>{label}</span>
+                        <span style={{ color: wText, background: wCard, border: `1px solid ${wBdr}`,
+                          borderRadius: 5, padding: '2px 8px', fontSize: 11, minWidth: 48, textAlign: 'right' }}>{val}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Breakdown */}
+                  <div>
+                    <div style={{ fontSize: 9, fontWeight: 600, color: wMuted,
+                      letterSpacing: '0.7px', marginBottom: 7, textTransform: 'uppercase' }}>
+                      {tx(lang,'СТРУКТУРА ЗАТРАТ','XARAJATLAR TAQSIMOTI','COST BREAKDOWN')}
+                    </div>
+                    {[
+                      [tx(lang,'Цена','Narx','Price'), '5 200 000', wText],
+                      [tx(lang,'Комиссия (5%)','Komissiya (5%)','Commission (5%)'), '−260 000', wRed],
+                      [tx(lang,'Доставка прибл.','Yetkazib berish taxm.','Delivery approx.'), '−5 250', wRed],
+                      [tx(lang,'Возвраты (~2%) прибл.','Qaytarishlar (~2%) taxm.','Returns (~2%) approx.'), '−104 000', wRed],
+                      [tx(lang,'Эквайринг (1.5%)','Ekvayring (1.5%)','Acquiring (1.5%)'), '−78 000', wRed],
+                      [tx(lang,'Реклама (5%)','Reklama (5%)','Ad spend (5%)'), '−260 000', wRed],
+                    ].map(([label, val, col]) => (
+                      <div key={label as string} style={{ display: 'flex', justifyContent: 'space-between',
+                        padding: '3px 0', fontSize: 11 }}>
+                        <span style={{ color: wMuted }}>{label}</span>
+                        <span style={{ color: col as string, fontWeight: label === tx(lang,'Цена','Narx','Price') ? 600 : 400 }}>{val} so'm</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Net profit box */}
+                  <div style={{ background: 'rgba(74,222,128,0.1)', border: '1px solid rgba(74,222,128,0.3)',
+                    borderRadius: 10, padding: '10px 12px', textAlign: 'center' }}>
+                    <div style={{ fontSize: 10, color: wMuted, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                      {tx(lang,'ОЦ. ЧИСТАЯ ПРИБЫЛЬ','TAXMINIY SOF FOYDA','EST. NET PROFIT')}
+                    </div>
+                    <div style={{ fontSize: 17, fontWeight: 800, color: wGreen }}>4 492 750 so'm</div>
+                    <div style={{ fontSize: 11, color: wGreen, marginTop: 2 }}>86% {tx(lang,'маржа','marja','margin')}</div>
+                    <div style={{ background: 'rgba(74,222,128,0.2)', height: 4, borderRadius: 2, marginTop: 8 }}>
+                      <div style={{ width: '86%', height: '100%', background: wGreen, borderRadius: 2 }} />
+                    </div>
+                  </div>
+
+                  {/* Footer disclaimer */}
+                  <div style={{ fontSize: 10, color: wMuted, textAlign: 'center',
+                    padding: '6px 0', borderTop: `1px solid ${wBdr}` }}>
+                    ⚠️ {tx(lang,'Примерный расчёт · daromadchi.uz','Taxminiy hisob · daromadchi.uz','Estimated · daromadchi.uz')}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </FadeUp>
+
+        {/* Disclaimer */}
+        <FadeUp delay={0.15}>
+          <div style={{ marginTop: 20, display: 'flex', alignItems: 'flex-start', gap: 10,
+            background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.2)',
+            borderRadius: 12, padding: '12px 16px' }}>
+            <span style={{ fontSize: 16, flexShrink: 0 }}>⚠️</span>
+            <p style={{ fontSize: 13, color: sub, lineHeight: 1.6 }}>
+              {tx(lang,
+                'Все данные о доставке, возвратах и комиссиях являются приблизительными. Точные тарифы зависят от категории товара, склада и условий договора с маркетплейсом.',
+                'Yetkazib berish, qaytarishlar va komissiyalar bo\'yicha barcha ma\'lumotlar taxminiy. Aniq tariflar mahsulot toifasi, ombor va marketpleysning shartnoma shartlariga bog\'liq.',
+                'All delivery, return and commission data is approximate. Exact rates depend on product category, warehouse and marketplace contract terms.'
+              )}
+            </p>
+          </div>
+        </FadeUp>
+
+        {/* Install CTA */}
+        <FadeUp delay={0.2}>
+          <div style={{ textAlign: 'center', marginTop: 32 }}>
+            <Link href="/extension"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 8,
+                fontSize: 15, fontWeight: 700, background: acc.btn, color: acc.btnTxt,
+                padding: '14px 36px', borderRadius: 10, textDecoration: 'none', transition: 'all 0.15s' }}
+              onMouseEnter={e => { e.currentTarget.style.background = acc.btnHov; e.currentTarget.style.transform = 'translateY(-2px)' }}
+              onMouseLeave={e => { e.currentTarget.style.background = acc.btn; e.currentTarget.style.transform = 'translateY(0)' }}>
+              {tx(lang,'Установить расширение','Kengaytmani o\'rnatish','Install extension')} <ArrowRight size={16}/>
+            </Link>
+            <p style={{ marginTop: 10, fontSize: 12, color: sub }}>
+              {tx(lang,'Chrome · Edge · Brave — бесплатно','Chrome · Edge · Brave — bepul','Chrome · Edge · Brave — free')}
+            </p>
+          </div>
+        </FadeUp>
+      </div>
+    </section>
+  )
+}
+
+// ── 7. PRICING — theme-aware ──────────────────────────────────────────────────
 function SlotPrice({ value, trigger, delay = 0 }: { value: string; trigger: boolean; delay?: number }) {
   const DIGITS = '0123456789'
   const blank = value.replace(/\d/g, '-')
@@ -1739,6 +2036,7 @@ export default function Page() {
       <FeaturesSection lang={lang} />
       <HowItWorksSection lang={lang} />
       <BentoSection lang={lang} />
+      <ExtensionSection lang={lang} />
       <PricingSection lang={lang} />
       <ResourcesSection lang={lang} />
       <FaqSection lang={lang} />
