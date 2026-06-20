@@ -797,85 +797,78 @@ function FeaturesSection({ lang }: { lang: string }) {
           </div>
         </motion.div>
 
-        {/* Right: floating scattered app screens */}
-        <div style={{ position: 'relative', height: 520 }}>
+        {/* Right: text content */}
+        <div>
+          <FadeUp delay={0.15}>
+            <p style={{ fontSize: 11, fontWeight: 700, color: acc.tint, marginBottom: 10,
+              textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+              {tx(lang,'REAL-TIME ANALITIKA','REAL-TIME ANALITIKA','REAL-TIME ANALYTICS')}
+            </p>
+            <h2 style={{ fontSize: 'clamp(26px, 3vw, 42px)', fontWeight: 800, lineHeight: 1.1,
+              color: isDark ? P.dText : P.ink, letterSpacing: '-0.022em', marginBottom: 18 }}>
+              {tx(lang,
+                <>Savdo va analitika —<br/><span style={{ color: acc.tint }}>hammasi bitta ekranda</span></>,
+                <>Savdo va analitika —<br/><span style={{ color: acc.tint }}>hammasi bitta ekranda</span></>,
+                <>Sales & analytics —<br/><span style={{ color: acc.tint }}>all on one screen</>
+              )}
+            </h2>
+          </FadeUp>
 
-          {/* Screen 1 — KPI overview, top left, slight tilt */}
-          {screenCard(
-            <div style={{ background: dBg, padding: '14px' }}>
-              <p style={{ fontSize: 9, color: dMuted, marginBottom: 8, fontWeight: 600,
-                textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                {tx(lang,'Tahlil · Barcha platformalar','Tahlil · Barcha platformalar','Analytics · All platforms')}
-              </p>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
-                {kpis.map(k => (
-                  <div key={k.l} style={{ background: dCard, borderRadius: 8, padding: '8px 10px', border: `1px solid ${dBdr}` }}>
-                    <p style={{ fontSize: 8, color: dMuted, marginBottom: 3 }}>{k.l}</p>
-                    <p style={{ fontSize: 13, fontWeight: 800, color: k.col, fontFamily: 'monospace', lineHeight: 1 }}>{k.v}</p>
-                    <p style={{ fontSize: 8, color: k.col, marginTop: 2 }}>↑ {k.d}</p>
-                  </div>
-                ))}
-              </div>
-              <div style={{ marginTop: 10, display: 'flex', alignItems: 'flex-end', gap: 2, height: 36 }}>
-                {bars.map((h, i) => (
-                  <div key={i} style={{ flex: 1, borderRadius: '2px 2px 0 0', height: `${h}%`,
-                    background: i >= hiIdx ? 'linear-gradient(to top, #494fdf, #7c83f0)' : 'rgba(73,79,223,0.18)' }} />
-                ))}
-              </div>
-            </div>,
-            -2, 10,
-            { top: 0, left: 0, width: '80%', transition: { delay: 0.2 } as any }
-          )}
+          <FadeUp delay={0.23}>
+            <p style={{ fontSize: 16, color: isDark ? P.dMuted : P.stone, lineHeight: 1.65, marginBottom: 32 }}>
+              {tx(lang,
+                'DRR, qoldiq, narx va birlik iqtisodiyoti. Savdoni kuniga 5 daqiqada boshqaring.',
+                'DRR, qoldiq, narx va birlik iqtisodiyoti. Savdoni kuniga 5 daqiqada boshqaring.',
+                'DRR, stock, pricing and unit economics. Manage your sales in 5 minutes a day.'
+              )}
+            </p>
+          </FadeUp>
 
-          {/* Screen 2 — Orders table, bottom right, opposite tilt */}
-          {screenCard(
-            <div style={{ background: dBg, padding: '12px' }}>
-              <p style={{ fontSize: 9, color: dMuted, marginBottom: 8, fontWeight: 600,
-                textTransform: 'uppercase', letterSpacing: '0.05em' }}>Recent Orders</p>
+          <FadeUp delay={0.31}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 36 }}>
               {[
-                { id: 'DEMO-183', mp: 'Uzum',   col: '#494fdf', st: 'Delivered',   sc: '#22c55e' },
-                { id: 'DEMO-184', mp: 'WB',     col: '#CB11AB', st: 'Processing',  sc: '#f59e0b' },
-                { id: 'DEMO-185', mp: 'YM',     col: '#E8A000', st: 'Delivered',   sc: '#22c55e' },
-                { id: 'DEMO-186', mp: 'Uzum',   col: '#494fdf', st: 'Delivered',   sc: '#22c55e' },
-              ].map((o, i, arr) => (
-                <div key={o.id} style={{ display: 'flex', alignItems: 'center', gap: 8,
-                  padding: '6px 0', borderBottom: i < arr.length - 1 ? `1px solid ${dBdr}` : 'none' }}>
-                  <span style={{ fontSize: 8, fontWeight: 700, padding: '2px 5px', borderRadius: 4,
-                    background: `${o.col}22`, color: o.col }}>{o.mp}</span>
-                  <span style={{ flex: 1, fontSize: 9, color: dText, fontFamily: 'monospace' }}>{o.id}</span>
-                  <span style={{ fontSize: 9, fontWeight: 600, color: o.sc }}>{o.st}</span>
+                { icon: '📊', title: tx(lang,'Выручка и прибыль в реальном времени','Real-time daromad va foyda','Real-time revenue & profit'),
+                  desc: tx(lang,'Следите за KPI по каждому маркетплейсу и временному периоду','Har bir marketpleysning KPIlarini kuzating','Track KPIs per marketplace and time period') },
+                { icon: '🎯', title: tx(lang,'ДРР и рентабельность по каждому товару','Har bir mahsulot uchun DRR va rentabellik','DRR & profitability per product'),
+                  desc: tx(lang,'Найдите убыточные позиции и скорректируйте ставки рекламы','Zarar keltiruvchi pozitsiyalarni toping','Find losing products and adjust ad bids') },
+                { icon: '🔔', title: tx(lang,'Уведомления в Telegram каждые 15 минут','Har 15 daqiqada Telegram bildirishnomalari','Telegram alerts every 15 minutes'),
+                  desc: tx(lang,'Критические алерты по остаткам и превышению ДРР','Qoldiqlar va DRR oshishi haqida ogohlantirishlar','Critical alerts for stock and DRR spikes') },
+              ].map((f, i) => (
+                <div key={i} style={{ display: 'flex', gap: 14, padding: '14px 16px',
+                  background: isDark ? P.dCard : P.card, borderRadius: 14,
+                  border: `1px solid ${isDark ? P.dHair : P.hair}`,
+                  transition: 'border-color 0.15s' }}
+                  onMouseEnter={e => (e.currentTarget.style.borderColor = acc.color)}
+                  onMouseLeave={e => (e.currentTarget.style.borderColor = isDark ? P.dHair : P.hair)}>
+                  <span style={{ fontSize: 20, flexShrink: 0, lineHeight: 1.2 }}>{f.icon}</span>
+                  <div>
+                    <p style={{ fontSize: 13, fontWeight: 700, color: isDark ? P.dText : P.ink, marginBottom: 3 }}>{f.title}</p>
+                    <p style={{ fontSize: 12, color: isDark ? P.dMuted : P.stone, lineHeight: 1.5 }}>{f.desc}</p>
+                  </div>
                 </div>
               ))}
-            </div>,
-            3, 20,
-            { bottom: 0, right: 0, width: '72%', transition: { delay: 0.35 } as any }
-          )}
+            </div>
+          </FadeUp>
 
-          {/* Screen 3 — Donut + P&L mini, mid-left floating */}
-          {screenCard(
-            <div style={{ background: dBg, padding: '12px', display: 'flex', gap: 10, alignItems: 'center' }}>
-              <svg width={44} height={44} viewBox="0 0 44 44" style={{ flexShrink: 0 }}>
-                <circle cx="22" cy="22" r="15" fill="none" stroke={dBdr} strokeWidth="7"/>
-                <circle cx="22" cy="22" r="15" fill="none" stroke="#494fdf" strokeWidth="7"
-                  strokeDasharray="57 37" strokeLinecap="round" strokeDashoffset="-12" transform="rotate(-90 22 22)"/>
-                <circle cx="22" cy="22" r="15" fill="none" stroke="#f59e0b" strokeWidth="7"
-                  strokeDasharray="24 70" strokeLinecap="round" strokeDashoffset="-69" transform="rotate(-90 22 22)"/>
-                <circle cx="22" cy="22" r="15" fill="none" stroke="#22c55e" strokeWidth="7"
-                  strokeDasharray="13 81" strokeLinecap="round" strokeDashoffset="-93" transform="rotate(-90 22 22)"/>
-              </svg>
-              <div>
-                {[{l:'Uzum',c:'#494fdf',p:'48%'},{l:'WB',c:'#CB11AB',p:'31%'},{l:'YM',c:'#E8A000',p:'21%'}].map(m => (
-                  <div key={m.l} style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 3 }}>
-                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: m.c }} />
-                    <span style={{ fontSize: 9, color: dMuted, width: 24 }}>{m.l}</span>
-                    <span style={{ fontSize: 9, fontWeight: 700, color: dText, fontFamily: 'monospace' }}>{m.p}</span>
-                  </div>
-                ))}
-              </div>
-            </div>,
-            -1, 30,
-            { top: '38%', left: '10%', transition: { delay: 0.5 } as any }
-          )}
+          <FadeUp delay={0.39}>
+            <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+              <Link href="/login"
+                style={{ fontSize: 15, fontWeight: 700, background: acc.btn, color: acc.btnTxt,
+                  padding: '13px 28px', borderRadius: 10, textDecoration: 'none',
+                  transition: 'all 0.15s', display: 'inline-block' }}
+                onMouseEnter={e => { e.currentTarget.style.background = acc.btnHov; e.currentTarget.style.transform = 'translateY(-2px)' }}
+                onMouseLeave={e => { e.currentTarget.style.background = acc.btn; e.currentTarget.style.transform = 'translateY(0)' }}>
+                {tx(lang,'3 kun bepul boshlash →','3 kun bepul boshlash →','Start free 3 days →')}
+              </Link>
+              <a href="#how"
+                style={{ fontSize: 14, fontWeight: 600, color: isDark ? P.dMuted : P.stone, textDecoration: 'none',
+                  display: 'inline-flex', alignItems: 'center', gap: 6, transition: 'color 0.15s', padding: '13px 0' }}
+                onMouseEnter={e => (e.currentTarget.style.color = isDark ? '#fff' : P.ink)}
+                onMouseLeave={e => (e.currentTarget.style.color = isDark ? P.dMuted : P.stone)}>
+                {tx(lang,'Platformani o\'rganish →','Platformani o\'rganish →','Explore platform →')}
+              </a>
+            </div>
+          </FadeUp>
         </div>
       </div>
     </section>
@@ -1222,45 +1215,63 @@ function BentoSection({ lang }: { lang: string }) {
 function ExtensionSection({ lang }: { lang: string }) {
   const isDark = useIsDark()
   const acc = useAccent()
-  const secBg  = isDark ? P.dCard   : P.card
-  const cardBg = isDark ? P.dCard2  : '#f8fafc'
-  const bdr    = isDark ? P.dHair   : P.hair
-  const ink    = isDark ? P.dText   : P.ink
-  const sub    = isDark ? P.dMuted  : P.stone
-  const muted  = isDark ? '#475569' : '#94a3b8'
-  const wBg    = isDark ? '#0f1117' : '#f8fafc'
-  const wCard  = isDark ? '#1a1f2e' : '#ffffff'
-  const wBdr   = isDark ? '#2a3040' : '#e2e8f0'
-  const wText  = isDark ? '#e2e8f0' : '#0f172a'
-  const wMuted = isDark ? '#94a3b8' : '#64748b'
-  const wRed   = '#f87171'
-  const wGreen = '#4ade80'
+  const secBg = isDark ? P.dCard  : P.card
+  const ink   = isDark ? P.dText  : P.ink
+  const sub   = isDark ? P.dMuted : P.stone
 
-  const marketCards = [
+  const cards = [
     {
-      name: 'Uzum Market', color: '#494fdf', bg: '#494fdf18',
-      label: tx(lang,'Мгновенный расчёт маржи и комиссий прямо на странице товара',
-        'Mahsulot sahifasida bir zumda marja va komissiya hisobi',
-        'Instant margin and commission calculation on any product page'),
+      name: 'Uzum Market', color: '#494fdf', bg: 'rgba(73,79,223,0.1)',
+      icon: '🛒',
+      headline: tx(lang,
+        'Мгновенный расчёт маржи и FBO/FBS на странице товара',
+        'Mahsulot sahifasida FBO/FBS marja hisoblash',
+        'Instant margin & FBO/FBS calc on any product page'),
+      points: [
+        tx(lang,'Комиссия маркетплейса и эквайринг','Marketplace va ekvayring komissiyasi','Marketplace fee & acquiring'),
+        tx(lang,'Стоимость хранения, доставки и возвратов','Saqlash, yetkazib berish va qaytarish xarajatlari','Storage, delivery & return costs'),
+        tx(lang,'Чистая прибыль и маржа в одно нажатие','Bir bosishda sof foyda va marja','Net profit & margin in one click'),
+      ],
     },
     {
-      name: 'Wildberries', color: '#CB11AB', bg: '#CB11AB18',
-      label: tx(lang,'Тарифы FBW / FBS, стоимость хранения и возвратов',
-        'FBW / FBS tariflari, saqlash va qaytarish narxlari',
-        'FBW / FBS rates, storage and return costs'),
+      name: 'Wildberries', color: '#CB11AB', bg: 'rgba(203,17,171,0.1)',
+      icon: '📦',
+      headline: tx(lang,
+        'Тарифы FBW и FBS с учётом категории товара',
+        'Mahsulot toifasiga qarab FBW va FBS tariflari',
+        'FBW & FBS rates by product category'),
+      points: [
+        tx(lang,'Стоимость хранения на складе WB','WB omborida saqlash narxi','WB warehouse storage cost'),
+        tx(lang,'Расходы на возвраты и логистику','Qaytarish va logistika xarajatlari','Return & logistics expenses'),
+        tx(lang,'ДРР и рентабельность по каждому SKU','Har bir SKU bo\'yicha DRR va rentabellik','DRR & profitability per SKU'),
+      ],
     },
     {
-      name: 'Yandex Market', color: '#E8A000', bg: '#E8A00018',
-      label: tx(lang,'Расчёт DBS / FBY с учётом комиссий и доставки',
-        'DBS / FBY komissiyalari va yetkazib berish hisobi',
-        'DBS / FBY calculation including commissions and delivery'),
+      name: 'Yandex Market', color: '#E8A000', bg: 'rgba(232,160,0,0.1)',
+      icon: '🚀',
+      headline: tx(lang,
+        'Расчёт DBS и FBY с учётом всех комиссий',
+        'Barcha komissiyalar hisobga olingan DBS va FBY hisoblash',
+        'DBS & FBY calculation including all commissions'),
+      points: [
+        tx(lang,'Комиссии категорий и программ лояльности','Kategoriya va sodiqlik dasturlari komissiyalari','Category & loyalty program commissions'),
+        tx(lang,'Стоимость доставки до покупателя','Xaridorgacha yetkazib berish narxi','Delivery cost to customer'),
+        tx(lang,'Сравнение DBS vs FBY по чистой прибыли','Sof foyda bo\'yicha DBS vs FBY taqqoslash','Profit comparison DBS vs FBY'),
+      ],
     },
     {
       name: tx(lang,'Бесплатно','Bepul','Free'),
       color: acc.tint, bg: isDark ? 'rgba(131,192,249,0.1)' : 'rgba(131,192,249,0.15)',
-      label: tx(lang,'Устанавливается из Chrome Web Store за несколько секунд',
+      icon: '✨',
+      headline: tx(lang,
+        'Устанавливается из Chrome Web Store за несколько секунд',
         'Chrome Web Store dan bir necha soniyada o\'rnatiladi',
         'Install from Chrome Web Store in seconds'),
+      points: [
+        tx(lang,'Совместим с Chrome, Edge и Brave','Chrome, Edge va Brave bilan mos','Works on Chrome, Edge & Brave'),
+        tx(lang,'Без регистрации — сразу работает','Ro\'yxatdan o\'tmasdan — darhol ishlaydi','No sign-up — works immediately'),
+        tx(lang,'0 сум, навсегда бесплатно','0 so\'m, doimo bepul','0 sum, free forever'),
+      ],
     },
   ]
 
@@ -1278,253 +1289,43 @@ function ExtensionSection({ lang }: { lang: string }) {
           )}
         />
 
-        {/* 4 marketplace cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14, marginBottom: 48 }}>
-          {marketCards.map((c, i) => (
-            <FadeUp key={c.name} delay={i * 0.08}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 20, marginBottom: 48 }}>
+          {cards.map((c, i) => (
+            <FadeUp key={i} delay={i * 0.1}>
               <motion.div
-                whileHover={{ y: -4, scale: 1.02 }}
-                transition={{ duration: 0.2 }}
-                style={{ background: c.bg, border: `1px solid ${c.color}35`,
-                  borderRadius: 18, padding: '22px 18px', height: '100%',
-                  cursor: 'default' }}>
-                <div style={{ width: 36, height: 36, borderRadius: 10, background: `${c.color}20`,
-                  border: `1px solid ${c.color}40`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  marginBottom: 14 }}>
-                  <div style={{ width: 12, height: 12, borderRadius: '50%', background: c.color }} />
+                whileHover={{ y: -6, scale: 1.015 }}
+                transition={{ duration: 0.22 }}
+                style={{ background: c.bg, border: `1.5px solid ${c.color}40`,
+                  borderRadius: 24, padding: '32px 28px', height: '100%', cursor: 'default',
+                  boxShadow: `0 4px 28px ${c.color}18` }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
+                  <div style={{ width: 52, height: 52, borderRadius: 14, background: `${c.color}20`,
+                    border: `1.5px solid ${c.color}50`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24 }}>
+                    {c.icon}
+                  </div>
+                  <span style={{ fontSize: 15, fontWeight: 800, color: c.color,
+                    letterSpacing: '-0.01em' }}>{c.name}</span>
                 </div>
-                <p style={{ fontSize: 13, fontWeight: 700, color: c.color, marginBottom: 8 }}>{c.name}</p>
-                <p style={{ fontSize: 12, color: sub, lineHeight: 1.6 }}>{c.label}</p>
+                <p style={{ fontSize: 17, fontWeight: 700, color: ink, lineHeight: 1.4, marginBottom: 20 }}>
+                  {c.headline}
+                </p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {c.points.map((pt, j) => (
+                    <div key={j} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                      <div style={{ width: 7, height: 7, borderRadius: '50%', background: c.color,
+                        marginTop: 7, flexShrink: 0 }} />
+                      <span style={{ fontSize: 14, color: sub, lineHeight: 1.6 }}>{pt}</span>
+                    </div>
+                  ))}
+                </div>
               </motion.div>
             </FadeUp>
           ))}
         </div>
 
-        {/* Extension widget mockup + product page context */}
-        <FadeUp delay={0.1}>
-          <div style={{ background: cardBg, border: `1px solid ${bdr}`, borderRadius: 24,
-            overflow: 'hidden', boxShadow: isDark ? '0 8px 40px rgba(0,0,0,0.4)' : '0 8px 40px rgba(0,0,0,0.1)' }}>
-
-            {/* Fake browser chrome */}
-            <div style={{ background: '#1c1c1e', padding: '10px 16px',
-              display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{ display: 'flex', gap: 5 }}>
-                {['#ff5f57','#febc2e','#28c840'].map(c => (
-                  <div key={c} style={{ width: 10, height: 10, borderRadius: '50%', background: c }} />
-                ))}
-              </div>
-              <div style={{ flex: 1, background: '#2c2c2e', borderRadius: 6,
-                padding: '4px 10px', fontSize: 11, color: '#6b7a99', textAlign: 'center', maxWidth: 280, margin: '0 auto' }}>
-                daromadchi.uz/dashboard
-              </div>
-            </div>
-
-            {/* Page content + floating extension panel */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', minHeight: 500 }}>
-
-              {/* Left: Daromadchi dashboard */}
-              <div style={{ background: '#0c1120', padding: '16px', borderRight: `1px solid #1e2a42` }}>
-                {/* Mini tab bar */}
-                <div style={{ display: 'flex', gap: 4, marginBottom: 12, background: '#151c2e',
-                  padding: '6px 8px', borderRadius: 8, border: '1px solid #1e2a42' }}>
-                  {[tx(lang,'Все','Barchasi','All'),'Uzum','Wildberries','Yandex Market'].map((t,i) => (
-                    <div key={t} style={{ fontSize: 9, fontWeight: 600, padding: '3px 8px', borderRadius: 5,
-                      background: i===0 ? '#22c4b8' : 'transparent', color: i===0 ? '#fff' : '#6b7a99' }}>{t}</div>
-                  ))}
-                </div>
-                {/* KPI row */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 6, marginBottom: 10 }}>
-                  {[
-                    { l: tx(lang,'Tushum','Tushum','Revenue'),       v: '124.5M', d: '+12.4%', col: '#22c4b8' },
-                    { l: tx(lang,'Foyda','Foyda','Profit'),           v: '38.2M',  d: '+12.4%', col: '#22c55e' },
-                    { l: tx(lang,'Buyurtmalar','Buyurtmalar','Orders'), v: '1,842', d: '+12.4%', col: '#60a5fa' },
-                    { l: tx(lang,'Qoldiq','Qoldiq','Stock'),          v: '3,410',  d: '+12.4%', col: '#f59e0b' },
-                  ].map(k => (
-                    <div key={k.l} style={{ background: '#151c2e', borderRadius: 8, padding: '8px 8px 6px', border: '1px solid #1e2a42' }}>
-                      <p style={{ fontSize: 8, color: '#6b7a99', marginBottom: 3, textTransform: 'uppercase', letterSpacing: '0.03em' }}>{k.l}</p>
-                      <p style={{ fontSize: 13, fontWeight: 800, color: k.col, fontFamily: 'monospace', lineHeight: 1 }}>{k.v}</p>
-                      <p style={{ fontSize: 8, color: k.col, marginTop: 2 }}>↑ {k.d}</p>
-                    </div>
-                  ))}
-                </div>
-                {/* Chart row */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px', gap: 8, marginBottom: 10 }}>
-                  <div style={{ background: '#151c2e', borderRadius: 8, padding: '8px 10px', border: '1px solid #1e2a42' }}>
-                    <p style={{ fontSize: 8, color: '#6b7a99', marginBottom: 6, fontWeight: 600 }}>
-                      {tx(lang,'Kunlik tushum','Kunlik tushum','Daily revenue')}
-                    </p>
-                    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2, height: 38 }}>
-                      {[18,26,22,38,30,44,35,52,40,32,46,60,38,50].map((h, i) => (
-                        <div key={i} style={{ flex: 1, borderRadius: '2px 2px 0 0', height: `${h}%`,
-                          background: i >= 10 ? 'linear-gradient(to top, #494fdf, #7c83f0)' : 'rgba(73,79,223,0.18)' }} />
-                      ))}
-                    </div>
-                  </div>
-                  <div style={{ background: '#151c2e', borderRadius: 8, padding: '8px 10px', border: '1px solid #1e2a42',
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
-                    <p style={{ fontSize: 8, color: '#6b7a99', fontWeight: 600, alignSelf: 'flex-start' }}>
-                      {tx(lang,'Kategoriyalar','Kategoriyalar','Categories')}
-                    </p>
-                    <svg width={40} height={40} viewBox="0 0 40 40">
-                      <circle cx="20" cy="20" r="13" fill="none" stroke="#1e2a42" strokeWidth="6"/>
-                      <circle cx="20" cy="20" r="13" fill="none" stroke="#494fdf" strokeWidth="6"
-                        strokeDasharray="52 30" strokeLinecap="round" strokeDashoffset="-10" transform="rotate(-90 20 20)"/>
-                      <circle cx="20" cy="20" r="13" fill="none" stroke="#f59e0b" strokeWidth="6"
-                        strokeDasharray="21 61" strokeLinecap="round" strokeDashoffset="-62" transform="rotate(-90 20 20)"/>
-                      <circle cx="20" cy="20" r="13" fill="none" stroke="#22c55e" strokeWidth="6"
-                        strokeDasharray="13 69" strokeLinecap="round" strokeDashoffset="-83" transform="rotate(-90 20 20)"/>
-                    </svg>
-                  </div>
-                </div>
-                {/* Orders */}
-                <div style={{ background: '#151c2e', borderRadius: 8, overflow: 'hidden', border: '1px solid #1e2a42' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 10px', borderBottom: '1px solid #1e2a42' }}>
-                    <span style={{ fontSize: 8, fontWeight: 700, color: '#6b7a99', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Recent Orders</span>
-                    <span style={{ fontSize: 8, fontWeight: 700, color: '#6b7a99', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Status</span>
-                  </div>
-                  {[
-                    { id: 'DEMO-183', st: 'Delivered',  col: '#22c55e' },
-                    { id: 'DEMO-184', st: 'Processing', col: '#f59e0b' },
-                    { id: 'DEMO-185', st: 'Delivered',  col: '#22c55e' },
-                  ].map((o, i, arr) => (
-                    <div key={o.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                      padding: '6px 10px', borderBottom: i < arr.length - 1 ? '1px solid #1e2a42' : 'none' }}>
-                      <span style={{ fontSize: 9, color: '#e2e8f0', fontFamily: 'monospace' }}>{o.id}</span>
-                      <span style={{ fontSize: 9, fontWeight: 600, color: o.col }}>{o.st}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Right: Daromadchi extension panel */}
-              <div style={{ background: wBg, padding: '0', display: 'flex', flexDirection: 'column',
-                fontSize: 12, fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif' }}>
-                {/* Panel header */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  padding: '10px 12px', borderBottom: `1px solid ${wBdr}`,
-                  background: wBg, position: 'sticky', top: 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                    <span style={{ fontWeight: 700, fontSize: 14, color: wText }}>Daromadchi</span>
-                    <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 7px',
-                      background: '#494fdf', color: '#fff', borderRadius: 20 }}>Uzum</span>
-                  </div>
-                  <div style={{ display: 'flex', gap: 3 }}>
-                    {['UZ','RU','EN'].map((l,li) => (
-                      <span key={l} style={{ padding: '2px 5px', borderRadius: 4, fontSize: 10,
-                        color: li===1 ? '#fff' : wMuted,
-                        background: li===1 ? '#494fdf' : 'transparent',
-                        border: `1px solid ${li===1 ? '#494fdf' : wBdr}` }}>{l}</span>
-                    ))}
-                    <span style={{ padding: '3px 6px', borderRadius: 5, border: `1px solid ${wBdr}`,
-                      color: wMuted, fontSize: 13 }}>✕</span>
-                  </div>
-                </div>
-
-                <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 10, overflowY: 'auto' }}>
-                  {/* Product + price */}
-                  <div>
-                    <div style={{ fontWeight: 600, fontSize: 13, color: wText, marginBottom: 4 }}>
-                      Samsung Galaxy S25 256GB
-                    </div>
-                    <div style={{ fontSize: 20, fontWeight: 800, color: '#a78bfa' }}>5 200 000 so'm</div>
-                  </div>
-
-                  {/* FBO/FBS */}
-                  <div style={{ display: 'flex', gap: 6 }}>
-                    {['FBO','FBS'].map((t,ti) => (
-                      <div key={t} style={{ flex: 1, padding: '7px', borderRadius: 8, textAlign: 'center',
-                        border: `1px solid ${ti===0 ? '#494fdf' : wBdr}`,
-                        background: ti===0 ? '#494fdf' : 'transparent',
-                        color: ti===0 ? '#fff' : wMuted, fontSize: 12, fontWeight: 600 }}>{t}</div>
-                    ))}
-                  </div>
-
-                  {/* Params */}
-                  <div>
-                    <div style={{ fontSize: 9, fontWeight: 600, color: wMuted,
-                      letterSpacing: '0.7px', marginBottom: 7, textTransform: 'uppercase' }}>
-                      {tx(lang,'ПАРАМЕТРЫ РАСЧЁТА','HISOB PARAMETRLARI','CALCULATION PARAMS')}
-                    </div>
-                    {[
-                      [tx(lang,'Себестоимость (сум)','Tannarx (so\'m)','Cost (sum)'), '0'],
-                      [tx(lang,'Комиссия %','Komissiya %','Commission %'), '5'],
-                      [tx(lang,'Реклама %','Reklama %','Ad %'), '5'],
-                    ].map(([label, val]) => (
-                      <div key={label as string} style={{ display: 'flex', justifyContent: 'space-between',
-                        alignItems: 'center', padding: '4px 0', borderBottom: `1px solid ${wBdr}` }}>
-                        <span style={{ color: wMuted, fontSize: 11 }}>{label}</span>
-                        <span style={{ color: wText, background: wCard, border: `1px solid ${wBdr}`,
-                          borderRadius: 5, padding: '2px 8px', fontSize: 11, minWidth: 48, textAlign: 'right' }}>{val}</span>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Breakdown */}
-                  <div>
-                    <div style={{ fontSize: 9, fontWeight: 600, color: wMuted,
-                      letterSpacing: '0.7px', marginBottom: 7, textTransform: 'uppercase' }}>
-                      {tx(lang,'СТРУКТУРА ЗАТРАТ','XARAJATLAR TAQSIMOTI','COST BREAKDOWN')}
-                    </div>
-                    {[
-                      [tx(lang,'Цена','Narx','Price'), '5 200 000', wText],
-                      [tx(lang,'Комиссия (5%)','Komissiya (5%)','Commission (5%)'), '−260 000', wRed],
-                      [tx(lang,'Доставка прибл.','Yetkazib berish taxm.','Delivery approx.'), '−5 250', wRed],
-                      [tx(lang,'Возвраты (~2%) прибл.','Qaytarishlar (~2%) taxm.','Returns (~2%) approx.'), '−104 000', wRed],
-                      [tx(lang,'Эквайринг (1.5%)','Ekvayring (1.5%)','Acquiring (1.5%)'), '−78 000', wRed],
-                      [tx(lang,'Реклама (5%)','Reklama (5%)','Ad spend (5%)'), '−260 000', wRed],
-                    ].map(([label, val, col]) => (
-                      <div key={label as string} style={{ display: 'flex', justifyContent: 'space-between',
-                        padding: '3px 0', fontSize: 11 }}>
-                        <span style={{ color: wMuted }}>{label}</span>
-                        <span style={{ color: col as string, fontWeight: label === tx(lang,'Цена','Narx','Price') ? 600 : 400 }}>{val} so'm</span>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Net profit box */}
-                  <div style={{ background: 'rgba(74,222,128,0.1)', border: '1px solid rgba(74,222,128,0.3)',
-                    borderRadius: 10, padding: '10px 12px', textAlign: 'center' }}>
-                    <div style={{ fontSize: 10, color: wMuted, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                      {tx(lang,'ОЦ. ЧИСТАЯ ПРИБЫЛЬ','TAXMINIY SOF FOYDA','EST. NET PROFIT')}
-                    </div>
-                    <div style={{ fontSize: 17, fontWeight: 800, color: wGreen }}>4 492 750 so'm</div>
-                    <div style={{ fontSize: 11, color: wGreen, marginTop: 2 }}>86% {tx(lang,'маржа','marja','margin')}</div>
-                    <div style={{ background: 'rgba(74,222,128,0.2)', height: 4, borderRadius: 2, marginTop: 8 }}>
-                      <div style={{ width: '86%', height: '100%', background: wGreen, borderRadius: 2 }} />
-                    </div>
-                  </div>
-
-                  {/* Footer disclaimer */}
-                  <div style={{ fontSize: 10, color: wMuted, textAlign: 'center',
-                    padding: '6px 0', borderTop: `1px solid ${wBdr}` }}>
-                    ⚠️ {tx(lang,'Примерный расчёт · daromadchi.uz','Taxminiy hisob · daromadchi.uz','Estimated · daromadchi.uz')}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </FadeUp>
-
-        {/* Disclaimer */}
-        <FadeUp delay={0.15}>
-          <div style={{ marginTop: 20, display: 'flex', alignItems: 'flex-start', gap: 10,
-            background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.2)',
-            borderRadius: 12, padding: '12px 16px' }}>
-            <span style={{ fontSize: 16, flexShrink: 0 }}>⚠️</span>
-            <p style={{ fontSize: 13, color: sub, lineHeight: 1.6 }}>
-              {tx(lang,
-                'Все данные о доставке, возвратах и комиссиях являются приблизительными. Точные тарифы зависят от категории товара, склада и условий договора с маркетплейсом.',
-                'Yetkazib berish, qaytarishlar va komissiyalar bo\'yicha barcha ma\'lumotlar taxminiy. Aniq tariflar mahsulot toifasi, ombor va marketpleysning shartnoma shartlariga bog\'liq.',
-                'All delivery, return and commission data is approximate. Exact rates depend on product category, warehouse and marketplace contract terms.'
-              )}
-            </p>
-          </div>
-        </FadeUp>
-
-        {/* Install CTA */}
         <FadeUp delay={0.2}>
-          <div style={{ textAlign: 'center', marginTop: 32 }}>
+          <div style={{ textAlign: 'center' }}>
             <Link href="/extension"
               style={{ display: 'inline-flex', alignItems: 'center', gap: 8,
                 fontSize: 15, fontWeight: 700, background: acc.btn, color: acc.btnTxt,
@@ -1716,7 +1517,7 @@ function PricingSection({ lang }: { lang: string }) {
 function ResourcesSection({ lang }: { lang: string }) {
   const isDark = useIsDark()
   const acc = useAccent()
-  const [expanded, setExpanded] = useState<number | null>(null)
+  const [expanded, setExpanded] = useState<number | null>(0)
   const secBg  = isDark ? P.dCanvas : P.parchment
   const cardBg = isDark ? P.dCard   : P.card
   const bdr    = isDark ? P.dHair   : P.hair
@@ -1767,50 +1568,77 @@ function ResourcesSection({ lang }: { lang: string }) {
 
           {/* Large card — 01: Help center */}
           <FadeUp delay={0.05}>
-            <div style={{ background: cardBg, borderRadius: 24, padding: '32px',
-              border: `1px solid ${bdr}`, display: 'flex', flexDirection: 'column', minHeight: 420,
-              boxShadow: isDark ? '0 4px 24px rgba(197,232,254,0.06)' : '0 4px 24px rgba(0,0,0,0.06)',
-              position: 'relative', overflow: 'hidden' }}>
+            <div onClick={() => setExpanded(0)}
+              style={{ background: cardBg, borderRadius: 24, padding: '32px',
+                border: `1.5px solid ${expanded === 0 ? acc.color : bdr}`,
+                display: 'flex', flexDirection: 'column',
+                boxShadow: isDark ? '0 4px 24px rgba(197,232,254,0.06)' : '0 4px 24px rgba(0,0,0,0.06)',
+                position: 'relative', overflow: 'hidden', cursor: 'pointer',
+                transition: 'border-color 0.2s' }}>
               <div style={{ position: 'absolute', right: 12, top: 4, fontSize: 120, fontWeight: 900,
                 color: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)', lineHeight: 1,
                 userSelect: 'none', fontFamily: 'monospace', pointerEvents: 'none' }}>01</div>
-              <p style={{ fontSize: 10, fontWeight: 700, color: acc.tint, marginBottom: 8,
-                textTransform: 'uppercase', letterSpacing: '0.08em' }}>01</p>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 12 }}>
-                <BookOpen size={22} color={acc.tint} />
-                <h3 style={{ fontSize: 22, fontWeight: 800, color: ink, letterSpacing: '-0.01em' }}>
-                  {tx(lang,'Справка','Yordam markazi','Help center')}
-                </h3>
-              </div>
-              <p style={{ fontSize: 14, color: sub, lineHeight: 1.65, marginBottom: 28, maxWidth: 420 }}>
-                {tx(lang,
-                  'Пошаговые руководства по настройке, формулам DRR и юнит-экономике — всё в одном месте',
-                  'Sozlash, DRR formulalari va birlik-iqtisod bo\'yicha bosqichma-bosqich qo\'llanmalar',
-                  'Step-by-step guides on setup, DRR formulas and unit economics — all in one place'
-                )}
-              </p>
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {[
-                  { t: tx(lang,'Быстрый старт за 5 минут','5 daqiqada tez boshlash','Quick start in 5 min'), d: tx(lang,'Пошаговое руководство','Bosqichma-bosqich qo\'llanma','Step-by-step guide') },
-                  { t: tx(lang,'Как работает ДРР','DRR qanday ishlaydi','How DRR works'), d: tx(lang,'Формула и примеры','Formula va misollar','Formula and examples') },
-                  { t: tx(lang,'Настройка юнит-экономики','Birlik-iqtisodni sozlash','Setting up unit economics'), d: tx(lang,'Укажите закупку и логистику','Xarid va logistikani kiriting','Enter purchase costs & logistics') },
-                ].map((item, i) => (
-                  <div key={i}
-                    style={{ padding: '11px 14px', background: bg2, borderRadius: 12,
-                      border: `1px solid ${bdr}`, cursor: 'pointer', transition: 'border-color 0.15s' }}
-                    onMouseEnter={e => (e.currentTarget.style.borderColor = acc.color)}
-                    onMouseLeave={e => (e.currentTarget.style.borderColor = bdr)}>
-                    <p style={{ fontSize: 13, fontWeight: 600, color: ink, marginBottom: 2 }}>{item.t}</p>
-                    <p style={{ fontSize: 11, color: muted }}>{item.d}</p>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                <div>
+                  <p style={{ fontSize: 10, fontWeight: 700, color: acc.tint, marginBottom: 8,
+                    textTransform: 'uppercase', letterSpacing: '0.08em' }}>01</p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+                    <BookOpen size={22} color={acc.tint} />
+                    <h3 style={{ fontSize: 22, fontWeight: 800, color: ink, letterSpacing: '-0.01em' }}>
+                      {tx(lang,'Справка','Yordam markazi','Help center')}
+                    </h3>
                   </div>
-                ))}
+                </div>
+                <motion.div
+                  animate={{ rotate: expanded === 0 ? 45 : 0 }}
+                  transition={{ duration: 0.2 }}
+                  style={{ width: 30, height: 30, borderRadius: 9, background: bg2,
+                    border: `1px solid ${bdr}`, display: 'flex', alignItems: 'center',
+                    justifyContent: 'center', flexShrink: 0, fontSize: 18, color: ink,
+                    fontWeight: 500, lineHeight: 1 }}>
+                  +
+                </motion.div>
               </div>
-              <Link href="/help"
-                style={{ fontSize: 13, fontWeight: 700, color: acc.tint, textDecoration: 'none', marginTop: 20, display: 'inline-block' }}
-                onMouseEnter={e => (e.currentTarget.style.opacity = '0.7')}
-                onMouseLeave={e => (e.currentTarget.style.opacity = '1')}>
-                {tx(lang,'Все статьи →','Barcha maqolalar →','All articles →')}
-              </Link>
+              <AnimatePresence initial={false}>
+                {expanded === 0 && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}>
+                    <p style={{ fontSize: 14, color: sub, lineHeight: 1.65, marginBottom: 28, maxWidth: 420 }}>
+                      {tx(lang,
+                        'Пошаговые руководства по настройке, формулам DRR и юнит-экономике — всё в одном месте',
+                        'Sozlash, DRR formulalari va birlik-iqtisod bo\'yicha bosqichma-bosqich qo\'llanmalar',
+                        'Step-by-step guides on setup, DRR formulas and unit economics — all in one place'
+                      )}
+                    </p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      {[
+                        { t: tx(lang,'Быстрый старт за 5 минут','5 daqiqada tez boshlash','Quick start in 5 min'), d: tx(lang,'Пошаговое руководство','Bosqichma-bosqich qo\'llanma','Step-by-step guide') },
+                        { t: tx(lang,'Как работает ДРР','DRR qanday ishlaydi','How DRR works'), d: tx(lang,'Формула и примеры','Formula va misollar','Formula and examples') },
+                        { t: tx(lang,'Настройка юнит-экономики','Birlik-iqtisodni sozlash','Setting up unit economics'), d: tx(lang,'Укажите закупку и логистику','Xarid va logistikani kiriting','Enter purchase costs & logistics') },
+                      ].map((item, i) => (
+                        <div key={i}
+                          style={{ padding: '11px 14px', background: bg2, borderRadius: 12,
+                            border: `1px solid ${bdr}`, cursor: 'pointer', transition: 'border-color 0.15s' }}
+                          onMouseEnter={e => (e.currentTarget.style.borderColor = acc.color)}
+                          onMouseLeave={e => (e.currentTarget.style.borderColor = bdr)}>
+                          <p style={{ fontSize: 13, fontWeight: 600, color: ink, marginBottom: 2 }}>{item.t}</p>
+                          <p style={{ fontSize: 11, color: muted }}>{item.d}</p>
+                        </div>
+                      ))}
+                    </div>
+                    <Link href="/help"
+                      style={{ fontSize: 13, fontWeight: 700, color: acc.tint, textDecoration: 'none', marginTop: 20, display: 'inline-block' }}
+                      onMouseEnter={e => (e.currentTarget.style.opacity = '0.7')}
+                      onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
+                      onClick={e => e.stopPropagation()}>
+                      {tx(lang,'Все статьи →','Barcha maqolalar →','All articles →')}
+                    </Link>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </FadeUp>
 
@@ -1819,11 +1647,12 @@ function ResourcesSection({ lang }: { lang: string }) {
             {rightItems.map((item, idx) => (
               <FadeUp key={item.num} delay={0.1 + idx * 0.08}>
                 <div
-                  style={{ background: cardBg, borderRadius: 24, border: `1px solid ${bdr}`,
+                  style={{ background: cardBg, borderRadius: 24,
+                    border: `1.5px solid ${expanded === idx + 1 ? acc.color : bdr}`,
                     overflow: 'hidden', cursor: 'pointer',
                     boxShadow: isDark ? '0 4px 24px rgba(197,232,254,0.06)' : '0 4px 24px rgba(0,0,0,0.06)',
-                    transition: 'box-shadow 0.2s' }}
-                  onClick={() => setExpanded(expanded === idx ? null : idx)}>
+                    transition: 'border-color 0.2s' }}
+                  onClick={() => setExpanded(idx + 1)}>
                   {/* Header */}
                   <div style={{ padding: '22px 24px', display: 'flex', alignItems: 'center',
                     justifyContent: 'space-between', position: 'relative', overflow: 'hidden' }}>
@@ -1839,7 +1668,7 @@ function ResourcesSection({ lang }: { lang: string }) {
                       </div>
                     </div>
                     <motion.div
-                      animate={{ rotate: expanded === idx ? 45 : 0 }}
+                      animate={{ rotate: expanded === idx + 1 ? 45 : 0 }}
                       transition={{ duration: 0.2 }}
                       style={{ width: 30, height: 30, borderRadius: 9, background: bg2,
                         border: `1px solid ${bdr}`, display: 'flex', alignItems: 'center',
@@ -1851,7 +1680,7 @@ function ResourcesSection({ lang }: { lang: string }) {
 
                   {/* Expandable body */}
                   <AnimatePresence initial={false}>
-                    {expanded === idx && (
+                    {expanded === idx + 1 && (
                       <motion.div
                         initial={{ height: 0, opacity: 0 }}
                         animate={{ height: 'auto', opacity: 1 }}
@@ -1977,11 +1806,38 @@ function FaqSection({ lang }: { lang: string }) {
 function CtaSection({ lang }: { lang: string }) {
   const isDark = useIsDark()
   const acc = useAccent()
-  const secBg   = isDark ? P.dCanvas : '#83c0f9'
-  const headCol = isDark ? P.dText   : P.ink
-  const subCol  = isDark ? P.dMuted  : P.ink
+  const secBg    = isDark ? P.dCanvas : '#83c0f9'
+  const headCol  = isDark ? P.dText   : P.ink
+  const subCol   = isDark ? P.dMuted  : P.ink
   const badgeCol = isDark ? 'rgba(255,255,255,0.45)' : P.ink
   const glowColor = isDark ? 'rgba(197,232,254,0.12)' : 'rgba(144,213,255,0.45)'
+
+  const phrases = [
+    tx(lang,'Хватит работать вслепую — начните видеть цифры',
+      'Ko\'r-ko\'rona ishlamayin — raqamlarni ko\'ring',
+      'Stop flying blind — start seeing the numbers'),
+    tx(lang,'Вся аналитика трёх маркетплейсов в одном экране',
+      'Uchta marketpleysdagi analitika — bitta ekranda',
+      'All three marketplace analytics in one screen'),
+    tx(lang,'Узнайте, какой товар реально приносит прибыль',
+      'Qaysi mahsulot haqiqatan foyda keltirishini biling',
+      'Find out which product actually drives profit'),
+    tx(lang,'Подключите магазин — первые данные за 5 минут',
+      'Do\'konni ulang — dastlabki ma\'lumotlar 5 daqiqada',
+      'Connect your store — first data in 5 minutes'),
+  ]
+
+  const [phraseIdx, setPhraseIdx] = useState(0)
+  const [btnPulse, setBtnPulse] = useState(false)
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setPhraseIdx(p => (p + 1) % 4)
+      setBtnPulse(true)
+      setTimeout(() => setBtnPulse(false), 700)
+    }, 2500)
+    return () => clearInterval(id)
+  }, [])
 
   return (
     <section style={{ position: 'relative', background: secBg, overflow: 'hidden',
@@ -2002,25 +1858,39 @@ function CtaSection({ lang }: { lang: string }) {
 
       <div style={{ maxWidth: 680, margin: '0 auto', textAlign: 'center', position: 'relative', zIndex: 10 }}>
         <FadeUp>
-          <h2 style={{ fontSize: 'clamp(28px, 4vw, 52px)', fontWeight: 800, color: headCol,
-            lineHeight: 1.08, letterSpacing: '-0.024em', marginBottom: 20 }}>
-            {tx(lang,'Хватит работать вслепую — начните видеть цифры',
-              'Ko\'r-ko\'rona ishlamayin — raqamlarni ko\'ra boshlang',
-              'Stop flying blind — start seeing the numbers')}
-          </h2>
-          <p style={{ fontSize: 16, color: subCol, lineHeight: 1.65, marginBottom: 40, maxWidth: 500, margin: '0 auto 40px' }}>
+          <div style={{ minHeight: 'clamp(100px, 12vw, 160px)', display: 'flex', alignItems: 'center',
+            justifyContent: 'center', marginBottom: 20 }}>
+            <AnimatePresence mode="wait">
+              <motion.h2
+                key={phraseIdx}
+                initial={{ opacity: 0, y: 28 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -28 }}
+                transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
+                style={{ fontSize: 'clamp(28px, 4vw, 52px)', fontWeight: 800, color: headCol,
+                  lineHeight: 1.08, letterSpacing: '-0.024em' }}>
+                {phrases[phraseIdx]}
+              </motion.h2>
+            </AnimatePresence>
+          </div>
+          <p style={{ fontSize: 16, color: subCol, lineHeight: 1.65, maxWidth: 500, margin: '0 auto 40px' }}>
             {tx(lang,'Подключите магазин за несколько минут. Бесплатный тариф, без привязки карты',
               'Do\'koningizni bir necha daqiqada ulang. Bepul tarif, karta bog\'lanmaydi',
               'Connect your store in minutes. Free plan, no credit card required')}
           </p>
-          <Link href="/login"
-            style={{ display: 'inline-block', fontSize: 16, fontWeight: 700,
-              background: acc.btn, color: acc.btnTxt,
-              padding: '16px 44px', borderRadius: 10, textDecoration: 'none', transition: 'all 0.15s', marginBottom: 20 }}
-            onMouseEnter={e => { e.currentTarget.style.background = acc.btnHov; e.currentTarget.style.transform = 'translateY(-2px)' }}
-            onMouseLeave={e => { e.currentTarget.style.background = acc.btn; e.currentTarget.style.transform = 'translateY(0)' }}>
-            {tx(lang,'Начать бесплатно','Bepul boshlash','Start for free')}
-          </Link>
+          <motion.div
+            animate={btnPulse ? { scale: [1, 1.09, 0.96, 1.05, 1], y: [0, -8, 0] } : { scale: 1, y: 0 }}
+            transition={{ duration: 0.65, ease: 'easeInOut' }}
+            style={{ display: 'inline-block', marginBottom: 20 }}>
+            <Link href="/login"
+              style={{ display: 'inline-block', fontSize: 16, fontWeight: 700,
+                background: acc.btn, color: acc.btnTxt,
+                padding: '16px 44px', borderRadius: 10, textDecoration: 'none', transition: 'background 0.15s, transform 0.15s' }}
+              onMouseEnter={e => { e.currentTarget.style.background = acc.btnHov; e.currentTarget.style.transform = 'translateY(-2px)' }}
+              onMouseLeave={e => { e.currentTarget.style.background = acc.btn; e.currentTarget.style.transform = 'translateY(0)' }}>
+              {tx(lang,'Попробовать бесплатно — это легко','Bepul sinab ko\'ring — bu oson','Try it free — it\'s that easy')}
+            </Link>
+          </motion.div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 24, flexWrap: 'wrap' }}>
             {[tx(lang,'✓ 14 дней бесплатно','✓ 14 kun bepul','✓ 14 days free'),
               tx(lang,'✓ Без карты','✓ Kartasiz','✓ No card'),
