@@ -660,8 +660,8 @@ function FeaturesSection({ lang }: { lang: string }) {
   const bdr   = isDark ? P.dHair   : P.hair
 
   // Dashboard palette — adapts to site theme
-  const dBg    = isDark ? '#0c1120'  : '#f0f5fb'
-  const dCard  = isDark ? '#151c2e'  : '#ffffff'
+  const dBg    = isDark ? '#0c1120'  : '#83c0f7'
+  const dCard  = isDark ? '#151c2e'  : '#e8f0fd'
   const dBdr   = isDark ? '#1e2a42'  : '#d4e2ef'
   const dMuted = isDark ? '#6b7a99'  : '#7a90a8'
   const dText  = isDark ? '#e2e8f0'  : '#1e293b'
