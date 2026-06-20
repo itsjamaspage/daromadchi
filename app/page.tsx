@@ -1438,8 +1438,8 @@ function CtaSection({ lang }: { lang: string }) {
   const acc = useAccent()
   const secBg   = isDark ? P.dCanvas : '#83c0f9'
   const headCol = isDark ? P.dText   : P.ink
-  const subCol  = isDark ? P.dMuted  : P.stone
-  const badgeCol = isDark ? 'rgba(255,255,255,0.45)' : P.stone
+  const subCol  = isDark ? P.dMuted  : P.ink
+  const badgeCol = isDark ? 'rgba(255,255,255,0.45)' : P.ink
   const glowColor = isDark ? 'rgba(197,232,254,0.12)' : 'rgba(144,213,255,0.45)'
 
   return (
@@ -1500,7 +1500,7 @@ function FooterSection({ lang }: { lang: string }) {
   const bdr     = isDark ? P.dHair    : 'rgba(14,34,51,0.2)'
   const txt     = isDark ? P.dText    : P.ink
   const muted   = isDark ? P.dMuted   : P.ink
-  const subtle  = isDark ? 'rgba(255,255,255,0.28)' : 'rgba(14,34,51,0.65)'
+  const subtle  = isDark ? 'rgba(255,255,255,0.28)' : P.ink
 
   const cols = [
     { head: tx(lang,'Продукт','Mahsulot','Product'), links: [
