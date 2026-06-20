@@ -659,12 +659,15 @@ function FeaturesSection({ lang }: { lang: string }) {
   const secBg = isDark ? P.dCanvas : P.parchment
   const bdr   = isDark ? P.dHair   : P.hair
 
-  // Dark dashboard palette (matches photo 1 — always dark regardless of site theme)
-  const dBg    = '#0c1120'
-  const dCard  = '#151c2e'
-  const dBdr   = '#1e2a42'
-  const dMuted = '#6b7a99'
-  const dText  = '#e2e8f0'
+  // Dashboard palette — adapts to site theme
+  const dBg    = isDark ? '#0c1120'  : '#f0f5fb'
+  const dCard  = isDark ? '#151c2e'  : '#ffffff'
+  const dBdr   = isDark ? '#1e2a42'  : '#d4e2ef'
+  const dMuted = isDark ? '#6b7a99'  : '#7a90a8'
+  const dText  = isDark ? '#e2e8f0'  : '#1e293b'
+  const chrBar = isDark ? '#1c1c1e'  : '#e8eef5'
+  const chrUrl = isDark ? '#2c2c2e'  : '#d0dce8'
+  const chrTxt = isDark ? '#6b7a99'  : '#7a90a8'
 
   const kpis = [
     { l: tx(lang,'Tushum','Tushum','Revenue'),      v: '124.5M', d: '+12.4%', col: '#22c4b8' },
@@ -717,15 +720,15 @@ function FeaturesSection({ lang }: { lang: string }) {
               : '0 32px 80px rgba(0,0,0,0.22), 0 8px 24px rgba(0,0,0,0.12)' }}>
 
             {/* Chrome bar */}
-            <div style={{ padding: '10px 14px', background: '#1c1c1e',
+            <div style={{ padding: '10px 14px', background: chrBar,
               display: 'flex', alignItems: 'center', gap: 8 }}>
               <div style={{ display: 'flex', gap: 5, flexShrink: 0 }}>
                 {['#ff5f57','#febc2e','#28c840'].map(c => (
                   <div key={c} style={{ width: 10, height: 10, borderRadius: '50%', background: c }} />
                 ))}
               </div>
-              <div style={{ flex: 1, background: '#2c2c2e', borderRadius: 5,
-                padding: '4px 10px', fontSize: 10, color: '#6b7a99', textAlign: 'center',
+              <div style={{ flex: 1, background: chrUrl, borderRadius: 5,
+                padding: '4px 10px', fontSize: 10, color: chrTxt, textAlign: 'center',
                 maxWidth: 240, margin: '0 auto' }}>
                 daromadchi.uz/dashboard
               </div>
@@ -759,7 +762,7 @@ function FeaturesSection({ lang }: { lang: string }) {
                       <div key={i} style={{ flex: 1, borderRadius: '2px 2px 0 0', height: `${h}%`,
                         background: i >= hiIdx
                           ? `linear-gradient(to top, #494fdf, #7c83f0)`
-                          : 'rgba(73,79,223,0.2)' }} />
+                          : isDark ? 'rgba(73,79,223,0.2)' : 'rgba(73,79,223,0.12)' }} />
                     ))}
                   </div>
                 </div>
@@ -770,7 +773,7 @@ function FeaturesSection({ lang }: { lang: string }) {
                     {tx(lang,'Kategoriyalar','Kategoriyalar','Categories')}
                   </p>
                   <svg width={52} height={52} viewBox="0 0 52 52">
-                    <circle cx="26" cy="26" r="18" fill="none" stroke={dBdr} strokeWidth="8"/>
+                    <circle cx="26" cy="26" r="18" fill="none" stroke={isDark ? dBdr : '#d4e2ef'} strokeWidth="8"/>
                     <circle cx="26" cy="26" r="18" fill="none" stroke="#494fdf" strokeWidth="8"
                       strokeDasharray="68 45" strokeLinecap="round" strokeDashoffset="-14" transform="rotate(-90 26 26)"/>
                     <circle cx="26" cy="26" r="18" fill="none" stroke="#f59e0b" strokeWidth="8"
@@ -1237,7 +1240,7 @@ function ExtensionSection({ lang }: { lang: string }) {
   const cards = [
     {
       name: 'Uzum Market', color: '#494fdf', bg: 'rgba(73,79,223,0.1)',
-      icon: '🛒',
+      icon: 'UZ',
       headline: tx(lang,
         'Мгновенный расчёт маржи и FBO/FBS на странице товара',
         'Mahsulot sahifasida FBO/FBS marja hisoblash',
@@ -1250,7 +1253,7 @@ function ExtensionSection({ lang }: { lang: string }) {
     },
     {
       name: 'Wildberries', color: '#CB11AB', bg: 'rgba(203,17,171,0.1)',
-      icon: '📦',
+      icon: 'WB',
       headline: tx(lang,
         'Тарифы FBW и FBS с учётом категории товара',
         'Mahsulot toifasiga qarab FBW va FBS tariflari',
@@ -1263,7 +1266,7 @@ function ExtensionSection({ lang }: { lang: string }) {
     },
     {
       name: 'Yandex Market', color: '#E8A000', bg: 'rgba(232,160,0,0.1)',
-      icon: '🚀',
+      icon: 'YM',
       headline: tx(lang,
         'Расчёт DBS и FBY с учётом всех комиссий',
         'Barcha komissiyalar hisobga olingan DBS va FBY hisoblash',
@@ -1277,7 +1280,7 @@ function ExtensionSection({ lang }: { lang: string }) {
     {
       name: tx(lang,'Бесплатно','Bepul','Free'),
       color: acc.tint, bg: isDark ? 'rgba(131,192,249,0.1)' : 'rgba(131,192,249,0.15)',
-      icon: '✨',
+      icon: 'FR',
       headline: tx(lang,
         'Устанавливается из Chrome Web Store за несколько секунд',
         'Chrome Web Store dan bir necha soniyada o\'rnatiladi',
@@ -1316,7 +1319,8 @@ function ExtensionSection({ lang }: { lang: string }) {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
                   <div style={{ width: 52, height: 52, borderRadius: 14, background: `${c.color}20`,
                     border: `1.5px solid ${c.color}50`,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24 }}>
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 13, fontWeight: 800, color: c.color, letterSpacing: '0.02em' }}>
                     {c.icon}
                   </div>
                   <span style={{ fontSize: 15, fontWeight: 800, color: c.color,
