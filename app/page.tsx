@@ -705,6 +705,11 @@ function FeaturesSection({ lang }: { lang: string }) {
           transition={{ duration: 0.85, ease: [0.25, 0.46, 0.45, 0.94] }}
           style={{ position: 'relative' }}>
 
+          {/* Floating left-right wrapper */}
+          <motion.div
+            animate={{ x: [0, 10, 0, -10, 0] }}
+            transition={{ repeat: Infinity, duration: 7, ease: 'easeInOut', delay: 0.9 }}>
+
           {/* Browser chrome */}
           <div style={{ borderRadius: 14, overflow: 'hidden', border: `1px solid ${bdr}`,
             boxShadow: isDark
@@ -795,6 +800,7 @@ function FeaturesSection({ lang }: { lang: string }) {
               </div>
             </div>
           </div>
+          </motion.div>
         </motion.div>
 
         {/* Right: text content */}
@@ -827,11 +833,11 @@ function FeaturesSection({ lang }: { lang: string }) {
           <FadeUp delay={0.31}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 36 }}>
               {[
-                { icon: '📊', title: tx(lang,'Выручка и прибыль в реальном времени','Real-time daromad va foyda','Real-time revenue & profit'),
+                { title: tx(lang,'Выручка и прибыль в реальном времени','Real-time daromad va foyda','Real-time revenue & profit'),
                   desc: tx(lang,'Следите за KPI по каждому маркетплейсу и временному периоду','Har bir marketpleysning KPIlarini kuzating','Track KPIs per marketplace and time period') },
-                { icon: '🎯', title: tx(lang,'ДРР и рентабельность по каждому товару','Har bir mahsulot uchun DRR va rentabellik','DRR & profitability per product'),
+                { title: tx(lang,'ДРР и рентабельность по каждому товару','Har bir mahsulot uchun DRR va rentabellik','DRR & profitability per product'),
                   desc: tx(lang,'Найдите убыточные позиции и скорректируйте ставки рекламы','Zarar keltiruvchi pozitsiyalarni toping','Find losing products and adjust ad bids') },
-                { icon: '🔔', title: tx(lang,'Уведомления в Telegram каждые 15 минут','Har 15 daqiqada Telegram bildirishnomalari','Telegram alerts every 15 minutes'),
+                { title: tx(lang,'Уведомления в Telegram каждые 15 минут','Har 15 daqiqada Telegram bildirishnomalari','Telegram alerts every 15 minutes'),
                   desc: tx(lang,'Критические алерты по остаткам и превышению ДРР','Qoldiqlar va DRR oshishi haqida ogohlantirishlar','Critical alerts for stock and DRR spikes') },
               ].map((f, i) => (
                 <div key={i} style={{ display: 'flex', gap: 14, padding: '14px 16px',
@@ -840,7 +846,8 @@ function FeaturesSection({ lang }: { lang: string }) {
                   transition: 'border-color 0.15s' }}
                   onMouseEnter={e => (e.currentTarget.style.borderColor = acc.color)}
                   onMouseLeave={e => (e.currentTarget.style.borderColor = isDark ? P.dHair : P.hair)}>
-                  <span style={{ fontSize: 20, flexShrink: 0, lineHeight: 1.2 }}>{f.icon}</span>
+                  <div style={{ width: 3, borderRadius: 2, background: acc.tint,
+                    flexShrink: 0, alignSelf: 'stretch', minHeight: 36 }} />
                   <div>
                     <p style={{ fontSize: 13, fontWeight: 700, color: isDark ? P.dText : P.ink, marginBottom: 3 }}>{f.title}</p>
                     <p style={{ fontSize: 12, color: isDark ? P.dMuted : P.stone, lineHeight: 1.5 }}>{f.desc}</p>
