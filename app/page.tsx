@@ -1888,7 +1888,7 @@ function CtaSection({ lang }: { lang: string }) {
                 padding: '16px 44px', borderRadius: 10, textDecoration: 'none', transition: 'background 0.15s, transform 0.15s' }}
               onMouseEnter={e => { e.currentTarget.style.background = acc.btnHov; e.currentTarget.style.transform = 'translateY(-2px)' }}
               onMouseLeave={e => { e.currentTarget.style.background = acc.btn; e.currentTarget.style.transform = 'translateY(0)' }}>
-              {tx(lang,'Устали терять деньги? Начните зарабатывать →','Pulni yo\'qotishdan charchadingizmi? Daromad olishni boshlang →','Tired of losing money? Start earning →')}
+              {tx(lang,'Устали терять деньги? Начните зарабатывать →','Zarar emas — foyda. Bugunoq boshlang →','Your profit is hiding — let\'s go find it →')}
             </Link>
           </motion.div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 24, flexWrap: 'wrap' }}>
