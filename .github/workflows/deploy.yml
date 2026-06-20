@@ -1,8 +1,10 @@
 name: Deploy to Vercel
+# Disabled — using native Vercel GitHub integration instead.
+# This workflow was burning the 100 deployments/day free tier limit
+# by firing on every push (including rebase force-pushes).
 
 on:
-  push:
-    branches: [main]
+  workflow_dispatch:
 
 jobs:
   deploy:
