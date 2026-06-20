@@ -141,7 +141,7 @@ function Navbar({ lang }: { lang: string }) {
   // On non-scrolled: light hero → dark links; dark hero → white links
   const lnk = scrolled ? (isDark ? P.dMuted : P.stone) : (isDark ? 'rgba(255,255,255,0.78)' : P.ink)
   const lnkH = scrolled ? (isDark ? P.dText : P.ink)   : (isDark ? '#fff' : P.ink)
-  const borderCol = scrolled ? (isDark ? P.dHair : P.hair) : (isDark ? 'rgba(255,255,255,0.15)' : P.hair)
+  const borderCol = scrolled ? (isDark ? P.dHair : P.hair) : (isDark ? 'rgba(255,255,255,0.15)' : 'rgba(14,34,51,0.32)')
 
   return (
     <header style={{
@@ -434,8 +434,8 @@ function HeroSection({ lang }: { lang: string }) {
   const heroBg    = isDark ? P.dCanvas : 'linear-gradient(160deg, #a0d4fc 0%, #7bbaf7 45%, #7bbaf7 80%)'
   const glowColor = isDark ? 'rgba(197,232,254,0.12)' : 'rgba(144,213,255,0.55)'
   const headCol   = isDark ? P.dText   : P.ink
-  const subCol    = isDark ? P.dMuted  : P.stone
-  const secLinkCol = isDark ? 'rgba(255,255,255,0.62)' : P.stone
+  const subCol    = isDark ? P.dMuted  : P.ink
+  const secLinkCol = isDark ? 'rgba(255,255,255,0.62)' : P.ink
   const fadeTarget = isDark ? P.dCanvas : P.parchment
 
   return (
@@ -708,10 +708,15 @@ function FeaturesSection({ lang }: { lang: string }) {
           transition={{ duration: 0.85, ease: [0.25, 0.46, 0.45, 0.94] }}
           style={{ position: 'relative' }}>
 
-          {/* Floating left-right wrapper */}
+          {/* Floating left-right wrapper — also draggable */}
           <motion.div
+            drag="x"
+            dragConstraints={{ left: -30, right: 30 }}
+            dragElastic={0.25}
             animate={{ x: [0, 10, 0, -10, 0] }}
-            transition={{ repeat: Infinity, duration: 7, ease: 'easeInOut', delay: 0.9 }}>
+            transition={{ repeat: Infinity, duration: 7, ease: 'easeInOut', delay: 0.9 }}
+            style={{ cursor: 'grab' }}
+            whileDrag={{ cursor: 'grabbing' }}>
 
           {/* Browser chrome */}
           <div style={{ borderRadius: 14, overflow: 'hidden', border: `1px solid ${bdr}`,
