@@ -1579,153 +1579,104 @@ function ResourcesSection({ lang }: { lang: string }) {
             'Hujjatlar, Telegram-hamjamiyat va maydonchalarni ulash',
             'Documentation, Telegram community and marketplace connections')}
         />
-        <div style={{ display: 'grid', gridTemplateColumns: '1.35fr 0.65fr', gap: 16 }}>
-
-          {/* Large card — 01: Help center */}
-          <FadeUp delay={0.05}>
-            <div onClick={() => setExpanded(0)}
-              style={{ background: cardBg, borderRadius: 24, padding: '32px',
-                border: `1.5px solid ${expanded === 0 ? acc.color : bdr}`,
-                display: 'flex', flexDirection: 'column',
-                boxShadow: isDark ? '0 4px 24px rgba(197,232,254,0.06)' : '0 4px 24px rgba(0,0,0,0.06)',
-                position: 'relative', overflow: 'hidden', cursor: 'pointer',
-                transition: 'border-color 0.2s' }}>
-              <div style={{ position: 'absolute', right: 12, top: 4, fontSize: 120, fontWeight: 900,
-                color: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)', lineHeight: 1,
-                userSelect: 'none', fontFamily: 'monospace', pointerEvents: 'none' }}>01</div>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                <div>
-                  <p style={{ fontSize: 10, fontWeight: 700, color: acc.tint, marginBottom: 8,
-                    textTransform: 'uppercase', letterSpacing: '0.08em' }}>01</p>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-                    <BookOpen size={22} color={acc.tint} />
-                    <h3 style={{ fontSize: 22, fontWeight: 800, color: ink, letterSpacing: '-0.01em' }}>
-                      {tx(lang,'Справка','Yordam markazi','Help center')}
-                    </h3>
-                  </div>
-                </div>
-                <motion.div
-                  animate={{ rotate: expanded === 0 ? 45 : 0 }}
-                  transition={{ duration: 0.2 }}
-                  style={{ width: 30, height: 30, borderRadius: 9, background: bg2,
-                    border: `1px solid ${bdr}`, display: 'flex', alignItems: 'center',
-                    justifyContent: 'center', flexShrink: 0, fontSize: 18, color: ink,
-                    fontWeight: 500, lineHeight: 1 }}>
-                  +
-                </motion.div>
-              </div>
-              <AnimatePresence initial={false}>
-                {expanded === 0 && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}>
-                    <p style={{ fontSize: 14, color: sub, lineHeight: 1.65, marginBottom: 28, maxWidth: 420 }}>
-                      {tx(lang,
-                        'Пошаговые руководства по настройке, формулам DRR и юнит-экономике — всё в одном месте',
-                        'Sozlash, DRR formulalari va birlik-iqtisod bo\'yicha bosqichma-bosqich qo\'llanmalar',
-                        'Step-by-step guides on setup, DRR formulas and unit economics — all in one place'
-                      )}
-                    </p>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                      {[
-                        { t: tx(lang,'Быстрый старт за 5 минут','5 daqiqada tez boshlash','Quick start in 5 min'), d: tx(lang,'Пошаговое руководство','Bosqichma-bosqich qo\'llanma','Step-by-step guide') },
-                        { t: tx(lang,'Как работает ДРР','DRR qanday ishlaydi','How DRR works'), d: tx(lang,'Формула и примеры','Formula va misollar','Formula and examples') },
-                        { t: tx(lang,'Настройка юнит-экономики','Birlik-iqtisodni sozlash','Setting up unit economics'), d: tx(lang,'Укажите закупку и логистику','Xarid va logistikani kiriting','Enter purchase costs & logistics') },
-                      ].map((item, i) => (
-                        <div key={i}
-                          style={{ padding: '11px 14px', background: bg2, borderRadius: 12,
-                            border: `1px solid ${bdr}`, cursor: 'pointer', transition: 'border-color 0.15s' }}
-                          onMouseEnter={e => (e.currentTarget.style.borderColor = acc.color)}
-                          onMouseLeave={e => (e.currentTarget.style.borderColor = bdr)}>
-                          <p style={{ fontSize: 13, fontWeight: 600, color: ink, marginBottom: 2 }}>{item.t}</p>
-                          <p style={{ fontSize: 11, color: muted }}>{item.d}</p>
+        {/* All 3 items as full-width vertical accordion */}
+        {(() => {
+          const allItems = [
+            {
+              num: '01',
+              title: tx(lang,'Справка','Yordam markazi','Help center'),
+              icon: <BookOpen size={20} color={acc.tint} />,
+              desc: tx(lang,
+                'Пошаговые руководства по настройке, формулам DRR и юнит-экономике — всё в одном месте',
+                'Sozlash, DRR formulalari va birlik-iqtisod bo\'yicha bosqichma-bosqich qo\'llanmalar',
+                'Step-by-step guides on setup, DRR formulas and unit economics — all in one place'),
+              items: [
+                { t: tx(lang,'Быстрый старт за 5 минут','5 daqiqada tez boshlash','Quick start in 5 min'), d: tx(lang,'Пошаговое руководство','Bosqichma-bosqich qo\'llanma','Step-by-step guide') },
+                { t: tx(lang,'Как работает ДРР','DRR qanday ishlaydi','How DRR works'), d: tx(lang,'Формула и примеры','Formula va misollar','Formula and examples') },
+                { t: tx(lang,'Настройка юнит-экономики','Birlik-iqtisodni sozlash','Setting up unit economics'), d: tx(lang,'Укажите закупку и логистику','Xarid va logistikani kiriting','Enter purchase costs & logistics') },
+              ],
+              link: tx(lang,'Все статьи →','Barcha maqolalar →','All articles →'),
+              href: '/help',
+            },
+            ...rightItems.map(r => ({ ...r, desc: undefined as string | undefined })),
+          ]
+          return (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {allItems.map((item, idx) => (
+                <FadeUp key={item.num} delay={0.05 + idx * 0.07}>
+                  <div
+                    onClick={() => setExpanded(idx)}
+                    style={{ background: cardBg, borderRadius: 24, overflow: 'hidden',
+                      border: `1.5px solid ${expanded === idx ? acc.color : bdr}`,
+                      boxShadow: isDark ? '0 4px 24px rgba(197,232,254,0.06)' : '0 4px 24px rgba(0,0,0,0.06)',
+                      cursor: 'pointer', transition: 'border-color 0.2s' }}>
+                    {/* Header row */}
+                    <div style={{ padding: '26px 32px', display: 'flex', alignItems: 'center',
+                      justifyContent: 'space-between', position: 'relative', overflow: 'hidden' }}>
+                      <div style={{ position: 'absolute', right: 16, top: -8, fontSize: 100, fontWeight: 900,
+                        color: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)', lineHeight: 1,
+                        userSelect: 'none', fontFamily: 'monospace', pointerEvents: 'none' }}>{item.num}</div>
+                      <div>
+                        <p style={{ fontSize: 10, fontWeight: 700, color: acc.tint, marginBottom: 6,
+                          textTransform: 'uppercase', letterSpacing: '0.08em' }}>{item.num}</p>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          {item.icon}
+                          <h3 style={{ fontSize: 20, fontWeight: 800, color: ink, letterSpacing: '-0.01em' }}>{item.title}</h3>
                         </div>
-                      ))}
-                    </div>
-                    <Link href="/help"
-                      style={{ fontSize: 13, fontWeight: 700, color: acc.tint, textDecoration: 'none', marginTop: 20, display: 'inline-block' }}
-                      onMouseEnter={e => (e.currentTarget.style.opacity = '0.7')}
-                      onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
-                      onClick={e => e.stopPropagation()}>
-                      {tx(lang,'Все статьи →','Barcha maqolalar →','All articles →')}
-                    </Link>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          </FadeUp>
-
-          {/* Right: 2 stacked accordion cards */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            {rightItems.map((item, idx) => (
-              <FadeUp key={item.num} delay={0.1 + idx * 0.08}>
-                <div
-                  style={{ background: cardBg, borderRadius: 24,
-                    border: `1.5px solid ${expanded === idx + 1 ? acc.color : bdr}`,
-                    overflow: 'hidden', cursor: 'pointer',
-                    boxShadow: isDark ? '0 4px 24px rgba(197,232,254,0.06)' : '0 4px 24px rgba(0,0,0,0.06)',
-                    transition: 'border-color 0.2s' }}
-                  onClick={() => setExpanded(idx + 1)}>
-                  {/* Header */}
-                  <div style={{ padding: '22px 24px', display: 'flex', alignItems: 'center',
-                    justifyContent: 'space-between', position: 'relative', overflow: 'hidden' }}>
-                    <div style={{ position: 'absolute', right: 8, top: -10, fontSize: 80, fontWeight: 900,
-                      color: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)', lineHeight: 1,
-                      userSelect: 'none', fontFamily: 'monospace', pointerEvents: 'none' }}>{item.num}</div>
-                    <div>
-                      <p style={{ fontSize: 10, fontWeight: 700, color: acc.tint, marginBottom: 5,
-                        textTransform: 'uppercase', letterSpacing: '0.08em' }}>{item.num}</p>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                        {item.icon}
-                        <h3 style={{ fontSize: 15, fontWeight: 800, color: ink, letterSpacing: '-0.01em' }}>{item.title}</h3>
                       </div>
-                    </div>
-                    <motion.div
-                      animate={{ rotate: expanded === idx + 1 ? 45 : 0 }}
-                      transition={{ duration: 0.2 }}
-                      style={{ width: 30, height: 30, borderRadius: 9, background: bg2,
-                        border: `1px solid ${bdr}`, display: 'flex', alignItems: 'center',
-                        justifyContent: 'center', flexShrink: 0, fontSize: 18, color: ink,
-                        fontWeight: 500, lineHeight: 1 }}>
-                      +
-                    </motion.div>
-                  </div>
-
-                  {/* Expandable body */}
-                  <AnimatePresence initial={false}>
-                    {expanded === idx + 1 && (
                       <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}>
-                        <div style={{ padding: '0 24px 22px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                          {item.items.map((it, j) => (
-                            <div key={j} style={{ padding: '9px 12px', background: bg2,
-                              borderRadius: 10, border: `1px solid ${bdr}` }}>
-                              <p style={{ fontSize: 12, fontWeight: 600, color: ink, marginBottom: 2 }}>{it.t}</p>
-                              <p style={{ fontSize: 10, color: muted }}>{it.d}</p>
-                            </div>
-                          ))}
-                          <Link href={item.href}
-                            style={{ fontSize: 12, fontWeight: 700, color: acc.tint,
-                              textDecoration: 'none', marginTop: 6, display: 'inline-block' }}
-                            onMouseEnter={e => (e.currentTarget.style.opacity = '0.7')}
-                            onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
-                            onClick={e => e.stopPropagation()}>
-                            {item.link}
-                          </Link>
-                        </div>
+                        animate={{ rotate: expanded === idx ? 45 : 0 }}
+                        transition={{ duration: 0.2 }}
+                        style={{ width: 32, height: 32, borderRadius: 10, background: bg2,
+                          border: `1px solid ${bdr}`, display: 'flex', alignItems: 'center',
+                          justifyContent: 'center', flexShrink: 0, fontSize: 20, color: ink,
+                          fontWeight: 500, lineHeight: 1 }}>
+                        +
                       </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              </FadeUp>
-            ))}
-          </div>
-        </div>
+                    </div>
+                    {/* Expandable body */}
+                    <AnimatePresence initial={false}>
+                      {expanded === idx && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.32, ease: [0.25, 0.46, 0.45, 0.94] }}>
+                          <div style={{ padding: '0 32px 28px' }}>
+                            {item.desc && (
+                              <p style={{ fontSize: 14, color: sub, lineHeight: 1.65, marginBottom: 20, maxWidth: 600 }}>
+                                {item.desc}
+                              </p>
+                            )}
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12, marginBottom: 20 }}>
+                              {item.items.map((it, j) => (
+                                <div key={j}
+                                  style={{ padding: '14px 16px', background: bg2, borderRadius: 14,
+                                    border: `1px solid ${bdr}`, cursor: 'pointer', transition: 'border-color 0.15s' }}
+                                  onMouseEnter={e => (e.currentTarget.style.borderColor = acc.color)}
+                                  onMouseLeave={e => (e.currentTarget.style.borderColor = bdr)}>
+                                  <p style={{ fontSize: 13, fontWeight: 600, color: ink, marginBottom: 4 }}>{it.t}</p>
+                                  <p style={{ fontSize: 11, color: muted }}>{it.d}</p>
+                                </div>
+                              ))}
+                            </div>
+                            <Link href={item.href}
+                              style={{ fontSize: 13, fontWeight: 700, color: acc.tint, textDecoration: 'none', display: 'inline-block' }}
+                              onMouseEnter={e => (e.currentTarget.style.opacity = '0.7')}
+                              onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
+                              onClick={e => e.stopPropagation()}>
+                              {item.link}
+                            </Link>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </FadeUp>
+              ))}
+            </div>
+          )
+        })()}
       </div>
     </section>
   )
