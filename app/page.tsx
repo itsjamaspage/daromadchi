@@ -1813,18 +1813,14 @@ function CtaSection({ lang }: { lang: string }) {
   const glowColor = isDark ? 'rgba(197,232,254,0.12)' : 'rgba(144,213,255,0.45)'
 
   const phrases = [
-    tx(lang,'Хватит работать вслепую — начните видеть цифры',
-      'Ko\'r-ko\'rona ishlamayin — raqamlarni ko\'ring',
-      'Stop flying blind — start seeing the numbers'),
-    tx(lang,'Вся аналитика трёх маркетплейсов в одном экране',
-      'Uchta marketpleysdagi analitika — bitta ekranda',
-      'All three marketplace analytics in one screen'),
-    tx(lang,'Узнайте, какой товар реально приносит прибыль',
-      'Qaysi mahsulot haqiqatan foyda keltirishini biling',
-      'Find out which product actually drives profit'),
-    tx(lang,'Подключите магазин — первые данные за 5 минут',
-      'Do\'konni ulang — dastlabki ma\'lumotlar 5 daqiqada',
-      'Connect your store — first data in 5 minutes'),
+    tx(lang,
+      'Хотите увеличить продажи вместе с нами?',
+      'Biz bilan savdolaringizni oshirmoqchimisiz?',
+      'Ready to grow your sales with us?'),
+    tx(lang,
+      'Тогда поехали',
+      'Unda kettik',
+      'Then let\'s go'),
   ]
 
   const [phraseIdx, setPhraseIdx] = useState(0)
@@ -1832,7 +1828,7 @@ function CtaSection({ lang }: { lang: string }) {
 
   useEffect(() => {
     const id = setInterval(() => {
-      setPhraseIdx(p => (p + 1) % 4)
+      setPhraseIdx(p => (p + 1) % 2)
       setBtnPulse(true)
       setTimeout(() => setBtnPulse(false), 700)
     }, 2500)
@@ -1867,7 +1863,8 @@ function CtaSection({ lang }: { lang: string }) {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -28 }}
                 transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
-                style={{ fontSize: 'clamp(28px, 4vw, 52px)', fontWeight: 800, color: headCol,
+                style={{ fontSize: 'clamp(28px, 4vw, 52px)', fontWeight: 800,
+                  color: phraseIdx === 1 ? acc.tint : headCol,
                   lineHeight: 1.08, letterSpacing: '-0.024em' }}>
                 {phrases[phraseIdx]}
               </motion.h2>
