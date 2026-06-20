@@ -55,6 +55,7 @@ button, input, select, textarea, a {
 
   --hairline:   rgba(255, 255, 255, 0.08);
   --surface-soft: #1e1e1e;
+  --color-scheme: dark;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -87,6 +88,7 @@ button, input, select, textarea, a {
 
   --hairline:   #e2e2e7;
   --surface-soft: #f4f4f4;
+  --color-scheme: light;
 }
 
 /* ═══════════════════════════════════════════════════════════════════

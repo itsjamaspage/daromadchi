@@ -45,12 +45,14 @@ async function fetchSlice(
   days: number,
   marketplace: MarketplaceType | undefined,
   hasConnectedShop: boolean,
+  from?: string,
+  to?: string,
 ): Promise<MarketplaceSlice> {
   const [kpis, recentOrders, allProducts, chartData] = await Promise.all([
-    getKpis(days, marketplace),
+    getKpis(days, marketplace, from, to),
     getOrders(5, marketplace),
     getProducts(marketplace),
-    getDailyRevenue(days, marketplace),
+    getDailyRevenue(days, marketplace, from, to),
   ])
   return {
     kpis,
@@ -70,6 +72,8 @@ export default async function DashboardPage({ searchParams }: Props) {
   const params             = await searchParams
   const period             = params?.days ?? '30'
   const days               = parseDays(period)
+  const from               = params?.from
+  const to                 = params?.to
   const initialMarketplace = parseMarketplace(params)
 
   const allShops   = await getUserShops()
@@ -78,12 +82,11 @@ export default async function DashboardPage({ searchParams }: Props) {
   const hasYM      = allShops.some(s => s.marketplace === 'yandex_market')
   const hasWB      = allShops.some(s => s.marketplace === 'wildberries')
 
-  // Fetch all 4 marketplace slices in parallel — tab switching is instant client-side.
   const [allSlice, uzumSlice, ymSlice, wbSlice] = await Promise.all([
-    fetchSlice(days, undefined,       hasShops),
-    fetchSlice(days, 'uzum',          hasUzum),
-    fetchSlice(days, 'yandex_market', hasYM),
-    fetchSlice(days, 'wildberries',   hasWB),
+    fetchSlice(days, undefined,       hasShops,  from, to),
+    fetchSlice(days, 'uzum',          hasUzum,   from, to),
+    fetchSlice(days, 'yandex_market', hasYM,     from, to),
+    fetchSlice(days, 'wildberries',   hasWB,     from, to),
   ])
 
   return (
@@ -93,6 +96,8 @@ export default async function DashboardPage({ searchParams }: Props) {
         slices={{ all: allSlice, uzum: uzumSlice, yandex_market: ymSlice, wildberries: wbSlice }}
         days={days}
         period={period}
+        from={from}
+        to={to}
         initialMarketplace={initialMarketplace}
         hasShops={hasShops}
       />

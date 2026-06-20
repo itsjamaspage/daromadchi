@@ -7,7 +7,7 @@ import Link from 'next/link'
 import { DollarSign, TrendingUp, ShoppingBag, Package, Settings, ArrowRight, RefreshCw, LayoutDashboard } from 'lucide-react'
 import KpiCard from '@/components/dashboard/KpiCard'
 import RevenueChart from '@/components/dashboard/RevenueChart'
-import DateFilter from '@/components/dashboard/DateFilter'
+import DateRangePicker from '@/components/dashboard/DateRangePicker'
 import SyncButton from '@/components/dashboard/SyncButton'
 import StockAlerts from '@/components/dashboard/StockAlerts'
 import CategoryChart from '@/components/dashboard/CategoryChart'
@@ -44,6 +44,8 @@ interface Props {
   }
   days: number
   period: string
+  from?: string
+  to?: string
   initialMarketplace: MarketplaceType | undefined
   hasShops: boolean
 }
@@ -56,7 +58,7 @@ const STATUS_CLASS: Record<string, string> = {
   returned:  'bg-amber-500/10 text-amber-400',
 }
 
-export default function DashboardClient({ slices, days, period, initialMarketplace, hasShops }: Props) {
+export default function DashboardClient({ slices, days, period, from, to, initialMarketplace, hasShops }: Props) {
   const { lang } = useLang()
   const { theme } = useTheme()
   const isDark = theme === 'dark'
@@ -116,7 +118,7 @@ export default function DashboardClient({ slices, days, period, initialMarketpla
         <div className="flex items-center gap-2">
           <SyncButton />
           <Suspense>
-            <DateFilter current={period} />
+            <DateRangePicker period={period} from={from} to={to} />
           </Suspense>
           <button
             onClick={() => setShowCustomize(v => !v)}

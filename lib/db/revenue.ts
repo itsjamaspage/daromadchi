@@ -6,23 +6,42 @@ const supabaseConfigured =
   process.env.NEXT_PUBLIC_SUPABASE_URL &&
   !process.env.NEXT_PUBLIC_SUPABASE_URL.includes('your-project')
 
-export async function getDailyRevenue(days = 7, marketplace?: MarketplaceType): Promise<DailyRevenue[]> {
+export async function getDailyRevenue(
+  days = 7,
+  marketplace?: MarketplaceType,
+  from?: string,
+  to?: string,
+): Promise<DailyRevenue[]> {
   if (!supabaseConfigured) return []
 
   const shopIds = await getShopIds(marketplace)
   if (!shopIds || shopIds.length === 0) return []
 
-  const since = new Date()
-  since.setDate(since.getDate() - days + 1)
   const supabase = await createClient()
 
-  const { data, error } = await supabase
+  let sinceIso: string
+  let untilIso: string | undefined
+
+  if (from) {
+    sinceIso = new Date(from).toISOString()
+    untilIso = to ? new Date(to + 'T23:59:59').toISOString() : undefined
+  } else {
+    const since = new Date()
+    since.setDate(since.getDate() - days + 1)
+    sinceIso = since.toISOString()
+  }
+
+  let q = supabase
     .from('orders')
     .select('ordered_at, revenue')
     .in('shop_id', shopIds)
     .neq('status', 'cancelled')
-    .gte('ordered_at', since.toISOString())
+    .gte('ordered_at', sinceIso)
     .order('ordered_at', { ascending: true })
+
+  if (untilIso) q = q.lte('ordered_at', untilIso)
+
+  const { data, error } = await q
 
   if (error || !data) return []
 
