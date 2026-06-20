@@ -13,12 +13,13 @@ export default async function SyncStatusPage() {
 
   const { data: shops } = await supabase
     .from('shops')
-    .select('id, name, marketplace, api_key_encrypted, last_synced_at')
+    .select('id, name, marketplace, api_key_encrypted, last_synced_at, shop_id_external')
     .eq('user_id', user.id)
-    .neq('shop_id_external', 'DEMO')
+
+  const filteredShops = (shops ?? []).filter(s => s.shop_id_external !== 'DEMO')
 
   const shopsWithCounts = await Promise.all(
-    (shops ?? []).map(async shop => {
+    filteredShops.map(async shop => {
       const [{ count: productCount }, { count: orderCount }] = await Promise.all([
         supabase.from('products').select('*', { count: 'exact', head: true }).eq('shop_id', shop.id),
         supabase.from('orders').select('*', { count: 'exact', head: true }).eq('shop_id', shop.id),
