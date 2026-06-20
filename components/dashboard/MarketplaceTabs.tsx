@@ -33,9 +33,9 @@ export default function MarketplaceTabs({ current }: { current: MarketplaceType 
           prefetch={true}
           className="px-3 py-1.5 rounded-full text-xs font-semibold transition-all"
           style={current === mp ? {
-            background: 'rgba(73,79,223,0.1)',
+            background: 'rgba(131,192,249,0.15)',
             color: 'var(--c1)',
-            border: '1px solid rgba(73,79,223,0.2)',
+            border: '1px solid rgba(131,192,249,0.3)',
           } : {
             color: 'var(--text-muted)',
             border: '1px solid transparent',

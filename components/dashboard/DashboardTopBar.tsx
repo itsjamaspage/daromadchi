@@ -168,9 +168,9 @@ export default function DashboardTopBar() {
                       onClick={() => setLang(value)}
                       className="flex-1 text-[10px] font-semibold py-1.5 rounded-lg transition-all"
                       style={lang === value ? {
-                        background: 'rgba(73,79,223,0.1)',
+                        background: 'rgba(131,192,249,0.15)',
                         color: 'var(--c1)',
-                        border: '1px solid rgba(73,79,223,0.2)',
+                        border: '1px solid rgba(131,192,249,0.3)',
                       } : {
                         color: 'var(--text-muted)',
                         border: '1px solid transparent',

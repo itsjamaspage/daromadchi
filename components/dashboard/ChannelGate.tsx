@@ -56,7 +56,7 @@ export default function ChannelGate({ children }: { children: React.ReactNode })
   if (passed === null) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <span className="w-6 h-6 border-2 border-violet-400/40 border-t-violet-400 rounded-full animate-spin" />
+        <span className="w-6 h-6 border-2 border-[rgba(131,192,249,0.4)] border-t-[#83c0f9] rounded-full animate-spin" />
       </div>
     )
   }
@@ -85,7 +85,7 @@ export default function ChannelGate({ children }: { children: React.ReactNode })
             href={CHANNEL_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="block w-full py-3 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-sm font-semibold text-center transition-colors"
+            className="block w-full py-3 rounded-xl bg-[#83c0f9] hover:bg-[#6aabf0] text-white text-sm font-semibold text-center transition-colors"
           >
             {t.joinBtn}
           </a>

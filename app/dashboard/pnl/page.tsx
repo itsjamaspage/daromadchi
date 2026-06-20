@@ -65,8 +65,8 @@ export default async function PnlPage({ searchParams }: Props) {
       </Suspense>
 
       {isEmpty ? (
-        <div className="bg-[var(--bg-card2)] rounded-2xl p-10 text-center" style={{ border: '1px dashed rgba(73,79,223,0.3)' }}>
-          <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: 'rgba(73,79,223,0.1)', borderWidth: '1px', borderStyle: 'solid', borderColor: 'rgba(73,79,223,0.2)' }}>
+        <div className="bg-[var(--bg-card2)] rounded-2xl p-10 text-center" style={{ border: '1px dashed rgba(131,192,249,0.3)' }}>
+          <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: 'rgba(131,192,249,0.15)', borderWidth: '1px', borderStyle: 'solid', borderColor: 'rgba(131,192,249,0.25)' }}>
             <FileText className="w-7 h-7" style={{ color: 'var(--c1)' }} />
           </div>
           <h2 className="text-[var(--text-base)] font-bold text-lg mb-2">{d.noData}</h2>
@@ -83,7 +83,7 @@ export default async function PnlPage({ searchParams }: Props) {
           {/* Summary */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {[
-              { label: d.totalRevenuePnl,   value: fmt(totalRevenue), color: 'text-[#494fdf]' },
+              { label: d.totalRevenuePnl,   value: fmt(totalRevenue), color: 'text-[var(--c1)]' },
               { label: d.commission2,        value: fmt(totalFees),    color: 'text-red-400' },
               { label: d.delivery,           value: fmt(totalDelivery),color: 'text-amber-400' },
               { label: d.netNoCommission,    value: fmt(totalNet),     color: totalNet > 0 ? 'text-emerald-400' : 'text-red-400' },
@@ -135,7 +135,7 @@ export default async function PnlPage({ searchParams }: Props) {
                         <td className="px-5 py-4 text-[var(--text-base)] font-medium">
                           {m.month}
                           {i === monthlyData.length - 1 && (
-                            <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded" style={{ color: 'var(--c1)', background: 'rgba(73,79,223,0.1)' }}>{d.current}</span>
+                            <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded" style={{ color: 'var(--c1)', background: 'rgba(131,192,249,0.15)' }}>{d.current}</span>
                           )}
                         </td>
                         <td className="px-5 py-4 text-right text-[var(--text-muted)]">{m.order_count}</td>

@@ -20,8 +20,8 @@ export default function HelpTooltip({ section, className = '', variant = 'badge'
   if (!content) return null
 
   const triggerClass = variant === 'plain'
-    ? `inline-flex items-center justify-center w-5 h-5 rounded-md text-[var(--text-muted)] hover:text-violet-400 hover:bg-violet-500/10 transition-all flex-shrink-0 ${className}`
-    : `inline-flex items-center justify-center w-6 h-6 rounded-full border border-violet-500/40 bg-violet-500/10 text-violet-400 hover:border-violet-400/70 hover:bg-violet-500/20 hover:text-violet-300 transition-all flex-shrink-0 ${className}`
+    ? `inline-flex items-center justify-center w-5 h-5 rounded-md text-[var(--text-muted)] hover:text-[#83c0f9] hover:bg-[rgba(131,192,249,0.12)] transition-all flex-shrink-0 ${className}`
+    : `inline-flex items-center justify-center w-6 h-6 rounded-full border border-[rgba(131,192,249,0.4)] bg-[rgba(131,192,249,0.12)] text-[#83c0f9] hover:border-violet-400/70 hover:bg-[#6aabf0]/20 hover:text-[#83c0f9] transition-all flex-shrink-0 ${className}`
 
   return (
     <>
@@ -47,8 +47,8 @@ export default function HelpTooltip({ section, className = '', variant = 'badge'
             {/* Header */}
             <div className="px-5 py-4 border-b border-[var(--border)] flex items-center justify-between gap-3">
               <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-lg bg-violet-500/15 border border-violet-500/25 flex items-center justify-center flex-shrink-0">
-                  <HelpCircle className="w-3.5 h-3.5 text-violet-400" />
+                <div className="w-7 h-7 rounded-lg bg-[rgba(131,192,249,0.15)] border border-[rgba(131,192,249,0.25)] flex items-center justify-center flex-shrink-0">
+                  <HelpCircle className="w-3.5 h-3.5 text-[#83c0f9]" />
                 </div>
                 <h2 className="text-[var(--text-base)] font-semibold text-sm">{content.title}</h2>
               </div>
@@ -96,7 +96,7 @@ export default function HelpTooltip({ section, className = '', variant = 'badge'
             <div className="px-5 py-3 border-t border-[var(--border)]">
               <button
                 onClick={() => setOpen(false)}
-                className="w-full py-2 rounded-xl bg-violet-600/20 border border-violet-500/30 text-xs font-semibold hover:bg-violet-600/30 transition-all"
+                className="w-full py-2 rounded-xl bg-[rgba(131,192,249,0.15)] border border-[rgba(131,192,249,0.3)] text-xs font-semibold hover:bg-[#83c0f9]/30 transition-all"
                 style={{ color: 'var(--c1)' }}
               >
                 {lang === 'ru' ? 'Понятно' : lang === 'en' ? 'Got it' : 'Tushunarli'}
@@ -117,7 +117,7 @@ function Section({
   children: React.ReactNode
 }) {
   const colors = {
-    violet: 'text-violet-400 border-violet-500/20 bg-violet-500/5',
+    violet: 'text-[#83c0f9] border-[rgba(131,192,249,0.25)] bg-[#83c0f9]/5',
     emerald: 'text-emerald-400 border-emerald-500/20 bg-emerald-500/5',
     amber:   'text-amber-400 border-amber-500/20 bg-amber-500/5',
     cyan:    'text-cyan-400 border-cyan-500/20 bg-cyan-500/5',

@@ -82,7 +82,7 @@ export default function PeriodSelector({
             onClick={() => goPreset(value)}
             className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
               activePreset === value
-                ? 'bg-violet-600/20 text-[var(--c1)] border border-violet-500/30'
+                ? 'bg-[rgba(131,192,249,0.15)] text-[var(--c1)] border border-[rgba(131,192,249,0.3)]'
                 : 'text-[var(--text-muted)] hover:text-[var(--text-dim)]'
             }`}
           >
@@ -93,7 +93,7 @@ export default function PeriodSelector({
           onClick={goAll}
           className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
             noneActive
-              ? 'bg-violet-600/20 text-[var(--c1)] border border-violet-500/30'
+              ? 'bg-[rgba(131,192,249,0.15)] text-[var(--c1)] border border-[rgba(131,192,249,0.3)]'
               : 'text-[var(--text-muted)] hover:text-[var(--text-dim)]'
           }`}
         >
@@ -106,7 +106,7 @@ export default function PeriodSelector({
         onClick={() => setShowPicker(v => !v)}
         className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
           hasCustom
-            ? 'bg-violet-600/20 text-[var(--c1)] border-violet-500/30'
+            ? 'bg-[rgba(131,192,249,0.15)] text-[var(--c1)] border-[rgba(131,192,249,0.3)]'
             : 'text-[var(--text-muted)] hover:text-[var(--text-dim)] border-[var(--border)]'
         }`}
         style={{ background: hasCustom ? undefined : 'var(--bg-card2)' }}

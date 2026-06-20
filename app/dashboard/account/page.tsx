@@ -28,7 +28,7 @@ export default async function AccountPage() {
 
   const planLabel: Record<string, { label: string; color: string }> = {
     free:     { label: t.planFree,    color: 'text-[var(--text-muted)] bg-slate-500/10 border-[var(--border)]' },
-    pro:      { label: t.planPro,     color: 'text-[#494fdf] bg-[rgba(73,79,223,0.1)] border-[rgba(73,79,223,0.2)]' },
+    pro:      { label: t.planPro,     color: 'text-[var(--c1)] bg-[rgba(131,192,249,0.12)] border-[rgba(131,192,249,0.25)]' },
     pro_plus: { label: t.planProPlus, color: 'text-amber-400 bg-amber-500/10 border-amber-500/20' },
   }
   const planInfo = planLabel[effectivePlan] ?? planLabel.free
@@ -137,7 +137,7 @@ export default async function AccountPage() {
               <p className="text-[var(--text-muted)] text-xs mt-0.5">{t.passwordDesc}</p>
             </div>
             <Link href="/login?forgot=1"
-              className="text-sm font-medium transition-colors border border-[rgba(73,79,223,0.2)] px-3 py-1.5 rounded-xl hover:bg-[rgba(73,79,223,0.08)]"
+              className="text-sm font-medium transition-colors border border-[rgba(131,192,249,0.3)] px-3 py-1.5 rounded-xl hover:bg-[rgba(131,192,249,0.12)]"
               style={{ color: 'var(--c1)' }}>
               {t.change}
             </Link>

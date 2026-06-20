@@ -24,9 +24,9 @@ const MP_CONFIG: Record<string, { label: string; color: string; letter: string; 
 }
 
 const COLOR_CLASSES: Record<string, { bg: string; border: string; text: string; badge: string }> = {
-  violet: { bg: 'bg-violet-500/15', border: 'border-violet-500/25', text: 'text-violet-400', badge: 'bg-violet-500/10 border-violet-500/25 text-violet-400' },
-  amber:  { bg: 'bg-amber-500/15',  border: 'border-amber-500/25',  text: 'text-amber-400',  badge: 'bg-amber-500/10 border-amber-500/25 text-amber-400'   },
-  purple: { bg: 'bg-purple-500/15', border: 'border-purple-500/25', text: 'text-purple-400', badge: 'bg-purple-500/10 border-purple-500/25 text-purple-400' },
+  violet: { bg: 'bg-[rgba(131,192,249,0.12)]', border: 'border-[rgba(131,192,249,0.25)]', text: 'text-[#83c0f9]', badge: 'bg-[rgba(131,192,249,0.12)] border-[rgba(131,192,249,0.25)] text-[var(--c1)]' },
+  amber:  { bg: 'bg-amber-500/15',              border: 'border-amber-500/25',             text: 'text-amber-400',  badge: 'bg-amber-500/10 border-amber-500/25 text-amber-400'   },
+  purple: { bg: 'bg-[rgba(131,192,249,0.12)]', border: 'border-[rgba(131,192,249,0.25)]', text: 'text-[#83c0f9]', badge: 'bg-[rgba(131,192,249,0.12)] border-[rgba(131,192,249,0.25)] text-[var(--c1)]' },
 }
 
 function ShopCard({ shop }: { shop: Shop }) {
@@ -195,7 +195,7 @@ export default function SyncStatusClient({ shops }: { shops: Shop[] }) {
 
   if (shops.length === 0) {
     return (
-      <div className="bg-[var(--bg-card2)] border border-dashed border-violet-500/30 rounded-2xl p-10 text-center">
+      <div className="bg-[var(--bg-card2)] border border-dashed rounded-2xl p-10 text-center" style={{ borderColor: 'rgba(131,192,249,0.3)' }}>
         <p className="text-[var(--text-base)] font-bold mb-2">{t.noShops}</p>
         <p className="text-[var(--text-muted)] text-sm mb-4">{t.noShopsDesc}</p>
         <Link href="/dashboard/settings"
@@ -212,7 +212,7 @@ export default function SyncStatusClient({ shops }: { shops: Shop[] }) {
         <button
           onClick={handleSyncAll}
           disabled={syncingAll}
-          className="flex items-center gap-2 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-[var(--text-base)] text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors"
+          className="flex items-center gap-2 disabled:opacity-50 text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors" style={{ background: '#83c0f9', color: '#131321' }}
         >
           {syncingAll ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
           {syncingAll ? t.syncing : t.syncAll}

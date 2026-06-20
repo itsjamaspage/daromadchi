@@ -52,7 +52,7 @@ function DeductionBar({ entry }: { entry: PayoutEntry }) {
   if (total === 0) return null
 
   const segments = [
-    { label: t.segCommission, value: entry.commission,      color: 'bg-violet-500' },
+    { label: t.segCommission, value: entry.commission,      color: 'bg-[#83c0f9]' },
     { label: t.segDelivery,   value: entry.delivery,        color: 'bg-blue-500'   },
     { label: t.segReturns,    value: entry.returns,         color: 'bg-red-500'    },
     { label: t.segAd,         value: entry.adSpend,         color: 'bg-amber-500'  },

@@ -34,8 +34,8 @@ export default function RevenueChart({ data, days = 7 }: { data: DailyRevenue[];
   const axisColor = theme === 'dark' ? '#64748b' : '#9ca3af'
   const gridColor = theme === 'dark' ? '#ffffff08' : '#f3f4f6'
   const cursorColor = theme === 'dark' ? '#ffffff05' : '#f0f0f0'
-  const barColor1 = theme === 'dark' ? '#494fdf' : '#494fdf'
-  const barColor2 = theme === 'dark' ? '#4f55f1' : '#4f55f1'
+  const barColor1 = theme === 'dark' ? '#83c0f9' : '#83c0f9'
+  const barColor2 = theme === 'dark' ? '#6aabf0' : '#6aabf0'
 
   return (
     <div className="border rounded-2xl p-6" style={{ background: 'var(--bg-card2)', borderColor: 'var(--border)' }}>

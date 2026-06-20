@@ -94,8 +94,8 @@ export default function OrdersTable({ orders }: { orders: Order[] }) {
                 : 'text-[var(--text-muted)] hover:text-[var(--text-dim)]'
             }`}
             style={mp === tab.value ? {
-              background: 'rgba(73,79,223,0.12)',
-              border: '1px solid rgba(73,79,223,0.2)',
+              background: 'rgba(131,192,249,0.15)',
+              border: '1px solid rgba(131,192,249,0.25)',
             } : undefined}
           >
             {tab.label}
@@ -132,7 +132,7 @@ export default function OrdersTable({ orders }: { orders: Order[] }) {
             value={query}
             onChange={e => setQuery(e.target.value)}
             placeholder={d.searchOrderPlaceholder}
-            className="w-full bg-[var(--bg-card2)] border border-[var(--border2)] rounded-xl pl-9 pr-4 py-2.5 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[#494fdf]/60 focus:ring-1 focus:ring-[#494fdf]/30 transition-all"
+            className="w-full bg-[var(--bg-card2)] border border-[var(--border2)] rounded-xl pl-9 pr-4 py-2.5 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[#83c0f9]/60 focus:ring-1 focus:ring-[#83c0f9]/30 transition-all"
           />
         </div>
         <ExportButton data={exportData} filename="buyurtmalar" />
@@ -163,7 +163,7 @@ export default function OrdersTable({ orders }: { orders: Order[] }) {
                   <tr key={order.id} className="hover:bg-[var(--bg-card2)] transition-colors">
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(73,79,223,0.08)' }}>
+                        <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(131,192,249,0.12)' }}>
                           <ShoppingCart className="w-3.5 h-3.5" style={{ color: 'var(--c1)' }} />
                         </div>
                         <span className="font-mono text-xs font-medium" style={{ color: 'var(--c1)' }}>{order.order_id_external ?? order.id.slice(0, 8)}</span>

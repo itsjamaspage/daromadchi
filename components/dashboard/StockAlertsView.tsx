@@ -105,7 +105,7 @@ export default function StockAlertsView({ alerts, settings: initialSettings }: P
             onClick={() => setShowSettings(s => !s)}
             className={`p-2 rounded-xl transition-all ${
               showSettings
-                ? 'bg-violet-600/20 text-violet-400 border border-violet-500/20'
+                ? 'bg-[rgba(131,192,249,0.15)] text-[#83c0f9] border border-[rgba(131,192,249,0.25)]'
                 : 'text-[var(--text-muted)] hover:text-[var(--text-base)] hover:bg-[var(--bg-card2)]'
             }`}
             title={d.alertsSettingsBtn}
@@ -126,7 +126,7 @@ export default function StockAlertsView({ alerts, settings: initialSettings }: P
                   min={1}
                   value={settings.stockThreshold}
                   onChange={e => setSettings(s => ({ ...s, stockThreshold: Number(e.target.value) }))}
-                  className="w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-3 py-2 text-sm text-[var(--text-base)] focus:outline-none focus:border-violet-500/50 transition-colors"
+                  className="w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-3 py-2 text-sm text-[var(--text-base)] focus:outline-none focus:border-[rgba(131,192,249,0.5)] transition-colors"
                 />
               </div>
             </div>
@@ -134,7 +134,7 @@ export default function StockAlertsView({ alerts, settings: initialSettings }: P
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="bg-violet-600 hover:bg-violet-500 disabled:opacity-60 text-[var(--text-base)] text-sm font-semibold px-4 py-2 rounded-xl transition-colors"
+                className="bg-[#83c0f9] hover:bg-[#6aabf0] disabled:opacity-60 text-[var(--text-base)] text-sm font-semibold px-4 py-2 rounded-xl transition-colors"
               >
                 {saving ? d.saving : saved ? d.saved : d.save}
               </button>

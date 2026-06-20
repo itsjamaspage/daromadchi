@@ -96,10 +96,10 @@ export default function AdvertisingView({ uzumCampaigns, wbCampaigns }: Props) {
           <button key={mp} onClick={() => setMarketplace(mp)}
             className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${
               marketplace === mp
-                ? 'border border-[rgba(73,79,223,0.3)]'
+                ? 'border border-[rgba(131,192,249,0.35)]'
                 : 'text-[var(--text-muted)] hover:text-[var(--text-dim)]'
             }`}
-            style={marketplace === mp ? { color: 'var(--c1)', background: 'rgba(73,79,223,0.12)' } : {}}>
+            style={marketplace === mp ? { color: 'var(--c1)', background: 'rgba(131,192,249,0.15)' } : {}}>
             {mp === 'uzum' ? 'Uzum' : mp === 'wb' ? 'Wildberries' : 'Yandex Market'}
           </button>
         ))}
@@ -197,10 +197,10 @@ export default function AdvertisingView({ uzumCampaigns, wbCampaigns }: Props) {
                 <button key={v} onClick={() => setTypeTab(v)}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                     typeTab === v
-                      ? 'border border-[rgba(73,79,223,0.3)]'
+                      ? 'border border-[rgba(131,192,249,0.35)]'
                       : 'text-[var(--text-muted)] hover:text-[var(--text-dim)]'
                   }`}
-                  style={typeTab === v ? { color: 'var(--c1)', background: 'rgba(73,79,223,0.12)' } : {}}>
+                  style={typeTab === v ? { color: 'var(--c1)', background: 'rgba(131,192,249,0.15)' } : {}}>
                   {label}
                 </button>
               ))}
@@ -235,7 +235,7 @@ export default function AdvertisingView({ uzumCampaigns, wbCampaigns }: Props) {
                         <td className="px-3 py-3">
                           <span
                             className={`text-[10px] font-bold px-2 py-0.5 rounded ${c.type === 'cpc' ? 'bg-blue-500/10 text-blue-400' : ''}`}
-                            style={c.type !== 'cpc' ? { background: 'rgba(73,79,223,0.1)', color: 'var(--c1)' } : {}}
+                            style={c.type !== 'cpc' ? { background: 'rgba(131,192,249,0.12)', color: 'var(--c1)' } : {}}
                           >{c.type.toUpperCase()}</span>
                         </td>
                         <td className="px-3 py-3">

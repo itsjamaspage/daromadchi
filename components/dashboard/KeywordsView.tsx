@@ -113,7 +113,7 @@ export default function KeywordsView({ phrases }: Props) {
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder={d.kwSearchPlaceholder}
-              className="w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl pl-9 pr-4 py-2 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-violet-500/60 transition-all"
+              className="w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl pl-9 pr-4 py-2 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[rgba(131,192,249,0.6)] transition-all"
             />
           </div>
 
@@ -124,7 +124,7 @@ export default function KeywordsView({ phrases }: Props) {
                 onClick={() => setActiveTab(t.key)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                   activeTab === t.key
-                    ? 'bg-violet-600/20 text-violet-700 border border-violet-500/30 dark:text-violet-300'
+                    ? 'bg-[rgba(131,192,249,0.15)] text-[var(--c1)] border border-[rgba(131,192,249,0.3)] dark:text-[#83c0f9]'
                     : 'text-[var(--text-muted)] hover:text-[var(--text-dim)]'
                 }`}
               >
@@ -162,7 +162,7 @@ export default function KeywordsView({ phrases }: Props) {
                   <td className="px-4 py-3.5">
                     <div className="flex flex-wrap gap-1">
                       {row.keywords.slice(0, 5).map(kw => (
-                        <span key={kw} className="text-[10px] px-2 py-0.5 rounded-full bg-violet-500/10 border border-violet-500/20 text-violet-700 dark:text-violet-300">
+                        <span key={kw} className="text-[10px] px-2 py-0.5 rounded-full bg-[rgba(131,192,249,0.12)] border border-[rgba(131,192,249,0.25)] text-[var(--c1)] dark:text-[#83c0f9]">
                           {kw}
                         </span>
                       ))}

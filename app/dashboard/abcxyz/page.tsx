@@ -21,13 +21,13 @@ export default async function AbcXyzPage() {
         <div>
           <div className="flex items-center gap-3 mb-0.5">
             <h1 className="text-2xl font-bold text-[var(--text-base)]">{t.title}</h1>
-            <span className="text-[10px] font-semibold px-2 py-1 rounded-full bg-violet-500/10 border border-violet-500/25 text-violet-400">
+            <span className="text-[10px] font-semibold px-2 py-1 rounded-full border text-[var(--c1)]" style={{ background: 'rgba(131,192,249,0.12)', borderColor: 'rgba(131,192,249,0.25)' }}>
               {t.badge}
             </span>
           </div>
           <p className="text-[var(--text-muted)] text-sm">{t.subtitle}</p>
         </div>
-        <div className="bg-[var(--bg-card2)] border border-dashed border-violet-500/30 rounded-2xl p-10 text-center">
+        <div className="bg-[var(--bg-card2)] border border-dashed border-[rgba(131,192,249,0.3)] rounded-2xl p-10 text-center">
           <p className="text-[var(--text-base)] font-bold text-lg mb-2">{t.noData}</p>
           <p className="text-[var(--text-muted)] text-sm mb-6">{t.noDataDesc}</p>
           <Link href="/dashboard/settings"
@@ -74,7 +74,7 @@ export default async function AbcXyzPage() {
       <div>
         <div className="flex items-center gap-3 mb-0.5">
           <h1 className="text-2xl font-bold text-[var(--text-base)]">{t.title}</h1>
-          <span className="text-[10px] font-semibold px-2 py-1 rounded-full bg-violet-500/10 border border-violet-500/25 text-violet-400">
+          <span className="text-[10px] font-semibold px-2 py-1 rounded-full border text-[var(--c1)]" style={{ background: 'rgba(131,192,249,0.12)', borderColor: 'rgba(131,192,249,0.25)' }}>
             {t.badge}
           </span>
         </div>

@@ -242,25 +242,25 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
   function SortIcon({ col }: { col: ColKey }) {
     if (sortKey !== col) return <ChevronUp className="w-3 h-3 opacity-20" />
     return sortDir === 'asc'
-      ? <ChevronUp className="w-3 h-3 text-violet-400" />
-      : <ChevronDown className="w-3 h-3 text-violet-400" />
+      ? <ChevronUp className="w-3 h-3 text-[#83c0f9]" />
+      : <ChevronDown className="w-3 h-3 text-[#83c0f9]" />
   }
 
   return (
     <div className="space-y-4" ref={printRef}>
       {/* Extension banner */}
       {extPending && (
-        <div className="bg-violet-500/10 border border-violet-500/30 rounded-2xl px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-3">
+        <div className="bg-[rgba(131,192,249,0.12)] border border-[rgba(131,192,249,0.3)] rounded-2xl px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-3">
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold truncate" style={{ color: 'var(--c1)' }}>{extPending.title}</p>
-            <p className="text-xs text-violet-400/70 mt-0.5">
+            <p className="text-xs text-[#83c0f9]/70 mt-0.5">
               {extPending.marketplace?.toUpperCase()} · {extPending.sellingPrice ? `${new Intl.NumberFormat('uz-UZ').format(Math.round(extPending.sellingPrice))} so'm` : ''} · {extPending.margin ? `${Math.round(extPending.margin)}% marja` : ''}
             </p>
             {extError && <p className="text-xs text-red-400 mt-1">{extError}</p>}
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
             <button onClick={() => setExtPending(null)}
-              className="px-3 py-1.5 text-xs font-semibold text-violet-400/70 hover:text-violet-300 border border-violet-500/20 rounded-lg transition-colors">
+              className="px-3 py-1.5 text-xs font-semibold text-[#83c0f9]/70 hover:text-[#83c0f9] border border-[rgba(131,192,249,0.25)] rounded-lg transition-colors">
               Bekor
             </button>
             <button onClick={saveFromExtension} disabled={extSaving}
@@ -278,7 +278,7 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
           <input
             value={search} onChange={e => setSearch(e.target.value)}
             placeholder={d.ueSearch}
-            className="w-full pl-9 pr-3 py-2 bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl text-sm text-[var(--text-base)] placeholder-[var(--text-muted)] focus:outline-none focus:border-violet-500/50"
+            className="w-full pl-9 pr-3 py-2 bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl text-sm text-[var(--text-base)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[rgba(131,192,249,0.5)]"
           />
         </div>
 
@@ -314,7 +314,7 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
                   onClick={() => !col.always && toggleCol(col.key)}
                   className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                     active
-                      ? 'bg-violet-600/20 border border-violet-500/30'
+                      ? 'bg-[rgba(131,192,249,0.15)] border border-[rgba(131,192,249,0.3)]'
                       : 'bg-[var(--bg-card2)] text-[var(--text-muted)] border border-[var(--border)] hover:text-[var(--text-dim)]'
                   } ${col.always ? 'opacity-60 cursor-default' : 'cursor-pointer'}`}
                   style={active ? { color: 'var(--c1)' } : {}}>
@@ -344,7 +344,7 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
                   type="number" step={step} min={min} max={max}
                   value={draftSettings[key as keyof UnitEcoSettings] as number}
                   onChange={e => setDraftSettings(prev => ({ ...prev, [key]: parseFloat(e.target.value) || 0 }))}
-                  className="w-full px-3 py-2 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg text-sm text-[var(--text-base)] focus:outline-none focus:border-violet-500/50"
+                  className="w-full px-3 py-2 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg text-sm text-[var(--text-base)] focus:outline-none focus:border-[rgba(131,192,249,0.5)]"
                 />
               </label>
             ))}
@@ -353,7 +353,7 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
               <select
                 value={draftSettings.taxType}
                 onChange={e => setDraftSettings(prev => ({ ...prev, taxType: e.target.value as UnitEcoSettings['taxType'] }))}
-                className="w-full px-3 py-2 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg text-sm text-[var(--text-base)] focus:outline-none focus:border-violet-500/50">
+                className="w-full px-3 py-2 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg text-sm text-[var(--text-base)] focus:outline-none focus:border-[rgba(131,192,249,0.5)]">
                 <option value="income">Daromad (6%)</option>
                 <option value="income_minus_expense">Daromad − xarajat (15%)</option>
               </select>
@@ -397,8 +397,8 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
 
       {/* Table */}
       {filtered.length === 0 ? (
-        <div className="bg-[var(--bg-card2)] border border-dashed border-violet-500/30 rounded-2xl p-10 text-center">
-          <Plus className="w-8 h-8 text-violet-400/50 mx-auto mb-3" />
+        <div className="bg-[var(--bg-card2)] border border-dashed border-[rgba(131,192,249,0.3)] rounded-2xl p-10 text-center">
+          <Plus className="w-8 h-8 text-[#83c0f9]/50 mx-auto mb-3" />
           <p className="text-[var(--text-base)] font-semibold mb-1">{d.ueNoProducts}</p>
           <p className="text-[var(--text-muted)] text-sm">{d.ueNoProductsHint}</p>
         </div>
@@ -412,7 +412,7 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
                     <input type="checkbox"
                       checked={selected.size === filtered.length && filtered.length > 0}
                       onChange={toggleAll}
-                      className="rounded border-[var(--border2)] bg-transparent accent-violet-500" />
+                      className="rounded border-[var(--border2)] bg-transparent accent-[#83c0f9]" />
                   </th>
                   {shownCols.map(col => (
                     <th key={col.key}
@@ -429,22 +429,22 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
               <tbody className="divide-y divide-[var(--border)]">
                 {filtered.map(item => (
                   <tr key={item.id}
-                    className={`hover:bg-[var(--bg-card2)] transition-colors ${selected.has(item.id) ? 'bg-violet-500/5' : ''}`}>
+                    className={`hover:bg-[var(--bg-card2)] transition-colors ${selected.has(item.id) ? 'bg-[#83c0f9]/5' : ''}`}>
                     <td className="px-4 py-3">
                       <input type="checkbox"
                         checked={selected.has(item.id)}
                         onChange={() => toggleRow(item.id)}
-                        className="rounded border-[var(--border2)] bg-transparent accent-violet-500" />
+                        className="rounded border-[var(--border2)] bg-transparent accent-[#83c0f9]" />
                     </td>
 
                     {shownCols.map(col => {
                       if (col.key === 'title') return (
                         <td key="title" className="px-3 py-3">
                           <div className="flex items-center gap-2.5">
-                            <div className="w-8 h-8 rounded-lg bg-violet-500/10 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                            <div className="w-8 h-8 rounded-lg bg-[rgba(131,192,249,0.12)] flex items-center justify-center flex-shrink-0 overflow-hidden">
                               {item.image
                                 ? <img src={item.image} alt="" className="w-full h-full object-cover" />
-                                : <Package className="w-4 h-4 text-violet-400" />}
+                                : <Package className="w-4 h-4 text-[#83c0f9]" />}
                             </div>
                             <div className="min-w-0">
                               <p className="text-[var(--text-base)] font-medium text-xs leading-tight max-w-[180px] truncate">{item.title}</p>
@@ -453,7 +453,7 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
                             <div className="flex items-center gap-1 flex-shrink-0">
                               {item.productUrl && (
                                 <a href={item.productUrl} target="_blank" rel="noreferrer"
-                                  className="text-[var(--text-muted)] hover:text-violet-400 transition-colors">
+                                  className="text-[var(--text-muted)] hover:text-[#83c0f9] transition-colors">
                                   <ExternalLink className="w-3 h-3" />
                                 </a>
                               )}
@@ -510,7 +510,7 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
                                   if (e.key === 'Enter') saveSupplier(item.id, supplierRef.current?.value || '')
                                   if (e.key === 'Escape') setEditingSupplier(null)
                                 }}
-                                className="w-32 px-2 py-1 bg-[var(--bg-input)] border border-violet-500/50 rounded text-xs text-[var(--text-base)] focus:outline-none"
+                                className="w-32 px-2 py-1 bg-[var(--bg-input)] border border-[rgba(131,192,249,0.5)] rounded text-xs text-[var(--text-base)] focus:outline-none"
                                 autoFocus />
                               <button onClick={() => saveSupplier(item.id, supplierRef.current?.value || '')}
                                 className="text-emerald-400 hover:text-emerald-300"><Check className="w-3 h-3" /></button>
@@ -519,9 +519,9 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
                             </div>
                           ) : (
                             <button onClick={() => setEditingSupplier(item.id)}
-                              className="text-xs text-[var(--text-muted)] hover:text-violet-400 transition-colors truncate max-w-[100px] block">
+                              className="text-xs text-[var(--text-muted)] hover:text-[#83c0f9] transition-colors truncate max-w-[100px] block">
                               {item.supplierUrl ? (
-                                <span className="text-violet-400 flex items-center gap-1">
+                                <span className="text-[#83c0f9] flex items-center gap-1">
                                   <ExternalLink className="w-3 h-3" /> Havola
                                 </span>
                               ) : <span className="border-b border-dashed border-[var(--border2)]">+ Qo&apos;shish</span>}
@@ -534,7 +534,7 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
                     {/* Always-visible edit button */}
                     <td className="px-3 py-3">
                       <button onClick={() => openEdit(item)}
-                        className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium bg-violet-500/10 hover:bg-violet-500/20 text-violet-400 hover:text-violet-300 transition-colors border border-violet-500/20">
+                        className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium bg-[rgba(131,192,249,0.12)] hover:bg-[#6aabf0]/20 text-[#83c0f9] hover:text-[#83c0f9] transition-colors border border-[rgba(131,192,249,0.25)]">
                         <Pencil className="w-3 h-3" /> Tahrir
                       </button>
                     </td>
@@ -559,10 +559,10 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--border)]">
               <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-8 h-8 rounded-lg bg-violet-500/10 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                <div className="w-8 h-8 rounded-lg bg-[rgba(131,192,249,0.12)] flex items-center justify-center flex-shrink-0 overflow-hidden">
                   {editingItem.image
                     ? <img src={editingItem.image} alt="" className="w-full h-full object-cover" />
-                    : <Package className="w-4 h-4 text-violet-400" />}
+                    : <Package className="w-4 h-4 text-[#83c0f9]" />}
                 </div>
                 <p className="text-sm font-semibold text-[var(--text-base)] truncate">{editingItem.title}</p>
               </div>
@@ -578,7 +578,7 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
                 <span className="text-xs font-medium text-[var(--text-muted)]">Mahsulot nomi</span>
                 <input type="text" value={editDraft.title ?? ''}
                   onChange={e => setDraftField('title', e.target.value)}
-                  className="w-full px-3 py-2 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg text-sm text-[var(--text-base)] focus:outline-none focus:border-violet-500/50" />
+                  className="w-full px-3 py-2 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg text-sm text-[var(--text-base)] focus:outline-none focus:border-[rgba(131,192,249,0.5)]" />
               </label>
 
               <div className="grid grid-cols-2 gap-3">
@@ -587,63 +587,63 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
                   <span className="text-xs font-medium text-[var(--text-muted)]">Sotuv narxi (so&apos;m)</span>
                   <input type="number" min={0} value={editDraft.sellingPrice ?? 0}
                     onChange={e => setDraftField('sellingPrice', parseFloat(e.target.value) || 0)}
-                    className="w-full px-3 py-2 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg text-sm text-[var(--text-base)] focus:outline-none focus:border-violet-500/50" />
+                    className="w-full px-3 py-2 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg text-sm text-[var(--text-base)] focus:outline-none focus:border-[rgba(131,192,249,0.5)]" />
                 </label>
                 {/* Cost price */}
                 <label className="flex flex-col gap-1.5">
-                  <span className="text-xs font-medium text-[var(--text-muted)]">Tannarx (so&apos;m) <span className="text-violet-400">*ROI uchun</span></span>
+                  <span className="text-xs font-medium text-[var(--text-muted)]">Tannarx (so&apos;m) <span className="text-[#83c0f9]">*ROI uchun</span></span>
                   <input type="number" min={0} value={editDraft.costPrice ?? 0}
                     onChange={e => setDraftField('costPrice', parseFloat(e.target.value) || 0)}
-                    className="w-full px-3 py-2 bg-[var(--bg-input)] border border-violet-500/50 rounded-lg text-sm text-[var(--text-base)] focus:outline-none focus:border-violet-500" />
+                    className="w-full px-3 py-2 bg-[var(--bg-input)] border border-[rgba(131,192,249,0.5)] rounded-lg text-sm text-[var(--text-base)] focus:outline-none focus:border-[rgba(131,192,249,0.6)]" />
                 </label>
                 {/* Commission % */}
                 <label className="flex flex-col gap-1.5">
                   <span className="text-xs font-medium text-[var(--text-muted)]">Komissiya (%)</span>
                   <input type="number" min={0} max={100} step={0.5} value={editDraft.commissionPct ?? 0}
                     onChange={e => setDraftField('commissionPct', parseFloat(e.target.value) || 0)}
-                    className="w-full px-3 py-2 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg text-sm text-[var(--text-base)] focus:outline-none focus:border-violet-500/50" />
+                    className="w-full px-3 py-2 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg text-sm text-[var(--text-base)] focus:outline-none focus:border-[rgba(131,192,249,0.5)]" />
                 </label>
                 {/* Delivery */}
                 <label className="flex flex-col gap-1.5">
                   <span className="text-xs font-medium text-[var(--text-muted)]">Yetkazib berish (so&apos;m)</span>
                   <input type="number" min={0} value={editDraft.delivery ?? 0}
                     onChange={e => setDraftField('delivery', parseFloat(e.target.value) || 0)}
-                    className="w-full px-3 py-2 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg text-sm text-[var(--text-base)] focus:outline-none focus:border-violet-500/50" />
+                    className="w-full px-3 py-2 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg text-sm text-[var(--text-base)] focus:outline-none focus:border-[rgba(131,192,249,0.5)]" />
                 </label>
                 {/* Ad spend */}
                 <label className="flex flex-col gap-1.5">
                   <span className="text-xs font-medium text-[var(--text-muted)]">Reklama (so&apos;m)</span>
                   <input type="number" min={0} value={editDraft.adSpend ?? 0}
                     onChange={e => setDraftField('adSpend', parseFloat(e.target.value) || 0)}
-                    className="w-full px-3 py-2 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg text-sm text-[var(--text-base)] focus:outline-none focus:border-violet-500/50" />
+                    className="w-full px-3 py-2 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg text-sm text-[var(--text-base)] focus:outline-none focus:border-[rgba(131,192,249,0.5)]" />
                 </label>
                 {/* Tax */}
                 <label className="flex flex-col gap-1.5">
                   <span className="text-xs font-medium text-[var(--text-muted)]">Soliq (so&apos;m)</span>
                   <input type="number" min={0} value={editDraft.tax ?? 0}
                     onChange={e => setDraftField('tax', parseFloat(e.target.value) || 0)}
-                    className="w-full px-3 py-2 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg text-sm text-[var(--text-base)] focus:outline-none focus:border-violet-500/50" />
+                    className="w-full px-3 py-2 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg text-sm text-[var(--text-base)] focus:outline-none focus:border-[rgba(131,192,249,0.5)]" />
                 </label>
                 {/* Acquiring */}
                 <label className="flex flex-col gap-1.5">
                   <span className="text-xs font-medium text-[var(--text-muted)]">Ekvayring (so&apos;m)</span>
                   <input type="number" min={0} value={editDraft.acquiring ?? 0}
                     onChange={e => setDraftField('acquiring', parseFloat(e.target.value) || 0)}
-                    className="w-full px-3 py-2 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg text-sm text-[var(--text-base)] focus:outline-none focus:border-violet-500/50" />
+                    className="w-full px-3 py-2 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg text-sm text-[var(--text-base)] focus:outline-none focus:border-[rgba(131,192,249,0.5)]" />
                 </label>
                 {/* Last mile */}
                 <label className="flex flex-col gap-1.5">
                   <span className="text-xs font-medium text-[var(--text-muted)]">Oxirgi milya (so&apos;m)</span>
                   <input type="number" min={0} value={editDraft.lastMile ?? 0}
                     onChange={e => setDraftField('lastMile', parseFloat(e.target.value) || 0)}
-                    className="w-full px-3 py-2 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg text-sm text-[var(--text-base)] focus:outline-none focus:border-violet-500/50" />
+                    className="w-full px-3 py-2 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg text-sm text-[var(--text-base)] focus:outline-none focus:border-[rgba(131,192,249,0.5)]" />
                 </label>
                 {/* Stock */}
                 <label className="flex flex-col gap-1.5">
                   <span className="text-xs font-medium text-[var(--text-muted)]">Zaxira (dona)</span>
                   <input type="number" min={0} value={editDraft.stock ?? ''}
                     onChange={e => setDraftField('stock', e.target.value ? parseInt(e.target.value) : undefined)}
-                    className="w-full px-3 py-2 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg text-sm text-[var(--text-base)] focus:outline-none focus:border-violet-500/50" />
+                    className="w-full px-3 py-2 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg text-sm text-[var(--text-base)] focus:outline-none focus:border-[rgba(131,192,249,0.5)]" />
                 </label>
                 {/* Supplier URL */}
                 <label className="flex flex-col gap-1.5">
@@ -651,7 +651,7 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
                   <input type="url" value={editDraft.supplierUrl ?? ''}
                     onChange={e => setDraftField('supplierUrl', e.target.value)}
                     placeholder="https://..."
-                    className="w-full px-3 py-2 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg text-sm text-[var(--text-base)] focus:outline-none focus:border-violet-500/50" />
+                    className="w-full px-3 py-2 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg text-sm text-[var(--text-base)] focus:outline-none focus:border-[rgba(131,192,249,0.5)]" />
                 </label>
               </div>
 

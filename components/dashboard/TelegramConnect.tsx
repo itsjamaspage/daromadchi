@@ -162,7 +162,7 @@ export default function TelegramConnect() {
             {/* Notification types */}
             <div className="space-y-2">
               <p className="text-[var(--text-base)] text-sm font-semibold flex items-center gap-2">
-                <Bell className="w-4 h-4 text-violet-400" /> {d.tgNotifTypes}
+                <Bell className="w-4 h-4 text-[#83c0f9]" /> {d.tgNotifTypes}
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {notifTypes.map(({ key, label, icon: Icon }) => (
@@ -171,13 +171,13 @@ export default function TelegramConnect() {
                     onClick={() => setPrefs(p => ({ ...p, [key]: !p[key] }))}
                     className={`flex items-center gap-3 px-4 py-3 rounded-xl border text-left transition-all ${
                       prefs[key]
-                        ? 'bg-violet-600/15 border-violet-500/40'
+                        ? 'bg-[rgba(131,192,249,0.12)] border-[rgba(131,192,249,0.4)]'
                         : 'bg-[var(--bg-input)] border-[var(--border)] hover:border-[var(--border2)]'
                     }`}
                   >
-                    <Icon className={`w-4 h-4 flex-shrink-0 ${prefs[key] ? 'text-violet-400' : 'text-[var(--text-muted)]'}`} />
+                    <Icon className={`w-4 h-4 flex-shrink-0 ${prefs[key] ? 'text-[#83c0f9]' : 'text-[var(--text-muted)]'}`} />
                     <span className={`text-xs font-medium flex-1 ${prefs[key] ? 'text-[var(--text-base)]' : 'text-[var(--text-muted)]'}`}>{label}</span>
-                    <span className={`w-9 h-5 rounded-full p-0.5 flex-shrink-0 transition-colors ${prefs[key] ? 'bg-violet-500' : 'bg-[var(--border2)]'}`}>
+                    <span className={`w-9 h-5 rounded-full p-0.5 flex-shrink-0 transition-colors ${prefs[key] ? 'bg-[#83c0f9]' : 'bg-[var(--border2)]'}`}>
                       <span className={`block w-4 h-4 rounded-full bg-white transition-transform ${prefs[key] ? 'translate-x-4' : ''}`} />
                     </span>
                   </button>
@@ -188,11 +188,11 @@ export default function TelegramConnect() {
             {/* Delivery schedule — fixed daily at 10:00 for all users */}
             <div className="space-y-2 pt-2 border-t border-[var(--border)]">
               <p className="text-[var(--text-base)] text-sm font-semibold flex items-center gap-2">
-                <Clock className="w-4 h-4 text-violet-400" /> {d.tgScheduleLabel}
+                <Clock className="w-4 h-4 text-[#83c0f9]" /> {d.tgScheduleLabel}
               </p>
               <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border)]">
                 <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--text-base)]">
-                  <Clock className="w-4 h-4 text-violet-400" /> {d.tgScheduleFixed}
+                  <Clock className="w-4 h-4 text-[#83c0f9]" /> {d.tgScheduleFixed}
                 </span>
               </div>
               <p className="text-[var(--text-muted)] text-xs">{d.tgScheduleFixedHint}</p>
@@ -202,7 +202,7 @@ export default function TelegramConnect() {
               <button
                 onClick={savePrefs}
                 disabled={saving}
-                className="bg-violet-600 hover:bg-violet-500 disabled:opacity-60 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors"
+                className="bg-[#83c0f9] hover:bg-[#6aabf0] disabled:opacity-60 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors"
               >
                 {saving ? d.saving : saved ? d.saved : d.tgSavePrefs}
               </button>

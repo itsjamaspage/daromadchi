@@ -9,7 +9,7 @@ interface KpiCardProps {
 }
 
 const colorMap = {
-  violet:  { bgRgba: 'rgba(73,79,223,0.08)',   color: '#494fdf' },
+  violet:  { bgRgba: 'rgba(131,192,249,0.15)',  color: '#83c0f9' },
   emerald: { bgRgba: 'rgba(66,134,25,0.08)',   color: '#428619' },
   blue:    { bgRgba: 'rgba(55,108,213,0.08)',  color: '#376cd5' },
   amber:   { bgRgba: 'rgba(236,126,0,0.08)',   color: '#ec7e00' },

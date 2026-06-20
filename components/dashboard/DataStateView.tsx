@@ -104,7 +104,7 @@ export default function DataStateView({ uzumDays, yandexDays, wbDays }: Props) {
           <button key={m.id}
             onClick={() => { setMp(m.id); setSelected(new Set()); setHoveredDay(null) }}
             className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-              mp === m.id ? 'bg-violet-600/20 border border-violet-500/30' : 'text-[var(--text-muted)] hover:text-[var(--text-dim)]'
+              mp === m.id ? 'bg-[rgba(131,192,249,0.15)] border border-[rgba(131,192,249,0.3)]' : 'text-[var(--text-muted)] hover:text-[var(--text-dim)]'
             }`}
             style={mp === m.id ? { color: 'var(--c1)' } : {}}>
             {m.label}
@@ -145,7 +145,7 @@ export default function DataStateView({ uzumDays, yandexDays, wbDays }: Props) {
 
           {/* Actions */}
           {selected.size > 0 && (
-            <div className="flex items-center gap-3 bg-violet-500/5 border border-violet-500/20 rounded-xl px-4 py-3">
+            <div className="flex items-center gap-3 bg-[#83c0f9]/5 border border-[rgba(131,192,249,0.25)] rounded-xl px-4 py-3">
               <span className="text-xs font-semibold" style={{ color: 'var(--c1)' }}>{selected.size} {d.dsSelectedSuffix}</span>
               <button onClick={resyncSelected}
                 className="flex items-center gap-1.5 px-3 py-1.5 btn-primary text-xs font-semibold rounded-lg transition-colors ml-auto">
@@ -173,11 +173,11 @@ export default function DataStateView({ uzumDays, yandexDays, wbDays }: Props) {
                     onMouseEnter={() => setHoveredDay(day)}
                     onMouseLeave={() => setHoveredDay(null)}
                     className={`relative flex flex-col items-center gap-1 p-2 rounded-xl border transition-all cursor-pointer
-                      ${isSelected  ? 'ring-2 ring-violet-500 ring-offset-1 ring-offset-[var(--bg-card2)]' : ''}
+                      ${isSelected  ? 'ring-2 ring-[#83c0f9] ring-offset-1 ring-offset-[var(--bg-card2)]' : ''}
                       ${isResyncing ? 'animate-pulse' : ''}
                       ${bg}`}>
                     {isResyncing && (
-                      <RefreshCw className="absolute top-1 right-1 w-2.5 h-2.5 text-violet-400 animate-spin" />
+                      <RefreshCw className="absolute top-1 right-1 w-2.5 h-2.5 text-[#83c0f9] animate-spin" />
                     )}
                     <span className="text-[10px] text-[var(--text-muted)]">{monthShort}</span>
                     <span className="text-sm font-bold text-[var(--text-base)]">{dayNum}</span>
