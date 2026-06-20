@@ -43,14 +43,14 @@ export default function Sidebar({ onClose }: SidebarProps) {
   const isDark = theme === 'dark'
   const d = translations[lang].dashboard
 
-  const sideBg     = isDark ? 'var(--bg-card)' : '#ffffff'
-  const sideBdr    = 'var(--border)'
-  const sideLabel  = 'var(--c1)'
-  const sideText   = 'var(--text-muted)'
-  const sideTitle  = 'var(--text-base)'
-  const activeCol  = 'var(--c1)'
-  const activeBg   = 'rgba(131,192,249,0.15)'
-  const activeBdr  = '1px solid rgba(131,192,249,0.3)'
+  const sideBg     = isDark ? 'var(--bg-card)'              : '#83c0f9'
+  const sideBdr    = isDark ? 'var(--border)'               : 'rgba(14,34,51,0.15)'
+  const sideLabel  = isDark ? 'var(--c1)'                   : 'rgba(14,34,51,0.55)'
+  const sideText   = isDark ? 'var(--text-muted)'           : 'rgba(14,34,51,0.8)'
+  const sideTitle  = isDark ? 'var(--text-base)'            : '#0e2233'
+  const activeCol  = isDark ? 'var(--c1)'                   : '#0e2233'
+  const activeBg   = isDark ? 'rgba(131,192,249,0.15)'      : 'rgba(14,34,51,0.12)'
+  const activeBdr  = isDark ? '1px solid rgba(131,192,249,0.3)' : '1px solid rgba(14,34,51,0.22)'
 
   function handleNavClick() {
     onClose?.()
