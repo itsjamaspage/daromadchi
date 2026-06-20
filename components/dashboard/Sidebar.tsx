@@ -8,7 +8,7 @@ import {
   Megaphone, Database, Layers, AlertTriangle, CreditCard,
   CalendarDays, Users, RefreshCw,
 } from 'lucide-react'
-import { useLang } from '@/app/providers'
+import { useLang, useTheme } from '@/app/providers'
 import { translations } from '@/lib/i18n'
 import HelpTooltip from '@/components/dashboard/HelpTooltip'
 import { helpContent, type HelpSection } from '@/lib/help-tooltips'
@@ -39,7 +39,18 @@ interface SidebarProps {
 export default function Sidebar({ onClose }: SidebarProps) {
   const pathname = usePathname()
   const { lang } = useLang()
-  const d        = translations[lang].dashboard
+  const { theme } = useTheme()
+  const isDark = theme === 'dark'
+  const d = translations[lang].dashboard
+
+  const sideBg     = isDark ? 'var(--bg-card)'              : '#83c0f9'
+  const sideBdr    = isDark ? 'var(--border)'               : 'rgba(14,34,51,0.15)'
+  const sideLabel  = isDark ? 'var(--c1)'                   : 'rgba(14,34,51,0.55)'
+  const sideText   = isDark ? 'var(--text-muted)'           : 'rgba(14,34,51,0.8)'
+  const sideTitle  = isDark ? 'var(--text-base)'            : '#0e2233'
+  const activeCol  = isDark ? 'var(--c1)'                   : '#0e2233'
+  const activeBg   = isDark ? 'rgba(131,192,249,0.15)'      : 'rgba(14,34,51,0.12)'
+  const activeBdr  = isDark ? '1px solid rgba(131,192,249,0.3)' : '1px solid rgba(14,34,51,0.22)'
 
   function handleNavClick() {
     onClose?.()
@@ -48,16 +59,16 @@ export default function Sidebar({ onClose }: SidebarProps) {
   return (
     <aside
       className="sidebar-collapse h-full flex flex-col overflow-hidden"
-      style={{ background: 'var(--bg-card)', borderRight: '1px solid var(--border)' }}
+      style={{ background: sideBg, borderRight: `1px solid ${sideBdr}` }}
     >
       {/* Logo */}
-      <div className="sidebar-logo-row flex items-center justify-between shrink-0" style={{ borderBottom: '1px solid var(--border)' }}>
+      <div className="sidebar-logo-row flex items-center justify-between shrink-0" style={{ borderBottom: `1px solid ${sideBdr}` }}>
         <Link href="/dashboard" onClick={handleNavClick} className="flex items-center gap-3 min-w-0">
           <img src="/icon.svg" alt="Daromadchi" className="w-8 h-8 rounded-xl flex-shrink-0" />
-          <span className="sidebar-label font-bold text-sm tracking-tight truncate" style={{ color: 'var(--text-base)' }}>Daromadchi</span>
+          <span className="sidebar-label font-bold text-sm tracking-tight truncate" style={{ color: sideTitle }}>Daromadchi</span>
         </Link>
         {onClose && (
-          <button onClick={onClose} className="lg:hidden p-1 ml-2" style={{ color: 'var(--text-muted)' }}>
+          <button onClick={onClose} className="lg:hidden p-1 ml-2" style={{ color: sideText }}>
             <X className="w-4 h-4" />
           </button>
         )}
@@ -66,7 +77,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
       {/* Nav */}
       <nav className="flex-1 py-3 space-y-0.5 overflow-y-auto overflow-x-hidden px-1.5">
         <p className="sidebar-label px-2 pt-1 pb-1.5 text-[9px] font-semibold uppercase tracking-widest truncate"
-          style={{ color: 'var(--c1)' }}>
+          style={{ color: sideLabel }}>
           {d.nav.store}
         </p>
         {storeNavItems.map(({ href, key, icon: Icon }) => {
@@ -80,17 +91,17 @@ export default function Sidebar({ onClose }: SidebarProps) {
                 title={label}
                 className="flex-1 flex items-center gap-3 px-2 py-2 rounded-xl text-sm font-medium transition-all min-w-0"
                 style={active ? {
-                  background: 'rgba(131,192,249,0.15)',
-                  color: 'var(--c1)',
-                  border: '1px solid rgba(131,192,249,0.3)',
+                  background: activeBg,
+                  color: activeCol,
+                  border: activeBdr,
                 } : {
-                  color: 'var(--text-muted)',
+                  color: sideText,
                   border: '1px solid transparent',
                 }}
               >
-                <Icon className="w-4 h-4 flex-shrink-0" style={{ color: active ? 'var(--c1)' : 'var(--text-muted)' }} />
+                <Icon className="w-4 h-4 flex-shrink-0" style={{ color: active ? activeCol : sideText }} />
                 <span className="sidebar-label truncate flex-1">{label}</span>
-                {active && <ChevronRight className="sidebar-label w-3 h-3 flex-shrink-0" style={{ color: 'var(--c1)' }} />}
+                {active && <ChevronRight className="sidebar-label w-3 h-3 flex-shrink-0" style={{ color: activeCol }} />}
               </Link>
               {(key in helpContent) && (
                 <span className="sidebar-label">

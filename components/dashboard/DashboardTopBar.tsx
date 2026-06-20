@@ -70,16 +70,24 @@ export default function DashboardTopBar() {
     { href: '/dashboard/settings',      icon: Settings,    label: (d.nav as Record<string,string>).settings       ?? 'Sozlamalar'       },
   ]
 
+  const isDark = theme === 'dark'
+  const topBg  = isDark ? 'var(--bg-card)' : '#83c0f9'
+  const topBdr = isDark ? 'var(--border)'  : 'rgba(14,34,51,0.15)'
+  const topTxt = isDark ? 'var(--text-base)'  : '#0e2233'
+  const topMut = isDark ? 'var(--text-muted)' : 'rgba(14,34,51,0.7)'
+  const topBtn = isDark ? 'var(--bg-input)'   : 'rgba(14,34,51,0.08)'
+  const topBtnBdr = isDark ? 'var(--border)'  : 'rgba(14,34,51,0.2)'
+
   return (
     <header
       className="hidden lg:flex fixed top-0 left-14 right-0 h-14 z-30 items-center justify-end px-6 border-b gap-3"
-      style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}
+      style={{ background: topBg, borderColor: topBdr }}
     >
       {/* Theme toggle — always visible in header */}
       <button
         onClick={toggle}
         className="w-9 h-9 flex items-center justify-center rounded-xl border transition-all"
-        style={{ background: 'var(--bg-input)', borderColor: 'var(--border)', color: 'var(--text-muted)' }}
+        style={{ background: topBtn, borderColor: topBtnBdr, color: topMut }}
         title={theme === 'dark' ? d.lightMode : d.darkMode}
       >
         {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
@@ -91,8 +99,8 @@ export default function DashboardTopBar() {
           onClick={() => setOpen(o => !o)}
           className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl border transition-all"
           style={{
-            borderColor: open ? 'var(--border2)' : 'var(--border)',
-            background:  'var(--bg-input)',
+            borderColor: topBtnBdr,
+            background:  topBtn,
           }}
         >
           {/* Avatar */}
@@ -106,17 +114,17 @@ export default function DashboardTopBar() {
           </div>
 
           <div className="text-left">
-            <p className="text-sm font-semibold leading-tight" style={{ color: 'var(--text-base)' }}>
+            <p className="text-sm font-semibold leading-tight" style={{ color: topTxt }}>
               {user?.name ?? '…'}
             </p>
-            <p className="text-[11px] leading-tight" style={{ color: 'var(--text-muted)' }}>
+            <p className="text-[11px] leading-tight" style={{ color: topMut }}>
               {user?.email}
             </p>
           </div>
 
           <ChevronDown
             className="w-3.5 h-3.5 shrink-0 transition-transform"
-            style={{ color: 'var(--text-muted)', transform: open ? 'rotate(180deg)' : 'none' }}
+            style={{ color: topMut, transform: open ? 'rotate(180deg)' : 'none' }}
           />
         </button>
 
