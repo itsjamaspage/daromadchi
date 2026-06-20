@@ -1855,7 +1855,7 @@ function CtaSection({ lang }: { lang: string }) {
             </Link>
           </motion.div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 24, flexWrap: 'wrap' }}>
-            {[tx(lang,'✓ 14 дней бесплатно','✓ 14 kun bepul','✓ 14 days free'),
+            {[tx(lang,'✓ 7 дней — только Pro и Pro+','✓ 7 kun — faqat Pro va Pro+','✓ 7 days — Pro & Pro+ only'),
               tx(lang,'✓ Без карты','✓ Kartasiz','✓ No card'),
               tx(lang,'✓ Быстрое подключение','✓ Tez ulanish','✓ Quick setup')].map(s => (
               <span key={s} style={{ fontSize: 13, color: badgeCol, fontWeight: 500 }}>{s}</span>
@@ -1870,7 +1870,7 @@ function CtaSection({ lang }: { lang: string }) {
 // ── FOOTER ────────────────────────────────────────────────────────────────────
 function FooterSection({ lang }: { lang: string }) {
   const isDark = useIsDark()
-  const footBg  = isDark ? '#1e1e1e'  : '#83c0f9'
+  const footBg  = isDark ? '#1e1e1e'  : '#e8f0fd'
   const bdr     = isDark ? P.dHair    : 'rgba(14,34,51,0.2)'
   const txt     = isDark ? P.dText    : P.ink
   const muted   = isDark ? P.dMuted   : P.ink
