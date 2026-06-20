@@ -1,4 +1,5 @@
 import { cache } from 'react'
+import { unstable_cache } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import type { MarketplaceType } from '@/lib/types'
 
@@ -11,16 +12,6 @@ export interface ShopRef {
   marketplace: MarketplaceType
 }
 
-/**
- * The authenticated user's id, memoized for the lifetime of a single server
- * request via React `cache()`.
- *
- * `supabase.auth.getUser()` is a network round-trip to the Supabase auth
- * server. Before this, every `lib/db/*` helper called it independently, so a
- * single dashboard render fired it 4-5 times in series. Wrapping it in
- * `cache()` collapses those into one round-trip that every caller in the same
- * request shares.
- */
 export const getCurrentUserId = cache(async (): Promise<string | null> => {
   if (!supabaseConfigured) return null
   const supabase = await createClient()
@@ -28,20 +19,25 @@ export const getCurrentUserId = cache(async (): Promise<string | null> => {
   return user?.id ?? null
 })
 
-/**
- * All shops (id + marketplace) belonging to the current user, memoized per
- * request. A single `shops` read is shared across every data helper instead of
- * each one issuing its own.
- */
+// Persist shops per user across requests for 60 s to avoid a DB round-trip on
+// every page navigation. getUserShops() still validates auth on every request.
+const _fetchShopsByUser = unstable_cache(
+  async (userId: string): Promise<ShopRef[]> => {
+    const supabase = await createClient()
+    const { data } = await supabase
+      .from('shops')
+      .select('id, marketplace')
+      .eq('user_id', userId)
+    return (data ?? []) as ShopRef[]
+  },
+  ['user-shops'],
+  { revalidate: 60 },
+)
+
 export const getUserShops = cache(async (): Promise<ShopRef[]> => {
   const userId = await getCurrentUserId()
   if (!userId) return []
-  const supabase = await createClient()
-  const { data } = await supabase
-    .from('shops')
-    .select('id, marketplace')
-    .eq('user_id', userId)
-  return (data ?? []) as ShopRef[]
+  return _fetchShopsByUser(userId)
 })
 
 /**

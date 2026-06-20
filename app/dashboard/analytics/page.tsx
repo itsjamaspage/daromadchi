@@ -90,7 +90,7 @@ export default async function AnalyticsPage({ searchParams }: Props) {
       <div>
         <div className="flex items-center gap-2 mb-0.5">
           <h1 className="text-2xl font-bold flex items-center gap-2" style={{ color: 'var(--text-base)' }}>
-            <BarChart2 className="w-6 h-6" style={{ color: '#7c3aed' }} />
+            <BarChart2 className="w-6 h-6" style={{ color: 'var(--c1)' }} />
             {d.analyticsTitle}
           </h1>
         </div>
@@ -117,8 +117,8 @@ export default async function AnalyticsPage({ searchParams }: Props) {
       </div>
 
       {isEmpty ? (
-        <div className="border border-dashed rounded-2xl p-10 text-center" style={{ background: 'var(--bg-card2)', borderColor: 'rgba(124, 58, 237, 0.3)' }}>
-          <div className="w-14 h-14 rounded-2xl border flex items-center justify-center mx-auto mb-4" style={{ background: 'rgba(124, 58, 237, 0.1)', borderColor: 'rgba(124, 58, 237, 0.2)', color: '#7c3aed' }}>
+        <div className="border border-dashed rounded-2xl p-10 text-center" style={{ background: 'var(--bg-card2)', borderColor: 'rgba(131, 192, 249, 0.3)' }}>
+          <div className="w-14 h-14 rounded-2xl border flex items-center justify-center mx-auto mb-4" style={{ background: 'rgba(131, 192, 249, 0.1)', borderColor: 'rgba(131, 192, 249, 0.2)', color: 'var(--c1)' }}>
             <BarChart2 className="w-7 h-7" />
           </div>
           <h2 className="font-bold text-lg mb-2" style={{ color: 'var(--text-base)' }}>{d.noAnalyticsData}</h2>
@@ -127,7 +127,7 @@ export default async function AnalyticsPage({ searchParams }: Props) {
           </p>
           <Link href="/dashboard/settings"
             className="inline-flex items-center gap-2 text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors"
-            style={{ background: '#7c3aed', color: 'white' }}>
+            style={{ background: 'var(--c1)', color: 'white' }}>
             <Settings className="w-4 h-4" /> {d.goToSettings}
           </Link>
         </div>
@@ -135,7 +135,7 @@ export default async function AnalyticsPage({ searchParams }: Props) {
         <>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {[
-              { label: d.totalOrders,      value: kpis.total_orders.toLocaleString(),           color: '#7c3aed' },
+              { label: d.totalOrders,      value: kpis.total_orders.toLocaleString(),           color: 'var(--c1)' },
               { label: d.totalRevenue,     value: `${fmt(kpis.total_revenue)} so'm`,             color: '#10b981' },
               { label: d.netProfit,        value: `${fmt(kpis.total_profit)} so'm`,              color: kpis.total_profit >= 0 ? '#10b981' : '#ef4444' },
               { label: d.stockInWarehouse, value: kpis.total_stock.toLocaleString(),             color: '#f59e0b' },
@@ -164,7 +164,7 @@ export default async function AnalyticsPage({ searchParams }: Props) {
           {/* KPI cards */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {[
-              { label: d.totalProducts,  value: products.length.toString(),  color: '#7c3aed' },
+              { label: d.totalProducts,  value: products.length.toString(),  color: 'var(--c1)' },
               { label: d.avgMargin,      value: `${avgMargin.toFixed(1)}%`,  color: avgMargin >= 25 ? '#10b981' : '#f59e0b' },
               { label: d.lowMargin,      value: lowMarginCount.toString(),   color: lowMarginCount > 0 ? '#ef4444' : '#10b981' },
               { label: d.highMargin,     value: highMarginCount.toString(),  color: '#10b981' },
@@ -179,7 +179,7 @@ export default async function AnalyticsPage({ searchParams }: Props) {
           {/* Top sold in selected period */}
           <div className="border rounded-2xl overflow-hidden" style={{ background: 'var(--bg-card2)', borderColor: 'var(--border)' }}>
             <div className="px-5 py-4 flex items-center gap-2" style={{ borderBottom: '1px solid var(--border)' }}>
-              <TrendingUp className="w-4 h-4" style={{ color: '#7c3aed' }} />
+              <TrendingUp className="w-4 h-4" style={{ color: 'var(--c1)' }} />
               <h2 className="font-semibold text-sm" style={{ color: 'var(--text-base)' }}>{d.topSoldTitle}</h2>
             </div>
             {periodSales.length === 0 ? (
@@ -201,7 +201,7 @@ export default async function AnalyticsPage({ searchParams }: Props) {
                           <p className="font-medium" style={{ color: 'var(--text-base)' }}>{row.title}</p>
                           {row.sku && <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{row.sku}</p>}
                         </td>
-                        <td className="px-4 py-3.5 text-right font-semibold" style={{ color: '#7c3aed' }}>{row.qty_sold}</td>
+                        <td className="px-4 py-3.5 text-right font-semibold" style={{ color: 'var(--c1)' }}>{row.qty_sold}</td>
                         <td className="px-4 py-3.5 text-right" style={{ color: 'var(--text-dim)' }}>{fmt(row.revenue)} so'm</td>
                       </tr>
                     ))}
@@ -299,7 +299,7 @@ export default async function AnalyticsPage({ searchParams }: Props) {
                     <td colSpan={6} className="px-5 py-4 font-bold text-xs uppercase tracking-wide" style={{ color: 'var(--text-base)' }}>
                       {d.warehouseValueTotal}
                     </td>
-                    <td className="px-4 py-4 text-right font-bold" style={{ color: '#7c3aed' }}>{fmt(totalStockValue)} so'm</td>
+                    <td className="px-4 py-4 text-right font-bold" style={{ color: 'var(--c1)' }}>{fmt(totalStockValue)} so'm</td>
                   </tr>
                 </tfoot>
               </table>

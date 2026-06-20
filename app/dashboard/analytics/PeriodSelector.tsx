@@ -138,7 +138,7 @@ export default function PeriodSelector({
             onClick={applyCustom}
             disabled={!fromVal || !toVal}
             className="text-xs font-semibold px-3 py-1 rounded-lg transition-all disabled:opacity-40"
-            style={{ background: '#7c3aed', color: 'white' }}
+            style={{ background: 'var(--c1)', color: 'white' }}
           >
             {labels.apply}
           </button>
