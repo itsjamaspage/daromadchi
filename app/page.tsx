@@ -137,7 +137,7 @@ function Navbar({ lang }: { lang: string }) {
     { label: tx(lang,'Помощь','Yordam','Help'), href: '/help' },
   ]
 
-  const scrolledBg = isDark ? 'rgba(19,19,33,0.96)' : 'rgba(255,255,255,0.95)'
+  const scrolledBg = isDark ? 'rgba(22,22,22,0.96)' : 'rgba(255,255,255,0.95)'
   // On non-scrolled: light hero → dark links; dark hero → white links
   const lnk = scrolled ? (isDark ? P.dMuted : P.stone) : (isDark ? 'rgba(255,255,255,0.78)' : P.ink)
   const lnkH = scrolled ? (isDark ? P.dText : P.ink)   : (isDark ? '#fff' : P.ink)
@@ -1585,7 +1585,7 @@ function FooterSection({ lang }: { lang: string }) {
 function MobileBottomNav({ lang }: { lang: string }) {
   const isDark = useIsDark()
   const acc = useAccent()
-  const navBg   = isDark ? 'rgba(19,19,33,0.97)'    : 'rgba(255,255,255,0.97)'
+  const navBg   = isDark ? 'rgba(22,22,22,0.97)'    : 'rgba(255,255,255,0.97)'
   const border   = isDark ? P.dHair                 : P.hair
   const iconCol  = isDark ? 'rgba(197,232,254,0.45)': P.stone
   const activeCol = isDark ? acc.color              : '#0369a1'

@@ -166,7 +166,7 @@ function LoginForm() {
   const bg     = isDark ? '#161616'  : '#e8f4fe'
   const card   = isDark ? '#1e1e1e'  : '#ffffff'
   const border = isDark ? 'rgba(131,192,249,0.12)' : 'rgba(131,192,249,0.35)'
-  const inputBg = isDark ? '#1c1c2e' : '#d6ecfc'
+  const inputBg = isDark ? '#252525' : '#d6ecfc'
   const inputBorder = isDark ? 'rgba(131,192,249,0.15)' : 'rgba(131,192,249,0.45)'
   const textBase  = isDark ? '#e2e8f0' : '#0e2233'
   const textMuted = isDark ? '#64748b' : '#2c5f82'
@@ -289,7 +289,7 @@ function LoginForm() {
 
           {/* Tabs */}
           {mode !== 'forgot' && (
-          <div className="flex rounded-xl p-1 mb-6 gap-1" style={{ background: isDark ? '#1c1c2e' : '#c8e4f8' }}>
+          <div className="flex rounded-xl p-1 mb-6 gap-1" style={{ background: isDark ? '#252525' : '#c8e4f8' }}>
             {(['login','signup'] as const).map(m => (
               <button key={m} onClick={() => switchMode(m)}
                 className="flex-1 py-2.5 rounded-lg text-sm font-bold transition-all"
