@@ -888,7 +888,7 @@ function HowItWorksSection({ lang }: { lang: string }) {
   const acc = useAccent()
   const [active, setActive] = useState(0)
 
-  const secBg  = isDark ? P.dCard : P.card
+  const secBg  = isDark ? P.dCard : '#e8f0fd'
   const ink    = isDark ? P.dText   : P.ink
   const sub    = isDark ? P.dMuted  : P.stone
   const uiBg   = isDark ? 'rgba(28,28,46,0.95)' : P.parchment
@@ -1094,124 +1094,132 @@ function BentoSection({ lang }: { lang: string }) {
             'Tahlil, zaxira nazorati va moliya bir joyda',
             'Analytics, inventory control and financials in one place')}
         />
-        <div style={{ display: 'grid', gridTemplateColumns: '1.35fr 0.65fr', gap: 16 }}>
+        {/* Top: 4 KPI stat cards */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12, marginBottom: 16 }}>
+          {[
+            { l: tx(lang,'Выручка','Daromad','Revenue'), v: '124.5M', d: '+12%', col: '#22c4b8' },
+            { l: tx(lang,'Заказы','Buyurtmalar','Orders'), v: '1 842', d: '+8%', col: '#60a5fa' },
+            { l: tx(lang,'ДРР','DRR','DRR'), v: '8.2%', d: '-1.4%', col: '#f59e0b' },
+            { l: tx(lang,'Прибыль','Foyda','Profit'), v: '38.2M', d: '+15%', col: '#22c55e' },
+          ].map((k, i) => (
+            <FadeUp key={k.l} delay={i * 0.07}>
+              <div style={{ background: cardBg, borderRadius: 18, padding: '20px 22px',
+                border: `1px solid ${bdr}`, borderLeft: `3px solid ${k.col}`,
+                boxShadow: isDark ? '0 4px 20px rgba(0,0,0,0.25)' : '0 4px 20px rgba(0,0,0,0.06)' }}>
+                <p style={{ fontSize: 10, color: muted, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{k.l}</p>
+                <p style={{ fontSize: 22, fontWeight: 800, color: k.col, fontFamily: 'monospace', lineHeight: 1, marginBottom: 4 }}>{k.v}</p>
+                <p style={{ fontSize: 11, fontWeight: 600, color: k.col, opacity: 0.8 }}>{k.d} {tx(lang,'за месяц','oyda','this month')}</p>
+              </div>
+            </FadeUp>
+          ))}
+        </div>
 
-          {/* Large featured card — Analytics hub */}
-          <FadeUp delay={0.05}>
-            <div style={{ background: cardBg, borderRadius: 24, padding: '32px',
-              border: `1px solid ${bdr}`, display: 'flex', flexDirection: 'column', minHeight: 480,
+        {/* Bottom: 3 equal feature cards */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 16 }}>
+
+          {/* Analytics card */}
+          <FadeUp delay={0.12}>
+            <div style={{ background: cardBg, borderRadius: 24, padding: '28px',
+              border: `1px solid ${bdr}`, height: '100%',
               boxShadow: isDark ? '0 4px 24px rgba(197,232,254,0.06)' : '0 4px 24px rgba(0,0,0,0.06)' }}>
               <p style={{ fontSize: 11, fontWeight: 700, color: acc.tint, marginBottom: 6,
                 textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                 {tx(lang,'АНАЛИТИКА','TAHLIL','ANALYTICS')}
               </p>
-              <h3 style={{ fontSize: 22, fontWeight: 800, color: ink, marginBottom: 10, letterSpacing: '-0.01em' }}>
-                {tx(lang,'Аналитика маркетплейсов','Analitika markazi','Analytics hub')}
+              <h3 style={{ fontSize: 18, fontWeight: 800, color: ink, marginBottom: 10, letterSpacing: '-0.01em' }}>
+                {tx(lang,'Аналитика маркетплейсов','Analitika markazi','Marketplace analytics')}
               </h3>
-              <p style={{ fontSize: 14, color: sub, lineHeight: 1.65, marginBottom: 24, maxWidth: 400 }}>
-                {tx(lang,
-                  'Все ключевые метрики по Uzum, Wildberries и Yandex Market в одном дашборде с автообновлением каждые 15 минут',
-                  'Barcha asosiy ko\'rsatkichlar — Uzum, Wildberries va Yandex Market bo\'yicha bitta dashboardda har 15 daqiqada yangilanadi',
-                  'All key metrics across Uzum, Wildberries and Yandex Market in one dashboard, updated every 15 minutes'
-                )}
+              <p style={{ fontSize: 13, color: sub, lineHeight: 1.6, marginBottom: 18 }}>
+                {tx(lang,'Uzum, Wildberries и Yandex Market — обновление каждые 15 минут',
+                  'Uzum, Wildberries va Yandex Market — har 15 daqiqada yangilanadi',
+                  'Uzum, Wildberries & Yandex Market — updates every 15 min')}
               </p>
-              <div style={{ flex: 1, background: bg2, borderRadius: 16, padding: '16px', border: `1px solid ${bdr}` }}>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8, marginBottom: 14 }}>
-                  {[
-                    { l: tx(lang,'Выручка','Daromad','Revenue'), v: '124.5M', d: '+12%' },
-                    { l: tx(lang,'Заказы','Buyurtmalar','Orders'), v: '1 842', d: '+8%' },
-                    { l: tx(lang,'ДРР','DRR','DRR'), v: '8.2%', d: '-1.4%' },
-                    { l: tx(lang,'Прибыль','Foyda','Profit'), v: '38.2M', d: '+15%' },
-                  ].map(k => (
-                    <div key={k.l} style={{ background: cardBg, borderRadius: 10, padding: '10px 12px',
-                      borderTop: `2px solid ${acc.color}` }}>
-                      <p style={{ fontSize: 9, color: muted, marginBottom: 2 }}>{k.l}</p>
-                      <p style={{ fontSize: 13, fontWeight: 700, color: ink, fontFamily: 'monospace', lineHeight: 1.1 }}>{k.v}</p>
-                      <p style={{ fontSize: 9, fontWeight: 700, color: acc.tint, marginTop: 1 }}>{k.d}</p>
-                    </div>
+              <div style={{ background: bg2, borderRadius: 12, padding: '12px', border: `1px solid ${bdr}` }}>
+                <p style={{ fontSize: 9, color: muted, marginBottom: 8, fontWeight: 600,
+                  textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  {tx(lang,'Выручка по дням','Kunlik daromad','Daily revenue')}
+                </p>
+                <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2, height: 56 }}>
+                  {[32,45,38,62,55,78,65,85,72,58,80,95,68,82].map((h, i) => (
+                    <div key={i} style={{ flex: 1, borderRadius: '2px 2px 0 0', height: `${h}%`,
+                      background: i >= 10 ? acc.color : `${acc.color}28` }} />
                   ))}
-                </div>
-                <div style={{ background: cardBg, borderRadius: 10, padding: '10px 12px', border: `1px solid ${bdr}` }}>
-                  <p style={{ fontSize: 9, color: muted, marginBottom: 8, fontWeight: 600,
-                    textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    {tx(lang,'Выручка по дням','Kunlik daromad','Daily revenue')}
-                  </p>
-                  <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2, height: 52 }}>
-                    {[32,45,38,62,55,78,65,85,72,58,80,95,68,82].map((h, i) => (
-                      <div key={i} style={{ flex: 1, borderRadius: '2px 2px 0 0', height: `${h}%`,
-                        background: i >= 10 ? acc.color : `${acc.color}28` }} />
-                    ))}
-                  </div>
                 </div>
               </div>
             </div>
           </FadeUp>
 
-          {/* Right column: 2 smaller cards */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-
-            {/* Inventory control */}
-            <FadeUp delay={0.1}>
-              <div style={{ background: cardBg, borderRadius: 24, padding: '24px',
-                border: `1px solid ${bdr}`, flex: 1,
-                boxShadow: isDark ? '0 4px 24px rgba(197,232,254,0.06)' : '0 4px 24px rgba(0,0,0,0.06)' }}>
-                <p style={{ fontSize: 11, fontWeight: 700, color: '#f59e0b', marginBottom: 6,
-                  textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                  {tx(lang,'ЗАПАСЫ','ZAXIRA','INVENTORY')}
-                </p>
-                <h3 style={{ fontSize: 16, fontWeight: 800, color: ink, marginBottom: 14, letterSpacing: '-0.01em' }}>
-                  {tx(lang,'Zaxira nazorati','Zaxira nazorati','Stock control')}
-                </h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-                  {[
-                    { name: tx(lang,'Куртка','Qishki kurtka','Jacket'), stock: 120, low: false },
-                    { name: tx(lang,'Кроссовки','Krossovka','Sneakers'), stock: 8, low: true },
-                    { name: tx(lang,'Рюкзак','Ryuksak','Backpack'), stock: 45, low: false },
-                  ].map(item => (
-                    <div key={item.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      padding: '7px 10px', background: bg2, borderRadius: 8, border: `1px solid ${bdr}` }}>
-                      <span style={{ fontSize: 11, color: ink, fontWeight: 500 }}>{item.name}</span>
-                      <span style={{ fontSize: 11, fontWeight: 700,
-                        color: item.low ? '#f87171' : '#10b981',
-                        background: item.low ? 'rgba(248,113,113,0.1)' : 'rgba(16,185,129,0.1)',
-                        padding: '2px 8px', borderRadius: 100 }}>
-                        {item.stock} {tx(lang,'шт','ta','pcs')}
-                      </span>
-                    </div>
-                  ))}
-                </div>
+          {/* Inventory card */}
+          <FadeUp delay={0.2}>
+            <div style={{ background: cardBg, borderRadius: 24, padding: '28px',
+              border: `1px solid ${bdr}`, height: '100%',
+              boxShadow: isDark ? '0 4px 24px rgba(197,232,254,0.06)' : '0 4px 24px rgba(0,0,0,0.06)' }}>
+              <p style={{ fontSize: 11, fontWeight: 700, color: '#f59e0b', marginBottom: 6,
+                textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                {tx(lang,'ЗАПАСЫ','ZAXIRA','INVENTORY')}
+              </p>
+              <h3 style={{ fontSize: 18, fontWeight: 800, color: ink, marginBottom: 10, letterSpacing: '-0.01em' }}>
+                {tx(lang,'Контроль остатков','Zaxira nazorati','Stock control')}
+              </h3>
+              <p style={{ fontSize: 13, color: sub, lineHeight: 1.6, marginBottom: 18 }}>
+                {tx(lang,'Алерты когда товар заканчивается, по каждому складу',
+                  'Har bir ombor bo\'yicha mahsulot tugayotganda ogohlantirish',
+                  'Alerts when stock runs low, per warehouse')}
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {[
+                  { name: tx(lang,'Куртка','Qishki kurtka','Jacket'), stock: 120, low: false },
+                  { name: tx(lang,'Кроссовки','Krossovka','Sneakers'), stock: 8, low: true },
+                  { name: tx(lang,'Рюкзак','Ryuksak','Backpack'), stock: 45, low: false },
+                ].map(item => (
+                  <div key={item.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '8px 12px', background: bg2, borderRadius: 10, border: `1px solid ${bdr}` }}>
+                    <span style={{ fontSize: 12, color: ink, fontWeight: 500 }}>{item.name}</span>
+                    <span style={{ fontSize: 11, fontWeight: 700,
+                      color: item.low ? '#f87171' : '#10b981',
+                      background: item.low ? 'rgba(248,113,113,0.1)' : 'rgba(16,185,129,0.1)',
+                      padding: '3px 10px', borderRadius: 100 }}>
+                      {item.stock} {tx(lang,'шт','ta','pcs')}
+                    </span>
+                  </div>
+                ))}
               </div>
-            </FadeUp>
+            </div>
+          </FadeUp>
 
-            {/* P&L card */}
-            <FadeUp delay={0.15}>
-              <div style={{ background: cardBg, borderRadius: 24, padding: '24px',
-                border: `1px solid ${bdr}`, flex: 1,
-                boxShadow: isDark ? '0 4px 24px rgba(197,232,254,0.06)' : '0 4px 24px rgba(0,0,0,0.06)' }}>
-                <p style={{ fontSize: 11, fontWeight: 700, color: '#10b981', marginBottom: 6,
-                  textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                  {tx(lang,'ФИНАНСЫ','MOLIYA','FINANCE')}
-                </p>
-                <h3 style={{ fontSize: 16, fontWeight: 800, color: ink, marginBottom: 14, letterSpacing: '-0.01em' }}>
-                  {tx(lang,'Foyda hisobi','Foyda hisobi','Profit report')}
-                </h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-                  {[
-                    { l: tx(lang,'Выручка','Daromad','Revenue'), v: '124.5M', col: ink },
-                    { l: tx(lang,'Комиссия','Komissiya','Commission'), v: '-12.2M', col: '#f87171' },
-                    { l: tx(lang,'Доставка','Yetkazib berish','Delivery'), v: '-3.8M', col: '#f59e0b' },
-                    { l: tx(lang,'Прибыль','Foyda','Profit'), v: '108.5M', col: '#10b981' },
-                  ].map((row, i, arr) => (
-                    <div key={row.l} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      padding: '7px 0', borderBottom: i < arr.length - 1 ? `1px solid ${bdr}` : 'none' }}>
-                      <span style={{ fontSize: 11, color: sub }}>{row.l}</span>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: row.col, fontFamily: 'monospace' }}>{row.v}</span>
-                    </div>
-                  ))}
-                </div>
+          {/* P&L card */}
+          <FadeUp delay={0.28}>
+            <div style={{ background: cardBg, borderRadius: 24, padding: '28px',
+              border: `1px solid ${bdr}`, height: '100%',
+              boxShadow: isDark ? '0 4px 24px rgba(197,232,254,0.06)' : '0 4px 24px rgba(0,0,0,0.06)' }}>
+              <p style={{ fontSize: 11, fontWeight: 700, color: '#10b981', marginBottom: 6,
+                textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                {tx(lang,'ФИНАНСЫ','MOLIYA','FINANCE')}
+              </p>
+              <h3 style={{ fontSize: 18, fontWeight: 800, color: ink, marginBottom: 10, letterSpacing: '-0.01em' }}>
+                {tx(lang,'Отчёт о прибыли','Foyda hisobi','Profit report')}
+              </h3>
+              <p style={{ fontSize: 13, color: sub, lineHeight: 1.6, marginBottom: 18 }}>
+                {tx(lang,'Полная структура доходов и расходов по каждому каналу',
+                  'Har bir kanal bo\'yicha to\'liq daromad va xarajatlar tuzilmasi',
+                  'Full revenue and cost breakdown per channel')}
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+                {[
+                  { l: tx(lang,'Выручка','Daromad','Revenue'), v: '124.5M', col: ink },
+                  { l: tx(lang,'Комиссия','Komissiya','Commission'), v: '-12.2M', col: '#f87171' },
+                  { l: tx(lang,'Доставка','Yetkazib berish','Delivery'), v: '-3.8M', col: '#f59e0b' },
+                  { l: tx(lang,'Прибыль','Foyda','Profit'), v: '108.5M', col: '#10b981' },
+                ].map((row, i, arr) => (
+                  <div key={row.l} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '10px 0', borderBottom: i < arr.length - 1 ? `1px solid ${bdr}` : 'none' }}>
+                    <span style={{ fontSize: 12, color: sub }}>{row.l}</span>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: row.col, fontFamily: 'monospace' }}>{row.v}</span>
+                  </div>
+                ))}
               </div>
-            </FadeUp>
-          </div>
+            </div>
+          </FadeUp>
         </div>
       </div>
     </section>
@@ -1222,7 +1230,7 @@ function BentoSection({ lang }: { lang: string }) {
 function ExtensionSection({ lang }: { lang: string }) {
   const isDark = useIsDark()
   const acc = useAccent()
-  const secBg = isDark ? P.dCard  : P.card
+  const secBg = isDark ? P.dCard  : '#e8f0fd'
   const ink   = isDark ? P.dText  : P.ink
   const sub   = isDark ? P.dMuted : P.stone
 
@@ -1389,7 +1397,7 @@ function PricingSection({ lang }: { lang: string }) {
   const sectionRef = useRef(null)
   const inView = useInView(sectionRef, { once: true, amount: 0.3 })
 
-  const secBg  = isDark ? '#1e1e1e' : P.card
+  const secBg  = isDark ? '#1e1e1e' : '#e8f0fd'
   const ink    = isDark ? P.dText   : P.ink
   const muted  = isDark ? P.dMuted  : P.stone
   const bdr    = isDark ? P.dHair   : P.hair
@@ -1728,7 +1736,7 @@ function FaqSection({ lang }: { lang: string }) {
   const isDark = useIsDark()
   const acc = useAccent()
   const [open, setOpen] = useState<number | null>(0)
-  const secBg = isDark ? P.dCard : P.card
+  const secBg = isDark ? P.dCard : '#e8f0fd'
   const bdr   = isDark ? P.dHair   : P.hair
   const ink   = isDark ? P.dText   : P.ink
   const sub   = isDark ? P.dMuted  : P.stone
