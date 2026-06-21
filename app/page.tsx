@@ -999,7 +999,7 @@ function HowItWorksSection({ lang }: { lang: string }) {
         />
 
         {/* Two-column: accordion tabs left, active UI right */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.1fr', gap: 48, alignItems: 'start' }}>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-12" style={{ alignItems: 'start' }}>
 
           {/* Left: accordion */}
           <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -1309,7 +1309,7 @@ function ExtensionSection({ lang }: { lang: string }) {
           )}
         />
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 20, marginBottom: 48 }}>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-12">
           {cards.map((c, i) => (
             <FadeUp key={i} delay={i * 0.1}>
               <motion.div
@@ -1467,7 +1467,7 @@ function PricingSection({ lang }: { lang: string }) {
               'Bepul boshlang, o\'sish bilan kengaytiring','Start free, scale as you grow')}
           </p>
         </motion.div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 20 }}>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           {tiers.map((t, i) => (
             <motion.div key={t.name}
               initial={{ opacity: 0, y: -140, scale: 0.9 }}
@@ -1902,7 +1902,7 @@ function FooterSection({ lang }: { lang: string }) {
       fontFamily: "'Space Grotesk', system-ui, sans-serif", borderTop: `1px solid ${bdr}`,
       transition: 'background 0.3s' }}>
       <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr 1fr 1fr', gap: 40, marginBottom: 56 }}>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-14">
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
               <img src="/icon.svg" alt="" style={{ width: 30, height: 30, borderRadius: 7 }} />
