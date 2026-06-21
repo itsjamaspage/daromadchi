@@ -83,6 +83,7 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
   const [showSettings, setShowSettings] = useState(false)
   const [settings, setSettings]         = useState<UnitEcoSettings>(initSettings)
   const [draftSettings, setDraftSettings] = useState<UnitEcoSettings>(initSettings)
+  const [mpFilter, setMpFilter] = useState<'all' | 'uzum' | 'yandex_market' | 'wildberries'>('all')
   const [editingSupplier, setEditingSupplier] = useState<string|null>(null)
   const supplierRef = useRef<HTMLInputElement>(null)
   const printRef    = useRef<HTMLDivElement>(null)
@@ -174,6 +175,7 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
   const filtered = useMemo(() => {
     const q = search.toLowerCase()
     return items
+      .filter(it => mpFilter === 'all' || it.marketplace === mpFilter)
       .filter(it => !q || it.title.toLowerCase().includes(q) || (it.sku||'').toLowerCase().includes(q))
       .sort((a, b) => {
         const av = a[sortKey as keyof UnitEconomicsItem] as number ?? 0
@@ -270,6 +272,24 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
           </div>
         </div>
       )}
+
+      {/* Marketplace tabs */}
+      <div className="flex items-center gap-1.5 p-1 bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl w-fit">
+        {(['all', 'uzum', 'yandex_market', 'wildberries'] as const).map(mp => (
+          <button
+            key={mp}
+            onClick={() => setMpFilter(mp)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              mpFilter === mp
+                ? 'text-[var(--c1)]'
+                : 'text-[var(--text-base)] hover:text-[var(--c1)]'
+            }`}
+            style={mpFilter === mp ? { background: 'rgba(131,192,249,0.15)', border: '1px solid rgba(131,192,249,0.25)' } : undefined}
+          >
+            {mp === 'all' ? 'Barchasi' : mp === 'uzum' ? 'Uzum' : mp === 'yandex_market' ? 'Yandex Market' : 'Wildberries'}
+          </button>
+        ))}
+      </div>
 
       {/* Toolbar */}
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">

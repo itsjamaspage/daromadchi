@@ -1,5 +1,5 @@
 import { getT } from '@/lib/server-i18n'
-import { Calculator, Info } from 'lucide-react'
+import { Info } from 'lucide-react'
 import UnitEconomicsTable from '@/components/dashboard/UnitEconomicsTable'
 import { getUnitEconomicsItems, getUnitEcoSettings } from '@/lib/db/unit-economics'
 import type { MarketplaceType } from '@/lib/types'
@@ -55,12 +55,6 @@ export default async function UnitEconomicsPage({
             </span>
           </div>
           <p className="text-[var(--text-muted)] text-sm">{d.unitEcoSubtitle}</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <a href="https://uzum.uz" target="_blank" rel="noreferrer"
-            className="inline-flex items-center gap-2 btn-primary text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors shadow-lg">
-            <Calculator className="w-4 h-4" /> {d.openUzum}
-          </a>
         </div>
       </div>
 
