@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   CartesianGrid, Cell,
@@ -33,6 +33,18 @@ export default function SeasonalityView({ data }: Props) {
   const [selectedIdx, setSelectedIdx] = useState(0)
   const printRef = useRef<HTMLDivElement>(null)
   const product = data[selectedIdx]
+
+  const [axisColor, setAxisColor] = useState('#64748b')
+  useEffect(() => {
+    const isDark = document.documentElement.getAttribute('data-theme') !== 'light'
+    setAxisColor(isDark ? '#64748b' : '#3a4550')
+    const observer = new MutationObserver(() => {
+      const dark = document.documentElement.getAttribute('data-theme') !== 'light'
+      setAxisColor(dark ? '#64748b' : '#3a4550')
+    })
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
+    return () => observer.disconnect()
+  }, [])
 
   const maxRevenue = Math.max(...product.data.map(d => d.revenue))
   const minRevenue = Math.min(...product.data.map(d => d.revenue))
@@ -73,8 +85,8 @@ export default function SeasonalityView({ data }: Props) {
             <button key={p.productId} onClick={() => setSelectedIdx(i)}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border transition-all ${
                 selectedIdx === i
-                  ? 'bg-[rgba(131,192,249,0.15)] border-[rgba(131,192,249,0.3)]'
-                  : 'bg-[var(--bg-card2)] border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text-base)] hover:border-[var(--border)]'
+                  ? 'bg-[rgba(131,192,249,0.15)] border-[var(--c1)]'
+                  : 'bg-[var(--bg-card2)] border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text-base)] hover:border-[rgba(131,192,249,0.5)]'
               }`}
               style={selectedIdx === i ? { color: 'var(--c1)' } : {}}>
               <Package className="w-3.5 h-3.5" />
@@ -116,9 +128,9 @@ export default function SeasonalityView({ data }: Props) {
 
         <ResponsiveContainer width="100%" height={260}>
           <BarChart data={product.data} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
-            <XAxis dataKey="month" tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} />
-            <YAxis tickFormatter={fs} tick={{ fill: '#64748b', fontSize: 10 }} axisLine={false} tickLine={false} width={52} />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+            <XAxis dataKey="month" tick={{ fill: axisColor, fontSize: 11 }} axisLine={false} tickLine={false} />
+            <YAxis tickFormatter={fs} tick={{ fill: axisColor, fontSize: 10 }} axisLine={false} tickLine={false} width={52} />
             <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(124,58,237,0.08)' }} />
             <Bar dataKey="revenue" radius={[4,4,0,0]}>
               {product.data.map((d, i) => (
