@@ -6,23 +6,15 @@ import { Calendar, X } from 'lucide-react'
 
 interface Labels {
   label: string
-  p30: string; p90: string; p180: string; pAll: string
-  apply: string; clear: string
+  apply: string
+  clear: string
 }
 
-const PRESETS = [
-  { value: '30',  key: 'p30'  },
-  { value: '90',  key: 'p90'  },
-  { value: '180', key: 'p180' },
-] as const
-
 export default function PeriodSelector({
-  currentDays,
   currentFrom,
   currentTo,
   labels,
 }: {
-  currentDays: number | null
   currentFrom: string | null
   currentTo: string | null
   labels: Labels
@@ -43,17 +35,6 @@ export default function PeriodSelector({
     return p
   }
 
-  function goPreset(days: string) {
-    const p = base(); p.set('days', days)
-    setShowPicker(false)
-    router.push(`${pathname}?${p.toString()}`, { scroll: false })
-  }
-
-  function goAll() {
-    router.push(`${pathname}?${base().toString()}`, { scroll: false })
-    setShowPicker(false); setFromVal(''); setToVal('')
-  }
-
   function applyCustom() {
     if (!fromVal || !toVal) return
     const p = base(); p.set('from', fromVal); p.set('to', toVal)
@@ -67,38 +48,8 @@ export default function PeriodSelector({
     setShowPicker(false)
   }
 
-  const activePreset = !hasCustom && currentDays !== null ? String(currentDays) : null
-  const noneActive   = !hasCustom && currentDays === null
-
   return (
     <div className="flex flex-wrap items-center gap-2">
-      {/* Preset pills */}
-      <div className="flex items-center gap-1 p-1 rounded-xl border" style={{ background: 'var(--bg-card2)', borderColor: 'var(--border)' }}>
-        {PRESETS.map(({ value, key }) => (
-          <button
-            key={value}
-            onClick={() => goPreset(value)}
-            className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
-              activePreset === value
-                ? 'bg-[rgba(131,192,249,0.15)] text-[var(--c1)] border border-[rgba(131,192,249,0.3)]'
-                : 'text-[var(--text-muted)] hover:text-[var(--text-dim)]'
-            }`}
-          >
-            {labels[key]}
-          </button>
-        ))}
-        <button
-          onClick={goAll}
-          className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
-            noneActive
-              ? 'bg-[rgba(131,192,249,0.15)] text-[var(--c1)] border border-[rgba(131,192,249,0.3)]'
-              : 'text-[var(--text-muted)] hover:text-[var(--text-dim)]'
-          }`}
-        >
-          {labels.pAll}
-        </button>
-      </div>
-
       {/* Calendar toggle */}
       <button
         onClick={() => setShowPicker(v => !v)}

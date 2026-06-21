@@ -34,12 +34,13 @@ function statusIcon(s: SyncDay['status']) {
 type MP = 'uzum' | 'yandex' | 'wb'
 
 interface Props {
-  uzumDays:   SyncDay[]
-  yandexDays: SyncDay[]
-  wbDays:     SyncDay[]
+  uzumDays:     SyncDay[]
+  yandexDays:   SyncDay[]
+  wbDays:       SyncDay[]
+  connectedMps?: string[]
 }
 
-export default function DataStateView({ uzumDays, yandexDays, wbDays }: Props) {
+export default function DataStateView({ uzumDays, yandexDays, wbDays, connectedMps }: Props) {
   const { lang } = useLang()
   const d = translations[lang].dashboard
   const [mp, setMp] = useState<MP>('uzum')
@@ -48,6 +49,8 @@ export default function DataStateView({ uzumDays, yandexDays, wbDays }: Props) {
   const [hoveredDay, setHoveredDay] = useState<SyncDay | null>(null)
 
   const days = mp === 'uzum' ? uzumDays : mp === 'yandex' ? yandexDays : wbDays
+  const mpId = mp === 'uzum' ? 'uzum' : mp === 'yandex' ? 'yandex_market' : 'wildberries'
+  const isConnected = !connectedMps || connectedMps.length === 0 || connectedMps.includes(mpId)
 
   function statusLabel(s: SyncDay['status']) {
     switch (s) {
@@ -90,7 +93,8 @@ export default function DataStateView({ uzumDays, yandexDays, wbDays }: Props) {
     pending:  days.filter(d => d.status === 'pending').length,
   }
 
-  const noShop = days.length === 0
+  const noShop = !isConnected
+  const noData = isConnected && days.length === 0
 
   return (
     <div className="space-y-4">
@@ -122,6 +126,17 @@ export default function DataStateView({ uzumDays, yandexDays, wbDays }: Props) {
             {lang === 'ru' ? 'Подключите магазин в настройках, чтобы увидеть историю синхронизации.' :
              lang === 'en' ? 'Connect a shop in Settings to see sync history.' :
              "Sinxronizatsiya tarixini ko'rish uchun Sozlamalarda do'kon ulang."}
+          </p>
+        </div>
+      ) : noData ? (
+        <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl p-8 text-center">
+          <p className="text-[var(--text-base)] font-semibold text-sm mb-1">
+            {lang === 'ru' ? 'Данные ещё не загружены' : lang === 'en' ? 'No data yet' : "Ma'lumotlar hali yuklanmagan"}
+          </p>
+          <p className="text-[var(--text-muted)] text-xs">
+            {lang === 'ru' ? 'Синхронизация данных началась. Повторите попытку позже.' :
+             lang === 'en' ? 'Sync is in progress. Check back soon.' :
+             "Sinxronizatsiya jarayoni boshlandi. Biroz vaqt o'tgach qayta ko'ring."}
           </p>
         </div>
       ) : (

@@ -96,22 +96,33 @@ function DeductionBar({ entry }: { entry: PayoutEntry }) {
   )
 }
 
+const MP_TABS = [
+  { value: 'all',           label: 'Barchasi' },
+  { value: 'uzum',          label: 'Uzum' },
+  { value: 'yandex_market', label: 'Yandex Market' },
+  { value: 'wildberries',   label: 'Wildberries' },
+] as const
+type MpFilter = typeof MP_TABS[number]['value']
+
 export default function PayoutsView({ entries }: Props) {
   const { lang } = useLang()
   const t = dashT[lang].payouts
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [mpFilter, setMpFilter] = useState<MpFilter>('all')
   const printRef = useRef<HTMLDivElement>(null)
 
-  const paidEntries = entries.filter(e => e.status === 'paid')
+  const filteredEntries = mpFilter === 'all' ? entries : entries.filter(e => e.marketplace === mpFilter)
+
+  const paidEntries = filteredEntries.filter(e => e.status === 'paid')
   const totalPaid   = paidEntries.reduce((s, e) => s + e.netPayout, 0)
-  const pending     = entries.filter(e => e.status !== 'paid').reduce((s, e) => s + e.netPayout, 0)
+  const pending     = filteredEntries.filter(e => e.status !== 'paid').reduce((s, e) => s + e.netPayout, 0)
   const avgPaid     = paidEntries.length > 0 ? Math.round(totalPaid / paidEntries.length) : 0
 
   function toggle(id: string) {
     setExpandedId(prev => prev === id ? null : id)
   }
 
-  const exportData = entries.map(e => ({
+  const exportData = filteredEntries.map(e => ({
     [t.colPeriod]:              e.period,
     [t.colOrders]:              e.ordersCount,
     [`${t.colGross} (so'm)`]:   e.grossRevenue,
@@ -124,10 +135,32 @@ export default function PayoutsView({ entries }: Props) {
     [t.colStatus]: e.status === 'paid' ? t.statusPaid : e.status === 'processing' ? t.statusProcessing : t.statusPending,
   }))
 
+  const availableMps = MP_TABS.filter(tab =>
+    tab.value === 'all' || entries.some(e => e.marketplace === tab.value)
+  )
+
   return (
     <div className="space-y-4" ref={printRef}>
-      {/* Export button */}
-      <div className="flex justify-end">
+      {/* Marketplace tabs + export */}
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        {availableMps.length > 1 && (
+          <div className="flex items-center gap-1.5 p-1 bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl w-fit">
+            {availableMps.map(tab => (
+              <button
+                key={tab.value}
+                onClick={() => { setMpFilter(tab.value); setExpandedId(null) }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  mpFilter === tab.value
+                    ? 'text-[var(--c1)]'
+                    : 'text-[var(--text-base)] hover:text-[var(--c1)]'
+                }`}
+                style={mpFilter === tab.value ? { background: 'rgba(131,192,249,0.15)', border: '1px solid rgba(131,192,249,0.25)' } : undefined}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        )}
         <ExportButton data={exportData} filename="tolovu-hisoboti" targetRef={printRef} />
       </div>
 
@@ -141,7 +174,7 @@ export default function PayoutsView({ entries }: Props) {
         <div className="bg-[var(--bg-card2)] border border-amber-500/20 rounded-2xl px-4 py-3">
           <p className="text-[var(--text-muted)] text-xs mb-1">Kutilayotgan</p>
           <p className="text-amber-400 text-xl font-bold">{fmtShort(pending)}</p>
-          <p className="text-[var(--text-muted)] text-xs mt-0.5">{entries.filter(e => e.status !== 'paid').length} ta davr</p>
+          <p className="text-[var(--text-muted)] text-xs mt-0.5">{filteredEntries.filter(e => e.status !== 'paid').length} ta davr</p>
         </div>
         <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl px-4 py-3">
           <p className="text-[var(--text-muted)] text-xs mb-1">O&apos;rtacha to&apos;lov</p>
@@ -177,7 +210,7 @@ export default function PayoutsView({ entries }: Props) {
               </tr>
             </thead>
             <tbody>
-              {entries.map(entry => (
+              {filteredEntries.map(entry => (
                 <>
                   <tr
                     key={entry.id}

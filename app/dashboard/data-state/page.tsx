@@ -1,14 +1,29 @@
+import { createClient } from '@/lib/supabase/server'
 import { getT } from '@/lib/server-i18n'
 import DataStateView from '@/components/dashboard/DataStateView'
 import { getSyncDays } from '@/lib/db/sync-state'
 
 export default async function DataStatePage() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
   const [t, uzumDays, yandexDays, wbDays] = await Promise.all([
     getT(),
     getSyncDays('uzum', 30),
     getSyncDays('yandex_market', 30),
     getSyncDays('wildberries', 30),
   ])
+
+  const connectedMps: string[] = []
+  if (user) {
+    const { data: shops } = await supabase
+      .from('shops')
+      .select('marketplace')
+      .eq('user_id', user.id)
+      .neq('shop_id_external', 'DEMO')
+    shops?.forEach(s => { if (!connectedMps.includes(s.marketplace)) connectedMps.push(s.marketplace) })
+  }
+
   const d = t.dashboard
 
   return (
@@ -23,6 +38,7 @@ export default async function DataStatePage() {
         uzumDays={uzumDays}
         yandexDays={yandexDays}
         wbDays={wbDays}
+        connectedMps={connectedMps}
       />
     </div>
   )

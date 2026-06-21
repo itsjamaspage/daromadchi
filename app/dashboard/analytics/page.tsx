@@ -103,14 +103,12 @@ export default async function AnalyticsPage({ searchParams }: Props) {
         </Suspense>
         <Suspense>
           <PeriodSelector
-            currentDays={days}
             currentFrom={from}
             currentTo={to}
             labels={{
               label: d.periodLabel,
-              p30: d.period30, p90: d.period90, p180: d.period180,
-              pAll: d.periodAll,
-              apply: d.periodApply, clear: d.periodClear,
+              apply: d.periodApply,
+              clear: d.periodClear,
             }}
           />
         </Suspense>

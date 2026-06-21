@@ -11,6 +11,7 @@ function mapRow(row: Record<string, unknown>): PayoutEntry {
   return {
     id:               String(row.id),
     period:           String(row.period),
+    marketplace:      (row.marketplace as string) ?? undefined,
     grossRevenue:     Number(row.gross_revenue),
     commission:       Number(row.commission),
     delivery:         Number(row.delivery),

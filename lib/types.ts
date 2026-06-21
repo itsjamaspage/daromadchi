@@ -170,6 +170,7 @@ export interface StockAlert {
 export interface PayoutEntry {
   id: string
   period: string
+  marketplace?: string
   grossRevenue: number
   commission: number
   delivery: number
