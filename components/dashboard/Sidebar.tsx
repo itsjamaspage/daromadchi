@@ -58,7 +58,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
 
   return (
     <aside
-      className="sidebar-collapse h-full flex flex-col overflow-hidden"
+      className={`${onClose ? 'sidebar-full' : 'sidebar-collapse'} h-full flex flex-col overflow-hidden`}
       style={{ background: sideBg, borderRight: `1px solid ${sideBdr}` }}
     >
       {/* Logo */}

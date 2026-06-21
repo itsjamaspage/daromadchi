@@ -278,6 +278,17 @@ h1, h2, h3, h4, h5, h6 {
 }
 .sidebar-collapse:hover { width: 240px; }
 
+/* Mobile drawer — always fully expanded, no hover needed */
+.sidebar-full { width: 240px; overflow: hidden; }
+.sidebar-full .sidebar-label {
+  opacity: 1; pointer-events: auto; max-width: 500px;
+}
+.sidebar-full nav a,
+.sidebar-full nav > div > a,
+.sidebar-full nav button:not([title]) {
+  flex: 1; width: auto; height: auto;
+}
+
 .sidebar-collapse:not(:hover) nav > div { justify-content: center; }
 .sidebar-collapse:not(:hover) nav a,
 .sidebar-collapse:not(:hover) nav > div > a,

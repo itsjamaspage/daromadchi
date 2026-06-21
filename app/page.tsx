@@ -7,7 +7,7 @@ import {
   TrendingUp, TrendingDown, ArrowRight, Menu, X, Check,
   ChevronDown, BarChart2, Package, Bell,
   LayoutDashboard, ShoppingCart, Megaphone, Layers,
-  BookOpen, MessageCircle, Plug2,
+  BookOpen, MessageCircle, Plug2, UserCircle,
 } from 'lucide-react'
 import { useTheme, useLang } from './providers'
 import type { Lang } from '@/lib/i18n'
@@ -208,9 +208,11 @@ function Navbar({ lang }: { lang: string }) {
             {theme === 'dark' ? '☀' : '☾'}
           </button>
 
-          <Link href="/login" className="hidden md:block"
-            style={{ fontSize: 14, fontWeight: 500, textDecoration: 'none', padding: '9px 14px', color: lnk, transition: 'color 0.12s' }}>
-            {tx(lang,'Войти','Kirish','Sign in')}
+          <Link href="/login" className="hidden md:flex items-center justify-center"
+            style={{ width: 38, height: 38, borderRadius: 6, border: `1px solid ${borderCol}`, color: lnk, transition: 'all 0.12s' }}
+            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(0,0,0,0.05)')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+            <UserCircle size={18} />
           </Link>
 
           <Link href="/login" className="hidden sm:block"
@@ -1977,7 +1979,7 @@ function MobileBottomNav({ lang }: { lang: string }) {
     { label: tx(lang,'Функции','Imkoniyatlar','Features'),  href: '#features', Icon: Layers },
     { label: tx(lang,'Тарифы','Tariflar','Pricing'),        href: '#pricing',  Icon: Package },
     { label: tx(lang,'Вопросы','Savollar','FAQ'),           href: '#faq',      Icon: MessageCircle },
-    { label: tx(lang,'Войти','Kirish','Sign in'),           href: '/login',    Icon: BookOpen },
+    { label: tx(lang,'Profil','Profil','Profile'),           href: '/login',    Icon: UserCircle },
   ]
 
   return (

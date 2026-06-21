@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Package, ShoppingCart, Calculator, Settings } from 'lucide-react'
+import { LayoutDashboard, Package, ShoppingCart, BarChart2, Settings } from 'lucide-react'
 import { useLang } from '@/app/providers'
 import { translations } from '@/lib/i18n'
 
@@ -15,7 +15,7 @@ export default function BottomNav() {
     { href: '/dashboard',            label: d.nav.dashboard,   icon: LayoutDashboard },
     { href: '/dashboard/products',   label: d.nav.products,    icon: Package         },
     { href: '/dashboard/orders',     label: d.nav.orders,      icon: ShoppingCart    },
-    { href: '/dashboard/calculator', label: d.nav.calculator,  icon: Calculator      },
+    { href: '/dashboard/analytics',  label: d.nav.analytics,   icon: BarChart2       },
     { href: '/dashboard/settings',   label: d.nav.settings,    icon: Settings        },
   ]
 
