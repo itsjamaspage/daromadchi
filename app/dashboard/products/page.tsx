@@ -8,8 +8,8 @@ import type { MarketplaceType } from '@/lib/types'
 
 const MP_LABELS: Record<string, string> = {
   uzum:          'Uzum',
-  yandex_market: 'YM',
-  wildberries:   'WB',
+  yandex_market: 'Yandex Market',
+  wildberries:   'Wildberries',
 }
 
 const VALID: MarketplaceType[] = ['uzum', 'yandex_market', 'wildberries']

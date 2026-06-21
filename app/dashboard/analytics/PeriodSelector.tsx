@@ -6,7 +6,7 @@ import { Calendar, X } from 'lucide-react'
 
 interface Labels {
   label: string
-  p30: string; p90: string; p180: string; p365: string; p730: string; pAll: string
+  p30: string; p90: string; p180: string; pAll: string
   apply: string; clear: string
 }
 
@@ -14,8 +14,6 @@ const PRESETS = [
   { value: '30',  key: 'p30'  },
   { value: '90',  key: 'p90'  },
   { value: '180', key: 'p180' },
-  { value: '365', key: 'p365' },
-  { value: '730', key: 'p730' },
 ] as const
 
 export default function PeriodSelector({

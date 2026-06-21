@@ -218,7 +218,8 @@ function Navbar({ lang }: { lang: string }) {
 
           <Link href="/login" className="hidden sm:block"
             style={{ fontSize: 14, fontWeight: 700, background: acc.btn, color: acc.btnTxt,
-              padding: '10px 22px', borderRadius: 8, textDecoration: 'none', transition: 'background 0.15s', whiteSpace: 'nowrap' }}
+              padding: '10px 22px', borderRadius: 8, textDecoration: 'none', transition: 'all 0.15s', whiteSpace: 'nowrap',
+              border: `1.5px solid ${acc.btnBdr}`, boxShadow: isDark ? 'none' : '0 1px 6px rgba(14,27,46,0.10)' }}
             onMouseEnter={e => (e.currentTarget.style.background = acc.btnHov)}
             onMouseLeave={e => (e.currentTarget.style.background = acc.btn)}>
             {tx(lang,'Начать бесплатно','Bepul boshlash','Start free')}

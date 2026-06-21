@@ -91,7 +91,7 @@ export default function OrdersTable({ orders }: { orders: Order[] }) {
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
               mp === tab.value
                 ? 'text-[var(--c1)]'
-                : 'text-[var(--text-muted)] hover:text-[var(--text-dim)]'
+                : 'text-[var(--text-base)] hover:text-[var(--c1)]'
             }`}
             style={mp === tab.value ? {
               background: 'rgba(131,192,249,0.15)',
@@ -110,7 +110,7 @@ export default function OrdersTable({ orders }: { orders: Order[] }) {
             key={tab.value}
             onClick={() => setStatus(tab.value)}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 ${
-              status === tab.value ? 'text-[var(--text-base)]' : 'text-[var(--text-muted)] hover:text-[var(--text-base)]'
+              status === tab.value ? 'text-[var(--text-base)]' : 'text-[var(--text-base)] opacity-70 hover:opacity-100'
             }`}
             style={status === tab.value ? { background: 'var(--c1)' } : undefined}
           >

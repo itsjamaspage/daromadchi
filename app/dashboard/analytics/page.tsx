@@ -109,7 +109,7 @@ export default async function AnalyticsPage({ searchParams }: Props) {
             labels={{
               label: d.periodLabel,
               p30: d.period30, p90: d.period90, p180: d.period180,
-              p365: d.period365, p730: d.period730, pAll: d.periodAll,
+              pAll: d.periodAll,
               apply: d.periodApply, clear: d.periodClear,
             }}
           />
