@@ -323,3 +323,8 @@ h1, h2, h3, h4, h5, h6 {
 .prose-custom pre.prose-code code { background: none; border: none; color: var(--c1); padding: 0; font-size: 0.82rem; font-family: monospace; }
 .info-box    { background: rgba(131,192,249,0.10); border: 1px solid rgba(131,192,249,0.25); border-radius: 12px; padding: 0.875rem 1rem; font-size: 0.82rem; color: var(--text-muted); margin: 1.25rem 0; }
 .warning-box { background: rgba(236,126,0,0.06); border: 1px solid rgba(236,126,0,0.2); border-radius: 12px; padding: 0.875rem 1rem; font-size: 0.82rem; color: var(--text-muted); margin: 1.25rem 0; }
+
+/* Hero dashboard mockup — scale down on mobile so it fits the screen */
+@media (max-width: 640px) {
+  .dash-mockup-scale { zoom: 0.46; }
+}

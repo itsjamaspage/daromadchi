@@ -447,7 +447,7 @@ function HeroSection({ lang }: { lang: string }) {
       <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none',
         background: `radial-gradient(ellipse 45% 30% at 50% 0%, ${isDark ? 'rgba(197,232,254,0.06)' : 'rgba(14,116,144,0.08)'} 0%, transparent 55%)` }} />
 
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '130px 100px 0',
+      <div className="px-5 sm:px-12 lg:px-[100px]" style={{ maxWidth: 1200, margin: '0 auto', paddingTop: 100,
         position: 'relative', zIndex: 10, textAlign: 'center' }}>
 
         {/* Floating stat cards — desktop only */}
@@ -501,11 +501,13 @@ function HeroSection({ lang }: { lang: string }) {
           </a>
         </motion.div>
 
-        {/* Dashboard mockup — constrained width */}
+        {/* Dashboard mockup — constrained width, scales down on mobile */}
         <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.40, duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
           style={{ maxWidth: 840, margin: '0 auto', position: 'relative', zIndex: 20 }}>
-          <DashMockup />
+          <div className="dash-mockup-scale">
+            <DashMockup />
+          </div>
         </motion.div>
       </div>
 
