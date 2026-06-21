@@ -58,9 +58,9 @@ export default async function UnitEconomicsPage({
         </div>
       </div>
 
-      <div className="flex items-start gap-3 bg-blue-500/5 border border-blue-500/20 rounded-2xl px-4 py-3">
-        <Info className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: 'var(--color-info)' }} />
-        <p className="text-xs leading-relaxed" style={{ color: 'var(--color-info)' }}>{d.unitEcoNote}</p>
+      <div className="flex items-start gap-3 bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl px-4 py-3">
+        <Info className="w-4 h-4 flex-shrink-0 mt-0.5 text-[var(--c1)]" />
+        <p className="text-xs leading-relaxed text-[var(--text-base)]">{d.unitEcoNote}</p>
       </div>
 
       <UnitEconomicsTable items={items} defaultSettings={settings} fromExtension={fromExtension} />
