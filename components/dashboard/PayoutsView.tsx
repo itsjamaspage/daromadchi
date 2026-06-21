@@ -135,17 +135,12 @@ export default function PayoutsView({ entries }: Props) {
     [t.colStatus]: e.status === 'paid' ? t.statusPaid : e.status === 'processing' ? t.statusProcessing : t.statusPending,
   }))
 
-  const availableMps = MP_TABS.filter(tab =>
-    tab.value === 'all' || entries.some(e => e.marketplace === tab.value)
-  )
-
   return (
     <div className="space-y-4" ref={printRef}>
       {/* Marketplace tabs + export */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        {availableMps.length > 1 && (
-          <div className="flex items-center gap-1.5 p-1 bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl w-fit">
-            {availableMps.map(tab => (
+        <div className="flex items-center gap-1.5 p-1 bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl w-fit">
+            {MP_TABS.map(tab => (
               <button
                 key={tab.value}
                 onClick={() => { setMpFilter(tab.value); setExpandedId(null) }}
@@ -160,7 +155,6 @@ export default function PayoutsView({ entries }: Props) {
               </button>
             ))}
           </div>
-        )}
         <ExportButton data={exportData} filename="tolovu-hisoboti" targetRef={printRef} />
       </div>
 

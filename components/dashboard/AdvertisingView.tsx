@@ -154,7 +154,7 @@ export default function AdvertisingView({ uzumCampaigns, wbCampaigns }: Props) {
               { label: t.kpiDrr,         value: totals.drr > 0 ? `${totals.drr.toFixed(1)}%` : '—', color: drrColor(totals.drr) },
             ].map(({ label, value, color }) => (
               <div key={label} className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl px-4 py-3">
-                <p className="text-xs text-[var(--text-muted)] mb-1">{label}</p>
+                <p className="text-xs text-[var(--text-base)] mb-1">{label}</p>
                 <p className={`text-sm font-bold ${color}`}>{value}</p>
               </div>
             ))}
@@ -183,9 +183,9 @@ export default function AdvertisingView({ uzumCampaigns, wbCampaigns }: Props) {
               },
             ].map(({ label, value, color, hint }) => (
               <div key={label} className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl px-4 py-3">
-                <p className="text-xs text-[var(--text-muted)] mb-0.5">{label}</p>
+                <p className="text-xs text-[var(--text-base)] mb-0.5">{label}</p>
                 <p className={`text-sm font-bold ${color}`}>{value}</p>
-                <p className="text-[10px] text-[var(--text-muted)] mt-0.5 leading-tight">{hint}</p>
+                <p className="text-[10px] text-[var(--text-base)] mt-0.5 leading-tight opacity-70">{hint}</p>
               </div>
             ))}
           </div>
@@ -217,7 +217,7 @@ export default function AdvertisingView({ uzumCampaigns, wbCampaigns }: Props) {
                 <thead>
                   <tr className="border-b border-[var(--border)]">
                     {[t.colCampaign, t.colType, t.colStatus, t.colSpend, t.colImpressions, t.colClicks, t.colCtr, t.colOrders, t.colRevenue, t.colDrr, 'CPO', 'CR', 'ROAS'].map(h => (
-                      <th key={h} className="px-3 py-3 text-left text-xs font-semibold text-[var(--text-muted)] whitespace-nowrap">{h}</th>
+                      <th key={h} className="px-3 py-3 text-left text-xs font-semibold text-[var(--text-base)] whitespace-nowrap">{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -230,7 +230,7 @@ export default function AdvertisingView({ uzumCampaigns, wbCampaigns }: Props) {
                       <tr key={c.id} className="hover:bg-[var(--bg-card2)] transition-colors">
                         <td className="px-3 py-3">
                           <p className="text-[var(--text-base)] text-xs font-medium max-w-[200px] truncate">{c.name}</p>
-                          <p className="text-[var(--text-muted)] text-[10px] mt-0.5 truncate max-w-[200px]">{c.productTitle}</p>
+                          <p className="text-[var(--text-base)] text-[10px] mt-0.5 truncate max-w-[200px] opacity-70">{c.productTitle}</p>
                         </td>
                         <td className="px-3 py-3">
                           <span
@@ -241,13 +241,13 @@ export default function AdvertisingView({ uzumCampaigns, wbCampaigns }: Props) {
                         <td className="px-3 py-3">
                           <div className="flex items-center gap-1.5">
                             <span className={`w-1.5 h-1.5 rounded-full ${statusDot(c.status)}`} />
-                            <span className="text-xs text-[var(--text-muted)]">{statusLabel(c.status, t)}</span>
+                            <span className="text-xs text-[var(--text-base)]">{statusLabel(c.status, t)}</span>
                           </div>
                         </td>
                         <td className="px-3 py-3 text-red-400 text-xs">{fs(c.spend)}</td>
-                        <td className="px-3 py-3 text-[var(--text-muted)] text-xs">{c.impressions.toLocaleString('uz-UZ')}</td>
-                        <td className="px-3 py-3 text-[var(--text-dim)] text-xs">{c.clicks.toLocaleString('uz-UZ')}</td>
-                        <td className="px-3 py-3 text-[var(--text-dim)] text-xs">{c.ctr.toFixed(2)}%</td>
+                        <td className="px-3 py-3 text-[var(--text-base)] text-xs">{c.impressions.toLocaleString('uz-UZ')}</td>
+                        <td className="px-3 py-3 text-[var(--text-base)] text-xs">{c.clicks.toLocaleString('uz-UZ')}</td>
+                        <td className="px-3 py-3 text-[var(--text-base)] text-xs">{c.ctr.toFixed(2)}%</td>
                         <td className="px-3 py-3">
                           <div className="flex items-center gap-1">
                             <span className="text-[var(--text-base)] text-xs font-semibold">{c.orders}</span>
@@ -263,7 +263,7 @@ export default function AdvertisingView({ uzumCampaigns, wbCampaigns }: Props) {
                               {c.drr.toFixed(1)}%
                             </span>
                           ) : (
-                            <span className="text-[var(--text-muted)] text-xs">—</span>
+                            <span className="text-[var(--text-base)] text-xs">—</span>
                           )}
                         </td>
                         <td className="px-3 py-3 text-orange-400 text-xs">{cpo !== null ? fs(cpo) : '—'}</td>
