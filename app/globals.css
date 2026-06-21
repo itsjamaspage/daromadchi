@@ -63,8 +63,8 @@ button, input, select, textarea, a {
    canvas-light #ffffff · surface-soft #f4f4f4 · cobalt #494fdf
 ═══════════════════════════════════════════════════════════════════ */
 [data-theme="light"] {
-  --color-info:  rgba(197, 232, 254, 0.9);
-  --color-warn:  rgba(236, 126, 0, 0.9);
+  --color-info:  #0369a1;
+  --color-warn:  #c2410c;
 
   --bg-base:    #83c0f7;                    /* canvas-light */
   --bg-card:    #e8f0fd;                    /* surface-soft */

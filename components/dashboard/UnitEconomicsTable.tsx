@@ -468,7 +468,7 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
                             </div>
                             <div className="min-w-0">
                               <p className="text-[var(--text-base)] font-medium text-xs leading-tight max-w-[180px] truncate">{item.title}</p>
-                              <p className="text-[var(--text-muted)] text-[10px] mt-0.5">{item.category || item.marketplace}</p>
+                              <p className="text-[var(--text-base)] text-[10px] mt-0.5 opacity-70">{item.category || item.marketplace}</p>
                             </div>
                             <div className="flex items-center gap-1 flex-shrink-0">
                               {item.productUrl && (
@@ -481,10 +481,10 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
                           </div>
                         </td>
                       )
-                      if (col.key === 'sku') return <td key="sku" className="px-3 py-3 text-[var(--text-muted)] text-xs font-mono">{item.sku || '—'}</td>
+                      if (col.key === 'sku') return <td key="sku" className="px-3 py-3 text-[var(--text-base)] text-xs font-mono">{item.sku || '—'}</td>
                       if (col.key === 'sellingPrice') return <td key="sellingPrice" className="px-3 py-3 text-[var(--text-base)] text-xs">{fs(item.sellingPrice)}</td>
-                      if (col.key === 'costPrice') return <td key="costPrice" className="px-3 py-3 text-[var(--text-muted)] text-xs">{fs(item.costPrice)}</td>
-                      if (col.key === 'commission') return <td key="commission" className="px-3 py-3 text-xs"><span className="text-red-400">−{fs(item.commission)}</span><span className="text-[var(--text-muted)] text-[10px] ml-1">({item.commissionPct}%)</span></td>
+                      if (col.key === 'costPrice') return <td key="costPrice" className="px-3 py-3 text-[var(--text-base)] text-xs">{fs(item.costPrice)}</td>
+                      if (col.key === 'commission') return <td key="commission" className="px-3 py-3 text-xs"><span className="text-red-400">−{fs(item.commission)}</span><span className="text-[var(--text-base)] text-[10px] ml-1 opacity-60">({item.commissionPct}%)</span></td>
                       if (col.key === 'delivery') return <td key="delivery" className="px-3 py-3 text-red-400 text-xs">−{fs(item.delivery)}</td>
                       if (col.key === 'lastMile') return <td key="lastMile" className="px-3 py-3 text-red-400 text-xs">{item.lastMile > 0 ? `−${fs(item.lastMile)}` : '—'}</td>
                       if (col.key === 'acquiring') return <td key="acquiring" className="px-3 py-3 text-red-400 text-xs">−{fs(item.acquiring)}</td>

@@ -169,11 +169,11 @@ export default function OrdersTable({ orders }: { orders: Order[] }) {
                         <span className="font-mono text-xs font-medium" style={{ color: 'var(--c1)' }}>{order.order_id_external ?? order.id.slice(0, 8)}</span>
                       </div>
                     </td>
-                    <td className="px-5 py-4 text-[var(--text-dim)] text-xs">{marketplaceLabel[order.marketplace] ?? order.marketplace}</td>
-                    <td className="px-5 py-4 text-[var(--text-muted)] text-xs">{new Date(order.ordered_at).toLocaleDateString('uz-UZ')}</td>
+                    <td className="px-5 py-4 text-[var(--text-base)] text-xs">{marketplaceLabel[order.marketplace] ?? order.marketplace}</td>
+                    <td className="px-5 py-4 text-[var(--text-base)] text-xs">{new Date(order.ordered_at).toLocaleDateString('uz-UZ')}</td>
                     <td className="px-5 py-4 text-right text-[var(--text-base)] font-semibold">{order.revenue != null ? fmt(order.revenue) : '—'}</td>
-                    <td className="px-5 py-4 text-right text-red-400/70 text-xs">{order.marketplace_fee != null ? fmt(order.marketplace_fee) : '—'}</td>
-                    <td className="px-5 py-4 text-right text-[var(--text-dim)]">{order.items_count}</td>
+                    <td className="px-5 py-4 text-right text-red-400 text-xs font-medium">{order.marketplace_fee != null ? fmt(order.marketplace_fee) : '—'}</td>
+                    <td className="px-5 py-4 text-right text-[var(--text-base)]">{order.items_count}</td>
                     <td className="px-5 py-4 text-center">
                       <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg ${sc.className}`}>
                         <div className={`w-1.5 h-1.5 rounded-full ${sc.dot}`} />

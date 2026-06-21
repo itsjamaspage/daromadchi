@@ -284,13 +284,13 @@ export default function AdvertisingView({ uzumCampaigns, wbCampaigns }: Props) {
           </div>
 
           {/* Legend */}
-          <div className="flex flex-wrap gap-4 text-xs text-[var(--text-muted)]">
+          <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl px-4 py-3 flex flex-wrap gap-4 text-xs text-[var(--text-base)]">
             <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-red-500" />{t.legendNoSale}</span>
-            <span className="flex items-center gap-1.5"><span className="w-8 h-3 rounded bg-emerald-500/30 border border-emerald-500/50" /><span className="text-emerald-500">DRR &lt; 10%</span></span>
-            <span className="flex items-center gap-1.5"><span className="w-8 h-3 rounded bg-amber-500/30 border border-amber-500/50" /><span className="text-amber-500">DRR 10–20%</span></span>
-            <span className="flex items-center gap-1.5"><span className="w-8 h-3 rounded bg-red-500/30 border border-red-500/50" /><span className="text-red-500">DRR &gt; 20%</span></span>
+            <span className="flex items-center gap-1.5"><span className="w-8 h-3 rounded bg-emerald-500/30 border border-emerald-500/50" /><span className="text-emerald-600 font-medium">DRR &lt; 10%</span></span>
+            <span className="flex items-center gap-1.5"><span className="w-8 h-3 rounded bg-amber-500/30 border border-amber-500/50" /><span className="text-amber-600 font-medium">DRR 10–20%</span></span>
+            <span className="flex items-center gap-1.5"><span className="w-8 h-3 rounded bg-red-500/30 border border-red-500/50" /><span className="text-red-600 font-medium">DRR &gt; 20%</span></span>
             <span className="flex items-center gap-1.5">
-              <span className="text-emerald-400 font-bold">ROAS ≥ 3x</span>
+              <span className="text-emerald-600 font-bold">ROAS ≥ 3x</span>
               = {lang === 'ru' ? 'отличная отдача' : lang === 'en' ? 'great return' : 'yaxshi qaytish'}
             </span>
           </div>
