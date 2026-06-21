@@ -222,7 +222,7 @@ function Navbar({ lang }: { lang: string }) {
           </Link>
 
           <button className="md:hidden" onClick={() => setMenuOpen(v => !v)}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: lnk, padding: 4, display: 'none' }}>
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: lnk, padding: 4 }}>
             {menuOpen ? <X size={22}/> : <Menu size={22}/>}
           </button>
         </div>
@@ -700,8 +700,7 @@ function FeaturesSection({ lang }: { lang: string }) {
   return (
     <section id="features" ref={ref} style={{ background: secBg, padding: '96px 24px',
       fontFamily: "'Space Grotesk', system-ui, sans-serif", transition: 'background 0.3s', overflow: 'hidden' }}>
-      <div style={{ maxWidth: 1200, margin: '0 auto', display: 'grid',
-        gridTemplateColumns: '1fr 1fr', gap: '64px', alignItems: 'center' }}>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16" style={{ maxWidth: 1200, margin: '0 auto', alignItems: 'center' }}>
 
         {/* Left: dark dashboard mockup — matches photo 1 */}
         <motion.div
@@ -1101,7 +1100,7 @@ function BentoSection({ lang }: { lang: string }) {
             'Analytics, inventory control and financials in one place')}
         />
         {/* Top: 4 KPI stat cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12, marginBottom: 16 }}>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
           {[
             { l: tx(lang,'Выручка','Daromad','Revenue'), v: '124.5M', d: '+12%', col: '#22c4b8' },
             { l: tx(lang,'Заказы','Buyurtmalar','Orders'), v: '1 842', d: '+8%', col: '#60a5fa' },
@@ -1121,7 +1120,7 @@ function BentoSection({ lang }: { lang: string }) {
         </div>
 
         {/* Bottom: 3 equal feature cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 16 }}>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 
           {/* Analytics card */}
           <FadeUp delay={0.12}>
@@ -1655,7 +1654,7 @@ function ResourcesSection({ lang }: { lang: string }) {
                                 {item.desc}
                               </p>
                             )}
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12, marginBottom: 20 }}>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-5">
                               {item.items.map((it, j) => (
                                 <div key={j}
                                   style={{ padding: '14px 16px', background: bg2, borderRadius: 14,
