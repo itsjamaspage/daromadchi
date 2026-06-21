@@ -64,17 +64,17 @@ export default function HelpTooltip({ section, className = '', variant = 'badge'
             <div className="px-5 py-4 space-y-4 max-h-[70vh] overflow-y-auto">
               {/* What it does */}
               <Section label={sectionLabel(lang, 'what')} color="violet">
-                <p className="text-[var(--text-dim)] text-xs leading-relaxed">{content.what}</p>
+                <p className="text-[var(--text-dim)] text-sm leading-relaxed">{content.what}</p>
               </Section>
 
               {/* How it helps */}
               <Section label={sectionLabel(lang, 'why')} color="emerald">
-                <p className="text-[var(--text-dim)] text-xs leading-relaxed">{content.why}</p>
+                <p className="text-[var(--text-dim)] text-sm leading-relaxed">{content.why}</p>
               </Section>
 
               {/* How to use */}
               <Section label={sectionLabel(lang, 'how')} color="amber">
-                <p className="text-[var(--text-dim)] text-xs leading-relaxed">{content.how}</p>
+                <p className="text-[var(--text-dim)] text-sm leading-relaxed">{content.how}</p>
               </Section>
 
               {/* Data collection steps */}
@@ -85,7 +85,7 @@ export default function HelpTooltip({ section, className = '', variant = 'badge'
                       <span className="flex-shrink-0 w-5 h-5 rounded-full bg-cyan-500/15 border border-cyan-500/25 text-cyan-400 text-[10px] font-bold flex items-center justify-center mt-0.5">
                         {s.step}
                       </span>
-                      <span className="text-[var(--text-dim)] text-xs leading-relaxed">{s.text}</span>
+                      <span className="text-[var(--text-dim)] text-sm leading-relaxed">{s.text}</span>
                     </li>
                   ))}
                 </ol>
@@ -116,18 +116,23 @@ function Section({
   color: 'violet' | 'emerald' | 'amber' | 'cyan'
   children: React.ReactNode
 }) {
-  const colors = {
-    violet: 'text-[#83c0f9] border-[rgba(131,192,249,0.25)] bg-[#83c0f9]/5',
-    emerald: 'text-emerald-400 border-emerald-500/20 bg-emerald-500/5',
-    amber:   'text-amber-400 border-amber-500/20 bg-amber-500/5',
-    cyan:    'text-cyan-400 border-cyan-500/20 bg-cyan-500/5',
-  }
+  const cfg = {
+    violet: { border: 'rgba(131,192,249,0.25)', bg: 'rgba(131,192,249,0.07)', dot: '#83c0f9',   text: '#83c0f9'   },
+    emerald: { border: 'rgba(52,211,153,0.25)',  bg: 'rgba(52,211,153,0.07)',  dot: '#34d399',   text: '#34d399'   },
+    amber:   { border: 'rgba(251,191,36,0.25)',  bg: 'rgba(251,191,36,0.07)',  dot: '#fbbf24',   text: '#f59e0b'   },
+    cyan:    { border: 'rgba(34,211,238,0.25)',  bg: 'rgba(34,211,238,0.07)',  dot: '#22d3ee',   text: '#22d3ee'   },
+  }[color]
   return (
-    <div className={`rounded-xl border px-3.5 py-3 ${colors[color]}`}>
-      <p className={`text-[10px] font-bold uppercase tracking-widest mb-2 ${colors[color].split(' ')[0]}`}>
-        {label}
-      </p>
-      {children}
+    <div className="rounded-xl overflow-hidden" style={{ border: `1px solid ${cfg.border}`, background: cfg.bg }}>
+      <div className="flex items-center gap-2 px-4 py-2.5" style={{ borderBottom: `1px solid ${cfg.border}` }}>
+        <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: cfg.dot }} />
+        <p className="text-xs font-bold uppercase tracking-wider" style={{ color: cfg.text }}>
+          {label}
+        </p>
+      </div>
+      <div className="px-4 py-3">
+        {children}
+      </div>
     </div>
   )
 }
