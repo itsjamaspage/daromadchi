@@ -71,9 +71,10 @@ function useAccent() {
     dk:     isDark ? A.darkDk : A.lightDk,
     bg:     isDark ? A.darkBg : A.lightBg,
     tint:   isDark ? A.dark   : '#0369a1',
-    btn:    isDark ? A.dark    : '#131321',
-    btnTxt: isDark ? '#131321' : '#ffffff',
-    btnHov: isDark ? A.darkDk  : '#0e1a2e',
+    btn:    isDark ? A.dark    : '#ffffff',
+    btnTxt: isDark ? '#131321' : '#0e1b2e',
+    btnHov: isDark ? A.darkDk  : '#f0f6ff',
+    btnBdr: isDark ? 'transparent' : 'rgba(14,27,46,0.18)',
   }
 }
 
@@ -608,7 +609,12 @@ function ComparisonSection({ lang }: { lang: string }) {
 // ── 3. MARQUEE ────────────────────────────────────────────────────────────────
 function MarqueeSection({ lang }: { lang: string }) {
   const isDark = useIsDark()
-  const bg = isDark ? '#1e1e1e' : '#0e1b2e'
+  const bg       = isDark ? '#1e1e1e' : '#ffffff'
+  const bdr      = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(14,27,46,0.08)'
+  const divider  = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(14,27,46,0.12)'
+  const labelCol = isDark ? 'rgba(255,255,255,0.5)'  : 'rgba(14,27,46,0.45)'
+  const itemCol  = isDark ? '#ffffff'                : '#0e1b2e'
+  const dotCol   = isDark ? 'rgba(255,255,255,0.2)'  : 'rgba(14,27,46,0.2)'
   const items = [
     'Wildberries',
     tx(lang, 'Аналитика продаж', 'Savdo tahlili', 'Sales analytics'),
@@ -622,16 +628,16 @@ function MarqueeSection({ lang }: { lang: string }) {
   return (
     <div style={{
       background: bg, overflow: 'hidden', display: 'flex', alignItems: 'stretch',
-      borderTop: '1px solid rgba(255,255,255,0.08)',
-      borderBottom: '1px solid rgba(255,255,255,0.08)',
+      borderTop: `1px solid ${bdr}`,
+      borderBottom: `1px solid ${bdr}`,
       fontFamily: "'Space Grotesk', system-ui, sans-serif",
     }}>
       <div style={{
-        padding: '14px 24px', borderRight: '1px solid rgba(255,255,255,0.12)',
+        padding: '14px 24px', borderRight: `1px solid ${divider}`,
         flexShrink: 0, display: 'flex', alignItems: 'center',
       }}>
         <p style={{
-          fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.5)',
+          fontSize: 9, fontWeight: 700, color: labelCol,
           letterSpacing: '0.1em', textTransform: 'uppercase', lineHeight: 1.5, whiteSpace: 'nowrap',
         }}>
           INTEGRATSIYA QILINGAN<br />BOZORLAR VA FUNKSIYALAR
@@ -641,10 +647,10 @@ function MarqueeSection({ lang }: { lang: string }) {
         <div className="animate-ticker" style={{ display: 'flex', width: 'max-content' }}>
           {[...items, ...items].map((item, i) => (
             <div key={i} style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
-              <span style={{ padding: '14px 28px', fontSize: 13, fontWeight: 600, color: '#ffffff', whiteSpace: 'nowrap' }}>
+              <span style={{ padding: '14px 28px', fontSize: 13, fontWeight: 600, color: itemCol, whiteSpace: 'nowrap' }}>
                 {item}
               </span>
-              <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: 18, lineHeight: 1 }}>·</span>
+              <span style={{ color: dotCol, fontSize: 18, lineHeight: 1 }}>·</span>
             </div>
           ))}
         </div>
@@ -660,7 +666,7 @@ function FeaturesSection({ lang }: { lang: string }) {
   const ref = useRef<HTMLDivElement>(null)
   const inView = useInView(ref, { once: true, margin: '-80px' })
 
-  const secBg = isDark ? P.dCanvas : P.parchment
+  const secBg = isDark ? P.dCanvas : '#ffffff'
   const bdr   = isDark ? P.dHair   : P.hair
 
   // Dashboard palette — adapts to site theme
@@ -869,11 +875,11 @@ function FeaturesSection({ lang }: { lang: string }) {
           <FadeUp delay={0.39}>
             <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
               <Link href="/login"
-                style={{ fontSize: 15, fontWeight: 700, background: acc.btn, color: acc.btnTxt,
+                style={{ fontSize: 15, fontWeight: 700, background: isDark ? acc.btn : acc.color, color: isDark ? acc.btnTxt : '#ffffff',
                   padding: '13px 28px', borderRadius: 10, textDecoration: 'none',
                   transition: 'all 0.15s', display: 'inline-block' }}
-                onMouseEnter={e => { e.currentTarget.style.background = acc.btnHov; e.currentTarget.style.transform = 'translateY(-2px)' }}
-                onMouseLeave={e => { e.currentTarget.style.background = acc.btn; e.currentTarget.style.transform = 'translateY(0)' }}>
+                onMouseEnter={e => { e.currentTarget.style.background = isDark ? acc.btnHov : acc.dk; e.currentTarget.style.transform = 'translateY(-2px)' }}
+                onMouseLeave={e => { e.currentTarget.style.background = isDark ? acc.btn : acc.color; e.currentTarget.style.transform = 'translateY(0)' }}>
                 {tx(lang,'3 kun bepul boshlash →','3 kun bepul boshlash →','Start free 3 days →')}
               </Link>
               <a href="#how"
@@ -1522,12 +1528,12 @@ function PricingSection({ lang }: { lang: string }) {
 
               <Link href={t.ctaHref}
                 style={{ display: 'block', textAlign: 'center', fontSize: 14, fontWeight: 700,
-                  background: t.highlight ? '#0e1b2e' : acc.btn,
-                  color: t.highlight ? '#ffffff' : acc.btnTxt,
+                  background: t.highlight ? (isDark ? '#0e1b2e' : '#ffffff') : (isDark ? acc.btn : acc.color),
+                  color: t.highlight ? (isDark ? '#ffffff' : '#0e1b2e') : (isDark ? acc.btnTxt : '#ffffff'),
                   padding: '13px 24px', borderRadius: 10,
                   textDecoration: 'none', transition: 'all 0.15s' }}
-                onMouseEnter={e => { e.currentTarget.style.background = t.highlight ? '#1a2f4a' : acc.btnHov }}
-                onMouseLeave={e => { e.currentTarget.style.background = t.highlight ? '#0e1b2e' : acc.btn }}>
+                onMouseEnter={e => { e.currentTarget.style.background = t.highlight ? (isDark ? '#1a2f4a' : '#f0f6ff') : (isDark ? acc.btnHov : acc.dk) }}
+                onMouseLeave={e => { e.currentTarget.style.background = t.highlight ? (isDark ? '#0e1b2e' : '#ffffff') : (isDark ? acc.btn : acc.color) }}>
                 {t.cta}
               </Link>
             </motion.div>
