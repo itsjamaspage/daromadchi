@@ -1167,7 +1167,7 @@ function BentoSection({ lang }: { lang: string }) {
   const bdr    = isDark ? P.dHair   : P.hair
   const ink    = isDark ? P.dText   : P.ink
   const sub    = isDark ? P.dMuted  : P.stone
-  const muted  = isDark ? P.dMuted  : '#94A3B8'
+  const muted  = isDark ? P.dMuted  : P.stone
   const bg2    = isDark ? P.dCanvas : '#F8FAFD'
 
   return (
@@ -1195,7 +1195,7 @@ function BentoSection({ lang }: { lang: string }) {
                 boxShadow: isDark ? '0 4px 20px rgba(0,0,0,0.25)' : '0 4px 20px rgba(0,0,0,0.06)' }}>
                 <p style={{ fontSize: 10, color: muted, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{k.l}</p>
                 <p style={{ fontSize: 22, fontWeight: 800, color: k.col, fontFamily: 'monospace', lineHeight: 1, marginBottom: 4 }}>{k.v}</p>
-                <p style={{ fontSize: 11, fontWeight: 600, color: k.col, opacity: 0.8 }}>{k.d} {tx(lang,'за месяц','oyda','this month')}</p>
+                <p style={{ fontSize: 11, fontWeight: 600, color: k.col }}>{k.d} {tx(lang,'за месяц','oyda','this month')}</p>
               </div>
             </FadeUp>
           ))}
@@ -1418,7 +1418,7 @@ function ExtensionSection({ lang }: { lang: string }) {
                     <div key={j} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
                       <div style={{ width: 7, height: 7, borderRadius: '50%', background: c.color,
                         marginTop: 7, flexShrink: 0 }} />
-                      <span style={{ fontSize: 14, color: sub, lineHeight: 1.6 }}>{pt}</span>
+                      <span style={{ fontSize: 14, color: ink, lineHeight: 1.6 }}>{pt}</span>
                     </div>
                   ))}
                 </div>
@@ -1732,7 +1732,7 @@ function ResourcesSection({ lang }: { lang: string }) {
                           transition={{ duration: 0.32, ease: [0.25, 0.46, 0.45, 0.94] }}>
                           <div style={{ padding: '0 32px 28px' }}>
                             {item.desc && (
-                              <p style={{ fontSize: 14, color: sub, lineHeight: 1.65, marginBottom: 20, maxWidth: 600 }}>
+                              <p style={{ fontSize: 14, color: ink, lineHeight: 1.65, marginBottom: 20, maxWidth: 600 }}>
                                 {item.desc}
                               </p>
                             )}
@@ -1744,7 +1744,7 @@ function ResourcesSection({ lang }: { lang: string }) {
                                   onMouseEnter={e => (e.currentTarget.style.borderColor = acc.color)}
                                   onMouseLeave={e => (e.currentTarget.style.borderColor = bdr)}>
                                   <p style={{ fontSize: 13, fontWeight: 600, color: ink, marginBottom: 4 }}>{it.t}</p>
-                                  <p style={{ fontSize: 11, color: muted }}>{it.d}</p>
+                                  <p style={{ fontSize: 11, color: ink }}>{it.d}</p>
                                 </div>
                               ))}
                             </div>
@@ -1830,7 +1830,7 @@ function FaqSection({ lang }: { lang: string }) {
                     <span style={{ fontSize: 15, fontWeight: 600, color: ink }}>{f.q}</span>
                   </div>
                   <motion.div animate={{ rotate: open === i ? 180 : 0 }} transition={{ duration: 0.2 }}>
-                    <ChevronDown size={18} color={sub}/>
+                    <ChevronDown size={18} color={ink}/>
                   </motion.div>
                 </button>
                 <AnimatePresence initial={false}>
@@ -1841,7 +1841,7 @@ function FaqSection({ lang }: { lang: string }) {
                       exit={{ height: 0, opacity: 0 }}
                       transition={{ duration: 0.25, ease: 'easeInOut' }}
                       style={{ overflow: 'hidden' }}>
-                      <p style={{ fontSize: 14, color: sub, lineHeight: 1.7, paddingBottom: 20, paddingLeft: 34 }}>
+                      <p style={{ fontSize: 14, color: ink, lineHeight: 1.7, paddingBottom: 20, paddingLeft: 34 }}>
                         {f.a}
                       </p>
                     </motion.div>
