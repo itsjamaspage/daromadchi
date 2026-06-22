@@ -883,11 +883,11 @@ function FeaturesSection({ lang }: { lang: string }) {
           <FadeUp delay={0.39}>
             <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
               <Link href="/login"
-                style={{ fontSize: 15, fontWeight: 700, background: '#ffffff', color: isDark ? acc.btn : acc.color,
-                  padding: '13px 28px', borderRadius: 10, textDecoration: 'none', border: '2px solid rgba(255,255,255,0.7)',
+                style={{ fontSize: 13, fontWeight: 700, background: '#83c0f9', color: '#131321',
+                  padding: '11px 22px', borderRadius: 10, textDecoration: 'none',
                   transition: 'all 0.15s', display: 'inline-block' }}
-                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.88)'; e.currentTarget.style.transform = 'translateY(-2px)' }}
-                onMouseLeave={e => { e.currentTarget.style.background = '#ffffff'; e.currentTarget.style.transform = 'translateY(0)' }}>
+                onMouseEnter={e => { e.currentTarget.style.background = '#6aabf0'; e.currentTarget.style.transform = 'translateY(-2px)' }}
+                onMouseLeave={e => { e.currentTarget.style.background = '#83c0f9'; e.currentTarget.style.transform = 'translateY(0)' }}>
                 {tx(lang,'3 kun bepul boshlash →','3 kun bepul boshlash →','Start free 3 days →')}
               </Link>
               <a href="#how"
