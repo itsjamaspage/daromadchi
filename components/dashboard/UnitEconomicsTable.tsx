@@ -182,7 +182,7 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
         const bv = b[sortKey as keyof UnitEconomicsItem] as number ?? 0
         return sortDir === 'asc' ? (av > bv ? 1 : -1) : (av < bv ? 1 : -1)
       })
-  }, [items, search, sortKey, sortDir])
+  }, [items, search, sortKey, sortDir, mpFilter])
 
   function toggleSort(key: ColKey) {
     if (sortKey === key) setSortDir(d => d === 'asc' ? 'desc' : 'asc')

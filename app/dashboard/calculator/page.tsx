@@ -240,12 +240,12 @@ export default function CalculatorPage() {
             </select>
           </div>
 
-          <div className="flex items-center gap-2 border rounded-xl px-4 py-2.5" style={{ background: 'rgba(131,192,249,0.1)', borderColor: 'rgba(131,192,249,0.12)' }}>
+          <div className="flex items-center gap-2 border rounded-xl px-4 py-2.5" style={{ background: 'rgba(131,192,249,0.18)', borderColor: 'rgba(131,192,249,0.45)' }}>
             <Info className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--c1)' }} />
-            <p className="text-xs text-[var(--text-muted)]">
+            <p className="text-xs text-[var(--text-base)]">
               {mp === 'uzum' ? 'Uzum' : mp === 'yandex' ? 'Yandex Market' : 'Wildberries'} {lang === 'ru' ? 'комиссия:' : lang === 'en' ? 'commission:' : 'komissiyasi:'}
               {' '}<span className="font-semibold" style={{ color: 'var(--c1)' }}>{isApprox ? '~' : ''}{commission}%</span> · {CATEGORIES[catIdx].name}
-              {isApprox && <span className="text-amber-400 ml-1">({lang === 'ru' ? 'приблизительно' : lang === 'en' ? 'approximate' : 'taxminiy'})</span>}
+              {isApprox && <span className="ml-1 font-medium text-amber-700">({lang === 'ru' ? 'приблизительно' : lang === 'en' ? 'approximate' : 'taxminiy'})</span>}
             </p>
           </div>
         </div>

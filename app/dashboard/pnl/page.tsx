@@ -96,7 +96,7 @@ export default async function PnlPage({ searchParams }: Props) {
           </div>
 
           {/* Note about COGS */}
-          <div className="flex items-start gap-3 bg-amber-500/[0.06] border border-amber-500/20 rounded-xl px-4 py-3 text-xs" style={{ color: 'var(--color-warn)' }}>
+          <div className="flex items-start gap-3 bg-amber-50 border border-amber-300 rounded-xl px-4 py-3 text-xs text-amber-800">
             <Link2 className="w-4 h-4 mt-0.5 flex-shrink-0" />
             <span>
               {d.cogsNote}
@@ -145,14 +145,14 @@ export default async function PnlPage({ searchParams }: Props) {
                           )}
                         </td>
                         <td className="px-5 py-4 text-right text-[var(--text-muted)]">{m.order_count}</td>
-                        <td className="px-5 py-4 text-right text-[var(--text-dim)]">{fmt(m.revenue)}</td>
-                        <td className="px-5 py-4 text-right text-red-400/70">{m.marketplace_fee > 0 ? fmt(m.marketplace_fee) : '—'}</td>
-                        <td className="px-5 py-4 text-right text-amber-400/70">{m.delivery_cost > 0 ? fmt(m.delivery_cost) : '—'}</td>
+                        <td className="px-5 py-4 text-right text-[var(--text-base)]">{fmt(m.revenue)}</td>
+                        <td className="px-5 py-4 text-right text-red-600">{m.marketplace_fee > 0 ? fmt(m.marketplace_fee) : '—'}</td>
+                        <td className="px-5 py-4 text-right text-amber-600">{m.delivery_cost > 0 ? fmt(m.delivery_cost) : '—'}</td>
                         <td className="px-5 py-4 text-right">
-                          <span className={`font-bold ${m.net > 0 ? 'text-emerald-400' : 'text-red-400'}`}>{fmt(m.net)}</span>
+                          <span className={`font-bold ${m.net > 0 ? 'text-emerald-700' : 'text-red-600'}`}>{fmt(m.net)}</span>
                         </td>
                         <td className="px-5 py-4 text-right">
-                          <span className={`text-sm font-semibold ${margin > 80 ? 'text-emerald-400' : margin > 60 ? 'text-amber-400' : 'text-red-400'}`}>
+                          <span className={`text-sm font-semibold ${margin > 80 ? 'text-emerald-700' : margin > 60 ? 'text-amber-600' : 'text-red-600'}`}>
                             {margin.toFixed(1)}%
                           </span>
                         </td>
@@ -162,12 +162,12 @@ export default async function PnlPage({ searchParams }: Props) {
                   {/* Totals */}
                   <tr className="bg-[var(--bg-card2)] border-t border-[var(--border2)]">
                     <td className="px-5 py-4 text-[var(--text-base)] font-bold text-xs uppercase tracking-wide">{d.total}</td>
-                    <td className="px-5 py-4 text-right text-[var(--text-dim)] font-bold">{monthlyData.reduce((s, m) => s + m.order_count, 0)}</td>
+                    <td className="px-5 py-4 text-right text-[var(--text-base)] font-bold">{monthlyData.reduce((s, m) => s + m.order_count, 0)}</td>
                     <td className="px-5 py-4 text-right text-[var(--text-base)] font-bold">{fmt(totalRevenue)}</td>
-                    <td className="px-5 py-4 text-right text-red-400 font-bold">{fmt(totalFees)}</td>
-                    <td className="px-5 py-4 text-right text-amber-400 font-bold">{fmt(totalDelivery)}</td>
-                    <td className="px-5 py-4 text-right"><span className="text-emerald-400 font-bold">{fmt(totalNet)}</span></td>
-                    <td className="px-5 py-4 text-right"><span className="text-emerald-400 font-bold">{avgMargin.toFixed(1)}%</span></td>
+                    <td className="px-5 py-4 text-right text-red-600 font-bold">{fmt(totalFees)}</td>
+                    <td className="px-5 py-4 text-right text-amber-600 font-bold">{fmt(totalDelivery)}</td>
+                    <td className="px-5 py-4 text-right"><span className="text-emerald-700 font-bold">{fmt(totalNet)}</span></td>
+                    <td className="px-5 py-4 text-right"><span className="text-emerald-700 font-bold">{avgMargin.toFixed(1)}%</span></td>
                   </tr>
                 </tbody>
               </table>

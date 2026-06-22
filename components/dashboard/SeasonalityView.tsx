@@ -198,13 +198,13 @@ export default function SeasonalityView({ data }: Props) {
       </div>
 
       {/* Recommendation box */}
-      <div className="bg-[#83c0f9]/5 border border-violet-500/15 rounded-2xl px-5 py-4">
+      <div className="bg-[#83c0f9]/15 border border-[#83c0f9]/40 rounded-2xl px-5 py-4">
         <p className="font-semibold text-sm mb-2" style={{ color: 'var(--c1)' }}>Tavsiya</p>
-        <p className="text-[var(--text-muted)] text-xs leading-relaxed">
-          <strong className="text-[var(--text-base)]">{product.peakMonth}</strong> oyida eng yuqori sotuv kuzatiladi.
-          Shu oydan <strong className="text-[var(--text-base)]">1–2 oy oldin</strong> yetarli zaxira to&apos;plang.
+        <p className="text-[var(--text-base)] text-xs leading-relaxed">
+          <strong style={{ color: 'var(--c1)' }}>{product.peakMonth}</strong> oyida eng yuqori sotuv kuzatiladi.
+          Shu oydan <strong style={{ color: 'var(--c1)' }}>1–2 oy oldin</strong> yetarli zaxira to&apos;plang.
           {product.lowMonth !== product.peakMonth && (
-            <> <strong className="text-[var(--text-base)]">{product.lowMonth}</strong> oyida sotuv pasayadi — bu davrda reklama xarajatini kamaytiring.</>
+            <> <strong style={{ color: 'var(--c1)' }}>{product.lowMonth}</strong> oyida sotuv pasayadi — bu davrda reklama xarajatini kamaytiring.</>
           )}
         </p>
       </div>
