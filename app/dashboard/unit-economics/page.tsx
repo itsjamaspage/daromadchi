@@ -1,5 +1,5 @@
-import { getT } from '@/lib/server-i18n'
-import { Info, Puzzle, ArrowRight } from 'lucide-react'
+import { getT, getLang } from '@/lib/server-i18n'
+import { Info, Download, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 import UnitEconomicsTable from '@/components/dashboard/UnitEconomicsTable'
 import { getUnitEconomicsItems, getUnitEcoSettings } from '@/lib/db/unit-economics'
@@ -10,8 +10,9 @@ export default async function UnitEconomicsPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  const [t, items, settings, sp] = await Promise.all([
+  const [t, lang, items, settings, sp] = await Promise.all([
     getT(),
+    getLang(),
     getUnitEconomicsItems(),
     getUnitEcoSettings(),
     searchParams,
@@ -45,6 +46,18 @@ export default async function UnitEconomicsPage({
     sku:           str(sp.productId) || undefined,
   } : null
 
+  const extTitle = lang === 'ru' ? 'Установите расширение для браузера'
+    : lang === 'en' ? 'Install the browser extension'
+    : 'Brauzer kengaytmasini o\'rnating'
+
+  const extDesc = lang === 'ru'
+    ? 'Расширение работает в Chrome, Edge и Brave. Откройте карточку товара на Uzum.uz или WB и добавьте продукт одним нажатием — все данные попадут сюда автоматически.'
+    : lang === 'en'
+    ? 'Works in Chrome, Edge and Brave. Open any product on Uzum.uz or WB and add it with one click — all data appears here automatically.'
+    : 'Chrome, Edge va Brave\'da ishlaydi. Uzum.uz yoki WB\'da mahsulot kartasini oching va bir tugma bilan qo\'shing — barcha ma\'lumotlar avtomatik tushadi.'
+
+  const extBtn = lang === 'ru' ? 'Установить' : lang === 'en' ? 'Install now' : 'O\'rnatish'
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -66,32 +79,22 @@ export default async function UnitEconomicsPage({
       </div>
 
       {/* Extension install CTA */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-4 rounded-2xl px-5 py-4 border-2"
-        style={{ background: 'rgba(131,192,249,0.08)', borderColor: 'rgba(131,192,249,0.35)' }}>
+      <div className="flex flex-col sm:flex-row sm:items-center gap-4 rounded-2xl px-5 py-4"
+        style={{ background: 'rgba(131,192,249,0.12)', border: '2px solid rgba(131,192,249,0.4)' }}>
         <div className="flex items-start gap-3 flex-1 min-w-0">
           <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-            style={{ background: 'rgba(131,192,249,0.15)', border: '1px solid rgba(131,192,249,0.3)' }}>
-            <Puzzle className="w-4 h-4 text-[var(--c1)]" />
+            style={{ background: 'rgba(131,192,249,0.2)', border: '1px solid rgba(131,192,249,0.4)' }}>
+            <Download className="w-4 h-4 text-[var(--c1)]" />
           </div>
           <div>
-            <p className="text-sm font-semibold text-[var(--text-base)] mb-0.5">
-              {(t.lang as string) === 'ru' ? 'Установите расширение для браузера' :
-               (t.lang as string) === 'en' ? 'Install the browser extension' :
-               'Brauzer kengaytmasini o\'rnating'}
-            </p>
-            <p className="text-xs text-[var(--text-muted)] leading-relaxed">
-              {(t.lang as string) === 'ru'
-                ? 'Расширение работает в Chrome, Edge и Brave. Откройте карточку на Uzum.uz или WB и добавьте товар одним нажатием — все данные попадут сюда автоматически.'
-                : (t.lang as string) === 'en'
-                ? 'Works in Chrome, Edge and Brave. Open any product on Uzum.uz or WB and add it with one click — all data lands here automatically.'
-                : 'Chrome, Edge va Brave\'da ishlaydi. Uzum.uz yoki WB\'da mahsulot kartasini oching va bir tugma bilan qo\'shing — barcha ma\'lumotlar avtomatik tushadi.'}
-            </p>
+            <p className="text-sm font-semibold text-[var(--text-base)] mb-0.5">{extTitle}</p>
+            <p className="text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>{extDesc}</p>
           </div>
         </div>
         <Link href="/extension"
-          className="flex items-center gap-2 flex-shrink-0 text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors hover:opacity-90"
+          className="flex items-center gap-2 flex-shrink-0 text-sm font-semibold px-5 py-2.5 rounded-xl"
           style={{ background: '#83c0f9', color: '#131321' }}>
-          {(t.lang as string) === 'ru' ? 'Установить' : (t.lang as string) === 'en' ? 'Install now' : 'O\'rnatish'}
+          {extBtn}
           <ArrowRight className="w-4 h-4" />
         </Link>
       </div>
