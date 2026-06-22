@@ -18,17 +18,17 @@ function fsPct(n: number) {
 }
 
 function roiColor(roi: number) {
-  return roi >= 80 ? 'text-emerald-400' : roi >= 30 ? 'text-amber-400' : 'text-red-400'
+  return roi >= 80 ? 'text-emerald-600' : roi >= 30 ? 'text-amber-600' : 'text-red-600'
 }
 function roiBg(roi: number) {
-  return roi >= 80 ? 'bg-emerald-500/10 text-emerald-400' : roi >= 30 ? 'bg-amber-500/10 text-amber-400' : 'bg-red-500/10 text-red-400'
+  return roi >= 80 ? 'bg-emerald-100 text-emerald-700' : roi >= 30 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'
 }
 function marginColor(m: number) {
-  return m >= 20 ? 'text-emerald-400' : m >= 10 ? 'text-amber-400' : 'text-red-400'
+  return m >= 20 ? 'text-emerald-600' : m >= 10 ? 'text-amber-600' : 'text-red-600'
 }
 function stockColor(s: number | undefined) {
   if (s === undefined) return 'text-[var(--text-muted)]'
-  return s >= 30 ? 'text-emerald-400' : s >= 10 ? 'text-amber-400' : 'text-red-400'
+  return s >= 30 ? 'text-emerald-600' : s >= 10 ? 'text-amber-600' : 'text-red-600'
 }
 
 const ALL_COLUMNS = [
@@ -305,7 +305,7 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
         <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
           {selected.size > 0 && (
             <button onClick={deleteSelected}
-              className="flex items-center gap-1.5 px-3 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-semibold rounded-xl border border-red-500/20 transition-colors">
+              className="flex items-center gap-1.5 px-3 py-2 bg-red-100 hover:bg-red-200 text-red-700 text-xs font-semibold rounded-xl border border-red-300 transition-colors">
               <Trash2 className="w-3.5 h-3.5" /> O&apos;chirish ({selected.size})
             </button>
           )}
@@ -484,14 +484,14 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
                       if (col.key === 'sku') return <td key="sku" className="px-3 py-3 text-[var(--text-base)] text-xs font-mono">{item.sku || '—'}</td>
                       if (col.key === 'sellingPrice') return <td key="sellingPrice" className="px-3 py-3 text-[var(--text-base)] text-xs">{fs(item.sellingPrice)}</td>
                       if (col.key === 'costPrice') return <td key="costPrice" className="px-3 py-3 text-[var(--text-base)] text-xs">{fs(item.costPrice)}</td>
-                      if (col.key === 'commission') return <td key="commission" className="px-3 py-3 text-xs"><span className="text-red-400">−{fs(item.commission)}</span><span className="text-[var(--text-base)] text-[10px] ml-1 opacity-60">({item.commissionPct}%)</span></td>
-                      if (col.key === 'delivery') return <td key="delivery" className="px-3 py-3 text-red-400 text-xs">−{fs(item.delivery)}</td>
-                      if (col.key === 'lastMile') return <td key="lastMile" className="px-3 py-3 text-red-400 text-xs">{item.lastMile > 0 ? `−${fs(item.lastMile)}` : '—'}</td>
-                      if (col.key === 'acquiring') return <td key="acquiring" className="px-3 py-3 text-red-400 text-xs">−{fs(item.acquiring)}</td>
-                      if (col.key === 'adSpend') return <td key="adSpend" className="px-3 py-3 text-red-400 text-xs">−{fs(item.adSpend)}</td>
-                      if (col.key === 'tax') return <td key="tax" className="px-3 py-3 text-red-400 text-xs">−{fs(item.tax)}</td>
+                      if (col.key === 'commission') return <td key="commission" className="px-3 py-3 text-xs"><span className="text-red-600">−{fs(item.commission)}</span><span className="text-[var(--text-base)] text-[10px] ml-1 opacity-60">({item.commissionPct}%)</span></td>
+                      if (col.key === 'delivery') return <td key="delivery" className="px-3 py-3 text-red-600 text-xs">−{fs(item.delivery)}</td>
+                      if (col.key === 'lastMile') return <td key="lastMile" className="px-3 py-3 text-red-600 text-xs">{item.lastMile > 0 ? `−${fs(item.lastMile)}` : '—'}</td>
+                      if (col.key === 'acquiring') return <td key="acquiring" className="px-3 py-3 text-red-600 text-xs">−{fs(item.acquiring)}</td>
+                      if (col.key === 'adSpend') return <td key="adSpend" className="px-3 py-3 text-red-600 text-xs">−{fs(item.adSpend)}</td>
+                      if (col.key === 'tax') return <td key="tax" className="px-3 py-3 text-red-600 text-xs">−{fs(item.tax)}</td>
                       if (col.key === 'netProfit') return (
-                        <td key="netProfit" className={`px-3 py-3 text-xs font-bold ${item.netProfit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                        <td key="netProfit" className={`px-3 py-3 text-xs font-bold ${item.netProfit >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
                           {item.netProfit >= 0 ? '+' : ''}{fs(item.netProfit)}
                         </td>
                       )
@@ -499,7 +499,7 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
                         <td key="roi" className="px-3 py-3">
                           {item.costPrice === 0 ? (
                             <button onClick={() => openEdit(item)}
-                              className="text-xs text-amber-400 border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 rounded-lg hover:bg-amber-500/20 transition-colors"
+                              className="text-xs text-amber-700 border border-amber-300 bg-amber-100 px-2 py-0.5 rounded-lg hover:bg-amber-200 transition-colors"
                               title="Tannarx kiritilmagan — ROI hisoblanmadi">
                               —
                             </button>
@@ -682,19 +682,19 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
                   <div className="grid grid-cols-3 gap-2 pt-2 border-t border-[var(--border)]">
                     <div className="bg-[var(--bg-card2)] rounded-xl px-3 py-2 text-center">
                       <p className="text-[10px] text-[var(--text-muted)] mb-0.5">Foyda</p>
-                      <p className={`text-xs font-bold ${(calc.netProfit ?? 0) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                      <p className={`text-xs font-bold ${(calc.netProfit ?? 0) >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
                         {(calc.netProfit ?? 0) >= 0 ? '+' : ''}{new Intl.NumberFormat('uz-UZ').format(Math.round(calc.netProfit ?? 0))} so&apos;m
                       </p>
                     </div>
                     <div className="bg-[var(--bg-card2)] rounded-xl px-3 py-2 text-center">
                       <p className="text-[10px] text-[var(--text-muted)] mb-0.5">ROI</p>
-                      <p className={`text-xs font-bold ${(calc.roi ?? 0) >= 30 ? 'text-emerald-400' : 'text-amber-400'}`}>
+                      <p className={`text-xs font-bold ${(calc.roi ?? 0) >= 30 ? 'text-emerald-600' : 'text-amber-600'}`}>
                         {Math.round(calc.roi ?? 0)}%
                       </p>
                     </div>
                     <div className="bg-[var(--bg-card2)] rounded-xl px-3 py-2 text-center">
                       <p className="text-[10px] text-[var(--text-muted)] mb-0.5">Marja</p>
-                      <p className={`text-xs font-bold ${(calc.margin ?? 0) >= 20 ? 'text-emerald-400' : 'text-amber-400'}`}>
+                      <p className={`text-xs font-bold ${(calc.margin ?? 0) >= 20 ? 'text-emerald-600' : 'text-amber-600'}`}>
                         {(calc.margin ?? 0).toFixed(1)}%
                       </p>
                     </div>

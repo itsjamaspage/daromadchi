@@ -50,7 +50,7 @@ export default async function UnitEconomicsPage({
         <div>
           <div className="flex items-center gap-2 mb-0.5">
             <h1 className="text-2xl font-bold text-[var(--text-base)]">{d.unitEcoTitle}</h1>
-            <span className="text-[10px] font-semibold px-2 py-1 rounded-full border" style={{ background: 'rgba(131,192,249,0.12)', borderColor: 'rgba(131,192,249,0.30)', color: 'var(--c1)' }}>
+            <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full border-2" style={{ background: 'rgba(131,192,249,0.15)', borderColor: 'rgba(131,192,249,0.7)', color: 'var(--c1)' }}>
               {items.length} {d.productCount}
             </span>
           </div>
