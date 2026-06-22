@@ -216,7 +216,7 @@ export default function TeamPage() {
           )}
           <button
             onClick={() => setShowModal(true)}
-            className="flex items-center gap-2 bg-[#83c0f9] hover:bg-[#6aabf0] text-[#131321] text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors"
+            className="flex items-center gap-2 border-2 border-[#83c0f9] text-[#2563a8] hover:bg-[rgba(131,192,249,0.12)] text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors"
           >
             <UserPlus className="w-4 h-4" />
             {d.teamAddMember}

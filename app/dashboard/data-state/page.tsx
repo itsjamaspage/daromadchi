@@ -21,7 +21,6 @@ export default async function DataStatePage() {
       .from('shops')
       .select('marketplace')
       .eq('user_id', userId)
-      .neq('shop_id_external', 'DEMO')
     shops?.forEach(s => { if (!connectedMps.includes(s.marketplace)) connectedMps.push(s.marketplace) })
   }
 

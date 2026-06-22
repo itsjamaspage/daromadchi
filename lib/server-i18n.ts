@@ -6,3 +6,8 @@ export async function getT() {
   const lang = (store.get('lang')?.value ?? 'uz') as Lang
   return translations[lang]
 }
+
+export async function getLang(): Promise<Lang> {
+  const store = await cookies()
+  return (store.get('lang')?.value ?? 'uz') as Lang
+}

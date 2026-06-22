@@ -1,8 +1,8 @@
 'use client'
 
-import { LineChart, Line, ResponsiveContainer, Tooltip } from 'recharts'
+import { useState } from 'react'
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { TrendingUp, TrendingDown } from 'lucide-react'
-import { useTheme } from '@/app/providers'
 
 function fmtM(v: number) {
   if (Math.abs(v) >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}M`
@@ -22,27 +22,7 @@ type DataRow = {
   orders?: number
 }
 
-function Sparkline({ data, dataKey, color, label }: {
-  data: DataRow[]
-  dataKey: keyof DataRow
-  color: string
-  label: string
-}) {
-  return (
-    <ResponsiveContainer width="100%" height={40}>
-      <LineChart data={data} margin={{ top: 4, right: 4, left: 4, bottom: 4 }}>
-        <Tooltip
-          contentStyle={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 11, padding: '4px 8px' }}
-          labelStyle={{ color: 'var(--text-muted)', marginBottom: 2 }}
-          itemStyle={{ color }}
-          formatter={(v: number) => [fmtFull(v), label]}
-        />
-        <Line type="monotone" dataKey={dataKey as string} stroke={color} strokeWidth={2}
-          dot={false} activeDot={{ r: 4, fill: color, strokeWidth: 0 }} />
-      </LineChart>
-    </ResponsiveContainer>
-  )
-}
+type MetricKey = 'revenue' | 'cost' | 'profit' | 'orders'
 
 export default function PnlChart({
   data,
@@ -57,76 +37,115 @@ export default function PnlChart({
   profitLabel: string
   ordersLabel?: string
 }) {
-  const { theme } = useTheme()
-  const isDark = theme === 'dark'
+  const showOrders = !!ordersLabel && data.some(d => (d.orders ?? 0) > 0)
 
-  const totalRevenue = data.reduce((s, d) => s + d.revenue, 0)
-  const totalCost    = data.reduce((s, d) => s + d.cost, 0)
-  const totalProfit  = data.reduce((s, d) => s + d.profit, 0)
-  const totalOrders  = data.reduce((s, d) => s + (d.orders ?? 0), 0)
-  const showOrders   = ordersLabel && data.some(d => (d.orders ?? 0) > 0)
-
-  function trend(key: keyof DataRow) {
-    const first = (data[0]?.[key] as number) ?? 0
-    const last  = (data[data.length - 1]?.[key] as number) ?? 0
-    return first > 0 ? ((last - first) / first) * 100 : null
-  }
-
-  const rows = [
-    { label: revenueLabel, key: 'revenue' as const, color: '#0284c7', total: totalRevenue, unit: "so'm" },
-    { label: costLabel,    key: 'cost'    as const, color: '#dc2626', total: totalCost,    unit: "so'm" },
-    { label: profitLabel,  key: 'profit'  as const, color: '#059669', total: totalProfit,  unit: "so'm" },
-    ...(showOrders && ordersLabel ? [{ label: ordersLabel, key: 'orders' as const, color: '#d97706', total: totalOrders, unit: '' }] : []),
+  const metrics: { key: MetricKey; label: string; color: string; unit: string }[] = [
+    { key: 'revenue', label: revenueLabel, color: '#0284c7', unit: "so'm" },
+    { key: 'cost',    label: costLabel,    color: '#dc2626', unit: "so'm" },
+    { key: 'profit',  label: profitLabel,  color: '#059669', unit: "so'm" },
+    ...(showOrders && ordersLabel ? [{ key: 'orders' as MetricKey, label: ordersLabel, color: '#d97706', unit: '' }] : []),
   ]
+
+  const [active, setActive] = useState<MetricKey>('revenue')
+
+  const metric = metrics.find(m => m.key === active) ?? metrics[0]
+  const total  = data.reduce((s, d) => s + ((d[active] as number) ?? 0), 0)
+
+  const first = (data[0]?.[active] as number) ?? 0
+  const last  = (data[data.length - 1]?.[active] as number) ?? 0
+  const trend = first > 0 ? ((last - first) / first) * 100 : null
+  const up    = trend !== null && trend >= 0
 
   return (
     <div className="border rounded-2xl overflow-hidden" style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}>
-      <table className="w-full">
-        <tbody className="divide-y" style={{ borderColor: 'var(--border)' }}>
-          {rows.map((row, i) => {
-            const t = trend(row.key)
-            const up = t !== null && t >= 0
-            return (
-              <tr key={row.key} className={i % 2 === 1 ? '' : ''}>
-                {/* Label */}
-                <td className="px-5 py-4 w-32">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: row.color }} />
-                    <span className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>{row.label}</span>
-                  </div>
-                </td>
 
-                {/* Value */}
-                <td className="px-5 py-4 w-40">
-                  <p className="text-lg font-bold leading-none" style={{ color: row.color }}>
-                    {fmtM(row.total)}
-                  </p>
-                  {row.unit && (
-                    <p className="text-[10px] mt-0.5" style={{ color: 'var(--text-dim)' }}>{row.unit}</p>
-                  )}
-                </td>
+      {/* Metric selector tabs — click to switch */}
+      <div className={`grid border-b divide-x ${showOrders ? 'grid-cols-4' : 'grid-cols-3'}`}
+        style={{ borderColor: 'var(--border)', '--tw-divide-opacity': 1 } as React.CSSProperties}>
+        {metrics.map(m => {
+          const isActive = m.key === active
+          const mTotal = data.reduce((s, d) => s + ((d[m.key] as number) ?? 0), 0)
+          return (
+            <button
+              key={m.key}
+              onClick={() => setActive(m.key)}
+              className="flex flex-col items-start px-5 py-4 text-left transition-all hover:opacity-90 border-[var(--border)]"
+              style={{
+                background: isActive ? `color-mix(in srgb, ${m.color} 8%, transparent)` : 'transparent',
+                borderBottom: `3px solid ${isActive ? m.color : 'transparent'}`,
+              }}
+            >
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: m.color }} />
+                <span className="text-[11px] font-medium" style={{ color: 'var(--text-muted)' }}>{m.label}</span>
+              </div>
+              <p className="text-lg font-bold leading-none" style={{ color: m.color }}>{fmtM(mTotal)}</p>
+              {m.unit && <p className="text-[10px] mt-0.5" style={{ color: 'var(--text-dim)' }}>{m.unit}</p>}
+            </button>
+          )
+        })}
+      </div>
 
-                {/* Trend badge */}
-                <td className="px-4 py-4 w-24">
-                  {t !== null && (
-                    <span className={`inline-flex items-center gap-0.5 text-[11px] font-semibold px-2 py-0.5 rounded-lg ${
-                      up ? 'text-emerald-700 bg-emerald-100' : 'text-red-700 bg-red-100'
-                    }`}>
-                      {up ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                      {up ? '+' : ''}{Math.abs(t).toFixed(1)}%
-                    </span>
-                  )}
-                </td>
+      {/* Detail area for selected metric */}
+      <div className="p-5 space-y-4">
 
-                {/* Sparkline */}
-                <td className="pr-5 py-2" style={{ minWidth: 140 }}>
-                  <Sparkline data={data} dataKey={row.key} color={row.color} label={row.label} />
-                </td>
-              </tr>
-            )
-          })}
-        </tbody>
-      </table>
+        {/* Headline */}
+        <div className="flex items-center gap-3">
+          <div>
+            <p className="text-[11px] font-medium mb-0.5" style={{ color: 'var(--text-muted)' }}>{metric.label}</p>
+            <p className="text-3xl font-bold leading-none" style={{ color: metric.color }}>{fmtM(total)}</p>
+            {metric.unit && <p className="text-xs mt-0.5" style={{ color: 'var(--text-dim)' }}>{metric.unit}</p>}
+          </div>
+          {trend !== null && (
+            <span className={`inline-flex items-center gap-0.5 text-[11px] font-semibold px-2.5 py-1 rounded-lg ml-auto ${
+              up ? 'text-emerald-700 bg-emerald-100' : 'text-red-700 bg-red-100'
+            }`}>
+              {up ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+              {up ? '+' : ''}{Math.abs(trend).toFixed(1)}%
+            </span>
+          )}
+        </div>
+
+        {/* Area chart */}
+        <ResponsiveContainer width="100%" height={160}>
+          <AreaChart data={data} margin={{ top: 4, right: 4, left: -16, bottom: 0 }}>
+            <defs>
+              <linearGradient id={`grad-${active}`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%"  stopColor={metric.color} stopOpacity={0.25} />
+                <stop offset="95%" stopColor={metric.color} stopOpacity={0.02} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+            <XAxis dataKey="month" tick={{ fontSize: 10, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} />
+            <YAxis tick={{ fontSize: 10, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false}
+              tickFormatter={v => fmtM(v as number)} />
+            <Tooltip
+              contentStyle={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 11, padding: '4px 8px' }}
+              labelStyle={{ color: 'var(--text-muted)', marginBottom: 2 }}
+              formatter={(v: number) => [`${fmtFull(v)}${metric.unit ? ` ${metric.unit}` : ''}`, metric.label]}
+            />
+            <Area type="monotone" dataKey={active} stroke={metric.color} strokeWidth={2}
+              fill={`url(#grad-${active})`} dot={false} activeDot={{ r: 4, fill: metric.color, strokeWidth: 0 }} />
+          </AreaChart>
+        </ResponsiveContainer>
+
+        {/* Month-by-month breakdown */}
+        <div className="border rounded-xl overflow-hidden" style={{ borderColor: 'var(--border)' }}>
+          <div className="divide-y" style={{ borderColor: 'var(--border)' }}>
+            {data.map(row => {
+              const val = (row[active] as number) ?? 0
+              return (
+                <div key={row.month} className="flex items-center justify-between px-4 py-2">
+                  <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{row.month}</span>
+                  <span className="text-xs font-semibold" style={{ color: metric.color }}>
+                    {fmtM(val)}{metric.unit ? ` ${metric.unit}` : ''}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
