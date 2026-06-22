@@ -1,4 +1,5 @@
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { getCurrentUserId } from '@/lib/db/shop-context'
 import type { StockAlert } from '@/lib/types'
 
 export type { StockAlert }
@@ -10,13 +11,13 @@ const supabaseConfigured =
 export async function getStockAlerts(): Promise<StockAlert[]> {
   if (!supabaseConfigured) return []
 
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return []
+  const userId = await getCurrentUserId()
+  if (!userId) return []
 
+  const supabase = createAdminClient()
   const [{ data: settings }, { data: shopRows }] = await Promise.all([
-    supabase.from('user_settings').select('alert_stock_threshold').eq('user_id', user.id).single(),
-    supabase.from('shops').select('id, marketplace').eq('user_id', user.id),
+    supabase.from('user_settings').select('alert_stock_threshold').eq('user_id', userId).single(),
+    supabase.from('shops').select('id, marketplace').eq('user_id', userId),
   ])
 
   const threshold = settings?.alert_stock_threshold ?? 15
@@ -87,14 +88,14 @@ const defaultAlertSettings: AlertSettings = {
 export async function getAlertSettings(): Promise<AlertSettings> {
   if (!supabaseConfigured) return defaultAlertSettings
 
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return defaultAlertSettings
+  const userId = await getCurrentUserId()
+  if (!userId) return defaultAlertSettings
 
+  const supabase = createAdminClient()
   const { data } = await supabase
     .from('user_settings')
     .select('alert_stock_threshold, telegram_bot_token, telegram_chat_id')
-    .eq('user_id', user.id)
+    .eq('user_id', userId)
     .single()
 
   if (!data) return defaultAlertSettings
@@ -108,12 +109,12 @@ export async function getAlertSettings(): Promise<AlertSettings> {
 export async function saveAlertSettings(s: AlertSettings): Promise<void> {
   if (!supabaseConfigured) return
 
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return
+  const userId = await getCurrentUserId()
+  if (!userId) return
 
+  const supabase = createAdminClient()
   await supabase.from('user_settings').upsert({
-    user_id:               user.id,
+    user_id:               userId,
     alert_stock_threshold: s.stockThreshold,
     telegram_bot_token:    s.telegramBotToken,
     telegram_chat_id:      s.telegramChatId,

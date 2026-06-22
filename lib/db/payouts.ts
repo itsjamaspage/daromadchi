@@ -1,4 +1,5 @@
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { getCurrentUserId } from '@/lib/db/shop-context'
 import type { PayoutEntry } from '@/lib/types'
 
 export type { PayoutEntry }
@@ -30,14 +31,14 @@ function mapRow(row: Record<string, unknown>): PayoutEntry {
 export async function getPayoutEntries(): Promise<PayoutEntry[]> {
   if (!supabaseConfigured) return []
 
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return []
+  const userId = await getCurrentUserId()
+  if (!userId) return []
 
+  const supabase = createAdminClient()
   const { data, error } = await supabase
     .from('payouts')
     .select('*')
-    .eq('user_id', user.id)
+    .eq('user_id', userId)
     .order('created_at', { ascending: false })
 
   if (error || !data) return []

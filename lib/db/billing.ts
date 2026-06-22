@@ -1,4 +1,5 @@
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { getCurrentUserId } from '@/lib/db/shop-context'
 
 export type PlanType = 'free' | 'pro' | 'pro_plus'
 
@@ -28,20 +29,20 @@ export async function getBilling(): Promise<BillingInfo> {
   }
   if (!supabaseConfigured) return empty
 
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return empty
+  const userId = await getCurrentUserId()
+  if (!userId) return empty
 
+  const supabase = createAdminClient()
   const [{ data: userRow }, { data: paymentRows }] = await Promise.all([
     supabase
       .from('users')
       .select('plan, plan_expires_at, trial_ends_at')
-      .eq('id', user.id)
+      .eq('id', userId)
       .maybeSingle(),
     supabase
       .from('payments')
       .select('id, plan, amount, status, created_at')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .order('created_at', { ascending: false }),
   ])
 

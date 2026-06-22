@@ -1,4 +1,5 @@
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { getCurrentUserId } from '@/lib/db/shop-context'
 
 export interface ReferralStats {
   code: string
@@ -17,7 +18,6 @@ export interface ReferralEntry {
 }
 
 function generateCode(userId: string): string {
-  // deterministic-ish short code from user id
   const hash = userId.replace(/-/g, '').slice(0, 8).toUpperCase()
   return `DR${hash}`
 }
@@ -37,27 +37,27 @@ const supabaseConfigured =
 export async function getReferralStats(): Promise<{ stats: ReferralStats; entries: ReferralEntry[] }> {
   if (!supabaseConfigured) return { stats: EMPTY_STATS, entries: [] }
 
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { stats: EMPTY_STATS, entries: [] }
+  const userId = await getCurrentUserId()
+  if (!userId) return { stats: EMPTY_STATS, entries: [] }
 
-  // Ensure referral code exists
+  const supabase = createAdminClient()
+
   const { data: settings } = await supabase
     .from('user_settings')
     .select('referral_code')
-    .eq('user_id', user.id)
+    .eq('user_id', userId)
     .single()
 
   let code = settings?.referral_code as string | null
   if (!code) {
-    code = generateCode(user.id)
-    await supabase.from('user_settings').upsert({ user_id: user.id, referral_code: code })
+    code = generateCode(userId)
+    await supabase.from('user_settings').upsert({ user_id: userId, referral_code: code })
   }
 
   const { data: rows } = await supabase
     .from('referrals')
     .select('*')
-    .eq('referrer_user_id', user.id)
+    .eq('referrer_user_id', userId)
     .order('created_at', { ascending: false })
 
   const entries: ReferralEntry[] = (rows ?? []).map(r => ({

@@ -1,4 +1,5 @@
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { getCurrentUserId } from '@/lib/db/shop-context'
 import type { UnitEconomicsItem, UnitEcoSettings } from '@/lib/types'
 
 const supabaseConfigured =
@@ -36,14 +37,14 @@ function mapRow(row: Record<string, unknown>): UnitEconomicsItem {
 export async function getUnitEconomicsItems(): Promise<UnitEconomicsItem[]> {
   if (!supabaseConfigured) return []
 
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return []
+  const userId = await getCurrentUserId()
+  if (!userId) return []
 
+  const supabase = createAdminClient()
   const { data, error } = await supabase
     .from('unit_economics_items')
     .select('*')
-    .eq('user_id', user.id)
+    .eq('user_id', userId)
     .order('created_at', { ascending: false })
 
   if (error || !data) return []
@@ -52,22 +53,26 @@ export async function getUnitEconomicsItems(): Promise<UnitEconomicsItem[]> {
 
 export async function deleteUnitEconomicsItems(ids: string[]): Promise<void> {
   if (!supabaseConfigured || ids.length === 0) return
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return
-  await supabase.from('unit_economics_items').delete().in('id', ids).eq('user_id', user.id)
+
+  const userId = await getCurrentUserId()
+  if (!userId) return
+
+  const supabase = createAdminClient()
+  await supabase.from('unit_economics_items').delete().in('id', ids).eq('user_id', userId)
 }
 
 export async function updateUnitEconomicsSupplier(id: string, supplierUrl: string): Promise<void> {
   if (!supabaseConfigured) return
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return
+
+  const userId = await getCurrentUserId()
+  if (!userId) return
+
+  const supabase = createAdminClient()
   await supabase
     .from('unit_economics_items')
     .update({ supplier_url: supplierUrl, updated_at: new Date().toISOString() })
     .eq('id', id)
-    .eq('user_id', user.id)
+    .eq('user_id', userId)
 }
 
 export async function updateUnitEconomicsItem(
@@ -75,10 +80,11 @@ export async function updateUnitEconomicsItem(
   fields: Partial<Omit<UnitEconomicsItem, 'id' | 'addedAt'>>,
 ): Promise<boolean> {
   if (!supabaseConfigured) return true
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return false
 
+  const userId = await getCurrentUserId()
+  if (!userId) return false
+
+  const supabase = createAdminClient()
   const update: Record<string, unknown> = { updated_at: new Date().toISOString() }
   if (fields.title         !== undefined) update.title          = fields.title
   if (fields.costPrice     !== undefined) update.cost_price     = fields.costPrice
@@ -100,7 +106,7 @@ export async function updateUnitEconomicsItem(
     .from('unit_economics_items')
     .update(update)
     .eq('id', id)
-    .eq('user_id', user.id)
+    .eq('user_id', userId)
 
   return !error
 }
@@ -109,14 +115,15 @@ export async function addUnitEconomicsItem(
   item: Omit<UnitEconomicsItem, 'id' | 'addedAt'>
 ): Promise<{ id: string } | null | false> {
   if (!supabaseConfigured) return { id: `mock-${Date.now()}` }
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return null   // null = not authenticated → 401
 
+  const userId = await getCurrentUserId()
+  if (!userId) return null   // null = not authenticated → 401
+
+  const supabase = createAdminClient()
   const { data, error } = await supabase
     .from('unit_economics_items')
     .insert({
-      user_id:        user.id,
+      user_id:        userId,
       title:          item.title,
       image:          item.image ?? null,
       sku:            item.sku ?? null,
@@ -156,14 +163,14 @@ export async function getUnitEcoSettings(): Promise<UnitEcoSettings> {
   }
   if (!supabaseConfigured) return defaults
 
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return defaults
+  const userId = await getCurrentUserId()
+  if (!userId) return defaults
 
+  const supabase = createAdminClient()
   const { data } = await supabase
     .from('user_settings')
     .select('*')
-    .eq('user_id', user.id)
+    .eq('user_id', userId)
     .single()
 
   if (!data) return defaults
@@ -179,12 +186,13 @@ export async function getUnitEcoSettings(): Promise<UnitEcoSettings> {
 
 export async function saveUnitEcoSettings(s: UnitEcoSettings): Promise<void> {
   if (!supabaseConfigured) return
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return
 
+  const userId = await getCurrentUserId()
+  if (!userId) return
+
+  const supabase = createAdminClient()
   await supabase.from('user_settings').upsert({
-    user_id:          user.id,
+    user_id:          userId,
     ue_acquiring_pct: s.acquiringPct,
     ue_last_mile_pct: s.lastMilePct,
     ue_ad_pct:        s.adPct,

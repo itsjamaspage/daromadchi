@@ -53,15 +53,7 @@ export default function ChannelGate({ children }: { children: React.ReactNode })
     }, 2200)
   }
 
-  if (passed === null) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <span className="w-6 h-6 border-2 border-[rgba(131,192,249,0.4)] border-t-[#83c0f9] rounded-full animate-spin" />
-      </div>
-    )
-  }
-
-  if (passed) return <>{children}</>
+  if (passed !== false) return <>{children}</>
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--bg)] px-4">

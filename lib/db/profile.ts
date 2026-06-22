@@ -1,4 +1,5 @@
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { getCurrentUserId } from '@/lib/db/shop-context'
 
 export interface UserProfile {
   fullName: string
@@ -14,19 +15,19 @@ export async function getProfile(): Promise<UserProfile> {
   const empty: UserProfile = { fullName: '', email: '', phone: '' }
   if (!supabaseConfigured) return empty
 
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return empty
+  const userId = await getCurrentUserId()
+  if (!userId) return empty
 
+  const supabase = createAdminClient()
   const { data } = await supabase
     .from('users')
-    .select('full_name, email')
-    .eq('id', user.id)
+    .select('full_name, email, phone')
+    .eq('id', userId)
     .maybeSingle()
 
   return {
-    fullName: (data?.full_name as string) ?? (user.user_metadata?.full_name as string) ?? '',
-    email:    (data?.email as string) ?? user.email ?? '',
-    phone:    (user.user_metadata?.phone as string) ?? '',
+    fullName: (data?.full_name as string) ?? '',
+    email:    (data?.email as string) ?? '',
+    phone:    (data?.phone as string) ?? '',
   }
 }

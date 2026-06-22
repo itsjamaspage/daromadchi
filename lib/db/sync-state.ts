@@ -1,19 +1,19 @@
-import { createClient } from '@/lib/supabase/server'
-import type { SyncDay } from '@/lib/types'
-import type { MarketplaceType } from '@/lib/types'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { getCurrentUserId } from '@/lib/db/shop-context'
+import type { SyncDay, MarketplaceType } from '@/lib/types'
 
 const supabaseConfigured =
   process.env.NEXT_PUBLIC_SUPABASE_URL &&
   !process.env.NEXT_PUBLIC_SUPABASE_URL.includes('your-project')
 
 async function getShopId(marketplace: MarketplaceType): Promise<string | null> {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return null
+  const userId = await getCurrentUserId()
+  if (!userId) return null
+  const supabase = createAdminClient()
   const { data } = await supabase
     .from('shops')
     .select('id')
-    .eq('user_id', user.id)
+    .eq('user_id', userId)
     .eq('marketplace', marketplace)
     .neq('shop_id_external', 'DEMO')
     .limit(1)
@@ -30,7 +30,7 @@ export async function getSyncDays(marketplace: MarketplaceType, days = 30): Prom
   const since = new Date()
   since.setDate(since.getDate() - days + 1)
 
-  const supabase = await createClient()
+  const supabase = createAdminClient()
   const { data, error } = await supabase
     .from('sync_days')
     .select('*')
@@ -64,7 +64,7 @@ export async function resyncDays(marketplace: MarketplaceType, dates: string[]):
   const shopId = await getShopId(marketplace)
   if (!shopId) return
 
-  const supabase = await createClient()
+  const supabase = createAdminClient()
   await supabase
     .from('sync_days')
     .upsert(

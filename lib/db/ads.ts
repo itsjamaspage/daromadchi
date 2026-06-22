@@ -1,4 +1,5 @@
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { getCurrentUserId } from '@/lib/db/shop-context'
 import type { AdsStatsSummary, MarketplaceType } from '@/lib/types'
 
 const supabaseConfigured =
@@ -12,11 +13,11 @@ export async function getAdsStats(
 ): Promise<Map<string, AdsStatsSummary>> {
   if (!supabaseConfigured) return new Map()
 
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return new Map()
+  const userId = await getCurrentUserId()
+  if (!userId) return new Map()
 
-  let q = supabase.from('shops').select('id').eq('user_id', user.id)
+  const supabase = createAdminClient()
+  let q = supabase.from('shops').select('id').eq('user_id', userId)
   if (marketplace) q = q.eq('marketplace', marketplace)
   const { data: shops } = await q
   const shopIds = (shops ?? []).map(s => s.id)
