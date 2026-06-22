@@ -135,7 +135,7 @@ export default function TelegramConnect() {
           <p className="text-[var(--text-muted)] text-xs mt-0.5">{d.tgDesc}</p>
         </div>
         {linked && (
-          <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400">
+          <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full bg-emerald-100 border border-emerald-400 text-emerald-800">
             <Check className="w-3 h-3" /> {d.tgConnected}{username ? ` · @${username}` : ''}
           </span>
         )}

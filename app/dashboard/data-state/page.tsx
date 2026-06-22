@@ -1,11 +1,11 @@
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { getCurrentUserId } from '@/lib/db/shop-context'
 import { getT } from '@/lib/server-i18n'
 import DataStateView from '@/components/dashboard/DataStateView'
 import { getSyncDays } from '@/lib/db/sync-state'
 
 export default async function DataStatePage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const userId = await getCurrentUserId()
 
   const [t, uzumDays, yandexDays, wbDays] = await Promise.all([
     getT(),
@@ -15,11 +15,12 @@ export default async function DataStatePage() {
   ])
 
   const connectedMps: string[] = []
-  if (user) {
+  if (userId) {
+    const supabase = createAdminClient()
     const { data: shops } = await supabase
       .from('shops')
       .select('marketplace')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .neq('shop_id_external', 'DEMO')
     shops?.forEach(s => { if (!connectedMps.includes(s.marketplace)) connectedMps.push(s.marketplace) })
   }
