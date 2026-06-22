@@ -64,10 +64,21 @@ export async function syncFromYandex(
         stock_quantity: stockMap.get(e.offer.shopSku) ?? 0,
       }))
       if (productRows.length > 0) {
-        const { error } = await supabase
-          .from('products')
-          .upsert(productRows, { onConflict: 'shop_id,marketplace_product_id', ignoreDuplicates: false })
-        if (error) throw new Error(`Mahsulot xato: ${error.message}`)
+        const { data: existingProds } = await supabase
+          .from('products').select('id, marketplace_product_id').eq('shop_id', shopId)
+        const existingMap = new Map((existingProds ?? []).map((p: { id: string; marketplace_product_id: string }) =>
+          [String(p.marketplace_product_id), String(p.id)]))
+        const toIns = productRows.filter(r => !existingMap.has(String(r.marketplace_product_id)))
+        const toUpd = productRows.filter(r => existingMap.has(String(r.marketplace_product_id)))
+          .map(r => ({ ...r, id: existingMap.get(String(r.marketplace_product_id))! }))
+        if (toIns.length > 0) {
+          const { error: e } = await supabase.from('products').insert(toIns)
+          if (e) throw new Error(`Mahsulot xato: ${e.message}`)
+        }
+        if (toUpd.length > 0) {
+          const { error: e } = await supabase.from('products').upsert(toUpd)
+          if (e) throw new Error(`Mahsulot xato: ${e.message}`)
+        }
       }
     } catch (prodErr) {
       warnings.push(

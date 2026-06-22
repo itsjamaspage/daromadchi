@@ -73,11 +73,16 @@ export async function syncFromWildberries(
         updated_at:             new Date().toISOString(),
       }))
 
-      const { error } = await supabase
-        .from('products')
-        .upsert(rows, { onConflict: 'shop_id,marketplace_product_id' })
-      if (error) errors.push(error.message)
-      else productsUpserted = rows.length
+      const { data: existingProds } = await supabase
+        .from('products').select('id, marketplace_product_id').eq('shop_id', shopId)
+      const existingMap = new Map((existingProds ?? []).map((p: { id: string; marketplace_product_id: string }) =>
+        [String(p.marketplace_product_id), String(p.id)]))
+      const toIns = rows.filter((r: { marketplace_product_id: string }) => !existingMap.has(String(r.marketplace_product_id)))
+      const toUpd = rows.filter((r: { marketplace_product_id: string }) => existingMap.has(String(r.marketplace_product_id)))
+        .map((r: { marketplace_product_id: string }) => ({ ...r, id: existingMap.get(String(r.marketplace_product_id))! }))
+      if (toIns.length > 0) { const { error: e } = await supabase.from('products').insert(toIns); if (e) errors.push(e.message) }
+      if (toUpd.length > 0) { const { error: e } = await supabase.from('products').upsert(toUpd); if (e) errors.push(e.message) }
+      if (!errors.length) productsUpserted = rows.length
     }
   } catch (e) {
     errors.push(`Products sync failed: ${e}`)
