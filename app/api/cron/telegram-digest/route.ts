@@ -32,7 +32,7 @@ export async function GET(req: Request) {
   // Vercel Cron sends: Authorization: Bearer {CRON_SECRET}
   const auth   = req.headers.get('authorization')
   const bearer = auth?.startsWith('Bearer ') ? auth.slice(7) : null
-  if (process.env.CRON_SECRET && bearer !== process.env.CRON_SECRET) {
+  if (!process.env.CRON_SECRET || bearer !== process.env.CRON_SECRET) {
     return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 })
   }
 

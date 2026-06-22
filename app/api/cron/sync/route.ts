@@ -12,7 +12,7 @@ export async function GET(req: Request) {
   const url    = new URL(req.url)
   const secret = req.headers.get('x-cron-secret') ?? url.searchParams.get('secret')
 
-  if (process.env.CRON_SECRET && secret !== process.env.CRON_SECRET) {
+  if (!process.env.CRON_SECRET || secret !== process.env.CRON_SECRET) {
     return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 })
   }
 
