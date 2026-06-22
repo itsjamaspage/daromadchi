@@ -31,11 +31,11 @@ export default function OrdersTable({ orders }: { orders: Order[] }) {
   const s = d.status
 
   const statusConfig: Record<OrderStatus, { label: string; className: string; dot: string }> = {
-    pending:   { label: s.pending,   className: 'bg-slate-500/10 text-[var(--text-muted)] border border-[var(--border)]',       dot: 'bg-slate-400'   },
-    confirmed: { label: s.confirmed, className: 'bg-blue-500/10 text-blue-400 border border-blue-500/20',          dot: 'bg-blue-400'    },
-    delivered: { label: s.delivered, className: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20', dot: 'bg-emerald-400' },
-    cancelled: { label: s.cancelled, className: 'bg-red-500/10 text-red-400 border border-red-500/20',             dot: 'bg-red-400'     },
-    returned:  { label: s.returned,  className: 'bg-amber-500/10 text-amber-400 border border-amber-500/20',       dot: 'bg-amber-400'   },
+    pending:   { label: s.pending,   className: 'bg-slate-100 text-slate-600 border border-slate-300',         dot: 'bg-slate-500'   },
+    confirmed: { label: s.confirmed, className: 'bg-blue-50 text-blue-600 border border-blue-200',             dot: 'bg-blue-500'    },
+    delivered: { label: s.delivered, className: 'bg-emerald-50 text-emerald-700 border border-emerald-200',    dot: 'bg-emerald-500' },
+    cancelled: { label: s.cancelled, className: 'bg-red-50 text-red-600 border border-red-200',                dot: 'bg-red-500'     },
+    returned:  { label: s.returned,  className: 'bg-amber-50 text-amber-600 border border-amber-200',          dot: 'bg-amber-500'   },
   }
 
   const STATUS_TABS: { value: OrderStatus | 'all'; label: string }[] = [
