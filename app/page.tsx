@@ -430,72 +430,8 @@ function DashMockup() {
 }
 
 // ── Hero decorative shapes ────────────────────────────────────────────────────
-function HeroDecorShapes({ isDark }: { isDark: boolean }) {
-  const c1   = isDark ? '#e879f9' : 'rgba(255,255,255,0.88)'
-  const c2   = isDark ? '#facc15' : 'rgba(255,255,255,0.54)'
-  const ease: [number,number,number,number] = [0.25, 0.46, 0.45, 0.94]
-
-  return (
-    <div className="hidden lg:block" style={{ position: 'absolute', inset: 0, zIndex: 6, pointerEvents: 'none' }}>
-
-      {/* ↗ Arrow — top-left corner */}
-      <motion.div initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 0.9, duration: 0.55, ease }}
-        style={{ position: 'absolute', left: 14, top: 108 }}>
-        <svg width="58" height="58" viewBox="0 0 58 58" fill="none">
-          <path d="M 8 50 L 50 8 M 28 8 L 50 8 L 50 30"
-            stroke={c1} strokeWidth="9" strokeLinecap="round" strokeLinejoin="round"/>
-        </svg>
-      </motion.div>
-
-      {/* Small dashed dot — near arrow */}
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 0.65 }}
-        transition={{ delay: 1.1, duration: 0.5 }}
-        style={{ position: 'absolute', left: 76, top: 144 }}>
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-          <circle cx="10" cy="10" r="7" stroke={c1} strokeWidth="2" strokeDasharray="3.5 2.5"/>
-        </svg>
-      </motion.div>
-
-      {/* ↻ Rotating curved arrow — top-right corner */}
-      <motion.div initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 1.0, duration: 0.55, ease }}
-        style={{ position: 'absolute', right: 14, top: 90 }}>
-        <svg width="70" height="70" viewBox="0 0 70 70" fill="none">
-          <path d="M 35 6 A 29 29 0 1 1 60 18" stroke={c2} strokeWidth="9" strokeLinecap="round"/>
-          <path d="M 48 13 L 61 19 L 55 32" stroke={c2} strokeWidth="7.5" strokeLinecap="round" strokeLinejoin="round"/>
-        </svg>
-      </motion.div>
-
-      {/* Arc band — left mid, below float cards */}
-      <motion.div initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 1.1, duration: 0.55, ease }}
-        style={{ position: 'absolute', left: 8, top: 456, transform: 'rotate(-6deg)' }}>
-        <svg width="102" height="62" viewBox="0 0 102 62" fill="none">
-          <path d="M 6 56 A 49 49 0 0 1 96 56" stroke={c2} strokeWidth="14" strokeLinecap="round"/>
-        </svg>
-      </motion.div>
-
-      {/* Fan/sector — right mid, below float cards */}
-      <motion.div initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 1.2, duration: 0.55, ease }}
-        style={{ position: 'absolute', right: 8, top: 428 }}>
-        <svg width="90" height="78" viewBox="0 0 90 78">
-          <path d="M 45 76 L 10 22 A 60 60 0 0 1 80 22 Z" fill={c1}/>
-        </svg>
-      </motion.div>
-
-      {/* Small dashed dot — near fan */}
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 0.65 }}
-        transition={{ delay: 1.3, duration: 0.5 }}
-        style={{ position: 'absolute', right: 100, top: 430 }}>
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-          <circle cx="10" cy="10" r="7" stroke={c1} strokeWidth="2" strokeDasharray="3.5 2.5"/>
-        </svg>
-      </motion.div>
-
-    </div>
-  )
+function HeroDecorShapes({ isDark: _isDark }: { isDark: boolean }) {
+  return null
 }
 
 // ── 1. HERO ───────────────────────────────────────────────────────────────────
