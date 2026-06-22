@@ -2023,9 +2023,7 @@ function FooterSection({ lang }: { lang: string }) {
         <div style={{ borderTop: `1px solid ${bdr}`, paddingTop: 24,
           display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
           <p style={{ fontSize: 12, color: subtle }}>
-            © 2025 Daromadchi. {tx(lang,'ООО «Daromadchi» · ИНН: 123456789 · г. Ташкент, Узбекистан',
-              'MChJ «Daromadchi» · INN: 123456789 · Toshkent shahri, O\'zbekiston',
-              'LLC «Daromadchi» · TIN: 123456789 · Tashkent, Uzbekistan')}
+            © 2025 Daromadchi. {tx(lang,'г. Ташкент, Узбекистан', 'Toshkent shahri, O\'zbekiston', 'Tashkent, Uzbekistan')}
           </p>
           <div style={{ display: 'flex', gap: 20 }}>
             {[tx(lang,'Политика конфиденциальности','Maxfiylik siyosati','Privacy policy'),
