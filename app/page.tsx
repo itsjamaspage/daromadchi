@@ -1911,7 +1911,7 @@ function FooterSection({ lang }: { lang: string }) {
       { label: 'Uzum Market', href: '#' }, { label: 'Wildberries', href: '#' }, { label: 'Yandex Market', href: '#' },
     ]},
     { head: tx(lang,'Контакты','Aloqa','Contact'), links: [
-      { label: 'Telegram', href: 'https://t.me/daromadchi' }, { label: 'support@daromadchi.uz', href: 'mailto:support@daromadchi.uz' },
+      { label: 'Telegram', href: 'https://t.me/daromadchi_alerts_bot' },
     ]},
   ]
 
