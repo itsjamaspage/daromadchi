@@ -165,33 +165,33 @@ export default function PrivacyPage() {
   const t = T[lang] ?? T.uz
 
   return (
-    <main className="max-w-3xl mx-auto px-4 sm:px-6 py-12">
-      <div className="text-center mb-12">
+    <main className="max-w-3xl mx-auto px-4 sm:px-6 py-16">
+      <div className="text-center mb-14">
         <h1
-          className="text-3xl sm:text-4xl font-extrabold mb-2"
+          className="text-4xl sm:text-5xl font-extrabold mb-3"
           style={{ fontFamily: 'var(--font-display)', color: 'var(--text-base)' }}
         >
           {t.title}
         </h1>
-        <p className="text-sm mb-1" style={{ color: 'var(--text-muted)' }}>{t.subtitle}</p>
-        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{t.updated}</p>
+        <p className="text-base mb-2" style={{ color: 'var(--text-muted)' }}>{t.subtitle}</p>
+        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{t.updated}</p>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-5">
         {t.sections.map((s, i) => (
           <div
             key={i}
-            className="rounded-2xl p-6 border neon-card"
+            className="rounded-2xl p-8 border neon-card"
             style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}
           >
             <h2
-              className="font-bold text-sm mb-2"
+              className="font-bold text-base mb-3"
               style={{ fontFamily: 'var(--font-display)', color: 'var(--text-base)' }}
             >
               {s.heading}
             </h2>
             <p
-              className="text-sm leading-relaxed whitespace-pre-line"
+              className="text-base leading-relaxed whitespace-pre-line"
               style={{ color: 'var(--text-muted)' }}
             >
               {s.body}
@@ -200,7 +200,7 @@ export default function PrivacyPage() {
         ))}
       </div>
 
-      <p className="text-center text-xs mt-10" style={{ color: 'var(--text-muted)' }}>
+      <p className="text-center text-sm mt-12" style={{ color: 'var(--text-muted)' }}>
         © {new Date().getFullYear()} Daromadchi.{' '}
         {lang === 'uz' ? 'Barcha huquqlar himoyalangan.' : lang === 'ru' ? 'Все права защищены.' : 'All rights reserved.'}
       </p>
