@@ -1962,12 +1962,14 @@ function FooterSection({ lang }: { lang: string }) {
             © 2025 Daromadchi. {tx(lang,'г. Ташкент, Узбекистан', 'Toshkent shahri, O\'zbekiston', 'Tashkent, Uzbekistan')}
           </p>
           <div style={{ display: 'flex', gap: 20 }}>
-            {[tx(lang,'Политика конфиденциальности','Maxfiylik siyosati','Privacy policy'),
-              tx(lang,'Публичная оферта','Ommaviy oferta','Terms of service')].map(l => (
-              <a key={l} href="#" style={{ fontSize: 12, color: subtle, textDecoration: 'none', transition: 'color 0.12s' }}
+            {[
+              { label: tx(lang,'Политика конфиденциальности','Maxfiylik siyosati','Privacy policy'), href: '/privacy' },
+              { label: tx(lang,'Публичная оферта','Ommaviy oferta','Terms of service'), href: '/terms' },
+            ].map(({ label, href }) => (
+              <a key={label} href={href} style={{ fontSize: 12, color: subtle, textDecoration: 'none', transition: 'color 0.12s' }}
                 onMouseEnter={e => (e.currentTarget.style.color = muted)}
                 onMouseLeave={e => (e.currentTarget.style.color = subtle)}>
-                {l}
+                {label}
               </a>
             ))}
           </div>
