@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { ChevronDown, MessageCircle, Mail, ArrowLeft, Menu, X, UserCircle } from 'lucide-react'
+import { ChevronDown, MessageCircle, ArrowLeft, Menu, X, UserCircle } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useTheme, useLang } from '@/app/providers'
 import type { Lang } from '@/lib/i18n'
@@ -228,8 +228,7 @@ function Footer({ lang }: { lang: string }) {
       { label: 'Uzum Market', href: '#' }, { label: 'Wildberries', href: '#' }, { label: 'Yandex Market', href: '#' },
     ]},
     { head: lang === 'ru' ? 'Контакты' : lang === 'en' ? 'Contact' : 'Aloqa', links: [
-      { label: 'Telegram', href: 'https://t.me/daromadchi' },
-      { label: 'support@daromadchi.uz', href: 'mailto:support@daromadchi.uz' },
+      { label: 'Telegram', href: 'tg://user?id=6884517020' },
     ]},
   ]
 
@@ -309,9 +308,8 @@ export default function YordamPage() {
   const bg   = isDark ? P.dCanvas : '#e8f4fe'
   const ink  = isDark ? P.dText   : P.ink
 
-  // Contact info
-  const TG_BOT = '@daromadchi_alerts_bot'
-  const EMAIL  = 'support@daromadchi.uz'
+  // Contact info — link to user by ID (no public username)
+  const TG_HREF = 'tg://user?id=6884517020'
 
   type FaqEntry = { q: string; a: string | React.ReactNode }
 
@@ -355,7 +353,7 @@ export default function YordamPage() {
     },
     {
       q: 'Как часто обновляются данные?',
-      a: 'Данные синхронизируются каждые 15 минут автоматически. При критических изменениях (низкие остатки, превышение ДРР) вы получаете мгновенное уведомление в Telegram — подключите бот ' + TG_BOT + ' в настройках.',
+      a: 'Данные синхронизируются каждые 15 минут автоматически. При критических изменениях (низкие остатки, превышение ДРР) вы получаете мгновенное уведомление в Telegram.',
     },
     {
       q: 'Где взять API-ключ?',
@@ -419,7 +417,7 @@ export default function YordamPage() {
     },
     {
       q: 'How often is data updated?',
-      a: 'Data syncs every 15 minutes automatically. For critical changes (low stock, DRR exceeded) you get an instant Telegram notification — connect the bot ' + TG_BOT + ' in settings.',
+      a: 'Data syncs every 15 minutes automatically. For critical changes (low stock, DRR exceeded) you get an instant Telegram notification.',
     },
     {
       q: 'Where do I get an API key?',
@@ -483,7 +481,7 @@ export default function YordamPage() {
     },
     {
       q: "Ma'lumotlar qanchalik tez-tez yangilanadi?",
-      a: `Ma'lumotlar har 15 daqiqada avtomatik sinxronlanadi. Kritik o'zgarishlar (qoldiq kamayishi, DRR oshishi) bo'lganda ${TG_BOT} boti orqali Telegram'ga darhol xabar keladi — sozlamalarda botni ulang.`,
+      a: `Ma'lumotlar har 15 daqiqada avtomatik sinxronlanadi. Kritik o'zgarishlar (qoldiq kamayishi, DRR oshishi) bo'lganda Telegram'ga darhol xabar keladi.`,
     },
     {
       q: "API kalitini qayerdan olaman?",
@@ -594,43 +592,20 @@ export default function YordamPage() {
               : 'Biz yordam beramiz. Qulay usulda biz bilan bog\'laning.'}
           </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            {/* Telegram */}
-            <a href={`https://t.me/${TG_BOT.replace('@','')}`} target="_blank" rel="noopener noreferrer"
-              style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 28px',
-                background: isDark ? 'rgba(131,192,249,0.1)' : 'rgba(131,192,249,0.15)',
-                border: `1.5px solid ${isDark ? 'rgba(131,192,249,0.3)' : 'rgba(131,192,249,0.5)'}`,
-                borderRadius: 14, textDecoration: 'none', transition: 'all 0.15s', minWidth: 220 }}
-              onMouseEnter={e => { e.currentTarget.style.background = isDark ? 'rgba(131,192,249,0.18)' : 'rgba(131,192,249,0.25)'; e.currentTarget.style.transform = 'translateY(-2px)' }}
-              onMouseLeave={e => { e.currentTarget.style.background = isDark ? 'rgba(131,192,249,0.1)' : 'rgba(131,192,249,0.15)'; e.currentTarget.style.transform = 'translateY(0)' }}>
-              <div style={{ width: 40, height: 40, borderRadius: 10, background: '#2AABEE',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
-                  <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.19 13.09l-2.96-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.958.469z"/>
-                </svg>
-              </div>
-              <div style={{ textAlign: 'left' }}>
-                <p style={{ fontSize: 11, fontWeight: 600, color: isDark ? P.dMuted : P.stone, marginBottom: 2 }}>Telegram</p>
-                <p style={{ fontSize: 14, fontWeight: 700, color: ink }}>{TG_BOT}</p>
-              </div>
-            </a>
-
-            {/* Email */}
-            <a href={`mailto:${EMAIL}`}
-              style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 28px',
-                background: isDark ? 'rgba(131,192,249,0.1)' : 'rgba(131,192,249,0.15)',
-                border: `1.5px solid ${isDark ? 'rgba(131,192,249,0.3)' : 'rgba(131,192,249,0.5)'}`,
-                borderRadius: 14, textDecoration: 'none', transition: 'all 0.15s', minWidth: 220 }}
-              onMouseEnter={e => { e.currentTarget.style.background = isDark ? 'rgba(131,192,249,0.18)' : 'rgba(131,192,249,0.25)'; e.currentTarget.style.transform = 'translateY(-2px)' }}
-              onMouseLeave={e => { e.currentTarget.style.background = isDark ? 'rgba(131,192,249,0.1)' : 'rgba(131,192,249,0.15)'; e.currentTarget.style.transform = 'translateY(0)' }}>
-              <div style={{ width: 40, height: 40, borderRadius: 10, background: acc.tint,
-                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <Mail size={20} color={isDark ? '#131321' : '#fff'} />
-              </div>
-              <div style={{ textAlign: 'left' }}>
-                <p style={{ fontSize: 11, fontWeight: 600, color: isDark ? P.dMuted : P.stone, marginBottom: 2 }}>Email</p>
-                <p style={{ fontSize: 14, fontWeight: 700, color: ink }}>{EMAIL}</p>
-              </div>
+          <div style={{ display: 'flex', justifyContent: 'center' }}>
+            {/* Telegram — opens by user ID */}
+            <a href={TG_HREF}
+              style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 32px',
+                background: '#2AABEE', borderRadius: 14, textDecoration: 'none',
+                transition: 'all 0.15s', color: '#fff' }}
+              onMouseEnter={e => { e.currentTarget.style.background = '#1a9bd8'; e.currentTarget.style.transform = 'translateY(-2px)' }}
+              onMouseLeave={e => { e.currentTarget.style.background = '#2AABEE'; e.currentTarget.style.transform = 'translateY(0)' }}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="white">
+                <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.19 13.09l-2.96-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.958.469z"/>
+              </svg>
+              <span style={{ fontSize: 15, fontWeight: 700 }}>
+                {lang === 'ru' ? 'Написать в Telegram' : lang === 'en' ? 'Message on Telegram' : 'Telegram orqali yozish'}
+              </span>
             </a>
           </div>
         </motion.div>
