@@ -75,8 +75,8 @@ button, input, select, textarea, a {
   --border2:    #191c1f;                    /* hairline-strong */
 
   --text-base:  #191c1f;                    /* ink */
-  --text-muted: #3a4550;                    /* mute */
-  --text-dim:   #5d6b76;                    /* stone */
+  --text-muted: #191c1f;                    /* mute */
+  --text-dim:   #2d3748;                    /* stone */
 
   --nav-bg:     rgba(255, 255, 255, 0.97);
 
