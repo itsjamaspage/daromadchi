@@ -140,14 +140,12 @@ export async function POST(req: NextRequest) {
   console.log('[webhook] POST received')
 
   const expectedSecret = process.env.TELEGRAM_WEBHOOK_SECRET
-  if (!expectedSecret) {
-    console.error('[webhook] TELEGRAM_WEBHOOK_SECRET not set — rejecting request')
-    return NextResponse.json({ ok: true })
-  }
-  const got = req.headers.get('x-telegram-bot-api-secret-token')
-  if (got !== expectedSecret) {
-    console.log('[webhook] secret mismatch, ignoring')
-    return NextResponse.json({ ok: true })
+  if (expectedSecret) {
+    const got = req.headers.get('x-telegram-bot-api-secret-token')
+    if (got !== expectedSecret) {
+      console.log('[webhook] secret mismatch, ignoring')
+      return NextResponse.json({ ok: true })
+    }
   }
 
   const body = await req.json().catch((e: unknown) => { console.error('[webhook] body parse error', e); return null })
