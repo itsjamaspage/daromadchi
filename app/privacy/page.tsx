@@ -35,7 +35,7 @@ const T = {
       {
         heading: '5. Foydalanuvchi huquqlari',
         short: 'Huquqlar',
-        body: `ZRU-547 Qonuniga asosan sizda quyidagi huquqlar mavjud:\n• Ma\'lumotlaringizni ko\'rish va nusxa olish huquqi.\n• Ma\'lumotlarni to\'g\'irlash yoki o\'chirish talabi.\n• Ma\'lumotlarni qayta ishlashga rozilikni qaytarib olish.\n• Ma\'lumotlaringizni boshqa xizmatga ko\'chirish (portativlik).\n\nHuquqlaringizni amalga oshirish uchun ${COMPANY_EMAIL} manziliga murojaat qiling. So\'rovlar 15 ish kuni ichida ko\'rib chiqiladi.`,
+        body: `ZRU-547 Qonuniga asosan sizda quyidagi huquqlar mavjud:\n• Ma\'lumotlaringizni ko\'rish va nusxa olish huquqi.\n• Ma\'lumotlarni to\'g\'irlash yoki o\'chirish talabi.\n• Ma\'lumotlarni qayta ishlashga rozilikni qaytarib olish.\n• Ma\'lumotlaringizni boshqa xizmatga ko\'chirish (portativlik).\n\nHuquqlaringizni amalga oshirish uchun Telegram orqali murojaat qiling: @daromadchi_alerts_bot. So\'rovlar 15 ish kuni ichida ko\'rib chiqiladi.`,
       },
       {
         heading: '6. Cookie va kuzatuv',
@@ -65,7 +65,7 @@ const T = {
       {
         heading: '10. Aloqa',
         short: 'Aloqa',
-        body: `Savollar, shikoyatlar yoki huquqiy so\'rovlar uchun:\nElektron pochta: ${COMPANY_EMAIL}\n\nO\'zbekiston Respublikasida shikoyat qilish uchun: Raqamli texnologiyalar vazirligi yoki sudga murojaat qilishingiz mumkin.`,
+        body: `Savollar, shikoyatlar yoki huquqiy so\'rovlar uchun:\nTelegram: @daromadchi_alerts_bot\n\nO\'zbekiston Respublikasida shikoyat qilish uchun: Raqamli texnologiyalar vazirligi yoki sudga murojaat qilishingiz mumkin.`,
       },
     ],
   },
@@ -83,7 +83,7 @@ const T = {
       { heading: '4. Хранение и безопасность', short: 'Безопасность',
         body: `Данные хранятся в базе данных Supabase Inc. (провайдер инфраструктуры, США), PostgreSQL. API-ключи шифруются алгоритмом AES-256-CBC. Все передачи осуществляются по протоколу HTTPS.\n\nТретьи лица: Supabase (инфраструктура базы данных) — доступ к данным только в рамках технического обслуживания. Данные не передаются иным третьим лицам.\n\nВ соответствии с Законом ЗРУ-547 персональные данные хранятся только в течение необходимого срока, но не более 1 года после удаления аккаунта.` },
       { heading: '5. Права пользователей', short: 'Права',
-        body: `На основании Закона ЗРУ-547 вы имеете право:\n• Получить доступ к своим данным и их копию.\n• Потребовать исправления или удаления данных.\n• Отозвать согласие на обработку данных.\n• Перенести свои данные в другой сервис.\n\nДля реализации своих прав обращайтесь на ${COMPANY_EMAIL}. Запросы рассматриваются в течение 15 рабочих дней.` },
+        body: `На основании Закона ЗРУ-547 вы имеете право:\n• Получить доступ к своим данным и их копию.\n• Потребовать исправления или удаления данных.\n• Отозвать согласие на обработку данных.\n• Перенести свои данные в другой сервис.\n\nДля реализации своих прав обращайтесь в Telegram: @daromadchi_alerts_bot. Запросы рассматриваются в течение 15 рабочих дней.` },
       { heading: '6. Куки и отслеживание', short: 'Куки',
         body: `Мы используем только функциональные куки: сессионная аутентификация и настройки языка. Сторонние рекламные куки и расширенное отслеживание не применяются.` },
       { heading: '7. Условия использования', short: 'Условия',
@@ -95,7 +95,7 @@ const T = {
       { heading: 'Расширение Chrome', short: 'Расширение',
         body: `Расширение Chrome Daromadchi придерживается следующих принципов конфиденциальности:\n\n• Личные данные не собираются — имена, адреса, электронная почта и иные идентификационные данные не собираются.\n• Локальное чтение — расширение считывает данные о товарах со страниц маркетплейсов только локально в вашем браузере. Эти данные не отправляются на внешние серверы.\n• chrome.storage — пользовательские настройки хранятся только на вашем устройстве и никуда не передаются.\n• Alarms — фоновая синхронизация выполняется только локально.\n• Notifications — уведомления отображаются только на вашем устройстве.` },
       { heading: '10. Контакты', short: 'Контакты',
-        body: `По вопросам, жалобам или юридическим запросам:\nЭлектронная почта: ${COMPANY_EMAIL}\n\nДля подачи жалобы в Республике Узбекистан: Министерство цифровых технологий или суд.` },
+        body: `По вопросам, жалобам или юридическим запросам:\nTelegram: @daromadchi_alerts_bot\n\nДля подачи жалобы в Республике Узбекистан: Министерство цифровых технологий или суд.` },
     ],
   },
   en: {
@@ -112,7 +112,7 @@ const T = {
       { heading: '4. Storage & security', short: 'Security',
         body: `Data is stored with Supabase Inc. (infrastructure provider, USA) in a PostgreSQL database. API keys are encrypted with AES-256-CBC. All data in transit is protected by HTTPS.\n\nThird parties: Supabase (database infrastructure) — access limited to technical operations only. No data is sold or shared with any other third parties.\n\nUnder Law ZRU-547, personal data is retained only as long as necessary, and for no more than 1 year after account deletion.` },
       { heading: '5. User rights', short: 'Rights',
-        body: `Under Law ZRU-547 you have the right to:\n• Access and receive a copy of your data.\n• Request correction or deletion of your data.\n• Withdraw consent to data processing.\n• Data portability — transfer your data to another service.\n\nTo exercise your rights, contact ${COMPANY_EMAIL}. Requests are processed within 15 working days.` },
+        body: `Under Law ZRU-547 you have the right to:\n• Access and receive a copy of your data.\n• Request correction or deletion of your data.\n• Withdraw consent to data processing.\n• Data portability — transfer your data to another service.\n\nTo exercise your rights, contact us on Telegram: @daromadchi_alerts_bot. Requests are processed within 15 working days.` },
       { heading: '6. Cookies & tracking', short: 'Cookies',
         body: `We use only functional cookies: session authentication and language preferences. No third-party advertising cookies or broad tracking are used.` },
       { heading: '7. Terms of use', short: 'Terms',
@@ -124,7 +124,7 @@ const T = {
       { heading: 'Chrome Extension', short: 'Extension',
         body: `The Daromadchi Chrome Extension follows these privacy principles:\n\n• No personal data collected — no names, addresses, email addresses, or other identifying information are collected.\n• Local reading only — the extension reads product data from marketplace pages locally in your browser only. This data is never sent to any external server.\n• chrome.storage — user settings are saved only on your device and never transmitted anywhere.\n• Alarms — background sync runs locally only.\n• Notifications — alerts are displayed only on your own device.` },
       { heading: '10. Contact', short: 'Contact',
-        body: `For questions, complaints or legal requests:\nEmail: ${COMPANY_EMAIL}\n\nTo file a complaint in the Republic of Uzbekistan: Ministry of Digital Technologies or the relevant court.` },
+        body: `For questions, complaints or legal requests:\nTelegram: @daromadchi_alerts_bot\n\nTo file a complaint in the Republic of Uzbekistan: Ministry of Digital Technologies or the relevant court.` },
     ],
   },
 }
