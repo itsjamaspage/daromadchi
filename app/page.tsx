@@ -17,8 +17,8 @@ const P = {
   ink:       '#0E2233',
   parchment: '#83c0f9',
   card:      '#FFFFFF',
-  stone:     '#4A7090',
-  muted:     '#7AACC7',
+  stone:     '#0E2233',
+  muted:     '#334155',
   green:     '#0E7490',
   greenDk:   '#155E75',
   greenBg:   'rgba(14,116,144,0.09)',
@@ -70,7 +70,7 @@ function useAccent() {
     color:  isDark ? A.dark   : A.light,
     dk:     isDark ? A.darkDk : A.lightDk,
     bg:     isDark ? A.darkBg : A.lightBg,
-    tint:   isDark ? A.dark   : '#0369a1',
+    tint:   isDark ? A.dark   : '#0E2233',
     btn:    isDark ? A.dark    : '#ffffff',
     btnTxt: isDark ? '#131321' : '#0e1b2e',
     btnHov: isDark ? A.darkDk  : '#f0f6ff',
@@ -1343,7 +1343,7 @@ function ExtensionSection({ lang }: { lang: string }) {
                     fontSize: 13, fontWeight: 800, color: c.color, letterSpacing: '0.02em' }}>
                     {c.icon}
                   </div>
-                  <span style={{ fontSize: 15, fontWeight: 800, color: c.color,
+                  <span style={{ fontSize: 15, fontWeight: 800, color: isDark ? P.dText : P.ink,
                     letterSpacing: '-0.01em' }}>{c.name}</span>
                 </div>
                 <p style={{ fontSize: 17, fontWeight: 700, color: ink, lineHeight: 1.4, marginBottom: 20 }}>
