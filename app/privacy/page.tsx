@@ -246,7 +246,7 @@ export default function PrivacyPage() {
                 style={{
                   background: flash === i
                     ? theme === 'dark'
-                      ? 'rgba(255,255,255,0.07)'
+                      ? 'rgba(0,212,255,0.15)'
                       : 'rgba(0,180,255,0.12)'
                     : 'var(--bg-card)',
                   borderColor: flash === i ? 'var(--c1)' : 'var(--border)',
