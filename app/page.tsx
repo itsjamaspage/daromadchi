@@ -831,7 +831,7 @@ function FeaturesSection({ lang }: { lang: string }) {
           <FadeUp delay={0.15}>
             <p style={{ fontSize: 11, fontWeight: 700, color: acc.tint, marginBottom: 10,
               textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-              {tx(lang,'REAL-TIME ANALITIKA','REAL-TIME ANALITIKA','REAL-TIME ANALYTICS')}
+              {tx(lang,'АНАЛИТИКА В РЕАЛЬНОМ ВРЕМЕНИ','REAL-TIME ANALITIKA','REAL-TIME ANALYTICS')}
             </p>
             <h2 style={{ fontSize: 'clamp(26px, 3vw, 42px)', fontWeight: 800, lineHeight: 1.1,
               color: isDark ? P.dText : P.ink, letterSpacing: '-0.022em', marginBottom: 18 }}>
