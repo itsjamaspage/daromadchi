@@ -149,7 +149,7 @@ export default function PrivacyPage() {
       <aside
         className="sticky top-[68px] self-start h-[calc(100vh-68px)] flex-shrink-0 border-r transition-all duration-300 overflow-hidden"
         style={{
-          width: open ? 220 : 48,
+          width: open ? 280 : 60,
           borderColor: 'var(--border)',
           background: 'var(--bg-card)',
         }}
@@ -157,27 +157,27 @@ export default function PrivacyPage() {
         {/* Toggle button */}
         <button
           onClick={() => setOpen(o => !o)}
-          className="w-full flex items-center justify-end px-3 py-4 border-b transition-colors hover:text-[var(--c1)]"
-          style={{ borderColor: 'var(--border)', color: 'var(--text-muted)' }}
+          className="w-full flex items-center justify-end px-4 py-5 border-b transition-colors hover:text-[var(--c1)]"
+          style={{ borderColor: 'var(--border)', color: 'var(--text-dim)' }}
         >
           {open
-            ? <ChevronLeft className="w-4 h-4 flex-shrink-0" />
-            : <ChevronRight className="w-4 h-4 flex-shrink-0" />}
+            ? <ChevronLeft className="w-5 h-5 flex-shrink-0" />
+            : <ChevronRight className="w-5 h-5 flex-shrink-0" />}
         </button>
 
         {/* Nav items */}
-        <nav className="flex flex-col gap-1 p-2 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 68px - 53px)' }}>
+        <nav className="flex flex-col gap-1.5 p-3 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 68px - 58px)' }}>
           {t.sections.map((s, i) => (
             <button
               key={i}
               onClick={() => scrollTo(`section-${i}`)}
               title={s.heading}
-              className="flex items-center gap-2 px-2 py-2 rounded-xl text-left text-xs font-medium transition-all hover:bg-[var(--c1)]/10 hover:text-[var(--c1)] whitespace-nowrap overflow-hidden"
-              style={{ color: 'var(--text-muted)' }}
+              className="flex items-center gap-3 px-3 py-3 rounded-xl text-left text-sm font-semibold transition-all hover:bg-[var(--c1)]/10 hover:text-[var(--c1)] whitespace-nowrap overflow-hidden"
+              style={{ color: 'var(--text-base)' }}
             >
               <span
-                className="flex-shrink-0 w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-bold"
-                style={{ background: 'var(--c1)1a', color: 'var(--c1)' }}
+                className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold"
+                style={{ background: 'rgba(0,212,255,0.12)', color: 'var(--c1)' }}
               >
                 {i + 1}
               </span>
