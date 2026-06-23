@@ -688,19 +688,19 @@ function FeaturesSection({ lang }: { lang: string }) {
   const chrTxt = isDark ? '#6b7a99'  : '#7a90a8'
 
   const kpis = [
-    { l: tx(lang,'Tushum','Tushum','Revenue'),      v: '124.5M', d: '+12.4%', col: '#22c4b8' },
-    { l: tx(lang,'Foyda','Foyda','Profit'),          v: '38.2M',  d: '+12.4%', col: '#22c55e' },
-    { l: tx(lang,'Buyurtmalar','Buyurtmalar','Orders'), v: '1,842', d: '+12.4%', col: '#60a5fa' },
-    { l: tx(lang,'Qoldiq','Qoldiq','Stock'),         v: '3,410',  d: '+12.4%', col: '#f59e0b' },
+    { l: tx(lang,'Выручка','Tushum','Revenue'),      v: '124.5M', d: '+12.4%', col: '#22c4b8' },
+    { l: tx(lang,'Прибыль','Foyda','Profit'),         v: '38.2M',  d: '+12.4%', col: '#22c55e' },
+    { l: tx(lang,'Заказы','Buyurtmalar','Orders'),    v: '1,842',  d: '+12.4%', col: '#60a5fa' },
+    { l: tx(lang,'Остатки','Qoldiq','Stock'),         v: '3,410',  d: '+12.4%', col: '#f59e0b' },
   ]
 
 
   const bars  = [18,26,22,38,30,44,35,52,40,32,46,60,38,50]
   const hiIdx = bars.length - 4
   const orders = [
-    { id: 'DEMO-183', status: tx(lang,'Delivered','Delivered','Delivered'),   col: '#22c55e' },
-    { id: 'DEMO-184', status: tx(lang,'Processing','Processing','Processing'), col: '#f59e0b' },
-    { id: 'DEMO-185', status: tx(lang,'Delivered','Delivered','Delivered'),   col: '#22c55e' },
+    { id: 'DEMO-183', status: tx(lang,'Доставлен','Yetkazildi','Delivered'),    col: '#22c55e' },
+    { id: 'DEMO-184', status: tx(lang,'В обработке','Jarayonda','Processing'),  col: '#f59e0b' },
+    { id: 'DEMO-185', status: tx(lang,'Доставлен','Yetkazildi','Delivered'),    col: '#22c55e' },
   ]
 
   const screenCard = (children: React.ReactNode, rotate: number, zIdx: number, style: React.CSSProperties) => (
@@ -775,7 +775,7 @@ function FeaturesSection({ lang }: { lang: string }) {
                 <div style={{ background: dCard, borderRadius: 10, padding: '10px 12px',
                   border: `1px solid ${dBdr}` }}>
                   <p style={{ fontSize: 9, color: dMuted, marginBottom: 8, fontWeight: 600 }}>
-                    {tx(lang,'Kunlik tushum','Kunlik tushum','Daily revenue')}
+                    {tx(lang,'Дневная выручка','Kunlik tushum','Daily revenue')}
                   </p>
                   <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2, height: 52 }}>
                     {bars.map((h, i) => (
@@ -790,7 +790,7 @@ function FeaturesSection({ lang }: { lang: string }) {
                 <div style={{ background: dCard, borderRadius: 10, padding: '10px 12px',
                   border: `1px solid ${dBdr}`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                   <p style={{ fontSize: 9, color: dMuted, fontWeight: 600, alignSelf: 'flex-start' }}>
-                    {tx(lang,'Kategoriyalar','Kategoriyalar','Categories')}
+                    {tx(lang,'Категории','Kategoriyalar','Categories')}
                   </p>
                   <svg width={52} height={52} viewBox="0 0 52 52">
                     <circle cx="26" cy="26" r="18" fill="none" stroke={isDark ? dBdr : '#d4e2ef'} strokeWidth="8"/>
@@ -809,7 +809,7 @@ function FeaturesSection({ lang }: { lang: string }) {
                 <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px',
                   borderBottom: `1px solid ${dBdr}` }}>
                   <span style={{ fontSize: 9, fontWeight: 700, color: dMuted, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                    {tx(lang,'Recent Orders','Recent Orders','Recent Orders')}
+                    {tx(lang,'Последние заказы','So\'nggi buyurtmalar','Recent Orders')}
                   </span>
                   <span style={{ fontSize: 9, fontWeight: 700, color: dMuted, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Status</span>
                 </div>
@@ -836,7 +836,7 @@ function FeaturesSection({ lang }: { lang: string }) {
             <h2 style={{ fontSize: 'clamp(26px, 3vw, 42px)', fontWeight: 800, lineHeight: 1.1,
               color: isDark ? P.dText : P.ink, letterSpacing: '-0.022em', marginBottom: 18 }}>
               {tx(lang,
-                <>Savdo va analitika —<br/><span style={{ color: acc.tint }}>hammasi bitta ekranda</span></>,
+                <>Продажи и аналитика —<br/><span style={{ color: acc.tint }}>всё на одном экране</span></>,
                 <>Savdo va analitika —<br/><span style={{ color: acc.tint }}>hammasi bitta ekranda</span></>,
                 <>Your store, fully visible —<br/><span style={{ color: acc.tint }}>every number, one place</span></>
               )}
@@ -846,7 +846,7 @@ function FeaturesSection({ lang }: { lang: string }) {
           <FadeUp delay={0.23}>
             <p style={{ fontSize: 16, color: isDark ? P.dMuted : P.stone, lineHeight: 1.65, marginBottom: 32 }}>
               {tx(lang,
-                'DRR, qoldiq, narx va birlik iqtisodiyoti. Savdoni kuniga 5 daqiqada boshqaring.',
+                'ДРР, остатки, цены и юнит-экономика. Управляйте продажами за 5 минут в день.',
                 'DRR, qoldiq, narx va birlik iqtisodiyoti. Savdoni kuniga 5 daqiqada boshqaring.',
                 'DRR, stock, pricing and unit economics. Manage your sales in 5 minutes a day.'
               )}
@@ -888,14 +888,14 @@ function FeaturesSection({ lang }: { lang: string }) {
                   transition: 'all 0.15s', display: 'inline-block' }}
                 onMouseEnter={e => { e.currentTarget.style.background = '#6aabf0'; e.currentTarget.style.transform = 'translateY(-2px)' }}
                 onMouseLeave={e => { e.currentTarget.style.background = '#83c0f9'; e.currentTarget.style.transform = 'translateY(0)' }}>
-                {tx(lang,'3 kun bepul boshlash →','3 kun bepul boshlash →','Start free 3 days →')}
+                {tx(lang,'Начать бесплатно 3 дня →','3 kun bepul boshlash →','Start free 3 days →')}
               </Link>
               <a href="#how"
                 style={{ fontSize: 14, fontWeight: 600, color: isDark ? P.dMuted : P.stone, textDecoration: 'none',
                   display: 'inline-flex', alignItems: 'center', gap: 6, transition: 'color 0.15s', padding: '13px 0' }}
                 onMouseEnter={e => (e.currentTarget.style.color = isDark ? '#fff' : P.ink)}
                 onMouseLeave={e => (e.currentTarget.style.color = isDark ? P.dMuted : P.stone)}>
-                {tx(lang,'Platformani o\'rganish →','Platformani o\'rganish →','Explore platform →')}
+                {tx(lang,'Изучить платформу →','Platformani o\'rganish →','Explore platform →')}
               </a>
             </div>
           </FadeUp>
