@@ -60,6 +60,10 @@ const t: Record<Lang, {
         body: `Platformadan ro\'yxatdan o\'tish paytida siz ushbu maxfiylik siyosatini o\'qib chiqqaningiz va qabul qilganingizni tasdiqlaysiz — bu ZRU-547 Qonuni talab etgan elektron rozilik hisoblanadi.\n\nDaromadchi shaxsiy ma\'lumotlar bazasi O\'zbekiston Respublikasi Hukumati huzuridagi Davlat shaxslashtirish markazi tomonidan yuritiluvchi Shaxsiy ma\'lumotlar bazalarining Davlat reestriga kiritish bo\'yicha ro\'yxatdan o\'tish jarayoni olib borilmoqda.`,
       },
       {
+        heading: 'Chrome Kengaytmasi — Maxfiylik',
+        body: `Daromadchi Chrome Kengaytmasi quyidagi maxfiylik tamoyillariga amal qiladi:\n\n• Shaxsiy ma\'lumot to\'planmaydi — ism, manzil, elektron pochta yoki boshqa identifikatsion ma\'lumotlar yig\'ilmaydi.\n• Mahalliy o\'qish — kengaytma bozor sahifalaridan (Uzum, Wildberries, Yandex Market) mahsulot ma\'lumotlarini faqat brauzeringizda, mahalliy ravishda o\'qiydi. Bu ma\'lumotlar tashqi serverlarga yuborilmaydi.\n• chrome.storage — foydalanuvchi sozlamalari (API kalitlari, ogohlantirish chegaralari, til, mavzu) faqat qurilmangizda saqlanadi va hech qaerga uzatilmaydi.\n• Alarms — fon sinxronizatsiyasi Chrome Alarms API orqali faqat mahalliy ravishda amalga oshiriladi.\n• Notifications — zaxira yoki DRR chegarasi oshganda bildirishnomalar faqat sizning qurilmangizda ko\'rsatiladi.`,
+      },
+      {
         heading: '10. Aloqa',
         body: `Savollar, shikoyatlar yoki huquqiy so\'rovlar uchun:\nElektron pochta: ${COMPANY_EMAIL}\n\nO\'zbekiston Respublikasida shikoyat qilish uchun: Raqamli texnologiyalar vazirligi yoki sudga murojaat qilishingiz mumkin.`,
       },
@@ -108,6 +112,10 @@ const t: Record<Lang, {
         body: `При регистрации на платформе вы подтверждаете, что ознакомились с настоящей политикой и принимаете её — это является электронным согласием в соответствии с требованиями Закона ЗРУ-547.\n\nПо базе персональных данных Daromadchi ведётся процедура включения в Государственный реестр баз персональных данных, ведомый Государственным центром персонализации при Правительстве Республики Узбекистан.`,
       },
       {
+        heading: 'Расширение Chrome — Конфиденциальность',
+        body: `Расширение Chrome Daromadchi придерживается следующих принципов конфиденциальности:\n\n• Личные данные не собираются — имена, адреса, электронная почта и иные идентификационные данные не собираются.\n• Локальное чтение — расширение считывает данные о товарах (цена, категория, комиссия) со страниц маркетплейсов (Uzum, Wildberries, Yandex Market) только локально в вашем браузере. Эти данные не отправляются на внешние серверы.\n• chrome.storage — пользовательские настройки (API-ключи, пороги оповещений, язык, тема) хранятся только на вашем устройстве и никуда не передаются.\n• Alarms — фоновая синхронизация выполняется через Chrome Alarms API только локально.\n• Notifications — уведомления о достижении порогов запасов или ДРР отображаются только на вашем устройстве.`,
+      },
+      {
         heading: '10. Контакты',
         body: `По вопросам, жалобам или юридическим запросам:\nЭлектронная почта: ${COMPANY_EMAIL}\n\nДля подачи жалобы в Республике Узбекистан: Министерство цифровых технологий или суд.`,
       },
@@ -154,6 +162,10 @@ const t: Record<Lang, {
       {
         heading: '9. Consent & registration',
         body: `By registering on the platform you confirm you have read and accept this policy — this constitutes electronic consent as required by Law ZRU-547.\n\nThe Daromadchi personal data database is currently undergoing registration for inclusion in the State Register of Personal Data Bases maintained by the State Personalisation Centre under the Cabinet of Ministers of the Republic of Uzbekistan.`,
+      },
+      {
+        heading: 'Chrome Extension — Privacy',
+        body: `The Daromadchi Chrome Extension follows these privacy principles:\n\n• No personal data collected — no names, addresses, email addresses, or other identifying information are collected.\n• Local reading only — the extension reads product data (price, category, commission) from marketplace pages (Uzum, Wildberries, Yandex Market) locally in your browser only. This data is never sent to any external server.\n• chrome.storage — user settings (API keys, alert thresholds, language, theme) are saved only on your device and never transmitted anywhere.\n• Alarms — background sync runs via the Chrome Alarms API locally only.\n• Notifications — stock or DRR threshold alerts are displayed only on your own device.`,
       },
       {
         heading: '10. Contact',
