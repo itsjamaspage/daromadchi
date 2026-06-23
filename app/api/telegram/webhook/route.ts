@@ -415,6 +415,24 @@ export async function POST(req: NextRequest) {
       )
       return NextResponse.json({ ok: true })
     }
+
+    // ── Support fallback: forward any free-text message to owner ──────────
+    if (!session || session.step === 'done') {
+      const firstName = (message.from?.first_name as string | undefined) ?? ''
+      const uname     = (message.from?.username  as string | undefined) ?? ''
+      const senderInfo = [firstName, uname ? `@${uname}` : '', `(ID: ${chatId})`].filter(Boolean).join(' ')
+      const lang = session?.lang ?? 'uz'
+      const thanks = lang === 'ru'
+        ? '✅ Спасибо за ваш вопрос! Мы получили его и ответим в ближайшее время.'
+        : lang === 'en'
+        ? '✅ Thank you for your question! We received it and will get back to you soon.'
+        : '✅ Savolingiz uchun rahmat! Qabul qildik, tez orada javob beramiz.'
+      await sendTelegramMessage(chatId, thanks)
+      await sendTelegramMessage('6884517020',
+        `📩 <b>Yangi savol / Новый вопрос</b>\n\n👤 ${senderInfo}\n\n💬 ${text}`
+      )
+      return NextResponse.json({ ok: true })
+    }
   }
 
   // /start (bare) — begin onboarding with language selection
