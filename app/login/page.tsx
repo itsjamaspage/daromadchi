@@ -221,20 +221,24 @@ function LoginForm() {
         }
         else { router.push('/dashboard'); router.refresh() }
       } else {
-        const { data, error } = await supabase.auth.signUp({
-          email, password,
-          options: { data: { full_name: name } },
+        const signupRes = await fetch('/api/auth/signup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password, name }),
         })
-        if (error) { setError(error.message); setLoading(false) }
-        else {
-          if (refCode && data.user) {
+        const signupData = await signupRes.json()
+        if (!signupRes.ok) {
+          setError(signupData.error ?? 'Xato yuz berdi')
+          setLoading(false)
+        } else {
+          if (refCode && signupData.userId) {
             await fetch('/api/referral/track', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ refCode, newUserId: data.user.id }),
+              body: JSON.stringify({ refCode, newUserId: signupData.userId }),
             }).catch(() => {})
           }
-          if (data.session) { router.push('/dashboard'); router.refresh() }
+          if (!signupData.needsConfirmation) { router.push('/dashboard'); router.refresh() }
           else { setSuccess(true); setLoading(false) }
         }
       }

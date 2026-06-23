@@ -34,9 +34,10 @@ export async function proxy(request: NextRequest) {
 
   if (pathname.startsWith('/api/')) {
     const ip = getIp(request)
-    // Sync routes: stricter limit (20/min) — they hit external marketplaces
-    const isSyncRoute = /^\/api\/(uzum|wildberries|yandex)\/sync/.test(pathname)
-    const limit = isSyncRoute ? 20 : 100
+    // Sync routes: 20/min; auth/feedback: 20/min; others: 100/min
+    const isSyncRoute    = /^\/api\/(uzum|wildberries|yandex)\/sync/.test(pathname)
+    const isSensitive    = /^\/api\/(auth\/signup|feedback)/.test(pathname)
+    const limit = (isSyncRoute || isSensitive) ? 20 : 100
     if (isRateLimited(ip, limit)) {
       return new NextResponse(
         JSON.stringify({ ok: false, error: 'Too many requests' }),
