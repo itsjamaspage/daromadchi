@@ -1367,10 +1367,10 @@ function ExtensionSection({ lang }: { lang: string }) {
           <div style={{ textAlign: 'center' }}>
             <Link href="/extension"
               style={{ display: 'inline-flex', alignItems: 'center', gap: 8,
-                fontSize: 15, fontWeight: 700, background: acc.btn, color: acc.btnTxt,
+                fontSize: 15, fontWeight: 700, background: '#83c0f9', color: '#131321',
                 padding: '14px 36px', borderRadius: 10, textDecoration: 'none', transition: 'all 0.15s' }}
-              onMouseEnter={e => { e.currentTarget.style.background = acc.btnHov; e.currentTarget.style.transform = 'translateY(-2px)' }}
-              onMouseLeave={e => { e.currentTarget.style.background = acc.btn; e.currentTarget.style.transform = 'translateY(0)' }}>
+              onMouseEnter={e => { e.currentTarget.style.background = '#6aabf0'; e.currentTarget.style.transform = 'translateY(-2px)' }}
+              onMouseLeave={e => { e.currentTarget.style.background = '#83c0f9'; e.currentTarget.style.transform = 'translateY(0)' }}>
               {tx(lang,'Установить расширение','Kengaytmani o\'rnatish','Install extension')} <ArrowRight size={16}/>
             </Link>
             <p style={{ marginTop: 10, fontSize: 12, color: sub }}>
