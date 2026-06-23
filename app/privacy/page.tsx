@@ -175,15 +175,15 @@ export default function PrivacyPage() {
               className="flex items-center gap-3 px-3 py-3 rounded-xl text-left text-sm font-semibold transition-all hover:bg-[var(--c1)]/10 hover:text-[var(--c1)] whitespace-nowrap overflow-hidden"
               style={{ color: 'var(--text-base)' }}
             >
-              <span
-                className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold"
-                style={{ background: 'rgba(0,212,255,0.12)', color: 'var(--c1)' }}
-              >
-                {i + 1}
-              </span>
-              {open && (
+              {open && <>
+                <span
+                  className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold"
+                  style={{ background: 'rgba(0,212,255,0.12)', color: 'var(--c1)' }}
+                >
+                  {i + 1}
+                </span>
                 <span className="truncate">{s.short}</span>
-              )}
+              </>}
             </button>
           ))}
         </nav>
