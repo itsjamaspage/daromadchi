@@ -151,13 +151,9 @@ export default function HelpPage() {
         <p className="text-[var(--text-muted)] text-sm mb-2">{t.notFound}</p>
         <p className="text-[var(--text-base)] font-semibold mb-4">{t.contact}</p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <a href="https://t.me/daromadchi_support_bot" target="_blank" rel="noopener noreferrer"
+          <a href="tg://user?id=6884517020"
             className="px-5 py-2.5 rounded-xl bg-[var(--c1)] text-[#020c1a] font-semibold text-sm hover:opacity-90 transition-opacity">
             {t.telegram}
-          </a>
-          <a href="mailto:support@daromadchi.uz"
-            className="px-5 py-2.5 rounded-xl border border-[var(--border2)] text-[var(--text-base)] text-sm hover:border-[var(--c1)]/40 hover:text-[var(--c1)] transition-all">
-            support@daromadchi.uz
           </a>
         </div>
       </div>
