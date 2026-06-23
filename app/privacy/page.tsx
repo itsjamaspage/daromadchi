@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { useLang } from '@/app/providers'
+import { useLang, useTheme } from '@/app/providers'
 
 const COMPANY_EMAIL = 'support@daromadchi.uz'
 
@@ -133,6 +133,7 @@ const NAVBAR_H = 68
 
 export default function PrivacyPage() {
   const { lang } = useLang()
+  const { theme } = useTheme()
   const t = T[lang] ?? T.uz
   const [open, setOpen] = useState(true)
   const [active, setActive] = useState(0)
@@ -243,10 +244,14 @@ export default function PrivacyPage() {
                 data-idx={i}
                 className="rounded-2xl p-8 border neon-card scroll-mt-24 transition-all duration-300"
                 style={{
-                  background: 'var(--bg-card)',
+                  background: flash === i
+                    ? theme === 'dark'
+                      ? 'rgba(255,255,255,0.07)'
+                      : 'rgba(0,180,255,0.12)'
+                    : 'var(--bg-card)',
                   borderColor: flash === i ? 'var(--c1)' : 'var(--border)',
-                  boxShadow: flash === i ? '0 0 0 3px rgba(0,212,255,0.30)' : undefined,
-                  transition: 'border-color 0.4s ease, box-shadow 0.4s ease',
+                  boxShadow: flash === i ? '0 0 0 3px rgba(0,212,255,0.25)' : undefined,
+                  transition: 'background 0.5s ease, border-color 0.4s ease, box-shadow 0.4s ease',
                 }}
               >
                 <h2
