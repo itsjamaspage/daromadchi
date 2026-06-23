@@ -1,27 +1,14 @@
 'use client'
 
-import { useState } from 'react'
-import Link from 'next/link'
-import { ArrowLeft, Globe } from 'lucide-react'
+import { useLang } from '@/app/providers'
 
-type Lang = 'uz' | 'ru' | 'en'
-
-const LAST_UPDATED = '2026-06-04'
 const COMPANY_EMAIL = 'support@daromadchi.uz'
-const COMPANY_NAME = 'Daromadchi'
 
-const t: Record<Lang, {
-  title: string
-  subtitle: string
-  lastUpdated: string
-  back: string
-  sections: { heading: string; body: string }[]
-}> = {
+const T = {
   uz: {
     title: 'Maxfiylik siyosati va Foydalanish shartlari',
     subtitle: "Daromadchi platformasidan foydalanish orqali siz ushbu siyosatga rozilik bildirasiz.",
-    lastUpdated: `Oxirgi yangilanish: ${LAST_UPDATED}`,
-    back: 'Bosh sahifaga',
+    updated: 'Oxirgi yangilanish: 2026-06-04',
     sections: [
       {
         heading: '1. Umumiy ma\'lumot',
@@ -37,7 +24,7 @@ const t: Record<Lang, {
       },
       {
         heading: '4. Ma\'lumotlar saqlash, xavfsizlik va uchinchi shaxslarga uzatish',
-        body: `Ma\'lumotlar Supabase Inc. (infrastruktura provayderi, AQSh) PostgreSQL ma\'lumotlar bazasida saqlanadi. API kalitlari AES-256-CBC algoritmi bilan shifrlangan holda saqlanadi. Barcha uzatmalar HTTPS orqali amalga oshiriladi.\n\nXalqaro uzatish: ZRU-547 Qonuniga 2026-yil 26-martda kiritilgan o\'zgarishlarga muvofiq, xorijiy bulut xizmatlaridan foydalanish axborot xavfsizligi talablariga rioya etilgan taqdirda ruxsat etiladi. Biz Supabase'ning SOC 2 sertifikatiga asoslanib ushbu talabga muvofiq ekanligini e'lon qilamiz.\n\nUchinchi shaxslar: Supabase (ma\'lumotlar bazasi infratuzilmasi) — ma\'lumotlarga faqat texnik xizmat ko\'rsatish doirasida kirish huquqiga ega. Boshqa uchinchi shaxslarga ma\'lumot uzatilmaydi.\n\nZRU-547 Qonuni talablariga ko\'ra, shaxsiy ma\'lumotlar faqat zarur muddat davomida, lekin eng ko\'pi bilan hisob o\'chirilgandan keyin 1 yil saqlanadi.`,
+        body: `Ma\'lumotlar Supabase Inc. (infrastruktura provayderi, AQSh) PostgreSQL ma\'lumotlar bazasida saqlanadi. API kalitlari AES-256-CBC algoritmi bilan shifrlangan holda saqlanadi. Barcha uzatmalar HTTPS orqali amalga oshiriladi.\n\nUchinchi shaxslar: Supabase (ma\'lumotlar bazasi infratuzilmasi) — ma\'lumotlarga faqat texnik xizmat ko\'rsatish doirasida kirish huquqiga ega. Boshqa uchinchi shaxslarga ma\'lumot uzatilmaydi.\n\nZRU-547 Qonuni talablariga ko\'ra, shaxsiy ma\'lumotlar faqat zarur muddat davomida, lekin eng ko\'pi bilan hisob o\'chirilgandan keyin 1 yil saqlanadi.`,
       },
       {
         heading: '5. Foydalanuvchi huquqlari',
@@ -57,11 +44,11 @@ const t: Record<Lang, {
       },
       {
         heading: '9. Rozilik va ro\'yxatdan o\'tish',
-        body: `Platformadan ro\'yxatdan o\'tish paytida siz ushbu maxfiylik siyosatini o\'qib chiqqaningiz va qabul qilganingizni tasdiqlaysiz — bu ZRU-547 Qonuni talab etgan elektron rozilik hisoblanadi.\n\nDaromadchi shaxsiy ma\'lumotlar bazasi O\'zbekiston Respublikasi Hukumati huzuridagi Davlat shaxslashtirish markazi tomonidan yuritiluvchi Shaxsiy ma\'lumotlar bazalarining Davlat reestriga kiritish bo\'yicha ro\'yxatdan o\'tish jarayoni olib borilmoqda.`,
+        body: `Platformadan ro\'yxatdan o\'tish paytida siz ushbu maxfiylik siyosatini o\'qib chiqqaningiz va qabul qilganingizni tasdiqlaysiz — bu ZRU-547 Qonuni talab etgan elektron rozilik hisoblanadi.`,
       },
       {
         heading: 'Chrome Kengaytmasi — Maxfiylik',
-        body: `Daromadchi Chrome Kengaytmasi quyidagi maxfiylik tamoyillariga amal qiladi:\n\n• Shaxsiy ma\'lumot to\'planmaydi — ism, manzil, elektron pochta yoki boshqa identifikatsion ma\'lumotlar yig\'ilmaydi.\n• Mahalliy o\'qish — kengaytma bozor sahifalaridan (Uzum, Wildberries, Yandex Market) mahsulot ma\'lumotlarini faqat brauzeringizda, mahalliy ravishda o\'qiydi. Bu ma\'lumotlar tashqi serverlarga yuborilmaydi.\n• chrome.storage — foydalanuvchi sozlamalari (API kalitlari, ogohlantirish chegaralari, til, mavzu) faqat qurilmangizda saqlanadi va hech qaerga uzatilmaydi.\n• Alarms — fon sinxronizatsiyasi Chrome Alarms API orqali faqat mahalliy ravishda amalga oshiriladi.\n• Notifications — zaxira yoki DRR chegarasi oshganda bildirishnomalar faqat sizning qurilmangizda ko\'rsatiladi.`,
+        body: `Daromadchi Chrome Kengaytmasi quyidagi maxfiylik tamoyillariga amal qiladi:\n\n• Shaxsiy ma\'lumot to\'planmaydi — ism, manzil, elektron pochta yoki boshqa identifikatsion ma\'lumotlar yig\'ilmaydi.\n• Mahalliy o\'qish — kengaytma bozor sahifalaridan mahsulot ma\'lumotlarini faqat brauzeringizda o\'qiydi. Bu ma\'lumotlar tashqi serverlarga yuborilmaydi.\n• chrome.storage — foydalanuvchi sozlamalari faqat qurilmangizda saqlanadi va hech qaerga uzatilmaydi.\n• Alarms — fon sinxronizatsiyasi faqat mahalliy ravishda amalga oshiriladi.\n• Notifications — bildirishnomalar faqat sizning qurilmangizda ko\'rsatiladi.`,
       },
       {
         heading: '10. Aloqa',
@@ -72,16 +59,15 @@ const t: Record<Lang, {
   ru: {
     title: 'Политика конфиденциальности и Условия использования',
     subtitle: 'Используя платформу Daromadchi, вы соглашаетесь с данной политикой.',
-    lastUpdated: `Последнее обновление: ${LAST_UPDATED}`,
-    back: 'На главную',
+    updated: 'Последнее обновление: 2026-06-04',
     sections: [
       {
         heading: '1. Общие сведения',
-        body: `Daromadchi — аналитическая платформа для продавцов на маркетплейсах Узбекистана (Uzum Market, Wildberries, Yandex Market). Настоящая политика разработана в соответствии с Законом Республики Узбекистан «О персональных данных» (2 июля 2019 г., ЗРУ-547) и Законом «Об информатизации» (11 декабря 2003 г., № 560-II).`,
+        body: `Daromadchi — аналитическая платформа для продавцов на маркетплейсах Узбекистана (Uzum Market, Wildberries, Yandex Market). Настоящая политика разработана в соответствии с Законом РУз «О персональных данных» (2 июля 2019 г., ЗРУ-547) и Законом «Об информатизации» (11 декабря 2003 г., № 560-II).`,
       },
       {
         heading: '2. Какие данные собираются',
-        body: `• Учётные данные: адрес электронной почты и зашифрованный пароль (через Supabase Auth).\n• Данные магазина: API-ключ маркетплейса, введённый вами (хранится в зашифрованном виде AES-256).\n• Торговые данные: заказы, товары, запасы и рекламная статистика, полученные через API маркетплейса.\n• Данные браузерного расширения: при установке расширения со страниц маркетплейсов (Uzum, Wildberries, Yandex Market) собираются цены и данные о товарах — только в рамках вашей учётной записи.\n• Данные Telegram: при включении уведомлений сохраняется Telegram chat ID пользователя — исключительно для отправки уведомлений.\n• Технические данные: тип браузера, IP-адрес (в целях безопасности), системные журналы.\n\nМы не собираем данные платёжных карт, копии документов или иные специальные категории персональных данных.`,
+        body: `• Учётные данные: адрес электронной почты и зашифрованный пароль (через Supabase Auth).\n• Данные магазина: API-ключ маркетплейса, введённый вами (хранится в зашифрованном виде AES-256).\n• Торговые данные: заказы, товары, запасы и рекламная статистика, полученные через API маркетплейса.\n• Данные браузерного расширения: при установке расширения со страниц маркетплейсов собираются цены и данные о товарах — только в рамках вашей учётной записи.\n• Данные Telegram: при включении уведомлений сохраняется Telegram chat ID — исключительно для отправки уведомлений.\n• Технические данные: тип браузера, IP-адрес (в целях безопасности), системные журналы.\n\nМы не собираем данные платёжных карт, копии документов или иные специальные категории персональных данных.`,
       },
       {
         heading: '3. Как используются данные',
@@ -89,11 +75,11 @@ const t: Record<Lang, {
       },
       {
         heading: '4. Хранение данных, безопасность и передача третьим лицам',
-        body: `Данные хранятся в базе данных Supabase Inc. (провайдер инфраструктуры, США), PostgreSQL. API-ключи шифруются алгоритмом AES-256-CBC. Все передачи осуществляются по протоколу HTTPS.\n\nМеждународная передача: поправки к Закону ЗРУ-547 от 26 марта 2026 г. разрешают использование иностранных облачных сервисов при соблюдении требований информационной безопасности. Мы ссылаемся на сертификацию Supabase SOC 2 как подтверждение соответствия этим требованиям.\n\nТретьи лица: Supabase (инфраструктура базы данных) — доступ к данным только в рамках технического обслуживания. Данные не передаются иным третьим лицам.\n\nВ соответствии с Законом ЗРУ-547 персональные данные хранятся только в течение необходимого срока, но не более 1 года после удаления аккаунта.`,
+        body: `Данные хранятся в базе данных Supabase Inc. (провайдер инфраструктуры, США), PostgreSQL. API-ключи шифруются алгоритмом AES-256-CBC. Все передачи осуществляются по протоколу HTTPS.\n\nТретьи лица: Supabase (инфраструктура базы данных) — доступ к данным только в рамках технического обслуживания. Данные не передаются иным третьим лицам.\n\nВ соответствии с Законом ЗРУ-547 персональные данные хранятся только в течение необходимого срока, но не более 1 года после удаления аккаунта.`,
       },
       {
         heading: '5. Права пользователей',
-        body: `На основании Закона ЗРУ-547 вы имеете право:\n• Получить доступ к своим данным и их копию.\n• Потребовать исправления или удаления данных.\n• Отозвать согласие на обработку данных.\n• Перенести свои данные в другой сервис (право на портируемость).\n\nДля реализации своих прав обращайтесь на ${COMPANY_EMAIL}. Запросы рассматриваются в течение 15 рабочих дней.`,
+        body: `На основании Закона ЗРУ-547 вы имеете право:\n• Получить доступ к своим данным и их копию.\n• Потребовать исправления или удаления данных.\n• Отозвать согласие на обработку данных.\n• Перенести свои данные в другой сервис.\n\nДля реализации своих прав обращайтесь на ${COMPANY_EMAIL}. Запросы рассматриваются в течение 15 рабочих дней.`,
       },
       {
         heading: '6. Куки и отслеживание',
@@ -109,11 +95,11 @@ const t: Record<Lang, {
       },
       {
         heading: '9. Согласие и регистрация',
-        body: `При регистрации на платформе вы подтверждаете, что ознакомились с настоящей политикой и принимаете её — это является электронным согласием в соответствии с требованиями Закона ЗРУ-547.\n\nПо базе персональных данных Daromadchi ведётся процедура включения в Государственный реестр баз персональных данных, ведомый Государственным центром персонализации при Правительстве Республики Узбекистан.`,
+        body: `При регистрации на платформе вы подтверждаете, что ознакомились с настоящей политикой и принимаете её — это является электронным согласием в соответствии с требованиями Закона ЗРУ-547.`,
       },
       {
         heading: 'Расширение Chrome — Конфиденциальность',
-        body: `Расширение Chrome Daromadchi придерживается следующих принципов конфиденциальности:\n\n• Личные данные не собираются — имена, адреса, электронная почта и иные идентификационные данные не собираются.\n• Локальное чтение — расширение считывает данные о товарах (цена, категория, комиссия) со страниц маркетплейсов (Uzum, Wildberries, Yandex Market) только локально в вашем браузере. Эти данные не отправляются на внешние серверы.\n• chrome.storage — пользовательские настройки (API-ключи, пороги оповещений, язык, тема) хранятся только на вашем устройстве и никуда не передаются.\n• Alarms — фоновая синхронизация выполняется через Chrome Alarms API только локально.\n• Notifications — уведомления о достижении порогов запасов или ДРР отображаются только на вашем устройстве.`,
+        body: `Расширение Chrome Daromadchi придерживается следующих принципов конфиденциальности:\n\n• Личные данные не собираются — имена, адреса, электронная почта и иные идентификационные данные не собираются.\n• Локальное чтение — расширение считывает данные о товарах со страниц маркетплейсов только локально в вашем браузере. Эти данные не отправляются на внешние серверы.\n• chrome.storage — пользовательские настройки хранятся только на вашем устройстве и никуда не передаются.\n• Alarms — фоновая синхронизация выполняется только локально.\n• Notifications — уведомления отображаются только на вашем устройстве.`,
       },
       {
         heading: '10. Контакты',
@@ -124,8 +110,7 @@ const t: Record<Lang, {
   en: {
     title: 'Privacy Policy & Terms of Use',
     subtitle: 'By using the Daromadchi platform, you agree to this policy.',
-    lastUpdated: `Last updated: ${LAST_UPDATED}`,
-    back: 'Back to home',
+    updated: 'Last updated: 2026-06-04',
     sections: [
       {
         heading: '1. About',
@@ -133,7 +118,7 @@ const t: Record<Lang, {
       },
       {
         heading: '2. What data we collect',
-        body: `• Account data: email address and encrypted password (via Supabase Auth).\n• Shop data: the marketplace API key you provide (stored encrypted with AES-256).\n• Trading data: orders, products, stock levels and ad statistics fetched via the marketplace API.\n• Browser extension data: if the extension is installed, price and product data is collected from marketplace pages (Uzum, Wildberries, Yandex Market) — only within your logged-in account.\n• Telegram data: when alerts are enabled, your Telegram chat ID is stored solely for sending notifications.\n• Technical data: browser type, IP address (for security purposes), system logs.\n\nWe do not collect payment card details, identity document copies, or other special-category personal data.`,
+        body: `• Account data: email address and encrypted password (via Supabase Auth).\n• Shop data: the marketplace API key you provide (stored encrypted with AES-256).\n• Trading data: orders, products, stock levels and ad statistics fetched via the marketplace API.\n• Browser extension data: if the extension is installed, price and product data is collected from marketplace pages — only within your logged-in account.\n• Telegram data: when alerts are enabled, your Telegram chat ID is stored solely for sending notifications.\n• Technical data: browser type, IP address (for security purposes), system logs.\n\nWe do not collect payment card details, identity document copies, or other special-category personal data.`,
       },
       {
         heading: '3. How data is used',
@@ -141,7 +126,7 @@ const t: Record<Lang, {
       },
       {
         heading: '4. Data storage, security & third-party transfers',
-        body: `Data is stored with Supabase Inc. (infrastructure provider, USA) in a PostgreSQL database. API keys are encrypted with AES-256-CBC. All data in transit is protected by HTTPS.\n\nInternational transfer: amendments to Law ZRU-547 (26 March 2026) permit use of foreign cloud services where information security requirements are met. We rely on Supabase's SOC 2 certification as evidence of compliance with these requirements.\n\nThird parties: Supabase (database infrastructure) — access limited to technical operations only. No data is sold or shared with any other third parties.\n\nUnder Law ZRU-547, personal data is retained only as long as necessary, and for no more than 1 year after account deletion.`,
+        body: `Data is stored with Supabase Inc. (infrastructure provider, USA) in a PostgreSQL database. API keys are encrypted with AES-256-CBC. All data in transit is protected by HTTPS.\n\nThird parties: Supabase (database infrastructure) — access limited to technical operations only. No data is sold or shared with any other third parties.\n\nUnder Law ZRU-547, personal data is retained only as long as necessary, and for no more than 1 year after account deletion.`,
       },
       {
         heading: '5. User rights',
@@ -161,11 +146,11 @@ const t: Record<Lang, {
       },
       {
         heading: '9. Consent & registration',
-        body: `By registering on the platform you confirm you have read and accept this policy — this constitutes electronic consent as required by Law ZRU-547.\n\nThe Daromadchi personal data database is currently undergoing registration for inclusion in the State Register of Personal Data Bases maintained by the State Personalisation Centre under the Cabinet of Ministers of the Republic of Uzbekistan.`,
+        body: `By registering on the platform you confirm you have read and accept this policy — this constitutes electronic consent as required by Law ZRU-547.`,
       },
       {
         heading: 'Chrome Extension — Privacy',
-        body: `The Daromadchi Chrome Extension follows these privacy principles:\n\n• No personal data collected — no names, addresses, email addresses, or other identifying information are collected.\n• Local reading only — the extension reads product data (price, category, commission) from marketplace pages (Uzum, Wildberries, Yandex Market) locally in your browser only. This data is never sent to any external server.\n• chrome.storage — user settings (API keys, alert thresholds, language, theme) are saved only on your device and never transmitted anywhere.\n• Alarms — background sync runs via the Chrome Alarms API locally only.\n• Notifications — stock or DRR threshold alerts are displayed only on your own device.`,
+        body: `The Daromadchi Chrome Extension follows these privacy principles:\n\n• No personal data collected — no names, addresses, email addresses, or other identifying information are collected.\n• Local reading only — the extension reads product data from marketplace pages locally in your browser only. This data is never sent to any external server.\n• chrome.storage — user settings are saved only on your device and never transmitted anywhere.\n• Alarms — background sync runs locally only.\n• Notifications — alerts are displayed only on your own device.`,
       },
       {
         heading: '10. Contact',
@@ -175,84 +160,50 @@ const t: Record<Lang, {
   },
 }
 
-const LANG_LABELS: Record<Lang, string> = { uz: 'UZ', ru: 'RU', en: 'EN' }
-
 export default function PrivacyPage() {
-  const [lang, setLang] = useState<Lang>('uz')
-  const content = t[lang]
+  const { lang } = useLang()
+  const t = T[lang] ?? T.uz
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg, #0f1117)', color: 'var(--text, #e2e8f0)' }}>
-      {/* Header */}
-      <div style={{ borderBottom: '1px solid var(--border2, #2d2d3a)', padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', maxWidth: 800, margin: '0 auto', width: '100%' }}>
-        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-dim, #94a3b8)', textDecoration: 'none', fontSize: 14 }}>
-          <ArrowLeft size={16} />
-          {content.back}
-        </Link>
-
-        {/* Language switcher */}
-        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-          <Globe size={14} style={{ color: 'var(--text-dim, #94a3b8)' }} />
-          {(['uz', 'ru', 'en'] as Lang[]).map(l => (
-            <button
-              key={l}
-              onClick={() => setLang(l)}
-              style={{
-                padding: '4px 10px',
-                borderRadius: 6,
-                border: '1px solid',
-                fontSize: 12,
-                fontWeight: 600,
-                cursor: 'pointer',
-                borderColor: lang === l ? 'var(--c1, #00d4ff)' : 'var(--border2, #2d2d3a)',
-                background: lang === l ? 'rgba(0,212,255,0.1)' : 'transparent',
-                color: lang === l ? 'var(--c1, #00d4ff)' : 'var(--text-dim, #94a3b8)',
-              }}
-            >
-              {LANG_LABELS[l]}
-            </button>
-          ))}
-        </div>
+    <main className="max-w-3xl mx-auto px-4 sm:px-6 py-12">
+      <div className="text-center mb-12">
+        <h1
+          className="text-3xl sm:text-4xl font-extrabold mb-2"
+          style={{ fontFamily: 'var(--font-display)', color: 'var(--text-base)' }}
+        >
+          {t.title}
+        </h1>
+        <p className="text-sm mb-1" style={{ color: 'var(--text-muted)' }}>{t.subtitle}</p>
+        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{t.updated}</p>
       </div>
 
-      {/* Content */}
-      <main style={{ maxWidth: 800, margin: '0 auto', padding: '48px 24px 80px' }}>
-        {/* Logo */}
-        <div style={{ marginBottom: 32 }}>
-          <span style={{ fontSize: 22, fontWeight: 700, color: 'var(--c1, #00d4ff)' }}>
-            {COMPANY_NAME}
-          </span>
-        </div>
+      <div className="space-y-4">
+        {t.sections.map((s, i) => (
+          <div
+            key={i}
+            className="rounded-2xl p-6 border neon-card"
+            style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}
+          >
+            <h2
+              className="font-bold text-sm mb-2"
+              style={{ fontFamily: 'var(--font-display)', color: 'var(--text-base)' }}
+            >
+              {s.heading}
+            </h2>
+            <p
+              className="text-sm leading-relaxed whitespace-pre-line"
+              style={{ color: 'var(--text-muted)' }}
+            >
+              {s.body}
+            </p>
+          </div>
+        ))}
+      </div>
 
-        <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: 12, lineHeight: 1.3 }}>
-          {content.title}
-        </h1>
-        <p style={{ color: 'var(--text-dim, #94a3b8)', marginBottom: 8 }}>
-          {content.subtitle}
-        </p>
-        <p style={{ fontSize: 13, color: 'var(--text-dim, #94a3b8)', marginBottom: 48 }}>
-          {content.lastUpdated}
-        </p>
-
-        {/* Sections */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 40 }}>
-          {content.sections.map((s, i) => (
-            <section key={i}>
-              <h2 style={{ fontSize: 18, fontWeight: 600, marginBottom: 12, color: 'var(--text, #e2e8f0)' }}>
-                {s.heading}
-              </h2>
-              <div style={{ fontSize: 15, lineHeight: 1.75, color: 'var(--text-dim, #94a3b8)', whiteSpace: 'pre-line' }}>
-                {s.body}
-              </div>
-            </section>
-          ))}
-        </div>
-
-        {/* Footer note */}
-        <div style={{ marginTop: 64, paddingTop: 24, borderTop: '1px solid var(--border2, #2d2d3a)', fontSize: 13, color: 'var(--text-dim, #94a3b8)' }}>
-          © {new Date().getFullYear()} {COMPANY_NAME}. {lang === 'uz' ? 'Barcha huquqlar himoyalangan.' : lang === 'ru' ? 'Все права защищены.' : 'All rights reserved.'}
-        </div>
-      </main>
-    </div>
+      <p className="text-center text-xs mt-10" style={{ color: 'var(--text-muted)' }}>
+        © {new Date().getFullYear()} Daromadchi.{' '}
+        {lang === 'uz' ? 'Barcha huquqlar himoyalangan.' : lang === 'ru' ? 'Все права защищены.' : 'All rights reserved.'}
+      </p>
+    </main>
   )
 }
