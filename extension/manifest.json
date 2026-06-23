@@ -62,7 +62,7 @@
       "run_at": "document_idle"
     }
   ],
-  "permissions": ["storage", "alarms", "notifications", "activeTab", "scripting", "tabs"],
+  "permissions": ["storage", "alarms", "notifications", "activeTab"],
   "host_permissions": [
     "*://*.uzum.uz/*",
     "https://uzum.uz/*",
@@ -83,5 +83,6 @@
   ],
   "background": {
     "service_worker": "background.js"
-  }
+  },
+  "homepage_url": "https://daromadchi.uz"
 }
