@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useLang } from '@/app/providers'
 
@@ -135,10 +135,30 @@ export default function PrivacyPage() {
   const { lang } = useLang()
   const t = T[lang] ?? T.uz
   const [open, setOpen] = useState(true)
+  const [active, setActive] = useState(0)
+  const observerRef = useRef<IntersectionObserver | null>(null)
 
-  const scrollTo = (id: string) => {
-    const el = document.getElementById(id)
+  useEffect(() => {
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const idx = Number(entry.target.getAttribute('data-idx'))
+            setActive(idx)
+          }
+        })
+      },
+      { rootMargin: `-${NAVBAR_H + 32}px 0px -55% 0px`, threshold: 0 }
+    )
+    const els = document.querySelectorAll('[data-idx]')
+    els.forEach((el) => observerRef.current?.observe(el))
+    return () => observerRef.current?.disconnect()
+  }, [lang])
+
+  const scrollTo = (idx: number) => {
+    const el = document.getElementById(`section-${idx}`)
     if (!el) return
+    setActive(idx)
     const y = el.getBoundingClientRect().top + window.scrollY - NAVBAR_H - 16
     window.scrollTo({ top: y, behavior: 'smooth' })
   }
@@ -170,15 +190,22 @@ export default function PrivacyPage() {
           {t.sections.map((s, i) => (
             <button
               key={i}
-              onClick={() => scrollTo(`section-${i}`)}
+              onClick={() => scrollTo(i)}
               title={s.heading}
-              className="flex items-center gap-3 px-3 py-3 rounded-xl text-left text-sm font-semibold transition-all hover:bg-[var(--c1)]/10 hover:text-[var(--c1)] whitespace-nowrap overflow-hidden"
-              style={{ color: 'var(--text-base)' }}
+              className="flex items-center gap-3 px-3 py-3 rounded-xl text-left text-sm font-semibold transition-all whitespace-nowrap overflow-hidden border"
+              style={{
+                color: active === i ? 'var(--c1)' : 'var(--text-base)',
+                background: active === i ? 'rgba(0,212,255,0.10)' : 'transparent',
+                borderColor: active === i ? 'var(--c1)' : 'transparent',
+              }}
             >
               {open && <>
                 <span
                   className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold"
-                  style={{ background: 'rgba(0,212,255,0.12)', color: 'var(--c1)' }}
+                  style={{
+                    background: active === i ? 'rgba(0,212,255,0.20)' : 'rgba(0,212,255,0.10)',
+                    color: 'var(--c1)',
+                  }}
                 >
                   {i + 1}
                 </span>
@@ -208,8 +235,13 @@ export default function PrivacyPage() {
               <div
                 key={i}
                 id={`section-${i}`}
-                className="rounded-2xl p-8 border neon-card scroll-mt-24"
-                style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}
+                data-idx={i}
+                className="rounded-2xl p-8 border neon-card scroll-mt-24 transition-all duration-300"
+                style={{
+                  background: 'var(--bg-card)',
+                  borderColor: active === i ? 'var(--c1)' : 'var(--border)',
+                  boxShadow: active === i ? '0 0 0 2px rgba(0,212,255,0.25)' : undefined,
+                }}
               >
                 <h2
                   className="font-bold text-base mb-3"
