@@ -136,7 +136,9 @@ export default function PrivacyPage() {
   const t = T[lang] ?? T.uz
   const [open, setOpen] = useState(true)
   const [active, setActive] = useState(0)
+  const [flash, setFlash] = useState<number | null>(null)
   const observerRef = useRef<IntersectionObserver | null>(null)
+  const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     observerRef.current = new IntersectionObserver(
@@ -161,6 +163,9 @@ export default function PrivacyPage() {
     setActive(idx)
     const y = el.getBoundingClientRect().top + window.scrollY - NAVBAR_H - 16
     window.scrollTo({ top: y, behavior: 'smooth' })
+    if (flashTimerRef.current) clearTimeout(flashTimerRef.current)
+    setFlash(idx)
+    flashTimerRef.current = setTimeout(() => setFlash(null), 2000)
   }
 
   return (
@@ -239,8 +244,9 @@ export default function PrivacyPage() {
                 className="rounded-2xl p-8 border neon-card scroll-mt-24 transition-all duration-300"
                 style={{
                   background: 'var(--bg-card)',
-                  borderColor: active === i ? 'var(--c1)' : 'var(--border)',
-                  boxShadow: active === i ? '0 0 0 2px rgba(0,212,255,0.25)' : undefined,
+                  borderColor: flash === i ? 'var(--c1)' : 'var(--border)',
+                  boxShadow: flash === i ? '0 0 0 3px rgba(0,212,255,0.30)' : undefined,
+                  transition: 'border-color 0.4s ease, box-shadow 0.4s ease',
                 }}
               >
                 <h2
