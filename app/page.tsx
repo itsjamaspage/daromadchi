@@ -439,7 +439,7 @@ function HeroSection({ lang }: { lang: string }) {
     <section style={{ position: 'relative', background: heroBg, overflow: 'hidden',
       fontFamily: "'Space Grotesk', system-ui, sans-serif", paddingBottom: 0 }}>
       {/* LiquidEther full-section background */}
-      <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
+      <div style={{ position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none' }}>
         <LiquidEther
           colors={isDark ? ['#312e81', '#4f46e5', '#818cf8'] : ['#2563eb', '#7bbaf7', '#a5f3fc']}
           autoDemo={true}
