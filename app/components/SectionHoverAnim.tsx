@@ -14,7 +14,7 @@ interface Props {
 // appears on hover without blocking clicks (pointerEvents: none on the overlay).
 // Lazy-mounts LiquidEther on first hover and unmounts after the fade-out completes,
 // so no WebGL context is active while the user is not hovering.
-export default function SectionHoverAnim({ colors, opacity = 0.5 }: Props) {
+export default function SectionHoverAnim({ colors, opacity = 0.12 }: Props) {
   const ref = useRef<HTMLDivElement>(null)
   const [mounted, setMounted] = useState(false)
   const [visible, setVisible] = useState(false)
@@ -48,13 +48,13 @@ export default function SectionHoverAnim({ colors, opacity = 0.5 }: Props) {
       {mounted && (
         <div style={{
           position: 'absolute', inset: 0, pointerEvents: 'none',
-          opacity: visible ? Math.min(opacity, 0.5) : 0,
+          opacity: visible ? Math.min(opacity, 0.12) : 0,
           transition: 'opacity 0.5s ease',
         }}>
           <LiquidEther
             colors={colors}
-            mouseForce={20}
-            cursorSize={100}
+            mouseForce={6}
+            cursorSize={60}
             resolution={0.4}
             iterationsPoisson={24}
             iterationsViscous={12}

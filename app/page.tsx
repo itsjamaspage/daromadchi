@@ -23,8 +23,8 @@ const LiquidEther = dynamic(() => import('./components/LiquidEther'), { ssr: fal
 // fluid reads as white light rather than blending into the blue background.
 const ANIM_WHITE   = ['#ffffff', '#ffffff', '#f8fafc', '#f0f0f0', '#e8e8e8'] as const
 const ANIM_BLUE    = ['#0369a1', '#0284c7', '#0ea5e9', '#38bdf8', '#7dd3fc'] as const
-// Dark mode: neutral grays close to background — shows motion without adding colour or glow
-const ANIM_BLUE_DK = ['#4a4a4a', '#404040', '#363636', '#2d2d2d', '#242424'] as const
+// Dark mode: white/light gray at very low opacity — visible as gentle shimmer, no glow
+const ANIM_BLUE_DK = ['#ffffff', '#f5f5f5', '#ebebeb', '#dcdcdc', '#cdcdcd'] as const
 
 // ── Palette ───────────────────────────────────────────────────────────────────
 const P = {
@@ -1807,10 +1807,13 @@ function CtaSection({ lang }: { lang: string }) {
   ]
 
   const [phraseIdx, setPhraseIdx] = useState(0)
+  const [btnPulse, setBtnPulse] = useState(false)
 
   useEffect(() => {
     const id = setInterval(() => {
       setPhraseIdx(p => (p + 1) % 2)
+      setBtnPulse(true)
+      setTimeout(() => setBtnPulse(false), 700)
     }, 2500)
     return () => clearInterval(id)
   }, [])
@@ -1854,7 +1857,10 @@ function CtaSection({ lang }: { lang: string }) {
               'Do\'koningizni bir necha daqiqada ulang. Bepul tarif, karta bog\'lanmaydi',
               'Connect your store in minutes. Free plan, no credit card required')}
           </p>
-          <div style={{ display: 'inline-block', marginBottom: 20 }}>
+          <motion.div
+            animate={btnPulse ? { scale: [1, 1.09, 0.96, 1.05, 1], y: [0, -8, 0] } : { scale: 1, y: 0 }}
+            transition={{ duration: 0.65, ease: 'easeInOut' }}
+            style={{ display: 'inline-block', marginBottom: 20 }}>
             <Link href="/login"
               style={{ display: 'inline-block', fontSize: 16, fontWeight: 700,
                 background: acc.btn, color: acc.btnTxt,
@@ -1863,7 +1869,7 @@ function CtaSection({ lang }: { lang: string }) {
               onMouseLeave={e => { e.currentTarget.style.background = acc.btn; e.currentTarget.style.transform = 'translateY(0)' }}>
               {tx(lang,'Устали терять деньги? Начните зарабатывать →','Zarar emas — foyda. Bugunoq boshlang →','Your profit is hiding — let\'s go find it →')}
             </Link>
-          </div>
+          </motion.div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 24, flexWrap: 'wrap' }}>
             {[tx(lang,'✓ 7 дней — только Pro и Pro+','✓ 7 kun — faqat Pro va Pro+','✓ 7 days — Pro & Pro+ only'),
               tx(lang,'✓ Без карты','✓ Kartasiz','✓ No card'),
