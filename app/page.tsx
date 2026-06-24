@@ -18,8 +18,10 @@ import BorderGlow from './components/BorderGlow'
 import SectionHoverAnim from './components/SectionHoverAnim'
 const LiquidEther = dynamic(() => import('./components/LiquidEther'), { ssr: false })
 
-// Fluid animation colour sets — white shimmer for blue-bg sections, blue shimmer for light-bg sections
-const ANIM_WHITE   = ['#ffffff', '#f0f9ff', '#e0f2fe', '#bae6fd', '#93c5fd'] as const
+// Fluid animation colour sets
+// ANIM_WHITE: pure white/silver shimmer — used on all blue-background sections so the
+// fluid reads as white light rather than blending into the blue background.
+const ANIM_WHITE   = ['#ffffff', '#ffffff', '#f8fafc', '#f0f0f0', '#e8e8e8'] as const
 const ANIM_BLUE    = ['#0369a1', '#0284c7', '#0ea5e9', '#38bdf8', '#7dd3fc'] as const
 const ANIM_BLUE_DK = ['#0c4a6e', '#0369a1', '#0ea5e9', '#38bdf8', '#7dd3fc'] as const
 
@@ -651,7 +653,7 @@ function FeaturesSection({ lang }: { lang: string }) {
   return (
     <section id="features" ref={ref} style={{ position: 'relative', background: secBg, padding: '96px 24px',
       fontFamily: "'Space Grotesk', system-ui, sans-serif", transition: 'background 0.3s', overflow: 'hidden' }}>
-      <SectionHoverAnim colors={isDark ? [...ANIM_BLUE_DK] : [...ANIM_WHITE]} opacity={0.4} />
+      <SectionHoverAnim colors={isDark ? [...ANIM_BLUE_DK] : [...ANIM_WHITE]} opacity={0.6} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16" style={{ maxWidth: 1200, margin: '0 auto', alignItems: 'center' }}>
 
         {/* Left: dark dashboard mockup — matches photo 1 */}
@@ -1045,7 +1047,7 @@ function BentoSection({ lang }: { lang: string }) {
   return (
     <section style={{ position: 'relative', background: secBg, padding: '88px 24px',
       fontFamily: "'Space Grotesk', system-ui, sans-serif", transition: 'background 0.3s', overflow: 'hidden' }}>
-      <SectionHoverAnim colors={isDark ? [...ANIM_BLUE_DK] : [...ANIM_WHITE]} opacity={0.4} />
+      <SectionHoverAnim colors={isDark ? [...ANIM_BLUE_DK] : [...ANIM_WHITE]} opacity={0.6} />
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
         <SectionHead dark={isDark}
           title={tx(lang,'Всё необходимое для роста','O\'sish uchun kerak bo\'lgan hamma narsa','Everything you need to grow')}
@@ -1577,7 +1579,7 @@ function ResourcesSection({ lang }: { lang: string }) {
   return (
     <section id="resources" style={{ position: 'relative', background: secBg, padding: '88px 24px',
       fontFamily: "'Space Grotesk', system-ui, sans-serif", transition: 'background 0.3s' }}>
-      <SectionHoverAnim colors={isDark ? [...ANIM_BLUE_DK] : [...ANIM_WHITE]} opacity={0.4} />
+      <SectionHoverAnim colors={isDark ? [...ANIM_BLUE_DK] : [...ANIM_WHITE]} opacity={0.6} />
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
         <SectionHead dark={isDark}
           title={tx(lang,'Помощь и интеграции','Yordam va integratsiyalar','Help & integrations')}
