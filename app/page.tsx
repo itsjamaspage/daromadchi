@@ -863,10 +863,11 @@ function HowItWorksSection({ lang }: { lang: string }) {
   const uiBg   = isDark ? 'rgba(28,28,46,0.95)' : P.parchment
   const uiBdr  = isDark ? P.dHair   : P.hair
   const fldBg  = isDark ? P.dCard2 : '#fff'
+  const stepColor = isDark ? acc.tint : P.parchment
 
   const steps = [
     {
-      color: acc.tint,
+      color: stepColor,
       title: tx(lang,'Регистрация','Ro\'yxatdan o\'tish','Register'),
       desc: tx(lang,
         'Только email и пароль. Менее 30 секунд — и вы внутри',
@@ -891,7 +892,7 @@ function HowItWorksSection({ lang }: { lang: string }) {
       ),
     },
     {
-      color: acc.tint,
+      color: stepColor,
       title: tx(lang,'Подключите магазин','Do\'koningizni ulang','Connect your store'),
       desc: tx(lang,
         'Вставьте API-ключ из кабинета Uzum, WB или Яндекс — мы не можем менять данные в вашем магазине, только читать',
@@ -916,7 +917,7 @@ function HowItWorksSection({ lang }: { lang: string }) {
       ),
     },
     {
-      color: acc.tint,
+      color: stepColor,
       title: tx(lang,'Данные готовы','Ma\'lumotlar tayyor','Data is ready'),
       desc: tx(lang,
         'Данные синхронизируются автоматически — вся история продаж с момента подключения, без ручного ввода',
@@ -979,7 +980,7 @@ function HowItWorksSection({ lang }: { lang: string }) {
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '18px 0' }}>
                     <div style={{ width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
-                      background: isActive ? s.color : (isDark ? 'rgba(197,232,254,0.10)' : P.hair),
+                      background: isActive ? s.color : (isDark ? 'rgba(197,232,254,0.10)' : '#ffffff'),
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       fontSize: 14, fontWeight: 800,
                       color: isActive ? '#131321' : (isDark ? P.dMuted : P.stone),
