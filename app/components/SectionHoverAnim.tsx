@@ -53,9 +53,6 @@ export default function SectionHoverAnim({ colors, opacity = 0.45 }: Props) {
         }}>
           <LiquidEther
             colors={colors}
-            autoDemo
-            autoSpeed={0.3}
-            autoIntensity={1.2}
             mouseForce={20}
             cursorSize={100}
             resolution={0.4}
@@ -64,9 +61,6 @@ export default function SectionHoverAnim({ colors, opacity = 0.45 }: Props) {
             isViscous={false}
             isBounce={false}
             BFECC
-            autoResumeDelay={2000}
-            autoRampDuration={0.8}
-            takeoverDuration={0.3}
           />
         </div>
       )}
