@@ -23,8 +23,8 @@ const LiquidEther = dynamic(() => import('./components/LiquidEther'), { ssr: fal
 // fluid reads as white light rather than blending into the blue background.
 const ANIM_WHITE   = ['#ffffff', '#ffffff', '#f8fafc', '#f0f0f0', '#e8e8e8'] as const
 const ANIM_BLUE    = ['#0369a1', '#0284c7', '#0ea5e9', '#38bdf8', '#7dd3fc'] as const
-// Dark mode: neutral gray/silver — avoids bright blue pulses that look like white glowing on dark bg
-const ANIM_BLUE_DK = ['#e2e8f0', '#cbd5e1', '#94a3b8', '#64748b', '#475569'] as const
+// Dark mode: pure neutral white/silver, zero blue tint — renders as a soft silver shimmer
+const ANIM_BLUE_DK = ['#ffffff', '#f5f5f5', '#e5e5e5', '#d4d4d4', '#a3a3a3'] as const
 
 // ── Palette ───────────────────────────────────────────────────────────────────
 const P = {
