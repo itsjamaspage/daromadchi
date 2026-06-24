@@ -1911,7 +1911,7 @@ function FooterSection({ lang }: { lang: string }) {
       { label: 'Uzum Market', href: '#' }, { label: 'Wildberries', href: '#' }, { label: 'Yandex Market', href: '#' },
     ]},
     { head: tx(lang,'Контакты','Aloqa','Contact'), links: [
-      { label: 'Telegram', href: 'https://t.me/daromadchi' }, { label: 'support@daromadchi.uz', href: 'mailto:support@daromadchi.uz' },
+      { label: 'Telegram', href: 'https://t.me/daromadchi_alerts_bot' },
     ]},
   ]
 
@@ -1962,12 +1962,15 @@ function FooterSection({ lang }: { lang: string }) {
             © 2025 Daromadchi. {tx(lang,'г. Ташкент, Узбекистан', 'Toshkent shahri, O\'zbekiston', 'Tashkent, Uzbekistan')}
           </p>
           <div style={{ display: 'flex', gap: 20 }}>
-            {[tx(lang,'Политика конфиденциальности','Maxfiylik siyosati','Privacy policy'),
-              tx(lang,'Публичная оферта','Ommaviy oferta','Terms of service')].map(l => (
-              <a key={l} href="#" style={{ fontSize: 12, color: subtle, textDecoration: 'none', transition: 'color 0.12s' }}
+            {[
+              { label: tx(lang,'Конфиденциальность','Maxfiylik','Privacy'), href: '/privacy' },
+              { label: tx(lang,'Публичная оферта','Ommaviy oferta','Terms'), href: '/terms' },
+              { label: tx(lang,'Соответствие данных','Muvofiqlik','Compliance'), href: '/compliance' },
+            ].map(l => (
+              <a key={l.href} href={l.href} style={{ fontSize: 12, color: subtle, textDecoration: 'none', transition: 'color 0.12s' }}
                 onMouseEnter={e => (e.currentTarget.style.color = muted)}
                 onMouseLeave={e => (e.currentTarget.style.color = subtle)}>
-                {l}
+                {l.label}
               </a>
             ))}
           </div>
