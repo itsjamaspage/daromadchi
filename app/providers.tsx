@@ -20,14 +20,13 @@ interface Props {
 
 export default function Providers({ children, initialLang = 'uz' }: Props) {
   const router = useRouter()
-  const theme: Theme = 'dark'
+  const [theme, setTheme] = useState<Theme>('dark')
   const [lang,  setLangState] = useState<Lang>(initialLang)
 
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', 'dark')
-    localStorage.setItem('theme', 'dark')
+    const savedTheme = localStorage.getItem('theme') as Theme | null
+    if (savedTheme) setTheme(savedTheme)
 
-    // Sync language: if localStorage differs from cookie/initialLang, update cookie
     const savedLang = localStorage.getItem('lang') as Lang | null
     if (savedLang && savedLang !== initialLang) {
       setLangState(savedLang)
@@ -37,7 +36,14 @@ export default function Providers({ children, initialLang = 'uz' }: Props) {
     }
   }, [])
 
-  function toggle() {}
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme)
+    localStorage.setItem('theme', theme)
+  }, [theme])
+
+  function toggle() {
+    setTheme(t => t === 'dark' ? 'light' : 'dark')
+  }
 
   function setLang(l: Lang) {
     setLangState(l)
