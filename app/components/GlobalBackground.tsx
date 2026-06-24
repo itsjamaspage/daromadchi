@@ -5,20 +5,25 @@ import { useTheme } from '../providers'
 
 const LiquidEther = dynamic(() => import('./LiquidEther'), { ssr: false })
 
-const WRAPPER: React.CSSProperties = {
+// zIndex: 2 puts this above the layout's zIndex: 1 stacking context,
+// so it appears in front of section backgrounds. pointerEvents: none
+// keeps all clicks/scrolls working. opacity keeps it subtle enough
+// not to obscure text.
+const WRAPPER = (extra: React.CSSProperties): React.CSSProperties => ({
   position: 'fixed',
   inset: 0,
-  zIndex: 0,
+  zIndex: 2,
   pointerEvents: 'none',
   touchAction: 'pan-y',
-}
+  ...extra,
+})
 
 export default function GlobalBackground() {
   const { theme } = useTheme()
 
   if (theme === 'dark') {
     return (
-      <div style={WRAPPER}>
+      <div style={WRAPPER({ opacity: 0.35 })}>
         <LiquidEther
           colors={['#0c4a6e', '#0369a1', '#0ea5e9', '#38bdf8', '#7dd3fc']}
           autoDemo={true}
@@ -40,11 +45,10 @@ export default function GlobalBackground() {
     )
   }
 
-  // Light theme: single layer, white/icy colors + screen blend.
-  // Visible as bright white shimmer on the blue hero/section backgrounds,
-  // naturally invisible on white/pale sections. Single WebGL context = no lag.
+  // Light theme: white/icy colours at low opacity so the fluid shimmer
+  // is visible over blue sections without obscuring text on white sections.
   return (
-    <div style={{ ...WRAPPER, mixBlendMode: 'screen', opacity: 0.65 }}>
+    <div style={WRAPPER({ opacity: 0.45, mixBlendMode: 'screen' })}>
       <LiquidEther
         colors={['#ffffff', '#e0f2fe', '#bae6fd', '#7dd3fc', '#38bdf8']}
         autoDemo={true}
