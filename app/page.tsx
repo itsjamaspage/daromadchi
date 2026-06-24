@@ -2,6 +2,7 @@
 // v3
 import React, { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
+import dynamic from 'next/dynamic'
 import { motion, AnimatePresence, useInView } from 'framer-motion'
 import {
   TrendingUp, TrendingDown, ArrowRight, Menu, X, Check,
@@ -11,6 +12,11 @@ import {
 } from 'lucide-react'
 import { useTheme, useLang } from './providers'
 import type { Lang } from '@/lib/i18n'
+
+const FloatingLines = dynamic(() => import('./components/FloatingLines'), {
+  ssr: false,
+  loading: () => <div style={{ width: '100%', height: 480 }} />,
+})
 
 // ── Palette ───────────────────────────────────────────────────────────────────
 const P = {
@@ -461,18 +467,6 @@ function HeroSection({ lang }: { lang: string }) {
       <div className="px-5 sm:px-12 lg:px-[100px]" style={{ maxWidth: 1200, margin: '0 auto', paddingTop: 100,
         position: 'relative', zIndex: 10, textAlign: 'center' }}>
 
-        {/* Floating stat cards — desktop only */}
-        <div className="hidden lg:block">
-          <FloatCard mp="Uzum" mpColor={acc.color} metric="Выручка" value="24.5M сум" change="+12%" up delay={0.35} floatDur={3.6}
-            style={{ left: '-40px', top: '170px', transform: 'rotate(-4deg)', zIndex: 5 }} />
-          <FloatCard mp="Wildberries" mpColor={acc.color} metric="Заказы" value="1 842" change="+8.1%" up delay={0.5} floatDur={4.1}
-            style={{ right: '-40px', top: '150px', transform: 'rotate(3.5deg)', zIndex: 15 }} />
-          <FloatCard mp="Yandex Market" mpColor={acc.color} metric="ДРР" value="8.2%" change="-1.4%" up={false} delay={0.65} floatDur={3.9}
-            style={{ left: '-60px', top: '340px', transform: 'rotate(-2deg)', zIndex: 15 }} />
-          <FloatCard mp="Uzum" mpColor={acc.color} metric="Прибыль" value="6.8M сум" change="+15%" up delay={0.8} floatDur={4.4}
-            style={{ right: '-60px', top: '320px', transform: 'rotate(4.5deg)', zIndex: 5 }} />
-        </div>
-
         {/* Headline */}
         <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.14, duration: 0.6 }}
           style={{ fontSize: 'clamp(28px, 4vw, 52px)', fontWeight: 800, lineHeight: 1.08,
@@ -512,13 +506,25 @@ function HeroSection({ lang }: { lang: string }) {
           </a>
         </motion.div>
 
-        {/* Dashboard mockup — constrained width, scales down on mobile */}
+        {/* FloatingLines animation */}
         <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.40, duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
-          style={{ maxWidth: 840, margin: '0 auto', position: 'relative', zIndex: 20 }}>
-          <div className="dash-mockup-scale">
-            <DashMockup />
-          </div>
+          style={{ width: '100%', height: 480, borderRadius: 24, overflow: 'hidden',
+            position: 'relative', zIndex: 20, marginBottom: 0 }}>
+          <FloatingLines
+            enabledWaves={['bottom', 'top', 'middle']}
+            lineCount={8}
+            lineDistance={65}
+            bendRadius={12}
+            bendStrength={-0.5}
+            interactive={true}
+            parallax={true}
+            animationSpeed={0.9}
+            linesGradient={isDark
+              ? ['#0369a1', '#0ea5e9', '#38bdf8', '#7dd3fc', '#bae6fd']
+              : ['#1e3a5f', '#1d4ed8', '#3b82f6', '#60a5fa', '#93c5fd', '#dbeafe']}
+            mixBlendMode="screen"
+          />
         </motion.div>
       </div>
 
