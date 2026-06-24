@@ -169,9 +169,9 @@ function LandingNav({ lang }: { lang: string }) {
       </button>
       <Link href="/login"
         style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-          width: 34, height: 34, borderRadius: 9999, border: `1px solid ${borderCol}`,
+          width: 44, height: 44, borderRadius: 9999, border: `1px solid ${borderCol}`,
           color: iconCol, textDecoration: 'none', flexShrink: 0 }}>
-        <UserCircle size={15} />
+        <UserCircle size={18} />
       </Link>
     </>
   )
