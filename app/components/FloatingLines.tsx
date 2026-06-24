@@ -271,6 +271,8 @@ export default function FloatingLines({
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2))
     renderer.domElement.style.width = '100%'
     renderer.domElement.style.height = '100%'
+    renderer.domElement.style.touchAction = 'pan-y'
+    renderer.domElement.style.pointerEvents = 'none'
     container.appendChild(renderer.domElement)
 
     const uniforms = {

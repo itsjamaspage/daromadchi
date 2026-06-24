@@ -12,18 +12,19 @@ export default function GlobalBackground() {
         inset: 0,
         zIndex: 40,
         pointerEvents: 'none',
+        touchAction: 'pan-y',
       }}
     >
       <FloatingLines
         enabledWaves={['bottom', 'middle', 'top']}
-        lineCount={5}
-        lineDistance={80}
-        bendRadius={8}
-        bendStrength={-0.3}
+        lineCount={8}
+        lineDistance={65}
+        bendRadius={12}
+        bendStrength={-0.5}
         interactive={false}
         parallax={false}
-        animationSpeed={0.6}
-        linesGradient={['#0c2040', '#102a58', '#163470', '#1a3d88', '#20469e']}
+        animationSpeed={0.9}
+        linesGradient={['#0369a1', '#0ea5e9', '#38bdf8', '#7dd3fc', '#bae6fd']}
         mixBlendMode="screen"
       />
     </div>
