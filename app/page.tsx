@@ -1402,7 +1402,7 @@ function PricingSection({ lang }: { lang: string }) {
   const sectionRef = useRef(null)
   const inView = useInView(sectionRef, { once: true, amount: 0.3 })
 
-  const secBg  = isDark ? '#1e1e1e' : '#e8f0fd'
+  const secBg  = isDark ? '#1e1e1e' : P.parchment
   const ink    = isDark ? P.dText   : P.ink
   const muted  = isDark ? P.dMuted  : P.stone
   const bdr    = isDark ? P.dHair   : P.hair
@@ -1447,7 +1447,7 @@ function PricingSection({ lang }: { lang: string }) {
   return (
     <section id="pricing" ref={sectionRef} style={{ position: 'relative', background: secBg, padding: '88px 24px',
       fontFamily: "'Space Grotesk', system-ui, sans-serif", transition: 'background 0.3s' }}>
-      <SectionHoverAnim colors={isDark ? [...ANIM_BLUE_DK] : [...ANIM_BLUE]} opacity={0.4} />
+      <SectionHoverAnim colors={isDark ? [...ANIM_BLUE_DK] : [...ANIM_WHITE]} opacity={0.6} />
       <div style={{ maxWidth: 1000, margin: '0 auto', position: 'relative' }}>
         <motion.div
           initial={{ opacity: 0, y: 16 }}
@@ -1541,7 +1541,7 @@ function ResourcesSection({ lang }: { lang: string }) {
   const isDark = useIsDark()
   const acc = useAccent()
   const [expanded, setExpanded] = useState<number | null>(0)
-  const secBg  = isDark ? P.dCanvas : P.parchment
+  const secBg  = isDark ? P.dCanvas : '#e8f0fd'
   const cardBg = isDark ? P.dCard   : P.card
   const bdr    = isDark ? P.dHair   : P.hair
   const ink    = isDark ? P.dText   : P.ink
@@ -1579,7 +1579,7 @@ function ResourcesSection({ lang }: { lang: string }) {
   return (
     <section id="resources" style={{ position: 'relative', background: secBg, padding: '88px 24px',
       fontFamily: "'Space Grotesk', system-ui, sans-serif", transition: 'background 0.3s' }}>
-      <SectionHoverAnim colors={isDark ? [...ANIM_BLUE_DK] : [...ANIM_WHITE]} opacity={0.6} />
+      <SectionHoverAnim colors={isDark ? [...ANIM_BLUE_DK] : [...ANIM_BLUE]} opacity={0.4} />
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
         <SectionHead dark={isDark}
           title={tx(lang,'Помощь и интеграции','Yordam va integratsiyalar','Help & integrations')}
@@ -1703,7 +1703,7 @@ function FaqSection({ lang }: { lang: string }) {
   const isDark = useIsDark()
   const acc = useAccent()
   const [open, setOpen] = useState<number | null>(0)
-  const secBg = isDark ? P.dCard : '#e8f0fd'
+  const secBg = isDark ? P.dCard : P.parchment
   const bdr   = isDark ? P.dHair   : P.hair
   const ink   = isDark ? P.dText   : P.ink
   const sub   = isDark ? P.dMuted  : P.stone
@@ -1738,7 +1738,7 @@ function FaqSection({ lang }: { lang: string }) {
   return (
     <section id="faq" style={{ position: 'relative', background: secBg, padding: '88px 24px',
       fontFamily: "'Space Grotesk', system-ui, sans-serif", transition: 'background 0.3s' }}>
-      <SectionHoverAnim colors={isDark ? [...ANIM_BLUE_DK] : [...ANIM_BLUE]} opacity={0.4} />
+      <SectionHoverAnim colors={isDark ? [...ANIM_BLUE_DK] : [...ANIM_WHITE]} opacity={0.6} />
       <div style={{ maxWidth: 760, margin: '0 auto' }}>
         <SectionHead dark={isDark}
           title={tx(lang,'Частые вопросы','Tez-tez so\'raladigan savollar','Frequently asked questions')}
@@ -1789,7 +1789,7 @@ function FaqSection({ lang }: { lang: string }) {
 function CtaSection({ lang }: { lang: string }) {
   const isDark = useIsDark()
   const acc = useAccent()
-  const secBg    = isDark ? P.dCanvas : '#83c0f9'
+  const secBg    = isDark ? P.dCanvas : '#e8f0fd'
   const headCol  = isDark ? P.dText   : P.ink
   const subCol   = isDark ? P.dMuted  : P.ink
   const badgeCol = isDark ? 'rgba(255,255,255,0.45)' : P.ink
@@ -1821,7 +1821,7 @@ function CtaSection({ lang }: { lang: string }) {
   return (
     <section style={{ position: 'relative', background: secBg, overflow: 'hidden',
       padding: '100px 24px', fontFamily: "'Space Grotesk', system-ui, sans-serif", transition: 'background 0.3s' }}>
-      <SectionHoverAnim colors={isDark ? [...ANIM_BLUE_DK] : [...ANIM_WHITE]} opacity={0.5} />
+      <SectionHoverAnim colors={isDark ? [...ANIM_BLUE_DK] : [...ANIM_BLUE]} opacity={0.4} />
       <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none',
         background: `radial-gradient(ellipse 80% 55% at 50% 120%, ${glowColor} 0%, transparent 65%)` }} />
 
@@ -1888,7 +1888,7 @@ function CtaSection({ lang }: { lang: string }) {
 // ── FOOTER ────────────────────────────────────────────────────────────────────
 function FooterSection({ lang }: { lang: string }) {
   const isDark = useIsDark()
-  const footBg  = isDark ? '#1e1e1e'  : '#e8f0fd'
+  const footBg  = isDark ? '#1e1e1e'  : P.parchment
   const bdr     = isDark ? P.dHair    : 'rgba(14,34,51,0.2)'
   const txt     = isDark ? P.dText    : P.ink
   const muted   = isDark ? P.dMuted   : P.ink
@@ -1913,7 +1913,7 @@ function FooterSection({ lang }: { lang: string }) {
     <footer style={{ position: 'relative', background: footBg, padding: '64px 24px 32px',
       fontFamily: "'Space Grotesk', system-ui, sans-serif", borderTop: `1px solid ${bdr}`,
       transition: 'background 0.3s' }}>
-      <SectionHoverAnim colors={isDark ? [...ANIM_BLUE_DK] : [...ANIM_BLUE]} opacity={0.3} />
+      <SectionHoverAnim colors={isDark ? [...ANIM_BLUE_DK] : [...ANIM_WHITE]} opacity={0.5} />
       <div style={{ maxWidth: 1200, margin: '0 auto' }}>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-14">
           <div>
