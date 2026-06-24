@@ -13,6 +13,7 @@ import {
   Vector3,
   WebGLRenderer,
 } from 'three'
+import './FloatingLines.css'
 
 const vertexShader = `
 precision highp float;
@@ -401,13 +402,8 @@ export default function FloatingLines({
   return (
     <div
       ref={containerRef}
-      style={{
-        width: '100%',
-        height: '100%',
-        position: 'relative',
-        overflow: 'hidden',
-        mixBlendMode,
-      }}
+      className="floating-lines-container"
+      style={{ mixBlendMode }}
     />
   )
 }
