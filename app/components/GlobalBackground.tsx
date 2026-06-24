@@ -40,49 +40,28 @@ export default function GlobalBackground() {
     )
   }
 
-  // Light theme: two blended layers give adaptive color.
-  // multiply layer: blue fluid × page-bg → visible blue on white/light sections, dark-blended on blue sections.
-  // screen layer: white fluid + screen → visible white on blue sections, invisible on white/light sections.
+  // Light theme: single layer, white/icy colors + screen blend.
+  // Visible as bright white shimmer on the blue hero/section backgrounds,
+  // naturally invisible on white/pale sections. Single WebGL context = no lag.
   return (
-    <>
-      <div style={{ ...WRAPPER, mixBlendMode: 'multiply' }}>
-        <LiquidEther
-          colors={['#0369a1', '#0ea5e9', '#38bdf8', '#7dd3fc', '#bae6fd']}
-          autoDemo={true}
-          autoSpeed={0.3}
-          autoIntensity={2.0}
-          mouseForce={0}
-          cursorSize={0}
-          resolution={0.3}
-          iterationsPoisson={16}
-          iterationsViscous={8}
-          isViscous={false}
-          isBounce={false}
-          BFECC={false}
-          autoResumeDelay={0}
-          autoRampDuration={1.2}
-          takeoverDuration={0.5}
-        />
-      </div>
-      <div style={{ ...WRAPPER, mixBlendMode: 'screen' }}>
-        <LiquidEther
-          colors={['#ffffff', '#f0f9ff', '#e0f2fe', '#bae6fd', '#93c5fd']}
-          autoDemo={true}
-          autoSpeed={0.35}
-          autoIntensity={1.8}
-          mouseForce={0}
-          cursorSize={0}
-          resolution={0.3}
-          iterationsPoisson={16}
-          iterationsViscous={8}
-          isViscous={false}
-          isBounce={false}
-          BFECC={false}
-          autoResumeDelay={0}
-          autoRampDuration={1.5}
-          takeoverDuration={0.5}
-        />
-      </div>
-    </>
+    <div style={{ ...WRAPPER, mixBlendMode: 'screen', opacity: 0.65 }}>
+      <LiquidEther
+        colors={['#ffffff', '#e0f2fe', '#bae6fd', '#7dd3fc', '#38bdf8']}
+        autoDemo={true}
+        autoSpeed={0.45}
+        autoIntensity={3.0}
+        mouseForce={20}
+        cursorSize={100}
+        resolution={0.5}
+        iterationsPoisson={32}
+        iterationsViscous={32}
+        isViscous={false}
+        isBounce={false}
+        BFECC={true}
+        autoResumeDelay={2000}
+        autoRampDuration={0.8}
+        takeoverDuration={0.3}
+      />
+    </div>
   )
 }
