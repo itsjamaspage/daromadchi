@@ -16,14 +16,14 @@ export default function GlobalBackground() {
     >
       <FloatingLines
         enabledWaves={['bottom', 'middle', 'top']}
-        lineCount={8}
-        lineDistance={60}
-        bendRadius={10}
-        bendStrength={-0.4}
-        interactive={true}
-        parallax={true}
-        animationSpeed={0.8}
-        linesGradient={['#0369a1', '#0ea5e9', '#38bdf8', '#7dd3fc', '#bae6fd']}
+        lineCount={5}
+        lineDistance={80}
+        bendRadius={8}
+        bendStrength={-0.3}
+        interactive={false}
+        parallax={false}
+        animationSpeed={0.6}
+        linesGradient={['#0c2040', '#102a58', '#163470', '#1a3d88', '#20469e']}
         mixBlendMode="screen"
       />
     </div>
