@@ -17,6 +17,8 @@ const FloatingLines = dynamic(() => import('./components/FloatingLines'), {
   ssr: false,
   loading: () => <div style={{ width: '100%', height: 480 }} />,
 })
+import CardNav from './components/CardNav'
+import BorderGlow from './components/BorderGlow'
 
 // ── Palette ───────────────────────────────────────────────────────────────────
 const P = {
@@ -120,14 +122,13 @@ function SectionHead({ title, accent, sub, dark = false }: {
   )
 }
 
-// ── Navbar ────────────────────────────────────────────────────────────────────
-function Navbar({ lang }: { lang: string }) {
+// ── Navbar (CardNav) ──────────────────────────────────────────────────────────
+function LandingNav({ lang }: { lang: string }) {
   const isDark = useIsDark()
   const acc = useAccent()
   const { toggle, theme } = useTheme()
   const { setLang } = useLang()
   const [scrolled, setScrolled] = useState(false)
-  const [menuOpen, setMenuOpen] = useState(false)
   const [langOpen, setLangOpen] = useState(false)
 
   useEffect(() => {
@@ -136,129 +137,109 @@ function Navbar({ lang }: { lang: string }) {
     return () => window.removeEventListener('scroll', h)
   }, [])
 
-  const links = [
-    { label: tx(lang,'Возможности','Imkoniyatlar','Features'), href: '#features' },
-    { label: tx(lang,'Как работает','Qanday ishlaydi','How it works'), href: '#how' },
-    { label: tx(lang,'Тарифы','Tariflar','Pricing'), href: '#pricing' },
-    { label: tx(lang,'Вопросы','Savollar','FAQ'), href: '#faq' },
-    { label: tx(lang,'Помощь','Yordam','Help'), href: '/help' },
+  const cardItems = [
+    {
+      label: tx(lang, 'Аналитика', 'Analitika', 'Analytics'),
+      bgColor: isDark ? '#1B1722' : '#1e3a5f',
+      textColor: '#fff',
+      links: [
+        { label: tx(lang, 'Функции', 'Imkoniyatlar', 'Features'), href: '#features', ariaLabel: 'Features' },
+        { label: tx(lang, 'Как работает', 'Qanday ishlaydi', 'How it works'), href: '#how', ariaLabel: 'How it works' },
+        { label: tx(lang, 'Расширение', 'Kengaytma', 'Extension'), href: '#extension', ariaLabel: 'Extension' },
+      ],
+    },
+    {
+      label: tx(lang, 'Тарифы', 'Tariflar', 'Pricing'),
+      bgColor: isDark ? '#2F293A' : '#0e2e5a',
+      textColor: '#fff',
+      links: [
+        { label: tx(lang, 'Тарифы', 'Tariflar', 'Pricing'), href: '#pricing', ariaLabel: 'Pricing' },
+        { label: tx(lang, 'Вопросы', 'Savollar', 'FAQ'), href: '#faq', ariaLabel: 'FAQ' },
+        { label: tx(lang, 'Сравнение', 'Taqqoslash', 'Compare'), href: '#comparison', ariaLabel: 'Comparison' },
+      ],
+    },
+    {
+      label: tx(lang, 'Помощь', 'Yordam', 'Help'),
+      bgColor: isDark ? '#231E2E' : '#0c2240',
+      textColor: '#fff',
+      links: [
+        { label: tx(lang, 'Документация', 'Hujjatlar', 'Docs'), href: '/help', ariaLabel: 'Help center' },
+        { label: tx(lang, 'Соответствие', 'Muvofiqlik', 'Compliance'), href: '/compliance', ariaLabel: 'Compliance' },
+        { label: tx(lang, 'Войти', 'Kirish', 'Log in'), href: '/login', ariaLabel: 'Log in' },
+      ],
+    },
   ]
 
-  const scrolledBg = isDark ? 'rgba(22,22,22,0.96)' : 'rgba(255,255,255,0.95)'
-  // On non-scrolled: light hero → dark links; dark hero → white links
-  const lnk = scrolled ? (isDark ? P.dMuted : P.stone) : (isDark ? 'rgba(255,255,255,0.78)' : P.ink)
-  const lnkH = scrolled ? (isDark ? P.dText : P.ink)   : (isDark ? '#fff' : P.ink)
-  const borderCol = scrolled ? (isDark ? P.dHair : P.hair) : (isDark ? 'rgba(255,255,255,0.15)' : 'rgba(14,34,51,0.32)')
+  const borderCol = isDark ? P.dHair : 'rgba(14,34,51,0.18)'
+  const iconCol   = isDark ? P.dMuted : P.stone
+
+  const rightControls = (
+    <>
+      <div style={{ position: 'relative' }}>
+        <button
+          onClick={() => setLangOpen(v => !v)}
+          className="card-nav-lang-btn"
+          style={{ color: iconCol, border: `1px solid ${borderCol}` }}
+        >
+          {lang.toUpperCase()}
+        </button>
+        {langOpen && (
+          <div
+            className="card-nav-lang-dropdown"
+            style={{
+              background: isDark ? P.dCard2 : '#fff',
+              borderColor: isDark ? P.dHair : P.hair,
+            }}
+          >
+            {(['uz', 'ru', 'en'] as Lang[]).map(l => (
+              <button
+                key={l}
+                className="card-nav-lang-option"
+                onClick={() => { setLang(l); setLangOpen(false) }}
+                style={{
+                  background: lang === l ? acc.bg : 'transparent',
+                  color: lang === l ? acc.tint : iconCol,
+                }}
+              >
+                {l.toUpperCase()}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+      <button
+        onClick={toggle}
+        className="card-nav-icon-btn"
+        style={{ color: iconCol, border: `1px solid ${borderCol}` }}
+      >
+        {theme === 'dark' ? '☀' : '☾'}
+      </button>
+      <Link
+        href="/login"
+        className="card-nav-icon-btn"
+        style={{ color: iconCol, border: `1px solid ${borderCol}` }}
+      >
+        <UserCircle size={16} />
+      </Link>
+    </>
+  )
 
   return (
-    <header style={{
-      position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
-      background: scrolled ? scrolledBg : 'transparent',
-      borderBottom: `1px solid ${scrolled ? (isDark ? P.dHair : P.hair) : 'transparent'}`,
-      backdropFilter: scrolled ? 'blur(16px)' : 'none',
-      transition: 'all 0.25s ease',
-      fontFamily: "'Space Grotesk', system-ui, sans-serif",
-    }}>
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 28px', height: 76,
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-
-        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
-          <img src="/icon.svg" alt="" style={{ width: 32, height: 32, borderRadius: 8 }} />
-          <span style={{ fontWeight: 800, fontSize: 18, letterSpacing: '-0.01em',
-            color: scrolled ? (isDark ? P.dText : P.ink) : (isDark ? '#fff' : P.ink) }}>
-            Daromadchi
-          </span>
-        </Link>
-
-        <nav className="hidden md:flex" style={{ alignItems: 'center', gap: 28 }}>
-          {links.map(n => (
-            <a key={n.href} href={n.href}
-              style={{ fontSize: 14, fontWeight: 500, color: lnk, textDecoration: 'none', transition: 'color 0.12s' }}
-              onMouseEnter={e => (e.currentTarget.style.color = lnkH)}
-              onMouseLeave={e => (e.currentTarget.style.color = lnk)}>
-              {n.label}
-            </a>
-          ))}
-        </nav>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{ position: 'relative' }}>
-            <button onClick={() => setLangOpen(v => !v)}
-              style={{ fontSize: 12, fontWeight: 600, cursor: 'pointer', background: 'transparent',
-                border: `1px solid ${borderCol}`,
-                borderRadius: 6, padding: '6px 10px', color: lnk, transition: 'all 0.12s' }}>
-              {lang.toUpperCase()}
-            </button>
-            <AnimatePresence>
-              {langOpen && (
-                <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
-                  style={{ position: 'absolute', top: 'calc(100% + 6px)', right: 0, minWidth: 56, zIndex: 200,
-                    background: isDark ? P.dCard2 : '#fff',
-                    border: `1px solid ${isDark ? P.dHair : P.hair}`, borderRadius: 8, overflow: 'hidden' }}>
-                  {(['uz','ru','en'] as Lang[]).map(l => (
-                    <button key={l} onClick={() => { setLang(l); setLangOpen(false) }}
-                      style={{ width: '100%', padding: '8px 12px', textAlign: 'left', fontSize: 13, fontWeight: 600,
-                        background: lang === l ? acc.bg : 'transparent',
-                        color: lang === l ? acc.tint : (isDark ? P.dMuted : P.stone), cursor: 'pointer', border: 'none' }}>
-                      {l.toUpperCase()}
-                    </button>
-                  ))}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-
-          <button onClick={toggle}
-            style={{ width: 38, height: 38, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: 'transparent', border: `1px solid ${borderCol}`,
-              borderRadius: 6, cursor: 'pointer', fontSize: 15, color: lnk, transition: 'all 0.12s' }}>
-            {theme === 'dark' ? '☀' : '☾'}
-          </button>
-
-          <Link href="/login" className="hidden md:flex items-center justify-center"
-            style={{ width: 38, height: 38, borderRadius: 6, border: `1px solid ${borderCol}`, color: lnk, transition: 'all 0.12s' }}
-            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(0,0,0,0.05)')}
-            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-            <UserCircle size={18} />
-          </Link>
-
-          <Link href="/login" className="hidden sm:block"
-            style={{ fontSize: 14, fontWeight: 700, background: acc.btn, color: acc.btnTxt,
-              padding: '10px 22px', borderRadius: 8, textDecoration: 'none', transition: 'all 0.15s', whiteSpace: 'nowrap',
-              border: `1.5px solid ${acc.btnBdr}`, boxShadow: isDark ? 'none' : '0 1px 6px rgba(14,27,46,0.10)' }}
-            onMouseEnter={e => (e.currentTarget.style.background = acc.btnHov)}
-            onMouseLeave={e => (e.currentTarget.style.background = acc.btn)}>
-            {tx(lang,'Начать бесплатно','Bepul boshlash','Start free')}
-          </Link>
-
-          <button className="md:hidden" onClick={() => setMenuOpen(v => !v)}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: lnk, padding: 4 }}>
-            {menuOpen ? <X size={22}/> : <Menu size={22}/>}
-          </button>
-        </div>
-      </div>
-
-      <AnimatePresence>
-        {menuOpen && (
-          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
-            style={{ background: isDark ? P.dCanvas : '#fff', borderTop: `1px solid ${isDark ? P.dHair : P.hair}`, overflow: 'hidden' }}>
-            <div style={{ padding: '16px 28px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {links.map(n => (
-                <a key={n.href} href={n.href} onClick={() => setMenuOpen(false)}
-                  style={{ fontSize: 16, fontWeight: 500, color: isDark ? P.dText : P.ink, textDecoration: 'none' }}>
-                  {n.label}
-                </a>
-              ))}
-              <Link href="/login"
-                style={{ marginTop: 8, fontSize: 15, fontWeight: 700, background: acc.btn, color: acc.btnTxt,
-                  padding: '13px 24px', borderRadius: 8, textDecoration: 'none', textAlign: 'center', display: 'block' }}>
-                {tx(lang,'Начать бесплатно','Bepul boshlash','Start free')}
-              </Link>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </header>
+    <CardNav
+      logo="/icon.svg"
+      logoAlt="Daromadchi"
+      logoText="Daromadchi"
+      logoTextColor={isDark ? P.dText : P.ink}
+      items={cardItems}
+      baseColor={isDark ? P.dCard2 : '#ffffff'}
+      menuColor={isDark ? P.dMuted : P.stone}
+      buttonBgColor={acc.btn}
+      buttonTextColor={acc.btnTxt}
+      buttonLabel={tx(lang, 'Начать', 'Boshlash', 'Start')}
+      buttonHref="/login"
+      rightControls={rightControls}
+      scrolled={scrolled}
+    />
   )
 }
 
@@ -1126,19 +1107,26 @@ function BentoSection({ lang }: { lang: string }) {
         {/* Top: 4 KPI stat cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
           {[
-            { l: tx(lang,'Выручка','Daromad','Revenue'), v: '124.5M', d: '+12%', col: '#22c4b8' },
-            { l: tx(lang,'Заказы','Buyurtmalar','Orders'), v: '1 842', d: '+8%', col: '#60a5fa' },
-            { l: tx(lang,'ДРР','DRR','DRR'), v: '8.2%', d: '-1.4%', col: '#f59e0b' },
-            { l: tx(lang,'Прибыль','Foyda','Profit'), v: '38.2M', d: '+15%', col: '#22c55e' },
+            { l: tx(lang,'Выручка','Daromad','Revenue'), v: '124.5M', d: '+12%', col: '#22c4b8', hsl: '174 67 45', cols: ['#22c4b8','#0d9488','#5eead4'] },
+            { l: tx(lang,'Заказы','Buyurtmalar','Orders'), v: '1 842', d: '+8%', col: '#60a5fa', hsl: '213 94 68', cols: ['#60a5fa','#3b82f6','#93c5fd'] },
+            { l: tx(lang,'ДРР','DRR','DRR'), v: '8.2%', d: '-1.4%', col: '#f59e0b', hsl: '38 92 50', cols: ['#f59e0b','#d97706','#fcd34d'] },
+            { l: tx(lang,'Прибыль','Foyda','Profit'), v: '38.2M', d: '+15%', col: '#22c55e', hsl: '142 71 45', cols: ['#22c55e','#16a34a','#86efac'] },
           ].map((k, i) => (
-            <FadeUp key={k.l} delay={i * 0.07}>
-              <div style={{ background: cardBg, borderRadius: 18, padding: '20px 22px',
-                border: `1px solid ${bdr}`, borderLeft: `3px solid ${k.col}`,
-                boxShadow: isDark ? '0 4px 20px rgba(0,0,0,0.25)' : '0 4px 20px rgba(0,0,0,0.06)' }}>
-                <p style={{ fontSize: 10, color: muted, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{k.l}</p>
-                <p style={{ fontSize: 22, fontWeight: 800, color: k.col, fontFamily: 'monospace', lineHeight: 1, marginBottom: 4 }}>{k.v}</p>
-                <p style={{ fontSize: 11, fontWeight: 600, color: k.col }}>{k.d} {tx(lang,'за месяц','oyda','this month')}</p>
-              </div>
+            <FadeUp key={k.l} delay={i * 0.07} style={{ height: '100%' }}>
+              <BorderGlow
+                backgroundColor={isDark ? P.dCard : '#ffffff'}
+                glowColor={k.hsl}
+                colors={k.cols}
+                borderRadius={18}
+                glowIntensity={0.8}
+                style={{ height: '100%' }}
+              >
+                <div style={{ padding: '20px 22px', borderLeft: `3px solid ${k.col}` }}>
+                  <p style={{ fontSize: 10, color: muted, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{k.l}</p>
+                  <p style={{ fontSize: 22, fontWeight: 800, color: k.col, fontFamily: 'monospace', lineHeight: 1, marginBottom: 4 }}>{k.v}</p>
+                  <p style={{ fontSize: 11, fontWeight: 600, color: k.col }}>{k.d} {tx(lang,'за месяц','oyda','this month')}</p>
+                </div>
+              </BorderGlow>
             </FadeUp>
           ))}
         </div>
@@ -1147,107 +1135,128 @@ function BentoSection({ lang }: { lang: string }) {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 
           {/* Analytics card */}
-          <FadeUp delay={0.12}>
-            <div style={{ background: cardBg, borderRadius: 24, padding: '28px',
-              border: `1px solid ${bdr}`, height: '100%',
-              boxShadow: isDark ? '0 4px 24px rgba(197,232,254,0.06)' : '0 4px 24px rgba(0,0,0,0.06)' }}>
-              <p style={{ fontSize: 11, fontWeight: 700, color: acc.tint, marginBottom: 6,
-                textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                {tx(lang,'АНАЛИТИКА','TAHLIL','ANALYTICS')}
-              </p>
-              <h3 style={{ fontSize: 18, fontWeight: 800, color: ink, marginBottom: 10, letterSpacing: '-0.01em' }}>
-                {tx(lang,'Аналитика маркетплейсов','Analitika markazi','Marketplace analytics')}
-              </h3>
-              <p style={{ fontSize: 13, color: sub, lineHeight: 1.6, marginBottom: 18 }}>
-                {tx(lang,'Uzum, Wildberries и Yandex Market — обновление каждые 15 минут',
-                  'Uzum, Wildberries va Yandex Market — har 15 daqiqada yangilanadi',
-                  'Uzum, Wildberries & Yandex Market — updates every 15 min')}
-              </p>
-              <div style={{ background: bg2, borderRadius: 12, padding: '12px', border: `1px solid ${bdr}` }}>
-                <p style={{ fontSize: 9, color: muted, marginBottom: 8, fontWeight: 600,
-                  textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  {tx(lang,'Выручка по дням','Kunlik daromad','Daily revenue')}
+          <FadeUp delay={0.12} style={{ height: '100%' }}>
+            <BorderGlow
+              backgroundColor={isDark ? P.dCard : '#ffffff'}
+              glowColor="207 90 74"
+              colors={['#83c0f9', '#60a5fa', '#a5f3fc']}
+              borderRadius={24}
+              glowIntensity={0.8}
+              style={{ height: '100%' }}
+            >
+              <div style={{ padding: '28px' }}>
+                <p style={{ fontSize: 11, fontWeight: 700, color: acc.tint, marginBottom: 6,
+                  textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                  {tx(lang,'АНАЛИТИКА','TAHLIL','ANALYTICS')}
                 </p>
-                <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2, height: 56 }}>
-                  {[32,45,38,62,55,78,65,85,72,58,80,95,68,82].map((h, i) => (
-                    <div key={i} style={{ flex: 1, borderRadius: '2px 2px 0 0', height: `${h}%`,
-                      background: i >= 10 ? acc.color : `${acc.color}28` }} />
-                  ))}
+                <h3 style={{ fontSize: 18, fontWeight: 800, color: ink, marginBottom: 10, letterSpacing: '-0.01em' }}>
+                  {tx(lang,'Аналитика маркетплейсов','Analitika markazi','Marketplace analytics')}
+                </h3>
+                <p style={{ fontSize: 13, color: sub, lineHeight: 1.6, marginBottom: 18 }}>
+                  {tx(lang,'Uzum, Wildberries и Yandex Market — обновление каждые 15 минут',
+                    'Uzum, Wildberries va Yandex Market — har 15 daqiqada yangilanadi',
+                    'Uzum, Wildberries & Yandex Market — updates every 15 min')}
+                </p>
+                <div style={{ background: bg2, borderRadius: 12, padding: '12px', border: `1px solid ${bdr}` }}>
+                  <p style={{ fontSize: 9, color: muted, marginBottom: 8, fontWeight: 600,
+                    textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    {tx(lang,'Выручка по дням','Kunlik daromad','Daily revenue')}
+                  </p>
+                  <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2, height: 56 }}>
+                    {[32,45,38,62,55,78,65,85,72,58,80,95,68,82].map((h, i) => (
+                      <div key={i} style={{ flex: 1, borderRadius: '2px 2px 0 0', height: `${h}%`,
+                        background: i >= 10 ? acc.color : `${acc.color}28` }} />
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
+            </BorderGlow>
           </FadeUp>
 
           {/* Inventory card */}
-          <FadeUp delay={0.2}>
-            <div style={{ background: cardBg, borderRadius: 24, padding: '28px',
-              border: `1px solid ${bdr}`, height: '100%',
-              boxShadow: isDark ? '0 4px 24px rgba(197,232,254,0.06)' : '0 4px 24px rgba(0,0,0,0.06)' }}>
-              <p style={{ fontSize: 11, fontWeight: 700, color: '#f59e0b', marginBottom: 6,
-                textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                {tx(lang,'ЗАПАСЫ','ZAXIRA','INVENTORY')}
-              </p>
-              <h3 style={{ fontSize: 18, fontWeight: 800, color: ink, marginBottom: 10, letterSpacing: '-0.01em' }}>
-                {tx(lang,'Контроль остатков','Zaxira nazorati','Stock control')}
-              </h3>
-              <p style={{ fontSize: 13, color: sub, lineHeight: 1.6, marginBottom: 18 }}>
-                {tx(lang,'Алерты когда товар заканчивается, по каждому складу',
-                  'Har bir ombor bo\'yicha mahsulot tugayotganda ogohlantirish',
-                  'Alerts when stock runs low, per warehouse')}
-              </p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {[
-                  { name: tx(lang,'Куртка','Qishki kurtka','Jacket'), stock: 120, low: false },
-                  { name: tx(lang,'Кроссовки','Krossovka','Sneakers'), stock: 8, low: true },
-                  { name: tx(lang,'Рюкзак','Ryuksak','Backpack'), stock: 45, low: false },
-                ].map(item => (
-                  <div key={item.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    padding: '8px 12px', background: bg2, borderRadius: 10, border: `1px solid ${bdr}` }}>
-                    <span style={{ fontSize: 12, color: ink, fontWeight: 500 }}>{item.name}</span>
-                    <span style={{ fontSize: 11, fontWeight: 700,
-                      color: item.low ? '#f87171' : '#10b981',
-                      background: item.low ? 'rgba(248,113,113,0.1)' : 'rgba(16,185,129,0.1)',
-                      padding: '3px 10px', borderRadius: 100 }}>
-                      {item.stock} {tx(lang,'шт','ta','pcs')}
-                    </span>
-                  </div>
-                ))}
+          <FadeUp delay={0.2} style={{ height: '100%' }}>
+            <BorderGlow
+              backgroundColor={isDark ? P.dCard : '#ffffff'}
+              glowColor="38 92 50"
+              colors={['#f59e0b', '#d97706', '#fcd34d']}
+              borderRadius={24}
+              glowIntensity={0.8}
+              style={{ height: '100%' }}
+            >
+              <div style={{ padding: '28px' }}>
+                <p style={{ fontSize: 11, fontWeight: 700, color: '#f59e0b', marginBottom: 6,
+                  textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                  {tx(lang,'ЗАПАСЫ','ZAXIRA','INVENTORY')}
+                </p>
+                <h3 style={{ fontSize: 18, fontWeight: 800, color: ink, marginBottom: 10, letterSpacing: '-0.01em' }}>
+                  {tx(lang,'Контроль остатков','Zaxira nazorati','Stock control')}
+                </h3>
+                <p style={{ fontSize: 13, color: sub, lineHeight: 1.6, marginBottom: 18 }}>
+                  {tx(lang,'Алерты когда товар заканчивается, по каждому складу',
+                    'Har bir ombor bo\'yicha mahsulot tugayotganda ogohlantirish',
+                    'Alerts when stock runs low, per warehouse')}
+                </p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {[
+                    { name: tx(lang,'Куртка','Qishki kurtka','Jacket'), stock: 120, low: false },
+                    { name: tx(lang,'Кроссовки','Krossovka','Sneakers'), stock: 8, low: true },
+                    { name: tx(lang,'Рюкзак','Ryuksak','Backpack'), stock: 45, low: false },
+                  ].map(item => (
+                    <div key={item.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      padding: '8px 12px', background: bg2, borderRadius: 10, border: `1px solid ${bdr}` }}>
+                      <span style={{ fontSize: 12, color: ink, fontWeight: 500 }}>{item.name}</span>
+                      <span style={{ fontSize: 11, fontWeight: 700,
+                        color: item.low ? '#f87171' : '#10b981',
+                        background: item.low ? 'rgba(248,113,113,0.1)' : 'rgba(16,185,129,0.1)',
+                        padding: '3px 10px', borderRadius: 100 }}>
+                        {item.stock} {tx(lang,'шт','ta','pcs')}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
+            </BorderGlow>
           </FadeUp>
 
           {/* P&L card */}
-          <FadeUp delay={0.28}>
-            <div style={{ background: cardBg, borderRadius: 24, padding: '28px',
-              border: `1px solid ${bdr}`, height: '100%',
-              boxShadow: isDark ? '0 4px 24px rgba(197,232,254,0.06)' : '0 4px 24px rgba(0,0,0,0.06)' }}>
-              <p style={{ fontSize: 11, fontWeight: 700, color: '#10b981', marginBottom: 6,
-                textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                {tx(lang,'ФИНАНСЫ','MOLIYA','FINANCE')}
-              </p>
-              <h3 style={{ fontSize: 18, fontWeight: 800, color: ink, marginBottom: 10, letterSpacing: '-0.01em' }}>
-                {tx(lang,'Отчёт о прибыли','Foyda hisobi','Profit report')}
-              </h3>
-              <p style={{ fontSize: 13, color: sub, lineHeight: 1.6, marginBottom: 18 }}>
-                {tx(lang,'Полная структура доходов и расходов по каждому каналу',
-                  'Har bir kanal bo\'yicha to\'liq daromad va xarajatlar tuzilmasi',
-                  'Full revenue and cost breakdown per channel')}
-              </p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-                {[
-                  { l: tx(lang,'Выручка','Daromad','Revenue'), v: '124.5M', col: ink },
-                  { l: tx(lang,'Комиссия','Komissiya','Commission'), v: '-12.2M', col: '#f87171' },
-                  { l: tx(lang,'Доставка','Yetkazib berish','Delivery'), v: '-3.8M', col: '#f59e0b' },
-                  { l: tx(lang,'Прибыль','Foyda','Profit'), v: '108.5M', col: '#10b981' },
-                ].map((row, i, arr) => (
-                  <div key={row.l} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    padding: '10px 0', borderBottom: i < arr.length - 1 ? `1px solid ${bdr}` : 'none' }}>
-                    <span style={{ fontSize: 12, color: sub }}>{row.l}</span>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: row.col, fontFamily: 'monospace' }}>{row.v}</span>
-                  </div>
-                ))}
+          <FadeUp delay={0.28} style={{ height: '100%' }}>
+            <BorderGlow
+              backgroundColor={isDark ? P.dCard : '#ffffff'}
+              glowColor="158 84 40"
+              colors={['#10b981', '#059669', '#6ee7b7']}
+              borderRadius={24}
+              glowIntensity={0.8}
+              style={{ height: '100%' }}
+            >
+              <div style={{ padding: '28px' }}>
+                <p style={{ fontSize: 11, fontWeight: 700, color: '#10b981', marginBottom: 6,
+                  textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                  {tx(lang,'ФИНАНСЫ','MOLIYA','FINANCE')}
+                </p>
+                <h3 style={{ fontSize: 18, fontWeight: 800, color: ink, marginBottom: 10, letterSpacing: '-0.01em' }}>
+                  {tx(lang,'Отчёт о прибыли','Foyda hisobi','Profit report')}
+                </h3>
+                <p style={{ fontSize: 13, color: sub, lineHeight: 1.6, marginBottom: 18 }}>
+                  {tx(lang,'Полная структура доходов и расходов по каждому каналу',
+                    'Har bir kanal bo\'yicha to\'liq daromad va xarajatlar tuzilmasi',
+                    'Full revenue and cost breakdown per channel')}
+                </p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+                  {[
+                    { l: tx(lang,'Выручка','Daromad','Revenue'), v: '124.5M', col: ink },
+                    { l: tx(lang,'Комиссия','Komissiya','Commission'), v: '-12.2M', col: '#f87171' },
+                    { l: tx(lang,'Доставка','Yetkazib berish','Delivery'), v: '-3.8M', col: '#f59e0b' },
+                    { l: tx(lang,'Прибыль','Foyda','Profit'), v: '108.5M', col: '#10b981' },
+                  ].map((row, i, arr) => (
+                    <div key={row.l} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      padding: '10px 0', borderBottom: i < arr.length - 1 ? `1px solid ${bdr}` : 'none' }}>
+                      <span style={{ fontSize: 12, color: sub }}>{row.l}</span>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: row.col, fontFamily: 'monospace' }}>{row.v}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
+            </BorderGlow>
           </FadeUp>
         </div>
       </div>
@@ -1334,39 +1343,52 @@ function ExtensionSection({ lang }: { lang: string }) {
         />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-12">
-          {cards.map((c, i) => (
-            <FadeUp key={i} delay={i * 0.1}>
-              <motion.div
-                whileHover={{ y: -6, scale: 1.015 }}
-                transition={{ duration: 0.22 }}
-                style={{ background: c.bg, border: `1.5px solid ${c.color}40`,
-                  borderRadius: 24, padding: '32px 28px', height: '100%', cursor: 'default',
-                  boxShadow: `0 4px 28px ${c.color}18` }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
-                  <div style={{ width: 52, height: 52, borderRadius: 14, background: `${c.color}20`,
-                    border: `1.5px solid ${c.color}50`,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 13, fontWeight: 800, color: c.color, letterSpacing: '0.02em' }}>
-                    {c.icon}
-                  </div>
-                  <span style={{ fontSize: 15, fontWeight: 800, color: isDark ? P.dText : P.ink,
-                    letterSpacing: '-0.01em' }}>{c.name}</span>
-                </div>
-                <p style={{ fontSize: 17, fontWeight: 700, color: ink, lineHeight: 1.4, marginBottom: 20 }}>
-                  {c.headline}
-                </p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  {c.points.map((pt, j) => (
-                    <div key={j} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-                      <div style={{ width: 7, height: 7, borderRadius: '50%', background: c.color,
-                        marginTop: 7, flexShrink: 0 }} />
-                      <span style={{ fontSize: 14, color: ink, lineHeight: 1.6 }}>{pt}</span>
+          {(() => {
+            const glowHsl = ['234 67 57', '307 84 43', '39 100 45', '207 90 74']
+            const glowCols = [
+              ['#494fdf', '#6366f1', '#818cf8'],
+              ['#CB11AB', '#ec4899', '#f0abfc'],
+              ['#E8A000', '#f59e0b', '#fcd34d'],
+              ['#83c0f9', '#60a5fa', '#a5f3fc'],
+            ]
+            return cards.map((c, i) => (
+              <FadeUp key={i} delay={i * 0.1} style={{ height: '100%' }}>
+                <BorderGlow
+                  backgroundColor={isDark ? P.dCard : '#ffffff'}
+                  glowColor={glowHsl[i]}
+                  colors={glowCols[i]}
+                  borderRadius={24}
+                  glowIntensity={0.9}
+                  style={{ height: '100%' }}
+                >
+                  <div style={{ padding: '32px 28px', cursor: 'default' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
+                      <div style={{ width: 52, height: 52, borderRadius: 14, background: `${c.color}20`,
+                        border: `1.5px solid ${c.color}50`,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 13, fontWeight: 800, color: c.color, letterSpacing: '0.02em' }}>
+                        {c.icon}
+                      </div>
+                      <span style={{ fontSize: 15, fontWeight: 800, color: isDark ? P.dText : P.ink,
+                        letterSpacing: '-0.01em' }}>{c.name}</span>
                     </div>
-                  ))}
-                </div>
-              </motion.div>
-            </FadeUp>
-          ))}
+                    <p style={{ fontSize: 17, fontWeight: 700, color: ink, lineHeight: 1.4, marginBottom: 20 }}>
+                      {c.headline}
+                    </p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                      {c.points.map((pt, j) => (
+                        <div key={j} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                          <div style={{ width: 7, height: 7, borderRadius: '50%', background: c.color,
+                            marginTop: 7, flexShrink: 0 }} />
+                          <span style={{ fontSize: 14, color: ink, lineHeight: 1.6 }}>{pt}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </BorderGlow>
+              </FadeUp>
+            ))
+          })()}
         </div>
 
         <FadeUp delay={0.2}>
@@ -1496,60 +1518,61 @@ function PricingSection({ lang }: { lang: string }) {
             <motion.div key={t.name}
               initial={{ opacity: 0, y: -140, scale: 0.9 }}
               animate={inView ? { opacity: 1, y: 0, scale: t.highlight ? 1.02 : 1 } : {}}
-              transition={{ delay: i * 0.18, type: 'spring', stiffness: 160, damping: 18 }}
-              style={{
-                background: t.highlight ? P.parchment : cardBg,
-                borderRadius: 20, padding: '28px 24px',
-                border: `1px solid ${t.highlight ? acc.color : bdr}`,
-                boxShadow: t.highlight
-                  ? `0 16px 48px ${acc.color}30`
-                  : isDark ? 'none' : '0 4px 20px rgba(0,0,0,0.05)',
-                position: 'relative', display: 'flex', flexDirection: 'column',
-              }}>
+              transition={{ delay: i * 0.18, type: 'spring', stiffness: 160, damping: 18 }}>
+              <BorderGlow
+                backgroundColor={t.highlight ? P.parchment : (isDark ? P.dCard : P.card)}
+                glowColor="207 70 74"
+                colors={t.highlight ? ['#83c0f9', '#60a5fa', '#bfdbfe'] : ['#83c0f9', '#60a5fa', '#a5f3fc']}
+                borderRadius={20}
+                glowIntensity={t.highlight ? 1.0 : 0.75}
+                style={{ display: 'flex', flexDirection: 'column', height: '100%' }}
+              >
+                <div style={{ padding: '28px 24px', display: 'flex', flexDirection: 'column', flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                    <p style={{ fontSize: 13, fontWeight: 700, color: t.highlight ? acc.dk : muted }}>
+                      {t.name}
+                    </p>
+                    {(t as any).badge && (
+                      <span style={{ background: acc.color, borderRadius: 100, padding: '3px 12px',
+                        fontSize: 10, fontWeight: 800, color: '#131321', letterSpacing: '0.04em' }}>
+                        {(t as any).badge}
+                      </span>
+                    )}
+                  </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                <p style={{ fontSize: 13, fontWeight: 700, color: t.highlight ? acc.dk : muted }}>
-                  {t.name}
-                </p>
-                {(t as any).badge && (
-                  <span style={{ background: acc.color, borderRadius: 100, padding: '3px 12px',
-                    fontSize: 10, fontWeight: 800, color: '#131321', letterSpacing: '0.04em' }}>
-                    {(t as any).badge}
-                  </span>
-                )}
-              </div>
+                  <div style={{ marginBottom: 4 }}>
+                    <span style={{ fontSize: 34, fontWeight: 800, color: ink,
+                      fontFamily: 'var(--font-mono-landing), monospace' }}>
+                      {t.price === '0' ? '0' : <SlotPrice value={t.price} trigger={inView} delay={i * 0.18 + 0.4} />}
+                    </span>
+                  </div>
+                  <p style={{ fontSize: 13, color: muted, marginBottom: 24 }}>{t.sub}</p>
 
-              <div style={{ marginBottom: 4 }}>
-                <span style={{ fontSize: 34, fontWeight: 800, color: ink,
-                  fontFamily: 'var(--font-mono-landing), monospace' }}>
-                  {t.price === '0' ? '0' : <SlotPrice value={t.price} trigger={inView} delay={i * 0.18 + 0.4} />}
-                </span>
-              </div>
-              <p style={{ fontSize: 13, color: muted, marginBottom: 24 }}>{t.sub}</p>
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
+                    {t.features.map((f, fi) => (
+                      <motion.div key={f}
+                        initial={{ opacity: 0, x: -8 }}
+                        animate={inView ? { opacity: 1, x: 0 } : {}}
+                        transition={{ delay: i * 0.18 + 0.7 + fi * 0.05, duration: 0.25 }}
+                        style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                        <Check size={14} color={acc.tint} style={{ marginTop: 2, flexShrink: 0 }}/>
+                        <span style={{ fontSize: 13, color: ink, lineHeight: 1.4 }}>{f}</span>
+                      </motion.div>
+                    ))}
+                  </div>
 
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
-                {t.features.map((f, fi) => (
-                  <motion.div key={f}
-                    initial={{ opacity: 0, x: -8 }}
-                    animate={inView ? { opacity: 1, x: 0 } : {}}
-                    transition={{ delay: i * 0.18 + 0.7 + fi * 0.05, duration: 0.25 }}
-                    style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-                    <Check size={14} color={acc.tint} style={{ marginTop: 2, flexShrink: 0 }}/>
-                    <span style={{ fontSize: 13, color: ink, lineHeight: 1.4 }}>{f}</span>
-                  </motion.div>
-                ))}
-              </div>
-
-              <Link href={t.ctaHref}
-                style={{ display: 'block', textAlign: 'center', fontSize: 14, fontWeight: 700,
-                  background: t.highlight ? (isDark ? '#0e1b2e' : '#ffffff') : (isDark ? acc.btn : acc.color),
-                  color: t.highlight ? (isDark ? '#ffffff' : '#0e1b2e') : (isDark ? acc.btnTxt : '#ffffff'),
-                  padding: '13px 24px', borderRadius: 10,
-                  textDecoration: 'none', transition: 'all 0.15s' }}
-                onMouseEnter={e => { e.currentTarget.style.background = t.highlight ? (isDark ? '#1a2f4a' : '#f0f6ff') : (isDark ? acc.btnHov : acc.dk) }}
-                onMouseLeave={e => { e.currentTarget.style.background = t.highlight ? (isDark ? '#0e1b2e' : '#ffffff') : (isDark ? acc.btn : acc.color) }}>
-                {t.cta}
-              </Link>
+                  <Link href={t.ctaHref}
+                    style={{ display: 'block', textAlign: 'center', fontSize: 14, fontWeight: 700,
+                      background: t.highlight ? (isDark ? '#0e1b2e' : '#ffffff') : (isDark ? acc.btn : acc.color),
+                      color: t.highlight ? (isDark ? '#ffffff' : '#0e1b2e') : (isDark ? acc.btnTxt : '#ffffff'),
+                      padding: '13px 24px', borderRadius: 10,
+                      textDecoration: 'none', transition: 'all 0.15s' }}
+                    onMouseEnter={e => { e.currentTarget.style.background = t.highlight ? (isDark ? '#1a2f4a' : '#f0f6ff') : (isDark ? acc.btnHov : acc.dk) }}
+                    onMouseLeave={e => { e.currentTarget.style.background = t.highlight ? (isDark ? '#0e1b2e' : '#ffffff') : (isDark ? acc.btn : acc.color) }}>
+                    {t.cta}
+                  </Link>
+                </div>
+              </BorderGlow>
             </motion.div>
           ))}
         </div>
@@ -1634,12 +1657,18 @@ function ResourcesSection({ lang }: { lang: string }) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {allItems.map((item, idx) => (
                 <FadeUp key={item.num} delay={0.05 + idx * 0.07}>
+                  <BorderGlow
+                    backgroundColor={isDark ? P.dCard : P.card}
+                    glowColor="207 70 74"
+                    colors={['#83c0f9', '#60a5fa', '#a5f3fc']}
+                    borderRadius={24}
+                    glowIntensity={0.75}
+                  >
                   <div
                     onClick={() => setExpanded(idx)}
-                    style={{ background: cardBg, borderRadius: 24, overflow: 'hidden',
-                      border: `1.5px solid ${expanded === idx ? acc.color : bdr}`,
-                      boxShadow: isDark ? '0 4px 24px rgba(197,232,254,0.06)' : '0 4px 24px rgba(0,0,0,0.06)',
-                      cursor: 'pointer', transition: 'border-color 0.2s' }}>
+                    style={{ overflow: 'hidden', borderRadius: 24,
+                      outline: expanded === idx ? `1.5px solid ${acc.color}` : 'none',
+                      cursor: 'pointer', transition: 'outline-color 0.2s' }}>
                     {/* Header row */}
                     <div style={{ padding: '26px 32px', display: 'flex', alignItems: 'center',
                       justifyContent: 'space-between', position: 'relative', overflow: 'hidden' }}>
@@ -1702,6 +1731,7 @@ function ResourcesSection({ lang }: { lang: string }) {
                       )}
                     </AnimatePresence>
                   </div>
+                  </BorderGlow>
                 </FadeUp>
               ))}
             </div>
@@ -2045,7 +2075,7 @@ export default function Page() {
   const { lang } = useLang()
   return (
     <div style={{ fontFamily: "'Space Grotesk', system-ui, sans-serif" }}>
-      <Navbar lang={lang} />
+      <LandingNav lang={lang} />
       <div id="top" />
       <HeroSection lang={lang} />
       <MarqueeSection lang={lang} />
