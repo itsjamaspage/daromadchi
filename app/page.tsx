@@ -15,7 +15,7 @@ import type { Lang } from '@/lib/i18n'
 
 import PillNav from './components/PillNav'
 import BorderGlow from './components/BorderGlow'
-import GlobalBackground from './components/GlobalBackground'
+const LiquidEther = dynamic(() => import('./components/LiquidEther'), { ssr: false })
 
 // ── Palette ───────────────────────────────────────────────────────────────────
 const P = {
@@ -387,6 +387,28 @@ function HeroSection({ lang }: { lang: string }) {
   return (
     <section style={{ position: 'relative', background: heroBg, overflow: 'hidden',
       fontFamily: "'Space Grotesk', system-ui, sans-serif", paddingBottom: 0 }}>
+      {/* Fluid animation — absolute inside section, no fixed compositing overhead */}
+      <div style={{ position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none', touchAction: 'pan-y' }}>
+        <LiquidEther
+          colors={isDark
+            ? ['#0c4a6e', '#0369a1', '#0ea5e9', '#38bdf8', '#7dd3fc']
+            : ['#ffffff', '#f0f9ff', '#e0f2fe', '#bae6fd', '#93c5fd']}
+          autoDemo={true}
+          autoSpeed={0.5}
+          autoIntensity={3.2}
+          mouseForce={22}
+          cursorSize={110}
+          resolution={0.4}
+          iterationsPoisson={24}
+          iterationsViscous={12}
+          isViscous={false}
+          isBounce={false}
+          BFECC={true}
+          autoResumeDelay={2000}
+          autoRampDuration={0.8}
+          takeoverDuration={0.3}
+        />
+      </div>
       {/* Ambient glow */}
       <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 1,
         background: `radial-gradient(ellipse 90% 55% at 50% -5%, ${glowColor} 0%, transparent 65%)` }} />
@@ -2013,7 +2035,6 @@ export default function Page() {
   const { lang } = useLang()
   return (
     <div style={{ fontFamily: "'Space Grotesk', system-ui, sans-serif" }}>
-      <GlobalBackground />
       <LandingNav lang={lang} />
       <div id="top" />
       <HeroSection lang={lang} />
