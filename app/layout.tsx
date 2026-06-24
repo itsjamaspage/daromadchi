@@ -4,6 +4,8 @@ import { cookies } from 'next/headers'
 import './globals.css'
 import Providers from './providers'
 import type { Lang } from '@/lib/i18n'
+import LoadingOverlay from './components/LoadingOverlay'
+import NavigationEvents from './components/NavigationEvents'
 
 const spaceGrotesk = Space_Grotesk({
   subsets: ['latin'],
@@ -44,6 +46,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       </head>
       <body className="antialiased">
         <Providers initialLang={lang}>{children}</Providers>
+        <NavigationEvents />
+        <LoadingOverlay />
       </body>
     </html>
   )
