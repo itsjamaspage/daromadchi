@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
   <!-- Outer D shape: black fill = the metallic surface -->
   <path d="M50 40 L50 360 L170 360 C295 360 350 295 350 200 C350 105 295 40 170 40 Z" fill="black"/>
   <!-- Inner cutout: white = treated as background by MetallicPaint processImage -->
