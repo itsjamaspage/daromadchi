@@ -13,11 +13,7 @@ import {
 import { useTheme, useLang } from './providers'
 import type { Lang } from '@/lib/i18n'
 
-const FloatingLines = dynamic(() => import('./components/FloatingLines'), {
-  ssr: false,
-  loading: () => <div style={{ width: '100%', height: 480 }} />,
-})
-const LiquidEther = dynamic(() => import('./components/LiquidEther'), { ssr: false })
+const FloatingLines = dynamic(() => import('./components/FloatingLines'), { ssr: false })
 import CardNav from './components/CardNav'
 import BorderGlow from './components/BorderGlow'
 
@@ -438,15 +434,21 @@ function HeroSection({ lang }: { lang: string }) {
   return (
     <section style={{ position: 'relative', background: heroBg, overflow: 'hidden',
       fontFamily: "'Space Grotesk', system-ui, sans-serif", paddingBottom: 0 }}>
-      {/* LiquidEther full-section background */}
+      {/* FloatingLines hero background */}
       <div style={{ position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none' }}>
-        <LiquidEther
-          colors={isDark ? ['#312e81', '#4f46e5', '#818cf8'] : ['#2563eb', '#7bbaf7', '#a5f3fc']}
-          autoDemo={true}
-          autoSpeed={0.5}
-          autoIntensity={2.2}
-          resolution={0.5}
-          style={{ width: '100%', height: '100%' }}
+        <FloatingLines
+          enabledWaves={['bottom', 'middle', 'top']}
+          lineCount={8}
+          lineDistance={65}
+          bendRadius={12}
+          bendStrength={-0.5}
+          interactive={false}
+          parallax={false}
+          animationSpeed={0.9}
+          linesGradient={isDark
+            ? ['#0369a1', '#0ea5e9', '#38bdf8', '#7dd3fc', '#bae6fd']
+            : ['#1e3a5f', '#1d4ed8', '#3b82f6', '#60a5fa', '#93c5fd', '#dbeafe']}
+          mixBlendMode="screen"
         />
       </div>
       {/* Ambient glow */}
@@ -499,9 +501,10 @@ function HeroSection({ lang }: { lang: string }) {
           </a>
         </motion.div>
 
-        {/* Dashboard mockup */}
+        {/* Dashboard mockup — hidden on mobile to avoid overflow */}
         <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.40, duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
+          className="hidden sm:block"
           style={{ width: '100%', position: 'relative', zIndex: 20, marginBottom: 0 }}>
           <DashMockup />
         </motion.div>
