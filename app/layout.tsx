@@ -47,9 +47,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       </head>
       <body className="antialiased">
         <GlobalBackground />
-        <Providers initialLang={lang}>{children}</Providers>
-        <NavigationEvents />
-        <LoadingOverlay />
+        <div style={{ position: 'relative', zIndex: 1 }}>
+          <Providers initialLang={lang}>{children}</Providers>
+          <NavigationEvents />
+          <LoadingOverlay />
+        </div>
       </body>
     </html>
   )

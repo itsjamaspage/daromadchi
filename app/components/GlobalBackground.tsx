@@ -10,7 +10,7 @@ export default function GlobalBackground() {
       style={{
         position: 'fixed',
         inset: 0,
-        zIndex: 40,
+        zIndex: 0,
         pointerEvents: 'none',
         touchAction: 'pan-y',
       }}
