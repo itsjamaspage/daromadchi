@@ -18,7 +18,6 @@ export default function LoadingOverlay() {
       prevPathname.current = pathname
       if (hideTimer.current) clearTimeout(hideTimer.current)
       setVisible(false)
-      setMounted(false)
     }
   }, [pathname])
 
@@ -31,7 +30,6 @@ export default function LoadingOverlay() {
     const handleEnd = () => {
       hideTimer.current = setTimeout(() => {
         setVisible(false)
-        setTimeout(() => setMounted(false), 400)
       }, 200)
     }
 

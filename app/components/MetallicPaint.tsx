@@ -144,7 +144,7 @@ void main(){
 }`
 
 function processImage(img) {
-  const MAX_SIZE = 1000, MIN_SIZE = 500
+  const MAX_SIZE = 1000, MIN_SIZE = 400
   let width = img.naturalWidth || img.width
   let height = img.naturalHeight || img.height
 
@@ -191,7 +191,7 @@ function processImage(img) {
   }
 
   const u = new Float32Array(size)
-  const ITERATIONS = 200, C = 0.01, omega = 1.85
+  const ITERATIONS = 60, C = 0.01, omega = 1.85
 
   for (let iter = 0; iter < ITERATIONS; iter++) {
     for (let y = 1; y < height - 1; y++) {
