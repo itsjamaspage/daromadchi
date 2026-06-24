@@ -15,7 +15,7 @@ import type { Lang } from '@/lib/i18n'
 
 import PillNav from './components/PillNav'
 import BorderGlow from './components/BorderGlow'
-const FloatingLines = dynamic(() => import('./components/FloatingLines'), { ssr: false })
+import GlobalBackground from './components/GlobalBackground'
 
 // ── Palette ───────────────────────────────────────────────────────────────────
 const P = {
@@ -387,23 +387,6 @@ function HeroSection({ lang }: { lang: string }) {
   return (
     <section style={{ position: 'relative', background: heroBg, overflow: 'hidden',
       fontFamily: "'Space Grotesk', system-ui, sans-serif", paddingBottom: 0 }}>
-      {/* FloatingLines hero background */}
-      <div style={{ position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none' }}>
-        <FloatingLines
-          enabledWaves={['bottom', 'middle', 'top']}
-          lineCount={8}
-          lineDistance={65}
-          bendRadius={12}
-          bendStrength={-0.5}
-          interactive={false}
-          parallax={false}
-          animationSpeed={0.9}
-          linesGradient={isDark
-            ? ['#0369a1', '#0ea5e9', '#38bdf8', '#7dd3fc', '#bae6fd']
-            : ['#1e3a5f', '#1d4ed8', '#3b82f6', '#60a5fa', '#93c5fd', '#dbeafe']}
-          mixBlendMode="screen"
-        />
-      </div>
       {/* Ambient glow */}
       <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 1,
         background: `radial-gradient(ellipse 90% 55% at 50% -5%, ${glowColor} 0%, transparent 65%)` }} />
@@ -2030,6 +2013,7 @@ export default function Page() {
   const { lang } = useLang()
   return (
     <div style={{ fontFamily: "'Space Grotesk', system-ui, sans-serif" }}>
+      <GlobalBackground />
       <LandingNav lang={lang} />
       <div id="top" />
       <HeroSection lang={lang} />
