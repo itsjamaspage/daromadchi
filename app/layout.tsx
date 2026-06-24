@@ -6,6 +6,7 @@ import Providers from './providers'
 import type { Lang } from '@/lib/i18n'
 import LoadingOverlay from './components/LoadingOverlay'
 import NavigationEvents from './components/NavigationEvents'
+import GlobalBackground from './components/GlobalBackground'
 
 const spaceGrotesk = Space_Grotesk({
   subsets: ['latin'],
@@ -45,6 +46,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <script dangerouslySetInnerHTML={{ __html: `(function(){try{var t=localStorage.getItem('theme');document.documentElement.setAttribute('data-theme',t||'dark');}catch(e){document.documentElement.setAttribute('data-theme','dark');}})()` }} />
       </head>
       <body className="antialiased">
+        <GlobalBackground />
         <Providers initialLang={lang}>{children}</Providers>
         <NavigationEvents />
         <LoadingOverlay />
