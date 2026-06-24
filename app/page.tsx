@@ -13,7 +13,7 @@ import {
 import { useTheme, useLang } from './providers'
 import type { Lang } from '@/lib/i18n'
 
-import CardNav from './components/CardNav'
+import PillNav from './components/PillNav'
 import BorderGlow from './components/BorderGlow'
 const FloatingLines = dynamic(() => import('./components/FloatingLines'), { ssr: false })
 
@@ -119,123 +119,74 @@ function SectionHead({ title, accent, sub, dark = false }: {
   )
 }
 
-// ── Navbar (CardNav) ──────────────────────────────────────────────────────────
+// ── Navbar (PillNav) ──────────────────────────────────────────────────────────
 function LandingNav({ lang }: { lang: string }) {
   const isDark = useIsDark()
   const acc = useAccent()
   const { toggle, theme } = useTheme()
   const { setLang } = useLang()
-  const [scrolled, setScrolled] = useState(false)
   const [langOpen, setLangOpen] = useState(false)
 
-  useEffect(() => {
-    const h = () => setScrolled(window.scrollY > 24)
-    window.addEventListener('scroll', h, { passive: true })
-    return () => window.removeEventListener('scroll', h)
-  }, [])
-
-  const cardItems = [
-    {
-      label: tx(lang, 'Аналитика', 'Analitika', 'Analytics'),
-      bgColor: isDark ? '#1B1722' : '#1e3a5f',
-      textColor: '#fff',
-      links: [
-        { label: tx(lang, 'Функции', 'Imkoniyatlar', 'Features'), href: '#features', ariaLabel: 'Features' },
-        { label: tx(lang, 'Как работает', 'Qanday ishlaydi', 'How it works'), href: '#how', ariaLabel: 'How it works' },
-        { label: tx(lang, 'Расширение', 'Kengaytma', 'Extension'), href: '#extension', ariaLabel: 'Extension' },
-      ],
-    },
-    {
-      label: tx(lang, 'Тарифы', 'Tariflar', 'Pricing'),
-      bgColor: isDark ? '#2F293A' : '#0e2e5a',
-      textColor: '#fff',
-      links: [
-        { label: tx(lang, 'Тарифы', 'Tariflar', 'Pricing'), href: '#pricing', ariaLabel: 'Pricing' },
-        { label: tx(lang, 'Вопросы', 'Savollar', 'FAQ'), href: '#faq', ariaLabel: 'FAQ' },
-        { label: tx(lang, 'Сравнение', 'Taqqoslash', 'Compare'), href: '#comparison', ariaLabel: 'Comparison' },
-      ],
-    },
-    {
-      label: tx(lang, 'Помощь', 'Yordam', 'Help'),
-      bgColor: isDark ? '#231E2E' : '#0c2240',
-      textColor: '#fff',
-      links: [
-        { label: tx(lang, 'Документация', 'Hujjatlar', 'Docs'), href: '/help', ariaLabel: 'Help center' },
-        { label: tx(lang, 'Соответствие', 'Muvofiqlik', 'Compliance'), href: '/compliance', ariaLabel: 'Compliance' },
-        { label: tx(lang, 'Войти', 'Kirish', 'Log in'), href: '/login', ariaLabel: 'Log in' },
-      ],
-    },
+  const navItems = [
+    { label: tx(lang, 'Как работает', 'Qanday ishlaydi', 'How it works'), href: '#how' },
+    { label: tx(lang, 'Тарифы', 'Tariflar', 'Pricing'), href: '#pricing' },
+    { label: tx(lang, 'Расширение', 'Kengaytma', 'Extension'), href: '#extension' },
+    { label: tx(lang, 'Помощь', 'Yordam', 'Help'), href: '#faq' },
   ]
 
-  const borderCol = isDark ? P.dHair : 'rgba(14,34,51,0.18)'
+  const borderCol = isDark ? P.dHair : 'rgba(14,34,51,0.15)'
   const iconCol   = isDark ? P.dMuted : P.stone
+  const baseColor = isDark ? P.dCard2 : '#ffffff'
+  const pillColor = isDark ? '#1a1726' : P.ink
 
-  const rightControls = (
+  const rightContent = (
     <>
       <div style={{ position: 'relative' }}>
         <button
           onClick={() => setLangOpen(v => !v)}
-          className="card-nav-lang-btn"
-          style={{ color: iconCol, border: `1px solid ${borderCol}` }}
+          className="pill-ctrl-btn"
+          style={{ color: iconCol, border: `1px solid ${borderCol}`, background: 'transparent' }}
         >
           {lang.toUpperCase()}
         </button>
         {langOpen && (
-          <div
-            className="card-nav-lang-dropdown"
-            style={{
-              background: isDark ? P.dCard2 : '#fff',
-              borderColor: isDark ? P.dHair : P.hair,
-            }}
-          >
+          <div className="pill-lang-dropdown"
+            style={{ background: isDark ? P.dCard2 : '#fff', borderColor: isDark ? P.dHair : P.hair }}>
             {(['uz', 'ru', 'en'] as Lang[]).map(l => (
-              <button
-                key={l}
-                className="card-nav-lang-option"
+              <button key={l} className="pill-lang-option"
                 onClick={() => { setLang(l); setLangOpen(false) }}
-                style={{
-                  background: lang === l ? acc.bg : 'transparent',
-                  color: lang === l ? acc.tint : iconCol,
-                }}
-              >
+                style={{ background: lang === l ? acc.bg : 'transparent', color: lang === l ? acc.tint : iconCol }}>
                 {l.toUpperCase()}
               </button>
             ))}
           </div>
         )}
       </div>
-      <button
-        onClick={toggle}
-        className="card-nav-icon-btn"
-        style={{ color: iconCol, border: `1px solid ${borderCol}` }}
-      >
+      <button onClick={toggle} className="pill-ctrl-btn"
+        style={{ color: iconCol, border: `1px solid ${borderCol}`, background: 'transparent' }}>
         {theme === 'dark' ? '☀' : '☾'}
       </button>
-      <Link
-        href="/login"
-        className="card-nav-icon-btn"
-        style={{ color: iconCol, border: `1px solid ${borderCol}` }}
-      >
-        <UserCircle size={16} />
+      <Link href="/login"
+        style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+          width: 34, height: 34, borderRadius: 9999, border: `1px solid ${borderCol}`,
+          color: iconCol, textDecoration: 'none', flexShrink: 0 }}>
+        <UserCircle size={15} />
       </Link>
     </>
   )
 
   return (
-    <CardNav
+    <PillNav
       logo="/icon.svg"
       logoAlt="Daromadchi"
-      logoText="Daromadchi"
-      logoTextColor={isDark ? P.dText : P.ink}
-      items={cardItems}
-      baseColor={isDark ? P.dCard2 : '#ffffff'}
-      menuColor={isDark ? P.dMuted : P.stone}
-      buttonBgColor={acc.btn}
-      buttonTextColor={acc.btnTxt}
-      buttonLabel={tx(lang, 'Начать', 'Boshlash', 'Start')}
-      buttonHref="/login"
-      rightControls={rightControls}
-      scrolled={scrolled}
+      logoHref="/"
+      items={navItems}
+      baseColor={baseColor}
+      pillColor={pillColor}
+      pillTextColor="#ffffff"
+      hoveredPillTextColor={pillColor}
+      rightContent={rightContent}
+      initialLoadAnimation={false}
     />
   )
 }
@@ -1330,7 +1281,7 @@ function ExtensionSection({ lang }: { lang: string }) {
   ]
 
   return (
-    <section style={{ background: secBg, padding: '88px 24px',
+    <section id="extension" style={{ background: secBg, padding: '88px 24px',
       fontFamily: "'Space Grotesk', system-ui, sans-serif", transition: 'background 0.3s' }}>
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
         <SectionHead dark={isDark}
@@ -1522,7 +1473,8 @@ function PricingSection({ lang }: { lang: string }) {
               transition={{ delay: i * 0.18, type: 'spring', stiffness: 160, damping: 18 }}>
               <BorderGlow
                 backgroundColor={t.highlight ? P.parchment : (isDark ? P.dCard : P.card)}
-                glowColor="207 70 74"
+                glowColor="207 100 55"
+                glowIntensity={1.4}
                 colors={t.highlight ? ['#83c0f9', '#60a5fa', '#bfdbfe'] : ['#83c0f9', '#60a5fa', '#a5f3fc']}
                 borderRadius={20}
                 glowIntensity={t.highlight ? 1.0 : 0.75}

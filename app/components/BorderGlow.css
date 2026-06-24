@@ -12,16 +12,17 @@
   isolation: isolate;
   transform: translate3d(0, 0, 0.01px);
   display: grid;
-  border: 1px solid rgb(255 255 255 / 15%);
+  border: 1.5px solid var(--glow-color-40, hsl(40deg 80% 80% / 40%));
   background: var(--card-bg, #120F17);
   overflow: visible;
   box-shadow:
-    rgba(0, 0, 0, 0.1) 0px 1px 2px,
-    rgba(0, 0, 0, 0.1) 0px 2px 4px,
-    rgba(0, 0, 0, 0.1) 0px 4px 8px,
-    rgba(0, 0, 0, 0.1) 0px 8px 16px,
-    rgba(0, 0, 0, 0.1) 0px 16px 32px,
-    rgba(0, 0, 0, 0.1) 0px 32px 64px;
+    0 0 0 1px var(--glow-color-20, hsl(40deg 80% 80% / 20%)),
+    0 0 18px 2px var(--glow-color-10, hsl(40deg 80% 80% / 10%)),
+    rgba(0, 0, 0, 0.08) 0px 1px 2px,
+    rgba(0, 0, 0, 0.08) 0px 2px 4px,
+    rgba(0, 0, 0, 0.06) 0px 4px 8px,
+    rgba(0, 0, 0, 0.08) 0px 8px 16px,
+    rgba(0, 0, 0, 0.06) 0px 16px 32px;
 }
 
 .border-glow-card::before,
