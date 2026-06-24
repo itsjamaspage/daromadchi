@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Space_Grotesk, JetBrains_Mono } from 'next/font/google'
 import { cookies } from 'next/headers'
+import { Suspense } from 'react'
 import './globals.css'
 import Providers from './providers'
 import type { Lang } from '@/lib/i18n'
@@ -49,7 +50,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <GlobalBackground />
         <div style={{ position: 'relative', zIndex: 1 }}>
           <Providers initialLang={lang}>{children}</Providers>
-          <NavigationEvents />
+          <Suspense><NavigationEvents /></Suspense>
           <LoadingOverlay />
         </div>
       </body>

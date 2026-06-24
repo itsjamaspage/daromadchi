@@ -1,7 +1,6 @@
 import { unstable_cache } from 'next/cache'
-import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { getCurrentUserId, getShopIds } from '@/lib/db/shop-context'
+import { getCurrentUserId } from '@/lib/db/shop-context'
 import type { Product, MarketplaceType } from '@/lib/types'
 
 const supabaseConfigured =
@@ -96,6 +95,67 @@ export interface ProductSalesRow {
   revenue: number
 }
 
+// Cached per (userId, marketplace, period) for 30 s. Collapses the old two-step
+// orders→order_items serial waterfall into a single join query.
+const _fetchProductSales = unstable_cache(
+  async (userId: string, mp: string, days: number | null, from: string, to: string): Promise<ProductSalesRow[]> => {
+    const supabase = createAdminClient()
+    const { data: shopsData } = await supabase.from('shops').select('id, marketplace').eq('user_id', userId)
+    const allShops = shopsData ?? []
+    const shopIds = mp
+      ? allShops.filter((s: { marketplace: string }) => s.marketplace === mp).map((s: { id: string }) => s.id)
+      : allShops.map((s: { id: string }) => s.id)
+    if (shopIds.length === 0) return []
+
+    let sinceIso: string | null = null
+    let untilIso: string | null = null
+    if (from && to) {
+      sinceIso = new Date(from).toISOString()
+      const toDate = new Date(to); toDate.setHours(23, 59, 59, 999)
+      untilIso = toDate.toISOString()
+    } else if (days !== null && days > 0) {
+      const d = new Date(); d.setDate(d.getDate() - days)
+      sinceIso = d.toISOString()
+    }
+
+    const shopFilter = `(${shopIds.join(',')})`
+    let query = supabase
+      .from('order_items')
+      .select('product_id, quantity, price_per_unit, orders!inner(shop_id, status, ordered_at), products(title, sku)')
+      .filter('orders.shop_id', 'in', shopFilter)
+      .filter('orders.status', 'neq', 'cancelled')
+      .not('product_id', 'is', null)
+    if (sinceIso) query = query.filter('orders.ordered_at', 'gte', sinceIso)
+    if (untilIso) query = query.filter('orders.ordered_at', 'lte', untilIso)
+
+    const { data: items } = await query
+    if (!items || items.length === 0) return []
+
+    const byProduct = new Map<string, ProductSalesRow>()
+    for (const item of items) {
+      if (!item.product_id) continue
+      const prod = Array.isArray(item.products) ? item.products[0] : item.products
+      const existing = byProduct.get(item.product_id)
+      if (existing) {
+        existing.qty_sold += item.quantity ?? 0
+        existing.revenue  += (item.quantity ?? 0) * (item.price_per_unit ?? 0)
+      } else {
+        byProduct.set(item.product_id, {
+          product_id: item.product_id,
+          title:      prod?.title ?? 'Unknown',
+          sku:        prod?.sku   ?? null,
+          qty_sold:   item.quantity ?? 0,
+          revenue:    (item.quantity ?? 0) * (item.price_per_unit ?? 0),
+        })
+      }
+    }
+
+    return [...byProduct.values()].sort((a, b) => b.qty_sold - a.qty_sold)
+  },
+  ['product-sales'],
+  { revalidate: 30 },
+)
+
 export async function getProductSales(
   days: number | null,
   marketplace?: MarketplaceType,
@@ -103,63 +163,7 @@ export async function getProductSales(
   to?: string,
 ): Promise<ProductSalesRow[]> {
   if (!supabaseConfigured) return []
-
-  const shopIds = await getShopIds(marketplace)
-  if (!shopIds || shopIds.length === 0) return []
-
-  const supabase = await createClient()
-
-  let sinceIso: string | null = null
-  let untilIso: string | null = null
-
-  if (from && to) {
-    sinceIso = new Date(from).toISOString()
-    const toDate = new Date(to); toDate.setHours(23, 59, 59, 999)
-    untilIso = toDate.toISOString()
-  } else if (days !== null && days > 0) {
-    const d = new Date(); d.setDate(d.getDate() - days)
-    sinceIso = d.toISOString()
-  }
-
-  let ordersQuery = supabase
-    .from('orders')
-    .select('id')
-    .in('shop_id', shopIds)
-    .neq('status', 'cancelled')
-  if (sinceIso) ordersQuery = ordersQuery.gte('ordered_at', sinceIso)
-  if (untilIso) ordersQuery = ordersQuery.lte('ordered_at', untilIso)
-
-  const { data: ordersInWindow } = await ordersQuery
-  if (!ordersInWindow || ordersInWindow.length === 0) return []
-
-  const orderIds = ordersInWindow.map(o => o.id)
-
-  const { data: items } = await supabase
-    .from('order_items')
-    .select('product_id, quantity, price_per_unit, products(title, sku)')
-    .in('order_id', orderIds)
-    .not('product_id', 'is', null)
-
-  if (!items || items.length === 0) return []
-
-  const byProduct = new Map<string, ProductSalesRow>()
-  for (const item of items) {
-    if (!item.product_id) continue
-    const prod = Array.isArray(item.products) ? item.products[0] : item.products
-    const existing = byProduct.get(item.product_id)
-    if (existing) {
-      existing.qty_sold += item.quantity ?? 0
-      existing.revenue  += (item.quantity ?? 0) * (item.price_per_unit ?? 0)
-    } else {
-      byProduct.set(item.product_id, {
-        product_id: item.product_id,
-        title:      prod?.title ?? 'Unknown',
-        sku:        prod?.sku   ?? null,
-        qty_sold:   item.quantity ?? 0,
-        revenue:    (item.quantity ?? 0) * (item.price_per_unit ?? 0),
-      })
-    }
-  }
-
-  return [...byProduct.values()].sort((a, b) => b.qty_sold - a.qty_sold)
+  const userId = await getCurrentUserId()
+  if (!userId) return []
+  return _fetchProductSales(userId, marketplace ?? '', days, from ?? '', to ?? '')
 }

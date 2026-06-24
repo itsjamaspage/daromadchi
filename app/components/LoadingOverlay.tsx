@@ -2,43 +2,38 @@
 
 import dynamic from 'next/dynamic'
 import { useEffect, useRef, useState } from 'react'
-import { usePathname } from 'next/navigation'
 
 const MetallicPaint = dynamic(() => import('./MetallicPaint'), { ssr: false })
 
-const MIN_VISIBLE_MS = 800
+// Only show overlay if loading takes longer than this threshold
+const SHOW_THRESHOLD_MS = 350
 
 export default function LoadingOverlay() {
-  const pathname = usePathname()
   const [visible, setVisible] = useState(false)
   const [mounted, setMounted] = useState(false)
-  const prevPathname = useRef(pathname)
+  const showTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const startTime = useRef<number>(0)
-
-  useEffect(() => {
-    if (prevPathname.current !== pathname) {
-      prevPathname.current = pathname
-      // Pathname changed = navigation complete; schedule hide respecting minimum
-      const elapsed = Date.now() - startTime.current
-      const wait = Math.max(0, MIN_VISIBLE_MS - elapsed)
-      if (hideTimer.current) clearTimeout(hideTimer.current)
-      hideTimer.current = setTimeout(() => setVisible(false), wait)
-    }
-  }, [pathname])
 
   useEffect(() => {
     const handleStart = () => {
+      if (showTimer.current) clearTimeout(showTimer.current)
       if (hideTimer.current) clearTimeout(hideTimer.current)
-      startTime.current = Date.now()
-      setMounted(true)
-      requestAnimationFrame(() => setVisible(true))
+      // Only show if loading takes longer than the threshold
+      showTimer.current = setTimeout(() => {
+        setMounted(true)
+        requestAnimationFrame(() => setVisible(true))
+      }, SHOW_THRESHOLD_MS)
     }
+
     const handleEnd = () => {
-      const elapsed = Date.now() - startTime.current
-      const wait = Math.max(200, MIN_VISIBLE_MS - elapsed)
+      // Cancel pending show if loading finished quickly
+      if (showTimer.current) {
+        clearTimeout(showTimer.current)
+        showTimer.current = null
+      }
+      // Hide overlay if it was shown
       if (hideTimer.current) clearTimeout(hideTimer.current)
-      hideTimer.current = setTimeout(() => setVisible(false), wait)
+      hideTimer.current = setTimeout(() => setVisible(false), 150)
     }
 
     window.addEventListener('__loading_start__', handleStart)
@@ -46,6 +41,7 @@ export default function LoadingOverlay() {
     return () => {
       window.removeEventListener('__loading_start__', handleStart)
       window.removeEventListener('__loading_end__', handleEnd)
+      if (showTimer.current) clearTimeout(showTimer.current)
       if (hideTimer.current) clearTimeout(hideTimer.current)
     }
   }, [])
@@ -60,7 +56,7 @@ export default function LoadingOverlay() {
         zIndex: 9999,
         backgroundColor: '#020d1f',
         opacity: visible ? 1 : 0,
-        transition: 'opacity 0.35s ease',
+        transition: 'opacity 0.3s ease',
         pointerEvents: visible ? 'all' : 'none',
         display: 'flex',
         flexDirection: 'column',
