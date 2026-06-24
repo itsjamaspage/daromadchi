@@ -231,7 +231,7 @@ export default function CompliancePage() {
 
       {/* ── Main content ──────────────────────────────────────────────────────── */}
       <main className="flex-1 min-w-0 px-5 sm:px-8 lg:px-12 py-10 pb-24">
-        <div style={{ maxWidth: 760 }}>
+        <div style={{ maxWidth: 760, margin: '0 auto' }}>
 
           {/* Page header */}
           <div className="mb-10">
@@ -290,11 +290,11 @@ export default function CompliancePage() {
                     transition: 'background 0.5s ease, border-color 0.4s ease, box-shadow 0.4s ease',
                   }}
                 >
-                  <h2 className="text-lg font-bold mb-5" style={{ color: 'var(--text-base)' }}>
+                  <h2 className="text-xl font-bold mb-5" style={{ color: 'var(--text-base)' }}>
                     {heading}
                   </h2>
                   <div
-                    className="text-sm leading-7 whitespace-pre-line"
+                    className="text-base leading-8 whitespace-pre-line"
                     style={{ color: 'var(--text-muted)' }}
                   >
                     {body}
