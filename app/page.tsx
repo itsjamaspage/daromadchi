@@ -137,7 +137,8 @@ function LandingNav({ lang }: { lang: string }) {
   const borderCol = isDark ? P.dHair : 'rgba(14,34,51,0.15)'
   const iconCol   = isDark ? P.dMuted : P.stone
   const baseColor = isDark ? P.dCard2 : '#ffffff'
-  const pillColor = isDark ? '#1a1726' : P.ink
+  const pillColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(14,34,51,0.07)'
+  const hoverCircle = isDark ? '#e2e8f0' : P.ink
 
   const rightContent = (
     <>
@@ -183,8 +184,9 @@ function LandingNav({ lang }: { lang: string }) {
       items={navItems}
       baseColor={baseColor}
       pillColor={pillColor}
-      pillTextColor="#ffffff"
-      hoveredPillTextColor={pillColor}
+      pillTextColor={isDark ? '#c8d6e5' : P.ink}
+      hoveredPillTextColor={isDark ? P.dCard2 : '#ffffff'}
+      hoverCircleColor={hoverCircle}
       rightContent={rightContent}
       initialLoadAnimation={false}
     />

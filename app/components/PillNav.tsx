@@ -18,6 +18,7 @@ const PillNav = ({
   pillColor = '#120F17',
   hoveredPillTextColor = '#120F17',
   pillTextColor,
+  hoverCircleColor,
   onMobileMenuClick,
   initialLoadAnimation = false,
   rightContent,
@@ -151,6 +152,7 @@ const PillNav = ({
     ['--pill-bg']: pillColor,
     ['--hover-text']: hoveredPillTextColor,
     ['--pill-text']: resolvedPillTextColor,
+    ...(hoverCircleColor ? { ['--hover-circle']: hoverCircleColor } : {}),
   }
 
   const renderPill = (item, i) => {

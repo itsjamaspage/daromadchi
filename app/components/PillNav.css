@@ -109,7 +109,7 @@
   left: 50%;
   bottom: 0;
   border-radius: 50%;
-  background: var(--base, #fff);
+  background: var(--hover-circle, var(--base, #000));
   z-index: 1;
   display: block;
   pointer-events: none;
