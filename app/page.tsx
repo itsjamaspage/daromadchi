@@ -1793,11 +1793,11 @@ function FaqSection({ lang }: { lang: string }) {
                   </div>
                   <motion.div animate={{ rotate: open === i ? 180 : 0 }} transition={{ duration: 0.2 }}
                     style={{ width: 34, height: 34, borderRadius: '50%', flexShrink: 0,
-                      background: open === i ? acc.btn : 'transparent',
-                      border: `1.5px solid ${open === i ? acc.btn : bdr}`,
+                      background: open === i ? '#ffffff' : 'transparent',
+                      border: `1.5px solid ${bdr}`,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      transition: 'background 0.2s, border-color 0.2s' }}>
-                    <ChevronDown size={16} color={open === i ? '#131321' : ink}/>
+                      transition: 'background 0.2s' }}>
+                    <ChevronDown size={16} color={ink}/>
                   </motion.div>
                 </button>
                 <AnimatePresence initial={false}>
