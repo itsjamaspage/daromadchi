@@ -1806,18 +1806,6 @@ function CtaSection({ lang }: { lang: string }) {
       'Then let\'s go'),
   ]
 
-  const [phraseIdx, setPhraseIdx] = useState(0)
-  const [btnPulse, setBtnPulse] = useState(false)
-
-  useEffect(() => {
-    const id = setInterval(() => {
-      setPhraseIdx(p => (p + 1) % 2)
-      setBtnPulse(true)
-      setTimeout(() => setBtnPulse(false), 700)
-    }, 2500)
-    return () => clearInterval(id)
-  }, [])
-
   return (
     <section style={{ position: 'relative', background: secBg, overflow: 'hidden',
       padding: '100px 24px', fontFamily: "'Space Grotesk', system-ui, sans-serif", transition: 'background 0.3s' }}>
@@ -1838,29 +1826,18 @@ function CtaSection({ lang }: { lang: string }) {
         <FadeUp>
           <div style={{ minHeight: 'clamp(100px, 12vw, 160px)', display: 'flex', alignItems: 'center',
             justifyContent: 'center', marginBottom: 20 }}>
-            <AnimatePresence mode="wait">
-              <motion.h2
-                key={phraseIdx}
-                initial={{ opacity: 0, y: 28 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -28 }}
-                transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
-                style={{ fontSize: 'clamp(28px, 4vw, 52px)', fontWeight: 800,
-                  color: phraseIdx === 1 ? acc.tint : headCol,
-                  lineHeight: 1.08, letterSpacing: '-0.024em' }}>
-                {phrases[phraseIdx]}
-              </motion.h2>
-            </AnimatePresence>
+            <h2 style={{ fontSize: 'clamp(28px, 4vw, 52px)', fontWeight: 800,
+                color: headCol,
+                lineHeight: 1.08, letterSpacing: '-0.024em' }}>
+                {phrases[0]}
+              </h2>
           </div>
           <p style={{ fontSize: 16, color: subCol, lineHeight: 1.65, maxWidth: 500, margin: '0 auto 40px' }}>
             {tx(lang,'Подключите магазин за несколько минут. Бесплатный тариф, без привязки карты',
               'Do\'koningizni bir necha daqiqada ulang. Bepul tarif, karta bog\'lanmaydi',
               'Connect your store in minutes. Free plan, no credit card required')}
           </p>
-          <motion.div
-            animate={btnPulse ? { scale: [1, 1.09, 0.96, 1.05, 1], y: [0, -8, 0] } : { scale: 1, y: 0 }}
-            transition={{ duration: 0.65, ease: 'easeInOut' }}
-            style={{ display: 'inline-block', marginBottom: 20 }}>
+          <div style={{ display: 'inline-block', marginBottom: 20 }}>
             <Link href="/login"
               style={{ display: 'inline-block', fontSize: 16, fontWeight: 700,
                 background: acc.btn, color: acc.btnTxt,
@@ -1869,7 +1846,7 @@ function CtaSection({ lang }: { lang: string }) {
               onMouseLeave={e => { e.currentTarget.style.background = acc.btn; e.currentTarget.style.transform = 'translateY(0)' }}>
               {tx(lang,'Устали терять деньги? Начните зарабатывать →','Zarar emas — foyda. Bugunoq boshlang →','Your profit is hiding — let\'s go find it →')}
             </Link>
-          </motion.div>
+          </div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 24, flexWrap: 'wrap' }}>
             {[tx(lang,'✓ 7 дней — только Pro и Pro+','✓ 7 kun — faqat Pro va Pro+','✓ 7 days — Pro & Pro+ only'),
               tx(lang,'✓ Без карты','✓ Kartasiz','✓ No card'),
