@@ -414,7 +414,7 @@ function HeroSection({ lang }: { lang: string }) {
             color: headCol, marginBottom: 18, letterSpacing: '-0.024em' }}>
           {tx(lang,
             <>Аналитика трёх маркетплейсов —<br/>всё на одном экране</>,
-            <>Uch marketpleysning analitikasi —<br/>hammasi bitta ekranda</>,
+            <>Uchta marketpleysning analitikasi —<br/>hammasi bitta ekranda</>,
             <>Three marketplace analytics —<br/>all on one screen</>
           )}
         </motion.h1>
@@ -861,9 +861,9 @@ function HowItWorksSection({ lang }: { lang: string }) {
       color: stepColor,
       title: tx(lang,'Регистрация','Ro\'yxatdan o\'tish','Register'),
       desc: tx(lang,
-        'Только email и пароль. Менее 30 секунд — и вы внутри',
-        'Faqat email va parol. 30 soniyadan kam — va siz ichkaridasiz',
-        'Just email and password. Under 30 seconds and you\'re in'
+        'Зарегистрируйтесь в системе и начните пользоваться нашей платформой',
+        'Tizimga ro\'yxatdan o\'ting va platformamizdan foydalanishni boshlang',
+        'Sign up in the system and start using our platform'
       ),
       ui: (
         <div style={{ background: uiBg, borderRadius: 16, padding: '20px',
@@ -886,9 +886,9 @@ function HowItWorksSection({ lang }: { lang: string }) {
       color: stepColor,
       title: tx(lang,'Подключите магазин','Do\'koningizni ulang','Connect your store'),
       desc: tx(lang,
-        'Вставьте API-ключ из кабинета Uzum, WB или Яндекс — мы не можем менять данные в вашем магазине, только читать',
-        'Uzum, WB yoki Yandex kabinetidan API kalitini kiriting — biz faqat o\'qiy olamiz',
-        'Paste API key from Uzum, WB or Yandex — we can only read data, never modify your store'
+        'Вставьте API-ключ из кабинета Uzum, WB или Яндекс — получите доступ к данным магазина, платформа работает в режиме «только чтение»',
+        'Uzum, WB yoki Yandex kabinetidan API kalitini kiriting — do\'kon ma\'lumotlariga kirish oling, platforma «faqat o\'qish» rejimida ishlaydi',
+        'Paste API key from Uzum, WB or Yandex — and access to your store\'s data, our platform works in "read only" mode.'
       ),
       ui: (
         <div style={{ background: uiBg, borderRadius: 16, padding: '20px',
@@ -912,7 +912,7 @@ function HowItWorksSection({ lang }: { lang: string }) {
       title: tx(lang,'Данные готовы','Ma\'lumotlar tayyor','Data is ready'),
       desc: tx(lang,
         'Данные синхронизируются автоматически — вся история продаж с момента подключения, без ручного ввода',
-        'Ma\'lumotlar avtomatik sinxronlanadi — do\'koningizni ulagan paytdan boshlab barcha sotuv tarixi',
+        'Ma\'lumotlar avtomatik sinxronlanadi — do\'koningizni ulagan paytdan boshlab barcha sotuv tarixi ko\'rinadi',
         'Data syncs automatically — full sales history from the moment you connect, no manual entry needed'
       ),
       ui: (
@@ -1052,7 +1052,7 @@ function BentoSection({ lang }: { lang: string }) {
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
         <SectionHead dark={isDark}
           title={tx(lang,'Всё необходимое для роста','O\'sish uchun kerak bo\'lgan hamma narsa','Everything you need to grow')}
-          accent={tx(lang,'роста','o\'sish','grow')}
+          accent={tx(lang,'роста','O\'sish','grow')}
           sub={tx(lang,'Аналитика, контроль запасов и финансы в одном месте',
             'Tahlil, zaxira nazorati va moliya bir joyda',
             'Analytics, inventory control and financials in one place')}
@@ -1275,7 +1275,7 @@ function ExtensionSection({ lang }: { lang: string }) {
         'Install from Chrome Web Store in seconds'),
       points: [
         tx(lang,'Совместим с Chrome, Edge и Brave','Chrome, Edge va Brave bilan mos','Works on Chrome, Edge & Brave'),
-        tx(lang,'Без регистрации — сразу работает','Ro\'yxatdan o\'tmasdan — darhol ishlaydi','No sign-up — works immediately'),
+        tx(lang,'Требуется аккаунт Daromadchi для полного доступа','To\'liq kirish uchun Daromadchi hisobi talab etiladi','Daromadchi account required for full access'),
         tx(lang,'0 сум, навсегда бесплатно','0 so\'m, doimo bepul','0 sum, free forever'),
       ],
     },
