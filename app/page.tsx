@@ -1736,7 +1736,7 @@ function FaqSection({ lang }: { lang: string }) {
   const isDark = useIsDark()
   const acc = useAccent()
   const [open, setOpen] = useState<number | null>(0)
-  const secBg = isDark ? P.dCard : '#ffffff'
+  const secBg = isDark ? P.dCard : P.parchment
   const bdr   = isDark ? P.dHair   : P.hair
   const ink   = isDark ? P.dText   : P.ink
   const sub   = isDark ? P.dMuted  : P.stone
@@ -1780,10 +1780,11 @@ function FaqSection({ lang }: { lang: string }) {
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           {faqs.map((f, i) => (
             <FadeUp key={i} delay={i * 0.06}>
-              <div style={{ borderBottom: `1px solid ${bdr}` }}>
+              <div style={{ background: isDark ? P.dCard : '#ffffff', borderRadius: 16,
+                marginBottom: 10, border: `1px solid ${bdr}`, overflow: 'hidden' }}>
                 <button onClick={() => setOpen(open === i ? null : i)}
                   style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    padding: '20px 0', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', gap: 16 }}>
+                    padding: '20px 24px', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', gap: 16 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                     <span style={{ fontSize: 13, fontWeight: 700, color: acc.tint,
                       fontFamily: 'var(--font-mono-landing), monospace', minWidth: 20 }}>
@@ -1808,7 +1809,7 @@ function FaqSection({ lang }: { lang: string }) {
                       exit={{ height: 0, opacity: 0 }}
                       transition={{ duration: 0.25, ease: 'easeInOut' }}
                       style={{ overflow: 'hidden' }}>
-                      <p style={{ fontSize: 14, color: ink, lineHeight: 1.7, paddingBottom: 20, paddingLeft: 34 }}>
+                      <p style={{ fontSize: 14, color: ink, lineHeight: 1.7, padding: '0 24px 20px 24px' }}>
                         {f.a}
                       </p>
                     </motion.div>
