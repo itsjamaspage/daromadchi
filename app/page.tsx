@@ -248,12 +248,15 @@ function FloatCard({ mp, mpColor, metric, value, change, up, delay, floatDur = 3
 
 // ── Dashboard mockup — matches real app ───────────────────────────────────────
 function DashMockup() {
-  const border = '#E2E8F0'
-  const bg2    = '#F8FAFD'
-  const muted  = '#94A3B8'
-  const ink    = '#0F172A'
+  const isDark = useIsDark()
 
-  const teal = '#0E7490'
+  const mainBg = isDark ? '#0c1120' : '#ffffff'
+  const border = isDark ? '#1e2a42' : '#E2E8F0'
+  const bg2    = isDark ? '#0f1627' : '#F8FAFD'
+  const muted  = isDark ? '#6b7a99' : '#94A3B8'
+  const ink    = isDark ? '#e2e8f0' : '#0F172A'
+
+  const teal = isDark ? '#22c4b8' : '#0E7490'
   const kpis = [
     { l: 'Выручка',  v: '124 540 000', u: 'сум', d: '+12.4%', pos: true,  c: teal },
     { l: 'Заказы',   v: '1 842',        u: '',    d: '+8.1%',  pos: true,  c: teal },
@@ -273,9 +276,9 @@ function DashMockup() {
   ]
 
   return (
-    <div style={{ background: '#fff', borderRadius: 16, overflow: 'hidden', display: 'flex',
+    <div style={{ background: mainBg, borderRadius: 16, overflow: 'hidden', display: 'flex',
       border: `1px solid ${border}`,
-      boxShadow: '0 24px 64px rgba(0,0,0,0.18), 0 6px 20px rgba(0,0,0,0.08)' }}>
+      boxShadow: isDark ? '0 24px 64px rgba(0,0,0,0.55), 0 6px 20px rgba(0,0,0,0.35)' : '0 24px 64px rgba(0,0,0,0.18), 0 6px 20px rgba(0,0,0,0.08)' }}>
 
       {/* Mini sidebar */}
       <div style={{ width: 42, background: bg2, borderRight: `1px solid ${border}`,
@@ -453,7 +456,7 @@ function HeroSection({ lang }: { lang: string }) {
           className="hidden sm:block"
           style={{ width: '100%', position: 'relative', zIndex: 20, marginBottom: 0 }}>
           <BorderGlow
-            backgroundColor='#ffffff'
+            backgroundColor={isDark ? '#0c1120' : '#ffffff'}
             glowColor={isDark ? "0 0 85" : "207 90 74"}
             colors={isDark ? ['#c5d8fe','#a8c5fd','#dbeafe'] : ['#83c0f9','#60a5fa','#a5f3fc']}
             borderRadius={16}
