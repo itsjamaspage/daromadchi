@@ -49,11 +49,16 @@ const _fetchRevenue = unstable_cache(
       grouped.set(date, { revenue: existing.revenue + Number(row.revenue ?? 0), count: existing.count + 1 })
     }
 
-    return Array.from(grouped.entries()).map(([date, v]) => ({
-      date: new Date(date).toLocaleDateString('uz-UZ', { month: 'short', day: 'numeric' }),
-      revenue: v.revenue,
-      order_count: v.count,
-    }))
+    return Array.from(grouped.entries()).map(([date, v]) => {
+      const d = new Date(date)
+      const label = d.toLocaleDateString('uz-UZ', { month: 'short', day: 'numeric' })
+      const yr = String(d.getFullYear()).slice(-2)
+      return {
+        date: `${label} '${yr}`,
+        revenue: v.revenue,
+        order_count: v.count,
+      }
+    })
   },
   ['revenue'],
   { revalidate: 30 },

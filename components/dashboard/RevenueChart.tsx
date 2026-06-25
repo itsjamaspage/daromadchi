@@ -42,7 +42,9 @@ export default function RevenueChart({ data, days = 7 }: { data: DailyRevenue[];
       <div className="flex items-center justify-between mb-6">
         <div>
           <h3 className="font-semibold" style={{ color: 'var(--text-base)' }}>{d.dailyRevenue}</h3>
-          <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{d.last} {days} {d.daysSuffix}</p>
+          <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
+          {d.last} {days} {d.daysSuffix} · {new Date().getFullYear()}
+        </p>
         </div>
         <span className="text-xs px-3 py-1.5 rounded-lg border" style={{ color: 'var(--text-muted)', background: 'rgba(255, 255, 255, 0.04)', borderColor: 'var(--border)' }}>
           So&apos;m
