@@ -163,6 +163,48 @@ export async function syncFromUzum(shopId: string, token: string, fromDateOverri
       if (ordErr) throw new Error(`Buyurtmalarni saqlashda xato: ${ordErr.message}`)
     }
 
+    // ── Derive products from order items if product sync returned nothing ────────
+    // Happens when the Uzum product API 403s or returns 0 — orders are present
+    // but productRows is still empty, leaving the products table blank.
+    if (productRows.length === 0 && uzumOrders.length > 0) {
+      try {
+        const seenMap = new Map<string, typeof productRows[0]>()
+        for (const o of uzumOrders) {
+          for (const it of (o.orderItems ?? o.items ?? [])) {
+            const mpid = String(it.skuId)
+            if (!seenMap.has(mpid)) {
+              seenMap.set(mpid, {
+                shop_id: shopId,
+                marketplace_product_id: mpid,
+                title: it.productTitle ?? `SKU ${it.skuId}`,
+                sku: mpid,
+                category: null,
+                selling_price: it.price ?? null,
+                cost_price: null,
+                stock_quantity: 0,
+              })
+            }
+          }
+        }
+        if (seenMap.size > 0) {
+          const derived = [...seenMap.values()]
+          const { data: existingProds } = await supabase
+            .from('products').select('id, marketplace_product_id').eq('shop_id', shopId)
+          const existingMap = new Map(
+            (existingProds ?? []).map((p: { id: string; marketplace_product_id: string }) =>
+              [String(p.marketplace_product_id), String(p.id)]),
+          )
+          const toIns = derived.filter(r => !existingMap.has(r.marketplace_product_id))
+          const toUpd = derived
+            .filter(r => existingMap.has(r.marketplace_product_id))
+            .map(r => ({ ...r, id: existingMap.get(r.marketplace_product_id)! }))
+          if (toIns.length > 0) await supabase.from('products').insert(toIns)
+          if (toUpd.length > 0) await supabase.from('products').upsert(toUpd)
+          productRows.push(...derived)
+        }
+      } catch { /* best-effort */ }
+    }
+
     const newOrderRows = orderRows
 
     // ── Order items (best-effort) ─────────────────────────────────────────────
