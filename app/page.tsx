@@ -254,7 +254,9 @@ function DashMockup() {
   const muted  = isDark ? '#6b7a99' : '#94A3B8'
   const ink    = isDark ? '#e2e8f0' : '#0F172A'
 
-  const teal = isDark ? '#22c4b8' : '#0E7490'
+  const teal    = isDark ? '#83c0f9' : '#3b82f6'
+  const tealBg  = isDark ? 'rgba(131,192,249,0.15)' : 'rgba(59,130,246,0.12)'
+  const tealDim = isDark ? 'rgba(131,192,249,0.12)' : 'rgba(59,130,246,0.15)'
   const kpis = [
     { l: 'Выручка',  v: '124 540 000', u: 'сум', d: '+12.4%', pos: true,  c: teal },
     { l: 'Заказы',   v: '1 842',        u: '',    d: '+8.1%',  pos: true,  c: teal },
@@ -286,7 +288,7 @@ function DashMockup() {
         {sideIcons.map((Icon, i) => (
           <div key={i} style={{ width: 30, height: 30, borderRadius: 7,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: i === 0 ? 'rgba(14,116,144,0.12)' : 'transparent', marginBottom: 2 }}>
+            background: i === 0 ? tealBg : 'transparent', marginBottom: 2 }}>
             <Icon size={13} color={i === 0 ? teal : muted} />
           </div>
         ))}
@@ -329,7 +331,7 @@ function DashMockup() {
             <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2, height: 40 }}>
               {bars.map((h, i) => (
                 <div key={i} style={{ flex: 1, borderRadius: '2px 2px 0 0',
-                  background: i >= hi ? teal : 'rgba(14,116,144,0.15)', height: `${h}%` }} />
+                  background: i >= hi ? teal : tealDim, height: `${h}%` }} />
               ))}
             </div>
           </div>
