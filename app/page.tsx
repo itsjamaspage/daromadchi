@@ -452,7 +452,15 @@ function HeroSection({ lang }: { lang: string }) {
           transition={{ delay: 0.40, duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
           className="hidden sm:block"
           style={{ width: '100%', position: 'relative', zIndex: 20, marginBottom: 0 }}>
-          <DashMockup />
+          <BorderGlow
+            backgroundColor='#ffffff'
+            glowColor={isDark ? "0 0 85" : "207 90 74"}
+            colors={isDark ? ['#c5d8fe','#a8c5fd','#dbeafe'] : ['#83c0f9','#60a5fa','#a5f3fc']}
+            borderRadius={16}
+            glowIntensity={isDark ? 1.8 : 1.2}
+          >
+            <DashMockup />
+          </BorderGlow>
         </motion.div>
       </div>
 
@@ -497,6 +505,13 @@ function ComparisonSection({ lang }: { lang: string }) {
           )}
         />
         <FadeUp delay={0.1}>
+          <BorderGlow
+            backgroundColor={isDark ? P.dCard : P.card}
+            glowColor={isDark ? "0 0 85" : "207 90 74"}
+            colors={['#83c0f9','#60a5fa','#a5f3fc']}
+            borderRadius={20}
+            glowIntensity={isDark ? 1.8 : 1.2}
+          >
           <div style={{ background: cardBg, borderRadius: 20, overflow: 'hidden',
             border: `1px solid ${bdr}`, boxShadow: isDark ? '0 4px 24px rgba(197,232,254,0.06)' : '0 4px 24px rgba(0,0,0,0.06)' }}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr',
@@ -534,6 +549,7 @@ function ComparisonSection({ lang }: { lang: string }) {
               </div>
             ))}
           </div>
+          </BorderGlow>
         </FadeUp>
         <FadeUp delay={0.2} style={{ textAlign: 'center', marginTop: 36 }}>
           <Link href="/login"
@@ -671,6 +687,13 @@ function FeaturesSection({ lang }: { lang: string }) {
             style={{ transformPerspective: 900 }}>
 
           {/* Browser chrome */}
+          <BorderGlow
+            backgroundColor={isDark ? '#0c1120' : '#83c0f7'}
+            glowColor={isDark ? "0 0 85" : "207 90 74"}
+            colors={isDark ? ['#c5d8fe','#a8c5fd','#7bb8f9'] : ['#83c0f9','#60a5fa','#a5f3fc']}
+            borderRadius={14}
+            glowIntensity={isDark ? 1.8 : 1.2}
+          >
           <div style={{ borderRadius: 14, overflow: 'hidden', border: `1px solid ${bdr}`,
             boxShadow: isDark
               ? '0 32px 80px rgba(0,0,0,0.6), 0 8px 24px rgba(0,0,0,0.4)'
@@ -760,6 +783,7 @@ function FeaturesSection({ lang }: { lang: string }) {
               </div>
             </div>
           </div>
+          </BorderGlow>
           </motion.div>
         </motion.div>
 
@@ -1024,7 +1048,15 @@ function HowItWorksSection({ lang }: { lang: string }) {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -16 }}
               transition={{ duration: 0.28, ease: 'easeOut' }}>
-              {steps[active].ui}
+              <BorderGlow
+                backgroundColor={isDark ? 'rgba(28,28,46,0.95)' : P.parchment}
+                glowColor={isDark ? "0 0 85" : "207 90 74"}
+                colors={['#83c0f9','#60a5fa','#a5f3fc']}
+                borderRadius={16}
+                glowIntensity={isDark ? 1.8 : 1.2}
+              >
+                {steps[active].ui}
+              </BorderGlow>
             </motion.div>
           </AnimatePresence>
         </div>
@@ -1068,10 +1100,10 @@ function BentoSection({ lang }: { lang: string }) {
             <FadeUp key={k.l} delay={i * 0.07} style={{ height: '100%' }}>
               <BorderGlow
                 backgroundColor={isDark ? P.dCard : '#ffffff'}
-                glowColor={k.hsl}
+                glowColor={isDark ? "0 0 85" : k.hsl}
                 colors={k.cols}
                 borderRadius={18}
-                glowIntensity={0.8}
+                glowIntensity={isDark ? 1.5 : 1.2}
                 style={{ height: '100%' }}
               >
                 <div style={{ padding: '20px 22px', borderLeft: `3px solid ${k.col}` }}>
@@ -1091,10 +1123,10 @@ function BentoSection({ lang }: { lang: string }) {
           <FadeUp delay={0.12} style={{ height: '100%' }}>
             <BorderGlow
               backgroundColor={isDark ? P.dCard : '#ffffff'}
-              glowColor="207 90 74"
+              glowColor={isDark ? "0 0 85" : "207 90 74"}
               colors={['#83c0f9', '#60a5fa', '#a5f3fc']}
               borderRadius={24}
-              glowIntensity={0.8}
+              glowIntensity={isDark ? 1.5 : 1.2}
               style={{ height: '100%' }}
             >
               <div style={{ padding: '28px' }}>
@@ -1130,10 +1162,10 @@ function BentoSection({ lang }: { lang: string }) {
           <FadeUp delay={0.2} style={{ height: '100%' }}>
             <BorderGlow
               backgroundColor={isDark ? P.dCard : '#ffffff'}
-              glowColor="38 92 50"
+              glowColor={isDark ? "0 0 85" : "38 92 50"}
               colors={['#f59e0b', '#d97706', '#fcd34d']}
               borderRadius={24}
-              glowIntensity={0.8}
+              glowIntensity={isDark ? 1.5 : 1.2}
               style={{ height: '100%' }}
             >
               <div style={{ padding: '28px' }}>
@@ -1175,10 +1207,10 @@ function BentoSection({ lang }: { lang: string }) {
           <FadeUp delay={0.28} style={{ height: '100%' }}>
             <BorderGlow
               backgroundColor={isDark ? P.dCard : '#ffffff'}
-              glowColor="158 84 40"
+              glowColor={isDark ? "0 0 85" : "158 84 40"}
               colors={['#10b981', '#059669', '#6ee7b7']}
               borderRadius={24}
-              glowIntensity={0.8}
+              glowIntensity={isDark ? 1.5 : 1.2}
               style={{ height: '100%' }}
             >
               <div style={{ padding: '28px' }}>
@@ -1309,10 +1341,10 @@ function ExtensionSection({ lang }: { lang: string }) {
               <FadeUp key={i} delay={i * 0.1} style={{ height: '100%' }}>
                 <BorderGlow
                   backgroundColor={isDark ? P.dCard : '#ffffff'}
-                  glowColor={glowHsl[i]}
+                  glowColor={isDark ? "0 0 85" : glowHsl[i]}
                   colors={glowCols[i]}
                   borderRadius={24}
-                  glowIntensity={0.9}
+                  glowIntensity={isDark ? 1.5 : 1.2}
                   style={{ height: '100%' }}
                 >
                   <div style={{ padding: '32px 28px', cursor: 'default' }}>
@@ -1475,12 +1507,11 @@ function PricingSection({ lang }: { lang: string }) {
               animate={inView ? { opacity: 1, y: 0, scale: t.highlight ? 1.02 : 1 } : {}}
               transition={{ delay: i * 0.18, type: 'spring', stiffness: 160, damping: 18 }}>
               <BorderGlow
-                backgroundColor={t.highlight ? P.parchment : (isDark ? P.dCard : P.card)}
-                glowColor="207 100 55"
-                glowIntensity={1.4}
+                backgroundColor={t.highlight ? (isDark ? P.parchment : '#0e1b2e') : (isDark ? P.dCard : P.card)}
+                glowColor={isDark ? "0 0 85" : "207 100 55"}
                 colors={t.highlight ? ['#83c0f9', '#60a5fa', '#bfdbfe'] : ['#83c0f9', '#60a5fa', '#a5f3fc']}
                 borderRadius={20}
-                glowIntensity={t.highlight ? 1.0 : 0.75}
+                glowIntensity={t.highlight ? (isDark ? 1.5 : 1.2) : (isDark ? 1.2 : 0.9)}
                 style={{ display: 'flex', flexDirection: 'column', height: '100%' }}
               >
                 <div style={{ padding: '28px 24px', display: 'flex', flexDirection: 'column', flex: 1 }}>
@@ -1497,12 +1528,13 @@ function PricingSection({ lang }: { lang: string }) {
                   </div>
 
                   <div style={{ marginBottom: 4 }}>
-                    <span style={{ fontSize: 34, fontWeight: 800, color: ink,
+                    <span style={{ fontSize: 34, fontWeight: 800,
+                      color: t.highlight && !isDark ? '#E8FFF8' : ink,
                       fontFamily: 'var(--font-mono-landing), monospace' }}>
                       {t.price === '0' ? '0' : <SlotPrice value={t.price} trigger={inView} delay={i * 0.18 + 0.4} />}
                     </span>
                   </div>
-                  <p style={{ fontSize: 13, color: muted, marginBottom: 24 }}>{t.sub}</p>
+                  <p style={{ fontSize: 13, color: t.highlight && !isDark ? P.dMuted : muted, marginBottom: 24 }}>{t.sub}</p>
 
                   <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
                     {t.features.map((f, fi) => (
@@ -1511,8 +1543,8 @@ function PricingSection({ lang }: { lang: string }) {
                         animate={inView ? { opacity: 1, x: 0 } : {}}
                         transition={{ delay: i * 0.18 + 0.7 + fi * 0.05, duration: 0.25 }}
                         style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-                        <Check size={14} color={acc.tint} style={{ marginTop: 2, flexShrink: 0 }}/>
-                        <span style={{ fontSize: 13, color: ink, lineHeight: 1.4 }}>{f}</span>
+                        <Check size={14} color={t.highlight && !isDark ? '#7bbaf7' : acc.tint} style={{ marginTop: 2, flexShrink: 0 }}/>
+                        <span style={{ fontSize: 13, color: t.highlight && !isDark ? '#E8FFF8' : ink, lineHeight: 1.4 }}>{f}</span>
                       </motion.div>
                     ))}
                   </div>
@@ -1616,10 +1648,10 @@ function ResourcesSection({ lang }: { lang: string }) {
                 <FadeUp key={item.num} delay={0.05 + idx * 0.07}>
                   <BorderGlow
                     backgroundColor={isDark ? P.dCard : P.card}
-                    glowColor="207 70 74"
+                    glowColor={isDark ? "0 0 85" : "207 70 74"}
                     colors={['#83c0f9', '#60a5fa', '#a5f3fc']}
                     borderRadius={24}
-                    glowIntensity={0.75}
+                    glowIntensity={isDark ? 1.5 : 1.2}
                   >
                   <div
                     onClick={() => setExpanded(idx)}
@@ -1759,8 +1791,13 @@ function FaqSection({ lang }: { lang: string }) {
                     </span>
                     <span style={{ fontSize: 15, fontWeight: 600, color: ink }}>{f.q}</span>
                   </div>
-                  <motion.div animate={{ rotate: open === i ? 180 : 0 }} transition={{ duration: 0.2 }}>
-                    <ChevronDown size={18} color={ink}/>
+                  <motion.div animate={{ rotate: open === i ? 180 : 0 }} transition={{ duration: 0.2 }}
+                    style={{ width: 34, height: 34, borderRadius: '50%', flexShrink: 0,
+                      background: open === i ? acc.btn : 'transparent',
+                      border: `1.5px solid ${open === i ? acc.btn : bdr}`,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      transition: 'background 0.2s, border-color 0.2s' }}>
+                    <ChevronDown size={16} color={open === i ? '#131321' : ink}/>
                   </motion.div>
                 </button>
                 <AnimatePresence initial={false}>
