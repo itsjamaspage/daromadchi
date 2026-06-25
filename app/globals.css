@@ -25,6 +25,11 @@ button, input, select, textarea, a {
   font-family: 'Space Grotesk', system-ui, sans-serif !important;
 }
 
+html {
+  background-color: #161616;
+  color-scheme: dark;
+}
+
 /* ═══════════════════════════════════════════════════════════════════
    DARK THEME — Revolut black canvas
    canvas-dark #161616 · surface-elevated #1e1e1e · mint #46F0D2
