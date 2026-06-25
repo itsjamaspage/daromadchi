@@ -24,11 +24,9 @@ export default function Providers({ children, initialLang = 'uz' }: Props) {
   const [lang,  setLangState] = useState<Lang>(initialLang)
 
   useEffect(() => {
-    // Restore saved theme
     const savedTheme = localStorage.getItem('theme') as Theme | null
     if (savedTheme) setTheme(savedTheme)
 
-    // Sync language: if localStorage differs from cookie/initialLang, update cookie
     const savedLang = localStorage.getItem('lang') as Lang | null
     if (savedLang && savedLang !== initialLang) {
       setLangState(savedLang)
