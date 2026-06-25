@@ -1519,7 +1519,7 @@ function PricingSection({ lang }: { lang: string }) {
               >
                 <div style={{ padding: '28px 24px', display: 'flex', flexDirection: 'column', flex: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                    <p style={{ fontSize: 13, fontWeight: 700, color: t.highlight ? acc.dk : muted }}>
+                    <p style={{ fontSize: 13, fontWeight: 700, color: t.highlight ? (isDark ? P.green : acc.dk) : muted }}>
                       {t.name}
                     </p>
                     {(t as any).badge && (
@@ -1532,12 +1532,12 @@ function PricingSection({ lang }: { lang: string }) {
 
                   <div style={{ marginBottom: 4 }}>
                     <span style={{ fontSize: 34, fontWeight: 800,
-                      color: t.highlight && !isDark ? '#E8FFF8' : ink,
+                      color: t.highlight ? (isDark ? P.ink : '#E8FFF8') : ink,
                       fontFamily: 'var(--font-mono-landing), monospace' }}>
                       {t.price === '0' ? '0' : <SlotPrice value={t.price} trigger={inView} delay={i * 0.18 + 0.4} />}
                     </span>
                   </div>
-                  <p style={{ fontSize: 13, color: t.highlight && !isDark ? P.dMuted : muted, marginBottom: 24 }}>{t.sub}</p>
+                  <p style={{ fontSize: 13, color: t.highlight ? (isDark ? P.muted : P.dMuted) : muted, marginBottom: 24 }}>{t.sub}</p>
 
                   <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
                     {t.features.map((f, fi) => (
@@ -1546,8 +1546,8 @@ function PricingSection({ lang }: { lang: string }) {
                         animate={inView ? { opacity: 1, x: 0 } : {}}
                         transition={{ delay: i * 0.18 + 0.7 + fi * 0.05, duration: 0.25 }}
                         style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-                        <Check size={14} color={t.highlight && !isDark ? '#7bbaf7' : acc.tint} style={{ marginTop: 2, flexShrink: 0 }}/>
-                        <span style={{ fontSize: 13, color: t.highlight && !isDark ? '#E8FFF8' : ink, lineHeight: 1.4 }}>{f}</span>
+                        <Check size={14} color={t.highlight ? (isDark ? P.green : '#7bbaf7') : acc.tint} style={{ marginTop: 2, flexShrink: 0 }}/>
+                        <span style={{ fontSize: 13, color: t.highlight ? (isDark ? P.ink : '#E8FFF8') : ink, lineHeight: 1.4 }}>{f}</span>
                       </motion.div>
                     ))}
                   </div>
@@ -1804,20 +1804,18 @@ function FaqSection({ lang }: { lang: string }) {
                     <ChevronDown size={16} color={ink}/>
                   </motion.div>
                 </button>
-                <AnimatePresence initial={false}>
-                  {open === i && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.25, ease: 'easeInOut' }}
-                      style={{ overflow: 'hidden' }}>
-                      <p style={{ fontSize: 14, color: ink, lineHeight: 1.7, padding: '0 24px 20px 24px' }}>
-                        {f.a}
-                      </p>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                <div style={{
+                  display: 'grid',
+                  gridTemplateRows: open === i ? '1fr' : '0fr',
+                  transition: 'grid-template-rows 0.25s ease-in-out, opacity 0.2s ease-in-out',
+                  opacity: open === i ? 1 : 0,
+                }}>
+                  <div style={{ overflow: 'hidden' }}>
+                    <p style={{ fontSize: 14, color: ink, lineHeight: 1.7, padding: '0 24px 20px 24px' }}>
+                      {f.a}
+                    </p>
+                  </div>
+                </div>
               </div>
             </FadeUp>
           ))}
