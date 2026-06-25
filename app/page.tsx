@@ -1736,7 +1736,7 @@ function FaqSection({ lang }: { lang: string }) {
   const isDark = useIsDark()
   const acc = useAccent()
   const [open, setOpen] = useState<number | null>(0)
-  const secBg = isDark ? P.dCard : P.parchment
+  const secBg = isDark ? P.dCard : '#ffffff'
   const bdr   = isDark ? P.dHair   : P.hair
   const ink   = isDark ? P.dText   : P.ink
   const sub   = isDark ? P.dMuted  : P.stone
