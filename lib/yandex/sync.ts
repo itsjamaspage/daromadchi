@@ -88,15 +88,17 @@ export async function syncFromYandex(
       )
     }
 
-    // ── Orders (incremental since last sync, fallback 90 days) ───────────────
-    const { data: shopRow } = await supabase
-      .from('shops')
-      .select('last_synced_at')
-      .eq('id', shopId)
-      .single()
+    // ── Orders (incremental since last sync, fallback 365 days) ─────────────
+    const [{ data: shopRow }, { count: existingProductCount }] = await Promise.all([
+      supabase.from('shops').select('last_synced_at').eq('id', shopId).single(),
+      supabase.from('products').select('*', { count: 'exact', head: true }).eq('shop_id', shopId),
+    ])
 
+    // If products table is empty, force a full 365-day re-sync so order items
+    // get proper product_ids (needed for category chart and top products).
+    const hasProducts = (existingProductCount ?? 0) > 0
     const since = fromDateOverride
-      ?? (shopRow?.last_synced_at
+      ?? (hasProducts && shopRow?.last_synced_at
         ? new Date(shopRow.last_synced_at)
         : (() => { const d = new Date(); d.setDate(d.getDate() - 365); return d })())
 
