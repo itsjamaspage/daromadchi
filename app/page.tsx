@@ -220,7 +220,7 @@ function FloatCard({ mp, mpColor, metric, value, change, up, delay, floatDur = 3
       {/* CSS animation — GPU-accelerated, no JS per frame */}
       <div className="animate-float" style={{ animationDuration: `${floatDur}s`, animationDelay: `${delay * 0.3}s` }}>
         <div style={{
-          background: isDark ? 'rgba(18,40,88,0.97)' : '#a0d4fc',
+          background: isDark ? 'rgba(18,40,88,0.97)' : '#83c0f9',
           borderRadius: 14, padding: '12px 16px', minWidth: 162,
           boxShadow: isDark
             ? '0 10px 40px rgba(197,232,254,0.12), 0 2px 8px rgba(0,0,0,0.40)'
