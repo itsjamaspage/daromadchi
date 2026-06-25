@@ -1774,7 +1774,6 @@ function FaqSection({ lang }: { lang: string }) {
   return (
     <section id="faq" style={{ position: 'relative', background: secBg, padding: '88px 24px',
       fontFamily: "'Space Grotesk', system-ui, sans-serif", transition: 'background 0.3s' }}>
-      <SectionHoverAnim colors={isDark ? [...ANIM_BLUE_DK] : [...ANIM_WHITE]} opacity={0.6} />
       <div style={{ maxWidth: 760, margin: '0 auto' }}>
         <SectionHead dark={isDark}
           title={tx(lang,'Частые вопросы','Tez-tez so\'raladigan savollar','Frequently asked questions')}
@@ -1795,14 +1794,14 @@ function FaqSection({ lang }: { lang: string }) {
                     </span>
                     <span style={{ fontSize: 15, fontWeight: 600, color: ink }}>{f.q}</span>
                   </div>
-                  <motion.div animate={{ rotate: open === i ? 180 : 0 }} transition={{ duration: 0.2 }}
-                    style={{ width: 34, height: 34, borderRadius: '50%', flexShrink: 0,
-                      background: open === i ? '#ffffff' : 'transparent',
-                      border: `1.5px solid ${bdr}`,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      transition: 'background 0.2s' }}>
+                  <div style={{ width: 34, height: 34, borderRadius: '50%', flexShrink: 0,
+                    background: open === i ? (isDark ? 'rgba(131,192,249,0.18)' : '#ffffff') : 'transparent',
+                    border: `1.5px solid ${bdr}`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    transform: open === i ? 'rotate(180deg)' : 'rotate(0deg)',
+                    transition: 'transform 0.22s ease, background 0.22s ease' }}>
                     <ChevronDown size={16} color={ink}/>
-                  </motion.div>
+                  </div>
                 </button>
                 <div style={{
                   display: 'grid',
