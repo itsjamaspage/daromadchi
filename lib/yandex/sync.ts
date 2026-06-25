@@ -144,6 +144,46 @@ export async function syncFromYandex(
 
     const newOrderRows = orderRows
 
+    // ── Derive products from order items if product sync returned nothing ────
+    if (productRows.length === 0 && yandexOrders.length > 0) {
+      try {
+        const seenMap = new Map<string, typeof productRows[0]>()
+        for (const o of yandexOrders) {
+          for (const it of o.items ?? []) {
+            const mpid = it.offerId
+            if (!seenMap.has(mpid)) {
+              seenMap.set(mpid, {
+                shop_id: shopId,
+                marketplace_product_id: mpid,
+                title: it.offerName ?? `SKU ${mpid}`,
+                sku: mpid,
+                category: null,
+                selling_price: it.prices?.buyerPrice ?? null,
+                cost_price: null,
+                stock_quantity: 0,
+              })
+            }
+          }
+        }
+        if (seenMap.size > 0) {
+          const derived = [...seenMap.values()]
+          const { data: existingProds } = await supabase
+            .from('products').select('id, marketplace_product_id').eq('shop_id', shopId)
+          const existingMap = new Map(
+            (existingProds ?? []).map((p: { id: string; marketplace_product_id: string }) =>
+              [String(p.marketplace_product_id), String(p.id)]),
+          )
+          const toIns = derived.filter(r => !existingMap.has(r.marketplace_product_id))
+          const toUpd = derived
+            .filter(r => existingMap.has(r.marketplace_product_id))
+            .map(r => ({ ...r, id: existingMap.get(r.marketplace_product_id)! }))
+          if (toIns.length > 0) await supabase.from('products').insert(toIns)
+          if (toUpd.length > 0) await supabase.from('products').upsert(toUpd)
+          productRows.push(...derived)
+        }
+      } catch { /* best-effort */ }
+    }
+
     // ── Order items (best-effort) ─────────────────────────────────────────────
     try {
       const { data: dbProducts } = await supabase
