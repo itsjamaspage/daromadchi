@@ -220,25 +220,23 @@ function FloatCard({ mp, mpColor, metric, value, change, up, delay, floatDur = 3
       {/* CSS animation — GPU-accelerated, no JS per frame */}
       <div className="animate-float" style={{ animationDuration: `${floatDur}s`, animationDelay: `${delay * 0.3}s` }}>
         <div style={{
-          background: isDark ? 'rgba(18,40,88,0.97)' : '#83c0f9',
+          background: '#83c0f9',
           borderRadius: 14, padding: '12px 16px', minWidth: 162,
-          boxShadow: isDark
-            ? '0 10px 40px rgba(197,232,254,0.12), 0 2px 8px rgba(0,0,0,0.40)'
-            : '0 10px 36px rgba(0,0,0,0.14), 0 2px 8px rgba(0,0,0,0.06)',
+          boxShadow: '0 10px 40px rgba(0,0,0,0.22), 0 2px 8px rgba(0,0,0,0.14)',
           fontFamily: "'Space Grotesk', system-ui, sans-serif",
-          border: isDark ? '1px solid rgba(197,232,254,0.18)' : '1px solid rgba(186,230,253,0.8)',
+          border: '1px solid rgba(14,27,46,0.14)',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 5 }}>
-            <div style={{ width: 7, height: 7, borderRadius: '50%', background: mpColor }} />
-            <span style={{ fontSize: 10, fontWeight: 700, color: isDark ? P.dMuted : P.stone, letterSpacing: '0.02em' }}>{mp}</span>
+            <div style={{ width: 7, height: 7, borderRadius: '50%', background: P.ink }} />
+            <span style={{ fontSize: 10, fontWeight: 700, color: P.stone, letterSpacing: '0.02em' }}>{mp}</span>
           </div>
-          <p style={{ fontSize: 10, color: isDark ? 'rgba(198,187,255,0.5)' : P.muted, marginBottom: 2 }}>{metric}</p>
-          <p style={{ fontSize: 17, fontWeight: 800, color: isDark ? P.dText : P.ink, fontFamily: "'Space Grotesk', system-ui, sans-serif", lineHeight: 1.1 }}>
+          <p style={{ fontSize: 10, color: P.muted, marginBottom: 2 }}>{metric}</p>
+          <p style={{ fontSize: 17, fontWeight: 800, color: P.ink, fontFamily: "'Space Grotesk', system-ui, sans-serif", lineHeight: 1.1 }}>
             {value}
           </p>
           <div style={{ display: 'flex', alignItems: 'center', gap: 3, marginTop: 5 }}>
-            {up ? <TrendingUp size={11} color={acc.tint}/> : <TrendingDown size={11} color={P.red}/>}
-            <span style={{ fontSize: 11, fontWeight: 700, color: up ? acc.tint : P.red }}>{change}</span>
+            {up ? <TrendingUp size={11} color={P.green}/> : <TrendingDown size={11} color={P.red}/>}
+            <span style={{ fontSize: 11, fontWeight: 700, color: up ? P.green : P.red }}>{change}</span>
           </div>
         </div>
       </div>
