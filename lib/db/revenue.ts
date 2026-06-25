@@ -52,9 +52,8 @@ const _fetchRevenue = unstable_cache(
     return Array.from(grouped.entries()).map(([date, v]) => {
       const d = new Date(date)
       const label = d.toLocaleDateString('uz-UZ', { month: 'short', day: 'numeric' })
-      const yr = String(d.getFullYear()).slice(-2)
       return {
-        date: `${label} '${yr}`,
+        date: `${label} ${d.getFullYear()}`,
         revenue: v.revenue,
         order_count: v.count,
       }

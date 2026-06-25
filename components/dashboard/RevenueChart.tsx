@@ -43,21 +43,27 @@ export default function RevenueChart({ data, days = 7 }: { data: DailyRevenue[];
         <div>
           <h3 className="font-semibold" style={{ color: 'var(--text-base)' }}>{d.dailyRevenue}</h3>
           <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
-          {d.last} {days} {d.daysSuffix} · {new Date().getFullYear()}
-        </p>
+            {data.length > 0
+              ? `${data[0].date} — ${data[data.length - 1].date}`
+              : `${d.last} ${days} ${d.daysSuffix}`}
+          </p>
         </div>
         <span className="text-xs px-3 py-1.5 rounded-lg border" style={{ color: 'var(--text-muted)', background: 'rgba(255, 255, 255, 0.04)', borderColor: 'var(--border)' }}>
           So&apos;m
         </span>
       </div>
       <ResponsiveContainer width="100%" height={220}>
-        <BarChart data={data} barSize={32} margin={{ top: 4, right: 4, left: 4, bottom: 0 }}>
+        <BarChart data={data} barSize={32} margin={{ top: 4, right: 4, left: 4, bottom: 10 }}>
           <CartesianGrid strokeDasharray="3 3" stroke={gridColor} vertical={false} />
           <XAxis
             dataKey="date"
-            tick={{ fill: axisColor, fontSize: 12 }}
+            tick={{ fill: axisColor, fontSize: 10 }}
             axisLine={false}
             tickLine={false}
+            angle={-35}
+            textAnchor="end"
+            height={52}
+            interval="preserveStartEnd"
           />
           <YAxis
             tickFormatter={formatSum}
