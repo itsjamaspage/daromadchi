@@ -85,9 +85,9 @@ function useAccent() {
     dk:     isDark ? A.darkDk : A.lightDk,
     bg:     isDark ? A.darkBg : A.lightBg,
     tint:   isDark ? A.dark   : '#0E2233',
-    btn:    isDark ? A.dark    : '#ffffff',
-    btnTxt: isDark ? '#131321' : '#0e1b2e',
-    btnHov: isDark ? A.darkDk  : '#f0f6ff',
+    btn:    '#83c0f9',
+    btnTxt: '#131321',
+    btnHov: '#6aabf0',
     btnBdr: isDark ? 'transparent' : 'rgba(14,27,46,0.18)',
   }
 }
@@ -432,10 +432,10 @@ function HeroSection({ lang }: { lang: string }) {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.30, duration: 0.55 }}
           style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, flexWrap: 'wrap', marginBottom: 56 }}>
           <Link href="/login"
-            style={{ fontSize: 15, fontWeight: 700, background: '#ffffff', color: '#131321',
+            style={{ fontSize: 15, fontWeight: 700, background: '#83c0f9', color: '#131321',
               padding: '14px 34px', borderRadius: 10, textDecoration: 'none', transition: 'all 0.15s', display: 'inline-block' }}
-            onMouseEnter={e => { e.currentTarget.style.background = '#f0f6ff'; e.currentTarget.style.transform = 'translateY(-2px)' }}
-            onMouseLeave={e => { e.currentTarget.style.background = '#ffffff'; e.currentTarget.style.transform = 'translateY(0)' }}>
+            onMouseEnter={e => { e.currentTarget.style.background = '#6aabf0'; e.currentTarget.style.transform = 'translateY(-2px)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = '#83c0f9'; e.currentTarget.style.transform = 'translateY(0)' }}>
             {tx(lang,'Начать бесплатно','Bepul boshlash','Start for free')}
           </Link>
           <a href="#how"
@@ -1519,12 +1519,12 @@ function PricingSection({ lang }: { lang: string }) {
 
                   <Link href={t.ctaHref}
                     style={{ display: 'block', textAlign: 'center', fontSize: 14, fontWeight: 700,
-                      background: t.highlight ? (isDark ? '#0e1b2e' : '#ffffff') : (isDark ? acc.btn : acc.color),
-                      color: t.highlight ? (isDark ? '#ffffff' : '#0e1b2e') : (isDark ? acc.btnTxt : '#ffffff'),
+                      background: t.highlight ? '#ffffff' : acc.btn,
+                      color: t.highlight ? '#0e1b2e' : acc.btnTxt,
                       padding: '13px 24px', borderRadius: 10,
                       textDecoration: 'none', transition: 'all 0.15s' }}
-                    onMouseEnter={e => { e.currentTarget.style.background = t.highlight ? (isDark ? '#1a2f4a' : '#f0f6ff') : (isDark ? acc.btnHov : acc.dk) }}
-                    onMouseLeave={e => { e.currentTarget.style.background = t.highlight ? (isDark ? '#0e1b2e' : '#ffffff') : (isDark ? acc.btn : acc.color) }}>
+                    onMouseEnter={e => { e.currentTarget.style.background = t.highlight ? '#f0f6ff' : acc.btnHov }}
+                    onMouseLeave={e => { e.currentTarget.style.background = t.highlight ? '#ffffff' : acc.btn }}>
                     {t.cta}
                   </Link>
                 </div>
