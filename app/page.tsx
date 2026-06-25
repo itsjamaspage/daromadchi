@@ -1109,7 +1109,7 @@ function BentoSection({ lang }: { lang: string }) {
                 glowIntensity={isDark ? 1.5 : 1.2}
                 style={{ height: '100%' }}
               >
-                <div style={{ padding: '20px 22px', borderLeft: `3px solid ${k.col}` }}>
+                <div style={{ padding: '20px 22px' }}>
                   <p style={{ fontSize: 10, color: muted, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{k.l}</p>
                   <p style={{ fontSize: 22, fontWeight: 800, color: k.col, fontFamily: 'monospace', lineHeight: 1, marginBottom: 4 }}>{k.v}</p>
                   <p style={{ fontSize: 11, fontWeight: 600, color: k.col }}>{k.d} {tx(lang,'за месяц','oyda','this month')}</p>
