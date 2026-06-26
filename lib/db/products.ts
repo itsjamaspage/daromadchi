@@ -178,11 +178,12 @@ const _fetchCategoryRevenue = unstable_cache(
       sinceIso = d.toISOString()
     }
 
-    const { data: rows } = await supabase.rpc('get_category_revenue', {
+    const { data: rows, error } = await supabase.rpc('get_category_revenue', {
       shop_ids: shopIds,
       since_iso: sinceIso,
       until_iso: untilIso,
     })
+    console.log('[_fetchCategoryRevenue] rows:', rows?.length, 'error:', error?.message, 'shopIds:', shopIds)
     if (!rows || rows.length === 0) return []
 
     const total = rows.reduce((s: number, r: any) => s + Number(r.revenue ?? 0), 0)
