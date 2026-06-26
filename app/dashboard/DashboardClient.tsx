@@ -201,7 +201,16 @@ export default function DashboardClient({ slices, days, period, from, to, initia
           yandex_market: { url: 'https://partner.market.yandex.ru', label: 'partner.market.yandex.ru' },
           wildberries:   { url: 'https://seller.wildberries.ru',    label: 'seller.wildberries.ru'    },
         }
-        const mpLink = mpLinks[marketplace ?? ''] ?? mpLinks.uzum
+        // On a specific tab show only that marketplace; on "Все" show all connected ones
+        const linksToShow: { url: string; label: string }[] = marketplace
+          ? [mpLinks[marketplace]].filter(Boolean)
+          : (['uzum', 'yandex_market', 'wildberries'] as const)
+              .filter(mp => slices[mp].hasConnectedShop)
+              .map(mp => mpLinks[mp])
+        // Fallback: if no connected shops yet, show all three
+        const fallbackLinks = Object.values(mpLinks)
+        const displayLinks = linksToShow.length > 0 ? linksToShow : fallbackLinks
+
         if (hasConnectedShop) {
           return (
             <div className="bg-[var(--bg-card2)] border border-dashed border-amber-500/30 rounded-2xl p-10 text-center">
@@ -210,11 +219,13 @@ export default function DashboardClient({ slices, days, period, from, to, initia
               </div>
               <h2 className="text-[var(--text-base)] font-bold text-lg mb-2">{d.noDataSynced ?? d.noData}</h2>
               <p className="text-[var(--text-muted)] text-sm mb-6 max-w-sm mx-auto">{d.noDataSyncedDesc ?? d.noDataDesc}</p>
-              <div className="flex items-center justify-center gap-3">
-                <Link href={mpLink.url} target="_blank" rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 text-[var(--text-muted)] hover:text-[var(--text-base)] text-sm font-medium px-5 py-2.5 rounded-xl border border-[var(--border2)] hover:bg-[var(--bg-card2)] transition-all">
-                  {mpLink.label} <ArrowRight className="w-3.5 h-3.5" />
-                </Link>
+              <div className="flex items-center justify-center gap-3 flex-wrap">
+                {displayLinks.map(link => (
+                  <Link key={link.url} href={link.url} target="_blank" rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 text-[var(--text-muted)] hover:text-[var(--text-base)] text-sm font-medium px-5 py-2.5 rounded-xl border border-[var(--border2)] hover:bg-[var(--bg-card2)] transition-all">
+                    {link.label} <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                ))}
               </div>
             </div>
           )
@@ -226,15 +237,17 @@ export default function DashboardClient({ slices, days, period, from, to, initia
             </div>
             <h2 className="text-[var(--text-base)] font-bold text-lg mb-2">{d.noData}</h2>
             <p className="text-[var(--text-muted)] text-sm mb-6 max-w-sm mx-auto">{d.noDataDesc}</p>
-            <div className="flex items-center justify-center gap-3">
+            <div className="flex items-center justify-center gap-3 flex-wrap">
               <Link href="/dashboard/settings"
                 className="inline-flex items-center gap-2 btn-primary text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors shadow-lg" style={{ boxShadow: '0 4px 14px rgba(131,192,249,0.2)' }}>
                 <Settings className="w-4 h-4" /> {d.goSettings}
               </Link>
-              <Link href={mpLink.url} target="_blank" rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 text-[var(--text-muted)] hover:text-[var(--text-base)] text-sm font-medium px-5 py-2.5 rounded-xl border border-[var(--border2)] hover:bg-[var(--bg-card2)] transition-all">
-                {mpLink.label} <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
+              {displayLinks.map(link => (
+                <Link key={link.url} href={link.url} target="_blank" rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 text-[var(--text-muted)] hover:text-[var(--text-base)] text-sm font-medium px-5 py-2.5 rounded-xl border border-[var(--border2)] hover:bg-[var(--bg-card2)] transition-all">
+                  {link.label} <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              ))}
             </div>
           </div>
         )
