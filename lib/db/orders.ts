@@ -25,7 +25,7 @@ const _fetchOrders = unstable_cache(
     if (error || !data) return []
     return data
   },
-  ['orders'],
+  ['orders', shopIdsStr],
   { revalidate: 30 },
 )
 
