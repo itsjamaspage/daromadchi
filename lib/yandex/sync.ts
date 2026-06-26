@@ -220,10 +220,14 @@ export async function syncFromYandex(
             const extIds = extractOrders.map(o => String(o.id))
             const [{ data: dbOrds }, { data: dbProds }] = await Promise.all([
               supabase.from('orders').select('id, order_id_external').eq('shop_id', shopId).in('order_id_external', extIds),
-              supabase.from('products').select('id, sku').eq('shop_id', shopId),
+              supabase.from('products').select('id, sku, marketplace_product_id').eq('shop_id', shopId),
             ])
             const oMap = new Map<string, string>(); for (const o of dbOrds ?? []) oMap.set(o.order_id_external as string, o.id as string)
-            const pMap = new Map<string, string>(); for (const p of dbProds ?? []) if (p.sku) pMap.set(p.sku as string, p.id as string)
+            const pMap = new Map<string, string>()
+            for (const p of dbProds ?? []) {
+              if (p.sku) pMap.set(p.sku as string, p.id as string)
+              if (p.marketplace_product_id) pMap.set(p.marketplace_product_id as string, p.id as string)
+            }
             const itmRows: { order_id: string; product_id: string | null; quantity: number; price_per_unit: number }[] = []
             for (const o of extractOrders) {
               const dbOid = oMap.get(String(o.id))
@@ -246,11 +250,12 @@ export async function syncFromYandex(
     try {
       const { data: dbProducts } = await supabase
         .from('products')
-        .select('id, sku')
+        .select('id, sku, marketplace_product_id')
         .eq('shop_id', shopId)
       const skuMap = new Map<string, string>()
       for (const p of dbProducts ?? []) {
         if (p.sku) skuMap.set(p.sku as string, p.id as string)
+        if (p.marketplace_product_id) skuMap.set(p.marketplace_product_id as string, p.id as string)
       }
 
       const extIds = yandexOrders.map(o => String(o.id))
