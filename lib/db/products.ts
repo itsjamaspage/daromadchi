@@ -178,20 +178,30 @@ const _fetchCategoryRevenue = unstable_cache(
       sinceIso = d.toISOString()
     }
 
-    const { data: rows } = await supabase.rpc('get_category_revenue', {
-      shop_ids: shopIds,
-      since_iso: sinceIso,
-      until_iso: untilIso,
-    })
-    if (!rows || rows.length === 0) return []
+    let query = supabase
+      .from('order_items')
+      .select('quantity, price_per_unit, products!inner(category, cost_price), orders!inner(shop_id, ordered_at)')
+      .in('orders.shop_id', shopIds)
+    if (sinceIso) query = query.filter('orders.ordered_at', 'gte', sinceIso)
+    if (untilIso) query = query.filter('orders.ordered_at', 'lte', untilIso)
 
-    const total = rows.reduce((s: number, r: any) => s + Number(r.revenue ?? 0), 0)
-    return rows.map((r: any) => ({
-      name: r.category,
-      revenue: Number(r.revenue ?? 0),
-      profit: Number(r.revenue ?? 0) - Number(r.cost ?? 0),
-      percent: total > 0 ? (Number(r.revenue ?? 0) / total) * 100 : 0,
-    }))
+    const { data: items } = await query
+    if (!items || items.length === 0) return []
+
+    const map = new Map<string, { revenue: number; profit: number }>()
+    for (const item of items) {
+      const prod = Array.isArray(item.products) ? item.products[0] : item.products
+      const cat = (prod as any)?.category ?? 'Boshqa'
+      const rev = (item.quantity ?? 0) * Number(item.price_per_unit ?? 0)
+      const cost = (item.quantity ?? 0) * Number((prod as any)?.cost_price ?? 0)
+      const existing = map.get(cat) ?? { revenue: 0, profit: 0 }
+      map.set(cat, { revenue: existing.revenue + rev, profit: existing.profit + (rev - cost) })
+    }
+
+    const total = [...map.values()].reduce((s, v) => s + v.revenue, 0)
+    return [...map.entries()]
+      .map(([name, v]) => ({ name, ...v, percent: total > 0 ? (v.revenue / total) * 100 : 0 }))
+      .sort((a, b) => b.revenue - a.revenue)
   },
   ['category-revenue'],
   { revalidate: 30 },
