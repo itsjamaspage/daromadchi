@@ -50,8 +50,11 @@ export const getUserShops = cache(async (): Promise<ShopRef[]> => {
  */
 export const getShopIds = cache(async (marketplace?: MarketplaceType): Promise<string[] | null> => {
   const userId = await getCurrentUserId()
+  console.log('[getShopIds] userId:', userId, 'marketplace:', marketplace)
   if (!userId) return null
   const shops = await getUserShops()
+  console.log('[getShopIds] shops:', shops?.length, shops?.map(s => s.marketplace))
   const filtered = marketplace ? shops.filter(s => s.marketplace === marketplace) : shops
+  console.log('[getShopIds] filtered:', filtered?.length)
   return filtered.map(s => s.id)
 })
