@@ -38,7 +38,7 @@ async function fetchSlice(
     getOrders(5, marketplace),
     getProducts(marketplace),
     getDailyRevenue(days, marketplace, from, to),
-    getCategoryRevenue(days, marketplace, from, to),
+    marketplace ? Promise.resolve([]) : getCategoryRevenue(days, undefined, from, to),
   ])
   return {
     kpis,
