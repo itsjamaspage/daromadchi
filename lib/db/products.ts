@@ -37,8 +37,6 @@ const _fetchProducts = unstable_cache(
         .select('product_id, quantity, orders!inner(shop_id)')
         .filter('orders.shop_id', 'in', shopFilter),
     ])
-    console.log('[_fetchProducts] products.length:', products?.length, 'error:', error?.message)
-    console.log('[_fetchProducts] soldItems.length:', soldItems?.length)
     if (error || !products) return []
 
     const productSkuMap = new Map<string, string | null>((allUserProducts ?? []).map((p: { id: string; sku: string | null }) => [p.id, p.sku] as [string, string | null]))
@@ -74,13 +72,9 @@ export async function getProducts(marketplace?: MarketplaceType): Promise<Produc
     getShopIds(),
     marketplace ? getShopIds(marketplace) : getShopIds(),
   ])
-  console.log('[getProducts] allShopIds:', allShopIds)
-  console.log('[getProducts] targetShopIds:', targetShopIds)
   if (!allShopIds || allShopIds.length === 0) return []
   if (!targetShopIds || targetShopIds.length === 0) return []
-  const result = await _fetchProducts(allShopIds.join(','), targetShopIds.join(','))
-  console.log('[getProducts] result count:', result.length)
-  return result
+  return _fetchProducts(allShopIds.join(','), targetShopIds.join(','))
 }
 
 export interface ProductSalesRow {
