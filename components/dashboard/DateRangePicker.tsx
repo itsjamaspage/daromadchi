@@ -97,13 +97,17 @@ export default function DateRangePicker({ period, from, to }: Props) {
     <div className="relative" ref={ref}>
       <button
         onClick={() => setOpen(o => !o)}
-        className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-medium transition-all ${pending ? 'opacity-60' : ''}`}
+        disabled={pending}
+        className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-medium transition-all ${pending ? 'opacity-60 cursor-not-allowed' : ''}`}
         style={{
           background: open ? 'rgba(131,192,249,0.12)' : 'var(--bg-input)',
           borderColor: open ? 'rgba(131,192,249,0.35)' : 'var(--border)',
         }}
       >
-        <CalendarDays className="w-3.5 h-3.5 shrink-0" style={{ color: 'var(--c1)' }} />
+        {pending
+          ? <svg className="w-3.5 h-3.5 shrink-0 animate-spin" viewBox="0 0 24 24" fill="none" style={{ color: 'var(--c1)' }}><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" /></svg>
+          : <CalendarDays className="w-3.5 h-3.5 shrink-0" style={{ color: 'var(--c1)' }} />
+        }
         <span style={{ color: 'var(--text-base)' }}>{label}</span>
       </button>
 
@@ -160,10 +164,16 @@ export default function DateRangePicker({ period, from, to }: Props) {
           </div>
           <button
             onClick={apply}
-            disabled={!customFrom || !customTo}
-            className="w-full py-2 rounded-xl text-sm font-semibold transition-all disabled:opacity-40"
+            disabled={!customFrom || !customTo || pending}
+            className="w-full py-2 rounded-xl text-sm font-semibold transition-all disabled:opacity-40 flex items-center justify-center gap-2"
             style={{ background: '#83c0f9', color: '#131321' }}
           >
+            {pending && (
+              <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+              </svg>
+            )}
             {lang === 'uz' ? 'Qo\'llash' : lang === 'ru' ? 'Применить' : 'Apply'}
           </button>
         </div>
