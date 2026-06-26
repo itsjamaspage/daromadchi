@@ -131,7 +131,7 @@ export default function DateRangePicker({ period, from, to }: Props) {
 
       {open && (
         <div
-          className="absolute right-0 top-full mt-2 z-50 rounded-2xl border shadow-2xl p-4 space-y-3"
+          className="fixed left-4 right-4 sm:absolute sm:left-auto sm:right-0 sm:w-auto top-[4.5rem] sm:top-full sm:mt-2 z-50 rounded-2xl border shadow-2xl p-4 space-y-3"
           style={{ background: 'var(--bg-card)', borderColor: 'var(--border)', minWidth: 240 }}
         >
           {/* Quick presets */}
