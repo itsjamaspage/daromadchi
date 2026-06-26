@@ -205,6 +205,7 @@ export async function getCategoryRevenue(
 ): Promise<CategoryRow[]> {
   if (!supabaseConfigured) return []
   const shopIds = await getShopIds(marketplace)
+  console.log('[getCategoryRevenue] shopIds:', shopIds)
   if (!shopIds || shopIds.length === 0) return []
   return _fetchCategoryRevenue(shopIds.join(','), days, from ?? '', to ?? '')
 }
