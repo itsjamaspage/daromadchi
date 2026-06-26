@@ -1,5 +1,4 @@
 import { cache } from 'react'
-import { unstable_cache } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { MarketplaceType } from '@/lib/types'
@@ -20,28 +19,15 @@ export const getCurrentUserId = cache(async (): Promise<string | null> => {
   return user?.id ?? null
 })
 
-// Persist shops per user across requests for 60 s to avoid a DB round-trip on
-// every page navigation. getUserShops() still validates auth on every request.
-const _fetchShopsByUser = unstable_cache(
-  async (userId: string): Promise<ShopRef[]> => {
-    const supabase = createAdminClient()
-    const { data } = await supabase
-      .from('shops')
-      .select('id, marketplace')
-      .eq('user_id', userId)
-    return (data ?? []) as ShopRef[]
-  },
-  ['user-shops-v3'],
-  { revalidate: 60 },
-)
-
 export const getUserShops = cache(async (): Promise<ShopRef[]> => {
   const userId = await getCurrentUserId()
-  console.log('[getUserShops] userId:', userId)
   if (!userId) return []
-  const shops = await _fetchShopsByUser(userId)
-  console.log('[getUserShops] shops:', shops?.length, shops?.map(s => s.marketplace))
-  return shops
+  const supabase = createAdminClient()
+  const { data } = await supabase
+    .from('shops')
+    .select('id, marketplace')
+    .eq('user_id', userId)
+  return (data ?? []) as ShopRef[]
 })
 
 /**
@@ -53,11 +39,8 @@ export const getUserShops = cache(async (): Promise<ShopRef[]> => {
  */
 export const getShopIds = cache(async (marketplace?: MarketplaceType): Promise<string[] | null> => {
   const userId = await getCurrentUserId()
-  console.log('[getShopIds] userId:', userId, 'marketplace:', marketplace)
   if (!userId) return null
   const shops = await getUserShops()
-  console.log('[getShopIds] shops:', shops?.length, shops?.map(s => s.marketplace))
   const filtered = marketplace ? shops.filter(s => s.marketplace === marketplace) : shops
-  console.log('[getShopIds] filtered:', filtered?.length)
   return filtered.map(s => s.id)
 })
