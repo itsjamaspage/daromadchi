@@ -57,7 +57,7 @@ const _fetchRevenue = unstable_cache(
     })
   },
   ['revenue'],
-  { revalidate: 30 },
+  { revalidate: 1 },
 )
 
 export async function getDailyRevenue(

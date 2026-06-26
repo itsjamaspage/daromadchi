@@ -99,7 +99,7 @@ const _fetchKpis = unstable_cache(
     }
   },
   ['kpis'],
-  { revalidate: 30 },
+  { revalidate: 1 },
 )
 
 export async function getKpis(
