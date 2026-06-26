@@ -64,22 +64,12 @@ export default function StockAlerts({ products }: { products: Product[] }) {
                 </p>
               </div>
 
-              <div className="text-right flex-shrink-0 hidden sm:block">
-                <p className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>Buyurtma berish</p>
-                <p className="text-sm font-bold" style={{ color: '#7c3aed' }}>{reorder} dona</p>
-              </div>
-
               <div className="w-1.5 h-10 rounded-full flex-shrink-0" style={{ background: barColor }} />
             </div>
           )
         })}
       </div>
 
-      <div className="px-5 py-3 border-t border-[var(--border)] bg-[var(--bg-card2)]">
-        <p className="text-[var(--text-muted)] text-xs">
-          Hisoblash: so&apos;nggi 30 kunlik savdo tezligiga asoslangan · Buyurtma: 45 kunlik zaxira
-        </p>
-      </div>
     </div>
   )
 }

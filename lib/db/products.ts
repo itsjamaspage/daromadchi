@@ -181,9 +181,8 @@ const _fetchCategoryRevenue = unstable_cache(
     const shopFilter = `(${shopIds.join(',')})`
     let query = supabase
       .from('order_items')
-      .select('quantity, price_per_unit, products(category, cost_price), orders!inner(shop_id, status, ordered_at)')
+      .select('quantity, price_per_unit, products(category, cost_price), orders!inner(shop_id, ordered_at)')
       .filter('orders.shop_id', 'in', shopFilter)
-      .filter('orders.status', 'neq', 'cancelled')
       .not('product_id', 'is', null)
     if (sinceIso) query = query.filter('orders.ordered_at', 'gte', sinceIso)
     if (untilIso) query = query.filter('orders.ordered_at', 'lte', untilIso)
