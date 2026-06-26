@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
-import { Menu, Sun, Moon } from 'lucide-react'
+import { Menu, Sun, Moon, RefreshCw } from 'lucide-react'
 import Link from 'next/link'
 import Sidebar from './Sidebar'
 import { useTheme, useLang } from '@/app/providers'
@@ -66,6 +66,15 @@ export default function MobileNav() {
             </button>
           ))}
         </div>
+
+        {/* Sync shortcut */}
+        <Link
+          href="/dashboard/sync"
+          className="p-1.5 rounded-lg transition-colors"
+          style={{ color: theme === 'dark' ? 'var(--text-muted)' : 'rgba(14,34,51,0.65)' }}
+        >
+          <RefreshCw className="w-4 h-4" />
+        </Link>
 
         {/* Theme toggle */}
         <button
