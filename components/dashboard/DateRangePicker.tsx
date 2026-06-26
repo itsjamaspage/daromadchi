@@ -26,7 +26,7 @@ function defaultFrom() {
   return d.toISOString().slice(0, 10)
 }
 
-export default function DateRangePicker({ from, to }: Props) {
+export default function DateRangePicker({ period, from, to }: Props) {
   const [open, setOpen] = useState(false)
   const [customFrom, setCustomFrom] = useState(from ?? defaultFrom())
   const [customTo, setCustomTo]     = useState(to ?? todayStr())
@@ -63,6 +63,25 @@ export default function DateRangePicker({ from, to }: Props) {
     })
   }
 
+  function applyPreset(days: string) {
+    const p = new URLSearchParams(searchParams.toString())
+    p.delete('from')
+    p.delete('to')
+    p.set('days', days)
+    startTransition(() => {
+      router.push(`${pathname}?${p.toString()}`, { scroll: false })
+      setOpen(false)
+    })
+  }
+
+  const PRESETS = [
+    { label: lang === 'uz' ? '30 kun' : '30 дн.',  days: '30'  },
+    { label: lang === 'uz' ? '90 kun' : '90 дн.',  days: '90'  },
+    { label: lang === 'uz' ? '1 yil'  : '1 год',   days: '365' },
+  ]
+
+  const activeDays = !from && !to ? (period ?? '30') : null
+
   const label = from && to
     ? `${formatDateLabel(from)} — ${formatDateLabel(to)}`
     : lang === 'ru' ? 'Выбрать период' : lang === 'uz' ? 'Davr tanlash' : 'Select period'
@@ -93,6 +112,23 @@ export default function DateRangePicker({ from, to }: Props) {
           className="absolute right-0 top-full mt-2 z-50 rounded-2xl border shadow-2xl p-4 space-y-3"
           style={{ background: 'var(--bg-card)', borderColor: 'var(--border)', minWidth: 240 }}
         >
+          {/* Quick presets */}
+          <div className="flex gap-1.5">
+            {PRESETS.map(({ label: pl, days }) => (
+              <button
+                key={days}
+                onClick={() => applyPreset(days)}
+                className="flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all"
+                style={{
+                  background: activeDays === days ? 'rgba(131,192,249,0.18)' : 'var(--bg-input)',
+                  border: activeDays === days ? '1px solid rgba(131,192,249,0.4)' : '1px solid var(--border)',
+                  color: activeDays === days ? 'var(--c1)' : 'var(--text-muted)',
+                }}
+              >
+                {pl}
+              </button>
+            ))}
+          </div>
           <div className="flex flex-col gap-2">
             <div className="space-y-1">
               <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>

@@ -14,6 +14,7 @@ function parseDays(v: string | undefined): number {
   if (v === '7')     return 7
   if (v === '30')    return 30
   if (v === '90')    return 90
+  if (v === '365')   return 365
   if (v === 'month') return new Date().getDate() // days elapsed since 1st of current month
   return 30
 }
