@@ -194,7 +194,7 @@ const _fetchCategoryRevenue = unstable_cache(
       percent: total > 0 ? (Number(r.revenue ?? 0) / total) * 100 : 0,
     }))
   },
-  ['category-revenue'],
+  ['category-revenue-v3'],
   { revalidate: 30 },
 )
 
