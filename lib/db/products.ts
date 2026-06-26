@@ -68,7 +68,7 @@ const _fetchProducts = unstable_cache(
       }
     })
   },
-  ['products', allShopIdsStr, targetShopIdsStr],
+  ['products'],
   { revalidate: 30 },
 )
 
@@ -143,7 +143,7 @@ const _fetchProductSales = unstable_cache(
 
     return [...byProduct.values()].sort((a, b) => b.qty_sold - a.qty_sold)
   },
-  ['product-sales', shopIdsStr],
+  ['product-sales'],
   { revalidate: 30 },
 )
 
@@ -212,7 +212,7 @@ const _fetchCategoryRevenue = unstable_cache(
       .map(([name, v]) => ({ name, ...v, percent: total > 0 ? (v.revenue / total) * 100 : 0 }))
       .sort((a, b) => b.revenue - a.revenue)
   },
-  ['category-revenue', shopIdsStr],
+  ['category-revenue'],
   { revalidate: 30 },
 )
 

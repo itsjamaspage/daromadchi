@@ -56,7 +56,7 @@ const _fetchRevenue = unstable_cache(
       }
     })
   },
-  ['revenue', shopIdsStr],
+  ['revenue'],
   { revalidate: 30 },
 )
 

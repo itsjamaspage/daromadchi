@@ -98,7 +98,7 @@ const _fetchKpis = unstable_cache(
       change_orders:  prevSinceIso ? pct(total_orders,  prev_orders)  : null,
     }
   },
-  ['kpis', shopIdsStr],
+  ['kpis'],
   { revalidate: 30 },
 )
 
