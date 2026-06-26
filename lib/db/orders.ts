@@ -1,6 +1,6 @@
 import { unstable_cache } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { getCurrentUserId } from '@/lib/db/shop-context'
+import { getShopIds } from '@/lib/db/shop-context'
 import type { Order, MarketplaceType } from '@/lib/types'
 
 const supabaseConfigured =
@@ -8,15 +8,11 @@ const supabaseConfigured =
   !process.env.NEXT_PUBLIC_SUPABASE_URL.includes('your-project')
 
 const _fetchOrders = unstable_cache(
-  async (userId: string, mp: string, limit: number): Promise<Order[]> => {
-    const supabase = createAdminClient()
-    const { data: shopsData } = await supabase.from('shops').select('id, marketplace').eq('user_id', userId)
-    const allShops = shopsData ?? []
-    const shopIds = mp
-      ? allShops.filter((s: { marketplace: string }) => s.marketplace === mp).map((s: { id: string }) => s.id)
-      : allShops.map((s: { id: string }) => s.id)
+  async (shopIdsStr: string, limit: number): Promise<Order[]> => {
+    const shopIds = shopIdsStr ? shopIdsStr.split(',') : []
     if (shopIds.length === 0) return []
 
+    const supabase = createAdminClient()
     let query = supabase
       .from('orders')
       .select('id, shop_id, order_id_external, marketplace, status, revenue, marketplace_fee, delivery_cost, items_count, ordered_at')
@@ -35,7 +31,7 @@ const _fetchOrders = unstable_cache(
 
 export async function getOrders(limit?: number, marketplace?: MarketplaceType): Promise<Order[]> {
   if (!supabaseConfigured) return []
-  const userId = await getCurrentUserId()
-  if (!userId) return []
-  return _fetchOrders(userId, marketplace ?? '', limit ?? 0)
+  const shopIds = await getShopIds(marketplace)
+  if (!shopIds || shopIds.length === 0) return []
+  return _fetchOrders(shopIds.join(','), limit ?? 0)
 }

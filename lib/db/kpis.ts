@@ -1,6 +1,6 @@
 import { unstable_cache } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { getCurrentUserId } from '@/lib/db/shop-context'
+import { getShopIds } from '@/lib/db/shop-context'
 import type { Kpis, MarketplaceType } from '@/lib/types'
 
 const supabaseConfigured =
@@ -15,14 +15,11 @@ function pct(curr: number, prev: number): number | null {
 const emptyKpis: Kpis = { total_revenue: 0, total_profit: 0, total_orders: 0, total_stock: 0 }
 
 const _fetchKpis = unstable_cache(
-  async (userId: string, mp: string, days: number, from: string, to: string): Promise<Kpis> => {
-    const supabase = createAdminClient()
-    const { data: shopsData } = await supabase.from('shops').select('id, marketplace').eq('user_id', userId)
-    const allShops = shopsData ?? []
-    const shopIds = mp
-      ? allShops.filter((s: { marketplace: string }) => s.marketplace === mp).map((s: { id: string }) => s.id)
-      : allShops.map((s: { id: string }) => s.id)
+  async (shopIdsStr: string, days: number, from: string, to: string): Promise<Kpis> => {
+    const shopIds = shopIdsStr ? shopIdsStr.split(',') : []
     if (shopIds.length === 0) return emptyKpis
+
+    const supabase = createAdminClient()
 
     let sinceIso: string | null = null
     let untilIso: string | null = null
@@ -112,7 +109,7 @@ export async function getKpis(
   to?: string,
 ): Promise<Kpis> {
   if (!supabaseConfigured) return emptyKpis
-  const userId = await getCurrentUserId()
-  if (!userId) return emptyKpis
-  return _fetchKpis(userId, marketplace ?? '', days, from ?? '', to ?? '')
+  const shopIds = await getShopIds(marketplace)
+  if (!shopIds || shopIds.length === 0) return emptyKpis
+  return _fetchKpis(shopIds.join(','), days, from ?? '', to ?? '')
 }

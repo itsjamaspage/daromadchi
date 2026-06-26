@@ -1,28 +1,23 @@
 import { unstable_cache } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { getCurrentUserId } from '@/lib/db/shop-context'
+import { getShopIds } from '@/lib/db/shop-context'
 import type { Product, MarketplaceType } from '@/lib/types'
 
 const supabaseConfigured =
   process.env.NEXT_PUBLIC_SUPABASE_URL &&
   !process.env.NEXT_PUBLIC_SUPABASE_URL.includes('your-project')
 
-// Cached per (userId, marketplace) for 30 s. Runs 3 queries in parallel —
-// products, sku map, and sold counts via orders join — no serial waterfall.
+// allShopIdsStr  — all shops for this user (for cross-marketplace SKU dedup + sold counts)
+// targetShopIdsStr — shops filtered by marketplace (for the main products query)
 const _fetchProducts = unstable_cache(
-  async (userId: string, mp: string): Promise<Product[]> => {
+  async (allShopIdsStr: string, targetShopIdsStr: string): Promise<Product[]> => {
+    const allShopIds    = allShopIdsStr    ? allShopIdsStr.split(',')    : []
+    const targetShopIds = targetShopIdsStr ? targetShopIdsStr.split(',') : []
+    if (allShopIds.length === 0 || targetShopIds.length === 0) return []
+
     const supabase = createAdminClient()
-    const { data: shopsData } = await supabase.from('shops').select('id, marketplace').eq('user_id', userId)
-    const allShops = shopsData ?? []
-    if (allShops.length === 0) return []
-
-    const allShopIds = allShops.map((s: { id: string }) => s.id)
-    const targetShopIds = mp
-      ? allShops.filter((s: { marketplace: string }) => s.marketplace === mp).map((s: { id: string }) => s.id)
-      : allShopIds
-    if (targetShopIds.length === 0) return []
-
     const shopFilter = `(${allShopIds.join(',')})`
+
     const [
       { data: products, error },
       { data: allUserProducts },
@@ -37,8 +32,6 @@ const _fetchProducts = unstable_cache(
         .from('products')
         .select('id, sku')
         .in('shop_id', allShopIds),
-      // Join order_items → orders in one query instead of the old 2-step pattern
-      // (get validOrderIds → get items). Filters by shop & status via !inner join.
       supabase
         .from('order_items')
         .select('product_id, quantity, orders!inner(shop_id)')
@@ -46,7 +39,7 @@ const _fetchProducts = unstable_cache(
     ])
     if (error || !products) return []
 
-    const productSkuMap = new Map((allUserProducts ?? []).map((p: { id: string; sku: string | null }) => [p.id, p.sku]))
+    const productSkuMap = new Map<string, string | null>((allUserProducts ?? []).map((p: { id: string; sku: string | null }) => [p.id, p.sku] as [string, string | null]))
     const soldByProductId = new Map<string, number>()
     const soldBySku = new Map<string, number>()
 
@@ -81,9 +74,13 @@ const _fetchProducts = unstable_cache(
 
 export async function getProducts(marketplace?: MarketplaceType): Promise<Product[]> {
   if (!supabaseConfigured) return []
-  const userId = await getCurrentUserId()
-  if (!userId) return []
-  return _fetchProducts(userId, marketplace ?? '')
+  const [allShopIds, targetShopIds] = await Promise.all([
+    getShopIds(),
+    marketplace ? getShopIds(marketplace) : getShopIds(),
+  ])
+  if (!allShopIds || allShopIds.length === 0) return []
+  if (!targetShopIds || targetShopIds.length === 0) return []
+  return _fetchProducts(allShopIds.join(','), targetShopIds.join(','))
 }
 
 export interface ProductSalesRow {
@@ -94,17 +91,12 @@ export interface ProductSalesRow {
   revenue: number
 }
 
-// Cached per (userId, marketplace, period) for 30 s. Collapses the old two-step
-// orders→order_items serial waterfall into a single join query.
 const _fetchProductSales = unstable_cache(
-  async (userId: string, mp: string, days: number | null, from: string, to: string): Promise<ProductSalesRow[]> => {
-    const supabase = createAdminClient()
-    const { data: shopsData } = await supabase.from('shops').select('id, marketplace').eq('user_id', userId)
-    const allShops = shopsData ?? []
-    const shopIds = mp
-      ? allShops.filter((s: { marketplace: string }) => s.marketplace === mp).map((s: { id: string }) => s.id)
-      : allShops.map((s: { id: string }) => s.id)
+  async (shopIdsStr: string, days: number | null, from: string, to: string): Promise<ProductSalesRow[]> => {
+    const shopIds = shopIdsStr ? shopIdsStr.split(',') : []
     if (shopIds.length === 0) return []
+
+    const supabase = createAdminClient()
 
     let sinceIso: string | null = null
     let untilIso: string | null = null
@@ -162,9 +154,9 @@ export async function getProductSales(
   to?: string,
 ): Promise<ProductSalesRow[]> {
   if (!supabaseConfigured) return []
-  const userId = await getCurrentUserId()
-  if (!userId) return []
-  return _fetchProductSales(userId, marketplace ?? '', days, from ?? '', to ?? '')
+  const shopIds = await getShopIds(marketplace)
+  if (!shopIds || shopIds.length === 0) return []
+  return _fetchProductSales(shopIds.join(','), days, from ?? '', to ?? '')
 }
 
 export interface CategoryRow {
@@ -175,14 +167,11 @@ export interface CategoryRow {
 }
 
 const _fetchCategoryRevenue = unstable_cache(
-  async (userId: string, mp: string, days: number, from: string, to: string): Promise<CategoryRow[]> => {
-    const supabase = createAdminClient()
-    const { data: shopsData } = await supabase.from('shops').select('id, marketplace').eq('user_id', userId)
-    const allShops = shopsData ?? []
-    const shopIds = mp
-      ? allShops.filter((s: { marketplace: string }) => s.marketplace === mp).map((s: { id: string }) => s.id)
-      : allShops.map((s: { id: string }) => s.id)
+  async (shopIdsStr: string, days: number, from: string, to: string): Promise<CategoryRow[]> => {
+    const shopIds = shopIdsStr ? shopIdsStr.split(',') : []
     if (shopIds.length === 0) return []
+
+    const supabase = createAdminClient()
 
     let sinceIso: string | null = null
     let untilIso: string | null = null
@@ -234,7 +223,7 @@ export async function getCategoryRevenue(
   to?: string,
 ): Promise<CategoryRow[]> {
   if (!supabaseConfigured) return []
-  const userId = await getCurrentUserId()
-  if (!userId) return []
-  return _fetchCategoryRevenue(userId, marketplace ?? '', days, from ?? '', to ?? '')
+  const shopIds = await getShopIds(marketplace)
+  if (!shopIds || shopIds.length === 0) return []
+  return _fetchCategoryRevenue(shopIds.join(','), days, from ?? '', to ?? '')
 }

@@ -1,6 +1,6 @@
 import { unstable_cache } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { getCurrentUserId } from '@/lib/db/shop-context'
+import { getShopIds } from '@/lib/db/shop-context'
 import type { DailyRevenue, MarketplaceType } from '@/lib/types'
 
 const supabaseConfigured =
@@ -8,14 +8,11 @@ const supabaseConfigured =
   !process.env.NEXT_PUBLIC_SUPABASE_URL.includes('your-project')
 
 const _fetchRevenue = unstable_cache(
-  async (userId: string, mp: string, days: number, from: string, to: string): Promise<DailyRevenue[]> => {
-    const supabase = createAdminClient()
-    const { data: shopsData } = await supabase.from('shops').select('id, marketplace').eq('user_id', userId)
-    const allShops = shopsData ?? []
-    const shopIds = mp
-      ? allShops.filter((s: { marketplace: string }) => s.marketplace === mp).map((s: { id: string }) => s.id)
-      : allShops.map((s: { id: string }) => s.id)
+  async (shopIdsStr: string, days: number, from: string, to: string): Promise<DailyRevenue[]> => {
+    const shopIds = shopIdsStr ? shopIdsStr.split(',') : []
     if (shopIds.length === 0) return []
+
+    const supabase = createAdminClient()
 
     let sinceIso: string
     let untilIso: string | undefined
@@ -70,7 +67,7 @@ export async function getDailyRevenue(
   to?: string,
 ): Promise<DailyRevenue[]> {
   if (!supabaseConfigured) return []
-  const userId = await getCurrentUserId()
-  if (!userId) return []
-  return _fetchRevenue(userId, marketplace ?? '', days, from ?? '', to ?? '')
+  const shopIds = await getShopIds(marketplace)
+  if (!shopIds || shopIds.length === 0) return []
+  return _fetchRevenue(shopIds.join(','), days, from ?? '', to ?? '')
 }
