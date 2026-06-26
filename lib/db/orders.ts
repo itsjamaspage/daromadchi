@@ -26,7 +26,7 @@ const _fetchOrders = unstable_cache(
     return data
   },
   ['orders'],
-  { revalidate: 1 },
+  { revalidate: 30 },
 )
 
 export async function getOrders(limit?: number, marketplace?: MarketplaceType): Promise<Order[]> {

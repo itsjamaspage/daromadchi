@@ -65,7 +65,7 @@ const _fetchProducts = unstable_cache(
     })
   },
   ['products'],
-  { revalidate: 1 },
+  { revalidate: 30 },
 )
 
 export async function getProducts(marketplace?: MarketplaceType): Promise<Product[]> {
@@ -144,7 +144,7 @@ const _fetchProductSales = unstable_cache(
     return [...byProduct.values()].sort((a, b) => b.qty_sold - a.qty_sold)
   },
   ['product-sales'],
-  { revalidate: 1 },
+  { revalidate: 30 },
 )
 
 export async function getProductSales(
@@ -213,7 +213,7 @@ const _fetchCategoryRevenue = unstable_cache(
       .sort((a, b) => b.revenue - a.revenue)
   },
   ['category-revenue'],
-  { revalidate: 1 },
+  { revalidate: 30 },
 )
 
 export async function getCategoryRevenue(
