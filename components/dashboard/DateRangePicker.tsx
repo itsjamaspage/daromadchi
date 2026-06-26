@@ -80,7 +80,7 @@ export default function DateRangePicker({ period, from, to }: Props) {
     { label: lang === 'uz' ? '1 yil'  : '1 год',   days: '365' },
   ]
 
-  const activeDays = !from && !to ? (period ?? '30') : null
+  const activeDays = !from && !to ? (period ?? '365') : null
 
   const label = from && to
     ? `${formatDateLabel(from)} — ${formatDateLabel(to)}`

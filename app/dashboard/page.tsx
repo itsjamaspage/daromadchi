@@ -16,7 +16,7 @@ function parseDays(v: string | undefined): number {
   if (v === '90')    return 90
   if (v === '365')   return 365
   if (v === 'month') return new Date().getDate() // days elapsed since 1st of current month
-  return 30
+  return 365
 }
 
 const VALID_MARKETPLACES = ['uzum', 'yandex_market', 'wildberries'] as const
@@ -71,7 +71,7 @@ interface Props {
 
 export default async function DashboardPage({ searchParams }: Props) {
   const params             = await searchParams
-  const period             = params?.days ?? '30'
+  const period             = params?.days ?? '365'
   const days               = parseDays(period)
   const from               = params?.from
   const to                 = params?.to
