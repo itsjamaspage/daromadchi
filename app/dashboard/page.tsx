@@ -31,8 +31,8 @@ function buildCategoryData(products: Awaited<ReturnType<typeof getProducts>>): C
   const map = new Map<string, { revenue: number; profit: number }>()
   for (const p of products) {
     const cat = p.category ?? 'Boshqa'
-    const rev = Number(p.selling_price ?? 0) * (p.stock_quantity ?? 0)
-    const prof = Number(p.profit ?? 0) * (p.stock_quantity ?? 0)
+    const rev = Number(p.selling_price ?? 0)
+    const prof = Number(p.profit ?? 0)
     const existing = map.get(cat) ?? { revenue: 0, profit: 0 }
     map.set(cat, { revenue: existing.revenue + rev, profit: existing.profit + prof })
   }
