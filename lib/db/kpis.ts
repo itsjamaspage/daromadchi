@@ -63,7 +63,7 @@ const _fetchKpis = unstable_cache(
     const [ordersRes, prevOrdersRes, stockRes] = await Promise.all([
       ordersQuery,
       prevSinceIso ? prevOrdersQuery : Promise.resolve({ data: [] as { revenue: number; marketplace_fee: number; delivery_cost: number }[] }),
-      supabase.from('products').select('sku, stock_quantity, physical_stock').in('shop_id', shopIds),
+      supabase.from('products').select('stock_quantity').in('shop_id', shopIds),
     ])
 
     const rows = ordersRes.data ?? []
@@ -78,18 +78,7 @@ const _fetchKpis = unstable_cache(
       s + Number(o.revenue ?? 0) - Number(o.marketplace_fee ?? 0) - Number(o.delivery_cost ?? 0), 0)
     const prev_orders  = prevRows.length
 
-    const seenSkus = new Set<string>()
-    let total_stock = 0
-    for (const p of stockRes.data ?? []) {
-      if (p.physical_stock !== null && p.sku) {
-        if (!seenSkus.has(p.sku)) {
-          seenSkus.add(p.sku)
-          total_stock += p.physical_stock
-        }
-      } else {
-        total_stock += p.stock_quantity
-      }
-    }
+    const total_stock = (stockRes.data ?? []).reduce((s, p) => s + (p.stock_quantity ?? 0), 0)
 
     return {
       total_revenue, total_profit, total_orders, total_stock,

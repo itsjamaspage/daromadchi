@@ -25,7 +25,7 @@ const _fetchProducts = unstable_cache(
     ] = await Promise.all([
       supabase
         .from('products')
-        .select('id, shop_id, sku, title, cost_price, selling_price, stock_quantity, physical_stock, category, marketplace_product_id, updated_at')
+        .select('id, shop_id, sku, title, cost_price, selling_price, stock_quantity, category, marketplace_product_id, updated_at')
         .in('shop_id', targetShopIds)
         .order('title'),
       supabase
@@ -54,19 +54,13 @@ const _fetchProducts = unstable_cache(
 
     return products.map((p: any) => {
       const sold = soldByProductId.get(p.id) ?? 0
-      const skuSold = p.sku ? (soldBySku.get(p.sku) ?? 0) : sold
-      const hasSharedPool = p.physical_stock !== null && p.sku !== null
-      const available_stock = hasSharedPool
-        ? Math.max(0, p.physical_stock! - skuSold)
-        : p.stock_quantity
 
       return {
         ...p,
-        physical_stock: p.physical_stock ?? null,
-        available_stock,
+        available_stock: p.stock_quantity,
         profit: Number(p.selling_price ?? 0) - Number(p.cost_price ?? 0),
         sold,
-        is_shared: hasSharedPool,
+        is_shared: false,
       }
     })
   },
