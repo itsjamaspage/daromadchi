@@ -41,9 +41,8 @@ const _fetchProducts = unstable_cache(
       // (get validOrderIds → get items). Filters by shop & status via !inner join.
       supabase
         .from('order_items')
-        .select('product_id, quantity, orders!inner(shop_id, status)')
-        .filter('orders.shop_id', 'in', shopFilter)
-        .filter('orders.status', 'in', '(pending,confirmed,delivered)'),
+        .select('product_id, quantity, orders!inner(shop_id)')
+        .filter('orders.shop_id', 'in', shopFilter),
     ])
     if (error || !products) return []
 
@@ -166,4 +165,76 @@ export async function getProductSales(
   const userId = await getCurrentUserId()
   if (!userId) return []
   return _fetchProductSales(userId, marketplace ?? '', days, from ?? '', to ?? '')
+}
+
+export interface CategoryRow {
+  name: string
+  revenue: number
+  profit: number
+  percent: number
+}
+
+const _fetchCategoryRevenue = unstable_cache(
+  async (userId: string, mp: string, days: number, from: string, to: string): Promise<CategoryRow[]> => {
+    const supabase = createAdminClient()
+    const { data: shopsData } = await supabase.from('shops').select('id, marketplace').eq('user_id', userId)
+    const allShops = shopsData ?? []
+    const shopIds = mp
+      ? allShops.filter((s: { marketplace: string }) => s.marketplace === mp).map((s: { id: string }) => s.id)
+      : allShops.map((s: { id: string }) => s.id)
+    if (shopIds.length === 0) return []
+
+    let sinceIso: string | null = null
+    let untilIso: string | null = null
+    if (from && to) {
+      sinceIso = new Date(from).toISOString()
+      const toDate = new Date(to); toDate.setHours(23, 59, 59, 999)
+      untilIso = toDate.toISOString()
+    } else if (days > 0) {
+      const d = new Date(); d.setDate(d.getDate() - days + 1)
+      sinceIso = d.toISOString()
+    }
+
+    const shopFilter = `(${shopIds.join(',')})`
+    let query = supabase
+      .from('order_items')
+      .select('quantity, price_per_unit, products(category, cost_price), orders!inner(shop_id, status, ordered_at)')
+      .filter('orders.shop_id', 'in', shopFilter)
+      .filter('orders.status', 'neq', 'cancelled')
+      .not('product_id', 'is', null)
+    if (sinceIso) query = query.filter('orders.ordered_at', 'gte', sinceIso)
+    if (untilIso) query = query.filter('orders.ordered_at', 'lte', untilIso)
+
+    const { data: items } = await query
+    if (!items || items.length === 0) return []
+
+    const map = new Map<string, { revenue: number; profit: number }>()
+    for (const item of items) {
+      const prod = Array.isArray(item.products) ? item.products[0] : item.products
+      const cat = (prod as any)?.category ?? 'Boshqa'
+      const rev = (item.quantity ?? 0) * Number(item.price_per_unit ?? 0)
+      const cost = (item.quantity ?? 0) * Number((prod as any)?.cost_price ?? 0)
+      const existing = map.get(cat) ?? { revenue: 0, profit: 0 }
+      map.set(cat, { revenue: existing.revenue + rev, profit: existing.profit + (rev - cost) })
+    }
+
+    const total = [...map.values()].reduce((s, v) => s + v.revenue, 0)
+    return [...map.entries()]
+      .map(([name, v]) => ({ name, ...v, percent: total > 0 ? (v.revenue / total) * 100 : 0 }))
+      .sort((a, b) => b.revenue - a.revenue)
+  },
+  ['category-revenue'],
+  { revalidate: 30 },
+)
+
+export async function getCategoryRevenue(
+  days: number,
+  marketplace?: MarketplaceType,
+  from?: string,
+  to?: string,
+): Promise<CategoryRow[]> {
+  if (!supabaseConfigured) return []
+  const userId = await getCurrentUserId()
+  if (!userId) return []
+  return _fetchCategoryRevenue(userId, marketplace ?? '', days, from ?? '', to ?? '')
 }

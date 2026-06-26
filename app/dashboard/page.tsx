@@ -3,11 +3,11 @@ import DashboardClient from './DashboardClient'
 import type { MarketplaceSlice } from './DashboardClient'
 import { getKpis } from '@/lib/db/kpis'
 import { getOrders } from '@/lib/db/orders'
-import { getProducts } from '@/lib/db/products'
+import { getProducts, getCategoryRevenue } from '@/lib/db/products'
 import { getDailyRevenue } from '@/lib/db/revenue'
 import { getUserShops } from '@/lib/db/shop-context'
 import WelcomePopup from '@/components/dashboard/WelcomePopup'
-import type { MarketplaceType, Product } from '@/lib/types'
+import type { MarketplaceType } from '@/lib/types'
 
 function parseDays(v: string | undefined): number {
   if (v === '1')     return 1
@@ -26,22 +26,6 @@ function parseMarketplace(params: Record<string, string> | undefined): Marketpla
   return (VALID_MARKETPLACES as readonly string[]).includes(v ?? '') ? v as MarketplaceType : undefined
 }
 
-function buildCategoryData(products: Product[]) {
-  const map: Record<string, { revenue: number; profit: number }> = {}
-  for (const p of products) {
-    const cat = p.category ?? 'Boshqa'
-    const rev = Number(p.selling_price ?? 0) * (p.sold ?? 0)
-    const pro = p.profit * (p.sold ?? 0)
-    if (!map[cat]) map[cat] = { revenue: 0, profit: 0 }
-    map[cat].revenue += rev
-    map[cat].profit  += pro
-  }
-  const total = Object.values(map).reduce((s, v) => s + v.revenue, 0)
-  return Object.entries(map)
-    .map(([name, v]) => ({ name, ...v, percent: total > 0 ? (v.revenue / total) * 100 : 0 }))
-    .sort((a, b) => b.revenue - a.revenue)
-}
-
 async function fetchSlice(
   days: number,
   marketplace: MarketplaceType | undefined,
@@ -49,18 +33,19 @@ async function fetchSlice(
   from?: string,
   to?: string,
 ): Promise<MarketplaceSlice> {
-  const [kpis, recentOrders, allProducts, chartData] = await Promise.all([
+  const [kpis, recentOrders, allProducts, chartData, categoryData] = await Promise.all([
     getKpis(days, marketplace, from, to),
     getOrders(5, marketplace),
     getProducts(marketplace),
     getDailyRevenue(days, marketplace, from, to),
+    getCategoryRevenue(days, marketplace, from, to),
   ])
   return {
     kpis,
     recentOrders,
     allProducts,
     chartData,
-    categoryData: buildCategoryData(allProducts),
+    categoryData,
     hasConnectedShop,
   }
 }
