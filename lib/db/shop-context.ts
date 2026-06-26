@@ -31,7 +31,7 @@ const _fetchShopsByUser = unstable_cache(
       .eq('user_id', userId)
     return (data ?? []) as ShopRef[]
   },
-  ['user-shops'],
+  ['user-shops-v2'],
   { revalidate: 60 },
 )
 
