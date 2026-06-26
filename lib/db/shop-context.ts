@@ -37,8 +37,11 @@ const _fetchShopsByUser = unstable_cache(
 
 export const getUserShops = cache(async (): Promise<ShopRef[]> => {
   const userId = await getCurrentUserId()
+  console.log('[getUserShops] userId:', userId)
   if (!userId) return []
-  return _fetchShopsByUser(userId)
+  const shops = await _fetchShopsByUser(userId)
+  console.log('[getUserShops] shops:', shops?.length, shops?.map(s => s.marketplace))
+  return shops
 })
 
 /**
