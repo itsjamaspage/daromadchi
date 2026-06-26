@@ -26,17 +26,35 @@ function defaultFrom() {
   return d.toISOString().slice(0, 10)
 }
 
+function Spinner({ className }: { className?: string }) {
+  return (
+    <svg className={`animate-spin ${className ?? 'w-4 h-4'}`} viewBox="0 0 24 24" fill="none">
+      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+    </svg>
+  )
+}
+
 export default function DateRangePicker({ period, from, to }: Props) {
   const [open, setOpen] = useState(false)
   const [customFrom, setCustomFrom] = useState(from ?? defaultFrom())
   const [customTo, setCustomTo]     = useState(to ?? todayStr())
   const ref = useRef<HTMLDivElement>(null)
+  const shouldCloseAfterPending = useRef(false)
 
   const router       = useRouter()
   const pathname     = usePathname()
   const searchParams = useSearchParams()
   const [pending, startTransition] = useTransition()
   const { lang } = useLang()
+
+  // Close the dropdown once the transition finishes
+  useEffect(() => {
+    if (!pending && shouldCloseAfterPending.current) {
+      shouldCloseAfterPending.current = false
+      setOpen(false)
+    }
+  }, [pending])
 
   useEffect(() => {
     setCustomFrom(from ?? defaultFrom())
@@ -57,9 +75,9 @@ export default function DateRangePicker({ period, from, to }: Props) {
     p.delete('days')
     p.set('from', customFrom)
     p.set('to', customTo)
+    shouldCloseAfterPending.current = true
     startTransition(() => {
       router.push(`${pathname}?${p.toString()}`, { scroll: false })
-      setOpen(false)
     })
   }
 
@@ -68,9 +86,9 @@ export default function DateRangePicker({ period, from, to }: Props) {
     p.delete('from')
     p.delete('to')
     p.set('days', days)
+    shouldCloseAfterPending.current = true
     startTransition(() => {
       router.push(`${pathname}?${p.toString()}`, { scroll: false })
-      setOpen(false)
     })
   }
 
@@ -105,7 +123,7 @@ export default function DateRangePicker({ period, from, to }: Props) {
         }}
       >
         {pending
-          ? <svg className="w-3.5 h-3.5 shrink-0 animate-spin" viewBox="0 0 24 24" fill="none" style={{ color: 'var(--c1)' }}><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" /></svg>
+          ? <Spinner className="w-3.5 h-3.5 shrink-0" />
           : <CalendarDays className="w-3.5 h-3.5 shrink-0" style={{ color: 'var(--c1)' }} />
         }
         <span style={{ color: 'var(--text-base)' }}>{label}</span>
@@ -122,13 +140,15 @@ export default function DateRangePicker({ period, from, to }: Props) {
               <button
                 key={days}
                 onClick={() => applyPreset(days)}
-                className="flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all"
+                disabled={pending}
+                className="flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1 disabled:opacity-60"
                 style={{
                   background: activeDays === days ? 'rgba(131,192,249,0.18)' : 'var(--bg-input)',
                   border: activeDays === days ? '1px solid rgba(131,192,249,0.4)' : '1px solid var(--border)',
                   color: activeDays === days ? 'var(--c1)' : 'var(--text-muted)',
                 }}
               >
+                {pending && activeDays === days && <Spinner className="w-3 h-3" />}
                 {pl}
               </button>
             ))}
@@ -168,12 +188,7 @@ export default function DateRangePicker({ period, from, to }: Props) {
             className="w-full py-2 rounded-xl text-sm font-semibold transition-all disabled:opacity-40 flex items-center justify-center gap-2"
             style={{ background: '#83c0f9', color: '#131321' }}
           >
-            {pending && (
-              <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-              </svg>
-            )}
+            {pending && <Spinner className="w-4 h-4" />}
             {lang === 'uz' ? 'Qo\'llash' : lang === 'ru' ? 'Применить' : 'Apply'}
           </button>
         </div>
