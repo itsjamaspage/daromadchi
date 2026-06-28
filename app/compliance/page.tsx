@@ -5,7 +5,6 @@ import Link from 'next/link'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useLang, useTheme } from '@/app/providers'
 import BorderGlow from '@/app/components/BorderGlow'
-import SectionHoverAnim from '@/app/components/SectionHoverAnim'
 
 function tx(lang: string, ru: string, uz: string, en: string) {
   return lang === 'ru' ? ru : lang === 'uz' ? uz : en
@@ -174,29 +173,18 @@ export default function CompliancePage() {
 
       {/* ── Sidebar ───────────────────────────────────────────────────────────── */}
       <aside
-        className="sticky hidden md:flex flex-col shrink-0 border-r border-[var(--border)] transition-all duration-300"
-        style={{
-          top: NAVBAR_H,
-          height: `calc(100vh - ${NAVBAR_H}px)`,
-          width: open ? 264 : 56,
-          background: 'var(--bg-card)',
-          overflowY: 'auto',
-          overflowX: 'hidden',
-        }}
+        className="sticky top-[68px] self-start h-[calc(100vh-68px)] flex-shrink-0 border-r transition-all duration-300 overflow-hidden"
+        style={{ width: open ? 280 : 60, borderColor: 'var(--border)', background: 'var(--bg-card)' }}
       >
-        {/* Toggle */}
-        <div className="flex items-center justify-end p-3 border-b border-[var(--border)]">
-          <button
-            onClick={() => setOpen(o => !o)}
-            className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors hover:bg-[var(--bg-input)]"
-            style={{ color: 'var(--text-muted)' }}
-          >
-            {open ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-          </button>
-        </div>
+        <button
+          onClick={() => setOpen(o => !o)}
+          className="w-full flex items-center justify-end px-4 py-5 border-b transition-colors hover:text-[var(--c1)]"
+          style={{ borderColor: 'var(--border)', color: 'var(--text-dim)' }}
+        >
+          {open ? <ChevronLeft className="w-5 h-5 flex-shrink-0" /> : <ChevronRight className="w-5 h-5 flex-shrink-0" />}
+        </button>
 
-        {/* Nav items */}
-        <nav className="flex flex-col gap-1 p-2">
+        <nav className="flex flex-col gap-1.5 p-3 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 68px - 58px)' }}>
           {SECTIONS.map((s, i) => {
             const label = s.short[lang as 'uz' | 'ru' | 'en'] ?? s.short.en
             const isActive = active === i
@@ -204,27 +192,26 @@ export default function CompliancePage() {
               <button
                 key={i}
                 onClick={() => scrollTo(i)}
-                className="flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-left transition-all text-sm font-medium"
+                title={s.heading[lang as 'uz' | 'ru' | 'en'] ?? s.heading.en}
+                className="flex items-center gap-3 px-3 py-3 rounded-xl text-left text-sm font-semibold transition-all whitespace-nowrap overflow-hidden border"
                 style={{
+                  color: isActive ? 'var(--c1)' : 'var(--text-base)',
                   background: isActive ? (isDark ? 'rgba(131,192,249,0.10)' : 'rgba(2,132,199,0.08)') : 'transparent',
-                  color: isActive ? 'var(--c1)' : 'var(--text-muted)',
-                  borderLeft: isActive ? '2px solid var(--c1)' : '2px solid transparent',
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
+                  borderColor: isActive ? 'var(--c1)' : 'transparent',
                 }}
               >
-                <span
-                  className="shrink-0 w-5 h-5 rounded-md flex items-center justify-center text-xs font-bold"
-                  style={{
-                    background: isActive ? 'var(--c1)' : 'var(--bg-input)',
-                    color: isActive ? '#020c1a' : 'var(--text-muted)',
-                  }}
-                >
-                  {i + 1}
-                </span>
-                {open && (
+                {open && <>
+                  <span
+                    className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold"
+                    style={{
+                      background: isActive ? (isDark ? 'rgba(131,192,249,0.22)' : 'rgba(2,132,199,0.18)') : (isDark ? 'rgba(131,192,249,0.10)' : 'rgba(2,132,199,0.08)'),
+                      color: 'var(--c1)',
+                    }}
+                  >
+                    {i + 1}
+                  </span>
                   <span className="truncate">{label}</span>
-                )}
+                </>}
               </button>
             )
           })}
@@ -233,10 +220,6 @@ export default function CompliancePage() {
 
       {/* ── Main content ──────────────────────────────────────────────────────── */}
       <main className="flex-1 min-w-0 px-5 sm:px-8 lg:px-12 py-10 pb-24 relative">
-        <SectionHoverAnim
-          colors={isDark ? ['#ffffff', '#f5f5f5', '#ebebeb', '#dcdcdc', '#cdcdcd'] : ['#ffffff', '#ffffff', '#f8fafc', '#f0f0f0', '#e8e8e8']}
-          opacity={0.35}
-        />
         <div style={{ maxWidth: 760, margin: '0 auto', position: 'relative', zIndex: 1 }}>
 
           {/* Page header */}

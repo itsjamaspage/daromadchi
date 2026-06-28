@@ -59,14 +59,8 @@ export default function HelpPage() {
     : []
 
   return (
-    <main className="relative max-w-5xl mx-auto px-4 sm:px-6 py-12">
-      <div aria-hidden style={{
-        position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0,
-        background: isDark
-          ? 'radial-gradient(ellipse 65% 30% at 50% 0%, rgba(131,192,249,0.07) 0%, transparent 65%)'
-          : 'radial-gradient(ellipse 65% 30% at 50% 0%, rgba(2,132,199,0.05) 0%, transparent 65%)',
-      }} />
-      <div style={{ position: 'relative', zIndex: 1 }}>
+    <main className="max-w-5xl mx-auto px-4 sm:px-6 py-12">
+      <div>
       {/* Hero */}
       <div className="text-center mb-12">
         <h1

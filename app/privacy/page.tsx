@@ -4,7 +4,6 @@ import { useState, useEffect, useRef } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useLang, useTheme } from '@/app/providers'
 import BorderGlow from '@/app/components/BorderGlow'
-import SectionHoverAnim from '@/app/components/SectionHoverAnim'
 
 const COMPANY_EMAIL = 'support@daromadchi.uz'
 
@@ -235,10 +234,6 @@ export default function PrivacyPage() {
 
       {/* Main content */}
       <main className="flex-1 min-w-0 px-8 py-16 relative">
-        <SectionHoverAnim
-          colors={isDark ? ['#ffffff', '#f5f5f5', '#ebebeb', '#dcdcdc', '#cdcdcd'] : ['#ffffff', '#ffffff', '#f8fafc', '#f0f0f0', '#e8e8e8']}
-          opacity={0.35}
-        />
         <div className="max-w-3xl mx-auto" style={{ position: 'relative', zIndex: 1 }}>
           <div className="text-center mb-14">
             <h1
