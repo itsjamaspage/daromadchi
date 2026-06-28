@@ -154,13 +154,13 @@ const _fetchCategoryRevenue = unstable_cache(
 
     const total = rows.reduce((s: number, r: any) => s + Number(r.revenue ?? 0), 0)
     return rows.map((r: any) => ({
-      name:    r.category,
+      name:    r.category ?? 'Boshqa',
       revenue: Number(r.revenue ?? 0),
       profit:  Number(r.revenue ?? 0) - Number(r.cost ?? 0),
       percent: total > 0 ? (Number(r.revenue ?? 0) / total) * 100 : 0,
     }))
   },
-  ['category-revenue-v7'],
+  ['category-revenue-v8'],
   { revalidate: 30 },
 )
 
