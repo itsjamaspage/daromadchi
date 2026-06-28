@@ -1,10 +1,8 @@
 name: Deploy to Vercel
-# Disabled — Vercel CLI deploys count against the 100/day API quota on the free tier.
-# Deployments are triggered via the native Vercel GitHub integration instead,
-# which uses a separate (unthrottled) path. To trigger a deploy, push any
-# forward commit to main (e.g. update public/version.txt via the GitHub API).
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
 
 jobs:
@@ -16,9 +14,12 @@ jobs:
       - name: Install Vercel CLI
         run: npm install -g vercel
 
-      - name: Link and deploy
-        run: |
-          vercel link --yes --token $VERCEL_TOKEN --scope auralook --project daromadchi
-          vercel --prod --yes --token $VERCEL_TOKEN
+      - name: Link project
+        run: vercel link --yes --token $VERCEL_TOKEN --project daromadchi
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
+      - name: Deploy to production
+        run: vercel --prod --yes --token $VERCEL_TOKEN
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}

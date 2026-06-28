@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useLang, useTheme } from '@/app/providers'
+import BorderGlow from '@/app/components/BorderGlow'
 
 function tx(lang: string, ru: string, uz: string, en: string) {
   return lang === 'ru' ? ru : lang === 'uz' ? uz : en
@@ -163,38 +164,27 @@ export default function CompliancePage() {
     flashTimerRef.current = setTimeout(() => setFlash(null), 2000)
   }
 
-  const flashBg   = isDark ? 'rgba(0,212,255,0.15)' : 'rgba(0,180,255,0.12)'
+  const flashBg   = isDark ? 'rgba(131,192,249,0.12)' : 'rgba(2,132,199,0.08)'
   const flashBdr  = 'var(--c1)'
-  const flashShadow = '0 0 0 3px rgba(0,212,255,0.25)'
+  const flashShadow = isDark ? '0 0 0 3px rgba(131,192,249,0.3)' : '0 0 0 3px rgba(2,132,199,0.3)'
 
   return (
     <div className="flex min-h-screen" style={{ background: 'var(--bg-base)', fontFamily: "'Space Grotesk', system-ui, sans-serif" }}>
 
       {/* ── Sidebar ───────────────────────────────────────────────────────────── */}
       <aside
-        className="sticky hidden md:flex flex-col shrink-0 border-r border-[var(--border)] transition-all duration-300"
-        style={{
-          top: NAVBAR_H,
-          height: `calc(100vh - ${NAVBAR_H}px)`,
-          width: open ? 264 : 56,
-          background: 'var(--bg-card)',
-          overflowY: 'auto',
-          overflowX: 'hidden',
-        }}
+        className="sticky top-[68px] self-start h-[calc(100vh-68px)] flex-shrink-0 border-r transition-all duration-300 overflow-hidden"
+        style={{ width: open ? 280 : 60, borderColor: 'var(--border)', background: 'var(--bg-card)' }}
       >
-        {/* Toggle */}
-        <div className="flex items-center justify-end p-3 border-b border-[var(--border)]">
-          <button
-            onClick={() => setOpen(o => !o)}
-            className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors hover:bg-[var(--bg-input)]"
-            style={{ color: 'var(--text-muted)' }}
-          >
-            {open ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-          </button>
-        </div>
+        <button
+          onClick={() => setOpen(o => !o)}
+          className="w-full flex items-center justify-end px-4 py-5 border-b transition-colors hover:text-[var(--c1)]"
+          style={{ borderColor: 'var(--border)', color: 'var(--text-dim)' }}
+        >
+          {open ? <ChevronLeft className="w-5 h-5 flex-shrink-0" /> : <ChevronRight className="w-5 h-5 flex-shrink-0" />}
+        </button>
 
-        {/* Nav items */}
-        <nav className="flex flex-col gap-1 p-2">
+        <nav className="flex flex-col gap-1.5 p-3 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 68px - 58px)' }}>
           {SECTIONS.map((s, i) => {
             const label = s.short[lang as 'uz' | 'ru' | 'en'] ?? s.short.en
             const isActive = active === i
@@ -202,27 +192,26 @@ export default function CompliancePage() {
               <button
                 key={i}
                 onClick={() => scrollTo(i)}
-                className="flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-left transition-all text-sm font-medium"
+                title={s.heading[lang as 'uz' | 'ru' | 'en'] ?? s.heading.en}
+                className="flex items-center gap-3 px-3 py-3 rounded-xl text-left text-sm font-semibold transition-all whitespace-nowrap overflow-hidden border"
                 style={{
-                  background: isActive ? 'rgba(0,212,255,0.10)' : 'transparent',
-                  color: isActive ? 'var(--c1)' : 'var(--text-muted)',
-                  borderLeft: isActive ? '2px solid var(--c1)' : '2px solid transparent',
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
+                  color: isActive ? 'var(--c1)' : 'var(--text-base)',
+                  background: isActive ? (isDark ? 'rgba(131,192,249,0.10)' : 'rgba(2,132,199,0.08)') : 'transparent',
+                  borderColor: isActive ? 'var(--c1)' : 'transparent',
                 }}
               >
-                <span
-                  className="shrink-0 w-5 h-5 rounded-md flex items-center justify-center text-xs font-bold"
-                  style={{
-                    background: isActive ? 'var(--c1)' : 'var(--bg-input)',
-                    color: isActive ? '#020c1a' : 'var(--text-muted)',
-                  }}
-                >
-                  {i + 1}
-                </span>
-                {open && (
+                {open && <>
+                  <span
+                    className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold"
+                    style={{
+                      background: isActive ? (isDark ? 'rgba(131,192,249,0.22)' : 'rgba(2,132,199,0.18)') : (isDark ? 'rgba(131,192,249,0.10)' : 'rgba(2,132,199,0.08)'),
+                      color: 'var(--c1)',
+                    }}
+                  >
+                    {i + 1}
+                  </span>
                   <span className="truncate">{label}</span>
-                )}
+                </>}
               </button>
             )
           })}
@@ -230,8 +219,8 @@ export default function CompliancePage() {
       </aside>
 
       {/* ── Main content ──────────────────────────────────────────────────────── */}
-      <main className="flex-1 min-w-0 px-5 sm:px-8 lg:px-12 py-10 pb-24">
-        <div style={{ maxWidth: 760, margin: '0 auto' }}>
+      <main className="flex-1 min-w-0 px-5 sm:px-8 lg:px-12 py-10 pb-24 relative">
+        <div style={{ maxWidth: 760, margin: '0 auto', position: 'relative', zIndex: 1 }}>
 
           {/* Page header */}
           <div className="mb-10">
@@ -248,7 +237,7 @@ export default function CompliancePage() {
             </div>
 
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg mb-5 text-xs font-semibold uppercase tracking-wider"
-              style={{ background: 'rgba(0,212,255,0.10)', color: 'var(--c1)' }}>
+              style={{ background: isDark ? 'rgba(131,192,249,0.10)' : 'rgba(2,132,199,0.08)', color: 'var(--c1)' }}>
               {tx(lang, 'Соответствие данных', 'Ma\'lumotlar Muvofiqlik', 'Data Compliance')}
             </div>
 
@@ -278,28 +267,44 @@ export default function CompliancePage() {
               const body    = s.body[lang as 'uz' | 'ru' | 'en'] ?? s.body.en
               const isFlash = flash === i
               return (
-                <section
+                <div
                   key={i}
                   id={`section-${i}`}
                   data-idx={i}
-                  className="rounded-2xl border p-6 sm:p-8 transition-all"
+                  className="scroll-mt-24"
                   style={{
-                    background: isFlash ? flashBg : 'var(--bg-card)',
-                    borderColor: isFlash ? flashBdr : 'var(--border)',
-                    boxShadow: isFlash ? flashShadow : undefined,
-                    transition: 'background 0.5s ease, border-color 0.4s ease, box-shadow 0.4s ease',
+                    borderRadius: 16,
+                    boxShadow: isFlash
+                      ? '0 0 0 2px rgba(131,192,249,0.9), 0 0 28px rgba(131,192,249,0.35)'
+                      : active === i
+                        ? '0 0 0 1.5px rgba(131,192,249,0.5)'
+                        : 'none',
+                    transition: 'box-shadow 0.4s ease',
                   }}
                 >
-                  <h2 className="text-xl font-bold mb-5" style={{ color: 'var(--text-base)' }}>
-                    {heading}
-                  </h2>
-                  <div
-                    className="text-base leading-8 whitespace-pre-line"
-                    style={{ color: 'var(--text-muted)' }}
+                  <BorderGlow
+                    borderRadius={16}
+                    glowColor={isDark ? "210 84 75" : "201 97 39"}
+                    glowIntensity={isDark ? 1.5 : 1.0}
+                    backgroundColor={active === i ? (isDark ? 'rgba(15,28,48,1)' : 'rgba(230,241,255,1)') : 'var(--bg-card)'}
+                    colors={isDark
+                      ? ['rgba(131,192,249,0.25)', 'rgba(100,171,240,0.18)', 'rgba(80,150,220,0.12)']
+                      : ['rgba(2,132,199,0.15)', 'rgba(3,105,161,0.10)', 'rgba(14,116,200,0.08)']}
+                    className="w-full"
                   >
-                    {body}
-                  </div>
-                </section>
+                    <div className="p-6 sm:p-8">
+                      <h2 className="text-xl font-bold mb-5" style={{ color: 'var(--text-base)' }}>
+                        {heading}
+                      </h2>
+                      <div
+                        className="text-base leading-8 whitespace-pre-line"
+                        style={{ color: 'var(--text-muted)' }}
+                      >
+                        {body}
+                      </div>
+                    </div>
+                  </BorderGlow>
+                </div>
               )
             })}
           </div>

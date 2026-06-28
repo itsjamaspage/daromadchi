@@ -1,24 +1,27 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import { usePathname } from 'next/navigation'
+import { usePathname, useSearchParams } from 'next/navigation'
 
 export default function NavigationEvents() {
   const pathname = usePathname()
-  const prevPathname = useRef<string | null>(null)
+  const searchParams = useSearchParams()
+  const prevKey = useRef<string | null>(null)
   const pendingEnd = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  // Fire __loading_end__ whenever pathname OR search params change
   useEffect(() => {
-    if (prevPathname.current === null) {
-      prevPathname.current = pathname
+    const key = `${pathname}?${searchParams.toString()}`
+    if (prevKey.current === null) {
+      prevKey.current = key
       return
     }
-    if (prevPathname.current !== pathname) {
-      prevPathname.current = pathname
+    if (prevKey.current !== key) {
+      prevKey.current = key
       if (pendingEnd.current) clearTimeout(pendingEnd.current)
       window.dispatchEvent(new Event('__loading_end__'))
     }
-  }, [pathname])
+  }, [pathname, searchParams])
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
@@ -27,7 +30,7 @@ export default function NavigationEvents() {
       const href = anchor.getAttribute('href')
       if (!href || href.startsWith('#') || href.startsWith('http') || href.startsWith('mailto') || href.startsWith('tel')) return
       if (anchor.target === '_blank') return
-      const isSamePage = href === window.location.pathname || href === window.location.pathname + window.location.search
+      const isSamePage = href === window.location.pathname + window.location.search
       if (isSamePage) return
 
       if (pendingEnd.current) clearTimeout(pendingEnd.current)

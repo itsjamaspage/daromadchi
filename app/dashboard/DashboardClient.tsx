@@ -14,8 +14,11 @@ import CategoryChart from '@/components/dashboard/CategoryChart'
 import { useLang, useTheme } from '@/app/providers'
 import { dashT } from '@/lib/dashT'
 import type { Kpis, Order, Product, DailyRevenue, MarketplaceType } from '@/lib/types'
+import type { ProductSalesRow } from '@/lib/db/products'
 
 function formatSum(n: number) {
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1).replace(/\.0$/, '') + " mln so'm"
+  if (n >= 1_000)     return (n / 1_000).toFixed(1).replace(/\.0$/, '')     + " ming so'm"
   return new Intl.NumberFormat('uz-UZ').format(n) + " so'm"
 }
 
@@ -30,6 +33,7 @@ export interface MarketplaceSlice {
   kpis: Kpis
   recentOrders: Order[]
   allProducts: Product[]
+  productSales: ProductSalesRow[]
   chartData: DailyRevenue[]
   categoryData: CategoryData[]
   hasConnectedShop: boolean
@@ -76,7 +80,7 @@ export default function DashboardClient({ slices, days, period, from, to, initia
   }
 
   const sliceKey = marketplace ?? 'all'
-  const { kpis, recentOrders, allProducts, chartData, categoryData, hasConnectedShop } =
+  const { kpis, recentOrders, allProducts, productSales, chartData, categoryData, hasConnectedShop } =
     slices[sliceKey as keyof typeof slices]
 
   const isEmpty = kpis.total_orders === 0 && allProducts.length === 0
@@ -201,7 +205,16 @@ export default function DashboardClient({ slices, days, period, from, to, initia
           yandex_market: { url: 'https://partner.market.yandex.ru', label: 'partner.market.yandex.ru' },
           wildberries:   { url: 'https://seller.wildberries.ru',    label: 'seller.wildberries.ru'    },
         }
-        const mpLink = mpLinks[marketplace ?? ''] ?? mpLinks.uzum
+        // On a specific tab show only that marketplace; on "Все" show all connected ones
+        const linksToShow: { url: string; label: string }[] = marketplace
+          ? [mpLinks[marketplace]].filter(Boolean)
+          : (['uzum', 'yandex_market', 'wildberries'] as const)
+              .filter(mp => slices[mp].hasConnectedShop)
+              .map(mp => mpLinks[mp])
+        // Fallback: if no connected shops yet, show all three
+        const fallbackLinks = Object.values(mpLinks)
+        const displayLinks = linksToShow.length > 0 ? linksToShow : fallbackLinks
+
         if (hasConnectedShop) {
           return (
             <div className="bg-[var(--bg-card2)] border border-dashed border-amber-500/30 rounded-2xl p-10 text-center">
@@ -210,11 +223,13 @@ export default function DashboardClient({ slices, days, period, from, to, initia
               </div>
               <h2 className="text-[var(--text-base)] font-bold text-lg mb-2">{d.noDataSynced ?? d.noData}</h2>
               <p className="text-[var(--text-muted)] text-sm mb-6 max-w-sm mx-auto">{d.noDataSyncedDesc ?? d.noDataDesc}</p>
-              <div className="flex items-center justify-center gap-3">
-                <Link href={mpLink.url} target="_blank" rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 text-[var(--text-muted)] hover:text-[var(--text-base)] text-sm font-medium px-5 py-2.5 rounded-xl border border-[var(--border2)] hover:bg-[var(--bg-card2)] transition-all">
-                  {mpLink.label} <ArrowRight className="w-3.5 h-3.5" />
-                </Link>
+              <div className="flex items-center justify-center gap-3 flex-wrap">
+                {displayLinks.map(link => (
+                  <Link key={link.url} href={link.url} target="_blank" rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 text-[var(--text-muted)] hover:text-[var(--text-base)] text-sm font-medium px-5 py-2.5 rounded-xl border border-[var(--border2)] hover:bg-[var(--bg-card2)] transition-all">
+                    {link.label} <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                ))}
               </div>
             </div>
           )
@@ -226,15 +241,17 @@ export default function DashboardClient({ slices, days, period, from, to, initia
             </div>
             <h2 className="text-[var(--text-base)] font-bold text-lg mb-2">{d.noData}</h2>
             <p className="text-[var(--text-muted)] text-sm mb-6 max-w-sm mx-auto">{d.noDataDesc}</p>
-            <div className="flex items-center justify-center gap-3">
+            <div className="flex items-center justify-center gap-3 flex-wrap">
               <Link href="/dashboard/settings"
                 className="inline-flex items-center gap-2 btn-primary text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors shadow-lg" style={{ boxShadow: '0 4px 14px rgba(131,192,249,0.2)' }}>
                 <Settings className="w-4 h-4" /> {d.goSettings}
               </Link>
-              <Link href={mpLink.url} target="_blank" rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 text-[var(--text-muted)] hover:text-[var(--text-base)] text-sm font-medium px-5 py-2.5 rounded-xl border border-[var(--border2)] hover:bg-[var(--bg-card2)] transition-all">
-                {mpLink.label} <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
+              {displayLinks.map(link => (
+                <Link key={link.url} href={link.url} target="_blank" rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 text-[var(--text-muted)] hover:text-[var(--text-base)] text-sm font-medium px-5 py-2.5 rounded-xl border border-[var(--border2)] hover:bg-[var(--bg-card2)] transition-all">
+                  {link.label} <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              ))}
             </div>
           </div>
         )
@@ -261,10 +278,17 @@ export default function DashboardClient({ slices, days, period, from, to, initia
           <div className="xl:col-span-2">
             <RevenueChart data={chartData} days={days} />
           </div>
-          <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl p-6">
-            <h3 className="text-[var(--text-base)] font-semibold mb-4">{d.recentOrders}</h3>
-            <div className="space-y-3">
-              {recentOrders.map(order => (
+          <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl p-6 flex flex-col">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-[var(--text-base)] font-semibold">{d.recentOrders}</h3>
+              <Link href="/dashboard/orders" className="text-xs transition-colors" style={{ color: 'var(--c1)' }}>
+                {d.viewAll} &rarr;
+              </Link>
+            </div>
+            <div className="space-y-3 flex-1">
+              {recentOrders.length === 0 ? (
+                <p className="text-xs text-[var(--text-muted)] py-4 text-center">{d.noProducts ?? 'No orders found'}</p>
+              ) : recentOrders.map(order => (
                 <div key={order.id} className="flex items-start gap-3 pb-3 border-b border-[var(--border)] last:border-0 last:pb-0">
                   <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5" style={{ background: 'rgba(131,192,249,0.12)' }}>
                     <ShoppingBag className="w-4 h-4" style={{ color: '#83c0f9' }} />
@@ -285,44 +309,57 @@ export default function DashboardClient({ slices, days, period, from, to, initia
 
       {/* Category chart + top products */}
       {!hiddenWidgets.has('categories') && (
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
           <CategoryChart data={categoryData} />
           <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-[var(--text-base)] font-semibold">{d.topProducts}</h3>
-              <a href="/dashboard/products" className="text-xs transition-colors" style={{ color: 'var(--c1)' }}>
+              <Link href="/dashboard/products" className="text-xs transition-colors" style={{ color: 'var(--c1)' }}>
                 {d.viewAll} &rarr;
-              </a>
+              </Link>
             </div>
             <div className="overflow-x-auto">
             <table className="w-full text-sm min-w-[280px]">
               <thead>
                 <tr className="text-[var(--text-muted)] text-xs border-b border-[var(--border)]">
                   <th className="text-left font-medium pb-3 pr-4">{d.product}</th>
-                  <th className="text-right font-medium pb-3 pr-4">{d.profit2}</th>
+                  <th className="text-right font-medium pb-3 pr-4">{d.revenue ?? "Daromad"}</th>
                   <th className="text-right font-medium pb-3">{d.sold}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--border)]">
-                {allProducts.length === 0 ? (
+                {productSales.length === 0 && allProducts.length === 0 ? (
                   <tr>
                     <td colSpan={3} className="py-8 text-center">
                       <p className="text-[var(--text-muted)] text-xs">{d.noProducts}</p>
                       <p className="text-[var(--text-muted)] text-[10px] mt-1">{d.noProductsDesc}</p>
                     </td>
                   </tr>
-                ) : allProducts.slice(0, 5).map(p => (
-                  <tr key={p.id} className="hover:bg-[var(--bg-card2)] transition-colors">
-                    <td className="py-3 pr-4">
-                      <p className="text-[var(--text-base)] font-medium text-xs">{p.title}</p>
-                      <p className="text-[var(--text-muted)] text-xs">{p.sku}</p>
-                    </td>
-                    <td className="py-3 pr-4 text-right">
-                      <span className="text-emerald-400 font-medium text-xs">{formatSum(p.profit)}</span>
-                    </td>
-                    <td className="py-3 text-right text-[var(--text-dim)] text-xs">{p.sold ?? 0}</td>
-                  </tr>
-                ))}
+                ) : productSales.length > 0
+                  ? productSales.slice(0, 5).map(p => (
+                    <tr key={p.product_id} className="hover:bg-[var(--bg-card2)] transition-colors">
+                      <td className="py-3 pr-4">
+                        <p className="text-[var(--text-base)] font-medium text-xs">{p.title}</p>
+                        <p className="text-[var(--text-muted)] text-xs">{p.sku}</p>
+                      </td>
+                      <td className="py-3 pr-4 text-right">
+                        <span className="text-emerald-400 font-medium text-xs">{formatSum(p.revenue)}</span>
+                      </td>
+                      <td className="py-3 text-right text-[var(--text-dim)] text-xs">{p.qty_sold}</td>
+                    </tr>
+                  ))
+                  : [...allProducts].sort((a, b) => (b.sold ?? 0) - (a.sold ?? 0)).slice(0, 5).map(p => (
+                    <tr key={p.id} className="hover:bg-[var(--bg-card2)] transition-colors">
+                      <td className="py-3 pr-4">
+                        <p className="text-[var(--text-base)] font-medium text-xs">{p.title}</p>
+                        <p className="text-[var(--text-muted)] text-xs">{p.sku}</p>
+                      </td>
+                      <td className="py-3 pr-4 text-right">
+                        <span className="text-emerald-400 font-medium text-xs">{formatSum(Number(p.selling_price ?? 0) * (p.sold ?? 0))}</span>
+                      </td>
+                      <td className="py-3 text-right text-[var(--text-dim)] text-xs">{p.sold ?? 0}</td>
+                    </tr>
+                  ))}
               </tbody>
             </table>
             </div>

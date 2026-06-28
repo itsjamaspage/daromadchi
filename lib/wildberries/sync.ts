@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { marketplaceFetch } from '@/lib/marketplace-readonly-guard'
 
 // Correct base URLs per WB API docs (migrated from suppliers-api Jan 2025)
 const WB_CONTENT = 'https://content-api.wildberries.ru'
@@ -43,7 +44,7 @@ export async function syncFromWildberries(
     const allCards: unknown[] = []
 
     for (let page = 0; page < 20; page++) {
-      const res = await fetch(`${WB_CONTENT}/content/v2/get/cards/list`, {
+      const res = await marketplaceFetch(`${WB_CONTENT}/content/v2/get/cards/list`, {
         method: 'POST',
         headers: bearerHeaders(token),
         body: JSON.stringify({ settings: { cursor, filter: { withPhoto: -1 } } }),
@@ -73,11 +74,16 @@ export async function syncFromWildberries(
         updated_at:             new Date().toISOString(),
       }))
 
-      const { error } = await supabase
-        .from('products')
-        .upsert(rows, { onConflict: 'shop_id,marketplace_product_id' })
-      if (error) errors.push(error.message)
-      else productsUpserted = rows.length
+      const { data: existingProds } = await supabase
+        .from('products').select('id, marketplace_product_id').eq('shop_id', shopId)
+      const existingMap = new Map((existingProds ?? []).map((p: { id: string; marketplace_product_id: string }) =>
+        [String(p.marketplace_product_id), String(p.id)]))
+      const toIns = rows.filter((r: { marketplace_product_id: string }) => !existingMap.has(String(r.marketplace_product_id)))
+      const toUpd = rows.filter((r: { marketplace_product_id: string }) => existingMap.has(String(r.marketplace_product_id)))
+        .map((r: { marketplace_product_id: string }) => ({ ...r, id: existingMap.get(String(r.marketplace_product_id))! }))
+      if (toIns.length > 0) { const { error: e } = await supabase.from('products').insert(toIns); if (e) errors.push(e.message) }
+      if (toUpd.length > 0) { const { error: e } = await supabase.from('products').upsert(toUpd); if (e) errors.push(e.message) }
+      if (!errors.length) productsUpserted = rows.length
     }
   } catch (e) {
     errors.push(`Products sync failed: ${e}`)
@@ -85,7 +91,7 @@ export async function syncFromWildberries(
 
   // ─── Stocks (Marketplace API v1) — update stock_quantity ───────────────────
   try {
-    const stocksRes = await fetch(
+    const stocksRes = await marketplaceFetch(
       'https://marketplace-api.wildberries.ru/api/v3/stocks/0?limit=1000&offset=0',
       { headers: bearerHeaders(token) },
     )
@@ -120,7 +126,7 @@ export async function syncFromWildberries(
         : (() => { const d = new Date(); d.setDate(d.getDate() - 365); return d })())
     const df = sinceDt.toISOString().split('T')[0]
 
-    const res = await fetch(
+    const res = await marketplaceFetch(
       `${WB_STATS}/api/v1/supplier/orders?dateFrom=${df}&flag=0`,
       { headers: statsHeaders(token) },
     )

@@ -93,7 +93,7 @@ export default async function UnitEconomicsPage({
         </div>
         <Link href="/extension"
           className="flex items-center gap-2 flex-shrink-0 text-sm font-semibold px-5 py-2.5 rounded-xl"
-          style={{ background: '#83c0f9', color: '#131321' }}>
+          style={{ background: '#ffffff', color: '#0e1b2e', border: '2px solid rgba(255,255,255,0.7)' }}>
           {extBtn}
           <ArrowRight className="w-4 h-4" />
         </Link>

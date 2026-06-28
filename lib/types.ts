@@ -102,6 +102,7 @@ export interface Shop {
   api_key_encrypted: string | null
   shop_id_external: string | null
   is_active: boolean
+  token_valid: boolean | null
   last_synced_at: string | null
   created_at: string
 }

@@ -18,7 +18,7 @@ const ui = {
     tagline: 'Savdo tahlil platformasi',
     tabs: { login: 'Kirish', signup: "Ro'yxatdan o'tish" },
     email: 'Email', password: 'Parol', name: 'To\'liq ism',
-    namePh: 'Alisher Umarov',
+    namePh: "To'liq ismingiz",
     emailPh: 'email@example.com',
     loginBtn: 'Kirish', signupBtn: 'Hisob yaratish',
     loggingIn: 'Kirish...', signingUp: 'Hisob yaratilmoqda...',
@@ -43,7 +43,7 @@ const ui = {
     tagline: 'Sales analytics platform',
     tabs: { login: 'Sign in', signup: 'Sign up' },
     email: 'Email', password: 'Password', name: 'Full name',
-    namePh: 'John Smith',
+    namePh: 'Your full name',
     emailPh: 'email@example.com',
     loginBtn: 'Sign in', signupBtn: 'Create account',
     loggingIn: 'Signing in...', signingUp: 'Creating account...',
@@ -68,7 +68,7 @@ const ui = {
     tagline: 'Платформа аналитики продаж',
     tabs: { login: 'Войти', signup: 'Регистрация' },
     email: 'Email', password: 'Пароль', name: 'Полное имя',
-    namePh: 'Иван Иванов',
+    namePh: 'Ваше полное имя',
     emailPh: 'email@example.com',
     loginBtn: 'Войти', signupBtn: 'Создать аккаунт',
     loggingIn: 'Вход...', signingUp: 'Создание аккаунта...',
@@ -221,20 +221,24 @@ function LoginForm() {
         }
         else { router.push('/dashboard'); router.refresh() }
       } else {
-        const { data, error } = await supabase.auth.signUp({
-          email, password,
-          options: { data: { full_name: name } },
+        const signupRes = await fetch('/api/auth/signup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password, name }),
         })
-        if (error) { setError(error.message); setLoading(false) }
-        else {
-          if (refCode && data.user) {
+        const signupData = await signupRes.json()
+        if (!signupRes.ok) {
+          setError(signupData.error ?? 'Xato yuz berdi')
+          setLoading(false)
+        } else {
+          if (refCode && signupData.userId) {
             await fetch('/api/referral/track', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ refCode, newUserId: data.user.id }),
+              body: JSON.stringify({ refCode, newUserId: signupData.userId }),
             }).catch(() => {})
           }
-          if (data.session) { router.push('/dashboard'); router.refresh() }
+          if (!signupData.needsConfirmation) { router.push('/dashboard'); router.refresh() }
           else { setSuccess(true); setLoading(false) }
         }
       }

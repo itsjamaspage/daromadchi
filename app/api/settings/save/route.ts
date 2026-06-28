@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { encrypt } from '@/lib/crypto'
 import { logger } from '@/lib/logger'
 
@@ -50,12 +51,30 @@ export async function POST(req: NextRequest) {
     if (Object.keys(update).length === 0) {
       return NextResponse.json({ ok: true, message: 'O\'zgartirish yo\'q' })
     }
+
+    // When API key changes, wipe all old shop data so stale data doesn't show
+    if (apiKey?.trim()) {
+      const admin = createAdminClient()
+      const { data: orderIds } = await admin
+        .from('orders')
+        .select('id')
+        .eq('shop_id', existing.id)
+      if (orderIds && orderIds.length > 0) {
+        await admin.from('order_items').delete().in('order_id', orderIds.map((o: { id: string }) => o.id))
+      }
+      await admin.from('orders').delete().eq('shop_id', existing.id)
+      await admin.from('products').delete().eq('shop_id', existing.id)
+      await admin.from('sync_days').delete().eq('shop_id', existing.id)
+      update.last_synced_at = null
+      logger.info('settings_save_cleared_shop_data', { userId: user.id, marketplace, shopId: existing.id })
+    }
+
     const { error } = await supabase.from('shops').update(update).eq('id', existing.id)
     if (error) {
       logger.error('settings_save_update_failed', { userId: user.id, marketplace, code: error.code })
       return NextResponse.json({ error: 'Saqlashda xato yuz berdi' }, { status: 500 })
     }
-    return NextResponse.json({ ok: true })
+    return NextResponse.json({ ok: true, cleared: !!(apiKey?.trim()) })
   }
 
   // Insert new shop

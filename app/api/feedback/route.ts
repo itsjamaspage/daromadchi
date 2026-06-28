@@ -7,7 +7,35 @@ const MAX_MSG_LEN = 2000
 // ~5 MB image → base64 ≈ 6.7 MB string
 const MAX_IMAGE_B64 = 7 * 1024 * 1024
 
+// 5 submissions per IP per hour
+const feedbackRateMap = new Map<string, { count: number; resetAt: number }>()
+function checkFeedbackRate(ip: string): boolean {
+  const now = Date.now()
+  const entry = feedbackRateMap.get(ip)
+  if (!entry || now > entry.resetAt) {
+    feedbackRateMap.set(ip, { count: 1, resetAt: now + 3_600_000 })
+    if (feedbackRateMap.size > 5000) {
+      for (const [k, v] of feedbackRateMap) {
+        if (now > v.resetAt) { feedbackRateMap.delete(k); break }
+      }
+    }
+    return false
+  }
+  entry.count++
+  return entry.count > 5
+}
+
 export async function POST(req: NextRequest) {
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+    ?? req.headers.get('x-real-ip')
+    ?? 'unknown'
+  if (checkFeedbackRate(ip)) {
+    return NextResponse.json(
+      { error: "Juda ko'p so'rov yuborildi. Bir soatdan so'ng urinib ko'ring." },
+      { status: 429, headers: { 'Retry-After': '3600' } },
+    )
+  }
+
   try {
     const body = await req.json().catch(() => null)
     if (!body) return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })

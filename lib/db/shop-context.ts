@@ -1,5 +1,4 @@
 import { cache } from 'react'
-import { unstable_cache } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { MarketplaceType } from '@/lib/types'
@@ -20,25 +19,15 @@ export const getCurrentUserId = cache(async (): Promise<string | null> => {
   return user?.id ?? null
 })
 
-// Persist shops per user across requests for 60 s to avoid a DB round-trip on
-// every page navigation. getUserShops() still validates auth on every request.
-const _fetchShopsByUser = unstable_cache(
-  async (userId: string): Promise<ShopRef[]> => {
-    const supabase = createAdminClient()
-    const { data } = await supabase
-      .from('shops')
-      .select('id, marketplace')
-      .eq('user_id', userId)
-    return (data ?? []) as ShopRef[]
-  },
-  ['user-shops'],
-  { revalidate: 60 },
-)
-
 export const getUserShops = cache(async (): Promise<ShopRef[]> => {
   const userId = await getCurrentUserId()
   if (!userId) return []
-  return _fetchShopsByUser(userId)
+  const supabase = createAdminClient()
+  const { data } = await supabase
+    .from('shops')
+    .select('id, marketplace')
+    .eq('user_id', userId)
+  return (data ?? []) as ShopRef[]
 })
 
 /**
@@ -55,3 +44,17 @@ export const getShopIds = cache(async (marketplace?: MarketplaceType): Promise<s
   const filtered = marketplace ? shops.filter(s => s.marketplace === marketplace) : shops
   return filtered.map(s => s.id)
 })
+
+export async function getShopLaunchDate(): Promise<string | null> {
+  const supabase = createAdminClient()
+  const shopIds = await getShopIds()
+  if (!shopIds || shopIds.length === 0) return null
+  const { data } = await supabase
+    .from('orders')
+    .select('ordered_at')
+    .in('shop_id', shopIds)
+    .order('ordered_at', { ascending: true })
+    .limit(1)
+    .single()
+  return data?.ordered_at ?? null
+}

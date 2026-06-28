@@ -1,5 +1,6 @@
 // Wildberries public catalogue API — no authentication required.
 // Used for market research: search top products by name.
+import { marketplaceFetch } from '@/lib/marketplace-readonly-guard'
 
 export interface WbPublicProduct {
   id: number
@@ -63,7 +64,7 @@ export async function searchWbProducts(
       sort,
       spp: '30',
     })
-    const res = await fetch(
+    const res = await marketplaceFetch(
       `https://search.wb.ru/exactmatch/ru/common/v5/search?${params}`,
       {
         headers: { 'Accept': 'application/json', 'User-Agent': 'Mozilla/5.0' },

@@ -81,10 +81,21 @@ export async function syncFromUzum(shopId: string, token: string, fromDateOverri
       }
 
       if (productRows.length > 0) {
-        const { error: prodErr } = await supabase
-          .from('products')
-          .upsert(productRows, { onConflict: 'shop_id,marketplace_product_id', ignoreDuplicates: false })
-        if (prodErr) throw new Error(`Mahsulotlarni saqlashda xato: ${prodErr.message}`)
+        const { data: existingProds } = await supabase
+          .from('products').select('id, marketplace_product_id').eq('shop_id', shopId)
+        const existingMap = new Map((existingProds ?? []).map((p: { id: string; marketplace_product_id: string }) =>
+          [String(p.marketplace_product_id), String(p.id)]))
+        const toIns = productRows.filter(r => !existingMap.has(String(r.marketplace_product_id)))
+        const toUpd = productRows.filter(r => existingMap.has(String(r.marketplace_product_id)))
+          .map(r => ({ ...r, id: existingMap.get(String(r.marketplace_product_id))! }))
+        if (toIns.length > 0) {
+          const { error: e } = await supabase.from('products').insert(toIns)
+          if (e) throw new Error(`Mahsulotlarni saqlashda xato: ${e.message}`)
+        }
+        if (toUpd.length > 0) {
+          const { error: e } = await supabase.from('products').upsert(toUpd)
+          if (e) throw new Error(`Mahsulotlarni saqlashda xato: ${e.message}`)
+        }
       }
     } catch (prodSyncErr) {
       // Non-fatal: 403 means shop has no active listings. Continue to orders.
@@ -92,12 +103,13 @@ export async function syncFromUzum(shopId: string, token: string, fromDateOverri
     }
 
     // ── Orders (incremental: since last sync, or caller-supplied override) ──────
-    const { data: shopRow } = await supabase
-      .from('shops')
-      .select('last_synced_at')
-      .eq('id', shopId)
-      .single()
+    const [{ data: shopRow }, { count: existingProductCount }] = await Promise.all([
+      supabase.from('shops').select('last_synced_at').eq('id', shopId).single(),
+      supabase.from('products').select('*', { count: 'exact', head: true }).eq('shop_id', shopId),
+    ])
 
+    // Incremental: only fetch orders since last sync to avoid overwriting existing
+    // order statuses (which would remove previously-counted revenue from the chart).
     const since = fromDateOverride
       ?? (shopRow?.last_synced_at
         ? new Date(shopRow.last_synced_at)
@@ -152,7 +164,116 @@ export async function syncFromUzum(shopId: string, token: string, fromDateOverri
       if (ordErr) throw new Error(`Buyurtmalarni saqlashda xato: ${ordErr.message}`)
     }
 
+    // ── Derive products from order items if product sync returned nothing ────────
+    // Happens when the Uzum product API 403s or returns 0 — orders are present
+    // but productRows is still empty, leaving the products table blank.
+    if (productRows.length === 0 && uzumOrders.length > 0) {
+      try {
+        const seenMap = new Map<string, typeof productRows[0]>()
+        for (const o of uzumOrders) {
+          for (const it of (o.orderItems ?? o.items ?? [])) {
+            const mpid = String(it.skuId)
+            if (!seenMap.has(mpid)) {
+              seenMap.set(mpid, {
+                shop_id: shopId,
+                marketplace_product_id: mpid,
+                title: it.productTitle ?? `SKU ${it.skuId}`,
+                sku: mpid,
+                category: null,
+                selling_price: it.price ?? null,
+                cost_price: null,
+                stock_quantity: 0,
+              })
+            }
+          }
+        }
+        if (seenMap.size > 0) {
+          const derived = [...seenMap.values()]
+          const { data: existingProds } = await supabase
+            .from('products').select('id, marketplace_product_id').eq('shop_id', shopId)
+          const existingMap = new Map(
+            (existingProds ?? []).map((p: { id: string; marketplace_product_id: string }) =>
+              [String(p.marketplace_product_id), String(p.id)]),
+          )
+          const toIns = derived.filter(r => !existingMap.has(r.marketplace_product_id))
+          const toUpd = derived
+            .filter(r => existingMap.has(r.marketplace_product_id))
+            .map(r => ({ ...r, id: existingMap.get(r.marketplace_product_id)! }))
+          if (toIns.length > 0) await supabase.from('products').insert(toIns)
+          if (toUpd.length > 0) await supabase.from('products').upsert(toUpd)
+          productRows.push(...derived)
+        }
+      } catch { /* best-effort */ }
+    }
+
     const newOrderRows = orderRows
+
+    // ── Product extraction from API when table is empty and no current batch ──
+    // Runs when incremental sync has no new orders AND products table is empty.
+    // Fetches recent orders from API ONLY for product/SKU info — does NOT upsert
+    // those orders to the DB so existing order statuses are never overwritten.
+    if (productRows.length === 0 && (existingProductCount ?? 0) === 0) {
+      try {
+        const extractMs = Date.now() - 90 * 24 * 60 * 60 * 1000
+        const [fbsEx, fboEx] = await Promise.all([
+          fetchAllPages(p => fetchUzumOrders(token, uzumShopIds, p, 100, extractMs))
+            .catch(() => [] as UzumFbsOrder[]),
+          fetchAllPages(p => fetchUzumOrders(token, uzumShopIds, p, 100, extractMs, undefined, 'fbo'))
+            .catch(() => [] as UzumFbsOrder[]),
+        ])
+        const extractOrders: UzumFbsOrder[] = [
+          ...fbsEx,
+          ...fboEx.filter(o => !fbsEx.some(f => String(f.id) === String(o.id))),
+        ]
+        if (extractOrders.length > 0) {
+          const seenMap = new Map<string, typeof productRows[0]>()
+          for (const o of extractOrders) {
+            for (const it of (o.orderItems ?? o.items ?? [])) {
+              const mpid = String(it.skuId)
+              if (!seenMap.has(mpid)) {
+                seenMap.set(mpid, {
+                  shop_id: shopId, marketplace_product_id: mpid,
+                  title: it.productTitle ?? `SKU ${it.skuId}`,
+                  sku: mpid, category: null,
+                  selling_price: it.price ?? null, cost_price: null, stock_quantity: 0,
+                })
+              }
+            }
+          }
+          if (seenMap.size > 0) {
+            const derived = [...seenMap.values()]
+            const { data: ep } = await supabase.from('products').select('id, marketplace_product_id').eq('shop_id', shopId)
+            const em = new Map((ep ?? []).map((p: { id: string; marketplace_product_id: string }) => [String(p.marketplace_product_id), String(p.id)]))
+            const toIns = derived.filter(r => !em.has(r.marketplace_product_id))
+            const toUpd = derived.filter(r => em.has(r.marketplace_product_id)).map(r => ({ ...r, id: em.get(r.marketplace_product_id)! }))
+            if (toIns.length > 0) await supabase.from('products').insert(toIns)
+            if (toUpd.length > 0) await supabase.from('products').upsert(toUpd)
+            productRows.push(...derived)
+            // Re-create order_items for these orders already in DB with correct product_ids
+            const extIds = extractOrders.map(o => String(o.id ?? o.orderId))
+            const [{ data: dbOrds }, { data: dbProds }] = await Promise.all([
+              supabase.from('orders').select('id, order_id_external').eq('shop_id', shopId).in('order_id_external', extIds),
+              supabase.from('products').select('id, marketplace_product_id').eq('shop_id', shopId),
+            ])
+            const oMap = new Map<string, string>(); for (const o of dbOrds ?? []) oMap.set(o.order_id_external as string, o.id as string)
+            const pMap = new Map<string, string>(); for (const p of dbProds ?? []) if (p.marketplace_product_id) pMap.set(String(p.marketplace_product_id), p.id as string)
+            const itmRows: { order_id: string; product_id: string | null; quantity: number; price_per_unit: number }[] = []
+            for (const o of extractOrders) {
+              const dbOid = oMap.get(String(o.id ?? o.orderId))
+              if (!dbOid) continue
+              for (const it of (o.orderItems ?? o.items ?? [])) {
+                itmRows.push({ order_id: dbOid, product_id: pMap.get(String(it.skuId)) ?? null, quantity: it.quantity, price_per_unit: it.price })
+              }
+            }
+            if (itmRows.length > 0) {
+              const dbOids = [...new Set(itmRows.map(r => r.order_id))]
+              await supabase.from('order_items').delete().in('order_id', dbOids)
+              for (let i = 0; i < itmRows.length; i += 500) await supabase.from('order_items').insert(itmRows.slice(i, i + 500))
+            }
+          }
+        }
+      } catch { /* best-effort: product extraction is non-fatal */ }
+    }
 
     // ── Order items (best-effort) ─────────────────────────────────────────────
     // Build a map: marketplace_product_id → products.id for fast lookup

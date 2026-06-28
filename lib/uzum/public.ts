@@ -1,5 +1,7 @@
 // Uzum public shopping API — no authentication required
 // Used for market research: categories, top products, search
+import { marketplaceFetch } from '@/lib/marketplace-readonly-guard'
+
 export const UZUM_PUBLIC_BASE = 'https://api.uzum.uz'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -35,7 +37,7 @@ export interface MarketProductsResult {
 // ─── Internal fetch helper ────────────────────────────────────────────────────
 
 async function pub<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${UZUM_PUBLIC_BASE}${path}`, {
+  const res = await marketplaceFetch(`${UZUM_PUBLIC_BASE}${path}`, {
     ...init,
     headers: {
       'Accept': 'application/json',
@@ -96,7 +98,7 @@ export async function searchMarketProducts(
 ): Promise<MarketProductsResult> {
   try {
     const gql = `query MakeSearch($text:String!,$limit:Int!){makeSearch(query:{text:$text,pagination:{offset:0,limit:$limit},showAdultContent:NONE}){total items{catalogCard{id title minSellPrice minFullPrice feedbackQuantity rating photos{key link{high low}}}}}}`
-    const res = await fetch('https://graphql.uzum.uz', {
+    const res = await marketplaceFetch('https://graphql.uzum.uz', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

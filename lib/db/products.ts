@@ -1,91 +1,65 @@
 import { unstable_cache } from 'next/cache'
-import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { getCurrentUserId, getShopIds } from '@/lib/db/shop-context'
+import { getShopIds } from '@/lib/db/shop-context'
 import type { Product, MarketplaceType } from '@/lib/types'
 
 const supabaseConfigured =
   process.env.NEXT_PUBLIC_SUPABASE_URL &&
   !process.env.NEXT_PUBLIC_SUPABASE_URL.includes('your-project')
 
-// Cached per (userId, marketplace) for 30 s. Runs 3 queries in parallel —
-// products, sku map, and sold counts via orders join — no serial waterfall.
+// Bug fix: Supabase JS silently ignores .filter('joined_table.column', ...) on embedded resources.
+// All cross-table filtering is now done via RPC (raw SQL) to ensure correct results.
+
+// allShopIdsStr  — all shops for this user (for cross-marketplace SKU dedup + sold counts)
+// targetShopIdsStr — shops filtered by marketplace (for the main products query)
 const _fetchProducts = unstable_cache(
-  async (userId: string, mp: string): Promise<Product[]> => {
+  async (allShopIdsStr: string, targetShopIdsStr: string): Promise<Product[]> => {
+    const allShopIds    = allShopIdsStr    ? allShopIdsStr.split(',')    : []
+    const targetShopIds = targetShopIdsStr ? targetShopIdsStr.split(',') : []
+    if (allShopIds.length === 0 || targetShopIds.length === 0) return []
+
     const supabase = createAdminClient()
-    const { data: shopsData } = await supabase.from('shops').select('id, marketplace').eq('user_id', userId)
-    const allShops = shopsData ?? []
-    if (allShops.length === 0) return []
 
-    const allShopIds = allShops.map((s: { id: string }) => s.id)
-    const targetShopIds = mp
-      ? allShops.filter((s: { marketplace: string }) => s.marketplace === mp).map((s: { id: string }) => s.id)
-      : allShopIds
-    if (targetShopIds.length === 0) return []
-
-    const shopFilter = `(${allShopIds.join(',')})`
     const [
       { data: products, error },
-      { data: allUserProducts },
-      { data: soldItems },
+      { data: soldRows },
     ] = await Promise.all([
       supabase
         .from('products')
-        .select('id, shop_id, sku, title, cost_price, selling_price, stock_quantity, physical_stock, category, marketplace_product_id, updated_at')
+        .select('id, shop_id, sku, title, cost_price, selling_price, stock_quantity, category, marketplace_product_id, updated_at')
         .in('shop_id', targetShopIds)
         .order('title'),
-      supabase
-        .from('products')
-        .select('id, sku')
-        .in('shop_id', allShopIds),
-      // Join order_items → orders in one query instead of the old 2-step pattern
-      // (get validOrderIds → get items). Filters by shop & status via !inner join.
-      supabase
-        .from('order_items')
-        .select('product_id, quantity, orders!inner(shop_id, status)')
-        .filter('orders.shop_id', 'in', shopFilter)
-        .filter('orders.status', 'in', '(pending,confirmed,delivered)'),
+      // Use RPC instead of embedded filter — JS client silently ignores joined-table filters
+      supabase.rpc('get_sold_counts', { shop_ids: allShopIds }),
     ])
     if (error || !products) return []
 
-    const productSkuMap = new Map((allUserProducts ?? []).map((p: { id: string; sku: string | null }) => [p.id, p.sku]))
     const soldByProductId = new Map<string, number>()
-    const soldBySku = new Map<string, number>()
-
-    for (const item of soldItems ?? []) {
-      if (!item.product_id) continue
-      soldByProductId.set(item.product_id, (soldByProductId.get(item.product_id) ?? 0) + item.quantity)
-      const sku = productSkuMap.get(item.product_id)
-      if (sku) soldBySku.set(sku, (soldBySku.get(sku) ?? 0) + item.quantity)
+    for (const row of soldRows ?? []) {
+      if (row.product_id) soldByProductId.set(row.product_id, Number(row.qty_sold ?? 0))
     }
 
-    return products.map((p: any) => {
-      const sold = soldByProductId.get(p.id) ?? 0
-      const skuSold = p.sku ? (soldBySku.get(p.sku) ?? 0) : sold
-      const hasSharedPool = p.physical_stock !== null && p.sku !== null
-      const available_stock = hasSharedPool
-        ? Math.max(0, p.physical_stock! - skuSold)
-        : p.stock_quantity
-
-      return {
-        ...p,
-        physical_stock: p.physical_stock ?? null,
-        available_stock,
-        profit: Number(p.selling_price ?? 0) - Number(p.cost_price ?? 0),
-        sold,
-        is_shared: hasSharedPool,
-      }
-    })
+    return products.map((p: any) => ({
+      ...p,
+      available_stock: p.stock_quantity,
+      profit: Number(p.selling_price ?? 0) - Number(p.cost_price ?? 0),
+      sold: soldByProductId.get(p.id) ?? 0,
+      is_shared: false,
+    }))
   },
-  ['products'],
+  ['products-v2'],
   { revalidate: 30 },
 )
 
 export async function getProducts(marketplace?: MarketplaceType): Promise<Product[]> {
   if (!supabaseConfigured) return []
-  const userId = await getCurrentUserId()
-  if (!userId) return []
-  return _fetchProducts(userId, marketplace ?? '')
+  const [allShopIds, targetShopIds] = await Promise.all([
+    getShopIds(),
+    marketplace ? getShopIds(marketplace) : getShopIds(),
+  ])
+  if (!allShopIds || allShopIds.length === 0) return []
+  if (!targetShopIds || targetShopIds.length === 0) return []
+  return _fetchProducts(allShopIds.join(','), targetShopIds.join(','))
 }
 
 export interface ProductSalesRow {
@@ -96,6 +70,44 @@ export interface ProductSalesRow {
   revenue: number
 }
 
+const _fetchProductSales = unstable_cache(
+  async (shopIdsStr: string, days: number | null, from: string, to: string): Promise<ProductSalesRow[]> => {
+    const shopIds = shopIdsStr ? shopIdsStr.split(',') : []
+    if (shopIds.length === 0) return []
+
+    const supabase = createAdminClient()
+
+    let sinceIso: string | null = null
+    let untilIso: string | null = null
+    if (from && to) {
+      sinceIso = new Date(from).toISOString()
+      const toDate = new Date(to); toDate.setHours(23, 59, 59, 999)
+      untilIso = toDate.toISOString()
+    } else if (days !== null && days > 0) {
+      const d = new Date(); d.setDate(d.getDate() - days)
+      sinceIso = d.toISOString()
+    }
+
+    // Use RPC — embedded .filter('orders.column', ...) is silently ignored by Supabase JS
+    const { data: rows } = await supabase.rpc('get_product_sales', {
+      shop_ids: shopIds,
+      since_iso: sinceIso,
+      until_iso: untilIso,
+    })
+    if (!rows || rows.length === 0) return []
+
+    return rows.map((r: any) => ({
+      product_id: r.product_id,
+      title:      r.title ?? 'Unknown',
+      sku:        r.sku ?? null,
+      qty_sold:   Number(r.qty_sold ?? 0),
+      revenue:    Number(r.revenue ?? 0),
+    }))
+  },
+  ['product-sales-v3'],
+  { revalidate: 30 },
+)
+
 export async function getProductSales(
   days: number | null,
   marketplace?: MarketplaceType,
@@ -103,63 +115,63 @@ export async function getProductSales(
   to?: string,
 ): Promise<ProductSalesRow[]> {
   if (!supabaseConfigured) return []
-
   const shopIds = await getShopIds(marketplace)
   if (!shopIds || shopIds.length === 0) return []
+  return _fetchProductSales(shopIds.join(','), days, from ?? '', to ?? '')
+}
 
-  const supabase = await createClient()
+export interface CategoryRow {
+  name: string
+  revenue: number
+  profit: number
+  percent: number
+}
 
-  let sinceIso: string | null = null
-  let untilIso: string | null = null
+const _fetchCategoryRevenue = unstable_cache(
+  async (shopIdsStr: string, days: number, from: string, to: string): Promise<CategoryRow[]> => {
+    const shopIds = shopIdsStr ? shopIdsStr.split(',') : []
+    if (shopIds.length === 0) return []
 
-  if (from && to) {
-    sinceIso = new Date(from).toISOString()
-    const toDate = new Date(to); toDate.setHours(23, 59, 59, 999)
-    untilIso = toDate.toISOString()
-  } else if (days !== null && days > 0) {
-    const d = new Date(); d.setDate(d.getDate() - days)
-    sinceIso = d.toISOString()
-  }
+    const supabase = createAdminClient()
 
-  let ordersQuery = supabase
-    .from('orders')
-    .select('id')
-    .in('shop_id', shopIds)
-    .neq('status', 'cancelled')
-  if (sinceIso) ordersQuery = ordersQuery.gte('ordered_at', sinceIso)
-  if (untilIso) ordersQuery = ordersQuery.lte('ordered_at', untilIso)
-
-  const { data: ordersInWindow } = await ordersQuery
-  if (!ordersInWindow || ordersInWindow.length === 0) return []
-
-  const orderIds = ordersInWindow.map(o => o.id)
-
-  const { data: items } = await supabase
-    .from('order_items')
-    .select('product_id, quantity, price_per_unit, products(title, sku)')
-    .in('order_id', orderIds)
-    .not('product_id', 'is', null)
-
-  if (!items || items.length === 0) return []
-
-  const byProduct = new Map<string, ProductSalesRow>()
-  for (const item of items) {
-    if (!item.product_id) continue
-    const prod = Array.isArray(item.products) ? item.products[0] : item.products
-    const existing = byProduct.get(item.product_id)
-    if (existing) {
-      existing.qty_sold += item.quantity ?? 0
-      existing.revenue  += (item.quantity ?? 0) * (item.price_per_unit ?? 0)
-    } else {
-      byProduct.set(item.product_id, {
-        product_id: item.product_id,
-        title:      prod?.title ?? 'Unknown',
-        sku:        prod?.sku   ?? null,
-        qty_sold:   item.quantity ?? 0,
-        revenue:    (item.quantity ?? 0) * (item.price_per_unit ?? 0),
-      })
+    let sinceIso: string | null = null
+    let untilIso: string | null = null
+    if (from && to) {
+      sinceIso = new Date(from).toISOString()
+      const toDate = new Date(to); toDate.setHours(23, 59, 59, 999)
+      untilIso = toDate.toISOString()
+    } else if (days > 0) {
+      const d = new Date(); d.setDate(d.getDate() - days + 1)
+      sinceIso = d.toISOString()
     }
-  }
 
-  return [...byProduct.values()].sort((a, b) => b.qty_sold - a.qty_sold)
+    const { data: rows, error } = await supabase.rpc('get_category_revenue', {
+      shop_ids: shopIds,
+      since_iso: sinceIso,
+      until_iso: untilIso,
+    })
+    if (error || !rows || rows.length === 0) return []
+
+    const total = rows.reduce((s: number, r: any) => s + Number(r.revenue ?? 0), 0)
+    return rows.map((r: any) => ({
+      name:    r.category ?? 'Boshqa',
+      revenue: Number(r.revenue ?? 0),
+      profit:  Number(r.revenue ?? 0) - Number(r.cost ?? 0),
+      percent: total > 0 ? (Number(r.revenue ?? 0) / total) * 100 : 0,
+    }))
+  },
+  ['category-revenue-v8'],
+  { revalidate: 30 },
+)
+
+export async function getCategoryRevenue(
+  days: number,
+  marketplace?: MarketplaceType,
+  from?: string,
+  to?: string,
+): Promise<CategoryRow[]> {
+  if (!supabaseConfigured) return []
+  const shopIds = await getShopIds(marketplace)
+  if (!shopIds || shopIds.length === 0) return []
+  return _fetchCategoryRevenue(shopIds.join(','), days, from ?? '', to ?? '')
 }

@@ -4,6 +4,8 @@
 // Products: GET /v1/shops → shopId, then GET /v1/product/shop/{shopId}
 // Swagger (requires login): https://api-seller.uzum.uz/api/seller-openapi/swagger/swagger-ui/webjars/swagger-ui/index.html
 
+import { marketplaceFetch } from '@/lib/marketplace-readonly-guard'
+
 export const UZUM_API_BASE = 'https://api-seller.uzum.uz/api/seller-openapi'
 
 export class UzumApiError extends Error {
@@ -40,7 +42,7 @@ async function request<T>(
   options?: RequestInit,
 ): Promise<T> {
   const t = token.trim()
-  const res = await fetch(`${UZUM_API_BASE}${path}`, {
+  const res = await marketplaceFetch(`${UZUM_API_BASE}${path}`, {
     ...options,
     headers: {
       Authorization: t,

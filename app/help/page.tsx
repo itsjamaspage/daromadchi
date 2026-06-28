@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useState } from 'react'
 import { getCategoryList } from '@/lib/help-content'
-import { useLang } from '@/app/providers'
+import { useLang, useTheme } from '@/app/providers'
 
 const T = {
   uz: {
@@ -43,6 +43,8 @@ const T = {
 
 export default function HelpPage() {
   const { lang } = useLang()
+  const { theme } = useTheme()
+  const isDark = theme === 'dark'
   const t = T[lang] ?? T.uz
   const categories = getCategoryList(lang)
   const [query, setQuery] = useState('')
@@ -58,6 +60,7 @@ export default function HelpPage() {
 
   return (
     <main className="max-w-5xl mx-auto px-4 sm:px-6 py-12">
+      <div>
       {/* Hero */}
       <div className="text-center mb-12">
         <h1
@@ -151,15 +154,12 @@ export default function HelpPage() {
         <p className="text-[var(--text-muted)] text-sm mb-2">{t.notFound}</p>
         <p className="text-[var(--text-base)] font-semibold mb-4">{t.contact}</p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <a href="https://t.me/daromadchi_support_bot" target="_blank" rel="noopener noreferrer"
+          <a href="https://t.me/daromadchi_alerts_bot" target="_blank" rel="noopener noreferrer"
             className="px-5 py-2.5 rounded-xl bg-[var(--c1)] text-[#020c1a] font-semibold text-sm hover:opacity-90 transition-opacity">
             {t.telegram}
           </a>
-          <a href="mailto:support@daromadchi.uz"
-            className="px-5 py-2.5 rounded-xl border border-[var(--border2)] text-[var(--text-base)] text-sm hover:border-[var(--c1)]/40 hover:text-[var(--c1)] transition-all">
-            support@daromadchi.uz
-          </a>
         </div>
+      </div>
       </div>
     </main>
   )

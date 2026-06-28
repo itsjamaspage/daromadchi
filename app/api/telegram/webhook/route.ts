@@ -140,14 +140,12 @@ export async function POST(req: NextRequest) {
   console.log('[webhook] POST received')
 
   const expectedSecret = process.env.TELEGRAM_WEBHOOK_SECRET
-  if (!expectedSecret) {
-    console.error('[webhook] TELEGRAM_WEBHOOK_SECRET not set — rejecting request')
-    return NextResponse.json({ ok: true })
-  }
-  const got = req.headers.get('x-telegram-bot-api-secret-token')
-  if (got !== expectedSecret) {
-    console.log('[webhook] secret mismatch, ignoring')
-    return NextResponse.json({ ok: true })
+  if (expectedSecret) {
+    const got = req.headers.get('x-telegram-bot-api-secret-token')
+    if (got !== expectedSecret) {
+      console.log('[webhook] secret mismatch, ignoring')
+      return NextResponse.json({ ok: true })
+    }
   }
 
   const body = await req.json().catch((e: unknown) => { console.error('[webhook] body parse error', e); return null })
@@ -412,6 +410,24 @@ export async function POST(req: NextRequest) {
         chatId,
         MKT_QUESTION[lang] ?? MKT_QUESTION.uz,
         MKT_BUTTONS[lang]?.map(b => [{ text: b.text, callback_data: b.data }]) ?? []
+      )
+      return NextResponse.json({ ok: true })
+    }
+
+    // ── Support fallback: forward any free-text message to owner ──────────
+    if (!session || session.step === 'done') {
+      const firstName = (message.from?.first_name as string | undefined) ?? ''
+      const uname     = (message.from?.username  as string | undefined) ?? ''
+      const senderInfo = [firstName, uname ? `@${uname}` : '', `(ID: ${chatId})`].filter(Boolean).join(' ')
+      const lang = session?.lang ?? 'uz'
+      const thanks = lang === 'ru'
+        ? '✅ Спасибо за ваш вопрос! Мы получили его и ответим в ближайшее время.'
+        : lang === 'en'
+        ? '✅ Thank you for your question! We received it and will get back to you soon.'
+        : '✅ Savolingiz uchun rahmat! Qabul qildik, tez orada javob beramiz.'
+      await sendTelegramMessage(chatId, thanks)
+      await sendTelegramMessage('6884517020',
+        `📩 <b>Yangi savol / Новый вопрос</b>\n\n👤 ${senderInfo}\n\n💬 ${text}`
       )
       return NextResponse.json({ ok: true })
     }

@@ -1,0 +1,15 @@
+# CODEOWNERS — repository owner must approve changes to sensitive files.
+# GitHub enforces this: PRs touching these files cannot be merged without
+# explicit approval from the listed owner.
+#
+# Owner: jkhakimjonov8@gmail.com (itsjamaspage)
+
+# Marketplace read-only enforcement files — owner approval required
+/lib/marketplace-readonly-guard.ts    @itsjamaspage
+/eslint.config.mjs                    @itsjamaspage
+/AGENTS.md                            @itsjamaspage
+/CLAUDE.md                            @itsjamaspage
+
+# CI/CD pipeline — owner approval required
+/.github/workflows/                   @itsjamaspage
+/.github/CODEOWNERS                   @itsjamaspage
