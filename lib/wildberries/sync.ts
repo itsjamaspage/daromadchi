@@ -54,6 +54,7 @@ export async function syncFromWildberries(
         break
       }
       const json = await res.json()
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const cards: any[] = json.data?.cards ?? json.cards ?? []
       allCards.push(...cards)
       const nextCursor = json.data?.cursor ?? json.cursor
@@ -62,6 +63,7 @@ export async function syncFromWildberries(
     }
 
     if (allCards.length > 0) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const rows = (allCards as any[]).map(c => ({
         shop_id:                shopId,
         sku:                    c.vendorCode ?? null,
@@ -97,6 +99,7 @@ export async function syncFromWildberries(
     )
     if (stocksRes.ok) {
       const stocksData = await stocksRes.json()
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const stocks: any[] = stocksData?.stocks ?? stocksData ?? []
       const stockMap = new Map<string, number>()
       for (const s of stocks) {
@@ -131,8 +134,10 @@ export async function syncFromWildberries(
       { headers: statsHeaders(token) },
     )
     if (res.ok) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const rawLines: any[] = await res.json()
       if (Array.isArray(rawLines) && rawLines.length > 0) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const grouped = new Map<string, any[]>()
         for (const line of rawLines) {
           const key = line.gNumber ?? line.srid ?? String(line.odid ?? Math.random())

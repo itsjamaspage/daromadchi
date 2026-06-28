@@ -72,7 +72,7 @@ const KPI = {
   amber:   '#ec7e00',
 }
 
-function tx(lang: string, ru: string, uz: string, en: string) {
+function tx(lang: string, ru: React.ReactNode, uz: React.ReactNode, en: React.ReactNode): React.ReactNode {
   return lang === 'ru' ? ru : lang === 'uz' ? uz : en
 }
 
@@ -198,6 +198,8 @@ function LandingNav({ lang }: { lang: string }) {
       hoverCircleColor={hoverCircle}
       rightContent={rightContent}
       initialLoadAnimation={false}
+      activeHref=""
+      onMobileMenuClick={undefined}
     />
   )
 }

@@ -1,6 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCurrentUserId } from '@/lib/db/shop-context'
-import type { UnitEconomicsItem, UnitEcoSettings } from '@/lib/types'
+import type { UnitEconomicsItem, UnitEcoSettings, MarketplaceType } from '@/lib/types'
 
 const supabaseConfigured =
   process.env.NEXT_PUBLIC_SUPABASE_URL &&

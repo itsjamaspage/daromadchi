@@ -1,5 +1,5 @@
-'use client'
 // @ts-nocheck
+'use client'
 
 import { useEffect, useRef, useState, useCallback } from 'react'
 import './MetallicPaint.css'

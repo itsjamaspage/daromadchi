@@ -39,6 +39,7 @@ const _fetchProducts = unstable_cache(
       if (row.product_id) soldByProductId.set(row.product_id, Number(row.qty_sold ?? 0))
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return products.map((p: any) => ({
       ...p,
       available_stock: p.stock_quantity,
@@ -96,6 +97,7 @@ const _fetchProductSales = unstable_cache(
     })
     if (!rows || rows.length === 0) return []
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return rows.map((r: any) => ({
       product_id: r.product_id,
       title:      r.title ?? 'Unknown',
@@ -152,7 +154,9 @@ const _fetchCategoryRevenue = unstable_cache(
     })
     if (error || !rows || rows.length === 0) return []
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const total = rows.reduce((s: number, r: any) => s + Number(r.revenue ?? 0), 0)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return rows.map((r: any) => ({
       name:    r.category ?? 'Boshqa',
       revenue: Number(r.revenue ?? 0),
