@@ -165,7 +165,7 @@ export default function PrivacyPage() {
     const el = document.getElementById(`section-${idx}`)
     if (!el) return
     setActive(idx)
-    const y = el.getBoundingClientRect().top + window.scrollY - NAVBAR_H - 16
+    const y = el.getBoundingClientRect().top + window.scrollY - NAVBAR_H - 36
 
     scrollLockRef.current = true
     if (scrollLockTimerRef.current) clearTimeout(scrollLockTimerRef.current)
