@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useLang, useTheme } from '@/app/providers'
+import BorderGlow from '@/app/components/BorderGlow'
 
 const COMPANY_EMAIL = 'support@daromadchi.uz'
 
@@ -170,6 +171,7 @@ const NAVBAR_H = 68
 export default function TermsPage() {
   const { lang } = useLang()
   const { theme } = useTheme()
+  const isDark = theme === 'dark'
   const t = T[lang] ?? T.uz
   const [open, setOpen] = useState(true)
   const [active, setActive] = useState(0)
@@ -284,30 +286,38 @@ export default function TermsPage() {
                 key={i}
                 id={`section-${i}`}
                 data-idx={i}
-                className="rounded-2xl p-8 border neon-card scroll-mt-24 transition-all duration-300"
+                className="scroll-mt-24"
                 style={{
-                  background: flash === i
-                    ? theme === 'dark'
-                      ? 'rgba(0,212,255,0.15)'
-                      : 'rgba(0,180,255,0.12)'
-                    : 'var(--bg-card)',
-                  borderColor: flash === i ? 'var(--c1)' : 'var(--border)',
-                  boxShadow: flash === i ? '0 0 0 3px rgba(0,212,255,0.25)' : undefined,
-                  transition: 'background 0.5s ease, border-color 0.4s ease, box-shadow 0.4s ease',
+                  borderRadius: 16,
+                  boxShadow: flash === i ? '0 0 0 2px rgba(0,212,255,0.8), 0 0 28px rgba(0,212,255,0.3)' : 'none',
+                  transition: 'box-shadow 0.5s ease',
                 }}
               >
-                <h2
-                  className="font-bold text-base mb-3"
-                  style={{ fontFamily: 'var(--font-display)', color: 'var(--text-base)' }}
+                <BorderGlow
+                  borderRadius={16}
+                  glowColor={isDark ? "190 100 55" : "207 90 55"}
+                  glowIntensity={isDark ? 1.5 : 1.0}
+                  backgroundColor="var(--bg-card)"
+                  colors={isDark
+                    ? ['rgba(0,212,255,0.3)', 'rgba(0,150,220,0.2)', 'rgba(80,180,255,0.15)']
+                    : ['rgba(14,100,180,0.18)', 'rgba(0,140,200,0.12)', 'rgba(80,160,220,0.10)']}
+                  className="w-full"
                 >
-                  {s.heading}
-                </h2>
-                <p
-                  className="text-base leading-relaxed whitespace-pre-line"
-                  style={{ color: 'var(--text-muted)' }}
-                >
-                  {s.body}
-                </p>
+                  <div className="p-8">
+                    <h2
+                      className="font-bold text-base mb-3"
+                      style={{ fontFamily: 'var(--font-display)', color: 'var(--text-base)' }}
+                    >
+                      {s.heading}
+                    </h2>
+                    <p
+                      className="text-base leading-relaxed whitespace-pre-line"
+                      style={{ color: 'var(--text-muted)' }}
+                    >
+                      {s.body}
+                    </p>
+                  </div>
+                </BorderGlow>
               </div>
             ))}
           </div>
