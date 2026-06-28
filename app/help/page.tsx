@@ -65,6 +65,7 @@ export default function HelpPage() {
         colors={isDark ? ['#ffffff', '#f5f5f5', '#ebebeb', '#dcdcdc', '#cdcdcd'] : ['#ffffff', '#ffffff', '#f8fafc', '#f0f0f0', '#e8e8e8']}
         opacity={0.5}
       />
+      <div style={{ position: 'relative', zIndex: 1 }}>
       {/* Hero */}
       <div className="text-center mb-12">
         <h1
@@ -163,6 +164,7 @@ export default function HelpPage() {
             {t.telegram}
           </a>
         </div>
+      </div>
       </div>
     </main>
   )

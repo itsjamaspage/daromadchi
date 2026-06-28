@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useLang, useTheme } from '@/app/providers'
+import BorderGlow from '@/app/components/BorderGlow'
+import SectionHoverAnim from '@/app/components/SectionHoverAnim'
 
 function tx(lang: string, ru: string, uz: string, en: string) {
   return lang === 'ru' ? ru : lang === 'uz' ? uz : en
@@ -230,8 +232,12 @@ export default function CompliancePage() {
       </aside>
 
       {/* ── Main content ──────────────────────────────────────────────────────── */}
-      <main className="flex-1 min-w-0 px-5 sm:px-8 lg:px-12 py-10 pb-24">
-        <div style={{ maxWidth: 760, margin: '0 auto' }}>
+      <main className="flex-1 min-w-0 px-5 sm:px-8 lg:px-12 py-10 pb-24 relative">
+        <SectionHoverAnim
+          colors={isDark ? ['#ffffff', '#f5f5f5', '#ebebeb', '#dcdcdc', '#cdcdcd'] : ['#ffffff', '#ffffff', '#f8fafc', '#f0f0f0', '#e8e8e8']}
+          opacity={0.5}
+        />
+        <div style={{ maxWidth: 760, margin: '0 auto', position: 'relative', zIndex: 1 }}>
 
           {/* Page header */}
           <div className="mb-10">
@@ -278,28 +284,40 @@ export default function CompliancePage() {
               const body    = s.body[lang as 'uz' | 'ru' | 'en'] ?? s.body.en
               const isFlash = flash === i
               return (
-                <section
+                <div
                   key={i}
                   id={`section-${i}`}
                   data-idx={i}
-                  className="rounded-2xl border p-6 sm:p-8 transition-all"
+                  className="scroll-mt-24"
                   style={{
-                    background: isFlash ? flashBg : 'var(--bg-card)',
-                    borderColor: isFlash ? flashBdr : 'var(--border)',
-                    boxShadow: isFlash ? flashShadow : undefined,
-                    transition: 'background 0.5s ease, border-color 0.4s ease, box-shadow 0.4s ease',
+                    borderRadius: 16,
+                    boxShadow: isFlash ? '0 0 0 2px rgba(0,212,255,0.8), 0 0 28px rgba(0,212,255,0.3)' : 'none',
+                    transition: 'box-shadow 0.5s ease',
                   }}
                 >
-                  <h2 className="text-xl font-bold mb-5" style={{ color: 'var(--text-base)' }}>
-                    {heading}
-                  </h2>
-                  <div
-                    className="text-base leading-8 whitespace-pre-line"
-                    style={{ color: 'var(--text-muted)' }}
+                  <BorderGlow
+                    borderRadius={16}
+                    glowColor={isDark ? "190 100 55" : "207 90 55"}
+                    glowIntensity={isDark ? 1.5 : 1.0}
+                    backgroundColor="var(--bg-card)"
+                    colors={isDark
+                      ? ['rgba(0,212,255,0.3)', 'rgba(0,150,220,0.2)', 'rgba(80,180,255,0.15)']
+                      : ['rgba(14,100,180,0.18)', 'rgba(0,140,200,0.12)', 'rgba(80,160,220,0.10)']}
+                    className="w-full"
                   >
-                    {body}
-                  </div>
-                </section>
+                    <div className="p-6 sm:p-8">
+                      <h2 className="text-xl font-bold mb-5" style={{ color: 'var(--text-base)' }}>
+                        {heading}
+                      </h2>
+                      <div
+                        className="text-base leading-8 whitespace-pre-line"
+                        style={{ color: 'var(--text-muted)' }}
+                      >
+                        {body}
+                      </div>
+                    </div>
+                  </BorderGlow>
+                </div>
               )
             })}
           </div>

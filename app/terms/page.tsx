@@ -217,11 +217,7 @@ export default function TermsPage() {
   }
 
   return (
-    <div className="flex relative overflow-hidden">
-      <SectionHoverAnim
-        colors={isDark ? ['#ffffff', '#f5f5f5', '#ebebeb', '#dcdcdc', '#cdcdcd'] : ['#ffffff', '#ffffff', '#f8fafc', '#f0f0f0', '#e8e8e8']}
-        opacity={0.5}
-      />
+    <div className="flex">
       {/* Sidebar */}
       <aside
         className="sticky top-[68px] self-start h-[calc(100vh-68px)] flex-shrink-0 border-r transition-all duration-300 overflow-hidden"
@@ -272,8 +268,12 @@ export default function TermsPage() {
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 min-w-0 px-8 py-16">
-        <div className="max-w-3xl mx-auto">
+      <main className="flex-1 min-w-0 px-8 py-16 relative">
+        <SectionHoverAnim
+          colors={isDark ? ['#ffffff', '#f5f5f5', '#ebebeb', '#dcdcdc', '#cdcdcd'] : ['#ffffff', '#ffffff', '#f8fafc', '#f0f0f0', '#e8e8e8']}
+          opacity={0.5}
+        />
+        <div className="max-w-3xl mx-auto" style={{ position: 'relative', zIndex: 1 }}>
           <div className="text-center mb-14">
             <h1
               className="text-4xl sm:text-5xl font-extrabold mb-3"
