@@ -72,7 +72,7 @@ export interface YandexOrderItem {
   price?: number
   buyerPrice?: number
   initialPrice?: number
-  prices?: { buyerPriceBeforeDiscount?: number; buyerPrice?: number; actual?: number }
+  prices?: Array<{ type: string; costPerItem?: number; total?: number }>
 }
 
 export interface YandexOrder {

@@ -318,7 +318,6 @@ export async function syncFromYandex(
         const dbOrderId = orderIdMap.get(String(o.id))
         if (!dbOrderId) continue
         for (const it of o.items ?? []) {
-          const anyIt = it as any
           const offerIdStr = String(it.offerId)
           // Primary: match by offerId/sku/marketplace_product_id
           let productId = skuMap.get(offerIdStr) ?? null
@@ -327,15 +326,14 @@ export async function syncFromYandex(
             productId = titleMap.get(it.offerName) ?? null
             if (productId) titleMatchBackfill.set(productId, offerIdStr)
           }
-          console.log('[YM-PRICE]', 'offerId:', it.offerId, '| raw item keys:', Object.keys(it), '| prices:', JSON.stringify(it.prices), '| buyerPrice:', (it as any).buyerPrice, '| price:', (it as any).price)
           itemRows.push({
             order_id:       dbOrderId,
             product_id:     productId,
             quantity:       it.count,
-            price_per_unit: it.prices?.buyerPrice
-              ?? it.prices?.buyerPriceBeforeDiscount
-              ?? anyIt.buyerPrice
-              ?? anyIt.price
+            price_per_unit: it.prices?.find((p: any) => p.type === 'BUYER')?.costPerItem
+              ?? it.prices?.find((p: any) => p.type === 'PARTNER')?.costPerItem
+              ?? it.buyerPrice
+              ?? it.price
               ?? 0,
           })
         }
