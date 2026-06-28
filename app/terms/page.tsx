@@ -4,7 +4,6 @@ import { useState, useEffect, useRef } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useLang, useTheme } from '@/app/providers'
 import BorderGlow from '@/app/components/BorderGlow'
-import SectionHoverAnim from '@/app/components/SectionHoverAnim'
 
 const COMPANY_EMAIL = 'support@daromadchi.uz'
 
@@ -269,10 +268,12 @@ export default function TermsPage() {
 
       {/* Main content */}
       <main className="flex-1 min-w-0 px-8 py-16 relative">
-        <SectionHoverAnim
-          colors={isDark ? ['#ffffff', '#f5f5f5', '#ebebeb', '#dcdcdc', '#cdcdcd'] : ['#ffffff', '#ffffff', '#f8fafc', '#f0f0f0', '#e8e8e8']}
-          opacity={0.5}
-        />
+        <div aria-hidden style={{
+          position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0,
+          background: isDark
+            ? 'radial-gradient(ellipse 65% 30% at 50% 0%, rgba(131,192,249,0.07) 0%, transparent 65%)'
+            : 'radial-gradient(ellipse 65% 30% at 50% 0%, rgba(2,132,199,0.05) 0%, transparent 65%)',
+        }} />
         <div className="max-w-3xl mx-auto" style={{ position: 'relative', zIndex: 1 }}>
           <div className="text-center mb-14">
             <h1
@@ -300,12 +301,12 @@ export default function TermsPage() {
               >
                 <BorderGlow
                   borderRadius={16}
-                  glowColor={isDark ? "190 100 55" : "207 90 55"}
+                  glowColor={isDark ? "210 84 75" : "201 97 39"}
                   glowIntensity={isDark ? 1.5 : 1.0}
                   backgroundColor="var(--bg-card)"
                   colors={isDark
-                    ? ['rgba(0,212,255,0.3)', 'rgba(0,150,220,0.2)', 'rgba(80,180,255,0.15)']
-                    : ['rgba(14,100,180,0.18)', 'rgba(0,140,200,0.12)', 'rgba(80,160,220,0.10)']}
+                    ? ['rgba(131,192,249,0.25)', 'rgba(100,171,240,0.18)', 'rgba(80,150,220,0.12)']
+                    : ['rgba(2,132,199,0.15)', 'rgba(3,105,161,0.10)', 'rgba(14,116,200,0.08)']}
                   className="w-full"
                 >
                   <div className="p-8">

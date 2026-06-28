@@ -4,7 +4,6 @@ import Link from 'next/link'
 import { useState } from 'react'
 import { getCategoryList } from '@/lib/help-content'
 import { useLang, useTheme } from '@/app/providers'
-import SectionHoverAnim from '@/app/components/SectionHoverAnim'
 
 const T = {
   uz: {
@@ -60,11 +59,13 @@ export default function HelpPage() {
     : []
 
   return (
-    <main className="relative overflow-hidden max-w-5xl mx-auto px-4 sm:px-6 py-12">
-      <SectionHoverAnim
-        colors={isDark ? ['#ffffff', '#f5f5f5', '#ebebeb', '#dcdcdc', '#cdcdcd'] : ['#ffffff', '#ffffff', '#f8fafc', '#f0f0f0', '#e8e8e8']}
-        opacity={0.5}
-      />
+    <main className="relative max-w-5xl mx-auto px-4 sm:px-6 py-12">
+      <div aria-hidden style={{
+        position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0,
+        background: isDark
+          ? 'radial-gradient(ellipse 65% 30% at 50% 0%, rgba(131,192,249,0.07) 0%, transparent 65%)'
+          : 'radial-gradient(ellipse 65% 30% at 50% 0%, rgba(2,132,199,0.05) 0%, transparent 65%)',
+      }} />
       <div style={{ position: 'relative', zIndex: 1 }}>
       {/* Hero */}
       <div className="text-center mb-12">
