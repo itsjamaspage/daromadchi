@@ -289,15 +289,19 @@ export default function TermsPage() {
                 className="scroll-mt-24"
                 style={{
                   borderRadius: 16,
-                  boxShadow: flash === i ? '0 0 0 2px rgba(131,192,249,0.8), 0 0 28px rgba(131,192,249,0.3)' : 'none',
-                  transition: 'box-shadow 0.5s ease',
+                  boxShadow: flash === i
+                    ? '0 0 0 2px rgba(131,192,249,0.9), 0 0 28px rgba(131,192,249,0.35)'
+                    : active === i
+                      ? '0 0 0 1.5px rgba(131,192,249,0.5)'
+                      : 'none',
+                  transition: 'box-shadow 0.4s ease',
                 }}
               >
                 <BorderGlow
                   borderRadius={16}
                   glowColor={isDark ? "210 84 75" : "201 97 39"}
                   glowIntensity={isDark ? 1.5 : 1.0}
-                  backgroundColor="var(--bg-card)"
+                  backgroundColor={active === i ? (isDark ? 'rgba(15,28,48,1)' : 'rgba(230,241,255,1)') : 'var(--bg-card)'}
                   colors={isDark
                     ? ['rgba(131,192,249,0.25)', 'rgba(100,171,240,0.18)', 'rgba(80,150,220,0.12)']
                     : ['rgba(2,132,199,0.15)', 'rgba(3,105,161,0.10)', 'rgba(14,116,200,0.08)']}
