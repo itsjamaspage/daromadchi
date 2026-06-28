@@ -1,8 +1,6 @@
 'use client'
 
-import {
-  PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend,
-} from 'recharts'
+import { PieChart, Pie, Cell, Tooltip } from 'recharts'
 import { useLang } from '@/app/providers'
 import { translations } from '@/lib/i18n'
 
@@ -33,25 +31,26 @@ export default function CategoryChart({ data }: { data: CategoryData[] }) {
       <p className="text-xs mb-5" style={{ color: 'var(--text-muted)' }}>{t?.tradeShare || 'Savdo ulushi'}</p>
 
       {data.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-10 gap-2">
-          <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: 'rgba(131,192,249,0.08)', border: '1px solid rgba(131,192,249,0.15)' }}>
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: 'var(--text-muted)' }}>
+        <div className="flex items-center gap-3 py-4">
+          <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(131,192,249,0.08)', border: '1px solid rgba(131,192,249,0.15)' }}>
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: 'var(--text-muted)' }}>
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
             </svg>
           </div>
-          <p className="text-xs text-center" style={{ color: 'var(--text-muted)' }}>{t?.noData ?? 'No category data'}</p>
+          <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{t?.noData ?? 'No category data'}</p>
         </div>
       ) : (
-        <div className="flex flex-col sm:flex-row items-center gap-6">
-          <ResponsiveContainer width={180} height={180}>
-            <PieChart>
+        <div className="flex items-center gap-6">
+          {/* Fixed-size PieChart — avoids the height expansion that ResponsiveContainer caused */}
+          <div className="flex-shrink-0">
+            <PieChart width={152} height={152}>
               <Pie
                 data={data}
-                cx="50%"
-                cy="50%"
-                innerRadius={52}
-                outerRadius={80}
+                cx={76}
+                cy={76}
+                innerRadius={46}
+                outerRadius={68}
                 paddingAngle={3}
                 dataKey="revenue"
                 nameKey="name"
@@ -62,27 +61,29 @@ export default function CategoryChart({ data }: { data: CategoryData[] }) {
               </Pie>
               <Tooltip content={<CustomTooltip />} />
             </PieChart>
-          </ResponsiveContainer>
+          </div>
 
-          <div className="flex-1 space-y-2 w-full">
+          <div className="flex-1 space-y-2.5 min-w-0">
             {data.map((d, i) => (
-              <div key={d.name} className="flex items-center gap-3">
-                <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: COLORS[i % COLORS.length] }} />
+              <div key={d.name} className="flex items-center gap-2.5">
+                <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: COLORS[i % COLORS.length] }} />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs truncate" style={{ color: 'var(--text-dim)' }}>{d.name}</span>
-                    <span className="text-xs ml-2" style={{ color: 'var(--text-muted)' }}>{d.percent.toFixed(0)}%</span>
+                    <div className="flex items-center gap-2 ml-2 flex-shrink-0">
+                      <span className="text-[11px]" style={{ color: 'var(--text-muted)' }}>{d.percent.toFixed(0)}%</span>
+                      <span className="text-[11px] font-medium tabular-nums" style={{ color: 'var(--text-dim)' }}>
+                        {new Intl.NumberFormat('uz-UZ').format(Math.round(d.revenue / 1_000_000))}M
+                      </span>
+                    </div>
                   </div>
-                  <div className="h-1 rounded-full overflow-hidden" style={{ background: 'rgba(255, 255, 255, 0.05)' }}>
+                  <div className="h-1 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
                     <div
                       className="h-full rounded-full transition-all"
                       style={{ width: `${d.percent}%`, background: COLORS[i % COLORS.length] }}
                     />
                   </div>
                 </div>
-                <span className="text-xs flex-shrink-0 hidden sm:block" style={{ color: 'var(--text-muted)' }}>
-                  {new Intl.NumberFormat('uz-UZ').format(Math.round(d.revenue / 1_000_000))}M
-                </span>
               </div>
             ))}
           </div>

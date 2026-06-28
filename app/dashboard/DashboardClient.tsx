@@ -307,7 +307,7 @@ export default function DashboardClient({ slices, days, period, from, to, initia
 
       {/* Category chart + top products */}
       {!hiddenWidgets.has('categories') && (
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
           <CategoryChart data={categoryData} />
           <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl p-6">
             <div className="flex items-center justify-between mb-4">
