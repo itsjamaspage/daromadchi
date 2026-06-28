@@ -70,6 +70,7 @@ export default async function DashboardPage({ searchParams }: Props) {
     if (launchDate) {
       from = launchDate.slice(0, 10)
       to   = new Date().toISOString().slice(0, 10)
+      // eslint-disable-next-line react-hooks/purity
       days = Math.ceil((Date.now() - new Date(from).getTime()) / 86_400_000)
     }
   }

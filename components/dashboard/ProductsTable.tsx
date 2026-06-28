@@ -19,6 +19,12 @@ function fmt(n: number) {
 }
 
 type TabKey = 'all' | 'high_drr' | 'low_stock' | 'no_orders'
+type SortKey = 'title' | 'profit' | 'margin' | 'stock_quantity' | 'drr'
+
+function SortIcon({ col, sortBy, sortDir }: { col: SortKey; sortBy: SortKey; sortDir: 'asc' | 'desc' }) {
+  if (sortBy !== col) return <span className="ml-1" style={{ color: 'var(--text-muted)' }}>↕</span>
+  return <span className="ml-1" style={{ color: 'var(--c1)' }}>{sortDir === 'desc' ? '↓' : '↑'}</span>
+}
 
 function drrBadge(drr: number) {
   if (drr < 10) return { bgColor: 'rgba(52, 211, 153, 0.1)', color: '#10b981', label: `${drr.toFixed(1)}%` }
@@ -118,11 +124,6 @@ export default function ProductsTable({ products }: { products: Product[] }) {
     [d.adSpendLabel]:  p.adSpend,
     'DRR (%)':         p.drr.toFixed(1),
   }))
-
-  function SortIcon({ col }: { col: typeof sortBy }) {
-    if (sortBy !== col) return <span className="ml-1" style={{ color: 'var(--text-muted)' }}>↕</span>
-    return <span className="ml-1" style={{ color: 'var(--c1)' }}>{sortDir === 'desc' ? '↓' : '↑'}</span>
-  }
 
   const tabCounts = {
     all:       enriched.length,
@@ -242,22 +243,22 @@ export default function ProductsTable({ products }: { products: Product[] }) {
             <thead>
               <tr className="text-xs" style={{ color: 'var(--text-muted)', borderBottom: '1px solid var(--border)', background: 'rgba(255, 255, 255, 0.01)' }}>
                 <th className="text-left font-medium px-5 py-3 cursor-pointer select-none" style={{ color: 'var(--text-muted)' }} onClick={() => toggleSort('title')}>
-                  {d.product} <SortIcon col="title" />
+                  {d.product} <SortIcon col="title" sortBy={sortBy} sortDir={sortDir} />
                 </th>
                 <th className="text-left font-medium px-5 py-3">{d.category}</th>
                 <th className="text-right font-medium px-5 py-3">{d.price}</th>
                 <th className="text-right font-medium px-5 py-3 cursor-pointer select-none" style={{ color: 'var(--text-muted)' }} onClick={() => toggleSort('profit')}>
-                  {d.profit} <SortIcon col="profit" />
+                  {d.profit} <SortIcon col="profit" sortBy={sortBy} sortDir={sortDir} />
                 </th>
                 <th className="text-right font-medium px-5 py-3 cursor-pointer select-none" style={{ color: 'var(--text-muted)' }} onClick={() => toggleSort('margin')}>
-                  {d.margin} <SortIcon col="margin" />
+                  {d.margin} <SortIcon col="margin" sortBy={sortBy} sortDir={sortDir} />
                 </th>
                 <th className="text-right font-medium px-5 py-3 cursor-pointer select-none" style={{ color: 'var(--text-muted)' }} onClick={() => toggleSort('drr')}>
-                  DRR <SortIcon col="drr" />
+                  DRR <SortIcon col="drr" sortBy={sortBy} sortDir={sortDir} />
                 </th>
                 <th className="text-right font-medium px-5 py-3">{d.sold}</th>
                 <th className="text-right font-medium px-5 py-3 cursor-pointer select-none" style={{ color: 'var(--text-muted)' }} onClick={() => toggleSort('stock_quantity')}>
-                  {d.stockQty} <SortIcon col="stock_quantity" />
+                  {d.stockQty} <SortIcon col="stock_quantity" sortBy={sortBy} sortDir={sortDir} />
                 </th>
               </tr>
             </thead>

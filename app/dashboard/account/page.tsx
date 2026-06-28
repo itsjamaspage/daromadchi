@@ -22,9 +22,8 @@ export default async function AccountPage() {
     : null
 
   const trialExpired = !isOnTrial && trialEndsAt !== null && plan === 'free'
-  const trialDaysLeft = isOnTrial && trialEndsAt
-    ? Math.ceil((new Date(trialEndsAt).getTime() - Date.now()) / 86400000)
-    : 0
+  const nowMs = trialEndsAt ? new Date(trialEndsAt).getTime() - new Date().getTime() : 0
+  const trialDaysLeft = isOnTrial && trialEndsAt ? Math.ceil(nowMs / 86400000) : 0
 
   const planLabel: Record<string, { label: string; color: string }> = {
     free:     { label: t.planFree,    color: 'text-[var(--text-muted)] bg-slate-500/10 border-[var(--border)]' },

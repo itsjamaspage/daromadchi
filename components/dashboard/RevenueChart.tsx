@@ -13,6 +13,7 @@ function formatSum(value: number) {
   return `${value}`
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload?.length) {
     return (

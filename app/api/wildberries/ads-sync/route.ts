@@ -40,6 +40,7 @@ export async function POST() {
 
     // Extract advertIds from nested structure { adverts: { status: [ { type, count, advert_list: [{advertId}] } ] } }
     const campaignIds: number[] = []
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     for (const group of Object.values(countData?.adverts ?? {}) as any[]) {
       for (const item of group ?? []) {
         for (const advert of item?.advert_list ?? []) {
@@ -72,6 +73,7 @@ export async function POST() {
       )
       if (!statsRes.ok) continue
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const statsData: any[] = await statsRes.json()
       for (const campaign of statsData ?? []) {
         for (const day of campaign.days ?? []) {

@@ -6,6 +6,7 @@ import { translations } from '@/lib/i18n'
 
 const COLORS = ['#7c3aed', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6']
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const CustomTooltip = ({ active, payload }: any) => {
   const { lang } = useLang()
   const t = translations[lang].dashboard

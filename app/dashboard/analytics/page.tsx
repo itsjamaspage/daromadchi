@@ -1,3 +1,4 @@
+/* eslint-disable react/no-unescaped-entities */
 import { BarChart2, Settings, Package, Link2, RefreshCw, TrendingUp } from 'lucide-react'
 import Link from 'next/link'
 import { Suspense } from 'react'

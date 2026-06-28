@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment, react-hooks/set-state-in-effect */
 // @ts-nocheck
 'use client'
 

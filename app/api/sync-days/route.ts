@@ -8,8 +8,8 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ ok: false }, { status: 401 })
 
   try {
-    const { dates } = await req.json() as { dates: string[] }
-    await resyncDays(dates ?? [])
+    const { dates, marketplace } = await req.json() as { dates: string[]; marketplace?: string }
+    await resyncDays((marketplace ?? 'wildberries') as import('@/lib/types').MarketplaceType, dates ?? [])
     return NextResponse.json({ ok: true })
   } catch {
     return NextResponse.json({ ok: false, error: 'Server xatosi' }, { status: 500 })

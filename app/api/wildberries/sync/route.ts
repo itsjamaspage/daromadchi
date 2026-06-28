@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const result = await syncFromWildberries(supabase, shop.id, decrypt(shop.api_key_encrypted), fromDate)
-    if (!result.ok) logger.warn('wb_sync_error', { shopId: shop.id, error: result.error })
+    if (!result.ok) logger.warn('wb_sync_error', { shopId: shop.id, errors: result.errors })
     return NextResponse.json(result)
   } catch (err) {
     logger.error('wb_sync_unhandled', { shopId: shop.id, error: String(err) })

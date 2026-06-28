@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 // @ts-nocheck
 'use client'
 
@@ -395,7 +396,7 @@ export default function LiquidEther({
       createAllFBO() {
         const type = this.getFloatType()
         const opts = { type, depthBuffer: false, stencilBuffer: false, minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, wrapS: THREE.ClampToEdgeWrapping, wrapT: THREE.ClampToEdgeWrapping }
-        for (let key in this.fbos) this.fbos[key] = new THREE.WebGLRenderTarget(this.fboSize.x, this.fboSize.y, opts)
+        for (const key in this.fbos) this.fbos[key] = new THREE.WebGLRenderTarget(this.fboSize.x, this.fboSize.y, opts)
       }
       createShaderPass() {
         this.advection = new Advection({ cellScale: this.cellScale, fboSize: this.fboSize, dt: this.options.dt, src: this.fbos.vel_0, dst: this.fbos.vel_1 })
@@ -412,7 +413,7 @@ export default function LiquidEther({
       }
       resize() {
         this.calcSize()
-        for (let key in this.fbos) this.fbos[key].setSize(this.fboSize.x, this.fboSize.y)
+        for (const key in this.fbos) this.fbos[key].setSize(this.fboSize.x, this.fboSize.y)
       }
       update() {
         if (this.options.isBounce) this.boundarySpace.set(0, 0)

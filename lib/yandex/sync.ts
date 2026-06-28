@@ -187,7 +187,7 @@ export async function syncFromYandex(
                 title: it.offerName ?? `SKU ${mpid}`,
                 sku: mpid,
                 category: null,
-                selling_price: it.prices?.buyerPrice ?? null,
+                selling_price: it.buyerPrice ?? it.price ?? null,
                 cost_price: null,
                 stock_quantity: 0,
               })

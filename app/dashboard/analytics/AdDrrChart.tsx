@@ -8,11 +8,13 @@ import { useTheme } from '@/app/providers'
 
 interface Row { name: string; drrTotal: number; drrAd: number }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null
   return (
     <div className="border rounded-xl px-4 py-3 shadow-xl text-xs space-y-1.5" style={{ background: 'var(--bg-input)', borderColor: 'var(--border2)' }}>
       <p className="font-medium truncate max-w-[160px]" style={{ color: 'var(--text-dim)' }}>{label}</p>
+      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
       {payload.map((p: any) => (
         <div key={p.dataKey} className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: p.fill }} />

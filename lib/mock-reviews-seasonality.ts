@@ -7,6 +7,7 @@ export interface ReviewEntry {
   productTitle: string
   sentiment: 'positive' | 'negative' | 'neutral'
   replied: boolean
+  replyText?: string
   platform?: string
   shopId?: string
 }
