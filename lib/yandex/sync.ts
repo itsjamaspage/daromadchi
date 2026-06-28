@@ -327,6 +327,7 @@ export async function syncFromYandex(
             productId = titleMap.get(it.offerName) ?? null
             if (productId) titleMatchBackfill.set(productId, offerIdStr)
           }
+          console.log('[YM-PRICE]', 'offerId:', it.offerId, '| raw item keys:', Object.keys(it), '| prices:', JSON.stringify(it.prices), '| buyerPrice:', (it as any).buyerPrice, '| price:', (it as any).price)
           itemRows.push({
             order_id:       dbOrderId,
             product_id:     productId,
