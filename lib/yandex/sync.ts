@@ -278,15 +278,16 @@ export async function syncFromYandex(
     try {
       const { data: dbProducts } = await supabase
         .from('products')
-        .select('id, sku, marketplace_product_id')
+        .select('id, sku, marketplace_product_id, title')
         .eq('shop_id', shopId)
       const skuMap = new Map<string, string>()
+      const titleMap = new Map<string, string>()
       for (const p of dbProducts ?? []) {
         if (p.sku) skuMap.set(p.sku as string, p.id as string)
         if (p.marketplace_product_id) skuMap.set(p.marketplace_product_id as string, p.id as string)
+        if (p.title) titleMap.set(p.title as string, p.id as string)
       }
       // Bridge: offerId (shopSku) → marketSku → product.id
-      // Handles the case where products.sku is null but marketplace_product_id has the marketSku
       for (const [shopSku, marketSkuStr] of shopSkuToMarketSku) {
         const shopSkuStr = String(shopSku)
         if (!skuMap.has(shopSkuStr)) {
@@ -306,6 +307,9 @@ export async function syncFromYandex(
         orderIdMap.set(o.order_id_external as string, o.id as string)
       }
 
+      // Track title-matched (productId → offerId) for post-insert sku backfill
+      const titleMatchBackfill = new Map<string, string>()
+
       const itemRows: {
         order_id: string; product_id: string | null;
         quantity: number; price_per_unit: number
@@ -315,16 +319,18 @@ export async function syncFromYandex(
         if (!dbOrderId) continue
         for (const it of o.items ?? []) {
           const anyIt = it as any
-          console.log('[YM-DEBUG] offerId:', JSON.stringify(it.offerId),
-            '| type:', typeof (it as any).offerId,
-            '| skuMap size:', skuMap.size,
-            '| skuMap has offerId:', skuMap.has(String(it.offerId)),
-            '| first 3 skuMap keys:', JSON.stringify([...skuMap.keys()].slice(0, 3)))
+          const offerIdStr = String(it.offerId)
+          // Primary: match by offerId/sku/marketplace_product_id
+          let productId = skuMap.get(offerIdStr) ?? null
+          // Fallback: match by offerName = product title (same string from YM catalog)
+          if (!productId && it.offerName) {
+            productId = titleMap.get(it.offerName) ?? null
+            if (productId) titleMatchBackfill.set(productId, offerIdStr)
+          }
           itemRows.push({
             order_id:       dbOrderId,
-            product_id:     skuMap.get(String(it.offerId)) ?? null,
+            product_id:     productId,
             quantity:       it.count,
-            // YM list endpoint may omit prices or use different field names
             price_per_unit: it.prices?.buyerPrice
               ?? it.prices?.buyerPriceBeforeDiscount
               ?? anyIt.buyerPrice
@@ -340,6 +346,11 @@ export async function syncFromYandex(
         for (let i = 0; i < itemRows.length; i += 500) {
           await supabase.from('order_items').insert(itemRows.slice(i, i + 500))
         }
+      }
+
+      // Backfill product.sku = offerId so future syncs match via skuMap without title lookup
+      for (const [productId, offerId] of titleMatchBackfill) {
+        await supabase.from('products').update({ sku: offerId }).eq('id', productId)
       }
     } catch { /* order items sync is best-effort */ }
 
