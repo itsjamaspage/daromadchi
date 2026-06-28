@@ -100,9 +100,18 @@ export default function DateRangePicker({ period, from, to }: Props) {
 
   const activeDays = !from && !to ? (period ?? '365') : null
 
+  const PRESET_LABELS: Record<string, Record<string, string>> = {
+    '30':  { uz: '30 kun', ru: '30 дн.', en: '30 days' },
+    '90':  { uz: '90 kun', ru: '90 дн.', en: '90 days' },
+    '365': { uz: '1 yil',  ru: '1 год',  en: '1 year'  },
+    '1':   { uz: '1 kun',  ru: '1 день', en: 'Today'   },
+    '7':   { uz: '7 kun',  ru: '7 дн.',  en: '7 days'  },
+  }
+
   const label = from && to
     ? `${formatDateLabel(from)} — ${formatDateLabel(to)}`
-    : lang === 'ru' ? 'Выбрать период' : lang === 'uz' ? 'Davr tanlash' : 'Select period'
+    : (PRESET_LABELS[period]?.[lang] ?? PRESET_LABELS[period]?.en)
+      ?? (lang === 'ru' ? 'Выбрать период' : lang === 'uz' ? 'Davr tanlash' : 'Select period')
 
   const inputStyle = {
     background: 'var(--bg-input)',

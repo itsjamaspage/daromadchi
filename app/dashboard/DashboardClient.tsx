@@ -326,25 +326,38 @@ export default function DashboardClient({ slices, days, period, from, to, initia
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--border)]">
-                {productSales.length === 0 ? (
+                {productSales.length === 0 && allProducts.length === 0 ? (
                   <tr>
                     <td colSpan={3} className="py-8 text-center">
                       <p className="text-[var(--text-muted)] text-xs">{d.noProducts}</p>
                       <p className="text-[var(--text-muted)] text-[10px] mt-1">{d.noProductsDesc}</p>
                     </td>
                   </tr>
-                ) : productSales.slice(0, 5).map(p => (
-                  <tr key={p.product_id} className="hover:bg-[var(--bg-card2)] transition-colors">
-                    <td className="py-3 pr-4">
-                      <p className="text-[var(--text-base)] font-medium text-xs">{p.title}</p>
-                      <p className="text-[var(--text-muted)] text-xs">{p.sku}</p>
-                    </td>
-                    <td className="py-3 pr-4 text-right">
-                      <span className="text-emerald-400 font-medium text-xs">{formatSum(p.revenue)}</span>
-                    </td>
-                    <td className="py-3 text-right text-[var(--text-dim)] text-xs">{p.qty_sold}</td>
-                  </tr>
-                ))}
+                ) : productSales.length > 0
+                  ? productSales.slice(0, 5).map(p => (
+                    <tr key={p.product_id} className="hover:bg-[var(--bg-card2)] transition-colors">
+                      <td className="py-3 pr-4">
+                        <p className="text-[var(--text-base)] font-medium text-xs">{p.title}</p>
+                        <p className="text-[var(--text-muted)] text-xs">{p.sku}</p>
+                      </td>
+                      <td className="py-3 pr-4 text-right">
+                        <span className="text-emerald-400 font-medium text-xs">{formatSum(p.revenue)}</span>
+                      </td>
+                      <td className="py-3 text-right text-[var(--text-dim)] text-xs">{p.qty_sold}</td>
+                    </tr>
+                  ))
+                  : [...allProducts].sort((a, b) => (b.sold ?? 0) - (a.sold ?? 0)).slice(0, 5).map(p => (
+                    <tr key={p.id} className="hover:bg-[var(--bg-card2)] transition-colors">
+                      <td className="py-3 pr-4">
+                        <p className="text-[var(--text-base)] font-medium text-xs">{p.title}</p>
+                        <p className="text-[var(--text-muted)] text-xs">{p.sku}</p>
+                      </td>
+                      <td className="py-3 pr-4 text-right">
+                        <span className="text-emerald-400 font-medium text-xs">{formatSum(Number(p.selling_price ?? 0) * (p.sold ?? 0))}</span>
+                      </td>
+                      <td className="py-3 text-right text-[var(--text-dim)] text-xs">{p.sold ?? 0}</td>
+                    </tr>
+                  ))}
               </tbody>
             </table>
             </div>

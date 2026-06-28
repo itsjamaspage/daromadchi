@@ -55,9 +55,9 @@ export async function syncFromYandex(
       const stockMap = await fetchAllYandexStocks(token, campaignId, allSkus)
       productRows = entries.map(e => ({
         shop_id: shopId,
-        marketplace_product_id: String(e.mapping?.marketSku ?? e.offer.shopSku),
+        marketplace_product_id: String(e.mapping?.marketSku ?? e.offer.shopSku ?? ''),
         title: e.offer.name,
-        sku: e.offer.shopSku,
+        sku: e.offer.shopSku || String(e.mapping?.marketSku ?? ''),
         category: e.offer.category ?? null,
         selling_price: e.offer.price?.value ?? null,
         cost_price: null,
