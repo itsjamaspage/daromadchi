@@ -131,7 +131,6 @@ const _fetchCategoryRevenue = unstable_cache(
   async (shopIdsStr: string, days: number, from: string, to: string): Promise<CategoryRow[]> => {
     const shopIds = shopIdsStr ? shopIdsStr.split(',') : []
     if (shopIds.length === 0) return []
-    console.log('[CAT-REV] shopIds:', shopIdsStr, 'from:', from, 'to:', to)
 
     const supabase = createAdminClient()
 
@@ -151,7 +150,6 @@ const _fetchCategoryRevenue = unstable_cache(
       since_iso: sinceIso,
       until_iso: untilIso,
     })
-    console.log('[CAT-REV] rpc result:', rows?.length, 'error:', error?.message)
     if (error || !rows || rows.length === 0) return []
 
     const total = rows.reduce((s: number, r: any) => s + Number(r.revenue ?? 0), 0)
@@ -162,7 +160,7 @@ const _fetchCategoryRevenue = unstable_cache(
       percent: total > 0 ? (Number(r.revenue ?? 0) / total) * 100 : 0,
     }))
   },
-  ['category-revenue-v6'],
+  ['category-revenue-v7'],
   { revalidate: 30 },
 )
 
