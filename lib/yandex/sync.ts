@@ -96,6 +96,26 @@ export async function syncFromYandex(
       )
     }
 
+    // ── shopSku→marketSku bridge via SKU stats (fallback when product API omits shopSku) ──
+    // YM auto-generates shopSkus like "1743086372-27" that don't appear in the offer-mappings
+    // API response but DO appear as offerId in orders. SKU stats API returns both fields.
+    if (shopSkuToMarketSku.size === 0) {
+      try {
+        const today = new Date()
+        const ninetyDaysAgo = new Date(); ninetyDaysAgo.setDate(today.getDate() - 90)
+        const stats = await fetchAllYandexSkuStats(
+          token, campaignId,
+          ninetyDaysAgo.toISOString().slice(0, 10),
+          today.toISOString().slice(0, 10),
+        )
+        for (const stat of stats) {
+          if (stat.shopSku && stat.marketSku) {
+            shopSkuToMarketSku.set(stat.shopSku, String(stat.marketSku))
+          }
+        }
+      } catch { /* best-effort */ }
+    }
+
     // ── Orders (incremental since last sync, fallback 365 days) ─────────────
     const [{ data: shopRow }, { count: existingProductCount }] = await Promise.all([
       supabase.from('shops').select('last_synced_at').eq('id', shopId).single(),
