@@ -17,6 +17,8 @@ import type { Kpis, Order, Product, DailyRevenue, MarketplaceType } from '@/lib/
 import type { ProductSalesRow } from '@/lib/db/products'
 
 function formatSum(n: number) {
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1).replace(/\.0$/, '') + " mln so'm"
+  if (n >= 1_000)     return (n / 1_000).toFixed(1).replace(/\.0$/, '')     + " ming so'm"
   return new Intl.NumberFormat('uz-UZ').format(n) + " so'm"
 }
 
