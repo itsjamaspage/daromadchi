@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/api/auth'
 import { sendTelegramMessage, sendTelegramKeyboard, answerCallbackQuery } from '@/lib/telegram'
+import { withErrorHandler } from '@/lib/api-handler'
 
 // Register via: GET https://api.telegram.org/bot{TOKEN}/setWebhook?url=https://daromadchi.uz/api/telegram/webhook
 // Always return 200 so Telegram doesn't retry.
 
-export async function GET() {
+export const GET = withErrorHandler(async () => {
   return NextResponse.json({ ok: true, bot_token_set: !!process.env.TELEGRAM_BOT_TOKEN })
-}
+})
 
 const NOTIF_LABELS: Record<string, string> = {
   morning: '🌅 Ertalab 8:00',
@@ -136,7 +137,7 @@ async function sendLangSelect(chatId: string) {
   )
 }
 
-export async function POST(req: NextRequest) {
+export const POST = withErrorHandler(async (req: NextRequest) => {
   console.log('[webhook] POST received')
 
   const expectedSecret = process.env.TELEGRAM_WEBHOOK_SECRET
@@ -440,4 +441,4 @@ export async function POST(req: NextRequest) {
   }
 
   return NextResponse.json({ ok: true })
-}
+})

@@ -1,19 +1,30 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 import { encrypt } from '@/lib/crypto'
 import { validateMarketplaceToken } from '@/lib/validate-token'
 import { clearShopData } from '@/lib/db/clear-shop-data'
 import { logger } from '@/lib/logger'
+import { withErrorHandler } from '@/lib/api-handler'
 
-export async function POST(req: Request) {
+const TokenSchema = z.object({
+  marketplace: z.enum(['wildberries', 'uzum', 'yandex_market']),
+  token:       z.string().max(2000).optional(),
+  campaignId:  z.string().max(200).optional(),
+  shopName:    z.string().max(200).optional(),
+})
+
+export const POST = withErrorHandler(async (req: NextRequest) => {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 })
 
-  const body = await req.json()
-  const { marketplace, token, campaignId, shopName } = body
-
-  if (!marketplace) return NextResponse.json({ ok: false, error: 'marketplace required' }, { status: 400 })
+  const raw = await req.json().catch(() => null)
+  const parsed = TokenSchema.safeParse(raw)
+  if (!parsed.success) {
+    return NextResponse.json({ ok: false, error: parsed.error.issues[0]?.message ?? 'Noto\'g\'ri ma\'lumot' }, { status: 400 })
+  }
+  const { marketplace, token, campaignId, shopName } = parsed.data
 
   // Validate token against the marketplace API before saving
   if (token?.trim()) {
@@ -75,4 +86,4 @@ export async function POST(req: Request) {
       ? 'Токен сохранён. Старые данные очищены. Нажмите Синхронизировать.'
       : 'Токен сохранён.',
   })
-}
+})

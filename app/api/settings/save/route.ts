@@ -1,29 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { encrypt } from '@/lib/crypto'
 import { logger } from '@/lib/logger'
+import { withErrorHandler } from '@/lib/api-handler'
 
-export async function POST(req: NextRequest) {
+const SaveSchema = z.object({
+  marketplace:    z.enum(['uzum', 'yandex_market', 'wildberries']),
+  apiKey:         z.string().max(2000).optional(),
+  shopIdExternal: z.string().max(200).optional(),
+  shopName:       z.string().max(200).optional(),
+})
+
+export const POST = withErrorHandler(async (req: NextRequest) => {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const body = await req.json().catch(() => null)
-  if (!body?.marketplace) {
-    return NextResponse.json({ error: 'marketplace talab etiladi' }, { status: 400 })
+  const raw = await req.json().catch(() => null)
+  const parsed = SaveSchema.safeParse(raw)
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.issues[0]?.message ?? 'Noto\'g\'ri ma\'lumot' }, { status: 400 })
   }
-
-  const { marketplace, apiKey, shopIdExternal, shopName } = body as {
-    marketplace:     'uzum' | 'yandex_market' | 'wildberries'
-    apiKey?:         string
-    shopIdExternal?: string
-    shopName?:       string
-  }
-
-  if (!['uzum', 'yandex_market', 'wildberries'].includes(marketplace)) {
-    return NextResponse.json({ error: 'marketplace noto\'g\'ri' }, { status: 400 })
-  }
+  const { marketplace, apiKey, shopIdExternal, shopName } = parsed.data
 
   const { data: existing } = await supabase
     .from('shops')
@@ -32,16 +32,6 @@ export async function POST(req: NextRequest) {
     .eq('marketplace', marketplace)
     .eq('is_active', true)
     .maybeSingle()
-
-  if (apiKey && apiKey.trim().length > 2000) {
-    return NextResponse.json({ error: 'apiKey juda uzun' }, { status: 400 })
-  }
-  if (shopIdExternal && shopIdExternal.trim().length > 200) {
-    return NextResponse.json({ error: 'shopIdExternal juda uzun' }, { status: 400 })
-  }
-  if (shopName && shopName.trim().length > 200) {
-    return NextResponse.json({ error: 'shopName juda uzun' }, { status: 400 })
-  }
 
   const update: Record<string, unknown> = {}
   if (apiKey?.trim())        update.api_key_encrypted = encrypt(apiKey.trim())
@@ -90,4 +80,4 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Saqlashda xato yuz berdi' }, { status: 500 })
   }
   return NextResponse.json({ ok: true, created: true })
-}
+})

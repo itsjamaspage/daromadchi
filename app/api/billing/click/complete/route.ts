@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/api/auth'
 import { verifyClickSign, ClickError } from '@/lib/billing/click'
 import { planExpiresAt } from '@/lib/billing/plans'
+import { withErrorHandler } from '@/lib/api-handler'
 
-export async function POST(req: NextRequest) {
+export const POST = withErrorHandler(async (req: NextRequest) => {
   const text = await req.text()
   const body = Object.fromEntries(new URLSearchParams(text))
 
@@ -46,4 +47,4 @@ export async function POST(req: NextRequest) {
   ])
 
   return NextResponse.json({ ...base, error: 0, error_note: 'Success' })
-}
+})

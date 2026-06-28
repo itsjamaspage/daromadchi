@@ -1,5 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
+import { withErrorHandler } from '@/lib/api-handler'
+
+const SignupSchema = z.object({
+  email:    z.string().email('Email noto\'g\'ri formatda'),
+  password: z.string().min(6, 'Parol kamida 6 ta belgi bo\'lishi kerak').max(128),
+  name:     z.string().max(100).optional(),
+})
 
 // 10 signup attempts per IP per hour
 const signupRateMap = new Map<string, { count: number; resetAt: number }>()
@@ -19,7 +27,7 @@ function checkSignupRate(ip: string): boolean {
   return entry.count > 10
 }
 
-export async function POST(req: NextRequest) {
+export const POST = withErrorHandler(async (req: NextRequest) => {
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
     ?? req.headers.get('x-real-ip')
     ?? 'unknown'
@@ -31,19 +39,18 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  const body = await req.json().catch(() => null)
-  if (!body?.email || typeof body.email !== 'string') {
-    return NextResponse.json({ error: 'Email talab etiladi' }, { status: 400 })
+  const raw = await req.json().catch(() => null)
+  const parsed = SignupSchema.safeParse(raw)
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.issues[0]?.message ?? 'Noto\'g\'ri ma\'lumot' }, { status: 400 })
   }
-  if (!body?.password || typeof body.password !== 'string' || body.password.length < 6) {
-    return NextResponse.json({ error: "Parol kamida 6 ta belgi bo'lishi kerak" }, { status: 400 })
-  }
+  const { email, password, name } = parsed.data
 
   const supabase = await createClient()
   const { data, error } = await supabase.auth.signUp({
-    email: body.email,
-    password: body.password,
-    options: { data: { full_name: typeof body.name === 'string' ? body.name.trim() : '' } },
+    email,
+    password,
+    options: { data: { full_name: name?.trim() ?? '' } },
   })
 
   if (error) {
@@ -55,4 +62,4 @@ export async function POST(req: NextRequest) {
     userId: data.user?.id ?? null,
     needsConfirmation: !data.session,
   })
-}
+})

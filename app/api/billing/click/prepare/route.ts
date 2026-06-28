@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/api/auth'
 import { verifyClickSign, ClickError } from '@/lib/billing/click'
+import { withErrorHandler } from '@/lib/api-handler'
 
-export async function POST(req: NextRequest) {
+export const POST = withErrorHandler(async (req: NextRequest) => {
   // Click sends form-urlencoded
   const text = await req.text()
   const body = Object.fromEntries(new URLSearchParams(text))
@@ -37,4 +38,4 @@ export async function POST(req: NextRequest) {
     .eq('id', merchant_trans_id)
 
   return NextResponse.json({ ...base, merchant_prepare_id: merchant_trans_id, error: 0, error_note: 'Success' })
-}
+})

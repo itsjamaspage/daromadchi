@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin, getAuthUser } from '@/lib/api/auth'
 import { telegramConfigured, telegramDeepLink } from '@/lib/telegram'
+import { withErrorHandler } from '@/lib/api-handler'
 
-export async function POST(req: NextRequest) {
+export const POST = withErrorHandler(async (req: NextRequest) => {
   const user = await getAuthUser(req.headers.get('authorization'))
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
@@ -29,4 +30,4 @@ export async function POST(req: NextRequest) {
   if (error) return NextResponse.json({ error: 'Token yaratishda xato' }, { status: 500 })
 
   return NextResponse.json({ url: telegramDeepLink(linkToken), expiresAt })
-}
+})

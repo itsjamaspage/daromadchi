@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { withErrorHandler } from '@/lib/api-handler'
 
-export async function GET(req: NextRequest) {
+export const GET = withErrorHandler(async (req: NextRequest) => {
   const token = req.headers.get('authorization')?.replace('Bearer ', '')
   if (!token) return NextResponse.json({ error: 'no token' }, { status: 401 })
 
@@ -22,4 +23,4 @@ export async function GET(req: NextRequest) {
   const isExpired = !!planExpiresAt && new Date(planExpiresAt) < new Date()
 
   return NextResponse.json({ ok: true, plan: isExpired ? 'free' : plan })
-}
+})

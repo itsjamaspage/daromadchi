@@ -4,8 +4,9 @@ import { supabaseAdmin } from '@/lib/api/auth'
 import { PLAN_PRICES, PLAN_MONTHS, type PlanKey, type Period } from '@/lib/billing/plans'
 import { clickPaymentUrl } from '@/lib/billing/click'
 import { paymePaymentUrl } from '@/lib/billing/payme'
+import { withErrorHandler } from '@/lib/api-handler'
 
-export async function POST(req: NextRequest) {
+export const POST = withErrorHandler(async (req: NextRequest) => {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -38,4 +39,4 @@ export async function POST(req: NextRequest) {
     : paymePaymentUrl(payment.id, amount)
 
   return NextResponse.json({ url, paymentId: payment.id })
-}
+})

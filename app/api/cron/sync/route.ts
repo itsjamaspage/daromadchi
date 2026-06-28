@@ -4,11 +4,12 @@ import { syncFromUzum } from '@/lib/uzum/sync'
 import { syncFromYandex } from '@/lib/yandex/sync'
 import { syncFromWildberries } from '@/lib/wildberries/sync'
 import { decrypt } from '@/lib/crypto'
+import { withErrorHandler } from '@/lib/api-handler'
 
 export const runtime    = 'nodejs'
 export const maxDuration = 300  // 5 min — enough for full sync of multiple shops
 
-export async function GET(req: Request) {
+export const GET = withErrorHandler(async (req: Request) => {
   const url    = new URL(req.url)
   const secret = req.headers.get('x-cron-secret') ?? url.searchParams.get('secret')
 
@@ -46,4 +47,4 @@ export async function GET(req: Request) {
   }
 
   return NextResponse.json({ ok: true, synced: results.length, results })
-}
+})

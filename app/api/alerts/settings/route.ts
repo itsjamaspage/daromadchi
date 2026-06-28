@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { saveAlertSettings } from '@/lib/db/alerts'
+import { withErrorHandler } from '@/lib/api-handler'
 
-export async function POST(req: NextRequest) {
+export const POST = withErrorHandler(async (req: NextRequest) => {
   try {
     const body = await req.json().catch(() => null)
     if (!body) return NextResponse.json({ ok: false, error: 'Invalid JSON' }, { status: 400 })
@@ -23,4 +24,4 @@ export async function POST(req: NextRequest) {
   } catch {
     return NextResponse.json({ ok: false, error: 'Server xatosi' }, { status: 500 })
   }
-}
+})

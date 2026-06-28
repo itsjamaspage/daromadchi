@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/api/auth'
+import { withErrorHandler } from '@/lib/api-handler'
 
 const UZUM_PUBLIC = 'https://api.uzum.uz'
 
-export async function GET(req: NextRequest) {
+export const GET = withErrorHandler(async (req: NextRequest) => {
   // ── Auth ─────────────────────────────────────────────────────────────────────
   const token = req.headers.get('authorization')?.slice(7)
   if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -129,4 +130,4 @@ export async function GET(req: NextRequest) {
   // Will be added when Yandex Content API integration is implemented
 
   return NextResponse.json({ ownProduct, marketData })
-}
+})

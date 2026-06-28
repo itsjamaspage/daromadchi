@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { fetchYandexCategories, fetchCategoryModels, searchYandexModels, YandexApiError } from '@/lib/yandex/client'
 import { decrypt as decryptKey } from '@/lib/crypto'
+import { withErrorHandler } from '@/lib/api-handler'
 
-export async function GET(req: NextRequest) {
+export const GET = withErrorHandler(async (req: NextRequest) => {
   const { searchParams } = req.nextUrl
   const action     = searchParams.get('action') ?? 'categories'
   const categoryId = searchParams.get('categoryId')
@@ -69,4 +70,4 @@ export async function GET(req: NextRequest) {
     const message = err instanceof Error ? err.message : 'Unknown error'
     return NextResponse.json({ error: message }, { status: 500 })
   }
-}
+})

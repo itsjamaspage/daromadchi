@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { addUnitEconomicsItem, deleteUnitEconomicsItems, updateUnitEconomicsSupplier, updateUnitEconomicsItem } from '@/lib/db/unit-economics'
+import { withErrorHandler } from '@/lib/api-handler'
 
 const MARKETPLACES = ['uzum', 'yandex_market', 'wildberries'] as const
 
@@ -16,7 +17,7 @@ function isFiniteNum(v: unknown): v is number {
   return typeof v === 'number' && isFinite(v)
 }
 
-export async function POST(req: NextRequest) {
+export const POST = withErrorHandler(async (req: NextRequest) => {
   try {
     const body = await req.json().catch(() => null)
     if (!body) return NextResponse.json({ ok: false, error: 'Invalid JSON' }, { status: 400 })
@@ -42,9 +43,9 @@ export async function POST(req: NextRequest) {
     const msg = e instanceof Error ? e.message : 'Server xatosi'
     return NextResponse.json({ ok: false, error: msg }, { status: 500 })
   }
-}
+})
 
-export async function DELETE(req: NextRequest) {
+export const DELETE = withErrorHandler(async (req: NextRequest) => {
   try {
     const body = await req.json().catch(() => null)
     const ids = body?.ids
@@ -59,9 +60,9 @@ export async function DELETE(req: NextRequest) {
   } catch {
     return NextResponse.json({ ok: false, error: 'Server xatosi' }, { status: 500 })
   }
-}
+})
 
-export async function PATCH(req: NextRequest) {
+export const PATCH = withErrorHandler(async (req: NextRequest) => {
   try {
     const body = await req.json().catch(() => null)
     if (!body) return NextResponse.json({ ok: false, error: 'Invalid JSON' }, { status: 400 })
@@ -90,4 +91,4 @@ export async function PATCH(req: NextRequest) {
   } catch {
     return NextResponse.json({ ok: false, error: 'Server xatosi' }, { status: 500 })
   }
-}
+})
