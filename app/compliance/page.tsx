@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useLang, useTheme } from '@/app/providers'
 import BorderGlow from '@/app/components/BorderGlow'
+import SectionHoverAnim from '@/app/components/SectionHoverAnim'
 
 function tx(lang: string, ru: string, uz: string, en: string) {
   return lang === 'ru' ? ru : lang === 'uz' ? uz : en
@@ -164,9 +165,9 @@ export default function CompliancePage() {
     flashTimerRef.current = setTimeout(() => setFlash(null), 2000)
   }
 
-  const flashBg   = isDark ? 'rgba(0,212,255,0.15)' : 'rgba(0,180,255,0.12)'
+  const flashBg   = isDark ? 'rgba(131,192,249,0.12)' : 'rgba(2,132,199,0.08)'
   const flashBdr  = 'var(--c1)'
-  const flashShadow = '0 0 0 3px rgba(0,212,255,0.25)'
+  const flashShadow = isDark ? '0 0 0 3px rgba(131,192,249,0.3)' : '0 0 0 3px rgba(2,132,199,0.3)'
 
   return (
     <div className="flex min-h-screen" style={{ background: 'var(--bg-base)', fontFamily: "'Space Grotesk', system-ui, sans-serif" }}>
@@ -205,7 +206,7 @@ export default function CompliancePage() {
                 onClick={() => scrollTo(i)}
                 className="flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-left transition-all text-sm font-medium"
                 style={{
-                  background: isActive ? 'rgba(0,212,255,0.10)' : 'transparent',
+                  background: isActive ? (isDark ? 'rgba(131,192,249,0.10)' : 'rgba(2,132,199,0.08)') : 'transparent',
                   color: isActive ? 'var(--c1)' : 'var(--text-muted)',
                   borderLeft: isActive ? '2px solid var(--c1)' : '2px solid transparent',
                   whiteSpace: 'nowrap',
@@ -232,12 +233,10 @@ export default function CompliancePage() {
 
       {/* ── Main content ──────────────────────────────────────────────────────── */}
       <main className="flex-1 min-w-0 px-5 sm:px-8 lg:px-12 py-10 pb-24 relative">
-        <div aria-hidden style={{
-          position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0,
-          background: isDark
-            ? 'radial-gradient(ellipse 65% 30% at 50% 0%, rgba(131,192,249,0.07) 0%, transparent 65%)'
-            : 'radial-gradient(ellipse 65% 30% at 50% 0%, rgba(2,132,199,0.05) 0%, transparent 65%)',
-        }} />
+        <SectionHoverAnim
+          colors={isDark ? ['#ffffff', '#f5f5f5', '#ebebeb', '#dcdcdc', '#cdcdcd'] : ['#ffffff', '#ffffff', '#f8fafc', '#f0f0f0', '#e8e8e8']}
+          opacity={0.35}
+        />
         <div style={{ maxWidth: 760, margin: '0 auto', position: 'relative', zIndex: 1 }}>
 
           {/* Page header */}
@@ -255,7 +254,7 @@ export default function CompliancePage() {
             </div>
 
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg mb-5 text-xs font-semibold uppercase tracking-wider"
-              style={{ background: 'rgba(0,212,255,0.10)', color: 'var(--c1)' }}>
+              style={{ background: isDark ? 'rgba(131,192,249,0.10)' : 'rgba(2,132,199,0.08)', color: 'var(--c1)' }}>
               {tx(lang, 'Соответствие данных', 'Ma\'lumotlar Muvofiqlik', 'Data Compliance')}
             </div>
 
@@ -292,7 +291,7 @@ export default function CompliancePage() {
                   className="scroll-mt-24"
                   style={{
                     borderRadius: 16,
-                    boxShadow: isFlash ? '0 0 0 2px rgba(0,212,255,0.8), 0 0 28px rgba(0,212,255,0.3)' : 'none',
+                    boxShadow: isFlash ? '0 0 0 2px rgba(131,192,249,0.8), 0 0 28px rgba(131,192,249,0.3)' : 'none',
                     transition: 'box-shadow 0.5s ease',
                   }}
                 >

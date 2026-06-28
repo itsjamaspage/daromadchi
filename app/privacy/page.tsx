@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useLang, useTheme } from '@/app/providers'
 import BorderGlow from '@/app/components/BorderGlow'
+import SectionHoverAnim from '@/app/components/SectionHoverAnim'
 
 const COMPANY_EMAIL = 'support@daromadchi.uz'
 
@@ -211,7 +212,7 @@ export default function PrivacyPage() {
               className="flex items-center gap-3 px-3 py-3 rounded-xl text-left text-sm font-semibold transition-all whitespace-nowrap overflow-hidden border"
               style={{
                 color: active === i ? 'var(--c1)' : 'var(--text-base)',
-                background: active === i ? 'rgba(0,212,255,0.10)' : 'transparent',
+                background: active === i ? (isDark ? 'rgba(131,192,249,0.10)' : 'rgba(2,132,199,0.08)') : 'transparent',
                 borderColor: active === i ? 'var(--c1)' : 'transparent',
               }}
             >
@@ -219,7 +220,7 @@ export default function PrivacyPage() {
                 <span
                   className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold"
                   style={{
-                    background: active === i ? 'rgba(0,212,255,0.20)' : 'rgba(0,212,255,0.10)',
+                    background: active === i ? (isDark ? 'rgba(131,192,249,0.22)' : 'rgba(2,132,199,0.18)') : (isDark ? 'rgba(131,192,249,0.10)' : 'rgba(2,132,199,0.08)'),
                     color: 'var(--c1)',
                   }}
                 >
@@ -234,12 +235,10 @@ export default function PrivacyPage() {
 
       {/* Main content */}
       <main className="flex-1 min-w-0 px-8 py-16 relative">
-        <div aria-hidden style={{
-          position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0,
-          background: isDark
-            ? 'radial-gradient(ellipse 65% 30% at 50% 0%, rgba(131,192,249,0.07) 0%, transparent 65%)'
-            : 'radial-gradient(ellipse 65% 30% at 50% 0%, rgba(2,132,199,0.05) 0%, transparent 65%)',
-        }} />
+        <SectionHoverAnim
+          colors={isDark ? ['#ffffff', '#f5f5f5', '#ebebeb', '#dcdcdc', '#cdcdcd'] : ['#ffffff', '#ffffff', '#f8fafc', '#f0f0f0', '#e8e8e8']}
+          opacity={0.35}
+        />
         <div className="max-w-3xl mx-auto" style={{ position: 'relative', zIndex: 1 }}>
           <div className="text-center mb-14">
             <h1
@@ -261,7 +260,7 @@ export default function PrivacyPage() {
                 className="scroll-mt-24"
                 style={{
                   borderRadius: 16,
-                  boxShadow: flash === i ? '0 0 0 2px rgba(0,212,255,0.8), 0 0 28px rgba(0,212,255,0.3)' : 'none',
+                  boxShadow: flash === i ? '0 0 0 2px rgba(131,192,249,0.8), 0 0 28px rgba(131,192,249,0.3)' : 'none',
                   transition: 'box-shadow 0.5s ease',
                 }}
               >
