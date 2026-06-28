@@ -68,7 +68,11 @@ export interface YandexOrderItem {
   offerId: string
   offerName: string
   count: number
-  prices: { buyerPriceBeforeDiscount: number; buyerPrice: number }
+  // Some YM endpoints return price at the item level (flat), others nest it under prices
+  price?: number
+  buyerPrice?: number
+  initialPrice?: number
+  prices?: { buyerPriceBeforeDiscount?: number; buyerPrice?: number; actual?: number }
 }
 
 export interface YandexOrder {

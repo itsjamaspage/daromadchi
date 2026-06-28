@@ -45,12 +45,20 @@ export async function syncFromYandex(
     } catch { /* best-effort */ }
 
     // ── Products (best-effort — don't fail the whole sync if endpoint 404s) ──
+    // shopSkuToMarketSku bridges order item offerId (shopSku) → marketSku string
+    // so we can resolve product_id even when products.sku is null
+    const shopSkuToMarketSku = new Map<string, string>()
     let productRows: {
       shop_id: string; marketplace_product_id: string; title: string; sku: string
       category: string | null; selling_price: number | null; cost_price: null; stock_quantity: number
     }[] = []
     try {
       const entries = await fetchAllYandexProducts(token, campaignId, businessId)
+      for (const e of entries) {
+        if (e.offer.shopSku && e.mapping?.marketSku) {
+          shopSkuToMarketSku.set(e.offer.shopSku, String(e.mapping.marketSku))
+        }
+      }
       const allSkus = entries.map(e => e.offer.shopSku).filter(Boolean)
       const stockMap = await fetchAllYandexStocks(token, campaignId, allSkus)
       productRows = entries.map(e => ({
@@ -257,6 +265,14 @@ export async function syncFromYandex(
         if (p.sku) skuMap.set(p.sku as string, p.id as string)
         if (p.marketplace_product_id) skuMap.set(p.marketplace_product_id as string, p.id as string)
       }
+      // Bridge: offerId (shopSku) → marketSku → product.id
+      // Handles the case where products.sku is null but marketplace_product_id has the marketSku
+      for (const [shopSku, marketSkuStr] of shopSkuToMarketSku) {
+        if (!skuMap.has(shopSku)) {
+          const pid = skuMap.get(marketSkuStr)
+          if (pid) skuMap.set(shopSku, pid)
+        }
+      }
 
       const extIds = yandexOrders.map(o => String(o.id))
       const { data: dbOrders } = await supabase
@@ -277,12 +293,17 @@ export async function syncFromYandex(
         const dbOrderId = orderIdMap.get(String(o.id))
         if (!dbOrderId) continue
         for (const it of o.items ?? []) {
-          console.log('[YM item raw]', JSON.stringify(it).slice(0, 500))
+          const anyIt = it as any
           itemRows.push({
             order_id:       dbOrderId,
             product_id:     skuMap.get(it.offerId) ?? null,
             quantity:       it.count,
-            price_per_unit: it.prices?.buyerPrice ?? 0,
+            // YM list endpoint may omit prices or use different field names
+            price_per_unit: it.prices?.buyerPrice
+              ?? it.prices?.buyerPriceBeforeDiscount
+              ?? anyIt.buyerPrice
+              ?? anyIt.price
+              ?? 0,
           })
         }
       }
