@@ -277,6 +277,7 @@ export async function syncFromYandex(
         const dbOrderId = orderIdMap.get(String(o.id))
         if (!dbOrderId) continue
         for (const it of o.items ?? []) {
+          console.log('[YM item raw]', JSON.stringify(it).slice(0, 500))
           itemRows.push({
             order_id:       dbOrderId,
             product_id:     skuMap.get(it.offerId) ?? null,
