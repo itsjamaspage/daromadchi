@@ -35,7 +35,7 @@ async function fetchSlice(
 ): Promise<MarketplaceSlice> {
   const [kpis, recentOrders, allProducts, chartData, categoryData] = await Promise.all([
     getKpis(days, marketplace, from, to),
-    getOrders(5, marketplace),
+    getOrders(5, marketplace, from, to),
     getProducts(marketplace),
     getDailyRevenue(days, marketplace, from, to),
     marketplace ? Promise.resolve([]) : getCategoryRevenue(days, undefined, from, to),

@@ -324,7 +324,7 @@ export default function DashboardClient({ slices, days, period, from, to, initia
                       <p className="text-[var(--text-muted)] text-[10px] mt-1">{d.noProductsDesc}</p>
                     </td>
                   </tr>
-                ) : allProducts.slice(0, 5).map(p => (
+                ) : [...allProducts].sort((a, b) => (b.sold ?? 0) - (a.sold ?? 0)).slice(0, 5).map(p => (
                   <tr key={p.id} className="hover:bg-[var(--bg-card2)] transition-colors">
                     <td className="py-3 pr-4">
                       <p className="text-[var(--text-base)] font-medium text-xs">{p.title}</p>

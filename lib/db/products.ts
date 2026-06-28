@@ -183,8 +183,7 @@ const _fetchCategoryRevenue = unstable_cache(
       since_iso: sinceIso,
       until_iso: untilIso,
     })
-    console.log('[_fetchCategoryRevenue] rows:', rows?.length, 'error:', error?.message, 'shopIds:', shopIds)
-    if (!rows || rows.length === 0) return []
+    if (error || !rows || rows.length === 0) return []
 
     const total = rows.reduce((s: number, r: any) => s + Number(r.revenue ?? 0), 0)
     return rows.map((r: any) => ({
@@ -206,7 +205,6 @@ export async function getCategoryRevenue(
 ): Promise<CategoryRow[]> {
   if (!supabaseConfigured) return []
   const shopIds = await getShopIds(marketplace)
-  console.log('[getCategoryRevenue] shopIds:', shopIds)
   if (!shopIds || shopIds.length === 0) return []
   return _fetchCategoryRevenue(shopIds.join(','), days, from ?? '', to ?? '')
 }
