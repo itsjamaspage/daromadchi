@@ -140,10 +140,13 @@ export default function PrivacyPage() {
   const [flash, setFlash] = useState<number | null>(null)
   const observerRef = useRef<IntersectionObserver | null>(null)
   const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const scrollLockRef = useRef(false)
+  const scrollLockTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     observerRef.current = new IntersectionObserver(
       (entries) => {
+        if (scrollLockRef.current) return
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
             const idx = Number(entry.target.getAttribute('data-idx'))
@@ -163,6 +166,11 @@ export default function PrivacyPage() {
     if (!el) return
     setActive(idx)
     const y = el.getBoundingClientRect().top + window.scrollY - NAVBAR_H - 16
+
+    scrollLockRef.current = true
+    if (scrollLockTimerRef.current) clearTimeout(scrollLockTimerRef.current)
+    scrollLockTimerRef.current = setTimeout(() => { scrollLockRef.current = false }, 1000)
+
     window.scrollTo({ top: y, behavior: 'smooth' })
     if (flashTimerRef.current) clearTimeout(flashTimerRef.current)
     setFlash(idx)
