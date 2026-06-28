@@ -7,6 +7,9 @@ const supabaseConfigured =
   process.env.NEXT_PUBLIC_SUPABASE_URL &&
   !process.env.NEXT_PUBLIC_SUPABASE_URL.includes('your-project')
 
+// Bug fix: Supabase JS silently ignores .filter('joined_table.column', ...) on embedded resources.
+// All cross-table filtering is now done via RPC (raw SQL) to ensure correct results.
+
 // allShopIdsStr  — all shops for this user (for cross-marketplace SKU dedup + sold counts)
 // targetShopIdsStr — shops filtered by marketplace (for the main products query)
 const _fetchProducts = unstable_cache(
@@ -16,53 +19,35 @@ const _fetchProducts = unstable_cache(
     if (allShopIds.length === 0 || targetShopIds.length === 0) return []
 
     const supabase = createAdminClient()
-    const shopFilter = `(${allShopIds.join(',')})`
 
     const [
       { data: products, error },
-      { data: allUserProducts },
-      { data: soldItems },
+      { data: soldRows },
     ] = await Promise.all([
       supabase
         .from('products')
         .select('id, shop_id, sku, title, cost_price, selling_price, stock_quantity, category, marketplace_product_id, updated_at')
         .in('shop_id', targetShopIds)
         .order('title'),
-      supabase
-        .from('products')
-        .select('id, sku')
-        .in('shop_id', allShopIds),
-      supabase
-        .from('order_items')
-        .select('product_id, quantity, orders!inner(shop_id)')
-        .filter('orders.shop_id', 'in', shopFilter),
+      // Use RPC instead of embedded filter — JS client silently ignores joined-table filters
+      supabase.rpc('get_sold_counts', { shop_ids: allShopIds }),
     ])
     if (error || !products) return []
 
-    const productSkuMap = new Map<string, string | null>((allUserProducts ?? []).map((p: { id: string; sku: string | null }) => [p.id, p.sku] as [string, string | null]))
     const soldByProductId = new Map<string, number>()
-    const soldBySku = new Map<string, number>()
-
-    for (const item of soldItems ?? []) {
-      if (!item.product_id) continue
-      soldByProductId.set(item.product_id, (soldByProductId.get(item.product_id) ?? 0) + item.quantity)
-      const sku = productSkuMap.get(item.product_id)
-      if (sku) soldBySku.set(sku, (soldBySku.get(sku) ?? 0) + item.quantity)
+    for (const row of soldRows ?? []) {
+      if (row.product_id) soldByProductId.set(row.product_id, Number(row.qty_sold ?? 0))
     }
 
-    return products.map((p: any) => {
-      const sold = soldByProductId.get(p.id) ?? 0
-
-      return {
-        ...p,
-        available_stock: p.stock_quantity,
-        profit: Number(p.selling_price ?? 0) - Number(p.cost_price ?? 0),
-        sold,
-        is_shared: false,
-      }
-    })
+    return products.map((p: any) => ({
+      ...p,
+      available_stock: p.stock_quantity,
+      profit: Number(p.selling_price ?? 0) - Number(p.cost_price ?? 0),
+      sold: soldByProductId.get(p.id) ?? 0,
+      is_shared: false,
+    }))
   },
-  ['products'],
+  ['products-v2'],
   { revalidate: 30 },
 )
 
@@ -103,41 +88,23 @@ const _fetchProductSales = unstable_cache(
       sinceIso = d.toISOString()
     }
 
-    const shopFilter = `(${shopIds.join(',')})`
-    let query = supabase
-      .from('order_items')
-      .select('product_id, quantity, price_per_unit, orders!inner(shop_id, status, ordered_at), products(title, sku)')
-      .filter('orders.shop_id', 'in', shopFilter)
-      .filter('orders.status', 'neq', 'cancelled')
-      .not('product_id', 'is', null)
-    if (sinceIso) query = query.filter('orders.ordered_at', 'gte', sinceIso)
-    if (untilIso) query = query.filter('orders.ordered_at', 'lte', untilIso)
+    // Use RPC — embedded .filter('orders.column', ...) is silently ignored by Supabase JS
+    const { data: rows } = await supabase.rpc('get_product_sales', {
+      shop_ids: shopIds,
+      since_iso: sinceIso,
+      until_iso: untilIso,
+    })
+    if (!rows || rows.length === 0) return []
 
-    const { data: items } = await query
-    if (!items || items.length === 0) return []
-
-    const byProduct = new Map<string, ProductSalesRow>()
-    for (const item of items) {
-      if (!item.product_id) continue
-      const prod = Array.isArray(item.products) ? item.products[0] : item.products
-      const existing = byProduct.get(item.product_id)
-      if (existing) {
-        existing.qty_sold += item.quantity ?? 0
-        existing.revenue  += (item.quantity ?? 0) * (item.price_per_unit ?? 0)
-      } else {
-        byProduct.set(item.product_id, {
-          product_id: item.product_id,
-          title:      prod?.title ?? 'Unknown',
-          sku:        prod?.sku   ?? null,
-          qty_sold:   item.quantity ?? 0,
-          revenue:    (item.quantity ?? 0) * (item.price_per_unit ?? 0),
-        })
-      }
-    }
-
-    return [...byProduct.values()].sort((a, b) => b.qty_sold - a.qty_sold)
+    return rows.map((r: any) => ({
+      product_id: r.product_id,
+      title:      r.title ?? 'Unknown',
+      sku:        r.sku ?? null,
+      qty_sold:   Number(r.qty_sold ?? 0),
+      revenue:    Number(r.revenue ?? 0),
+    }))
   },
-  ['product-sales'],
+  ['product-sales-v2'],
   { revalidate: 30 },
 )
 
@@ -158,46 +125,6 @@ export interface CategoryRow {
   revenue: number
   profit: number
   percent: number
-}
-
-async function _computeCategoryRevenueJs(
-  supabase: ReturnType<typeof createAdminClient>,
-  shopIds: string[],
-  sinceIso: string | null,
-  untilIso: string | null,
-): Promise<CategoryRow[]> {
-  const shopFilter = `(${shopIds.join(',')})`
-  let query = supabase
-    .from('order_items')
-    .select('quantity, price_per_unit, products!inner(category, cost_price), orders!inner(shop_id, status, ordered_at)')
-    .filter('orders.shop_id', 'in', shopFilter)
-    .filter('orders.status', 'neq', 'cancelled')
-    .not('product_id', 'is', null)
-  if (sinceIso) query = query.filter('orders.ordered_at', 'gte', sinceIso)
-  if (untilIso) query = query.filter('orders.ordered_at', 'lte', untilIso)
-
-  const { data: items } = await query
-  if (!items || items.length === 0) return []
-
-  const byCategory = new Map<string, { revenue: number; cost: number }>()
-  for (const item of items) {
-    const prod = Array.isArray(item.products) ? item.products[0] : item.products
-    const cat = prod?.category ?? 'Other'
-    const rev = (item.quantity ?? 0) * (item.price_per_unit ?? 0)
-    const cost = (item.quantity ?? 0) * Number(prod?.cost_price ?? 0)
-    const existing = byCategory.get(cat) ?? { revenue: 0, cost: 0 }
-    byCategory.set(cat, { revenue: existing.revenue + rev, cost: existing.cost + cost })
-  }
-
-  const total = [...byCategory.values()].reduce((s, v) => s + v.revenue, 0)
-  return [...byCategory.entries()]
-    .sort((a, b) => b[1].revenue - a[1].revenue)
-    .map(([name, v]) => ({
-      name,
-      revenue: v.revenue,
-      profit: v.revenue - v.cost,
-      percent: total > 0 ? (v.revenue / total) * 100 : 0,
-    }))
 }
 
 const _fetchCategoryRevenue = unstable_cache(
@@ -223,20 +150,17 @@ const _fetchCategoryRevenue = unstable_cache(
       since_iso: sinceIso,
       until_iso: untilIso,
     })
+    if (error || !rows || rows.length === 0) return []
 
-    if (!error && rows && rows.length > 0) {
-      const total = rows.reduce((s: number, r: any) => s + Number(r.revenue ?? 0), 0)
-      return rows.map((r: any) => ({
-        name: r.category,
-        revenue: Number(r.revenue ?? 0),
-        profit: Number(r.revenue ?? 0) - Number(r.cost ?? 0),
-        percent: total > 0 ? (Number(r.revenue ?? 0) / total) * 100 : 0,
-      }))
-    }
-
-    return _computeCategoryRevenueJs(supabase, shopIds, sinceIso, untilIso)
+    const total = rows.reduce((s: number, r: any) => s + Number(r.revenue ?? 0), 0)
+    return rows.map((r: any) => ({
+      name:    r.category,
+      revenue: Number(r.revenue ?? 0),
+      profit:  Number(r.revenue ?? 0) - Number(r.cost ?? 0),
+      percent: total > 0 ? (Number(r.revenue ?? 0) / total) * 100 : 0,
+    }))
   },
-  ['category-revenue-v4'],
+  ['category-revenue-v5'],
   { revalidate: 30 },
 )
 
