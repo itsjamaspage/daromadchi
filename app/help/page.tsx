@@ -3,7 +3,8 @@
 import Link from 'next/link'
 import { useState } from 'react'
 import { getCategoryList } from '@/lib/help-content'
-import { useLang } from '@/app/providers'
+import { useLang, useTheme } from '@/app/providers'
+import SectionHoverAnim from '@/app/components/SectionHoverAnim'
 
 const T = {
   uz: {
@@ -43,6 +44,8 @@ const T = {
 
 export default function HelpPage() {
   const { lang } = useLang()
+  const { theme } = useTheme()
+  const isDark = theme === 'dark'
   const t = T[lang] ?? T.uz
   const categories = getCategoryList(lang)
   const [query, setQuery] = useState('')
@@ -57,7 +60,11 @@ export default function HelpPage() {
     : []
 
   return (
-    <main className="max-w-5xl mx-auto px-4 sm:px-6 py-12">
+    <main className="relative overflow-hidden max-w-5xl mx-auto px-4 sm:px-6 py-12">
+      <SectionHoverAnim
+        colors={isDark ? ['#ffffff', '#f5f5f5', '#ebebeb', '#dcdcdc', '#cdcdcd'] : ['#ffffff', '#ffffff', '#f8fafc', '#f0f0f0', '#e8e8e8']}
+        opacity={0.5}
+      />
       {/* Hero */}
       <div className="text-center mb-12">
         <h1
