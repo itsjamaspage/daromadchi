@@ -160,6 +160,46 @@ export interface CategoryRow {
   percent: number
 }
 
+async function _computeCategoryRevenueJs(
+  supabase: ReturnType<typeof createAdminClient>,
+  shopIds: string[],
+  sinceIso: string | null,
+  untilIso: string | null,
+): Promise<CategoryRow[]> {
+  const shopFilter = `(${shopIds.join(',')})`
+  let query = supabase
+    .from('order_items')
+    .select('quantity, price_per_unit, products!inner(category, cost_price), orders!inner(shop_id, status, ordered_at)')
+    .filter('orders.shop_id', 'in', shopFilter)
+    .filter('orders.status', 'neq', 'cancelled')
+    .not('product_id', 'is', null)
+  if (sinceIso) query = query.filter('orders.ordered_at', 'gte', sinceIso)
+  if (untilIso) query = query.filter('orders.ordered_at', 'lte', untilIso)
+
+  const { data: items } = await query
+  if (!items || items.length === 0) return []
+
+  const byCategory = new Map<string, { revenue: number; cost: number }>()
+  for (const item of items) {
+    const prod = Array.isArray(item.products) ? item.products[0] : item.products
+    const cat = prod?.category ?? 'Other'
+    const rev = (item.quantity ?? 0) * (item.price_per_unit ?? 0)
+    const cost = (item.quantity ?? 0) * Number(prod?.cost_price ?? 0)
+    const existing = byCategory.get(cat) ?? { revenue: 0, cost: 0 }
+    byCategory.set(cat, { revenue: existing.revenue + rev, cost: existing.cost + cost })
+  }
+
+  const total = [...byCategory.values()].reduce((s, v) => s + v.revenue, 0)
+  return [...byCategory.entries()]
+    .sort((a, b) => b[1].revenue - a[1].revenue)
+    .map(([name, v]) => ({
+      name,
+      revenue: v.revenue,
+      profit: v.revenue - v.cost,
+      percent: total > 0 ? (v.revenue / total) * 100 : 0,
+    }))
+}
+
 const _fetchCategoryRevenue = unstable_cache(
   async (shopIdsStr: string, days: number, from: string, to: string): Promise<CategoryRow[]> => {
     const shopIds = shopIdsStr ? shopIdsStr.split(',') : []
@@ -183,17 +223,20 @@ const _fetchCategoryRevenue = unstable_cache(
       since_iso: sinceIso,
       until_iso: untilIso,
     })
-    if (error || !rows || rows.length === 0) return []
 
-    const total = rows.reduce((s: number, r: any) => s + Number(r.revenue ?? 0), 0)
-    return rows.map((r: any) => ({
-      name: r.category,
-      revenue: Number(r.revenue ?? 0),
-      profit: Number(r.revenue ?? 0) - Number(r.cost ?? 0),
-      percent: total > 0 ? (Number(r.revenue ?? 0) / total) * 100 : 0,
-    }))
+    if (!error && rows && rows.length > 0) {
+      const total = rows.reduce((s: number, r: any) => s + Number(r.revenue ?? 0), 0)
+      return rows.map((r: any) => ({
+        name: r.category,
+        revenue: Number(r.revenue ?? 0),
+        profit: Number(r.revenue ?? 0) - Number(r.cost ?? 0),
+        percent: total > 0 ? (Number(r.revenue ?? 0) / total) * 100 : 0,
+      }))
+    }
+
+    return _computeCategoryRevenueJs(supabase, shopIds, sinceIso, untilIso)
   },
-  ['category-revenue-v3'],
+  ['category-revenue-v4'],
   { revalidate: 30 },
 )
 

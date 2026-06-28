@@ -273,16 +273,10 @@ export async function syncFromYandex(
         order_id: string; product_id: string | null;
         quantity: number; price_per_unit: number
       }[] = []
-      const skuMapKeys = [...skuMap.keys()].slice(0, 5)
-      let loggedOfferIds = false
       for (const o of yandexOrders) {
         const dbOrderId = orderIdMap.get(String(o.id))
         if (!dbOrderId) continue
         for (const it of o.items ?? []) {
-          if (!loggedOfferIds) {
-            console.log('[ym-sync] sample offerId:', it.offerId, '| skuMap keys sample:', skuMapKeys)
-            loggedOfferIds = true
-          }
           itemRows.push({
             order_id:       dbOrderId,
             product_id:     skuMap.get(it.offerId) ?? null,

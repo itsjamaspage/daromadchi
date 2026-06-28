@@ -3,7 +3,7 @@ import DashboardClient from './DashboardClient'
 import type { MarketplaceSlice } from './DashboardClient'
 import { getKpis } from '@/lib/db/kpis'
 import { getOrders } from '@/lib/db/orders'
-import { getProducts, getCategoryRevenue } from '@/lib/db/products'
+import { getProducts, getProductSales, getCategoryRevenue } from '@/lib/db/products'
 import { getDailyRevenue } from '@/lib/db/revenue'
 import { getUserShops } from '@/lib/db/shop-context'
 import WelcomePopup from '@/components/dashboard/WelcomePopup'
@@ -33,10 +33,11 @@ async function fetchSlice(
   from?: string,
   to?: string,
 ): Promise<MarketplaceSlice> {
-  const [kpis, recentOrders, allProducts, chartData, categoryData] = await Promise.all([
+  const [kpis, recentOrders, allProducts, productSales, chartData, categoryData] = await Promise.all([
     getKpis(days, marketplace, from, to),
     getOrders(5, marketplace, from, to),
     getProducts(marketplace),
+    getProductSales(days, marketplace, from, to),
     getDailyRevenue(days, marketplace, from, to),
     marketplace ? Promise.resolve([]) : getCategoryRevenue(days, undefined, from, to),
   ])
@@ -44,6 +45,7 @@ async function fetchSlice(
     kpis,
     recentOrders,
     allProducts,
+    productSales,
     chartData,
     categoryData,
     hasConnectedShop,
