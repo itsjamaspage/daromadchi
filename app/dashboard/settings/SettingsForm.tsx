@@ -49,7 +49,9 @@ function UzumCard({ shop, userId: _userId }: { shop: Shop | null; userId: string
         body: JSON.stringify({ marketplace: 'uzum', token: apiKey.trim(), shopName: "Uzum do'konim" }),
       })
       const data = await res.json()
-      setSaveMsg(data.ok ? { ok: true, text: 'Saqlandi!' } : { ok: false, text: data.error ?? 'Xato' })
+      setSaveMsg(data.ok
+        ? { ok: true, text: data.message ?? 'Saqlandi!' }
+        : { ok: false, text: data.error ?? 'Xato' })
       if (data.ok) { setApiKey(''); router.refresh() }
     } catch {
       setSaveMsg({ ok: false, text: "Server bilan bog'lanishda xato" })
@@ -218,7 +220,9 @@ function YandexCard({ shop, userId: _userId }: { shop: Shop | null; userId: stri
         }),
       })
       const data = await res.json()
-      setSaveMsg(data.ok ? { ok: true, text: 'Saqlandi!' } : { ok: false, text: data.error ?? 'Xato' })
+      setSaveMsg(data.ok
+        ? { ok: true, text: data.message ?? 'Saqlandi!' }
+        : { ok: false, text: data.error ?? 'Xato' })
       if (data.ok) { setApiKey(''); router.refresh() }
     } catch {
       setSaveMsg({ ok: false, text: "Server bilan bog'lanishda xato" })
@@ -371,7 +375,9 @@ function WildberriesCard({ shop, userId: _userId }: { shop: Shop | null; userId:
         body: JSON.stringify({ marketplace: 'wildberries', token: apiKey.trim(), shopName: 'Wildberries do\'konim' }),
       })
       const data = await res.json()
-      setSaveMsg(data.ok ? { ok: true, text: 'Saqlandi!' } : { ok: false, text: data.error ?? 'Xato' })
+      setSaveMsg(data.ok
+        ? { ok: true, text: data.message ?? 'Saqlandi!' }
+        : { ok: false, text: data.error ?? 'Xato' })
       if (data.ok) { setApiKey(''); router.refresh() }
     } catch {
       setSaveMsg({ ok: false, text: "Server bilan bog'lanishda xato" })
