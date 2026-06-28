@@ -295,6 +295,11 @@ export async function syncFromYandex(
         if (!dbOrderId) continue
         for (const it of o.items ?? []) {
           const anyIt = it as any
+          console.log('[YM-DEBUG] offerId:', JSON.stringify(it.offerId),
+            '| type:', typeof (it as any).offerId,
+            '| skuMap size:', skuMap.size,
+            '| skuMap has offerId:', skuMap.has(String(it.offerId)),
+            '| first 3 skuMap keys:', JSON.stringify([...skuMap.keys()].slice(0, 3)))
           itemRows.push({
             order_id:       dbOrderId,
             product_id:     skuMap.get(String(it.offerId)) ?? null,
