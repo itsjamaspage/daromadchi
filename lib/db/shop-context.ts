@@ -44,3 +44,17 @@ export const getShopIds = cache(async (marketplace?: MarketplaceType): Promise<s
   const filtered = marketplace ? shops.filter(s => s.marketplace === marketplace) : shops
   return filtered.map(s => s.id)
 })
+
+export async function getShopLaunchDate(): Promise<string | null> {
+  const supabase = createAdminClient()
+  const shopIds = await getShopIds()
+  if (!shopIds || shopIds.length === 0) return null
+  const { data } = await supabase
+    .from('orders')
+    .select('ordered_at')
+    .in('shop_id', shopIds)
+    .order('ordered_at', { ascending: true })
+    .limit(1)
+    .single()
+  return data?.ordered_at ?? null
+}

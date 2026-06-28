@@ -104,7 +104,7 @@ const _fetchProductSales = unstable_cache(
       revenue:    Number(r.revenue ?? 0),
     }))
   },
-  ['product-sales-v2'],
+  ['product-sales-v3'],
   { revalidate: 30 },
 )
 
@@ -160,7 +160,7 @@ const _fetchCategoryRevenue = unstable_cache(
       percent: total > 0 ? (Number(r.revenue ?? 0) / total) * 100 : 0,
     }))
   },
-  ['category-revenue-v5'],
+  ['category-revenue-v6'],
   { revalidate: 30 },
 )
 

@@ -5,7 +5,7 @@ import { getKpis } from '@/lib/db/kpis'
 import { getOrders } from '@/lib/db/orders'
 import { getProducts, getProductSales, getCategoryRevenue } from '@/lib/db/products'
 import { getDailyRevenue } from '@/lib/db/revenue'
-import { getUserShops } from '@/lib/db/shop-context'
+import { getUserShops, getShopLaunchDate } from '@/lib/db/shop-context'
 import WelcomePopup from '@/components/dashboard/WelcomePopup'
 import type { MarketplaceType } from '@/lib/types'
 
@@ -59,10 +59,20 @@ interface Props {
 export default async function DashboardPage({ searchParams }: Props) {
   const params             = await searchParams
   const period             = params?.days ?? '365'
-  const days               = parseDays(period)
-  const from               = params?.from
-  const to                 = params?.to
+  let   days               = parseDays(period)
+  let   from               = params?.from
+  let   to                 = params?.to
   const initialMarketplace = parseMarketplace(params)
+
+  // Default view: use the earliest order date as "from" so users always see all their data
+  if (!from && !to && period === '365') {
+    const launchDate = await getShopLaunchDate()
+    if (launchDate) {
+      from = launchDate.slice(0, 10)
+      to   = new Date().toISOString().slice(0, 10)
+      days = Math.ceil((Date.now() - new Date(from).getTime()) / 86_400_000)
+    }
+  }
 
   const allShops   = await getUserShops()
   const hasShops   = allShops.length > 0
