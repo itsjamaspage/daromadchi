@@ -268,9 +268,10 @@ export async function syncFromYandex(
       // Bridge: offerId (shopSku) → marketSku → product.id
       // Handles the case where products.sku is null but marketplace_product_id has the marketSku
       for (const [shopSku, marketSkuStr] of shopSkuToMarketSku) {
-        if (!skuMap.has(shopSku)) {
+        const shopSkuStr = String(shopSku)
+        if (!skuMap.has(shopSkuStr)) {
           const pid = skuMap.get(marketSkuStr)
-          if (pid) skuMap.set(shopSku, pid)
+          if (pid) skuMap.set(shopSkuStr, pid)
         }
       }
 
@@ -296,7 +297,7 @@ export async function syncFromYandex(
           const anyIt = it as any
           itemRows.push({
             order_id:       dbOrderId,
-            product_id:     skuMap.get(it.offerId) ?? null,
+            product_id:     skuMap.get(String(it.offerId)) ?? null,
             quantity:       it.count,
             // YM list endpoint may omit prices or use different field names
             price_per_unit: it.prices?.buyerPrice
