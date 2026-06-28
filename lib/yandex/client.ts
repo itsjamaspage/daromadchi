@@ -5,6 +5,8 @@
 //   Api-Key; sending such a key as Bearer returns FORBIDDEN "OAuth token is invalid".
 // Docs: https://yandex.ru/dev/market/partner-api/doc/
 
+import { marketplaceFetch } from '@/lib/marketplace-readonly-guard'
+
 export const YANDEX_API_BASE = 'https://api.partner.market.yandex.ru'
 
 export class YandexApiError extends Error {
@@ -34,7 +36,7 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 3, baseMs = 600): Pr
 }
 
 async function request<T>(path: string, token: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${YANDEX_API_BASE}${path}`, {
+  const res = await marketplaceFetch(`${YANDEX_API_BASE}${path}`, {
     ...options,
     headers: {
       'Api-Key': token,

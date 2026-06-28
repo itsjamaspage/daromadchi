@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { marketplaceFetch } from '@/lib/marketplace-readonly-guard'
 
 // Correct base URLs per WB API docs (migrated from suppliers-api Jan 2025)
 const WB_CONTENT = 'https://content-api.wildberries.ru'
@@ -43,7 +44,7 @@ export async function syncFromWildberries(
     const allCards: unknown[] = []
 
     for (let page = 0; page < 20; page++) {
-      const res = await fetch(`${WB_CONTENT}/content/v2/get/cards/list`, {
+      const res = await marketplaceFetch(`${WB_CONTENT}/content/v2/get/cards/list`, {
         method: 'POST',
         headers: bearerHeaders(token),
         body: JSON.stringify({ settings: { cursor, filter: { withPhoto: -1 } } }),
@@ -90,7 +91,7 @@ export async function syncFromWildberries(
 
   // ─── Stocks (Marketplace API v1) — update stock_quantity ───────────────────
   try {
-    const stocksRes = await fetch(
+    const stocksRes = await marketplaceFetch(
       'https://marketplace-api.wildberries.ru/api/v3/stocks/0?limit=1000&offset=0',
       { headers: bearerHeaders(token) },
     )
@@ -125,7 +126,7 @@ export async function syncFromWildberries(
         : (() => { const d = new Date(); d.setDate(d.getDate() - 365); return d })())
     const df = sinceDt.toISOString().split('T')[0]
 
-    const res = await fetch(
+    const res = await marketplaceFetch(
       `${WB_STATS}/api/v1/supplier/orders?dateFrom=${df}&flag=0`,
       { headers: statsHeaders(token) },
     )
