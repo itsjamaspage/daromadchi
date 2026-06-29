@@ -184,7 +184,7 @@ export default function StockAlertsView({ alerts, settings: initialSettings }: P
                         <span className={`text-sm font-bold ${
                           isCritical ? 'text-red-400' : isWarning ? 'text-amber-400' : 'text-[var(--text-base)]'
                         }`}>
-                          {alert.currentStock} {d.unitsSuffix}
+                          {alert.isShared ? `Umumiy qoldiq: ${alert.currentStock}` : alert.currentStock} {d.unitsSuffix}
                         </span>
                       </td>
                       <td className="px-5 py-3.5 text-[var(--text-muted)] text-sm">{alert.threshold} {d.unitsSuffix}</td>

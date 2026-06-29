@@ -17,21 +17,23 @@ export async function getStockAlerts(): Promise<StockAlert[]> {
   const supabase = createAdminClient()
   const [{ data: settings }, { data: shopRows }] = await Promise.all([
     supabase.from('user_settings').select('alert_stock_threshold').eq('user_id', userId).single(),
-    supabase.from('shops').select('id, marketplace').eq('user_id', userId),
+    supabase.from('shops').select('id, marketplace, warehouse_id').eq('user_id', userId),
   ])
 
   const threshold = settings?.alert_stock_threshold ?? 15
   const shopIds = (shopRows ?? []).map((s: { id: string }) => s.id)
   if (shopIds.length === 0) return []
 
-  const shopMarketplace = new Map<string, string>()
-  for (const s of shopRows ?? []) shopMarketplace.set(s.id as string, s.marketplace as string)
+  const shopInfo = new Map<string, { marketplace: string; warehouseId: string | null }>()
+  for (const s of shopRows ?? []) {
+    shopInfo.set(s.id as string, { marketplace: s.marketplace as string, warehouseId: (s.warehouse_id as string | null) ?? null })
+  }
 
+  // Fetch ALL products — we calculate available_stock after warehouse grouping, then filter
   const { data, error } = await supabase
     .from('products')
     .select('id, title, sku, stock_quantity, shop_id')
     .in('shop_id', shopIds)
-    .lte('stock_quantity', threshold)
 
   if (error || !data || data.length === 0) return []
 
@@ -53,24 +55,50 @@ export async function getStockAlerts(): Promise<StockAlert[]> {
     }
   } catch { /* best-effort */ }
 
+  // Build warehouse+SKU sold totals and shop counts
+  const groupTotalSold = new Map<string, number>()
+  const groupShopCount = new Map<string, number>()
+  for (const p of data as Record<string, unknown>[]) {
+    if (!p.sku) continue
+    const wid = shopInfo.get(String(p.shop_id))?.warehouseId
+    if (!wid) continue
+    const key = `${wid}:${p.sku}`
+    groupTotalSold.set(key, (groupTotalSold.get(key) ?? 0) + (salesMap.get(String(p.id)) ?? 0))
+    groupShopCount.set(key, (groupShopCount.get(key) ?? 0) + 1)
+  }
+
   const PERIOD_DAYS = 30
-  return (data as Record<string, unknown>[]).map(row => {
-    const totalSold = salesMap.get(String(row.id)) ?? 0
-    const dailySales = totalSold / PERIOD_DAYS
-    const daysLeft = dailySales > 0
-      ? Math.floor(Number(row.stock_quantity) / dailySales)
-      : 999
-    return {
+  const alerts: StockAlert[] = []
+
+  for (const row of data as Record<string, unknown>[]) {
+    const wid      = shopInfo.get(String(row.shop_id))?.warehouseId
+    const key      = wid && row.sku ? `${wid}:${String(row.sku)}` : null
+    const isShared = key ? (groupShopCount.get(key) ?? 0) > 1 : false
+
+    const availableStock = isShared && key
+      ? Math.max(0, Number(row.stock_quantity) - (groupTotalSold.get(key) ?? 0))
+      : Number(row.stock_quantity)
+
+    if (availableStock > threshold) continue
+
+    const sold       = salesMap.get(String(row.id)) ?? 0
+    const dailySales = sold / PERIOD_DAYS
+    const daysLeft   = dailySales > 0 ? Math.floor(availableStock / dailySales) : 999
+
+    alerts.push({
       productId:    String(row.id),
       productTitle: String(row.title),
       sku:          String(row.sku ?? ''),
-      currentStock: Number(row.stock_quantity),
+      currentStock: availableStock,
       threshold,
       daysLeft,
       dailySales:   Math.round(dailySales * 10) / 10,
-      marketplace:  (shopMarketplace.get(String(row.shop_id)) ?? 'uzum') as 'uzum' | 'yandex_market',
-    }
-  }).sort((a, b) => a.daysLeft - b.daysLeft)
+      marketplace:  (shopInfo.get(String(row.shop_id))?.marketplace ?? 'uzum') as StockAlert['marketplace'],
+      isShared,
+    })
+  }
+
+  return alerts.sort((a, b) => a.daysLeft - b.daysLeft)
 }
 
 export interface AlertSettings {

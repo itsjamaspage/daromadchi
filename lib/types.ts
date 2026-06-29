@@ -105,6 +105,7 @@ export interface Shop {
   token_valid: boolean | null
   last_synced_at: string | null
   created_at: string
+  warehouse_id?: string | null
 }
 
 export interface Product {
@@ -161,11 +162,12 @@ export interface StockAlert {
   productId: string
   productTitle: string
   sku: string
-  currentStock: number
+  currentStock: number   // warehouse-aware available stock
   threshold: number
-  daysLeft: number      // estimated days until stockout at current sales rate
-  dailySales: number    // avg daily sales
-  marketplace: 'uzum' | 'yandex_market'
+  daysLeft: number       // estimated days until stockout at current sales rate
+  dailySales: number     // avg daily sales
+  marketplace: MarketplaceType
+  isShared?: boolean     // true when stock is pooled across a warehouse
 }
 
 // ── Payouts ───────────────────────────────────────────────────────────────────

@@ -323,9 +323,9 @@ export default function ProductsTable({ products }: { products: Product[] }) {
                               <span
                                 className="text-[10px] font-medium px-1.5 py-0.5 rounded"
                                 style={{ background: 'rgba(168,85,247,0.12)', color: '#a855f7' }}
-                                title="Bu mahsulot bir nechta do'konda sotiladi — zaxira umumiy"
+                                title="Bu SKU bir nechta do'kon o'rtasida bo'linadi"
                               >
-                                shared
+                                Umumiy
                               </span>
                             )}
                           </div>
