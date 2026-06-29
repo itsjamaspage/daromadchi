@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Suspense } from 'react'
 import Link from 'next/link'
@@ -54,12 +54,19 @@ interface Props {
   hasShops: boolean
 }
 
-const STATUS_CLASS: Record<string, string> = {
+const STATUS_CLASS_DARK: Record<string, string> = {
   pending:   'bg-slate-500/10 text-[var(--text-muted)]',
   confirmed: 'bg-blue-500/10 text-blue-400',
   delivered: 'bg-emerald-500/10 text-emerald-400',
   cancelled: 'bg-red-500/10 text-red-400',
   returned:  'bg-amber-500/10 text-amber-400',
+}
+const STATUS_CLASS_LIGHT: Record<string, string> = {
+  pending:   'bg-slate-500/10 text-slate-600',
+  confirmed: 'bg-blue-500/10 text-blue-700',
+  delivered: 'bg-emerald-500/10 text-emerald-700',
+  cancelled: 'bg-red-500/10 text-red-600',
+  returned:  'bg-amber-500/10 text-amber-700',
 }
 
 export default function DashboardClient({ slices, days, period, from, to, initialMarketplace, hasShops }: Props) {
@@ -234,6 +241,48 @@ export default function DashboardClient({ slices, days, period, from, to, initia
             </div>
           )
         }
+        // Marketplace-specific not-connected card
+        if (marketplace) {
+          const mpName = ({ uzum: 'Uzum Market', yandex_market: 'Yandex Market', wildberries: 'Wildberries' } as Record<string, string>)[marketplace]
+          const mpLink = displayLinks[0]
+          return (
+            <div className="bg-[var(--bg-card2)] border border-dashed rounded-2xl p-10" style={{ borderColor: 'rgba(131,192,249,0.3)' }}>
+              <div className="max-w-md mx-auto text-center">
+                <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: 'rgba(131,192,249,0.12)', border: '1px solid rgba(131,192,249,0.25)' }}>
+                  <Settings className="w-7 h-7" style={{ color: '#83c0f9' }} />
+                </div>
+                <h2 className="text-[var(--text-base)] font-bold text-lg mb-2">{mpName} ulanmagan</h2>
+                <p className="text-[var(--text-muted)] text-sm mb-6">API tokenini ulang va quyidagi ma&apos;lumotlarni ko&apos;ring:</p>
+                <div className="grid grid-cols-2 gap-3 mb-8 text-left max-w-xs mx-auto">
+                  {([
+                    [DollarSign,  "Daromad va foyda"],
+                    [ShoppingBag, "Buyurtmalar tarixi"],
+                    [TrendingUp,  "Sotuv dinamikasi"],
+                    [Package,     "Mahsulot qoldiqlari"],
+                  ] as [React.ElementType, string][]).map(([Icon, label]) => (
+                    <div key={label} className="flex items-center gap-2 text-sm" style={{ color: 'var(--text-muted)' }}>
+                      <Icon className="w-4 h-4 flex-shrink-0" style={{ color: '#83c0f9' }} />
+                      {label}
+                    </div>
+                  ))}
+                </div>
+                <div className="flex items-center justify-center gap-3 flex-wrap">
+                  <Link href="/dashboard/settings"
+                    className="inline-flex items-center gap-2 btn-primary text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors" style={{ boxShadow: '0 4px 14px rgba(131,192,249,0.2)' }}>
+                    <Settings className="w-4 h-4" /> {mpName} ulash
+                  </Link>
+                  {mpLink && (
+                    <Link href={mpLink.url} target="_blank" rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 text-sm font-medium px-5 py-2.5 rounded-xl border transition-all" style={{ color: 'var(--text-muted)', borderColor: 'var(--border2)' }}>
+                      {mpLink.label} <ArrowRight className="w-3.5 h-3.5" />
+                    </Link>
+                  )}
+                </div>
+              </div>
+            </div>
+          )
+        }
+
         return (
           <div className="bg-[var(--bg-card2)] border border-dashed rounded-2xl p-10 text-center" style={{ borderColor: 'rgba(131,192,249,0.3)' }}>
             <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: 'rgba(131,192,249,0.12)', border: '1px solid rgba(131,192,249,0.25)' }}>
@@ -269,7 +318,7 @@ export default function DashboardClient({ slices, days, period, from, to, initia
 
       {/* Stock alerts */}
       {!hiddenWidgets.has('alerts') && (
-        <StockAlerts products={allProducts} />
+        <StockAlerts products={allProducts} isDark={isDark} />
       )}
 
       {/* Chart + recent orders */}
@@ -297,7 +346,7 @@ export default function DashboardClient({ slices, days, period, from, to, initia
                     <p className="text-sm text-[var(--text-base)] font-medium truncate font-mono">{order.order_id_external ?? order.id.slice(0, 8)}</p>
                     <p className="text-xs text-[var(--text-muted)] truncate">{{ uzum: 'Uzum Market', yandex_market: 'Yandex Market', wildberries: 'Wildberries' }[order.marketplace] ?? order.marketplace}</p>
                   </div>
-                  <span className={`text-[11px] font-medium px-2 py-0.5 rounded-lg flex-shrink-0 ${STATUS_CLASS[order.status] ?? 'bg-slate-500/10 text-[var(--text-muted)]'}`}>
+                  <span className={`text-[11px] font-medium px-2 py-0.5 rounded-lg flex-shrink-0 ${(isDark ? STATUS_CLASS_DARK : STATUS_CLASS_LIGHT)[order.status] ?? 'bg-slate-500/10 text-[var(--text-muted)]'}`}>
                     {s[order.status as keyof typeof s] ?? order.status}
                   </span>
                 </div>
@@ -343,7 +392,7 @@ export default function DashboardClient({ slices, days, period, from, to, initia
                         <p className="text-[var(--text-muted)] text-xs">{p.sku}</p>
                       </td>
                       <td className="py-3 pr-4 text-right">
-                        <span className="text-emerald-400 font-medium text-xs">{formatSum(p.revenue)}</span>
+                        <span className={`${isDark ? 'text-emerald-400' : 'text-emerald-700'} font-medium text-xs`}>{formatSum(p.revenue)}</span>
                       </td>
                       <td className="py-3 text-right text-[var(--text-dim)] text-xs">{p.qty_sold}</td>
                     </tr>
