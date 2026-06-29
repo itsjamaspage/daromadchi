@@ -22,6 +22,8 @@ const APPROVED_POST_ENDPOINTS: RegExp[] = [
   /api\.partner\.market\.yandex\.ru\/v2\/campaigns\/\d+\/stats\/skus/,
   // Wildberries Content API — paginated card list (POST is the read method)
   /content-api\.wildberries\.ru\/content\/v2\/get\/cards\/list/,
+  // Uzum GraphQL public search API (read-only market research, no auth)
+  /^https:\/\/graphql\.uzum\.uz/,
 ]
 
 const WRITE_METHODS = new Set(['PUT', 'PATCH', 'DELETE'])
