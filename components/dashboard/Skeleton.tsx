@@ -1,5 +1,5 @@
 export function SkeletonBox({ className = '', style }: { className?: string; style?: React.CSSProperties }) {
-  return <div className={`animate-pulse bg-[var(--bg-card2)] rounded-xl ${className}`} style={style} />
+  return <div className={`animate-pulse rounded-xl ${className}`} style={{ background: 'var(--skeleton-pulse)', ...style }} />
 }
 
 export function KpiSkeleton() {

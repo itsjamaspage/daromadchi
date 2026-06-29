@@ -61,6 +61,8 @@ html, body {
   --hairline:   rgba(255, 255, 255, 0.08);
   --surface-soft: #1e1e1e;
   --color-scheme: dark;
+
+  --skeleton-pulse: rgba(125, 211, 252, 0.09);  /* subtle blue shimmer on dark bg */
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -94,6 +96,8 @@ html, body {
   --hairline:   #e2e2e7;
   --surface-soft: #f4f4f4;
   --color-scheme: light;
+
+  --skeleton-pulse: rgba(17, 60, 120, 0.09);  /* subtle ink shimmer on light bg */
 }
 
 /* ═══════════════════════════════════════════════════════════════════
