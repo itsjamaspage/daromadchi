@@ -167,7 +167,7 @@ function LoginForm() {
   const bg     = isDark ? '#161616'  : '#e8f4fe'
   const card   = isDark ? '#1e1e1e'  : '#ffffff'
   const border = isDark ? 'rgba(131,192,249,0.12)' : 'rgba(131,192,249,0.35)'
-  const inputBg = isDark ? '#252525' : '#d6ecfc'
+  const inputBg = isDark ? '#252525' : '#ffffff'
   const inputBorder = isDark ? 'rgba(131,192,249,0.15)' : 'rgba(131,192,249,0.45)'
   const textBase  = isDark ? '#e2e8f0' : '#0e2233'
   const textMuted = isDark ? '#64748b' : '#2c5f82'
