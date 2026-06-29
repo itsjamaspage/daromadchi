@@ -16,5 +16,8 @@ export async function clearShopData(shopId: string): Promise<void> {
     admin.from('orders').delete().eq('shop_id', shopId),
     admin.from('products').delete().eq('shop_id', shopId),
     admin.from('sync_days').delete().eq('shop_id', shopId),
+    admin.from('ad_campaigns').delete().eq('shop_id', shopId),
+    admin.from('search_phrases').delete().eq('shop_id', shopId),
+    admin.from('product_ads_stats').delete().eq('shop_id', shopId),
   ])
 }
