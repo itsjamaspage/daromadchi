@@ -132,7 +132,6 @@ export interface CategoryRow {
 const _fetchCategoryRevenue = unstable_cache(
   async (shopIdsStr: string, days: number, from: string, to: string): Promise<CategoryRow[]> => {
     const shopIds = shopIdsStr ? shopIdsStr.split(',') : []
-    console.log('[CAT-DEBUG] called with:', { shopIdsStr, days, from, to, shopIdCount: shopIds.length })
     if (shopIds.length === 0) return []
 
     const supabase = createAdminClient()
@@ -148,26 +147,47 @@ const _fetchCategoryRevenue = unstable_cache(
       sinceIso = d.toISOString()
     }
 
-    console.log('[CAT-DEBUG] querying RPC with:', { shopIds, sinceIso, untilIso })
-    const { data: rows, error } = await supabase.rpc('get_category_revenue', {
-      shop_ids: shopIds,
-      since_iso: sinceIso,
-      until_iso: untilIso,
-    })
-    console.log('[CAT-DEBUG] rpc result:', { rowCount: rows?.length ?? 0, error: error?.message ?? null, firstRow: rows?.[0] ?? null })
-    if (error || !rows || rows.length === 0) return []
+    // Step 1: get qualifying order IDs by filtering on direct columns (orders.shop_id,
+    // orders.ordered_at) — avoids the Supabase JS embedded-filter bug that the old RPC
+    // worked around, but the RPC itself returned 0 rows for small shop-id subsets.
+    let orderQuery = supabase.from('orders').select('id').in('shop_id', shopIds)
+    if (sinceIso) orderQuery = orderQuery.gte('ordered_at', sinceIso)
+    if (untilIso) orderQuery = orderQuery.lte('ordered_at', untilIso)
+    const { data: orderRows, error: orderErr } = await orderQuery
+    if (orderErr || !orderRows?.length) return []
 
+    const orderIds = (orderRows as { id: string }[]).map(r => r.id)
+
+    // Step 2: fetch items for those orders + product category via FK join.
+    // Filter is on order_items.order_id (direct column) — no embedded-filter issue.
+    const { data: items, error: itemErr } = await supabase
+      .from('order_items')
+      .select('price_per_unit, quantity, cost_per_unit, products(category)')
+      .in('order_id', orderIds)
+    if (itemErr || !items?.length) return []
+
+    // Step 3: aggregate by category in JS
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const total = rows.reduce((s: number, r: any) => s + Number(r.revenue ?? 0), 0)
+    const catMap = new Map<string, { revenue: number; cost: number }>()
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return rows.map((r: any) => ({
-      name:    r.category ?? 'Boshqa',
-      revenue: Number(r.revenue ?? 0),
-      profit:  Number(r.revenue ?? 0) - Number(r.cost ?? 0),
-      percent: total > 0 ? (Number(r.revenue ?? 0) / total) * 100 : 0,
+    for (const item of items as any[]) {
+      const cat: string = item.products?.category ?? 'Boshqa'
+      const rev = Number(item.price_per_unit) * Number(item.quantity)
+      const cst = Number(item.cost_per_unit) * Number(item.quantity)
+      const cur = catMap.get(cat) ?? { revenue: 0, cost: 0 }
+      catMap.set(cat, { revenue: cur.revenue + rev, cost: cur.cost + cst })
+    }
+
+    const entries = [...catMap.entries()].sort((a, b) => b[1].revenue - a[1].revenue)
+    const total = entries.reduce((s, [, v]) => s + v.revenue, 0)
+    return entries.map(([name, { revenue, cost }]) => ({
+      name,
+      revenue: Math.round(revenue),
+      profit:  Math.round(revenue - cost),
+      percent: total > 0 ? (revenue / total) * 100 : 0,
     }))
   },
-  ['category-revenue-v8'],
+  ['category-revenue-v9'],
   { revalidate: 30 },
 )
 

@@ -26,7 +26,6 @@ interface CategoryData { name: string; revenue: number; profit: number; percent:
 export default function CategoryChart({ data }: { data: CategoryData[] }) {
   const { lang } = useLang()
   const t = translations[lang].dashboard
-  console.log('[CHART-CAT] data received:', data?.length, data)
   return (
     <div className="border rounded-2xl p-6" style={{ background: 'var(--bg-card2)', borderColor: 'var(--border)' }}>
       <h3 className="font-semibold mb-0.5" style={{ color: 'var(--text-base)' }}>{t?.categoryRevenue || 'Kategoriya bo\'yicha daromad'}</h3>
