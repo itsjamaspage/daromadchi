@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin, getAuthUser, getShopIds } from '@/lib/api/auth'
+import { withErrorHandler } from '@/lib/api-handler'
 
-export async function GET(req: NextRequest) {
+export const GET = withErrorHandler(async (req: NextRequest) => {
   const user = await getAuthUser(req.headers.get('authorization'))
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
@@ -40,4 +41,4 @@ export async function GET(req: NextRequest) {
   }))
 
   return NextResponse.json({ products, total: count ?? products.length })
-}
+})

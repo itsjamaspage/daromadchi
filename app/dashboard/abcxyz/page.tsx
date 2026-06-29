@@ -45,10 +45,14 @@ export default async function AbcXyzPage() {
     .sort((a, b) => b.revenue - a.revenue)
 
   const totalRevenue = withRevenue.reduce((sum, p) => sum + p.revenue, 0)
-  let cumulative = 0
 
-  const classified = withRevenue.map(p => {
-    cumulative += p.revenue
+  const cumulativeRevs = withRevenue.reduce<number[]>((acc, p) => {
+    acc.push((acc[acc.length - 1] ?? 0) + p.revenue)
+    return acc
+  }, [])
+
+  const classified = withRevenue.map((p, i) => {
+    const cumulative = cumulativeRevs[i]
     const share = totalRevenue > 0 ? cumulative / totalRevenue : 1
     const abc = share <= 0.80 ? 'A' : share <= 0.95 ? 'B' : 'C'
     const sold = p.sold ?? 0

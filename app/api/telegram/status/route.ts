@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { telegramConfigured } from '@/lib/telegram'
+import { withErrorHandler } from '@/lib/api-handler'
 
 export interface NotifPrefs {
   lowStock: boolean
@@ -11,7 +12,7 @@ export interface NotifPrefs {
   sendDays: number[] // 0=Sun … 6=Sat
 }
 
-export async function GET() {
+export const GET = withErrorHandler(async () => {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -37,4 +38,4 @@ export async function GET() {
     username:   data?.telegram_username ?? null,
     prefs,
   })
-}
+})

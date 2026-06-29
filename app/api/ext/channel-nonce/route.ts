@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { supabaseAdmin, getAuthUser } from '@/lib/api/auth'
+import { withErrorHandler } from '@/lib/api-handler'
 
 const CORS: HeadersInit = {
   'Access-Control-Allow-Origin': '*',
@@ -13,7 +14,7 @@ export async function OPTIONS() {
 }
 
 // POST: generate a nonce tied to the current user
-export async function POST(req: NextRequest) {
+export const POST = withErrorHandler(async (req: NextRequest) => {
   let userId: string | null = null
   const auth = req.headers.get('authorization')
   if (auth) {
@@ -48,10 +49,10 @@ export async function POST(req: NextRequest) {
   })
 
   return NextResponse.json({ nonce, expiresAt }, { headers: CORS })
-}
+})
 
 // GET: check if a nonce has been verified by the bot
-export async function GET(req: NextRequest) {
+export const GET = withErrorHandler(async (req: NextRequest) => {
   const nonce = req.nextUrl.searchParams.get('nonce')
   if (!nonce) {
     return NextResponse.json({ verified: false }, { headers: CORS })
@@ -74,4 +75,4 @@ export async function GET(req: NextRequest) {
   }
 
   return NextResponse.json({ verified: data.verified }, { headers: CORS })
-}
+})

@@ -8,3 +8,15 @@ export function createAdminClient() {
   if (!url || !key) throw new Error('Supabase admin credentials not configured (SUPABASE_SERVICE_ROLE_KEY missing)')
   return createClient(url, key, { auth: { persistSession: false } })
 }
+
+export async function withRetry<T>(fn: () => Promise<T>, maxRetries = 3): Promise<T> {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return await fn()
+    } catch (err) {
+      if (i === maxRetries - 1) throw err
+      await new Promise(r => setTimeout(r, Math.pow(2, i) * 1000))
+    }
+  }
+  throw new Error('Max retries exceeded')
+}

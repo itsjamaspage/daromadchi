@@ -187,7 +187,7 @@ export async function syncFromYandex(
                 title: it.offerName ?? `SKU ${mpid}`,
                 sku: mpid,
                 category: null,
-                selling_price: it.prices?.buyerPrice ?? null,
+                selling_price: it.buyerPrice ?? it.price ?? null,
                 cost_price: null,
                 stock_quantity: 0,
               })
@@ -230,7 +230,7 @@ export async function syncFromYandex(
                   shop_id: shopId, marketplace_product_id: it.offerId,
                   title: it.offerName ?? `SKU ${it.offerId}`,
                   sku: it.offerId, category: null,
-                  selling_price: it.prices?.buyerPrice ?? null, cost_price: null, stock_quantity: 0,
+                  selling_price: it.buyerPrice ?? it.price ?? null, cost_price: null, stock_quantity: 0,
                 })
               }
             }
@@ -261,7 +261,7 @@ export async function syncFromYandex(
               const dbOid = oMap.get(String(o.id))
               if (!dbOid) continue
               for (const it of o.items ?? []) {
-                itmRows.push({ order_id: dbOid, product_id: pMap.get(it.offerId) ?? null, quantity: it.count, price_per_unit: it.prices?.buyerPrice ?? 0 })
+                itmRows.push({ order_id: dbOid, product_id: pMap.get(it.offerId) ?? null, quantity: it.count, price_per_unit: it.buyerPrice ?? it.price ?? 0 })
               }
             }
             if (itmRows.length > 0) {
@@ -330,8 +330,8 @@ export async function syncFromYandex(
             order_id:       dbOrderId,
             product_id:     productId,
             quantity:       it.count,
-            price_per_unit: it.prices?.find((p: any) => p.type === 'BUYER')?.costPerItem
-              ?? it.prices?.find((p: any) => p.type === 'PARTNER')?.costPerItem
+            price_per_unit: it.prices?.find(p => p.type === 'BUYER')?.costPerItem
+              ?? it.prices?.find(p => p.type === 'PARTNER')?.costPerItem
               ?? it.buyerPrice
               ?? it.price
               ?? 0,

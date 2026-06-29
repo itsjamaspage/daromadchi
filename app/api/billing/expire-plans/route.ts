@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/api/auth'
+import { withErrorHandler } from '@/lib/api-handler'
 
 // Called by Vercel Cron daily at 01:00 UTC.
 // Downgrades users whose plan_expires_at has passed.
-export async function GET(req: NextRequest) {
+export const GET = withErrorHandler(async (req: NextRequest) => {
   // Vercel Cron sends: Authorization: Bearer {CRON_SECRET}
   const auth   = req.headers.get('authorization')
   const secret = auth?.startsWith('Bearer ') ? auth.slice(7) : null
@@ -20,4 +21,4 @@ export async function GET(req: NextRequest) {
 
   if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 })
   return NextResponse.json({ ok: true, downgraded: data?.length ?? 0 })
-}
+})

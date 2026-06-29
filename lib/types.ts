@@ -119,6 +119,7 @@ export interface Product {
   available_stock: number        // physical_stock - sold_across_all_sku_shops, or stock_quantity
   category: string | null
   marketplace_product_id: string | null
+  marketplace?: MarketplaceType
   updated_at: string
   // computed
   profit: number

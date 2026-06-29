@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
@@ -24,6 +25,19 @@ function formatSom(n: number) {
 const PEAK_COLOR   = '#7c3aed'
 const NORMAL_COLOR = '#4c1d95'
 const LOW_COLOR    = '#1e1b4b'
+
+function CustomTooltip({ active, payload, label }: { active?: boolean; payload?: { value: number; payload: { orders: number; avgCheck: number } }[]; label?: string }) {
+  if (!active || !payload?.length) return null
+  const d = payload[0].payload
+  return (
+    <div className="bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl p-3 shadow-xl text-xs">
+      <p className="text-[var(--text-base)] font-semibold mb-2">{label}</p>
+      <p className="text-[#83c0f9]">Daromad: <span className="font-bold">{formatSom(payload[0].value)}</span></p>
+      <p className="text-[var(--text-muted)]">Buyurtmalar: <span className="text-[var(--text-base)] font-semibold">{d.orders} ta</span></p>
+      <p className="text-[var(--text-muted)]">O&apos;rtacha chek: <span className="text-[var(--text-base)] font-semibold">{formatSom(d.avgCheck)}</span></p>
+    </div>
+  )
+}
 
 interface Props { data: ProductSeasonality[] }
 
@@ -54,19 +68,6 @@ export default function SeasonalityView({ data }: Props) {
     if (revenue === minRevenue) return LOW_COLOR
     const pct = (revenue - minRevenue) / (maxRevenue - minRevenue)
     return pct > 0.6 ? '#7c3aed' : pct > 0.3 ? '#a78bfa' : '#c4b5fd'
-  }
-
-  const CustomTooltip = ({ active, payload, label }: {active?: boolean; payload?: {value: number; payload: {orders: number; avgCheck: number}}[]; label?: string}) => {
-    if (!active || !payload?.length) return null
-    const d = payload[0].payload
-    return (
-      <div className="bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl p-3 shadow-xl text-xs">
-        <p className="text-[var(--text-base)] font-semibold mb-2">{label}</p>
-        <p className="text-[#83c0f9]">Daromad: <span className="font-bold">{formatSom(payload[0].value)}</span></p>
-        <p className="text-[var(--text-muted)]">Buyurtmalar: <span className="text-[var(--text-base)] font-semibold">{d.orders} ta</span></p>
-        <p className="text-[var(--text-muted)]">O&apos;rtacha chek: <span className="text-[var(--text-base)] font-semibold">{formatSom(d.avgCheck)}</span></p>
-      </div>
-    )
   }
 
   const exportData = product.data.map(d => ({

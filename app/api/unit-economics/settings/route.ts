@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { saveUnitEcoSettings } from '@/lib/db/unit-economics'
+import { withErrorHandler } from '@/lib/api-handler'
 
 const PCT_FIELDS = ['acquiringPct', 'lastMilePct', 'adPct', 'taxPct', 'defaultCommissionPct'] as const
 const TAX_TYPES  = ['income', 'income_minus_expense'] as const
 
-export async function POST(req: NextRequest) {
+export const POST = withErrorHandler(async (req: NextRequest) => {
   try {
     const body = await req.json().catch(() => null)
     if (!body) return NextResponse.json({ ok: false, error: 'Invalid JSON' }, { status: 400 })
@@ -31,4 +32,4 @@ export async function POST(req: NextRequest) {
   } catch {
     return NextResponse.json({ ok: false, error: 'Server xatosi' }, { status: 500 })
   }
-}
+})

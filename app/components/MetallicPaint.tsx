@@ -1,5 +1,6 @@
-'use client'
+/* eslint-disable @typescript-eslint/ban-ts-comment, react-hooks/set-state-in-effect */
 // @ts-nocheck
+'use client'
 
 import { useEffect, useRef, useState, useCallback } from 'react'
 import './MetallicPaint.css'

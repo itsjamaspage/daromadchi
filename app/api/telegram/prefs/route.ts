@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import type { NotifPrefs } from '../status/route'
+import { withErrorHandler } from '@/lib/api-handler'
 
-export async function POST(req: NextRequest) {
+export const POST = withErrorHandler(async (req: NextRequest) => {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -37,4 +38,4 @@ export async function POST(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: 'save_failed' }, { status: 500 })
   return NextResponse.json({ ok: true })
-}
+})

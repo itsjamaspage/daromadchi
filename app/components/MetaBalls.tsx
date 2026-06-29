@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 // @ts-nocheck
 'use client'
 
@@ -217,7 +218,7 @@ export default function MetaBalls({
       cancelAnimationFrame(raf)
       cleanup?.()
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   }, [color, speed, enableMouseInteraction, hoverSmoothness, padding, maxRadius])
 
   return (

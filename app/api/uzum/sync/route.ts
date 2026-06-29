@@ -3,6 +3,7 @@ import { syncFromUzum } from '@/lib/uzum/sync'
 import { createClient } from '@/lib/supabase/server'
 import { decrypt } from '@/lib/crypto'
 import { logger } from '@/lib/logger'
+import { withErrorHandler } from '@/lib/api-handler'
 
 function fromDaysToDate(fromDays: unknown): Date | undefined {
   if (typeof fromDays !== 'number') return undefined
@@ -10,7 +11,7 @@ function fromDaysToDate(fromDays: unknown): Date | undefined {
   const d = new Date(); d.setDate(d.getDate() - fromDays); return d
 }
 
-export async function POST(req: NextRequest) {
+export const POST = withErrorHandler(async (req: NextRequest) => {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -45,10 +46,10 @@ export async function POST(req: NextRequest) {
     logger.error('uzum_sync_unhandled', { shopId: shop.id, error: String(err) })
     return NextResponse.json({ ok: false, error: 'Sync xatosi yuz berdi' }, { status: 500 })
   }
-}
+})
 
 // GET /api/uzum/sync — lightweight token test (no data written)
-export async function GET() {
+export const GET = withErrorHandler(async () => {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 })
@@ -82,4 +83,4 @@ export async function GET() {
   } catch (err) {
     return NextResponse.json({ ok: false, error: `Tarmoq xatosi: ${String(err)}` })
   }
-}
+})

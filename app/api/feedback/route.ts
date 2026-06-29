@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { sendTelegramMessage, sendTelegramPhoto } from '@/lib/telegram'
+import { withErrorHandler } from '@/lib/api-handler'
 
 const FEEDBACK_CHAT_IDS = ['6884517020']
 const VALID_TYPES = ['bug', 'idea'] as const
@@ -25,7 +26,7 @@ function checkFeedbackRate(ip: string): boolean {
   return entry.count > 5
 }
 
-export async function POST(req: NextRequest) {
+export const POST = withErrorHandler(async (req: NextRequest) => {
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
     ?? req.headers.get('x-real-ip')
     ?? 'unknown'
@@ -74,4 +75,4 @@ export async function POST(req: NextRequest) {
   } catch {
     return NextResponse.json({ error: 'Server error' }, { status: 500 })
   }
-}
+})

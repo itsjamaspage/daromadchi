@@ -211,9 +211,11 @@ export default function AnalyticsBoard({ chartData, categoryData, products, kpis
               <YAxis tickFormatter={fmtCompact} tick={{ fill: axisColor, fontSize: 11 }} axisLine={false} tickLine={false} width={42} />
               <Tooltip
                 cursor={{ fill: theme === 'dark' ? '#ffffff08' : '#00000008' }}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 content={({ active, payload, label }: any) => active && payload?.length ? (
                   <TipBox>
                     <p style={{ color: 'var(--text-muted)' }}>{label}</p>
+                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                     {payload.map((e: any) => (
                       <p key={e.dataKey} className="font-semibold" style={{ color: e.fill }}>
                         {e.dataKey}: {fmtCompact(e.value)}
@@ -242,6 +244,7 @@ export default function AnalyticsBoard({ chartData, categoryData, products, kpis
                   <Cell key={i} fill={i === 0 ? PALETTE[2] : PALETTE[4]} stroke="transparent" />
                 ))}
               </Pie>
+              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
               <Tooltip content={({ active, payload }: any) => active && payload?.length ? (
                 <TipBox>
                   <p style={{ color: 'var(--text-dim)' }}>{payload[0].name}</p>
@@ -272,6 +275,7 @@ export default function AnalyticsBoard({ chartData, categoryData, products, kpis
           <h3 className="font-semibold mb-5" style={{ color: 'var(--text-base)' }}>{t.salesFunnel}</h3>
           <ResponsiveContainer width="100%" height={260}>
             <FunnelChart>
+              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
               <Tooltip content={({ active, payload }: any) => active && payload?.length ? (
                 <TipBox>
                   <p style={{ color: 'var(--text-dim)' }}>{payload[0].payload.name}</p>
@@ -298,6 +302,7 @@ export default function AnalyticsBoard({ chartData, categoryData, products, kpis
               <YAxis type="number" dataKey="y" name={t.revenueSom} tickFormatter={fmtCompact}
                 tick={{ fill: axisColor, fontSize: 11 }} axisLine={false} tickLine={false} width={42} />
               <ZAxis type="number" dataKey="z" range={[120, 900]} name={t.units} />
+              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
               <Tooltip cursor={{ strokeDasharray: '3 3' }} content={({ active, payload }: any) => active && payload?.length ? (
                 <TipBox>
                   <p className="font-medium" style={{ color: 'var(--text-dim)' }}>{payload[0].payload.name}</p>

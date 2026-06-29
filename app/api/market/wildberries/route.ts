@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { searchWbProducts } from '@/lib/wildberries/public'
+import { withErrorHandler } from '@/lib/api-handler'
 
 type SortOption = 'popular' | 'priceup' | 'pricedown' | 'rate'
 const VALID_SORTS: SortOption[] = ['popular', 'priceup', 'pricedown', 'rate']
 
-export async function GET(req: NextRequest) {
+export const GET = withErrorHandler(async (req: NextRequest) => {
   const { searchParams } = req.nextUrl
   const query   = searchParams.get('q')
   const rawSort = searchParams.get('sort') ?? 'popular'
@@ -23,4 +24,4 @@ export async function GET(req: NextRequest) {
     const message = err instanceof Error ? err.message : 'Unknown error'
     return NextResponse.json({ error: message }, { status: 500 })
   }
-}
+})

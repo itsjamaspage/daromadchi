@@ -122,7 +122,7 @@ export default function PnlChart({
             <Tooltip
               contentStyle={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 11, padding: '4px 8px' }}
               labelStyle={{ color: 'var(--text-muted)', marginBottom: 2 }}
-              formatter={(v: number) => [`${fmtFull(v)}${metric.unit ? ` ${metric.unit}` : ''}`, metric.label]}
+              formatter={(v) => [`${fmtFull(Number(v ?? 0))}${metric.unit ? ` ${metric.unit}` : ''}`, metric.label]}
             />
             <Area type="monotone" dataKey={active} stroke={metric.color} strokeWidth={2}
               fill={`url(#grad-${active})`} dot={false} activeDot={{ r: 4, fill: metric.color, strokeWidth: 0 }} />

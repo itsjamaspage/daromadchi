@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { decrypt } from '@/lib/crypto'
 import { syncFromWildberries } from '@/lib/wildberries/sync'
 import { logger } from '@/lib/logger'
+import { withErrorHandler } from '@/lib/api-handler'
 
 function fromDaysToDate(fromDays: unknown): Date | undefined {
   if (typeof fromDays !== 'number') return undefined
@@ -10,7 +11,7 @@ function fromDaysToDate(fromDays: unknown): Date | undefined {
   const d = new Date(); d.setDate(d.getDate() - fromDays); return d
 }
 
-export async function POST(req: NextRequest) {
+export const POST = withErrorHandler(async (req: NextRequest) => {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -31,16 +32,16 @@ export async function POST(req: NextRequest) {
 
   try {
     const result = await syncFromWildberries(supabase, shop.id, decrypt(shop.api_key_encrypted), fromDate)
-    if (!result.ok) logger.warn('wb_sync_error', { shopId: shop.id, error: result.error })
+    if (!result.ok) logger.warn('wb_sync_error', { shopId: shop.id, errors: result.errors })
     return NextResponse.json(result)
   } catch (err) {
     logger.error('wb_sync_unhandled', { shopId: shop.id, error: String(err) })
     return NextResponse.json({ ok: false, error: 'Sync xatosi yuz berdi' }, { status: 500 })
   }
-}
+})
 
 // GET /api/wildberries/sync — lightweight token test, no data written
-export async function GET() {
+export const GET = withErrorHandler(async () => {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 })
@@ -80,4 +81,4 @@ export async function GET() {
   } catch {
     return NextResponse.json({ ok: false, error: 'WB API bilan bog\'lanishda xato' })
   }
-}
+})

@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin, getAuthUser, getShopIds, getUserPlan } from '@/lib/api/auth'
 import { sendTelegramMessage, isInNotificationWindow } from '@/lib/telegram'
+import { withErrorHandler } from '@/lib/api-handler'
 
 function fmt(n: number) {
   return new Intl.NumberFormat('uz-UZ').format(Math.round(n)) + " so'm"
 }
 
-export async function POST(req: NextRequest) {
+export const POST = withErrorHandler(async (req: NextRequest) => {
   const user = await getAuthUser(req.headers.get('authorization'))
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
@@ -86,4 +87,4 @@ export async function POST(req: NextRequest) {
 
   const ok = await sendTelegramMessage(settings.telegram_chat_id, lines.join('\n'))
   return NextResponse.json({ ok })
-}
+})

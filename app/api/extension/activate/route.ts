@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { withErrorHandler } from '@/lib/api-handler'
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
 const CHANNEL   = '@daromadchi_uz'
@@ -21,7 +22,7 @@ function checkRateLimit(ip: string): boolean {
 // POST /api/extension/activate
 // Body: { code: string }
 // Returns: { ok: true } or { ok: false, error: string }
-export async function POST(req: NextRequest) {
+export const POST = withErrorHandler(async (req: NextRequest) => {
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() ?? '0.0.0.0'
   if (!checkRateLimit(ip)) {
     return NextResponse.json({ ok: false, error: 'Juda ko\'p urinish. 15 daqiqadan keyin qayta urining.' }, { status: 429 })
@@ -53,7 +54,7 @@ export async function POST(req: NextRequest) {
   } catch {
     return NextResponse.json({ ok: false, error: 'Server xatosi' }, { status: 500 })
   }
-}
+})
 
 async function checkMembership(chatId: string): Promise<boolean> {
   if (!BOT_TOKEN) return true // dev fallback

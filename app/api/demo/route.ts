@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { withErrorHandler } from '@/lib/api-handler'
 
 // Clearly-labelled, removable sample data so the app can be evaluated without a
 // real store that has listings. Everything lives under a single demo shop
@@ -30,7 +31,7 @@ function rndInt(min: number, max: number) { return Math.floor(rnd(min, max + 1))
 function pick<T>(arr: readonly T[]): T { return arr[rndInt(0, arr.length - 1)] }
 function roundTo(n: number, step = 1000) { return Math.round(n / step) * step }
 
-export async function DELETE() {
+export const DELETE = withErrorHandler(async () => {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -44,9 +45,9 @@ export async function DELETE() {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ ok: true, cleared: true })
-}
+})
 
-export async function POST() {
+export const POST = withErrorHandler(async () => {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -231,4 +232,4 @@ export async function POST() {
     orders: orderRows.length,
     campaigns: adRows.length,
   })
-}
+})

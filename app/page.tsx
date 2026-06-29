@@ -72,7 +72,8 @@ const KPI = {
   amber:   '#ec7e00',
 }
 
-function tx(lang: string, ru: string, uz: string, en: string) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function tx(lang: string, ru: any, uz: any, en: any): any {
   return lang === 'ru' ? ru : lang === 'uz' ? uz : en
 }
 
@@ -198,6 +199,8 @@ function LandingNav({ lang }: { lang: string }) {
       hoverCircleColor={hoverCircle}
       rightContent={rightContent}
       initialLoadAnimation={false}
+      activeHref=""
+      onMobileMenuClick={undefined}
     />
   )
 }
@@ -1522,9 +1525,11 @@ function PricingSection({ lang }: { lang: string }) {
                     <p style={{ fontSize: 13, fontWeight: 700, color: t.highlight ? (isDark ? P.green : acc.dk) : muted }}>
                       {t.name}
                     </p>
+                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                     {(t as any).badge && (
                       <span style={{ background: '#ffffff', borderRadius: 100, padding: '3px 12px',
                         fontSize: 10, fontWeight: 800, color: '#0e1b2e', letterSpacing: '0.04em' }}>
+                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                         {(t as any).badge}
                       </span>
                     )}

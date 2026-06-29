@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCategoryProducts, searchMarketProducts } from '@/lib/uzum/public'
+import { withErrorHandler } from '@/lib/api-handler'
 
 type SortOption = 'ORDER_COUNT_DESC' | 'PRICE_ASC' | 'PRICE_DESC' | 'RATING_DESC'
 const VALID_SORTS: SortOption[] = ['ORDER_COUNT_DESC', 'PRICE_ASC', 'PRICE_DESC', 'RATING_DESC']
 
-export async function GET(req: NextRequest) {
+export const GET = withErrorHandler(async (req: NextRequest) => {
   const { searchParams } = req.nextUrl
   const categoryId = searchParams.get('categoryId')
   const query      = searchParams.get('q')
@@ -33,4 +34,4 @@ export async function GET(req: NextRequest) {
     const message = err instanceof Error ? err.message : 'Unknown error'
     return NextResponse.json({ error: message }, { status: 500 })
   }
-}
+})

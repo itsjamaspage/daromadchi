@@ -20,6 +20,11 @@ export function encrypt(plaintext: string): string {
   return `enc:${iv.toString('hex')}:${enc.toString('hex')}`
 }
 
+// Returns true if the value is in the `enc:<iv>:<ciphertext>` format.
+export function isEncrypted(value: string): boolean {
+  return value.startsWith('enc:') && value.split(':').length === 3
+}
+
 // Decrypts `enc:…` values; returns other values unchanged (backward compat).
 export function decrypt(value: string): string {
   if (!value.startsWith('enc:')) return value

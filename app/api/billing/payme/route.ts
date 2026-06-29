@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/api/auth'
 import { verifyPaymeAuth, PaymeError } from '@/lib/billing/payme'
 import { planExpiresAt } from '@/lib/billing/plans'
+import { withErrorHandler } from '@/lib/api-handler'
 
 function rpc(id: unknown, result: unknown) {
   return NextResponse.json({ jsonrpc: '2.0', id, result })
@@ -12,7 +13,7 @@ function rpcErr(id: unknown, code: number, message: unknown) {
 
 const STATE = { PENDING: 1, PAID: 2, CANCELLED: -1 } as const
 
-export async function POST(req: NextRequest) {
+export const POST = withErrorHandler(async (req: NextRequest) => {
   if (!verifyPaymeAuth(req.headers.get('authorization'))) {
     return rpcErr(null, PaymeError.FORBIDDEN.code, PaymeError.FORBIDDEN.message)
   }
@@ -120,4 +121,4 @@ export async function POST(req: NextRequest) {
   }
 
   return rpcErr(id, -32601, 'Method not found')
-}
+})

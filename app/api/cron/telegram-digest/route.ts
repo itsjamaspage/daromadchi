@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendTelegramMessage } from '@/lib/telegram'
+import { withErrorHandler } from '@/lib/api-handler'
 
 export const runtime     = 'nodejs'
 export const maxDuration  = 120
@@ -28,7 +29,7 @@ function fmt(n: number): string {
   return new Intl.NumberFormat('ru-RU').format(Math.round(n))
 }
 
-export async function GET(req: Request) {
+export const GET = withErrorHandler(async (req: Request) => {
   // Vercel Cron sends: Authorization: Bearer {CRON_SECRET}
   const auth   = req.headers.get('authorization')
   const bearer = auth?.startsWith('Bearer ') ? auth.slice(7) : null
@@ -115,7 +116,7 @@ export async function GET(req: Request) {
   }
 
   return NextResponse.json({ ok: true, uzHour, uzDay, sent: sent.length, details: sent })
-}
+})
 
 // Aggregates revenue + order count over the last `days` days for the given shops.
 async function buildSalesSummary(

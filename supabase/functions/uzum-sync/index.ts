@@ -52,6 +52,7 @@ Deno.serve(async () => {
         if (!items.length) break
 
         await supabase.from('products').upsert(
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           items.map((p: any) => ({
             user_id:  userId,
             name:     p.name,
@@ -85,6 +86,7 @@ Deno.serve(async () => {
         if (!items.length) break
 
         await supabase.from('orders').upsert(
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           items.map((o: any) => ({
             user_id:      userId,
             order_ref:    o.orderNumber,

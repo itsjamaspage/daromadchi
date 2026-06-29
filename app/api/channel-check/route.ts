@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { supabaseAdmin, getAuthUser } from '@/lib/api/auth'
 import { checkChannelMember } from '@/lib/telegram'
+import { withErrorHandler } from '@/lib/api-handler'
 
 const CORS: HeadersInit = {
   'Access-Control-Allow-Origin': '*',
@@ -13,7 +14,7 @@ export async function OPTIONS() {
   return new Response(null, { status: 204, headers: CORS })
 }
 
-export async function GET(req: NextRequest) {
+export const GET = withErrorHandler(async (req: NextRequest) => {
   // Accept Bearer token (extension) or session cookie (dashboard)
   let userId: string | null = null
   const auth = req.headers.get('authorization')
@@ -42,4 +43,4 @@ export async function GET(req: NextRequest) {
 
   const subscribed = await checkChannelMember(settings.telegram_chat_id)
   return NextResponse.json({ subscribed }, { headers: CORS })
-}
+})
