@@ -344,3 +344,22 @@ h1, h2, h3, h4, h5, h6 {
 @media (max-width: 640px) {
   .dash-mockup-scale { zoom: 0.46; }
 }
+
+/* Override Chrome/Safari autofill background (it ignores regular background-color) */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px #252525 inset !important;
+  box-shadow:         0 0 0 1000px #252525 inset !important;
+  -webkit-text-fill-color: #e2e8f0 !important;
+}
+
+[data-theme="light"] input:-webkit-autofill,
+[data-theme="light"] input:-webkit-autofill:hover,
+[data-theme="light"] input:-webkit-autofill:focus,
+[data-theme="light"] input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important;
+  box-shadow:         0 0 0 1000px #ffffff inset !important;
+  -webkit-text-fill-color: #0e2233 !important;
+}

@@ -59,9 +59,6 @@ export default function StockAlerts({ products }: { products: Product[] }) {
                 <p className="text-sm font-bold" style={{ color: urgentColor }}>
                   {p.available_stock} dona
                 </p>
-                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                  {p.daysLeft >= 999 ? 'Harakat yo\'q' : `~${p.daysLeft} kun qoldi`}
-                </p>
               </div>
 
               <div className="w-1.5 h-10 rounded-full flex-shrink-0" style={{ background: barColor }} />
