@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Suspense } from 'react'
 import Link from 'next/link'
@@ -234,6 +234,48 @@ export default function DashboardClient({ slices, days, period, from, to, initia
             </div>
           )
         }
+        // Marketplace-specific not-connected card
+        if (marketplace) {
+          const mpName = ({ uzum: 'Uzum Market', yandex_market: 'Yandex Market', wildberries: 'Wildberries' } as Record<string, string>)[marketplace]
+          const mpLink = displayLinks[0]
+          return (
+            <div className="bg-[var(--bg-card2)] border border-dashed rounded-2xl p-10" style={{ borderColor: 'rgba(131,192,249,0.3)' }}>
+              <div className="max-w-md mx-auto text-center">
+                <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: 'rgba(131,192,249,0.12)', border: '1px solid rgba(131,192,249,0.25)' }}>
+                  <Settings className="w-7 h-7" style={{ color: '#83c0f9' }} />
+                </div>
+                <h2 className="text-[var(--text-base)] font-bold text-lg mb-2">{mpName} ulanmagan</h2>
+                <p className="text-[var(--text-muted)] text-sm mb-6">API tokenini ulang va quyidagi ma&apos;lumotlarni ko&apos;ring:</p>
+                <div className="grid grid-cols-2 gap-3 mb-8 text-left max-w-xs mx-auto">
+                  {([
+                    [DollarSign,  "Daromad va foyda"],
+                    [ShoppingBag, "Buyurtmalar tarixi"],
+                    [TrendingUp,  "Sotuv dinamikasi"],
+                    [Package,     "Mahsulot qoldiqlari"],
+                  ] as [React.ElementType, string][]).map(([Icon, label]) => (
+                    <div key={label} className="flex items-center gap-2 text-sm" style={{ color: 'var(--text-muted)' }}>
+                      <Icon className="w-4 h-4 flex-shrink-0" style={{ color: '#83c0f9' }} />
+                      {label}
+                    </div>
+                  ))}
+                </div>
+                <div className="flex items-center justify-center gap-3 flex-wrap">
+                  <Link href="/dashboard/settings"
+                    className="inline-flex items-center gap-2 btn-primary text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors" style={{ boxShadow: '0 4px 14px rgba(131,192,249,0.2)' }}>
+                    <Settings className="w-4 h-4" /> {mpName} ulash
+                  </Link>
+                  {mpLink && (
+                    <Link href={mpLink.url} target="_blank" rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 text-sm font-medium px-5 py-2.5 rounded-xl border transition-all" style={{ color: 'var(--text-muted)', borderColor: 'var(--border2)' }}>
+                      {mpLink.label} <ArrowRight className="w-3.5 h-3.5" />
+                    </Link>
+                  )}
+                </div>
+              </div>
+            </div>
+          )
+        }
+
         return (
           <div className="bg-[var(--bg-card2)] border border-dashed rounded-2xl p-10 text-center" style={{ borderColor: 'rgba(131,192,249,0.3)' }}>
             <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: 'rgba(131,192,249,0.12)', border: '1px solid rgba(131,192,249,0.25)' }}>
@@ -269,7 +311,7 @@ export default function DashboardClient({ slices, days, period, from, to, initia
 
       {/* Stock alerts */}
       {!hiddenWidgets.has('alerts') && (
-        <StockAlerts products={allProducts} />
+        <StockAlerts products={allProducts} isDark={isDark} />
       )}
 
       {/* Chart + recent orders */}
