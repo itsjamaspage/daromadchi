@@ -1,5 +1,15 @@
 export function SkeletonBox({ className = '', style }: { className?: string; style?: React.CSSProperties }) {
-  return <div className={`animate-pulse rounded-xl ${className}`} style={{ background: 'var(--skeleton-pulse)', ...style }} />
+  return (
+    <div
+      className={`rounded-xl ${className}`}
+      style={{
+        backgroundImage: 'linear-gradient(90deg, var(--skeleton-base) 25%, var(--skeleton-shine) 50%, var(--skeleton-base) 75%)',
+        backgroundSize: '400% 100%',
+        animation: 'skeleton-shimmer 1.6s linear infinite',
+        ...style,
+      }}
+    />
+  )
 }
 
 export function KpiSkeleton() {

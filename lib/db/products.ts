@@ -132,6 +132,7 @@ export interface CategoryRow {
 const _fetchCategoryRevenue = unstable_cache(
   async (shopIdsStr: string, days: number, from: string, to: string): Promise<CategoryRow[]> => {
     const shopIds = shopIdsStr ? shopIdsStr.split(',') : []
+    console.log('[CAT-DEBUG] called with:', { shopIdsStr, days, from, to, shopIdCount: shopIds.length })
     if (shopIds.length === 0) return []
 
     const supabase = createAdminClient()
@@ -147,11 +148,13 @@ const _fetchCategoryRevenue = unstable_cache(
       sinceIso = d.toISOString()
     }
 
+    console.log('[CAT-DEBUG] querying RPC with:', { shopIds, sinceIso, untilIso })
     const { data: rows, error } = await supabase.rpc('get_category_revenue', {
       shop_ids: shopIds,
       since_iso: sinceIso,
       until_iso: untilIso,
     })
+    console.log('[CAT-DEBUG] rpc result:', { rowCount: rows?.length ?? 0, error: error?.message ?? null, firstRow: rows?.[0] ?? null })
     if (error || !rows || rows.length === 0) return []
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

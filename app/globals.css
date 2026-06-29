@@ -62,7 +62,8 @@ html, body {
   --surface-soft: #1e1e1e;
   --color-scheme: dark;
 
-  --skeleton-pulse: rgba(125, 211, 252, 0.09);  /* subtle blue shimmer on dark bg */
+  --skeleton-base:  #1a2633;   /* skeleton row base — visible on #111 card */
+  --skeleton-shine: #2e4560;   /* skeleton shimmer highlight */
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -97,7 +98,16 @@ html, body {
   --surface-soft: #f4f4f4;
   --color-scheme: light;
 
-  --skeleton-pulse: rgba(17, 60, 120, 0.09);  /* subtle ink shimmer on light bg */
+  --skeleton-base:  #bdd0e8;   /* skeleton row base — visible on #e8f0fd card */
+  --skeleton-shine: #d8e9f8;   /* skeleton shimmer highlight */
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   SKELETON SHIMMER — moving highlight sweep
+═══════════════════════════════════════════════════════════════════ */
+@keyframes skeleton-shimmer {
+  0%   { background-position: 200% center; }
+  100% { background-position: -200% center; }
 }
 
 /* ═══════════════════════════════════════════════════════════════════
