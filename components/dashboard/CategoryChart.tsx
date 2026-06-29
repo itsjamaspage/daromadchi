@@ -78,7 +78,7 @@ export default function CategoryChart({ data }: { data: CategoryData[] }) {
                       </span>
                     </div>
                   </div>
-                  <div className="h-1 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                  <div className="h-1 rounded-full overflow-hidden" style={{ background: 'var(--border)' }}>
                     <div
                       className="h-full rounded-full transition-all"
                       style={{ width: `${d.percent}%`, background: COLORS[i % COLORS.length] }}

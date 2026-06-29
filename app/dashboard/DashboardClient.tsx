@@ -54,12 +54,19 @@ interface Props {
   hasShops: boolean
 }
 
-const STATUS_CLASS: Record<string, string> = {
+const STATUS_CLASS_DARK: Record<string, string> = {
   pending:   'bg-slate-500/10 text-[var(--text-muted)]',
   confirmed: 'bg-blue-500/10 text-blue-400',
   delivered: 'bg-emerald-500/10 text-emerald-400',
   cancelled: 'bg-red-500/10 text-red-400',
   returned:  'bg-amber-500/10 text-amber-400',
+}
+const STATUS_CLASS_LIGHT: Record<string, string> = {
+  pending:   'bg-slate-500/10 text-slate-600',
+  confirmed: 'bg-blue-500/10 text-blue-700',
+  delivered: 'bg-emerald-500/10 text-emerald-700',
+  cancelled: 'bg-red-500/10 text-red-600',
+  returned:  'bg-amber-500/10 text-amber-700',
 }
 
 export default function DashboardClient({ slices, days, period, from, to, initialMarketplace, hasShops }: Props) {
@@ -339,7 +346,7 @@ export default function DashboardClient({ slices, days, period, from, to, initia
                     <p className="text-sm text-[var(--text-base)] font-medium truncate font-mono">{order.order_id_external ?? order.id.slice(0, 8)}</p>
                     <p className="text-xs text-[var(--text-muted)] truncate">{{ uzum: 'Uzum Market', yandex_market: 'Yandex Market', wildberries: 'Wildberries' }[order.marketplace] ?? order.marketplace}</p>
                   </div>
-                  <span className={`text-[11px] font-medium px-2 py-0.5 rounded-lg flex-shrink-0 ${STATUS_CLASS[order.status] ?? 'bg-slate-500/10 text-[var(--text-muted)]'}`}>
+                  <span className={`text-[11px] font-medium px-2 py-0.5 rounded-lg flex-shrink-0 ${(isDark ? STATUS_CLASS_DARK : STATUS_CLASS_LIGHT)[order.status] ?? 'bg-slate-500/10 text-[var(--text-muted)]'}`}>
                     {s[order.status as keyof typeof s] ?? order.status}
                   </span>
                 </div>
@@ -385,7 +392,7 @@ export default function DashboardClient({ slices, days, period, from, to, initia
                         <p className="text-[var(--text-muted)] text-xs">{p.sku}</p>
                       </td>
                       <td className="py-3 pr-4 text-right">
-                        <span className="text-emerald-400 font-medium text-xs">{formatSum(p.revenue)}</span>
+                        <span className={`${isDark ? 'text-emerald-400' : 'text-emerald-700'} font-medium text-xs`}>{formatSum(p.revenue)}</span>
                       </td>
                       <td className="py-3 text-right text-[var(--text-dim)] text-xs">{p.qty_sold}</td>
                     </tr>
