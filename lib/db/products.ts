@@ -23,11 +23,11 @@ const _fetchProducts = unstable_cache(
     ] = await Promise.all([
       supabase
         .from('products')
-        .select('id, shop_id, sku, title, cost_price, selling_price, stock_quantity, physical_stock, category, marketplace_product_id, updated_at')
+        .select('id, shop_id, sku, title, cost_price, selling_price, stock_quantity, category, marketplace_product_id, updated_at')
         .in('shop_id', allShopIds)
         .order('title'),
       supabase.rpc('get_sold_counts', { shop_ids: allShopIds }),
-      supabase.from('shops').select('id, marketplace').in('id', allShopIds),
+      supabase.from('shops').select('id, marketplace, warehouse_id').in('id', allShopIds),
     ])
     if (error || !products) return []
 
@@ -36,36 +36,41 @@ const _fetchProducts = unstable_cache(
       if (row.product_id) soldByProductId.set(row.product_id, Number(row.qty_sold ?? 0))
     }
 
-    const shopMarketplace = new Map<string, MarketplaceType>()
+    const shopInfo = new Map<string, { marketplace: MarketplaceType; warehouseId: string | null }>()
     for (const s of shopRows ?? []) {
-      shopMarketplace.set(s.id, s.marketplace as MarketplaceType)
+      shopInfo.set(s.id, { marketplace: s.marketplace as MarketplaceType, warehouseId: s.warehouse_id ?? null })
     }
 
-    // Group by SKU: count shops selling it + sum sold across all of them
-    const skuTotalSold = new Map<string, number>()
-    const skuCount     = new Map<string, number>()
+    // Group by warehouse+SKU: when two shops share a warehouse, products with the same SKU
+    // draw from the same physical pool. Key = `${warehouseId}:${sku}` (only when warehouseId set).
+    const groupTotalSold  = new Map<string, number>()
+    const groupShopCount  = new Map<string, number>()
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     for (const p of products as any[]) {
       if (!p.sku) continue
+      const wid = shopInfo.get(p.shop_id)?.warehouseId
+      if (!wid) continue
+      const key = `${wid}:${p.sku}`
       const sold = soldByProductId.get(p.id) ?? 0
-      skuTotalSold.set(p.sku, (skuTotalSold.get(p.sku) ?? 0) + sold)
-      skuCount.set(p.sku,     (skuCount.get(p.sku)     ?? 0) + 1)
+      groupTotalSold.set(key, (groupTotalSold.get(key) ?? 0) + sold)
+      groupShopCount.set(key, (groupShopCount.get(key) ?? 0) + 1)
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return (products as any[]).map(p => {
-      const sold      = soldByProductId.get(p.id) ?? 0
-      const isShared  = p.sku ? (skuCount.get(p.sku) ?? 0) > 1 : false
-      const totalSold = p.sku ? (skuTotalSold.get(p.sku) ?? sold) : sold
+      const sold = soldByProductId.get(p.id) ?? 0
+      const wid  = shopInfo.get(p.shop_id)?.warehouseId
+      const key  = wid && p.sku ? `${wid}:${p.sku}` : null
+      const isShared = key ? (groupShopCount.get(key) ?? 0) > 1 : false
 
-      // When physical_stock is set, available = shared pool − all cross-shop sales for this SKU
-      const availableStock = isShared && p.physical_stock != null
-        ? Math.max(0, p.physical_stock - totalSold)
+      // Warehouse-aware available stock: subtract ALL sales across the same warehouse+SKU group
+      const availableStock = isShared && key
+        ? Math.max(0, p.stock_quantity - (groupTotalSold.get(key) ?? 0))
         : p.stock_quantity
 
       return {
         ...p,
-        marketplace:     shopMarketplace.get(p.shop_id),
+        marketplace:     shopInfo.get(p.shop_id)?.marketplace,
         available_stock: availableStock,
         profit:          Number(p.selling_price ?? 0) - Number(p.cost_price ?? 0),
         sold,
@@ -73,7 +78,7 @@ const _fetchProducts = unstable_cache(
       }
     })
   },
-  ['products-v3'],
+  ['products-v4'],
   { revalidate: 30 },
 )
 

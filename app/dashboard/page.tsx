@@ -41,7 +41,6 @@ async function fetchSlice(
     getDailyRevenue(days, marketplace, from, to),
     getCategoryRevenue(days, marketplace, from, to),
   ])
-  console.log('[PAGE-CAT]', marketplace ?? 'all', categoryData?.length, JSON.stringify(categoryData?.slice(0, 2)))
   return {
     kpis,
     recentOrders,

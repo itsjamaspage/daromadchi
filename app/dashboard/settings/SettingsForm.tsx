@@ -1,11 +1,11 @@
 /* eslint-disable react/no-unescaped-entities */
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   RefreshCw, Save, Key, CheckCircle, XCircle, ExternalLink,
-  Loader2, Hash, Sparkles, Trash2, Send, LinkIcon,
+  Loader2, Hash, Sparkles, Trash2, Send, LinkIcon, Building2, Plus,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import type { Shop } from '@/lib/types'
@@ -502,6 +502,184 @@ function WildberriesCard({ shop, userId: _userId }: { shop: Shop | null; userId:
   )
 }
 
+// ─── Warehouses section ───────────────────────────────────────────────────────
+
+interface WarehouseRow { id: string; name: string; created_at: string }
+interface ShopLite { id: string; name: string; marketplace: string; warehouse_id: string | null }
+
+const MP_BADGE: Record<string, { label: string; color: string; bg: string }> = {
+  uzum:          { label: 'UZ', color: '#494fdf', bg: 'rgba(73,79,223,0.15)'   },
+  yandex_market: { label: 'YM', color: '#E8A000', bg: 'rgba(232,160,0,0.15)'  },
+  wildberries:   { label: 'WB', color: '#CB11AB', bg: 'rgba(203,17,171,0.15)' },
+}
+
+function WarehousesCard() {
+  const [warehouses, setWarehouses] = useState<WarehouseRow[]>([])
+  const [shops,      setShops]      = useState<ShopLite[]>([])
+  const [loading,    setLoading]    = useState(true)
+  const [showAdd,    setShowAdd]    = useState(false)
+  const [newName,    setNewName]    = useState('')
+  const [adding,     setAdding]     = useState(false)
+  const [msg,        setMsg]        = useState<{ ok: boolean; text: string } | null>(null)
+
+  useEffect(() => {
+    fetch('/api/warehouses')
+      .then(r => r.json())
+      .then(d => { setWarehouses(d.warehouses ?? []); setShops(d.shops ?? []) })
+      .finally(() => setLoading(false))
+  }, [])
+
+  async function handleCreate(e: React.FormEvent) {
+    e.preventDefault()
+    if (!newName.trim()) return
+    setAdding(true); setMsg(null)
+    try {
+      const res  = await fetch('/api/warehouses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newName.trim() }),
+      })
+      const data = await res.json()
+      if (data.warehouse) { setWarehouses(prev => [...prev, data.warehouse]); setNewName(''); setShowAdd(false) }
+      else setMsg({ ok: false, text: data.error ?? 'Xato' })
+    } catch { setMsg({ ok: false, text: 'Tarmoq xatosi' }) }
+    setAdding(false)
+  }
+
+  async function handleDelete(id: string) {
+    const res = await fetch(`/api/warehouses?id=${id}`, { method: 'DELETE' })
+    if (res.ok) setWarehouses(prev => prev.filter(w => w.id !== id))
+  }
+
+  async function handleAssign(shopId: string, warehouseId: string | null) {
+    await fetch('/api/warehouses/assign', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ shopId, warehouseId }),
+    })
+    setShops(prev => prev.map(s => s.id === shopId ? { ...s, warehouse_id: warehouseId } : s))
+  }
+
+  return (
+    <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
+      {/* Header */}
+      <div className="px-6 py-4 border-b border-[var(--border)] flex items-center gap-3">
+        <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(99,179,237,0.12)', border: '1px solid rgba(99,179,237,0.25)' }}>
+          <Building2 className="w-4 h-4" style={{ color: '#63b3ed' }} />
+        </div>
+        <div className="flex-1">
+          <p className="text-[var(--text-base)] font-semibold text-sm">Omborlar</p>
+          <p className="text-[var(--text-muted)] text-xs">Bir xil tovarlarni sotuvchi do&apos;konlarni birlashtiring</p>
+        </div>
+        <button
+          onClick={() => setShowAdd(v => !v)}
+          className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
+          style={{ background: 'rgba(99,179,237,0.12)', color: '#63b3ed', border: '1px solid rgba(99,179,237,0.2)' }}
+        >
+          <Plus className="w-3.5 h-3.5" /> Yangi ombor
+        </button>
+      </div>
+
+      <div className="p-6 space-y-5">
+        {/* Add form */}
+        {showAdd && (
+          <form onSubmit={handleCreate} className="flex gap-2">
+            <input
+              autoFocus
+              value={newName}
+              onChange={e => setNewName(e.target.value)}
+              placeholder="Ombor nomi (masalan: Toshkent ombori)"
+              className="flex-1 bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[rgba(99,179,237,0.5)] transition-all"
+            />
+            <button type="submit" disabled={adding}
+              className="flex items-center gap-1.5 text-sm font-medium px-4 py-2 rounded-xl disabled:opacity-50 transition-colors"
+              style={{ background: '#63b3ed', color: '#131321' }}>
+              {adding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              Saqlash
+            </button>
+            <button type="button" onClick={() => setShowAdd(false)}
+              className="px-3 py-2 rounded-xl text-sm text-[var(--text-muted)] border border-[var(--border2)] hover:text-red-400 transition-colors">
+              <XCircle className="w-4 h-4" />
+            </button>
+          </form>
+        )}
+        <StatusMsg msg={msg} />
+
+        {/* Warehouse list */}
+        {loading ? (
+          <div className="flex items-center gap-2 text-[var(--text-muted)] text-sm py-2">
+            <Loader2 className="w-4 h-4 animate-spin" /> Yuklanmoqda…
+          </div>
+        ) : warehouses.length === 0 ? (
+          <p className="text-[var(--text-muted)] text-sm">Hali ombor yo&apos;q. Yuqoridagi tugma bilan yarating.</p>
+        ) : (
+          <div className="space-y-2">
+            {warehouses.map(w => {
+              const assigned = shops.filter(s => s.warehouse_id === w.id)
+              return (
+                <div key={w.id} className="flex items-center gap-3 px-4 py-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border2)]">
+                  <Building2 className="w-4 h-4 text-[var(--text-muted)] shrink-0" />
+                  <span className="text-sm font-medium text-[var(--text-base)] flex-1">{w.name}</span>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {assigned.length === 0
+                      ? <span className="text-[var(--text-muted)] text-xs">Do&apos;kon biriktirilmagan</span>
+                      : assigned.map(s => {
+                          const b = MP_BADGE[s.marketplace]
+                          return b ? (
+                            <span key={s.id} className="text-[10px] font-bold px-2 py-0.5 rounded-md" style={{ background: b.bg, color: b.color, border: `1px solid ${b.color}30` }}>
+                              {b.label}
+                            </span>
+                          ) : null
+                        })
+                    }
+                  </div>
+                  <button
+                    onClick={() => handleDelete(w.id)}
+                    title="O'chirish"
+                    className="text-[var(--text-muted)] hover:text-red-400 transition-colors ml-1"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )
+            })}
+          </div>
+        )}
+
+        {/* Shop assignments */}
+        {!loading && shops.length > 0 && (
+          <div className="space-y-2 pt-2 border-t border-[var(--border)]">
+            <p className="text-xs font-medium text-[var(--text-muted)] pb-1">Do&apos;konni omborga biriktirish</p>
+            {shops.map(s => {
+              const b = MP_BADGE[s.marketplace]
+              return (
+                <div key={s.id} className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-[var(--bg-input)] border border-[var(--border2)]">
+                  {b && (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-md shrink-0" style={{ background: b.bg, color: b.color, border: `1px solid ${b.color}30` }}>
+                      {b.label}
+                    </span>
+                  )}
+                  <span className="text-sm text-[var(--text-base)] flex-1 truncate">{s.name}</span>
+                  <select
+                    value={s.warehouse_id ?? ''}
+                    onChange={e => handleAssign(s.id, e.target.value || null)}
+                    className="bg-[var(--bg-card2)] border border-[var(--border2)] rounded-lg px-2 py-1 text-xs text-[var(--text-base)] focus:outline-none focus:border-[rgba(99,179,237,0.5)] transition-all cursor-pointer"
+                  >
+                    <option value="">— Biriktirilmagan —</option>
+                    {warehouses.map(w => (
+                      <option key={w.id} value={w.id}>{w.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 interface Props {
   uzumShop:          Shop | null
   yandexShop:        Shop | null
@@ -517,6 +695,7 @@ export default function SettingsForm({ uzumShop, yandexShop, wbShop, userId, tel
       <UzumCard        shop={uzumShop}   userId={userId} />
       <YandexCard      shop={yandexShop} userId={userId} />
       <WildberriesCard shop={wbShop}     userId={userId} />
+      <WarehousesCard />
       <TelegramCard    chatId={telegramChatId ?? null} username={telegramUsername ?? null} />
       <DemoCard />
     </div>
