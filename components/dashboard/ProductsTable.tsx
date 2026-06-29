@@ -297,15 +297,13 @@ export default function ProductsTable({ products }: { products: Product[] }) {
                     <td className="px-5 py-4 text-right">
                       <span className="font-semibold" style={{ color: '#10b981' }}>{fmt(p.profit)}</span>
                     </td>
-                    <td className="px-5 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <div className="w-16 h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255, 255, 255, 0.06)' }}>
+                    <td className="px-5 py-4">
+                      <div className="flex flex-col items-end gap-1">
+                        <span className="text-xs font-medium tabular-nums" style={{ color: marginColor }}>{margin}%</span>
+                        <div className="w-16 h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--border)' }}>
                           <div className="h-full rounded-full"
                             style={{ width: `${Math.min(margin, 100)}%`, background: 'linear-gradient(to right, var(--c1), #428619)' }} />
                         </div>
-                        <span className="text-xs font-medium" style={{ color: marginColor }}>
-                          {margin}%
-                        </span>
                       </div>
                     </td>
                     <td className="px-5 py-4 text-right">
