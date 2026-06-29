@@ -7,30 +7,27 @@ const supabaseConfigured =
   process.env.NEXT_PUBLIC_SUPABASE_URL &&
   !process.env.NEXT_PUBLIC_SUPABASE_URL.includes('your-project')
 
-// Bug fix: Supabase JS silently ignores .filter('joined_table.column', ...) on embedded resources.
-// All cross-table filtering is now done via RPC (raw SQL) to ensure correct results.
-
-// allShopIdsStr  — all shops for this user (for cross-marketplace SKU dedup + sold counts)
-// targetShopIdsStr — shops filtered by marketplace (for the main products query)
+// Fetch all products for the user across all shops.
+// Marketplace filtering is done in JS so the result is cached once and reused for all tab switches.
 const _fetchProducts = unstable_cache(
-  async (allShopIdsStr: string, targetShopIdsStr: string): Promise<Product[]> => {
-    const allShopIds    = allShopIdsStr    ? allShopIdsStr.split(',')    : []
-    const targetShopIds = targetShopIdsStr ? targetShopIdsStr.split(',') : []
-    if (allShopIds.length === 0 || targetShopIds.length === 0) return []
+  async (allShopIdsStr: string): Promise<Product[]> => {
+    const allShopIds = allShopIdsStr ? allShopIdsStr.split(',') : []
+    if (allShopIds.length === 0) return []
 
     const supabase = createAdminClient()
 
     const [
       { data: products, error },
       { data: soldRows },
+      { data: shopRows },
     ] = await Promise.all([
       supabase
         .from('products')
-        .select('id, shop_id, sku, title, cost_price, selling_price, stock_quantity, category, marketplace_product_id, updated_at')
-        .in('shop_id', targetShopIds)
+        .select('id, shop_id, sku, title, cost_price, selling_price, stock_quantity, physical_stock, category, marketplace_product_id, updated_at')
+        .in('shop_id', allShopIds)
         .order('title'),
-      // Use RPC instead of embedded filter — JS client silently ignores joined-table filters
       supabase.rpc('get_sold_counts', { shop_ids: allShopIds }),
+      supabase.from('shops').select('id, marketplace').in('id', allShopIds),
     ])
     if (error || !products) return []
 
@@ -39,28 +36,53 @@ const _fetchProducts = unstable_cache(
       if (row.product_id) soldByProductId.set(row.product_id, Number(row.qty_sold ?? 0))
     }
 
+    const shopMarketplace = new Map<string, MarketplaceType>()
+    for (const s of shopRows ?? []) {
+      shopMarketplace.set(s.id, s.marketplace as MarketplaceType)
+    }
+
+    // Group by SKU: count shops selling it + sum sold across all of them
+    const skuTotalSold = new Map<string, number>()
+    const skuCount     = new Map<string, number>()
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return products.map((p: any) => ({
-      ...p,
-      available_stock: p.stock_quantity,
-      profit: Number(p.selling_price ?? 0) - Number(p.cost_price ?? 0),
-      sold: soldByProductId.get(p.id) ?? 0,
-      is_shared: false,
-    }))
+    for (const p of products as any[]) {
+      if (!p.sku) continue
+      const sold = soldByProductId.get(p.id) ?? 0
+      skuTotalSold.set(p.sku, (skuTotalSold.get(p.sku) ?? 0) + sold)
+      skuCount.set(p.sku,     (skuCount.get(p.sku)     ?? 0) + 1)
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return (products as any[]).map(p => {
+      const sold      = soldByProductId.get(p.id) ?? 0
+      const isShared  = p.sku ? (skuCount.get(p.sku) ?? 0) > 1 : false
+      const totalSold = p.sku ? (skuTotalSold.get(p.sku) ?? sold) : sold
+
+      // When physical_stock is set, available = shared pool − all cross-shop sales for this SKU
+      const availableStock = isShared && p.physical_stock != null
+        ? Math.max(0, p.physical_stock - totalSold)
+        : p.stock_quantity
+
+      return {
+        ...p,
+        marketplace:     shopMarketplace.get(p.shop_id),
+        available_stock: availableStock,
+        profit:          Number(p.selling_price ?? 0) - Number(p.cost_price ?? 0),
+        sold,
+        is_shared:       isShared,
+      }
+    })
   },
-  ['products-v2'],
+  ['products-v3'],
   { revalidate: 30 },
 )
 
 export async function getProducts(marketplace?: MarketplaceType): Promise<Product[]> {
   if (!supabaseConfigured) return []
-  const [allShopIds, targetShopIds] = await Promise.all([
-    getShopIds(),
-    marketplace ? getShopIds(marketplace) : getShopIds(),
-  ])
+  const allShopIds = await getShopIds()
   if (!allShopIds || allShopIds.length === 0) return []
-  if (!targetShopIds || targetShopIds.length === 0) return []
-  return _fetchProducts(allShopIds.join(','), targetShopIds.join(','))
+  const all = await _fetchProducts(allShopIds.join(','))
+  return marketplace ? all.filter(p => p.marketplace === marketplace) : all
 }
 
 export interface ProductSalesRow {

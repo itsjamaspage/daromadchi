@@ -7,12 +7,23 @@ import { useLang } from '@/app/providers'
 import { translations } from '@/lib/i18n'
 import type { Product, MarketplaceType } from '@/lib/types'
 
-const MP_TABS: { mp: MarketplaceType | undefined; label: string }[] = [
-  { mp: undefined,       label: 'Barchasi'      },
-  { mp: 'uzum',          label: 'Uzum'          },
-  { mp: 'yandex_market', label: 'Yandex Market' },
-  { mp: 'wildberries',   label: 'Wildberries'   },
-]
+const MP_META: Record<MarketplaceType, { label: string; short: string; color: string; bg: string }> = {
+  uzum:          { label: 'Uzum',          short: 'UZ', color: '#494fdf', bg: 'rgba(73,79,223,0.12)'   },
+  yandex_market: { label: 'Yandex Market', short: 'YM', color: '#E8A000', bg: 'rgba(232,160,0,0.12)'  },
+  wildberries:   { label: 'Wildberries',   short: 'WB', color: '#CB11AB', bg: 'rgba(203,17,171,0.12)' },
+}
+
+function MpBadge({ mp }: { mp: MarketplaceType }) {
+  const m = MP_META[mp]
+  return (
+    <span
+      className="text-[10px] font-bold px-1.5 py-0.5 rounded"
+      style={{ background: m.bg, color: m.color }}
+    >
+      {m.short}
+    </span>
+  )
+}
 
 function fmt(n: number) {
   return new Intl.NumberFormat('uz-UZ').format(n) + " so'm"
@@ -51,13 +62,20 @@ export default function ProductsTable({ products }: { products: Product[] }) {
 
   const allLabel = d.status.all
 
-  const [mp,       setMp]       = useState<MarketplaceType | undefined>(undefined)
-  const [query,    setQuery]    = useState('')
-  const [sortBy,   setSortBy]   = useState<'title' | 'profit' | 'margin' | 'stock_quantity' | 'drr'>('profit')
-  const [sortDir,  setSortDir]  = useState<'asc' | 'desc'>('desc')
-  const [tab,      setTab]      = useState<TabKey>('all')
-  const [drrThreshold, setDrrThreshold] = useState(20)
+  const [mp,             setMp]             = useState<MarketplaceType | undefined>(undefined)
+  const [query,          setQuery]          = useState('')
+  const [sortBy,         setSortBy]         = useState<SortKey>('profit')
+  const [sortDir,        setSortDir]        = useState<'asc' | 'desc'>('desc')
+  const [tab,            setTab]            = useState<TabKey>('all')
+  const [drrThreshold,   setDrrThreshold]   = useState(20)
   const [stockThreshold, setStockThreshold] = useState(10)
+
+  // Derive available marketplaces from the product list (only show tabs for connected ones)
+  const availableMps = useMemo(() => {
+    const mps = new Set<MarketplaceType>()
+    for (const p of products) if (p.marketplace) mps.add(p.marketplace)
+    return [...mps].sort()
+  }, [products])
 
   const categories = useMemo(() => {
     const cats = [...new Set(products.map(p => p.category).filter(Boolean))] as string[]
@@ -85,9 +103,8 @@ export default function ProductsTable({ products }: { products: Product[] }) {
     }
     if (category !== allLabel) rows = rows.filter(p => p.category === category)
 
-    // Tab filter
     if (tab === 'high_drr')  rows = rows.filter(p => p.drr >= drrThreshold)
-    if (tab === 'low_stock') rows = rows.filter(p => p.stock_quantity < stockThreshold)
+    if (tab === 'low_stock') rows = rows.filter(p => p.available_stock < stockThreshold)
     if (tab === 'no_orders') rows = rows.filter(p => (p.sold ?? 0) === 0)
 
     rows.sort((a, b) => {
@@ -112,45 +129,65 @@ export default function ProductsTable({ products }: { products: Product[] }) {
   }
 
   const exportData = filtered.map(p => ({
-    [d.product]:       p.title,
-    'SKU':             p.sku ?? '',
-    [d.category]:      p.category ?? '',
-    [d.price]:         p.selling_price ?? 0,
-    [d.costPriceLabel]:p.cost_price ?? 0,
-    [d.profit]:        p.profit,
-    [`${d.margin} (%)`]: (p.profit / (Number(p.selling_price) || 1) * 100).toFixed(1),
-    [d.sold]:          p.sold ?? 0,
-    [d.stockQty]:      p.stock_quantity,
-    [d.adSpendLabel]:  p.adSpend,
-    'DRR (%)':         p.drr.toFixed(1),
+    [d.product]:          p.title,
+    'SKU':                p.sku ?? '',
+    'Marketplace':        p.marketplace ? MP_META[p.marketplace]?.label : '',
+    [d.category]:         p.category ?? '',
+    [d.price]:            p.selling_price ?? 0,
+    [d.costPriceLabel]:   p.cost_price ?? 0,
+    [d.profit]:           p.profit,
+    [`${d.margin} (%)`]:  (p.profit / (Number(p.selling_price) || 1) * 100).toFixed(1),
+    [d.sold]:             p.sold ?? 0,
+    [d.stockQty]:         p.available_stock,
+    [d.adSpendLabel]:     p.adSpend,
+    'DRR (%)':            p.drr.toFixed(1),
   }))
 
   const tabCounts = {
     all:       enriched.length,
     high_drr:  enriched.filter(p => p.drr >= drrThreshold).length,
-    low_stock: enriched.filter(p => p.stock_quantity < stockThreshold).length,
+    low_stock: enriched.filter(p => p.available_stock < stockThreshold).length,
     no_orders: enriched.filter(p => (p.sold ?? 0) === 0).length,
   }
 
   return (
     <div className="space-y-4">
-      {/* Marketplace tabs — instant client-side filter */}
-      <div className="flex items-center gap-1.5 p-1 rounded-xl w-fit border" style={{ background: 'var(--bg-card2)', borderColor: 'var(--border)' }}>
-        {MP_TABS.map(({ mp: m, label }) => (
-          <button key={label} onClick={() => setMp(m)}
+      {/* Marketplace tabs — instant client-side filter, only shows connected marketplaces */}
+      {availableMps.length > 0 && (
+        <div className="flex items-center gap-1.5 p-1 rounded-xl w-fit border" style={{ background: 'var(--bg-card2)', borderColor: 'var(--border)' }}>
+          <button
+            onClick={() => setMp(undefined)}
             className="px-3 py-1.5 rounded-full text-xs font-semibold transition-all"
-            style={mp === m ? {
+            style={mp === undefined ? {
               background: 'rgba(131,192,249,0.12)',
               color: 'var(--c1)',
               border: '1px solid rgba(131,192,249,0.25)',
             } : {
               color: 'var(--text-muted)',
               border: '1px solid transparent',
-            }}>
-            {label}
+            }}
+          >
+            {d.all ?? 'Barchasi'}
           </button>
-        ))}
-      </div>
+          {availableMps.map(m => (
+            <button
+              key={m}
+              onClick={() => setMp(m)}
+              className="px-3 py-1.5 rounded-full text-xs font-semibold transition-all"
+              style={mp === m ? {
+                background: MP_META[m].bg,
+                color: MP_META[m].color,
+                border: `1px solid ${MP_META[m].color}40`,
+              } : {
+                color: 'var(--text-muted)',
+                border: '1px solid transparent',
+              }}
+            >
+              {MP_META[m].label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Filter tabs */}
       <div className="flex items-center gap-1 p-1 rounded-xl w-fit border" style={{ background: 'var(--bg-card2)', borderColor: 'var(--border)' }}>
@@ -269,19 +306,30 @@ export default function ProductsTable({ products }: { products: Product[] }) {
                 const price  = Number(p.selling_price ?? 0)
                 const margin = price > 0 ? Number(((p.profit / price) * 100).toFixed(1)) : 0
                 const drr = drrBadge(p.drr)
-                const stock = stockBadge(p.stock_quantity)
+                const stock = stockBadge(p.available_stock)
                 const noSaleWithAd = (p.sold ?? 0) === 0 && p.adSpend > 0
                 const organicSale  = (p.sold ?? 0) > 0 && p.adSpend === 0
-                const marginColor = margin > 35 ? '#10b981' : margin > 20 ? '#f59e0b' : '#ef4444'
+                const marginColor  = margin > 35 ? '#10b981' : margin > 20 ? '#f59e0b' : '#ef4444'
                 return (
                   <tr key={p.id} style={{ borderBottom: idx < filtered.length - 1 ? '1px solid var(--border)' : 'none' }}>
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-2">
                         <div>
-                          <p className="font-medium transition-colors" style={{ color: 'var(--text-base)' }}>{p.title}</p>
-                          <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{p.sku}</p>
+                          <p className="font-medium" style={{ color: 'var(--text-base)' }}>{p.title}</p>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{p.sku}</span>
+                            {p.marketplace && <MpBadge mp={p.marketplace} />}
+                            {p.is_shared && (
+                              <span
+                                className="text-[10px] font-medium px-1.5 py-0.5 rounded"
+                                style={{ background: 'rgba(168,85,247,0.12)', color: '#a855f7' }}
+                                title="Bu mahsulot bir nechta do'konda sotiladi — zaxira umumiy"
+                              >
+                                shared
+                              </span>
+                            )}
+                          </div>
                         </div>
-                        {/* Smart indicators */}
                         {noSaleWithAd && (
                           <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: '#ef4444' }} title="Reklama sarfi bor, lekin sotuv yo'q" />
                         )}
@@ -314,7 +362,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
                     <td className="px-5 py-4 text-right" style={{ color: 'var(--text-dim)' }}>{p.sold ?? 0}</td>
                     <td className="px-5 py-4 text-right">
                       <span className="text-xs font-medium px-2.5 py-1 rounded-lg" style={{ background: stock.bgColor, color: stock.color }}>
-                        {p.stock_quantity}
+                        {p.available_stock}
                       </span>
                     </td>
                   </tr>
