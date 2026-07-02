@@ -37,13 +37,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const lang = (cookieStore.get('lang')?.value ?? 'uz') as Lang
 
   return (
-    <html lang={lang} className={`${spaceGrotesk.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning style={{ backgroundColor: '#161616' }}>
+    <html lang={lang} className={`${spaceGrotesk.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning style={{ backgroundColor: '#ffffff' }}>
       <head>
         <link rel="manifest" href="/manifest.json" />
         <link rel="icon" href="/icon.svg" type="image/svg+xml" />
         <link rel="apple-touch-icon" href="/icon.svg" />
         <meta name="theme-color" content="#16A34A" />
-        <script dangerouslySetInnerHTML={{ __html: `(function(){try{var t=localStorage.getItem('theme');document.documentElement.setAttribute('data-theme',t||'dark');}catch(e){document.documentElement.setAttribute('data-theme','dark');}})()` }} />
+        <script dangerouslySetInnerHTML={{ __html: `(function(){try{var t=localStorage.getItem('theme');document.documentElement.setAttribute('data-theme',t||'light');}catch(e){document.documentElement.setAttribute('data-theme','light');}})()` }} />
       </head>
       <body className="antialiased">
         <div style={{ position: 'relative', zIndex: 1 }}>

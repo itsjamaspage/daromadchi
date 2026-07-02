@@ -7,7 +7,7 @@ import type { Lang } from '@/lib/i18n'
 
 /* ── Theme ─────────────────────────────────────────────────────────────────── */
 type Theme = 'dark' | 'light'
-const ThemeCtx = createContext<{ theme: Theme; toggle: () => void }>({ theme: 'dark', toggle: () => {} })
+const ThemeCtx = createContext<{ theme: Theme; toggle: () => void }>({ theme: 'light', toggle: () => {} })
 export const useTheme = () => useContext(ThemeCtx)
 
 /* ── Language ───────────────────────────────────────────────────────────────── */
@@ -21,7 +21,7 @@ interface Props {
 
 export default function Providers({ children, initialLang = 'uz' }: Props) {
   const router = useRouter()
-  const [theme, setTheme] = useState<Theme>('dark')
+  const [theme, setTheme] = useState<Theme>('light')
   const [lang,  setLangState] = useState<Lang>(initialLang)
 
   useEffect(() => {
