@@ -8,7 +8,6 @@ import { DollarSign, TrendingUp, ShoppingBag, Package, Settings, ArrowRight, Ref
 import KpiCard from '@/components/dashboard/KpiCard'
 import RevenueChart from '@/components/dashboard/RevenueChart'
 import DateRangePicker from '@/components/dashboard/DateRangePicker'
-import SyncButton from '@/components/dashboard/SyncButton'
 import StockAlerts from '@/components/dashboard/StockAlerts'
 import CategoryChart from '@/components/dashboard/CategoryChart'
 import { useLang, useTheme } from '@/app/providers'
@@ -127,7 +126,6 @@ export default function DashboardClient({ slices, days, period, from, to, initia
           <p className="text-[var(--text-muted)] text-sm">{d.subtitle}</p>
         </div>
         <div className="flex items-center gap-2">
-          <SyncButton />
           <Suspense>
             <DateRangePicker period={period} from={from} to={to} />
           </Suspense>
