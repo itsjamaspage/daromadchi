@@ -220,7 +220,7 @@ function LoginForm() {
           }
           setLoading(false)
         }
-        else { router.push('/dashboard'); router.refresh() }
+        else { window.location.href = '/dashboard' }
       } else {
         const signupRes = await fetch('/api/auth/signup', {
           method: 'POST',
@@ -239,7 +239,7 @@ function LoginForm() {
               body: JSON.stringify({ refCode, newUserId: signupData.userId }),
             }).catch(() => {})
           }
-          if (!signupData.needsConfirmation) { router.push('/dashboard'); router.refresh() }
+          if (!signupData.needsConfirmation) { window.location.href = '/dashboard' }
           else { setSuccess(true); setLoading(false) }
         }
       }
