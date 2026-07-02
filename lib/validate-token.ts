@@ -1,5 +1,6 @@
 import type { MarketplaceType } from '@/lib/types'
 import { marketplaceFetch } from '@/lib/marketplace-readonly-guard'
+import { logger } from '@/lib/logger'
 
 export async function validateMarketplaceToken(
   marketplace: MarketplaceType,
@@ -12,6 +13,7 @@ export async function validateMarketplaceToken(
           headers: { 'Api-Key': token, Accept: 'application/json' },
           cache: 'no-store',
         })
+        if (!res.ok) logger.warn('validate_token_rejected', { marketplace, status: res.status })
         return res.ok
       }
       case 'uzum': {
@@ -19,19 +21,22 @@ export async function validateMarketplaceToken(
           headers: { Authorization: token, Accept: 'application/json' },
           cache: 'no-store',
         })
+        if (!res.ok) logger.warn('validate_token_rejected', { marketplace, status: res.status })
         return res.ok
       }
       case 'wildberries': {
-        const res = await marketplaceFetch('https://marketplace-api.wildberries.ru/api/v3/supplies?limit=1', {
-          headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+        const res = await marketplaceFetch('https://common-api.wildberries.ru/api/v1/seller-info', {
+          headers: { Authorization: token },
           cache: 'no-store',
         })
+        if (!res.ok) logger.warn('validate_token_rejected', { marketplace, status: res.status })
         return res.ok
       }
       default:
         return false
     }
-  } catch {
+  } catch (err) {
+    logger.error('validate_token_network_error', { marketplace, error: String(err) })
     return false
   }
 }
