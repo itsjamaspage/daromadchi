@@ -65,6 +65,16 @@ html, body {
 
   --skeleton-base:  #bdd0e8;   /* skeleton row base — visible on #e8f0fd card */
   --skeleton-shine: #d8e9f8;   /* skeleton shimmer highlight */
+
+  --status-ok-bg:   rgba(5, 150, 105, 0.1);
+  --status-ok-text: #047857;
+  --status-ok-bdr:  rgba(5, 150, 105, 0.25);
+  --status-err-bg:  rgba(220, 38, 38, 0.08);
+  --status-err-text:#b91c1c;
+  --status-err-bdr: rgba(220, 38, 38, 0.2);
+  --badge-ok-bg:    rgba(5, 150, 105, 0.1);
+  --badge-ok-text:  #047857;
+  --badge-ok-bdr:   rgba(5, 150, 105, 0.25);
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -100,6 +110,16 @@ html, body {
 
   --skeleton-base:  #1a2633;   /* skeleton row base — visible on #111 card */
   --skeleton-shine: #2e4560;   /* skeleton shimmer highlight */
+
+  --status-ok-bg:   rgba(16, 185, 129, 0.1);
+  --status-ok-text: #34d399;
+  --status-ok-bdr:  rgba(16, 185, 129, 0.25);
+  --status-err-bg:  rgba(239, 68, 68, 0.1);
+  --status-err-text:#f87171;
+  --status-err-bdr: rgba(239, 68, 68, 0.2);
+  --badge-ok-bg:    rgba(16, 185, 129, 0.1);
+  --badge-ok-text:  #34d399;
+  --badge-ok-bdr:   rgba(16, 185, 129, 0.25);
 }
 
 /* ═══════════════════════════════════════════════════════════════════
