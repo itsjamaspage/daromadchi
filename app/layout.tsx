@@ -37,7 +37,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const lang = (cookieStore.get('lang')?.value ?? 'uz') as Lang
 
   return (
-    <html lang={lang} className={`${spaceGrotesk.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning style={{ backgroundColor: '#ffffff' }}>
+    <html lang={lang} className={`${spaceGrotesk.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning style={{ backgroundColor: '#83c0f7' }}>
       <head>
         <link rel="manifest" href="/manifest.json" />
         <link rel="icon" href="/icon.svg" type="image/svg+xml" />
