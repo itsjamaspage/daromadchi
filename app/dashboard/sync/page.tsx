@@ -1,4 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { getCurrentUserId } from '@/lib/db/shop-context'
+import { getSyncDays } from '@/lib/db/sync-state'
 import SyncStatusClient from './SyncStatusClient'
 import { getLang } from '@/lib/lang'
 import { dashT } from '@/lib/dashT'
@@ -11,10 +14,15 @@ export default async function SyncStatusPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
 
-  const { data: shops } = await supabase
-    .from('shops')
-    .select('id, name, marketplace, api_key_encrypted, last_synced_at, shop_id_external')
-    .eq('user_id', user.id)
+  const [{ data: shops }, uzumDays, yandexDays, wbDays] = await Promise.all([
+    supabase
+      .from('shops')
+      .select('id, name, marketplace, api_key_encrypted, last_synced_at, shop_id_external')
+      .eq('user_id', user.id),
+    getSyncDays('uzum', 30),
+    getSyncDays('yandex_market', 30),
+    getSyncDays('wildberries', 30),
+  ])
 
   const filteredShops = (shops ?? []).filter(s => s.shop_id_external !== 'DEMO')
 
@@ -28,13 +36,21 @@ export default async function SyncStatusPage() {
     })
   )
 
+  const connectedMps = filteredShops.map(s => s.marketplace).filter((v, i, a) => a.indexOf(v) === i)
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-[var(--text-base)]">{t.title}</h1>
         <p className="text-[var(--text-muted)] text-sm mt-1">{t.subtitle}</p>
       </div>
-      <SyncStatusClient shops={shopsWithCounts} />
+      <SyncStatusClient
+        shops={shopsWithCounts}
+        uzumDays={uzumDays}
+        yandexDays={yandexDays}
+        wbDays={wbDays}
+        connectedMps={connectedMps}
+      />
     </div>
   )
 }

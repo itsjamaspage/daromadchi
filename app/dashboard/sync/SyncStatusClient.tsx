@@ -2,10 +2,12 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { RefreshCw, CheckCircle, XCircle, Loader2, Settings } from 'lucide-react'
+import { RefreshCw, CheckCircle, XCircle, Loader2, Settings, ChevronDown } from 'lucide-react'
 import Link from 'next/link'
 import { useLang } from '@/app/providers'
 import { dashT } from '@/lib/dashT'
+import type { SyncDay } from '@/lib/types'
+import DataStateView from '@/components/dashboard/DataStateView'
 
 interface Shop {
   id: string
@@ -176,11 +178,22 @@ function ShopCard({ shop }: { shop: Shop }) {
   )
 }
 
-export default function SyncStatusClient({ shops }: { shops: Shop[] }) {
+interface Props {
+  shops: Shop[]
+  uzumDays: SyncDay[]
+  yandexDays: SyncDay[]
+  wbDays: SyncDay[]
+  connectedMps: string[]
+}
+
+export default function SyncStatusClient({ shops, uzumDays, yandexDays, wbDays, connectedMps }: Props) {
   const router = useRouter()
   const { lang } = useLang()
   const t = dashT[lang].sync
   const [syncingAll, setSyncingAll] = useState(false)
+  const [showHistory, setShowHistory] = useState(false)
+
+  const hasDays = uzumDays.length > 0 || yandexDays.length > 0 || wbDays.length > 0
 
   async function handleSyncAll() {
     setSyncingAll(true)
@@ -219,6 +232,27 @@ export default function SyncStatusClient({ shops }: { shops: Shop[] }) {
         </button>
       </div>
       {shops.map(shop => <ShopCard key={shop.id} shop={shop} />)}
+
+      {hasDays && (
+        <div className="space-y-4 pt-2">
+          <button
+            onClick={() => setShowHistory(v => !v)}
+            className="flex items-center gap-2 text-sm font-semibold text-[var(--text-base)] hover:text-[var(--c1)] transition-colors"
+          >
+            <ChevronDown className={`w-4 h-4 transition-transform ${showHistory ? 'rotate-180' : ''}`} />
+            {lang === 'ru' ? 'История синхронизации по дням' : lang === 'en' ? 'Daily sync history' : 'Kunlik sinxronizatsiya tarixi'}
+          </button>
+
+          {showHistory && (
+            <DataStateView
+              uzumDays={uzumDays}
+              yandexDays={yandexDays}
+              wbDays={wbDays}
+              connectedMps={connectedMps}
+            />
+          )}
+        </div>
+      )}
     </div>
   )
 }
