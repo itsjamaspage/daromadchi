@@ -65,6 +65,61 @@ html, body {
 
   --skeleton-base:  #bdd0e8;   /* skeleton row base — visible on #e8f0fd card */
   --skeleton-shine: #d8e9f8;   /* skeleton shimmer highlight */
+
+  --status-ok-bg:   rgba(5, 150, 105, 0.1);
+  --status-ok-text: #047857;
+  --status-ok-bdr:  rgba(5, 150, 105, 0.25);
+  --status-err-bg:  rgba(220, 38, 38, 0.08);
+  --status-err-text:#b91c1c;
+  --status-err-bdr: rgba(220, 38, 38, 0.2);
+  --badge-ok-bg:    rgba(5, 150, 105, 0.1);
+  --badge-ok-text:  #047857;
+  --badge-ok-bdr:   rgba(5, 150, 105, 0.25);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   DARK THEME — Revolut black canvas
+   canvas-dark #161616 · surface-elevated #1e1e1e · mint #46F0D2
+═══════════════════════════════════════════════════════════════════ */
+[data-theme="dark"] {
+  --color-info:  rgba(197, 232, 254, 0.85);
+
+  --bg-base:    #161616;                    /* canvas-dark */
+  --bg-card:    #1e1e1e;                    /* surface-elevated */
+  --bg-card2:   #111111;                    /* surface-deep */
+  --bg-input:   #252525;                    /* input bg */
+
+  --border:     rgba(255, 255, 255, 0.08);  /* hairline-dark */
+  --border2:    rgba(255, 255, 255, 0.18);  /* hairline-dark strong */
+
+  --text-base:  #ffffff;                    /* on-dark */
+  --text-muted: rgba(255, 255, 255, 0.72);  /* on-dark-mute */
+  --text-dim:   #8d969e;                    /* stone */
+
+  --nav-bg:     rgba(22, 22, 22, 0.96);
+
+  --c1:         #83c0f9;   /* sky blue — brand primary */
+  --c2:         #6aabf0;   /* sky blue dark */
+
+  --scrollbar-track: #111111;
+  --scrollbar-thumb: #3a3a3a;
+
+  --hairline:   rgba(255, 255, 255, 0.08);
+  --surface-soft: #1e1e1e;
+  --color-scheme: dark;
+
+  --skeleton-base:  #1a2633;   /* skeleton row base — visible on #111 card */
+  --skeleton-shine: #2e4560;   /* skeleton shimmer highlight */
+
+  --status-ok-bg:   rgba(16, 185, 129, 0.1);
+  --status-ok-text: #34d399;
+  --status-ok-bdr:  rgba(16, 185, 129, 0.25);
+  --status-err-bg:  rgba(239, 68, 68, 0.1);
+  --status-err-text:#f87171;
+  --status-err-bdr: rgba(239, 68, 68, 0.2);
+  --badge-ok-bg:    rgba(16, 185, 129, 0.1);
+  --badge-ok-text:  #34d399;
+  --badge-ok-bdr:   rgba(16, 185, 129, 0.25);
 }
 
 /* ═══════════════════════════════════════════════════════════════════

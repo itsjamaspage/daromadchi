@@ -14,9 +14,17 @@ import type { Shop } from '@/lib/types'
 
 function StatusMsg({ msg }: { msg: { ok: boolean; text: string } | null }) {
   if (!msg) return null
+  const ok = msg.ok
   return (
-    <div className={`flex items-start gap-2 text-sm px-4 py-2.5 rounded-xl ${msg.ok ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
-      {msg.ok ? <CheckCircle className="w-4 h-4 mt-0.5 shrink-0" /> : <XCircle className="w-4 h-4 mt-0.5 shrink-0" />}
+    <div
+      className="flex items-start gap-2 text-sm px-4 py-2.5 rounded-xl border"
+      style={{
+        background: ok ? 'var(--status-ok-bg)' : 'var(--status-err-bg)',
+        color:      ok ? 'var(--status-ok-text)' : 'var(--status-err-text)',
+        borderColor: ok ? 'var(--status-ok-bdr)' : 'var(--status-err-bdr)',
+      }}
+    >
+      {ok ? <CheckCircle className="w-4 h-4 mt-0.5 shrink-0" /> : <XCircle className="w-4 h-4 mt-0.5 shrink-0" />}
       {msg.text}
     </div>
   )
@@ -107,7 +115,7 @@ function UzumCard({ shop, userId: _userId }: { shop: Shop | null; userId: string
           <p className="text-[var(--text-base)] font-semibold text-sm">Uzum Market</p>
           <p className="text-[var(--text-muted)] text-xs">seller.uzum.uz</p>
         </div>
-        <span className={`ml-auto text-[10px] font-semibold px-2 py-1 rounded-full border ${hasKey ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-400' : 'bg-slate-500/10 border-[var(--border)] text-[var(--text-muted)]'}`}>
+        <span className={`ml-auto text-[10px] font-semibold px-2 py-1 rounded-full border ${hasKey ? 'bg-[var(--badge-ok-bg)] border-[var(--badge-ok-bdr)] text-[var(--badge-ok-text)]' : 'bg-slate-500/10 border-[var(--border)] text-[var(--text-muted)]'}`}>
           {hasKey ? 'Ulangan' : 'Ulanmagan'}
         </span>
       </div>
@@ -159,7 +167,7 @@ function UzumCard({ shop, userId: _userId }: { shop: Shop | null; userId: string
           <button onClick={handleTest} disabled={testing || syncing || !hasKey}
             title={!hasKey ? 'Avval token saqlang' : ''}
             className="flex items-center gap-2 bg-[var(--bg-input)] hover:bg-[var(--bg-input)] border border-[var(--border2)] disabled:opacity-40 disabled:cursor-not-allowed text-[var(--text-dim)] text-sm font-medium px-4 py-2 rounded-xl transition-colors">
-            {testing ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4 text-emerald-400" />}
+            {testing ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" style={{ color: 'var(--status-ok-text)' }} />}
             Tekshirish
           </button>
           <button onClick={handleSync} disabled={syncing || !hasKey}
@@ -268,7 +276,7 @@ function YandexCard({ shop, userId: _userId }: { shop: Shop | null; userId: stri
           <p className="text-[var(--text-base)] font-semibold text-sm">Yandex Market</p>
           <p className="text-[var(--text-muted)] text-xs">partner.market.yandex.ru</p>
         </div>
-        <span className={`ml-auto text-[10px] font-semibold px-2 py-1 rounded-full border ${connected ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-400' : 'bg-slate-500/10 border-[var(--border)] text-[var(--text-muted)]'}`}>
+        <span className={`ml-auto text-[10px] font-semibold px-2 py-1 rounded-full border ${connected ? 'bg-[var(--badge-ok-bg)] border-[var(--badge-ok-bdr)] text-[var(--badge-ok-text)]' : 'bg-slate-500/10 border-[var(--border)] text-[var(--text-muted)]'}`}>
           {connected ? 'Ulangan' : 'Ulanmagan'}
         </span>
       </div>
@@ -310,7 +318,7 @@ function YandexCard({ shop, userId: _userId }: { shop: Shop | null; userId: stri
 
         <StatusMsg msg={saveMsg} />
         <button type="submit" disabled={saving}
-          className="flex items-center gap-2 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-[var(--text-base)] text-sm font-medium px-4 py-2 rounded-xl transition-colors">
+          className="flex items-center gap-2 bg-amber-500/80 hover:bg-amber-500/90 disabled:opacity-50 text-[var(--text-base)] text-sm font-medium px-4 py-2 rounded-xl transition-colors">
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
           Saqlash
         </button>
@@ -333,12 +341,12 @@ function YandexCard({ shop, userId: _userId }: { shop: Shop | null; userId: stri
             <button onClick={handleTest} disabled={testing || syncing || !connected}
               title={!connected ? 'Avval token va Campaign ID saqlang' : ''}
               className="flex items-center gap-2 bg-[var(--bg-input)] hover:bg-[var(--bg-input)] border border-[var(--border2)] disabled:opacity-40 disabled:cursor-not-allowed text-[var(--text-dim)] text-sm font-medium px-4 py-2 rounded-xl transition-colors">
-              {testing ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4 text-emerald-400" />}
+              {testing ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" style={{ color: 'var(--status-ok-text)' }} />}
               Tekshirish
             </button>
             <button onClick={handleSync} disabled={syncing || !connected}
               title={!connected ? 'Avval token va Campaign ID saqlang' : ''}
-              className="flex items-center gap-2 bg-amber-600 hover:bg-amber-500 border border-transparent disabled:opacity-40 disabled:cursor-not-allowed text-[var(--text-base)] text-sm font-medium px-4 py-2 rounded-xl transition-colors">
+              className="flex items-center gap-2 bg-amber-500/80 hover:bg-amber-500/90 border border-transparent disabled:opacity-40 disabled:cursor-not-allowed text-[var(--text-base)] text-sm font-medium px-4 py-2 rounded-xl transition-colors">
               {syncing ? <><Loader2 className="w-4 h-4 animate-spin" /> Sinxronlanmoqda…</> : <><RefreshCw className="w-4 h-4" /> Sinxronlash</>}
             </button>
           </div>
@@ -433,7 +441,7 @@ function WildberriesCard({ shop, userId: _userId }: { shop: Shop | null; userId:
           <p className="text-[var(--text-base)] font-semibold text-sm">Wildberries</p>
           <p className="text-[var(--text-muted)] text-xs">seller.wildberries.ru</p>
         </div>
-        <span className={`ml-auto text-[10px] font-semibold px-2 py-1 rounded-full border ${hasKey ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-400' : 'bg-slate-500/10 border-[var(--border)] text-[var(--text-muted)]'}`}>
+        <span className={`ml-auto text-[10px] font-semibold px-2 py-1 rounded-full border ${hasKey ? 'bg-[var(--badge-ok-bg)] border-[var(--badge-ok-bdr)] text-[var(--badge-ok-text)]' : 'bg-slate-500/10 border-[var(--border)] text-[var(--text-muted)]'}`}>
           {hasKey ? 'Ulangan' : 'Ulanmagan'}
         </span>
       </div>
@@ -487,7 +495,7 @@ function WildberriesCard({ shop, userId: _userId }: { shop: Shop | null; userId:
             <button onClick={handleTest} disabled={testing || syncing || !hasKey}
               title={!hasKey ? 'Avval token saqlang' : ''}
               className="flex items-center gap-2 bg-[var(--bg-input)] hover:bg-[var(--bg-input)] border border-[var(--border2)] disabled:opacity-40 disabled:cursor-not-allowed text-[var(--text-dim)] text-sm font-medium px-4 py-2 rounded-xl transition-colors">
-              {testing ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4 text-emerald-400" />}
+              {testing ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" style={{ color: 'var(--status-ok-text)' }} />}
               Tekshirish
             </button>
             <button onClick={handleSync} disabled={syncing || !hasKey}
@@ -752,7 +760,7 @@ function TelegramCard({ chatId, username }: { chatId: string | null; username: s
           </p>
         </div>
         {connected && (
-          <span className="text-[10px] font-semibold px-2 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+          <span className="text-[10px] font-semibold px-2 py-1 rounded-full border" style={{ background: 'var(--badge-ok-bg)', borderColor: 'var(--badge-ok-bdr)', color: 'var(--badge-ok-text)' }}>
             Ulangan ✓
           </span>
         )}

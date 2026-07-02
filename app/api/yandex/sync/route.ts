@@ -24,6 +24,7 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     .select('id, api_key_encrypted, shop_id_external')
     .eq('user_id', user.id)
     .eq('marketplace', 'yandex_market')
+    .eq('is_active', true)
     .single()
 
   if (!shop?.api_key_encrypted) {
@@ -59,6 +60,7 @@ export const GET = withErrorHandler(async () => {
     .select('api_key_encrypted, shop_id_external')
     .eq('user_id', user.id)
     .eq('marketplace', 'yandex_market')
+    .eq('is_active', true)
     .single()
 
   if (!shop?.api_key_encrypted) {
