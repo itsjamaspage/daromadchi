@@ -21,6 +21,7 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     .select('id, api_key_encrypted, last_synced_at')
     .eq('user_id', user.id)
     .eq('marketplace', 'wildberries')
+    .eq('is_active', true)
     .maybeSingle()
 
   if (!shop?.api_key_encrypted) {
@@ -51,6 +52,7 @@ export const GET = withErrorHandler(async () => {
     .select('api_key_encrypted')
     .eq('user_id', user.id)
     .eq('marketplace', 'wildberries')
+    .eq('is_active', true)
     .maybeSingle()
 
   if (!shop?.api_key_encrypted) {
