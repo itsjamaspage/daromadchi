@@ -19,6 +19,7 @@ export const POST = withErrorHandler(async () => {
     .select('*')
     .eq('user_id', user.id)
     .eq('marketplace', 'wildberries')
+    .neq('shop_id_external', 'DEMO')
     .maybeSingle()
 
   if (!shop?.api_key_encrypted) {

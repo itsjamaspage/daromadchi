@@ -17,7 +17,7 @@ export async function getStockAlerts(): Promise<StockAlert[]> {
   const supabase = createAdminClient()
   const [{ data: settings }, { data: shopRows }] = await Promise.all([
     supabase.from('user_settings').select('alert_stock_threshold').eq('user_id', userId).single(),
-    supabase.from('shops').select('id, marketplace, warehouse_id').eq('user_id', userId),
+    supabase.from('shops').select('id, marketplace, warehouse_id').eq('user_id', userId).neq('shop_id_external', 'DEMO'),
   ])
 
   const threshold = settings?.alert_stock_threshold ?? 15
