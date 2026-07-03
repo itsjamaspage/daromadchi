@@ -1,14 +1,28 @@
 import { ShoppingCart, Settings } from 'lucide-react'
 import Link from 'next/link'
-import { getOrders } from '@/lib/db/orders'
+import { getOrdersPaginated } from '@/lib/db/orders'
 import OrdersTable from '@/components/dashboard/OrdersTable'
+import Pagination from '@/components/dashboard/Pagination'
 import { getT } from '@/lib/server-i18n'
 
-export default async function OrdersPage() {
-  const [t, orders] = await Promise.all([getT(), getOrders()])
-  const d = t.dashboard
+const PAGE_SIZE = 50
 
-  if (orders.length === 0) {
+interface Props {
+  searchParams: Promise<Record<string, string>>
+}
+
+export default async function OrdersPage({ searchParams }: Props) {
+  const params = await searchParams
+  const page = Math.max(1, parseInt(params.page ?? '1', 10) || 1)
+
+  const [t, { rows: orders, total }] = await Promise.all([
+    getT(),
+    getOrdersPaginated(page, PAGE_SIZE),
+  ])
+  const d = t.dashboard
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
+
+  if (total === 0) {
     return (
       <div className="space-y-6">
         <div>
@@ -39,9 +53,10 @@ export default async function OrdersPage() {
         <div className="flex items-center gap-2 mb-0.5">
           <h1 className="text-2xl font-bold" style={{ color: 'var(--text-base)' }}>{d.ordersTitle}</h1>
         </div>
-        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{orders.length} {d.orderCount}</p>
+        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{total} {d.orderCount}</p>
       </div>
       <OrdersTable orders={orders} />
+      <Pagination page={page} totalPages={totalPages} basePath="/dashboard/orders" />
     </div>
   )
 }

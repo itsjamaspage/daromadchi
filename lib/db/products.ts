@@ -90,6 +90,69 @@ export async function getProducts(marketplace?: MarketplaceType): Promise<Produc
   return marketplace ? all.filter(p => p.marketplace === marketplace) : all
 }
 
+export interface PaginatedProducts {
+  rows: Product[]
+  total: number
+}
+
+const _fetchProductsPaginated = unstable_cache(
+  async (allShopIdsStr: string, page: number, pageSize: number): Promise<PaginatedProducts> => {
+    const allShopIds = allShopIdsStr ? allShopIdsStr.split(',') : []
+    if (allShopIds.length === 0) return { rows: [], total: 0 }
+
+    const supabase = createAdminClient()
+    const from = (page - 1) * pageSize
+    const to = from + pageSize - 1
+
+    const [
+      { data: products, error, count },
+      { data: soldRows },
+      { data: shopRows },
+    ] = await Promise.all([
+      supabase
+        .from('products')
+        .select('id, shop_id, sku, title, cost_price, selling_price, stock_quantity, category, marketplace_product_id, updated_at', { count: 'exact' })
+        .in('shop_id', allShopIds)
+        .order('title')
+        .range(from, to),
+      supabase.rpc('get_sold_counts', { shop_ids: allShopIds }),
+      supabase.from('shops').select('id, marketplace, warehouse_id').in('id', allShopIds),
+    ])
+    if (error || !products) return { rows: [], total: 0 }
+
+    const soldByProductId = new Map<string, number>()
+    for (const row of soldRows ?? []) {
+      if (row.product_id) soldByProductId.set(row.product_id, Number(row.qty_sold ?? 0))
+    }
+
+    const shopInfo = new Map<string, { marketplace: MarketplaceType; warehouseId: string | null }>()
+    for (const s of shopRows ?? []) {
+      shopInfo.set(s.id, { marketplace: s.marketplace as MarketplaceType, warehouseId: s.warehouse_id ?? null })
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const rows = (products as any[]).map(p => ({
+      ...p,
+      marketplace:     shopInfo.get(p.shop_id)?.marketplace,
+      available_stock: p.stock_quantity,
+      profit:          Number(p.selling_price ?? 0) - Number(p.cost_price ?? 0),
+      sold:            soldByProductId.get(p.id) ?? 0,
+      is_shared:       false,
+    }))
+
+    return { rows, total: count ?? 0 }
+  },
+  ['products-paginated'],
+  { revalidate: 30 },
+)
+
+export async function getProductsPaginated(page = 1, pageSize = 50): Promise<PaginatedProducts> {
+  if (!supabaseConfigured) return { rows: [], total: 0 }
+  const allShopIds = await getShopIds()
+  if (!allShopIds || allShopIds.length === 0) return { rows: [], total: 0 }
+  return _fetchProductsPaginated(allShopIds.join(','), page, pageSize)
+}
+
 export interface ProductSalesRow {
   product_id: string
   title: string
