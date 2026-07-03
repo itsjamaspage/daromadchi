@@ -74,6 +74,7 @@ export const GET = withErrorHandler(async (req: Request) => {
       .from('shops')
       .select('id')
       .eq('user_id', s.user_id)
+      .neq('shop_id_external', 'DEMO')
     const shopIds = (shopRows ?? []).map((r: { id: string }) => r.id)
     if (shopIds.length === 0) continue
 

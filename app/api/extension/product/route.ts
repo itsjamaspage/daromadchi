@@ -31,6 +31,7 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
     .select('id')
     .eq('user_id', user.id)
     .eq('marketplace', mpType)
+    .neq('shop_id_external', 'DEMO')
 
   if (shops && shops.length > 0) {
     const shopIds = shops.map((s: { id: string }) => s.id)

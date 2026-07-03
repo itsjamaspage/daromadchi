@@ -17,7 +17,7 @@ export async function getAdsStats(
   if (!userId) return new Map()
 
   const supabase = createAdminClient()
-  let q = supabase.from('shops').select('id').eq('user_id', userId)
+  let q = supabase.from('shops').select('id').eq('user_id', userId).neq('shop_id_external', 'DEMO')
   if (marketplace) q = q.eq('marketplace', marketplace)
   const { data: shops } = await q
   const shopIds = (shops ?? []).map(s => s.id)

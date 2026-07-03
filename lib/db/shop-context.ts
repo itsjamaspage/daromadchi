@@ -27,6 +27,7 @@ export const getUserShops = cache(async (): Promise<ShopRef[]> => {
     .from('shops')
     .select('id, marketplace')
     .eq('user_id', userId)
+    .neq('shop_id_external', 'DEMO')
   return (data ?? []) as ShopRef[]
 })
 

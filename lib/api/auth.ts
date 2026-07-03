@@ -31,7 +31,7 @@ export async function getAuthUser(authHeader: string | null): Promise<User | nul
 }
 
 export async function getShopIds(userId: string, shopId?: string | null): Promise<string[]> {
-  let q = supabaseAdmin.from('shops').select('id').eq('user_id', userId)
+  let q = supabaseAdmin.from('shops').select('id').eq('user_id', userId).neq('shop_id_external', 'DEMO')
   if (shopId) q = q.eq('id', shopId)
   const { data } = await q
   return (data ?? []).map((s: { id: string }) => s.id)
