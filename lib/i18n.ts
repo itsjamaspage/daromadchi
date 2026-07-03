@@ -266,6 +266,10 @@ export const translations = {
       noOrdersTitle: "Buyurtmalar yo'q",
       noOrdersDesc: "Do'koningizni (Uzum, Yandex Market yoki Wildberries) ulab, sinxronizatsiyani boshlang — buyurtmalar avtomatik import qilinadi.",
       orderCount: 'ta buyurtma',
+      prevPage: 'Oldingi',
+      nextPage: 'Keyingi',
+      pageOf: 'Sahifa',
+      pageOfSep: '/',
       // Products page
       productsTitle: 'Mahsulotlar',
       noProductsTitle: "Mahsulotlar yo'q",
@@ -1001,6 +1005,10 @@ export const translations = {
       noOrdersTitle: 'No orders',
       noOrdersDesc: 'Connect your store (Uzum, Yandex Market or Wildberries) and start sync — orders will be imported automatically.',
       orderCount: 'orders',
+      prevPage: 'Previous',
+      nextPage: 'Next',
+      pageOf: 'Page',
+      pageOfSep: 'of',
       // Products page
       productsTitle: 'Products',
       noProductsTitle: 'No products',
@@ -1736,6 +1744,10 @@ export const translations = {
       noOrdersTitle: 'Заказов нет',
       noOrdersDesc: 'Подключите магазин (Uzum, Yandex Market или Wildberries) и запустите синхронизацию — заказы импортируются автоматически.',
       orderCount: 'заказов',
+      prevPage: 'Назад',
+      nextPage: 'Вперёд',
+      pageOf: 'Страница',
+      pageOfSep: 'из',
       // Products page
       productsTitle: 'Товары',
       noProductsTitle: 'Товаров нет',
