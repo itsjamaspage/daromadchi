@@ -1,6 +1,6 @@
 import { unstable_cache } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { getShopIds } from '@/lib/db/shop-context'
+import { getShopIds, getCurrentUserId } from '@/lib/db/shop-context'
 import type { Product, MarketplaceType } from '@/lib/types'
 
 const supabaseConfigured =
@@ -96,90 +96,52 @@ export interface PaginatedProducts {
 }
 
 const _fetchProductsPaginated = unstable_cache(
-  async (allShopIdsStr: string, page: number, pageSize: number): Promise<PaginatedProducts> => {
-    const allShopIds = allShopIdsStr ? allShopIdsStr.split(',') : []
-    if (allShopIds.length === 0) return { rows: [], total: 0 }
-
+  async (userId: string, page: number, pageSize: number): Promise<PaginatedProducts> => {
     const supabase = createAdminClient()
-    const from = (page - 1) * pageSize
-    const to = from + pageSize - 1
+    const offset = (page - 1) * pageSize
 
-    const [
-      { data: products, error, count },
-      { data: allSkuRows },
-      { data: soldRows },
-      { data: shopRows },
-    ] = await Promise.all([
-      supabase
-        .from('products')
-        .select('id, shop_id, sku, title, cost_price, selling_price, stock_quantity, category, marketplace_product_id, updated_at', { count: 'exact' })
-        .in('shop_id', allShopIds)
-        .order('title')
-        .range(from, to),
-      supabase
-        .from('products')
-        .select('id, shop_id, sku')
-        .in('shop_id', allShopIds),
-      supabase.rpc('get_sold_counts', { shop_ids: allShopIds }),
-      supabase.from('shops').select('id, marketplace, warehouse_id').in('id', allShopIds),
-    ])
-    if (error || !products) return { rows: [], total: 0 }
-
-    const soldByProductId = new Map<string, number>()
-    for (const row of soldRows ?? []) {
-      if (row.product_id) soldByProductId.set(row.product_id, Number(row.qty_sold ?? 0))
-    }
-
-    const shopInfo = new Map<string, { marketplace: MarketplaceType; warehouseId: string | null }>()
-    for (const s of shopRows ?? []) {
-      shopInfo.set(s.id, { marketplace: s.marketplace as MarketplaceType, warehouseId: s.warehouse_id ?? null })
-    }
-
-    // Build warehouse+SKU grouping from ALL products (not just this page)
-    const groupTotalSold = new Map<string, number>()
-    const groupShopCount = new Map<string, number>()
-    for (const p of allSkuRows ?? []) {
-      if (!p.sku) continue
-      const wid = shopInfo.get(p.shop_id)?.warehouseId
-      if (!wid) continue
-      const key = `${wid}:${p.sku}`
-      const sold = soldByProductId.get(p.id) ?? 0
-      groupTotalSold.set(key, (groupTotalSold.get(key) ?? 0) + sold)
-      groupShopCount.set(key, (groupShopCount.get(key) ?? 0) + 1)
-    }
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const rows = (products as any[]).map(p => {
-      const sold = soldByProductId.get(p.id) ?? 0
-      const wid  = shopInfo.get(p.shop_id)?.warehouseId
-      const key  = wid && p.sku ? `${wid}:${p.sku}` : null
-      const isShared = key ? (groupShopCount.get(key) ?? 0) > 1 : false
-
-      const availableStock = isShared && key
-        ? Math.max(0, p.stock_quantity - (groupTotalSold.get(key) ?? 0))
-        : p.stock_quantity
-
-      return {
-        ...p,
-        marketplace:     shopInfo.get(p.shop_id)?.marketplace,
-        available_stock: availableStock,
-        profit:          Number(p.selling_price ?? 0) - Number(p.cost_price ?? 0),
-        sold,
-        is_shared:       isShared,
-      }
+    const { data, error } = await supabase.rpc('get_products_paginated', {
+      p_user_id: userId,
+      p_marketplace: null,
+      p_offset: offset,
+      p_limit: pageSize,
     })
 
-    return { rows, total: count ?? 0 }
+    if (error || !data || data.length === 0) return { rows: [], total: 0 }
+
+    const total = Number(data[0].total_count ?? 0)
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const rows: Product[] = data.map((r: any) => ({
+      id:                     r.id,
+      shop_id:                r.shop_id,
+      sku:                    r.sku,
+      title:                  r.title,
+      cost_price:             r.cost_price != null ? Number(r.cost_price) : null,
+      selling_price:          r.selling_price != null ? Number(r.selling_price) : null,
+      stock_quantity:         r.stock_quantity,
+      physical_stock:         null,
+      category:               r.category,
+      marketplace_product_id: r.marketplace_product_id,
+      updated_at:             r.updated_at,
+      marketplace:            r.marketplace as MarketplaceType,
+      available_stock:        r.available_stock,
+      profit:                 Number(r.profit ?? 0),
+      sold:                   Number(r.sold ?? 0),
+      is_shared:              r.is_shared ?? false,
+    }))
+
+    return { rows, total }
   },
-  ['products-paginated-v2'],
+  ['products-paginated-rpc'],
   { revalidate: 30 },
 )
 
 export async function getProductsPaginated(page = 1, pageSize = 50): Promise<PaginatedProducts> {
   if (!supabaseConfigured) return { rows: [], total: 0 }
-  const allShopIds = await getShopIds()
-  if (!allShopIds || allShopIds.length === 0) return { rows: [], total: 0 }
-  return _fetchProductsPaginated(allShopIds.join(','), page, pageSize)
+  const userId = await getCurrentUserId()
+  if (!userId) return { rows: [], total: 0 }
+  return _fetchProductsPaginated(userId, page, pageSize)
 }
 
 export interface ProductSalesRow {
