@@ -3,6 +3,11 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getShopIds, getCurrentUserId } from '@/lib/db/shop-context'
 import type { Product, MarketplaceType } from '@/lib/types'
 
+export interface PaginatedProducts {
+  rows: Product[]
+  total: number
+}
+
 const supabaseConfigured =
   process.env.NEXT_PUBLIC_SUPABASE_URL &&
   !process.env.NEXT_PUBLIC_SUPABASE_URL.includes('your-project')
@@ -282,4 +287,53 @@ export async function getCategoryRevenue(
   const shopIds = await getShopIds(marketplace)
   if (!shopIds || shopIds.length === 0) return []
   return _fetchCategoryRevenue(shopIds.join(','), days, from ?? '', to ?? '')
+}
+
+const _fetchProductsPaginated = unstable_cache(
+  async (userId: string, marketplace: string | null, page: number, pageSize: number): Promise<PaginatedProducts> => {
+    const supabase = createAdminClient()
+    const offset = (page - 1) * pageSize
+
+    const { data, error } = await supabase.rpc('get_products_paginated', {
+      p_user_id: userId,
+      p_marketplace: marketplace,
+      p_offset: offset,
+      p_limit: pageSize,
+    })
+
+    if (error || !data || data.length === 0) return { rows: [], total: 0 }
+
+    const total = Number(data[0].total_count ?? 0)
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const rows: Product[] = data.map((r: any) => ({
+      id:                     r.id,
+      shop_id:                r.shop_id,
+      sku:                    r.sku,
+      title:                  r.title,
+      cost_price:             r.cost_price != null ? Number(r.cost_price) : null,
+      selling_price:          r.selling_price != null ? Number(r.selling_price) : null,
+      stock_quantity:         r.stock_quantity,
+      physical_stock:         null,
+      category:               r.category,
+      marketplace_product_id: r.marketplace_product_id,
+      updated_at:             r.updated_at,
+      marketplace:            r.marketplace as MarketplaceType,
+      available_stock:        r.available_stock,
+      profit:                 Number(r.profit ?? 0),
+      sold:                   Number(r.sold ?? 0),
+      is_shared:              r.is_shared ?? false,
+    }))
+
+    return { rows, total }
+  },
+  ['products-paginated-rpc'],
+  { revalidate: 30 },
+)
+
+export async function getProductsPaginated(page = 1, pageSize = 50, marketplace?: MarketplaceType): Promise<PaginatedProducts> {
+  if (!supabaseConfigured) return { rows: [], total: 0 }
+  const userId = await getCurrentUserId()
+  if (!userId) return { rows: [], total: 0 }
+  return _fetchProductsPaginated(userId, marketplace ?? null, page, pageSize)
 }

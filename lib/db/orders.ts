@@ -69,9 +69,9 @@ const _fetchOrdersPaginated = unstable_cache(
   { revalidate: 30 },
 )
 
-export async function getOrdersPaginated(page = 1, pageSize = 50): Promise<PaginatedOrders> {
+export async function getOrdersPaginated(page = 1, pageSize = 50, marketplace?: MarketplaceType): Promise<PaginatedOrders> {
   if (!supabaseConfigured) return { rows: [], total: 0 }
-  const shopIds = await getShopIds()
+  const shopIds = await getShopIds(marketplace)
   if (!shopIds || shopIds.length === 0) return { rows: [], total: 0 }
   return _fetchOrdersPaginated(shopIds.join(','), page, pageSize)
 }

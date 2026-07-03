@@ -1,11 +1,15 @@
+import { Suspense } from 'react'
 import { Package, Settings } from 'lucide-react'
 import Link from 'next/link'
 import { getProductsPaginated } from '@/lib/db/products'
 import ProductsTable from '@/components/dashboard/ProductsTable'
+import MarketplaceTabs from '@/components/dashboard/MarketplaceTabs'
 import Pagination from '@/components/dashboard/Pagination'
 import { getT } from '@/lib/server-i18n'
+import type { MarketplaceType } from '@/lib/types'
 
 const PAGE_SIZE = 50
+const VALID_MARKETPLACES = ['uzum', 'yandex_market', 'wildberries'] as const
 
 interface Props {
   searchParams: Promise<Record<string, string>>
@@ -14,10 +18,13 @@ interface Props {
 export default async function ProductsPage({ searchParams }: Props) {
   const params = await searchParams
   const page = Math.max(1, parseInt(params.page ?? '1', 10) || 1)
+  const mp = (VALID_MARKETPLACES as readonly string[]).includes(params.mp ?? '')
+    ? (params.mp as MarketplaceType)
+    : undefined
 
   const [t, { rows: products, total }] = await Promise.all([
     getT(),
-    getProductsPaginated(page, PAGE_SIZE),
+    getProductsPaginated(page, PAGE_SIZE, mp),
   ])
   const d = t.dashboard
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
@@ -28,6 +35,10 @@ export default async function ProductsPage({ searchParams }: Props) {
         <h1 className="text-2xl font-bold mb-0.5" style={{ color: 'var(--text-base)' }}>{d.productsTitle}</h1>
         <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{total} {d.productCount}</p>
       </div>
+
+      <Suspense>
+        <MarketplaceTabs current={mp} />
+      </Suspense>
 
       {total === 0 ? (
         <div className="border border-dashed rounded-2xl p-10 text-center" style={{ background: 'var(--bg-card2)', borderColor: 'rgba(131, 192, 249, 0.3)' }}>
