@@ -106,6 +106,7 @@ const _fetchProductsPaginated = unstable_cache(
 
     const [
       { data: products, error, count },
+      { data: allSkuRows },
       { data: soldRows },
       { data: shopRows },
     ] = await Promise.all([
@@ -115,6 +116,10 @@ const _fetchProductsPaginated = unstable_cache(
         .in('shop_id', allShopIds)
         .order('title')
         .range(from, to),
+      supabase
+        .from('products')
+        .select('id, shop_id, sku')
+        .in('shop_id', allShopIds),
       supabase.rpc('get_sold_counts', { shop_ids: allShopIds }),
       supabase.from('shops').select('id, marketplace, warehouse_id').in('id', allShopIds),
     ])
@@ -130,19 +135,43 @@ const _fetchProductsPaginated = unstable_cache(
       shopInfo.set(s.id, { marketplace: s.marketplace as MarketplaceType, warehouseId: s.warehouse_id ?? null })
     }
 
+    // Build warehouse+SKU grouping from ALL products (not just this page)
+    const groupTotalSold = new Map<string, number>()
+    const groupShopCount = new Map<string, number>()
+    for (const p of allSkuRows ?? []) {
+      if (!p.sku) continue
+      const wid = shopInfo.get(p.shop_id)?.warehouseId
+      if (!wid) continue
+      const key = `${wid}:${p.sku}`
+      const sold = soldByProductId.get(p.id) ?? 0
+      groupTotalSold.set(key, (groupTotalSold.get(key) ?? 0) + sold)
+      groupShopCount.set(key, (groupShopCount.get(key) ?? 0) + 1)
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const rows = (products as any[]).map(p => ({
-      ...p,
-      marketplace:     shopInfo.get(p.shop_id)?.marketplace,
-      available_stock: p.stock_quantity,
-      profit:          Number(p.selling_price ?? 0) - Number(p.cost_price ?? 0),
-      sold:            soldByProductId.get(p.id) ?? 0,
-      is_shared:       false,
-    }))
+    const rows = (products as any[]).map(p => {
+      const sold = soldByProductId.get(p.id) ?? 0
+      const wid  = shopInfo.get(p.shop_id)?.warehouseId
+      const key  = wid && p.sku ? `${wid}:${p.sku}` : null
+      const isShared = key ? (groupShopCount.get(key) ?? 0) > 1 : false
+
+      const availableStock = isShared && key
+        ? Math.max(0, p.stock_quantity - (groupTotalSold.get(key) ?? 0))
+        : p.stock_quantity
+
+      return {
+        ...p,
+        marketplace:     shopInfo.get(p.shop_id)?.marketplace,
+        available_stock: availableStock,
+        profit:          Number(p.selling_price ?? 0) - Number(p.cost_price ?? 0),
+        sold,
+        is_shared:       isShared,
+      }
+    })
 
     return { rows, total: count ?? 0 }
   },
-  ['products-paginated'],
+  ['products-paginated-v2'],
   { revalidate: 30 },
 )
 
