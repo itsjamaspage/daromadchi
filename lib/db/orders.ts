@@ -40,3 +40,38 @@ export async function getOrders(limit?: number, marketplace?: MarketplaceType, f
   if (!shopIds || shopIds.length === 0) return []
   return _fetchOrders(shopIds.join(','), limit ?? 0, from ?? '', to ?? '')
 }
+
+export interface PaginatedOrders {
+  rows: Order[]
+  total: number
+}
+
+const _fetchOrdersPaginated = unstable_cache(
+  async (shopIdsStr: string, page: number, pageSize: number): Promise<PaginatedOrders> => {
+    const shopIds = shopIdsStr ? shopIdsStr.split(',') : []
+    if (shopIds.length === 0) return { rows: [], total: 0 }
+
+    const supabase = createAdminClient()
+    const from = (page - 1) * pageSize
+    const to = from + pageSize - 1
+
+    const { data, error, count } = await supabase
+      .from('orders')
+      .select('id, shop_id, order_id_external, marketplace, status, revenue, marketplace_fee, delivery_cost, items_count, ordered_at', { count: 'exact' })
+      .in('shop_id', shopIds)
+      .order('ordered_at', { ascending: false })
+      .range(from, to)
+
+    if (error || !data) return { rows: [], total: 0 }
+    return { rows: data, total: count ?? 0 }
+  },
+  ['orders-paginated'],
+  { revalidate: 30 },
+)
+
+export async function getOrdersPaginated(page = 1, pageSize = 50): Promise<PaginatedOrders> {
+  if (!supabaseConfigured) return { rows: [], total: 0 }
+  const shopIds = await getShopIds()
+  if (!shopIds || shopIds.length === 0) return { rows: [], total: 0 }
+  return _fetchOrdersPaginated(shopIds.join(','), page, pageSize)
+}
