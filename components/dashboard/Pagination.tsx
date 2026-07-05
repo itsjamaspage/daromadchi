@@ -1,9 +1,9 @@
 'use client'
 
 import Link from 'next/link'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { useSearchParams } from 'next/navigation'
 import { useLang } from '@/app/providers'
-import { translations } from '@/lib/i18n'
+import { dashT } from '@/lib/dashT'
 
 interface Props {
   page: number
@@ -12,47 +12,48 @@ interface Props {
 }
 
 export default function Pagination({ page, totalPages, basePath }: Props) {
+  const searchParams = useSearchParams()
   const { lang } = useLang()
-  const d = translations[lang].dashboard
+  const d = dashT[lang].dashboard
 
   if (totalPages <= 1) return null
 
-  const prevHref = page > 1 ? `${basePath}?page=${page - 1}` : null
-  const nextHref = page < totalPages ? `${basePath}?page=${page + 1}` : null
+  function pageHref(p: number) {
+    const params = new URLSearchParams(searchParams.toString())
+    if (p > 1) params.set('page', String(p))
+    else params.delete('page')
+    const q = params.toString()
+    return q ? `${basePath}?${q}` : basePath
+  }
 
-  const btnBase = 'inline-flex items-center gap-1.5 text-sm font-medium px-4 py-2 rounded-xl border transition-colors'
-  const btnActive = `${btnBase} border-[var(--border2)] text-[var(--text-base)] hover:bg-[var(--bg-input)]`
-  const btnDisabled = `${btnBase} border-[var(--border)] text-[var(--text-dim)] opacity-40 pointer-events-none`
+  const linkClass = 'px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border'
+  const activeClass = 'border-[rgba(131,192,249,0.3)] text-[var(--c1)]'
+  const disabledClass = 'border-transparent text-[var(--text-muted)] opacity-40 pointer-events-none'
+  const enabledClass = 'border-[var(--border2)] text-[var(--text-muted)] hover:text-[var(--text-base)] bg-[var(--bg-card2)]'
 
   return (
-    <div className="flex items-center justify-between pt-2">
-      {prevHref ? (
-        <Link href={prevHref} className={btnActive}>
-          <ChevronLeft className="w-4 h-4" />
-          {d.prevPage}
-        </Link>
-      ) : (
-        <span className={btnDisabled}>
-          <ChevronLeft className="w-4 h-4" />
-          {d.prevPage}
-        </span>
-      )}
-
-      <span className="text-sm" style={{ color: 'var(--text-muted)' }}>
-        {d.pageOf} {page} {d.pageOfSep} {totalPages}
+    <div className="flex items-center justify-center gap-3">
+      <Link
+        href={pageHref(page - 1)}
+        className={`${linkClass} ${page <= 1 ? disabledClass : enabledClass}`}
+        aria-disabled={page <= 1}
+        tabIndex={page <= 1 ? -1 : 0}
+        scroll={false}
+      >
+        {(d as Record<string, string>).prevPage ?? 'Previous'}
+      </Link>
+      <span className="text-xs font-medium text-[var(--text-muted)]">
+        {(d as Record<string, string>).pageOf ?? 'Page'} {page} {(d as Record<string, string>).pageOfSep ?? 'of'} {totalPages}
       </span>
-
-      {nextHref ? (
-        <Link href={nextHref} className={btnActive}>
-          {d.nextPage}
-          <ChevronRight className="w-4 h-4" />
-        </Link>
-      ) : (
-        <span className={btnDisabled}>
-          {d.nextPage}
-          <ChevronRight className="w-4 h-4" />
-        </span>
-      )}
+      <Link
+        href={pageHref(page + 1)}
+        className={`${linkClass} ${page >= totalPages ? disabledClass : enabledClass}`}
+        aria-disabled={page >= totalPages}
+        tabIndex={page >= totalPages ? -1 : 0}
+        scroll={false}
+      >
+        {(d as Record<string, string>).nextPage ?? 'Next'}
+      </Link>
     </div>
   )
 }
