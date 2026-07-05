@@ -95,60 +95,6 @@ export async function getProducts(marketplace?: MarketplaceType): Promise<Produc
   return marketplace ? all.filter(p => p.marketplace === marketplace) : all
 }
 
-export interface PaginatedProducts {
-  rows: Product[]
-  total: number
-}
-
-const _fetchProductsPaginated = unstable_cache(
-  async (userId: string, page: number, pageSize: number): Promise<PaginatedProducts> => {
-    const supabase = createAdminClient()
-    const offset = (page - 1) * pageSize
-
-    const { data, error } = await supabase.rpc('get_products_paginated', {
-      p_user_id: userId,
-      p_marketplace: null,
-      p_offset: offset,
-      p_limit: pageSize,
-    })
-
-    if (error || !data || data.length === 0) return { rows: [], total: 0 }
-
-    const total = Number(data[0].total_count ?? 0)
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const rows: Product[] = data.map((r: any) => ({
-      id:                     r.id,
-      shop_id:                r.shop_id,
-      sku:                    r.sku,
-      title:                  r.title,
-      cost_price:             r.cost_price != null ? Number(r.cost_price) : null,
-      selling_price:          r.selling_price != null ? Number(r.selling_price) : null,
-      stock_quantity:         r.stock_quantity,
-      physical_stock:         null,
-      category:               r.category,
-      marketplace_product_id: r.marketplace_product_id,
-      updated_at:             r.updated_at,
-      marketplace:            r.marketplace as MarketplaceType,
-      available_stock:        r.available_stock,
-      profit:                 Number(r.profit ?? 0),
-      sold:                   Number(r.sold ?? 0),
-      is_shared:              r.is_shared ?? false,
-    }))
-
-    return { rows, total }
-  },
-  ['products-paginated-rpc'],
-  { revalidate: 30 },
-)
-
-export async function getProductsPaginated(page = 1, pageSize = 50): Promise<PaginatedProducts> {
-  if (!supabaseConfigured) return { rows: [], total: 0 }
-  const userId = await getCurrentUserId()
-  if (!userId) return { rows: [], total: 0 }
-  return _fetchProductsPaginated(userId, page, pageSize)
-}
-
 export interface ProductSalesRow {
   product_id: string
   title: string
