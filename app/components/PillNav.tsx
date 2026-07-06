@@ -32,7 +32,6 @@ const PillNav = ({
   const logoImgRef = useRef(null)
   const logoTweenRef = useRef(null)
   const hamburgerRef = useRef(null)
-  const mobileMenuRef = useRef(null)
   const navItemsRef = useRef(null)
   const logoRef = useRef(null)
 
@@ -79,9 +78,6 @@ const PillNav = ({
     window.addEventListener('resize', layout)
     if (document.fonts?.ready) document.fonts.ready.then(layout).catch(() => {})
 
-    const menu = mobileMenuRef.current
-    if (menu) gsap.set(menu, { visibility: 'hidden', opacity: 0 })
-
     if (initialLoadAnimation) {
       const logo = logoRef.current
       const navItems = navItemsRef.current
@@ -118,7 +114,6 @@ const PillNav = ({
     const newState = !isMobileMenuOpen
     setIsMobileMenuOpen(newState)
     const hamburger = hamburgerRef.current
-    const menu = mobileMenuRef.current
     if (hamburger) {
       const lines = hamburger.querySelectorAll('.hamburger-line')
       if (newState) {
@@ -129,15 +124,12 @@ const PillNav = ({
         gsap.to(lines[1], { rotation: 0, y: 0, duration: 0.3, ease })
       }
     }
-    if (menu) {
-      if (newState) {
-        gsap.set(menu, { visibility: 'visible' })
-        gsap.fromTo(menu, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.3, ease, transformOrigin: 'top center' })
-      } else {
-        gsap.to(menu, { opacity: 0, y: 10, duration: 0.2, ease, transformOrigin: 'top center', onComplete: () => gsap.set(menu, { visibility: 'hidden' }) })
-      }
-    }
     onMobileMenuClick?.()
+  }
+
+  const closeMobileMenu = () => {
+    if (!isMobileMenuOpen) return
+    toggleMobileMenu()
   }
 
   const isHashOrExternal = href =>
@@ -188,7 +180,7 @@ const PillNav = ({
 
   return (
     <div className="pill-nav-container">
-      <nav className={`pill-nav ${className}`} aria-label="Primary" style={cssVars}>
+      <nav className={`pill-nav ${className}${isMobileMenuOpen ? ' is-mobile-open' : ''}`} aria-label="Primary" style={cssVars}>
         <a className="pill-logo" href={logoHref} aria-label="Home"
           onMouseEnter={handleLogoEnter} ref={logoRef}>
           <img src={logo} alt={logoAlt} ref={logoImgRef} />
@@ -213,25 +205,25 @@ const PillNav = ({
           <span className="hamburger-line" />
           <span className="hamburger-line" />
         </button>
-      </nav>
 
-      <div className="mobile-menu-popover mobile-only" ref={mobileMenuRef} style={cssVars}>
-        <ul className="mobile-menu-list">
+        {/* Mobile inline menu — renders inside the nav pill */}
+        <div className={`mobile-menu-inline mobile-only${isMobileMenuOpen ? ' is-open' : ''}`}>
           {items.map((item, i) => (
-            <li key={item.href || `mobile-${i}`}>
-              {isHashOrExternal(item.href) ? (
-                <a href={item.href}
-                  className={`mobile-menu-link${activeHref === item.href ? ' is-active' : ''}`}
-                  onClick={() => { setIsMobileMenuOpen(false); toggleMobileMenu() }}>{item.label}</a>
-              ) : (
-                <Link href={item.href}
-                  className={`mobile-menu-link${activeHref === item.href ? ' is-active' : ''}`}
-                  onClick={() => { setIsMobileMenuOpen(false); toggleMobileMenu() }}>{item.label}</Link>
-              )}
-            </li>
+            isHashOrExternal(item.href) ? (
+              <a key={item.href || `m-${i}`} href={item.href}
+                className={`mobile-menu-inline-link${activeHref === item.href ? ' is-active' : ''}`}
+                onClick={closeMobileMenu}>{item.label}</a>
+            ) : (
+              <Link key={item.href || `m-${i}`} href={item.href}
+                className={`mobile-menu-inline-link${activeHref === item.href ? ' is-active' : ''}`}
+                onClick={closeMobileMenu}>{item.label}</Link>
+            )
           ))}
-        </ul>
-      </div>
+          {rightContent && (
+            <div className="mobile-menu-inline-controls">{rightContent}</div>
+          )}
+        </div>
+      </nav>
     </div>
   )
 }
