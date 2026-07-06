@@ -2017,7 +2017,7 @@ function MobileBottomNav({ lang }: { lang: string }) {
         position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 100,
         background: navBg, borderTop: `1px solid ${border}`,
         backdropFilter: 'blur(20px)',
-        paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+        paddingBottom: 'env(safe-area-inset-bottom, 8px)',
         fontFamily: "'Space Grotesk', system-ui, sans-serif",
       }}
     >

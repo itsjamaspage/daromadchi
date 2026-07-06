@@ -216,14 +216,6 @@ const PillNav = ({
       </nav>
 
       <div className="mobile-menu-popover mobile-only" ref={mobileMenuRef} style={cssVars}>
-        <div className="mobile-menu-header">
-          {logo && <img src={logo} alt={logoAlt} className="mobile-menu-logo" />}
-          <button className="mobile-menu-close" onClick={toggleMobileMenu} aria-label="Close menu">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-              <line x1="3" y1="3" x2="13" y2="13" /><line x1="13" y1="3" x2="3" y2="13" />
-            </svg>
-          </button>
-        </div>
         <ul className="mobile-menu-list">
           {items.map((item, i) => (
             <li key={item.href || `mobile-${i}`}>
@@ -239,9 +231,6 @@ const PillNav = ({
             </li>
           ))}
         </ul>
-        {rightContent && (
-          <div className="mobile-menu-actions">{rightContent}</div>
-        )}
       </div>
     </div>
   )
