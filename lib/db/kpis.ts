@@ -44,41 +44,25 @@ const _fetchKpis = unstable_cache(
       prevUntilIso = since.toISOString()
     }
 
-    let ordersQuery = supabase
-      .from('orders')
-      .select('revenue, marketplace_fee, delivery_cost')
-      .in('shop_id', shopIds)
-      .neq('status', 'cancelled')
-    if (sinceIso) ordersQuery = ordersQuery.gte('ordered_at', sinceIso)
-    if (untilIso) ordersQuery = ordersQuery.lte('ordered_at', untilIso)
+    const { data, error } = await supabase.rpc('get_dashboard_kpis', {
+      p_shop_ids: shopIds,
+      p_since: sinceIso,
+      p_until: untilIso,
+      p_prev_since: prevSinceIso,
+      p_prev_until: prevUntilIso,
+    })
 
-    let prevOrdersQuery = supabase
-      .from('orders')
-      .select('revenue, marketplace_fee, delivery_cost')
-      .in('shop_id', shopIds)
-      .neq('status', 'cancelled')
-    if (prevSinceIso) prevOrdersQuery = prevOrdersQuery.gte('ordered_at', prevSinceIso)
-    if (prevUntilIso) prevOrdersQuery = prevOrdersQuery.lt('ordered_at', prevUntilIso)
+    if (error || !data || data.length === 0) return emptyKpis
 
-    const [ordersRes, prevOrdersRes, stockRes] = await Promise.all([
-      ordersQuery,
-      prevSinceIso ? prevOrdersQuery : Promise.resolve({ data: [] as { revenue: number; marketplace_fee: number; delivery_cost: number }[] }),
-      supabase.from('products').select('stock_quantity').in('shop_id', shopIds),
-    ])
+    const row = data[0]
+    const total_revenue = Number(row.total_revenue ?? 0)
+    const total_profit  = Number(row.total_profit ?? 0)
+    const total_orders  = Number(row.total_orders ?? 0)
+    const total_stock   = Number(row.total_stock ?? 0)
 
-    const rows = ordersRes.data ?? []
-    const total_revenue = rows.reduce((s, o) => s + Number(o.revenue ?? 0), 0)
-    const total_profit  = rows.reduce((s, o) =>
-      s + Number(o.revenue ?? 0) - Number(o.marketplace_fee ?? 0) - Number(o.delivery_cost ?? 0), 0)
-    const total_orders  = rows.length
-
-    const prevRows = prevOrdersRes.data ?? []
-    const prev_revenue = prevRows.reduce((s, o) => s + Number(o.revenue ?? 0), 0)
-    const prev_profit  = prevRows.reduce((s, o) =>
-      s + Number(o.revenue ?? 0) - Number(o.marketplace_fee ?? 0) - Number(o.delivery_cost ?? 0), 0)
-    const prev_orders  = prevRows.length
-
-    const total_stock = (stockRes.data ?? []).reduce((s, p) => s + (p.stock_quantity ?? 0), 0)
+    const prev_revenue = Number(row.prev_revenue ?? 0)
+    const prev_profit  = Number(row.prev_profit ?? 0)
+    const prev_orders  = Number(row.prev_orders ?? 0)
 
     return {
       total_revenue, total_profit, total_orders, total_stock,
@@ -87,7 +71,7 @@ const _fetchKpis = unstable_cache(
       change_orders:  prevSinceIso ? pct(total_orders,  prev_orders)  : null,
     }
   },
-  ['kpis'],
+  ['kpis-rpc'],
   { revalidate: 30 },
 )
 
