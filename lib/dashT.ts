@@ -27,6 +27,7 @@ export const dashT = {
       yesterday: 'Kecha', thisMonth: 'Bu oy', vsPrev: 'o\'tgan davrga nisbatan',
       customize: 'Moslash', widgetKpis: 'KPI Kartalar', widgetAlerts: 'Ombor ogohlantirishlari', widgetChart: 'Daromad grafigi', widgetCategories: 'Kategoriyalar',
       noProducts: "Mahsulotlar yo'q", noProductsDesc: "Do'koningizni sinxronlang yoki mahsulot qo'shing.",
+      prevPage: 'Oldingi', nextPage: 'Keyingi', pageOf: 'Sahifa', pageOfSep: '/',
     },
     export: {
       download: 'Yuklab olish', xlsx: 'Excel (.xlsx)', csv: 'CSV', pdf: 'PDF (chop etish)',
@@ -402,6 +403,7 @@ export const dashT = {
       yesterday: 'Yesterday', thisMonth: 'This month', vsPrev: 'vs prior period',
       customize: 'Customize', widgetKpis: 'KPI Cards', widgetAlerts: 'Stock Alerts', widgetChart: 'Revenue Chart', widgetCategories: 'Categories',
       noProducts: 'No products', noProductsDesc: 'Sync your store or add products.',
+      prevPage: 'Previous', nextPage: 'Next', pageOf: 'Page', pageOfSep: 'of',
     },
     export: {
       download: 'Download', xlsx: 'Excel (.xlsx)', csv: 'CSV', pdf: 'PDF (print)',
@@ -774,6 +776,7 @@ export const dashT = {
       yesterday: 'Вчера', thisMonth: 'Тек. месяц', vsPrev: 'к прошлому периоду',
       customize: 'Настроить', widgetKpis: 'KPI Карточки', widgetAlerts: 'Уведомления о запасах', widgetChart: 'График выручки', widgetCategories: 'Категории',
       noProducts: 'Нет товаров', noProductsDesc: 'Синхронизируйте магазин или добавьте товары.',
+      prevPage: 'Назад', nextPage: 'Вперёд', pageOf: 'Страница', pageOfSep: 'из',
     },
     export: {
       download: 'Скачать', xlsx: 'Excel (.xlsx)', csv: 'CSV', pdf: 'PDF (печать)',
