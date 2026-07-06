@@ -28,6 +28,7 @@ button, input, select, textarea, a {
 html, body {
   background-color: var(--bg-base);
   color-scheme: var(--color-scheme);
+  overflow-x: hidden;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
