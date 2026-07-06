@@ -1997,7 +1997,7 @@ function FooterSection({ lang }: { lang: string }) {
 function MobileBottomNav({ lang }: { lang: string }) {
   const isDark = useIsDark()
   const acc = useAccent()
-  const navBg   = isDark ? 'rgba(22,22,22,0.97)'    : 'rgba(255,255,255,0.97)'
+  const navBg   = isDark ? '#161616'                 : '#ffffff'
   const border   = isDark ? P.dHair                 : P.hair
   const iconCol  = isDark ? 'rgba(197,232,254,0.45)': P.stone
   const activeCol = isDark ? acc.color              : '#0369a1'
