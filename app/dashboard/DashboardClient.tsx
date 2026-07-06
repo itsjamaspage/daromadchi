@@ -249,14 +249,14 @@ export default function DashboardClient({ slices, days, period, from, to, initia
                 <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: 'rgba(131,192,249,0.12)', border: '1px solid rgba(131,192,249,0.25)' }}>
                   <Settings className="w-7 h-7" style={{ color: '#83c0f9' }} />
                 </div>
-                <h2 className="text-[var(--text-base)] font-bold text-lg mb-2">{mpName} ulanmagan</h2>
-                <p className="text-[var(--text-muted)] text-sm mb-6">API tokenini ulang va quyidagi ma&apos;lumotlarni ko&apos;ring:</p>
+                <h2 className="text-[var(--text-base)] font-bold text-lg mb-2">{d.mpNotConnected.replace('{mp}', mpName)}</h2>
+                <p className="text-[var(--text-muted)] text-sm mb-6">{d.mpConnectDesc}</p>
                 <div className="grid grid-cols-2 gap-3 mb-8 text-left max-w-xs mx-auto">
                   {([
-                    [DollarSign,  "Daromad va foyda"],
-                    [ShoppingBag, "Buyurtmalar tarixi"],
-                    [TrendingUp,  "Sotuv dinamikasi"],
-                    [Package,     "Mahsulot qoldiqlari"],
+                    [DollarSign,  d.featureRevenue],
+                    [ShoppingBag, d.featureOrders],
+                    [TrendingUp,  d.featureSales],
+                    [Package,     d.featureStock],
                   ] as [React.ElementType, string][]).map(([Icon, label]) => (
                     <div key={label} className="flex items-center gap-2 text-sm" style={{ color: 'var(--text-muted)' }}>
                       <Icon className="w-4 h-4 flex-shrink-0" style={{ color: '#83c0f9' }} />

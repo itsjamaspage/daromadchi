@@ -442,7 +442,7 @@ function LoginForm() {
               {/* Submit */}
               <button type="submit" disabled={loading}
                 className="w-full font-bold rounded-xl py-3 text-sm transition-all flex items-center justify-center gap-2 mt-1 disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{ background: '#ffffff', color: '#0369a1', border: '2px solid rgba(131,192,249,0.6)', boxShadow: '0 4px 16px rgba(131,192,249,0.2)' }}>
+                style={{ background: '#83c0f9', color: '#0e2233', border: '2px solid rgba(131,192,249,0.6)', boxShadow: '0 4px 16px rgba(131,192,249,0.25)' }}>
                 {loading
                   ? <><Loader2 className="w-4 h-4 animate-spin" />{mode === 'login' ? t.loggingIn : t.signingUp}</>
                   : mode === 'login' ? t.loginBtn : t.signupBtn
