@@ -9,6 +9,30 @@ import { withErrorHandler } from '@/lib/api-handler'
 export const runtime    = 'nodejs'
 export const maxDuration = 300  // 5 min — enough for full sync of multiple shops
 
+const CONCURRENCY = 5
+
+async function syncShop(
+  shop: { id: string; marketplace: string; api_key_encrypted: string; shop_id_external: string | null },
+): Promise<Record<string, unknown>> {
+  const start = Date.now()
+  try {
+    const token = decrypt(shop.api_key_encrypted)
+    let r: { ok: boolean; [key: string]: unknown } | undefined
+    if (shop.marketplace === 'uzum') {
+      r = { ...await syncFromUzum(shop.id, token) }
+    } else if (shop.marketplace === 'yandex_market' && shop.shop_id_external) {
+      r = { ...await syncFromYandex(shop.id, token, shop.shop_id_external) }
+    } else if (shop.marketplace === 'wildberries') {
+      const supabase = createAdminClient()
+      r = { ...await syncFromWildberries(supabase, shop.id, token) }
+    }
+    if (!r) return { shopId: shop.id, marketplace: shop.marketplace, ok: true, skipped: true }
+    return { shopId: shop.id, marketplace: shop.marketplace, ms: Date.now() - start, ...r }
+  } catch (err) {
+    return { shopId: shop.id, marketplace: shop.marketplace, ms: Date.now() - start, ok: false, error: String(err) }
+  }
+}
+
 export const GET = withErrorHandler(async (req: Request) => {
   const url    = new URL(req.url)
   const secret = req.headers.get('x-cron-secret') ?? url.searchParams.get('secret')
@@ -26,23 +50,18 @@ export const GET = withErrorHandler(async (req: Request) => {
 
   if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 })
 
+  const allShops = shops ?? []
   const results: Record<string, unknown>[] = []
 
-  for (const shop of (shops ?? [])) {
-    try {
-      const token = decrypt(shop.api_key_encrypted)
-      if (shop.marketplace === 'uzum') {
-        const r = await syncFromUzum(shop.id, token)
-        results.push({ shopId: shop.id, marketplace: 'uzum', ...r })
-      } else if (shop.marketplace === 'yandex_market' && shop.shop_id_external) {
-        const r = await syncFromYandex(shop.id, token, shop.shop_id_external)
-        results.push({ shopId: shop.id, marketplace: 'yandex_market', ...r })
-      } else if (shop.marketplace === 'wildberries') {
-        const r = await syncFromWildberries(supabase, shop.id, token)
-        results.push({ shopId: shop.id, marketplace: 'wildberries', ...r })
+  for (let i = 0; i < allShops.length; i += CONCURRENCY) {
+    const batch = allShops.slice(i, i + CONCURRENCY)
+    const settled = await Promise.allSettled(batch.map(syncShop))
+    for (const outcome of settled) {
+      if (outcome.status === 'fulfilled') {
+        results.push(outcome.value)
+      } else {
+        results.push({ ok: false, error: String(outcome.reason) })
       }
-    } catch (err) {
-      results.push({ shopId: shop.id, ok: false, error: String(err) })
     }
   }
 

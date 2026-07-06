@@ -348,8 +348,12 @@ export async function syncFromYandex(
       }
 
       // Backfill product.sku = offerId so future syncs match via skuMap without title lookup
-      for (const [productId, offerId] of titleMatchBackfill) {
-        await supabase.from('products').update({ sku: offerId }).eq('id', productId)
+      if (titleMatchBackfill.size > 0) {
+        const backfillRows = [...titleMatchBackfill].map(([productId, offerId]) => ({
+          id: productId,
+          sku: offerId,
+        }))
+        await supabase.from('products').upsert(backfillRows)
       }
     } catch { /* order items sync is best-effort */ }
 
