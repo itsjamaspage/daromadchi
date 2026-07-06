@@ -144,11 +144,11 @@ function LandingNav({ lang }: { lang: string }) {
     { label: tx(lang, 'Помощь', 'Yordam', 'Help'), href: '#faq' },
   ]
 
-  const borderCol = isDark ? 'rgba(14,34,51,0.15)' : 'rgba(14,34,51,0.15)'
-  const iconCol   = isDark ? P.stone : P.stone
-  const baseColor = '#ffffff'
-  const pillColor = '#ffffff'
-  const hoverCircle = '#83c0f9'
+  const borderCol = isDark ? 'rgba(255,255,255,0.2)' : 'rgba(14,34,51,0.15)'
+  const iconCol   = isDark ? '#ffffff' : P.stone
+  const baseColor = isDark ? P.dCard2 : '#ffffff'
+  const pillColor = isDark ? 'rgba(255,255,255,0.08)' : '#ffffff'
+  const hoverCircle = isDark ? '#e2e8f0' : '#83c0f9'
 
   const rightContent = (
     <>
@@ -162,7 +162,7 @@ function LandingNav({ lang }: { lang: string }) {
         </button>
         {langOpen && (
           <div className="pill-lang-dropdown"
-            style={{ background: '#fff', borderColor: P.hair }}>
+            style={{ background: isDark ? P.dCard2 : '#fff', borderColor: isDark ? P.dHair : P.hair }}>
             {(['uz', 'ru', 'en'] as Lang[]).map(l => (
               <button key={l} className="pill-lang-option"
                 onClick={() => { setLang(l); setLangOpen(false) }}
@@ -194,8 +194,8 @@ function LandingNav({ lang }: { lang: string }) {
       items={navItems}
       baseColor={baseColor}
       pillColor={pillColor}
-      pillTextColor={P.ink}
-      hoveredPillTextColor={P.ink}
+      pillTextColor={isDark ? '#e2e8f0' : P.ink}
+      hoveredPillTextColor={isDark ? P.dCard2 : P.ink}
       hoverCircleColor={hoverCircle}
       rightContent={rightContent}
       initialLoadAnimation={false}
