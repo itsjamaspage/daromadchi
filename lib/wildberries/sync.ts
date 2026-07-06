@@ -105,12 +105,24 @@ export async function syncFromWildberries(
       for (const s of stocks) {
         if (s.nmId) stockMap.set(String(s.nmId), (stockMap.get(String(s.nmId)) ?? 0) + (s.amount ?? 0))
       }
-      for (const [nmId, qty] of stockMap) {
-        await supabase
+      if (stockMap.size > 0) {
+        const { data: prods } = await supabase
           .from('products')
-          .update({ stock_quantity: qty, updated_at: new Date().toISOString() })
+          .select('id, marketplace_product_id')
           .eq('shop_id', shopId)
-          .eq('marketplace_product_id', nmId)
+          .in('marketplace_product_id', [...stockMap.keys()])
+        const now = new Date().toISOString()
+        const updateRows = (prods ?? [])
+          .filter((p: { marketplace_product_id: string }) => stockMap.has(String(p.marketplace_product_id)))
+          .map((p: { id: string; marketplace_product_id: string }) => ({
+            id: p.id,
+            stock_quantity: stockMap.get(String(p.marketplace_product_id))!,
+            updated_at: now,
+          }))
+        if (updateRows.length > 0) {
+          const { error: e } = await supabase.from('products').upsert(updateRows)
+          if (e) errors.push(e.message)
+        }
       }
     }
   } catch { /* stocks sync is best-effort */ }
