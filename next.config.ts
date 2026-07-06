@@ -4,6 +4,7 @@ const nextConfig: NextConfig = {
   typescript: { ignoreBuildErrors: true },
   productionBrowserSourceMaps: false,
   poweredByHeader: false,
+  compress: true,
   experimental: {
     optimizePackageImports: ['recharts', 'date-fns', 'lucide-react'],
   },
