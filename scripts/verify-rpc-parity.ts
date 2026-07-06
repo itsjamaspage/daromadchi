@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Parity verification: compare old JS-aggregation results against new RPC results.
  *
