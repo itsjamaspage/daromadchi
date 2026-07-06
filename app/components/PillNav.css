@@ -13,6 +13,7 @@
   .pill-nav-container {
     width: calc(100% - 2rem);
     top: 0.75em;
+    max-width: 100%;
   }
 }
 

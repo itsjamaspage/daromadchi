@@ -21,7 +21,7 @@ export default function BottomNav() {
 
   return (
     <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-[var(--border)] bg-[var(--bg-card)]/95 backdrop-blur-xl"
-      style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+      style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 12px)' }}>
       <div className="flex items-stretch h-16">
         {tabs.map(({ href, label, icon: Icon }) => {
           const active = pathname === href
