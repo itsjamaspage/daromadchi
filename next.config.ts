@@ -3,6 +3,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   typescript: { ignoreBuildErrors: true },
   productionBrowserSourceMaps: false,
+  poweredByHeader: false,
   experimental: {
     optimizePackageImports: ['recharts', 'date-fns', 'lucide-react'],
   },
