@@ -27,6 +27,9 @@ export const dashT = {
       yesterday: 'Kecha', thisMonth: 'Bu oy', vsPrev: 'o\'tgan davrga nisbatan',
       customize: 'Moslash', widgetKpis: 'KPI Kartalar', widgetAlerts: 'Ombor ogohlantirishlari', widgetChart: 'Daromad grafigi', widgetCategories: 'Kategoriyalar',
       noProducts: "Mahsulotlar yo'q", noProductsDesc: "Do'koningizni sinxronlang yoki mahsulot qo'shing.",
+      mpNotConnected: '{mp} ulanmagan',
+      mpConnectDesc: "API tokenini ulang va quyidagi ma'lumotlarni ko'ring:",
+      featureRevenue: 'Daromad va foyda', featureOrders: 'Buyurtmalar tarixi', featureSales: 'Sotuv dinamikasi', featureStock: 'Mahsulot qoldiqlari',
       prevPage: 'Oldingi', nextPage: 'Keyingi', pageOf: 'Sahifa', pageOfSep: '/',
     },
     export: {
@@ -403,6 +406,9 @@ export const dashT = {
       yesterday: 'Yesterday', thisMonth: 'This month', vsPrev: 'vs prior period',
       customize: 'Customize', widgetKpis: 'KPI Cards', widgetAlerts: 'Stock Alerts', widgetChart: 'Revenue Chart', widgetCategories: 'Categories',
       noProducts: 'No products', noProductsDesc: 'Sync your store or add products.',
+      mpNotConnected: '{mp} not connected',
+      mpConnectDesc: 'Connect your API token to see the following data:',
+      featureRevenue: 'Revenue & profit', featureOrders: 'Order history', featureSales: 'Sales dynamics', featureStock: 'Product stock',
       prevPage: 'Previous', nextPage: 'Next', pageOf: 'Page', pageOfSep: 'of',
     },
     export: {
@@ -776,6 +782,9 @@ export const dashT = {
       yesterday: 'Вчера', thisMonth: 'Тек. месяц', vsPrev: 'к прошлому периоду',
       customize: 'Настроить', widgetKpis: 'KPI Карточки', widgetAlerts: 'Уведомления о запасах', widgetChart: 'График выручки', widgetCategories: 'Категории',
       noProducts: 'Нет товаров', noProductsDesc: 'Синхронизируйте магазин или добавьте товары.',
+      mpNotConnected: '{mp} не подключён',
+      mpConnectDesc: 'Подключите API-токен и получите доступ к данным:',
+      featureRevenue: 'Выручка и прибыль', featureOrders: 'История заказов', featureSales: 'Динамика продаж', featureStock: 'Остатки товаров',
       prevPage: 'Назад', nextPage: 'Вперёд', pageOf: 'Страница', pageOfSep: 'из',
     },
     export: {
