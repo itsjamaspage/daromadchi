@@ -15,48 +15,37 @@ const _fetchRevenue = unstable_cache(
     const supabase = createAdminClient()
 
     let sinceIso: string
-    let untilIso: string | undefined
+    let untilIso: string | null = null
 
     if (from) {
       sinceIso = new Date(from).toISOString()
-      untilIso = to ? new Date(to + 'T23:59:59').toISOString() : undefined
+      untilIso = to ? new Date(to + 'T23:59:59').toISOString() : null
     } else {
       const since = new Date()
       since.setDate(since.getDate() - days + 1)
       sinceIso = since.toISOString()
     }
 
-    let q = supabase
-      .from('orders')
-      .select('ordered_at, revenue')
-      .in('shop_id', shopIds)
-      .neq('status', 'cancelled')
-      .gte('ordered_at', sinceIso)
-      .order('ordered_at', { ascending: true })
+    const { data, error } = await supabase.rpc('get_daily_revenue', {
+      p_shop_ids: shopIds,
+      p_since: sinceIso,
+      p_until: untilIso,
+    })
 
-    if (untilIso) q = q.lte('ordered_at', untilIso)
-
-    const { data, error } = await q
     if (error || !data) return []
 
-    const grouped = new Map<string, { revenue: number; count: number }>()
-    for (const row of data) {
-      const date = row.ordered_at.slice(0, 10)
-      const existing = grouped.get(date) ?? { revenue: 0, count: 0 }
-      grouped.set(date, { revenue: existing.revenue + Number(row.revenue ?? 0), count: existing.count + 1 })
-    }
-
-    return Array.from(grouped.entries()).map(([date, v]) => {
-      const d = new Date(date)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return (data as any[]).map(row => {
+      const d = new Date(row.day)
       const label = d.toLocaleDateString('uz-UZ', { month: 'short', day: 'numeric' })
       return {
         date: `${label} ${d.getFullYear()}`,
-        revenue: v.revenue,
-        order_count: v.count,
+        revenue: Number(row.revenue ?? 0),
+        order_count: Number(row.order_count ?? 0),
       }
     })
   },
-  ['revenue'],
+  ['revenue-rpc'],
   { revalidate: 30 },
 )
 

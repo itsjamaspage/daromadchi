@@ -179,47 +179,23 @@ const _fetchCategoryRevenue = unstable_cache(
       sinceIso = d.toISOString()
     }
 
-    // Step 1: get qualifying order IDs by filtering on direct columns (orders.shop_id,
-    // orders.ordered_at) — avoids the Supabase JS embedded-filter bug that the old RPC
-    // worked around, but the RPC itself returned 0 rows for small shop-id subsets.
-    let orderQuery = supabase.from('orders').select('id').in('shop_id', shopIds)
-    if (sinceIso) orderQuery = orderQuery.gte('ordered_at', sinceIso)
-    if (untilIso) orderQuery = orderQuery.lte('ordered_at', untilIso)
-    const { data: orderRows, error: orderErr } = await orderQuery
-    if (orderErr || !orderRows?.length) return []
+    const { data, error } = await supabase.rpc('get_category_revenue', {
+      p_shop_ids: shopIds,
+      p_since: sinceIso,
+      p_until: untilIso,
+    })
 
-    const orderIds = (orderRows as { id: string }[]).map(r => r.id)
+    if (error || !data || data.length === 0) return []
 
-    // Step 2: fetch items for those orders + product category via FK join.
-    // Filter is on order_items.order_id (direct column) — no embedded-filter issue.
-    const { data: items, error: itemErr } = await supabase
-      .from('order_items')
-      .select('price_per_unit, quantity, cost_per_unit, products(category)')
-      .in('order_id', orderIds)
-    if (itemErr || !items?.length) return []
-
-    // Step 3: aggregate by category in JS
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const catMap = new Map<string, { revenue: number; cost: number }>()
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    for (const item of items as any[]) {
-      const cat: string = item.products?.category ?? 'Boshqa'
-      const rev = Number(item.price_per_unit) * Number(item.quantity)
-      const cst = Number(item.cost_per_unit) * Number(item.quantity)
-      const cur = catMap.get(cat) ?? { revenue: 0, cost: 0 }
-      catMap.set(cat, { revenue: cur.revenue + rev, cost: cur.cost + cst })
-    }
-
-    const entries = [...catMap.entries()].sort((a, b) => b[1].revenue - a[1].revenue)
-    const total = entries.reduce((s, [, v]) => s + v.revenue, 0)
-    return entries.map(([name, { revenue, cost }]) => ({
-      name,
-      revenue: Math.round(revenue),
-      profit:  Math.round(revenue - cost),
-      percent: total > 0 ? (revenue / total) * 100 : 0,
+    return (data as any[]).map(r => ({
+      name:    r.name,
+      revenue: Number(r.revenue ?? 0),
+      profit:  Number(r.profit ?? 0),
+      percent: Number(r.percent ?? 0),
     }))
   },
-  ['category-revenue-v9'],
+  ['category-revenue-rpc'],
   { revalidate: 30 },
 )
 
