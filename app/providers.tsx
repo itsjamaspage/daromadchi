@@ -39,6 +39,7 @@ export default function Providers({ children, initialLang = 'uz' }: Props) {
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
+    document.documentElement.style.backgroundColor = theme === 'dark' ? '#161616' : '#83c0f7'
     localStorage.setItem('theme', theme)
   }, [theme])
 
