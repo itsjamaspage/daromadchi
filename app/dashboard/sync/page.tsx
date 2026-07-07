@@ -37,7 +37,12 @@ export default async function SyncStatusPage() {
         db.select({ total: count() }).from(products).where(eq(products.shop_id, shop.id)),
         db.select({ total: count() }).from(orders).where(eq(orders.shop_id, shop.id)),
       ])
-      return { ...shop, productCount: productCount ?? 0, orderCount: orderCount ?? 0 }
+      return {
+        ...shop,
+        last_synced_at: shop.last_synced_at?.toISOString() ?? null,
+        productCount: productCount ?? 0,
+        orderCount: orderCount ?? 0,
+      }
     })
   )
 

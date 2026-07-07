@@ -1,4 +1,4 @@
-import { inArray, gte, desc } from 'drizzle-orm'
+import { and, inArray, gte, desc } from 'drizzle-orm'
 import { db, adCampaigns, productAdsStats, products } from '@/lib/db'
 import { getShopIds as resolveShopIds } from '@/lib/db/shop-context'
 import type { AdCampaign, MarketplaceType } from '@/lib/types'
@@ -49,8 +49,10 @@ export async function getWbAdCampaigns(days = 30): Promise<AdCampaign[]> {
     orders_from_ads: productAdsStats.orders_from_ads,
     revenue_from_ads: productAdsStats.revenue_from_ads,
   }).from(productAdsStats)
-    .where(inArray(productAdsStats.shop_id, shopIds))
-    .where(gte(productAdsStats.date, sinceStr))
+    .where(and(
+      inArray(productAdsStats.shop_id, shopIds),
+      gte(productAdsStats.date, sinceStr),
+    ))
 
   if (rows.length === 0) return []
 
@@ -58,15 +60,17 @@ export async function getWbAdCampaigns(days = 30): Promise<AdCampaign[]> {
   recentCutoff.setDate(recentCutoff.getDate() - 3)
   const recentStr = recentCutoff.toISOString().slice(0, 10)
 
-  const skus = [...new Set(rows.map(r => r.sku))]
+  const skus: string[] = [...new Set(rows.map((r: { sku: string }) => r.sku))]
   const titleBySku = new Map<string, string>()
   if (skus.length > 0) {
     const prods = await db.select({
       marketplace_product_id: products.marketplace_product_id,
       title: products.title,
     }).from(products)
-      .where(inArray(products.shop_id, shopIds))
-      .where(inArray(products.marketplace_product_id, skus))
+      .where(and(
+        inArray(products.shop_id, shopIds),
+        inArray(products.marketplace_product_id, skus),
+      ))
     for (const p of prods) {
       if (p.marketplace_product_id) titleBySku.set(p.marketplace_product_id, p.title)
     }

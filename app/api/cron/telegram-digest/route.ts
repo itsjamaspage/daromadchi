@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { isNotNull, eq, ne, inArray, gte, lte } from 'drizzle-orm'
+import { isNotNull, eq, ne, and, inArray, gte, lte } from 'drizzle-orm'
 import { db, userSettings, shops as shopsTable, orders as ordersTable, products as productsTable } from '@/lib/db'
 import { sendTelegramMessage } from '@/lib/telegram'
 import { withErrorHandler } from '@/lib/api-handler'
@@ -80,14 +80,16 @@ export const GET = withErrorHandler(async (req: Request) => {
         title: productsTable.title,
         stock_quantity: productsTable.stock_quantity,
       }).from(productsTable)
-        .where(inArray(productsTable.shop_id, shopIds))
-        .where(lte(productsTable.stock_quantity, threshold))
+        .where(and(
+          inArray(productsTable.shop_id, shopIds),
+          lte(productsTable.stock_quantity, threshold),
+        ))
         .orderBy(productsTable.stock_quantity)
         .limit(10)
 
       if (lowStock.length > 0) {
         const lines = lowStock
-          .map(p => `• ${p.title} — <b>${p.stock_quantity}</b> dona`)
+          .map((p: { title: string; stock_quantity: number }) => `• ${p.title} — <b>${p.stock_quantity}</b> dona`)
           .join('\n')
         parts.push(`📦 <b>Kam zaxira (${lowStock.length})</b>\n${lines}`)
       }
@@ -113,16 +115,18 @@ async function buildSalesSummary(
   const orderRows = await db.select({
     revenue: ordersTable.revenue,
   }).from(ordersTable)
-    .where(inArray(ordersTable.shop_id, shopIds))
-    .where(ne(ordersTable.status, 'cancelled'))
-    .where(gte(ordersTable.ordered_at, since))
+    .where(and(
+      inArray(ordersTable.shop_id, shopIds),
+      ne(ordersTable.status, 'cancelled'),
+      gte(ordersTable.ordered_at, since),
+    ))
 
   if (orderRows.length === 0) {
     return `Buyurtmalar yo'q.`
   }
 
   const revenue = orderRows.reduce(
-    (sum, o) => sum + Number(o.revenue ?? 0),
+    (sum: number, o: { revenue: string | null }) => sum + Number(o.revenue ?? 0),
     0,
   )
   return `Buyurtmalar: <b>${orderRows.length}</b>\nTushum: <b>${fmt(revenue)} so'm</b>`
