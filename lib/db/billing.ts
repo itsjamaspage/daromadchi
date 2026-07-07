@@ -1,4 +1,5 @@
-import { createAdminClient } from '@/lib/supabase/admin'
+import { eq, desc } from 'drizzle-orm'
+import { db, users, payments } from '@/lib/db'
 import { getCurrentUserId } from '@/lib/db/shop-context'
 
 export type PlanType = 'free' | 'pro' | 'pro_plus'
@@ -19,45 +20,43 @@ export interface BillingInfo {
   payments: PaymentRecord[]
 }
 
-const supabaseConfigured =
-  process.env.NEXT_PUBLIC_SUPABASE_URL &&
-  !process.env.NEXT_PUBLIC_SUPABASE_URL.includes('your-project')
-
 export async function getBilling(): Promise<BillingInfo> {
   const empty: BillingInfo = {
     plan: 'free', planExpiresAt: null, isOnTrial: false, trialEndsAt: null, payments: [],
   }
-  if (!supabaseConfigured) return empty
 
   const userId = await getCurrentUserId()
   if (!userId) return empty
 
-  const supabase = createAdminClient()
-  const [{ data: userRow }, { data: paymentRows }] = await Promise.all([
-    supabase
-      .from('users')
-      .select('plan, plan_expires_at, trial_ends_at')
-      .eq('id', userId)
-      .maybeSingle(),
-    supabase
-      .from('payments')
-      .select('id, plan, amount, status, created_at')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false }),
+  const [[userRow], paymentRows] = await Promise.all([
+    db.select({
+      plan: users.plan,
+      plan_expires_at: users.plan_expires_at,
+      trial_ends_at: users.trial_ends_at,
+    }).from(users).where(eq(users.id, userId)),
+    db.select({
+      id: payments.id,
+      plan: payments.plan,
+      amount: payments.amount,
+      status: payments.status,
+      created_at: payments.created_at,
+    }).from(payments)
+      .where(eq(payments.user_id, userId))
+      .orderBy(desc(payments.created_at)),
   ])
 
   const plan = (userRow?.plan ?? 'free') as PlanType
-  const planExpiresAt = (userRow?.plan_expires_at as string) ?? null
-  const trialEndsAt = (userRow?.trial_ends_at as string) ?? null
+  const planExpiresAt = userRow?.plan_expires_at?.toISOString() ?? null
+  const trialEndsAt = userRow?.trial_ends_at?.toISOString() ?? null
   const isOnTrial = !!trialEndsAt && new Date(trialEndsAt) > new Date() && plan === 'free'
 
-  const payments: PaymentRecord[] = (paymentRows ?? []).map(p => ({
-    id:     p.id as string,
-    date:   p.created_at as string,
-    plan:   p.plan as string,
+  const paymentList: PaymentRecord[] = paymentRows.map(p => ({
+    id:     p.id,
+    date:   p.created_at.toISOString(),
+    plan:   p.plan,
     amount: Number(p.amount),
     status: p.status as PaymentRecord['status'],
   }))
 
-  return { plan, planExpiresAt, isOnTrial, trialEndsAt, payments }
+  return { plan, planExpiresAt, isOnTrial, trialEndsAt, payments: paymentList }
 }

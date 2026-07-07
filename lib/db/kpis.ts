@@ -1,11 +1,8 @@
 import { unstable_cache } from 'next/cache'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { inArray, gte, lte, ne, and, sql } from 'drizzle-orm'
+import { db, orders, products } from '@/lib/db'
 import { getShopIds } from '@/lib/db/shop-context'
 import type { Kpis, MarketplaceType } from '@/lib/types'
-
-const supabaseConfigured =
-  process.env.NEXT_PUBLIC_SUPABASE_URL &&
-  !process.env.NEXT_PUBLIC_SUPABASE_URL.includes('your-project')
 
 function pct(curr: number, prev: number): number | null {
   if (prev === 0) return null
@@ -14,62 +11,73 @@ function pct(curr: number, prev: number): number | null {
 
 const emptyKpis: Kpis = { total_revenue: 0, total_profit: 0, total_orders: 0, total_stock: 0 }
 
+async function fetchPeriodKpis(shopIds: string[], since: Date | null, until: Date | null) {
+  const conditions = [
+    inArray(orders.shop_id, shopIds),
+    ne(orders.status, 'cancelled'),
+  ]
+  if (since) conditions.push(gte(orders.ordered_at, since))
+  if (until) conditions.push(lte(orders.ordered_at, until))
+
+  const [orderAgg] = await db.select({
+    total_revenue: sql<number>`coalesce(sum(${orders.revenue}::numeric), 0)`,
+    total_profit: sql<number>`coalesce(sum(${orders.revenue}::numeric - coalesce(${orders.marketplace_fee}::numeric, 0) - coalesce(${orders.delivery_cost}::numeric, 0)), 0)`,
+    total_orders: sql<number>`count(*)`,
+  }).from(orders).where(and(...conditions))
+
+  return {
+    revenue: Number(orderAgg?.total_revenue ?? 0),
+    profit: Number(orderAgg?.total_profit ?? 0),
+    orders: Number(orderAgg?.total_orders ?? 0),
+  }
+}
+
 const _fetchKpis = unstable_cache(
   async (shopIdsStr: string, days: number, from: string, to: string): Promise<Kpis> => {
     const shopIds = shopIdsStr ? shopIdsStr.split(',') : []
     if (shopIds.length === 0) return emptyKpis
 
-    const supabase = createAdminClient()
-
-    let sinceIso: string | null = null
-    let untilIso: string | null = null
-    let prevSinceIso: string | null = null
-    let prevUntilIso: string | null = null
+    let sinceDate: Date | null = null
+    let untilDate: Date | null = null
+    let prevSinceDate: Date | null = null
+    let prevUntilDate: Date | null = null
 
     if (from && to) {
-      sinceIso = new Date(from).toISOString()
-      const toDate = new Date(to); toDate.setHours(23, 59, 59, 999)
-      untilIso = toDate.toISOString()
-      const spanMs = toDate.getTime() - new Date(from).getTime()
-      const prevTo = new Date(new Date(from).getTime() - 1)
-      const prevFrom = new Date(prevTo.getTime() - spanMs)
-      prevSinceIso = prevFrom.toISOString()
-      prevUntilIso = prevTo.toISOString()
+      sinceDate = new Date(from)
+      untilDate = new Date(to); untilDate.setHours(23, 59, 59, 999)
+      const spanMs = untilDate.getTime() - sinceDate.getTime()
+      prevUntilDate = new Date(sinceDate.getTime() - 1)
+      prevSinceDate = new Date(prevUntilDate.getTime() - spanMs)
     } else if (days > 0) {
-      const now = new Date()
-      const since = new Date(now); since.setDate(since.getDate() - days + 1)
-      const prevSince = new Date(since); prevSince.setDate(prevSince.getDate() - days)
-      sinceIso = since.toISOString()
-      prevSinceIso = prevSince.toISOString()
-      prevUntilIso = since.toISOString()
+      sinceDate = new Date()
+      sinceDate.setDate(sinceDate.getDate() - days + 1)
+      prevSinceDate = new Date(sinceDate)
+      prevSinceDate.setDate(prevSinceDate.getDate() - days)
+      prevUntilDate = new Date(sinceDate)
     }
 
-    const { data, error } = await supabase.rpc('get_dashboard_kpis', {
-      p_shop_ids: shopIds,
-      p_since: sinceIso,
-      p_until: untilIso,
-      p_prev_since: prevSinceIso,
-      p_prev_until: prevUntilIso,
-    })
+    const [current, stock] = await Promise.all([
+      fetchPeriodKpis(shopIds, sinceDate, untilDate),
+      db.select({
+        total: sql<number>`coalesce(sum(${products.stock_quantity}), 0)`,
+      }).from(products).where(inArray(products.shop_id, shopIds)),
+    ])
 
-    if (error || !data || data.length === 0) return emptyKpis
-
-    const row = data[0]
-    const total_revenue = Number(row.total_revenue ?? 0)
-    const total_profit  = Number(row.total_profit ?? 0)
-    const total_orders  = Number(row.total_orders ?? 0)
-    const total_stock   = Number(row.total_stock ?? 0)
-
-    const prev_revenue = Number(row.prev_revenue ?? 0)
-    const prev_profit  = Number(row.prev_profit ?? 0)
-    const prev_orders  = Number(row.prev_orders ?? 0)
-
-    return {
-      total_revenue, total_profit, total_orders, total_stock,
-      change_revenue: prevSinceIso ? pct(total_revenue, prev_revenue) : null,
-      change_profit:  prevSinceIso ? pct(total_profit,  prev_profit)  : null,
-      change_orders:  prevSinceIso ? pct(total_orders,  prev_orders)  : null,
+    const result: Kpis = {
+      total_revenue: current.revenue,
+      total_profit: current.profit,
+      total_orders: current.orders,
+      total_stock: Number(stock[0]?.total ?? 0),
     }
+
+    if (prevSinceDate) {
+      const prev = await fetchPeriodKpis(shopIds, prevSinceDate, prevUntilDate)
+      result.change_revenue = pct(current.revenue, prev.revenue)
+      result.change_profit = pct(current.profit, prev.profit)
+      result.change_orders = pct(current.orders, prev.orders)
+    }
+
+    return result
   },
   ['kpis-rpc'],
   { revalidate: 30 },
@@ -81,7 +89,6 @@ export async function getKpis(
   from?: string,
   to?: string,
 ): Promise<Kpis> {
-  if (!supabaseConfigured) return emptyKpis
   const shopIds = await getShopIds(marketplace)
   if (!shopIds || shopIds.length === 0) return emptyKpis
   return _fetchKpis(shopIds.join(','), days, from ?? '', to ?? '')

@@ -1,6 +1,6 @@
+import { eq, ne, and, count } from 'drizzle-orm'
 import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
-import { getCurrentUserId } from '@/lib/db/shop-context'
+import { db, shops, products, orders } from '@/lib/db'
 import { getSyncDays } from '@/lib/db/sync-state'
 import SyncStatusClient from './SyncStatusClient'
 import { getLang } from '@/lib/lang'
@@ -14,23 +14,28 @@ export default async function SyncStatusPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
 
-  const [{ data: shops }, uzumDays, yandexDays, wbDays] = await Promise.all([
-    supabase
-      .from('shops')
-      .select('id, name, marketplace, api_key_encrypted, last_synced_at, shop_id_external')
-      .eq('user_id', user.id),
+  const [shopRows, uzumDays, yandexDays, wbDays] = await Promise.all([
+    db.select({
+      id: shops.id,
+      name: shops.name,
+      marketplace: shops.marketplace,
+      api_key_encrypted: shops.api_key_encrypted,
+      last_synced_at: shops.last_synced_at,
+      shop_id_external: shops.shop_id_external,
+    }).from(shops)
+      .where(eq(shops.user_id, user.id)),
     getSyncDays('uzum', 30),
     getSyncDays('yandex_market', 30),
     getSyncDays('wildberries', 30),
   ])
 
-  const filteredShops = (shops ?? []).filter(s => s.shop_id_external !== 'DEMO')
+  const filteredShops = shopRows.filter(s => s.shop_id_external !== 'DEMO')
 
   const shopsWithCounts = await Promise.all(
     filteredShops.map(async shop => {
-      const [{ count: productCount }, { count: orderCount }] = await Promise.all([
-        supabase.from('products').select('*', { count: 'exact', head: true }).eq('shop_id', shop.id),
-        supabase.from('orders').select('*', { count: 'exact', head: true }).eq('shop_id', shop.id),
+      const [[{ total: productCount }], [{ total: orderCount }]] = await Promise.all([
+        db.select({ total: count() }).from(products).where(eq(products.shop_id, shop.id)),
+        db.select({ total: count() }).from(orders).where(eq(orders.shop_id, shop.id)),
       ])
       return { ...shop, productCount: productCount ?? 0, orderCount: orderCount ?? 0 }
     })

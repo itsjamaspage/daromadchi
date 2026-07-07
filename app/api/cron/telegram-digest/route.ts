@@ -1,27 +1,19 @@
 import { NextResponse } from 'next/server'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { isNotNull, eq, ne, inArray, gte, lte } from 'drizzle-orm'
+import { db, userSettings, shops as shopsTable, orders as ordersTable, products as productsTable } from '@/lib/db'
 import { sendTelegramMessage } from '@/lib/telegram'
 import { withErrorHandler } from '@/lib/api-handler'
 
 export const runtime     = 'nodejs'
 export const maxDuration  = 120
 
-// Runs hourly (see vercel.json). Sends each linked user their daily summary /
-// weekly report / low-stock digest when the current Uzbekistan time matches the
-// hour they chose and today is one of their selected days.
-//
-// Uzbekistan is UTC+5 (no DST).
 const UZ_OFFSET_MIN = 5 * 60
 
 interface SettingsRow {
   user_id:              string
   telegram_chat_id:     string
-  notif_low_stock:      boolean
-  notif_daily_summary:  boolean
-  notif_new_orders:     boolean
-  notif_weekly_report:  boolean
-  notif_send_time:      string | null
-  notif_send_days:      number[] | null
+  notif_send_time:      string
+  notif_send_days:      number[]
   alert_stock_threshold: number | null
 }
 
@@ -30,80 +22,72 @@ function fmt(n: number): string {
 }
 
 export const GET = withErrorHandler(async (req: Request) => {
-  // Vercel Cron sends: Authorization: Bearer {CRON_SECRET}
   const auth   = req.headers.get('authorization')
   const bearer = auth?.startsWith('Bearer ') ? auth.slice(7) : null
   if (!process.env.CRON_SECRET || bearer !== process.env.CRON_SECRET) {
     return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 })
   }
 
-  // Current Uzbekistan local time
   const nowUtcMin = new Date().getUTCHours() * 60 + new Date().getUTCMinutes()
   const uzMin     = (nowUtcMin + UZ_OFFSET_MIN) % (24 * 60)
   const uzHour    = Math.floor(uzMin / 60)
-  // Day-of-week in UZ time (0=Sun … 6=Sat)
   const uzDay = new Date(Date.now() + UZ_OFFSET_MIN * 60_000).getUTCDay()
 
-  const supabase = createAdminClient()
-  const { data: rows, error } = await supabase
-    .from('user_settings')
-    .select('user_id, telegram_chat_id, notif_low_stock, notif_daily_summary, notif_new_orders, notif_weekly_report, notif_send_time, notif_send_days, alert_stock_threshold')
-    .not('telegram_chat_id', 'is', null)
-
-  if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 })
+  const rows = await db.select({
+    user_id: userSettings.user_id,
+    telegram_chat_id: userSettings.telegram_chat_id,
+    notif_send_time: userSettings.notif_send_time,
+    notif_send_days: userSettings.notif_send_days,
+    alert_stock_threshold: userSettings.alert_stock_threshold,
+  }).from(userSettings)
+    .where(isNotNull(userSettings.telegram_chat_id))
 
   const sent: { userId: string; parts: string[] }[] = []
 
-  for (const s of (rows ?? []) as SettingsRow[]) {
-    // Match the chosen hour
+  for (const s of rows as SettingsRow[]) {
     const sendTime = s.notif_send_time ?? '09:00'
     const sendHour = parseInt(sendTime.split(':')[0] ?? '9', 10)
     if (sendHour !== uzHour) continue
 
-    // Match the chosen day
     const days = s.notif_send_days ?? [1, 2, 3, 4, 5, 6, 0]
     if (!days.includes(uzDay)) continue
 
-    // Weekly report only fires on Mondays
     const isWeeklyDay = uzDay === 1
-
     const parts: string[] = []
 
-    // Resolve user's shops once
-    const { data: shopRows } = await supabase
-      .from('shops')
-      .select('id')
-      .eq('user_id', s.user_id)
-      .neq('shop_id_external', 'DEMO')
-    const shopIds = (shopRows ?? []).map((r: { id: string }) => r.id)
+    const shopRows = await db.select({ id: shopsTable.id }).from(shopsTable)
+      .where(eq(shopsTable.user_id, s.user_id))
+    const shopIds = shopRows
+      .map(r => r.id)
     if (shopIds.length === 0) continue
 
     // ── Daily summary (yesterday's sales) ──
-    if (s.notif_daily_summary) {
-      const day = await buildSalesSummary(supabase, shopIds, 1)
+    {
+      const day = await buildSalesSummary(shopIds, 1)
       if (day) parts.push(`📊 <b>Kunlik xulosa (kecha)</b>\n` + day)
     }
 
     // ── Weekly report (last 7 days, Mondays only) ──
-    if (s.notif_weekly_report && isWeeklyDay) {
-      const week = await buildSalesSummary(supabase, shopIds, 7)
+    if (isWeeklyDay) {
+      const week = await buildSalesSummary(shopIds, 7)
       if (week) parts.push(`📈 <b>Haftalik hisobot (7 kun)</b>\n` + week)
     }
 
     // ── Low-stock alerts ──
-    if (s.notif_low_stock) {
+    {
       const threshold = s.alert_stock_threshold ?? 15
-      const { data: lowStock } = await supabase
-        .from('products')
-        .select('title, stock_quantity')
-        .in('shop_id', shopIds)
-        .lte('stock_quantity', threshold)
-        .order('stock_quantity', { ascending: true })
+      const lowStock = await db.select({
+        title: productsTable.title,
+        stock_quantity: productsTable.stock_quantity,
+      }).from(productsTable)
+        .where(inArray(productsTable.shop_id, shopIds))
+        .where(lte(productsTable.stock_quantity, threshold))
+        .orderBy(productsTable.stock_quantity)
         .limit(10)
 
-      if (lowStock && lowStock.length > 0) {
+      if (lowStock.length > 0) {
         const lines = lowStock
-          .map((p: { title: string; stock_quantity: number }) => `• ${p.title} — <b>${p.stock_quantity}</b> dona`)
+          .map(p => `• ${p.title} — <b>${p.stock_quantity}</b> dona`)
           .join('\n')
         parts.push(`📦 <b>Kam zaxira (${lowStock.length})</b>\n${lines}`)
       }
@@ -119,28 +103,27 @@ export const GET = withErrorHandler(async (req: Request) => {
   return NextResponse.json({ ok: true, uzHour, uzDay, sent: sent.length, details: sent })
 })
 
-// Aggregates revenue + order count over the last `days` days for the given shops.
 async function buildSalesSummary(
-  supabase: ReturnType<typeof createAdminClient>,
   shopIds: string[],
   days: number,
 ): Promise<string | null> {
   const since = new Date()
   since.setDate(since.getDate() - days)
 
-  const { data: orders } = await supabase
-    .from('orders')
-    .select('revenue')
-    .in('shop_id', shopIds)
-    .gte('ordered_at', since.toISOString())
+  const orderRows = await db.select({
+    revenue: ordersTable.revenue,
+  }).from(ordersTable)
+    .where(inArray(ordersTable.shop_id, shopIds))
+    .where(ne(ordersTable.status, 'cancelled'))
+    .where(gte(ordersTable.ordered_at, since))
 
-  if (!orders || orders.length === 0) {
+  if (orderRows.length === 0) {
     return `Buyurtmalar yo'q.`
   }
 
-  const revenue = orders.reduce(
-    (sum: number, o: { revenue: number | null }) => sum + Number(o.revenue ?? 0),
+  const revenue = orderRows.reduce(
+    (sum, o) => sum + Number(o.revenue ?? 0),
     0,
   )
-  return `Buyurtmalar: <b>${orders.length}</b>\nTushum: <b>${fmt(revenue)} so'm</b>`
+  return `Buyurtmalar: <b>${orderRows.length}</b>\nTushum: <b>${fmt(revenue)} so'm</b>`
 }

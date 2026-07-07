@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
+import { eq, and } from 'drizzle-orm'
 import { createClient } from '@/lib/supabase/server'
+import { db, shops } from '@/lib/db'
 import { encrypt } from '@/lib/crypto'
 import { validateMarketplaceToken } from '@/lib/validate-token'
 import { clearShopData } from '@/lib/db/clear-shop-data'
@@ -26,7 +28,6 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   }
   const { marketplace, token, campaignId, shopName } = parsed.data
 
-  // Validate token against the marketplace API before saving
   if (token?.trim()) {
     const valid = await validateMarketplaceToken(marketplace, token.trim())
     if (!valid) {
@@ -37,15 +38,10 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     }
   }
 
-  const { data: existing } = await supabase
-    .from('shops')
-    .select('id')
-    .eq('user_id', user.id)
-    .eq('marketplace', marketplace)
-    .eq('is_active', true)
-    .maybeSingle()
+  const [existing] = await db.select({ id: shops.id }).from(shops)
+    .where(and(eq(shops.user_id, user.id), eq(shops.marketplace, marketplace), eq(shops.is_active, true)))
 
-  const update: Record<string, string | boolean | null> = {}
+  const update: Record<string, unknown> = {}
   if (token?.trim()) {
     update.api_key_encrypted = encrypt(token.trim())
     update.token_valid = true
@@ -58,13 +54,9 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
       await clearShopData(existing.id)
       logger.info('shops_token_cleared', { userId: user.id, marketplace, shopId: existing.id })
     }
-    const { error } = await supabase.from('shops').update(update).eq('id', existing.id)
-    if (error) {
-      logger.error('shops_token_update_failed', { userId: user.id, marketplace, code: error.code })
-      return NextResponse.json({ ok: false, error: error.message }, { status: 500 })
-    }
+    await db.update(shops).set(update).where(eq(shops.id, existing.id))
   } else {
-    const { error } = await supabase.from('shops').insert({
+    await db.insert(shops).values({
       user_id: user.id,
       name: shopName ?? `${marketplace} do'konim`,
       marketplace,
@@ -72,10 +64,6 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
       token_valid: !!token?.trim(),
       ...update,
     })
-    if (error) {
-      logger.error('shops_token_insert_failed', { userId: user.id, marketplace, code: error.code })
-      return NextResponse.json({ ok: false, error: error.message }, { status: 500 })
-    }
   }
 
   const cleared = !!(token?.trim() && existing)

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { supabaseAdmin } from '@/lib/api/auth'
+import { db, userSettings } from '@/lib/db'
 import { telegramConfigured, telegramDeepLink } from '@/lib/telegram'
 import { withErrorHandler } from '@/lib/api-handler'
 
@@ -18,36 +18,19 @@ export const POST = withErrorHandler(async () => {
     .join('')
   const expiresAt = new Date(Date.now() + 10 * 60 * 1000)
 
-  // Try insert first, fall back to update if row exists
-  const { error: upsertError } = await supabaseAdmin.from('user_settings').upsert(
-    {
-      user_id:                  user.id,
+  await db.insert(userSettings).values({
+    user_id:                  user.id,
+    telegram_link_token:      linkToken,
+    telegram_link_expires_at: expiresAt,
+    updated_at:               new Date(),
+  }).onConflictDoUpdate({
+    target: userSettings.user_id,
+    set: {
       telegram_link_token:      linkToken,
-      telegram_link_expires_at: expiresAt.toISOString(),
-      updated_at:               new Date().toISOString(),
+      telegram_link_expires_at: expiresAt,
+      updated_at:               new Date(),
     },
-    { onConflict: 'user_id' },
-  )
-
-  if (upsertError) {
-    // Fallback: try a plain update in case upsert fails due to missing columns
-    const { error: updateError } = await supabaseAdmin
-      .from('user_settings')
-      .update({
-        telegram_link_token:      linkToken,
-        telegram_link_expires_at: expiresAt.toISOString(),
-        updated_at:               new Date().toISOString(),
-      })
-      .eq('user_id', user.id)
-
-    if (updateError) {
-      console.error('[telegram/link] upsert:', upsertError.message, '| update:', updateError.message)
-      return NextResponse.json(
-        { error: 'token_failed', detail: upsertError.message },
-        { status: 500 }
-      )
-    }
-  }
+  })
 
   return NextResponse.json({ url: telegramDeepLink(linkToken), expiresAt })
 })

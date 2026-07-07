@@ -1,4 +1,5 @@
-import { createClient } from '@/lib/supabase/server'
+import { eq, and, inArray, count } from 'drizzle-orm'
+import { db, shops, products, orders, orderItems, syncDays, adCampaigns } from '@/lib/db'
 import {
   fetchAllPages,
   fetchUzumOrders,
@@ -34,7 +35,6 @@ export interface SyncResult {
 }
 
 export async function syncFromUzum(shopId: string, token: string, fromDateOverride?: Date): Promise<SyncResult> {
-  const supabase = await createClient()
   const warnings: string[] = []
 
   try {
@@ -81,20 +81,37 @@ export async function syncFromUzum(shopId: string, token: string, fromDateOverri
       }
 
       if (productRows.length > 0) {
-        const { data: existingProds } = await supabase
-          .from('products').select('id, marketplace_product_id').eq('shop_id', shopId)
-        const existingMap = new Map((existingProds ?? []).map((p: { id: string; marketplace_product_id: string }) =>
+        const existingProds = await db.select({ id: products.id, marketplace_product_id: products.marketplace_product_id })
+          .from(products).where(eq(products.shop_id, shopId))
+        const existingMap = new Map(existingProds.map(p =>
           [String(p.marketplace_product_id), String(p.id)]))
         const toIns = productRows.filter(r => !existingMap.has(String(r.marketplace_product_id)))
         const toUpd = productRows.filter(r => existingMap.has(String(r.marketplace_product_id)))
           .map(r => ({ ...r, id: existingMap.get(String(r.marketplace_product_id))! }))
         if (toIns.length > 0) {
-          const { error: e } = await supabase.from('products').insert(toIns)
-          if (e) throw new Error(`Mahsulotlarni saqlashda xato: ${e.message}`)
+          await db.insert(products).values(toIns.map(r => ({
+            shop_id: r.shop_id,
+            marketplace_product_id: r.marketplace_product_id,
+            title: r.title,
+            sku: r.sku,
+            category: r.category,
+            selling_price: r.selling_price != null ? String(r.selling_price) : null,
+            cost_price: r.cost_price != null ? String(r.cost_price) : null,
+            stock_quantity: r.stock_quantity,
+          })))
         }
         if (toUpd.length > 0) {
-          const { error: e } = await supabase.from('products').upsert(toUpd)
-          if (e) throw new Error(`Mahsulotlarni saqlashda xato: ${e.message}`)
+          for (const r of toUpd) {
+            await db.update(products).set({
+              title: r.title,
+              sku: r.sku,
+              category: r.category,
+              selling_price: r.selling_price != null ? String(r.selling_price) : null,
+              cost_price: r.cost_price != null ? String(r.cost_price) : null,
+              stock_quantity: r.stock_quantity,
+              marketplace_product_id: r.marketplace_product_id,
+            }).where(eq(products.id, r.id))
+          }
         }
       }
     } catch (prodSyncErr) {
@@ -103,10 +120,12 @@ export async function syncFromUzum(shopId: string, token: string, fromDateOverri
     }
 
     // ── Orders (incremental: since last sync, or caller-supplied override) ──────
-    const [{ data: shopRow }, { count: existingProductCount }] = await Promise.all([
-      supabase.from('shops').select('last_synced_at').eq('id', shopId).single(),
-      supabase.from('products').select('*', { count: 'exact', head: true }).eq('shop_id', shopId),
+    const [shopRows, productCountRows] = await Promise.all([
+      db.select({ last_synced_at: shops.last_synced_at }).from(shops).where(eq(shops.id, shopId)).limit(1),
+      db.select({ total: count() }).from(products).where(eq(products.shop_id, shopId)),
     ])
+    const shopRow = shopRows[0] ?? null
+    const existingProductCount = productCountRows[0]?.total ?? 0
 
     // Incremental: only fetch orders since last sync to avoid overwriting existing
     // order statuses (which would remove previously-counted revenue from the chart).
@@ -158,10 +177,35 @@ export async function syncFromUzum(shopId: string, token: string, fromDateOverri
 
     // Upsert: inserts new orders AND updates status of existing ones
     if (orderRows.length > 0) {
-      const { error: ordErr } = await supabase
-        .from('orders')
-        .upsert(orderRows, { onConflict: 'shop_id,order_id_external', ignoreDuplicates: false })
-      if (ordErr) throw new Error(`Buyurtmalarni saqlashda xato: ${ordErr.message}`)
+      const extIds = orderRows.map(r => r.order_id_external)
+      const existingOrds = await db.select({ id: orders.id, order_id_external: orders.order_id_external })
+        .from(orders).where(and(eq(orders.shop_id, shopId), inArray(orders.order_id_external, extIds)))
+      const existingOrdMap = new Map(existingOrds.map(o => [o.order_id_external, o.id]))
+
+      const toInsOrd = orderRows.filter(r => !existingOrdMap.has(r.order_id_external))
+      const toUpdOrd = orderRows.filter(r => existingOrdMap.has(r.order_id_external))
+
+      if (toInsOrd.length > 0) {
+        for (let i = 0; i < toInsOrd.length; i += 500) {
+          await db.insert(orders).values(toInsOrd.slice(i, i + 500).map(r => ({
+            shop_id: r.shop_id,
+            order_id_external: r.order_id_external,
+            marketplace: r.marketplace,
+            status: r.status,
+            revenue: String(r.revenue),
+            items_count: r.items_count,
+            ordered_at: new Date(r.ordered_at),
+          })))
+        }
+      }
+      for (const r of toUpdOrd) {
+        await db.update(orders).set({
+          status: r.status,
+          revenue: String(r.revenue),
+          items_count: r.items_count,
+          ordered_at: new Date(r.ordered_at),
+        }).where(eq(orders.id, existingOrdMap.get(r.order_id_external)!))
+      }
     }
 
     // ── Derive products from order items if product sync returned nothing ────────
@@ -189,18 +233,40 @@ export async function syncFromUzum(shopId: string, token: string, fromDateOverri
         }
         if (seenMap.size > 0) {
           const derived = [...seenMap.values()]
-          const { data: existingProds } = await supabase
-            .from('products').select('id, marketplace_product_id').eq('shop_id', shopId)
+          const existingProds = await db.select({ id: products.id, marketplace_product_id: products.marketplace_product_id })
+            .from(products).where(eq(products.shop_id, shopId))
           const existingMap = new Map(
-            (existingProds ?? []).map((p: { id: string; marketplace_product_id: string }) =>
-              [String(p.marketplace_product_id), String(p.id)]),
+            existingProds.map(p => [String(p.marketplace_product_id), String(p.id)]),
           )
           const toIns = derived.filter(r => !existingMap.has(r.marketplace_product_id))
           const toUpd = derived
             .filter(r => existingMap.has(r.marketplace_product_id))
             .map(r => ({ ...r, id: existingMap.get(r.marketplace_product_id)! }))
-          if (toIns.length > 0) await supabase.from('products').insert(toIns)
-          if (toUpd.length > 0) await supabase.from('products').upsert(toUpd)
+          if (toIns.length > 0) {
+            await db.insert(products).values(toIns.map(r => ({
+              shop_id: r.shop_id,
+              marketplace_product_id: r.marketplace_product_id,
+              title: r.title,
+              sku: r.sku,
+              category: r.category,
+              selling_price: r.selling_price != null ? String(r.selling_price) : null,
+              cost_price: r.cost_price != null ? String(r.cost_price) : null,
+              stock_quantity: r.stock_quantity,
+            })))
+          }
+          if (toUpd.length > 0) {
+            for (const r of toUpd) {
+              await db.update(products).set({
+                title: r.title,
+                sku: r.sku,
+                category: r.category,
+                selling_price: r.selling_price != null ? String(r.selling_price) : null,
+                cost_price: r.cost_price != null ? String(r.cost_price) : null,
+                stock_quantity: r.stock_quantity,
+                marketplace_product_id: r.marketplace_product_id,
+              }).where(eq(products.id, r.id))
+            }
+          }
           productRows.push(...derived)
         }
       } catch { /* best-effort */ }
@@ -212,7 +278,7 @@ export async function syncFromUzum(shopId: string, token: string, fromDateOverri
     // Runs when incremental sync has no new orders AND products table is empty.
     // Fetches recent orders from API ONLY for product/SKU info — does NOT upsert
     // those orders to the DB so existing order statuses are never overwritten.
-    if (productRows.length === 0 && (existingProductCount ?? 0) === 0) {
+    if (productRows.length === 0 && existingProductCount === 0) {
       try {
         const extractMs = Date.now() - 90 * 24 * 60 * 60 * 1000
         const [fbsEx, fboEx] = await Promise.all([
@@ -242,21 +308,47 @@ export async function syncFromUzum(shopId: string, token: string, fromDateOverri
           }
           if (seenMap.size > 0) {
             const derived = [...seenMap.values()]
-            const { data: ep } = await supabase.from('products').select('id, marketplace_product_id').eq('shop_id', shopId)
-            const em = new Map((ep ?? []).map((p: { id: string; marketplace_product_id: string }) => [String(p.marketplace_product_id), String(p.id)]))
+            const ep = await db.select({ id: products.id, marketplace_product_id: products.marketplace_product_id })
+              .from(products).where(eq(products.shop_id, shopId))
+            const em = new Map(ep.map(p => [String(p.marketplace_product_id), String(p.id)]))
             const toIns = derived.filter(r => !em.has(r.marketplace_product_id))
             const toUpd = derived.filter(r => em.has(r.marketplace_product_id)).map(r => ({ ...r, id: em.get(r.marketplace_product_id)! }))
-            if (toIns.length > 0) await supabase.from('products').insert(toIns)
-            if (toUpd.length > 0) await supabase.from('products').upsert(toUpd)
+            if (toIns.length > 0) {
+              await db.insert(products).values(toIns.map(r => ({
+                shop_id: r.shop_id,
+                marketplace_product_id: r.marketplace_product_id,
+                title: r.title,
+                sku: r.sku,
+                category: r.category,
+                selling_price: r.selling_price != null ? String(r.selling_price) : null,
+                cost_price: r.cost_price != null ? String(r.cost_price) : null,
+                stock_quantity: r.stock_quantity,
+              })))
+            }
+            if (toUpd.length > 0) {
+              for (const r of toUpd) {
+                await db.update(products).set({
+                  title: r.title,
+                  sku: r.sku,
+                  category: r.category,
+                  selling_price: r.selling_price != null ? String(r.selling_price) : null,
+                  cost_price: r.cost_price != null ? String(r.cost_price) : null,
+                  stock_quantity: r.stock_quantity,
+                  marketplace_product_id: r.marketplace_product_id,
+                }).where(eq(products.id, r.id))
+              }
+            }
             productRows.push(...derived)
             // Re-create order_items for these orders already in DB with correct product_ids
             const extIds = extractOrders.map(o => String(o.id ?? o.orderId))
-            const [{ data: dbOrds }, { data: dbProds }] = await Promise.all([
-              supabase.from('orders').select('id, order_id_external').eq('shop_id', shopId).in('order_id_external', extIds),
-              supabase.from('products').select('id, marketplace_product_id').eq('shop_id', shopId),
+            const [dbOrds, dbProds] = await Promise.all([
+              db.select({ id: orders.id, order_id_external: orders.order_id_external })
+                .from(orders).where(and(eq(orders.shop_id, shopId), inArray(orders.order_id_external, extIds))),
+              db.select({ id: products.id, marketplace_product_id: products.marketplace_product_id })
+                .from(products).where(eq(products.shop_id, shopId)),
             ])
-            const oMap = new Map<string, string>(); for (const o of dbOrds ?? []) oMap.set(o.order_id_external as string, o.id as string)
-            const pMap = new Map<string, string>(); for (const p of dbProds ?? []) if (p.marketplace_product_id) pMap.set(String(p.marketplace_product_id), p.id as string)
+            const oMap = new Map<string, string>(); for (const o of dbOrds) oMap.set(o.order_id_external as string, o.id as string)
+            const pMap = new Map<string, string>(); for (const p of dbProds) if (p.marketplace_product_id) pMap.set(String(p.marketplace_product_id), p.id as string)
             const itmRows: { order_id: string; product_id: string | null; quantity: number; price_per_unit: number }[] = []
             for (const o of extractOrders) {
               const dbOid = oMap.get(String(o.id ?? o.orderId))
@@ -267,8 +359,15 @@ export async function syncFromUzum(shopId: string, token: string, fromDateOverri
             }
             if (itmRows.length > 0) {
               const dbOids = [...new Set(itmRows.map(r => r.order_id))]
-              await supabase.from('order_items').delete().in('order_id', dbOids)
-              for (let i = 0; i < itmRows.length; i += 500) await supabase.from('order_items').insert(itmRows.slice(i, i + 500))
+              await db.delete(orderItems).where(inArray(orderItems.order_id, dbOids))
+              for (let i = 0; i < itmRows.length; i += 500) {
+                await db.insert(orderItems).values(itmRows.slice(i, i + 500).map(r => ({
+                  order_id: r.order_id,
+                  product_id: r.product_id,
+                  quantity: r.quantity,
+                  price_per_unit: String(r.price_per_unit),
+                })))
+              }
             }
           }
         }
@@ -278,24 +377,19 @@ export async function syncFromUzum(shopId: string, token: string, fromDateOverri
     // ── Order items (best-effort) ─────────────────────────────────────────────
     // Build a map: marketplace_product_id → products.id for fast lookup
     try {
-      const { data: dbProducts } = await supabase
-        .from('products')
-        .select('id, marketplace_product_id')
-        .eq('shop_id', shopId)
+      const dbProducts = await db.select({ id: products.id, marketplace_product_id: products.marketplace_product_id })
+        .from(products).where(eq(products.shop_id, shopId))
       const pidMap = new Map<string, string>()
-      for (const p of dbProducts ?? []) {
+      for (const p of dbProducts) {
         if (p.marketplace_product_id) pidMap.set(String(p.marketplace_product_id), p.id as string)
       }
 
       // Map order_id_external → orders.id
       const extIds = uzumOrders.map(o => String(o.id ?? o.orderId))
-      const { data: dbOrders } = await supabase
-        .from('orders')
-        .select('id, order_id_external')
-        .eq('shop_id', shopId)
-        .in('order_id_external', extIds)
+      const dbOrders = await db.select({ id: orders.id, order_id_external: orders.order_id_external })
+        .from(orders).where(and(eq(orders.shop_id, shopId), inArray(orders.order_id_external, extIds)))
       const orderIdMap = new Map<string, string>()
-      for (const o of dbOrders ?? []) {
+      for (const o of dbOrders) {
         orderIdMap.set(o.order_id_external as string, o.id as string)
       }
 
@@ -320,9 +414,14 @@ export async function syncFromUzum(shopId: string, token: string, fromDateOverri
       // Delete old items for these orders then re-insert (simpler than upsert without unique key)
       if (itemRows.length > 0) {
         const dbOrderIds = [...new Set(itemRows.map(r => r.order_id))]
-        await supabase.from('order_items').delete().in('order_id', dbOrderIds)
+        await db.delete(orderItems).where(inArray(orderItems.order_id, dbOrderIds))
         for (let i = 0; i < itemRows.length; i += 500) {
-          await supabase.from('order_items').insert(itemRows.slice(i, i + 500))
+          await db.insert(orderItems).values(itemRows.slice(i, i + 500).map(r => ({
+            order_id: r.order_id,
+            product_id: r.product_id,
+            quantity: r.quantity,
+            price_per_unit: String(r.price_per_unit),
+          })))
         }
       }
     } catch { /* order items sync is best-effort */ }
@@ -335,26 +434,25 @@ export async function syncFromUzum(shopId: string, token: string, fromDateOverri
       if (uzumCampaigns.length > 0) {
         const campaignRows = uzumCampaigns.map(c => ({
           shop_id: shopId,
-          external_id: c.campaignId,
           name: c.name,
-          type: c.type === 'CPC' ? 'cpc' : 'cpo',
-          status: AD_STATUS_MAP[c.status] ?? 'stopped',
+          type: (c.type === 'CPC' ? 'cpc' : 'cpo') as 'cpc' | 'cpo',
+          status: (AD_STATUS_MAP[c.status] ?? 'stopped') as 'active' | 'paused' | 'stopped',
           product_title: c.productName ?? '',
-          spend: c.spentBudget ?? 0,
+          spend: String(c.spentBudget ?? 0),
           impressions: c.impressions ?? 0,
           clicks: c.clicks ?? 0,
-          ctr: c.clicks && c.impressions ? (c.clicks / c.impressions) * 100 : 0,
+          ctr: String(c.clicks && c.impressions ? (c.clicks / c.impressions) * 100 : 0),
           orders: c.orders ?? 0,
-          revenue: c.revenue ?? 0,
-          drr: c.revenue && c.spentBudget ? (c.spentBudget / c.revenue) * 100 : 0,
+          revenue: String(c.revenue ?? 0),
+          drr: String(c.revenue && c.spentBudget ? (c.spentBudget / c.revenue) * 100 : 0),
           start_date: c.startDate,
         }))
 
-        const { error: adErr } = await supabase
-          .from('ad_campaigns')
-          .upsert(campaignRows, { onConflict: 'shop_id,external_id', ignoreDuplicates: false })
+        await db.delete(adCampaigns).where(eq(adCampaigns.shop_id, shopId))
+        for (let i = 0; i < campaignRows.length; i += 500) {
+          await db.insert(adCampaigns).values(campaignRows.slice(i, i + 500))
+        }
 
-        if (adErr) throw adErr
         campaignsUpserted = campaignRows.length
       }
     } catch {
@@ -364,18 +462,23 @@ export async function syncFromUzum(shopId: string, token: string, fromDateOverri
     // ── Update sync metadata ──────────────────────────────────────────────────
     const today = new Date().toISOString().slice(0, 10)
     await Promise.all([
-      supabase.from('shops').update({ last_synced_at: new Date().toISOString() }).eq('id', shopId),
-      supabase.from('sync_days').upsert(
-        {
-          shop_id: shopId,
-          sync_date: today,
+      db.update(shops).set({ last_synced_at: new Date() }).where(eq(shops.id, shopId)),
+      db.insert(syncDays).values({
+        shop_id: shopId,
+        sync_date: today,
+        status: 'success',
+        products_count: productRows.length,
+        revenue: String(newOrderRows.reduce((s, o) => s + (o.revenue ?? 0), 0)),
+        synced_at: new Date(),
+      }).onConflictDoUpdate({
+        target: [syncDays.shop_id, syncDays.sync_date],
+        set: {
           status: 'success',
           products_count: productRows.length,
-          revenue: newOrderRows.reduce((s, o) => s + (o.revenue ?? 0), 0),
-          synced_at: new Date().toISOString(),
+          revenue: String(newOrderRows.reduce((s, o) => s + (o.revenue ?? 0), 0)),
+          synced_at: new Date(),
         },
-        { onConflict: 'shop_id,sync_date' },
-      ),
+      }),
     ])
 
     return {
@@ -396,17 +499,20 @@ export async function syncFromUzum(shopId: string, token: string, fromDateOverri
     // Record sync failure
     try {
       const today = new Date().toISOString().slice(0, 10)
-      const supabase2 = await createClient()
-      await supabase2.from('sync_days').upsert(
-        {
-          shop_id: shopId,
-          sync_date: today,
+      await db.insert(syncDays).values({
+        shop_id: shopId,
+        sync_date: today,
+        status: 'error',
+        error_message: msg.slice(0, 500),
+        synced_at: new Date(),
+      }).onConflictDoUpdate({
+        target: [syncDays.shop_id, syncDays.sync_date],
+        set: {
           status: 'error',
           error_message: msg.slice(0, 500),
-          synced_at: new Date().toISOString(),
+          synced_at: new Date(),
         },
-        { onConflict: 'shop_id,sync_date' },
-      )
+      })
     } catch { /* ignore secondary failure */ }
 
     return { ok: false, ordersUpserted: 0, productsUpserted: 0, campaignsUpserted: 0, error: msg }

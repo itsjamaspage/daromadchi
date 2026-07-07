@@ -1,11 +1,8 @@
 import { cache } from 'react'
 import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { eq, ne, and, asc, inArray } from 'drizzle-orm'
+import { db, shops, orders } from '@/lib/db'
 import type { MarketplaceType } from '@/lib/types'
-
-const supabaseConfigured =
-  process.env.NEXT_PUBLIC_SUPABASE_URL &&
-  !process.env.NEXT_PUBLIC_SUPABASE_URL.includes('your-project')
 
 export interface ShopRef {
   id: string
@@ -13,49 +10,40 @@ export interface ShopRef {
 }
 
 export const getCurrentUserId = cache(async (): Promise<string | null> => {
-  if (!supabaseConfigured) return null
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  return user?.id ?? null
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    return user?.id ?? null
+  } catch {
+    return null
+  }
 })
 
 export const getUserShops = cache(async (): Promise<ShopRef[]> => {
   const userId = await getCurrentUserId()
   if (!userId) return []
-  const supabase = createAdminClient()
-  const { data } = await supabase
-    .from('shops')
-    .select('id, marketplace')
-    .eq('user_id', userId)
-    .neq('shop_id_external', 'DEMO')
-  return (data ?? []) as ShopRef[]
+  const rows = await db.select({ id: shops.id, marketplace: shops.marketplace })
+    .from(shops)
+    .where(and(eq(shops.user_id, userId), ne(shops.shop_id_external, 'DEMO')))
+  return rows as ShopRef[]
 })
 
-/**
- * Shop ids for the current user, optionally filtered by marketplace.
- *
- * Returns `null` when there is no authenticated user, so callers can tell
- * "logged out" apart from "logged in but no shops". Derived from the memoized
- * shop list — no extra round-trips regardless of how many times it is called.
- */
 export const getShopIds = cache(async (marketplace?: MarketplaceType): Promise<string[] | null> => {
   const userId = await getCurrentUserId()
   if (!userId) return null
-  const shops = await getUserShops()
-  const filtered = marketplace ? shops.filter(s => s.marketplace === marketplace) : shops
+  const allShops = await getUserShops()
+  const filtered = marketplace ? allShops.filter(s => s.marketplace === marketplace) : allShops
   return filtered.map(s => s.id)
 })
 
 export async function getShopLaunchDate(): Promise<string | null> {
-  const supabase = createAdminClient()
   const shopIds = await getShopIds()
   if (!shopIds || shopIds.length === 0) return null
-  const { data } = await supabase
-    .from('orders')
-    .select('ordered_at')
-    .in('shop_id', shopIds)
-    .order('ordered_at', { ascending: true })
+  const rows = await db.select({ ordered_at: orders.ordered_at })
+    .from(orders)
+    .where(inArray(orders.shop_id, shopIds))
+    .orderBy(asc(orders.ordered_at))
     .limit(1)
-    .single()
-  return data?.ordered_at ?? null
+  if (rows.length === 0) return null
+  return rows[0].ordered_at?.toISOString() ?? null
 }
