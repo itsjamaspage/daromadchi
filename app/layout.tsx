@@ -23,12 +23,35 @@ const jetbrainsMono = JetBrains_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'Daromadchi — Multi-Marketplace Analytics',
-  description: 'Uzum Market, Yandex Market va Wildberries sotuvchilari uchun analitika platformasi',
+  title: {
+    default: 'Daromadchi — Uzum, Wildberries, Yandex Market analitika platformasi',
+    template: '%s | Daromadchi',
+  },
+  description: 'Uzum, Wildberries va Yandex Market sotuvchilari uchun marketplace analitika platformasi. Sotuv tahlili, daromad va foyda hisoblash, tovar analitikasi — barchasi bir joyda.',
+  keywords: ['marketplace analitika', 'Uzum sotuvchilar uchun', 'Wildberries analitika', 'Yandex Market analitika', 'sotuv tahlili', 'daromad va foyda hisoblash', 'tovar analitikasi', 'marketplace analytics Uzbekistan'],
+  metadataBase: new URL('https://www.daromadchi.uz'),
+  openGraph: {
+    type: 'website',
+    locale: 'uz_UZ',
+    url: 'https://www.daromadchi.uz',
+    siteName: 'Daromadchi',
+    title: 'Daromadchi — Uzum, Wildberries, Yandex Market analitika platformasi',
+    description: 'Uzum, Wildberries va Yandex Market sotuvchilari uchun marketplace analitika. Sotuv tahlili, daromad va foyda hisoblash, tovar analitikasi.',
+    images: [{ url: '/og-image.png', width: 1200, height: 630, alt: 'Daromadchi — Marketplace Analytics' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Daromadchi — Marketplace analitika platformasi',
+    description: 'Uzum, Wildberries va Yandex Market sotuvchilari uchun sotuv tahlili va analitika.',
+    images: ['/og-image.png'],
+  },
   icons: {
     icon: '/icon.svg',
     shortcut: '/icon.svg',
     apple: '/icon.svg',
+  },
+  alternates: {
+    canonical: 'https://www.daromadchi.uz',
   },
 }
 
