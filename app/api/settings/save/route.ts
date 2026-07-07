@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
+import { eq, and, inArray } from 'drizzle-orm'
 import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { db, shops, orders, orderItems, products, syncDays } from '@/lib/db'
 import { encrypt } from '@/lib/crypto'
 import { logger } from '@/lib/logger'
 import { withErrorHandler } from '@/lib/api-handler'
@@ -25,16 +26,11 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   }
   const { marketplace, apiKey, shopIdExternal, shopName } = parsed.data
 
-  const { data: existing } = await supabase
-    .from('shops')
-    .select('id')
-    .eq('user_id', user.id)
-    .eq('marketplace', marketplace)
-    .eq('is_active', true)
-    .maybeSingle()
+  const [existing] = await db.select({ id: shops.id }).from(shops)
+    .where(and(eq(shops.user_id, user.id), eq(shops.marketplace, marketplace), eq(shops.is_active, true)))
 
   const update: Record<string, unknown> = {}
-  if (apiKey?.trim())        update.api_key_encrypted = encrypt(apiKey.trim())
+  if (apiKey?.trim())         update.api_key_encrypted = encrypt(apiKey.trim())
   if (shopIdExternal?.trim()) update.shop_id_external  = shopIdExternal.trim()
 
   if (existing) {
@@ -42,42 +38,29 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
       return NextResponse.json({ ok: true, message: 'O\'zgartirish yo\'q' })
     }
 
-    // When API key changes, wipe all old shop data so stale data doesn't show
     if (apiKey?.trim()) {
-      const admin = createAdminClient()
-      const { data: orderIds } = await admin
-        .from('orders')
-        .select('id')
-        .eq('shop_id', existing.id)
-      if (orderIds && orderIds.length > 0) {
-        await admin.from('order_items').delete().in('order_id', orderIds.map((o: { id: string }) => o.id))
+      const orderRows = await db.select({ id: orders.id }).from(orders)
+        .where(eq(orders.shop_id, existing.id))
+      if (orderRows.length > 0) {
+        await db.delete(orderItems).where(inArray(orderItems.order_id, orderRows.map(o => o.id)))
       }
-      await admin.from('orders').delete().eq('shop_id', existing.id)
-      await admin.from('products').delete().eq('shop_id', existing.id)
-      await admin.from('sync_days').delete().eq('shop_id', existing.id)
+      await db.delete(orders).where(eq(orders.shop_id, existing.id))
+      await db.delete(products).where(eq(products.shop_id, existing.id))
+      await db.delete(syncDays).where(eq(syncDays.shop_id, existing.id))
       update.last_synced_at = null
       logger.info('settings_save_cleared_shop_data', { userId: user.id, marketplace, shopId: existing.id })
     }
 
-    const { error } = await supabase.from('shops').update(update).eq('id', existing.id)
-    if (error) {
-      logger.error('settings_save_update_failed', { userId: user.id, marketplace, code: error.code })
-      return NextResponse.json({ error: 'Saqlashda xato yuz berdi' }, { status: 500 })
-    }
+    await db.update(shops).set(update).where(eq(shops.id, existing.id))
     return NextResponse.json({ ok: true, cleared: !!(apiKey?.trim()) })
   }
 
-  // Insert new shop
-  const { error } = await supabase.from('shops').insert({
+  await db.insert(shops).values({
     user_id:     user.id,
     name:        shopName ?? (marketplace === 'uzum' ? 'Uzum do\'konim' : marketplace === 'wildberries' ? 'Wildberries do\'konim' : 'Yandex Market do\'konim'),
     marketplace,
     is_active:   true,
     ...update,
   })
-  if (error) {
-    logger.error('settings_save_insert_failed', { userId: user.id, marketplace, code: error.code })
-    return NextResponse.json({ error: 'Saqlashda xato yuz berdi' }, { status: 500 })
-  }
   return NextResponse.json({ ok: true, created: true })
 })

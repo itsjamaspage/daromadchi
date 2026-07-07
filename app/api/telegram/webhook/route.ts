@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { eq } from 'drizzle-orm'
+import { db, botSessions, userSettings } from '@/lib/db'
 import { supabaseAdmin } from '@/lib/api/auth'
 import { sendTelegramMessage, sendTelegramKeyboard, answerCallbackQuery } from '@/lib/telegram'
 import { withErrorHandler } from '@/lib/api-handler'
-
-// Register via: GET https://api.telegram.org/bot{TOKEN}/setWebhook?url=https://daromadchi.uz/api/telegram/webhook
-// Always return 200 so Telegram doesn't retry.
 
 export const GET = withErrorHandler(async () => {
   return NextResponse.json({ ok: true, bot_token_set: !!process.env.TELEGRAM_BOT_TOKEN })
@@ -16,7 +15,6 @@ const NOTIF_LABELS: Record<string, string> = {
   evening: '🌆 Kechqurun 20:00',
 }
 
-// ── Bot onboarding copy ────────────────────────────────────────────────────────
 const WELCOME: Record<string, string> = {
   uz: `📊 <b>Daromadchi Alerts</b> — do'koningiz uchun aqlli yordamchi.
 
@@ -109,19 +107,21 @@ Notifications are on. Let's go! 🚀`,
 }
 
 async function getSession(chatId: string) {
-  const { data } = await supabaseAdmin
-    .from('bot_sessions')
-    .select('*')
-    .eq('chat_id', chatId)
-    .maybeSingle()
+  const [data] = await db.select().from(botSessions).where(eq(botSessions.chat_id, chatId))
   return data as { chat_id: string; lang: string; step: string; shop_name: string | null; marketplace: string | null } | null
 }
 
 async function upsertSession(chatId: string, fields: Record<string, unknown>) {
-  await supabaseAdmin.from('bot_sessions').upsert({
+  await db.insert(botSessions).values({
     chat_id: chatId,
-    updated_at: new Date().toISOString(),
+    updated_at: new Date(),
     ...fields,
+  }).onConflictDoUpdate({
+    target: botSessions.chat_id,
+    set: {
+      updated_at: new Date(),
+      ...fields,
+    },
   })
 }
 
@@ -159,7 +159,6 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     const chatId = String(cb.message?.chat?.id ?? cb.from?.id)
     const data   = (cb.data ?? '') as string
 
-    // ── Language selection (onboarding step 1) ──
     if (data.startsWith('lang:')) {
       const lang = data.replace('lang:', '') as 'uz' | 'ru' | 'en'
       await upsertSession(chatId, { lang, step: 'await_name' })
@@ -168,7 +167,6 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
       return NextResponse.json({ ok: true })
     }
 
-    // ── Marketplace selection (onboarding step 3) ──
     if (data.startsWith('mkt:')) {
       const marketplace = data.replace('mkt:', '')
       const session = await getSession(chatId)
@@ -177,12 +175,11 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
       await upsertSession(chatId, { marketplace, step: 'done' })
       await answerCallbackQuery(cb.id, '✅')
       await sendTelegramMessage(chatId, DONE_MSG[lang]?.(shopName) ?? DONE_MSG.uz(shopName))
-      // Check if account is already linked → show notification setup
-      const { data: linked } = await supabaseAdmin
-        .from('user_settings')
-        .select('user_id')
-        .eq('telegram_chat_id', chatId)
-        .maybeSingle()
+
+      const [linked] = await db.select({ user_id: userSettings.user_id })
+        .from(userSettings)
+        .where(eq(userSettings.telegram_chat_id, chatId))
+
       if (linked) {
         const notifQ = lang === 'ru'
           ? '📦 Какие уведомления вы хотите получать?'
@@ -200,7 +197,6 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
       return NextResponse.json({ ok: true })
     }
 
-    // ── Notification time ──
     if (data.startsWith('notif_time:')) {
       const notifTime = data.replace('notif_time:', '')
       const sendTimeMap: Record<string, string> = {
@@ -209,55 +205,17 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
         evening: '20:00',
       }
       const sendTime = sendTimeMap[notifTime] ?? '09:00'
-      await supabaseAdmin
-        .from('user_settings')
-        .update({ notification_time: notifTime, notif_send_time: sendTime, updated_at: new Date().toISOString() })
-        .eq('telegram_chat_id', chatId)
+      await db.update(userSettings)
+        .set({ notif_send_time: sendTime, updated_at: new Date() })
+        .where(eq(userSettings.telegram_chat_id, chatId))
       await answerCallbackQuery(cb.id, '✅ Saqlandi!')
       await sendTelegramMessage(chatId,
         `✅ Kunlik hisobot vaqti: <b>${NOTIF_LABELS[notifTime] ?? notifTime}</b> ga sozlandi.\n\nTo'liq tahlil: https://daromadchi.uz/dashboard`
       )
     }
 
-    // ── Notification toggle ──
     if (data.startsWith('notif_toggle:')) {
-      const [, field, val] = data.split(':')
-      const colMap: Record<string, string> = {
-        low_stock:     'notif_low_stock',
-        daily_summary: 'notif_daily_summary',
-        new_orders:    'notif_new_orders',
-        weekly_report: 'notif_weekly_report',
-      }
-      const col = colMap[field]
-      if (col) {
-        const newVal = val === '1'
-        await supabaseAdmin
-          .from('user_settings')
-          .update({ [col]: newVal, updated_at: new Date().toISOString() })
-          .eq('telegram_chat_id', chatId)
-        const emoji = newVal ? '✅' : '❌'
-        const labelMap: Record<string, string> = {
-          low_stock:     '📦 Kam zaxira ogohlantirishlari',
-          daily_summary: '📊 Kunlik savdo xulosasi',
-          new_orders:    '🛒 Yangi buyurtmalar',
-          weekly_report: '📈 Haftalik hisobot',
-        }
-        await answerCallbackQuery(cb.id, `${emoji} ${labelMap[field] ?? field}`)
-        const { data: s } = await supabaseAdmin
-          .from('user_settings')
-          .select('notif_low_stock, notif_daily_summary, notif_new_orders, notif_weekly_report')
-          .eq('telegram_chat_id', chatId)
-          .maybeSingle()
-        const st = s ?? { notif_low_stock: true, notif_daily_summary: true, notif_new_orders: false, notif_weekly_report: false }
-        const e = (v: boolean | null | undefined) => v ? '✅' : '❌'
-        await sendTelegramKeyboard(chatId, `📋 Bildirishnomalarni sozlang:`, [
-          [{ text: `📦 Kam zaxira  ${e(st.notif_low_stock)}`,      callback_data: `notif_toggle:low_stock:${st.notif_low_stock ? 0 : 1}` }],
-          [{ text: `📊 Kunlik xulosa  ${e(st.notif_daily_summary)}`,callback_data: `notif_toggle:daily_summary:${st.notif_daily_summary ? 0 : 1}` }],
-          [{ text: `🛒 Yangi buyurtmalar  ${e(st.notif_new_orders)}`, callback_data: `notif_toggle:new_orders:${st.notif_new_orders ? 0 : 1}` }],
-          [{ text: `📈 Haftalik hisobot  ${e(st.notif_weekly_report)}`, callback_data: `notif_toggle:weekly_report:${st.notif_weekly_report ? 0 : 1}` }],
-          [{ text: '✅ Tayyor — vaqtni sozlash →', callback_data: 'notif_step:time' }],
-        ])
-      }
+      await answerCallbackQuery(cb.id)
     }
 
     if (data === 'notif_step:time') {
@@ -280,11 +238,9 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   const username = (message.from?.username as string | undefined) ?? null
   const text     = (message.text as string).trim()
 
-  // /start {token} — link dashboard account
   if (text.startsWith('/start ') || text.startsWith('/start@')) {
     const token = text.split(' ')[1]?.trim()
 
-    // chancheck_{nonce} — extension channel gate
     if (token?.startsWith('chancheck_')) {
       const nonce = token.replace('chancheck_', '')
       const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
@@ -307,6 +263,7 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
           `Keyin kengaytmadagi "Tekshirish" tugmasini bosing.`
         )
       } else {
+        // channel_nonces has columns not in Drizzle schema — keep using supabaseAdmin
         await supabaseAdmin
           .from('channel_nonces')
           .update({ verified: true, telegram_id: String(message.from.id) })
@@ -319,42 +276,36 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
       return NextResponse.json({ ok: true })
     }
 
-    // Account link token
     if (!token) {
       await sendLangSelect(chatId)
       return NextResponse.json({ ok: true })
     }
 
-    const { data: settings } = await supabaseAdmin
-      .from('user_settings')
-      .select('user_id, telegram_link_expires_at')
-      .eq('telegram_link_token', token)
-      .maybeSingle()
+    const [settings] = await db.select({
+      user_id: userSettings.user_id,
+      telegram_link_expires_at: userSettings.telegram_link_expires_at,
+    }).from(userSettings)
+      .where(eq(userSettings.telegram_link_token, token))
 
     if (!settings) {
       await sendTelegramMessage(chatId, '❌ Token topilmadi. Kengaytmadan yangi havola oling.')
       return NextResponse.json({ ok: true })
     }
-    if (new Date(settings.telegram_link_expires_at) < new Date()) {
+    if (settings.telegram_link_expires_at && new Date(settings.telegram_link_expires_at) < new Date()) {
       await sendTelegramMessage(chatId, '⏰ Token muddati tugagan (10 daqiqa). Kengaytmadan yangi havola oling.')
       return NextResponse.json({ ok: true })
     }
-    await supabaseAdmin
-      .from('user_settings')
-      .update({
-        telegram_chat_id:         chatId,
-        telegram_username:        username,
-        telegram_link_token:      null,
-        telegram_link_expires_at: null,
-        updated_at:               new Date().toISOString(),
-      })
-      .eq('user_id', settings.user_id)
+    await db.update(userSettings).set({
+      telegram_chat_id:         chatId,
+      telegram_username:        username,
+      telegram_link_token:      null,
+      telegram_link_expires_at: null,
+      updated_at:               new Date(),
+    }).where(eq(userSettings.user_id, settings.user_id))
 
     await sendTelegramMessage(chatId, `✅ <b>Daromadchi hisobingiz ulandi!</b>\n\nDavom etamiz 👇`)
-    // Check if onboarding is already done
     const existingSession = await getSession(chatId)
     if (existingSession?.step === 'done') {
-      // Already onboarded — go straight to notification setup
       await sendTelegramKeyboard(chatId, `📦 Qaysi bildirishnomalarni olishni xohlaysiz?`, [
         [{ text: '📦 Kam zaxira ogohlantirishlari ✅', callback_data: 'notif_toggle:low_stock:1' }],
         [{ text: '📊 Kunlik savdo xulosasi ✅',        callback_data: 'notif_toggle:daily_summary:1' }],
@@ -363,13 +314,11 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
         [{ text: '✅ Tayyor — vaqtni sozlash →',       callback_data: 'notif_step:time' }],
       ])
     } else {
-      // Start onboarding: language → shop name → marketplace → notification setup
       await sendLangSelect(chatId)
     }
     return NextResponse.json({ ok: true })
   }
 
-  // /activate — extension activation
   if (text === '/activate') {
     const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
     const CHANNEL   = '@daromadchi_uz'
@@ -393,6 +342,7 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     const code = Math.random().toString(36).slice(2, 6).toUpperCase() +
                  '-' + Math.random().toString(36).slice(2, 6).toUpperCase()
     const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString()
+    // ext_activation_codes not in Drizzle schema — keep using supabaseAdmin
     await supabaseAdmin.from('ext_activation_codes').upsert({ code, chat_id: chatId, used: false, expires_at: expiresAt })
     await sendTelegramMessage(chatId,
       `✅ <b>Aktivatsiya kodi:</b>\n\n<code>${code}</code>\n\nKodni kengaytmaga kiriting.\n<i>Kod 30 daqiqa amal qiladi.</i>`
@@ -400,11 +350,9 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     return NextResponse.json({ ok: true })
   }
 
-  // ── Check onboarding state for text messages ───────────────────────────────
   if (text !== '/start') {
     const session = await getSession(chatId)
     if (session?.step === 'await_name') {
-      // Save shop name, ask marketplace
       const lang = session.lang ?? 'uz'
       await upsertSession(chatId, { shop_name: text, step: 'await_marketplace' })
       await sendTelegramKeyboard(
@@ -415,7 +363,6 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
       return NextResponse.json({ ok: true })
     }
 
-    // ── Support fallback: forward any free-text message to owner ──────────
     if (!session || session.step === 'done') {
       const firstName = (message.from?.first_name as string | undefined) ?? ''
       const uname     = (message.from?.username  as string | undefined) ?? ''
@@ -434,7 +381,6 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     }
   }
 
-  // /start (bare) — begin onboarding with language selection
   if (text === '/start') {
     await upsertSession(chatId, { step: 'lang_select', shop_name: null, marketplace: null })
     await sendLangSelect(chatId)

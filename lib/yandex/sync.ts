@@ -1,4 +1,5 @@
-import { createClient } from '@/lib/supabase/server'
+import { eq, and, inArray, count } from 'drizzle-orm'
+import { db, shops, products, orders, orderItems, syncDays } from '@/lib/db'
 import {
   fetchAllYandexOrders,
   fetchAllYandexProducts,
@@ -32,12 +33,9 @@ export async function syncFromYandex(
   campaignId: string,
   fromDateOverride?: Date,
 ): Promise<YandexSyncResult> {
-  const supabase = await createClient()
   const warnings: string[] = []
 
   try {
-    // Auto-discover businessId (enables business-level offer-mappings endpoint
-    // which works even when the campaign integration toggle is off in Yandex portal)
     let businessId: number | undefined
     try {
       const info = await fetchCampaignInfo(token, campaignId)
@@ -45,8 +43,6 @@ export async function syncFromYandex(
     } catch { /* best-effort */ }
 
     // ── Products (best-effort — don't fail the whole sync if endpoint 404s) ──
-    // shopSkuToMarketSku bridges order item offerId (shopSku) → marketSku string
-    // so we can resolve product_id even when products.sku is null
     const shopSkuToMarketSku = new Map<string, string>()
     let productRows: {
       shop_id: string; marketplace_product_id: string; title: string; sku: string
@@ -72,20 +68,37 @@ export async function syncFromYandex(
         stock_quantity: stockMap.get(e.offer.shopSku) ?? 0,
       }))
       if (productRows.length > 0) {
-        const { data: existingProds } = await supabase
-          .from('products').select('id, marketplace_product_id').eq('shop_id', shopId)
-        const existingMap = new Map((existingProds ?? []).map((p: { id: string; marketplace_product_id: string }) =>
+        const existingProds = await db.select({ id: products.id, marketplace_product_id: products.marketplace_product_id })
+          .from(products).where(eq(products.shop_id, shopId))
+        const existingMap = new Map(existingProds.map(p =>
           [String(p.marketplace_product_id), String(p.id)]))
         const toIns = productRows.filter(r => !existingMap.has(String(r.marketplace_product_id)))
         const toUpd = productRows.filter(r => existingMap.has(String(r.marketplace_product_id)))
           .map(r => ({ ...r, id: existingMap.get(String(r.marketplace_product_id))! }))
         if (toIns.length > 0) {
-          const { error: e } = await supabase.from('products').insert(toIns)
-          if (e) throw new Error(`Mahsulot xato: ${e.message}`)
+          await db.insert(products).values(toIns.map(r => ({
+            shop_id: r.shop_id,
+            marketplace_product_id: r.marketplace_product_id,
+            title: r.title,
+            sku: r.sku,
+            category: r.category,
+            selling_price: r.selling_price != null ? String(r.selling_price) : null,
+            cost_price: null,
+            stock_quantity: r.stock_quantity,
+          })))
         }
         if (toUpd.length > 0) {
-          const { error: e } = await supabase.from('products').upsert(toUpd)
-          if (e) throw new Error(`Mahsulot xato: ${e.message}`)
+          for (const r of toUpd) {
+            await db.update(products).set({
+              marketplace_product_id: r.marketplace_product_id,
+              title: r.title,
+              sku: r.sku,
+              category: r.category,
+              selling_price: r.selling_price != null ? String(r.selling_price) : null,
+              cost_price: null,
+              stock_quantity: r.stock_quantity,
+            }).where(eq(products.id, r.id))
+          }
         }
       }
     } catch (prodErr) {
@@ -97,8 +110,6 @@ export async function syncFromYandex(
     }
 
     // ── shopSku→marketSku bridge via SKU stats (fallback when product API omits shopSku) ──
-    // YM auto-generates shopSkus like "1743086372-27" that don't appear in the offer-mappings
-    // API response but DO appear as offerId in orders. SKU stats API returns both fields.
     if (shopSkuToMarketSku.size === 0) {
       try {
         const today = new Date()
@@ -117,13 +128,13 @@ export async function syncFromYandex(
     }
 
     // ── Orders (incremental since last sync, fallback 365 days) ─────────────
-    const [{ data: shopRow }, { count: existingProductCount }] = await Promise.all([
-      supabase.from('shops').select('last_synced_at').eq('id', shopId).single(),
-      supabase.from('products').select('*', { count: 'exact', head: true }).eq('shop_id', shopId),
+    const [shopRows, productCountRows] = await Promise.all([
+      db.select({ last_synced_at: shops.last_synced_at }).from(shops).where(eq(shops.id, shopId)),
+      db.select({ total: count() }).from(products).where(eq(products.shop_id, shopId)),
     ])
+    const shopRow = shopRows[0] ?? null
+    const existingProductCount = productCountRows[0]?.total ?? 0
 
-    // Incremental: only fetch orders since last sync to avoid overwriting existing
-    // order statuses (which would remove previously-counted revenue from the chart).
     const since = fromDateOverride
       ?? (shopRow?.last_synced_at
         ? new Date(shopRow.last_synced_at)
@@ -134,7 +145,6 @@ export async function syncFromYandex(
 
     const yandexOrders = await fetchAllYandexOrders(token, campaignId, fromDate)
 
-    // Yandex returns dates as "dd-MM-yyyy HH:mm:ss" — convert to ISO for Postgres
     function parseYandexDate(raw?: string): string | null {
       if (!raw) return null
       const m = raw.match(/^(\d{2})-(\d{2})-(\d{4}) (\d{2}):(\d{2}):(\d{2})$/)
@@ -163,12 +173,40 @@ export async function syncFromYandex(
         ordered_at: orderedAt,
       }))
 
-    // Upsert: inserts new orders AND updates status of existing ones
     if (orderRows.length > 0) {
-      const { error } = await supabase
-        .from('orders')
-        .upsert(orderRows, { onConflict: 'shop_id,order_id_external', ignoreDuplicates: false })
-      if (error) throw new Error(`Buyurtma xato: ${error.message}`)
+      const extIds = orderRows.map(r => r.order_id_external)
+      const existingOrders = await db.select({ id: orders.id, order_id_external: orders.order_id_external })
+        .from(orders).where(and(eq(orders.shop_id, shopId), inArray(orders.order_id_external, extIds)))
+      const existingOrderMap = new Map(existingOrders.map(o => [o.order_id_external, o.id]))
+
+      const toInsert = orderRows.filter(r => !existingOrderMap.has(r.order_id_external))
+      const toUpdate = orderRows.filter(r => existingOrderMap.has(r.order_id_external))
+
+      if (toInsert.length > 0) {
+        for (let i = 0; i < toInsert.length; i += 500) {
+          await db.insert(orders).values(toInsert.slice(i, i + 500).map(r => ({
+            shop_id: r.shop_id,
+            order_id_external: r.order_id_external,
+            marketplace: r.marketplace,
+            status: r.status,
+            revenue: r.revenue != null ? String(r.revenue) : null,
+            marketplace_fee: r.marketplace_fee != null ? String(r.marketplace_fee) : null,
+            delivery_cost: r.delivery_cost != null ? String(r.delivery_cost) : null,
+            items_count: r.items_count,
+            ordered_at: new Date(r.ordered_at),
+          })))
+        }
+      }
+      for (const r of toUpdate) {
+        await db.update(orders).set({
+          status: r.status,
+          revenue: r.revenue != null ? String(r.revenue) : null,
+          marketplace_fee: r.marketplace_fee != null ? String(r.marketplace_fee) : null,
+          delivery_cost: r.delivery_cost != null ? String(r.delivery_cost) : null,
+          items_count: r.items_count,
+          ordered_at: new Date(r.ordered_at),
+        }).where(eq(orders.id, existingOrderMap.get(r.order_id_external)!))
+      }
     }
 
     const newOrderRows = orderRows
@@ -196,27 +234,47 @@ export async function syncFromYandex(
         }
         if (seenMap.size > 0) {
           const derived = [...seenMap.values()]
-          const { data: existingProds } = await supabase
-            .from('products').select('id, marketplace_product_id').eq('shop_id', shopId)
+          const existingProds = await db.select({ id: products.id, marketplace_product_id: products.marketplace_product_id })
+            .from(products).where(eq(products.shop_id, shopId))
           const existingMap = new Map(
-            (existingProds ?? []).map((p: { id: string; marketplace_product_id: string }) =>
-              [String(p.marketplace_product_id), String(p.id)]),
+            existingProds.map(p => [String(p.marketplace_product_id), String(p.id)]),
           )
           const toIns = derived.filter(r => !existingMap.has(r.marketplace_product_id))
           const toUpd = derived
             .filter(r => existingMap.has(r.marketplace_product_id))
             .map(r => ({ ...r, id: existingMap.get(r.marketplace_product_id)! }))
-          if (toIns.length > 0) await supabase.from('products').insert(toIns)
-          if (toUpd.length > 0) await supabase.from('products').upsert(toUpd)
+          if (toIns.length > 0) {
+            await db.insert(products).values(toIns.map(r => ({
+              shop_id: r.shop_id,
+              marketplace_product_id: r.marketplace_product_id,
+              title: r.title,
+              sku: r.sku,
+              category: r.category,
+              selling_price: r.selling_price != null ? String(r.selling_price) : null,
+              cost_price: null,
+              stock_quantity: r.stock_quantity,
+            })))
+          }
+          if (toUpd.length > 0) {
+            for (const r of toUpd) {
+              await db.update(products).set({
+                marketplace_product_id: r.marketplace_product_id,
+                title: r.title,
+                sku: r.sku,
+                category: r.category,
+                selling_price: r.selling_price != null ? String(r.selling_price) : null,
+                cost_price: null,
+                stock_quantity: r.stock_quantity,
+              }).where(eq(products.id, r.id))
+            }
+          }
           productRows.push(...derived)
         }
       } catch { /* best-effort */ }
     }
 
     // ── Product extraction from API when table is empty and no current batch ──
-    // Fetches recent orders from API ONLY for product info — does NOT upsert
-    // those orders to the DB so existing order statuses are never overwritten.
-    if (productRows.length === 0 && (existingProductCount ?? 0) === 0) {
+    if (productRows.length === 0 && existingProductCount === 0) {
       try {
         const extractFrom = new Date(); extractFrom.setDate(extractFrom.getDate() - 90)
         const extractOrders = await fetchAllYandexOrders(token, campaignId, extractFrom.toISOString().slice(0, 10))
@@ -237,22 +295,47 @@ export async function syncFromYandex(
           }
           if (seenMap.size > 0) {
             const derived = [...seenMap.values()]
-            const { data: ep } = await supabase.from('products').select('id, marketplace_product_id').eq('shop_id', shopId)
-            const em = new Map((ep ?? []).map((p: { id: string; marketplace_product_id: string }) => [String(p.marketplace_product_id), String(p.id)]))
+            const ep = await db.select({ id: products.id, marketplace_product_id: products.marketplace_product_id })
+              .from(products).where(eq(products.shop_id, shopId))
+            const em = new Map(ep.map(p => [String(p.marketplace_product_id), String(p.id)]))
             const toIns = derived.filter(r => !em.has(r.marketplace_product_id))
             const toUpd = derived.filter(r => em.has(r.marketplace_product_id)).map(r => ({ ...r, id: em.get(r.marketplace_product_id)! }))
-            if (toIns.length > 0) await supabase.from('products').insert(toIns)
-            if (toUpd.length > 0) await supabase.from('products').upsert(toUpd)
+            if (toIns.length > 0) {
+              await db.insert(products).values(toIns.map(r => ({
+                shop_id: r.shop_id,
+                marketplace_product_id: r.marketplace_product_id,
+                title: r.title,
+                sku: r.sku,
+                category: r.category,
+                selling_price: r.selling_price != null ? String(r.selling_price) : null,
+                cost_price: null,
+                stock_quantity: r.stock_quantity,
+              })))
+            }
+            if (toUpd.length > 0) {
+              for (const r of toUpd) {
+                await db.update(products).set({
+                  marketplace_product_id: r.marketplace_product_id,
+                  title: r.title,
+                  sku: r.sku,
+                  category: r.category,
+                  selling_price: r.selling_price != null ? String(r.selling_price) : null,
+                  cost_price: null,
+                  stock_quantity: r.stock_quantity,
+                }).where(eq(products.id, r.id))
+              }
+            }
             productRows.push(...derived)
-            // Re-create order_items for these orders already in DB with correct product_ids
             const extIds = extractOrders.map(o => String(o.id))
-            const [{ data: dbOrds }, { data: dbProds }] = await Promise.all([
-              supabase.from('orders').select('id, order_id_external').eq('shop_id', shopId).in('order_id_external', extIds),
-              supabase.from('products').select('id, sku, marketplace_product_id').eq('shop_id', shopId),
+            const [dbOrds, dbProds] = await Promise.all([
+              db.select({ id: orders.id, order_id_external: orders.order_id_external })
+                .from(orders).where(and(eq(orders.shop_id, shopId), inArray(orders.order_id_external, extIds))),
+              db.select({ id: products.id, sku: products.sku, marketplace_product_id: products.marketplace_product_id })
+                .from(products).where(eq(products.shop_id, shopId)),
             ])
-            const oMap = new Map<string, string>(); for (const o of dbOrds ?? []) oMap.set(o.order_id_external as string, o.id as string)
+            const oMap = new Map<string, string>(); for (const o of dbOrds) oMap.set(o.order_id_external as string, o.id as string)
             const pMap = new Map<string, string>()
-            for (const p of dbProds ?? []) {
+            for (const p of dbProds) {
               if (p.sku) pMap.set(p.sku as string, p.id as string)
               if (p.marketplace_product_id) pMap.set(p.marketplace_product_id as string, p.id as string)
             }
@@ -266,8 +349,15 @@ export async function syncFromYandex(
             }
             if (itmRows.length > 0) {
               const dbOids = [...new Set(itmRows.map(r => r.order_id))]
-              await supabase.from('order_items').delete().in('order_id', dbOids)
-              for (let i = 0; i < itmRows.length; i += 500) await supabase.from('order_items').insert(itmRows.slice(i, i + 500))
+              await db.delete(orderItems).where(inArray(orderItems.order_id, dbOids))
+              for (let i = 0; i < itmRows.length; i += 500) {
+                await db.insert(orderItems).values(itmRows.slice(i, i + 500).map(r => ({
+                  order_id: r.order_id,
+                  product_id: r.product_id,
+                  quantity: r.quantity,
+                  price_per_unit: String(r.price_per_unit),
+                })))
+              }
             }
           }
         }
@@ -276,18 +366,15 @@ export async function syncFromYandex(
 
     // ── Order items (best-effort) ─────────────────────────────────────────────
     try {
-      const { data: dbProducts } = await supabase
-        .from('products')
-        .select('id, sku, marketplace_product_id, title')
-        .eq('shop_id', shopId)
+      const dbProducts = await db.select({ id: products.id, sku: products.sku, marketplace_product_id: products.marketplace_product_id, title: products.title })
+        .from(products).where(eq(products.shop_id, shopId))
       const skuMap = new Map<string, string>()
       const titleMap = new Map<string, string>()
-      for (const p of dbProducts ?? []) {
+      for (const p of dbProducts) {
         if (p.sku) skuMap.set(p.sku as string, p.id as string)
         if (p.marketplace_product_id) skuMap.set(p.marketplace_product_id as string, p.id as string)
         if (p.title) titleMap.set(p.title as string, p.id as string)
       }
-      // Bridge: offerId (shopSku) → marketSku → product.id
       for (const [shopSku, marketSkuStr] of shopSkuToMarketSku) {
         const shopSkuStr = String(shopSku)
         if (!skuMap.has(shopSkuStr)) {
@@ -297,17 +384,13 @@ export async function syncFromYandex(
       }
 
       const extIds = yandexOrders.map(o => String(o.id))
-      const { data: dbOrders } = await supabase
-        .from('orders')
-        .select('id, order_id_external')
-        .eq('shop_id', shopId)
-        .in('order_id_external', extIds)
+      const dbOrders = await db.select({ id: orders.id, order_id_external: orders.order_id_external })
+        .from(orders).where(and(eq(orders.shop_id, shopId), inArray(orders.order_id_external, extIds)))
       const orderIdMap = new Map<string, string>()
-      for (const o of dbOrders ?? []) {
+      for (const o of dbOrders) {
         orderIdMap.set(o.order_id_external as string, o.id as string)
       }
 
-      // Track title-matched (productId → offerId) for post-insert sku backfill
       const titleMatchBackfill = new Map<string, string>()
 
       const itemRows: {
@@ -319,9 +402,7 @@ export async function syncFromYandex(
         if (!dbOrderId) continue
         for (const it of o.items ?? []) {
           const offerIdStr = String(it.offerId)
-          // Primary: match by offerId/sku/marketplace_product_id
           let productId = skuMap.get(offerIdStr) ?? null
-          // Fallback: match by offerName = product title (same string from YM catalog)
           if (!productId && it.offerName) {
             productId = titleMap.get(it.offerName) ?? null
             if (productId) titleMatchBackfill.set(productId, offerIdStr)
@@ -341,46 +422,47 @@ export async function syncFromYandex(
 
       if (itemRows.length > 0) {
         const dbOrderIds = [...new Set(itemRows.map(r => r.order_id))]
-        await supabase.from('order_items').delete().in('order_id', dbOrderIds)
+        await db.delete(orderItems).where(inArray(orderItems.order_id, dbOrderIds))
         for (let i = 0; i < itemRows.length; i += 500) {
-          await supabase.from('order_items').insert(itemRows.slice(i, i + 500))
+          await db.insert(orderItems).values(itemRows.slice(i, i + 500).map(r => ({
+            order_id: r.order_id,
+            product_id: r.product_id,
+            quantity: r.quantity,
+            price_per_unit: String(r.price_per_unit),
+          })))
         }
       }
 
-      // Backfill product.sku = offerId so future syncs match via skuMap without title lookup
       if (titleMatchBackfill.size > 0) {
-        const backfillRows = [...titleMatchBackfill].map(([productId, offerId]) => ({
-          id: productId,
-          sku: offerId,
-        }))
-        await supabase.from('products').upsert(backfillRows)
+        for (const [productId, offerId] of titleMatchBackfill) {
+          await db.update(products).set({ sku: offerId }).where(eq(products.id, productId))
+        }
       }
     } catch { /* order items sync is best-effort */ }
 
     // ── Advertising ───────────────────────────────────────────────────────────
-    // Yandex Market's Partner API does NOT expose advertising statistics — ads
-    // are managed in Yandex Direct, a separate product/API. We deliberately do
-    // not synthesize ad campaigns from SKU/commission data, because labeling
-    // commission as "ad spend" produces misleading DRR/CTR numbers. Real
-    // commission and delivery costs are already captured on each order above
-    // (marketplace_fee / delivery_cost) and feed the P&L.
     const campaignsUpserted = 0
 
     // ── Update sync metadata ──────────────────────────────────────────────────
     const today = new Date().toISOString().slice(0, 10)
     await Promise.all([
-      supabase.from('shops').update({ last_synced_at: new Date().toISOString() }).eq('id', shopId),
-      supabase.from('sync_days').upsert(
-        {
-          shop_id: shopId,
-          sync_date: today,
+      db.update(shops).set({ last_synced_at: new Date() }).where(eq(shops.id, shopId)),
+      db.insert(syncDays).values({
+        shop_id: shopId,
+        sync_date: today,
+        status: 'success',
+        products_count: productRows.length,
+        revenue: String(newOrderRows.reduce((s, o) => s + (o.revenue ?? 0), 0)),
+        synced_at: new Date(),
+      }).onConflictDoUpdate({
+        target: [syncDays.shop_id, syncDays.sync_date],
+        set: {
           status: 'success',
           products_count: productRows.length,
-          revenue: newOrderRows.reduce((s, o) => s + (o.revenue ?? 0), 0),
-          synced_at: new Date().toISOString(),
+          revenue: String(newOrderRows.reduce((s, o) => s + (o.revenue ?? 0), 0)),
+          synced_at: new Date(),
         },
-        { onConflict: 'shop_id,sync_date' },
-      ),
+      }),
     ])
 
     return {
@@ -400,17 +482,20 @@ export async function syncFromYandex(
 
     try {
       const today = new Date().toISOString().slice(0, 10)
-      const supabase2 = await createClient()
-      await supabase2.from('sync_days').upsert(
-        {
-          shop_id: shopId,
-          sync_date: today,
+      await db.insert(syncDays).values({
+        shop_id: shopId,
+        sync_date: today,
+        status: 'error',
+        error_message: msg.slice(0, 500),
+        synced_at: new Date(),
+      }).onConflictDoUpdate({
+        target: [syncDays.shop_id, syncDays.sync_date],
+        set: {
           status: 'error',
           error_message: msg.slice(0, 500),
-          synced_at: new Date().toISOString(),
+          synced_at: new Date(),
         },
-        { onConflict: 'shop_id,sync_date' },
-      )
+      })
     } catch { /* ignore */ }
 
     return { ok: false, ordersUpserted: 0, productsUpserted: 0, campaignsUpserted: 0, error: msg }

@@ -1,4 +1,5 @@
-import { createAdminClient } from '@/lib/supabase/admin'
+import { eq } from 'drizzle-orm'
+import { db, users } from '@/lib/db'
 import { getCurrentUserId } from '@/lib/db/shop-context'
 
 export interface UserProfile {
@@ -7,27 +8,21 @@ export interface UserProfile {
   phone: string
 }
 
-const supabaseConfigured =
-  process.env.NEXT_PUBLIC_SUPABASE_URL &&
-  !process.env.NEXT_PUBLIC_SUPABASE_URL.includes('your-project')
-
 export async function getProfile(): Promise<UserProfile> {
   const empty: UserProfile = { fullName: '', email: '', phone: '' }
-  if (!supabaseConfigured) return empty
-
   const userId = await getCurrentUserId()
   if (!userId) return empty
 
-  const supabase = createAdminClient()
-  const { data } = await supabase
-    .from('users')
-    .select('full_name, email, phone')
-    .eq('id', userId)
-    .maybeSingle()
+  const rows = await db.select({
+    full_name: users.full_name,
+    email: users.email,
+    phone: users.phone,
+  }).from(users).where(eq(users.id, userId)).limit(1)
 
+  if (rows.length === 0) return empty
   return {
-    fullName: (data?.full_name as string) ?? '',
-    email:    (data?.email as string) ?? '',
-    phone:    (data?.phone as string) ?? '',
+    fullName: rows[0].full_name ?? '',
+    email:    rows[0].email ?? '',
+    phone:    rows[0].phone ?? '',
   }
 }

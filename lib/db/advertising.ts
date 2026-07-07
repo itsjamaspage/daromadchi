@@ -1,96 +1,91 @@
-import { createClient } from '@/lib/supabase/server'
+import { and, inArray, gte, desc } from 'drizzle-orm'
+import { db, adCampaigns, productAdsStats, products } from '@/lib/db'
 import { getShopIds as resolveShopIds } from '@/lib/db/shop-context'
 import type { AdCampaign, MarketplaceType } from '@/lib/types'
-
-const supabaseConfigured =
-  process.env.NEXT_PUBLIC_SUPABASE_URL &&
-  !process.env.NEXT_PUBLIC_SUPABASE_URL.includes('your-project')
 
 async function getShopIds(marketplace?: MarketplaceType): Promise<string[]> {
   return (await resolveShopIds(marketplace)) ?? []
 }
 
 export async function getAdCampaigns(marketplace?: MarketplaceType): Promise<AdCampaign[]> {
-  if (!supabaseConfigured) return []
-
   const shopIds = await getShopIds(marketplace)
   if (shopIds.length === 0) return []
 
-  const supabase = await createClient()
-  const { data, error } = await supabase
-    .from('ad_campaigns')
-    .select('*')
-    .in('shop_id', shopIds)
-    .order('spend', { ascending: false })
+  const rows = await db.select().from(adCampaigns)
+    .where(inArray(adCampaigns.shop_id, shopIds))
+    .orderBy(desc(adCampaigns.spend))
 
-  if (error || !data) return []
-
-  return data.map(row => ({
-    id:           row.id as string,
-    name:         row.name as string,
+  return rows.map(row => ({
+    id:           row.id,
+    name:         row.name,
     type:         row.type as 'cpc' | 'cpo',
     status:       row.status as 'active' | 'paused' | 'stopped',
-    productTitle: (row.product_title as string) ?? '',
+    productTitle: row.product_title ?? '',
     spend:        Number(row.spend),
-    impressions:  Number(row.impressions),
-    clicks:       Number(row.clicks),
+    impressions:  row.impressions,
+    clicks:       row.clicks,
     ctr:          Number(row.ctr),
-    orders:       Number(row.orders),
+    orders:       row.orders,
     revenue:      Number(row.revenue),
     drr:          Number(row.drr),
-    startDate:    (row.start_date as string) ?? '',
+    startDate:    row.start_date ?? '',
   }))
 }
 
-/**
- * Wildberries advertising, aggregated per product over the last `days` days
- * from product_ads_stats (populated by /api/wildberries/ads-sync). Returned in
- * the same AdCampaign shape so it renders alongside Uzum campaigns. Product
- * titles are joined via marketplace_product_id (the WB nmID).
- */
 export async function getWbAdCampaigns(days = 30): Promise<AdCampaign[]> {
-  if (!supabaseConfigured) return []
-
   const shopIds = await getShopIds('wildberries')
   if (shopIds.length === 0) return []
 
-  const supabase = await createClient()
   const since = new Date()
   since.setDate(since.getDate() - days + 1)
+  const sinceStr = since.toISOString().slice(0, 10)
 
-  const { data: rows } = await supabase
-    .from('product_ads_stats')
-    .select('sku, date, impressions, clicks, spend, orders_from_ads, revenue_from_ads')
-    .in('shop_id', shopIds)
-    .gte('date', since.toISOString().slice(0, 10))
-  if (!rows || rows.length === 0) return []
+  const rows = await db.select({
+    sku: productAdsStats.sku,
+    date: productAdsStats.date,
+    impressions: productAdsStats.impressions,
+    clicks: productAdsStats.clicks,
+    spend: productAdsStats.spend,
+    orders_from_ads: productAdsStats.orders_from_ads,
+    revenue_from_ads: productAdsStats.revenue_from_ads,
+  }).from(productAdsStats)
+    .where(and(
+      inArray(productAdsStats.shop_id, shopIds),
+      gte(productAdsStats.date, sinceStr),
+    ))
 
-  // "Active" = had ad spend in the last few days; otherwise we can't claim it's
-  // running (product_ads_stats is historical and has no live campaign state).
+  if (rows.length === 0) return []
+
   const recentCutoff = new Date()
   recentCutoff.setDate(recentCutoff.getDate() - 3)
   const recentStr = recentCutoff.toISOString().slice(0, 10)
 
-  const skus = [...new Set(rows.map(r => String(r.sku)))]
+  const skus: string[] = [...new Set(rows.map((r: { sku: string }) => r.sku))]
   const titleBySku = new Map<string, string>()
-  const { data: prods } = await supabase
-    .from('products')
-    .select('marketplace_product_id, title')
-    .in('shop_id', shopIds)
-    .in('marketplace_product_id', skus)
-  for (const p of prods ?? []) titleBySku.set(String(p.marketplace_product_id), p.title as string)
+  if (skus.length > 0) {
+    const prods = await db.select({
+      marketplace_product_id: products.marketplace_product_id,
+      title: products.title,
+    }).from(products)
+      .where(and(
+        inArray(products.shop_id, shopIds),
+        inArray(products.marketplace_product_id, skus),
+      ))
+    for (const p of prods) {
+      if (p.marketplace_product_id) titleBySku.set(p.marketplace_product_id, p.title)
+    }
+  }
 
   const agg = new Map<string, { imp: number; clicks: number; spend: number; orders: number; revenue: number; lastSpendDate: string }>()
   for (const r of rows) {
-    const sku = String(r.sku)
+    const sku = r.sku
     const a = agg.get(sku) ?? { imp: 0, clicks: 0, spend: 0, orders: 0, revenue: 0, lastSpendDate: '' }
-    a.imp     += Number(r.impressions)
-    a.clicks  += Number(r.clicks)
+    a.imp     += r.impressions
+    a.clicks  += r.clicks
     a.spend   += Number(r.spend)
-    a.orders  += Number(r.orders_from_ads)
+    a.orders  += r.orders_from_ads
     a.revenue += Number(r.revenue_from_ads)
-    const date = String(r.date)
-    if (Number(r.spend) > 0 && date > a.lastSpendDate) a.lastSpendDate = date
+    if (Number(r.spend) > 0 && r.date > a.lastSpendDate) a.lastSpendDate = r.date
     agg.set(sku, a)
   }
 
@@ -99,7 +94,6 @@ export async function getWbAdCampaigns(days = 30): Promise<AdCampaign[]> {
       id:           `wb-${sku}`,
       name:         titleBySku.get(sku) ?? `WB nmID ${sku}`,
       type:         'cpc' as const,
-      // Derived from spend recency rather than asserted: recent spend ⇒ active.
       status:       (a.lastSpendDate >= recentStr ? 'active' : 'paused') as 'active' | 'paused' | 'stopped',
       productTitle: titleBySku.get(sku) ?? `nmID ${sku}`,
       spend:        a.spend,

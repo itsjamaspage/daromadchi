@@ -1,10 +1,7 @@
-import { createClient } from '@/lib/supabase/server'
+import { inArray, ne, gte, and, eq } from 'drizzle-orm'
+import { db, orders, orderItems, products } from '@/lib/db'
 import { getShopIds as resolveShopIds } from '@/lib/db/shop-context'
 import type { MarketplaceType } from '@/lib/types'
-
-const supabaseConfigured =
-  process.env.NEXT_PUBLIC_SUPABASE_URL &&
-  !process.env.NEXT_PUBLIC_SUPABASE_URL.includes('your-project')
 
 export interface SeasonalityPoint {
   month: string
@@ -29,53 +26,50 @@ async function getShopIds(marketplace?: MarketplaceType): Promise<string[]> {
   return (await resolveShopIds(marketplace)) ?? []
 }
 
-/**
- * Real per-product monthly seasonality built from the last 12 months of
- * order_items × orders. Returns the top products by revenue. Empty array
- * when there is no synced data.
- */
 export async function getSeasonality(maxProducts = 6, marketplace?: MarketplaceType): Promise<ProductSeasonality[]> {
-  if (!supabaseConfigured) return []
-
   const shopIds = await getShopIds(marketplace)
   if (shopIds.length === 0) return []
 
-  const supabase = await createClient()
   const since = new Date()
   since.setMonth(since.getMonth() - 11)
   since.setDate(1)
 
-  const { data: orders } = await supabase
-    .from('orders')
-    .select('id, ordered_at')
-    .in('shop_id', shopIds)
-    .neq('status', 'cancelled')
-    .gte('ordered_at', since.toISOString())
+  const orderRows = await db.select({
+    id: orders.id,
+    ordered_at: orders.ordered_at,
+  }).from(orders)
+    .where(and(
+      inArray(orders.shop_id, shopIds),
+      ne(orders.status, 'cancelled'),
+      gte(orders.ordered_at, since),
+    ))
 
-  if (!orders || orders.length === 0) return []
+  if (orderRows.length === 0) return []
 
-  const orderMonth = new Map<string, string>() // order_id → 'YYYY-MM'
-  for (const o of orders) {
-    const d = new Date(o.ordered_at as string)
-    orderMonth.set(o.id as string, `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`)
+  const orderMonth = new Map<string, string>()
+  for (const o of orderRows) {
+    const d = o.ordered_at
+    orderMonth.set(o.id, `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`)
   }
 
   const orderIds = [...orderMonth.keys()]
-  const { data: items } = await supabase
-    .from('order_items')
-    .select('order_id, product_id, quantity, price_per_unit')
-    .in('order_id', orderIds)
+  const items = await db.select({
+    order_id: orderItems.order_id,
+    product_id: orderItems.product_id,
+    quantity: orderItems.quantity,
+    price_per_unit: orderItems.price_per_unit,
+  }).from(orderItems)
+    .where(inArray(orderItems.order_id, orderIds))
 
-  if (!items || items.length === 0) return []
+  if (items.length === 0) return []
 
-  // product_id → month → { revenue, orders }
   const agg = new Map<string, Map<string, { revenue: number; orders: number }>>()
   for (const it of items) {
-    const pid = it.product_id as string | null
+    const pid = it.product_id
     if (!pid) continue
-    const month = orderMonth.get(it.order_id as string)
+    const month = orderMonth.get(it.order_id)
     if (!month) continue
-    const qty = Number(it.quantity ?? 0)
+    const qty = it.quantity ?? 0
     const revenue = qty * Number(it.price_per_unit ?? 0)
     if (!agg.has(pid)) agg.set(pid, new Map())
     const m = agg.get(pid)!
@@ -85,18 +79,19 @@ export async function getSeasonality(maxProducts = 6, marketplace?: MarketplaceT
 
   if (agg.size === 0) return []
 
-  // product titles + categories
-  const { data: products } = await supabase
-    .from('products')
-    .select('id, title, category')
-    .in('id', [...agg.keys()])
+  const productIds = [...agg.keys()]
+  const prodRows = await db.select({
+    id: products.id,
+    title: products.title,
+    category: products.category,
+  }).from(products)
+    .where(inArray(products.id, productIds))
 
   const meta = new Map<string, { title: string; category: string }>()
-  for (const p of products ?? []) {
-    meta.set(p.id as string, { title: (p.title as string) ?? '—', category: (p.category as string) ?? '—' })
+  for (const p of prodRows) {
+    meta.set(p.id, { title: p.title ?? '—', category: p.category ?? '—' })
   }
 
-  // chronological month keys for the last 12 months
   const monthKeys: string[] = []
   const cur = new Date(since)
   for (let i = 0; i < 12; i++) {
