@@ -3,9 +3,9 @@ import {
   pgEnum,
   uuid,
   text,
-  varchar,
   boolean,
   integer,
+  bigint,
   numeric,
   timestamp,
   date,
@@ -42,18 +42,6 @@ export const paymentStatusEnum = pgEnum('payment_status', [
   'failed',
 ])
 
-export const payoutStatusEnum = pgEnum('payout_status', [
-  'paid',
-  'pending',
-  'processing',
-])
-
-export const referralStatusEnum = pgEnum('referral_status', [
-  'pending',
-  'active',
-  'paid',
-])
-
 export const syncDayStatusEnum = pgEnum('sync_day_status', [
   'ready',
   'success',
@@ -80,7 +68,16 @@ export const users = pgTable('users', {
   updated_at:     timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 })
 
-/* ── 2. shops ───────────────────────────────────────────────────────────────── */
+/* ── 2. warehouses ──────────────────────────────────────────────────────────── */
+
+export const warehouses = pgTable('warehouses', {
+  id:         uuid('id').primaryKey().defaultRandom(),
+  user_id:    uuid('user_id').references(() => users.id, { onDelete: 'cascade' }),
+  name:       text('name').notNull(),
+  created_at: timestamp('created_at', { withTimezone: true }).defaultNow(),
+})
+
+/* ── 3. shops ───────────────────────────────────────────────────────────────── */
 
 export const shops = pgTable('shops', {
   id:                uuid('id').primaryKey().defaultRandom(),
@@ -92,13 +89,13 @@ export const shops = pgTable('shops', {
   is_active:         boolean('is_active').default(true).notNull(),
   token_valid:       boolean('token_valid'),
   last_synced_at:    timestamp('last_synced_at', { withTimezone: true }),
-  warehouse_id:      text('warehouse_id'),
+  warehouse_id:      uuid('warehouse_id').references(() => warehouses.id, { onDelete: 'set null' }),
   created_at:        timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 }, (t) => [
   index('shops_user_id_idx').on(t.user_id),
 ])
 
-/* ── 3. products ────────────────────────────────────────────────────────────── */
+/* ── 4. products ────────────────────────────────────────────────────────────── */
 
 export const products = pgTable('products', {
   id:                     uuid('id').primaryKey().defaultRandom(),
@@ -117,7 +114,7 @@ export const products = pgTable('products', {
   index('products_sku_idx').on(t.sku),
 ])
 
-/* ── 4. orders ──────────────────────────────────────────────────────────────── */
+/* ── 5. orders ──────────────────────────────────────────────────────────────── */
 
 export const orders = pgTable('orders', {
   id:                uuid('id').primaryKey().defaultRandom(),
@@ -135,7 +132,7 @@ export const orders = pgTable('orders', {
   index('orders_ordered_at_idx').on(t.ordered_at),
 ])
 
-/* ── 5. order_items ─────────────────────────────────────────────────────────── */
+/* ── 6. order_items ─────────────────────────────────────────────────────────── */
 
 export const orderItems = pgTable('order_items', {
   id:             uuid('id').primaryKey().defaultRandom(),
@@ -148,7 +145,7 @@ export const orderItems = pgTable('order_items', {
   index('order_items_product_id_idx').on(t.product_id),
 ])
 
-/* ── 6. ad_campaigns ────────────────────────────────────────────────────────── */
+/* ── 7. ad_campaigns ────────────────────────────────────────────────────────── */
 
 export const adCampaigns = pgTable('ad_campaigns', {
   id:            uuid('id').primaryKey().defaultRandom(),
@@ -169,7 +166,7 @@ export const adCampaigns = pgTable('ad_campaigns', {
   index('ad_campaigns_shop_id_idx').on(t.shop_id),
 ])
 
-/* ── 7. product_ads_stats ───────────────────────────────────────────────────── */
+/* ── 8. product_ads_stats ───────────────────────────────────────────────────── */
 
 export const productAdsStats = pgTable('product_ads_stats', {
   id:               uuid('id').primaryKey().defaultRandom(),
@@ -185,7 +182,7 @@ export const productAdsStats = pgTable('product_ads_stats', {
   uniqueIndex('product_ads_stats_shop_sku_date_idx').on(t.shop_id, t.sku, t.date),
 ])
 
-/* ── 8. search_phrases ──────────────────────────────────────────────────────── */
+/* ── 9. search_phrases ──────────────────────────────────────────────────────── */
 
 export const searchPhrases = pgTable('search_phrases', {
   id:            uuid('id').primaryKey().defaultRandom(),
@@ -202,7 +199,7 @@ export const searchPhrases = pgTable('search_phrases', {
   index('search_phrases_shop_id_idx').on(t.shop_id),
 ])
 
-/* ── 9. sync_logs ───────────────────────────────────────────────────────────── */
+/* ── 10. sync_logs ──────────────────────────────────────────────────────────── */
 
 export const syncLogs = pgTable('sync_logs', {
   id:        uuid('id').primaryKey().defaultRandom(),
@@ -214,7 +211,7 @@ export const syncLogs = pgTable('sync_logs', {
   index('sync_logs_shop_id_idx').on(t.shop_id),
 ])
 
-/* ── 10. sync_days ──────────────────────────────────────────────────────────── */
+/* ── 11. sync_days ──────────────────────────────────────────────────────────── */
 
 export const syncDays = pgTable('sync_days', {
   id:             uuid('id').primaryKey().defaultRandom(),
@@ -230,7 +227,7 @@ export const syncDays = pgTable('sync_days', {
   uniqueIndex('sync_days_shop_date_idx').on(t.shop_id, t.sync_date),
 ])
 
-/* ── 11. user_settings ──────────────────────────────────────────────────────── */
+/* ── 12. user_settings ──────────────────────────────────────────────────────── */
 
 export const userSettings = pgTable('user_settings', {
   id:                    uuid('id').primaryKey().defaultRandom(),
@@ -250,7 +247,7 @@ export const userSettings = pgTable('user_settings', {
   uniqueIndex('user_settings_user_id_idx').on(t.user_id),
 ])
 
-/* ── 12. unit_economics_items ───────────────────────────────────────────────── */
+/* ── 13. unit_economics_items ───────────────────────────────────────────────── */
 
 export const unitEconomicsItems = pgTable('unit_economics_items', {
   id:              uuid('id').primaryKey().defaultRandom(),
@@ -282,7 +279,7 @@ export const unitEconomicsItems = pgTable('unit_economics_items', {
   index('unit_economics_items_user_id_idx').on(t.user_id),
 ])
 
-/* ── 13. payments ───────────────────────────────────────────────────────────── */
+/* ── 14. payments ───────────────────────────────────────────────────────────── */
 
 export const payments = pgTable('payments', {
   id:         uuid('id').primaryKey().defaultRandom(),
@@ -295,43 +292,18 @@ export const payments = pgTable('payments', {
   index('payments_user_id_idx').on(t.user_id),
 ])
 
-/* ── 14. referrals ──────────────────────────────────────────────────────────── */
+/* ── 15. alerts ─────────────────────────────────────────────────────────────── */
 
-export const referrals = pgTable('referrals', {
-  id:               uuid('id').primaryKey().defaultRandom(),
-  referrer_user_id: uuid('referrer_user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  referred_user_id: uuid('referred_user_id').references(() => users.id, { onDelete: 'set null' }),
-  status:           referralStatusEnum('status').default('pending').notNull(),
-  reward_amount:    numeric('reward_amount').default('0').notNull(),
-  activated_at:     timestamp('activated_at', { withTimezone: true }),
-  created_at:       timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-}, (t) => [
-  index('referrals_referrer_idx').on(t.referrer_user_id),
-])
-
-/* ── 15. payouts ────────────────────────────────────────────────────────────── */
-
-export const payouts = pgTable('payouts', {
-  id:               uuid('id').primaryKey().defaultRandom(),
-  user_id:          uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  period:           text('period').notNull(),
-  marketplace:      text('marketplace'),
-  gross_revenue:    numeric('gross_revenue').default('0').notNull(),
-  commission:       numeric('commission').default('0').notNull(),
-  delivery:         numeric('delivery').default('0').notNull(),
-  returns:          numeric('returns').default('0').notNull(),
-  ad_spend:         numeric('ad_spend').default('0').notNull(),
-  acquiring:        numeric('acquiring').default('0').notNull(),
-  tax:              numeric('tax').default('0').notNull(),
-  other_deductions: numeric('other_deductions').default('0').notNull(),
-  net_payout:       numeric('net_payout').default('0').notNull(),
-  orders_count:     integer('orders_count').default(0).notNull(),
-  status:           payoutStatusEnum('status').default('pending').notNull(),
-  payout_date:      date('payout_date'),
-  created_at:       timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-}, (t) => [
-  index('payouts_user_id_idx').on(t.user_id),
-])
+export const alerts = pgTable('alerts', {
+  id:                uuid('id').primaryKey().defaultRandom(),
+  user_id:           uuid('user_id').references(() => users.id, { onDelete: 'cascade' }),
+  shop_id:           bigint('shop_id', { mode: 'number' }),
+  sku_id:            bigint('sku_id', { mode: 'number' }),
+  type:              text('type'),
+  message:           text('message'),
+  sent_to_telegram:  boolean('sent_to_telegram').default(false),
+  created_at:        timestamp('created_at', { withTimezone: true }).defaultNow(),
+})
 
 /* ── 16. competitor_watchlist ───────────────────────────────────────────────── */
 
