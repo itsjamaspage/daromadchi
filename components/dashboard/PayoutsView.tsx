@@ -40,7 +40,7 @@ function StatusBadge({ status }: { status: PayoutEntry['status'] }) {
   }
   return (
     <span className="inline-flex px-2.5 py-1 rounded-lg text-xs font-semibold bg-[var(--bg-card2)] text-[var(--text-muted)] border border-[var(--border)]">
-      Kutilmoqda
+      {t.statusPending}
     </span>
   )
 }
@@ -63,7 +63,7 @@ function DeductionBar({ entry }: { entry: PayoutEntry }) {
 
   return (
     <div className="px-5 py-4 bg-[var(--bg-card2)] border-t border-[var(--border)] space-y-3">
-      <p className="text-[var(--text-muted)] text-xs font-semibold uppercase tracking-wider">Chegirmalar tafsiloti</p>
+      <p className="text-[var(--text-muted)] text-xs font-semibold uppercase tracking-wider">{t.deductionsTitle}</p>
 
       {/* Proportional bar */}
       <div className="flex h-3 rounded-full overflow-hidden gap-px">
@@ -89,20 +89,21 @@ function DeductionBar({ entry }: { entry: PayoutEntry }) {
       </div>
 
       <div className="flex items-center justify-between pt-1 border-t border-[var(--border)]">
-        <span className="text-[var(--text-muted)] text-xs">Jami chegirmalar</span>
+        <span className="text-[var(--text-muted)] text-xs">{t.totalDeductions}</span>
         <span className="text-[var(--text-base)] text-sm font-bold">{fmt(total)}</span>
       </div>
     </div>
   )
 }
 
-const MP_TABS = [
-  { value: 'all',           label: 'Barchasi' },
-  { value: 'uzum',          label: 'Uzum' },
-  { value: 'yandex_market', label: 'Yandex Market' },
-  { value: 'wildberries',   label: 'Wildberries' },
-] as const
-type MpFilter = typeof MP_TABS[number]['value']
+const MP_KEYS = ['all', 'uzum', 'yandex_market', 'wildberries'] as const
+type MpFilter = typeof MP_KEYS[number]
+const MP_LABELS: Record<MpFilter, string> = {
+  all: '', // filled from translations
+  uzum: 'Uzum',
+  yandex_market: 'Yandex Market',
+  wildberries: 'Wildberries',
+}
 
 export default function PayoutsView({ entries }: Props) {
   const { lang } = useLang()
@@ -140,20 +141,23 @@ export default function PayoutsView({ entries }: Props) {
       {/* Marketplace tabs + export */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-1.5 p-1 bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl w-fit">
-            {MP_TABS.map(tab => (
-              <button
-                key={tab.value}
-                onClick={() => { setMpFilter(tab.value); setExpandedId(null) }}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                  mpFilter === tab.value
-                    ? 'text-[var(--c1)]'
-                    : 'text-[var(--text-base)] hover:text-[var(--c1)]'
-                }`}
-                style={mpFilter === tab.value ? { background: 'rgba(131,192,249,0.15)', border: '1px solid rgba(131,192,249,0.25)' } : undefined}
-              >
-                {tab.label}
-              </button>
-            ))}
+            {MP_KEYS.map(key => {
+              const label = key === 'all' ? t.tabAll : MP_LABELS[key]
+              return (
+                <button
+                  key={key}
+                  onClick={() => { setMpFilter(key); setExpandedId(null) }}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                    mpFilter === key
+                      ? 'text-[var(--c1)]'
+                      : 'text-[var(--text-base)] hover:text-[var(--c1)]'
+                  }`}
+                  style={mpFilter === key ? { background: 'rgba(131,192,249,0.15)', border: '1px solid rgba(131,192,249,0.25)' } : undefined}
+                >
+                  {label}
+                </button>
+              )
+            })}
           </div>
         <ExportButton data={exportData} filename="tolovu-hisoboti" targetRef={printRef} />
       </div>
@@ -161,19 +165,19 @@ export default function PayoutsView({ entries }: Props) {
       {/* Summary cards */}
       <div className="grid grid-cols-3 gap-3">
         <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl px-4 py-3">
-          <p className="text-[var(--text-muted)] text-xs mb-1">Jami to&apos;langan</p>
+          <p className="text-[var(--text-muted)] text-xs mb-1">{t.kpiTotalPaid}</p>
           <p className="text-[var(--text-base)] text-xl font-bold">{fmtShort(totalPaid)}</p>
-          <p className="text-[var(--text-muted)] text-xs mt-0.5">{paidEntries.length} ta davr</p>
+          <p className="text-[var(--text-muted)] text-xs mt-0.5">{paidEntries.length} {t.periods}</p>
         </div>
         <div className="bg-[var(--bg-card2)] border border-amber-500/20 rounded-2xl px-4 py-3">
-          <p className="text-[var(--text-muted)] text-xs mb-1">Kutilayotgan</p>
+          <p className="text-[var(--text-muted)] text-xs mb-1">{t.kpiPending}</p>
           <p className="text-amber-400 text-xl font-bold">{fmtShort(pending)}</p>
-          <p className="text-[var(--text-muted)] text-xs mt-0.5">{filteredEntries.filter(e => e.status !== 'paid').length} ta davr</p>
+          <p className="text-[var(--text-muted)] text-xs mt-0.5">{filteredEntries.filter(e => e.status !== 'paid').length} {t.periods}</p>
         </div>
         <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl px-4 py-3">
-          <p className="text-[var(--text-muted)] text-xs mb-1">O&apos;rtacha to&apos;lov</p>
+          <p className="text-[var(--text-muted)] text-xs mb-1">{t.kpiAvg}</p>
           <p className="text-[var(--text-base)] text-xl font-bold">{fmtShort(avgPaid)}</p>
-          <p className="text-[var(--text-muted)] text-xs mt-0.5">har bir davr</p>
+          <p className="text-[var(--text-muted)] text-xs mt-0.5">{t.perPeriod}</p>
         </div>
       </div>
 
@@ -183,23 +187,23 @@ export default function PayoutsView({ entries }: Props) {
           <table className="w-full">
             <thead>
               <tr className="border-b border-[var(--border)]">
-                <th className="px-5 py-3 text-left text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Davr</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Buyurtmalar</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Brutto</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Komissiya</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Yetkazish</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Qaytarish</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Reklama</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Soliq</th>
+                <th className="px-5 py-3 text-left text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">{t.colPeriod}</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">{t.colOrders}</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">{t.colGross}</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">{t.colCommission}</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">{t.colDelivery}</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">{t.colReturns}</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">{t.colAd}</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">{t.colTax}</th>
                 <th className="px-4 py-3 text-right text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
                   <span className="inline-flex items-center gap-1">
-                    Sof to&apos;lov
-                    <span title="Nima uchun bu miqdor? Brutto daromaddan barcha chegirmalar: komissiya, yetkazish, qaytarishlar, reklama xarajatlari, ekvayring va soliq ayiriladi.">
+                    {t.colNet}
+                    <span title={t.netTooltip}>
                       <HelpCircle className="w-3.5 h-3.5 text-[var(--text-muted)] cursor-help" />
                     </span>
                   </span>
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Holat</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">{t.colStatus}</th>
                 <th className="px-3 py-3" />
               </tr>
             </thead>
