@@ -1916,8 +1916,9 @@ function FooterSection({ lang }: { lang: string }) {
     { head: tx(lang,'Продукт','Mahsulot','Product'), links: [
       { label: tx(lang,'Войти','Kirish','Sign in'), href: '/login' },
       { label: tx(lang,'Регистрация','Ro\'yxatdan o\'tish','Register'), href: '/login' },
-      { label: tx(lang,'Тарифы','Tariflar','Pricing'), href: '#pricing' },
+      { label: tx(lang,'Тарифы','Tariflar','Pricing'), href: '/pricing' },
       { label: tx(lang,'Возможности','Imkoniyatlar','Features'), href: '#features' },
+      { label: tx(lang,'О нас','Biz haqimizda','About'), href: '/about' },
     ]},
     { head: tx(lang,'Маркетплейсы','Marketpleyslar','Marketplaces'), links: [
       { label: 'Uzum Market', href: '#' }, { label: 'Wildberries', href: '#' }, { label: 'Yandex Market', href: '#' },
