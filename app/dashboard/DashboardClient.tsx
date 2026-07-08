@@ -76,6 +76,7 @@ export default function DashboardClient({ slices, days, period, from, to, initia
   const t = dashT[lang]
   const d = t.dashboard
   const s = t.status
+  const mp = t.marketplaces
   const router = useRouter()
 
   const [marketplace, setMarketplace] = useState<MarketplaceType | undefined>(initialMarketplace)
@@ -148,16 +149,16 @@ export default function DashboardClient({ slices, days, period, from, to, initia
       {/* Marketplace tabs — client-side switching, no page reload */}
       <div className="flex items-center gap-1.5 p-1 bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl w-fit">
         {([
-          { label: d.all,           mp: undefined,       color: 'blue'  },
-          { label: 'Uzum',          mp: 'uzum',          color: 'blue'  },
-          { label: 'Yandex Market', mp: 'yandex_market', color: 'amber' },
-          { label: 'Wildberries',   mp: 'wildberries',   color: 'blue'  },
-        ] as { label: string; mp: MarketplaceType | undefined; color: string }[]).map(({ label, mp, color }) => {
-          const active = marketplace === mp
+          { label: d.all,                mp: undefined,        color: 'blue'  },
+          { label: mp.uzum,              mp: 'uzum',           color: 'blue'  },
+          { label: mp.yandex_market,     mp: 'yandex_market',  color: 'amber' },
+          { label: mp.wildberries,       mp: 'wildberries',    color: 'blue'  },
+        ] as { label: string; mp: MarketplaceType | undefined; color: string }[]).map(({ label, mp: mpVal, color }) => {
+          const active = marketplace === mpVal
           return (
             <button
               key={label}
-              onClick={() => switchTab(mp)}
+              onClick={() => switchTab(mpVal)}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                 active
                   ? color === 'amber'
@@ -243,7 +244,7 @@ export default function DashboardClient({ slices, days, period, from, to, initia
         }
         // Marketplace-specific not-connected card
         if (marketplace) {
-          const mpName = ({ uzum: 'Uzum Market', yandex_market: 'Yandex Market', wildberries: 'Wildberries' } as Record<string, string>)[marketplace]
+          const mpName = ({ uzum: mp.uzum, yandex_market: mp.yandex_market, wildberries: mp.wildberries } as Record<string, string>)[marketplace]
           const mpLink = displayLinks[0]
           return (
             <div className="bg-[var(--bg-card2)] border border-dashed rounded-2xl p-10" style={{ borderColor: 'rgba(131,192,249,0.3)' }}>
@@ -344,7 +345,7 @@ export default function DashboardClient({ slices, days, period, from, to, initia
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-[var(--text-base)] font-medium truncate font-mono">{order.order_id_external ?? order.id.slice(0, 8)}</p>
-                    <p className="text-xs text-[var(--text-muted)] truncate">{{ uzum: 'Uzum Market', yandex_market: 'Yandex Market', wildberries: 'Wildberries' }[order.marketplace] ?? order.marketplace}</p>
+                    <p className="text-xs text-[var(--text-muted)] truncate">{{ uzum: mp.uzum, yandex_market: mp.yandex_market, wildberries: mp.wildberries }[order.marketplace] ?? order.marketplace}</p>
                   </div>
                   <span className={`text-[11px] font-medium px-2 py-0.5 rounded-lg flex-shrink-0 ${(isDark ? STATUS_CLASS_DARK : STATUS_CLASS_LIGHT)[order.status] ?? 'bg-slate-500/10 text-[var(--text-muted)]'}`}>
                     {s[order.status as keyof typeof s] ?? order.status}

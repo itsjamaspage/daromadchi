@@ -9,6 +9,9 @@ export const dashT = {
       store: "Do'konim", bozor: 'Bozor', sync: 'Sinxronizatsiya',
       abcxyz: 'ABC-XYZ',
     },
+    marketplaces: {
+      uzum: 'Uzum Market', yandex_market: 'Yandex Market', wildberries: 'Wildberries',
+    },
     dashboard: {
       title: 'Dashboard', subtitle: "Xush kelibsiz! Bu sizning do'koningiz analitikasi.",
       badge: "Sizning ma'lumotingiz", sync: 'Sinxronlash',
@@ -389,6 +392,9 @@ export const dashT = {
       store: 'My Store', bozor: 'Market', sync: 'Sync Status',
       abcxyz: 'ABC-XYZ',
     },
+    marketplaces: {
+      uzum: 'Uzum Market', yandex_market: 'Yandex Market', wildberries: 'Wildberries',
+    },
     dashboard: {
       title: 'Dashboard', subtitle: 'Welcome! This is your store analytics.',
       badge: 'Your data', sync: 'Sync',
@@ -765,6 +771,9 @@ export const dashT = {
       analytics: 'Аналитика', pnl: 'Отчёт P&L', calculator: 'Калькулятор',
       market: 'Исследование рынка', settings: 'Настройки', profile: 'Профиль', logout: 'Выйти',
       store: 'Мой магазин', bozor: 'Рынок', sync: 'Синхронизация', abcxyz: 'ABC-XYZ',
+    },
+    marketplaces: {
+      uzum: 'Uzum Market', yandex_market: 'Yandex Market', wildberries: 'Wildberries',
     },
     dashboard: {
       title: 'Дашборд', subtitle: 'Добро пожаловать! Это аналитика вашего магазина.',
