@@ -4,8 +4,6 @@ import { useState, useEffect, useRef } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useLang, useTheme } from '@/app/providers'
 
-const COMPANY_EMAIL = 'support@daromadchi.uz'
-
 const T = {
   uz: {
     title: 'Maxfiylik siyosati va Foydalanish shartlari',
