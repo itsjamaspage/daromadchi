@@ -25,56 +25,121 @@
       overflow: auto;
       display: flex;
       flex-direction: column;
-      padding: 40px 20px;
+      padding: 20px;
       position: relative;
     }
 
-    .header {
-      text-align: center;
-      margin-bottom: 50px;
+    .construction-bar {
+      background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(51, 65, 85, 0.7) 100%);
+      border: 2px solid rgba(14, 165, 233, 0.4);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 30px;
       animation: slideDown 0.6s ease-out;
     }
 
+    .construction-title {
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: #0ea5e9;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+
+    .construction-text {
+      font-size: 13px;
+      line-height: 1.8;
+      color: #cbd5e1;
+      margin-bottom: 16px;
+    }
+
+    .construction-legend {
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+      font-size: 12px;
+    }
+
+    .legend-item-inline {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #94a3b8;
+    }
+
+    .legend-box {
+      width: 16px;
+      height: 16px;
+      border-radius: 3px;
+      border: 2px solid;
+    }
+
+    .legend-box.client { background: rgba(14, 165, 233, 0.2); border-color: #0ea5e9; }
+    .legend-box.server { background: rgba(6, 182, 212, 0.2); border-color: #06b6d4; }
+    .legend-box.service { background: rgba(99, 102, 241, 0.2); border-color: #6366f1; }
+    .legend-box.external { background: rgba(168, 85, 247, 0.2); border-color: #a855f7; }
+    .legend-box.infrastructure { background: rgba(59, 130, 246, 0.2); border-color: #3b82f6; }
+
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+      animation: slideDown 0.6s ease-out 0.2s backwards;
+    }
+
     .title {
-      font-size: 36px;
+      font-size: 32px;
       font-weight: 800;
       letter-spacing: 2px;
       background: linear-gradient(to right, #0ea5e9, #06b6d4);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
-      margin-bottom: 12px;
+      margin-bottom: 8px;
     }
 
     .subtitle {
       color: #94a3b8;
-      font-size: 14px;
+      font-size: 13px;
       letter-spacing: 1px;
+    }
+
+    .svg-container {
+      position: relative;
+      width: 100%;
+      height: 500px;
+      margin-bottom: 40px;
+      background: rgba(30, 41, 59, 0.3);
+      border-radius: 12px;
+      border: 1px solid rgba(14, 165, 233, 0.2);
+      overflow: hidden;
     }
 
     .svg-connections {
       position: absolute;
-      top: 0;
-      left: 0;
+      inset: 0;
       width: 100%;
       height: 100%;
-      pointer-events: none;
       z-index: 1;
     }
 
     .layers-wrapper {
-      position: relative;
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
       z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .layers {
       display: grid;
       grid-template-columns: repeat(5, 1fr);
-      gap: 40px;
-      margin-bottom: 60px;
-      max-width: 2000px;
-      margin-left: auto;
-      margin-right: auto;
+      gap: 30px;
+      padding: 20px;
+      width: 100%;
     }
 
     .layer {
@@ -88,45 +153,44 @@
     .layer:nth-child(5) { animation-delay: 0.5s; }
 
     .layer-label {
-      font-size: 12px;
+      font-size: 11px;
       text-transform: uppercase;
-      letter-spacing: 2px;
+      letter-spacing: 1.5px;
       color: #0ea5e9;
       font-weight: 700;
-      margin-bottom: 8px;
-    }
-
-    .layer-header {
-      font-size: 14px;
-      font-weight: 600;
-      color: #cbd5e1;
-      margin-bottom: 16px;
-      padding-bottom: 12px;
-      border-bottom: 2px solid rgba(14, 165, 233, 0.3);
-      line-height: 1.5;
+      margin-bottom: 12px;
     }
 
     .components {
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 12px;
     }
 
     .component {
       background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(51, 65, 85, 0.5) 100%);
       border: 2px solid rgba(14, 165, 233, 0.3);
-      border-radius: 12px;
-      padding: 20px;
+      border-radius: 8px;
+      padding: 16px;
       cursor: pointer;
       transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
       position: relative;
       overflow: hidden;
       animation: popIn 0.6s ease-out backwards;
+      min-height: 100px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
     }
 
-    .component:nth-child(1) { animation-delay: 0.25s; }
-    .component:nth-child(2) { animation-delay: 0.35s; }
-    .component:nth-child(3) { animation-delay: 0.45s; }
+    .component.has-bugs {
+      border-color: #ef4444;
+      box-shadow: inset 0 0 0 1px rgba(239, 68, 68, 0.3);
+    }
+
+    .component:nth-child(1) { animation-delay: 0.2s; }
+    .component:nth-child(2) { animation-delay: 0.3s; }
+    .component:nth-child(3) { animation-delay: 0.4s; }
 
     .component::before {
       content: '';
@@ -145,70 +209,91 @@
       border-color: #0ea5e9;
       background: linear-gradient(135deg, rgba(14, 165, 233, 0.25) 0%, rgba(51, 65, 85, 0.9) 100%);
       box-shadow: 0 0 40px rgba(14, 165, 233, 0.4), 0 8px 32px rgba(0, 0, 0, 0.5);
-      transform: translateY(-10px) scale(1.05);
+      transform: translateY(-8px) scale(1.05);
+    }
+
+    .component-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 8px;
+      margin-bottom: 12px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .component-name {
+      font-size: 14px;
+      font-weight: 700;
+      font-family: ui-monospace, monospace;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: #0ea5e9;
     }
 
     .component-status {
       display: inline-block;
-      width: 10px;
-      height: 10px;
+      width: 8px;
+      height: 8px;
       border-radius: 50%;
-      margin-right: 8px;
       animation: pulse 2s ease-in-out infinite;
     }
 
-    .component-status.complete { background: #10b981; box-shadow: 0 0 10px rgba(16, 185, 129, 0.6); }
-    .component-status.in-progress { background: #f59e0b; box-shadow: 0 0 10px rgba(245, 158, 11, 0.6); animation: pulse 1.5s ease-in-out infinite; }
-    .component-status.not-started { background: #ef4444; box-shadow: 0 0 10px rgba(239, 68, 68, 0.4); }
+    .component-status.complete { background: #10b981; box-shadow: 0 0 8px rgba(16, 185, 129, 0.6); }
+    .component-status.in-progress { background: #f59e0b; animation: pulse 1.5s ease-in-out infinite; }
+    .component-status.bug { background: #ef4444; box-shadow: 0 0 8px rgba(239, 68, 68, 0.8); }
 
-    .component-name {
-      font-size: 16px;
-      font-weight: 700;
-      font-family: ui-monospace, monospace;
-      margin-bottom: 12px;
-      display: flex;
+    .bug-badge {
+      display: inline-flex;
       align-items: center;
-      gap: 8px;
-      color: #0ea5e9;
+      gap: 4px;
+      padding: 2px 8px;
+      background: rgba(239, 68, 68, 0.2);
+      border: 1px solid #ef4444;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 700;
+      color: #ef4444;
+      text-transform: uppercase;
+      position: relative;
+      z-index: 1;
     }
 
     .component-desc {
-      font-size: 12px;
+      font-size: 11px;
       color: #cbd5e1;
-      line-height: 1.6;
-      margin-bottom: 12px;
+      line-height: 1.5;
+      position: relative;
+      z-index: 1;
     }
 
     .tech-stack {
       display: flex;
       flex-wrap: wrap;
-      gap: 6px;
-      margin-bottom: 8px;
+      gap: 4px;
+      margin-top: 8px;
+      position: relative;
+      z-index: 1;
     }
 
     .tech-tag {
-      padding: 4px 8px;
+      padding: 2px 6px;
       background: rgba(14, 165, 233, 0.15);
       border: 1px solid rgba(14, 165, 233, 0.3);
-      border-radius: 4px;
-      font-size: 11px;
+      border-radius: 3px;
+      font-size: 9px;
       color: #0ea5e9;
       font-family: ui-monospace, monospace;
-      transition: all 0.3s;
-    }
-
-    .component:hover .tech-tag {
-      background: rgba(14, 165, 233, 0.25);
-      border-color: #0ea5e9;
     }
 
     .detail-panel {
       position: fixed;
-      right: -400px;
+      right: -450px;
       top: 0;
-      width: 400px;
+      width: 450px;
       height: 100vh;
-      background: rgba(15, 23, 42, 0.95);
+      background: rgba(15, 23, 42, 0.98);
       border-left: 2px solid rgba(14, 165, 233, 0.5);
       overflow-y: auto;
       transition: right 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -224,11 +309,15 @@
     .detail-header {
       padding: 30px 24px;
       border-bottom: 2px solid rgba(14, 165, 233, 0.3);
-      background: linear-gradient(135deg, rgba(14, 165, 233, 0.1) 0%, rgba(51, 65, 85, 0.3) 100%);
+      background: linear-gradient(135deg, rgba(14, 165, 233, 0.15) 0%, rgba(51, 65, 85, 0.3) 100%);
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
-      gap: 20px;
+      gap: 16px;
+    }
+
+    .detail-title-section {
+      flex: 1;
     }
 
     .detail-title {
@@ -236,13 +325,14 @@
       font-weight: 800;
       font-family: ui-monospace, monospace;
       color: #0ea5e9;
+      margin-bottom: 8px;
     }
 
     .detail-status {
       display: inline-block;
       padding: 6px 12px;
       border-radius: 6px;
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 1px;
@@ -250,7 +340,7 @@
 
     .detail-status.complete { background: rgba(16, 185, 129, 0.2); color: #10b981; }
     .detail-status.in-progress { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
-    .detail-status.not-started { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+    .detail-status.bug { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
 
     .close-btn {
       background: none;
@@ -266,6 +356,7 @@
       justify-content: center;
       transition: all 0.3s;
       border-radius: 6px;
+      flex-shrink: 0;
     }
 
     .close-btn:hover {
@@ -286,31 +377,70 @@
       text-transform: uppercase;
       letter-spacing: 1.5px;
       color: #0ea5e9;
-      margin-bottom: 10px;
+      margin-bottom: 12px;
       font-weight: 700;
     }
 
     .detail-value {
-      font-size: 14px;
+      font-size: 13px;
       line-height: 1.6;
       color: #cbd5e1;
+    }
+
+    .bug-item {
+      background: rgba(239, 68, 68, 0.1);
+      border-left: 3px solid #ef4444;
+      padding: 12px;
+      border-radius: 4px;
       margin-bottom: 12px;
-    }
-
-    .tech-tags-detail {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-
-    .tech-tag-detail {
-      padding: 6px 12px;
-      background: rgba(14, 165, 233, 0.2);
-      border: 1px solid rgba(14, 165, 233, 0.4);
-      border-radius: 6px;
       font-size: 12px;
-      color: #0ea5e9;
+    }
+
+    .bug-priority {
+      display: inline-block;
+      padding: 2px 8px;
+      background: #ef4444;
+      color: white;
+      border-radius: 3px;
+      font-size: 10px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .bug-priority.high { background: #ef4444; }
+    .bug-priority.medium { background: #f59e0b; }
+
+    .bug-description {
+      color: #cbd5e1;
+      margin-top: 8px;
+    }
+
+    .bug-reference {
+      font-size: 11px;
+      color: #94a3b8;
       font-family: ui-monospace, monospace;
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(14, 165, 233, 0.2);
+    }
+
+    .fix-item {
+      background: rgba(16, 185, 129, 0.1);
+      border-left: 3px solid #10b981;
+      padding: 12px;
+      border-radius: 4px;
+      margin-bottom: 12px;
+      font-size: 12px;
+    }
+
+    .fix-title {
+      color: #10b981;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .fix-description {
+      color: #cbd5e1;
     }
 
     .connection-item {
@@ -325,56 +455,16 @@
     .connection-name {
       color: #06b6d4;
       font-weight: 700;
-      font-family: ui-monospace, monospace;
-      margin-bottom: 6px;
+      margin-bottom: 4px;
     }
 
     .connection-desc {
       color: #cbd5e1;
-      font-size: 12px;
-      line-height: 1.5;
+      font-size: 11px;
     }
-
-    .legend {
-      display: flex;
-      gap: 30px;
-      margin-top: 60px;
-      padding: 30px;
-      border-top: 1px solid rgba(148, 163, 184, 0.2);
-      flex-wrap: wrap;
-      animation: slideUp 0.6s ease-out 0.8s backwards;
-      max-width: 2000px;
-      margin-left: auto;
-      margin-right: auto;
-      background: rgba(30, 41, 59, 0.4);
-      border-radius: 12px;
-      backdrop-filter: blur(10px);
-    }
-
-    .legend-item {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 13px;
-    }
-
-    .legend-dot {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-    }
-
-    .legend-dot.complete { background: #10b981; box-shadow: 0 0 8px rgba(16, 185, 129, 0.5); }
-    .legend-dot.in-progress { background: #f59e0b; box-shadow: 0 0 8px rgba(245, 158, 11, 0.5); }
-    .legend-dot.not-started { background: #ef4444; box-shadow: 0 0 8px rgba(239, 68, 68, 0.4); }
 
     @keyframes slideDown {
-      from { opacity: 0; transform: translateY(-30px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    @keyframes slideUp {
-      from { opacity: 0; transform: translateY(30px); }
+      from { opacity: 0; transform: translateY(-20px); }
       to { opacity: 1; transform: translateY(0); }
     }
 
@@ -384,229 +474,79 @@
     }
 
     @keyframes popIn {
-      from { opacity: 0; transform: scale(0.85) translateY(20px); }
-      to { opacity: 1; transform: scale(1) translateY(0); }
+      from { opacity: 0; transform: scale(0.8); }
+      to { opacity: 1; transform: scale(1); }
     }
 
     @keyframes pulse {
-      0%, 100% { box-shadow: 0 0 10px currentColor; }
-      50% { box-shadow: 0 0 20px currentColor; }
+      0%, 100% { box-shadow: 0 0 8px currentColor; }
+      50% { box-shadow: 0 0 16px currentColor; }
     }
 
     @keyframes animateStroke {
       to { stroke-dashoffset: 0; }
     }
 
-    @keyframes flowAnimation {
-      0% { offset-distance: 0%; }
-      100% { offset-distance: 100%; }
-    }
-
     .connection-line {
-      stroke: url(#grad);
+      stroke: #06b6d4;
       stroke-width: 2;
       fill: none;
-      filter: drop-shadow(0 0 3px rgba(6, 182, 212, 0.4));
+      filter: drop-shadow(0 0 2px rgba(6, 182, 212, 0.4));
     }
 
     .connection-line-animated {
-      animation: animateStroke 2s ease-in-out infinite;
-      stroke-dasharray: 10, 5;
-    }
-
-    .flow-dot {
-      fill: #06b6d4;
-      r: 3;
-      animation: flowAnimation 3s linear infinite;
-      filter: drop-shadow(0 0 4px rgba(6, 182, 212, 0.8));
+      stroke-dasharray: 8, 4;
+      animation: animateStroke 1.5s linear infinite;
     }
   </style>
 </head>
 <body>
   <div class="main-container">
     <div class="canvas-area" id="canvasArea">
-      <svg class="svg-connections" id="connectionsSvg">
-        <defs>
-          <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" style="stop-color:#0ea5e9;stop-opacity:0.3" />
-            <stop offset="50%" style="stop-color:#06b6d4;stop-opacity:0.8" />
-            <stop offset="100%" style="stop-color:#0ea5e9;stop-opacity:0.3" />
-          </linearGradient>
-        </defs>
-      </svg>
+      <div class="construction-bar">
+        <div class="construction-title">🏗️ How It Works</div>
+        <div class="construction-text">
+          Daromadchi is a multi-marketplace seller dashboard that syncs orders, inventory, and prices across Uzum Market, Yandex Market, and Wildberries.
+          The Web App provides sellers with real-time analytics and management tools, while the Chrome Extension automates price/stock updates.
+          All data flows through our API Routes to a PostgreSQL database, with read-only marketplace integrations (NO writes allowed).
+          Authentication via NextAuth.js v5 with JWT tokens. Self-hosted on Hetzner VPS with Nginx reverse proxy.
+        </div>
+        <div class="construction-legend">
+          <div class="legend-item-inline">
+            <div class="legend-box client"></div>
+            <span>Client (UI on your browser)</span>
+          </div>
+          <div class="legend-item-inline">
+            <div class="legend-box server"></div>
+            <span>Server (runs the actual logic)</span>
+          </div>
+          <div class="legend-item-inline">
+            <div class="legend-box service"></div>
+            <span>Service (business functions)</span>
+          </div>
+          <div class="legend-item-inline">
+            <div class="legend-box external"></div>
+            <span>External (outside APIs)</span>
+          </div>
+          <div class="legend-item-inline">
+            <div class="legend-box infrastructure"></div>
+            <span>Infrastructure (deployment)</span>
+          </div>
+        </div>
+      </div>
 
       <div class="header">
-        <div class="title">DAROMADCHI ARCHITECTURE</div>
-        <div class="subtitle">Multi-marketplace e-commerce seller dashboard system</div>
+        <div class="title">SYSTEM ARCHITECTURE</div>
+        <div class="subtitle">Click any component to see details, bugs, and planned fixes</div>
       </div>
 
-      <div class="layers-wrapper">
-        <div class="layers">
-          <!-- Layer 1: Client -->
-          <div class="layer">
-            <div class="layer-label">🖥️ Client Layer</div>
-            <div class="layer-header">User-facing interfaces for accessing the dashboard and marketplace automation</div>
-            <div class="components">
-              <div class="component" data-id="web-app">
-                <div class="component-name">
-                  <span class="component-status complete"></span>
-                  Web App
-                </div>
-                <div class="component-desc">Next.js 14 dashboard (daromadchi.uz)</div>
-                <div class="tech-stack">
-                  <span class="tech-tag">React 18</span>
-                  <span class="tech-tag">Next.js 14</span>
-                  <span class="tech-tag">TypeScript</span>
-                </div>
-              </div>
-              <div class="component" data-id="chrome-ext">
-                <div class="component-name">
-                  <span class="component-status complete"></span>
-                  Chrome Extension
-                </div>
-                <div class="component-desc">Marketplace browser automation</div>
-                <div class="tech-stack">
-                  <span class="tech-tag">Manifest v3</span>
-                  <span class="tech-tag">Service Workers</span>
-                </div>
-              </div>
-            </div>
-          </div>
+      <div class="svg-container">
+        <svg class="svg-connections" id="connectionsSvg"></svg>
 
-          <!-- Layer 2: Authentication -->
-          <div class="layer">
-            <div class="layer-label">🔐 Auth Layer</div>
-            <div class="layer-header">Secure session management and user identity verification</div>
-            <div class="components">
-              <div class="component" data-id="nextauth">
-                <div class="component-name">
-                  <span class="component-status complete"></span>
-                  NextAuth.js v5
-                </div>
-                <div class="component-desc">JWT session management (30-day maxAge)</div>
-                <div class="tech-stack">
-                  <span class="tech-tag">OAuth 2.0</span>
-                  <span class="tech-tag">JWT</span>
-                  <span class="tech-tag">Credentials</span>
-                </div>
-              </div>
-            </div>
+        <div class="layers-wrapper">
+          <div class="layers" id="layersContainer">
+            <!-- Layers will be generated by JavaScript -->
           </div>
-
-          <!-- Layer 3: Backend/API -->
-          <div class="layer">
-            <div class="layer-label">⚙️ Backend Layer</div>
-            <div class="layer-header">Business logic, API handlers, and marketplace synchronization engines</div>
-            <div class="components">
-              <div class="component" data-id="api-routes">
-                <div class="component-name">
-                  <span class="component-status complete"></span>
-                  API Routes
-                </div>
-                <div class="component-desc">Next.js API handlers (/api/*)</div>
-                <div class="tech-stack">
-                  <span class="tech-tag">REST</span>
-                  <span class="tech-tag">CORS</span>
-                  <span class="tech-tag">Rate Limiting</span>
-                </div>
-              </div>
-              <div class="component" data-id="marketplaces">
-                <div class="component-name">
-                  <span class="component-status complete"></span>
-                  Marketplace Integrations
-                </div>
-                <div class="component-desc">Read-only marketplace APIs</div>
-                <div class="tech-stack">
-                  <span class="tech-tag">Uzum Market</span>
-                  <span class="tech-tag">Yandex Market</span>
-                  <span class="tech-tag">Wildberries</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Layer 4: Data -->
-          <div class="layer">
-            <div class="layer-label">💾 Data Layer</div>
-            <div class="layer-header">Persistent storage for all application data and analytics</div>
-            <div class="components">
-              <div class="component" data-id="postgresql">
-                <div class="component-name">
-                  <span class="component-status complete"></span>
-                  PostgreSQL 16
-                </div>
-                <div class="component-desc">Primary data store</div>
-                <div class="tech-stack">
-                  <span class="tech-tag">Drizzle ORM</span>
-                  <span class="tech-tag">Migrations</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Layer 5: External -->
-          <div class="layer">
-            <div class="layer-label">🌐 External Services</div>
-            <div class="layer-header">Third-party integrations for notifications, communications, and deployment</div>
-            <div class="components">
-              <div class="component" data-id="telegram">
-                <div class="component-name">
-                  <span class="component-status complete"></span>
-                  Telegram Bot
-                </div>
-                <div class="component-desc">Notifications & alerts</div>
-                <div class="tech-stack">
-                  <span class="tech-tag">Bot API</span>
-                </div>
-              </div>
-              <div class="component" data-id="resend">
-                <div class="component-name">
-                  <span class="component-status in-progress"></span>
-                  Resend Email
-                </div>
-                <div class="component-desc">Password reset emails</div>
-                <div class="tech-stack">
-                  <span class="tech-tag">Transactional</span>
-                </div>
-              </div>
-              <div class="component" data-id="github">
-                <div class="component-name">
-                  <span class="component-status complete"></span>
-                  GitHub
-                </div>
-                <div class="component-desc">Source control & CI/CD</div>
-                <div class="tech-stack">
-                  <span class="tech-tag">Actions</span>
-                </div>
-              </div>
-              <div class="component" data-id="hetzner">
-                <div class="component-name">
-                  <span class="component-status complete"></span>
-                  Hetzner VPS
-                </div>
-                <div class="component-desc">Self-hosted deployment</div>
-                <div class="tech-stack">
-                  <span class="tech-tag">Ubuntu 24.04</span>
-                  <span class="tech-tag">Nginx</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="legend">
-        <div class="legend-item">
-          <div class="legend-dot complete"></div>
-          <span>Complete</span>
-        </div>
-        <div class="legend-item">
-          <div class="legend-dot in-progress"></div>
-          <span>In Progress</span>
-        </div>
-        <div class="legend-item">
-          <div class="legend-dot not-started"></div>
-          <span>Not Started</span>
         </div>
       </div>
     </div>
@@ -614,7 +554,7 @@
     <!-- Detail Panel -->
     <div class="detail-panel" id="detailPanel">
       <div class="detail-header">
-        <div>
+        <div class="detail-title-section">
           <div class="detail-title" id="detailTitle">Component</div>
           <div class="detail-status complete" id="detailStatus">Complete</div>
         </div>
@@ -625,15 +565,28 @@
           <div class="detail-label">Description</div>
           <div class="detail-value" id="detailDesc"></div>
         </div>
+
+        <div class="detail-section" id="bugsSection" style="display: none;">
+          <div class="detail-label" style="color: #ef4444;">🐛 Known Bugs</div>
+          <div id="detailBugs"></div>
+        </div>
+
+        <div class="detail-section" id="fixesSection" style="display: none;">
+          <div class="detail-label" style="color: #10b981;">✅ Planned Fixes</div>
+          <div id="detailFixes"></div>
+        </div>
+
         <div class="detail-section">
           <div class="detail-label">Technology Stack</div>
-          <div class="tech-tags-detail" id="detailTech"></div>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px;" id="detailTech"></div>
         </div>
+
         <div class="detail-section">
           <div class="detail-label">Purpose & Details</div>
           <div class="detail-value" id="detailPurpose"></div>
         </div>
-        <div class="detail-section" id="connectionsSection">
+
+        <div class="detail-section" id="connectionsSection" style="display: none;">
           <div class="detail-label">Connected To</div>
           <div id="detailConnections"></div>
         </div>
@@ -646,138 +599,222 @@
       'web-app': {
         name: 'Web App',
         status: 'complete',
-        desc: 'Next.js 14 dashboard hosted at daromadchi.uz',
-        tech: ['React 18', 'Next.js 14', 'TypeScript', 'Tailwind CSS'],
-        purpose: 'Main user interface for sellers to manage multi-marketplace inventory, orders, pricing, and analytics in real-time. Supports 3 languages (Russian, Uzbek, English) with dynamic language switching via React Context.',
+        desc: 'Next.js 14 dashboard (daromadchi.uz)',
+        tech: ['React 18', 'Next.js 14', 'TypeScript', 'Tailwind CSS', 'Multi-language'],
+        purpose: 'Main user interface for sellers. Real-time KPI dashboard showing revenue, orders, profit by marketplace. Language switcher (RU/UZ/EN). Shop management, order history, analytics.',
+        bugs: [],
+        fixes: [],
         connections: [
-          { name: 'NextAuth.js v5', desc: 'User authentication and session management' },
-          { name: 'API Routes', desc: 'Fetch dashboard data, shop info, sync status' },
-          { name: 'Hetzner VPS', desc: 'Hosted at https://daromadchi.uz' }
+          { name: 'NextAuth.js v5', desc: 'User authentication and session validation' },
+          { name: 'API Routes', desc: 'Fetch dashboard metrics and shop data' }
         ]
       },
       'chrome-ext': {
         name: 'Chrome Extension',
         status: 'complete',
-        desc: 'Marketplace browser automation tool',
+        desc: 'Marketplace browser automation',
         tech: ['Manifest v3', 'Service Workers', 'Content Scripts'],
-        purpose: 'Automates repetitive tasks on marketplace websites (price updates, stock management). Communicates with API Routes via CORS-whitelisted cross-origin requests.',
+        purpose: 'Automates repetitive tasks: price updates, stock changes, listing management. Communicates with API via CORS-whitelisted cross-origin requests.',
+        bugs: [],
+        fixes: [],
         connections: [
-          { name: 'API Routes', desc: 'Cross-origin requests for automation tasks' }
+          { name: 'API Routes', desc: 'Cross-origin automation requests' }
         ]
       },
       'nextauth': {
         name: 'NextAuth.js v5',
         status: 'complete',
-        desc: 'JWT-based authentication with 30-day session maxAge',
-        tech: ['OAuth 2.0', 'JWT', 'Credentials Provider', 'NextAuth.js v5'],
-        purpose: 'Handles user login via Credentials provider. Validates JWT tokens on protected routes. Manages user sessions with 30-day expiration. Supports future OAuth integrations.',
+        desc: 'JWT session (30-day maxAge)',
+        tech: ['OAuth 2.0', 'JWT', 'Credentials', 'NextAuth v5'],
+        purpose: 'Authenticates users via Credentials provider. 30-day JWT token expiration. Protects dashboard routes. Validates API requests.',
+        bugs: [],
+        fixes: [],
         connections: [
-          { name: 'Web App', desc: 'Validates user sessions and protects routes' },
-          { name: 'API Routes', desc: 'Authenticates API requests' }
+          { name: 'Web App', desc: 'Validates user sessions' },
+          { name: 'API Routes', desc: 'Authenticates backend requests' }
         ]
       },
       'api-routes': {
         name: 'API Routes',
         status: 'complete',
-        desc: 'Next.js API handlers with rate limiting and CORS',
-        tech: ['REST', 'CORS', 'Rate Limiting', 'Rate: 10/min sync, 20/min auth, 100/min other'],
-        purpose: 'Core backend logic for dashboard operations. Handles order syncing, inventory management, analytics queries. Rate-limited per IP to prevent abuse: sync endpoints (10/min), auth endpoints (20/min), other endpoints (100/min).',
+        desc: 'Rate-limited REST endpoints',
+        tech: ['REST', 'CORS', 'Rate Limiting', '10/20/100 per minute'],
+        purpose: 'Core backend: handles sync requests, dashboard queries, marketplace integration. Rate limits: sync=10/min, auth=20/min, other=100/min per IP.',
+        bugs: [
+          { priority: 'high', ref: 'REF #1', desc: 'CORS preflight sometimes hangs on slow networks, causing 4s timeout on extension requests' },
+          { priority: 'medium', ref: 'REF #2', desc: 'Rate limit counter resets on restart, losing request history for that period' }
+        ],
+        fixes: [
+          { title: 'Add request timeout safeguards', desc: 'Wrap CORS preflight in Promise.race with 2s timeout to prevent hanging' },
+          { title: 'Persistent rate limit store', desc: 'Move rate limit tracking to Redis instead of in-memory Map to survive restarts' }
+        ],
         connections: [
-          { name: 'Web App', desc: 'Serve dashboard data and analytics' },
-          { name: 'Chrome Extension', desc: 'Accept automation requests' },
-          { name: 'Marketplace APIs', desc: 'Sync orders, prices, inventory' },
-          { name: 'PostgreSQL', desc: 'Store and query data' },
-          { name: 'Telegram Bot', desc: 'Send notifications' }
+          { name: 'Web App', desc: 'Dashboard data queries' },
+          { name: 'Chrome Extension', desc: 'Automation requests' },
+          { name: 'Marketplace APIs', desc: 'Sync orders/prices' },
+          { name: 'PostgreSQL', desc: 'Store/retrieve data' }
         ]
       },
       'marketplaces': {
-        name: 'Marketplace Integrations',
+        name: 'Marketplace APIs',
         status: 'complete',
-        desc: 'Read-only integrations with Uzum Market, Yandex Market, Wildberries',
-        tech: ['Uzum Market API', 'Yandex Market API', 'Wildberries API'],
-        purpose: 'STRICTLY READ-ONLY. Syncs order data, inventory, and prices from marketplaces. Background jobs keyed per shop, run periodically. NO writes to marketplaces (immutable rule). Fetches stats, offers, stocks, order info.',
+        desc: 'Uzum, Yandex, Wildberries',
+        tech: ['REST APIs', 'Read-Only', 'Cron Jobs', 'Background Sync'],
+        purpose: 'STRICTLY READ-ONLY integrations. Background jobs sync orders, inventory, and prices. NO writes to marketplaces (immutable rule enforced).',
+        bugs: [],
+        fixes: [
+          { title: 'Add retry logic with exponential backoff', desc: 'Currently fails silently if marketplace API timeouts. Add 3 retries with increasing delays.' }
+        ],
         connections: [
-          { name: 'API Routes', desc: 'Sync requests triggered via cron jobs' },
-          { name: 'PostgreSQL', desc: 'Store sync results and order history' }
+          { name: 'API Routes', desc: 'Triggered by sync endpoints' },
+          { name: 'PostgreSQL', desc: 'Store synced data' }
         ]
       },
       'postgresql': {
         name: 'PostgreSQL 16',
         status: 'complete',
-        desc: 'Primary production database',
-        tech: ['PostgreSQL 16', 'Drizzle ORM', 'Migrations'],
-        purpose: 'Persistent storage for all application data: users, shops, orders, products, sync history, analytics. Uses Drizzle ORM for type-safe queries. Schema migrations tracked in version control.',
+        desc: 'Production database',
+        tech: ['PostgreSQL 16', 'Drizzle ORM', 'Migrations', 'Indexes'],
+        purpose: 'Persistent storage: users, shops, orders, products, sync history, analytics. Uses Drizzle ORM for type-safe queries. Schema versioned.',
+        bugs: [],
+        fixes: [],
         connections: [
-          { name: 'API Routes', desc: 'Query and store application data' },
-          { name: 'Marketplace APIs', desc: 'Store synced order and inventory data' },
-          { name: 'Hetzner VPS', desc: 'Database runs on production server' }
+          { name: 'API Routes', desc: 'Query and write data' },
+          { name: 'Marketplace APIs', desc: 'Store sync results' }
         ]
       },
       'telegram': {
         name: 'Telegram Bot',
         status: 'complete',
-        desc: 'Deployment and operational notifications',
-        tech: ['Telegram Bot API', 'Admin notifications'],
-        purpose: 'Sends CI/CD notifications (deploy success/failure) to admin chat. Integrated in GitHub Actions workflow.',
+        desc: 'Deployment notifications',
+        tech: ['Bot API', 'Webhooks'],
+        purpose: 'Sends CI/CD notifications (deploy success/failure) to admin chat. Integrated in GitHub Actions.',
+        bugs: [],
+        fixes: [],
         connections: [
-          { name: 'API Routes', desc: 'Receive notification triggers' },
-          { name: 'GitHub', desc: 'CI/CD pipeline notifications' }
+          { name: 'GitHub Actions', desc: 'Receive workflow completion events' }
         ]
       },
       'resend': {
         name: 'Resend Email',
         status: 'in-progress',
-        desc: 'Transactional email service',
-        tech: ['Resend', 'Transactional Emails'],
-        purpose: 'Sends password reset emails. Being integrated for OAuth 2.0 flow and account recovery emails.',
+        desc: 'Password reset emails',
+        tech: ['Resend API', 'Transactional'],
+        purpose: 'Sends password recovery emails. Currently in-progress for full OAuth 2.0 integration.',
+        bugs: [
+          { priority: 'medium', ref: 'REF #3', desc: 'Email template not rendering images on mobile. Links work but images show as broken.' }
+        ],
+        fixes: [
+          { title: 'Fix responsive email template', desc: 'Switch to fluid email format with max-width media queries for mobile compatibility' },
+          { title: 'Add email tracking', desc: 'Implement open/click tracking to monitor password reset flow completion rates' }
+        ],
         connections: [
-          { name: 'API Routes', desc: 'Trigger email sends for password reset' }
+          { name: 'API Routes', desc: 'Trigger password reset emails' }
         ]
       },
       'github': {
         name: 'GitHub',
         status: 'complete',
-        desc: 'Source control and CI/CD automation',
-        tech: ['GitHub', 'GitHub Actions', 'CI/CD'],
-        purpose: 'Central repository for all code. GitHub Actions runs CI/CD pipeline: Lint, TypeScript type check, Build, Health check, Deploy to VPS.',
+        desc: 'Source control & CI/CD',
+        tech: ['GitHub', 'Actions', 'Workflows'],
+        purpose: 'Central repository. CI/CD pipeline: Lint → TypeCheck → Build → HealthCheck → Deploy. Automatic on push to main.',
+        bugs: [],
+        fixes: [],
         connections: [
-          { name: 'Hetzner VPS', desc: 'Deploy via SSH on push to main branch' }
+          { name: 'Hetzner VPS', desc: 'Deploy via SSH on successful CI' }
         ]
       },
       'hetzner': {
         name: 'Hetzner VPS',
         status: 'complete',
-        desc: 'Self-hosted production server (65.21.158.239)',
+        desc: 'Self-hosted (65.21.158.239)',
         tech: ['Ubuntu 24.04', 'Nginx', 'PM2', 'Node.js'],
-        purpose: 'Runs production application. Nginx reverse proxy handles HTTPS. PM2 manages Node.js processes. PostgreSQL 16 database on same server. Domain daromadchi.uz points to this IP.',
+        purpose: 'Production server running Next.js app, PostgreSQL database, Nginx reverse proxy. Handles daromadchi.uz domain.',
+        bugs: [],
+        fixes: [],
         connections: [
           { name: 'Web App', desc: 'Serves production dashboard' },
           { name: 'API Routes', desc: 'Runs backend services' },
-          { name: 'PostgreSQL', desc: 'Local database instance' },
-          { name: 'GitHub', desc: 'Receives deployments via SSH' }
+          { name: 'PostgreSQL', desc: 'Local database' }
         ]
       }
     };
+
+    const layerConfig = [
+      { label: '🖥️ Client', color: 'client', components: ['web-app', 'chrome-ext'] },
+      { label: '🔐 Auth', color: 'server', components: ['nextauth'] },
+      { label: '⚙️ Backend', color: 'service', components: ['api-routes', 'marketplaces'] },
+      { label: '💾 Data', color: 'service', components: ['postgresql'] },
+      { label: '🌐 External', color: 'external', components: ['telegram', 'resend', 'github', 'hetzner'] }
+    ];
+
+    const layersContainer = document.getElementById('layersContainer');
+
+    // Generate layers HTML
+    layerConfig.forEach(layer => {
+      const layerDiv = document.createElement('div');
+      layerDiv.className = 'layer';
+
+      let componentsHtml = '<div class="layer-label">' + layer.label + '</div><div class="components">';
+
+      layer.components.forEach(compId => {
+        const data = componentData[compId];
+        const bugCount = data.bugs.length;
+        const hasBugs = bugCount > 0 ? ' has-bugs' : '';
+
+        componentsHtml += `
+          <div class="component${hasBugs}" data-id="${compId}" style="border-color: var(--${layer.color}-color, rgba(14, 165, 233, 0.3))">
+            <div class="component-header">
+              <div class="component-name">
+                <span class="component-status ${data.status === 'bug' ? 'bug' : data.status}"></span>
+                ${data.name}
+              </div>
+              ${bugCount > 0 ? `<div class="bug-badge">🐛 ${bugCount}</div>` : ''}
+            </div>
+            <div class="component-desc">${data.desc}</div>
+          </div>
+        `;
+      });
+
+      componentsHtml += '</div>';
+      layerDiv.innerHTML = componentsHtml;
+      layersContainer.appendChild(layerDiv);
+    });
 
     const components = document.querySelectorAll('.component');
     const detailPanel = document.getElementById('detailPanel');
     const closeBtn = document.getElementById('closeBtn');
     const svg = document.getElementById('connectionsSvg');
 
-    // Draw connection lines
+    // Draw connection lines with proper anchoring
     function drawConnections() {
       const positions = {};
+      const boxes = {};
+
       components.forEach(comp => {
         const rect = comp.getBoundingClientRect();
-        const canvasRect = document.getElementById('canvasArea').getBoundingClientRect();
+        const containerRect = document.getElementById('layersContainer').getBoundingClientRect();
+        const svgRect = svg.parentElement.getBoundingClientRect();
+
         const id = comp.getAttribute('data-id');
+        const relX = rect.left - svgRect.left;
+        const relY = rect.top - svgRect.top;
+
         positions[id] = {
-          x: rect.left - canvasRect.left + rect.width / 2,
-          y: rect.top - canvasRect.top + rect.height / 2
+          x: relX + rect.width / 2,
+          y: relY + rect.height / 2
+        };
+
+        boxes[id] = {
+          left: relX,
+          top: relY,
+          right: relX + rect.width,
+          bottom: relY + rect.height,
+          width: rect.width,
+          height: rect.height
         };
       });
 
-      // Define connections (from -> to)
       const connections = [
         ['web-app', 'nextauth'],
         ['web-app', 'api-routes'],
@@ -793,41 +830,62 @@
         ['web-app', 'hetzner']
       ];
 
-      svg.innerHTML = `
-        <defs>
-          <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" style="stop-color:#0ea5e9;stop-opacity:0.3" />
-            <stop offset="50%" style="stop-color:#06b6d4;stop-opacity:0.8" />
-            <stop offset="100%" style="stop-color:#0ea5e9;stop-opacity:0.3" />
-          </linearGradient>
-        </defs>
-      `;
+      svg.innerHTML = '';
 
       connections.forEach((conn, idx) => {
-        const [from, to] = conn;
-        if (positions[from] && positions[to]) {
-          const x1 = positions[from].x;
-          const y1 = positions[from].y;
-          const x2 = positions[to].x;
-          const y2 = positions[to].y;
+        const [fromId, toId] = conn;
+        if (positions[fromId] && positions[toId] && boxes[fromId] && boxes[toId]) {
+          const from = positions[fromId];
+          const to = positions[toId];
+          const fromBox = boxes[fromId];
+          const toBox = boxes[toId];
+
+          // Find edge points
+          let x1, y1, x2, y2;
+
+          // From edge
+          if (from.x < to.x) {
+            x1 = fromBox.right;
+          } else if (from.x > to.x) {
+            x1 = fromBox.left;
+          } else {
+            x1 = from.x;
+          }
+
+          if (from.y < to.y) {
+            y1 = fromBox.bottom;
+          } else if (from.y > to.y) {
+            y1 = fromBox.top;
+          } else {
+            y1 = from.y;
+          }
+
+          // To edge
+          if (to.x < from.x) {
+            x2 = toBox.right;
+          } else if (to.x > from.x) {
+            x2 = toBox.left;
+          } else {
+            x2 = to.x;
+          }
+
+          if (to.y < from.y) {
+            y2 = toBox.bottom;
+          } else if (to.y > from.y) {
+            y2 = toBox.top;
+          } else {
+            y2 = to.y;
+          }
 
           // Create curved path
           const midX = (x1 + x2) / 2;
-          const midY = (y1 + y2) / 2 + 40;
+          const midY = (y1 + y2) / 2 + 30;
 
           const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
           path.setAttribute('d', `M ${x1} ${y1} Q ${midX} ${midY} ${x2} ${y2}`);
           path.setAttribute('class', 'connection-line connection-line-animated');
           path.style.animationDelay = `${idx * 0.1}s`;
           svg.appendChild(path);
-
-          // Add flow dot
-          const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-          dot.setAttribute('class', 'flow-dot');
-          dot.setAttribute('cx', x1);
-          dot.setAttribute('cy', y1);
-          dot.style.animationDelay = `${idx * 0.1}s`;
-          svg.appendChild(dot);
         }
       });
     }
@@ -839,15 +897,50 @@
         const data = componentData[id];
 
         document.getElementById('detailTitle').textContent = data.name;
-        document.getElementById('detailStatus').className = `detail-status ${data.status}`;
-        document.getElementById('detailStatus').textContent = data.status === 'complete' ? 'Complete' : data.status === 'in-progress' ? 'In Progress' : 'Not Started';
+
+        const statusClass = data.bugs.length > 0 ? 'bug' : data.status;
+        const statusText = data.bugs.length > 0 ? 'Bugs Found' : (data.status === 'complete' ? 'Complete' : data.status === 'in-progress' ? 'In Progress' : 'Not Started');
+        const statusEl = document.getElementById('detailStatus');
+        statusEl.className = `detail-status ${statusClass}`;
+        statusEl.textContent = statusText;
+
         document.getElementById('detailDesc').textContent = data.desc;
-
-        const techHtml = data.tech.map(t => `<span class="tech-tag-detail">${t}</span>`).join('');
-        document.getElementById('detailTech').innerHTML = techHtml;
-
         document.getElementById('detailPurpose').textContent = data.purpose;
 
+        // Bugs section
+        if (data.bugs.length > 0) {
+          const bugsHtml = data.bugs.map(bug => `
+            <div class="bug-item">
+              <div class="bug-priority ${bug.priority}">${bug.priority.toUpperCase()}</div>
+              <div class="bug-description">${bug.desc}</div>
+              <div class="bug-reference">${bug.ref}</div>
+            </div>
+          `).join('');
+          document.getElementById('detailBugs').innerHTML = bugsHtml;
+          document.getElementById('bugsSection').style.display = 'block';
+        } else {
+          document.getElementById('bugsSection').style.display = 'none';
+        }
+
+        // Fixes section
+        if (data.fixes.length > 0) {
+          const fixesHtml = data.fixes.map(fix => `
+            <div class="fix-item">
+              <div class="fix-title">→ ${fix.title}</div>
+              <div class="fix-description">${fix.desc}</div>
+            </div>
+          `).join('');
+          document.getElementById('detailFixes').innerHTML = fixesHtml;
+          document.getElementById('fixesSection').style.display = 'block';
+        } else {
+          document.getElementById('fixesSection').style.display = 'none';
+        }
+
+        // Tech stack
+        const techHtml = data.tech.map(t => `<span class="tech-tag">${t}</span>`).join('');
+        document.getElementById('detailTech').innerHTML = techHtml;
+
+        // Connections
         if (data.connections.length > 0) {
           const connHtml = data.connections.map(c => `
             <div class="connection-item">
@@ -857,8 +950,6 @@
           `).join('');
           document.getElementById('detailConnections').innerHTML = connHtml;
           document.getElementById('connectionsSection').style.display = 'block';
-        } else {
-          document.getElementById('connectionsSection').style.display = 'none';
         }
 
         detailPanel.classList.add('active');
@@ -869,15 +960,14 @@
       detailPanel.classList.remove('active');
     });
 
-    // Close panel on outside click
     document.addEventListener('click', (e) => {
       if (!detailPanel.contains(e.target) && !e.target.closest('.component')) {
         detailPanel.classList.remove('active');
       }
     });
 
-    // Initial draw and redraw on resize
-    window.addEventListener('load', drawConnections);
+    // Draw and redraw on load/resize
+    window.addEventListener('load', () => setTimeout(drawConnections, 100));
     window.addEventListener('resize', drawConnections);
   </script>
 </body>
