@@ -1,0 +1,1303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Daromadchi System Architecture</title>
+  <style>
+    :root {
+      --bg-primary: #0f172a;
+      --bg-secondary: #1e293b;
+      --bg-tertiary: #334155;
+      --border: #475569;
+      --text-primary: #f1f5f9;
+      --text-secondary: #cbd5e1;
+      --text-muted: #64748b;
+      --accent: #0ea5e9;
+      --accent-hover: #06b6d4;
+      --complete: #10b981;
+      --in-progress: #f59e0b;
+      --not-started: #ef4444;
+      --glow: rgba(14, 165, 233, 0.3);
+    }
+
+    @media (prefers-color-scheme: light) {
+      :root {
+        --bg-primary: #f8fafc;
+        --bg-secondary: #f1f5f9;
+        --bg-tertiary: #e2e8f0;
+        --border: #cbd5e1;
+        --text-primary: #0f172a;
+        --text-secondary: #334155;
+        --text-muted: #64748b;
+        --accent: #0ea5e9;
+        --accent-hover: #0284c7;
+        --complete: #059669;
+        --in-progress: #d97706;
+        --not-started: #dc2626;
+        --glow: rgba(14, 165, 233, 0.15);
+      }
+    }
+
+    :root[data-theme="light"] {
+      --bg-primary: #f8fafc;
+      --bg-secondary: #f1f5f9;
+      --bg-tertiary: #e2e8f0;
+      --border: #cbd5e1;
+      --text-primary: #0f172a;
+      --text-secondary: #334155;
+      --text-muted: #64748b;
+      --accent: #0ea5e9;
+      --accent-hover: #0284c7;
+      --complete: #059669;
+      --in-progress: #d97706;
+      --not-started: #dc2626;
+      --glow: rgba(14, 165, 233, 0.15);
+    }
+
+    :root[data-theme="dark"] {
+      --bg-primary: #0f172a;
+      --bg-secondary: #1e293b;
+      --bg-tertiary: #334155;
+      --border: #475569;
+      --text-primary: #f1f5f9;
+      --text-secondary: #cbd5e1;
+      --text-muted: #64748b;
+      --accent: #0ea5e9;
+      --accent-hover: #06b6d4;
+      --complete: #10b981;
+      --in-progress: #f59e0b;
+      --not-started: #ef4444;
+      --glow: rgba(14, 165, 233, 0.3);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", sans-serif;
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Top bar */
+    .top-bar {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 12px 20px;
+      background-color: var(--bg-secondary);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      z-index: 100;
+    }
+
+    .logo {
+      font-family: ui-monospace, "Menlo", "Monaco", monospace;
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      color: var(--accent);
+    }
+
+    .search-box {
+      flex: 1;
+      max-width: 300px;
+      padding: 8px 12px;
+      background-color: var(--bg-primary);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--text-primary);
+      font-size: 13px;
+    }
+
+    .search-box::placeholder {
+      color: var(--text-muted);
+    }
+
+    .search-box:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px var(--glow);
+    }
+
+    .filter-group {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .filter-btn, .layer-btn, .theme-toggle {
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 500;
+      border: 1px solid var(--border);
+      background-color: transparent;
+      color: var(--text-secondary);
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .filter-btn:hover, .layer-btn:hover, .theme-toggle:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .filter-btn.active, .layer-btn.active {
+      background-color: var(--accent);
+      border-color: var(--accent);
+      color: var(--bg-primary);
+    }
+
+    .spacer {
+      flex: 1;
+    }
+
+    /* Main container */
+    .main-container {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* Left sidebar */
+    .sidebar-left {
+      width: 250px;
+      background-color: var(--bg-secondary);
+      border-right: 1px solid var(--border);
+      overflow-y: auto;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .sidebar-section {
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .sidebar-section:last-child {
+      border-bottom: none;
+    }
+
+    .sidebar-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .status-badge {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .status-badge.complete { background-color: var(--complete); }
+    .status-badge.in-progress { background-color: var(--in-progress); }
+    .status-badge.not-started { background-color: var(--not-started); }
+
+    .stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      font-size: 12px;
+    }
+
+    .stat-card {
+      padding: 8px;
+      background-color: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+    }
+
+    .stat-value {
+      font-family: ui-monospace, "Menlo", "Monaco", monospace;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--accent);
+    }
+
+    .stat-label {
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-top: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    /* Canvas area */
+    .canvas-container {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      background-color: var(--bg-primary);
+    }
+
+    canvas {
+      display: block;
+      cursor: default;
+    }
+
+    canvas:hover {
+      cursor: grab;
+    }
+
+    canvas:active {
+      cursor: grabbing;
+    }
+
+    /* Right sidebar */
+    .sidebar-right {
+      width: 340px;
+      background-color: var(--bg-secondary);
+      border-left: 1px solid var(--border);
+      overflow-y: auto;
+      flex-shrink: 0;
+      display: none;
+      flex-direction: column;
+      z-index: 50;
+    }
+
+    .sidebar-right.visible {
+      display: flex;
+    }
+
+    .sidebar-right-header {
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
+      position: relative;
+    }
+
+    .close-btn {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      width: 28px;
+      height: 28px;
+      border: 1px solid var(--border);
+      background-color: transparent;
+      border-radius: 4px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .close-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .component-title {
+      font-family: ui-monospace, "Menlo", "Monaco", monospace;
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: var(--text-primary);
+      word-break: break-word;
+    }
+
+    .component-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 8px;
+      background-color: var(--bg-tertiary);
+      border-radius: 3px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .component-status.complete {
+      color: var(--complete);
+    }
+
+    .component-status.in-progress {
+      color: var(--in-progress);
+    }
+
+    .component-status.not-started {
+      color: var(--not-started);
+    }
+
+    .sidebar-right-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0;
+    }
+
+    .content-section {
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .content-section:last-child {
+      border-bottom: none;
+    }
+
+    .section-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+
+    .description-text {
+      font-size: 13px;
+      line-height: 1.5;
+      color: var(--text-secondary);
+      max-width: 65ch;
+    }
+
+    .tech-stack {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .tech-tag {
+      padding: 4px 8px;
+      background-color: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      font-size: 11px;
+      color: var(--text-secondary);
+      font-family: ui-monospace, "Menlo", "Monaco", monospace;
+    }
+
+    .connection-item {
+      padding: 12px;
+      background-color: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      margin-bottom: 8px;
+      font-size: 12px;
+    }
+
+    .connection-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .connection-name {
+      font-family: ui-monospace, "Menlo", "Monaco", monospace;
+      font-weight: 600;
+      color: var(--accent);
+      margin-bottom: 4px;
+      font-size: 11px;
+    }
+
+    .connection-type {
+      display: inline-block;
+      font-size: 10px;
+      padding: 2px 6px;
+      background-color: var(--bg-secondary);
+      border-radius: 2px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .connection-text {
+      color: var(--text-secondary);
+      line-height: 1.4;
+      margin-bottom: 4px;
+    }
+
+    .connection-text strong {
+      color: var(--text-primary);
+      font-weight: 600;
+    }
+
+    .connection-when {
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-top: 6px;
+      font-family: ui-monospace, "Menlo", "Monaco", monospace;
+    }
+
+    .issue-list, .next-steps-list {
+      list-style: none;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .issue-list li, .next-steps-list li {
+      padding: 4px 0;
+      line-height: 1.4;
+    }
+
+    .issue-list li:before {
+      content: "⚠ ";
+      color: var(--in-progress);
+      margin-right: 6px;
+    }
+
+    .next-steps-list li:before {
+      content: "→ ";
+      color: var(--accent);
+      margin-right: 6px;
+    }
+
+    /* Scrollbar styling */
+    .sidebar-left::-webkit-scrollbar,
+    .sidebar-right-content::-webkit-scrollbar,
+    .sidebar-right::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .sidebar-left::-webkit-scrollbar-track,
+    .sidebar-right-content::-webkit-scrollbar-track,
+    .sidebar-right::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .sidebar-left::-webkit-scrollbar-thumb,
+    .sidebar-right-content::-webkit-scrollbar-thumb,
+    .sidebar-right::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 3px;
+    }
+
+    .sidebar-left::-webkit-scrollbar-thumb:hover,
+    .sidebar-right-content::-webkit-scrollbar-thumb:hover,
+    .sidebar-right::-webkit-scrollbar-thumb:hover {
+      background: var(--text-muted);
+    }
+
+    .empty-state {
+      padding: 20px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <div class="top-bar">
+    <div class="logo">DAROMADCHI / ARCH</div>
+    <input type="text" class="search-box" id="searchBox" placeholder="Search components...">
+    <div class="filter-group">
+      <button class="filter-btn active" data-filter="all">All</button>
+      <button class="filter-btn" data-filter="complete">✓ Complete</button>
+      <button class="filter-btn" data-filter="in-progress">⏳ In Progress</button>
+      <button class="filter-btn" data-filter="not-started">● Not Started</button>
+    </div>
+    <div class="filter-group" style="margin-left: 8px;">
+      <button class="layer-btn active" data-layer="frontend">Frontend</button>
+      <button class="layer-btn active" data-layer="backend">Backend</button>
+      <button class="layer-btn active" data-layer="database">Database</button>
+      <button class="layer-btn active" data-layer="external">External</button>
+      <button class="layer-btn active" data-layer="infrastructure">Infra</button>
+    </div>
+    <div class="spacer"></div>
+    <button class="theme-toggle" id="themeToggle">🌙</button>
+  </div>
+
+  <div class="main-container">
+    <div class="sidebar-left">
+      <div class="sidebar-section">
+        <div class="sidebar-title">Status</div>
+        <div class="legend-item">
+          <div class="status-badge complete"></div>
+          <span>Complete</span>
+        </div>
+        <div class="legend-item">
+          <div class="status-badge in-progress"></div>
+          <span>In Progress</span>
+        </div>
+        <div class="legend-item">
+          <div class="status-badge not-started"></div>
+          <span>Not Started</span>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-title">System Stats</div>
+        <div class="stats">
+          <div class="stat-card">
+            <div class="stat-value" id="componentCount">12</div>
+            <div class="stat-label">Components</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="connectionCount">28</div>
+            <div class="stat-label">Connections</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">4</div>
+            <div class="stat-label">Layers</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">Phase 3</div>
+            <div class="stat-label">Active</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-title">Quick Links</div>
+        <div style="font-size: 12px; color: var(--text-secondary); line-height: 1.6;">
+          <div style="cursor: pointer; margin-bottom: 4px;" class="jump-link" data-component="web-app">→ Web App</div>
+          <div style="cursor: pointer; margin-bottom: 4px;" class="jump-link" data-component="nextauth-v5">→ NextAuth.js</div>
+          <div style="cursor: pointer; margin-bottom: 4px;" class="jump-link" data-component="postgresql">→ PostgreSQL</div>
+          <div style="cursor: pointer;" class="jump-link" data-component="hetzner-vps">→ Hetzner VPS</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="canvas-container">
+      <canvas id="diagramCanvas"></canvas>
+    </div>
+
+    <div class="sidebar-right" id="sidebarRight">
+      <div class="sidebar-right-header">
+        <button class="close-btn" id="closeBtn">✕</button>
+        <div class="component-title" id="selectedComponentName">Component Name</div>
+        <div class="component-status complete" id="selectedComponentStatus">
+          <span class="status-badge complete" style="margin-right: 4px;"></span>
+          Complete
+        </div>
+      </div>
+
+      <div class="sidebar-right-content">
+        <div class="content-section">
+          <div class="section-label">Description</div>
+          <div class="description-text" id="selectedComponentDesc">Loading...</div>
+        </div>
+
+        <div class="content-section">
+          <div class="section-label">Technology Stack</div>
+          <div class="tech-stack" id="selectedComponentTech"></div>
+        </div>
+
+        <div class="content-section">
+          <div class="section-label">Purpose</div>
+          <div class="description-text" id="selectedComponentPurpose">Loading...</div>
+        </div>
+
+        <div class="content-section">
+          <div class="section-label">Connected To</div>
+          <div id="selectedComponentConnections"></div>
+        </div>
+
+        <div class="content-section">
+          <div class="section-label">Known Issues</div>
+          <div id="selectedComponentIssues"></div>
+        </div>
+
+        <div class="content-section">
+          <div class="section-label">Next Steps</div>
+          <div id="selectedComponentNextSteps"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Component data structure
+    const componentsData = {
+      'web-app': {
+        name: 'Web App\n(daromadchi.uz)',
+        layer: 'frontend',
+        status: 'complete',
+        description: 'Main SaaS dashboard for marketplace analytics. Provides sellers with real-time insights across multiple marketplaces.',
+        technology: ['Next.js 14', 'React', 'TailwindCSS', 'Hetzner VPS'],
+        purpose: 'Provide sellers with analytics and insights across marketplaces',
+        dateAdded: 'May 2024',
+        lastUpdated: 'July 8, 2026',
+        connectedTo: [
+          {
+            componentName: 'NextAuth.js v5',
+            type: 'uses',
+            why: 'Need authentication system to verify users before showing data',
+            purpose: 'Secure user sessions and manage login/logout',
+            dataFlow: 'User credentials → JWT tokens → Session validation',
+            when: 'July 8, 2026 (Phase 3)'
+          },
+          {
+            componentName: 'PostgreSQL 16',
+            type: 'sends-to/receives-from',
+            why: 'Need persistent storage for user data, shops, products, orders',
+            purpose: 'Read/write analytics data, user profiles, settings',
+            dataFlow: 'Dashboard → API Routes → PostgreSQL (queries and updates)',
+            when: 'May 2024'
+          },
+          {
+            componentName: 'API Routes',
+            type: 'provides-to',
+            why: 'Frontend needs backend endpoints to fetch data',
+            purpose: 'Gateway between frontend and databases/external APIs',
+            dataFlow: 'Dashboard requests → API Routes → Data returned',
+            when: 'May 2024'
+          }
+        ],
+        knownIssues: ['Hardcoded Russian text in some dashboard labels (fixing)'],
+        nextSteps: ['Fix hardcoded Russian text', 'Add password reset functionality', 'Implement OAuth login']
+      },
+
+      'nextauth-v5': {
+        name: 'NextAuth.js v5',
+        layer: 'backend',
+        status: 'complete',
+        description: 'JWT-based session management and authentication system. Handles user login, session persistence, and credential validation.',
+        technology: ['NextAuth.js v5', 'PostgreSQL', 'bcryptjs', 'JWT'],
+        purpose: 'Secure authentication for users to access their private analytics',
+        dateAdded: 'July 8, 2026 (Phase 3)',
+        lastUpdated: 'July 8, 2026',
+        connectedTo: [
+          {
+            componentName: 'Web App',
+            type: 'provides-to',
+            why: 'Every page load needs to verify user is authenticated',
+            purpose: 'Check if user has valid JWT token and session',
+            dataFlow: 'Page load → NextAuth checks session → Allow/Deny access',
+            when: 'July 8, 2026'
+          },
+          {
+            componentName: 'PostgreSQL 16',
+            type: 'sends-to/receives-from',
+            why: 'Need to store user credentials and sessions securely',
+            purpose: 'Persist user data, password hashes, JWT sessions',
+            dataFlow: 'User login → bcryptjs hash comparison → Create JWT → Store session',
+            when: 'July 8, 2026'
+          },
+          {
+            componentName: 'API Routes',
+            type: 'provides-to',
+            why: 'Login page needs endpoints to authenticate users',
+            purpose: 'Handle sign-in, sign-out, session retrieval',
+            dataFlow: 'Credentials → /api/auth/signin → Validation → JWT',
+            when: 'July 8, 2026'
+          }
+        ],
+        knownIssues: [],
+        nextSteps: ['Password reset flow (Phase 4)', 'Add OAuth providers (Phase 5)', 'Two-factor authentication']
+      },
+
+      'api-routes': {
+        name: 'API Routes\n(/api/*)',
+        layer: 'backend',
+        status: 'complete',
+        description: 'Backend REST endpoints handling all server-side logic. Bridge between frontend, databases, and external marketplace APIs.',
+        technology: ['Next.js API Routes', 'Node.js', 'Express-style middleware'],
+        purpose: 'Gateway between frontend, databases, and external marketplace APIs',
+        dateAdded: 'May 2024',
+        lastUpdated: 'July 8, 2026',
+        connectedTo: [
+          {
+            componentName: 'Web App',
+            type: 'receives-from',
+            why: 'Frontend needs to fetch data and submit requests',
+            purpose: 'All dashboard data comes through these endpoints',
+            dataFlow: 'Dashboard requests → /api/analytics → PostgreSQL → JSON',
+            when: 'May 2024'
+          },
+          {
+            componentName: 'NextAuth.js v5',
+            type: 'uses',
+            why: 'Every API route needs to verify user is authenticated',
+            purpose: 'Protect endpoints from unauthorized access',
+            dataFlow: 'Request → Verify JWT token → Allow/Deny',
+            when: 'July 8, 2026'
+          },
+          {
+            componentName: 'PostgreSQL 16',
+            type: 'sends-to/receives-from',
+            why: 'Need to store and retrieve marketplace data',
+            purpose: 'Read user shops, products, orders; write sync data',
+            dataFlow: '/api/sync → Marketplace API → Process → PostgreSQL',
+            when: 'May 2024'
+          }
+        ],
+        knownIssues: [],
+        nextSteps: ['Add caching layer', 'Implement rate limiting', 'Add API documentation']
+      },
+
+      'postgresql': {
+        name: 'PostgreSQL 16',
+        layer: 'database',
+        status: 'complete',
+        description: 'Self-hosted relational database on Hetzner VPS. Stores all application data including users, shops, products, orders, and sessions.',
+        technology: ['PostgreSQL 16', 'Drizzle ORM', 'SQL'],
+        purpose: 'Persistent storage for all application data',
+        dateAdded: 'May 2024',
+        lastUpdated: 'July 8, 2026',
+        connectedTo: [
+          {
+            componentName: 'Web App',
+            type: 'receives-from/sends-to',
+            why: 'Dashboard needs all analytics data',
+            purpose: 'Store and retrieve all user data, dashboards, settings',
+            dataFlow: 'Dashboard → API → PostgreSQL queries → Results → Dashboard',
+            when: 'May 2024'
+          },
+          {
+            componentName: 'NextAuth.js v5',
+            type: 'receives-from/sends-to',
+            why: 'Must store user credentials, password hashes, sessions',
+            purpose: 'Authenticate users, manage sessions',
+            dataFlow: 'Login → Hash comparison → Create session → Store in DB',
+            when: 'July 8, 2026'
+          }
+        ],
+        knownIssues: [],
+        nextSteps: ['Add indexing for performance', 'Implement automated backups', 'Plan for scaling']
+      },
+
+      'uzum-api': {
+        name: 'Uzum\nMarket API',
+        layer: 'external',
+        status: 'complete',
+        description: 'Official Uzum seller API for marketplace data. Provides real-time product, order, and inventory information.',
+        technology: ['REST API', 'Bearer token auth', 'JSON'],
+        purpose: 'Get real-time product and order data for Uzum sellers',
+        dateAdded: 'May 2024',
+        lastUpdated: 'July 8, 2026',
+        connectedTo: [
+          {
+            componentName: 'API Routes',
+            type: 'called-by',
+            why: 'Daromadchi needs to periodically sync Uzum data',
+            purpose: 'Fetch products, orders, inventory, returns',
+            dataFlow: 'Cron → /api/sync → Uzum API → JSON → PostgreSQL',
+            when: 'May 2024 (every 2 hours)'
+          }
+        ],
+        knownIssues: [],
+        nextSteps: ['Implement webhook-based updates (real-time instead of polling)']
+      },
+
+      'wildberries-api': {
+        name: 'Wildberries\nAPI',
+        layer: 'external',
+        status: 'complete',
+        description: 'Official Wildberries seller API for marketplace data. Provides real-time product, shipment, and order information.',
+        technology: ['REST API', 'API key auth', 'JSON'],
+        purpose: 'Get real-time product and order data for WB sellers',
+        dateAdded: 'May 2024',
+        lastUpdated: 'July 8, 2026',
+        connectedTo: [
+          {
+            componentName: 'API Routes',
+            type: 'called-by',
+            why: 'Daromadchi needs to periodically sync WB data',
+            purpose: 'Fetch products, orders, shipments, inventory',
+            dataFlow: 'Cron → /api/sync → WB API → JSON → PostgreSQL',
+            when: 'May 2024 (every 2 hours)'
+          }
+        ],
+        knownIssues: [],
+        nextSteps: ['Implement webhook-based updates']
+      },
+
+      'yandex-api': {
+        name: 'Yandex\nMarket API',
+        layer: 'external',
+        status: 'complete',
+        description: 'Yandex Market partner API for marketplace data. Provides real-time product, order, and stock level information.',
+        technology: ['REST API', 'OAuth Bearer', 'JSON'],
+        purpose: 'Get real-time product and order data for Yandex sellers',
+        dateAdded: 'May 2024',
+        lastUpdated: 'July 8, 2026',
+        connectedTo: [
+          {
+            componentName: 'API Routes',
+            type: 'called-by',
+            why: 'Daromadchi needs to periodically sync Yandex data',
+            purpose: 'Fetch products, orders, stock levels',
+            dataFlow: 'Cron → /api/sync → YM API → JSON → PostgreSQL',
+            when: 'May 2024 (every 2 hours)'
+          }
+        ],
+        knownIssues: [],
+        nextSteps: ['Implement webhook-based updates']
+      },
+
+      'telegram-bot': {
+        name: 'Telegram Bot\n(daromadchi_alerts)',
+        layer: 'backend',
+        status: 'complete',
+        description: 'Telegram bot for seller alerts and notifications. Sends real-time notifications about orders, sales, returns, and account activities.',
+        technology: ['Telegram Bot API', 'Webhooks', 'Node.js'],
+        purpose: 'Send real-time notifications to sellers about orders, sales, returns',
+        dateAdded: 'June 2024',
+        lastUpdated: 'July 8, 2026',
+        connectedTo: [
+          {
+            componentName: 'API Routes',
+            type: 'receives-from',
+            why: 'API routes trigger bot to send messages',
+            purpose: 'Send notifications when important events occur',
+            dataFlow: 'Event → /api/telegram → Bot fetches user → Send Telegram',
+            when: 'June 2024'
+          },
+          {
+            componentName: 'PostgreSQL 16',
+            type: 'receives-from',
+            why: 'Need to fetch user Telegram IDs and alert settings',
+            purpose: 'Know which users to notify and how to reach them',
+            dataFlow: 'Event → Query PostgreSQL → Get user settings → Send',
+            when: 'June 2024'
+          }
+        ],
+        knownIssues: [],
+        nextSteps: ['Add more notification types', 'Allow customizable preferences', 'Add notification history']
+      },
+
+      'chrome-extension': {
+        name: 'Chrome\nExtension',
+        layer: 'frontend',
+        status: 'complete',
+        description: 'Manifest V3 Chrome extension showing analytics overlaid on marketplace websites. Displays commission rates, payouts, and SKU-level data.',
+        technology: ['JavaScript', 'Chrome APIs', 'Manifest V3'],
+        purpose: 'Show analytics data overlaid on Uzum, Wildberries, Yandex websites',
+        dateAdded: 'March 2024',
+        lastUpdated: 'July 2024 (v2.3.0)',
+        connectedTo: [
+          {
+            componentName: 'Web App / API Routes',
+            type: 'receives-from',
+            why: 'Extension fetches same data as web app',
+            purpose: 'Display analytics while browsing marketplaces',
+            dataFlow: 'User browsing → Extension → /api/analytics → Show overlay',
+            when: 'March 2024'
+          }
+        ],
+        knownIssues: [],
+        nextSteps: ['Add more marketplace support', 'Improve UI/UX', 'Add performance optimization']
+      },
+
+      'resend': {
+        name: 'Resend\n(Email)',
+        layer: 'external',
+        status: 'in-progress',
+        description: 'Email service for transactional emails. Will send password reset and account verification emails to users.',
+        technology: ['Resend API', 'React Email', 'SMTP'],
+        purpose: 'Send password reset and account emails to users',
+        dateAdded: 'Not yet (Phase 4)',
+        lastUpdated: 'In Progress',
+        connectedTo: [
+          {
+            componentName: 'NextAuth.js v5',
+            type: 'will-be-used-by',
+            why: 'Users need password reset functionality',
+            purpose: 'Send secure password reset links',
+            dataFlow: 'Forgot password → Generate token → Resend email → User clicks link',
+            when: 'Phase 4 (expected July 2026)'
+          }
+        ],
+        knownIssues: ['Not yet implemented'],
+        nextSteps: ['Implement forgot password endpoint', 'Create email templates', 'Test with real emails']
+      },
+
+      'hetzner-vps': {
+        name: 'Hetzner VPS\n(65.21.158.239)',
+        layer: 'infrastructure',
+        status: 'complete',
+        description: 'Self-hosted VPS running all Daromadchi infrastructure. Hosts the entire application without cloud dependencies like Vercel or Supabase.',
+        technology: ['Ubuntu 24.04', 'Nginx', 'PM2', 'PostgreSQL', 'Node.js'],
+        purpose: 'Host the entire application (no cloud dependencies)',
+        dateAdded: 'July 2026 (migrated from Vercel/Supabase)',
+        lastUpdated: 'July 8, 2026',
+        connectedTo: [
+          {
+            componentName: 'Web App (Next.js)',
+            type: 'hosts',
+            why: 'Need server to run the application',
+            purpose: 'Serve website, run API routes, handle requests',
+            dataFlow: 'User request → Nginx → Next.js → Respond',
+            when: 'July 2026'
+          },
+          {
+            componentName: 'PostgreSQL 16',
+            type: 'hosts',
+            why: 'Database runs on same VPS',
+            purpose: 'Persistent data storage',
+            dataFlow: 'All API queries → PostgreSQL (local connection)',
+            when: 'July 2026'
+          }
+        ],
+        knownIssues: [],
+        nextSteps: ['Set up automated backups', 'Implement monitoring/alerting', 'Plan for scaling']
+      },
+
+      'github': {
+        name: 'GitHub\nRepository',
+        layer: 'infrastructure',
+        status: 'complete',
+        description: 'Source code repository and version control. Stores code, tracks changes, and enables continuous deployment to production.',
+        technology: ['Git', 'GitHub', 'GitHub Actions'],
+        purpose: 'Store code, track changes, enable continuous deployment',
+        dateAdded: 'May 2024',
+        lastUpdated: 'July 8, 2026',
+        connectedTo: [
+          {
+            componentName: 'Hetzner VPS',
+            type: 'deploys-to',
+            why: 'Need to push code updates to production',
+            purpose: 'Continuous integration and deployment',
+            dataFlow: 'Code pushed → GitHub Actions → Auto-deploy to VPS',
+            when: 'July 2026 (Phase 1 CI/CD)'
+          }
+        ],
+        knownIssues: [],
+        nextSteps: ['Add automated tests', 'Implement staging environment', 'Add code coverage reporting']
+      }
+    };
+
+    // Canvas setup
+    const canvas = document.getElementById('diagramCanvas');
+    const ctx = canvas.getContext('2d');
+    let isDragging = false;
+    let dragStartX, dragStartY;
+    let offsetX = 0, offsetY = 0;
+
+    function resizeCanvas() {
+      const container = canvas.parentElement;
+      canvas.width = container.clientWidth;
+      canvas.height = container.clientHeight;
+      draw();
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    // Component positions (layered architecture)
+    const positions = {
+      'web-app': { x: 150, y: 80, layer: 'frontend' },
+      'chrome-extension': { x: 400, y: 80, layer: 'frontend' },
+      'nextauth-v5': { x: 100, y: 200, layer: 'backend' },
+      'api-routes': { x: 350, y: 200, layer: 'backend' },
+      'telegram-bot': { x: 600, y: 200, layer: 'backend' },
+      'postgresql': { x: 250, y: 320, layer: 'database' },
+      'uzum-api': { x: 100, y: 400, layer: 'external' },
+      'wildberries-api': { x: 350, y: 400, layer: 'external' },
+      'yandex-api': { x: 600, y: 400, layer: 'external' },
+      'resend': { x: 750, y: 200, layer: 'external' },
+      'hetzner-vps': { x: 250, y: 500, layer: 'infrastructure' },
+      'github': { x: 550, y: 500, layer: 'infrastructure' }
+    };
+
+    const componentSize = { width: 120, height: 60 };
+
+    let selectedComponent = null;
+    let filteredStatus = 'all';
+    let activeLayers = {
+      frontend: true,
+      backend: true,
+      database: true,
+      external: true,
+      infrastructure: true
+    };
+    let searchTerm = '';
+
+    function getStatusColor(status) {
+      const colors = {
+        complete: getComputedStyle(document.documentElement).getPropertyValue('--complete'),
+        'in-progress': getComputedStyle(document.documentElement).getPropertyValue('--in-progress'),
+        'not-started': getComputedStyle(document.documentElement).getPropertyValue('--not-started')
+      };
+      return colors[status] || colors.complete;
+    }
+
+    function isComponentVisible(componentId) {
+      const component = componentsData[componentId];
+      if (!activeLayers[component.layer]) return false;
+      if (filteredStatus !== 'all' && component.status !== filteredStatus) return false;
+      if (searchTerm && !component.name.toLowerCase().includes(searchTerm.toLowerCase())) return false;
+      return true;
+    }
+
+    function draw() {
+      const bgColor = getComputedStyle(document.documentElement).getPropertyValue('--bg-primary');
+      ctx.fillStyle = bgColor;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Draw connections first (behind boxes)
+      Object.entries(componentsData).forEach(([id, component]) => {
+        if (!isComponentVisible(id)) return;
+        const pos = positions[id];
+
+        component.connectedTo.forEach(conn => {
+          const targetId = Object.keys(componentsData).find(
+            cId => componentsData[cId].name.replace(/\n/g, ' ') === conn.componentName.replace(/\n/g, ' ')
+          );
+
+          if (targetId && isComponentVisible(targetId)) {
+            const targetPos = positions[targetId];
+            drawConnection(pos, targetPos, id === selectedComponent);
+          }
+        });
+      });
+
+      // Draw components
+      Object.entries(componentsData).forEach(([id, component]) => {
+        if (!isComponentVisible(id)) return;
+        const pos = positions[id];
+        const isSelected = id === selectedComponent;
+        drawComponent(id, component, pos, isSelected);
+      });
+    }
+
+    function drawConnection(from, to, isActive) {
+      const startX = from.x + componentSize.width / 2 + offsetX;
+      const startY = from.y + componentSize.height / 2 + offsetY;
+      const endX = to.x + componentSize.width / 2 + offsetX;
+      const endY = to.y + componentSize.height / 2 + offsetY;
+
+      const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--accent');
+      ctx.strokeStyle = isActive ? accentColor : getComputedStyle(document.documentElement).getPropertyValue('--border');
+      ctx.lineWidth = isActive ? 2 : 1;
+      ctx.globalAlpha = isActive ? 1 : 0.4;
+
+      // Curved line
+      ctx.beginPath();
+      const cpX = (startX + endX) / 2;
+      const cpY = (startY + endY) / 2 + 40;
+      ctx.moveTo(startX, startY);
+      ctx.quadraticCurveTo(cpX, cpY, endX, endY);
+      ctx.stroke();
+
+      ctx.globalAlpha = 1;
+    }
+
+    function drawComponent(id, component, pos, isSelected) {
+      const x = pos.x + offsetX;
+      const y = pos.y + offsetY;
+
+      const bgColor = getComputedStyle(document.documentElement).getPropertyValue('--bg-secondary');
+      const textColor = getComputedStyle(document.documentElement).getPropertyValue('--text-primary');
+      const statusColor = getStatusColor(component.status);
+
+      ctx.fillStyle = bgColor;
+      ctx.fillRect(x, y, componentSize.width, componentSize.height);
+
+      // Border
+      ctx.strokeStyle = isSelected
+        ? getComputedStyle(document.documentElement).getPropertyValue('--accent')
+        : statusColor;
+      ctx.lineWidth = isSelected ? 2 : 1.5;
+      ctx.strokeRect(x, y, componentSize.width, componentSize.height);
+
+      // Glow if selected
+      if (isSelected) {
+        ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--glow');
+        ctx.lineWidth = 6;
+        ctx.globalAlpha = 0.3;
+        ctx.strokeRect(x, y, componentSize.width, componentSize.height);
+        ctx.globalAlpha = 1;
+      }
+
+      // Status badge
+      ctx.fillStyle = statusColor;
+      ctx.fillRect(x + componentSize.width - 8, y - 4, 8, 8);
+
+      // Text
+      ctx.fillStyle = textColor;
+      ctx.font = '11px ui-monospace, "Menlo", "Monaco", monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      const lines = component.name.split('\n');
+      const lineHeight = 10;
+      const startY = y + componentSize.height / 2 - (lines.length - 1) * lineHeight / 2;
+
+      lines.forEach((line, i) => {
+        ctx.fillText(line, x + componentSize.width / 2, startY + i * lineHeight);
+      });
+    }
+
+    // Canvas interaction
+    canvas.addEventListener('mousedown', (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const clickX = e.clientX - rect.left - offsetX;
+      const clickY = e.clientY - rect.top - offsetY;
+
+      // Check if clicked on a component
+      let clicked = false;
+      Object.entries(componentsData).forEach(([id, component]) => {
+        if (!isComponentVisible(id)) return;
+        const pos = positions[id];
+        if (clickX >= pos.x && clickX <= pos.x + componentSize.width &&
+            clickY >= pos.y && clickY <= pos.y + componentSize.height) {
+          selectedComponent = id;
+          showSidebar(id, component);
+          clicked = true;
+          draw();
+        }
+      });
+
+      if (!clicked) {
+        isDragging = true;
+        dragStartX = e.clientX;
+        dragStartY = e.clientY;
+      }
+    });
+
+    canvas.addEventListener('mousemove', (e) => {
+      if (isDragging) {
+        offsetX += e.clientX - dragStartX;
+        offsetY += e.clientY - dragStartY;
+        dragStartX = e.clientX;
+        dragStartY = e.clientY;
+        draw();
+      }
+    });
+
+    canvas.addEventListener('mouseup', () => {
+      isDragging = false;
+    });
+
+    canvas.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const rect = canvas.getBoundingClientRect();
+      const zoom = e.deltaY > 0 ? 0.9 : 1.1;
+      offsetX = rect.left + rect.width / 2 + (offsetX - rect.width / 2) * zoom;
+      offsetY = rect.top + rect.height / 2 + (offsetY - rect.height / 2) * zoom;
+      draw();
+    });
+
+    // Sidebar functions
+    function showSidebar(componentId, component) {
+      document.getElementById('selectedComponentName').textContent = component.name.replace(/\n/g, ' ');
+
+      const statusEl = document.getElementById('selectedComponentStatus');
+      statusEl.className = `component-status ${component.status}`;
+      const statusText = component.status === 'complete' ? '✓ Complete' :
+                        component.status === 'in-progress' ? '⏳ In Progress' : '● Not Started';
+      statusEl.innerHTML = `<span class="status-badge ${component.status}" style="margin-right: 4px;"></span>${statusText}`;
+
+      document.getElementById('selectedComponentDesc').textContent = component.description;
+      document.getElementById('selectedComponentPurpose').textContent = component.purpose;
+
+      const techEl = document.getElementById('selectedComponentTech');
+      techEl.innerHTML = component.technology.map(t => `<div class="tech-tag">${t}</div>`).join('');
+
+      const connEl = document.getElementById('selectedComponentConnections');
+      if (component.connectedTo.length === 0) {
+        connEl.innerHTML = '<div class="empty-state">No connections</div>';
+      } else {
+        connEl.innerHTML = component.connectedTo.map(conn => `
+          <div class="connection-item">
+            <div class="connection-name">${conn.componentName}</div>
+            <div class="connection-type">${conn.type}</div>
+            <div class="connection-text"><strong>Why:</strong> ${conn.why}</div>
+            <div class="connection-text"><strong>Purpose:</strong> ${conn.purpose}</div>
+            <div class="connection-text"><strong>Data Flow:</strong> ${conn.dataFlow}</div>
+            <div class="connection-when">When: ${conn.when}</div>
+          </div>
+        `).join('');
+      }
+
+      const issuesEl = document.getElementById('selectedComponentIssues');
+      if (component.knownIssues.length === 0) {
+        issuesEl.innerHTML = '<div class="empty-state">None</div>';
+      } else {
+        issuesEl.innerHTML = `<ul class="issue-list">${component.knownIssues.map(i => `<li>${i}</li>`).join('')}</ul>`;
+      }
+
+      const nextEl = document.getElementById('selectedComponentNextSteps');
+      if (component.nextSteps.length === 0) {
+        nextEl.innerHTML = '<div class="empty-state">None</div>';
+      } else {
+        nextEl.innerHTML = `<ul class="next-steps-list">${component.nextSteps.map(n => `<li>${n}</li>`).join('')}</ul>`;
+      }
+
+      document.getElementById('sidebarRight').classList.add('visible');
+    }
+
+    // Close sidebar
+    document.getElementById('closeBtn').addEventListener('click', () => {
+      selectedComponent = null;
+      document.getElementById('sidebarRight').classList.remove('visible');
+      draw();
+    });
+
+    // Filter buttons
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        filteredStatus = btn.dataset.filter;
+        selectedComponent = null;
+        document.getElementById('sidebarRight').classList.remove('visible');
+        draw();
+      });
+    });
+
+    // Layer buttons
+    document.querySelectorAll('.layer-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        btn.classList.toggle('active');
+        activeLayers[btn.dataset.layer] = btn.classList.contains('active');
+        selectedComponent = null;
+        document.getElementById('sidebarRight').classList.remove('visible');
+        draw();
+      });
+    });
+
+    // Search
+    document.getElementById('searchBox').addEventListener('input', (e) => {
+      searchTerm = e.target.value;
+      selectedComponent = null;
+      document.getElementById('sidebarRight').classList.remove('visible');
+      draw();
+    });
+
+    // Jump links
+    document.querySelectorAll('.jump-link').forEach(link => {
+      link.addEventListener('click', () => {
+        const componentId = link.dataset.component;
+        if (isComponentVisible(componentId)) {
+          selectedComponent = componentId;
+          showSidebar(componentId, componentsData[componentId]);
+          draw();
+        }
+      });
+    });
+
+    // Theme toggle
+    document.getElementById('themeToggle').addEventListener('click', () => {
+      const current = document.documentElement.getAttribute('data-theme');
+      const next = current === 'light' ? 'dark' : current === 'dark' ? null : 'light';
+      if (next) {
+        document.documentElement.setAttribute('data-theme', next);
+      } else {
+        document.documentElement.removeAttribute('data-theme');
+      }
+      draw();
+    });
+
+    // Initial draw
+    draw();
+  </script>
+</body>
+</html>
