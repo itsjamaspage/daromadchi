@@ -18,6 +18,23 @@ function corsHeaders(origin: string | null, isExtRoute: boolean): Record<string,
   return { 'Access-Control-Allow-Origin': allowed, 'Vary': 'Origin' }
 }
 
+// ── CORS ──────────────────────────────────────────────────────────────────────
+
+const ALLOWED_ORIGINS = [
+  'https://www.daromadchi.uz',
+  'https://daromadchi.uz',
+  'http://localhost:3000',
+]
+
+// Extension routes intentionally allow cross-origin access from browser extensions.
+const EXTENSION_ROUTE = /^\/api\/(ext\/|channel-check)/
+
+function corsHeaders(origin: string | null, isExtRoute: boolean): Record<string, string> {
+  if (isExtRoute) return { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET,POST,OPTIONS' }
+  const allowed = origin && ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0]
+  return { 'Access-Control-Allow-Origin': allowed, 'Vary': 'Origin' }
+}
+
 // ── Rate limiting ─────────────────────────────────────────────────────────────
 
 interface RateEntry { count: number; resetAt: number }
