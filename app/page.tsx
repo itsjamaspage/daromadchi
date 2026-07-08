@@ -976,7 +976,7 @@ function BentoSection({ lang }: { lang: string }) {
             { l: tx(lang,'ДРР','DRR','DRR'), v: '8.2%', d: '-1.4%', col: '#f59e0b', hsl: '38 92 50', cols: ['#f59e0b','#d97706','#fcd34d'] },
             { l: tx(lang,'Прибыль','Foyda','Profit'), v: '38.2M', d: '+15%', col: '#22c55e', hsl: '142 71 45', cols: ['#22c55e','#16a34a','#86efac'] },
           ].map((k, i) => (
-            <div>
+            <div key={i}>
               <div>
                 <div style={{ padding: '20px 22px' }}>
                   <p style={{ fontSize: 10, color: muted, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{k.l}</p>
@@ -1188,7 +1188,7 @@ function ExtensionSection({ lang }: { lang: string }) {
               ['#83c0f9', '#60a5fa', '#a5f3fc'],
             ]
             return cards.map((c, i) => (
-              <div>
+              <div key={i}>
                 <div>
                   <div style={{ padding: '32px 28px', cursor: 'default' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
@@ -1438,7 +1438,7 @@ function ResourcesSection({ lang }: { lang: string }) {
           return (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {allItems.map((item, idx) => (
-                <div>
+                <div key={idx}>
                   <div style={{ background: isDark ? P.dCard : P.card, borderRadius: 24,
                     border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}` }}>
                   <div
@@ -1555,7 +1555,7 @@ function FaqSection({ lang }: { lang: string }) {
         />
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           {faqs.map((f, i) => (
-            <div>
+            <div key={i}>
               <div style={{ background: isDark ? P.dCard : '#ffffff', borderRadius: 16,
                 marginBottom: 10, border: `1px solid ${bdr}`, overflow: 'hidden' }}>
                 <button onClick={() => setOpen(open === i ? null : i)}

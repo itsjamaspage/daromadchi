@@ -4,7 +4,6 @@ import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useLang, useTheme } from '@/app/providers'
-import BorderGlow from '@/app/components/BorderGlow'
 
 function tx(lang: string, ru: string, uz: string, en: string) {
   return lang === 'ru' ? ru : lang === 'uz' ? uz : en
@@ -282,28 +281,22 @@ export default function CompliancePage() {
                     transition: 'box-shadow 0.4s ease',
                   }}
                 >
-                  <BorderGlow
-                    borderRadius={16}
-                    glowColor={isDark ? "210 84 75" : "201 97 39"}
-                    glowIntensity={isDark ? 1.5 : 1.0}
-                    backgroundColor={active === i ? (isDark ? 'rgba(15,28,48,1)' : 'rgba(230,241,255,1)') : 'var(--bg-card)'}
-                    colors={isDark
-                      ? ['rgba(131,192,249,0.25)', 'rgba(100,171,240,0.18)', 'rgba(80,150,220,0.12)']
-                      : ['rgba(2,132,199,0.15)', 'rgba(3,105,161,0.10)', 'rgba(14,116,200,0.08)']}
-                    className="w-full"
+                  <div
+                    className="w-full p-6 sm:p-8 rounded-2xl"
+                    style={{
+                      background: active === i ? (isDark ? 'rgba(15,28,48,1)' : 'rgba(230,241,255,1)') : 'var(--bg-card)',
+                    }}
                   >
-                    <div className="p-6 sm:p-8">
-                      <h2 className="text-xl font-bold mb-5" style={{ color: 'var(--text-base)' }}>
-                        {heading}
-                      </h2>
-                      <div
-                        className="text-base leading-8 whitespace-pre-line"
-                        style={{ color: 'var(--text-muted)' }}
-                      >
-                        {body}
-                      </div>
+                    <h2 className="text-xl font-bold mb-5" style={{ color: 'var(--text-base)' }}>
+                      {heading}
+                    </h2>
+                    <div
+                      className="text-base leading-8 whitespace-pre-line"
+                      style={{ color: 'var(--text-muted)' }}
+                    >
+                      {body}
                     </div>
-                  </BorderGlow>
+                  </div>
                 </div>
               )
             })}
