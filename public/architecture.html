@@ -11,20 +11,27 @@
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       background: linear-gradient(135deg, #0f172a 0%, #1a1f3a 100%);
       color: #f1f5f9;
-      overflow-y: auto;
-      min-height: 100vh;
-      padding-bottom: 40px;
+      overflow: hidden;
+      height: 100vh;
     }
 
-    .container {
-      max-width: 1600px;
-      margin: 0 auto;
+    .main-container {
+      display: flex;
+      height: 100vh;
+    }
+
+    .canvas-area {
+      flex: 1;
+      overflow: auto;
+      display: flex;
+      flex-direction: column;
       padding: 40px 20px;
+      position: relative;
     }
 
     .header {
       text-align: center;
-      margin-bottom: 60px;
+      margin-bottom: 50px;
       animation: slideDown 0.6s ease-out;
     }
 
@@ -45,11 +52,29 @@
       letter-spacing: 1px;
     }
 
+    .svg-connections {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .layers-wrapper {
+      position: relative;
+      z-index: 2;
+    }
+
     .layers {
       display: grid;
       grid-template-columns: repeat(5, 1fr);
       gap: 40px;
       margin-bottom: 60px;
+      max-width: 2000px;
+      margin-left: auto;
+      margin-right: auto;
     }
 
     .layer {
@@ -69,8 +94,6 @@
       color: #0ea5e9;
       font-weight: 700;
       margin-bottom: 8px;
-      padding-bottom: 0;
-      border-bottom: none;
     }
 
     .layer-header {
@@ -91,19 +114,19 @@
 
     .component {
       background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(51, 65, 85, 0.5) 100%);
-      border: 1px solid rgba(14, 165, 233, 0.3);
+      border: 2px solid rgba(14, 165, 233, 0.3);
       border-radius: 12px;
       padding: 20px;
       cursor: pointer;
       transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
       position: relative;
       overflow: hidden;
-      animation: popIn 0.5s ease-out backwards;
+      animation: popIn 0.6s ease-out backwards;
     }
 
-    .component:nth-child(1) { animation-delay: 0.15s; }
-    .component:nth-child(2) { animation-delay: 0.25s; }
-    .component:nth-child(3) { animation-delay: 0.35s; }
+    .component:nth-child(1) { animation-delay: 0.25s; }
+    .component:nth-child(2) { animation-delay: 0.35s; }
+    .component:nth-child(3) { animation-delay: 0.45s; }
 
     .component::before {
       content: '';
@@ -120,9 +143,9 @@
 
     .component:hover {
       border-color: #0ea5e9;
-      background: linear-gradient(135deg, rgba(14, 165, 233, 0.15) 0%, rgba(51, 65, 85, 0.8) 100%);
-      box-shadow: 0 0 30px rgba(14, 165, 233, 0.3), 0 8px 32px rgba(0, 0, 0, 0.3);
-      transform: translateY(-8px) scale(1.02);
+      background: linear-gradient(135deg, rgba(14, 165, 233, 0.25) 0%, rgba(51, 65, 85, 0.9) 100%);
+      box-shadow: 0 0 40px rgba(14, 165, 233, 0.4), 0 8px 32px rgba(0, 0, 0, 0.5);
+      transform: translateY(-10px) scale(1.05);
     }
 
     .component-status {
@@ -160,7 +183,7 @@
       display: flex;
       flex-wrap: wrap;
       gap: 6px;
-      margin-bottom: 12px;
+      margin-bottom: 8px;
     }
 
     .tech-tag {
@@ -179,81 +202,153 @@
       border-color: #0ea5e9;
     }
 
-    .connections-grid {
-      margin-top: 60px;
-      padding-top: 60px;
-      border-top: 1px solid rgba(148, 163, 184, 0.2);
+    .detail-panel {
+      position: fixed;
+      right: -400px;
+      top: 0;
+      width: 400px;
+      height: 100vh;
+      background: rgba(15, 23, 42, 0.95);
+      border-left: 2px solid rgba(14, 165, 233, 0.5);
+      overflow-y: auto;
+      transition: right 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      backdrop-filter: blur(10px);
+      z-index: 10000;
+      box-shadow: -20px 0 60px rgba(0, 0, 0, 0.8);
     }
 
-    .connections-title {
-      font-size: 18px;
-      font-weight: 700;
-      margin-bottom: 30px;
-      color: #0ea5e9;
-      animation: slideDown 0.6s ease-out 0.6s backwards;
+    .detail-panel.active {
+      right: 0;
     }
 
-    .connections-grid-2 {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-      gap: 24px;
-      animation: fadeIn 0.8s ease-out 0.7s backwards;
-    }
-
-    .connection-card {
-      background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(51, 65, 85, 0.5) 100%);
-      border: 1px solid rgba(148, 163, 184, 0.2);
-      border-radius: 12px;
-      padding: 20px;
-      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-      cursor: pointer;
-    }
-
-    .connection-card:hover {
-      border-color: #06b6d4;
-      background: linear-gradient(135deg, rgba(6, 182, 212, 0.1) 0%, rgba(51, 65, 85, 0.8) 100%);
-      box-shadow: 0 0 30px rgba(6, 182, 212, 0.2);
-      transform: translateY(-6px);
-    }
-
-    .connection-arrow {
-      color: #06b6d4;
-      font-size: 18px;
-      margin: 0 12px;
-      animation: slideRight 0.5s ease-out infinite;
-    }
-
-    .connection-flow {
+    .detail-header {
+      padding: 30px 24px;
+      border-bottom: 2px solid rgba(14, 165, 233, 0.3);
+      background: linear-gradient(135deg, rgba(14, 165, 233, 0.1) 0%, rgba(51, 65, 85, 0.3) 100%);
       display: flex;
-      align-items: center;
-      margin-bottom: 16px;
-      font-size: 13px;
-      font-weight: 600;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 20px;
     }
 
-    .flow-component {
-      background: rgba(14, 165, 233, 0.15);
-      padding: 6px 12px;
-      border-radius: 6px;
+    .detail-title {
+      font-size: 22px;
+      font-weight: 800;
       font-family: ui-monospace, monospace;
       color: #0ea5e9;
+    }
+
+    .detail-status {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .detail-status.complete { background: rgba(16, 185, 129, 0.2); color: #10b981; }
+    .detail-status.in-progress { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
+    .detail-status.not-started { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+
+    .close-btn {
+      background: none;
+      border: none;
+      color: #64748b;
+      font-size: 28px;
+      cursor: pointer;
+      padding: 0;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s;
+      border-radius: 6px;
+    }
+
+    .close-btn:hover {
+      color: #f1f5f9;
+      background: rgba(14, 165, 233, 0.2);
+    }
+
+    .detail-content {
+      padding: 24px;
+    }
+
+    .detail-section {
+      margin-bottom: 24px;
+    }
+
+    .detail-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: #0ea5e9;
+      margin-bottom: 10px;
+      font-weight: 700;
+    }
+
+    .detail-value {
+      font-size: 14px;
+      line-height: 1.6;
+      color: #cbd5e1;
+      margin-bottom: 12px;
+    }
+
+    .tech-tags-detail {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .tech-tag-detail {
+      padding: 6px 12px;
+      background: rgba(14, 165, 233, 0.2);
+      border: 1px solid rgba(14, 165, 233, 0.4);
+      border-radius: 6px;
+      font-size: 12px;
+      color: #0ea5e9;
+      font-family: ui-monospace, monospace;
+    }
+
+    .connection-item {
+      background: rgba(6, 182, 212, 0.1);
+      padding: 12px;
+      border-left: 3px solid #06b6d4;
+      border-radius: 4px;
+      margin-bottom: 12px;
       font-size: 12px;
     }
 
-    .connection-desc-text {
+    .connection-name {
+      color: #06b6d4;
+      font-weight: 700;
+      font-family: ui-monospace, monospace;
+      margin-bottom: 6px;
+    }
+
+    .connection-desc {
       color: #cbd5e1;
       font-size: 12px;
-      line-height: 1.6;
+      line-height: 1.5;
     }
 
     .legend {
       display: flex;
       gap: 30px;
       margin-top: 60px;
-      padding-top: 30px;
+      padding: 30px;
       border-top: 1px solid rgba(148, 163, 184, 0.2);
       flex-wrap: wrap;
       animation: slideUp 0.6s ease-out 0.8s backwards;
+      max-width: 2000px;
+      margin-left: auto;
+      margin-right: auto;
+      background: rgba(30, 41, 59, 0.4);
+      border-radius: 12px;
+      backdrop-filter: blur(10px);
     }
 
     .legend-item {
@@ -274,18 +369,13 @@
     .legend-dot.not-started { background: #ef4444; box-shadow: 0 0 8px rgba(239, 68, 68, 0.4); }
 
     @keyframes slideDown {
-      from { opacity: 0; transform: translateY(-20px); }
+      from { opacity: 0; transform: translateY(-30px); }
       to { opacity: 1; transform: translateY(0); }
     }
 
     @keyframes slideUp {
-      from { opacity: 0; transform: translateY(20px); }
+      from { opacity: 0; transform: translateY(30px); }
       to { opacity: 1; transform: translateY(0); }
-    }
-
-    @keyframes slideRight {
-      0%, 100% { transform: translateX(0); }
-      50% { transform: translateX(4px); }
     }
 
     @keyframes fadeIn {
@@ -294,304 +384,501 @@
     }
 
     @keyframes popIn {
-      from { opacity: 0; transform: scale(0.8); }
-      to { opacity: 1; transform: scale(1); }
+      from { opacity: 0; transform: scale(0.85) translateY(20px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
     }
 
     @keyframes pulse {
       0%, 100% { box-shadow: 0 0 10px currentColor; }
       50% { box-shadow: 0 0 20px currentColor; }
     }
+
+    @keyframes animateStroke {
+      to { stroke-dashoffset: 0; }
+    }
+
+    @keyframes flowAnimation {
+      0% { offset-distance: 0%; }
+      100% { offset-distance: 100%; }
+    }
+
+    .connection-line {
+      stroke: url(#grad);
+      stroke-width: 2;
+      fill: none;
+      filter: drop-shadow(0 0 3px rgba(6, 182, 212, 0.4));
+    }
+
+    .connection-line-animated {
+      animation: animateStroke 2s ease-in-out infinite;
+      stroke-dasharray: 10, 5;
+    }
+
+    .flow-dot {
+      fill: #06b6d4;
+      r: 3;
+      animation: flowAnimation 3s linear infinite;
+      filter: drop-shadow(0 0 4px rgba(6, 182, 212, 0.8));
+    }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="header">
-      <div class="title">DAROMADCHI ARCHITECTURE</div>
-      <div class="subtitle">Multi-marketplace e-commerce seller dashboard system</div>
-    </div>
+  <div class="main-container">
+    <div class="canvas-area" id="canvasArea">
+      <svg class="svg-connections" id="connectionsSvg">
+        <defs>
+          <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" style="stop-color:#0ea5e9;stop-opacity:0.3" />
+            <stop offset="50%" style="stop-color:#06b6d4;stop-opacity:0.8" />
+            <stop offset="100%" style="stop-color:#0ea5e9;stop-opacity:0.3" />
+          </linearGradient>
+        </defs>
+      </svg>
 
-    <div class="layers">
-      <!-- Layer 1: Client -->
-      <div class="layer">
-        <div class="layer-label">🖥️ Client Layer</div>
-        <div class="layer-header">User-facing interfaces for accessing the dashboard and marketplace automation</div>
-        <div class="components">
-          <div class="component">
-            <div class="component-name">
-              <span class="component-status complete"></span>
-              Web App
-            </div>
-            <div class="component-desc">Next.js 14 dashboard (daromadchi.uz)</div>
-            <div class="tech-stack">
-              <span class="tech-tag">React 18</span>
-              <span class="tech-tag">Next.js 14</span>
-              <span class="tech-tag">TypeScript</span>
-            </div>
-            <div class="component-desc" style="margin: 12px 0 0 0; font-size: 11px; color: #94a3b8;">
-              Multi-language UI (RU/UZ/EN) with real-time language switching via React Context
+      <div class="header">
+        <div class="title">DAROMADCHI ARCHITECTURE</div>
+        <div class="subtitle">Multi-marketplace e-commerce seller dashboard system</div>
+      </div>
+
+      <div class="layers-wrapper">
+        <div class="layers">
+          <!-- Layer 1: Client -->
+          <div class="layer">
+            <div class="layer-label">🖥️ Client Layer</div>
+            <div class="layer-header">User-facing interfaces for accessing the dashboard and marketplace automation</div>
+            <div class="components">
+              <div class="component" data-id="web-app">
+                <div class="component-name">
+                  <span class="component-status complete"></span>
+                  Web App
+                </div>
+                <div class="component-desc">Next.js 14 dashboard (daromadchi.uz)</div>
+                <div class="tech-stack">
+                  <span class="tech-tag">React 18</span>
+                  <span class="tech-tag">Next.js 14</span>
+                  <span class="tech-tag">TypeScript</span>
+                </div>
+              </div>
+              <div class="component" data-id="chrome-ext">
+                <div class="component-name">
+                  <span class="component-status complete"></span>
+                  Chrome Extension
+                </div>
+                <div class="component-desc">Marketplace browser automation</div>
+                <div class="tech-stack">
+                  <span class="tech-tag">Manifest v3</span>
+                  <span class="tech-tag">Service Workers</span>
+                </div>
+              </div>
             </div>
           </div>
-          <div class="component">
-            <div class="component-name">
-              <span class="component-status complete"></span>
-              Chrome Extension
+
+          <!-- Layer 2: Authentication -->
+          <div class="layer">
+            <div class="layer-label">🔐 Auth Layer</div>
+            <div class="layer-header">Secure session management and user identity verification</div>
+            <div class="components">
+              <div class="component" data-id="nextauth">
+                <div class="component-name">
+                  <span class="component-status complete"></span>
+                  NextAuth.js v5
+                </div>
+                <div class="component-desc">JWT session management (30-day maxAge)</div>
+                <div class="tech-stack">
+                  <span class="tech-tag">OAuth 2.0</span>
+                  <span class="tech-tag">JWT</span>
+                  <span class="tech-tag">Credentials</span>
+                </div>
+              </div>
             </div>
-            <div class="component-desc">Marketplace browser automation</div>
-            <div class="tech-stack">
-              <span class="tech-tag">Manifest v3</span>
-              <span class="tech-tag">Service Workers</span>
+          </div>
+
+          <!-- Layer 3: Backend/API -->
+          <div class="layer">
+            <div class="layer-label">⚙️ Backend Layer</div>
+            <div class="layer-header">Business logic, API handlers, and marketplace synchronization engines</div>
+            <div class="components">
+              <div class="component" data-id="api-routes">
+                <div class="component-name">
+                  <span class="component-status complete"></span>
+                  API Routes
+                </div>
+                <div class="component-desc">Next.js API handlers (/api/*)</div>
+                <div class="tech-stack">
+                  <span class="tech-tag">REST</span>
+                  <span class="tech-tag">CORS</span>
+                  <span class="tech-tag">Rate Limiting</span>
+                </div>
+              </div>
+              <div class="component" data-id="marketplaces">
+                <div class="component-name">
+                  <span class="component-status complete"></span>
+                  Marketplace Integrations
+                </div>
+                <div class="component-desc">Read-only marketplace APIs</div>
+                <div class="tech-stack">
+                  <span class="tech-tag">Uzum Market</span>
+                  <span class="tech-tag">Yandex Market</span>
+                  <span class="tech-tag">Wildberries</span>
+                </div>
+              </div>
             </div>
-            <div class="component-desc" style="margin: 12px 0 0 0; font-size: 11px; color: #94a3b8;">
-              Automates price/stock updates on marketplaces via API
+          </div>
+
+          <!-- Layer 4: Data -->
+          <div class="layer">
+            <div class="layer-label">💾 Data Layer</div>
+            <div class="layer-header">Persistent storage for all application data and analytics</div>
+            <div class="components">
+              <div class="component" data-id="postgresql">
+                <div class="component-name">
+                  <span class="component-status complete"></span>
+                  PostgreSQL 16
+                </div>
+                <div class="component-desc">Primary data store</div>
+                <div class="tech-stack">
+                  <span class="tech-tag">Drizzle ORM</span>
+                  <span class="tech-tag">Migrations</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Layer 5: External -->
+          <div class="layer">
+            <div class="layer-label">🌐 External Services</div>
+            <div class="layer-header">Third-party integrations for notifications, communications, and deployment</div>
+            <div class="components">
+              <div class="component" data-id="telegram">
+                <div class="component-name">
+                  <span class="component-status complete"></span>
+                  Telegram Bot
+                </div>
+                <div class="component-desc">Notifications & alerts</div>
+                <div class="tech-stack">
+                  <span class="tech-tag">Bot API</span>
+                </div>
+              </div>
+              <div class="component" data-id="resend">
+                <div class="component-name">
+                  <span class="component-status in-progress"></span>
+                  Resend Email
+                </div>
+                <div class="component-desc">Password reset emails</div>
+                <div class="tech-stack">
+                  <span class="tech-tag">Transactional</span>
+                </div>
+              </div>
+              <div class="component" data-id="github">
+                <div class="component-name">
+                  <span class="component-status complete"></span>
+                  GitHub
+                </div>
+                <div class="component-desc">Source control & CI/CD</div>
+                <div class="tech-stack">
+                  <span class="tech-tag">Actions</span>
+                </div>
+              </div>
+              <div class="component" data-id="hetzner">
+                <div class="component-name">
+                  <span class="component-status complete"></span>
+                  Hetzner VPS
+                </div>
+                <div class="component-desc">Self-hosted deployment</div>
+                <div class="tech-stack">
+                  <span class="tech-tag">Ubuntu 24.04</span>
+                  <span class="tech-tag">Nginx</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Layer 2: Authentication -->
-      <div class="layer">
-        <div class="layer-label">🔐 Auth Layer</div>
-        <div class="layer-header">Secure session management and user identity verification</div>
-        <div class="components">
-          <div class="component">
-            <div class="component-name">
-              <span class="component-status complete"></span>
-              NextAuth.js v5
-            </div>
-            <div class="component-desc">JWT session management (30-day maxAge)</div>
-            <div class="tech-stack">
-              <span class="tech-tag">OAuth 2.0</span>
-              <span class="tech-tag">JWT</span>
-              <span class="tech-tag">Credentials</span>
-            </div>
-            <div class="component-desc" style="margin: 12px 0 0 0; font-size: 11px; color: #94a3b8;">
-              Handles user authentication, sessions, and protected routes
-            </div>
-          </div>
+      <div class="legend">
+        <div class="legend-item">
+          <div class="legend-dot complete"></div>
+          <span>Complete</span>
         </div>
-      </div>
-
-      <!-- Layer 3: Backend/API -->
-      <div class="layer">
-        <div class="layer-label">⚙️ Backend Layer</div>
-        <div class="layer-header">Business logic, API handlers, and marketplace synchronization engines</div>
-        <div class="components">
-          <div class="component">
-            <div class="component-name">
-              <span class="component-status complete"></span>
-              API Routes
-            </div>
-            <div class="component-desc">Next.js API handlers (/api/*)</div>
-            <div class="tech-stack">
-              <span class="tech-tag">REST</span>
-              <span class="tech-tag">CORS</span>
-              <span class="tech-tag">Rate Limiting</span>
-            </div>
-            <div class="component-desc" style="margin: 12px 0 0 0; font-size: 11px; color: #94a3b8;">
-              Rate-limited endpoints (10/min sync, 20/min auth, 100/min others)
-            </div>
-          </div>
-          <div class="component">
-            <div class="component-name">
-              <span class="component-status complete"></span>
-              Marketplace Integrations
-            </div>
-            <div class="component-desc">Read-only marketplace APIs</div>
-            <div class="tech-stack">
-              <span class="tech-tag">Uzum Market</span>
-              <span class="tech-tag">Yandex Market</span>
-              <span class="tech-tag">Wildberries</span>
-            </div>
-            <div class="component-desc" style="margin: 12px 0 0 0; font-size: 11px; color: #94a3b8;">
-              Syncs orders, inventory, prices. STRICTLY READ-ONLY (no writes to marketplaces)
-            </div>
-          </div>
+        <div class="legend-item">
+          <div class="legend-dot in-progress"></div>
+          <span>In Progress</span>
         </div>
-      </div>
-
-      <!-- Layer 4: Data -->
-      <div class="layer">
-        <div class="layer-label">💾 Data Layer</div>
-        <div class="layer-header">Persistent storage for all application data and analytics</div>
-        <div class="components">
-          <div class="component">
-            <div class="component-name">
-              <span class="component-status complete"></span>
-              PostgreSQL 16
-            </div>
-            <div class="component-desc">Primary data store</div>
-            <div class="tech-stack">
-              <span class="tech-tag">Drizzle ORM</span>
-              <span class="tech-tag">Migrations</span>
-            </div>
-            <div class="component-desc" style="margin: 12px 0 0 0; font-size: 11px; color: #94a3b8;">
-              Stores users, shops, orders, products, sync history, analytics
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Layer 5: External -->
-      <div class="layer">
-        <div class="layer-label">🌐 External Services</div>
-        <div class="layer-header">Third-party integrations for notifications, communications, and deployment</div>
-        <div class="components">
-          <div class="component">
-            <div class="component-name">
-              <span class="component-status complete"></span>
-              Telegram Bot
-            </div>
-            <div class="component-desc">Notifications & alerts</div>
-            <div class="tech-stack">
-              <span class="tech-tag">Bot API</span>
-            </div>
-          </div>
-          <div class="component">
-            <div class="component-name">
-              <span class="component-status in-progress"></span>
-              Resend Email
-            </div>
-            <div class="component-desc">Password reset emails</div>
-            <div class="tech-stack">
-              <span class="tech-tag">Transactional</span>
-            </div>
-          </div>
-          <div class="component">
-            <div class="component-name">
-              <span class="component-status complete"></span>
-              GitHub
-            </div>
-            <div class="component-desc">Source control & CI/CD</div>
-            <div class="tech-stack">
-              <span class="tech-tag">Actions</span>
-            </div>
-          </div>
-          <div class="component">
-            <div class="component-name">
-              <span class="component-status complete"></span>
-              Hetzner VPS
-            </div>
-            <div class="component-desc">Self-hosted deployment (65.21.158.239)</div>
-            <div class="tech-stack">
-              <span class="tech-tag">Ubuntu 24.04</span>
-              <span class="tech-tag">Nginx</span>
-              <span class="tech-tag">PM2</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="connections-grid">
-      <div class="connections-title">Data Flow & Connections</div>
-      <div class="connections-grid-2">
-        <div class="connection-card">
-          <div class="connection-flow">
-            <span class="flow-component">Web App</span>
-            <span class="connection-arrow">→</span>
-            <span class="flow-component">NextAuth.js</span>
-          </div>
-          <div class="connection-desc-text">User login via Credentials provider, JWT token validation on protected routes</div>
-        </div>
-
-        <div class="connection-card">
-          <div class="connection-flow">
-            <span class="flow-component">Web App</span>
-            <span class="connection-arrow">→</span>
-            <span class="flow-component">API Routes</span>
-          </div>
-          <div class="connection-desc-text">Fetch dashboards, shop data, sync history. CORS validated, rate-limited</div>
-        </div>
-
-        <div class="connection-card">
-          <div class="connection-flow">
-            <span class="flow-component">API Routes</span>
-            <span class="connection-arrow">→</span>
-            <span class="flow-component">Marketplaces</span>
-          </div>
-          <div class="connection-desc-text">Sync orders, prices, inventory (read-only). Background jobs keyed per shop</div>
-        </div>
-
-        <div class="connection-card">
-          <div class="connection-flow">
-            <span class="flow-component">API Routes</span>
-            <span class="connection-arrow">→</span>
-            <span class="flow-component">PostgreSQL</span>
-          </div>
-          <div class="connection-desc-text">Store/query users, shops, sync results, order history, analytics</div>
-        </div>
-
-        <div class="connection-card">
-          <div class="connection-flow">
-            <span class="flow-component">Chrome Ext</span>
-            <span class="connection-arrow">→</span>
-            <span class="flow-component">API Routes</span>
-          </div>
-          <div class="connection-desc-text">Cross-origin requests allowed for extension automation (CORS whitelisted)</div>
-        </div>
-
-        <div class="connection-card">
-          <div class="connection-flow">
-            <span class="flow-component">API Routes</span>
-            <span class="connection-arrow">→</span>
-            <span class="flow-component">Telegram Bot</span>
-          </div>
-          <div class="connection-desc-text">Send deployment success/failure notifications to admin chat</div>
-        </div>
-
-        <div class="connection-card">
-          <div class="connection-flow">
-            <span class="flow-component">API Routes</span>
-            <span class="connection-arrow">→</span>
-            <span class="flow-component">Resend Email</span>
-          </div>
-          <div class="connection-desc-text">Transactional emails for password reset flow (future: OAuth 2.0)</div>
-        </div>
-
-        <div class="connection-card">
-          <div class="connection-flow">
-            <span class="flow-component">GitHub</span>
-            <span class="connection-arrow">→</span>
-            <span class="flow-component">Hetzner VPS</span>
-          </div>
-          <div class="connection-desc-text">CI/CD: Lint, Type Check, Build, Health Check, Deploy via SSH</div>
-        </div>
-
-        <div class="connection-card">
-          <div class="connection-flow">
-            <span class="flow-component">Hetzner VPS</span>
-            <span class="connection-arrow">→</span>
-            <span class="flow-component">PostgreSQL</span>
-          </div>
-          <div class="connection-desc-text">Local PostgreSQL 16 database on production server</div>
-        </div>
-
-        <div class="connection-card">
-          <div class="connection-flow">
-            <span class="flow-component">Web App</span>
-            <span class="connection-arrow">→</span>
-            <span class="flow-component">Hetzner VPS</span>
-          </div>
-          <div class="connection-desc-text">HTTPS requests to daromadchi.uz (Nginx reverse proxy on VPS)</div>
+        <div class="legend-item">
+          <div class="legend-dot not-started"></div>
+          <span>Not Started</span>
         </div>
       </div>
     </div>
 
-    <div class="legend">
-      <div class="legend-item">
-        <div class="legend-dot complete"></div>
-        <span>Complete</span>
+    <!-- Detail Panel -->
+    <div class="detail-panel" id="detailPanel">
+      <div class="detail-header">
+        <div>
+          <div class="detail-title" id="detailTitle">Component</div>
+          <div class="detail-status complete" id="detailStatus">Complete</div>
+        </div>
+        <button class="close-btn" id="closeBtn">&times;</button>
       </div>
-      <div class="legend-item">
-        <div class="legend-dot in-progress"></div>
-        <span>In Progress</span>
-      </div>
-      <div class="legend-item">
-        <div class="legend-dot not-started"></div>
-        <span>Not Started</span>
+      <div class="detail-content">
+        <div class="detail-section">
+          <div class="detail-label">Description</div>
+          <div class="detail-value" id="detailDesc"></div>
+        </div>
+        <div class="detail-section">
+          <div class="detail-label">Technology Stack</div>
+          <div class="tech-tags-detail" id="detailTech"></div>
+        </div>
+        <div class="detail-section">
+          <div class="detail-label">Purpose & Details</div>
+          <div class="detail-value" id="detailPurpose"></div>
+        </div>
+        <div class="detail-section" id="connectionsSection">
+          <div class="detail-label">Connected To</div>
+          <div id="detailConnections"></div>
+        </div>
       </div>
     </div>
   </div>
+
+  <script>
+    const componentData = {
+      'web-app': {
+        name: 'Web App',
+        status: 'complete',
+        desc: 'Next.js 14 dashboard hosted at daromadchi.uz',
+        tech: ['React 18', 'Next.js 14', 'TypeScript', 'Tailwind CSS'],
+        purpose: 'Main user interface for sellers to manage multi-marketplace inventory, orders, pricing, and analytics in real-time. Supports 3 languages (Russian, Uzbek, English) with dynamic language switching via React Context.',
+        connections: [
+          { name: 'NextAuth.js v5', desc: 'User authentication and session management' },
+          { name: 'API Routes', desc: 'Fetch dashboard data, shop info, sync status' },
+          { name: 'Hetzner VPS', desc: 'Hosted at https://daromadchi.uz' }
+        ]
+      },
+      'chrome-ext': {
+        name: 'Chrome Extension',
+        status: 'complete',
+        desc: 'Marketplace browser automation tool',
+        tech: ['Manifest v3', 'Service Workers', 'Content Scripts'],
+        purpose: 'Automates repetitive tasks on marketplace websites (price updates, stock management). Communicates with API Routes via CORS-whitelisted cross-origin requests.',
+        connections: [
+          { name: 'API Routes', desc: 'Cross-origin requests for automation tasks' }
+        ]
+      },
+      'nextauth': {
+        name: 'NextAuth.js v5',
+        status: 'complete',
+        desc: 'JWT-based authentication with 30-day session maxAge',
+        tech: ['OAuth 2.0', 'JWT', 'Credentials Provider', 'NextAuth.js v5'],
+        purpose: 'Handles user login via Credentials provider. Validates JWT tokens on protected routes. Manages user sessions with 30-day expiration. Supports future OAuth integrations.',
+        connections: [
+          { name: 'Web App', desc: 'Validates user sessions and protects routes' },
+          { name: 'API Routes', desc: 'Authenticates API requests' }
+        ]
+      },
+      'api-routes': {
+        name: 'API Routes',
+        status: 'complete',
+        desc: 'Next.js API handlers with rate limiting and CORS',
+        tech: ['REST', 'CORS', 'Rate Limiting', 'Rate: 10/min sync, 20/min auth, 100/min other'],
+        purpose: 'Core backend logic for dashboard operations. Handles order syncing, inventory management, analytics queries. Rate-limited per IP to prevent abuse: sync endpoints (10/min), auth endpoints (20/min), other endpoints (100/min).',
+        connections: [
+          { name: 'Web App', desc: 'Serve dashboard data and analytics' },
+          { name: 'Chrome Extension', desc: 'Accept automation requests' },
+          { name: 'Marketplace APIs', desc: 'Sync orders, prices, inventory' },
+          { name: 'PostgreSQL', desc: 'Store and query data' },
+          { name: 'Telegram Bot', desc: 'Send notifications' }
+        ]
+      },
+      'marketplaces': {
+        name: 'Marketplace Integrations',
+        status: 'complete',
+        desc: 'Read-only integrations with Uzum Market, Yandex Market, Wildberries',
+        tech: ['Uzum Market API', 'Yandex Market API', 'Wildberries API'],
+        purpose: 'STRICTLY READ-ONLY. Syncs order data, inventory, and prices from marketplaces. Background jobs keyed per shop, run periodically. NO writes to marketplaces (immutable rule). Fetches stats, offers, stocks, order info.',
+        connections: [
+          { name: 'API Routes', desc: 'Sync requests triggered via cron jobs' },
+          { name: 'PostgreSQL', desc: 'Store sync results and order history' }
+        ]
+      },
+      'postgresql': {
+        name: 'PostgreSQL 16',
+        status: 'complete',
+        desc: 'Primary production database',
+        tech: ['PostgreSQL 16', 'Drizzle ORM', 'Migrations'],
+        purpose: 'Persistent storage for all application data: users, shops, orders, products, sync history, analytics. Uses Drizzle ORM for type-safe queries. Schema migrations tracked in version control.',
+        connections: [
+          { name: 'API Routes', desc: 'Query and store application data' },
+          { name: 'Marketplace APIs', desc: 'Store synced order and inventory data' },
+          { name: 'Hetzner VPS', desc: 'Database runs on production server' }
+        ]
+      },
+      'telegram': {
+        name: 'Telegram Bot',
+        status: 'complete',
+        desc: 'Deployment and operational notifications',
+        tech: ['Telegram Bot API', 'Admin notifications'],
+        purpose: 'Sends CI/CD notifications (deploy success/failure) to admin chat. Integrated in GitHub Actions workflow.',
+        connections: [
+          { name: 'API Routes', desc: 'Receive notification triggers' },
+          { name: 'GitHub', desc: 'CI/CD pipeline notifications' }
+        ]
+      },
+      'resend': {
+        name: 'Resend Email',
+        status: 'in-progress',
+        desc: 'Transactional email service',
+        tech: ['Resend', 'Transactional Emails'],
+        purpose: 'Sends password reset emails. Being integrated for OAuth 2.0 flow and account recovery emails.',
+        connections: [
+          { name: 'API Routes', desc: 'Trigger email sends for password reset' }
+        ]
+      },
+      'github': {
+        name: 'GitHub',
+        status: 'complete',
+        desc: 'Source control and CI/CD automation',
+        tech: ['GitHub', 'GitHub Actions', 'CI/CD'],
+        purpose: 'Central repository for all code. GitHub Actions runs CI/CD pipeline: Lint, TypeScript type check, Build, Health check, Deploy to VPS.',
+        connections: [
+          { name: 'Hetzner VPS', desc: 'Deploy via SSH on push to main branch' }
+        ]
+      },
+      'hetzner': {
+        name: 'Hetzner VPS',
+        status: 'complete',
+        desc: 'Self-hosted production server (65.21.158.239)',
+        tech: ['Ubuntu 24.04', 'Nginx', 'PM2', 'Node.js'],
+        purpose: 'Runs production application. Nginx reverse proxy handles HTTPS. PM2 manages Node.js processes. PostgreSQL 16 database on same server. Domain daromadchi.uz points to this IP.',
+        connections: [
+          { name: 'Web App', desc: 'Serves production dashboard' },
+          { name: 'API Routes', desc: 'Runs backend services' },
+          { name: 'PostgreSQL', desc: 'Local database instance' },
+          { name: 'GitHub', desc: 'Receives deployments via SSH' }
+        ]
+      }
+    };
+
+    const components = document.querySelectorAll('.component');
+    const detailPanel = document.getElementById('detailPanel');
+    const closeBtn = document.getElementById('closeBtn');
+    const svg = document.getElementById('connectionsSvg');
+
+    // Draw connection lines
+    function drawConnections() {
+      const positions = {};
+      components.forEach(comp => {
+        const rect = comp.getBoundingClientRect();
+        const canvasRect = document.getElementById('canvasArea').getBoundingClientRect();
+        const id = comp.getAttribute('data-id');
+        positions[id] = {
+          x: rect.left - canvasRect.left + rect.width / 2,
+          y: rect.top - canvasRect.top + rect.height / 2
+        };
+      });
+
+      // Define connections (from -> to)
+      const connections = [
+        ['web-app', 'nextauth'],
+        ['web-app', 'api-routes'],
+        ['chrome-ext', 'api-routes'],
+        ['nextauth', 'api-routes'],
+        ['api-routes', 'marketplaces'],
+        ['api-routes', 'postgresql'],
+        ['marketplaces', 'postgresql'],
+        ['api-routes', 'telegram'],
+        ['api-routes', 'resend'],
+        ['github', 'hetzner'],
+        ['hetzner', 'postgresql'],
+        ['web-app', 'hetzner']
+      ];
+
+      svg.innerHTML = `
+        <defs>
+          <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" style="stop-color:#0ea5e9;stop-opacity:0.3" />
+            <stop offset="50%" style="stop-color:#06b6d4;stop-opacity:0.8" />
+            <stop offset="100%" style="stop-color:#0ea5e9;stop-opacity:0.3" />
+          </linearGradient>
+        </defs>
+      `;
+
+      connections.forEach((conn, idx) => {
+        const [from, to] = conn;
+        if (positions[from] && positions[to]) {
+          const x1 = positions[from].x;
+          const y1 = positions[from].y;
+          const x2 = positions[to].x;
+          const y2 = positions[to].y;
+
+          // Create curved path
+          const midX = (x1 + x2) / 2;
+          const midY = (y1 + y2) / 2 + 40;
+
+          const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+          path.setAttribute('d', `M ${x1} ${y1} Q ${midX} ${midY} ${x2} ${y2}`);
+          path.setAttribute('class', 'connection-line connection-line-animated');
+          path.style.animationDelay = `${idx * 0.1}s`;
+          svg.appendChild(path);
+
+          // Add flow dot
+          const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+          dot.setAttribute('class', 'flow-dot');
+          dot.setAttribute('cx', x1);
+          dot.setAttribute('cy', y1);
+          dot.style.animationDelay = `${idx * 0.1}s`;
+          svg.appendChild(dot);
+        }
+      });
+    }
+
+    // Show detail panel
+    components.forEach(comp => {
+      comp.addEventListener('click', () => {
+        const id = comp.getAttribute('data-id');
+        const data = componentData[id];
+
+        document.getElementById('detailTitle').textContent = data.name;
+        document.getElementById('detailStatus').className = `detail-status ${data.status}`;
+        document.getElementById('detailStatus').textContent = data.status === 'complete' ? 'Complete' : data.status === 'in-progress' ? 'In Progress' : 'Not Started';
+        document.getElementById('detailDesc').textContent = data.desc;
+
+        const techHtml = data.tech.map(t => `<span class="tech-tag-detail">${t}</span>`).join('');
+        document.getElementById('detailTech').innerHTML = techHtml;
+
+        document.getElementById('detailPurpose').textContent = data.purpose;
+
+        if (data.connections.length > 0) {
+          const connHtml = data.connections.map(c => `
+            <div class="connection-item">
+              <div class="connection-name">→ ${c.name}</div>
+              <div class="connection-desc">${c.desc}</div>
+            </div>
+          `).join('');
+          document.getElementById('detailConnections').innerHTML = connHtml;
+          document.getElementById('connectionsSection').style.display = 'block';
+        } else {
+          document.getElementById('connectionsSection').style.display = 'none';
+        }
+
+        detailPanel.classList.add('active');
+      });
+    });
+
+    closeBtn.addEventListener('click', () => {
+      detailPanel.classList.remove('active');
+    });
+
+    // Close panel on outside click
+    document.addEventListener('click', (e) => {
+      if (!detailPanel.contains(e.target) && !e.target.closest('.component')) {
+        detailPanel.classList.remove('active');
+      }
+    });
+
+    // Initial draw and redraw on resize
+    window.addEventListener('load', drawConnections);
+    window.addEventListener('resize', drawConnections);
+  </script>
 </body>
 </html>
