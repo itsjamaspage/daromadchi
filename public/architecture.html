@@ -1,974 +1,909 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Daromadchi System Architecture</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: linear-gradient(135deg, #0f172a 0%, #1a1f3a 100%);
-      color: #f1f5f9;
-      overflow: hidden;
-      height: 100vh;
-    }
-
-    .main-container {
-      display: flex;
-      height: 100vh;
-    }
-
-    .canvas-area {
-      flex: 1;
-      overflow: auto;
-      display: flex;
-      flex-direction: column;
-      padding: 20px;
-      position: relative;
-    }
-
-    .construction-bar {
-      background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(51, 65, 85, 0.7) 100%);
-      border: 2px solid rgba(14, 165, 233, 0.4);
-      border-radius: 12px;
-      padding: 24px;
-      margin-bottom: 30px;
-      animation: slideDown 0.6s ease-out;
-    }
-
-    .construction-title {
-      font-size: 14px;
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      color: #0ea5e9;
-      font-weight: 700;
-      margin-bottom: 12px;
-    }
-
-    .construction-text {
-      font-size: 13px;
-      line-height: 1.8;
-      color: #cbd5e1;
-      margin-bottom: 16px;
-    }
-
-    .construction-legend {
-      display: flex;
-      gap: 24px;
-      flex-wrap: wrap;
-      font-size: 12px;
-    }
-
-    .legend-item-inline {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      color: #94a3b8;
-    }
-
-    .legend-box {
-      width: 16px;
-      height: 16px;
-      border-radius: 3px;
-      border: 2px solid;
-    }
-
-    .legend-box.client { background: rgba(14, 165, 233, 0.2); border-color: #0ea5e9; }
-    .legend-box.server { background: rgba(6, 182, 212, 0.2); border-color: #06b6d4; }
-    .legend-box.service { background: rgba(99, 102, 241, 0.2); border-color: #6366f1; }
-    .legend-box.external { background: rgba(168, 85, 247, 0.2); border-color: #a855f7; }
-    .legend-box.infrastructure { background: rgba(59, 130, 246, 0.2); border-color: #3b82f6; }
-
-    .header {
-      text-align: center;
-      margin-bottom: 30px;
-      animation: slideDown 0.6s ease-out 0.2s backwards;
-    }
-
-    .title {
-      font-size: 32px;
-      font-weight: 800;
-      letter-spacing: 2px;
-      background: linear-gradient(to right, #0ea5e9, #06b6d4);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      margin-bottom: 8px;
-    }
-
-    .subtitle {
-      color: #94a3b8;
-      font-size: 13px;
-      letter-spacing: 1px;
-    }
-
-    .svg-container {
-      position: relative;
-      width: 100%;
-      height: 500px;
-      margin-bottom: 40px;
-      background: rgba(30, 41, 59, 0.3);
-      border-radius: 12px;
-      border: 1px solid rgba(14, 165, 233, 0.2);
-      overflow: hidden;
-    }
-
-    .svg-connections {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      z-index: 1;
-    }
-
-    .layers-wrapper {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      z-index: 2;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .layers {
-      display: grid;
-      grid-template-columns: repeat(5, 1fr);
-      gap: 30px;
-      padding: 20px;
-      width: 100%;
-    }
-
-    .layer {
-      animation: fadeIn 0.8s ease-out backwards;
-    }
-
-    .layer:nth-child(1) { animation-delay: 0.1s; }
-    .layer:nth-child(2) { animation-delay: 0.2s; }
-    .layer:nth-child(3) { animation-delay: 0.3s; }
-    .layer:nth-child(4) { animation-delay: 0.4s; }
-    .layer:nth-child(5) { animation-delay: 0.5s; }
-
-    .layer-label {
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 1.5px;
-      color: #0ea5e9;
-      font-weight: 700;
-      margin-bottom: 12px;
-    }
-
-    .components {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    .component {
-      background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(51, 65, 85, 0.5) 100%);
-      border: 2px solid rgba(14, 165, 233, 0.3);
-      border-radius: 8px;
-      padding: 16px;
-      cursor: pointer;
-      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-      position: relative;
-      overflow: hidden;
-      animation: popIn 0.6s ease-out backwards;
-      min-height: 100px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-    }
-
-    .component.has-bugs {
-      border-color: #ef4444;
-      box-shadow: inset 0 0 0 1px rgba(239, 68, 68, 0.3);
-    }
-
-    .component:nth-child(1) { animation-delay: 0.2s; }
-    .component:nth-child(2) { animation-delay: 0.3s; }
-    .component:nth-child(3) { animation-delay: 0.4s; }
-
-    .component::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(45deg, transparent 30%, rgba(14, 165, 233, 0.1) 50%, transparent 70%);
-      transform: translateX(-100%);
-      transition: transform 0.6s;
-    }
-
-    .component:hover::before {
-      transform: translateX(100%);
-    }
-
-    .component:hover {
-      border-color: #0ea5e9;
-      background: linear-gradient(135deg, rgba(14, 165, 233, 0.25) 0%, rgba(51, 65, 85, 0.9) 100%);
-      box-shadow: 0 0 40px rgba(14, 165, 233, 0.4), 0 8px 32px rgba(0, 0, 0, 0.5);
-      transform: translateY(-8px) scale(1.05);
-    }
-
-    .component-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 8px;
-      margin-bottom: 12px;
-      position: relative;
-      z-index: 1;
-    }
-
-    .component-name {
-      font-size: 14px;
-      font-weight: 700;
-      font-family: ui-monospace, monospace;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      color: #0ea5e9;
-    }
-
-    .component-status {
-      display: inline-block;
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      animation: pulse 2s ease-in-out infinite;
-    }
-
-    .component-status.complete { background: #10b981; box-shadow: 0 0 8px rgba(16, 185, 129, 0.6); }
-    .component-status.in-progress { background: #f59e0b; animation: pulse 1.5s ease-in-out infinite; }
-    .component-status.bug { background: #ef4444; box-shadow: 0 0 8px rgba(239, 68, 68, 0.8); }
-
-    .bug-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      padding: 2px 8px;
-      background: rgba(239, 68, 68, 0.2);
-      border: 1px solid #ef4444;
-      border-radius: 4px;
-      font-size: 10px;
-      font-weight: 700;
-      color: #ef4444;
-      text-transform: uppercase;
-      position: relative;
-      z-index: 1;
-    }
-
-    .component-desc {
-      font-size: 11px;
-      color: #cbd5e1;
-      line-height: 1.5;
-      position: relative;
-      z-index: 1;
-    }
-
-    .tech-stack {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 4px;
-      margin-top: 8px;
-      position: relative;
-      z-index: 1;
-    }
-
-    .tech-tag {
-      padding: 2px 6px;
-      background: rgba(14, 165, 233, 0.15);
-      border: 1px solid rgba(14, 165, 233, 0.3);
-      border-radius: 3px;
-      font-size: 9px;
-      color: #0ea5e9;
-      font-family: ui-monospace, monospace;
-    }
-
-    .detail-panel {
-      position: fixed;
-      right: -450px;
-      top: 0;
-      width: 450px;
-      height: 100vh;
-      background: rgba(15, 23, 42, 0.98);
-      border-left: 2px solid rgba(14, 165, 233, 0.5);
-      overflow-y: auto;
-      transition: right 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-      backdrop-filter: blur(10px);
-      z-index: 10000;
-      box-shadow: -20px 0 60px rgba(0, 0, 0, 0.8);
-    }
-
-    .detail-panel.active {
-      right: 0;
-    }
-
-    .detail-header {
-      padding: 30px 24px;
-      border-bottom: 2px solid rgba(14, 165, 233, 0.3);
-      background: linear-gradient(135deg, rgba(14, 165, 233, 0.15) 0%, rgba(51, 65, 85, 0.3) 100%);
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 16px;
-    }
-
-    .detail-title-section {
-      flex: 1;
-    }
-
-    .detail-title {
-      font-size: 22px;
-      font-weight: 800;
-      font-family: ui-monospace, monospace;
-      color: #0ea5e9;
-      margin-bottom: 8px;
-    }
-
-    .detail-status {
-      display: inline-block;
-      padding: 6px 12px;
-      border-radius: 6px;
-      font-size: 10px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
-
-    .detail-status.complete { background: rgba(16, 185, 129, 0.2); color: #10b981; }
-    .detail-status.in-progress { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
-    .detail-status.bug { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
-
-    .close-btn {
-      background: none;
-      border: none;
-      color: #64748b;
-      font-size: 28px;
-      cursor: pointer;
-      padding: 0;
-      width: 32px;
-      height: 32px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.3s;
-      border-radius: 6px;
-      flex-shrink: 0;
-    }
-
-    .close-btn:hover {
-      color: #f1f5f9;
-      background: rgba(14, 165, 233, 0.2);
-    }
-
-    .detail-content {
-      padding: 24px;
-    }
-
-    .detail-section {
-      margin-bottom: 24px;
-    }
-
-    .detail-label {
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 1.5px;
-      color: #0ea5e9;
-      margin-bottom: 12px;
-      font-weight: 700;
-    }
-
-    .detail-value {
-      font-size: 13px;
-      line-height: 1.6;
-      color: #cbd5e1;
-    }
-
-    .bug-item {
-      background: rgba(239, 68, 68, 0.1);
-      border-left: 3px solid #ef4444;
-      padding: 12px;
-      border-radius: 4px;
-      margin-bottom: 12px;
-      font-size: 12px;
-    }
-
-    .bug-priority {
-      display: inline-block;
-      padding: 2px 8px;
-      background: #ef4444;
-      color: white;
-      border-radius: 3px;
-      font-size: 10px;
-      font-weight: 700;
-      margin-bottom: 8px;
-    }
-
-    .bug-priority.high { background: #ef4444; }
-    .bug-priority.medium { background: #f59e0b; }
-
-    .bug-description {
-      color: #cbd5e1;
-      margin-top: 8px;
-    }
-
-    .bug-reference {
-      font-size: 11px;
-      color: #94a3b8;
-      font-family: ui-monospace, monospace;
-      margin-top: 8px;
-      padding-top: 8px;
-      border-top: 1px solid rgba(14, 165, 233, 0.2);
-    }
-
-    .fix-item {
-      background: rgba(16, 185, 129, 0.1);
-      border-left: 3px solid #10b981;
-      padding: 12px;
-      border-radius: 4px;
-      margin-bottom: 12px;
-      font-size: 12px;
-    }
-
-    .fix-title {
-      color: #10b981;
-      font-weight: 700;
-      margin-bottom: 8px;
-    }
-
-    .fix-description {
-      color: #cbd5e1;
-    }
-
-    .connection-item {
-      background: rgba(6, 182, 212, 0.1);
-      padding: 12px;
-      border-left: 3px solid #06b6d4;
-      border-radius: 4px;
-      margin-bottom: 12px;
-      font-size: 12px;
-    }
-
-    .connection-name {
-      color: #06b6d4;
-      font-weight: 700;
-      margin-bottom: 4px;
-    }
-
-    .connection-desc {
-      color: #cbd5e1;
-      font-size: 11px;
-    }
-
-    @keyframes slideDown {
-      from { opacity: 0; transform: translateY(-20px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
-
-    @keyframes popIn {
-      from { opacity: 0; transform: scale(0.8); }
-      to { opacity: 1; transform: scale(1); }
-    }
-
-    @keyframes pulse {
-      0%, 100% { box-shadow: 0 0 8px currentColor; }
-      50% { box-shadow: 0 0 16px currentColor; }
-    }
-
-    @keyframes animateStroke {
-      to { stroke-dashoffset: 0; }
-    }
-
-    .connection-line {
-      stroke: #06b6d4;
-      stroke-width: 2;
-      fill: none;
-      filter: drop-shadow(0 0 2px rgba(6, 182, 212, 0.4));
-    }
-
-    .connection-line-animated {
-      stroke-dasharray: 8, 4;
-      animation: animateStroke 1.5s linear infinite;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daromadchi Architecture</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-tertiary: #334155;
+            --text-primary: #f1f5f9;
+            --text-secondary: #cbd5e1;
+            --border-color: #475569;
+            --accent-blue: #3b82f6;
+            --accent-blue-light: #93c5fd;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --hover-bg: #1e293b;
+        }
+
+        [data-theme="light"] {
+            --bg-primary: #f8fafc;
+            --bg-secondary: #f1f5f9;
+            --bg-tertiary: #e2e8f0;
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --border-color: #cbd5e1;
+            --accent-blue: #2563eb;
+            --accent-blue-light: #bfdbfe;
+            --hover-bg: #e2e8f0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        /* Navigation Bar */
+        .navbar {
+            background-color: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+            flex-wrap: wrap;
+            min-height: 70px;
+        }
+
+        .navbar-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            letter-spacing: 0.05em;
+            color: var(--accent-blue);
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 200px;
+            padding: 0.5rem 1rem;
+            background-color: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 0.375rem;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+        }
+
+        .search-box::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .navbar-controls {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 0.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: 0.375rem;
+            padding: 0.25rem;
+            background-color: var(--bg-tertiary);
+        }
+
+        .btn {
+            padding: 0.375rem 0.875rem;
+            border: none;
+            background-color: transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 0.75rem;
+            border-radius: 0.25rem;
+            transition: all 0.2s;
+        }
+
+        .btn:hover {
+            background-color: var(--hover-bg);
+            color: var(--text-primary);
+        }
+
+        .btn.active {
+            background-color: var(--accent-blue);
+            color: white;
+        }
+
+        .theme-toggle {
+            background-color: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            padding: 0.375rem 0.875rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+        }
+
+        .theme-toggle:hover {
+            background-color: var(--hover-bg);
+            color: var(--text-primary);
+        }
+
+        /* Main Content */
+        .main-content {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* Sidebar Left */
+        .sidebar-left {
+            width: 250px;
+            background-color: var(--bg-secondary);
+            border-right: 1px solid var(--border-color);
+            padding: 1.5rem;
+            overflow-y: auto;
+            font-size: 0.875rem;
+        }
+
+        .legend-section {
+            margin-bottom: 2rem;
+        }
+
+        .legend-title {
+            font-weight: bold;
+            margin-bottom: 0.75rem;
+            color: var(--text-primary);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-secondary);
+        }
+
+        .legend-dot {
+            width: 0.75rem;
+            height: 0.75rem;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .stats-section {
+            margin-bottom: 2rem;
+            padding: 1rem;
+            background-color: var(--bg-tertiary);
+            border-radius: 0.375rem;
+            border: 1px solid var(--border-color);
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            color: var(--text-secondary);
+        }
+
+        .stat-value {
+            color: var(--accent-blue);
+            font-weight: bold;
+        }
+
+        .component-links {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .component-link {
+            padding: 0.5rem;
+            background-color: var(--bg-tertiary);
+            border-left: 2px solid transparent;
+            cursor: pointer;
+            border-radius: 0.25rem;
+            transition: all 0.2s;
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+        }
+
+        .component-link:hover {
+            background-color: var(--hover-bg);
+            border-left-color: var(--accent-blue);
+            color: var(--text-primary);
+        }
+
+        /* Canvas */
+        .canvas {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            background-color: var(--bg-primary);
+        }
+
+        svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .component-box {
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .component-box:hover rect {
+            filter: drop-shadow(0 0 10px rgba(59, 130, 246, 0.5));
+        }
+
+        .component-box.highlight rect {
+            filter: drop-shadow(0 0 15px rgba(59, 130, 246, 0.8));
+            stroke-width: 3;
+        }
+
+        .component-box.connected rect {
+            opacity: 0.6;
+        }
+
+        .component-box.dimmed rect,
+        .component-box.dimmed text {
+            opacity: 0.3;
+        }
+
+        /* Sidebar Right */
+        .sidebar-right {
+            width: 320px;
+            background-color: var(--bg-secondary);
+            border-left: 1px solid var(--border-color);
+            padding: 1.5rem;
+            overflow-y: auto;
+            display: none;
+            flex-direction: column;
+        }
+
+        .sidebar-right.active {
+            display: flex;
+        }
+
+        .detail-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 1rem;
+        }
+
+        .detail-title {
+            font-weight: bold;
+            font-size: 1.125rem;
+            color: var(--text-primary);
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 1.5rem;
+            transition: color 0.2s;
+        }
+
+        .close-btn:hover {
+            color: var(--text-primary);
+        }
+
+        .detail-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .detail-label {
+            font-weight: bold;
+            color: var(--accent-blue);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+        }
+
+        .detail-content {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            line-height: 1.5;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            margin-top: 0.5rem;
+        }
+
+        .status-complete {
+            background-color: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+            border: 1px solid #10b981;
+        }
+
+        .status-progress {
+            background-color: rgba(245, 158, 11, 0.2);
+            color: #f59e0b;
+            border: 1px solid #f59e0b;
+        }
+
+        .status-not-started {
+            background-color: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            border: 1px solid #ef4444;
+        }
+
+        .tech-stack {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .tech-tag {
+            background-color: var(--bg-tertiary);
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            border: 1px solid var(--border-color);
+            font-size: 0.7rem;
+            font-family: "Courier New", monospace;
+            color: var(--accent-blue);
+        }
+
+        .connection-item {
+            background-color: var(--bg-tertiary);
+            padding: 0.5rem;
+            border-radius: 0.25rem;
+            border-left: 2px solid var(--accent-blue);
+            margin-bottom: 0.5rem;
+            font-size: 0.8rem;
+        }
+
+        .connection-type {
+            color: var(--accent-blue);
+            font-weight: bold;
+            font-size: 0.7rem;
+        }
+
+        .connection-desc {
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+
+        .issue-item {
+            background-color: rgba(239, 68, 68, 0.1);
+            padding: 0.5rem;
+            border-radius: 0.25rem;
+            border-left: 2px solid #ef4444;
+            margin-bottom: 0.5rem;
+            font-size: 0.8rem;
+        }
+
+        .step-item {
+            background-color: rgba(59, 130, 246, 0.1);
+            padding: 0.5rem;
+            border-radius: 0.25rem;
+            border-left: 2px solid var(--accent-blue);
+            margin-bottom: 0.5rem;
+            font-size: 0.8rem;
+        }
+
+        .sidebar-left::-webkit-scrollbar,
+        .sidebar-right::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .sidebar-left::-webkit-scrollbar-track,
+        .sidebar-right::-webkit-scrollbar-track {
+            background-color: var(--bg-secondary);
+        }
+
+        .sidebar-left::-webkit-scrollbar-thumb,
+        .sidebar-right::-webkit-scrollbar-thumb {
+            background-color: var(--border-color);
+            border-radius: 3px;
+        }
+
+        .sidebar-left::-webkit-scrollbar-thumb:hover,
+        .sidebar-right::-webkit-scrollbar-thumb:hover {
+            background-color: var(--accent-blue);
+        }
+    </style>
 </head>
 <body>
-  <div class="main-container">
-    <div class="canvas-area" id="canvasArea">
-      <div class="construction-bar">
-        <div class="construction-title">🏗️ How It Works</div>
-        <div class="construction-text">
-          Daromadchi is a multi-marketplace seller dashboard that syncs orders, inventory, and prices across Uzum Market, Yandex Market, and Wildberries.
-          The Web App provides sellers with real-time analytics and management tools, while the Chrome Extension automates price/stock updates.
-          All data flows through our API Routes to a PostgreSQL database, with read-only marketplace integrations (NO writes allowed).
-          Authentication via NextAuth.js v5 with JWT tokens. Self-hosted on Hetzner VPS with Nginx reverse proxy.
+    <div class="container">
+        <div class="navbar">
+            <div class="navbar-title">DAROMADCHI / ARCHITECTURE</div>
+            <input type="text" class="search-box" id="searchBox" placeholder="Search components...">
+            <div class="navbar-controls">
+                <div class="btn-group" id="statusFilter">
+                    <button class="btn active" data-filter="all">All</button>
+                    <button class="btn" data-filter="complete">Complete ✓</button>
+                    <button class="btn" data-filter="progress">In Progress ⏳</button>
+                    <button class="btn" data-filter="not-started">Not Started</button>
+                </div>
+                <div class="btn-group" id="layerFilter">
+                    <button class="btn active" data-layer="all">All Layers</button>
+                    <button class="btn" data-layer="frontend">Frontend</button>
+                    <button class="btn" data-layer="backend">Backend</button>
+                    <button class="btn" data-layer="database">Database</button>
+                    <button class="btn" data-layer="external">External</button>
+                    <button class="btn" data-layer="infra">Infra</button>
+                </div>
+                <button class="theme-toggle" id="themeToggle">🌙 Dark</button>
+            </div>
         </div>
-        <div class="construction-legend">
-          <div class="legend-item-inline">
-            <div class="legend-box client"></div>
-            <span>Client (UI on your browser)</span>
-          </div>
-          <div class="legend-item-inline">
-            <div class="legend-box server"></div>
-            <span>Server (runs the actual logic)</span>
-          </div>
-          <div class="legend-item-inline">
-            <div class="legend-box service"></div>
-            <span>Service (business functions)</span>
-          </div>
-          <div class="legend-item-inline">
-            <div class="legend-box external"></div>
-            <span>External (outside APIs)</span>
-          </div>
-          <div class="legend-item-inline">
-            <div class="legend-box infrastructure"></div>
-            <span>Infrastructure (deployment)</span>
-          </div>
+
+        <div class="main-content">
+            <div class="sidebar-left">
+                <div class="legend-section">
+                    <div class="legend-title">Status Legend</div>
+                    <div class="legend-item">
+                        <div class="legend-dot" style="background-color: #10b981;"></div>
+                        <span>Complete</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot" style="background-color: #f59e0b;"></div>
+                        <span>In Progress</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot" style="background-color: #ef4444;"></div>
+                        <span>Not Started</span>
+                    </div>
+                </div>
+
+                <div class="stats-section">
+                    <div class="legend-title">System Stats</div>
+                    <div class="stat-item">
+                        <span>Components</span>
+                        <span class="stat-value">12</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Connections</span>
+                        <span class="stat-value">28</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Layers</span>
+                        <span class="stat-value">5</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Active Phase</span>
+                        <span class="stat-value">3</span>
+                    </div>
+                </div>
+
+                <div class="legend-section">
+                    <div class="legend-title">Components</div>
+                    <div class="component-links" id="componentLinks"></div>
+                </div>
+            </div>
+
+            <div class="canvas">
+                <svg id="diagramSvg" viewBox="0 0 1600 900"></svg>
+            </div>
+
+            <div class="sidebar-right" id="detailsPanel">
+                <div class="detail-header">
+                    <div class="detail-title" id="detailTitle"></div>
+                    <button class="close-btn" onclick="closeDetails()">✕</button>
+                </div>
+                <div id="detailsContent"></div>
+            </div>
         </div>
-      </div>
-
-      <div class="header">
-        <div class="title">SYSTEM ARCHITECTURE</div>
-        <div class="subtitle">Click any component to see details, bugs, and planned fixes</div>
-      </div>
-
-      <div class="svg-container">
-        <svg class="svg-connections" id="connectionsSvg"></svg>
-
-        <div class="layers-wrapper">
-          <div class="layers" id="layersContainer">
-            <!-- Layers will be generated by JavaScript -->
-          </div>
-        </div>
-      </div>
     </div>
 
-    <!-- Detail Panel -->
-    <div class="detail-panel" id="detailPanel">
-      <div class="detail-header">
-        <div class="detail-title-section">
-          <div class="detail-title" id="detailTitle">Component</div>
-          <div class="detail-status complete" id="detailStatus">Complete</div>
-        </div>
-        <button class="close-btn" id="closeBtn">&times;</button>
-      </div>
-      <div class="detail-content">
-        <div class="detail-section">
-          <div class="detail-label">Description</div>
-          <div class="detail-value" id="detailDesc"></div>
-        </div>
+    <script>
+        const components = [
+            {
+                id: "web-app",
+                name: "Web App",
+                layer: "frontend",
+                status: "complete",
+                x: 100, y: 100,
+                description: "Next.js 14 web application for seller dashboard",
+                tech: ["Next.js 14", "React", "TypeScript", "Tailwind CSS"],
+                connections: [
+                    { target: "nextauth", type: "auth", desc: "User authentication" },
+                    { target: "api-routes", type: "data", desc: "Fetch products & orders" }
+                ],
+                issues: [],
+                nextSteps: ["Improve performance metrics", "Add real-time updates"]
+            },
+            {
+                id: "chrome-ext",
+                name: "Chrome Extension",
+                layer: "frontend",
+                status: "complete",
+                x: 100, y: 280,
+                description: "Browser extension for margin calculation on marketplace pages",
+                tech: ["Manifest V3", "JavaScript", "React"],
+                connections: [
+                    { target: "api-routes", type: "data", desc: "Send/receive data" }
+                ],
+                issues: [],
+                nextSteps: ["Add Ozon support", "Improve algorithms"]
+            },
+            {
+                id: "nextauth",
+                name: "NextAuth.js v5",
+                layer: "backend",
+                status: "complete",
+                x: 400, y: 100,
+                description: "JWT-based authentication with 30-day sessions",
+                tech: ["NextAuth.js v5", "JWT", "PostgreSQL"],
+                connections: [
+                    { target: "web-app", type: "auth", desc: "Authenticate user" },
+                    { target: "api-routes", type: "middleware", desc: "Protect routes" },
+                    { target: "postgres", type: "storage", desc: "Store sessions" }
+                ],
+                issues: [],
+                nextSteps: ["Add OAuth providers", "Implement 2FA"]
+            },
+            {
+                id: "api-routes",
+                name: "API Routes",
+                layer: "backend",
+                status: "complete",
+                x: 400, y: 280,
+                description: "Next.js API endpoints for all backend operations",
+                tech: ["Node.js", "Next.js API Routes", "TypeScript"],
+                connections: [
+                    { target: "web-app", type: "serve", desc: "API responses" },
+                    { target: "chrome-ext", type: "serve", desc: "Extension data" },
+                    { target: "postgres", type: "storage", desc: "CRUD operations" },
+                    { target: "uzum", type: "fetch", desc: "Market data" },
+                    { target: "wildberries", type: "fetch", desc: "Sales data" },
+                    { target: "yandex", type: "fetch", desc: "Stock data" },
+                    { target: "resend", type: "send", desc: "Send emails" }
+                ],
+                issues: ["Rate limiting on marketplace APIs"],
+                nextSteps: ["Add GraphQL layer", "Implement caching"]
+            },
+            {
+                id: "telegram-bot",
+                name: "Telegram Bot",
+                layer: "backend",
+                status: "complete",
+                x: 400, y: 460,
+                description: "Push notifications and alerts via Telegram",
+                tech: ["Node.js", "Telegram API", "Cron jobs"],
+                connections: [
+                    { target: "api-routes", type: "trigger", desc: "Alert signals" }
+                ],
+                issues: [],
+                nextSteps: ["Add slash commands", "Message templates"]
+            },
+            {
+                id: "postgres",
+                name: "PostgreSQL 16",
+                layer: "database",
+                status: "complete",
+                x: 400, y: 640,
+                description: "Primary data store for users, orders, products, metrics",
+                tech: ["PostgreSQL 16", "Drizzle ORM", "pg library"],
+                connections: [
+                    { target: "api-routes", type: "storage", desc: "Read/write data" },
+                    { target: "nextauth", type: "storage", desc: "Session storage" }
+                ],
+                issues: [],
+                nextSteps: ["Add read replicas", "Implement partitioning"]
+            },
+            {
+                id: "uzum",
+                name: "Uzum Market API",
+                layer: "external",
+                status: "complete",
+                x: 800, y: 100,
+                description: "Read-only API for Uzum marketplace data",
+                tech: ["REST API", "OAuth", "Marketplace"],
+                connections: [
+                    { target: "api-routes", type: "fetch", desc: "Sales & inventory" }
+                ],
+                issues: ["API rate limits (10 req/min)"],
+                nextSteps: ["Migrate to Uzum API v2", "Add webhook support"]
+            },
+            {
+                id: "wildberries",
+                name: "Wildberries API",
+                layer: "external",
+                status: "complete",
+                x: 800, y: 260,
+                description: "Read-only API for Wildberries sales data",
+                tech: ["REST API", "Token auth", "Marketplace"],
+                connections: [
+                    { target: "api-routes", type: "fetch", desc: "Orders & analytics" }
+                ],
+                issues: ["Complex pricing structure"],
+                nextSteps: ["Add FBW/FBS caching", "Price history"]
+            },
+            {
+                id: "yandex",
+                name: "Yandex Market API",
+                layer: "external",
+                status: "complete",
+                x: 800, y: 420,
+                description: "Read-only API for Yandex Market data",
+                tech: ["REST API", "OAuth", "Marketplace"],
+                connections: [
+                    { target: "api-routes", type: "fetch", desc: "Sales & stock" }
+                ],
+                issues: ["Occasional API instability"],
+                nextSteps: ["Add fallback caching", "Retry logic"]
+            },
+            {
+                id: "resend",
+                name: "Resend (Email)",
+                layer: "external",
+                status: "progress",
+                x: 800, y: 580,
+                description: "Email service for notifications and reports",
+                tech: ["Resend API", "Email templates"],
+                connections: [
+                    { target: "api-routes", type: "send", desc: "Send emails" }
+                ],
+                issues: ["Email templates need refinement"],
+                nextSteps: ["Implement scheduled reports", "Add analytics"]
+            },
+            {
+                id: "hetzner",
+                name: "Hetzner VPS",
+                layer: "infra",
+                status: "complete",
+                x: 1200, y: 350,
+                description: "Self-hosted infrastructure running all services",
+                tech: ["Ubuntu 22.04", "Docker", "systemd"],
+                connections: [
+                    { target: "github", type: "deploy", desc: "CI/CD from GitHub" }
+                ],
+                issues: ["Monitor CPU/memory usage"],
+                nextSteps: ["Upgrade instance size", "Add load balancer"]
+            },
+            {
+                id: "github",
+                name: "GitHub",
+                layer: "infra",
+                status: "complete",
+                x: 1200, y: 550,
+                description: "Version control and CI/CD pipeline",
+                tech: ["Git", "GitHub Actions", "Docker"],
+                connections: [
+                    { target: "hetzner", type: "deploy", desc: "Deploy on push" }
+                ],
+                issues: [],
+                nextSteps: ["Add security scanning", "Automated testing"]
+            }
+        ];
 
-        <div class="detail-section" id="bugsSection" style="display: none;">
-          <div class="detail-label" style="color: #ef4444;">🐛 Known Bugs</div>
-          <div id="detailBugs"></div>
-        </div>
+        let currentTheme = localStorage.getItem("theme") || "dark";
+        let selectedComponent = null;
+        let currentStatusFilter = "all";
+        let currentLayerFilter = "all";
+        let searchQuery = "";
 
-        <div class="detail-section" id="fixesSection" style="display: none;">
-          <div class="detail-label" style="color: #10b981;">✅ Planned Fixes</div>
-          <div id="detailFixes"></div>
-        </div>
+        document.addEventListener("DOMContentLoaded", () => {
+            setTheme(currentTheme);
+            renderDiagram();
+            populateComponentLinks();
+            setupEventListeners();
+        });
 
-        <div class="detail-section">
-          <div class="detail-label">Technology Stack</div>
-          <div style="display: flex; flex-wrap: wrap; gap: 8px;" id="detailTech"></div>
-        </div>
-
-        <div class="detail-section">
-          <div class="detail-label">Purpose & Details</div>
-          <div class="detail-value" id="detailPurpose"></div>
-        </div>
-
-        <div class="detail-section" id="connectionsSection" style="display: none;">
-          <div class="detail-label">Connected To</div>
-          <div id="detailConnections"></div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <script>
-    const componentData = {
-      'web-app': {
-        name: 'Web App',
-        status: 'complete',
-        desc: 'Next.js 14 dashboard (daromadchi.uz)',
-        tech: ['React 18', 'Next.js 14', 'TypeScript', 'Tailwind CSS', 'Multi-language'],
-        purpose: 'Main user interface for sellers. Real-time KPI dashboard showing revenue, orders, profit by marketplace. Language switcher (RU/UZ/EN). Shop management, order history, analytics.',
-        bugs: [],
-        fixes: [],
-        connections: [
-          { name: 'NextAuth.js v5', desc: 'User authentication and session validation' },
-          { name: 'API Routes', desc: 'Fetch dashboard metrics and shop data' }
-        ]
-      },
-      'chrome-ext': {
-        name: 'Chrome Extension',
-        status: 'complete',
-        desc: 'Marketplace browser automation',
-        tech: ['Manifest v3', 'Service Workers', 'Content Scripts'],
-        purpose: 'Automates repetitive tasks: price updates, stock changes, listing management. Communicates with API via CORS-whitelisted cross-origin requests.',
-        bugs: [],
-        fixes: [],
-        connections: [
-          { name: 'API Routes', desc: 'Cross-origin automation requests' }
-        ]
-      },
-      'nextauth': {
-        name: 'NextAuth.js v5',
-        status: 'complete',
-        desc: 'JWT session (30-day maxAge)',
-        tech: ['OAuth 2.0', 'JWT', 'Credentials', 'NextAuth v5'],
-        purpose: 'Authenticates users via Credentials provider. 30-day JWT token expiration. Protects dashboard routes. Validates API requests.',
-        bugs: [],
-        fixes: [],
-        connections: [
-          { name: 'Web App', desc: 'Validates user sessions' },
-          { name: 'API Routes', desc: 'Authenticates backend requests' }
-        ]
-      },
-      'api-routes': {
-        name: 'API Routes',
-        status: 'complete',
-        desc: 'Rate-limited REST endpoints',
-        tech: ['REST', 'CORS', 'Rate Limiting', '10/20/100 per minute'],
-        purpose: 'Core backend: handles sync requests, dashboard queries, marketplace integration. Rate limits: sync=10/min, auth=20/min, other=100/min per IP.',
-        bugs: [
-          { priority: 'high', ref: 'REF #1', desc: 'CORS preflight sometimes hangs on slow networks, causing 4s timeout on extension requests' },
-          { priority: 'medium', ref: 'REF #2', desc: 'Rate limit counter resets on restart, losing request history for that period' }
-        ],
-        fixes: [
-          { title: 'Add request timeout safeguards', desc: 'Wrap CORS preflight in Promise.race with 2s timeout to prevent hanging' },
-          { title: 'Persistent rate limit store', desc: 'Move rate limit tracking to Redis instead of in-memory Map to survive restarts' }
-        ],
-        connections: [
-          { name: 'Web App', desc: 'Dashboard data queries' },
-          { name: 'Chrome Extension', desc: 'Automation requests' },
-          { name: 'Marketplace APIs', desc: 'Sync orders/prices' },
-          { name: 'PostgreSQL', desc: 'Store/retrieve data' }
-        ]
-      },
-      'marketplaces': {
-        name: 'Marketplace APIs',
-        status: 'complete',
-        desc: 'Uzum, Yandex, Wildberries',
-        tech: ['REST APIs', 'Read-Only', 'Cron Jobs', 'Background Sync'],
-        purpose: 'STRICTLY READ-ONLY integrations. Background jobs sync orders, inventory, and prices. NO writes to marketplaces (immutable rule enforced).',
-        bugs: [],
-        fixes: [
-          { title: 'Add retry logic with exponential backoff', desc: 'Currently fails silently if marketplace API timeouts. Add 3 retries with increasing delays.' }
-        ],
-        connections: [
-          { name: 'API Routes', desc: 'Triggered by sync endpoints' },
-          { name: 'PostgreSQL', desc: 'Store synced data' }
-        ]
-      },
-      'postgresql': {
-        name: 'PostgreSQL 16',
-        status: 'complete',
-        desc: 'Production database',
-        tech: ['PostgreSQL 16', 'Drizzle ORM', 'Migrations', 'Indexes'],
-        purpose: 'Persistent storage: users, shops, orders, products, sync history, analytics. Uses Drizzle ORM for type-safe queries. Schema versioned.',
-        bugs: [],
-        fixes: [],
-        connections: [
-          { name: 'API Routes', desc: 'Query and write data' },
-          { name: 'Marketplace APIs', desc: 'Store sync results' }
-        ]
-      },
-      'telegram': {
-        name: 'Telegram Bot',
-        status: 'complete',
-        desc: 'Deployment notifications',
-        tech: ['Bot API', 'Webhooks'],
-        purpose: 'Sends CI/CD notifications (deploy success/failure) to admin chat. Integrated in GitHub Actions.',
-        bugs: [],
-        fixes: [],
-        connections: [
-          { name: 'GitHub Actions', desc: 'Receive workflow completion events' }
-        ]
-      },
-      'resend': {
-        name: 'Resend Email',
-        status: 'in-progress',
-        desc: 'Password reset emails',
-        tech: ['Resend API', 'Transactional'],
-        purpose: 'Sends password recovery emails. Currently in-progress for full OAuth 2.0 integration.',
-        bugs: [
-          { priority: 'medium', ref: 'REF #3', desc: 'Email template not rendering images on mobile. Links work but images show as broken.' }
-        ],
-        fixes: [
-          { title: 'Fix responsive email template', desc: 'Switch to fluid email format with max-width media queries for mobile compatibility' },
-          { title: 'Add email tracking', desc: 'Implement open/click tracking to monitor password reset flow completion rates' }
-        ],
-        connections: [
-          { name: 'API Routes', desc: 'Trigger password reset emails' }
-        ]
-      },
-      'github': {
-        name: 'GitHub',
-        status: 'complete',
-        desc: 'Source control & CI/CD',
-        tech: ['GitHub', 'Actions', 'Workflows'],
-        purpose: 'Central repository. CI/CD pipeline: Lint → TypeCheck → Build → HealthCheck → Deploy. Automatic on push to main.',
-        bugs: [],
-        fixes: [],
-        connections: [
-          { name: 'Hetzner VPS', desc: 'Deploy via SSH on successful CI' }
-        ]
-      },
-      'hetzner': {
-        name: 'Hetzner VPS',
-        status: 'complete',
-        desc: 'Self-hosted (65.21.158.239)',
-        tech: ['Ubuntu 24.04', 'Nginx', 'PM2', 'Node.js'],
-        purpose: 'Production server running Next.js app, PostgreSQL database, Nginx reverse proxy. Handles daromadchi.uz domain.',
-        bugs: [],
-        fixes: [],
-        connections: [
-          { name: 'Web App', desc: 'Serves production dashboard' },
-          { name: 'API Routes', desc: 'Runs backend services' },
-          { name: 'PostgreSQL', desc: 'Local database' }
-        ]
-      }
-    };
-
-    const layerConfig = [
-      { label: '🖥️ Client', color: 'client', components: ['web-app', 'chrome-ext'] },
-      { label: '🔐 Auth', color: 'server', components: ['nextauth'] },
-      { label: '⚙️ Backend', color: 'service', components: ['api-routes', 'marketplaces'] },
-      { label: '💾 Data', color: 'service', components: ['postgresql'] },
-      { label: '🌐 External', color: 'external', components: ['telegram', 'resend', 'github', 'hetzner'] }
-    ];
-
-    const layersContainer = document.getElementById('layersContainer');
-
-    // Generate layers HTML
-    layerConfig.forEach(layer => {
-      const layerDiv = document.createElement('div');
-      layerDiv.className = 'layer';
-
-      let componentsHtml = '<div class="layer-label">' + layer.label + '</div><div class="components">';
-
-      layer.components.forEach(compId => {
-        const data = componentData[compId];
-        const bugCount = data.bugs.length;
-        const hasBugs = bugCount > 0 ? ' has-bugs' : '';
-
-        componentsHtml += `
-          <div class="component${hasBugs}" data-id="${compId}" style="border-color: var(--${layer.color}-color, rgba(14, 165, 233, 0.3))">
-            <div class="component-header">
-              <div class="component-name">
-                <span class="component-status ${data.status === 'bug' ? 'bug' : data.status}"></span>
-                ${data.name}
-              </div>
-              ${bugCount > 0 ? `<div class="bug-badge">🐛 ${bugCount}</div>` : ''}
-            </div>
-            <div class="component-desc">${data.desc}</div>
-          </div>
-        `;
-      });
-
-      componentsHtml += '</div>';
-      layerDiv.innerHTML = componentsHtml;
-      layersContainer.appendChild(layerDiv);
-    });
-
-    const components = document.querySelectorAll('.component');
-    const detailPanel = document.getElementById('detailPanel');
-    const closeBtn = document.getElementById('closeBtn');
-    const svg = document.getElementById('connectionsSvg');
-
-    // Draw connection lines with proper anchoring
-    function drawConnections() {
-      const positions = {};
-      const boxes = {};
-
-      components.forEach(comp => {
-        const rect = comp.getBoundingClientRect();
-        const containerRect = document.getElementById('layersContainer').getBoundingClientRect();
-        const svgRect = svg.parentElement.getBoundingClientRect();
-
-        const id = comp.getAttribute('data-id');
-        const relX = rect.left - svgRect.left;
-        const relY = rect.top - svgRect.top;
-
-        positions[id] = {
-          x: relX + rect.width / 2,
-          y: relY + rect.height / 2
-        };
-
-        boxes[id] = {
-          left: relX,
-          top: relY,
-          right: relX + rect.width,
-          bottom: relY + rect.height,
-          width: rect.width,
-          height: rect.height
-        };
-      });
-
-      const connections = [
-        ['web-app', 'nextauth'],
-        ['web-app', 'api-routes'],
-        ['chrome-ext', 'api-routes'],
-        ['nextauth', 'api-routes'],
-        ['api-routes', 'marketplaces'],
-        ['api-routes', 'postgresql'],
-        ['marketplaces', 'postgresql'],
-        ['api-routes', 'telegram'],
-        ['api-routes', 'resend'],
-        ['github', 'hetzner'],
-        ['hetzner', 'postgresql'],
-        ['web-app', 'hetzner']
-      ];
-
-      svg.innerHTML = '';
-
-      connections.forEach((conn, idx) => {
-        const [fromId, toId] = conn;
-        if (positions[fromId] && positions[toId] && boxes[fromId] && boxes[toId]) {
-          const from = positions[fromId];
-          const to = positions[toId];
-          const fromBox = boxes[fromId];
-          const toBox = boxes[toId];
-
-          // Find edge points
-          let x1, y1, x2, y2;
-
-          // From edge
-          if (from.x < to.x) {
-            x1 = fromBox.right;
-          } else if (from.x > to.x) {
-            x1 = fromBox.left;
-          } else {
-            x1 = from.x;
-          }
-
-          if (from.y < to.y) {
-            y1 = fromBox.bottom;
-          } else if (from.y > to.y) {
-            y1 = fromBox.top;
-          } else {
-            y1 = from.y;
-          }
-
-          // To edge
-          if (to.x < from.x) {
-            x2 = toBox.right;
-          } else if (to.x > from.x) {
-            x2 = toBox.left;
-          } else {
-            x2 = to.x;
-          }
-
-          if (to.y < from.y) {
-            y2 = toBox.bottom;
-          } else if (to.y > from.y) {
-            y2 = toBox.top;
-          } else {
-            y2 = to.y;
-          }
-
-          // Create curved path
-          const midX = (x1 + x2) / 2;
-          const midY = (y1 + y2) / 2 + 30;
-
-          const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-          path.setAttribute('d', `M ${x1} ${y1} Q ${midX} ${midY} ${x2} ${y2}`);
-          path.setAttribute('class', 'connection-line connection-line-animated');
-          path.style.animationDelay = `${idx * 0.1}s`;
-          svg.appendChild(path);
-        }
-      });
-    }
-
-    // Show detail panel
-    components.forEach(comp => {
-      comp.addEventListener('click', () => {
-        const id = comp.getAttribute('data-id');
-        const data = componentData[id];
-
-        document.getElementById('detailTitle').textContent = data.name;
-
-        const statusClass = data.bugs.length > 0 ? 'bug' : data.status;
-        const statusText = data.bugs.length > 0 ? 'Bugs Found' : (data.status === 'complete' ? 'Complete' : data.status === 'in-progress' ? 'In Progress' : 'Not Started');
-        const statusEl = document.getElementById('detailStatus');
-        statusEl.className = `detail-status ${statusClass}`;
-        statusEl.textContent = statusText;
-
-        document.getElementById('detailDesc').textContent = data.desc;
-        document.getElementById('detailPurpose').textContent = data.purpose;
-
-        // Bugs section
-        if (data.bugs.length > 0) {
-          const bugsHtml = data.bugs.map(bug => `
-            <div class="bug-item">
-              <div class="bug-priority ${bug.priority}">${bug.priority.toUpperCase()}</div>
-              <div class="bug-description">${bug.desc}</div>
-              <div class="bug-reference">${bug.ref}</div>
-            </div>
-          `).join('');
-          document.getElementById('detailBugs').innerHTML = bugsHtml;
-          document.getElementById('bugsSection').style.display = 'block';
-        } else {
-          document.getElementById('bugsSection').style.display = 'none';
+        function setTheme(theme) {
+            currentTheme = theme;
+            document.documentElement.setAttribute("data-theme", theme);
+            localStorage.setItem("theme", theme);
+            const themeToggle = document.getElementById("themeToggle");
+            themeToggle.textContent = theme === "dark" ? "☀️ Light" : "🌙 Dark";
         }
 
-        // Fixes section
-        if (data.fixes.length > 0) {
-          const fixesHtml = data.fixes.map(fix => `
-            <div class="fix-item">
-              <div class="fix-title">→ ${fix.title}</div>
-              <div class="fix-description">${fix.desc}</div>
-            </div>
-          `).join('');
-          document.getElementById('detailFixes').innerHTML = fixesHtml;
-          document.getElementById('fixesSection').style.display = 'block';
-        } else {
-          document.getElementById('fixesSection').style.display = 'none';
+        document.getElementById("themeToggle").addEventListener("click", () => {
+            setTheme(currentTheme === "dark" ? "light" : "dark");
+        });
+
+        function setupEventListeners() {
+            document.getElementById("searchBox").addEventListener("input", (e) => {
+                searchQuery = e.target.value.toLowerCase();
+                renderDiagram();
+            });
+
+            document.getElementById("statusFilter").addEventListener("click", (e) => {
+                if (e.target.classList.contains("btn")) {
+                    document.querySelectorAll("#statusFilter .btn").forEach(b => b.classList.remove("active"));
+                    e.target.classList.add("active");
+                    currentStatusFilter = e.target.dataset.filter;
+                    renderDiagram();
+                }
+            });
+
+            document.getElementById("layerFilter").addEventListener("click", (e) => {
+                if (e.target.classList.contains("btn")) {
+                    document.querySelectorAll("#layerFilter .btn").forEach(b => b.classList.remove("active"));
+                    e.target.classList.add("active");
+                    currentLayerFilter = e.target.dataset.layer;
+                    renderDiagram();
+                }
+            });
         }
 
-        // Tech stack
-        const techHtml = data.tech.map(t => `<span class="tech-tag">${t}</span>`).join('');
-        document.getElementById('detailTech').innerHTML = techHtml;
-
-        // Connections
-        if (data.connections.length > 0) {
-          const connHtml = data.connections.map(c => `
-            <div class="connection-item">
-              <div class="connection-name">→ ${c.name}</div>
-              <div class="connection-desc">${c.desc}</div>
-            </div>
-          `).join('');
-          document.getElementById('detailConnections').innerHTML = connHtml;
-          document.getElementById('connectionsSection').style.display = 'block';
+        function populateComponentLinks() {
+            const container = document.getElementById("componentLinks");
+            container.innerHTML = components.map(c => `
+                <div class="component-link" onclick="selectComponent('${c.id}')">
+                    <span style="color: ${getStatusColor(c.status)};">●</span> ${c.name}
+                </div>
+            `).join("");
         }
 
-        detailPanel.classList.add('active');
-      });
-    });
+        function getStatusColor(status) {
+            const colors = { complete: "#10b981", progress: "#f59e0b", "not-started": "#ef4444" };
+            return colors[status] || "#94a3b8";
+        }
 
-    closeBtn.addEventListener('click', () => {
-      detailPanel.classList.remove('active');
-    });
+        function shouldShowComponent(component) {
+            const matchesSearch = component.name.toLowerCase().includes(searchQuery) ||
+                component.id.toLowerCase().includes(searchQuery);
+            const matchesStatus = currentStatusFilter === "all" || component.status === currentStatusFilter;
+            const matchesLayer = currentLayerFilter === "all" || component.layer === currentLayerFilter;
+            return matchesSearch && matchesStatus && matchesLayer;
+        }
 
-    document.addEventListener('click', (e) => {
-      if (!detailPanel.contains(e.target) && !e.target.closest('.component')) {
-        detailPanel.classList.remove('active');
-      }
-    });
+        function renderDiagram() {
+            const svg = document.getElementById("diagramSvg");
+            svg.innerHTML = "";
 
-    // Draw and redraw on load/resize
-    window.addEventListener('load', () => setTimeout(drawConnections, 100));
-    window.addEventListener('resize', drawConnections);
-  </script>
+            const visibleComponents = components.filter(shouldShowComponent);
+            const visibleIds = new Set(visibleComponents.map(c => c.id));
+
+            components.forEach(comp => {
+                if (!visibleIds.has(comp.id)) return;
+                comp.connections.forEach(conn => {
+                    if (!visibleIds.has(conn.target)) return;
+                    const target = components.find(c => c.id === conn.target);
+                    drawConnection(svg, comp, target, conn.type);
+                });
+            });
+
+            visibleComponents.forEach(comp => {
+                drawComponent(svg, comp);
+            });
+        }
+
+        function drawConnection(svg, from, to, type) {
+            const x1 = from.x + 75;
+            const y1 = from.y + 50;
+            const x2 = to.x + 75;
+            const y2 = to.y + 50;
+
+            const midX = (x1 + x2) / 2;
+            const midY = (y1 + y2) / 2;
+
+            const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            path.setAttribute("d", `M ${x1} ${y1} Q ${midX} ${midY - 50} ${x2} ${y2}`);
+            path.setAttribute("stroke", type === "auth" ? "#8b5cf6" : type === "storage" ? "#06b6d4" : "#64748b");
+            path.setAttribute("stroke-width", "2");
+            path.setAttribute("fill", "none");
+            path.setAttribute("class", `connection connection-${from.id} connection-${to.id}`);
+
+            svg.appendChild(path);
+        }
+
+        function drawComponent(svg, comp) {
+            const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+            g.setAttribute("class", "component-box");
+            g.setAttribute("data-id", comp.id);
+            g.onclick = () => selectComponent(comp.id);
+
+            const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+            rect.setAttribute("x", comp.x);
+            rect.setAttribute("y", comp.y);
+            rect.setAttribute("width", "150");
+            rect.setAttribute("height", "100");
+            rect.setAttribute("rx", "8");
+            rect.setAttribute("fill", "var(--bg-tertiary)");
+            rect.setAttribute("stroke", getStatusColor(comp.status));
+            rect.setAttribute("stroke-width", "2");
+
+            const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+            text.setAttribute("x", comp.x + 75);
+            text.setAttribute("y", comp.y + 35);
+            text.setAttribute("text-anchor", "middle");
+            text.setAttribute("font-size", "12");
+            text.setAttribute("font-weight", "bold");
+            text.setAttribute("fill", "var(--text-primary)");
+            text.textContent = comp.name;
+
+            const status = document.createElementNS("http://www.w3.org/2000/svg", "text");
+            status.setAttribute("x", comp.x + 75);
+            status.setAttribute("y", comp.y + 65);
+            status.setAttribute("text-anchor", "middle");
+            status.setAttribute("font-size", "10");
+            status.setAttribute("fill", getStatusColor(comp.status));
+            status.textContent = comp.status === "complete" ? "✓ Complete" : comp.status === "progress" ? "⏳ In Progress" : "● Not Started";
+
+            g.appendChild(rect);
+            g.appendChild(text);
+            g.appendChild(status);
+            svg.appendChild(g);
+        }
+
+        function selectComponent(componentId) {
+            selectedComponent = componentId;
+            const comp = components.find(c => c.id === componentId);
+            showDetails(comp);
+        }
+
+        function showDetails(comp) {
+            const panel = document.getElementById("detailsPanel");
+            document.getElementById("detailTitle").textContent = comp.name;
+
+            const statusClass = `status-${comp.status === "complete" ? "complete" : comp.status === "progress" ? "progress" : "not-started"}`;
+            const statusText = comp.status === "complete" ? "✓ Complete" : comp.status === "progress" ? "⏳ In Progress" : "● Not Started";
+
+            let html = `
+                <div class="detail-section">
+                    <div class="detail-label">Description</div>
+                    <div class="detail-content">${comp.description}</div>
+                    <span class="status-badge ${statusClass}">${statusText}</span>
+                </div>
+
+                <div class="detail-section">
+                    <div class="detail-label">Technology Stack</div>
+                    <div class="tech-stack">
+                        ${comp.tech.map(t => `<div class="tech-tag">${t}</div>`).join("")}
+                    </div>
+                </div>
+
+                <div class="detail-section">
+                    <div class="detail-label">Connections (${comp.connections.length})</div>
+                    ${comp.connections.map(conn => {
+                        const target = components.find(c => c.id === conn.target);
+                        return `<div class="connection-item">
+                            <div class="connection-type">${target.name}</div>
+                            <div class="connection-desc">${conn.desc}</div>
+                        </div>`;
+                    }).join("")}
+                </div>
+            `;
+
+            if (comp.issues.length > 0) {
+                html += `<div class="detail-section">
+                    <div class="detail-label">Known Issues</div>
+                    ${comp.issues.map(issue => `<div class="issue-item">${issue}</div>`).join("")}
+                </div>`;
+            } else {
+                html += `<div class="detail-section">
+                    <div class="detail-label">Known Issues</div>
+                    <div class="detail-content">None</div>
+                </div>`;
+            }
+
+            html += `<div class="detail-section">
+                <div class="detail-label">Next Steps</div>
+                ${comp.nextSteps.map(step => `<div class="step-item">${step}</div>`).join("")}
+            </div>`;
+
+            document.getElementById("detailsContent").innerHTML = html;
+            panel.classList.add("active");
+        }
+
+        function closeDetails() {
+            document.getElementById("detailsPanel").classList.remove("active");
+            selectedComponent = null;
+        }
+    </script>
 </body>
 </html>
