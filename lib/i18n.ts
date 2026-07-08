@@ -385,6 +385,9 @@ export const translations = {
       unitEcoSubtitle: "Kengaytmadan mahsulot qo'shing — barcha xarajatlar avtomatik hisoblanadi",
       openUzum: "Uzumga o'tish",
       unitEcoNote: "Uzum.uz sahifasida mahsulot kartasini oching → kengaytmadagi «Unit-ekonomikaga qo'shish» tugmasini bosing → mahsulot fotosurat va to'liq ma'lumotlar bilan shu sahifaga avtomatik qo'shiladi. Ta'minotchi havolasini qo'shib, buyurtma berishga tayyor bo'ling.",
+      extTitle: 'Brauzer kengaytmasini o\'rnating',
+      extDesc: 'Chrome, Edge va Brave\'da ishlaydi. Uzum.uz yoki WB\'da mahsulot kartasini oching va bir tugma bilan qo\'shing — barcha ma\'lumotlar avtomatik tushadi.',
+      extBtn: 'O\'rnatish',
       // Price tracking
       priceTrackingTitle: 'Narx kuzatuvi',
       priceTrackingSubtitle: "Raqobatchilar narxlarini kuzating va pozitsiyangizni biling",
@@ -1130,6 +1133,9 @@ export const translations = {
       unitEcoSubtitle: 'Add products via the extension — all costs are calculated automatically',
       openUzum: 'Go to Uzum',
       unitEcoNote: "Open a product page on Uzum.uz → click «Add to Unit Economics» in the extension → the product with photo and full details is added to this page automatically. Add a supplier link and get ready to order.",
+      extTitle: 'Install the browser extension',
+      extDesc: 'Works in Chrome, Edge and Brave. Open any product on Uzum.uz or WB and add it with one click — all data appears here automatically.',
+      extBtn: 'Install now',
       // Price tracking
       priceTrackingTitle: 'Price tracking',
       priceTrackingSubtitle: 'Monitor competitor prices and know your position',
@@ -1875,6 +1881,9 @@ export const translations = {
       unitEcoSubtitle: 'Добавляйте товары через расширение — все расходы считаются автоматически',
       openUzum: 'Перейти на Uzum',
       unitEcoNote: 'Откройте карточку товара на Uzum.uz → нажмите «Добавить в юнит-экономику» в расширении → товар с фото и полными данными автоматически добавляется на эту страницу. Добавьте ссылку на поставщика и будьте готовы к заказу.',
+      extTitle: 'Установите расширение для браузера',
+      extDesc: 'Расширение работает в Chrome, Edge и Brave. Откройте карточку товара на Uzum.uz или WB и добавьте продукт одним нажатием — все данные попадут сюда автоматически.',
+      extBtn: 'Установить',
       // Price tracking
       priceTrackingTitle: 'Отслеживание цен',
       priceTrackingSubtitle: 'Следите за ценами конкурентов и знайте свою позицию',
