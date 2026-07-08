@@ -48,10 +48,12 @@ export default function Providers({ children, initialLang = 'uz' }: Props) {
   }
 
   function setLang(l: Lang) {
+    if (lang === l) return // Avoid redundant updates
     setLangState(l)
     localStorage.setItem('lang', l)
     document.cookie = `lang=${l};path=/;max-age=31536000`
-    router.refresh()
+    // Refresh after a tick to ensure state updates propagate
+    setTimeout(() => router.refresh(), 0)
   }
 
   return (
