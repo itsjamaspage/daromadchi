@@ -385,6 +385,11 @@ export const dashT = {
       notFound: 'Natija topilmadi',
       showing: "ta mahsulot ko'rsatilmoqda",
     },
+    unitEconomics: {
+      extTitle: 'Brauzer kengaytmasini o\'rnating',
+      extDesc: 'Chrome, Edge va Brave\'da ishlaydi. Uzum.uz yoki WB\'da mahsulot kartasini oching va bir tugma bilan qo\'shing — barcha ma\'lumotlar avtomatik tushadi.',
+      extBtn: 'O\'rnatish',
+    },
   },
   en: {
     nav: {
@@ -768,6 +773,11 @@ export const dashT = {
       notFound: 'No results found',
       showing: 'products shown',
     },
+    unitEconomics: {
+      extTitle: 'Install the browser extension',
+      extDesc: 'Works in Chrome, Edge and Brave. Open any product on Uzum.uz or WB and add it with one click — all data appears here automatically.',
+      extBtn: 'Install now',
+    },
   },
   ru: {
     nav: {
@@ -1149,6 +1159,11 @@ export const dashT = {
       colCtr: 'CTR', colPosition: 'Позиция', colTrend: 'Тренд',
       notFound: 'Результаты не найдены',
       showing: 'товаров показано',
+    },
+    unitEconomics: {
+      extTitle: 'Установите расширение для браузера',
+      extDesc: 'Расширение работает в Chrome, Edge и Brave. Откройте карточку товара на Uzum.uz или WB и добавьте продукт одним нажатием — все данные попадут сюда автоматически.',
+      extBtn: 'Установить',
     },
   },
 } satisfies Record<Lang, unknown>

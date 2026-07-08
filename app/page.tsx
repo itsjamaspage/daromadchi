@@ -486,7 +486,6 @@ function ComparisonSection({ lang }: { lang: string }) {
             {tx(lang,'Try for free','Bepul sinab ko\'ring','Try for free')}
           </Link>
         </div>
-        </div>
       </div>
     </section>
   )
