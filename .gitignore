@@ -46,3 +46,6 @@ next-env.d.ts
 supabase/.temp/
 *.zip
 .claude/
+
+# data exports
+scripts/supabase-export.sql
