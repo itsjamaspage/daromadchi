@@ -38,6 +38,10 @@ export default function Providers({ children, initialLang = 'uz' }: Props) {
   }, [])
 
   useEffect(() => {
+    setLangState(initialLang)
+  }, [initialLang])
+
+  useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
     document.documentElement.style.backgroundColor = theme === 'dark' ? '#161616' : '#83c0f7'
     localStorage.setItem('theme', theme)
