@@ -75,11 +75,13 @@ jobs:
     steps:
       - name: Notify success
         if: needs.build.result == 'success' && needs.health-check.result == 'success'
+        continue-on-error: true
         run: |
           MSG="✅ Deploy succeeded%0A${{ github.event.head_commit.message }}%0A${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}"
           curl -s "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage?chat_id=${{ secrets.TELEGRAM_CHAT_ID }}&text=${MSG}"
       - name: Notify failure
         if: needs.build.result != 'success' || needs.health-check.result != 'success'
+        continue-on-error: true
         run: |
           MSG="❌ CI FAILED%0A${{ github.event.head_commit.message }}%0ALogs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           curl -s "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage?chat_id=${{ secrets.TELEGRAM_CHAT_ID }}&text=${MSG}"
