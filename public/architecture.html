@@ -3,250 +3,45 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Daromadchi Architecture</title>
+  <title>Daromadchi System Architecture</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: linear-gradient(135deg, #0f172a 0%, #1a1f3a 100%);
-      color: #f1f5f9;
-      overflow: hidden;
-      height: 100vh;
-    }
-
-    .container {
-      width: 100%;
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .top-bar {
-      padding: 16px 24px;
-      background: rgba(30, 41, 59, 0.8);
-      border-bottom: 1px solid rgba(148, 163, 184, 0.2);
-      display: flex;
-      align-items: center;
-      gap: 20px;
-      flex-shrink: 0;
-      backdrop-filter: blur(10px);
-    }
-
-    .logo {
-      font-size: 18px;
-      font-weight: 700;
-      letter-spacing: 2px;
-      color: #0ea5e9;
-    }
-
-    .search-box {
-      flex: 0 0 250px;
-      padding: 8px 12px;
-      background: rgba(15, 23, 42, 0.6);
-      border: 1px solid rgba(148, 163, 184, 0.3);
-      border-radius: 6px;
-      color: #f1f5f9;
-      font-size: 13px;
-    }
-
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: linear-gradient(135deg, #0f172a 0%, #1a1f3a 100%); color: #f1f5f9; overflow: hidden; height: 100vh; }
+    .container { width: 100%; height: 100%; display: flex; flex-direction: column; }
+    .top-bar { padding: 16px 24px; background: rgba(30, 41, 59, 0.8); border-bottom: 1px solid rgba(148, 163, 184, 0.2); display: flex; align-items: center; gap: 20px; flex-shrink: 0; backdrop-filter: blur(10px); }
+    .logo { font-size: 18px; font-weight: 700; letter-spacing: 2px; color: #0ea5e9; }
+    .search-box { flex: 0 0 250px; padding: 8px 12px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(148, 163, 184, 0.3); border-radius: 6px; color: #f1f5f9; font-size: 13px; }
     .search-box::placeholder { color: #64748b; }
     .search-box:focus { outline: none; border-color: #0ea5e9; }
-
-    .controls {
-      display: flex;
-      gap: 8px;
-      margin-left: auto;
-    }
-
-    .btn {
-      padding: 6px 12px;
-      background: rgba(51, 65, 85, 0.5);
-      border: 1px solid rgba(148, 163, 184, 0.3);
-      border-radius: 4px;
-      color: #cbd5e1;
-      font-size: 11px;
-      cursor: pointer;
-      transition: all 0.2s;
-      font-weight: 500;
-    }
-
-    .btn:hover {
-      background: rgba(71, 85, 105, 0.7);
-      border-color: #0ea5e9;
-      color: #0ea5e9;
-    }
-
-    .btn.active {
-      background: #0ea5e9;
-      border-color: #0ea5e9;
-      color: #0f172a;
-    }
-
-    .main {
-      display: flex;
-      flex: 1;
-      overflow: hidden;
-    }
-
-    .canvas-wrapper {
-      flex: 1;
-      position: relative;
-      overflow: auto;
-      background: linear-gradient(to bottom, #0f172a, #1a1f3a);
-    }
-
-    svg {
-      width: 100%;
-      height: 100%;
-      min-width: 1200px;
-      min-height: 800px;
-    }
-
-    .detail-panel {
-      position: fixed;
-      right: 0;
-      top: 60px;
-      width: 360px;
-      height: calc(100% - 60px);
-      background: rgba(30, 41, 59, 0.95);
-      border-left: 1px solid rgba(148, 163, 184, 0.2);
-      overflow-y: auto;
-      transform: translateX(100%);
-      transition: transform 0.3s ease;
-      backdrop-filter: blur(10px);
-      z-index: 1000;
-    }
-
-    .detail-panel.active {
-      transform: translateX(0);
-    }
-
-    .detail-header {
-      padding: 20px;
-      border-bottom: 1px solid rgba(148, 163, 184, 0.2);
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-    }
-
-    .detail-title {
-      font-size: 18px;
-      font-weight: 700;
-      margin-bottom: 8px;
-      font-family: ui-monospace, monospace;
-    }
-
-    .status-badge {
-      display: inline-block;
-      padding: 4px 8px;
-      border-radius: 3px;
-      font-size: 10px;
-      font-weight: 600;
-      text-transform: uppercase;
-    }
-
+    .controls { display: flex; gap: 8px; align-items: center; }
+    .btn { padding: 6px 12px; background: rgba(51, 65, 85, 0.5); border: 1px solid rgba(148, 163, 184, 0.3); border-radius: 4px; color: #cbd5e1; font-size: 11px; cursor: pointer; transition: all 0.2s; font-weight: 500; }
+    .btn:hover { background: rgba(71, 85, 105, 0.7); border-color: #0ea5e9; color: #0ea5e9; }
+    .btn.active { background: #0ea5e9; border-color: #0ea5e9; color: #0f172a; }
+    .main { display: flex; flex: 1; overflow: hidden; }
+    .canvas-wrapper { flex: 1; overflow: auto; background: linear-gradient(to bottom, #0f172a, #1a1f3a); }
+    svg { width: 100%; height: 100%; min-width: 1200px; min-height: 800px; }
+    .detail-panel { position: fixed; right: 0; top: 60px; width: 360px; height: calc(100% - 60px); background: rgba(30, 41, 59, 0.95); border-left: 1px solid rgba(148, 163, 184, 0.2); overflow-y: auto; transform: translateX(100%); transition: transform 0.3s ease; backdrop-filter: blur(10px); z-index: 1000; }
+    .detail-panel.active { transform: translateX(0); }
+    .detail-header { padding: 20px; border-bottom: 1px solid rgba(148, 163, 184, 0.2); display: flex; justify-content: space-between; align-items: flex-start; }
+    .detail-title { font-size: 18px; font-weight: 700; margin-bottom: 8px; font-family: ui-monospace, monospace; }
+    .status-badge { display: inline-block; padding: 4px 8px; border-radius: 3px; font-size: 10px; font-weight: 600; text-transform: uppercase; }
     .status-badge.complete { background: rgba(16, 185, 129, 0.2); color: #10b981; }
     .status-badge.in-progress { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
     .status-badge.not-started { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
-
-    .close-btn {
-      background: none;
-      border: none;
-      color: #64748b;
-      font-size: 20px;
-      cursor: pointer;
-      padding: 4px;
-    }
-
+    .close-btn { background: none; border: none; color: #64748b; font-size: 20px; cursor: pointer; padding: 4px; }
     .close-btn:hover { color: #f1f5f9; }
-
-    .detail-content {
-      padding: 20px;
-    }
-
-    .detail-section {
-      margin-bottom: 20px;
-    }
-
-    .detail-label {
-      font-size: 10px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: #64748b;
-      margin-bottom: 8px;
-      font-weight: 600;
-    }
-
-    .detail-value {
-      font-size: 13px;
-      line-height: 1.5;
-      color: #cbd5e1;
-    }
-
-    .tech-tags {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-    }
-
-    .tech-tag {
-      padding: 3px 8px;
-      background: rgba(71, 85, 105, 0.5);
-      border: 1px solid rgba(148, 163, 184, 0.3);
-      border-radius: 3px;
-      font-size: 11px;
-      color: #cbd5e1;
-      font-family: ui-monospace, monospace;
-    }
-
-    .connection-item {
-      background: rgba(51, 65, 85, 0.3);
-      padding: 10px;
-      border-radius: 4px;
-      margin-bottom: 8px;
-      font-size: 12px;
-    }
-
-    .connection-name {
-      color: #0ea5e9;
-      font-weight: 600;
-      font-family: ui-monospace, monospace;
-      margin-bottom: 4px;
-    }
-
-    .connection-desc {
-      color: #cbd5e1;
-      font-size: 11px;
-      line-height: 1.4;
-    }
-
-    .legend {
-      position: fixed;
-      bottom: 20px;
-      left: 20px;
-      background: rgba(30, 41, 59, 0.8);
-      border: 1px solid rgba(148, 163, 184, 0.2);
-      border-radius: 8px;
-      padding: 16px;
-      backdrop-filter: blur(10px);
-      font-size: 12px;
-      z-index: 100;
-    }
-
-    .legend-item {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 6px;
-    }
-
-    .legend-dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-    }
-
+    .detail-content { padding: 20px; }
+    .detail-section { margin-bottom: 20px; }
+    .detail-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #64748b; margin-bottom: 8px; font-weight: 600; }
+    .detail-value { font-size: 13px; line-height: 1.5; color: #cbd5e1; }
+    .tech-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+    .tech-tag { padding: 3px 8px; background: rgba(71, 85, 105, 0.5); border: 1px solid rgba(148, 163, 184, 0.3); border-radius: 3px; font-size: 11px; color: #cbd5e1; font-family: ui-monospace, monospace; }
+    .connection-item { background: rgba(51, 65, 85, 0.3); padding: 10px; border-radius: 4px; margin-bottom: 8px; font-size: 12px; }
+    .connection-name { color: #0ea5e9; font-weight: 600; font-family: ui-monospace, monospace; margin-bottom: 4px; }
+    .connection-desc { color: #cbd5e1; font-size: 11px; line-height: 1.4; }
+    .legend { position: fixed; bottom: 20px; left: 20px; background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(148, 163, 184, 0.2); border-radius: 8px; padding: 16px; backdrop-filter: blur(10px); font-size: 12px; z-index: 100; }
+    .legend-item { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+    .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
     .legend-item:last-child { margin-bottom: 0; }
   </style>
 </head>
@@ -262,7 +57,6 @@
         <button class="btn" data-filter="not-started">● Not Started</button>
       </div>
     </div>
-
     <div class="main">
       <div class="canvas-wrapper">
         <svg id="diagramSvg"></svg>
@@ -295,135 +89,28 @@
   </div>
 
   <div class="legend">
-    <div class="legend-item">
-      <div class="legend-dot" style="background: #10b981;"></div>
-      <span>Complete</span>
-    </div>
-    <div class="legend-item">
-      <div class="legend-dot" style="background: #f59e0b;"></div>
-      <span>In Progress</span>
-    </div>
-    <div class="legend-item">
-      <div class="legend-dot" style="background: #ef4444;"></div>
-      <span>Not Started</span>
-    </div>
+    <div class="legend-item"><div class="legend-dot" style="background: #10b981;"></div><span>Complete</span></div>
+    <div class="legend-item"><div class="legend-dot" style="background: #f59e0b;"></div><span>In Progress</span></div>
+    <div class="legend-item"><div class="legend-dot" style="background: #ef4444;"></div><span>Not Started</span></div>
   </div>
 
   <script>
     const componentsData = {
-      'web-app': {
-        name: 'Web App\n(daromadchi.uz)',
-        layer: 'frontend',
-        x: 80, y: 100,
-        status: 'complete',
-        description: 'Main SaaS dashboard for marketplace analytics',
-        technology: ['Next.js 14', 'React', 'TailwindCSS'],
-        connectedTo: ['nextauth-v5', 'api-routes', 'postgresql'],
-      },
-      'chrome-ext': {
-        name: 'Chrome\nExtension',
-        layer: 'frontend',
-        x: 80, y: 280,
-        status: 'complete',
-        description: 'Manifest V3 extension showing analytics overlay',
-        technology: ['JavaScript', 'Chrome APIs', 'Manifest V3'],
-        connectedTo: ['api-routes'],
-      },
-      'nextauth-v5': {
-        name: 'NextAuth.js\nv5',
-        layer: 'backend',
-        x: 300, y: 80,
-        status: 'complete',
-        description: 'JWT-based session management and authentication',
-        technology: ['NextAuth.js v5', 'PostgreSQL', 'bcryptjs'],
-        connectedTo: ['web-app', 'postgresql', 'api-routes'],
-      },
-      'api-routes': {
-        name: 'API Routes\n(/api/*)',
-        layer: 'backend',
-        x: 300, y: 240,
-        status: 'complete',
-        description: 'Backend REST endpoints for all server logic',
-        technology: ['Next.js API', 'Node.js', 'Middleware'],
-        connectedTo: ['web-app', 'nextauth-v5', 'postgresql', 'uzum-api', 'wildberries-api', 'yandex-api', 'telegram-bot', 'resend'],
-      },
-      'telegram-bot': {
-        name: 'Telegram\nBot',
-        layer: 'backend',
-        x: 300, y: 400,
-        status: 'complete',
-        description: 'Real-time notifications via Telegram',
-        technology: ['Telegram Bot API', 'Webhooks', 'Node.js'],
-        connectedTo: ['api-routes', 'postgresql'],
-      },
-      'postgresql': {
-        name: 'PostgreSQL\n16',
-        layer: 'database',
-        x: 520, y: 240,
-        status: 'complete',
-        description: 'Self-hosted relational database on Hetzner VPS',
-        technology: ['PostgreSQL 16', 'Drizzle ORM', 'SQL'],
-        connectedTo: ['web-app', 'nextauth-v5', 'api-routes', 'telegram-bot'],
-      },
-      'uzum-api': {
-        name: 'Uzum\nMarket API',
-        layer: 'external',
-        x: 740, y: 80,
-        status: 'complete',
-        description: 'Official Uzum seller API for marketplace data',
-        technology: ['REST API', 'Bearer token', 'JSON'],
-        connectedTo: ['api-routes'],
-      },
-      'wildberries-api': {
-        name: 'Wildberries\nAPI',
-        layer: 'external',
-        x: 740, y: 200,
-        status: 'complete',
-        description: 'Official Wildberries seller API',
-        technology: ['REST API', 'API key', 'JSON'],
-        connectedTo: ['api-routes'],
-      },
-      'yandex-api': {
-        name: 'Yandex\nMarket API',
-        layer: 'external',
-        x: 740, y: 320,
-        status: 'complete',
-        description: 'Yandex Market partner API',
-        technology: ['REST API', 'OAuth Bearer', 'JSON'],
-        connectedTo: ['api-routes'],
-      },
-      'resend': {
-        name: 'Resend\n(Email)',
-        layer: 'external',
-        x: 740, y: 440,
-        status: 'in-progress',
-        description: 'Email service for transactional emails',
-        technology: ['Resend API', 'React Email', 'SMTP'],
-        connectedTo: ['api-routes'],
-      },
-      'hetzner-vps': {
-        name: 'Hetzner VPS\n(65.21.158.239)',
-        layer: 'infrastructure',
-        x: 520, y: 420,
-        status: 'complete',
-        description: 'Self-hosted VPS running all infrastructure',
-        technology: ['Ubuntu 24.04', 'Nginx', 'PM2', 'Node.js'],
-        connectedTo: ['postgresql'],
-      },
-      'github': {
-        name: 'GitHub\nRepository',
-        layer: 'infrastructure',
-        x: 740, y: 520,
-        status: 'complete',
-        description: 'Source code repository and CI/CD',
-        technology: ['Git', 'GitHub', 'GitHub Actions'],
-        connectedTo: ['hetzner-vps'],
-      },
+      'web-app': { name: 'Web App\n(daromadchi.uz)', layer: 'frontend', x: 80, y: 100, status: 'complete', description: 'Main SaaS dashboard for marketplace analytics. Provides sellers with real-time insights.', technology: ['Next.js 14', 'React', 'TailwindCSS'], connectedTo: ['nextauth-v5', 'api-routes', 'postgresql'] },
+      'chrome-ext': { name: 'Chrome\nExtension', layer: 'frontend', x: 80, y: 280, status: 'complete', description: 'Manifest V3 extension showing analytics overlay on marketplaces.', technology: ['JavaScript', 'Chrome APIs', 'Manifest V3'], connectedTo: ['api-routes'] },
+      'nextauth-v5': { name: 'NextAuth.js\nv5', layer: 'backend', x: 300, y: 80, status: 'complete', description: 'JWT-based session management and authentication system.', technology: ['NextAuth.js v5', 'PostgreSQL', 'bcryptjs'], connectedTo: ['web-app', 'postgresql', 'api-routes'] },
+      'api-routes': { name: 'API Routes\n(/api/*)', layer: 'backend', x: 300, y: 240, status: 'complete', description: 'Backend REST endpoints handling all server-side logic.', technology: ['Next.js API', 'Node.js', 'Middleware'], connectedTo: ['web-app', 'nextauth-v5', 'postgresql', 'uzum-api', 'wildberries-api', 'yandex-api', 'telegram-bot', 'resend'] },
+      'telegram-bot': { name: 'Telegram\nBot', layer: 'backend', x: 300, y: 400, status: 'complete', description: 'Real-time notifications via Telegram bot.', technology: ['Telegram Bot API', 'Webhooks', 'Node.js'], connectedTo: ['api-routes', 'postgresql'] },
+      'postgresql': { name: 'PostgreSQL\n16', layer: 'database', x: 520, y: 240, status: 'complete', description: 'Self-hosted relational database on Hetzner VPS.', technology: ['PostgreSQL 16', 'Drizzle ORM', 'SQL'], connectedTo: ['web-app', 'nextauth-v5', 'api-routes', 'telegram-bot'] },
+      'uzum-api': { name: 'Uzum\nMarket API', layer: 'external', x: 740, y: 80, status: 'complete', description: 'Official Uzum seller API for marketplace data.', technology: ['REST API', 'Bearer token', 'JSON'], connectedTo: ['api-routes'] },
+      'wildberries-api': { name: 'Wildberries\nAPI', layer: 'external', x: 740, y: 200, status: 'complete', description: 'Official Wildberries seller API for marketplace data.', technology: ['REST API', 'API key', 'JSON'], connectedTo: ['api-routes'] },
+      'yandex-api': { name: 'Yandex\nMarket API', layer: 'external', x: 740, y: 320, status: 'complete', description: 'Yandex Market partner API for marketplace data.', technology: ['REST API', 'OAuth Bearer', 'JSON'], connectedTo: ['api-routes'] },
+      'resend': { name: 'Resend\n(Email)', layer: 'external', x: 740, y: 440, status: 'in-progress', description: 'Email service for transactional emails and password resets.', technology: ['Resend API', 'React Email', 'SMTP'], connectedTo: ['api-routes'] },
+      'hetzner-vps': { name: 'Hetzner VPS\n(65.21.158.239)', layer: 'infrastructure', x: 520, y: 420, status: 'complete', description: 'Self-hosted VPS running all infrastructure.', technology: ['Ubuntu 24.04', 'Nginx', 'PM2', 'Node.js'], connectedTo: ['postgresql'] },
+      'github': { name: 'GitHub\nRepository', layer: 'infrastructure', x: 740, y: 520, status: 'complete', description: 'Source code repository and CI/CD.', technology: ['Git', 'GitHub', 'GitHub Actions'], connectedTo: ['hetzner-vps'] },
     };
 
-    let selectedComponent = null;
-    let filteredStatus = 'all';
-    let searchTerm = '';
+    let selectedComponent = null, filteredStatus = 'all', searchTerm = '';
 
     function getStatusColor(status) {
       const colors = { complete: '#10b981', 'in-progress': '#f59e0b', 'not-started': '#ef4444' };
@@ -440,17 +127,13 @@
     function drawDiagram() {
       const svg = document.getElementById('diagramSvg');
       svg.innerHTML = '';
+      svg.setAttribute('viewBox', '0 0 1000 700');
 
-      const width = 1000, height = 700;
-      svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
-
-      // Draw connections first (lines behind boxes)
       Object.entries(componentsData).forEach(([id, comp]) => {
         if (!isComponentVisible(id)) return;
         comp.connectedTo.forEach(targetId => {
           if (!isComponentVisible(targetId)) return;
           const target = componentsData[targetId];
-
           const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
           line.setAttribute('x1', comp.x + 80);
           line.setAttribute('y1', comp.y + 40);
@@ -463,15 +146,12 @@
         });
       });
 
-      // Draw component boxes
       Object.entries(componentsData).forEach(([id, comp]) => {
         if (!isComponentVisible(id)) return;
-
         const color = getStatusColor(comp.status);
         const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
         g.setAttribute('cursor', 'pointer');
 
-        // Box
         const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
         rect.setAttribute('x', comp.x);
         rect.setAttribute('y', comp.y);
@@ -483,7 +163,6 @@
         rect.setAttribute('stroke-width', '2');
         g.appendChild(rect);
 
-        // Text
         const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
         text.setAttribute('x', comp.x + 80);
         text.setAttribute('y', comp.y + 40);
@@ -493,12 +172,9 @@
         text.setAttribute('font-size', '11');
         text.setAttribute('font-weight', '600');
         text.setAttribute('font-family', 'ui-monospace, monospace');
-        text.innerHTML = comp.name.split('\n').map((line, i) =>
-          `<tspan x="${comp.x + 80}" dy="${i === 0 ? 0 : 14}">${line}</tspan>`
-        ).join('');
+        text.innerHTML = comp.name.split('\n').map((line, i) => `<tspan x="${comp.x + 80}" dy="${i === 0 ? 0 : 14}">${line}</tspan>`).join('');
         g.appendChild(text);
 
-        // Status dot
         const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
         dot.setAttribute('cx', comp.x + 150);
         dot.setAttribute('cy', comp.y + 8);
@@ -506,7 +182,6 @@
         dot.setAttribute('fill', color);
         g.appendChild(dot);
 
-        // Click handler
         g.addEventListener('click', () => showDetail(id));
         g.addEventListener('mouseenter', () => {
           rect.setAttribute('stroke-width', '3');
@@ -528,16 +203,11 @@
       document.getElementById('detailStatus').textContent = comp.status === 'complete' ? '✓ Complete' : comp.status === 'in-progress' ? '⏳ In Progress' : '● Not Started';
       document.getElementById('detailStatus').className = `status-badge ${comp.status}`;
       document.getElementById('detailDesc').textContent = comp.description;
-
-      const techEl = document.getElementById('detailTech');
-      techEl.innerHTML = comp.technology.map(t => `<div class="tech-tag">${t}</div>`).join('');
-
-      const connEl = document.getElementById('detailConnections');
-      connEl.innerHTML = comp.connectedTo.map(cid => {
+      document.getElementById('detailTech').innerHTML = comp.technology.map(t => `<div class="tech-tag">${t}</div>`).join('');
+      document.getElementById('detailConnections').innerHTML = comp.connectedTo.map(cid => {
         const target = componentsData[cid];
         return `<div class="connection-item"><div class="connection-name">${target.name.replace(/\n/g, ' ')}</div><div class="connection-desc">${target.description}</div></div>`;
       }).join('');
-
       document.getElementById('detailPanel').classList.add('active');
     }
 
@@ -546,7 +216,6 @@
       selectedComponent = null;
     }
 
-    // Event listeners
     document.querySelectorAll('[data-filter]').forEach(btn => {
       btn.addEventListener('click', () => {
         document.querySelectorAll('[data-filter]').forEach(b => b.classList.remove('active'));
@@ -561,7 +230,6 @@
       drawDiagram();
     });
 
-    // Initial draw
     drawDiagram();
   </script>
 </body>
