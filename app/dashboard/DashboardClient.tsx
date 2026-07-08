@@ -269,7 +269,7 @@ export default function DashboardClient({ slices, days, period, from, to, initia
                 <div className="flex items-center justify-center gap-3 flex-wrap">
                   <Link href="/dashboard/settings"
                     className="inline-flex items-center gap-2 btn-primary text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors" style={{ boxShadow: '0 4px 14px rgba(131,192,249,0.2)' }}>
-                    <Settings className="w-4 h-4" /> {mpName} ulash
+                    <Settings className="w-4 h-4" /> {d.connectMp.replace('{mp}', mpName)}
                   </Link>
                   {mpLink && (
                     <Link href={mpLink.url} target="_blank" rel="noopener noreferrer"
