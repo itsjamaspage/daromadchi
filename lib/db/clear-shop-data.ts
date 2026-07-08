@@ -1,23 +1,21 @@
-import { createAdminClient } from '@/lib/supabase/admin'
+import { eq, inArray } from 'drizzle-orm'
+import { db, orders, orderItems, products, syncDays, adCampaigns, searchPhrases, productAdsStats } from '@/lib/db'
 
 export async function clearShopData(shopId: string): Promise<void> {
-  const admin = createAdminClient()
+  const orderRows = await db.select({ id: orders.id }).from(orders)
+    .where(eq(orders.shop_id, shopId))
 
-  const { data: orderIds } = await admin
-    .from('orders')
-    .select('id')
-    .eq('shop_id', shopId)
-
-  if (orderIds && orderIds.length > 0) {
-    await admin.from('order_items').delete().in('order_id', orderIds.map((o: { id: string }) => o.id))
+  if (orderRows.length > 0) {
+    await db.delete(orderItems)
+      .where(inArray(orderItems.order_id, orderRows.map(o => o.id)))
   }
 
   await Promise.all([
-    admin.from('orders').delete().eq('shop_id', shopId),
-    admin.from('products').delete().eq('shop_id', shopId),
-    admin.from('sync_days').delete().eq('shop_id', shopId),
-    admin.from('ad_campaigns').delete().eq('shop_id', shopId),
-    admin.from('search_phrases').delete().eq('shop_id', shopId),
-    admin.from('product_ads_stats').delete().eq('shop_id', shopId),
+    db.delete(orders).where(eq(orders.shop_id, shopId)),
+    db.delete(products).where(eq(products.shop_id, shopId)),
+    db.delete(syncDays).where(eq(syncDays.shop_id, shopId)),
+    db.delete(adCampaigns).where(eq(adCampaigns.shop_id, shopId)),
+    db.delete(searchPhrases).where(eq(searchPhrases.shop_id, shopId)),
+    db.delete(productAdsStats).where(eq(productAdsStats.shop_id, shopId)),
   ])
 }

@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from 'next/server'
-import { updateSession } from '@/lib/supabase/middleware'
+import { auth } from '@/lib/auth/config'
 
 // ── CORS ──────────────────────────────────────────────────────────────────────
 
@@ -111,7 +111,18 @@ export async function proxy(request: NextRequest) {
     return addSecurityHeaders(res)
   }
 
-  const res = await updateSession(request)
+  // Auth check for protected routes
+  const publicRoutes = ['/', '/login', '/signup', '/about', '/pricing', '/sitemap.xml', '/robots.txt']
+  const isPublic = publicRoutes.some(route => pathname === route || pathname.startsWith(route.endsWith('/') ? route : route + '/'))
+
+  if (!isPublic && !pathname.startsWith('/_next') && !pathname.startsWith('/api/')) {
+    const session = await auth()
+    if (!session?.user) {
+      return NextResponse.redirect(new URL('/login', request.url))
+    }
+  }
+
+  const res = NextResponse.next({ request })
   addSecurityHeaders(res)
   return res
 }

@@ -57,15 +57,17 @@ export const planTypeEnum = pgEnum('plan_type', ['free', 'pro', 'pro_plus'])
 /* ── 1. users ───────────────────────────────────────────────────────────────── */
 
 export const users = pgTable('users', {
-  id:             uuid('id').primaryKey().defaultRandom(),
-  email:          text('email').notNull(),
-  full_name:      text('full_name'),
-  phone:          text('phone'),
-  plan:           planTypeEnum('plan').default('free').notNull(),
+  id:              uuid('id').primaryKey().defaultRandom(),
+  email:           text('email').notNull(),
+  full_name:       text('full_name'),
+  phone:           text('phone'),
+  password_hash:   text('password_hash'),
+  email_verified:  timestamp('email_verified'),
+  plan:            planTypeEnum('plan').default('free').notNull(),
   plan_expires_at: timestamp('plan_expires_at', { withTimezone: true }),
-  trial_ends_at:  timestamp('trial_ends_at', { withTimezone: true }),
-  created_at:     timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-  updated_at:     timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  trial_ends_at:   timestamp('trial_ends_at', { withTimezone: true }),
+  created_at:      timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updated_at:      timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 })
 
 /* ── 2. warehouses ──────────────────────────────────────────────────────────── */
@@ -138,8 +140,9 @@ export const orderItems = pgTable('order_items', {
   id:             uuid('id').primaryKey().defaultRandom(),
   order_id:       uuid('order_id').notNull().references(() => orders.id, { onDelete: 'cascade' }),
   product_id:     uuid('product_id').references(() => products.id, { onDelete: 'set null' }),
-  quantity:        integer('quantity').default(1).notNull(),
+  quantity:       integer('quantity').default(1).notNull(),
   price_per_unit: numeric('price_per_unit'),
+  cost_per_unit:  numeric('cost_per_unit'),
 }, (t) => [
   index('order_items_order_id_idx').on(t.order_id),
   index('order_items_product_id_idx').on(t.product_id),
@@ -230,19 +233,27 @@ export const syncDays = pgTable('sync_days', {
 /* ── 12. user_settings ──────────────────────────────────────────────────────── */
 
 export const userSettings = pgTable('user_settings', {
-  id:                    uuid('id').primaryKey().defaultRandom(),
-  user_id:               uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  alert_stock_threshold: integer('alert_stock_threshold').default(15),
-  telegram_bot_token:    text('telegram_bot_token'),
-  telegram_chat_id:      text('telegram_chat_id'),
-  referral_code:         text('referral_code'),
-  ue_acquiring_pct:      numeric('ue_acquiring_pct').default('1.5'),
-  ue_last_mile_pct:      numeric('ue_last_mile_pct').default('0'),
-  ue_ad_pct:             numeric('ue_ad_pct').default('5'),
-  ue_tax_pct:            numeric('ue_tax_pct').default('6'),
-  ue_tax_type:           taxTypeEnum('ue_tax_type').default('income'),
-  ue_comm_pct:           numeric('ue_comm_pct').default('10'),
-  updated_at:            timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  id:                        uuid('id').primaryKey().defaultRandom(),
+  user_id:                   uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  alert_stock_threshold:     integer('alert_stock_threshold').default(15),
+  telegram_bot_token:        text('telegram_bot_token'),
+  telegram_chat_id:          text('telegram_chat_id'),
+  telegram_username:         text('telegram_username'),
+  telegram_pending_token:    text('telegram_pending_token'),
+  telegram_token_expires_at: timestamp('telegram_token_expires_at', { withTimezone: true }),
+  telegram_link_token:       text('telegram_link_token'),
+  telegram_link_expires_at:  timestamp('telegram_link_expires_at', { withTimezone: true }),
+  referral_code:             text('referral_code'),
+  ue_acquiring_pct:          numeric('ue_acquiring_pct').default('1.5'),
+  ue_last_mile_pct:          numeric('ue_last_mile_pct').default('0'),
+  ue_ad_pct:                 numeric('ue_ad_pct').default('5'),
+  ue_tax_pct:                numeric('ue_tax_pct').default('6'),
+  ue_tax_type:               taxTypeEnum('ue_tax_type').default('income'),
+  ue_comm_pct:               numeric('ue_comm_pct').default('10'),
+  notif_send_time:           text('notif_send_time').default('09:00').notNull(),
+  notif_send_days:           integer('notif_send_days').array().default([1, 2, 3, 4, 5, 6, 0]).notNull(),
+  created_at:                timestamp('created_at', { withTimezone: true }).defaultNow(),
+  updated_at:                timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 }, (t) => [
   uniqueIndex('user_settings_user_id_idx').on(t.user_id),
 ])
@@ -295,14 +306,14 @@ export const payments = pgTable('payments', {
 /* ── 15. alerts ─────────────────────────────────────────────────────────────── */
 
 export const alerts = pgTable('alerts', {
-  id:                uuid('id').primaryKey().defaultRandom(),
-  user_id:           uuid('user_id').references(() => users.id, { onDelete: 'cascade' }),
-  shop_id:           bigint('shop_id', { mode: 'number' }),
-  sku_id:            bigint('sku_id', { mode: 'number' }),
-  type:              text('type'),
-  message:           text('message'),
-  sent_to_telegram:  boolean('sent_to_telegram').default(false),
-  created_at:        timestamp('created_at', { withTimezone: true }).defaultNow(),
+  id:               uuid('id').primaryKey().defaultRandom(),
+  user_id:          uuid('user_id').references(() => users.id, { onDelete: 'cascade' }),
+  shop_id:          bigint('shop_id', { mode: 'number' }),
+  sku_id:           bigint('sku_id', { mode: 'number' }),
+  type:             text('type'),
+  message:          text('message'),
+  sent_to_telegram: boolean('sent_to_telegram').default(false),
+  created_at:       timestamp('created_at', { withTimezone: true }).defaultNow(),
 })
 
 /* ── 16. competitor_watchlist ───────────────────────────────────────────────── */
@@ -324,13 +335,17 @@ export const competitorWatchlist = pgTable('competitor_watchlist', {
 /* ── 17. bot_sessions ───────────────────────────────────────────────────────── */
 
 export const botSessions = pgTable('bot_sessions', {
-  id:         uuid('id').primaryKey().defaultRandom(),
-  user_id:    uuid('user_id').references(() => users.id, { onDelete: 'cascade' }),
-  chat_id:    text('chat_id').notNull(),
-  state:      text('state'),
-  data:       text('data'),
-  created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-  updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  id:          uuid('id').primaryKey().defaultRandom(),
+  user_id:     uuid('user_id').references(() => users.id, { onDelete: 'cascade' }),
+  chat_id:     text('chat_id').notNull(),
+  state:       text('state'),
+  data:        text('data'),
+  lang:        text('lang').default('uz').notNull(),
+  step:        text('step').default('lang_select').notNull(),
+  shop_name:   text('shop_name'),
+  marketplace: text('marketplace'),
+  created_at:  timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updated_at:  timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 }, (t) => [
   uniqueIndex('bot_sessions_chat_id_idx').on(t.chat_id),
 ])
@@ -347,4 +362,48 @@ export const channelNonces = pgTable('channel_nonces', {
   created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 }, (t) => [
   uniqueIndex('channel_nonces_nonce_idx').on(t.nonce),
+])
+
+/* ── 19. sessions (NextAuth) ────────────────────────────────────────────────── */
+
+export const sessions = pgTable('sessions', {
+  id:         text('id').primaryKey(),
+  user_id:    uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  token_hash: text('token_hash').notNull().unique(),
+  expires_at: timestamp('expires_at').notNull(),
+  created_at: timestamp('created_at').defaultNow(),
+  ip_address: text('ip_address'),
+  user_agent: text('user_agent'),
+}, (t) => [
+  index('idx_sessions_user_id').on(t.user_id),
+  index('idx_sessions_expires_at').on(t.expires_at),
+])
+
+/* ── 20. accounts (NextAuth OAuth) ───────────────────────────────────────────── */
+
+export const accounts = pgTable('accounts', {
+  id:                  text('id').primaryKey(),
+  user_id:             uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  provider:            text('provider').notNull(),
+  provider_account_id: text('provider_account_id').notNull(),
+  refresh_token:       text('refresh_token'),
+  access_token:        text('access_token'),
+  token_expires_at:    timestamp('token_expires_at'),
+  created_at:          timestamp('created_at').defaultNow(),
+}, (t) => [
+  index('idx_accounts_user_id').on(t.user_id),
+  uniqueIndex('idx_accounts_provider').on(t.provider, t.provider_account_id),
+])
+
+/* ── 21. verification_tokens (Email verification) ──────────────────────────── */
+
+export const verificationTokens = pgTable('verification_tokens', {
+  token:      text('token').primaryKey(),
+  user_id:    uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  email:      text('email').notNull(),
+  expires_at: timestamp('expires_at').notNull(),
+  created_at: timestamp('created_at').defaultNow(),
+}, (t) => [
+  index('idx_verification_tokens_user_id').on(t.user_id),
+  index('idx_verification_tokens_expires_at').on(t.expires_at),
 ])

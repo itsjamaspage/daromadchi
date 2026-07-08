@@ -1,10 +1,8 @@
 import { NextResponse } from 'next/server'
+import { eq, and } from 'drizzle-orm'
 import { createClient } from '@/lib/supabase/server'
+import { db, shops, products, orders, orderItems } from '@/lib/db'
 import { withErrorHandler } from '@/lib/api-handler'
-
-// Clearly-labelled, removable sample data so the app can be evaluated without a
-// real store. All demo shops share shop_id_external = 'DEMO'; deleting by that
-// tag cascades away every demo row across all three marketplaces.
 
 const DEMO_TAG = 'DEMO'
 
@@ -46,29 +44,24 @@ function pick<T>(arr: readonly T[]): T { return arr[rndInt(0, arr.length - 1)] }
 function roundTo(n: number, step = 1000) { return Math.round(n / step) * step }
 
 async function seedMarketplace(
-  supabase: Awaited<ReturnType<typeof import('@/lib/supabase/server').createClient>>,
   userId: string,
   marketplace: MarketplaceType,
   shopName: string,
   productNames: string[],
-  feeRate: number,     // marketplace commission rate
-  dailyOrders: number, // max orders per day
+  feeRate: number,
+  dailyOrders: number,
 ) {
-  const { data: shop, error: shopErr } = await supabase
-    .from('shops')
-    .insert({
-      user_id: userId,
-      name: shopName,
-      marketplace,
-      shop_id_external: DEMO_TAG,
-      is_active: false,
-      api_key_encrypted: null,
-    })
-    .select('id')
-    .single()
+  const [shop] = await db.insert(shops).values({
+    user_id: userId,
+    name: shopName,
+    marketplace,
+    shop_id_external: DEMO_TAG,
+    is_active: false,
+    api_key_encrypted: null,
+  }).returning({ id: shops.id })
 
-  if (shopErr || !shop) return null
-  const shopId = shop.id as string
+  if (!shop) return null
+  const shopId = shop.id
 
   const productDefs = productNames.map((title, i) => {
     const cat = CATEGORIES[i % CATEGORIES.length]
@@ -79,31 +72,29 @@ async function seedMarketplace(
       sku: `DEMO-${marketplace.slice(0, 2).toUpperCase()}-${100 + i}`,
       title,
       category: cat.name,
-      cost_price: cost,
-      selling_price: selling,
+      cost_price: String(cost),
+      selling_price: String(selling),
       stock_quantity: rndInt(0, 120),
       marketplace_product_id: `demo-${marketplace}-${100 + i}`,
     }
   })
 
-  const { data: insertedProducts, error: prodErr } = await supabase
-    .from('products')
-    .insert(productDefs)
-    .select('id, sku, selling_price, cost_price')
+  const insertedProducts = await db.insert(products).values(productDefs)
+    .returning({ id: products.id, sku: products.sku, selling_price: products.selling_price, cost_price: products.cost_price })
 
-  if (prodErr || !insertedProducts) {
-    await supabase.from('shops').delete().eq('id', shopId)
+  if (!insertedProducts.length) {
+    await db.delete(shops).where(eq(shops.id, shopId))
     return null
   }
 
   const DAYS = 183
   type OrderRow = {
     shop_id: string; order_id_external: string; marketplace: MarketplaceType
-    status: typeof STATUSES[number]; revenue: number; marketplace_fee: number
-    delivery_cost: number; items_count: number; ordered_at: string
+    status: typeof STATUSES[number]; revenue: string; marketplace_fee: string
+    delivery_cost: string; items_count: number; ordered_at: Date
   }
   const orderRows: OrderRow[] = []
-  const itemsByExternal = new Map<string, { product_id: string; quantity: number; price_per_unit: number; cost_per_unit: number }[]>()
+  const itemsByExternal = new Map<string, { product_id: string; quantity: number; price_per_unit: string; cost_per_unit: string }[]>()
 
   let seq = 0
   for (let d = DAYS; d >= 0; d--) {
@@ -116,25 +107,25 @@ async function seedMarketplace(
     for (let o = 0; o < ordersToday; o++) {
       const ext = `DEMO-${marketplace.slice(0, 2).toUpperCase()}-${seq++}`
       const lineCount = rndInt(1, 3)
-      const items: { product_id: string; quantity: number; price_per_unit: number; cost_per_unit: number }[] = []
+      const items: { product_id: string; quantity: number; price_per_unit: string; cost_per_unit: string }[] = []
       let revenue = 0
       for (let li = 0; li < lineCount; li++) {
         const p = pick(insertedProducts)
         const qty = rndInt(1, 3)
         const price = Number(p.selling_price)
         revenue += price * qty
-        items.push({ product_id: p.id as string, quantity: qty, price_per_unit: price, cost_per_unit: Number(p.cost_price) })
+        items.push({ product_id: p.id, quantity: qty, price_per_unit: String(price), cost_per_unit: String(Number(p.cost_price)) })
       }
       orderRows.push({
         shop_id: shopId,
         order_id_external: ext,
         marketplace,
         status: pick(STATUSES),
-        revenue: Math.round(revenue),
-        marketplace_fee: Math.round(revenue * feeRate),
-        delivery_cost: items.length * 5000,
+        revenue: String(Math.round(revenue)),
+        marketplace_fee: String(Math.round(revenue * feeRate)),
+        delivery_cost: String(items.length * 5000),
         items_count: items.length,
-        ordered_at: date.toISOString(),
+        ordered_at: date,
       })
       itemsByExternal.set(ext, items)
     }
@@ -142,19 +133,20 @@ async function seedMarketplace(
 
   for (let i = 0; i < orderRows.length; i += 500) {
     const batch = orderRows.slice(i, i + 500)
-    const { data: ins, error } = await supabase.from('orders').insert(batch).select('id, order_id_external')
-    if (error || !ins) continue
-    const itemRows: { order_id: string; product_id: string; quantity: number; price_per_unit: number; cost_per_unit: number }[] = []
+    const ins = await db.insert(orders).values(batch)
+      .returning({ id: orders.id, order_id_external: orders.order_id_external })
+
+    const itemRows: { order_id: string; product_id: string; quantity: number; price_per_unit: string; cost_per_unit: string }[] = []
     for (const row of ins) {
-      const items = itemsByExternal.get(row.order_id_external as string) ?? []
-      for (const it of items) itemRows.push({ order_id: row.id as string, ...it })
+      const items = itemsByExternal.get(row.order_id_external!) ?? []
+      for (const it of items) itemRows.push({ order_id: row.id, ...it })
     }
     for (let j = 0; j < itemRows.length; j += 500) {
-      await supabase.from('order_items').insert(itemRows.slice(j, j + 500))
+      await db.insert(orderItems).values(itemRows.slice(j, j + 500))
     }
   }
 
-  await supabase.from('shops').update({ last_synced_at: new Date().toISOString() }).eq('id', shopId)
+  await db.update(shops).set({ last_synced_at: new Date() }).where(eq(shops.id, shopId))
   return { products: insertedProducts.length, orders: orderRows.length }
 }
 
@@ -163,13 +155,9 @@ export const DELETE = withErrorHandler(async () => {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { error } = await supabase
-    .from('shops')
-    .delete()
-    .eq('user_id', user.id)
-    .eq('shop_id_external', DEMO_TAG)
+  await db.delete(shops)
+    .where(and(eq(shops.user_id, user.id), eq(shops.shop_id_external, DEMO_TAG)))
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ ok: true, cleared: true })
 })
 
@@ -178,13 +166,13 @@ export const POST = withErrorHandler(async () => {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  // Remove any existing demo data across all marketplaces
-  await supabase.from('shops').delete().eq('user_id', user.id).eq('shop_id_external', DEMO_TAG)
+  await db.delete(shops)
+    .where(and(eq(shops.user_id, user.id), eq(shops.shop_id_external, DEMO_TAG)))
 
   const [uzum, ym, wb] = await Promise.all([
-    seedMarketplace(supabase, user.id, 'uzum',          "DEMO — Uzum do'kon",          UZUM_PRODUCTS, 0.15, 3),
-    seedMarketplace(supabase, user.id, 'yandex_market', "DEMO — Yandex Market do'kon", YM_PRODUCTS,   0.07, 2),
-    seedMarketplace(supabase, user.id, 'wildberries',   "DEMO — Wildberries do'kon",   WB_PRODUCTS,   0.17, 2),
+    seedMarketplace(user.id, 'uzum',          "DEMO — Uzum do'kon",          UZUM_PRODUCTS, 0.15, 3),
+    seedMarketplace(user.id, 'yandex_market', "DEMO — Yandex Market do'kon", YM_PRODUCTS,   0.07, 2),
+    seedMarketplace(user.id, 'wildberries',   "DEMO — Wildberries do'kon",   WB_PRODUCTS,   0.17, 2),
   ])
 
   return NextResponse.json({

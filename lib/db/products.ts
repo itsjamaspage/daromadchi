@@ -1,5 +1,6 @@
 import { unstable_cache } from 'next/cache'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { eq, ne, and, inArray, gte, lte, desc, asc, sql, count } from 'drizzle-orm'
+import { db, shops, products, orders, orderItems } from '@/lib/db'
 import { getShopIds, getCurrentUserId } from '@/lib/db/shop-context'
 import type { Product, MarketplaceType } from '@/lib/types'
 
@@ -8,50 +9,53 @@ export interface PaginatedProducts {
   total: number
 }
 
-const supabaseConfigured =
-  process.env.NEXT_PUBLIC_SUPABASE_URL &&
-  !process.env.NEXT_PUBLIC_SUPABASE_URL.includes('your-project')
-
-// Fetch all products for the user across all shops.
-// Marketplace filtering is done in JS so the result is cached once and reused for all tab switches.
 const _fetchProducts = unstable_cache(
   async (allShopIdsStr: string): Promise<Product[]> => {
     const allShopIds = allShopIdsStr ? allShopIdsStr.split(',') : []
     if (allShopIds.length === 0) return []
 
-    const supabase = createAdminClient()
-
-    const [
-      { data: products, error },
-      { data: soldRows },
-      { data: shopRows },
-    ] = await Promise.all([
-      supabase
-        .from('products')
-        .select('id, shop_id, sku, title, cost_price, selling_price, stock_quantity, category, marketplace_product_id, updated_at')
-        .in('shop_id', allShopIds)
-        .order('title'),
-      supabase.rpc('get_sold_counts', { shop_ids: allShopIds }),
-      supabase.from('shops').select('id, marketplace, warehouse_id').in('id', allShopIds),
+    const [productRows, soldRows, shopRows] = await Promise.all([
+      db.select({
+        id: products.id,
+        shop_id: products.shop_id,
+        sku: products.sku,
+        title: products.title,
+        cost_price: products.cost_price,
+        selling_price: products.selling_price,
+        stock_quantity: products.stock_quantity,
+        category: products.category,
+        marketplace_product_id: products.marketplace_product_id,
+        updated_at: products.updated_at,
+      }).from(products)
+        .where(inArray(products.shop_id, allShopIds))
+        .orderBy(asc(products.title)),
+      db.select({
+        product_id: orderItems.product_id,
+        qty_sold: sql<number>`coalesce(sum(${orderItems.quantity}), 0)`.as('qty_sold'),
+      }).from(orderItems)
+        .innerJoin(orders, eq(orderItems.order_id, orders.id))
+        .where(inArray(orders.shop_id, allShopIds))
+        .groupBy(orderItems.product_id),
+      db.select({
+        id: shops.id,
+        marketplace: shops.marketplace,
+        warehouse_id: shops.warehouse_id,
+      }).from(shops).where(inArray(shops.id, allShopIds)),
     ])
-    if (error || !products) return []
 
     const soldByProductId = new Map<string, number>()
-    for (const row of soldRows ?? []) {
-      if (row.product_id) soldByProductId.set(row.product_id, Number(row.qty_sold ?? 0))
+    for (const row of soldRows) {
+      if (row.product_id) soldByProductId.set(row.product_id, Number(row.qty_sold))
     }
 
     const shopInfo = new Map<string, { marketplace: MarketplaceType; warehouseId: string | null }>()
-    for (const s of shopRows ?? []) {
-      shopInfo.set(s.id, { marketplace: s.marketplace as MarketplaceType, warehouseId: s.warehouse_id ?? null })
+    for (const s of shopRows) {
+      shopInfo.set(s.id, { marketplace: s.marketplace as MarketplaceType, warehouseId: s.warehouse_id })
     }
 
-    // Group by warehouse+SKU: when two shops share a warehouse, products with the same SKU
-    // draw from the same physical pool. Key = `${warehouseId}:${sku}` (only when warehouseId set).
-    const groupTotalSold  = new Map<string, number>()
-    const groupShopCount  = new Map<string, number>()
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    for (const p of products as any[]) {
+    const groupTotalSold = new Map<string, number>()
+    const groupShopCount = new Map<string, number>()
+    for (const p of productRows) {
       if (!p.sku) continue
       const wid = shopInfo.get(p.shop_id)?.warehouseId
       if (!wid) continue
@@ -61,26 +65,33 @@ const _fetchProducts = unstable_cache(
       groupShopCount.set(key, (groupShopCount.get(key) ?? 0) + 1)
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return (products as any[]).map(p => {
+    return productRows.map(p => {
       const sold = soldByProductId.get(p.id) ?? 0
-      const wid  = shopInfo.get(p.shop_id)?.warehouseId
-      const key  = wid && p.sku ? `${wid}:${p.sku}` : null
+      const wid = shopInfo.get(p.shop_id)?.warehouseId
+      const key = wid && p.sku ? `${wid}:${p.sku}` : null
       const isShared = key ? (groupShopCount.get(key) ?? 0) > 1 : false
-
-      // Warehouse-aware available stock: subtract ALL sales across the same warehouse+SKU group
       const availableStock = isShared && key
         ? Math.max(0, p.stock_quantity - (groupTotalSold.get(key) ?? 0))
         : p.stock_quantity
 
       return {
-        ...p,
-        marketplace:     shopInfo.get(p.shop_id)?.marketplace,
+        id: p.id,
+        shop_id: p.shop_id,
+        sku: p.sku,
+        title: p.title,
+        cost_price: p.cost_price ? Number(p.cost_price) : null,
+        selling_price: p.selling_price ? Number(p.selling_price) : null,
+        stock_quantity: p.stock_quantity,
+        physical_stock: null,
+        category: p.category,
+        marketplace_product_id: p.marketplace_product_id,
+        updated_at: p.updated_at.toISOString(),
+        marketplace: shopInfo.get(p.shop_id)?.marketplace,
         available_stock: availableStock,
-        profit:          Number(p.selling_price ?? 0) - Number(p.cost_price ?? 0),
+        profit: Number(p.selling_price ?? 0) - Number(p.cost_price ?? 0),
         sold,
-        is_shared:       isShared,
-      }
+        is_shared: isShared,
+      } as Product
     })
   },
   ['products-v4'],
@@ -88,7 +99,6 @@ const _fetchProducts = unstable_cache(
 )
 
 export async function getProducts(marketplace?: MarketplaceType): Promise<Product[]> {
-  if (!supabaseConfigured) return []
   const allShopIds = await getShopIds()
   if (!allShopIds || allShopIds.length === 0) return []
   const all = await _fetchProducts(allShopIds.join(','))
@@ -108,34 +118,41 @@ const _fetchProductSales = unstable_cache(
     const shopIds = shopIdsStr ? shopIdsStr.split(',') : []
     if (shopIds.length === 0) return []
 
-    const supabase = createAdminClient()
-
-    let sinceIso: string | null = null
-    let untilIso: string | null = null
+    let sinceDate: Date | null = null
+    let untilDate: Date | null = null
     if (from && to) {
-      sinceIso = new Date(from).toISOString()
-      const toDate = new Date(to); toDate.setHours(23, 59, 59, 999)
-      untilIso = toDate.toISOString()
+      sinceDate = new Date(from)
+      untilDate = new Date(to)
+      untilDate.setHours(23, 59, 59, 999)
     } else if (days !== null && days > 0) {
-      const d = new Date(); d.setDate(d.getDate() - days)
-      sinceIso = d.toISOString()
+      sinceDate = new Date()
+      sinceDate.setDate(sinceDate.getDate() - days)
     }
 
-    // Use RPC — embedded .filter('orders.column', ...) is silently ignored by Supabase JS
-    const { data: rows } = await supabase.rpc('get_product_sales', {
-      shop_ids: shopIds,
-      since_iso: sinceIso,
-      until_iso: untilIso,
-    })
-    if (!rows || rows.length === 0) return []
+    const conditions = [
+      inArray(orders.shop_id, shopIds),
+    ]
+    if (sinceDate) conditions.push(gte(orders.ordered_at, sinceDate))
+    if (untilDate) conditions.push(lte(orders.ordered_at, untilDate))
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return rows.map((r: any) => ({
-      product_id: r.product_id,
-      title:      r.title ?? 'Unknown',
-      sku:        r.sku ?? null,
-      qty_sold:   Number(r.qty_sold ?? 0),
-      revenue:    Number(r.revenue ?? 0),
+    const rows = await db.select({
+      product_id: orderItems.product_id,
+      title: products.title,
+      sku: products.sku,
+      qty_sold: sql<number>`coalesce(sum(${orderItems.quantity}), 0)`.as('qty_sold'),
+      revenue: sql<number>`coalesce(sum(${orderItems.quantity} * ${orderItems.price_per_unit}), 0)`.as('revenue'),
+    }).from(orderItems)
+      .innerJoin(orders, eq(orderItems.order_id, orders.id))
+      .innerJoin(products, eq(orderItems.product_id, products.id))
+      .where(and(...conditions))
+      .groupBy(orderItems.product_id, products.title, products.sku)
+
+    return rows.map(r => ({
+      product_id: r.product_id!,
+      title: r.title ?? 'Unknown',
+      sku: r.sku ?? null,
+      qty_sold: Number(r.qty_sold),
+      revenue: Number(r.revenue),
     }))
   },
   ['product-sales-v3'],
@@ -148,7 +165,6 @@ export async function getProductSales(
   from?: string,
   to?: string,
 ): Promise<ProductSalesRow[]> {
-  if (!supabaseConfigured) return []
   const shopIds = await getShopIds(marketplace)
   if (!shopIds || shopIds.length === 0) return []
   return _fetchProductSales(shopIds.join(','), days, from ?? '', to ?? '')
@@ -166,33 +182,39 @@ const _fetchCategoryRevenue = unstable_cache(
     const shopIds = shopIdsStr ? shopIdsStr.split(',') : []
     if (shopIds.length === 0) return []
 
-    const supabase = createAdminClient()
-
-    let sinceIso: string | null = null
-    let untilIso: string | null = null
+    let sinceDate: Date | null = null
+    let untilDate: Date | null = null
     if (from && to) {
-      sinceIso = new Date(from).toISOString()
-      const toDate = new Date(to); toDate.setHours(23, 59, 59, 999)
-      untilIso = toDate.toISOString()
+      sinceDate = new Date(from)
+      untilDate = new Date(to)
+      untilDate.setHours(23, 59, 59, 999)
     } else if (days > 0) {
-      const d = new Date(); d.setDate(d.getDate() - days + 1)
-      sinceIso = d.toISOString()
+      sinceDate = new Date()
+      sinceDate.setDate(sinceDate.getDate() - days + 1)
     }
 
-    const { data, error } = await supabase.rpc('get_category_revenue', {
-      p_shop_ids: shopIds,
-      p_since: sinceIso,
-      p_until: untilIso,
-    })
+    const conditions = [
+      inArray(orders.shop_id, shopIds),
+    ]
+    if (sinceDate) conditions.push(gte(orders.ordered_at, sinceDate))
+    if (untilDate) conditions.push(lte(orders.ordered_at, untilDate))
 
-    if (error || !data || data.length === 0) return []
+    const rows = await db.select({
+      name: sql<string>`coalesce(${products.category}, 'Uncategorized')`.as('name'),
+      revenue: sql<number>`coalesce(sum(${orderItems.quantity} * ${orderItems.price_per_unit}), 0)`.as('revenue'),
+      profit: sql<number>`coalesce(sum(${orderItems.quantity} * (${orderItems.price_per_unit} - coalesce(${orderItems.cost_per_unit}, ${products.cost_price}, 0))), 0)`.as('profit'),
+    }).from(orderItems)
+      .innerJoin(orders, eq(orderItems.order_id, orders.id))
+      .innerJoin(products, eq(orderItems.product_id, products.id))
+      .where(and(...conditions))
+      .groupBy(products.category)
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return (data as any[]).map(r => ({
-      name:    r.name,
-      revenue: Number(r.revenue ?? 0),
-      profit:  Number(r.profit ?? 0),
-      percent: Number(r.percent ?? 0),
+    const totalRevenue = rows.reduce((s, r) => s + Number(r.revenue), 0)
+    return rows.map(r => ({
+      name: r.name,
+      revenue: Number(r.revenue),
+      profit: Number(r.profit),
+      percent: totalRevenue > 0 ? Math.round((Number(r.revenue) / totalRevenue) * 100) : 0,
     }))
   },
   ['category-revenue-rpc'],
@@ -205,7 +227,6 @@ export async function getCategoryRevenue(
   from?: string,
   to?: string,
 ): Promise<CategoryRow[]> {
-  if (!supabaseConfigured) return []
   const shopIds = await getShopIds(marketplace)
   if (!shopIds || shopIds.length === 0) return []
   return _fetchCategoryRevenue(shopIds.join(','), days, from ?? '', to ?? '')
@@ -213,39 +234,99 @@ export async function getCategoryRevenue(
 
 const _fetchProductsPaginated = unstable_cache(
   async (userId: string, marketplace: string | null, page: number, pageSize: number): Promise<PaginatedProducts> => {
-    const supabase = createAdminClient()
     const offset = (page - 1) * pageSize
 
-    const { data, error } = await supabase.rpc('get_products_paginated', {
-      p_user_id: userId,
-      p_marketplace: marketplace,
-      p_offset: offset,
-      p_limit: pageSize,
+    const shopConditions = [
+      eq(shops.user_id, userId),
+      ne(shops.shop_id_external, 'DEMO'),
+    ]
+    if (marketplace) shopConditions.push(eq(shops.marketplace, marketplace as MarketplaceType))
+
+    const userShops = await db.select({ id: shops.id, marketplace: shops.marketplace, warehouse_id: shops.warehouse_id })
+      .from(shops).where(and(...shopConditions))
+    const shopIds = userShops.map(s => s.id)
+    if (shopIds.length === 0) return { rows: [], total: 0 }
+
+    const shopInfo = new Map<string, { marketplace: MarketplaceType; warehouseId: string | null }>()
+    for (const s of userShops) {
+      shopInfo.set(s.id, { marketplace: s.marketplace as MarketplaceType, warehouseId: s.warehouse_id })
+    }
+
+    const [productRows, [{ total }]] = await Promise.all([
+      db.select({
+        id: products.id,
+        shop_id: products.shop_id,
+        sku: products.sku,
+        title: products.title,
+        cost_price: products.cost_price,
+        selling_price: products.selling_price,
+        stock_quantity: products.stock_quantity,
+        category: products.category,
+        marketplace_product_id: products.marketplace_product_id,
+        updated_at: products.updated_at,
+      }).from(products)
+        .where(inArray(products.shop_id, shopIds))
+        .orderBy(asc(products.title))
+        .limit(pageSize)
+        .offset(offset),
+      db.select({ total: count() }).from(products).where(inArray(products.shop_id, shopIds)),
+    ])
+
+    const productIds = productRows.map(p => p.id)
+    const soldRows = productIds.length > 0
+      ? await db.select({
+          product_id: orderItems.product_id,
+          qty_sold: sql<number>`coalesce(sum(${orderItems.quantity}), 0)`.as('qty_sold'),
+        }).from(orderItems)
+          .innerJoin(orders, eq(orderItems.order_id, orders.id))
+          .where(inArray(orderItems.product_id, productIds))
+          .groupBy(orderItems.product_id)
+      : []
+
+    const soldMap = new Map<string, number>()
+    for (const r of soldRows) {
+      if (r.product_id) soldMap.set(r.product_id, Number(r.qty_sold))
+    }
+
+    const groupTotalSold = new Map<string, number>()
+    const groupShopCount = new Map<string, number>()
+    for (const p of productRows) {
+      if (!p.sku) continue
+      const wid = shopInfo.get(p.shop_id)?.warehouseId
+      if (!wid) continue
+      const key = `${wid}:${p.sku}`
+      groupTotalSold.set(key, (groupTotalSold.get(key) ?? 0) + (soldMap.get(p.id) ?? 0))
+      groupShopCount.set(key, (groupShopCount.get(key) ?? 0) + 1)
+    }
+
+    const rows: Product[] = productRows.map(p => {
+      const sold = soldMap.get(p.id) ?? 0
+      const wid = shopInfo.get(p.shop_id)?.warehouseId
+      const key = wid && p.sku ? `${wid}:${p.sku}` : null
+      const isShared = key ? (groupShopCount.get(key) ?? 0) > 1 : false
+      const availableStock = isShared && key
+        ? Math.max(0, p.stock_quantity - (groupTotalSold.get(key) ?? 0))
+        : p.stock_quantity
+
+      return {
+        id: p.id,
+        shop_id: p.shop_id,
+        sku: p.sku,
+        title: p.title,
+        cost_price: p.cost_price ? Number(p.cost_price) : null,
+        selling_price: p.selling_price ? Number(p.selling_price) : null,
+        stock_quantity: p.stock_quantity,
+        physical_stock: null,
+        category: p.category,
+        marketplace_product_id: p.marketplace_product_id,
+        updated_at: p.updated_at.toISOString(),
+        marketplace: shopInfo.get(p.shop_id)?.marketplace,
+        available_stock: availableStock,
+        profit: Number(p.selling_price ?? 0) - Number(p.cost_price ?? 0),
+        sold,
+        is_shared: isShared,
+      } as Product
     })
-
-    if (error || !data || data.length === 0) return { rows: [], total: 0 }
-
-    const total = Number(data[0].total_count ?? 0)
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const rows: Product[] = data.map((r: any) => ({
-      id:                     r.id,
-      shop_id:                r.shop_id,
-      sku:                    r.sku,
-      title:                  r.title,
-      cost_price:             r.cost_price != null ? Number(r.cost_price) : null,
-      selling_price:          r.selling_price != null ? Number(r.selling_price) : null,
-      stock_quantity:         r.stock_quantity,
-      physical_stock:         null,
-      category:               r.category,
-      marketplace_product_id: r.marketplace_product_id,
-      updated_at:             r.updated_at,
-      marketplace:            r.marketplace as MarketplaceType,
-      available_stock:        r.available_stock,
-      profit:                 Number(r.profit ?? 0),
-      sold:                   Number(r.sold ?? 0),
-      is_shared:              r.is_shared ?? false,
-    }))
 
     return { rows, total }
   },
@@ -254,7 +335,6 @@ const _fetchProductsPaginated = unstable_cache(
 )
 
 export async function getProductsPaginated(page = 1, pageSize = 50, marketplace?: MarketplaceType): Promise<PaginatedProducts> {
-  if (!supabaseConfigured) return { rows: [], total: 0 }
   const userId = await getCurrentUserId()
   if (!userId) return { rows: [], total: 0 }
   return _fetchProductsPaginated(userId, marketplace ?? null, page, pageSize)

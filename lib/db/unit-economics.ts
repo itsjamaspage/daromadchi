@@ -1,18 +1,15 @@
-import { createAdminClient } from '@/lib/supabase/admin'
+import { eq, and, inArray, desc } from 'drizzle-orm'
+import { db, unitEconomicsItems, userSettings } from '@/lib/db'
 import { getCurrentUserId } from '@/lib/db/shop-context'
 import type { UnitEconomicsItem, UnitEcoSettings, MarketplaceType } from '@/lib/types'
 
-const supabaseConfigured =
-  process.env.NEXT_PUBLIC_SUPABASE_URL &&
-  !process.env.NEXT_PUBLIC_SUPABASE_URL.includes('your-project')
-
-function mapRow(row: Record<string, unknown>): UnitEconomicsItem {
+function mapRow(row: typeof unitEconomicsItems.$inferSelect): UnitEconomicsItem {
   return {
-    id:            row.id as string,
-    title:         row.title as string,
-    image:         (row.image as string) ?? undefined,
-    sku:           (row.sku as string) ?? undefined,
-    category:      (row.category as string) ?? undefined,
+    id:            row.id,
+    title:         row.title,
+    image:         row.image ?? undefined,
+    sku:           row.sku ?? undefined,
+    category:      row.category ?? undefined,
     marketplace:   row.marketplace as MarketplaceType,
     sellingPrice:  Number(row.selling_price),
     costPrice:     Number(row.cost_price),
@@ -28,132 +25,106 @@ function mapRow(row: Record<string, unknown>): UnitEconomicsItem {
     margin:        Number(row.margin),
     stock:         row.stock !== null ? Number(row.stock) : undefined,
     weight:        row.weight !== null ? Number(row.weight) : undefined,
-    supplierUrl:   (row.supplier_url as string) ?? undefined,
-    productUrl:    (row.product_url as string) ?? undefined,
-    addedAt:       row.created_at as string,
+    supplierUrl:   row.supplier_url ?? undefined,
+    productUrl:    row.product_url ?? undefined,
+    addedAt:       row.created_at.toISOString(),
   }
 }
 
 export async function getUnitEconomicsItems(): Promise<UnitEconomicsItem[]> {
-  if (!supabaseConfigured) return []
-
   const userId = await getCurrentUserId()
   if (!userId) return []
 
-  const supabase = createAdminClient()
-  const { data, error } = await supabase
-    .from('unit_economics_items')
-    .select('*')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false })
+  const rows = await db.select().from(unitEconomicsItems)
+    .where(eq(unitEconomicsItems.user_id, userId))
+    .orderBy(desc(unitEconomicsItems.created_at))
 
-  if (error || !data) return []
-  return data.map(mapRow)
+  return rows.map(mapRow)
 }
 
 export async function deleteUnitEconomicsItems(ids: string[]): Promise<void> {
-  if (!supabaseConfigured || ids.length === 0) return
+  if (ids.length === 0) return
 
   const userId = await getCurrentUserId()
   if (!userId) return
 
-  const supabase = createAdminClient()
-  await supabase.from('unit_economics_items').delete().in('id', ids).eq('user_id', userId)
+  await db.delete(unitEconomicsItems)
+    .where(and(inArray(unitEconomicsItems.id, ids), eq(unitEconomicsItems.user_id, userId)))
 }
 
 export async function updateUnitEconomicsSupplier(id: string, supplierUrl: string): Promise<void> {
-  if (!supabaseConfigured) return
-
   const userId = await getCurrentUserId()
   if (!userId) return
 
-  const supabase = createAdminClient()
-  await supabase
-    .from('unit_economics_items')
-    .update({ supplier_url: supplierUrl, updated_at: new Date().toISOString() })
-    .eq('id', id)
-    .eq('user_id', userId)
+  await db.update(unitEconomicsItems)
+    .set({ supplier_url: supplierUrl, updated_at: new Date() })
+    .where(and(eq(unitEconomicsItems.id, id), eq(unitEconomicsItems.user_id, userId)))
 }
 
 export async function updateUnitEconomicsItem(
   id: string,
   fields: Partial<Omit<UnitEconomicsItem, 'id' | 'addedAt'>>,
 ): Promise<boolean> {
-  if (!supabaseConfigured) return true
-
   const userId = await getCurrentUserId()
   if (!userId) return false
 
-  const supabase = createAdminClient()
-  const update: Record<string, unknown> = { updated_at: new Date().toISOString() }
+  const update: Record<string, unknown> = { updated_at: new Date() }
   if (fields.title         !== undefined) update.title          = fields.title
-  if (fields.costPrice     !== undefined) update.cost_price     = fields.costPrice
-  if (fields.sellingPrice  !== undefined) update.selling_price  = fields.sellingPrice
-  if (fields.commissionPct !== undefined) update.commission_pct = fields.commissionPct
-  if (fields.commission    !== undefined) update.commission     = fields.commission
-  if (fields.delivery      !== undefined) update.delivery       = fields.delivery
-  if (fields.lastMile      !== undefined) update.last_mile      = fields.lastMile
-  if (fields.acquiring     !== undefined) update.acquiring      = fields.acquiring
-  if (fields.adSpend       !== undefined) update.ad_spend       = fields.adSpend
-  if (fields.tax           !== undefined) update.tax            = fields.tax
-  if (fields.netProfit     !== undefined) update.net_profit     = fields.netProfit
-  if (fields.roi           !== undefined) update.roi            = fields.roi
-  if (fields.margin        !== undefined) update.margin         = fields.margin
+  if (fields.costPrice     !== undefined) update.cost_price     = String(fields.costPrice)
+  if (fields.sellingPrice  !== undefined) update.selling_price  = String(fields.sellingPrice)
+  if (fields.commissionPct !== undefined) update.commission_pct = String(fields.commissionPct)
+  if (fields.commission    !== undefined) update.commission     = String(fields.commission)
+  if (fields.delivery      !== undefined) update.delivery       = String(fields.delivery)
+  if (fields.lastMile      !== undefined) update.last_mile      = String(fields.lastMile)
+  if (fields.acquiring     !== undefined) update.acquiring      = String(fields.acquiring)
+  if (fields.adSpend       !== undefined) update.ad_spend       = String(fields.adSpend)
+  if (fields.tax           !== undefined) update.tax            = String(fields.tax)
+  if (fields.netProfit     !== undefined) update.net_profit     = String(fields.netProfit)
+  if (fields.roi           !== undefined) update.roi            = String(fields.roi)
+  if (fields.margin        !== undefined) update.margin         = String(fields.margin)
   if (fields.stock         !== undefined) update.stock          = fields.stock
   if (fields.supplierUrl   !== undefined) update.supplier_url   = fields.supplierUrl
 
-  const { error } = await supabase
-    .from('unit_economics_items')
-    .update(update)
-    .eq('id', id)
-    .eq('user_id', userId)
+  await db.update(unitEconomicsItems)
+    .set(update)
+    .where(and(eq(unitEconomicsItems.id, id), eq(unitEconomicsItems.user_id, userId)))
 
-  return !error
+  return true
 }
 
 export async function addUnitEconomicsItem(
   item: Omit<UnitEconomicsItem, 'id' | 'addedAt'>
 ): Promise<{ id: string } | null | false> {
-  if (!supabaseConfigured) return { id: `mock-${Date.now()}` }
-
   const userId = await getCurrentUserId()
-  if (!userId) return null   // null = not authenticated → 401
+  if (!userId) return null
 
-  const supabase = createAdminClient()
-  const { data, error } = await supabase
-    .from('unit_economics_items')
-    .insert({
-      user_id:        userId,
-      title:          item.title,
-      image:          item.image ?? null,
-      sku:            item.sku ?? null,
-      category:       item.category ?? null,
-      marketplace:    item.marketplace,
-      selling_price:  item.sellingPrice,
-      cost_price:     item.costPrice,
-      commission_pct: item.commissionPct,
-      commission:     item.commission,
-      delivery:       item.delivery,
-      last_mile:      item.lastMile,
-      acquiring:      item.acquiring,
-      ad_spend:       item.adSpend,
-      tax:            item.tax,
-      net_profit:     item.netProfit,
-      roi:            item.roi ?? null,
-      margin:         item.margin,
-      stock:          item.stock ?? null,
-      weight:         item.weight ?? null,
-      supplier_url:   item.supplierUrl ?? null,
-      product_url:    item.productUrl ?? null,
-    })
-    .select('id')
-    .single()
+  const [row] = await db.insert(unitEconomicsItems).values({
+    user_id:        userId,
+    title:          item.title,
+    image:          item.image ?? null,
+    sku:            item.sku ?? null,
+    category:       item.category ?? null,
+    marketplace:    item.marketplace,
+    selling_price:  String(item.sellingPrice),
+    cost_price:     String(item.costPrice),
+    commission_pct: String(item.commissionPct),
+    commission:     String(item.commission),
+    delivery:       String(item.delivery),
+    last_mile:      String(item.lastMile),
+    acquiring:      String(item.acquiring),
+    ad_spend:       String(item.adSpend),
+    tax:            String(item.tax),
+    net_profit:     String(item.netProfit),
+    roi:            item.roi != null ? String(item.roi) : null,
+    margin:         String(item.margin),
+    stock:          item.stock ?? null,
+    weight:         item.weight != null ? String(item.weight) : null,
+    supplier_url:   item.supplierUrl ?? null,
+    product_url:    item.productUrl ?? null,
+  }).returning({ id: unitEconomicsItems.id })
 
-  if (error || !data) {
-    console.error('[addUnitEconomicsItem] DB error:', error?.message, error?.details, error?.code)
-    return false
-  }
-  return { id: data.id as string }
+  if (!row) return false
+  return { id: row.id }
 }
 
 export async function getUnitEcoSettings(): Promise<UnitEcoSettings> {
@@ -161,44 +132,47 @@ export async function getUnitEcoSettings(): Promise<UnitEcoSettings> {
     acquiringPct: 1.5, lastMilePct: 0, adPct: 5,
     taxPct: 6, taxType: 'income', defaultCommissionPct: 10,
   }
-  if (!supabaseConfigured) return defaults
 
   const userId = await getCurrentUserId()
   if (!userId) return defaults
 
-  const supabase = createAdminClient()
-  const { data } = await supabase
-    .from('user_settings')
-    .select('*')
-    .eq('user_id', userId)
-    .single()
+  const [row] = await db.select().from(userSettings)
+    .where(eq(userSettings.user_id, userId))
 
-  if (!data) return defaults
+  if (!row) return defaults
   return {
-    acquiringPct:        Number(data.ue_acquiring_pct),
-    lastMilePct:         Number(data.ue_last_mile_pct),
-    adPct:               Number(data.ue_ad_pct),
-    taxPct:              Number(data.ue_tax_pct),
-    taxType:             data.ue_tax_type as UnitEcoSettings['taxType'],
-    defaultCommissionPct: Number(data.ue_comm_pct),
+    acquiringPct:        Number(row.ue_acquiring_pct),
+    lastMilePct:         Number(row.ue_last_mile_pct),
+    adPct:               Number(row.ue_ad_pct),
+    taxPct:              Number(row.ue_tax_pct),
+    taxType:             row.ue_tax_type as UnitEcoSettings['taxType'],
+    defaultCommissionPct: Number(row.ue_comm_pct),
   }
 }
 
 export async function saveUnitEcoSettings(s: UnitEcoSettings): Promise<void> {
-  if (!supabaseConfigured) return
-
   const userId = await getCurrentUserId()
   if (!userId) return
 
-  const supabase = createAdminClient()
-  await supabase.from('user_settings').upsert({
+  await db.insert(userSettings).values({
     user_id:          userId,
-    ue_acquiring_pct: s.acquiringPct,
-    ue_last_mile_pct: s.lastMilePct,
-    ue_ad_pct:        s.adPct,
-    ue_tax_pct:       s.taxPct,
+    ue_acquiring_pct: String(s.acquiringPct),
+    ue_last_mile_pct: String(s.lastMilePct),
+    ue_ad_pct:        String(s.adPct),
+    ue_tax_pct:       String(s.taxPct),
     ue_tax_type:      s.taxType,
-    ue_comm_pct:      s.defaultCommissionPct,
-    updated_at:       new Date().toISOString(),
+    ue_comm_pct:      String(s.defaultCommissionPct),
+    updated_at:       new Date(),
+  }).onConflictDoUpdate({
+    target: userSettings.user_id,
+    set: {
+      ue_acquiring_pct: String(s.acquiringPct),
+      ue_last_mile_pct: String(s.lastMilePct),
+      ue_ad_pct:        String(s.adPct),
+      ue_tax_pct:       String(s.taxPct),
+      ue_tax_type:      s.taxType,
+      ue_comm_pct:      String(s.defaultCommissionPct),
+      updated_at:       new Date(),
+    },
   })
 }

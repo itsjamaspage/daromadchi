@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { supabaseAdmin } from '@/lib/api/auth'
+import { db, userSettings } from '@/lib/db'
 import { telegramConfigured, telegramDeepLink } from '@/lib/telegram'
 import { withErrorHandler } from '@/lib/api-handler'
 
@@ -18,20 +18,19 @@ export const POST = withErrorHandler(async () => {
     .join('')
   const expiresAt = new Date(Date.now() + 10 * 60 * 1000)
 
-  const { error } = await supabaseAdmin.from('user_settings').upsert(
-    {
-      user_id:                  user.id,
+  await db.insert(userSettings).values({
+    user_id:                  user.id,
+    telegram_link_token:      linkToken,
+    telegram_link_expires_at: expiresAt,
+    updated_at:               new Date(),
+  }).onConflictDoUpdate({
+    target: userSettings.user_id,
+    set: {
       telegram_link_token:      linkToken,
-      telegram_link_expires_at: expiresAt.toISOString(),
-      updated_at:               new Date().toISOString(),
+      telegram_link_expires_at: expiresAt,
+      updated_at:               new Date(),
     },
-    { onConflict: 'user_id' }
-  )
-
-  if (error) {
-    console.error('[telegram-link] upsert error:', error)
-    return NextResponse.json({ error: 'Token yaratishda xato' }, { status: 500 })
-  }
+  })
 
   return NextResponse.json({ url: telegramDeepLink(linkToken), expiresAt })
 })

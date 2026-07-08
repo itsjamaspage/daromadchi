@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { eq, and, isNotNull } from 'drizzle-orm'
+import { db, shops } from '@/lib/db'
 import { syncFromUzum } from '@/lib/uzum/sync'
 import { syncFromYandex } from '@/lib/yandex/sync'
 import { syncFromWildberries } from '@/lib/wildberries/sync'
@@ -7,7 +8,7 @@ import { decrypt } from '@/lib/crypto'
 import { withErrorHandler } from '@/lib/api-handler'
 
 export const runtime    = 'nodejs'
-export const maxDuration = 300  // 5 min — enough for full sync of multiple shops
+export const maxDuration = 300
 
 const CONCURRENCY = 5
 
@@ -23,8 +24,7 @@ async function syncShop(
     } else if (shop.marketplace === 'yandex_market' && shop.shop_id_external) {
       r = { ...await syncFromYandex(shop.id, token, shop.shop_id_external) }
     } else if (shop.marketplace === 'wildberries') {
-      const supabase = createAdminClient()
-      r = { ...await syncFromWildberries(supabase, shop.id, token) }
+      r = { ...await syncFromWildberries(null, shop.id, token) }
     }
     if (!r) return { shopId: shop.id, marketplace: shop.marketplace, ok: true, skipped: true }
     return { shopId: shop.id, marketplace: shop.marketplace, ms: Date.now() - start, ...r }
@@ -41,21 +41,21 @@ export const GET = withErrorHandler(async (req: Request) => {
     return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 })
   }
 
-  const supabase = createAdminClient()
-  const { data: shops, error } = await supabase
-    .from('shops')
-    .select('id, marketplace, api_key_encrypted, shop_id_external')
-    .eq('is_active', true)
-    .not('api_key_encrypted', 'is', null)
+  const allShops = await db.select({
+    id: shops.id,
+    marketplace: shops.marketplace,
+    api_key_encrypted: shops.api_key_encrypted,
+    shop_id_external: shops.shop_id_external,
+  }).from(shops)
+    .where(and(eq(shops.is_active, true), isNotNull(shops.api_key_encrypted)))
 
-  if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 })
-
-  const allShops = shops ?? []
   const results: Record<string, unknown>[] = []
 
   for (let i = 0; i < allShops.length; i += CONCURRENCY) {
     const batch = allShops.slice(i, i + CONCURRENCY)
-    const settled = await Promise.allSettled(batch.map(syncShop))
+    const settled = await Promise.allSettled(
+      batch.map(s => syncShop({ ...s, api_key_encrypted: s.api_key_encrypted! }))
+    )
     for (const outcome of settled) {
       if (outcome.status === 'fulfilled') {
         results.push(outcome.value)
