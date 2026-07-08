@@ -250,6 +250,7 @@ function FloatCard({ mp, mpColor, metric, value, change, up, delay, floatDur = 3
 // ── Dashboard mockup — matches real app ───────────────────────────────────────
 function DashMockup() {
   const isDark = useIsDark()
+  const { lang } = useLang()
 
   const mainBg = isDark ? '#0c1120' : '#ffffff'
   const border = isDark ? '#1e2a42' : '#E2E8F0'
@@ -261,10 +262,10 @@ function DashMockup() {
   const tealBg  = isDark ? 'rgba(131,192,249,0.15)' : 'rgba(59,130,246,0.12)'
   const tealDim = isDark ? 'rgba(131,192,249,0.12)' : 'rgba(59,130,246,0.15)'
   const kpis = [
-    { l: 'Выручка',  v: '124 540 000', u: 'сум', d: '+12.4%', pos: true,  c: teal },
-    { l: 'Заказы',   v: '1 842',        u: '',    d: '+8.1%',  pos: true,  c: teal },
-    { l: 'Расход',   v: '10 200 000',   u: 'сум', d: '+3.2%',  pos: false, c: teal },
-    { l: 'Прибыль',  v: '38 200 000',   u: 'сум', d: '+15.7%', pos: true,  c: teal },
+    { l: tx(lang, 'Выручка', 'Daromad', 'Revenue'),  v: '124 540 000', u: tx(lang, 'сум', "so'm", "sum"), d: '+12.4%', pos: true,  c: teal },
+    { l: tx(lang, 'Заказы', 'Buyurtmalar', 'Orders'),   v: '1 842',        u: '',    d: '+8.1%',  pos: true,  c: teal },
+    { l: tx(lang, 'Расход', 'Xarajat', 'Expense'),   v: '10 200 000',   u: tx(lang, 'сум', "so'm", "sum"), d: '+3.2%',  pos: false, c: teal },
+    { l: tx(lang, 'Прибыль', 'Foyda', 'Profit'),  v: '38 200 000',   u: tx(lang, 'сум', "so'm", "sum"), d: '+15.7%', pos: true,  c: teal },
   ]
 
   const sideIcons = [LayoutDashboard, Package, ShoppingCart, BarChart2, Megaphone, Layers, Bell]
@@ -272,10 +273,10 @@ function DashMockup() {
   const hi   = bars.length - 4
 
   const rows = [
-    { name: 'Куртка зимняя мужская',  sku: 'UZ-00312', rev: '18 240 000', drr: 7.2,  ok: true,  mp: teal },
-    { name: 'Кроссовки Nike Air',      sku: 'WB-01847', rev: '12 590 000', drr: 11.4, ok: false, mp: teal },
-    { name: 'Рюкзак туристический',    sku: 'YM-00951', rev: '9 870 000',  drr: 9.8,  ok: true,  mp: teal },
-    { name: 'Наушники Sony WH-1000',   sku: 'UZ-00488', rev: '8 340 000',  drr: 6.1,  ok: true,  mp: teal },
+    { name: tx(lang, 'Куртка зимняя мужская', 'Qishloq ko\'ylagi', 'Winter jacket'),  sku: 'UZ-00312', rev: '18 240 000', drr: 7.2,  ok: true,  mp: teal },
+    { name: tx(lang, 'Кроссовки Nike Air', 'Nike Air krossovkalar', 'Nike Air sneakers'),      sku: 'WB-01847', rev: '12 590 000', drr: 11.4, ok: false, mp: teal },
+    { name: tx(lang, 'Рюкзак туристический', 'Turist ruksak', 'Tourist backpack'),    sku: 'YM-00951', rev: '9 870 000',  drr: 9.8,  ok: true,  mp: teal },
+    { name: tx(lang, 'Наушники Sony WH-1000', 'Sony WH-1000 naushniki', 'Sony WH-1000 headphones'),   sku: 'UZ-00488', rev: '8 340 000',  drr: 6.1,  ok: true,  mp: teal },
   ]
 
   return (
@@ -302,14 +303,19 @@ function DashMockup() {
         <div style={{ background: bg2, borderBottom: `1px solid ${border}`, padding: '8px 12px',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
           <div style={{ display: 'flex', gap: 3 }}>
-            {['Все','Uzum','Wildberries','Yandex Market'].map((tab, i) => (
+            {[
+              tx(lang, 'Все', 'Hammasi', 'All'),
+              'Uzum',
+              'Wildberries',
+              'Yandex Market'
+            ].map((tab, i) => (
               <div key={tab} style={{ fontSize: 10, fontWeight: 600, padding: '4px 9px', borderRadius: 6, cursor: 'pointer',
                 background: i === 0 ? teal : 'transparent', color: i === 0 ? '#fff' : muted }}>
                 {tab}
               </div>
             ))}
           </div>
-          <span style={{ fontSize: 10, color: muted }}>17 мар — 30 мар 2026</span>
+          <span style={{ fontSize: 10, color: muted }}>{tx(lang, '17 мар — 30 мар 2026', '17 mrt — 30 mrt 2026', 'Mar 17 — Mar 30 2026')}</span>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', borderBottom: `1px solid ${border}` }}>
@@ -329,7 +335,7 @@ function DashMockup() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 100px', borderBottom: `1px solid ${border}` }}>
           <div style={{ padding: '10px 12px', borderRight: `1px solid ${border}` }}>
             <p style={{ fontSize: 8, color: muted, marginBottom: 6, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-              Выручка по дням
+              {tx(lang, 'Выручка по дням', 'Kunlik daromad', 'Revenue by day')}
             </p>
             <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2, height: 40 }}>
               {bars.map((h, i) => (
@@ -355,7 +361,13 @@ function DashMockup() {
         <div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 72px 88px 44px 46px',
             padding: '5px 12px', background: bg2, borderBottom: `1px solid ${border}` }}>
-            {['Товар','Артикул','Выручка, сум','ДРР%','Статус'].map(h => (
+            {[
+              tx(lang, 'Товар', 'Mahsulot', 'Product'),
+              tx(lang, 'Артикул', 'SKU', 'SKU'),
+              tx(lang, 'Выручка, сум', "Daromad, so'm", 'Revenue, sum'),
+              tx(lang, 'ДРР%', 'DRR%', 'DRR%'),
+              tx(lang, 'Статус', 'Holat', 'Status')
+            ].map(h => (
               <span key={h} style={{ fontSize: 8, fontWeight: 700, color: muted, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{h}</span>
             ))}
           </div>
@@ -371,7 +383,7 @@ function DashMockup() {
               <span style={{ fontSize: 9, fontWeight: 700, color: r.drr > 10 ? P.red : teal }}>{r.drr}%</span>
               <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
                 <div style={{ width: 5, height: 5, borderRadius: '50%', background: r.ok ? teal : P.red }} />
-                <span style={{ fontSize: 8, color: muted }}>{r.ok ? 'Норма' : 'Мало'}</span>
+                <span style={{ fontSize: 8, color: muted }}>{r.ok ? tx(lang, 'Норма', 'OK', 'Good') : tx(lang, 'Мало', 'Kam', 'Low')}</span>
               </div>
             </div>
           ))}
