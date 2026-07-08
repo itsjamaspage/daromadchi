@@ -6,231 +6,577 @@
   <title>Daromadchi System Architecture</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: linear-gradient(135deg, #0f172a 0%, #1a1f3a 100%); color: #f1f5f9; overflow: hidden; height: 100vh; }
-    .container { width: 100%; height: 100%; display: flex; flex-direction: column; }
-    .top-bar { padding: 16px 24px; background: rgba(30, 41, 59, 0.8); border-bottom: 1px solid rgba(148, 163, 184, 0.2); display: flex; align-items: center; gap: 20px; flex-shrink: 0; backdrop-filter: blur(10px); }
-    .logo { font-size: 18px; font-weight: 700; letter-spacing: 2px; color: #0ea5e9; }
-    .search-box { flex: 0 0 250px; padding: 8px 12px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(148, 163, 184, 0.3); border-radius: 6px; color: #f1f5f9; font-size: 13px; }
-    .search-box::placeholder { color: #64748b; }
-    .search-box:focus { outline: none; border-color: #0ea5e9; }
-    .controls { display: flex; gap: 8px; align-items: center; }
-    .btn { padding: 6px 12px; background: rgba(51, 65, 85, 0.5); border: 1px solid rgba(148, 163, 184, 0.3); border-radius: 4px; color: #cbd5e1; font-size: 11px; cursor: pointer; transition: all 0.2s; font-weight: 500; }
-    .btn:hover { background: rgba(71, 85, 105, 0.7); border-color: #0ea5e9; color: #0ea5e9; }
-    .btn.active { background: #0ea5e9; border-color: #0ea5e9; color: #0f172a; }
-    .main { display: flex; flex: 1; overflow: hidden; }
-    .canvas-wrapper { flex: 1; overflow: auto; background: linear-gradient(to bottom, #0f172a, #1a1f3a); }
-    svg { width: 100%; height: 100%; min-width: 1200px; min-height: 800px; }
-    .detail-panel { position: fixed; right: 0; top: 60px; width: 360px; height: calc(100% - 60px); background: rgba(30, 41, 59, 0.95); border-left: 1px solid rgba(148, 163, 184, 0.2); overflow-y: auto; transform: translateX(100%); transition: transform 0.3s ease; backdrop-filter: blur(10px); z-index: 1000; }
-    .detail-panel.active { transform: translateX(0); }
-    .detail-header { padding: 20px; border-bottom: 1px solid rgba(148, 163, 184, 0.2); display: flex; justify-content: space-between; align-items: flex-start; }
-    .detail-title { font-size: 18px; font-weight: 700; margin-bottom: 8px; font-family: ui-monospace, monospace; }
-    .status-badge { display: inline-block; padding: 4px 8px; border-radius: 3px; font-size: 10px; font-weight: 600; text-transform: uppercase; }
-    .status-badge.complete { background: rgba(16, 185, 129, 0.2); color: #10b981; }
-    .status-badge.in-progress { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
-    .status-badge.not-started { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
-    .close-btn { background: none; border: none; color: #64748b; font-size: 20px; cursor: pointer; padding: 4px; }
-    .close-btn:hover { color: #f1f5f9; }
-    .detail-content { padding: 20px; }
-    .detail-section { margin-bottom: 20px; }
-    .detail-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #64748b; margin-bottom: 8px; font-weight: 600; }
-    .detail-value { font-size: 13px; line-height: 1.5; color: #cbd5e1; }
-    .tech-tags { display: flex; flex-wrap: wrap; gap: 6px; }
-    .tech-tag { padding: 3px 8px; background: rgba(71, 85, 105, 0.5); border: 1px solid rgba(148, 163, 184, 0.3); border-radius: 3px; font-size: 11px; color: #cbd5e1; font-family: ui-monospace, monospace; }
-    .connection-item { background: rgba(51, 65, 85, 0.3); padding: 10px; border-radius: 4px; margin-bottom: 8px; font-size: 12px; }
-    .connection-name { color: #0ea5e9; font-weight: 600; font-family: ui-monospace, monospace; margin-bottom: 4px; }
-    .connection-desc { color: #cbd5e1; font-size: 11px; line-height: 1.4; }
-    .legend { position: fixed; bottom: 20px; left: 20px; background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(148, 163, 184, 0.2); border-radius: 8px; padding: 16px; backdrop-filter: blur(10px); font-size: 12px; z-index: 100; }
-    .legend-item { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
-    .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
-    .legend-item:last-child { margin-bottom: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: linear-gradient(135deg, #0f172a 0%, #1a1f3a 100%);
+      color: #f1f5f9;
+      overflow-y: auto;
+      min-height: 100vh;
+      padding-bottom: 40px;
+    }
+
+    .container {
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 60px;
+      animation: slideDown 0.6s ease-out;
+    }
+
+    .title {
+      font-size: 36px;
+      font-weight: 800;
+      letter-spacing: 2px;
+      background: linear-gradient(to right, #0ea5e9, #06b6d4);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 12px;
+    }
+
+    .subtitle {
+      color: #94a3b8;
+      font-size: 14px;
+      letter-spacing: 1px;
+    }
+
+    .layers {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 40px;
+      margin-bottom: 60px;
+    }
+
+    .layer {
+      animation: fadeIn 0.8s ease-out backwards;
+    }
+
+    .layer:nth-child(1) { animation-delay: 0.1s; }
+    .layer:nth-child(2) { animation-delay: 0.2s; }
+    .layer:nth-child(3) { animation-delay: 0.3s; }
+    .layer:nth-child(4) { animation-delay: 0.4s; }
+    .layer:nth-child(5) { animation-delay: 0.5s; }
+
+    .layer-label {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: #0ea5e9;
+      font-weight: 700;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid rgba(14, 165, 233, 0.3);
+    }
+
+    .components {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .component {
+      background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(51, 65, 85, 0.5) 100%);
+      border: 1px solid rgba(14, 165, 233, 0.3);
+      border-radius: 12px;
+      padding: 20px;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      position: relative;
+      overflow: hidden;
+      animation: popIn 0.5s ease-out backwards;
+    }
+
+    .component:nth-child(1) { animation-delay: 0.15s; }
+    .component:nth-child(2) { animation-delay: 0.25s; }
+    .component:nth-child(3) { animation-delay: 0.35s; }
+
+    .component::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(45deg, transparent 30%, rgba(14, 165, 233, 0.1) 50%, transparent 70%);
+      transform: translateX(-100%);
+      transition: transform 0.6s;
+    }
+
+    .component:hover::before {
+      transform: translateX(100%);
+    }
+
+    .component:hover {
+      border-color: #0ea5e9;
+      background: linear-gradient(135deg, rgba(14, 165, 233, 0.15) 0%, rgba(51, 65, 85, 0.8) 100%);
+      box-shadow: 0 0 30px rgba(14, 165, 233, 0.3), 0 8px 32px rgba(0, 0, 0, 0.3);
+      transform: translateY(-8px) scale(1.02);
+    }
+
+    .component-status {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-right: 8px;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    .component-status.complete { background: #10b981; box-shadow: 0 0 10px rgba(16, 185, 129, 0.6); }
+    .component-status.in-progress { background: #f59e0b; box-shadow: 0 0 10px rgba(245, 158, 11, 0.6); animation: pulse 1.5s ease-in-out infinite; }
+    .component-status.not-started { background: #ef4444; box-shadow: 0 0 10px rgba(239, 68, 68, 0.4); }
+
+    .component-name {
+      font-size: 16px;
+      font-weight: 700;
+      font-family: ui-monospace, monospace;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #0ea5e9;
+    }
+
+    .component-desc {
+      font-size: 12px;
+      color: #cbd5e1;
+      line-height: 1.6;
+      margin-bottom: 12px;
+    }
+
+    .tech-stack {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+
+    .tech-tag {
+      padding: 4px 8px;
+      background: rgba(14, 165, 233, 0.15);
+      border: 1px solid rgba(14, 165, 233, 0.3);
+      border-radius: 4px;
+      font-size: 11px;
+      color: #0ea5e9;
+      font-family: ui-monospace, monospace;
+      transition: all 0.3s;
+    }
+
+    .component:hover .tech-tag {
+      background: rgba(14, 165, 233, 0.25);
+      border-color: #0ea5e9;
+    }
+
+    .connections-grid {
+      margin-top: 60px;
+      padding-top: 60px;
+      border-top: 1px solid rgba(148, 163, 184, 0.2);
+    }
+
+    .connections-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 30px;
+      color: #0ea5e9;
+      animation: slideDown 0.6s ease-out 0.6s backwards;
+    }
+
+    .connections-grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      gap: 24px;
+      animation: fadeIn 0.8s ease-out 0.7s backwards;
+    }
+
+    .connection-card {
+      background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(51, 65, 85, 0.5) 100%);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      border-radius: 12px;
+      padding: 20px;
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      cursor: pointer;
+    }
+
+    .connection-card:hover {
+      border-color: #06b6d4;
+      background: linear-gradient(135deg, rgba(6, 182, 212, 0.1) 0%, rgba(51, 65, 85, 0.8) 100%);
+      box-shadow: 0 0 30px rgba(6, 182, 212, 0.2);
+      transform: translateY(-6px);
+    }
+
+    .connection-arrow {
+      color: #06b6d4;
+      font-size: 18px;
+      margin: 0 12px;
+      animation: slideRight 0.5s ease-out infinite;
+    }
+
+    .connection-flow {
+      display: flex;
+      align-items: center;
+      margin-bottom: 16px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .flow-component {
+      background: rgba(14, 165, 233, 0.15);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-family: ui-monospace, monospace;
+      color: #0ea5e9;
+      font-size: 12px;
+    }
+
+    .connection-desc-text {
+      color: #cbd5e1;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .legend {
+      display: flex;
+      gap: 30px;
+      margin-top: 60px;
+      padding-top: 30px;
+      border-top: 1px solid rgba(148, 163, 184, 0.2);
+      flex-wrap: wrap;
+      animation: slideUp 0.6s ease-out 0.8s backwards;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+    }
+
+    .legend-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+
+    .legend-dot.complete { background: #10b981; box-shadow: 0 0 8px rgba(16, 185, 129, 0.5); }
+    .legend-dot.in-progress { background: #f59e0b; box-shadow: 0 0 8px rgba(245, 158, 11, 0.5); }
+    .legend-dot.not-started { background: #ef4444; box-shadow: 0 0 8px rgba(239, 68, 68, 0.4); }
+
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes slideRight {
+      0%, 100% { transform: translateX(0); }
+      50% { transform: translateX(4px); }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes popIn {
+      from { opacity: 0; transform: scale(0.8); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 10px currentColor; }
+      50% { box-shadow: 0 0 20px currentColor; }
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <div class="top-bar">
-      <div class="logo">🏗️ DAROMADCHI ARCHITECTURE</div>
-      <input type="text" class="search-box" id="searchBox" placeholder="Search components...">
-      <div class="controls">
-        <button class="btn active" data-filter="all">All</button>
-        <button class="btn" data-filter="complete">✓ Complete</button>
-        <button class="btn" data-filter="in-progress">⏳ In Progress</button>
-        <button class="btn" data-filter="not-started">● Not Started</button>
+    <div class="header">
+      <div class="title">DAROMADCHI ARCHITECTURE</div>
+      <div class="subtitle">Multi-marketplace e-commerce seller dashboard system</div>
+    </div>
+
+    <div class="layers">
+      <!-- Layer 1: Client -->
+      <div class="layer">
+        <div class="layer-label">🖥️ Client Layer</div>
+        <div class="components">
+          <div class="component">
+            <div class="component-name">
+              <span class="component-status complete"></span>
+              Web App
+            </div>
+            <div class="component-desc">Next.js 14 dashboard (daromadchi.uz)</div>
+            <div class="tech-stack">
+              <span class="tech-tag">React 18</span>
+              <span class="tech-tag">Next.js 14</span>
+              <span class="tech-tag">TypeScript</span>
+            </div>
+            <div class="component-desc" style="margin: 12px 0 0 0; font-size: 11px; color: #94a3b8;">
+              Multi-language UI (RU/UZ/EN) with real-time language switching via React Context
+            </div>
+          </div>
+          <div class="component">
+            <div class="component-name">
+              <span class="component-status complete"></span>
+              Chrome Extension
+            </div>
+            <div class="component-desc">Marketplace browser automation</div>
+            <div class="tech-stack">
+              <span class="tech-tag">Manifest v3</span>
+              <span class="tech-tag">Service Workers</span>
+            </div>
+            <div class="component-desc" style="margin: 12px 0 0 0; font-size: 11px; color: #94a3b8;">
+              Automates price/stock updates on marketplaces via API
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Layer 2: Authentication -->
+      <div class="layer">
+        <div class="layer-label">🔐 Auth Layer</div>
+        <div class="components">
+          <div class="component">
+            <div class="component-name">
+              <span class="component-status complete"></span>
+              NextAuth.js v5
+            </div>
+            <div class="component-desc">JWT session management (30-day maxAge)</div>
+            <div class="tech-stack">
+              <span class="tech-tag">OAuth 2.0</span>
+              <span class="tech-tag">JWT</span>
+              <span class="tech-tag">Credentials</span>
+            </div>
+            <div class="component-desc" style="margin: 12px 0 0 0; font-size: 11px; color: #94a3b8;">
+              Handles user authentication, sessions, and protected routes
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Layer 3: Backend/API -->
+      <div class="layer">
+        <div class="layer-label">⚙️ Backend Layer</div>
+        <div class="components">
+          <div class="component">
+            <div class="component-name">
+              <span class="component-status complete"></span>
+              API Routes
+            </div>
+            <div class="component-desc">Next.js API handlers (/api/*)</div>
+            <div class="tech-stack">
+              <span class="tech-tag">REST</span>
+              <span class="tech-tag">CORS</span>
+              <span class="tech-tag">Rate Limiting</span>
+            </div>
+            <div class="component-desc" style="margin: 12px 0 0 0; font-size: 11px; color: #94a3b8;">
+              Rate-limited endpoints (10/min sync, 20/min auth, 100/min others)
+            </div>
+          </div>
+          <div class="component">
+            <div class="component-name">
+              <span class="component-status complete"></span>
+              Marketplace Integrations
+            </div>
+            <div class="component-desc">Read-only marketplace APIs</div>
+            <div class="tech-stack">
+              <span class="tech-tag">Uzum Market</span>
+              <span class="tech-tag">Yandex Market</span>
+              <span class="tech-tag">Wildberries</span>
+            </div>
+            <div class="component-desc" style="margin: 12px 0 0 0; font-size: 11px; color: #94a3b8;">
+              Syncs orders, inventory, prices. STRICTLY READ-ONLY (no writes to marketplaces)
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Layer 4: Data -->
+      <div class="layer">
+        <div class="layer-label">💾 Data Layer</div>
+        <div class="components">
+          <div class="component">
+            <div class="component-name">
+              <span class="component-status complete"></span>
+              PostgreSQL 16
+            </div>
+            <div class="component-desc">Primary data store</div>
+            <div class="tech-stack">
+              <span class="tech-tag">Drizzle ORM</span>
+              <span class="tech-tag">Migrations</span>
+            </div>
+            <div class="component-desc" style="margin: 12px 0 0 0; font-size: 11px; color: #94a3b8;">
+              Stores users, shops, orders, products, sync history, analytics
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Layer 5: External -->
+      <div class="layer">
+        <div class="layer-label">🌐 External Services</div>
+        <div class="components">
+          <div class="component">
+            <div class="component-name">
+              <span class="component-status complete"></span>
+              Telegram Bot
+            </div>
+            <div class="component-desc">Notifications & alerts</div>
+            <div class="tech-stack">
+              <span class="tech-tag">Bot API</span>
+            </div>
+          </div>
+          <div class="component">
+            <div class="component-name">
+              <span class="component-status in-progress"></span>
+              Resend Email
+            </div>
+            <div class="component-desc">Password reset emails</div>
+            <div class="tech-stack">
+              <span class="tech-tag">Transactional</span>
+            </div>
+          </div>
+          <div class="component">
+            <div class="component-name">
+              <span class="component-status complete"></span>
+              GitHub
+            </div>
+            <div class="component-desc">Source control & CI/CD</div>
+            <div class="tech-stack">
+              <span class="tech-tag">Actions</span>
+            </div>
+          </div>
+          <div class="component">
+            <div class="component-name">
+              <span class="component-status complete"></span>
+              Hetzner VPS
+            </div>
+            <div class="component-desc">Self-hosted deployment (65.21.158.239)</div>
+            <div class="tech-stack">
+              <span class="tech-tag">Ubuntu 24.04</span>
+              <span class="tech-tag">Nginx</span>
+              <span class="tech-tag">PM2</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
-    <div class="main">
-      <div class="canvas-wrapper">
-        <svg id="diagramSvg"></svg>
+
+    <div class="connections-grid">
+      <div class="connections-title">Data Flow & Connections</div>
+      <div class="connections-grid-2">
+        <div class="connection-card">
+          <div class="connection-flow">
+            <span class="flow-component">Web App</span>
+            <span class="connection-arrow">→</span>
+            <span class="flow-component">NextAuth.js</span>
+          </div>
+          <div class="connection-desc-text">User login via Credentials provider, JWT token validation on protected routes</div>
+        </div>
+
+        <div class="connection-card">
+          <div class="connection-flow">
+            <span class="flow-component">Web App</span>
+            <span class="connection-arrow">→</span>
+            <span class="flow-component">API Routes</span>
+          </div>
+          <div class="connection-desc-text">Fetch dashboards, shop data, sync history. CORS validated, rate-limited</div>
+        </div>
+
+        <div class="connection-card">
+          <div class="connection-flow">
+            <span class="flow-component">API Routes</span>
+            <span class="connection-arrow">→</span>
+            <span class="flow-component">Marketplaces</span>
+          </div>
+          <div class="connection-desc-text">Sync orders, prices, inventory (read-only). Background jobs keyed per shop</div>
+        </div>
+
+        <div class="connection-card">
+          <div class="connection-flow">
+            <span class="flow-component">API Routes</span>
+            <span class="connection-arrow">→</span>
+            <span class="flow-component">PostgreSQL</span>
+          </div>
+          <div class="connection-desc-text">Store/query users, shops, sync results, order history, analytics</div>
+        </div>
+
+        <div class="connection-card">
+          <div class="connection-flow">
+            <span class="flow-component">Chrome Ext</span>
+            <span class="connection-arrow">→</span>
+            <span class="flow-component">API Routes</span>
+          </div>
+          <div class="connection-desc-text">Cross-origin requests allowed for extension automation (CORS whitelisted)</div>
+        </div>
+
+        <div class="connection-card">
+          <div class="connection-flow">
+            <span class="flow-component">API Routes</span>
+            <span class="connection-arrow">→</span>
+            <span class="flow-component">Telegram Bot</span>
+          </div>
+          <div class="connection-desc-text">Send deployment success/failure notifications to admin chat</div>
+        </div>
+
+        <div class="connection-card">
+          <div class="connection-flow">
+            <span class="flow-component">API Routes</span>
+            <span class="connection-arrow">→</span>
+            <span class="flow-component">Resend Email</span>
+          </div>
+          <div class="connection-desc-text">Transactional emails for password reset flow (future: OAuth 2.0)</div>
+        </div>
+
+        <div class="connection-card">
+          <div class="connection-flow">
+            <span class="flow-component">GitHub</span>
+            <span class="connection-arrow">→</span>
+            <span class="flow-component">Hetzner VPS</span>
+          </div>
+          <div class="connection-desc-text">CI/CD: Lint, Type Check, Build, Health Check, Deploy via SSH</div>
+        </div>
+
+        <div class="connection-card">
+          <div class="connection-flow">
+            <span class="flow-component">Hetzner VPS</span>
+            <span class="connection-arrow">→</span>
+            <span class="flow-component">PostgreSQL</span>
+          </div>
+          <div class="connection-desc-text">Local PostgreSQL 16 database on production server</div>
+        </div>
+
+        <div class="connection-card">
+          <div class="connection-flow">
+            <span class="flow-component">Web App</span>
+            <span class="connection-arrow">→</span>
+            <span class="flow-component">Hetzner VPS</span>
+          </div>
+          <div class="connection-desc-text">HTTPS requests to daromadchi.uz (Nginx reverse proxy on VPS)</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="legend">
+      <div class="legend-item">
+        <div class="legend-dot complete"></div>
+        <span>Complete</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot in-progress"></div>
+        <span>In Progress</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot not-started"></div>
+        <span>Not Started</span>
       </div>
     </div>
   </div>
-
-  <div class="detail-panel" id="detailPanel">
-    <div class="detail-header">
-      <div>
-        <div class="detail-title" id="detailTitle">Component</div>
-        <div class="status-badge complete" id="detailStatus">Complete</div>
-      </div>
-      <button class="close-btn" onclick="closeDetail()">✕</button>
-    </div>
-    <div class="detail-content">
-      <div class="detail-section">
-        <div class="detail-label">Description</div>
-        <div class="detail-value" id="detailDesc">Loading...</div>
-      </div>
-      <div class="detail-section">
-        <div class="detail-label">Technology</div>
-        <div class="tech-tags" id="detailTech"></div>
-      </div>
-      <div class="detail-section">
-        <div class="detail-label">Connected To</div>
-        <div id="detailConnections"></div>
-      </div>
-    </div>
-  </div>
-
-  <div class="legend">
-    <div class="legend-item"><div class="legend-dot" style="background: #10b981;"></div><span>Complete</span></div>
-    <div class="legend-item"><div class="legend-dot" style="background: #f59e0b;"></div><span>In Progress</span></div>
-    <div class="legend-item"><div class="legend-dot" style="background: #ef4444;"></div><span>Not Started</span></div>
-  </div>
-
-  <script>
-    const componentsData = {
-      'web-app': { name: 'Web App\n(daromadchi.uz)', layer: 'frontend', x: 80, y: 100, status: 'complete', description: 'Main SaaS dashboard for marketplace analytics. Provides sellers with real-time insights.', technology: ['Next.js 14', 'React', 'TailwindCSS'], connectedTo: ['nextauth-v5', 'api-routes', 'postgresql'] },
-      'chrome-ext': { name: 'Chrome\nExtension', layer: 'frontend', x: 80, y: 280, status: 'complete', description: 'Manifest V3 extension showing analytics overlay on marketplaces.', technology: ['JavaScript', 'Chrome APIs', 'Manifest V3'], connectedTo: ['api-routes'] },
-      'nextauth-v5': { name: 'NextAuth.js\nv5', layer: 'backend', x: 300, y: 80, status: 'complete', description: 'JWT-based session management and authentication system.', technology: ['NextAuth.js v5', 'PostgreSQL', 'bcryptjs'], connectedTo: ['web-app', 'postgresql', 'api-routes'] },
-      'api-routes': { name: 'API Routes\n(/api/*)', layer: 'backend', x: 300, y: 240, status: 'complete', description: 'Backend REST endpoints handling all server-side logic.', technology: ['Next.js API', 'Node.js', 'Middleware'], connectedTo: ['web-app', 'nextauth-v5', 'postgresql', 'uzum-api', 'wildberries-api', 'yandex-api', 'telegram-bot', 'resend'] },
-      'telegram-bot': { name: 'Telegram\nBot', layer: 'backend', x: 300, y: 400, status: 'complete', description: 'Real-time notifications via Telegram bot.', technology: ['Telegram Bot API', 'Webhooks', 'Node.js'], connectedTo: ['api-routes', 'postgresql'] },
-      'postgresql': { name: 'PostgreSQL\n16', layer: 'database', x: 520, y: 240, status: 'complete', description: 'Self-hosted relational database on Hetzner VPS.', technology: ['PostgreSQL 16', 'Drizzle ORM', 'SQL'], connectedTo: ['web-app', 'nextauth-v5', 'api-routes', 'telegram-bot'] },
-      'uzum-api': { name: 'Uzum\nMarket API', layer: 'external', x: 740, y: 80, status: 'complete', description: 'Official Uzum seller API for marketplace data.', technology: ['REST API', 'Bearer token', 'JSON'], connectedTo: ['api-routes'] },
-      'wildberries-api': { name: 'Wildberries\nAPI', layer: 'external', x: 740, y: 200, status: 'complete', description: 'Official Wildberries seller API for marketplace data.', technology: ['REST API', 'API key', 'JSON'], connectedTo: ['api-routes'] },
-      'yandex-api': { name: 'Yandex\nMarket API', layer: 'external', x: 740, y: 320, status: 'complete', description: 'Yandex Market partner API for marketplace data.', technology: ['REST API', 'OAuth Bearer', 'JSON'], connectedTo: ['api-routes'] },
-      'resend': { name: 'Resend\n(Email)', layer: 'external', x: 740, y: 440, status: 'in-progress', description: 'Email service for transactional emails and password resets.', technology: ['Resend API', 'React Email', 'SMTP'], connectedTo: ['api-routes'] },
-      'hetzner-vps': { name: 'Hetzner VPS\n(65.21.158.239)', layer: 'infrastructure', x: 520, y: 420, status: 'complete', description: 'Self-hosted VPS running all infrastructure.', technology: ['Ubuntu 24.04', 'Nginx', 'PM2', 'Node.js'], connectedTo: ['postgresql'] },
-      'github': { name: 'GitHub\nRepository', layer: 'infrastructure', x: 740, y: 520, status: 'complete', description: 'Source code repository and CI/CD.', technology: ['Git', 'GitHub', 'GitHub Actions'], connectedTo: ['hetzner-vps'] },
-    };
-
-    let selectedComponent = null, filteredStatus = 'all', searchTerm = '';
-
-    function getStatusColor(status) {
-      const colors = { complete: '#10b981', 'in-progress': '#f59e0b', 'not-started': '#ef4444' };
-      return colors[status] || '#10b981';
-    }
-
-    function isComponentVisible(id) {
-      const c = componentsData[id];
-      if (filteredStatus !== 'all' && c.status !== filteredStatus) return false;
-      if (searchTerm && !c.name.toLowerCase().includes(searchTerm.toLowerCase())) return false;
-      return true;
-    }
-
-    function drawDiagram() {
-      const svg = document.getElementById('diagramSvg');
-      svg.innerHTML = '';
-      svg.setAttribute('viewBox', '0 0 1000 700');
-
-      Object.entries(componentsData).forEach(([id, comp]) => {
-        if (!isComponentVisible(id)) return;
-        comp.connectedTo.forEach(targetId => {
-          if (!isComponentVisible(targetId)) return;
-          const target = componentsData[targetId];
-          const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-          line.setAttribute('x1', comp.x + 80);
-          line.setAttribute('y1', comp.y + 40);
-          line.setAttribute('x2', target.x + 80);
-          line.setAttribute('y2', target.y + 40);
-          line.setAttribute('stroke', '#60a5fa');
-          line.setAttribute('stroke-width', '2');
-          line.setAttribute('opacity', '0.4');
-          svg.appendChild(line);
-        });
-      });
-
-      Object.entries(componentsData).forEach(([id, comp]) => {
-        if (!isComponentVisible(id)) return;
-        const color = getStatusColor(comp.status);
-        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-        g.setAttribute('cursor', 'pointer');
-
-        const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-        rect.setAttribute('x', comp.x);
-        rect.setAttribute('y', comp.y);
-        rect.setAttribute('width', '160');
-        rect.setAttribute('height', '80');
-        rect.setAttribute('rx', '8');
-        rect.setAttribute('fill', 'rgba(30, 41, 59, 0.6)');
-        rect.setAttribute('stroke', color);
-        rect.setAttribute('stroke-width', '2');
-        g.appendChild(rect);
-
-        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        text.setAttribute('x', comp.x + 80);
-        text.setAttribute('y', comp.y + 40);
-        text.setAttribute('text-anchor', 'middle');
-        text.setAttribute('dominant-baseline', 'middle');
-        text.setAttribute('fill', '#f1f5f9');
-        text.setAttribute('font-size', '11');
-        text.setAttribute('font-weight', '600');
-        text.setAttribute('font-family', 'ui-monospace, monospace');
-        text.innerHTML = comp.name.split('\n').map((line, i) => `<tspan x="${comp.x + 80}" dy="${i === 0 ? 0 : 14}">${line}</tspan>`).join('');
-        g.appendChild(text);
-
-        const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-        dot.setAttribute('cx', comp.x + 150);
-        dot.setAttribute('cy', comp.y + 8);
-        dot.setAttribute('r', '6');
-        dot.setAttribute('fill', color);
-        g.appendChild(dot);
-
-        g.addEventListener('click', () => showDetail(id));
-        g.addEventListener('mouseenter', () => {
-          rect.setAttribute('stroke-width', '3');
-          rect.setAttribute('filter', 'drop-shadow(0 0 8px rgba(14, 165, 233, 0.4))');
-        });
-        g.addEventListener('mouseleave', () => {
-          rect.setAttribute('stroke-width', '2');
-          rect.setAttribute('filter', 'none');
-        });
-
-        svg.appendChild(g);
-      });
-    }
-
-    function showDetail(id) {
-      selectedComponent = id;
-      const comp = componentsData[id];
-      document.getElementById('detailTitle').textContent = comp.name.replace(/\n/g, ' ');
-      document.getElementById('detailStatus').textContent = comp.status === 'complete' ? '✓ Complete' : comp.status === 'in-progress' ? '⏳ In Progress' : '● Not Started';
-      document.getElementById('detailStatus').className = `status-badge ${comp.status}`;
-      document.getElementById('detailDesc').textContent = comp.description;
-      document.getElementById('detailTech').innerHTML = comp.technology.map(t => `<div class="tech-tag">${t}</div>`).join('');
-      document.getElementById('detailConnections').innerHTML = comp.connectedTo.map(cid => {
-        const target = componentsData[cid];
-        return `<div class="connection-item"><div class="connection-name">${target.name.replace(/\n/g, ' ')}</div><div class="connection-desc">${target.description}</div></div>`;
-      }).join('');
-      document.getElementById('detailPanel').classList.add('active');
-    }
-
-    function closeDetail() {
-      document.getElementById('detailPanel').classList.remove('active');
-      selectedComponent = null;
-    }
-
-    document.querySelectorAll('[data-filter]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('[data-filter]').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        filteredStatus = btn.dataset.filter;
-        drawDiagram();
-      });
-    });
-
-    document.getElementById('searchBox').addEventListener('input', (e) => {
-      searchTerm = e.target.value;
-      drawDiagram();
-    });
-
-    drawDiagram();
-  </script>
 </body>
 </html>
