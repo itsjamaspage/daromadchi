@@ -92,7 +92,7 @@ function SectionHead({ title, accent, sub, dark = false }: {
   const isDark = useIsDark()
   const parts = accent ? title.split(accent) : [title]
   return (
-    <FadeUp>
+    <div>
       <div style={{ textAlign: 'center', marginBottom: 56 }}>
         <h2 style={{ fontSize: 'clamp(26px, 3.5vw, 42px)', fontWeight: 800, lineHeight: 1.1,
           color: dark ? P.dText : (isDark ? P.dText : P.ink), letterSpacing: '-0.022em', marginBottom: sub ? 16 : 0 }}>
@@ -102,7 +102,7 @@ function SectionHead({ title, accent, sub, dark = false }: {
         </h2>
         {sub && <p style={{ fontSize: 16, color: dark ? P.dMuted : (isDark ? P.dMuted : P.stone), maxWidth: 520, margin: '0 auto', lineHeight: 1.65 }}>{sub}</p>}
       </div>
-    </FadeUp>
+    </div>
   )
 }
 
@@ -486,7 +486,7 @@ function ComparisonSection({ lang }: { lang: string }) {
             {tx(lang,'Try for free','Bepul sinab ko\'ring','Try for free')}
           </Link>
         </div>
-        </FadeUp>
+        </div>
       </div>
     </section>
   )
@@ -690,32 +690,32 @@ function FeaturesSection({ lang }: { lang: string }) {
 
         {/* Right: text content */}
         <div>
-          <FadeUp delay={0.15}>
+          <div>
             <p style={{ fontSize: 11, fontWeight: 700, color: acc.tint, marginBottom: 10,
               textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-              {tx(lang,'АНАЛИТИКА В РЕАЛЬНОМ ВРЕМЕНИ','REAL-TIME ANALITIKA','REAL-TIME ANALYTICS')}
+              {tx(lang,'REAL-TIME ANALYTICS','REAL-TIME ANALITIKA','REAL-TIME ANALYTICS')}
             </p>
             <h2 style={{ fontSize: 'clamp(26px, 3vw, 42px)', fontWeight: 800, lineHeight: 1.1,
               color: isDark ? P.dText : P.ink, letterSpacing: '-0.022em', marginBottom: 18 }}>
               {tx(lang,
-                <>Продажи и аналитика —<br/><span style={{ color: acc.tint }}>всё на одном экране</span></>,
-                <>Savdo va analitika —<br/><span style={{ color: acc.tint }}>hammasi bitta ekranda</span></>,
-                <>Your store, fully visible —<br/><span style={{ color: acc.tint }}>every number, one place</span></>
+                <>Sales & Analytics —<br/><span style={{ color: acc.tint }}>all in one place</span></>,
+                <>Savdo va analitika —<br/><span style={{ color: acc.tint }}>hammasi bitta joyda</span></>,
+                <>Sales & Analytics —<br/><span style={{ color: acc.tint }}>all in one place</span></>
               )}
             </h2>
-          </FadeUp>
+          </div>
 
-          <FadeUp delay={0.23}>
+          <div>
             <p style={{ fontSize: 16, color: isDark ? P.dMuted : P.stone, lineHeight: 1.65, marginBottom: 32 }}>
               {tx(lang,
-                'ДРР, остатки, цены и юнит-экономика. Управляйте продажами за 5 минут в день.',
+                'DRR, stock, pricing and unit economics. Manage your sales in 5 minutes a day.',
                 'DRR, qoldiq, narx va birlik iqtisodiyoti. Savdoni kuniga 5 daqiqada boshqaring.',
                 'DRR, stock, pricing and unit economics. Manage your sales in 5 minutes a day.'
               )}
             </p>
-          </FadeUp>
+          </div>
 
-          <FadeUp delay={0.31}>
+          <div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 36 }}>
               {[
                 { title: tx(lang,'Выручка и прибыль в реальном времени','Real-time daromad va foyda','Real-time revenue & profit'),
@@ -740,9 +740,9 @@ function FeaturesSection({ lang }: { lang: string }) {
                 </div>
               ))}
             </div>
-          </FadeUp>
+          </div>
 
-          <FadeUp delay={0.39}>
+          <div>
             <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
               <Link href="/login"
                 style={{ fontSize: 13, fontWeight: 700, background: '#83c0f9', color: '#131321',
@@ -757,10 +757,10 @@ function FeaturesSection({ lang }: { lang: string }) {
                   display: 'inline-flex', alignItems: 'center', gap: 6, transition: 'color 0.15s', padding: '13px 0' }}
                 onMouseEnter={e => (e.currentTarget.style.color = isDark ? '#fff' : P.ink)}
                 onMouseLeave={e => (e.currentTarget.style.color = isDark ? P.dMuted : P.stone)}>
-                {tx(lang,'Изучить платформу →','Platformani o\'rganish →','Explore platform →')}
+                {tx(lang,'Explore platform →','Platformani o\'rganish →','Explore platform →')}
               </a>
             </div>
-          </FadeUp>
+          </div>
         </div>
       </div>
     </section>
@@ -872,7 +872,6 @@ function HowItWorksSection({ lang }: { lang: string }) {
   return (
     <section id="how" style={{ position: 'relative', background: secBg, padding: '88px 24px',
       fontFamily: "'Space Grotesk', system-ui, sans-serif", transition: 'background 0.3s' }}>
-      <SectionHoverAnim colors={isDark ? [...ANIM_BLUE_DK] : [...ANIM_BLUE]} opacity={0.4} />
       <div style={{ maxWidth: 1000, margin: '0 auto' }}>
         <SectionHead dark={isDark}
           title={tx(lang,'Настройте магазин за 5 минут','Do\'koningizni 5 daqiqada sozlang','Set up your store in 5 minutes')}
@@ -912,21 +911,14 @@ function HowItWorksSection({ lang }: { lang: string }) {
                     </h3>
                   </div>
 
-                  <AnimatePresence initial={false}>
-                    {isActive && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.28, ease: 'easeInOut' }}
-                        style={{ overflow: 'hidden' }}>
-                        <p style={{ fontSize: 14, color: sub, lineHeight: 1.65,
-                          paddingBottom: 18, paddingLeft: 50, paddingRight: 8 }}>
-                          {s.desc}
-                        </p>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                  {isActive && (
+                    <div style={{ overflow: 'hidden' }}>
+                      <p style={{ fontSize: 14, color: sub, lineHeight: 1.65,
+                        paddingBottom: 18, paddingLeft: 50, paddingRight: 8 }}>
+                        {s.desc}
+                      </p>
+                    </div>
+                  )}
                 </div>
               )
             })}
@@ -943,23 +935,11 @@ function HowItWorksSection({ lang }: { lang: string }) {
           </div>
 
           {/* Right: active UI illustration */}
-          <AnimatePresence mode="wait">
-            <motion.div key={active}
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -16 }}
-              transition={{ duration: 0.28, ease: 'easeOut' }}>
-              <BorderGlow
-                backgroundColor={isDark ? 'rgba(28,28,46,0.95)' : P.parchment}
-                glowColor={isDark ? "0 0 85" : "207 90 74"}
-                colors={['#83c0f9','#60a5fa','#a5f3fc']}
-                borderRadius={16}
-                glowIntensity={isDark ? 1.8 : 1.2}
-              >
-                {steps[active].ui}
-              </BorderGlow>
-            </motion.div>
-          </AnimatePresence>
+          <div key={active}>
+            <div style={{ borderRadius: 16, overflow: 'hidden', border: '1px solid rgba(14,27,46,0.18)' }}>
+              {steps[active].ui}
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -981,7 +961,6 @@ function BentoSection({ lang }: { lang: string }) {
   return (
     <section style={{ position: 'relative', background: secBg, padding: '88px 24px',
       fontFamily: "'Space Grotesk', system-ui, sans-serif", transition: 'background 0.3s', overflow: 'hidden' }}>
-      <SectionHoverAnim colors={isDark ? [...ANIM_BLUE_DK] : [...ANIM_WHITE]} opacity={0.6} />
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
         <SectionHead dark={isDark}
           title={tx(lang,'Всё необходимое для роста','O\'sish uchun kerak bo\'lgan hamma narsa','Everything you need to grow')}
@@ -998,22 +977,15 @@ function BentoSection({ lang }: { lang: string }) {
             { l: tx(lang,'ДРР','DRR','DRR'), v: '8.2%', d: '-1.4%', col: '#f59e0b', hsl: '38 92 50', cols: ['#f59e0b','#d97706','#fcd34d'] },
             { l: tx(lang,'Прибыль','Foyda','Profit'), v: '38.2M', d: '+15%', col: '#22c55e', hsl: '142 71 45', cols: ['#22c55e','#16a34a','#86efac'] },
           ].map((k, i) => (
-            <FadeUp key={k.l} delay={i * 0.07} style={{ height: '100%' }}>
-              <BorderGlow
-                backgroundColor={isDark ? P.dCard : '#ffffff'}
-                glowColor={isDark ? "0 0 85" : k.hsl}
-                colors={k.cols}
-                borderRadius={18}
-                glowIntensity={isDark ? 1.5 : 1.2}
-                style={{ height: '100%' }}
-              >
+            <div>
+              <div>
                 <div style={{ padding: '20px 22px' }}>
                   <p style={{ fontSize: 10, color: muted, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{k.l}</p>
                   <p style={{ fontSize: 22, fontWeight: 800, color: k.col, fontFamily: 'monospace', lineHeight: 1, marginBottom: 4 }}>{k.v}</p>
                   <p style={{ fontSize: 11, fontWeight: 600, color: k.col }}>{k.d} {tx(lang,'за месяц','oyda','this month')}</p>
                 </div>
-              </BorderGlow>
-            </FadeUp>
+              </div>
+            </div>
           ))}
         </div>
 
@@ -1021,15 +993,8 @@ function BentoSection({ lang }: { lang: string }) {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 
           {/* Analytics card */}
-          <FadeUp delay={0.12} style={{ height: '100%' }}>
-            <BorderGlow
-              backgroundColor={isDark ? P.dCard : '#ffffff'}
-              glowColor={isDark ? "0 0 85" : "207 90 74"}
-              colors={['#83c0f9', '#60a5fa', '#a5f3fc']}
-              borderRadius={24}
-              glowIntensity={isDark ? 1.5 : 1.2}
-              style={{ height: '100%' }}
-            >
+          <div>
+            <div>
               <div style={{ padding: '28px' }}>
                 <p style={{ fontSize: 11, fontWeight: 700, color: acc.tint, marginBottom: 6,
                   textTransform: 'uppercase', letterSpacing: '0.08em' }}>
@@ -1056,19 +1021,12 @@ function BentoSection({ lang }: { lang: string }) {
                   </div>
                 </div>
               </div>
-            </BorderGlow>
-          </FadeUp>
+            </div>
+          </div>
 
           {/* Inventory card */}
-          <FadeUp delay={0.2} style={{ height: '100%' }}>
-            <BorderGlow
-              backgroundColor={isDark ? P.dCard : '#ffffff'}
-              glowColor={isDark ? "0 0 85" : "38 92 50"}
-              colors={['#f59e0b', '#d97706', '#fcd34d']}
-              borderRadius={24}
-              glowIntensity={isDark ? 1.5 : 1.2}
-              style={{ height: '100%' }}
-            >
+          <div>
+            <div>
               <div style={{ padding: '28px' }}>
                 <p style={{ fontSize: 11, fontWeight: 700, color: '#f59e0b', marginBottom: 6,
                   textTransform: 'uppercase', letterSpacing: '0.08em' }}>
@@ -1101,19 +1059,12 @@ function BentoSection({ lang }: { lang: string }) {
                   ))}
                 </div>
               </div>
-            </BorderGlow>
-          </FadeUp>
+            </div>
+          </div>
 
           {/* P&L card */}
-          <FadeUp delay={0.28} style={{ height: '100%' }}>
-            <BorderGlow
-              backgroundColor={isDark ? P.dCard : '#ffffff'}
-              glowColor={isDark ? "0 0 85" : "158 84 40"}
-              colors={['#10b981', '#059669', '#6ee7b7']}
-              borderRadius={24}
-              glowIntensity={isDark ? 1.5 : 1.2}
-              style={{ height: '100%' }}
-            >
+          <div>
+            <div>
               <div style={{ padding: '28px' }}>
                 <p style={{ fontSize: 11, fontWeight: 700, color: '#10b981', marginBottom: 6,
                   textTransform: 'uppercase', letterSpacing: '0.08em' }}>
@@ -1142,8 +1093,8 @@ function BentoSection({ lang }: { lang: string }) {
                   ))}
                 </div>
               </div>
-            </BorderGlow>
-          </FadeUp>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -1217,7 +1168,6 @@ function ExtensionSection({ lang }: { lang: string }) {
   return (
     <section id="extension" style={{ position: 'relative', background: secBg, padding: '88px 24px',
       fontFamily: "'Space Grotesk', system-ui, sans-serif", transition: 'background 0.3s' }}>
-      <SectionHoverAnim colors={isDark ? [...ANIM_BLUE_DK] : [...ANIM_BLUE]} opacity={0.4} />
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
         <SectionHead dark={isDark}
           title={tx(lang,'Расширение для браузера','Brauzer kengaytmasi','Browser extension')}
@@ -1239,15 +1189,8 @@ function ExtensionSection({ lang }: { lang: string }) {
               ['#83c0f9', '#60a5fa', '#a5f3fc'],
             ]
             return cards.map((c, i) => (
-              <FadeUp key={i} delay={i * 0.1} style={{ height: '100%' }}>
-                <BorderGlow
-                  backgroundColor={isDark ? P.dCard : '#ffffff'}
-                  glowColor={isDark ? "0 0 85" : glowHsl[i]}
-                  colors={glowCols[i]}
-                  borderRadius={24}
-                  glowIntensity={isDark ? 1.5 : 1.2}
-                  style={{ height: '100%' }}
-                >
+              <div>
+                <div>
                   <div style={{ padding: '32px 28px', cursor: 'default' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
                       <div style={{ width: 52, height: 52, borderRadius: 14, background: `${c.color}20`,
@@ -1272,13 +1215,13 @@ function ExtensionSection({ lang }: { lang: string }) {
                       ))}
                     </div>
                   </div>
-                </BorderGlow>
-              </FadeUp>
+                </div>
+              </div>
             ))
           })()}
         </div>
 
-        <FadeUp delay={0.2}>
+        <div>
           <div style={{ textAlign: 'center' }}>
             <Link href="/extension"
               style={{ display: 'inline-flex', alignItems: 'center', gap: 8,
@@ -1292,49 +1235,16 @@ function ExtensionSection({ lang }: { lang: string }) {
               {tx(lang,'Chrome · Edge · Brave — бесплатно','Chrome · Edge · Brave — bepul','Chrome · Edge · Brave — free')}
             </p>
           </div>
-        </FadeUp>
+        </div>
       </div>
     </section>
   )
 }
 
 // ── 7. PRICING — theme-aware ──────────────────────────────────────────────────
-function SlotPrice({ value, trigger, delay = 0 }: { value: string; trigger: boolean; delay?: number }) {
-  const DIGITS = '0123456789'
-  const blank = value.replace(/\d/g, '-')
-  const [display, setDisplay] = useState(blank)
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  useEffect(() => {
-    if (!trigger) return
-    const plainLen = value.replace(/ /g, '').length
-    timerRef.current = setTimeout(() => {
-      let frame = 0
-      const total = 22 + plainLen * 3
-      const iv = setInterval(() => {
-        if (frame >= total) { setDisplay(value); clearInterval(iv); return }
-        setDisplay(
-          value.split('').map((ch, i) => {
-            if (ch === ' ') return ' '
-            const charIdx = value.slice(0, i + 1).replace(/ /g, '').length - 1
-            const revealFrame = Math.floor(total * 0.55 * ((charIdx + 1) / plainLen))
-            return frame > revealFrame ? ch : DIGITS[Math.floor(Math.random() * 10)]
-          }).join('')
-        )
-        frame++
-      }, 48)
-    }, delay * 1000)
-    return () => { if (timerRef.current) clearTimeout(timerRef.current) }
-  }, [trigger, value, delay])
-
-  return <span className="tabular-nums">{display}</span>
-}
-
 function PricingSection({ lang }: { lang: string }) {
   const isDark = useIsDark()
   const acc = useAccent()
-  const sectionRef = useRef(null)
-  const inView = useInView(sectionRef, { once: true, amount: 0.3 })
 
   const secBg  = isDark ? '#1e1e1e' : P.parchment
   const ink    = isDark ? P.dText   : P.ink
@@ -1379,15 +1289,10 @@ function PricingSection({ lang }: { lang: string }) {
   ]
 
   return (
-    <section id="pricing" ref={sectionRef} style={{ position: 'relative', background: secBg, padding: '88px 24px',
+    <section id="pricing" style={{ position: 'relative', background: secBg, padding: '88px 24px',
       fontFamily: "'Space Grotesk', system-ui, sans-serif", transition: 'background 0.3s' }}>
-      <SectionHoverAnim colors={isDark ? [...ANIM_BLUE_DK] : [...ANIM_WHITE]} opacity={0.6} />
       <div style={{ maxWidth: 1000, margin: '0 auto', position: 'relative' }}>
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.5 }}
-          style={{ textAlign: 'center', marginBottom: 56 }}>
+        <div style={{ textAlign: 'center', marginBottom: 56 }}>
           <p style={{ fontSize: 11, fontWeight: 700, color: acc.tint, marginBottom: 10,
             textTransform: 'uppercase', letterSpacing: '0.12em' }}>
             {tx(lang,'ТАРИФЫ','TARIFLAR','PRICING')}
@@ -1400,71 +1305,58 @@ function PricingSection({ lang }: { lang: string }) {
             {tx(lang,'Начните бесплатно, масштабируйтесь по мере роста',
               'Bepul boshlang, o\'sish bilan kengaytiring','Start free, scale as you grow')}
           </p>
-        </motion.div>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           {tiers.map((t, i) => (
-            <motion.div key={t.name}
-              initial={{ opacity: 0, y: -140, scale: 0.9 }}
-              animate={inView ? { opacity: 1, y: 0, scale: t.highlight ? 1.02 : 1 } : {}}
-              transition={{ delay: i * 0.18, type: 'spring', stiffness: 160, damping: 18 }}>
-              <BorderGlow
-                backgroundColor={t.highlight ? (isDark ? P.parchment : '#0e1b2e') : (isDark ? P.dCard : P.card)}
-                glowColor={isDark ? "0 0 85" : "207 100 55"}
-                colors={t.highlight ? ['#83c0f9', '#60a5fa', '#bfdbfe'] : ['#83c0f9', '#60a5fa', '#a5f3fc']}
-                borderRadius={20}
-                glowIntensity={t.highlight ? (isDark ? 1.5 : 1.2) : (isDark ? 1.2 : 0.9)}
-                style={{ display: 'flex', flexDirection: 'column', height: '100%' }}
-              >
-                <div style={{ padding: '28px 24px', display: 'flex', flexDirection: 'column', flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                    <p style={{ fontSize: 13, fontWeight: 700, color: t.highlight ? (isDark ? P.green : acc.dk) : muted }}>
-                      {t.name}
-                    </p>
-                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                    {(t as any).badge && (
-                      <span style={{ background: '#ffffff', borderRadius: 100, padding: '3px 12px',
-                        fontSize: 10, fontWeight: 800, color: '#0e1b2e', letterSpacing: '0.04em' }}>
-                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                        {(t as any).badge}
-                      </span>
-                    )}
-                  </div>
-
-                  <div style={{ marginBottom: 4 }}>
-                    <span style={{ fontSize: 34, fontWeight: 800,
-                      color: t.highlight ? (isDark ? P.ink : '#E8FFF8') : ink,
-                      fontFamily: 'var(--font-mono-landing), monospace' }}>
-                      {t.price === '0' ? '0' : <SlotPrice value={t.price} trigger={inView} delay={i * 0.18 + 0.4} />}
+            <div key={t.name} style={{ display: 'flex', flexDirection: 'column', height: '100%',
+              background: t.highlight ? (isDark ? P.parchment : '#0e1b2e') : (isDark ? P.dCard : P.card),
+              border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`,
+              borderRadius: 20, overflow: 'hidden' }}>
+              <div style={{ padding: '28px 24px', display: 'flex', flexDirection: 'column', flex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                  <p style={{ fontSize: 13, fontWeight: 700, color: t.highlight ? (isDark ? P.green : acc.dk) : muted }}>
+                    {t.name}
+                  </p>
+                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                  {(t as any).badge && (
+                    <span style={{ background: '#ffffff', borderRadius: 100, padding: '3px 12px',
+                      fontSize: 10, fontWeight: 800, color: '#0e1b2e', letterSpacing: '0.04em' }}>
+                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                      {(t as any).badge}
                     </span>
-                  </div>
-                  <p style={{ fontSize: 13, color: t.highlight ? (isDark ? P.muted : P.dMuted) : muted, marginBottom: 24 }}>{t.sub}</p>
-
-                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
-                    {t.features.map((f, fi) => (
-                      <motion.div key={f}
-                        initial={{ opacity: 0, x: -8 }}
-                        animate={inView ? { opacity: 1, x: 0 } : {}}
-                        transition={{ delay: i * 0.18 + 0.7 + fi * 0.05, duration: 0.25 }}
-                        style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-                        <Check size={14} color={t.highlight ? (isDark ? P.green : '#7bbaf7') : acc.tint} style={{ marginTop: 2, flexShrink: 0 }}/>
-                        <span style={{ fontSize: 13, color: t.highlight ? (isDark ? P.ink : '#E8FFF8') : ink, lineHeight: 1.4 }}>{f}</span>
-                      </motion.div>
-                    ))}
-                  </div>
-
-                  <Link href={t.ctaHref}
-                    style={{ display: 'block', textAlign: 'center', fontSize: 14, fontWeight: 700,
-                      background: t.highlight ? '#ffffff' : acc.btn,
-                      color: t.highlight ? '#0e1b2e' : acc.btnTxt,
-                      padding: '13px 24px', borderRadius: 10,
-                      textDecoration: 'none', transition: 'all 0.15s' }}
-                    onMouseEnter={e => { e.currentTarget.style.background = t.highlight ? '#f0f6ff' : acc.btnHov }}
-                    onMouseLeave={e => { e.currentTarget.style.background = t.highlight ? '#ffffff' : acc.btn }}>
-                    {t.cta}
-                  </Link>
+                  )}
                 </div>
-              </BorderGlow>
-            </motion.div>
+
+                <div style={{ marginBottom: 4 }}>
+                  <span style={{ fontSize: 34, fontWeight: 800,
+                    color: t.highlight ? (isDark ? P.ink : '#E8FFF8') : ink,
+                    fontFamily: 'var(--font-mono-landing), monospace' }}>
+                    {t.price}
+                  </span>
+                </div>
+                <p style={{ fontSize: 13, color: t.highlight ? (isDark ? P.muted : P.dMuted) : muted, marginBottom: 24 }}>{t.sub}</p>
+
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
+                  {t.features.map((f, fi) => (
+                    <div key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                      <Check size={14} color={t.highlight ? (isDark ? P.green : '#7bbaf7') : acc.tint} style={{ marginTop: 2, flexShrink: 0 }}/>
+                      <span style={{ fontSize: 13, color: t.highlight ? (isDark ? P.ink : '#E8FFF8') : ink, lineHeight: 1.4 }}>{f}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <Link href={t.ctaHref}
+                  style={{ display: 'block', textAlign: 'center', fontSize: 14, fontWeight: 700,
+                    background: t.highlight ? '#ffffff' : acc.btn,
+                    color: t.highlight ? '#0e1b2e' : acc.btnTxt,
+                    padding: '13px 24px', borderRadius: 10,
+                    textDecoration: 'none', transition: 'all 0.15s' }}
+                  onMouseEnter={e => { e.currentTarget.style.background = t.highlight ? '#f0f6ff' : acc.btnHov }}
+                  onMouseLeave={e => { e.currentTarget.style.background = t.highlight ? '#ffffff' : acc.btn }}>
+                  {t.cta}
+                </Link>
+              </div>
+            </div>
           ))}
         </div>
       </div>
@@ -1515,7 +1407,6 @@ function ResourcesSection({ lang }: { lang: string }) {
   return (
     <section id="resources" style={{ position: 'relative', background: secBg, padding: '88px 24px',
       fontFamily: "'Space Grotesk', system-ui, sans-serif", transition: 'background 0.3s' }}>
-      <SectionHoverAnim colors={isDark ? [...ANIM_BLUE_DK] : [...ANIM_BLUE]} opacity={0.4} />
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
         <SectionHead dark={isDark}
           title={tx(lang,'Помощь и интеграции','Yordam va integratsiyalar','Help & integrations')}
@@ -1548,19 +1439,13 @@ function ResourcesSection({ lang }: { lang: string }) {
           return (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {allItems.map((item, idx) => (
-                <FadeUp key={item.num} delay={0.05 + idx * 0.07}>
-                  <BorderGlow
-                    backgroundColor={isDark ? P.dCard : P.card}
-                    glowColor={isDark ? "0 0 85" : "207 70 74"}
-                    colors={['#83c0f9', '#60a5fa', '#a5f3fc']}
-                    borderRadius={24}
-                    glowIntensity={isDark ? 1.5 : 1.2}
-                  >
+                <div>
+                  <div style={{ background: isDark ? P.dCard : P.card, borderRadius: 24,
+                    border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}` }}>
                   <div
                     onClick={() => setExpanded(idx)}
                     style={{ overflow: 'hidden', borderRadius: 24,
-                      outline: expanded === idx ? `1.5px solid ${acc.color}` : 'none',
-                      cursor: 'pointer', transition: 'outline-color 0.2s' }}>
+                      cursor: 'pointer' }}>
                     {/* Header row */}
                     <div style={{ padding: '26px 32px', display: 'flex', alignItems: 'center',
                       justifyContent: 'space-between', position: 'relative', overflow: 'hidden' }}>
@@ -1575,56 +1460,46 @@ function ResourcesSection({ lang }: { lang: string }) {
                           <h3 style={{ fontSize: 20, fontWeight: 800, color: ink, letterSpacing: '-0.01em' }}>{item.title}</h3>
                         </div>
                       </div>
-                      <motion.div
-                        animate={{ rotate: expanded === idx ? 45 : 0 }}
-                        transition={{ duration: 0.2 }}
-                        style={{ width: 32, height: 32, borderRadius: 10, background: bg2,
-                          border: `1px solid ${bdr}`, display: 'flex', alignItems: 'center',
-                          justifyContent: 'center', flexShrink: 0, fontSize: 20, color: ink,
-                          fontWeight: 500, lineHeight: 1 }}>
+                      <div style={{ width: 32, height: 32, borderRadius: 10, background: bg2,
+                        border: `1px solid ${bdr}`, display: 'flex', alignItems: 'center',
+                        justifyContent: 'center', flexShrink: 0, fontSize: 20, color: ink,
+                        fontWeight: 500, lineHeight: 1, transform: expanded === idx ? 'rotate(45deg)' : 'rotate(0deg)',
+                        transition: 'transform 0.2s' }}>
                         +
-                      </motion.div>
+                      </div>
                     </div>
                     {/* Expandable body */}
-                    <AnimatePresence initial={false}>
-                      {expanded === idx && (
-                        <motion.div
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: 'auto', opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          transition={{ duration: 0.32, ease: [0.25, 0.46, 0.45, 0.94] }}>
-                          <div style={{ padding: '0 32px 28px' }}>
-                            {item.desc && (
-                              <p style={{ fontSize: 14, color: ink, lineHeight: 1.65, marginBottom: 20, maxWidth: 600 }}>
-                                {item.desc}
-                              </p>
-                            )}
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-5">
-                              {item.items.map((it, j) => (
-                                <div key={j}
-                                  style={{ padding: '14px 16px', background: bg2, borderRadius: 14,
-                                    border: `1px solid ${bdr}`, cursor: 'pointer', transition: 'border-color 0.15s' }}
-                                  onMouseEnter={e => (e.currentTarget.style.borderColor = acc.color)}
-                                  onMouseLeave={e => (e.currentTarget.style.borderColor = bdr)}>
-                                  <p style={{ fontSize: 13, fontWeight: 600, color: ink, marginBottom: 4 }}>{it.t}</p>
-                                  <p style={{ fontSize: 11, color: ink }}>{it.d}</p>
-                                </div>
-                              ))}
+                    {expanded === idx && (
+                      <div style={{ padding: '0 32px 28px' }}>
+                        {item.desc && (
+                          <p style={{ fontSize: 14, color: ink, lineHeight: 1.65, marginBottom: 20, maxWidth: 600 }}>
+                            {item.desc}
+                          </p>
+                        )}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-5">
+                          {item.items.map((it, j) => (
+                            <div key={j}
+                              style={{ padding: '14px 16px', background: bg2, borderRadius: 14,
+                                border: `1px solid ${bdr}`, cursor: 'pointer', transition: 'border-color 0.15s' }}
+                              onMouseEnter={e => (e.currentTarget.style.borderColor = acc.color)}
+                              onMouseLeave={e => (e.currentTarget.style.borderColor = bdr)}>
+                              <p style={{ fontSize: 13, fontWeight: 600, color: ink, marginBottom: 4 }}>{it.t}</p>
+                              <p style={{ fontSize: 11, color: ink }}>{it.d}</p>
                             </div>
-                            <Link href={item.href}
-                              style={{ fontSize: 13, fontWeight: 700, color: acc.tint, textDecoration: 'none', display: 'inline-block' }}
-                              onMouseEnter={e => (e.currentTarget.style.opacity = '0.7')}
-                              onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
-                              onClick={e => e.stopPropagation()}>
-                              {item.link}
-                            </Link>
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
+                          ))}
+                        </div>
+                        <Link href={item.href}
+                          style={{ fontSize: 13, fontWeight: 700, color: acc.tint, textDecoration: 'none', display: 'inline-block' }}
+                          onMouseEnter={e => (e.currentTarget.style.opacity = '0.7')}
+                          onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
+                          onClick={e => e.stopPropagation()}>
+                          {item.link}
+                        </Link>
+                      </div>
+                    )}
                   </div>
-                  </BorderGlow>
-                </FadeUp>
+                  </div>
+                </div>
               ))}
             </div>
           )
@@ -1681,7 +1556,7 @@ function FaqSection({ lang }: { lang: string }) {
         />
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           {faqs.map((f, i) => (
-            <FadeUp key={i} delay={i * 0.06}>
+            <div>
               <div style={{ background: isDark ? P.dCard : '#ffffff', borderRadius: 16,
                 marginBottom: 10, border: `1px solid ${bdr}`, overflow: 'hidden' }}>
                 <button onClick={() => setOpen(open === i ? null : i)}
@@ -1716,7 +1591,7 @@ function FaqSection({ lang }: { lang: string }) {
                   </div>
                 </div>
               </div>
-            </FadeUp>
+            </div>
           ))}
         </div>
       </div>
@@ -1747,21 +1622,9 @@ function CtaSection({ lang }: { lang: string }) {
   return (
     <section style={{ position: 'relative', background: secBg, overflow: 'hidden',
       padding: '100px 24px', fontFamily: "'Space Grotesk', system-ui, sans-serif", transition: 'background 0.3s' }}>
-      <SectionHoverAnim colors={isDark ? [...ANIM_BLUE_DK] : [...ANIM_BLUE]} opacity={0.4} />
-
-      <div className="hidden lg:block">
-        <FloatCard mp="Uzum" mpColor={acc.color} metric="Выручка" value="24.5M сум" change="+12%" up delay={0} floatDur={3.8}
-          style={{ left: '4%', top: '20%', transform: 'rotate(-3.5deg)', zIndex: 5, opacity: 0.9 }} />
-        <FloatCard mp="Wildberries" mpColor={acc.color} metric="Заказы" value="1 842" change="+8%" up delay={0.1} floatDur={4.3}
-          style={{ right: '3%', top: '18%', transform: 'rotate(4deg)', zIndex: 5, opacity: 0.9 }} />
-        <FloatCard mp="Yandex Market" mpColor={acc.color} metric="ДРР" value="8.2%" change="-1.4%" up={false} delay={0.15} floatDur={3.6}
-          style={{ left: '6%', bottom: '20%', transform: 'rotate(-2deg)', zIndex: 5, opacity: 0.9 }} />
-        <FloatCard mp="Uzum" mpColor={acc.color} metric="Прибыль" value="6.8M сум" change="+15%" up delay={0.2} floatDur={4.1}
-          style={{ right: '5%', bottom: '22%', transform: 'rotate(3deg)', zIndex: 5, opacity: 0.9 }} />
-      </div>
 
       <div style={{ maxWidth: 680, margin: '0 auto', textAlign: 'center', position: 'relative', zIndex: 10 }}>
-        <FadeUp>
+        <div>
           <div style={{ minHeight: 'clamp(100px, 12vw, 160px)', display: 'flex', alignItems: 'center',
             justifyContent: 'center', marginBottom: 20 }}>
             <h2 style={{ fontSize: 'clamp(28px, 4vw, 52px)', fontWeight: 800,
@@ -1792,7 +1655,7 @@ function CtaSection({ lang }: { lang: string }) {
               <span key={s} style={{ fontSize: 13, color: badgeCol, fontWeight: 500 }}>{s}</span>
             ))}
           </div>
-        </FadeUp>
+        </div>
       </div>
     </section>
   )
@@ -1827,7 +1690,6 @@ function FooterSection({ lang }: { lang: string }) {
     <footer style={{ position: 'relative', background: footBg, padding: '64px 24px 32px',
       fontFamily: "'Space Grotesk', system-ui, sans-serif", borderTop: `1px solid ${bdr}`,
       transition: 'background 0.3s' }}>
-      <SectionHoverAnim colors={isDark ? [...ANIM_BLUE_DK] : [...ANIM_WHITE]} opacity={0.5} />
       <div style={{ maxWidth: 1200, margin: '0 auto' }}>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-14">
           <div>
