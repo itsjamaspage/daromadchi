@@ -86,9 +86,9 @@ function useAccent() {
     dk:     isDark ? A.darkDk : A.lightDk,
     bg:     isDark ? A.darkBg : A.lightBg,
     tint:   isDark ? A.dark   : '#0E2233',
-    btn:    '#83c0f9',
-    btnTxt: '#131321',
-    btnHov: '#6aabf0',
+    btn:    isDark ? '#ffffff' : '#83c0f9',
+    btnTxt: isDark ? '#131321' : '#131321',
+    btnHov: isDark ? '#f0f0f0' : '#6aabf0',
     btnBdr: isDark ? 'transparent' : 'rgba(14,27,46,0.18)',
   }
 }
@@ -438,10 +438,10 @@ function HeroSection({ lang }: { lang: string }) {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.30, duration: 0.55 }}
           style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, flexWrap: 'wrap', marginBottom: 56 }}>
           <Link href="/login"
-            style={{ fontSize: 15, fontWeight: 700, background: '#ffffff', color: '#0e1b2e',
+            style={{ fontSize: 15, fontWeight: 700, background: acc.btn, color: acc.btnTxt,
               padding: '14px 34px', borderRadius: 10, textDecoration: 'none', transition: 'all 0.15s', display: 'inline-block' }}
-            onMouseEnter={e => { e.currentTarget.style.background = '#f0f6ff'; e.currentTarget.style.transform = 'translateY(-2px)' }}
-            onMouseLeave={e => { e.currentTarget.style.background = '#ffffff'; e.currentTarget.style.transform = 'translateY(0)' }}>
+            onMouseEnter={e => { e.currentTarget.style.background = acc.btnHov; e.currentTarget.style.transform = 'translateY(-2px)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = acc.btn; e.currentTarget.style.transform = 'translateY(0)' }}>
             {tx(lang,'Начать бесплатно','Bepul boshlash','Start for free')}
           </Link>
           <a href="#how"
@@ -850,11 +850,11 @@ function FeaturesSection({ lang }: { lang: string }) {
           <FadeUp delay={0.39}>
             <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
               <Link href="/login"
-                style={{ fontSize: 13, fontWeight: 700, background: '#83c0f9', color: '#131321',
+                style={{ fontSize: 13, fontWeight: 700, background: acc.btn, color: acc.btnTxt,
                   padding: '11px 22px', borderRadius: 10, textDecoration: 'none',
                   transition: 'all 0.15s', display: 'inline-block' }}
-                onMouseEnter={e => { e.currentTarget.style.background = '#6aabf0'; e.currentTarget.style.transform = 'translateY(-2px)' }}
-                onMouseLeave={e => { e.currentTarget.style.background = '#83c0f9'; e.currentTarget.style.transform = 'translateY(0)' }}>
+                onMouseEnter={e => { e.currentTarget.style.background = acc.btnHov; e.currentTarget.style.transform = 'translateY(-2px)' }}
+                onMouseLeave={e => { e.currentTarget.style.background = acc.btn; e.currentTarget.style.transform = 'translateY(0)' }}>
                 {tx(lang,'Начать бесплатно 3 дня →','3 kun bepul boshlash →','Start free 3 days →')}
               </Link>
               <a href="#how"
@@ -1387,10 +1387,10 @@ function ExtensionSection({ lang }: { lang: string }) {
           <div style={{ textAlign: 'center' }}>
             <Link href="/extension"
               style={{ display: 'inline-flex', alignItems: 'center', gap: 8,
-                fontSize: 15, fontWeight: 700, background: '#83c0f9', color: '#131321',
+                fontSize: 15, fontWeight: 700, background: acc.btn, color: acc.btnTxt,
                 padding: '14px 36px', borderRadius: 10, textDecoration: 'none', transition: 'all 0.15s' }}
-              onMouseEnter={e => { e.currentTarget.style.background = '#6aabf0'; e.currentTarget.style.transform = 'translateY(-2px)' }}
-              onMouseLeave={e => { e.currentTarget.style.background = '#83c0f9'; e.currentTarget.style.transform = 'translateY(0)' }}>
+              onMouseEnter={e => { e.currentTarget.style.background = acc.btnHov; e.currentTarget.style.transform = 'translateY(-2px)' }}
+              onMouseLeave={e => { e.currentTarget.style.background = acc.btn; e.currentTarget.style.transform = 'translateY(0)' }}>
               {tx(lang,'Установить расширение','Kengaytmani o\'rnatish','Install extension')} <ArrowRight size={16}/>
             </Link>
             <p style={{ marginTop: 10, fontSize: 12, color: sub }}>
@@ -1559,12 +1559,12 @@ function PricingSection({ lang }: { lang: string }) {
 
                   <Link href={t.ctaHref}
                     style={{ display: 'block', textAlign: 'center', fontSize: 14, fontWeight: 700,
-                      background: t.highlight ? '#ffffff' : acc.btn,
-                      color: t.highlight ? '#0e1b2e' : acc.btnTxt,
+                      background: '#ffffff',
+                      color: '#0e1b2e',
                       padding: '13px 24px', borderRadius: 10,
                       textDecoration: 'none', transition: 'all 0.15s' }}
-                    onMouseEnter={e => { e.currentTarget.style.background = t.highlight ? '#f0f6ff' : acc.btnHov }}
-                    onMouseLeave={e => { e.currentTarget.style.background = t.highlight ? '#ffffff' : acc.btn }}>
+                    onMouseEnter={e => { e.currentTarget.style.background = '#f0f6ff' }}
+                    onMouseLeave={e => { e.currentTarget.style.background = '#ffffff' }}>
                     {t.cta}
                   </Link>
                 </div>
