@@ -1,5 +1,5 @@
 import { cache } from 'react'
-import { createClient } from '@/lib/supabase/server'
+import { getCurrentUser } from '@/lib/auth/session'
 import { eq, ne, and, asc, inArray } from 'drizzle-orm'
 import { db, shops, orders } from '@/lib/db'
 import type { MarketplaceType } from '@/lib/types'
@@ -11,8 +11,7 @@ export interface ShopRef {
 
 export const getCurrentUserId = cache(async (): Promise<string | null> => {
   try {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getCurrentUser()
     return user?.id ?? null
   } catch {
     return null

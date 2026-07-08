@@ -61,6 +61,8 @@ export const users = pgTable('users', {
   email:           text('email').notNull(),
   full_name:       text('full_name'),
   phone:           text('phone'),
+  password_hash:   text('password_hash'),
+  email_verified:  timestamp('email_verified'),
   plan:            planTypeEnum('plan').default('free').notNull(),
   plan_expires_at: timestamp('plan_expires_at', { withTimezone: true }),
   trial_ends_at:   timestamp('trial_ends_at', { withTimezone: true }),
@@ -360,4 +362,48 @@ export const channelNonces = pgTable('channel_nonces', {
   created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 }, (t) => [
   uniqueIndex('channel_nonces_nonce_idx').on(t.nonce),
+])
+
+/* ── 19. sessions (NextAuth) ────────────────────────────────────────────────── */
+
+export const sessions = pgTable('sessions', {
+  id:         text('id').primaryKey(),
+  user_id:    uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  token_hash: text('token_hash').notNull().unique(),
+  expires_at: timestamp('expires_at').notNull(),
+  created_at: timestamp('created_at').defaultNow(),
+  ip_address: text('ip_address'),
+  user_agent: text('user_agent'),
+}, (t) => [
+  index('idx_sessions_user_id').on(t.user_id),
+  index('idx_sessions_expires_at').on(t.expires_at),
+])
+
+/* ── 20. accounts (NextAuth OAuth) ───────────────────────────────────────────── */
+
+export const accounts = pgTable('accounts', {
+  id:                  text('id').primaryKey(),
+  user_id:             uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  provider:            text('provider').notNull(),
+  provider_account_id: text('provider_account_id').notNull(),
+  refresh_token:       text('refresh_token'),
+  access_token:        text('access_token'),
+  token_expires_at:    timestamp('token_expires_at'),
+  created_at:          timestamp('created_at').defaultNow(),
+}, (t) => [
+  index('idx_accounts_user_id').on(t.user_id),
+  uniqueIndex('idx_accounts_provider').on(t.provider, t.provider_account_id),
+])
+
+/* ── 21. verification_tokens (Email verification) ──────────────────────────── */
+
+export const verificationTokens = pgTable('verification_tokens', {
+  token:      text('token').primaryKey(),
+  user_id:    uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  email:      text('email').notNull(),
+  expires_at: timestamp('expires_at').notNull(),
+  created_at: timestamp('created_at').defaultNow(),
+}, (t) => [
+  index('idx_verification_tokens_user_id').on(t.user_id),
+  index('idx_verification_tokens_expires_at').on(t.expires_at),
 ])
