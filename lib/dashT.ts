@@ -302,6 +302,7 @@ export const dashT = {
       notFound: 'Izoh topilmadi',
     },
     payouts: {
+      tabAll: 'Barchasi',
       kpiTotalPaid: "Jami to'langan", kpiPending: 'Kutilayotgan', kpiAvg: "O'rtacha to'lov",
       perPeriod: 'har bir davr', periods: 'ta davr',
       statusPaid: "To'langan", statusProcessing: 'Jarayonda', statusPending: 'Kutilmoqda',
@@ -311,6 +312,7 @@ export const dashT = {
       colPeriod: 'Davr', colOrders: 'Buyurtmalar', colGross: 'Brutto',
       colCommission: 'Komissiya', colDelivery: 'Yetkazish', colReturns: 'Qaytarish',
       colAd: 'Reklama', colTax: 'Soliq', colNet: "Sof to'lov", colStatus: 'Holat',
+      netTooltip: "Nima uchun bu miqdor? Brutto daromaddan barcha chegirmalar: komissiya, yetkazish, qaytarishlar, reklama xarajatlari, ekvayring va soliq ayiriladi.",
     },
     seasonality: {
       insightBest: 'Eng yaxshi oy', insightLow: 'Eng past oy',
@@ -685,6 +687,7 @@ export const dashT = {
       notFound: 'No reviews found',
     },
     payouts: {
+      tabAll: 'All',
       kpiTotalPaid: 'Total paid', kpiPending: 'Pending', kpiAvg: 'Avg payout',
       perPeriod: 'per period', periods: 'periods',
       statusPaid: 'Paid', statusProcessing: 'Processing', statusPending: 'Pending',
@@ -694,6 +697,7 @@ export const dashT = {
       colPeriod: 'Period', colOrders: 'Orders', colGross: 'Gross',
       colCommission: 'Commission', colDelivery: 'Delivery', colReturns: 'Returns',
       colAd: 'Advertising', colTax: 'Tax', colNet: 'Net payout', colStatus: 'Status',
+      netTooltip: 'Why this amount? All deductions are subtracted from gross revenue: commission, delivery, returns, advertising, acquiring, and tax.',
     },
     seasonality: {
       insightBest: 'Best month', insightLow: 'Lowest month',
@@ -1065,6 +1069,7 @@ export const dashT = {
       notFound: 'Отзывы не найдены',
     },
     payouts: {
+      tabAll: 'Все',
       kpiTotalPaid: 'Всего выплачено', kpiPending: 'Ожидает', kpiAvg: 'Средняя выплата',
       perPeriod: 'за период', periods: 'периодов',
       statusPaid: 'Выплачено', statusProcessing: 'В обработке', statusPending: 'Ожидает',
@@ -1074,6 +1079,7 @@ export const dashT = {
       colPeriod: 'Период', colOrders: 'Заказы', colGross: 'Брутто',
       colCommission: 'Комиссия', colDelivery: 'Доставка', colReturns: 'Возвраты',
       colAd: 'Реклама', colTax: 'Налог', colNet: 'Чистая выплата', colStatus: 'Статус',
+      netTooltip: 'Почему такая сумма? Из брутто-дохода вычтены все удержания: комиссия, доставка, возвраты, реклама, эквайринг и налог.',
     },
     seasonality: {
       insightBest: 'Лучший месяц', insightLow: 'Худший месяц',
