@@ -1,30 +1,16 @@
 'use client'
-// v3
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useRef, useState, useEffect } from 'react'
 import Link from 'next/link'
-import dynamic from 'next/dynamic'
-import { motion, AnimatePresence, useInView } from 'framer-motion'
 import {
-  TrendingUp, TrendingDown, ArrowRight, Menu, X, Check,
+  TrendingUp, TrendingDown, ArrowRight, Check,
   ChevronDown, BarChart2, Package, Bell,
   LayoutDashboard, ShoppingCart, Megaphone, Layers,
-  BookOpen, MessageCircle, Plug2, UserCircle,
+  BookOpen, MessageCircle, Plug2, UserCircle, X,
 } from 'lucide-react'
 import { useTheme, useLang } from './providers'
 import type { Lang } from '@/lib/i18n'
 
 import PillNav from './components/PillNav'
-import BorderGlow from './components/BorderGlow'
-import SectionHoverAnim from './components/SectionHoverAnim'
-const LiquidEther = dynamic(() => import('./components/LiquidEther'), { ssr: false })
-
-// Fluid animation colour sets
-// ANIM_WHITE: pure white/silver shimmer — used on all blue-background sections so the
-// fluid reads as white light rather than blending into the blue background.
-const ANIM_WHITE   = ['#ffffff', '#ffffff', '#f8fafc', '#f0f0f0', '#e8e8e8'] as const
-const ANIM_BLUE    = ['#0369a1', '#0284c7', '#0ea5e9', '#38bdf8', '#7dd3fc'] as const
-// Dark mode: white/light gray at very low opacity — visible as gentle shimmer, no glow
-const ANIM_BLUE_DK = ['#ffffff', '#f5f5f5', '#ebebeb', '#dcdcdc', '#cdcdcd'] as const
 
 // ── Palette ───────────────────────────────────────────────────────────────────
 const P = {
@@ -93,18 +79,9 @@ function useAccent() {
   }
 }
 
-// ── Scroll-triggered fade-up ──────────────────────────────────────────────────
-function FadeUp({ children, delay = 0, style }: { children: React.ReactNode; delay?: number; style?: React.CSSProperties }) {
-  const ref = useRef(null)
-  const inView = useInView(ref, { once: true, margin: '-48px' })
-  return (
-    <motion.div ref={ref} style={style}
-      initial={{ opacity: 0, y: 22 }}
-      animate={inView ? { opacity: 1, y: 0 } : {}}
-      transition={{ delay, duration: 0.55, ease: [0.25, 0.46, 0.45, 0.94] }}>
-      {children}
-    </motion.div>
-  )
+// Simple wrapper without animations
+function FadeUp({ children, style }: { children: React.ReactNode; delay?: number; style?: React.CSSProperties }) {
+  return <div style={style}>{children}</div>
 }
 
 // ── Section heading ───────────────────────────────────────────────────────────
@@ -205,47 +182,6 @@ function LandingNav({ lang }: { lang: string }) {
   )
 }
 
-// ── Floating stat card — with continuous bob animation ────────────────────────
-function FloatCard({ mp, mpColor, metric, value, change, up, delay, floatDur = 3.5, style }: {
-  mp: string; mpColor: string; metric: string; value: string
-  change: string; up: boolean; delay: number; floatDur?: number
-  style: React.CSSProperties
-}) {
-  const isDark = useIsDark()
-  const acc = useAccent()
-  return (
-    // Outer div: entry animation + absolute position
-    <motion.div
-      initial={{ opacity: 0, y: 20, scale: 0.92 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ delay, duration: 0.65, ease: [0.25, 0.46, 0.45, 0.94] }}
-      style={{ position: 'absolute', ...style }}>
-      {/* CSS animation — GPU-accelerated, no JS per frame */}
-      <div className="animate-float" style={{ animationDuration: `${floatDur}s`, animationDelay: `${delay * 0.3}s` }}>
-        <div style={{
-          background: '#83c0f9',
-          borderRadius: 14, padding: '12px 16px', minWidth: 162,
-          boxShadow: '0 10px 40px rgba(0,0,0,0.22), 0 2px 8px rgba(0,0,0,0.14)',
-          fontFamily: "'Space Grotesk', system-ui, sans-serif",
-          border: '1px solid rgba(14,27,46,0.14)',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 5 }}>
-            <div style={{ width: 7, height: 7, borderRadius: '50%', background: P.ink }} />
-            <span style={{ fontSize: 10, fontWeight: 700, color: P.stone, letterSpacing: '0.02em' }}>{mp}</span>
-          </div>
-          <p style={{ fontSize: 10, color: P.muted, marginBottom: 2 }}>{metric}</p>
-          <p style={{ fontSize: 17, fontWeight: 800, color: P.ink, fontFamily: "'Space Grotesk', system-ui, sans-serif", lineHeight: 1.1 }}>
-            {value}
-          </p>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 3, marginTop: 5 }}>
-            {up ? <TrendingUp size={11} color={P.green}/> : <TrendingDown size={11} color={P.red}/>}
-            <span style={{ fontSize: 11, fontWeight: 700, color: up ? P.green : P.red }}>{change}</span>
-          </div>
-        </div>
-      </div>
-    </motion.div>
-  )
-}
 
 // ── Dashboard mockup — matches real app ───────────────────────────────────────
 function DashMockup() {
@@ -414,72 +350,55 @@ function HeroSection({ lang }: { lang: string }) {
   return (
     <section style={{ position: 'relative', background: heroBg, overflow: 'hidden',
       fontFamily: "'Space Grotesk', system-ui, sans-serif", paddingBottom: 0 }}>
-      <SectionHoverAnim colors={isDark ? [...ANIM_BLUE_DK] : [...ANIM_WHITE]} opacity={0.55} />
-      {/* Ambient glow */}
       <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 1,
         background: `radial-gradient(ellipse 90% 55% at 50% -5%, ${glowColor} 0%, transparent 65%)` }} />
       <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 1,
         background: `radial-gradient(ellipse 45% 30% at 50% 0%, ${isDark ? 'rgba(197,232,254,0.06)' : 'rgba(14,116,144,0.08)'} 0%, transparent 55%)` }} />
 
-      <HeroDecorShapes isDark={isDark} />
-
       <div className="px-5 sm:px-12 lg:px-[100px]" style={{ maxWidth: 1200, margin: '0 auto', paddingTop: 100,
         position: 'relative', zIndex: 10, textAlign: 'center' }}>
 
         {/* Headline */}
-        <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.14, duration: 0.6 }}
-          style={{ fontSize: 'clamp(28px, 4vw, 52px)', fontWeight: 800, lineHeight: 1.08,
-            color: headCol, marginBottom: 18, letterSpacing: '-0.024em' }}>
+        <h1 style={{ fontSize: 'clamp(28px, 4vw, 52px)', fontWeight: 800, lineHeight: 1.08,
+          color: headCol, marginBottom: 18, letterSpacing: '-0.024em' }}>
           {tx(lang,
-            <>Аналитика трёх маркетплейсов —<br/>всё на одном экране</>,
-            <>Uchta marketpleysning analitikasi —<br/>hammasi bitta ekranda</>,
-            <>Three marketplace analytics —<br/>all on one screen</>
+            <>Real-time profit tracking for Uzum, Wildberries, and Yandex Market</>,
+            <>Uzum, Wildberries va Yandex Market uchun real vaqtda foyda kuzatish</>,
+            <>Real-time profit tracking for Uzum, Wildberries, and Yandex Market</>
           )}
-        </motion.h1>
+        </h1>
 
-        <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.22, duration: 0.6 }}
-          style={{ fontSize: 'clamp(14px, 1.6vw, 17px)', color: subCol, marginBottom: 36,
-            maxWidth: 500, margin: '0 auto 36px', lineHeight: 1.65 }}>
+        <p style={{ fontSize: 'clamp(14px, 1.6vw, 17px)', color: subCol, marginBottom: 36,
+          maxWidth: 500, margin: '0 auto 36px', lineHeight: 1.65 }}>
           {tx(lang,
-            'Выручка, ДРР, остатки и юнит-экономика по Uzum, Wildberries и Yandex Market — всё в одной таблице с автообновлением',
-            'Uzum, Wildberries va Yandex Market bo\'yicha daromad, DRR, qoldiqlar va birlik-iqtisod — barchasi bitta jadvalda',
-            'Revenue, ad spend, stock and unit economics across Uzum, Wildberries and Yandex Market — all in one place'
+            'Revenue, DRR, stock and unit economics across Uzum, Wildberries and Yandex Market — all in one place',
+            'Uzum, Wildberries va Yandex Market bo\'yicha daromad, DRR, qoldiqlar va birlik-iqtisod — barchasi bitta joyda',
+            'Revenue, DRR, stock and unit economics across Uzum, Wildberries and Yandex Market — all in one place'
           )}
-        </motion.p>
+        </p>
 
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.30, duration: 0.55 }}
-          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, flexWrap: 'wrap', marginBottom: 56 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, flexWrap: 'wrap', marginBottom: 56 }}>
           <Link href="/login"
             style={{ fontSize: 15, fontWeight: 700, background: '#ffffff', color: '#0e1b2e',
               padding: '14px 34px', borderRadius: 10, textDecoration: 'none', transition: 'all 0.15s', display: 'inline-block' }}
             onMouseEnter={e => { e.currentTarget.style.background = '#f0f6ff'; e.currentTarget.style.transform = 'translateY(-2px)' }}
             onMouseLeave={e => { e.currentTarget.style.background = '#ffffff'; e.currentTarget.style.transform = 'translateY(0)' }}>
-            {tx(lang,'Начать бесплатно','Bepul boshlash','Start for free')}
+            {tx(lang,'Start for free','Bepul boshlash','Start for free')}
           </Link>
           <a href="#how"
             style={{ fontSize: 14, fontWeight: 600, color: secLinkCol, textDecoration: 'none',
               display: 'inline-flex', alignItems: 'center', gap: 6, transition: 'color 0.15s' }}
             onMouseEnter={e => (e.currentTarget.style.color = isDark ? '#fff' : P.ink)}
             onMouseLeave={e => (e.currentTarget.style.color = secLinkCol)}>
-            {tx(lang,'Как это работает','Qanday ishlaydi','How it works')} <ArrowRight size={14}/>
+            {tx(lang,'How it works','Qanday ishlaydi','How it works')} <ArrowRight size={14}/>
           </a>
-        </motion.div>
+        </div>
 
         {/* Dashboard mockup — hidden on mobile to avoid overflow */}
-        <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.40, duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
-          className="hidden sm:block"
-          style={{ width: '100%', position: 'relative', zIndex: 20, marginBottom: 0 }}>
-          <BorderGlow
-            backgroundColor={isDark ? '#0c1120' : '#ffffff'}
-            glowColor={isDark ? "0 0 85" : "207 90 74"}
-            colors={isDark ? ['#c5d8fe','#a8c5fd','#dbeafe'] : ['#83c0f9','#60a5fa','#a5f3fc']}
-            borderRadius={16}
-            glowIntensity={isDark ? 1.8 : 1.2}
-          >
-            <DashMockup />
-          </BorderGlow>
-        </motion.div>
+        <div className="hidden sm:block"
+          style={{ width: '100%', position: 'relative', zIndex: 20, marginBottom: 0, borderRadius: 16, overflow: 'hidden', border: '1px solid rgba(14,27,46,0.18)' }}>
+          <DashMockup />
+        </div>
       </div>
 
       <div style={{ height: 64, background: `linear-gradient(to bottom, transparent, ${fadeTarget})`,
@@ -511,27 +430,18 @@ function ComparisonSection({ lang }: { lang: string }) {
   return (
     <section id="comparison" style={{ position: 'relative', background: secBg, padding: '88px 24px',
       fontFamily: "'Space Grotesk', system-ui, sans-serif", transition: 'background 0.3s' }}>
-      <SectionHoverAnim colors={isDark ? [...ANIM_BLUE_DK] : [...ANIM_BLUE]} opacity={0.4} />
       <div style={{ maxWidth: 860, margin: '0 auto' }}>
         <SectionHead dark={isDark}
-          title={tx(lang,'Сейчас вы видите только половину данных','Hozir siz ma\'lumotlarning yarmini ko\'ryapsiz','You\'re only seeing half the data')}
-          accent={tx(lang,'половину данных','yarmini','half the data')}
+          title={tx(lang,'All your marketplace data in one dashboard','Hozir siz ma\'lumotlarning yarmini ko\'ryapsiz','All your marketplace data in one dashboard')}
+          accent={tx(lang,'one dashboard','yarmini','one dashboard')}
           sub={tx(lang,
-            'Три отдельных кабинета не дают общей картины — приходится переключаться и складывать цифры вручную',
+            'Real-time profit tracking, DRR control, and inventory management across all three marketplaces',
             'Uchta alohida kabinet umumiy rasmni bermaydi — raqamlarni qo\'lda hisoblashga to\'g\'ri keladi',
-            'Three separate dashboards give no unified view — you switch tabs and add up numbers by hand'
+            'Real-time profit tracking, DRR control, and inventory management across all three marketplaces'
           )}
         />
-        <FadeUp delay={0.1}>
-          <BorderGlow
-            backgroundColor={isDark ? P.dCard : P.card}
-            glowColor={isDark ? "0 0 85" : "207 90 74"}
-            colors={['#83c0f9','#60a5fa','#a5f3fc']}
-            borderRadius={20}
-            glowIntensity={isDark ? 1.8 : 1.2}
-          >
-          <div style={{ background: cardBg, borderRadius: 20, overflow: 'hidden',
-            border: `1px solid ${bdr}`, boxShadow: isDark ? '0 4px 24px rgba(197,232,254,0.06)' : '0 4px 24px rgba(0,0,0,0.06)' }}>
+        <div style={{ background: cardBg, borderRadius: 20, overflow: 'hidden',
+          border: `1px solid ${bdr}`, boxShadow: isDark ? '0 4px 24px rgba(197,232,254,0.06)' : '0 4px 24px rgba(0,0,0,0.06)' }}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr',
               background: headBg, borderBottom: `1px solid ${bdr}` }}>
               <div style={{ padding: '16px 24px' }}/>
@@ -567,16 +477,15 @@ function ComparisonSection({ lang }: { lang: string }) {
               </div>
             ))}
           </div>
-          </BorderGlow>
-        </FadeUp>
-        <FadeUp delay={0.2} style={{ textAlign: 'center', marginTop: 36 }}>
+        <div style={{ textAlign: 'center', marginTop: 36 }}>
           <Link href="/login"
             style={{ display: 'inline-block', fontSize: 15, fontWeight: 700, background: acc.btn, color: acc.btnTxt,
               padding: '14px 36px', borderRadius: 10, textDecoration: 'none', transition: 'all 0.15s' }}
             onMouseEnter={e => { e.currentTarget.style.background = acc.btnHov; e.currentTarget.style.transform = 'translateY(-1px)' }}
             onMouseLeave={e => { e.currentTarget.style.background = acc.btn; e.currentTarget.style.transform = 'translateY(0)' }}>
-            {tx(lang,'Попробовать бесплатно','Bepul sinab ko\'ring','Try for free')}
+            {tx(lang,'Try for free','Bepul sinab ko\'ring','Try for free')}
           </Link>
+        </div>
         </FadeUp>
       </div>
     </section>
@@ -609,7 +518,6 @@ function MarqueeSection({ lang }: { lang: string }) {
       borderBottom: `1px solid ${bdr}`,
       fontFamily: "'Space Grotesk', system-ui, sans-serif",
     }}>
-      <SectionHoverAnim colors={isDark ? [...ANIM_BLUE_DK] : [...ANIM_BLUE]} opacity={0.35} />
       <div style={{
         padding: '14px 24px', borderRight: `1px solid ${divider}`,
         flexShrink: 0, display: 'flex', alignItems: 'center',
@@ -642,7 +550,6 @@ function FeaturesSection({ lang }: { lang: string }) {
   const isDark = useIsDark()
   const acc = useAccent()
   const ref = useRef<HTMLDivElement>(null)
-  const inView = useInView(ref, { once: true, margin: '-80px' })
 
   const secBg = isDark ? P.dCanvas : P.parchment
   const bdr   = isDark ? P.dHair   : P.hair
@@ -668,50 +575,28 @@ function FeaturesSection({ lang }: { lang: string }) {
   const bars  = [18,26,22,38,30,44,35,52,40,32,46,60,38,50]
   const hiIdx = bars.length - 4
   const orders = [
-    { id: 'DEMO-183', status: tx(lang,'Доставлен','Yetkazildi','Delivered'),    col: '#22c55e' },
-    { id: 'DEMO-184', status: tx(lang,'В обработке','Jarayonda','Processing'),  col: '#f59e0b' },
-    { id: 'DEMO-185', status: tx(lang,'Доставлен','Yetkazildi','Delivered'),    col: '#22c55e' },
+    { id: 'ORD-001', status: tx(lang,'Delivered','Yetkazildi','Delivered'),    col: '#22c55e' },
+    { id: 'ORD-002', status: tx(lang,'Processing','Jarayonda','Processing'),  col: '#f59e0b' },
+    { id: 'ORD-003', status: tx(lang,'Delivered','Yetkazildi','Delivered'),    col: '#22c55e' },
   ]
 
   const screenCard = (children: React.ReactNode, rotate: number, zIdx: number, style: React.CSSProperties) => (
-    <motion.div
-      initial={{ opacity: 0, y: 32, rotate }}
-      animate={inView ? { opacity: 1, y: 0, rotate } : {}}
-      transition={{ duration: 0.75, ease: [0.25, 0.46, 0.45, 0.94] }}
+    <div
       style={{ position: 'absolute', background: dCard, borderRadius: 16, overflow: 'hidden',
         border: `1px solid ${dBdr}`, zIndex: zIdx,
         boxShadow: '0 20px 60px rgba(0,0,0,0.55), 0 4px 16px rgba(0,0,0,0.35)', ...style }}>
       {children}
-    </motion.div>
+    </div>
   )
 
   return (
     <section id="features" ref={ref} style={{ position: 'relative', background: secBg, padding: '96px 24px',
       fontFamily: "'Space Grotesk', system-ui, sans-serif", transition: 'background 0.3s', overflow: 'hidden' }}>
-      <SectionHoverAnim colors={isDark ? [...ANIM_BLUE_DK] : [...ANIM_WHITE]} opacity={0.6} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16" style={{ maxWidth: 1200, margin: '0 auto', alignItems: 'center' }}>
 
         {/* Left: dark dashboard mockup — matches photo 1 */}
-        <motion.div
-          initial={{ opacity: 0, y: 44 }}
-          animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.85, ease: [0.25, 0.46, 0.45, 0.94] }}
-          style={{ position: 'relative' }}>
-
-          {/* 3D tilt on hover wrapper */}
-          <motion.div
-            animate={{ rotateY: [0, 6, 0, -6, 0], rotateX: [0, 3, 0, -3, 0] }}
-            transition={{ repeat: Infinity, duration: 8, ease: 'easeInOut' }}
-            style={{ transformPerspective: 900 }}>
-
+        <div style={{ position: 'relative' }}>
           {/* Browser chrome */}
-          <BorderGlow
-            backgroundColor={isDark ? '#0c1120' : '#83c0f7'}
-            glowColor={isDark ? "0 0 85" : "207 90 74"}
-            colors={isDark ? ['#c5d8fe','#a8c5fd','#7bb8f9'] : ['#83c0f9','#60a5fa','#a5f3fc']}
-            borderRadius={14}
-            glowIntensity={isDark ? 1.8 : 1.2}
-          >
           <div style={{ borderRadius: 14, overflow: 'hidden', border: `1px solid ${bdr}`,
             boxShadow: isDark
               ? '0 32px 80px rgba(0,0,0,0.6), 0 8px 24px rgba(0,0,0,0.4)'
@@ -801,9 +686,7 @@ function FeaturesSection({ lang }: { lang: string }) {
               </div>
             </div>
           </div>
-          </BorderGlow>
-          </motion.div>
-        </motion.div>
+        </div>
 
         {/* Right: text content */}
         <div>
