@@ -68,9 +68,19 @@
       letter-spacing: 2px;
       color: #0ea5e9;
       font-weight: 700;
-      margin-bottom: 20px;
+      margin-bottom: 8px;
+      padding-bottom: 0;
+      border-bottom: none;
+    }
+
+    .layer-header {
+      font-size: 14px;
+      font-weight: 600;
+      color: #cbd5e1;
+      margin-bottom: 16px;
       padding-bottom: 12px;
       border-bottom: 2px solid rgba(14, 165, 233, 0.3);
+      line-height: 1.5;
     }
 
     .components {
@@ -305,6 +315,7 @@
       <!-- Layer 1: Client -->
       <div class="layer">
         <div class="layer-label">🖥️ Client Layer</div>
+        <div class="layer-header">User-facing interfaces for accessing the dashboard and marketplace automation</div>
         <div class="components">
           <div class="component">
             <div class="component-name">
@@ -341,6 +352,7 @@
       <!-- Layer 2: Authentication -->
       <div class="layer">
         <div class="layer-label">🔐 Auth Layer</div>
+        <div class="layer-header">Secure session management and user identity verification</div>
         <div class="components">
           <div class="component">
             <div class="component-name">
@@ -363,6 +375,7 @@
       <!-- Layer 3: Backend/API -->
       <div class="layer">
         <div class="layer-label">⚙️ Backend Layer</div>
+        <div class="layer-header">Business logic, API handlers, and marketplace synchronization engines</div>
         <div class="components">
           <div class="component">
             <div class="component-name">
@@ -400,6 +413,7 @@
       <!-- Layer 4: Data -->
       <div class="layer">
         <div class="layer-label">💾 Data Layer</div>
+        <div class="layer-header">Persistent storage for all application data and analytics</div>
         <div class="components">
           <div class="component">
             <div class="component-name">
@@ -421,6 +435,7 @@
       <!-- Layer 5: External -->
       <div class="layer">
         <div class="layer-label">🌐 External Services</div>
+        <div class="layer-header">Third-party integrations for notifications, communications, and deployment</div>
         <div class="components">
           <div class="component">
             <div class="component-name">
