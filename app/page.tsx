@@ -2008,7 +2008,7 @@ function MobileBottomNav({ lang }: { lang: string }) {
     { label: tx(lang,'Функции','Imkoniyatlar','Features'),  href: '#features', Icon: Layers },
     { label: tx(lang,'Тарифы','Tariflar','Pricing'),        href: '#pricing',  Icon: Package },
     { label: tx(lang,'Вопросы','Savollar','FAQ'),           href: '#faq',      Icon: MessageCircle },
-    { label: tx(lang,'Profil','Profil','Profile'),           href: '/login',    Icon: UserCircle },
+    { label: tx(lang,'Профиль','Profil','Profile'),           href: '/login',    Icon: UserCircle },
   ]
 
   return (
