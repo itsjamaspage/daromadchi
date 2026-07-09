@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import { useTheme, useLang } from './providers'
 import type { Lang } from '@/lib/i18n'
+import { T } from '@/lib/landing-t'
 
 import PillNav from './components/PillNav'
 import BorderGlow from './components/BorderGlow'
@@ -72,11 +73,6 @@ const KPI = {
   amber:   '#ec7e00',
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function tx(lang: string, ru: any, uz: any, en: any): any {
-  return lang === 'ru' ? ru : lang === 'uz' ? uz : en
-}
-
 function useIsDark() { return useTheme().theme === 'dark' }
 
 function useAccent() {
@@ -130,7 +126,7 @@ function SectionHead({ title, accent, sub, dark = false }: {
 }
 
 // ── Navbar (PillNav) ──────────────────────────────────────────────────────────
-function LandingNav({ lang }: { lang: string }) {
+function LandingNav({ lang }: { lang: Lang }) {
   const isDark = useIsDark()
   const acc = useAccent()
   const { toggle, theme } = useTheme()
@@ -138,10 +134,10 @@ function LandingNav({ lang }: { lang: string }) {
   const [langOpen, setLangOpen] = useState(false)
 
   const navItems = [
-    { label: tx(lang, 'Как работает', 'Qanday ishlaydi', 'How it works'), href: '#how' },
-    { label: tx(lang, 'Тарифы', 'Tariflar', 'Pricing'), href: '#pricing' },
-    { label: tx(lang, 'Расширение', 'Kengaytma', 'Extension'), href: '#extension' },
-    { label: tx(lang, 'Помощь', 'Yordam', 'Help'), href: '#faq' },
+    { label: T.nav.howItWorks[lang], href: '#how' },
+    { label: T.nav.pricing[lang], href: '#pricing' },
+    { label: T.nav.extension[lang], href: '#extension' },
+    { label: T.nav.help[lang], href: '#faq' },
   ]
 
   const borderCol = isDark ? 'rgba(255,255,255,0.2)' : 'rgba(14,34,51,0.15)'
@@ -248,7 +244,7 @@ function FloatCard({ mp, mpColor, metric, value, change, up, delay, floatDur = 3
 }
 
 // ── Dashboard mockup — matches real app ───────────────────────────────────────
-function DashMockup({ lang }: { lang: string }) {
+function DashMockup({ lang }: { lang: Lang }) {
   const isDark = useIsDark()
 
   const mainBg = isDark ? '#0c1120' : '#ffffff'
@@ -261,10 +257,10 @@ function DashMockup({ lang }: { lang: string }) {
   const tealBg  = isDark ? 'rgba(131,192,249,0.15)' : 'rgba(59,130,246,0.12)'
   const tealDim = isDark ? 'rgba(131,192,249,0.12)' : 'rgba(59,130,246,0.15)'
   const kpis = [
-    { l: tx(lang,'Выручка','Daromad','Revenue'),   v: '124 540 000', u: tx(lang,'сум','so\'m','sum'), d: '+12.4%', pos: true,  c: teal },
-    { l: tx(lang,'Заказы','Buyurtmalar','Orders'),  v: '1 842',        u: '',    d: '+8.1%',  pos: true,  c: teal },
-    { l: tx(lang,'Расход','Xarajat','Expenses'),    v: '10 200 000',   u: tx(lang,'сум','so\'m','sum'), d: '+3.2%',  pos: false, c: teal },
-    { l: tx(lang,'Прибыль','Foyda','Profit'),       v: '38 200 000',   u: tx(lang,'сум','so\'m','sum'), d: '+15.7%', pos: true,  c: teal },
+    { l: T.mockup.revenue[lang],   v: '124 540 000', u: T.mockup.sum[lang], d: '+12.4%', pos: true,  c: teal },
+    { l: T.mockup.orders[lang],  v: '1 842',        u: '',    d: '+8.1%',  pos: true,  c: teal },
+    { l: T.mockup.expenses[lang],    v: '10 200 000',   u: T.mockup.sum[lang], d: '+3.2%',  pos: false, c: teal },
+    { l: T.mockup.profit[lang],       v: '38 200 000',   u: T.mockup.sum[lang], d: '+15.7%', pos: true,  c: teal },
   ]
 
   const sideIcons = [LayoutDashboard, Package, ShoppingCart, BarChart2, Megaphone, Layers, Bell]
@@ -272,10 +268,10 @@ function DashMockup({ lang }: { lang: string }) {
   const hi   = bars.length - 4
 
   const rows = [
-    { name: tx(lang,'Куртка зимняя мужская','Erkaklar qishki kurtkasi','Men\'s winter jacket'),  sku: 'UZ-00312', rev: '18 240 000', drr: 7.2,  ok: true,  mp: teal },
-    { name: tx(lang,'Кроссовки Nike Air','Nike Air krossovka','Nike Air sneakers'),      sku: 'WB-01847', rev: '12 590 000', drr: 11.4, ok: false, mp: teal },
-    { name: tx(lang,'Рюкзак туристический','Turist ryuksaki','Hiking backpack'),    sku: 'YM-00951', rev: '9 870 000',  drr: 9.8,  ok: true,  mp: teal },
-    { name: tx(lang,'Наушники Sony WH-1000','Sony WH-1000 quloqchin','Sony WH-1000 headphones'),   sku: 'UZ-00488', rev: '8 340 000',  drr: 6.1,  ok: true,  mp: teal },
+    { name: T.mockup.winterJacket[lang],  sku: 'UZ-00312', rev: '18 240 000', drr: 7.2,  ok: true,  mp: teal },
+    { name: T.mockup.nikeAir[lang],      sku: 'WB-01847', rev: '12 590 000', drr: 11.4, ok: false, mp: teal },
+    { name: T.mockup.hikingBackpack[lang],    sku: 'YM-00951', rev: '9 870 000',  drr: 9.8,  ok: true,  mp: teal },
+    { name: T.mockup.sonyHeadphones[lang],   sku: 'UZ-00488', rev: '8 340 000',  drr: 6.1,  ok: true,  mp: teal },
   ]
 
   return (
@@ -302,14 +298,14 @@ function DashMockup({ lang }: { lang: string }) {
         <div style={{ background: bg2, borderBottom: `1px solid ${border}`, padding: '8px 12px',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
           <div style={{ display: 'flex', gap: 3 }}>
-            {[tx(lang,'Все','Barchasi','All'),'Uzum','Wildberries','Yandex Market'].map((tab, i) => (
+            {[T.mockup.all[lang],'Uzum','Wildberries','Yandex Market'].map((tab, i) => (
               <div key={tab} style={{ fontSize: 10, fontWeight: 600, padding: '4px 9px', borderRadius: 6, cursor: 'pointer',
                 background: i === 0 ? teal : 'transparent', color: i === 0 ? '#fff' : muted }}>
                 {tab}
               </div>
             ))}
           </div>
-          <span style={{ fontSize: 10, color: muted }}>{tx(lang,'17 мар — 30 мар 2026','17-mar — 30-mar 2026','Mar 17 — Mar 30, 2026')}</span>
+          <span style={{ fontSize: 10, color: muted }}>{T.mockup.dateRange[lang]}</span>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', borderBottom: `1px solid ${border}` }}>
@@ -329,7 +325,7 @@ function DashMockup({ lang }: { lang: string }) {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 100px', borderBottom: `1px solid ${border}` }}>
           <div style={{ padding: '10px 12px', borderRight: `1px solid ${border}` }}>
             <p style={{ fontSize: 8, color: muted, marginBottom: 6, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-              {tx(lang,'Выручка по дням','Kunlik daromad','Daily revenue')}
+              {T.mockup.dailyRevenue[lang]}
             </p>
             <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2, height: 40 }}>
               {bars.map((h, i) => (
@@ -340,7 +336,7 @@ function DashMockup({ lang }: { lang: string }) {
           </div>
           <div style={{ padding: '10px 12px' }}>
             <p style={{ fontSize: 8, color: muted, marginBottom: 8, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-              {tx(lang,'Площадки','Maydonchalar','Platforms')}
+              {T.mockup.platforms[lang]}
             </p>
             {[{mp:'Uzum',c:teal,pct:'48%'},{mp:'WB',c:teal,pct:'32%'},{mp:'YM',c:teal,pct:'20%'}].map(m => (
               <div key={m.mp} style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 6 }}>
@@ -355,7 +351,7 @@ function DashMockup({ lang }: { lang: string }) {
         <div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 72px 88px 44px 46px',
             padding: '5px 12px', background: bg2, borderBottom: `1px solid ${border}` }}>
-            {[tx(lang,'Товар','Mahsulot','Product'),tx(lang,'Артикул','Artikul','SKU'),tx(lang,'Выручка, сум','Daromad, so\'m','Revenue, sum'),tx(lang,'ДРР%','DRR%','DRR%'),tx(lang,'Статус','Holat','Status')].map(h => (
+            {[T.mockup.product[lang],T.mockup.sku[lang],T.mockup.revenueSum[lang],T.mockup.drrPct[lang],T.mockup.status[lang]].map(h => (
               <span key={h} style={{ fontSize: 8, fontWeight: 700, color: muted, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{h}</span>
             ))}
           </div>
@@ -371,7 +367,7 @@ function DashMockup({ lang }: { lang: string }) {
               <span style={{ fontSize: 9, fontWeight: 700, color: r.drr > 10 ? P.red : teal }}>{r.drr}%</span>
               <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
                 <div style={{ width: 5, height: 5, borderRadius: '50%', background: r.ok ? teal : P.red }} />
-                <span style={{ fontSize: 8, color: muted }}>{r.ok ? tx(lang,'Норма','Normal','OK') : tx(lang,'Мало','Kam','Low')}</span>
+                <span style={{ fontSize: 8, color: muted }}>{r.ok ? T.mockup.ok[lang] : T.mockup.low[lang]}</span>
               </div>
             </div>
           ))}
@@ -387,7 +383,7 @@ function HeroDecorShapes({ isDark: _isDark }: { isDark: boolean }) {
 }
 
 // ── 1. HERO ───────────────────────────────────────────────────────────────────
-function HeroSection({ lang }: { lang: string }) {
+function HeroSection({ lang }: { lang: Lang }) {
   const isDark = useIsDark()
   const acc = useAccent()
 
@@ -418,21 +414,13 @@ function HeroSection({ lang }: { lang: string }) {
         <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.14, duration: 0.6 }}
           style={{ fontSize: 'clamp(28px, 4vw, 52px)', fontWeight: 800, lineHeight: 1.08,
             color: headCol, marginBottom: 18, letterSpacing: '-0.024em' }}>
-          {tx(lang,
-            <>Аналитика трёх маркетплейсов —<br/>всё на одном экране</>,
-            <>Uchta marketpleysning analitikasi —<br/>hammasi bitta ekranda</>,
-            <>Three marketplace analytics —<br/>all on one screen</>
-          )}
+          {T.hero.headingLine1[lang]}<br/>{T.hero.headingLine2[lang]}
         </motion.h1>
 
         <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.22, duration: 0.6 }}
           style={{ fontSize: 'clamp(14px, 1.6vw, 17px)', color: subCol, marginBottom: 36,
             maxWidth: 500, margin: '0 auto 36px', lineHeight: 1.65 }}>
-          {tx(lang,
-            'Выручка, ДРР, остатки и юнит-экономика по Uzum, Wildberries и Yandex Market — всё в одной таблице с автообновлением',
-            'Uzum, Wildberries va Yandex Market bo\'yicha daromad, DRR, qoldiqlar va birlik-iqtisod — barchasi bitta jadvalda',
-            'Revenue, ad spend, stock and unit economics across Uzum, Wildberries and Yandex Market — all in one place'
-          )}
+          {T.hero.subtitle[lang]}
         </motion.p>
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.30, duration: 0.55 }}
@@ -442,14 +430,14 @@ function HeroSection({ lang }: { lang: string }) {
               padding: '14px 34px', borderRadius: 10, textDecoration: 'none', transition: 'all 0.15s', display: 'inline-block' }}
             onMouseEnter={e => { e.currentTarget.style.background = acc.btnHov; e.currentTarget.style.transform = 'translateY(-2px)' }}
             onMouseLeave={e => { e.currentTarget.style.background = acc.btn; e.currentTarget.style.transform = 'translateY(0)' }}>
-            {tx(lang,'Начать бесплатно','Bepul boshlash','Start for free')}
+            {T.hero.startFree[lang]}
           </Link>
           <a href="#how"
             style={{ fontSize: 14, fontWeight: 600, color: secLinkCol, textDecoration: 'none',
               display: 'inline-flex', alignItems: 'center', gap: 6, transition: 'color 0.15s' }}
             onMouseEnter={e => (e.currentTarget.style.color = isDark ? '#fff' : P.ink)}
             onMouseLeave={e => (e.currentTarget.style.color = secLinkCol)}>
-            {tx(lang,'Как это работает','Qanday ishlaydi','How it works')} <ArrowRight size={14}/>
+            {T.hero.howItWorks[lang]} <ArrowRight size={14}/>
           </a>
         </motion.div>
 
@@ -477,7 +465,7 @@ function HeroSection({ lang }: { lang: string }) {
 }
 
 // ── 2. COMPARISON TABLE ───────────────────────────────────────────────────────
-function ComparisonSection({ lang }: { lang: string }) {
+function ComparisonSection({ lang }: { lang: Lang }) {
   const isDark = useIsDark()
   const acc = useAccent()
   const secBg  = isDark ? '#1e1e1e' : '#e8f0fd'
@@ -488,12 +476,12 @@ function ComparisonSection({ lang }: { lang: string }) {
   const sub    = isDark ? P.dMuted  : P.stone
 
   const rows = [
-    tx(lang,'Выручка по всем площадкам','Barcha saytlar bo\'yicha daromad','Revenue across all platforms'),
-    tx(lang,'ДРР в реальном времени','Real vaqt DRR','Real-time ad spend ratio'),
-    tx(lang,'Остатки по складам','Ombor qoldiqlari','Stock by warehouse'),
-    tx(lang,'Юнит-экономика','Birlik-iqtisod','Unit economics'),
-    tx(lang,'Уведомления в Telegram','Telegram bildirishnomalari','Telegram notifications'),
-    tx(lang,'Экспорт в Excel','Excel ga eksport','Excel export'),
+    T.comparison.row1[lang],
+    T.comparison.row2[lang],
+    T.comparison.row3[lang],
+    T.comparison.row4[lang],
+    T.comparison.row5[lang],
+    T.comparison.row6[lang],
   ]
 
   return (
@@ -502,13 +490,9 @@ function ComparisonSection({ lang }: { lang: string }) {
       <SectionHoverAnim colors={isDark ? [...ANIM_BLUE_DK] : [...ANIM_BLUE]} opacity={0.4} />
       <div style={{ maxWidth: 860, margin: '0 auto' }}>
         <SectionHead dark={isDark}
-          title={tx(lang,'Сейчас вы видите только половину данных','Hozir siz ma\'lumotlarning yarmini ko\'ryapsiz','You\'re only seeing half the data')}
-          accent={tx(lang,'половину данных','yarmini','half the data')}
-          sub={tx(lang,
-            'Три отдельных кабинета не дают общей картины — приходится переключаться и складывать цифры вручную',
-            'Uchta alohida kabinet umumiy rasmni bermaydi — raqamlarni qo\'lda hisoblashga to\'g\'ri keladi',
-            'Three separate dashboards give no unified view — you switch tabs and add up numbers by hand'
-          )}
+          title={T.comparison.title[lang]}
+          accent={T.comparison.accent[lang]}
+          sub={T.comparison.sub[lang]}
         />
         <FadeUp delay={0.1}>
           <BorderGlow
@@ -525,7 +509,7 @@ function ComparisonSection({ lang }: { lang: string }) {
               <div style={{ padding: '16px 24px' }}/>
               <div style={{ padding: '16px 24px', textAlign: 'center', borderLeft: `1px solid ${bdr}` }}>
                 <p style={{ fontSize: 13, fontWeight: 700, color: sub }}>
-                  {tx(lang,'3 кабинета по отдельности','3 ta alohida kabinet','3 separate dashboards')}
+                  {T.comparison.separateDashboards[lang]}
                 </p>
               </div>
               <div style={{ padding: '16px 24px', textAlign: 'center',
@@ -563,7 +547,7 @@ function ComparisonSection({ lang }: { lang: string }) {
               padding: '14px 36px', borderRadius: 10, textDecoration: 'none', transition: 'all 0.15s' }}
             onMouseEnter={e => { e.currentTarget.style.background = acc.btnHov; e.currentTarget.style.transform = 'translateY(-1px)' }}
             onMouseLeave={e => { e.currentTarget.style.background = acc.btn; e.currentTarget.style.transform = 'translateY(0)' }}>
-            {tx(lang,'Попробовать бесплатно','Bepul sinab ko\'ring','Try for free')}
+            {T.comparison.tryFree[lang]}
           </Link>
         </FadeUp>
       </div>
@@ -572,7 +556,7 @@ function ComparisonSection({ lang }: { lang: string }) {
 }
 
 // ── 3. MARQUEE ────────────────────────────────────────────────────────────────
-function MarqueeSection({ lang }: { lang: string }) {
+function MarqueeSection({ lang }: { lang: Lang }) {
   const isDark = useIsDark()
   const bg       = isDark ? '#1e1e1e' : '#ffffff'
   const bdr      = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(14,27,46,0.08)'
@@ -582,13 +566,13 @@ function MarqueeSection({ lang }: { lang: string }) {
   const dotCol   = isDark ? 'rgba(255,255,255,0.2)'  : 'rgba(14,27,46,0.2)'
   const items = [
     'Wildberries',
-    tx(lang, 'Аналитика продаж', 'Savdo tahlili', 'Sales analytics'),
+    T.marquee.salesAnalytics[lang],
     'P&L hisobot',
     'Yandex Market',
-    tx(lang, 'Юнит-экономика', 'Birlik iqtisodiyoti', 'Unit economics'),
+    T.marquee.unitEconomics[lang],
     'Uzum Market',
-    tx(lang, 'ДРР контроль', 'DRR nazorat', 'DRR control'),
-    tx(lang, 'Excel экспорт', 'Excel eksport', 'Excel export'),
+    T.marquee.drrControl[lang],
+    T.marquee.excelExport[lang],
   ]
   return (
     <div style={{
@@ -606,7 +590,7 @@ function MarqueeSection({ lang }: { lang: string }) {
           fontSize: 9, fontWeight: 700, color: labelCol,
           letterSpacing: '0.1em', textTransform: 'uppercase', lineHeight: 1.5, whiteSpace: 'nowrap',
         }}>
-          {tx(lang,<>ИНТЕГРИРОВАННЫЕ<br />ПЛОЩАДКИ И ФУНКЦИИ</>,<>INTEGRATSIYA QILINGAN<br />BOZORLAR VA FUNKSIYALAR</>,<>INTEGRATED<br />MARKETS &amp; FEATURES</>)}
+          {T.marquee.labelLine1[lang]}<br />{T.marquee.labelLine2[lang]}
         </p>
       </div>
       <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
@@ -626,7 +610,7 @@ function MarqueeSection({ lang }: { lang: string }) {
 }
 
 // ── 4. FEATURES ───────────────────────────────────────────────────────────────
-function FeaturesSection({ lang }: { lang: string }) {
+function FeaturesSection({ lang }: { lang: Lang }) {
   const isDark = useIsDark()
   const acc = useAccent()
   const ref = useRef<HTMLDivElement>(null)
@@ -646,19 +630,19 @@ function FeaturesSection({ lang }: { lang: string }) {
   const chrTxt = isDark ? '#6b7a99'  : '#7a90a8'
 
   const kpis = [
-    { l: tx(lang,'Выручка','Tushum','Revenue'),      v: '124.5M', d: '+12.4%', col: '#22c4b8' },
-    { l: tx(lang,'Прибыль','Foyda','Profit'),         v: '38.2M',  d: '+12.4%', col: '#22c55e' },
-    { l: tx(lang,'Заказы','Buyurtmalar','Orders'),    v: '1,842',  d: '+12.4%', col: '#60a5fa' },
-    { l: tx(lang,'Остатки','Qoldiq','Stock'),         v: '3,410',  d: '+12.4%', col: '#f59e0b' },
+    { l: T.features.revenue[lang],      v: '124.5M', d: '+12.4%', col: '#22c4b8' },
+    { l: T.features.profit[lang],         v: '38.2M',  d: '+12.4%', col: '#22c55e' },
+    { l: T.features.orders[lang],    v: '1,842',  d: '+12.4%', col: '#60a5fa' },
+    { l: T.features.stock[lang],         v: '3,410',  d: '+12.4%', col: '#f59e0b' },
   ]
 
 
   const bars  = [18,26,22,38,30,44,35,52,40,32,46,60,38,50]
   const hiIdx = bars.length - 4
   const orders = [
-    { id: 'DEMO-183', status: tx(lang,'Доставлен','Yetkazildi','Delivered'),    col: '#22c55e' },
-    { id: 'DEMO-184', status: tx(lang,'В обработке','Jarayonda','Processing'),  col: '#f59e0b' },
-    { id: 'DEMO-185', status: tx(lang,'Доставлен','Yetkazildi','Delivered'),    col: '#22c55e' },
+    { id: 'DEMO-183', status: T.features.delivered[lang],    col: '#22c55e' },
+    { id: 'DEMO-184', status: T.features.processing[lang],  col: '#f59e0b' },
+    { id: 'DEMO-185', status: T.features.delivered[lang],    col: '#22c55e' },
   ]
 
   const screenCard = (children: React.ReactNode, rotate: number, zIdx: number, style: React.CSSProperties) => (
@@ -741,7 +725,7 @@ function FeaturesSection({ lang }: { lang: string }) {
                 <div style={{ background: dCard, borderRadius: 10, padding: '10px 12px',
                   border: `1px solid ${dBdr}` }}>
                   <p style={{ fontSize: 9, color: dMuted, marginBottom: 8, fontWeight: 600 }}>
-                    {tx(lang,'Дневная выручка','Kunlik tushum','Daily revenue')}
+                    {T.features.dailyRevenue[lang]}
                   </p>
                   <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2, height: 52 }}>
                     {bars.map((h, i) => (
@@ -756,7 +740,7 @@ function FeaturesSection({ lang }: { lang: string }) {
                 <div style={{ background: dCard, borderRadius: 10, padding: '10px 12px',
                   border: `1px solid ${dBdr}`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                   <p style={{ fontSize: 9, color: dMuted, fontWeight: 600, alignSelf: 'flex-start' }}>
-                    {tx(lang,'Категории','Kategoriyalar','Categories')}
+                    {T.features.categories[lang]}
                   </p>
                   <svg width={52} height={52} viewBox="0 0 52 52">
                     <circle cx="26" cy="26" r="18" fill="none" stroke={isDark ? dBdr : '#d4e2ef'} strokeWidth="8"/>
@@ -775,9 +759,9 @@ function FeaturesSection({ lang }: { lang: string }) {
                 <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px',
                   borderBottom: `1px solid ${dBdr}` }}>
                   <span style={{ fontSize: 9, fontWeight: 700, color: dMuted, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                    {tx(lang,'Последние заказы','So\'nggi buyurtmalar','Recent Orders')}
+                    {T.features.recentOrders[lang]}
                   </span>
-                  <span style={{ fontSize: 9, fontWeight: 700, color: dMuted, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{tx(lang,'Статус','Holat','Status')}</span>
+                  <span style={{ fontSize: 9, fontWeight: 700, color: dMuted, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{T.features.status[lang]}</span>
                 </div>
                 {orders.map((o, i) => (
                   <div key={o.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center',
@@ -798,37 +782,29 @@ function FeaturesSection({ lang }: { lang: string }) {
           <FadeUp delay={0.15}>
             <p style={{ fontSize: 11, fontWeight: 700, color: acc.tint, marginBottom: 10,
               textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-              {tx(lang,'АНАЛИТИКА В РЕАЛЬНОМ ВРЕМЕНИ','REAL-TIME ANALITIKA','REAL-TIME ANALYTICS')}
+              {T.features.badge[lang]}
             </p>
             <h2 style={{ fontSize: 'clamp(26px, 3vw, 42px)', fontWeight: 800, lineHeight: 1.1,
               color: isDark ? P.dText : P.ink, letterSpacing: '-0.022em', marginBottom: 18 }}>
-              {tx(lang,
-                <>Продажи и аналитика —<br/><span style={{ color: acc.tint }}>всё на одном экране</span></>,
-                <>Savdo va analitika —<br/><span style={{ color: acc.tint }}>hammasi bitta ekranda</span></>,
-                <>Your store, fully visible —<br/><span style={{ color: acc.tint }}>every number, one place</span></>
-              )}
+              {T.features.headingLine1[lang]}<br/><span style={{ color: acc.tint }}>{T.features.headingAccentLine[lang]}</span>
             </h2>
           </FadeUp>
 
           <FadeUp delay={0.23}>
             <p style={{ fontSize: 16, color: isDark ? P.dMuted : P.stone, lineHeight: 1.65, marginBottom: 32 }}>
-              {tx(lang,
-                'ДРР, остатки, цены и юнит-экономика. Управляйте продажами за 5 минут в день.',
-                'DRR, qoldiq, narx va birlik iqtisodiyoti. Savdoni kuniga 5 daqiqada boshqaring.',
-                'DRR, stock, pricing and unit economics. Manage your sales in 5 minutes a day.'
-              )}
+              {T.features.description[lang]}
             </p>
           </FadeUp>
 
           <FadeUp delay={0.31}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 36 }}>
               {[
-                { title: tx(lang,'Выручка и прибыль в реальном времени','Real-time daromad va foyda','Real-time revenue & profit'),
-                  desc: tx(lang,'Следите за KPI по каждому маркетплейсу и временному периоду','Har bir marketpleysning KPIlarini kuzating','Track KPIs per marketplace and time period') },
-                { title: tx(lang,'ДРР и рентабельность по каждому товару','Har bir mahsulot uchun DRR va rentabellik','DRR & profitability per product'),
-                  desc: tx(lang,'Найдите убыточные позиции и скорректируйте ставки рекламы','Zarar keltiruvchi pozitsiyalarni toping','Find losing products and adjust ad bids') },
-                { title: tx(lang,'Уведомления в Telegram каждые 15 минут','Har 15 daqiqada Telegram bildirishnomalari','Telegram alerts every 15 minutes'),
-                  desc: tx(lang,'Критические алерты по остаткам и превышению ДРР','Qoldiqlar va DRR oshishi haqida ogohlantirishlar','Critical alerts for stock and DRR spikes') },
+                { title: T.features.feature1Title[lang],
+                  desc: T.features.feature1Desc[lang] },
+                { title: T.features.feature2Title[lang],
+                  desc: T.features.feature2Desc[lang] },
+                { title: T.features.feature3Title[lang],
+                  desc: T.features.feature3Desc[lang] },
               ].map((f, i) => (
                 <div key={i} style={{ display: 'flex', gap: 14, padding: '14px 16px',
                   background: isDark ? P.dCard : P.card, borderRadius: 14,
@@ -855,14 +831,14 @@ function FeaturesSection({ lang }: { lang: string }) {
                   transition: 'all 0.15s', display: 'inline-block' }}
                 onMouseEnter={e => { e.currentTarget.style.background = acc.btnHov; e.currentTarget.style.transform = 'translateY(-2px)' }}
                 onMouseLeave={e => { e.currentTarget.style.background = acc.btn; e.currentTarget.style.transform = 'translateY(0)' }}>
-                {tx(lang,'Начать бесплатно 3 дня →','3 kun bepul boshlash →','Start free 3 days →')}
+                {T.features.startFree3Days[lang]}
               </Link>
               <a href="#how"
                 style={{ fontSize: 14, fontWeight: 600, color: isDark ? P.dMuted : P.stone, textDecoration: 'none',
                   display: 'inline-flex', alignItems: 'center', gap: 6, transition: 'color 0.15s', padding: '13px 0' }}
                 onMouseEnter={e => (e.currentTarget.style.color = isDark ? '#fff' : P.ink)}
                 onMouseLeave={e => (e.currentTarget.style.color = isDark ? P.dMuted : P.stone)}>
-                {tx(lang,'Изучить платформу →','Platformani o\'rganish →','Explore platform →')}
+                {T.features.explorePlatform[lang]}
               </a>
             </div>
           </FadeUp>
@@ -873,7 +849,7 @@ function FeaturesSection({ lang }: { lang: string }) {
 }
 
 // ── 4. HOW IT WORKS — interactive accordion ───────────────────────────────────
-function HowItWorksSection({ lang }: { lang: string }) {
+function HowItWorksSection({ lang }: { lang: Lang }) {
   const isDark = useIsDark()
   const acc = useAccent()
   const [active, setActive] = useState(0)
@@ -889,16 +865,12 @@ function HowItWorksSection({ lang }: { lang: string }) {
   const steps = [
     {
       color: stepColor,
-      title: tx(lang,'Регистрация','Ro\'yxatdan o\'tish','Register'),
-      desc: tx(lang,
-        'Зарегистрируйтесь в системе и начните пользоваться нашей платформой',
-        'Tizimga ro\'yxatdan o\'ting va platformamizdan foydalanishni boshlang',
-        'Sign up in the system and start using our platform'
-      ),
+      title: T.howItWorks.step1Title[lang],
+      desc: T.howItWorks.step1Desc[lang],
       ui: (
         <div style={{ background: uiBg, borderRadius: 16, padding: '20px',
           border: `1px solid ${uiBdr}`, boxShadow: isDark ? '0 8px 32px rgba(197,232,254,0.08)' : '0 8px 32px rgba(0,0,0,0.10)' }}>
-          {[{l:'Email',v:'seller@example.com'},{l:tx(lang,'Пароль','Parol','Password'),v:'••••••••••'}].map(f => (
+          {[{l:'Email',v:'seller@example.com'},{l:T.howItWorks.password[lang],v:'••••••••••'}].map(f => (
             <div key={f.l} style={{ marginBottom: 12 }}>
               <p style={{ fontSize: 11, color: sub, marginBottom: 5 }}>{f.l}</p>
               <div style={{ background: fldBg, border: `1px solid ${uiBdr}`, borderRadius: 8, padding: '10px 14px' }}>
@@ -907,24 +879,20 @@ function HowItWorksSection({ lang }: { lang: string }) {
             </div>
           ))}
           <div style={{ background: acc.color, borderRadius: 8, padding: '11px', textAlign: 'center', marginTop: 6 }}>
-            <span style={{ fontSize: 13, fontWeight: 700, color: '#131321' }}>{tx(lang,'Зарегистрироваться','Ro\'yxatdan o\'tish','Sign up')}</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: '#131321' }}>{T.howItWorks.signUp[lang]}</span>
           </div>
         </div>
       ),
     },
     {
       color: stepColor,
-      title: tx(lang,'Подключите магазин','Do\'koningizni ulang','Connect your store'),
-      desc: tx(lang,
-        'Вставьте API-ключ из кабинета Uzum, WB или Яндекс — получите доступ к данным магазина, платформа работает в режиме «только чтение»',
-        'Uzum, WB yoki Yandex kabinetidan API kalitini kiriting — do\'kon ma\'lumotlariga kirish oling, platforma «faqat o\'qish» rejimida ishlaydi',
-        'Paste API key from Uzum, WB or Yandex — and access to your store\'s data, our platform works in "read only" mode.'
-      ),
+      title: T.howItWorks.step2Title[lang],
+      desc: T.howItWorks.step2Desc[lang],
       ui: (
         <div style={{ background: uiBg, borderRadius: 16, padding: '20px',
           border: `1px solid ${uiBdr}`, boxShadow: isDark ? '0 8px 32px rgba(197,232,254,0.08)' : '0 8px 32px rgba(0,0,0,0.10)' }}>
           <p style={{ fontSize: 11, fontWeight: 700, color: sub, marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            {tx(lang,'Ваши магазины','Do\'konlaringiz','Your stores')}
+            {T.howItWorks.yourStores[lang]}
           </p>
           {[{mp:'Uzum',c:acc.color,status:'✅'},{mp:'Wildberries',c:acc.color,status:'✅'},{mp:'Yandex Market',c:acc.color,status:'⏳'}].map(m => (
             <div key={m.mp} style={{ display: 'flex', alignItems: 'center', gap: 10,
@@ -939,12 +907,8 @@ function HowItWorksSection({ lang }: { lang: string }) {
     },
     {
       color: stepColor,
-      title: tx(lang,'Данные готовы','Ma\'lumotlar tayyor','Data is ready'),
-      desc: tx(lang,
-        'Данные синхронизируются автоматически — вся история продаж с момента подключения, без ручного ввода',
-        'Ma\'lumotlar avtomatik sinxronlanadi — do\'koningizni ulagan paytdan boshlab barcha sotuv tarixi ko\'rinadi',
-        'Data syncs automatically — full sales history from the moment you connect, no manual entry needed'
-      ),
+      title: T.howItWorks.step3Title[lang],
+      desc: T.howItWorks.step3Desc[lang],
       ui: (
         <div style={{ background: uiBg, borderRadius: 16, padding: '20px',
           border: `1px solid ${uiBdr}`, boxShadow: isDark ? '0 8px 32px rgba(197,232,254,0.08)' : '0 8px 32px rgba(0,0,0,0.10)' }}>
@@ -960,7 +924,7 @@ function HowItWorksSection({ lang }: { lang: string }) {
           </div>
           <div style={{ background: fldBg, borderRadius: 10, padding: '12px 14px', border: `1px solid ${uiBdr}` }}>
             <p style={{ fontSize: 10, color: sub, marginBottom: 8, fontWeight: 600 }}>
-              {tx(lang,'Выручка по дням','Kunlik daromad','Daily revenue')}
+              {T.howItWorks.dailyRevenue[lang]}
             </p>
             <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2, height: 36 }}>
               {[40,55,48,70,62,80,72,90,76,60,84,96,70,88].map((h, i) => (
@@ -980,9 +944,9 @@ function HowItWorksSection({ lang }: { lang: string }) {
       <SectionHoverAnim colors={isDark ? [...ANIM_BLUE_DK] : [...ANIM_BLUE]} opacity={0.4} />
       <div style={{ maxWidth: 1000, margin: '0 auto' }}>
         <SectionHead dark={isDark}
-          title={tx(lang,'Настройте магазин за 5 минут','Do\'koningizni 5 daqiqada sozlang','Set up your store in 5 minutes')}
-          accent={tx(lang,'за 5 минут','5 daqiqada','in 5 minutes')}
-          sub={tx(lang,'Три шага до полной аналитики','To\'liq tahlilgacha uch qadam','Three steps to full analytics')}
+          title={T.howItWorks.title[lang]}
+          accent={T.howItWorks.accent[lang]}
+          sub={T.howItWorks.sub[lang]}
         />
 
         {/* Two-column: accordion tabs left, active UI right */}
@@ -1042,7 +1006,7 @@ function HowItWorksSection({ lang }: { lang: string }) {
                   padding: '13px 32px', borderRadius: 10, textDecoration: 'none', transition: 'all 0.15s' }}
                 onMouseEnter={e => { e.currentTarget.style.background = acc.btnHov; e.currentTarget.style.transform = 'translateY(-1px)' }}
                 onMouseLeave={e => { e.currentTarget.style.background = acc.btn; e.currentTarget.style.transform = 'translateY(0)' }}>
-                {tx(lang,'Подключить бесплатно','Bepul ulash','Connect for free')}
+                {T.howItWorks.connectFree[lang]}
               </Link>
             </div>
           </div>
@@ -1072,7 +1036,7 @@ function HowItWorksSection({ lang }: { lang: string }) {
 }
 
 // ── 5. BENTO ──────────────────────────────────────────────────────────────────
-function BentoSection({ lang }: { lang: string }) {
+function BentoSection({ lang }: { lang: Lang }) {
   const isDark = useIsDark()
   const acc = useAccent()
   const secBg  = isDark ? P.dCanvas : P.parchment
@@ -1089,19 +1053,17 @@ function BentoSection({ lang }: { lang: string }) {
       <SectionHoverAnim colors={isDark ? [...ANIM_BLUE_DK] : [...ANIM_WHITE]} opacity={0.6} />
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
         <SectionHead dark={isDark}
-          title={tx(lang,'Всё необходимое для роста','O\'sish uchun kerak bo\'lgan hamma narsa','Everything you need to grow')}
-          accent={tx(lang,'роста','O\'sish','grow')}
-          sub={tx(lang,'Аналитика, контроль запасов и финансы в одном месте',
-            'Tahlil, zaxira nazorati va moliya bir joyda',
-            'Analytics, inventory control and financials in one place')}
+          title={T.bento.title[lang]}
+          accent={T.bento.accent[lang]}
+          sub={T.bento.sub[lang]}
         />
         {/* Top: 4 KPI stat cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
           {[
-            { l: tx(lang,'Выручка','Daromad','Revenue'), v: '124.5M', d: '+12%', col: '#22c4b8', hsl: '174 67 45', cols: ['#22c4b8','#0d9488','#5eead4'] },
-            { l: tx(lang,'Заказы','Buyurtmalar','Orders'), v: '1 842', d: '+8%', col: '#60a5fa', hsl: '213 94 68', cols: ['#60a5fa','#3b82f6','#93c5fd'] },
-            { l: tx(lang,'ДРР','DRR','DRR'), v: '8.2%', d: '-1.4%', col: '#f59e0b', hsl: '38 92 50', cols: ['#f59e0b','#d97706','#fcd34d'] },
-            { l: tx(lang,'Прибыль','Foyda','Profit'), v: '38.2M', d: '+15%', col: '#22c55e', hsl: '142 71 45', cols: ['#22c55e','#16a34a','#86efac'] },
+            { l: T.bento.revenue[lang], v: '124.5M', d: '+12%', col: '#22c4b8', hsl: '174 67 45', cols: ['#22c4b8','#0d9488','#5eead4'] },
+            { l: T.bento.orders[lang], v: '1 842', d: '+8%', col: '#60a5fa', hsl: '213 94 68', cols: ['#60a5fa','#3b82f6','#93c5fd'] },
+            { l: T.bento.drr[lang], v: '8.2%', d: '-1.4%', col: '#f59e0b', hsl: '38 92 50', cols: ['#f59e0b','#d97706','#fcd34d'] },
+            { l: T.bento.profit[lang], v: '38.2M', d: '+15%', col: '#22c55e', hsl: '142 71 45', cols: ['#22c55e','#16a34a','#86efac'] },
           ].map((k, i) => (
             <FadeUp key={k.l} delay={i * 0.07} style={{ height: '100%' }}>
               <BorderGlow
@@ -1115,7 +1077,7 @@ function BentoSection({ lang }: { lang: string }) {
                 <div style={{ padding: '20px 22px' }}>
                   <p style={{ fontSize: 10, color: muted, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{k.l}</p>
                   <p style={{ fontSize: 22, fontWeight: 800, color: k.col, fontFamily: 'monospace', lineHeight: 1, marginBottom: 4 }}>{k.v}</p>
-                  <p style={{ fontSize: 11, fontWeight: 600, color: k.col }}>{k.d} {tx(lang,'за месяц','oyda','this month')}</p>
+                  <p style={{ fontSize: 11, fontWeight: 600, color: k.col }}>{k.d} {T.bento.thisMonth[lang]}</p>
                 </div>
               </BorderGlow>
             </FadeUp>
@@ -1138,20 +1100,18 @@ function BentoSection({ lang }: { lang: string }) {
               <div style={{ padding: '28px' }}>
                 <p style={{ fontSize: 11, fontWeight: 700, color: acc.tint, marginBottom: 6,
                   textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                  {tx(lang,'АНАЛИТИКА','TAHLIL','ANALYTICS')}
+                  {T.bento.analyticsLabel[lang]}
                 </p>
                 <h3 style={{ fontSize: 18, fontWeight: 800, color: ink, marginBottom: 10, letterSpacing: '-0.01em' }}>
-                  {tx(lang,'Аналитика маркетплейсов','Analitika markazi','Marketplace analytics')}
+                  {T.bento.analyticsTitle[lang]}
                 </h3>
                 <p style={{ fontSize: 13, color: sub, lineHeight: 1.6, marginBottom: 18 }}>
-                  {tx(lang,'Uzum, Wildberries и Yandex Market — обновление каждые 15 минут',
-                    'Uzum, Wildberries va Yandex Market — har 15 daqiqada yangilanadi',
-                    'Uzum, Wildberries & Yandex Market — updates every 15 min')}
+                  {T.bento.analyticsDesc[lang]}
                 </p>
                 <div style={{ background: bg2, borderRadius: 12, padding: '12px', border: `1px solid ${bdr}` }}>
                   <p style={{ fontSize: 9, color: muted, marginBottom: 8, fontWeight: 600,
                     textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    {tx(lang,'Выручка по дням','Kunlik daromad','Daily revenue')}
+                    {T.bento.dailyRevenue[lang]}
                   </p>
                   <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2, height: 56 }}>
                     {[32,45,38,62,55,78,65,85,72,58,80,95,68,82].map((h, i) => (
@@ -1177,21 +1137,19 @@ function BentoSection({ lang }: { lang: string }) {
               <div style={{ padding: '28px' }}>
                 <p style={{ fontSize: 11, fontWeight: 700, color: '#f59e0b', marginBottom: 6,
                   textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                  {tx(lang,'ЗАПАСЫ','ZAXIRA','INVENTORY')}
+                  {T.bento.inventoryLabel[lang]}
                 </p>
                 <h3 style={{ fontSize: 18, fontWeight: 800, color: ink, marginBottom: 10, letterSpacing: '-0.01em' }}>
-                  {tx(lang,'Контроль остатков','Zaxira nazorati','Stock control')}
+                  {T.bento.inventoryTitle[lang]}
                 </h3>
                 <p style={{ fontSize: 13, color: sub, lineHeight: 1.6, marginBottom: 18 }}>
-                  {tx(lang,'Алерты когда товар заканчивается, по каждому складу',
-                    'Har bir ombor bo\'yicha mahsulot tugayotganda ogohlantirish',
-                    'Alerts when stock runs low, per warehouse')}
+                  {T.bento.inventoryDesc[lang]}
                 </p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {[
-                    { name: tx(lang,'Куртка','Qishki kurtka','Jacket'), stock: 120, low: false },
-                    { name: tx(lang,'Кроссовки','Krossovka','Sneakers'), stock: 8, low: true },
-                    { name: tx(lang,'Рюкзак','Ryuksak','Backpack'), stock: 45, low: false },
+                    { name: T.bento.jacket[lang], stock: 120, low: false },
+                    { name: T.bento.sneakers[lang], stock: 8, low: true },
+                    { name: T.bento.backpack[lang], stock: 45, low: false },
                   ].map(item => (
                     <div key={item.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                       padding: '8px 12px', background: bg2, borderRadius: 10, border: `1px solid ${bdr}` }}>
@@ -1200,7 +1158,7 @@ function BentoSection({ lang }: { lang: string }) {
                         color: item.low ? '#f87171' : '#10b981',
                         background: item.low ? 'rgba(248,113,113,0.1)' : 'rgba(16,185,129,0.1)',
                         padding: '3px 10px', borderRadius: 100 }}>
-                        {item.stock} {tx(lang,'шт','ta','pcs')}
+                        {item.stock} {T.bento.pcs[lang]}
                       </span>
                     </div>
                   ))}
@@ -1222,22 +1180,20 @@ function BentoSection({ lang }: { lang: string }) {
               <div style={{ padding: '28px' }}>
                 <p style={{ fontSize: 11, fontWeight: 700, color: '#10b981', marginBottom: 6,
                   textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                  {tx(lang,'ФИНАНСЫ','MOLIYA','FINANCE')}
+                  {T.bento.financeLabel[lang]}
                 </p>
                 <h3 style={{ fontSize: 18, fontWeight: 800, color: ink, marginBottom: 10, letterSpacing: '-0.01em' }}>
-                  {tx(lang,'Отчёт о прибыли','Foyda hisobi','Profit report')}
+                  {T.bento.financeTitle[lang]}
                 </h3>
                 <p style={{ fontSize: 13, color: sub, lineHeight: 1.6, marginBottom: 18 }}>
-                  {tx(lang,'Полная структура доходов и расходов по каждому каналу',
-                    'Har bir kanal bo\'yicha to\'liq daromad va xarajatlar tuzilmasi',
-                    'Full revenue and cost breakdown per channel')}
+                  {T.bento.financeDesc[lang]}
                 </p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
                   {[
-                    { l: tx(lang,'Выручка','Daromad','Revenue'), v: '124.5M', col: ink },
-                    { l: tx(lang,'Комиссия','Komissiya','Commission'), v: '-12.2M', col: '#f87171' },
-                    { l: tx(lang,'Доставка','Yetkazib berish','Delivery'), v: '-3.8M', col: '#f59e0b' },
-                    { l: tx(lang,'Прибыль','Foyda','Profit'), v: '108.5M', col: '#10b981' },
+                    { l: T.bento.revenueRow[lang], v: '124.5M', col: ink },
+                    { l: T.bento.commission[lang], v: '-12.2M', col: '#f87171' },
+                    { l: T.bento.delivery[lang], v: '-3.8M', col: '#f59e0b' },
+                    { l: T.bento.profitRow[lang], v: '108.5M', col: '#10b981' },
                   ].map((row, i, arr) => (
                     <div key={row.l} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                       padding: '10px 0', borderBottom: i < arr.length - 1 ? `1px solid ${bdr}` : 'none' }}>
@@ -1256,7 +1212,7 @@ function BentoSection({ lang }: { lang: string }) {
 }
 
 // ── 6. EXTENSION SHOWCASE ────────────────────────────────────────────────────
-function ExtensionSection({ lang }: { lang: string }) {
+function ExtensionSection({ lang }: { lang: Lang }) {
   const isDark = useIsDark()
   const acc = useAccent()
   const secBg = isDark ? P.dCard  : '#e8f0fd'
@@ -1267,54 +1223,42 @@ function ExtensionSection({ lang }: { lang: string }) {
     {
       name: 'Uzum Market', color: '#494fdf', bg: 'rgba(73,79,223,0.1)',
       icon: 'UZ',
-      headline: tx(lang,
-        'Мгновенный расчёт маржи и FBO/FBS на странице товара',
-        'Mahsulot sahifasida FBO/FBS marja hisoblash',
-        'Instant margin & FBO/FBS calc on any product page'),
+      headline: T.extension.uzumHeadline[lang],
       points: [
-        tx(lang,'Комиссия маркетплейса и эквайринг','Marketplace va ekvayring komissiyasi','Marketplace fee & acquiring'),
-        tx(lang,'Стоимость хранения, доставки и возвратов','Saqlash, yetkazib berish va qaytarish xarajatlari','Storage, delivery & return costs'),
-        tx(lang,'Чистая прибыль и маржа в одно нажатие','Bir bosishda sof foyda va marja','Net profit & margin in one click'),
+        T.extension.uzumPoint1[lang],
+        T.extension.uzumPoint2[lang],
+        T.extension.uzumPoint3[lang],
       ],
     },
     {
       name: 'Wildberries', color: '#CB11AB', bg: 'rgba(203,17,171,0.1)',
       icon: 'WB',
-      headline: tx(lang,
-        'Тарифы FBW и FBS с учётом категории товара',
-        'Mahsulot toifasiga qarab FBW va FBS tariflari',
-        'FBW & FBS rates by product category'),
+      headline: T.extension.wbHeadline[lang],
       points: [
-        tx(lang,'Стоимость хранения на складе WB','WB omborida saqlash narxi','WB warehouse storage cost'),
-        tx(lang,'Расходы на возвраты и логистику','Qaytarish va logistika xarajatlari','Return & logistics expenses'),
-        tx(lang,'ДРР и рентабельность по каждому SKU','Har bir SKU bo\'yicha DRR va rentabellik','DRR & profitability per SKU'),
+        T.extension.wbPoint1[lang],
+        T.extension.wbPoint2[lang],
+        T.extension.wbPoint3[lang],
       ],
     },
     {
       name: 'Yandex Market', color: '#E8A000', bg: 'rgba(232,160,0,0.1)',
       icon: 'YM',
-      headline: tx(lang,
-        'Расчёт DBS и FBY с учётом всех комиссий',
-        'Barcha komissiyalar hisobga olingan DBS va FBY hisoblash',
-        'DBS & FBY calculation including all commissions'),
+      headline: T.extension.ymHeadline[lang],
       points: [
-        tx(lang,'Комиссии категорий и программ лояльности','Kategoriya va sodiqlik dasturlari komissiyalari','Category & loyalty program commissions'),
-        tx(lang,'Стоимость доставки до покупателя','Xaridorgacha yetkazib berish narxi','Delivery cost to customer'),
-        tx(lang,'Сравнение DBS vs FBY по чистой прибыли','Sof foyda bo\'yicha DBS vs FBY taqqoslash','Profit comparison DBS vs FBY'),
+        T.extension.ymPoint1[lang],
+        T.extension.ymPoint2[lang],
+        T.extension.ymPoint3[lang],
       ],
     },
     {
-      name: tx(lang,'Бесплатно','Bepul','Free'),
+      name: T.extension.freeName[lang],
       color: acc.tint, bg: isDark ? 'rgba(131,192,249,0.1)' : 'rgba(131,192,249,0.15)',
       icon: 'FR',
-      headline: tx(lang,
-        'Устанавливается из Chrome Web Store за несколько секунд',
-        'Chrome Web Store dan bir necha soniyada o\'rnatiladi',
-        'Install from Chrome Web Store in seconds'),
+      headline: T.extension.freeHeadline[lang],
       points: [
-        tx(lang,'Совместим с Chrome, Edge и Brave','Chrome, Edge va Brave bilan mos','Works on Chrome, Edge & Brave'),
-        tx(lang,'Требуется аккаунт Daromadchi для полного доступа','To\'liq kirish uchun Daromadchi hisobi talab etiladi','Daromadchi account required for full access'),
-        tx(lang,'0 сум, навсегда бесплатно','0 so\'m, doimo bepul','0 sum, free forever'),
+        T.extension.freePoint1[lang],
+        T.extension.freePoint2[lang],
+        T.extension.freePoint3[lang],
       ],
     },
   ]
@@ -1325,13 +1269,9 @@ function ExtensionSection({ lang }: { lang: string }) {
       <SectionHoverAnim colors={isDark ? [...ANIM_BLUE_DK] : [...ANIM_BLUE]} opacity={0.4} />
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
         <SectionHead dark={isDark}
-          title={tx(lang,'Расширение для браузера','Brauzer kengaytmasi','Browser extension')}
-          accent={tx(lang,'Расширение','kengaytmasi','extension')}
-          sub={tx(lang,
-            'Рассчитайте маржу, комиссию и прибыль прямо на странице товара — без переключения вкладок',
-            'Mahsulot sahifasida marjani, komissiyani va foydani hisoblang — yorliqlarni almashtirmasdan',
-            'Calculate margin, commission and profit right on the product page — no tab switching'
-          )}
+          title={T.extension.title[lang]}
+          accent={T.extension.accent[lang]}
+          sub={T.extension.sub[lang]}
         />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-12">
@@ -1391,10 +1331,10 @@ function ExtensionSection({ lang }: { lang: string }) {
                 padding: '14px 36px', borderRadius: 10, textDecoration: 'none', transition: 'all 0.15s' }}
               onMouseEnter={e => { e.currentTarget.style.background = acc.btnHov; e.currentTarget.style.transform = 'translateY(-2px)' }}
               onMouseLeave={e => { e.currentTarget.style.background = acc.btn; e.currentTarget.style.transform = 'translateY(0)' }}>
-              {tx(lang,'Установить расширение','Kengaytmani o\'rnatish','Install extension')} <ArrowRight size={16}/>
+              {T.extension.installBtn[lang]} <ArrowRight size={16}/>
             </Link>
             <p style={{ marginTop: 10, fontSize: 12, color: sub }}>
-              {tx(lang,'Chrome · Edge · Brave — бесплатно','Chrome · Edge · Brave — bepul','Chrome · Edge · Brave — free')}
+              {T.extension.browserNote[lang]}
             </p>
           </div>
         </FadeUp>
@@ -1435,7 +1375,7 @@ function SlotPrice({ value, trigger, delay = 0 }: { value: string; trigger: bool
   return <span className="tabular-nums">{display}</span>
 }
 
-function PricingSection({ lang }: { lang: string }) {
+function PricingSection({ lang }: { lang: Lang }) {
   const isDark = useIsDark()
   const acc = useAccent()
   const sectionRef = useRef(null)
@@ -1449,37 +1389,37 @@ function PricingSection({ lang }: { lang: string }) {
 
   const tiers = [
     {
-      name: tx(lang,'Бесплатно','Bepul','Free'), price: '0',
-      sub: tx(lang,'навсегда','abadiy','forever'), highlight: false,
+      name: T.pricing.freeName[lang], price: '0',
+      sub: T.pricing.freeSub[lang], highlight: false,
       features: [
-        tx(lang,'Демо-данные','Demo ma\'lumotlar','Demo data'),
-        tx(lang,'1 магазин','1 do\'kon','1 store'),
-        tx(lang,'6 страниц аналитики','6 tahlil sahifasi','6 analytics pages'),
+        T.pricing.freeFeature1[lang],
+        T.pricing.freeFeature2[lang],
+        T.pricing.freeFeature3[lang],
       ],
-      cta: tx(lang,'Начать бесплатно','Bepul boshlash','Start free'), ctaHref: '/login',
+      cta: T.pricing.freeCta[lang], ctaHref: '/login',
     },
     {
-      name: 'Pro', price: '300 000', badge: tx(lang,'Популярный','Ommabop','Popular'),
-      sub: tx(lang,'сум / месяц','so\'m / oy','sum / month'), highlight: true,
+      name: 'Pro', price: '300 000', badge: T.pricing.proBadge[lang],
+      sub: T.pricing.proSub[lang], highlight: true,
       features: [
-        tx(lang,'До 3 магазинов','3 ta do\'kongacha','Up to 3 stores'),
-        tx(lang,'Вся аналитика','Barcha tahlillar','All analytics'),
-        tx(lang,'Автосинхронизация','Avto-sinxronizatsiya','Auto-sync'),
-        tx(lang,'P&L отчёт','P&L hisobot','P&L report'),
-        tx(lang,'Email-уведомления','Email ogohlantirishlar','Email notifications'),
+        T.pricing.proFeature1[lang],
+        T.pricing.proFeature2[lang],
+        T.pricing.proFeature3[lang],
+        T.pricing.proFeature4[lang],
+        T.pricing.proFeature5[lang],
       ],
-      cta: tx(lang,'Попробовать Pro','Pro ni sinab ko\'rish','Try Pro'), ctaHref: '/login',
+      cta: T.pricing.proCta[lang], ctaHref: '/login',
     },
     {
       name: 'Pro+', price: '600 000',
-      sub: tx(lang,'сум / месяц','so\'m / oy','sum / month'), highlight: false,
+      sub: T.pricing.proPlusSub[lang], highlight: false,
       features: [
-        tx(lang,'5+ магазинов','5+ do\'konlar','5+ stores'),
-        tx(lang,'Всё из Pro','Barcha Pro imkoniyatlar','Everything in Pro'),
-        tx(lang,'API-доступ','API kirish','API access'),
-        tx(lang,'Приоритетная поддержка','Ustuvor yordam','Priority support'),
+        T.pricing.proPlusFeature1[lang],
+        T.pricing.proPlusFeature2[lang],
+        T.pricing.proPlusFeature3[lang],
+        T.pricing.proPlusFeature4[lang],
       ],
-      cta: tx(lang,'Подключить Pro+','Pro+ ulash','Get Pro+'), ctaHref: '/login',
+      cta: T.pricing.proPlusCta[lang], ctaHref: '/login',
     },
   ]
 
@@ -1495,15 +1435,14 @@ function PricingSection({ lang }: { lang: string }) {
           style={{ textAlign: 'center', marginBottom: 56 }}>
           <p style={{ fontSize: 11, fontWeight: 700, color: acc.tint, marginBottom: 10,
             textTransform: 'uppercase', letterSpacing: '0.12em' }}>
-            {tx(lang,'ТАРИФЫ','TARIFLAR','PRICING')}
+            {T.pricing.label[lang]}
           </p>
           <h2 style={{ fontSize: 'clamp(26px, 3.5vw, 42px)', fontWeight: 800, color: ink,
             letterSpacing: '-0.022em', marginBottom: 16 }}>
-            {tx(lang,'Тариф для вашего бизнеса','Biznesingizga mos tarif','A plan for your business')}
+            {T.pricing.title[lang]}
           </h2>
           <p style={{ fontSize: 16, color: muted, maxWidth: 400, margin: '0 auto' }}>
-            {tx(lang,'Начните бесплатно, масштабируйтесь по мере роста',
-              'Bepul boshlang, o\'sish bilan kengaytiring','Start free, scale as you grow')}
+            {T.pricing.sub[lang]}
           </p>
         </motion.div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
@@ -1578,7 +1517,7 @@ function PricingSection({ lang }: { lang: string }) {
 }
 
 // ── 7. RESOURCES ──────────────────────────────────────────────────────────────
-function ResourcesSection({ lang }: { lang: string }) {
+function ResourcesSection({ lang }: { lang: Lang }) {
   const isDark = useIsDark()
   const acc = useAccent()
   const [expanded, setExpanded] = useState<number | null>(0)
@@ -1596,23 +1535,23 @@ function ResourcesSection({ lang }: { lang: string }) {
       title: 'Telegram',
       icon: <MessageCircle size={18} color={acc.tint} />,
       items: [
-        { t: tx(lang,'Канал с обновлениями','Yangilanishlar kanali','Updates channel'), d: tx(lang,'Новые функции и релизы','Yangi funksiyalar va relizlar','New features & releases') },
-        { t: tx(lang,'Чат поддержки','Qo\'llab-quvvatlash chati','Support chat'), d: tx(lang,'Ответ в течение часа','Bir soat ichida javob','Reply within an hour') },
-        { t: tx(lang,'Сообщество продавцов','Sotuvchilar hamjamiyati','Sellers community'), d: tx(lang,'Советы и кейсы','Maslahatlar va holatlar','Tips & case studies') },
+        { t: T.resources.tgItem1Title[lang], d: T.resources.tgItem1Desc[lang] },
+        { t: T.resources.tgItem2Title[lang], d: T.resources.tgItem2Desc[lang] },
+        { t: T.resources.tgItem3Title[lang], d: T.resources.tgItem3Desc[lang] },
       ],
-      link: tx(lang,'Открыть Telegram →','Telegramni ochish →','Open Telegram →'),
+      link: T.resources.tgLink[lang],
       href: 'https://t.me/daromadchi',
     },
     {
       num: '03',
-      title: tx(lang,'Интеграции','Integratsiyalar','Integrations'),
+      title: T.resources.integrationsTitle[lang],
       icon: <Plug2 size={18} color={acc.tint} />,
       items: [
-        { t: 'Uzum Market',   d: tx(lang,'Подключение через API-ключ','API kalit orqali ulash','Connect via API key') },
-        { t: 'Wildberries',   d: tx(lang,'Подключение через токен WB','WB token orqali ulash','Connect via WB token') },
-        { t: 'Yandex Market', d: tx(lang,'OAuth-авторизация','OAuth-avtorizatsiya','OAuth authorisation') },
+        { t: 'Uzum Market',   d: T.resources.intUzumDesc[lang] },
+        { t: 'Wildberries',   d: T.resources.intWbDesc[lang] },
+        { t: 'Yandex Market', d: T.resources.intYmDesc[lang] },
       ],
-      link: tx(lang,'Инструкция по подключению →','Ulash yo\'riqnomasi →','Connection guide →'),
+      link: T.resources.intLink[lang],
       href: '/help',
     },
   ]
@@ -1623,29 +1562,24 @@ function ResourcesSection({ lang }: { lang: string }) {
       <SectionHoverAnim colors={isDark ? [...ANIM_BLUE_DK] : [...ANIM_BLUE]} opacity={0.4} />
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
         <SectionHead dark={isDark}
-          title={tx(lang,'Помощь и интеграции','Yordam va integratsiyalar','Help & integrations')}
-          accent={tx(lang,'интеграции','integratsiyalar','integrations')}
-          sub={tx(lang,'Документация, Telegram-сообщество и подключение площадок',
-            'Hujjatlar, Telegram-hamjamiyat va maydonchalarni ulash',
-            'Documentation, Telegram community and marketplace connections')}
+          title={T.resources.title[lang]}
+          accent={T.resources.accent[lang]}
+          sub={T.resources.sub[lang]}
         />
         {/* All 3 items as full-width vertical accordion */}
         {(() => {
           const allItems = [
             {
               num: '01',
-              title: tx(lang,'Справка','Yordam markazi','Help center'),
+              title: T.resources.helpTitle[lang],
               icon: <BookOpen size={20} color={acc.tint} />,
-              desc: tx(lang,
-                'Пошаговые руководства по настройке, формулам DRR и юнит-экономике — всё в одном месте',
-                'Sozlash, DRR formulalari va birlik-iqtisod bo\'yicha bosqichma-bosqich qo\'llanmalar',
-                'Step-by-step guides on setup, DRR formulas and unit economics — all in one place'),
+              desc: T.resources.helpDesc[lang],
               items: [
-                { t: tx(lang,'Быстрый старт за 5 минут','5 daqiqada tez boshlash','Quick start in 5 min'), d: tx(lang,'Пошаговое руководство','Bosqichma-bosqich qo\'llanma','Step-by-step guide') },
-                { t: tx(lang,'Как работает ДРР','DRR qanday ishlaydi','How DRR works'), d: tx(lang,'Формула и примеры','Formula va misollar','Formula and examples') },
-                { t: tx(lang,'Настройка юнит-экономики','Birlik-iqtisodni sozlash','Setting up unit economics'), d: tx(lang,'Укажите закупку и логистику','Xarid va logistikani kiriting','Enter purchase costs & logistics') },
+                { t: T.resources.helpItem1Title[lang], d: T.resources.helpItem1Desc[lang] },
+                { t: T.resources.helpItem2Title[lang], d: T.resources.helpItem2Desc[lang] },
+                { t: T.resources.helpItem3Title[lang], d: T.resources.helpItem3Desc[lang] },
               ],
-              link: tx(lang,'Все статьи →','Barcha maqolalar →','All articles →'),
+              link: T.resources.helpLink[lang],
               href: '/help',
             },
             ...rightItems.map(r => ({ ...r, desc: undefined as string | undefined })),
@@ -1740,7 +1674,7 @@ function ResourcesSection({ lang }: { lang: string }) {
 }
 
 // ── 8. FAQ ────────────────────────────────────────────────────────────────────
-function FaqSection({ lang }: { lang: string }) {
+function FaqSection({ lang }: { lang: Lang }) {
   const isDark = useIsDark()
   const acc = useAccent()
   const [open, setOpen] = useState<number | null>(0)
@@ -1750,30 +1684,18 @@ function FaqSection({ lang }: { lang: string }) {
   const sub   = isDark ? P.dMuted  : P.stone
 
   const faqs = [
-    { q: tx(lang,'Безопасно ли подключать API-ключ?','API kalitini ulash xavfsizmi?','Is it safe to connect my API key?'),
-      a: tx(lang,'Да. Мы используем только Read Only ключи — мы можем читать данные из вашего магазина, но никогда не можем изменять цены, товары или заказы. Ключ хранится в зашифрованном виде.',
-        'Ha. Biz faqat Read Only kalitlaridan foydalanamiz — biz do\'kongingizdagi ma\'lumotlarni o\'qiy olamiz, lekin narxlar, mahsulotlar yoki buyurtmalarni hech qachon o\'zgartira olmaymiz.',
-        'Yes. We only use Read Only keys — we can read data from your store but can never modify prices, products or orders. The key is stored encrypted.') },
-    { q: tx(lang,'Как быстро появляются данные после подключения?','Ulanganidan keyin ma\'lumotlar qanchalik tez paydo bo\'ladi?','How quickly does data appear after connecting?'),
-      a: tx(lang,'Первая синхронизация занимает до 5 минут и подтягивает историю за последние 7 дней. Далее данные обновляются автоматически каждые 15 минут для заказов и каждые 4 часа для статистики.',
-        'Birinchi sinxronizatsiya 5 daqiqagacha davom etadi va so\'nggi 7 kunlik tarixni tortib oladi. Keyin buyurtmalar uchun har 15 daqiqada, statistika uchun har 4 soatda avtomatik yangilanadi.',
-        'First sync takes up to 5 minutes and pulls 7 days of history. After that, orders update every 15 minutes and statistics every 4 hours.') },
-    { q: tx(lang,'Поддерживаете ли все три маркетплейса?','Uchala marketpleysni ham qo\'llayapsizmi?','Do you support all three marketplaces?'),
-      a: tx(lang,'Да — Uzum Market, Wildberries и Yandex Market полностью поддерживаются. Данные из всех трёх платформ объединяются в единую таблицу с разбивкой по площадкам.',
-        'Ha — Uzum Market, Wildberries va Yandex Market to\'liq qo\'llaniladi.',
-        'Yes — Uzum Market, Wildberries and Yandex Market are fully supported. Data from all three platforms is merged into one table with per-platform breakdown.') },
-    { q: tx(lang,'Как работает юнит-экономика?','Birlik-iqtisod qanday ishlaydi?','How does unit economics work?'),
-      a: tx(lang,'Вы вводите закупочную цену, логистику и прочие расходы по каждому товару. Daromadchi автоматически рассчитывает маржу, ROI и минимальную цену продажи для безубыточности.',
-        'Har bir mahsulot uchun xarid narxi, logistika va boshqa xarajatlarni kiritasiz. Daromadchi avtomatik ravishda marja, ROI va minimal sotish narxini hisoblaydi.',
-        'You enter purchase price, logistics and other costs per product. Daromadchi automatically calculates margin, ROI and minimum break-even price.') },
-    { q: tx(lang,'Есть ли мобильная версия?','Mobil versiya bormi?','Is there a mobile version?'),
-      a: tx(lang,'Веб-версия адаптирована для мобильных устройств и работает в любом браузере. Нативное мобильное приложение в дорожной карте на август 2026 года.',
-        'Veb-versiya mobil qurilmalar uchun moslashtirilgan. Mahalliy mobil ilova avgust 2026 yo\'l xaritasida.',
-        'The web version is mobile-responsive and works in any browser. A native mobile app is on the roadmap for August 2026.') },
-    { q: tx(lang,'Можно ли попробовать перед оплатой?','To\'lovdan oldin sinab ko\'rsa bo\'ladimi?','Can I try before paying?'),
-      a: tx(lang,'Да, есть бесплатный тариф без ограничения по времени: до 1 магазина, топ-50 товаров, ежедневные обновления. Для доступа ко всем функциям — Pro от 149 000 сум/мес.',
-        'Ha, vaqt cheklovisiz bepul tarif mavjud: 1 do\'kongacha, top-50 mahsulot, kunlik yangilanishlar.',
-        'Yes, there\'s a free tier with no time limit: up to 1 store, top 50 products, daily updates. For all features — Pro from 149,000 sum/month.') },
+    { q: T.faq.q1[lang],
+      a: T.faq.a1[lang] },
+    { q: T.faq.q2[lang],
+      a: T.faq.a2[lang] },
+    { q: T.faq.q3[lang],
+      a: T.faq.a3[lang] },
+    { q: T.faq.q4[lang],
+      a: T.faq.a4[lang] },
+    { q: T.faq.q5[lang],
+      a: T.faq.a5[lang] },
+    { q: T.faq.q6[lang],
+      a: T.faq.a6[lang] },
   ]
 
   return (
@@ -1781,8 +1703,8 @@ function FaqSection({ lang }: { lang: string }) {
       fontFamily: "'Space Grotesk', system-ui, sans-serif", transition: 'background 0.3s' }}>
       <div style={{ maxWidth: 760, margin: '0 auto' }}>
         <SectionHead dark={isDark}
-          title={tx(lang,'Частые вопросы','Tez-tez so\'raladigan savollar','Frequently asked questions')}
-          accent={tx(lang,'вопросы','savollar','questions')}
+          title={T.faq.title[lang]}
+          accent={T.faq.accent[lang]}
         />
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           {faqs.map((f, i) => (
@@ -1830,7 +1752,7 @@ function FaqSection({ lang }: { lang: string }) {
 }
 
 // ── 9. CTA ────────────────────────────────────────────────────────────────────
-function CtaSection({ lang }: { lang: string }) {
+function CtaSection({ lang }: { lang: Lang }) {
   const isDark = useIsDark()
   const acc = useAccent()
   const secBg    = isDark ? P.dCanvas : '#e8f0fd'
@@ -1839,14 +1761,8 @@ function CtaSection({ lang }: { lang: string }) {
   const badgeCol = isDark ? 'rgba(255,255,255,0.45)' : P.ink
 
   const phrases = [
-    tx(lang,
-      'Хотите увеличить продажи вместе с нами?',
-      'Biz bilan savdolaringizni oshirmoqchimisiz?',
-      'Ready to grow your sales with us?'),
-    tx(lang,
-      'Тогда поехали',
-      'Unda kettik',
-      'Then let\'s go'),
+    T.cta.heading[lang],
+    T.cta.thenLetsGo[lang],
   ]
 
   return (
@@ -1855,13 +1771,13 @@ function CtaSection({ lang }: { lang: string }) {
       <SectionHoverAnim colors={isDark ? [...ANIM_BLUE_DK] : [...ANIM_BLUE]} opacity={0.4} />
 
       <div className="hidden lg:block">
-        <FloatCard mp="Uzum" mpColor={acc.color} metric={tx(lang,'Выручка','Daromad','Revenue')} value={tx(lang,'24.5M сум','24.5M so\'m','24.5M sum')} change="+12%" up delay={0} floatDur={3.8}
+        <FloatCard mp="Uzum" mpColor={acc.color} metric={T.cta.revenue[lang]} value={T.cta.revenueValue[lang]} change="+12%" up delay={0} floatDur={3.8}
           style={{ left: '4%', top: '20%', transform: 'rotate(-3.5deg)', zIndex: 5, opacity: 0.9 }} />
-        <FloatCard mp="Wildberries" mpColor={acc.color} metric={tx(lang,'Заказы','Buyurtmalar','Orders')} value="1 842" change="+8%" up delay={0.1} floatDur={4.3}
+        <FloatCard mp="Wildberries" mpColor={acc.color} metric={T.cta.orders[lang]} value="1 842" change="+8%" up delay={0.1} floatDur={4.3}
           style={{ right: '3%', top: '18%', transform: 'rotate(4deg)', zIndex: 5, opacity: 0.9 }} />
-        <FloatCard mp="Yandex Market" mpColor={acc.color} metric={tx(lang,'ДРР','DRR','DRR')} value="8.2%" change="-1.4%" up={false} delay={0.15} floatDur={3.6}
+        <FloatCard mp="Yandex Market" mpColor={acc.color} metric={T.cta.drr[lang]} value="8.2%" change="-1.4%" up={false} delay={0.15} floatDur={3.6}
           style={{ left: '6%', bottom: '20%', transform: 'rotate(-2deg)', zIndex: 5, opacity: 0.9 }} />
-        <FloatCard mp="Uzum" mpColor={acc.color} metric={tx(lang,'Прибыль','Foyda','Profit')} value={tx(lang,'6.8M сум','6.8M so\'m','6.8M sum')} change="+15%" up delay={0.2} floatDur={4.1}
+        <FloatCard mp="Uzum" mpColor={acc.color} metric={T.cta.profit[lang]} value={T.cta.profitValue[lang]} change="+15%" up delay={0.2} floatDur={4.1}
           style={{ right: '5%', bottom: '22%', transform: 'rotate(3deg)', zIndex: 5, opacity: 0.9 }} />
       </div>
 
@@ -1876,9 +1792,7 @@ function CtaSection({ lang }: { lang: string }) {
               </h2>
           </div>
           <p style={{ fontSize: 16, color: subCol, lineHeight: 1.65, maxWidth: 500, margin: '0 auto 40px' }}>
-            {tx(lang,'Подключите магазин за несколько минут. Бесплатный тариф, без привязки карты',
-              'Do\'koningizni bir necha daqiqada ulang. Bepul tarif, karta bog\'lanmaydi',
-              'Connect your store in minutes. Free plan, no credit card required')}
+            {T.cta.subtext[lang]}
           </p>
           <div style={{ display: 'inline-block', marginBottom: 20 }}>
             <Link href="/login"
@@ -1887,13 +1801,13 @@ function CtaSection({ lang }: { lang: string }) {
                 padding: '16px 44px', borderRadius: 10, textDecoration: 'none', transition: 'background 0.15s, transform 0.15s' }}
               onMouseEnter={e => { e.currentTarget.style.background = acc.btnHov; e.currentTarget.style.transform = 'translateY(-2px)' }}
               onMouseLeave={e => { e.currentTarget.style.background = acc.btn; e.currentTarget.style.transform = 'translateY(0)' }}>
-              {tx(lang,'Устали терять деньги? Начните зарабатывать →','Zarar emas — foyda. Bugunoq boshlang →','Your profit is hiding — let\'s go find it →')}
+              {T.cta.ctaBtn[lang]}
             </Link>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 24, flexWrap: 'wrap' }}>
-            {[tx(lang,'✓ 7 дней — только Pro и Pro+','✓ 7 kun — faqat Pro va Pro+','✓ 7 days — Pro & Pro+ only'),
-              tx(lang,'✓ Без карты','✓ Kartasiz','✓ No card'),
-              tx(lang,'✓ Быстрое подключение','✓ Tez ulanish','✓ Quick setup')].map(s => (
+            {[T.cta.badge1[lang],
+              T.cta.badge2[lang],
+              T.cta.badge3[lang]].map(s => (
               <span key={s} style={{ fontSize: 13, color: badgeCol, fontWeight: 500 }}>{s}</span>
             ))}
           </div>
@@ -1904,7 +1818,7 @@ function CtaSection({ lang }: { lang: string }) {
 }
 
 // ── FOOTER ────────────────────────────────────────────────────────────────────
-function FooterSection({ lang }: { lang: string }) {
+function FooterSection({ lang }: { lang: Lang }) {
   const isDark = useIsDark()
   const footBg  = isDark ? '#1e1e1e'  : P.parchment
   const bdr     = isDark ? P.dHair    : 'rgba(14,34,51,0.2)'
@@ -1913,17 +1827,17 @@ function FooterSection({ lang }: { lang: string }) {
   const subtle  = isDark ? 'rgba(255,255,255,0.28)' : P.ink
 
   const cols = [
-    { head: tx(lang,'Продукт','Mahsulot','Product'), links: [
-      { label: tx(lang,'Войти','Kirish','Sign in'), href: '/login' },
-      { label: tx(lang,'Регистрация','Ro\'yxatdan o\'tish','Register'), href: '/login' },
-      { label: tx(lang,'Тарифы','Tariflar','Pricing'), href: '/pricing' },
-      { label: tx(lang,'Возможности','Imkoniyatlar','Features'), href: '#features' },
-      { label: tx(lang,'О нас','Biz haqimizda','About'), href: '/about' },
+    { head: T.footer.productHead[lang], links: [
+      { label: T.footer.signIn[lang], href: '/login' },
+      { label: T.footer.register[lang], href: '/login' },
+      { label: T.footer.pricing[lang], href: '/pricing' },
+      { label: T.footer.features[lang], href: '#features' },
+      { label: T.footer.about[lang], href: '/about' },
     ]},
-    { head: tx(lang,'Маркетплейсы','Marketpleyslar','Marketplaces'), links: [
+    { head: T.footer.marketplacesHead[lang], links: [
       { label: 'Uzum Market', href: '#' }, { label: 'Wildberries', href: '#' }, { label: 'Yandex Market', href: '#' },
     ]},
-    { head: tx(lang,'Контакты','Aloqa','Contact'), links: [
+    { head: T.footer.contactHead[lang], links: [
       { label: 'Telegram', href: 'https://t.me/daromadchi_alerts_bot' },
     ]},
   ]
@@ -1941,9 +1855,7 @@ function FooterSection({ lang }: { lang: string }) {
               <span style={{ fontWeight: 700, fontSize: 17, color: txt }}>Daromadchi</span>
             </div>
             <p style={{ fontSize: 13, color: muted, lineHeight: 1.65, maxWidth: 240 }}>
-              {tx(lang,'Аналитика Uzum, Wildberries и Yandex Market для продавцов из Узбекистана',
-                'O\'zbekistondagi sotuvchilar uchun Uzum, Wildberries va Yandex Market tahlili',
-                'Analytics for Uzum, Wildberries and Yandex Market sellers in Uzbekistan')}
+              {T.footer.description[lang]}
             </p>
             <div style={{ display: 'flex', gap: 8, marginTop: 20 }}>
               {['Uzum','WB','YM'].map(mp => (
@@ -1973,13 +1885,13 @@ function FooterSection({ lang }: { lang: string }) {
         <div style={{ borderTop: `1px solid ${bdr}`, paddingTop: 24,
           display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
           <p style={{ fontSize: 12, color: subtle }}>
-            © 2025 Daromadchi. {tx(lang,'г. Ташкент, Узбекистан', 'Toshkent shahri, O\'zbekiston', 'Tashkent, Uzbekistan')}
+            © 2025 Daromadchi. {T.footer.location[lang]}
           </p>
           <div style={{ display: 'flex', gap: 20 }}>
             {[
-              { label: tx(lang,'Конфиденциальность','Maxfiylik','Privacy'), href: '/privacy' },
-              { label: tx(lang,'Публичная оферта','Ommaviy oferta','Terms'), href: '/terms' },
-              { label: tx(lang,'Соответствие данных','Muvofiqlik','Compliance'), href: '/compliance' },
+              { label: T.footer.privacy[lang], href: '/privacy' },
+              { label: T.footer.terms[lang], href: '/terms' },
+              { label: T.footer.compliance[lang], href: '/compliance' },
             ].map(l => (
               <a key={l.href} href={l.href} style={{ fontSize: 12, color: subtle, textDecoration: 'none', transition: 'color 0.12s' }}
                 onMouseEnter={e => (e.currentTarget.style.color = muted)}
@@ -1995,7 +1907,7 @@ function FooterSection({ lang }: { lang: string }) {
 }
 
 // ── Mobile Bottom Navigation ──────────────────────────────────────────────────
-function MobileBottomNav({ lang }: { lang: string }) {
+function MobileBottomNav({ lang }: { lang: Lang }) {
   const isDark = useIsDark()
   const acc = useAccent()
   const navBg   = isDark ? '#161616'                 : '#ffffff'
@@ -2004,11 +1916,11 @@ function MobileBottomNav({ lang }: { lang: string }) {
   const activeCol = isDark ? acc.color              : '#0369a1'
 
   const items = [
-    { label: tx(lang,'Главная','Bosh sahifa','Home'),       href: '#top',      Icon: LayoutDashboard },
-    { label: tx(lang,'Функции','Imkoniyatlar','Features'),  href: '#features', Icon: Layers },
-    { label: tx(lang,'Тарифы','Tariflar','Pricing'),        href: '#pricing',  Icon: Package },
-    { label: tx(lang,'Вопросы','Savollar','FAQ'),           href: '#faq',      Icon: MessageCircle },
-    { label: tx(lang,'Профиль','Profil','Profile'),           href: '/login',    Icon: UserCircle },
+    { label: T.mobileNav.home[lang],       href: '#top',      Icon: LayoutDashboard },
+    { label: T.mobileNav.features[lang],  href: '#features', Icon: Layers },
+    { label: T.mobileNav.pricing[lang],        href: '#pricing',  Icon: Package },
+    { label: T.mobileNav.faq[lang],           href: '#faq',      Icon: MessageCircle },
+    { label: T.mobileNav.profile[lang],           href: '/login',    Icon: UserCircle },
   ]
 
   return (

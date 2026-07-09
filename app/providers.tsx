@@ -1,63 +1,61 @@
-/* eslint-disable react-hooks/set-state-in-effect */
 'use client'
 
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import type { Lang } from '@/lib/i18n'
 
-/* ── Theme ─────────────────────────────────────────────────────────────────── */
 type Theme = 'dark' | 'light'
+const LANGS: Lang[] = ['uz', 'en', 'ru']
+
+function isLang(v: string | null): v is Lang { return LANGS.includes(v as Lang) }
+
+function setCookie(k: string, v: string) {
+  document.cookie = `${k}=${v};path=/;max-age=31536000;SameSite=Lax`
+}
+
 const ThemeCtx = createContext<{ theme: Theme; toggle: () => void }>({ theme: 'light', toggle: () => {} })
 export const useTheme = () => useContext(ThemeCtx)
 
-/* ── Language ───────────────────────────────────────────────────────────────── */
 const LangCtx = createContext<{ lang: Lang; setLang: (l: Lang) => void }>({ lang: 'uz', setLang: () => {} })
 export const useLang = () => useContext(LangCtx)
 
-interface Props {
-  children: React.ReactNode
-  initialLang?: Lang
-}
-
-export default function Providers({ children, initialLang = 'uz' }: Props) {
+export default function Providers({ children, initialLang = 'uz' }: { children: React.ReactNode; initialLang?: Lang }) {
   const router = useRouter()
+  const didMount = useRef(false)
   const [theme, setTheme] = useState<Theme>('light')
-  const [lang,  setLangState] = useState<Lang>(initialLang)
+  const [lang, setLangRaw] = useState<Lang>(initialLang)
 
   useEffect(() => {
-    const savedTheme = localStorage.getItem('theme') as Theme | null
-    if (savedTheme) setTheme(savedTheme)
-  }, [])
+    const st = localStorage.getItem('theme') as Theme | null
+    if (st === 'dark' || st === 'light') setTheme(st)
 
-  useEffect(() => {
-    const savedLang = localStorage.getItem('lang') as Lang | null
-    if (savedLang && savedLang !== initialLang) {
-      setLangState(savedLang)
-      document.cookie = `lang=${savedLang};path=/;max-age=31536000`
+    const sl = localStorage.getItem('lang')
+    if (isLang(sl)) {
+      setLangRaw(sl)
+      if (sl !== initialLang) setCookie('lang', sl)
     } else {
-      setLangState(initialLang)
-      if (!savedLang) {
-        localStorage.setItem('lang', initialLang)
-      }
+      localStorage.setItem('lang', initialLang)
     }
+
+    didMount.current = true
   }, [initialLang])
+
+  useEffect(() => { document.documentElement.lang = lang }, [lang])
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
     document.documentElement.style.backgroundColor = theme === 'dark' ? '#161616' : '#83c0f7'
-    localStorage.setItem('theme', theme)
+    if (didMount.current) localStorage.setItem('theme', theme)
   }, [theme])
 
-  function toggle() {
-    setTheme(t => t === 'dark' ? 'light' : 'dark')
-  }
+  const toggle = useCallback(() => setTheme(p => p === 'dark' ? 'light' : 'dark'), [])
 
-  function setLang(l: Lang) {
-    setLangState(l)
+  const setLang = useCallback((l: Lang) => {
+    setLangRaw(l)
     localStorage.setItem('lang', l)
-    document.cookie = `lang=${l};path=/;max-age=31536000`
+    setCookie('lang', l)
     router.refresh()
-  }
+  }, [router])
 
   return (
     <ThemeCtx.Provider value={{ theme, toggle }}>
