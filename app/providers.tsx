@@ -27,18 +27,19 @@ export default function Providers({ children, initialLang = 'uz' }: Props) {
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme') as Theme | null
     if (savedTheme) setTheme(savedTheme)
+  }, [])
 
+  useEffect(() => {
     const savedLang = localStorage.getItem('lang') as Lang | null
     if (savedLang && savedLang !== initialLang) {
       setLangState(savedLang)
       document.cookie = `lang=${savedLang};path=/;max-age=31536000`
-    } else if (!savedLang) {
-      localStorage.setItem('lang', initialLang)
+    } else {
+      setLangState(initialLang)
+      if (!savedLang) {
+        localStorage.setItem('lang', initialLang)
+      }
     }
-  }, [])
-
-  useEffect(() => {
-    setLangState(initialLang)
   }, [initialLang])
 
   useEffect(() => {
