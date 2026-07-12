@@ -51,6 +51,7 @@ export default function ReferralView({ stats, entries }: Props) {
             { icon: Copy,  step: '1', text: t.step1 },
             { icon: Users, step: '2', text: t.step2 },
             { icon: Gift,  step: '3', text: t.step3 },
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
           ].map(({ icon: _Icon, step, text }) => (
             <div key={step} className="flex items-start gap-3">
               <div className="w-7 h-7 rounded-full bg-[#83c0f9]/30 border border-[rgba(131,192,249,0.4)] flex items-center justify-center flex-shrink-0">

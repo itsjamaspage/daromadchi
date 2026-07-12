@@ -118,7 +118,7 @@
         if (!el) continue;
         const p = extractPrice(el.innerText);
         if (p) return p;
-      } catch (_e) {}
+      } catch { /* ignore */ }
     }
 
     // Strategy 2: class-based selectors (hashed names, so substring match)
@@ -136,7 +136,7 @@
         if (!el) continue;
         const p = extractPrice(el.innerText);
         if (p) return p;
-      } catch (_e) {}
+      } catch { /* ignore */ }
     }
 
     // Strategy 3: scan leaf-ish elements containing the currency word.

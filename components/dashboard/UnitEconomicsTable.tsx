@@ -17,9 +17,6 @@ function fsPct(n: number) {
   return n.toFixed(1) + '%'
 }
 
-function _roiColor(roi: number) {
-  return roi >= 80 ? 'text-emerald-600' : roi >= 30 ? 'text-amber-600' : 'text-red-600'
-}
 function roiBg(roi: number) {
   return roi >= 80 ? 'bg-emerald-100 text-emerald-700' : roi >= 30 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'
 }

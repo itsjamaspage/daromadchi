@@ -90,6 +90,7 @@ function exportPdf(data: ExportRow[], filename: string) {
   win.document.close()
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export default function ExportButton({ data, filename = 'hisobot', targetRef: _targetRef, label }: ExportButtonProps) {
   const { lang } = useLang()
   const t = dashT[lang].export

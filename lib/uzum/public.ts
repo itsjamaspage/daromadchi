@@ -94,6 +94,7 @@ export async function getCategoryProducts(
 export async function searchMarketProducts(
   query: string,
   size = 40,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _sort: 'ORDER_COUNT_DESC' | 'PRICE_ASC' | 'PRICE_DESC' | 'RATING_DESC' = 'ORDER_COUNT_DESC'
 ): Promise<MarketProductsResult> {
   try {
