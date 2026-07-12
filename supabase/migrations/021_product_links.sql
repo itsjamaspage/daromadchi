@@ -16,11 +16,6 @@ CREATE TABLE IF NOT EXISTS public.product_links (
   CONSTRAINT product_links_user_key_unique UNIQUE (user_id, match_key)
 );
 
-ALTER TABLE public.product_links ENABLE ROW LEVEL SECURITY;
-
-DO $$ BEGIN
-  CREATE POLICY "Users manage own product links" ON public.product_links
-    FOR ALL USING (user_id = auth.uid());
-EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-
+-- No RLS: production runs plain Postgres (no Supabase auth schema); this table
+-- is only accessed through the app's server-side queries, always scoped by user_id.
 CREATE INDEX IF NOT EXISTS idx_product_links_user_id ON public.product_links (user_id);
