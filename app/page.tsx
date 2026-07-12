@@ -1743,13 +1743,13 @@ function CtaSection({ lang }: { lang: Lang }) {
       <SectionHoverAnim colors={isDark ? [...ANIM_BLUE_DK] : [...ANIM_BLUE]} opacity={0.4} />
 
       <div className="hidden lg:block">
-        <FloatCard mp="Uzum" mpColor={acc.color} metric={T.cta.revenue[lang]} value={T.cta.revenueValue[lang]} change="+12%" up delay={0} floatDur={3.8}
+        <FloatCard mp="Uzum"metric={T.cta.revenue[lang]} value={T.cta.revenueValue[lang]} change="+12%" up delay={0} floatDur={3.8}
           style={{ left: '4%', top: '20%', transform: 'rotate(-3.5deg)', zIndex: 5, opacity: 0.9 }} />
-        <FloatCard mp="Wildberries" mpColor={acc.color} metric={T.cta.orders[lang]} value="1 842" change="+8%" up delay={0.1} floatDur={4.3}
+        <FloatCard mp="Wildberries"metric={T.cta.orders[lang]} value="1 842" change="+8%" up delay={0.1} floatDur={4.3}
           style={{ right: '3%', top: '18%', transform: 'rotate(4deg)', zIndex: 5, opacity: 0.9 }} />
-        <FloatCard mp="Yandex Market" mpColor={acc.color} metric={T.cta.drr[lang]} value="8.2%" change="-1.4%" up={false} delay={0.15} floatDur={3.6}
+        <FloatCard mp="Yandex Market"metric={T.cta.drr[lang]} value="8.2%" change="-1.4%" up={false} delay={0.15} floatDur={3.6}
           style={{ left: '6%', bottom: '20%', transform: 'rotate(-2deg)', zIndex: 5, opacity: 0.9 }} />
-        <FloatCard mp="Uzum" mpColor={acc.color} metric={T.cta.profit[lang]} value={T.cta.profitValue[lang]} change="+15%" up delay={0.2} floatDur={4.1}
+        <FloatCard mp="Uzum"metric={T.cta.profit[lang]} value={T.cta.profitValue[lang]} change="+15%" up delay={0.2} floatDur={4.1}
           style={{ right: '5%', bottom: '22%', transform: 'rotate(3deg)', zIndex: 5, opacity: 0.9 }} />
       </div>
 
