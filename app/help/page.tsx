@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useState } from 'react'
 import { getCategoryList } from '@/lib/help-content'
-import { useLang, useTheme } from '@/app/providers'
+import { useLang } from '@/app/providers'
 
 const T = {
   uz: {
@@ -43,7 +43,6 @@ const T = {
 
 export default function HelpPage() {
   const { lang } = useLang()
-  const { theme } = useTheme()
   const t = T[lang] ?? T.uz
   const categories = getCategoryList(lang)
   const [query, setQuery] = useState('')

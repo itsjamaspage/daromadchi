@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment */
+/* eslint-disable @typescript-eslint/ban-ts-comment, @typescript-eslint/no-unused-vars */
 // @ts-nocheck
 'use client'
 
@@ -472,7 +472,7 @@ export default function LiquidEther({
             if (canvas && canvas.parentNode) canvas.parentNode.removeChild(canvas)
             Common.renderer.dispose(); Common.renderer.forceContextLoss()
           }
-        } catch { void 0 }
+        } catch (_) { /* noop */ }
       }
     }
 
@@ -509,8 +509,8 @@ export default function LiquidEther({
 
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current)
-      try { resizeObserverRef.current?.disconnect() } catch { void 0 }
-      try { intersectionObserverRef.current?.disconnect() } catch { void 0 }
+      try { resizeObserverRef.current?.disconnect() } catch (_) { /* noop */ }
+      try { intersectionObserverRef.current?.disconnect() } catch (_) { /* noop */ }
       if (webglRef.current) { webglRef.current.dispose(); webglRef.current = null }
     }
   }, [BFECC, cursorSize, dt, isBounce, isViscous, iterationsPoisson, iterationsViscous, mouseForce, resolution, viscous, colors, autoDemo, autoSpeed, autoIntensity, takeoverDuration, autoResumeDelay, autoRampDuration])

@@ -366,7 +366,8 @@ function DashMockup({ lang }: { lang: Lang }) {
 }
 
 // ── Hero decorative shapes ────────────────────────────────────────────────────
-function HeroDecorShapes(_: { isDark: boolean }) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function HeroDecorShapes(_props: { isDark: boolean }) {
   return null
 }
 
