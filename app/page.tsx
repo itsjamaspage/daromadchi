@@ -387,7 +387,6 @@ function HeroSection({ lang }: { lang: Lang }) {
   return (
     <section style={{ position: 'relative', background: heroBg, overflow: 'hidden',
       fontFamily: "'Space Grotesk', system-ui, sans-serif", paddingBottom: 0 }}>
-      <SectionHoverAnim colors={isDark ? [...ANIM_BLUE_DK] : [...ANIM_WHITE]} opacity={0.55} />
       {/* Ambient glow */}
       <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 1,
         background: `radial-gradient(ellipse 90% 55% at 50% -5%, ${glowColor} 0%, transparent 65%)` }} />
@@ -476,7 +475,6 @@ function ComparisonSection({ lang }: { lang: Lang }) {
   return (
     <section id="comparison" style={{ position: 'relative', background: secBg, padding: '88px 24px',
       fontFamily: "'Space Grotesk', system-ui, sans-serif", transition: 'background 0.3s' }}>
-      <SectionHoverAnim colors={isDark ? [...ANIM_BLUE_DK] : [...ANIM_BLUE]} opacity={0.4} />
       <div style={{ maxWidth: 860, margin: '0 auto' }}>
         <SectionHead dark={isDark}
           title={T.comparison.title[lang]}
@@ -570,7 +568,6 @@ function MarqueeSection({ lang }: { lang: Lang }) {
       borderBottom: `1px solid ${bdr}`,
       fontFamily: "'Space Grotesk', system-ui, sans-serif",
     }}>
-      <SectionHoverAnim colors={isDark ? [...ANIM_BLUE_DK] : [...ANIM_BLUE]} opacity={0.35} />
       <div style={{
         padding: '14px 24px', borderRight: `1px solid ${divider}`,
         flexShrink: 0, display: 'flex', alignItems: 'center',
@@ -639,7 +636,6 @@ function FeaturesSection({ lang }: { lang: Lang }) {
   return (
     <section id="features" ref={ref} style={{ position: 'relative', background: secBg, padding: '96px 24px',
       fontFamily: "'Space Grotesk', system-ui, sans-serif", transition: 'background 0.3s', overflow: 'hidden' }}>
-      <SectionHoverAnim colors={isDark ? [...ANIM_BLUE_DK] : [...ANIM_WHITE]} opacity={0.6} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16" style={{ maxWidth: 1200, margin: '0 auto', alignItems: 'center' }}>
 
         {/* Left: dark dashboard mockup — matches photo 1 */}
@@ -857,7 +853,7 @@ function HowItWorksSection({ lang }: { lang: Lang }) {
               </div>
             </div>
           ))}
-          <div style={{ background: acc.color, borderRadius: 8, padding: '11px', textAlign: 'center', marginTop: 6 }}>
+          <div style={{ background: '#ffffff', borderRadius: 8, padding: '11px', textAlign: 'center', marginTop: 6 }}>
             <span style={{ fontSize: 13, fontWeight: 700, color: '#131321' }}>{T.howItWorks.signUp[lang]}</span>
           </div>
         </div>
@@ -920,7 +916,6 @@ function HowItWorksSection({ lang }: { lang: Lang }) {
   return (
     <section id="how" style={{ position: 'relative', background: secBg, padding: '88px 24px',
       fontFamily: "'Space Grotesk', system-ui, sans-serif", transition: 'background 0.3s' }}>
-      <SectionHoverAnim colors={isDark ? [...ANIM_BLUE_DK] : [...ANIM_BLUE]} opacity={0.4} />
       <div style={{ maxWidth: 1000, margin: '0 auto' }}>
         <SectionHead dark={isDark}
           title={T.howItWorks.title[lang]}
@@ -1028,7 +1023,6 @@ function BentoSection({ lang }: { lang: Lang }) {
   return (
     <section style={{ position: 'relative', background: secBg, padding: '88px 24px',
       fontFamily: "'Space Grotesk', system-ui, sans-serif", transition: 'background 0.3s', overflow: 'hidden' }}>
-      <SectionHoverAnim colors={isDark ? [...ANIM_BLUE_DK] : [...ANIM_WHITE]} opacity={0.6} />
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
         <SectionHead dark={isDark}
           title={T.bento.title[lang]}
@@ -1244,7 +1238,6 @@ function ExtensionSection({ lang }: { lang: Lang }) {
   return (
     <section id="extension" style={{ position: 'relative', background: secBg, padding: '88px 24px',
       fontFamily: "'Space Grotesk', system-ui, sans-serif", transition: 'background 0.3s' }}>
-      <SectionHoverAnim colors={isDark ? [...ANIM_BLUE_DK] : [...ANIM_BLUE]} opacity={0.4} />
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
         <SectionHead dark={isDark}
           title={T.extension.title[lang]}
@@ -1402,7 +1395,6 @@ function PricingSection({ lang }: { lang: Lang }) {
   return (
     <section id="pricing" ref={sectionRef} style={{ position: 'relative', background: secBg, padding: '88px 24px',
       fontFamily: "'Space Grotesk', system-ui, sans-serif", transition: 'background 0.3s' }}>
-      <SectionHoverAnim colors={isDark ? [...ANIM_BLUE_DK] : [...ANIM_WHITE]} opacity={0.6} />
       <div style={{ maxWidth: 1000, margin: '0 auto', position: 'relative' }}>
         <motion.div
           initial={{ opacity: 0, y: 16 }}
@@ -1428,7 +1420,7 @@ function PricingSection({ lang }: { lang: Lang }) {
               animate={inView ? { opacity: 1, y: 0, scale: t.highlight ? 1.02 : 1 } : {}}
               transition={{ delay: i * 0.18, type: 'spring', stiffness: 160, damping: 18 }}>
               <BorderGlow
-                backgroundColor={t.highlight ? (isDark ? P.parchment : '#0e1b2e') : (isDark ? P.dCard : P.card)}
+                backgroundColor={t.highlight ? (isDark ? '#ffffff' : '#0e1b2e') : (isDark ? P.dCard : P.card)}
                 glowColor={isDark ? "0 0 85" : "207 100 55"}
                 colors={t.highlight ? ['#83c0f9', '#60a5fa', '#bfdbfe'] : ['#83c0f9', '#60a5fa', '#a5f3fc']}
                 borderRadius={20}
@@ -1474,12 +1466,12 @@ function PricingSection({ lang }: { lang: Lang }) {
 
                   <Link href={t.ctaHref}
                     style={{ display: 'block', textAlign: 'center', fontSize: 14, fontWeight: 700,
-                      background: '#ffffff',
-                      color: '#0e1b2e',
+                      background: '#0e1b2e',
+                      color: '#ffffff',
                       padding: '13px 24px', borderRadius: 10,
                       textDecoration: 'none', transition: 'all 0.15s' }}
-                    onMouseEnter={e => { e.currentTarget.style.background = '#f0f6ff' }}
-                    onMouseLeave={e => { e.currentTarget.style.background = '#ffffff' }}>
+                    onMouseEnter={e => { e.currentTarget.style.background = '#1a2a3e' }}
+                    onMouseLeave={e => { e.currentTarget.style.background = '#0e1b2e' }}>
                     {t.cta}
                   </Link>
                 </div>
@@ -1532,7 +1524,6 @@ function ResourcesSection({ lang }: { lang: Lang }) {
   return (
     <section id="resources" style={{ position: 'relative', background: secBg, padding: '88px 24px',
       fontFamily: "'Space Grotesk', system-ui, sans-serif", transition: 'background 0.3s' }}>
-      <SectionHoverAnim colors={isDark ? [...ANIM_BLUE_DK] : [...ANIM_BLUE]} opacity={0.4} />
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
         <SectionHead dark={isDark}
           title={T.resources.title[lang]}
@@ -1816,7 +1807,6 @@ function FooterSection({ lang }: { lang: Lang }) {
     <footer style={{ position: 'relative', background: footBg, padding: '64px 24px 32px',
       fontFamily: "'Space Grotesk', system-ui, sans-serif", borderTop: `1px solid ${bdr}`,
       transition: 'background 0.3s' }}>
-      <SectionHoverAnim colors={isDark ? [...ANIM_BLUE_DK] : [...ANIM_WHITE]} opacity={0.5} />
       <div style={{ maxWidth: 1200, margin: '0 auto' }}>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-14">
           <div>
@@ -1829,7 +1819,7 @@ function FooterSection({ lang }: { lang: Lang }) {
             </p>
             <div style={{ display: 'flex', gap: 8, marginTop: 20 }}>
               {['Uzum','WB','YM'].map(mp => (
-                <div key={mp} style={{ fontSize: 10, fontWeight: 700, color: isDark ? A.dark : P.ink, background: isDark ? A.darkBg : 'rgba(14,34,51,0.12)', borderRadius: 4, padding: '3px 7px' }}>
+                <div key={mp} style={{ fontSize: 10, fontWeight: 700, color: isDark ? '#ffffff' : P.ink, background: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(14,34,51,0.12)', borderRadius: 4, padding: '3px 7px' }}>
                   {mp}
                 </div>
               ))}
