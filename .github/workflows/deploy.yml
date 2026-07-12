@@ -18,4 +18,19 @@ jobs:
 
       - name: Deploy to VPS
         run: |
-          ssh -i ~/.ssh/deploy_key ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} 'cd /var/www/daromadchi && bash deploy.sh'
+          ssh -i ~/.ssh/deploy_key ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} 'bash -s' <<'DEPLOY'
+          set -e
+          cd /var/www/daromadchi
+          echo "Resetting working tree to latest main..."
+          git merge --abort 2>/dev/null || true
+          git rebase --abort 2>/dev/null || true
+          git fetch origin main
+          git reset --hard origin/main
+          echo "Installing dependencies..."
+          npm ci --no-audit --no-fund || npm install --no-audit --no-fund
+          echo "Building..."
+          npm run build
+          echo "Restarting app..."
+          pm2 restart daromadchi
+          echo "Deploy complete."
+          DEPLOY
