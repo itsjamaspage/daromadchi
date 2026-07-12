@@ -141,7 +141,6 @@ export async function syncFromYandex(
         : (() => { const d = new Date(); d.setDate(d.getDate() - 365); return d })())
 
     const fromDate = since.toISOString().slice(0, 10)
-    const toDate   = new Date().toISOString().slice(0, 10)
 
     const yandexOrders = await fetchAllYandexOrders(token, campaignId, fromDate)
 

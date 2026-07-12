@@ -38,12 +38,12 @@ export const T = {
   },
 
   hero: {
-    headingLine1: tr('Аналитика трёх маркетплейсов —', 'Uchta marketpleysning analitikasi —', 'Three marketplace analytics —'),
-    headingLine2: tr('всё на одном экране', 'hammasi bitta ekranda', 'all on one screen'),
+    headingLine1: tr('Управляйте прибылью на трёх маркетплейсах', "Uch marketpleysda foydangizni boshqaring", 'Control your profit across three marketplaces'),
+    headingLine2: tr('из одного окна', 'bitta oynadan', 'from a single dashboard'),
     subtitle: tr(
-      'Выручка, ДРР, остатки и юнит-экономика по Uzum, Wildberries и Yandex Market — всё в одной таблице с автообновлением',
-      "Uzum, Wildberries va Yandex Market bo'yicha daromad, DRR, qoldiqlar va birlik-iqtisod — barchasi bitta jadvalda",
-      'Revenue, ad spend, stock and unit economics across Uzum, Wildberries and Yandex Market — all in one place',
+      'Выручка, ДРР, остатки и юнит-экономика по Uzum, Wildberries и Yandex Market — обновление каждые 15 минут, без ручного ввода',
+      "Uzum, Wildberries va Yandex Market bo'yicha daromad, DRR, qoldiqlar va birlik-iqtisod — har 15 daqiqada yangilanadi, qo'lda kiritishsiz",
+      'Revenue, DRR, stock and unit economics across Uzum, Wildberries and Yandex Market — updated every 15 minutes, no manual entry',
     ),
     startFree: tr('Начать бесплатно', 'Bepul boshlash', 'Start for free'),
     howItWorks: tr('Как это работает', 'Qanday ishlaydi', 'How it works'),
@@ -92,8 +92,8 @@ export const T = {
     delivered: tr('Доставлен', 'Yetkazildi', 'Delivered'),
     processing: tr('В обработке', 'Jarayonda', 'Processing'),
     badge: tr('АНАЛИТИКА В РЕАЛЬНОМ ВРЕМЕНИ', 'REAL-TIME ANALITIKA', 'REAL-TIME ANALYTICS'),
-    headingLine1: tr('Продажи и аналитика —', 'Savdo va analitika —', 'Your store, fully visible —'),
-    headingAccentLine: tr('всё на одном экране', 'hammasi bitta ekranda', 'every number, one place'),
+    headingLine1: tr('Продажи и аналитика —', 'Savdo va analitika —', 'Sales & Analytics —'),
+    headingAccentLine: tr('всё в одном месте', 'hammasi bir joyda', 'all in one place'),
     description: tr(
       'ДРР, остатки, цены и юнит-экономика. Управляйте продажами за 5 минут в день.',
       "DRR, qoldiq, narx va birlik iqtisodiyoti. Savdoni kuniga 5 daqiqada boshqaring.",
@@ -151,12 +151,12 @@ export const T = {
   },
 
   bento: {
-    title: tr("Всё необходимое для роста", "O'sish uchun kerak bo'lgan hamma narsa", 'Everything you need to grow'),
-    accent: tr('роста', "O'sish", 'grow'),
+    title: tr("Все данные маркетплейсов в одном дашборде", "Barcha marketplace ma'lumotlari bitta dashboardda", 'All your marketplace data in one dashboard'),
+    accent: tr('одном дашборде', 'bitta dashboardda', 'one dashboard'),
     sub: tr(
-      'Аналитика, контроль запасов и финансы в одном месте',
-      'Tahlil, zaxira nazorati va moliya bir joyda',
-      'Analytics, inventory control and financials in one place',
+      'Аналитика продаж, контроль остатков и управление финансами — в реальном времени по всем трём площадкам',
+      "Sotuv tahlili, zaxira nazorati va moliyaviy boshqaruv — uchala maydoncha bo'yicha real vaqtda",
+      'Real-time profit tracking, DRR control, and inventory management across all three marketplaces',
     ),
     revenue: tr('Выручка', 'Daromad', 'Revenue'),
     orders: tr('Заказы', 'Buyurtmalar', 'Orders'),

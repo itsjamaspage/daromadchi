@@ -5,7 +5,7 @@ import Link from 'next/link'
 import dynamic from 'next/dynamic'
 import { motion, AnimatePresence, useInView } from 'framer-motion'
 import {
-  TrendingUp, TrendingDown, ArrowRight, Menu, X, Check,
+  TrendingUp, TrendingDown, ArrowRight, X, Check,
   ChevronDown, BarChart2, Package, Bell,
   LayoutDashboard, ShoppingCart, Megaphone, Layers,
   BookOpen, MessageCircle, Plug2, UserCircle,
@@ -17,7 +17,8 @@ import { T } from '@/lib/landing-t'
 import PillNav from './components/PillNav'
 import BorderGlow from './components/BorderGlow'
 import SectionHoverAnim from './components/SectionHoverAnim'
-const LiquidEther = dynamic(() => import('./components/LiquidEther'), { ssr: false })
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const _LiquidEther = dynamic(() => import('./components/LiquidEther'), { ssr: false })
 
 // Fluid animation colour sets
 // ANIM_WHITE: pure white/silver shimmer — used on all blue-background sections so the
@@ -66,7 +67,8 @@ const A = {
 }
 
 // Real dashboard KPI colours — matches KpiCard.tsx
-const KPI = {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const _KPI = {
   violet:  '#494fdf',
   emerald: '#428619',
   blue:    '#376cd5',
@@ -202,13 +204,13 @@ function LandingNav({ lang }: { lang: Lang }) {
 }
 
 // ── Floating stat card — with continuous bob animation ────────────────────────
-function FloatCard({ mp, mpColor, metric, value, change, up, delay, floatDur = 3.5, style }: {
+function FloatCard({ mp, mpColor: _mpColor, metric, value, change, up, delay, floatDur = 3.5, style }: {
   mp: string; mpColor: string; metric: string; value: string
   change: string; up: boolean; delay: number; floatDur?: number
   style: React.CSSProperties
 }) {
-  const isDark = useIsDark()
-  const acc = useAccent()
+  const _isDark = useIsDark()
+  const _acc = useAccent()
   return (
     // Outer div: entry animation + absolute position
     <motion.div
@@ -645,7 +647,7 @@ function FeaturesSection({ lang }: { lang: Lang }) {
     { id: 'DEMO-185', status: T.features.delivered[lang],    col: '#22c55e' },
   ]
 
-  const screenCard = (children: React.ReactNode, rotate: number, zIdx: number, style: React.CSSProperties) => (
+  const _screenCard = (children: React.ReactNode, rotate: number, zIdx: number, style: React.CSSProperties) => (
     <motion.div
       initial={{ opacity: 0, y: 32, rotate }}
       animate={inView ? { opacity: 1, y: 0, rotate } : {}}
@@ -1040,12 +1042,11 @@ function BentoSection({ lang }: { lang: Lang }) {
   const isDark = useIsDark()
   const acc = useAccent()
   const secBg  = isDark ? P.dCanvas : P.parchment
-  const cardBg = isDark ? P.dCard   : P.card
-  const bdr    = isDark ? P.dHair   : P.hair
   const ink    = isDark ? P.dText   : P.ink
   const sub    = isDark ? P.dMuted  : P.stone
   const muted  = isDark ? P.dMuted  : P.stone
   const bg2    = isDark ? P.dCanvas : '#F8FAFD'
+  const bdr    = isDark ? P.dHair   : P.hair
 
   return (
     <section style={{ position: 'relative', background: secBg, padding: '88px 24px',
@@ -1074,7 +1075,7 @@ function BentoSection({ lang }: { lang: Lang }) {
                 glowIntensity={isDark ? 1.5 : 1.2}
                 style={{ height: '100%' }}
               >
-                <div style={{ padding: '20px 22px' }}>
+                <div style={{ padding: '20px 22px', border: `1.5px solid ${k.col}40`, borderRadius: 18 }}>
                   <p style={{ fontSize: 10, color: muted, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{k.l}</p>
                   <p style={{ fontSize: 22, fontWeight: 800, color: k.col, fontFamily: 'monospace', lineHeight: 1, marginBottom: 4 }}>{k.v}</p>
                   <p style={{ fontSize: 11, fontWeight: 600, color: k.col }}>{k.d} {T.bento.thisMonth[lang]}</p>
@@ -1095,7 +1096,7 @@ function BentoSection({ lang }: { lang: Lang }) {
               colors={['#83c0f9', '#60a5fa', '#a5f3fc']}
               borderRadius={24}
               glowIntensity={isDark ? 1.5 : 1.2}
-              style={{ height: '100%' }}
+              style={{ height: '100%', border: `1.5px solid ${isDark ? '#83c0f960' : '#83c0f940'}` }}
             >
               <div style={{ padding: '28px' }}>
                 <p style={{ fontSize: 11, fontWeight: 700, color: acc.tint, marginBottom: 6,
@@ -1132,7 +1133,7 @@ function BentoSection({ lang }: { lang: Lang }) {
               colors={['#f59e0b', '#d97706', '#fcd34d']}
               borderRadius={24}
               glowIntensity={isDark ? 1.5 : 1.2}
-              style={{ height: '100%' }}
+              style={{ height: '100%', border: `1.5px solid ${isDark ? '#f59e0b60' : '#f59e0b40'}` }}
             >
               <div style={{ padding: '28px' }}>
                 <p style={{ fontSize: 11, fontWeight: 700, color: '#f59e0b', marginBottom: 6,
@@ -1175,7 +1176,7 @@ function BentoSection({ lang }: { lang: Lang }) {
               colors={['#10b981', '#059669', '#6ee7b7']}
               borderRadius={24}
               glowIntensity={isDark ? 1.5 : 1.2}
-              style={{ height: '100%' }}
+              style={{ height: '100%', border: `1.5px solid ${isDark ? '#10b98160' : '#10b98140'}` }}
             >
               <div style={{ padding: '28px' }}>
                 <p style={{ fontSize: 11, fontWeight: 700, color: '#10b981', marginBottom: 6,
@@ -1291,7 +1292,7 @@ function ExtensionSection({ lang }: { lang: Lang }) {
                   colors={glowCols[i]}
                   borderRadius={24}
                   glowIntensity={isDark ? 1.5 : 1.2}
-                  style={{ height: '100%' }}
+                  style={{ height: '100%', border: `1.5px solid ${c.color}${isDark ? '60' : '40'}` }}
                 >
                   <div style={{ padding: '32px 28px', cursor: 'default' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
@@ -1384,8 +1385,6 @@ function PricingSection({ lang }: { lang: Lang }) {
   const secBg  = isDark ? '#1e1e1e' : P.parchment
   const ink    = isDark ? P.dText   : P.ink
   const muted  = isDark ? P.dMuted  : P.stone
-  const bdr    = isDark ? P.dHair   : P.hair
-  const cardBg = isDark ? P.dCard : P.card
 
   const tiers = [
     {
@@ -1522,11 +1521,8 @@ function ResourcesSection({ lang }: { lang: Lang }) {
   const acc = useAccent()
   const [expanded, setExpanded] = useState<number | null>(0)
   const secBg  = isDark ? P.dCanvas : '#e8f0fd'
-  const cardBg = isDark ? P.dCard   : P.card
   const bdr    = isDark ? P.dHair   : P.hair
   const ink    = isDark ? P.dText   : P.ink
-  const sub    = isDark ? P.dMuted  : P.stone
-  const muted  = isDark ? P.dMuted  : '#94A3B8'
   const bg2    = isDark ? P.dCanvas : '#F8FAFD'
 
   const rightItems = [
@@ -1681,7 +1677,6 @@ function FaqSection({ lang }: { lang: Lang }) {
   const secBg = isDark ? P.dCard : P.parchment
   const bdr   = isDark ? P.dHair   : P.hair
   const ink   = isDark ? P.dText   : P.ink
-  const sub   = isDark ? P.dMuted  : P.stone
 
   const faqs = [
     { q: T.faq.q1[lang],
