@@ -1458,12 +1458,12 @@ function PricingSection({ lang }: { lang: Lang }) {
 
                   <Link href={t.ctaHref}
                     style={{ display: 'block', textAlign: 'center', fontSize: 14, fontWeight: 700,
-                      background: '#0e1b2e',
-                      color: '#ffffff',
+                      background: t.highlight ? '#ffffff' : '#0e1b2e',
+                      color: t.highlight ? '#0e1b2e' : '#ffffff',
                       padding: '13px 24px', borderRadius: 10,
                       textDecoration: 'none', transition: 'all 0.15s' }}
-                    onMouseEnter={e => { e.currentTarget.style.background = '#1a2a3e' }}
-                    onMouseLeave={e => { e.currentTarget.style.background = '#0e1b2e' }}>
+                    onMouseEnter={e => { e.currentTarget.style.background = t.highlight ? '#f0f0f0' : '#1a2a3e' }}
+                    onMouseLeave={e => { e.currentTarget.style.background = t.highlight ? '#ffffff' : '#0e1b2e' }}>
                     {t.cta}
                   </Link>
                 </div>

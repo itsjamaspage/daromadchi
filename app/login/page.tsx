@@ -265,9 +265,9 @@ function LoginForm() {
               <button key={m} onClick={() => switchMode(m)}
                 className="flex-1 py-2.5 rounded-lg text-sm font-bold transition-all"
                 style={{
-                  background: mode === m ? '#83c0f9' : isDark ? 'rgba(255,255,255,0.04)' : 'rgba(131,192,249,0.2)',
+                  background: mode === m ? '#ffffff' : isDark ? 'rgba(255,255,255,0.04)' : 'rgba(131,192,249,0.2)',
                   color: mode === m ? '#0e2233' : isDark ? '#94a3b8' : '#2c5f82',
-                  boxShadow: mode === m ? '0 4px 12px rgba(131,192,249,0.4)' : undefined,
+                  boxShadow: mode === m ? '0 4px 12px rgba(255,255,255,0.25)' : undefined,
                   border: mode === m ? 'none' : `1px solid ${isDark ? 'rgba(131,192,249,0.08)' : 'rgba(131,192,249,0.2)'}`,
                 }}>
                 {t.tabs[m]}
@@ -312,7 +312,7 @@ function LoginForm() {
                 )}
                 <button type="submit" disabled={loading}
                   className="w-full font-bold rounded-xl py-3 text-sm transition-all flex items-center justify-center gap-2 mt-1 disabled:opacity-50 disabled:cursor-not-allowed"
-                  style={{ background: '#83c0f9', color: '#0e2233', boxShadow: '0 8px 24px rgba(131,192,249,0.35)' }}>
+                  style={{ background: '#ffffff', color: '#0e2233', boxShadow: '0 8px 24px rgba(255,255,255,0.2)' }}>
                   {loading ? <><Loader2 className="w-4 h-4 animate-spin" />{t.resetSending}</> : t.resetBtn}
                 </button>
                 <p className="text-center text-xs pt-1">
@@ -402,7 +402,7 @@ function LoginForm() {
 
               <button type="submit" disabled={loading}
                 className="w-full font-bold rounded-xl py-3 text-sm transition-all flex items-center justify-center gap-2 mt-1 disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{ background: '#83c0f9', color: '#0e2233', border: '2px solid rgba(131,192,249,0.6)', boxShadow: '0 4px 16px rgba(131,192,249,0.25)' }}>
+                style={{ background: '#ffffff', color: '#0e2233', border: '2px solid rgba(255,255,255,0.6)', boxShadow: '0 4px 16px rgba(255,255,255,0.15)' }}>
                 {loading
                   ? <><Loader2 className="w-4 h-4 animate-spin" />{mode === 'login' ? t.loggingIn : t.signingUp}</>
                   : mode === 'login' ? t.loginBtn : t.signupBtn

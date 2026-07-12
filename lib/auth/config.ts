@@ -19,7 +19,7 @@ const authConfig: NextAuthConfig = {
         }
 
         const user = await db.query.users.findFirst({
-          where: eq(users.email, credentials.email as string)
+          where: eq(users.email, (credentials.email as string).toLowerCase())
         })
 
         if (!user || !user.password_hash) {
