@@ -1,17 +1,11 @@
-/* eslint-disable react-hooks/set-state-in-effect */
 'use client'
 
 import { useState, useRef, useEffect, Suspense } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { signIn } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Mail, Lock, Loader2, Eye, EyeOff, User, CheckCircle, ArrowLeft } from 'lucide-react'
 import { useTheme, useLang } from '@/app/providers'
-
-const supabaseConfigured =
-  typeof process !== 'undefined' &&
-  process.env.NEXT_PUBLIC_SUPABASE_URL &&
-  !process.env.NEXT_PUBLIC_SUPABASE_URL.includes('your-project')
 
 const ui = {
   uz: {
@@ -24,9 +18,8 @@ const ui = {
     loggingIn: 'Kirish...', signingUp: 'Hisob yaratilmoqda...',
     noAccount: "Hisobingiz yo'qmi?", hasAccount: 'Hisobingiz bormi?',
     signupLink: "Ro'yxatdan o'tish", loginLink: 'Kirish',
-    success: "Hisob yaratildi! Tasdiqlash uchun emailni tekshiring.",
+    success: "Hisob yaratildi! Endi tizimga kirishingiz mumkin.",
     back: 'Bosh sahifaga',
-    demo: 'Demo: demo@daromadchi.uz / demo1234',
     forgotPw: 'Parolni unutdingizmi?',
     resetTitle: 'Parolni tiklash',
     resetDesc: 'Emailingizni kiriting — tiklash havolasini yuboramiz.',
@@ -34,9 +27,7 @@ const ui = {
     resetSending: 'Yuborilmoqda...',
     resetSuccess: 'Parolni tiklash havolasi emailingizga yuborildi.',
     backToLogin: 'Kirishga qaytish',
-    verifyFailed: 'Havola yaroqsiz yoki muddati tugagan. Qaytadan urinib koʻring.',
-    invalidCreds: 'Email yoki parol notoʻgʻri. Hisobingiz boʻlmasa, avval roʻyxatdan oʻting.',
-    emailNotConfirmed: 'Email tasdiqlanmagan. Pochtangizdagi tasdiqlash havolasini bosing.',
+    invalidCreds: 'Email yoki parol notoʻgʻri.',
     goSignup: 'Roʻyxatdan oʻtish',
   },
   en: {
@@ -49,9 +40,8 @@ const ui = {
     loggingIn: 'Signing in...', signingUp: 'Creating account...',
     noAccount: "Don't have an account?", hasAccount: 'Already have an account?',
     signupLink: 'Sign up', loginLink: 'Sign in',
-    success: 'Account created! Check your email to confirm.',
+    success: 'Account created! You can now sign in.',
     back: 'Back to home',
-    demo: 'Demo: demo@daromadchi.uz / demo1234',
     forgotPw: 'Forgot password?',
     resetTitle: 'Reset password',
     resetDesc: 'Enter your email — we\'ll send you a reset link.',
@@ -59,9 +49,7 @@ const ui = {
     resetSending: 'Sending...',
     resetSuccess: 'A password reset link has been sent to your email.',
     backToLogin: 'Back to sign in',
-    verifyFailed: 'The link is invalid or expired. Please try again.',
-    invalidCreds: 'Incorrect email or password. If you don\'t have an account, sign up first.',
-    emailNotConfirmed: 'Email not confirmed. Click the confirmation link we sent to your inbox.',
+    invalidCreds: 'Incorrect email or password.',
     goSignup: 'Sign up',
   },
   ru: {
@@ -74,9 +62,8 @@ const ui = {
     loggingIn: 'Вход...', signingUp: 'Создание аккаунта...',
     noAccount: 'Нет аккаунта?', hasAccount: 'Уже есть аккаунт?',
     signupLink: 'Зарегистрироваться', loginLink: 'Войти',
-    success: 'Аккаунт создан! Проверьте email для подтверждения.',
+    success: 'Аккаунт создан! Теперь вы можете войти.',
     back: 'На главную',
-    demo: 'Демо: demo@daromadchi.uz / demo1234',
     forgotPw: 'Забыли пароль?',
     resetTitle: 'Сброс пароля',
     resetDesc: 'Введите email — мы отправим ссылку для сброса.',
@@ -84,9 +71,7 @@ const ui = {
     resetSending: 'Отправка...',
     resetSuccess: 'Ссылка для сброса пароля отправлена на ваш email.',
     backToLogin: 'Вернуться ко входу',
-    verifyFailed: 'Ссылка недействительна или устарела. Попробуйте снова.',
-    invalidCreds: 'Неверный email или пароль. Если у вас нет аккаунта, сначала зарегистрируйтесь.',
-    emailNotConfirmed: 'Email не подтверждён. Откройте письмо и нажмите на ссылку подтверждения.',
+    invalidCreds: 'Неверный email или пароль.',
     goSignup: 'Зарегистрироваться',
   },
 }
@@ -154,13 +139,6 @@ function LoginForm() {
   const [showSignupHint, setShowSignupHint] = useState(false)
   const router = useRouter()
 
-  useEffect(() => {
-    if (searchParams.get('error') === 'verification_failed') {
-      setError(t.verifyFailed)
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
   const isDark = theme === 'dark'
   const bg     = isDark ? '#161616'  : '#e8f4fe'
   const card   = isDark ? '#1e1e1e'  : '#ffffff'
@@ -178,16 +156,20 @@ function LoginForm() {
   async function handleReset(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true); setError('')
-    if (!supabaseConfigured) { setResetSent(true); setLoading(false); return }
     try {
-      const supabase = createClient()
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/callback?next=/auth/update-password`,
+      const res = await fetch('/api/auth/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
       })
-      if (error) setError(error.message)
-      else setResetSent(true)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An unexpected error occurred')
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        setError(data.error || 'Error')
+      } else {
+        setResetSent(true)
+      }
+    } catch {
+      setError('Network error')
     } finally {
       setLoading(false)
     }
@@ -197,28 +179,22 @@ function LoginForm() {
     e.preventDefault()
     setLoading(true); setError('')
 
-    if (!supabaseConfigured) {
-      router.push('/dashboard'); router.refresh(); return
-    }
-
     try {
-      const supabase = createClient()
-
       if (mode === 'login') {
-        const { error } = await supabase.auth.signInWithPassword({ email, password })
-        if (error) {
-          const msg = error.message.toLowerCase()
-          if (msg.includes('email not confirmed')) {
-            setError(t.emailNotConfirmed)
-          } else if (msg.includes('invalid login credentials')) {
-            setError(t.invalidCreds)
-            setShowSignupHint(true)
-          } else {
-            setError(error.message)
-          }
+        const result = await signIn('credentials', {
+          email,
+          password,
+          redirect: false,
+        })
+
+        if (!result?.ok) {
+          setError(t.invalidCreds)
+          setShowSignupHint(true)
           setLoading(false)
+        } else {
+          router.push('/dashboard')
+          router.refresh()
         }
-        else { window.location.href = '/dashboard' }
       } else {
         const signupRes = await fetch('/api/auth/signup', {
           method: 'POST',
@@ -237,8 +213,8 @@ function LoginForm() {
               body: JSON.stringify({ refCode, newUserId: signupData.userId }),
             }).catch(() => {})
           }
-          if (!signupData.needsConfirmation) { window.location.href = '/dashboard' }
-          else { setSuccess(true); setLoading(false) }
+          setSuccess(true)
+          setLoading(false)
         }
       }
     } catch (err) {

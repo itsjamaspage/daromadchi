@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { createClient } from '@/lib/supabase/server'
+import { db } from '@/lib/db'
+import { users } from '@/lib/db/schema'
+import { eq } from 'drizzle-orm'
+import bcrypt from 'bcryptjs'
 import { withErrorHandler } from '@/lib/api-handler'
 
 const SignupSchema = z.object({
@@ -9,7 +12,6 @@ const SignupSchema = z.object({
   name:     z.string().max(100).optional(),
 })
 
-// 10 signup attempts per IP per hour
 const signupRateMap = new Map<string, { count: number; resetAt: number }>()
 function checkSignupRate(ip: string): boolean {
   const now = Date.now()
@@ -46,20 +48,24 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   }
   const { email, password, name } = parsed.data
 
-  const supabase = await createClient()
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: { data: { full_name: name?.trim() ?? '' } },
+  const existing = await db.query.users.findFirst({
+    where: eq(users.email, email.toLowerCase()),
   })
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 })
+  if (existing) {
+    return NextResponse.json({ error: 'Bu email allaqachon ro\'yxatdan o\'tgan' }, { status: 400 })
   }
+
+  const passwordHash = await bcrypt.hash(password, 12)
+
+  const [newUser] = await db.insert(users).values({
+    email: email.toLowerCase(),
+    full_name: name?.trim() ?? null,
+    password_hash: passwordHash,
+  }).returning({ id: users.id })
 
   return NextResponse.json({
     ok: true,
-    userId: data.user?.id ?? null,
-    needsConfirmation: !data.session,
+    userId: newUser?.id ?? null,
   })
 })
