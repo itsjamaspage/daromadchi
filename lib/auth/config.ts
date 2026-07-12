@@ -35,7 +35,7 @@ const authConfig: NextAuthConfig = {
           throw new Error('Invalid password')
         }
 
-        if (!user.email_verified) {
+        if (!user.email_verified && process.env.SMTP_USER) {
           throw new Error('EMAIL_NOT_VERIFIED')
         }
 

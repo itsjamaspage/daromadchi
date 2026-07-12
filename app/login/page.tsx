@@ -346,7 +346,11 @@ function LoginForm() {
               body: JSON.stringify({ refCode, newUserId: signupData.userId }),
             }).catch(() => {})
           }
-          switchMode('verify')
+          if (signupData.needsVerification) {
+            switchMode('verify')
+          } else {
+            setSuccess(true)
+          }
           setLoading(false)
         }
       }
