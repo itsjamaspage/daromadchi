@@ -38,8 +38,8 @@ export const T = {
   },
 
   hero: {
-    headingLine1: tr('Управляйте прибылью на трёх маркетплейсах', "Uch marketpleysda foydangizni boshqaring", 'Control your profit across three marketplaces'),
-    headingLine2: tr('из одного окна', 'bitta oynadan', 'from a single dashboard'),
+    headingLine1: tr('Управляйте продажами на трёх маркетплейсах', "Uchta marketpleys sotuvlaringizni bitta joydan boshqaring", 'Manage your sales across three marketplaces'),
+    headingLine2: tr('из одной панели', '', 'from one dashboard'),
     subtitle: tr(
       'Выручка, ДРР, остатки и юнит-экономика по Uzum, Wildberries и Yandex Market — обновление каждые 15 минут, без ручного ввода',
       "Uzum, Wildberries va Yandex Market bo'yicha daromad, DRR, qoldiqlar va birlik-iqtisod — har 15 daqiqada yangilanadi, qo'lda kiritishsiz",

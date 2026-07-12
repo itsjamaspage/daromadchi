@@ -72,9 +72,9 @@ function useAccent() {
     dk:     isDark ? A.darkDk : A.lightDk,
     bg:     isDark ? A.darkBg : A.lightBg,
     tint:   isDark ? A.dark   : '#0E2233',
-    btn:    isDark ? '#ffffff' : '#83c0f9',
-    btnTxt: isDark ? '#131321' : '#131321',
-    btnHov: isDark ? '#f0f0f0' : '#6aabf0',
+    btn:    '#ffffff',
+    btnTxt: '#131321',
+    btnHov: '#f0f0f0',
     btnBdr: isDark ? 'transparent' : 'rgba(14,27,46,0.18)',
   }
 }
@@ -207,7 +207,7 @@ function FloatCard({ mp, metric, value, change, up, delay, floatDur = 3.5, style
       {/* CSS animation — GPU-accelerated, no JS per frame */}
       <div className="animate-float" style={{ animationDuration: `${floatDur}s`, animationDelay: `${delay * 0.3}s` }}>
         <div style={{
-          background: '#83c0f9',
+          background: '#ffffff',
           borderRadius: 14, padding: '12px 16px', minWidth: 162,
           boxShadow: '0 10px 40px rgba(0,0,0,0.22), 0 2px 8px rgba(0,0,0,0.14)',
           fontFamily: "'Space Grotesk', system-ui, sans-serif",
@@ -241,9 +241,9 @@ function DashMockup({ lang }: { lang: Lang }) {
   const muted  = isDark ? '#6b7a99' : '#94A3B8'
   const ink    = isDark ? '#e2e8f0' : '#0F172A'
 
-  const teal    = isDark ? '#83c0f9' : '#3b82f6'
-  const tealBg  = isDark ? 'rgba(131,192,249,0.15)' : 'rgba(59,130,246,0.12)'
-  const tealDim = isDark ? 'rgba(131,192,249,0.12)' : 'rgba(59,130,246,0.15)'
+  const teal    = isDark ? '#ffffff' : '#3b82f6'
+  const tealBg  = isDark ? 'rgba(255,255,255,0.15)' : 'rgba(59,130,246,0.12)'
+  const tealDim = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(59,130,246,0.15)'
   const kpis = [
     { l: T.mockup.revenue[lang],   v: '124 540 000', u: T.mockup.sum[lang], d: '+12.4%', pos: true,  c: teal },
     { l: T.mockup.orders[lang],  v: '1 842',        u: '',    d: '+8.1%',  pos: true,  c: teal },
@@ -839,7 +839,7 @@ function HowItWorksSection({ lang }: { lang: Lang }) {
   const uiBg   = isDark ? 'rgba(28,28,46,0.95)' : P.parchment
   const uiBdr  = isDark ? P.dHair   : P.hair
   const fldBg  = isDark ? P.dCard2 : '#fff'
-  const stepColor = isDark ? acc.tint : P.parchment
+  const stepColor = '#ffffff'
 
   const steps = [
     {
@@ -1740,8 +1740,6 @@ function CtaSection({ lang }: { lang: Lang }) {
   return (
     <section style={{ position: 'relative', background: secBg, overflow: 'hidden',
       padding: '100px 24px', fontFamily: "'Space Grotesk', system-ui, sans-serif", transition: 'background 0.3s' }}>
-      <SectionHoverAnim colors={isDark ? [...ANIM_BLUE_DK] : [...ANIM_BLUE]} opacity={0.4} />
-
       <div className="hidden lg:block">
         <FloatCard mp="Uzum"metric={T.cta.revenue[lang]} value={T.cta.revenueValue[lang]} change="+12%" up delay={0} floatDur={3.8}
           style={{ left: '4%', top: '20%', transform: 'rotate(-3.5deg)', zIndex: 5, opacity: 0.9 }} />
