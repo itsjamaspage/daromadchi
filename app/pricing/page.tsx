@@ -219,6 +219,7 @@ export default function PricingPage() {
     )
     obs.observe(el)
     return () => obs.disconnect()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
@@ -234,6 +235,7 @@ export default function PricingPage() {
       if (t < 1) requestAnimationFrame(tick)
     }
     requestAnimationFrame(tick)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isYearly])
 
   function fmtCount(n: number) {

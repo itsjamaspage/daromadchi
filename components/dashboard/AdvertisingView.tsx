@@ -42,7 +42,10 @@ export default function AdvertisingView({ uzumCampaigns, wbCampaigns }: Props) {
   const [typeTab, setTypeTab] = useState<AdType | 'all'>('all')
   const printRef = useRef<HTMLDivElement>(null)
 
-  const campaigns = marketplace === 'uzum' ? uzumCampaigns : marketplace === 'wb' ? wbCampaigns : []
+  const campaigns = useMemo(() =>
+    marketplace === 'uzum' ? uzumCampaigns : marketplace === 'wb' ? wbCampaigns : [],
+    [marketplace, uzumCampaigns, wbCampaigns]
+  )
 
   const filtered = useMemo(() =>
     typeTab === 'all' ? campaigns : campaigns.filter(c => c.type === typeTab),

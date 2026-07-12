@@ -536,7 +536,7 @@ async function loadAll() {
   ]);
 
   const {
-    daromadchi_token, daromadchi_connected, daromadchi_email, daromadchi_plan = 'free', cachedStats, cacheTime,
+    daromadchi_token, daromadchi_connected, daromadchi_email: _daromadchi_email, daromadchi_plan = 'free', cachedStats, cacheTime,
     activeAlerts = [], alertSettings = {}, tgStatus = {}, ext_lang = 'uz', ext_theme = 'dark',
     yandexStats, yandexConnected, yandexCampaignId,
     uzumDirectStats, uzumConnected, uzumShopName,

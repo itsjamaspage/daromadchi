@@ -43,6 +43,7 @@ export default function DashboardTopBar() {
         avatar: data.user.user_metadata?.avatar_url,
       })
     })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {

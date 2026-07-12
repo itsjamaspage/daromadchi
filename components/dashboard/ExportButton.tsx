@@ -90,7 +90,7 @@ function exportPdf(data: ExportRow[], filename: string) {
   win.document.close()
 }
 
-export default function ExportButton({ data, filename = 'hisobot', targetRef, label }: ExportButtonProps) {
+export default function ExportButton({ data, filename = 'hisobot', targetRef: _targetRef, label }: ExportButtonProps) {
   const { lang } = useLang()
   const t = dashT[lang].export
   const [open, setOpen] = useState(false)

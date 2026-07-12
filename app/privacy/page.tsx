@@ -5,7 +5,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useLang, useTheme } from '@/app/providers'
 import BorderGlow from '@/app/components/BorderGlow'
 
-const COMPANY_EMAIL = 'support@daromadchi.uz'
+const _COMPANY_EMAIL = 'support@daromadchi.uz'
 
 const T = {
   uz: {

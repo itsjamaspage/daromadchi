@@ -2,7 +2,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { Calculator, TrendingUp, TrendingDown, AlertTriangle, Info, Zap } from 'lucide-react'
+import { Calculator, TrendingDown, AlertTriangle, Info, Zap } from 'lucide-react'
 import { useLang } from '@/app/providers'
 import { dashT } from '@/lib/dashT'
 

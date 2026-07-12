@@ -1,5 +1,5 @@
 import { unstable_cache } from 'next/cache'
-import { eq, ne, and, inArray, gte, lte, desc, asc, sql, count } from 'drizzle-orm'
+import { eq, ne, and, inArray, gte, lte, asc, sql, count } from 'drizzle-orm'
 import { db, shops, products, orders, orderItems } from '@/lib/db'
 import { getShopIds, getCurrentUserId } from '@/lib/db/shop-context'
 import type { Product, MarketplaceType } from '@/lib/types'

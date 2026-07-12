@@ -134,7 +134,7 @@ export async function syncFromUzum(shopId: string, token: string, fromDateOverri
         ? new Date(shopRow.last_synced_at)
         : (() => { const d = new Date(); d.setDate(d.getDate() - 365); return d })())
 
-    const fromDate = since.toISOString().slice(0, 10)
+    const _fromDate = since.toISOString().slice(0, 10)
 
     // Orders — fetch both FBS (/v2/fbs/orders) and FBO (/v2/fbo/orders).
     // Many Uzum sellers use FBO (Uzum warehouse), so FBS alone returns 0.

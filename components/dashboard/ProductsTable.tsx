@@ -121,7 +121,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
       return sortDir === 'desc' ? bv - av : av - bv
     })
     return rows
-  }, [enriched, query, category, tab, sortBy, sortDir, drrThreshold, stockThreshold])
+  }, [enriched, query, category, tab, sortBy, sortDir, drrThreshold, stockThreshold, allLabel])
 
   function toggleSort(col: typeof sortBy) {
     if (sortBy === col) setSortDir(d => d === 'desc' ? 'asc' : 'desc')

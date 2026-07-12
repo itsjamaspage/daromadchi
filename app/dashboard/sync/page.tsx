@@ -1,4 +1,4 @@
-import { eq, ne, and, count } from 'drizzle-orm'
+import { eq, count } from 'drizzle-orm'
 import { createClient } from '@/lib/supabase/server'
 import { db, shops, products, orders } from '@/lib/db'
 import { getSyncDays } from '@/lib/db/sync-state'

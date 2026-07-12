@@ -17,7 +17,7 @@ function fsPct(n: number) {
   return n.toFixed(1) + '%'
 }
 
-function roiColor(roi: number) {
+function _roiColor(roi: number) {
   return roi >= 80 ? 'text-emerald-600' : roi >= 30 ? 'text-amber-600' : 'text-red-600'
 }
 function roiBg(roi: number) {
@@ -192,7 +192,7 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
   function toggleRow(id: string) {
     setSelected(prev => {
       const n = new Set(prev)
-      n.has(id) ? n.delete(id) : n.add(id)
+      if (n.has(id)) n.delete(id); else n.add(id)
       return n
     })
   }
@@ -216,7 +216,7 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
   function toggleCol(key: ColKey) {
     setVisibleCols(prev => {
       const n = new Set(prev)
-      n.has(key) ? n.delete(key) : n.add(key)
+      if (n.has(key)) n.delete(key); else n.add(key)
       return n
     })
   }

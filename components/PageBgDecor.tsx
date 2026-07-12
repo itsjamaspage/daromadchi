@@ -2,4 +2,4 @@
 
 interface Props { isDark: boolean }
 
-export function PageBgDecor(_: Props) { return null }
+export function PageBgDecor(_p: Props) { return null }

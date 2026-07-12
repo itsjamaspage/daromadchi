@@ -7,7 +7,7 @@ import {
   RefreshCw, Save, Key, CheckCircle, XCircle, ExternalLink,
   Loader2, Hash, Sparkles, Trash2, Send, LinkIcon, Building2, Plus,
 } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
+// import { createClient } from '@/lib/supabase/client'
 import type { Shop } from '@/lib/types'
 
 // ─── Shared sub-components ────────────────────────────────────────────────────

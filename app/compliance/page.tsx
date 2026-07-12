@@ -164,9 +164,9 @@ export default function CompliancePage() {
     flashTimerRef.current = setTimeout(() => setFlash(null), 2000)
   }
 
-  const flashBg   = isDark ? 'rgba(131,192,249,0.12)' : 'rgba(2,132,199,0.08)'
-  const flashBdr  = 'var(--c1)'
-  const flashShadow = isDark ? '0 0 0 3px rgba(131,192,249,0.3)' : '0 0 0 3px rgba(2,132,199,0.3)'
+  const _flashBg   = isDark ? 'rgba(131,192,249,0.12)' : 'rgba(2,132,199,0.08)'
+  const _flashBdr  = 'var(--c1)'
+  const _flashShadow = isDark ? '0 0 0 3px rgba(131,192,249,0.3)' : '0 0 0 3px rgba(2,132,199,0.3)'
 
   return (
     <div className="flex min-h-screen" style={{ background: 'var(--bg-base)', fontFamily: "'Space Grotesk', system-ui, sans-serif" }}>

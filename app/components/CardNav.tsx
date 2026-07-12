@@ -80,7 +80,7 @@ const CardNav = ({
         contentEl.style.position = 'static'
         contentEl.style.height = 'auto'
 
-        contentEl.offsetHeight
+        void contentEl.offsetHeight
 
         const contentHeight = contentEl.scrollHeight
 

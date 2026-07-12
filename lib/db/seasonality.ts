@@ -1,4 +1,4 @@
-import { inArray, ne, gte, and, eq } from 'drizzle-orm'
+import { inArray, ne, gte, and } from 'drizzle-orm'
 import { db, orders, orderItems, products } from '@/lib/db'
 import { getShopIds as resolveShopIds } from '@/lib/db/shop-context'
 import type { MarketplaceType } from '@/lib/types'

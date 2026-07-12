@@ -69,7 +69,7 @@ const STATUS_CLASS_LIGHT: Record<string, string> = {
   returned:  'bg-amber-500/10 text-amber-700',
 }
 
-export default function DashboardClient({ slices, days, period, from, to, initialMarketplace, hasShops }: Props) {
+export default function DashboardClient({ slices, days, period, from, to, initialMarketplace, hasShops: _hasShops }: Props) {
   const { lang } = useLang()
   const { theme } = useTheme()
   const isDark = theme === 'dark'

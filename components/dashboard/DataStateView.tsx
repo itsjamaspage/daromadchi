@@ -64,7 +64,7 @@ export default function DataStateView({ uzumDays, yandexDays, wbDays, connectedM
   function toggleDay(date: string) {
     setSelected(prev => {
       const n = new Set(prev)
-      n.has(date) ? n.delete(date) : n.add(date)
+      if (n.has(date)) n.delete(date); else n.add(date)
       return n
     })
   }

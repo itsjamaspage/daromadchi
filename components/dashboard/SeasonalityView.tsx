@@ -23,7 +23,7 @@ function formatSom(n: number) {
 }
 
 const PEAK_COLOR   = '#7c3aed'
-const NORMAL_COLOR = '#4c1d95'
+const _NORMAL_COLOR = '#4c1d95'
 const LOW_COLOR    = '#1e1b4b'
 
 function CustomTooltip({ active, payload, label }: { active?: boolean; payload?: { value: number; payload: { orders: number; avgCheck: number } }[]; label?: string }) {
