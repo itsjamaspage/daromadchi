@@ -508,7 +508,8 @@
           Daromadchi is a multi-marketplace seller dashboard that syncs orders, inventory, and prices across Uzum Market, Yandex Market, and Wildberries.
           The Web App provides sellers with real-time analytics and management tools, while the Chrome Extension automates price/stock updates.
           All data flows through our API Routes to a PostgreSQL database, with read-only marketplace integrations (NO writes allowed).
-          Authentication via NextAuth.js v5 with JWT tokens. Self-hosted on Hetzner VPS with Nginx reverse proxy.
+          Authentication via NextAuth.js v5 with JWT tokens and email verification (6-digit code via SMTP on signup).
+          Self-hosted on Hetzner VPS with Nginx reverse proxy.
         </div>
         <div class="construction-legend">
           <div class="legend-item-inline">
@@ -598,9 +599,9 @@
       'web-app': {
         name: 'Web App',
         status: 'complete',
-        desc: 'Next.js 14 dashboard (daromadchi.uz)',
-        tech: ['React 18', 'Next.js 14', 'TypeScript', 'Tailwind CSS', 'Multi-language'],
-        purpose: 'Main user interface for sellers. Real-time KPI dashboard showing revenue, orders, profit by marketplace. Language switcher (RU/UZ/EN). Shop management, order history, analytics.',
+        desc: 'Next.js 16 dashboard (daromadchi.uz)',
+        tech: ['React 19', 'Next.js 16', 'TypeScript', 'Tailwind CSS', 'Multi-language'],
+        purpose: 'Main user interface for sellers. Real-time KPI dashboard showing revenue, orders, profit by marketplace. Language switcher (RU/UZ/EN). Shop management, order history, analytics. Email verification on signup with 6-digit code.',
         bugs: [],
         fixes: [],
         connections: [
@@ -623,14 +624,16 @@
       'nextauth': {
         name: 'NextAuth.js v5',
         status: 'complete',
-        desc: 'JWT session (30-day maxAge)',
-        tech: ['OAuth 2.0', 'JWT', 'Credentials', 'NextAuth v5'],
-        purpose: 'Authenticates users via Credentials provider. 30-day JWT token expiration. Protects dashboard routes. Validates API requests.',
+        desc: 'JWT session + email verification',
+        tech: ['OAuth 2.0', 'JWT', 'Credentials', 'NextAuth v5', 'bcryptjs'],
+        purpose: 'Authenticates users via Credentials provider with bcrypt password hashing. 30-day JWT token expiration. Blocks login for unverified emails (EMAIL_NOT_VERIFIED). Email verification required after signup via 6-digit code. Protects dashboard routes.',
         bugs: [],
         fixes: [],
         connections: [
           { name: 'Web App', desc: 'Validates user sessions' },
-          { name: 'API Routes', desc: 'Authenticates backend requests' }
+          { name: 'API Routes', desc: 'Authenticates backend requests' },
+          { name: 'SMTP Email', desc: 'Sends verification codes on signup' },
+          { name: 'PostgreSQL', desc: 'Users table with email_verified timestamp, verification_tokens table' }
         ]
       },
       'api-routes': {
@@ -694,21 +697,17 @@
           { name: 'GitHub Actions', desc: 'Receive workflow completion events' }
         ]
       },
-      'resend': {
-        name: 'Resend Email',
-        status: 'in-progress',
-        desc: 'Password reset emails',
-        tech: ['Resend API', 'Transactional'],
-        purpose: 'Sends password recovery emails. Currently in-progress for full OAuth 2.0 integration.',
-        bugs: [
-          { priority: 'medium', ref: 'REF #3', desc: 'Email template not rendering images on mobile. Links work but images show as broken.' }
-        ],
-        fixes: [
-          { title: 'Fix responsive email template', desc: 'Switch to fluid email format with max-width media queries for mobile compatibility' },
-          { title: 'Add email tracking', desc: 'Implement open/click tracking to monitor password reset flow completion rates' }
-        ],
+      'email-smtp': {
+        name: 'SMTP Email',
+        status: 'complete',
+        desc: 'Email verification & password reset',
+        tech: ['Nodemailer', 'SMTP', 'Gmail App Password', 'HTML Templates'],
+        purpose: 'Sends 6-digit verification codes on signup and password reset. Uses nodemailer with SMTP transport (Gmail). Codes expire in 10 minutes. Rate-limited resend endpoint (5 per 10 min per IP). Verification required before first login.',
+        bugs: [],
+        fixes: [],
         connections: [
-          { name: 'API Routes', desc: 'Trigger password reset emails' }
+          { name: 'API Routes', desc: 'Signup sends verification code, resend-code endpoint, password reset' },
+          { name: 'PostgreSQL', desc: 'Stores verification tokens with expiry in verification_tokens table' }
         ]
       },
       'github': {
@@ -744,7 +743,7 @@
       { label: '🔐 Auth', color: 'server', components: ['nextauth'] },
       { label: '⚙️ Backend', color: 'service', components: ['api-routes', 'marketplaces'] },
       { label: '💾 Data', color: 'service', components: ['postgresql'] },
-      { label: '🌐 External', color: 'external', components: ['telegram', 'resend', 'github', 'hetzner'] }
+      { label: '🌐 External', color: 'external', components: ['telegram', 'email-smtp', 'github', 'hetzner'] }
     ];
 
     const layersContainer = document.getElementById('layersContainer');
@@ -823,7 +822,7 @@
         ['api-routes', 'postgresql'],
         ['marketplaces', 'postgresql'],
         ['api-routes', 'telegram'],
-        ['api-routes', 'resend'],
+        ['api-routes', 'email-smtp'],
         ['github', 'hetzner'],
         ['hetzner', 'postgresql'],
         ['web-app', 'hetzner']
