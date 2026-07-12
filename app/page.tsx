@@ -2,7 +2,6 @@
 // v3
 import React, { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import dynamic from 'next/dynamic'
 import { motion, AnimatePresence, useInView } from 'framer-motion'
 import {
   TrendingUp, TrendingDown, ArrowRight, X, Check,
@@ -17,8 +16,6 @@ import { T } from '@/lib/landing-t'
 import PillNav from './components/PillNav'
 import BorderGlow from './components/BorderGlow'
 import SectionHoverAnim from './components/SectionHoverAnim'
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const _LiquidEther = dynamic(() => import('./components/LiquidEther'), { ssr: false })
 
 // Fluid animation colour sets
 // ANIM_WHITE: pure white/silver shimmer — used on all blue-background sections so the
@@ -64,15 +61,6 @@ const A = {
   dark:     '#83c0f9',   // sky blue for dark mode — stable button color
   darkDk:   '#7bbaf7',
   darkBg:   'rgba(160,212,252,0.12)',
-}
-
-// Real dashboard KPI colours — matches KpiCard.tsx
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const _KPI = {
-  violet:  '#494fdf',
-  emerald: '#428619',
-  blue:    '#376cd5',
-  amber:   '#ec7e00',
 }
 
 function useIsDark() { return useTheme().theme === 'dark' }
@@ -204,13 +192,11 @@ function LandingNav({ lang }: { lang: Lang }) {
 }
 
 // ── Floating stat card — with continuous bob animation ────────────────────────
-function FloatCard({ mp, mpColor: _mpColor, metric, value, change, up, delay, floatDur = 3.5, style }: {
-  mp: string; mpColor: string; metric: string; value: string
+function FloatCard({ mp, metric, value, change, up, delay, floatDur = 3.5, style }: {
+  mp: string; metric: string; value: string
   change: string; up: boolean; delay: number; floatDur?: number
   style: React.CSSProperties
 }) {
-  const _isDark = useIsDark()
-  const _acc = useAccent()
   return (
     // Outer div: entry animation + absolute position
     <motion.div
@@ -380,7 +366,7 @@ function DashMockup({ lang }: { lang: Lang }) {
 }
 
 // ── Hero decorative shapes ────────────────────────────────────────────────────
-function HeroDecorShapes({ isDark: _isDark }: { isDark: boolean }) {
+function HeroDecorShapes(_: { isDark: boolean }) {
   return null
 }
 
@@ -647,17 +633,7 @@ function FeaturesSection({ lang }: { lang: Lang }) {
     { id: 'DEMO-185', status: T.features.delivered[lang],    col: '#22c55e' },
   ]
 
-  const _screenCard = (children: React.ReactNode, rotate: number, zIdx: number, style: React.CSSProperties) => (
-    <motion.div
-      initial={{ opacity: 0, y: 32, rotate }}
-      animate={inView ? { opacity: 1, y: 0, rotate } : {}}
-      transition={{ duration: 0.75, ease: [0.25, 0.46, 0.45, 0.94] }}
-      style={{ position: 'absolute', background: dCard, borderRadius: 16, overflow: 'hidden',
-        border: `1px solid ${dBdr}`, zIndex: zIdx,
-        boxShadow: '0 20px 60px rgba(0,0,0,0.55), 0 4px 16px rgba(0,0,0,0.35)', ...style }}>
-      {children}
-    </motion.div>
-  )
+
 
   return (
     <section id="features" ref={ref} style={{ position: 'relative', background: secBg, padding: '96px 24px',

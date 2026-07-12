@@ -32,7 +32,7 @@ function StatusMsg({ msg }: { msg: { ok: boolean; text: string } | null }) {
 
 // ─── Uzum section ─────────────────────────────────────────────────────────────
 
-function UzumCard({ shop, userId: _userId }: { shop: Shop | null; userId: string }) {
+function UzumCard({ shop }: { shop: Shop | null; userId: string }) {
   const router = useRouter()
 
   const [apiKey,   setApiKey]   = useState('')
@@ -184,7 +184,7 @@ function UzumCard({ shop, userId: _userId }: { shop: Shop | null; userId: string
 
 // ─── Yandex section ───────────────────────────────────────────────────────────
 
-function YandexCard({ shop, userId: _userId }: { shop: Shop | null; userId: string }) {
+function YandexCard({ shop }: { shop: Shop | null; userId: string }) {
   const router = useRouter()
 
   const [apiKey,      setApiKey]      = useState('')
@@ -358,7 +358,7 @@ function YandexCard({ shop, userId: _userId }: { shop: Shop | null; userId: stri
 
 // ─── Wildberries section ──────────────────────────────────────────────────────
 
-function WildberriesCard({ shop, userId: _userId }: { shop: Shop | null; userId: string }) {
+function WildberriesCard({ shop }: { shop: Shop | null; userId: string }) {
   const router = useRouter()
 
   const [apiKey,   setApiKey]   = useState('')

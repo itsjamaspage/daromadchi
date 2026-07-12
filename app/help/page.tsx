@@ -44,7 +44,6 @@ const T = {
 export default function HelpPage() {
   const { lang } = useLang()
   const { theme } = useTheme()
-  const _isDark = theme === 'dark'
   const t = T[lang] ?? T.uz
   const categories = getCategoryList(lang)
   const [query, setQuery] = useState('')

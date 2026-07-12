@@ -472,7 +472,7 @@ export default function LiquidEther({
             if (canvas && canvas.parentNode) canvas.parentNode.removeChild(canvas)
             Common.renderer.dispose(); Common.renderer.forceContextLoss()
           }
-        } catch (_e) { void 0 }
+        } catch { void 0 }
       }
     }
 
@@ -509,8 +509,8 @@ export default function LiquidEther({
 
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current)
-      try { resizeObserverRef.current?.disconnect() } catch (_e) { void 0 }
-      try { intersectionObserverRef.current?.disconnect() } catch (_e) { void 0 }
+      try { resizeObserverRef.current?.disconnect() } catch { void 0 }
+      try { intersectionObserverRef.current?.disconnect() } catch { void 0 }
       if (webglRef.current) { webglRef.current.dispose(); webglRef.current = null }
     }
   }, [BFECC, cursorSize, dt, isBounce, isViscous, iterationsPoisson, iterationsViscous, mouseForce, resolution, viscous, colors, autoDemo, autoSpeed, autoIntensity, takeoverDuration, autoResumeDelay, autoRampDuration])

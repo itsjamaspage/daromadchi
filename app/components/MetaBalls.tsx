@@ -19,7 +19,6 @@ export default function MetaBalls({
   speed = 0.3,
   enableMouseInteraction = true,
   hoverSmoothness = 0.05,
-  animateOnce: _animateOnce = false,
   padding = 3,
   maxRadius = 30,
 }: MetaBallsProps) {
