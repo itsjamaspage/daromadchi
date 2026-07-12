@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
-import { isNotNull, eq, ne, and, inArray, gte, lte } from 'drizzle-orm'
-import { db, userSettings, shops as shopsTable, orders as ordersTable, products as productsTable } from '@/lib/db'
+import { isNotNull, eq, ne, and, inArray, gte } from 'drizzle-orm'
+import { db, userSettings, shops as shopsTable, orders as ordersTable } from '@/lib/db'
+import { computeStockGroups, lowStockGroups } from '@/lib/db/stock-groups'
 import { sendTelegramMessage } from '@/lib/telegram'
 import { withErrorHandler } from '@/lib/api-handler'
 
@@ -8,6 +9,8 @@ export const runtime     = 'nodejs'
 export const maxDuration  = 120
 
 const UZ_OFFSET_MIN = 5 * 60
+
+const MP_SHORT = { uzum: 'UZ', wildberries: 'WB', yandex_market: 'YM' } as const
 
 interface SettingsRow {
   user_id:              string
@@ -73,26 +76,24 @@ export const GET = withErrorHandler(async (req: Request) => {
       if (week) parts.push(`📈 <b>Haftalik hisobot (7 kun)</b>\n` + week)
     }
 
-    // ── Low-stock alerts ──
+    // ── Low-stock alerts (total leftover across all marketplaces) ──
     {
       const threshold = s.alert_stock_threshold ?? 15
-      const lowStock = await db.select({
-        title: productsTable.title,
-        stock_quantity: productsTable.stock_quantity,
-      }).from(productsTable)
-        .where(and(
-          inArray(productsTable.shop_id, shopIds),
-          lte(productsTable.stock_quantity, threshold),
-        ))
-        .orderBy(productsTable.stock_quantity)
-        .limit(10)
-
-      if (lowStock.length > 0) {
-        const lines = lowStock
-          .map((p: { title: string; stock_quantity: number }) => `• ${p.title} — <b>${p.stock_quantity}</b> dona`)
-          .join('\n')
-        parts.push(`📦 <b>Kam zaxira (${lowStock.length})</b>\n${lines}`)
-      }
+      try {
+        const groups = await computeStockGroups(s.user_id, shopIds)
+        const low = lowStockGroups(groups, threshold).slice(0, 10)
+        if (low.length > 0) {
+          const lines = low.map(g => {
+            const perMp = (['uzum', 'wildberries', 'yandex_market'] as const)
+              .filter(mp => mp in g.stock_by_marketplace)
+              .map(mp => `${MP_SHORT[mp]} ${g.stock_by_marketplace[mp]}`)
+              .join(' · ')
+            const days = g.days_of_stock !== null ? `, ~${g.days_of_stock} kun` : ''
+            return `• ${g.title} — jami <b>${g.leftover}</b> dona${perMp ? ` (${perMp})` : ''}${days}`
+          }).join('\n')
+          parts.push(`📦 <b>Kam zaxira (${low.length})</b>\n${lines}\nYangi partiya buyurtma qiling yoki reklamani to'xtating.`)
+        }
+      } catch { /* leftover alerts are best-effort */ }
     }
 
     if (parts.length === 0) continue

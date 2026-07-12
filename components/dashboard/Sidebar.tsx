@@ -6,7 +6,7 @@ import {
   LayoutDashboard, Package, ShoppingCart,
   ChevronRight, X, BarChart2, Calculator, FileText,
   Megaphone, Layers, AlertTriangle, CreditCard,
-  CalendarDays, Users, RefreshCw,
+  CalendarDays, Users, RefreshCw, Boxes,
 } from 'lucide-react'
 import { useLang, useTheme } from '@/app/providers'
 import { translations } from '@/lib/i18n'
@@ -18,6 +18,7 @@ type NavItem = { href: string; key: string; icon: React.ElementType }
 const storeNavItems: NavItem[] = [
   { href: '/dashboard',                key: 'dashboard',     icon: LayoutDashboard },
   { href: '/dashboard/products',       key: 'products',      icon: Package         },
+  { href: '/dashboard/stocks',         key: 'stocks',        icon: Boxes           },
   { href: '/dashboard/orders',         key: 'orders',        icon: ShoppingCart    },
   { href: '/dashboard/analytics',      key: 'analytics',     icon: BarChart2       },
   { href: '/dashboard/advertising',    key: 'advertising',   icon: Megaphone       },
