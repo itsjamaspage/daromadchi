@@ -19,26 +19,32 @@ export const useTheme = () => useContext(ThemeCtx)
 const LangCtx = createContext<{ lang: Lang; setLang: (l: Lang) => void }>({ lang: 'uz', setLang: () => {} })
 export const useLang = () => useContext(LangCtx)
 
+function getStoredTheme(): Theme {
+  if (typeof window === 'undefined') return 'light'
+  const st = localStorage.getItem('theme')
+  return st === 'dark' || st === 'light' ? st : 'light'
+}
+
+function getStoredLang(fallback: Lang): Lang {
+  if (typeof window === 'undefined') return fallback
+  const sl = localStorage.getItem('lang')
+  if (isLang(sl)) {
+    if (sl !== fallback) setCookie('lang', sl)
+    return sl
+  }
+  localStorage.setItem('lang', fallback)
+  return fallback
+}
+
 export default function Providers({ children, initialLang = 'uz' }: { children: React.ReactNode; initialLang?: Lang }) {
   const router = useRouter()
   const didMount = useRef(false)
-  const [theme, setTheme] = useState<Theme>('light')
-  const [lang, setLangRaw] = useState<Lang>(initialLang)
+  const [theme, setTheme] = useState<Theme>(getStoredTheme)
+  const [lang, setLangRaw] = useState<Lang>(() => getStoredLang(initialLang))
 
   useEffect(() => {
-    const st = localStorage.getItem('theme') as Theme | null
-    if (st === 'dark' || st === 'light') setTheme(st)
-
-    const sl = localStorage.getItem('lang')
-    if (isLang(sl)) {
-      setLangRaw(sl)
-      if (sl !== initialLang) setCookie('lang', sl)
-    } else {
-      localStorage.setItem('lang', initialLang)
-    }
-
     didMount.current = true
-  }, [initialLang])
+  }, [])
 
   useEffect(() => { document.documentElement.lang = lang }, [lang])
 
