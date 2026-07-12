@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { db } from '@/lib/db'
-import { users } from '@/lib/db/schema'
+import { users, verificationTokens } from '@/lib/db/schema'
 import { eq } from 'drizzle-orm'
 import bcrypt from 'bcryptjs'
+import crypto from 'crypto'
 import { withErrorHandler } from '@/lib/api-handler'
+import { sendVerificationCode } from '@/lib/email'
 
 const SignupSchema = z.object({
   email:    z.string().email('Email noto\'g\'ri formatda'),
@@ -29,6 +31,10 @@ function checkSignupRate(ip: string): boolean {
   return entry.count > 10
 }
 
+function generateCode(): string {
+  return crypto.randomInt(100000, 999999).toString()
+}
+
 export const POST = withErrorHandler(async (req: NextRequest) => {
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
     ?? req.headers.get('x-real-ip')
@@ -47,9 +53,10 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     return NextResponse.json({ error: parsed.error.issues[0]?.message ?? 'Noto\'g\'ri ma\'lumot' }, { status: 400 })
   }
   const { email, password, name } = parsed.data
+  const emailLower = email.toLowerCase()
 
   const existing = await db.query.users.findFirst({
-    where: eq(users.email, email.toLowerCase()),
+    where: eq(users.email, emailLower),
   })
 
   if (existing) {
@@ -59,13 +66,25 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   const passwordHash = await bcrypt.hash(password, 12)
 
   const [newUser] = await db.insert(users).values({
-    email: email.toLowerCase(),
+    email: emailLower,
     full_name: name?.trim() ?? null,
     password_hash: passwordHash,
   }).returning({ id: users.id })
 
+  const code = generateCode()
+  await db.delete(verificationTokens).where(eq(verificationTokens.email, emailLower))
+  await db.insert(verificationTokens).values({
+    token: code,
+    user_id: newUser!.id,
+    email: emailLower,
+    expires_at: new Date(Date.now() + 10 * 60 * 1000),
+  })
+
+  await sendVerificationCode(emailLower, code)
+
   return NextResponse.json({
     ok: true,
     userId: newUser?.id ?? null,
+    needsVerification: true,
   })
 })

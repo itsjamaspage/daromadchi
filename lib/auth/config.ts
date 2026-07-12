@@ -35,6 +35,10 @@ const authConfig: NextAuthConfig = {
           throw new Error('Invalid password')
         }
 
+        if (!user.email_verified) {
+          throw new Error('EMAIL_NOT_VERIFIED')
+        }
+
         return {
           id: user.id,
           email: user.email,

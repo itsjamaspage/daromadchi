@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useRef, useEffect, Suspense } from 'react'
+import { useState, useRef, useEffect, useCallback, Suspense } from 'react'
 import { signIn } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { Mail, Lock, Loader2, Eye, EyeOff, User, CheckCircle, ArrowLeft } from 'lucide-react'
+import { Mail, Lock, Loader2, Eye, EyeOff, User, CheckCircle, ArrowLeft, ShieldCheck } from 'lucide-react'
 import { useTheme, useLang } from '@/app/providers'
 
 const ui = {
@@ -29,6 +29,15 @@ const ui = {
     backToLogin: 'Kirishga qaytish',
     invalidCreds: 'Email yoki parol notoʻgʻri.',
     goSignup: 'Roʻyxatdan oʻtish',
+    verifyTitle: 'Emailni tasdiqlash',
+    verifyDesc: 'Tasdiqlash kodi emailingizga yuborildi:',
+    verifyBtn: 'Tasdiqlash',
+    verifying: 'Tekshirilmoqda...',
+    resendCode: 'Kodni qayta yuborish',
+    resending: 'Yuborilmoqda...',
+    codeSent: 'Yangi kod yuborildi!',
+    verifySuccess: 'Email tasdiqlandi! Endi tizimga kirishingiz mumkin.',
+    emailNotVerified: 'Emailingiz tasdiqlanmagan. Tasdiqlash kodini tekshiring.',
   },
   en: {
     tagline: 'Sales analytics platform',
@@ -51,6 +60,15 @@ const ui = {
     backToLogin: 'Back to sign in',
     invalidCreds: 'Incorrect email or password.',
     goSignup: 'Sign up',
+    verifyTitle: 'Verify your email',
+    verifyDesc: 'A verification code was sent to:',
+    verifyBtn: 'Verify',
+    verifying: 'Verifying...',
+    resendCode: 'Resend code',
+    resending: 'Sending...',
+    codeSent: 'New code sent!',
+    verifySuccess: 'Email verified! You can now sign in.',
+    emailNotVerified: 'Your email is not verified. Please check your verification code.',
   },
   ru: {
     tagline: 'Платформа аналитики продаж',
@@ -73,6 +91,15 @@ const ui = {
     backToLogin: 'Вернуться ко входу',
     invalidCreds: 'Неверный email или пароль.',
     goSignup: 'Зарегистрироваться',
+    verifyTitle: 'Подтвердите email',
+    verifyDesc: 'Код подтверждения отправлен на:',
+    verifyBtn: 'Подтвердить',
+    verifying: 'Проверка...',
+    resendCode: 'Отправить код снова',
+    resending: 'Отправка...',
+    codeSent: 'Новый код отправлен!',
+    verifySuccess: 'Email подтверждён! Теперь вы можете войти.',
+    emailNotVerified: 'Ваш email не подтверждён. Проверьте код подтверждения.',
   },
 }
 
@@ -119,6 +146,59 @@ function LangDropdown({ lang, setLang, inputBg, inputBorder, textMuted, card }: 
   )
 }
 
+function CodeInputBoxes({ value, onChange, inputBg, inputBorder, textBase }: {
+  value: string; onChange: (v: string) => void
+  inputBg: string; inputBorder: string; textBase: string
+}) {
+  const refs = useRef<(HTMLInputElement | null)[]>([])
+
+  const handleInput = useCallback((idx: number, char: string) => {
+    if (!/^\d?$/.test(char)) return
+    const arr = value.split('')
+    while (arr.length < 6) arr.push('')
+    arr[idx] = char
+    const next = arr.join('').slice(0, 6)
+    onChange(next)
+    if (char && idx < 5) refs.current[idx + 1]?.focus()
+  }, [value, onChange])
+
+  const handleKeyDown = useCallback((idx: number, e: React.KeyboardEvent) => {
+    if (e.key === 'Backspace' && !value[idx] && idx > 0) {
+      refs.current[idx - 1]?.focus()
+    }
+  }, [value])
+
+  const handlePaste = useCallback((e: React.ClipboardEvent) => {
+    e.preventDefault()
+    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6)
+    onChange(pasted)
+    refs.current[Math.min(pasted.length, 5)]?.focus()
+  }, [onChange])
+
+  return (
+    <div className="flex gap-2 justify-center" onPaste={handlePaste}>
+      {Array.from({ length: 6 }).map((_, i) => (
+        <input
+          key={i}
+          ref={el => { refs.current[i] = el }}
+          type="text"
+          inputMode="numeric"
+          maxLength={1}
+          value={value[i] ?? ''}
+          onChange={e => handleInput(i, e.target.value)}
+          onKeyDown={e => handleKeyDown(i, e)}
+          className="w-11 h-13 rounded-xl text-center text-xl font-bold outline-none transition-all border-2"
+          style={{
+            background: inputBg,
+            borderColor: value[i] ? '#0369a1' : inputBorder,
+            color: textBase,
+          }}
+        />
+      ))}
+    </div>
+  )
+}
+
 function LoginForm() {
   const { theme, toggle } = useTheme()
   const { lang, setLang } = useLang()
@@ -127,7 +207,7 @@ function LoginForm() {
   const searchParams = useSearchParams()
   const refCode = searchParams.get('ref') ?? ''
 
-  const [mode, setMode] = useState<'login' | 'signup' | 'forgot'>('login')
+  const [mode, setMode] = useState<'login' | 'signup' | 'forgot' | 'verify'>('login')
   const [email,    setEmail]    = useState('')
   const [password, setPassword] = useState('')
   const [name,     setName]     = useState('')
@@ -137,6 +217,9 @@ function LoginForm() {
   const [success,  setSuccess]  = useState(false)
   const [resetSent, setResetSent] = useState(false)
   const [showSignupHint, setShowSignupHint] = useState(false)
+  const [verifyCode, setVerifyCode] = useState('')
+  const [resending, setResending] = useState(false)
+  const [resendMsg, setResendMsg] = useState('')
   const router = useRouter()
 
   const isDark = theme === 'dark'
@@ -149,8 +232,8 @@ function LoginForm() {
   const textMuted = isDark ? '#64748b' : '#2c5f82'
   const labelColor = isDark ? '#94a3b8' : '#1a4a6b'
 
-  function switchMode(m: 'login' | 'signup' | 'forgot') {
-    setMode(m); setError(''); setSuccess(false); setResetSent(false); setShowSignupHint(false)
+  function switchMode(m: 'login' | 'signup' | 'forgot' | 'verify') {
+    setMode(m); setError(''); setSuccess(false); setResetSent(false); setShowSignupHint(false); setVerifyCode(''); setResendMsg('')
   }
 
   async function handleReset(e: React.FormEvent) {
@@ -175,6 +258,51 @@ function LoginForm() {
     }
   }
 
+  async function handleResendCode() {
+    setResending(true); setResendMsg(''); setError('')
+    try {
+      const res = await fetch('/api/auth/resend-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      })
+      if (res.ok) {
+        setResendMsg(t.codeSent)
+      } else {
+        const data = await res.json().catch(() => ({}))
+        setError(data.error || 'Error')
+      }
+    } catch {
+      setError('Network error')
+    } finally {
+      setResending(false)
+    }
+  }
+
+  async function handleVerify(e: React.FormEvent) {
+    e.preventDefault()
+    if (verifyCode.length !== 6) return
+    setLoading(true); setError('')
+    try {
+      const res = await fetch('/api/auth/verify-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, code: verifyCode }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setError(data.error || 'Error')
+        setLoading(false)
+      } else {
+        setSuccess(true)
+        setLoading(false)
+      }
+    } catch {
+      setError('Network error')
+      setLoading(false)
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true); setError('')
@@ -188,8 +316,13 @@ function LoginForm() {
         })
 
         if (!result?.ok) {
-          setError(t.invalidCreds)
-          setShowSignupHint(true)
+          if (result?.error?.includes('EMAIL_NOT_VERIFIED')) {
+            switchMode('verify')
+            handleResendCode()
+          } else {
+            setError(t.invalidCreds)
+            setShowSignupHint(true)
+          }
           setLoading(false)
         } else {
           router.push('/dashboard')
@@ -213,7 +346,7 @@ function LoginForm() {
               body: JSON.stringify({ refCode, newUserId: signupData.userId }),
             }).catch(() => {})
           }
-          setSuccess(true)
+          switchMode('verify')
           setLoading(false)
         }
       }
@@ -259,24 +392,68 @@ function LoginForm() {
         <div className="rounded-2xl p-8 shadow-2xl border" style={{ background: card, borderColor: border }}>
           <div className="absolute top-0 left-1/4 right-1/4 h-px bg-gradient-to-r from-transparent via-blue-400 to-transparent rounded-full" />
 
-          {mode !== 'forgot' && (
-          <div className="flex rounded-xl p-1 mb-6 gap-1" style={{ background: isDark ? '#252525' : '#c8e4f8' }}>
-            {(['login','signup'] as const).map(m => (
-              <button key={m} onClick={() => switchMode(m)}
-                className="flex-1 py-2.5 rounded-lg text-sm font-bold transition-all"
-                style={{
-                  background: mode === m ? '#ffffff' : isDark ? 'rgba(255,255,255,0.04)' : 'rgba(131,192,249,0.2)',
-                  color: mode === m ? '#0e2233' : isDark ? '#94a3b8' : '#2c5f82',
-                  boxShadow: mode === m ? '0 4px 12px rgba(255,255,255,0.25)' : undefined,
-                  border: mode === m ? 'none' : `1px solid ${isDark ? 'rgba(131,192,249,0.08)' : 'rgba(131,192,249,0.2)'}`,
-                }}>
-                {t.tabs[m]}
-              </button>
-            ))}
-          </div>
-          )}
+          {mode === 'verify' ? (
+            success ? (
+              <div className="text-center py-6 space-y-4">
+                <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-emerald-500/10 border border-emerald-500/20 mb-2">
+                  <CheckCircle className="w-7 h-7 text-emerald-400" />
+                </div>
+                <p className="font-semibold" style={{ color: textBase }}>{t.verifySuccess}</p>
+                <button onClick={() => switchMode('login')}
+                  className="text-sm underline underline-offset-2 transition-colors" style={{ color: '#0369a1' }}>
+                  {t.loginLink} →
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleVerify} className="space-y-5">
+                <div className="text-center mb-2">
+                  <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-blue-500/10 border border-blue-500/20 mb-3">
+                    <ShieldCheck className="w-6 h-6 text-blue-400" />
+                  </div>
+                  <h2 className="text-base font-bold mb-1" style={{ color: textBase }}>{t.verifyTitle}</h2>
+                  <p className="text-xs" style={{ color: textMuted }}>{t.verifyDesc}</p>
+                  <p className="text-sm font-semibold mt-1" style={{ color: textBase }}>{email}</p>
+                </div>
 
-          {mode === 'forgot' ? (
+                <CodeInputBoxes
+                  value={verifyCode}
+                  onChange={setVerifyCode}
+                  inputBg={inputBg}
+                  inputBorder={inputBorder}
+                  textBase={textBase}
+                />
+
+                {error && (
+                  <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 text-sm text-red-400">
+                    {error}
+                  </div>
+                )}
+
+                {resendMsg && (
+                  <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-4 py-3 text-sm text-emerald-400 text-center">
+                    {resendMsg}
+                  </div>
+                )}
+
+                <button type="submit" disabled={loading || verifyCode.length !== 6}
+                  className="w-full font-bold rounded-xl py-3 text-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{ background: '#ffffff', color: '#0e2233', border: '2px solid rgba(255,255,255,0.6)', boxShadow: '0 4px 16px rgba(255,255,255,0.15)' }}>
+                  {loading ? <><Loader2 className="w-4 h-4 animate-spin" />{t.verifying}</> : t.verifyBtn}
+                </button>
+
+                <div className="flex items-center justify-between text-xs pt-1">
+                  <button type="button" onClick={handleResendCode} disabled={resending}
+                    className="font-semibold transition-colors underline underline-offset-2" style={{ color: '#0369a1' }}>
+                    {resending ? t.resending : t.resendCode}
+                  </button>
+                  <button type="button" onClick={() => switchMode('login')}
+                    className="font-semibold transition-colors underline underline-offset-2" style={{ color: '#0369a1' }}>
+                    {t.backToLogin}
+                  </button>
+                </div>
+              </form>
+            )
+          ) : mode === 'forgot' ? (
             resetSent ? (
               <div className="text-center py-6 space-y-4">
                 <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-emerald-500/10 border border-emerald-500/20 mb-2">
@@ -335,88 +512,105 @@ function LoginForm() {
               </button>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {mode === 'signup' && (
+            <>
+              <div className="flex rounded-xl p-1 mb-6 gap-1" style={{ background: isDark ? '#252525' : '#c8e4f8' }}>
+                {(['login','signup'] as const).map(m => (
+                  <button key={m} onClick={() => switchMode(m)}
+                    className="flex-1 py-2.5 rounded-lg text-sm font-bold transition-all"
+                    style={{
+                      background: mode === m ? '#ffffff' : isDark ? 'rgba(255,255,255,0.04)' : 'rgba(131,192,249,0.2)',
+                      color: mode === m ? '#0e2233' : isDark ? '#94a3b8' : '#2c5f82',
+                      boxShadow: mode === m ? '0 4px 12px rgba(255,255,255,0.25)' : undefined,
+                      border: mode === m ? 'none' : `1px solid ${isDark ? 'rgba(131,192,249,0.08)' : 'rgba(131,192,249,0.2)'}`,
+                    }}>
+                    {t.tabs[m]}
+                  </button>
+                ))}
+              </div>
+
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {mode === 'signup' && (
+                  <div>
+                    <label className="block text-xs font-medium mb-2" style={{ color: labelColor }}>{t.name}</label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: textMuted }} />
+                      <input type="text" value={name} onChange={e => setName(e.target.value)} required
+                        placeholder={t.namePh}
+                        className={inputCls}
+                        style={{ background: inputBg, border: `1px solid ${inputBorder}`, color: textBase }}
+                      />
+                    </div>
+                  </div>
+                )}
+
                 <div>
-                  <label className="block text-xs font-medium mb-2" style={{ color: labelColor }}>{t.name}</label>
+                  <label className="block text-xs font-medium mb-2" style={{ color: labelColor }}>{t.email}</label>
                   <div className="relative">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: textMuted }} />
-                    <input type="text" value={name} onChange={e => setName(e.target.value)} required
-                      placeholder={t.namePh}
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: textMuted }} />
+                    <input type="email" value={email} onChange={e => setEmail(e.target.value)} required
+                      placeholder={t.emailPh}
                       className={inputCls}
                       style={{ background: inputBg, border: `1px solid ${inputBorder}`, color: textBase }}
                     />
                   </div>
                 </div>
-              )}
 
-              <div>
-                <label className="block text-xs font-medium mb-2" style={{ color: labelColor }}>{t.email}</label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: textMuted }} />
-                  <input type="email" value={email} onChange={e => setEmail(e.target.value)} required
-                    placeholder={t.emailPh}
-                    className={inputCls}
-                    style={{ background: inputBg, border: `1px solid ${inputBorder}`, color: textBase }}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-xs font-medium" style={{ color: labelColor }}>{t.password}</label>
-                  {mode === 'login' && (
-                    <button type="button" onClick={() => switchMode('forgot')}
-                      className="text-xs cursor-pointer transition-colors" style={{ color: '#0369a1' }}>{t.forgotPw}</button>
-                  )}
-                </div>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: textMuted }} />
-                  <input type={showPw ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} required
-                    minLength={6} placeholder="••••••••"
-                    className={`${inputCls} pr-10`}
-                    style={{ background: inputBg, border: `1px solid ${inputBorder}`, color: textBase }}
-                  />
-                  <button type="button" onClick={() => setShowPw(!showPw)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 transition-colors"
-                    style={{ color: textMuted }}>
-                    {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-                {mode === 'signup' && (
-                  <p className="text-xs mt-1.5" style={{ color: textMuted }}>Minimum 6 characters</p>
-                )}
-              </div>
-
-              {error && (
-                <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 text-sm text-red-400">
-                  {error}
-                  {showSignupHint && (
-                    <button type="button" onClick={() => switchMode('signup')}
-                      className="block mt-2 text-violet-400 hover:text-violet-300 font-semibold underline underline-offset-2 transition-colors">
-                      {t.goSignup} →
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-xs font-medium" style={{ color: labelColor }}>{t.password}</label>
+                    {mode === 'login' && (
+                      <button type="button" onClick={() => switchMode('forgot')}
+                        className="text-xs cursor-pointer transition-colors" style={{ color: '#0369a1' }}>{t.forgotPw}</button>
+                    )}
+                  </div>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: textMuted }} />
+                    <input type={showPw ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} required
+                      minLength={6} placeholder="••••••••"
+                      className={`${inputCls} pr-10`}
+                      style={{ background: inputBg, border: `1px solid ${inputBorder}`, color: textBase }}
+                    />
+                    <button type="button" onClick={() => setShowPw(!showPw)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 transition-colors"
+                      style={{ color: textMuted }}>
+                      {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
+                  </div>
+                  {mode === 'signup' && (
+                    <p className="text-xs mt-1.5" style={{ color: textMuted }}>Minimum 6 characters</p>
                   )}
                 </div>
-              )}
 
-              <button type="submit" disabled={loading}
-                className="w-full font-bold rounded-xl py-3 text-sm transition-all flex items-center justify-center gap-2 mt-1 disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{ background: '#ffffff', color: '#0e2233', border: '2px solid rgba(255,255,255,0.6)', boxShadow: '0 4px 16px rgba(255,255,255,0.15)' }}>
-                {loading
-                  ? <><Loader2 className="w-4 h-4 animate-spin" />{mode === 'login' ? t.loggingIn : t.signingUp}</>
-                  : mode === 'login' ? t.loginBtn : t.signupBtn
-                }
-              </button>
+                {error && (
+                  <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 text-sm text-red-400">
+                    {error}
+                    {showSignupHint && (
+                      <button type="button" onClick={() => switchMode('signup')}
+                        className="block mt-2 text-violet-400 hover:text-violet-300 font-semibold underline underline-offset-2 transition-colors">
+                        {t.goSignup} →
+                      </button>
+                    )}
+                  </div>
+                )}
 
-              <p className="text-center text-xs pt-1" style={{ color: textMuted }}>
-                {mode === 'login' ? t.noAccount : t.hasAccount}{' '}
-                <button type="button" onClick={() => switchMode(mode === 'login' ? 'signup' : 'login')}
-                  className="font-semibold transition-colors underline underline-offset-2" style={{ color: '#0369a1' }}>
-                  {mode === 'login' ? t.signupLink : t.loginLink}
+                <button type="submit" disabled={loading}
+                  className="w-full font-bold rounded-xl py-3 text-sm transition-all flex items-center justify-center gap-2 mt-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{ background: '#ffffff', color: '#0e2233', border: '2px solid rgba(255,255,255,0.6)', boxShadow: '0 4px 16px rgba(255,255,255,0.15)' }}>
+                  {loading
+                    ? <><Loader2 className="w-4 h-4 animate-spin" />{mode === 'login' ? t.loggingIn : t.signingUp}</>
+                    : mode === 'login' ? t.loginBtn : t.signupBtn
+                  }
                 </button>
-              </p>
-            </form>
+
+                <p className="text-center text-xs pt-1" style={{ color: textMuted }}>
+                  {mode === 'login' ? t.noAccount : t.hasAccount}{' '}
+                  <button type="button" onClick={() => switchMode(mode === 'login' ? 'signup' : 'login')}
+                    className="font-semibold transition-colors underline underline-offset-2" style={{ color: '#0369a1' }}>
+                    {mode === 'login' ? t.signupLink : t.loginLink}
+                  </button>
+                </p>
+              </form>
+            </>
           )}
         </div>
 
