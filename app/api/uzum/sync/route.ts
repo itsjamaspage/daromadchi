@@ -1,31 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { eq, and } from 'drizzle-orm'
 import { syncFromUzum } from '@/lib/uzum/sync'
-import { createClient } from '@/lib/supabase/server'
+import { getCurrentUser } from '@/lib/auth/session'
+import { db, shops } from '@/lib/db'
 import { decrypt } from '@/lib/crypto'
 import { logger } from '@/lib/logger'
 import { withErrorHandler } from '@/lib/api-handler'
 
 function fromDaysToDate(fromDays: unknown): Date | undefined {
   if (typeof fromDays !== 'number') return undefined
-  if (fromDays === 0) return new Date('2022-10-01') // Uzum launched Oct 2022
+  if (fromDays === 0) return new Date('2022-10-01')
   const d = new Date(); d.setDate(d.getDate() - fromDays); return d
 }
 
 export const POST = withErrorHandler(async (req: NextRequest) => {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
+  const user = await getCurrentUser()
   if (!user) {
     return NextResponse.json({ ok: false, error: 'Avtorizatsiya talab etiladi' }, { status: 401 })
   }
 
-  const { data: shop } = await supabase
-    .from('shops')
-    .select('id, api_key_encrypted')
-    .eq('user_id', user.id)
-    .eq('marketplace', 'uzum')
-    .eq('is_active', true)
-    .single()
+  const [shop] = await db.select({
+    id: shops.id,
+    api_key_encrypted: shops.api_key_encrypted,
+  }).from(shops)
+    .where(and(eq(shops.user_id, user.id), eq(shops.marketplace, 'uzum'), eq(shops.is_active, true)))
 
   if (!shop?.api_key_encrypted) {
     return NextResponse.json(
@@ -48,19 +46,14 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   }
 })
 
-// GET /api/uzum/sync — lightweight token test (no data written)
 export const GET = withErrorHandler(async () => {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getCurrentUser()
   if (!user) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 })
 
-  const { data: shop } = await supabase
-    .from('shops')
-    .select('api_key_encrypted')
-    .eq('user_id', user.id)
-    .eq('marketplace', 'uzum')
-    .eq('is_active', true)
-    .single()
+  const [shop] = await db.select({
+    api_key_encrypted: shops.api_key_encrypted,
+  }).from(shops)
+    .where(and(eq(shops.user_id, user.id), eq(shops.marketplace, 'uzum'), eq(shops.is_active, true)))
 
   if (!shop?.api_key_encrypted) {
     return NextResponse.json({ ok: false, error: 'Token topilmadi' }, { status: 400 })

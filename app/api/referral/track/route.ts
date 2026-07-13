@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { eq } from 'drizzle-orm'
-import { createClient } from '@/lib/supabase/server'
+import { getCurrentUser } from '@/lib/auth/session'
 import { db, userSettings } from '@/lib/db'
 import { withErrorHandler } from '@/lib/api-handler'
 
 export const POST = withErrorHandler(async (req: NextRequest) => {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getCurrentUser()
   if (!user) return NextResponse.json({ ok: false }, { status: 401 })
 
   try {

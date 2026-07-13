@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { createClient } from '@/lib/supabase/server'
+import { getCurrentUser } from '@/lib/auth/session'
 import { resyncDays } from '@/lib/db/sync-state'
 import { withErrorHandler } from '@/lib/api-handler'
 import type { MarketplaceType } from '@/lib/types'
@@ -11,8 +11,7 @@ const SyncDaysSchema = z.object({
 })
 
 export const POST = withErrorHandler(async (req: NextRequest) => {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getCurrentUser()
   if (!user) return NextResponse.json({ ok: false }, { status: 401 })
 
   const raw = await req.json().catch(() => null)
