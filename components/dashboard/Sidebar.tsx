@@ -49,8 +49,8 @@ export default function Sidebar({ onClose }: SidebarProps) {
   const sideText   = isDark ? 'var(--text-muted)'               : 'rgba(14,34,51,0.75)'
   const sideTitle  = isDark ? 'var(--text-base)'                : '#0e1b2e'
   const activeCol  = isDark ? 'var(--c1)'                       : '#0e1b2e'
-  const activeBg   = isDark ? 'rgba(131,192,249,0.15)'          : 'rgba(14,27,46,0.1)'
-  const activeBdr  = isDark ? '1px solid rgba(131,192,249,0.3)' : '1px solid rgba(14,27,46,0.18)'
+  const activeBg   = isDark ? 'rgba(255,255,255,0.10)'          : 'rgba(14,27,46,0.1)'
+  const activeBdr  = isDark ? '1px solid rgba(255,255,255,0.15)' : '1px solid rgba(14,27,46,0.18)'
 
   function handleNavClick() {
     onClose?.()

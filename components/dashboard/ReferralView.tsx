@@ -17,7 +17,7 @@ function statusCls(s: ReferralEntry['status']) {
   return s === 'active'
     ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
     : s === 'paid'
-    ? 'bg-[rgba(131,192,249,0.12)] text-[#83c0f9] border-[rgba(131,192,249,0.25)]'
+    ? 'bg-[var(--bg-card2)] text-[var(--c1)] border-[var(--border)]'
     : 'bg-[var(--bg-card2)] text-[var(--text-muted)] border-[var(--border)]'
 }
 
@@ -44,8 +44,8 @@ export default function ReferralView({ stats, entries }: Props) {
   return (
     <div className="space-y-6">
       {/* How it works */}
-      <div className="bg-gradient-to-br from-violet-600/10 to-violet-500/5 border border-[rgba(131,192,249,0.25)] rounded-2xl p-6">
-        <p className="text-sm font-semibold text-[#83c0f9] mb-4">{t.howTitle}</p>
+      <div className="bg-gradient-to-br from-violet-600/10 to-violet-500/5 border border-[var(--border)] rounded-2xl p-6">
+        <p className="text-sm font-semibold text-[var(--c1)] mb-4">{t.howTitle}</p>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {[
             { icon: Copy,  step: '1', text: t.step1 },
@@ -54,8 +54,8 @@ export default function ReferralView({ stats, entries }: Props) {
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           ].map(({ icon: _Icon, step, text }) => (
             <div key={step} className="flex items-start gap-3">
-              <div className="w-7 h-7 rounded-full bg-[#83c0f9]/30 border border-[rgba(131,192,249,0.4)] flex items-center justify-center flex-shrink-0">
-                <span className="text-xs font-bold text-[#83c0f9]">{step}</span>
+              <div className="w-7 h-7 rounded-full bg-[var(--c1)]/30 border border-[var(--border)] flex items-center justify-center flex-shrink-0">
+                <span className="text-xs font-bold text-[var(--c1)]">{step}</span>
               </div>
               <p className="text-sm text-[var(--text-dim)]">{text}</p>
             </div>
@@ -67,7 +67,7 @@ export default function ReferralView({ stats, entries }: Props) {
       <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl p-6 space-y-4">
         <p className="text-xs font-semibold text-[var(--text-muted)]">Sizning referal havolangiz</p>
         <div className="flex flex-col sm:flex-row gap-3">
-          <div className="flex-1 px-4 py-3 bg-[var(--bg-input)] border border-[var(--border)] rounded-xl font-mono text-sm text-[#83c0f9] truncate">
+          <div className="flex-1 px-4 py-3 bg-[var(--bg-input)] border border-[var(--border)] rounded-xl font-mono text-sm text-[var(--c1)] truncate">
             {referralUrl}
           </div>
           <button onClick={copyLink}
@@ -80,7 +80,7 @@ export default function ReferralView({ stats, entries }: Props) {
           </button>
         </div>
         <div className="flex items-center gap-2 text-xs text-[var(--text-muted)]">
-          <span className="px-2 py-1 bg-[var(--bg-card2)] rounded-lg font-mono text-[#83c0f9] font-semibold">{stats.code}</span>
+          <span className="px-2 py-1 bg-[var(--bg-card2)] rounded-lg font-mono text-[var(--c1)] font-semibold">{stats.code}</span>
           <span>— sizning kodingiz</span>
         </div>
       </div>
@@ -91,7 +91,7 @@ export default function ReferralView({ stats, entries }: Props) {
           { label: 'Jami taklif',    value: String(stats.totalReferred),  icon: Users,      color: 'text-[var(--text-base)]'       },
           { label: 'Faol',           value: String(stats.activeReferred),  icon: TrendingUp, color: 'text-emerald-400' },
           { label: 'Kutilmoqda',     value: String(stats.pendingReferred), icon: Clock,      color: 'text-amber-400'   },
-          { label: 'Jami mukofot',   value: fs(stats.totalReward),         icon: Gift,       color: 'text-[#83c0f9]'  },
+          { label: 'Jami mukofot',   value: fs(stats.totalReward),         icon: Gift,       color: 'text-[var(--c1)]'  },
         ].map(({ label, value, icon: Icon, color }) => (
           <div key={label} className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl px-4 py-4">
             <div className="flex items-center justify-between mb-2">
@@ -149,8 +149,8 @@ export default function ReferralView({ stats, entries }: Props) {
       )}
 
       {entries.length === 0 && (
-        <div className="bg-[var(--bg-card2)] border border-dashed border-[rgba(131,192,249,0.3)] rounded-2xl p-10 text-center">
-          <Gift className="w-8 h-8 text-[#83c0f9]/50 mx-auto mb-3" />
+        <div className="bg-[var(--bg-card2)] border border-dashed border-[var(--border)] rounded-2xl p-10 text-center">
+          <Gift className="w-8 h-8 text-[var(--c1)]/50 mx-auto mb-3" />
           <p className="text-[var(--text-base)] font-semibold mb-1">Hali hech kim taklif qilinmagan</p>
           <p className="text-[var(--text-muted)] text-sm">Yuqoridagi havolani ulashing va mukofot oling</p>
         </div>

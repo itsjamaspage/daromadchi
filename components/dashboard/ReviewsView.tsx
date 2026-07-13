@@ -116,13 +116,13 @@ export default function ReviewsView({ reviews }: Props) {
           {TABS.map(({ key, label, count }) => (
             <button key={key} onClick={() => setFilter(key)}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
-                filter === key ? 'bg-[rgba(131,192,249,0.15)] border border-[rgba(131,192,249,0.3)]' : 'text-[var(--text-muted)] hover:text-[var(--text-dim)]'
+                filter === key ? 'bg-[var(--bg-card2)] border border-[var(--border)]' : 'text-[var(--text-muted)] hover:text-[var(--text-dim)]'
               }`}
               style={filter === key ? { color: 'var(--c1)' } : {}}>
               {label}
               {count !== undefined && (
                 <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
-                  filter === key ? 'bg-[#83c0f9]/20' : 'bg-white/[0.06] text-[var(--text-muted)]'
+                  filter === key ? 'bg-[var(--c1)]/20' : 'bg-white/[0.06] text-[var(--text-muted)]'
                 }`}
                 style={filter === key ? { color: 'var(--c1)' } : {}}>{count}</span>
               )}
@@ -133,7 +133,7 @@ export default function ReviewsView({ reviews }: Props) {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
           <input value={search} onChange={e => setSearch(e.target.value)}
             placeholder={t.searchPlaceholder}
-            className="w-full pl-9 pr-3 py-2 bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl text-sm text-[var(--text-base)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[rgba(131,192,249,0.5)]" />
+            className="w-full pl-9 pr-3 py-2 bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl text-sm text-[var(--text-base)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--border2)]" />
         </div>
         <div className="sm:ml-auto flex-shrink-0">
           <ExportButton data={exportData} filename="izohlar" targetRef={printRef} />
@@ -194,7 +194,7 @@ export default function ReviewsView({ reviews }: Props) {
                 <div className="flex items-center gap-2 flex-shrink-0">
                   {!isReplied && (
                     <button onClick={() => setReplyOpen(isReplyOpen ? null : review.id)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-[#83c0f9]/10 hover:bg-[rgba(131,192,249,0.15)] text-[#83c0f9] text-xs font-semibold rounded-lg border border-[rgba(131,192,249,0.25)] transition-colors">
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--c1)]/10 hover:bg-[var(--bg-card2)] text-[var(--c1)] text-xs font-semibold rounded-lg border border-[var(--border)] transition-colors">
                       <MessageSquare className="w-3 h-3" /> {t.replyBtn}
                     </button>
                   )}
@@ -211,7 +211,7 @@ export default function ReviewsView({ reviews }: Props) {
               {isExpanded && review.replyText && (
                 <div className="px-4 pb-3 border-t border-white/[0.04] pt-3">
                   <p className="text-xs text-[var(--text-muted)] mb-1.5 font-semibold">{t.yourReply}</p>
-                  <p className="text-sm text-[var(--text-dim)] bg-[#83c0f9]/5 border border-violet-500/10 rounded-xl px-3 py-2">
+                  <p className="text-sm text-[var(--text-dim)] bg-[var(--c1)]/5 border border-violet-500/10 rounded-xl px-3 py-2">
                     {review.replyText}
                   </p>
                 </div>
@@ -226,11 +226,11 @@ export default function ReviewsView({ reviews }: Props) {
                     value={replyDraft[review.id] || ''}
                     onChange={e => setReplyDraft(prev => ({ ...prev, [review.id]: e.target.value }))}
                     placeholder={t.replyPlaceholder}
-                    className="w-full px-3 py-2 bg-[var(--bg-base)] border border-[var(--border2)] rounded-xl text-sm text-[var(--text-base)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[rgba(131,192,249,0.5)] resize-none"
+                    className="w-full px-3 py-2 bg-[var(--bg-base)] border border-[var(--border2)] rounded-xl text-sm text-[var(--text-base)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--border2)] resize-none"
                   />
                   <div className="flex gap-2">
                     <button onClick={() => submitReply(review.id)}
-                      className="px-4 py-2 bg-[#83c0f9] hover:bg-[#6aabf0] text-[var(--text-base)] text-xs font-semibold rounded-xl transition-colors">
+                      className="px-4 py-2 bg-[var(--c1)] hover:bg-[#6aabf0] text-[var(--text-base)] text-xs font-semibold rounded-xl transition-colors">
                       {t.replySend}
                     </button>
                     <button onClick={() => setReplyOpen(null)}

@@ -55,7 +55,7 @@ export default function PeriodSelector({
         onClick={() => setShowPicker(v => !v)}
         className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
           hasCustom
-            ? 'bg-[rgba(131,192,249,0.15)] text-[var(--c1)] border-[rgba(131,192,249,0.3)]'
+            ? 'bg-[var(--bg-card2)] text-[var(--c1)] border-[var(--border)]'
             : 'text-[var(--text-muted)] hover:text-[var(--text-dim)] border-[var(--border)]'
         }`}
         style={{ background: hasCustom ? undefined : 'var(--bg-card2)' }}

@@ -46,7 +46,7 @@ export default function SearchPhrasesView({ phrases }: Props) {
 
   function SortIcon({ col }: { col: SortKey }) {
     if (sortKey !== col) return <ChevronUp className="w-3 h-3 opacity-20" />
-    return sortDir === 'asc' ? <ChevronUp className="w-3 h-3 text-[#83c0f9]" /> : <ChevronDown className="w-3 h-3 text-[#83c0f9]" />
+    return sortDir === 'asc' ? <ChevronUp className="w-3 h-3 text-[var(--c1)]" /> : <ChevronDown className="w-3 h-3 text-[var(--c1)]" />
   }
 
   const exportData = filtered.map(p => ({
@@ -67,10 +67,10 @@ export default function SearchPhrasesView({ phrases }: Props) {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
           <input value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Ibora qidirish..."
-            className="w-full pl-9 pr-3 py-2 bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl text-sm text-[var(--text-base)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[rgba(131,192,249,0.5)]" />
+            className="w-full pl-9 pr-3 py-2 bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl text-sm text-[var(--text-base)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--border2)]" />
         </div>
         <select value={productFilter} onChange={e => setProductFilter(e.target.value)}
-          className="w-full sm:w-auto px-3 py-2 bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl text-sm text-[var(--text-base)] focus:outline-none focus:border-[rgba(131,192,249,0.5)]">
+          className="w-full sm:w-auto px-3 py-2 bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl text-sm text-[var(--text-base)] focus:outline-none focus:border-[var(--border2)]">
           <option value="all">Barcha mahsulotlar</option>
           {products.slice(1).map(p => <option key={p} value={p}>{p}</option>)}
         </select>

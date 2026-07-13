@@ -36,7 +36,7 @@ export default function DateFilter({ current }: { current: string }) {
           className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
             current !== opt.value ? 'text-[var(--text-muted)] hover:text-[var(--text-base)]' : ''
           }`}
-          style={current === opt.value ? { background: '#83c0f9', color: '#131321' } : {}}
+          style={current === opt.value ? { background: 'var(--c1)', color: '#131321' } : {}}
         >
           {opt.label}
         </button>

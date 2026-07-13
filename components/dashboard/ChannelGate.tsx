@@ -78,7 +78,7 @@ export default function ChannelGate({ children }: { children: React.ReactNode })
             href={CHANNEL_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="block w-full py-3 rounded-xl bg-[#83c0f9] hover:bg-[#6aabf0] text-white text-sm font-semibold text-center transition-colors"
+            className="block w-full py-3 rounded-xl bg-[var(--c1)] hover:bg-[#6aabf0] text-white text-sm font-semibold text-center transition-colors"
           >
             {t.joinBtn}
           </a>
