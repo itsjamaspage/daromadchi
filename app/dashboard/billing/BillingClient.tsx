@@ -124,7 +124,7 @@ function InvoiceModal({ onClose, d }: { onClose: () => void; d: T }) {
       <div className="relative w-full max-w-sm bg-[var(--bg-card2)] border border-[var(--border2)] rounded-2xl shadow-2xl shadow-black/60 overflow-hidden">
         <div className="px-6 py-4 border-b border-[var(--border)] flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <FileText className="w-4 h-4 text-[#83c0f9]" />
+            <FileText className="w-4 h-4 text-[var(--c1)]" />
             <h2 className="text-[var(--text-base)] font-semibold text-sm">{d.billingInvoiceTitle}</h2>
           </div>
           <button onClick={onClose} className="text-[var(--text-muted)] hover:text-[var(--text-base)] transition-colors p-1">
@@ -139,7 +139,7 @@ function InvoiceModal({ onClose, d }: { onClose: () => void; d: T }) {
               value={company}
               onChange={e => setCompany(e.target.value)}
               required
-              className="w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[rgba(131,192,249,0.6)] transition-all"
+              className="w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--border2)] transition-all"
             />
           </div>
           <div>
@@ -149,7 +149,7 @@ function InvoiceModal({ onClose, d }: { onClose: () => void; d: T }) {
               value={inn}
               onChange={e => setInn(e.target.value)}
               required
-              className="w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[rgba(131,192,249,0.6)] transition-all"
+              className="w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--border2)] transition-all"
             />
           </div>
           {sent ? (
@@ -254,7 +254,7 @@ export default function BillingClient({ billing }: { billing: BillingInfo }) {
       {/* Payment Methods (request invoice only — no card storage) */}
       <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
         <div className="px-5 py-4 border-b border-[var(--border)] flex items-center gap-2">
-          <CreditCard className="w-4 h-4 text-[#83c0f9]" />
+          <CreditCard className="w-4 h-4 text-[var(--c1)]" />
           <h2 className="text-[var(--text-base)] font-semibold text-sm">{d.billingPaymentMethods}</h2>
         </div>
         <div className="p-5">
@@ -263,7 +263,7 @@ export default function BillingClient({ billing }: { billing: BillingInfo }) {
               href="/pricing"
               className="flex items-center gap-2 text-sm font-medium text-[var(--text-dim)] hover:text-[var(--text-base)] border border-[var(--border2)] px-4 py-2 rounded-xl transition-all bg-[var(--bg-card2)]"
             >
-              <span className="text-[#83c0f9] font-bold text-base leading-none">+</span>
+              <span className="text-[var(--c1)] font-bold text-base leading-none">+</span>
               {d.billingAddPayment}
             </a>
             <button
@@ -280,7 +280,7 @@ export default function BillingClient({ billing }: { billing: BillingInfo }) {
       {/* Payment History */}
       <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
         <div className="px-5 py-4 border-b border-[var(--border)] flex items-center gap-2">
-          <FileText className="w-4 h-4 text-[#83c0f9]" />
+          <FileText className="w-4 h-4 text-[var(--c1)]" />
           <h2 className="text-[var(--text-base)] font-semibold text-sm">{d.billingPaymentHistory}</h2>
         </div>
         {billing.payments.length === 0 ? (

@@ -45,10 +45,10 @@ export default function MarketplaceTabs({ current }: { current: MarketplaceType 
               active
                 ? color === 'amber'
                   ? isDark ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-amber-500/15 text-amber-700 border border-amber-500/30'
-                  : 'border border-[rgba(131,192,249,0.3)] text-[var(--c1)]'
+                  : 'border border-[var(--border)] text-[var(--c1)]'
                 : 'text-[var(--text-muted)] hover:text-[var(--text-dim)] border border-transparent'
             }`}
-            style={active && color !== 'amber' ? { background: 'rgba(131,192,249,0.15)' } : {}}
+            style={active && color !== 'amber' ? { background: 'var(--bg-card2)' } : {}}
           >
             {label}
           </Link>

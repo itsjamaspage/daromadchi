@@ -119,7 +119,7 @@ export default function DashboardClient({ slices, days, period, from, to, initia
         <div>
           <div className="flex items-center gap-3 mb-0.5">
             <h1 className="text-2xl font-bold text-[var(--text-base)]">{d.title}</h1>
-            <span className="text-[10px] font-semibold px-2 py-1 rounded-full" style={{ background: 'rgba(131,192,249,0.15)', border: '1px solid rgba(131,192,249,0.3)', color: 'var(--c1)' }}>
+            <span className="text-[10px] font-semibold px-2 py-1 rounded-full" style={{ background: 'var(--bg-card2)', border: '1px solid var(--border)', color: 'var(--c1)' }}>
               {d.badge}
             </span>
           </div>
@@ -133,7 +133,7 @@ export default function DashboardClient({ slices, days, period, from, to, initia
             onClick={() => setShowCustomize(v => !v)}
             className={`hidden sm:flex items-center gap-2 text-xs font-medium px-3 py-2 rounded-xl border transition-all ${
               showCustomize
-                ? 'border border-[rgba(131,192,249,0.3)] text-[var(--c1)]'
+                ? 'border border-[var(--border)] text-[var(--c1)]'
                 : 'bg-[var(--bg-input)] border-[var(--border2)] text-[var(--text-muted)] hover:text-[var(--text-base)]'
             }`}
           >
@@ -160,10 +160,10 @@ export default function DashboardClient({ slices, days, period, from, to, initia
                 active
                   ? color === 'amber'
                     ? isDark ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-amber-500/15 text-amber-700 border border-amber-500/30'
-                    : 'border border-[rgba(131,192,249,0.3)] text-[var(--c1)]'
+                    : 'border border-[var(--border)] text-[var(--c1)]'
                   : 'text-[var(--text-muted)] hover:text-[var(--text-dim)]'
               }`}
-              style={active && color !== 'amber' ? { background: 'rgba(131,192,249,0.15)' } : {}}
+              style={active && color !== 'amber' ? { background: 'var(--bg-card2)' } : {}}
             >
               {label}
             </button>
@@ -189,12 +189,12 @@ export default function DashboardClient({ slices, days, period, from, to, initia
                   onClick={() => toggleWidget(id)}
                   className={`flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-lg border transition-all ${
                     visible
-                      ? 'border-[rgba(131,192,249,0.3)] text-[var(--c1)]'
+                      ? 'border-[var(--border)] text-[var(--c1)]'
                       : 'bg-[var(--bg-card2)] border-[var(--border2)] text-[var(--text-muted)]'
                   }`}
-                  style={visible ? { background: 'rgba(131,192,249,0.12)' } : {}}
+                  style={visible ? { background: 'var(--bg-card2)' } : {}}
                 >
-                  <span className="w-2 h-2 rounded-full" style={{ background: visible ? '#83c0f9' : '#475569' }} />
+                  <span className="w-2 h-2 rounded-full" style={{ background: visible ? 'var(--c1)' : '#475569' }} />
                   {label}
                 </button>
               )
@@ -244,10 +244,10 @@ export default function DashboardClient({ slices, days, period, from, to, initia
           const mpName = ({ uzum: 'Uzum Market', yandex_market: 'Yandex Market', wildberries: 'Wildberries' } as Record<string, string>)[marketplace]
           const mpLink = displayLinks[0]
           return (
-            <div className="bg-[var(--bg-card2)] border border-dashed rounded-2xl p-10" style={{ borderColor: 'rgba(131,192,249,0.3)' }}>
+            <div className="bg-[var(--bg-card2)] border border-dashed rounded-2xl p-10" style={{  borderColor: 'var(--border)' }}>
               <div className="max-w-md mx-auto text-center">
-                <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: 'rgba(131,192,249,0.12)', border: '1px solid rgba(131,192,249,0.25)' }}>
-                  <Settings className="w-7 h-7" style={{ color: '#83c0f9' }} />
+                <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: 'var(--bg-card2)', border: '1px solid var(--border)' }}>
+                  <Settings className="w-7 h-7" style={{ color: 'var(--c1)' }} />
                 </div>
                 <h2 className="text-[var(--text-base)] font-bold text-lg mb-2">{d.mpNotConnected.replace('{mp}', mpName)}</h2>
                 <p className="text-[var(--text-muted)] text-sm mb-6">{d.mpConnectDesc}</p>
@@ -259,14 +259,14 @@ export default function DashboardClient({ slices, days, period, from, to, initia
                     [Package,     d.featureStock],
                   ] as [React.ElementType, string][]).map(([Icon, label]) => (
                     <div key={label} className="flex items-center gap-2 text-sm" style={{ color: 'var(--text-muted)' }}>
-                      <Icon className="w-4 h-4 flex-shrink-0" style={{ color: '#83c0f9' }} />
+                      <Icon className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--c1)' }} />
                       {label}
                     </div>
                   ))}
                 </div>
                 <div className="flex items-center justify-center gap-3 flex-wrap">
                   <Link href="/dashboard/settings"
-                    className="inline-flex items-center gap-2 btn-primary text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors" style={{ boxShadow: '0 4px 14px rgba(131,192,249,0.2)' }}>
+                    className="inline-flex items-center gap-2 btn-primary text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors" style={{ boxShadow: 'none' }}>
                     <Settings className="w-4 h-4" /> {d.connectMp.replace('{mp}', mpName)}
                   </Link>
                   {mpLink && (
@@ -282,15 +282,15 @@ export default function DashboardClient({ slices, days, period, from, to, initia
         }
 
         return (
-          <div className="bg-[var(--bg-card2)] border border-dashed rounded-2xl p-10 text-center" style={{ borderColor: 'rgba(131,192,249,0.3)' }}>
-            <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: 'rgba(131,192,249,0.12)', border: '1px solid rgba(131,192,249,0.25)' }}>
-              <RefreshCw className="w-7 h-7" style={{ color: '#83c0f9' }} />
+          <div className="bg-[var(--bg-card2)] border border-dashed rounded-2xl p-10 text-center" style={{  borderColor: 'var(--border)' }}>
+            <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: 'var(--bg-card2)', border: '1px solid var(--border)' }}>
+              <RefreshCw className="w-7 h-7" style={{ color: 'var(--c1)' }} />
             </div>
             <h2 className="text-[var(--text-base)] font-bold text-lg mb-2">{d.noData}</h2>
             <p className="text-[var(--text-muted)] text-sm mb-6 max-w-sm mx-auto">{d.noDataDesc}</p>
             <div className="flex items-center justify-center gap-3 flex-wrap">
               <Link href="/dashboard/settings"
-                className="inline-flex items-center gap-2 btn-primary text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors shadow-lg" style={{ boxShadow: '0 4px 14px rgba(131,192,249,0.2)' }}>
+                className="inline-flex items-center gap-2 btn-primary text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors shadow-lg" style={{ boxShadow: 'none' }}>
                 <Settings className="w-4 h-4" /> {d.goSettings}
               </Link>
               {displayLinks.map(link => (
@@ -337,8 +337,8 @@ export default function DashboardClient({ slices, days, period, from, to, initia
                 <p className="text-xs text-[var(--text-muted)] py-4 text-center">{d.noProducts ?? 'No orders found'}</p>
               ) : recentOrders.map(order => (
                 <div key={order.id} className="flex items-start gap-3 pb-3 border-b border-[var(--border)] last:border-0 last:pb-0">
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5" style={{ background: 'rgba(131,192,249,0.12)' }}>
-                    <ShoppingBag className="w-4 h-4" style={{ color: '#83c0f9' }} />
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5" style={{ background: 'var(--bg-card2)' }}>
+                    <ShoppingBag className="w-4 h-4" style={{ color: 'var(--c1)' }} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-[var(--text-base)] font-medium truncate font-mono">{order.order_id_external ?? order.id.slice(0, 8)}</p>

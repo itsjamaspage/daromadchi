@@ -26,9 +26,9 @@ const MP_CONFIG: Record<string, { label: string; color: string; letter: string; 
 }
 
 const COLOR_CLASSES: Record<string, { bg: string; border: string; text: string; badge: string }> = {
-  violet: { bg: 'bg-[rgba(131,192,249,0.12)]', border: 'border-[rgba(131,192,249,0.25)]', text: 'text-[#83c0f9]', badge: 'bg-[rgba(131,192,249,0.12)] border-[rgba(131,192,249,0.25)] text-[var(--c1)]' },
+  violet: { bg: 'bg-[var(--bg-card2)]', border: 'border-[var(--border)]', text: 'text-[var(--c1)]', badge: 'bg-[var(--bg-card2)] border-[var(--border)] text-[var(--c1)]' },
   amber:  { bg: 'bg-amber-500/15',              border: 'border-amber-500/25',             text: 'text-amber-400',  badge: 'bg-amber-500/10 border-amber-500/25 text-amber-400'   },
-  purple: { bg: 'bg-[rgba(131,192,249,0.12)]', border: 'border-[rgba(131,192,249,0.25)]', text: 'text-[#83c0f9]', badge: 'bg-[rgba(131,192,249,0.12)] border-[rgba(131,192,249,0.25)] text-[var(--c1)]' },
+  purple: { bg: 'bg-[var(--bg-card2)]', border: 'border-[var(--border)]', text: 'text-[var(--c1)]', badge: 'bg-[var(--bg-card2)] border-[var(--border)] text-[var(--c1)]' },
 }
 
 function ShopCard({ shop }: { shop: Shop }) {
@@ -208,7 +208,7 @@ export default function SyncStatusClient({ shops, uzumDays, yandexDays, wbDays, 
 
   if (shops.length === 0) {
     return (
-      <div className="bg-[var(--bg-card2)] border border-dashed rounded-2xl p-10 text-center" style={{ borderColor: 'rgba(131,192,249,0.3)' }}>
+      <div className="bg-[var(--bg-card2)] border border-dashed rounded-2xl p-10 text-center" style={{  borderColor: 'var(--border)' }}>
         <p className="text-[var(--text-base)] font-bold mb-2">{t.noShops}</p>
         <p className="text-[var(--text-muted)] text-sm mb-4">{t.noShopsDesc}</p>
         <Link href="/dashboard/settings"
@@ -225,7 +225,7 @@ export default function SyncStatusClient({ shops, uzumDays, yandexDays, wbDays, 
         <button
           onClick={handleSyncAll}
           disabled={syncingAll}
-          className="flex items-center gap-2 disabled:opacity-50 text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors" style={{ background: '#83c0f9', color: '#131321' }}
+          className="flex items-center gap-2 disabled:opacity-50 text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors" style={{ background: 'var(--c1)', color: 'var(--bg-base)' }}
         >
           {syncingAll ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
           {syncingAll ? t.syncing : t.syncAll}

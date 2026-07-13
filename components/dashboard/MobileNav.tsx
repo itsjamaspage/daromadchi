@@ -58,7 +58,7 @@ export default function MobileNav() {
               onClick={() => setLang(value)}
               className="text-[10px] font-semibold px-2 py-1 rounded-lg transition-all"
               style={{
-                background: lang === value ? 'rgba(131,192,249,0.15)' : 'transparent',
+                background: lang === value ? 'var(--bg-card2)' : 'transparent',
                 color: lang === value ? 'var(--c1)' : 'var(--text-muted)',
                 border: lang === value ? '1px solid var(--border2)' : '1px solid transparent',
               }}

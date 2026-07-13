@@ -108,8 +108,8 @@ function UzumCard({ shop }: { shop: Shop | null; userId: string }) {
     <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
       {/* Header */}
       <div className="px-6 py-4 border-b border-[var(--border)] flex items-center gap-3">
-        <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(131,192,249,0.15)', border: '1px solid rgba(131,192,249,0.25)' }}>
-          <span className="text-sm font-bold" style={{ color: '#83c0f9' }}>U</span>
+        <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'var(--bg-card2)', border: '1px solid var(--border)' }}>
+          <span className="text-sm font-bold" style={{ color: 'var(--c1)' }}>U</span>
         </div>
         <div>
           <p className="text-[var(--text-base)] font-semibold text-sm">Uzum Market</p>
@@ -131,7 +131,7 @@ function UzumCard({ shop }: { shop: Shop | null; userId: string }) {
             value={apiKey}
             onChange={e => setApiKey(e.target.value)}
             placeholder={hasKey ? '••••••••  (yangilash uchun kiriting)' : 'Token kiriting…'}
-            className="w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[rgba(131,192,249,0.6)] transition-all font-mono"
+            className="w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--border2)] transition-all font-mono"
           />
           <p className="text-[var(--text-muted)] text-xs mt-1.5 flex items-center gap-1">
             <a href="https://seller.uzum.uz" target="_blank" rel="noopener noreferrer" className="flex items-center gap-0.5" style={{ color: 'var(--c1)' }}>
@@ -142,7 +142,7 @@ function UzumCard({ shop }: { shop: Shop | null; userId: string }) {
         </div>
         <StatusMsg msg={saveMsg} />
         <button type="submit" disabled={saving}
-          className="flex items-center gap-2 disabled:opacity-50 text-sm font-medium px-4 py-2 rounded-xl transition-colors" style={{ background: '#83c0f9', color: '#131321' }}>
+          className="flex items-center gap-2 disabled:opacity-50 text-sm font-medium px-4 py-2 rounded-xl transition-colors" style={{ background: 'var(--c1)', color: 'var(--bg-base)' }}>
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
           Saqlash
         </button>
@@ -157,7 +157,7 @@ function UzumCard({ shop }: { shop: Shop | null; userId: string }) {
             </p>
           </div>
           {syncing && syncStep && (
-            <div className="flex items-center gap-2 text-xs rounded-xl px-3 py-2" style={{ color: '#83c0f9', background: 'rgba(131,192,249,0.06)', border: '1px solid rgba(131,192,249,0.15)' }}>
+            <div className="flex items-center gap-2 text-xs rounded-xl px-3 py-2" style={{ color: 'var(--c1)', background: 'var(--bg-card2)', border: '1px solid var(--border)' }}>
               <Loader2 className="w-3.5 h-3.5 animate-spin flex-shrink-0" />
               {syncStep}
             </div>
@@ -172,7 +172,7 @@ function UzumCard({ shop }: { shop: Shop | null; userId: string }) {
           </button>
           <button onClick={handleSync} disabled={syncing || !hasKey}
             title={!hasKey ? 'Avval token saqlang' : ''}
-            className="flex items-center gap-2 border border-transparent disabled:opacity-40 disabled:cursor-not-allowed text-sm font-medium px-4 py-2 rounded-xl transition-colors" style={{ background: '#83c0f9', color: '#131321' }}>
+            className="flex items-center gap-2 border border-transparent disabled:opacity-40 disabled:cursor-not-allowed text-sm font-medium px-4 py-2 rounded-xl transition-colors" style={{ background: 'var(--c1)', color: 'var(--bg-base)' }}>
             {syncing ? <><Loader2 className="w-4 h-4 animate-spin" /> Sinxronlanmoqda…</> : <><RefreshCw className="w-4 h-4" /> Sinxronlash</>}
           </button>
           </div>
@@ -434,8 +434,8 @@ function WildberriesCard({ shop }: { shop: Shop | null; userId: string }) {
     <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
       {/* Header */}
       <div className="px-6 py-4 border-b border-[var(--border)] flex items-center gap-3">
-        <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(131,192,249,0.15)', border: '1px solid rgba(131,192,249,0.25)' }}>
-          <span className="text-sm font-bold" style={{ color: '#83c0f9' }}>WB</span>
+        <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'var(--bg-card2)', border: '1px solid var(--border)' }}>
+          <span className="text-sm font-bold" style={{ color: 'var(--c1)' }}>WB</span>
         </div>
         <div>
           <p className="text-[var(--text-base)] font-semibold text-sm">Wildberries</p>
@@ -457,7 +457,7 @@ function WildberriesCard({ shop }: { shop: Shop | null; userId: string }) {
             value={apiKey}
             onChange={e => setApiKey(e.target.value)}
             placeholder={hasKey ? '••••••••  (yangilash uchun kiriting)' : 'Token kiriting…'}
-            className="w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[rgba(131,192,249,0.6)] transition-all font-mono"
+            className="w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--border2)] transition-all font-mono"
           />
           <p className="text-[var(--text-muted)] text-xs mt-1.5">
             <a href="https://seller.wildberries.ru/supplier-settings/access-to-api" target="_blank" rel="noopener noreferrer"
@@ -472,7 +472,7 @@ function WildberriesCard({ shop }: { shop: Shop | null; userId: string }) {
         </div>
         <StatusMsg msg={saveMsg} />
         <button type="submit" disabled={saving}
-          className="flex items-center gap-2 disabled:opacity-50 text-sm font-medium px-4 py-2 rounded-xl transition-colors" style={{ background: '#83c0f9', color: '#131321' }}>
+          className="flex items-center gap-2 disabled:opacity-50 text-sm font-medium px-4 py-2 rounded-xl transition-colors" style={{ background: 'var(--c1)', color: 'var(--bg-base)' }}>
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
           Saqlash
         </button>
@@ -485,7 +485,7 @@ function WildberriesCard({ shop }: { shop: Shop | null; userId: string }) {
             {lastSync ? <>Oxirgi sinxr: <span className="text-[var(--text-dim)]">{lastSync}</span></> : 'Hali sinxronlanmagan'}
           </p>
           {syncing && syncStep && (
-            <div className="flex items-center gap-2 text-xs rounded-xl px-3 py-2" style={{ color: '#83c0f9', background: 'rgba(131,192,249,0.06)', border: '1px solid rgba(131,192,249,0.15)' }}>
+            <div className="flex items-center gap-2 text-xs rounded-xl px-3 py-2" style={{ color: 'var(--c1)', background: 'var(--bg-card2)', border: '1px solid var(--border)' }}>
               <Loader2 className="w-3.5 h-3.5 animate-spin flex-shrink-0" />
               {syncStep}
             </div>
@@ -500,7 +500,7 @@ function WildberriesCard({ shop }: { shop: Shop | null; userId: string }) {
             </button>
             <button onClick={handleSync} disabled={syncing || !hasKey}
               title={!hasKey ? 'Avval token saqlang' : ''}
-              className="flex items-center gap-2 border border-transparent disabled:opacity-40 disabled:cursor-not-allowed text-sm font-medium px-4 py-2 rounded-xl transition-colors" style={{ background: '#83c0f9', color: '#131321' }}>
+              className="flex items-center gap-2 border border-transparent disabled:opacity-40 disabled:cursor-not-allowed text-sm font-medium px-4 py-2 rounded-xl transition-colors" style={{ background: 'var(--c1)', color: 'var(--bg-base)' }}>
               {syncing ? <><Loader2 className="w-4 h-4 animate-spin" /> Sinxronlanmoqda…</> : <><RefreshCw className="w-4 h-4" /> Sinxronlash</>}
             </button>
           </div>

@@ -100,7 +100,7 @@ export default function AbcXyzClient({ products }: { products: ClassifiedProduct
             onClick={() => setFilter(id)}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 ${
               filter === id
-                ? 'bg-[#83c0f9] text-[var(--text-base)] shadow-sm'
+                ? 'bg-[var(--c1)] text-[var(--text-base)] shadow-sm'
                 : 'bg-[var(--bg-card2)] border border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text-base)]'
             }`}
           >

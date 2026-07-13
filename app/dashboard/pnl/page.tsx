@@ -65,8 +65,8 @@ export default async function PnlPage({ searchParams }: Props) {
       </Suspense>
 
       {isEmpty ? (
-        <div className="bg-[var(--bg-card2)] rounded-2xl p-10 text-center" style={{ border: '1px dashed rgba(131,192,249,0.3)' }}>
-          <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: 'rgba(131,192,249,0.15)', borderWidth: '1px', borderStyle: 'solid', borderColor: 'rgba(131,192,249,0.25)' }}>
+        <div className="bg-[var(--bg-card2)] rounded-2xl p-10 text-center" style={{ border: '1px dashed var(--border)' }}>
+          <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: 'var(--bg-card2)', borderWidth: '1px', borderStyle: 'solid',  borderColor: 'var(--border)' }}>
             <FileText className="w-7 h-7" style={{ color: 'var(--c1)' }} />
           </div>
           <h2 className="text-[var(--text-base)] font-bold text-lg mb-2">{d.noData}</h2>
@@ -141,7 +141,7 @@ export default async function PnlPage({ searchParams }: Props) {
                         <td className="px-5 py-4 text-[var(--text-base)] font-medium">
                           {m.month}
                           {i === monthlyData.length - 1 && (
-                            <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded" style={{ color: 'var(--c1)', background: 'rgba(131,192,249,0.15)' }}>{d.current}</span>
+                            <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded" style={{ color: 'var(--c1)', background: 'var(--bg-card2)' }}>{d.current}</span>
                           )}
                         </td>
                         <td className="px-5 py-4 text-right text-[var(--text-muted)]">{m.order_count}</td>

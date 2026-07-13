@@ -139,7 +139,7 @@ export default function ExportButton({ data, filename = 'hisobot', targetRef: _t
         className="flex items-center gap-2 bg-[var(--bg-input)] hover:bg-[var(--bg-input)] border border-[var(--border2)] text-[var(--text-dim)] text-sm font-medium px-4 py-2.5 rounded-xl transition-colors disabled:opacity-60"
       >
         {loading ? (
-          <span className="w-4 h-4 border-2 border-[rgba(131,192,249,0.4)] border-t-[#83c0f9] rounded-full animate-spin" />
+          <span className="w-4 h-4 border-2 border-[var(--border)] border-t-[var(--c1)] rounded-full animate-spin" />
         ) : (
           <Download className="w-4 h-4" />
         )}

@@ -154,8 +154,8 @@ export default function Glossary() {
           <div className="relative w-full max-w-md bg-[var(--bg-card)] border border-[var(--border2)] rounded-2xl shadow-2xl shadow-black/60 overflow-hidden" style={{ whiteSpace: 'normal' }}>
             <div className="px-5 py-4 border-b border-[var(--border)] flex items-center justify-between gap-3">
               <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-lg bg-[rgba(131,192,249,0.15)] border border-[rgba(131,192,249,0.25)] flex items-center justify-center flex-shrink-0">
-                  <BookOpen className="w-3.5 h-3.5 text-[#83c0f9]" />
+                <div className="w-7 h-7 rounded-lg bg-[var(--bg-card2)] border border-[var(--border)] flex items-center justify-center flex-shrink-0">
+                  <BookOpen className="w-3.5 h-3.5 text-[var(--c1)]" />
                 </div>
                 <h2 className="text-[var(--text-base)] font-semibold text-sm">{l.title}</h2>
               </div>
@@ -171,7 +171,7 @@ export default function Glossary() {
               {TERMS.map(term => (
                 <div key={term.abbr} className="w-full rounded-xl border border-[var(--border)] bg-[var(--bg-card2)] px-3.5 py-3">
                   <div className="flex items-baseline gap-1.5 flex-wrap min-w-0">
-                    <span className="text-[#83c0f9] font-bold text-xs shrink-0">{term.abbr}</span>
+                    <span className="text-[var(--c1)] font-bold text-xs shrink-0">{term.abbr}</span>
                     <span className="text-[var(--text-base)] text-xs font-medium" style={{ overflowWrap: 'break-word', wordBreak: 'break-word' }}>{term.full[lang] ?? term.full.uz}</span>
                   </div>
                   <p className="text-[var(--text-muted)] text-xs leading-relaxed mt-1" style={{ overflowWrap: 'break-word', wordBreak: 'break-word' }}>{term.desc[lang] ?? term.desc.uz}</p>
@@ -182,7 +182,7 @@ export default function Glossary() {
             <div className="px-5 py-3 border-t border-[var(--border)]">
               <button
                 onClick={() => setOpen(false)}
-                className="w-full py-2 rounded-xl bg-[rgba(131,192,249,0.15)] border border-[rgba(131,192,249,0.3)] text-xs font-semibold hover:bg-[#83c0f9]/30 transition-all"
+                className="w-full py-2 rounded-xl bg-[var(--bg-card2)] border border-[var(--border)] text-xs font-semibold hover:bg-[var(--c1)]/30 transition-all"
                 style={{ color: 'var(--c1)' }}
               >
                 {l.close}

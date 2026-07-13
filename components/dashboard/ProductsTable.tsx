@@ -159,9 +159,9 @@ export default function ProductsTable({ products }: { products: Product[] }) {
             onClick={() => setMp(undefined)}
             className="px-3 py-1.5 rounded-full text-xs font-semibold transition-all"
             style={mp === undefined ? {
-              background: 'rgba(131,192,249,0.12)',
+              background: 'var(--bg-card2)',
               color: 'var(--c1)',
-              border: '1px solid rgba(131,192,249,0.25)',
+              border: '1px solid var(--border)',
             } : {
               color: 'var(--text-muted)',
               border: '1px solid transparent',
@@ -195,16 +195,16 @@ export default function ProductsTable({ products }: { products: Product[] }) {
           <button key={key} onClick={() => setTab(key)}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border"
             style={tab === key ? {
-              background: 'rgba(131,192,249,0.15)',
+              background: 'var(--bg-card2)',
               color: 'var(--c1)',
-              borderColor: 'rgba(131,192,249,0.25)',
+               borderColor: 'var(--border)',
             } : {
               color: 'var(--text-muted)',
               borderColor: 'transparent',
             }}>
             {label}
             <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={tab === key ? {
-              background: 'rgba(131,192,249,0.15)',
+              background: 'var(--bg-card2)',
               color: 'var(--c1)',
             } : {
               background: 'rgba(255, 255, 255, 0.04)',
@@ -256,9 +256,9 @@ export default function ProductsTable({ products }: { products: Product[] }) {
             <button key={c} onClick={() => setCategory(c)}
               className="px-3 py-2 rounded-xl text-xs font-medium transition-all border"
               style={category === c ? {
-                background: 'rgba(131,192,249,0.15)',
+                background: 'var(--bg-card2)',
                 color: 'var(--c1)',
-                borderColor: 'rgba(131,192,249,0.25)',
+                 borderColor: 'var(--border)',
               } : {
                 color: 'var(--text-muted)',
                 borderColor: 'var(--border)',

@@ -35,7 +35,7 @@ export default function RevenueChart({ data, days = 7 }: { data: DailyRevenue[];
   const axisColor = theme === 'dark' ? '#64748b' : '#9ca3af'
   const gridColor = theme === 'dark' ? '#ffffff08' : '#f3f4f6'
   const cursorColor = theme === 'dark' ? '#ffffff05' : '#f0f0f0'
-  const barColor1 = theme === 'dark' ? '#83c0f9' : '#83c0f9'
+  const barColor1 = theme === 'dark' ? '#ffffff' : '#83c0f9'
   const barColor2 = theme === 'dark' ? '#6aabf0' : '#6aabf0'
 
   return (

@@ -128,8 +128,8 @@ export default function DateRangePicker({ period, from, to }: Props) {
         disabled={pending}
         className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-medium transition-all ${pending ? 'opacity-60 cursor-not-allowed' : ''}`}
         style={{
-          background: open ? 'rgba(131,192,249,0.12)' : 'var(--bg-input)',
-          borderColor: open ? 'rgba(131,192,249,0.35)' : 'var(--border)',
+          background: open ? 'var(--bg-card2)' : 'var(--bg-input)',
+          borderColor: open ? 'var(--border)' : 'var(--border)',
         }}
       >
         {pending
@@ -153,8 +153,8 @@ export default function DateRangePicker({ period, from, to }: Props) {
                 disabled={pending}
                 className="flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1 disabled:opacity-60"
                 style={{
-                  background: activeDays === days ? 'rgba(131,192,249,0.18)' : 'var(--bg-input)',
-                  border: activeDays === days ? '1px solid rgba(131,192,249,0.4)' : '1px solid var(--border)',
+                  background: activeDays === days ? 'var(--bg-card2)' : 'var(--bg-input)',
+                  border: activeDays === days ? '1px solid var(--border)' : '1px solid var(--border)',
                   color: activeDays === days ? 'var(--c1)' : 'var(--text-muted)',
                 }}
               >
@@ -196,7 +196,7 @@ export default function DateRangePicker({ period, from, to }: Props) {
             onClick={apply}
             disabled={!customFrom || !customTo || pending}
             className="w-full py-2 rounded-xl text-sm font-semibold transition-all disabled:opacity-40 flex items-center justify-center gap-2"
-            style={{ background: '#83c0f9', color: '#131321' }}
+            style={{ background: 'var(--c1)', color: '#131321' }}
           >
             {pending && <Spinner className="w-4 h-4" />}
             {lang === 'uz' ? 'Qo\'llash' : lang === 'ru' ? 'Применить' : 'Apply'}

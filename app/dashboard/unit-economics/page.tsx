@@ -64,7 +64,7 @@ export default async function UnitEconomicsPage({
         <div>
           <div className="flex items-center gap-2 mb-0.5">
             <h1 className="text-2xl font-bold text-[var(--text-base)]">{d.unitEcoTitle}</h1>
-            <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full border-2" style={{ background: 'rgba(131,192,249,0.15)', borderColor: 'rgba(131,192,249,0.7)', color: 'var(--c1)' }}>
+            <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full border-2" style={{ background: 'var(--bg-card2)',  borderColor: 'var(--border)', color: 'var(--c1)' }}>
               {items.length} {d.productCount}
             </span>
           </div>
@@ -80,10 +80,10 @@ export default async function UnitEconomicsPage({
 
       {/* Extension install CTA */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-4 rounded-2xl px-5 py-4"
-        style={{ background: 'rgba(131,192,249,0.12)', border: '2px solid rgba(131,192,249,0.4)' }}>
+        style={{ background: 'var(--bg-card2)', border: '2px solid var(--border)' }}>
         <div className="flex items-start gap-3 flex-1 min-w-0">
           <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-            style={{ background: 'rgba(131,192,249,0.2)', border: '1px solid rgba(131,192,249,0.4)' }}>
+            style={{ background: 'var(--bg-card2)', border: '1px solid var(--border)' }}>
             <Download className="w-4 h-4 text-[var(--c1)]" />
           </div>
           <div>

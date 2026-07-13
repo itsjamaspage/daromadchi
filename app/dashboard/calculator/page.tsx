@@ -51,7 +51,7 @@ const YANDEX_CATS: { name: Record<string, string>; rate: number }[] = [
 
 type MP = 'uzum' | 'yandex' | 'wildberries'
 
-const inputCls = "w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[rgba(131,192,249,0.6)] focus:ring-1 focus:ring-[rgba(131,192,249,0.3)] transition-all"
+const inputCls = "w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--border2)] focus:ring-1 focus:ring-[var(--border)] transition-all"
 
 export default function CalculatorPage() {
   const { lang } = useLang()
@@ -160,10 +160,10 @@ export default function CalculatorPage() {
                 onClick={() => { setMp(m.id); setCatIdx(0) }}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                   mp === m.id
-                    ? 'border border-[rgba(131,192,249,0.3)]'
+                    ? 'border border-[var(--border)]'
                     : 'text-[var(--text-muted)] hover:text-[var(--text-dim)]'
                 }`}
-                style={mp === m.id ? { background: 'rgba(131,192,249,0.15)', color: 'var(--c1)' } : {}}
+                style={mp === m.id ? { background: 'var(--bg-card2)', color: 'var(--c1)' } : {}}
               >
                 {m.label}
               </button>
@@ -241,7 +241,7 @@ export default function CalculatorPage() {
             </select>
           </div>
 
-          <div className="flex items-center gap-2 border rounded-xl px-4 py-2.5" style={{ background: 'rgba(131,192,249,0.18)', borderColor: 'rgba(131,192,249,0.45)' }}>
+          <div className="flex items-center gap-2 border rounded-xl px-4 py-2.5" style={{ background: 'var(--bg-card2)',  borderColor: 'var(--border)' }}>
             <Info className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--c1)' }} />
             <p className="text-xs text-[var(--text-base)]">
               {mp === 'uzum' ? 'Uzum' : mp === 'yandex' ? 'Yandex Market' : 'Wildberries'} {lang === 'ru' ? 'комиссия:' : lang === 'en' ? 'commission:' : 'komissiyasi:'}
@@ -262,7 +262,7 @@ export default function CalculatorPage() {
             <>
               {/* ── REALITY CHECK ─────────────────────────────────────── */}
               <div className="rounded-2xl overflow-hidden border border-[var(--border2)]">
-                <div className="px-5 py-3 border-b border-[var(--border)] flex items-center gap-2" style={{ background: 'rgba(131,192,249,0.12)' }}>
+                <div className="px-5 py-3 border-b border-[var(--border)] flex items-center gap-2" style={{ background: 'var(--bg-card2)' }}>
                   <Zap className="w-4 h-4" style={{ color: 'var(--c1)' }} />
                   <span className="text-[var(--text-base)] font-bold text-sm">{t.realityCheck}</span>
                 </div>
@@ -314,7 +314,7 @@ export default function CalculatorPage() {
                       ...(result.uzumLogFee > 0 ? [{ label: lang === 'ru' ? 'Логистика Uzum' : lang === 'en' ? 'Uzum logistics' : 'Uzum logistika', value: result.uzumLogFee, color: 'bg-orange-500' }] : []),
                       ...(result.payoutFeeAmt > 0 ? [{ label: lang === 'ru' ? 'Услуга вывода' : lang === 'en' ? 'Payout fee' : 'Chiqarish xizmati', value: result.payoutFeeAmt, color: 'bg-pink-500' }] : []),
                       { label: t.bdReturnLoss,                      value: result.returnLoss * (parseFloat(returnRate)/100), color: 'bg-rose-500' },
-                      { label: t.bdAd,                              value: result.adPerUnit,    color: 'bg-[#83c0f9]' },
+                      { label: t.bdAd,                              value: result.adPerUnit,    color: 'bg-[var(--c1)]' },
                     ].filter(r => r.value > 0).map(r => {
                       const pct = result.price > 0 ? (r.value / result.price) * 100 : 0
                       return (
