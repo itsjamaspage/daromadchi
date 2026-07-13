@@ -11,336 +11,258 @@
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       background: linear-gradient(135deg, #0f172a 0%, #1a1f3a 100%);
       color: #f1f5f9;
-      overflow: hidden;
-      height: 100vh;
-    }
-
-    .main-container {
-      display: flex;
-      height: 100vh;
+      min-height: 100vh;
     }
 
     .canvas-area {
-      flex: 1;
-      overflow: auto;
-      display: flex;
-      flex-direction: column;
-      padding: 20px;
-      position: relative;
+      padding: 24px;
+      max-width: 1600px;
+      margin: 0 auto;
     }
 
-    .construction-bar {
+    .info-bar {
       background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(51, 65, 85, 0.7) 100%);
       border: 2px solid rgba(14, 165, 233, 0.4);
       border-radius: 12px;
-      padding: 24px;
-      margin-bottom: 30px;
-      animation: slideDown 0.6s ease-out;
+      padding: 20px 24px;
+      margin-bottom: 24px;
     }
 
-    .construction-title {
-      font-size: 14px;
+    .info-title {
+      font-size: 13px;
       text-transform: uppercase;
       letter-spacing: 2px;
       color: #0ea5e9;
       font-weight: 700;
-      margin-bottom: 12px;
+      margin-bottom: 10px;
     }
 
-    .construction-text {
+    .info-text {
       font-size: 13px;
-      line-height: 1.8;
+      line-height: 1.7;
       color: #cbd5e1;
-      margin-bottom: 16px;
+      margin-bottom: 14px;
     }
 
-    .construction-legend {
+    .legend {
       display: flex;
-      gap: 24px;
+      gap: 20px;
       flex-wrap: wrap;
       font-size: 12px;
     }
 
-    .legend-item-inline {
+    .legend-item {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
       color: #94a3b8;
     }
 
-    .legend-box {
-      width: 16px;
-      height: 16px;
+    .legend-dot {
+      width: 14px;
+      height: 14px;
       border-radius: 3px;
       border: 2px solid;
     }
 
-    .legend-box.client { background: rgba(14, 165, 233, 0.2); border-color: #0ea5e9; }
-    .legend-box.server { background: rgba(6, 182, 212, 0.2); border-color: #06b6d4; }
-    .legend-box.service { background: rgba(99, 102, 241, 0.2); border-color: #6366f1; }
-    .legend-box.external { background: rgba(168, 85, 247, 0.2); border-color: #a855f7; }
-    .legend-box.infrastructure { background: rgba(59, 130, 246, 0.2); border-color: #3b82f6; }
+    .legend-dot.client { background: rgba(14, 165, 233, 0.2); border-color: #0ea5e9; }
+    .legend-dot.auth { background: rgba(168, 85, 247, 0.2); border-color: #a855f7; }
+    .legend-dot.dashboard { background: rgba(6, 182, 212, 0.2); border-color: #06b6d4; }
+    .legend-dot.api { background: rgba(99, 102, 241, 0.2); border-color: #6366f1; }
+    .legend-dot.data { background: rgba(16, 185, 129, 0.2); border-color: #10b981; }
+    .legend-dot.external { background: rgba(245, 158, 11, 0.2); border-color: #f59e0b; }
+    .legend-dot.infra { background: rgba(59, 130, 246, 0.2); border-color: #3b82f6; }
 
     .header {
       text-align: center;
-      margin-bottom: 30px;
-      animation: slideDown 0.6s ease-out 0.2s backwards;
+      margin-bottom: 28px;
     }
 
     .title {
-      font-size: 32px;
+      font-size: 28px;
       font-weight: 800;
       letter-spacing: 2px;
       background: linear-gradient(to right, #0ea5e9, #06b6d4);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
     }
 
     .subtitle {
       color: #94a3b8;
       font-size: 13px;
-      letter-spacing: 1px;
     }
 
-    .svg-container {
+    .arch-container {
       position: relative;
-      width: 100%;
-      height: 500px;
-      margin-bottom: 40px;
-      background: rgba(30, 41, 59, 0.3);
-      border-radius: 12px;
-      border: 1px solid rgba(14, 165, 233, 0.2);
-      overflow: hidden;
     }
 
-    .svg-connections {
+    .svg-overlay {
       position: absolute;
       inset: 0;
       width: 100%;
       height: 100%;
-      z-index: 1;
+      z-index: 10;
+      pointer-events: none;
     }
 
-    .layers-wrapper {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      z-index: 2;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+    .connection-line {
+      stroke: rgba(6, 182, 212, 0.35);
+      stroke-width: 1.5;
+      fill: none;
     }
 
-    .layers {
-      display: grid;
-      grid-template-columns: repeat(5, 1fr);
-      gap: 30px;
-      padding: 20px;
-      width: 100%;
+    .section {
+      margin-bottom: 20px;
     }
 
-    .layer {
-      animation: fadeIn 0.8s ease-out backwards;
-    }
-
-    .layer:nth-child(1) { animation-delay: 0.1s; }
-    .layer:nth-child(2) { animation-delay: 0.2s; }
-    .layer:nth-child(3) { animation-delay: 0.3s; }
-    .layer:nth-child(4) { animation-delay: 0.4s; }
-    .layer:nth-child(5) { animation-delay: 0.5s; }
-
-    .layer-label {
+    .section-label {
       font-size: 11px;
       text-transform: uppercase;
-      letter-spacing: 1.5px;
-      color: #0ea5e9;
+      letter-spacing: 2px;
       font-weight: 700;
-      margin-bottom: 12px;
+      margin-bottom: 10px;
+      padding-left: 4px;
     }
 
-    .components {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
+    .section-label.client-label { color: #0ea5e9; }
+    .section-label.auth-label { color: #a855f7; }
+    .section-label.dashboard-label { color: #06b6d4; }
+    .section-label.api-label { color: #6366f1; }
+    .section-label.data-label { color: #10b981; }
+    .section-label.external-label { color: #f59e0b; }
+    .section-label.infra-label { color: #3b82f6; }
+
+    .cards-row {
+      display: grid;
+      gap: 10px;
     }
 
-    .component {
-      background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(51, 65, 85, 0.5) 100%);
-      border: 2px solid rgba(14, 165, 233, 0.3);
+    .cards-row.cols-3 { grid-template-columns: repeat(3, 1fr); }
+    .cards-row.cols-4 { grid-template-columns: repeat(4, 1fr); }
+    .cards-row.cols-5 { grid-template-columns: repeat(5, 1fr); }
+    .cards-row.cols-6 { grid-template-columns: repeat(6, 1fr); }
+
+    .card {
+      background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(51, 65, 85, 0.6) 100%);
+      border: 1.5px solid rgba(100, 116, 139, 0.3);
       border-radius: 8px;
-      padding: 16px;
+      padding: 12px 14px;
       cursor: pointer;
-      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      transition: all 0.25s ease;
       position: relative;
-      overflow: hidden;
-      animation: popIn 0.6s ease-out backwards;
-      min-height: 100px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
     }
 
-    .component.has-bugs {
-      border-color: #ef4444;
-      box-shadow: inset 0 0 0 1px rgba(239, 68, 68, 0.3);
+    .card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
     }
 
-    .component:nth-child(1) { animation-delay: 0.2s; }
-    .component:nth-child(2) { animation-delay: 0.3s; }
-    .component:nth-child(3) { animation-delay: 0.4s; }
+    .card.client-card { border-color: rgba(14, 165, 233, 0.4); }
+    .card.client-card:hover { border-color: #0ea5e9; box-shadow: 0 0 20px rgba(14, 165, 233, 0.2); }
 
-    .component::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(45deg, transparent 30%, rgba(14, 165, 233, 0.1) 50%, transparent 70%);
-      transform: translateX(-100%);
-      transition: transform 0.6s;
-    }
+    .card.auth-card { border-color: rgba(168, 85, 247, 0.4); }
+    .card.auth-card:hover { border-color: #a855f7; box-shadow: 0 0 20px rgba(168, 85, 247, 0.2); }
 
-    .component:hover::before {
-      transform: translateX(100%);
-    }
+    .card.dashboard-card { border-color: rgba(6, 182, 212, 0.4); }
+    .card.dashboard-card:hover { border-color: #06b6d4; box-shadow: 0 0 20px rgba(6, 182, 212, 0.2); }
 
-    .component:hover {
-      border-color: #0ea5e9;
-      background: linear-gradient(135deg, rgba(14, 165, 233, 0.25) 0%, rgba(51, 65, 85, 0.9) 100%);
-      box-shadow: 0 0 40px rgba(14, 165, 233, 0.4), 0 8px 32px rgba(0, 0, 0, 0.5);
-      transform: translateY(-8px) scale(1.05);
-    }
+    .card.api-card { border-color: rgba(99, 102, 241, 0.4); }
+    .card.api-card:hover { border-color: #6366f1; box-shadow: 0 0 20px rgba(99, 102, 241, 0.2); }
 
-    .component-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 8px;
-      margin-bottom: 12px;
-      position: relative;
-      z-index: 1;
-    }
+    .card.data-card { border-color: rgba(16, 185, 129, 0.4); }
+    .card.data-card:hover { border-color: #10b981; box-shadow: 0 0 20px rgba(16, 185, 129, 0.2); }
 
-    .component-name {
-      font-size: 14px;
+    .card.external-card { border-color: rgba(245, 158, 11, 0.4); }
+    .card.external-card:hover { border-color: #f59e0b; box-shadow: 0 0 20px rgba(245, 158, 11, 0.2); }
+
+    .card.infra-card { border-color: rgba(59, 130, 246, 0.4); }
+    .card.infra-card:hover { border-color: #3b82f6; box-shadow: 0 0 20px rgba(59, 130, 246, 0.2); }
+
+    .card-name {
+      font-size: 13px;
       font-weight: 700;
       font-family: ui-monospace, monospace;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      color: #0ea5e9;
+      margin-bottom: 4px;
     }
 
-    .component-status {
-      display: inline-block;
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      animation: pulse 2s ease-in-out infinite;
-    }
+    .card.client-card .card-name { color: #0ea5e9; }
+    .card.auth-card .card-name { color: #a855f7; }
+    .card.dashboard-card .card-name { color: #06b6d4; }
+    .card.api-card .card-name { color: #6366f1; }
+    .card.data-card .card-name { color: #10b981; }
+    .card.external-card .card-name { color: #f59e0b; }
+    .card.infra-card .card-name { color: #3b82f6; }
 
-    .component-status.complete { background: #10b981; box-shadow: 0 0 8px rgba(16, 185, 129, 0.6); }
-    .component-status.in-progress { background: #f59e0b; animation: pulse 1.5s ease-in-out infinite; }
-    .component-status.bug { background: #ef4444; box-shadow: 0 0 8px rgba(239, 68, 68, 0.8); }
-
-    .bug-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      padding: 2px 8px;
-      background: rgba(239, 68, 68, 0.2);
-      border: 1px solid #ef4444;
-      border-radius: 4px;
-      font-size: 10px;
-      font-weight: 700;
-      color: #ef4444;
-      text-transform: uppercase;
-      position: relative;
-      z-index: 1;
-    }
-
-    .component-desc {
+    .card-desc {
       font-size: 11px;
-      color: #cbd5e1;
-      line-height: 1.5;
-      position: relative;
-      z-index: 1;
+      color: #94a3b8;
+      line-height: 1.4;
     }
 
-    .tech-stack {
+    .card-tags {
       display: flex;
       flex-wrap: wrap;
-      gap: 4px;
-      margin-top: 8px;
-      position: relative;
-      z-index: 1;
+      gap: 3px;
+      margin-top: 6px;
     }
 
-    .tech-tag {
-      padding: 2px 6px;
-      background: rgba(14, 165, 233, 0.15);
-      border: 1px solid rgba(14, 165, 233, 0.3);
+    .tag {
+      padding: 1px 5px;
+      background: rgba(100, 116, 139, 0.15);
+      border: 1px solid rgba(100, 116, 139, 0.25);
       border-radius: 3px;
       font-size: 9px;
-      color: #0ea5e9;
+      color: #94a3b8;
       font-family: ui-monospace, monospace;
     }
+
+    .status-dot {
+      display: inline-block;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      margin-right: 5px;
+      vertical-align: middle;
+    }
+
+    .status-dot.green { background: #10b981; box-shadow: 0 0 6px rgba(16, 185, 129, 0.5); }
+    .status-dot.yellow { background: #f59e0b; box-shadow: 0 0 6px rgba(245, 158, 11, 0.5); }
 
     .detail-panel {
       position: fixed;
-      right: -450px;
+      right: -460px;
       top: 0;
-      width: 450px;
+      width: 460px;
       height: 100vh;
       background: rgba(15, 23, 42, 0.98);
       border-left: 2px solid rgba(14, 165, 233, 0.5);
       overflow-y: auto;
-      transition: right 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      transition: right 0.35s ease;
       backdrop-filter: blur(10px);
       z-index: 10000;
       box-shadow: -20px 0 60px rgba(0, 0, 0, 0.8);
     }
 
-    .detail-panel.active {
-      right: 0;
-    }
+    .detail-panel.active { right: 0; }
 
     .detail-header {
-      padding: 30px 24px;
+      padding: 24px;
       border-bottom: 2px solid rgba(14, 165, 233, 0.3);
-      background: linear-gradient(135deg, rgba(14, 165, 233, 0.15) 0%, rgba(51, 65, 85, 0.3) 100%);
+      background: linear-gradient(135deg, rgba(14, 165, 233, 0.1) 0%, rgba(51, 65, 85, 0.3) 100%);
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
-      gap: 16px;
-    }
-
-    .detail-title-section {
-      flex: 1;
     }
 
     .detail-title {
-      font-size: 22px;
+      font-size: 20px;
       font-weight: 800;
       font-family: ui-monospace, monospace;
       color: #0ea5e9;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
     }
-
-    .detail-status {
-      display: inline-block;
-      padding: 6px 12px;
-      border-radius: 6px;
-      font-size: 10px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
-
-    .detail-status.complete { background: rgba(16, 185, 129, 0.2); color: #10b981; }
-    .detail-status.in-progress { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
-    .detail-status.bug { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
 
     .close-btn {
       background: none;
@@ -354,30 +276,22 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: all 0.3s;
       border-radius: 6px;
       flex-shrink: 0;
     }
 
-    .close-btn:hover {
-      color: #f1f5f9;
-      background: rgba(14, 165, 233, 0.2);
-    }
+    .close-btn:hover { color: #f1f5f9; background: rgba(14, 165, 233, 0.2); }
 
-    .detail-content {
-      padding: 24px;
-    }
+    .detail-content { padding: 24px; }
 
-    .detail-section {
-      margin-bottom: 24px;
-    }
+    .detail-section { margin-bottom: 20px; }
 
     .detail-label {
       font-size: 11px;
       text-transform: uppercase;
       letter-spacing: 1.5px;
       color: #0ea5e9;
-      margin-bottom: 12px;
+      margin-bottom: 10px;
       font-weight: 700;
     }
 
@@ -387,583 +301,747 @@
       color: #cbd5e1;
     }
 
-    .bug-item {
-      background: rgba(239, 68, 68, 0.1);
-      border-left: 3px solid #ef4444;
-      padding: 12px;
-      border-radius: 4px;
-      margin-bottom: 12px;
-      font-size: 12px;
-    }
-
-    .bug-priority {
-      display: inline-block;
-      padding: 2px 8px;
-      background: #ef4444;
-      color: white;
-      border-radius: 3px;
-      font-size: 10px;
-      font-weight: 700;
-      margin-bottom: 8px;
-    }
-
-    .bug-priority.high { background: #ef4444; }
-    .bug-priority.medium { background: #f59e0b; }
-
-    .bug-description {
-      color: #cbd5e1;
-      margin-top: 8px;
-    }
-
-    .bug-reference {
-      font-size: 11px;
-      color: #94a3b8;
-      font-family: ui-monospace, monospace;
-      margin-top: 8px;
-      padding-top: 8px;
-      border-top: 1px solid rgba(14, 165, 233, 0.2);
-    }
-
-    .fix-item {
-      background: rgba(16, 185, 129, 0.1);
-      border-left: 3px solid #10b981;
-      padding: 12px;
-      border-radius: 4px;
-      margin-bottom: 12px;
-      font-size: 12px;
-    }
-
-    .fix-title {
-      color: #10b981;
-      font-weight: 700;
-      margin-bottom: 8px;
-    }
-
-    .fix-description {
-      color: #cbd5e1;
-    }
-
-    .connection-item {
+    .conn-item {
       background: rgba(6, 182, 212, 0.1);
-      padding: 12px;
+      padding: 10px;
       border-left: 3px solid #06b6d4;
       border-radius: 4px;
-      margin-bottom: 12px;
+      margin-bottom: 8px;
       font-size: 12px;
     }
 
-    .connection-name {
-      color: #06b6d4;
-      font-weight: 700;
-      margin-bottom: 4px;
+    .conn-name { color: #06b6d4; font-weight: 700; margin-bottom: 2px; }
+    .conn-desc { color: #cbd5e1; font-size: 11px; }
+
+    .flow-arrow {
+      text-align: center;
+      padding: 6px 0;
+      color: #475569;
+      font-size: 18px;
+      letter-spacing: 4px;
     }
 
-    .connection-desc {
-      color: #cbd5e1;
-      font-size: 11px;
+    @media (max-width: 1200px) {
+      .cards-row.cols-6 { grid-template-columns: repeat(3, 1fr); }
+      .cards-row.cols-5 { grid-template-columns: repeat(3, 1fr); }
     }
 
-    @keyframes slideDown {
-      from { opacity: 0; transform: translateY(-20px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
-
-    @keyframes popIn {
-      from { opacity: 0; transform: scale(0.8); }
-      to { opacity: 1; transform: scale(1); }
-    }
-
-    @keyframes pulse {
-      0%, 100% { box-shadow: 0 0 8px currentColor; }
-      50% { box-shadow: 0 0 16px currentColor; }
-    }
-
-    @keyframes animateStroke {
-      to { stroke-dashoffset: 0; }
-    }
-
-    .connection-line {
-      stroke: #06b6d4;
-      stroke-width: 2;
-      fill: none;
-      filter: drop-shadow(0 0 2px rgba(6, 182, 212, 0.4));
-    }
-
-    .connection-line-animated {
-      opacity: 0.7;
+    @media (max-width: 800px) {
+      .cards-row.cols-6,
+      .cards-row.cols-5,
+      .cards-row.cols-4,
+      .cards-row.cols-3 { grid-template-columns: repeat(2, 1fr); }
     }
   </style>
 </head>
 <body>
-  <div class="main-container">
-    <div class="canvas-area" id="canvasArea">
-      <div class="construction-bar">
-        <div class="construction-title">🏗️ How It Works</div>
-        <div class="construction-text">
-          Daromadchi is a multi-marketplace seller dashboard that syncs orders, inventory, and prices across Uzum Market, Yandex Market, and Wildberries.
-          The Web App provides sellers with real-time analytics and management tools, while the Chrome Extension automates price/stock updates.
-          All data flows through our API Routes to a PostgreSQL database, with read-only marketplace integrations (NO writes allowed).
-          Authentication via NextAuth.js v5 with JWT tokens and email verification (6-digit code via SMTP on signup).
-          Self-hosted on Hetzner VPS with Nginx reverse proxy.
-        </div>
-        <div class="construction-legend">
-          <div class="legend-item-inline">
-            <div class="legend-box client"></div>
-            <span>Client (UI on your browser)</span>
-          </div>
-          <div class="legend-item-inline">
-            <div class="legend-box server"></div>
-            <span>Server (runs the actual logic)</span>
-          </div>
-          <div class="legend-item-inline">
-            <div class="legend-box service"></div>
-            <span>Service (business functions)</span>
-          </div>
-          <div class="legend-item-inline">
-            <div class="legend-box external"></div>
-            <span>External (outside APIs)</span>
-          </div>
-          <div class="legend-item-inline">
-            <div class="legend-box infrastructure"></div>
-            <span>Infrastructure (deployment)</span>
-          </div>
-        </div>
+  <div class="canvas-area">
+    <div class="info-bar">
+      <div class="info-title">Daromadchi — Multi-Marketplace Seller Dashboard</div>
+      <div class="info-text">
+        Syncs orders, inventory, and prices across Uzum Market, Yandex Market, and Wildberries.
+        Web dashboard + Chrome Extension for seller analytics and automation.
+        All marketplace integrations are <strong>strictly read-only</strong> — no writes allowed.
+        Auth via NextAuth.js v5 (JWT + email verification). Self-hosted on Hetzner VPS.
       </div>
-
-      <div class="header">
-        <div class="title">SYSTEM ARCHITECTURE</div>
-        <div class="subtitle">Click any component to see details, bugs, and planned fixes</div>
-      </div>
-
-      <div class="svg-container">
-        <svg class="svg-connections" id="connectionsSvg"></svg>
-
-        <div class="layers-wrapper">
-          <div class="layers" id="layersContainer">
-            <!-- Layers will be generated by JavaScript -->
-          </div>
-        </div>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot client"></div>Client</div>
+        <div class="legend-item"><div class="legend-dot auth"></div>Auth</div>
+        <div class="legend-item"><div class="legend-dot dashboard"></div>Dashboard</div>
+        <div class="legend-item"><div class="legend-dot api"></div>API</div>
+        <div class="legend-item"><div class="legend-dot data"></div>Data</div>
+        <div class="legend-item"><div class="legend-dot external"></div>External</div>
+        <div class="legend-item"><div class="legend-dot infra"></div>Infra</div>
       </div>
     </div>
 
-    <!-- Detail Panel -->
-    <div class="detail-panel" id="detailPanel">
-      <div class="detail-header">
-        <div class="detail-title-section">
-          <div class="detail-title" id="detailTitle">Component</div>
-          <div class="detail-status complete" id="detailStatus">Complete</div>
+    <div class="header">
+      <div class="title">SYSTEM ARCHITECTURE</div>
+      <div class="subtitle">Click any component for details — 50+ routes, 21 database tables, 3 marketplaces</div>
+    </div>
+
+    <div class="arch-container" id="archContainer">
+      <!-- CLIENT LAYER -->
+      <div class="section">
+        <div class="section-label client-label">Client Layer</div>
+        <div class="cards-row cols-3" id="client-row">
+          <div class="card client-card" data-id="web-app">
+            <div class="card-name"><span class="status-dot green"></span>Web App</div>
+            <div class="card-desc">Next.js 16 dashboard — daromadchi.uz. Landing, login, pricing, 20+ dashboard pages. Multi-language (UZ/RU/EN).</div>
+            <div class="card-tags"><span class="tag">React 19</span><span class="tag">Next.js 16</span><span class="tag">TypeScript</span><span class="tag">Tailwind</span></div>
+          </div>
+          <div class="card client-card" data-id="chrome-ext">
+            <div class="card-name"><span class="status-dot green"></span>Chrome Extension</div>
+            <div class="card-desc">Marketplace browser automation. Price/stock monitoring, product tracking, daily summaries, Telegram alerts.</div>
+            <div class="card-tags"><span class="tag">Manifest v3</span><span class="tag">Service Workers</span><span class="tag">Content Scripts</span></div>
+          </div>
+          <div class="card client-card" data-id="telegram-bot">
+            <div class="card-name"><span class="status-dot green"></span>Telegram Bot</div>
+            <div class="card-desc">User notifications: daily digest, price alerts, order updates. Account linking via deep links. Preference management.</div>
+            <div class="card-tags"><span class="tag">Bot API</span><span class="tag">Webhooks</span><span class="tag">Deep Links</span></div>
+          </div>
         </div>
-        <button class="close-btn" id="closeBtn">&times;</button>
       </div>
-      <div class="detail-content">
-        <div class="detail-section">
-          <div class="detail-label">Description</div>
-          <div class="detail-value" id="detailDesc"></div>
-        </div>
 
-        <div class="detail-section" id="bugsSection" style="display: none;">
-          <div class="detail-label" style="color: #ef4444;">🐛 Known Bugs</div>
-          <div id="detailBugs"></div>
-        </div>
+      <div class="flow-arrow">▼ ▼ ▼</div>
 
-        <div class="detail-section" id="fixesSection" style="display: none;">
-          <div class="detail-label" style="color: #10b981;">✅ Planned Fixes</div>
-          <div id="detailFixes"></div>
+      <!-- AUTH LAYER -->
+      <div class="section">
+        <div class="section-label auth-label">Authentication & Security</div>
+        <div class="cards-row cols-4" id="auth-row">
+          <div class="card auth-card" data-id="nextauth">
+            <div class="card-name"><span class="status-dot green"></span>NextAuth.js v5</div>
+            <div class="card-desc">Credentials provider, bcrypt hashing, 30-day JWT sessions. Blocks unverified emails.</div>
+            <div class="card-tags"><span class="tag">JWT</span><span class="tag">bcryptjs</span><span class="tag">Credentials</span></div>
+          </div>
+          <div class="card auth-card" data-id="email-verify">
+            <div class="card-name"><span class="status-dot green"></span>Email Verification</div>
+            <div class="card-desc">6-digit code on signup via SMTP. 10-min expiry. Rate-limited resend (5/10min). Graceful degradation without SMTP.</div>
+            <div class="card-tags"><span class="tag">Nodemailer</span><span class="tag">Gmail SMTP</span><span class="tag">6-digit code</span></div>
+          </div>
+          <div class="card auth-card" data-id="rate-limit">
+            <div class="card-name"><span class="status-dot green"></span>Rate Limiting</div>
+            <div class="card-desc">Per-IP rate limits: signup 10/hr, auth 20/min, sync 10/min, general 100/min. In-memory Map.</div>
+            <div class="card-tags"><span class="tag">IP-based</span><span class="tag">In-memory</span></div>
+          </div>
+          <div class="card auth-card" data-id="readonly-guard">
+            <div class="card-name"><span class="status-dot green"></span>Read-Only Guard</div>
+            <div class="card-desc">Enforces marketplace API read-only rule. Only whitelisted POST-for-read endpoints allowed.</div>
+            <div class="card-tags"><span class="tag">Middleware</span><span class="tag">Whitelist</span></div>
+          </div>
         </div>
+      </div>
 
-        <div class="detail-section">
-          <div class="detail-label">Technology Stack</div>
-          <div style="display: flex; flex-wrap: wrap; gap: 8px;" id="detailTech"></div>
+      <div class="flow-arrow">▼ ▼ ▼</div>
+
+      <!-- DASHBOARD PAGES -->
+      <div class="section">
+        <div class="section-label dashboard-label">Dashboard Pages (20+)</div>
+        <div class="cards-row cols-6" id="dashboard-row">
+          <div class="card dashboard-card" data-id="pg-analytics">
+            <div class="card-name">Analytics</div>
+            <div class="card-desc">Revenue, orders, profit KPIs by marketplace</div>
+          </div>
+          <div class="card dashboard-card" data-id="pg-orders">
+            <div class="card-name">Orders</div>
+            <div class="card-desc">Order history, filtering, status tracking</div>
+          </div>
+          <div class="card dashboard-card" data-id="pg-products">
+            <div class="card-name">Products</div>
+            <div class="card-desc">Product catalog, physical stock, listings</div>
+          </div>
+          <div class="card dashboard-card" data-id="pg-pnl">
+            <div class="card-name">P&L</div>
+            <div class="card-desc">Profit & loss breakdown per product</div>
+          </div>
+          <div class="card dashboard-card" data-id="pg-billing">
+            <div class="card-name">Billing</div>
+            <div class="card-desc">Subscription plans, Click/Payme payments</div>
+          </div>
+          <div class="card dashboard-card" data-id="pg-advertising">
+            <div class="card-name">Advertising</div>
+            <div class="card-desc">Ad campaign stats and spend tracking</div>
+          </div>
+          <div class="card dashboard-card" data-id="pg-keywords">
+            <div class="card-name">Keywords</div>
+            <div class="card-desc">Keyword research and ranking data</div>
+          </div>
+          <div class="card dashboard-card" data-id="pg-reviews">
+            <div class="card-name">Reviews</div>
+            <div class="card-desc">Customer review monitoring</div>
+          </div>
+          <div class="card dashboard-card" data-id="pg-seasonality">
+            <div class="card-name">Seasonality</div>
+            <div class="card-desc">Seasonal demand trends</div>
+          </div>
+          <div class="card dashboard-card" data-id="pg-search">
+            <div class="card-name">Search Phrases</div>
+            <div class="card-desc">Search query analytics</div>
+          </div>
+          <div class="card dashboard-card" data-id="pg-calculator">
+            <div class="card-name">Calculator</div>
+            <div class="card-desc">Pricing & margin calculator</div>
+          </div>
+          <div class="card dashboard-card" data-id="pg-unit-econ">
+            <div class="card-name">Unit Economics</div>
+            <div class="card-desc">Per-unit cost and profit analysis</div>
+          </div>
+          <div class="card dashboard-card" data-id="pg-alerts">
+            <div class="card-name">Alerts</div>
+            <div class="card-desc">Custom alert rules & notification settings</div>
+          </div>
+          <div class="card dashboard-card" data-id="pg-payouts">
+            <div class="card-name">Payouts</div>
+            <div class="card-desc">Marketplace payout tracking</div>
+          </div>
+          <div class="card dashboard-card" data-id="pg-team">
+            <div class="card-name">Team</div>
+            <div class="card-desc">Multi-user team access</div>
+          </div>
+          <div class="card dashboard-card" data-id="pg-referral">
+            <div class="card-name">Referral</div>
+            <div class="card-desc">Referral program & tracking</div>
+          </div>
+          <div class="card dashboard-card" data-id="pg-sync">
+            <div class="card-name">Data Sync</div>
+            <div class="card-desc">Manual sync triggers, sync history</div>
+          </div>
+          <div class="card dashboard-card" data-id="pg-settings">
+            <div class="card-name">Settings</div>
+            <div class="card-desc">Account, profile, shop tokens, notifications</div>
+          </div>
         </div>
+      </div>
 
-        <div class="detail-section">
-          <div class="detail-label">Purpose & Details</div>
-          <div class="detail-value" id="detailPurpose"></div>
+      <div class="flow-arrow">▼ ▼ ▼</div>
+
+      <!-- API LAYER -->
+      <div class="section">
+        <div class="section-label api-label">API Routes (50+ endpoints)</div>
+        <div class="cards-row cols-5" id="api-row">
+          <div class="card api-card" data-id="api-auth">
+            <div class="card-name">Auth APIs</div>
+            <div class="card-desc">signup, login, verify-email, resend-code, delete-account, update-password</div>
+            <div class="card-tags"><span class="tag">6 routes</span></div>
+          </div>
+          <div class="card api-card" data-id="api-sync">
+            <div class="card-name">Marketplace Sync</div>
+            <div class="card-desc">uzum/sync, wildberries/sync, yandex/sync, wildberries/ads-sync, yandex/ads-sync</div>
+            <div class="card-tags"><span class="tag">5 routes</span><span class="tag">read-only</span></div>
+          </div>
+          <div class="card api-card" data-id="api-billing">
+            <div class="card-name">Billing APIs</div>
+            <div class="card-desc">create-payment, click/prepare, click/complete, payme webhook, expire-plans</div>
+            <div class="card-tags"><span class="tag">5 routes</span></div>
+          </div>
+          <div class="card api-card" data-id="api-extension">
+            <div class="card-name">Extension APIs</div>
+            <div class="card-desc">activate, me, products, product, stats, validate, send-alerts, daily-summary, telegram-link/status</div>
+            <div class="card-tags"><span class="tag">10 routes</span><span class="tag">CORS</span></div>
+          </div>
+          <div class="card api-card" data-id="api-telegram">
+            <div class="card-name">Telegram APIs</div>
+            <div class="card-desc">link, disconnect, status, prefs, webhook, channel-check, channel-nonce</div>
+            <div class="card-tags"><span class="tag">7 routes</span></div>
+          </div>
+          <div class="card api-card" data-id="api-cron">
+            <div class="card-name">Cron Jobs</div>
+            <div class="card-desc">cron/sync — scheduled marketplace sync. cron/telegram-digest — daily summary notifications.</div>
+            <div class="card-tags"><span class="tag">2 routes</span><span class="tag">scheduled</span></div>
+          </div>
+          <div class="card api-card" data-id="api-data">
+            <div class="card-name">Data APIs</div>
+            <div class="card-desc">alerts, settings, products/physical-stock, warehouses, warehouses/assign, sync-days, unit-economics</div>
+            <div class="card-tags"><span class="tag">8 routes</span></div>
+          </div>
+          <div class="card api-card" data-id="api-market">
+            <div class="card-name">Market APIs</div>
+            <div class="card-desc">market/products, market/wildberries, market/yandex — proxy endpoints for marketplace data</div>
+            <div class="card-tags"><span class="tag">3 routes</span></div>
+          </div>
+          <div class="card api-card" data-id="api-other">
+            <div class="card-name">Other APIs</div>
+            <div class="card-desc">health, feedback, demo, referral/track, settings/save, shops/token</div>
+            <div class="card-tags"><span class="tag">6 routes</span></div>
+          </div>
+          <div class="card api-card" data-id="api-handler">
+            <div class="card-name">API Handler</div>
+            <div class="card-desc">withErrorHandler wrapper — centralized error handling, logging, CORS for all routes</div>
+            <div class="card-tags"><span class="tag">middleware</span></div>
+          </div>
         </div>
+      </div>
 
-        <div class="detail-section" id="connectionsSection" style="display: none;">
-          <div class="detail-label">Connected To</div>
-          <div id="detailConnections"></div>
+      <div class="flow-arrow">▼ ▼ ▼</div>
+
+      <!-- DATA LAYER -->
+      <div class="section">
+        <div class="section-label data-label">Data Layer</div>
+        <div class="cards-row cols-3" id="data-row">
+          <div class="card data-card" data-id="postgresql">
+            <div class="card-name"><span class="status-dot green"></span>PostgreSQL 16</div>
+            <div class="card-desc">21 tables: users, shops, orders, products, order_items, daily_stats, ad_campaigns, ad_stats, keywords, reviews, search_phrases, warehouses, warehouse_mappings, billing_plans, payments, sync_logs, settings, alerts, alert_settings, referrals, verification_tokens</div>
+            <div class="card-tags"><span class="tag">Drizzle ORM</span><span class="tag">21 tables</span><span class="tag">Migrations</span></div>
+          </div>
+          <div class="card data-card" data-id="drizzle">
+            <div class="card-name"><span class="status-dot green"></span>Drizzle ORM</div>
+            <div class="card-desc">Type-safe SQL queries, schema-first migrations, relational queries. Supports all 21 tables with proper relations.</div>
+            <div class="card-tags"><span class="tag">TypeScript</span><span class="tag">Schema</span><span class="tag">Migrate</span></div>
+          </div>
+          <div class="card data-card" data-id="encryption">
+            <div class="card-name"><span class="status-dot green"></span>Encryption</div>
+            <div class="card-desc">AES-256-GCM encryption for shop API tokens at rest. ENCRYPTION_KEY env var. Encrypt/decrypt on read/write.</div>
+            <div class="card-tags"><span class="tag">AES-256-GCM</span><span class="tag">Token storage</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flow-arrow">▼ ▼ ▼</div>
+
+      <!-- EXTERNAL SERVICES -->
+      <div class="section">
+        <div class="section-label external-label">External Services</div>
+        <div class="cards-row cols-6" id="external-row">
+          <div class="card external-card" data-id="uzum">
+            <div class="card-name">Uzum Market</div>
+            <div class="card-desc">Uzbekistan marketplace — orders, products, stats sync</div>
+            <div class="card-tags"><span class="tag">REST API</span><span class="tag">read-only</span></div>
+          </div>
+          <div class="card external-card" data-id="yandex">
+            <div class="card-name">Yandex Market</div>
+            <div class="card-desc">Russia marketplace — orders, offers, ads, stocks sync</div>
+            <div class="card-tags"><span class="tag">REST API</span><span class="tag">read-only</span></div>
+          </div>
+          <div class="card external-card" data-id="wildberries">
+            <div class="card-name">Wildberries</div>
+            <div class="card-desc">Russia marketplace — orders, products, ads sync</div>
+            <div class="card-tags"><span class="tag">REST API</span><span class="tag">read-only</span></div>
+          </div>
+          <div class="card external-card" data-id="click-pay">
+            <div class="card-name">Click</div>
+            <div class="card-desc">UZ payment — prepare/complete flow</div>
+            <div class="card-tags"><span class="tag">Payment</span></div>
+          </div>
+          <div class="card external-card" data-id="payme-pay">
+            <div class="card-name">Payme</div>
+            <div class="card-desc">UZ payment — webhook integration</div>
+            <div class="card-tags"><span class="tag">Payment</span></div>
+          </div>
+          <div class="card external-card" data-id="gmail-smtp">
+            <div class="card-name">Gmail SMTP</div>
+            <div class="card-desc">Verification codes, password resets via App Password</div>
+            <div class="card-tags"><span class="tag">Nodemailer</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flow-arrow">▼ ▼ ▼</div>
+
+      <!-- INFRASTRUCTURE -->
+      <div class="section">
+        <div class="section-label infra-label">Infrastructure & Deployment</div>
+        <div class="cards-row cols-5" id="infra-row">
+          <div class="card infra-card" data-id="hetzner">
+            <div class="card-name"><span class="status-dot green"></span>Hetzner VPS</div>
+            <div class="card-desc">Ubuntu 24.04, production host for app + database. IP: 65.21.158.239</div>
+            <div class="card-tags"><span class="tag">Ubuntu 24.04</span><span class="tag">Self-hosted</span></div>
+          </div>
+          <div class="card infra-card" data-id="nginx">
+            <div class="card-name"><span class="status-dot green"></span>Nginx</div>
+            <div class="card-desc">Reverse proxy, SSL termination, daromadchi.uz → localhost:3000</div>
+            <div class="card-tags"><span class="tag">SSL</span><span class="tag">Reverse Proxy</span></div>
+          </div>
+          <div class="card infra-card" data-id="pm2">
+            <div class="card-name"><span class="status-dot green"></span>PM2</div>
+            <div class="card-desc">Process manager — auto-restart, logs, cluster mode</div>
+            <div class="card-tags"><span class="tag">Node.js</span><span class="tag">Process Mgr</span></div>
+          </div>
+          <div class="card infra-card" data-id="github-ci">
+            <div class="card-name"><span class="status-dot green"></span>GitHub Actions</div>
+            <div class="card-desc">CI/CD: Lint → TypeCheck → Build → Health Check → Deploy via SSH → Telegram notify</div>
+            <div class="card-tags"><span class="tag">CI/CD</span><span class="tag">5 jobs</span></div>
+          </div>
+          <div class="card infra-card" data-id="deploy">
+            <div class="card-name"><span class="status-dot green"></span>Deploy Pipeline</div>
+            <div class="card-desc">git reset --hard → npm ci → npm run build → pm2 restart. Triggered on push to main.</div>
+            <div class="card-tags"><span class="tag">SSH</span><span class="tag">Auto-deploy</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PUBLIC PAGES -->
+      <div class="section" style="margin-top: 20px;">
+        <div class="section-label client-label">Public Pages</div>
+        <div class="cards-row cols-6" id="public-row">
+          <div class="card client-card" data-id="pg-landing">
+            <div class="card-name">Landing</div>
+            <div class="card-desc">Hero, features, pricing, testimonials</div>
+          </div>
+          <div class="card client-card" data-id="pg-login">
+            <div class="card-name">Login / Signup</div>
+            <div class="card-desc">Auth flow with email verification</div>
+          </div>
+          <div class="card client-card" data-id="pg-pricing">
+            <div class="card-name">Pricing</div>
+            <div class="card-desc">Plan comparison, subscription tiers</div>
+          </div>
+          <div class="card client-card" data-id="pg-help">
+            <div class="card-name">Help Center</div>
+            <div class="card-desc">Knowledge base, FAQ articles</div>
+          </div>
+          <div class="card client-card" data-id="pg-about">
+            <div class="card-name">About</div>
+            <div class="card-desc">Company info</div>
+          </div>
+          <div class="card client-card" data-id="pg-legal">
+            <div class="card-name">Legal</div>
+            <div class="card-desc">Terms, privacy, compliance</div>
+          </div>
         </div>
       </div>
     </div>
   </div>
 
+  <!-- Detail Panel -->
+  <div class="detail-panel" id="detailPanel">
+    <div class="detail-header">
+      <div>
+        <div class="detail-title" id="detailTitle">Component</div>
+      </div>
+      <button class="close-btn" id="closeBtn">&times;</button>
+    </div>
+    <div class="detail-content">
+      <div class="detail-section">
+        <div class="detail-label">Description</div>
+        <div class="detail-value" id="detailDesc"></div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-label">Technology</div>
+        <div style="display: flex; flex-wrap: wrap; gap: 6px;" id="detailTech"></div>
+      </div>
+      <div class="detail-section" id="connectionsSection" style="display: none;">
+        <div class="detail-label">Connected To</div>
+        <div id="detailConnections"></div>
+      </div>
+    </div>
+  </div>
+
   <script>
-    const componentData = {
+    const data = {
       'web-app': {
         name: 'Web App',
-        status: 'complete',
-        desc: 'Next.js 16 dashboard (daromadchi.uz)',
-        tech: ['React 19', 'Next.js 16', 'TypeScript', 'Tailwind CSS', 'Multi-language'],
-        purpose: 'Main user interface for sellers. Real-time KPI dashboard showing revenue, orders, profit by marketplace. Language switcher (RU/UZ/EN). Shop management, order history, analytics. Email verification on signup with 6-digit code.',
-        bugs: [],
-        fixes: [],
+        desc: 'Next.js 16 dashboard at daromadchi.uz. React 19 with Turbopack. 20+ dashboard pages for multi-marketplace seller analytics. Language switcher (UZ/RU/EN). Email verification on signup with 6-digit code. Responsive design with Tailwind CSS.',
+        tech: ['React 19', 'Next.js 16.2.4', 'TypeScript', 'Tailwind CSS', 'Turbopack', 'i18n (UZ/RU/EN)'],
         connections: [
-          { name: 'NextAuth.js v5', desc: 'User authentication and session validation' },
-          { name: 'API Routes', desc: 'Fetch dashboard metrics and shop data' }
+          { name: 'NextAuth.js v5', desc: 'Session management and route protection' },
+          { name: 'API Routes', desc: 'All dashboard data flows through REST APIs' },
+          { name: 'Hetzner VPS', desc: 'Hosted as PM2-managed Node.js process' }
         ]
       },
       'chrome-ext': {
         name: 'Chrome Extension',
-        status: 'complete',
-        desc: 'Marketplace browser automation',
-        tech: ['Manifest v3', 'Service Workers', 'Content Scripts'],
-        purpose: 'Automates repetitive tasks: price updates, stock changes, listing management. Communicates with API via CORS-whitelisted cross-origin requests.',
-        bugs: [],
-        fixes: [],
+        desc: 'Manifest v3 browser extension for marketplace automation. Tracks products, monitors prices and stock across all three marketplaces. Sends daily summaries and alerts via Telegram. Communicates with API via CORS-whitelisted requests.',
+        tech: ['Manifest v3', 'Service Workers', 'Content Scripts', 'CORS'],
         connections: [
-          { name: 'API Routes', desc: 'Cross-origin automation requests' }
+          { name: 'Extension APIs', desc: '10 dedicated endpoints for activation, products, stats, alerts' },
+          { name: 'Telegram Bot', desc: 'Sends alerts and daily summaries via linked Telegram account' }
+        ]
+      },
+      'telegram-bot': {
+        name: 'Telegram Bot',
+        desc: 'User-facing Telegram bot for notifications. Daily digest of marketplace stats. Price change alerts. Order notifications. Account linking via deep links with nonce verification. Per-user notification preferences. Also receives CI/CD deploy notifications from GitHub Actions.',
+        tech: ['Telegram Bot API', 'Webhooks', 'Deep Links', 'Nonce Auth'],
+        connections: [
+          { name: 'Telegram APIs', desc: '7 routes for link, disconnect, status, prefs, webhook' },
+          { name: 'Cron Jobs', desc: 'telegram-digest sends scheduled daily summaries' },
+          { name: 'GitHub Actions', desc: 'Receives deploy success/failure notifications' }
         ]
       },
       'nextauth': {
         name: 'NextAuth.js v5',
-        status: 'complete',
-        desc: 'JWT session + email verification',
-        tech: ['OAuth 2.0', 'JWT', 'Credentials', 'NextAuth v5', 'bcryptjs'],
-        purpose: 'Authenticates users via Credentials provider with bcrypt password hashing. 30-day JWT token expiration. Blocks login for unverified emails (EMAIL_NOT_VERIFIED). Email verification required after signup via 6-digit code. Protects dashboard routes.',
-        bugs: [],
-        fixes: [],
+        desc: 'Authentication via Credentials provider with bcrypt password hashing (12 rounds). 30-day JWT sessions. Case-insensitive email lookup. Blocks login for unverified emails when SMTP is configured (EMAIL_NOT_VERIFIED error). Protects all /dashboard routes via middleware.',
+        tech: ['NextAuth v5', 'JWT', 'bcryptjs', 'Credentials Provider', 'Middleware'],
         connections: [
-          { name: 'Web App', desc: 'Validates user sessions' },
-          { name: 'API Routes', desc: 'Authenticates backend requests' },
-          { name: 'SMTP Email', desc: 'Sends verification codes on signup' },
-          { name: 'PostgreSQL', desc: 'Users table with email_verified timestamp, verification_tokens table' }
+          { name: 'Web App', desc: 'Session validation and route protection' },
+          { name: 'PostgreSQL', desc: 'Users table with email_verified timestamp' },
+          { name: 'Email Verification', desc: 'Enforces verification before first login' }
         ]
       },
-      'api-routes': {
-        name: 'API Routes',
-        status: 'complete',
-        desc: 'Rate-limited REST endpoints',
-        tech: ['REST', 'CORS', 'Rate Limiting', '10/20/100 per minute'],
-        purpose: 'Core backend: handles sync requests, dashboard queries, marketplace integration. Rate limits: sync=10/min, auth=20/min, other=100/min per IP.',
-        bugs: [
-          { priority: 'high', ref: 'REF #1', desc: 'CORS preflight sometimes hangs on slow networks, causing 4s timeout on extension requests' },
-          { priority: 'medium', ref: 'REF #2', desc: 'Rate limit counter resets on restart, losing request history for that period' }
-        ],
-        fixes: [
-          { title: 'Add request timeout safeguards', desc: 'Wrap CORS preflight in Promise.race with 2s timeout to prevent hanging' },
-          { title: 'Persistent rate limit store', desc: 'Move rate limit tracking to Redis instead of in-memory Map to survive restarts' }
-        ],
+      'email-verify': {
+        name: 'Email Verification',
+        desc: '6-digit verification code sent via SMTP on signup. Codes stored in verification_tokens table with 10-minute expiry. Rate-limited resend (5 per 10 min per IP). Graceful degradation: verification only enforced when SMTP_USER env var is set. Prevents email enumeration on resend endpoint.',
+        tech: ['Nodemailer', 'Gmail App Password', 'SMTP', 'crypto.randomInt', 'HTML Templates'],
         connections: [
-          { name: 'Web App', desc: 'Dashboard data queries' },
-          { name: 'Chrome Extension', desc: 'Automation requests' },
-          { name: 'Marketplace APIs', desc: 'Sync orders/prices' },
-          { name: 'PostgreSQL', desc: 'Store/retrieve data' }
+          { name: 'Auth APIs', desc: 'signup, verify-email, resend-code routes' },
+          { name: 'PostgreSQL', desc: 'verification_tokens table with token, user_id, email, expires_at' },
+          { name: 'Gmail SMTP', desc: 'Sends HTML-formatted verification emails' }
         ]
       },
-      'marketplaces': {
-        name: 'Marketplace APIs',
-        status: 'complete',
-        desc: 'Uzum, Yandex, Wildberries',
-        tech: ['REST APIs', 'Read-Only', 'Cron Jobs', 'Background Sync'],
-        purpose: 'STRICTLY READ-ONLY integrations. Background jobs sync orders, inventory, and prices. NO writes to marketplaces (immutable rule enforced).',
-        bugs: [],
-        fixes: [
-          { title: 'Add retry logic with exponential backoff', desc: 'Currently fails silently if marketplace API timeouts. Add 3 retries with increasing delays.' }
-        ],
+      'rate-limit': {
+        name: 'Rate Limiting',
+        desc: 'Per-IP rate limiting using in-memory Map. Signup: 10 per hour. Auth: 20 per minute. Sync: 10 per minute. General API: 100 per minute. Map auto-cleanup when size exceeds 5000 entries. Resets on server restart.',
+        tech: ['In-memory Map', 'IP-based', 'Per-endpoint limits'],
         connections: [
-          { name: 'API Routes', desc: 'Triggered by sync endpoints' },
-          { name: 'PostgreSQL', desc: 'Store synced data' }
+          { name: 'API Routes', desc: 'Applied to all authenticated endpoints' },
+          { name: 'Auth APIs', desc: 'Stricter limits for signup and login' }
+        ]
+      },
+      'readonly-guard': {
+        name: 'Marketplace Read-Only Guard',
+        desc: 'Enforces the immutable rule: NO writes to marketplace APIs. Only whitelisted POST-for-read endpoints are allowed (Yandex offer-mappings, stocks, stats return 405 on GET). All other PUT/PATCH/DELETE to external marketplaces are blocked.',
+        tech: ['Middleware', 'Whitelist', 'Immutable Rule'],
+        connections: [
+          { name: 'Marketplace Sync', desc: 'Guards all outbound marketplace requests' }
+        ]
+      },
+      'api-auth': {
+        name: 'Auth APIs',
+        desc: '6 routes: [...nextauth] (login/session), signup (with verification), verify-email (6-digit code), resend-code (rate-limited), delete-account (admin-only via CRON_SECRET), update-password.',
+        tech: ['NextAuth', 'bcryptjs', 'Zod validation', 'Rate limiting'],
+        connections: [
+          { name: 'NextAuth.js v5', desc: 'Session management' },
+          { name: 'Email Verification', desc: 'Verification flow on signup' },
+          { name: 'PostgreSQL', desc: 'Users and verification_tokens tables' }
+        ]
+      },
+      'api-sync': {
+        name: 'Marketplace Sync APIs',
+        desc: '5 routes: uzum/sync, wildberries/sync, yandex/sync, wildberries/ads-sync, yandex/ads-sync. All strictly read-only. Sync orders, products, stocks, advertising stats from marketplace APIs to local PostgreSQL.',
+        tech: ['REST', 'Read-only', 'Background jobs', 'Encrypted tokens'],
+        connections: [
+          { name: 'Uzum Market', desc: 'Sync orders and products' },
+          { name: 'Yandex Market', desc: 'Sync orders, offers, ads, stocks' },
+          { name: 'Wildberries', desc: 'Sync orders, products, ads' },
+          { name: 'PostgreSQL', desc: 'Store all synced data' }
+        ]
+      },
+      'api-billing': {
+        name: 'Billing APIs',
+        desc: '5 routes: create-payment (initiate subscription), click/prepare + click/complete (Click payment flow), payme (Payme webhook), expire-plans (cron-triggered plan expiration).',
+        tech: ['Click API', 'Payme API', 'Webhooks', 'Plan management'],
+        connections: [
+          { name: 'Click', desc: 'Two-phase payment: prepare then complete' },
+          { name: 'Payme', desc: 'Webhook-based payment confirmation' },
+          { name: 'PostgreSQL', desc: 'billing_plans and payments tables' }
+        ]
+      },
+      'api-extension': {
+        name: 'Extension APIs',
+        desc: '10 routes for Chrome extension: activate (license), me (user info), products/product (catalog), stats (dashboard data), validate (token check), send-alerts, send-daily-summary, telegram-link/telegram-status.',
+        tech: ['CORS', 'Token auth', 'Cross-origin'],
+        connections: [
+          { name: 'Chrome Extension', desc: 'All extension communication goes through these endpoints' },
+          { name: 'Telegram Bot', desc: 'Extension triggers Telegram alerts and summaries' }
+        ]
+      },
+      'api-telegram': {
+        name: 'Telegram APIs',
+        desc: '7 routes: link (deep link account linking), disconnect, status (check link), prefs (notification preferences), webhook (bot updates), channel-check, ext/channel-nonce (nonce verification).',
+        tech: ['Bot API', 'Webhooks', 'Deep Links', 'Nonce'],
+        connections: [
+          { name: 'Telegram Bot', desc: 'Manages bot webhook and user interactions' },
+          { name: 'PostgreSQL', desc: 'Stores telegram_chat_id and notification prefs in users table' }
+        ]
+      },
+      'api-cron': {
+        name: 'Cron Jobs',
+        desc: '2 scheduled routes: cron/sync (periodic marketplace data sync for all active shops), cron/telegram-digest (daily summary notifications to linked Telegram users). Protected by CRON_SECRET header.',
+        tech: ['Scheduled', 'CRON_SECRET auth', 'Background processing'],
+        connections: [
+          { name: 'Marketplace Sync', desc: 'Triggers sync for all active shops' },
+          { name: 'Telegram Bot', desc: 'Sends daily digest notifications' },
+          { name: 'PostgreSQL', desc: 'Reads shop configs, writes sync results' }
+        ]
+      },
+      'api-data': {
+        name: 'Data APIs',
+        desc: '8 routes: alerts (CRUD), alerts/settings, products/physical-stock, warehouses, warehouses/assign, sync-days, unit-economics, unit-economics/settings.',
+        tech: ['REST', 'Authenticated', 'CRUD'],
+        connections: [
+          { name: 'PostgreSQL', desc: 'Direct database queries for dashboard data' },
+          { name: 'Dashboard Pages', desc: 'Supply data to analytics, alerts, warehouse pages' }
+        ]
+      },
+      'api-market': {
+        name: 'Market Proxy APIs',
+        desc: '3 routes: market/products (aggregated product data), market/wildberries, market/yandex. Proxy endpoints that normalize marketplace data formats for the dashboard.',
+        tech: ['REST', 'Data normalization', 'Aggregation'],
+        connections: [
+          { name: 'PostgreSQL', desc: 'Read synced marketplace data' },
+          { name: 'Dashboard Pages', desc: 'Normalized data for product views' }
+        ]
+      },
+      'api-other': {
+        name: 'Other APIs',
+        desc: '6 routes: health (uptime check for CI), feedback (user feedback form), demo (demo data), referral/track (referral link tracking), settings/save, shops/token (encrypted shop API token management).',
+        tech: ['REST', 'Health check', 'Feedback'],
+        connections: [
+          { name: 'GitHub Actions', desc: 'Health check endpoint pinged after deploy' },
+          { name: 'PostgreSQL', desc: 'Store feedback, referrals, settings' }
+        ]
+      },
+      'api-handler': {
+        name: 'API Handler (withErrorHandler)',
+        desc: 'Centralized error handling wrapper for all API routes. Catches errors, formats responses, adds CORS headers. Used by every route via withErrorHandler() HOF.',
+        tech: ['Error handling', 'CORS', 'HOF pattern'],
+        connections: [
+          { name: 'All API Routes', desc: 'Wraps every route handler' }
         ]
       },
       'postgresql': {
         name: 'PostgreSQL 16',
-        status: 'complete',
-        desc: 'Production database',
-        tech: ['PostgreSQL 16', 'Drizzle ORM', 'Migrations', 'Indexes'],
-        purpose: 'Persistent storage: users, shops, orders, products, sync history, analytics. Uses Drizzle ORM for type-safe queries. Schema versioned.',
-        bugs: [],
-        fixes: [],
+        desc: '21 tables: users, shops, orders, products, order_items, daily_stats, ad_campaigns, ad_stats, keywords, reviews, search_phrases, warehouses, warehouse_mappings, billing_plans, payments, sync_logs, settings, alerts, alert_settings, referrals, verification_tokens. Self-hosted on Hetzner VPS.',
+        tech: ['PostgreSQL 16', 'Drizzle ORM', 'Migrations', 'Indexes', '21 tables'],
         connections: [
-          { name: 'API Routes', desc: 'Query and write data' },
-          { name: 'Marketplace APIs', desc: 'Store sync results' }
+          { name: 'Drizzle ORM', desc: 'Type-safe query builder' },
+          { name: 'All API Routes', desc: 'Central data store for all operations' },
+          { name: 'Hetzner VPS', desc: 'Runs locally on the same server' }
         ]
       },
-      'telegram': {
-        name: 'Telegram Bot',
-        status: 'complete',
-        desc: 'Deployment notifications',
-        tech: ['Bot API', 'Webhooks'],
-        purpose: 'Sends CI/CD notifications (deploy success/failure) to admin chat. Integrated in GitHub Actions.',
-        bugs: [],
-        fixes: [],
+      'drizzle': {
+        name: 'Drizzle ORM',
+        desc: 'Type-safe SQL query builder for PostgreSQL. Schema-first approach with TypeScript types generated from schema definitions. Supports relational queries, migrations, and all 21 tables with proper foreign key relations.',
+        tech: ['TypeScript', 'Schema-first', 'Relational queries', 'Migrations'],
         connections: [
-          { name: 'GitHub Actions', desc: 'Receive workflow completion events' }
+          { name: 'PostgreSQL', desc: 'Generates and runs SQL queries' },
+          { name: 'API Routes', desc: 'Used by all routes for database access' }
         ]
       },
-      'email-smtp': {
-        name: 'SMTP Email',
-        status: 'complete',
-        desc: 'Email verification & password reset',
-        tech: ['Nodemailer', 'SMTP', 'Gmail App Password', 'HTML Templates'],
-        purpose: 'Sends 6-digit verification codes on signup and password reset. Uses nodemailer with SMTP transport (Gmail). Codes expire in 10 minutes. Rate-limited resend endpoint (5 per 10 min per IP). Verification required before first login.',
-        bugs: [],
-        fixes: [],
+      'encryption': {
+        name: 'Token Encryption',
+        desc: 'AES-256-GCM encryption for marketplace API tokens stored in the shops table. Encrypts on save, decrypts on read. Uses ENCRYPTION_KEY environment variable. Prevents token exposure if database is compromised.',
+        tech: ['AES-256-GCM', 'Node.js crypto', 'At-rest encryption'],
         connections: [
-          { name: 'API Routes', desc: 'Signup sends verification code, resend-code endpoint, password reset' },
-          { name: 'PostgreSQL', desc: 'Stores verification tokens with expiry in verification_tokens table' }
+          { name: 'PostgreSQL', desc: 'Encrypted tokens stored in shops table' },
+          { name: 'Marketplace Sync', desc: 'Decrypts tokens before API calls' }
         ]
       },
-      'github': {
-        name: 'GitHub',
-        status: 'complete',
-        desc: 'Source control & CI/CD',
-        tech: ['GitHub', 'Actions', 'Workflows'],
-        purpose: 'Central repository. CI/CD pipeline: Lint → TypeCheck → Build → HealthCheck → Deploy. Automatic on push to main.',
-        bugs: [],
-        fixes: [],
-        connections: [
-          { name: 'Hetzner VPS', desc: 'Deploy via SSH on successful CI' }
-        ]
+      'uzum': {
+        name: 'Uzum Market API',
+        desc: 'Uzbekistan\'s largest marketplace. REST API integration for syncing orders, products, and sales statistics. Strictly read-only — no price/stock/listing writes.',
+        tech: ['REST API', 'Read-only', 'OAuth tokens'],
+        connections: [{ name: 'Marketplace Sync APIs', desc: 'uzum/sync endpoint' }]
+      },
+      'yandex': {
+        name: 'Yandex Market API',
+        desc: 'Russian marketplace. Syncs orders, offer-mappings, stocks, and advertising stats. Some endpoints require POST for read operations (offer-mappings, stocks, stats — whitelisted in read-only guard).',
+        tech: ['REST API', 'Read-only', 'POST-for-read'],
+        connections: [{ name: 'Marketplace Sync APIs', desc: 'yandex/sync and yandex/ads-sync endpoints' }]
+      },
+      'wildberries': {
+        name: 'Wildberries API',
+        desc: 'Russian marketplace. Syncs orders, products, and advertising campaign statistics. REST API with token-based authentication. Strictly read-only.',
+        tech: ['REST API', 'Read-only', 'Token auth'],
+        connections: [{ name: 'Marketplace Sync APIs', desc: 'wildberries/sync and wildberries/ads-sync endpoints' }]
+      },
+      'click-pay': {
+        name: 'Click Payment',
+        desc: 'Uzbekistan payment provider. Two-phase flow: prepare (reserves funds) → complete (confirms payment). Used for subscription billing.',
+        tech: ['Payment API', 'Two-phase', 'UZS currency'],
+        connections: [{ name: 'Billing APIs', desc: 'click/prepare and click/complete routes' }]
+      },
+      'payme-pay': {
+        name: 'Payme Payment',
+        desc: 'Uzbekistan payment provider. Webhook-based integration — Payme sends transaction events to our webhook endpoint for confirmation.',
+        tech: ['Payment API', 'Webhooks', 'UZS currency'],
+        connections: [{ name: 'Billing APIs', desc: 'payme webhook route' }]
+      },
+      'gmail-smtp': {
+        name: 'Gmail SMTP',
+        desc: 'Email delivery via Gmail App Password. Sends HTML-formatted 6-digit verification codes on signup and password reset codes. Configurable via SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM env vars.',
+        tech: ['Nodemailer', 'Gmail', 'App Password', 'HTML templates'],
+        connections: [{ name: 'Email Verification', desc: 'Sends verification and password reset codes' }]
       },
       'hetzner': {
         name: 'Hetzner VPS',
-        status: 'complete',
-        desc: 'Self-hosted (65.21.158.239)',
-        tech: ['Ubuntu 24.04', 'Nginx', 'PM2', 'Node.js'],
-        purpose: 'Production server running Next.js app, PostgreSQL database, Nginx reverse proxy. Handles daromadchi.uz domain.',
-        bugs: [],
-        fixes: [],
+        desc: 'Production server (65.21.158.239) running Ubuntu 24.04. Hosts Next.js app (PM2), PostgreSQL 16, and Nginx reverse proxy. All services run on a single VPS.',
+        tech: ['Ubuntu 24.04', 'Dedicated VPS', '65.21.158.239'],
         connections: [
-          { name: 'Web App', desc: 'Serves production dashboard' },
-          { name: 'API Routes', desc: 'Runs backend services' },
-          { name: 'PostgreSQL', desc: 'Local database' }
+          { name: 'Nginx', desc: 'Reverse proxy on port 80/443' },
+          { name: 'PM2', desc: 'Manages Node.js process' },
+          { name: 'PostgreSQL', desc: 'Local database on same server' }
         ]
-      }
+      },
+      'nginx': {
+        name: 'Nginx',
+        desc: 'Reverse proxy and SSL termination. Routes daromadchi.uz traffic to localhost:3000 (Next.js). Handles HTTPS certificates.',
+        tech: ['Reverse Proxy', 'SSL/TLS', 'Let\'s Encrypt'],
+        connections: [
+          { name: 'Web App', desc: 'Proxies HTTPS traffic to Next.js' },
+          { name: 'Hetzner VPS', desc: 'Runs as system service' }
+        ]
+      },
+      'pm2': {
+        name: 'PM2',
+        desc: 'Node.js process manager. Auto-restarts on crash, log management, startup scripts. Runs the Next.js production server.',
+        tech: ['Process Manager', 'Auto-restart', 'Logs'],
+        connections: [
+          { name: 'Web App', desc: 'Manages Next.js process lifecycle' },
+          { name: 'Deploy Pipeline', desc: 'pm2 restart daromadchi after deploy' }
+        ]
+      },
+      'github-ci': {
+        name: 'GitHub Actions CI/CD',
+        desc: 'Pipeline: Lint → TypeCheck → Build → Health Check (main only) → Telegram Notify. Runs on every push. Build requires Supabase and encryption env vars as secrets.',
+        tech: ['GitHub Actions', 'Node.js 20', 'npm ci', '5 jobs'],
+        connections: [
+          { name: 'Deploy Pipeline', desc: 'Triggers deploy on push to main' },
+          { name: 'Telegram Bot', desc: 'Sends deploy success/failure notifications' },
+          { name: 'Health Check', desc: 'Pings /api/health after deploy' }
+        ]
+      },
+      'deploy': {
+        name: 'Deploy Pipeline',
+        desc: 'On push to main: SSH to VPS → git reset --hard origin/main → npm ci → npm run build → pm2 restart daromadchi. Automated via GitHub Actions.',
+        tech: ['SSH', 'git', 'npm', 'pm2'],
+        connections: [
+          { name: 'Hetzner VPS', desc: 'Deploys via SSH' },
+          { name: 'GitHub Actions', desc: 'Triggered by successful CI build' }
+        ]
+      },
+      'pg-analytics': { name: 'Analytics Page', desc: 'Revenue, orders, and profit KPIs broken down by marketplace and time period. Charts and summary cards.', tech: ['Dashboard'], connections: [] },
+      'pg-orders': { name: 'Orders Page', desc: 'Order history with filtering by marketplace, date range, and status. Detailed order view with line items.', tech: ['Dashboard'], connections: [] },
+      'pg-products': { name: 'Products Page', desc: 'Product catalog across all marketplaces. Physical stock tracking, listing status.', tech: ['Dashboard'], connections: [] },
+      'pg-pnl': { name: 'P&L Page', desc: 'Profit and loss analysis per product, per marketplace. Revenue minus costs, commissions, and fees.', tech: ['Dashboard'], connections: [] },
+      'pg-billing': { name: 'Billing Page', desc: 'Subscription management. Plan comparison, payment history. Click and Payme integration.', tech: ['Dashboard'], connections: [] },
+      'pg-advertising': { name: 'Advertising Page', desc: 'Ad campaign performance stats from Yandex and Wildberries. Spend tracking and ROI.', tech: ['Dashboard'], connections: [] },
+      'pg-keywords': { name: 'Keywords Page', desc: 'Keyword research tools and ranking data for marketplace SEO optimization.', tech: ['Dashboard'], connections: [] },
+      'pg-reviews': { name: 'Reviews Page', desc: 'Customer review monitoring across marketplaces. Rating trends.', tech: ['Dashboard'], connections: [] },
+      'pg-seasonality': { name: 'Seasonality Page', desc: 'Seasonal demand trends and forecasting to help with inventory planning.', tech: ['Dashboard'], connections: [] },
+      'pg-search': { name: 'Search Phrases Page', desc: 'Search query analytics showing what customers search for on marketplaces.', tech: ['Dashboard'], connections: [] },
+      'pg-calculator': { name: 'Calculator Page', desc: 'Pricing and margin calculator. Input costs and see projected profit per unit.', tech: ['Dashboard'], connections: [] },
+      'pg-unit-econ': { name: 'Unit Economics Page', desc: 'Per-unit cost analysis including marketplace fees, logistics, and commissions.', tech: ['Dashboard'], connections: [] },
+      'pg-alerts': { name: 'Alerts Page', desc: 'Custom alert rules for price changes, stock levels, order spikes. Notification settings.', tech: ['Dashboard'], connections: [] },
+      'pg-payouts': { name: 'Payouts Page', desc: 'Track marketplace payouts and reconcile with expected revenue.', tech: ['Dashboard'], connections: [] },
+      'pg-team': { name: 'Team Page', desc: 'Multi-user team management. Invite team members with role-based access.', tech: ['Dashboard'], connections: [] },
+      'pg-referral': { name: 'Referral Page', desc: 'Referral program dashboard. Share links, track signups, earn rewards.', tech: ['Dashboard'], connections: [] },
+      'pg-sync': { name: 'Data Sync Page', desc: 'Manual sync triggers for each marketplace. View sync history and status logs.', tech: ['Dashboard'], connections: [] },
+      'pg-settings': { name: 'Settings Page', desc: 'Account settings, profile, shop API token management (encrypted), notification preferences.', tech: ['Dashboard'], connections: [] },
+      'pg-landing': { name: 'Landing Page', desc: 'Public landing page with hero section, feature showcase, pricing tiers, and testimonials. Multi-language support.', tech: ['Public'], connections: [] },
+      'pg-login': { name: 'Login / Signup Page', desc: 'Authentication page with login, signup, forgot password, and email verification modes. 6-digit code input with auto-focus and paste support.', tech: ['Public'], connections: [] },
+      'pg-pricing': { name: 'Pricing Page', desc: 'Detailed plan comparison page. Free, Pro, and Enterprise tiers.', tech: ['Public'], connections: [] },
+      'pg-help': { name: 'Help Center', desc: 'Knowledge base with searchable articles. Slug-based article routing.', tech: ['Public'], connections: [] },
+      'pg-about': { name: 'About Page', desc: 'Company information and mission statement.', tech: ['Public'], connections: [] },
+      'pg-legal': { name: 'Legal Pages', desc: 'Terms of service, privacy policy, and compliance documentation.', tech: ['Public'], connections: [] },
     };
 
-    const layerConfig = [
-      { label: '🖥️ Client', color: 'client', components: ['web-app', 'chrome-ext'] },
-      { label: '🔐 Auth', color: 'server', components: ['nextauth'] },
-      { label: '⚙️ Backend', color: 'service', components: ['api-routes', 'marketplaces'] },
-      { label: '💾 Data', color: 'service', components: ['postgresql'] },
-      { label: '🌐 External', color: 'external', components: ['telegram', 'email-smtp', 'github', 'hetzner'] }
-    ];
-
-    const layersContainer = document.getElementById('layersContainer');
-
-    // Generate layers HTML
-    layerConfig.forEach(layer => {
-      const layerDiv = document.createElement('div');
-      layerDiv.className = 'layer';
-
-      let componentsHtml = '<div class="layer-label">' + layer.label + '</div><div class="components">';
-
-      layer.components.forEach(compId => {
-        const data = componentData[compId];
-        const bugCount = data.bugs.length;
-        const hasBugs = bugCount > 0 ? ' has-bugs' : '';
-
-        componentsHtml += `
-          <div class="component${hasBugs}" data-id="${compId}" style="border-color: var(--${layer.color}-color, rgba(14, 165, 233, 0.3))">
-            <div class="component-header">
-              <div class="component-name">
-                <span class="component-status ${data.status === 'bug' ? 'bug' : data.status}"></span>
-                ${data.name}
-              </div>
-              ${bugCount > 0 ? `<div class="bug-badge">🐛 ${bugCount}</div>` : ''}
-            </div>
-            <div class="component-desc">${data.desc}</div>
-          </div>
-        `;
-      });
-
-      componentsHtml += '</div>';
-      layerDiv.innerHTML = componentsHtml;
-      layersContainer.appendChild(layerDiv);
-    });
-
-    const components = document.querySelectorAll('.component');
     const detailPanel = document.getElementById('detailPanel');
     const closeBtn = document.getElementById('closeBtn');
-    const svg = document.getElementById('connectionsSvg');
 
-    // Draw connection lines with proper anchoring
-    function drawConnections() {
-      const positions = {};
-      const boxes = {};
+    document.querySelectorAll('.card').forEach(card => {
+      card.addEventListener('click', () => {
+        const id = card.getAttribute('data-id');
+        const d = data[id];
+        if (!d) return;
 
-      components.forEach(comp => {
-        const rect = comp.getBoundingClientRect();
-        const containerRect = document.getElementById('layersContainer').getBoundingClientRect();
-        const svgRect = svg.parentElement.getBoundingClientRect();
+        document.getElementById('detailTitle').textContent = d.name;
+        document.getElementById('detailDesc').textContent = d.desc;
 
-        const id = comp.getAttribute('data-id');
-        const relX = rect.left - svgRect.left;
-        const relY = rect.top - svgRect.top;
+        document.getElementById('detailTech').innerHTML = d.tech.map(t =>
+          `<span class="tag" style="font-size:11px;padding:3px 8px;">${t}</span>`
+        ).join('');
 
-        positions[id] = {
-          x: relX + rect.width / 2,
-          y: relY + rect.height / 2
-        };
-
-        boxes[id] = {
-          left: relX,
-          top: relY,
-          right: relX + rect.width,
-          bottom: relY + rect.height,
-          width: rect.width,
-          height: rect.height
-        };
-      });
-
-      const connections = [
-        ['web-app', 'nextauth'],
-        ['web-app', 'api-routes'],
-        ['chrome-ext', 'api-routes'],
-        ['nextauth', 'api-routes'],
-        ['api-routes', 'marketplaces'],
-        ['api-routes', 'postgresql'],
-        ['marketplaces', 'postgresql'],
-        ['api-routes', 'telegram'],
-        ['api-routes', 'email-smtp'],
-        ['github', 'hetzner'],
-        ['hetzner', 'postgresql'],
-        ['web-app', 'hetzner']
-      ];
-
-      svg.innerHTML = '';
-
-      connections.forEach((conn, idx) => {
-        const [fromId, toId] = conn;
-        if (positions[fromId] && positions[toId] && boxes[fromId] && boxes[toId]) {
-          const from = positions[fromId];
-          const to = positions[toId];
-          const fromBox = boxes[fromId];
-          const toBox = boxes[toId];
-
-          // Find edge points
-          let x1, y1, x2, y2;
-
-          // From edge
-          if (from.x < to.x) {
-            x1 = fromBox.right;
-          } else if (from.x > to.x) {
-            x1 = fromBox.left;
-          } else {
-            x1 = from.x;
-          }
-
-          if (from.y < to.y) {
-            y1 = fromBox.bottom;
-          } else if (from.y > to.y) {
-            y1 = fromBox.top;
-          } else {
-            y1 = from.y;
-          }
-
-          // To edge
-          if (to.x < from.x) {
-            x2 = toBox.right;
-          } else if (to.x > from.x) {
-            x2 = toBox.left;
-          } else {
-            x2 = to.x;
-          }
-
-          if (to.y < from.y) {
-            y2 = toBox.bottom;
-          } else if (to.y > from.y) {
-            y2 = toBox.top;
-          } else {
-            y2 = to.y;
-          }
-
-          // Create straight line
-          const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-          path.setAttribute('d', `M ${x1} ${y1} L ${x2} ${y2}`);
-          path.setAttribute('class', 'connection-line connection-line-animated');
-          path.style.animationDelay = `${idx * 0.1}s`;
-          svg.appendChild(path);
-        }
-      });
-    }
-
-    // Show detail panel
-    components.forEach(comp => {
-      comp.addEventListener('click', () => {
-        const id = comp.getAttribute('data-id');
-        const data = componentData[id];
-
-        document.getElementById('detailTitle').textContent = data.name;
-
-        const statusClass = data.bugs.length > 0 ? 'bug' : data.status;
-        const statusText = data.bugs.length > 0 ? 'Bugs Found' : (data.status === 'complete' ? 'Complete' : data.status === 'in-progress' ? 'In Progress' : 'Not Started');
-        const statusEl = document.getElementById('detailStatus');
-        statusEl.className = `detail-status ${statusClass}`;
-        statusEl.textContent = statusText;
-
-        document.getElementById('detailDesc').textContent = data.desc;
-        document.getElementById('detailPurpose').textContent = data.purpose;
-
-        // Bugs section
-        if (data.bugs.length > 0) {
-          const bugsHtml = data.bugs.map(bug => `
-            <div class="bug-item">
-              <div class="bug-priority ${bug.priority}">${bug.priority.toUpperCase()}</div>
-              <div class="bug-description">${bug.desc}</div>
-              <div class="bug-reference">${bug.ref}</div>
-            </div>
-          `).join('');
-          document.getElementById('detailBugs').innerHTML = bugsHtml;
-          document.getElementById('bugsSection').style.display = 'block';
+        const connSection = document.getElementById('connectionsSection');
+        if (d.connections.length > 0) {
+          document.getElementById('detailConnections').innerHTML = d.connections.map(c =>
+            `<div class="conn-item"><div class="conn-name">${c.name}</div><div class="conn-desc">${c.desc}</div></div>`
+          ).join('');
+          connSection.style.display = 'block';
         } else {
-          document.getElementById('bugsSection').style.display = 'none';
-        }
-
-        // Fixes section
-        if (data.fixes.length > 0) {
-          const fixesHtml = data.fixes.map(fix => `
-            <div class="fix-item">
-              <div class="fix-title">→ ${fix.title}</div>
-              <div class="fix-description">${fix.desc}</div>
-            </div>
-          `).join('');
-          document.getElementById('detailFixes').innerHTML = fixesHtml;
-          document.getElementById('fixesSection').style.display = 'block';
-        } else {
-          document.getElementById('fixesSection').style.display = 'none';
-        }
-
-        // Tech stack
-        const techHtml = data.tech.map(t => `<span class="tech-tag">${t}</span>`).join('');
-        document.getElementById('detailTech').innerHTML = techHtml;
-
-        // Connections
-        if (data.connections.length > 0) {
-          const connHtml = data.connections.map(c => `
-            <div class="connection-item">
-              <div class="connection-name">→ ${c.name}</div>
-              <div class="connection-desc">${c.desc}</div>
-            </div>
-          `).join('');
-          document.getElementById('detailConnections').innerHTML = connHtml;
-          document.getElementById('connectionsSection').style.display = 'block';
+          connSection.style.display = 'none';
         }
 
         detailPanel.classList.add('active');
       });
     });
 
-    closeBtn.addEventListener('click', () => {
-      detailPanel.classList.remove('active');
-    });
+    closeBtn.addEventListener('click', () => detailPanel.classList.remove('active'));
 
     document.addEventListener('click', (e) => {
-      if (!detailPanel.contains(e.target) && !e.target.closest('.component')) {
+      if (!detailPanel.contains(e.target) && !e.target.closest('.card')) {
         detailPanel.classList.remove('active');
       }
     });
-
-    // Draw and redraw on load/resize
-    window.addEventListener('load', () => setTimeout(drawConnections, 100));
-    window.addEventListener('resize', drawConnections);
   </script>
 </body>
 </html>

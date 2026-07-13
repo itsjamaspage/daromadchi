@@ -74,20 +74,19 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   let needsVerification = false
 
   if (process.env.SMTP_USER) {
-    const code = generateCode()
-    await db.delete(verificationTokens).where(eq(verificationTokens.email, emailLower))
-    await db.insert(verificationTokens).values({
-      token: code,
-      user_id: newUser!.id,
-      email: emailLower,
-      expires_at: new Date(Date.now() + 10 * 60 * 1000),
-    })
-
     try {
+      const code = generateCode()
+      await db.delete(verificationTokens).where(eq(verificationTokens.email, emailLower))
+      await db.insert(verificationTokens).values({
+        token: code,
+        user_id: newUser!.id,
+        email: emailLower,
+        expires_at: new Date(Date.now() + 10 * 60 * 1000),
+      })
       await sendVerificationCode(emailLower, code)
       needsVerification = true
     } catch (err) {
-      console.error('[SMTP] Failed to send verification email:', err)
+      console.error('[Verification] Failed to create/send verification:', err)
     }
   }
 
