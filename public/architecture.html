@@ -56,6 +56,41 @@
       align-items: center;
       gap: 6px;
       color: #94a3b8;
+      cursor: pointer;
+      padding: 4px 10px;
+      border-radius: 6px;
+      border: 1.5px solid transparent;
+      transition: all 0.25s ease;
+      user-select: none;
+    }
+
+    .legend-item:hover {
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .legend-item.active {
+      color: #f1f5f9;
+      border-color: rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .section.dimmed {
+      opacity: 0.12;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .section {
+      transition: opacity 0.3s ease;
+    }
+
+    .flow-arrow.dimmed {
+      opacity: 0.06;
+      transition: opacity 0.3s ease;
+    }
+
+    .flow-arrow {
+      transition: opacity 0.3s ease;
     }
 
     .legend-dot {
@@ -344,14 +379,14 @@
         All marketplace integrations are <strong>strictly read-only</strong> — no writes allowed.
         Auth via NextAuth.js v5 (JWT + email verification). Self-hosted on Hetzner VPS.
       </div>
-      <div class="legend">
-        <div class="legend-item"><div class="legend-dot client"></div>Client</div>
-        <div class="legend-item"><div class="legend-dot auth"></div>Auth</div>
-        <div class="legend-item"><div class="legend-dot dashboard"></div>Dashboard</div>
-        <div class="legend-item"><div class="legend-dot api"></div>API</div>
-        <div class="legend-item"><div class="legend-dot data"></div>Data</div>
-        <div class="legend-item"><div class="legend-dot external"></div>External</div>
-        <div class="legend-item"><div class="legend-dot infra"></div>Infra</div>
+      <div class="legend" id="legendFilter">
+        <div class="legend-item" data-filter="client"><div class="legend-dot client"></div>Client</div>
+        <div class="legend-item" data-filter="auth"><div class="legend-dot auth"></div>Auth</div>
+        <div class="legend-item" data-filter="dashboard"><div class="legend-dot dashboard"></div>Dashboard</div>
+        <div class="legend-item" data-filter="api"><div class="legend-dot api"></div>API</div>
+        <div class="legend-item" data-filter="data"><div class="legend-dot data"></div>Data</div>
+        <div class="legend-item" data-filter="external"><div class="legend-dot external"></div>External</div>
+        <div class="legend-item" data-filter="infra"><div class="legend-dot infra"></div>Infra</div>
       </div>
     </div>
 
@@ -362,7 +397,7 @@
 
     <div class="arch-container" id="archContainer">
       <!-- CLIENT LAYER -->
-      <div class="section">
+      <div class="section" data-category="client">
         <div class="section-label client-label">Client Layer</div>
         <div class="cards-row cols-3" id="client-row">
           <div class="card client-card" data-id="web-app">
@@ -386,7 +421,7 @@
       <div class="flow-arrow">▼ ▼ ▼</div>
 
       <!-- AUTH LAYER -->
-      <div class="section">
+      <div class="section" data-category="auth">
         <div class="section-label auth-label">Authentication & Security</div>
         <div class="cards-row cols-4" id="auth-row">
           <div class="card auth-card" data-id="nextauth">
@@ -415,7 +450,7 @@
       <div class="flow-arrow">▼ ▼ ▼</div>
 
       <!-- DASHBOARD PAGES -->
-      <div class="section">
+      <div class="section" data-category="dashboard">
         <div class="section-label dashboard-label">Dashboard Pages (20+)</div>
         <div class="cards-row cols-6" id="dashboard-row">
           <div class="card dashboard-card" data-id="pg-analytics">
@@ -496,7 +531,7 @@
       <div class="flow-arrow">▼ ▼ ▼</div>
 
       <!-- API LAYER -->
-      <div class="section">
+      <div class="section" data-category="api">
         <div class="section-label api-label">API Routes (50+ endpoints)</div>
         <div class="cards-row cols-5" id="api-row">
           <div class="card api-card" data-id="api-auth">
@@ -555,7 +590,7 @@
       <div class="flow-arrow">▼ ▼ ▼</div>
 
       <!-- DATA LAYER -->
-      <div class="section">
+      <div class="section" data-category="data">
         <div class="section-label data-label">Data Layer</div>
         <div class="cards-row cols-3" id="data-row">
           <div class="card data-card" data-id="postgresql">
@@ -579,7 +614,7 @@
       <div class="flow-arrow">▼ ▼ ▼</div>
 
       <!-- EXTERNAL SERVICES -->
-      <div class="section">
+      <div class="section" data-category="external">
         <div class="section-label external-label">External Services</div>
         <div class="cards-row cols-6" id="external-row">
           <div class="card external-card" data-id="uzum">
@@ -618,7 +653,7 @@
       <div class="flow-arrow">▼ ▼ ▼</div>
 
       <!-- INFRASTRUCTURE -->
-      <div class="section">
+      <div class="section" data-category="infra">
         <div class="section-label infra-label">Infrastructure & Deployment</div>
         <div class="cards-row cols-5" id="infra-row">
           <div class="card infra-card" data-id="hetzner">
@@ -650,7 +685,7 @@
       </div>
 
       <!-- PUBLIC PAGES -->
-      <div class="section" style="margin-top: 20px;">
+      <div class="section" data-category="client" style="margin-top: 20px;">
         <div class="section-label client-label">Public Pages</div>
         <div class="cards-row cols-6" id="public-row">
           <div class="card client-card" data-id="pg-landing">
@@ -1038,9 +1073,36 @@
     closeBtn.addEventListener('click', () => detailPanel.classList.remove('active'));
 
     document.addEventListener('click', (e) => {
-      if (!detailPanel.contains(e.target) && !e.target.closest('.card')) {
+      if (!detailPanel.contains(e.target) && !e.target.closest('.card') && !e.target.closest('.legend-item')) {
         detailPanel.classList.remove('active');
       }
+    });
+
+    let activeFilter = null;
+    const sections = document.querySelectorAll('.section[data-category]');
+    const arrows = document.querySelectorAll('.flow-arrow');
+    const legendItems = document.querySelectorAll('.legend-item[data-filter]');
+
+    legendItems.forEach(item => {
+      item.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const filter = item.getAttribute('data-filter');
+
+        if (activeFilter === filter) {
+          activeFilter = null;
+          legendItems.forEach(li => li.classList.remove('active'));
+          sections.forEach(s => s.classList.remove('dimmed'));
+          arrows.forEach(a => a.classList.remove('dimmed'));
+        } else {
+          activeFilter = filter;
+          legendItems.forEach(li => li.classList.remove('active'));
+          item.classList.add('active');
+          sections.forEach(s => {
+            s.classList.toggle('dimmed', s.getAttribute('data-category') !== filter);
+          });
+          arrows.forEach(a => a.classList.add('dimmed'));
+        }
+      });
     });
   </script>
 </body>

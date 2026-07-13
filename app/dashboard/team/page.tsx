@@ -27,7 +27,7 @@ type T = typeof translations['uz']['dashboard']
 
 function RoleBadge({ role, d }: { role: Role; d: T }) {
   const config: Record<Role, { label: string; cls: string; icon: React.ReactNode; style?: React.CSSProperties }> = {
-    owner:  { label: d.roleOwner,  cls: 'border text-[#83c0f9]', style: { background: 'rgba(131,192,249,0.12)', borderColor: 'rgba(131,192,249,0.3)' }, icon: <Crown  className="w-3 h-3" /> },
+    owner:  { label: d.roleOwner,  cls: 'border text-[var(--c1)]', style: { background: 'var(--bg-card2)',  borderColor: 'var(--border)' }, icon: <Crown  className="w-3 h-3" /> },
     admin:  { label: d.roleAdmin,  cls: 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300', icon: <Shield className="w-3 h-3" /> },
     viewer: { label: d.roleViewer, cls: 'bg-[var(--bg-card2)] border-[var(--border)] text-[var(--text-muted)]', icon: <Eye className="w-3 h-3" /> },
   }
@@ -90,7 +90,7 @@ function InviteModal({ onClose, d }: { onClose: () => void; d: T }) {
         {/* Header */}
         <div className="px-6 py-4 border-b border-[var(--border)] flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <UserPlus className="w-4 h-4 text-[#83c0f9]" />
+            <UserPlus className="w-4 h-4 text-[var(--c1)]" />
             <h2 className="text-[var(--text-base)] font-semibold text-sm">{d.teamInviteTitle}</h2>
           </div>
           <button
@@ -114,7 +114,7 @@ function InviteModal({ onClose, d }: { onClose: () => void; d: T }) {
               onChange={e => setEmail(e.target.value)}
               placeholder="example@email.com"
               required
-              className="w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[rgba(131,192,249,0.6)] transition-all"
+              className="w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--border2)] transition-all"
             />
           </div>
 
@@ -134,14 +134,14 @@ function InviteModal({ onClose, d }: { onClose: () => void; d: T }) {
                   onClick={() => setRole(opt.value)}
                   className={`w-full flex items-start gap-3 px-4 py-3 rounded-xl border text-left transition-all ${
                     role === opt.value
-                      ? 'border-[rgba(131,192,249,0.4)]'
+                      ? 'border-[var(--border)]'
                       : 'bg-[var(--bg-card2)] border-[var(--border)] hover:border-[var(--border2)]'
                   }`}
-                  style={role === opt.value ? { background: 'rgba(131,192,249,0.1)' } : {}}
+                  style={role === opt.value ? { background: 'var(--bg-card2)' } : {}}
                 >
                   <div className={`mt-0.5 w-3.5 h-3.5 rounded-full border-2 flex-shrink-0 ${
                     role === opt.value
-                      ? 'border-[#83c0f9] bg-[#83c0f9]'
+                      ? 'border-[var(--c1)] bg-[var(--c1)]'
                       : 'border-[var(--border2)]'
                   }`} />
                   <div>
@@ -166,7 +166,7 @@ function InviteModal({ onClose, d }: { onClose: () => void; d: T }) {
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex items-center justify-center gap-2 bg-[#83c0f9] hover:bg-[#6aabf0] disabled:opacity-50 text-[#131321] text-sm font-medium px-4 py-2.5 rounded-xl transition-colors"
+              className="w-full flex items-center justify-center gap-2 bg-[var(--c1)] hover:bg-[#6aabf0] disabled:opacity-50 text-[#131321] text-sm font-medium px-4 py-2.5 rounded-xl transition-colors"
             >
               {loading ? (
                 <span className="w-4 h-4 rounded-full border-2 border-[var(--border2)] border-t-white animate-spin" />
@@ -216,7 +216,7 @@ export default function TeamPage() {
           )}
           <button
             onClick={() => setShowModal(true)}
-            className="flex items-center gap-2 border-2 border-[#83c0f9] text-[#2563a8] hover:bg-[rgba(131,192,249,0.12)] text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors"
+            className="flex items-center gap-2 border-2 border-[var(--c1)] text-[#2563a8] hover:bg-[var(--bg-card2)] text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors"
           >
             <UserPlus className="w-4 h-4" />
             {d.teamAddMember}
@@ -227,7 +227,7 @@ export default function TeamPage() {
       {/* Role legend */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {[
-          { icon: <Crown  className="w-4 h-4 text-[#83c0f9]" />, label: d.roleOwner,  desc: d.roleOwnerDesc },
+          { icon: <Crown  className="w-4 h-4 text-[var(--c1)]" />, label: d.roleOwner,  desc: d.roleOwnerDesc },
           { icon: <Shield className="w-4 h-4 text-emerald-400" />, label: d.roleAdmin, desc: d.roleAdminDesc },
           { icon: <Eye    className="w-4 h-4 text-[var(--text-muted)]" />,  label: d.roleViewer, desc: d.roleViewerDesc },
         ].map(r => (
@@ -244,7 +244,7 @@ export default function TeamPage() {
       {/* Members list */}
       <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
         <div className="px-5 py-4 border-b border-[var(--border)] flex items-center gap-2">
-          <Users className="w-4 h-4 text-[#83c0f9]" />
+          <Users className="w-4 h-4 text-[var(--c1)]" />
           <h2 className="text-[var(--text-base)] font-semibold text-sm">{d.teamMembers}</h2>
           <span className="ml-auto text-xs text-[var(--text-muted)]">{members.length} {d.teamMembersCount}</span>
         </div>
@@ -294,9 +294,9 @@ export default function TeamPage() {
 
       {/* Pro upsell */}
       {!isPro && (
-        <div className="bg-[var(--bg-card2)] border border-dashed rounded-2xl p-6 flex items-start gap-4" style={{ borderColor: 'rgba(131,192,249,0.3)' }}>
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(131,192,249,0.12)', border: '1px solid rgba(131,192,249,0.25)' }}>
-            <Lock className="w-5 h-5 text-[#83c0f9]" />
+        <div className="bg-[var(--bg-card2)] border border-dashed rounded-2xl p-6 flex items-start gap-4" style={{  borderColor: 'var(--border)' }}>
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'var(--bg-card2)', border: '1px solid var(--border)' }}>
+            <Lock className="w-5 h-5 text-[var(--c1)]" />
           </div>
           <div>
             <p className="text-[var(--text-base)] font-semibold text-sm mb-1">{d.teamLockedTitle}</p>

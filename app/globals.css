@@ -103,8 +103,8 @@ html, body {
 
   --nav-bg:     rgba(22, 22, 22, 0.96);
 
-  --c1:         #83c0f9;   /* sky blue — brand primary */
-  --c2:         #6aabf0;   /* sky blue dark */
+  --c1:         #ffffff;   /* white — brand primary */
+  --c2:         #e2e8f0;   /* soft white — brand secondary */
 
   --scrollbar-track: #111111;
   --scrollbar-thumb: #3a3a3a;
@@ -148,8 +148,8 @@ html, body {
 
   --nav-bg:     rgba(22, 22, 22, 0.96);
 
-  --c1:         #83c0f9;   /* sky blue — brand primary */
-  --c2:         #6aabf0;   /* sky blue dark */
+  --c1:         #ffffff;   /* white — brand primary */
+  --c2:         #e2e8f0;   /* soft white — brand secondary */
 
   --scrollbar-track: #111111;
   --scrollbar-thumb: #3a3a3a;

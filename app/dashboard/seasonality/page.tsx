@@ -12,7 +12,7 @@ export default async function SeasonalityPage() {
       <div>
         <div className="flex items-center gap-3 mb-0.5">
           <h1 className="text-2xl font-bold text-[var(--text-base)] flex items-center gap-3">
-            <CalendarDays className="w-6 h-6 text-[#83c0f9]" />
+            <CalendarDays className="w-6 h-6 text-[var(--c1)]" />
             {d.seasonalityTitle}
           </h1>
         </div>

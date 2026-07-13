@@ -31,7 +31,7 @@ function CustomTooltip({ active, payload, label }: { active?: boolean; payload?:
   return (
     <div className="bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl p-3 shadow-xl text-xs">
       <p className="text-[var(--text-base)] font-semibold mb-2">{label}</p>
-      <p className="text-[#83c0f9]">Daromad: <span className="font-bold">{formatSom(payload[0].value)}</span></p>
+      <p className="text-[var(--c1)]">Daromad: <span className="font-bold">{formatSom(payload[0].value)}</span></p>
       <p className="text-[var(--text-muted)]">Buyurtmalar: <span className="text-[var(--text-base)] font-semibold">{d.orders} ta</span></p>
       <p className="text-[var(--text-muted)]">O&apos;rtacha chek: <span className="text-[var(--text-base)] font-semibold">{formatSom(d.avgCheck)}</span></p>
     </div>
@@ -85,8 +85,8 @@ export default function SeasonalityView({ data }: Props) {
             <button key={p.productId} onClick={() => setSelectedIdx(i)}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border transition-all ${
                 selectedIdx === i
-                  ? 'bg-[rgba(131,192,249,0.15)] border-[var(--c1)]'
-                  : 'bg-[var(--bg-card2)] border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text-base)] hover:border-[rgba(131,192,249,0.5)]'
+                  ? 'bg-[var(--bg-card2)] border-[var(--c1)]'
+                  : 'bg-[var(--bg-card2)] border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text-base)] hover:border-[var(--border)]'
               }`}
               style={selectedIdx === i ? { color: 'var(--c1)' } : {}}>
               <Package className="w-3.5 h-3.5" />
@@ -100,7 +100,7 @@ export default function SeasonalityView({ data }: Props) {
       {/* Insight cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: 'Eng yaxshi oy',   value: product.peakMonth,        color: 'text-[#83c0f9]', sub: 'Ko\'proq zaxira oling' },
+          { label: 'Eng yaxshi oy',   value: product.peakMonth,        color: 'text-[var(--c1)]', sub: 'Ko\'proq zaxira oling' },
           { label: 'Eng past oy',     value: product.lowMonth,         color: 'text-[var(--text-muted)]',  sub: 'Zaxirani kamaytiring' },
           { label: 'O\'sish',          value: `+${product.growthPct}%`, color: 'text-emerald-400',sub: 'Yillik trend' },
           { label: 'Kategoriya',      value: product.category,         color: 'text-[var(--text-base)]',      sub: product.productTitle },
@@ -172,10 +172,10 @@ export default function SeasonalityView({ data }: Props) {
                 const isLow  = d.revenue === minRevenue
                 const pct = maxRevenue > 0 ? (d.revenue / maxRevenue) * 100 : 0
                 return (
-                  <tr key={i} className={`hover:bg-[var(--bg-card2)] transition-colors ${isPeak ? 'bg-[#83c0f9]/5' : ''}`}>
+                  <tr key={i} className={`hover:bg-[var(--bg-card2)] transition-colors ${isPeak ? 'bg-[var(--c1)]/5' : ''}`}>
                     <td className="px-4 py-3">
                       <span className="text-[var(--text-base)] text-xs font-medium">{d.month}</span>
-                      {isPeak && <span className="ml-2 text-[10px] text-[#83c0f9] bg-[rgba(131,192,249,0.12)] px-1.5 py-0.5 rounded">Eng yaxshi</span>}
+                      {isPeak && <span className="ml-2 text-[10px] text-[var(--c1)] bg-[var(--bg-card2)] px-1.5 py-0.5 rounded">Eng yaxshi</span>}
                       {isLow  && <span className="ml-2 text-[10px] text-[var(--text-muted)] bg-[var(--bg-card2)] px-1.5 py-0.5 rounded">Eng past</span>}
                     </td>
                     <td className="px-4 py-3 text-[var(--text-base)] text-xs font-semibold">{formatSom(d.revenue)}</td>
@@ -198,7 +198,7 @@ export default function SeasonalityView({ data }: Props) {
       </div>
 
       {/* Recommendation box */}
-      <div className="bg-[#83c0f9]/15 border border-[#83c0f9]/40 rounded-2xl px-5 py-4">
+      <div className="bg-[var(--c1)]/15 border border-[var(--c1)]/40 rounded-2xl px-5 py-4">
         <p className="font-semibold text-sm mb-2" style={{ color: 'var(--c1)' }}>Tavsiya</p>
         <p className="text-[var(--text-base)] text-xs leading-relaxed">
           <strong style={{ color: 'var(--c1)' }}>{product.peakMonth}</strong> oyida eng yuqori sotuv kuzatiladi.

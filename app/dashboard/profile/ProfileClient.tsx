@@ -115,7 +115,7 @@ function ProfileTab({ d, profile }: { d: T; profile: UserProfile }) {
               type="text"
               value={name}
               onChange={e => setName(e.target.value)}
-              className="w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[rgba(131,192,249,0.6)] transition-all"
+              className="w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--border2)] transition-all"
             />
           </div>
 
@@ -127,7 +127,7 @@ function ProfileTab({ d, profile }: { d: T; profile: UserProfile }) {
                 type="email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                className="w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[rgba(131,192,249,0.6)] transition-all pr-36"
+                className="w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--border2)] transition-all pr-36"
               />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
                 <CheckCircle className="w-3 h-3" /> {d.profileVerified}
@@ -143,7 +143,7 @@ function ProfileTab({ d, profile }: { d: T; profile: UserProfile }) {
               value={phone}
               onChange={e => setPhone(e.target.value)}
               placeholder="+998"
-              className="w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[rgba(131,192,249,0.6)] transition-all"
+              className="w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--border2)] transition-all"
             />
           </div>
 
@@ -237,7 +237,7 @@ function SecurityTab({ d }: { d: T }) {
                 value={field.value}
                 onChange={e => field.setter(e.target.value)}
                 required
-                className="w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[rgba(131,192,249,0.6)] transition-all"
+                className="w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--border2)] transition-all"
               />
             </div>
           ))}
@@ -311,7 +311,7 @@ function SecurityTab({ d }: { d: T }) {
                     onChange={e => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                     placeholder="000000"
                     maxLength={6}
-                    className="flex-1 bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[rgba(131,192,249,0.6)] transition-all tracking-widest font-mono"
+                    className="flex-1 bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--border2)] transition-all tracking-widest font-mono"
                   />
                   <button
                     type="button"
@@ -458,10 +458,10 @@ export default function ProfileClient({ profile }: { profile: UserProfile }) {
             onClick={() => setActiveTab(t.key)}
             className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${
               activeTab === t.key
-                ? 'border border-[rgba(131,192,249,0.3)]'
+                ? 'border border-[var(--border)]'
                 : 'text-[var(--text-muted)] hover:text-[var(--text-dim)]'
             }`}
-            style={activeTab === t.key ? { background: 'rgba(131,192,249,0.15)', color: 'var(--c1)' } : {}}
+            style={activeTab === t.key ? { background: 'var(--bg-card2)', color: 'var(--c1)' } : {}}
           >
             {t.icon}
             {t.label}

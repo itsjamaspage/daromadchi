@@ -57,7 +57,7 @@ function GroupEditor({ group, onDone }: { group: StockGroup; onDone: () => void 
 
   const inputStyle: React.CSSProperties = {
     background: 'var(--bg-card2)',
-    border: '1px solid rgba(131,192,249,0.3)',
+    border: '1px solid var(--border)',
     color: 'var(--text-base)',
   }
 
@@ -125,11 +125,11 @@ export default function StocksTable({ groups }: { groups: StockGroup[] }) {
         <input value={query} onChange={e => setQuery(e.target.value)}
           placeholder={d.searchPlaceholder}
           className="w-full rounded-xl pl-9 pr-3 py-2 text-sm"
-          style={{ background: 'var(--bg-card2)', border: '1px solid rgba(131,192,249,0.3)', color: 'var(--text-base)' }} />
+          style={{ background: 'var(--bg-card2)', border: '1px solid var(--border)', color: 'var(--text-base)' }} />
       </div>
 
       <div className="rounded-2xl border overflow-x-auto"
-        style={{ background: 'var(--bg-card)', borderColor: 'rgba(131,192,249,0.25)' }}>
+        style={{ background: 'var(--bg-card)',  borderColor: 'var(--border)' }}>
         <table className="w-full text-sm" style={{ minWidth: 760 }}>
           <thead>
             <tr className="text-left text-[11px] uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>
@@ -170,7 +170,7 @@ function FragmentRow({ group: g, badge, isOpen, onToggle, d }: {
   const mps = MP_ORDER.filter(mp => mp in g.stock_by_marketplace || mp in g.sold_by_marketplace)
   return (
     <>
-      <tr className="border-t" style={{ borderColor: 'rgba(131,192,249,0.15)' }}>
+      <tr className="border-t" style={{  borderColor: 'var(--border)' }}>
         <td className="px-5 py-3.5">
           <p className="font-semibold leading-tight" style={{ color: 'var(--text-base)' }}>{g.title}</p>
           <p className="text-[11px] mt-0.5" style={{ color: 'var(--text-muted)' }}>
@@ -222,7 +222,7 @@ function FragmentRow({ group: g, badge, isOpen, onToggle, d }: {
         </td>
       </tr>
       {isOpen && (
-        <tr className="border-t" style={{ borderColor: 'rgba(131,192,249,0.15)', background: 'var(--bg-card2)' }}>
+        <tr className="border-t" style={{  borderColor: 'var(--border)', background: 'var(--bg-card2)' }}>
           <td colSpan={6} className="px-5">
             <GroupEditor group={g} onDone={onToggle} />
           </td>

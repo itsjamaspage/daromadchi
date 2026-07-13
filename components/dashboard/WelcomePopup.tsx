@@ -41,7 +41,7 @@ const LABELS = {
 const MARKETPLACES = [
   { key: 'uzum',   label: (l: typeof LABELS.uz) => l.uzum,   accent: 'var(--c1)',  letter: 'U' },
   { key: 'yandex', label: (l: typeof LABELS.uz) => l.yandex, accent: '#f59e0b',    letter: 'Y' },
-  { key: 'wb',     label: (l: typeof LABELS.uz) => l.wb,     accent: '#83c0f9',    letter: 'W' },
+  { key: 'wb',     label: (l: typeof LABELS.uz) => l.wb,     accent: '#7c3aed',    letter: 'W' },
 ]
 
 interface Props {
@@ -77,7 +77,7 @@ export default function WelcomePopup({ hasShops }: Props) {
 
         {/* Icon */}
         <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-5"
-          style={{ background: 'rgba(131,192,249,0.12)', border: '1px solid rgba(131,192,249,0.20)' }}>
+          style={{ background: 'var(--bg-card2)', border: '1px solid var(--border)' }}>
           <Zap className="w-8 h-8" style={{ color: 'var(--c1)' }} />
         </div>
 

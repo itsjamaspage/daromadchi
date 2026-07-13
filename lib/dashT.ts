@@ -308,6 +308,7 @@ export const dashT = {
       colPeriod: 'Davr', colOrders: 'Buyurtmalar', colGross: 'Brutto',
       colCommission: 'Komissiya', colDelivery: 'Yetkazish', colReturns: 'Qaytarish',
       colAd: 'Reklama', colTax: 'Soliq', colNet: "Sof to'lov", colStatus: 'Holat',
+      tabAll: 'Barchasi', tabUzum: 'Uzum', tabYandex: 'Yandex Market', tabWb: 'Wildberries',
     },
     seasonality: {
       insightBest: 'Eng yaxshi oy', insightLow: 'Eng past oy',
@@ -688,6 +689,7 @@ export const dashT = {
       colPeriod: 'Period', colOrders: 'Orders', colGross: 'Gross',
       colCommission: 'Commission', colDelivery: 'Delivery', colReturns: 'Returns',
       colAd: 'Advertising', colTax: 'Tax', colNet: 'Net payout', colStatus: 'Status',
+      tabAll: 'All', tabUzum: 'Uzum', tabYandex: 'Yandex Market', tabWb: 'Wildberries',
     },
     seasonality: {
       insightBest: 'Best month', insightLow: 'Lowest month',
@@ -1065,6 +1067,7 @@ export const dashT = {
       colPeriod: 'Период', colOrders: 'Заказы', colGross: 'Брутто',
       colCommission: 'Комиссия', colDelivery: 'Доставка', colReturns: 'Возвраты',
       colAd: 'Реклама', colTax: 'Налог', colNet: 'Чистая выплата', colStatus: 'Статус',
+      tabAll: 'Все', tabUzum: 'Uzum', tabYandex: 'Yandex Market', tabWb: 'Wildberries',
     },
     seasonality: {
       insightBest: 'Лучший месяц', insightLow: 'Худший месяц',

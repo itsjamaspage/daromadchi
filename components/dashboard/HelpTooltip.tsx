@@ -20,8 +20,8 @@ export default function HelpTooltip({ section, className = '', variant = 'badge'
   if (!content) return null
 
   const triggerClass = variant === 'plain'
-    ? `inline-flex items-center justify-center w-5 h-5 rounded-md text-[var(--text-muted)] hover:text-[#83c0f9] hover:bg-[rgba(131,192,249,0.12)] transition-all flex-shrink-0 ${className}`
-    : `inline-flex items-center justify-center w-6 h-6 rounded-full border border-[rgba(131,192,249,0.4)] bg-[rgba(131,192,249,0.12)] text-[#83c0f9] hover:border-violet-400/70 hover:bg-[#6aabf0]/20 hover:text-[#83c0f9] transition-all flex-shrink-0 ${className}`
+    ? `inline-flex items-center justify-center w-5 h-5 rounded-md text-[var(--text-muted)] hover:text-[var(--c1)] hover:bg-[var(--bg-card2)] transition-all flex-shrink-0 ${className}`
+    : `inline-flex items-center justify-center w-6 h-6 rounded-full border border-[var(--border)] bg-[var(--bg-card2)] text-[var(--c1)] hover:border-violet-400/70 hover:bg-[#6aabf0]/20 hover:text-[var(--c1)] transition-all flex-shrink-0 ${className}`
 
   return (
     <>
@@ -47,8 +47,8 @@ export default function HelpTooltip({ section, className = '', variant = 'badge'
             {/* Header */}
             <div className="px-5 py-4 border-b border-[var(--border)] flex items-center justify-between gap-3">
               <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-lg bg-[rgba(131,192,249,0.15)] border border-[rgba(131,192,249,0.25)] flex items-center justify-center flex-shrink-0">
-                  <HelpCircle className="w-3.5 h-3.5 text-[#83c0f9]" />
+                <div className="w-7 h-7 rounded-lg bg-[var(--bg-card2)] border border-[var(--border)] flex items-center justify-center flex-shrink-0">
+                  <HelpCircle className="w-3.5 h-3.5 text-[var(--c1)]" />
                 </div>
                 <h2 className="text-[var(--text-base)] font-semibold text-sm">{content.title}</h2>
               </div>
@@ -96,7 +96,7 @@ export default function HelpTooltip({ section, className = '', variant = 'badge'
             <div className="px-5 py-3 border-t border-[var(--border)]">
               <button
                 onClick={() => setOpen(false)}
-                className="w-full py-2 rounded-xl bg-[rgba(131,192,249,0.15)] border border-[rgba(131,192,249,0.3)] text-xs font-semibold hover:bg-[#83c0f9]/30 transition-all"
+                className="w-full py-2 rounded-xl bg-[var(--bg-card2)] border border-[var(--border)] text-xs font-semibold hover:bg-[var(--c1)]/30 transition-all"
                 style={{ color: 'var(--c1)' }}
               >
                 {lang === 'ru' ? 'Понятно' : lang === 'en' ? 'Got it' : 'Tushunarli'}
@@ -117,7 +117,7 @@ function Section({
   children: React.ReactNode
 }) {
   const cfg = {
-    violet: { border: 'rgba(131,192,249,0.25)', bg: 'rgba(131,192,249,0.07)', dot: '#83c0f9',   text: '#83c0f9'   },
+    violet: { border: 'var(--border)', bg: 'var(--bg-card2)', dot: 'var(--c1)',   text: 'var(--c1)'   },
     emerald: { border: 'rgba(52,211,153,0.25)',  bg: 'rgba(52,211,153,0.07)',  dot: '#34d399',   text: '#34d399'   },
     amber:   { border: 'rgba(251,191,36,0.25)',  bg: 'rgba(251,191,36,0.07)',  dot: '#fbbf24',   text: '#f59e0b'   },
     cyan:    { border: 'rgba(34,211,238,0.25)',  bg: 'rgba(34,211,238,0.07)',  dot: '#22d3ee',   text: '#22d3ee'   },
