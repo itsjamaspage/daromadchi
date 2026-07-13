@@ -1,41 +1,42 @@
 import { getT } from '@/lib/server-i18n'
-import { createClient } from '@/lib/supabase/server'
+import { getCurrentUser } from '@/lib/auth/session'
+import { db } from '@/lib/db'
+import { shops, userSettings } from '@/lib/db/schema'
+import { eq, and, ne } from 'drizzle-orm'
 import SettingsForm from './SettingsForm'
 import type { Shop } from '@/lib/types'
 
 export default async function SettingsPage() {
-  const [t, supabase] = await Promise.all([getT(), createClient()])
+  const [t, user] = await Promise.all([getT(), getCurrentUser()])
   const d = t.dashboard
-  const { data: { user } } = await supabase.auth.getUser()
 
   let uzumShop:   Shop | null = null
   let yandexShop: Shop | null = null
   let wbShop:     Shop | null = null
 
   if (user) {
-    const { data } = await supabase
-      .from('shops')
-      .select('*')
-      .eq('user_id', user.id)
+    const rows = await db
+      .select()
+      .from(shops)
+      .where(and(eq(shops.user_id, user.id), ne(shops.shop_id_external, 'DEMO')))
 
-    for (const row of data ?? []) {
-      if (row.shop_id_external === 'DEMO') continue
-      if (row.marketplace === 'uzum')          uzumShop   = row as Shop
-      if (row.marketplace === 'yandex_market') yandexShop = row as Shop
-      if (row.marketplace === 'wildberries')   wbShop     = row as Shop
+    for (const row of rows) {
+      const s = { ...row, created_at: row.created_at.toISOString(), last_synced_at: row.last_synced_at?.toISOString() ?? null } as Shop
+      if (row.marketplace === 'uzum')          uzumShop   = s
+      if (row.marketplace === 'yandex_market') yandexShop = s
+      if (row.marketplace === 'wildberries')   wbShop     = s
     }
   }
 
   let telegramChatId:   string | null = null
   let telegramUsername: string | null = null
   if (user) {
-    const { data: tg } = await supabase
-      .from('user_settings')
-      .select('telegram_chat_id, telegram_username')
-      .eq('user_id', user.id)
-      .maybeSingle()
-    telegramChatId   = tg?.telegram_chat_id   ?? null
-    telegramUsername = tg?.telegram_username  ?? null
+    const tg = await db.query.userSettings.findFirst({
+      where: eq(userSettings.user_id, user.id),
+      columns: { telegram_chat_id: true, telegram_username: true },
+    })
+    telegramChatId  = tg?.telegram_chat_id  ?? null
+    telegramUsername = tg?.telegram_username ?? null
   }
 
   return (

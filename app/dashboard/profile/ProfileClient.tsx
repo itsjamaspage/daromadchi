@@ -84,13 +84,8 @@ function ProfileTab({ d, profile }: { d: T; profile: UserProfile }) {
     <div className="space-y-6">
       {/* Avatar */}
       <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl p-6 flex flex-col sm:flex-row items-center gap-6">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-20 h-20 rounded-2xl flex items-center justify-center shadow-lg" style={{ background: 'var(--c1)' }}>
-            <span className="text-[var(--text-base)] font-bold text-2xl">{initialsFrom(name, email)}</span>
-          </div>
-          <button className="text-xs font-medium text-[var(--text-muted)] hover:text-[var(--text-base)] border border-[var(--border2)] hover:border-[var(--border2)] px-3 py-1.5 rounded-lg transition-all">
-            {d.profileUploadPhoto}
-          </button>
+        <div className="w-20 h-20 rounded-2xl flex items-center justify-center shadow-lg" style={{ background: 'var(--c1)' }}>
+          <span className="text-[var(--text-base)] font-bold text-2xl">{initialsFrom(name, email)}</span>
         </div>
         <div>
           <p className="text-[var(--text-base)] font-bold text-lg">{name}</p>
@@ -152,8 +147,7 @@ function ProfileTab({ d, profile }: { d: T; profile: UserProfile }) {
             <button
               type="submit"
               disabled={saving}
-              className="flex items-center gap-2 disabled:opacity-50 text-[var(--text-base)] text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors shadow-lg"
-              style={{ background: 'var(--c1)' }}
+              className="flex items-center gap-2 disabled:opacity-50 text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors shadow-lg btn-primary"
             >
               {saving
                 ? <span className="w-4 h-4 rounded-full border-2 border-[var(--border2)] border-t-white animate-spin" />
@@ -246,8 +240,7 @@ function SecurityTab({ d }: { d: T }) {
             <button
               type="submit"
               disabled={pwSaving}
-              className="flex items-center gap-2 disabled:opacity-50 text-[var(--text-base)] text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors shadow-lg"
-              style={{ background: 'var(--c1)' }}
+              className="flex items-center gap-2 disabled:opacity-50 text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors shadow-lg btn-primary"
             >
               {pwSaving
                 ? <span className="w-4 h-4 rounded-full border-2 border-[var(--border2)] border-t-white animate-spin" />

@@ -20,8 +20,7 @@ export default function DashboardError({
       </p>
       <button
         onClick={reset}
-        className="px-4 py-2 rounded-xl text-sm font-medium transition-opacity hover:opacity-80"
-        style={{ background: 'var(--c1)', color: '#fff' }}
+        className="px-4 py-2 rounded-xl text-sm font-medium transition-opacity hover:opacity-80 btn-primary"
       >
         Qayta urinish
       </button>
