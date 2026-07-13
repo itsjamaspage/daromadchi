@@ -130,7 +130,7 @@ function UzumCard({ shop }: { shop: Shop | null; userId: string }) {
             type="password"
             value={apiKey}
             onChange={e => setApiKey(e.target.value)}
-            placeholder={hasKey ? '••••••••  (yangilash uchun kiriting)' : 'Token kiriting…'}
+            placeholder="Token kiriting..."
             className="w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--border2)] transition-all font-mono"
           />
           <p className="text-[var(--text-muted)] text-xs mt-1.5 flex items-center gap-1">
@@ -291,7 +291,7 @@ function YandexCard({ shop }: { shop: Shop | null; userId: string }) {
             type="password"
             value={apiKey}
             onChange={e => setApiKey(e.target.value)}
-            placeholder={hasKey ? '••••••••  (yangilash uchun kiriting)' : 'API token kiriting…'}
+            placeholder="Token kiriting..."
             className="w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-amber-500/40 transition-all font-mono"
           />
         </div>
@@ -304,7 +304,7 @@ function YandexCard({ shop }: { shop: Shop | null; userId: string }) {
             type="text"
             value={campaignId}
             onChange={e => setCampaignId(e.target.value)}
-            placeholder={hasCampaign ? `${shop!.shop_id_external!}  (yangilash uchun kiriting)` : 'Campaign ID (masalan: 12345678)'}
+            placeholder="Campaign ID kiriting..."
             className="w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-amber-500/40 transition-all font-mono"
           />
           <p className="text-[var(--text-muted)] text-xs mt-1.5 flex items-center gap-1">
@@ -456,7 +456,7 @@ function WildberriesCard({ shop }: { shop: Shop | null; userId: string }) {
             type="password"
             value={apiKey}
             onChange={e => setApiKey(e.target.value)}
-            placeholder={hasKey ? '••••••••  (yangilash uchun kiriting)' : 'Token kiriting…'}
+            placeholder="Token kiriting..."
             className="w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--border2)] transition-all font-mono"
           />
           <p className="text-[var(--text-muted)] text-xs mt-1.5">
