@@ -407,3 +407,22 @@ export const verificationTokens = pgTable('verification_tokens', {
   index('idx_verification_tokens_user_id').on(t.user_id),
   index('idx_verification_tokens_expires_at').on(t.expires_at),
 ])
+
+/* ── 22. product_links ──────────────────────────────────────────────────────── */
+// Cross-marketplace leftover tracking: products are auto-grouped across
+// marketplaces by normalized seller article (match_key). This stores the
+// per-group physical stock baseline and low-stock alert threshold.
+
+export const productLinks = pgTable('product_links', {
+  id:                   uuid('id').primaryKey().defaultRandom(),
+  user_id:              uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  match_key:            text('match_key').notNull(),
+  total_physical_stock: integer('total_physical_stock'),
+  baseline_at:          timestamp('baseline_at', { withTimezone: true }),
+  stock_threshold:      integer('stock_threshold'),
+  created_at:           timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updated_at:           timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (t) => [
+  uniqueIndex('product_links_user_key_unique').on(t.user_id, t.match_key),
+  index('idx_product_links_user_id').on(t.user_id),
+])

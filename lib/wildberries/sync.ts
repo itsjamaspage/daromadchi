@@ -2,8 +2,9 @@ import { eq, and, inArray } from 'drizzle-orm'
 import { db, shops, products, orders, orderItems, syncDays } from '@/lib/db'
 import { marketplaceFetch } from '@/lib/marketplace-readonly-guard'
 
-const WB_CONTENT = 'https://content-api.wildberries.ru'
-const WB_STATS   = 'https://statistics-api.wildberries.ru'
+const WB_CONTENT     = 'https://content-api.wildberries.ru'
+const WB_STATS       = 'https://statistics-api.wildberries.ru'
+const WB_MARKETPLACE = 'https://marketplace-api.wildberries.ru'
 
 function bearerHeaders(token: string) {
   return { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
@@ -29,6 +30,8 @@ export async function syncFromWildberries(
   let ordersUpserted   = 0
   let revenueTotal     = 0
   const errors: string[] = []
+  // barcode → nmId, needed for FBS stock lookups (v3 stocks API is barcode-keyed)
+  const barcodeToNm = new Map<string, string>()
 
   // ─── Products (Content API v2) ──────────────────────────────────────────────
   try {
@@ -53,6 +56,14 @@ export async function syncFromWildberries(
       const nextCursor = json.data?.cursor ?? json.cursor
       if (!nextCursor?.updatedAt || cards.length < 100) break
       cursor = { limit: 100, updatedAt: nextCursor.updatedAt, nmID: nextCursor.nmID }
+    }
+
+    for (const c of allCards) {
+      for (const size of c.sizes ?? []) {
+        for (const barcode of size.skus ?? []) {
+          if (barcode && c.nmID) barcodeToNm.set(String(barcode), String(c.nmID))
+        }
+      }
     }
 
     if (allCards.length > 0) {
@@ -94,31 +105,77 @@ export async function syncFromWildberries(
   }
 
   // ─── Stocks ───────────────────────────────────────────────────────────────
+  // WB reports stock through two separate read-only APIs:
+  //  • FBO (goods stored at WB warehouses): GET statistics-api /api/v1/supplier/stocks
+  //  • FBS (seller's own warehouses): GET /api/v3/warehouses, then per warehouse
+  //    POST /api/v3/stocks/{warehouseId} with barcodes — POST is WB's read method
+  //    here; the write variant is PUT on the same path, which the guard blocks.
   try {
-    const stocksRes = await marketplaceFetch(
-      'https://marketplace-api.wildberries.ru/api/v3/stocks/0?limit=1000&offset=0',
-      { headers: bearerHeaders(token) },
-    )
-    if (stocksRes.ok) {
-      const stocksData = await stocksRes.json()
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const stocks: any[] = stocksData?.stocks ?? stocksData ?? []
-      const stockMap = new Map<string, number>()
-      for (const s of stocks) {
-        if (s.nmId) stockMap.set(String(s.nmId), (stockMap.get(String(s.nmId)) ?? 0) + (s.amount ?? 0))
-      }
-      if (stockMap.size > 0) {
-        const prods = await db.select({
-          id: products.id,
-          marketplace_product_id: products.marketplace_product_id,
-        }).from(products)
-          .where(and(eq(products.shop_id, shopId), inArray(products.marketplace_product_id, [...stockMap.keys()])))
+    const stockMap = new Map<string, number>() // nmId → total units
+    let fboOk = false
+    let fbsOk = false
 
-        for (const p of prods) {
-          const qty = stockMap.get(String(p.marketplace_product_id))
-          if (qty !== undefined) {
-            await db.update(products).set({ stock_quantity: qty, updated_at: new Date() }).where(eq(products.id, p.id))
+    try {
+      const fboRes = await marketplaceFetch(
+        `${WB_STATS}/api/v1/supplier/stocks?dateFrom=2019-06-20`,
+        { headers: statsHeaders(token) },
+      )
+      if (fboRes.ok) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const rows: any[] = await fboRes.json() ?? []
+        for (const r of rows) {
+          if (r.nmId) stockMap.set(String(r.nmId), (stockMap.get(String(r.nmId)) ?? 0) + (r.quantity ?? 0))
+        }
+        fboOk = true
+      }
+    } catch { /* best-effort */ }
+
+    if (barcodeToNm.size > 0) {
+      try {
+        const whRes = await marketplaceFetch(`${WB_MARKETPLACE}/api/v3/warehouses`, { headers: bearerHeaders(token) })
+        if (whRes.ok) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const whs: any[] = await whRes.json() ?? []
+          const allBarcodes = [...barcodeToNm.keys()]
+          for (const wh of whs) {
+            if (!wh?.id) continue
+            for (let i = 0; i < allBarcodes.length; i += 1000) {
+              const res = await marketplaceFetch(`${WB_MARKETPLACE}/api/v3/stocks/${wh.id}`, {
+                method: 'POST',
+                headers: bearerHeaders(token),
+                body: JSON.stringify({ skus: allBarcodes.slice(i, i + 1000) }),
+              })
+              if (!res.ok) continue
+              const json = await res.json()
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const stocks: any[] = json?.stocks ?? []
+              for (const s of stocks) {
+                const nm = barcodeToNm.get(String(s.sku))
+                if (nm) stockMap.set(nm, (stockMap.get(nm) ?? 0) + (s.amount ?? 0))
+              }
+            }
           }
+          fbsOk = true
+        }
+      } catch { /* best-effort */ }
+    }
+
+    if (fboOk || fbsOk) {
+      const prods = await db.select({
+        id: products.id,
+        marketplace_product_id: products.marketplace_product_id,
+        stock_quantity: products.stock_quantity,
+      }).from(products).where(eq(products.shop_id, shopId))
+
+      // With both sources answering, absence means genuinely 0 left; with only
+      // one source, zeroing would wipe stock held at the other, so update only
+      // products the responding source reported.
+      const bothOk = fboOk && fbsOk
+      for (const p of prods) {
+        const reported = stockMap.get(String(p.marketplace_product_id))
+        const qty = reported ?? (bothOk ? 0 : p.stock_quantity)
+        if (qty !== p.stock_quantity) {
+          await db.update(products).set({ stock_quantity: qty, updated_at: new Date() }).where(eq(products.id, p.id))
         }
       }
     }

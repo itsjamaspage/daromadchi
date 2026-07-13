@@ -30,7 +30,35 @@ jobs:
           npm ci --no-audit --no-fund || npm install --no-audit --no-fund
           echo "Building..."
           npm run build
+          echo "Applying DB migrations..."
+          node scripts/apply-sql-migrations.mjs
           echo "Restarting app..."
           pm2 restart daromadchi
+          echo "Installing cron schedule..."
+          cat > /var/www/daromadchi/cron-runner.sh <<'EOS'
+          #!/bin/bash
+          # Hits Daromadchi cron endpoints on the local app. Installed by deploy.yml.
+          cd /var/www/daromadchi || exit 1
+          getvar() {
+            for f in .env.production.local .env.local .env .env.production; do
+              [ -f "$f" ] || continue
+              v=$(grep -m1 "^$1=" "$f" | cut -d= -f2- | sed "s/^[\"']//;s/[\"']$//")
+              [ -n "$v" ] && { echo "$v"; return; }
+            done
+          }
+          SECRET=$(getvar CRON_SECRET)
+          PORT=$(getvar PORT); PORT=${PORT:-3000}
+          case "$1" in
+            sync)   curl -sf -m 280 -H "x-cron-secret: $SECRET" "http://127.0.0.1:$PORT/api/cron/sync" ;;
+            digest) curl -sf -m 110 -H "Authorization: Bearer $SECRET" "http://127.0.0.1:$PORT/api/cron/telegram-digest" ;;
+          esac
+          EOS
+          chmod +x /var/www/daromadchi/cron-runner.sh
+          if ! grep -q '^CRON_SECRET=' .env .env.local .env.production .env.production.local 2>/dev/null; then
+            echo "WARNING: CRON_SECRET is not set in the server .env — scheduled sync will be rejected with 403 until it is added."
+          fi
+          ( crontab -l 2>/dev/null | grep -v 'daromadchi/cron-runner.sh' || true
+            echo '*/15 * * * * /var/www/daromadchi/cron-runner.sh sync >> $HOME/daromadchi-cron.log 2>&1'
+            echo '5 * * * * /var/www/daromadchi/cron-runner.sh digest >> $HOME/daromadchi-cron.log 2>&1' ) | crontab -
           echo "Deploy complete."
           DEPLOY

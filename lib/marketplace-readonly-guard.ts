@@ -22,6 +22,10 @@ const APPROVED_POST_ENDPOINTS: RegExp[] = [
   /api\.partner\.market\.yandex\.ru\/v2\/campaigns\/\d+\/stats\/skus/,
   // Wildberries Content API — paginated card list (POST is the read method)
   /content-api\.wildberries\.ru\/content\/v2\/get\/cards\/list/,
+  // Wildberries Marketplace API — FBS stock lookup by barcodes (POST is the read
+  // method; the write variant is PUT on the same path and remains blocked).
+  // Approved by owner in chat for the cross-marketplace leftover feature (2026-07-12).
+  /marketplace-api\.wildberries\.ru\/api\/v3\/stocks\/\d+$/,
   // Uzum GraphQL public search API (read-only market research, no auth)
   /^https:\/\/graphql\.uzum\.uz/,
 ]
