@@ -41,7 +41,7 @@ const LABELS = {
 const MARKETPLACES = [
   { key: 'uzum',   label: (l: typeof LABELS.uz) => l.uzum,   accent: 'var(--c1)',  letter: 'U' },
   { key: 'yandex', label: (l: typeof LABELS.uz) => l.yandex, accent: '#f59e0b',    letter: 'Y' },
-  { key: 'wb',     label: (l: typeof LABELS.uz) => l.wb,     accent: '#83c0f9',    letter: 'W' },
+  { key: 'wb',     label: (l: typeof LABELS.uz) => l.wb,     accent: '#7c3aed',    letter: 'W' },
 ]
 
 interface Props {

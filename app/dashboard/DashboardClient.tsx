@@ -10,7 +10,6 @@ import RevenueChart from '@/components/dashboard/RevenueChart'
 import DateRangePicker from '@/components/dashboard/DateRangePicker'
 import StockAlerts from '@/components/dashboard/StockAlerts'
 import CategoryChart from '@/components/dashboard/CategoryChart'
-import LanguageSwitcher from '@/components/dashboard/LanguageSwitcher'
 import { useLang, useTheme } from '@/app/providers'
 import { dashT } from '@/lib/dashT'
 import type { Kpis, Order, Product, DailyRevenue, MarketplaceType } from '@/lib/types'
@@ -130,7 +129,6 @@ export default function DashboardClient({ slices, days, period, from, to, initia
           <Suspense>
             <DateRangePicker period={period} from={from} to={to} />
           </Suspense>
-          <LanguageSwitcher />
           <button
             onClick={() => setShowCustomize(v => !v)}
             className={`hidden sm:flex items-center gap-2 text-xs font-medium px-3 py-2 rounded-xl border transition-all ${
