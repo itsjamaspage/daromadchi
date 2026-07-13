@@ -1,6 +1,5 @@
 import { getT, getLang } from '@/lib/server-i18n'
 import { Info, Download, ArrowRight } from 'lucide-react'
-import Link from 'next/link'
 import UnitEconomicsTable from '@/components/dashboard/UnitEconomicsTable'
 import { getUnitEconomicsItems, getUnitEcoSettings } from '@/lib/db/unit-economics'
 import type { MarketplaceType } from '@/lib/types'
@@ -91,12 +90,12 @@ export default async function UnitEconomicsPage({
             <p className="text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>{extDesc}</p>
           </div>
         </div>
-        <Link href="/extension"
+        <a href="https://chromewebstore.google.com/detail/daromadchi-%E2%80%94-uzum-yandex/kdgmhemligckdjibcojbdiofokjjnaed" target="_blank" rel="noopener noreferrer"
           className="flex items-center gap-2 flex-shrink-0 text-sm font-semibold px-5 py-2.5 rounded-xl"
           style={{ background: '#ffffff', color: '#0e1b2e', border: '2px solid rgba(255,255,255,0.7)' }}>
           {extBtn}
           <ArrowRight className="w-4 h-4" />
-        </Link>
+        </a>
       </div>
 
       <UnitEconomicsTable items={items} defaultSettings={settings} fromExtension={fromExtension} />
