@@ -165,7 +165,7 @@ export default function AboutPage() {
             <Link href="/privacy" className="hover:text-[var(--text-base)] transition-colors no-underline">Maxfiylik</Link>
             <Link href="/terms" className="hover:text-[var(--text-base)] transition-colors no-underline">Oferta</Link>
           </div>
-          <p className="text-xs text-[var(--text-dim)]">© 2025 Daromadchi. Toshkent, O&apos;zbekiston</p>
+          <p className="text-xs text-[var(--text-dim)]">© 2026 Daromadchi. Toshkent, O&apos;zbekiston</p>
         </div>
       </footer>
     </div>

@@ -1775,9 +1775,9 @@ function FooterSection({ lang }: { lang: Lang }) {
   const isDark = useIsDark()
   const footBg  = isDark ? '#1e1e1e'  : P.parchment
   const bdr     = isDark ? P.dHair    : 'rgba(14,34,51,0.2)'
-  const txt     = isDark ? P.dText    : P.ink
-  const muted   = isDark ? P.dMuted   : P.ink
-  const subtle  = isDark ? 'rgba(255,255,255,0.28)' : P.ink
+  const txt     = isDark ? '#ffffff'  : P.ink
+  const muted   = isDark ? 'rgba(255,255,255,0.7)' : P.ink
+  const subtle  = isDark ? 'rgba(255,255,255,0.45)' : P.ink
 
   const cols = [
     { head: T.footer.productHead[lang], links: [
@@ -1837,7 +1837,7 @@ function FooterSection({ lang }: { lang: Lang }) {
         <div style={{ borderTop: `1px solid ${bdr}`, paddingTop: 24,
           display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
           <p style={{ fontSize: 12, color: subtle }}>
-            © 2025 Daromadchi. {T.footer.location[lang]}
+            © 2026 Daromadchi. {T.footer.location[lang]}
           </p>
           <div style={{ display: 'flex', gap: 20 }}>
             {[
