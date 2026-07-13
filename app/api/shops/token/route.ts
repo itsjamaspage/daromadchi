@@ -28,7 +28,7 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   const { marketplace, token, campaignId, shopName } = parsed.data
 
   if (token?.trim()) {
-    const valid = await validateMarketplaceToken(marketplace, token.trim())
+    const valid = await validateMarketplaceToken(marketplace, token.trim(), campaignId?.trim())
     if (!valid) {
       return NextResponse.json(
         { ok: false, error: 'Недействительный токен. Проверьте и попробуйте снова.' },
