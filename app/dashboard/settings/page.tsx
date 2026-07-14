@@ -2,7 +2,7 @@ import { getT } from '@/lib/server-i18n'
 import { getCurrentUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 import { shops, userSettings } from '@/lib/db/schema'
-import { eq, and, ne } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 import SettingsForm from './SettingsForm'
 import type { Shop } from '@/lib/types'
 
@@ -18,9 +18,10 @@ export default async function SettingsPage() {
     const rows = await db
       .select()
       .from(shops)
-      .where(and(eq(shops.user_id, user.id), ne(shops.shop_id_external, 'DEMO')))
+      .where(eq(shops.user_id, user.id))
 
     for (const row of rows) {
+      if (row.shop_id_external === 'DEMO') continue
       const s = { ...row, created_at: row.created_at.toISOString(), last_synced_at: row.last_synced_at?.toISOString() ?? null } as Shop
       if (row.marketplace === 'uzum')          uzumShop   = s
       if (row.marketplace === 'yandex_market') yandexShop = s

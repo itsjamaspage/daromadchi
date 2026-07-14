@@ -4,8 +4,11 @@ import MobileNav from '@/components/dashboard/MobileNav'
 import BottomNav from '@/components/dashboard/BottomNav'
 import FeedbackWidget from '@/components/dashboard/FeedbackWidget'
 import ChannelGate from '@/components/dashboard/ChannelGate'
+import { getCurrentUser } from '@/lib/auth/session'
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const user = await getCurrentUser()
+
   return (
     <ChannelGate>
       <div className="min-h-screen">
@@ -15,7 +18,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
 
         {/* Desktop top bar — profile pill + dropdown */}
-        <DashboardTopBar />
+        <DashboardTopBar userName={user?.full_name ?? user?.email?.split('@')[0] ?? 'User'} userEmail={user?.email ?? ''} />
 
         {/* Mobile: top bar with hamburger + slide-in drawer */}
         <MobileNav />
