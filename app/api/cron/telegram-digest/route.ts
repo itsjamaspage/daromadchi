@@ -15,6 +15,9 @@ const MP_SHORT = { uzum: 'UZ', wildberries: 'WB', yandex_market: 'YM' } as const
 interface SettingsRow {
   user_id:              string
   telegram_chat_id:     string
+  notif_low_stock:      boolean
+  notif_daily_summary:  boolean
+  notif_weekly_report:  boolean
   notif_send_time:      string
   notif_send_days:      number[]
   alert_stock_threshold: number | null
@@ -39,6 +42,9 @@ export const GET = withErrorHandler(async (req: Request) => {
   const rows = await db.select({
     user_id: userSettings.user_id,
     telegram_chat_id: userSettings.telegram_chat_id,
+    notif_low_stock: userSettings.notif_low_stock,
+    notif_daily_summary: userSettings.notif_daily_summary,
+    notif_weekly_report: userSettings.notif_weekly_report,
     notif_send_time: userSettings.notif_send_time,
     notif_send_days: userSettings.notif_send_days,
     alert_stock_threshold: userSettings.alert_stock_threshold,
@@ -65,19 +71,19 @@ export const GET = withErrorHandler(async (req: Request) => {
     if (shopIds.length === 0) continue
 
     // ── Daily summary (yesterday's sales) ──
-    {
+    if (s.notif_daily_summary) {
       const day = await buildSalesSummary(shopIds, 1)
       if (day) parts.push(`📊 <b>Kunlik xulosa (kecha)</b>\n` + day)
     }
 
     // ── Weekly report (last 7 days, Mondays only) ──
-    if (isWeeklyDay) {
+    if (s.notif_weekly_report && isWeeklyDay) {
       const week = await buildSalesSummary(shopIds, 7)
       if (week) parts.push(`📈 <b>Haftalik hisobot (7 kun)</b>\n` + week)
     }
 
     // ── Low-stock alerts (total leftover across all marketplaces) ──
-    {
+    if (s.notif_low_stock) {
       const threshold = s.alert_stock_threshold ?? 15
       try {
         const groups = await computeStockGroups(s.user_id, shopIds)

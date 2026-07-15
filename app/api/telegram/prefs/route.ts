@@ -21,17 +21,30 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     ? [...new Set(body.sendDays.filter(n => Number.isInteger(n) && n >= 0 && n <= 6))]
     : [1, 2, 3, 4, 5, 6, 0]
 
+  const lowStock     = typeof body.lowStock === 'boolean' ? body.lowStock : true
+  const dailySummary = typeof body.dailySummary === 'boolean' ? body.dailySummary : true
+  const newOrders    = typeof body.newOrders === 'boolean' ? body.newOrders : false
+  const weeklyReport = typeof body.weeklyReport === 'boolean' ? body.weeklyReport : false
+
   await db.insert(userSettings).values({
-    user_id:         user.id,
-    notif_send_time: sendTime,
-    notif_send_days: sendDays,
-    updated_at:      new Date(),
+    user_id:              user.id,
+    notif_low_stock:      lowStock,
+    notif_daily_summary:  dailySummary,
+    notif_new_orders:     newOrders,
+    notif_weekly_report:  weeklyReport,
+    notif_send_time:      sendTime,
+    notif_send_days:      sendDays,
+    updated_at:           new Date(),
   }).onConflictDoUpdate({
     target: userSettings.user_id,
     set: {
-      notif_send_time: sendTime,
-      notif_send_days: sendDays,
-      updated_at:      new Date(),
+      notif_low_stock:     lowStock,
+      notif_daily_summary: dailySummary,
+      notif_new_orders:    newOrders,
+      notif_weekly_report: weeklyReport,
+      notif_send_time:     sendTime,
+      notif_send_days:     sendDays,
+      updated_at:          new Date(),
     },
   })
 
