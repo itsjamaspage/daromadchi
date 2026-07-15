@@ -1,6 +1,6 @@
 import { cache } from 'react'
 import { getCurrentUser } from '@/lib/auth/session'
-import { eq, ne, and, asc, inArray } from 'drizzle-orm'
+import { eq, ne, and, or, isNull, asc, inArray } from 'drizzle-orm'
 import { db, shops, orders } from '@/lib/db'
 import type { MarketplaceType } from '@/lib/types'
 
@@ -23,7 +23,7 @@ export const getUserShops = cache(async (): Promise<ShopRef[]> => {
   if (!userId) return []
   const rows = await db.select({ id: shops.id, marketplace: shops.marketplace })
     .from(shops)
-    .where(and(eq(shops.user_id, userId), ne(shops.shop_id_external, 'DEMO')))
+    .where(and(eq(shops.user_id, userId), or(isNull(shops.shop_id_external), ne(shops.shop_id_external, 'DEMO'))))
   return rows as ShopRef[]
 })
 

@@ -1,4 +1,4 @@
-import { eq, ne, and, inArray, gte } from 'drizzle-orm'
+import { eq, ne, and, or, isNull, inArray, gte } from 'drizzle-orm'
 import { db, shops, productAdsStats } from '@/lib/db'
 import { getCurrentUserId } from '@/lib/db/shop-context'
 import type { AdsStatsSummary, MarketplaceType } from '@/lib/types'
@@ -10,7 +10,7 @@ export async function getAdsStats(
   const userId = await getCurrentUserId()
   if (!userId) return new Map()
 
-  const conditions = [eq(shops.user_id, userId), ne(shops.shop_id_external, 'DEMO')]
+  const conditions = [eq(shops.user_id, userId), or(isNull(shops.shop_id_external), ne(shops.shop_id_external, 'DEMO'))]
   if (marketplace) conditions.push(eq(shops.marketplace, marketplace))
   const shopRows = await db.select({ id: shops.id }).from(shops).where(and(...conditions))
   const shopIds = shopRows.map(s => s.id)

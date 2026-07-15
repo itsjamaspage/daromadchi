@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { eq, and, ne, sql } from 'drizzle-orm'
+import { eq, and, ne, or, isNull, sql } from 'drizzle-orm'
 import { getCurrentUser } from '@/lib/auth/session'
 import { db, shops, productAdsStats } from '@/lib/db'
 import { decrypt } from '@/lib/crypto'
@@ -19,7 +19,7 @@ export const POST = withErrorHandler(async () => {
     .where(and(
       eq(shops.user_id, user.id),
       eq(shops.marketplace, 'wildberries'),
-      ne(shops.shop_id_external, 'DEMO'),
+      or(isNull(shops.shop_id_external), ne(shops.shop_id_external, 'DEMO')),
     ))
 
   if (!shop?.api_key_encrypted) {

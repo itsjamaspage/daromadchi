@@ -1,5 +1,5 @@
 import { unstable_cache } from 'next/cache'
-import { eq, ne, and, inArray, gte, lte, asc, sql, count } from 'drizzle-orm'
+import { eq, ne, and, or, isNull, inArray, gte, lte, asc, sql, count } from 'drizzle-orm'
 import { db, shops, products, orders, orderItems } from '@/lib/db'
 import { getShopIds, getCurrentUserId } from '@/lib/db/shop-context'
 import type { Product, MarketplaceType } from '@/lib/types'
@@ -238,7 +238,7 @@ const _fetchProductsPaginated = unstable_cache(
 
     const shopConditions = [
       eq(shops.user_id, userId),
-      ne(shops.shop_id_external, 'DEMO'),
+      or(isNull(shops.shop_id_external), ne(shops.shop_id_external, 'DEMO')),
     ]
     if (marketplace) shopConditions.push(eq(shops.marketplace, marketplace as MarketplaceType))
 
