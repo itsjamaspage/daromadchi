@@ -29,7 +29,7 @@ export default async function SyncStatusPage() {
     getSyncDays('wildberries', 30),
   ])
 
-  const filteredShops = shopRows.filter(s => s.shop_id_external !== 'DEMO')
+  const filteredShops = shopRows.filter(s => s.shop_id_external === null || s.shop_id_external !== 'DEMO')
 
   const shopsWithCounts = await Promise.all(
     filteredShops.map(async shop => {

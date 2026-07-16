@@ -57,7 +57,7 @@ export default function AdDrrChart({ rows }: { rows: Row[] }) {
             wrapperStyle={{ fontSize: 12, color: legendColor, paddingTop: 12 }}
             formatter={(value) => <span style={{ color: legendColor }}>{value}</span>}
           />
-          <ReferenceLine y={25} stroke="#f59e0b" strokeDasharray="4 3" strokeWidth={1.5} label={{ value: 'Max 25%', fill: '#f59e0b', fontSize: 10, position: 'right' }} />
+          <ReferenceLine y={100} stroke={theme === 'dark' ? '#374151' : '#e5e7eb'} strokeDasharray="3 3" strokeWidth={1} label={{ value: '100%', fill: axisColor, fontSize: 9, position: 'right' }} />
           <Bar dataKey="DRR umumiy"  fill="#7c3aed" radius={[4, 4, 0, 0]} />
           <Bar dataKey="DRR reklama" fill="#3b82f6" radius={[4, 4, 0, 0]} />
         </BarChart>

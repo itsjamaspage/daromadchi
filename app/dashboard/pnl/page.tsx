@@ -2,6 +2,7 @@ import { FileText, Link2, Settings } from 'lucide-react'
 import Link from 'next/link'
 import { Suspense } from 'react'
 import { getMonthlyPnl } from '@/lib/db/pnl'
+import { getUserShops } from '@/lib/db/shop-context'
 import PnlChart from './PnlChart'
 import ExportButton from '@/components/dashboard/ExportButton'
 import MarketplaceTabs from '@/components/dashboard/MarketplaceTabs'
@@ -24,9 +25,10 @@ interface Props {
 export default async function PnlPage({ searchParams }: Props) {
   const params = await searchParams
   const marketplace = parseMp(params.mp)
-  const [t, monthlyData] = await Promise.all([getT(), getMonthlyPnl(6, marketplace)])
+  const [t, monthlyData, userShops] = await Promise.all([getT(), getMonthlyPnl(6, marketplace), getUserShops()])
   const d = t.dashboard
   const isEmpty = monthlyData.length === 0
+  const hasShops = userShops.length > 0
 
   const totalRevenue  = monthlyData.reduce((s, m) => s + m.revenue, 0)
   const totalFees     = monthlyData.reduce((s, m) => s + m.marketplace_fee, 0)
@@ -69,14 +71,18 @@ export default async function PnlPage({ searchParams }: Props) {
           <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: 'var(--bg-card2)', borderWidth: '1px', borderStyle: 'solid',  borderColor: 'var(--border)' }}>
             <FileText className="w-7 h-7" style={{ color: 'var(--c1)' }} />
           </div>
-          <h2 className="text-[var(--text-base)] font-bold text-lg mb-2">{d.noData}</h2>
+          <h2 className="text-[var(--text-base)] font-bold text-lg mb-2">
+            {hasShops ? d.noOrdersConnectedTitle : d.noData}
+          </h2>
           <p className="text-[var(--text-muted)] text-sm mb-6 max-w-sm mx-auto">
-            {d.noDataPnlDesc}
+            {hasShops ? d.noOrdersConnectedDesc : d.noDataPnlDesc}
           </p>
-          <Link href="/dashboard/settings"
-            className="inline-flex items-center gap-2 btn-primary text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors shadow-lg">
-            <Settings className="w-4 h-4" /> {d.goToSettings}
-          </Link>
+          {!hasShops && (
+            <Link href="/dashboard/settings"
+              className="inline-flex items-center gap-2 btn-primary text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors shadow-lg">
+              <Settings className="w-4 h-4" /> {d.goToSettings}
+            </Link>
+          )}
         </div>
       ) : (
         <>

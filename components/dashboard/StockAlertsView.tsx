@@ -51,7 +51,14 @@ export default function StockAlertsView({ alerts, settings: initialSettings }: P
     }
   }
 
-  function daysLeftBadge(daysLeft: number) {
+  function daysLeftBadge(daysLeft: number, dailySales: number) {
+    if (dailySales === 0) {
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-semibold bg-slate-500/15 text-[var(--text-muted)] border border-[var(--border)]">
+          {d.noSales ?? 'Sotuv yo\'q'}
+        </span>
+      )
+    }
     if (daysLeft <= 3) {
       return (
         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-semibold bg-red-500/15 text-red-400 border border-red-500/20">
@@ -188,7 +195,7 @@ export default function StockAlertsView({ alerts, settings: initialSettings }: P
                         </span>
                       </td>
                       <td className="px-5 py-3.5 text-[var(--text-muted)] text-sm">{alert.threshold} {d.unitsSuffix}</td>
-                      <td className="px-5 py-3.5">{daysLeftBadge(alert.daysLeft)}</td>
+                      <td className="px-5 py-3.5">{daysLeftBadge(alert.daysLeft, alert.dailySales)}</td>
                       <td className="px-5 py-3.5 text-[var(--text-dim)] text-sm">{alert.dailySales}{d.perDay}</td>
                       <td className="px-5 py-3.5">
                         {isCritical ? (

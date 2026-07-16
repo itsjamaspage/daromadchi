@@ -268,7 +268,7 @@ export const helpContent: HelpDB = {
   unitEconomics: {
     uz: {
       title: 'Birlik iqtisodiyoti',
-      what: 'Har bir mahsulot yoki buyurtma bo\'yicha haqiqiy foyda: narxdan barcha xarajatlar (komissiya, yetkazish, soliq) ayirilgandan keyingi holat.',
+      what: 'Har bir mahsulot yoki buyurtma bo\'yicha haqiqiy foyda: narxdan barcha xarajatlar (komissiya, yetkazish, soliq) ayirilgandan keyingi holat.\n\n⚠️ Eslatma: bu ma\'lumotlar taxminiy hisoblanadi va aniq buxgalteriya hisobi o\'rnini bosmaydi.',
       why: 'Qaysi mahsulotlar sof foyda keltiradi, qaysilari aslida zararli ekanini bilib oling.',
       how: 'Foyda marjasi manfiy bo\'lsa — mahsulot narxini oshirish yoki xarajatlarni kamaytirish kerak.',
       steps: [
@@ -280,7 +280,7 @@ export const helpContent: HelpDB = {
     },
     ru: {
       title: 'Юнит-экономика',
-      what: 'Реальная прибыль на единицу товара или заказ: цена минус все расходы (комиссия, доставка, налоги).',
+      what: 'Реальная прибыль на единицу товара или заказ: цена минус все расходы (комиссия, доставка, налоги).\n\n⚠️ Примечание: данные являются приблизительными и не заменяют точный бухгалтерский учёт.',
       why: 'Узнайте, какие товары приносят чистую прибыль, а какие на самом деле убыточны.',
       how: 'Отрицательная маржа — нужно поднять цену или снизить расходы.',
       steps: [
@@ -292,7 +292,7 @@ export const helpContent: HelpDB = {
     },
     en: {
       title: 'Unit Economics',
-      what: 'Real profit per product or order: price minus all costs (commission, delivery, taxes).',
+      what: 'Real profit per product or order: price minus all costs (commission, delivery, taxes).\n\n⚠️ Note: these figures are approximate estimates and do not replace precise accounting.',
       why: 'Find out which products generate real profit and which are actually losing money.',
       how: 'Negative margin = raise price or cut costs.',
       steps: [

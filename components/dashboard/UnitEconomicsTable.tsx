@@ -259,12 +259,13 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
             <button onClick={() => setExtPending(null)}
-              className="px-3 py-1.5 text-xs font-semibold text-[var(--c1)]/70 hover:text-[var(--c1)] border border-[var(--border)] rounded-lg transition-colors">
+              className="px-3 py-1.5 text-xs font-semibold border-2 rounded-lg transition-colors"
+              style={{ borderColor: 'var(--border2)', color: 'var(--text-base)', background: 'var(--bg-card2)' }}>
               Bekor
             </button>
             <button onClick={saveFromExtension} disabled={extSaving}
-              className="px-4 py-1.5 text-xs font-semibold btn-primary disabled:opacity-50 rounded-lg transition-colors">
-              {extSaving ? 'Saqlanmoqda…' : "Qo'shish"}
+              className="px-4 py-1.5 text-xs font-bold btn-primary disabled:opacity-50 rounded-lg transition-colors shadow-sm">
+              {extSaving ? 'Saqlanmoqda…' : "✓ Qo'shish"}
             </button>
           </div>
         </div>
