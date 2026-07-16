@@ -2,6 +2,7 @@ import { Suspense } from 'react'
 import { ShoppingCart, Settings } from 'lucide-react'
 import Link from 'next/link'
 import { getOrdersPaginated } from '@/lib/db/orders'
+import { getUserShops } from '@/lib/db/shop-context'
 import OrdersTable from '@/components/dashboard/OrdersTable'
 import MarketplaceTabs from '@/components/dashboard/MarketplaceTabs'
 import Pagination from '@/components/dashboard/Pagination'
@@ -22,12 +23,14 @@ export default async function OrdersPage({ searchParams }: Props) {
     ? (params.mp as MarketplaceType)
     : undefined
 
-  const [t, { rows: orders, total }] = await Promise.all([
+  const [t, { rows: orders, total }, userShops] = await Promise.all([
     getT(),
     getOrdersPaginated(page, PAGE_SIZE, mp),
+    getUserShops(),
   ])
   const d = t.dashboard
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
+  const hasShops = userShops.length > 0
 
   return (
     <div className="space-y-6">
@@ -45,14 +48,18 @@ export default async function OrdersPage({ searchParams }: Props) {
           <div className="w-14 h-14 rounded-2xl border flex items-center justify-center mx-auto mb-4" style={{ background: 'rgba(131, 192, 249, 0.1)', borderColor: 'rgba(131, 192, 249, 0.2)', color: 'var(--c1)' }}>
             <ShoppingCart className="w-7 h-7" />
           </div>
-          <h2 className="font-bold text-lg mb-2" style={{ color: 'var(--text-base)' }}>{d.noOrdersTitle}</h2>
+          <h2 className="font-bold text-lg mb-2" style={{ color: 'var(--text-base)' }}>
+            {hasShops ? d.noOrdersConnectedTitle : d.noOrdersTitle}
+          </h2>
           <p className="text-sm mb-6 max-w-sm mx-auto" style={{ color: 'var(--text-muted)' }}>
-            {d.noOrdersDesc}
+            {hasShops ? d.noOrdersConnectedDesc : d.noOrdersDesc}
           </p>
-          <Link href="/dashboard/settings"
-            className="inline-flex items-center gap-2 text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors btn-primary">
-            <Settings className="w-4 h-4" /> {d.goToSettings}
-          </Link>
+          {!hasShops && (
+            <Link href="/dashboard/settings"
+              className="inline-flex items-center gap-2 text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors btn-primary">
+              <Settings className="w-4 h-4" /> {d.goToSettings}
+            </Link>
+          )}
         </div>
       ) : (
         <>

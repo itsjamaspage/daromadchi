@@ -78,14 +78,15 @@ export default function ChannelGate({ children }: { children: React.ReactNode })
             href={CHANNEL_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="block w-full py-3 rounded-xl bg-[var(--c1)] hover:bg-[#6aabf0] text-white text-sm font-semibold text-center transition-colors"
+            className="block w-full py-3 rounded-xl btn-primary text-sm font-semibold text-center transition-colors"
           >
             {t.joinBtn}
           </a>
           <button
             onClick={handleDone}
             disabled={showPopup}
-            className="w-full py-3 rounded-xl border border-emerald-500/50 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 text-sm font-semibold transition-colors disabled:opacity-60"
+            className="w-full py-3 rounded-xl border-2 border-emerald-500 bg-emerald-500/15 text-emerald-600 hover:bg-emerald-500/25 text-sm font-semibold transition-colors disabled:opacity-60"
+            style={{ color: 'var(--text-base)' }}
           >
             {t.doneBtn}
           </button>
