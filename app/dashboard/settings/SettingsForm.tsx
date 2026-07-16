@@ -368,7 +368,7 @@ function YandexCard({ shop }: { shop: Shop | null; userId: string }) {
 
         <StatusMsg msg={saveMsg} />
         <button type="submit" disabled={saving}
-          className="flex items-center gap-2 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors">
+          className="flex items-center gap-2 btn-primary disabled:opacity-50 px-4 py-2 rounded-xl transition-colors">
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
           Saqlash
         </button>
@@ -396,7 +396,7 @@ function YandexCard({ shop }: { shop: Shop | null; userId: string }) {
             </button>
             <button onClick={handleSync} disabled={syncing || !connected}
               title={!connected ? 'Avval token va Campaign ID saqlang' : ''}
-              className="flex items-center gap-2 bg-amber-500 hover:bg-amber-600 border border-transparent disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors">
+              className="flex items-center gap-2 btn-primary border border-transparent disabled:opacity-40 disabled:cursor-not-allowed px-4 py-2 rounded-xl transition-colors">
               {syncing ? <><Loader2 className="w-4 h-4 animate-spin" /> Sinxronlanmoqda…</> : <><RefreshCw className="w-4 h-4" /> Sinxronlash</>}
             </button>
           </div>
