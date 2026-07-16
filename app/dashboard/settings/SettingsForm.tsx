@@ -800,7 +800,7 @@ export default function SettingsForm({ uzumShop, yandexShop, wbShop, shopCounts,
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {mpCards.map(({ shop, Component }) => (
           <Component key={shop?.id ?? Component.name} shop={shop} userId={userId} />
         ))}
