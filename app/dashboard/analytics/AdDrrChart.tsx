@@ -47,8 +47,8 @@ export default function AdDrrChart({ rows }: { rows: Row[] }) {
           <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>Mahsulot bo&apos;yicha reklama xarajatlari ulushi</p>
         </div>
       </div>
-      <ResponsiveContainer width="100%" height={480}>
-        <BarChart data={data} barGap={2} barCategoryGap="30%" margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
+      <ResponsiveContainer width="100%" height={data.length <= 3 ? 320 : 480}>
+        <BarChart data={data} barGap={2} barCategoryGap="30%" maxBarSize={60} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke={gridColor} vertical={false} />
           <XAxis dataKey="name" tick={{ fill: axisColor, fontSize: 11 }} axisLine={false} tickLine={false} />
           <YAxis tickFormatter={v => `${v}%`} tick={{ fill: axisColor, fontSize: 11 }} axisLine={false} tickLine={false} width={38} />
