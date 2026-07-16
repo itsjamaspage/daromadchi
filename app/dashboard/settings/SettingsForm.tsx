@@ -767,20 +767,49 @@ interface Props {
   uzumShop:          Shop | null
   yandexShop:        Shop | null
   wbShop:            Shop | null
+  shopCounts:        Record<string, { products: number; orders: number }>
   userId:            string
   telegramChatId?:   string | null
   telegramUsername?: string | null
 }
 
-export default function SettingsForm({ uzumShop, yandexShop, wbShop, userId, telegramChatId, telegramUsername }: Props) {
+export default function SettingsForm({ uzumShop, yandexShop, wbShop, shopCounts, userId, telegramChatId, telegramUsername }: Props) {
+  const mpCards = [
+    { shop: uzumShop, mp: 'uzum', Component: UzumCard },
+    { shop: yandexShop, mp: 'yandex_market', Component: YandexCard },
+    { shop: wbShop, mp: 'wildberries', Component: WildberriesCard },
+  ]
+  const connected = mpCards.filter(c => c.shop?.api_key_encrypted)
+  const notConnected = mpCards.filter(c => !c.shop?.api_key_encrypted)
+
   return (
-    <div className="space-y-4">
-      <UzumCard        shop={uzumShop}   userId={userId} />
-      <YandexCard      shop={yandexShop} userId={userId} />
-      <WildberriesCard shop={wbShop}     userId={userId} />
+    <div className="space-y-6">
+      {connected.length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {connected.map(({ mp }) => {
+            const c = shopCounts[mp]
+            const labels: Record<string, string> = { uzum: 'Uzum', yandex_market: 'Yandex', wildberries: 'WB' }
+            return (
+              <div key={mp} className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl px-4 py-3">
+                <p className="text-xs font-semibold mb-1" style={{ color: 'var(--c1)' }}>{labels[mp]}</p>
+                <p className="text-lg font-bold text-[var(--text-base)]">{c?.products ?? 0} <span className="text-xs font-normal text-[var(--text-muted)]">mahsulot</span></p>
+                <p className="text-xs text-[var(--text-muted)]">{c?.orders ?? 0} buyurtma</p>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      <div className="space-y-4">
+        {mpCards.map(({ shop, Component }) => (
+          <Component key={shop?.id ?? Component.name} shop={shop} userId={userId} />
+        ))}
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <TelegramCard chatId={telegramChatId ?? null} username={telegramUsername ?? null} />
+        <DemoCard />
+      </div>
       <WarehousesCard />
-      <TelegramCard    chatId={telegramChatId ?? null} username={telegramUsername ?? null} />
-      <DemoCard />
     </div>
   )
 }

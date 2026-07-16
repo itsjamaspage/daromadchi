@@ -1,8 +1,8 @@
 import { getT } from '@/lib/server-i18n'
 import { getCurrentUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
-import { shops, userSettings } from '@/lib/db/schema'
-import { eq } from 'drizzle-orm'
+import { shops, userSettings, products, orders } from '@/lib/db/schema'
+import { eq, count } from 'drizzle-orm'
 import SettingsForm from './SettingsForm'
 import type { Shop } from '@/lib/types'
 
@@ -13,6 +13,7 @@ export default async function SettingsPage() {
   let uzumShop:   Shop | null = null
   let yandexShop: Shop | null = null
   let wbShop:     Shop | null = null
+  const shopCounts: Record<string, { products: number; orders: number }> = {}
 
   if (user) {
     const rows = await db
@@ -27,6 +28,15 @@ export default async function SettingsPage() {
       if (row.marketplace === 'yandex_market') yandexShop = s
       if (row.marketplace === 'wildberries')   wbShop     = s
     }
+
+    const shopsWithKeys = [uzumShop, yandexShop, wbShop].filter(Boolean) as Shop[]
+    await Promise.all(shopsWithKeys.map(async s => {
+      const [[{ total: pc }], [{ total: oc }]] = await Promise.all([
+        db.select({ total: count() }).from(products).where(eq(products.shop_id, s.id)),
+        db.select({ total: count() }).from(orders).where(eq(orders.shop_id, s.id)),
+      ])
+      shopCounts[s.marketplace] = { products: pc ?? 0, orders: oc ?? 0 }
+    }))
   }
 
   let telegramChatId:   string | null = null
@@ -55,6 +65,7 @@ export default async function SettingsPage() {
         uzumShop={uzumShop}
         yandexShop={yandexShop}
         wbShop={wbShop}
+        shopCounts={shopCounts}
         userId={user?.id ?? ''}
         telegramChatId={telegramChatId}
         telegramUsername={telegramUsername}
