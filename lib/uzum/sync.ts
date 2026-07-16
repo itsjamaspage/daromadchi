@@ -71,7 +71,7 @@ export async function syncFromUzum(shopId: string, token: string, fromDateOverri
                 category: card.category ?? null,
                 selling_price: sku.price ?? null,
                 cost_price: sku.purchasePrice || null,
-                stock_quantity: sku.quantityActive ?? 0,
+                stock_quantity: (sku.quantityActive ?? 0) + (sku.quantityFbs ?? 0),
               })
             }
           }

@@ -59,9 +59,13 @@ function UzumCard({ shop }: { shop: Shop | null; userId: string }) {
       })
       const data = await res.json()
       setSaveMsg(data.ok
-        ? { ok: true, text: data.message ?? 'Saqlandi!' }
+        ? { ok: true, text: data.message ?? 'Saqlandi! Sinxronlash boshlanmoqda…' }
         : { ok: false, text: data.error ?? 'Xato' })
-      if (data.ok) { setApiKey(''); router.refresh() }
+      if (data.ok) {
+        setApiKey('')
+        router.refresh()
+        triggerSync()
+      }
     } catch {
       setSaveMsg({ ok: false, text: "Server bilan bog'lanishda xato" })
     }
@@ -78,6 +82,27 @@ function UzumCard({ shop }: { shop: Shop | null; userId: string }) {
       setSyncMsg({ ok: false, text: "Server bilan bog'lanishda xato" })
     }
     setTesting(false)
+  }
+
+  function triggerSync() {
+    setSyncing(true); setSyncMsg(null)
+    const steps = ['Mahsulotlar yuklanmoqda…', 'Buyurtmalar tekshirilmoqda…', 'Reklama kampaniyalari…', 'Saqlanyapti…']
+    let stepIdx = 0
+    setSyncStep(steps[0])
+    const interval = setInterval(() => {
+      stepIdx = Math.min(stepIdx + 1, steps.length - 1)
+      setSyncStep(steps[stepIdx])
+    }, 4000)
+    fetch('/api/uzum/sync', { method: 'POST' })
+      .then(r => r.json())
+      .then(data => {
+        setSyncMsg(data.ok
+          ? { ok: true, text: `${data.productsUpserted ?? 0} mahsulot, ${data.ordersUpserted ?? 0} buyurtma${data.campaignsUpserted ? `, ${data.campaignsUpserted} kampaniya` : ''} yangilandi.` }
+          : { ok: false, text: data.error ?? 'Xato' })
+        if (data.ok) router.refresh()
+      })
+      .catch(() => setSyncMsg({ ok: false, text: "Server bilan bog'lanishda xato" }))
+      .finally(() => { clearInterval(interval); setSyncStep(null); setSyncing(false) })
   }
 
   async function handleSync() {
@@ -230,13 +255,38 @@ function YandexCard({ shop }: { shop: Shop | null; userId: string }) {
       })
       const data = await res.json()
       setSaveMsg(data.ok
-        ? { ok: true, text: data.message ?? 'Saqlandi!' }
+        ? { ok: true, text: data.message ?? 'Saqlandi! Sinxronlash boshlanmoqda…' }
         : { ok: false, text: data.error ?? 'Xato' })
-      if (data.ok) { setApiKey(''); router.refresh() }
+      if (data.ok) {
+        setApiKey('')
+        router.refresh()
+        triggerYandexSync()
+      }
     } catch {
       setSaveMsg({ ok: false, text: "Server bilan bog'lanishda xato" })
     }
     setSaving(false)
+  }
+
+  function triggerYandexSync() {
+    setSyncing(true); setSyncMsg(null)
+    const steps = ['Mahsulotlar yuklanmoqda…', 'Buyurtmalar tekshirilmoqda…', 'Reklama kampaniyalari…', 'Saqlanyapti…']
+    let stepIdx = 0
+    setSyncStep(steps[0])
+    const interval = setInterval(() => {
+      stepIdx = Math.min(stepIdx + 1, steps.length - 1)
+      setSyncStep(steps[stepIdx])
+    }, 4000)
+    fetch('/api/yandex/sync', { method: 'POST' })
+      .then(r => r.json())
+      .then(data => {
+        setSyncMsg(data.ok
+          ? { ok: true, text: `${data.productsUpserted ?? 0} mahsulot, ${data.ordersUpserted ?? 0} buyurtma${data.campaignsUpserted ? `, ${data.campaignsUpserted} kampaniya` : ''} yangilandi.` }
+          : { ok: false, text: data.error ?? 'Xato' })
+        if (data.ok) router.refresh()
+      })
+      .catch(() => setSyncMsg({ ok: false, text: "Server bilan bog'lanishda xato" }))
+      .finally(() => { clearInterval(interval); setSyncStep(null); setSyncing(false) })
   }
 
   async function handleSync() {
@@ -385,13 +435,38 @@ function WildberriesCard({ shop }: { shop: Shop | null; userId: string }) {
       })
       const data = await res.json()
       setSaveMsg(data.ok
-        ? { ok: true, text: data.message ?? 'Saqlandi!' }
+        ? { ok: true, text: data.message ?? 'Saqlandi! Sinxronlash boshlanmoqda…' }
         : { ok: false, text: data.error ?? 'Xato' })
-      if (data.ok) { setApiKey(''); router.refresh() }
+      if (data.ok) {
+        setApiKey('')
+        router.refresh()
+        triggerWbSync()
+      }
     } catch {
       setSaveMsg({ ok: false, text: "Server bilan bog'lanishda xato" })
     }
     setSaving(false)
+  }
+
+  function triggerWbSync() {
+    setSyncing(true); setSyncMsg(null)
+    const steps = ['Mahsulotlar yuklanmoqda…', 'Buyurtmalar tekshirilmoqda…', 'Saqlanyapti…']
+    let stepIdx = 0
+    setSyncStep(steps[0])
+    const interval = setInterval(() => {
+      stepIdx = Math.min(stepIdx + 1, steps.length - 1)
+      setSyncStep(steps[stepIdx])
+    }, 4000)
+    fetch('/api/wildberries/sync', { method: 'POST' })
+      .then(r => r.json())
+      .then(data => {
+        setSyncMsg(data.ok
+          ? { ok: true, text: `${data.productsUpserted ?? 0} mahsulot, ${data.ordersUpserted ?? 0} buyurtma yangilandi.` }
+          : { ok: false, text: data.error ?? (data.errors?.[0]) ?? 'Xato' })
+        if (data.ok) router.refresh()
+      })
+      .catch(() => setSyncMsg({ ok: false, text: "Server bilan bog'lanishda xato" }))
+      .finally(() => { clearInterval(interval); setSyncStep(null); setSyncing(false) })
   }
 
   async function handleTest() {
