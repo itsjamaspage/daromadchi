@@ -259,13 +259,17 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
             <button onClick={() => setExtPending(null)}
-              className="px-3 py-1.5 text-xs font-semibold border-2 rounded-lg transition-colors"
-              style={{ borderColor: 'var(--border2)', color: 'var(--text-base)', background: 'var(--bg-card2)' }}>
-              Bekor
+              className="w-9 h-9 flex items-center justify-center rounded-lg border-2 border-red-500/50 bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors"
+              title="Bekor">
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
             </button>
             <button onClick={saveFromExtension} disabled={extSaving}
-              className="px-4 py-1.5 text-xs font-bold btn-primary disabled:opacity-50 rounded-lg transition-colors shadow-sm">
-              {extSaving ? 'Saqlanmoqda…' : "✓ Qo'shish"}
+              className="w-9 h-9 flex items-center justify-center rounded-lg border-2 border-emerald-500/50 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 disabled:opacity-50 transition-colors"
+              title="Qo'shish">
+              {extSaving
+                ? <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10" strokeDasharray="32" strokeDashoffset="12"/></svg>
+                : <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+              }
             </button>
           </div>
         </div>
