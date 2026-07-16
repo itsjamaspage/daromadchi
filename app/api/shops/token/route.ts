@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { eq, and } from 'drizzle-orm'
-import { createClient } from '@/lib/supabase/server'
+import { getCurrentUser } from '@/lib/auth/session'
 import { db, shops } from '@/lib/db'
 import { encrypt } from '@/lib/crypto'
 import { validateMarketplaceToken } from '@/lib/validate-token'
@@ -17,8 +17,7 @@ const TokenSchema = z.object({
 })
 
 export const POST = withErrorHandler(async (req: NextRequest) => {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getCurrentUser()
   if (!user) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 })
 
   const raw = await req.json().catch(() => null)
@@ -29,7 +28,7 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   const { marketplace, token, campaignId, shopName } = parsed.data
 
   if (token?.trim()) {
-    const valid = await validateMarketplaceToken(marketplace, token.trim())
+    const valid = await validateMarketplaceToken(marketplace, token.trim(), campaignId?.trim())
     if (!valid) {
       return NextResponse.json(
         { ok: false, error: 'Недействительный токен. Проверьте и попробуйте снова.' },

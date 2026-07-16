@@ -50,8 +50,7 @@ export default async function OrdersPage({ searchParams }: Props) {
             {d.noOrdersDesc}
           </p>
           <Link href="/dashboard/settings"
-            className="inline-flex items-center gap-2 text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors"
-            style={{ background: 'var(--c1)', color: 'white' }}>
+            className="inline-flex items-center gap-2 text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors btn-primary">
             <Settings className="w-4 h-4" /> {d.goToSettings}
           </Link>
         </div>

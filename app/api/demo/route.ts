@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { eq, and } from 'drizzle-orm'
-import { createClient } from '@/lib/supabase/server'
+import { getCurrentUser } from '@/lib/auth/session'
 import { db, shops, products, orders, orderItems } from '@/lib/db'
 import { withErrorHandler } from '@/lib/api-handler'
 
@@ -151,8 +151,7 @@ async function seedMarketplace(
 }
 
 export const DELETE = withErrorHandler(async () => {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getCurrentUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   await db.delete(shops)
@@ -162,8 +161,7 @@ export const DELETE = withErrorHandler(async () => {
 })
 
 export const POST = withErrorHandler(async () => {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getCurrentUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   await db.delete(shops)

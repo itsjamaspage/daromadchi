@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { eq, and } from 'drizzle-orm'
+import { getCurrentUser } from '@/lib/auth/session'
+import { db, shops } from '@/lib/db'
 import { decrypt } from '@/lib/crypto'
 import { syncFromWildberries } from '@/lib/wildberries/sync'
 import { logger } from '@/lib/logger'
@@ -7,22 +9,20 @@ import { withErrorHandler } from '@/lib/api-handler'
 
 function fromDaysToDate(fromDays: unknown): Date | undefined {
   if (typeof fromDays !== 'number') return undefined
-  if (fromDays === 0) return new Date('2022-02-01') // WB Uzbekistan launched Feb 2022
+  if (fromDays === 0) return new Date('2022-02-01')
   const d = new Date(); d.setDate(d.getDate() - fromDays); return d
 }
 
 export const POST = withErrorHandler(async (req: NextRequest) => {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getCurrentUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { data: shop } = await supabase
-    .from('shops')
-    .select('id, api_key_encrypted, last_synced_at')
-    .eq('user_id', user.id)
-    .eq('marketplace', 'wildberries')
-    .eq('is_active', true)
-    .maybeSingle()
+  const [shop] = await db.select({
+    id: shops.id,
+    api_key_encrypted: shops.api_key_encrypted,
+    last_synced_at: shops.last_synced_at,
+  }).from(shops)
+    .where(and(eq(shops.user_id, user.id), eq(shops.marketplace, 'wildberries'), eq(shops.is_active, true)))
 
   if (!shop?.api_key_encrypted) {
     return NextResponse.json({ error: 'No Wildberries API token saved' }, { status: 400 })
@@ -32,7 +32,7 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   const fromDate = fromDaysToDate(body?.fromDays)
 
   try {
-    const result = await syncFromWildberries(supabase, shop.id, decrypt(shop.api_key_encrypted), fromDate)
+    const result = await syncFromWildberries(null, shop.id, decrypt(shop.api_key_encrypted), fromDate)
     if (!result.ok) logger.warn('wb_sync_error', { shopId: shop.id, errors: result.errors })
     return NextResponse.json(result)
   } catch (err) {
@@ -41,19 +41,14 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   }
 })
 
-// GET /api/wildberries/sync — lightweight token test, no data written
 export const GET = withErrorHandler(async () => {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getCurrentUser()
   if (!user) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 })
 
-  const { data: shop } = await supabase
-    .from('shops')
-    .select('api_key_encrypted')
-    .eq('user_id', user.id)
-    .eq('marketplace', 'wildberries')
-    .eq('is_active', true)
-    .maybeSingle()
+  const [shop] = await db.select({
+    api_key_encrypted: shops.api_key_encrypted,
+  }).from(shops)
+    .where(and(eq(shops.user_id, user.id), eq(shops.marketplace, 'wildberries'), eq(shops.is_active, true)))
 
   if (!shop?.api_key_encrypted) {
     return NextResponse.json({ ok: false, error: 'Token topilmadi' }, { status: 400 })
@@ -61,7 +56,6 @@ export const GET = withErrorHandler(async () => {
 
   const token = decrypt(shop.api_key_encrypted)
 
-  // Test with seller-info (common-api) — no IP whitelist required for some accounts
   try {
     const res = await fetch('https://common-api.wildberries.ru/api/v1/seller-info', {
       headers: { 'Authorization': token }

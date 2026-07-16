@@ -1,63 +1,61 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { eq, ne, and, or, isNull } from 'drizzle-orm'
+import { getCurrentUser } from '@/lib/auth/session'
+import { db, warehouses, shops } from '@/lib/db'
 import { withErrorHandler } from '@/lib/api-handler'
 
-// GET — return all warehouses + all shops (with warehouse assignments) for current user
 export const GET = withErrorHandler(async () => {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getCurrentUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const [{ data: warehouses }, { data: shops }] = await Promise.all([
-    supabase
-      .from('warehouses')
-      .select('id, name, created_at')
-      .eq('user_id', user.id)
-      .order('created_at'),
-    supabase
-      .from('shops')
-      .select('id, name, marketplace, warehouse_id')
-      .eq('user_id', user.id)
-      .neq('shop_id_external', 'DEMO'),
+  const [warehouseRows, shopRows] = await Promise.all([
+    db.select({
+      id: warehouses.id,
+      name: warehouses.name,
+      created_at: warehouses.created_at,
+    }).from(warehouses)
+      .where(eq(warehouses.user_id, user.id))
+      .orderBy(warehouses.created_at),
+    db.select({
+      id: shops.id,
+      name: shops.name,
+      marketplace: shops.marketplace,
+      warehouse_id: shops.warehouse_id,
+    }).from(shops)
+      .where(and(eq(shops.user_id, user.id), or(isNull(shops.shop_id_external), ne(shops.shop_id_external, 'DEMO')))),
   ])
 
-  return NextResponse.json({ warehouses: warehouses ?? [], shops: shops ?? [] })
+  return NextResponse.json({ warehouses: warehouseRows, shops: shopRows })
 })
 
-// POST — create new warehouse { name }
 export const POST = withErrorHandler(async (req: Request) => {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getCurrentUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { name } = await req.json()
   if (!name?.trim()) return NextResponse.json({ error: 'name required' }, { status: 400 })
 
-  const { data, error } = await supabase
-    .from('warehouses')
-    .insert({ user_id: user.id, name: name.trim() })
-    .select('id, name, created_at')
-    .single()
+  const [warehouse] = await db.insert(warehouses).values({
+    user_id: user.id,
+    name: name.trim(),
+  }).returning({
+    id: warehouses.id,
+    name: warehouses.name,
+    created_at: warehouses.created_at,
+  })
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json({ warehouse: data })
+  return NextResponse.json({ warehouse })
 })
 
-// DELETE /?id=xxx — delete warehouse by id
 export const DELETE = withErrorHandler(async (req: Request) => {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getCurrentUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const id = new URL(req.url).searchParams.get('id')
   if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 })
 
-  const { error } = await supabase
-    .from('warehouses')
-    .delete()
-    .eq('id', id)
-    .eq('user_id', user.id)
+  await db.delete(warehouses)
+    .where(and(eq(warehouses.id, id), eq(warehouses.user_id, user.id)))
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ ok: true })
 })

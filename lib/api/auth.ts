@@ -1,6 +1,6 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import type { User } from '@supabase/supabase-js'
-import { eq, ne, and } from 'drizzle-orm'
+import { eq, ne, and, or, isNull } from 'drizzle-orm'
 import { db, shops, users } from '@/lib/db'
 
 let _supabaseAdmin: SupabaseClient | null = null
@@ -30,7 +30,7 @@ export async function getAuthUser(authHeader: string | null): Promise<User | nul
 }
 
 export async function getShopIds(userId: string, shopId?: string | null): Promise<string[]> {
-  const conditions = [eq(shops.user_id, userId), ne(shops.shop_id_external, 'DEMO')]
+  const conditions = [eq(shops.user_id, userId), or(isNull(shops.shop_id_external), ne(shops.shop_id_external, 'DEMO'))]
   if (shopId) conditions.push(eq(shops.id, shopId))
   const rows = await db.select({ id: shops.id }).from(shops).where(and(...conditions))
   return rows.map(s => s.id)

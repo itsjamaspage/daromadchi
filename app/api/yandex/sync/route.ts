@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { eq, and } from 'drizzle-orm'
+import { getCurrentUser } from '@/lib/auth/session'
+import { db, shops } from '@/lib/db'
 import { syncFromYandex } from '@/lib/yandex/sync'
 import { decrypt } from '@/lib/crypto'
 import { logger } from '@/lib/logger'
@@ -7,25 +9,22 @@ import { withErrorHandler } from '@/lib/api-handler'
 
 function fromDaysToDate(fromDays: unknown): Date | undefined {
   if (typeof fromDays !== 'number') return undefined
-  if (fromDays === 0) return new Date('2025-04-07') // YM Uzbekistan launched Apr 7 2025
+  if (fromDays === 0) return new Date('2025-04-07')
   const d = new Date(); d.setDate(d.getDate() - fromDays); return d
 }
 
 export const POST = withErrorHandler(async (req: NextRequest) => {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
+  const user = await getCurrentUser()
   if (!user) {
     return NextResponse.json({ ok: false, error: 'Autentifikatsiya talab etiladi' }, { status: 401 })
   }
 
-  const { data: shop } = await supabase
-    .from('shops')
-    .select('id, api_key_encrypted, shop_id_external')
-    .eq('user_id', user.id)
-    .eq('marketplace', 'yandex_market')
-    .eq('is_active', true)
-    .single()
+  const [shop] = await db.select({
+    id: shops.id,
+    api_key_encrypted: shops.api_key_encrypted,
+    shop_id_external: shops.shop_id_external,
+  }).from(shops)
+    .where(and(eq(shops.user_id, user.id), eq(shops.marketplace, 'yandex_market'), eq(shops.is_active, true)))
 
   if (!shop?.api_key_encrypted) {
     return NextResponse.json({ ok: false, error: 'Yandex API token topilmadi. Avval sozlamalarda tokenni saqlang.' }, { status: 400 })
@@ -49,19 +48,15 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   }
 })
 
-// GET /api/yandex/sync — lightweight token test
 export const GET = withErrorHandler(async () => {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getCurrentUser()
   if (!user) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 })
 
-  const { data: shop } = await supabase
-    .from('shops')
-    .select('api_key_encrypted, shop_id_external')
-    .eq('user_id', user.id)
-    .eq('marketplace', 'yandex_market')
-    .eq('is_active', true)
-    .single()
+  const [shop] = await db.select({
+    api_key_encrypted: shops.api_key_encrypted,
+    shop_id_external: shops.shop_id_external,
+  }).from(shops)
+    .where(and(eq(shops.user_id, user.id), eq(shops.marketplace, 'yandex_market'), eq(shops.is_active, true)))
 
   if (!shop?.api_key_encrypted) {
     return NextResponse.json({ ok: false, error: 'Token topilmadi' }, { status: 400 })

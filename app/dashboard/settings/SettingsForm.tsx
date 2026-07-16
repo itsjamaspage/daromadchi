@@ -59,9 +59,13 @@ function UzumCard({ shop }: { shop: Shop | null; userId: string }) {
       })
       const data = await res.json()
       setSaveMsg(data.ok
-        ? { ok: true, text: data.message ?? 'Saqlandi!' }
+        ? { ok: true, text: data.message ?? 'Saqlandi! Sinxronlash boshlanmoqda…' }
         : { ok: false, text: data.error ?? 'Xato' })
-      if (data.ok) { setApiKey(''); router.refresh() }
+      if (data.ok) {
+        setApiKey('')
+        router.refresh()
+        triggerSync()
+      }
     } catch {
       setSaveMsg({ ok: false, text: "Server bilan bog'lanishda xato" })
     }
@@ -78,6 +82,27 @@ function UzumCard({ shop }: { shop: Shop | null; userId: string }) {
       setSyncMsg({ ok: false, text: "Server bilan bog'lanishda xato" })
     }
     setTesting(false)
+  }
+
+  function triggerSync() {
+    setSyncing(true); setSyncMsg(null)
+    const steps = ['Mahsulotlar yuklanmoqda…', 'Buyurtmalar tekshirilmoqda…', 'Reklama kampaniyalari…', 'Saqlanyapti…']
+    let stepIdx = 0
+    setSyncStep(steps[0])
+    const interval = setInterval(() => {
+      stepIdx = Math.min(stepIdx + 1, steps.length - 1)
+      setSyncStep(steps[stepIdx])
+    }, 4000)
+    fetch('/api/uzum/sync', { method: 'POST' })
+      .then(r => r.json())
+      .then(data => {
+        setSyncMsg(data.ok
+          ? { ok: true, text: `${data.productsUpserted ?? 0} mahsulot, ${data.ordersUpserted ?? 0} buyurtma${data.campaignsUpserted ? `, ${data.campaignsUpserted} kampaniya` : ''} yangilandi.` }
+          : { ok: false, text: data.error ?? 'Xato' })
+        if (data.ok) router.refresh()
+      })
+      .catch(() => setSyncMsg({ ok: false, text: "Server bilan bog'lanishda xato" }))
+      .finally(() => { clearInterval(interval); setSyncStep(null); setSyncing(false) })
   }
 
   async function handleSync() {
@@ -130,7 +155,7 @@ function UzumCard({ shop }: { shop: Shop | null; userId: string }) {
             type="password"
             value={apiKey}
             onChange={e => setApiKey(e.target.value)}
-            placeholder={hasKey ? '••••••••  (yangilash uchun kiriting)' : 'Token kiriting…'}
+            placeholder="Token kiriting..."
             className="w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--border2)] transition-all font-mono"
           />
           <p className="text-[var(--text-muted)] text-xs mt-1.5 flex items-center gap-1">
@@ -142,7 +167,7 @@ function UzumCard({ shop }: { shop: Shop | null; userId: string }) {
         </div>
         <StatusMsg msg={saveMsg} />
         <button type="submit" disabled={saving}
-          className="flex items-center gap-2 disabled:opacity-50 text-sm font-medium px-4 py-2 rounded-xl transition-colors" style={{ background: 'var(--c1)', color: 'var(--bg-base)' }}>
+          className="flex items-center gap-2 btn-primary disabled:opacity-50 px-4 py-2 rounded-xl transition-colors">
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
           Saqlash
         </button>
@@ -172,7 +197,7 @@ function UzumCard({ shop }: { shop: Shop | null; userId: string }) {
           </button>
           <button onClick={handleSync} disabled={syncing || !hasKey}
             title={!hasKey ? 'Avval token saqlang' : ''}
-            className="flex items-center gap-2 border border-transparent disabled:opacity-40 disabled:cursor-not-allowed text-sm font-medium px-4 py-2 rounded-xl transition-colors" style={{ background: 'var(--c1)', color: 'var(--bg-base)' }}>
+            className="flex items-center gap-2 btn-primary border border-transparent disabled:opacity-40 disabled:cursor-not-allowed px-4 py-2 rounded-xl transition-colors">
             {syncing ? <><Loader2 className="w-4 h-4 animate-spin" /> Sinxronlanmoqda…</> : <><RefreshCw className="w-4 h-4" /> Sinxronlash</>}
           </button>
           </div>
@@ -188,7 +213,7 @@ function YandexCard({ shop }: { shop: Shop | null; userId: string }) {
   const router = useRouter()
 
   const [apiKey,      setApiKey]      = useState('')
-  const [campaignId,  setCampaignId]  = useState(shop?.shop_id_external ?? '')
+  const [campaignId,  setCampaignId]  = useState('')
   const [saving,      setSaving]      = useState(false)
   const [syncing,     setSyncing]     = useState(false)
   const [testing,     setTesting]     = useState(false)
@@ -230,13 +255,38 @@ function YandexCard({ shop }: { shop: Shop | null; userId: string }) {
       })
       const data = await res.json()
       setSaveMsg(data.ok
-        ? { ok: true, text: data.message ?? 'Saqlandi!' }
+        ? { ok: true, text: data.message ?? 'Saqlandi! Sinxronlash boshlanmoqda…' }
         : { ok: false, text: data.error ?? 'Xato' })
-      if (data.ok) { setApiKey(''); router.refresh() }
+      if (data.ok) {
+        setApiKey('')
+        router.refresh()
+        triggerYandexSync()
+      }
     } catch {
       setSaveMsg({ ok: false, text: "Server bilan bog'lanishda xato" })
     }
     setSaving(false)
+  }
+
+  function triggerYandexSync() {
+    setSyncing(true); setSyncMsg(null)
+    const steps = ['Mahsulotlar yuklanmoqda…', 'Buyurtmalar tekshirilmoqda…', 'Reklama kampaniyalari…', 'Saqlanyapti…']
+    let stepIdx = 0
+    setSyncStep(steps[0])
+    const interval = setInterval(() => {
+      stepIdx = Math.min(stepIdx + 1, steps.length - 1)
+      setSyncStep(steps[stepIdx])
+    }, 4000)
+    fetch('/api/yandex/sync', { method: 'POST' })
+      .then(r => r.json())
+      .then(data => {
+        setSyncMsg(data.ok
+          ? { ok: true, text: `${data.productsUpserted ?? 0} mahsulot, ${data.ordersUpserted ?? 0} buyurtma${data.campaignsUpserted ? `, ${data.campaignsUpserted} kampaniya` : ''} yangilandi.` }
+          : { ok: false, text: data.error ?? 'Xato' })
+        if (data.ok) router.refresh()
+      })
+      .catch(() => setSyncMsg({ ok: false, text: "Server bilan bog'lanishda xato" }))
+      .finally(() => { clearInterval(interval); setSyncStep(null); setSyncing(false) })
   }
 
   async function handleSync() {
@@ -291,7 +341,7 @@ function YandexCard({ shop }: { shop: Shop | null; userId: string }) {
             type="password"
             value={apiKey}
             onChange={e => setApiKey(e.target.value)}
-            placeholder={hasKey ? '••••••••  (yangilash uchun kiriting)' : 'API token kiriting…'}
+            placeholder="Token kiriting..."
             className="w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-amber-500/40 transition-all font-mono"
           />
         </div>
@@ -304,12 +354,12 @@ function YandexCard({ shop }: { shop: Shop | null; userId: string }) {
             type="text"
             value={campaignId}
             onChange={e => setCampaignId(e.target.value)}
-            placeholder={hasCampaign ? shop!.shop_id_external! : 'Campaign ID (masalan: 12345678)'}
+            placeholder="Campaign ID kiriting..."
             className="w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-amber-500/40 transition-all font-mono"
           />
           <p className="text-[var(--text-muted)] text-xs mt-1.5 flex items-center gap-1">
             <a href="https://partner.market.yandex.ru" target="_blank" rel="noopener noreferrer"
-              className="text-amber-400 hover:text-amber-300 flex items-center gap-0.5">
+              className="flex items-center gap-0.5" style={{ color: 'var(--c1)' }}>
               partner.market.yandex.ru <ExternalLink className="w-3 h-3" />
             </a>
             → Nastroyki → API → Sozdat&apos; token
@@ -318,7 +368,7 @@ function YandexCard({ shop }: { shop: Shop | null; userId: string }) {
 
         <StatusMsg msg={saveMsg} />
         <button type="submit" disabled={saving}
-          className="flex items-center gap-2 bg-amber-500/80 hover:bg-amber-500/90 disabled:opacity-50 text-[var(--text-base)] text-sm font-medium px-4 py-2 rounded-xl transition-colors">
+          className="flex items-center gap-2 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors">
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
           Saqlash
         </button>
@@ -331,7 +381,7 @@ function YandexCard({ shop }: { shop: Shop | null; userId: string }) {
             {lastSync ? <>Oxirgi sinxr: <span className="text-[var(--text-dim)]">{lastSync}</span></> : 'Hali sinxronlanmagan'}
           </p>
           {syncing && syncStep && (
-            <div className="flex items-center gap-2 text-xs text-amber-400 bg-amber-500/5 border border-amber-500/15 rounded-xl px-3 py-2">
+            <div className="flex items-center gap-2 text-xs rounded-xl px-3 py-2" style={{ color: 'var(--c1)', background: 'var(--bg-card2)', border: '1px solid var(--border)' }}>
               <Loader2 className="w-3.5 h-3.5 animate-spin flex-shrink-0" />
               {syncStep}
             </div>
@@ -346,7 +396,7 @@ function YandexCard({ shop }: { shop: Shop | null; userId: string }) {
             </button>
             <button onClick={handleSync} disabled={syncing || !connected}
               title={!connected ? 'Avval token va Campaign ID saqlang' : ''}
-              className="flex items-center gap-2 bg-amber-500/80 hover:bg-amber-500/90 border border-transparent disabled:opacity-40 disabled:cursor-not-allowed text-[var(--text-base)] text-sm font-medium px-4 py-2 rounded-xl transition-colors">
+              className="flex items-center gap-2 bg-amber-500 hover:bg-amber-600 border border-transparent disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors">
               {syncing ? <><Loader2 className="w-4 h-4 animate-spin" /> Sinxronlanmoqda…</> : <><RefreshCw className="w-4 h-4" /> Sinxronlash</>}
             </button>
           </div>
@@ -385,13 +435,38 @@ function WildberriesCard({ shop }: { shop: Shop | null; userId: string }) {
       })
       const data = await res.json()
       setSaveMsg(data.ok
-        ? { ok: true, text: data.message ?? 'Saqlandi!' }
+        ? { ok: true, text: data.message ?? 'Saqlandi! Sinxronlash boshlanmoqda…' }
         : { ok: false, text: data.error ?? 'Xato' })
-      if (data.ok) { setApiKey(''); router.refresh() }
+      if (data.ok) {
+        setApiKey('')
+        router.refresh()
+        triggerWbSync()
+      }
     } catch {
       setSaveMsg({ ok: false, text: "Server bilan bog'lanishda xato" })
     }
     setSaving(false)
+  }
+
+  function triggerWbSync() {
+    setSyncing(true); setSyncMsg(null)
+    const steps = ['Mahsulotlar yuklanmoqda…', 'Buyurtmalar tekshirilmoqda…', 'Saqlanyapti…']
+    let stepIdx = 0
+    setSyncStep(steps[0])
+    const interval = setInterval(() => {
+      stepIdx = Math.min(stepIdx + 1, steps.length - 1)
+      setSyncStep(steps[stepIdx])
+    }, 4000)
+    fetch('/api/wildberries/sync', { method: 'POST' })
+      .then(r => r.json())
+      .then(data => {
+        setSyncMsg(data.ok
+          ? { ok: true, text: `${data.productsUpserted ?? 0} mahsulot, ${data.ordersUpserted ?? 0} buyurtma yangilandi.` }
+          : { ok: false, text: data.error ?? (data.errors?.[0]) ?? 'Xato' })
+        if (data.ok) router.refresh()
+      })
+      .catch(() => setSyncMsg({ ok: false, text: "Server bilan bog'lanishda xato" }))
+      .finally(() => { clearInterval(interval); setSyncStep(null); setSyncing(false) })
   }
 
   async function handleTest() {
@@ -456,7 +531,7 @@ function WildberriesCard({ shop }: { shop: Shop | null; userId: string }) {
             type="password"
             value={apiKey}
             onChange={e => setApiKey(e.target.value)}
-            placeholder={hasKey ? '••••••••  (yangilash uchun kiriting)' : 'Token kiriting…'}
+            placeholder="Token kiriting..."
             className="w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--border2)] transition-all font-mono"
           />
           <p className="text-[var(--text-muted)] text-xs mt-1.5">
@@ -466,13 +541,13 @@ function WildberriesCard({ shop }: { shop: Shop | null; userId: string }) {
             </a>
             {' '}→ Nastroyki → Dostup k API → Sozdat' novy klyuch
           </p>
-          <p className="text-amber-500/80 text-xs mt-1">
+          <p className="text-xs mt-1" style={{ color: 'var(--text-dim)' }}>
             ⚠️ Token yaratishda IP cheklovini olib tashlang, aks holda sinxronlash ishlamaydi.
           </p>
         </div>
         <StatusMsg msg={saveMsg} />
         <button type="submit" disabled={saving}
-          className="flex items-center gap-2 disabled:opacity-50 text-sm font-medium px-4 py-2 rounded-xl transition-colors" style={{ background: 'var(--c1)', color: 'var(--bg-base)' }}>
+          className="flex items-center gap-2 btn-primary disabled:opacity-50 px-4 py-2 rounded-xl transition-colors">
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
           Saqlash
         </button>
@@ -500,7 +575,7 @@ function WildberriesCard({ shop }: { shop: Shop | null; userId: string }) {
             </button>
             <button onClick={handleSync} disabled={syncing || !hasKey}
               title={!hasKey ? 'Avval token saqlang' : ''}
-              className="flex items-center gap-2 border border-transparent disabled:opacity-40 disabled:cursor-not-allowed text-sm font-medium px-4 py-2 rounded-xl transition-colors" style={{ background: 'var(--c1)', color: 'var(--bg-base)' }}>
+              className="flex items-center gap-2 btn-primary border border-transparent disabled:opacity-40 disabled:cursor-not-allowed px-4 py-2 rounded-xl transition-colors">
               {syncing ? <><Loader2 className="w-4 h-4 animate-spin" /> Sinxronlanmoqda…</> : <><RefreshCw className="w-4 h-4" /> Sinxronlash</>}
             </button>
           </div>

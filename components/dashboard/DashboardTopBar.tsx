@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/client'
+import { signOut } from 'next-auth/react'
 import {
   BellRing, CreditCard, UserCircle, HelpCircle,
   Settings, LogOut, ChevronDown, Sun, Moon,
@@ -19,32 +19,15 @@ const LANGS: { value: Lang; label: string }[] = [
   { value: 'en', label: 'EN' },
 ]
 
-interface UserInfo { name: string; email: string; avatar?: string }
+interface Props { userName: string; userEmail: string }
 
-export default function DashboardTopBar() {
+export default function DashboardTopBar({ userName, userEmail }: Props) {
   const [open, setOpen]   = useState(false)
-  const [user, setUser]   = useState<UserInfo | null>(null)
   const dropRef           = useRef<HTMLDivElement>(null)
   const router            = useRouter()
-  const supabase          = createClient()
   const { theme, toggle } = useTheme()
   const { lang, setLang } = useLang()
   const d                 = translations[lang].dashboard
-
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (!data.user) return
-      setUser({
-        name:   data.user.user_metadata?.full_name
-                || data.user.user_metadata?.name
-                || data.user.email?.split('@')[0]
-                || 'User',
-        email:  data.user.email ?? '',
-        avatar: data.user.user_metadata?.avatar_url,
-      })
-    })
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
 
   useEffect(() => {
     const h = (e: MouseEvent) => {
@@ -56,12 +39,10 @@ export default function DashboardTopBar() {
 
   async function handleLogout() {
     setOpen(false)
-    await supabase.auth.signOut()
-    router.push('/login')
-    router.refresh()
+    await signOut({ redirectTo: '/login' })
   }
 
-  const initial = user?.name?.[0]?.toUpperCase() ?? 'U'
+  const initial = userName[0]?.toUpperCase() ?? 'U'
 
   const menuItems = [
     { href: '/dashboard/notifications', icon: BellRing,   label: (d.nav as Record<string,string>).notifications  ?? 'Bildirishnomalar' },
@@ -109,17 +90,15 @@ export default function DashboardTopBar() {
             className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 overflow-hidden"
             style={{ background: 'var(--c1)', color: '#fff' }}
           >
-            {user?.avatar
-              ? <img src={user.avatar} alt="" className="w-full h-full object-cover" />
-              : initial}
+            {initial}
           </div>
 
           <div className="text-left">
             <p className="text-sm font-semibold leading-tight" style={{ color: topTxt }}>
-              {user?.name ?? '…'}
+              {userName}
             </p>
             <p className="text-[11px] leading-tight" style={{ color: topMut }}>
-              {user?.email}
+              {userEmail}
             </p>
           </div>
 
@@ -137,8 +116,8 @@ export default function DashboardTopBar() {
           >
             {/* User header */}
             <div className="px-4 py-3 border-b" style={{ borderColor: 'var(--border)' }}>
-              <p className="text-sm font-semibold" style={{ color: 'var(--text-base)' }}>{user?.name}</p>
-              <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{user?.email}</p>
+              <p className="text-sm font-semibold" style={{ color: 'var(--text-base)' }}>{userName}</p>
+              <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{userEmail}</p>
             </div>
 
             {/* Nav links */}

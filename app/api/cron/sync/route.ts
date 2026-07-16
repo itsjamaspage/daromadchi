@@ -1,16 +1,23 @@
 import { NextResponse } from 'next/server'
 import { eq, and, isNotNull } from 'drizzle-orm'
-import { db, shops } from '@/lib/db'
+import { db, shops, userSettings } from '@/lib/db'
 import { syncFromUzum } from '@/lib/uzum/sync'
 import { syncFromYandex } from '@/lib/yandex/sync'
 import { syncFromWildberries } from '@/lib/wildberries/sync'
 import { decrypt } from '@/lib/crypto'
 import { withErrorHandler } from '@/lib/api-handler'
+import { sendTelegramMessage } from '@/lib/telegram'
 
 export const runtime    = 'nodejs'
 export const maxDuration = 300
 
 const CONCURRENCY = 5
+
+const MP_LABEL: Record<string, string> = {
+  uzum: 'Uzum Market',
+  yandex_market: 'Yandex Market',
+  wildberries: 'Wildberries',
+}
 
 async function syncShop(
   shop: { id: string; marketplace: string; api_key_encrypted: string; shop_id_external: string | null },
@@ -43,6 +50,8 @@ export const GET = withErrorHandler(async (req: Request) => {
 
   const allShops = await db.select({
     id: shops.id,
+    user_id: shops.user_id,
+    name: shops.name,
     marketplace: shops.marketplace,
     api_key_encrypted: shops.api_key_encrypted,
     shop_id_external: shops.shop_id_external,
@@ -62,6 +71,48 @@ export const GET = withErrorHandler(async (req: Request) => {
       } else {
         results.push({ ok: false, error: String(outcome.reason) })
       }
+    }
+  }
+
+  // ── Send new-order Telegram notifications ──
+  const ordersByUser = new Map<string, { marketplace: string; name: string | null; count: number }[]>()
+  for (const r of results) {
+    const count = Number(r.ordersUpserted ?? 0)
+    if (count <= 0) continue
+    const shop = allShops.find(s => s.id === r.shopId)
+    if (!shop) continue
+    const list = ordersByUser.get(shop.user_id) ?? []
+    list.push({ marketplace: shop.marketplace, name: shop.name, count })
+    ordersByUser.set(shop.user_id, list)
+  }
+
+  if (ordersByUser.size > 0) {
+    const userIds = [...ordersByUser.keys()]
+    const settingsRows = await db.select({
+      user_id: userSettings.user_id,
+      telegram_chat_id: userSettings.telegram_chat_id,
+      notif_new_orders: userSettings.notif_new_orders,
+    }).from(userSettings)
+      .where(and(
+        isNotNull(userSettings.telegram_chat_id),
+      ))
+
+    for (const s of settingsRows) {
+      if (!s.notif_new_orders || !s.telegram_chat_id) continue
+      const shopOrders = ordersByUser.get(s.user_id)
+      if (!shopOrders) continue
+
+      const lines = shopOrders.map(o => {
+        const mpName = MP_LABEL[o.marketplace] ?? o.marketplace
+        return `• ${mpName}: <b>${o.count}</b> ta yangi buyurtma`
+      }).join('\n')
+
+      const total = shopOrders.reduce((sum, o) => sum + o.count, 0)
+      const msg = `🛒 <b>Yangi buyurtmalar (${total})</b>\n\n${lines}\n\nBatafsil: https://daromadchi.uz/dashboard`
+
+      try {
+        await sendTelegramMessage(s.telegram_chat_id, msg)
+      } catch { /* best-effort */ }
     }
   }
 

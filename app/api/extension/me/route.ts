@@ -1,20 +1,21 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { eq } from 'drizzle-orm'
+import { getCurrentUser } from '@/lib/auth/session'
+import { db } from '@/lib/db'
+import { userSettings } from '@/lib/db/schema'
 import { withErrorHandler } from '@/lib/api-handler'
 
 export const GET = withErrorHandler(async () => {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getCurrentUser()
 
   if (!user) {
     return NextResponse.json({ ok: false }, { status: 401 })
   }
 
-  const { data: settings } = await supabase
-    .from('user_settings')
-    .select('telegram_chat_id, telegram_username')
-    .eq('user_id', user.id)
-    .maybeSingle()
+  const settings = await db.query.userSettings.findFirst({
+    columns: { telegram_chat_id: true, telegram_username: true },
+    where: eq(userSettings.user_id, user.id),
+  })
 
   return NextResponse.json({
     ok: true,

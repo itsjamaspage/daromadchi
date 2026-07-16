@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { eq, and } from 'drizzle-orm'
+import { getCurrentUser } from '@/lib/auth/session'
+import { db, shops } from '@/lib/db'
 import { fetchYandexCategories, fetchCategoryModels, searchYandexModels, YandexApiError } from '@/lib/yandex/client'
 import { decrypt as decryptKey } from '@/lib/crypto'
 import { withErrorHandler } from '@/lib/api-handler'
@@ -9,20 +11,15 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
   const action     = searchParams.get('action') ?? 'categories'
   const categoryId = searchParams.get('categoryId')
 
-  // Need the user's Yandex token for API calls
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
+  const user = await getCurrentUser()
   if (!user) {
     return NextResponse.json({ error: 'Autentifikatsiya talab etiladi' }, { status: 401 })
   }
 
-  const { data: shop } = await supabase
-    .from('shops')
-    .select('api_key_encrypted')
-    .eq('user_id', user.id)
-    .eq('marketplace', 'yandex_market')
-    .single()
+  const [shop] = await db.select({
+    api_key_encrypted: shops.api_key_encrypted,
+  }).from(shops)
+    .where(and(eq(shops.user_id, user.id), eq(shops.marketplace, 'yandex_market')))
 
   if (!shop?.api_key_encrypted) {
     return NextResponse.json(

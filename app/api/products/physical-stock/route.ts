@@ -1,13 +1,11 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { eq, and, inArray } from 'drizzle-orm'
+import { getCurrentUser } from '@/lib/auth/session'
+import { db, shops, products } from '@/lib/db'
 import { withErrorHandler } from '@/lib/api-handler'
 
-// PATCH /api/products/physical-stock
-// { sku: string, physical_stock: number | null }
-// Updates physical_stock for ALL products with this SKU owned by the user.
 export const PATCH = withErrorHandler(async (req: Request) => {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getCurrentUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await req.json()
@@ -19,19 +17,14 @@ export const PATCH = withErrorHandler(async (req: Request) => {
     return NextResponse.json({ error: 'physical_stock must be a non-negative integer' }, { status: 400 })
   }
 
-  const { data: shops } = await supabase
-    .from('shops')
-    .select('id')
-    .eq('user_id', user.id)
-  const shopIds = (shops ?? []).map(s => s.id)
+  const shopRows = await db.select({ id: shops.id }).from(shops)
+    .where(eq(shops.user_id, user.id))
+  const shopIds = shopRows.map(s => s.id)
   if (shopIds.length === 0) return NextResponse.json({ ok: true })
 
-  const { error } = await supabase
-    .from('products')
-    .update({ physical_stock })
-    .in('shop_id', shopIds)
-    .eq('sku', sku)
+  await db.update(products)
+    .set({ physical_stock })
+    .where(and(inArray(products.shop_id, shopIds), eq(products.sku, sku)))
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ ok: true })
 })

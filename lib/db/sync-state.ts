@@ -1,4 +1,4 @@
-import { eq, ne, and, gte, asc } from 'drizzle-orm'
+import { eq, ne, and, or, isNull, gte, asc } from 'drizzle-orm'
 import { db, shops, syncDays } from '@/lib/db'
 import { getCurrentUserId } from '@/lib/db/shop-context'
 import type { SyncDay, MarketplaceType } from '@/lib/types'
@@ -11,7 +11,7 @@ async function getShopId(marketplace: MarketplaceType): Promise<string | null> {
     .where(and(
       eq(shops.user_id, userId),
       eq(shops.marketplace, marketplace),
-      ne(shops.shop_id_external, 'DEMO'),
+      or(isNull(shops.shop_id_external), ne(shops.shop_id_external, 'DEMO')),
     ))
     .limit(1)
 
