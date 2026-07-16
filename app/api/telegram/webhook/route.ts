@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { eq } from 'drizzle-orm'
-import { db, botSessions, userSettings } from '@/lib/db'
+import { db, botSessions, userSettings, shops } from '@/lib/db'
 import { supabaseAdmin } from '@/lib/api/auth'
 import { sendTelegramMessage, sendTelegramKeyboard, answerCallbackQuery } from '@/lib/telegram'
 import { withErrorHandler } from '@/lib/api-handler'
@@ -15,100 +15,111 @@ const NOTIF_LABELS: Record<string, string> = {
   evening: '🌆 Kechqurun 20:00',
 }
 
-const WELCOME: Record<string, string> = {
-  uz: `📊 <b>Daromadchi Alerts</b> — do'koningiz uchun aqlli yordamchi.
-
-Men nima qilaman:
-• 📦 Zaxira kamaysa — ogohlantiraman
-• 📊 Har kuni savdo xulosasi — sotuvlar, buyurtmalar, daromad
-• 🛒 Yangi buyurtmalar haqida xabar
-
-🔒 <b>Ma'lumotlar xavfsizligi:</b>
-Faqat do'kon nomi, marketpleysi va bildirishnoma sozlamalari saqlanadi. Ma'lumotlar shifrlanib saqlanadi va uchinchi shaxslarga berilmaydi.
-
-Do'koningiz yoki brendingiz nomini yozing 👇`,
-
-  ru: `📊 <b>Daromadchi Alerts</b> — умный помощник для вашего магазина.
-
-Что я делаю:
-• 📦 Предупреждаю об остатках товаров
-• 📊 Ежедневная сводка — продажи, заказы, доход
-• 🛒 Уведомляю о новых заказах
-
-🔒 <b>Безопасность данных:</b>
-Хранятся только название магазина, маркетплейс и настройки уведомлений. Данные зашифрованы и не передаются третьим лицам.
-
-Напишите название вашего магазина или бренда 👇`,
-
-  en: `📊 <b>Daromadchi Alerts</b> — smart assistant for your store.
-
-What I do:
-• 📦 Alert you when stock runs low
-• 📊 Daily summary — sales, orders, revenue
-• 🛒 Notify you about new orders
-
-🔒 <b>Data security:</b>
-Only your store name, marketplace, and notification preferences are stored. Data is encrypted and never shared with third parties.
-
-Write your store or brand name 👇`,
+const MKT_NAMES: Record<string, string> = {
+  uzum:          '🟣 Uzum Market',
+  yandex_market: '🟡 Yandex Market',
+  wildberries:   '🟣 Wildberries',
 }
 
-const MKT_QUESTION: Record<string, string> = {
-  uz: '🛍 Qaysi marketpleysda sotyapsiz?',
-  ru: '🛍 На каком маркетплейсе вы продаёте?',
-  en: '🛍 Which marketplace do you sell on?',
+const WELCOME_UNLINKED: Record<string, string> = {
+  uz: `👋 <b>Daromadchi Alerts</b> ga xush kelibsiz!
+
+Men sizning do'koningiz uchun aqlli yordamchiman:
+
+📦 Zaxira kamaysa — ogohlantiraman
+📊 Har kuni savdo xulosasi yuboraman
+🛒 Yangi buyurtmalar haqida xabar beraman
+📈 Haftalik hisobot tayyorlayman
+
+<b>Boshlash uchun:</b>
+1️⃣ <a href="https://daromadchi.uz">daromadchi.uz</a> da ro'yxatdan o'ting
+2️⃣ Sozlamalar sahifasida API kalitlarini ulang
+3️⃣ "Telegram ulash" tugmasini bosing
+
+Shundan keyin men avtomatik ravishda do'konlaringizni topaman va bildirishnomalarni yoqaman! 🚀`,
+
+  ru: `👋 Добро пожаловать в <b>Daromadchi Alerts</b>!
+
+Я умный помощник для вашего магазина:
+
+📦 Предупреждаю когда заканчиваются остатки
+📊 Ежедневная сводка продаж
+🛒 Уведомления о новых заказах
+📈 Еженедельные отчёты
+
+<b>Чтобы начать:</b>
+1️⃣ Зарегистрируйтесь на <a href="https://daromadchi.uz">daromadchi.uz</a>
+2️⃣ Подключите API-ключи в Настройках
+3️⃣ Нажмите "Подключить Telegram"
+
+После этого я автоматически найду ваши магазины и включу уведомления! 🚀`,
+
+  en: `👋 Welcome to <b>Daromadchi Alerts</b>!
+
+I'm a smart assistant for your store:
+
+📦 Alert you when stock runs low
+📊 Daily sales summary
+🛒 New order notifications
+📈 Weekly reports
+
+<b>To get started:</b>
+1️⃣ Sign up at <a href="https://daromadchi.uz">daromadchi.uz</a>
+2️⃣ Connect your API keys in Settings
+3️⃣ Click "Link Telegram"
+
+After that I'll automatically find your stores and turn on notifications! 🚀`,
 }
 
-const MKT_BUTTONS: Record<string, { text: string; data: string }[]> = {
-  uz: [
-    { text: '🟣 Uzum Market',   data: 'mkt:uzum' },
-    { text: '🟣 Wildberries',   data: 'mkt:wb'   },
-    { text: '🟡 Yandex Market', data: 'mkt:ym'   },
-    { text: '🌐 Barcha platformalar', data: 'mkt:all' },
-  ],
-  ru: [
-    { text: '🟣 Uzum Market',   data: 'mkt:uzum' },
-    { text: '🟣 Wildberries',   data: 'mkt:wb'   },
-    { text: '🟡 Yandex Market', data: 'mkt:ym'   },
-    { text: '🌐 Все платформы', data: 'mkt:all'  },
-  ],
-  en: [
-    { text: '🟣 Uzum Market',   data: 'mkt:uzum' },
-    { text: '🟣 Wildberries',   data: 'mkt:wb'   },
-    { text: '🟡 Yandex Market', data: 'mkt:ym'   },
-    { text: '🌐 All platforms', data: 'mkt:all'  },
-  ],
-}
+function buildLinkedWelcome(lang: string, shopList: { name: string; marketplace: string }[]): string {
+  const shopLines = shopList
+    .map(s => `  ${MKT_NAMES[s.marketplace] ?? s.marketplace} — <b>${s.name}</b>`)
+    .join('\n')
 
-const DONE_MSG: Record<string, (shopName: string) => string> = {
-  uz: (n) => `✅ <b>Siz ro'yxatdan o'tdingiz!</b>
+  if (lang === 'ru') {
+    return `✅ <b>Telegram подключён к Daromadchi!</b>
 
-🏪 Do'kon: <b>${n}</b>
+🏪 <b>Ваши магазины:</b>
+${shopLines || '  Магазины не найдены'}
 
-To'liq tahlil va hisobotlar uchun daromadchi.uz ga kiring va Telegram hisobingizni ulan (Sozlamalar → Telegram).
+Теперь вы будете получать:
+📦 Предупреждения об остатках
+📊 Ежедневную сводку продаж
+🛒 Уведомления о новых заказах
 
-Bildirishnomalar yoqildi. Davom eting! 🚀`,
+Уведомления включены. Вперёд! 🚀`
+  }
 
-  ru: (n) => `✅ <b>Вы зарегистрированы!</b>
+  if (lang === 'en') {
+    return `✅ <b>Telegram connected to Daromadchi!</b>
 
-🏪 Магазин: <b>${n}</b>
+🏪 <b>Your stores:</b>
+${shopLines || '  No stores found'}
 
-Для полной аналитики войдите на daromadchi.uz и подключите Telegram-аккаунт (Настройки → Telegram).
+You will now receive:
+📦 Low stock alerts
+📊 Daily sales summary
+🛒 New order notifications
 
-Уведомления включены. Вперёд! 🚀`,
+Notifications are on. Let's go! 🚀`
+  }
 
-  en: (n) => `✅ <b>You're all set!</b>
+  return `✅ <b>Telegram Daromadchi ga ulandi!</b>
 
-🏪 Store: <b>${n}</b>
+🏪 <b>Sizning do'konlaringiz:</b>
+${shopLines || "  Do'konlar topilmadi"}
 
-For full analytics, log in to daromadchi.uz and link your Telegram account (Settings → Telegram).
+Endi siz quyidagilarni olasiz:
+📦 Kam zaxira ogohlantirishlari
+📊 Kunlik savdo xulosasi
+🛒 Yangi buyurtma xabarlari
 
-Notifications are on. Let's go! 🚀`,
+Bildirishnomalar yoqildi. Davom eting! 🚀`
 }
 
 async function getSession(chatId: string) {
   const [data] = await db.select().from(botSessions).where(eq(botSessions.chat_id, chatId))
-  return data as { chat_id: string; lang: string; step: string; shop_name: string | null; marketplace: string | null } | null
+  return data as { chat_id: string; lang: string; step: string; user_id: string | null; shop_name: string | null; marketplace: string | null } | null
 }
 
 async function upsertSession(chatId: string, fields: Record<string, unknown>) {
@@ -125,6 +136,12 @@ async function upsertSession(chatId: string, fields: Record<string, unknown>) {
   })
 }
 
+async function getUserShops(userId: string) {
+  return db.select({ name: shops.name, marketplace: shops.marketplace })
+    .from(shops)
+    .where(eq(shops.user_id, userId))
+}
+
 async function sendLangSelect(chatId: string) {
   await sendTelegramKeyboard(
     chatId,
@@ -137,21 +154,30 @@ async function sendLangSelect(chatId: string) {
   )
 }
 
-export const POST = withErrorHandler(async (req: NextRequest) => {
-  console.log('[webhook] POST received')
+async function sendNotifSettings(chatId: string, lang: string) {
+  const q = lang === 'ru'
+    ? '⚙️ Настройте уведомления:'
+    : lang === 'en'
+    ? '⚙️ Configure notifications:'
+    : '⚙️ Bildirishnomalarni sozlang:'
+  await sendTelegramKeyboard(chatId, q, [
+    [{ text: '📦 Kam zaxira ogohlantirishlari ✅', callback_data: 'notif_toggle:low_stock:1' }],
+    [{ text: '📊 Kunlik savdo xulosasi ✅',        callback_data: 'notif_toggle:daily_summary:1' }],
+    [{ text: '🛒 Yangi buyurtmalar ❌',            callback_data: 'notif_toggle:new_orders:0' }],
+    [{ text: '📈 Haftalik hisobot ❌',             callback_data: 'notif_toggle:weekly_report:0' }],
+    [{ text: '✅ Tayyor — vaqtni sozlash →',       callback_data: 'notif_step:time' }],
+  ])
+}
 
+export const POST = withErrorHandler(async (req: NextRequest) => {
   const expectedSecret = process.env.TELEGRAM_WEBHOOK_SECRET
   if (expectedSecret) {
     const got = req.headers.get('x-telegram-bot-api-secret-token')
-    if (got !== expectedSecret) {
-      console.log('[webhook] secret mismatch, ignoring')
-      return NextResponse.json({ ok: true })
-    }
+    if (got !== expectedSecret) return NextResponse.json({ ok: true })
   }
 
-  const body = await req.json().catch((e: unknown) => { console.error('[webhook] body parse error', e); return null })
+  const body = await req.json().catch(() => null)
   if (!body) return NextResponse.json({ ok: true })
-  console.log('[webhook] update type:', body.callback_query ? 'callback_query' : body.message ? 'message:' + body.message.text : 'other')
 
   // ── callback_query ─────────────────────────────────────────────────────────
   if (body.callback_query) {
@@ -161,57 +187,41 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
 
     if (data.startsWith('lang:')) {
       const lang = data.replace('lang:', '') as 'uz' | 'ru' | 'en'
-      await upsertSession(chatId, { lang, step: 'await_name' })
       await answerCallbackQuery(cb.id)
-      await sendTelegramMessage(chatId, WELCOME[lang] ?? WELCOME.uz)
-      return NextResponse.json({ ok: true })
-    }
-
-    if (data.startsWith('mkt:')) {
-      const marketplace = data.replace('mkt:', '')
-      const session = await getSession(chatId)
-      const lang = session?.lang ?? 'uz'
-      const shopName = session?.shop_name ?? '—'
-      await upsertSession(chatId, { marketplace, step: 'done' })
-      await answerCallbackQuery(cb.id, '✅')
-      await sendTelegramMessage(chatId, DONE_MSG[lang]?.(shopName) ?? DONE_MSG.uz(shopName))
 
       const [linked] = await db.select({ user_id: userSettings.user_id })
         .from(userSettings)
         .where(eq(userSettings.telegram_chat_id, chatId))
 
       if (linked) {
-        const notifQ = lang === 'ru'
-          ? '📦 Какие уведомления вы хотите получать?'
-          : lang === 'en'
-          ? '📦 Which notifications do you want to receive?'
-          : '📦 Qaysi bildirishnomalarni olishni xohlaysiz?'
-        await sendTelegramKeyboard(chatId, notifQ, [
-          [{ text: '📦 Kam zaxira ogohlantirishlari ✅', callback_data: 'notif_toggle:low_stock:1' }],
-          [{ text: '📊 Kunlik savdo xulosasi ✅',        callback_data: 'notif_toggle:daily_summary:1' }],
-          [{ text: '🛒 Yangi buyurtmalar ❌',            callback_data: 'notif_toggle:new_orders:0' }],
-          [{ text: '📈 Haftalik hisobot ❌',             callback_data: 'notif_toggle:weekly_report:0' }],
-          [{ text: '✅ Tayyor — vaqtni sozlash →',       callback_data: 'notif_step:time' }],
-        ])
+        const userShops = await getUserShops(linked.user_id)
+        await upsertSession(chatId, { lang, step: 'done', user_id: linked.user_id })
+        await sendTelegramMessage(chatId, buildLinkedWelcome(lang, userShops))
+        await sendNotifSettings(chatId, lang)
+      } else {
+        await upsertSession(chatId, { lang, step: 'done' })
+        await sendTelegramMessage(chatId, WELCOME_UNLINKED[lang] ?? WELCOME_UNLINKED.uz)
       }
       return NextResponse.json({ ok: true })
     }
 
     if (data.startsWith('notif_time:')) {
       const notifTime = data.replace('notif_time:', '')
-      const sendTimeMap: Record<string, string> = {
-        morning: '08:00',
-        noon:    '13:00',
-        evening: '20:00',
-      }
+      const sendTimeMap: Record<string, string> = { morning: '08:00', noon: '13:00', evening: '20:00' }
       const sendTime = sendTimeMap[notifTime] ?? '09:00'
       await db.update(userSettings)
         .set({ notif_send_time: sendTime, updated_at: new Date() })
         .where(eq(userSettings.telegram_chat_id, chatId))
-      await answerCallbackQuery(cb.id, '✅ Saqlandi!')
-      await sendTelegramMessage(chatId,
-        `✅ Kunlik hisobot vaqti: <b>${NOTIF_LABELS[notifTime] ?? notifTime}</b> ga sozlandi.\n\nTo'liq tahlil: https://daromadchi.uz/dashboard`
-      )
+      await answerCallbackQuery(cb.id, '✅')
+      const session = await getSession(chatId)
+      const lang = session?.lang ?? 'uz'
+      const timeLabel = NOTIF_LABELS[notifTime] ?? notifTime
+      const msg = lang === 'ru'
+        ? `✅ Время сводки: <b>${timeLabel}</b>\n\nВсё готово! Аналитика: https://daromadchi.uz/dashboard`
+        : lang === 'en'
+        ? `✅ Summary time: <b>${timeLabel}</b>\n\nAll set! Analytics: https://daromadchi.uz/dashboard`
+        : `✅ Kunlik hisobot vaqti: <b>${timeLabel}</b>\n\nHammasi tayyor! Tahlil: https://daromadchi.uz/dashboard`
+      await sendTelegramMessage(chatId, msg)
     }
 
     if (data.startsWith('notif_toggle:')) {
@@ -220,7 +230,14 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
 
     if (data === 'notif_step:time') {
       await answerCallbackQuery(cb.id)
-      await sendTelegramKeyboard(chatId, `🕐 Kunlik xulosani qaysi vaqtda olishni xohlaysiz?`, [[
+      const session = await getSession(chatId)
+      const lang = session?.lang ?? 'uz'
+      const q = lang === 'ru'
+        ? '🕐 Когда присылать сводку?'
+        : lang === 'en'
+        ? '🕐 When should I send the summary?'
+        : '🕐 Kunlik xulosani qaysi vaqtda olishni xohlaysiz?'
+      await sendTelegramKeyboard(chatId, q, [[
         { text: '🌅 Ertalab 8:00',    callback_data: 'notif_time:morning' },
         { text: '☀️ Kunduzi 13:00',   callback_data: 'notif_time:noon'    },
         { text: '🌆 Kechqurun 20:00', callback_data: 'notif_time:evening' },
@@ -238,6 +255,7 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   const username = (message.from?.username as string | undefined) ?? null
   const text     = (message.text as string).trim()
 
+  // ── /start <token> — user came from Settings "Telegram ulash" button ──────
   if (text.startsWith('/start ') || text.startsWith('/start@')) {
     const token = text.split(' ')[1]?.trim()
 
@@ -263,7 +281,6 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
           `Keyin kengaytmadagi "Tekshirish" tugmasini bosing.`
         )
       } else {
-        // channel_nonces has columns not in Drizzle schema — keep using supabaseAdmin
         await supabaseAdmin
           .from('channel_nonces')
           .update({ verified: true, telegram_id: String(message.from.id) })
@@ -288,13 +305,14 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
       .where(eq(userSettings.telegram_link_token, token))
 
     if (!settings) {
-      await sendTelegramMessage(chatId, '❌ Token topilmadi. Kengaytmadan yangi havola oling.')
+      await sendTelegramMessage(chatId, '❌ Havola noto\'g\'ri yoki eskirgan. Sozlamalar sahifasidan yangi havola oling.')
       return NextResponse.json({ ok: true })
     }
     if (settings.telegram_link_expires_at && new Date(settings.telegram_link_expires_at) < new Date()) {
-      await sendTelegramMessage(chatId, '⏰ Token muddati tugagan (10 daqiqa). Kengaytmadan yangi havola oling.')
+      await sendTelegramMessage(chatId, '⏰ Havola muddati tugagan. Sozlamalar sahifasidan yangi havola oling.')
       return NextResponse.json({ ok: true })
     }
+
     await db.update(userSettings).set({
       telegram_chat_id:         chatId,
       telegram_username:        username,
@@ -303,22 +321,29 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
       updated_at:               new Date(),
     }).where(eq(userSettings.user_id, settings.user_id))
 
-    await sendTelegramMessage(chatId, `✅ <b>Daromadchi hisobingiz ulandi!</b>\n\nDavom etamiz 👇`)
-    const existingSession = await getSession(chatId)
-    if (existingSession?.step === 'done') {
-      await sendTelegramKeyboard(chatId, `📦 Qaysi bildirishnomalarni olishni xohlaysiz?`, [
-        [{ text: '📦 Kam zaxira ogohlantirishlari ✅', callback_data: 'notif_toggle:low_stock:1' }],
-        [{ text: '📊 Kunlik savdo xulosasi ✅',        callback_data: 'notif_toggle:daily_summary:1' }],
-        [{ text: '🛒 Yangi buyurtmalar ❌',            callback_data: 'notif_toggle:new_orders:0' }],
-        [{ text: '📈 Haftalik hisobot ❌',             callback_data: 'notif_toggle:weekly_report:0' }],
-        [{ text: '✅ Tayyor — vaqtni sozlash →',       callback_data: 'notif_step:time' }],
-      ])
-    } else {
-      await sendLangSelect(chatId)
-    }
+    const userShops = await getUserShops(settings.user_id)
+    await upsertSession(chatId, { user_id: settings.user_id, step: 'done', lang: 'uz' })
+
+    await sendLangSelect(chatId)
     return NextResponse.json({ ok: true })
   }
 
+  // ── /start (no token) — random user or returning user ─────────────────────
+  if (text === '/start') {
+    const [alreadyLinked] = await db.select({ user_id: userSettings.user_id })
+      .from(userSettings)
+      .where(eq(userSettings.telegram_chat_id, chatId))
+
+    if (alreadyLinked) {
+      await upsertSession(chatId, { user_id: alreadyLinked.user_id, step: 'lang_select' })
+    } else {
+      await upsertSession(chatId, { step: 'lang_select', shop_name: null, marketplace: null })
+    }
+    await sendLangSelect(chatId)
+    return NextResponse.json({ ok: true })
+  }
+
+  // ── /activate — extension activation code ─────────────────────────────────
   if (text === '/activate') {
     const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
     const CHANNEL   = '@daromadchi_uz'
@@ -342,7 +367,6 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     const code = Math.random().toString(36).slice(2, 6).toUpperCase() +
                  '-' + Math.random().toString(36).slice(2, 6).toUpperCase()
     const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString()
-    // ext_activation_codes not in Drizzle schema — keep using supabaseAdmin
     await supabaseAdmin.from('ext_activation_codes').upsert({ code, chat_id: chatId, used: false, expires_at: expiresAt })
     await sendTelegramMessage(chatId,
       `✅ <b>Aktivatsiya kodi:</b>\n\n<code>${code}</code>\n\nKodni kengaytmaga kiriting.\n<i>Kod 30 daqiqa amal qiladi.</i>`
@@ -350,41 +374,21 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     return NextResponse.json({ ok: true })
   }
 
-  if (text !== '/start') {
-    const session = await getSession(chatId)
-    if (session?.step === 'await_name') {
-      const lang = session.lang ?? 'uz'
-      await upsertSession(chatId, { shop_name: text, step: 'await_marketplace' })
-      await sendTelegramKeyboard(
-        chatId,
-        MKT_QUESTION[lang] ?? MKT_QUESTION.uz,
-        MKT_BUTTONS[lang]?.map(b => [{ text: b.text, callback_data: b.data }]) ?? []
-      )
-      return NextResponse.json({ ok: true })
-    }
-
-    if (!session || session.step === 'done') {
-      const firstName = (message.from?.first_name as string | undefined) ?? ''
-      const uname     = (message.from?.username  as string | undefined) ?? ''
-      const senderInfo = [firstName, uname ? `@${uname}` : '', `(ID: ${chatId})`].filter(Boolean).join(' ')
-      const lang = session?.lang ?? 'uz'
-      const thanks = lang === 'ru'
-        ? '✅ Спасибо за ваш вопрос! Мы получили его и ответим в ближайшее время.'
-        : lang === 'en'
-        ? '✅ Thank you for your question! We received it and will get back to you soon.'
-        : '✅ Savolingiz uchun rahmat! Qabul qildik, tez orada javob beramiz.'
-      await sendTelegramMessage(chatId, thanks)
-      await sendTelegramMessage('6884517020',
-        `📩 <b>Yangi savol / Новый вопрос</b>\n\n👤 ${senderInfo}\n\n💬 ${text}`
-      )
-      return NextResponse.json({ ok: true })
-    }
-  }
-
-  if (text === '/start') {
-    await upsertSession(chatId, { step: 'lang_select', shop_name: null, marketplace: null })
-    await sendLangSelect(chatId)
-  }
+  // ── free text — forward as question to admin ──────────────────────────────
+  const session = await getSession(chatId)
+  const lang = session?.lang ?? 'uz'
+  const firstName = (message.from?.first_name as string | undefined) ?? ''
+  const uname     = (message.from?.username  as string | undefined) ?? ''
+  const senderInfo = [firstName, uname ? `@${uname}` : '', `(ID: ${chatId})`].filter(Boolean).join(' ')
+  const thanks = lang === 'ru'
+    ? '✅ Спасибо за ваш вопрос! Мы получили его и ответим в ближайшее время.'
+    : lang === 'en'
+    ? '✅ Thank you for your question! We received it and will get back to you soon.'
+    : '✅ Savolingiz uchun rahmat! Qabul qildik, tez orada javob beramiz.'
+  await sendTelegramMessage(chatId, thanks)
+  await sendTelegramMessage('6884517020',
+    `📩 <b>Yangi savol / Новый вопрос</b>\n\n👤 ${senderInfo}\n\n💬 ${text}`
+  )
 
   return NextResponse.json({ ok: true })
 })
