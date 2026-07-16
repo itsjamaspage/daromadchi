@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { eq } from 'drizzle-orm'
 import { db, botSessions, userSettings, shops } from '@/lib/db'
 import { supabaseAdmin } from '@/lib/api/auth'
-import { sendTelegramMessage, sendTelegramKeyboard, answerCallbackQuery } from '@/lib/telegram'
+import { sendTelegramMessage, sendTelegramKeyboard, answerCallbackQuery, editMessageButtons } from '@/lib/telegram'
 import { withErrorHandler } from '@/lib/api-handler'
 
 export const GET = withErrorHandler(async () => {
@@ -225,7 +225,46 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     }
 
     if (data.startsWith('notif_toggle:')) {
-      await answerCallbackQuery(cb.id)
+      const parts = data.split(':')
+      const key = parts[1] as 'low_stock' | 'daily_summary' | 'new_orders' | 'weekly_report'
+      const currentVal = parts[2] === '1'
+      const newVal = !currentVal
+
+      const dbFieldMap: Record<string, 'notif_low_stock' | 'notif_daily_summary' | 'notif_new_orders' | 'notif_weekly_report'> = {
+        low_stock:     'notif_low_stock',
+        daily_summary: 'notif_daily_summary',
+        new_orders:    'notif_new_orders',
+        weekly_report: 'notif_weekly_report',
+      }
+      const dbField = dbFieldMap[key]
+
+      if (dbField) {
+        await db.update(userSettings)
+          .set({ [dbField]: newVal, updated_at: new Date() })
+          .where(eq(userSettings.telegram_chat_id, chatId))
+      }
+
+      const [row] = await db.select({
+        ls: userSettings.notif_low_stock,
+        ds: userSettings.notif_daily_summary,
+        no: userSettings.notif_new_orders,
+        wr: userSettings.notif_weekly_report,
+      }).from(userSettings).where(eq(userSettings.telegram_chat_id, chatId))
+
+      const ls = row?.ls ?? true, ds = row?.ds ?? true, no = row?.no ?? false, wr = row?.wr ?? false
+
+      const messageId = cb.message?.message_id
+      if (messageId) {
+        await editMessageButtons(chatId, messageId, [
+          [{ text: `📦 Kam zaxira ogohlantirishlari ${ls ? '✅' : '❌'}`, callback_data: `notif_toggle:low_stock:${ls ? '1' : '0'}` }],
+          [{ text: `📊 Kunlik savdo xulosasi ${ds ? '✅' : '❌'}`,        callback_data: `notif_toggle:daily_summary:${ds ? '1' : '0'}` }],
+          [{ text: `🛒 Yangi buyurtmalar ${no ? '✅' : '❌'}`,            callback_data: `notif_toggle:new_orders:${no ? '1' : '0'}` }],
+          [{ text: `📈 Haftalik hisobot ${wr ? '✅' : '❌'}`,             callback_data: `notif_toggle:weekly_report:${wr ? '1' : '0'}` }],
+          [{ text: '✅ Tayyor — vaqtni sozlash →',                        callback_data: 'notif_step:time' }],
+        ])
+      }
+
+      await answerCallbackQuery(cb.id, newVal ? '✅' : '❌')
     }
 
     if (data === 'notif_step:time') {

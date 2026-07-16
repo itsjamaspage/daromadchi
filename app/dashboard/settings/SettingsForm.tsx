@@ -824,6 +824,21 @@ function TelegramCard({ chatId, username }: { chatId: string | null; username: s
 
   const connected = !!chatId
 
+  useEffect(() => {
+    if (!link || connected) return
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch('/api/telegram/status')
+        const data = await res.json()
+        if (data.linked) {
+          clearInterval(interval)
+          router.refresh()
+        }
+      } catch {}
+    }, 3000)
+    return () => clearInterval(interval)
+  }, [link, connected, router])
+
   async function handleConnect() {
     setLoading(true); setMsg(null)
     try {

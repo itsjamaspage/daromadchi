@@ -71,6 +71,28 @@ export async function sendTelegramKeyboard(
   }
 }
 
+export async function editMessageButtons(
+  chatId: string,
+  messageId: number,
+  buttons: InlineButton[][],
+): Promise<boolean> {
+  if (!BOT_TOKEN) return false
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/editMessageReplyMarkup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id:      chatId,
+        message_id:   messageId,
+        reply_markup: { inline_keyboard: buttons },
+      }),
+    })
+    return res.ok
+  } catch {
+    return false
+  }
+}
+
 export async function answerCallbackQuery(callbackQueryId: string, text?: string): Promise<void> {
   if (!BOT_TOKEN) return
   await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/answerCallbackQuery`, {
