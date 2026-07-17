@@ -1,10 +1,11 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { revalidateTag } from 'next/cache'
 import { eq, and, inArray } from 'drizzle-orm'
 import { getCurrentUser } from '@/lib/auth/session'
 import { db, shops, products } from '@/lib/db'
 import { withErrorHandler } from '@/lib/api-handler'
 
-export const PATCH = withErrorHandler(async (req: Request) => {
+export const PATCH = withErrorHandler(async (req: NextRequest) => {
   const user = await getCurrentUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
@@ -25,6 +26,8 @@ export const PATCH = withErrorHandler(async (req: Request) => {
   await db.update(products)
     .set({ physical_stock })
     .where(and(inArray(products.shop_id, shopIds), eq(products.sku, sku)))
+
+  revalidateTag('product-data', 'max')
 
   return NextResponse.json({ ok: true })
 })

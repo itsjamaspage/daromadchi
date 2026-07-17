@@ -95,7 +95,7 @@ const _fetchProducts = unstable_cache(
     })
   },
   ['products-v4'],
-  { revalidate: 30 },
+  { revalidate: 30, tags: ['product-data'] },
 )
 
 export async function getProducts(marketplace?: MarketplaceType): Promise<Product[]> {
@@ -156,7 +156,7 @@ const _fetchProductSales = unstable_cache(
     }))
   },
   ['product-sales-v3'],
-  { revalidate: 30 },
+  { revalidate: 30, tags: ['product-data'] },
 )
 
 export async function getProductSales(
@@ -218,7 +218,7 @@ const _fetchCategoryRevenue = unstable_cache(
     }))
   },
   ['category-revenue-rpc'],
-  { revalidate: 30 },
+  { revalidate: 30, tags: ['product-data'] },
 )
 
 export async function getCategoryRevenue(
@@ -331,7 +331,7 @@ const _fetchProductsPaginated = unstable_cache(
     return { rows, total }
   },
   ['products-paginated-rpc'],
-  { revalidate: 30 },
+  { revalidate: 30, tags: ['product-data'] },
 )
 
 export async function getProductsPaginated(page = 1, pageSize = 50, marketplace?: MarketplaceType): Promise<PaginatedProducts> {
