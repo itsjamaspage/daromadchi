@@ -8,10 +8,10 @@ import { translations } from '@/lib/i18n'
 import type { StockGroup } from '@/lib/db/stock-groups'
 import type { MarketplaceType } from '@/lib/types'
 
-const MP_META: Record<MarketplaceType, { short: string; color: string; bg: string }> = {
-  uzum:          { short: 'UZ', color: '#494fdf', bg: 'rgba(73,79,223,0.12)'  },
-  yandex_market: { short: 'YM', color: '#E8A000', bg: 'rgba(232,160,0,0.12)'  },
-  wildberries:   { short: 'WB', color: '#CB11AB', bg: 'rgba(203,17,171,0.12)' },
+const MP_META: Record<MarketplaceType, { label: string; short: string; color: string; bg: string }> = {
+  uzum:          { label: 'Uzum',        short: 'UZ', color: '#494fdf', bg: 'rgba(73,79,223,0.12)'  },
+  yandex_market: { label: 'Yandex',      short: 'YM', color: '#E8A000', bg: 'rgba(232,160,0,0.12)'  },
+  wildberries:   { label: 'Wildberries', short: 'WB', color: '#CB11AB', bg: 'rgba(203,17,171,0.12)' },
 }
 const MP_ORDER: MarketplaceType[] = ['uzum', 'wildberries', 'yandex_market']
 
@@ -20,7 +20,7 @@ function MpCount({ mp, value }: { mp: MarketplaceType; value: number }) {
   return (
     <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-1.5 py-0.5 rounded"
       style={{ background: m.bg, color: m.color }}>
-      {m.short} <span style={{ fontVariantNumeric: 'tabular-nums' }}>{value}</span>
+      {m.label} <span style={{ fontVariantNumeric: 'tabular-nums' }}>{value}</span>
     </span>
   )
 }
@@ -173,9 +173,18 @@ function FragmentRow({ group: g, badge, isOpen, onToggle, d }: {
       <tr className="border-t" style={{  borderColor: 'var(--border)' }}>
         <td className="px-5 py-3.5">
           <p className="font-semibold leading-tight" style={{ color: 'var(--text-base)' }}>{g.title}</p>
-          <p className="text-[11px] mt-0.5" style={{ color: 'var(--text-muted)' }}>
-            {g.members[0]?.sku ?? '—'}{mps.length > 1 ? ` · ${mps.length} ${d.linkedBadge}` : ''}
-          </p>
+          <div className="flex flex-wrap items-center gap-1.5 mt-1">
+            <span className="text-[11px]" style={{ color: 'var(--text-muted)' }}>{g.members[0]?.sku ?? '—'}</span>
+            {mps.map(mp => {
+              const m = MP_META[mp]
+              return (
+                <span key={mp} className="text-[10px] font-bold px-1.5 py-0.5 rounded"
+                  style={{ background: m.bg, color: m.color }}>
+                  {m.label}
+                </span>
+              )
+            })}
+          </div>
         </td>
         <td className="px-5 py-3.5">
           <div className="flex flex-wrap gap-1.5">
