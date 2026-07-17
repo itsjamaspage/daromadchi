@@ -191,9 +191,14 @@ export default function ProductsTable({ products }: { products: Product[] }) {
       if (sortBy === 'margin') {
         av = a.profit / (Number(a.selling_price) || 1)
         bv = b.profit / (Number(b.selling_price) || 1)
+      } else if (sortBy === 'title') {
+        return sortDir === 'desc'
+          ? b.title.localeCompare(a.title)
+          : a.title.localeCompare(b.title)
+      } else if (sortBy === 'profit') {
+        av = a.profit; bv = b.profit
       } else {
-        av = (a as Record<string, unknown>)[sortBy] as number ?? 0
-        bv = (b as Record<string, unknown>)[sortBy] as number ?? 0
+        av = a.available_stock; bv = b.available_stock
       }
       return sortDir === 'desc' ? bv - av : av - bv
     })
