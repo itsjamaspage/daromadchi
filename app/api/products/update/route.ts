@@ -1,10 +1,11 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { revalidateTag } from 'next/cache'
 import { eq, and, inArray } from 'drizzle-orm'
 import { getCurrentUser } from '@/lib/auth/session'
 import { db, shops, products } from '@/lib/db'
 import { withErrorHandler } from '@/lib/api-handler'
 
-export const PATCH = withErrorHandler(async (req: Request) => {
+export const PATCH = withErrorHandler(async (req: NextRequest) => {
   const user = await getCurrentUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
@@ -30,6 +31,8 @@ export const PATCH = withErrorHandler(async (req: Request) => {
   if (result.length === 0) {
     return NextResponse.json({ error: 'Product not found' }, { status: 404 })
   }
+
+  revalidateTag('products-v4')
 
   return NextResponse.json({ ok: true })
 })
