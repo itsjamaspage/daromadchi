@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin, getAuthUser, getShopIds, getUserPlan } from '@/lib/api/auth'
+import { supabaseAdmin, getExtensionUser, getShopIds, getUserPlan } from '@/lib/api/auth'
 import { sendTelegramMessage, isInNotificationWindow } from '@/lib/telegram'
 import { withErrorHandler } from '@/lib/api-handler'
 
@@ -8,7 +8,7 @@ function fmt(n: number) {
 }
 
 export const POST = withErrorHandler(async (req: NextRequest) => {
-  const user = await getAuthUser(req.headers.get('authorization'))
+  const user = await getExtensionUser(req.headers.get('authorization'))
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const plan = await getUserPlan(user.id)

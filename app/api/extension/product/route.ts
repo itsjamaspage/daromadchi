@@ -1,15 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/api/auth'
+import { supabaseAdmin, getExtensionUser } from '@/lib/api/auth'
 import { withErrorHandler } from '@/lib/api-handler'
 
 const UZUM_PUBLIC = 'https://api.uzum.uz'
 
 export const GET = withErrorHandler(async (req: NextRequest) => {
-  // ── Auth ─────────────────────────────────────────────────────────────────────
-  const token = req.headers.get('authorization')?.slice(7)
-  if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
-  const { data: { user } } = await supabaseAdmin.auth.getUser(token)
+  const user = await getExtensionUser(req.headers.get('authorization'))
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   // ── Params ───────────────────────────────────────────────────────────────────

@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getAuthUser } from '@/lib/api/auth'
+import { getExtensionUser } from '@/lib/api/auth'
 import { db, userSettings } from '@/lib/db'
 import { telegramConfigured, telegramDeepLink } from '@/lib/telegram'
 import { withErrorHandler } from '@/lib/api-handler'
 
 export const POST = withErrorHandler(async (req: NextRequest) => {
-  const user = await getAuthUser(req.headers.get('authorization'))
+  const user = await getExtensionUser(req.headers.get('authorization'))
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   if (!telegramConfigured()) {

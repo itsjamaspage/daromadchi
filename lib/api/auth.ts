@@ -29,6 +29,13 @@ export async function getAuthUser(authHeader: string | null): Promise<User | nul
   return user ?? null
 }
 
+export async function getExtensionUser(authHeader: string | null) {
+  const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null
+  if (!token || token.length < 20) return null
+  const [user] = await db.select().from(users).where(eq(users.extension_token, token)).limit(1)
+  return user ?? null
+}
+
 export async function getShopIds(userId: string, shopId?: string | null): Promise<string[]> {
   const conditions = [eq(shops.user_id, userId), or(isNull(shops.shop_id_external), ne(shops.shop_id_external, 'DEMO'))]
   if (shopId) conditions.push(eq(shops.id, shopId))

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { eq } from 'drizzle-orm'
 import { db, alerts, userSettings } from '@/lib/db'
-import { getAuthUser, getUserPlan } from '@/lib/api/auth'
+import { getExtensionUser, getUserPlan } from '@/lib/api/auth'
 import { sendTelegramMessage } from '@/lib/telegram'
 import { withErrorHandler } from '@/lib/api-handler'
 
@@ -12,7 +12,7 @@ interface AlertInput {
 }
 
 export const POST = withErrorHandler(async (req: NextRequest) => {
-  const user = await getAuthUser(req.headers.get('authorization'))
+  const user = await getExtensionUser(req.headers.get('authorization'))
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const plan = await getUserPlan(user.id)

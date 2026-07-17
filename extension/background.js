@@ -668,8 +668,14 @@ chrome.alarms.onAlarm.addListener((alarm) => {
 chrome.runtime.onMessage.addListener((msg, sender, reply) => {
   if (msg.action === 'daromadchi_connected') {
     const updates = { daromadchi_connected: true, daromadchi_email: msg.email || '' };
+    if (msg.token) updates.daromadchi_token = msg.token;
     if (msg.tg) updates.tgStatus = msg.tg;
     chrome.storage.local.set(updates);
+    reply({ ok: true });
+    return true;
+  }
+  if (msg.action === 'daromadchi_disconnected') {
+    chrome.storage.local.remove(['daromadchi_token', 'daromadchi_connected', 'daromadchi_email', 'cachedStats', 'cacheTime']);
     reply({ ok: true });
     return true;
   }

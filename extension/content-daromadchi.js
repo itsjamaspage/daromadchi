@@ -1,4 +1,4 @@
-// content-daromadchi.js — checks if user is logged in and notifies background
+// content-daromadchi.js — checks if user is logged in and delivers extension token
 (function () {
   function sync() {
     fetch(location.origin + '/api/extension/me', {
@@ -10,8 +10,11 @@
           chrome.runtime.sendMessage({
             action: 'daromadchi_connected',
             email: data.email,
+            token: data.token || null,
             tg: data.tg ?? null,
           })
+        } else {
+          chrome.runtime.sendMessage({ action: 'daromadchi_disconnected' })
         }
       })
       .catch(() => {})
