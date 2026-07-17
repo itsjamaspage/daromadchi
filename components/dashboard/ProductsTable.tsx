@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react'
 import { Search } from 'lucide-react'
 import ExportButton from './ExportButton'
-import { useLang } from '@/app/providers'
+import { useLang, useTheme } from '@/app/providers'
 import { translations } from '@/lib/i18n'
 import type { Product, MarketplaceType } from '@/lib/types'
 
@@ -51,6 +51,8 @@ function stockBadge(qty: number) {
 
 export default function ProductsTable({ products }: { products: Product[] }) {
   const { lang } = useLang()
+  const { theme } = useTheme()
+  const isDark = theme === 'dark'
   const d = translations[lang].dashboard
 
   const TABS: { key: TabKey; label: string }[] = [
@@ -375,11 +377,11 @@ export default function ProductsTable({ products }: { products: Product[] }) {
 
       {/* Indicator legend */}
       <div className="flex flex-wrap gap-4 text-xs" style={{ color: 'var(--text-muted)' }}>
-        <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full" style={{ background: '#ef4444' }} />Reklama bor, sotuv yo&apos;q</span>
-        <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full" style={{ background: '#10b981' }} />Reklamasiz organik sotuv</span>
-        <span className="flex items-center gap-1.5"><span className="w-6 h-3 rounded border" style={{ background: 'rgba(52, 211, 153, 0.1)', borderColor: 'rgba(52, 211, 153, 0.2)' }} /><span style={{ color: '#10b981' }}>DRR &lt;10%</span></span>
-        <span className="flex items-center gap-1.5"><span className="w-6 h-3 rounded border" style={{ background: 'rgba(245, 158, 11, 0.1)', borderColor: 'rgba(245, 158, 11, 0.2)' }} /><span style={{ color: '#f59e0b' }}>DRR 10–20%</span></span>
-        <span className="flex items-center gap-1.5"><span className="w-6 h-3 rounded border" style={{ background: 'rgba(239, 68, 68, 0.1)', borderColor: 'rgba(239, 68, 68, 0.2)' }} /><span style={{ color: '#ef4444' }}>DRR &gt;20%</span></span>
+        <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full" style={{ background: isDark ? '#ef4444' : '#dc2626' }} />Reklama bor, sotuv yo&apos;q</span>
+        <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full" style={{ background: isDark ? '#10b981' : '#047857' }} />Reklamasiz organik sotuv</span>
+        <span className="flex items-center gap-1.5"><span className="w-6 h-3 rounded border" style={{ background: isDark ? 'rgba(52, 211, 153, 0.1)' : 'rgba(4, 120, 87, 0.15)', borderColor: isDark ? 'rgba(52, 211, 153, 0.2)' : 'rgba(4, 120, 87, 0.3)' }} /><span style={{ color: isDark ? '#10b981' : '#047857' }}>DRR &lt;10%</span></span>
+        <span className="flex items-center gap-1.5"><span className="w-6 h-3 rounded border" style={{ background: isDark ? 'rgba(245, 158, 11, 0.1)' : 'rgba(180, 83, 9, 0.15)', borderColor: isDark ? 'rgba(245, 158, 11, 0.2)' : 'rgba(180, 83, 9, 0.3)' }} /><span style={{ color: isDark ? '#f59e0b' : '#b45309' }}>DRR 10–20%</span></span>
+        <span className="flex items-center gap-1.5"><span className="w-6 h-3 rounded border" style={{ background: isDark ? 'rgba(239, 68, 68, 0.1)' : 'rgba(185, 28, 28, 0.15)', borderColor: isDark ? 'rgba(239, 68, 68, 0.2)' : 'rgba(185, 28, 28, 0.3)' }} /><span style={{ color: isDark ? '#ef4444' : '#b91c1c' }}>DRR &gt;20%</span></span>
       </div>
     </div>
   )
