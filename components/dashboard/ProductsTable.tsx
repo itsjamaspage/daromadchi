@@ -3,7 +3,7 @@
 import { useState, useMemo, useCallback, Fragment } from 'react'
 import { Search, Check, X, Pencil } from 'lucide-react'
 import ExportButton from './ExportButton'
-import { useLang, useTheme } from '@/app/providers'
+import { useLang } from '@/app/providers'
 import { translations } from '@/lib/i18n'
 import type { Product, MarketplaceType } from '@/lib/types'
 import { useRouter } from 'next/navigation'
@@ -30,19 +30,14 @@ function fmt(n: number) {
   return new Intl.NumberFormat('uz-UZ').format(n) + " so'm"
 }
 
-type TabKey = 'all' | 'high_drr' | 'low_stock' | 'no_orders'
-type SortKey = 'title' | 'profit' | 'margin' | 'stock_quantity' | 'drr'
+type TabKey = 'all' | 'low_stock' | 'no_orders'
+type SortKey = 'title' | 'profit' | 'margin' | 'stock_quantity'
 
 function SortIcon({ col, sortBy, sortDir }: { col: SortKey; sortBy: SortKey; sortDir: 'asc' | 'desc' }) {
   if (sortBy !== col) return <span className="ml-1" style={{ color: 'var(--text-muted)' }}>↕</span>
   return <span className="ml-1" style={{ color: 'var(--c1)' }}>{sortDir === 'desc' ? '↓' : '↑'}</span>
 }
 
-function drrBadge(drr: number) {
-  if (drr < 10) return { bgColor: 'rgba(52, 211, 153, 0.1)', color: '#10b981', label: `${drr.toFixed(1)}%` }
-  if (drr < 20) return { bgColor: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', label: `${drr.toFixed(1)}%` }
-  return           { bgColor: 'rgba(239, 68, 68, 0.1)', color: '#ef4444',       label: `${drr.toFixed(1)}%` }
-}
 
 function stockBadge(qty: number) {
   if (qty >= 30) return { bgColor: 'rgba(100, 116, 139, 0.2)', color: 'var(--text-dim)' }
@@ -50,7 +45,7 @@ function stockBadge(qty: number) {
   return           { bgColor: 'rgba(239, 68, 68, 0.1)', color: '#ef4444' }
 }
 
-function EditRow({ product, onClose, onSaved }: { product: Product & { adSpend: number; drr: number }; onClose: () => void; onSaved: (productId: string, newCostPrice: number | null, fetchDone: Promise<void>) => void }) {
+function EditRow({ product, onClose, onSaved }: { product: Product; onClose: () => void; onSaved: (productId: string, newCostPrice: number | null, fetchDone: Promise<void>) => void }) {
   const { lang } = useLang()
   const d = translations[lang].dashboard
   const [costPrice, setCostPrice] = useState(product.cost_price != null ? String(product.cost_price) : '')
@@ -131,8 +126,6 @@ function EditRow({ product, onClose, onSaved }: { product: Product & { adSpend: 
 
 export default function ProductsTable({ products }: { products: Product[] }) {
   const { lang } = useLang()
-  const { theme } = useTheme()
-  const isDark = theme === 'dark'
   const d = translations[lang].dashboard
   const router = useRouter()
 
@@ -143,7 +136,6 @@ export default function ProductsTable({ products }: { products: Product[] }) {
   const [sortBy,         setSortBy]         = useState<SortKey>('profit')
   const [sortDir,        setSortDir]        = useState<'asc' | 'desc'>('desc')
   const [tab,            setTab]            = useState<TabKey>('all')
-  const [drrThreshold,   setDrrThreshold]   = useState(20)
   const [stockThreshold, setStockThreshold] = useState(10)
   const [editingId,      setEditingId]      = useState<string | null>(null)
   const [optimisticUpdates, setOptimisticUpdates] = useState<Map<string, number | null>>(new Map())
@@ -169,16 +161,11 @@ export default function ProductsTable({ products }: { products: Product[] }) {
   }), [products, optimisticUpdates])
 
   const enriched = useMemo(() => productsWithOverrides
-    .filter(p => !mp || p.marketplace === mp)
-    .map((p) => ({
-      ...p, adSpend: 0, adOrders: 0, adClicks: 0, drr: 0,
-    })), [productsWithOverrides, mp])
-
-  const hasAdData = enriched.some(p => p.adSpend > 0)
+    .filter(p => !mp || p.marketplace === mp),
+    [productsWithOverrides, mp])
 
   const TABS: { key: TabKey; label: string }[] = [
     { key: 'all',       label: d.status.all          },
-    ...(hasAdData ? [{ key: 'high_drr' as TabKey, label: '⚠️ ' + d.highMargin }] : []),
     { key: 'low_stock', label: '📦 ' + d.stockQty    },
     { key: 'no_orders', label: '🚫 ' + d.noMovement  },
   ]
@@ -196,7 +183,6 @@ export default function ProductsTable({ products }: { products: Product[] }) {
     }
     if (category !== allLabel) rows = rows.filter(p => p.category === category)
 
-    if (tab === 'high_drr')  rows = rows.filter(p => p.drr >= drrThreshold)
     if (tab === 'low_stock') rows = rows.filter(p => p.available_stock < stockThreshold)
     if (tab === 'no_orders') rows = rows.filter(p => (p.sold ?? 0) === 0)
 
@@ -205,8 +191,6 @@ export default function ProductsTable({ products }: { products: Product[] }) {
       if (sortBy === 'margin') {
         av = a.profit / (Number(a.selling_price) || 1)
         bv = b.profit / (Number(b.selling_price) || 1)
-      } else if (sortBy === 'drr') {
-        av = a.drr; bv = b.drr
       } else {
         av = (a as Record<string, unknown>)[sortBy] as number ?? 0
         bv = (b as Record<string, unknown>)[sortBy] as number ?? 0
@@ -214,7 +198,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
       return sortDir === 'desc' ? bv - av : av - bv
     })
     return rows
-  }, [enriched, query, category, tab, sortBy, sortDir, drrThreshold, stockThreshold, allLabel])
+  }, [enriched, query, category, tab, sortBy, sortDir, stockThreshold, allLabel])
 
   function toggleSort(col: typeof sortBy) {
     if (sortBy === col) setSortDir(d => d === 'desc' ? 'asc' : 'desc')
@@ -226,29 +210,21 @@ export default function ProductsTable({ products }: { products: Product[] }) {
     fetchDone.then(() => router.refresh())
   }, [router])
 
-  const exportData = filtered.map(p => {
-    const row: Record<string, string | number | null> = {
-      [d.product]:          p.title,
-      'SKU':                p.sku ?? '',
-      'Marketplace':        p.marketplace ? MP_META[p.marketplace]?.label : '',
-      [d.category]:         p.category ?? '',
-      [d.price]:            p.selling_price ?? 0,
-      [d.costPriceLabel]:   p.cost_price ?? 0,
-      [d.profit]:           p.profit,
-      [`${d.margin} (%)`]:  (p.profit / (Number(p.selling_price) || 1) * 100).toFixed(1),
-      [d.sold]:             p.sold ?? 0,
-      [d.stockQty]:         p.available_stock,
-    }
-    if (hasAdData) {
-      row[d.adSpendLabel] = p.adSpend
-      row['DRR (%)'] = p.drr.toFixed(1)
-    }
-    return row
-  })
+  const exportData = filtered.map(p => ({
+    [d.product]:          p.title,
+    'SKU':                p.sku ?? '',
+    'Marketplace':        p.marketplace ? MP_META[p.marketplace]?.label : '',
+    [d.category]:         p.category ?? '',
+    [d.price]:            p.selling_price ?? 0,
+    [d.costPriceLabel]:   p.cost_price ?? 0,
+    [d.profit]:           p.profit,
+    [`${d.margin} (%)`]:  (p.profit / (Number(p.selling_price) || 1) * 100).toFixed(1),
+    [d.sold]:             p.sold ?? 0,
+    [d.stockQty]:         p.available_stock,
+  }))
 
   const tabCounts = {
     all:       enriched.length,
-    high_drr:  enriched.filter(p => p.drr >= drrThreshold).length,
     low_stock: enriched.filter(p => p.available_stock < stockThreshold).length,
     no_orders: enriched.filter(p => (p.sold ?? 0) === 0).length,
   }
@@ -315,17 +291,8 @@ export default function ProductsTable({ products }: { products: Product[] }) {
         ))}
       </div>
 
-      {(tab === 'high_drr' || tab === 'low_stock') && (
+      {tab === 'low_stock' && (
         <div className="flex items-center gap-3 text-xs" style={{ color: 'var(--text-muted)' }}>
-          {tab === 'high_drr' && (
-            <label className="flex items-center gap-2">
-              DRR chegarasi:
-              <input type="number" min={5} max={100} value={drrThreshold}
-                onChange={e => setDrrThreshold(Number(e.target.value))}
-                className="w-16 px-2 py-1 rounded-lg focus:outline-none transition-all" style={{ background: 'var(--bg-card2)', borderColor: 'var(--border)', color: 'var(--text-base)', border: '1px solid var(--border)' }} />
-              %
-            </label>
-          )}
           {tab === 'low_stock' && (
             <label className="flex items-center gap-2">
               Zaxira chegarasi:
@@ -390,11 +357,6 @@ export default function ProductsTable({ products }: { products: Product[] }) {
                 <th className="text-right font-medium px-5 py-3 cursor-pointer select-none" style={{ color: 'var(--text-muted)' }} onClick={() => toggleSort('margin')}>
                   {d.margin} <SortIcon col="margin" sortBy={sortBy} sortDir={sortDir} />
                 </th>
-                {hasAdData && (
-                  <th className="text-right font-medium px-5 py-3 cursor-pointer select-none" style={{ color: 'var(--text-muted)' }} onClick={() => toggleSort('drr')}>
-                    DRR <SortIcon col="drr" sortBy={sortBy} sortDir={sortDir} />
-                  </th>
-                )}
                 <th className="text-right font-medium px-5 py-3">{d.sold}</th>
                 <th className="text-right font-medium px-5 py-3 cursor-pointer select-none" style={{ color: 'var(--text-muted)' }} onClick={() => toggleSort('stock_quantity')}>
                   {d.stockQty} <SortIcon col="stock_quantity" sortBy={sortBy} sortDir={sortDir} />
@@ -403,14 +365,11 @@ export default function ProductsTable({ products }: { products: Product[] }) {
             </thead>
             <tbody>
               {filtered.length === 0 ? (
-                <tr><td colSpan={hasAdData ? 9 : 8} className="px-5 py-10 text-center text-sm" style={{ color: 'var(--text-muted)' }}>{d.noProductsTitle}</td></tr>
+                <tr><td colSpan={8} className="px-5 py-10 text-center text-sm" style={{ color: 'var(--text-muted)' }}>{d.noProductsTitle}</td></tr>
               ) : filtered.map((p, idx) => {
                 const price  = Number(p.selling_price ?? 0)
                 const margin = price > 0 ? Number(((p.profit / price) * 100).toFixed(1)) : 0
-                const drr = drrBadge(p.drr)
                 const stock = stockBadge(p.available_stock)
-                const noSaleWithAd = (p.sold ?? 0) === 0 && p.adSpend > 0
-                const organicSale  = (p.sold ?? 0) > 0 && p.adSpend === 0
                 const marginColor  = margin > 35 ? '#10b981' : margin > 20 ? '#f59e0b' : '#ef4444'
                 const isEditing = editingId === p.id
                 return (
@@ -435,12 +394,6 @@ export default function ProductsTable({ products }: { products: Product[] }) {
                               )}
                             </div>
                           </div>
-                          {noSaleWithAd && (
-                            <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: '#ef4444' }} title="Reklama sarfi bor, lekin sotuv yo'q" />
-                          )}
-                          {organicSale && (
-                            <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: '#10b981' }} title="Reklamasiz organik sotuv" />
-                          )}
                           <Pencil className="w-3.5 h-3.5 flex-shrink-0 opacity-30" style={{ color: 'var(--text-muted)' }} />
                         </div>
                       </td>
@@ -463,13 +416,6 @@ export default function ProductsTable({ products }: { products: Product[] }) {
                           </div>
                         </div>
                       </td>
-                      {hasAdData && (
-                        <td className="px-5 py-4 text-right">
-                          <span className="text-xs font-medium px-2 py-0.5 rounded-lg" style={{ background: drr.bgColor, color: drr.color }}>
-                            {drr.label}
-                          </span>
-                        </td>
-                      )}
                       <td className="px-5 py-4 text-right" style={{ color: 'var(--text-dim)' }}>{p.sold ?? 0}</td>
                       <td className="px-5 py-4 text-right">
                         <span className="text-xs font-medium px-2.5 py-1 rounded-lg" style={{ background: stock.bgColor, color: stock.color }}>
@@ -492,16 +438,6 @@ export default function ProductsTable({ products }: { products: Product[] }) {
         </div>
       </div>
 
-      {/* Indicator legend */}
-      <div className="flex flex-wrap gap-4 text-xs" style={{ color: 'var(--text-muted)' }}>
-        <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full" style={{ background: isDark ? '#ef4444' : '#dc2626' }} />Reklama bor, sotuv yo&apos;q</span>
-        <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full" style={{ background: isDark ? '#10b981' : '#047857' }} />Reklamasiz organik sotuv</span>
-        {hasAdData && <>
-          <span className="flex items-center gap-1.5"><span className="w-6 h-3 rounded border" style={{ background: isDark ? 'rgba(52, 211, 153, 0.1)' : '#d1fae5', borderColor: isDark ? 'rgba(52, 211, 153, 0.2)' : '#059669' }} /><span style={{ color: isDark ? '#10b981' : '#065f46', fontWeight: isDark ? 400 : 600 }}>DRR &lt;10%</span></span>
-          <span className="flex items-center gap-1.5"><span className="w-6 h-3 rounded border" style={{ background: isDark ? 'rgba(245, 158, 11, 0.1)' : '#fef3c7', borderColor: isDark ? 'rgba(245, 158, 11, 0.2)' : '#d97706' }} /><span style={{ color: isDark ? '#f59e0b' : '#92400e', fontWeight: isDark ? 400 : 600 }}>DRR 10–20%</span></span>
-          <span className="flex items-center gap-1.5"><span className="w-6 h-3 rounded border" style={{ background: isDark ? 'rgba(239, 68, 68, 0.1)' : '#fee2e2', borderColor: isDark ? 'rgba(239, 68, 68, 0.2)' : '#dc2626' }} /><span style={{ color: isDark ? '#ef4444' : '#991b1b', fontWeight: isDark ? 400 : 600 }}>DRR &gt;20%</span></span>
-        </>}
-      </div>
     </div>
   )
 }
