@@ -1,11 +1,12 @@
 'use client'
 
-import { useState, useMemo } from 'react'
-import { Search } from 'lucide-react'
+import { useState, useMemo, useCallback, Fragment } from 'react'
+import { Search, Check, X, Pencil } from 'lucide-react'
 import ExportButton from './ExportButton'
 import { useLang, useTheme } from '@/app/providers'
 import { translations } from '@/lib/i18n'
 import type { Product, MarketplaceType } from '@/lib/types'
+import { useRouter } from 'next/navigation'
 
 const MP_META: Record<MarketplaceType, { label: string; short: string; color: string; bg: string }> = {
   uzum:          { label: 'Uzum',          short: 'UZ', color: '#494fdf', bg: 'rgba(73,79,223,0.12)'   },
@@ -49,11 +50,107 @@ function stockBadge(qty: number) {
   return           { bgColor: 'rgba(239, 68, 68, 0.1)', color: '#ef4444' }
 }
 
+function EditRow({ product, onClose, onSaved }: { product: Product & { adSpend: number; drr: number }; onClose: () => void; onSaved: () => void }) {
+  const { lang } = useLang()
+  const d = translations[lang].dashboard
+  const [costPrice, setCostPrice] = useState(product.cost_price != null ? String(product.cost_price) : '')
+  const [saving, setSaving] = useState(false)
+  const [msg, setMsg] = useState<string | null>(null)
+
+  const sellingPrice = Number(product.selling_price ?? 0)
+  const cp = Number(costPrice) || 0
+  const newProfit = sellingPrice - cp
+  const newMargin = sellingPrice > 0 ? (newProfit / sellingPrice * 100) : 0
+
+  async function handleSave() {
+    setSaving(true); setMsg(null)
+    try {
+      const res = await fetch('/api/products/update', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          productId: product.id,
+          costPrice: costPrice === '' ? null : Number(costPrice),
+        }),
+      })
+      if (res.ok) {
+        onSaved()
+        onClose()
+      } else {
+        const data = await res.json()
+        setMsg(data.error ?? 'Xato')
+      }
+    } catch {
+      setMsg('Tarmoq xatosi')
+    }
+    setSaving(false)
+  }
+
+  return (
+    <tr>
+      <td colSpan={9} className="px-5 py-4" style={{ background: 'var(--bg-input)' }}>
+        <div className="flex flex-wrap items-end gap-4">
+          <div>
+            <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-muted)' }}>{d.price}</label>
+            <div className="px-3 py-2 rounded-lg text-sm border" style={{ background: 'var(--bg-card2)', borderColor: 'var(--border)', color: 'var(--text-dim)' }}>
+              {fmt(sellingPrice)}
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-muted)' }}>{d.costPriceLabel}</label>
+            <input
+              type="number"
+              min={0}
+              value={costPrice}
+              onChange={e => setCostPrice(e.target.value)}
+              placeholder="0"
+              className="px-3 py-2 rounded-lg text-sm border w-40 focus:outline-none"
+              style={{ background: 'var(--bg-card2)', borderColor: 'var(--border)', color: 'var(--text-base)' }}
+              autoFocus
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-muted)' }}>{d.profit}</label>
+            <div className="px-3 py-2 rounded-lg text-sm border" style={{ background: 'var(--bg-card2)', borderColor: 'var(--border)', color: newProfit >= 0 ? '#10b981' : '#ef4444' }}>
+              {fmt(newProfit)}
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-muted)' }}>{d.margin}</label>
+            <div className="px-3 py-2 rounded-lg text-sm border" style={{ background: 'var(--bg-card2)', borderColor: 'var(--border)', color: newMargin > 35 ? '#10b981' : newMargin > 20 ? '#f59e0b' : '#ef4444' }}>
+              {newMargin.toFixed(1)}%
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="w-9 h-9 rounded-lg flex items-center justify-center border-2 transition-colors"
+              style={{ borderColor: 'rgba(16, 185, 129, 0.5)', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981' }}
+            >
+              <Check className="w-4 h-4" />
+            </button>
+            <button
+              onClick={onClose}
+              className="w-9 h-9 rounded-lg flex items-center justify-center border-2 transition-colors"
+              style={{ borderColor: 'rgba(239, 68, 68, 0.5)', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444' }}
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          {msg && <span className="text-xs text-red-500">{msg}</span>}
+        </div>
+      </td>
+    </tr>
+  )
+}
+
 export default function ProductsTable({ products }: { products: Product[] }) {
   const { lang } = useLang()
   const { theme } = useTheme()
   const isDark = theme === 'dark'
   const d = translations[lang].dashboard
+  const router = useRouter()
 
   const TABS: { key: TabKey; label: string }[] = [
     { key: 'all',       label: d.status.all          },
@@ -71,8 +168,8 @@ export default function ProductsTable({ products }: { products: Product[] }) {
   const [tab,            setTab]            = useState<TabKey>('all')
   const [drrThreshold,   setDrrThreshold]   = useState(20)
   const [stockThreshold, setStockThreshold] = useState(10)
+  const [editingId,      setEditingId]      = useState<string | null>(null)
 
-  // Derive available marketplaces from the product list (only show tabs for connected ones)
   const availableMps = useMemo(() => {
     const mps = new Set<MarketplaceType>()
     for (const p of products) if (p.marketplace) mps.add(p.marketplace)
@@ -85,7 +182,6 @@ export default function ProductsTable({ products }: { products: Product[] }) {
   }, [products, allLabel])
   const [category, setCategory] = useState(allLabel)
 
-  // Ad metrics come from real ad-sync data; until connected they are 0.
   const enriched = useMemo(() => products
     .filter(p => !mp || p.marketplace === mp)
     .map((p) => ({
@@ -130,6 +226,10 @@ export default function ProductsTable({ products }: { products: Product[] }) {
     else { setSortBy(col); setSortDir('desc') }
   }
 
+  const handleSaved = useCallback(() => {
+    router.refresh()
+  }, [router])
+
   const exportData = filtered.map(p => ({
     [d.product]:          p.title,
     'SKU':                p.sku ?? '',
@@ -154,7 +254,6 @@ export default function ProductsTable({ products }: { products: Product[] }) {
 
   return (
     <div className="space-y-4">
-      {/* Marketplace tabs — instant client-side filter, only shows connected marketplaces */}
       {availableMps.length > 0 && (
         <div className="flex items-center gap-1.5 p-1 rounded-xl w-fit border" style={{ background: 'var(--bg-card2)', borderColor: 'var(--border)' }}>
           <button
@@ -191,7 +290,6 @@ export default function ProductsTable({ products }: { products: Product[] }) {
         </div>
       )}
 
-      {/* Filter tabs */}
       <div className="flex items-center gap-1 p-1 rounded-xl w-fit border" style={{ background: 'var(--bg-card2)', borderColor: 'var(--border)' }}>
         {TABS.map(({ key, label }) => (
           <button key={key} onClick={() => setTab(key)}
@@ -216,7 +314,6 @@ export default function ProductsTable({ products }: { products: Product[] }) {
         ))}
       </div>
 
-      {/* Threshold controls (shown when tab active) */}
       {(tab === 'high_drr' || tab === 'low_stock') && (
         <div className="flex items-center gap-3 text-xs" style={{ color: 'var(--text-muted)' }}>
           {tab === 'high_drr' && (
@@ -240,7 +337,6 @@ export default function ProductsTable({ products }: { products: Product[] }) {
         </div>
       )}
 
-      {/* Search + category filter */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--text-muted)' }} />
@@ -286,6 +382,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
                 </th>
                 <th className="text-left font-medium px-5 py-3">{d.category}</th>
                 <th className="text-right font-medium px-5 py-3">{d.price}</th>
+                <th className="text-right font-medium px-5 py-3">{d.costPrice}</th>
                 <th className="text-right font-medium px-5 py-3 cursor-pointer select-none" style={{ color: 'var(--text-muted)' }} onClick={() => toggleSort('profit')}>
                   {d.profit} <SortIcon col="profit" sortBy={sortBy} sortDir={sortDir} />
                 </th>
@@ -303,7 +400,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
             </thead>
             <tbody>
               {filtered.length === 0 ? (
-                <tr><td colSpan={8} className="px-5 py-10 text-center text-sm" style={{ color: 'var(--text-muted)' }}>{d.noProductsTitle}</td></tr>
+                <tr><td colSpan={9} className="px-5 py-10 text-center text-sm" style={{ color: 'var(--text-muted)' }}>{d.noProductsTitle}</td></tr>
               ) : filtered.map((p, idx) => {
                 const price  = Number(p.selling_price ?? 0)
                 const margin = price > 0 ? Number(((p.profit / price) * 100).toFixed(1)) : 0
@@ -312,62 +409,77 @@ export default function ProductsTable({ products }: { products: Product[] }) {
                 const noSaleWithAd = (p.sold ?? 0) === 0 && p.adSpend > 0
                 const organicSale  = (p.sold ?? 0) > 0 && p.adSpend === 0
                 const marginColor  = margin > 35 ? '#10b981' : margin > 20 ? '#f59e0b' : '#ef4444'
+                const isEditing = editingId === p.id
                 return (
-                  <tr key={p.id} style={{ borderBottom: idx < filtered.length - 1 ? '1px solid var(--border)' : 'none' }}>
-                    <td className="px-5 py-4">
-                      <div className="flex items-center gap-2">
-                        <div>
-                          <p className="font-medium" style={{ color: 'var(--text-base)' }}>{p.title}</p>
-                          <div className="flex items-center gap-1.5 mt-0.5">
-                            <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{p.sku}</span>
-                            {p.marketplace && <MpBadge mp={p.marketplace} />}
-                            {p.is_shared && (
-                              <span
-                                className="text-[10px] font-medium px-1.5 py-0.5 rounded"
-                                style={{ background: 'rgba(168,85,247,0.12)', color: '#a855f7' }}
-                                title="Bu SKU bir nechta do'kon o'rtasida bo'linadi"
-                              >
-                                Umumiy
-                              </span>
-                            )}
+                  <Fragment key={p.id}>
+                    <tr style={{ borderBottom: (!isEditing && idx < filtered.length - 1) ? '1px solid var(--border)' : isEditing ? '1px solid var(--border)' : 'none', cursor: 'pointer' }}
+                      onClick={() => setEditingId(isEditing ? null : p.id)}>
+                      <td className="px-5 py-4">
+                        <div className="flex items-center gap-2">
+                          <div>
+                            <p className="font-medium" style={{ color: 'var(--text-base)' }}>{p.title}</p>
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                              <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{p.sku}</span>
+                              {p.marketplace && <MpBadge mp={p.marketplace} />}
+                              {p.is_shared && (
+                                <span
+                                  className="text-[10px] font-medium px-1.5 py-0.5 rounded"
+                                  style={{ background: 'rgba(168,85,247,0.12)', color: '#a855f7' }}
+                                  title="Bu SKU bir nechta do'kon o'rtasida bo'linadi"
+                                >
+                                  Umumiy
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          {noSaleWithAd && (
+                            <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: '#ef4444' }} title="Reklama sarfi bor, lekin sotuv yo'q" />
+                          )}
+                          {organicSale && (
+                            <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: '#10b981' }} title="Reklamasiz organik sotuv" />
+                          )}
+                          <Pencil className="w-3.5 h-3.5 flex-shrink-0 opacity-30" style={{ color: 'var(--text-muted)' }} />
+                        </div>
+                      </td>
+                      <td className="px-5 py-4">
+                        <span className="text-xs px-2.5 py-1 rounded-lg border" style={{ color: 'var(--text-muted)', background: 'rgba(255, 255, 255, 0.04)', borderColor: 'var(--border)' }}>{p.category ?? '—'}</span>
+                      </td>
+                      <td className="px-5 py-4 text-right" style={{ color: 'var(--text-dim)' }}>{fmt(price)}</td>
+                      <td className="px-5 py-4 text-right" style={{ color: p.cost_price ? 'var(--text-dim)' : 'var(--text-muted)' }}>
+                        {p.cost_price ? fmt(p.cost_price) : '—'}
+                      </td>
+                      <td className="px-5 py-4 text-right">
+                        <span className="font-semibold" style={{ color: '#10b981' }}>{fmt(p.profit)}</span>
+                      </td>
+                      <td className="px-5 py-4">
+                        <div className="flex flex-col items-end gap-1">
+                          <span className="text-xs font-medium tabular-nums" style={{ color: marginColor }}>{margin}%</span>
+                          <div className="w-16 h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--border)' }}>
+                            <div className="h-full rounded-full"
+                              style={{ width: `${Math.min(margin, 100)}%`, background: 'linear-gradient(to right, var(--c1), #428619)' }} />
                           </div>
                         </div>
-                        {noSaleWithAd && (
-                          <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: '#ef4444' }} title="Reklama sarfi bor, lekin sotuv yo'q" />
-                        )}
-                        {organicSale && (
-                          <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: '#10b981' }} title="Reklamasiz organik sotuv" />
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-5 py-4">
-                      <span className="text-xs px-2.5 py-1 rounded-lg border" style={{ color: 'var(--text-muted)', background: 'rgba(255, 255, 255, 0.04)', borderColor: 'var(--border)' }}>{p.category ?? '—'}</span>
-                    </td>
-                    <td className="px-5 py-4 text-right" style={{ color: 'var(--text-dim)' }}>{fmt(price)}</td>
-                    <td className="px-5 py-4 text-right">
-                      <span className="font-semibold" style={{ color: '#10b981' }}>{fmt(p.profit)}</span>
-                    </td>
-                    <td className="px-5 py-4">
-                      <div className="flex flex-col items-end gap-1">
-                        <span className="text-xs font-medium tabular-nums" style={{ color: marginColor }}>{margin}%</span>
-                        <div className="w-16 h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--border)' }}>
-                          <div className="h-full rounded-full"
-                            style={{ width: `${Math.min(margin, 100)}%`, background: 'linear-gradient(to right, var(--c1), #428619)' }} />
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-5 py-4 text-right">
-                      <span className="text-xs font-medium px-2 py-0.5 rounded-lg" style={{ background: drr.bgColor, color: drr.color }}>
-                        {drr.label}
-                      </span>
-                    </td>
-                    <td className="px-5 py-4 text-right" style={{ color: 'var(--text-dim)' }}>{p.sold ?? 0}</td>
-                    <td className="px-5 py-4 text-right">
-                      <span className="text-xs font-medium px-2.5 py-1 rounded-lg" style={{ background: stock.bgColor, color: stock.color }}>
-                        {p.available_stock}
-                      </span>
-                    </td>
-                  </tr>
+                      </td>
+                      <td className="px-5 py-4 text-right">
+                        <span className="text-xs font-medium px-2 py-0.5 rounded-lg" style={{ background: drr.bgColor, color: drr.color }}>
+                          {drr.label}
+                        </span>
+                      </td>
+                      <td className="px-5 py-4 text-right" style={{ color: 'var(--text-dim)' }}>{p.sold ?? 0}</td>
+                      <td className="px-5 py-4 text-right">
+                        <span className="text-xs font-medium px-2.5 py-1 rounded-lg" style={{ background: stock.bgColor, color: stock.color }}>
+                          {p.available_stock}
+                        </span>
+                      </td>
+                    </tr>
+                    {isEditing && (
+                      <EditRow
+                        product={p}
+                        onClose={() => setEditingId(null)}
+                        onSaved={handleSaved}
+                      />
+                    )}
+                  </Fragment>
                 )
               })}
             </tbody>
