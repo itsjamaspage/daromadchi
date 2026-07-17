@@ -54,36 +54,22 @@ function EditRow({ product, onClose, onSaved }: { product: Product & { adSpend: 
   const { lang } = useLang()
   const d = translations[lang].dashboard
   const [costPrice, setCostPrice] = useState(product.cost_price != null ? String(product.cost_price) : '')
-  const [saving, setSaving] = useState(false)
-  const [msg, setMsg] = useState<string | null>(null)
 
   const sellingPrice = Number(product.selling_price ?? 0)
   const cp = Number(costPrice) || 0
   const newProfit = sellingPrice - cp
   const newMargin = sellingPrice > 0 ? (newProfit / sellingPrice * 100) : 0
 
-  async function handleSave() {
-    setSaving(true); setMsg(null)
-    try {
-      const res = await fetch('/api/products/update', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          productId: product.id,
-          costPrice: costPrice === '' ? null : Number(costPrice),
-        }),
-      })
-      if (res.ok) {
-        onSaved(product.id, costPrice === '' ? null : Number(costPrice))
-        onClose()
-      } else {
-        const data = await res.json()
-        setMsg(data.error ?? 'Xato')
-      }
-    } catch {
-      setMsg('Tarmoq xatosi')
-    }
-    setSaving(false)
+  function handleSave() {
+    const newCost = costPrice === '' ? null : Number(costPrice)
+    onSaved(product.id, newCost)
+    onClose()
+
+    fetch('/api/products/update', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ productId: product.id, costPrice: newCost }),
+    }).catch(() => {})
   }
 
   return (
@@ -124,7 +110,6 @@ function EditRow({ product, onClose, onSaved }: { product: Product & { adSpend: 
           <div className="flex items-center gap-2">
             <button
               onClick={handleSave}
-              disabled={saving}
               className="w-9 h-9 rounded-lg flex items-center justify-center border-2 transition-colors"
               style={{ borderColor: 'rgba(16, 185, 129, 0.5)', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981' }}
             >
@@ -138,7 +123,6 @@ function EditRow({ product, onClose, onSaved }: { product: Product & { adSpend: 
               <X className="w-4 h-4" />
             </button>
           </div>
-          {msg && <span className="text-xs text-red-500">{msg}</span>}
         </div>
       </td>
     </tr>
