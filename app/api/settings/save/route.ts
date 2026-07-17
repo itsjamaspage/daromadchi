@@ -53,8 +53,8 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
 
     await db.update(shops).set(update).where(eq(shops.id, existing.id))
     if (apiKey?.trim()) {
-      revalidateTag('product-data', 'max')
-      revalidateTag('order-data', 'max')
+      revalidateTag('product-data', { expire: 0 })
+      revalidateTag('order-data', { expire: 0 })
     }
     return NextResponse.json({ ok: true, cleared: !!(apiKey?.trim()) })
   }

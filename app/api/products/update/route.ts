@@ -32,7 +32,7 @@ export const PATCH = withErrorHandler(async (req: NextRequest) => {
     return NextResponse.json({ error: 'Product not found' }, { status: 404 })
   }
 
-  revalidateTag('product-data', 'max')
+  revalidateTag('product-data', { expire: 0 })
 
   return NextResponse.json({ ok: true })
 })

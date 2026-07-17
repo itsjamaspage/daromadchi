@@ -68,8 +68,8 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
 
   const cleared = !!(token?.trim() && existing)
   if (cleared) {
-    revalidateTag('product-data', 'max')
-    revalidateTag('order-data', 'max')
+    revalidateTag('product-data', { expire: 0 })
+    revalidateTag('order-data', { expire: 0 })
   }
   return NextResponse.json({
     ok: true,

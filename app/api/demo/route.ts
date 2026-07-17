@@ -158,8 +158,8 @@ export const DELETE = withErrorHandler(async () => {
   await db.delete(shops)
     .where(and(eq(shops.user_id, user.id), eq(shops.shop_id_external, DEMO_TAG)))
 
-  revalidateTag('product-data', 'max')
-  revalidateTag('order-data', 'max')
+  revalidateTag('product-data', { expire: 0 })
+  revalidateTag('order-data', { expire: 0 })
   return NextResponse.json({ ok: true, cleared: true })
 })
 
@@ -176,8 +176,8 @@ export const POST = withErrorHandler(async () => {
     seedMarketplace(user.id, 'wildberries',   "DEMO — Wildberries do'kon",   WB_PRODUCTS,   0.17, 2),
   ])
 
-  revalidateTag('product-data', 'max')
-  revalidateTag('order-data', 'max')
+  revalidateTag('product-data', { expire: 0 })
+  revalidateTag('order-data', { expire: 0 })
   return NextResponse.json({
     ok: true,
     uzum:          uzum   ?? { error: 'failed' },

@@ -27,7 +27,7 @@ export const PATCH = withErrorHandler(async (req: NextRequest) => {
     .set({ physical_stock })
     .where(and(inArray(products.shop_id, shopIds), eq(products.sku, sku)))
 
-  revalidateTag('product-data', 'max')
+  revalidateTag('product-data', { expire: 0 })
 
   return NextResponse.json({ ok: true })
 })
