@@ -1,6 +1,6 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import type { User } from '@supabase/supabase-js'
-import { eq, ne, and, or, isNull } from 'drizzle-orm'
+import { eq, ne, and, or, isNull, sql } from 'drizzle-orm'
 import { db, shops, users } from '@/lib/db'
 
 let _supabaseAdmin: SupabaseClient | null = null
@@ -32,7 +32,13 @@ export async function getAuthUser(authHeader: string | null): Promise<User | nul
 export async function getExtensionUser(authHeader: string | null) {
   const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null
   if (!token || token.length < 20) return null
-  const [user] = await db.select().from(users).where(eq(users.extension_token, token)).limit(1)
+  const [user] = await db.select({
+    id: users.id,
+    email: users.email,
+    plan: users.plan,
+    plan_expires_at: users.plan_expires_at,
+    trial_ends_at: users.trial_ends_at,
+  }).from(users).where(sql`extension_token = ${token}`).limit(1)
   return user ?? null
 }
 

@@ -66,7 +66,6 @@ export const users = pgTable('users', {
   plan:            planTypeEnum('plan').default('free').notNull(),
   plan_expires_at: timestamp('plan_expires_at', { withTimezone: true }),
   trial_ends_at:   timestamp('trial_ends_at', { withTimezone: true }),
-  extension_token: text('extension_token'),
   created_at:      timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updated_at:      timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 })
