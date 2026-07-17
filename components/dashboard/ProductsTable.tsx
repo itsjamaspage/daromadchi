@@ -50,7 +50,7 @@ function stockBadge(qty: number) {
   return           { bgColor: 'rgba(239, 68, 68, 0.1)', color: '#ef4444' }
 }
 
-function EditRow({ product, onClose, onSaved }: { product: Product & { adSpend: number; drr: number }; onClose: () => void; onSaved: (productId: string, newCostPrice: number | null) => void }) {
+function EditRow({ product, onClose, onSaved }: { product: Product & { adSpend: number; drr: number }; onClose: () => void; onSaved: (productId: string, newCostPrice: number | null, fetchDone: Promise<void>) => void }) {
   const { lang } = useLang()
   const d = translations[lang].dashboard
   const [costPrice, setCostPrice] = useState(product.cost_price != null ? String(product.cost_price) : '')
@@ -62,14 +62,14 @@ function EditRow({ product, onClose, onSaved }: { product: Product & { adSpend: 
 
   function handleSave() {
     const newCost = costPrice === '' ? null : Number(costPrice)
-    onSaved(product.id, newCost)
-    onClose()
-
-    fetch('/api/products/update', {
+    const fetchDone = fetch('/api/products/update', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ productId: product.id, costPrice: newCost }),
-    }).catch(() => {})
+    }).then(() => {}).catch(() => {})
+
+    onSaved(product.id, newCost, fetchDone)
+    onClose()
   }
 
   return (
@@ -219,9 +219,9 @@ export default function ProductsTable({ products }: { products: Product[] }) {
     else { setSortBy(col); setSortDir('desc') }
   }
 
-  const handleSaved = useCallback((productId: string, newCostPrice: number | null) => {
+  const handleSaved = useCallback((productId: string, newCostPrice: number | null, fetchDone: Promise<void>) => {
     setOptimisticUpdates(prev => new Map(prev).set(productId, newCostPrice))
-    router.refresh()
+    fetchDone.then(() => router.refresh())
   }, [router])
 
   const exportData = filtered.map(p => ({
