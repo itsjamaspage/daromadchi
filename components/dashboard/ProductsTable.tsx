@@ -50,7 +50,7 @@ function stockBadge(qty: number) {
   return           { bgColor: 'rgba(239, 68, 68, 0.1)', color: '#ef4444' }
 }
 
-function EditRow({ product, onClose, onSaved }: { product: Product & { adSpend: number; drr: number }; onClose: () => void; onSaved: () => void }) {
+function EditRow({ product, onClose, onSaved }: { product: Product & { adSpend: number; drr: number }; onClose: () => void; onSaved: (productId: string, newCostPrice: number | null) => void }) {
   const { lang } = useLang()
   const d = translations[lang].dashboard
   const [costPrice, setCostPrice] = useState(product.cost_price != null ? String(product.cost_price) : '')
@@ -74,7 +74,7 @@ function EditRow({ product, onClose, onSaved }: { product: Product & { adSpend: 
         }),
       })
       if (res.ok) {
-        onSaved()
+        onSaved(product.id, costPrice === '' ? null : Number(costPrice))
         onClose()
       } else {
         const data = await res.json()
@@ -169,6 +169,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
   const [drrThreshold,   setDrrThreshold]   = useState(20)
   const [stockThreshold, setStockThreshold] = useState(10)
   const [editingId,      setEditingId]      = useState<string | null>(null)
+  const [optimisticUpdates, setOptimisticUpdates] = useState<Map<string, number | null>>(new Map())
 
   const availableMps = useMemo(() => {
     const mps = new Set<MarketplaceType>()
@@ -182,11 +183,19 @@ export default function ProductsTable({ products }: { products: Product[] }) {
   }, [products, allLabel])
   const [category, setCategory] = useState(allLabel)
 
-  const enriched = useMemo(() => products
+  const productsWithOverrides = useMemo(() => products.map(p => {
+    if (!optimisticUpdates.has(p.id)) return p
+    const newCost = optimisticUpdates.get(p.id) ?? null
+    const selling = Number(p.selling_price ?? 0)
+    const profit = selling - (newCost ?? 0)
+    return { ...p, cost_price: newCost, profit }
+  }), [products, optimisticUpdates])
+
+  const enriched = useMemo(() => productsWithOverrides
     .filter(p => !mp || p.marketplace === mp)
     .map((p) => ({
       ...p, adSpend: 0, adOrders: 0, adClicks: 0, drr: 0,
-    })), [products, mp])
+    })), [productsWithOverrides, mp])
 
   const filtered = useMemo(() => {
     let rows = [...enriched]
@@ -226,7 +235,8 @@ export default function ProductsTable({ products }: { products: Product[] }) {
     else { setSortBy(col); setSortDir('desc') }
   }
 
-  const handleSaved = useCallback(() => {
+  const handleSaved = useCallback((productId: string, newCostPrice: number | null) => {
+    setOptimisticUpdates(prev => new Map(prev).set(productId, newCostPrice))
     router.refresh()
   }, [router])
 
