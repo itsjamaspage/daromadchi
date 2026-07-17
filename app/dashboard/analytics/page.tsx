@@ -233,10 +233,11 @@ export default async function AnalyticsPage({ searchParams }: Props) {
           <AdDrrChart rows={chartRows} />
 
           {/* Ad data notice */}
-          <div className="flex items-start gap-3 border rounded-xl px-4 py-3 text-xs" style={{ background: 'rgba(59, 130, 246, 0.06)', borderColor: 'rgba(59, 130, 246, 0.2)', color: 'var(--color-info)' }}>
-            <Link2 className="w-4 h-4 mt-0.5 flex-shrink-0" />
+          <div className="flex items-start gap-3 border rounded-xl px-4 py-3 text-xs" style={{ background: 'var(--bg-card2)', borderColor: 'var(--border)' }}>
+            <Link2 className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: 'var(--c1)' }} />
             <span>
-              <strong style={{ color: 'rgba(59, 130, 246, 0.9)' }}>{d.adAnalyticsNote}</strong> {d.adAnalyticsNoteSuffix}
+              <strong style={{ color: 'var(--c1)' }}>{d.adAnalyticsNote}</strong>{' '}
+              <span style={{ color: 'var(--text-muted)' }}>{d.adAnalyticsNoteSuffix}</span>
             </span>
           </div>
 
