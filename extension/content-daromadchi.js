@@ -1,7 +1,7 @@
 // content-daromadchi.js — checks if user is logged in and notifies background
 (function () {
   function sync() {
-    fetch('https://www.daromadchi.uz/api/extension/me', {
+    fetch(location.origin + '/api/extension/me', {
       credentials: 'include',
     })
       .then(r => r.json())

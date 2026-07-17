@@ -15,7 +15,12 @@ const EXTENSION_ROUTE = /^\/api\/(ext\/|channel-check)/
 function corsHeaders(origin: string | null, isExtRoute: boolean): Record<string, string> {
   if (isExtRoute) return { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET,POST,OPTIONS' }
   const allowed = origin && ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0]
-  return { 'Access-Control-Allow-Origin': allowed, 'Vary': 'Origin' }
+  return {
+    'Access-Control-Allow-Origin': allowed,
+    'Access-Control-Allow-Credentials': 'true',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Vary': 'Origin',
+  }
 }
 
 // ── Rate limiting ─────────────────────────────────────────────────────────────
