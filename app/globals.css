@@ -80,6 +80,12 @@ html, body {
   --badge-ok-bg:    rgba(5, 150, 105, 0.1);
   --badge-ok-text:  #047857;
   --badge-ok-bdr:   rgba(5, 150, 105, 0.25);
+
+  --alert-red-bg:     #fef2f2;
+  --alert-red-border: #fecaca;
+  --alert-red-icon:   #dc2626;
+  --alert-red-text:   #991b1b;
+  --alert-red-muted:  #b91c1c;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -125,6 +131,12 @@ html, body {
   --badge-ok-bg:    rgba(16, 185, 129, 0.1);
   --badge-ok-text:  #34d399;
   --badge-ok-bdr:   rgba(16, 185, 129, 0.25);
+
+  --alert-red-bg:     rgba(239, 68, 68, 0.07);
+  --alert-red-border: rgba(239, 68, 68, 0.2);
+  --alert-red-icon:   #ef4444;
+  --alert-red-text:   #ef4444;
+  --alert-red-muted:  rgba(239, 68, 68, 0.7);
 }
 
 /* ═══════════════════════════════════════════════════════════════════

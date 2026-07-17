@@ -218,10 +218,10 @@ export default async function AnalyticsPage({ searchParams }: Props) {
                   return price > 0 && (p.profit / price) < 0.15
                 })
                 .map(p => (
-                  <div key={p.id} className="flex items-center gap-3 border rounded-xl px-4 py-3 text-sm" style={{ background: 'rgba(239, 68, 68, 0.07)', borderColor: 'rgba(239, 68, 68, 0.2)' }}>
-                    <Package className="w-4 h-4 flex-shrink-0" style={{ color: '#ef4444' }} />
-                    <span className="font-medium" style={{ color: 'rgba(239, 68, 68, 0.9)' }}>{p.title}</span>
-                    <span style={{ color: 'rgba(239, 68, 68, 0.7)' }}>
+                  <div key={p.id} className="flex items-center gap-3 border rounded-xl px-4 py-3 text-sm" style={{ background: 'var(--alert-red-bg)', borderColor: 'var(--alert-red-border)' }}>
+                    <Package className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--alert-red-icon)' }} />
+                    <span className="font-medium" style={{ color: 'var(--alert-red-text)' }}>{p.title}</span>
+                    <span style={{ color: 'var(--alert-red-muted)' }}>
                       — margin {((p.profit / Number(p.selling_price)) * 100).toFixed(1)}% ({d.belowMarginNote}
                     </span>
                   </div>

@@ -136,13 +136,6 @@ export default function ProductsTable({ products }: { products: Product[] }) {
   const d = translations[lang].dashboard
   const router = useRouter()
 
-  const TABS: { key: TabKey; label: string }[] = [
-    { key: 'all',       label: d.status.all          },
-    { key: 'high_drr',  label: '⚠️ ' + d.highMargin  },
-    { key: 'low_stock', label: '📦 ' + d.stockQty    },
-    { key: 'no_orders', label: '🚫 ' + d.noMovement  },
-  ]
-
   const allLabel = d.status.all
 
   const [mp,             setMp]             = useState<MarketplaceType | undefined>(undefined)
@@ -180,6 +173,15 @@ export default function ProductsTable({ products }: { products: Product[] }) {
     .map((p) => ({
       ...p, adSpend: 0, adOrders: 0, adClicks: 0, drr: 0,
     })), [productsWithOverrides, mp])
+
+  const hasAdData = enriched.some(p => p.adSpend > 0)
+
+  const TABS: { key: TabKey; label: string }[] = [
+    { key: 'all',       label: d.status.all          },
+    ...(hasAdData ? [{ key: 'high_drr' as TabKey, label: '⚠️ ' + d.highMargin }] : []),
+    { key: 'low_stock', label: '📦 ' + d.stockQty    },
+    { key: 'no_orders', label: '🚫 ' + d.noMovement  },
+  ]
 
   const filtered = useMemo(() => {
     let rows = [...enriched]
@@ -224,20 +226,25 @@ export default function ProductsTable({ products }: { products: Product[] }) {
     fetchDone.then(() => router.refresh())
   }, [router])
 
-  const exportData = filtered.map(p => ({
-    [d.product]:          p.title,
-    'SKU':                p.sku ?? '',
-    'Marketplace':        p.marketplace ? MP_META[p.marketplace]?.label : '',
-    [d.category]:         p.category ?? '',
-    [d.price]:            p.selling_price ?? 0,
-    [d.costPriceLabel]:   p.cost_price ?? 0,
-    [d.profit]:           p.profit,
-    [`${d.margin} (%)`]:  (p.profit / (Number(p.selling_price) || 1) * 100).toFixed(1),
-    [d.sold]:             p.sold ?? 0,
-    [d.stockQty]:         p.available_stock,
-    [d.adSpendLabel]:     p.adSpend,
-    'DRR (%)':            p.drr.toFixed(1),
-  }))
+  const exportData = filtered.map(p => {
+    const row: Record<string, string | number | null> = {
+      [d.product]:          p.title,
+      'SKU':                p.sku ?? '',
+      'Marketplace':        p.marketplace ? MP_META[p.marketplace]?.label : '',
+      [d.category]:         p.category ?? '',
+      [d.price]:            p.selling_price ?? 0,
+      [d.costPriceLabel]:   p.cost_price ?? 0,
+      [d.profit]:           p.profit,
+      [`${d.margin} (%)`]:  (p.profit / (Number(p.selling_price) || 1) * 100).toFixed(1),
+      [d.sold]:             p.sold ?? 0,
+      [d.stockQty]:         p.available_stock,
+    }
+    if (hasAdData) {
+      row[d.adSpendLabel] = p.adSpend
+      row['DRR (%)'] = p.drr.toFixed(1)
+    }
+    return row
+  })
 
   const tabCounts = {
     all:       enriched.length,
@@ -383,9 +390,11 @@ export default function ProductsTable({ products }: { products: Product[] }) {
                 <th className="text-right font-medium px-5 py-3 cursor-pointer select-none" style={{ color: 'var(--text-muted)' }} onClick={() => toggleSort('margin')}>
                   {d.margin} <SortIcon col="margin" sortBy={sortBy} sortDir={sortDir} />
                 </th>
-                <th className="text-right font-medium px-5 py-3 cursor-pointer select-none" style={{ color: 'var(--text-muted)' }} onClick={() => toggleSort('drr')}>
-                  DRR <SortIcon col="drr" sortBy={sortBy} sortDir={sortDir} />
-                </th>
+                {hasAdData && (
+                  <th className="text-right font-medium px-5 py-3 cursor-pointer select-none" style={{ color: 'var(--text-muted)' }} onClick={() => toggleSort('drr')}>
+                    DRR <SortIcon col="drr" sortBy={sortBy} sortDir={sortDir} />
+                  </th>
+                )}
                 <th className="text-right font-medium px-5 py-3">{d.sold}</th>
                 <th className="text-right font-medium px-5 py-3 cursor-pointer select-none" style={{ color: 'var(--text-muted)' }} onClick={() => toggleSort('stock_quantity')}>
                   {d.stockQty} <SortIcon col="stock_quantity" sortBy={sortBy} sortDir={sortDir} />
@@ -394,7 +403,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
             </thead>
             <tbody>
               {filtered.length === 0 ? (
-                <tr><td colSpan={9} className="px-5 py-10 text-center text-sm" style={{ color: 'var(--text-muted)' }}>{d.noProductsTitle}</td></tr>
+                <tr><td colSpan={hasAdData ? 9 : 8} className="px-5 py-10 text-center text-sm" style={{ color: 'var(--text-muted)' }}>{d.noProductsTitle}</td></tr>
               ) : filtered.map((p, idx) => {
                 const price  = Number(p.selling_price ?? 0)
                 const margin = price > 0 ? Number(((p.profit / price) * 100).toFixed(1)) : 0
@@ -454,11 +463,13 @@ export default function ProductsTable({ products }: { products: Product[] }) {
                           </div>
                         </div>
                       </td>
-                      <td className="px-5 py-4 text-right">
-                        <span className="text-xs font-medium px-2 py-0.5 rounded-lg" style={{ background: drr.bgColor, color: drr.color }}>
-                          {drr.label}
-                        </span>
-                      </td>
+                      {hasAdData && (
+                        <td className="px-5 py-4 text-right">
+                          <span className="text-xs font-medium px-2 py-0.5 rounded-lg" style={{ background: drr.bgColor, color: drr.color }}>
+                            {drr.label}
+                          </span>
+                        </td>
+                      )}
                       <td className="px-5 py-4 text-right" style={{ color: 'var(--text-dim)' }}>{p.sold ?? 0}</td>
                       <td className="px-5 py-4 text-right">
                         <span className="text-xs font-medium px-2.5 py-1 rounded-lg" style={{ background: stock.bgColor, color: stock.color }}>
@@ -485,9 +496,11 @@ export default function ProductsTable({ products }: { products: Product[] }) {
       <div className="flex flex-wrap gap-4 text-xs" style={{ color: 'var(--text-muted)' }}>
         <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full" style={{ background: isDark ? '#ef4444' : '#dc2626' }} />Reklama bor, sotuv yo&apos;q</span>
         <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full" style={{ background: isDark ? '#10b981' : '#047857' }} />Reklamasiz organik sotuv</span>
-        <span className="flex items-center gap-1.5"><span className="w-6 h-3 rounded border" style={{ background: isDark ? 'rgba(52, 211, 153, 0.1)' : '#d1fae5', borderColor: isDark ? 'rgba(52, 211, 153, 0.2)' : '#059669' }} /><span style={{ color: isDark ? '#10b981' : '#065f46', fontWeight: isDark ? 400 : 600 }}>DRR &lt;10%</span></span>
-        <span className="flex items-center gap-1.5"><span className="w-6 h-3 rounded border" style={{ background: isDark ? 'rgba(245, 158, 11, 0.1)' : '#fef3c7', borderColor: isDark ? 'rgba(245, 158, 11, 0.2)' : '#d97706' }} /><span style={{ color: isDark ? '#f59e0b' : '#92400e', fontWeight: isDark ? 400 : 600 }}>DRR 10–20%</span></span>
-        <span className="flex items-center gap-1.5"><span className="w-6 h-3 rounded border" style={{ background: isDark ? 'rgba(239, 68, 68, 0.1)' : '#fee2e2', borderColor: isDark ? 'rgba(239, 68, 68, 0.2)' : '#dc2626' }} /><span style={{ color: isDark ? '#ef4444' : '#991b1b', fontWeight: isDark ? 400 : 600 }}>DRR &gt;20%</span></span>
+        {hasAdData && <>
+          <span className="flex items-center gap-1.5"><span className="w-6 h-3 rounded border" style={{ background: isDark ? 'rgba(52, 211, 153, 0.1)' : '#d1fae5', borderColor: isDark ? 'rgba(52, 211, 153, 0.2)' : '#059669' }} /><span style={{ color: isDark ? '#10b981' : '#065f46', fontWeight: isDark ? 400 : 600 }}>DRR &lt;10%</span></span>
+          <span className="flex items-center gap-1.5"><span className="w-6 h-3 rounded border" style={{ background: isDark ? 'rgba(245, 158, 11, 0.1)' : '#fef3c7', borderColor: isDark ? 'rgba(245, 158, 11, 0.2)' : '#d97706' }} /><span style={{ color: isDark ? '#f59e0b' : '#92400e', fontWeight: isDark ? 400 : 600 }}>DRR 10–20%</span></span>
+          <span className="flex items-center gap-1.5"><span className="w-6 h-3 rounded border" style={{ background: isDark ? 'rgba(239, 68, 68, 0.1)' : '#fee2e2', borderColor: isDark ? 'rgba(239, 68, 68, 0.2)' : '#dc2626' }} /><span style={{ color: isDark ? '#ef4444' : '#991b1b', fontWeight: isDark ? 400 : 600 }}>DRR &gt;20%</span></span>
+        </>}
       </div>
     </div>
   )
