@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { revalidateTag } from 'next/cache'
+import { revalidatePath } from 'next/cache'
 import { eq, and, inArray } from 'drizzle-orm'
 import { getCurrentUser } from '@/lib/auth/session'
 import { db, shops, products } from '@/lib/db'
@@ -32,7 +32,7 @@ export const PATCH = withErrorHandler(async (req: NextRequest) => {
     return NextResponse.json({ error: 'Product not found' }, { status: 404 })
   }
 
-  revalidateTag('products-v4')
+  revalidatePath('/dashboard/products')
 
   return NextResponse.json({ ok: true })
 })
