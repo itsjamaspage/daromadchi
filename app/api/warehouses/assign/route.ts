@@ -16,6 +16,6 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     .set({ warehouse_id: warehouseId ?? null })
     .where(and(eq(shops.id, shopId), eq(shops.user_id, user.id)))
 
-  revalidateTag('product-data', 'max')
+  revalidateTag('product-data', { expire: 0 })
   return NextResponse.json({ ok: true })
 })
