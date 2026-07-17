@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { revalidateTag } from 'next/cache'
 import { z } from 'zod'
 import { eq, and, inArray } from 'drizzle-orm'
 import { getCurrentUser } from '@/lib/auth/session'
@@ -51,6 +52,10 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     }
 
     await db.update(shops).set(update).where(eq(shops.id, existing.id))
+    if (apiKey?.trim()) {
+      revalidateTag('product-data', 'max')
+      revalidateTag('order-data', 'max')
+    }
     return NextResponse.json({ ok: true, cleared: !!(apiKey?.trim()) })
   }
 

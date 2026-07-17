@@ -47,7 +47,7 @@ const _fetchRevenue = unstable_cache(
     })
   },
   ['revenue-rpc'],
-  { revalidate: 30 },
+  { revalidate: 30, tags: ['order-data'] },
 )
 
 export async function getDailyRevenue(

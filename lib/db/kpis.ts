@@ -80,7 +80,7 @@ const _fetchKpis = unstable_cache(
     return result
   },
   ['kpis-rpc'],
-  { revalidate: 30 },
+  { revalidate: 30, tags: ['product-data', 'order-data'] },
 )
 
 export async function getKpis(

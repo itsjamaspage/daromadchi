@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { revalidateTag } from 'next/cache'
 import { eq, and } from 'drizzle-orm'
 import { getCurrentUser } from '@/lib/auth/session'
 import { db, shops, products, orders, orderItems } from '@/lib/db'
@@ -157,6 +158,8 @@ export const DELETE = withErrorHandler(async () => {
   await db.delete(shops)
     .where(and(eq(shops.user_id, user.id), eq(shops.shop_id_external, DEMO_TAG)))
 
+  revalidateTag('product-data', 'max')
+  revalidateTag('order-data', 'max')
   return NextResponse.json({ ok: true, cleared: true })
 })
 
@@ -173,6 +176,8 @@ export const POST = withErrorHandler(async () => {
     seedMarketplace(user.id, 'wildberries',   "DEMO — Wildberries do'kon",   WB_PRODUCTS,   0.17, 2),
   ])
 
+  revalidateTag('product-data', 'max')
+  revalidateTag('order-data', 'max')
   return NextResponse.json({
     ok: true,
     uzum:          uzum   ?? { error: 'failed' },

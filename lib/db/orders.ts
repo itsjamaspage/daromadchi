@@ -41,7 +41,7 @@ const _fetchOrders = unstable_cache(
     return rows.map(mapRow)
   },
   ['orders'],
-  { revalidate: 30 },
+  { revalidate: 30, tags: ['order-data'] },
 )
 
 export async function getOrders(limit?: number, marketplace?: MarketplaceType, from?: string, to?: string): Promise<Order[]> {
@@ -75,7 +75,7 @@ const _fetchOrdersPaginated = unstable_cache(
     return { rows: rows.map(mapRow), total }
   },
   ['orders-paginated'],
-  { revalidate: 30 },
+  { revalidate: 30, tags: ['order-data'] },
 )
 
 export async function getOrdersPaginated(page = 1, pageSize = 50, marketplace?: MarketplaceType): Promise<PaginatedOrders> {

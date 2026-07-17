@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { revalidateTag } from 'next/cache'
 import { z } from 'zod'
 import { eq, and } from 'drizzle-orm'
 import { getCurrentUser } from '@/lib/auth/session'
@@ -66,6 +67,10 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   }
 
   const cleared = !!(token?.trim() && existing)
+  if (cleared) {
+    revalidateTag('product-data', 'max')
+    revalidateTag('order-data', 'max')
+  }
   return NextResponse.json({
     ok: true,
     cleared,
