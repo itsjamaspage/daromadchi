@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { eq, and, isNotNull } from 'drizzle-orm'
-import { db, shops, userSettings } from '@/lib/db'
+import { db, shops, users, userSettings } from '@/lib/db'
 import { syncFromUzum } from '@/lib/uzum/sync'
 import { syncFromYandex } from '@/lib/yandex/sync'
 import { syncFromWildberries } from '@/lib/wildberries/sync'
@@ -17,6 +17,23 @@ const MP_LABEL: Record<string, string> = {
   uzum: 'Uzum Market',
   yandex_market: 'Yandex Market',
   wildberries: 'Wildberries',
+}
+
+const SYNC_INTERVAL_MS: Record<string, number> = {
+  free:     6 * 60 * 60 * 1000,
+  pro:      2 * 60 * 60 * 1000,
+  pro_plus: 30 * 60 * 1000,
+}
+
+function getEffectivePlan(user: { plan: string; plan_expires_at: Date | null; trial_ends_at: Date | null }): string {
+  const plan = user.plan ?? 'free'
+  if (plan !== 'free' && user.plan_expires_at) {
+    if (new Date(user.plan_expires_at) < new Date()) return 'free'
+  }
+  if (plan === 'free' && user.trial_ends_at) {
+    if (new Date(user.trial_ends_at) > new Date()) return 'pro'
+  }
+  return plan
 }
 
 async function syncShop(
@@ -55,13 +72,37 @@ export const GET = withErrorHandler(async (req: Request) => {
     marketplace: shops.marketplace,
     api_key_encrypted: shops.api_key_encrypted,
     shop_id_external: shops.shop_id_external,
+    last_synced_at: shops.last_synced_at,
   }).from(shops)
     .where(and(eq(shops.is_active, true), isNotNull(shops.api_key_encrypted)))
 
-  const results: Record<string, unknown>[] = []
+  const userIds = [...new Set(allShops.map(s => s.user_id))]
+  const userRows = userIds.length > 0
+    ? await db.select({
+        id: users.id,
+        plan: users.plan,
+        plan_expires_at: users.plan_expires_at,
+        trial_ends_at: users.trial_ends_at,
+      }).from(users)
+    : []
+  const userPlanMap = new Map<string, string>()
+  for (const u of userRows) {
+    userPlanMap.set(u.id, getEffectivePlan(u))
+  }
 
-  for (let i = 0; i < allShops.length; i += CONCURRENCY) {
-    const batch = allShops.slice(i, i + CONCURRENCY)
+  const now = Date.now()
+  const eligibleShops = allShops.filter(s => {
+    const plan = userPlanMap.get(s.user_id) ?? 'free'
+    const interval = SYNC_INTERVAL_MS[plan] ?? SYNC_INTERVAL_MS.free
+    if (!s.last_synced_at) return true
+    return now - new Date(s.last_synced_at).getTime() >= interval
+  })
+
+  const results: Record<string, unknown>[] = []
+  const skippedCount = allShops.length - eligibleShops.length
+
+  for (let i = 0; i < eligibleShops.length; i += CONCURRENCY) {
+    const batch = eligibleShops.slice(i, i + CONCURRENCY)
     const settled = await Promise.allSettled(
       batch.map(s => syncShop({ ...s, api_key_encrypted: s.api_key_encrypted! }))
     )
@@ -79,7 +120,7 @@ export const GET = withErrorHandler(async (req: Request) => {
   for (const r of results) {
     const count = Number(r.ordersUpserted ?? 0)
     if (count <= 0) continue
-    const shop = allShops.find(s => s.id === r.shopId)
+    const shop = eligibleShops.find(s => s.id === r.shopId)
     if (!shop) continue
     const list = ordersByUser.get(shop.user_id) ?? []
     list.push({ marketplace: shop.marketplace, name: shop.name, count })
@@ -87,7 +128,6 @@ export const GET = withErrorHandler(async (req: Request) => {
   }
 
   if (ordersByUser.size > 0) {
-    const userIds = [...ordersByUser.keys()]
     const settingsRows = await db.select({
       user_id: userSettings.user_id,
       telegram_chat_id: userSettings.telegram_chat_id,
@@ -116,5 +156,5 @@ export const GET = withErrorHandler(async (req: Request) => {
     }
   }
 
-  return NextResponse.json({ ok: true, synced: results.length, results })
+  return NextResponse.json({ ok: true, synced: results.length, skipped: skippedCount, results })
 })

@@ -5,7 +5,6 @@ import { Suspense } from 'react'
 import { getProducts } from '@/lib/db/products'
 import { getProductSales } from '@/lib/db/products'
 import { getKpis } from '@/lib/db/kpis'
-import AdDrrChart from './AdDrrChart'
 import MarketplaceTabs from '@/components/dashboard/MarketplaceTabs'
 import PeriodSelector from './PeriodSelector'
 import { getT } from '@/lib/server-i18n'
@@ -79,12 +78,6 @@ export default async function AnalyticsPage({ searchParams }: Props) {
     const mb = Number(b.selling_price ?? 0) > 0 ? b.profit / Number(b.selling_price) : 0
     return mb - ma
   })
-
-  const chartRows = sortedByMargin.slice(0, 10).map(p => ({
-    name: p.title,
-    drrTotal: Number(p.selling_price ?? 0) > 0 ? (p.profit / Number(p.selling_price)) * 100 : 0,
-    drrAd: 0,
-  }))
 
   return (
     <div className="space-y-6">
@@ -228,9 +221,6 @@ export default async function AnalyticsPage({ searchParams }: Props) {
                 ))}
             </div>
           )}
-
-          {/* Top-10 margin chart */}
-          <AdDrrChart rows={chartRows} />
 
           {/* Ad data notice */}
           <div className="flex items-start gap-3 border rounded-xl px-4 py-3 text-xs" style={{ background: 'var(--bg-card2)', borderColor: 'var(--border)' }}>
