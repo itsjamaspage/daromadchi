@@ -95,7 +95,6 @@ export async function syncFromYandex(
               sku: r.sku,
               category: r.category,
               selling_price: r.selling_price != null ? String(r.selling_price) : null,
-              cost_price: null,
               stock_quantity: r.stock_quantity,
             }).where(eq(products.id, r.id))
           }
@@ -262,7 +261,6 @@ export async function syncFromYandex(
                 sku: r.sku,
                 category: r.category,
                 selling_price: r.selling_price != null ? String(r.selling_price) : null,
-                cost_price: null,
                 stock_quantity: r.stock_quantity,
               }).where(eq(products.id, r.id))
             }
@@ -319,7 +317,6 @@ export async function syncFromYandex(
                   sku: r.sku,
                   category: r.category,
                   selling_price: r.selling_price != null ? String(r.selling_price) : null,
-                  cost_price: null,
                   stock_quantity: r.stock_quantity,
                 }).where(eq(products.id, r.id))
               }

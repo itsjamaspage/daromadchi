@@ -107,7 +107,6 @@ export async function syncFromUzum(shopId: string, token: string, fromDateOverri
               sku: r.sku,
               category: r.category,
               selling_price: r.selling_price != null ? String(r.selling_price) : null,
-              cost_price: r.cost_price != null ? String(r.cost_price) : null,
               stock_quantity: r.stock_quantity,
               marketplace_product_id: r.marketplace_product_id,
             }).where(eq(products.id, r.id))
@@ -259,7 +258,6 @@ export async function syncFromUzum(shopId: string, token: string, fromDateOverri
                 sku: r.sku,
                 category: r.category,
                 selling_price: r.selling_price != null ? String(r.selling_price) : null,
-                cost_price: r.cost_price != null ? String(r.cost_price) : null,
                 stock_quantity: r.stock_quantity,
                 marketplace_product_id: r.marketplace_product_id,
               }).where(eq(products.id, r.id))
@@ -330,7 +328,6 @@ export async function syncFromUzum(shopId: string, token: string, fromDateOverri
                   sku: r.sku,
                   category: r.category,
                   selling_price: r.selling_price != null ? String(r.selling_price) : null,
-                  cost_price: r.cost_price != null ? String(r.cost_price) : null,
                   stock_quantity: r.stock_quantity,
                   marketplace_product_id: r.marketplace_product_id,
                 }).where(eq(products.id, r.id))
