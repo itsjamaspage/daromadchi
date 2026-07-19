@@ -19,8 +19,10 @@ export class UzumApiError extends Error {
   }
 }
 
-// Exponential backoff for transient errors (429, 5xx)
-async function withRetry<T>(fn: () => Promise<T>, retries = 3, baseMs = 500): Promise<T> {
+// Exponential backoff for transient errors (429, 5xx). Rate limits (429) get a
+// longer wait than 5xx because Uzum's limiter needs real time to reset —
+// otherwise a throttled request fails and its orders are silently skipped.
+async function withRetry<T>(fn: () => Promise<T>, retries = 4, baseMs = 600): Promise<T> {
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
       return await fn()
@@ -28,7 +30,8 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 3, baseMs = 500): Pr
       const status = err instanceof UzumApiError ? err.status : 0
       const retryable = status === 429 || status >= 500
       if (!retryable || attempt === retries) throw err
-      await new Promise(r => setTimeout(r, baseMs * 2 ** attempt))
+      const base = status === 429 ? 2000 : baseMs
+      await new Promise(r => setTimeout(r, base * 2 ** attempt))
     }
   }
   throw new Error('unreachable')

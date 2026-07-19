@@ -7,6 +7,9 @@ import { decrypt } from '@/lib/crypto'
 import { logger } from '@/lib/logger'
 import { withErrorHandler } from '@/lib/api-handler'
 
+export const runtime = 'nodejs'
+export const maxDuration = 120
+
 export const POST = withErrorHandler(async () => {
   const user = await getCurrentUser()
   if (!user) {

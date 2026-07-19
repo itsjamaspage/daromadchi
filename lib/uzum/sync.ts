@@ -39,16 +39,13 @@ const STATUS_MAP: Record<string, string> = {
   RETURNED: 'returned',
 }
 
-// The FBS orders endpoint returns nothing without a status filter, so we
-// enumerate every candidate status and merge. Uzum rejects unknown statuses
-// with HTTP 400 — those are skipped. (PROCESSING/SHIPPED/IN_TRANSIT/TO_WITHDRAW/
-// AWAITING_PICKUP were confirmed invalid and removed.) The real in-transit enum
-// value is being pinned down via /api/uzum/diagnose (OpenAPI spec extraction).
+// The FBS orders endpoint returns nothing without a status filter, so we query
+// each status and merge. These SIX are the ONLY values Uzum accepts (confirmed
+// via /api/uzum/diagnose — every other name returns HTTP 400). Keeping the list
+// tight matters: querying invalid statuses wastes requests and trips Uzum's rate
+// limiter (429), which previously caused the real order to be skipped.
 const FBS_STATUSES = [
-  'CREATED', 'NEW', 'PENDING', 'CONFIRMED', 'AGREED', 'ACCEPTED',
-  'PACKED', 'PACKAGED', 'ASSEMBLED', 'READY',
-  'SENT', 'HANDED_OVER', 'TRANSFERRED', 'ON_DELIVERY', 'DELIVERING', 'ACTIVE',
-  'DELIVERED', 'COMPLETED', 'CANCELED', 'CANCELLED', 'EXPIRED', 'RETURNED',
+  'CREATED', 'DELIVERING', 'DELIVERED', 'COMPLETED', 'CANCELED', 'RETURNED',
 ]
 
 const AD_STATUS_MAP: Record<string, string> = {
@@ -188,10 +185,13 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
     let fbsOk = false
     let fboOk = false
 
-    // FBS: enumerate every status and merge (the status-less view returns 0, and
-    // Uzum rejects unknown statuses with HTTP 400 — those are skipped). fbsOk is
-    // true if at least one status query succeeded (even with 0 results), so a
-    // genuinely empty FBS account isn't treated as a failure.
+    // Small pause between order calls so we don't burst into Uzum's rate limiter
+    // (429), which previously caused the real order's status query to be skipped.
+    const pause = () => new Promise(r => setTimeout(r, 350))
+
+    // FBS: query each valid status and merge. fbsOk is true if at least one
+    // status query succeeded (even with 0 results), so a genuinely empty FBS
+    // account isn't treated as a failure.
     const fbsById = new Map<string, UzumFbsOrder>()
     for (const st of FBS_STATUSES) {
       try {
@@ -204,11 +204,12 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
           warnings.push(`FBS ${st}: ${e instanceof UzumApiError ? `${e.status} ${e.body?.slice(0, 100) ?? ''}` : String(e)}`)
         }
       }
+      await pause()
     }
 
-    // FBO: same status enumeration, no date filter. 403 (RBAC) means the key
-    // lacks FBO scope — that's a per-status failure, so fboOk stays false only
-    // if every attempt failed.
+    // FBO: same, but if the key lacks FBO scope the first call returns 403
+    // (RBAC) — stop immediately instead of repeating the denial for every status
+    // (that just burns requests against the rate limit).
     const fboById = new Map<string, UzumFbsOrder>()
     for (const st of FBS_STATUSES) {
       try {
@@ -216,10 +217,15 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
         fboOk = true
         for (const o of batch) fboById.set(String(o.id ?? o.orderId), o)
       } catch (e) {
+        if (e instanceof UzumApiError && e.status === 403) {
+          warnings.push(`FBO: 403 (key lacks FBO scope) — skipped`)
+          break
+        }
         if (!(e instanceof UzumApiError && e.status === 400)) {
           warnings.push(`FBO ${st}: ${e instanceof UzumApiError ? `${e.status} ${e.body?.slice(0, 100) ?? ''}` : String(e)}`)
         }
       }
+      await pause()
     }
 
     const fbsOrders = [...fbsById.values()]
