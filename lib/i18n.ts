@@ -246,6 +246,7 @@ export const translations = {
       // Top products by period
       topSoldTitle: 'Tanlangan davrda eng ko\'p sotilgan',
       topSoldQty: 'Sotilgan',
+      topSoldInTransit: 'Jarayonda',
       topSoldCancelled: 'Bekor qilingan',
       topSoldRevenue: 'Daromad',
       noSalesInPeriod: 'Bu davrda sotuv ma\'lumoti topilmadi',
@@ -1030,6 +1031,7 @@ export const translations = {
       // Top products by period
       topSoldTitle: 'Top sold in selected period',
       topSoldQty: 'Sold',
+      topSoldInTransit: 'In transit',
       topSoldCancelled: 'Cancelled',
       topSoldRevenue: 'Revenue',
       noSalesInPeriod: 'No sales data found for this period',
@@ -1814,6 +1816,7 @@ export const translations = {
       // Top products by period
       topSoldTitle: 'Топ продаж за выбранный период',
       topSoldQty: 'Продано',
+      topSoldInTransit: 'В процессе',
       topSoldCancelled: 'Отменено',
       topSoldRevenue: 'Выручка',
       noSalesInPeriod: 'Данные о продажах за этот период не найдены',

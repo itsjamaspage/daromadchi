@@ -122,6 +122,7 @@ export interface ProductSalesRow {
   title: string
   sku: string | null
   qty_sold: number      // units on real sales (cancelled/returned excluded)
+  qty_in_transit: number // subset of qty_sold not yet delivered (pending/confirmed)
   qty_cancelled: number // units on cancelled orders, shown separately
   qty_returned: number
   revenue: number       // revenue of real sales only
@@ -158,6 +159,7 @@ const _fetchProductSales = unstable_cache(
       title: products.title,
       sku: products.sku,
       qty_sold: sql<number>`coalesce(sum(${orderItems.quantity}) filter (where ${orders.status} not in ('cancelled','returned')), 0)`.as('qty_sold'),
+      qty_in_transit: sql<number>`coalesce(sum(${orderItems.quantity}) filter (where ${orders.status} in ('pending','confirmed')), 0)`.as('qty_in_transit'),
       qty_cancelled: sql<number>`coalesce(sum(${orderItems.quantity}) filter (where ${orders.status} = 'cancelled'), 0)`.as('qty_cancelled'),
       qty_returned: sql<number>`coalesce(sum(${orderItems.quantity}) filter (where ${orders.status} = 'returned'), 0)`.as('qty_returned'),
       revenue: sql<number>`coalesce(sum(${orderItems.quantity} * ${orderItems.price_per_unit}) filter (where ${orders.status} not in ('cancelled','returned')), 0)`.as('revenue'),
@@ -172,12 +174,13 @@ const _fetchProductSales = unstable_cache(
       title: r.title ?? 'Unknown',
       sku: r.sku ?? null,
       qty_sold: Number(r.qty_sold),
+      qty_in_transit: Number(r.qty_in_transit),
       qty_cancelled: Number(r.qty_cancelled),
       qty_returned: Number(r.qty_returned),
       revenue: Number(r.revenue),
     }))
   },
-  ['product-sales-v4'],
+  ['product-sales-v5'],
   { revalidate: 30, tags: ['product-data'] },
 )
 

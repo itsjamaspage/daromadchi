@@ -76,10 +76,17 @@ function parseOrderedAt(v: unknown): Date {
 // Uzum's FBS list can report quantity=1 while the order-level price is an
 // exact multiple of the unit price (a real 2-unit order came back as one
 // item, quantity 1, price 76 000 with order price 152 000). When the order has
-// a single line item and the total divides evenly, trust the ratio.
-function effectiveQty(o: UzumFbsOrder, it: UzumFbsOrderItem, lineCount: number): number {
+// a single line item and the total divides evenly, trust the ratio. When the
+// item carries no usable price, fall back to the product's known selling
+// price so the app can still work out the real unit count.
+function effectiveQty(
+  o: UzumFbsOrder,
+  it: UzumFbsOrderItem,
+  lineCount: number,
+  fallbackUnitPrice?: number | null,
+): number {
   const q = it.quantity ?? it.amount ?? 1
-  const p = it.price
+  const p = it.price > 0 ? it.price : (fallbackUnitPrice ?? 0)
   const total = o.price ?? o.totalPrice
   if (lineCount === 1 && p > 0 && total != null && total > p * q && total % p === 0) {
     return total / p
@@ -297,12 +304,27 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
     ]
     const uzumOrders: UzumFbsOrder[] = taggedOrders.map(t => t.o)
 
+    // Known unit prices, for recovering real quantities from the order total:
+    // per-SKU from the product sync, plus — when the shop sells at exactly one
+    // price — that lone price for orders that arrive with no line items at all.
+    const priceByMpid = new Map<string, number>()
+    for (const r of productRows) {
+      if (r.selling_price != null && r.selling_price > 0) {
+        priceByMpid.set(String(r.marketplace_product_id), r.selling_price)
+      }
+    }
+    const distinctPrices = [...new Set(priceByMpid.values())]
+    const soloPrice = distinctPrices.length === 1 ? distinctPrices[0] : null
+
     const orderRows = taggedOrders.map(({ o, ff }) => {
       // Support both new (id/dateCreated/price/orderItems) and legacy field names
       const extId = extIdOf(o)
       const orderedAt = parseOrderedAt(o.dateCreated ?? o.createdAt)
       const revenue = o.price ?? o.totalPrice ?? 0
       const allItems = o.orderItems ?? o.items ?? []
+      const unitsFromTotal = allItems.length === 0 && soloPrice != null && revenue > 0 && revenue % soloPrice === 0
+        ? revenue / soloPrice
+        : null
       return {
         shop_id: shopId,
         order_id_external: extId,
@@ -316,7 +338,9 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
           | 'returned',
         revenue,
         // Units, not line items: an order of 2× one SKU must show 2, not 1.
-        items_count: allItems.reduce((s, it) => s + effectiveQty(o, it, allItems.length), 0) || 1,
+        items_count: allItems.length > 0
+          ? allItems.reduce((s, it) => s + effectiveQty(o, it, allItems.length, priceByMpid.get(String(it.skuId))), 0)
+          : (unitsFromTotal ?? 1),
         ordered_at: orderedAt,
       }
     })
@@ -526,13 +550,16 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
     // ── Order items (best-effort) ─────────────────────────────────────────────
     // Build a map: marketplace_product_id → products.id for fast lookup
     try {
-      const dbProducts = await db.select({ id: products.id, marketplace_product_id: products.marketplace_product_id, title: products.title })
+      const dbProducts = await db.select({ id: products.id, marketplace_product_id: products.marketplace_product_id, title: products.title, selling_price: products.selling_price })
         .from(products).where(eq(products.shop_id, shopId))
       const pidMap = new Map<string, string>()
       const titleMap = new Map<string, string>()
+      const priceByDbId = new Map<string, number>()
       for (const p of dbProducts) {
         if (p.marketplace_product_id) pidMap.set(String(p.marketplace_product_id), p.id as string)
         if (p.title) titleMap.set(p.title.trim().toLowerCase(), p.id as string)
+        const sp = p.selling_price != null ? Number(p.selling_price) : 0
+        if (sp > 0) priceByDbId.set(p.id as string, sp)
       }
       // The order item's skuId doesn't always match the product API's skuId
       // (different id spaces). Fall back to title match, then — for a
@@ -562,12 +589,24 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
         if (!dbOrderId) continue
         const lines = o.orderItems ?? o.items ?? []
         for (const it of lines) {
+          const pid = resolveProductId(it)
+          const productPrice = pid ? priceByDbId.get(pid) : undefined
           itemRows.push({
             order_id:       dbOrderId,
-            product_id:     resolveProductId(it),
-            quantity:       effectiveQty(o, it, lines.length),
-            price_per_unit: it.price,
+            product_id:     pid,
+            quantity:       effectiveQty(o, it, lines.length, productPrice),
+            price_per_unit: it.price > 0 ? it.price : (productPrice ?? 0),
           })
+        }
+        // Order arrived with no line items at all: in a single-product shop we
+        // still know what was bought — synthesize the line from the order
+        // total and the product's price so analytics see every order.
+        if (lines.length === 0 && dbProducts.length === 1) {
+          const pid = dbProducts[0].id as string
+          const sp = priceByDbId.get(pid)
+          const total = o.price ?? o.totalPrice ?? 0
+          const qty = sp && total > 0 && total % sp === 0 ? total / sp : 1
+          itemRows.push({ order_id: dbOrderId, product_id: pid, quantity: qty, price_per_unit: sp ?? total })
         }
       }
       const unmatched = itemRows.filter(r => r.product_id == null).length

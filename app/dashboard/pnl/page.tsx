@@ -43,6 +43,7 @@ export default async function PnlPage({ searchParams }: Props) {
     [`${d.delivery} (so'm)`]: Math.round(m.delivery_cost),
     [`${d.net} (so'm)`]:      Math.round(m.net),
     [d.ordersCol]:            m.order_count,
+    [d.topSoldCancelled]:     m.cancelled_count,
   }))
 
   return (
@@ -132,6 +133,7 @@ export default async function PnlPage({ searchParams }: Props) {
                   <tr className="text-[var(--text-muted)] text-xs border-b border-[var(--border)] bg-[var(--bg-card2)]">
                     <th className="text-left font-medium px-5 py-3">{d.month}</th>
                     <th className="text-right font-medium px-5 py-3">{d.ordersCol}</th>
+                    <th className="text-right font-medium px-5 py-3">{d.topSoldCancelled}</th>
                     <th className="text-right font-medium px-5 py-3">{d.revenue}</th>
                     <th className="text-right font-medium px-5 py-3">{d.commission2}</th>
                     <th className="text-right font-medium px-5 py-3">{d.delivery}</th>
@@ -151,6 +153,11 @@ export default async function PnlPage({ searchParams }: Props) {
                           )}
                         </td>
                         <td className="px-5 py-4 text-right text-[var(--text-muted)]">{m.order_count}</td>
+                        <td className="px-5 py-4 text-right">
+                          {m.cancelled_count > 0
+                            ? <span className="text-red-600 font-semibold" title={fmt(m.cancelled_amount)}>{m.cancelled_count}</span>
+                            : <span className="text-[var(--text-muted)]">—</span>}
+                        </td>
                         <td className="px-5 py-4 text-right text-[var(--text-base)]">{fmt(m.revenue)}</td>
                         <td className="px-5 py-4 text-right text-red-600">{m.marketplace_fee > 0 ? fmt(m.marketplace_fee) : '—'}</td>
                         <td className="px-5 py-4 text-right text-amber-600">{m.delivery_cost > 0 ? fmt(m.delivery_cost) : '—'}</td>
@@ -169,6 +176,7 @@ export default async function PnlPage({ searchParams }: Props) {
                   <tr className="bg-[var(--bg-card2)] border-t border-[var(--border2)]">
                     <td className="px-5 py-4 text-[var(--text-base)] font-bold text-xs uppercase tracking-wide">{d.total}</td>
                     <td className="px-5 py-4 text-right text-[var(--text-base)] font-bold">{monthlyData.reduce((s, m) => s + m.order_count, 0)}</td>
+                    <td className="px-5 py-4 text-right text-red-600 font-bold">{monthlyData.reduce((s, m) => s + m.cancelled_count, 0) || '—'}</td>
                     <td className="px-5 py-4 text-right text-[var(--text-base)] font-bold">{fmt(totalRevenue)}</td>
                     <td className="px-5 py-4 text-right text-red-600 font-bold">{fmt(totalFees)}</td>
                     <td className="px-5 py-4 text-right text-amber-600 font-bold">{fmt(totalDelivery)}</td>

@@ -182,6 +182,7 @@ export default async function AnalyticsPage({ searchParams }: Props) {
                     <tr className="text-xs" style={{ color: 'var(--text-muted)', borderBottom: '1px solid var(--border)', background: 'rgba(255,255,255,0.01)' }}>
                       <th className="text-left font-medium px-5 py-3">{d.product}</th>
                       <th className="text-right font-medium px-4 py-3">{d.topSoldQty}</th>
+                      <th className="text-right font-medium px-4 py-3">{d.topSoldInTransit}</th>
                       <th className="text-right font-medium px-4 py-3">{d.topSoldCancelled}</th>
                       <th className="text-right font-medium px-4 py-3">{d.topSoldRevenue}</th>
                     </tr>
@@ -194,6 +195,7 @@ export default async function AnalyticsPage({ searchParams }: Props) {
                           {row.sku && <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{row.sku}</p>}
                         </td>
                         <td className="px-4 py-3.5 text-right font-semibold" style={{ color: 'var(--c1)' }}>{row.qty_sold}</td>
+                        <td className="px-4 py-3.5 text-right font-semibold" style={{ color: row.qty_in_transit > 0 ? '#f59e0b' : 'var(--text-muted)' }}>{row.qty_in_transit}</td>
                         <td className="px-4 py-3.5 text-right font-semibold" style={{ color: row.qty_cancelled + row.qty_returned > 0 ? '#ef4444' : 'var(--text-muted)' }}>{row.qty_cancelled + row.qty_returned}</td>
                         <td className="px-4 py-3.5 text-right" style={{ color: 'var(--text-dim)' }}>{fmt(row.revenue)} so'm</td>
                       </tr>
