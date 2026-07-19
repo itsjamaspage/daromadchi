@@ -190,6 +190,7 @@ export async function fetchUzumOrders(
   fromDateMs?: number,
   toDateMs?: number,
   orderType: 'fbs' | 'fbo' = 'fbs',
+  status?: string,
 ): Promise<{ data: UzumFbsOrder[]; totalCount: number; pageSize: number }> {
   return withRetry(() => {
     const params = new URLSearchParams({
@@ -199,6 +200,7 @@ export async function fetchUzumOrders(
     for (const id of shopIds) params.append('shopIds', String(id))
     if (fromDateMs != null) params.set('dateFrom', String(fromDateMs))
     if (toDateMs != null) params.set('dateTo', String(toDateMs))
+    if (status) params.set('status', status)
     return request<UzumFbsOrdersResponse>(`/v2/${orderType}/orders?${params}`, token).then(r => {
       const orders = r.payload?.orders ?? r.data ?? r.orders ?? []
       return {
