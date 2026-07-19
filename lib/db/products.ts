@@ -31,7 +31,10 @@ const _fetchProducts = unstable_cache(
         .orderBy(asc(products.title)),
       db.select({
         product_id: orderItems.product_id,
-        qty_sold: sql<number>`coalesce(sum(${orderItems.quantity}), 0)`.as('qty_sold'),
+        // Units on real sales (cancelled/returned excluded — those aren't sales).
+        qty_sold: sql<number>`coalesce(sum(${orderItems.quantity}) filter (where ${orders.status} not in ('cancelled','returned')), 0)`.as('qty_sold'),
+        // Units on cancelled orders, surfaced separately in the UI.
+        qty_cancelled: sql<number>`coalesce(sum(${orderItems.quantity}) filter (where ${orders.status} = 'cancelled'), 0)`.as('qty_cancelled'),
       }).from(orderItems)
         .innerJoin(orders, eq(orderItems.order_id, orders.id))
         .where(inArray(orders.shop_id, allShopIds))
@@ -44,8 +47,12 @@ const _fetchProducts = unstable_cache(
     ])
 
     const soldByProductId = new Map<string, number>()
+    const cancelledByProductId = new Map<string, number>()
     for (const row of soldRows) {
-      if (row.product_id) soldByProductId.set(row.product_id, Number(row.qty_sold))
+      if (row.product_id) {
+        soldByProductId.set(row.product_id, Number(row.qty_sold))
+        cancelledByProductId.set(row.product_id, Number(row.qty_cancelled))
+      }
     }
 
     const shopInfo = new Map<string, { marketplace: MarketplaceType; warehouseId: string | null }>()
@@ -90,11 +97,12 @@ const _fetchProducts = unstable_cache(
         available_stock: availableStock,
         profit: Number(p.selling_price ?? 0) - Number(p.cost_price ?? 0),
         sold,
+        cancelled: cancelledByProductId.get(p.id) ?? 0,
         is_shared: isShared,
       } as Product
     })
   },
-  ['products-v4'],
+  ['products-v5'],
   { revalidate: 30, tags: ['product-data'] },
 )
 
@@ -276,7 +284,8 @@ const _fetchProductsPaginated = unstable_cache(
     const soldRows = productIds.length > 0
       ? await db.select({
           product_id: orderItems.product_id,
-          qty_sold: sql<number>`coalesce(sum(${orderItems.quantity}), 0)`.as('qty_sold'),
+          qty_sold: sql<number>`coalesce(sum(${orderItems.quantity}) filter (where ${orders.status} not in ('cancelled','returned')), 0)`.as('qty_sold'),
+          qty_cancelled: sql<number>`coalesce(sum(${orderItems.quantity}) filter (where ${orders.status} = 'cancelled'), 0)`.as('qty_cancelled'),
         }).from(orderItems)
           .innerJoin(orders, eq(orderItems.order_id, orders.id))
           .where(inArray(orderItems.product_id, productIds))
@@ -284,8 +293,12 @@ const _fetchProductsPaginated = unstable_cache(
       : []
 
     const soldMap = new Map<string, number>()
+    const cancelledMap = new Map<string, number>()
     for (const r of soldRows) {
-      if (r.product_id) soldMap.set(r.product_id, Number(r.qty_sold))
+      if (r.product_id) {
+        soldMap.set(r.product_id, Number(r.qty_sold))
+        cancelledMap.set(r.product_id, Number(r.qty_cancelled))
+      }
     }
 
     const groupTotalSold = new Map<string, number>()
@@ -324,13 +337,14 @@ const _fetchProductsPaginated = unstable_cache(
         available_stock: availableStock,
         profit: Number(p.selling_price ?? 0) - Number(p.cost_price ?? 0),
         sold,
+        cancelled: cancelledMap.get(p.id) ?? 0,
         is_shared: isShared,
       } as Product
     })
 
     return { rows, total }
   },
-  ['products-paginated-rpc'],
+  ['products-paginated-rpc-v2'],
   { revalidate: 30, tags: ['product-data'] },
 )
 
