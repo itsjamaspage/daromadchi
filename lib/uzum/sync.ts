@@ -48,6 +48,30 @@ const FBS_STATUSES = [
   'CREATED', 'DELIVERING', 'DELIVERED', 'COMPLETED', 'CANCELED', 'RETURNED',
 ]
 
+// FBS/FBO order queries use size=50 — the exact page size /api/uzum/diagnose
+// proved returns orders. Uzum answers a generic 400 "bad-request-001" for any
+// parameter it dislikes, so an unproven size risks every status query failing.
+const ORDERS_PAGE_SIZE = 50
+
+// External order id: SellerOrderDto uses `id`; legacy payloads use `orderId`.
+const extIdOf = (o: UzumFbsOrder): string => String(o.id ?? o.orderId ?? '')
+
+// dateCreated may be an ISO string, an epoch number, or a numeric string —
+// and the epoch may be seconds or milliseconds. An unparseable value must not
+// become Invalid Date (that would abort the whole upsert), so fall back to now.
+function parseOrderedAt(v: unknown): Date {
+  if (typeof v === 'number' || (typeof v === 'string' && /^\d{10,}$/.test(v))) {
+    const n = Number(v)
+    const d = new Date(n < 1e12 ? n * 1000 : n)
+    if (!Number.isNaN(d.getTime())) return d
+  }
+  if (typeof v === 'string' && v) {
+    const d = new Date(v)
+    if (!Number.isNaN(d.getTime())) return d
+  }
+  return new Date()
+}
+
 const AD_STATUS_MAP: Record<string, string> = {
   ACTIVE: 'active',
   PAUSED: 'paused',
@@ -69,10 +93,15 @@ export interface SyncResult {
   ordersDegraded?: boolean
   error?: string
   details?: string
+  // Per-request outcome of every order query (e.g. fbs_CANCELED: "1" or
+  // "HTTP 400 …") plus the first raw order JSON. Returned to the Settings card
+  // so a failing sync is diagnosable without server logs.
+  debug?: Record<string, string>
 }
 
 export async function syncFromUzum(shopId: string, token: string): Promise<SyncResult> {
   const warnings: string[] = []
+  const debug: Record<string, string> = {}
 
   try {
     // ── Products: resolve shop(s), then pull product/SKU data ─────────────────
@@ -195,14 +224,16 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
     const fbsById = new Map<string, UzumFbsOrder>()
     for (const st of FBS_STATUSES) {
       try {
-        const batch = await fetchAllPages(page => fetchUzumOrders(token, uzumShopIds, page, 100, undefined, undefined, 'fbs', st))
+        const batch = await fetchAllPages(page => fetchUzumOrders(token, uzumShopIds, page, ORDERS_PAGE_SIZE, undefined, undefined, 'fbs', st))
         fbsOk = true
-        for (const o of batch) fbsById.set(String(o.id ?? o.orderId), o)
+        debug[`fbs_${st}`] = String(batch.length)
+        for (const o of batch) fbsById.set(extIdOf(o), o)
       } catch (e) {
-        // 400 = status not valid for this account; ignore. Note anything else.
-        if (!(e instanceof UzumApiError && e.status === 400)) {
-          warnings.push(`FBS ${st}: ${e instanceof UzumApiError ? `${e.status} ${e.body?.slice(0, 100) ?? ''}` : String(e)}`)
-        }
+        // Record EVERY failure, including 400 — silently dropping 400s is how
+        // a total order-fetch failure previously looked like "0 orders, ok".
+        const msg = e instanceof UzumApiError ? `HTTP ${e.status} ${e.body?.slice(0, 120) ?? ''}` : String(e)
+        debug[`fbs_${st}`] = msg
+        warnings.push(`FBS ${st}: ${msg}`)
       }
       await pause()
     }
@@ -213,17 +244,19 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
     const fboById = new Map<string, UzumFbsOrder>()
     for (const st of FBS_STATUSES) {
       try {
-        const batch = await fetchAllPages(page => fetchUzumOrders(token, uzumShopIds, page, 100, undefined, undefined, 'fbo', st))
+        const batch = await fetchAllPages(page => fetchUzumOrders(token, uzumShopIds, page, ORDERS_PAGE_SIZE, undefined, undefined, 'fbo', st))
         fboOk = true
-        for (const o of batch) fboById.set(String(o.id ?? o.orderId), o)
+        debug[`fbo_${st}`] = String(batch.length)
+        for (const o of batch) fboById.set(extIdOf(o), o)
       } catch (e) {
         if (e instanceof UzumApiError && e.status === 403) {
+          debug[`fbo_${st}`] = 'HTTP 403'
           warnings.push(`FBO: 403 (key lacks FBO scope) — skipped`)
           break
         }
-        if (!(e instanceof UzumApiError && e.status === 400)) {
-          warnings.push(`FBO ${st}: ${e instanceof UzumApiError ? `${e.status} ${e.body?.slice(0, 100) ?? ''}` : String(e)}`)
-        }
+        const msg = e instanceof UzumApiError ? `HTTP ${e.status} ${e.body?.slice(0, 120) ?? ''}` : String(e)
+        debug[`fbo_${st}`] = msg
+        warnings.push(`FBO ${st}: ${msg}`)
       }
       await pause()
     }
@@ -231,20 +264,24 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
     const fbsOrders = [...fbsById.values()]
     const fboOrders = [...fboById.values()]
     const ordersDegraded = !fbsOk && !fboOk
+    // Keep the first raw order visible in the sync result: if mapping/upserting
+    // fails, the actual field names Uzum returned are the evidence we need.
+    const firstRaw = fbsOrders[0] ?? fboOrders[0]
+    if (firstRaw) debug.firstOrderRaw = JSON.stringify(firstRaw).slice(0, 800)
     // Tag each order with its fulfillment scheme so it can be distinguished
     // downstream. Deduplicate by id in case the FBO endpoint overlaps with FBS.
     const taggedOrders: { o: UzumFbsOrder; ff: string }[] = [
       ...fbsOrders.map(o => ({ o, ff: 'fbs' })),
       ...fboOrders
-        .filter(o => !fbsOrders.some(f => String(f.id) === String(o.id)))
+        .filter(o => !fbsOrders.some(f => extIdOf(f) === extIdOf(o)))
         .map(o => ({ o, ff: 'fbo' })),
     ]
     const uzumOrders: UzumFbsOrder[] = taggedOrders.map(t => t.o)
 
     const orderRows = taggedOrders.map(({ o, ff }) => {
       // Support both new (id/dateCreated/price/orderItems) and legacy field names
-      const extId = String(o.id ?? o.orderId)
-      const orderedAt = o.dateCreated ?? o.createdAt ?? new Date().toISOString()
+      const extId = extIdOf(o)
+      const orderedAt = parseOrderedAt(o.dateCreated ?? o.createdAt)
       const revenue = o.price ?? o.totalPrice ?? 0
       const allItems = o.orderItems ?? o.items ?? []
       return {
@@ -284,7 +321,7 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
             status: r.status,
             revenue: String(r.revenue),
             items_count: r.items_count,
-            ordered_at: new Date(r.ordered_at),
+            ordered_at: r.ordered_at,
           })))
         }
       }
@@ -294,7 +331,7 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
           status: r.status,
           revenue: String(r.revenue),
           items_count: r.items_count,
-          ordered_at: new Date(r.ordered_at),
+          ordered_at: r.ordered_at,
         }).where(eq(orders.id, existingOrdMap.get(r.order_id_external)!))
       }
     }
@@ -376,8 +413,8 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
         for (const type of ['fbs', 'fbo'] as const) {
           for (const st of FBS_STATUSES) {
             try {
-              const batch = await fetchAllPages(p => fetchUzumOrders(token, uzumShopIds, p, 100, undefined, undefined, type, st))
-              for (const o of batch) exById.set(String(o.id ?? o.orderId), o)
+              const batch = await fetchAllPages(p => fetchUzumOrders(token, uzumShopIds, p, ORDERS_PAGE_SIZE, undefined, undefined, type, st))
+              for (const o of batch) exById.set(extIdOf(o), o)
             } catch { /* invalid status / no scope — skip */ }
           }
         }
@@ -431,7 +468,7 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
             }
             productRows.push(...derived)
             // Re-create order_items for these orders already in DB with correct product_ids
-            const extIds = extractOrders.map(o => String(o.id ?? o.orderId))
+            const extIds = extractOrders.map(o => extIdOf(o))
             const [dbOrds, dbProds] = await Promise.all([
               db.select({ id: orders.id, order_id_external: orders.order_id_external })
                 .from(orders).where(and(eq(orders.shop_id, shopId), inArray(orders.order_id_external, extIds))),
@@ -442,7 +479,7 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
             const pMap = new Map<string, string>(); for (const p of dbProds) if (p.marketplace_product_id) pMap.set(String(p.marketplace_product_id), p.id as string)
             const itmRows: { order_id: string; product_id: string | null; quantity: number; price_per_unit: number }[] = []
             for (const o of extractOrders) {
-              const dbOid = oMap.get(String(o.id ?? o.orderId))
+              const dbOid = oMap.get(extIdOf(o))
               if (!dbOid) continue
               for (const it of (o.orderItems ?? o.items ?? [])) {
                 itmRows.push({ order_id: dbOid, product_id: pMap.get(String(it.skuId)) ?? null, quantity: it.quantity, price_per_unit: it.price })
@@ -476,7 +513,7 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
       }
 
       // Map order_id_external → orders.id
-      const extIds = uzumOrders.map(o => String(o.id ?? o.orderId))
+      const extIds = uzumOrders.map(o => extIdOf(o))
       const dbOrders = await db.select({ id: orders.id, order_id_external: orders.order_id_external })
         .from(orders).where(and(eq(orders.shop_id, shopId), inArray(orders.order_id_external, extIds)))
       const orderIdMap = new Map<string, string>()
@@ -489,7 +526,7 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
         quantity: number; price_per_unit: number
       }[] = []
       for (const o of uzumOrders) {
-        const extId = String(o.id ?? o.orderId)
+        const extId = extIdOf(o)
         const dbOrderId = orderIdMap.get(extId)
         if (!dbOrderId) continue
         for (const it of (o.orderItems ?? o.items ?? [])) {
@@ -593,6 +630,7 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
       fboCount: fboOrders.length,
       ordersDegraded,
       details: warnings.length ? warnings.join(' | ') : undefined,
+      debug,
     }
   } catch (err) {
     const msg =
@@ -621,6 +659,6 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
       })
     } catch { /* ignore secondary failure */ }
 
-    return { ok: false, ordersUpserted: 0, productsUpserted: 0, campaignsUpserted: 0, error: msg }
+    return { ok: false, ordersUpserted: 0, productsUpserted: 0, campaignsUpserted: 0, error: msg, debug }
   }
 }

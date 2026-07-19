@@ -32,6 +32,29 @@ function StatusMsg({ msg }: { msg: { ok: boolean; text: string } | null }) {
 
 // ─── Uzum section ─────────────────────────────────────────────────────────────
 
+// Sync result → status text. When the sync returns 0 orders (or fails), append
+// the per-request debug the API now returns, so a silent failure is visible
+// right on the card instead of requiring server logs.
+function uzumSyncText(data: {
+  ok?: boolean; error?: string; productsUpserted?: number; ordersUpserted?: number
+  campaignsUpserted?: number; details?: string; debug?: Record<string, string>
+}): { ok: boolean; text: string } {
+  let text = data.ok
+    ? `${data.productsUpserted ?? 0} mahsulot, ${data.ordersUpserted ?? 0} buyurtma${data.campaignsUpserted ? `, ${data.campaignsUpserted} kampaniya` : ''} yangilandi.`
+    : (data.error ?? 'Xato')
+  if (!data.ordersUpserted) {
+    if (data.details) text += `\nOgohlantirishlar: ${data.details}`
+    if (data.debug) {
+      const perStatus = Object.entries(data.debug)
+        .filter(([k]) => k !== 'firstOrderRaw')
+        .map(([k, v]) => `${k}=${v}`).join(', ')
+      if (perStatus) text += `\nSo'rovlar: ${perStatus}`
+      if (data.debug.firstOrderRaw) text += `\n1-buyurtma (xom): ${data.debug.firstOrderRaw.slice(0, 300)}`
+    }
+  }
+  return { ok: !!data.ok, text }
+}
+
 function UzumCard({ shop }: { shop: Shop | null; userId: string }) {
   const router = useRouter()
 
@@ -125,9 +148,7 @@ function UzumCard({ shop }: { shop: Shop | null; userId: string }) {
     fetch('/api/uzum/sync', { method: 'POST' })
       .then(r => r.json())
       .then(data => {
-        setSyncMsg(data.ok
-          ? { ok: true, text: `${data.productsUpserted ?? 0} mahsulot, ${data.ordersUpserted ?? 0} buyurtma${data.campaignsUpserted ? `, ${data.campaignsUpserted} kampaniya` : ''} yangilandi.` }
-          : { ok: false, text: data.error ?? 'Xato' })
+        setSyncMsg(uzumSyncText(data))
         if (data.ok) router.refresh()
       })
       .catch(() => setSyncMsg({ ok: false, text: "Server bilan bog'lanishda xato" }))
@@ -146,9 +167,7 @@ function UzumCard({ shop }: { shop: Shop | null; userId: string }) {
     try {
       const res  = await fetch('/api/uzum/sync', { method: 'POST' })
       const data = await res.json()
-      setSyncMsg(data.ok
-        ? { ok: true, text: `${data.productsUpserted ?? 0} mahsulot, ${data.ordersUpserted ?? 0} buyurtma${data.campaignsUpserted ? `, ${data.campaignsUpserted} kampaniya` : ''} yangilandi.` }
-        : { ok: false, text: data.error ?? 'Xato' })
+      setSyncMsg(uzumSyncText(data))
       if (data.ok) router.refresh()
     } catch {
       setSyncMsg({ ok: false, text: "Server bilan bog'lanishda xato" })

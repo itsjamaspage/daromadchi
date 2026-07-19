@@ -45,12 +45,17 @@ async function request<T>(
   options?: RequestInit,
 ): Promise<T> {
   const t = token.trim()
+  // Match the request shape /api/uzum/diagnose proved working: Authorization +
+  // Accept only. Do NOT send Content-Type on GET — a body-less GET declaring
+  // application/json can be rejected with the same generic 400 Uzum returns
+  // for any malformed request, and that 400 used to be swallowed silently.
+  const method = String(options?.method ?? 'GET').toUpperCase()
   const res = await marketplaceFetch(`${UZUM_API_BASE}${path}`, {
     ...options,
     headers: {
       Authorization: t,
-      'Content-Type': 'application/json',
       Accept: 'application/json',
+      ...(method === 'GET' ? {} : { 'Content-Type': 'application/json' }),
       ...options?.headers,
     },
     next: { revalidate: 0 },
