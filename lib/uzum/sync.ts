@@ -90,7 +90,7 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
     const productRows: {
       shop_id: string; marketplace_product_id: string; title: string; sku: string
       category: string | null; selling_price: number | null; cost_price: number | null
-      stock_quantity: number
+      stock_quantity: number; quantity_sold: number | null
     }[] = []
 
     // Product sync is best-effort: shops with 0 active listings return 403.
@@ -112,6 +112,10 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
                 selling_price: sku.price ?? null,
                 cost_price: sku.purchasePrice || null,
                 stock_quantity: (sku.quantityActive ?? 0) + (sku.quantityFbs ?? 0),
+                // Marketplace-authoritative lifetime units sold (includes FBO,
+                // which we can't read at the order level). Used as the "sold"
+                // figure so FBO sales are counted even without order records.
+                quantity_sold: sku.quantitySold ?? null,
               })
             }
           }
@@ -138,6 +142,7 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
             selling_price: r.selling_price != null ? String(r.selling_price) : null,
             cost_price: r.cost_price != null ? String(r.cost_price) : null,
             stock_quantity: r.stock_quantity,
+            quantity_sold: r.quantity_sold,
           })))
         }
         if (toUpd.length > 0) {
@@ -148,6 +153,7 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
               category: r.category,
               selling_price: r.selling_price != null ? String(r.selling_price) : null,
               stock_quantity: r.stock_quantity,
+              quantity_sold: r.quantity_sold,
               marketplace_product_id: r.marketplace_product_id,
             }).where(eq(products.id, r.id))
           }
@@ -306,6 +312,7 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
                 selling_price: it.price ?? null,
                 cost_price: null,
                 stock_quantity: 0,
+                quantity_sold: null,
               })
             }
           }
@@ -380,6 +387,7 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
                   title: it.productTitle ?? `SKU ${it.skuId}`,
                   sku: mpid, category: null,
                   selling_price: it.price ?? null, cost_price: null, stock_quantity: 0,
+                  quantity_sold: null,
                 })
               }
             }

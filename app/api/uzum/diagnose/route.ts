@@ -180,7 +180,23 @@ export const GET = withErrorHandler(async () => {
     }
     // (b) /v1/fbs/orders variant (in case v2 is the wrong version for this account)
     orderProbes.push(await probe('v1_fbs_CREATED', `${UZUM_API_BASE}/v1/fbs/orders?${withIds({ page: '0', size: '50', status: 'CREATED' })}`, token)); await gap()
-    orderProbes.push(await probe('v1_fbs_DELIVERING', `${UZUM_API_BASE}/v1/fbs/orders?${withIds({ page: '0', size: '50', status: 'DELIVERING' })}`, token))
+    orderProbes.push(await probe('v1_fbs_DELIVERING', `${UZUM_API_BASE}/v1/fbs/orders?${withIds({ page: '0', size: '50', status: 'DELIVERING' })}`, token)); await gap()
+
+    // (c) FBO revenue workaround hunt: analytics/finance/report endpoints that a
+    // read-only key might reach (FBO order records are 403). If any returns 200,
+    // it may carry FBO sales totals we can use for revenue.
+    for (const path of ['/v1/analytics/sales', '/v2/analytics/sales', '/v1/finance/orders', '/v1/reports/sales', '/v2/analytics/orders']) {
+      orderProbes.push(await probe(`analytics ${path}`, `${UZUM_API_BASE}${path}?${withIds({ page: '0', size: '50' })}`, token))
+      await gap()
+    }
+  }
+
+  // Product sample — confirms SKU.quantitySold (our FBO "sold" workaround) is
+  // present and populated for this seller.
+  let productSample: unknown = null
+  if (uzumShopIds[0]) {
+    const pp = await probe('product_sample', `${UZUM_API_BASE}/v1/product/shop/${uzumShopIds[0]}?page=0&size=5&filter=ALL`, token)
+    productSample = pp.sample ?? pp.bodySnippet
   }
 
   const validStatuses = orderProbes.filter(p => p.status === 200).map(p => `${p.label}${p.count ? `(${p.count})` : '(0)'}`)
@@ -193,8 +209,9 @@ export const GET = withErrorHandler(async () => {
     specPath,
     discoveredStatuses,
     validStatuses,
+    productSample,
     shopsProbe,
     orderProbes,
-    hint: 'validStatuses lists the FBS statuses that returned 200; the one with (n>0) holds the order. discoveredStatuses is what Uzum\'s OpenAPI spec exposed. Paste the full JSON to support.',
+    hint: 'validStatuses = FBS statuses that returned 200. productSample shows whether SKU.quantitySold is populated (our FBO sold workaround). analytics_* probes hunt for an FBO revenue source a read-only key can reach. Paste the full JSON to support.',
   })
 })

@@ -23,6 +23,7 @@ const _fetchProducts = unstable_cache(
         cost_price: products.cost_price,
         selling_price: products.selling_price,
         stock_quantity: products.stock_quantity,
+        quantity_sold: products.quantity_sold,
         category: products.category,
         marketplace_product_id: products.marketplace_product_id,
         updated_at: products.updated_at,
@@ -73,7 +74,10 @@ const _fetchProducts = unstable_cache(
     }
 
     return productRows.map(p => {
-      const sold = soldByProductId.get(p.id) ?? 0
+      // Prefer the marketplace's authoritative lifetime sold count (covers FBO,
+      // which we can't read at the order level); fall back to order-derived.
+      const orderSold = soldByProductId.get(p.id) ?? 0
+      const sold = p.quantity_sold != null ? p.quantity_sold : orderSold
       const wid = shopInfo.get(p.shop_id)?.warehouseId
       const key = wid && p.sku ? `${wid}:${p.sku}` : null
       const isShared = key ? (groupShopCount.get(key) ?? 0) > 1 : false
@@ -102,7 +106,7 @@ const _fetchProducts = unstable_cache(
       } as Product
     })
   },
-  ['products-v5'],
+  ['products-v6'],
   { revalidate: 30, tags: ['product-data'] },
 )
 
@@ -269,6 +273,7 @@ const _fetchProductsPaginated = unstable_cache(
         cost_price: products.cost_price,
         selling_price: products.selling_price,
         stock_quantity: products.stock_quantity,
+        quantity_sold: products.quantity_sold,
         category: products.category,
         marketplace_product_id: products.marketplace_product_id,
         updated_at: products.updated_at,
@@ -313,7 +318,8 @@ const _fetchProductsPaginated = unstable_cache(
     }
 
     const rows: Product[] = productRows.map(p => {
-      const sold = soldMap.get(p.id) ?? 0
+      const orderSold = soldMap.get(p.id) ?? 0
+      const sold = p.quantity_sold != null ? p.quantity_sold : orderSold
       const wid = shopInfo.get(p.shop_id)?.warehouseId
       const key = wid && p.sku ? `${wid}:${p.sku}` : null
       const isShared = key ? (groupShopCount.get(key) ?? 0) > 1 : false
@@ -344,7 +350,7 @@ const _fetchProductsPaginated = unstable_cache(
 
     return { rows, total }
   },
-  ['products-paginated-rpc-v2'],
+  ['products-paginated-rpc-v3'],
   { revalidate: 30, tags: ['product-data'] },
 )
 

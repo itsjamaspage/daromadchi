@@ -108,6 +108,9 @@ export const products = pgTable('products', {
   selling_price:          numeric('selling_price'),
   stock_quantity:         integer('stock_quantity').default(0).notNull(),
   physical_stock:         integer('physical_stock'),
+  // Marketplace-reported lifetime units sold (includes FBO orders we can't read
+  // at the order level). Nullable until the next product sync populates it.
+  quantity_sold:          integer('quantity_sold'),
   category:               text('category'),
   marketplace_product_id: text('marketplace_product_id'),
   updated_at:             timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
