@@ -12,6 +12,7 @@ export function normalizeLang(v: string | null | undefined): NotifLang {
 
 interface NotifStrings {
   dailyTitle: string
+  todayTitle: string
   weeklyTitle: (days: number) => string
   noOrders: string
   orders: string
@@ -34,6 +35,7 @@ interface NotifStrings {
 const STRINGS: Record<NotifLang, NotifStrings> = {
   uz: {
     dailyTitle:     '📊 <b>Kunlik xulosa (kecha)</b>',
+    todayTitle:     '🛒 <b>Bugungi buyurtmalar</b>',
     weeklyTitle:    (d) => `📈 <b>Haftalik hisobot (${d} kun)</b>`,
     noOrders:       "Buyurtmalar yo'q.",
     orders:         'Buyurtmalar',
@@ -54,6 +56,7 @@ const STRINGS: Record<NotifLang, NotifStrings> = {
   },
   ru: {
     dailyTitle:     '📊 <b>Сводка за вчера</b>',
+    todayTitle:     '🛒 <b>Заказы за сегодня</b>',
     weeklyTitle:    (d) => `📈 <b>Недельный отчёт (${d} дн.)</b>`,
     noOrders:       'Заказов нет.',
     orders:         'Заказы',
@@ -74,6 +77,7 @@ const STRINGS: Record<NotifLang, NotifStrings> = {
   },
   en: {
     dailyTitle:     '📊 <b>Daily summary (yesterday)</b>',
+    todayTitle:     '🛒 <b>Orders today</b>',
     weeklyTitle:    (d) => `📈 <b>Weekly report (${d} days)</b>`,
     noOrders:       'No orders.',
     orders:         'Orders',

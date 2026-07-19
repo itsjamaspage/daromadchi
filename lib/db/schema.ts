@@ -258,7 +258,7 @@ export const userSettings = pgTable('user_settings', {
   ue_comm_pct:               numeric('ue_comm_pct').default('10'),
   notif_low_stock:           boolean('notif_low_stock').default(true).notNull(),
   notif_daily_summary:       boolean('notif_daily_summary').default(true).notNull(),
-  notif_new_orders:          boolean('notif_new_orders').default(false).notNull(),
+  notif_new_orders:          boolean('notif_new_orders').default(true).notNull(),
   notif_weekly_report:       boolean('notif_weekly_report').default(false).notNull(),
   notif_send_time:           text('notif_send_time').default('09:00').notNull(),
   notif_send_days:           integer('notif_send_days').array().default([1, 2, 3, 4, 5, 6, 0]).notNull(),

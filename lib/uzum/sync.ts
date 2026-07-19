@@ -104,6 +104,12 @@ const AD_STATUS_MAP: Record<string, string> = {
 export interface SyncResult {
   ok: boolean
   ordersUpserted: number
+  // Orders actually INSERTED this run (ordersUpserted counts every order the
+  // sync touched, including unchanged re-reads — useless for "new order"
+  // notifications). newOrders carries one display line per inserted order
+  // that still needs fulfilling (pending/confirmed).
+  ordersInserted?: number
+  newOrders?: string[]
   productsUpserted: number
   campaignsUpserted: number
   // Observability: how many raw orders each source returned, and whether the
@@ -128,6 +134,8 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
   const warnings: string[] = []
   const debug: Record<string, string> = {}
   let itemsUpserted = 0
+  let ordersInserted = 0
+  const newOrders: string[] = []
 
   try {
     // ── Products: resolve shop(s), then pull product/SKU data ─────────────────
@@ -370,6 +378,12 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
 
       const toInsOrd = orderRows.filter(r => !existingOrdMap.has(r.order_id_external))
       const toUpdOrd = orderRows.filter(r => existingOrdMap.has(r.order_id_external))
+      ordersInserted = toInsOrd.length
+      for (const r of toInsOrd) {
+        if (r.status === 'pending' || r.status === 'confirmed') {
+          newOrders.push(`#${r.order_id_external} — ${r.revenue} so'm, ${r.items_count} dona`)
+        }
+      }
 
       if (toInsOrd.length > 0) {
         for (let i = 0; i < toInsOrd.length; i += 500) {
@@ -723,6 +737,8 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
       fboCount: fboOrders.length,
       ordersDegraded,
       itemsUpserted,
+      ordersInserted,
+      newOrders,
       details: warnings.length ? warnings.join(' | ') : undefined,
       debug,
     }

@@ -36,6 +36,12 @@ export async function buildDigestForUser(
   if (s.notif_daily_summary) {
     const day = await buildSalesSummary(shopIds, 1, lang)
     if (day) parts.push(`${t.dailyTitle}\n` + day)
+
+    // Orders received TODAY (midnight → now): the digest goes out at the
+    // user's chosen time, and today's orders would otherwise only appear in
+    // tomorrow's digest. Silent when today has no activity.
+    const today = await buildSalesSummary(shopIds, 0, lang)
+    if (today) parts.push(`${t.todayTitle}\n` + today)
   }
 
   // ── Weekly report (last 7 days, Mondays only) ──
@@ -71,9 +77,10 @@ export async function buildDigestForUser(
 }
 
 /**
- * Sales summary for the last `days` days. Includes order count, revenue,
- * total units sold, a per-category unit breakdown, and cancelled order count.
- * Cancelled/returned orders are excluded from sold totals but counted separately.
+ * Sales summary for the last `days` days (days=0 → today so far, midnight to
+ * now). Includes order count, revenue, total units sold, a per-category unit
+ * breakdown, and cancelled order count. Cancelled/returned orders are excluded
+ * from sold totals but counted separately.
  */
 async function buildSalesSummary(
   shopIds: string[],
@@ -84,8 +91,7 @@ async function buildSalesSummary(
   const since = new Date()
   since.setHours(0, 0, 0, 0)
   since.setDate(since.getDate() - days)
-  const until = new Date()
-  until.setHours(0, 0, 0, 0)
+  const until = days === 0 ? new Date() : new Date(new Date().setHours(0, 0, 0, 0))
 
   const [orderRows, unitRows, catRows] = await Promise.all([
     // Order-level aggregates. status split so cancelled is counted separately.
@@ -131,7 +137,9 @@ async function buildSalesSummary(
   const cancelled = orderRows.filter(o => o.status === 'cancelled')
 
   if (active.length === 0 && cancelled.length === 0) {
-    return t.noOrders
+    // Today-so-far section stays silent when empty; yesterday/week sections
+    // say "no orders" explicitly so the digest isn't mistaken for broken.
+    return days === 0 ? null : t.noOrders
   }
 
   const revenue = active.reduce((sum, o) => sum + Number(o.revenue ?? 0), 0)

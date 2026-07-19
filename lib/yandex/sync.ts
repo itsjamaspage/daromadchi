@@ -21,6 +21,10 @@ const STATUS_MAP: Record<string, string> = {
 export interface YandexSyncResult {
   ok: boolean
   ordersUpserted: number
+  // Orders actually INSERTED this run; newOrders = display lines for inserted
+  // orders still needing fulfilment. Used for real-time Telegram alerts.
+  ordersInserted?: number
+  newOrders?: string[]
   productsUpserted: number
   campaignsUpserted: number
   error?: string
@@ -34,6 +38,8 @@ export async function syncFromYandex(
   fromDateOverride?: Date,
 ): Promise<YandexSyncResult> {
   const warnings: string[] = []
+  let ordersInserted = 0
+  const newOrders: string[] = []
 
   try {
     let businessId: number | undefined
@@ -179,6 +185,12 @@ export async function syncFromYandex(
 
       const toInsert = orderRows.filter(r => !existingOrderMap.has(r.order_id_external))
       const toUpdate = orderRows.filter(r => existingOrderMap.has(r.order_id_external))
+      ordersInserted = toInsert.length
+      for (const r of toInsert) {
+        if (r.status === 'pending' || r.status === 'confirmed') {
+          newOrders.push(`#${r.order_id_external} — ${r.revenue ?? 0} so'm, ${r.items_count} dona`)
+        }
+      }
 
       if (toInsert.length > 0) {
         for (let i = 0; i < toInsert.length; i += 500) {
@@ -464,6 +476,8 @@ export async function syncFromYandex(
     return {
       ok: true,
       ordersUpserted: newOrderRows.length,
+      ordersInserted,
+      newOrders,
       productsUpserted: productRows.length,
       campaignsUpserted,
       details: warnings.length ? warnings.join(' | ') : undefined,

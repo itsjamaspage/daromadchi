@@ -16,7 +16,7 @@ interface NotifPrefs {
 }
 
 const DEFAULT_PREFS: NotifPrefs = {
-  lowStock: true, dailySummary: true, newOrders: false, weeklyReport: false,
+  lowStock: true, dailySummary: true, newOrders: true, weeklyReport: false,
   sendTime: '09:00', sendDays: [1, 2, 3, 4, 5, 6, 0],
 }
 

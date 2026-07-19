@@ -17,6 +17,9 @@ export interface WbSyncResult {
   ok: boolean
   productsUpserted: number
   ordersUpserted: number
+  // Orders actually INSERTED this run (WB's report only carries finished
+  // orders — delivered/cancelled — so there are no fulfilment alerts here).
+  ordersInserted?: number
   errors?: string[]
 }
 
@@ -28,6 +31,7 @@ export async function syncFromWildberries(
 ): Promise<WbSyncResult> {
   let productsUpserted = 0
   let ordersUpserted   = 0
+  let ordersInserted   = 0
   let revenueTotal     = 0
   const errors: string[] = []
   // barcode → nmId, needed for FBS stock lookups (v3 stocks API is barcode-keyed)
@@ -246,6 +250,7 @@ export async function syncFromWildberries(
           }).where(eq(orders.id, existingOrderMap.get(r.order_id_external)!))
         }
         ordersUpserted = orderRowsToInsert.length
+        ordersInserted = toInsert.length
 
         // ── Order items (best-effort) ─────────────────────────────────────────
         try {
@@ -322,6 +327,7 @@ export async function syncFromWildberries(
     ok: errors.length === 0,
     productsUpserted,
     ordersUpserted,
+    ordersInserted,
     errors: errors.length > 0 ? errors : undefined,
   }
 }

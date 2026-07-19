@@ -115,15 +115,19 @@ export const GET = withErrorHandler(async (req: Request) => {
     }
   }
 
-  // ── Send new-order Telegram notifications ──
-  const ordersByUser = new Map<string, { marketplace: string; name: string | null; count: number }[]>()
+  // ── Real-time "new order to fulfill" Telegram alerts ──
+  // Only orders actually INSERTED this run in an actionable status
+  // (pending/confirmed) trigger an alert — ordersUpserted counts every
+  // re-synced old order and used to spam users hours after the fact.
+  // First-ever syncs (last_synced_at null) are backfills, not new orders.
+  const ordersByUser = new Map<string, { marketplace: string; name: string | null; lines: string[] }[]>()
   for (const r of results) {
-    const count = Number(r.ordersUpserted ?? 0)
-    if (count <= 0) continue
+    const newOrders = (r.newOrders as string[] | undefined) ?? []
+    if (newOrders.length === 0) continue
     const shop = eligibleShops.find(s => s.id === r.shopId)
-    if (!shop) continue
+    if (!shop || !shop.last_synced_at) continue
     const list = ordersByUser.get(shop.user_id) ?? []
-    list.push({ marketplace: shop.marketplace, name: shop.name, count })
+    list.push({ marketplace: shop.marketplace, name: shop.name, lines: newOrders })
     ordersByUser.set(shop.user_id, list)
   }
 
@@ -142,13 +146,15 @@ export const GET = withErrorHandler(async (req: Request) => {
       const shopOrders = ordersByUser.get(s.user_id)
       if (!shopOrders) continue
 
-      const lines = shopOrders.map(o => {
+      const total = shopOrders.reduce((sum, o) => sum + o.lines.length, 0)
+      const blocks = shopOrders.map(o => {
         const mpName = MP_LABEL[o.marketplace] ?? o.marketplace
-        return `• ${mpName}: <b>${o.count}</b> ta yangi buyurtma`
+        const detail = o.lines.slice(0, 10).map(l => `   ${l}`).join('\n')
+        const more = o.lines.length > 10 ? `\n   …va yana ${o.lines.length - 10} ta` : ''
+        return `• ${mpName}: <b>${o.lines.length}</b> ta yangi buyurtma\n${detail}${more}`
       }).join('\n')
 
-      const total = shopOrders.reduce((sum, o) => sum + o.count, 0)
-      const msg = `🛒 <b>Yangi buyurtmalar (${total})</b>\n\n${lines}\n\nBatafsil: https://daromadchi.uz/dashboard`
+      const msg = `🛒 <b>Yangi buyurtma${total > 1 ? `lar (${total})` : ''}!</b>\nYig'ib jo'natish kerak:\n\n${blocks}\n\nBatafsil: https://daromadchi.uz/dashboard/orders`
 
       try {
         await sendTelegramMessage(s.telegram_chat_id, msg)
