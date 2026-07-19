@@ -34,6 +34,8 @@ const _fetchProducts = unstable_cache(
         product_id: orderItems.product_id,
         // Units on real sales (cancelled/returned excluded — those aren't sales).
         qty_sold: sql<number>`coalesce(sum(${orderItems.quantity}) filter (where ${orders.status} not in ('cancelled','returned')), 0)`.as('qty_sold'),
+        // Units on open orders (ordered, not yet delivered).
+        qty_in_transit: sql<number>`coalesce(sum(${orderItems.quantity}) filter (where ${orders.status} in ('pending','confirmed')), 0)`.as('qty_in_transit'),
         // Units on cancelled orders, surfaced separately in the UI.
         qty_cancelled: sql<number>`coalesce(sum(${orderItems.quantity}) filter (where ${orders.status} = 'cancelled'), 0)`.as('qty_cancelled'),
       }).from(orderItems)
@@ -48,10 +50,12 @@ const _fetchProducts = unstable_cache(
     ])
 
     const soldByProductId = new Map<string, number>()
+    const inTransitByProductId = new Map<string, number>()
     const cancelledByProductId = new Map<string, number>()
     for (const row of soldRows) {
       if (row.product_id) {
         soldByProductId.set(row.product_id, Number(row.qty_sold))
+        inTransitByProductId.set(row.product_id, Number(row.qty_in_transit))
         cancelledByProductId.set(row.product_id, Number(row.qty_cancelled))
       }
     }
@@ -101,12 +105,13 @@ const _fetchProducts = unstable_cache(
         available_stock: availableStock,
         profit: Number(p.selling_price ?? 0) - Number(p.cost_price ?? 0),
         sold,
+        in_transit: inTransitByProductId.get(p.id) ?? 0,
         cancelled: cancelledByProductId.get(p.id) ?? 0,
         is_shared: isShared,
       } as Product
     })
   },
-  ['products-v6'],
+  ['products-v7'],
   { revalidate: 30, tags: ['product-data'] },
 )
 

@@ -1,5 +1,5 @@
 import { unstable_cache } from 'next/cache'
-import { inArray, gte, lte, ne, and, sql } from 'drizzle-orm'
+import { inArray, gte, lte, and, sql } from 'drizzle-orm'
 import { db, orders, products } from '@/lib/db'
 import { getShopIds } from '@/lib/db/shop-context'
 import type { Kpis, MarketplaceType } from '@/lib/types'
@@ -12,16 +12,17 @@ function pct(curr: number, prev: number): number | null {
 const emptyKpis: Kpis = { total_revenue: 0, total_profit: 0, total_orders: 0, total_stock: 0 }
 
 async function fetchPeriodKpis(shopIds: string[], since: Date | null, until: Date | null) {
+  // Orders KPI counts EVERY order received (a cancelled order still happened);
+  // money figures exclude cancelled — a cancelled order earns nothing.
   const conditions = [
     inArray(orders.shop_id, shopIds),
-    ne(orders.status, 'cancelled'),
   ]
   if (since) conditions.push(gte(orders.ordered_at, since))
   if (until) conditions.push(lte(orders.ordered_at, until))
 
   const [orderAgg] = await db.select({
-    total_revenue: sql<number>`coalesce(sum(${orders.revenue}::numeric), 0)`,
-    total_profit: sql<number>`coalesce(sum(${orders.revenue}::numeric - coalesce(${orders.marketplace_fee}::numeric, 0) - coalesce(${orders.delivery_cost}::numeric, 0)), 0)`,
+    total_revenue: sql<number>`coalesce(sum(${orders.revenue}::numeric) filter (where ${orders.status} <> 'cancelled'), 0)`,
+    total_profit: sql<number>`coalesce(sum(${orders.revenue}::numeric - coalesce(${orders.marketplace_fee}::numeric, 0) - coalesce(${orders.delivery_cost}::numeric, 0)) filter (where ${orders.status} <> 'cancelled'), 0)`,
     total_orders: sql<number>`count(*)`,
   }).from(orders).where(and(...conditions))
 

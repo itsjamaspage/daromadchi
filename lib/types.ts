@@ -125,6 +125,7 @@ export interface Product {
   // computed
   profit: number
   sold: number                   // units on non-cancelled/returned orders
+  in_transit: number             // units on open orders (pending/confirmed)
   cancelled: number              // units on cancelled orders
   is_shared: boolean             // true when physical_stock links across marketplaces
 }

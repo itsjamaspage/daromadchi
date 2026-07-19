@@ -1,5 +1,6 @@
 import { eq, and, inArray, count } from 'drizzle-orm'
 import { db, shops, products, orders, orderItems, syncDays, adCampaigns } from '@/lib/db'
+import { clearShopData } from '@/lib/db/clear-shop-data'
 import {
   fetchAllPages,
   fetchUzumOrders,
@@ -145,6 +146,21 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
     const uzumShops = await fetchUzumShops(token)
     if (uzumShops.length === 0) {
       throw new Error("Uzum do'kon topilmadi (/v1/shops bo'sh qaytdi)")
+    }
+
+    // Detect a genuinely different seller account. Token saves no longer wipe
+    // data (that left the app empty after routine token re-saves); instead the
+    // sync compares the Uzum shop id against the stored one and clears only on
+    // a real switch, then records the current id.
+    const uzumPrimaryId = String(uzumShops[0].id)
+    const [shopRow] = await db.select({ shop_id_external: shops.shop_id_external })
+      .from(shops).where(eq(shops.id, shopId))
+    if (shopRow && shopRow.shop_id_external && shopRow.shop_id_external !== uzumPrimaryId) {
+      await clearShopData(shopId)
+      warnings.push(`Uzum akkaunt o'zgardi (${shopRow.shop_id_external} → ${uzumPrimaryId}) — eski ma'lumotlar tozalandi`)
+    }
+    if (!shopRow?.shop_id_external || shopRow.shop_id_external !== uzumPrimaryId) {
+      await db.update(shops).set({ shop_id_external: uzumPrimaryId }).where(eq(shops.id, shopId))
     }
 
     const productRows: {

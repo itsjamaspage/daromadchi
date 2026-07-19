@@ -38,7 +38,7 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     }
   }
 
-  const [existing] = await db.select({ id: shops.id }).from(shops)
+  const [existing] = await db.select({ id: shops.id, shop_id_external: shops.shop_id_external }).from(shops)
     .where(and(eq(shops.user_id, user.id), eq(shops.marketplace, marketplace), eq(shops.is_active, true)))
 
   const update: Record<string, unknown> = {}
@@ -49,10 +49,20 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   }
   if (campaignId?.trim()) update.shop_id_external = campaignId.trim()
 
+  // Saving a token must NOT destroy synced data: users re-save the same
+  // account's token routinely (rotation, re-copy), and wiping left the app
+  // empty until the next successful sync. Data is cleared ONLY when the shop
+  // provably changed: a different Yandex campaign id here, or — for
+  // marketplaces where the account id is only learnable via the API — inside
+  // the sync when the fetched shop id differs from the stored one.
+  let cleared = false
   if (existing) {
-    if (token?.trim()) {
+    const campaignChanged = !!campaignId?.trim() && !!existing.shop_id_external
+      && existing.shop_id_external !== campaignId.trim()
+    if (campaignChanged) {
       await clearShopData(existing.id)
-      logger.info('shops_token_cleared', { userId: user.id, marketplace, shopId: existing.id })
+      cleared = true
+      logger.info('shops_token_cleared', { userId: user.id, marketplace, shopId: existing.id, reason: 'campaign_changed' })
     }
     await db.update(shops).set(update).where(eq(shops.id, existing.id))
   } else {
@@ -66,7 +76,6 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     })
   }
 
-  const cleared = !!(token?.trim() && existing)
   if (cleared) {
     revalidateTag('product-data', { expire: 0 })
     revalidateTag('order-data', { expire: 0 })
@@ -76,6 +85,6 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     cleared,
     message: cleared
       ? 'Токен сохранён. Старые данные очищены. Нажмите Синхронизировать.'
-      : 'Токен сохранён.',
+      : 'Токен сохранён. Нажмите Синхронизировать.',
   })
 })

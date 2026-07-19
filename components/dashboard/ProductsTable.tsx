@@ -30,7 +30,7 @@ function fmt(n: number) {
   return new Intl.NumberFormat('uz-UZ').format(n) + " so'm"
 }
 
-type TabKey = 'all' | 'low_stock' | 'no_orders' | 'cancelled'
+type TabKey = 'all' | 'low_stock' | 'no_orders' | 'ordered' | 'cancelled'
 type SortKey = 'title' | 'profit' | 'margin' | 'stock_quantity'
 
 function SortIcon({ col, sortBy, sortDir }: { col: SortKey; sortBy: SortKey; sortDir: 'asc' | 'desc' }) {
@@ -168,6 +168,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
     { key: 'all',       label: d.status.all          },
     { key: 'low_stock', label: '📦 ' + d.stockQty    },
     { key: 'no_orders', label: '🚫 ' + d.noMovement  },
+    { key: 'ordered',   label: '🛒 ' + d.orderedTab   },
     { key: 'cancelled', label: '❌ ' + d.cancelledTab },
   ]
 
@@ -186,6 +187,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
 
     if (tab === 'low_stock') rows = rows.filter(p => p.available_stock < stockThreshold)
     if (tab === 'no_orders') rows = rows.filter(p => (p.sold ?? 0) === 0)
+    if (tab === 'ordered')   rows = rows.filter(p => (p.in_transit ?? 0) > 0)
     if (tab === 'cancelled') rows = rows.filter(p => (p.cancelled ?? 0) > 0)
 
     rows.sort((a, b) => {
@@ -234,6 +236,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
     all:       enriched.length,
     low_stock: enriched.filter(p => p.available_stock < stockThreshold).length,
     no_orders: enriched.filter(p => (p.sold ?? 0) === 0).length,
+    ordered:   enriched.filter(p => (p.in_transit ?? 0) > 0).length,
     cancelled: enriched.filter(p => (p.cancelled ?? 0) > 0).length,
   }
 
@@ -366,6 +369,8 @@ export default function ProductsTable({ products }: { products: Product[] }) {
                   {d.margin} <SortIcon col="margin" sortBy={sortBy} sortDir={sortDir} />
                 </th>
                 <th className="text-right font-medium px-5 py-3">{d.sold}</th>
+                <th className="text-right font-medium px-5 py-3">{d.orderedTab}</th>
+                <th className="text-right font-medium px-5 py-3">{d.cancelledTab}</th>
                 <th className="text-right font-medium px-5 py-3 cursor-pointer select-none" style={{ color: 'var(--text-muted)' }} onClick={() => toggleSort('stock_quantity')}>
                   {d.stockQty} <SortIcon col="stock_quantity" sortBy={sortBy} sortDir={sortDir} />
                 </th>
@@ -426,11 +431,12 @@ export default function ProductsTable({ products }: { products: Product[] }) {
                       </td>
                       <td className="px-5 py-4 text-right" style={{ color: 'var(--text-dim)' }}>
                         {p.sold ?? 0}
-                        {(p.cancelled ?? 0) > 0 && (
-                          <span className="ml-1.5 text-[11px] font-medium tabular-nums" style={{ color: '#ef4444' }} title={d.cancelledUnits}>
-                            (−{p.cancelled})
-                          </span>
-                        )}
+                      </td>
+                      <td className="px-5 py-4 text-right font-medium tabular-nums" style={{ color: (p.in_transit ?? 0) > 0 ? '#f59e0b' : 'var(--text-muted)' }}>
+                        {p.in_transit ?? 0}
+                      </td>
+                      <td className="px-5 py-4 text-right font-medium tabular-nums" style={{ color: (p.cancelled ?? 0) > 0 ? '#ef4444' : 'var(--text-muted)' }}>
+                        {p.cancelled ?? 0}
                       </td>
                       <td className="px-5 py-4 text-right">
                         <span className="text-xs font-medium px-2.5 py-1 rounded-lg" style={{ background: stock.bgColor, color: stock.color }}>
