@@ -123,6 +123,9 @@ export const orders = pgTable('orders', {
   shop_id:           uuid('shop_id').notNull().references(() => shops.id, { onDelete: 'cascade' }),
   order_id_external: text('order_id_external'),
   marketplace:       marketplaceTypeEnum('marketplace').notNull(),
+  // Fulfillment scheme: 'fbs' (by seller), 'fbo' (by marketplace warehouse),
+  // 'dbs' (delivery by seller), etc. Nullable for legacy/unknown rows.
+  fulfillment_type:  text('fulfillment_type'),
   status:            orderStatusEnum('status').default('pending').notNull(),
   revenue:           numeric('revenue'),
   marketplace_fee:   numeric('marketplace_fee'),

@@ -134,6 +134,7 @@ export interface Order {
   shop_id: string
   order_id_external: string | null
   marketplace: MarketplaceType
+  fulfillment_type: string | null  // 'fbs' | 'fbo' | 'dbs' | …
   status: OrderStatus
   revenue: number | null
   marketplace_fee: number | null

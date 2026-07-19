@@ -10,6 +10,7 @@ function mapRow(row: typeof orders.$inferSelect): Order {
     shop_id:           row.shop_id,
     order_id_external: row.order_id_external,
     marketplace:       row.marketplace as Order['marketplace'],
+    fulfillment_type:  row.fulfillment_type,
     status:            row.status as Order['status'],
     revenue:           row.revenue ? Number(row.revenue) : null,
     marketplace_fee:   row.marketplace_fee ? Number(row.marketplace_fee) : null,
