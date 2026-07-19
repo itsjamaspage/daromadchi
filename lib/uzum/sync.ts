@@ -30,6 +30,13 @@ export interface SyncResult {
   ordersUpserted: number
   productsUpserted: number
   campaignsUpserted: number
+  // Observability: how many raw orders each source returned, and whether the
+  // order endpoints actually succeeded. When ordersDegraded is true, the order
+  // fetch failed and last_synced_at was intentionally NOT advanced so the same
+  // window is retried on the next run (see the metadata update below).
+  fbsCount?: number
+  fboCount?: number
+  ordersDegraded?: boolean
   error?: string
   details?: string
 }
@@ -138,12 +145,19 @@ export async function syncFromUzum(shopId: string, token: string, fromDateOverri
     const uzumShopIds = uzumShops.map(s => s.id)
     const fromDateMs = since.getTime()
 
+    // Track whether each order source actually succeeded. A single source
+    // failing is normal (a seller may only use FBS or only FBO), but if BOTH
+    // fail we must not advance last_synced_at — otherwise the orders in this
+    // window are skipped forever.
+    let fbsOk = true
+    let fboOk = true
     const [fbsOrders, fboOrders] = await Promise.all([
       fetchAllPages(page => fetchUzumOrders(token, uzumShopIds, page, 100, fromDateMs))
-        .catch(e => { warnings.push(`FBS: ${e instanceof UzumApiError ? `${e.status} ${e.body?.slice(0, 150) ?? ''}` : String(e)}`); return [] as UzumFbsOrder[] }),
+        .catch(e => { fbsOk = false; warnings.push(`FBS: ${e instanceof UzumApiError ? `${e.status} ${e.body?.slice(0, 150) ?? ''}` : String(e)}`); return [] as UzumFbsOrder[] }),
       fetchAllPages(page => fetchUzumOrders(token, uzumShopIds, page, 100, fromDateMs, undefined, 'fbo'))
-        .catch(e => { warnings.push(`FBO: ${e instanceof UzumApiError ? `${e.status} ${e.body?.slice(0, 150) ?? ''}` : String(e)}`); return [] as UzumFbsOrder[] }),
+        .catch(e => { fboOk = false; warnings.push(`FBO: ${e instanceof UzumApiError ? `${e.status} ${e.body?.slice(0, 150) ?? ''}` : String(e)}`); return [] as UzumFbsOrder[] }),
     ])
+    const ordersDegraded = !fbsOk && !fboOk
     const uzumOrders: UzumFbsOrder[] = [
       ...fbsOrders,
       // Deduplicate by id in case FBO endpoint overlaps with FBS
@@ -455,32 +469,47 @@ export async function syncFromUzum(shopId: string, token: string, fromDateOverri
     }
 
     // ── Update sync metadata ──────────────────────────────────────────────────
+    // Advance last_synced_at ONLY when the order fetch didn't fully fail.
+    // Advancing it after a failed fetch would permanently skip this window's
+    // orders on the next incremental run.
     const today = new Date().toISOString().slice(0, 10)
-    await Promise.all([
-      db.update(shops).set({ last_synced_at: new Date() }).where(eq(shops.id, shopId)),
+    const dayStatus = ordersDegraded ? 'degraded' : 'success'
+    const dayError  = ordersDegraded && warnings.length
+      ? `Buyurtmalarni yuklab bo'lmadi: ${warnings.join(' | ')}`.slice(0, 500)
+      : null
+    const metaWrites: Promise<unknown>[] = [
       db.insert(syncDays).values({
         shop_id: shopId,
         sync_date: today,
-        status: 'success',
+        status: dayStatus,
         products_count: productRows.length,
         revenue: String(newOrderRows.reduce((s, o) => s + (o.revenue ?? 0), 0)),
+        error_message: dayError,
         synced_at: new Date(),
       }).onConflictDoUpdate({
         target: [syncDays.shop_id, syncDays.sync_date],
         set: {
-          status: 'success',
+          status: dayStatus,
           products_count: productRows.length,
           revenue: String(newOrderRows.reduce((s, o) => s + (o.revenue ?? 0), 0)),
+          error_message: dayError,
           synced_at: new Date(),
         },
       }),
-    ])
+    ]
+    if (!ordersDegraded) {
+      metaWrites.push(db.update(shops).set({ last_synced_at: new Date() }).where(eq(shops.id, shopId)))
+    }
+    await Promise.all(metaWrites)
 
     return {
       ok: true,
       ordersUpserted: newOrderRows.length,
       productsUpserted: productRows.length,
       campaignsUpserted,
+      fbsCount: fbsOrders.length,
+      fboCount: fboOrders.length,
+      ordersDegraded,
       details: warnings.length ? warnings.join(' | ') : undefined,
     }
   } catch (err) {
