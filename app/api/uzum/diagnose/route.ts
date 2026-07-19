@@ -154,22 +154,17 @@ export const GET = withErrorHandler(async () => {
   // sweep those exact values (guessing names just yields "Bad request"). Only
   // CREATED / DELIVERED / COMPLETED were valid so far, and the in-transit order
   // is in none of them — so we need the authoritative list.
-  const now = Date.now()
-  const fromMs = now - 365 * 24 * 60 * 60 * 1000
   const orderProbes: Probe[] = []
   const gap = () => new Promise(r => setTimeout(r, 1100))
 
   const { specPath, discoveredStatuses } = await discoverStatuses(token)
 
-  // Statuses to sweep: whatever the spec revealed, else a broad fallback list.
-  // Always include the three we know are valid so counts are comparable.
-  const known = ['CREATED', 'DELIVERED', 'COMPLETED']
-  const fallback = [
-    'CONFIRMED', 'AGREED', 'ACCEPTED', 'PACKED', 'PACKAGED', 'ASSEMBLED',
-    'READY', 'SENT', 'HANDED_OVER', 'TRANSFERRED', 'ON_DELIVERY', 'DELIVERING',
-    'CANCELED', 'RETURNED', 'EXPIRED', 'PENDING', 'ACTIVE',
-  ]
-  const sweep = [...new Set([...known, ...discoveredStatuses, ...fallback])].slice(0, 24)
+  // The valid FBS status enum is now known: CREATED, DELIVERING, DELIVERED,
+  // COMPLETED, CANCELED, RETURNED — and every one returned 0 WITH the date
+  // filter. Remaining questions: (a) does the date filter hide the order?
+  // (b) does /v1/fbs differ? (c) does the OpenAPI spec expose other order
+  // types? Probe the valid statuses WITHOUT a date filter, and try /v1/fbs.
+  const VALID = ['CREATED', 'DELIVERING', 'DELIVERED', 'COMPLETED', 'CANCELED', 'RETURNED']
 
   if (uzumShopIds.length > 0) {
     const withIds = (base: Record<string, string>) => {
@@ -177,17 +172,18 @@ export const GET = withErrorHandler(async () => {
       for (const id of uzumShopIds) p.append('shopIds', String(id))
       return p.toString()
     }
-    const dated = (extra: Record<string, string> = {}) =>
-      withIds({ page: '0', size: '50', dateFrom: String(fromMs), dateTo: String(now), ...extra })
 
-    for (const st of sweep) {
-      orderProbes.push(await probe(`fbs_${st}`, `${UZUM_API_BASE}/v2/fbs/orders?${dated({ status: st })}`, token))
+    // (a) valid statuses, NO date filter — rules the date bounds in or out
+    for (const st of VALID) {
+      orderProbes.push(await probe(`fbs_${st}_nodate`, `${UZUM_API_BASE}/v2/fbs/orders?${withIds({ page: '0', size: '50', status: st })}`, token))
       await gap()
     }
+    // (b) /v1/fbs/orders variant (in case v2 is the wrong version for this account)
+    orderProbes.push(await probe('v1_fbs_CREATED', `${UZUM_API_BASE}/v1/fbs/orders?${withIds({ page: '0', size: '50', status: 'CREATED' })}`, token)); await gap()
+    orderProbes.push(await probe('v1_fbs_DELIVERING', `${UZUM_API_BASE}/v1/fbs/orders?${withIds({ page: '0', size: '50', status: 'DELIVERING' })}`, token))
   }
 
-  // Which statuses are actually valid (200) vs rejected (400), and which hold data.
-  const validStatuses = orderProbes.filter(p => p.status === 200).map(p => `${p.label.replace('fbs_', '')}${p.count ? `(${p.count})` : ''}`)
+  const validStatuses = orderProbes.filter(p => p.status === 200).map(p => `${p.label}${p.count ? `(${p.count})` : '(0)'}`)
 
   return NextResponse.json({
     ok: true,
