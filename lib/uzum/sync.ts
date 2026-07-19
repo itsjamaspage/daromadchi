@@ -163,13 +163,17 @@ export async function syncFromUzum(shopId: string, token: string, fromDateOverri
         .catch(e => { fboOk = false; warnings.push(`FBO: ${e instanceof UzumApiError ? `${e.status} ${e.body?.slice(0, 150) ?? ''}` : String(e)}`); return [] as UzumFbsOrder[] }),
     ])
     const ordersDegraded = !fbsOk && !fboOk
-    const uzumOrders: UzumFbsOrder[] = [
-      ...fbsOrders,
-      // Deduplicate by id in case FBO endpoint overlaps with FBS
-      ...fboOrders.filter(o => !fbsOrders.some(f => String(f.id) === String(o.id))),
+    // Tag each order with its fulfillment scheme so it can be distinguished
+    // downstream. Deduplicate by id in case the FBO endpoint overlaps with FBS.
+    const taggedOrders: { o: UzumFbsOrder; ff: string }[] = [
+      ...fbsOrders.map(o => ({ o, ff: 'fbs' })),
+      ...fboOrders
+        .filter(o => !fbsOrders.some(f => String(f.id) === String(o.id)))
+        .map(o => ({ o, ff: 'fbo' })),
     ]
+    const uzumOrders: UzumFbsOrder[] = taggedOrders.map(t => t.o)
 
-    const orderRows = uzumOrders.map(o => {
+    const orderRows = taggedOrders.map(({ o, ff }) => {
       // Support both new (id/dateCreated/price/orderItems) and legacy field names
       const extId = String(o.id ?? o.orderId)
       const orderedAt = o.dateCreated ?? o.createdAt ?? new Date().toISOString()
@@ -179,6 +183,7 @@ export async function syncFromUzum(shopId: string, token: string, fromDateOverri
         shop_id: shopId,
         order_id_external: extId,
         marketplace: 'uzum' as const,
+        fulfillment_type: ff,
         status: (STATUS_MAP[o.status] ?? 'pending') as
           | 'pending'
           | 'confirmed'
@@ -207,6 +212,7 @@ export async function syncFromUzum(shopId: string, token: string, fromDateOverri
             shop_id: r.shop_id,
             order_id_external: r.order_id_external,
             marketplace: r.marketplace,
+            fulfillment_type: r.fulfillment_type,
             status: r.status,
             revenue: String(r.revenue),
             items_count: r.items_count,
@@ -216,6 +222,7 @@ export async function syncFromUzum(shopId: string, token: string, fromDateOverri
       }
       for (const r of toUpdOrd) {
         await db.update(orders).set({
+          fulfillment_type: r.fulfillment_type,
           status: r.status,
           revenue: String(r.revenue),
           items_count: r.items_count,

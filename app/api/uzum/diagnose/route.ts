@@ -8,6 +8,7 @@ import { UZUM_API_BASE } from '@/lib/uzum/client'
 import { withErrorHandler } from '@/lib/api-handler'
 
 export const runtime = 'nodejs'
+export const maxDuration = 60
 
 // READ-ONLY diagnostic. Calls the Uzum seller API exactly the way the sync does
 // (GET /v1/shops, GET /v2/fbs|fbo/orders) and reports raw HTTP status, counts,
@@ -98,30 +99,40 @@ export const GET = withErrorHandler(async () => {
     uzumShopIds = (arr as { id: number }[]).map(s => s.id).filter(Boolean)
   } catch { /* status already captured by shopsProbe */ }
 
-  // Step 2: orders. Several variants to pin down the 400/403 cause. Calls are
-  // spaced out so Uzum's rate limiter doesn't turn real errors into 429 noise.
+  // Step 2: fulfillment discovery. FBS returned 200 but 0 orders even though the
+  // seller has FBS sales — so the default FBS view is filtered (likely by status:
+  // it returns only orders awaiting action, not delivered/completed ones). Probe
+  // a wide 365-day window across FBS (with several statuses), DBS, and unified
+  // order endpoints so we can see which one actually contains the order and what
+  // its status/type fields look like. Calls are spaced out to avoid 429 noise.
   const now = Date.now()
-  const fromMs = now - 90 * 24 * 60 * 60 * 1000
+  const fromMs = now - 365 * 24 * 60 * 60 * 1000
   const orderProbes: Probe[] = []
-  const gap = () => new Promise(r => setTimeout(r, 1200))
+  const gap = () => new Promise(r => setTimeout(r, 1100))
   if (uzumShopIds.length > 0) {
     const withIds = (base: Record<string, string>) => {
       const p = new URLSearchParams(base)
       for (const id of uzumShopIds) p.append('shopIds', String(id))
       return p.toString()
     }
+    const dated = (extra: Record<string, string> = {}) =>
+      withIds({ page: '0', size: '50', dateFrom: String(fromMs), dateTo: String(now), ...extra })
 
-    // A) date range as epoch ms (what the sync currently sends)
-    orderProbes.push(await probe('fbs_dateFrom_ms', `${UZUM_API_BASE}/v2/fbs/orders?${withIds({ page: '0', size: '50', dateFrom: String(fromMs) })}`, token)); await gap()
-    // B) date range with BOTH dateFrom and dateTo (common 400 cause: dateTo required)
-    orderProbes.push(await probe('fbs_dateFrom_dateTo', `${UZUM_API_BASE}/v2/fbs/orders?${withIds({ page: '0', size: '50', dateFrom: String(fromMs), dateTo: String(now) })}`, token)); await gap()
-    // C) no date filter at all
-    orderProbes.push(await probe('fbs_no_date', `${UZUM_API_BASE}/v2/fbs/orders?${withIds({ page: '0', size: '50' })}`, token)); await gap()
-    // D) FBO with both dates
-    orderProbes.push(await probe('fbo_dateFrom_dateTo', `${UZUM_API_BASE}/v2/fbo/orders?${withIds({ page: '0', size: '50', dateFrom: String(fromMs), dateTo: String(now) })}`, token)); await gap()
-    // E) single shopId param name variant (some endpoints want `shopId`, not `shopIds`)
-    const single = new URLSearchParams({ page: '0', size: '50', shopId: String(uzumShopIds[0]) })
-    orderProbes.push(await probe('fbs_shopId_singular', `${UZUM_API_BASE}/v2/fbs/orders?${single}`, token))
+    // FBS, default view (baseline — known 200/0)
+    orderProbes.push(await probe('fbs_default', `${UZUM_API_BASE}/v2/fbs/orders?${dated()}`, token)); await gap()
+    // FBS with an intentionally invalid status — Uzum usually 400s with the list
+    // of valid enum values in the body, which reveals the real status names.
+    orderProbes.push(await probe('fbs_status_probe', `${UZUM_API_BASE}/v2/fbs/orders?${dated({ status: 'DISCOVER_VALID_STATUSES' })}`, token)); await gap()
+    // FBS with common "finished" statuses so a delivered order shows up
+    orderProbes.push(await probe('fbs_status_DELIVERED', `${UZUM_API_BASE}/v2/fbs/orders?${dated({ status: 'DELIVERED' })}`, token)); await gap()
+    orderProbes.push(await probe('fbs_status_COMPLETED', `${UZUM_API_BASE}/v2/fbs/orders?${dated({ status: 'COMPLETED' })}`, token)); await gap()
+    // DBS (delivery by seller) — not queried by the sync at all today
+    orderProbes.push(await probe('dbs_default', `${UZUM_API_BASE}/v2/dbs/orders?${dated()}`, token)); await gap()
+    // Unified order endpoints (some APIs expose all fulfillment types in one)
+    orderProbes.push(await probe('orders_v2', `${UZUM_API_BASE}/v2/orders?${dated()}`, token)); await gap()
+    orderProbes.push(await probe('orders_v1', `${UZUM_API_BASE}/v1/orders?${dated()}`, token)); await gap()
+    // FBO reconfirm (expected 403 RBAC on this token)
+    orderProbes.push(await probe('fbo_default', `${UZUM_API_BASE}/v2/fbo/orders?${dated()}`, token))
   }
 
   return NextResponse.json({
@@ -131,6 +142,6 @@ export const GET = withErrorHandler(async () => {
     uzumShopIds,
     shopsProbe,
     orderProbes,
-    hint: 'Look at orderProbes[].status and .count. 200 with count>0 means the API returns orders (sync should store them). 4xx/0 means the token or endpoint is the problem — paste bodySnippet to support.',
+    hint: 'Find the probe with HTTP 200 and count>0 — that endpoint/status has the order; its .sample shows the real status + fulfillment fields. fbs_status_probe body often lists the valid status enum. Paste the full JSON to support.',
   })
 })
