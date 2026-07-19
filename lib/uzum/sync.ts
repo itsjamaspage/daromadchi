@@ -144,17 +144,22 @@ export async function syncFromUzum(shopId: string, token: string, fromDateOverri
     // Many Uzum sellers use FBO (Uzum warehouse), so FBS alone returns 0.
     const uzumShopIds = uzumShops.map(s => s.id)
     const fromDateMs = since.getTime()
+    // Uzum's order endpoints reject dateFrom without dateTo (HTTP 400). Always
+    // send both. Confirmed via /api/uzum/diagnose: dateFrom-only → 400,
+    // dateFrom+dateTo → 200.
+    const toDateMs = Date.now()
 
     // Track whether each order source actually succeeded. A single source
-    // failing is normal (a seller may only use FBS or only FBO), but if BOTH
-    // fail we must not advance last_synced_at — otherwise the orders in this
-    // window are skipped forever.
+    // failing is normal (a seller may only use FBS or only FBO — e.g. FBO
+    // returns "RBAC: access denied" when the API key lacks FBO scope), but if
+    // BOTH fail we must not advance last_synced_at — otherwise the orders in
+    // this window are skipped forever.
     let fbsOk = true
     let fboOk = true
     const [fbsOrders, fboOrders] = await Promise.all([
-      fetchAllPages(page => fetchUzumOrders(token, uzumShopIds, page, 100, fromDateMs))
+      fetchAllPages(page => fetchUzumOrders(token, uzumShopIds, page, 100, fromDateMs, toDateMs))
         .catch(e => { fbsOk = false; warnings.push(`FBS: ${e instanceof UzumApiError ? `${e.status} ${e.body?.slice(0, 150) ?? ''}` : String(e)}`); return [] as UzumFbsOrder[] }),
-      fetchAllPages(page => fetchUzumOrders(token, uzumShopIds, page, 100, fromDateMs, undefined, 'fbo'))
+      fetchAllPages(page => fetchUzumOrders(token, uzumShopIds, page, 100, fromDateMs, toDateMs, 'fbo'))
         .catch(e => { fboOk = false; warnings.push(`FBO: ${e instanceof UzumApiError ? `${e.status} ${e.body?.slice(0, 150) ?? ''}` : String(e)}`); return [] as UzumFbsOrder[] }),
     ])
     const ordersDegraded = !fbsOk && !fboOk
@@ -291,10 +296,11 @@ export async function syncFromUzum(shopId: string, token: string, fromDateOverri
     if (productRows.length === 0 && existingProductCount === 0) {
       try {
         const extractMs = Date.now() - 90 * 24 * 60 * 60 * 1000
+        const extractToMs = Date.now()
         const [fbsEx, fboEx] = await Promise.all([
-          fetchAllPages(p => fetchUzumOrders(token, uzumShopIds, p, 100, extractMs))
+          fetchAllPages(p => fetchUzumOrders(token, uzumShopIds, p, 100, extractMs, extractToMs))
             .catch(() => [] as UzumFbsOrder[]),
-          fetchAllPages(p => fetchUzumOrders(token, uzumShopIds, p, 100, extractMs, undefined, 'fbo'))
+          fetchAllPages(p => fetchUzumOrders(token, uzumShopIds, p, 100, extractMs, extractToMs, 'fbo'))
             .catch(() => [] as UzumFbsOrder[]),
         ])
         const extractOrders: UzumFbsOrder[] = [
