@@ -25,7 +25,7 @@ function StatusMsg({ msg }: { msg: { ok: boolean; text: string } | null }) {
       }}
     >
       {ok ? <CheckCircle className="w-4 h-4 mt-0.5 shrink-0" /> : <XCircle className="w-4 h-4 mt-0.5 shrink-0" />}
-      {msg.text}
+      <span className="whitespace-pre-wrap break-words min-w-0">{msg.text}</span>
     </div>
   )
 }
@@ -95,11 +95,14 @@ function UzumCard({ shop }: { shop: Shop | null; userId: string }) {
       if (!data.ok) {
         setSyncMsg({ ok: false, text: `Diagnostika: ${data.error ?? 'Xato'}` })
       } else {
-        const probes = (data.orderProbes ?? []) as { label: string; status: number; count: number | null }[]
+        const probes = (data.orderProbes ?? []) as { label: string; status: number; count: number | null; bodySnippet?: string }[]
         const summary = probes.length === 0
           ? `do'kon topilmadi (shops HTTP ${data.shopsProbe?.status})`
-          : probes.map(p => `${p.label}: HTTP ${p.status}${p.count !== null ? ` (${p.count})` : ''}`).join(' · ')
-        setSyncMsg({ ok: true, text: `shopIds [${(data.uzumShopIds ?? []).join(', ')}] · ${summary}` })
+          : probes.map(p => {
+              const base = `${p.label}: HTTP ${p.status}${p.count !== null ? ` (${p.count})` : ''}`
+              return p.status >= 400 && p.bodySnippet ? `${base} → ${p.bodySnippet}` : base
+            }).join('\n')
+        setSyncMsg({ ok: true, text: `shopIds [${(data.uzumShopIds ?? []).join(', ')}]\n${summary}` })
         console.log('[uzum diagnose]', data)
       }
     } catch {
@@ -851,8 +854,33 @@ function TelegramCard({ chatId, username }: { chatId: string | null; username: s
   const [link,    setLink]    = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [msg,     setMsg]     = useState<{ ok: boolean; text: string } | null>(null)
+  const [notifLang, setNotifLang] = useState<'uz' | 'ru' | 'en'>('uz')
 
   const connected = !!chatId
+
+  // Load the saved notification language so the selector reflects reality.
+  useEffect(() => {
+    if (!connected) return
+    fetch('/api/telegram/status')
+      .then(r => r.json())
+      .then(d => { if (d?.notifLang) setNotifLang(d.notifLang) })
+      .catch(() => {})
+  }, [connected])
+
+  async function saveNotifLang(l: 'uz' | 'ru' | 'en') {
+    const prev = notifLang
+    setNotifLang(l); setMsg(null)
+    try {
+      const res = await fetch('/api/settings/language', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lang: l }),
+      })
+      if (!res.ok) { setNotifLang(prev); setMsg({ ok: false, text: 'Tilni saqlab boʻlmadi' }) }
+    } catch {
+      setNotifLang(prev); setMsg({ ok: false, text: 'Tarmoq xatosi' })
+    }
+  }
 
   useEffect(() => {
     if (!link || connected) return
@@ -932,6 +960,21 @@ function TelegramCard({ chatId, username }: { chatId: string | null; username: s
       </div>
       <div className="p-5 space-y-3">
         {connected ? (
+          <>
+          <div className="space-y-1.5">
+            <p className="text-[var(--text-muted)] text-xs">Bildirishnoma tili / Язык уведомлений</p>
+            <div className="inline-flex rounded-xl border border-[var(--border2)] overflow-hidden">
+              {([['uz', "O'zbek"], ['ru', 'Русский'], ['en', 'English']] as const).map(([code, label]) => (
+                <button
+                  key={code}
+                  onClick={() => saveNotifLang(code)}
+                  className={`text-xs font-semibold px-3 py-2 transition-colors ${notifLang === code ? 'btn-primary text-white' : 'bg-[var(--bg-input)] text-[var(--text-muted)] hover:text-[var(--text-base)]'}`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
           <div className="flex flex-wrap gap-2">
             <button
               onClick={handleSendTest}
@@ -950,6 +993,7 @@ function TelegramCard({ chatId, username }: { chatId: string | null; username: s
               Telegram uzish
             </button>
           </div>
+          </>
         ) : link ? (
           <div className="space-y-3">
             <p className="text-[var(--text-muted)] text-xs">
