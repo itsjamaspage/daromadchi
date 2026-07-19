@@ -93,6 +93,9 @@ export interface SyncResult {
   ordersDegraded?: boolean
   error?: string
   details?: string
+  // order_items rows written. 0 while ordersUpserted > 0 means the list
+  // response carried no orderItems — the raw order in debug shows why.
+  itemsUpserted?: number
   // Per-request outcome of every order query (e.g. fbs_CANCELED: "1" or
   // "HTTP 400 …") plus the first raw order JSON. Returned to the Settings card
   // so a failing sync is diagnosable without server logs.
@@ -102,6 +105,7 @@ export interface SyncResult {
 export async function syncFromUzum(shopId: string, token: string): Promise<SyncResult> {
   const warnings: string[] = []
   const debug: Record<string, string> = {}
+  let itemsUpserted = 0
 
   try {
     // ── Products: resolve shop(s), then pull product/SKU data ─────────────────
@@ -296,7 +300,8 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
           | 'cancelled'
           | 'returned',
         revenue,
-        items_count: allItems.length || 1,
+        // Units, not line items: an order of 2× one SKU must show 2, not 1.
+        items_count: allItems.reduce((s, it) => s + (it.quantity ?? 1), 0) || 1,
         ordered_at: orderedAt,
       }
     })
@@ -551,8 +556,12 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
             price_per_unit: String(r.price_per_unit),
           })))
         }
+        itemsUpserted += itemRows.length
       }
-    } catch { /* order items sync is best-effort */ }
+    } catch (e) {
+      // Best-effort, but never silent: analytics depend on order_items.
+      warnings.push(`Order items: ${String(e).slice(0, 150)}`)
+    }
 
     // ── Ad campaigns (best-effort — gracefully skipped if endpoint 404s) ──────
     let campaignsUpserted = 0
@@ -629,6 +638,7 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
       fbsCount: fbsOrders.length,
       fboCount: fboOrders.length,
       ordersDegraded,
+      itemsUpserted,
       details: warnings.length ? warnings.join(' | ') : undefined,
       debug,
     }

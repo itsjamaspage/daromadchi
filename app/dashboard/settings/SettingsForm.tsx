@@ -37,19 +37,21 @@ function StatusMsg({ msg }: { msg: { ok: boolean; text: string } | null }) {
 // right on the card instead of requiring server logs.
 function uzumSyncText(data: {
   ok?: boolean; error?: string; productsUpserted?: number; ordersUpserted?: number
-  campaignsUpserted?: number; details?: string; debug?: Record<string, string>
+  campaignsUpserted?: number; itemsUpserted?: number; details?: string; debug?: Record<string, string>
 }): { ok: boolean; text: string } {
   let text = data.ok
-    ? `${data.productsUpserted ?? 0} mahsulot, ${data.ordersUpserted ?? 0} buyurtma${data.campaignsUpserted ? `, ${data.campaignsUpserted} kampaniya` : ''} yangilandi.`
+    ? `${data.productsUpserted ?? 0} mahsulot, ${data.ordersUpserted ?? 0} buyurtma (${data.itemsUpserted ?? 0} element)${data.campaignsUpserted ? `, ${data.campaignsUpserted} kampaniya` : ''} yangilandi.`
     : (data.error ?? 'Xato')
-  if (!data.ordersUpserted) {
-    if (data.details) text += `\nOgohlantirishlar: ${data.details}`
-    if (data.debug) {
-      const perStatus = Object.entries(data.debug)
-        .filter(([k]) => k !== 'firstOrderRaw')
-        .map(([k, v]) => `${k}=${v}`).join(', ')
-      if (perStatus) text += `\nSo'rovlar: ${perStatus}`
-      if (data.debug.firstOrderRaw) text += `\n1-buyurtma (xom): ${data.debug.firstOrderRaw.slice(0, 300)}`
+  if (data.details) text += `\nOgohlantirishlar: ${data.details}`
+  if (data.debug) {
+    const perStatus = Object.entries(data.debug)
+      .filter(([k]) => k !== 'firstOrderRaw')
+      .map(([k, v]) => `${k}=${v}`).join(', ')
+    if (perStatus) text += `\nSo'rovlar: ${perStatus}`
+    // Raw order shown when something is off: no orders stored, or orders
+    // without line items (breaks analytics) — the field names are the evidence.
+    if (data.debug.firstOrderRaw && (!data.ordersUpserted || !data.itemsUpserted)) {
+      text += `\n1-buyurtma (xom): ${data.debug.firstOrderRaw.slice(0, 400)}`
     }
   }
   return { ok: !!data.ok, text }
