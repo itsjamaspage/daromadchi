@@ -98,20 +98,30 @@ export const GET = withErrorHandler(async () => {
     uzumShopIds = (arr as { id: number }[]).map(s => s.id).filter(Boolean)
   } catch { /* status already captured by shopsProbe */ }
 
-  // Step 2: orders — last 90 days, both FBS and FBO, for each shop id.
-  const fromMs = Date.now() - 90 * 24 * 60 * 60 * 1000
+  // Step 2: orders. Several variants to pin down the 400/403 cause. Calls are
+  // spaced out so Uzum's rate limiter doesn't turn real errors into 429 noise.
+  const now = Date.now()
+  const fromMs = now - 90 * 24 * 60 * 60 * 1000
   const orderProbes: Probe[] = []
+  const gap = () => new Promise(r => setTimeout(r, 1200))
   if (uzumShopIds.length > 0) {
-    const params = new URLSearchParams({ page: '0', size: '100', dateFrom: String(fromMs) })
-    for (const id of uzumShopIds) params.append('shopIds', String(id))
-    orderProbes.push(await probe('fbs_orders_90d', `${UZUM_API_BASE}/v2/fbs/orders?${params}`, token))
-    orderProbes.push(await probe('fbo_orders_90d', `${UZUM_API_BASE}/v2/fbo/orders?${params}`, token))
+    const withIds = (base: Record<string, string>) => {
+      const p = new URLSearchParams(base)
+      for (const id of uzumShopIds) p.append('shopIds', String(id))
+      return p.toString()
+    }
 
-    // Also try with no date filter, in case dateFrom is the thing hiding orders.
-    const paramsNoDate = new URLSearchParams({ page: '0', size: '100' })
-    for (const id of uzumShopIds) paramsNoDate.append('shopIds', String(id))
-    orderProbes.push(await probe('fbs_orders_all', `${UZUM_API_BASE}/v2/fbs/orders?${paramsNoDate}`, token))
-    orderProbes.push(await probe('fbo_orders_all', `${UZUM_API_BASE}/v2/fbo/orders?${paramsNoDate}`, token))
+    // A) date range as epoch ms (what the sync currently sends)
+    orderProbes.push(await probe('fbs_dateFrom_ms', `${UZUM_API_BASE}/v2/fbs/orders?${withIds({ page: '0', size: '50', dateFrom: String(fromMs) })}`, token)); await gap()
+    // B) date range with BOTH dateFrom and dateTo (common 400 cause: dateTo required)
+    orderProbes.push(await probe('fbs_dateFrom_dateTo', `${UZUM_API_BASE}/v2/fbs/orders?${withIds({ page: '0', size: '50', dateFrom: String(fromMs), dateTo: String(now) })}`, token)); await gap()
+    // C) no date filter at all
+    orderProbes.push(await probe('fbs_no_date', `${UZUM_API_BASE}/v2/fbs/orders?${withIds({ page: '0', size: '50' })}`, token)); await gap()
+    // D) FBO with both dates
+    orderProbes.push(await probe('fbo_dateFrom_dateTo', `${UZUM_API_BASE}/v2/fbo/orders?${withIds({ page: '0', size: '50', dateFrom: String(fromMs), dateTo: String(now) })}`, token)); await gap()
+    // E) single shopId param name variant (some endpoints want `shopId`, not `shopIds`)
+    const single = new URLSearchParams({ page: '0', size: '50', shopId: String(uzumShopIds[0]) })
+    orderProbes.push(await probe('fbs_shopId_singular', `${UZUM_API_BASE}/v2/fbs/orders?${single}`, token))
   }
 
   return NextResponse.json({

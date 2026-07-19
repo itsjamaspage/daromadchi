@@ -27,6 +27,7 @@ export const GET = withErrorHandler(async () => {
     notif_weekly_report: userSettings.notif_weekly_report,
     notif_send_time: userSettings.notif_send_time,
     notif_send_days: userSettings.notif_send_days,
+    notif_lang: userSettings.notif_lang,
   }).from(userSettings)
     .where(eq(userSettings.user_id, user.id))
 
@@ -43,6 +44,7 @@ export const GET = withErrorHandler(async () => {
     configured: telegramConfigured(),
     linked:     !!data?.telegram_chat_id,
     username:   data?.telegram_username ?? null,
+    notifLang:  data?.notif_lang ?? 'uz',
     prefs,
   })
 })
