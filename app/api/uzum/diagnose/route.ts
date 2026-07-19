@@ -150,21 +150,14 @@ export const GET = withErrorHandler(async () => {
     uzumShopIds = (arr as { id: number }[]).map(s => s.id).filter(Boolean)
   } catch { /* status already captured by shopsProbe */ }
 
-  // Step 2: discover the REAL FBS status enum from Uzum's OpenAPI spec, then
-  // sweep those exact values (guessing names just yields "Bad request"). Only
-  // CREATED / DELIVERED / COMPLETED were valid so far, and the in-transit order
-  // is in none of them — so we need the authoritative list.
+  // Step 2: lean, FBO-focused probe set. Uzum rate-limits aggressively (429), so
+  // keep the request count low and the gaps generous. The open questions now:
+  // (1) does the key unlock FBO (200 vs 403)? (2) does FBS still return orders
+  // with no date filter? (3) is there a read-accessible analytics endpoint?
   const orderProbes: Probe[] = []
-  const gap = () => new Promise(r => setTimeout(r, 1100))
+  const gap = () => new Promise(r => setTimeout(r, 2000))
 
   const { specPath, discoveredStatuses } = await discoverStatuses(token)
-
-  // The valid FBS status enum is now known: CREATED, DELIVERING, DELIVERED,
-  // COMPLETED, CANCELED, RETURNED — and every one returned 0 WITH the date
-  // filter. Remaining questions: (a) does the date filter hide the order?
-  // (b) does /v1/fbs differ? (c) does the OpenAPI spec expose other order
-  // types? Probe the valid statuses WITHOUT a date filter, and try /v1/fbs.
-  const VALID = ['CREATED', 'DELIVERING', 'DELIVERED', 'COMPLETED', 'CANCELED', 'RETURNED']
 
   if (uzumShopIds.length > 0) {
     const withIds = (base: Record<string, string>) => {
@@ -172,23 +165,17 @@ export const GET = withErrorHandler(async () => {
       for (const id of uzumShopIds) p.append('shopIds', String(id))
       return p.toString()
     }
+    const q = (extra: Record<string, string>) => withIds({ page: '0', size: '50', ...extra })
 
-    // (a) valid statuses, NO date filter — rules the date bounds in or out
-    for (const st of VALID) {
-      orderProbes.push(await probe(`fbs_${st}_nodate`, `${UZUM_API_BASE}/v2/fbs/orders?${withIds({ page: '0', size: '50', status: st })}`, token))
-      await gap()
-    }
-    // (b) /v1/fbs/orders variant (in case v2 is the wrong version for this account)
-    orderProbes.push(await probe('v1_fbs_CREATED', `${UZUM_API_BASE}/v1/fbs/orders?${withIds({ page: '0', size: '50', status: 'CREATED' })}`, token)); await gap()
-    orderProbes.push(await probe('v1_fbs_DELIVERING', `${UZUM_API_BASE}/v1/fbs/orders?${withIds({ page: '0', size: '50', status: 'DELIVERING' })}`, token)); await gap()
-
-    // (c) FBO revenue workaround hunt: analytics/finance/report endpoints that a
-    // read-only key might reach (FBO order records are 403). If any returns 200,
-    // it may carry FBO sales totals we can use for revenue.
-    for (const path of ['/v1/analytics/sales', '/v2/analytics/sales', '/v1/finance/orders', '/v1/reports/sales', '/v2/analytics/orders']) {
-      orderProbes.push(await probe(`analytics ${path}`, `${UZUM_API_BASE}${path}?${withIds({ page: '0', size: '50' })}`, token))
-      await gap()
-    }
+    // FBO — the key question: 200 (unlocked) vs 403 (still no scope)?
+    orderProbes.push(await probe('fbo_CREATED', `${UZUM_API_BASE}/v2/fbo/orders?${q({ status: 'CREATED' })}`, token)); await gap()
+    orderProbes.push(await probe('fbo_DELIVERING', `${UZUM_API_BASE}/v2/fbo/orders?${q({ status: 'DELIVERING' })}`, token)); await gap()
+    orderProbes.push(await probe('fbo_DELIVERED', `${UZUM_API_BASE}/v2/fbo/orders?${q({ status: 'DELIVERED' })}`, token)); await gap()
+    // FBS confirm — CANCELED with no date filter previously returned the order.
+    orderProbes.push(await probe('fbs_CANCELED', `${UZUM_API_BASE}/v2/fbs/orders?${q({ status: 'CANCELED' })}`, token)); await gap()
+    orderProbes.push(await probe('fbs_CREATED', `${UZUM_API_BASE}/v2/fbs/orders?${q({ status: 'CREATED' })}`, token)); await gap()
+    // One analytics probe (revenue hunt) — kept minimal to spare the rate limit.
+    orderProbes.push(await probe('analytics /v1/analytics/sales', `${UZUM_API_BASE}/v1/analytics/sales?${q({})}`, token))
   }
 
   // Product sample — confirms SKU.quantitySold (our FBO "sold" workaround) is
