@@ -59,11 +59,24 @@ export const GET = withErrorHandler(async () => {
     if (res.ok) {
       return NextResponse.json({ ok: true, message: `Uzum token ishlayapti — sinxronizatsiyani boshlashingiz mumkin` })
     }
+    // 429 = rate limited, NOT a bad token. Say so instead of "token invalid".
+    if (res.status === 429) {
+      return NextResponse.json({
+        ok: false,
+        error: `Uzum so'rovlar chegarasiga yetdingiz (429). Token to'g'ri — 1-2 daqiqa kuting va qaytadan urinib ko'ring.`,
+      })
+    }
+    // 401/403 = auth/permission problem — that's the "wrong token" case.
     let body = ''
     try { body = await res.text() } catch { /* ignore */ }
-    return NextResponse.json(
-      { ok: false, error: `Uzum token noto'g'ri (${res.status}). seller.uzum.uz → Sozlamalar → API integratsiya sahifasidan API kalitini qayta nusxalab saqlang.`, detail: body.slice(0, 300) },
-    )
+    const authIssue = res.status === 401 || res.status === 403
+    return NextResponse.json({
+      ok: false,
+      error: authIssue
+        ? `Uzum token noto'g'ri yoki ruxsat yo'q (${res.status}). seller.uzum.uz → Sozlamalar → API integratsiya sahifasidan API kalitini qayta nusxalab saqlang.`
+        : `Uzum xatosi (${res.status}). Birozdan so'ng qaytadan urinib ko'ring.`,
+      detail: body.slice(0, 300),
+    })
   } catch (err) {
     return NextResponse.json({ ok: false, error: `Tarmoq xatosi: ${String(err)}` })
   }
