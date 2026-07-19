@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   RefreshCw, Save, Key, CheckCircle, XCircle, ExternalLink,
-  Loader2, Hash, Sparkles, Trash2, Send, LinkIcon, Building2, Plus,
+  Loader2, Hash, Sparkles, Trash2, Send, LinkIcon, Building2, Plus, AlertTriangle,
 } from 'lucide-react'
 // import { createClient } from '@/lib/supabase/client'
 import type { Shop } from '@/lib/types'
@@ -42,6 +42,7 @@ function UzumCard({ shop }: { shop: Shop | null; userId: string }) {
   const [syncStep, setSyncStep] = useState<string | null>(null)
   const [saveMsg,  setSaveMsg]  = useState<{ ok: boolean; text: string } | null>(null)
   const [syncMsg,  setSyncMsg]  = useState<{ ok: boolean; text: string } | null>(null)
+  const [diagnosing, setDiagnosing] = useState(false)
 
   const hasKey  = !!shop?.api_key_encrypted
   const lastSync = shop?.last_synced_at
@@ -82,6 +83,29 @@ function UzumCard({ shop }: { shop: Shop | null; userId: string }) {
       setSyncMsg({ ok: false, text: "Server bilan bog'lanishda xato" })
     }
     setTesting(false)
+  }
+
+  // Read-only diagnostic: shows exactly what Uzum's order API returns so we can
+  // see why orders aren't landing (HTTP status + count per FBS/FBO endpoint).
+  async function handleDiagnose() {
+    setDiagnosing(true); setSyncMsg(null)
+    try {
+      const res  = await fetch('/api/uzum/diagnose')
+      const data = await res.json()
+      if (!data.ok) {
+        setSyncMsg({ ok: false, text: `Diagnostika: ${data.error ?? 'Xato'}` })
+      } else {
+        const probes = (data.orderProbes ?? []) as { label: string; status: number; count: number | null }[]
+        const summary = probes.length === 0
+          ? `do'kon topilmadi (shops HTTP ${data.shopsProbe?.status})`
+          : probes.map(p => `${p.label}: HTTP ${p.status}${p.count !== null ? ` (${p.count})` : ''}`).join(' · ')
+        setSyncMsg({ ok: true, text: `shopIds [${(data.uzumShopIds ?? []).join(', ')}] · ${summary}` })
+        console.log('[uzum diagnose]', data)
+      }
+    } catch {
+      setSyncMsg({ ok: false, text: "Diagnostika: server bilan bog'lanishda xato" })
+    }
+    setDiagnosing(false)
   }
 
   function triggerSync() {
@@ -199,6 +223,12 @@ function UzumCard({ shop }: { shop: Shop | null; userId: string }) {
             title={!hasKey ? 'Avval token saqlang' : ''}
             className="flex items-center gap-2 btn-primary border border-transparent disabled:opacity-40 disabled:cursor-not-allowed px-4 py-2 rounded-xl transition-colors">
             {syncing ? <><Loader2 className="w-4 h-4 animate-spin" /> Sinxronlanmoqda…</> : <><RefreshCw className="w-4 h-4" /> Sinxronlash</>}
+          </button>
+          <button onClick={handleDiagnose} disabled={diagnosing || syncing || !hasKey}
+            title="Buyurtmalar API javobini tekshirish (read-only)"
+            className="flex items-center gap-2 bg-[var(--bg-input)] hover:bg-[var(--bg-input)] border border-[var(--border2)] disabled:opacity-40 disabled:cursor-not-allowed text-[var(--text-muted)] text-sm font-medium px-4 py-2 rounded-xl transition-colors">
+            {diagnosing ? <Loader2 className="w-4 h-4 animate-spin" /> : <AlertTriangle className="w-4 h-4" />}
+            Diagnostika
           </button>
           </div>
         </div>
@@ -864,6 +894,22 @@ function TelegramCard({ chatId, username }: { chatId: string | null; username: s
     setLoading(false)
   }
 
+  // Sends a real notification now (bypassing the schedule) so the user can
+  // verify Telegram delivery and see what the digest looks like.
+  async function handleSendTest() {
+    setLoading(true); setMsg(null)
+    try {
+      const res  = await fetch('/api/telegram/test', { method: 'POST' })
+      const data = await res.json().catch(() => null)
+      setMsg(res.ok && data?.ok
+        ? { ok: true, text: 'Test bildirishnoma yuborildi — Telegramni tekshiring ✅' }
+        : { ok: false, text: data?.error === 'telegram_not_linked' ? 'Telegram ulanmagan' : 'Yuborib bo\'lmadi' })
+    } catch {
+      setMsg({ ok: false, text: "Tarmoq xatosi" })
+    }
+    setLoading(false)
+  }
+
   return (
     <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
       <div className="p-5 flex items-center gap-3 border-b border-[var(--border)]">
@@ -886,14 +932,24 @@ function TelegramCard({ chatId, username }: { chatId: string | null; username: s
       </div>
       <div className="p-5 space-y-3">
         {connected ? (
-          <button
-            onClick={handleDisconnect}
-            disabled={loading}
-            className="inline-flex items-center gap-2 text-sm font-medium px-4 py-2.5 rounded-xl border border-[var(--border2)] text-[var(--text-muted)] hover:text-red-400 hover:border-red-500/40 transition-all disabled:opacity-60"
-          >
-            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}
-            Telegram uzish
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={handleSendTest}
+              disabled={loading}
+              className="inline-flex items-center gap-2 btn-primary text-sm font-semibold px-4 py-2.5 rounded-xl disabled:opacity-60"
+            >
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+              Test bildirishnoma yuborish
+            </button>
+            <button
+              onClick={handleDisconnect}
+              disabled={loading}
+              className="inline-flex items-center gap-2 text-sm font-medium px-4 py-2.5 rounded-xl border border-[var(--border2)] text-[var(--text-muted)] hover:text-red-400 hover:border-red-500/40 transition-all disabled:opacity-60"
+            >
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}
+              Telegram uzish
+            </button>
+          </div>
         ) : link ? (
           <div className="space-y-3">
             <p className="text-[var(--text-muted)] text-xs">
