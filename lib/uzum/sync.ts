@@ -264,6 +264,22 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
       await pause()
     }
 
+    // Safety net for orders whose status name we don't know: status-less query
+    // with dates in epoch SECONDS. The ms variant is proven broken and
+    // status-less-without-dates returns 0, but a real active order exists that
+    // none of the known statuses return — if seconds-dates work, this catches
+    // it. Harmless otherwise (400/0 is recorded, dedup absorbs overlaps).
+    try {
+      const nowSec = Math.floor(Date.now() / 1000)
+      const batch = await fetchAllPages(page => fetchUzumOrders(token, uzumShopIds, page, ORDERS_PAGE_SIZE, nowSec - 365 * 24 * 3600, nowSec, 'fbs'))
+      debug.fbs_dateSeconds = String(batch.length)
+      if (batch.length > 0) fbsOk = true
+      for (const o of batch) if (!fbsById.has(extIdOf(o))) fbsById.set(extIdOf(o), o)
+    } catch (e) {
+      debug.fbs_dateSeconds = e instanceof UzumApiError ? `HTTP ${e.status}` : String(e).slice(0, 80)
+    }
+    await pause()
+
     // FBO: same, but if the key lacks FBO scope the first call returns 403
     // (RBAC) — stop immediately instead of repeating the denial for every status
     // (that just burns requests against the rate limit).

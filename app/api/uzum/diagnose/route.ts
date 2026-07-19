@@ -8,7 +8,7 @@ import { UZUM_API_BASE } from '@/lib/uzum/client'
 import { withErrorHandler } from '@/lib/api-handler'
 
 export const runtime = 'nodejs'
-export const maxDuration = 60
+export const maxDuration = 120 // the status-hunt probe set + 429 retries can exceed 60s
 
 // READ-ONLY diagnostic. Calls the Uzum seller API exactly the way the sync does
 // (GET /v1/shops, GET /v2/fbs|fbo/orders) and reports raw HTTP status, counts,
@@ -150,10 +150,12 @@ export const GET = withErrorHandler(async () => {
     uzumShopIds = (arr as { id: number }[]).map(s => s.id).filter(Boolean)
   } catch { /* status already captured by shopsProbe */ }
 
-  // Step 2: lean, FBO-focused probe set. Uzum rate-limits aggressively (429), so
-  // keep the request count low and the gaps generous. The open questions now:
-  // (1) does the key unlock FBO (200 vs 403)? (2) does FBS still return orders
-  // with no date filter? (3) is there a read-accessible analytics endpoint?
+  // Step 2: hunt for the ACTIVE order the API isn't showing. A real
+  // not-yet-shipped order exists in the seller cabinet, yet every one of our 6
+  // known statuses returns 0 (only the CANCELED one shows its order). So the
+  // active order must be behind (a) a status name we haven't discovered, or
+  // (b) the date-filter variant in epoch SECONDS (ms was proven broken), or
+  // (c) a different endpoint. All read-only GETs, 2s apart for the rate limit.
   const orderProbes: Probe[] = []
   const gap = () => new Promise(r => setTimeout(r, 2000))
 
@@ -167,15 +169,26 @@ export const GET = withErrorHandler(async () => {
     }
     const q = (extra: Record<string, string>) => withIds({ page: '0', size: '50', ...extra })
 
-    // FBO — the key question: 200 (unlocked) vs 403 (still no scope)?
-    orderProbes.push(await probe('fbo_CREATED', `${UZUM_API_BASE}/v2/fbo/orders?${q({ status: 'CREATED' })}`, token)); await gap()
-    orderProbes.push(await probe('fbo_DELIVERING', `${UZUM_API_BASE}/v2/fbo/orders?${q({ status: 'DELIVERING' })}`, token)); await gap()
-    orderProbes.push(await probe('fbo_DELIVERED', `${UZUM_API_BASE}/v2/fbo/orders?${q({ status: 'DELIVERED' })}`, token)); await gap()
-    // FBS confirm — CANCELED with no date filter previously returned the order.
+    // Controls: CANCELED must return 1; CREATED currently returns 0.
     orderProbes.push(await probe('fbs_CANCELED', `${UZUM_API_BASE}/v2/fbs/orders?${q({ status: 'CANCELED' })}`, token)); await gap()
     orderProbes.push(await probe('fbs_CREATED', `${UZUM_API_BASE}/v2/fbs/orders?${q({ status: 'CREATED' })}`, token)); await gap()
-    // One analytics probe (revenue hunt) — kept minimal to spare the rate limit.
-    orderProbes.push(await probe('analytics /v1/analytics/sales', `${UZUM_API_BASE}/v1/analytics/sales?${q({})}`, token))
+
+    // (b) Status-less with dates in epoch SECONDS (never tried — ms was the
+    // broken variant). If this returns orders, the sync can drop statuses.
+    const nowSec = Math.floor(Date.now() / 1000)
+    const fromSec = nowSec - 90 * 24 * 3600
+    orderProbes.push(await probe('fbs_noStatus_dateSeconds',
+      `${UZUM_API_BASE}/v2/fbs/orders?${q({ dateFrom: String(fromSec), dateTo: String(nowSec) })}`, token)); await gap()
+
+    // (a) Candidate status names for "new/processing" orders. Invalid names
+    // cost one cheap 400 each; a 200 with count>0 is the jackpot.
+    for (const st of ['PACKING', 'PACKED', 'ACCEPTED', 'IN_PROGRESS', 'AWAITING_SHIPMENT', 'IN_TRANSIT']) {
+      orderProbes.push(await probe(`fbs_${st}`, `${UZUM_API_BASE}/v2/fbs/orders?${q({ status: st })}`, token)); await gap()
+    }
+
+    // (c) Alternate endpoints a "new" order might live behind.
+    orderProbes.push(await probe('fbs_v1', `${UZUM_API_BASE}/v1/fbs/orders?${q({})}`, token)); await gap()
+    orderProbes.push(await probe('dbs_CREATED', `${UZUM_API_BASE}/v2/dbs/orders?${q({ status: 'CREATED' })}`, token))
   }
 
   // Product sample — confirms SKU.quantitySold (our FBO "sold" workaround) is
