@@ -11,12 +11,40 @@ import {
 } from './client'
 
 const STATUS_MAP: Record<string, string> = {
+  // Not-yet-shipped / being prepared by the seller
+  CREATED: 'pending',
+  NEW: 'pending',
   PROCESSING: 'pending',
+  PACKING: 'pending',
+  ASSEMBLING: 'pending',
+  TO_PACK: 'pending',
+  // Handed to Uzum / in transit / awaiting pickup at the PVZ
   SHIPPED: 'confirmed',
+  SENT: 'confirmed',
+  IN_TRANSIT: 'confirmed',
+  DELIVERING: 'confirmed',
+  TO_WITHDRAW: 'confirmed',
+  AWAITING_PICKUP: 'confirmed',
+  READY_FOR_PICKUP: 'confirmed',
+  // Finished
   DELIVERED: 'delivered',
+  COMPLETED: 'delivered',
+  // Cancelled / returned
   CANCELLED: 'cancelled',
+  CANCELED: 'cancelled',
   RETURNED: 'returned',
 }
+
+// The FBS orders endpoint returns nothing without a status filter, so we
+// enumerate every known status and merge. Statuses the account doesn't support
+// return HTTP 400 and are skipped. Covers the full lifecycle so an order that
+// is still in transit (e.g. awaiting pickup at the PVZ) is captured, not just
+// delivered ones.
+const FBS_STATUSES = [
+  'CREATED', 'NEW', 'PROCESSING', 'PACKING', 'ASSEMBLING', 'TO_PACK',
+  'SHIPPED', 'SENT', 'IN_TRANSIT', 'DELIVERING', 'TO_WITHDRAW', 'AWAITING_PICKUP', 'READY_FOR_PICKUP',
+  'DELIVERED', 'COMPLETED', 'CANCELLED', 'CANCELED', 'RETURNED',
+]
 
 const AD_STATUS_MAP: Record<string, string> = {
   ACTIVE: 'active',
@@ -154,11 +182,29 @@ export async function syncFromUzum(shopId: string, token: string, fromDateOverri
     // returns "RBAC: access denied" when the API key lacks FBO scope), but if
     // BOTH fail we must not advance last_synced_at — otherwise the orders in
     // this window are skipped forever.
-    let fbsOk = true
+    let fbsOk = false
     let fboOk = true
+
+    // FBS: enumerate every status and merge (the status-less view returns 0).
+    // A status the account doesn't support returns HTTP 400 — skip it. fbsOk is
+    // true if at least one status query succeeded (even with 0 results), so a
+    // genuinely empty FBS account isn't treated as a failure.
+    const fbsById = new Map<string, UzumFbsOrder>()
+    for (const st of FBS_STATUSES) {
+      try {
+        const batch = await fetchAllPages(page => fetchUzumOrders(token, uzumShopIds, page, 100, fromDateMs, toDateMs, 'fbs', st))
+        fbsOk = true
+        for (const o of batch) fbsById.set(String(o.id ?? o.orderId), o)
+      } catch (e) {
+        // 400 = status not valid for this account; ignore. Note anything else.
+        if (!(e instanceof UzumApiError && e.status === 400)) {
+          warnings.push(`FBS ${st}: ${e instanceof UzumApiError ? `${e.status} ${e.body?.slice(0, 100) ?? ''}` : String(e)}`)
+        }
+      }
+    }
+
     const [fbsOrders, fboOrders] = await Promise.all([
-      fetchAllPages(page => fetchUzumOrders(token, uzumShopIds, page, 100, fromDateMs, toDateMs))
-        .catch(e => { fbsOk = false; warnings.push(`FBS: ${e instanceof UzumApiError ? `${e.status} ${e.body?.slice(0, 150) ?? ''}` : String(e)}`); return [] as UzumFbsOrder[] }),
+      Promise.resolve([...fbsById.values()]),
       fetchAllPages(page => fetchUzumOrders(token, uzumShopIds, page, 100, fromDateMs, toDateMs, 'fbo'))
         .catch(e => { fboOk = false; warnings.push(`FBO: ${e instanceof UzumApiError ? `${e.status} ${e.body?.slice(0, 150) ?? ''}` : String(e)}`); return [] as UzumFbsOrder[] }),
     ])

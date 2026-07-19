@@ -27,10 +27,18 @@ interface Probe {
 
 async function probe(label: string, url: string, token: string): Promise<Probe> {
   try {
-    const res = await marketplaceFetch(url, {
+    // Retry on 429 so Uzum's rate limiter doesn't mask the real result.
+    let res = await marketplaceFetch(url, {
       headers: { Authorization: token.trim(), Accept: 'application/json' },
       next: { revalidate: 0 },
     })
+    for (let attempt = 0; attempt < 3 && res.status === 429; attempt++) {
+      await new Promise(r => setTimeout(r, 2500))
+      res = await marketplaceFetch(url, {
+        headers: { Authorization: token.trim(), Accept: 'application/json' },
+        next: { revalidate: 0 },
+      })
+    }
     const text = await res.text().catch(() => '')
     let json: unknown = null
     try { json = JSON.parse(text) } catch { /* non-JSON body */ }
@@ -118,21 +126,15 @@ export const GET = withErrorHandler(async () => {
     const dated = (extra: Record<string, string> = {}) =>
       withIds({ page: '0', size: '50', dateFrom: String(fromMs), dateTo: String(now), ...extra })
 
-    // FBS, default view (baseline — known 200/0)
-    orderProbes.push(await probe('fbs_default', `${UZUM_API_BASE}/v2/fbs/orders?${dated()}`, token)); await gap()
-    // FBS with an intentionally invalid status — Uzum usually 400s with the list
-    // of valid enum values in the body, which reveals the real status names.
-    orderProbes.push(await probe('fbs_status_probe', `${UZUM_API_BASE}/v2/fbs/orders?${dated({ status: 'DISCOVER_VALID_STATUSES' })}`, token)); await gap()
-    // FBS with common "finished" statuses so a delivered order shows up
-    orderProbes.push(await probe('fbs_status_DELIVERED', `${UZUM_API_BASE}/v2/fbs/orders?${dated({ status: 'DELIVERED' })}`, token)); await gap()
-    orderProbes.push(await probe('fbs_status_COMPLETED', `${UZUM_API_BASE}/v2/fbs/orders?${dated({ status: 'COMPLETED' })}`, token)); await gap()
-    // DBS (delivery by seller) — not queried by the sync at all today
-    orderProbes.push(await probe('dbs_default', `${UZUM_API_BASE}/v2/dbs/orders?${dated()}`, token)); await gap()
-    // Unified order endpoints (some APIs expose all fulfillment types in one)
-    orderProbes.push(await probe('orders_v2', `${UZUM_API_BASE}/v2/orders?${dated()}`, token)); await gap()
-    orderProbes.push(await probe('orders_v1', `${UZUM_API_BASE}/v1/orders?${dated()}`, token)); await gap()
-    // FBO reconfirm (expected 403 RBAC on this token)
-    orderProbes.push(await probe('fbo_default', `${UZUM_API_BASE}/v2/fbo/orders?${dated()}`, token))
+    // The order is FBS but still in transit (awaiting pickup at the PVZ), so it
+    // sits under an active status — not DELIVERED/COMPLETED (both returned 0).
+    // Probe the active statuses to find which one holds it; the winning probe's
+    // .sample shows the real status/fulfillment fields the sync should map.
+    const statuses = ['PROCESSING', 'SHIPPED', 'IN_TRANSIT', 'TO_WITHDRAW', 'AWAITING_PICKUP', 'CREATED', 'DELIVERED']
+    for (const st of statuses) {
+      orderProbes.push(await probe(`fbs_${st}`, `${UZUM_API_BASE}/v2/fbs/orders?${dated({ status: st })}`, token))
+      await gap()
+    }
   }
 
   return NextResponse.json({
