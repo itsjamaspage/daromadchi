@@ -44,6 +44,8 @@ export interface StockGroup {
   sold_by_marketplace: Partial<Record<MarketplaceType, number>>
   total_stock_api: number
   total_sold: number
+  /** units on cancelled/returned orders — visible, but never counted as sold */
+  total_cancelled: number
   /** user-entered physical quantity, null = api mode */
   total_physical_stock: number | null
   baseline_at: string | null
@@ -76,7 +78,7 @@ export async function computeStockGroups(userId: string, shopIds: string[]): Pro
   const since14d = new Date()
   since14d.setDate(since14d.getDate() - 14)
 
-  const [productRows, shopRows, soldRows, sold14Rows, linkRows] = await Promise.all([
+  const [productRows, shopRows, soldRows, sold14Rows, linkRows, cancelledRows] = await Promise.all([
     db.select({
       id: products.id,
       shop_id: products.shop_id,
@@ -109,10 +111,21 @@ export async function computeStockGroups(userId: string, shopIds: string[]): Pro
       ))
       .groupBy(orderItems.product_id),
     db.select().from(productLinks).where(eq(productLinks.user_id, userId)),
+    db.select({
+      product_id: orderItems.product_id,
+      qty: sql<number>`coalesce(sum(${orderItems.quantity}), 0)`.as('qty'),
+    }).from(orderItems)
+      .innerJoin(orders, eq(orderItems.order_id, orders.id))
+      .where(and(
+        inArray(orders.shop_id, shopIds),
+        inArray(orders.status, [...NOT_SOLD_STATUSES]),
+      ))
+      .groupBy(orderItems.product_id),
   ])
 
   const mpByShop = new Map(shopRows.map(s => [s.id, s.marketplace as MarketplaceType]))
   const soldByProduct = new Map(soldRows.map(r => [r.product_id, Number(r.qty)]))
+  const cancelledByProduct = new Map(cancelledRows.map(r => [r.product_id, Number(r.qty)]))
   const sold14ByProduct = new Map(sold14Rows.map(r => [r.product_id, Number(r.qty)]))
   const linkByKey = new Map(linkRows.map(l => [l.match_key, l]))
 
@@ -180,12 +193,14 @@ export async function computeStockGroups(userId: string, shopIds: string[]): Pro
     const soldByMp: Partial<Record<MarketplaceType, number>> = {}
     let totalStock = 0
     let totalSold = 0
+    let totalCancelled = 0
     let sold14 = 0
     for (const m of members) {
       stockByMp[m.marketplace] = (stockByMp[m.marketplace] ?? 0) + m.stock
       soldByMp[m.marketplace] = (soldByMp[m.marketplace] ?? 0) + m.sold_total
       totalStock += m.stock
       totalSold += m.sold_total
+      totalCancelled += cancelledByProduct.get(m.product_id) ?? 0
       sold14 += sold14ByProduct.get(m.product_id) ?? 0
     }
 
@@ -204,6 +219,7 @@ export async function computeStockGroups(userId: string, shopIds: string[]): Pro
       sold_by_marketplace: soldByMp,
       total_stock_api: totalStock,
       total_sold: totalSold,
+      total_cancelled: totalCancelled,
       total_physical_stock: link?.total_physical_stock ?? null,
       baseline_at: link?.baseline_at?.toISOString() ?? null,
       stock_threshold: link?.stock_threshold ?? null,

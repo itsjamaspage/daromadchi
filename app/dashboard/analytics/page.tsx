@@ -182,17 +182,19 @@ export default async function AnalyticsPage({ searchParams }: Props) {
                     <tr className="text-xs" style={{ color: 'var(--text-muted)', borderBottom: '1px solid var(--border)', background: 'rgba(255,255,255,0.01)' }}>
                       <th className="text-left font-medium px-5 py-3">{d.product}</th>
                       <th className="text-right font-medium px-4 py-3">{d.topSoldQty}</th>
+                      <th className="text-right font-medium px-4 py-3">{d.topSoldCancelled}</th>
                       <th className="text-right font-medium px-4 py-3">{d.topSoldRevenue}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {periodSales.slice(0, 20).map((row, idx) => (
-                      <tr key={row.product_id} style={{ borderBottom: idx < Math.min(periodSales.length, 20) - 1 ? '1px solid var(--border)' : 'none' }}>
+                      <tr key={row.product_id ?? row.title} style={{ borderBottom: idx < Math.min(periodSales.length, 20) - 1 ? '1px solid var(--border)' : 'none' }}>
                         <td className="px-5 py-3.5">
                           <p className="font-medium" style={{ color: 'var(--text-base)' }}>{row.title}</p>
                           {row.sku && <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{row.sku}</p>}
                         </td>
                         <td className="px-4 py-3.5 text-right font-semibold" style={{ color: 'var(--c1)' }}>{row.qty_sold}</td>
+                        <td className="px-4 py-3.5 text-right font-semibold" style={{ color: row.qty_cancelled + row.qty_returned > 0 ? '#ef4444' : 'var(--text-muted)' }}>{row.qty_cancelled + row.qty_returned}</td>
                         <td className="px-4 py-3.5 text-right" style={{ color: 'var(--text-dim)' }}>{fmt(row.revenue)} so'm</td>
                       </tr>
                     ))}

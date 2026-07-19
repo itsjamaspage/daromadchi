@@ -8,6 +8,7 @@ import {
   fetchUzumAdCampaigns,
   UzumApiError,
   type UzumFbsOrder,
+  type UzumFbsOrderItem,
 } from './client'
 
 const STATUS_MAP: Record<string, string> = {
@@ -70,6 +71,20 @@ function parseOrderedAt(v: unknown): Date {
     if (!Number.isNaN(d.getTime())) return d
   }
   return new Date()
+}
+
+// Uzum's FBS list can report quantity=1 while the order-level price is an
+// exact multiple of the unit price (a real 2-unit order came back as one
+// item, quantity 1, price 76 000 with order price 152 000). When the order has
+// a single line item and the total divides evenly, trust the ratio.
+function effectiveQty(o: UzumFbsOrder, it: UzumFbsOrderItem, lineCount: number): number {
+  const q = it.quantity ?? it.amount ?? 1
+  const p = it.price
+  const total = o.price ?? o.totalPrice
+  if (lineCount === 1 && p > 0 && total != null && total > p * q && total % p === 0) {
+    return total / p
+  }
+  return q
 }
 
 const AD_STATUS_MAP: Record<string, string> = {
@@ -301,7 +316,7 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
           | 'returned',
         revenue,
         // Units, not line items: an order of 2× one SKU must show 2, not 1.
-        items_count: allItems.reduce((s, it) => s + (it.quantity ?? 1), 0) || 1,
+        items_count: allItems.reduce((s, it) => s + effectiveQty(o, it, allItems.length), 0) || 1,
         ordered_at: orderedAt,
       }
     })
@@ -486,8 +501,9 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
             for (const o of extractOrders) {
               const dbOid = oMap.get(extIdOf(o))
               if (!dbOid) continue
-              for (const it of (o.orderItems ?? o.items ?? [])) {
-                itmRows.push({ order_id: dbOid, product_id: pMap.get(String(it.skuId)) ?? null, quantity: it.quantity, price_per_unit: it.price })
+              const lines = o.orderItems ?? o.items ?? []
+              for (const it of lines) {
+                itmRows.push({ order_id: dbOid, product_id: pMap.get(String(it.skuId)) ?? null, quantity: effectiveQty(o, it, lines.length), price_per_unit: it.price })
               }
             }
             if (itmRows.length > 0) {
@@ -510,12 +526,22 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
     // ── Order items (best-effort) ─────────────────────────────────────────────
     // Build a map: marketplace_product_id → products.id for fast lookup
     try {
-      const dbProducts = await db.select({ id: products.id, marketplace_product_id: products.marketplace_product_id })
+      const dbProducts = await db.select({ id: products.id, marketplace_product_id: products.marketplace_product_id, title: products.title })
         .from(products).where(eq(products.shop_id, shopId))
       const pidMap = new Map<string, string>()
+      const titleMap = new Map<string, string>()
       for (const p of dbProducts) {
         if (p.marketplace_product_id) pidMap.set(String(p.marketplace_product_id), p.id as string)
+        if (p.title) titleMap.set(p.title.trim().toLowerCase(), p.id as string)
       }
+      // The order item's skuId doesn't always match the product API's skuId
+      // (different id spaces). Fall back to title match, then — for a
+      // single-product shop — to that lone product, so analytics never lose
+      // the item to a null product_id.
+      const resolveProductId = (it: UzumFbsOrderItem): string | null =>
+        pidMap.get(String(it.skuId)) ??
+        (it.productTitle ? titleMap.get(it.productTitle.trim().toLowerCase()) : undefined) ??
+        (dbProducts.length === 1 ? dbProducts[0].id as string : null)
 
       // Map order_id_external → orders.id
       const extIds = uzumOrders.map(o => extIdOf(o))
@@ -534,15 +560,18 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
         const extId = extIdOf(o)
         const dbOrderId = orderIdMap.get(extId)
         if (!dbOrderId) continue
-        for (const it of (o.orderItems ?? o.items ?? [])) {
+        const lines = o.orderItems ?? o.items ?? []
+        for (const it of lines) {
           itemRows.push({
             order_id:       dbOrderId,
-            product_id:     pidMap.get(String(it.skuId)) ?? null,
-            quantity:       it.quantity,
+            product_id:     resolveProductId(it),
+            quantity:       effectiveQty(o, it, lines.length),
             price_per_unit: it.price,
           })
         }
       }
+      const unmatched = itemRows.filter(r => r.product_id == null).length
+      if (unmatched > 0) debug.itemsUnmatched = String(unmatched)
 
       // Delete old items for these orders then re-insert (simpler than upsert without unique key)
       if (itemRows.length > 0) {

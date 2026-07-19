@@ -160,7 +160,8 @@ export interface UzumAdCampaignsResponse {
 export interface UzumFbsOrderItem {
   skuId: number
   productTitle?: string
-  quantity: number
+  quantity?: number
+  amount?: number // some payloads use `amount` for the unit count
   price: number
 }
 

@@ -118,11 +118,13 @@ export async function getProducts(marketplace?: MarketplaceType): Promise<Produc
 }
 
 export interface ProductSalesRow {
-  product_id: string
+  product_id: string | null
   title: string
   sku: string | null
-  qty_sold: number
-  revenue: number
+  qty_sold: number      // units on real sales (cancelled/returned excluded)
+  qty_cancelled: number // units on cancelled orders, shown separately
+  qty_returned: number
+  revenue: number       // revenue of real sales only
 }
 
 const _fetchProductSales = unstable_cache(
@@ -147,27 +149,35 @@ const _fetchProductSales = unstable_cache(
     if (sinceDate) conditions.push(gte(orders.ordered_at, sinceDate))
     if (untilDate) conditions.push(lte(orders.ordered_at, untilDate))
 
+    // Cancelled/returned units are NOT sales — they are counted separately so
+    // the UI can show everything that happened in the store, in real units.
+    // LEFT join on products: an order item whose product link failed to
+    // resolve must still be visible, not silently dropped.
     const rows = await db.select({
       product_id: orderItems.product_id,
       title: products.title,
       sku: products.sku,
-      qty_sold: sql<number>`coalesce(sum(${orderItems.quantity}), 0)`.as('qty_sold'),
-      revenue: sql<number>`coalesce(sum(${orderItems.quantity} * ${orderItems.price_per_unit}), 0)`.as('revenue'),
+      qty_sold: sql<number>`coalesce(sum(${orderItems.quantity}) filter (where ${orders.status} not in ('cancelled','returned')), 0)`.as('qty_sold'),
+      qty_cancelled: sql<number>`coalesce(sum(${orderItems.quantity}) filter (where ${orders.status} = 'cancelled'), 0)`.as('qty_cancelled'),
+      qty_returned: sql<number>`coalesce(sum(${orderItems.quantity}) filter (where ${orders.status} = 'returned'), 0)`.as('qty_returned'),
+      revenue: sql<number>`coalesce(sum(${orderItems.quantity} * ${orderItems.price_per_unit}) filter (where ${orders.status} not in ('cancelled','returned')), 0)`.as('revenue'),
     }).from(orderItems)
       .innerJoin(orders, eq(orderItems.order_id, orders.id))
-      .innerJoin(products, eq(orderItems.product_id, products.id))
+      .leftJoin(products, eq(orderItems.product_id, products.id))
       .where(and(...conditions))
       .groupBy(orderItems.product_id, products.title, products.sku)
 
     return rows.map(r => ({
-      product_id: r.product_id!,
+      product_id: r.product_id,
       title: r.title ?? 'Unknown',
       sku: r.sku ?? null,
       qty_sold: Number(r.qty_sold),
+      qty_cancelled: Number(r.qty_cancelled),
+      qty_returned: Number(r.qty_returned),
       revenue: Number(r.revenue),
     }))
   },
-  ['product-sales-v3'],
+  ['product-sales-v4'],
   { revalidate: 30, tags: ['product-data'] },
 )
 

@@ -58,6 +58,7 @@ export const translations = {
         noData: "Mahsulotlar topilmadi. Do'konlaringizni ulang va sinxronizatsiya qiling.",
         searchPlaceholder: 'Mahsulot nomi yoki artikul...',
         soldNoRecent: "So'nggi 14 kunda sotuv yo'q",
+        cancelledLabel: 'Bekor qilingan',
         linkedBadge: 'ta marketpleys',
         sinceBaseline: 'kiritilgandan beri sotilgan',
       },
@@ -244,7 +245,8 @@ export const translations = {
       periodClear: 'Tozalash',
       // Top products by period
       topSoldTitle: 'Tanlangan davrda eng ko\'p sotilgan',
-      topSoldQty: 'Soni',
+      topSoldQty: 'Sotilgan',
+      topSoldCancelled: 'Bekor qilingan',
       topSoldRevenue: 'Daromad',
       noSalesInPeriod: 'Bu davrda sotuv ma\'lumoti topilmadi',
       // Table columns (analytics)
@@ -840,6 +842,7 @@ export const translations = {
         noData: 'No products found. Connect your shops and run a sync.',
         searchPlaceholder: 'Product name or article...',
         soldNoRecent: 'No sales in the last 14 days',
+        cancelledLabel: 'Cancelled',
         linkedBadge: 'marketplaces',
         sinceBaseline: 'sold since entered',
       },
@@ -1026,7 +1029,8 @@ export const translations = {
       periodClear: 'Clear',
       // Top products by period
       topSoldTitle: 'Top sold in selected period',
-      topSoldQty: 'Qty',
+      topSoldQty: 'Sold',
+      topSoldCancelled: 'Cancelled',
       topSoldRevenue: 'Revenue',
       noSalesInPeriod: 'No sales data found for this period',
       // Table columns (analytics)
@@ -1622,6 +1626,7 @@ export const translations = {
         noData: 'Товары не найдены. Подключите магазины и запустите синхронизацию.',
         searchPlaceholder: 'Название товара или артикул...',
         soldNoRecent: 'Нет продаж за последние 14 дней',
+        cancelledLabel: 'Отменено',
         linkedBadge: 'маркетплейса',
         sinceBaseline: 'продано после ввода',
       },
@@ -1808,7 +1813,8 @@ export const translations = {
       periodClear: 'Сбросить',
       // Top products by period
       topSoldTitle: 'Топ продаж за выбранный период',
-      topSoldQty: 'Кол-во',
+      topSoldQty: 'Продано',
+      topSoldCancelled: 'Отменено',
       topSoldRevenue: 'Выручка',
       noSalesInPeriod: 'Данные о продажах за этот период не найдены',
       // Table columns (analytics)
