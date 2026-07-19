@@ -1,5 +1,5 @@
 import { eq, count } from 'drizzle-orm'
-import { createClient } from '@/lib/supabase/server'
+import { getCurrentUser } from '@/lib/auth/session'
 import { db, shops, products, orders } from '@/lib/db'
 import { getSyncDays } from '@/lib/db/sync-state'
 import SyncStatusClient from './SyncStatusClient'
@@ -7,11 +7,13 @@ import { getLang } from '@/lib/lang'
 import { dashT } from '@/lib/dashT'
 
 export default async function SyncStatusPage() {
-  const supabase = await createClient()
   const lang = await getLang()
   const t = dashT[lang].sync
 
-  const { data: { user } } = await supabase.auth.getUser()
+  // Use the same (NextAuth) session as the rest of the dashboard. Previously
+  // this page read the Supabase session, which is a different user id, so it
+  // always found zero shops and showed "No stores connected".
+  const user = await getCurrentUser()
   if (!user) return null
 
   const [shopRows, uzumDays, yandexDays, wbDays] = await Promise.all([
