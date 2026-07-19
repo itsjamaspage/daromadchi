@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { RefreshCw, CheckCircle, XCircle, Loader2, Settings, ChevronDown } from 'lucide-react'
+import { RefreshCw, CheckCircle, XCircle, Loader2, Settings, ChevronDown, AlertTriangle } from 'lucide-react'
 import Link from 'next/link'
 import { useLang } from '@/app/providers'
 import { dashT } from '@/lib/dashT'
@@ -42,6 +42,8 @@ function ShopCard({ shop }: { shop: Shop }) {
   const [syncMsg, setSyncMsg]   = useState<string | null>(null)
   const [adsSyncMsg, setAdsSyncMsg] = useState<string | null>(null)
   const [fromDays, setFromDays] = useState<number | null>(null)
+  const [diagState, setDiagState] = useState<'idle' | 'running' | 'done' | 'err'>('idle')
+  const [diagMsg, setDiagMsg]     = useState<string | null>(null)
 
   const cfg = MP_CONFIG[shop.marketplace]
   const col = COLOR_CLASSES[cfg?.color ?? 'violet']
@@ -73,6 +75,28 @@ function ShopCard({ shop }: { shop: Shop }) {
       }
     } catch {
       setSyncState('err'); setSyncMsg(t.errorSync)
+    }
+  }
+
+  async function handleDiagnose() {
+    setDiagState('running'); setDiagMsg(null)
+    try {
+      const res = await fetch('/api/uzum/diagnose')
+      const data = await res.json()
+      if (!data.ok) {
+        setDiagState('err'); setDiagMsg(data.error ?? 'Xato')
+        return
+      }
+      const probes = (data.orderProbes ?? []) as { label: string; status: number; count: number | null }[]
+      const summary = probes.length === 0
+        ? `Do'kon topilmadi (shops: ${data.shopsProbe?.status})`
+        : probes.map(p => `${p.label}: HTTP ${p.status}${p.count !== null ? ` (${p.count})` : ''}`).join(' · ')
+      setDiagState('done')
+      setDiagMsg(`shopIds: [${(data.uzumShopIds ?? []).join(', ')}] · ${summary}`)
+      // Full payload to the console for support/debugging.
+      console.log('[uzum diagnose]', data)
+    } catch {
+      setDiagState('err'); setDiagMsg('Diagnostika xatosi')
     }
   }
 
@@ -155,6 +179,18 @@ function ShopCard({ shop }: { shop: Shop }) {
             {syncState === 'syncing' ? t.syncing : t.syncNow}
           </button>
 
+          {shop.marketplace === 'uzum' && (
+            <button
+              onClick={handleDiagnose}
+              disabled={diagState === 'running' || !hasKey}
+              className="flex items-center gap-2 bg-[var(--bg-input)] hover:opacity-80 border border-[var(--border2)] disabled:opacity-40 disabled:cursor-not-allowed text-[var(--text-muted)] text-sm font-medium px-4 py-2 rounded-xl transition-colors"
+              title="Buyurtmalar API javobini tekshirish (read-only)"
+            >
+              {diagState === 'running' ? <Loader2 className="w-4 h-4 animate-spin" /> : <AlertTriangle className="w-4 h-4" />}
+              {diagState === 'running' ? '…' : 'Diagnostika'}
+            </button>
+          )}
+
           {cfg.adsUrl && (
             <button
               onClick={handleAdsSync}
@@ -172,6 +208,9 @@ function ShopCard({ shop }: { shop: Shop }) {
         )}
         {adsSyncMsg && (
           <p className={`text-xs ${adsSyncState === 'err' ? 'text-red-400' : 'text-emerald-400'}`}>{adsSyncMsg}</p>
+        )}
+        {diagMsg && (
+          <p className={`text-xs break-all ${diagState === 'err' ? 'text-red-400' : 'text-[var(--text-muted)]'}`}>{diagMsg}</p>
         )}
       </div>
     </div>
