@@ -30,7 +30,7 @@ function fmt(n: number) {
   return new Intl.NumberFormat('uz-UZ').format(n) + " so'm"
 }
 
-type TabKey = 'all' | 'low_stock' | 'no_orders'
+type TabKey = 'all' | 'low_stock' | 'no_orders' | 'cancelled'
 type SortKey = 'title' | 'profit' | 'margin' | 'stock_quantity'
 
 function SortIcon({ col, sortBy, sortDir }: { col: SortKey; sortBy: SortKey; sortDir: 'asc' | 'desc' }) {
@@ -168,6 +168,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
     { key: 'all',       label: d.status.all          },
     { key: 'low_stock', label: '📦 ' + d.stockQty    },
     { key: 'no_orders', label: '🚫 ' + d.noMovement  },
+    { key: 'cancelled', label: '❌ ' + d.cancelledTab },
   ]
 
   const filtered = useMemo(() => {
@@ -185,6 +186,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
 
     if (tab === 'low_stock') rows = rows.filter(p => p.available_stock < stockThreshold)
     if (tab === 'no_orders') rows = rows.filter(p => (p.sold ?? 0) === 0)
+    if (tab === 'cancelled') rows = rows.filter(p => (p.cancelled ?? 0) > 0)
 
     rows.sort((a, b) => {
       let av: number, bv: number
@@ -232,6 +234,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
     all:       enriched.length,
     low_stock: enriched.filter(p => p.available_stock < stockThreshold).length,
     no_orders: enriched.filter(p => (p.sold ?? 0) === 0).length,
+    cancelled: enriched.filter(p => (p.cancelled ?? 0) > 0).length,
   }
 
   return (
@@ -421,7 +424,14 @@ export default function ProductsTable({ products }: { products: Product[] }) {
                           </div>
                         </div>
                       </td>
-                      <td className="px-5 py-4 text-right" style={{ color: 'var(--text-dim)' }}>{p.sold ?? 0}</td>
+                      <td className="px-5 py-4 text-right" style={{ color: 'var(--text-dim)' }}>
+                        {p.sold ?? 0}
+                        {(p.cancelled ?? 0) > 0 && (
+                          <span className="ml-1.5 text-[11px] font-medium tabular-nums" style={{ color: '#ef4444' }} title={d.cancelledUnits}>
+                            (−{p.cancelled})
+                          </span>
+                        )}
+                      </td>
                       <td className="px-5 py-4 text-right">
                         <span className="text-xs font-medium px-2.5 py-1 rounded-lg" style={{ background: stock.bgColor, color: stock.color }}>
                           {p.available_stock}

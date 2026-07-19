@@ -44,6 +44,15 @@ export default function Providers({ children, initialLang = 'uz' }: { children: 
 
   useEffect(() => {
     didMount.current = true
+    // Sync the already-chosen language to the account once on load so users who
+    // picked their language before it was persisted still get notifications in
+    // it. No-op (401) for anonymous visitors.
+    fetch('/api/settings/language', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ lang }),
+    }).catch(() => {})
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => { document.documentElement.lang = lang }, [lang])
@@ -60,6 +69,14 @@ export default function Providers({ children, initialLang = 'uz' }: { children: 
     setLangRaw(l)
     localStorage.setItem('lang', l)
     setCookie('lang', l)
+    // Persist to the account so scheduled Telegram notifications (sent by a cron
+    // job that can't read this cookie) use the same language. Fire-and-forget;
+    // silently ignored when the visitor isn't logged in.
+    fetch('/api/settings/language', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ lang: l }),
+    }).catch(() => {})
     router.refresh()
   }, [router])
 

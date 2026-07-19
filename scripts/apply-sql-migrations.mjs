@@ -6,6 +6,7 @@ import pg from 'pg'
 
 const MIGRATIONS = [
   'supabase/migrations/021_product_links.sql',
+  'supabase/migrations/022_notif_language.sql',
 ]
 
 function loadDatabaseUrl() {

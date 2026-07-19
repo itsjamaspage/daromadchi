@@ -124,7 +124,8 @@ export interface Product {
   updated_at: string
   // computed
   profit: number
-  sold: number
+  sold: number                   // units on non-cancelled/returned orders
+  cancelled: number              // units on cancelled orders
   is_shared: boolean             // true when physical_stock links across marketplaces
 }
 

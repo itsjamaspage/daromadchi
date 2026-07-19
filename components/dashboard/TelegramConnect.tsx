@@ -32,6 +32,7 @@ export default function TelegramConnect() {
   const [prefs, setPrefs]           = useState<NotifPrefs>(DEFAULT_PREFS)
   const [saving, setSaving]         = useState(false)
   const [saved, setSaved]           = useState(false)
+  const [testState, setTestState]   = useState<'idle' | 'sending' | 'sent' | 'failed'>('idle')
 
   async function refresh() {
     try {
@@ -95,6 +96,19 @@ export default function TelegramConnect() {
       setTimeout(() => setSaved(false), 2000)
     } finally {
       setSaving(false)
+    }
+  }
+
+  async function sendTest() {
+    setTestState('sending')
+    try {
+      const res = await fetch('/api/telegram/test', { method: 'POST' })
+      const json = await res.json().catch(() => null)
+      setTestState(res.ok && json?.ok ? 'sent' : 'failed')
+    } catch {
+      setTestState('failed')
+    } finally {
+      setTimeout(() => setTestState('idle'), 3000)
     }
   }
 
@@ -206,6 +220,17 @@ export default function TelegramConnect() {
                 className="bg-[var(--c1)] hover:bg-[#6aabf0] disabled:opacity-60 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors"
               >
                 {saving ? d.saving : saved ? d.saved : d.tgSavePrefs}
+              </button>
+              <button
+                onClick={sendTest}
+                disabled={testState === 'sending'}
+                className="inline-flex items-center gap-1.5 border border-[var(--border2)] hover:bg-[var(--bg-input)] disabled:opacity-60 text-[var(--text-base)] text-sm font-semibold px-4 py-2 rounded-xl transition-colors"
+              >
+                <Send className="w-3.5 h-3.5" />
+                {testState === 'sending' ? d.tgTestSending
+                  : testState === 'sent' ? d.tgTestSent
+                  : testState === 'failed' ? d.tgTestFailed
+                  : d.tgSendTest}
               </button>
               <button
                 onClick={disconnect}

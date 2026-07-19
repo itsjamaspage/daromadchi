@@ -256,6 +256,7 @@ export const userSettings = pgTable('user_settings', {
   notif_weekly_report:       boolean('notif_weekly_report').default(false).notNull(),
   notif_send_time:           text('notif_send_time').default('09:00').notNull(),
   notif_send_days:           integer('notif_send_days').array().default([1, 2, 3, 4, 5, 6, 0]).notNull(),
+  notif_lang:                text('notif_lang').default('uz').notNull(),
   created_at:                timestamp('created_at', { withTimezone: true }).defaultNow(),
   updated_at:                timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 }, (t) => [
