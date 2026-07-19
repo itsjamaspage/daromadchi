@@ -102,7 +102,9 @@ function UzumCard({ shop }: { shop: Shop | null; userId: string }) {
               const base = `${p.label}: HTTP ${p.status}${p.count !== null ? ` (${p.count})` : ''}`
               return p.status >= 400 && p.bodySnippet ? `${base} → ${p.bodySnippet}` : base
             }).join('\n')
-        setSyncMsg({ ok: true, text: `shopIds [${(data.uzumShopIds ?? []).join(', ')}]\n${summary}` })
+        const spec = `OpenAPI: ${data.specPath ?? 'topilmadi'}${(data.discoveredStatuses?.length ? ` → [${data.discoveredStatuses.join(', ')}]` : '')}`
+        const valid = `valid(200): [${(data.validStatuses ?? []).join(', ')}]`
+        setSyncMsg({ ok: true, text: `shopIds [${(data.uzumShopIds ?? []).join(', ')}]\n${spec}\n${valid}\n${summary}` })
         console.log('[uzum diagnose]', data)
       }
     } catch {
