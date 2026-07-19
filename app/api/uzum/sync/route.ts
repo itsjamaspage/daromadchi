@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { eq, and } from 'drizzle-orm'
 import { syncFromUzum } from '@/lib/uzum/sync'
 import { getCurrentUser } from '@/lib/auth/session'
@@ -7,13 +7,7 @@ import { decrypt } from '@/lib/crypto'
 import { logger } from '@/lib/logger'
 import { withErrorHandler } from '@/lib/api-handler'
 
-function fromDaysToDate(fromDays: unknown): Date | undefined {
-  if (typeof fromDays !== 'number') return undefined
-  if (fromDays === 0) return new Date('2022-10-01')
-  const d = new Date(); d.setDate(d.getDate() - fromDays); return d
-}
-
-export const POST = withErrorHandler(async (req: NextRequest) => {
+export const POST = withErrorHandler(async () => {
   const user = await getCurrentUser()
   if (!user) {
     return NextResponse.json({ ok: false, error: 'Avtorizatsiya talab etiladi' }, { status: 401 })
@@ -32,12 +26,9 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     )
   }
 
-  const body = await req.json().catch(() => ({}))
-  const fromDate = fromDaysToDate(body?.fromDays)
-
   try {
     const token = decrypt(shop.api_key_encrypted)
-    const result = await syncFromUzum(shop.id, token, fromDate)
+    const result = await syncFromUzum(shop.id, token)
     if (!result.ok) logger.warn('uzum_sync_error', { shopId: shop.id, error: result.error })
     return NextResponse.json(result, { status: result.ok ? 200 : 500 })
   } catch (err) {

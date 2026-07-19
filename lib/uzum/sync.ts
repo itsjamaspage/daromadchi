@@ -74,7 +74,7 @@ export interface SyncResult {
   details?: string
 }
 
-export async function syncFromUzum(shopId: string, token: string, fromDateOverride?: Date): Promise<SyncResult> {
+export async function syncFromUzum(shopId: string, token: string): Promise<SyncResult> {
   const warnings: string[] = []
 
   try {
@@ -158,29 +158,21 @@ export async function syncFromUzum(shopId: string, token: string, fromDateOverri
       warnings.push(`Products: ${prodSyncErr instanceof UzumApiError ? `${prodSyncErr.status} ${prodSyncErr.body?.slice(0, 150) ?? ''}` : String(prodSyncErr)}`)
     }
 
-    // ── Orders (incremental: since last sync, or caller-supplied override) ──────
-    const [shopRows, productCountRows] = await Promise.all([
-      db.select({ last_synced_at: shops.last_synced_at }).from(shops).where(eq(shops.id, shopId)).limit(1),
+    // ── Orders ──────────────────────────────────────────────────────────────
+    const [productCountRows] = await Promise.all([
       db.select({ total: count() }).from(products).where(eq(products.shop_id, shopId)),
     ])
-    const shopRow = shopRows[0] ?? null
     const existingProductCount = productCountRows[0]?.total ?? 0
 
-    // Incremental: only fetch orders since last sync to avoid overwriting existing
-    // order statuses (which would remove previously-counted revenue from the chart).
-    const since = fromDateOverride
-      ?? (shopRow?.last_synced_at
-        ? new Date(shopRow.last_synced_at)
-        : (() => { const d = new Date(); d.setDate(d.getDate() - 365); return d })())
-
-    // Orders — fetch both FBS (/v2/fbs/orders) and FBO (/v2/fbo/orders).
-    // Many Uzum sellers use FBO (Uzum warehouse), so FBS alone returns 0.
+    // Orders — fetch FBS (/v2/fbs/orders) and FBO (/v2/fbo/orders).
+    // NOTE: we intentionally send NO date filter. Uzum's orders endpoints treat
+    // dateFrom/dateTo in a way that silently returns 0 for real orders (a unit
+    // mismatch — ms vs seconds — pushes the range far into the future). Confirmed
+    // via /api/uzum/diagnose: with dateFrom+dateTo every status returned 0, but
+    // with NO date filter fbs?status=CANCELED returned the actual order. So we
+    // fetch all pages per status and upsert (upsert is idempotent, so re-reading
+    // the full set every sync is safe).
     const uzumShopIds = uzumShops.map(s => s.id)
-    const fromDateMs = since.getTime()
-    // Uzum's order endpoints reject dateFrom without dateTo (HTTP 400). Always
-    // send both. Confirmed via /api/uzum/diagnose: dateFrom-only → 400,
-    // dateFrom+dateTo → 200.
-    const toDateMs = Date.now()
 
     // Track whether each order source actually succeeded. A single source
     // failing is normal (a seller may only use FBS or only FBO — e.g. FBO
@@ -188,16 +180,16 @@ export async function syncFromUzum(shopId: string, token: string, fromDateOverri
     // BOTH fail we must not advance last_synced_at — otherwise the orders in
     // this window are skipped forever.
     let fbsOk = false
-    let fboOk = true
+    let fboOk = false
 
-    // FBS: enumerate every status and merge (the status-less view returns 0).
-    // A status the account doesn't support returns HTTP 400 — skip it. fbsOk is
+    // FBS: enumerate every status and merge (the status-less view returns 0, and
+    // Uzum rejects unknown statuses with HTTP 400 — those are skipped). fbsOk is
     // true if at least one status query succeeded (even with 0 results), so a
     // genuinely empty FBS account isn't treated as a failure.
     const fbsById = new Map<string, UzumFbsOrder>()
     for (const st of FBS_STATUSES) {
       try {
-        const batch = await fetchAllPages(page => fetchUzumOrders(token, uzumShopIds, page, 100, fromDateMs, toDateMs, 'fbs', st))
+        const batch = await fetchAllPages(page => fetchUzumOrders(token, uzumShopIds, page, 100, undefined, undefined, 'fbs', st))
         fbsOk = true
         for (const o of batch) fbsById.set(String(o.id ?? o.orderId), o)
       } catch (e) {
@@ -208,11 +200,24 @@ export async function syncFromUzum(shopId: string, token: string, fromDateOverri
       }
     }
 
-    const [fbsOrders, fboOrders] = await Promise.all([
-      Promise.resolve([...fbsById.values()]),
-      fetchAllPages(page => fetchUzumOrders(token, uzumShopIds, page, 100, fromDateMs, toDateMs, 'fbo'))
-        .catch(e => { fboOk = false; warnings.push(`FBO: ${e instanceof UzumApiError ? `${e.status} ${e.body?.slice(0, 150) ?? ''}` : String(e)}`); return [] as UzumFbsOrder[] }),
-    ])
+    // FBO: same status enumeration, no date filter. 403 (RBAC) means the key
+    // lacks FBO scope — that's a per-status failure, so fboOk stays false only
+    // if every attempt failed.
+    const fboById = new Map<string, UzumFbsOrder>()
+    for (const st of FBS_STATUSES) {
+      try {
+        const batch = await fetchAllPages(page => fetchUzumOrders(token, uzumShopIds, page, 100, undefined, undefined, 'fbo', st))
+        fboOk = true
+        for (const o of batch) fboById.set(String(o.id ?? o.orderId), o)
+      } catch (e) {
+        if (!(e instanceof UzumApiError && e.status === 400)) {
+          warnings.push(`FBO ${st}: ${e instanceof UzumApiError ? `${e.status} ${e.body?.slice(0, 100) ?? ''}` : String(e)}`)
+        }
+      }
+    }
+
+    const fbsOrders = [...fbsById.values()]
+    const fboOrders = [...fboById.values()]
     const ordersDegraded = !fbsOk && !fboOk
     // Tag each order with its fulfillment scheme so it can be distinguished
     // downstream. Deduplicate by id in case the FBO endpoint overlaps with FBS.
@@ -353,18 +358,17 @@ export async function syncFromUzum(shopId: string, token: string, fromDateOverri
     // those orders to the DB so existing order statuses are never overwritten.
     if (productRows.length === 0 && existingProductCount === 0) {
       try {
-        const extractMs = Date.now() - 90 * 24 * 60 * 60 * 1000
-        const extractToMs = Date.now()
-        const [fbsEx, fboEx] = await Promise.all([
-          fetchAllPages(p => fetchUzumOrders(token, uzumShopIds, p, 100, extractMs, extractToMs))
-            .catch(() => [] as UzumFbsOrder[]),
-          fetchAllPages(p => fetchUzumOrders(token, uzumShopIds, p, 100, extractMs, extractToMs, 'fbo'))
-            .catch(() => [] as UzumFbsOrder[]),
-        ])
-        const extractOrders: UzumFbsOrder[] = [
-          ...fbsEx,
-          ...fboEx.filter(o => !fbsEx.some(f => String(f.id) === String(o.id))),
-        ]
+        // No date filter (broken on Uzum's side); enumerate statuses instead.
+        const exById = new Map<string, UzumFbsOrder>()
+        for (const type of ['fbs', 'fbo'] as const) {
+          for (const st of FBS_STATUSES) {
+            try {
+              const batch = await fetchAllPages(p => fetchUzumOrders(token, uzumShopIds, p, 100, undefined, undefined, type, st))
+              for (const o of batch) exById.set(String(o.id ?? o.orderId), o)
+            } catch { /* invalid status / no scope — skip */ }
+          }
+        }
+        const extractOrders: UzumFbsOrder[] = [...exById.values()]
         if (extractOrders.length > 0) {
           const seenMap = new Map<string, typeof productRows[0]>()
           for (const o of extractOrders) {
