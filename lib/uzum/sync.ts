@@ -14,36 +14,41 @@ const STATUS_MAP: Record<string, string> = {
   // Not-yet-shipped / being prepared by the seller
   CREATED: 'pending',
   NEW: 'pending',
-  PROCESSING: 'pending',
-  PACKING: 'pending',
-  ASSEMBLING: 'pending',
-  TO_PACK: 'pending',
+  PENDING: 'pending',
+  CONFIRMED: 'pending',
+  AGREED: 'pending',
+  ACCEPTED: 'pending',
+  PACKED: 'pending',
+  PACKAGED: 'pending',
+  ASSEMBLED: 'pending',
+  READY: 'pending',
   // Handed to Uzum / in transit / awaiting pickup at the PVZ
-  SHIPPED: 'confirmed',
   SENT: 'confirmed',
-  IN_TRANSIT: 'confirmed',
+  HANDED_OVER: 'confirmed',
+  TRANSFERRED: 'confirmed',
+  ON_DELIVERY: 'confirmed',
   DELIVERING: 'confirmed',
-  TO_WITHDRAW: 'confirmed',
-  AWAITING_PICKUP: 'confirmed',
-  READY_FOR_PICKUP: 'confirmed',
+  ACTIVE: 'confirmed',
   // Finished
   DELIVERED: 'delivered',
   COMPLETED: 'delivered',
   // Cancelled / returned
   CANCELLED: 'cancelled',
   CANCELED: 'cancelled',
+  EXPIRED: 'cancelled',
   RETURNED: 'returned',
 }
 
 // The FBS orders endpoint returns nothing without a status filter, so we
-// enumerate every known status and merge. Statuses the account doesn't support
-// return HTTP 400 and are skipped. Covers the full lifecycle so an order that
-// is still in transit (e.g. awaiting pickup at the PVZ) is captured, not just
-// delivered ones.
+// enumerate every candidate status and merge. Uzum rejects unknown statuses
+// with HTTP 400 — those are skipped. (PROCESSING/SHIPPED/IN_TRANSIT/TO_WITHDRAW/
+// AWAITING_PICKUP were confirmed invalid and removed.) The real in-transit enum
+// value is being pinned down via /api/uzum/diagnose (OpenAPI spec extraction).
 const FBS_STATUSES = [
-  'CREATED', 'NEW', 'PROCESSING', 'PACKING', 'ASSEMBLING', 'TO_PACK',
-  'SHIPPED', 'SENT', 'IN_TRANSIT', 'DELIVERING', 'TO_WITHDRAW', 'AWAITING_PICKUP', 'READY_FOR_PICKUP',
-  'DELIVERED', 'COMPLETED', 'CANCELLED', 'CANCELED', 'RETURNED',
+  'CREATED', 'NEW', 'PENDING', 'CONFIRMED', 'AGREED', 'ACCEPTED',
+  'PACKED', 'PACKAGED', 'ASSEMBLED', 'READY',
+  'SENT', 'HANDED_OVER', 'TRANSFERRED', 'ON_DELIVERY', 'DELIVERING', 'ACTIVE',
+  'DELIVERED', 'COMPLETED', 'CANCELED', 'CANCELLED', 'EXPIRED', 'RETURNED',
 ]
 
 const AD_STATUS_MAP: Record<string, string> = {
