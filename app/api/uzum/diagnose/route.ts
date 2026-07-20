@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { eq, and } from 'drizzle-orm'
 import { getCurrentUser } from '@/lib/auth/session'
-import { db, shops } from '@/lib/db'
+import { db, shops, orders } from '@/lib/db'
 import { decrypt } from '@/lib/crypto'
 import { marketplaceFetch } from '@/lib/marketplace-readonly-guard'
 import { UZUM_API_BASE } from '@/lib/uzum/client'
@@ -61,7 +61,9 @@ async function probe(label: string, url: string, token: string): Promise<Probe> 
       ok: res.ok,
       status: res.status,
       count: list ? list.length : null,
-      sample: list && list.length > 0 ? list[0] : null,
+      // Non-list 200s (order detail, counts) matter too — show the raw body so
+      // a working by-id endpoint is recognizable at a glance.
+      sample: list && list.length > 0 ? list[0] : (res.ok && json != null && !list ? text.slice(0, 400) : null),
       bodySnippet: res.ok ? '' : text.slice(0, 300),
     }
   } catch (err) {
@@ -101,7 +103,12 @@ function collectStatusEnums(node: unknown, out: Set<string>, depth = 0): void {
 // Fetch Uzum's OpenAPI spec (tries the common paths) and extract the FBS order
 // status enum, so we sweep real values instead of guessing.
 async function discoverStatuses(token: string): Promise<{ specPath: string | null; discoveredStatuses: string[] }> {
-  const paths = ['/v3/api-docs', '/api-docs', '/swagger/v1/api-docs', '/v3/api-docs/swagger-config']
+  // The swagger UI is served under /swagger/… (see lib/uzum/client.ts), so the
+  // spec most likely lives there too — try those first.
+  const paths = [
+    '/swagger/v3/api-docs', '/swagger/api-docs', '/swagger/v2/api-docs',
+    '/v3/api-docs', '/api-docs', '/swagger/v1/api-docs', '/v3/api-docs/swagger-config',
+  ]
   for (const p of paths) {
     try {
       const res = await marketplaceFetch(`${UZUM_API_BASE}${p}`, {
@@ -120,9 +127,13 @@ async function discoverStatuses(token: string): Promise<{ specPath: string | nul
   return { specPath: null, discoveredStatuses: [] }
 }
 
-export const GET = withErrorHandler(async () => {
+export const GET = withErrorHandler(async (req: Request) => {
   const user = await getCurrentUser()
   if (!user) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 })
+
+  // Optional: probe a SPECIFIC order number (e.g. the invisible active order,
+  // whose number is visible in the seller cabinet): /api/uzum/diagnose?orderId=123
+  const askedId = new URL(req.url).searchParams.get('orderId')?.trim() || null
 
   const [shop] = await db.select({
     id: shops.id,
@@ -150,16 +161,24 @@ export const GET = withErrorHandler(async () => {
     uzumShopIds = (arr as { id: number }[]).map(s => s.id).filter(Boolean)
   } catch { /* status already captured by shopsProbe */ }
 
-  // Step 2: hunt for the ACTIVE order the API isn't showing. A real
-  // not-yet-shipped order exists in the seller cabinet, yet every one of our 6
-  // known statuses returns 0 (only the CANCELED one shows its order). So the
-  // active order must be behind (a) a status name we haven't discovered, or
-  // (b) the date-filter variant in epoch SECONDS (ms was proven broken), or
-  // (c) a different endpoint. All read-only GETs, 2s apart for the rate limit.
+  // Step 2: hunt for the ACTIVE order through OTHER DOORS. The status sweep is
+  // exhausted (all 6 valid statuses return 0 while the order exists in the
+  // cabinet), so probe: (a) an order-detail endpoint by a KNOWN id — if that
+  // works, any order number visible in the cabinet can be fetched directly;
+  // (b) alternate list-query shapes (statuses= plural, repeated status=, no
+  // pagination params); (c) the FBS invoice/supply resources where a
+  // not-yet-shipped order may live. All read-only GETs, 2s apart.
   const orderProbes: Probe[] = []
   const gap = () => new Promise(r => setTimeout(r, 2000))
 
   const { specPath, discoveredStatuses } = await discoverStatuses(token)
+
+  // A known-real external order id from our DB (the cancelled order) — used to
+  // discover whether a by-id detail endpoint exists at all.
+  const [knownOrder] = await db.select({ ext: orders.order_id_external })
+    .from(orders).where(and(eq(orders.shop_id, shop.id), eq(orders.marketplace, 'uzum')))
+    .limit(1)
+  const knownId = knownOrder?.ext ?? null
 
   if (uzumShopIds.length > 0) {
     const withIds = (base: Record<string, string>) => {
@@ -173,20 +192,32 @@ export const GET = withErrorHandler(async () => {
     orderProbes.push(await probe('fbs_CANCELED', `${UZUM_API_BASE}/v2/fbs/orders?${q({ status: 'CANCELED' })}`, token)); await gap()
     orderProbes.push(await probe('fbs_CREATED', `${UZUM_API_BASE}/v2/fbs/orders?${q({ status: 'CREATED' })}`, token)); await gap()
 
-    // (b) Status-less with dates in epoch SECONDS (never tried — ms was the
-    // broken variant). If this returns orders, the sync can drop statuses.
-    const nowSec = Math.floor(Date.now() / 1000)
-    const fromSec = nowSec - 90 * 24 * 3600
-    orderProbes.push(await probe('fbs_noStatus_dateSeconds',
-      `${UZUM_API_BASE}/v2/fbs/orders?${q({ dateFrom: String(fromSec), dateTo: String(nowSec) })}`, token)); await gap()
-
-    // (a) Candidate status names for "new/processing" orders. Invalid names
-    // cost one cheap 400 each; a 200 with count>0 is the jackpot.
-    for (const st of ['PACKING', 'PACKED', 'ACCEPTED', 'IN_PROGRESS', 'AWAITING_SHIPMENT', 'IN_TRANSIT']) {
-      orderProbes.push(await probe(`fbs_${st}`, `${UZUM_API_BASE}/v2/fbs/orders?${q({ status: st })}`, token)); await gap()
+    // (a) Detail-by-id: works with the known id → the cabinet's order number
+    // for the invisible order can be fetched the same way.
+    if (knownId) {
+      orderProbes.push(await probe('detail /v2/fbs/orders/{id}', `${UZUM_API_BASE}/v2/fbs/orders/${knownId}`, token)); await gap()
+      orderProbes.push(await probe('detail /v2/fbs/order/{id}', `${UZUM_API_BASE}/v2/fbs/order/${knownId}`, token)); await gap()
+    }
+    // A user-supplied order number (?orderId=…) — the direct test for the
+    // invisible order once its number is read off the seller cabinet.
+    if (askedId && /^\d+$/.test(askedId)) {
+      orderProbes.push(await probe(`asked /v2/fbs/orders/${askedId}`, `${UZUM_API_BASE}/v2/fbs/orders/${askedId}`, token)); await gap()
+      orderProbes.push(await probe(`asked /v2/fbs/order/${askedId}`, `${UZUM_API_BASE}/v2/fbs/order/${askedId}`, token)); await gap()
     }
 
-    // (c) Alternate endpoints a "new" order might live behind.
+    // (b) Alternate list shapes.
+    orderProbes.push(await probe('fbs_CREATED_noPaging', `${UZUM_API_BASE}/v2/fbs/orders?${withIds({ status: 'CREATED' })}`, token)); await gap()
+    orderProbes.push(await probe('fbs_statuses_plural', `${UZUM_API_BASE}/v2/fbs/orders?${q({ statuses: 'CREATED' })}`, token)); await gap()
+    {
+      const multi = new URLSearchParams({ page: '0', size: '50' })
+      for (const id of uzumShopIds) multi.append('shopIds', String(id))
+      multi.append('status', 'CREATED'); multi.append('status', 'DELIVERING')
+      orderProbes.push(await probe('fbs_multiStatus', `${UZUM_API_BASE}/v2/fbs/orders?${multi}`, token)); await gap()
+    }
+
+    // (c) Invoice/supply resources + alternate endpoints.
+    orderProbes.push(await probe('fbs_invoice_v2', `${UZUM_API_BASE}/v2/fbs/invoice?${q({})}`, token)); await gap()
+    orderProbes.push(await probe('invoice_v1', `${UZUM_API_BASE}/v1/invoice?${q({})}`, token)); await gap()
     orderProbes.push(await probe('fbs_v1', `${UZUM_API_BASE}/v1/fbs/orders?${q({})}`, token)); await gap()
     orderProbes.push(await probe('dbs_CREATED', `${UZUM_API_BASE}/v2/dbs/orders?${q({ status: 'CREATED' })}`, token))
   }

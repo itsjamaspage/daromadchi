@@ -120,12 +120,18 @@ function UzumCard({ shop }: { shop: Shop | null; userId: string }) {
       if (!data.ok) {
         setSyncMsg({ ok: false, text: `Diagnostika: ${data.error ?? 'Xato'}` })
       } else {
-        const probes = (data.orderProbes ?? []) as { label: string; status: number; count: number | null; bodySnippet?: string }[]
+        const probes = (data.orderProbes ?? []) as { label: string; status: number; count: number | null; sample?: unknown; bodySnippet?: string }[]
         const summary = probes.length === 0
           ? `do'kon topilmadi (shops HTTP ${data.shopsProbe?.status})`
           : probes.map(p => {
               const base = `${p.label}: HTTP ${p.status}${p.count !== null ? ` (${p.count})` : ''}`
-              return p.status >= 400 && p.bodySnippet ? `${base} → ${p.bodySnippet}` : base
+              if (p.status >= 400 && p.bodySnippet) return `${base} → ${p.bodySnippet}`
+              // Non-list 200s (order detail / counts): show the raw body — this
+              // is how a working by-id endpoint announces itself.
+              if (p.status === 200 && p.count === null && p.sample) {
+                return `${base} → ${typeof p.sample === 'string' ? p.sample.slice(0, 200) : JSON.stringify(p.sample).slice(0, 200)}`
+              }
+              return base
             }).join('\n')
         const spec = `OpenAPI: ${data.specPath ?? 'topilmadi'}${(data.discoveredStatuses?.length ? ` → [${data.discoveredStatuses.join(', ')}]` : '')}`
         const valid = `valid(200): [${(data.validStatuses ?? []).join(', ')}]`
