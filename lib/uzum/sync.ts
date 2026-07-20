@@ -53,13 +53,23 @@ const STATUS_MAP: Record<string, string> = {
 }
 
 // The FBS orders endpoint returns nothing without a status filter, so we query
-// each status and merge. These SIX are the ONLY values Uzum accepts (confirmed
-// via /api/uzum/diagnose — every other name returns HTTP 400). Keeping the list
-// tight matters: querying invalid statuses wastes requests and trips Uzum's rate
-// limiter (429), which previously caused the real order to be skipped.
+// each status and merge. This list is the ORDER-STATUS vocabulary from Uzum's
+// own OpenAPI spec (/swagger/api-docs, discovered 2026-07-20) — the earlier
+// hand-tested list of 6 missed real statuses like PACKING/PENDING_DELIVERY,
+// which is exactly where a fresh not-yet-shipped order lives (a real active
+// order was invisible for days because of that). Names Uzum rejects for a
+// given account return 400 and are recorded in debug, not treated as errors.
 const FBS_STATUSES = [
-  'CREATED', 'DELIVERING', 'DELIVERED', 'COMPLETED', 'CANCELED', 'RETURNED',
+  'CREATED', 'PROCESSING', 'PACKING', 'TO_WITHDRAW', 'PENDING_DELIVERY',
+  'DELIVERING', 'ACCEPTED_AT_DP', 'DELIVERED_TO_CUSTOMER_DELIVERY_POINT',
+  'DELIVERED', 'COMPLETED', 'PENDING_CANCELLATION', 'PARTIALLY_CANCELLED',
+  'CANCELED', 'RETURNED',
 ]
+
+// The spec-derived enum, cached per server process so cron syncs don't
+// re-download the OpenAPI document (and burn rate limit) on every run.
+let statusEnumCache: { value: string[]; at: number } | null = null
+const STATUS_ENUM_TTL_MS = 6 * 60 * 60 * 1000
 
 // FBS/FBO order queries use size=50 — the exact page size /api/uzum/diagnose
 // proved returns orders. Uzum answers a generic 400 "bad-request-001" for any
@@ -280,15 +290,21 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
     const pause = () => new Promise(r => setTimeout(r, 350))
 
     // Status list: prefer the AUTHORITATIVE enum from Uzum's own OpenAPI spec
-    // (/swagger/api-docs — proven readable). The hand-maintained list of 6
-    // missed real statuses like PACKING/PENDING_DELIVERY, which is exactly
-    // where a fresh not-yet-shipped order lives. Falls back to the static
-    // list when the spec is unreachable.
+    // (/swagger/api-docs — proven readable), cached for 6h per process so the
+    // half-hourly cron doesn't re-download the spec every run. Falls back to
+    // the static list (itself spec-derived) when the spec is unreachable —
+    // either way every real order status gets swept.
     let fbsStatuses = FBS_STATUSES
-    const specEnum = await fetchUzumFbsStatusEnum(token)
-    if (specEnum && specEnum.length > 0) {
-      fbsStatuses = specEnum.slice(0, 20)
-      debug.statusSource = `openapi:${specEnum.length}`
+    if (statusEnumCache && Date.now() - statusEnumCache.at < STATUS_ENUM_TTL_MS) {
+      fbsStatuses = statusEnumCache.value
+      debug.statusSource = `cached:${fbsStatuses.length}`
+    } else {
+      const specEnum = await fetchUzumFbsStatusEnum(token)
+      if (specEnum && specEnum.length > 0) {
+        fbsStatuses = specEnum.slice(0, 20)
+        statusEnumCache = { value: fbsStatuses, at: Date.now() }
+        debug.statusSource = `openapi:${specEnum.length}`
+      }
     }
 
     // FBS: query each valid status and merge. fbsOk is true if at least one

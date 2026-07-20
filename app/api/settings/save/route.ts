@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { revalidateTag } from 'next/cache'
 import { z } from 'zod'
-import { eq, and, inArray } from 'drizzle-orm'
+import { eq, and } from 'drizzle-orm'
 import { getCurrentUser } from '@/lib/auth/session'
-import { db, shops, orders, orderItems, products, syncDays } from '@/lib/db'
+import { db, shops } from '@/lib/db'
 import { encrypt } from '@/lib/crypto'
-import { logger } from '@/lib/logger'
 import { withErrorHandler } from '@/lib/api-handler'
 
 const SaveSchema = z.object({
@@ -38,25 +37,18 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
       return NextResponse.json({ ok: true, message: 'O\'zgartirish yo\'q' })
     }
 
-    if (apiKey?.trim()) {
-      const orderRows = await db.select({ id: orders.id }).from(orders)
-        .where(eq(orders.shop_id, existing.id))
-      if (orderRows.length > 0) {
-        await db.delete(orderItems).where(inArray(orderItems.order_id, orderRows.map(o => o.id)))
-      }
-      await db.delete(orders).where(eq(orders.shop_id, existing.id))
-      await db.delete(products).where(eq(products.shop_id, existing.id))
-      await db.delete(syncDays).where(eq(syncDays.shop_id, existing.id))
-      update.last_synced_at = null
-      logger.info('settings_save_cleared_shop_data', { userId: user.id, marketplace, shopId: existing.id })
-    }
+    // Saving a token must NOT destroy synced data (same rule as
+    // /api/shops/token): users re-save the same account's token routinely and
+    // a wipe left the app empty until the next fully-successful sync. A real
+    // account switch is detected inside the sync (shop_id_external check).
+    if (apiKey?.trim()) update.last_synced_at = null
 
     await db.update(shops).set(update).where(eq(shops.id, existing.id))
     if (apiKey?.trim()) {
       revalidateTag('product-data', { expire: 0 })
       revalidateTag('order-data', { expire: 0 })
     }
-    return NextResponse.json({ ok: true, cleared: !!(apiKey?.trim()) })
+    return NextResponse.json({ ok: true, cleared: false })
   }
 
   await db.insert(shops).values({
