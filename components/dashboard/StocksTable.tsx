@@ -137,7 +137,6 @@ export default function StocksTable({ groups }: { groups: StockGroup[] }) {
               <th className="px-5 py-3 font-semibold">{d.colStock}</th>
               <th className="px-5 py-3 font-semibold">{d.colSold}</th>
               <th className="px-5 py-3 font-semibold">{d.colLeftover}</th>
-              <th className="px-5 py-3 font-semibold">{d.colDays}</th>
               <th className="px-2 py-3" />
             </tr>
           </thead>
@@ -224,15 +223,6 @@ function FragmentRow({ group: g, badge, isOpen, onToggle, d }: {
           <p className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>
             {g.mode === 'baseline' ? `${d.baselineModeBadge}: ${g.total_physical_stock}` : d.apiModeBadge}
           </p>
-        </td>
-        <td className="px-5 py-3.5">
-          {g.days_of_stock !== null ? (
-            <span className="font-semibold" style={{ color: 'var(--text-base)', fontVariantNumeric: 'tabular-nums' }}>
-              ≈ {g.days_of_stock} {d.days}
-            </span>
-          ) : (
-            <span className="text-[11px]" style={{ color: 'var(--text-muted)' }}>{d.soldNoRecent}</span>
-          )}
         </td>
         <td className="px-2 py-3.5">
           <button onClick={onToggle} title={d.edit}

@@ -30,7 +30,7 @@ function fmt(n: number) {
   return new Intl.NumberFormat('uz-UZ').format(n) + " so'm"
 }
 
-type TabKey = 'all' | 'low_stock' | 'no_orders' | 'ordered' | 'cancelled'
+type TabKey = 'all' | 'low_stock' | 'delivered' | 'ordered' | 'cancelled'
 type SortKey = 'title' | 'profit' | 'margin' | 'stock_quantity'
 
 function SortIcon({ col, sortBy, sortDir }: { col: SortKey; sortBy: SortKey; sortDir: 'asc' | 'desc' }) {
@@ -131,7 +131,6 @@ export default function ProductsTable({ products }: { products: Product[] }) {
 
   const allLabel = d.status.all
 
-  const [mp,             setMp]             = useState<MarketplaceType | undefined>(undefined)
   const [query,          setQuery]          = useState('')
   const [sortBy,         setSortBy]         = useState<SortKey>('profit')
   const [sortDir,        setSortDir]        = useState<'asc' | 'desc'>('desc')
@@ -140,17 +139,16 @@ export default function ProductsTable({ products }: { products: Product[] }) {
   const [editingId,      setEditingId]      = useState<string | null>(null)
   const [optimisticUpdates, setOptimisticUpdates] = useState<Map<string, number | null>>(new Map())
 
-  const availableMps = useMemo(() => {
-    const mps = new Set<MarketplaceType>()
-    for (const p of products) if (p.marketplace) mps.add(p.marketplace)
-    return [...mps].sort()
-  }, [products])
-
+  // Language-independent sentinel for "all categories": the state must never
+  // hold a LOCALIZED label — switching the UI language used to leave the old
+  // language's "All" string in state, which then filtered every row out and
+  // the page looked like the data had disappeared.
+  const ALL_CAT = '__all__'
   const categories = useMemo(() => {
     const cats = [...new Set(products.map(p => p.category).filter(Boolean))] as string[]
-    return [allLabel, ...cats]
-  }, [products, allLabel])
-  const [category, setCategory] = useState(allLabel)
+    return [ALL_CAT, ...cats]
+  }, [products])
+  const [category, setCategory] = useState(ALL_CAT)
 
   const productsWithOverrides = useMemo(() => products.map(p => {
     if (!optimisticUpdates.has(p.id)) return p
@@ -160,14 +158,14 @@ export default function ProductsTable({ products }: { products: Product[] }) {
     return { ...p, cost_price: newCost, profit }
   }), [products, optimisticUpdates])
 
-  const enriched = useMemo(() => productsWithOverrides
-    .filter(p => !mp || p.marketplace === mp),
-    [productsWithOverrides, mp])
+  // Marketplace filtering happens via the page-level tabs (?mp= URL param) —
+  // the second in-table marketplace row was a duplicate and is gone.
+  const enriched = productsWithOverrides
 
   const TABS: { key: TabKey; label: string }[] = [
     { key: 'all',       label: d.status.all          },
     { key: 'low_stock', label: '📦 ' + d.stockQty    },
-    { key: 'no_orders', label: '🚫 ' + d.noMovement  },
+    { key: 'delivered', label: '✅ ' + d.sold         },
     { key: 'ordered',   label: '🛒 ' + d.orderedTab   },
     { key: 'cancelled', label: '❌ ' + d.cancelledTab },
   ]
@@ -183,10 +181,11 @@ export default function ProductsTable({ products }: { products: Product[] }) {
         (p.category ?? '').toLowerCase().includes(q)
       )
     }
-    if (category !== allLabel) rows = rows.filter(p => p.category === category)
+    if (category !== ALL_CAT) rows = rows.filter(p => p.category === category)
 
     if (tab === 'low_stock') rows = rows.filter(p => p.available_stock < stockThreshold)
-    if (tab === 'no_orders') rows = rows.filter(p => (p.sold ?? 0) === 0)
+    // Delivered = units actually delivered (lifetime sold minus still-open orders)
+    if (tab === 'delivered') rows = rows.filter(p => (p.sold ?? 0) - (p.in_transit ?? 0) > 0)
     if (tab === 'ordered')   rows = rows.filter(p => (p.in_transit ?? 0) > 0)
     if (tab === 'cancelled') rows = rows.filter(p => (p.cancelled ?? 0) > 0)
 
@@ -207,7 +206,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
       return sortDir === 'desc' ? bv - av : av - bv
     })
     return rows
-  }, [enriched, query, category, tab, sortBy, sortDir, stockThreshold, allLabel])
+  }, [enriched, query, category, tab, sortBy, sortDir, stockThreshold])
 
   function toggleSort(col: typeof sortBy) {
     if (sortBy === col) setSortDir(d => d === 'desc' ? 'asc' : 'desc')
@@ -237,49 +236,13 @@ export default function ProductsTable({ products }: { products: Product[] }) {
   const tabCounts = {
     all:       enriched.length,
     low_stock: enriched.filter(p => p.available_stock < stockThreshold).length,
-    no_orders: enriched.filter(p => (p.sold ?? 0) === 0).length,
+    delivered: enriched.filter(p => (p.sold ?? 0) - (p.in_transit ?? 0) > 0).length,
     ordered:   enriched.filter(p => (p.in_transit ?? 0) > 0).length,
     cancelled: enriched.filter(p => (p.cancelled ?? 0) > 0).length,
   }
 
   return (
     <div className="space-y-4">
-      {availableMps.length > 0 && (
-        <div className="flex items-center gap-1.5 p-1 rounded-xl w-fit border" style={{ background: 'var(--bg-card2)', borderColor: 'var(--border)' }}>
-          <button
-            onClick={() => setMp(undefined)}
-            className="px-3 py-1.5 rounded-full text-xs font-semibold transition-all"
-            style={mp === undefined ? {
-              background: 'var(--bg-card2)',
-              color: 'var(--c1)',
-              border: '1px solid var(--border)',
-            } : {
-              color: 'var(--text-muted)',
-              border: '1px solid transparent',
-            }}
-          >
-            {d.all ?? 'Barchasi'}
-          </button>
-          {availableMps.map(m => (
-            <button
-              key={m}
-              onClick={() => setMp(m)}
-              className="px-3 py-1.5 rounded-full text-xs font-semibold transition-all"
-              style={mp === m ? {
-                background: MP_META[m].bg,
-                color: MP_META[m].color,
-                border: `1px solid ${MP_META[m].color}40`,
-              } : {
-                color: 'var(--text-muted)',
-                border: '1px solid transparent',
-              }}
-            >
-              {MP_META[m].label}
-            </button>
-          ))}
-        </div>
-      )}
-
       <div className="flex items-center gap-1 p-1 rounded-xl w-fit border" style={{ background: 'var(--bg-card2)', borderColor: 'var(--border)' }}>
         {TABS.map(({ key, label }) => (
           <button key={key} onClick={() => setTab(key)}
@@ -342,7 +305,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
                 color: 'var(--text-muted)',
                 borderColor: 'var(--border)',
               }}>
-              {c}
+              {c === ALL_CAT ? allLabel : c}
             </button>
           ))}
         </div>
@@ -351,7 +314,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
         </div>
       </div>
 
-      <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{filtered.length} {d.productCount} {query || category !== allLabel ? '(filtr)' : ''}</p>
+      <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{filtered.length} {d.productCount} {query || category !== ALL_CAT ? '(filtr)' : ''}</p>
 
       <div className="border rounded-2xl overflow-hidden" style={{ background: 'var(--bg-card2)', borderColor: 'var(--border)' }}>
         <div className="overflow-x-auto">

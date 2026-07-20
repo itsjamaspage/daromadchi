@@ -17,14 +17,6 @@ const marketplaceLabel: Record<string, string> = {
   wildberries: 'Wildberries',
 }
 
-const MP_TABS = [
-  { value: 'all',           label: 'Barchasi' },
-  { value: 'uzum',          label: 'Uzum'          },
-  { value: 'yandex_market', label: 'Yandex Market' },
-  { value: 'wildberries',   label: 'Wildberries'   },
-] as const
-type MpFilter = typeof MP_TABS[number]['value']
-
 // Three lifecycle buckets instead of five near-identical status tabs: an
 // order is IN PROCESS (pending/confirmed) until it's DELIVERED; cancelled and
 // returned orders land in CANCELLED. Orders move between buckets on their own
@@ -58,7 +50,6 @@ export default function OrdersTable({ orders }: { orders: Order[] }) {
 
   const [query,  setQuery]  = useState('')
   const [status, setStatus] = useState<StatusTab>('all')
-  const [mp,     setMp]     = useState<MpFilter>('all')
 
   const statusCounts = useMemo(() =>
     orders.reduce((acc, o) => {
@@ -70,7 +61,6 @@ export default function OrdersTable({ orders }: { orders: Order[] }) {
 
   const filtered = useMemo(() => {
     let rows = [...orders]
-    if (mp !== 'all') rows = rows.filter(o => o.marketplace === mp)
     if (status !== 'all') rows = rows.filter(o => (STATUS_GROUP[o.status] ?? 'in_process') === status)
     if (query.trim()) {
       const q = query.toLowerCase()
@@ -80,7 +70,7 @@ export default function OrdersTable({ orders }: { orders: Order[] }) {
       )
     }
     return rows
-  }, [orders, status, query, mp])
+  }, [orders, status, query])
 
   const exportData = filtered.map(o => ({
     [d.orderId]: o.order_id_external ?? o.id,
@@ -95,27 +85,8 @@ export default function OrdersTable({ orders }: { orders: Order[] }) {
 
   return (
     <div className="space-y-4">
-      {/* Marketplace filter */}
-      <div className="flex items-center gap-1.5 p-1 bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl w-fit">
-        {MP_TABS.map(tab => (
-          <button
-            key={tab.value}
-            onClick={() => setMp(tab.value)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-              mp === tab.value
-                ? 'text-[var(--c1)]'
-                : 'text-[var(--text-base)] hover:text-[var(--c1)]'
-            }`}
-            style={mp === tab.value ? {
-              background: 'var(--bg-card2)',
-              border: '1px solid var(--border)',
-            } : undefined}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
+      {/* Marketplace filtering lives in the page-level tabs (?mp=) — the
+          duplicate in-table row ("Barchasi | Uzum | …") was removed. */}
       {/* Status filter */}
       <div className="flex items-center gap-1 bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl p-1 w-fit flex-wrap">
         {STATUS_TABS.map(tab => (

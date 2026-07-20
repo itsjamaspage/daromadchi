@@ -206,7 +206,7 @@ export const translations = {
       // Table columns
       product: 'Mahsulot',
       profit: 'Foyda',
-      sold: 'Sotilgan',
+      sold: 'Yetkazilgan',
       // Status labels
       status: {
         pending: 'Kutilmoqda',
@@ -247,7 +247,7 @@ export const translations = {
       periodClear: 'Tozalash',
       // Top products by period
       topSoldTitle: 'Tanlangan davrda eng ko\'p sotilgan',
-      topSoldQty: 'Sotilgan',
+      topSoldQty: 'Yetkazilgan',
       topSoldInTransit: 'Jarayonda',
       topSoldCancelled: 'Bekor qilingan',
       topSoldRevenue: 'Daromad',
@@ -482,7 +482,7 @@ export const translations = {
       stockAlertsTitle: 'Ombor ogohlantirishlari',
       noMovement: "Harakat yo'q",
       cancelledTab: 'Bekor qilingan',
-      orderedTab: 'Buyurtma qilingan',
+      orderedTab: 'Jarayonda',
       cancelledUnits: 'Bekor qilingan dona',
       daysLeft: 'kun qoldi',
       reorder: 'Buyurtma berish',
@@ -994,7 +994,7 @@ export const translations = {
       // Table columns
       product: 'Product',
       profit: 'Profit',
-      sold: 'Sold',
+      sold: 'Delivered',
       // Status labels
       status: {
         pending: 'Pending',
@@ -1035,7 +1035,7 @@ export const translations = {
       periodClear: 'Clear',
       // Top products by period
       topSoldTitle: 'Top sold in selected period',
-      topSoldQty: 'Sold',
+      topSoldQty: 'Delivered',
       topSoldInTransit: 'In transit',
       topSoldCancelled: 'Cancelled',
       topSoldRevenue: 'Revenue',
@@ -1270,7 +1270,7 @@ export const translations = {
       stockAlertsTitle: 'Stock alerts',
       noMovement: 'No movement',
       cancelledTab: 'Cancelled',
-      orderedTab: 'Ordered',
+      orderedTab: 'In process',
       cancelledUnits: 'Cancelled units',
       daysLeft: 'days left',
       reorder: 'Reorder',
@@ -1782,7 +1782,7 @@ export const translations = {
       // Table columns
       product: 'Товар',
       profit: 'Прибыль',
-      sold: 'Продано',
+      sold: 'Доставлено',
       // Status labels
       status: {
         pending: 'Ожидает',
@@ -1823,7 +1823,7 @@ export const translations = {
       periodClear: 'Сбросить',
       // Top products by period
       topSoldTitle: 'Топ продаж за выбранный период',
-      topSoldQty: 'Продано',
+      topSoldQty: 'Доставлено',
       topSoldInTransit: 'В процессе',
       topSoldCancelled: 'Отменено',
       topSoldRevenue: 'Выручка',
@@ -2058,7 +2058,7 @@ export const translations = {
       stockAlertsTitle: 'Оповещения об остатках',
       noMovement: 'Нет движения',
       cancelledTab: 'Отменённые',
-      orderedTab: 'Заказанные',
+      orderedTab: 'В процессе',
       cancelledUnits: 'Отменено шт.',
       daysLeft: 'дней осталось',
       reorder: 'Заказать',
