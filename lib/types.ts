@@ -127,8 +127,9 @@ export interface Product {
   updated_at: string
   // computed
   profit: number
-  sold: number                   // units on non-cancelled/returned orders
-  in_transit: number             // units on open orders (pending/confirmed)
+  sold: number                   // marketplace lifetime sold counter (or DB fallback)
+  delivered: number              // units actually delivered (same formula as analytics)
+  in_transit: number             // units on open orders (pending/confirmed) + counter surplus
   cancelled: number              // units on cancelled orders
   is_shared: boolean             // true when physical_stock links across marketplaces
 }

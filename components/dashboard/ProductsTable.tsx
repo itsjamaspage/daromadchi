@@ -184,8 +184,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
     if (category !== ALL_CAT) rows = rows.filter(p => p.category === category)
 
     if (tab === 'low_stock') rows = rows.filter(p => p.available_stock < stockThreshold)
-    // Delivered = units actually delivered (lifetime sold minus still-open orders)
-    if (tab === 'delivered') rows = rows.filter(p => (p.sold ?? 0) - (p.in_transit ?? 0) > 0)
+    if (tab === 'delivered') rows = rows.filter(p => (p.delivered ?? 0) > 0)
     if (tab === 'ordered')   rows = rows.filter(p => (p.in_transit ?? 0) > 0)
     if (tab === 'cancelled') rows = rows.filter(p => (p.cancelled ?? 0) > 0)
 
@@ -227,7 +226,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
     [d.costPriceLabel]:   p.cost_price ?? 0,
     [d.profit]:           p.profit,
     [`${d.margin} (%)`]:  (p.profit / (Number(p.selling_price) || 1) * 100).toFixed(1),
-    [d.sold]:             Math.max((p.sold ?? 0) - (p.in_transit ?? 0), 0),
+    [d.sold]:             p.delivered ?? 0,
     [d.orderedTab]:       p.in_transit ?? 0,
     [d.cancelledTab]:     p.cancelled ?? 0,
     [d.stockQty]:         p.available_stock,
@@ -236,7 +235,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
   const tabCounts = {
     all:       enriched.length,
     low_stock: enriched.filter(p => p.available_stock < stockThreshold).length,
-    delivered: enriched.filter(p => (p.sold ?? 0) - (p.in_transit ?? 0) > 0).length,
+    delivered: enriched.filter(p => (p.delivered ?? 0) > 0).length,
     ordered:   enriched.filter(p => (p.in_transit ?? 0) > 0).length,
     cancelled: enriched.filter(p => (p.cancelled ?? 0) > 0).length,
   }
@@ -395,7 +394,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
                         </div>
                       </td>
                       <td className="px-5 py-4 text-right" style={{ color: 'var(--text-dim)' }}>
-                        {Math.max((p.sold ?? 0) - (p.in_transit ?? 0), 0)}
+                        {p.delivered ?? 0}
                       </td>
                       <td className="px-5 py-4 text-right font-medium tabular-nums" style={{ color: (p.in_transit ?? 0) > 0 ? '#f59e0b' : 'var(--text-muted)' }}>
                         {p.in_transit ?? 0}

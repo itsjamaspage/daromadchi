@@ -90,6 +90,11 @@ const _fetchProducts = unstable_cache(
       // column on its own.
       const dbInTransit = inTransitByProductId.get(p.id) ?? 0
       const surplus = p.quantity_sold != null ? Math.max(p.quantity_sold - orderSold, 0) : 0
+      // SAME formulas as the analytics query (_fetchProductSales) — the two
+      // pages must never disagree about delivered/in-process counts:
+      //   delivered  = DB non-cancelled units minus those still in transit
+      //   in-process = DB in-transit units + counter surplus (ordered, hidden)
+      const deliveredUnits = Math.max(orderSold - dbInTransit, 0)
       const wid = shopInfo.get(p.shop_id)?.warehouseId
       const key = wid && p.sku ? `${wid}:${p.sku}` : null
       const isShared = key ? (groupShopCount.get(key) ?? 0) > 1 : false
@@ -113,13 +118,14 @@ const _fetchProducts = unstable_cache(
         available_stock: availableStock,
         profit: Number(p.selling_price ?? 0) - Number(p.cost_price ?? 0),
         sold,
+        delivered: deliveredUnits,
         in_transit: dbInTransit + surplus,
         cancelled: cancelledByProductId.get(p.id) ?? 0,
         is_shared: isShared,
       } as Product
     })
   },
-  ['products-v8'],
+  ['products-v9'],
   { revalidate: 30, tags: ['product-data'] },
 )
 
