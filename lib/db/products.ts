@@ -82,6 +82,14 @@ const _fetchProducts = unstable_cache(
       // which we can't read at the order level); fall back to order-derived.
       const orderSold = soldByProductId.get(p.id) ?? 0
       const sold = p.quantity_sold != null ? p.quantity_sold : orderSold
+      // Uzum increments quantitySold at ORDER time and hides fresh orders from
+      // the order API, so any surplus of the counter over DB-visible units is a
+      // unit that was ordered but not yet delivered/visible → it belongs in
+      // "ordered", not "sold". When the order later surfaces (delivered or
+      // cancelled) the surplus collapses to 0 and the unit lands in the right
+      // column on its own.
+      const dbInTransit = inTransitByProductId.get(p.id) ?? 0
+      const surplus = p.quantity_sold != null ? Math.max(p.quantity_sold - orderSold, 0) : 0
       const wid = shopInfo.get(p.shop_id)?.warehouseId
       const key = wid && p.sku ? `${wid}:${p.sku}` : null
       const isShared = key ? (groupShopCount.get(key) ?? 0) > 1 : false
@@ -105,13 +113,13 @@ const _fetchProducts = unstable_cache(
         available_stock: availableStock,
         profit: Number(p.selling_price ?? 0) - Number(p.cost_price ?? 0),
         sold,
-        in_transit: inTransitByProductId.get(p.id) ?? 0,
+        in_transit: dbInTransit + surplus,
         cancelled: cancelledByProductId.get(p.id) ?? 0,
         is_shared: isShared,
       } as Product
     })
   },
-  ['products-v7'],
+  ['products-v8'],
   { revalidate: 30, tags: ['product-data'] },
 )
 
@@ -174,18 +182,53 @@ const _fetchProductSales = unstable_cache(
       .where(and(...conditions))
       .groupBy(orderItems.product_id, products.title, products.sku)
 
-    return rows.map(r => ({
-      product_id: r.product_id,
-      title: r.title ?? 'Unknown',
-      sku: r.sku ?? null,
-      qty_sold: Number(r.qty_sold),
-      qty_in_transit: Number(r.qty_in_transit),
-      qty_cancelled: Number(r.qty_cancelled),
-      qty_returned: Number(r.qty_returned),
-      revenue: Number(r.revenue),
-    }))
+    // Reconcile with Uzum's lifetime quantitySold on the unfiltered view: the
+    // counter increments at ORDER time while fresh orders are hidden from the
+    // order API, so its surplus over DB-visible units means "ordered, not yet
+    // delivered" → shown under in-transit, never under sold. Period-filtered
+    // views stay DB-only (a lifetime counter can't be sliced by date).
+    const surplusByProduct = new Map<string, number>()
+    const extraRows: ProductSalesRow[] = []
+    if (!sinceDate && !untilDate) {
+      const prodRows = await db.select({
+        id: products.id, title: products.title, sku: products.sku, quantity_sold: products.quantity_sold,
+      }).from(products).where(inArray(products.shop_id, shopIds))
+      const dbUnits = new Map(rows.filter(r => r.product_id).map(r => [r.product_id as string, Number(r.qty_sold)]))
+      const seen = new Set(rows.map(r => r.product_id))
+      for (const p of prodRows) {
+        if (p.quantity_sold == null) continue
+        const surplus = Math.max(p.quantity_sold - (dbUnits.get(p.id) ?? 0), 0)
+        if (surplus <= 0) continue
+        if (seen.has(p.id)) {
+          surplusByProduct.set(p.id, surplus)
+        } else {
+          // No order rows at all for this product — still show its ordered units.
+          extraRows.push({
+            product_id: p.id, title: p.title, sku: p.sku ?? null,
+            qty_sold: 0, qty_in_transit: surplus, qty_cancelled: 0, qty_returned: 0, revenue: 0,
+          })
+        }
+      }
+    }
+
+    const mapped = rows.map(r => {
+      const dbInTransit = Number(r.qty_in_transit)
+      const surplus = r.product_id ? (surplusByProduct.get(r.product_id) ?? 0) : 0
+      return {
+        product_id: r.product_id,
+        title: r.title ?? 'Unknown',
+        sku: r.sku ?? null,
+        // Sold = delivered units: DB non-cancelled minus those still in transit.
+        qty_sold: Math.max(Number(r.qty_sold) - dbInTransit, 0),
+        qty_in_transit: dbInTransit + surplus,
+        qty_cancelled: Number(r.qty_cancelled),
+        qty_returned: Number(r.qty_returned),
+        revenue: Number(r.revenue),
+      }
+    })
+    return [...mapped, ...extraRows]
   },
-  ['product-sales-v5'],
+  ['product-sales-v6'],
   { revalidate: 30, tags: ['product-data'] },
 )
 

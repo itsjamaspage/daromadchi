@@ -228,7 +228,9 @@ export default function ProductsTable({ products }: { products: Product[] }) {
     [d.costPriceLabel]:   p.cost_price ?? 0,
     [d.profit]:           p.profit,
     [`${d.margin} (%)`]:  (p.profit / (Number(p.selling_price) || 1) * 100).toFixed(1),
-    [d.sold]:             p.sold ?? 0,
+    [d.sold]:             Math.max((p.sold ?? 0) - (p.in_transit ?? 0), 0),
+    [d.orderedTab]:       p.in_transit ?? 0,
+    [d.cancelledTab]:     p.cancelled ?? 0,
     [d.stockQty]:         p.available_stock,
   }))
 
@@ -430,7 +432,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
                         </div>
                       </td>
                       <td className="px-5 py-4 text-right" style={{ color: 'var(--text-dim)' }}>
-                        {p.sold ?? 0}
+                        {Math.max((p.sold ?? 0) - (p.in_transit ?? 0), 0)}
                       </td>
                       <td className="px-5 py-4 text-right font-medium tabular-nums" style={{ color: (p.in_transit ?? 0) > 0 ? '#f59e0b' : 'var(--text-muted)' }}>
                         {p.in_transit ?? 0}
