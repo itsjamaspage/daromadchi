@@ -309,7 +309,10 @@ export default function DashboardClient({ slices, days, period, from, to, initia
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
           <KpiCard title={d.revenue} value={formatSum(kpis.total_revenue)}             change={isEmpty ? null : kpis.change_revenue} icon={DollarSign}  color="violet" />
           <KpiCard title={d.profit}  value={formatSum(kpis.total_profit)}              change={isEmpty ? null : kpis.change_profit}  icon={TrendingUp}  color="emerald" />
-          <KpiCard title={d.orders}  value={kpis.total_orders.toLocaleString('uz-UZ')} change={isEmpty ? null : kpis.change_orders}  icon={ShoppingBag} color="blue" />
+          <KpiCard title={d.orders}
+            value={(kpis.total_orders - (kpis.cancelled_orders ?? 0)).toLocaleString('uz-UZ')}
+            note={(kpis.cancelled_orders ?? 0) > 0 ? `+${kpis.cancelled_orders} ${t.status.cancelled.toLowerCase()}` : undefined}
+            change={isEmpty ? null : kpis.change_orders} icon={ShoppingBag} color="blue" />
           <KpiCard title={d.stock}   value={kpis.total_stock.toLocaleString('uz-UZ')}  change={isEmpty ? null : undefined}           icon={Package}     color="amber" />
         </div>
       )}

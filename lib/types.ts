@@ -153,7 +153,8 @@ export interface DailyRevenue {
 export interface Kpis {
   total_revenue: number
   total_profit: number
-  total_orders: number
+  total_orders: number            // every order received, incl. cancelled
+  cancelled_orders?: number       // subset of total_orders that were cancelled
   total_stock: number
   change_revenue?: number | null  // % vs prior period
   change_profit?: number | null

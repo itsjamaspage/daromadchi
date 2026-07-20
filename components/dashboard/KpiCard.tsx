@@ -3,6 +3,8 @@ import { TrendingUp, TrendingDown, type LucideIcon } from 'lucide-react'
 interface KpiCardProps {
   title: string
   value: string
+  /** small muted line under the value, e.g. "+1 bekor qilingan" */
+  note?: string
   change?: number | null
   icon: LucideIcon
   color: 'violet' | 'emerald' | 'blue' | 'amber'
@@ -15,7 +17,7 @@ const colorMap = {
   amber:   { bgRgba: 'rgba(236,126,0,0.08)',   color: '#ec7e00' },
 }
 
-export default function KpiCard({ title, value, change, icon: Icon, color }: KpiCardProps) {
+export default function KpiCard({ title, value, note, change, icon: Icon, color }: KpiCardProps) {
   const c = colorMap[color]
   const isPositive = (change ?? 0) >= 0
 
@@ -48,6 +50,11 @@ export default function KpiCard({ title, value, change, icon: Icon, color }: Kpi
       <p className="text-2xl font-semibold tracking-tight" style={{ color: 'var(--text-base)' }}>
         {value}
       </p>
+      {note && (
+        <p className="text-[11px] font-medium mt-0.5" style={{ color: '#ef4444' }}>
+          {note}
+        </p>
+      )}
     </div>
   )
 }

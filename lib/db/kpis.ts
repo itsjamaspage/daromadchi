@@ -24,12 +24,14 @@ async function fetchPeriodKpis(shopIds: string[], since: Date | null, until: Dat
     total_revenue: sql<number>`coalesce(sum(${orders.revenue}::numeric) filter (where ${orders.status} <> 'cancelled'), 0)`,
     total_profit: sql<number>`coalesce(sum(${orders.revenue}::numeric - coalesce(${orders.marketplace_fee}::numeric, 0) - coalesce(${orders.delivery_cost}::numeric, 0)) filter (where ${orders.status} <> 'cancelled'), 0)`,
     total_orders: sql<number>`count(*)`,
+    cancelled_orders: sql<number>`count(*) filter (where ${orders.status} = 'cancelled')`,
   }).from(orders).where(and(...conditions))
 
   return {
     revenue: Number(orderAgg?.total_revenue ?? 0),
     profit: Number(orderAgg?.total_profit ?? 0),
     orders: Number(orderAgg?.total_orders ?? 0),
+    cancelled: Number(orderAgg?.cancelled_orders ?? 0),
   }
 }
 
@@ -68,6 +70,7 @@ const _fetchKpis = unstable_cache(
       total_revenue: current.revenue,
       total_profit: current.profit,
       total_orders: current.orders,
+      cancelled_orders: current.cancelled,
       total_stock: Number(stock[0]?.total ?? 0),
     }
 
@@ -80,7 +83,7 @@ const _fetchKpis = unstable_cache(
 
     return result
   },
-  ['kpis-rpc'],
+  ['kpis-v2'],
   { revalidate: 30, tags: ['product-data', 'order-data'] },
 )
 
