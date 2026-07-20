@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   RefreshCw, Save, Key, CheckCircle, XCircle, ExternalLink,
-  Loader2, Hash, Sparkles, Trash2, Send, LinkIcon, Building2, Plus, AlertTriangle,
+  Loader2, Hash, Trash2, Send, LinkIcon, Building2, Plus, AlertTriangle,
 } from 'lucide-react'
 // import { createClient } from '@/lib/supabase/client'
 import type { Shop } from '@/lib/types'
@@ -868,10 +868,7 @@ export default function SettingsForm({ uzumShop, yandexShop, wbShop, shopCounts,
           <Component key={shop?.id ?? Component.name} shop={shop} userId={userId} />
         ))}
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <TelegramCard chatId={telegramChatId ?? null} username={telegramUsername ?? null} />
-        <DemoCard />
-      </div>
+      <TelegramCard chatId={telegramChatId ?? null} username={telegramUsername ?? null} />
       <WarehousesCard />
     </div>
   )
@@ -1059,76 +1056,3 @@ function TelegramCard({ chatId, username }: { chatId: string | null; username: s
   )
 }
 
-// ─── Demo data section ────────────────────────────────────────────────────────
-
-function DemoCard() {
-  const router = useRouter()
-  const [busy, setBusy] = useState<'load' | 'clear' | null>(null)
-  const [msg, setMsg]   = useState<{ ok: boolean; text: string } | null>(null)
-
-  async function load() {
-    setBusy('load'); setMsg(null)
-    try {
-      const res  = await fetch('/api/demo', { method: 'POST' })
-      const data = await res.json()
-      setMsg(res.ok
-        ? { ok: true, text: `Namuna ma'lumotlari yuklandi: ${data.products} mahsulot, ${data.orders} buyurtma, ${data.campaigns} reklama.` }
-        : { ok: false, text: data.error ?? 'Xatolik' })
-      if (res.ok) router.refresh()
-    } catch {
-      setMsg({ ok: false, text: 'Tarmoq xatosi' })
-    } finally { setBusy(null) }
-  }
-
-  async function clear() {
-    setBusy('clear'); setMsg(null)
-    try {
-      const res  = await fetch('/api/demo', { method: 'DELETE' })
-      const data = await res.json()
-      setMsg(res.ok ? { ok: true, text: 'Namuna ma\'lumotlari o\'chirildi.' } : { ok: false, text: data.error ?? 'Xatolik' })
-      if (res.ok) router.refresh()
-    } catch {
-      setMsg({ ok: false, text: 'Tarmoq xatosi' })
-    } finally { setBusy(null) }
-  }
-
-  return (
-    <div className="bg-[var(--bg-card2)] border border-dashed border-amber-500/40 rounded-2xl overflow-hidden">
-      <div className="p-5 flex items-center gap-3 border-b border-[var(--border)]">
-        <div className="w-9 h-9 rounded-xl bg-amber-500/15 border border-amber-500/25 flex items-center justify-center">
-          <Sparkles className="w-4 h-4 text-amber-400" />
-        </div>
-        <div className="flex-1">
-          <p className="text-[var(--text-base)] font-semibold text-sm">Namuna (DEMO) ma&apos;lumotlari</p>
-          <p className="text-[var(--text-muted)] text-xs">Do&apos;koningizda hali tovar bo&apos;lmasa — ilovani sinab ko&apos;rish uchun</p>
-        </div>
-      </div>
-      <div className="p-5 space-y-3">
-        <p className="text-[var(--text-muted)] text-xs leading-relaxed">
-          Bu tugma hisobingizga <b>namuna</b> mahsulotlar, buyurtmalar va reklama statistikasini yuklaydi —
-          shunda barcha sahifalar (Dashboard, P&amp;L, ABC/XYZ, Reklama...) to&apos;ldirilgan holda ko&apos;rinadi.
-          Bu <b>haqiqiy ma&apos;lumot emas</b> va istalgan vaqt bir tugma bilan o&apos;chiriladi.
-        </p>
-        <div className="flex flex-wrap gap-2">
-          <button
-            onClick={load}
-            disabled={busy !== null}
-            className="inline-flex items-center gap-2 btn-primary text-sm font-semibold px-4 py-2.5 rounded-xl disabled:opacity-60"
-          >
-            {busy === 'load' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-            Namuna ma&apos;lumotlarini yuklash
-          </button>
-          <button
-            onClick={clear}
-            disabled={busy !== null}
-            className="inline-flex items-center gap-2 text-sm font-medium px-4 py-2.5 rounded-xl border border-[var(--border2)] text-[var(--text-muted)] hover:text-red-400 hover:border-red-500/40 transition-all disabled:opacity-60"
-          >
-            {busy === 'clear' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-            O&apos;chirish
-          </button>
-        </div>
-        <StatusMsg msg={msg} />
-      </div>
-    </div>
-  )
-}

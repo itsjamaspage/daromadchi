@@ -148,9 +148,9 @@ async function renderStats(token, stats, lang = 'uz') {
         <div class="stat-sub">${change(stats.ordersChange)} kechagiga</div>
       </div>
       <div class="stat">
-        <div class="stat-lbl">Reklama sarfi</div>
-        <div class="stat-val">${fp(stats.adSpendToday, true)}</div>
-        <div class="stat-sub">DRR: ${stats.drr||'—'}%</div>
+        <div class="stat-lbl">Jarayonda</div>
+        <div class="stat-val ${stats.inProcess>0?'up':''}">${stats.inProcess||0}</div>
+        <div class="stat-sub">buyurtma</div>
       </div>
       <div class="stat">
         <div class="stat-lbl">Kam zaxira</div>
@@ -158,9 +158,9 @@ async function renderStats(token, stats, lang = 'uz') {
         <div class="stat-sub">mahsulot</div>
       </div>
       <div class="stat">
-        <div class="stat-lbl">Qaytarishlar</div>
-        <div class="stat-val">${stats.todayReturns||0}</div>
-        <div class="stat-sub">${stats.returnRate||'—'}% tizim</div>
+        <div class="stat-lbl">Bekor qilingan</div>
+        <div class="stat-val ${stats.todayCancelled>0?'dn':''}">${stats.todayCancelled||0}</div>
+        <div class="stat-sub">${stats.todayReturns ? stats.todayReturns + ' qaytarilgan' : '—'}</div>
       </div>
     </div>
 

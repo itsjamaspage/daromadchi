@@ -357,6 +357,7 @@ const _fetchProductsPaginated = unstable_cache(
       ? await db.select({
           product_id: orderItems.product_id,
           qty_sold: sql<number>`coalesce(sum(${orderItems.quantity}) filter (where ${orders.status} not in ('cancelled','returned')), 0)`.as('qty_sold'),
+          qty_in_transit: sql<number>`coalesce(sum(${orderItems.quantity}) filter (where ${orders.status} in ('pending','confirmed')), 0)`.as('qty_in_transit'),
           qty_cancelled: sql<number>`coalesce(sum(${orderItems.quantity}) filter (where ${orders.status} = 'cancelled'), 0)`.as('qty_cancelled'),
         }).from(orderItems)
           .innerJoin(orders, eq(orderItems.order_id, orders.id))
@@ -365,10 +366,12 @@ const _fetchProductsPaginated = unstable_cache(
       : []
 
     const soldMap = new Map<string, number>()
+    const inTransitMap = new Map<string, number>()
     const cancelledMap = new Map<string, number>()
     for (const r of soldRows) {
       if (r.product_id) {
         soldMap.set(r.product_id, Number(r.qty_sold))
+        inTransitMap.set(r.product_id, Number(r.qty_in_transit))
         cancelledMap.set(r.product_id, Number(r.qty_cancelled))
       }
     }
@@ -387,6 +390,9 @@ const _fetchProductsPaginated = unstable_cache(
     const rows: Product[] = productRows.map(p => {
       const orderSold = soldMap.get(p.id) ?? 0
       const sold = p.quantity_sold != null ? p.quantity_sold : orderSold
+      const dbInTransit = inTransitMap.get(p.id) ?? 0
+      const surplus = p.quantity_sold != null ? Math.max(p.quantity_sold - orderSold, 0) : 0
+      const deliveredUnits = Math.max(orderSold - dbInTransit, 0)
       const wid = shopInfo.get(p.shop_id)?.warehouseId
       const key = wid && p.sku ? `${wid}:${p.sku}` : null
       const isShared = key ? (groupShopCount.get(key) ?? 0) > 1 : false
@@ -410,6 +416,8 @@ const _fetchProductsPaginated = unstable_cache(
         available_stock: availableStock,
         profit: Number(p.selling_price ?? 0) - Number(p.cost_price ?? 0),
         sold,
+        delivered: deliveredUnits,
+        in_transit: dbInTransit + surplus,
         cancelled: cancelledMap.get(p.id) ?? 0,
         is_shared: isShared,
       } as Product
