@@ -6,7 +6,7 @@ import { getUserShops } from '@/lib/db/shop-context'
 import PnlChart from './PnlChart'
 import ExportButton from '@/components/dashboard/ExportButton'
 import MarketplaceTabs from '@/components/dashboard/MarketplaceTabs'
-import { getT } from '@/lib/server-i18n'
+import { getT, getLang } from '@/lib/server-i18n'
 import type { MarketplaceType } from '@/lib/types'
 
 function fmt(n: number) {
@@ -25,9 +25,14 @@ interface Props {
 export default async function PnlPage({ searchParams }: Props) {
   const params = await searchParams
   const marketplace = parseMp(params.mp)
-  const [t, pnl, userShops] = await Promise.all([getT(), getMonthlyPnl(6, marketplace), getUserShops()])
+  const [t, lang, pnl, userShops] = await Promise.all([getT(), getLang(), getMonthlyPnl(6, marketplace), getUserShops()])
   const d = t.dashboard
-  const monthlyData = pnl.rows
+  // Month names in the UI language — not hardcoded to one locale.
+  const locale = lang === 'ru' ? 'ru-RU' : lang === 'en' ? 'en-US' : 'uz-UZ'
+  const monthlyData = pnl.rows.map(m => ({
+    ...m,
+    month: new Date(m.monthKey + '-01').toLocaleDateString(locale, { month: 'short', year: '2-digit' }),
+  }))
   const isEmpty = monthlyData.length === 0
   const hasShops = userShops.length > 0
   const anyEstimated = monthlyData.some(m => m.estimated)

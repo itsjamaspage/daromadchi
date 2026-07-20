@@ -14,6 +14,8 @@ import type { MarketplaceType } from '@/lib/types'
  * money figure but shown as a count so a cancellation-only month still renders.
  */
 export interface MonthlyPnl {
+  /** raw YYYY-MM key — format it with the UI language's locale in the page */
+  monthKey: string
   month: string
   order_count: number
   cancelled_count: number
@@ -127,6 +129,7 @@ export async function getMonthlyPnl(
       : Math.max(v.revenue - commission - delivery - acquiring - ads - cogs, 0)
     const tax        = taxBase * params.taxPct / 100
     return {
+      monthKey:         key,
       month:            d.toLocaleDateString('uz-UZ', { month: 'short', year: '2-digit' }),
       order_count:      v.count,
       cancelled_count:  v.cancelledCount,

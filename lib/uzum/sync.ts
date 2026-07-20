@@ -1,4 +1,4 @@
-import { eq, and, inArray, count } from 'drizzle-orm'
+import { eq, and, inArray, count, sql } from 'drizzle-orm'
 import { db, shops, products, orders, orderItems, syncDays, adCampaigns } from '@/lib/db'
 import { clearShopData } from '@/lib/db/clear-shop-data'
 import {
@@ -737,6 +737,47 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
     } catch (e) {
       // Best-effort, but never silent: analytics depend on order_items.
       warnings.push(`Order items: ${String(e).slice(0, 150)}`)
+    }
+
+    // ── Repair: orders without line items are invisible to per-product
+    // analytics (products/analytics showed "in process 0" while an open order
+    // existed). In a single-product shop the line is derivable from the
+    // order's own items_count and revenue — synthesize it, and relink any
+    // orphaned rows (product_id NULL from syncs that ran while the products
+    // table was empty). Heals historical rows, not just the current fetch.
+    try {
+      const shopProds = await db.select({ id: products.id })
+        .from(products).where(eq(products.shop_id, shopId))
+      if (shopProds.length === 1) {
+        const loneId = shopProds[0].id as string
+        const allOrds = await db.select({ id: orders.id, items_count: orders.items_count, revenue: orders.revenue })
+          .from(orders).where(eq(orders.shop_id, shopId))
+        const shopOrderIds = allOrds.map(o => o.id as string)
+        if (shopOrderIds.length > 0) {
+          await db.update(orderItems).set({ product_id: loneId })
+            .where(and(inArray(orderItems.order_id, shopOrderIds), sql`${orderItems.product_id} is null`))
+          const withItems = await db.select({ order_id: orderItems.order_id })
+            .from(orderItems).where(inArray(orderItems.order_id, shopOrderIds))
+          const hasItems = new Set(withItems.map(r => r.order_id as string))
+          const missing = allOrds.filter(o => !hasItems.has(o.id as string))
+          if (missing.length > 0) {
+            await db.insert(orderItems).values(missing.map(o => {
+              const qty = o.items_count || 1
+              const rev = Number(o.revenue ?? 0)
+              return {
+                order_id: o.id as string,
+                product_id: loneId,
+                quantity: qty,
+                price_per_unit: String(qty > 0 ? rev / qty : rev),
+              }
+            }))
+            itemsUpserted += missing.length
+            debug.itemsRepaired = String(missing.length)
+          }
+        }
+      }
+    } catch (e) {
+      warnings.push(`Items repair: ${String(e).slice(0, 120)}`)
     }
 
     // ── Ad campaigns (best-effort — gracefully skipped if endpoint 404s) ──────
