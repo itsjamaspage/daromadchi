@@ -10,6 +10,7 @@ const MIGRATIONS = [
   'supabase/migrations/023_order_fulfillment_type.sql',
   'supabase/migrations/024_product_quantity_sold.sql',
   'supabase/migrations/025_notif_new_orders_default_on.sql',
+  'supabase/migrations/026_unit_econ_landed_cost.sql',
 ]
 
 function loadDatabaseUrl() {

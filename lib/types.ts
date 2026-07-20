@@ -23,6 +23,9 @@ export interface UnitEconomicsItem {
   marketplace: MarketplaceType
   sellingPrice: number
   costPrice: number
+  /** per-unit cost of bringing the product from the supplier (e.g. China):
+   *  cargo/customs/freight — separate from costPrice (purchase price) */
+  landedCost?: number
   commissionPct: number
   commission: number
   delivery: number
@@ -155,6 +158,7 @@ export interface Kpis {
   total_profit: number
   total_orders: number            // every order received, incl. cancelled
   cancelled_orders?: number       // subset of total_orders that were cancelled
+  cancelled_units?: number        // item units on those cancelled orders
   total_stock: number
   change_revenue?: number | null  // % vs prior period
   change_profit?: number | null

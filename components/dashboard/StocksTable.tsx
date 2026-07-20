@@ -197,6 +197,12 @@ function FragmentRow({ group: g, badge, isOpen, onToggle, d }: {
             <span className="text-[11px] font-semibold" style={{ color: 'var(--text-muted)' }}>
               = {g.total_sold}
             </span>
+            {g.total_in_process > 0 && (
+              <span className="text-[11px] font-semibold px-1.5 py-0.5 rounded"
+                style={{ background: 'rgba(245,158,11,0.1)', color: '#f59e0b' }}>
+                {d.inProcessLabel}: {g.total_in_process}
+              </span>
+            )}
             {g.total_cancelled > 0 && (
               <span className="text-[11px] font-semibold px-1.5 py-0.5 rounded"
                 style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>

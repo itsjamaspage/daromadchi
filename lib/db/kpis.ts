@@ -1,6 +1,6 @@
 import { unstable_cache } from 'next/cache'
-import { inArray, gte, lte, and, sql } from 'drizzle-orm'
-import { db, orders, products } from '@/lib/db'
+import { inArray, gte, lte, and, eq, sql } from 'drizzle-orm'
+import { db, orders, orderItems, products } from '@/lib/db'
 import { getShopIds } from '@/lib/db/shop-context'
 import type { Kpis, MarketplaceType } from '@/lib/types'
 
@@ -27,11 +27,20 @@ async function fetchPeriodKpis(shopIds: string[], since: Date | null, until: Dat
     cancelled_orders: sql<number>`count(*) filter (where ${orders.status} = 'cancelled')`,
   }).from(orders).where(and(...conditions))
 
+  // Cancelled UNITS (a single cancelled order can hold several items — users
+  // think in items, so the KPI note shows both counts).
+  const [unitAgg] = await db.select({
+    units: sql<number>`coalesce(sum(${orderItems.quantity}), 0)`,
+  }).from(orderItems)
+    .innerJoin(orders, eq(orderItems.order_id, orders.id))
+    .where(and(...conditions, sql`${orders.status} = 'cancelled'`))
+
   return {
     revenue: Number(orderAgg?.total_revenue ?? 0),
     profit: Number(orderAgg?.total_profit ?? 0),
     orders: Number(orderAgg?.total_orders ?? 0),
     cancelled: Number(orderAgg?.cancelled_orders ?? 0),
+    cancelledUnits: Number(unitAgg?.units ?? 0),
   }
 }
 
@@ -71,6 +80,7 @@ const _fetchKpis = unstable_cache(
       total_profit: current.profit,
       total_orders: current.orders,
       cancelled_orders: current.cancelled,
+      cancelled_units: current.cancelledUnits,
       total_stock: Number(stock[0]?.total ?? 0),
     }
 

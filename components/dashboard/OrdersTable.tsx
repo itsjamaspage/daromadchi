@@ -25,6 +25,17 @@ const MP_TABS = [
 ] as const
 type MpFilter = typeof MP_TABS[number]['value']
 
+// Three lifecycle buckets instead of five near-identical status tabs: an
+// order is IN PROCESS (pending/confirmed) until it's DELIVERED; cancelled and
+// returned orders land in CANCELLED. Orders move between buckets on their own
+// as the sync updates order.status.
+const STATUS_GROUP: Record<OrderStatus, 'in_process' | 'delivered' | 'cancelled'> = {
+  pending: 'in_process', confirmed: 'in_process',
+  delivered: 'delivered',
+  cancelled: 'cancelled', returned: 'cancelled',
+}
+type StatusTab = 'all' | 'in_process' | 'delivered' | 'cancelled'
+
 export default function OrdersTable({ orders }: { orders: Order[] }) {
   const { lang } = useLang()
   const d = translations[lang].dashboard
@@ -38,27 +49,29 @@ export default function OrdersTable({ orders }: { orders: Order[] }) {
     returned:  { label: s.returned,  className: 'bg-amber-50 text-amber-600 border border-amber-200',          dot: 'bg-amber-500'   },
   }
 
-  const STATUS_TABS: { value: OrderStatus | 'all'; label: string }[] = [
-    { value: 'all',       label: s.all            },
-    { value: 'delivered', label: s.delivered      },
-    { value: 'confirmed', label: s.confirmed      },
-    { value: 'pending',   label: s.pending        },
-    { value: 'returned',  label: s.returned       },
-    { value: 'cancelled', label: s.cancelledShort },
+  const STATUS_TABS: { value: StatusTab; label: string }[] = [
+    { value: 'all',        label: s.all            },
+    { value: 'in_process', label: s.inProcess      },
+    { value: 'delivered',  label: s.delivered      },
+    { value: 'cancelled',  label: s.cancelledShort },
   ]
 
   const [query,  setQuery]  = useState('')
-  const [status, setStatus] = useState<OrderStatus | 'all'>('all')
+  const [status, setStatus] = useState<StatusTab>('all')
   const [mp,     setMp]     = useState<MpFilter>('all')
 
   const statusCounts = useMemo(() =>
-    orders.reduce((acc, o) => { acc[o.status] = (acc[o.status] || 0) + 1; return acc }, {} as Record<string, number>)
+    orders.reduce((acc, o) => {
+      const g = STATUS_GROUP[o.status] ?? 'in_process'
+      acc[g] = (acc[g] || 0) + 1
+      return acc
+    }, {} as Record<string, number>)
   , [orders])
 
   const filtered = useMemo(() => {
     let rows = [...orders]
     if (mp !== 'all') rows = rows.filter(o => o.marketplace === mp)
-    if (status !== 'all') rows = rows.filter(o => o.status === status)
+    if (status !== 'all') rows = rows.filter(o => (STATUS_GROUP[o.status] ?? 'in_process') === status)
     if (query.trim()) {
       const q = query.toLowerCase()
       rows = rows.filter(o =>

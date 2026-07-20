@@ -281,6 +281,10 @@ export const unitEconomicsItems = pgTable('unit_economics_items', {
   marketplace:     marketplaceTypeEnum('marketplace').notNull(),
   selling_price:   numeric('selling_price').notNull(),
   cost_price:      numeric('cost_price').notNull(),
+  // Per-unit cost of actually bringing the product from the supplier (e.g.
+  // China): cargo/customs/freight. Separate from cost_price (purchase price)
+  // so the margin reflects the true landed cost.
+  landed_cost:     numeric('landed_cost'),
   commission_pct:  numeric('commission_pct').notNull(),
   commission:      numeric('commission').notNull(),
   delivery:        numeric('delivery').notNull(),

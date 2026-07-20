@@ -13,6 +13,7 @@ function mapRow(row: typeof unitEconomicsItems.$inferSelect): UnitEconomicsItem 
     marketplace:   row.marketplace as MarketplaceType,
     sellingPrice:  Number(row.selling_price),
     costPrice:     Number(row.cost_price),
+    landedCost:    row.landed_cost !== null ? Number(row.landed_cost) : 0,
     commissionPct: Number(row.commission_pct),
     commission:    Number(row.commission),
     delivery:      Number(row.delivery),
@@ -71,6 +72,7 @@ export async function updateUnitEconomicsItem(
   const update: Record<string, unknown> = { updated_at: new Date() }
   if (fields.title         !== undefined) update.title          = fields.title
   if (fields.costPrice     !== undefined) update.cost_price     = String(fields.costPrice)
+  if (fields.landedCost    !== undefined) update.landed_cost    = String(fields.landedCost)
   if (fields.sellingPrice  !== undefined) update.selling_price  = String(fields.sellingPrice)
   if (fields.commissionPct !== undefined) update.commission_pct = String(fields.commissionPct)
   if (fields.commission    !== undefined) update.commission     = String(fields.commission)
@@ -107,6 +109,7 @@ export async function addUnitEconomicsItem(
     marketplace:    item.marketplace,
     selling_price:  String(item.sellingPrice),
     cost_price:     String(item.costPrice),
+    landed_cost:    item.landedCost != null ? String(item.landedCost) : null,
     commission_pct: String(item.commissionPct),
     commission:     String(item.commission),
     delivery:       String(item.delivery),

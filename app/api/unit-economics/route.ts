@@ -7,7 +7,7 @@ const MARKETPLACES = ['uzum', 'yandex_market', 'wildberries'] as const
 // Fields that may be updated via PATCH
 const ALLOWED_UPDATE_FIELDS = new Set([
   'title', 'image', 'sku', 'category', 'marketplace',
-  'sellingPrice', 'costPrice', 'commissionPct', 'commission',
+  'sellingPrice', 'costPrice', 'landedCost', 'commissionPct', 'commission',
   'delivery', 'lastMile', 'acquiring', 'adSpend', 'tax',
   'netProfit', 'roi', 'margin', 'stock', 'weight',
   'supplierUrl', 'productUrl',

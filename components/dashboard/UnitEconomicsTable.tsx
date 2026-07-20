@@ -33,6 +33,7 @@ const ALL_COLUMNS = [
   { key: 'sku',         label: 'SKU',            always: false },
   { key: 'sellingPrice',label: 'Narx',           always: false },
   { key: 'costPrice',   label: 'Tannarx',        always: false },
+  { key: 'landedCost',  label: 'Keltirish narxi', always: false },
   { key: 'commission',  label: 'Komissiya',      always: false },
   { key: 'delivery',    label: 'Yetkazish',      always: false },
   { key: 'lastMile',    label: 'Oxirgi milya',   always: false },
@@ -47,7 +48,7 @@ const ALL_COLUMNS = [
 ] as const
 
 type ColKey = typeof ALL_COLUMNS[number]['key']
-const DEFAULT_VISIBLE: ColKey[] = ['title','sellingPrice','costPrice','commission','delivery','adSpend','netProfit','roi','margin','stock','supplierUrl']
+const DEFAULT_VISIBLE: ColKey[] = ['title','sellingPrice','costPrice','landedCost','commission','delivery','adSpend','netProfit','roi','margin','stock','supplierUrl']
 
 const DEFAULT_SETTINGS: UnitEcoSettings = {
   acquiringPct: 1.5,
@@ -99,6 +100,7 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
     setEditDraft({
       title:         item.title,
       costPrice:     item.costPrice,
+      landedCost:    item.landedCost,
       sellingPrice:  item.sellingPrice,
       commissionPct: item.commissionPct,
       delivery:      item.delivery,
@@ -114,15 +116,19 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
   function recalc(draft: Partial<UnitEconomicsItem>): Partial<UnitEconomicsItem> {
     const sp  = draft.sellingPrice  ?? 0
     const cp  = draft.costPrice     ?? 0
+    // Landed cost: what it actually cost to bring the unit from the supplier
+    // (cargo/customs). Part of the true unit cost, so it reduces profit and
+    // sits in the ROI denominator alongside the purchase price.
+    const lc  = draft.landedCost    ?? 0
     const com = sp * (draft.commissionPct ?? 0) / 100
     const del = draft.delivery  ?? 0
     const lm  = draft.lastMile  ?? 0
     const acq = draft.acquiring ?? 0
     const ad  = draft.adSpend   ?? 0
     const tax = draft.tax       ?? 0
-    const np  = sp - cp - com - del - lm - acq - ad - tax
+    const np  = sp - cp - lc - com - del - lm - acq - ad - tax
     const margin = sp > 0 ? (np / sp) * 100 : 0
-    const roi    = cp > 0 ? (np / cp) * 100 : 0
+    const roi    = cp + lc > 0 ? (np / (cp + lc)) * 100 : 0
     return { ...draft, commission: com, netProfit: np, margin, roi }
   }
 
@@ -486,6 +492,7 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
                       if (col.key === 'sku') return <td key="sku" className="px-3 py-3 text-[var(--text-base)] text-xs font-mono">{item.sku || '—'}</td>
                       if (col.key === 'sellingPrice') return <td key="sellingPrice" className="px-3 py-3 text-[var(--text-base)] text-xs">{fs(item.sellingPrice)}</td>
                       if (col.key === 'costPrice') return <td key="costPrice" className="px-3 py-3 text-[var(--text-base)] text-xs">{fs(item.costPrice)}</td>
+                      if (col.key === 'landedCost') return <td key="landedCost" className="px-3 py-3 text-[var(--text-base)] text-xs">{item.landedCost ? fs(item.landedCost) : '—'}</td>
                       if (col.key === 'commission') return <td key="commission" className="px-3 py-3 text-xs"><span className="text-red-600">−{fs(item.commission)}</span><span className="text-[var(--text-base)] text-[10px] ml-1 opacity-60">({item.commissionPct}%)</span></td>
                       if (col.key === 'delivery') return <td key="delivery" className="px-3 py-3 text-red-600 text-xs">−{fs(item.delivery)}</td>
                       if (col.key === 'lastMile') return <td key="lastMile" className="px-3 py-3 text-red-600 text-xs">{item.lastMile > 0 ? `−${fs(item.lastMile)}` : '—'}</td>
@@ -616,6 +623,13 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
                   <span className="text-xs font-medium text-[var(--text-muted)]">Tannarx (so&apos;m) <span className="text-[var(--c1)]">*ROI uchun</span></span>
                   <input type="number" min={0} value={editDraft.costPrice ?? 0}
                     onChange={e => setDraftField('costPrice', parseFloat(e.target.value) || 0)}
+                    className="w-full px-3 py-2 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg text-sm text-[var(--text-base)] focus:outline-none focus:border-[var(--border2)]" />
+                </label>
+                {/* Landed cost (bringing from supplier / China) */}
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-xs font-medium text-[var(--text-muted)]">Keltirish narxi (so&apos;m) <span className="text-[var(--c1)]">— kargo/bojxona, Xitoydan olib kelish</span></span>
+                  <input type="number" min={0} value={editDraft.landedCost ?? 0}
+                    onChange={e => setDraftField('landedCost', parseFloat(e.target.value) || 0)}
                     className="w-full px-3 py-2 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg text-sm text-[var(--text-base)] focus:outline-none focus:border-[var(--border2)]" />
                 </label>
                 {/* Commission % */}

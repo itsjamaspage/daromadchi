@@ -59,6 +59,7 @@ export const translations = {
         searchPlaceholder: 'Mahsulot nomi yoki artikul...',
         soldNoRecent: "So'nggi 14 kunda sotuv yo'q",
         cancelledLabel: 'Bekor qilingan',
+        inProcessLabel: 'Jarayonda',
         linkedBadge: 'ta marketpleys',
         sinceBaseline: 'kiritilgandan beri sotilgan',
       },
@@ -214,6 +215,7 @@ export const translations = {
         cancelled: 'Bekor qilindi',
         returned: 'Qaytarildi',
         cancelledShort: 'Bekor',
+        inProcess: 'Jarayonda',
         all: 'Barchasi',
       },
       // Analytics page
@@ -845,6 +847,7 @@ export const translations = {
         searchPlaceholder: 'Product name or article...',
         soldNoRecent: 'No sales in the last 14 days',
         cancelledLabel: 'Cancelled',
+        inProcessLabel: 'In process',
         linkedBadge: 'marketplaces',
         sinceBaseline: 'sold since entered',
       },
@@ -1000,6 +1003,7 @@ export const translations = {
         cancelled: 'Cancelled',
         returned: 'Returned',
         cancelledShort: 'Cancelled',
+        inProcess: 'In process',
         all: 'All',
       },
       // Analytics page
@@ -1631,6 +1635,7 @@ export const translations = {
         searchPlaceholder: 'Название товара или артикул...',
         soldNoRecent: 'Нет продаж за последние 14 дней',
         cancelledLabel: 'Отменено',
+        inProcessLabel: 'В процессе',
         linkedBadge: 'маркетплейса',
         sinceBaseline: 'продано после ввода',
       },
@@ -1786,6 +1791,7 @@ export const translations = {
         cancelled: 'Отменён',
         returned: 'Возврат',
         cancelledShort: 'Отменён',
+        inProcess: 'В процессе',
         all: 'Все',
       },
       // Analytics page
