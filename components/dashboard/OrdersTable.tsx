@@ -17,6 +17,15 @@ const marketplaceLabel: Record<string, string> = {
   wildberries: 'Wildberries',
 }
 
+// Deep link from an order id to the marketplace's seller cabinet, so the id
+// can be verified against the source with one click. Null = no known deep
+// link for that marketplace.
+export function sellerOrderUrl(marketplace: string, extId: string | null): string | null {
+  if (!extId) return null
+  if (marketplace === 'uzum') return `https://seller.uzum.uz/seller/orders/fbs/${extId}`
+  return null
+}
+
 // Three lifecycle buckets instead of five near-identical status tabs: an
 // order is IN PROCESS (pending/confirmed) until it's DELIVERED; cancelled and
 // returned orders land in CANCELLED. Orders move between buckets on their own
@@ -150,7 +159,20 @@ export default function OrdersTable({ orders }: { orders: Order[] }) {
                         <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'var(--bg-card2)' }}>
                           <ShoppingCart className="w-3.5 h-3.5" style={{ color: 'var(--c1)' }} />
                         </div>
-                        <span className="font-mono text-xs font-medium" style={{ color: 'var(--c1)' }}>{order.order_id_external ?? order.id.slice(0, 8)}</span>
+                        {(() => {
+                          const url = sellerOrderUrl(order.marketplace, order.order_id_external)
+                          const label = order.order_id_external ?? order.id.slice(0, 8)
+                          return url ? (
+                            <a href={url} target="_blank" rel="noopener noreferrer"
+                              className="font-mono text-xs font-medium hover:underline"
+                              style={{ color: 'var(--c1)' }}
+                              title="Uzum seller kabinetida ochish">
+                              {label} ↗
+                            </a>
+                          ) : (
+                            <span className="font-mono text-xs font-medium" style={{ color: 'var(--c1)' }}>{label}</span>
+                          )
+                        })()}
                       </div>
                     </td>
                     <td className="px-5 py-4 text-[var(--text-base)] text-xs">
