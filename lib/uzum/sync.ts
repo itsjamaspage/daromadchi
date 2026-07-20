@@ -7,6 +7,8 @@ import {
   fetchUzumShops,
   fetchUzumShopProducts,
   fetchUzumAdCampaigns,
+  fetchUzumFbsStatusEnum,
+  fetchUzumInvoices,
   UzumApiError,
   type UzumFbsOrder,
   type UzumFbsOrderItem,
@@ -24,6 +26,10 @@ const STATUS_MAP: Record<string, string> = {
   PACKAGED: 'pending',
   ASSEMBLED: 'pending',
   READY: 'pending',
+  PROCESSING: 'pending',
+  PACKING: 'pending',
+  IN_PROGRESS: 'pending',
+  PENDING_CANCELLATION: 'pending',
   // Handed to Uzum / in transit / awaiting pickup at the PVZ
   SENT: 'confirmed',
   HANDED_OVER: 'confirmed',
@@ -31,6 +37,11 @@ const STATUS_MAP: Record<string, string> = {
   ON_DELIVERY: 'confirmed',
   DELIVERING: 'confirmed',
   ACTIVE: 'confirmed',
+  PENDING_DELIVERY: 'confirmed',
+  ACCEPTED_AT_DP: 'confirmed',
+  DELIVERED_TO_CUSTOMER_DELIVERY_POINT: 'confirmed',
+  TO_WITHDRAW: 'confirmed',
+  PARTIALLY_CANCELLED: 'confirmed',
   // Finished
   DELIVERED: 'delivered',
   COMPLETED: 'delivered',
@@ -268,25 +279,71 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
     // (429), which previously caused the real order's status query to be skipped.
     const pause = () => new Promise(r => setTimeout(r, 350))
 
+    // Status list: prefer the AUTHORITATIVE enum from Uzum's own OpenAPI spec
+    // (/swagger/api-docs — proven readable). The hand-maintained list of 6
+    // missed real statuses like PACKING/PENDING_DELIVERY, which is exactly
+    // where a fresh not-yet-shipped order lives. Falls back to the static
+    // list when the spec is unreachable.
+    let fbsStatuses = FBS_STATUSES
+    const specEnum = await fetchUzumFbsStatusEnum(token)
+    if (specEnum && specEnum.length > 0) {
+      fbsStatuses = specEnum.slice(0, 20)
+      debug.statusSource = `openapi:${specEnum.length}`
+    }
+
     // FBS: query each valid status and merge. fbsOk is true if at least one
     // status query succeeded (even with 0 results), so a genuinely empty FBS
     // account isn't treated as a failure.
     const fbsById = new Map<string, UzumFbsOrder>()
-    for (const st of FBS_STATUSES) {
+    for (const st of fbsStatuses) {
       try {
         const batch = await fetchAllPages(page => fetchUzumOrders(token, uzumShopIds, page, ORDERS_PAGE_SIZE, undefined, undefined, 'fbs', st))
         fbsOk = true
         debug[`fbs_${st}`] = String(batch.length)
         for (const o of batch) fbsById.set(extIdOf(o), o)
       } catch (e) {
-        // Record EVERY failure, including 400 — silently dropping 400s is how
-        // a total order-fetch failure previously looked like "0 orders, ok".
+        // Record EVERY failure in debug — silently dropping errors is how a
+        // total order-fetch failure previously looked like "0 orders, ok".
+        // 400 = status name not valid for this endpoint (possible with the
+        // spec-derived enum); visible in debug but not worth a warning.
         const msg = e instanceof UzumApiError ? `HTTP ${e.status} ${e.body?.slice(0, 120) ?? ''}` : String(e)
         debug[`fbs_${st}`] = msg
-        warnings.push(`FBS ${st}: ${msg}`)
+        if (!(e instanceof UzumApiError && e.status === 400)) {
+          warnings.push(`FBS ${st}: ${msg}`)
+        }
       }
       await pause()
     }
+
+    // FBS invoices: /v1/invoice is readable on this account while a fresh
+    // not-yet-shipped order is missing from every /v2/fbs/orders status. Pull
+    // it as an additional order source: order-shaped records (own id + price/
+    // items/status) merge into the FBS set; the first record's raw JSON is
+    // surfaced in debug so the real field names are always visible.
+    try {
+      const invoices = await fetchUzumInvoices(token, uzumShopIds)
+      debug.invoices = String(invoices.length)
+      if (invoices.length > 0) {
+        debug.firstInvoiceRaw = JSON.stringify(invoices[0]).slice(0, 700)
+      }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      for (const inv of invoices as any[]) {
+        const nested = Array.isArray(inv?.orders) ? inv.orders : [inv]
+        for (const o of nested) {
+          const extId = String(o?.id ?? o?.orderId ?? '')
+          if (!extId || extId === 'undefined' || fbsById.has(extId)) continue
+          const orderShaped = o?.price != null || o?.totalPrice != null
+            || o?.orderItems != null || o?.items != null || o?.status != null
+          if (orderShaped) {
+            fbsById.set(extId, o as UzumFbsOrder)
+            fbsOk = true
+          }
+        }
+      }
+    } catch (e) {
+      debug.invoices = e instanceof UzumApiError ? `HTTP ${e.status}` : String(e).slice(0, 80)
+    }
+    await pause()
 
     // NOTE: a status-less query with epoch-SECONDS dates was tried as a safety
     // net for unknown status names — it returned 200 with 0 orders even while

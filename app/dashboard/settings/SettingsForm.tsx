@@ -126,10 +126,11 @@ function UzumCard({ shop }: { shop: Shop | null; userId: string }) {
           : probes.map(p => {
               const base = `${p.label}: HTTP ${p.status}${p.count !== null ? ` (${p.count})` : ''}`
               if (p.status >= 400 && p.bodySnippet) return `${base} → ${p.bodySnippet}`
-              // Non-list 200s (order detail / counts): show the raw body — this
-              // is how a working by-id endpoint announces itself.
-              if (p.status === 200 && p.count === null && p.sample) {
-                return `${base} → ${typeof p.sample === 'string' ? p.sample.slice(0, 200) : JSON.stringify(p.sample).slice(0, 200)}`
+              // Show the first record / raw body of every 200 that carried
+              // data — the field names ARE the diagnosis (e.g. what an
+              // /v1/invoice record actually looks like).
+              if (p.status === 200 && p.sample) {
+                return `${base} → ${typeof p.sample === 'string' ? p.sample.slice(0, 250) : JSON.stringify(p.sample).slice(0, 250)}`
               }
               return base
             }).join('\n')

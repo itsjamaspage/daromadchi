@@ -221,6 +221,71 @@ export async function fetchUzumOrders(
   })
 }
 
+// ─── OpenAPI spec (GET /swagger/api-docs) ────────────────────────────────────
+// Proven readable with the seller token. Gives the AUTHORITATIVE status enum
+// of GET /v2/fbs/orders' `status` parameter, replacing hand-maintained guesses
+// (the guessed list of 6 missed real statuses like PACKING/PENDING_DELIVERY).
+export async function fetchUzumFbsStatusEnum(token: string): Promise<string[] | null> {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const spec = await request<any>('/swagger/api-docs', token)
+    if (!spec?.paths) return null
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const resolve = (node: any): any => {
+      if (node && typeof node === 'object' && typeof node.$ref === 'string') {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let cur: any = spec
+        for (const part of node.$ref.replace(/^#\//, '').split('/')) cur = cur?.[part]
+        return cur
+      }
+      return node
+    }
+    for (const [path, ops] of Object.entries(spec.paths)) {
+      if (!/\/fbs\/orders\/?$/.test(path)) continue
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const get = (ops as any)?.get
+      for (const rawParam of get?.parameters ?? []) {
+        const param = resolve(rawParam)
+        if (param?.name !== 'status' && param?.name !== 'statuses') continue
+        let schema = resolve(param.schema)
+        if (schema?.type === 'array') schema = resolve(schema.items)
+        if (Array.isArray(schema?.enum) && schema.enum.length > 0) {
+          return schema.enum.map(String)
+        }
+      }
+    }
+    return null
+  } catch {
+    return null
+  }
+}
+
+// ─── FBS invoices (GET /v1/invoice) ──────────────────────────────────────────
+// Proven readable (HTTP 200) on an account whose fresh orders are hidden from
+// /v2/fbs/orders — a not-yet-shipped FBS order lives here. The response shape
+// isn't documented for us, so parse tolerantly: return the first array found.
+export async function fetchUzumInvoices(
+  token: string,
+  shopIds: number[],
+  page = 0,
+  size = 50,
+): Promise<unknown[]> {
+  return withRetry(async () => {
+    const params = new URLSearchParams({ page: String(page), size: String(size) })
+    for (const id of shopIds) params.append('shopIds', String(id))
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const j = await request<any>(`/v1/invoice?${params}`, token)
+    if (Array.isArray(j)) return j
+    const direct = j?.payload?.invoices ?? j?.payload?.orders ?? j?.invoices ?? j?.data ?? j?.orders
+      ?? (Array.isArray(j?.payload) ? j.payload : null)
+    if (Array.isArray(direct)) return direct
+    for (const v of Object.values(j?.payload ?? j ?? {})) {
+      if (Array.isArray(v)) return v as unknown[]
+    }
+    return []
+  })
+}
+
 // GET /v1/shops — the seller's own shops (we need the shopId for product calls)
 export async function fetchUzumShops(token: string): Promise<UzumShop[]> {
   return withRetry(async () => {
