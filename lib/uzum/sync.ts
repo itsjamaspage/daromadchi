@@ -9,6 +9,8 @@ import {
   fetchUzumAdCampaigns,
   fetchUzumFbsStatusEnum,
   fetchUzumInvoices,
+  discoverUzumFinancePaths,
+  fetchUzumFinanceData,
   UzumApiError,
   type UzumFbsOrder,
   type UzumFbsOrderItem,
@@ -826,6 +828,73 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
       }
     } catch {
       // Ad sync is best-effort — don't fail the whole sync
+    }
+
+    // ── Finance data (real commission from Uzum) ────────────────────────────
+    // Uzum's finance section shows real commission deductions per order.
+    // Try to discover and call finance API endpoints to get real data instead
+    // of relying on estimated percentages.
+    try {
+      const financePaths = await discoverUzumFinancePaths(token)
+      const financeResult = await fetchUzumFinanceData(token, uzumShopIds, financePaths)
+      Object.assign(debug, financeResult.debug)
+
+      if (financeResult.entries.length > 0) {
+        const financeByOrderId = new Map<string, { commission: number; delivery: number; netPayout: number }>()
+        for (const e of financeResult.entries) {
+          financeByOrderId.set(e.orderId, e)
+        }
+        if (financeByOrderId.size > 0) {
+          const financeOrderIds = [...financeByOrderId.keys()]
+          const dbFinanceOrders = await db.select({
+            id: orders.id,
+            order_id_external: orders.order_id_external,
+            revenue: orders.revenue,
+          }).from(orders).where(and(
+            eq(orders.shop_id, shopId),
+            inArray(orders.order_id_external, financeOrderIds),
+          ))
+          for (const dbOrd of dbFinanceOrders) {
+            const fin = financeByOrderId.get(dbOrd.order_id_external as string)
+            if (!fin) continue
+            const commission = fin.commission > 0
+              ? fin.commission
+              : (fin.netPayout > 0 ? Number(dbOrd.revenue ?? 0) - fin.netPayout : 0)
+            if (commission > 0 || fin.delivery > 0) {
+              await db.update(orders).set({
+                marketplace_fee: String(commission),
+                ...(fin.delivery > 0 ? { delivery_cost: String(fin.delivery) } : {}),
+              }).where(eq(orders.id, dbOrd.id))
+            }
+          }
+          debug.financeOrdersUpdated = String(dbFinanceOrders.length)
+        }
+      } else if (financeResult.balance != null && financeResult.balance > 0) {
+        const activeOrders = await db.select({
+          id: orders.id,
+          revenue: orders.revenue,
+          marketplace_fee: orders.marketplace_fee,
+        }).from(orders).where(and(
+          eq(orders.shop_id, shopId),
+          sql`${orders.marketplace_fee} is null or ${orders.marketplace_fee} = '0'`,
+        ))
+        const totalRevenue = activeOrders.reduce((s, o) => s + Number(o.revenue ?? 0), 0)
+        if (totalRevenue > 0 && totalRevenue > financeResult.balance) {
+          const totalFee = totalRevenue - financeResult.balance
+          const feeRate = totalFee / totalRevenue
+          for (const o of activeOrders) {
+            const rev = Number(o.revenue ?? 0)
+            if (rev > 0) {
+              await db.update(orders).set({
+                marketplace_fee: String(Math.round(rev * feeRate)),
+              }).where(eq(orders.id, o.id))
+            }
+          }
+          debug.financeBalanceFallback = `balance=${financeResult.balance}, totalRev=${totalRevenue}, feeRate=${(feeRate * 100).toFixed(1)}%`
+        }
+      }
+    } catch (e) {
+      debug.financeError = String(e).slice(0, 200)
     }
 
     // ── Update sync metadata ──────────────────────────────────────────────────

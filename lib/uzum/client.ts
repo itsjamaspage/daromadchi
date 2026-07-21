@@ -354,6 +354,121 @@ export async function fetchUzumAdCampaigns(
   })
 }
 
+// ─── Finance / Operations ────────────────────────────────────────────────────
+// Uzum's seller dashboard shows real commission deductions in the "Финансы →
+// Операции → Продажи" section. Discover finance endpoints from the swagger
+// spec and try to call them to get per-order commission/fee data.
+
+export interface UzumFinanceEntry {
+  orderId: string
+  commission: number
+  delivery: number
+  netPayout: number
+}
+
+export async function discoverUzumFinancePaths(token: string): Promise<string[]> {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const spec = await request<any>('/swagger/api-docs', token)
+    if (!spec?.paths) return []
+    const keywords = /financ|balance|payment|payout|transaction|operation|settlement|accrual|report/i
+    return Object.keys(spec.paths).filter(p => keywords.test(p))
+  } catch {
+    return []
+  }
+}
+
+export async function fetchUzumFinanceData(
+  token: string,
+  shopIds: number[],
+  discoveredPaths?: string[],
+): Promise<{ entries: UzumFinanceEntry[]; balance: number | null; debug: Record<string, string> }> {
+  const debug: Record<string, string> = {}
+  const entries: UzumFinanceEntry[] = []
+  let balance: number | null = null
+
+  const buildParams = (extra?: Record<string, string>) => {
+    const params = new URLSearchParams({ page: '0', size: '100', ...extra })
+    for (const id of shopIds) params.append('shopIds', String(id))
+    return params
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const tryExtract = (data: any, path: string) => {
+    debug[`finance:${path}`] = JSON.stringify(data).slice(0, 600)
+    // Look for balance
+    const bal = data?.balance ?? data?.payload?.balance ?? data?.totalBalance
+      ?? data?.payload?.totalBalance ?? data?.availableBalance ?? data?.payload?.availableBalance
+    if (typeof bal === 'number' && bal > 0) balance = bal
+
+    // Look for per-operation entries
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const items: any[] | null = Array.isArray(data) ? data
+      : data?.payload?.operations ?? data?.payload?.transactions ?? data?.payload?.sales
+      ?? data?.data ?? data?.operations ?? data?.transactions ?? data?.sales
+      ?? (Array.isArray(data?.payload) ? data.payload : null)
+
+    if (Array.isArray(items)) {
+      for (const item of items) {
+        const orderId = String(item.orderId ?? item.orderNumber ?? item.orderCode
+          ?? item.order_id ?? item.id ?? '')
+        if (!orderId || orderId === 'undefined') continue
+        const commission = Math.abs(Number(
+          item.commission ?? item.fee ?? item.marketplaceFee ?? item.serviceFee
+          ?? item.commissionAmount ?? item.marketplace_fee ?? 0
+        ))
+        const delivery = Math.abs(Number(
+          item.deliveryCost ?? item.logistics ?? item.logisticsFee
+          ?? item.delivery ?? item.delivery_cost ?? 0
+        ))
+        const netPayout = Number(
+          item.netAmount ?? item.payout ?? item.payable ?? item.sellerAmount
+          ?? item.amountForSeller ?? item.net ?? item.amount ?? 0
+        )
+        if (commission > 0 || delivery > 0 || netPayout > 0) {
+          entries.push({ orderId, commission, delivery, netPayout })
+        }
+      }
+    }
+  }
+
+  // 1. Try discovered paths from swagger spec
+  const specPaths = discoveredPaths ?? []
+  if (specPaths.length > 0) debug.discoveredFinancePaths = specPaths.join(', ')
+  for (const path of specPaths.slice(0, 6)) {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const data = await withRetry(() => request<any>(`${path}?${buildParams()}`, token), 1)
+      tryExtract(data, path)
+    } catch (e) {
+      debug[`finance:${path}`] = e instanceof UzumApiError ? `HTTP ${e.status}` : String(e).slice(0, 80)
+    }
+  }
+
+  // 2. Try well-known patterns not in spec
+  const fallbacks = [
+    '/v1/finance/balance',
+    '/v1/finance/operations',
+    '/v1/finance/transactions',
+    '/v1/finance/sales',
+    '/v1/seller/finance/operations',
+    '/v1/seller/balance',
+  ]
+  for (const path of fallbacks) {
+    if (debug[`finance:${path}`]) continue
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const data = await withRetry(() => request<any>(`${path}?${buildParams()}`, token), 1)
+      tryExtract(data, path)
+      if (entries.length > 0 || balance != null) break
+    } catch (e) {
+      debug[`finance:${path}`] = e instanceof UzumApiError ? `HTTP ${e.status}` : String(e).slice(0, 80)
+    }
+  }
+
+  return { entries, balance, debug }
+}
+
 // Fetch all pages of a paginated resource
 export async function fetchAllPages<T>(
   fetcher: (page: number) => Promise<{ data: T[]; totalCount: number; pageSize?: number }>,
