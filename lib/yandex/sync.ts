@@ -115,21 +115,24 @@ export async function syncFromYandex(
     }
 
     // ── shopSku→marketSku bridge via SKU stats (fallback when product API omits shopSku) ──
-    if (shopSkuToMarketSku.size === 0) {
-      try {
-        const today = new Date()
-        const ninetyDaysAgo = new Date(); ninetyDaysAgo.setDate(today.getDate() - 90)
-        const stats = await fetchAllYandexSkuStats(
-          token, campaignId,
-          ninetyDaysAgo.toISOString().slice(0, 10),
-          today.toISOString().slice(0, 10),
-        )
-        for (const stat of stats) {
-          if (stat.shopSku && stat.marketSku) {
-            shopSkuToMarketSku.set(stat.shopSku, String(stat.marketSku))
+    if (shopSkuToMarketSku.size === 0 && productRows.length > 0) {
+      const knownSkus = productRows.map(r => r.sku).filter(Boolean)
+      if (knownSkus.length > 0) {
+        try {
+          const today = new Date()
+          const ninetyDaysAgo = new Date(); ninetyDaysAgo.setDate(today.getDate() - 90)
+          const stats = await fetchAllYandexSkuStats(
+            token, campaignId, knownSkus,
+            ninetyDaysAgo.toISOString().slice(0, 10),
+            today.toISOString().slice(0, 10),
+          )
+          for (const stat of stats) {
+            if (stat.shopSku && stat.marketSku) {
+              shopSkuToMarketSku.set(stat.shopSku, String(stat.marketSku))
+            }
           }
-        }
-      } catch { /* best-effort */ }
+        } catch { /* best-effort */ }
+      }
     }
 
     // ── Orders (incremental since last sync, fallback 365 days) ─────────────

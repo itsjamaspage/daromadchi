@@ -273,6 +273,7 @@ export async function fetchYandexStocks(
 export async function fetchYandexSkuStats(
   token: string,
   campaignId: string,
+  shopSkus: string[],
   dateFrom: string,
   dateTo: string,
   pageToken?: string,
@@ -285,7 +286,7 @@ export async function fetchYandexSkuStats(
       token,
       {
         method: 'POST',
-        body: JSON.stringify({ dateFrom, dateTo }),
+        body: JSON.stringify({ shopSkus, dateFrom, dateTo }),
       },
     )
   })
@@ -398,14 +399,16 @@ export async function fetchAllYandexStocks(
 export async function fetchAllYandexSkuStats(
   token: string,
   campaignId: string,
+  shopSkus: string[],
   dateFrom: string,
   dateTo: string,
 ): Promise<YandexSkuStat[]> {
+  if (shopSkus.length === 0) return []
   const all: YandexSkuStat[] = []
   try {
     let pageToken: string | undefined
     do {
-      const res = await fetchYandexSkuStats(token, campaignId, dateFrom, dateTo, pageToken)
+      const res = await fetchYandexSkuStats(token, campaignId, shopSkus, dateFrom, dateTo, pageToken)
       all.push(...res.result.shopSkus)
       pageToken = res.result.paging?.nextPageToken
     } while (pageToken)
