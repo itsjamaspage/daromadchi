@@ -158,6 +158,7 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
   let itemsUpserted = 0
   let ordersInserted = 0
   const newOrders: string[] = []
+  const commissionBySkuId = new Map<string, number>()
 
   try {
     // ── Products: resolve shop(s), then pull product/SKU data ─────────────────
@@ -200,6 +201,9 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
           const list = res.productList ?? []
           for (const card of list) {
             for (const sku of card.skuList ?? []) {
+              if (sku.commission != null && sku.commission > 0) {
+                commissionBySkuId.set(String(sku.skuId), sku.commission)
+              }
               productRows.push({
                 shop_id: shopId,
                 marketplace_product_id: String(sku.skuId),
@@ -427,6 +431,14 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
       const unitsFromTotal = allItems.length === 0 && soloPrice != null && revenue > 0 && revenue % soloPrice === 0
         ? revenue / soloPrice
         : null
+      let feeCalc = 0
+      let feeComplete = allItems.length > 0
+      for (const it of allItems) {
+        const rate = commissionBySkuId.get(String(it.skuId))
+        if (rate == null) { feeComplete = false; break }
+        feeCalc += it.price * effectiveQty(o, it, allItems.length, priceByMpid.get(String(it.skuId))) * rate / 100
+      }
+      const marketplace_fee = feeComplete && feeCalc > 0 ? feeCalc : null
       return {
         shop_id: shopId,
         order_id_external: extId,
@@ -439,6 +451,7 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
           | 'cancelled'
           | 'returned',
         revenue,
+        marketplace_fee,
         // Units, not line items: an order of 2× one SKU must show 2, not 1.
         items_count: allItems.length > 0
           ? allItems.reduce((s, it) => s + effectiveQty(o, it, allItems.length, priceByMpid.get(String(it.skuId))), 0)
@@ -472,6 +485,7 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
             fulfillment_type: r.fulfillment_type,
             status: r.status,
             revenue: String(r.revenue),
+            marketplace_fee: r.marketplace_fee != null ? String(r.marketplace_fee) : null,
             items_count: r.items_count,
             ordered_at: r.ordered_at,
           })))
@@ -482,6 +496,7 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
           fulfillment_type: r.fulfillment_type,
           status: r.status,
           revenue: String(r.revenue),
+          marketplace_fee: r.marketplace_fee != null ? String(r.marketplace_fee) : null,
           items_count: r.items_count,
           ordered_at: r.ordered_at,
         }).where(eq(orders.id, existingOrdMap.get(r.order_id_external)!))

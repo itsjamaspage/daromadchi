@@ -185,6 +185,8 @@ export async function syncFromWildberries(
     }
   } catch { /* stocks sync is best-effort */ }
 
+  const sridToGNumber = new Map<string, string>()
+
   // ─── Orders (Statistics API) ────────────────────────────────────────────────
   try {
     const [shopRow] = await db.select({ last_synced_at: shops.last_synced_at })
@@ -210,6 +212,7 @@ export async function syncFromWildberries(
           const key = line.gNumber ?? line.srid ?? String(line.odid ?? Math.random())
           if (!grouped.has(key)) grouped.set(key, [])
           grouped.get(key)!.push(line)
+          if (line.srid) sridToGNumber.set(String(line.srid), key)
         }
 
         const orderRowsToInsert = []
@@ -223,8 +226,8 @@ export async function syncFromWildberries(
             marketplace:       'wildberries' as const,
             status:            (first.isCancel ? 'cancelled' : 'delivered') as 'cancelled' | 'delivered',
             revenue:           String(totalRevenue),
-            marketplace_fee:   '0',
-            delivery_cost:     '0',
+            marketplace_fee:   null,
+            delivery_cost:     null,
             items_count:       lines.length,
             ordered_at:        new Date(first.date ?? new Date().toISOString()),
           })
@@ -300,6 +303,65 @@ export async function syncFromWildberries(
   } catch (e) {
     errors.push(`Orders sync failed: ${e}`)
   }
+
+  // ─── Finance report (reportDetailByPeriod) ────────────────────────────────
+  // Fetches per-sale financial data to populate real commission and delivery
+  // costs on WB orders, replacing the null placeholders.
+  try {
+    const reportSince = fromDateOverride
+      ?? (() => { const d = new Date(); d.setDate(d.getDate() - 90); return d })()
+    const reportFrom = reportSince.toISOString().split('T')[0]
+    const reportTo = new Date().toISOString().split('T')[0]
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const allReportEntries: any[] = []
+    let lastRrdId = 0
+    for (let page = 0; page < 20; page++) {
+      const url = `${WB_STATS}/api/v1/supplier/reportDetailByPeriod?dateFrom=${reportFrom}&dateTo=${reportTo}` +
+        (lastRrdId > 0 ? `&rrdid=${lastRrdId}` : '')
+      const reportRes = await marketplaceFetch(url, { headers: statsHeaders(token) })
+      if (!reportRes.ok) break
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const entries: any[] = await reportRes.json()
+      if (!Array.isArray(entries) || entries.length === 0) break
+      allReportEntries.push(...entries)
+      lastRrdId = entries[entries.length - 1].rrd_id ?? 0
+      if (entries.length < 100000) break
+    }
+
+    if (allReportEntries.length > 0) {
+      const financeByOrder = new Map<string, { commission: number; delivery: number }>()
+      for (const entry of allReportEntries) {
+        const srid = entry.srid ? String(entry.srid) : ''
+        const gNumber = sridToGNumber.get(srid) ?? srid
+        if (!gNumber) continue
+        const existing = financeByOrder.get(gNumber) ?? { commission: 0, delivery: 0 }
+        existing.commission += Math.abs(Number(entry.ppvz_sales_commission ?? 0))
+        existing.delivery += Math.abs(Number(entry.delivery_rub ?? 0))
+        financeByOrder.set(gNumber, existing)
+      }
+
+      if (financeByOrder.size > 0) {
+        const gNumbers = [...financeByOrder.keys()].slice(0, 5000)
+        const dbOrdersForFinance = await db.select({
+          id: orders.id,
+          order_id_external: orders.order_id_external,
+        }).from(orders).where(and(
+          eq(orders.shop_id, shopId),
+          inArray(orders.order_id_external, gNumbers),
+        ))
+
+        for (const dbOrder of dbOrdersForFinance) {
+          const finance = financeByOrder.get(dbOrder.order_id_external as string)
+          if (finance && (finance.commission > 0 || finance.delivery > 0)) {
+            await db.update(orders).set({
+              marketplace_fee: String(finance.commission),
+              delivery_cost: String(finance.delivery),
+            }).where(eq(orders.id, dbOrder.id))
+          }
+        }
+      }
+    }
+  } catch { /* finance report is best-effort */ }
 
   // ─── Sync metadata ────────────────────────────────────────────────────────
   const today = new Date().toISOString().slice(0, 10)
