@@ -424,6 +424,12 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
     const distinctPrices = [...new Set(priceByMpid.values())]
     const soloPrice = distinctPrices.length === 1 ? distinctPrices[0] : null
 
+    // Average commission % across all known SKUs — fallback for orders with no items
+    const commissionValues = [...commissionBySkuId.values()]
+    const avgCommissionPct = commissionValues.length > 0
+      ? commissionValues.reduce((s, v) => s + v, 0) / commissionValues.length
+      : 0
+
     const orderRows = taggedOrders.map(({ o, ff }) => {
       // Support both new (id/dateCreated/price/orderItems) and legacy field names
       const extId = extIdOf(o)
@@ -440,7 +446,11 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
         if (rate == null) { feeComplete = false; break }
         feeCalc += it.price * effectiveQty(o, it, allItems.length, priceByMpid.get(String(it.skuId))) * rate / 100
       }
-      const marketplace_fee = feeComplete && feeCalc > 0 ? feeCalc : null
+      const marketplace_fee = feeComplete && feeCalc > 0
+        ? feeCalc
+        : (allItems.length === 0 && avgCommissionPct > 0 && revenue > 0
+          ? revenue * avgCommissionPct / 100
+          : null)
       return {
         shop_id: shopId,
         order_id_external: extId,

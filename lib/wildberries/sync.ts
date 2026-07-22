@@ -198,6 +198,32 @@ export async function syncFromWildberries(
         : (() => { const d = new Date(); d.setDate(d.getDate() - 365); return d })())
     const df = sinceDt.toISOString().split('T')[0]
 
+    // Fetch sales data (has forPay = net amount after WB commission)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const salesFeeByGNumber = new Map<string, { fee: number; delivery: number }>()
+    try {
+      const salesRes = await marketplaceFetch(
+        `${WB_STATS}/api/v1/supplier/sales?dateFrom=${df}&flag=0`,
+        { headers: statsHeaders(token) },
+      )
+      if (salesRes.ok) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const salesLines: any[] = await salesRes.json()
+        if (Array.isArray(salesLines)) {
+          for (const line of salesLines) {
+            const gn = line.gNumber
+            if (!gn || line.IsStorno) continue
+            const salePrice = line.finishedPrice ?? line.priceWithDisc ?? 0
+            const forPay = line.forPay ?? 0
+            const fee = Math.max(salePrice - forPay, 0)
+            const prev = salesFeeByGNumber.get(gn) ?? { fee: 0, delivery: 0 }
+            prev.fee += fee
+            salesFeeByGNumber.set(gn, prev)
+          }
+        }
+      }
+    } catch { /* sales data is best-effort */ }
+
     const res = await marketplaceFetch(
       `${WB_STATS}/api/v1/supplier/orders?dateFrom=${df}&flag=0`,
       { headers: statsHeaders(token) },
@@ -220,13 +246,14 @@ export async function syncFromWildberries(
           const first = lines[0]
           const totalRevenue = lines.reduce((s: number, l: { finishedPrice?: number; priceWithDisc?: number }) => s + (l.finishedPrice ?? l.priceWithDisc ?? 0), 0)
           revenueTotal += totalRevenue
+          const salesData = salesFeeByGNumber.get(gNumber)
           orderRowsToInsert.push({
             shop_id:           shopId,
             order_id_external: gNumber,
             marketplace:       'wildberries' as const,
             status:            (first.isCancel ? 'cancelled' : 'delivered') as 'cancelled' | 'delivered',
             revenue:           String(totalRevenue),
-            marketplace_fee:   null,
+            marketplace_fee:   salesData ? String(salesData.fee) : null,
             delivery_cost:     null,
             items_count:       lines.length,
             ordered_at:        new Date(first.date ?? new Date().toISOString()),
@@ -249,7 +276,8 @@ export async function syncFromWildberries(
         }
         for (const r of toUpdate) {
           await db.update(orders).set({
-            status: r.status, revenue: r.revenue, items_count: r.items_count,
+            status: r.status, revenue: r.revenue, marketplace_fee: r.marketplace_fee,
+            items_count: r.items_count,
           }).where(eq(orders.id, existingOrderMap.get(r.order_id_external)!))
         }
         ordersUpserted = orderRowsToInsert.length
