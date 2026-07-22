@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Search, ChevronUp, Pencil } from 'lucide-react'
+import { Search, ChevronUp, Pencil, Link2, Unlink } from 'lucide-react'
 import { useLang } from '@/app/providers'
 import { translations } from '@/lib/i18n'
 import type { StockGroup } from '@/lib/db/stock-groups'
@@ -104,11 +104,98 @@ function GroupEditor({ group, onDone }: { group: StockGroup; onDone: () => void 
   )
 }
 
+function LinkModal({ group, allGroups, onClose, d }: {
+  group: StockGroup
+  allGroups: StockGroup[]
+  onClose: () => void
+  d: Record<string, string>
+}) {
+  const router = useRouter()
+  const [isPending, startTransition] = useTransition()
+  const [search, setSearch] = useState('')
+
+  const candidates = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    return allGroups
+      .filter(g => g.match_key !== group.match_key)
+      .filter(g => !q ||
+        g.title.toLowerCase().includes(q) ||
+        g.members.some(m => m.sku?.toLowerCase().includes(q) || m.title.toLowerCase().includes(q)))
+  }, [allGroups, group.match_key, search])
+
+  const merge = (targetKey: string) => {
+    startTransition(async () => {
+      await fetch('/api/stock-groups/merge', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ source_key: group.match_key, target_key: targetKey }),
+      })
+      router.refresh()
+      onClose()
+    })
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: 'rgba(0,0,0,0.5)' }} onClick={onClose}>
+      <div className="w-full max-w-md rounded-2xl p-5 space-y-3"
+        style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}
+        onClick={e => e.stopPropagation()}>
+        <h3 className="font-semibold text-base" style={{ color: 'var(--text-base)' }}>{d.linkTitle}</h3>
+        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+          {group.title} → {d.linkHint}
+        </p>
+        <input value={search} onChange={e => setSearch(e.target.value)}
+          placeholder={d.searchPlaceholder}
+          className="w-full rounded-lg px-3 py-2 text-sm"
+          style={{ background: 'var(--bg-card2)', border: '1px solid var(--border)', color: 'var(--text-base)' }}
+          autoFocus />
+        <div className="max-h-60 overflow-y-auto space-y-1">
+          {candidates.map(g => {
+            const mps = MP_ORDER.filter(mp => mp in g.stock_by_marketplace)
+            return (
+              <button key={g.match_key} onClick={() => merge(g.match_key)} disabled={isPending}
+                className="w-full text-left px-3 py-2 rounded-lg transition-colors hover:opacity-80 disabled:opacity-50"
+                style={{ background: 'var(--bg-card2)' }}>
+                <p className="text-sm font-medium truncate" style={{ color: 'var(--text-base)' }}>{g.title}</p>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>
+                    {g.members[0]?.sku ?? '—'}
+                  </span>
+                  {mps.map(mp => {
+                    const m = MP_META[mp]
+                    return (
+                      <span key={mp} className="text-[9px] font-bold px-1 py-0.5 rounded"
+                        style={{ background: m.bg, color: m.color }}>{m.short}</span>
+                    )
+                  })}
+                  <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>
+                    {g.leftover} {d.units}
+                  </span>
+                </div>
+              </button>
+            )
+          })}
+          {candidates.length === 0 && (
+            <p className="text-xs text-center py-4" style={{ color: 'var(--text-muted)' }}>{d.noData}</p>
+          )}
+        </div>
+        <button onClick={onClose}
+          className="w-full text-xs font-semibold px-4 py-2 rounded-lg transition-colors"
+          style={{ background: 'var(--bg-card2)', color: 'var(--text-muted)' }}>
+          {d.cancel}
+        </button>
+      </div>
+    </div>
+  )
+}
+
 export default function StocksTable({ groups }: { groups: StockGroup[] }) {
   const { lang } = useLang()
   const d = translations[lang].dashboard.stocksPage
   const [query, setQuery] = useState('')
   const [openKey, setOpenKey] = useState<string | null>(null)
+  const [linkingKey, setLinkingKey] = useState<string | null>(null)
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -117,6 +204,8 @@ export default function StocksTable({ groups }: { groups: StockGroup[] }) {
       g.title.toLowerCase().includes(q) ||
       g.members.some(m => m.sku?.toLowerCase().includes(q) || m.title.toLowerCase().includes(q)))
   }, [groups, query])
+
+  const linkingGroup = linkingKey ? groups.find(g => g.match_key === linkingKey) : null
 
   return (
     <div className="space-y-4">
@@ -146,7 +235,8 @@ export default function StocksTable({ groups }: { groups: StockGroup[] }) {
               const isOpen = openKey === g.match_key
               return (
                 <FragmentRow key={g.match_key} group={g} badge={badge} isOpen={isOpen}
-                  onToggle={() => setOpenKey(isOpen ? null : g.match_key)} d={d} />
+                  onToggle={() => setOpenKey(isOpen ? null : g.match_key)}
+                  onLink={() => setLinkingKey(g.match_key)} d={d} />
               )
             })}
           </tbody>
@@ -155,15 +245,43 @@ export default function StocksTable({ groups }: { groups: StockGroup[] }) {
           <p className="px-5 py-10 text-center text-sm" style={{ color: 'var(--text-muted)' }}>{d.noData}</p>
         )}
       </div>
+
+      {linkingGroup && (
+        <LinkModal group={linkingGroup} allGroups={groups}
+          onClose={() => setLinkingKey(null)} d={d} />
+      )}
     </div>
   )
 }
 
-function FragmentRow({ group: g, badge, isOpen, onToggle, d }: {
+function UnlinkButton({ sourceKey, d }: { sourceKey: string; d: Record<string, string> }) {
+  const router = useRouter()
+  const [isPending, startTransition] = useTransition()
+  return (
+    <button disabled={isPending} title={d.unlinkBtn}
+      onClick={() => {
+        startTransition(async () => {
+          await fetch('/api/stock-groups/merge', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ source_key: sourceKey }),
+          })
+          router.refresh()
+        })
+      }}
+      className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded transition-colors disabled:opacity-50"
+      style={{ background: 'rgba(99,102,241,0.1)', color: '#6366f1' }}>
+      <Unlink className="w-3 h-3" /> {d.unlinkBtn}
+    </button>
+  )
+}
+
+function FragmentRow({ group: g, badge, isOpen, onToggle, onLink, d }: {
   group: StockGroup
   badge: { bg: string; color: string }
   isOpen: boolean
   onToggle: () => void
+  onLink: () => void
   d: Record<string, string>
 }) {
   const mps = MP_ORDER.filter(mp => mp in g.stock_by_marketplace || mp in g.sold_by_marketplace)
@@ -183,7 +301,20 @@ function FragmentRow({ group: g, badge, isOpen, onToggle, d }: {
                 </span>
               )
             })}
+            {g.merged_from.length > 0 && (
+              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded"
+                style={{ background: 'rgba(99,102,241,0.1)', color: '#6366f1' }}>
+                {d.linkedLabel}
+              </span>
+            )}
           </div>
+          {g.merged_from.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-1">
+              {g.merged_from.map(key => (
+                <UnlinkButton key={key} sourceKey={key} d={d} />
+              ))}
+            </div>
+          )}
         </td>
         <td className="px-5 py-3.5">
           <div className="flex flex-wrap gap-1.5">
@@ -225,11 +356,18 @@ function FragmentRow({ group: g, badge, isOpen, onToggle, d }: {
           </p>
         </td>
         <td className="px-2 py-3.5">
-          <button onClick={onToggle} title={d.edit}
-            className="p-1.5 rounded-lg transition-colors"
-            style={{ color: 'var(--text-muted)' }}>
-            {isOpen ? <ChevronUp className="w-4 h-4" /> : <Pencil className="w-4 h-4" />}
-          </button>
+          <div className="flex flex-col gap-1">
+            <button onClick={onToggle} title={d.edit}
+              className="p-1.5 rounded-lg transition-colors"
+              style={{ color: 'var(--text-muted)' }}>
+              {isOpen ? <ChevronUp className="w-4 h-4" /> : <Pencil className="w-4 h-4" />}
+            </button>
+            <button onClick={onLink} title={d.linkBtn}
+              className="p-1.5 rounded-lg transition-colors"
+              style={{ color: 'var(--text-muted)' }}>
+              <Link2 className="w-4 h-4" />
+            </button>
+          </div>
         </td>
       </tr>
       {isOpen && (

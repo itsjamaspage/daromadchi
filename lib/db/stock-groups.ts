@@ -1,5 +1,5 @@
 import { eq, and, inArray, gte, sql, notInArray } from 'drizzle-orm'
-import { db, shops, products, orders, orderItems, productLinks } from '@/lib/db'
+import { db, shops, products, orders, orderItems, productLinks, productGroupMerges } from '@/lib/db'
 import { getShopIds, getCurrentUserId } from '@/lib/db/shop-context'
 import type { MarketplaceType } from '@/lib/types'
 
@@ -60,6 +60,8 @@ export interface StockGroup {
   sold_14d: number
   /** leftover / daily velocity; null when no recent sales */
   days_of_stock: number | null
+  /** match_keys that were manually merged into this group */
+  merged_from: string[]
 }
 
 function normalizeKey(sku: string): string {
@@ -80,7 +82,7 @@ export async function computeStockGroups(userId: string, shopIds: string[]): Pro
   const since14d = new Date()
   since14d.setDate(since14d.getDate() - 14)
 
-  const [productRows, shopRows, soldRows, sold14Rows, linkRows, cancelledRows, inProcessRows] = await Promise.all([
+  const [productRows, shopRows, soldRows, sold14Rows, linkRows, cancelledRows, inProcessRows, mergeRows] = await Promise.all([
     db.select({
       id: products.id,
       shop_id: products.shop_id,
@@ -133,6 +135,8 @@ export async function computeStockGroups(userId: string, shopIds: string[]): Pro
         inArray(orders.status, ['pending', 'confirmed']),
       ))
       .groupBy(orderItems.product_id),
+    db.select({ source_key: productGroupMerges.source_key, target_key: productGroupMerges.target_key })
+      .from(productGroupMerges).where(eq(productGroupMerges.user_id, userId)),
   ])
 
   const mpByShop = new Map(shopRows.map(s => [s.id, s.marketplace as MarketplaceType]))
@@ -142,10 +146,24 @@ export async function computeStockGroups(userId: string, shopIds: string[]): Pro
   const sold14ByProduct = new Map(sold14Rows.map(r => [r.product_id, Number(r.qty)]))
   const linkByKey = new Map(linkRows.map(l => [l.match_key, l]))
 
+  // Build merge resolution map (source → final target, resolving chains).
+  const mergeMap = new Map<string, string>()
+  for (const m of mergeRows) mergeMap.set(m.source_key, m.target_key)
+  function resolveKey(key: string): string {
+    const seen = new Set<string>()
+    let k = key
+    while (mergeMap.has(k) && !seen.has(k)) {
+      seen.add(k)
+      k = mergeMap.get(k)!
+    }
+    return k
+  }
+
   // Group products by normalized SKU; products without a SKU stand alone.
   const groups = new Map<string, StockGroupMember[]>()
   for (const p of productRows) {
-    const key = p.sku ? normalizeKey(p.sku) : `#${p.id}`
+    const rawKey = p.sku ? normalizeKey(p.sku) : `#${p.id}`
+    const key = resolveKey(rawKey)
     const member: StockGroupMember = {
       product_id: p.id,
       marketplace: mpByShop.get(p.shop_id) ?? 'uzum',
@@ -198,6 +216,15 @@ export async function computeStockGroups(userId: string, shopIds: string[]): Pro
     }
   }
 
+  // Build reverse map: target_key → [source_keys that merged into it]
+  const mergedFromMap = new Map<string, string[]>()
+  for (const m of mergeRows) {
+    const target = resolveKey(m.target_key)
+    const list = mergedFromMap.get(target)
+    if (list) list.push(m.source_key)
+    else mergedFromMap.set(target, [m.source_key])
+  }
+
   const result: StockGroup[] = []
   for (const [key, members] of groups) {
     const link = linkByKey.get(key)
@@ -244,6 +271,7 @@ export async function computeStockGroups(userId: string, shopIds: string[]): Pro
       leftover,
       sold_14d: sold14,
       days_of_stock: dailyVelocity > 0 ? Math.floor(leftover / dailyVelocity) : null,
+      merged_from: mergedFromMap.get(key) ?? [],
     })
   }
 

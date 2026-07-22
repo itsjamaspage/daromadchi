@@ -441,3 +441,18 @@ export const productLinks = pgTable('product_links', {
   uniqueIndex('product_links_user_key_unique').on(t.user_id, t.match_key),
   index('idx_product_links_user_id').on(t.user_id),
 ])
+
+/* ── 23. product_group_merges ─────────────────────────────────────────────── */
+// Manual cross-marketplace product grouping: when the same physical product
+// has different SKUs on different marketplaces, users merge them by mapping
+// source_key → target_key so they appear as a single stock group.
+export const productGroupMerges = pgTable('product_group_merges', {
+  id:         uuid('id').primaryKey().defaultRandom(),
+  user_id:    uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  source_key: text('source_key').notNull(),
+  target_key: text('target_key').notNull(),
+  created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (t) => [
+  uniqueIndex('product_group_merges_user_source').on(t.user_id, t.source_key),
+  index('idx_product_group_merges_user').on(t.user_id),
+])
