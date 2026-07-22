@@ -88,10 +88,15 @@ async function buildSalesSummary(
   lang: NotifLang,
 ): Promise<string | null> {
   const t = notifT(lang)
-  const since = new Date()
-  since.setHours(0, 0, 0, 0)
-  since.setDate(since.getDate() - days)
-  const until = days === 0 ? new Date() : new Date(new Date().setHours(0, 0, 0, 0))
+  // Compute midnight in Uzbekistan (UTC+5) so "yesterday" matches the user's
+  // calendar day, not UTC's.
+  const UZ_MS = 5 * 60 * 60_000
+  const nowUz = new Date(Date.now() + UZ_MS)
+  const midnightUz = new Date(Date.UTC(nowUz.getUTCFullYear(), nowUz.getUTCMonth(), nowUz.getUTCDate()))
+  // Shift back to real UTC: UZ midnight = UTC (midnight - 5h)
+  const midnightUtc = new Date(midnightUz.getTime() - UZ_MS)
+  const since = new Date(midnightUtc.getTime() - days * 86_400_000)
+  const until = days === 0 ? new Date() : midnightUtc
 
   const [orderRows, unitRows, catRows] = await Promise.all([
     // Order-level aggregates. status split so cancelled is counted separately.
