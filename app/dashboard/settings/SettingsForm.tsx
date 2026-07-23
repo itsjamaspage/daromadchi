@@ -66,6 +66,7 @@ function yandexSyncText(data: {
     if ('entriesWithPrice' in d)   parts.push(`inlinePrice=${d.entriesWithPrice}/${d.offerMappings ?? '?'}`)
     if ('priceEntries' in d)  parts.push(`offerPrices=${d.priceEntries}`)
     if ('stockEntries' in d)  parts.push(`stocks=${d.stockEntries}`)
+    if ('campaignOfferStocks' in d) parts.push(`campaignOffers=${d.campaignOfferStocks}`)
     if ('statsRows' in d)     parts.push(`stats=${d.statsRows}`)
     if ('shopSkuRepaired' in d) parts.push(`shopSkuRepaired=${d.shopSkuRepaired}`)
     if ('orders' in d)        parts.push(`ordersApi=${d.orders}`)
@@ -74,9 +75,11 @@ function yandexSyncText(data: {
     if ('campaignInfo' in d)  parts.push(`campaignInfo=${d.campaignInfo}`)
     if ('stats' in d)         parts.push(`statsErr=${d.stats}`)
     if (parts.length > 0) text += `\nAPI: ${parts.join(', ')}`
-    // Raw first offer — shown only when price extraction fell short, so we
-    // can see which field names Yandex is actually using for this shop.
-    if (d.firstOfferRaw && Number(d.entriesWithPrice ?? 0) < Number(d.offerMappings ?? 0)) {
+    // Raw first offer — shown when price OR stock extraction fell short, so
+    // we can see which field names Yandex is actually using for this shop.
+    const priceMissing = Number(d.entriesWithPrice ?? 0) < Number(d.offerMappings ?? 0)
+    const stockMissing = Number(d.stockEntries ?? 0) === 0 && Number(d.campaignOfferStocks ?? 0) === 0
+    if (d.firstOfferRaw && (priceMissing || stockMissing)) {
       text += `\nOffer namuna: ${d.firstOfferRaw}`
     }
   }

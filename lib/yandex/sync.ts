@@ -6,6 +6,7 @@ import {
   fetchAllYandexStocks,
   fetchAllYandexSkuStats,
   fetchAllYandexOfferPrices,
+  fetchAllYandexCampaignOffers,
   fetchCampaignInfo,
   YandexApiError,
 } from './client'
@@ -107,14 +108,21 @@ export async function syncFromYandex(
         } catch { /* ignore */ }
       }
 
-      // Stocks lookup: index by shopSku AND by marketSku so we can find stock
-      // even when offer-mappings returns an empty shopSku.
+      // Stocks lookup: try /offers/stocks first (FBS warehouses), fall back
+      // to /campaigns/{id}/offers which returns stock inline per offer (works
+      // for FBY and sellers who haven't uploaded FBS stock yet). Index by
+      // both shopSku and marketSku.
       const allSkus = entries.flatMap(e => [
         skuOf(e.offer),
         e.mapping?.marketSku ? String(e.mapping.marketSku) : '',
       ]).filter(Boolean)
       const stockMap = await fetchAllYandexStocks(token, campaignId, allSkus)
       debug.stockEntries = stockMap.size
+      let campaignOfferStocks: Map<string, number> | null = null
+      if (stockMap.size === 0) {
+        campaignOfferStocks = await fetchAllYandexCampaignOffers(token, campaignId)
+        debug.campaignOfferStocks = campaignOfferStocks.size
+      }
 
       // Prices fallback: dedicated offer-prices endpoint. Indexes by both
       // shopSku (offerId) and marketSku so lookups work either way.
@@ -130,6 +138,8 @@ export async function syncFromYandex(
           : (marketSku ? priceMap.get(marketSku) : null)
         const stock = (shopSku ? stockMap.get(shopSku) : undefined)
           ?? (marketSku ? stockMap.get(marketSku) : undefined)
+          ?? (campaignOfferStocks && shopSku ? campaignOfferStocks.get(shopSku) : undefined)
+          ?? (campaignOfferStocks && marketSku ? campaignOfferStocks.get(marketSku) : undefined)
           ?? 0
         return {
           shop_id: shopId,

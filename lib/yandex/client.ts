@@ -309,6 +309,61 @@ export async function fetchAllYandexOfferPrices(
   return prices
 }
 
+// Alternate stock source: POST /v2/campaigns/{campaignId}/offers returns
+// per-offer info including the current available quantity. Useful when
+// /offers/stocks returns empty (e.g. FBY-only sellers or sellers who haven't
+// uploaded FBS stock yet).
+export interface YandexCampaignOffer {
+  offerId?: string
+  marketSku?: number | string
+  quantum?: { minQuantity?: number; stepQuantity?: number }
+  available?: boolean
+  stocks?: { type?: string; count?: number }[]
+  status?: string
+  campaignStatus?: string
+}
+
+export interface YandexCampaignOffersResponse {
+  result?: {
+    offers?: YandexCampaignOffer[]
+    paging?: { nextPageToken?: string }
+  }
+}
+
+export async function fetchAllYandexCampaignOffers(
+  token: string,
+  campaignId: string,
+): Promise<Map<string, number>> {
+  const stocks = new Map<string, number>()
+  try {
+    let pageToken: string | undefined
+    do {
+      const params = new URLSearchParams({ limit: '200' })
+      if (pageToken) params.set('page_token', pageToken)
+      const res = await withRetry(() => request<YandexCampaignOffersResponse>(
+        `/v2/campaigns/${campaignId}/offers?${params}`,
+        token,
+        { method: 'POST', body: '{}' },
+      ))
+      for (const o of res.result?.offers ?? []) {
+        const key = o.offerId ?? (o.marketSku ? String(o.marketSku) : null)
+        if (!key) continue
+        // Sum FIT (available) stocks across warehouses. Fall back to counting
+        // any non-defect stock.
+        let qty = 0
+        for (const s of o.stocks ?? []) {
+          if (!s?.count) continue
+          if (!s.type || s.type === 'FIT' || s.type === 'AVAILABLE') qty += s.count
+        }
+        stocks.set(key, qty)
+        if (o.marketSku) stocks.set(String(o.marketSku), qty)
+      }
+      pageToken = res.result?.paging?.nextPageToken
+    } while (pageToken)
+  } catch { /* best-effort */ }
+  return stocks
+}
+
 // Fetch FBS warehouse stocks for given SKUs (batch up to 500 per request)
 export async function fetchYandexStocks(
   token: string,
