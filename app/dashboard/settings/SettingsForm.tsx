@@ -70,6 +70,7 @@ function yandexSyncText(data: {
     if ('entriesWithPrice' in d)   parts.push(`inlinePrice=${d.entriesWithPrice}/${d.offerMappings ?? '?'}`)
     if ('priceEntries' in d)  parts.push(`offerPrices=${d.priceEntries}`)
     if ('stockEntries' in d)  parts.push(`stocks=${d.stockEntries}`)
+    if ('stocksErr' in d)     parts.push(`stocksErr=${d.stocksErr}`)
     if ('campaignOfferStocks' in d) parts.push(`campaignOffers=${d.campaignOfferStocks}`)
     if ('statsRows' in d)     parts.push(`stats=${d.statsRows}`)
     if ('shopSkuRepaired' in d) parts.push(`shopSkuRepaired=${d.shopSkuRepaired}`)

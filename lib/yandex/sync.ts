@@ -119,8 +119,10 @@ export async function syncFromYandex(
         skuOf(e.offer),
         e.mapping?.marketSku ? String(e.mapping.marketSku) : '',
       ]).filter(Boolean)
-      const stockMap = await fetchAllYandexStocks(token, campaignId, allSkus)
+      const stocksResult = await fetchAllYandexStocks(token, campaignId, allSkus)
+      const stockMap = stocksResult.stockMap
       debug.stockEntries = stockMap.size
+      if (stocksResult.lastError) debug.stocksErr = stocksResult.lastError
       let campaignOfferStocks: Map<string, number> | null = null
       if (stockMap.size === 0) {
         campaignOfferStocks = await fetchAllYandexCampaignOffers(token, campaignId)

@@ -489,13 +489,16 @@ export async function fetchAllYandexProducts(
   return all
 }
 
-// Fetch stocks for all SKUs in batches of 500
+// Fetch stocks for all SKUs in batches of 500. Also returns the last HTTP
+// error status if one occurred, so the sync can distinguish "endpoint said
+// 0 items" from "endpoint returned 403/500".
 export async function fetchAllYandexStocks(
   token: string,
   campaignId: string,
   skus: string[],
-): Promise<Map<string, number>> {
+): Promise<{ stockMap: Map<string, number>; lastError: string | null }> {
   const stockMap = new Map<string, number>()
+  let lastError: string | null = null
   for (let i = 0; i < skus.length; i += 500) {
     const batch = skus.slice(i, i + 500)
     try {
@@ -508,11 +511,13 @@ export async function fetchAllYandexStocks(
         }
         pageToken = res.result.nextPageToken
       } while (pageToken)
-    } catch {
-      // Stock sync is best-effort per batch
+    } catch (e) {
+      // Preserve the last error so the sync can surface it as `stocksErr=403`
+      // instead of silently reporting stocks=0.
+      lastError = e instanceof YandexApiError ? String(e.status) : 'err'
     }
   }
-  return stockMap
+  return { stockMap, lastError }
 }
 
 // Fetch SKU stats for a period (best-effort)
