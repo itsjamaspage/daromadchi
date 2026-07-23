@@ -378,12 +378,20 @@ export async function fetchYandexStocks(
   return withRetry(() => {
     const params = new URLSearchParams({ limit: '500' })
     if (pageToken) params.set('page_token', pageToken)
+    // Yandex expects the offer identifiers under `offerIds` (with the
+    // withTurnover/archived flags), not `skus`. Sending {skus:[...]} was
+    // returning HTTP 400 Bad Request. `offerIds:[]` requests stock for all
+    // offers on the campaign.
     return request<YandexStocksResponse>(
       `/v2/campaigns/${campaignId}/offers/stocks?${params}`,
       token,
       {
         method: 'POST',
-        body: JSON.stringify({ skus: skus.slice(0, 500) }),
+        body: JSON.stringify({
+          offerIds: skus.slice(0, 500),
+          withTurnover: false,
+          archived: false,
+        }),
       },
     )
   })
@@ -513,8 +521,13 @@ export async function fetchAllYandexStocks(
       } while (pageToken)
     } catch (e) {
       // Preserve the last error so the sync can surface it as `stocksErr=403`
-      // instead of silently reporting stocks=0.
-      lastError = e instanceof YandexApiError ? String(e.status) : 'err'
+      // (or the truncated message body) instead of silently reporting stocks=0.
+      if (e instanceof YandexApiError) {
+        const bodySnippet = e.body ? ` ${e.body.slice(0, 120)}` : ''
+        lastError = `${e.status}${bodySnippet}`
+      } else {
+        lastError = 'err'
+      }
     }
   }
   return { stockMap, lastError }
