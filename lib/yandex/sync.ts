@@ -62,7 +62,10 @@ export async function syncFromYandex(
     const shopSkuToMarketSku = new Map<string, string>()
     let productRows: {
       shop_id: string; marketplace_product_id: string; title: string; sku: string
-      category: string | null; selling_price: number | null; cost_price: null; stock_quantity: number
+      category: string | null; selling_price: number | null; cost_price: null
+      // null = Yandex didn't report a stock number for this offer; the sync
+      // will preserve the existing DB value instead of writing 0.
+      stock_quantity: number | null
     }[] = []
     try {
       const entries = await fetchAllYandexProducts(token, campaignId, businessId)
@@ -142,7 +145,9 @@ export async function syncFromYandex(
           ? priceMap.get(shopSku) ?? (marketSku ? priceMap.get(marketSku) : null)
           : (marketSku ? priceMap.get(marketSku) : null)
         // Stock priority: FBS warehouses endpoint → campaign offers endpoint →
-        // inline offer.stocks (FIT/AVAILABLE totalled across warehouses) → 0.
+        // inline offer.stocks (FIT/AVAILABLE totalled across warehouses).
+        // null = no source returned data → keep the existing DB value on
+        // update so we don't clobber real stock with a spurious 0.
         let inlineStock: number | undefined
         if (Array.isArray(e.offer.stocks) && e.offer.stocks.length > 0) {
           inlineStock = e.offer.stocks
@@ -154,7 +159,7 @@ export async function syncFromYandex(
           ?? (campaignOfferStocks && shopSku ? campaignOfferStocks.get(shopSku) : undefined)
           ?? (campaignOfferStocks && marketSku ? campaignOfferStocks.get(marketSku) : undefined)
           ?? inlineStock
-          ?? 0
+          ?? null
         return {
           shop_id: shopId,
           marketplace_product_id: String(marketSku || shopSku || ''),
@@ -183,21 +188,25 @@ export async function syncFromYandex(
             category: r.category,
             selling_price: r.selling_price != null ? String(r.selling_price) : null,
             cost_price: null,
-            stock_quantity: r.stock_quantity,
+            // Column is NOT NULL — default to 0 on first insert when Yandex
+            // didn't report a stock number.
+            stock_quantity: r.stock_quantity ?? 0,
           })))
         }
         if (toUpd.length > 0) {
           for (const r of toUpd) {
-            // Only overwrite selling_price when API returned one — otherwise
-            // keep the existing DB value so the UI doesn't flip to 0.
+            // Only overwrite selling_price / stock_quantity when the API
+            // actually reported a value — otherwise keep the existing DB
+            // value so a silent "endpoint returned nothing" doesn't clobber
+            // real data with 0.
             const patch: Record<string, unknown> = {
               marketplace_product_id: r.marketplace_product_id,
               title: r.title,
               sku: r.sku,
               category: r.category,
-              stock_quantity: r.stock_quantity,
             }
             if (r.selling_price != null) patch.selling_price = String(r.selling_price)
+            if (r.stock_quantity != null) patch.stock_quantity = r.stock_quantity
             await db.update(products).set(patch).where(eq(products.id, r.id))
           }
         }
@@ -375,19 +384,21 @@ export async function syncFromYandex(
               category: r.category,
               selling_price: r.selling_price != null ? String(r.selling_price) : null,
               cost_price: null,
-              stock_quantity: r.stock_quantity,
+              stock_quantity: r.stock_quantity ?? 0,
             })))
           }
           if (toUpd.length > 0) {
             for (const r of toUpd) {
-              await db.update(products).set({
+              // Derived-from-orders path: we don't know stock, so leave the
+              // existing DB stock_quantity untouched instead of writing 0.
+              const patch: Record<string, unknown> = {
                 marketplace_product_id: r.marketplace_product_id,
                 title: r.title,
                 sku: r.sku,
                 category: r.category,
-                selling_price: r.selling_price != null ? String(r.selling_price) : null,
-                stock_quantity: r.stock_quantity,
-              }).where(eq(products.id, r.id))
+              }
+              if (r.selling_price != null) patch.selling_price = String(r.selling_price)
+              await db.update(products).set(patch).where(eq(products.id, r.id))
             }
           }
           productRows.push(...derived)
@@ -431,19 +442,21 @@ export async function syncFromYandex(
                 category: r.category,
                 selling_price: r.selling_price != null ? String(r.selling_price) : null,
                 cost_price: null,
-                stock_quantity: r.stock_quantity,
+                stock_quantity: r.stock_quantity ?? 0,
               })))
             }
             if (toUpd.length > 0) {
               for (const r of toUpd) {
-                await db.update(products).set({
+                // Extraction path: derived from historical orders, so we
+                // don't know current stock — keep the existing DB value.
+                const patch: Record<string, unknown> = {
                   marketplace_product_id: r.marketplace_product_id,
                   title: r.title,
                   sku: r.sku,
                   category: r.category,
-                  selling_price: r.selling_price != null ? String(r.selling_price) : null,
-                  stock_quantity: r.stock_quantity,
-                }).where(eq(products.id, r.id))
+                }
+                if (r.selling_price != null) patch.selling_price = String(r.selling_price)
+                await db.update(products).set(patch).where(eq(products.id, r.id))
               }
             }
             productRows.push(...derived)
