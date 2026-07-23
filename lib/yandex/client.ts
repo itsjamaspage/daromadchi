@@ -367,13 +367,13 @@ export async function fetchAllYandexCampaignOffers(
       for (const o of res.result?.offers ?? []) {
         const key = o.offerId ?? (o.marketSku ? String(o.marketSku) : null)
         if (!key) continue
-        // Sum FIT (available) stocks across warehouses. Fall back to counting
-        // any non-defect stock.
-        let qty = 0
-        for (const s of o.stocks ?? []) {
-          if (!s?.count) continue
-          if (!s.type || s.type === 'FIT' || s.type === 'AVAILABLE') qty += s.count
-        }
+        // Pick the FIT count (or AVAILABLE fallback). Do NOT sum FIT +
+        // AVAILABLE — Yandex reports the same physical unit under both
+        // buckets, so summing double-counts inventory.
+        const list = o.stocks ?? []
+        const fit = list.find(s => s?.type === 'FIT')
+        const avail = list.find(s => s?.type === 'AVAILABLE')
+        const qty = fit?.count ?? avail?.count ?? list[0]?.count ?? 0
         stocks.set(key, qty)
         if (o.marketSku) stocks.set(String(o.marketSku), qty)
       }
@@ -543,23 +543,31 @@ export async function fetchAllYandexStocks(
           if (!key || !Number.isFinite(qty) || qty === 0) return
           stockMap.set(key, (stockMap.get(key) ?? 0) + qty)
         }
+        // Yandex may report the same physical unit under multiple type
+        // buckets (FIT, AVAILABLE, ...) for the same warehouse — summing
+        // both double-counts the inventory. Pick the FIT count if present,
+        // else AVAILABLE, else the untyped/first entry. Never sum types.
+        const countStocks = (stocks: { type?: string; count?: number }[] | undefined): number => {
+          if (!stocks || stocks.length === 0) return 0
+          const fit = stocks.find(s => s?.type === 'FIT')
+          if (fit) return fit.count ?? 0
+          const avail = stocks.find(s => s?.type === 'AVAILABLE')
+          if (avail) return avail.count ?? 0
+          return stocks[0]?.count ?? 0
+        }
         // Older response shape: result.skus[]
         for (const item of res.result.skus ?? []) {
           const key = item.sku ?? item.offerId ?? ''
-          const stockList = item.warehouseStocks ?? item.stocks ?? []
-          const fitTotal = stockList
-            .filter(s => !s?.type || s.type === 'FIT' || s.type === 'AVAILABLE')
-            .reduce((sum, s) => sum + (s?.count ?? 0), 0)
-          inc(key, fitTotal)
+          const stockList = item.warehouseStocks ?? item.stocks
+          inc(key, countStocks(stockList))
         }
-        // Newer response shape: result.warehouses[].offers[]
+        // Newer response shape: result.warehouses[].offers[] — SUM ACROSS
+        // warehouses only (multiple warehouses = separate physical stock),
+        // but never across types within one warehouse.
         for (const w of res.result.warehouses ?? []) {
           for (const off of w.offers ?? []) {
             const key = off.offerId ?? ''
-            const fitTotal = (off.stocks ?? [])
-              .filter(s => !s?.type || s.type === 'FIT' || s.type === 'AVAILABLE')
-              .reduce((sum, s) => sum + (s?.count ?? 0), 0)
-            inc(key, fitTotal)
+            inc(key, countStocks(off.stocks))
           }
         }
         pageToken = res.result.nextPageToken ?? res.result.paging?.nextPageToken

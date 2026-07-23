@@ -145,14 +145,15 @@ export async function syncFromYandex(
           ? priceMap.get(shopSku) ?? (marketSku ? priceMap.get(marketSku) : null)
           : (marketSku ? priceMap.get(marketSku) : null)
         // Stock priority: FBS warehouses endpoint → campaign offers endpoint →
-        // inline offer.stocks (FIT/AVAILABLE totalled across warehouses).
-        // null = no source returned data → keep the existing DB value on
-        // update so we don't clobber real stock with a spurious 0.
+        // inline offer.stocks. null = no source returned data → keep the
+        // existing DB value on update so we don't clobber real stock with 0.
+        // Pick FIT count if present (do NOT sum FIT + AVAILABLE — they're
+        // the same physical units reported under different type buckets).
         let inlineStock: number | undefined
         if (Array.isArray(e.offer.stocks) && e.offer.stocks.length > 0) {
-          inlineStock = e.offer.stocks
-            .filter(s => !s?.type || s.type === 'FIT' || s.type === 'AVAILABLE')
-            .reduce((sum, s) => sum + (s?.count ?? 0), 0)
+          const fit = e.offer.stocks.find(s => s?.type === 'FIT')
+          const avail = e.offer.stocks.find(s => s?.type === 'AVAILABLE')
+          inlineStock = fit?.count ?? avail?.count ?? e.offer.stocks[0]?.count ?? 0
         }
         const stock = (shopSku ? stockMap.get(shopSku) : undefined)
           ?? (marketSku ? stockMap.get(marketSku) : undefined)
