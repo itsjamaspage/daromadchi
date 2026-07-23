@@ -32,28 +32,16 @@ function StatusMsg({ msg }: { msg: { ok: boolean; text: string } | null }) {
 
 // ─── Uzum section ─────────────────────────────────────────────────────────────
 
-// Sync result → status text. When the sync returns 0 orders (or fails), append
-// the per-request debug the API now returns, so a silent failure is visible
-// right on the card instead of requiring server logs.
+// Sync result → user-facing status text. Diagnostic debug/details are kept
+// server-side (still returned in the JSON for the /uzum/diagnose button) but
+// never rendered in the sync card — the raw dumps were unreadable noise.
 function uzumSyncText(data: {
   ok?: boolean; error?: string; productsUpserted?: number; ordersUpserted?: number
-  campaignsUpserted?: number; itemsUpserted?: number; details?: string; debug?: Record<string, string>
+  campaignsUpserted?: number; itemsUpserted?: number
 }): { ok: boolean; text: string } {
-  let text = data.ok
+  const text = data.ok
     ? `${data.productsUpserted ?? 0} mahsulot, ${data.ordersUpserted ?? 0} buyurtma (${data.itemsUpserted ?? 0} element)${data.campaignsUpserted ? `, ${data.campaignsUpserted} kampaniya` : ''} yangilandi.`
     : (data.error ?? 'Xato')
-  if (data.details) text += `\nOgohlantirishlar: ${data.details}`
-  if (data.debug) {
-    const perStatus = Object.entries(data.debug)
-      .filter(([k]) => k !== 'firstOrderRaw')
-      .map(([k, v]) => `${k}=${v}`).join(', ')
-    if (perStatus) text += `\nSo'rovlar: ${perStatus}`
-    // Raw order shown when something is off: no orders stored, or orders
-    // without line items (breaks analytics) — the field names are the evidence.
-    if (data.debug.firstOrderRaw && (!data.ordersUpserted || !data.itemsUpserted)) {
-      text += `\n1-buyurtma (xom): ${data.debug.firstOrderRaw.slice(0, 400)}`
-    }
-  }
   return { ok: !!data.ok, text }
 }
 
@@ -881,33 +869,8 @@ function TelegramCard({ chatId, username }: { chatId: string | null; username: s
   const [link,    setLink]    = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [msg,     setMsg]     = useState<{ ok: boolean; text: string } | null>(null)
-  const [notifLang, setNotifLang] = useState<'uz' | 'ru' | 'en'>('uz')
 
   const connected = !!chatId
-
-  // Load the saved notification language so the selector reflects reality.
-  useEffect(() => {
-    if (!connected) return
-    fetch('/api/telegram/status')
-      .then(r => r.json())
-      .then(d => { if (d?.notifLang) setNotifLang(d.notifLang) })
-      .catch(() => {})
-  }, [connected])
-
-  async function saveNotifLang(l: 'uz' | 'ru' | 'en') {
-    const prev = notifLang
-    setNotifLang(l); setMsg(null)
-    try {
-      const res = await fetch('/api/settings/language', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ lang: l }),
-      })
-      if (!res.ok) { setNotifLang(prev); setMsg({ ok: false, text: 'Tilni saqlab boʻlmadi' }) }
-    } catch {
-      setNotifLang(prev); setMsg({ ok: false, text: 'Tarmoq xatosi' })
-    }
-  }
 
   useEffect(() => {
     if (!link || connected) return
@@ -988,20 +951,6 @@ function TelegramCard({ chatId, username }: { chatId: string | null; username: s
       <div className="p-5 space-y-3">
         {connected ? (
           <>
-          <div className="space-y-1.5">
-            <p className="text-[var(--text-muted)] text-xs">Bildirishnoma tili / Язык уведомлений</p>
-            <div className="inline-flex rounded-xl border border-[var(--border2)] overflow-hidden">
-              {([['uz', "O'zbek"], ['ru', 'Русский'], ['en', 'English']] as const).map(([code, label]) => (
-                <button
-                  key={code}
-                  onClick={() => saveNotifLang(code)}
-                  className={`text-xs font-semibold px-3 py-2 transition-colors ${notifLang === code ? 'btn-primary text-white' : 'bg-[var(--bg-input)] text-[var(--text-muted)] hover:text-[var(--text-base)]'}`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          </div>
           <div className="flex flex-wrap gap-2">
             <button
               onClick={handleSendTest}

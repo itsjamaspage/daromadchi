@@ -9,10 +9,98 @@ export const GET = withErrorHandler(async () => {
   return NextResponse.json({ ok: true, bot_token_set: !!process.env.TELEGRAM_BOT_TOKEN })
 })
 
-const NOTIF_LABELS: Record<string, string> = {
-  morning: '🌅 Ertalab 8:00',
-  noon:    '☀️ Kunduzi 13:00',
-  evening: '🌆 Kechqurun 20:00',
+type Lang = 'uz' | 'ru' | 'en'
+
+const NOTIF_LABELS: Record<Lang, Record<string, string>> = {
+  uz: { morning: '🌅 Ertalab 8:00', noon: '☀️ Kunduzi 13:00', evening: '🌆 Kechqurun 20:00' },
+  ru: { morning: '🌅 Утро 8:00',    noon: '☀️ День 13:00',    evening: '🌆 Вечер 20:00' },
+  en: { morning: '🌅 Morning 8:00', noon: '☀️ Noon 13:00',    evening: '🌆 Evening 20:00' },
+}
+
+const BOT_I18N: Record<Lang, {
+  notifPrompt:    string
+  lowStock:       string
+  dailySummary:   string
+  newOrders:      string
+  weeklyReport:   string
+  timeStep:       string
+  timePrompt:     string
+  summaryTime:    string
+  allSet:         string
+  analytics:      string
+  linkBad:        string
+  linkExpired:    string
+  channelNotJoined: (channel: string) => string
+  channelConfirmed: string
+  activationCode: string
+  activationCodeValid: string
+  activationExpiry: string
+  thanksQuestion: string
+}> = {
+  uz: {
+    notifPrompt:  '⚙️ Bildirishnomalarni sozlang:',
+    lowStock:     'Kam zaxira ogohlantirishlari',
+    dailySummary: 'Kunlik savdo xulosasi',
+    newOrders:    'Yangi buyurtmalar',
+    weeklyReport: 'Haftalik hisobot',
+    timeStep:     '✅ Tayyor — vaqtni sozlash →',
+    timePrompt:   '🕐 Kunlik xulosani qaysi vaqtda olishni xohlaysiz?',
+    summaryTime:  'Kunlik hisobot vaqti',
+    allSet:       'Hammasi tayyor!',
+    analytics:    'Tahlil',
+    linkBad:      "❌ Havola noto'g'ri yoki eskirgan. Sozlamalar sahifasidan yangi havola oling.",
+    linkExpired:  '⏰ Havola muddati tugagan. Sozlamalar sahifasidan yangi havola oling.',
+    channelNotJoined: (c) => `❌ Siz hali <b>${c}</b> kanaliga a'zo emassiz.\n\n1. Kanalga a'zo bo'ling: https://t.me/daromadchi_uz\n2. Keyin yana /activate yuboring.`,
+    channelConfirmed: `✅ <b>Tasdiqlandi!</b> Siz @daromadchi_uz kanaliga a'zo ekansiz.\n\nKengaytmaga qayting va "Tekshirish" tugmasini bosing.`,
+    activationCode: '✅ <b>Aktivatsiya kodi:</b>',
+    activationCodeValid: 'Kodni kengaytmaga kiriting.',
+    activationExpiry: 'Kod 30 daqiqa amal qiladi.',
+    thanksQuestion: '✅ Savolingiz uchun rahmat! Qabul qildik, tez orada javob beramiz.',
+  },
+  ru: {
+    notifPrompt:  '⚙️ Настройте уведомления:',
+    lowStock:     'Предупреждения об остатках',
+    dailySummary: 'Ежедневная сводка продаж',
+    newOrders:    'Новые заказы',
+    weeklyReport: 'Еженедельный отчёт',
+    timeStep:     '✅ Готово — настроить время →',
+    timePrompt:   '🕐 Когда присылать сводку?',
+    summaryTime:  'Время сводки',
+    allSet:       'Всё готово!',
+    analytics:    'Аналитика',
+    linkBad:      '❌ Ссылка неверна или устарела. Получите новую в Настройках.',
+    linkExpired:  '⏰ Срок ссылки истёк. Получите новую в Настройках.',
+    channelNotJoined: (c) => `❌ Вы ещё не подписаны на канал <b>${c}</b>.\n\n1. Подпишитесь: https://t.me/daromadchi_uz\n2. Затем отправьте /activate ещё раз.`,
+    channelConfirmed: `✅ <b>Подтверждено!</b> Вы подписаны на канал @daromadchi_uz.\n\nВернитесь в расширение и нажмите "Проверить".`,
+    activationCode: '✅ <b>Код активации:</b>',
+    activationCodeValid: 'Введите код в расширение.',
+    activationExpiry: 'Код действует 30 минут.',
+    thanksQuestion: '✅ Спасибо за ваш вопрос! Мы получили его и ответим в ближайшее время.',
+  },
+  en: {
+    notifPrompt:  '⚙️ Configure notifications:',
+    lowStock:     'Low stock alerts',
+    dailySummary: 'Daily sales summary',
+    newOrders:    'New orders',
+    weeklyReport: 'Weekly report',
+    timeStep:     '✅ Done — set time →',
+    timePrompt:   '🕐 When should I send the summary?',
+    summaryTime:  'Summary time',
+    allSet:       'All set!',
+    analytics:    'Analytics',
+    linkBad:      '❌ Link is invalid or expired. Get a new one from Settings.',
+    linkExpired:  '⏰ Link expired. Get a new one from Settings.',
+    channelNotJoined: (c) => `❌ You're not yet a member of <b>${c}</b>.\n\n1. Join the channel: https://t.me/daromadchi_uz\n2. Then send /activate again.`,
+    channelConfirmed: `✅ <b>Confirmed!</b> You're a member of @daromadchi_uz.\n\nReturn to the extension and click "Check".`,
+    activationCode: '✅ <b>Activation code:</b>',
+    activationCodeValid: 'Enter the code in the extension.',
+    activationExpiry: 'Code is valid for 30 minutes.',
+    thanksQuestion: '✅ Thank you for your question! We received it and will get back to you soon.',
+  },
+}
+
+function botT(lang: string | null | undefined) {
+  return BOT_I18N[(lang as Lang) in BOT_I18N ? (lang as Lang) : 'uz']
 }
 
 const MKT_NAMES: Record<string, string> = {
@@ -155,17 +243,13 @@ async function sendLangSelect(chatId: string) {
 }
 
 async function sendNotifSettings(chatId: string, lang: string) {
-  const q = lang === 'ru'
-    ? '⚙️ Настройте уведомления:'
-    : lang === 'en'
-    ? '⚙️ Configure notifications:'
-    : '⚙️ Bildirishnomalarni sozlang:'
-  await sendTelegramKeyboard(chatId, q, [
-    [{ text: '📦 Kam zaxira ogohlantirishlari ✅', callback_data: 'notif_toggle:low_stock:1' }],
-    [{ text: '📊 Kunlik savdo xulosasi ✅',        callback_data: 'notif_toggle:daily_summary:1' }],
-    [{ text: '🛒 Yangi buyurtmalar ❌',            callback_data: 'notif_toggle:new_orders:0' }],
-    [{ text: '📈 Haftalik hisobot ❌',             callback_data: 'notif_toggle:weekly_report:0' }],
-    [{ text: '✅ Tayyor — vaqtni sozlash →',       callback_data: 'notif_step:time' }],
+  const t = botT(lang)
+  await sendTelegramKeyboard(chatId, t.notifPrompt, [
+    [{ text: `📦 ${t.lowStock} ✅`,     callback_data: 'notif_toggle:low_stock:1' }],
+    [{ text: `📊 ${t.dailySummary} ✅`, callback_data: 'notif_toggle:daily_summary:1' }],
+    [{ text: `🛒 ${t.newOrders} ❌`,    callback_data: 'notif_toggle:new_orders:0' }],
+    [{ text: `📈 ${t.weeklyReport} ❌`, callback_data: 'notif_toggle:weekly_report:0' }],
+    [{ text: t.timeStep,                callback_data: 'notif_step:time' }],
   ])
 }
 
@@ -194,6 +278,12 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
         .where(eq(userSettings.telegram_chat_id, chatId))
 
       if (linked) {
+        // Persist to userSettings.notif_lang so scheduled digests / test
+        // notifications also use the picked language — the whole bot flow
+        // now speaks one language chosen once at /start.
+        await db.update(userSettings)
+          .set({ notif_lang: lang, updated_at: new Date() })
+          .where(eq(userSettings.telegram_chat_id, chatId))
         const userShops = await getUserShops(linked.user_id)
         await upsertSession(chatId, { lang, step: 'done', user_id: linked.user_id })
         await sendTelegramMessage(chatId, buildLinkedWelcome(lang, userShops))
@@ -215,12 +305,9 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
       await answerCallbackQuery(cb.id, '✅')
       const session = await getSession(chatId)
       const lang = session?.lang ?? 'uz'
-      const timeLabel = NOTIF_LABELS[notifTime] ?? notifTime
-      const msg = lang === 'ru'
-        ? `✅ Время сводки: <b>${timeLabel}</b>\n\nВсё готово! Аналитика: https://daromadchi.uz/dashboard`
-        : lang === 'en'
-        ? `✅ Summary time: <b>${timeLabel}</b>\n\nAll set! Analytics: https://daromadchi.uz/dashboard`
-        : `✅ Kunlik hisobot vaqti: <b>${timeLabel}</b>\n\nHammasi tayyor! Tahlil: https://daromadchi.uz/dashboard`
+      const t = botT(lang)
+      const timeLabel = NOTIF_LABELS[(lang as Lang) in NOTIF_LABELS ? (lang as Lang) : 'uz'][notifTime] ?? notifTime
+      const msg = `✅ ${t.summaryTime}: <b>${timeLabel}</b>\n\n${t.allSet} ${t.analytics}: https://daromadchi.uz/dashboard`
       await sendTelegramMessage(chatId, msg)
     }
 
@@ -253,14 +340,18 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
 
       const ls = row?.ls ?? true, ds = row?.ds ?? true, no = row?.no ?? false, wr = row?.wr ?? false
 
+      const session = await getSession(chatId)
+      const lang = session?.lang ?? 'uz'
+      const t = botT(lang)
+
       const messageId = cb.message?.message_id
       if (messageId) {
         await editMessageButtons(chatId, messageId, [
-          [{ text: `📦 Kam zaxira ogohlantirishlari ${ls ? '✅' : '❌'}`, callback_data: `notif_toggle:low_stock:${ls ? '1' : '0'}` }],
-          [{ text: `📊 Kunlik savdo xulosasi ${ds ? '✅' : '❌'}`,        callback_data: `notif_toggle:daily_summary:${ds ? '1' : '0'}` }],
-          [{ text: `🛒 Yangi buyurtmalar ${no ? '✅' : '❌'}`,            callback_data: `notif_toggle:new_orders:${no ? '1' : '0'}` }],
-          [{ text: `📈 Haftalik hisobot ${wr ? '✅' : '❌'}`,             callback_data: `notif_toggle:weekly_report:${wr ? '1' : '0'}` }],
-          [{ text: '✅ Tayyor — vaqtni sozlash →',                        callback_data: 'notif_step:time' }],
+          [{ text: `📦 ${t.lowStock} ${ls ? '✅' : '❌'}`,     callback_data: `notif_toggle:low_stock:${ls ? '1' : '0'}` }],
+          [{ text: `📊 ${t.dailySummary} ${ds ? '✅' : '❌'}`, callback_data: `notif_toggle:daily_summary:${ds ? '1' : '0'}` }],
+          [{ text: `🛒 ${t.newOrders} ${no ? '✅' : '❌'}`,    callback_data: `notif_toggle:new_orders:${no ? '1' : '0'}` }],
+          [{ text: `📈 ${t.weeklyReport} ${wr ? '✅' : '❌'}`, callback_data: `notif_toggle:weekly_report:${wr ? '1' : '0'}` }],
+          [{ text: t.timeStep,                                 callback_data: 'notif_step:time' }],
         ])
       }
 
@@ -271,15 +362,12 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
       await answerCallbackQuery(cb.id)
       const session = await getSession(chatId)
       const lang = session?.lang ?? 'uz'
-      const q = lang === 'ru'
-        ? '🕐 Когда присылать сводку?'
-        : lang === 'en'
-        ? '🕐 When should I send the summary?'
-        : '🕐 Kunlik xulosani qaysi vaqtda olishni xohlaysiz?'
-      await sendTelegramKeyboard(chatId, q, [[
-        { text: '🌅 Ertalab 8:00',    callback_data: 'notif_time:morning' },
-        { text: '☀️ Kunduzi 13:00',   callback_data: 'notif_time:noon'    },
-        { text: '🌆 Kechqurun 20:00', callback_data: 'notif_time:evening' },
+      const t = botT(lang)
+      const labels = NOTIF_LABELS[(lang as Lang) in NOTIF_LABELS ? (lang as Lang) : 'uz']
+      await sendTelegramKeyboard(chatId, t.timePrompt, [[
+        { text: labels.morning, callback_data: 'notif_time:morning' },
+        { text: labels.noon,    callback_data: 'notif_time:noon'    },
+        { text: labels.evening, callback_data: 'notif_time:evening' },
       ]])
     }
 
@@ -343,12 +431,14 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     }).from(userSettings)
       .where(eq(userSettings.telegram_link_token, token))
 
+    const priorLang = (await getSession(chatId))?.lang ?? 'uz'
+    const tStart = botT(priorLang)
     if (!settings) {
-      await sendTelegramMessage(chatId, '❌ Havola noto\'g\'ri yoki eskirgan. Sozlamalar sahifasidan yangi havola oling.')
+      await sendTelegramMessage(chatId, tStart.linkBad)
       return NextResponse.json({ ok: true })
     }
     if (settings.telegram_link_expires_at && new Date(settings.telegram_link_expires_at) < new Date()) {
-      await sendTelegramMessage(chatId, '⏰ Havola muddati tugagan. Sozlamalar sahifasidan yangi havola oling.')
+      await sendTelegramMessage(chatId, tStart.linkExpired)
       return NextResponse.json({ ok: true })
     }
 
@@ -386,6 +476,8 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   if (text === '/activate') {
     const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
     const CHANNEL   = '@daromadchi_uz'
+    const activateLang = (await getSession(chatId))?.lang ?? 'uz'
+    const tAct = botT(activateLang)
     let isMember = false
     try {
       const r = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getChatMember`, {
@@ -398,9 +490,7 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     } catch {}
 
     if (!isMember) {
-      await sendTelegramMessage(chatId,
-        `❌ Siz hali <b>${CHANNEL}</b> kanaliga a'zo emassiz.\n\n1. Kanalga a'zo bo'ling: https://t.me/daromadchi_uz\n2. Keyin yana /activate yuboring.`
-      )
+      await sendTelegramMessage(chatId, tAct.channelNotJoined(CHANNEL))
       return NextResponse.json({ ok: true })
     }
     const code = Math.random().toString(36).slice(2, 6).toUpperCase() +
@@ -408,7 +498,7 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString()
     await supabaseAdmin.from('ext_activation_codes').upsert({ code, chat_id: chatId, used: false, expires_at: expiresAt })
     await sendTelegramMessage(chatId,
-      `✅ <b>Aktivatsiya kodi:</b>\n\n<code>${code}</code>\n\nKodni kengaytmaga kiriting.\n<i>Kod 30 daqiqa amal qiladi.</i>`
+      `${tAct.activationCode}\n\n<code>${code}</code>\n\n${tAct.activationCodeValid}\n<i>${tAct.activationExpiry}</i>`
     )
     return NextResponse.json({ ok: true })
   }
@@ -419,12 +509,7 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   const firstName = (message.from?.first_name as string | undefined) ?? ''
   const uname     = (message.from?.username  as string | undefined) ?? ''
   const senderInfo = [firstName, uname ? `@${uname}` : '', `(ID: ${chatId})`].filter(Boolean).join(' ')
-  const thanks = lang === 'ru'
-    ? '✅ Спасибо за ваш вопрос! Мы получили его и ответим в ближайшее время.'
-    : lang === 'en'
-    ? '✅ Thank you for your question! We received it and will get back to you soon.'
-    : '✅ Savolingiz uchun rahmat! Qabul qildik, tez orada javob beramiz.'
-  await sendTelegramMessage(chatId, thanks)
+  await sendTelegramMessage(chatId, botT(lang).thanksQuestion)
   await sendTelegramMessage('6884517020',
     `📩 <b>Yangi savol / Новый вопрос</b>\n\n👤 ${senderInfo}\n\n💬 ${text}`
   )

@@ -99,7 +99,9 @@ export interface YandexOffer {
   name: string
   category: string
   vendor?: string
+  // Yandex renamed price → basicPrice on offer-mappings; keep both for compat.
   price?: { value: number; discountBase?: number }
+  basicPrice?: { value: number; currencyId?: string; discountBase?: number }
   marketSku?: number
 }
 

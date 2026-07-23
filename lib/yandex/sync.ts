@@ -69,7 +69,9 @@ export async function syncFromYandex(
         title: e.offer.name,
         sku: e.offer.shopSku || String(e.mapping?.marketSku ?? ''),
         category: e.offer.category ?? null,
-        selling_price: e.offer.price?.value ?? null,
+        // Yandex uses basicPrice on newer offer-mappings responses; fall back
+        // to legacy `price` for older campaigns.
+        selling_price: e.offer.basicPrice?.value ?? e.offer.price?.value ?? null,
         cost_price: null,
         stock_quantity: stockMap.get(e.offer.shopSku) ?? 0,
       }))
@@ -95,14 +97,17 @@ export async function syncFromYandex(
         }
         if (toUpd.length > 0) {
           for (const r of toUpd) {
-            await db.update(products).set({
+            // Only overwrite selling_price when API returned one — otherwise
+            // keep the existing DB value so the UI doesn't flip to 0.
+            const patch: Record<string, unknown> = {
               marketplace_product_id: r.marketplace_product_id,
               title: r.title,
               sku: r.sku,
               category: r.category,
-              selling_price: r.selling_price != null ? String(r.selling_price) : null,
               stock_quantity: r.stock_quantity,
-            }).where(eq(products.id, r.id))
+            }
+            if (r.selling_price != null) patch.selling_price = String(r.selling_price)
+            await db.update(products).set(patch).where(eq(products.id, r.id))
           }
         }
       }
