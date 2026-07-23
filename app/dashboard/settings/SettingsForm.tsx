@@ -9,6 +9,8 @@ import {
 } from 'lucide-react'
 // import { createClient } from '@/lib/supabase/client'
 import type { Shop } from '@/lib/types'
+import { useLang } from '@/app/providers'
+import { translations } from '@/lib/i18n'
 
 // ─── Shared sub-components ────────────────────────────────────────────────────
 
@@ -32,16 +34,18 @@ function StatusMsg({ msg }: { msg: { ok: boolean; text: string } | null }) {
 
 // ─── Uzum section ─────────────────────────────────────────────────────────────
 
+type SettingsT = { products: string; orders: string; elements: string; campaigns: string; updated: string; error: string }
+
 // Sync result → user-facing status text. Diagnostic debug/details are kept
 // server-side (still returned in the JSON for the /uzum/diagnose button) but
 // never rendered in the sync card — the raw dumps were unreadable noise.
 function uzumSyncText(data: {
   ok?: boolean; error?: string; productsUpserted?: number; ordersUpserted?: number
   campaignsUpserted?: number; itemsUpserted?: number
-}): { ok: boolean; text: string } {
+}, t: SettingsT): { ok: boolean; text: string } {
   const text = data.ok
-    ? `${data.productsUpserted ?? 0} mahsulot, ${data.ordersUpserted ?? 0} buyurtma (${data.itemsUpserted ?? 0} element)${data.campaignsUpserted ? `, ${data.campaignsUpserted} kampaniya` : ''} yangilandi.`
-    : (data.error ?? 'Xato')
+    ? `${data.productsUpserted ?? 0} ${t.products}, ${data.ordersUpserted ?? 0} ${t.orders} (${data.itemsUpserted ?? 0} ${t.elements})${data.campaignsUpserted ? `, ${data.campaignsUpserted} ${t.campaigns}` : ''} ${t.updated}.`
+    : (data.error ?? t.error)
   return { ok: !!data.ok, text }
 }
 
@@ -53,10 +57,10 @@ function yandexSyncText(data: {
   ok?: boolean; error?: string; productsUpserted?: number; ordersUpserted?: number
   campaignsUpserted?: number; details?: string
   debug?: Record<string, string | number>
-}): { ok: boolean; text: string } {
+}, t: SettingsT): { ok: boolean; text: string } {
   let text = data.ok
-    ? `${data.productsUpserted ?? 0} mahsulot, ${data.ordersUpserted ?? 0} buyurtma${data.campaignsUpserted ? `, ${data.campaignsUpserted} kampaniya` : ''} yangilandi.`
-    : (data.error ?? 'Xato')
+    ? `${data.productsUpserted ?? 0} ${t.products}, ${data.ordersUpserted ?? 0} ${t.orders}${data.campaignsUpserted ? `, ${data.campaignsUpserted} ${t.campaigns}` : ''} ${t.updated}.`
+    : (data.error ?? t.error)
   if (data.details) text += `\n⚠ ${data.details}`
   if (data.debug && Object.keys(data.debug).length > 0) {
     const d = data.debug
@@ -88,6 +92,8 @@ function yandexSyncText(data: {
 
 function UzumCard({ shop }: { shop: Shop | null; userId: string }) {
   const router = useRouter()
+  const { lang } = useLang()
+  const t = translations[lang].dashboard.settingsPage
 
   const [apiKey,   setApiKey]   = useState('')
   const [saving,   setSaving]   = useState(false)
@@ -100,7 +106,7 @@ function UzumCard({ shop }: { shop: Shop | null; userId: string }) {
 
   const hasKey  = !!shop?.api_key_encrypted
   const lastSync = shop?.last_synced_at
-    ? new Date(shop.last_synced_at).toLocaleString('uz-UZ') : null
+    ? new Date(shop.last_synced_at).toLocaleString(lang === 'ru' ? 'ru-RU' : lang === 'en' ? 'en-US' : 'uz-UZ') : null
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
@@ -110,19 +116,19 @@ function UzumCard({ shop }: { shop: Shop | null; userId: string }) {
       const res  = await fetch('/api/shops/token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ marketplace: 'uzum', token: apiKey.trim(), shopName: "Uzum do'konim" }),
+        body: JSON.stringify({ marketplace: 'uzum', token: apiKey.trim(), shopName: t.uzumShopName }),
       })
       const data = await res.json()
       setSaveMsg(data.ok
-        ? { ok: true, text: data.message ?? 'Saqlandi! Sinxronlash boshlanmoqda…' }
-        : { ok: false, text: data.error ?? 'Xato' })
+        ? { ok: true, text: data.message ?? t.saved }
+        : { ok: false, text: data.error ?? t.error })
       if (data.ok) {
         setApiKey('')
         router.refresh()
         triggerSync()
       }
     } catch {
-      setSaveMsg({ ok: false, text: "Server bilan bog'lanishda xato" })
+      setSaveMsg({ ok: false, text: t.networkErr })
     }
     setSaving(false)
   }
@@ -132,9 +138,9 @@ function UzumCard({ shop }: { shop: Shop | null; userId: string }) {
     try {
       const res  = await fetch('/api/uzum/sync', { method: 'GET' })
       const data = await res.json()
-      setSyncMsg({ ok: data.ok, text: data.message ?? data.error ?? 'Xato' })
+      setSyncMsg({ ok: data.ok, text: data.message ?? data.error ?? t.error })
     } catch {
-      setSyncMsg({ ok: false, text: "Server bilan bog'lanishda xato" })
+      setSyncMsg({ ok: false, text: t.networkErr })
     }
     setTesting(false)
   }
@@ -147,7 +153,7 @@ function UzumCard({ shop }: { shop: Shop | null; userId: string }) {
       const res  = await fetch('/api/uzum/diagnose')
       const data = await res.json()
       if (!data.ok) {
-        setSyncMsg({ ok: false, text: `Diagnostika: ${data.error ?? 'Xato'}` })
+        setSyncMsg({ ok: false, text: `${t.diagnose}: ${data.error ?? t.error}` })
       } else {
         const probes = (data.orderProbes ?? []) as { label: string; status: number; count: number | null; sample?: unknown; bodySnippet?: string }[]
         const summary = probes.length === 0
@@ -169,7 +175,7 @@ function UzumCard({ shop }: { shop: Shop | null; userId: string }) {
         console.log('[uzum diagnose]', data)
       }
     } catch {
-      setSyncMsg({ ok: false, text: "Diagnostika: server bilan bog'lanishda xato" })
+      setSyncMsg({ ok: false, text: `${t.diagnose}: ${t.networkErr}` })
     }
     setDiagnosing(false)
   }
@@ -186,10 +192,10 @@ function UzumCard({ shop }: { shop: Shop | null; userId: string }) {
     fetch('/api/uzum/sync', { method: 'POST' })
       .then(r => r.json())
       .then(data => {
-        setSyncMsg(uzumSyncText(data))
+        setSyncMsg(uzumSyncText(data, t))
         if (data.ok) router.refresh()
       })
-      .catch(() => setSyncMsg({ ok: false, text: "Server bilan bog'lanishda xato" }))
+      .catch(() => setSyncMsg({ ok: false, text: t.networkErr }))
       .finally(() => { clearInterval(interval); setSyncStep(null); setSyncing(false) })
   }
 
@@ -205,10 +211,10 @@ function UzumCard({ shop }: { shop: Shop | null; userId: string }) {
     try {
       const res  = await fetch('/api/uzum/sync', { method: 'POST' })
       const data = await res.json()
-      setSyncMsg(uzumSyncText(data))
+      setSyncMsg(uzumSyncText(data, t))
       if (data.ok) router.refresh()
     } catch {
-      setSyncMsg({ ok: false, text: "Server bilan bog'lanishda xato" })
+      setSyncMsg({ ok: false, text: t.networkErr })
     }
     clearInterval(interval)
     setSyncStep(null)
@@ -227,7 +233,7 @@ function UzumCard({ shop }: { shop: Shop | null; userId: string }) {
           <p className="text-[var(--text-muted)] text-xs">seller.uzum.uz</p>
         </div>
         <span className={`ml-auto text-[10px] font-semibold px-2 py-1 rounded-full border ${hasKey ? 'bg-[var(--badge-ok-bg)] border-[var(--badge-ok-bdr)] text-[var(--badge-ok-text)]' : 'bg-slate-500/10 border-[var(--border)] text-[var(--text-muted)]'}`}>
-          {hasKey ? 'Ulangan' : 'Ulanmagan'}
+          {hasKey ? t.connected : t.notConnected}
         </span>
       </div>
 
@@ -241,7 +247,7 @@ function UzumCard({ shop }: { shop: Shop | null; userId: string }) {
             type="password"
             value={apiKey}
             onChange={e => setApiKey(e.target.value)}
-            placeholder="Token kiriting..."
+            placeholder={t.tokenPlaceholder}
             className="w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--border2)] transition-all font-mono"
           />
           <p className="text-[var(--text-muted)] text-xs mt-1.5 flex items-center gap-1">
@@ -255,7 +261,7 @@ function UzumCard({ shop }: { shop: Shop | null; userId: string }) {
         <button type="submit" disabled={saving}
           className="flex items-center gap-2 btn-primary disabled:opacity-50 px-4 py-2 rounded-xl transition-colors">
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-          Saqlash
+          {t.save}
         </button>
       </form>
 
@@ -264,7 +270,7 @@ function UzumCard({ shop }: { shop: Shop | null; userId: string }) {
         <div className="px-6 pb-6 space-y-3 border-t border-[var(--border)] pt-4">
           <div className="flex items-center justify-between">
             <p className="text-[var(--text-muted)] text-xs">
-              {lastSync ? <>Oxirgi sinxr: <span className="text-[var(--text-dim)]">{lastSync}</span></> : 'Hali sinxronlanmagan'}
+              {lastSync ? <>{t.lastSync}: <span className="text-[var(--text-dim)]">{lastSync}</span></> : t.neverSynced}
             </p>
           </div>
           {syncing && syncStep && (
@@ -279,18 +285,18 @@ function UzumCard({ shop }: { shop: Shop | null; userId: string }) {
             title={!hasKey ? 'Avval token saqlang' : ''}
             className="flex items-center gap-2 bg-[var(--bg-input)] hover:bg-[var(--bg-input)] border border-[var(--border2)] disabled:opacity-40 disabled:cursor-not-allowed text-[var(--text-dim)] text-sm font-medium px-4 py-2 rounded-xl transition-colors">
             {testing ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" style={{ color: 'var(--status-ok-text)' }} />}
-            Tekshirish
+            {t.check}
           </button>
           <button onClick={handleSync} disabled={syncing || !hasKey}
             title={!hasKey ? 'Avval token saqlang' : ''}
             className="flex items-center gap-2 btn-primary border border-transparent disabled:opacity-40 disabled:cursor-not-allowed px-4 py-2 rounded-xl transition-colors">
-            {syncing ? <><Loader2 className="w-4 h-4 animate-spin" /> Sinxronlanmoqda…</> : <><RefreshCw className="w-4 h-4" /> Sinxronlash</>}
+            {syncing ? <><Loader2 className="w-4 h-4 animate-spin" /> {t.syncing}</> : <><RefreshCw className="w-4 h-4" /> {t.sync}</>}
           </button>
           <button onClick={handleDiagnose} disabled={diagnosing || syncing || !hasKey}
             title="Buyurtmalar API javobini tekshirish (read-only)"
             className="flex items-center gap-2 bg-[var(--bg-input)] hover:bg-[var(--bg-input)] border border-[var(--border2)] disabled:opacity-40 disabled:cursor-not-allowed text-[var(--text-muted)] text-sm font-medium px-4 py-2 rounded-xl transition-colors">
             {diagnosing ? <Loader2 className="w-4 h-4 animate-spin" /> : <AlertTriangle className="w-4 h-4" />}
-            Diagnostika
+            {t.diagnose}
           </button>
           </div>
         </div>
@@ -303,6 +309,8 @@ function UzumCard({ shop }: { shop: Shop | null; userId: string }) {
 
 function YandexCard({ shop }: { shop: Shop | null; userId: string }) {
   const router = useRouter()
+  const { lang } = useLang()
+  const t = translations[lang].dashboard.settingsPage
 
   const [apiKey,      setApiKey]      = useState('')
   const [campaignId,  setCampaignId]  = useState('')
@@ -316,16 +324,16 @@ function YandexCard({ shop }: { shop: Shop | null; userId: string }) {
   const hasKey      = !!shop?.api_key_encrypted
   const hasCampaign = !!shop?.shop_id_external
   const lastSync    = shop?.last_synced_at
-    ? new Date(shop.last_synced_at).toLocaleString('uz-UZ') : null
+    ? new Date(shop.last_synced_at).toLocaleString(lang === 'ru' ? 'ru-RU' : lang === 'en' ? 'en-US' : 'uz-UZ') : null
 
   async function handleTest() {
     setTesting(true); setSyncMsg(null)
     try {
       const res  = await fetch('/api/yandex/sync', { method: 'GET' })
       const data = await res.json()
-      setSyncMsg({ ok: data.ok, text: data.message ?? data.error ?? 'Xato' })
+      setSyncMsg({ ok: data.ok, text: data.message ?? data.error ?? t.error })
     } catch {
-      setSyncMsg({ ok: false, text: "Server bilan bog'lanishda xato" })
+      setSyncMsg({ ok: false, text: t.networkErr })
     }
     setTesting(false)
   }
@@ -342,20 +350,20 @@ function YandexCard({ shop }: { shop: Shop | null; userId: string }) {
           marketplace: 'yandex_market',
           token: apiKey.trim() || undefined,
           campaignId: campaignId.trim() || undefined,
-          shopName: "Yandex Market do'konim",
+          shopName: t.yandexShopName,
         }),
       })
       const data = await res.json()
       setSaveMsg(data.ok
-        ? { ok: true, text: data.message ?? 'Saqlandi! Sinxronlash boshlanmoqda…' }
-        : { ok: false, text: data.error ?? 'Xato' })
+        ? { ok: true, text: data.message ?? t.saved }
+        : { ok: false, text: data.error ?? t.error })
       if (data.ok) {
         setApiKey('')
         router.refresh()
         triggerYandexSync()
       }
     } catch {
-      setSaveMsg({ ok: false, text: "Server bilan bog'lanishda xato" })
+      setSaveMsg({ ok: false, text: t.networkErr })
     }
     setSaving(false)
   }
@@ -372,10 +380,10 @@ function YandexCard({ shop }: { shop: Shop | null; userId: string }) {
     fetch('/api/yandex/sync', { method: 'POST' })
       .then(r => r.json())
       .then(data => {
-        setSyncMsg(yandexSyncText(data))
+        setSyncMsg(yandexSyncText(data, t))
         if (data.ok) router.refresh()
       })
-      .catch(() => setSyncMsg({ ok: false, text: "Server bilan bog'lanishda xato" }))
+      .catch(() => setSyncMsg({ ok: false, text: t.networkErr }))
       .finally(() => { clearInterval(interval); setSyncStep(null); setSyncing(false) })
   }
 
@@ -391,10 +399,10 @@ function YandexCard({ shop }: { shop: Shop | null; userId: string }) {
     try {
       const res  = await fetch('/api/yandex/sync', { method: 'POST' })
       const data = await res.json()
-      setSyncMsg(yandexSyncText(data))
+      setSyncMsg(yandexSyncText(data, t))
       if (data.ok) router.refresh()
     } catch {
-      setSyncMsg({ ok: false, text: "Server bilan bog'lanishda xato" })
+      setSyncMsg({ ok: false, text: t.networkErr })
     }
     clearInterval(interval)
     setSyncStep(null)
@@ -429,7 +437,7 @@ function YandexCard({ shop }: { shop: Shop | null; userId: string }) {
             type="password"
             value={apiKey}
             onChange={e => setApiKey(e.target.value)}
-            placeholder="Token kiriting..."
+            placeholder={t.tokenPlaceholder}
             className="w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-amber-500/40 transition-all font-mono"
           />
         </div>
@@ -442,7 +450,7 @@ function YandexCard({ shop }: { shop: Shop | null; userId: string }) {
             type="text"
             value={campaignId}
             onChange={e => setCampaignId(e.target.value)}
-            placeholder="Campaign ID kiriting..."
+            placeholder={t.campaignPlaceholder}
             className="w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-amber-500/40 transition-all font-mono"
           />
           <p className="text-[var(--text-muted)] text-xs mt-1.5 flex items-center gap-1">
@@ -458,7 +466,7 @@ function YandexCard({ shop }: { shop: Shop | null; userId: string }) {
         <button type="submit" disabled={saving}
           className="flex items-center gap-2 btn-primary disabled:opacity-50 px-4 py-2 rounded-xl transition-colors">
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-          Saqlash
+          {t.save}
         </button>
       </form>
 
@@ -466,7 +474,7 @@ function YandexCard({ shop }: { shop: Shop | null; userId: string }) {
       {shop && (
         <div className="px-6 pb-6 space-y-3 border-t border-[var(--border)] pt-4">
           <p className="text-[var(--text-muted)] text-xs">
-            {lastSync ? <>Oxirgi sinxr: <span className="text-[var(--text-dim)]">{lastSync}</span></> : 'Hali sinxronlanmagan'}
+            {lastSync ? <>{t.lastSync}: <span className="text-[var(--text-dim)]">{lastSync}</span></> : t.neverSynced}
           </p>
           {syncing && syncStep && (
             <div className="flex items-center gap-2 text-xs rounded-xl px-3 py-2" style={{ color: 'var(--c1)', background: 'var(--bg-card2)', border: '1px solid var(--border)' }}>
@@ -480,12 +488,12 @@ function YandexCard({ shop }: { shop: Shop | null; userId: string }) {
               title={!connected ? 'Avval token va Campaign ID saqlang' : ''}
               className="flex items-center gap-2 bg-[var(--bg-input)] hover:bg-[var(--bg-input)] border border-[var(--border2)] disabled:opacity-40 disabled:cursor-not-allowed text-[var(--text-dim)] text-sm font-medium px-4 py-2 rounded-xl transition-colors">
               {testing ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" style={{ color: 'var(--status-ok-text)' }} />}
-              Tekshirish
+              {t.check}
             </button>
             <button onClick={handleSync} disabled={syncing || !connected}
               title={!connected ? 'Avval token va Campaign ID saqlang' : ''}
               className="flex items-center gap-2 btn-primary border border-transparent disabled:opacity-40 disabled:cursor-not-allowed px-4 py-2 rounded-xl transition-colors">
-              {syncing ? <><Loader2 className="w-4 h-4 animate-spin" /> Sinxronlanmoqda…</> : <><RefreshCw className="w-4 h-4" /> Sinxronlash</>}
+              {syncing ? <><Loader2 className="w-4 h-4 animate-spin" /> {t.syncing}</> : <><RefreshCw className="w-4 h-4" /> {t.sync}</>}
             </button>
           </div>
         </div>
@@ -498,6 +506,8 @@ function YandexCard({ shop }: { shop: Shop | null; userId: string }) {
 
 function WildberriesCard({ shop }: { shop: Shop | null; userId: string }) {
   const router = useRouter()
+  const { lang } = useLang()
+  const t = translations[lang].dashboard.settingsPage
 
   const [apiKey,   setApiKey]   = useState('')
   const [saving,   setSaving]   = useState(false)
@@ -509,7 +519,7 @@ function WildberriesCard({ shop }: { shop: Shop | null; userId: string }) {
 
   const hasKey  = !!shop?.api_key_encrypted
   const lastSync = shop?.last_synced_at
-    ? new Date(shop.last_synced_at).toLocaleString('uz-UZ') : null
+    ? new Date(shop.last_synced_at).toLocaleString(lang === 'ru' ? 'ru-RU' : lang === 'en' ? 'en-US' : 'uz-UZ') : null
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
@@ -519,19 +529,19 @@ function WildberriesCard({ shop }: { shop: Shop | null; userId: string }) {
       const res  = await fetch('/api/shops/token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ marketplace: 'wildberries', token: apiKey.trim(), shopName: 'Wildberries do\'konim' }),
+        body: JSON.stringify({ marketplace: 'wildberries', token: apiKey.trim(), shopName: t.wbShopName }),
       })
       const data = await res.json()
       setSaveMsg(data.ok
-        ? { ok: true, text: data.message ?? 'Saqlandi! Sinxronlash boshlanmoqda…' }
-        : { ok: false, text: data.error ?? 'Xato' })
+        ? { ok: true, text: data.message ?? t.saved }
+        : { ok: false, text: data.error ?? t.error })
       if (data.ok) {
         setApiKey('')
         router.refresh()
         triggerWbSync()
       }
     } catch {
-      setSaveMsg({ ok: false, text: "Server bilan bog'lanishda xato" })
+      setSaveMsg({ ok: false, text: t.networkErr })
     }
     setSaving(false)
   }
@@ -549,11 +559,11 @@ function WildberriesCard({ shop }: { shop: Shop | null; userId: string }) {
       .then(r => r.json())
       .then(data => {
         setSyncMsg(data.ok
-          ? { ok: true, text: `${data.productsUpserted ?? 0} mahsulot, ${data.ordersUpserted ?? 0} buyurtma yangilandi.` }
-          : { ok: false, text: data.error ?? (data.errors?.[0]) ?? 'Xato' })
+          ? { ok: true, text: `${data.productsUpserted ?? 0} ${t.products}, ${data.ordersUpserted ?? 0} ${t.orders} ${t.updated}.` }
+          : { ok: false, text: data.error ?? (data.errors?.[0]) ?? t.error })
         if (data.ok) router.refresh()
       })
-      .catch(() => setSyncMsg({ ok: false, text: "Server bilan bog'lanishda xato" }))
+      .catch(() => setSyncMsg({ ok: false, text: t.networkErr }))
       .finally(() => { clearInterval(interval); setSyncStep(null); setSyncing(false) })
   }
 
@@ -562,9 +572,9 @@ function WildberriesCard({ shop }: { shop: Shop | null; userId: string }) {
     try {
       const res  = await fetch('/api/wildberries/sync', { method: 'GET' })
       const data = await res.json()
-      setSyncMsg({ ok: data.ok, text: data.message ?? data.error ?? 'Xato' })
+      setSyncMsg({ ok: data.ok, text: data.message ?? data.error ?? t.error })
     } catch {
-      setSyncMsg({ ok: false, text: "Server bilan bog'lanishda xato" })
+      setSyncMsg({ ok: false, text: t.networkErr })
     }
     setTesting(false)
   }
@@ -582,11 +592,11 @@ function WildberriesCard({ shop }: { shop: Shop | null; userId: string }) {
       const res  = await fetch('/api/wildberries/sync', { method: 'POST' })
       const data = await res.json()
       setSyncMsg(data.ok
-        ? { ok: true, text: `${data.productsUpserted ?? 0} mahsulot, ${data.ordersUpserted ?? 0} buyurtma yangilandi.` }
-        : { ok: false, text: data.error ?? (data.errors?.[0]) ?? 'Xato' })
+        ? { ok: true, text: `${data.productsUpserted ?? 0} ${t.products}, ${data.ordersUpserted ?? 0} ${t.orders} ${t.updated}.` }
+        : { ok: false, text: data.error ?? (data.errors?.[0]) ?? t.error })
       if (data.ok) router.refresh()
     } catch {
-      setSyncMsg({ ok: false, text: "Server bilan bog'lanishda xato" })
+      setSyncMsg({ ok: false, text: t.networkErr })
     }
     clearInterval(interval)
     setSyncStep(null)
@@ -605,7 +615,7 @@ function WildberriesCard({ shop }: { shop: Shop | null; userId: string }) {
           <p className="text-[var(--text-muted)] text-xs">seller.wildberries.ru</p>
         </div>
         <span className={`ml-auto text-[10px] font-semibold px-2 py-1 rounded-full border ${hasKey ? 'bg-[var(--badge-ok-bg)] border-[var(--badge-ok-bdr)] text-[var(--badge-ok-text)]' : 'bg-slate-500/10 border-[var(--border)] text-[var(--text-muted)]'}`}>
-          {hasKey ? 'Ulangan' : 'Ulanmagan'}
+          {hasKey ? t.connected : t.notConnected}
         </span>
       </div>
 
@@ -619,7 +629,7 @@ function WildberriesCard({ shop }: { shop: Shop | null; userId: string }) {
             type="password"
             value={apiKey}
             onChange={e => setApiKey(e.target.value)}
-            placeholder="Token kiriting..."
+            placeholder={t.tokenPlaceholder}
             className="w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--border2)] transition-all font-mono"
           />
           <p className="text-[var(--text-muted)] text-xs mt-1.5">
@@ -637,7 +647,7 @@ function WildberriesCard({ shop }: { shop: Shop | null; userId: string }) {
         <button type="submit" disabled={saving}
           className="flex items-center gap-2 btn-primary disabled:opacity-50 px-4 py-2 rounded-xl transition-colors">
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-          Saqlash
+          {t.save}
         </button>
       </form>
 
@@ -645,7 +655,7 @@ function WildberriesCard({ shop }: { shop: Shop | null; userId: string }) {
       {shop && (
         <div className="px-6 pb-6 space-y-3 border-t border-[var(--border)] pt-4">
           <p className="text-[var(--text-muted)] text-xs">
-            {lastSync ? <>Oxirgi sinxr: <span className="text-[var(--text-dim)]">{lastSync}</span></> : 'Hali sinxronlanmagan'}
+            {lastSync ? <>{t.lastSync}: <span className="text-[var(--text-dim)]">{lastSync}</span></> : t.neverSynced}
           </p>
           {syncing && syncStep && (
             <div className="flex items-center gap-2 text-xs rounded-xl px-3 py-2" style={{ color: 'var(--c1)', background: 'var(--bg-card2)', border: '1px solid var(--border)' }}>
@@ -659,12 +669,12 @@ function WildberriesCard({ shop }: { shop: Shop | null; userId: string }) {
               title={!hasKey ? 'Avval token saqlang' : ''}
               className="flex items-center gap-2 bg-[var(--bg-input)] hover:bg-[var(--bg-input)] border border-[var(--border2)] disabled:opacity-40 disabled:cursor-not-allowed text-[var(--text-dim)] text-sm font-medium px-4 py-2 rounded-xl transition-colors">
               {testing ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" style={{ color: 'var(--status-ok-text)' }} />}
-              Tekshirish
+              {t.check}
             </button>
             <button onClick={handleSync} disabled={syncing || !hasKey}
               title={!hasKey ? 'Avval token saqlang' : ''}
               className="flex items-center gap-2 btn-primary border border-transparent disabled:opacity-40 disabled:cursor-not-allowed px-4 py-2 rounded-xl transition-colors">
-              {syncing ? <><Loader2 className="w-4 h-4 animate-spin" /> Sinxronlanmoqda…</> : <><RefreshCw className="w-4 h-4" /> Sinxronlash</>}
+              {syncing ? <><Loader2 className="w-4 h-4 animate-spin" /> {t.syncing}</> : <><RefreshCw className="w-4 h-4" /> {t.sync}</>}
             </button>
           </div>
         </div>
@@ -685,6 +695,8 @@ const MP_BADGE: Record<string, { label: string; color: string; bg: string }> = {
 }
 
 function WarehousesCard() {
+  const { lang } = useLang()
+  const t = translations[lang].dashboard.settingsPage
   const [warehouses, setWarehouses] = useState<WarehouseRow[]>([])
   const [shops,      setShops]      = useState<ShopLite[]>([])
   const [loading,    setLoading]    = useState(true)
@@ -712,8 +724,8 @@ function WarehousesCard() {
       })
       const data = await res.json()
       if (data.warehouse) { setWarehouses(prev => [...prev, data.warehouse]); setNewName(''); setShowAdd(false) }
-      else setMsg({ ok: false, text: data.error ?? 'Xato' })
-    } catch { setMsg({ ok: false, text: 'Tarmoq xatosi' }) }
+      else setMsg({ ok: false, text: data.error ?? t.error })
+    } catch { setMsg({ ok: false, text: t.networkErr }) }
     setAdding(false)
   }
 
@@ -739,15 +751,15 @@ function WarehousesCard() {
           <Building2 className="w-4 h-4" style={{ color: '#63b3ed' }} />
         </div>
         <div className="flex-1">
-          <p className="text-[var(--text-base)] font-semibold text-sm">Omborlar</p>
-          <p className="text-[var(--text-muted)] text-xs">Bir xil tovarlarni sotuvchi do&apos;konlarni birlashtiring</p>
+          <p className="text-[var(--text-base)] font-semibold text-sm">{t.warehouses}</p>
+          <p className="text-[var(--text-muted)] text-xs">{t.warehousesSub}</p>
         </div>
         <button
           onClick={() => setShowAdd(v => !v)}
           className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
           style={{ background: 'rgba(99,179,237,0.12)', color: '#63b3ed', border: '1px solid rgba(99,179,237,0.2)' }}
         >
-          <Plus className="w-3.5 h-3.5" /> Yangi ombor
+          <Plus className="w-3.5 h-3.5" /> {t.newWarehouse}
         </button>
       </div>
 
@@ -862,13 +874,14 @@ interface Props {
 }
 
 export default function SettingsForm({ uzumShop, yandexShop, wbShop, shopCounts, userId, telegramChatId, telegramUsername }: Props) {
+  const { lang } = useLang()
+  const t = translations[lang].dashboard.settingsPage
   const mpCards = [
     { shop: uzumShop, mp: 'uzum', Component: UzumCard },
     { shop: yandexShop, mp: 'yandex_market', Component: YandexCard },
     { shop: wbShop, mp: 'wildberries', Component: WildberriesCard },
   ]
   const connected = mpCards.filter(c => c.shop?.api_key_encrypted)
-  const notConnected = mpCards.filter(c => !c.shop?.api_key_encrypted)
 
   return (
     <div className="space-y-6">
@@ -880,8 +893,8 @@ export default function SettingsForm({ uzumShop, yandexShop, wbShop, shopCounts,
             return (
               <div key={mp} className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl px-4 py-3">
                 <p className="text-xs font-semibold mb-1" style={{ color: 'var(--c1)' }}>{labels[mp]}</p>
-                <p className="text-lg font-bold text-[var(--text-base)]">{c?.products ?? 0} <span className="text-xs font-normal text-[var(--text-muted)]">mahsulot</span></p>
-                <p className="text-xs text-[var(--text-muted)]">{c?.orders ?? 0} buyurtma</p>
+                <p className="text-lg font-bold text-[var(--text-base)]">{c?.products ?? 0} <span className="text-xs font-normal text-[var(--text-muted)]">{t.products}</span></p>
+                <p className="text-xs text-[var(--text-muted)]">{c?.orders ?? 0} {t.orders}</p>
               </div>
             )
           })}
@@ -903,6 +916,8 @@ export default function SettingsForm({ uzumShop, yandexShop, wbShop, shopCounts,
 
 function TelegramCard({ chatId, username }: { chatId: string | null; username: string | null }) {
   const router  = useRouter()
+  const { lang } = useLang()
+  const t = translations[lang].dashboard.settingsPage
   const [link,    setLink]    = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [msg,     setMsg]     = useState<{ ok: boolean; text: string } | null>(null)
@@ -930,9 +945,9 @@ function TelegramCard({ chatId, username }: { chatId: string | null; username: s
       const res  = await fetch('/api/telegram/link', { method: 'POST' })
       const data = await res.json()
       if (data.url) setLink(data.url)
-      else setMsg({ ok: false, text: data.error ?? 'Xato' })
+      else setMsg({ ok: false, text: data.error ?? t.error })
     } catch {
-      setMsg({ ok: false, text: "Tarmoq xatosi" })
+      setMsg({ ok: false, text: t.networkErr })
     }
     setLoading(false)
   }
@@ -942,9 +957,9 @@ function TelegramCard({ chatId, username }: { chatId: string | null; username: s
     try {
       const res = await fetch('/api/telegram/disconnect', { method: 'POST' })
       if (res.ok) { setLink(null); router.refresh() }
-      else setMsg({ ok: false, text: 'Xato' })
+      else setMsg({ ok: false, text: t.error })
     } catch {
-      setMsg({ ok: false, text: "Tarmoq xatosi" })
+      setMsg({ ok: false, text: t.networkErr })
     }
     setLoading(false)
   }
@@ -957,10 +972,10 @@ function TelegramCard({ chatId, username }: { chatId: string | null; username: s
       const res  = await fetch('/api/telegram/test', { method: 'POST' })
       const data = await res.json().catch(() => null)
       setMsg(res.ok && data?.ok
-        ? { ok: true, text: 'Test bildirishnoma yuborildi — Telegramni tekshiring ✅' }
-        : { ok: false, text: data?.error === 'telegram_not_linked' ? 'Telegram ulanmagan' : 'Yuborib bo\'lmadi' })
+        ? { ok: true, text: t.testSent }
+        : { ok: false, text: data?.error === 'telegram_not_linked' ? t.notConnected : t.error })
     } catch {
-      setMsg({ ok: false, text: "Tarmoq xatosi" })
+      setMsg({ ok: false, text: t.networkErr })
     }
     setLoading(false)
   }
@@ -972,16 +987,16 @@ function TelegramCard({ chatId, username }: { chatId: string | null; username: s
           <Send className="w-4 h-4 text-sky-400" />
         </div>
         <div className="flex-1">
-          <p className="text-[var(--text-base)] font-semibold text-sm">Telegram</p>
+          <p className="text-[var(--text-base)] font-semibold text-sm">{t.telegram}</p>
           <p className="text-[var(--text-muted)] text-xs">
             {connected
-              ? `Ulangan${username ? ': @' + username : ''}`
-              : "Ogohlantirishlar va kunlik hisobotlarni Telegram orqali oling"}
+              ? `${t.connected}${username ? ': @' + username : ''}`
+              : t.telegramSub}
           </p>
         </div>
         {connected && (
           <span className="text-[10px] font-semibold px-2 py-1 rounded-full border" style={{ background: 'var(--badge-ok-bg)', borderColor: 'var(--badge-ok-bdr)', color: 'var(--badge-ok-text)' }}>
-            Ulangan ✓
+            {t.connected} ✓
           </span>
         )}
       </div>
@@ -995,7 +1010,7 @@ function TelegramCard({ chatId, username }: { chatId: string | null; username: s
               className="inline-flex items-center gap-2 btn-primary text-sm font-semibold px-4 py-2.5 rounded-xl disabled:opacity-60"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-              Test bildirishnoma yuborish
+              {t.sendTest}
             </button>
             <button
               onClick={handleDisconnect}
@@ -1003,15 +1018,12 @@ function TelegramCard({ chatId, username }: { chatId: string | null; username: s
               className="inline-flex items-center gap-2 text-sm font-medium px-4 py-2.5 rounded-xl border border-[var(--border2)] text-[var(--text-muted)] hover:text-red-400 hover:border-red-500/40 transition-all disabled:opacity-60"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}
-              Telegram uzish
+              {t.telegramUnlink}
             </button>
           </div>
           </>
         ) : link ? (
           <div className="space-y-3">
-            <p className="text-[var(--text-muted)] text-xs">
-              Quyidagi tugmani bosing — bot ochiladi va hisob avtomatik ulanadi:
-            </p>
             <a
               href={link}
               target="_blank"
@@ -1019,12 +1031,8 @@ function TelegramCard({ chatId, username }: { chatId: string | null; username: s
               className="inline-flex items-center gap-2 text-sm font-semibold px-4 py-2.5 rounded-xl text-white transition-all"
               style={{ background: 'linear-gradient(135deg, #29b6f6, #0288d1)' }}
             >
-              <Send className="w-4 h-4" /> Telegram botini ochish →
+              <Send className="w-4 h-4" /> {t.telegramLink} →
             </a>
-            <p className="text-[var(--text-muted)] text-xs">Havola 10 daqiqa amal qiladi. Bog&apos;langandan so&apos;ng sahifani yangilang.</p>
-            <button onClick={() => router.refresh()} className="text-xs underline" style={{ color: 'var(--c1)' }}>
-              Sahifani yangilash
-            </button>
           </div>
         ) : (
           <button
@@ -1033,7 +1041,7 @@ function TelegramCard({ chatId, username }: { chatId: string | null; username: s
             className="inline-flex items-center gap-2 btn-primary text-sm font-semibold px-4 py-2.5 rounded-xl disabled:opacity-60"
           >
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <LinkIcon className="w-4 h-4" />}
-            Telegram ulash
+            {t.telegramLink}
           </button>
         )}
         <StatusMsg msg={msg} />
