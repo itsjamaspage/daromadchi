@@ -391,7 +391,9 @@ export async function fetchYandexStocks(
   pageToken?: string,
 ): Promise<YandexStocksResponse> {
   return withRetry(async () => {
-    const params = new URLSearchParams({ limit: '500' })
+    // Yandex caps this endpoint at 200 items per page; higher values return
+    // 400 "Parameter limit must be less than or equal to 200".
+    const params = new URLSearchParams({ limit: '200' })
     if (pageToken) params.set('page_token', pageToken)
     const url = `/v2/campaigns/${campaignId}/offers/stocks?${params}`
     // Yandex's endpoint has accepted different body shapes across versions.
@@ -399,9 +401,9 @@ export async function fetchYandexStocks(
     // fall back to an empty body (returns all offers/warehouses), then to
     // the legacy `skus` shape as a last resort. First 2xx wins.
     const attempts = [
-      { offerIds: skus.slice(0, 500), withTurnover: false, archived: false },
+      { offerIds: skus.slice(0, 200), withTurnover: false, archived: false },
       {},
-      { skus: skus.slice(0, 500) },
+      { skus: skus.slice(0, 200) },
     ]
     let lastErr: unknown = null
     for (const body of attempts) {
@@ -429,7 +431,9 @@ export async function fetchYandexSkuStats(
   pageToken?: string,
 ): Promise<YandexSkuStatsResponse> {
   return withRetry(() => {
-    const params = new URLSearchParams({ limit: '500' })
+    // Yandex caps this endpoint at 200 items per page; higher values return
+    // 400 "Parameter limit must be less than or equal to 200".
+    const params = new URLSearchParams({ limit: '200' })
     if (pageToken) params.set('page_token', pageToken)
     return request<YandexSkuStatsResponse>(
       `/v2/campaigns/${campaignId}/stats/skus?${params}`,
@@ -529,8 +533,8 @@ export async function fetchAllYandexStocks(
 ): Promise<{ stockMap: Map<string, number>; lastError: string | null }> {
   const stockMap = new Map<string, number>()
   let lastError: string | null = null
-  for (let i = 0; i < skus.length; i += 500) {
-    const batch = skus.slice(i, i + 500)
+  for (let i = 0; i < skus.length; i += 200) {
+    const batch = skus.slice(i, i + 200)
     try {
       let pageToken: string | undefined
       do {
