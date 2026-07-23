@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { revalidateTag } from 'next/cache'
 import { eq, and } from 'drizzle-orm'
 import { getCurrentUser } from '@/lib/auth/session'
 import { db, shops } from '@/lib/db'
@@ -41,6 +42,12 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     const token  = decrypt(shop.api_key_encrypted)
     const result = await syncFromYandex(shop.id, token, shop.shop_id_external, fromDate)
     if (!result.ok) logger.warn('yandex_sync_error', { shopId: shop.id, error: result.error })
+    // Invalidate cached product/order pages so the Products page shows the
+    // fresh stock/price we just wrote instead of stale unstable_cache data.
+    if (result.ok) {
+      revalidateTag('product-data', { expire: 0 })
+      revalidateTag('order-data', { expire: 0 })
+    }
     return NextResponse.json(result, { status: result.ok ? 200 : 500 })
   } catch (err) {
     logger.error('yandex_sync_unhandled', { shopId: shop.id, error: String(err) })

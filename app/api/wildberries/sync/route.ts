@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { revalidateTag } from 'next/cache'
 import { eq, and } from 'drizzle-orm'
 import { getCurrentUser } from '@/lib/auth/session'
 import { db, shops } from '@/lib/db'
@@ -34,6 +35,10 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   try {
     const result = await syncFromWildberries(null, shop.id, decrypt(shop.api_key_encrypted), fromDate)
     if (!result.ok) logger.warn('wb_sync_error', { shopId: shop.id, errors: result.errors })
+    if (result.ok) {
+      revalidateTag('product-data', { expire: 0 })
+      revalidateTag('order-data', { expire: 0 })
+    }
     return NextResponse.json(result)
   } catch (err) {
     logger.error('wb_sync_unhandled', { shopId: shop.id, error: String(err) })

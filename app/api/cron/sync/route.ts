@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { revalidateTag } from 'next/cache'
 import { eq, and, isNotNull } from 'drizzle-orm'
 import { db, shops, users, userSettings } from '@/lib/db'
 import { syncFromUzum } from '@/lib/uzum/sync'
@@ -160,6 +161,13 @@ export const GET = withErrorHandler(async (req: Request) => {
         await sendTelegramMessage(s.telegram_chat_id, msg)
       } catch { /* best-effort */ }
     }
+  }
+
+  // Invalidate cached product/order pages if anything actually synced, so
+  // dashboards show fresh numbers on the next request.
+  if (results.some(r => r.ok)) {
+    revalidateTag('product-data', { expire: 0 })
+    revalidateTag('order-data', { expire: 0 })
   }
 
   return NextResponse.json({ ok: true, synced: results.length, skipped: skippedCount, results })

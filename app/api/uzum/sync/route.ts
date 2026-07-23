@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { revalidateTag } from 'next/cache'
 import { eq, and } from 'drizzle-orm'
 import { syncFromUzum } from '@/lib/uzum/sync'
 import { getCurrentUser } from '@/lib/auth/session'
@@ -33,6 +34,10 @@ export const POST = withErrorHandler(async () => {
     const token = decrypt(shop.api_key_encrypted)
     const result = await syncFromUzum(shop.id, token)
     if (!result.ok) logger.warn('uzum_sync_error', { shopId: shop.id, error: result.error })
+    if (result.ok) {
+      revalidateTag('product-data', { expire: 0 })
+      revalidateTag('order-data', { expire: 0 })
+    }
     return NextResponse.json(result, { status: result.ok ? 200 : 500 })
   } catch (err) {
     logger.error('uzum_sync_unhandled', { shopId: shop.id, error: String(err) })
