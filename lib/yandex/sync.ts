@@ -161,12 +161,22 @@ export async function syncFromYandex(
           ?? (campaignOfferStocks && marketSku ? campaignOfferStocks.get(marketSku) : undefined)
           ?? inlineStock
           ?? null
+        // Category can live under several fields depending on API version:
+        // offer.category / categoryName / marketCategoryName, or on the
+        // mapping side under marketCategoryName / categoryName. Pick the
+        // first non-empty one.
+        const category = e.offer.category?.trim()
+          || e.offer.categoryName?.trim()
+          || e.offer.marketCategoryName?.trim()
+          || e.mapping?.marketCategoryName?.trim()
+          || e.mapping?.categoryName?.trim()
+          || null
         return {
           shop_id: shopId,
           marketplace_product_id: String(marketSku || shopSku || ''),
           title: e.offer.name,
           sku: shopSku || marketSku,
-          category: e.offer.category ?? null,
+          category,
           selling_price: inlinePrice ?? lookupPrice ?? null,
           cost_price: null,
           stock_quantity: stock,
@@ -204,8 +214,8 @@ export async function syncFromYandex(
               marketplace_product_id: r.marketplace_product_id,
               title: r.title,
               sku: r.sku,
-              category: r.category,
             }
+            if (r.category != null) patch.category = r.category
             if (r.selling_price != null) patch.selling_price = String(r.selling_price)
             if (r.stock_quantity != null) patch.stock_quantity = r.stock_quantity
             await db.update(products).set(patch).where(eq(products.id, r.id))

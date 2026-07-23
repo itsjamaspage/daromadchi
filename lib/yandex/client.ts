@@ -100,7 +100,10 @@ export interface YandexOffer {
   shopSku?: string
   offerId?: string
   name: string
-  category: string
+  // Category may arrive under several field names depending on API version.
+  category?: string
+  categoryName?: string
+  marketCategoryName?: string
   vendor?: string
   // Prices can arrive under several field names across Yandex API versions.
   price?: { value: number; discountBase?: number }
@@ -116,7 +119,14 @@ export interface YandexOffer {
 
 export interface YandexOfferMappingEntry {
   offer: YandexOffer
-  mapping?: { marketSku: number; marketSkuName: string; categoryId: number }
+  mapping?: {
+    marketSku: number
+    marketSkuName?: string
+    marketCategoryName?: string
+    marketModelName?: string
+    categoryId?: number
+    categoryName?: string
+  }
 }
 
 export interface YandexOffersResponse {
