@@ -74,6 +74,11 @@ function yandexSyncText(data: {
     if ('campaignInfo' in d)  parts.push(`campaignInfo=${d.campaignInfo}`)
     if ('stats' in d)         parts.push(`statsErr=${d.stats}`)
     if (parts.length > 0) text += `\nAPI: ${parts.join(', ')}`
+    // Raw first offer — shown only when price extraction fell short, so we
+    // can see which field names Yandex is actually using for this shop.
+    if (d.firstOfferRaw && Number(d.entriesWithPrice ?? 0) < Number(d.offerMappings ?? 0)) {
+      text += `\nOffer namuna: ${d.firstOfferRaw}`
+    }
   }
   return { ok: !!data.ok, text }
 }

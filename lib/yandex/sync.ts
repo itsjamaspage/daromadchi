@@ -66,22 +66,51 @@ export async function syncFromYandex(
     try {
       const entries = await fetchAllYandexProducts(token, campaignId, businessId)
       debug.offerMappings = entries.length
+
+      // Parse a price from any of the several field shapes YM returns.
+      // Values can be number or string; treat 0 as "no price known".
+      const num = (v: unknown): number | null => {
+        if (v == null) return null
+        const n = typeof v === 'number' ? v : Number(v)
+        return Number.isFinite(n) && n > 0 ? n : null
+      }
+      function priceOf(o: typeof entries[0]['offer']): number | null {
+        return num(o.basicPrice?.value)
+          ?? num(o.cardPrice?.value)
+          ?? num(o.price?.value)
+          ?? num(o.purchasePrice?.value)
+      }
+      // shopSku is the canonical seller article; newer responses put it in
+      // `offerId` instead — accept either.
+      function skuOf(o: typeof entries[0]['offer']): string {
+        return (o.shopSku && o.shopSku.trim()) || (o.offerId && o.offerId.trim()) || ''
+      }
+
       let entriesWithPrice = 0
       let entriesWithShopSku = 0
       for (const e of entries) {
-        if (e.offer.shopSku && e.mapping?.marketSku) {
-          shopSkuToMarketSku.set(e.offer.shopSku, String(e.mapping.marketSku))
+        const sku = skuOf(e.offer)
+        if (sku && e.mapping?.marketSku) {
+          shopSkuToMarketSku.set(sku, String(e.mapping.marketSku))
         }
-        if (e.offer.shopSku) entriesWithShopSku++
-        if (e.offer.basicPrice?.value != null || e.offer.price?.value != null) entriesWithPrice++
+        if (sku) entriesWithShopSku++
+        if (priceOf(e.offer) != null) entriesWithPrice++
       }
       debug.entriesWithShopSku = entriesWithShopSku
       debug.entriesWithPrice = entriesWithPrice
 
+      // Diagnostic: raw first offer so we can see the exact field shape when
+      // price/shopSku still come out empty (values > 500 chars are truncated).
+      if (entries.length > 0) {
+        try {
+          debug.firstOfferRaw = JSON.stringify(entries[0]).slice(0, 500)
+        } catch { /* ignore */ }
+      }
+
       // Stocks lookup: index by shopSku AND by marketSku so we can find stock
       // even when offer-mappings returns an empty shopSku.
       const allSkus = entries.flatMap(e => [
-        e.offer.shopSku,
+        skuOf(e.offer),
         e.mapping?.marketSku ? String(e.mapping.marketSku) : '',
       ]).filter(Boolean)
       const stockMap = await fetchAllYandexStocks(token, campaignId, allSkus)
@@ -93,9 +122,9 @@ export async function syncFromYandex(
       debug.priceEntries = priceMap.size
 
       productRows = entries.map(e => {
-        const shopSku = e.offer.shopSku
+        const shopSku = skuOf(e.offer)
         const marketSku = e.mapping?.marketSku ? String(e.mapping.marketSku) : ''
-        const inlinePrice = e.offer.basicPrice?.value ?? e.offer.price?.value ?? null
+        const inlinePrice = priceOf(e.offer)
         const lookupPrice = shopSku
           ? priceMap.get(shopSku) ?? (marketSku ? priceMap.get(marketSku) : null)
           : (marketSku ? priceMap.get(marketSku) : null)

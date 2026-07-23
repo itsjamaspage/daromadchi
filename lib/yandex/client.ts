@@ -95,13 +95,18 @@ export interface YandexOrdersResponse {
 }
 
 export interface YandexOffer {
-  shopSku: string
+  // Yandex renamed shopSku → offerId on newer offer-mappings responses.
+  // Both may be present or empty depending on which endpoint answered.
+  shopSku?: string
+  offerId?: string
   name: string
   category: string
   vendor?: string
-  // Yandex renamed price → basicPrice on offer-mappings; keep both for compat.
+  // Prices can arrive under several field names across Yandex API versions.
   price?: { value: number; discountBase?: number }
-  basicPrice?: { value: number; currencyId?: string; discountBase?: number }
+  basicPrice?: { value: number | string; currencyId?: string; discountBase?: number }
+  purchasePrice?: { value: number | string; currencyId?: string }
+  cardPrice?: { value: number | string; currencyId?: string }
   marketSku?: number
 }
 
