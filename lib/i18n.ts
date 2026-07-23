@@ -105,6 +105,8 @@ export const translations = {
         uzumShopName:   "Uzum do'konim",
         yandexShopName: "Yandex Market do'konim",
         wbShopName:     "Wildberries do'konim",
+        campaignIdHint: "URL manzilidan raqamli ID (masalan 149137909) — email emas",
+        campaignIdInvalid: "Campaign ID faqat raqamlardan iborat bo'lishi kerak. Yandex Partner sahifasidagi URL manzilidan oling: campaignId=<raqam>",
       },
       // Dashboard main page
       yourData: "Sizning ma'lumotingiz",
@@ -941,6 +943,8 @@ export const translations = {
         uzumShopName:   'My Uzum shop',
         yandexShopName: 'My Yandex Market shop',
         wbShopName:     'My Wildberries shop',
+        campaignIdHint: 'Numeric ID from the URL (e.g. 149137909) — not your email',
+        campaignIdInvalid: 'Campaign ID must be numeric. Copy it from the URL on your Yandex Partner page: campaignId=<number>',
       },
       // Dashboard main page
       yourData: 'Your data',
@@ -1777,6 +1781,8 @@ export const translations = {
         uzumShopName:   'Мой магазин Uzum',
         yandexShopName: 'Мой магазин Yandex Market',
         wbShopName:     'Мой магазин Wildberries',
+        campaignIdHint: 'Числовой ID из URL (например 149137909) — не email',
+        campaignIdInvalid: 'Campaign ID должен быть числом. Скопируйте из URL страницы Yandex Partner: campaignId=<число>',
       },
       // Dashboard main page
       yourData: 'Ваши данные',

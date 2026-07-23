@@ -101,10 +101,13 @@ export async function syncFromYandex(
       debug.entriesWithPrice = entriesWithPrice
 
       // Diagnostic: raw first offer so we can see the exact field shape when
-      // price/shopSku still come out empty (values > 500 chars are truncated).
+      // price/shopSku still come out empty. Strip the pictures array (huge
+      // and irrelevant to price/stock diagnosis) before truncating.
       if (entries.length > 0) {
         try {
-          debug.firstOfferRaw = JSON.stringify(entries[0]).slice(0, 500)
+          const trimmed = JSON.parse(JSON.stringify(entries[0])) as { offer?: { pictures?: unknown }; mapping?: unknown }
+          if (trimmed.offer?.pictures) delete trimmed.offer.pictures
+          debug.firstOfferRaw = JSON.stringify(trimmed).slice(0, 1500)
         } catch { /* ignore */ }
       }
 
@@ -136,10 +139,19 @@ export async function syncFromYandex(
         const lookupPrice = shopSku
           ? priceMap.get(shopSku) ?? (marketSku ? priceMap.get(marketSku) : null)
           : (marketSku ? priceMap.get(marketSku) : null)
+        // Stock priority: FBS warehouses endpoint → campaign offers endpoint →
+        // inline offer.stocks (FIT/AVAILABLE totalled across warehouses) → 0.
+        let inlineStock: number | undefined
+        if (Array.isArray(e.offer.stocks) && e.offer.stocks.length > 0) {
+          inlineStock = e.offer.stocks
+            .filter(s => !s?.type || s.type === 'FIT' || s.type === 'AVAILABLE')
+            .reduce((sum, s) => sum + (s?.count ?? 0), 0)
+        }
         const stock = (shopSku ? stockMap.get(shopSku) : undefined)
           ?? (marketSku ? stockMap.get(marketSku) : undefined)
           ?? (campaignOfferStocks && shopSku ? campaignOfferStocks.get(shopSku) : undefined)
           ?? (campaignOfferStocks && marketSku ? campaignOfferStocks.get(marketSku) : undefined)
+          ?? inlineStock
           ?? 0
         return {
           shop_id: shopId,

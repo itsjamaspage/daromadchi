@@ -108,6 +108,10 @@ export interface YandexOffer {
   purchasePrice?: { value: number | string; currencyId?: string }
   cardPrice?: { value: number | string; currencyId?: string }
   marketSku?: number
+  // Stock can appear inline on some offer-mappings responses (FBS sellers).
+  stocks?: { type?: string; count?: number; warehouseId?: number }[]
+  available?: boolean
+  campaigns?: { campaignId?: number; status?: string; categoryId?: number }[]
 }
 
 export interface YandexOfferMappingEntry {

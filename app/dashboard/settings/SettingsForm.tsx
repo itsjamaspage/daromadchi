@@ -341,6 +341,13 @@ function YandexCard({ shop }: { shop: Shop | null; userId: string }) {
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
     if (!apiKey.trim() && !campaignId.trim()) return
+    // Yandex Campaign ID must be numeric — reject emails / URLs / anything else
+    // early so the sync doesn't fail with a "400 Incorrect campaignId" later.
+    const trimmedCampaign = campaignId.trim()
+    if (trimmedCampaign && !/^\d+$/.test(trimmedCampaign)) {
+      setSaveMsg({ ok: false, text: t.campaignIdInvalid })
+      return
+    }
     setSaving(true); setSaveMsg(null)
     try {
       const res  = await fetch('/api/shops/token', {
@@ -349,7 +356,7 @@ function YandexCard({ shop }: { shop: Shop | null; userId: string }) {
         body: JSON.stringify({
           marketplace: 'yandex_market',
           token: apiKey.trim() || undefined,
-          campaignId: campaignId.trim() || undefined,
+          campaignId: trimmedCampaign || undefined,
           shopName: t.yandexShopName,
         }),
       })
@@ -423,7 +430,7 @@ function YandexCard({ shop }: { shop: Shop | null; userId: string }) {
           <p className="text-[var(--text-muted)] text-xs">partner.market.yandex.ru</p>
         </div>
         <span className={`ml-auto text-[10px] font-semibold px-2 py-1 rounded-full border ${connected ? 'bg-[var(--badge-ok-bg)] border-[var(--badge-ok-bdr)] text-[var(--badge-ok-text)]' : 'bg-slate-500/10 border-[var(--border)] text-[var(--text-muted)]'}`}>
-          {connected ? 'Ulangan' : 'Ulanmagan'}
+          {connected ? t.connected : t.notConnected}
         </span>
       </div>
 
@@ -451,15 +458,11 @@ function YandexCard({ shop }: { shop: Shop | null; userId: string }) {
             value={campaignId}
             onChange={e => setCampaignId(e.target.value)}
             placeholder={t.campaignPlaceholder}
+            inputMode="numeric"
+            pattern="[0-9]*"
             className="w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-amber-500/40 transition-all font-mono"
           />
-          <p className="text-[var(--text-muted)] text-xs mt-1.5 flex items-center gap-1">
-            <a href="https://partner.market.yandex.ru" target="_blank" rel="noopener noreferrer"
-              className="flex items-center gap-0.5" style={{ color: 'var(--c1)' }}>
-              partner.market.yandex.ru <ExternalLink className="w-3 h-3" />
-            </a>
-            → Nastroyki → API → Sozdat&apos; token
-          </p>
+          <p className="text-[var(--text-muted)] text-xs mt-1.5">{t.campaignIdHint}</p>
         </div>
 
         <StatusMsg msg={saveMsg} />
