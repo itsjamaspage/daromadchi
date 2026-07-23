@@ -129,16 +129,31 @@ export interface YandexOffersResponse {
   }
 }
 
-// Warehouse stocks response (FBS sellers)
+// Warehouse stocks response (FBS sellers). Yandex has two response shapes
+// depending on API version: `result.skus[]` (older) and `result.warehouses[]`
+// nested with per-warehouse offers (newer). We accept either.
 export interface YandexWarehouseStock {
-  sku: string
-  warehouseStocks: { type: 'FIT' | 'DEFECT' | 'EXPIRED' | string; count: number }[]
+  sku?: string
+  offerId?: string
+  warehouseStocks?: { type?: string; count?: number }[]
+  stocks?: { type?: string; count?: number }[]
+}
+
+export interface YandexWarehouseWithOffers {
+  warehouseId?: number
+  offers?: {
+    offerId?: string
+    stocks?: { type?: string; count?: number }[]
+    turnoverSummary?: unknown
+  }[]
 }
 
 export interface YandexStocksResponse {
   result: {
-    skus: YandexWarehouseStock[]
+    skus?: YandexWarehouseStock[]
+    warehouses?: YandexWarehouseWithOffers[]
     nextPageToken?: string
+    paging?: { nextPageToken?: string }
   }
 }
 
@@ -375,25 +390,32 @@ export async function fetchYandexStocks(
   skus: string[],
   pageToken?: string,
 ): Promise<YandexStocksResponse> {
-  return withRetry(() => {
+  return withRetry(async () => {
     const params = new URLSearchParams({ limit: '500' })
     if (pageToken) params.set('page_token', pageToken)
-    // Yandex expects the offer identifiers under `offerIds` (with the
-    // withTurnover/archived flags), not `skus`. Sending {skus:[...]} was
-    // returning HTTP 400 Bad Request. `offerIds:[]` requests stock for all
-    // offers on the campaign.
-    return request<YandexStocksResponse>(
-      `/v2/campaigns/${campaignId}/offers/stocks?${params}`,
-      token,
-      {
-        method: 'POST',
-        body: JSON.stringify({
-          offerIds: skus.slice(0, 500),
-          withTurnover: false,
-          archived: false,
-        }),
-      },
-    )
+    const url = `/v2/campaigns/${campaignId}/offers/stocks?${params}`
+    // Yandex's endpoint has accepted different body shapes across versions.
+    // Try current spec first (`offerIds` list). If that returns 400/422,
+    // fall back to an empty body (returns all offers/warehouses), then to
+    // the legacy `skus` shape as a last resort. First 2xx wins.
+    const attempts = [
+      { offerIds: skus.slice(0, 500), withTurnover: false, archived: false },
+      {},
+      { skus: skus.slice(0, 500) },
+    ]
+    let lastErr: unknown = null
+    for (const body of attempts) {
+      try {
+        return await request<YandexStocksResponse>(url, token, {
+          method: 'POST',
+          body: JSON.stringify(body),
+        })
+      } catch (e) {
+        lastErr = e
+        if (!(e instanceof YandexApiError && (e.status === 400 || e.status === 422))) throw e
+      }
+    }
+    throw lastErr
   })
 }
 
@@ -513,11 +535,30 @@ export async function fetchAllYandexStocks(
       let pageToken: string | undefined
       do {
         const res = await fetchYandexStocks(token, campaignId, batch, pageToken)
-        for (const item of res.result.skus) {
-          const fit = item.warehouseStocks.find(s => s.type === 'FIT')
-          stockMap.set(item.sku, (stockMap.get(item.sku) ?? 0) + (fit?.count ?? 0))
+        const inc = (key: string, qty: number) => {
+          if (!key || !Number.isFinite(qty) || qty === 0) return
+          stockMap.set(key, (stockMap.get(key) ?? 0) + qty)
         }
-        pageToken = res.result.nextPageToken
+        // Older response shape: result.skus[]
+        for (const item of res.result.skus ?? []) {
+          const key = item.sku ?? item.offerId ?? ''
+          const stockList = item.warehouseStocks ?? item.stocks ?? []
+          const fitTotal = stockList
+            .filter(s => !s?.type || s.type === 'FIT' || s.type === 'AVAILABLE')
+            .reduce((sum, s) => sum + (s?.count ?? 0), 0)
+          inc(key, fitTotal)
+        }
+        // Newer response shape: result.warehouses[].offers[]
+        for (const w of res.result.warehouses ?? []) {
+          for (const off of w.offers ?? []) {
+            const key = off.offerId ?? ''
+            const fitTotal = (off.stocks ?? [])
+              .filter(s => !s?.type || s.type === 'FIT' || s.type === 'AVAILABLE')
+              .reduce((sum, s) => sum + (s?.count ?? 0), 0)
+            inc(key, fitTotal)
+          }
+        }
+        pageToken = res.result.nextPageToken ?? res.result.paging?.nextPageToken
       } while (pageToken)
     } catch (e) {
       // Preserve the last error so the sync can surface it as `stocksErr=403`
