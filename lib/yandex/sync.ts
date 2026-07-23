@@ -5,6 +5,7 @@ import {
   fetchAllYandexProducts,
   fetchAllYandexStocks,
   fetchAllYandexSkuStats,
+  fetchAllYandexOfferPrices,
   fetchCampaignInfo,
   YandexApiError,
 } from './client'
@@ -29,6 +30,10 @@ export interface YandexSyncResult {
   campaignsUpserted: number
   error?: string
   details?: string
+  // Structured diagnostic dump — surfaced in the sync toast so users can see
+  // which endpoints returned data and which were empty (e.g. offer-mappings
+  // returning offers with no basicPrice / no shopSku).
+  debug?: Record<string, string | number>
 }
 
 export async function syncFromYandex(
@@ -38,6 +43,7 @@ export async function syncFromYandex(
   fromDateOverride?: Date,
 ): Promise<YandexSyncResult> {
   const warnings: string[] = []
+  const debug: Record<string, string | number> = {}
   let ordersInserted = 0
   const newOrders: string[] = []
 
@@ -46,7 +52,10 @@ export async function syncFromYandex(
     try {
       const info = await fetchCampaignInfo(token, campaignId)
       if (info.businessId) businessId = info.businessId
-    } catch { /* best-effort */ }
+      debug.businessId = businessId ?? 0
+    } catch (e) {
+      debug.campaignInfo = e instanceof YandexApiError ? `${e.status}` : 'err'
+    }
 
     // ── Products (best-effort — don't fail the whole sync if endpoint 404s) ──
     const shopSkuToMarketSku = new Map<string, string>()
@@ -56,25 +65,54 @@ export async function syncFromYandex(
     }[] = []
     try {
       const entries = await fetchAllYandexProducts(token, campaignId, businessId)
+      debug.offerMappings = entries.length
+      let entriesWithPrice = 0
+      let entriesWithShopSku = 0
       for (const e of entries) {
         if (e.offer.shopSku && e.mapping?.marketSku) {
           shopSkuToMarketSku.set(e.offer.shopSku, String(e.mapping.marketSku))
         }
+        if (e.offer.shopSku) entriesWithShopSku++
+        if (e.offer.basicPrice?.value != null || e.offer.price?.value != null) entriesWithPrice++
       }
-      const allSkus = entries.map(e => e.offer.shopSku).filter(Boolean)
+      debug.entriesWithShopSku = entriesWithShopSku
+      debug.entriesWithPrice = entriesWithPrice
+
+      // Stocks lookup: index by shopSku AND by marketSku so we can find stock
+      // even when offer-mappings returns an empty shopSku.
+      const allSkus = entries.flatMap(e => [
+        e.offer.shopSku,
+        e.mapping?.marketSku ? String(e.mapping.marketSku) : '',
+      ]).filter(Boolean)
       const stockMap = await fetchAllYandexStocks(token, campaignId, allSkus)
-      productRows = entries.map(e => ({
-        shop_id: shopId,
-        marketplace_product_id: String(e.mapping?.marketSku ?? e.offer.shopSku ?? ''),
-        title: e.offer.name,
-        sku: e.offer.shopSku || String(e.mapping?.marketSku ?? ''),
-        category: e.offer.category ?? null,
-        // Yandex uses basicPrice on newer offer-mappings responses; fall back
-        // to legacy `price` for older campaigns.
-        selling_price: e.offer.basicPrice?.value ?? e.offer.price?.value ?? null,
-        cost_price: null,
-        stock_quantity: stockMap.get(e.offer.shopSku) ?? 0,
-      }))
+      debug.stockEntries = stockMap.size
+
+      // Prices fallback: dedicated offer-prices endpoint. Indexes by both
+      // shopSku (offerId) and marketSku so lookups work either way.
+      const priceMap = await fetchAllYandexOfferPrices(token, campaignId)
+      debug.priceEntries = priceMap.size
+
+      productRows = entries.map(e => {
+        const shopSku = e.offer.shopSku
+        const marketSku = e.mapping?.marketSku ? String(e.mapping.marketSku) : ''
+        const inlinePrice = e.offer.basicPrice?.value ?? e.offer.price?.value ?? null
+        const lookupPrice = shopSku
+          ? priceMap.get(shopSku) ?? (marketSku ? priceMap.get(marketSku) : null)
+          : (marketSku ? priceMap.get(marketSku) : null)
+        const stock = (shopSku ? stockMap.get(shopSku) : undefined)
+          ?? (marketSku ? stockMap.get(marketSku) : undefined)
+          ?? 0
+        return {
+          shop_id: shopId,
+          marketplace_product_id: String(marketSku || shopSku || ''),
+          title: e.offer.name,
+          sku: shopSku || marketSku,
+          category: e.offer.category ?? null,
+          selling_price: inlinePrice ?? lookupPrice ?? null,
+          cost_price: null,
+          stock_quantity: stock,
+        }
+      })
       if (productRows.length > 0) {
         const existingProds = await db.select({ id: products.id, marketplace_product_id: products.marketplace_product_id })
           .from(products).where(eq(products.shop_id, shopId))
@@ -112,11 +150,11 @@ export async function syncFromYandex(
         }
       }
     } catch (prodErr) {
-      warnings.push(
-        `Products: ${prodErr instanceof YandexApiError
-          ? `${prodErr.status} ${prodErr.body?.slice(0, 200) ?? prodErr.message}`
-          : String(prodErr)}`
-      )
+      const msg = prodErr instanceof YandexApiError
+        ? `${prodErr.status} ${prodErr.body?.slice(0, 200) ?? prodErr.message}`
+        : String(prodErr)
+      warnings.push(`Products: ${msg}`)
+      debug.productsErr = prodErr instanceof YandexApiError ? String(prodErr.status) : 'err'
     }
 
     // ── shopSku→marketSku bridge via SKU stats (fallback when product API omits shopSku) ──
@@ -131,12 +169,26 @@ export async function syncFromYandex(
             ninetyDaysAgo.toISOString().slice(0, 10),
             today.toISOString().slice(0, 10),
           )
+          debug.statsRows = stats.length
+          const marketSkuToShopSku = new Map<string, string>()
           for (const stat of stats) {
             if (stat.shopSku && stat.marketSku) {
               shopSkuToMarketSku.set(stat.shopSku, String(stat.marketSku))
+              marketSkuToShopSku.set(String(stat.marketSku), stat.shopSku)
             }
           }
-        } catch { /* best-effort */ }
+          // Repair rows whose SKU is a marketSku (numeric) by looking up the
+          // real shopSku from stats. This is the case when offer-mappings
+          // returned the offer without shopSku.
+          let repaired = 0
+          for (const r of productRows) {
+            const alt = marketSkuToShopSku.get(r.sku)
+            if (alt && alt !== r.sku) { r.sku = alt; repaired++ }
+          }
+          if (repaired > 0) debug.shopSkuRepaired = repaired
+        } catch (e) {
+          debug.stats = e instanceof YandexApiError ? `${e.status}` : 'err'
+        }
       }
     }
 
@@ -481,6 +533,7 @@ export async function syncFromYandex(
       }),
     ])
 
+    debug.orders = yandexOrders.length
     return {
       ok: true,
       ordersUpserted: newOrderRows.length,
@@ -489,6 +542,7 @@ export async function syncFromYandex(
       productsUpserted: productRows.length,
       campaignsUpserted,
       details: warnings.length ? warnings.join(' | ') : undefined,
+      debug,
     }
   } catch (err) {
     const msg =

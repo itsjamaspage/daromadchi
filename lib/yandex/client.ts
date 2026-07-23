@@ -250,6 +250,60 @@ export async function fetchYandexProducts(
   })
 }
 
+// Prices from the dedicated offer-prices endpoint — used as fallback when
+// offer-mappings doesn't include basicPrice for an offer. Read-only GET.
+export interface YandexOfferPrice {
+  offerId?: string          // shopSku
+  marketSku?: string
+  price?: { value: number; currencyId?: string; discountBase?: number }
+  updatedAt?: string
+}
+
+export interface YandexOfferPricesResponse {
+  result?: {
+    offers?: YandexOfferPrice[]
+    paging?: { nextPageToken?: string }
+    total?: number
+  }
+}
+
+export async function fetchYandexOfferPrices(
+  token: string,
+  campaignId: string,
+  pageToken?: string,
+): Promise<YandexOfferPricesResponse> {
+  return withRetry(() => {
+    const params = new URLSearchParams({ limit: '200' })
+    if (pageToken) params.set('page_token', pageToken)
+    return request<YandexOfferPricesResponse>(
+      `/v2/campaigns/${campaignId}/offer-prices?${params}`,
+      token,
+    )
+  })
+}
+
+export async function fetchAllYandexOfferPrices(
+  token: string,
+  campaignId: string,
+): Promise<Map<string, number>> {
+  const prices = new Map<string, number>()
+  try {
+    let pageToken: string | undefined
+    do {
+      const res = await fetchYandexOfferPrices(token, campaignId, pageToken)
+      for (const o of res.result?.offers ?? []) {
+        const key = o.offerId ?? (o.marketSku ? String(o.marketSku) : null)
+        const val = o.price?.value
+        if (key && typeof val === 'number' && val > 0) prices.set(key, val)
+        // Also index by marketSku so we can look up when only marketSku is known.
+        if (o.marketSku && typeof val === 'number' && val > 0) prices.set(String(o.marketSku), val)
+      }
+      pageToken = res.result?.paging?.nextPageToken
+    } while (pageToken)
+  } catch { /* best-effort */ }
+  return prices
+}
+
 // Fetch FBS warehouse stocks for given SKUs (batch up to 500 per request)
 export async function fetchYandexStocks(
   token: string,
