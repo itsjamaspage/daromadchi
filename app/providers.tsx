@@ -68,7 +68,13 @@ export default function Providers({ children, initialLang = 'uz' }: { children: 
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ lang: l }),
     }).catch(() => {})
-    router.refresh()
+    // Hard reload: router.refresh() only revalidates the current route's RSC,
+    // leaving the client-side RSC cache for OTHER routes stale — so navigating
+    // to Products/Stocks/etc. after switching language would still show the
+    // previous language until a hard refresh. window.location.reload() is
+    // heavy-handed but the only reliable way to flush every route's cache.
+    if (typeof window !== 'undefined') window.location.reload()
+    else router.refresh()
   }, [router])
 
   return (
