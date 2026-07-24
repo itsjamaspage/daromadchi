@@ -6,6 +6,7 @@ import { getProducts } from '@/lib/db/products'
 import { getProductSales } from '@/lib/db/products'
 import { getKpis } from '@/lib/db/kpis'
 import MarketplaceTabs from '@/components/dashboard/MarketplaceTabs'
+import EditableCostCell from '@/components/dashboard/EditableCostCell'
 import PeriodSelector from './PeriodSelector'
 import { getT } from '@/lib/server-i18n'
 import type { MarketplaceType } from '@/lib/types'
@@ -297,7 +298,9 @@ export default async function AnalyticsPage({ searchParams }: Props) {
                           <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{p.sku}</p>
                         </td>
                         <td className="px-4 py-3.5 text-right" style={{ color: 'var(--text-dim)' }}>{fmt(price)} so'm</td>
-                        <td className="px-4 py-3.5 text-right" style={{ color: 'var(--text-muted)' }}>{cost > 0 ? `${fmt(cost)} so'm` : '—'}</td>
+                        <td className="px-4 py-3.5 text-right">
+                          <EditableCostCell productId={p.id} initialCost={cost > 0 ? cost : null} />
+                        </td>
                         <td className="px-4 py-3.5 text-right">
                           <span className="font-semibold" style={{ color: profitColor }}>
                             {fmt(p.profit)} so'm

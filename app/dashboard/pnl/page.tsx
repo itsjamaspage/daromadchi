@@ -108,20 +108,32 @@ export default async function PnlPage({ searchParams }: Props) {
         </div>
       ) : (
         <>
-          {/* Summary — one text color everywhere */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {[
-              { label: d.totalRevenuePnl, value: fmt(totals.revenue) },
-              { label: d.commission2,     value: est(totals.commission, anyEstimated) },
-              { label: d.cogsLabel,       value: fmt(totals.cogs) },
-              { label: d.netNoCommission, value: fmt(totals.net) },
-            ].map(({ label, value }) => (
-              <div key={label} className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl p-5">
-                <p className="text-[var(--text-muted)] text-xs mb-2">{label}</p>
-                <p className="text-xl font-bold text-[var(--text-base)]">{value}</p>
+          {/* Summary — five cards. "Marketplace payout" mirrors what the
+              seller's marketplace balance page shows (revenue − commission −
+              delivery = what the marketplace will pay out). "Real profit"
+              subtracts the seller's own costs on top (COGS, acquiring, tax,
+              ads) — the true bottom line. Both are shown so users can
+              cross-check against Uzum/YM/WB's own dashboards without
+              confusing the two definitions. */}
+          {(() => {
+            const marketplacePayout = totals.revenue - totals.commission - totals.delivery
+            return (
+              <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+                {[
+                  { label: d.totalRevenuePnl,   value: fmt(totals.revenue),                     hint: null },
+                  { label: d.commission2,       value: est(totals.commission, anyEstimated),     hint: null },
+                  { label: d.marketplacePayout, value: est(marketplacePayout, anyEstimated),     hint: d.marketplacePayoutHint },
+                  { label: d.cogsLabel,         value: fmt(totals.cogs),                         hint: null },
+                  { label: d.netNoCommission,   value: fmt(totals.net),                          hint: null },
+                ].map(({ label, value, hint }) => (
+                  <div key={label} className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl p-5" title={hint ?? undefined}>
+                    <p className="text-[var(--text-muted)] text-xs mb-2">{label}</p>
+                    <p className="text-xl font-bold text-[var(--text-base)]">{value}</p>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            )
+          })()}
 
           {/* How the numbers are computed */}
           {anyEstimated && (
