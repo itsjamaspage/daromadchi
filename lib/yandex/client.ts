@@ -64,6 +64,9 @@ export interface YandexCampaign {
   id: number
   domain: string
   state: { status: string }
+  // Yandex reports the campaign's fulfillment model here. Values seen in
+  // practice: 'FBS', 'FBY', 'DBS', 'CLICK_AND_COLLECT', 'EXPRESS'.
+  placementType?: string
 }
 
 export interface YandexOrderItem {

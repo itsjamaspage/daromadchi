@@ -12,16 +12,15 @@ import type { MarketplaceType } from '@/lib/types'
  * READ-ONLY from the marketplaces; nothing is ever written back to a store.
  *
  * Two leftover modes per group:
- *  • api      — total leftover = MAX of marketplace-reported stocks. Same
- *               physical unit is listed on every marketplace as "N available",
- *               so summing double-counts for FBS sellers (dominant model here).
- *               Max is the honest "at least this many exist across all
- *               marketplaces" answer without inventing units that aren't there.
+ *  • api      — FBS/FBO-aware aggregation per member:
+ *                 FBO/FBY members → SUM (independent per-marketplace warehouses)
+ *                 FBS / unknown  → MAX (same physical pool on every marketplace)
+ *               Total leftover = FBO sum + FBS max. Handles mixed groups too
+ *               (e.g. SKU listed as FBS on Uzum and FBY on Yandex → both add).
  *  • baseline — the user entered how many units they physically own
  *               (total_physical_stock); leftover = that number minus exact
  *               units sold across ALL marketplaces since it was entered.
- *               Best for FBO sellers with independent per-marketplace stock,
- *               or anyone who wants exact tracking.
+ *               Use for exact tracking that ignores API stock numbers.
  */
 
 // Sold = every non-cancelled, non-returned order item. Returned units go back
@@ -36,6 +35,8 @@ export interface StockGroupMember {
   stock: number
   sold_total: number
   selling_price: number | null
+  // 'fbs' (seller ships) | 'fbo' / 'fby' (marketplace warehouse) | null (unknown)
+  fulfillment_type: string | null
 }
 
 export interface StockGroup {
@@ -94,6 +95,7 @@ export async function computeStockGroups(userId: string, shopIds: string[]): Pro
       title: products.title,
       selling_price: products.selling_price,
       stock_quantity: products.stock_quantity,
+      fulfillment_type: products.fulfillment_type,
     }).from(products).where(inArray(products.shop_id, shopIds)),
     db.select({ id: shops.id, marketplace: shops.marketplace })
       .from(shops).where(inArray(shops.id, shopIds)),
@@ -176,6 +178,7 @@ export async function computeStockGroups(userId: string, shopIds: string[]): Pro
       stock: p.stock_quantity,
       sold_total: soldByProduct.get(p.id) ?? 0,
       selling_price: p.selling_price ? Number(p.selling_price) : null,
+      fulfillment_type: p.fulfillment_type,
     }
     const list = groups.get(key)
     if (list) list.push(member)
@@ -248,13 +251,22 @@ export async function computeStockGroups(userId: string, shopIds: string[]): Pro
       sold14 += sold14ByProduct.get(m.product_id) ?? 0
     }
 
-    // Cross-marketplace physical stock is the MAX of per-marketplace stocks,
-    // not the SUM: for FBS sellers (the dominant model here) the same 1
-    // physical unit is listed on every marketplace as "1 available", so
-    // summing double-counts. Same-warehouse sellers pass through unchanged.
-    // FBO sellers who really have independent stock at each marketplace's
-    // warehouse should switch to baseline mode and enter their true count.
-    const totalStock = Math.max(0, ...Object.values(stockByMp))
+    // FBS/FBO-aware physical stock. Members are bucketed by fulfillment_type:
+    //   FBO/FBY → each marketplace holds independent inventory → SUM them.
+    //   FBS / unknown → same physical pool listed on every marketplace as
+    //     "N available" → take the MAX to avoid double-counting.
+    // Total leftover = FBO sum + FBS max. Unknown defaults to FBS because
+    // undercounting a real number is safer than inventing units that aren't
+    // there (which would let sellers oversell).
+    const fboMembers = members.filter(m =>
+      m.fulfillment_type === 'fbo' || m.fulfillment_type === 'fby')
+    const fbsMembers = members.filter(m =>
+      m.fulfillment_type !== 'fbo' && m.fulfillment_type !== 'fby')
+    const fboStock = fboMembers.reduce((sum, m) => sum + m.stock, 0)
+    const fbsStock = fbsMembers.length > 0
+      ? Math.max(0, ...fbsMembers.map(m => m.stock))
+      : 0
+    const totalStock = fboStock + fbsStock
 
     const hasBaseline = link?.total_physical_stock != null && link.baseline_at != null
     const sinceBaseline = soldSinceBaseline.get(key) ?? 0

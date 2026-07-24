@@ -294,10 +294,15 @@ function FragmentRow({ group: g, badge, isOpen, onToggle, onLink, d }: {
             <span className="text-[11px]" style={{ color: 'var(--text-muted)' }}>{g.members[0]?.sku ?? '—'}</span>
             {mps.map(mp => {
               const m = MP_META[mp]
+              // Show FBS/FBO/FBY next to the marketplace badge so the user
+              // can see how each listing is fulfilled — this drives whether
+              // stocks are summed (FBO/FBY) or shared (FBS) in the group.
+              const member = g.members.find(mem => mem.marketplace === mp)
+              const ft = member?.fulfillment_type?.toUpperCase()
               return (
-                <span key={mp} className="text-[10px] font-bold px-1.5 py-0.5 rounded"
+                <span key={mp} className="text-[10px] font-bold px-1.5 py-0.5 rounded inline-flex items-center gap-1"
                   style={{ background: m.bg, color: m.color }}>
-                  {m.label}
+                  {m.label}{ft ? <span className="opacity-70 font-medium">· {ft}</span> : null}
                 </span>
               )
             })}

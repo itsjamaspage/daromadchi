@@ -113,6 +113,9 @@ export const products = pgTable('products', {
   quantity_sold:          integer('quantity_sold'),
   category:               text('category'),
   marketplace_product_id: text('marketplace_product_id'),
+  // 'fbs' (seller ships) | 'fbo' (marketplace warehouse) | 'fby' (Yandex
+  // fulfillment) | null (unknown → treated as FBS by stock aggregation).
+  fulfillment_type:       text('fulfillment_type'),
   updated_at:             timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 }, (t) => [
   index('products_shop_id_idx').on(t.shop_id),

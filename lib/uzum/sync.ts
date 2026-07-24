@@ -246,6 +246,11 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
             cost_price: r.cost_price != null ? String(r.cost_price) : null,
             stock_quantity: r.stock_quantity,
             quantity_sold: r.quantity_sold,
+            // Uzbekistan's dominant model is FBS (seller ships from home).
+            // Uzum's product API doesn't expose per-SKU fulfillment reliably,
+            // so mark all Uzum products FBS by default. Users on FBO can
+            // switch to baseline mode for exact counts.
+            fulfillment_type: 'fbs',
           })))
         }
         if (toUpd.length > 0) {
@@ -258,6 +263,7 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
               stock_quantity: r.stock_quantity,
               quantity_sold: r.quantity_sold,
               marketplace_product_id: r.marketplace_product_id,
+              fulfillment_type: 'fbs',
             }).where(eq(products.id, r.id))
           }
         }

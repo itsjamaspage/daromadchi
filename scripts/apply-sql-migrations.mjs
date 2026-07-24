@@ -12,6 +12,7 @@ const MIGRATIONS = [
   'supabase/migrations/025_notif_new_orders_default_on.sql',
   'supabase/migrations/026_unit_econ_landed_cost.sql',
   'supabase/migrations/027_product_group_merges.sql',
+  'supabase/migrations/028_product_fulfillment_type.sql',
 ]
 
 function loadDatabaseUrl() {

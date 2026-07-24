@@ -50,10 +50,19 @@ export async function syncFromYandex(
 
   try {
     let businessId: number | undefined
+    // Yandex placementType → our fulfillment_type. FBS = seller ships,
+    // FBY = Yandex warehouse (an FBO variant). Fallback 'fbs' when the
+    // API doesn't answer, so the stock aggregator defaults to the safer
+    // (undercounting) side.
+    let campaignFulfillmentType: 'fbs' | 'fby' = 'fbs'
     try {
       const info = await fetchCampaignInfo(token, campaignId)
       if (info.businessId) businessId = info.businessId
       debug.businessId = businessId ?? 0
+      const placement = info.campaign.placementType?.toUpperCase()
+      if (placement === 'FBY') campaignFulfillmentType = 'fby'
+      else if (placement === 'FBS' || placement === 'DBS' || placement === 'EXPRESS') campaignFulfillmentType = 'fbs'
+      debug.placement = placement ?? 'unknown'
     } catch (e) {
       debug.campaignInfo = e instanceof YandexApiError ? `${e.status}` : 'err'
     }
@@ -66,6 +75,7 @@ export async function syncFromYandex(
       // null = Yandex didn't report a stock number for this offer; the sync
       // will preserve the existing DB value instead of writing 0.
       stock_quantity: number | null
+      fulfillment_type: 'fbs' | 'fby'
     }[] = []
     try {
       const entries = await fetchAllYandexProducts(token, campaignId, businessId)
@@ -180,6 +190,7 @@ export async function syncFromYandex(
           selling_price: inlinePrice ?? lookupPrice ?? null,
           cost_price: null,
           stock_quantity: stock,
+          fulfillment_type: campaignFulfillmentType,
         }
       })
       if (productRows.length > 0) {
@@ -202,6 +213,7 @@ export async function syncFromYandex(
             // Column is NOT NULL — default to 0 on first insert when Yandex
             // didn't report a stock number.
             stock_quantity: r.stock_quantity ?? 0,
+            fulfillment_type: r.fulfillment_type,
           })))
         }
         if (toUpd.length > 0) {
@@ -214,6 +226,7 @@ export async function syncFromYandex(
               marketplace_product_id: r.marketplace_product_id,
               title: r.title,
               sku: r.sku,
+              fulfillment_type: r.fulfillment_type,
             }
             if (r.category != null) patch.category = r.category
             if (r.selling_price != null) patch.selling_price = String(r.selling_price)
@@ -371,6 +384,7 @@ export async function syncFromYandex(
                 selling_price: it.buyerPrice ?? it.price ?? null,
                 cost_price: null,
                 stock_quantity: 0,
+                fulfillment_type: campaignFulfillmentType,
               })
             }
           }
@@ -396,6 +410,7 @@ export async function syncFromYandex(
               selling_price: r.selling_price != null ? String(r.selling_price) : null,
               cost_price: null,
               stock_quantity: r.stock_quantity ?? 0,
+              fulfillment_type: r.fulfillment_type,
             })))
           }
           if (toUpd.length > 0) {
@@ -433,6 +448,7 @@ export async function syncFromYandex(
                   title: it.offerName ?? `SKU ${it.offerId}`,
                   sku: it.offerId, category: null,
                   selling_price: it.buyerPrice ?? it.price ?? null, cost_price: null, stock_quantity: 0,
+                  fulfillment_type: campaignFulfillmentType,
                 })
               }
             }

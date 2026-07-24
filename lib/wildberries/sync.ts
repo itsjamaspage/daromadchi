@@ -81,6 +81,10 @@ export async function syncFromWildberries(
         cost_price:             null,
         selling_price:          null,
         stock_quantity:         0,
+        // Default 'fbo' — WB's dominant model. Overwritten per-product below
+        // if the FBS warehouses endpoint reports the SKU (in which case the
+        // seller is shipping it themselves).
+        fulfillment_type:       'fbo' as const,
         updated_at:             new Date(),
       }))
 
@@ -116,6 +120,10 @@ export async function syncFromWildberries(
   //    here; the write variant is PUT on the same path, which the guard blocks.
   try {
     const stockMap = new Map<string, number>() // nmId → total units
+    // Which endpoint reported this nmId: 'fbo' (WB warehouse) or 'fbs'
+    // (seller's own warehouse). Wins over the 'fbo' default set at product
+    // upsert when FBS reports it.
+    const stockSource = new Map<string, 'fbo' | 'fbs'>()
     let fboOk = false
     let fbsOk = false
 
@@ -128,7 +136,11 @@ export async function syncFromWildberries(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const rows: any[] = await fboRes.json() ?? []
         for (const r of rows) {
-          if (r.nmId) stockMap.set(String(r.nmId), (stockMap.get(String(r.nmId)) ?? 0) + (r.quantity ?? 0))
+          if (r.nmId) {
+            const nm = String(r.nmId)
+            stockMap.set(nm, (stockMap.get(nm) ?? 0) + (r.quantity ?? 0))
+            if (!stockSource.has(nm)) stockSource.set(nm, 'fbo')
+          }
         }
         fboOk = true
       }
@@ -155,7 +167,12 @@ export async function syncFromWildberries(
               const stocks: any[] = json?.stocks ?? []
               for (const s of stocks) {
                 const nm = barcodeToNm.get(String(s.sku))
-                if (nm) stockMap.set(nm, (stockMap.get(nm) ?? 0) + (s.amount ?? 0))
+                if (nm) {
+                  stockMap.set(nm, (stockMap.get(nm) ?? 0) + (s.amount ?? 0))
+                  // FBS overrides FBO for the fulfillment tag — if a SKU is
+                  // in a seller warehouse, that's what the seller is shipping.
+                  stockSource.set(nm, 'fbs')
+                }
               }
             }
           }
@@ -176,10 +193,15 @@ export async function syncFromWildberries(
       // products the responding source reported.
       const bothOk = fboOk && fbsOk
       for (const p of prods) {
-        const reported = stockMap.get(String(p.marketplace_product_id))
+        const nm = String(p.marketplace_product_id)
+        const reported = stockMap.get(nm)
         const qty = reported ?? (bothOk ? 0 : p.stock_quantity)
-        if (qty !== p.stock_quantity) {
-          await db.update(products).set({ stock_quantity: qty, updated_at: new Date() }).where(eq(products.id, p.id))
+        const source = stockSource.get(nm)
+        const patch: Record<string, unknown> = { updated_at: new Date() }
+        if (qty !== p.stock_quantity) patch.stock_quantity = qty
+        if (source) patch.fulfillment_type = source
+        if (Object.keys(patch).length > 1) {
+          await db.update(products).set(patch).where(eq(products.id, p.id))
         }
       }
     }
