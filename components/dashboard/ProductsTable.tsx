@@ -3,6 +3,7 @@
 import { useState, useMemo, useCallback, Fragment } from 'react'
 import { Search, Check, X, Pencil } from 'lucide-react'
 import ExportButton from './ExportButton'
+import FulfillmentBadge from './FulfillmentBadge'
 import { useLang } from '@/app/providers'
 import { translations } from '@/lib/i18n'
 import type { Product, MarketplaceType } from '@/lib/types'
@@ -357,9 +358,10 @@ export default function ProductsTable({ products }: { products: Product[] }) {
                         <div className="flex items-center gap-2">
                           <div>
                             <p className="font-medium" style={{ color: 'var(--text-base)' }}>{p.title}</p>
-                            <div className="flex items-center gap-1.5 mt-0.5">
+                            <div className="flex items-center flex-wrap gap-1.5 mt-0.5">
                               <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{p.sku}</span>
                               {p.marketplace && <MpBadge mp={p.marketplace} />}
+                              <FulfillmentBadge type={p.fulfillment_type} />
                               {p.is_shared && (
                                 <span
                                   className="text-[10px] font-medium px-1.5 py-0.5 rounded"

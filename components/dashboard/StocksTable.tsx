@@ -3,6 +3,7 @@
 import { useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Search, ChevronUp, Pencil, Link2, Unlink } from 'lucide-react'
+import FulfillmentBadge from './FulfillmentBadge'
 import { useLang } from '@/app/providers'
 import { translations } from '@/lib/i18n'
 import type { StockGroup } from '@/lib/db/stock-groups'
@@ -298,11 +299,13 @@ function FragmentRow({ group: g, badge, isOpen, onToggle, onLink, d }: {
               // can see how each listing is fulfilled — this drives whether
               // stocks are summed (FBO/FBY) or shared (FBS) in the group.
               const member = g.members.find(mem => mem.marketplace === mp)
-              const ft = member?.fulfillment_type?.toUpperCase()
               return (
-                <span key={mp} className="text-[10px] font-bold px-1.5 py-0.5 rounded inline-flex items-center gap-1"
-                  style={{ background: m.bg, color: m.color }}>
-                  {m.label}{ft ? <span className="opacity-70 font-medium">· {ft}</span> : null}
+                <span key={mp} className="inline-flex items-center gap-1">
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded"
+                    style={{ background: m.bg, color: m.color }}>
+                    {m.label}
+                  </span>
+                  <FulfillmentBadge type={member?.fulfillment_type} />
                 </span>
               )
             })}

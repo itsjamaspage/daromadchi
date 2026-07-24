@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { AlertTriangle, Package, TrendingDown } from 'lucide-react'
+import FulfillmentBadge from './FulfillmentBadge'
 import { useLang } from '@/app/providers'
 import { translations } from '@/lib/i18n'
 import type { StockGroup } from '@/lib/db/stock-groups'
@@ -70,10 +71,14 @@ export default function StockAlerts({ groups, isDark }: { groups: StockGroup[]; 
                   <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{sku}</span>
                   {mps.map(mp => {
                     const m = MP_META[mp]
+                    const member = g.members.find(mem => mem.marketplace === mp)
                     return (
-                      <span key={mp} className="text-[10px] font-bold px-1.5 py-0.5 rounded"
-                        style={{ background: m.bg, color: m.color }}>
-                        {m.short} {g.stock_by_marketplace[mp] ?? 0}
+                      <span key={mp} className="inline-flex items-center gap-1">
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded"
+                          style={{ background: m.bg, color: m.color }}>
+                          {m.short} {g.stock_by_marketplace[mp] ?? 0}
+                        </span>
+                        <FulfillmentBadge type={member?.fulfillment_type} />
                       </span>
                     )
                   })}

@@ -26,6 +26,7 @@ const _fetchProducts = unstable_cache(
         quantity_sold: products.quantity_sold,
         category: products.category,
         marketplace_product_id: products.marketplace_product_id,
+        fulfillment_type: products.fulfillment_type,
         updated_at: products.updated_at,
       }).from(products)
         .where(inArray(products.shop_id, allShopIds))
@@ -113,6 +114,7 @@ const _fetchProducts = unstable_cache(
         physical_stock: null,
         category: p.category,
         marketplace_product_id: p.marketplace_product_id,
+        fulfillment_type: p.fulfillment_type,
         updated_at: p.updated_at.toISOString(),
         marketplace: shopInfo.get(p.shop_id)?.marketplace,
         available_stock: availableStock,
@@ -343,6 +345,7 @@ const _fetchProductsPaginated = unstable_cache(
         quantity_sold: products.quantity_sold,
         category: products.category,
         marketplace_product_id: products.marketplace_product_id,
+        fulfillment_type: products.fulfillment_type,
         updated_at: products.updated_at,
       }).from(products)
         .where(inArray(products.shop_id, shopIds))
@@ -411,6 +414,7 @@ const _fetchProductsPaginated = unstable_cache(
         physical_stock: null,
         category: p.category,
         marketplace_product_id: p.marketplace_product_id,
+        fulfillment_type: p.fulfillment_type,
         updated_at: p.updated_at.toISOString(),
         marketplace: shopInfo.get(p.shop_id)?.marketplace,
         available_stock: availableStock,

@@ -124,6 +124,8 @@ export interface Product {
   category: string | null
   marketplace_product_id: string | null
   marketplace?: MarketplaceType
+  // 'fbs' | 'fbo' | 'fby' | null (unknown → sync hasn't run or not exposed)
+  fulfillment_type: string | null
   updated_at: string
   // computed
   profit: number
