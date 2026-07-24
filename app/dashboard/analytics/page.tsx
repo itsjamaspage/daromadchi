@@ -53,25 +53,54 @@ export default async function AnalyticsPage({ searchParams }: Props) {
   const hasOrders = kpis.total_orders > 0
   const isEmpty = !hasProducts && !hasOrders
 
-  const avgMargin = products.length > 0
-    ? products.reduce((s, p) => {
+  // Analytics operates on distinct physical products (grouped by normalized
+  // SKU), not per-marketplace listings. Otherwise the same 1 unit listed on
+  // Uzum + YM shows up as "2 products" and its warehouse value is doubled.
+  const norm = (s: string | null) => s ? s.trim().toLowerCase() : null
+  const groupsMap = new Map<string, typeof products>()
+  for (const p of products) {
+    const key = norm(p.sku) ?? `#${p.id}`
+    const list = groupsMap.get(key)
+    if (list) list.push(p)
+    else groupsMap.set(key, [p])
+  }
+  const productGroups = [...groupsMap.values()]
+  // One representative per group for margin math (pick first with both price
+  // and cost, else first with any price, else any).
+  const repMembers = productGroups.map(g =>
+    g.find(p => (p.selling_price ?? 0) > 0 && (p.cost_price ?? 0) > 0)
+    ?? g.find(p => (p.selling_price ?? 0) > 0)
+    ?? g[0])
+
+  const avgMargin = repMembers.length > 0
+    ? repMembers.reduce((s, p) => {
         const price = Number(p.selling_price ?? 0)
         return s + (price > 0 ? p.profit / price : 0)
-      }, 0) / products.length * 100
+      }, 0) / repMembers.length * 100
     : 0
 
-  const lowMarginCount  = products.filter(p => {
+  const lowMarginCount  = repMembers.filter(p => {
     const price = Number(p.selling_price ?? 0)
     return price > 0 && (p.profit / price) < 0.15
   }).length
 
-  const highMarginCount = products.filter(p => {
+  const highMarginCount = repMembers.filter(p => {
     const price = Number(p.selling_price ?? 0)
     return price > 0 && (p.profit / price) >= 0.35
   }).length
 
-  const totalStockValue = products.reduce((s, p) =>
-    s + Number(p.cost_price ?? 0) * p.stock_quantity, 0)
+  // Warehouse value: FBS members share a physical pool (max stock), FBO
+  // members each hold their own (sum). Use whichever member has a positive
+  // cost_price as the per-unit cost for the group.
+  const totalStockValue = productGroups.reduce((sum, g) => {
+    const cost = Number(g.find(p => (p.cost_price ?? 0) > 0)?.cost_price ?? 0)
+    if (cost <= 0) return sum
+    const fbo = g.filter(p => p.fulfillment_type === 'fbo' || p.fulfillment_type === 'fby')
+    const fbs = g.filter(p => p.fulfillment_type !== 'fbo' && p.fulfillment_type !== 'fby')
+    const fboUnits = fbo.reduce((s, p) => s + p.stock_quantity, 0)
+    const fbsUnits = fbs.length > 0 ? Math.max(0, ...fbs.map(p => p.stock_quantity)) : 0
+    return sum + cost * (fboUnits + fbsUnits)
+  }, 0)
 
   const sortedByMargin = [...products].sort((a, b) => {
     const ma = Number(a.selling_price ?? 0) > 0 ? a.profit / Number(a.selling_price) : 0
@@ -155,7 +184,7 @@ export default async function AnalyticsPage({ searchParams }: Props) {
           {/* KPI cards */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {[
-              { label: d.totalProducts,  value: products.length.toString(),  color: 'var(--c1)' },
+              { label: d.totalProducts,  value: productGroups.length.toString(),  color: 'var(--c1)' },
               { label: d.avgMargin,      value: `${avgMargin.toFixed(1)}%`,  color: avgMargin >= 25 ? '#10b981' : '#f59e0b' },
               { label: d.lowMargin,      value: lowMarginCount.toString(),   color: lowMarginCount > 0 ? '#ef4444' : '#10b981' },
               { label: d.highMargin,     value: highMarginCount.toString(),  color: '#10b981' },

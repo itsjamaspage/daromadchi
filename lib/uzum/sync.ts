@@ -445,14 +445,22 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
       const unitsFromTotal = allItems.length === 0 && soloPrice != null && revenue > 0 && revenue % soloPrice === 0
         ? revenue / soloPrice
         : null
+      // Per-item fee where possible. Previously, one missing SKU rate made
+      // the whole order fall back to a global estimate — losing the real
+      // per-item commissions we DID have. Now: use real rate when known,
+      // fill unknowns with avgCommissionPct (or leave null if we have no
+      // rate data at all).
       let feeCalc = 0
-      let feeComplete = allItems.length > 0
+      let feeAny = false
       for (const it of allItems) {
-        const rate = commissionBySkuId.get(String(it.skuId))
-        if (rate == null) { feeComplete = false; break }
-        feeCalc += it.price * effectiveQty(o, it, allItems.length, priceByMpid.get(String(it.skuId))) * rate / 100
+        const qty = effectiveQty(o, it, allItems.length, priceByMpid.get(String(it.skuId)))
+        const knownRate = commissionBySkuId.get(String(it.skuId))
+        const rate = knownRate ?? (avgCommissionPct > 0 ? avgCommissionPct : null)
+        if (rate == null) continue
+        feeCalc += it.price * qty * rate / 100
+        feeAny = true
       }
-      const marketplace_fee = feeComplete && feeCalc > 0
+      const marketplace_fee = feeAny && feeCalc > 0
         ? feeCalc
         : (allItems.length === 0 && avgCommissionPct > 0 && revenue > 0
           ? revenue * avgCommissionPct / 100

@@ -84,6 +84,12 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
   const [mpFilter, setMpFilter] = useState<'all' | 'uzum' | 'yandex_market' | 'wildberries'>('all')
   const [editingSupplier, setEditingSupplier] = useState<string|null>(null)
   const supplierRef = useRef<HTMLInputElement>(null)
+  // Inline cost editor: click the Tannarx cell to enter a new value —
+  // Enter to save, Esc to cancel. Persists via /api/unit-economics PATCH
+  // and the server recalculates margin/ROI on next fetch (this component
+  // also patches the local row so the derived numbers update instantly).
+  const [editingCost, setEditingCost] = useState<string|null>(null)
+  const costRef = useRef<HTMLInputElement>(null)
   const printRef    = useRef<HTMLDivElement>(null)
 
   const [extPending, setExtPending]   = useState<FromExtension | null>(fromExtension ?? null)
@@ -231,6 +237,26 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id, supplierUrl: val }),
+    }).catch(() => {})
+  }
+
+  function saveCost(id: string, raw: string) {
+    // Empty = clear cost (null). Non-numeric or negative = ignore.
+    const trimmed = raw.trim()
+    const parsed = trimmed === '' ? 0 : Number(trimmed)
+    if (!Number.isFinite(parsed) || parsed < 0) { setEditingCost(null); return }
+    setItems(prev => prev.map(i => {
+      if (i.id !== id) return i
+      // Recompute derived fields locally so the row updates instantly instead
+      // of waiting for a refetch.
+      const updated = recalc({ ...i, costPrice: parsed }) as UnitEconomicsItem
+      return updated
+    }))
+    setEditingCost(null)
+    fetch('/api/unit-economics', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, costPrice: parsed }),
     }).catch(() => {})
   }
 
@@ -491,7 +517,33 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
                       )
                       if (col.key === 'sku') return <td key="sku" className="px-3 py-3 text-[var(--text-base)] text-xs font-mono">{item.sku || '—'}</td>
                       if (col.key === 'sellingPrice') return <td key="sellingPrice" className="px-3 py-3 text-[var(--text-base)] text-xs">{fs(item.sellingPrice)}</td>
-                      if (col.key === 'costPrice') return <td key="costPrice" className="px-3 py-3 text-[var(--text-base)] text-xs">{fs(item.costPrice)}</td>
+                      if (col.key === 'costPrice') return (
+                        <td key="costPrice" className="px-3 py-3 text-xs">
+                          {editingCost === item.id ? (
+                            <div className="flex items-center gap-1">
+                              <input ref={costRef}
+                                type="number"
+                                defaultValue={item.costPrice || ''}
+                                onKeyDown={e => {
+                                  if (e.key === 'Enter') saveCost(item.id, costRef.current?.value ?? '')
+                                  if (e.key === 'Escape') setEditingCost(null)
+                                }}
+                                className="w-24 px-2 py-1 bg-[var(--bg-input)] border border-[var(--border)] rounded text-xs text-[var(--text-base)] focus:outline-none"
+                                autoFocus />
+                              <button onClick={() => saveCost(item.id, costRef.current?.value ?? '')}
+                                className="text-emerald-400 hover:text-emerald-300"><Check className="w-3 h-3" /></button>
+                              <button onClick={() => setEditingCost(null)}
+                                className="text-[var(--text-muted)] hover:text-[var(--text-dim)]"><X className="w-3 h-3" /></button>
+                            </div>
+                          ) : (
+                            <button onClick={() => setEditingCost(item.id)}
+                              className="text-[var(--text-base)] text-xs border-b border-dashed border-transparent hover:border-[var(--border2)] cursor-text"
+                              title="Tannarxni tahrirlash (Xitoydan yetkazish bilan)">
+                              {item.costPrice > 0 ? fs(item.costPrice) : <span className="text-[var(--text-muted)]">+ tannarx</span>}
+                            </button>
+                          )}
+                        </td>
+                      )
                       if (col.key === 'landedCost') return <td key="landedCost" className="px-3 py-3 text-[var(--text-base)] text-xs">{item.landedCost ? fs(item.landedCost) : '—'}</td>
                       if (col.key === 'commission') return <td key="commission" className="px-3 py-3 text-xs"><span className="text-red-600">−{fs(item.commission)}</span><span className="text-[var(--text-base)] text-[10px] ml-1 opacity-60">({item.commissionPct}%)</span></td>
                       if (col.key === 'delivery') return <td key="delivery" className="px-3 py-3 text-red-600 text-xs">−{fs(item.delivery)}</td>
