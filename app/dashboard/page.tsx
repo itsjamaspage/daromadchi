@@ -6,6 +6,7 @@ import { getOrders } from '@/lib/db/orders'
 import { getProducts, getProductSales, getCategoryRevenue } from '@/lib/db/products'
 import { getDailyRevenue } from '@/lib/db/revenue'
 import { getUserShops, getShopLaunchDate } from '@/lib/db/shop-context'
+import { getStockGroups } from '@/lib/db/stock-groups'
 import WelcomePopup from '@/components/dashboard/WelcomePopup'
 import type { MarketplaceType } from '@/lib/types'
 
@@ -81,11 +82,14 @@ export default async function DashboardPage({ searchParams }: Props) {
   const hasYM      = allShops.some(s => s.marketplace === 'yandex_market')
   const hasWB      = allShops.some(s => s.marketplace === 'wildberries')
 
-  const [allSlice, uzumSlice, ymSlice, wbSlice] = await Promise.all([
+  const [allSlice, uzumSlice, ymSlice, wbSlice, stockGroups] = await Promise.all([
     fetchSlice(days, undefined,       hasShops,  from, to),
     fetchSlice(days, 'uzum',          hasUzum,   from, to),
     fetchSlice(days, 'yandex_market', hasYM,     from, to),
     fetchSlice(days, 'wildberries',   hasWB,     from, to),
+    // Cross-marketplace grouped stock — same SKU on Uzum + YM + WB collapses
+    // to one alert with marketplace badges instead of N duplicates.
+    getStockGroups().catch(() => []),
   ])
 
   return (
@@ -93,6 +97,7 @@ export default async function DashboardPage({ searchParams }: Props) {
       <WelcomePopup hasShops={hasShops} />
       <DashboardClient
         slices={{ all: allSlice, uzum: uzumSlice, yandex_market: ymSlice, wildberries: wbSlice }}
+        stockGroups={stockGroups}
         days={days}
         period={period}
         from={from}

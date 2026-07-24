@@ -12,12 +12,16 @@ import type { MarketplaceType } from '@/lib/types'
  * READ-ONLY from the marketplaces; nothing is ever written back to a store.
  *
  * Two leftover modes per group:
- *  • api      — total leftover = sum of marketplace-reported stocks (FBO-style,
- *               goods stored at marketplace warehouses).
+ *  • api      — total leftover = MAX of marketplace-reported stocks. Same
+ *               physical unit is listed on every marketplace as "N available",
+ *               so summing double-counts for FBS sellers (dominant model here).
+ *               Max is the honest "at least this many exist across all
+ *               marketplaces" answer without inventing units that aren't there.
  *  • baseline — the user entered how many units they physically own
  *               (total_physical_stock); leftover = that number minus exact
- *               units sold across ALL marketplaces since it was entered
- *               (FBS-style, one shared stash shipped from the seller's side).
+ *               units sold across ALL marketplaces since it was entered.
+ *               Best for FBO sellers with independent per-marketplace stock,
+ *               or anyone who wants exact tracking.
  */
 
 // Sold = every non-cancelled, non-returned order item. Returned units go back
@@ -231,7 +235,6 @@ export async function computeStockGroups(userId: string, shopIds: string[]): Pro
 
     const stockByMp: Partial<Record<MarketplaceType, number>> = {}
     const soldByMp: Partial<Record<MarketplaceType, number>> = {}
-    let totalStock = 0
     let totalSold = 0
     let totalCancelled = 0
     let totalInProcess = 0
@@ -239,12 +242,19 @@ export async function computeStockGroups(userId: string, shopIds: string[]): Pro
     for (const m of members) {
       stockByMp[m.marketplace] = (stockByMp[m.marketplace] ?? 0) + m.stock
       soldByMp[m.marketplace] = (soldByMp[m.marketplace] ?? 0) + m.sold_total
-      totalStock += m.stock
       totalSold += m.sold_total
       totalCancelled += cancelledByProduct.get(m.product_id) ?? 0
       totalInProcess += inProcessByProduct.get(m.product_id) ?? 0
       sold14 += sold14ByProduct.get(m.product_id) ?? 0
     }
+
+    // Cross-marketplace physical stock is the MAX of per-marketplace stocks,
+    // not the SUM: for FBS sellers (the dominant model here) the same 1
+    // physical unit is listed on every marketplace as "1 available", so
+    // summing double-counts. Same-warehouse sellers pass through unchanged.
+    // FBO sellers who really have independent stock at each marketplace's
+    // warehouse should switch to baseline mode and enter their true count.
+    const totalStock = Math.max(0, ...Object.values(stockByMp))
 
     const hasBaseline = link?.total_physical_stock != null && link.baseline_at != null
     const sinceBaseline = soldSinceBaseline.get(key) ?? 0

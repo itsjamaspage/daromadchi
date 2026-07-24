@@ -14,6 +14,7 @@ import { useLang, useTheme } from '@/app/providers'
 import { dashT } from '@/lib/dashT'
 import type { Kpis, Order, Product, DailyRevenue, MarketplaceType } from '@/lib/types'
 import type { ProductSalesRow } from '@/lib/db/products'
+import type { StockGroup } from '@/lib/db/stock-groups'
 
 function formatSum(n: number) {
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(1).replace(/\.0$/, '') + " mln so'm"
@@ -45,6 +46,7 @@ interface Props {
     yandex_market: MarketplaceSlice
     wildberries: MarketplaceSlice
   }
+  stockGroups: StockGroup[]
   days: number
   period: string
   from?: string
@@ -68,7 +70,7 @@ const STATUS_CLASS_LIGHT: Record<string, string> = {
   returned:  'bg-amber-500/10 text-amber-700',
 }
 
-export default function DashboardClient({ slices, days, period, from, to, initialMarketplace, }: Props) {
+export default function DashboardClient({ slices, stockGroups, days, period, from, to, initialMarketplace, }: Props) {
   const { lang } = useLang()
   const { theme } = useTheme()
   const isDark = theme === 'dark'
@@ -321,7 +323,7 @@ export default function DashboardClient({ slices, days, period, from, to, initia
 
       {/* Stock alerts */}
       {!hiddenWidgets.has('alerts') && (
-        <StockAlerts products={allProducts} isDark={isDark} />
+        <StockAlerts groups={stockGroups} isDark={isDark} />
       )}
 
       {/* Chart + recent orders */}
