@@ -70,7 +70,7 @@ export interface StockGroup {
 }
 
 function normalizeKey(sku: string): string {
-  return sku.trim().toLowerCase()
+  return sku.trim().toLowerCase().replace(/[\s\-_./]+/g, '')
 }
 
 /** Session-scoped variant for dashboard pages and API routes. */

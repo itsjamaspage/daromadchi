@@ -68,39 +68,28 @@ const _fetchProducts = unstable_cache(
 
     const groupTotalSold = new Map<string, number>()
     const groupShopCount = new Map<string, number>()
+    const groupMaxStock = new Map<string, number>()
     for (const p of productRows) {
       if (!p.sku) continue
-      const wid = shopInfo.get(p.shop_id)?.warehouseId
-      if (!wid) continue
-      const key = `${wid}:${p.sku}`
+      const key = p.sku.trim().toLowerCase().replace(/[\s\-_./]+/g, '')
       const sold = soldByProductId.get(p.id) ?? 0
       groupTotalSold.set(key, (groupTotalSold.get(key) ?? 0) + sold)
       groupShopCount.set(key, (groupShopCount.get(key) ?? 0) + 1)
+      groupMaxStock.set(key, Math.max(groupMaxStock.get(key) ?? 0, p.stock_quantity))
     }
 
     return productRows.map(p => {
-      // Prefer the marketplace's authoritative lifetime sold count (covers FBO,
-      // which we can't read at the order level); fall back to order-derived.
       const orderSold = soldByProductId.get(p.id) ?? 0
       const sold = p.quantity_sold != null ? p.quantity_sold : orderSold
-      // Uzum increments quantitySold at ORDER time and hides fresh orders from
-      // the order API, so any surplus of the counter over DB-visible units is a
-      // unit that was ordered but not yet delivered/visible → it belongs in
-      // "ordered", not "sold". When the order later surfaces (delivered or
-      // cancelled) the surplus collapses to 0 and the unit lands in the right
-      // column on its own.
       const dbInTransit = inTransitByProductId.get(p.id) ?? 0
       const surplus = p.quantity_sold != null ? Math.max(p.quantity_sold - orderSold, 0) : 0
-      // SAME formulas as the analytics query (_fetchProductSales) — the two
-      // pages must never disagree about delivered/in-process counts:
-      //   delivered  = DB non-cancelled units minus those still in transit
-      //   in-process = DB in-transit units + counter surplus (ordered, hidden)
       const deliveredUnits = Math.max(orderSold - dbInTransit, 0)
-      const wid = shopInfo.get(p.shop_id)?.warehouseId
-      const key = wid && p.sku ? `${wid}:${p.sku}` : null
+      const key = p.sku ? p.sku.trim().toLowerCase().replace(/[\s\-_./]+/g, '') : null
       const isShared = key ? (groupShopCount.get(key) ?? 0) > 1 : false
+      const ft = p.fulfillment_type
+      const isFbo = ft === 'fbo' || ft === 'fby'
       const availableStock = isShared && key
-        ? Math.max(0, p.stock_quantity - (groupTotalSold.get(key) ?? 0))
+        ? Math.max(0, (isFbo ? p.stock_quantity : (groupMaxStock.get(key) ?? p.stock_quantity)) - (groupTotalSold.get(key) ?? 0))
         : p.stock_quantity
 
       return {
@@ -381,13 +370,13 @@ const _fetchProductsPaginated = unstable_cache(
 
     const groupTotalSold = new Map<string, number>()
     const groupShopCount = new Map<string, number>()
+    const groupMaxStock = new Map<string, number>()
     for (const p of productRows) {
       if (!p.sku) continue
-      const wid = shopInfo.get(p.shop_id)?.warehouseId
-      if (!wid) continue
-      const key = `${wid}:${p.sku}`
+      const key = p.sku.trim().toLowerCase().replace(/[\s\-_./]+/g, '')
       groupTotalSold.set(key, (groupTotalSold.get(key) ?? 0) + (soldMap.get(p.id) ?? 0))
       groupShopCount.set(key, (groupShopCount.get(key) ?? 0) + 1)
+      groupMaxStock.set(key, Math.max(groupMaxStock.get(key) ?? 0, p.stock_quantity))
     }
 
     const rows: Product[] = productRows.map(p => {
@@ -396,11 +385,12 @@ const _fetchProductsPaginated = unstable_cache(
       const dbInTransit = inTransitMap.get(p.id) ?? 0
       const surplus = p.quantity_sold != null ? Math.max(p.quantity_sold - orderSold, 0) : 0
       const deliveredUnits = Math.max(orderSold - dbInTransit, 0)
-      const wid = shopInfo.get(p.shop_id)?.warehouseId
-      const key = wid && p.sku ? `${wid}:${p.sku}` : null
+      const key = p.sku ? p.sku.trim().toLowerCase().replace(/[\s\-_./]+/g, '') : null
       const isShared = key ? (groupShopCount.get(key) ?? 0) > 1 : false
+      const ft = p.fulfillment_type
+      const isFbo = ft === 'fbo' || ft === 'fby'
       const availableStock = isShared && key
-        ? Math.max(0, p.stock_quantity - (groupTotalSold.get(key) ?? 0))
+        ? Math.max(0, (isFbo ? p.stock_quantity : (groupMaxStock.get(key) ?? p.stock_quantity)) - (groupTotalSold.get(key) ?? 0))
         : p.stock_quantity
 
       return {

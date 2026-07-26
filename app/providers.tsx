@@ -67,6 +67,7 @@ export default function Providers({ children, initialLang = 'uz' }: { children: 
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ lang: l }),
+      keepalive: true,
     }).catch(() => {})
     // Hard reload: router.refresh() only revalidates the current route's RSC,
     // leaving the client-side RSC cache for OTHER routes stale — so navigating

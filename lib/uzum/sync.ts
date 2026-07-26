@@ -1,4 +1,4 @@
-import { eq, and, inArray, count, sql } from 'drizzle-orm'
+import { eq, ne, and, inArray, count, sql } from 'drizzle-orm'
 import { db, shops, products, orders, orderItems, syncDays, adCampaigns } from '@/lib/db'
 import { clearShopData } from '@/lib/db/clear-shop-data'
 import {
@@ -160,7 +160,6 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
   let itemsUpserted = 0
   let ordersInserted = 0
   const newOrders: string[] = []
-  const commissionBySkuId = new Map<string, number>()
 
   try {
     // ── Products: resolve shop(s), then pull product/SKU data ─────────────────
@@ -203,9 +202,6 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
           const list = res.productList ?? []
           for (const card of list) {
             for (const sku of card.skuList ?? []) {
-              if (sku.commission != null && sku.commission > 0) {
-                commissionBySkuId.set(String(sku.skuId), sku.commission)
-              }
               productRows.push({
                 shop_id: shopId,
                 marketplace_product_id: String(sku.skuId),
@@ -430,12 +426,6 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
     const distinctPrices = [...new Set(priceByMpid.values())]
     const soloPrice = distinctPrices.length === 1 ? distinctPrices[0] : null
 
-    // Average commission % across all known SKUs — fallback for orders with no items
-    const commissionValues = [...commissionBySkuId.values()]
-    const avgCommissionPct = commissionValues.length > 0
-      ? commissionValues.reduce((s, v) => s + v, 0) / commissionValues.length
-      : 0
-
     const orderRows = taggedOrders.map(({ o, ff }) => {
       // Support both new (id/dateCreated/price/orderItems) and legacy field names
       const extId = extIdOf(o)
@@ -445,26 +435,6 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
       const unitsFromTotal = allItems.length === 0 && soloPrice != null && revenue > 0 && revenue % soloPrice === 0
         ? revenue / soloPrice
         : null
-      // Per-item fee where possible. Previously, one missing SKU rate made
-      // the whole order fall back to a global estimate — losing the real
-      // per-item commissions we DID have. Now: use real rate when known,
-      // fill unknowns with avgCommissionPct (or leave null if we have no
-      // rate data at all).
-      let feeCalc = 0
-      let feeAny = false
-      for (const it of allItems) {
-        const qty = effectiveQty(o, it, allItems.length, priceByMpid.get(String(it.skuId)))
-        const knownRate = commissionBySkuId.get(String(it.skuId))
-        const rate = knownRate ?? (avgCommissionPct > 0 ? avgCommissionPct : null)
-        if (rate == null) continue
-        feeCalc += it.price * qty * rate / 100
-        feeAny = true
-      }
-      const marketplace_fee = feeAny && feeCalc > 0
-        ? feeCalc
-        : (allItems.length === 0 && avgCommissionPct > 0 && revenue > 0
-          ? revenue * avgCommissionPct / 100
-          : null)
       return {
         shop_id: shopId,
         order_id_external: extId,
@@ -477,7 +447,6 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
           | 'cancelled'
           | 'returned',
         revenue,
-        marketplace_fee,
         // Units, not line items: an order of 2× one SKU must show 2, not 1.
         items_count: allItems.length > 0
           ? allItems.reduce((s, it) => s + effectiveQty(o, it, allItems.length, priceByMpid.get(String(it.skuId))), 0)
@@ -511,7 +480,6 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
             fulfillment_type: r.fulfillment_type,
             status: r.status,
             revenue: String(r.revenue),
-            marketplace_fee: r.marketplace_fee != null ? String(r.marketplace_fee) : null,
             items_count: r.items_count,
             ordered_at: r.ordered_at,
           })))
@@ -522,7 +490,6 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
           fulfillment_type: r.fulfillment_type,
           status: r.status,
           revenue: String(r.revenue),
-          marketplace_fee: r.marketplace_fee != null ? String(r.marketplace_fee) : null,
           items_count: r.items_count,
           ordered_at: r.ordered_at,
         }).where(eq(orders.id, existingOrdMap.get(r.order_id_external)!))
@@ -894,27 +861,47 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
           debug.financeOrdersUpdated = String(dbFinanceOrders.length)
         }
       } else if (financeResult.balance != null && financeResult.balance > 0) {
-        const activeOrders = await db.select({
+        const allOrders = await db.select({
           id: orders.id,
           revenue: orders.revenue,
           marketplace_fee: orders.marketplace_fee,
+          delivery_cost: orders.delivery_cost,
         }).from(orders).where(and(
           eq(orders.shop_id, shopId),
-          sql`${orders.marketplace_fee} is null or ${orders.marketplace_fee} = '0'`,
+          ne(orders.status, 'cancelled'),
         ))
-        const totalRevenue = activeOrders.reduce((s, o) => s + Number(o.revenue ?? 0), 0)
+        const totalRevenue = allOrders.reduce((s, o) => s + Number(o.revenue ?? 0), 0)
+        const totalExistingFee = allOrders.reduce((s, o) => s + Number(o.marketplace_fee ?? 0), 0)
+        const totalExistingDelivery = allOrders.reduce((s, o) => s + Number(o.delivery_cost ?? 0), 0)
+
         if (totalRevenue > 0 && totalRevenue > financeResult.balance) {
-          const totalFee = totalRevenue - financeResult.balance
-          const feeRate = totalFee / totalRevenue
-          for (const o of activeOrders) {
-            const rev = Number(o.revenue ?? 0)
-            if (rev > 0) {
-              await db.update(orders).set({
-                marketplace_fee: String(Math.round(rev * feeRate)),
-              }).where(eq(orders.id, o.id))
+          const totalFees = totalRevenue - financeResult.balance
+          const missingCommission = allOrders.filter(o => !Number(o.marketplace_fee))
+          const missingDelivery = allOrders.filter(o => !Number(o.delivery_cost))
+
+          if (missingCommission.length > 0 && totalExistingFee === 0) {
+            const feeRate = totalFees / totalRevenue
+            for (const o of missingCommission) {
+              const rev = Number(o.revenue ?? 0)
+              if (rev > 0) {
+                await db.update(orders).set({
+                  marketplace_fee: String(Math.round(rev * feeRate)),
+                }).where(eq(orders.id, o.id))
+              }
+            }
+            debug.financeBalanceFallback = `balance=${financeResult.balance}, totalRev=${totalRevenue}, feeRate=${(feeRate * 100).toFixed(1)}%`
+          } else if (totalExistingFee > 0 && missingDelivery.length > 0) {
+            const totalDelivery = totalFees - totalExistingFee - totalExistingDelivery
+            if (totalDelivery > 0) {
+              const deliveryPerOrder = Math.round(totalDelivery / missingDelivery.length)
+              for (const o of missingDelivery) {
+                await db.update(orders).set({
+                  delivery_cost: String(deliveryPerOrder),
+                }).where(eq(orders.id, o.id))
+              }
+              debug.financeDeliveryFallback = `balance=${financeResult.balance}, totalDelivery=${totalDelivery}, perOrder=${deliveryPerOrder}`
             }
           }
-          debug.financeBalanceFallback = `balance=${financeResult.balance}, totalRev=${totalRevenue}, feeRate=${(feeRate * 100).toFixed(1)}%`
         }
       }
     } catch (e) {
