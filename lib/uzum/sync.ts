@@ -160,7 +160,6 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
   let itemsUpserted = 0
   let ordersInserted = 0
   const newOrders: string[] = []
-  const commissionBySkuId = new Map<string, number>()
 
   try {
     // ── Products: resolve shop(s), then pull product/SKU data ─────────────────
@@ -203,9 +202,6 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
           const list = res.productList ?? []
           for (const card of list) {
             for (const sku of card.skuList ?? []) {
-              if (sku.commission != null && sku.commission > 0) {
-                commissionBySkuId.set(String(sku.skuId), sku.commission)
-              }
               productRows.push({
                 shop_id: shopId,
                 marketplace_product_id: String(sku.skuId),
@@ -430,12 +426,6 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
     const distinctPrices = [...new Set(priceByMpid.values())]
     const soloPrice = distinctPrices.length === 1 ? distinctPrices[0] : null
 
-    // Average commission % across all known SKUs — fallback for orders with no items
-    const commissionValues = [...commissionBySkuId.values()]
-    const avgCommissionPct = commissionValues.length > 0
-      ? commissionValues.reduce((s, v) => s + v, 0) / commissionValues.length
-      : 0
-
     const orderRows = taggedOrders.map(({ o, ff }) => {
       // Support both new (id/dateCreated/price/orderItems) and legacy field names
       const extId = extIdOf(o)
@@ -445,26 +435,6 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
       const unitsFromTotal = allItems.length === 0 && soloPrice != null && revenue > 0 && revenue % soloPrice === 0
         ? revenue / soloPrice
         : null
-      // Per-item fee where possible. Previously, one missing SKU rate made
-      // the whole order fall back to a global estimate — losing the real
-      // per-item commissions we DID have. Now: use real rate when known,
-      // fill unknowns with avgCommissionPct (or leave null if we have no
-      // rate data at all).
-      let feeCalc = 0
-      let feeAny = false
-      for (const it of allItems) {
-        const qty = effectiveQty(o, it, allItems.length, priceByMpid.get(String(it.skuId)))
-        const knownRate = commissionBySkuId.get(String(it.skuId))
-        const rate = knownRate ?? (avgCommissionPct > 0 ? avgCommissionPct : null)
-        if (rate == null) continue
-        feeCalc += it.price * qty * rate / 100
-        feeAny = true
-      }
-      const marketplace_fee = feeAny && feeCalc > 0
-        ? feeCalc
-        : (allItems.length === 0 && avgCommissionPct > 0 && revenue > 0
-          ? revenue * avgCommissionPct / 100
-          : null)
       return {
         shop_id: shopId,
         order_id_external: extId,
@@ -477,7 +447,6 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
           | 'cancelled'
           | 'returned',
         revenue,
-        marketplace_fee,
         // Units, not line items: an order of 2× one SKU must show 2, not 1.
         items_count: allItems.length > 0
           ? allItems.reduce((s, it) => s + effectiveQty(o, it, allItems.length, priceByMpid.get(String(it.skuId))), 0)
@@ -511,7 +480,6 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
             fulfillment_type: r.fulfillment_type,
             status: r.status,
             revenue: String(r.revenue),
-            marketplace_fee: r.marketplace_fee != null ? String(r.marketplace_fee) : null,
             items_count: r.items_count,
             ordered_at: r.ordered_at,
           })))
@@ -522,7 +490,6 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
           fulfillment_type: r.fulfillment_type,
           status: r.status,
           revenue: String(r.revenue),
-          marketplace_fee: r.marketplace_fee != null ? String(r.marketplace_fee) : null,
           items_count: r.items_count,
           ordered_at: r.ordered_at,
         }).where(eq(orders.id, existingOrdMap.get(r.order_id_external)!))
