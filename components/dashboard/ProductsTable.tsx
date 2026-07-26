@@ -235,7 +235,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
 
   const tabCounts = {
     all:       enriched.length,
-    low_stock: enriched.filter(p => p.available_stock < stockThreshold).length,
+    low_stock: enriched.reduce((s, p) => s + p.available_stock, 0),
     delivered: enriched.filter(p => (p.delivered ?? 0) > 0).length,
     ordered:   enriched.filter(p => (p.in_transit ?? 0) > 0).length,
     cancelled: enriched.filter(p => (p.cancelled ?? 0) > 0).length,
