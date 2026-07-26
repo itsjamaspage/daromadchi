@@ -89,7 +89,7 @@ const _fetchProducts = unstable_cache(
       const ft = p.fulfillment_type
       const isFbo = ft === 'fbo' || ft === 'fby'
       const availableStock = isShared && key
-        ? Math.max(0, (isFbo ? p.stock_quantity : (groupMaxStock.get(key) ?? p.stock_quantity)) - (groupTotalSold.get(key) ?? 0))
+        ? (isFbo ? p.stock_quantity : (groupMaxStock.get(key) ?? p.stock_quantity))
         : p.stock_quantity
 
       return {
@@ -390,7 +390,7 @@ const _fetchProductsPaginated = unstable_cache(
       const ft = p.fulfillment_type
       const isFbo = ft === 'fbo' || ft === 'fby'
       const availableStock = isShared && key
-        ? Math.max(0, (isFbo ? p.stock_quantity : (groupMaxStock.get(key) ?? p.stock_quantity)) - (groupTotalSold.get(key) ?? 0))
+        ? (isFbo ? p.stock_quantity : (groupMaxStock.get(key) ?? p.stock_quantity))
         : p.stock_quantity
 
       return {
