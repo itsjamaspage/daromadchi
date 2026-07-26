@@ -1288,14 +1288,14 @@ function ExtensionSection({ lang }: { lang: Lang }) {
 
         <FadeUp delay={0.2}>
           <div style={{ textAlign: 'center' }}>
-            <Link href="/extension"
+            <a href="https://chromewebstore.google.com/detail/daromadchi-%E2%80%94-uzum-yandex/kdgmhemligckdjibcojbdiofokjjnaed" target="_blank" rel="noopener noreferrer"
               style={{ display: 'inline-flex', alignItems: 'center', gap: 8,
                 fontSize: 15, fontWeight: 700, background: acc.btn, color: acc.btnTxt,
                 padding: '14px 36px', borderRadius: 10, textDecoration: 'none', transition: 'all 0.15s' }}
               onMouseEnter={e => { e.currentTarget.style.background = acc.btnHov; e.currentTarget.style.transform = 'translateY(-2px)' }}
               onMouseLeave={e => { e.currentTarget.style.background = acc.btn; e.currentTarget.style.transform = 'translateY(0)' }}>
               {T.extension.installBtn[lang]} <ArrowRight size={16}/>
-            </Link>
+            </a>
             <p style={{ marginTop: 10, fontSize: 12, color: sub }}>
               {T.extension.browserNote[lang]}
             </p>
