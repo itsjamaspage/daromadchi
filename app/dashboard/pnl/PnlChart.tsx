@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { TrendingUp, TrendingDown } from 'lucide-react'
 
 function fmtM(v: number) {
@@ -107,14 +107,8 @@ export default function PnlChart({
         </div>
 
         {/* Area chart */}
-        <ResponsiveContainer width="100%" height={160}>
-          <AreaChart data={data} margin={{ top: 4, right: 4, left: -16, bottom: 0 }}>
-            <defs>
-              <linearGradient id={`grad-${active}`} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%"  stopColor={metric.color} stopOpacity={0.25} />
-                <stop offset="95%" stopColor={metric.color} stopOpacity={0.02} />
-              </linearGradient>
-            </defs>
+        <ResponsiveContainer width="100%" height={200}>
+          <BarChart data={data} margin={{ top: 4, right: 4, left: -16, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
             <XAxis dataKey="month" tick={{ fontSize: 10, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} />
             <YAxis tick={{ fontSize: 10, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false}
@@ -123,10 +117,10 @@ export default function PnlChart({
               contentStyle={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 11, padding: '4px 8px' }}
               labelStyle={{ color: 'var(--text-muted)', marginBottom: 2 }}
               formatter={(v) => [`${fmtFull(Number(v ?? 0))}${metric.unit ? ` ${metric.unit}` : ''}`, metric.label]}
+              cursor={{ fill: 'rgba(0,0,0,0.04)' }}
             />
-            <Area type="monotone" dataKey={active} stroke={metric.color} strokeWidth={2}
-              fill={`url(#grad-${active})`} dot={false} activeDot={{ r: 4, fill: metric.color, strokeWidth: 0 }} />
-          </AreaChart>
+            <Bar dataKey={active} fill={metric.color} radius={[6, 6, 0, 0]} maxBarSize={80} />
+          </BarChart>
         </ResponsiveContainer>
 
         {/* Month-by-month breakdown */}

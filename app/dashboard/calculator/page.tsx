@@ -130,7 +130,7 @@ export default function CalculatorPage() {
   }, [price, cost, logistics, adSpend, returnRate, units, commission, volume, payoutSched, mp])
 
   return (
-    <div className="space-y-6 max-w-5xl">
+    <div className="space-y-6 max-w-6xl mx-auto">
       <div>
         <div className="flex items-center gap-2 mb-0.5">
           <h1 className="text-2xl font-bold text-[var(--text-base)] flex items-center gap-2">

@@ -7,9 +7,16 @@ import { getProductSales } from '@/lib/db/products'
 import { getKpis } from '@/lib/db/kpis'
 import MarketplaceTabs from '@/components/dashboard/MarketplaceTabs'
 import EditableCostCell from '@/components/dashboard/EditableCostCell'
+import FulfillmentBadge from '@/components/dashboard/FulfillmentBadge'
 import PeriodSelector from './PeriodSelector'
 import { getT } from '@/lib/server-i18n'
 import type { MarketplaceType } from '@/lib/types'
+
+const MP_META: Record<string, { short: string; color: string; bg: string }> = {
+  uzum:          { short: 'UZ', color: '#494fdf', bg: 'rgba(73,79,223,0.12)'   },
+  yandex_market: { short: 'YM', color: '#E8A000', bg: 'rgba(232,160,0,0.12)'  },
+  wildberries:   { short: 'WB', color: '#CB11AB', bg: 'rgba(203,17,171,0.12)' },
+}
 
 function fmt(n: number) {
   return new Intl.NumberFormat('uz-UZ').format(Math.round(n))
@@ -222,7 +229,25 @@ export default async function AnalyticsPage({ searchParams }: Props) {
                       <tr key={row.product_id ?? row.title} style={{ borderBottom: idx < Math.min(periodSales.length, 20) - 1 ? '1px solid var(--border)' : 'none' }}>
                         <td className="px-5 py-3.5">
                           <p className="font-medium" style={{ color: 'var(--text-base)' }}>{row.title}</p>
-                          {row.sku && <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{row.sku}</p>}
+                          {row.sku && (
+                            <div className="flex items-center flex-wrap gap-1.5 mt-0.5">
+                              <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{row.sku}</span>
+                              {(() => {
+                                const matching = products.filter(p => p.sku === row.sku || p.id === row.product_id)
+                                const mps = [...new Set(matching.map(p => p.marketplace).filter(Boolean))]
+                                const fts = [...new Set(matching.map(p => p.fulfillment_type).filter(Boolean))]
+                                return (
+                                  <>
+                                    {mps.map(mp => {
+                                      const m = MP_META[mp!]
+                                      return m ? <span key={mp} className="text-[10px] font-bold px-1.5 py-0.5 rounded" style={{ background: m.bg, color: m.color }}>{m.short}</span> : null
+                                    })}
+                                    {fts.map(ft => <FulfillmentBadge key={ft} type={ft} />)}
+                                  </>
+                                )
+                              })()}
+                            </div>
+                          )}
                         </td>
                         <td className="px-4 py-3.5 text-right font-semibold" style={{ color: 'var(--c1)' }}>{row.qty_sold}</td>
                         <td className="px-4 py-3.5 text-right font-semibold" style={{ color: row.qty_in_transit > 0 ? '#f59e0b' : 'var(--text-muted)' }}>{row.qty_in_transit}</td>
@@ -295,7 +320,11 @@ export default async function AnalyticsPage({ searchParams }: Props) {
                       <tr key={p.id} style={{ borderBottom: idx < sortedByMargin.length - 1 ? '1px solid var(--border)' : 'none' }}>
                         <td className="px-5 py-3.5">
                           <p className="font-medium" style={{ color: 'var(--text-base)' }}>{p.title}</p>
-                          <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{p.sku}</p>
+                          <div className="flex items-center flex-wrap gap-1.5 mt-0.5">
+                            <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{p.sku}</span>
+                            {p.marketplace && (() => { const m = MP_META[p.marketplace]; return m ? <span className="text-[10px] font-bold px-1.5 py-0.5 rounded" style={{ background: m.bg, color: m.color }}>{m.short}</span> : null })()}
+                            <FulfillmentBadge type={p.fulfillment_type} />
+                          </div>
                         </td>
                         <td className="px-4 py-3.5 text-right" style={{ color: 'var(--text-dim)' }}>{fmt(price)} so'm</td>
                         <td className="px-4 py-3.5 text-right">
