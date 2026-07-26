@@ -270,9 +270,13 @@ export async function computeStockGroups(userId: string, shopIds: string[]): Pro
 
     const hasBaseline = link?.total_physical_stock != null && link.baseline_at != null
     const sinceBaseline = soldSinceBaseline.get(key) ?? 0
+    // API mode: stock_quantity from the marketplace API already reflects
+    // completed sales. Only subtract pending/confirmed orders (in-process)
+    // that the API may not have accounted for yet. Baseline mode keeps its
+    // own running tally of sold-since-baseline.
     const leftover = hasBaseline
       ? Math.max(0, link!.total_physical_stock! - sinceBaseline)
-      : Math.max(0, totalStock - totalSold)
+      : Math.max(0, totalStock - totalInProcess)
 
     const dailyVelocity = sold14 / 14
     result.push({
