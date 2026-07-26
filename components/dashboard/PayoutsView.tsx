@@ -48,17 +48,19 @@ function StatusBadge({ status }: { status: PayoutEntry['status'] }) {
 function DeductionBar({ entry }: { entry: PayoutEntry }) {
   const { lang } = useLang()
   const t = dashT[lang].payouts
-  const total = entry.commission + entry.delivery + entry.returns + entry.adSpend + entry.acquiring + entry.tax + entry.otherDeductions
+  const total = entry.commission + entry.delivery + entry.returns + entry.adSpend + entry.acquiring + entry.tax + entry.penalty + entry.storageFee + entry.additionalPayment + entry.otherDeductions
   if (total === 0) return null
 
   const segments = [
-    { label: t.segCommission, value: entry.commission,      color: 'bg-violet-500' },
-    { label: t.segDelivery,   value: entry.delivery,        color: 'bg-blue-500'   },
-    { label: t.segReturns,    value: entry.returns,         color: 'bg-red-500'    },
-    { label: t.segAd,         value: entry.adSpend,         color: 'bg-amber-500'  },
-    { label: t.segAcquiring,  value: entry.acquiring,       color: 'bg-cyan-500'   },
-    { label: t.segTax,        value: entry.tax,             color: 'bg-pink-500'   },
-    { label: t.segOther,      value: entry.otherDeductions, color: 'bg-slate-500'  },
+    { label: t.segCommission, value: entry.commission,        color: 'bg-violet-500' },
+    { label: t.segDelivery,   value: entry.delivery,          color: 'bg-blue-500'   },
+    { label: t.segReturns,    value: entry.returns,           color: 'bg-red-500'    },
+    { label: t.segAd,         value: entry.adSpend,           color: 'bg-amber-500'  },
+    { label: t.segAcquiring,  value: entry.acquiring,         color: 'bg-cyan-500'   },
+    { label: t.segTax,        value: entry.tax,               color: 'bg-pink-500'   },
+    { label: 'Penalty',       value: entry.penalty,           color: 'bg-orange-500' },
+    { label: 'Storage',       value: entry.storageFee,        color: 'bg-teal-500'   },
+    { label: t.segOther,      value: entry.otherDeductions + entry.additionalPayment, color: 'bg-slate-500' },
   ].filter(s => s.value > 0)
 
   return (

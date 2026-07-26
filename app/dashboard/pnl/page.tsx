@@ -153,7 +153,7 @@ export default async function PnlPage({ searchParams }: Props) {
             data={monthlyData.map(m => ({
               month:   m.month,
               revenue: m.revenue,
-              cost:    m.commission + m.delivery + m.acquiring + m.tax + m.ads + m.cogs,
+              cost:    m.commission + m.delivery + m.acquiring + m.tax + m.ads + m.cogs + m.penalty + m.storageFee + m.additionalPayment,
               profit:  m.net,
               orders:  m.order_count,
             }))}
@@ -199,9 +199,9 @@ export default async function PnlPage({ searchParams }: Props) {
                         <td className={num}>{fmt(m.revenue)}</td>
                         <td className={num}>{est(m.commission, m.estimated)}</td>
                         <td className={num}>{m.delivery > 0 ? est(m.delivery, m.estimated) : '—'}</td>
-                        <td className={num}>{est(m.acquiring, true)}</td>
+                        <td className={num}>{est(m.acquiring, m.estimated)}</td>
                         <td className={num}>{est(m.tax, true)}</td>
-                        <td className={num}>{est(m.ads, true)}</td>
+                        <td className={num}>{est(m.ads, m.adSpendEstimated)}</td>
                         <td className={num}>{m.cogs > 0 ? fmt(m.cogs) : '—'}</td>
                         <td className={`${num} font-bold`}>{fmt(m.net)}</td>
                         <td className={num}>{margin.toFixed(1)}%</td>
@@ -216,9 +216,9 @@ export default async function PnlPage({ searchParams }: Props) {
                     <td className={`${num} font-bold`}>{fmt(totals.revenue)}</td>
                     <td className={`${num} font-bold`}>{est(totals.commission, anyEstimated)}</td>
                     <td className={`${num} font-bold`}>{totals.delivery > 0 ? fmt(totals.delivery) : '—'}</td>
-                    <td className={`${num} font-bold`}>{est(totals.acquiring, true)}</td>
+                    <td className={`${num} font-bold`}>{est(totals.acquiring, anyEstimated)}</td>
                     <td className={`${num} font-bold`}>{est(totals.tax, true)}</td>
-                    <td className={`${num} font-bold`}>{est(totals.ads, true)}</td>
+                    <td className={`${num} font-bold`}>{est(totals.ads, monthlyData.some(m => m.adSpendEstimated))}</td>
                     <td className={`${num} font-bold`}>{totals.cogs > 0 ? fmt(totals.cogs) : '—'}</td>
                     <td className={`${num} font-bold`}>{fmt(totals.net)}</td>
                     <td className={`${num} font-bold`}>{avgMargin.toFixed(1)}%</td>

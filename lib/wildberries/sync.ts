@@ -379,14 +379,22 @@ export async function syncFromWildberries(
     }
 
     if (allReportEntries.length > 0) {
-      const financeByOrder = new Map<string, { commission: number; delivery: number }>()
+      const financeByOrder = new Map<string, {
+        commission: number; delivery: number
+        penalty: number; storageFee: number; additionalPayment: number
+      }>()
       for (const entry of allReportEntries) {
         const srid = entry.srid ? String(entry.srid) : ''
         const gNumber = sridToGNumber.get(srid) ?? srid
         if (!gNumber) continue
-        const existing = financeByOrder.get(gNumber) ?? { commission: 0, delivery: 0 }
+        const existing = financeByOrder.get(gNumber) ?? {
+          commission: 0, delivery: 0, penalty: 0, storageFee: 0, additionalPayment: 0,
+        }
         existing.commission += Math.abs(Number(entry.ppvz_sales_commission ?? 0))
         existing.delivery += Math.abs(Number(entry.delivery_rub ?? 0))
+        existing.penalty += Math.abs(Number(entry.penalty ?? 0))
+        existing.storageFee += Math.abs(Number(entry.storage_fee ?? 0))
+        existing.additionalPayment += Math.abs(Number(entry.additional_payment ?? 0))
         financeByOrder.set(gNumber, existing)
       }
 
@@ -402,10 +410,13 @@ export async function syncFromWildberries(
 
         for (const dbOrder of dbOrdersForFinance) {
           const finance = financeByOrder.get(dbOrder.order_id_external as string)
-          if (finance && (finance.commission > 0 || finance.delivery > 0)) {
+          if (finance && (finance.commission > 0 || finance.delivery > 0 || finance.penalty > 0 || finance.storageFee > 0 || finance.additionalPayment > 0)) {
             await db.update(orders).set({
               marketplace_fee: String(finance.commission),
               delivery_cost: String(finance.delivery),
+              penalty: String(finance.penalty),
+              storage_fee: String(finance.storageFee),
+              additional_payment: String(finance.additionalPayment),
             }).where(eq(orders.id, dbOrder.id))
           }
         }

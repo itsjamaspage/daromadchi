@@ -1,5 +1,5 @@
 import { inArray, gte, and, ne, eq, sql, asc } from 'drizzle-orm'
-import { db, orders, orderItems, products, shops } from '@/lib/db'
+import { db, orders, orderItems, products, shops, productAdsStats } from '@/lib/db'
 import { getShopIds } from '@/lib/db/shop-context'
 import { getUnitEcoSettings } from '@/lib/db/unit-economics'
 import type { PayoutEntry } from '@/lib/types'
@@ -19,7 +19,8 @@ export async function getPayoutEntries(): Promise<PayoutEntry[]> {
   const since = new Date()
   since.setMonth(since.getMonth() - 12)
 
-  const [orderRows, cogsRows] = await Promise.all([
+  const sinceStr = since.toISOString().slice(0, 10)
+  const [orderRows, cogsRows, adSpendRows] = await Promise.all([
     db.select({
       shop_id: orders.shop_id,
       ordered_at: orders.ordered_at,
@@ -27,6 +28,9 @@ export async function getPayoutEntries(): Promise<PayoutEntry[]> {
       revenue: orders.revenue,
       marketplace_fee: orders.marketplace_fee,
       delivery_cost: orders.delivery_cost,
+      penalty: orders.penalty,
+      storage_fee: orders.storage_fee,
+      additional_payment: orders.additional_payment,
     }).from(orders)
       .where(and(
         inArray(orders.shop_id, allShopIds),
@@ -47,14 +51,27 @@ export async function getPayoutEntries(): Promise<PayoutEntry[]> {
         ne(orders.status, 'returned'),
       ))
       .groupBy(sql`to_char(${orders.ordered_at}, 'YYYY-MM')`, orders.marketplace),
+    db.select({
+      month: sql<string>`to_char(${productAdsStats.date}::date, 'YYYY-MM')`.as('month'),
+      marketplace: shops.marketplace,
+      spend: sql<number>`coalesce(sum(${productAdsStats.spend}), 0)`.as('spend'),
+    }).from(productAdsStats)
+      .innerJoin(shops, eq(productAdsStats.shop_id, shops.id))
+      .where(and(
+        inArray(productAdsStats.shop_id, allShopIds),
+        gte(productAdsStats.date, sinceStr),
+      ))
+      .groupBy(sql`to_char(${productAdsStats.date}::date, 'YYYY-MM')`, shops.marketplace),
   ])
 
   if (orderRows.length === 0) return []
 
   const cogsMap = new Map(cogsRows.map(r => [`${r.month}|${r.marketplace}`, Number(r.cogs)]))
+  const realAdSpendMap = new Map(adSpendRows.map(r => [`${r.month}|${r.marketplace}`, Number(r.spend)]))
 
   type Bucket = {
     revenue: number; realFee: number; realDelivery: number
+    penalty: number; storageFee: number; additionalPayment: number
     count: number; returnCount: number; returnAmount: number
   }
   const grouped = new Map<string, Bucket>()
@@ -65,7 +82,9 @@ export async function getPayoutEntries(): Promise<PayoutEntry[]> {
     const mp = mpByShop.get(row.shop_id) ?? 'uzum'
     const key = `${monthKey}|${mp}`
     const b = grouped.get(key) ?? {
-      revenue: 0, realFee: 0, realDelivery: 0, count: 0, returnCount: 0, returnAmount: 0,
+      revenue: 0, realFee: 0, realDelivery: 0,
+      penalty: 0, storageFee: 0, additionalPayment: 0,
+      count: 0, returnCount: 0, returnAmount: 0,
     }
 
     if (row.status === 'cancelled' || row.status === 'returned') {
@@ -75,6 +94,9 @@ export async function getPayoutEntries(): Promise<PayoutEntry[]> {
       b.revenue += Number(row.revenue ?? 0)
       b.realFee += Number(row.marketplace_fee ?? 0)
       b.realDelivery += Number(row.delivery_cost ?? 0)
+      b.penalty += Number(row.penalty ?? 0)
+      b.storageFee += Number(row.storage_fee ?? 0)
+      b.additionalPayment += Number(row.additional_payment ?? 0)
       b.count += 1
     }
     grouped.set(key, b)
@@ -88,11 +110,17 @@ export async function getPayoutEntries(): Promise<PayoutEntry[]> {
     const estimated = v.realFee === 0 && v.revenue > 0
     const commission = estimated ? v.revenue * ue.defaultCommissionPct / 100 : v.realFee
     const delivery = v.realDelivery > 0 ? v.realDelivery : v.revenue * ue.lastMilePct / 100
-    const acquiring = v.revenue * ue.acquiringPct / 100
+    // Acquiring is bundled into marketplace commission. Only add as
+    // separate estimate when commission itself is estimated.
+    const acquiring = estimated ? v.revenue * ue.acquiringPct / 100 : 0
     const tax = v.revenue * ue.taxPct / 100
-    const adSpend = v.revenue * ue.adPct / 100
+    const realAdSpend = realAdSpendMap.get(key) ?? 0
+    const adSpend = realAdSpend > 0 ? realAdSpend : (v.revenue > 0 ? v.revenue * ue.adPct / 100 : 0)
     const cogs = cogsMap.get(key) ?? 0
-    const netPayout = v.revenue - commission - delivery - acquiring - tax - adSpend - cogs
+    const penalty = v.penalty
+    const storageFee = v.storageFee
+    const additionalPayment = v.additionalPayment
+    const netPayout = v.revenue - commission - delivery - acquiring - tax - adSpend - cogs - penalty - storageFee - additionalPayment
 
     const isPast = monthKey < currentMonth
 
@@ -107,6 +135,9 @@ export async function getPayoutEntries(): Promise<PayoutEntry[]> {
       adSpend,
       acquiring,
       tax,
+      penalty,
+      storageFee,
+      additionalPayment,
       otherDeductions: cogs,
       netPayout,
       ordersCount: v.count,

@@ -136,6 +136,9 @@ export const orders = pgTable('orders', {
   revenue:           numeric('revenue'),
   marketplace_fee:   numeric('marketplace_fee'),
   delivery_cost:     numeric('delivery_cost'),
+  penalty:           numeric('penalty').default('0'),
+  storage_fee:       numeric('storage_fee').default('0'),
+  additional_payment: numeric('additional_payment').default('0'),
   items_count:       integer('items_count').default(0).notNull(),
   ordered_at:        timestamp('ordered_at', { withTimezone: true }).notNull(),
 }, (t) => [

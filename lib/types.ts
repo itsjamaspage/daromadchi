@@ -193,6 +193,9 @@ export interface PayoutEntry {
   adSpend: number
   acquiring: number
   tax: number
+  penalty: number
+  storageFee: number
+  additionalPayment: number
   otherDeductions: number
   netPayout: number
   ordersCount: number
