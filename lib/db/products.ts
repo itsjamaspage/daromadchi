@@ -71,7 +71,7 @@ const _fetchProducts = unstable_cache(
     const groupMaxStock = new Map<string, number>()
     for (const p of productRows) {
       if (!p.sku) continue
-      const key = p.sku.trim().toLowerCase()
+      const key = p.sku.trim().toLowerCase().replace(/[\s\-_./]+/g, '')
       const sold = soldByProductId.get(p.id) ?? 0
       groupTotalSold.set(key, (groupTotalSold.get(key) ?? 0) + sold)
       groupShopCount.set(key, (groupShopCount.get(key) ?? 0) + 1)
@@ -84,7 +84,7 @@ const _fetchProducts = unstable_cache(
       const dbInTransit = inTransitByProductId.get(p.id) ?? 0
       const surplus = p.quantity_sold != null ? Math.max(p.quantity_sold - orderSold, 0) : 0
       const deliveredUnits = Math.max(orderSold - dbInTransit, 0)
-      const key = p.sku ? p.sku.trim().toLowerCase() : null
+      const key = p.sku ? p.sku.trim().toLowerCase().replace(/[\s\-_./]+/g, '') : null
       const isShared = key ? (groupShopCount.get(key) ?? 0) > 1 : false
       const ft = p.fulfillment_type
       const isFbo = ft === 'fbo' || ft === 'fby'
@@ -373,7 +373,7 @@ const _fetchProductsPaginated = unstable_cache(
     const groupMaxStock = new Map<string, number>()
     for (const p of productRows) {
       if (!p.sku) continue
-      const key = p.sku.trim().toLowerCase()
+      const key = p.sku.trim().toLowerCase().replace(/[\s\-_./]+/g, '')
       groupTotalSold.set(key, (groupTotalSold.get(key) ?? 0) + (soldMap.get(p.id) ?? 0))
       groupShopCount.set(key, (groupShopCount.get(key) ?? 0) + 1)
       groupMaxStock.set(key, Math.max(groupMaxStock.get(key) ?? 0, p.stock_quantity))
@@ -385,7 +385,7 @@ const _fetchProductsPaginated = unstable_cache(
       const dbInTransit = inTransitMap.get(p.id) ?? 0
       const surplus = p.quantity_sold != null ? Math.max(p.quantity_sold - orderSold, 0) : 0
       const deliveredUnits = Math.max(orderSold - dbInTransit, 0)
-      const key = p.sku ? p.sku.trim().toLowerCase() : null
+      const key = p.sku ? p.sku.trim().toLowerCase().replace(/[\s\-_./]+/g, '') : null
       const isShared = key ? (groupShopCount.get(key) ?? 0) > 1 : false
       const ft = p.fulfillment_type
       const isFbo = ft === 'fbo' || ft === 'fby'
