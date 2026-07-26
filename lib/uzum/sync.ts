@@ -1,4 +1,4 @@
-import { eq, and, inArray, count, sql } from 'drizzle-orm'
+import { eq, ne, and, inArray, count, sql } from 'drizzle-orm'
 import { db, shops, products, orders, orderItems, syncDays, adCampaigns } from '@/lib/db'
 import { clearShopData } from '@/lib/db/clear-shop-data'
 import {
@@ -894,27 +894,47 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
           debug.financeOrdersUpdated = String(dbFinanceOrders.length)
         }
       } else if (financeResult.balance != null && financeResult.balance > 0) {
-        const activeOrders = await db.select({
+        const allOrders = await db.select({
           id: orders.id,
           revenue: orders.revenue,
           marketplace_fee: orders.marketplace_fee,
+          delivery_cost: orders.delivery_cost,
         }).from(orders).where(and(
           eq(orders.shop_id, shopId),
-          sql`${orders.marketplace_fee} is null or ${orders.marketplace_fee} = '0'`,
+          ne(orders.status, 'cancelled'),
         ))
-        const totalRevenue = activeOrders.reduce((s, o) => s + Number(o.revenue ?? 0), 0)
+        const totalRevenue = allOrders.reduce((s, o) => s + Number(o.revenue ?? 0), 0)
+        const totalExistingFee = allOrders.reduce((s, o) => s + Number(o.marketplace_fee ?? 0), 0)
+        const totalExistingDelivery = allOrders.reduce((s, o) => s + Number(o.delivery_cost ?? 0), 0)
+
         if (totalRevenue > 0 && totalRevenue > financeResult.balance) {
-          const totalFee = totalRevenue - financeResult.balance
-          const feeRate = totalFee / totalRevenue
-          for (const o of activeOrders) {
-            const rev = Number(o.revenue ?? 0)
-            if (rev > 0) {
-              await db.update(orders).set({
-                marketplace_fee: String(Math.round(rev * feeRate)),
-              }).where(eq(orders.id, o.id))
+          const totalFees = totalRevenue - financeResult.balance
+          const missingCommission = allOrders.filter(o => !Number(o.marketplace_fee))
+          const missingDelivery = allOrders.filter(o => !Number(o.delivery_cost))
+
+          if (missingCommission.length > 0 && totalExistingFee === 0) {
+            const feeRate = totalFees / totalRevenue
+            for (const o of missingCommission) {
+              const rev = Number(o.revenue ?? 0)
+              if (rev > 0) {
+                await db.update(orders).set({
+                  marketplace_fee: String(Math.round(rev * feeRate)),
+                }).where(eq(orders.id, o.id))
+              }
+            }
+            debug.financeBalanceFallback = `balance=${financeResult.balance}, totalRev=${totalRevenue}, feeRate=${(feeRate * 100).toFixed(1)}%`
+          } else if (totalExistingFee > 0 && missingDelivery.length > 0) {
+            const totalDelivery = totalFees - totalExistingFee - totalExistingDelivery
+            if (totalDelivery > 0) {
+              const deliveryPerOrder = Math.round(totalDelivery / missingDelivery.length)
+              for (const o of missingDelivery) {
+                await db.update(orders).set({
+                  delivery_cost: String(deliveryPerOrder),
+                }).where(eq(orders.id, o.id))
+              }
+              debug.financeDeliveryFallback = `balance=${financeResult.balance}, totalDelivery=${totalDelivery}, perOrder=${deliveryPerOrder}`
             }
           }
-          debug.financeBalanceFallback = `balance=${financeResult.balance}, totalRev=${totalRevenue}, feeRate=${(feeRate * 100).toFixed(1)}%`
         }
       }
     } catch (e) {
