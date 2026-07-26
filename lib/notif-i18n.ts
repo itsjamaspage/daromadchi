@@ -17,6 +17,8 @@ interface NotifStrings {
   noOrders: string
   orders: string
   revenue: string
+  profit: string
+  commission: string
   unitsSold: string
   cancelled: string
   byCategory: string
@@ -26,6 +28,10 @@ interface NotifStrings {
   lowStockUnit: string
   lowStockDays: (n: number) => string
   lowStockCta: string
+  deliveryTitle: (n: number) => string
+  deliverTo: string
+  deliverBy: string
+  fromMarket: string
   fullAnalytics: string
   som: string
   testHeader: string
@@ -40,8 +46,10 @@ const STRINGS: Record<NotifLang, NotifStrings> = {
     noOrders:       "Buyurtmalar yo'q.",
     orders:         'Buyurtmalar',
     revenue:        'Tushum',
-    unitsSold:      'Sotilgan mahsulot',
-    cancelled:      'Bekor qilingan',
+    profit:         'Foyda',
+    commission:     'Komissiya',
+    unitsSold:      'Sotilgan',
+    cancelled:      'Bekor',
     byCategory:     'Kategoriyalar bo\'yicha',
     uncategorized:  'Boshqa',
     lowStockTitle:  (n) => `📉 <b>Kam zaxira (${n})</b>`,
@@ -49,6 +57,10 @@ const STRINGS: Record<NotifLang, NotifStrings> = {
     lowStockUnit:   'dona',
     lowStockDays:   (n) => `~${n} kun`,
     lowStockCta:    "Yangi partiya buyurtma qiling yoki reklamani to'xtating.",
+    deliveryTitle:  (n) => `📦 <b>Yetkazish kerak (${n})</b>`,
+    deliverTo:      'PVZ ga',
+    deliverBy:      'gacha',
+    fromMarket:     'dan',
     fullAnalytics:  "To'liq tahlil",
     som:            "so'm",
     testHeader:     '🔔 <b>Test bildirishnoma</b>\nBu bildirishnomalar to\'g\'ri ishlayotganini tekshirish uchun namuna.',
@@ -61,8 +73,10 @@ const STRINGS: Record<NotifLang, NotifStrings> = {
     noOrders:       'Заказов нет.',
     orders:         'Заказы',
     revenue:        'Выручка',
-    unitsSold:      'Продано товаров',
-    cancelled:      'Отменённые',
+    profit:         'Прибыль',
+    commission:     'Комиссия',
+    unitsSold:      'Продано',
+    cancelled:      'Отмена',
     byCategory:     'По категориям',
     uncategorized:  'Прочее',
     lowStockTitle:  (n) => `📉 <b>Низкий остаток (${n})</b>`,
@@ -70,6 +84,10 @@ const STRINGS: Record<NotifLang, NotifStrings> = {
     lowStockUnit:   'шт',
     lowStockDays:   (n) => `~${n} дн.`,
     lowStockCta:    'Закажите новую партию или приостановите рекламу.',
+    deliveryTitle:  (n) => `📦 <b>К отправке (${n})</b>`,
+    deliverTo:      'в ПВЗ',
+    deliverBy:      'до',
+    fromMarket:     'из',
     fullAnalytics:  'Полная аналитика',
     som:            'сум',
     testHeader:     '🔔 <b>Тестовое уведомление</b>\nОбразец, чтобы проверить, что уведомления приходят правильно.',
@@ -82,7 +100,9 @@ const STRINGS: Record<NotifLang, NotifStrings> = {
     noOrders:       'No orders.',
     orders:         'Orders',
     revenue:        'Revenue',
-    unitsSold:      'Units sold',
+    profit:         'Profit',
+    commission:     'Commission',
+    unitsSold:      'Sold',
     cancelled:      'Cancelled',
     byCategory:     'By category',
     uncategorized:  'Other',
@@ -91,6 +111,10 @@ const STRINGS: Record<NotifLang, NotifStrings> = {
     lowStockUnit:   'pcs',
     lowStockDays:   (n) => `~${n} days`,
     lowStockCta:    'Order a new batch or pause advertising.',
+    deliveryTitle:  (n) => `📦 <b>To ship (${n})</b>`,
+    deliverTo:      'to PVZ',
+    deliverBy:      'by',
+    fromMarket:     'from',
     fullAnalytics:  'Full analytics',
     som:            'som',
     testHeader:     '🔔 <b>Test notification</b>\nA sample to check that notifications arrive correctly.',

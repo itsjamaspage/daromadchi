@@ -1,9 +1,13 @@
 import { eq, ne, and, inArray, gte, lt, sql } from 'drizzle-orm'
-import { db, shops as shopsTable, orders as ordersTable, orderItems as orderItemsTable, products as productsTable } from '@/lib/db'
+import { db, shops as shopsTable, orders as ordersTable, orderItems as orderItemsTable, products as productsTable, userSettings as userSettingsTable } from '@/lib/db'
 import { computeStockGroups, lowStockGroups } from '@/lib/db/stock-groups'
 import { notifT, fmtNumber, type NotifLang } from '@/lib/notif-i18n'
 
-const MP_SHORT = { uzum: 'UZ', wildberries: 'WB', yandex_market: 'YM' } as const
+const MP_FLAG: Record<string, string> = {
+  uzum:          '🟣UZ',
+  wildberries:   '🟣WB',
+  yandex_market: '🟡YM',
+}
 
 export interface DigestUser {
   user_id:               string
@@ -25,29 +29,39 @@ export async function buildDigestForUser(
   const lang = (s.notif_lang ?? 'uz') as NotifLang
   const t = notifT(lang)
 
-  const shopRows = await db.select({ id: shopsTable.id }).from(shopsTable)
+  const shopRows = await db.select({ id: shopsTable.id, marketplace: shopsTable.marketplace })
+    .from(shopsTable)
     .where(eq(shopsTable.user_id, s.user_id))
   const shopIds = shopRows.map(r => r.id)
   if (shopIds.length === 0) return null
+
+  const mpByShop = new Map<string, string>(shopRows.map(r => [r.id, r.marketplace]))
+
+  const [ueRow] = await db.select({ commPct: userSettingsTable.ue_comm_pct })
+    .from(userSettingsTable).where(eq(userSettingsTable.user_id, s.user_id))
+  const commPct = ueRow ? Number(ueRow.commPct) : 10
 
   const parts: string[] = []
 
   // ── Daily summary (yesterday's sales) ──
   if (s.notif_daily_summary) {
-    const day = await buildSalesSummary(shopIds, 1, lang)
+    const day = await buildSalesSummary(shopIds, mpByShop, 1, lang, commPct)
     if (day) parts.push(`${t.dailyTitle}\n` + day)
 
-    // Orders received TODAY (midnight → now): the digest goes out at the
-    // user's chosen time, and today's orders would otherwise only appear in
-    // tomorrow's digest. Silent when today has no activity.
-    const today = await buildSalesSummary(shopIds, 0, lang)
+    const today = await buildSalesSummary(shopIds, mpByShop, 0, lang, commPct)
     if (today) parts.push(`${t.todayTitle}\n` + today)
   }
 
   // ── Weekly report (last 7 days, Mondays only) ──
   if (s.notif_weekly_report && includeWeekly) {
-    const week = await buildSalesSummary(shopIds, 7, lang)
+    const week = await buildSalesSummary(shopIds, mpByShop, 7, lang, commPct)
     if (week) parts.push(`${t.weeklyTitle(7)}\n` + week)
+  }
+
+  // ── Pending deliveries (FBS orders the seller must ship) ──
+  if (s.notif_daily_summary) {
+    const pending = await buildPendingDeliveries(shopIds, mpByShop, lang)
+    if (pending) parts.push(pending)
   }
 
   // ── Low-stock alerts (total leftover across all marketplaces) ──
@@ -60,10 +74,10 @@ export async function buildDigestForUser(
         const lines = low.map(g => {
           const perMp = (['uzum', 'wildberries', 'yandex_market'] as const)
             .filter(mp => mp in g.stock_by_marketplace)
-            .map(mp => `${MP_SHORT[mp]} ${g.stock_by_marketplace[mp]}`)
+            .map(mp => `${MP_FLAG[mp]} ${g.stock_by_marketplace[mp]}`)
             .join(' · ')
           const days = g.days_of_stock !== null ? `, ${t.lowStockDays(g.days_of_stock)}` : ''
-          return `• ${g.title} — ${t.lowStockTotal} <b>${g.leftover}</b> ${t.lowStockUnit}${perMp ? ` (${perMp})` : ''}${days}`
+          return `• ${truncate(g.title, 35)} — <b>${g.leftover}</b> ${t.lowStockUnit} (${perMp})${days}`
         }).join('\n')
         parts.push(`${t.lowStockTitle(low.length)}\n${lines}\n${t.lowStockCta}`)
       }
@@ -76,102 +90,135 @@ export async function buildDigestForUser(
   return { text, headers: parts.map(p => p.split('\n')[0]) }
 }
 
+function truncate(s: string, max: number): string {
+  return s.length <= max ? s : s.slice(0, max - 1) + '…'
+}
+
 /**
- * Sales summary for the last `days` days (days=0 → today so far, midnight to
- * now). Includes order count, revenue, total units sold, a per-category unit
- * breakdown, and cancelled order count. Cancelled/returned orders are excluded
- * from sold totals but counted separately.
+ * Sales summary for the last `days` days (days=0 → today so far).
+ * Now includes per-marketplace breakdown and estimated profit.
  */
 async function buildSalesSummary(
   shopIds: string[],
+  mpByShop: Map<string, string>,
   days: number,
   lang: NotifLang,
+  commPct: number,
 ): Promise<string | null> {
   const t = notifT(lang)
-  // Compute midnight in Uzbekistan (UTC+5) so "yesterday" matches the user's
-  // calendar day, not UTC's.
   const UZ_MS = 5 * 60 * 60_000
   const nowUz = new Date(Date.now() + UZ_MS)
   const midnightUz = new Date(Date.UTC(nowUz.getUTCFullYear(), nowUz.getUTCMonth(), nowUz.getUTCDate()))
-  // Shift back to real UTC: UZ midnight = UTC (midnight - 5h)
   const midnightUtc = new Date(midnightUz.getTime() - UZ_MS)
   const since = new Date(midnightUtc.getTime() - days * 86_400_000)
   const until = days === 0 ? new Date() : midnightUtc
 
-  const [orderRows, unitRows, catRows] = await Promise.all([
-    // Order-level aggregates. status split so cancelled is counted separately.
-    db.select({
-      status: ordersTable.status,
-      revenue: ordersTable.revenue,
-    }).from(ordersTable)
-      .where(and(
-        inArray(ordersTable.shop_id, shopIds),
-        gte(ordersTable.ordered_at, since),
-        lt(ordersTable.ordered_at, until),
-      )),
-    // Total units sold on non-cancelled/returned orders.
-    db.select({
-      units: sql<number>`coalesce(sum(${orderItemsTable.quantity}), 0)`,
-    }).from(orderItemsTable)
-      .innerJoin(ordersTable, eq(orderItemsTable.order_id, ordersTable.id))
-      .where(and(
-        inArray(ordersTable.shop_id, shopIds),
-        gte(ordersTable.ordered_at, since),
-        lt(ordersTable.ordered_at, until),
-        ne(ordersTable.status, 'cancelled'),
-        ne(ordersTable.status, 'returned'),
-      )),
-    // Units per category (non-cancelled/returned).
-    db.select({
-      category: productsTable.category,
-      units: sql<number>`coalesce(sum(${orderItemsTable.quantity}), 0)`,
-    }).from(orderItemsTable)
-      .innerJoin(ordersTable, eq(orderItemsTable.order_id, ordersTable.id))
-      .leftJoin(productsTable, eq(orderItemsTable.product_id, productsTable.id))
-      .where(and(
-        inArray(ordersTable.shop_id, shopIds),
-        gte(ordersTable.ordered_at, since),
-        lt(ordersTable.ordered_at, until),
-        ne(ordersTable.status, 'cancelled'),
-        ne(ordersTable.status, 'returned'),
-      ))
-      .groupBy(productsTable.category),
-  ])
+  const orderRows = await db.select({
+    id: ordersTable.id,
+    shop_id: ordersTable.shop_id,
+    status: ordersTable.status,
+    revenue: ordersTable.revenue,
+    marketplace_fee: ordersTable.marketplace_fee,
+    delivery_cost: ordersTable.delivery_cost,
+    order_id_external: ordersTable.order_id_external,
+  }).from(ordersTable)
+    .where(and(
+      inArray(ordersTable.shop_id, shopIds),
+      gte(ordersTable.ordered_at, since),
+      lt(ordersTable.ordered_at, until),
+    ))
 
   const active    = orderRows.filter(o => o.status !== 'cancelled' && o.status !== 'returned')
   const cancelled = orderRows.filter(o => o.status === 'cancelled')
 
   if (active.length === 0 && cancelled.length === 0) {
-    // Today-so-far section stays silent when empty; yesterday/week sections
-    // say "no orders" explicitly so the digest isn't mistaken for broken.
     return days === 0 ? null : t.noOrders
   }
 
-  const revenue = active.reduce((sum, o) => sum + Number(o.revenue ?? 0), 0)
-  const units   = Number(unitRows[0]?.units ?? 0)
+  // Per-marketplace aggregation
+  const mpStats = new Map<string, { orders: number; revenue: number; fee: number; delivery: number }>()
+  for (const o of active) {
+    const mp = mpByShop.get(o.shop_id) ?? 'uzum'
+    const s = mpStats.get(mp) ?? { orders: 0, revenue: 0, fee: 0, delivery: 0 }
+    s.orders += 1
+    s.revenue += Number(o.revenue ?? 0)
+    s.fee += Number(o.marketplace_fee ?? 0)
+    s.delivery += Number(o.delivery_cost ?? 0)
+    mpStats.set(mp, s)
+  }
 
-  const lines: string[] = [
-    `🛒 ${t.orders}: <b>${active.length}</b>`,
-    `💰 ${t.revenue}: <b>${fmtNumber(revenue, lang)} ${t.som}</b>`,
-  ]
+  const totalRevenue = active.reduce((s, o) => s + Number(o.revenue ?? 0), 0)
+  const totalFee = active.reduce((s, o) => s + Number(o.marketplace_fee ?? 0), 0)
+  const totalDelivery = active.reduce((s, o) => s + Number(o.delivery_cost ?? 0), 0)
+  const estimatedFee = totalFee > 0 ? totalFee : totalRevenue * commPct / 100
+  const profit = totalRevenue - estimatedFee - totalDelivery
+  const isEstimated = totalFee === 0 && totalRevenue > 0
 
-  if (units > 0) {
-    lines.push(`📦 ${t.unitsSold}: <b>${units}</b>`)
+  const lines: string[] = []
 
-    const cats = catRows
-      .map(c => ({ name: c.category?.trim() || t.uncategorized, units: Number(c.units) }))
-      .filter(c => c.units > 0)
-      .sort((a, b) => b.units - a.units)
-      .slice(0, 5)
-    if (cats.length > 0) {
-      lines.push(`   <i>${t.byCategory}:</i>`)
-      for (const c of cats) lines.push(`   • ${c.name}: ${c.units}`)
-    }
+  // Per-marketplace order lines
+  for (const [mp, s] of Array.from(mpStats.entries()).sort((a, b) => b[1].revenue - a[1].revenue)) {
+    const flag = MP_FLAG[mp] ?? mp
+    const fee = s.fee > 0 ? s.fee : s.revenue * commPct / 100
+    lines.push(`${flag}: <b>${s.orders}</b> ${t.orders.toLowerCase()} · ${fmtNumber(s.revenue, lang)} ${t.som} (−${fmtNumber(fee, lang)} ${t.commission.toLowerCase()})`)
+  }
+
+  // Totals
+  if (mpStats.size > 1 || active.length > 0) {
+    const approx = isEstimated ? '≈ ' : ''
+    lines.push(`💰 ${t.revenue}: <b>${fmtNumber(totalRevenue, lang)} ${t.som}</b>`)
+    lines.push(`📈 ${t.profit}: <b>${approx}${fmtNumber(profit, lang)} ${t.som}</b>`)
   }
 
   if (cancelled.length > 0) {
-    lines.push(`🚫 ${t.cancelled}: <b>${cancelled.length}</b>`)
+    lines.push(`🚫 ${t.cancelled}: ${cancelled.length}`)
   }
 
   return lines.join('\n')
+}
+
+/**
+ * Pending orders that the seller needs to deliver to PVZ (pickup points).
+ * Shows per-marketplace count of pending/confirmed orders.
+ */
+async function buildPendingDeliveries(
+  shopIds: string[],
+  mpByShop: Map<string, string>,
+  lang: NotifLang,
+): Promise<string | null> {
+  const t = notifT(lang)
+
+  const pendingOrders = await db.select({
+    id: ordersTable.id,
+    shop_id: ordersTable.shop_id,
+    status: ordersTable.status,
+    fulfillment_type: ordersTable.fulfillment_type,
+    items_count: ordersTable.items_count,
+  }).from(ordersTable)
+    .where(and(
+      inArray(ordersTable.shop_id, shopIds),
+      inArray(ordersTable.status, ['pending', 'confirmed']),
+    ))
+
+  // Only FBS orders need seller delivery to PVZ
+  const fbsOrders = pendingOrders.filter(o =>
+    !o.fulfillment_type || o.fulfillment_type === 'fbs' || o.fulfillment_type === 'dbs')
+
+  if (fbsOrders.length === 0) return null
+
+  const byMp = new Map<string, { count: number; items: number }>()
+  for (const o of fbsOrders) {
+    const mp = mpByShop.get(o.shop_id) ?? 'uzum'
+    const s = byMp.get(mp) ?? { count: 0, items: 0 }
+    s.count += 1
+    s.items += o.items_count
+    byMp.set(mp, s)
+  }
+
+  const totalCount = fbsOrders.length
+  const lines = Array.from(byMp.entries())
+    .sort((a, b) => b[1].count - a[1].count)
+    .map(([mp, s]) => `  ${MP_FLAG[mp] ?? mp}: <b>${s.count}</b> (${s.items} ${t.lowStockUnit})`)
+
+  return `${t.deliveryTitle(totalCount)}\n${lines.join('\n')}`
 }
