@@ -238,7 +238,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
   // then a group qualifies for a tab if any of its members qualifies.
   // Products without a SKU stand alone (grouped by product id).
   const tabCounts = (() => {
-    const norm = (s: string | null) => s ? s.trim().toLowerCase() : null
+    const norm = (s: string | null) => s ? s.trim().toLowerCase().replace(/[\s\-_./]+/g, '') : null
     const groupsMap = new Map<string, typeof enriched>()
     for (const p of enriched) {
       const key = norm(p.sku) ?? `#${p.id}`
