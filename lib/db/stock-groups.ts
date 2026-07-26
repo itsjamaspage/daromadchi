@@ -272,7 +272,7 @@ export async function computeStockGroups(userId: string, shopIds: string[]): Pro
     const sinceBaseline = soldSinceBaseline.get(key) ?? 0
     const leftover = hasBaseline
       ? Math.max(0, link!.total_physical_stock! - sinceBaseline)
-      : totalStock
+      : Math.max(0, totalStock - totalSold)
 
     const dailyVelocity = sold14 / 14
     result.push({
