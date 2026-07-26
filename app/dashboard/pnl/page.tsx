@@ -158,7 +158,7 @@ export default async function PnlPage({ searchParams }: Props) {
               orders:  m.order_count,
             }))}
             revenueLabel={d.revenue}
-            costLabel={d.commission2}
+            costLabel={d.expenses}
             profitLabel={d.net}
             ordersLabel={d.ordersCol}
           />
