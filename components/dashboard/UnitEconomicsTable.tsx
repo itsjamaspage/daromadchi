@@ -5,10 +5,17 @@ import {
   Search, Trash2, Settings2, ExternalLink, ChevronUp, ChevronDown,
   Package, Plus, X, Check, Pencil,
 } from 'lucide-react'
-import type { UnitEconomicsItem, UnitEcoSettings } from '@/lib/types'
+import type { UnitEconomicsItem, UnitEcoSettings, MarketplaceType } from '@/lib/types'
 import ExportButton from '@/components/dashboard/ExportButton'
+import FulfillmentBadge from '@/components/dashboard/FulfillmentBadge'
 import { useLang } from '@/app/providers'
 import { translations } from '@/lib/i18n'
+
+const MP_META: Record<string, { label: string; short: string; color: string; bg: string }> = {
+  uzum:          { label: 'Uzum',          short: 'UZ', color: '#494fdf', bg: 'rgba(73,79,223,0.12)'   },
+  yandex_market: { label: 'Yandex Market', short: 'YM', color: '#E8A000', bg: 'rgba(232,160,0,0.12)'  },
+  wildberries:   { label: 'Wildberries',   short: 'WB', color: '#CB11AB', bg: 'rgba(203,17,171,0.12)' },
+}
 
 function fs(n: number) {
   return new Intl.NumberFormat('uz-UZ').format(Math.round(n)) + " so'm"
@@ -285,7 +292,7 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold truncate" style={{ color: 'var(--c1)' }}>{extPending.title}</p>
             <p className="text-xs text-[var(--c1)]/70 mt-0.5">
-              {extPending.marketplace?.toUpperCase()} · {extPending.sellingPrice ? `${new Intl.NumberFormat('uz-UZ').format(Math.round(extPending.sellingPrice))} so'm` : ''} · {extPending.margin ? `${Math.round(extPending.margin)}% marja` : ''}
+              {MP_META[extPending.marketplace ?? '']?.label ?? extPending.marketplace?.toUpperCase()} · {extPending.sellingPrice ? `${new Intl.NumberFormat('uz-UZ').format(Math.round(extPending.sellingPrice))} so'm` : ''} · {extPending.margin ? `${Math.round(extPending.margin)}% marja` : ''}
             </p>
             {extError && <p className="text-xs text-red-400 mt-1">{extError}</p>}
           </div>
@@ -320,7 +327,7 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
             }`}
             style={mpFilter === mp ? { background: 'var(--bg-card2)', border: '1px solid var(--border)' } : undefined}
           >
-            {mp === 'all' ? 'Barchasi' : mp === 'uzum' ? 'Uzum' : mp === 'yandex_market' ? 'Yandex Market' : 'Wildberries'}
+            {mp === 'all' ? 'Barchasi' : MP_META[mp]?.label ?? mp}
           </button>
         ))}
       </div>
@@ -502,7 +509,12 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
                             </div>
                             <div className="min-w-0">
                               <p className="text-[var(--text-base)] font-medium text-xs leading-tight max-w-[180px] truncate">{item.title}</p>
-                              <p className="text-[var(--text-base)] text-[10px] mt-0.5 opacity-70">{item.category || item.marketplace}</p>
+                              <div className="flex items-center gap-1.5 mt-0.5">
+                                {item.marketplace && MP_META[item.marketplace] && (
+                                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded" style={{ background: MP_META[item.marketplace].bg, color: MP_META[item.marketplace].color }}>{MP_META[item.marketplace].short}</span>
+                                )}
+                                {item.category && <span className="text-[var(--text-base)] text-[10px] opacity-70">{item.category}</span>}
+                              </div>
                             </div>
                             <div className="flex items-center gap-1 flex-shrink-0">
                               {item.productUrl && (
