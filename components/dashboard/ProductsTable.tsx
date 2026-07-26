@@ -233,28 +233,13 @@ export default function ProductsTable({ products }: { products: Product[] }) {
     [d.stockQty]:         p.available_stock,
   }))
 
-  // Tab counts reflect DISTINCT physical products: same SKU listed on
-  // multiple marketplaces = one product, not N. Group by normalized SKU,
-  // then a group qualifies for a tab if any of its members qualifies.
-  // Products without a SKU stand alone (grouped by product id).
-  const tabCounts = (() => {
-    const norm = (s: string | null) => s ? s.trim().toLowerCase().replace(/[\s\-_./]+/g, '') : null
-    const groupsMap = new Map<string, typeof enriched>()
-    for (const p of enriched) {
-      const key = norm(p.sku) ?? `#${p.id}`
-      const list = groupsMap.get(key)
-      if (list) list.push(p)
-      else groupsMap.set(key, [p])
-    }
-    const groupList = [...groupsMap.values()]
-    return {
-      all:       groupList.length,
-      low_stock: groupList.filter(g => g.some(p => p.available_stock < stockThreshold)).length,
-      delivered: groupList.filter(g => g.some(p => (p.delivered ?? 0) > 0)).length,
-      ordered:   groupList.filter(g => g.some(p => (p.in_transit ?? 0) > 0)).length,
-      cancelled: groupList.filter(g => g.some(p => (p.cancelled ?? 0) > 0)).length,
-    }
-  })()
+  const tabCounts = {
+    all:       enriched.length,
+    low_stock: enriched.filter(p => p.available_stock < stockThreshold).length,
+    delivered: enriched.filter(p => (p.delivered ?? 0) > 0).length,
+    ordered:   enriched.filter(p => (p.in_transit ?? 0) > 0).length,
+    cancelled: enriched.filter(p => (p.cancelled ?? 0) > 0).length,
+  }
 
   return (
     <div className="space-y-4">
