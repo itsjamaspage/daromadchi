@@ -23,6 +23,8 @@ const marketplaceLabel: Record<string, string> = {
 export function sellerOrderUrl(marketplace: string, extId: string | null): string | null {
   if (!extId) return null
   if (marketplace === 'uzum') return `https://seller.uzum.uz/seller/orders/fbs/${extId}`
+  if (marketplace === 'yandex_market') return `https://partner.market.yandex.ru/orders/${extId}`
+  if (marketplace === 'wildberries') return `https://seller.wildberries.ru/orders-and-returns/orders?search=${extId}`
   return null
 }
 

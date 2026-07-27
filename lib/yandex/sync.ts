@@ -323,6 +323,7 @@ export async function syncFromYandex(
         delivery_cost: o.deliveryTotal ?? null,
         items_count: o.items?.length ?? 1,
         ordered_at: orderedAt,
+        fulfillment_type: campaignFulfillmentType,
       }))
 
     if (orderRows.length > 0) {
@@ -352,6 +353,7 @@ export async function syncFromYandex(
             delivery_cost: r.delivery_cost != null ? String(r.delivery_cost) : null,
             items_count: r.items_count,
             ordered_at: new Date(r.ordered_at),
+            fulfillment_type: r.fulfillment_type,
           })))
         }
       }
@@ -363,6 +365,7 @@ export async function syncFromYandex(
           delivery_cost: r.delivery_cost != null ? String(r.delivery_cost) : null,
           items_count: r.items_count,
           ordered_at: new Date(r.ordered_at),
+          fulfillment_type: r.fulfillment_type,
         }).where(eq(orders.id, existingOrderMap.get(r.order_id_external)!))
       }
       ordersOk = true

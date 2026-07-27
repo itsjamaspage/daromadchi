@@ -282,6 +282,7 @@ export async function syncFromWildberries(
             delivery_cost:     null,
             items_count:       lines.length,
             ordered_at:        new Date(first.date ?? new Date().toISOString()),
+            fulfillment_type:  'fbo' as const,
           })
         }
 
