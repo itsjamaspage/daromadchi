@@ -614,7 +614,7 @@ export async function syncFromYandex(
     if (criticalOk) {
       promises.push(db.update(shops).set({ last_synced_at: new Date() }).where(eq(shops.id, shopId)))
     }
-    const syncStatus = criticalOk ? 'success' : 'partial'
+    const syncStatus = criticalOk ? 'success' : 'degraded'
     promises.push(db.insert(syncDays).values({
         shop_id: shopId,
         sync_date: today,

@@ -455,7 +455,7 @@ export async function syncFromWildberries(
     db.insert(syncDays).values({
       shop_id: shopId,
       sync_date: today,
-      status: errors.length === 0 ? 'success' : 'error',
+      status: errors.length === 0 ? 'success' : criticalOk ? 'error' : 'degraded',
       error_message: errors.length > 0 ? errors.join('; ').slice(0, 500) : null,
       products_count: productsUpserted,
       revenue: String(revenueTotal),
@@ -463,7 +463,7 @@ export async function syncFromWildberries(
     }).onConflictDoUpdate({
       target: [syncDays.shop_id, syncDays.sync_date],
       set: {
-        status: errors.length === 0 ? 'success' : 'error',
+        status: errors.length === 0 ? 'success' : criticalOk ? 'error' : 'degraded',
         error_message: errors.length > 0 ? errors.join('; ').slice(0, 500) : null,
         products_count: productsUpserted,
         revenue: String(revenueTotal),
