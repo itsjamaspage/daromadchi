@@ -57,5 +57,41 @@ export function marketplaceFetch(url: string, init?: RequestInit): Promise<Respo
     }
   }
 
-  return fetch(url, init)
+  return fetchWithRetry(url, init)
+}
+
+const MAX_RETRIES = 3
+const INITIAL_DELAY_MS = 2_000
+const REQUEST_TIMEOUT_MS = 30_000
+
+function isTransient(status: number): boolean {
+  return status === 429 || status === 502 || status === 503 || status === 504
+}
+
+async function fetchWithRetry(url: string, init?: RequestInit): Promise<Response> {
+  let lastErr: unknown
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const controller = new AbortController()
+      const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
+      const res = await fetch(url, { ...init, signal: init?.signal ?? controller.signal })
+      clearTimeout(timeout)
+      if (isTransient(res.status) && attempt < MAX_RETRIES) {
+        await sleep(INITIAL_DELAY_MS * 2 ** attempt)
+        continue
+      }
+      return res
+    } catch (err) {
+      lastErr = err
+      if (attempt < MAX_RETRIES) {
+        await sleep(INITIAL_DELAY_MS * 2 ** attempt)
+        continue
+      }
+    }
+  }
+  throw lastErr
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms))
 }

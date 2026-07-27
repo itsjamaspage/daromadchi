@@ -199,8 +199,9 @@ export interface PayoutEntry {
   otherDeductions: number
   netPayout: number
   ordersCount: number
-  status: 'paid' | 'pending' | 'processing'
+  status: 'paid' | 'pending' | 'processing' | 'estimated_paid' | 'estimated_pending'
   payoutDate: string | null
+  payoutEstimated: boolean
 }
 
 export interface WatchlistItem {

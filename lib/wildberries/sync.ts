@@ -33,6 +33,8 @@ export async function syncFromWildberries(
   let ordersUpserted   = 0
   let ordersInserted   = 0
   let revenueTotal     = 0
+  let ordersOk         = false
+  let stockOk          = false
   const errors: string[] = []
   // barcode → nmId, needed for FBS stock lookups (v3 stocks API is barcode-keyed)
   const barcodeToNm = new Map<string, string>()
@@ -204,6 +206,7 @@ export async function syncFromWildberries(
           await db.update(products).set(patch).where(eq(products.id, p.id))
         }
       }
+      stockOk = true
     }
   } catch { /* stocks sync is best-effort */ }
 
@@ -304,6 +307,7 @@ export async function syncFromWildberries(
         }
         ordersUpserted = orderRowsToInsert.length
         ordersInserted = toInsert.length
+        ordersOk = true
 
         // ── Order items (best-effort) ─────────────────────────────────────────
         try {
@@ -383,6 +387,8 @@ export async function syncFromWildberries(
         commission: number; delivery: number
         penalty: number; storageFee: number; additionalPayment: number
       }>()
+      // Orders with return entries in the finance report
+      const returnedGNumbers = new Set<string>()
       for (const entry of allReportEntries) {
         const srid = entry.srid ? String(entry.srid) : ''
         const gNumber = sridToGNumber.get(srid) ?? srid
@@ -396,6 +402,12 @@ export async function syncFromWildberries(
         existing.storageFee += Math.abs(Number(entry.storage_fee ?? 0))
         existing.additionalPayment += Math.abs(Number(entry.additional_payment ?? 0))
         financeByOrder.set(gNumber, existing)
+
+        // WB marks returns with doc_type_name 'Возврат' or negative retail_amount
+        const isReturn = entry.doc_type_name === 'Возврат'
+          || Number(entry.return_amount ?? 0) > 0
+          || Number(entry.retail_amount ?? 0) < 0
+        if (isReturn) returnedGNumbers.add(gNumber)
       }
 
       if (financeByOrder.size > 0) {
@@ -403,6 +415,7 @@ export async function syncFromWildberries(
         const dbOrdersForFinance = await db.select({
           id: orders.id,
           order_id_external: orders.order_id_external,
+          status: orders.status,
         }).from(orders).where(and(
           eq(orders.shop_id, shopId),
           inArray(orders.order_id_external, gNumbers),
@@ -410,14 +423,20 @@ export async function syncFromWildberries(
 
         for (const dbOrder of dbOrdersForFinance) {
           const finance = financeByOrder.get(dbOrder.order_id_external as string)
+          const isReturned = returnedGNumbers.has(dbOrder.order_id_external as string)
+          const updates: Record<string, unknown> = {}
           if (finance && (finance.commission > 0 || finance.delivery > 0 || finance.penalty > 0 || finance.storageFee > 0 || finance.additionalPayment > 0)) {
-            await db.update(orders).set({
-              marketplace_fee: String(finance.commission),
-              delivery_cost: String(finance.delivery),
-              penalty: String(finance.penalty),
-              storage_fee: String(finance.storageFee),
-              additional_payment: String(finance.additionalPayment),
-            }).where(eq(orders.id, dbOrder.id))
+            updates.marketplace_fee = String(finance.commission)
+            updates.delivery_cost = String(finance.delivery)
+            updates.penalty = String(finance.penalty)
+            updates.storage_fee = String(finance.storageFee)
+            updates.additional_payment = String(finance.additionalPayment)
+          }
+          if (isReturned && dbOrder.status !== 'returned') {
+            updates.status = 'returned'
+          }
+          if (Object.keys(updates).length > 0) {
+            await db.update(orders).set(updates).where(eq(orders.id, dbOrder.id))
           }
         }
       }
@@ -425,13 +444,19 @@ export async function syncFromWildberries(
   } catch { /* finance report is best-effort */ }
 
   // ─── Sync metadata ────────────────────────────────────────────────────────
+  // Only advance last_synced_at when critical data (orders + stock) succeeded.
+  // Finance/ads are secondary and can be backfilled later.
+  const criticalOk = ordersOk && stockOk
+  if (!criticalOk && errors.length === 0) {
+    errors.push(`WB sync partial: orders=${ordersOk}, stock=${stockOk}`)
+  }
   const today = new Date().toISOString().slice(0, 10)
-  await Promise.all([
-    db.update(shops).set({ last_synced_at: new Date() }).where(eq(shops.id, shopId)),
+  const promises: Promise<unknown>[] = [
     db.insert(syncDays).values({
       shop_id: shopId,
       sync_date: today,
       status: errors.length === 0 ? 'success' : 'error',
+      error_message: errors.length > 0 ? errors.join('; ').slice(0, 500) : null,
       products_count: productsUpserted,
       revenue: String(revenueTotal),
       synced_at: new Date(),
@@ -439,12 +464,17 @@ export async function syncFromWildberries(
       target: [syncDays.shop_id, syncDays.sync_date],
       set: {
         status: errors.length === 0 ? 'success' : 'error',
+        error_message: errors.length > 0 ? errors.join('; ').slice(0, 500) : null,
         products_count: productsUpserted,
         revenue: String(revenueTotal),
         synced_at: new Date(),
       },
     }),
-  ])
+  ]
+  if (criticalOk) {
+    promises.push(db.update(shops).set({ last_synced_at: new Date() }).where(eq(shops.id, shopId)))
+  }
+  await Promise.all(promises)
 
   return {
     ok: errors.length === 0,

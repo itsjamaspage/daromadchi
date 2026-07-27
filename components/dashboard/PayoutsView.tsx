@@ -31,10 +31,24 @@ function StatusBadge({ status }: { status: PayoutEntry['status'] }) {
       </span>
     )
   }
+  if (status === 'estimated_paid') {
+    return (
+      <span className="inline-flex px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-500/10 text-emerald-400/70 border border-emerald-500/10">
+        ≈ {t.statusPaid}
+      </span>
+    )
+  }
   if (status === 'processing') {
     return (
       <span className="inline-flex px-2.5 py-1 rounded-lg text-xs font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/20">
         {t.statusProcessing}
+      </span>
+    )
+  }
+  if (status === 'estimated_pending') {
+    return (
+      <span className="inline-flex px-2.5 py-1 rounded-lg text-xs font-semibold bg-[var(--bg-card2)] text-[var(--text-muted)] border border-dashed border-[var(--border)]">
+        ≈ {t.statusPending}
       </span>
     )
   }
@@ -117,9 +131,9 @@ export default function PayoutsView({ entries }: Props) {
 
   const filteredEntries = mpFilter === 'all' ? entries : entries.filter(e => e.marketplace === mpFilter)
 
-  const paidEntries = filteredEntries.filter(e => e.status === 'paid')
+  const paidEntries = filteredEntries.filter(e => e.status === 'paid' || e.status === 'estimated_paid')
   const totalPaid   = paidEntries.reduce((s, e) => s + e.netPayout, 0)
-  const pending     = filteredEntries.filter(e => e.status !== 'paid').reduce((s, e) => s + e.netPayout, 0)
+  const pending     = filteredEntries.filter(e => e.status !== 'paid' && e.status !== 'estimated_paid').reduce((s, e) => s + e.netPayout, 0)
   const avgPaid     = paidEntries.length > 0 ? Math.round(totalPaid / paidEntries.length) : 0
 
   function toggle(id: string) {
@@ -136,7 +150,7 @@ export default function PayoutsView({ entries }: Props) {
     [`${t.colAd} (so'm)`]:      e.adSpend,
     [`${t.colTax} (so'm)`]:     e.tax,
     [`${t.colNet} (so'm)`]:     e.netPayout,
-    [t.colStatus]: e.status === 'paid' ? t.statusPaid : e.status === 'processing' ? t.statusProcessing : t.statusPending,
+    [t.colStatus]: (e.status === 'paid' || e.status === 'estimated_paid') ? `${e.payoutEstimated ? '≈ ' : ''}${t.statusPaid}` : e.status === 'processing' ? t.statusProcessing : `${e.payoutEstimated ? '≈ ' : ''}${t.statusPending}`,
   }))
 
   return (
@@ -172,7 +186,7 @@ export default function PayoutsView({ entries }: Props) {
         <div className="bg-[var(--bg-card2)] border border-amber-500/20 rounded-2xl px-4 py-3">
           <p className="text-[var(--text-muted)] text-xs mb-1">{t.kpiPending}</p>
           <p className="text-amber-400 text-xl font-bold">{fmtShort(pending)}</p>
-          <p className="text-[var(--text-muted)] text-xs mt-0.5">{filteredEntries.filter(e => e.status !== 'paid').length} {t.periods}</p>
+          <p className="text-[var(--text-muted)] text-xs mt-0.5">{filteredEntries.filter(e => e.status !== 'paid' && e.status !== 'estimated_paid').length} {t.periods}</p>
         </div>
         <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl px-4 py-3">
           <p className="text-[var(--text-muted)] text-xs mb-1">{t.kpiAvg}</p>

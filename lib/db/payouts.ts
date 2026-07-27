@@ -141,8 +141,10 @@ export async function getPayoutEntries(): Promise<PayoutEntry[]> {
       otherDeductions: cogs,
       netPayout,
       ordersCount: v.count,
-      status: isPast ? 'paid' as const : 'pending' as const,
-      payoutDate: isPast ? `${monthKey}-28` : null,
+      // TODO: replace with real payout schedule data from each marketplace's API
+      status: isPast ? 'estimated_paid' as const : 'estimated_pending' as const,
+      payoutDate: null,
+      payoutEstimated: true,
     }
   })
 

@@ -46,6 +46,8 @@ export async function syncFromYandex(
   const warnings: string[] = []
   const debug: Record<string, string | number> = {}
   let ordersInserted = 0
+  let productsOk = false
+  let ordersOk = false
   const newOrders: string[] = []
 
   try {
@@ -235,6 +237,7 @@ export async function syncFromYandex(
           }
         }
       }
+      productsOk = true
     } catch (prodErr) {
       const msg = prodErr instanceof YandexApiError
         ? `${prodErr.status} ${prodErr.body?.slice(0, 200) ?? prodErr.message}`
@@ -363,6 +366,7 @@ export async function syncFromYandex(
           ordered_at: new Date(r.ordered_at),
         }).where(eq(orders.id, existingOrderMap.get(r.order_id_external)!))
       }
+      ordersOk = true
     }
 
     const newOrderRows = orderRows
@@ -605,30 +609,38 @@ export async function syncFromYandex(
     const campaignsUpserted = 0
 
     // ── Update sync metadata ──────────────────────────────────────────────────
+    const criticalOk = productsOk && ordersOk
     const today = new Date().toISOString().slice(0, 10)
-    await Promise.all([
-      db.update(shops).set({ last_synced_at: new Date() }).where(eq(shops.id, shopId)),
-      db.insert(syncDays).values({
+    const promises: Promise<unknown>[] = []
+    if (criticalOk) {
+      promises.push(db.update(shops).set({ last_synced_at: new Date() }).where(eq(shops.id, shopId)))
+    }
+    const syncStatus = criticalOk ? 'success' : 'partial'
+    promises.push(db.insert(syncDays).values({
         shop_id: shopId,
         sync_date: today,
-        status: 'success',
+        status: syncStatus,
         products_count: productRows.length,
         revenue: String(newOrderRows.reduce((s, o) => s + (o.revenue ?? 0), 0)),
         synced_at: new Date(),
       }).onConflictDoUpdate({
         target: [syncDays.shop_id, syncDays.sync_date],
         set: {
-          status: 'success',
+          status: syncStatus,
           products_count: productRows.length,
           revenue: String(newOrderRows.reduce((s, o) => s + (o.revenue ?? 0), 0)),
           synced_at: new Date(),
         },
       }),
-    ])
+    )
+    await Promise.all(promises)
+    if (!criticalOk) {
+      warnings.push(`YM sync partial: products=${productsOk}, orders=${ordersOk}`)
+    }
 
     debug.orders = yandexOrders.length
     return {
-      ok: true,
+      ok: criticalOk,
       ordersUpserted: newOrderRows.length,
       ordersInserted,
       newOrders,

@@ -122,7 +122,7 @@ export async function getMonthlyPnl(
       revenue: 0, realFee: 0, realDelivery: 0, count: 0, cancelledCount: 0, cancelledAmount: 0,
       penalty: 0, storageFee: 0, additionalPayment: 0,
     }
-    if (row.status === 'cancelled') {
+    if (row.status === 'cancelled' || row.status === 'returned') {
       ex.cancelledCount += 1
       ex.cancelledAmount += Number(row.revenue ?? 0)
     } else {
