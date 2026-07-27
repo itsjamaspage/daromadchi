@@ -313,12 +313,11 @@ export async function syncFromYandex(
         shop_id: shopId,
         order_id_external: String(o.id),
         marketplace: 'yandex_market' as const,
-        status: (STATUS_MAP[o.status] ?? 'pending') as
-          | 'pending'
-          | 'confirmed'
-          | 'delivered'
-          | 'cancelled'
-          | 'returned',
+        status: (() => {
+          const mapped = STATUS_MAP[o.status] ?? 'pending'
+          if (!STATUS_MAP[o.status]) console.warn(`[SYNC WARNING] Unmapped Yandex order status: "${o.status}" for order ${o.id}. Defaulting to pending.`)
+          return mapped as 'pending' | 'confirmed' | 'delivered' | 'cancelled' | 'returned'
+        })(),
         revenue: o.buyerTotal ?? o.itemsTotal ?? 0,
         marketplace_fee: o.commissionTotal ?? null,
         delivery_cost: o.deliveryTotal ?? null,

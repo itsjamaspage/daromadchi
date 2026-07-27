@@ -1,7 +1,7 @@
 import { cache } from 'react'
 import { getCurrentUser } from '@/lib/auth/session'
-import { eq, ne, and, or, isNull, asc, inArray } from 'drizzle-orm'
-import { db, shops, orders } from '@/lib/db'
+import { eq, ne, and, or, isNull, asc, inArray, desc, sql } from 'drizzle-orm'
+import { db, shops, orders, syncDays } from '@/lib/db'
 import type { MarketplaceType } from '@/lib/types'
 
 export interface ShopRef {
@@ -46,3 +46,33 @@ export async function getShopLaunchDate(): Promise<string | null> {
   if (rows.length === 0) return null
   return rows[0].ordered_at?.toISOString() ?? null
 }
+
+export interface SyncInfo {
+  lastSyncedAt: string | null
+  lastSyncFailed: boolean
+}
+
+export const getSyncInfo = cache(async (): Promise<SyncInfo> => {
+  const shopIds = await getShopIds()
+  if (!shopIds || shopIds.length === 0) return { lastSyncedAt: null, lastSyncFailed: false }
+
+  const rows = await db.select({ last_synced_at: shops.last_synced_at })
+    .from(shops)
+    .where(inArray(shops.id, shopIds))
+    .orderBy(desc(shops.last_synced_at))
+    .limit(1)
+
+  const lastSyncedAt = rows[0]?.last_synced_at?.toISOString() ?? null
+
+  const today = new Date().toISOString().slice(0, 10)
+  const failRows = await db.select({ status: syncDays.status })
+    .from(syncDays)
+    .where(and(
+      inArray(syncDays.shop_id, shopIds),
+      eq(syncDays.sync_date, today),
+      eq(syncDays.status, 'error'),
+    ))
+    .limit(1)
+
+  return { lastSyncedAt, lastSyncFailed: failRows.length > 0 }
+})

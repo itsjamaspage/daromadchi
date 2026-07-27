@@ -440,12 +440,11 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
         order_id_external: extId,
         marketplace: 'uzum' as const,
         fulfillment_type: ff,
-        status: (STATUS_MAP[o.status] ?? 'pending') as
-          | 'pending'
-          | 'confirmed'
-          | 'delivered'
-          | 'cancelled'
-          | 'returned',
+        status: (() => {
+          const mapped = STATUS_MAP[o.status] ?? 'pending'
+          if (!STATUS_MAP[o.status]) console.warn(`[SYNC WARNING] Unmapped Uzum order status: "${o.status}" for order ${extId}. Defaulting to pending.`)
+          return mapped as 'pending' | 'confirmed' | 'delivered' | 'cancelled' | 'returned'
+        })(),
         revenue,
         // Units, not line items: an order of 2× one SKU must show 2, not 1.
         items_count: allItems.length > 0

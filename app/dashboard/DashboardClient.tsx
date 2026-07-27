@@ -10,6 +10,7 @@ import RevenueChart from '@/components/dashboard/RevenueChart'
 import DateRangePicker from '@/components/dashboard/DateRangePicker'
 import StockAlerts from '@/components/dashboard/StockAlerts'
 import CategoryChart from '@/components/dashboard/CategoryChart'
+import LastSynced from '@/components/dashboard/LastSynced'
 import { useLang, useTheme } from '@/app/providers'
 import { dashT } from '@/lib/dashT'
 import type { Kpis, Order, Product, DailyRevenue, MarketplaceType } from '@/lib/types'
@@ -53,6 +54,7 @@ interface Props {
   to?: string
   initialMarketplace: MarketplaceType | undefined
   hasShops: boolean
+  syncInfo: { lastSyncedAt: string | null; lastSyncFailed: boolean }
 }
 
 const STATUS_CLASS_DARK: Record<string, string> = {
@@ -70,7 +72,7 @@ const STATUS_CLASS_LIGHT: Record<string, string> = {
   returned:  'bg-amber-500/10 text-amber-700',
 }
 
-export default function DashboardClient({ slices, stockGroups, days, period, from, to, initialMarketplace, }: Props) {
+export default function DashboardClient({ slices, stockGroups, days, period, from, to, initialMarketplace, syncInfo, }: Props) {
   const { lang } = useLang()
   const { theme } = useTheme()
   const isDark = theme === 'dark'
@@ -127,7 +129,8 @@ export default function DashboardClient({ slices, stockGroups, days, period, fro
           </div>
           <p className="text-[var(--text-muted)] text-sm">{d.subtitle}</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <LastSynced lastSyncedAt={syncInfo.lastSyncedAt} lastSyncFailed={syncInfo.lastSyncFailed} />
           <Suspense>
             <DateRangePicker period={period} from={from} to={to} />
           </Suspense>

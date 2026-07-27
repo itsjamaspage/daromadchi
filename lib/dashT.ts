@@ -32,6 +32,10 @@ export const dashT = {
       connectMp: '{mp} ulash',
       featureRevenue: 'Daromad va foyda', featureOrders: 'Buyurtmalar tarixi', featureSales: 'Sotuv dinamikasi', featureStock: 'Mahsulot qoldiqlari',
       prevPage: 'Oldingi', nextPage: 'Keyingi', pageOf: 'Sahifa', pageOfSep: '/',
+      syncedAgo: 'Sinxronlangan', syncedMinAgo: 'daq oldin', syncedHrAgo: 'soat oldin', syncedDayAgo: 'kun oldin',
+      syncFailed: 'Oxirgi sinxr muvaffaqiyatsiz', syncNow: 'Sinxronlash', notSyncedYet: 'Hali sinxronlanmagan',
+      estimated: 'taxminiy', estimatedTooltip: '{pct}% stavka asosida hisoblangan. Haqiqiy ma\'lumot uchun marketplace\'ni ulang.',
+      taxEstimatedTooltip: '{pct}% stavka asosida hisoblangan. Haqiqiy soliq rejimingizga bog\'liq.',
     },
     export: {
       download: 'Yuklab olish', xlsx: 'Excel (.xlsx)', csv: 'CSV', pdf: 'PDF (chop etish)',
@@ -413,6 +417,10 @@ export const dashT = {
       connectMp: 'Connect {mp}',
       featureRevenue: 'Revenue & profit', featureOrders: 'Order history', featureSales: 'Sales dynamics', featureStock: 'Product stock',
       prevPage: 'Previous', nextPage: 'Next', pageOf: 'Page', pageOfSep: 'of',
+      syncedAgo: 'Synced', syncedMinAgo: 'min ago', syncedHrAgo: 'hr ago', syncedDayAgo: 'day ago',
+      syncFailed: 'Last sync failed', syncNow: 'Sync', notSyncedYet: 'Not synced yet',
+      estimated: 'estimated', estimatedTooltip: 'Estimated at {pct}% rate. Connect marketplace for real data.',
+      taxEstimatedTooltip: 'Estimated at {pct}%. Actual tax depends on your tax regime.',
     },
     export: {
       download: 'Download', xlsx: 'Excel (.xlsx)', csv: 'CSV', pdf: 'PDF (print)',
@@ -791,6 +799,10 @@ export const dashT = {
       connectMp: 'Подключить {mp}',
       featureRevenue: 'Выручка и прибыль', featureOrders: 'История заказов', featureSales: 'Динамика продаж', featureStock: 'Остатки товаров',
       prevPage: 'Назад', nextPage: 'Вперёд', pageOf: 'Страница', pageOfSep: 'из',
+      syncedAgo: 'Синхр.', syncedMinAgo: 'мин назад', syncedHrAgo: 'ч назад', syncedDayAgo: 'дн назад',
+      syncFailed: 'Последняя синхр. не удалась', syncNow: 'Синхр.', notSyncedYet: 'Ещё не синхронизировано',
+      estimated: 'оценка', estimatedTooltip: 'Рассчитано по ставке {pct}%. Подключите маркетплейс для реальных данных.',
+      taxEstimatedTooltip: 'Рассчитано по ставке {pct}%. Фактический налог зависит от вашего режима.',
     },
     export: {
       download: 'Скачать', xlsx: 'Excel (.xlsx)', csv: 'CSV', pdf: 'PDF (печать)',

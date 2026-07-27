@@ -5,6 +5,7 @@ import { getProductsPaginated } from '@/lib/db/products'
 import ProductsTable from '@/components/dashboard/ProductsTable'
 import MarketplaceTabs from '@/components/dashboard/MarketplaceTabs'
 import Pagination from '@/components/dashboard/Pagination'
+import LastSyncedServer from '@/components/dashboard/LastSyncedServer'
 import { getT } from '@/lib/server-i18n'
 import type { MarketplaceType } from '@/lib/types'
 
@@ -36,9 +37,14 @@ export default async function ProductsPage({ searchParams }: Props) {
         <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{total} {d.productCount}</p>
       </div>
 
-      <Suspense>
-        <MarketplaceTabs current={mp} />
-      </Suspense>
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <Suspense>
+          <MarketplaceTabs current={mp} />
+        </Suspense>
+        <Suspense>
+          <LastSyncedServer />
+        </Suspense>
+      </div>
 
       {total === 0 ? (
         <div className="border border-dashed rounded-2xl p-10 text-center" style={{ background: 'var(--bg-card2)', borderColor: 'rgba(131, 192, 249, 0.3)' }}>

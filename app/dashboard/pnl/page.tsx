@@ -53,7 +53,11 @@ export default async function PnlPage({ searchParams }: Props) {
   }), { orders: 0, cancelled: 0, revenue: 0, commission: 0, delivery: 0, acquiring: 0, tax: 0, ads: 0, cogs: 0, net: 0 })
   const totalExpenses = totals.commission + totals.delivery + totals.acquiring + totals.tax + totals.ads + totals.cogs
   const avgMargin = totals.revenue > 0 ? (totals.net / totals.revenue) * 100 : 0
-  const est = (v: number, isEst: boolean) => `${isEst && v > 0 ? '≈ ' : ''}${fmt(v)}`
+  const estText = (v: number, isEst: boolean) => `${isEst && v > 0 ? '≈ ' : ''}${fmt(v)}`
+  const est = (v: number, isEst: boolean, tooltip?: string) => {
+    if (!isEst || v === 0) return fmt(v)
+    return <span title={tooltip} className="underline decoration-dotted decoration-[var(--text-muted)] cursor-help">{'≈ '}{fmt(v)}</span>
+  }
 
   const exportData = monthlyData.map(m => ({
     [d.month]:                     m.month,
@@ -197,11 +201,11 @@ export default async function PnlPage({ searchParams }: Props) {
                         <td className={num}>{m.order_count}</td>
                         <td className={num}>{m.cancelled_count || '—'}</td>
                         <td className={num}>{fmt(m.revenue)}</td>
-                        <td className={num}>{est(m.commission, m.estimated)}</td>
-                        <td className={num}>{m.delivery > 0 ? est(m.delivery, m.estimated) : '—'}</td>
-                        <td className={num}>{est(m.acquiring, m.estimated)}</td>
-                        <td className={num}>{est(m.tax, true)}</td>
-                        <td className={num}>{est(m.ads, m.adSpendEstimated)}</td>
+                        <td className={num}>{est(m.commission, m.estimated, `≈ ${pnl.params.commissionPct}%`)}</td>
+                        <td className={num}>{m.delivery > 0 ? est(m.delivery, m.estimated, `≈ ${pnl.params.lastMilePct}%`) : '—'}</td>
+                        <td className={num}>{est(m.acquiring, m.estimated, `≈ ${pnl.params.acquiringPct}%`)}</td>
+                        <td className={num}>{est(m.tax, true, `≈ ${pnl.params.taxPct}%`)}</td>
+                        <td className={num}>{est(m.ads, m.adSpendEstimated, `≈ ${pnl.params.adPct}%`)}</td>
                         <td className={num}>{m.cogs > 0 ? fmt(m.cogs) : '—'}</td>
                         <td className={`${num} font-bold`}>{fmt(m.net)}</td>
                         <td className={num}>{margin.toFixed(1)}%</td>
@@ -214,11 +218,11 @@ export default async function PnlPage({ searchParams }: Props) {
                     <td className={`${num} font-bold`}>{totals.orders}</td>
                     <td className={`${num} font-bold`}>{totals.cancelled || '—'}</td>
                     <td className={`${num} font-bold`}>{fmt(totals.revenue)}</td>
-                    <td className={`${num} font-bold`}>{est(totals.commission, anyEstimated)}</td>
+                    <td className={`${num} font-bold`}>{est(totals.commission, anyEstimated, `≈ ${pnl.params.commissionPct}%`)}</td>
                     <td className={`${num} font-bold`}>{totals.delivery > 0 ? fmt(totals.delivery) : '—'}</td>
-                    <td className={`${num} font-bold`}>{est(totals.acquiring, anyEstimated)}</td>
-                    <td className={`${num} font-bold`}>{est(totals.tax, true)}</td>
-                    <td className={`${num} font-bold`}>{est(totals.ads, monthlyData.some(m => m.adSpendEstimated))}</td>
+                    <td className={`${num} font-bold`}>{est(totals.acquiring, anyEstimated, `≈ ${pnl.params.acquiringPct}%`)}</td>
+                    <td className={`${num} font-bold`}>{est(totals.tax, true, `≈ ${pnl.params.taxPct}%`)}</td>
+                    <td className={`${num} font-bold`}>{est(totals.ads, monthlyData.some(m => m.adSpendEstimated), `≈ ${pnl.params.adPct}%`)}</td>
                     <td className={`${num} font-bold`}>{totals.cogs > 0 ? fmt(totals.cogs) : '—'}</td>
                     <td className={`${num} font-bold`}>{fmt(totals.net)}</td>
                     <td className={`${num} font-bold`}>{avgMargin.toFixed(1)}%</td>
