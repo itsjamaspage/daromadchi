@@ -21,17 +21,25 @@ const CustomTooltip = ({ active, payload }: any) => {
   )
 }
 
-interface CategoryData { name: string; revenue: number; profit: number; percent: number }
+interface CategoryData { name: string; name_ru?: string; name_uz?: string; name_en?: string; revenue: number; profit: number; percent: number }
+
+function localizedName(d: CategoryData, lang: string): string {
+  if (lang === 'uz' && d.name_uz) return d.name_uz
+  if (lang === 'en' && d.name_en) return d.name_en
+  if (lang === 'ru' && d.name_ru) return d.name_ru
+  return d.name
+}
 
 export default function CategoryChart({ data }: { data: CategoryData[] }) {
   const { lang } = useLang()
   const t = translations[lang].dashboard
+  const localData = data.map(d => ({ ...d, name: localizedName(d, lang) }))
   return (
     <div className="border rounded-2xl p-6" style={{ background: 'var(--bg-card2)', borderColor: 'var(--border)' }}>
       <h3 className="font-semibold mb-0.5" style={{ color: 'var(--text-base)' }}>{t?.categoryRevenue || 'Kategoriya bo\'yicha daromad'}</h3>
       <p className="text-xs mb-5" style={{ color: 'var(--text-muted)' }}>{t?.tradeShare || 'Savdo ulushi'}</p>
 
-      {data.length === 0 ? (
+      {localData.length === 0 ? (
         <div className="flex items-center gap-3 py-4">
           <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'var(--bg-card2)', border: '1px solid var(--border)' }}>
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: 'var(--text-muted)' }}>
@@ -47,7 +55,7 @@ export default function CategoryChart({ data }: { data: CategoryData[] }) {
           <div className="flex-shrink-0">
             <PieChart width={152} height={152}>
               <Pie
-                data={data}
+                data={localData}
                 cx={76}
                 cy={76}
                 innerRadius={46}
@@ -56,7 +64,7 @@ export default function CategoryChart({ data }: { data: CategoryData[] }) {
                 dataKey="revenue"
                 nameKey="name"
               >
-                {data.map((_, i) => (
+                {localData.map((_, i) => (
                   <Cell key={i} fill={COLORS[i % COLORS.length]} stroke="transparent" />
                 ))}
               </Pie>
@@ -65,7 +73,7 @@ export default function CategoryChart({ data }: { data: CategoryData[] }) {
           </div>
 
           <div className="flex-1 space-y-2.5 min-w-0">
-            {data.map((d, i) => (
+            {localData.map((d, i) => (
               <div key={d.name} className="flex items-center gap-2.5">
                 <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: COLORS[i % COLORS.length] }} />
                 <div className="flex-1 min-w-0">

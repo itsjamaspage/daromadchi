@@ -29,6 +29,9 @@ function formatSum(n: number) {
 
 interface CategoryData {
   name: string
+  name_ru?: string
+  name_uz?: string
+  name_en?: string
   revenue: number
   profit: number
   percent: number

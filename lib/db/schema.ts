@@ -11,6 +11,7 @@ import {
   date,
   uniqueIndex,
   index,
+  serial,
 } from 'drizzle-orm/pg-core'
 
 /* ── Enums ──────────────────────────────────────────────────────────────────── */
@@ -462,4 +463,25 @@ export const productGroupMerges = pgTable('product_group_merges', {
 }, (t) => [
   uniqueIndex('product_group_merges_user_source').on(t.user_id, t.source_key),
   index('idx_product_group_merges_user').on(t.user_id),
+])
+
+/* ── 24. categories_canonical ──────────────────────────────────────────────── */
+export const categoriesCanonical = pgTable('categories_canonical', {
+  id:      serial('id').primaryKey(),
+  name_ru: text('name_ru').notNull(),
+  name_uz: text('name_uz').notNull(),
+  name_en: text('name_en').notNull(),
+}, (t) => [
+  uniqueIndex('categories_canonical_name_ru_idx').on(t.name_ru),
+])
+
+/* ── 25. category_aliases ──────────────────────────────────────────────────── */
+export const categoryAliases = pgTable('category_aliases', {
+  id:            serial('id').primaryKey(),
+  canonical_id:  integer('canonical_id').notNull().references(() => categoriesCanonical.id, { onDelete: 'cascade' }),
+  marketplace:   text('marketplace').notNull(),
+  original_name: text('original_name').notNull(),
+}, (t) => [
+  uniqueIndex('category_aliases_mp_name_idx').on(t.marketplace, t.original_name),
+  index('category_aliases_canonical_idx').on(t.canonical_id),
 ])
