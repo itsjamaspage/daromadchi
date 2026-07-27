@@ -67,7 +67,6 @@ export const translations = {
         linkTitle: 'Mahsulotlarni birlashtirish',
         linkHint: 'Bir xil mahsulotni tanlang — qoldiqlar birlashtiriladi',
         linkedLabel: 'Birlashtirilgan',
-        fbsTooltip: "Zaxira bo'limi faqat FBS sotuvchilar uchun ishlaydi. FBO/FBY sotuvchilarning zaxirasi har bir marketplace tomonidan mustaqil boshqariladi.",
       },
       settingsPage: {
         connected:      'Ulangan',
@@ -909,7 +908,6 @@ export const translations = {
         linkTitle: 'Link products',
         linkHint: 'Select the same product — stocks will be combined',
         linkedLabel: 'Linked',
-        fbsTooltip: 'Inventory section is designed for FBS sellers. FBO/FBY stock is managed independently by each marketplace.',
       },
       settingsPage: {
         connected:      'Connected',
@@ -1751,7 +1749,6 @@ export const translations = {
         linkTitle: 'Объединить товары',
         linkHint: 'Выберите тот же товар — остатки будут объединены',
         linkedLabel: 'Объединено',
-        fbsTooltip: 'Раздел остатков рассчитан для продавцов FBS. Остатки FBO/FBY управляются каждым маркетплейсом независимо.',
       },
       settingsPage: {
         connected:      'Подключено',
