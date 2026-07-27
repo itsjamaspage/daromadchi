@@ -365,7 +365,7 @@ export default function DashboardClient({ slices, stockGroups, days, period, fro
                   </div>
                   <div className="flex-1 min-w-0">
                     {(() => {
-                      const url = sellerOrderUrl(order.marketplace, order.order_id_external)
+                      const url = sellerOrderUrl(order.marketplace, order.order_id_external, { shopIdExternal: order.shop_id_external, businessId: order.business_id })
                       return url ? (
                         <a href={url} target="_blank" rel="noopener noreferrer"
                           className="text-sm text-[var(--text-base)] font-medium truncate font-mono hover:underline block">

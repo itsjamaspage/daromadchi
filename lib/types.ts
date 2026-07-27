@@ -148,6 +148,8 @@ export interface Order {
   delivery_cost: number | null
   items_count: number
   ordered_at: string
+  shop_id_external?: string | null
+  business_id?: string | null
 }
 
 export interface DailyRevenue {

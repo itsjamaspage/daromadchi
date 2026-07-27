@@ -1,10 +1,10 @@
 import { unstable_cache } from 'next/cache'
-import { inArray, desc, gte, lte, and, count } from 'drizzle-orm'
-import { db, orders } from '@/lib/db'
+import { inArray, desc, gte, lte, and, count, eq } from 'drizzle-orm'
+import { db, orders, shops } from '@/lib/db'
 import { getShopIds } from '@/lib/db/shop-context'
 import type { Order, MarketplaceType } from '@/lib/types'
 
-function mapRow(row: typeof orders.$inferSelect): Order {
+function mapRow(row: typeof orders.$inferSelect, shopRow?: { shop_id_external: string | null; business_id: string | null }): Order {
   return {
     id:                row.id,
     shop_id:           row.shop_id,
@@ -17,6 +17,8 @@ function mapRow(row: typeof orders.$inferSelect): Order {
     delivery_cost:     row.delivery_cost ? Number(row.delivery_cost) : null,
     items_count:       row.items_count,
     ordered_at:        row.ordered_at.toISOString(),
+    shop_id_external:  shopRow?.shop_id_external ?? null,
+    business_id:       shopRow?.business_id ?? null,
   }
 }
 
@@ -32,14 +34,19 @@ const _fetchOrders = unstable_cache(
       conditions.push(lte(orders.ordered_at, toDate))
     }
 
-    let query = db.select().from(orders)
+    let query = db.select({
+      order: orders,
+      shop_id_external: shops.shop_id_external,
+      business_id: shops.business_id,
+    }).from(orders)
+      .leftJoin(shops, eq(orders.shop_id, shops.id))
       .where(and(...conditions))
       .orderBy(desc(orders.ordered_at))
       .$dynamic()
     if (limit > 0) query = query.limit(limit)
 
     const rows = await query
-    return rows.map(mapRow)
+    return rows.map(r => mapRow(r.order, { shop_id_external: r.shop_id_external, business_id: r.business_id }))
   },
   ['orders'],
   { revalidate: 30, tags: ['order-data'] },
@@ -65,7 +72,12 @@ const _fetchOrdersPaginated = unstable_cache(
     const condition = inArray(orders.shop_id, shopIds)
 
     const [rows, [{ total }]] = await Promise.all([
-      db.select().from(orders)
+      db.select({
+        order: orders,
+        shop_id_external: shops.shop_id_external,
+        business_id: shops.business_id,
+      }).from(orders)
+        .leftJoin(shops, eq(orders.shop_id, shops.id))
         .where(condition)
         .orderBy(desc(orders.ordered_at))
         .limit(pageSize)
@@ -73,7 +85,7 @@ const _fetchOrdersPaginated = unstable_cache(
       db.select({ total: count() }).from(orders).where(condition),
     ])
 
-    return { rows: rows.map(mapRow), total }
+    return { rows: rows.map(r => mapRow(r.order, { shop_id_external: r.shop_id_external, business_id: r.business_id })), total }
   },
   ['orders-paginated'],
   { revalidate: 30, tags: ['order-data'] },

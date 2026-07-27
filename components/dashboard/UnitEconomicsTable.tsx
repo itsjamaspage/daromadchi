@@ -443,12 +443,15 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
 
       {/* Summary indicators */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {[
-          { label: d.ueTotalProducts, value: `${filtered.length}` },
-          { label: d.ueAvgRoi,        value: filtered.length ? `${Math.round(filtered.reduce((s,i)=>s+i.roi,0)/filtered.length)}%` : '—' },
-          { label: d.ueAvgMargin,     value: filtered.length ? `${Math.round(filtered.reduce((s,i)=>s+i.margin,0)/filtered.length)}%` : '—' },
-          { label: d.ueTotalProfit,   value: filtered.length ? fs(filtered.reduce((s,i)=>s+i.netProfit,0)) : '—' },
-        ].map(({ label, value }) => (
+        {(() => {
+          const withCost = filtered.filter(i => i.costPrice > 0)
+          return [
+            { label: d.ueTotalProducts, value: `${filtered.length}` },
+            { label: d.ueAvgRoi,        value: withCost.length ? `${Math.round(withCost.reduce((s,i)=>s+i.roi,0)/withCost.length)}%` : '—' },
+            { label: d.ueAvgMargin,     value: filtered.length ? `${Math.round(filtered.reduce((s,i)=>s+i.margin,0)/filtered.length)}%` : '—' },
+            { label: d.ueTotalProfit,   value: filtered.length ? fs(filtered.reduce((s,i)=>s+i.netProfit,0)) : '—' },
+          ]
+        })().map(({ label, value }) => (
           <div key={label} className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl px-4 py-3">
             <p className="text-xs text-[var(--text-muted)] mb-1">{label}</p>
             <p className="text-sm font-bold text-[var(--text-base)]">{value}</p>

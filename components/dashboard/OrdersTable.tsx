@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react'
 import { Search, ShoppingCart } from 'lucide-react'
 import ExportButton from './ExportButton'
+import FulfillmentBadge from './FulfillmentBadge'
 import { useLang } from '@/app/providers'
 import { translations } from '@/lib/i18n'
 import type { Order, OrderStatus } from '@/lib/types'
@@ -11,19 +12,21 @@ function fmt(n: number) {
   return new Intl.NumberFormat('uz-UZ').format(n) + " so'm"
 }
 
-const marketplaceLabel: Record<string, string> = {
-  uzum: 'Uzum',
-  yandex_market: 'Yandex Market',
-  wildberries: 'Wildberries',
+const MP_META: Record<string, { short: string; color: string; bg: string }> = {
+  uzum:          { short: 'UZ', color: '#494fdf', bg: 'rgba(73,79,223,0.12)'   },
+  yandex_market: { short: 'YM', color: '#E8A000', bg: 'rgba(232,160,0,0.12)'  },
+  wildberries:   { short: 'WB', color: '#CB11AB', bg: 'rgba(203,17,171,0.12)' },
 }
 
-// Deep link from an order id to the marketplace's seller cabinet, so the id
-// can be verified against the source with one click. Null = no known deep
-// link for that marketplace.
-export function sellerOrderUrl(marketplace: string, extId: string | null): string | null {
+export function sellerOrderUrl(marketplace: string, extId: string | null, opts?: { shopIdExternal?: string | null; businessId?: string | null }): string | null {
   if (!extId) return null
   if (marketplace === 'uzum') return `https://seller.uzum.uz/seller/orders/fbs/${extId}`
-  if (marketplace === 'yandex_market') return `https://partner.market.yandex.ru/orders/${extId}`
+  if (marketplace === 'yandex_market') {
+    const biz = opts?.businessId
+    const campaign = opts?.shopIdExternal
+    if (biz && campaign) return `https://partner.market.yandex.ru/business/${biz}/orders?campaignId=${campaign}`
+    return null
+  }
   if (marketplace === 'wildberries') return `https://seller.wildberries.ru/orders-and-returns/orders?search=${extId}`
   return null
 }
@@ -85,7 +88,7 @@ export default function OrdersTable({ orders }: { orders: Order[] }) {
 
   const exportData = filtered.map(o => ({
     [d.orderId]: o.order_id_external ?? o.id,
-    [d.marketplace]: marketplaceLabel[o.marketplace] ?? o.marketplace,
+    [d.marketplace]: MP_META[o.marketplace]?.short ?? o.marketplace,
     [d.date]: o.ordered_at,
     [`${d.revenue} (so'm)`]: o.revenue ?? 0,
     [`${d.commission2} (so'm)`]: o.marketplace_fee ?? 0,
@@ -162,7 +165,7 @@ export default function OrdersTable({ orders }: { orders: Order[] }) {
                           <ShoppingCart className="w-3.5 h-3.5" style={{ color: 'var(--c1)' }} />
                         </div>
                         {(() => {
-                          const url = sellerOrderUrl(order.marketplace, order.order_id_external)
+                          const url = sellerOrderUrl(order.marketplace, order.order_id_external, { shopIdExternal: order.shop_id_external, businessId: order.business_id })
                           const label = order.order_id_external ?? order.id.slice(0, 8)
                           return url ? (
                             <a href={url} target="_blank" rel="noopener noreferrer"
@@ -177,14 +180,14 @@ export default function OrdersTable({ orders }: { orders: Order[] }) {
                         })()}
                       </div>
                     </td>
-                    <td className="px-5 py-4 text-[var(--text-base)] text-xs">
+                    <td className="px-5 py-4 text-xs">
                       <div className="flex items-center gap-1.5">
-                        <span>{marketplaceLabel[order.marketplace] ?? order.marketplace}</span>
-                        {order.fulfillment_type && (
-                          <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded" style={{ background: 'var(--bg-input)', color: 'var(--text-muted)' }}>
-                            {order.fulfillment_type}
+                        {MP_META[order.marketplace] && (
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded" style={{ background: MP_META[order.marketplace].bg, color: MP_META[order.marketplace].color }}>
+                            {MP_META[order.marketplace].short}
                           </span>
                         )}
+                        <FulfillmentBadge type={order.fulfillment_type} />
                       </div>
                     </td>
                     <td className="px-5 py-4 text-[var(--text-base)] text-xs">{new Date(order.ordered_at).toLocaleDateString('uz-UZ')}</td>
