@@ -44,7 +44,7 @@ export const dashT = {
       download: 'Yuklab olish', xlsx: 'Excel (.xlsx)', csv: 'CSV', pdf: 'PDF (chop etish)',
     },
     status: {
-      pending: 'Kutilmoqda', confirmed: 'Tasdiqlandi', delivered: 'Yetkazildi',
+      pending: 'Jarayonda', confirmed: 'Tasdiqlandi', delivered: 'Yetkazildi',
       cancelled: 'Bekor', returned: 'Qaytarildi',
     },
     products: {
@@ -73,7 +73,7 @@ export const dashT = {
       title: 'Buyurtmalar', count: 'ta buyurtma', empty: "Buyurtmalar yo'q",
       emptyDesc: "Uzum do'koningizni ulab, sinxronizatsiyani boshlang — buyurtmalar avtomatik import qilinadi.",
       goSettings: "Sozlamalarga o'tish",
-      pending: 'Kutilmoqda', confirmed: 'Tasdiqlandi', delivered: 'Yetkazildi',
+      pending: 'Jarayonda', confirmed: 'Tasdiqlandi', delivered: 'Yetkazildi',
       cancelledFull: 'Bekor qilindi', returned: 'Qaytarildi',
       all: 'Barchasi', cancelled: 'Bekor',
       searchPlaceholder: 'Buyurtma ID yoki marketplace...', notFound: 'Hech narsa topilmadi',
@@ -432,7 +432,7 @@ export const dashT = {
       download: 'Download', xlsx: 'Excel (.xlsx)', csv: 'CSV', pdf: 'PDF (print)',
     },
     status: {
-      pending: 'Pending', confirmed: 'Confirmed', delivered: 'Delivered',
+      pending: 'In process', confirmed: 'Confirmed', delivered: 'Delivered',
       cancelled: 'Cancelled', returned: 'Returned',
     },
     products: {
@@ -461,7 +461,7 @@ export const dashT = {
       title: 'Orders', count: 'orders', empty: 'No orders',
       emptyDesc: 'Connect your Uzum store and start syncing — orders will be imported automatically.',
       goSettings: 'Go to settings',
-      pending: 'Pending', confirmed: 'Confirmed', delivered: 'Delivered',
+      pending: 'In process', confirmed: 'Confirmed', delivered: 'Delivered',
       cancelledFull: 'Cancelled', returned: 'Returned',
       all: 'All', cancelled: 'Cancelled',
       searchPlaceholder: 'Order ID or marketplace...', notFound: 'Nothing found',
@@ -817,7 +817,7 @@ export const dashT = {
       download: 'Скачать', xlsx: 'Excel (.xlsx)', csv: 'CSV', pdf: 'PDF (печать)',
     },
     status: {
-      pending: 'Ожидает', confirmed: 'Подтверждён', delivered: 'Доставлен',
+      pending: 'В процессе', confirmed: 'Подтверждён', delivered: 'Доставлен',
       cancelled: 'Отменён', returned: 'Возвращён',
     },
     products: {
@@ -846,7 +846,7 @@ export const dashT = {
       title: 'Заказы', count: 'заказов', empty: 'Нет заказов',
       emptyDesc: 'Подключите магазин Uzum и запустите синхронизацию — заказы импортируются автоматически.',
       goSettings: 'Перейти в настройки',
-      pending: 'Ожидает', confirmed: 'Подтверждён', delivered: 'Доставлен',
+      pending: 'В процессе', confirmed: 'Подтверждён', delivered: 'Доставлен',
       cancelledFull: 'Отменён', returned: 'Возвращён',
       all: 'Все', cancelled: 'Отменён',
       searchPlaceholder: 'ID заказа или маркетплейс...', notFound: 'Ничего не найдено',

@@ -13,6 +13,7 @@ import CategoryChart from '@/components/dashboard/CategoryChart'
 import LastSynced from '@/components/dashboard/LastSynced'
 import SyncAlert from '@/components/dashboard/SyncAlert'
 import NewDataToast from '@/components/dashboard/NewDataToast'
+import { sellerOrderUrl } from '@/components/dashboard/OrdersTable'
 import { useSyncPolling } from '@/hooks/useSyncPolling'
 import { useLang, useTheme } from '@/app/providers'
 import { dashT } from '@/lib/dashT'
@@ -363,15 +364,17 @@ export default function DashboardClient({ slices, stockGroups, days, period, fro
                     <ShoppingBag className="w-4 h-4" style={{ color: 'var(--c1)' }} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    {order.marketplace === 'uzum' && order.order_id_external ? (
-                      <a href={`https://seller.uzum.uz/seller/orders/fbs/${order.order_id_external}`}
-                        target="_blank" rel="noopener noreferrer"
-                        className="text-sm text-[var(--text-base)] font-medium truncate font-mono hover:underline block">
-                        {order.order_id_external} ↗
-                      </a>
-                    ) : (
-                      <p className="text-sm text-[var(--text-base)] font-medium truncate font-mono">{order.order_id_external ?? order.id.slice(0, 8)}</p>
-                    )}
+                    {(() => {
+                      const url = sellerOrderUrl(order.marketplace, order.order_id_external)
+                      return url ? (
+                        <a href={url} target="_blank" rel="noopener noreferrer"
+                          className="text-sm text-[var(--text-base)] font-medium truncate font-mono hover:underline block">
+                          {order.order_id_external} ↗
+                        </a>
+                      ) : (
+                        <p className="text-sm text-[var(--text-base)] font-medium truncate font-mono">{order.order_id_external ?? order.id.slice(0, 8)}</p>
+                      )
+                    })()}
                     <p className="text-xs text-[var(--text-muted)] truncate">{{ uzum: 'Uzum Market', yandex_market: 'Yandex Market', wildberries: 'Wildberries' }[order.marketplace] ?? order.marketplace}</p>
                   </div>
                   <span className={`text-[11px] font-medium px-2 py-0.5 rounded-lg flex-shrink-0 ${(isDark ? STATUS_CLASS_DARK : STATUS_CLASS_LIGHT)[order.status] ?? 'bg-slate-500/10 text-[var(--text-muted)]'}`}>

@@ -1,8 +1,5 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { RefreshCw } from 'lucide-react'
 import { useLang } from '@/app/providers'
 import { dashT } from '@/lib/dashT'
 
@@ -23,24 +20,8 @@ function relativeTime(iso: string, d: Record<string, string>): { text: string; w
 }
 
 export default function LastSynced({ lastSyncedAt, lastSyncFailed }: Props) {
-  const router = useRouter()
   const { lang } = useLang()
   const d = dashT[lang].dashboard
-  const [syncing, setSyncing] = useState(false)
-
-  async function handleSync() {
-    setSyncing(true)
-    try {
-      await Promise.allSettled([
-        fetch('/api/uzum/sync', { method: 'POST' }),
-        fetch('/api/yandex/sync', { method: 'POST' }),
-        fetch('/api/wildberries/sync', { method: 'POST' }),
-      ])
-      router.refresh()
-    } finally {
-      setSyncing(false)
-    }
-  }
 
   let label: string
   let warn = false
@@ -66,14 +47,6 @@ export default function LastSynced({ lastSyncedAt, lastSyncFailed }: Props) {
       }>
         {label}
       </span>
-      <button
-        onClick={handleSync}
-        disabled={syncing}
-        className="inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-lg border transition-all bg-[var(--bg-input)] border-[var(--border2)] text-[var(--text-muted)] hover:text-[var(--text-base)] disabled:opacity-50"
-      >
-        <RefreshCw className={`w-3 h-3 ${syncing ? 'animate-spin' : ''}`} />
-        {d.syncNow}
-      </button>
     </div>
   )
 }

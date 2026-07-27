@@ -254,7 +254,7 @@ export const translations = {
       sold: 'Yetkazilgan',
       // Status labels
       status: {
-        pending: 'Kutilmoqda',
+        pending: 'Jarayonda',
         confirmed: 'Tasdiqlandi',
         delivered: 'Yetkazildi',
         cancelled: 'Bekor qilindi',
@@ -1095,7 +1095,7 @@ export const translations = {
       sold: 'Delivered',
       // Status labels
       status: {
-        pending: 'Pending',
+        pending: 'In process',
         confirmed: 'Confirmed',
         delivered: 'Delivered',
         cancelled: 'Cancelled',
@@ -1936,7 +1936,7 @@ export const translations = {
       sold: 'Доставлено',
       // Status labels
       status: {
-        pending: 'Ожидает',
+        pending: 'В процессе',
         confirmed: 'Подтверждён',
         delivered: 'Доставлен',
         cancelled: 'Отменён',
