@@ -5,15 +5,16 @@ import { readFileSync, existsSync } from 'node:fs'
 import pg from 'pg'
 
 const MIGRATIONS = [
-  'supabase/migrations/021_product_links.sql',
-  'supabase/migrations/022_notif_language.sql',
-  'supabase/migrations/023_order_fulfillment_type.sql',
-  'supabase/migrations/024_product_quantity_sold.sql',
-  'supabase/migrations/025_notif_new_orders_default_on.sql',
-  'supabase/migrations/026_unit_econ_landed_cost.sql',
-  'supabase/migrations/027_product_group_merges.sql',
-  'supabase/migrations/028_product_fulfillment_type.sql',
-  'supabase/migrations/029_order_wb_fees.sql',
+  'migrations/migrations/021_product_links.sql',
+  'migrations/migrations/022_notif_language.sql',
+  'migrations/migrations/023_order_fulfillment_type.sql',
+  'migrations/migrations/024_product_quantity_sold.sql',
+  'migrations/migrations/025_notif_new_orders_default_on.sql',
+  'migrations/migrations/026_unit_econ_landed_cost.sql',
+  'migrations/migrations/027_product_group_merges.sql',
+  'migrations/migrations/028_product_fulfillment_type.sql',
+  'migrations/migrations/029_order_wb_fees.sql',
+  'migrations/migrations/030_shops_business_id.sql',
 ]
 
 function loadDatabaseUrl() {
