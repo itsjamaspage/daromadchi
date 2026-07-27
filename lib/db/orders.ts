@@ -34,19 +34,34 @@ const _fetchOrders = unstable_cache(
       conditions.push(lte(orders.ordered_at, toDate))
     }
 
-    let query = db.select({
-      order: orders,
-      shop_id_external: shops.shop_id_external,
-      business_id: shops.business_id,
-    }).from(orders)
-      .leftJoin(shops, eq(orders.shop_id, shops.id))
-      .where(and(...conditions))
-      .orderBy(desc(orders.ordered_at))
-      .$dynamic()
-    if (limit > 0) query = query.limit(limit)
+    try {
+      let query = db.select({
+        order: orders,
+        shop_id_external: shops.shop_id_external,
+        business_id: shops.business_id,
+      }).from(orders)
+        .leftJoin(shops, eq(orders.shop_id, shops.id))
+        .where(and(...conditions))
+        .orderBy(desc(orders.ordered_at))
+        .$dynamic()
+      if (limit > 0) query = query.limit(limit)
 
-    const rows = await query
-    return rows.map(r => mapRow(r.order, { shop_id_external: r.shop_id_external, business_id: r.business_id }))
+      const rows = await query
+      return rows.map(r => mapRow(r.order, { shop_id_external: r.shop_id_external, business_id: r.business_id }))
+    } catch {
+      let query = db.select({
+        order: orders,
+        shop_id_external: shops.shop_id_external,
+      }).from(orders)
+        .leftJoin(shops, eq(orders.shop_id, shops.id))
+        .where(and(...conditions))
+        .orderBy(desc(orders.ordered_at))
+        .$dynamic()
+      if (limit > 0) query = query.limit(limit)
+
+      const rows = await query
+      return rows.map(r => mapRow(r.order, { shop_id_external: r.shop_id_external, business_id: null }))
+    }
   },
   ['orders'],
   { revalidate: 30, tags: ['order-data'] },
@@ -71,21 +86,38 @@ const _fetchOrdersPaginated = unstable_cache(
     const offset = (page - 1) * pageSize
     const condition = inArray(orders.shop_id, shopIds)
 
-    const [rows, [{ total }]] = await Promise.all([
-      db.select({
-        order: orders,
-        shop_id_external: shops.shop_id_external,
-        business_id: shops.business_id,
-      }).from(orders)
-        .leftJoin(shops, eq(orders.shop_id, shops.id))
-        .where(condition)
-        .orderBy(desc(orders.ordered_at))
-        .limit(pageSize)
-        .offset(offset),
-      db.select({ total: count() }).from(orders).where(condition),
-    ])
+    try {
+      const [rows, [{ total }]] = await Promise.all([
+        db.select({
+          order: orders,
+          shop_id_external: shops.shop_id_external,
+          business_id: shops.business_id,
+        }).from(orders)
+          .leftJoin(shops, eq(orders.shop_id, shops.id))
+          .where(condition)
+          .orderBy(desc(orders.ordered_at))
+          .limit(pageSize)
+          .offset(offset),
+        db.select({ total: count() }).from(orders).where(condition),
+      ])
 
-    return { rows: rows.map(r => mapRow(r.order, { shop_id_external: r.shop_id_external, business_id: r.business_id })), total }
+      return { rows: rows.map(r => mapRow(r.order, { shop_id_external: r.shop_id_external, business_id: r.business_id })), total }
+    } catch {
+      const [rows, [{ total }]] = await Promise.all([
+        db.select({
+          order: orders,
+          shop_id_external: shops.shop_id_external,
+        }).from(orders)
+          .leftJoin(shops, eq(orders.shop_id, shops.id))
+          .where(condition)
+          .orderBy(desc(orders.ordered_at))
+          .limit(pageSize)
+          .offset(offset),
+        db.select({ total: count() }).from(orders).where(condition),
+      ])
+
+      return { rows: rows.map(r => mapRow(r.order, { shop_id_external: r.shop_id_external, business_id: null })), total }
+    }
   },
   ['orders-paginated'],
   { revalidate: 30, tags: ['order-data'] },
