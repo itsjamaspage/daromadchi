@@ -28,6 +28,9 @@ interface NotifStrings {
   lowStockUnit: string
   lowStockDays: (n: number) => string
   lowStockCta: string
+  stockUpdateTitle: (n: number) => string
+  stockUpdateLine: (product: string, orderMp: string, newQty: number, targetMps: string) => string
+  stockUpdateCta: string
   deliveryTitle: (n: number) => string
   deliverTo: string
   deliverBy: string
@@ -57,6 +60,9 @@ const STRINGS: Record<NotifLang, NotifStrings> = {
     lowStockUnit:   'dona',
     lowStockDays:   (n) => `~${n} kun`,
     lowStockCta:    "Yangi partiya buyurtma qiling yoki reklamani to'xtating.",
+    stockUpdateTitle: (n) => `🔄 <b>Zaxirani yangilang (${n})</b>`,
+    stockUpdateLine: (product, orderMp, newQty, targetMps) => `• ${product} — buyurtma ${orderMp}, <b>${newQty}</b> qiling: ${targetMps}`,
+    stockUpdateCta: "Boshqa do'konlarda qoldiqni yangilang.",
     deliveryTitle:  (n) => `📦 <b>Yetkazish kerak (${n})</b>`,
     deliverTo:      'PVZ ga',
     deliverBy:      'gacha',
@@ -84,6 +90,9 @@ const STRINGS: Record<NotifLang, NotifStrings> = {
     lowStockUnit:   'шт',
     lowStockDays:   (n) => `~${n} дн.`,
     lowStockCta:    'Закажите новую партию или приостановите рекламу.',
+    stockUpdateTitle: (n) => `🔄 <b>Обновите остатки (${n})</b>`,
+    stockUpdateLine: (product, orderMp, newQty, targetMps) => `• ${product} — заказ ${orderMp}, поставьте <b>${newQty}</b>: ${targetMps}`,
+    stockUpdateCta: 'Обновите остатки в других магазинах.',
     deliveryTitle:  (n) => `📦 <b>К отправке (${n})</b>`,
     deliverTo:      'в ПВЗ',
     deliverBy:      'до',
@@ -111,6 +120,9 @@ const STRINGS: Record<NotifLang, NotifStrings> = {
     lowStockUnit:   'pcs',
     lowStockDays:   (n) => `~${n} days`,
     lowStockCta:    'Order a new batch or pause advertising.',
+    stockUpdateTitle: (n) => `🔄 <b>Update stock (${n})</b>`,
+    stockUpdateLine: (product, orderMp, newQty, targetMps) => `• ${product} — order on ${orderMp}, set to <b>${newQty}</b>: ${targetMps}`,
+    stockUpdateCta: 'Update stock in other stores.',
     deliveryTitle:  (n) => `📦 <b>To ship (${n})</b>`,
     deliverTo:      'to PVZ',
     deliverBy:      'by',

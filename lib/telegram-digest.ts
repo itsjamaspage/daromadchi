@@ -1,5 +1,5 @@
-import { eq, ne, and, inArray, gte, lt, sql } from 'drizzle-orm'
-import { db, shops as shopsTable, orders as ordersTable, orderItems as orderItemsTable, products as productsTable, userSettings as userSettingsTable } from '@/lib/db'
+import { eq, and, inArray, gte, lt } from 'drizzle-orm'
+import { db, shops as shopsTable, orders as ordersTable, userSettings as userSettingsTable } from '@/lib/db'
 import { computeStockGroups, lowStockGroups } from '@/lib/db/stock-groups'
 import { notifT, fmtNumber, type NotifLang } from '@/lib/notif-i18n'
 
@@ -62,6 +62,14 @@ export async function buildDigestForUser(
   if (s.notif_daily_summary) {
     const pending = await buildPendingDeliveries(shopIds, mpByShop, lang)
     if (pending) parts.push(pending)
+  }
+
+  // ── FBS stock update alerts (tell user to update other stores) ──
+  if (s.notif_daily_summary) {
+    try {
+      const stockUpdate = await buildFbsStockUpdateAlerts(shopIds, mpByShop, s.user_id, lang)
+      if (stockUpdate) parts.push(stockUpdate)
+    } catch { /* best-effort */ }
   }
 
   // ── Low-stock alerts (total leftover across all marketplaces) ──
@@ -221,4 +229,73 @@ async function buildPendingDeliveries(
     .map(([mp, s]) => `  ${MP_FLAG[mp] ?? mp}: <b>${s.count}</b> (${s.items} ${t.lowStockUnit})`)
 
   return `${t.deliveryTitle(totalCount)}\n${lines.join('\n')}`
+}
+
+/**
+ * FBS stock update alerts: when an FBS order comes in on one marketplace,
+ * the seller must manually update stock on the OTHER marketplaces that carry
+ * the same product (since FBS = same physical pool, but each marketplace
+ * tracks stock independently).
+ *
+ * Example: product listed FBS on UZ, YM, WB with stock=3. Order comes in on
+ * YM → alert: "update stock to 2 on UZ, WB".
+ */
+async function buildFbsStockUpdateAlerts(
+  shopIds: string[],
+  mpByShop: Map<string, string>,
+  userId: string,
+  lang: NotifLang,
+): Promise<string | null> {
+  const t = notifT(lang)
+
+  const groups = await computeStockGroups(userId, shopIds)
+
+  // Find groups that have FBS members on 2+ marketplaces AND have in-process orders
+  const alerts: { title: string; orderMp: string; newQty: number; targetMps: string[] }[] = []
+
+  for (const g of groups) {
+    const fbsMembers = g.members.filter(m =>
+      m.fulfillment_type !== 'fbo' && m.fulfillment_type !== 'fby')
+
+    // Need FBS members on at least 2 different marketplaces
+    const fbsMps = new Set(fbsMembers.map(m => m.marketplace))
+    if (fbsMps.size < 2) continue
+
+    // Check for in-process orders — these represent recent orders that need
+    // stock adjustment on other marketplaces
+    if (g.total_in_process === 0) continue
+
+    // The current leftover is already computed correctly (API stock - in_process)
+    const newQty = g.leftover
+
+    // Find which marketplaces had the orders (those with lower stock than the max)
+    const maxStock = Math.max(0, ...fbsMembers.map(m => m.stock))
+    const orderMps = fbsMembers
+      .filter(m => m.stock < maxStock)
+      .map(m => m.marketplace)
+    const targetMps = fbsMembers
+      .filter(m => !orderMps.includes(m.marketplace) || orderMps.length === 0)
+      .map(m => m.marketplace)
+
+    // If we can't determine which marketplace had the order, show all
+    if (targetMps.length === 0 || orderMps.length === 0) continue
+
+    const orderMpLabel = orderMps.map(mp => MP_FLAG[mp] ?? mp).join(', ')
+    const targetMpLabels = targetMps.map(mp => MP_FLAG[mp] ?? mp)
+
+    alerts.push({
+      title: truncate(g.title, 30),
+      orderMp: orderMpLabel,
+      newQty: Math.max(0, newQty),
+      targetMps: targetMpLabels,
+    })
+  }
+
+  if (alerts.length === 0) return null
+
+  const lines = alerts.slice(0, 10).map(a =>
+    t.stockUpdateLine(a.title, a.orderMp, a.newQty, a.targetMps.join(', '))
+  ).join('\n')
+
+  return `${t.stockUpdateTitle(alerts.length)}\n${lines}\n${t.stockUpdateCta}`
 }
