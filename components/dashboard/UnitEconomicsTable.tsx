@@ -38,26 +38,21 @@ function stockColor(s: number | undefined) {
   return s >= 30 ? 'text-emerald-600' : s >= 10 ? 'text-amber-600' : 'text-red-600'
 }
 
-const ALL_COLUMNS = [
-  { key: 'title',       label: 'Mahsulot',      always: true  },
-  { key: 'sku',         label: 'SKU',            always: false },
-  { key: 'sellingPrice',label: 'Narx',           always: false },
-  { key: 'costPrice',   label: 'Tannarx',        always: false },
-  { key: 'landedCost',  label: 'Keltirish narxi', always: false },
-  { key: 'commission',  label: 'Komissiya',      always: false },
-  { key: 'delivery',    label: 'Yetkazish',      always: false },
-  { key: 'lastMile',    label: 'Oxirgi milya',   always: false },
-  { key: 'acquiring',   label: 'Ekvayring',      always: false },
-  { key: 'adSpend',     label: 'Reklama',        always: false },
-  { key: 'tax',         label: 'Soliq',          always: false },
-  { key: 'netProfit',   label: 'Foyda',          always: true  },
-  { key: 'roi',         label: 'ROI',            always: true  },
-  { key: 'margin',      label: 'Marja',          always: false },
-  { key: 'stock',       label: 'Zaxira',         always: false },
-  { key: 'supplierUrl', label: 'Ta\'minotchi',   always: false },
+const COL_KEYS = [
+  'title', 'sku', 'sellingPrice', 'costPrice', 'landedCost', 'commission',
+  'delivery', 'lastMile', 'acquiring', 'adSpend', 'tax', 'netProfit',
+  'roi', 'margin', 'stock', 'supplierUrl',
 ] as const
+type ColKey = typeof COL_KEYS[number]
+const COL_ALWAYS = new Set<ColKey>(['title', 'netProfit', 'roi'])
 
-type ColKey = typeof ALL_COLUMNS[number]['key']
+const COL_I18N_KEY: Record<ColKey, string> = {
+  title: 'ueColProduct', sku: 'ueColSku', sellingPrice: 'ueColPrice', costPrice: 'ueColCost',
+  landedCost: 'ueColLanded', commission: 'ueColCommission', delivery: 'ueColDelivery',
+  lastMile: 'ueColLastMile', acquiring: 'ueColAcquiring', adSpend: 'ueColAdSpend',
+  tax: 'ueColTax', netProfit: 'ueColProfit', roi: 'ueColRoi', margin: 'ueColMargin',
+  stock: 'ueColStock', supplierUrl: 'ueColSupplier',
+}
 const DEFAULT_VISIBLE: ColKey[] = ['title','sellingPrice','costPrice','landedCost','commission','delivery','adSpend','netProfit','roi','margin','stock','supplierUrl']
 
 const DEFAULT_SETTINGS: UnitEcoSettings = {
@@ -80,6 +75,9 @@ interface Props {
 export default function UnitEconomicsTable({ items: initialItems, defaultSettings, fromExtension }: Props) {
   const { lang } = useLang()
   const d = translations[lang].dashboard
+  const ALL_COLUMNS = useMemo(() => COL_KEYS.map(key => ({
+    key, label: (d as unknown as Record<string, string>)[COL_I18N_KEY[key]] ?? key, always: COL_ALWAYS.has(key),
+  })), [d])
   const initSettings = defaultSettings ?? DEFAULT_SETTINGS
   const [items, setItems]               = useState(initialItems)
   const [search, setSearch]             = useState('')
@@ -556,8 +554,8 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
                           ) : (
                             <button onClick={() => setEditingCost(item.id)}
                               className="text-[var(--text-base)] text-xs border-b border-dashed border-transparent hover:border-[var(--border2)] cursor-text"
-                              title="Tannarxni tahrirlash (Xitoydan yetkazish bilan)">
-                              {item.costPrice > 0 ? fs(item.costPrice) : <span className="text-[var(--text-muted)]">+ tannarx</span>}
+                              title={d.ueEditCostInline}>
+                              {item.costPrice > 0 ? fs(item.costPrice) : <span className="text-[var(--text-muted)]">{d.ueEditCostPlaceholder}</span>}
                             </button>
                           )}
                         </td>
@@ -579,7 +577,7 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
                           {item.costPrice === 0 ? (
                             <button onClick={() => openEdit(item)}
                               className="text-xs text-amber-700 border border-amber-300 bg-amber-100 px-2 py-0.5 rounded-lg hover:bg-amber-200 transition-colors"
-                              title="Tannarx kiritilmagan — ROI hisoblanmadi">
+                              title={d.ueEditNoCost}>
                               —
                             </button>
                           ) : (
@@ -674,7 +672,7 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
             <div className="p-5 space-y-4">
               {/* Title */}
               <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-medium text-[var(--text-muted)]">Mahsulot nomi</span>
+                <span className="text-xs font-medium text-[var(--text-muted)]">{d.ueEditTitle}</span>
                 <input type="text" value={editDraft.title ?? ''}
                   onChange={e => setDraftField('title', e.target.value)}
                   className="w-full px-3 py-2 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg text-sm text-[var(--text-base)] focus:outline-none focus:border-[var(--border2)]" />
@@ -683,7 +681,7 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
               <div className="grid grid-cols-2 gap-3">
                 {/* Selling price */}
                 <label className="flex flex-col gap-1.5">
-                  <span className="text-xs font-medium text-[var(--text-muted)]">Sotuv narxi (so&apos;m)</span>
+                  <span className="text-xs font-medium text-[var(--text-muted)]">{d.ueEditPrice}</span>
                   <input type="number" min={0} value={editDraft.sellingPrice ?? 0}
                     onFocus={selectOnFocus}
                     onChange={e => setDraftField('sellingPrice', parseFloat(e.target.value) || 0)}
@@ -691,7 +689,7 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
                 </label>
                 {/* Cost price */}
                 <label className="flex flex-col gap-1.5">
-                  <span className="text-xs font-medium text-[var(--text-muted)]">Tannarx (so&apos;m) <span className="text-[var(--c1)]">*ROI uchun</span></span>
+                  <span className="text-xs font-medium text-[var(--text-muted)]">{d.ueEditCost} <span className="text-[var(--c1)]">{d.ueEditCostHint}</span></span>
                   <input type="number" min={0} value={editDraft.costPrice ?? 0}
                     onFocus={selectOnFocus}
                     onChange={e => setDraftField('costPrice', parseFloat(e.target.value) || 0)}
@@ -699,7 +697,7 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
                 </label>
                 {/* Landed cost (bringing from supplier / China) */}
                 <label className="flex flex-col gap-1.5">
-                  <span className="text-xs font-medium text-[var(--text-muted)]">Keltirish narxi (so&apos;m) <span className="text-[var(--c1)]">— kargo/bojxona, Xitoydan olib kelish</span></span>
+                  <span className="text-xs font-medium text-[var(--text-muted)]">{d.ueEditLanded} <span className="text-[var(--c1)]">{d.ueEditLandedHint}</span></span>
                   <input type="number" min={0} value={editDraft.landedCost ?? 0}
                     onFocus={selectOnFocus}
                     onChange={e => setDraftField('landedCost', parseFloat(e.target.value) || 0)}
@@ -707,7 +705,7 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
                 </label>
                 {/* Commission % */}
                 <label className="flex flex-col gap-1.5">
-                  <span className="text-xs font-medium text-[var(--text-muted)]">Komissiya (%)</span>
+                  <span className="text-xs font-medium text-[var(--text-muted)]">{d.ueEditCommission}</span>
                   <input type="number" min={0} max={100} step={0.5} value={editDraft.commissionPct ?? 0}
                     onFocus={selectOnFocus}
                     onChange={e => setDraftField('commissionPct', parseFloat(e.target.value) || 0)}
@@ -715,7 +713,7 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
                 </label>
                 {/* Delivery */}
                 <label className="flex flex-col gap-1.5">
-                  <span className="text-xs font-medium text-[var(--text-muted)]">Yetkazib berish (so&apos;m)</span>
+                  <span className="text-xs font-medium text-[var(--text-muted)]">{d.ueEditDelivery}</span>
                   <input type="number" min={0} value={editDraft.delivery ?? 0}
                     onFocus={selectOnFocus}
                     onChange={e => setDraftField('delivery', parseFloat(e.target.value) || 0)}
@@ -723,7 +721,7 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
                 </label>
                 {/* Ad spend */}
                 <label className="flex flex-col gap-1.5">
-                  <span className="text-xs font-medium text-[var(--text-muted)]">Reklama (so&apos;m)</span>
+                  <span className="text-xs font-medium text-[var(--text-muted)]">{d.ueEditAdSpend}</span>
                   <input type="number" min={0} value={editDraft.adSpend ?? 0}
                     onFocus={selectOnFocus}
                     onChange={e => setDraftField('adSpend', parseFloat(e.target.value) || 0)}
@@ -731,7 +729,7 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
                 </label>
                 {/* Tax */}
                 <label className="flex flex-col gap-1.5">
-                  <span className="text-xs font-medium text-[var(--text-muted)]">Soliq (so&apos;m)</span>
+                  <span className="text-xs font-medium text-[var(--text-muted)]">{d.ueEditTax}</span>
                   <input type="number" min={0} value={editDraft.tax ?? 0}
                     onFocus={selectOnFocus}
                     onChange={e => setDraftField('tax', parseFloat(e.target.value) || 0)}
@@ -739,7 +737,7 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
                 </label>
                 {/* Acquiring */}
                 <label className="flex flex-col gap-1.5">
-                  <span className="text-xs font-medium text-[var(--text-muted)]">Ekvayring (so&apos;m)</span>
+                  <span className="text-xs font-medium text-[var(--text-muted)]">{d.ueEditAcquiring}</span>
                   <input type="number" min={0} value={editDraft.acquiring ?? 0}
                     onFocus={selectOnFocus}
                     onChange={e => setDraftField('acquiring', parseFloat(e.target.value) || 0)}
@@ -747,7 +745,7 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
                 </label>
                 {/* Last mile */}
                 <label className="flex flex-col gap-1.5">
-                  <span className="text-xs font-medium text-[var(--text-muted)]">Oxirgi milya (so&apos;m)</span>
+                  <span className="text-xs font-medium text-[var(--text-muted)]">{d.ueEditLastMile}</span>
                   <input type="number" min={0} value={editDraft.lastMile ?? 0}
                     onFocus={selectOnFocus}
                     onChange={e => setDraftField('lastMile', parseFloat(e.target.value) || 0)}
@@ -755,7 +753,7 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
                 </label>
                 {/* Stock */}
                 <label className="flex flex-col gap-1.5">
-                  <span className="text-xs font-medium text-[var(--text-muted)]">Zaxira (dona)</span>
+                  <span className="text-xs font-medium text-[var(--text-muted)]">{d.ueEditStock}</span>
                   <input type="number" min={0} value={editDraft.stock ?? ''}
                     onFocus={selectOnFocus}
                     onChange={e => setDraftField('stock', e.target.value ? parseInt(e.target.value) : undefined)}
@@ -763,7 +761,7 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
                 </label>
                 {/* Supplier URL */}
                 <label className="flex flex-col gap-1.5">
-                  <span className="text-xs font-medium text-[var(--text-muted)]">Ta&apos;minotchi havolasi</span>
+                  <span className="text-xs font-medium text-[var(--text-muted)]">{d.ueEditSupplier}</span>
                   <input type="url" value={editDraft.supplierUrl ?? ''}
                     onChange={e => setDraftField('supplierUrl', e.target.value)}
                     placeholder="https://..."
@@ -777,19 +775,19 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
                 return (
                   <div className="grid grid-cols-3 gap-2 pt-2 border-t border-[var(--border)]">
                     <div className="bg-[var(--bg-card2)] rounded-xl px-3 py-2 text-center">
-                      <p className="text-[10px] text-[var(--text-muted)] mb-0.5">Foyda</p>
+                      <p className="text-[10px] text-[var(--text-muted)] mb-0.5">{d.ueEditProfit}</p>
                       <p className={`text-xs font-bold ${(calc.netProfit ?? 0) >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
                         {(calc.netProfit ?? 0) >= 0 ? '+' : ''}{new Intl.NumberFormat('uz-UZ').format(Math.round(calc.netProfit ?? 0))} so&apos;m
                       </p>
                     </div>
                     <div className="bg-[var(--bg-card2)] rounded-xl px-3 py-2 text-center">
-                      <p className="text-[10px] text-[var(--text-muted)] mb-0.5">ROI</p>
+                      <p className="text-[10px] text-[var(--text-muted)] mb-0.5">{d.ueEditRoi}</p>
                       <p className={`text-xs font-bold ${(calc.roi ?? 0) >= 30 ? 'text-emerald-600' : 'text-amber-600'}`}>
                         {Math.round(calc.roi ?? 0)}%
                       </p>
                     </div>
                     <div className="bg-[var(--bg-card2)] rounded-xl px-3 py-2 text-center">
-                      <p className="text-[10px] text-[var(--text-muted)] mb-0.5">Marja</p>
+                      <p className="text-[10px] text-[var(--text-muted)] mb-0.5">{d.ueEditMargin}</p>
                       <p className={`text-xs font-bold ${(calc.margin ?? 0) >= 20 ? 'text-emerald-600' : 'text-amber-600'}`}>
                         {(calc.margin ?? 0).toFixed(1)}%
                       </p>
@@ -803,11 +801,11 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
             <div className="flex gap-2 px-5 py-4 border-t border-[var(--border)]">
               <button onClick={saveEdit} disabled={editSaving}
                 className="flex-1 btn-primary py-2.5 text-sm font-semibold rounded-xl disabled:opacity-50 transition-colors">
-                {editSaving ? 'Saqlanmoqda…' : 'Saqlash'}
+                {editSaving ? d.ueEditSaving : d.ueEditSave}
               </button>
               <button onClick={() => setEditingItem(null)}
                 className="px-5 py-2.5 bg-[var(--bg-card2)] hover:bg-[var(--bg-input)] text-[var(--text-muted)] text-sm font-semibold rounded-xl transition-colors">
-                Bekor
+                {d.ueEditCancel}
               </button>
             </div>
           </div>
