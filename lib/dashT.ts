@@ -36,12 +36,15 @@ export const dashT = {
       syncFailed: 'Oxirgi sinxr muvaffaqiyatsiz', syncNow: 'Sinxronlash', notSyncedYet: 'Hali sinxronlanmagan',
       estimated: 'taxminiy', estimatedTooltip: '{pct}% stavka asosida hisoblangan. Haqiqiy ma\'lumot uchun marketplace\'ni ulang.',
       taxEstimatedTooltip: '{pct}% stavka asosida hisoblangan. Haqiqiy soliq rejimingizga bog\'liq.',
+      syncAlertError: 'Sinxronizatsiya muvaffaqiyatsiz. Ma\'lumotlar eskirgan bo\'lishi mumkin.',
+      syncAlertPartial: 'Qisman sinxronizatsiya — ba\'zi ma\'lumotlar to\'liq emas bo\'lishi mumkin.',
+      newDataAvailable: 'Yangi ma\'lumot mavjud', refreshBtn: 'Yangilash',
     },
     export: {
       download: 'Yuklab olish', xlsx: 'Excel (.xlsx)', csv: 'CSV', pdf: 'PDF (chop etish)',
     },
     status: {
-      pending: 'Kutilmoqda', confirmed: 'Tasdiqlandi', delivered: 'Yetkazildi',
+      pending: 'Jarayonda', confirmed: 'Tasdiqlandi', delivered: 'Yetkazildi',
       cancelled: 'Bekor', returned: 'Qaytarildi',
     },
     products: {
@@ -70,7 +73,7 @@ export const dashT = {
       title: 'Buyurtmalar', count: 'ta buyurtma', empty: "Buyurtmalar yo'q",
       emptyDesc: "Uzum do'koningizni ulab, sinxronizatsiyani boshlang — buyurtmalar avtomatik import qilinadi.",
       goSettings: "Sozlamalarga o'tish",
-      pending: 'Kutilmoqda', confirmed: 'Tasdiqlandi', delivered: 'Yetkazildi',
+      pending: 'Jarayonda', confirmed: 'Tasdiqlandi', delivered: 'Yetkazildi',
       cancelledFull: 'Bekor qilindi', returned: 'Qaytarildi',
       all: 'Barchasi', cancelled: 'Bekor',
       searchPlaceholder: 'Buyurtma ID yoki marketplace...', notFound: 'Hech narsa topilmadi',
@@ -421,12 +424,15 @@ export const dashT = {
       syncFailed: 'Last sync failed', syncNow: 'Sync', notSyncedYet: 'Not synced yet',
       estimated: 'estimated', estimatedTooltip: 'Estimated at {pct}% rate. Connect marketplace for real data.',
       taxEstimatedTooltip: 'Estimated at {pct}%. Actual tax depends on your tax regime.',
+      syncAlertError: 'Sync failed. Data may be outdated.',
+      syncAlertPartial: 'Partial sync — some data may be incomplete.',
+      newDataAvailable: 'New data available', refreshBtn: 'Refresh',
     },
     export: {
       download: 'Download', xlsx: 'Excel (.xlsx)', csv: 'CSV', pdf: 'PDF (print)',
     },
     status: {
-      pending: 'Pending', confirmed: 'Confirmed', delivered: 'Delivered',
+      pending: 'In process', confirmed: 'Confirmed', delivered: 'Delivered',
       cancelled: 'Cancelled', returned: 'Returned',
     },
     products: {
@@ -455,7 +461,7 @@ export const dashT = {
       title: 'Orders', count: 'orders', empty: 'No orders',
       emptyDesc: 'Connect your Uzum store and start syncing — orders will be imported automatically.',
       goSettings: 'Go to settings',
-      pending: 'Pending', confirmed: 'Confirmed', delivered: 'Delivered',
+      pending: 'In process', confirmed: 'Confirmed', delivered: 'Delivered',
       cancelledFull: 'Cancelled', returned: 'Returned',
       all: 'All', cancelled: 'Cancelled',
       searchPlaceholder: 'Order ID or marketplace...', notFound: 'Nothing found',
@@ -803,12 +809,15 @@ export const dashT = {
       syncFailed: 'Последняя синхр. не удалась', syncNow: 'Синхр.', notSyncedYet: 'Ещё не синхронизировано',
       estimated: 'оценка', estimatedTooltip: 'Рассчитано по ставке {pct}%. Подключите маркетплейс для реальных данных.',
       taxEstimatedTooltip: 'Рассчитано по ставке {pct}%. Фактический налог зависит от вашего режима.',
+      syncAlertError: 'Синхронизация не удалась. Данные могут быть устаревшими.',
+      syncAlertPartial: 'Частичная синхронизация — некоторые данные могут быть неполными.',
+      newDataAvailable: 'Доступны новые данные', refreshBtn: 'Обновить',
     },
     export: {
       download: 'Скачать', xlsx: 'Excel (.xlsx)', csv: 'CSV', pdf: 'PDF (печать)',
     },
     status: {
-      pending: 'Ожидает', confirmed: 'Подтверждён', delivered: 'Доставлен',
+      pending: 'В процессе', confirmed: 'Подтверждён', delivered: 'Доставлен',
       cancelled: 'Отменён', returned: 'Возвращён',
     },
     products: {
@@ -837,7 +846,7 @@ export const dashT = {
       title: 'Заказы', count: 'заказов', empty: 'Нет заказов',
       emptyDesc: 'Подключите магазин Uzum и запустите синхронизацию — заказы импортируются автоматически.',
       goSettings: 'Перейти в настройки',
-      pending: 'Ожидает', confirmed: 'Подтверждён', delivered: 'Доставлен',
+      pending: 'В процессе', confirmed: 'Подтверждён', delivered: 'Доставлен',
       cancelledFull: 'Отменён', returned: 'Возвращён',
       all: 'Все', cancelled: 'Отменён',
       searchPlaceholder: 'ID заказа или маркетплейс...', notFound: 'Ничего не найдено',

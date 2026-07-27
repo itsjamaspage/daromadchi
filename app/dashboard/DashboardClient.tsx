@@ -11,7 +11,10 @@ import DateRangePicker from '@/components/dashboard/DateRangePicker'
 import StockAlerts from '@/components/dashboard/StockAlerts'
 import CategoryChart from '@/components/dashboard/CategoryChart'
 import LastSynced from '@/components/dashboard/LastSynced'
+import SyncAlert from '@/components/dashboard/SyncAlert'
+import NewDataToast from '@/components/dashboard/NewDataToast'
 import { sellerOrderUrl } from '@/components/dashboard/OrdersTable'
+import { useSyncPolling } from '@/hooks/useSyncPolling'
 import { useLang, useTheme } from '@/app/providers'
 import { dashT } from '@/lib/dashT'
 import type { Kpis, Order, Product, DailyRevenue, MarketplaceType } from '@/lib/types'
@@ -55,7 +58,7 @@ interface Props {
   to?: string
   initialMarketplace: MarketplaceType | undefined
   hasShops: boolean
-  syncInfo: { lastSyncedAt: string | null; lastSyncFailed: boolean }
+  syncInfo: { lastSyncedAt: string | null; lastSyncFailed: boolean; alerts: { shopName: string; status: 'error' | 'degraded'; message: string | null; syncedAt: string | null }[] }
 }
 
 const STATUS_CLASS_DARK: Record<string, string> = {
@@ -83,6 +86,12 @@ export default function DashboardClient({ slices, stockGroups, days, period, fro
   const router = useRouter()
 
   const [marketplace, setMarketplace] = useState<MarketplaceType | undefined>(initialMarketplace)
+  const { hasNewData, refresh: dismissNewData } = useSyncPolling(syncInfo.lastSyncedAt)
+
+  function handleRefresh() {
+    dismissNewData()
+    router.refresh()
+  }
 
   function switchTab(mp: MarketplaceType | undefined) {
     setMarketplace(mp)
@@ -148,6 +157,9 @@ export default function DashboardClient({ slices, stockGroups, days, period, fro
           </button>
         </div>
       </div>
+
+      {/* Sync alert banner */}
+      {syncInfo.alerts.length > 0 && <SyncAlert alerts={syncInfo.alerts} />}
 
       {/* Marketplace tabs — client-side switching, no page reload */}
       <div className="flex items-center gap-1.5 p-1 bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl w-fit">
@@ -434,6 +446,8 @@ export default function DashboardClient({ slices, stockGroups, days, period, fro
           </div>
         </div>
       )}
+
+      <NewDataToast visible={hasNewData} onRefresh={handleRefresh} />
     </div>
   )
 }

@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { getStockGroups } from '@/lib/db/stock-groups'
 import StocksTable from '@/components/dashboard/StocksTable'
 import LastSyncedServer from '@/components/dashboard/LastSyncedServer'
+import HelpTooltip from '@/components/dashboard/HelpTooltip'
 import { getT } from '@/lib/server-i18n'
 
 export const dynamic = 'force-dynamic'
@@ -16,7 +17,10 @@ export default async function StocksPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-bold mb-0.5" style={{ color: 'var(--text-base)' }}>{d.title}</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold mb-0.5" style={{ color: 'var(--text-base)' }}>{d.title}</h1>
+            <HelpTooltip section="stocks" />
+          </div>
           <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{d.subtitle}</p>
         </div>
         <Suspense>

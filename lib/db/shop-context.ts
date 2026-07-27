@@ -1,6 +1,6 @@
 import { cache } from 'react'
 import { getCurrentUser } from '@/lib/auth/session'
-import { eq, ne, and, or, isNull, asc, inArray, desc, sql } from 'drizzle-orm'
+import { eq, ne, and, or, isNull, asc, inArray, desc } from 'drizzle-orm'
 import { db, shops, orders, syncDays } from '@/lib/db'
 import type { MarketplaceType } from '@/lib/types'
 
@@ -47,14 +47,22 @@ export async function getShopLaunchDate(): Promise<string | null> {
   return rows[0].ordered_at?.toISOString() ?? null
 }
 
+export interface SyncAlert {
+  shopName: string
+  status: 'error' | 'degraded'
+  message: string | null
+  syncedAt: string | null
+}
+
 export interface SyncInfo {
   lastSyncedAt: string | null
   lastSyncFailed: boolean
+  alerts: SyncAlert[]
 }
 
 export const getSyncInfo = cache(async (): Promise<SyncInfo> => {
   const shopIds = await getShopIds()
-  if (!shopIds || shopIds.length === 0) return { lastSyncedAt: null, lastSyncFailed: false }
+  if (!shopIds || shopIds.length === 0) return { lastSyncedAt: null, lastSyncFailed: false, alerts: [] }
 
   const rows = await db.select({ last_synced_at: shops.last_synced_at })
     .from(shops)
@@ -65,14 +73,26 @@ export const getSyncInfo = cache(async (): Promise<SyncInfo> => {
   const lastSyncedAt = rows[0]?.last_synced_at?.toISOString() ?? null
 
   const today = new Date().toISOString().slice(0, 10)
-  const failRows = await db.select({ status: syncDays.status })
+  const alertRows = await db.select({
+    name: shops.name,
+    status: syncDays.status,
+    error_message: syncDays.error_message,
+    synced_at: syncDays.synced_at,
+  })
     .from(syncDays)
+    .innerJoin(shops, eq(syncDays.shop_id, shops.id))
     .where(and(
       inArray(syncDays.shop_id, shopIds),
       eq(syncDays.sync_date, today),
-      eq(syncDays.status, 'error'),
+      or(eq(syncDays.status, 'error'), eq(syncDays.status, 'degraded')),
     ))
-    .limit(1)
 
-  return { lastSyncedAt, lastSyncFailed: failRows.length > 0 }
+  const alerts: SyncAlert[] = alertRows.map(r => ({
+    shopName: r.name ?? 'Shop',
+    status: r.status as 'error' | 'degraded',
+    message: r.error_message,
+    syncedAt: r.synced_at?.toISOString() ?? null,
+  }))
+
+  return { lastSyncedAt, lastSyncFailed: alerts.some(a => a.status === 'error'), alerts }
 })

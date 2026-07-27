@@ -11,6 +11,7 @@ export type HelpContent = {
 export type HelpSection =
   | 'dashboard'
   | 'products'
+  | 'stocks'
   | 'orders'
   | 'analytics'
   | 'advertising'
@@ -105,6 +106,45 @@ export const helpContent: HelpDB = {
         { step: 2, text: 'Sales data is merged with order data' },
         { step: 3, text: 'Stock data is taken from warehouse records' },
         { step: 4, text: 'Data refreshes daily' },
+      ],
+    },
+  },
+
+  stocks: {
+    uz: {
+      title: 'Qoldiqlar (Inventarizatsiya)',
+      what: 'Barcha marketpleyslardagi mahsulot zaxiralarini bitta jadvalda ko\'rsatadi. Har bir SKU uchun umumiy qoldiq, sotilgan va qolgan kunlar hisoblanadi.\n\n⚠️ Bu bo\'lim faqat FBS (Fulfilled by Seller) sotuvchilar uchun to\'g\'ri ishlaydi. FBO/FBY sotuvchilarning zaxirasi har bir marketplace tomonidan mustaqil boshqariladi.',
+      why: 'Bir xil mahsulotni bir necha marketpleysda sotganingizda, haqiqiy qoldig\'ingiz nechta ekanini bilib, o\'z vaqtida tovar buyurtma qiling.',
+      how: 'Bir xil SKU-li mahsulotlarni birlashtiring — tizim ularni bitta qoldiq sifatida hisoblaydi. Jismoniy zaxirani kiriting yoki API rejimida ishlang.',
+      steps: [
+        { step: 1, text: 'Har bir marketplace API orqali ombordagi qoldiq olinadi' },
+        { step: 2, text: 'FBS mahsulotlar uchun MAX(qoldiq) olinadi — bitta jismoniy ombor' },
+        { step: 3, text: 'Jarayondagi buyurtmalar (pending/confirmed) ayiriladi' },
+        { step: 4, text: 'Umumiy qoldiq = MAX zaxira − Jami jarayondagi buyurtmalar' },
+      ],
+    },
+    ru: {
+      title: 'Остатки (Инвентаризация)',
+      what: 'Показывает запасы товаров по всем маркетплейсам в одной таблице. Для каждого SKU рассчитывается общий остаток, проданное и оставшиеся дни.\n\n⚠️ Этот раздел работает корректно только для продавцов FBS (Fulfilled by Seller). Остатки FBO/FBY управляются каждым маркетплейсом независимо.',
+      why: 'Когда один товар продаётся на нескольких маркетплейсах, важно знать реальный остаток и вовремя заказать новую партию.',
+      how: 'Объедините товары с одинаковым SKU — система посчитает их как один запас. Введите физический запас вручную или работайте в режиме API.',
+      steps: [
+        { step: 1, text: 'Остаток по каждому маркетплейсу получен через API' },
+        { step: 2, text: 'Для FBS-товаров берётся MAX(остаток) — один физический склад' },
+        { step: 3, text: 'Вычитаются заказы в обработке (pending/confirmed)' },
+        { step: 4, text: 'Общий остаток = MAX запас − Все заказы в обработке' },
+      ],
+    },
+    en: {
+      title: 'Inventory (Stock Levels)',
+      what: 'Shows product stock across all marketplaces in one table. For each SKU, total leftover, sold units, and days of stock are calculated.\n\n⚠️ This section only works correctly for FBS (Fulfilled by Seller) sellers. FBO/FBY stock is managed independently by each marketplace.',
+      why: 'When the same product is sold on multiple marketplaces, know your real remaining stock and reorder in time.',
+      how: 'Link products with the same SKU — the system treats them as one stock pool. Enter physical stock manually or use API mode.',
+      steps: [
+        { step: 1, text: 'Stock for each marketplace is pulled via API' },
+        { step: 2, text: 'For FBS products, MAX(stock) is used — one physical warehouse' },
+        { step: 3, text: 'In-process orders (pending/confirmed) are subtracted' },
+        { step: 4, text: 'Total leftover = MAX stock − All in-process orders' },
       ],
     },
   },
