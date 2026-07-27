@@ -1,6 +1,6 @@
 import { cache } from 'react'
 import { getCurrentUser } from '@/lib/auth/session'
-import { eq, ne, and, or, isNull, asc, inArray, desc, sql } from 'drizzle-orm'
+import { eq, ne, and, or, isNull, asc, inArray, desc } from 'drizzle-orm'
 import { db, shops, orders, syncDays } from '@/lib/db'
 import type { MarketplaceType } from '@/lib/types'
 

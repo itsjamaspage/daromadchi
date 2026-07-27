@@ -11,17 +11,21 @@ interface Props {
 }
 
 export default function NewDataToast({ visible, onRefresh }: Props) {
+  if (!visible) return null
+  return <NewDataToastInner onRefresh={onRefresh} />
+}
+
+function NewDataToastInner({ onRefresh }: { onRefresh: () => void }) {
   const { lang } = useLang()
   const d = dashT[lang].dashboard
-  const [autoDismissed, setAutoDismissed] = useState(false)
+  const [dismissed, setDismissed] = useState(false)
 
   useEffect(() => {
-    if (!visible) { setAutoDismissed(false); return }
-    const timer = setTimeout(() => setAutoDismissed(true), 30_000)
+    const timer = setTimeout(() => setDismissed(true), 30_000)
     return () => clearTimeout(timer)
-  }, [visible])
+  }, [])
 
-  if (!visible || autoDismissed) return null
+  if (dismissed) return null
 
   return (
     <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50" style={{ animation: 'slideUpIn 0.3s ease-out' }}>
