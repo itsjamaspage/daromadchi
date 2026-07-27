@@ -30,6 +30,9 @@ function roiBg(roi: number) {
 function marginColor(m: number) {
   return m >= 20 ? 'text-emerald-600' : m >= 10 ? 'text-amber-600' : 'text-red-600'
 }
+function selectOnFocus(e: React.FocusEvent<HTMLInputElement>) {
+  e.target.select()
+}
 function stockColor(s: number | undefined) {
   if (s === undefined) return 'text-[var(--text-muted)]'
   return s >= 30 ? 'text-emerald-600' : s >= 10 ? 'text-amber-600' : 'text-red-600'
@@ -682,6 +685,7 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
                 <label className="flex flex-col gap-1.5">
                   <span className="text-xs font-medium text-[var(--text-muted)]">Sotuv narxi (so&apos;m)</span>
                   <input type="number" min={0} value={editDraft.sellingPrice ?? 0}
+                    onFocus={selectOnFocus}
                     onChange={e => setDraftField('sellingPrice', parseFloat(e.target.value) || 0)}
                     className="w-full px-3 py-2 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg text-sm text-[var(--text-base)] focus:outline-none focus:border-[var(--border2)]" />
                 </label>
@@ -689,6 +693,7 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
                 <label className="flex flex-col gap-1.5">
                   <span className="text-xs font-medium text-[var(--text-muted)]">Tannarx (so&apos;m) <span className="text-[var(--c1)]">*ROI uchun</span></span>
                   <input type="number" min={0} value={editDraft.costPrice ?? 0}
+                    onFocus={selectOnFocus}
                     onChange={e => setDraftField('costPrice', parseFloat(e.target.value) || 0)}
                     className="w-full px-3 py-2 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg text-sm text-[var(--text-base)] focus:outline-none focus:border-[var(--border2)]" />
                 </label>
@@ -696,6 +701,7 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
                 <label className="flex flex-col gap-1.5">
                   <span className="text-xs font-medium text-[var(--text-muted)]">Keltirish narxi (so&apos;m) <span className="text-[var(--c1)]">— kargo/bojxona, Xitoydan olib kelish</span></span>
                   <input type="number" min={0} value={editDraft.landedCost ?? 0}
+                    onFocus={selectOnFocus}
                     onChange={e => setDraftField('landedCost', parseFloat(e.target.value) || 0)}
                     className="w-full px-3 py-2 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg text-sm text-[var(--text-base)] focus:outline-none focus:border-[var(--border2)]" />
                 </label>
@@ -703,6 +709,7 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
                 <label className="flex flex-col gap-1.5">
                   <span className="text-xs font-medium text-[var(--text-muted)]">Komissiya (%)</span>
                   <input type="number" min={0} max={100} step={0.5} value={editDraft.commissionPct ?? 0}
+                    onFocus={selectOnFocus}
                     onChange={e => setDraftField('commissionPct', parseFloat(e.target.value) || 0)}
                     className="w-full px-3 py-2 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg text-sm text-[var(--text-base)] focus:outline-none focus:border-[var(--border2)]" />
                 </label>
@@ -710,6 +717,7 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
                 <label className="flex flex-col gap-1.5">
                   <span className="text-xs font-medium text-[var(--text-muted)]">Yetkazib berish (so&apos;m)</span>
                   <input type="number" min={0} value={editDraft.delivery ?? 0}
+                    onFocus={selectOnFocus}
                     onChange={e => setDraftField('delivery', parseFloat(e.target.value) || 0)}
                     className="w-full px-3 py-2 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg text-sm text-[var(--text-base)] focus:outline-none focus:border-[var(--border2)]" />
                 </label>
@@ -717,6 +725,7 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
                 <label className="flex flex-col gap-1.5">
                   <span className="text-xs font-medium text-[var(--text-muted)]">Reklama (so&apos;m)</span>
                   <input type="number" min={0} value={editDraft.adSpend ?? 0}
+                    onFocus={selectOnFocus}
                     onChange={e => setDraftField('adSpend', parseFloat(e.target.value) || 0)}
                     className="w-full px-3 py-2 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg text-sm text-[var(--text-base)] focus:outline-none focus:border-[var(--border2)]" />
                 </label>
@@ -724,6 +733,7 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
                 <label className="flex flex-col gap-1.5">
                   <span className="text-xs font-medium text-[var(--text-muted)]">Soliq (so&apos;m)</span>
                   <input type="number" min={0} value={editDraft.tax ?? 0}
+                    onFocus={selectOnFocus}
                     onChange={e => setDraftField('tax', parseFloat(e.target.value) || 0)}
                     className="w-full px-3 py-2 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg text-sm text-[var(--text-base)] focus:outline-none focus:border-[var(--border2)]" />
                 </label>
@@ -731,6 +741,7 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
                 <label className="flex flex-col gap-1.5">
                   <span className="text-xs font-medium text-[var(--text-muted)]">Ekvayring (so&apos;m)</span>
                   <input type="number" min={0} value={editDraft.acquiring ?? 0}
+                    onFocus={selectOnFocus}
                     onChange={e => setDraftField('acquiring', parseFloat(e.target.value) || 0)}
                     className="w-full px-3 py-2 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg text-sm text-[var(--text-base)] focus:outline-none focus:border-[var(--border2)]" />
                 </label>
@@ -738,6 +749,7 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
                 <label className="flex flex-col gap-1.5">
                   <span className="text-xs font-medium text-[var(--text-muted)]">Oxirgi milya (so&apos;m)</span>
                   <input type="number" min={0} value={editDraft.lastMile ?? 0}
+                    onFocus={selectOnFocus}
                     onChange={e => setDraftField('lastMile', parseFloat(e.target.value) || 0)}
                     className="w-full px-3 py-2 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg text-sm text-[var(--text-base)] focus:outline-none focus:border-[var(--border2)]" />
                 </label>
@@ -745,6 +757,7 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
                 <label className="flex flex-col gap-1.5">
                   <span className="text-xs font-medium text-[var(--text-muted)]">Zaxira (dona)</span>
                   <input type="number" min={0} value={editDraft.stock ?? ''}
+                    onFocus={selectOnFocus}
                     onChange={e => setDraftField('stock', e.target.value ? parseInt(e.target.value) : undefined)}
                     className="w-full px-3 py-2 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg text-sm text-[var(--text-base)] focus:outline-none focus:border-[var(--border2)]" />
                 </label>
