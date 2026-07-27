@@ -65,11 +65,16 @@ const _fetchProducts = unstable_cache(
 
     const groupShopCount = new Map<string, number>()
     const groupMaxStock = new Map<string, number>()
+    const groupTotalPending = new Map<string, number>()
     for (const p of productRows) {
       if (!p.sku) continue
       const key = p.sku.trim().toLowerCase().replace(/[\s\-_./]+/g, '')
       groupShopCount.set(key, (groupShopCount.get(key) ?? 0) + 1)
       groupMaxStock.set(key, Math.max(groupMaxStock.get(key) ?? 0, p.stock_quantity))
+      const isFbs = p.fulfillment_type === 'fbs' || p.fulfillment_type === null
+      if (isFbs) {
+        groupTotalPending.set(key, (groupTotalPending.get(key) ?? 0) + (inTransitByProductId.get(p.id) ?? 0))
+      }
     }
 
     return productRows.map(p => {
@@ -82,15 +87,16 @@ const _fetchProducts = unstable_cache(
       const isShared = key ? (groupShopCount.get(key) ?? 0) > 1 : false
       const ft = p.fulfillment_type
       const isFbo = ft === 'fbo' || ft === 'fby'
-      // Stock = API's current value. For shared FBS products (same
-      // physical pool listed on multiple stores), take the MAX across
-      // stores. Then subtract only pending/confirmed orders — those are
-      // sales the API may not have reflected yet.  Delivered orders are
-      // already accounted for in the API's quantityActive.
-      const apiStock = isShared && key
-        ? (isFbo ? p.stock_quantity : (groupMaxStock.get(key) ?? p.stock_quantity))
-        : p.stock_quantity
-      const availableStock = Math.max(0, apiStock - dbInTransit)
+      let availableStock: number
+      if (isFbo) {
+        availableStock = Math.max(0, p.stock_quantity - dbInTransit)
+      } else if (isShared && key) {
+        const maxStock = groupMaxStock.get(key) ?? p.stock_quantity
+        const totalPending = groupTotalPending.get(key) ?? 0
+        availableStock = Math.max(0, maxStock - totalPending)
+      } else {
+        availableStock = Math.max(0, p.stock_quantity - dbInTransit)
+      }
 
       return {
         id: p.id,
@@ -370,11 +376,16 @@ const _fetchProductsPaginated = unstable_cache(
 
     const groupShopCount = new Map<string, number>()
     const groupMaxStock = new Map<string, number>()
+    const groupTotalPending = new Map<string, number>()
     for (const p of productRows) {
       if (!p.sku) continue
       const key = p.sku.trim().toLowerCase().replace(/[\s\-_./]+/g, '')
       groupShopCount.set(key, (groupShopCount.get(key) ?? 0) + 1)
       groupMaxStock.set(key, Math.max(groupMaxStock.get(key) ?? 0, p.stock_quantity))
+      const isFbs = p.fulfillment_type === 'fbs' || p.fulfillment_type === null
+      if (isFbs) {
+        groupTotalPending.set(key, (groupTotalPending.get(key) ?? 0) + (inTransitMap.get(p.id) ?? 0))
+      }
     }
 
     const rows: Product[] = productRows.map(p => {
@@ -387,10 +398,16 @@ const _fetchProductsPaginated = unstable_cache(
       const isShared = key ? (groupShopCount.get(key) ?? 0) > 1 : false
       const ft = p.fulfillment_type
       const isFbo = ft === 'fbo' || ft === 'fby'
-      const apiStock = isShared && key
-        ? (isFbo ? p.stock_quantity : (groupMaxStock.get(key) ?? p.stock_quantity))
-        : p.stock_quantity
-      const availableStock = Math.max(0, apiStock - dbInTransit)
+      let availableStock: number
+      if (isFbo) {
+        availableStock = Math.max(0, p.stock_quantity - dbInTransit)
+      } else if (isShared && key) {
+        const maxStock = groupMaxStock.get(key) ?? p.stock_quantity
+        const totalPending = groupTotalPending.get(key) ?? 0
+        availableStock = Math.max(0, maxStock - totalPending)
+      } else {
+        availableStock = Math.max(0, p.stock_quantity - dbInTransit)
+      }
 
       return {
         id: p.id,
