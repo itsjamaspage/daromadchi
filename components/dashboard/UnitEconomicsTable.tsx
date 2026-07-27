@@ -300,12 +300,12 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
           <div className="flex items-center gap-2 flex-shrink-0">
             <button onClick={() => setExtPending(null)}
               className="w-9 h-9 flex items-center justify-center rounded-lg border-2 border-red-500/50 bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors"
-              title="Bekor">
+              title={d.ueBtnCancel}>
               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
             </button>
             <button onClick={saveFromExtension} disabled={extSaving}
               className="w-9 h-9 flex items-center justify-center rounded-lg border-2 border-emerald-500/50 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 disabled:opacity-50 transition-colors"
-              title="Qo'shish">
+              title={d.ueBtnAdd}>
               {extSaving
                 ? <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10" strokeDasharray="32" strokeDashoffset="12"/></svg>
                 : <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
@@ -328,7 +328,7 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
             }`}
             style={mpFilter === mp ? { background: 'var(--bg-card2)', border: '1px solid var(--border)' } : undefined}
           >
-            {mp === 'all' ? 'Barchasi' : MP_META[mp]?.label ?? mp}
+            {mp === 'all' ? d.tabAll : MP_META[mp]?.label ?? mp}
           </button>
         ))}
       </div>
@@ -619,9 +619,9 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
                               className="text-xs text-[var(--text-muted)] hover:text-[var(--c1)] transition-colors truncate max-w-[100px] block">
                               {item.supplierUrl ? (
                                 <span className="text-[var(--c1)] flex items-center gap-1">
-                                  <ExternalLink className="w-3 h-3" /> Havola
+                                  <ExternalLink className="w-3 h-3" /> {d.ueBtnLink}
                                 </span>
-                              ) : <span className="border-b border-dashed border-[var(--border2)]">+ Qo&apos;shish</span>}
+                              ) : <span className="border-b border-dashed border-[var(--border2)]">+ {d.ueBtnAdd}</span>}
                             </button>
                           )}
                         </td>
@@ -632,7 +632,7 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
                     <td className="px-3 py-3">
                       <button onClick={() => openEdit(item)}
                         className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium bg-[var(--bg-card2)] hover:bg-[#6aabf0]/20 text-[var(--c1)] hover:text-[var(--c1)] transition-colors border border-[var(--border)]">
-                        <Pencil className="w-3 h-3" /> Tahrir
+                        <Pencil className="w-3 h-3" /> {d.ueBtnEdit}
                       </button>
                     </td>
                   </tr>

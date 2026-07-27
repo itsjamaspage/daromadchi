@@ -43,7 +43,7 @@ export default function StockAlerts({ groups, isDark }: { groups: StockGroup[]; 
         <AlertTriangle className="w-4 h-4" style={{ color: amber }} />
         <h3 className="font-semibold text-sm" style={{ color: 'var(--text-base)' }}>{d.title}</h3>
         <span className="ml-auto text-xs px-2 py-0.5 rounded-lg border" style={{ color: amber, background: isDark ? 'rgba(245,158,11,0.1)' : 'rgba(180,83,9,0.08)', borderColor: isDark ? 'rgba(245,158,11,0.2)' : 'rgba(180,83,9,0.25)' }}>
-          {alerts.length} {d.units}
+          {alerts.length}
         </span>
       </div>
 
