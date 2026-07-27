@@ -65,6 +65,9 @@ export async function syncFromYandex(
       if (placement === 'FBY') campaignFulfillmentType = 'fby'
       else if (placement === 'FBS' || placement === 'DBS' || placement === 'EXPRESS') campaignFulfillmentType = 'fbs'
       debug.placement = placement ?? 'unknown'
+      if (businessId) {
+        await db.update(shops).set({ business_id: String(businessId) }).where(eq(shops.id, shopId))
+      }
     } catch (e) {
       debug.campaignInfo = e instanceof YandexApiError ? `${e.status}` : 'err'
     }

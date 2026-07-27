@@ -88,6 +88,7 @@ export const shops = pgTable('shops', {
   marketplace:       marketplaceTypeEnum('marketplace').notNull(),
   api_key_encrypted: text('api_key_encrypted'),
   shop_id_external:  text('shop_id_external'),
+  business_id:       text('business_id'),
   is_active:         boolean('is_active').default(true).notNull(),
   token_valid:       boolean('token_valid'),
   last_synced_at:    timestamp('last_synced_at', { withTimezone: true }),
