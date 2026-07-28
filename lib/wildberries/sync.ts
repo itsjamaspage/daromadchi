@@ -129,6 +129,9 @@ export async function syncFromWildberries(
     let fboOk = false
     let fbsOk = false
 
+    // Track why each stock source didn't answer so a fresh shop / missing
+    // scope / rate limit / no-barcodes shape all look distinct in logs.
+    let fbsSkippedReason: string | null = null
     try {
       const fboRes = await marketplaceFetch(
         `${WB_STATS}/api/v1/supplier/stocks?dateFrom=2019-06-20`,
@@ -145,10 +148,20 @@ export async function syncFromWildberries(
           }
         }
         fboOk = true
+      } else {
+        let body = ''
+        try { body = await fboRes.text() } catch { /* ignore */ }
+        console.error(`[WB sync] FBO stocks fetch failed: HTTP ${fboRes.status} ${fboRes.statusText}\n${body.slice(0, 500)}`)
       }
-    } catch { /* best-effort */ }
+    } catch (e) {
+      console.error(`[WB sync] FBO stocks fetch threw:`, e)
+    }
 
-    if (barcodeToNm.size > 0) {
+    if (barcodeToNm.size === 0) {
+      // No barcodes on record yet (fresh shop, or cards sync hasn't populated
+      // barcodes). FBS stock endpoint requires SKUs — skip it, but say so.
+      fbsSkippedReason = 'no_barcodes'
+    } else {
       try {
         const whRes = await marketplaceFetch(`${WB_MARKETPLACE}/api/v3/warehouses`, { headers: bearerHeaders(token) })
         if (whRes.ok) {
@@ -179,11 +192,21 @@ export async function syncFromWildberries(
             }
           }
           fbsOk = true
+        } else {
+          let body = ''
+          try { body = await whRes.text() } catch { /* ignore */ }
+          console.error(`[WB sync] FBS warehouses fetch failed: HTTP ${whRes.status} ${whRes.statusText}\n${body.slice(0, 500)}`)
         }
-      } catch { /* best-effort */ }
+      } catch (e) {
+        console.error(`[WB sync] FBS warehouses fetch threw:`, e)
+      }
     }
 
-    if (fboOk || fbsOk) {
+    // Success = at least one source answered OR FBO succeeded and FBS was
+    // legitimately skipped (no barcodes to look up yet). Only both silently
+    // failing counts as a real "stock=false".
+    const stockAnswered = fboOk || fbsOk || (fboOk && fbsSkippedReason === 'no_barcodes')
+    if (stockAnswered) {
       const prods = await db.select({
         id: products.id,
         marketplace_product_id: products.marketplace_product_id,
