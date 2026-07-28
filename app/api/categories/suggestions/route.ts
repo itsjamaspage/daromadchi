@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { eq, sql } from 'drizzle-orm'
+import { and, eq, sql } from 'drizzle-orm'
 import { withErrorHandler } from '@/lib/api-handler'
 import { getCurrentUser } from '@/lib/auth/session'
 import { db, suggestedAliases, categoriesCanonical, categoryAliases } from '@/lib/db'
@@ -62,7 +62,8 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }
 
-  if (suggestion.status !== 'pending') {
+  const targetStatus = action === 'approve' ? 'approved' : 'rejected'
+  if (suggestion.status === targetStatus) {
     return NextResponse.json({ ok: true, already: suggestion.status })
   }
 
@@ -83,10 +84,23 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
         .where(eq(suggestedAliases.id, id))
     })
   } else {
-    await db
-      .update(suggestedAliases)
-      .set({ status: 'rejected', reviewed_at: new Date() })
-      .where(eq(suggestedAliases.id, id))
+    await db.transaction(async (tx) => {
+      if (suggestion.status === 'approved') {
+        await tx
+          .delete(categoryAliases)
+          .where(
+            and(
+              eq(categoryAliases.marketplace, suggestion.marketplace),
+              eq(categoryAliases.original_name, suggestion.original_name),
+            ),
+          )
+      }
+
+      await tx
+        .update(suggestedAliases)
+        .set({ status: 'rejected', reviewed_at: new Date() })
+        .where(eq(suggestedAliases.id, id))
+    })
   }
 
   return NextResponse.json({ ok: true })
