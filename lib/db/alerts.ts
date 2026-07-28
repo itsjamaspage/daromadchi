@@ -40,10 +40,12 @@ export async function getStockAlerts(): Promise<StockAlert[]> {
   const productIds = productRows.map(p => p.id)
 
   const salesMap = new Map<string, number>()
+  const inTransitMap = new Map<string, number>()
   try {
     const salesRows = await db.select({
       product_id: orderItems.product_id,
       quantity: orderItems.quantity,
+      status: orders.status,
     }).from(orderItems)
       .innerJoin(orders, eq(orderItems.order_id, orders.id))
       .where(and(
@@ -53,6 +55,9 @@ export async function getStockAlerts(): Promise<StockAlert[]> {
     for (const row of salesRows) {
       if (!row.product_id) continue
       salesMap.set(row.product_id, (salesMap.get(row.product_id) ?? 0) + (row.quantity ?? 0))
+      if (row.status === 'pending' || row.status === 'confirmed') {
+        inTransitMap.set(row.product_id, (inTransitMap.get(row.product_id) ?? 0) + (row.quantity ?? 0))
+      }
     }
   } catch { /* best-effort */ }
 
@@ -75,9 +80,13 @@ export async function getStockAlerts(): Promise<StockAlert[]> {
     const key = wid && row.sku ? `${wid}:${row.sku}` : null
     const isShared = key ? (groupShopCount.get(key) ?? 0) > 1 : false
 
+    // Units on open orders (pending/confirmed) are reserved — subtract them
+    // so остаток reflects units actually available to sell, matching the
+    // logic in lib/db/products.ts.
+    const inTransit = inTransitMap.get(row.id) ?? 0
     const availableStock = isShared && key
       ? Math.max(0, row.stock_quantity - (groupTotalSold.get(key) ?? 0))
-      : row.stock_quantity
+      : Math.max(0, row.stock_quantity - inTransit)
 
     if (availableStock > threshold) continue
 
