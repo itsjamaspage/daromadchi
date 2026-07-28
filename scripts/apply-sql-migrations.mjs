@@ -30,20 +30,53 @@ function loadDatabaseUrl() {
   return null
 }
 
+// Set APPLY_SQL_MIGRATIONS_ALLOW_SKIP=1 to keep the previous "print a warning
+// and exit 0" behaviour — useful for local dev where DATABASE_URL is expected
+// to be missing sometimes. On the VPS deploy pipeline this must stay unset so
+// a missing DATABASE_URL fails loud instead of silently marking the deploy as
+// successful while the DB stays untouched.
 const url = loadDatabaseUrl()
 if (!url) {
-  console.error('apply-sql-migrations: DATABASE_URL not found, skipping')
-  process.exit(0)
+  const msg = 'apply-sql-migrations: DATABASE_URL not found in env or .env files'
+  if (process.env.APPLY_SQL_MIGRATIONS_ALLOW_SKIP === '1') {
+    console.warn(`${msg} — skipping (APPLY_SQL_MIGRATIONS_ALLOW_SKIP=1)`)
+    process.exit(0)
+  }
+  console.error(`${msg} — refusing to silently skip. Set APPLY_SQL_MIGRATIONS_ALLOW_SKIP=1 to opt out.`)
+  process.exit(1)
 }
 
 const client = new pg.Client({ connectionString: url })
-await client.connect()
+try {
+  await client.connect()
+} catch (err) {
+  console.error(`apply-sql-migrations: failed to connect to database — ${err instanceof Error ? err.message : String(err)}`)
+  process.exit(1)
+}
+
+let failed = false
 try {
   for (const file of MIGRATIONS) {
-    const sql = readFileSync(file, 'utf8')
-    await client.query(sql)
-    console.log(`applied: ${file}`)
+    let sql
+    try {
+      sql = readFileSync(file, 'utf8')
+    } catch (err) {
+      console.error(`apply-sql-migrations: cannot read ${file} — ${err instanceof Error ? err.message : String(err)}`)
+      failed = true
+      break
+    }
+    try {
+      await client.query(sql)
+      console.log(`applied: ${file}`)
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : String(err)
+      console.error(`apply-sql-migrations: ${file} failed — ${detail}`)
+      failed = true
+      break
+    }
   }
 } finally {
-  await client.end()
+  await client.end().catch(() => {})
 }
+
+if (failed) process.exit(1)
