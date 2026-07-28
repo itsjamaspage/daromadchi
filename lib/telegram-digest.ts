@@ -181,10 +181,11 @@ async function buildPendingDeliveries(
 ): Promise<string | null> {
   const t = notifT(lang)
 
-  // Only 'pending' — orders the seller still has to pack and hand off. Once
-  // the marketplace confirms and moves the order to 'confirmed' (accepted,
-  // in transit / with courier) it's out of the seller's hands and doesn't
-  // belong under "To ship".
+  // Match the dashboard's "В процессе" set — pending + confirmed. Whatever
+  // the app shows in that column, the digest should show under the same
+  // header. Diverging created confusion when an order the DB still had at
+  // 'pending' appeared under "К отправке" in the digest while the app
+  // showed it as "В процессе".
   const pendingOrders = await db.select({
     id: ordersTable.id,
     shop_id: ordersTable.shop_id,
@@ -194,7 +195,7 @@ async function buildPendingDeliveries(
   }).from(ordersTable)
     .where(and(
       inArray(ordersTable.shop_id, shopIds),
-      eq(ordersTable.status, 'pending'),
+      inArray(ordersTable.status, ['pending', 'confirmed']),
     ))
 
   // Only FBS orders need seller delivery to PVZ
