@@ -1,3 +1,16 @@
+// Matching threshold calibration
+// Current: Jaccard >= 0.5 for token_set tier (matcher.ts)
+// Calibration log (update after each dry-run against real product data):
+//   [date] | threshold | tier-3 precision by score band | notes
+//   -------|-----------|-------------------------------|------
+//   (none yet — run npm run categories:suggest against a DB snapshot,
+//    bucket tier-3 by 0.5-0.6 / 0.6-0.7 / 0.7-0.8, review 20 per band)
+//
+// Note: resurrecting a rejected suggestion (reject->approve) does not
+// re-validate against the current taxonomy. If terms changed since the
+// suggestion was created, delete the stale suggestion and re-run the
+// backfill instead of approving it.
+
 export type ParentGroup =
   | 'electronics'
   | 'home'
