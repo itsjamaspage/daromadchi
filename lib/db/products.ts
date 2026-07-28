@@ -1,6 +1,6 @@
 import { unstable_cache } from 'next/cache'
 import { eq, ne, and, or, isNull, inArray, gte, lte, asc, sql, count } from 'drizzle-orm'
-import { db, shops, products, orders, orderItems } from '@/lib/db'
+import { db, shops, products, orders, orderItems, categoryAliases, categoriesCanonical } from '@/lib/db'
 import { getShopIds, getCurrentUserId } from '@/lib/db/shop-context'
 import type { Product, MarketplaceType } from '@/lib/types'
 
@@ -248,6 +248,9 @@ export async function getProductSales(
 
 export interface CategoryRow {
   name: string
+  name_ru?: string
+  name_uz?: string
+  name_en?: string
   revenue: number
   profit: number
   percent: number
@@ -276,21 +279,59 @@ const _fetchCategoryRevenue = unstable_cache(
     if (untilDate) conditions.push(lte(orders.ordered_at, untilDate))
 
     const rows = await db.select({
-      name: sql<string>`coalesce(${products.category}, 'Uncategorized')`.as('name'),
+      raw_category: sql<string>`coalesce(${products.category}, 'Uncategorized')`.as('raw_category'),
+      canonical_id: categoriesCanonical.id,
+      canonical_ru: categoriesCanonical.name_ru,
+      canonical_uz: categoriesCanonical.name_uz,
+      canonical_en: categoriesCanonical.name_en,
       revenue: sql<number>`coalesce(sum(${orderItems.quantity} * ${orderItems.price_per_unit}), 0)`.as('revenue'),
       profit: sql<number>`coalesce(sum(${orderItems.quantity} * (${orderItems.price_per_unit} - coalesce(${orderItems.cost_per_unit}, ${products.cost_price}, 0))), 0)`.as('profit'),
     }).from(orderItems)
       .innerJoin(orders, eq(orderItems.order_id, orders.id))
       .innerJoin(products, eq(orderItems.product_id, products.id))
+      .leftJoin(categoryAliases, and(
+        eq(products.category, categoryAliases.original_name),
+        sql`${categoryAliases.marketplace} = ${orders.marketplace}::text`,
+      ))
+      .leftJoin(categoriesCanonical, eq(categoryAliases.canonical_id, categoriesCanonical.id))
       .where(and(...conditions))
-      .groupBy(products.category)
+      .groupBy(
+        sql`coalesce(${categoriesCanonical.id}::text, ${products.category})`,
+        categoriesCanonical.id,
+        categoriesCanonical.name_ru,
+        categoriesCanonical.name_uz,
+        categoriesCanonical.name_en,
+      )
 
-    const totalRevenue = rows.reduce((s, r) => s + Number(r.revenue), 0)
-    return rows.map(r => ({
+    const merged = new Map<string, { name: string; name_ru?: string; name_uz?: string; name_en?: string; revenue: number; profit: number }>()
+    for (const r of rows) {
+      const key = r.canonical_id != null ? `c:${r.canonical_id}` : r.raw_category
+      const existing = merged.get(key)
+      if (existing) {
+        existing.revenue += Number(r.revenue)
+        existing.profit += Number(r.profit)
+      } else {
+        merged.set(key, {
+          name: r.canonical_ru ?? r.raw_category,
+          name_ru: r.canonical_ru ?? undefined,
+          name_uz: r.canonical_uz ?? undefined,
+          name_en: r.canonical_en ?? undefined,
+          revenue: Number(r.revenue),
+          profit: Number(r.profit),
+        })
+      }
+    }
+
+    const results = Array.from(merged.values())
+    const totalRevenue = results.reduce((s, r) => s + r.revenue, 0)
+    return results.map(r => ({
       name: r.name,
-      revenue: Number(r.revenue),
-      profit: Number(r.profit),
-      percent: totalRevenue > 0 ? Math.round((Number(r.revenue) / totalRevenue) * 100) : 0,
+      name_ru: r.name_ru,
+      name_uz: r.name_uz,
+      name_en: r.name_en,
+      revenue: r.revenue,
+      profit: r.profit,
+      percent: totalRevenue > 0 ? Math.round((r.revenue / totalRevenue) * 100) : 0,
     }))
   },
   ['category-revenue-rpc'],

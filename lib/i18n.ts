@@ -540,6 +540,7 @@ export const translations = {
       ueEditCancel: 'Bekor', ueEditProfit: 'Foyda', ueEditRoi: 'ROI', ueEditMargin: 'Marja',
       ueEditCostInline: 'Tannarxni tahrirlash (Xitoydan yetkazish bilan)',
       ueEditCostPlaceholder: '+ tannarx', ueEditNoCost: "Tannarx kiritilmagan — ROI hisoblanmadi",
+      ueBtnEdit: 'Tahrir', ueBtnAdd: "Qo'shish", ueBtnLink: 'Havola', ueBtnCancel: 'Bekor',
       // Sync button
       syncing: 'Sinxronlanmoqda...',
       syncDone: 'Tayyor!',
@@ -1396,6 +1397,7 @@ export const translations = {
       ueEditCancel: 'Cancel', ueEditProfit: 'Profit', ueEditRoi: 'ROI', ueEditMargin: 'Margin',
       ueEditCostInline: 'Edit cost price (incl. shipping from China)',
       ueEditCostPlaceholder: '+ cost price', ueEditNoCost: 'No cost entered — ROI not calculated',
+      ueBtnEdit: 'Edit', ueBtnAdd: 'Add', ueBtnLink: 'Link', ueBtnCancel: 'Cancel',
       // Sync button
       syncing: 'Syncing...',
       syncDone: 'Done!',
@@ -2252,6 +2254,7 @@ export const translations = {
       ueEditCancel: 'Отмена', ueEditProfit: 'Прибыль', ueEditRoi: 'ROI', ueEditMargin: 'Маржа',
       ueEditCostInline: 'Изменить себестоимость (с доставкой из Китая)',
       ueEditCostPlaceholder: '+ себестоимость', ueEditNoCost: 'Себестоимость не указана — ROI не рассчитан',
+      ueBtnEdit: 'Изменить', ueBtnAdd: 'Добавить', ueBtnLink: 'Ссылка', ueBtnCancel: 'Отмена',
       // Sync button
       syncing: 'Синхронизация...',
       syncDone: 'Готово!',

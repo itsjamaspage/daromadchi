@@ -36,16 +36,17 @@ export default function SyncAlert({ alerts }: Props) {
 
   const hasError = alerts.some(a => a.status === 'error')
 
+  const bg = hasError ? 'rgba(239,68,68,0.08)' : 'rgba(245,158,11,0.08)'
+  const border = hasError ? 'rgba(239,68,68,0.25)' : 'rgba(245,158,11,0.25)'
+  const fg = hasError ? '#b91c1c' : '#92400e'
+
   return (
-    <div className={`flex items-start gap-3 rounded-xl px-4 py-3 border ${
-      hasError
-        ? 'bg-red-50 border-red-200 dark:bg-red-500/10 dark:border-red-500/20'
-        : 'bg-amber-50 border-amber-200 dark:bg-amber-500/10 dark:border-amber-500/20'
-    }`}>
-      <AlertTriangle className={`w-4 h-4 mt-0.5 flex-shrink-0 ${hasError ? 'text-red-500 dark:text-red-400' : 'text-amber-500 dark:text-amber-400'}`} />
+    <div className="flex items-start gap-3 rounded-xl px-4 py-3 border"
+      style={{ background: bg, borderColor: border }}>
+      <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: hasError ? '#ef4444' : '#f59e0b' }} />
       <div className="flex-1 min-w-0">
         {alerts.map((a, i) => (
-          <p key={i} className={`text-xs ${hasError ? 'text-red-700 dark:text-red-300' : 'text-amber-700 dark:text-amber-300'}`}>
+          <p key={i} className="text-xs font-medium" style={{ color: fg }}>
             <span className="font-semibold">{a.shopName}:</span>{' '}
             {a.status === 'error' ? d.syncAlertError : d.syncAlertPartial}
           </p>
@@ -54,11 +55,8 @@ export default function SyncAlert({ alerts }: Props) {
       <button
         onClick={handleSync}
         disabled={syncing}
-        className={`inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-lg border transition-all flex-shrink-0 ${
-          hasError
-            ? 'border-red-300 text-red-600 hover:text-red-800 dark:border-red-500/30 dark:text-red-300 dark:hover:text-red-200'
-            : 'border-amber-300 text-amber-600 hover:text-amber-800 dark:border-amber-500/30 dark:text-amber-300 dark:hover:text-amber-200'
-        } disabled:opacity-50`}
+        className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-lg border transition-all flex-shrink-0 disabled:opacity-50"
+        style={{ borderColor: border, color: fg }}
       >
         <RefreshCw className={`w-3 h-3 ${syncing ? 'animate-spin' : ''}`} />
         {d.syncNow}
