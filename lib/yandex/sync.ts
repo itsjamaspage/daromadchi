@@ -292,19 +292,34 @@ export async function syncFromYandex(
     const shopRow = shopRows[0] ?? null
     const existingProductCount = productCountRows[0]?.total ?? 0
 
-    const since = fromDateOverride
-      ?? (shopRow?.last_synced_at
-        ? new Date(shopRow.last_synced_at)
-        : (() => { const d = new Date(); d.setDate(d.getDate() - 365); return d })())
+    // YM's `fromDate` filters by order CREATION date, not update. If we asked
+    // for "orders since last_synced_at" verbatim, an order created 3 days ago
+    // that just transitioned pending → delivered would never be re-fetched
+    // and its old status would sit in our DB forever. Always look back at
+    // least ORDER_STATUS_LOOKBACK_DAYS so status transitions on
+    // recent-but-still-open orders come through.
+    const ORDER_STATUS_LOOKBACK_DAYS = 30
+    const FIRST_SYNC_LOOKBACK_DAYS = 365
+    const since = fromDateOverride ?? (() => {
+      const lookback = new Date()
+      lookback.setDate(lookback.getDate() - (shopRow?.last_synced_at ? ORDER_STATUS_LOOKBACK_DAYS : FIRST_SYNC_LOOKBACK_DAYS))
+      // If last_synced_at is even older than the lookback (shop was inactive
+      // for months), fall back to that so we don't miss orders created in the
+      // gap.
+      if (shopRow?.last_synced_at) {
+        const lastSync = new Date(shopRow.last_synced_at)
+        return lastSync < lookback ? lastSync : lookback
+      }
+      return lookback
+    })()
 
     const fromDate = since.toISOString().slice(0, 10)
     // Surface exactly what we asked YM for so the sync toast shows "why 0" vs
-    // "silently failed" when orders come back empty. YM's fromDate filters by
-    // ORDER CREATION date, not update — noted here because that's the most
-    // common reason an existing order's status change goes unnoticed on an
-    // incremental sync.
+    // "silently failed" when orders come back empty.
     debug.ordersFromDate = fromDate
-    debug.ordersSince = shopRow?.last_synced_at ? 'last_synced_at' : (fromDateOverride ? 'override' : 'default_365d')
+    debug.ordersSince = shopRow?.last_synced_at
+      ? (new Date(shopRow.last_synced_at) < since ? 'last_synced_at' : `lookback_${ORDER_STATUS_LOOKBACK_DAYS}d`)
+      : (fromDateOverride ? 'override' : `default_${FIRST_SYNC_LOOKBACK_DAYS}d`)
 
     let yandexOrders: Awaited<ReturnType<typeof fetchAllYandexOrders>>
     try {
