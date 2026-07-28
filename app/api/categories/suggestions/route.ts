@@ -62,6 +62,10 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }
 
+  if (suggestion.status !== 'pending') {
+    return NextResponse.json({ ok: true, already: suggestion.status })
+  }
+
   if (action === 'approve') {
     await db.transaction(async (tx) => {
       await tx

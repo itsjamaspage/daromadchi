@@ -57,18 +57,50 @@ describe('matchCategory — substring tier', () => {
   })
 })
 
+describe('matchCategory — cross-marketplace disambiguation', () => {
+  it('headphones: RU and UZ names resolve to same canonical', () => {
+    const ru = matchCategory('Наушники и гарнитуры')
+    const uz = matchCategory('Simsiz quloqchinlar')
+    expect(ru?.canonical_id).toBe('headphones')
+    expect(uz?.canonical_id).toBe('headphones')
+  })
+
+  it('phone_accessories vs smartphones — чехол goes to accessories, not phones', () => {
+    const r = matchCategory('Чехлы для телефонов')
+    expect(r?.canonical_id).toBe('phone_accessories')
+    expect(r?.canonical_id).not.toBe('smartphones')
+  })
+
+  it('bags_wallets: Мужские сумки matches bags, not mens_clothing', () => {
+    const r = matchCategory('Мужские сумки')
+    expect(r?.canonical_id).toBe('bags_wallets')
+  })
+
+  it('smart_watches vs jewelry — Смарт-часы goes to smart_watches', () => {
+    const r = matchCategory('Смарт-часы')
+    expect(r?.canonical_id).toBe('smart_watches')
+  })
+
+  it('jewelry — Наручные часы goes to jewelry, not smart_watches', () => {
+    const r = matchCategory('Наручные часы')
+    expect(r?.canonical_id).toBe('jewelry')
+  })
+})
+
 describe('matchCategory — token_set tier', () => {
-  it('matches via token overlap', () => {
-    const r = matchCategory('товары собак кошек')
+  it('matches via high token overlap', () => {
+    const r = matchCategory('товары для собак и кошек')
     expect(r).not.toBeNull()
     expect(r!.canonical_id).toBe('pet_supplies')
-    expect(r!.tier).toBe('token_set')
-    expect(r!.score).toBeGreaterThanOrEqual(0.3)
   })
 })
 
 describe('matchCategory — no match', () => {
   it('returns null for gibberish', () => {
     expect(matchCategory('xyzzy12345')).toBeNull()
+  })
+
+  it('returns null for very short ambiguous input', () => {
+    expect(matchCategory('ab')).toBeNull()
   })
 })

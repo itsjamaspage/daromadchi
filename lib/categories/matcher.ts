@@ -58,7 +58,7 @@ function getAllTerms(cat: CanonicalCategory): string[] {
 export function matchCategory(rawCategory: string): MatchResult | null {
   const input = normalize(rawCategory)
   const inputLatin = cyrillicToLatin(input)
-  if (!input) return null
+  if (!input || input.length < 3) return null
 
   let best: MatchResult | null = null
 
@@ -100,7 +100,7 @@ export function matchCategory(rawCategory: string): MatchResult | null {
       const j2 = jaccard(inputTokensLatin, termTokensLatin)
       const j = Math.max(j1, j2)
 
-      if (j >= 0.4) {
+      if (j >= 0.5) {
         const score = Math.round(j * 800) / 1000
         if (!best || score > best.score) {
           best = { canonical_id: cat.id, score, tier: 'token_set' }
