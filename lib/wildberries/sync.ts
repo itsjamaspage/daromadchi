@@ -253,9 +253,24 @@ export async function syncFromWildberries(
       `${WB_STATS}/api/v1/supplier/orders?dateFrom=${df}&flag=0`,
       { headers: statsHeaders(token) },
     )
+    if (!res.ok) {
+      // Surface the real reason so a shop with a broken token / rate limit /
+      // permissions issue doesn't look identical to a shop with 0 orders.
+      let body = ''
+      try { body = await res.text() } catch { /* ignore */ }
+      console.error(`[WB sync] orders fetch failed: HTTP ${res.status} ${res.statusText}\n${body.slice(0, 500)}`)
+    }
     if (res.ok) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const rawLines: any[] = await res.json()
+      if (!Array.isArray(rawLines)) {
+        console.error(`[WB sync] orders endpoint returned a non-array payload: ${JSON.stringify(rawLines).slice(0, 200)}`)
+      } else {
+        // Empty response is a real, valid state — a fresh shop or a
+        // `dateFrom` window with no activity legitimately returns []. Mark
+        // orders synced here so we don't misreport it as "orders=false".
+        ordersOk = true
+      }
       if (Array.isArray(rawLines) && rawLines.length > 0) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const grouped = new Map<string, any[]>()
