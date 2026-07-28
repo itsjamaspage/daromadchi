@@ -298,8 +298,33 @@ export async function syncFromYandex(
         : (() => { const d = new Date(); d.setDate(d.getDate() - 365); return d })())
 
     const fromDate = since.toISOString().slice(0, 10)
+    // Surface exactly what we asked YM for so the sync toast shows "why 0" vs
+    // "silently failed" when orders come back empty. YM's fromDate filters by
+    // ORDER CREATION date, not update — noted here because that's the most
+    // common reason an existing order's status change goes unnoticed on an
+    // incremental sync.
+    debug.ordersFromDate = fromDate
+    debug.ordersSince = shopRow?.last_synced_at ? 'last_synced_at' : (fromDateOverride ? 'override' : 'default_365d')
 
-    const yandexOrders = await fetchAllYandexOrders(token, campaignId, fromDate)
+    let yandexOrders: Awaited<ReturnType<typeof fetchAllYandexOrders>>
+    try {
+      yandexOrders = await fetchAllYandexOrders(token, campaignId, fromDate)
+      debug.ordersFetch = 'ok'
+    } catch (err) {
+      if (err instanceof YandexApiError) {
+        debug.ordersFetch = 'err'
+        debug.ordersHttpStatus = err.status
+        debug.ordersHttpBody = (err.body ?? '').slice(0, 500)
+        console.error(`[YM sync] orders fetch failed for campaign ${campaignId}: HTTP ${err.status} — ${err.message}\n${err.body?.slice(0, 500) ?? ''}`)
+      } else {
+        debug.ordersFetch = 'err'
+        debug.ordersError = err instanceof Error ? err.message.slice(0, 500) : String(err).slice(0, 500)
+        console.error(`[YM sync] orders fetch failed for campaign ${campaignId}:`, err)
+      }
+      // Keep the sync going so products/stocks progress isn't wasted — the
+      // error is already recorded on `debug` and orders will just stay at 0.
+      yandexOrders = []
+    }
 
     function parseYandexDate(raw?: string): string | null {
       if (!raw) return null
@@ -309,8 +334,15 @@ export async function syncFromYandex(
       return isNaN(d.getTime()) ? null : d.toISOString()
     }
 
-    const orderRows = yandexOrders
-      .map(o => ({ o, orderedAt: parseYandexDate(o.creationDate) ?? parseYandexDate(o.updatedAt) }))
+    // Splitting the pipeline so we can tell the difference between "YM
+    // returned 0 orders" and "YM returned N orders but every one had an
+    // unparseable date and got filtered out" — the second is a code bug we'd
+    // otherwise never see.
+    const withDates = yandexOrders.map(o => ({ o, orderedAt: parseYandexDate(o.creationDate) ?? parseYandexDate(o.updatedAt) }))
+    const dropped = withDates.filter(r => r.orderedAt === null).length
+    if (dropped > 0) debug.ordersDroppedNoDate = dropped
+
+    const orderRows = withDates
       .filter((row): row is typeof row & { orderedAt: string } => row.orderedAt !== null)
       .map(({ o, orderedAt }) => ({
         shop_id: shopId,
