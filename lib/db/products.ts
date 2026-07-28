@@ -278,41 +278,66 @@ const _fetchCategoryRevenue = unstable_cache(
     if (sinceDate) conditions.push(gte(orders.ordered_at, sinceDate))
     if (untilDate) conditions.push(lte(orders.ordered_at, untilDate))
 
-    const rows = await db.select({
-      raw_category: sql<string>`coalesce(${products.category}, 'Uncategorized')`.as('raw_category'),
-      canonical_id: categoriesCanonical.id,
-      canonical_ru: categoriesCanonical.name_ru,
-      canonical_uz: categoriesCanonical.name_uz,
-      canonical_en: categoriesCanonical.name_en,
-      revenue: sql<number>`coalesce(sum(${orderItems.quantity} * ${orderItems.price_per_unit}), 0)`.as('revenue'),
-      profit: sql<number>`coalesce(sum(${orderItems.quantity} * (${orderItems.price_per_unit} - coalesce(${orderItems.cost_per_unit}, ${products.cost_price}, 0))), 0)`.as('profit'),
-    }).from(orderItems)
-      .innerJoin(orders, eq(orderItems.order_id, orders.id))
-      .innerJoin(products, eq(orderItems.product_id, products.id))
-      .leftJoin(categoryAliases, eq(products.category, categoryAliases.original_name))
-      .leftJoin(categoriesCanonical, eq(categoryAliases.canonical_id, categoriesCanonical.id))
-      .where(and(...conditions))
-      .groupBy(
-        sql`coalesce(${categoriesCanonical.id}::text, ${products.category})`,
-        categoriesCanonical.id,
-        categoriesCanonical.name_ru,
-        categoriesCanonical.name_uz,
-        categoriesCanonical.name_en,
-      )
-
+    // Canonical grouping needs migration 031's category_aliases +
+    // categories_canonical. If those tables aren't present yet (deploy where
+    // apply-sql-migrations.mjs didn't run to completion), fall back to raw
+    // per-marketplace category grouping so the dashboard still renders.
     const merged = new Map<string, { name: string; name_ru?: string; name_uz?: string; name_en?: string; revenue: number; profit: number }>()
-    for (const r of rows) {
-      const key = r.canonical_id != null ? `c:${r.canonical_id}` : r.raw_category
-      const existing = merged.get(key)
-      if (existing) {
-        existing.revenue += Number(r.revenue)
-        existing.profit += Number(r.profit)
-      } else {
-        merged.set(key, {
-          name: r.canonical_ru ?? r.raw_category,
-          name_ru: r.canonical_ru ?? undefined,
-          name_uz: r.canonical_uz ?? undefined,
-          name_en: r.canonical_en ?? undefined,
+    try {
+      const rows = await db.select({
+        raw_category: sql<string>`coalesce(${products.category}, 'Uncategorized')`.as('raw_category'),
+        canonical_id: categoriesCanonical.id,
+        canonical_ru: categoriesCanonical.name_ru,
+        canonical_uz: categoriesCanonical.name_uz,
+        canonical_en: categoriesCanonical.name_en,
+        revenue: sql<number>`coalesce(sum(${orderItems.quantity} * ${orderItems.price_per_unit}), 0)`.as('revenue'),
+        profit: sql<number>`coalesce(sum(${orderItems.quantity} * (${orderItems.price_per_unit} - coalesce(${orderItems.cost_per_unit}, ${products.cost_price}, 0))), 0)`.as('profit'),
+      }).from(orderItems)
+        .innerJoin(orders, eq(orderItems.order_id, orders.id))
+        .innerJoin(products, eq(orderItems.product_id, products.id))
+        .leftJoin(categoryAliases, eq(products.category, categoryAliases.original_name))
+        .leftJoin(categoriesCanonical, eq(categoryAliases.canonical_id, categoriesCanonical.id))
+        .where(and(...conditions))
+        .groupBy(
+          sql`coalesce(${categoriesCanonical.id}::text, ${products.category})`,
+          categoriesCanonical.id,
+          categoriesCanonical.name_ru,
+          categoriesCanonical.name_uz,
+          categoriesCanonical.name_en,
+        )
+
+      for (const r of rows) {
+        const key = r.canonical_id != null ? `c:${r.canonical_id}` : r.raw_category
+        const existing = merged.get(key)
+        if (existing) {
+          existing.revenue += Number(r.revenue)
+          existing.profit += Number(r.profit)
+        } else {
+          merged.set(key, {
+            name: r.canonical_ru ?? r.raw_category,
+            name_ru: r.canonical_ru ?? undefined,
+            name_uz: r.canonical_uz ?? undefined,
+            name_en: r.canonical_en ?? undefined,
+            revenue: Number(r.revenue),
+            profit: Number(r.profit),
+          })
+        }
+      }
+    } catch (err) {
+      console.warn('[getCategoryRevenue] canonical query failed, falling back to raw category grouping', err)
+      const rows = await db.select({
+        raw_category: sql<string>`coalesce(${products.category}, 'Uncategorized')`.as('raw_category'),
+        revenue: sql<number>`coalesce(sum(${orderItems.quantity} * ${orderItems.price_per_unit}), 0)`.as('revenue'),
+        profit: sql<number>`coalesce(sum(${orderItems.quantity} * (${orderItems.price_per_unit} - coalesce(${orderItems.cost_per_unit}, ${products.cost_price}, 0))), 0)`.as('profit'),
+      }).from(orderItems)
+        .innerJoin(orders, eq(orderItems.order_id, orders.id))
+        .innerJoin(products, eq(orderItems.product_id, products.id))
+        .where(and(...conditions))
+        .groupBy(products.category)
+
+      for (const r of rows) {
+        merged.set(r.raw_category, {
+          name: r.raw_category,
           revenue: Number(r.revenue),
           profit: Number(r.profit),
         })
