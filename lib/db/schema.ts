@@ -468,11 +468,13 @@ export const productGroupMerges = pgTable('product_group_merges', {
 /* ── 24. categories_canonical ──────────────────────────────────────────────── */
 export const categoriesCanonical = pgTable('categories_canonical', {
   id:      serial('id').primaryKey(),
+  slug:    text('slug').notNull(),
   name_ru: text('name_ru').notNull(),
   name_uz: text('name_uz').notNull(),
   name_en: text('name_en').notNull(),
 }, (t) => [
   uniqueIndex('categories_canonical_name_ru_idx').on(t.name_ru),
+  uniqueIndex('categories_canonical_slug_idx').on(t.slug),
 ])
 
 /* ── 25. category_aliases ──────────────────────────────────────────────────── */
@@ -484,4 +486,21 @@ export const categoryAliases = pgTable('category_aliases', {
 }, (t) => [
   uniqueIndex('category_aliases_mp_name_idx').on(t.marketplace, t.original_name),
   index('category_aliases_canonical_idx').on(t.canonical_id),
+])
+
+/* ── 26. suggested_aliases ─────────────────────────────────────────────────── */
+export const suggestedAliases = pgTable('suggested_aliases', {
+  id:            serial('id').primaryKey(),
+  canonical_id:  integer('canonical_id').notNull().references(() => categoriesCanonical.id, { onDelete: 'cascade' }),
+  marketplace:   text('marketplace').notNull(),
+  original_name: text('original_name').notNull(),
+  score:         numeric('score', { precision: 4, scale: 3 }).notNull(),
+  tier:          text('tier').notNull(),
+  status:        text('status').notNull().default('pending'),
+  reviewed_at:   timestamp('reviewed_at', { withTimezone: true }),
+  created_at:    timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (t) => [
+  uniqueIndex('suggested_aliases_mp_name_idx').on(t.marketplace, t.original_name),
+  index('suggested_aliases_status_idx').on(t.status),
+  index('suggested_aliases_canonical_idx').on(t.canonical_id),
 ])

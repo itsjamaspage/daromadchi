@@ -16,6 +16,8 @@ const MIGRATIONS = [
   'migrations/migrations/029_order_wb_fees.sql',
   'migrations/migrations/030_shops_business_id.sql',
   'migrations/migrations/031_category_canonical.sql',
+  'migrations/migrations/032_category_slug.sql',
+  'migrations/migrations/033_suggested_aliases.sql',
 ]
 
 function loadDatabaseUrl() {
