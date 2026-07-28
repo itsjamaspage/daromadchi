@@ -289,7 +289,10 @@ const _fetchCategoryRevenue = unstable_cache(
     }).from(orderItems)
       .innerJoin(orders, eq(orderItems.order_id, orders.id))
       .innerJoin(products, eq(orderItems.product_id, products.id))
-      .leftJoin(categoryAliases, eq(products.category, categoryAliases.original_name))
+      .leftJoin(categoryAliases, and(
+        eq(products.category, categoryAliases.original_name),
+        sql`${categoryAliases.marketplace} = ${orders.marketplace}::text`,
+      ))
       .leftJoin(categoriesCanonical, eq(categoryAliases.canonical_id, categoriesCanonical.id))
       .where(and(...conditions))
       .groupBy(

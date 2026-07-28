@@ -24,10 +24,8 @@ const CustomTooltip = ({ active, payload }: any) => {
 interface CategoryData { name: string; name_ru?: string; name_uz?: string; name_en?: string; revenue: number; profit: number; percent: number }
 
 function localizedName(d: CategoryData, lang: string): string {
-  if (lang === 'uz' && d.name_uz) return d.name_uz
-  if (lang === 'en' && d.name_en) return d.name_en
-  if (lang === 'ru' && d.name_ru) return d.name_ru
-  return d.name
+  const langKey = `name_${lang}` as keyof CategoryData
+  return (d[langKey] as string | undefined) ?? d.name_ru ?? d.name
 }
 
 export default function CategoryChart({ data }: { data: CategoryData[] }) {
