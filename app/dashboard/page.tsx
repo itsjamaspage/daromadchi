@@ -27,6 +27,8 @@ function parseMarketplace(params: Record<string, string> | undefined): Marketpla
   return (VALID_MARKETPLACES as readonly string[]).includes(v ?? '') ? v as MarketplaceType : undefined
 }
 
+// Each fetch is wrapped so one failing query (e.g. a missing table on an
+// out-of-date DB) degrades that panel rather than 500ing the whole dashboard.
 async function fetchSlice(
   days: number,
   marketplace: MarketplaceType | undefined,
@@ -34,13 +36,14 @@ async function fetchSlice(
   from?: string,
   to?: string,
 ): Promise<MarketplaceSlice> {
+  const emptyKpis = { total_revenue: 0, total_profit: 0, total_orders: 0, total_stock: 0 }
   const [kpis, recentOrders, allProducts, productSales, chartData, categoryData] = await Promise.all([
-    getKpis(days, marketplace, from, to),
-    getOrders(5, marketplace, from, to),
-    getProducts(marketplace),
-    getProductSales(days, marketplace, from, to),
-    getDailyRevenue(days, marketplace, from, to),
-    getCategoryRevenue(days, marketplace, from, to),
+    getKpis(days, marketplace, from, to).catch(e => { console.error('[dashboard] getKpis', e); return emptyKpis }),
+    getOrders(5, marketplace, from, to).catch(e => { console.error('[dashboard] getOrders', e); return [] }),
+    getProducts(marketplace).catch(e => { console.error('[dashboard] getProducts', e); return [] }),
+    getProductSales(days, marketplace, from, to).catch(e => { console.error('[dashboard] getProductSales', e); return [] }),
+    getDailyRevenue(days, marketplace, from, to).catch(e => { console.error('[dashboard] getDailyRevenue', e); return [] }),
+    getCategoryRevenue(days, marketplace, from, to).catch(e => { console.error('[dashboard] getCategoryRevenue', e); return [] }),
   ])
   return {
     kpis,
@@ -67,7 +70,7 @@ export default async function DashboardPage({ searchParams }: Props) {
 
   // Default view: use the earliest order date as "from" so users always see all their data
   if (!from && !to && period === '365') {
-    const launchDate = await getShopLaunchDate()
+    const launchDate = await getShopLaunchDate().catch(e => { console.error('[dashboard] getShopLaunchDate', e); return null })
     if (launchDate) {
       from = launchDate.slice(0, 10)
       to   = new Date().toISOString().slice(0, 10)
@@ -76,7 +79,7 @@ export default async function DashboardPage({ searchParams }: Props) {
     }
   }
 
-  const allShops   = await getUserShops()
+  const allShops   = await getUserShops().catch(e => { console.error('[dashboard] getUserShops', e); return [] })
   const hasShops   = allShops.length > 0
   const hasUzum    = allShops.some(s => s.marketplace === 'uzum')
   const hasYM      = allShops.some(s => s.marketplace === 'yandex_market')
@@ -89,8 +92,8 @@ export default async function DashboardPage({ searchParams }: Props) {
     fetchSlice(days, 'wildberries',   hasWB,     from, to),
     // Cross-marketplace grouped stock — same SKU on Uzum + YM + WB collapses
     // to one alert with marketplace badges instead of N duplicates.
-    getStockGroups().catch(() => []),
-    getSyncInfo(),
+    getStockGroups().catch(e => { console.error('[dashboard] getStockGroups', e); return [] }),
+    getSyncInfo().catch(e => { console.error('[dashboard] getSyncInfo', e); return { lastSyncedAt: null, lastSyncFailed: false, alerts: [] } }),
   ])
 
   return (
