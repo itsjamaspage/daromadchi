@@ -49,6 +49,10 @@ async function request<T>(path: string, token: string, options?: RequestInit): P
   if (!res.ok) {
     let body = ''
     try { body = await res.text() } catch { /* ignore */ }
+    // Server-side log so the real error text (401/403 permissions, 400 bad
+    // param, 429 quota) shows up in pm2 logs even when the caller collapses
+    // the failure into a `debug.<field>=err` badge for the UI.
+    console.error(`[Yandex API] ${res.status} ${res.statusText} — ${path}\n${body.slice(0, 500)}`)
     throw new YandexApiError(
       res.status,
       `Yandex API ${res.status} ${res.statusText} (${path})`,
