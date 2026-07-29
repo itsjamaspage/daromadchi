@@ -85,18 +85,17 @@ const _fetchProducts = unstable_cache(
       const deliveredUnits = Math.max(orderSold - dbInTransit, 0)
       const key = p.sku ? p.sku.trim().toLowerCase().replace(/[\s\-_./]+/g, '') : null
       const isShared = key ? (groupShopCount.get(key) ?? 0) > 1 : false
-      const ft = p.fulfillment_type
-      const isFbo = ft === 'fbo' || ft === 'fby'
-      let availableStock: number
-      if (isFbo) {
-        availableStock = Math.max(0, p.stock_quantity - dbInTransit)
-      } else if (isShared && key) {
-        const maxStock = groupMaxStock.get(key) ?? p.stock_quantity
-        const totalPending = groupTotalPending.get(key) ?? 0
-        availableStock = Math.max(0, maxStock - totalPending)
-      } else {
-        availableStock = Math.max(0, p.stock_quantity - dbInTransit)
-      }
+      // Show each row's OWN marketplace stock, not the shared-warehouse
+      // max. Previously the shared-FBS branch propagated groupMaxStock to
+      // every row of a matched SKU, so a listing that hadn't been approved
+      // / stocked on YM (real stock 0) showed the WB row's 2 because the
+      // SKU strings matched — a phantom stock number that contradicted YM's
+      // own cabinet. The group-max concept still belongs on the Stocks page
+      // (which correctly renders one row per SKU with per-marketplace
+      // badges). Per-marketplace rows here now read per-marketplace stock,
+      // deducting only the in-transit units bound to THIS row's product_id.
+      // isShared is still computed for the "Umumiy" badge in ProductsTable.
+      const availableStock = Math.max(0, p.stock_quantity - dbInTransit)
 
       return {
         id: p.id,
@@ -468,18 +467,17 @@ const _fetchProductsPaginated = unstable_cache(
       const deliveredUnits = Math.max(orderSold - dbInTransit, 0)
       const key = p.sku ? p.sku.trim().toLowerCase().replace(/[\s\-_./]+/g, '') : null
       const isShared = key ? (groupShopCount.get(key) ?? 0) > 1 : false
-      const ft = p.fulfillment_type
-      const isFbo = ft === 'fbo' || ft === 'fby'
-      let availableStock: number
-      if (isFbo) {
-        availableStock = Math.max(0, p.stock_quantity - dbInTransit)
-      } else if (isShared && key) {
-        const maxStock = groupMaxStock.get(key) ?? p.stock_quantity
-        const totalPending = groupTotalPending.get(key) ?? 0
-        availableStock = Math.max(0, maxStock - totalPending)
-      } else {
-        availableStock = Math.max(0, p.stock_quantity - dbInTransit)
-      }
+      // Show each row's OWN marketplace stock, not the shared-warehouse
+      // max. Previously the shared-FBS branch propagated groupMaxStock to
+      // every row of a matched SKU, so a listing that hadn't been approved
+      // / stocked on YM (real stock 0) showed the WB row's 2 because the
+      // SKU strings matched — a phantom stock number that contradicted YM's
+      // own cabinet. The group-max concept still belongs on the Stocks page
+      // (which correctly renders one row per SKU with per-marketplace
+      // badges). Per-marketplace rows here now read per-marketplace stock,
+      // deducting only the in-transit units bound to THIS row's product_id.
+      // isShared is still computed for the "Umumiy" badge in ProductsTable.
+      const availableStock = Math.max(0, p.stock_quantity - dbInTransit)
 
       return {
         id: p.id,
