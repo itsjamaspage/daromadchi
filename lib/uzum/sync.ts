@@ -274,6 +274,26 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
             }).where(eq(products.id, r.id))
           }
         }
+
+        // Zombie cleanup — same shape as the WB sync fix. When a seller
+        // removes a listing on Uzum, the product row used to sit in our DB
+        // forever with the last-known stock number. Now: any DB row for
+        // this shop whose skuId isn't in the fresh Uzum response gets
+        // deleted. Only runs when we actually got a non-empty productRows
+        // list (which itself required the fetch loop to complete without
+        // throwing — otherwise we're in the catch block below and skip
+        // this whole branch). order_items.product_id is ON DELETE SET NULL
+        // so historical order rows survive.
+        const freshIds = new Set(productRows.map(r => r.marketplace_product_id))
+        const zombieIds = existingProds
+          .filter(p => !freshIds.has(String(p.marketplace_product_id)))
+          .map(p => p.id)
+        if (zombieIds.length > 0) {
+          await db.delete(products).where(and(
+            eq(products.shop_id, shopId),
+            inArray(products.id, zombieIds),
+          ))
+        }
       }
     } catch (prodSyncErr) {
       // Non-fatal: 403 means shop has no active listings. Continue to orders.

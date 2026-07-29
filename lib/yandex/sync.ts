@@ -239,6 +239,27 @@ export async function syncFromYandex(
             await db.update(products).set(patch).where(eq(products.id, r.id))
           }
         }
+
+        // Zombie cleanup — same shape as the WB and Uzum sync fixes. When
+        // a seller removes an offer on Yandex Market, the product row
+        // used to sit in our DB forever with the last-known stock number.
+        // Now: any DB row for this shop whose marketplace_product_id isn't
+        // in the fresh YM offerMappings response gets deleted. Only runs
+        // when productRows is non-empty (the fetch loop completed and
+        // returned something) — otherwise we're either in the catch below
+        // or the shop legitimately has zero offers and we don't want to
+        // nuke everything on a transient auth blip. order_items.product_id
+        // is ON DELETE SET NULL so historical orders survive.
+        const freshIds = new Set(productRows.map(r => r.marketplace_product_id))
+        const zombieIds = existingProds
+          .filter(p => !freshIds.has(String(p.marketplace_product_id)))
+          .map(p => p.id)
+        if (zombieIds.length > 0) {
+          await db.delete(products).where(and(
+            eq(products.shop_id, shopId),
+            inArray(products.id, zombieIds),
+          ))
+        }
       }
       productsOk = true
     } catch (prodErr) {
