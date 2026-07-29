@@ -182,15 +182,24 @@ export interface StockAlert {
   productId: string
   productTitle: string
   sku: string
-  currentStock: number   // warehouse-aware available stock
+  currentStock: number   // per-listing available stock (matches the marketplace's own cabinet)
   threshold: number
   daysLeft: number       // estimated days until stockout at current sales rate
   dailySales: number     // avg daily sales
   marketplace: MarketplaceType
   isShared?: boolean     // true when stock is pooled across a warehouse
+  totalPhysical?: number // total physical stock in seller warehouse across all listings sharing this SKU
 }
 
 // ── Payouts ───────────────────────────────────────────────────────────────────
+export interface PayoutOrderItem {
+  productTitle: string
+  sku: string | null
+  qty: number
+  revenue: number
+  orderCount: number
+}
+
 export interface PayoutEntry {
   id: string
   period: string
@@ -211,6 +220,9 @@ export interface PayoutEntry {
   status: 'paid' | 'pending' | 'processing' | 'estimated_paid' | 'estimated_pending'
   payoutDate: string | null
   payoutEstimated: boolean
+  // Per-product breakdown of the orders that fed this payout period.
+  // Grouped by product so 50 orders of the same SKU collapse into one row.
+  items: PayoutOrderItem[]
 }
 
 export interface WatchlistItem {

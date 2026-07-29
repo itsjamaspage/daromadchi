@@ -2,7 +2,7 @@ import { inArray, gte, and, ne, eq, sql, asc } from 'drizzle-orm'
 import { db, orders, orderItems, products, shops, productAdsStats } from '@/lib/db'
 import { getShopIds } from '@/lib/db/shop-context'
 import { getUnitEcoSettings } from '@/lib/db/unit-economics'
-import type { PayoutEntry } from '@/lib/types'
+import type { PayoutEntry, PayoutOrderItem } from '@/lib/types'
 
 export type { PayoutEntry }
 
@@ -20,7 +20,7 @@ export async function getPayoutEntries(): Promise<PayoutEntry[]> {
   since.setMonth(since.getMonth() - 12)
 
   const sinceStr = since.toISOString().slice(0, 10)
-  const [orderRows, cogsRows, adSpendRows] = await Promise.all([
+  const [orderRows, cogsRows, adSpendRows, itemRows] = await Promise.all([
     db.select({
       shop_id: orders.shop_id,
       ordered_at: orders.ordered_at,
@@ -62,12 +62,56 @@ export async function getPayoutEntries(): Promise<PayoutEntry[]> {
         gte(productAdsStats.date, sinceStr),
       ))
       .groupBy(sql`to_char(${productAdsStats.date}::date, 'YYYY-MM')`, shops.marketplace),
+    // Per-product breakdown per period+marketplace. Aggregated in SQL so
+    // 100 orders of the same SKU collapse to one row before it ever hits
+    // the Node side. Cancelled/returned excluded — those already show in
+    // the top-level "returns" column and would double-count here.
+    db.select({
+      month: sql<string>`to_char(${orders.ordered_at}, 'YYYY-MM')`.as('month'),
+      marketplace: orders.marketplace,
+      productId: orderItems.product_id,
+      productTitle: products.title,
+      sku: products.sku,
+      qty: sql<number>`coalesce(sum(${orderItems.quantity}), 0)`.as('qty'),
+      revenue: sql<number>`coalesce(sum(${orderItems.quantity} * coalesce(${orderItems.price_per_unit}, 0)), 0)`.as('revenue'),
+      orderCount: sql<number>`count(distinct ${orders.id})`.as('order_count'),
+    }).from(orderItems)
+      .innerJoin(orders, eq(orderItems.order_id, orders.id))
+      .leftJoin(products, eq(orderItems.product_id, products.id))
+      .where(and(
+        inArray(orders.shop_id, allShopIds),
+        gte(orders.ordered_at, since),
+        ne(orders.status, 'cancelled'),
+        ne(orders.status, 'returned'),
+      ))
+      .groupBy(
+        sql`to_char(${orders.ordered_at}, 'YYYY-MM')`,
+        orders.marketplace,
+        orderItems.product_id,
+        products.title,
+        products.sku,
+      ),
   ])
 
   if (orderRows.length === 0) return []
 
   const cogsMap = new Map(cogsRows.map(r => [`${r.month}|${r.marketplace}`, Number(r.cogs)]))
   const realAdSpendMap = new Map(adSpendRows.map(r => [`${r.month}|${r.marketplace}`, Number(r.spend)]))
+
+  const itemsMap = new Map<string, PayoutOrderItem[]>()
+  for (const r of itemRows) {
+    const key = `${r.month}|${r.marketplace}`
+    const list = itemsMap.get(key) ?? []
+    list.push({
+      productTitle: r.productTitle ?? '—',
+      sku:          r.sku ?? null,
+      qty:          Number(r.qty),
+      revenue:      Number(r.revenue),
+      orderCount:   Number(r.orderCount),
+    })
+    itemsMap.set(key, list)
+  }
+  for (const list of itemsMap.values()) list.sort((a, b) => b.revenue - a.revenue)
 
   type Bucket = {
     revenue: number; realFee: number; realDelivery: number
@@ -145,6 +189,7 @@ export async function getPayoutEntries(): Promise<PayoutEntry[]> {
       status: isPast ? 'estimated_paid' as const : 'estimated_pending' as const,
       payoutDate: null,
       payoutEstimated: true,
+      items: itemsMap.get(key) ?? [],
     }
   })
 

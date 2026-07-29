@@ -316,6 +316,9 @@ export const dashT = {
       colCommission: 'Komissiya', colDelivery: 'Yetkazish', colReturns: 'Qaytarish',
       colAd: 'Reklama', colTax: 'Soliq', colNet: "Sof to'lov", colStatus: 'Holat',
       tabAll: 'Barchasi', tabUzum: 'Uzum', tabYandex: 'Yandex Market', tabWb: 'Wildberries',
+      itemsTitle: 'Mahsulotlar', itemsEmpty: 'Bu davrda mahsulot buyurtmalari yo\'q.',
+      itemProduct: 'Mahsulot', itemQty: 'Miqdor', itemRevenue: 'Tushum', itemOrders: 'buyurtma',
+      itemsShowMore: 'Yana ko\'rsatish', itemsShowLess: 'Kamroq ko\'rsatish',
     },
     seasonality: {
       insightBest: 'Eng yaxshi oy', insightLow: 'Eng past oy',
@@ -704,6 +707,9 @@ export const dashT = {
       colCommission: 'Commission', colDelivery: 'Delivery', colReturns: 'Returns',
       colAd: 'Advertising', colTax: 'Tax', colNet: 'Net payout', colStatus: 'Status',
       tabAll: 'All', tabUzum: 'Uzum', tabYandex: 'Yandex Market', tabWb: 'Wildberries',
+      itemsTitle: 'Products', itemsEmpty: 'No product orders in this period.',
+      itemProduct: 'Product', itemQty: 'Qty', itemRevenue: 'Revenue', itemOrders: 'orders',
+      itemsShowMore: 'Show more', itemsShowLess: 'Show less',
     },
     seasonality: {
       insightBest: 'Best month', insightLow: 'Lowest month',
@@ -1089,6 +1095,9 @@ export const dashT = {
       colCommission: 'Комиссия', colDelivery: 'Доставка', colReturns: 'Возвраты',
       colAd: 'Реклама', colTax: 'Налог', colNet: 'Чистая выплата', colStatus: 'Статус',
       tabAll: 'Все', tabUzum: 'Uzum', tabYandex: 'Yandex Market', tabWb: 'Wildberries',
+      itemsTitle: 'Товары', itemsEmpty: 'В этом периоде нет заказов по товарам.',
+      itemProduct: 'Товар', itemQty: 'Кол-во', itemRevenue: 'Выручка', itemOrders: 'заказов',
+      itemsShowMore: 'Показать ещё', itemsShowLess: 'Свернуть',
     },
     seasonality: {
       insightBest: 'Лучший месяц', insightLow: 'Худший месяц',

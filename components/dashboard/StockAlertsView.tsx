@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Settings2, AlertTriangle, Bell, Package } from 'lucide-react'
 import type { StockAlert } from '@/lib/db/alerts'
 import type { AlertSettings } from '@/lib/db/alerts'
@@ -12,6 +12,78 @@ import { translations } from '@/lib/i18n'
 interface Props {
   alerts: StockAlert[]
   settings: AlertSettings
+}
+
+// Same UX as ProductsTable's StockHint: opens on hover (desktop) and tap
+// (mobile). Purple accent when per-listing stock differs from group
+// physical total, grey otherwise.
+function AlertStockHint({ alert }: { alert: StockAlert }) {
+  const { lang } = useLang()
+  const d = translations[lang].dashboard
+  const [open, setOpen] = useState(false)
+  const wrapRef = useRef<HTMLSpanElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    function onDoc(e: MouseEvent) {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', onDoc)
+    return () => document.removeEventListener('mousedown', onDoc)
+  }, [open])
+
+  const total = alert.totalPhysical ?? alert.currentStock
+  const perListing = alert.currentStock
+  const differs = !!alert.isShared && total !== perListing
+
+  return (
+    <span
+      ref={wrapRef}
+      className="relative inline-flex"
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
+    >
+      <button
+        type="button"
+        onClick={(e) => { e.stopPropagation(); setOpen(o => !o) }}
+        className="inline-flex items-center justify-center w-4 h-4 rounded-full text-[10px] font-bold cursor-help"
+        style={{
+          background: differs ? 'rgba(168,85,247,0.15)' : 'rgba(100,116,139,0.15)',
+          color: differs ? '#a855f7' : 'var(--text-muted)',
+          border: `1px solid ${differs ? 'rgba(168,85,247,0.35)' : 'rgba(100,116,139,0.3)'}`,
+        }}
+        aria-label={d.stockHintAria}
+      >
+        ?
+      </button>
+      {open && (
+        <span
+          className="absolute left-0 top-6 z-30 w-64 rounded-xl p-3 text-left text-xs leading-relaxed shadow-xl"
+          style={{
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border)',
+            color: 'var(--text-base)',
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="font-semibold mb-1.5" style={{ color: 'var(--text-base)' }}>
+            {d.stockHintTitle}
+          </div>
+          <div className="flex items-center justify-between py-0.5">
+            <span style={{ color: 'var(--text-muted)' }}>{d.stockHintWarehouse}</span>
+            <span className="font-bold tabular-nums" style={{ color: differs ? '#a855f7' : 'var(--text-base)' }}>{total}</span>
+          </div>
+          <div className="flex items-center justify-between py-0.5">
+            <span style={{ color: 'var(--text-muted)' }}>{d.stockHintMarketplace}</span>
+            <span className="font-medium tabular-nums" style={{ color: 'var(--text-base)' }}>{perListing}</span>
+          </div>
+          <div className="mt-2 pt-2 text-[11px]" style={{ borderTop: '1px solid var(--border)', color: 'var(--text-muted)' }}>
+            {alert.isShared ? d.stockHintShared : d.stockHintSingle}
+          </div>
+        </span>
+      )}
+    </span>
+  )
 }
 
 export default function StockAlertsView({ alerts, settings: initialSettings }: Props) {
@@ -188,11 +260,14 @@ export default function StockAlertsView({ alerts, settings: initialSettings }: P
                       </td>
                       <td className="px-5 py-3.5 text-[var(--text-muted)] text-sm font-mono">{alert.sku}</td>
                       <td className="px-5 py-3.5">
-                        <span className={`text-sm font-bold ${
-                          isCritical ? 'text-red-400' : isWarning ? 'text-amber-400' : 'text-[var(--text-base)]'
-                        }`}>
-                          {alert.isShared ? `Umumiy qoldiq: ${alert.currentStock}` : alert.currentStock} {d.unitsSuffix}
-                        </span>
+                        <div className="inline-flex items-center gap-1.5">
+                          <span className={`text-sm font-bold ${
+                            isCritical ? 'text-red-400' : isWarning ? 'text-amber-400' : 'text-[var(--text-base)]'
+                          }`}>
+                            {alert.currentStock} {d.unitsSuffix}
+                          </span>
+                          <AlertStockHint alert={alert} />
+                        </div>
                       </td>
                       <td className="px-5 py-3.5 text-[var(--text-muted)] text-sm">{alert.threshold} {d.unitsSuffix}</td>
                       <td className="px-5 py-3.5">{daysLeftBadge(alert.daysLeft, alert.dailySales)}</td>

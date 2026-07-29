@@ -16,7 +16,7 @@ import { helpContent, type HelpSection } from '@/lib/help-tooltips'
 
 type NavItem = { href: string; key: string; icon: React.ElementType }
 
-const UPCOMING_KEYS = new Set(['advertising', 'seasonality'])
+const UPCOMING_KEYS = new Set(['advertising', 'seasonality', 'team'])
 
 const storeNavItems: NavItem[] = [
   { href: '/dashboard',                key: 'dashboard',     icon: LayoutDashboard },
@@ -44,6 +44,11 @@ const UPCOMING_TEXT: Record<string, { uz: string; en: string; ru: string }> = {
     uz: "Mavsumiylik bo'limi tez orada ishga tushadi!",
     en: 'Seasonality section is coming soon!',
     ru: 'Раздел сезонности скоро будет доступен!',
+  },
+  team: {
+    uz: "Jamoa bo'limi tez orada ishga tushadi!",
+    en: 'Team section is coming soon!',
+    ru: 'Раздел команды скоро будет доступен!',
   },
 }
 

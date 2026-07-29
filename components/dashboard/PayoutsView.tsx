@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, Fragment } from 'react'
 import { ChevronDown, ChevronUp, HelpCircle } from 'lucide-react'
-import type { PayoutEntry } from '@/lib/db/payouts'
+import type { PayoutEntry, PayoutOrderItem } from '@/lib/types'
 import ExportButton from '@/components/dashboard/ExportButton'
 import { useLang } from '@/app/providers'
 import { dashT } from '@/lib/dashT'
@@ -56,6 +56,66 @@ function StatusBadge({ status }: { status: PayoutEntry['status'] }) {
     <span className="inline-flex px-2.5 py-1 rounded-lg text-xs font-semibold bg-[var(--bg-card2)] text-[var(--text-muted)] border border-[var(--border)]">
       {t.statusPending}
     </span>
+  )
+}
+
+function ItemBreakdown({ items }: { items: PayoutOrderItem[] }) {
+  const { lang } = useLang()
+  const t = dashT[lang].payouts
+  const [expanded, setExpanded] = useState(false)
+
+  if (items.length === 0) {
+    return (
+      <div className="px-5 py-4 border-t border-[var(--border)]">
+        <p className="text-[var(--text-muted)] text-xs">{t.itemsEmpty}</p>
+      </div>
+    )
+  }
+
+  const INITIAL = 5
+  const visible = expanded ? items : items.slice(0, INITIAL)
+  const hidden = items.length - INITIAL
+
+  return (
+    <div className="px-5 py-4 border-t border-[var(--border)] space-y-2">
+      <p className="text-[var(--text-muted)] text-xs font-semibold uppercase tracking-wider">
+        {t.itemsTitle} · {items.length}
+      </p>
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="text-[var(--text-muted)] text-[11px] uppercase tracking-wider border-b border-[var(--border)]">
+            <th className="text-left font-medium py-2">{t.itemProduct}</th>
+            <th className="text-right font-medium py-2">{t.itemQty}</th>
+            <th className="text-right font-medium py-2">{t.itemRevenue}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {visible.map((item, i) => (
+            <tr key={`${item.sku ?? item.productTitle}-${i}`} className="border-b border-[var(--border)] last:border-b-0">
+              <td className="py-2 pr-3">
+                <div className="text-[var(--text-base)] font-medium leading-tight">{item.productTitle}</div>
+                <div className="flex items-center gap-2 mt-0.5">
+                  {item.sku && <span className="text-[var(--text-muted)] text-xs font-mono">{item.sku}</span>}
+                  <span className="text-[var(--text-muted)] text-xs">· {item.orderCount} {t.itemOrders}</span>
+                </div>
+              </td>
+              <td className="py-2 text-right text-[var(--text-dim)] tabular-nums">×{item.qty}</td>
+              <td className="py-2 text-right text-[var(--text-base)] font-medium tabular-nums">{fmt(item.revenue)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {hidden > 0 && (
+        <button
+          type="button"
+          onClick={() => setExpanded(e => !e)}
+          className="text-xs font-medium hover:underline"
+          style={{ color: 'var(--c1)' }}
+        >
+          {expanded ? t.itemsShowLess : `${t.itemsShowMore} (+${hidden})`}
+        </button>
+      )}
+    </div>
   )
 }
 
@@ -223,9 +283,8 @@ export default function PayoutsView({ entries }: Props) {
             </thead>
             <tbody>
               {filteredEntries.map(entry => (
-                <>
+                <Fragment key={entry.id}>
                   <tr
-                    key={entry.id}
                     onClick={() => toggle(entry.id)}
                     className="border-b border-[var(--border)] hover:bg-[var(--bg-card2)] transition-colors cursor-pointer"
                   >
@@ -254,13 +313,14 @@ export default function PayoutsView({ entries }: Props) {
                     </td>
                   </tr>
                   {expandedId === entry.id && (
-                    <tr key={`${entry.id}-detail`} className="border-b border-[var(--border)]">
+                    <tr className="border-b border-[var(--border)]">
                       <td colSpan={11} className="p-0">
+                        <ItemBreakdown items={entry.items} />
                         <DeductionBar entry={entry} />
                       </td>
                     </tr>
                   )}
-                </>
+                </Fragment>
               ))}
             </tbody>
           </table>
