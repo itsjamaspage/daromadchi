@@ -316,14 +316,19 @@ export const unitEconomicsItems = pgTable('unit_economics_items', {
 /* ── 14. payments ───────────────────────────────────────────────────────────── */
 
 export const payments = pgTable('payments', {
-  id:         uuid('id').primaryKey().defaultRandom(),
-  user_id:    uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  plan:       text('plan').notNull(),
-  amount:     numeric('amount').notNull(),
-  status:     paymentStatusEnum('status').default('pending').notNull(),
-  created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  id:                       uuid('id').primaryKey().defaultRandom(),
+  user_id:                  uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  provider:                 text('provider').notNull(),
+  provider_transaction_id:  text('provider_transaction_id'),
+  plan:                     text('plan').notNull(),
+  period_months:            integer('period_months').default(1).notNull(),
+  amount:                   numeric('amount').notNull(),
+  status:                   paymentStatusEnum('status').default('pending').notNull(),
+  created_at:               timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updated_at:               timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 }, (t) => [
   index('payments_user_id_idx').on(t.user_id),
+  index('payments_provider_tx_idx').on(t.provider_transaction_id),
 ])
 
 /* ── 15. alerts ─────────────────────────────────────────────────────────────── */
@@ -375,16 +380,20 @@ export const botSessions = pgTable('bot_sessions', {
 
 /* ── 18. channel_nonces ─────────────────────────────────────────────────────── */
 
+// Matches migration 011: nonce is the PK, telegram_id + verified are the
+// state fields the /telegram/webhook route reads/writes. The earlier
+// Drizzle model had drifted (extra id/channel/used columns that don't
+// exist in the DB, missing telegram_id/verified that do). Corrected here.
 export const channelNonces = pgTable('channel_nonces', {
-  id:         uuid('id').primaryKey().defaultRandom(),
-  user_id:    uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  nonce:      text('nonce').notNull(),
-  channel:    text('channel').notNull(),
-  used:       boolean('used').default(false).notNull(),
-  expires_at: timestamp('expires_at', { withTimezone: true }).notNull(),
-  created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  nonce:       text('nonce').primaryKey(),
+  user_id:     uuid('user_id').references(() => users.id, { onDelete: 'cascade' }),
+  telegram_id: text('telegram_id'),
+  verified:    boolean('verified').default(false).notNull(),
+  expires_at:  timestamp('expires_at', { withTimezone: true }).notNull(),
+  created_at:  timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 }, (t) => [
-  uniqueIndex('channel_nonces_nonce_idx').on(t.nonce),
+  index('idx_channel_nonces_user').on(t.user_id),
+  index('idx_channel_nonces_exp').on(t.expires_at),
 ])
 
 /* ── 19. sessions (NextAuth) ────────────────────────────────────────────────── */

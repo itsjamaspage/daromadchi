@@ -41,8 +41,8 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   await Promise.all([
     db.update(payments).set({ status: 'paid', updated_at: new Date() }).where(eq(payments.id, payment.id)),
     db.update(users).set({
-      plan:            payment.plan,
-      plan_expires_at: planExpiresAt(payment.period_months),
+      plan:            payment.plan as 'free' | 'pro' | 'pro_plus',
+      plan_expires_at: new Date(planExpiresAt(payment.period_months)),
     }).where(eq(users.id, payment.user_id)),
   ])
 

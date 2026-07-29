@@ -45,14 +45,13 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   await db.insert(channelNonces).values({
     nonce,
     user_id: userId,
-    channel: 'telegram',
-    used: false,
+    verified: false,
     expires_at: expiresAt,
   }).onConflictDoUpdate({
     target: channelNonces.nonce,
     set: {
       user_id: userId,
-      used: false,
+      verified: false,
       expires_at: expiresAt,
     },
   })
@@ -68,7 +67,7 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
   }
 
   const data = await db.query.channelNonces.findFirst({
-    columns: { used: true, expires_at: true },
+    columns: { verified: true, expires_at: true },
     where: eq(channelNonces.nonce, nonce),
   })
 
@@ -77,10 +76,10 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
     return NextResponse.json({ verified: false, reason: 'expired' }, { headers: CORS })
   }
 
-  // If verified (used), clean it up
-  if (data.used) {
+  // Once verified, clean it up so it can't be reused
+  if (data.verified) {
     await db.delete(channelNonces).where(eq(channelNonces.nonce, nonce))
   }
 
-  return NextResponse.json({ verified: data.used }, { headers: CORS })
+  return NextResponse.json({ verified: data.verified }, { headers: CORS })
 })

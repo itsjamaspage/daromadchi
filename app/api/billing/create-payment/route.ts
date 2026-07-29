@@ -24,17 +24,17 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   const months = PLAN_MONTHS[period as Period]
 
   const [payment] = await db.insert(payments).values({
-    user_id: user.id,
+    user_id:       user.id,
+    provider,      // 'click' | 'payme'
     plan,
-    amount: String(amount),
-    status: 'pending',
+    period_months: months,
+    amount:        String(amount),
+    status:        'pending',
   }).returning({ id: payments.id })
 
   if (!payment) {
     return NextResponse.json({ error: 'Failed to create payment record' }, { status: 500 })
   }
-
-  void months
 
   const url = provider === 'click'
     ? clickPaymentUrl(payment.id, amount)

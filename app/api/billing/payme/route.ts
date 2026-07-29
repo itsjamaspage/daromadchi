@@ -70,7 +70,10 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     const now = Date.now()
     await Promise.all([
       db.update(payments).set({ status: 'paid', updated_at: new Date() }).where(eq(payments.id, p.id)),
-      db.update(users).set({ plan: p.plan, plan_expires_at: planExpiresAt(p.period_months) }).where(eq(users.id, p.user_id)),
+      db.update(users).set({
+        plan: p.plan as 'free' | 'pro' | 'pro_plus',
+        plan_expires_at: new Date(planExpiresAt(p.period_months)),
+      }).where(eq(users.id, p.user_id)),
     ])
     return rpc(id, { perform_time: now, transaction: p.id, state: STATE.PAID })
   }
