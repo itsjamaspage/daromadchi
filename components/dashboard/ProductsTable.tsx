@@ -339,11 +339,14 @@ export default function ProductsTable({ products }: { products: Product[] }) {
                 <th className="text-right font-medium px-5 py-3 cursor-pointer select-none" style={{ color: 'var(--text-muted)' }} onClick={() => toggleSort('stock_quantity')}>
                   {d.stockQty} <SortIcon col="stock_quantity" sortBy={sortBy} sortDir={sortDir} />
                 </th>
+                <th className="text-right font-medium px-5 py-3" style={{ color: 'var(--text-muted)' }} title="Общее физическое количество этого товара во всех маркетплейсах (для shared-FBS SKU — макс по маркетплейсам)">
+                  {d.totalPhysical}
+                </th>
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 ? (
-                <tr><td colSpan={8} className="px-5 py-10 text-center text-sm" style={{ color: 'var(--text-muted)' }}>{d.noProductsTitle}</td></tr>
+                <tr><td colSpan={11} className="px-5 py-10 text-center text-sm" style={{ color: 'var(--text-muted)' }}>{d.noProductsTitle}</td></tr>
               ) : filtered.map((p, idx) => {
                 const price  = Number(p.selling_price ?? 0)
                 const margin = price > 0 ? Number(((p.profit / price) * 100).toFixed(1)) : 0
@@ -408,6 +411,10 @@ export default function ProductsTable({ products }: { products: Product[] }) {
                         <span className="text-xs font-medium px-2.5 py-1 rounded-lg" style={{ background: stock.bgColor, color: stock.color }}>
                           {p.available_stock}
                         </span>
+                      </td>
+                      <td className="px-5 py-4 text-right tabular-nums" style={{ color: p.is_shared ? 'var(--text-base)' : 'var(--text-muted)' }}
+                        title={p.is_shared ? 'Общий физический запас по всем маркетплейсам с этим SKU' : 'Товар только на одном маркетплейсе — равен колонке Остаток'}>
+                        {p.total_physical ?? p.available_stock}
                       </td>
                     </tr>
                     {isEditing && (

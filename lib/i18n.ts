@@ -303,6 +303,7 @@ export const translations = {
       margin: 'Margin',
       stockQty: 'Qoldiq',
       stockValue: 'Qoldiq qiymati',
+      totalPhysical: 'Umumiy fizik',
       // Calculator page
       calculatorTitle: 'Foyda kalkulyatori',
       calculatorSubtitle: "Uzum komissiyasi, qaytarish va logistika hisobga olingandan keyin <strong class=\"text-white\">haqiqiy foydangizni</strong> bilib oling",
@@ -1160,6 +1161,7 @@ export const translations = {
       margin: 'Margin',
       stockQty: 'Stock',
       stockValue: 'Stock value',
+      totalPhysical: 'Physical total',
       // Calculator page
       calculatorTitle: 'Profit calculator',
       calculatorSubtitle: 'Find out your <strong class="text-white">real profit</strong> after Uzum commission, returns and logistics',
@@ -2017,6 +2019,7 @@ export const translations = {
       margin: 'Маржа',
       stockQty: 'Остаток',
       stockValue: 'Стоимость остатка',
+      totalPhysical: 'Общий физ.',
       // Calculator page
       calculatorTitle: 'Калькулятор прибыли',
       calculatorSubtitle: 'Узнайте вашу <strong class="text-white">реальную прибыль</strong> с учётом комиссии Uzum, возвратов и логистики',

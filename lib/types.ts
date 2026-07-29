@@ -134,6 +134,13 @@ export interface Product {
   in_transit: number             // units on open orders (pending/confirmed) + counter surplus
   cancelled: number              // units on cancelled orders
   is_shared: boolean             // true when physical_stock links across marketplaces
+  // Total physical inventory across every listing sharing this SKU.
+  // For shared-FBS SKUs (one warehouse, listed on multiple marketplaces)
+  // this is the max across per-marketplace stocks. For non-shared SKUs
+  // it equals this row's own stock. Populated so the Products page can
+  // show "per-listing / physical total" side-by-side without hiding the
+  // wider inventory picture. See lib/db/products.ts for the derivation.
+  total_physical: number
 }
 
 export interface Order {
