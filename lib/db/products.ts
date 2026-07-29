@@ -307,6 +307,12 @@ const _fetchCategoryRevenue = unstable_cache(
           categoriesCanonical.name_ru,
           categoriesCanonical.name_uz,
           categoriesCanonical.name_en,
+          // Selected via `raw_category = coalesce(products.category, ...)`.
+          // Postgres doesn't infer functional dependency from "column appears
+          // inside a grouping expression", so the raw column needs to be its
+          // own term. The merged-map layer below still dedupes rows sharing a
+          // canonical id, so per-marketplace splits don't survive to the UI.
+          products.category,
         )
 
       for (const r of rows) {
