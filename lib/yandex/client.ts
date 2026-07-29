@@ -561,17 +561,15 @@ export async function fetchAllYandexStocks(
           if (!key || !Number.isFinite(qty) || qty === 0) return
           stockMap.set(key, (stockMap.get(key) ?? 0) + qty)
         }
-        // Yandex may report the same physical unit under multiple type
-        // buckets (FIT, AVAILABLE, ...) for the same warehouse — summing
-        // both double-counts the inventory. Pick the FIT count if present,
-        // else AVAILABLE, else the untyped/first entry. Never sum types.
+        // Only trust FIT — this is what YM's own catalog UI shows as
+        // "in stock". AVAILABLE / list[0] can reflect reserved, frozen, or
+        // campaign-flag units that YM does NOT treat as sellable inventory,
+        // so falling through to them causes daromadchi to show phantom
+        // stock when YM says "Нет на складе".
         const countStocks = (stocks: { type?: string; count?: number }[] | undefined): number => {
           if (!stocks || stocks.length === 0) return 0
           const fit = stocks.find(s => s?.type === 'FIT')
-          if (fit) return fit.count ?? 0
-          const avail = stocks.find(s => s?.type === 'AVAILABLE')
-          if (avail) return avail.count ?? 0
-          return stocks[0]?.count ?? 0
+          return fit?.count ?? 0
         }
         // Older response shape: result.skus[]
         for (const item of res.result.skus ?? []) {

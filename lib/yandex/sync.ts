@@ -162,13 +162,13 @@ export async function syncFromYandex(
         // Stock priority: FBS warehouses endpoint → campaign offers endpoint →
         // inline offer.stocks. null = no source returned data → keep the
         // existing DB value on update so we don't clobber real stock with 0.
-        // Pick FIT count if present (do NOT sum FIT + AVAILABLE — they're
-        // the same physical units reported under different type buckets).
+        // Only trust FIT — same reasoning as fetchAllYandexStocks: AVAILABLE
+        // and list[0] on the mapping's inline offer.stocks aren't sellable
+        // inventory, matching YM's own catalog UI which displays FIT.
         let inlineStock: number | undefined
         if (Array.isArray(e.offer.stocks) && e.offer.stocks.length > 0) {
           const fit = e.offer.stocks.find(s => s?.type === 'FIT')
-          const avail = e.offer.stocks.find(s => s?.type === 'AVAILABLE')
-          inlineStock = fit?.count ?? avail?.count ?? e.offer.stocks[0]?.count ?? 0
+          inlineStock = fit?.count ?? 0
         }
         const stock = (shopSku ? stockMap.get(shopSku) : undefined)
           ?? (marketSku ? stockMap.get(marketSku) : undefined)

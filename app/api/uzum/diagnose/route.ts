@@ -225,9 +225,40 @@ export const GET = withErrorHandler(async (req: Request) => {
   // Product sample — confirms SKU.quantitySold (our FBO "sold" workaround) is
   // present and populated for this seller.
   let productSample: unknown = null
+  // Raw stock-field breakdown per SKU so we can see WHICH Uzum field is
+  // contributing to a mismatch between daromadchi and the seller cabinet
+  // ("Закончился" in cabinet vs stock=N in daromadchi). Dumps every numeric
+  // field on each sku (not just the ones we type) so unknown-to-us buckets
+  // like quantityReserved / quantityReturning / quantityWaitingReceipt show up.
+  let productStocks: unknown = null
   if (uzumShopIds[0]) {
     const pp = await probe('product_sample', `${UZUM_API_BASE}/v1/product/shop/${uzumShopIds[0]}?page=0&size=5&filter=ALL`, token)
     productSample = pp.sample ?? pp.bodySnippet
+    try {
+      const res = await marketplaceFetch(
+        `${UZUM_API_BASE}/v1/product/shop/${uzumShopIds[0]}?page=0&size=50&filter=ALL`,
+        { headers: { Authorization: token.trim(), Accept: 'application/json' }, next: { revalidate: 0 } },
+      )
+      const data = await res.json().catch(() => null) as { productList?: unknown[] } | null
+      const list = data?.productList ?? []
+      productStocks = list.flatMap((card: unknown) => {
+        const c = card as { productId?: number; title?: string; skuList?: unknown[] }
+        return (c.skuList ?? []).map((sku: unknown) => {
+          const s = sku as Record<string, unknown>
+          const numeric: Record<string, number> = {}
+          for (const [k, v] of Object.entries(s)) {
+            if (typeof v === 'number') numeric[k] = v
+          }
+          return {
+            productId: c.productId,
+            title: c.title,
+            skuId: s.skuId,
+            sellerItemCode: s.sellerItemCode ?? s.article,
+            numericFields: numeric,
+          }
+        })
+      })
+    } catch { /* best-effort */ }
   }
 
   const validStatuses = orderProbes.filter(p => p.status === 200).map(p => `${p.label}${p.count ? `(${p.count})` : '(0)'}`)
@@ -241,6 +272,7 @@ export const GET = withErrorHandler(async (req: Request) => {
     discoveredStatuses,
     validStatuses,
     productSample,
+    productStocks,
     shopsProbe,
     orderProbes,
     hint: 'validStatuses = FBS statuses that returned 200. productSample shows whether SKU.quantitySold is populated (our FBO sold workaround). analytics_* probes hunt for an FBO revenue source a read-only key can reach. Paste the full JSON to support.',
