@@ -122,6 +122,15 @@ export interface UzumProductCard {
   category?: string
   title?: string
   skuList: UzumSku[]
+  // Authoritative product-level lifecycle status from Uzum. When
+  // status.value === 'RUN_OUT' the seller cabinet shows "Закончился" /
+  // "Tugadi" and the listing is not sellable — regardless of what the
+  // quantityActive / quantityFbs numeric fields on the SKU say.
+  status?: {
+    value?: string
+    title?: string
+    description?: string
+  }
 }
 
 export interface UzumShopProductsResponse {

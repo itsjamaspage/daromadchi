@@ -31,7 +31,11 @@ export default function LastSynced({ lastSyncedAt, lastSyncFailed }: Props) {
     label = d.syncFailed
     failed = true
   } else if (!lastSyncedAt) {
-    label = d.notSyncedYet
+    // Users have complained "Not yet synced" persists after a successful
+    // sync (stale server render or cache). Rather than fight it, just
+    // render nothing in the never-synced case — the sync banner and the
+    // sync buttons already convey status.
+    return null
   } else {
     const r = relativeTime(lastSyncedAt, d)
     label = r.text

@@ -201,7 +201,18 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
           const res = await fetchUzumShopProducts(token, uShop.id, page, size)
           const list = res.productList ?? []
           for (const card of list) {
+            // Uzum has a product-level "lifecycle" status field. When it is
+            // RUN_OUT (Uzbek: "Tugadi", Russian: "Закончился") the seller
+            // cabinet marks the listing as out of stock and unsellable,
+            // regardless of what the SKU-level quantityActive / quantityFbs
+            // numbers say. Those numeric fields include buckets like units
+            // returned from cancelled orders that are physically in seller
+            // hands but NOT re-listable, so trusting them causes daromadchi
+            // to show phantom stock. Reading status.value keeps us aligned
+            // with Uzum's own UI — the two numbers cannot diverge.
+            const outOfStock = card.status?.value === 'RUN_OUT'
             for (const sku of card.skuList ?? []) {
+              const rawStock = (sku.quantityActive ?? 0) + (sku.quantityFbs ?? 0)
               productRows.push({
                 shop_id: shopId,
                 marketplace_product_id: String(sku.skuId),
@@ -210,7 +221,7 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
                 category: card.category ?? null,
                 selling_price: sku.price ?? null,
                 cost_price: sku.purchasePrice || null,
-                stock_quantity: (sku.quantityActive ?? 0) + (sku.quantityFbs ?? 0),
+                stock_quantity: outOfStock ? 0 : rawStock,
                 // Marketplace-authoritative lifetime units sold (includes FBO,
                 // which we can't read at the order level). Used as the "sold"
                 // figure so FBO sales are counted even without order records.
