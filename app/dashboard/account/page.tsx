@@ -1,14 +1,13 @@
-import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { User, Mail, Calendar, Shield, CreditCard } from 'lucide-react'
 import Link from 'next/link'
 import { getLang } from '@/lib/lang'
 import { dashT } from '@/lib/dashT'
 import { getUserPlanFull } from '@/lib/api/auth'
+import { getCurrentUser } from '@/lib/auth/session'
 
 export default async function AccountPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getCurrentUser()
   if (!user) redirect('/login')
   const lang = await getLang()
   const t = dashT[lang].account

@@ -431,6 +431,18 @@ export const verificationTokens = pgTable('verification_tokens', {
   index('idx_verification_tokens_expires_at').on(t.expires_at),
 ])
 
+/* ── 21a. ext_activation_codes (Telegram → Chrome extension linking) ─────── */
+
+export const extActivationCodes = pgTable('ext_activation_codes', {
+  code:       text('code').primaryKey(),
+  chat_id:    text('chat_id').notNull(),
+  used:       boolean('used').default(false).notNull(),
+  expires_at: timestamp('expires_at', { withTimezone: true }).notNull(),
+  created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (t) => [
+  index('idx_ext_activation_chat').on(t.chat_id),
+])
+
 /* ── 21b. password_reset_tokens (mirrors verification_tokens shape) ────────── */
 
 export const passwordResetTokens = pgTable('password_reset_tokens', {
