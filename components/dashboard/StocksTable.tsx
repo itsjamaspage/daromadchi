@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Search, ChevronUp, Pencil, Link2, Unlink } from 'lucide-react'
+import { Search, ChevronUp, ChevronDown, Pencil, Link2, Unlink } from 'lucide-react'
 import FulfillmentBadge from './FulfillmentBadge'
 import { useLang } from '@/app/providers'
 import { translations } from '@/lib/i18n'
@@ -196,6 +196,10 @@ export default function StocksTable({ groups }: { groups: StockGroup[] }) {
   const d = translations[lang].dashboard.stocksPage
   const [query, setQuery] = useState('')
   const [openKey, setOpenKey] = useState<string | null>(null)
+  // Mobile-only: which row's info drawer is expanded. Separate from openKey
+  // (which is the desktop editor). On mobile we hide the Stock and Sold
+  // columns and let tapping reveal them below as label/value pairs.
+  const [mobileInfoKey, setMobileInfoKey] = useState<string | null>(null)
   const [linkingKey, setLinkingKey] = useState<string | null>(null)
 
   const filtered = useMemo(() => {
@@ -218,14 +222,14 @@ export default function StocksTable({ groups }: { groups: StockGroup[] }) {
           style={{ background: 'var(--bg-card2)', border: '1px solid var(--border)', color: 'var(--text-base)' }} />
       </div>
 
-      <div className="rounded-2xl border overflow-x-auto"
+      <div className="rounded-2xl border sm:overflow-x-auto"
         style={{ background: 'var(--bg-card)',  borderColor: 'var(--border)' }}>
-        <table className="w-full text-sm" style={{ minWidth: 760 }}>
+        <table className="w-full text-sm sm:min-w-[760px]">
           <thead>
             <tr className="text-left text-[11px] uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>
               <th className="px-5 py-3 font-semibold">{d.colProduct}</th>
-              <th className="px-5 py-3 font-semibold">{d.colStock}</th>
-              <th className="px-5 py-3 font-semibold">{d.colSold}</th>
+              <th className="hidden sm:table-cell px-5 py-3 font-semibold">{d.colStock}</th>
+              <th className="hidden sm:table-cell px-5 py-3 font-semibold">{d.colSold}</th>
               <th className="px-5 py-3 font-semibold">{d.colLeftover}</th>
               <th className="px-2 py-3" />
             </tr>
@@ -234,9 +238,12 @@ export default function StocksTable({ groups }: { groups: StockGroup[] }) {
             {filtered.map(g => {
               const badge = leftoverBadge(g.leftover, g.stock_threshold)
               const isOpen = openKey === g.match_key
+              const isMobileOpen = mobileInfoKey === g.match_key
               return (
                 <FragmentRow key={g.match_key} group={g} badge={badge} isOpen={isOpen}
+                  isMobileOpen={isMobileOpen}
                   onToggle={() => setOpenKey(isOpen ? null : g.match_key)}
+                  onMobileToggle={() => setMobileInfoKey(isMobileOpen ? null : g.match_key)}
                   onLink={() => setLinkingKey(g.match_key)} d={d} />
               )
             })}
@@ -277,20 +284,36 @@ function UnlinkButton({ sourceKey, d }: { sourceKey: string; d: Record<string, s
   )
 }
 
-function FragmentRow({ group: g, badge, isOpen, onToggle, onLink, d }: {
+function FragmentRow({ group: g, badge, isOpen, isMobileOpen, onToggle, onMobileToggle, onLink, d }: {
   group: StockGroup
   badge: { bg: string; color: string }
   isOpen: boolean
+  isMobileOpen: boolean
   onToggle: () => void
+  onMobileToggle: () => void
   onLink: () => void
   d: Record<string, string>
 }) {
   const mps = MP_ORDER.filter(mp => mp in g.stock_by_marketplace || mp in g.sold_by_marketplace)
   return (
     <>
-      <tr className="border-t" style={{  borderColor: 'var(--border)' }}>
+      <tr className="border-t sm:cursor-default cursor-pointer" style={{  borderColor: 'var(--border)' }}
+        onClick={(e) => {
+          // Row-level tap toggles the mobile info drawer. Ignored on ≥sm so
+          // desktop keeps its non-tappable rows and the pencil button stays
+          // the only way to open the editor.
+          if (typeof window !== 'undefined' && window.matchMedia('(min-width: 640px)').matches) return
+          const target = e.target as HTMLElement
+          if (target.closest('button, a')) return
+          onMobileToggle()
+        }}>
         <td className="px-5 py-3.5">
-          <p className="font-semibold leading-tight line-clamp-2 sm:line-clamp-none" style={{ color: 'var(--text-base)' }} title={g.title}>{g.title}</p>
+          <div className="flex items-start justify-between gap-2">
+            <p className="font-semibold leading-tight line-clamp-2 sm:line-clamp-none flex-1" style={{ color: 'var(--text-base)' }} title={g.title}>{g.title}</p>
+            <span className="sm:hidden mt-0.5 shrink-0" style={{ color: 'var(--text-muted)' }}>
+              {isMobileOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            </span>
+          </div>
           <div className="flex flex-wrap items-center gap-1.5 mt-1">
             <span className="text-[11px]" style={{ color: 'var(--text-muted)' }}>{g.members[0]?.sku ?? '—'}</span>
             {mps.map(mp => {
@@ -324,12 +347,12 @@ function FragmentRow({ group: g, badge, isOpen, onToggle, onLink, d }: {
             </div>
           )}
         </td>
-        <td className="px-5 py-3.5">
+        <td className="hidden sm:table-cell px-5 py-3.5">
           <div className="flex flex-wrap gap-1.5">
             {mps.map(mp => <MpCount key={mp} mp={mp} value={g.stock_by_marketplace[mp] ?? 0} />)}
           </div>
         </td>
-        <td className="px-5 py-3.5">
+        <td className="hidden sm:table-cell px-5 py-3.5">
           <div className="flex flex-wrap gap-1.5 items-center">
             {mps.map(mp => <MpCount key={mp} mp={mp} value={g.sold_by_marketplace[mp] ?? 0} />)}
             <span className="text-[11px] font-semibold" style={{ color: 'var(--text-muted)' }}>
@@ -378,6 +401,44 @@ function FragmentRow({ group: g, badge, isOpen, onToggle, onLink, d }: {
           </div>
         </td>
       </tr>
+      {isMobileOpen && (
+        <tr className="sm:hidden border-t" style={{ borderColor: 'var(--border)', background: 'var(--bg-card2)' }}>
+          <td colSpan={5} className="px-5 py-3">
+            <dl className="text-xs space-y-2">
+              <div>
+                <dt className="uppercase tracking-wide font-semibold mb-1" style={{ color: 'var(--text-muted)' }}>{d.colStock}</dt>
+                <dd className="flex flex-wrap gap-1.5">
+                  {mps.map(mp => <MpCount key={mp} mp={mp} value={g.stock_by_marketplace[mp] ?? 0} />)}
+                </dd>
+              </div>
+              <div>
+                <dt className="uppercase tracking-wide font-semibold mb-1" style={{ color: 'var(--text-muted)' }}>{d.colSold}</dt>
+                <dd className="flex flex-wrap gap-1.5 items-center">
+                  {mps.map(mp => <MpCount key={mp} mp={mp} value={g.sold_by_marketplace[mp] ?? 0} />)}
+                  <span className="text-[11px] font-semibold" style={{ color: 'var(--text-muted)' }}>= {g.total_sold}</span>
+                  {g.total_in_process > 0 && (
+                    <span className="text-[11px] font-semibold px-1.5 py-0.5 rounded"
+                      style={{ background: 'rgba(245,158,11,0.1)', color: '#f59e0b' }}>
+                      {d.inProcessLabel}: {g.total_in_process}
+                    </span>
+                  )}
+                  {g.total_cancelled > 0 && (
+                    <span className="text-[11px] font-semibold px-1.5 py-0.5 rounded"
+                      style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>
+                      {d.cancelledLabel}: {g.total_cancelled}
+                    </span>
+                  )}
+                </dd>
+                {g.mode === 'baseline' && (
+                  <p className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>
+                    {g.sold_since_baseline} {d.sinceBaseline}
+                  </p>
+                )}
+              </div>
+            </dl>
+          </td>
+        </tr>
+      )}
       {isOpen && (
         <tr className="border-t" style={{  borderColor: 'var(--border)', background: 'var(--bg-card2)' }}>
           <td colSpan={6} className="px-5">
