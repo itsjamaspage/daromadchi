@@ -7,7 +7,6 @@ import {
   RefreshCw, Save, Key, CheckCircle, XCircle, ExternalLink,
   Loader2, Hash, Trash2, Send, LinkIcon, Building2, Plus, AlertTriangle,
 } from 'lucide-react'
-// import { createClient } from '@/lib/supabase/client'
 import type { Shop } from '@/lib/types'
 import { useLang } from '@/app/providers'
 import { translations } from '@/lib/i18n'
