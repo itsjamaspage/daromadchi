@@ -357,7 +357,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-2">
                           <div>
-                            <p className="font-medium" style={{ color: 'var(--text-base)' }}>{p.title}</p>
+                            <p className="font-medium line-clamp-2 sm:line-clamp-none" style={{ color: 'var(--text-base)' }} title={p.title}>{p.title}</p>
                             <div className="flex items-center flex-wrap gap-1.5 mt-0.5">
                               <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{p.sku}</span>
                               {p.marketplace && <MpBadge mp={p.marketplace} />}
