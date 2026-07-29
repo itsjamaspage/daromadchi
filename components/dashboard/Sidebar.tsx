@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
@@ -15,21 +16,36 @@ import { helpContent, type HelpSection } from '@/lib/help-tooltips'
 
 type NavItem = { href: string; key: string; icon: React.ElementType }
 
+const UPCOMING_KEYS = new Set(['advertising', 'seasonality'])
+
 const storeNavItems: NavItem[] = [
   { href: '/dashboard',                key: 'dashboard',     icon: LayoutDashboard },
   { href: '/dashboard/products',       key: 'products',      icon: Package         },
   { href: '/dashboard/stocks',         key: 'stocks',        icon: Boxes           },
   { href: '/dashboard/orders',         key: 'orders',        icon: ShoppingCart    },
   { href: '/dashboard/analytics',      key: 'analytics',     icon: BarChart2       },
-  { href: '/dashboard/advertising',    key: 'advertising',   icon: Megaphone       },
   { href: '/dashboard/unit-economics', key: 'unitEconomics', icon: Layers          },
   { href: '/dashboard/pnl',            key: 'pnl',           icon: FileText        },
   { href: '/dashboard/calculator',     key: 'calculator',    icon: Calculator      },
   { href: '/dashboard/team',           key: 'team',          icon: Users           },
   { href: '/dashboard/alerts',         key: 'alerts',        icon: AlertTriangle   },
   { href: '/dashboard/payouts',        key: 'payouts',       icon: CreditCard      },
+  { href: '/dashboard/advertising',    key: 'advertising',   icon: Megaphone       },
   { href: '/dashboard/seasonality',    key: 'seasonality',   icon: CalendarDays    },
 ]
+
+const UPCOMING_TEXT: Record<string, { uz: string; en: string; ru: string }> = {
+  advertising: {
+    uz: "Reklama bo'limi tez orada ishga tushadi!",
+    en: 'Advertising section is coming soon!',
+    ru: 'Раздел рекламы скоро будет доступен!',
+  },
+  seasonality: {
+    uz: "Mavsumiylik bo'limi tez orada ishga tushadi!",
+    en: 'Seasonality section is coming soon!',
+    ru: 'Раздел сезонности скоро будет доступен!',
+  },
+}
 
 interface SidebarProps {
   onClose?: () => void
@@ -41,6 +57,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
   const { theme } = useTheme()
   const isDark = theme === 'dark'
   const d = translations[lang].dashboard
+  const [toast, setToast] = useState<string | null>(null)
 
   const sideBg     = isDark ? 'var(--bg-card)'                  : '#e8f0fd'
   const sideBdr    = isDark ? 'var(--border)'                   : 'rgba(14,34,51,0.1)'
@@ -53,6 +70,12 @@ export default function Sidebar({ onClose }: SidebarProps) {
 
   function handleNavClick() {
     onClose?.()
+  }
+
+  function handleUpcomingClick(key: string) {
+    const text = UPCOMING_TEXT[key]?.[lang as 'uz' | 'en' | 'ru'] ?? 'Coming soon!'
+    setToast(text)
+    setTimeout(() => setToast(null), 2500)
   }
 
   return (
@@ -80,8 +103,32 @@ export default function Sidebar({ onClose }: SidebarProps) {
           {d.nav.store}
         </p>
         {storeNavItems.map(({ href, key, icon: Icon }) => {
-          const active = pathname === href
+          const isUpcoming = UPCOMING_KEYS.has(key)
+          const active = !isUpcoming && pathname === href
           const label = (d.nav as unknown as Record<string, string>)[key] ?? key
+
+          if (isUpcoming) {
+            return (
+              <div key={key} className="flex items-center">
+                <button
+                  type="button"
+                  onClick={() => handleUpcomingClick(key)}
+                  title={label}
+                  className="flex-1 flex items-center gap-3 px-2 py-2 rounded-xl text-sm font-medium transition-all min-w-0 text-left"
+                  style={{ color: sideText, border: '1px solid transparent', opacity: 0.55 }}
+                >
+                  <Icon className="w-4 h-4 flex-shrink-0" style={{ color: sideText }} />
+                  <span className="sidebar-label truncate flex-1">{label}</span>
+                </button>
+                {(key in helpContent) && (
+                  <span className="sidebar-label">
+                    <HelpTooltip section={key as HelpSection} variant="plain" />
+                  </span>
+                )}
+              </div>
+            )
+          }
+
           return (
             <div key={href} className="flex items-center">
               <Link
@@ -111,6 +158,20 @@ export default function Sidebar({ onClose }: SidebarProps) {
           )
         })}
       </nav>
+
+      {/* Coming soon toast */}
+      {toast && (
+        <div
+          className="fixed top-6 left-1/2 -translate-x-1/2 z-[9999] px-5 py-3 rounded-xl shadow-lg text-sm font-medium animate-in fade-in slide-in-from-top-2 duration-200"
+          style={{
+            background: isDark ? '#1e293b' : '#fff',
+            color: isDark ? '#e2e8f0' : '#1e293b',
+            border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}`,
+          }}
+        >
+          {toast}
+        </div>
+      )}
     </aside>
   )
 }
