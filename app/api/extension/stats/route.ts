@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin, getExtensionUser, getShopIds, getUserPlan } from '@/lib/api/auth'
+import { eq, and, inArray, gte, lt, lte, gt, desc, count, sql } from 'drizzle-orm'
+import { db, orders, products, shops } from '@/lib/db'
+import { getExtensionUser, getShopIds, getUserPlan } from '@/lib/api/auth'
 import { withErrorHandler } from '@/lib/api-handler'
 
 export const GET = withErrorHandler(async (req: NextRequest) => {
@@ -34,75 +36,74 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
     since.setUTCHours(0, 0, 0, 0)
   }
 
-  const [todayOrdersRes, yesterdayOrdersRes, cancelledRes, returnedRes, inProcessRes, stockRes, shopsRes] = await Promise.all([
-    supabaseAdmin
-      .from('orders')
-      .select('revenue, marketplace_fee, delivery_cost, status')
-      .in('shop_id', shopIds)
-      .gte('ordered_at', since.toISOString()),
-    supabaseAdmin
-      .from('orders')
-      .select('revenue, marketplace_fee, delivery_cost, status')
-      .in('shop_id', shopIds)
-      .gte('ordered_at', yesterday.toISOString())
-      .lt('ordered_at', today.toISOString()),
-    supabaseAdmin
-      .from('orders')
-      .select('id', { count: 'exact', head: true })
-      .in('shop_id', shopIds)
-      .eq('status', 'cancelled'),
-    supabaseAdmin
-      .from('orders')
-      .select('id', { count: 'exact', head: true })
-      .in('shop_id', shopIds)
-      .eq('status', 'returned'),
-    supabaseAdmin
-      .from('orders')
-      .select('id', { count: 'exact', head: true })
-      .in('shop_id', shopIds)
-      .in('status', ['pending', 'confirmed']),
-    supabaseAdmin
-      .from('products')
-      .select('stock_quantity', { count: 'exact', head: false })
-      .in('shop_id', shopIds)
-      .lte('stock_quantity', 5)
-      .gt('stock_quantity', 0),
-    supabaseAdmin
-      .from('shops')
-      .select('last_synced_at')
-      .in('id', shopIds)
-      .order('last_synced_at', { ascending: false })
+  const [todayRows, yesterdayRows, cancelledRow, returnedRow, inProcessRow, lowStockRow, shopRow] = await Promise.all([
+    db.select({
+      revenue: orders.revenue,
+      marketplace_fee: orders.marketplace_fee,
+      delivery_cost: orders.delivery_cost,
+      status: orders.status,
+    }).from(orders).where(and(
+      inArray(orders.shop_id, shopIds),
+      gte(orders.ordered_at, since),
+    )),
+    db.select({
+      revenue: orders.revenue,
+      marketplace_fee: orders.marketplace_fee,
+      delivery_cost: orders.delivery_cost,
+      status: orders.status,
+    }).from(orders).where(and(
+      inArray(orders.shop_id, shopIds),
+      gte(orders.ordered_at, yesterday),
+      lt(orders.ordered_at, today),
+    )),
+    db.select({ n: count() }).from(orders).where(and(
+      inArray(orders.shop_id, shopIds),
+      eq(orders.status, 'cancelled'),
+    )),
+    db.select({ n: count() }).from(orders).where(and(
+      inArray(orders.shop_id, shopIds),
+      eq(orders.status, 'returned'),
+    )),
+    db.select({ n: count() }).from(orders).where(and(
+      inArray(orders.shop_id, shopIds),
+      inArray(orders.status, ['pending', 'confirmed']),
+    )),
+    db.select({ n: count() }).from(products).where(and(
+      inArray(products.shop_id, shopIds),
+      lte(products.stock_quantity, 5),
+      gt(products.stock_quantity, 0),
+    )),
+    db.select({ last_synced_at: shops.last_synced_at }).from(shops)
+      .where(inArray(shops.id, shopIds))
+      .orderBy(sql`${shops.last_synced_at} DESC NULLS LAST`)
       .limit(1),
   ])
 
-  type OrderRow = { revenue: string | null; marketplace_fee: string | null; delivery_cost: string | null; status: string }
-  const allTodayOrders  = (todayOrdersRes.data ?? []) as OrderRow[]
-  const activeOrders    = allTodayOrders.filter(o => o.status !== 'cancelled' && o.status !== 'returned')
-  const todayRevenue    = activeOrders.reduce((s, o) => s + Number(o.revenue        ?? 0), 0)
-  const todayCommission = activeOrders.reduce((s, o) => s + Number(o.marketplace_fee ?? 0), 0)
-  const todayDelivery   = activeOrders.reduce((s, o) => s + Number(o.delivery_cost  ?? 0), 0)
-  const todayProfit     = todayRevenue - todayCommission - todayDelivery
-  const todayOrders     = activeOrders.length
-  const todayCancelled  = allTodayOrders.filter(o => o.status === 'cancelled').length
-  const todayReturned   = allTodayOrders.filter(o => o.status === 'returned').length
-  const marginPct       = todayRevenue > 0 ? Math.round((todayProfit / todayRevenue) * 100) : 0
+  const activeToday      = todayRows.filter(o => o.status !== 'cancelled' && o.status !== 'returned')
+  const todayRevenue     = activeToday.reduce((s, o) => s + Number(o.revenue         ?? 0), 0)
+  const todayCommission  = activeToday.reduce((s, o) => s + Number(o.marketplace_fee ?? 0), 0)
+  const todayDelivery    = activeToday.reduce((s, o) => s + Number(o.delivery_cost   ?? 0), 0)
+  const todayProfit      = todayRevenue - todayCommission - todayDelivery
+  const todayOrders      = activeToday.length
+  const todayCancelled   = todayRows.filter(o => o.status === 'cancelled').length
+  const todayReturned    = todayRows.filter(o => o.status === 'returned').length
+  const marginPct        = todayRevenue > 0 ? Math.round((todayProfit / todayRevenue) * 100) : 0
 
-  const yesterdayOrders = (yesterdayOrdersRes.data ?? []) as OrderRow[]
-  const yesterdayActive = yesterdayOrders.filter(o => o.status !== 'cancelled' && o.status !== 'returned')
-  const yesterdayRevenue = yesterdayActive.reduce((s, o) => s + Number(o.revenue ?? 0), 0)
-  const yesterdayOrderCount = yesterdayActive.length
+  const activeYesterday      = yesterdayRows.filter(o => o.status !== 'cancelled' && o.status !== 'returned')
+  const yesterdayRevenue     = activeYesterday.reduce((s, o) => s + Number(o.revenue ?? 0), 0)
+  const yesterdayOrderCount  = activeYesterday.length
 
-  const revenueChange = yesterdayRevenue > 0 ? Math.round(((todayRevenue - yesterdayRevenue) / yesterdayRevenue) * 100) : null
-  const ordersChange  = yesterdayOrderCount > 0 ? Math.round(((todayOrders - yesterdayOrderCount) / yesterdayOrderCount) * 100) : null
+  const revenueChange = yesterdayRevenue    > 0 ? Math.round(((todayRevenue - yesterdayRevenue)    / yesterdayRevenue)    * 100) : null
+  const ordersChange  = yesterdayOrderCount > 0 ? Math.round(((todayOrders  - yesterdayOrderCount) / yesterdayOrderCount) * 100) : null
 
-  const totalCancelled = cancelledRes.count ?? 0
-  const totalReturned  = returnedRes.count ?? 0
-  const totalInProcess = inProcessRes.count ?? 0
-  const totalOrders    = allTodayOrders.length
+  const totalCancelled = Number(cancelledRow[0]?.n ?? 0)
+  const totalReturned  = Number(returnedRow[0]?.n  ?? 0)
+  const totalInProcess = Number(inProcessRow[0]?.n ?? 0)
+  const totalOrders    = todayRows.length
   const returnRate     = totalOrders > 0 ? Math.round((totalReturned / totalOrders) * 100) : 0
 
-  const lowStock   = stockRes.data?.length ?? 0
-  const lastSynced = shopsRes.data?.[0]?.last_synced_at ?? null
+  const lowStock   = Number(lowStockRow[0]?.n ?? 0)
+  const lastSynced = shopRow[0]?.last_synced_at?.toISOString() ?? null
 
   return NextResponse.json({
     todayRevenue, todayProfit, todayOrders, todayCommission, lowStock, lastSynced,

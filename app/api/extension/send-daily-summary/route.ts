@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin, getExtensionUser, getShopIds, getUserPlan } from '@/lib/api/auth'
+import { eq, and, inArray, gte, lte, asc } from 'drizzle-orm'
+import { db, orders as ordersTable, products, userSettings } from '@/lib/db'
+import { getExtensionUser, getShopIds, getUserPlan } from '@/lib/api/auth'
 import { sendTelegramMessage, isInNotificationWindow } from '@/lib/telegram'
 import { withErrorHandler } from '@/lib/api-handler'
 
@@ -16,18 +18,17 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     return NextResponse.json({ error: 'PRO_REQUIRED' }, { status: 403 })
   }
 
-  const { data: settings } = await supabaseAdmin
-    .from('user_settings')
-    .select('telegram_chat_id, notification_time')
-    .eq('user_id', user.id)
-    .maybeSingle()
+  const [settings] = await db.select({
+    telegram_chat_id: userSettings.telegram_chat_id,
+    notif_send_time: userSettings.notif_send_time,
+  }).from(userSettings).where(eq(userSettings.user_id, user.id)).limit(1)
 
   if (!settings?.telegram_chat_id) {
     return NextResponse.json({ error: 'Telegram ulanmagan' }, { status: 400 })
   }
 
   // Only send if we're within ±30 min of the user's chosen notification window
-  if (!isInNotificationWindow(settings.notification_time ?? null)) {
+  if (!isInNotificationWindow(settings.notif_send_time ?? null)) {
     return NextResponse.json({ ok: false, skipped: true, reason: 'outside_window' })
   }
 
@@ -38,31 +39,33 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
 
   const since24h = new Date(Date.now() - 86400000)
 
-  const [ordersRes, lowStockRes] = await Promise.all([
-    supabaseAdmin
-      .from('orders')
-      .select('revenue, marketplace_fee, delivery_cost, items_count, status')
-      .in('shop_id', shopIds)
-      .gte('ordered_at', since24h.toISOString()),
-    supabaseAdmin
-      .from('products')
-      .select('title, stock_quantity')
-      .in('shop_id', shopIds)
-      .lte('stock_quantity', 5)
-      .order('stock_quantity', { ascending: true })
-      .limit(5),
+  const [orderRows, lowStockRows] = await Promise.all([
+    db.select({
+      revenue: ordersTable.revenue,
+      marketplace_fee: ordersTable.marketplace_fee,
+      delivery_cost: ordersTable.delivery_cost,
+      items_count: ordersTable.items_count,
+      status: ordersTable.status,
+    }).from(ordersTable).where(and(
+      inArray(ordersTable.shop_id, shopIds),
+      gte(ordersTable.ordered_at, since24h),
+    )),
+    db.select({
+      title: products.title,
+      stock_quantity: products.stock_quantity,
+    }).from(products).where(and(
+      inArray(products.shop_id, shopIds),
+      lte(products.stock_quantity, 5),
+    )).orderBy(asc(products.stock_quantity)).limit(5),
   ])
 
-  type OrderRow = { revenue: string | null; marketplace_fee: string | null; delivery_cost: string | null; items_count: number; status: string }
-  const orders   = (ordersRes.data ?? []) as OrderRow[]
-  const active   = orders.filter(o => o.status !== 'cancelled')
-  const returned = orders.filter(o => o.status === 'returned')
+  const active   = orderRows.filter(o => o.status !== 'cancelled')
+  const returned = orderRows.filter(o => o.status === 'returned')
 
-  const revenue    = active.reduce((s, o) => s + Number(o.revenue        ?? 0), 0)
+  const revenue    = active.reduce((s, o) => s + Number(o.revenue         ?? 0), 0)
   const commission = active.reduce((s, o) => s + Number(o.marketplace_fee ?? 0), 0)
-  const delivery   = active.reduce((s, o) => s + Number(o.delivery_cost  ?? 0), 0)
+  const delivery   = active.reduce((s, o) => s + Number(o.delivery_cost   ?? 0), 0)
   const profit     = revenue - commission - delivery
-  const lowStock   = lowStockRes.data ?? []
 
   const dateStr = new Date().toLocaleDateString('uz-UZ', { day: '2-digit', month: '2-digit', year: 'numeric' })
 
@@ -76,9 +79,9 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
 
   if (returned.length > 0) lines.push(`↩️ Qaytarilgan: <b>${returned.length}</b>`)
 
-  if (lowStock.length > 0) {
+  if (lowStockRows.length > 0) {
     lines.push(``, `⚠️ <b>Kam zaxira:</b>`)
-    for (const p of lowStock) {
+    for (const p of lowStockRows) {
       lines.push(`• ${p.title}: ${p.stock_quantity} dona`)
     }
   }
