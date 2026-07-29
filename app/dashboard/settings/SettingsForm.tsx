@@ -48,45 +48,13 @@ function uzumSyncText(data: {
   return { ok: !!data.ok, text }
 }
 
-// Yandex sync toast — shows the counts plus a compact debug line describing
-// what each Yandex endpoint returned (how many offers had shopSku, how many
-// had inline price, how many had a price via the offer-prices fallback).
-// Useful for diagnosing why a product still shows 0 sum / 0 stock.
 function yandexSyncText(data: {
   ok?: boolean; error?: string; productsUpserted?: number; ordersUpserted?: number
-  campaignsUpserted?: number; details?: string
-  debug?: Record<string, string | number>
+  campaignsUpserted?: number
 }, t: SettingsT): { ok: boolean; text: string } {
-  let text = data.ok
+  const text = data.ok
     ? `${data.productsUpserted ?? 0} ${t.products}, ${data.ordersUpserted ?? 0} ${t.orders}${data.campaignsUpserted ? `, ${data.campaignsUpserted} ${t.campaigns}` : ''} ${t.updated}.`
     : (data.error ?? t.error)
-  if (data.details) text += `\n⚠ ${data.details}`
-  if (data.debug && Object.keys(data.debug).length > 0) {
-    const d = data.debug
-    const parts: string[] = []
-    if ('offerMappings' in d)  parts.push(`offers=${d.offerMappings}`)
-    if ('entriesWithShopSku' in d) parts.push(`shopSku=${d.entriesWithShopSku}/${d.offerMappings ?? '?'}`)
-    if ('entriesWithPrice' in d)   parts.push(`inlinePrice=${d.entriesWithPrice}/${d.offerMappings ?? '?'}`)
-    if ('priceEntries' in d)  parts.push(`offerPrices=${d.priceEntries}`)
-    if ('stockEntries' in d)  parts.push(`stocks=${d.stockEntries}`)
-    if ('stocksErr' in d)     parts.push(`stocksErr=${d.stocksErr}`)
-    if ('campaignOfferStocks' in d) parts.push(`campaignOffers=${d.campaignOfferStocks}`)
-    if ('statsRows' in d)     parts.push(`stats=${d.statsRows}`)
-    if ('shopSkuRepaired' in d) parts.push(`shopSkuRepaired=${d.shopSkuRepaired}`)
-    if ('orders' in d)        parts.push(`ordersApi=${d.orders}`)
-    if ('businessId' in d)    parts.push(`business=${d.businessId}`)
-    if ('productsErr' in d)   parts.push(`productsErr=${d.productsErr}`)
-    if ('campaignInfo' in d)  parts.push(`campaignInfo=${d.campaignInfo}`)
-    if ('stats' in d)         parts.push(`statsErr=${d.stats}`)
-    if (parts.length > 0) text += `\nAPI: ${parts.join(', ')}`
-    // Raw first offer — shown when price OR stock extraction fell short, so
-    // we can see which field names Yandex is actually using for this shop.
-    const priceMissing = Number(d.entriesWithPrice ?? 0) < Number(d.offerMappings ?? 0)
-    const stockMissing = Number(d.stockEntries ?? 0) === 0 && Number(d.campaignOfferStocks ?? 0) === 0
-    if (d.firstOfferRaw && (priceMissing || stockMissing)) {
-      text += `\nOffer namuna: ${d.firstOfferRaw}`
-    }
-  }
   return { ok: !!data.ok, text }
 }
 
