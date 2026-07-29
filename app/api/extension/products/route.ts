@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin, getExtensionUser, getShopIds } from '@/lib/api/auth'
+import { asc, inArray, count } from 'drizzle-orm'
+import { db, products } from '@/lib/db'
+import { getExtensionUser, getShopIds } from '@/lib/api/auth'
 import { withErrorHandler } from '@/lib/api-handler'
 
 export const GET = withErrorHandler(async (req: NextRequest) => {
@@ -14,15 +16,25 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
   const shopIds = await getShopIds(user.id, shopIdParam)
   if (shopIds.length === 0) return NextResponse.json({ products: [], total: 0 })
 
-  const { data: rows, count } = await supabaseAdmin
-    .from('products')
-    .select('id, title, sku, selling_price, cost_price, stock_quantity, category, marketplace_product_id', { count: 'exact' })
-    .in('shop_id', shopIds)
-    .order('stock_quantity', { ascending: true })
-    .range(page * size, (page + 1) * size - 1)
+  const [rows, [{ total }]] = await Promise.all([
+    db.select({
+      id: products.id,
+      title: products.title,
+      sku: products.sku,
+      selling_price: products.selling_price,
+      cost_price: products.cost_price,
+      stock_quantity: products.stock_quantity,
+      category: products.category,
+      marketplace_product_id: products.marketplace_product_id,
+    }).from(products)
+      .where(inArray(products.shop_id, shopIds))
+      .orderBy(asc(products.stock_quantity))
+      .limit(size)
+      .offset(page * size),
+    db.select({ total: count() }).from(products).where(inArray(products.shop_id, shopIds)),
+  ])
 
-  type ProductRow = { id: string; title: string; sku: string | null; selling_price: string | null; cost_price: string | null; stock_quantity: number; category: string | null; marketplace_product_id: string | null }
-  const products = ((rows ?? []) as ProductRow[]).map(p => ({
+  const productsOut = rows.map(p => ({
     id:           p.id,
     name:         p.title,
     sku:          p.sku,
@@ -40,5 +52,5 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
     newReviews:   0,
   }))
 
-  return NextResponse.json({ products, total: count ?? products.length })
+  return NextResponse.json({ products: productsOut, total })
 })
