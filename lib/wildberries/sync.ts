@@ -126,7 +126,10 @@ export async function syncFromWildberries(
     // (seller's own warehouse). Wins over the 'fbo' default set at product
     // upsert when FBS reports it.
     const stockSource = new Map<string, 'fbo' | 'fbs'>()
-    let fboOk = false
+    // fboOk stays false until the replacement endpoint (post-2026-07-20
+    // deprecation) is wired in. Kept as a variable so the success gate below
+    // reads clearly and the hook-point is obvious to whoever restores FBO.
+    const fboOk = false
     let fbsOk = false
 
     // Track why each stock source didn't answer so a fresh shop / missing
@@ -235,7 +238,6 @@ export async function syncFromWildberries(
     const df = sinceDt.toISOString().split('T')[0]
 
     // Fetch sales data (has forPay = net amount after WB commission)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const salesFeeByGNumber = new Map<string, { fee: number; delivery: number }>()
     try {
       const salesRes = await marketplaceFetch(
