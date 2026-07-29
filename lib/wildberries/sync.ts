@@ -132,34 +132,13 @@ export async function syncFromWildberries(
     // Track why each stock source didn't answer so a fresh shop / missing
     // scope / rate limit / no-barcodes shape all look distinct in logs.
     let fbsSkippedReason: string | null = null
-    try {
-      const fboRes = await marketplaceFetch(
-        `${WB_STATS}/api/v1/supplier/stocks?dateFrom=2019-06-20`,
-        { headers: statsHeaders(token) },
-      )
-      if (fboRes.ok) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const rows: any[] = await fboRes.json() ?? []
-        for (const r of rows) {
-          if (r.nmId) {
-            const nm = String(r.nmId)
-            stockMap.set(nm, (stockMap.get(nm) ?? 0) + (r.quantity ?? 0))
-            if (!stockSource.has(nm)) stockSource.set(nm, 'fbo')
-          }
-        }
-        fboOk = true
-      } else {
-        let body = ''
-        try { body = await fboRes.text() } catch { /* ignore */ }
-        const detail = `FBO stocks: HTTP ${fboRes.status} ${fboRes.statusText}${body ? ` — ${body.slice(0, 200)}` : ''}`
-        console.error(`[WB sync] ${detail}`)
-        errors.push(detail)
-      }
-    } catch (e) {
-      const detail = `FBO stocks: ${e instanceof Error ? e.message : String(e)}`
-      console.error(`[WB sync] FBO stocks fetch threw:`, e)
-      errors.push(detail)
-    }
+    // WB retired /api/v1/supplier/stocks on 2026-07-20 (PLUG-404-20260720,
+    // release note id=494). No verified replacement path yet — the
+    // seller-analytics-api warehouse_remains report is the leading guess but
+    // hasn't been confirmed against live docs. Skipping FBO entirely
+    // (option "c") so the sync toast reads clean and FBS carries the load
+    // until we ship the real replacement. Same shape as fbsSkippedReason.
+    const fboSkippedReason: string | null = 'endpoint_deprecated_20260720'
 
     if (barcodeToNm.size === 0) {
       // No barcodes on record yet (fresh shop, or cards sync hasn't populated
@@ -210,10 +189,11 @@ export async function syncFromWildberries(
       }
     }
 
-    // Success = at least one source answered OR FBO succeeded and FBS was
-    // legitimately skipped (no barcodes to look up yet). Only both silently
-    // failing counts as a real "stock=false".
-    const stockAnswered = fboOk || fbsOk || (fboOk && fbsSkippedReason === 'no_barcodes')
+    // Success = at least one source answered OR both were legitimately
+    // skipped (FBO deprecated + FBS has no barcodes yet). Only a live source
+    // silently failing counts as a real "stock=false".
+    const bothSkipped = fboSkippedReason !== null && fbsSkippedReason !== null
+    const stockAnswered = fboOk || fbsOk || bothSkipped
     if (stockAnswered) {
       const prods = await db.select({
         id: products.id,
