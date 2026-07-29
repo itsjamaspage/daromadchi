@@ -1,17 +1,12 @@
-import AdvertisingView from '@/components/dashboard/AdvertisingView'
-import { getAdCampaigns, getWbAdCampaigns } from '@/lib/db/advertising'
-import AdvertisingHeader from '@/components/dashboard/AdvertisingHeader'
+import { Megaphone } from 'lucide-react'
+import ComingSoon from '@/components/dashboard/ComingSoon'
+import { getT } from '@/lib/server-i18n'
 
+// Section temporarily disabled — awaiting redesign. See ComingSoon component
+// for the placeholder. Re-enable by restoring the previous AdvertisingView +
+// AdvertisingHeader imports and re-instating the DB queries.
 export default async function AdvertisingPage() {
-  const [uzumCampaigns, wbCampaigns] = await Promise.all([
-    getAdCampaigns(),
-    getWbAdCampaigns(),
-  ])
-
-  return (
-    <div className="space-y-6">
-      <AdvertisingHeader />
-      <AdvertisingView uzumCampaigns={uzumCampaigns} wbCampaigns={wbCampaigns} />
-    </div>
-  )
+  const t = await getT()
+  const d = t.dashboard
+  return <ComingSoon title={d.nav.advertising} icon={Megaphone} />
 }

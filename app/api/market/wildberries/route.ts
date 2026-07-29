@@ -1,11 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { searchWbProducts } from '@/lib/wildberries/public'
 import { withErrorHandler } from '@/lib/api-handler'
+import { enforceLimit } from '@/lib/rate-limit'
 
 type SortOption = 'popular' | 'priceup' | 'pricedown' | 'rate'
 const VALID_SORTS: SortOption[] = ['popular', 'priceup', 'pricedown', 'rate']
 
 export const GET = withErrorHandler(async (req: NextRequest) => {
+  // Hits WB's public search API from our VPS IP — throttle so a scraper
+  // routed through daromadchi doesn't get our IP banned upstream.
+  const limited = enforceLimit(req, { key: 'market:wildberries', max: 60, windowMs: 60_000 })
+  if (limited) return limited
+
   const { searchParams } = req.nextUrl
   const query   = searchParams.get('q')
   const rawSort = searchParams.get('sort') ?? 'popular'

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin, getExtensionUser } from '@/lib/api/auth'
+import { eq, and, ne, gte, inArray, sql } from 'drizzle-orm'
+import { db, shops, products, orders, orderItems } from '@/lib/db'
+import { getExtensionUser } from '@/lib/api/auth'
 import { withErrorHandler } from '@/lib/api-handler'
 
 const UZUM_PUBLIC = 'https://api.uzum.uz'
@@ -17,60 +19,76 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
     return NextResponse.json({ error: 'marketplace va productId talab etiladi' }, { status: 400 })
   }
 
-  const mpType = marketplace === 'yandex' ? 'yandex_market' : 'uzum'
+  const mpType = marketplace === 'yandex' ? 'yandex_market' as const : 'uzum' as const
 
   // ── Own product lookup ────────────────────────────────────────────────────────
-  let ownProduct = null
+  let ownProduct: {
+    title: string
+    sellingPrice: number
+    costPrice: number | null
+    stockQuantity: number
+    margin: number | null
+    drr: number | null
+    stockDaysRemaining: number | null
+    sales7d: number
+    dashboardUrl: string
+  } | null = null
 
-  const { data: shops } = await supabaseAdmin
-    .from('shops')
-    .select('id')
-    .eq('user_id', user.id)
-    .eq('marketplace', mpType)
-    .neq('shop_id_external', 'DEMO')
+  const shopRows = await db.select({ id: shops.id })
+    .from(shops)
+    .where(and(
+      eq(shops.user_id, user.id),
+      eq(shops.marketplace, mpType),
+      ne(shops.shop_id_external, 'DEMO'),
+    ))
 
-  if (shops && shops.length > 0) {
-    const shopIds = shops.map((s: { id: string }) => s.id)
+  if (shopRows.length > 0) {
+    const shopIds = shopRows.map(s => s.id)
 
-    const { data: product } = await supabaseAdmin
-      .from('products')
-      .select('id, title, selling_price, cost_price, stock_quantity')
-      .in('shop_id', shopIds)
-      .eq('marketplace_product_id', productId)
-      .maybeSingle()
+    const [product] = await db.select({
+      id: products.id,
+      title: products.title,
+      selling_price: products.selling_price,
+      cost_price: products.cost_price,
+      stock_quantity: products.stock_quantity,
+    }).from(products)
+      .where(and(
+        inArray(products.shop_id, shopIds),
+        eq(products.marketplace_product_id, productId),
+      ))
+      .limit(1)
 
     if (product) {
       const since7d  = new Date(); since7d.setDate(since7d.getDate() - 7)
       const since30d = new Date(); since30d.setDate(since30d.getDate() - 30)
 
-      // Sales in last 7 days via order_items
-      const { data: orderIds7d } = await supabaseAdmin
-        .from('orders')
-        .select('id')
-        .in('shop_id', shopIds)
-        .neq('status', 'cancelled')
-        .gte('ordered_at', since7d.toISOString())
-
-      let sales7d = 0
-      if (orderIds7d && orderIds7d.length > 0) {
-        const { count } = await supabaseAdmin
-          .from('order_items')
-          .select('id', { count: 'exact', head: true })
-          .eq('product_id', product.id)
-          .in('order_id', orderIds7d.map((o: { id: string }) => o.id))
-        sales7d = count ?? 0
-      }
+      // Sales in last 7 days: order_items rows joined to non-cancelled orders.
+      // One query — collapse the old two-step (fetch order ids, then count
+      // order_items in those orders) into a single JOIN.
+      const [salesRow] = await db.select({
+        n: sql<number>`coalesce(count(${orderItems.id}), 0)`.as('n'),
+      }).from(orderItems)
+        .innerJoin(orders, eq(orderItems.order_id, orders.id))
+        .where(and(
+          eq(orderItems.product_id, product.id),
+          inArray(orders.shop_id, shopIds),
+          ne(orders.status, 'cancelled'),
+          gte(orders.ordered_at, since7d),
+        ))
+      const sales7d = Number(salesRow?.n ?? 0)
 
       // DRR: shop-level fee / revenue ratio (last 30 days)
-      const { data: orderStats } = await supabaseAdmin
-        .from('orders')
-        .select('revenue, marketplace_fee')
-        .in('shop_id', shopIds)
-        .neq('status', 'cancelled')
-        .gte('ordered_at', since30d.toISOString())
-
-      const totalRev = (orderStats ?? []).reduce((s: number, o: { revenue: string | null }) => s + Number(o.revenue ?? 0), 0)
-      const totalFee = (orderStats ?? []).reduce((s: number, o: { marketplace_fee: string | null }) => s + Number(o.marketplace_fee ?? 0), 0)
+      const [drrRow] = await db.select({
+        totalRev: sql<number>`coalesce(sum(${orders.revenue}::numeric), 0)`,
+        totalFee: sql<number>`coalesce(sum(${orders.marketplace_fee}::numeric), 0)`,
+      }).from(orders)
+        .where(and(
+          inArray(orders.shop_id, shopIds),
+          ne(orders.status, 'cancelled'),
+          gte(orders.ordered_at, since30d),
+        ))
+      const totalRev = Number(drrRow?.totalRev ?? 0)
+      const totalFee = Number(drrRow?.totalFee ?? 0)
       const drr = totalRev > 0 ? Math.round((totalFee / totalRev) * 1000) / 10 : null
 
       const sellingPrice = Number(product.selling_price ?? 0)

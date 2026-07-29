@@ -27,7 +27,15 @@ jobs:
           git fetch origin main
           git reset --hard origin/main
           echo "Installing dependencies..."
-          npm ci --no-audit --no-fund || npm install --no-audit --no-fund
+          # `git reset --hard` leaves node_modules alone (gitignored), so a
+          # partially-installed tree from a killed npm run can persist between
+          # deploys. When that happens npm ci trips on ENOTEMPTY trying to
+          # rmdir dirs whose contents are half-there. Fall back through
+          # increasingly aggressive cleanup so the deploy recovers on its own
+          # instead of needing us to SSH in and rm -rf node_modules.
+          npm ci --no-audit --no-fund \
+            || (echo "npm ci failed, wiping node_modules and retrying..." && rm -rf node_modules && npm ci --no-audit --no-fund) \
+            || (echo "npm ci still failing, falling back to npm install..." && rm -rf node_modules && npm install --no-audit --no-fund)
           echo "Building..."
           npm run build
           echo "Applying DB migrations..."

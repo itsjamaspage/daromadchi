@@ -1,35 +1,12 @@
-import { getT } from '@/lib/server-i18n'
 import { CalendarDays } from 'lucide-react'
-import { getSeasonality } from '@/lib/db/seasonality'
-import SeasonalityView from '@/components/dashboard/SeasonalityView'
+import ComingSoon from '@/components/dashboard/ComingSoon'
+import { getT } from '@/lib/server-i18n'
 
+// Section temporarily disabled — awaiting redesign. See ComingSoon component
+// for the placeholder. Re-enable by restoring the previous SeasonalityView +
+// getSeasonality query.
 export default async function SeasonalityPage() {
-  const [t, data] = await Promise.all([getT(), getSeasonality()])
+  const t = await getT()
   const d = t.dashboard
-
-  return (
-    <div className="space-y-6">
-      <div>
-        <div className="flex items-center gap-3 mb-0.5">
-          <h1 className="text-2xl font-bold text-[var(--text-base)] flex items-center gap-3">
-            <CalendarDays className="w-6 h-6 text-[var(--c1)]" />
-            {d.seasonalityTitle}
-          </h1>
-        </div>
-        <p className="text-[var(--text-muted)] text-sm">{d.seasonalitySubtitle}</p>
-      </div>
-
-      {data.length === 0 ? (
-        <div className="border border-dashed rounded-2xl p-10 text-center" style={{ background: 'var(--bg-card2)', borderColor: 'rgba(131, 192, 249, 0.3)' }}>
-          <div className="w-14 h-14 rounded-2xl border flex items-center justify-center mx-auto mb-4" style={{ background: 'rgba(131, 192, 249, 0.1)', borderColor: 'rgba(131, 192, 249, 0.2)', color: 'var(--c1)' }}>
-            <CalendarDays className="w-7 h-7" />
-          </div>
-          <h2 className="font-bold text-lg mb-2" style={{ color: 'var(--text-base)' }}>{d.noDataYet}</h2>
-          <p className="text-sm max-w-sm mx-auto" style={{ color: 'var(--text-muted)' }}>{d.noDataDesc}</p>
-        </div>
-      ) : (
-        <SeasonalityView data={data} />
-      )}
-    </div>
-  )
+  return <ComingSoon title={d.nav.seasonality} icon={CalendarDays} />
 }

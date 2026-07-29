@@ -1,54 +1,43 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { eq } from 'drizzle-orm'
+import { db, extActivationCodes } from '@/lib/db'
 import { withErrorHandler } from '@/lib/api-handler'
+import { enforceLimit } from '@/lib/rate-limit'
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
 const CHANNEL   = '@daromadchi_uz'
-
-// IP-based rate limit: max 10 activation attempts per 15 minutes per IP
-const activateRateMap = new Map<string, { count: number; resetAt: number }>()
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now()
-  const entry = activateRateMap.get(ip)
-  if (!entry || now > entry.resetAt) {
-    activateRateMap.set(ip, { count: 1, resetAt: now + 15 * 60 * 1000 })
-    return true
-  }
-  if (entry.count >= 10) return false
-  entry.count++
-  return true
-}
 
 // POST /api/extension/activate
 // Body: { code: string }
 // Returns: { ok: true } or { ok: false, error: string }
 export const POST = withErrorHandler(async (req: NextRequest) => {
-  const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() ?? '0.0.0.0'
-  if (!checkRateLimit(ip)) {
-    return NextResponse.json({ ok: false, error: 'Juda ko\'p urinish. 15 daqiqadan keyin qayta urining.' }, { status: 429 })
-  }
+  const limited = enforceLimit(req, { key: 'extension:activate', max: 10, windowMs: 15 * 60 * 1000 })
+  if (limited) return limited
 
   try {
     const { code } = await req.json()
     if (!code?.trim()) return NextResponse.json({ ok: false, error: 'Kod kiritilmadi' }, { status: 400 })
 
-    const supabase = createAdminClient()
-    const { data, error } = await supabase
-      .from('ext_activation_codes')
-      .select('chat_id, used, expires_at')
-      .eq('code', code.trim().toUpperCase())
-      .single()
+    const normalized = code.trim().toUpperCase()
 
-    if (error || !data) return NextResponse.json({ ok: false, error: 'Kod topilmadi yoki noto\'g\'ri' }, { status: 404 })
-    if (data.used)       return NextResponse.json({ ok: false, error: 'Kod allaqachon ishlatilgan' }, { status: 400 })
-    if (new Date(data.expires_at) < new Date()) return NextResponse.json({ ok: false, error: 'Kod muddati tugagan. Qayta /activate yuboring' }, { status: 400 })
+    const [row] = await db.select({
+      chat_id:    extActivationCodes.chat_id,
+      used:       extActivationCodes.used,
+      expires_at: extActivationCodes.expires_at,
+    }).from(extActivationCodes)
+      .where(eq(extActivationCodes.code, normalized))
+      .limit(1)
 
-    // Double-check channel membership at activation time
-    const member = await checkMembership(data.chat_id)
+    if (!row)              return NextResponse.json({ ok: false, error: 'Kod topilmadi yoki noto\'g\'ri' }, { status: 404 })
+    if (row.used)          return NextResponse.json({ ok: false, error: 'Kod allaqachon ishlatilgan' }, { status: 400 })
+    if (row.expires_at < new Date()) return NextResponse.json({ ok: false, error: 'Kod muddati tugagan. Qayta /activate yuboring' }, { status: 400 })
+
+    const member = await checkMembership(row.chat_id)
     if (!member) return NextResponse.json({ ok: false, error: `@daromadchi_uz kanaliga a'zo bo'lmadingiz` }, { status: 403 })
 
-    // Mark code as used
-    await supabase.from('ext_activation_codes').update({ used: true }).eq('code', code.trim().toUpperCase())
+    await db.update(extActivationCodes)
+      .set({ used: true })
+      .where(eq(extActivationCodes.code, normalized))
 
     return NextResponse.json({ ok: true })
   } catch {

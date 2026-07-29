@@ -1,6 +1,6 @@
 import { eq, and, inArray, gte, lt } from 'drizzle-orm'
 import { db, shops as shopsTable, orders as ordersTable, userSettings as userSettingsTable } from '@/lib/db'
-import { computeStockGroups, lowStockGroups } from '@/lib/db/stock-groups'
+import { computeStockGroups } from '@/lib/db/stock-groups'
 import { notifT, fmtNumber, type NotifLang } from '@/lib/notif-i18n'
 
 const MP_FLAG: Record<string, string> = {
@@ -72,25 +72,10 @@ export async function buildDigestForUser(
     } catch { /* best-effort */ }
   }
 
-  // ── Low-stock alerts (total leftover across all marketplaces) ──
-  if (s.notif_low_stock) {
-    const threshold = s.alert_stock_threshold ?? 15
-    try {
-      const groups = await computeStockGroups(s.user_id, shopIds)
-      const low = lowStockGroups(groups, threshold).slice(0, 10)
-      if (low.length > 0) {
-        const lines = low.map(g => {
-          const perMp = (['uzum', 'wildberries', 'yandex_market'] as const)
-            .filter(mp => mp in g.stock_by_marketplace)
-            .map(mp => `${MP_FLAG[mp]} ${g.stock_by_marketplace[mp]}`)
-            .join(' · ')
-          const days = g.days_of_stock !== null ? `, ${t.lowStockDays(g.days_of_stock)}` : ''
-          return `• ${truncate(g.title, 35)} — <b>${g.leftover}</b> ${t.lowStockUnit} (${perMp})${days}`
-        }).join('\n')
-        parts.push(`${t.lowStockTitle(low.length)}\n${lines}\n${t.lowStockCta}`)
-      }
-    } catch { /* leftover alerts are best-effort */ }
-  }
+  // Low-stock section removed — it overlapped with "Update stocks" (FBS
+  // stock update alerts), which is the more actionable of the two.
+  // notif_low_stock preference is left in place for now; toggling it has no
+  // effect on the digest.
 
   if (parts.length === 0) return null
 
@@ -196,6 +181,11 @@ async function buildPendingDeliveries(
 ): Promise<string | null> {
   const t = notifT(lang)
 
+  // Match the dashboard's "В процессе" set — pending + confirmed. Whatever
+  // the app shows in that column, the digest should show under the same
+  // header. Diverging created confusion when an order the DB still had at
+  // 'pending' appeared under "К отправке" in the digest while the app
+  // showed it as "В процессе".
   const pendingOrders = await db.select({
     id: ordersTable.id,
     shop_id: ordersTable.shop_id,

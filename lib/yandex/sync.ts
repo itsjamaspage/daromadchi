@@ -292,14 +292,54 @@ export async function syncFromYandex(
     const shopRow = shopRows[0] ?? null
     const existingProductCount = productCountRows[0]?.total ?? 0
 
-    const since = fromDateOverride
-      ?? (shopRow?.last_synced_at
-        ? new Date(shopRow.last_synced_at)
-        : (() => { const d = new Date(); d.setDate(d.getDate() - 365); return d })())
+    // YM's `fromDate` filters by order CREATION date, not update. If we asked
+    // for "orders since last_synced_at" verbatim, an order created 3 days ago
+    // that just transitioned pending → delivered would never be re-fetched
+    // and its old status would sit in our DB forever. Always look back at
+    // least ORDER_STATUS_LOOKBACK_DAYS so status transitions on
+    // recent-but-still-open orders come through.
+    const ORDER_STATUS_LOOKBACK_DAYS = 30
+    const FIRST_SYNC_LOOKBACK_DAYS = 365
+    const since = fromDateOverride ?? (() => {
+      const lookback = new Date()
+      lookback.setDate(lookback.getDate() - (shopRow?.last_synced_at ? ORDER_STATUS_LOOKBACK_DAYS : FIRST_SYNC_LOOKBACK_DAYS))
+      // If last_synced_at is even older than the lookback (shop was inactive
+      // for months), fall back to that so we don't miss orders created in the
+      // gap.
+      if (shopRow?.last_synced_at) {
+        const lastSync = new Date(shopRow.last_synced_at)
+        return lastSync < lookback ? lastSync : lookback
+      }
+      return lookback
+    })()
 
     const fromDate = since.toISOString().slice(0, 10)
+    // Surface exactly what we asked YM for so the sync toast shows "why 0" vs
+    // "silently failed" when orders come back empty.
+    debug.ordersFromDate = fromDate
+    debug.ordersSince = shopRow?.last_synced_at
+      ? (new Date(shopRow.last_synced_at) < since ? 'last_synced_at' : `lookback_${ORDER_STATUS_LOOKBACK_DAYS}d`)
+      : (fromDateOverride ? 'override' : `default_${FIRST_SYNC_LOOKBACK_DAYS}d`)
 
-    const yandexOrders = await fetchAllYandexOrders(token, campaignId, fromDate)
+    let yandexOrders: Awaited<ReturnType<typeof fetchAllYandexOrders>>
+    try {
+      yandexOrders = await fetchAllYandexOrders(token, campaignId, fromDate)
+      debug.ordersFetch = 'ok'
+    } catch (err) {
+      if (err instanceof YandexApiError) {
+        debug.ordersFetch = 'err'
+        debug.ordersHttpStatus = err.status
+        debug.ordersHttpBody = (err.body ?? '').slice(0, 500)
+        console.error(`[YM sync] orders fetch failed for campaign ${campaignId}: HTTP ${err.status} — ${err.message}\n${err.body?.slice(0, 500) ?? ''}`)
+      } else {
+        debug.ordersFetch = 'err'
+        debug.ordersError = err instanceof Error ? err.message.slice(0, 500) : String(err).slice(0, 500)
+        console.error(`[YM sync] orders fetch failed for campaign ${campaignId}:`, err)
+      }
+      // Keep the sync going so products/stocks progress isn't wasted — the
+      // error is already recorded on `debug` and orders will just stay at 0.
+      yandexOrders = []
+    }
 
     function parseYandexDate(raw?: string): string | null {
       if (!raw) return null
@@ -309,8 +349,15 @@ export async function syncFromYandex(
       return isNaN(d.getTime()) ? null : d.toISOString()
     }
 
-    const orderRows = yandexOrders
-      .map(o => ({ o, orderedAt: parseYandexDate(o.creationDate) ?? parseYandexDate(o.updatedAt) }))
+    // Splitting the pipeline so we can tell the difference between "YM
+    // returned 0 orders" and "YM returned N orders but every one had an
+    // unparseable date and got filtered out" — the second is a code bug we'd
+    // otherwise never see.
+    const withDates = yandexOrders.map(o => ({ o, orderedAt: parseYandexDate(o.creationDate) ?? parseYandexDate(o.updatedAt) }))
+    const dropped = withDates.filter(r => r.orderedAt === null).length
+    if (dropped > 0) debug.ordersDroppedNoDate = dropped
+
+    const orderRows = withDates
       .filter((row): row is typeof row & { orderedAt: string } => row.orderedAt !== null)
       .map(({ o, orderedAt }) => ({
         shop_id: shopId,

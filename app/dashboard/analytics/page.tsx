@@ -99,14 +99,15 @@ export default async function AnalyticsPage({ searchParams }: Props) {
 
   // Warehouse value: FBS members share a physical pool (max stock), FBO
   // members each hold their own (sum). Use whichever member has a positive
-  // cost_price as the per-unit cost for the group.
+  // cost_price as the per-unit cost for the group. Uses available_stock so
+  // units already reserved by pending orders don't count as "still on shelf".
   const totalStockValue = productGroups.reduce((sum, g) => {
     const cost = Number(g.find(p => (p.cost_price ?? 0) > 0)?.cost_price ?? 0)
     if (cost <= 0) return sum
     const fbo = g.filter(p => p.fulfillment_type === 'fbo' || p.fulfillment_type === 'fby')
     const fbs = g.filter(p => p.fulfillment_type !== 'fbo' && p.fulfillment_type !== 'fby')
-    const fboUnits = fbo.reduce((s, p) => s + p.stock_quantity, 0)
-    const fbsUnits = fbs.length > 0 ? Math.max(0, ...fbs.map(p => p.stock_quantity)) : 0
+    const fboUnits = fbo.reduce((s, p) => s + p.available_stock, 0)
+    const fbsUnits = fbs.length > 0 ? Math.max(0, ...fbs.map(p => p.available_stock)) : 0
     return sum + cost * (fboUnits + fbsUnits)
   }, 0)
 
@@ -228,7 +229,7 @@ export default async function AnalyticsPage({ searchParams }: Props) {
                     {periodSales.slice(0, 20).map((row, idx) => (
                       <tr key={row.product_id ?? row.title} style={{ borderBottom: idx < Math.min(periodSales.length, 20) - 1 ? '1px solid var(--border)' : 'none' }}>
                         <td className="px-5 py-3.5">
-                          <p className="font-medium" style={{ color: 'var(--text-base)' }}>{row.title}</p>
+                          <p className="font-medium line-clamp-2 sm:line-clamp-none" style={{ color: 'var(--text-base)' }} title={row.title}>{row.title}</p>
                           {row.sku && (
                             <div className="flex items-center flex-wrap gap-1.5 mt-0.5">
                               <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{row.sku}</span>
@@ -313,13 +314,16 @@ export default async function AnalyticsPage({ searchParams }: Props) {
                     const price    = Number(p.selling_price ?? 0)
                     const cost     = Number(p.cost_price ?? 0)
                     const margin   = price > 0 ? (p.profit / price) * 100 : 0
-                    const stockVal = cost * p.stock_quantity
+                    // Show units actually on the shelf (raw stock minus units
+                    // reserved by pending orders), and value them at that.
+                    const stockQty = p.available_stock
+                    const stockVal = cost * stockQty
                     const profitColor = p.profit > 0 ? '#10b981' : '#ef4444'
                     const marginColor = margin >= 35 ? '#10b981' : margin >= 15 ? '#f59e0b' : '#ef4444'
                     return (
                       <tr key={p.id} style={{ borderBottom: idx < sortedByMargin.length - 1 ? '1px solid var(--border)' : 'none' }}>
                         <td className="px-5 py-3.5">
-                          <p className="font-medium" style={{ color: 'var(--text-base)' }}>{p.title}</p>
+                          <p className="font-medium line-clamp-2 sm:line-clamp-none" style={{ color: 'var(--text-base)' }} title={p.title}>{p.title}</p>
                           <div className="flex items-center flex-wrap gap-1.5 mt-0.5">
                             <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{p.sku}</span>
                             {p.marketplace && (() => { const m = MP_META[p.marketplace]; return m ? <span className="text-[10px] font-bold px-1.5 py-0.5 rounded" style={{ background: m.bg, color: m.color }}>{m.short}</span> : null })()}
@@ -340,7 +344,7 @@ export default async function AnalyticsPage({ searchParams }: Props) {
                             {margin.toFixed(1)}%
                           </span>
                         </td>
-                        <td className="px-4 py-3.5 text-right" style={{ color: 'var(--text-dim)' }}>{p.stock_quantity}</td>
+                        <td className="px-4 py-3.5 text-right" style={{ color: 'var(--text-dim)' }}>{stockQty}</td>
                         <td className="px-4 py-3.5 text-right" style={{ color: 'var(--text-muted)' }}>
                           {stockVal > 0 ? `${fmt(stockVal)} so'm` : '—'}
                         </td>

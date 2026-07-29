@@ -2,39 +2,47 @@
 'use client'
 
 import { useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
-import { useRouter } from 'next/navigation'
-import { Lock, Eye, EyeOff, Loader2, CheckCircle } from 'lucide-react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { Lock, Eye, EyeOff, Loader2, CheckCircle, AlertCircle } from 'lucide-react'
 
-export default function UpdatePasswordPage() {
-  const [password, setPassword]       = useState('')
-  const [confirm,  setConfirm]        = useState('')
-  const [showPw,   setShowPw]         = useState(false)
-  const [loading,  setLoading]        = useState(false)
-  const [error,    setError]          = useState('')
-  const [success,  setSuccess]        = useState(false)
+export default function ResetPasswordPage() {
+  const searchParams = useSearchParams()
+  const token = searchParams.get('token') ?? ''
+
+  const [password, setPassword] = useState('')
+  const [confirm,  setConfirm]  = useState('')
+  const [showPw,   setShowPw]   = useState(false)
+  const [loading,  setLoading]  = useState(false)
+  const [error,    setError]    = useState('')
+  const [success,  setSuccess]  = useState(false)
   const router = useRouter()
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError('')
 
-    if (password.length < 6) {
-      setError('Parol kamida 6 belgi bo\'lishi kerak'); return
-    }
-    if (password !== confirm) {
-      setError('Parollar mos kelmadi'); return
-    }
+    if (!token) { setError('Token yo\'q. Emaildagi havolani qaytadan bosing.'); return }
+    if (password.length < 6) { setError('Parol kamida 6 belgi bo\'lishi kerak'); return }
+    if (password !== confirm) { setError('Parollar mos kelmadi'); return }
 
     setLoading(true)
-    const supabase = createClient()
-    const { error } = await supabase.auth.updateUser({ password })
-
-    if (error) {
-      setError(error.message); setLoading(false)
-    } else {
+    try {
+      const res = await fetch('/api/auth/reset-password/confirm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, password }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setError(data.error ?? 'Xatolik yuz berdi')
+        setLoading(false)
+        return
+      }
       setSuccess(true)
-      setTimeout(() => router.push('/dashboard'), 2000)
+      setTimeout(() => router.push('/login'), 2000)
+    } catch {
+      setError('Tarmoq xatosi')
+      setLoading(false)
     }
   }
 
@@ -47,6 +55,7 @@ export default function UpdatePasswordPage() {
 
       <div className="w-full max-w-md relative z-10">
         <div className="text-center mb-7">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/icon.svg" alt="Daromadchi" className="w-14 h-14 rounded-2xl mb-4 shadow-xl" />
           <h1 className="text-3xl font-black tracking-tight text-white">Daromadchi</h1>
           <p className="mt-1 text-sm text-slate-500">Savdo tahlil platformasi</p>
@@ -55,13 +64,21 @@ export default function UpdatePasswordPage() {
         <div className="rounded-2xl p-8 shadow-2xl border"
           style={{ background: 'var(--bg-card)', borderColor: 'rgba(255,255,255,0.07)' }}>
 
-          {success ? (
+          {!token ? (
+            <div className="text-center py-6 space-y-3">
+              <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-red-500/10 border border-red-500/20 mb-2">
+                <AlertCircle className="w-7 h-7 text-red-400" />
+              </div>
+              <p className="font-semibold text-white">Havola noto'g'ri</p>
+              <p className="text-sm text-slate-500">Emaildan yuborilgan havolani to'liq nusxalab, brauzerga yopishtiring.</p>
+            </div>
+          ) : success ? (
             <div className="text-center py-6 space-y-4">
               <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-emerald-500/10 border border-emerald-500/20 mb-2">
                 <CheckCircle className="w-7 h-7 text-emerald-400" />
               </div>
               <p className="font-semibold text-white">Parol muvaffaqiyatli o'zgartirildi!</p>
-              <p className="text-sm text-slate-500">Dashboard'ga yo'naltirilmoqda...</p>
+              <p className="text-sm text-slate-500">Kirish sahifasiga yo'naltirilmoqda...</p>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">

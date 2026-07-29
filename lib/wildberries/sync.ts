@@ -126,29 +126,28 @@ export async function syncFromWildberries(
     // (seller's own warehouse). Wins over the 'fbo' default set at product
     // upsert when FBS reports it.
     const stockSource = new Map<string, 'fbo' | 'fbs'>()
-    let fboOk = false
+    // fboOk stays false until the replacement endpoint (post-2026-07-20
+    // deprecation) is wired in. Kept as a variable so the success gate below
+    // reads clearly and the hook-point is obvious to whoever restores FBO.
+    const fboOk = false
     let fbsOk = false
 
-    try {
-      const fboRes = await marketplaceFetch(
-        `${WB_STATS}/api/v1/supplier/stocks?dateFrom=2019-06-20`,
-        { headers: statsHeaders(token) },
-      )
-      if (fboRes.ok) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const rows: any[] = await fboRes.json() ?? []
-        for (const r of rows) {
-          if (r.nmId) {
-            const nm = String(r.nmId)
-            stockMap.set(nm, (stockMap.get(nm) ?? 0) + (r.quantity ?? 0))
-            if (!stockSource.has(nm)) stockSource.set(nm, 'fbo')
-          }
-        }
-        fboOk = true
-      }
-    } catch { /* best-effort */ }
+    // Track why each stock source didn't answer so a fresh shop / missing
+    // scope / rate limit / no-barcodes shape all look distinct in logs.
+    let fbsSkippedReason: string | null = null
+    // WB retired /api/v1/supplier/stocks on 2026-07-20 (PLUG-404-20260720,
+    // release note id=494). No verified replacement path yet — the
+    // seller-analytics-api warehouse_remains report is the leading guess but
+    // hasn't been confirmed against live docs. Skipping FBO entirely
+    // (option "c") so the sync toast reads clean and FBS carries the load
+    // until we ship the real replacement. Same shape as fbsSkippedReason.
+    const fboSkippedReason: string | null = 'endpoint_deprecated_20260720'
 
-    if (barcodeToNm.size > 0) {
+    if (barcodeToNm.size === 0) {
+      // No barcodes on record yet (fresh shop, or cards sync hasn't populated
+      // barcodes). FBS stock endpoint requires SKUs — skip it, but say so.
+      fbsSkippedReason = 'no_barcodes'
+    } else {
       try {
         const whRes = await marketplaceFetch(`${WB_MARKETPLACE}/api/v3/warehouses`, { headers: bearerHeaders(token) })
         if (whRes.ok) {
@@ -179,11 +178,26 @@ export async function syncFromWildberries(
             }
           }
           fbsOk = true
+        } else {
+          let body = ''
+          try { body = await whRes.text() } catch { /* ignore */ }
+          const detail = `FBS warehouses: HTTP ${whRes.status} ${whRes.statusText}${body ? ` — ${body.slice(0, 200)}` : ''}`
+          console.error(`[WB sync] ${detail}`)
+          errors.push(detail)
         }
-      } catch { /* best-effort */ }
+      } catch (e) {
+        const detail = `FBS warehouses: ${e instanceof Error ? e.message : String(e)}`
+        console.error(`[WB sync] FBS warehouses fetch threw:`, e)
+        errors.push(detail)
+      }
     }
 
-    if (fboOk || fbsOk) {
+    // Success = at least one source answered OR both were legitimately
+    // skipped (FBO deprecated + FBS has no barcodes yet). Only a live source
+    // silently failing counts as a real "stock=false".
+    const bothSkipped = fboSkippedReason !== null && fbsSkippedReason !== null
+    const stockAnswered = fboOk || fbsOk || bothSkipped
+    if (stockAnswered) {
       const prods = await db.select({
         id: products.id,
         marketplace_product_id: products.marketplace_product_id,
@@ -224,7 +238,6 @@ export async function syncFromWildberries(
     const df = sinceDt.toISOString().split('T')[0]
 
     // Fetch sales data (has forPay = net amount after WB commission)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const salesFeeByGNumber = new Map<string, { fee: number; delivery: number }>()
     try {
       const salesRes = await marketplaceFetch(
@@ -253,9 +266,27 @@ export async function syncFromWildberries(
       `${WB_STATS}/api/v1/supplier/orders?dateFrom=${df}&flag=0`,
       { headers: statsHeaders(token) },
     )
+    if (!res.ok) {
+      // Surface the real reason so a shop with a broken token / rate limit /
+      // permissions issue doesn't look identical to a shop with 0 orders.
+      // Body must be read exactly once — the else branch below used to also
+      // call res.text() which triggered "Body has already been read".
+      let body = ''
+      try { body = await res.text() } catch { /* ignore */ }
+      console.error(`[WB sync] orders fetch failed: HTTP ${res.status} ${res.statusText}\n${body.slice(0, 500)}`)
+      errors.push(`Orders API ${res.status}: ${(body || res.statusText).slice(0, 200)}`)
+    }
     if (res.ok) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const rawLines: any[] = await res.json()
+      if (!Array.isArray(rawLines)) {
+        console.error(`[WB sync] orders endpoint returned a non-array payload: ${JSON.stringify(rawLines).slice(0, 200)}`)
+      } else {
+        // Empty response is a real, valid state — a fresh shop or a
+        // `dateFrom` window with no activity legitimately returns []. Mark
+        // orders synced here so we don't misreport it as "orders=false".
+        ordersOk = true
+      }
       if (Array.isArray(rawLines) && rawLines.length > 0) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const grouped = new Map<string, any[]>()
@@ -352,9 +383,9 @@ export async function syncFromWildberries(
           }
         } catch { /* best-effort */ }
       }
-    } else {
-      errors.push(`Orders API ${res.status}: ${await res.text()}`)
     }
+    // Note: the !res.ok branch above already logs + pushes the error and
+    // consumes the body. Do NOT add an else here that calls res.text() again.
   } catch (e) {
     errors.push(`Orders sync failed: ${e}`)
   }
