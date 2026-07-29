@@ -290,7 +290,7 @@ function FragmentRow({ group: g, badge, isOpen, onToggle, onLink, d }: {
     <>
       <tr className="border-t" style={{  borderColor: 'var(--border)' }}>
         <td className="px-5 py-3.5">
-          <p className="font-semibold leading-tight" style={{ color: 'var(--text-base)' }}>{g.title}</p>
+          <p className="font-semibold leading-tight line-clamp-2 sm:line-clamp-none" style={{ color: 'var(--text-base)' }} title={g.title}>{g.title}</p>
           <div className="flex flex-wrap items-center gap-1.5 mt-1">
             <span className="text-[11px]" style={{ color: 'var(--text-muted)' }}>{g.members[0]?.sku ?? '—'}</span>
             {mps.map(mp => {

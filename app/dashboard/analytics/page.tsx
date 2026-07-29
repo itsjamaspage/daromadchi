@@ -229,7 +229,7 @@ export default async function AnalyticsPage({ searchParams }: Props) {
                     {periodSales.slice(0, 20).map((row, idx) => (
                       <tr key={row.product_id ?? row.title} style={{ borderBottom: idx < Math.min(periodSales.length, 20) - 1 ? '1px solid var(--border)' : 'none' }}>
                         <td className="px-5 py-3.5">
-                          <p className="font-medium" style={{ color: 'var(--text-base)' }}>{row.title}</p>
+                          <p className="font-medium line-clamp-2 sm:line-clamp-none" style={{ color: 'var(--text-base)' }} title={row.title}>{row.title}</p>
                           {row.sku && (
                             <div className="flex items-center flex-wrap gap-1.5 mt-0.5">
                               <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{row.sku}</span>
@@ -323,7 +323,7 @@ export default async function AnalyticsPage({ searchParams }: Props) {
                     return (
                       <tr key={p.id} style={{ borderBottom: idx < sortedByMargin.length - 1 ? '1px solid var(--border)' : 'none' }}>
                         <td className="px-5 py-3.5">
-                          <p className="font-medium" style={{ color: 'var(--text-base)' }}>{p.title}</p>
+                          <p className="font-medium line-clamp-2 sm:line-clamp-none" style={{ color: 'var(--text-base)' }} title={p.title}>{p.title}</p>
                           <div className="flex items-center flex-wrap gap-1.5 mt-0.5">
                             <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{p.sku}</span>
                             {p.marketplace && (() => { const m = MP_META[p.marketplace]; return m ? <span className="text-[10px] font-bold px-1.5 py-0.5 rounded" style={{ background: m.bg, color: m.color }}>{m.short}</span> : null })()}
