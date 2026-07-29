@@ -28,11 +28,16 @@ export default async function PnlPage({ searchParams }: Props) {
   const [t, lang, pnl, userShops] = await Promise.all([getT(), getLang(), getMonthlyPnl(6, marketplace), getUserShops()])
   const d = t.dashboard
   // Month names in the UI language — not hardcoded to one locale.
+  // Use full 4-digit year and capitalize the month name so a row like
+  // "июль 26 г." (Intl's ru output with 2-digit year) can't be misread
+  // as "26 July". This table is monthly, not daily.
   const locale = lang === 'ru' ? 'ru-RU' : lang === 'en' ? 'en-US' : 'uz-UZ'
-  const monthlyData = pnl.rows.map(m => ({
-    ...m,
-    month: new Date(m.monthKey + '-01').toLocaleDateString(locale, { month: 'short', year: '2-digit' }),
-  }))
+  const monthlyData = pnl.rows.map(m => {
+    const dt = new Date(m.monthKey + '-01T00:00:00Z')
+    const monthName = dt.toLocaleDateString(locale, { month: 'long', timeZone: 'UTC' })
+    const label = `${monthName.charAt(0).toUpperCase()}${monthName.slice(1)} ${dt.getUTCFullYear()}`
+    return { ...m, month: label }
+  })
   const isEmpty = monthlyData.length === 0
   const hasShops = userShops.length > 0
   const anyEstimated = monthlyData.some(m => m.estimated)
