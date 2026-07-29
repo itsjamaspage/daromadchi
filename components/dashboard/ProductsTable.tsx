@@ -51,6 +51,8 @@ function stockBadge(qty: number) {
 // says) and total physical stock in the seller's warehouse across every
 // SKU-shared listing. Click outside to close on mobile.
 function StockHint({ product }: { product: Product }) {
+  const { lang } = useLang()
+  const d = translations[lang].dashboard
   const [open, setOpen] = useState(false)
   const wrapRef = useRef<HTMLSpanElement>(null)
 
@@ -83,7 +85,7 @@ function StockHint({ product }: { product: Product }) {
           color: differs ? '#a855f7' : 'var(--text-muted)',
           border: `1px solid ${differs ? 'rgba(168,85,247,0.35)' : 'rgba(100,116,139,0.3)'}`,
         }}
-        aria-label="Что это значит?"
+        aria-label={d.stockHintAria}
       >
         ?
       </button>
@@ -98,26 +100,19 @@ function StockHint({ product }: { product: Product }) {
           onClick={(e) => e.stopPropagation()}
         >
           <div className="font-semibold mb-1.5" style={{ color: 'var(--text-base)' }}>
-            Общий физ. остаток
+            {d.stockHintTitle}
           </div>
           <div className="flex items-center justify-between py-0.5">
-            <span style={{ color: 'var(--text-muted)' }}>На складе продавца (FBS):</span>
+            <span style={{ color: 'var(--text-muted)' }}>{d.stockHintWarehouse}</span>
             <span className="font-bold tabular-nums" style={{ color: differs ? '#a855f7' : 'var(--text-base)' }}>{total}</span>
           </div>
           <div className="flex items-center justify-between py-0.5">
-            <span style={{ color: 'var(--text-muted)' }}>На этом маркетплейсе:</span>
+            <span style={{ color: 'var(--text-muted)' }}>{d.stockHintMarketplace}</span>
             <span className="font-medium tabular-nums" style={{ color: 'var(--text-base)' }}>{perListing}</span>
           </div>
-          {product.is_shared && (
-            <div className="mt-2 pt-2 text-[11px]" style={{ borderTop: '1px solid var(--border)', color: 'var(--text-muted)' }}>
-              Этот SKU выставлен на нескольких маркетплейсах. Открой Остатки — там разбивка по маркетплейсам.
-            </div>
-          )}
-          {!product.is_shared && (
-            <div className="mt-2 pt-2 text-[11px]" style={{ borderTop: '1px solid var(--border)', color: 'var(--text-muted)' }}>
-              Товар только на одном маркетплейсе — физический остаток совпадает с остатком листинга.
-            </div>
-          )}
+          <div className="mt-2 pt-2 text-[11px]" style={{ borderTop: '1px solid var(--border)', color: 'var(--text-muted)' }}>
+            {product.is_shared ? d.stockHintShared : d.stockHintSingle}
+          </div>
         </span>
       )}
     </span>
