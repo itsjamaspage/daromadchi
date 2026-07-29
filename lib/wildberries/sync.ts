@@ -269,9 +269,12 @@ export async function syncFromWildberries(
     if (!res.ok) {
       // Surface the real reason so a shop with a broken token / rate limit /
       // permissions issue doesn't look identical to a shop with 0 orders.
+      // Body must be read exactly once — the else branch below used to also
+      // call res.text() which triggered "Body has already been read".
       let body = ''
       try { body = await res.text() } catch { /* ignore */ }
       console.error(`[WB sync] orders fetch failed: HTTP ${res.status} ${res.statusText}\n${body.slice(0, 500)}`)
+      errors.push(`Orders API ${res.status}: ${(body || res.statusText).slice(0, 200)}`)
     }
     if (res.ok) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -380,9 +383,9 @@ export async function syncFromWildberries(
           }
         } catch { /* best-effort */ }
       }
-    } else {
-      errors.push(`Orders API ${res.status}: ${await res.text()}`)
     }
+    // Note: the !res.ok branch above already logs + pushes the error and
+    // consumes the body. Do NOT add an else here that calls res.text() again.
   } catch (e) {
     errors.push(`Orders sync failed: ${e}`)
   }
