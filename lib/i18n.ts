@@ -828,7 +828,7 @@ export const translations = {
         },
         {
           q: "Ma'lumotlar xavfsizmi?",
-          a: "Barcha ma'lumotlar Supabase'da saqlanadi va faqat siz ko'rasiz. API tokenlar shifrlangan holda saqlanadi.",
+          a: "Barcha ma'lumotlar Yevropadagi (Germaniya) ijaraga olingan serverimizda PostgreSQL bazasida saqlanadi va faqat siz ko'rasiz. API tokenlar AES-256 bilan shifrlangan, parollar bcrypt bilan xeshlangan holda saqlanadi.",
         },
         {
           q: 'Bepul tarif qancha vaqt ishlaydi?',
@@ -1685,7 +1685,7 @@ export const translations = {
         },
         {
           q: 'Is my data secure?',
-          a: 'All data is stored in Supabase and only you can see it. API tokens are stored encrypted.',
+          a: 'All data is stored in a PostgreSQL database on our dedicated server in Germany, and only you can see it. API tokens are stored encrypted with AES-256, passwords are hashed with bcrypt.',
         },
         {
           q: 'How long does the free plan last?',
@@ -2542,7 +2542,7 @@ export const translations = {
         },
         {
           q: 'Мои данные в безопасности?',
-          a: 'Все данные хранятся в Supabase и доступны только вам. API-токены хранятся в зашифрованном виде.',
+          a: 'Все данные хранятся в базе PostgreSQL на нашем выделенном сервере в Германии и доступны только вам. API-токены зашифрованы алгоритмом AES-256, пароли хешируются bcrypt.',
         },
         {
           q: 'Сколько работает бесплатный тариф?',
