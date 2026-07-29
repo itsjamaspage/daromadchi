@@ -18,6 +18,7 @@ const MIGRATIONS = [
   'migrations/migrations/031_category_canonical.sql',
   'migrations/migrations/032_category_slug.sql',
   'migrations/migrations/033_suggested_aliases.sql',
+  'migrations/migrations/034_password_reset_tokens.sql',
 ]
 
 function loadDatabaseUrl() {

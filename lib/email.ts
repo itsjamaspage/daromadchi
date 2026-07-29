@@ -107,6 +107,44 @@ export async function sendVerificationCode(email: string, code: string) {
   })
 }
 
+export async function sendPasswordResetLink(email: string, url: string) {
+  await transporter.sendMail({
+    from: `"Daromadchi" <${process.env.SMTP_FROM ?? process.env.SMTP_USER}>`,
+    to: email,
+    subject: 'Parolni tiklash — Daromadchi',
+    html: emailLayout(`
+      <div style="text-align: center;">
+        <div style="width: 56px; height: 56px; margin: 0 auto 16px; background: #fef3c7; border-radius: 50%; text-align: center; line-height: 56px;">
+          <span style="font-size: 28px;">&#128273;</span>
+        </div>
+        <h1 style="font-size: 20px; font-weight: 800; color: #0e2233; margin: 0 0 8px;">Parolni tiklash</h1>
+        <p style="color: #64748b; font-size: 14px; margin: 0 0 24px; line-height: 1.5;">
+          Parolingizni yangilash uchun quyidagi<br>tugmani bosing:
+        </p>
+
+        <a href="${url}" style="display: inline-block; background: linear-gradient(135deg,#7c3aed,#4f46e5); color: #ffffff; text-decoration: none; font-weight: 700; font-size: 14px; padding: 12px 28px; border-radius: 10px;">
+          Yangi parol o'rnatish
+        </a>
+
+        <p style="margin-top: 24px; color: #94a3b8; font-size: 12px; word-break: break-all;">
+          Yoki bu havolani brauzeringizga nusxalang:<br>
+          <a href="${url}" style="color: #0ea5e9;">${url}</a>
+        </p>
+
+        <div style="margin-top: 24px; padding: 12px 16px; background: #fefce8; border-radius: 8px; display: inline-block;">
+          <span style="color: #a16207; font-size: 13px;">&#9202; Havola <strong>1 soat</strong> ichida amal qiladi</span>
+        </div>
+      </div>
+
+      <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 28px 0 20px;">
+
+      <p style="color: #94a3b8; font-size: 12px; text-align: center; margin: 0; line-height: 1.6;">
+        Agar siz parolni tiklamagan bo'lsangiz,<br>bu xabarni e'tiborsiz qoldiring.
+      </p>
+    `),
+  })
+}
+
 export async function sendPasswordResetCode(email: string, code: string) {
   await transporter.sendMail({
     from: `"Daromadchi" <${process.env.SMTP_FROM ?? process.env.SMTP_USER}>`,

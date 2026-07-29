@@ -431,6 +431,20 @@ export const verificationTokens = pgTable('verification_tokens', {
   index('idx_verification_tokens_expires_at').on(t.expires_at),
 ])
 
+/* ── 21b. password_reset_tokens (mirrors verification_tokens shape) ────────── */
+
+export const passwordResetTokens = pgTable('password_reset_tokens', {
+  token:      text('token').primaryKey(),
+  user_id:    uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  email:      text('email').notNull(),
+  expires_at: timestamp('expires_at').notNull(),
+  used_at:    timestamp('used_at'),
+  created_at: timestamp('created_at').defaultNow(),
+}, (t) => [
+  index('idx_password_reset_tokens_user_id').on(t.user_id),
+  index('idx_password_reset_tokens_expires_at').on(t.expires_at),
+])
+
 /* ── 22. product_links ──────────────────────────────────────────────────────── */
 // Cross-marketplace leftover tracking: products are auto-grouped across
 // marketplaces by normalized seller article (match_key). This stores the
