@@ -51,7 +51,7 @@ export default async function AccountPage() {
         </div>
         <div>
           <p className="text-[var(--text-base)] font-bold text-lg">
-            {user.user_metadata?.full_name ?? t.defaultUser}
+            {user.full_name ?? t.defaultUser}
           </p>
           <p className="text-[var(--text-muted)] text-sm flex items-center gap-1.5 mt-0.5">
             <Mail className="w-3.5 h-3.5" /> {user.email}

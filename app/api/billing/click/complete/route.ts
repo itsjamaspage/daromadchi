@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/api/auth'
+import { eq } from 'drizzle-orm'
+import { db, payments, users } from '@/lib/db'
 import { verifyClickSign, ClickError } from '@/lib/billing/click'
 import { planExpiresAt } from '@/lib/billing/plans'
 import { withErrorHandler } from '@/lib/api-handler'
@@ -24,26 +25,25 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   const valid = verifyClickSign({ clickTransId: click_trans_id, merchantTransId: merchant_trans_id, amount, action, signTime: sign_time, merchantPrepareId: merchant_prepare_id, incoming: sign_string })
   if (!valid) return NextResponse.json({ ...base, ...ClickError.SIGN_FAILED })
 
-  const { data: payment } = await supabaseAdmin
-    .from('payments')
-    .select('id, user_id, plan, period_months, status')
-    .eq('id', merchant_trans_id)
-    .maybeSingle()
+  const [payment] = await db.select({
+    id: payments.id, user_id: payments.user_id, plan: payments.plan,
+    period_months: payments.period_months, status: payments.status,
+  }).from(payments).where(eq(payments.id, merchant_trans_id)).limit(1)
 
   if (!payment) return NextResponse.json({ ...base, ...ClickError.TRANS_NOT_FOUND })
   if (payment.status === 'paid') return NextResponse.json({ ...base, error: 0, error_note: 'Already paid' })
 
   if (Number(payment_status) < 0) {
-    await supabaseAdmin.from('payments').update({ status: 'cancelled', updated_at: new Date().toISOString() }).eq('id', payment.id)
+    await db.update(payments).set({ status: 'cancelled', updated_at: new Date() }).where(eq(payments.id, payment.id))
     return NextResponse.json({ ...base, error: 0, error_note: 'Cancelled' })
   }
 
   await Promise.all([
-    supabaseAdmin.from('payments').update({ status: 'paid', updated_at: new Date().toISOString() }).eq('id', payment.id),
-    supabaseAdmin.from('users').update({
+    db.update(payments).set({ status: 'paid', updated_at: new Date() }).where(eq(payments.id, payment.id)),
+    db.update(users).set({
       plan:            payment.plan,
       plan_expires_at: planExpiresAt(payment.period_months),
-    }).eq('id', payment.user_id),
+    }).where(eq(users.id, payment.user_id)),
   ])
 
   return NextResponse.json({ ...base, error: 0, error_note: 'Success' })

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { eq } from 'drizzle-orm'
-import { db, botSessions, userSettings, shops } from '@/lib/db'
-import { supabaseAdmin } from '@/lib/api/auth'
+import { eq, and, gt } from 'drizzle-orm'
+import { db, botSessions, userSettings, shops, channelNonces, extActivationCodes } from '@/lib/db'
 import { sendTelegramMessage, sendTelegramKeyboard, answerCallbackQuery, editMessageButtons } from '@/lib/telegram'
 import { withErrorHandler } from '@/lib/api-handler'
 
@@ -408,11 +407,12 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
           `Keyin kengaytmadagi "Tekshirish" tugmasini bosing.`
         )
       } else {
-        await supabaseAdmin
-          .from('channel_nonces')
-          .update({ verified: true, telegram_id: String(message.from.id) })
-          .eq('nonce', nonce)
-          .gt('expires_at', new Date().toISOString())
+        await db.update(channelNonces)
+          .set({ verified: true, telegram_id: String(message.from.id) })
+          .where(and(
+            eq(channelNonces.nonce, nonce),
+            gt(channelNonces.expires_at, new Date()),
+          ))
         await sendTelegramMessage(chatId,
           `✅ <b>Tasdiqlandi!</b> Siz @daromadchi_uz kanaliga a'zo ekansiz.\n\nKengaytmaga qayting va "Tekshirish" tugmasini bosing.`
         )
@@ -495,8 +495,13 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     }
     const code = Math.random().toString(36).slice(2, 6).toUpperCase() +
                  '-' + Math.random().toString(36).slice(2, 6).toUpperCase()
-    const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString()
-    await supabaseAdmin.from('ext_activation_codes').upsert({ code, chat_id: chatId, used: false, expires_at: expiresAt })
+    const expiresAt = new Date(Date.now() + 30 * 60 * 1000)
+    await db.insert(extActivationCodes)
+      .values({ code, chat_id: chatId, used: false, expires_at: expiresAt })
+      .onConflictDoUpdate({
+        target: extActivationCodes.code,
+        set: { chat_id: chatId, used: false, expires_at: expiresAt },
+      })
     await sendTelegramMessage(chatId,
       `${tAct.activationCode}\n\n<code>${code}</code>\n\n${tAct.activationCodeValid}\n<i>${tAct.activationExpiry}</i>`
     )

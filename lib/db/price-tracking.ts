@@ -1,10 +1,8 @@
 import type { CompetitorPrice } from '@/lib/types'
 
-const supabaseConfigured = process.env.NEXT_PUBLIC_SUPABASE_URL && !process.env.NEXT_PUBLIC_SUPABASE_URL.includes('your-project')
-
+// Placeholder for the competitor price feature — never implemented past the
+// stub. Returns [] until the competitor_prices join is written.
 export async function getCompetitorPrices(): Promise<CompetitorPrice[]> {
-  if (!supabaseConfigured) return []
-  // Real: query competitor_prices table joined with products
   return []
 }
 

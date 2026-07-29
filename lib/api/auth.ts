@@ -1,33 +1,5 @@
-import { createClient, type SupabaseClient } from '@supabase/supabase-js'
-import type { User } from '@supabase/supabase-js'
 import { eq, ne, and, or, isNull, sql } from 'drizzle-orm'
 import { db, shops, users } from '@/lib/db'
-
-let _supabaseAdmin: SupabaseClient | null = null
-function getSupabaseAdmin(): SupabaseClient {
-  if (!_supabaseAdmin) {
-    _supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    )
-  }
-  return _supabaseAdmin
-}
-
-export const supabaseAdmin: SupabaseClient = new Proxy({} as SupabaseClient, {
-  get(_target, prop) {
-    const client = getSupabaseAdmin()
-    const value = Reflect.get(client as object, prop)
-    return typeof value === 'function' ? value.bind(client) : value
-  },
-})
-
-export async function getAuthUser(authHeader: string | null): Promise<User | null> {
-  const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null
-  if (!token) return null
-  const { data: { user } } = await supabaseAdmin.auth.getUser(token)
-  return user ?? null
-}
 
 export async function getExtensionUser(authHeader: string | null) {
   const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null
