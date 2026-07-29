@@ -151,10 +151,14 @@ export async function syncFromWildberries(
       } else {
         let body = ''
         try { body = await fboRes.text() } catch { /* ignore */ }
-        console.error(`[WB sync] FBO stocks fetch failed: HTTP ${fboRes.status} ${fboRes.statusText}\n${body.slice(0, 500)}`)
+        const detail = `FBO stocks: HTTP ${fboRes.status} ${fboRes.statusText}${body ? ` — ${body.slice(0, 200)}` : ''}`
+        console.error(`[WB sync] ${detail}`)
+        errors.push(detail)
       }
     } catch (e) {
+      const detail = `FBO stocks: ${e instanceof Error ? e.message : String(e)}`
       console.error(`[WB sync] FBO stocks fetch threw:`, e)
+      errors.push(detail)
     }
 
     if (barcodeToNm.size === 0) {
@@ -195,10 +199,14 @@ export async function syncFromWildberries(
         } else {
           let body = ''
           try { body = await whRes.text() } catch { /* ignore */ }
-          console.error(`[WB sync] FBS warehouses fetch failed: HTTP ${whRes.status} ${whRes.statusText}\n${body.slice(0, 500)}`)
+          const detail = `FBS warehouses: HTTP ${whRes.status} ${whRes.statusText}${body ? ` — ${body.slice(0, 200)}` : ''}`
+          console.error(`[WB sync] ${detail}`)
+          errors.push(detail)
         }
       } catch (e) {
+        const detail = `FBS warehouses: ${e instanceof Error ? e.message : String(e)}`
         console.error(`[WB sync] FBS warehouses fetch threw:`, e)
+        errors.push(detail)
       }
     }
 
