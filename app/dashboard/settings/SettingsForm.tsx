@@ -150,7 +150,7 @@ function UzumCard({ shop }: { shop: Shop | null; userId: string }) {
 
   function triggerSync() {
     setSyncing(true); setSyncMsg(null)
-    const steps = ['Mahsulotlar yuklanmoqda…', 'Buyurtmalar tekshirilmoqda…', 'Reklama kampaniyalari…', 'Saqlanyapti…']
+    const steps = [t.syncStepProducts, t.syncStepOrders, t.syncStepAds, t.syncStepSaving]
     let stepIdx = 0
     setSyncStep(steps[0])
     const interval = setInterval(() => {
@@ -169,7 +169,7 @@ function UzumCard({ shop }: { shop: Shop | null; userId: string }) {
 
   async function handleSync() {
     setSyncing(true); setSyncMsg(null)
-    const steps = ['Mahsulotlar yuklanmoqda…', 'Buyurtmalar tekshirilmoqda…', 'Reklama kampaniyalari…', 'Saqlanyapti…']
+    const steps = [t.syncStepProducts, t.syncStepOrders, t.syncStepAds, t.syncStepSaving]
     let stepIdx = 0
     setSyncStep(steps[0])
     const interval = setInterval(() => {
@@ -345,7 +345,7 @@ function YandexCard({ shop }: { shop: Shop | null; userId: string }) {
 
   function triggerYandexSync() {
     setSyncing(true); setSyncMsg(null)
-    const steps = ['Mahsulotlar yuklanmoqda…', 'Buyurtmalar tekshirilmoqda…', 'Reklama kampaniyalari…', 'Saqlanyapti…']
+    const steps = [t.syncStepProducts, t.syncStepOrders, t.syncStepAds, t.syncStepSaving]
     let stepIdx = 0
     setSyncStep(steps[0])
     const interval = setInterval(() => {
@@ -364,7 +364,7 @@ function YandexCard({ shop }: { shop: Shop | null; userId: string }) {
 
   async function handleSync() {
     setSyncing(true); setSyncMsg(null)
-    const steps = ['Mahsulotlar yuklanmoqda…', 'Buyurtmalar tekshirilmoqda…', 'Reklama kampaniyalari…', 'Saqlanyapti…']
+    const steps = [t.syncStepProducts, t.syncStepOrders, t.syncStepAds, t.syncStepSaving]
     let stepIdx = 0
     setSyncStep(steps[0])
     const interval = setInterval(() => {
@@ -519,7 +519,7 @@ function WildberriesCard({ shop }: { shop: Shop | null; userId: string }) {
 
   function triggerWbSync() {
     setSyncing(true); setSyncMsg(null)
-    const steps = ['Mahsulotlar yuklanmoqda…', 'Buyurtmalar tekshirilmoqda…', 'Saqlanyapti…']
+    const steps = [t.syncStepProducts, t.syncStepOrders, t.syncStepSaving]
     let stepIdx = 0
     setSyncStep(steps[0])
     const interval = setInterval(() => {
@@ -552,7 +552,7 @@ function WildberriesCard({ shop }: { shop: Shop | null; userId: string }) {
 
   async function handleSync() {
     setSyncing(true); setSyncMsg(null)
-    const steps = ['Mahsulotlar yuklanmoqda…', 'Buyurtmalar tekshirilmoqda…', 'Saqlanyapti…']
+    const steps = [t.syncStepProducts, t.syncStepOrders, t.syncStepSaving]
     let stepIdx = 0
     setSyncStep(steps[0])
     const interval = setInterval(() => {
