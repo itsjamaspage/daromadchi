@@ -108,6 +108,31 @@ export async function syncFromWildberries(
           sku: r.sku, title: r.title, category: r.category, updated_at: r.updated_at,
         }).where(eq(products.id, id))
       }
+
+      // Zombie cleanup: when a seller deletes a card on WB, the product row
+      // used to sit in our DB forever with the last-known stock number,
+      // corrupting the Ostatki total. Now: any DB row whose nmID isn't in
+      // the fresh card list from WB gets deleted here. Gated on:
+      //   (a) products fetch completed without an errors.push — otherwise
+      //       a rate-limited / partial page could nuke real products.
+      //   (b) allCards.length > 0 — an empty response could also be a
+      //       transient auth issue, not "seller has zero listings".
+      // order_items.product_id has ON DELETE SET NULL so historical orders
+      // survive the delete (they just lose the product link).
+      const productsFetchClean = errors.every(e => !e.startsWith('Products API'))
+      if (productsFetchClean && allCards.length > 0) {
+        const freshIds = new Set(rows.map(r => String(r.marketplace_product_id)))
+        const zombieIds = existingProds
+          .filter(p => !freshIds.has(String(p.marketplace_product_id)))
+          .map(p => p.id)
+        if (zombieIds.length > 0) {
+          await db.delete(products).where(and(
+            eq(products.shop_id, shopId),
+            inArray(products.id, zombieIds),
+          ))
+        }
+      }
+
       if (!errors.length) productsUpserted = rows.length
     }
   } catch (e) {
