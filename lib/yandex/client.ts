@@ -557,8 +557,16 @@ export async function fetchAllYandexStocks(
       let pageToken: string | undefined
       do {
         const res = await fetchYandexStocks(token, campaignId, batch, pageToken)
+        // NB: do NOT early-exit on qty === 0. An explicit zero from YM
+        // ("FIT bucket exists, count is 0") is real information — it means
+        // "sold out". Skipping it left stockMap without the key, which the
+        // downstream nullish-coalesce chain in sync.ts treated as "no data"
+        // and preserved the previous DB value forever, so a product that
+        // sold out on YM kept showing its last-known non-zero stock in
+        // daromadchi. Always set the key; conflating "unknown" with "zero"
+        // was the bug.
         const inc = (key: string, qty: number) => {
-          if (!key || !Number.isFinite(qty) || qty === 0) return
+          if (!key || !Number.isFinite(qty)) return
           stockMap.set(key, (stockMap.get(key) ?? 0) + qty)
         }
         // Only trust FIT — this is what YM's own catalog UI shows as
