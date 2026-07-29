@@ -56,16 +56,29 @@ jobs:
     needs: [build]
     if: github.ref == 'refs/heads/main'
     steps:
-      - name: Wait for Vercel deploy
-        run: sleep 30
-      - name: Ping production
+      - name: Poll production /api/health
+        # The VPS deploy takes 60–180s (git pull, npm ci, next build,
+        # pm2 restart). Nginx returns 502 for a few seconds during
+        # the pm2 restart window. Poll with retries instead of one
+        # shot after a fixed sleep so a healthy deploy that finished
+        # inside the window still passes.
         run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://www.daromadchi.uz/api/health)
-          echo "Health check status: $STATUS"
-          if [ "$STATUS" != "200" ]; then
-            echo "Health check failed with status $STATUS"
-            exit 1
-          fi
+          MAX_ATTEMPTS=30            # 30 × 10s = 5 min total budget
+          SLEEP_SECONDS=10
+          INITIAL_DELAY=30           # give the deploy job time to at least start
+          echo "Waiting ${INITIAL_DELAY}s for deploy to begin..."
+          sleep $INITIAL_DELAY
+          for i in $(seq 1 $MAX_ATTEMPTS); do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 https://www.daromadchi.uz/api/health || echo "000")
+            echo "Attempt $i/$MAX_ATTEMPTS: HTTP $STATUS"
+            if [ "$STATUS" = "200" ]; then
+              echo "Health check passed."
+              exit 0
+            fi
+            sleep $SLEEP_SECONDS
+          done
+          echo "Health check failed: no 200 response after $MAX_ATTEMPTS attempts."
+          exit 1
 
   notify:
     name: Notify
