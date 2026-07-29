@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useCallback, Fragment } from 'react'
+import { useState, useMemo, useCallback, useEffect, useRef, Fragment } from 'react'
 import { Search, Check, X, Pencil } from 'lucide-react'
 import ExportButton from './ExportButton'
 import FulfillmentBadge from './FulfillmentBadge'
@@ -44,6 +44,84 @@ function stockBadge(qty: number) {
   if (qty >= 30) return { bgColor: 'rgba(100, 116, 139, 0.2)', color: 'var(--text-dim)' }
   if (qty >= 10) return { bgColor: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b' }
   return           { bgColor: 'rgba(239, 68, 68, 0.1)', color: '#ef4444' }
+}
+
+// "?" hint next to Остаток. Opens on hover (desktop) and on tap (mobile).
+// Explains the difference between per-listing stock (what this marketplace
+// says) and total physical stock in the seller's warehouse across every
+// SKU-shared listing. Click outside to close on mobile.
+function StockHint({ product }: { product: Product }) {
+  const [open, setOpen] = useState(false)
+  const wrapRef = useRef<HTMLSpanElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    function onDoc(e: MouseEvent) {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', onDoc)
+    return () => document.removeEventListener('mousedown', onDoc)
+  }, [open])
+
+  const total = product.total_physical ?? product.available_stock
+  const perListing = product.available_stock
+  const differs = product.is_shared && total !== perListing
+
+  return (
+    <span
+      ref={wrapRef}
+      className="relative inline-flex"
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
+    >
+      <button
+        type="button"
+        onClick={(e) => { e.stopPropagation(); setOpen(o => !o) }}
+        className="inline-flex items-center justify-center w-4 h-4 rounded-full text-[10px] font-bold cursor-help"
+        style={{
+          background: differs ? 'rgba(168,85,247,0.15)' : 'rgba(100,116,139,0.15)',
+          color: differs ? '#a855f7' : 'var(--text-muted)',
+          border: `1px solid ${differs ? 'rgba(168,85,247,0.35)' : 'rgba(100,116,139,0.3)'}`,
+        }}
+        aria-label="Что это значит?"
+      >
+        ?
+      </button>
+      {open && (
+        <span
+          className="absolute right-0 top-6 z-30 w-64 rounded-xl p-3 text-left text-xs leading-relaxed shadow-xl"
+          style={{
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border)',
+            color: 'var(--text-base)',
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="font-semibold mb-1.5" style={{ color: 'var(--text-base)' }}>
+            Общий физ. остаток
+          </div>
+          <div className="flex items-center justify-between py-0.5">
+            <span style={{ color: 'var(--text-muted)' }}>На складе продавца (FBS):</span>
+            <span className="font-bold tabular-nums" style={{ color: differs ? '#a855f7' : 'var(--text-base)' }}>{total}</span>
+          </div>
+          <div className="flex items-center justify-between py-0.5">
+            <span style={{ color: 'var(--text-muted)' }}>На этом маркетплейсе:</span>
+            <span className="font-medium tabular-nums" style={{ color: 'var(--text-base)' }}>{perListing}</span>
+          </div>
+          {product.is_shared && (
+            <div className="mt-2 pt-2 text-[11px]" style={{ borderTop: '1px solid var(--border)', color: 'var(--text-muted)' }}>
+              Этот SKU выставлен на нескольких маркетплейсах. Открой Остатки — там разбивка по маркетплейсам.
+            </div>
+          )}
+          {!product.is_shared && (
+            <div className="mt-2 pt-2 text-[11px]" style={{ borderTop: '1px solid var(--border)', color: 'var(--text-muted)' }}>
+              Товар только на одном маркетплейсе — физический остаток совпадает с остатком листинга.
+            </div>
+          )}
+        </span>
+      )}
+    </span>
+  )
 }
 
 function EditRow({ product, onClose, onSaved }: { product: Product; onClose: () => void; onSaved: (productId: string, newCostPrice: number | null, fetchDone: Promise<void>) => void }) {
@@ -412,15 +490,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
                           <span className="text-xs font-medium px-2.5 py-1 rounded-lg" style={{ background: stock.bgColor, color: stock.color }}>
                             {p.available_stock}
                           </span>
-                          {p.is_shared && (p.total_physical ?? p.available_stock) !== p.available_stock && (
-                            <span
-                              className="inline-flex items-center justify-center w-4 h-4 rounded-full text-[10px] font-bold cursor-help"
-                              style={{ background: 'rgba(168,85,247,0.15)', color: '#a855f7', border: '1px solid rgba(168,85,247,0.3)' }}
-                              title={`Общий физический остаток на складе продавца (FBS): ${p.total_physical}\n\nНа этом маркетплейсе выделено: ${p.available_stock}\nНа других маркетплейсах с тем же SKU физически лежит больше — открой Остатки для полной картины.`}
-                            >
-                              ?
-                            </span>
-                          )}
+                          <StockHint product={p} />
                         </div>
                       </td>
                     </tr>
