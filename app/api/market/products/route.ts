@@ -1,11 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCategoryProducts, searchMarketProducts } from '@/lib/uzum/public'
 import { withErrorHandler } from '@/lib/api-handler'
+import { enforceLimit } from '@/lib/rate-limit'
 
 type SortOption = 'ORDER_COUNT_DESC' | 'PRICE_ASC' | 'PRICE_DESC' | 'RATING_DESC'
 const VALID_SORTS: SortOption[] = ['ORDER_COUNT_DESC', 'PRICE_ASC', 'PRICE_DESC', 'RATING_DESC']
 
 export const GET = withErrorHandler(async (req: NextRequest) => {
+  // Hits Uzum's public GraphQL from our VPS IP — throttle so a scraper
+  // routed through daromadchi doesn't get our IP banned upstream.
+  const limited = enforceLimit(req, { key: 'market:uzum', max: 60, windowMs: 60_000 })
+  if (limited) return limited
+
   const { searchParams } = req.nextUrl
   const categoryId = searchParams.get('categoryId')
   const query      = searchParams.get('q')
