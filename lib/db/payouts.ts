@@ -177,36 +177,46 @@ export async function getPayoutEntries(): Promise<PayoutEntry[]> {
   const ymShopIds = shopRows.filter(r => r.marketplace === 'yandex_market').map(r => r.id)
   const ymSettlementByKey = new Map<string, { credit: number; debit: number; commission: number; delivery: number; other: number; txnCount: number }>()
   if (ymShopIds.length > 0) {
-    const settlementRows = await db.select({
-      month:  sql<string>`to_char(${yandexSettlementTransactions.transaction_at}, 'YYYY-MM')`.as('month'),
-      entry_type: yandexSettlementTransactions.entry_type,
-      entry_source: yandexSettlementTransactions.entry_source,
-      order_type: yandexSettlementTransactions.order_type,
-      amount: yandexSettlementTransactions.amount,
-    }).from(yandexSettlementTransactions)
-      .where(and(
-        inArray(yandexSettlementTransactions.shop_id, ymShopIds),
-        gte(yandexSettlementTransactions.transaction_at, since),
-      ))
-    for (const r of settlementRows) {
-      if (!r.month) continue
-      const key = `${r.month}|yandex_market`
-      const b = ymSettlementByKey.get(key) ?? { credit: 0, debit: 0, commission: 0, delivery: 0, other: 0, txnCount: 0 }
-      const amt = Number(r.amount)
-      b.txnCount += 1
-      if (r.entry_type === 'Начисление') {
-        b.credit += amt
-      } else {
-        b.debit += amt
-        // Split debits by orderType so the UI can show delivery vs commission
-        // separately. "Доставка покупателю" is delivery, everything else is
-        // rolled into commission (which for Yandex Uzbekistan includes their
-        // bundled "Услуги маркета" — commission + acquiring + ads).
-        if ((r.order_type ?? '').includes('Доставка')) b.delivery += amt
-        else if ((r.order_type ?? '').includes('Поручение')) b.commission += amt
-        else b.other += amt
+    // Try/catch guards against the migration not yet being applied on
+    // this DB (fresh deploy race, or admin manually rolled back). The
+    // Payouts page must render even if the settlements table doesn't
+    // exist yet — every Yandex row just stays in "awaiting" state.
+    try {
+      const settlementRows = await db.select({
+        month:  sql<string>`to_char(${yandexSettlementTransactions.transaction_at}, 'YYYY-MM')`.as('month'),
+        entry_type: yandexSettlementTransactions.entry_type,
+        entry_source: yandexSettlementTransactions.entry_source,
+        order_type: yandexSettlementTransactions.order_type,
+        amount: yandexSettlementTransactions.amount,
+      }).from(yandexSettlementTransactions)
+        .where(and(
+          inArray(yandexSettlementTransactions.shop_id, ymShopIds),
+          gte(yandexSettlementTransactions.transaction_at, since),
+        ))
+      for (const r of settlementRows) {
+        if (!r.month) continue
+        const key = `${r.month}|yandex_market`
+        const b = ymSettlementByKey.get(key) ?? { credit: 0, debit: 0, commission: 0, delivery: 0, other: 0, txnCount: 0 }
+        const amt = Number(r.amount)
+        b.txnCount += 1
+        if (r.entry_type === 'Начисление') {
+          b.credit += amt
+        } else {
+          b.debit += amt
+          // Split debits by orderType so the UI can show delivery vs commission
+          // separately. "Доставка покупателю" is delivery, everything else is
+          // rolled into commission (which for Yandex Uzbekistan includes their
+          // bundled "Услуги маркета" — commission + acquiring + ads).
+          if ((r.order_type ?? '').includes('Доставка')) b.delivery += amt
+          else if ((r.order_type ?? '').includes('Поручение')) b.commission += amt
+          else b.other += amt
+        }
+        ymSettlementByKey.set(key, b)
       }
-      ymSettlementByKey.set(key, b)
+    } catch (e) {
+      // Table missing or query failed. Log for diagnosis; render with
+      // no settlement rows (Yandex rows stay in "awaiting" state).
+      console.error('[payouts] yandex_settlement_transactions query failed:', String(e).slice(0, 200))
     }
   }
 
