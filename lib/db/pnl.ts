@@ -5,16 +5,16 @@ import { getUnitEcoSettings } from '@/lib/db/unit-economics'
 import type { MarketplaceType } from '@/lib/types'
 
 /**
- * Monthly P&L with a full expense breakdown. Marketplaces rarely report fees
+ * Daily P&L with a full expense breakdown. Marketplaces rarely report fees
  * per order (Uzum's seller API doesn't), so where real numbers are missing the
  * expense lines are ESTIMATED from the user's Unit Economics parameters
  * (commission %, acquiring %, tax %, ad %, last-mile %) — the same numbers
  * they already maintain on the Unit Economics page. COGS comes from each
  * product's cost price × units sold. Cancelled orders are excluded from every
- * money figure but shown as a count so a cancellation-only month still renders.
+ * money figure but shown as a count so a cancellation-only day still renders.
  */
 export interface MonthlyPnl {
-  /** raw YYYY-MM key — format it with the UI language's locale in the page */
+  /** raw YYYY-MM-DD key */
   monthKey: string
   month: string
   order_count: number
@@ -45,7 +45,7 @@ export interface PnlParams {
 }
 
 export async function getMonthlyPnl(
-  months = 6,
+  days = 30,
   marketplace?: MarketplaceType,
 ): Promise<{ rows: MonthlyPnl[]; params: PnlParams }> {
   const ue = await getUnitEcoSettings()
@@ -61,7 +61,7 @@ export async function getMonthlyPnl(
   if (!shopIds || shopIds.length === 0) return { rows: [], params }
 
   const since = new Date()
-  since.setMonth(since.getMonth() - months)
+  since.setDate(since.getDate() - days)
 
   const sinceStr = since.toISOString().slice(0, 10)
   const [rows, cogsRows, adSpendRows] = await Promise.all([
@@ -81,7 +81,7 @@ export async function getMonthlyPnl(
       ))
       .orderBy(asc(orders.ordered_at)),
     db.select({
-      month: sql<string>`to_char(${orders.ordered_at}, 'YYYY-MM')`.as('month'),
+      month: sql<string>`to_char(${orders.ordered_at}, 'YYYY-MM-DD')`.as('month'),
       cogs: sql<number>`coalesce(sum(${orderItems.quantity} * coalesce(${products.cost_price}, 0)), 0)`.as('cogs'),
     }).from(orderItems)
       .innerJoin(orders, eq(orderItems.order_id, orders.id))
@@ -92,16 +92,16 @@ export async function getMonthlyPnl(
         ne(orders.status, 'cancelled'),
         ne(orders.status, 'returned'),
       ))
-      .groupBy(sql`to_char(${orders.ordered_at}, 'YYYY-MM')`),
+      .groupBy(sql`to_char(${orders.ordered_at}, 'YYYY-MM-DD')`),
     db.select({
-      month: sql<string>`to_char(${productAdsStats.date}::date, 'YYYY-MM')`.as('month'),
+      month: sql<string>`to_char(${productAdsStats.date}::date, 'YYYY-MM-DD')`.as('month'),
       spend: sql<number>`coalesce(sum(${productAdsStats.spend}), 0)`.as('spend'),
     }).from(productAdsStats)
       .where(and(
         inArray(productAdsStats.shop_id, shopIds),
         gte(productAdsStats.date, sinceStr),
       ))
-      .groupBy(sql`to_char(${productAdsStats.date}::date, 'YYYY-MM')`),
+      .groupBy(sql`to_char(${productAdsStats.date}::date, 'YYYY-MM-DD')`),
   ])
 
   if (rows.length === 0) return { rows: [], params }
@@ -117,7 +117,7 @@ export async function getMonthlyPnl(
 
   for (const row of rows) {
     const d = row.ordered_at
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
     const ex = grouped.get(key) ?? {
       revenue: 0, realFee: 0, realDelivery: 0, count: 0, cancelledCount: 0, cancelledAmount: 0,
       penalty: 0, storageFee: 0, additionalPayment: 0,
@@ -138,7 +138,7 @@ export async function getMonthlyPnl(
   }
 
   const result = Array.from(grouped.entries()).map(([key, v]) => {
-    const d = new Date(key + '-01')
+    const d = new Date(key + 'T00:00:00')
     // Real marketplace numbers when present; the user's percentages otherwise.
     const estimated  = v.realFee === 0 && v.revenue > 0
     const commission = estimated ? v.revenue * params.commissionPct / 100 : v.realFee
@@ -159,7 +159,7 @@ export async function getMonthlyPnl(
     const tax        = taxBase * params.taxPct / 100
     return {
       monthKey:         key,
-      month:            d.toLocaleDateString('uz-UZ', { month: 'short', year: '2-digit' }),
+      month:            d.toLocaleDateString('uz-UZ', { day: 'numeric', month: 'short', year: '2-digit' }),
       order_count:      v.count,
       cancelled_count:  v.cancelledCount,
       cancelled_amount: v.cancelledAmount,

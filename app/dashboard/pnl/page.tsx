@@ -25,13 +25,14 @@ interface Props {
 export default async function PnlPage({ searchParams }: Props) {
   const params = await searchParams
   const marketplace = parseMp(params.mp)
-  const [t, lang, pnl, userShops] = await Promise.all([getT(), getLang(), getMonthlyPnl(6, marketplace), getUserShops()])
+  const [t, lang, pnl, userShops] = await Promise.all([getT(), getLang(), getMonthlyPnl(30, marketplace), getUserShops()])
   const d = t.dashboard
   // Month names in the UI language — not hardcoded to one locale.
   const locale = lang === 'ru' ? 'ru-RU' : lang === 'en' ? 'en-US' : 'uz-UZ'
+  const todayKey = new Date().toISOString().slice(0, 10)
   const monthlyData = pnl.rows.map(m => ({
     ...m,
-    month: new Date(m.monthKey + '-01').toLocaleDateString(locale, { month: 'short', year: '2-digit' }),
+    month: new Date(m.monthKey + 'T00:00:00').toLocaleDateString(locale, { day: 'numeric', month: 'short', year: '2-digit' }),
   }))
   const isEmpty = monthlyData.length === 0
   const hasShops = userShops.length > 0
@@ -60,7 +61,7 @@ export default async function PnlPage({ searchParams }: Props) {
   }
 
   const exportData = monthlyData.map(m => ({
-    [d.month]:                     m.month,
+    [d.date]:                      m.month,
     [d.ordersCol]:                 m.order_count,
     [d.topSoldCancelled]:          m.cancelled_count,
     [`${d.revenue} (so'm)`]:       Math.round(m.revenue),
@@ -173,7 +174,7 @@ export default async function PnlPage({ searchParams }: Props) {
               <table className="w-full text-sm" style={{ minWidth: 980 }}>
                 <thead>
                   <tr className="text-[var(--text-muted)] text-xs border-b border-[var(--border)]">
-                    <th className="text-left font-medium px-4 py-3">{d.month}</th>
+                    <th className="text-left font-medium px-4 py-3">{d.date}</th>
                     <th className="text-right font-medium px-4 py-3">{d.ordersCol}</th>
                     <th className="text-right font-medium px-4 py-3">{d.topSoldCancelled}</th>
                     <th className="text-right font-medium px-4 py-3">{d.revenue}</th>
@@ -194,7 +195,7 @@ export default async function PnlPage({ searchParams }: Props) {
                       <tr key={m.month} className={i === monthlyData.length - 1 ? 'bg-[var(--bg-card2)]' : ''}>
                         <td className="px-4 py-4 text-[var(--text-base)] font-medium">
                           {m.month}
-                          {i === monthlyData.length - 1 && (
+                          {m.monthKey === todayKey && (
                             <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded" style={{ color: 'var(--c1)', background: 'var(--bg-card2)' }}>{d.current}</span>
                           )}
                         </td>
