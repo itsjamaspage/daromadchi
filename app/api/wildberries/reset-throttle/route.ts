@@ -18,7 +18,9 @@ export const POST = withErrorHandler(async () => {
   const wbShops = await db.select({ id: shops.id }).from(shops)
     .where(and(eq(shops.user_id, user.id), eq(shops.marketplace, 'wildberries')))
 
-  for (const s of wbShops) clearWbThrottle(s.id)
+  // clearWbThrottle is async now (writes to the DB) — await each so the
+  // caller sees the actual number of rows reset, not fire-and-forget.
+  for (const s of wbShops) await clearWbThrottle(s.id)
 
   return NextResponse.json({ ok: true, cleared: wbShops.length })
 })

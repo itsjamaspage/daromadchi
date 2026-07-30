@@ -23,7 +23,12 @@ export default async function SettingsPage() {
 
     for (const row of rows) {
       if (row.shop_id_external === 'DEMO') continue
-      const s = { ...row, created_at: row.created_at.toISOString(), last_synced_at: row.last_synced_at?.toISOString() ?? null } as Shop
+      const s = {
+        ...row,
+        created_at:       row.created_at.toISOString(),
+        last_synced_at:   row.last_synced_at?.toISOString()   ?? null,
+        throttled_until:  row.throttled_until?.toISOString()  ?? null,
+      } as Shop
       if (row.marketplace === 'uzum')          uzumShop   = s
       if (row.marketplace === 'yandex_market') yandexShop = s
       if (row.marketplace === 'wildberries')   wbShop     = s

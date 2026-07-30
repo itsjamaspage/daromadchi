@@ -93,6 +93,12 @@ export const shops = pgTable('shops', {
   is_active:         boolean('is_active').default(true).notNull(),
   token_valid:       boolean('token_valid'),
   last_synced_at:    timestamp('last_synced_at', { withTimezone: true }),
+  // Marketplace rate-limit cooldown. When set to a future timestamp,
+  // sync() short-circuits without hitting the marketplace API — lets
+  // e.g. Wildberries' per-seller limiter naturally decay instead of
+  // getting hammered by our 15-min cron. Persisted (not in-memory) so
+  // deploys don't wipe it.
+  throttled_until:   timestamp('throttled_until', { withTimezone: true }),
   warehouse_id:      uuid('warehouse_id').references(() => warehouses.id, { onDelete: 'set null' }),
   created_at:        timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 }, (t) => [

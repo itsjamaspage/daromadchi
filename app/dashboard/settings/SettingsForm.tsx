@@ -509,6 +509,7 @@ function WildberriesCard({ shop }: { shop: Shop | null; userId: string }) {
   const [saving,   setSaving]   = useState(false)
   const [syncing,  setSyncing]  = useState(false)
   const [testing,  setTesting]  = useState(false)
+  const [resetting, setResetting] = useState(false)
   const [syncStep, setSyncStep] = useState<string | null>(null)
   const [saveMsg,  setSaveMsg]  = useState<{ ok: boolean; text: string } | null>(null)
   const [syncMsg,  setSyncMsg]  = useState<{ ok: boolean; text: string } | null>(null)
@@ -516,6 +517,31 @@ function WildberriesCard({ shop }: { shop: Shop | null; userId: string }) {
   const hasKey  = !!shop?.api_key_encrypted
   const lastSync = shop?.last_synced_at
     ? new Date(shop.last_synced_at).toLocaleString(lang === 'ru' ? 'ru-RU' : lang === 'en' ? 'en-US' : 'uz-UZ') : null
+  // Server writes throttled_until on the shop row when WB returns 429/461;
+  // it clears itself once the cooldown passes, but the shop row is fetched
+  // once per page load so we mirror the same expiry check client-side.
+  const throttledUntilMs = shop?.throttled_until ? new Date(shop.throttled_until).getTime() : 0
+  const throttled = throttledUntilMs > Date.now()
+  const throttledUntilLabel = throttled
+    ? new Date(throttledUntilMs).toLocaleString(lang === 'ru' ? 'ru-RU' : lang === 'en' ? 'en-US' : 'uz-UZ')
+    : null
+
+  async function handleResetThrottle() {
+    setResetting(true); setSyncMsg(null)
+    try {
+      const res = await fetch('/api/wildberries/reset-throttle', { method: 'POST' })
+      const data = await res.json()
+      if (data.ok) {
+        setSyncMsg({ ok: true, text: lang === 'ru' ? 'Лимит WB сброшен. Можно синхронизировать.' : lang === 'en' ? 'WB throttle reset. You can sync now.' : 'WB limiti tozalandi. Endi sinxronlash mumkin.' })
+        router.refresh()
+      } else {
+        setSyncMsg({ ok: false, text: data.error ?? t.error })
+      }
+    } catch {
+      setSyncMsg({ ok: false, text: t.networkErr })
+    }
+    setResetting(false)
+  }
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
@@ -660,6 +686,19 @@ function WildberriesCard({ shop }: { shop: Shop | null; userId: string }) {
             </div>
           )}
           <StatusMsg msg={syncMsg} />
+          {throttled && (
+            <div className="flex items-start gap-2 text-xs rounded-xl px-3 py-2"
+              style={{ color: 'var(--status-err-text)', background: 'var(--status-err-bg)', border: '1px solid var(--status-err-bdr)' }}>
+              <AlertTriangle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+              <span>
+                {lang === 'ru'
+                  ? `Wildberries ограничил синхронизацию до ${throttledUntilLabel}. Приложение подождёт, чтобы их лимитер восстановился.`
+                  : lang === 'en'
+                  ? `Wildberries throttled sync until ${throttledUntilLabel}. The app will wait for their limiter to recover.`
+                  : `Wildberries sinxronlashni ${throttledUntilLabel} gacha cheklab qo'ydi. Ilova ularning limiterini tiklanishini kutadi.`}
+              </span>
+            </div>
+          )}
           <div className="flex gap-2 flex-wrap">
             <button onClick={handleTest} disabled={testing || syncing || !hasKey}
               title={!hasKey ? 'Avval token saqlang' : ''}
@@ -672,6 +711,14 @@ function WildberriesCard({ shop }: { shop: Shop | null; userId: string }) {
               className="flex items-center gap-2 btn-primary border border-transparent disabled:opacity-40 disabled:cursor-not-allowed px-4 py-2 rounded-xl transition-colors">
               {syncing ? <><Loader2 className="w-4 h-4 animate-spin" /> {t.syncing}</> : <><RefreshCw className="w-4 h-4" /> {t.sync}</>}
             </button>
+            {throttled && (
+              <button onClick={handleResetThrottle} disabled={resetting}
+                title={lang === 'ru' ? 'Сбросить сохранённый лимит и попробовать синхронизацию снова' : 'Reset the stored throttle and try syncing again'}
+                className="flex items-center gap-2 bg-[var(--bg-input)] hover:bg-[var(--bg-input)] border border-[var(--border2)] disabled:opacity-40 disabled:cursor-not-allowed text-[var(--text-dim)] text-sm font-medium px-4 py-2 rounded-xl transition-colors">
+                {resetting ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                {lang === 'ru' ? 'Сбросить лимит' : lang === 'en' ? 'Reset throttle' : 'Limitni tozalash'}
+              </button>
+            )}
           </div>
         </div>
       )}

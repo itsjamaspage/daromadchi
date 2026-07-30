@@ -21,6 +21,7 @@ const MIGRATIONS = [
   'migrations/migrations/034_password_reset_tokens.sql',
   'migrations/migrations/035_yandex_settlements.sql',
   'migrations/migrations/036_uzum_settlements.sql',
+  'migrations/migrations/037_shops_throttled_until.sql',
 ]
 
 function loadDatabaseUrl() {

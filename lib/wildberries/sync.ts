@@ -6,35 +6,31 @@ const WB_CONTENT     = 'https://content-api.wildberries.ru'
 const WB_STATS       = 'https://statistics-api.wildberries.ru'
 const WB_MARKETPLACE = 'https://marketplace-api.wildberries.ru'
 
-// Per-shop rate-limit cooldown. WB's global limiter uses a per-seller
-// UUID; every 429/461 seems to RESET the cooldown window if you keep
-// hitting them (seller reported being locked out 17h straight while our
-// cron re-fired every 15 min). This map skips WB sync for a fixed
-// window after we see a rate-limit response, so the cron stops making
-// things worse. Cleared on process restart — acceptable since PM2
-// bounces typically once a day at most.
-const wbThrottledUntil = new Map<string, number>()
-const WB_THROTTLE_COOLDOWN_MS = 60 * 60 * 1000 // 1h — safer starting point
+// Persisted per-shop rate-limit cooldown. WB's global limiter uses a
+// per-seller UUID; every 429/461 seems to RESET the cooldown window if
+// you keep hitting them (seller reported being locked out 17h straight
+// while our cron re-fired every 15 min). Stored on shops.throttled_until
+// so a deploy (which wipes any in-memory state) doesn't reset it, and
+// the seller can see + manually reset it from the UI.
+const WB_THROTTLE_COOLDOWN_MS = 60 * 60 * 1000 // 1h
 
-function isThrottled(shopId: string): boolean {
-  const until = wbThrottledUntil.get(shopId)
-  return until != null && until > Date.now()
+async function readThrottleUntil(shopId: string): Promise<Date | null> {
+  const [row] = await db.select({ t: shops.throttled_until })
+    .from(shops).where(eq(shops.id, shopId)).limit(1)
+  return row?.t ?? null
 }
-function throttleUntilCooldown(shopId: string): number {
-  const until = Date.now() + WB_THROTTLE_COOLDOWN_MS
-  wbThrottledUntil.set(shopId, until)
-  return until
+async function writeThrottleUntil(shopId: string, until: Date | null) {
+  await db.update(shops).set({ throttled_until: until }).where(eq(shops.id, shopId))
 }
-// Exported so /api/wildberries/reset-throttle (or a dashboard button)
-// can clear it after the seller waits + regenerates a token.
-export function clearWbThrottle(shopId: string) {
-  wbThrottledUntil.delete(shopId)
+export async function clearWbThrottle(shopId: string) {
+  await writeThrottleUntil(shopId, null)
 }
-// Exported so the settings card can show "Throttled by WB until X".
-export function getWbThrottledUntil(shopId: string): number | null {
-  const until = wbThrottledUntil.get(shopId)
-  if (until == null || until <= Date.now()) return null
-  return until
+// Read-only helper for the settings card's "Throttled by WB until X" chip.
+// Returns null when the stored cooldown has already passed.
+export async function getWbThrottledUntil(shopId: string): Promise<number | null> {
+  const until = await readThrottleUntil(shopId)
+  if (until == null || until.getTime() <= Date.now()) return null
+  return until.getTime()
 }
 
 function bearerHeaders(token: string) {
@@ -63,7 +59,7 @@ export async function syncFromWildberries(
   // Short-circuit: if WB rate-limited us in the last hour, skip the
   // whole sync. Each 429 seems to extend WB's cooldown, so hitting them
   // during the block makes it last longer, not shorter.
-  const throttledUntil = getWbThrottledUntil(shopId)
+  const throttledUntil = await getWbThrottledUntil(shopId)
   if (throttledUntil) {
     const minsLeft = Math.max(1, Math.ceil((throttledUntil - Date.now()) / 60_000))
     return {
@@ -90,8 +86,9 @@ export async function syncFromWildberries(
   async function wbFetch(url: string, init?: RequestInit): Promise<Response | null> {
     const res = await marketplaceFetch(url, init)
     if (res.status === 429 || res.status === 461) {
-      const until = throttleUntilCooldown(shopId)
-      console.warn(`[WB sync] rate-limited (${res.status}) on ${url} — cooldown until ${new Date(until).toISOString()}`)
+      const until = new Date(Date.now() + WB_THROTTLE_COOLDOWN_MS)
+      await writeThrottleUntil(shopId, until)
+      console.warn(`[WB sync] rate-limited (${res.status}) on ${url} — cooldown until ${until.toISOString()}`)
       errors.push(`WB rate-limit (${res.status}); pausing WB sync for ~1 hour.`)
       return null
     }

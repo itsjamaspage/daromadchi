@@ -113,6 +113,10 @@ export interface Shop {
   // Netting/settlement APIs are scoped to businessId, so we expose it in the
   // Settings UI as a separate field.
   business_id?: string | null
+  // Rate-limit cooldown persisted from the sync code. Currently only
+  // Wildberries writes to this; the settings card surfaces it as a
+  // "throttled until X" chip with a manual reset button.
+  throttled_until?: string | null
 }
 
 export interface Product {
