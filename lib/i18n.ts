@@ -111,6 +111,9 @@ export const translations = {
         wbShopName:     "Wildberries do'konim",
         campaignIdHint: "URL manzilidan raqamli ID (masalan 149137909) — email emas",
         campaignIdInvalid: "Campaign ID faqat raqamlardan iborat bo'lishi kerak. Yandex Partner sahifasidagi URL manzilidan oling: campaignId=<raqam>",
+        businessIdPlaceholder: 'Business ID kiriting…',
+        businessIdHint: "Yandex Partner'ning \"Kabinet sozlamalari\" bo'limidagi raqamli Business ID. To'lovlar ma'lumoti (netting hisoboti) shu ID orqali olinadi.",
+        businessIdInvalid: "Business ID faqat raqamlardan iborat bo'lishi kerak.",
       },
       // Dashboard main page
       yourData: "Sizning ma'lumotingiz",
@@ -979,6 +982,9 @@ export const translations = {
         wbShopName:     'My Wildberries shop',
         campaignIdHint: 'Numeric ID from the URL (e.g. 149137909) — not your email',
         campaignIdInvalid: 'Campaign ID must be numeric. Copy it from the URL on your Yandex Partner page: campaignId=<number>',
+        businessIdPlaceholder: 'Enter Business ID…',
+        businessIdHint: 'Numeric Business ID from Yandex Partner → Cabinet settings. Payout data (netting report) is fetched using this ID.',
+        businessIdInvalid: 'Business ID must be numeric.',
       },
       // Dashboard main page
       yourData: 'Your data',
@@ -1847,6 +1853,9 @@ export const translations = {
         wbShopName:     'Мой магазин Wildberries',
         campaignIdHint: 'Числовой ID из URL (например 149137909) — не email',
         campaignIdInvalid: 'Campaign ID должен быть числом. Скопируйте из URL страницы Yandex Partner: campaignId=<число>',
+        businessIdPlaceholder: 'Введите Business ID…',
+        businessIdHint: 'Числовой Business ID из «Настройки кабинета» в Yandex Partner. По этому ID приходят данные о выплатах (netting отчёт).',
+        businessIdInvalid: 'Business ID должен состоять только из цифр.',
       },
       // Dashboard main page
       yourData: 'Ваши данные',

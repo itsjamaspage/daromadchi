@@ -32,18 +32,23 @@ export async function syncYandexSettlements(
   campaignId: string,
   windowDays = 7,
 ): Promise<SettlementsSyncResult> {
-  // Yandex's netting-report API is scoped to businessId, not campaignId.
-  // Resolve one from the other.
+  // Yandex's netting API is scoped to businessId, not campaignId. Two
+  // different IDs — early versions of the shop-connect flow stored
+  // campaignId in shops.business_id by mistake, so we self-heal any
+  // shop whose stored business_id equals its campaignId by re-fetching
+  // via /v2/campaigns/{campaignId}.
   let businessId: number | undefined
   const shopRow = await db.select({ business_id: shops.business_id }).from(shops).where(eq(shops.id, shopId)).limit(1)
-  if (shopRow[0]?.business_id && /^\d+$/.test(shopRow[0].business_id)) {
-    businessId = Number(shopRow[0].business_id)
+  const storedBid = shopRow[0]?.business_id
+  const storedLooksValid = storedBid && /^\d+$/.test(storedBid) && storedBid !== campaignId
+  if (storedLooksValid) {
+    businessId = Number(storedBid)
   }
   if (!businessId) {
     try {
       const info = await fetchCampaignInfo(token, campaignId)
       businessId = info.businessId
-      if (businessId) {
+      if (businessId && String(businessId) !== campaignId) {
         await db.update(shops).set({ business_id: String(businessId) }).where(eq(shops.id, shopId))
       }
     } catch (e) {

@@ -282,6 +282,7 @@ function YandexCard({ shop }: { shop: Shop | null; userId: string }) {
 
   const [apiKey,      setApiKey]      = useState('')
   const [campaignId,  setCampaignId]  = useState('')
+  const [businessId,  setBusinessId]  = useState('')
   const [saving,      setSaving]      = useState(false)
   const [syncing,     setSyncing]     = useState(false)
   const [testing,     setTesting]     = useState(false)
@@ -291,6 +292,7 @@ function YandexCard({ shop }: { shop: Shop | null; userId: string }) {
 
   const hasKey      = !!shop?.api_key_encrypted
   const hasCampaign = !!shop?.shop_id_external
+  const storedBusinessId = shop?.business_id ?? null
   const lastSync    = shop?.last_synced_at
     ? new Date(shop.last_synced_at).toLocaleString(lang === 'ru' ? 'ru-RU' : lang === 'en' ? 'en-US' : 'uz-UZ') : null
 
@@ -308,12 +310,17 @@ function YandexCard({ shop }: { shop: Shop | null; userId: string }) {
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
-    if (!apiKey.trim() && !campaignId.trim()) return
+    const trimmedCampaign = campaignId.trim()
+    const trimmedBusiness = businessId.trim()
+    if (!apiKey.trim() && !trimmedCampaign && !trimmedBusiness) return
     // Yandex Campaign ID must be numeric — reject emails / URLs / anything else
     // early so the sync doesn't fail with a "400 Incorrect campaignId" later.
-    const trimmedCampaign = campaignId.trim()
     if (trimmedCampaign && !/^\d+$/.test(trimmedCampaign)) {
       setSaveMsg({ ok: false, text: t.campaignIdInvalid })
+      return
+    }
+    if (trimmedBusiness && !/^\d+$/.test(trimmedBusiness)) {
+      setSaveMsg({ ok: false, text: t.businessIdInvalid })
       return
     }
     setSaving(true); setSaveMsg(null)
@@ -325,6 +332,7 @@ function YandexCard({ shop }: { shop: Shop | null; userId: string }) {
           marketplace: 'yandex_market',
           token: apiKey.trim() || undefined,
           campaignId: trimmedCampaign || undefined,
+          businessId: trimmedBusiness || undefined,
           shopName: t.yandexShopName,
         }),
       })
@@ -334,6 +342,7 @@ function YandexCard({ shop }: { shop: Shop | null; userId: string }) {
         : { ok: false, text: data.error ?? t.error })
       if (data.ok) {
         setApiKey('')
+        setBusinessId('')
         router.refresh()
         triggerYandexSync()
       }
@@ -431,6 +440,22 @@ function YandexCard({ shop }: { shop: Shop | null; userId: string }) {
             className="w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-amber-500/40 transition-all font-mono"
           />
           <p className="text-[var(--text-muted)] text-xs mt-1.5">{t.campaignIdHint}</p>
+        </div>
+
+        <div>
+          <label className="flex items-center gap-1.5 text-xs font-medium text-[var(--text-muted)] mb-2">
+            <Building2 className="w-3.5 h-3.5" /> Business ID
+          </label>
+          <input
+            type="text"
+            value={businessId}
+            onChange={e => setBusinessId(e.target.value)}
+            placeholder={storedBusinessId ?? t.businessIdPlaceholder}
+            inputMode="numeric"
+            pattern="[0-9]*"
+            className="w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-amber-500/40 transition-all font-mono"
+          />
+          <p className="text-[var(--text-muted)] text-xs mt-1.5">{t.businessIdHint}</p>
         </div>
 
         <StatusMsg msg={saveMsg} />
