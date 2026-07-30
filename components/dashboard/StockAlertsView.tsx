@@ -6,6 +6,7 @@ import { Settings2, AlertTriangle, Bell, Package } from 'lucide-react'
 import type { StockAlert } from '@/lib/db/alerts'
 import type { AlertSettings } from '@/lib/db/alerts'
 import ExportButton from '@/components/dashboard/ExportButton'
+import MpBadge from '@/components/dashboard/MpBadge'
 import TelegramConnect from '@/components/dashboard/TelegramConnect'
 import { useLang } from '@/app/providers'
 import { translations } from '@/lib/i18n'
@@ -269,11 +270,16 @@ export default function StockAlertsView({ alerts, settings: initialSettings }: P
                       className="hover:bg-[var(--bg-card2)] transition-colors"
                     >
                       <td className="px-5 py-3.5">
-                        <div className="flex items-center gap-2">
-                          <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                        <div className="flex items-start gap-2">
+                          <div className={`w-2 h-2 rounded-full flex-shrink-0 mt-1.5 ${
                             isCritical ? 'bg-red-500' : isWarning ? 'bg-amber-500' : 'bg-emerald-500'
                           }`} />
-                          <span className="text-[var(--text-base)] text-sm font-medium">{alert.productTitle}</span>
+                          <div className="min-w-0">
+                            <div className="text-[var(--text-base)] text-sm font-medium">{alert.productTitle}</div>
+                            <div className="mt-0.5">
+                              <MpBadge mp={alert.marketplace} />
+                            </div>
+                          </div>
                         </div>
                       </td>
                       <td className="px-5 py-3.5 text-[var(--text-muted)] text-sm font-mono">{alert.sku}</td>

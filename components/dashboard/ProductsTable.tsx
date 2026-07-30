@@ -4,28 +4,11 @@ import { useState, useMemo, useCallback, useEffect, useRef, Fragment } from 'rea
 import { Search, Check, X, Pencil } from 'lucide-react'
 import ExportButton from './ExportButton'
 import FulfillmentBadge from './FulfillmentBadge'
+import MpBadge, { MP_META } from './MpBadge'
 import { useLang } from '@/app/providers'
 import { translations } from '@/lib/i18n'
-import type { Product, MarketplaceType } from '@/lib/types'
+import type { Product } from '@/lib/types'
 import { useRouter } from 'next/navigation'
-
-const MP_META: Record<MarketplaceType, { label: string; short: string; color: string; bg: string }> = {
-  uzum:          { label: 'Uzum',          short: 'UZ', color: '#494fdf', bg: 'rgba(73,79,223,0.12)'   },
-  yandex_market: { label: 'Yandex Market', short: 'YM', color: '#E8A000', bg: 'rgba(232,160,0,0.12)'  },
-  wildberries:   { label: 'Wildberries',   short: 'WB', color: '#CB11AB', bg: 'rgba(203,17,171,0.12)' },
-}
-
-function MpBadge({ mp }: { mp: MarketplaceType }) {
-  const m = MP_META[mp]
-  return (
-    <span
-      className="text-[10px] font-bold px-1.5 py-0.5 rounded"
-      style={{ background: m.bg, color: m.color }}
-    >
-      {m.short}
-    </span>
-  )
-}
 
 function fmt(n: number) {
   return new Intl.NumberFormat('uz-UZ').format(n) + " so'm"
