@@ -12,15 +12,17 @@ import {
  * Fetch and store Yandex Market's real settlement transactions for one
  * shop. Idempotent — upsert on (shop_id, transaction_id).
  *
- * `windowDays` defaults to 60 so a fresh install captures 2 months of
- * history. The nightly cron re-runs this for the same window every
- * night; new transactions from Yandex just upsert.
+ * `windowDays` defaults to 7 — Yandex publishes settlement data within
+ * 1–2 days of delivery, so a 7-day window catches everything fresh on
+ * each cron run while keeping the report small (Yandex charges API
+ * quota per row, and a smaller window generates faster). New sellers
+ * or backfill jobs can pass a larger number.
  */
 export async function syncYandexSettlements(
   shopId: string,
   token: string,
   campaignId: string,
-  windowDays = 60,
+  windowDays = 7,
 ): Promise<{ ok: boolean; inserted: number; error?: string; skipped?: string }> {
   // Yandex's netting-report API is scoped to businessId, not campaignId.
   // Resolve one from the other.
