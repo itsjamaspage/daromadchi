@@ -6,6 +6,7 @@ import {
   pollReportUntilReady,
   downloadReport,
   parseNettingReport,
+  describeNettingReport,
 } from './netting-report'
 
 /**
@@ -94,7 +95,10 @@ export async function syncYandexSettlements(
 
   const parsed = parseNettingReport(buffer)
   if (parsed.length === 0) {
-    return { ok: true, inserted: 0, skipped: 'parsed 0 transactions from a non-empty XLSX (parser miss?)', debug: { reportId, bufferBytes: buffer.byteLength } }
+    // Include a snapshot of the XLSX so we can see whether the layout
+    // changed (new sheet order, renamed columns) instead of guessing.
+    const shape = describeNettingReport(buffer)
+    return { ok: true, inserted: 0, skipped: 'parsed 0 transactions from a non-empty XLSX (parser miss?)', debug: { reportId, bufferBytes: buffer.byteLength, shape } }
   }
 
   // Signed amount convention: negative for "Удержание", positive for

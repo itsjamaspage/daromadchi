@@ -156,40 +156,91 @@ export async function downloadReport(url: string, token: string): Promise<ArrayB
 }
 
 /**
+ * Snapshot of what a downloaded XLSX actually contains — used when the parser
+ * finds zero transactions and we need to see whether the layout drifted from
+ * the sample we built against. Returned by describeNettingReport and surfaced
+ * in the sync's error `debug` field on parse-miss.
+ */
+export interface NettingReportShape {
+  sheets: {
+    name: string
+    rowCount: number
+    firstRows: unknown[][] // first 3 non-empty rows for visual inspection
+  }[]
+}
+
+export function describeNettingReport(buffer: ArrayBuffer): NettingReportShape {
+  const wb = XLSX.read(buffer, { type: 'array', cellDates: true })
+  const sheets = wb.SheetNames.map(name => {
+    const s = wb.Sheets[name]
+    const rows: unknown[][] = s ? XLSX.utils.sheet_to_json(s, { header: 1, raw: true, defval: null }) : []
+    const nonEmpty = rows.filter(r => Array.isArray(r) && r.some(c => c != null && c !== ''))
+    return {
+      name,
+      rowCount: rows.length,
+      // Trim each cell to 60 chars and each row to first 20 cells so the
+      // debug blob stays under a couple KB even for wide reports.
+      firstRows: nonEmpty.slice(0, 3).map(r => r.slice(0, 20).map(c =>
+        typeof c === 'string' && c.length > 60 ? c.slice(0, 60) + '…' : c,
+      )),
+    }
+  })
+  return { sheets }
+}
+
+// Yandex tweaks column labels between report versions ("Сумма транзакции, UZS"
+// vs "Сумма транзакции" vs the ,-UZS variant). Match by any of a list of
+// candidates, whitespace/case-insensitive.
+function normHeader(v: unknown): string {
+  return String(v ?? '').replace(/\s+/g, ' ').trim().toLowerCase()
+}
+function findCol(header: unknown[], candidates: string[]): number {
+  const wanted = candidates.map(normHeader)
+  return header.findIndex(h => {
+    const n = normHeader(h)
+    return wanted.some(w => n === w || n.startsWith(w))
+  })
+}
+
+/**
  * Parse the XLSX buffer Yandex returned. Structure (verified against a real
  * report from a Uzbek FBS seller):
  *   Sheet 1: business summary (skipped)
  *   Sheet 2: one row per transaction with header row followed by data rows
  *            (with the columns documented in migrations/035_yandex_settlements.sql).
+ * We scan every sheet for the header row so a layout drift (Yandex adding a
+ * new intro sheet, splitting into per-order-type sheets, …) doesn't zero the
+ * parse. Header lookup itself is case/whitespace-insensitive with synonyms.
  */
 export function parseNettingReport(buffer: ArrayBuffer): SettlementTransaction[] {
   const wb = XLSX.read(buffer, { type: 'array', cellDates: true })
-  // Transaction detail lives on sheet 2 (index 1).
-  const sheetName = wb.SheetNames[1] ?? wb.SheetNames[0]
-  const sheet = wb.Sheets[sheetName]
-  if (!sheet) return []
 
-  // Read as row arrays so we can find the header row by content — Yandex
-  // sometimes prepends a few blank rows before the actual header.
-  const rows: unknown[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: true, defval: null })
-  const headerIdx = rows.findIndex(r => Array.isArray(r) && r.includes('ID транзакции'))
-  if (headerIdx < 0) return []
+  let sheet: XLSX.WorkSheet | undefined
+  let rows: unknown[][] = []
+  let headerIdx = -1
+  for (const name of wb.SheetNames) {
+    const s = wb.Sheets[name]
+    if (!s) continue
+    const r: unknown[][] = XLSX.utils.sheet_to_json(s, { header: 1, raw: true, defval: null })
+    const idx = r.findIndex(row => Array.isArray(row) && row.some(c => normHeader(c) === 'id транзакции' || normHeader(c).startsWith('id транзакции')))
+    if (idx >= 0) { sheet = s; rows = r; headerIdx = idx; break }
+  }
+  if (!sheet || headerIdx < 0) return []
   const header = rows[headerIdx] as (string | null)[]
-  const col = (name: string) => header.findIndex(h => (h ?? '').toString().trim() === name)
 
-  const idxTransactionId       = col('ID транзакции')
-  const idxTransactionDate     = col('Дата транзакции')
-  const idxOrderIdExternal     = col('Ваш номер заказа')
-  const idxYandexOrderNum      = col('Номер заказа или отгрузки')
-  const idxOrderCreatedAt      = col('Дата создания заказа')
-  const idxOrderDeliveredAt    = col('Дата доставки заказа')
-  const idxOrderType           = col('Тип заказа')
-  const idxSku                 = col('Ваш SKU')
-  const idxAmount              = col('Сумма транзакции, UZS')
-  const idxEntryType           = col('Тип транзакции')
-  const idxEntrySource         = col('Источник транзакции')
-  const idxQty                 = col('Количество')
-  const idxStatusNote          = col('Статус')
+  const idxTransactionId       = findCol(header, ['ID транзакции'])
+  const idxTransactionDate     = findCol(header, ['Дата транзакции'])
+  const idxOrderIdExternal     = findCol(header, ['Ваш номер заказа'])
+  const idxYandexOrderNum      = findCol(header, ['Номер заказа или отгрузки', 'Номер заказа', 'Номер отгрузки'])
+  const idxOrderCreatedAt      = findCol(header, ['Дата создания заказа'])
+  const idxOrderDeliveredAt    = findCol(header, ['Дата доставки заказа'])
+  const idxOrderType           = findCol(header, ['Тип заказа'])
+  const idxSku                 = findCol(header, ['Ваш SKU', 'SKU'])
+  const idxAmount              = findCol(header, ['Сумма транзакции, UZS', 'Сумма транзакции'])
+  const idxEntryType           = findCol(header, ['Тип транзакции'])
+  const idxEntrySource         = findCol(header, ['Источник транзакции'])
+  const idxQty                 = findCol(header, ['Количество'])
+  const idxStatusNote          = findCol(header, ['Статус'])
 
   const results: SettlementTransaction[] = []
   for (let i = headerIdx + 1; i < rows.length; i++) {

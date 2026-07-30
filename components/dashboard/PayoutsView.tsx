@@ -240,22 +240,27 @@ export default function PayoutsView({ entries }: Props) {
       // individual shops can report ok:false. Surface the actual sync
       // outcome so the seller sees "3 транзакций синхронизировано" or
       // the concrete error instead of a green "OK" that lied.
-      let payload: { ok?: boolean; results?: Array<{ ok: boolean; inserted?: number; error?: string; skipped?: string }> } = {}
+      let payload: { ok?: boolean; results?: Array<{ ok: boolean; inserted?: number; error?: string; skipped?: string; debug?: unknown }> } = {}
       try { payload = await res.json() } catch { /* non-json */ }
       const results = payload.results ?? []
       const totalInserted = results.reduce((s, r) => s + (r.inserted ?? 0), 0)
-      const firstError = results.find(r => !r.ok)?.error
-      const firstSkip  = results.find(r => r.skipped)?.skipped
+      const firstErrorRow = results.find(r => !r.ok)
+      const firstSkipRow  = results.find(r => r.skipped)
+      // Append the debug blob (report id, xlsx shape, etc.) to the tooltip
+      // so we can inspect what Yandex actually sent when the sync silently
+      // returned 0 transactions or errored.
+      const withDebug = (base: string, dbg: unknown) =>
+        dbg ? `${base}\n\n${JSON.stringify(dbg, null, 2)}` : base
       if (!res.ok) {
         setRefreshMsg({ tone: 'err', text: `HTTP ${res.status}` })
-      } else if (firstError) {
-        setRefreshMsg({ tone: 'err', text: firstError })
+      } else if (firstErrorRow) {
+        setRefreshMsg({ tone: 'err', text: withDebug(firstErrorRow.error ?? 'error', firstErrorRow.debug) })
       } else if (totalInserted > 0) {
         setRefreshMsg({ tone: 'ok', text: `${totalInserted} tx` })
         setTimeout(() => router.refresh(), 500)
       } else {
         // Sync ran cleanly but Yandex returned no transactions yet.
-        setRefreshMsg({ tone: 'ok', text: firstSkip ?? 'Yandex вернул 0 транзакций' })
+        setRefreshMsg({ tone: 'ok', text: withDebug(firstSkipRow?.skipped ?? 'Yandex вернул 0 транзакций', firstSkipRow?.debug) })
       }
     } catch (e) {
       setRefreshMsg({ tone: 'err', text: String(e).slice(0, 120) })
