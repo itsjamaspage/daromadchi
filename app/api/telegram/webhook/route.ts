@@ -253,10 +253,24 @@ async function sendNotifSettings(chatId: string, lang: string) {
 }
 
 export const POST = withErrorHandler(async (req: NextRequest) => {
+  // Telegram signs webhooks with the secret set on setWebhook and forwards
+  // it back as `x-telegram-bot-api-secret-token`. Before this change, an
+  // unset TELEGRAM_WEBHOOK_SECRET silently disabled verification — meaning
+  // if someone forgot the env var in prod, ANY POST to this route was
+  // treated as a legit Telegram update. Now:
+  //   - production: env var MUST be set AND header MUST match, or we 401
+  //   - non-production: env var is optional, so local dev with `curl` still works
   const expectedSecret = process.env.TELEGRAM_WEBHOOK_SECRET
+  const isProd = process.env.NODE_ENV === 'production'
+  if (isProd && !expectedSecret) {
+    return NextResponse.json(
+      { ok: false, error: 'TELEGRAM_WEBHOOK_SECRET not set on server' },
+      { status: 500 },
+    )
+  }
   if (expectedSecret) {
     const got = req.headers.get('x-telegram-bot-api-secret-token')
-    if (got !== expectedSecret) return NextResponse.json({ ok: true })
+    if (got !== expectedSecret) return NextResponse.json({ ok: false }, { status: 401 })
   }
 
   const body = await req.json().catch(() => null)

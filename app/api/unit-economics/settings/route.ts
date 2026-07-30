@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { saveUnitEcoSettings } from '@/lib/db/unit-economics'
+import { getCurrentUser } from '@/lib/auth/session'
 import { withErrorHandler } from '@/lib/api-handler'
 
 const PCT_FIELDS = ['acquiringPct', 'lastMilePct', 'adPct', 'taxPct', 'defaultCommissionPct'] as const
@@ -7,6 +8,9 @@ const TAX_TYPES  = ['income', 'income_minus_expense'] as const
 
 export const POST = withErrorHandler(async (req: NextRequest) => {
   try {
+    const user = await getCurrentUser()
+    if (!user) return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 })
+
     const body = await req.json().catch(() => null)
     if (!body) return NextResponse.json({ ok: false, error: 'Invalid JSON' }, { status: 400 })
 

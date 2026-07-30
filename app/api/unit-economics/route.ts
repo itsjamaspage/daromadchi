@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { addUnitEconomicsItem, deleteUnitEconomicsItems, updateUnitEconomicsSupplier, updateUnitEconomicsItem } from '@/lib/db/unit-economics'
+import { getCurrentUser } from '@/lib/auth/session'
 import { withErrorHandler } from '@/lib/api-handler'
 
 const MARKETPLACES = ['uzum', 'yandex_market', 'wildberries'] as const
@@ -19,6 +20,9 @@ function isFiniteNum(v: unknown): v is number {
 
 export const POST = withErrorHandler(async (req: NextRequest) => {
   try {
+    const user = await getCurrentUser()
+    if (!user) return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 })
+
     const body = await req.json().catch(() => null)
     if (!body) return NextResponse.json({ ok: false, error: 'Invalid JSON' }, { status: 400 })
 
@@ -47,6 +51,9 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
 
 export const DELETE = withErrorHandler(async (req: NextRequest) => {
   try {
+    const user = await getCurrentUser()
+    if (!user) return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 })
+
     const body = await req.json().catch(() => null)
     const ids = body?.ids
     if (!Array.isArray(ids) || ids.length > 200) {
@@ -64,6 +71,9 @@ export const DELETE = withErrorHandler(async (req: NextRequest) => {
 
 export const PATCH = withErrorHandler(async (req: NextRequest) => {
   try {
+    const user = await getCurrentUser()
+    if (!user) return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 })
+
     const body = await req.json().catch(() => null)
     if (!body) return NextResponse.json({ ok: false, error: 'Invalid JSON' }, { status: 400 })
 

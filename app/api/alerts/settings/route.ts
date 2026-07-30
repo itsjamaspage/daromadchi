@@ -1,9 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { saveAlertSettings } from '@/lib/db/alerts'
+import { getCurrentUser } from '@/lib/auth/session'
 import { withErrorHandler } from '@/lib/api-handler'
 
 export const POST = withErrorHandler(async (req: NextRequest) => {
   try {
+    // Auth guard up-front. saveAlertSettings currently no-ops for anon
+    // callers (returns silently) — that's a soft-fail we prefer to
+    // surface as a real 401 so the client can react correctly.
+    const user = await getCurrentUser()
+    if (!user) return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 })
+
     const body = await req.json().catch(() => null)
     if (!body) return NextResponse.json({ ok: false, error: 'Invalid JSON' }, { status: 400 })
 
