@@ -130,25 +130,27 @@ export async function getPnl(opts: PnlOpts): Promise<{ rows: PnlRow[]; params: P
   const cogsByBucket = new Map(cogsRows.map(r => [r.bucket, Number(r.cogs)]))
   const adSpendByBucket = new Map(adSpendRows.map(r => [r.bucket, Number(r.spend)]))
 
-  // Zero-fill every bucket in the range so an empty day still gets a row —
-  // required for the chart to show a "0 revenue" bar on days without orders.
+  // Zero-fill every DAY bucket in the range so an empty day renders a
+  // "0" bar on the chart. Month buckets are NOT zero-filled — an empty
+  // month is just noise in the table (5 rows of zeros before the first
+  // month with orders is what the seller complained about) and the
+  // chart handles missing months by simply omitting the bar.
   const grouped = new Map<string, {
     revenue: number; realFee: number; realDelivery: number; count: number
     cancelledCount: number; cancelledAmount: number
     penalty: number; storageFee: number; additionalPayment: number
   }>()
-  const cursor = new Date(from.getFullYear(), from.getMonth(), from.getDate())
-  const stop   = new Date(to.getFullYear(), to.getMonth(), to.getDate())
-  while (cursor <= stop) {
-    const key = bucket === 'day'
-      ? `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}-${String(cursor.getDate()).padStart(2, '0')}`
-      : `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}`
-    if (!grouped.has(key)) grouped.set(key, {
-      revenue: 0, realFee: 0, realDelivery: 0, count: 0, cancelledCount: 0, cancelledAmount: 0,
-      penalty: 0, storageFee: 0, additionalPayment: 0,
-    })
-    if (bucket === 'day') cursor.setDate(cursor.getDate() + 1)
-    else cursor.setMonth(cursor.getMonth() + 1)
+  if (bucket === 'day') {
+    const cursor = new Date(from.getFullYear(), from.getMonth(), from.getDate())
+    const stop   = new Date(to.getFullYear(), to.getMonth(), to.getDate())
+    while (cursor <= stop) {
+      const key = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}-${String(cursor.getDate()).padStart(2, '0')}`
+      grouped.set(key, {
+        revenue: 0, realFee: 0, realDelivery: 0, count: 0, cancelledCount: 0, cancelledAmount: 0,
+        penalty: 0, storageFee: 0, additionalPayment: 0,
+      })
+      cursor.setDate(cursor.getDate() + 1)
+    }
   }
 
   for (const row of rows) {

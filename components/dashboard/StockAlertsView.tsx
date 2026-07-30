@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Settings2, AlertTriangle, Bell, Package } from 'lucide-react'
 import type { StockAlert } from '@/lib/db/alerts'
 import type { AlertSettings } from '@/lib/db/alerts'
@@ -89,14 +90,17 @@ function AlertStockHint({ alert }: { alert: StockAlert }) {
 export default function StockAlertsView({ alerts, settings: initialSettings }: Props) {
   const { lang } = useLang()
   const d = translations[lang].dashboard
+  const router = useRouter()
   const [showSettings, setShowSettings] = useState(false)
   const [settings, setSettings] = useState(initialSettings)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const printRef = useRef<HTMLDivElement>(null)
 
-  const critical = alerts.filter(a => a.daysLeft <= 3).length
-  const warning  = alerts.filter(a => a.daysLeft > 3 && a.daysLeft <= 7).length
+  // Match the per-row classification: out-of-stock always counts as
+  // critical, everything else follows the daysLeft thresholds.
+  const critical = alerts.filter(a => a.currentStock <= 0 || a.daysLeft <= 3).length
+  const warning  = alerts.filter(a => a.currentStock > 0 && a.daysLeft > 3 && a.daysLeft <= 7).length
 
   const exportData = alerts.map(a => ({
     [d.colProduct]:    a.productTitle,
@@ -105,19 +109,26 @@ export default function StockAlertsView({ alerts, settings: initialSettings }: P
     [d.colThreshold]:  a.threshold,
     [d.colDaysLeft]:   a.daysLeft,
     [d.colDailySales]: a.dailySales,
-    [d.colStatus]: a.daysLeft <= 3 ? d.statusCritical : a.daysLeft <= 7 ? d.statusWarning : d.statusWatch,
+    [d.colStatus]: (a.currentStock <= 0 || a.daysLeft <= 3) ? d.statusCritical : a.daysLeft <= 7 ? d.statusWarning : d.statusWatch,
   }))
 
   async function handleSave() {
     setSaving(true)
     try {
-      await fetch('/api/alerts/settings', {
+      const res = await fetch('/api/alerts/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(settings),
       })
-      setSaved(true)
-      setTimeout(() => setSaved(false), 2000)
+      if (res.ok) {
+        setSaved(true)
+        setTimeout(() => setSaved(false), 2000)
+        // Reload the server-rendered alerts list with the new threshold.
+        // Without this the top table keeps showing rows filtered by the
+        // OLD threshold (e.g. saving 5 leaves the 15-threshold list on
+        // screen), and every "Порог" cell keeps reading the stale number.
+        router.refresh()
+      }
     } finally {
       setSaving(false)
     }
@@ -243,8 +254,15 @@ export default function StockAlertsView({ alerts, settings: initialSettings }: P
               </thead>
               <tbody className="divide-y divide-[var(--border)]">
                 {alerts.map(alert => {
-                  const isCritical = alert.daysLeft <= 3
-                  const isWarning  = alert.daysLeft <= 7
+                  // A completely out-of-stock listing is ALWAYS critical
+                  // regardless of recent sales — the seller was confused
+                  // when a "0 шт · 0/день" row rendered as green
+                  // "Наблюдение" while a "0 шт · 0.1/день" row on the
+                  // same page rendered red "Критично". If you have 0
+                  // stock, you cannot ship anything: that's a red row.
+                  const outOfStock = alert.currentStock <= 0
+                  const isCritical = outOfStock || alert.daysLeft <= 3
+                  const isWarning  = !isCritical && alert.daysLeft <= 7
                   return (
                     <tr
                       key={alert.productId}
