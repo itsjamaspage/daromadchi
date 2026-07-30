@@ -153,23 +153,34 @@ export async function syncYandexSettlements(
       })
     }
   } catch (e) {
-    const err = e as { message?: string; code?: string; detail?: string; constraint?: string; column?: string; table?: string }
+    // Drizzle wraps the underlying Postgres error in a DrizzleError and
+    // the pg fields (code, detail, constraint, column, table) live on
+    // `.cause`, not the outer error — that's why the earlier attempt saw
+    // them as undefined. Walk both, and dump every own+prototype property
+    // so nothing gets hidden.
+    const errCause = (e as { cause?: unknown }).cause
+    const pick = (obj: unknown) => {
+      if (obj == null || typeof obj !== 'object') return null
+      const out: Record<string, unknown> = {}
+      for (const k of ['message', 'code', 'detail', 'hint', 'constraint', 'column', 'table', 'severity', 'schema', 'internalPosition', 'internalQuery', 'where', 'file', 'line', 'routine']) {
+        const v = (obj as Record<string, unknown>)[k]
+        if (v !== undefined) out[k] = v
+      }
+      return out
+    }
+    const outerMsg = (e as { message?: string }).message ?? String(e)
     return {
       ok: false,
       inserted: 0,
-      error: `insert: ${err.message ?? String(e)}`.slice(0, 400),
+      // 2000 chars — long enough for a full pg statement + reason, not
+      // enough to blow up the tooltip.
+      error: `insert: ${outerMsg}`.slice(0, 2000),
       debug: {
         reportId,
         rowCount: rows.length,
-        // Postgres error fields drizzle passes through — the actual
-        // reason (unique_violation, not_null, check, etc.) plus the
-        // offending column/constraint name.
-        pgCode:       err.code,
-        pgDetail:     err.detail,
-        pgConstraint: err.constraint,
-        pgColumn:     err.column,
-        pgTable:      err.table,
-        firstRow:     rows[0],
+        errorOuter: pick(e),
+        errorCause: pick(errCause),
+        firstRow:   rows[0],
       },
     }
   }
