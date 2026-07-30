@@ -14,7 +14,11 @@ function fmt(n: number) {
   return new Intl.NumberFormat('uz-UZ').format(n) + " so'm"
 }
 
-type TabKey = 'all' | 'low_stock' | 'delivered' | 'ordered' | 'cancelled'
+// Product-level filters only. Order-status chips (delivered / in-process /
+// cancelled) used to live here too but those are ORDER-level counts and
+// belonged on the Orders page — showing them on Products was redundant
+// with the Orders page's own status filters and confused the seller.
+type TabKey = 'all' | 'low_stock'
 type SortKey = 'title' | 'profit' | 'margin' | 'stock_quantity'
 
 function SortIcon({ col, sortBy, sortDir }: { col: SortKey; sortBy: SortKey; sortDir: 'asc' | 'desc' }) {
@@ -222,9 +226,6 @@ export default function ProductsTable({ products }: { products: Product[] }) {
   const TABS: { key: TabKey; label: string }[] = [
     { key: 'all',       label: d.status.all          },
     { key: 'low_stock', label: '📦 ' + d.stockQty    },
-    { key: 'delivered', label: '✅ ' + d.sold         },
-    { key: 'ordered',   label: '🛒 ' + d.orderedTab   },
-    { key: 'cancelled', label: '❌ ' + d.cancelledTab },
   ]
 
   const filtered = useMemo(() => {
@@ -241,9 +242,6 @@ export default function ProductsTable({ products }: { products: Product[] }) {
     if (category !== ALL_CAT) rows = rows.filter(p => p.category === category)
 
     if (tab === 'low_stock') rows = rows.filter(p => p.available_stock < stockThreshold)
-    if (tab === 'delivered') rows = rows.filter(p => (p.delivered ?? 0) > 0)
-    if (tab === 'ordered')   rows = rows.filter(p => (p.in_transit ?? 0) > 0)
-    if (tab === 'cancelled') rows = rows.filter(p => (p.cancelled ?? 0) > 0)
 
     rows.sort((a, b) => {
       let av: number, bv: number
@@ -292,9 +290,6 @@ export default function ProductsTable({ products }: { products: Product[] }) {
   const tabCounts = {
     all:       enriched.length,
     low_stock: enriched.reduce((s, p) => s + p.available_stock, 0),
-    delivered: enriched.filter(p => (p.delivered ?? 0) > 0).length,
-    ordered:   enriched.filter(p => (p.in_transit ?? 0) > 0).length,
-    cancelled: enriched.filter(p => (p.cancelled ?? 0) > 0).length,
   }
 
   return (
