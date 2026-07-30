@@ -202,17 +202,23 @@ export async function getPnl(opts: PnlOpts): Promise<{ rows: PnlRow[]; params: P
       // both fold it in). Only show a separate estimated acquiring line
       // when we're falling back to Unit-Economics percentages.
       const acquiring  = (!hasReal && estimated) ? v.revenue * params.acquiringPct / 100 : 0
+      // Ads: use ONLY real productAdsStats data. Sellers explicitly
+      // asked to drop the "estimate from % of revenue" fallback — that
+      // was producing phantom ad-spend lines for shops that never ran
+      // ads. If we have no real data, show 0, not an estimate.
       const realAdSpend = adSpendByBucket.get(key) ?? 0
-      const adSpendEstimated = realAdSpend === 0 && v.revenue > 0
-      const ads = adSpendEstimated ? v.revenue * params.adPct / 100 : realAdSpend
+      const ads = realAdSpend
+      const adSpendEstimated = false
       const cogs       = cogsByBucket.get(key) ?? 0
       const penalty    = v.penalty
       const storageFee = v.storageFee
       const additionalPayment = v.additionalPayment
-      const taxBase    = ue.taxType === 'income'
-        ? v.revenue
-        : Math.max(v.revenue - commission - delivery - acquiring - ads - cogs - penalty - storageFee - additionalPayment, 0)
-      const tax        = taxBase * params.taxPct / 100
+      // Tax: dropped from the automatic P&L calculation. Uzbek sellers'
+      // tax rate depends on their legal form and turnover — we can't
+      // know it from any marketplace API — so estimating from a
+      // hard-coded percentage was misleading. Left at 0 here; a future
+      // Settings toggle can add seller-configured tax back in.
+      const tax        = 0
       return {
         bucketKey:        key,
         monthKey:         key,

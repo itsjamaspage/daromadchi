@@ -117,14 +117,18 @@ export async function getRealFinancialsByBucket(
         const gross      = Number(r.seller_price ?? 0)
         const commission = Number(r.commission   ?? 0)
         const delivery   = Number(r.delivery     ?? 0)
-        const withdrawn  = r.withdrawn_profit != null ? Number(r.withdrawn_profit) : null
-        const profit     = r.seller_profit    != null ? Number(r.seller_profit)    : null
-        // Same net preference as payouts.ts: withdrawnProfit (what
-        // actually hit the balance) → sellerProfit (pre-release) →
-        // derived (gross − commission − delivery).
-        const net = withdrawn != null ? withdrawn
-                  : profit    != null ? profit
-                  : gross - commission - delivery
+        // Uzum populates withdrawn_profit and seller_profit with numeric
+        // 0.00 (not null) on PROCESSING rows — money hasn't hit the
+        // balance yet, so withdrawn=0, but seller_profit already carries
+        // the expected net. Ranking "> 0" instead of "not null" so the
+        // 0.00 doesn't win over the real 55550. Matches payouts.ts's
+        // aggregate-level preference.
+        const withdrawn = Number(r.withdrawn_profit ?? 0)
+        const profit    = Number(r.seller_profit    ?? 0)
+        const derived   = gross - commission - delivery
+        const net = withdrawn > 0 ? withdrawn
+                  : profit    > 0 ? profit
+                  : derived
         bump(r.bucket, { commission, delivery, net, itemCount: 1 })
       }
     } catch (e) {
