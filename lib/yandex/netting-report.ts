@@ -60,53 +60,49 @@ async function yandexRequest<T>(path: string, token: string, options?: RequestIn
  * Kick off report generation. Returns Yandex's reportId — poll it with
  * getReportStatus until DONE.
  *
- * Yandex renamed this endpoint from `/reports/united-netting-report/generate`
- * (returns 404 now) to the business-scoped
- * `/businesses/{businessId}/reports/united-netting-report/generate`.
- * Uses the new one first; if Yandex 404s AGAIN (some sellers may still
- * be on legacy routing), falls back to the old path.
+ * Endpoint: POST /reports/united-netting/generate (verified via the
+ * diagnose probe — the more-obvious /reports/united-netting-report/generate
+ * returns 404). Body: { businessId, dateTimeFrom, dateTimeTo }.
+ *
+ * dateTimeTo MUST NOT be in the future (Yandex rejects with 400
+ * "Right date bound (…) is in the future"), so we clamp it to `now`
+ * regardless of what the caller passed.
  */
 export async function generateNettingReport(
   token: string,
   businessId: number,
   dateFrom: string, // YYYY-MM-DD
-  dateTo: string,   // YYYY-MM-DD
+  dateTo: string,   // YYYY-MM-DD (upper bound, clamped to now)
 ): Promise<string> {
   interface GenerateResponse {
     result?: { reportId?: string; estimatedGenerationTime?: number }
     errors?: { code: string; message: string }[]
   }
+
+  // Clamp the upper bound to just before "now" (subtract 60s so a
+  // slight clock skew between us and Yandex can't still land in the
+  // future). Preserves the requested dateFrom exactly.
+  const now = new Date(Date.now() - 60_000)
+  const requestedEndOfDay = new Date(`${dateTo}T23:59:59Z`)
+  const upper = requestedEndOfDay > now ? now : requestedEndOfDay
+  const dateTimeTo = upper.toISOString().replace(/\.\d{3}Z$/, 'Z')
+
   const body = JSON.stringify({
     businessId,
     dateTimeFrom: `${dateFrom}T00:00:00Z`,
-    dateTimeTo:   `${dateTo}T23:59:59Z`,
+    dateTimeTo,
   })
 
-  const paths = [
-    `/businesses/${businessId}/reports/united-netting-report/generate`,
-    `/reports/united-netting-report/generate`, // legacy fallback
-  ]
-
-  let lastErr: Error | null = null
-  for (const path of paths) {
-    try {
-      const data = await yandexRequest<GenerateResponse>(path, token, { method: 'POST', body })
-      const id = data.result?.reportId
-      if (!id) {
-        lastErr = new Error(`Yandex report generate returned no reportId (${path}). Body: ${JSON.stringify(data).slice(0, 400)}`)
-        continue
-      }
-      return id
-    } catch (e) {
-      lastErr = e as Error
-      // Only fall through on 404 — every other status (401, 403, 500…)
-      // means the endpoint exists and something else is wrong, so
-      // don't waste a second attempt.
-      const msg = String(lastErr)
-      if (!msg.includes('404')) break
-    }
+  const data = await yandexRequest<GenerateResponse>(
+    `/reports/united-netting/generate`,
+    token,
+    { method: 'POST', body },
+  )
+  const id = data.result?.reportId
+  if (!id) {
+    throw new Error(`Yandex report generate returned no reportId. Body: ${JSON.stringify(data).slice(0, 400)}`)
   }
-  throw lastErr ?? new Error('Yandex report generate: unknown failure')
+  return id
 }
 
 export interface ReportStatus {

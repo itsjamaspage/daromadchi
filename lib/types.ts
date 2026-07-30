@@ -109,6 +109,10 @@ export interface Shop {
   last_synced_at: string | null
   created_at: string
   warehouse_id?: string | null
+  // Yandex Market only — the seller's businessId (distinct from campaignId).
+  // Netting/settlement APIs are scoped to businessId, so we expose it in the
+  // Settings UI as a separate field.
+  business_id?: string | null
 }
 
 export interface Product {

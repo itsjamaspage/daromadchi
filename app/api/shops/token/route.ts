@@ -14,6 +14,10 @@ const TokenSchema = z.object({
   marketplace: z.enum(['wildberries', 'uzum', 'yandex_market']),
   token:       z.string().max(2000).optional(),
   campaignId:  z.string().max(200).optional(),
+  // Yandex only. Persisted to shops.business_id so the netting-report
+  // sync can hit the businessId-scoped endpoints without having to
+  // resolve it from campaignId on every run.
+  businessId:  z.string().max(200).optional(),
   shopName:    z.string().max(200).optional(),
 })
 
@@ -26,7 +30,11 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   if (!parsed.success) {
     return NextResponse.json({ ok: false, error: parsed.error.issues[0]?.message ?? 'Noto\'g\'ri ma\'lumot' }, { status: 400 })
   }
-  const { marketplace, token, campaignId, shopName } = parsed.data
+  const { marketplace, token, campaignId, businessId, shopName } = parsed.data
+
+  if (businessId?.trim() && !/^\d+$/.test(businessId.trim())) {
+    return NextResponse.json({ ok: false, error: 'Business ID должен состоять только из цифр.' }, { status: 400 })
+  }
 
   if (token?.trim()) {
     const valid = await validateMarketplaceToken(marketplace, token.trim(), campaignId?.trim())
@@ -48,6 +56,7 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     update.last_synced_at = null
   }
   if (campaignId?.trim()) update.shop_id_external = campaignId.trim()
+  if (businessId?.trim()) update.business_id = businessId.trim()
 
   // Saving a token must NOT destroy synced data: users re-save the same
   // account's token routinely (rotation, re-copy), and wiping left the app
