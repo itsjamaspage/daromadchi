@@ -342,7 +342,7 @@ export const translations = {
       // PnL page
       pnlTitle: 'Foyda va zarar hisoboti',
       pnlSubtitleEmpty: "Do'kon sinxronlashtirilgandan so'ng ma'lumotlar ko'rinadi",
-      pnlSubtitle: "So'nggi 6 oy · Daromad, komissiya va yetkazib berish xarajatlari",
+      pnlSubtitle: "Daromad, komissiya va yetkazib berish xarajatlari — davrni tanlang",
       cogsLabel: 'Tannarx (COGS)',
       acquiringLabel: 'Ekvayring',
       taxLabel: 'Soliq',
@@ -1210,7 +1210,7 @@ export const translations = {
       // PnL page
       pnlTitle: 'Profit & Loss report',
       pnlSubtitleEmpty: 'Data will appear once the store is synced',
-      pnlSubtitle: 'Last 6 months · Revenue, commission and delivery costs',
+      pnlSubtitle: 'Revenue, commission and delivery costs — pick a period',
       cogsLabel: 'COGS',
       acquiringLabel: 'Acquiring',
       taxLabel: 'Tax',
@@ -2078,7 +2078,7 @@ export const translations = {
       // PnL page
       pnlTitle: 'Отчёт о прибылях и убытках',
       pnlSubtitleEmpty: 'Данные появятся после синхронизации магазина',
-      pnlSubtitle: 'Последние 6 месяцев · Выручка, комиссия и расходы на доставку',
+      pnlSubtitle: 'Выручка, комиссия и расходы на доставку — выберите период',
       cogsLabel: 'Себестоимость',
       acquiringLabel: 'Эквайринг',
       taxLabel: 'Налог',
