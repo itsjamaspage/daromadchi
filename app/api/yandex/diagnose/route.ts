@@ -32,8 +32,11 @@ interface Probe {
 
 async function probe(label: string, url: string, token: string): Promise<Probe> {
   try {
+    // Yandex Partner API auth header is `Api-Key: <token>`, NOT Bearer.
+    // Using Bearer returns 401 which our sandboxed error wrapper turned
+    // into a 500 in the previous version of this file.
     const res = await marketplaceFetch(url, {
-      headers: { Authorization: `Bearer ${token.trim()}`, Accept: 'application/json' },
+      headers: { 'Api-Key': token.trim(), Accept: 'application/json' },
       next: { revalidate: 0 },
     })
     const text = await res.text().catch(() => '')

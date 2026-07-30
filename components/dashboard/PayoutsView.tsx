@@ -223,9 +223,13 @@ export default function PayoutsView({ entries }: Props) {
 
   const filteredEntries = mpFilter === 'all' ? entries : entries.filter(e => e.marketplace === mpFilter)
 
-  const paidEntries = filteredEntries.filter(e => e.status === 'paid' || e.status === 'estimated_paid')
+  // Exclude awaitingSettlement rows from KPI totals — those have
+  // netPayout=0 as a placeholder and would drag averages/totals down
+  // if summed.
+  const withKnownNet = filteredEntries.filter(e => !e.awaitingSettlement)
+  const paidEntries = withKnownNet.filter(e => e.status === 'paid' || e.status === 'estimated_paid')
   const totalPaid   = paidEntries.reduce((s, e) => s + e.netPayout, 0)
-  const pending     = filteredEntries.filter(e => e.status !== 'paid' && e.status !== 'estimated_paid').reduce((s, e) => s + e.netPayout, 0)
+  const pending     = withKnownNet.filter(e => e.status !== 'paid' && e.status !== 'estimated_paid').reduce((s, e) => s + e.netPayout, 0)
   const avgPaid     = paidEntries.length > 0 ? Math.round(totalPaid / paidEntries.length) : 0
 
   function toggle(id: string) {
@@ -354,14 +358,29 @@ export default function PayoutsView({ entries }: Props) {
                     </td>
                     <td className="px-4 py-3.5 text-right text-[var(--text-dim)] text-sm">{entry.ordersCount}</td>
                     <td className="px-4 py-3.5 text-right text-[var(--text-dim)] text-sm">{fmtShort(entry.grossRevenue)}</td>
-                    <td className="px-4 py-3.5 text-right text-red-400 text-sm">-{fmtShort(entry.commission)}</td>
-                    <td className="px-4 py-3.5 text-right text-red-400 text-sm">-{fmtShort(entry.delivery)}</td>
-                    <td className="px-4 py-3.5 text-right text-red-400 text-sm">-{fmtShort(entry.returns)}</td>
-                    <td className="px-4 py-3.5 text-right text-red-400 text-sm">-{fmtShort(entry.adSpend)}</td>
-                    <td className="px-4 py-3.5 text-right text-red-400 text-sm">-{fmtShort(entry.tax)}</td>
-                    <td className="px-4 py-3.5 text-right">
-                      <span className="text-[var(--text-base)] font-bold text-sm">{fmtShort(entry.netPayout)}</span>
-                    </td>
+                    {entry.awaitingSettlement ? (
+                      <>
+                        {/* Yandex row before Yandex publishes real
+                            settlement data — we refuse to estimate.
+                            One long "awaiting" cell spans the deduction
+                            columns instead of six fake numbers. */}
+                        <td colSpan={5} className="px-4 py-3.5 text-center text-[var(--text-muted)] text-xs italic" title={t.awaitingSettlementHint}>
+                          {t.awaitingSettlement}
+                        </td>
+                        <td className="px-4 py-3.5 text-right text-[var(--text-muted)] text-sm">—</td>
+                      </>
+                    ) : (
+                      <>
+                        <td className="px-4 py-3.5 text-right text-red-400 text-sm">-{fmtShort(entry.commission)}</td>
+                        <td className="px-4 py-3.5 text-right text-red-400 text-sm">-{fmtShort(entry.delivery)}</td>
+                        <td className="px-4 py-3.5 text-right text-red-400 text-sm">-{fmtShort(entry.returns)}</td>
+                        <td className="px-4 py-3.5 text-right text-red-400 text-sm">-{fmtShort(entry.adSpend)}</td>
+                        <td className="px-4 py-3.5 text-right text-red-400 text-sm">-{fmtShort(entry.tax)}</td>
+                        <td className="px-4 py-3.5 text-right">
+                          <span className="text-[var(--text-base)] font-bold text-sm">{fmtShort(entry.netPayout)}</span>
+                        </td>
+                      </>
+                    )}
                     <td className="px-4 py-3.5"><StatusBadge status={entry.status} /></td>
                     <td className="px-3 py-3.5 text-[var(--text-muted)]">
                       {expandedId === entry.id

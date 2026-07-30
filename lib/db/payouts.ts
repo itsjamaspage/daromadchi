@@ -170,8 +170,53 @@ export async function getPayoutEntries(): Promise<PayoutEntry[]> {
   const now = new Date()
   const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
 
-  const entries: PayoutEntry[] = Array.from(grouped.entries()).map(([key, v]) => {
+  const entries: PayoutEntry[] = Array.from(grouped.entries()).flatMap(([key, v]) => {
     const [monthKey, mp] = key.split('|')
+
+    // Yandex Market special-case: the `commissionTotal` field on the
+    // /v2/campaigns/{id}/orders endpoint is Yandex's order-TIME
+    // estimate, not the actual settlement charge. The real numbers
+    // live in Yandex's "united netting report" which is generated
+    // async and typically published a few days AFTER settlement.
+    //
+    // Seller explicitly asked: for Yandex, DON'T estimate. Wait until
+    // Yandex publishes real settlement data, then show that. Until
+    // then we return a placeholder entry with status='pending_settlement'
+    // and net=null so the UI can render "Ожидает данных Yandex"
+    // instead of guessing.
+    //
+    // TODO: fetch Yandex united-netting-report API and store real
+    // settlement per order — then this branch flips to real numbers.
+    if (mp === 'yandex_market') {
+      const isPast = monthKey < currentMonth
+      const entry: PayoutEntry = {
+        id: key,
+        period: monthKey,
+        marketplace: mp,
+        grossRevenue: v.revenue,
+        commission: 0,
+        delivery: 0,
+        returns: v.returnAmount,
+        adSpend: 0,
+        acquiring: 0,
+        tax: 0,
+        penalty: 0,
+        storageFee: 0,
+        additionalPayment: 0,
+        otherDeductions: 0,
+        netPayout: 0,
+        ordersCount: v.count,
+        status: isPast ? 'pending' : 'estimated_pending',
+        payoutDate: null,
+        payoutEstimated: false,
+        items: itemsMap.get(key) ?? [],
+        firstOrderDate: isoDate(v.firstOrderAt),
+        lastOrderDate:  isoDate(v.lastOrderAt),
+        awaitingSettlement: true,
+      }
+      return [entry]
+    }
+
     const estimated = v.realFee === 0 && v.revenue > 0
     const commission = estimated ? v.revenue * ue.defaultCommissionPct / 100 : v.realFee
     const delivery = v.realDelivery > 0 ? v.realDelivery : v.revenue * ue.lastMilePct / 100
@@ -188,8 +233,7 @@ export async function getPayoutEntries(): Promise<PayoutEntry[]> {
     const netPayout = v.revenue - commission - delivery - acquiring - tax - adSpend - cogs - penalty - storageFee - additionalPayment
 
     const isPast = monthKey < currentMonth
-
-    return {
+    const entry: PayoutEntry = {
       id: key,
       period: monthKey,
       marketplace: mp,
@@ -207,13 +251,15 @@ export async function getPayoutEntries(): Promise<PayoutEntry[]> {
       netPayout,
       ordersCount: v.count,
       // TODO: replace with real payout schedule data from each marketplace's API
-      status: isPast ? 'estimated_paid' as const : 'estimated_pending' as const,
+      status: isPast ? 'estimated_paid' : 'estimated_pending',
       payoutDate: null,
       payoutEstimated: true,
       items: itemsMap.get(key) ?? [],
       firstOrderDate: isoDate(v.firstOrderAt),
       lastOrderDate:  isoDate(v.lastOrderAt),
+      awaitingSettlement: false,
     }
+    return [entry]
   })
 
   entries.sort((a, b) => b.period.localeCompare(a.period))

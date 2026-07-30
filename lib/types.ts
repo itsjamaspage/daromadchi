@@ -229,6 +229,11 @@ export interface PayoutEntry {
   // period has no non-cancelled orders.
   firstOrderDate: string | null
   lastOrderDate: string | null
+  // True when the marketplace hasn't yet published real settlement
+  // data for this period (currently: always true for Yandex Market).
+  // When true the UI hides estimated commission/tax/ads/net numbers
+  // and shows an "Ожидает данных" state instead — no fake numbers.
+  awaitingSettlement: boolean
 }
 
 export interface WatchlistItem {

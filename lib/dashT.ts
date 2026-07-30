@@ -320,6 +320,8 @@ export const dashT = {
       itemProduct: 'Mahsulot', itemQty: 'Miqdor', itemRevenue: 'Tushum', itemOrders: 'buyurtma',
       itemsShowMore: 'Yana ko\'rsatish', itemsShowLess: 'Kamroq ko\'rsatish',
       estimateNote: "Raqamlar — sizning Unit Economics foizlaringiz asosidagi TAXMIN. Marketpleysning haqiqiy to'lovi farq qiladi — aniq summani marketpleys kabinetingizdagi «Moliya» bo'limida ko'ring.",
+      awaitingSettlement: 'Yandex ma\'lumotlarini kutmoqda',
+      awaitingSettlementHint: 'Yandex haqiqiy to\'lov ma\'lumotlarini bir necha kun ichida e\'lon qiladi. Chiqib turgandan keyin bu qatorda haqiqiy raqamlar ko\'rinadi.',
     },
     seasonality: {
       insightBest: 'Eng yaxshi oy', insightLow: 'Eng past oy',
@@ -712,6 +714,8 @@ export const dashT = {
       itemProduct: 'Product', itemQty: 'Qty', itemRevenue: 'Revenue', itemOrders: 'orders',
       itemsShowMore: 'Show more', itemsShowLess: 'Show less',
       estimateNote: "Numbers are ESTIMATES based on your Unit Economics percentages. Actual marketplace payout will differ — check the exact amount in your marketplace's finance section.",
+      awaitingSettlement: 'Awaiting Yandex data',
+      awaitingSettlementHint: 'Yandex publishes real settlement numbers a few days after the payout window closes. Real numbers will appear on this row once Yandex releases them.',
     },
     seasonality: {
       insightBest: 'Best month', insightLow: 'Lowest month',
@@ -1101,6 +1105,8 @@ export const dashT = {
       itemProduct: 'Товар', itemQty: 'Кол-во', itemRevenue: 'Выручка', itemOrders: 'заказов',
       itemsShowMore: 'Показать ещё', itemsShowLess: 'Свернуть',
       estimateNote: "Цифры — ОЦЕНКА на основе процентов из вашего Unit Economics. Реальная выплата маркетплейса будет отличаться — точную сумму смотрите в разделе «Финансы» кабинета маркетплейса.",
+      awaitingSettlement: 'Ожидает данных Yandex',
+      awaitingSettlementHint: 'Yandex публикует реальные суммы выплаты через несколько дней после закрытия расчётного периода. Как только Yandex их выложит — реальные цифры появятся в этой строке.',
     },
     seasonality: {
       insightBest: 'Лучший месяц', insightLow: 'Худший месяц',
