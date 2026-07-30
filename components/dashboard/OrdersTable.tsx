@@ -8,8 +8,9 @@ import { useLang } from '@/app/providers'
 import { translations } from '@/lib/i18n'
 import type { Order, OrderStatus } from '@/lib/types'
 
-function fmt(n: number) {
-  return new Intl.NumberFormat('uz-UZ').format(n) + " so'm"
+function fmt(n: number, lang: string) {
+  const suf = lang === 'ru' ? 'сум' : lang === 'en' ? 'UZS' : "so'm"
+  return new Intl.NumberFormat('uz-UZ').format(n) + ' ' + suf
 }
 
 const MP_META: Record<string, { short: string; color: string; bg: string }> = {
@@ -190,10 +191,15 @@ export default function OrdersTable({ orders }: { orders: Order[] }) {
                         <FulfillmentBadge type={order.fulfillment_type} />
                       </div>
                     </td>
-                    <td className="px-5 py-4 text-[var(--text-base)] text-xs">{new Date(order.ordered_at).toLocaleDateString('uz-UZ')}</td>
-                    <td className="px-5 py-4 text-right text-[var(--text-base)] font-semibold">{order.revenue != null ? fmt(order.revenue) : '—'}</td>
-                    <td className="px-5 py-4 text-right text-red-400 text-xs font-medium">{order.marketplace_fee != null ? fmt(order.marketplace_fee) : '—'}</td>
-                    <td className="px-5 py-4 text-right text-[var(--text-base)]">{order.items_count}</td>
+                    <td className="px-5 py-4 text-[var(--text-base)] text-xs font-bold">{new Date(order.ordered_at).toLocaleDateString('uz-UZ')}</td>
+                    {/* Cancelled/returned orders show a plain "—" for
+                        revenue and commission — the seller never received
+                        that money and never paid that fee, so displaying
+                        the numeric line makes them look like real income
+                        or a real deduction. */}
+                    <td className="px-5 py-4 text-right text-[var(--text-base)] font-bold">{STATUS_GROUP[order.status] === 'cancelled' ? '—' : (order.revenue != null ? fmt(order.revenue, lang) : '—')}</td>
+                    <td className="px-5 py-4 text-right text-[var(--text-base)] font-bold">{STATUS_GROUP[order.status] === 'cancelled' ? '—' : (order.marketplace_fee != null ? fmt(order.marketplace_fee, lang) : '—')}</td>
+                    <td className="px-5 py-4 text-right text-[var(--text-base)] font-bold">{order.items_count}</td>
                     <td className="px-5 py-4 text-center">
                       <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg ${sc.className}`}>
                         <div className={`w-1.5 h-1.5 rounded-full ${sc.dot}`} />

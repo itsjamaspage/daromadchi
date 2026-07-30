@@ -43,18 +43,24 @@ interface Props {
   entries: PayoutEntry[]
 }
 
-function fmt(n: number) {
-  return new Intl.NumberFormat('uz-UZ').format(n) + ' so\'m'
+// Currency suffix per app language. The UZ shop currency is always
+// so'm/сум/UZS but the LABEL follows the seller's chosen UI language
+// so "76 000 сум" reads naturally to a Russian user instead of the
+// Uzbek "so'm".
+function currencySuffix(lang: string): string {
+  return lang === 'ru' ? 'сум' : lang === 'en' ? 'UZS' : "so'm"
 }
 
-function fmtShort(n: number) {
-  // Precise, thousands-separated, currency-labelled. Sellers reading
-  // bare digits ("76 000") without a "so'm" tail had to guess whether
-  // the column meant sum, count, or percent — appending the unit makes
-  // it unambiguous at a glance. Only condense at 1M+ where a full
-  // digit run would overflow narrow columns.
-  if (Math.abs(n) >= 1_000_000) return (n / 1_000_000).toFixed(1) + " mln so'm"
-  return new Intl.NumberFormat('uz-UZ').format(Math.round(n)) + " so'm"
+function fmt(n: number, lang: string) {
+  return new Intl.NumberFormat('uz-UZ').format(n) + ' ' + currencySuffix(lang)
+}
+
+function fmtShort(n: number, lang: string) {
+  // Precise thousands-separated + localized currency suffix. Only
+  // condense at 1M+ where a full digit run would overflow narrow columns.
+  const suf = currencySuffix(lang)
+  if (Math.abs(n) >= 1_000_000) return (n / 1_000_000).toFixed(1) + ' mln ' + suf
+  return new Intl.NumberFormat('uz-UZ').format(Math.round(n)) + ' ' + suf
 }
 
 function StatusBadge({ status }: { status: PayoutEntry['status'] }) {
@@ -135,8 +141,8 @@ function ItemBreakdown({ items }: { items: PayoutOrderItem[] }) {
                   <span className="text-[var(--text-muted)] text-xs">· {item.orderCount} {t.itemOrders}</span>
                 </div>
               </td>
-              <td className="py-2 text-right text-[var(--text-dim)] tabular-nums">×{item.qty}</td>
-              <td className="py-2 text-right text-[var(--text-base)] font-medium tabular-nums">{fmt(item.revenue)}</td>
+              <td className="py-2 text-right text-[var(--text-base)] font-bold tabular-nums">×{item.qty}</td>
+              <td className="py-2 text-right text-[var(--text-base)] font-bold tabular-nums">{fmt(item.revenue, lang)}</td>
             </tr>
           ))}
         </tbody>
@@ -184,7 +190,7 @@ function DeductionBar({ entry }: { entry: PayoutEntry }) {
             key={seg.label}
             className={`${seg.color} opacity-80`}
             style={{ width: `${(seg.value / total) * 100}%` }}
-            title={`${seg.label}: ${fmtShort(seg.value)}`}
+            title={`${seg.label}: ${fmtShort(seg.value, lang)}`}
           />
         ))}
       </div>
@@ -195,14 +201,14 @@ function DeductionBar({ entry }: { entry: PayoutEntry }) {
           <div key={seg.label} className="flex items-center gap-2">
             <div className={`w-2.5 h-2.5 rounded-sm flex-shrink-0 ${seg.color} opacity-80`} />
             <span className="text-[var(--text-muted)] text-xs truncate">{seg.label}</span>
-            <span className="text-[var(--text-dim)] text-xs font-medium ml-auto">{fmtShort(seg.value)}</span>
+            <span className="text-[var(--text-base)] text-xs font-bold ml-auto">{fmtShort(seg.value, lang)}</span>
           </div>
         ))}
       </div>
 
       <div className="flex items-center justify-between pt-1 border-t border-[var(--border)]">
         <span className="text-[var(--text-muted)] text-xs">{t.totalDeductions}</span>
-        <span className="text-[var(--text-base)] text-sm font-bold">{fmt(total)}</span>
+        <span className="text-[var(--text-base)] text-sm font-bold">{fmt(total, lang)}</span>
       </div>
     </div>
   )
@@ -465,31 +471,21 @@ export default function PayoutsView({ entries }: Props) {
         </div>
       </div>
 
-      {/* Estimation warning — sellers were comparing these projections to
-          their marketplace's actual scheduled payouts and getting
-          confused when the numbers didn't match. Loud banner makes it
-          unambiguous. */}
-      <div className="flex items-start gap-3 rounded-xl px-4 py-3 text-xs border"
-        style={{ background: 'var(--bg-card2)', borderColor: 'var(--border)', color: 'var(--text-muted)' }}>
-        <HelpCircle className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: 'var(--c1)' }} />
-        <span>{t.estimateNote}</span>
-      </div>
-
       {/* Summary cards */}
       <div className="grid grid-cols-3 gap-3">
         <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl px-4 py-3">
           <p className="text-[var(--text-muted)] text-xs mb-1">{t.kpiTotalPaid}</p>
-          <p className="text-[var(--text-base)] text-xl font-bold">{fmtShort(totalPaid)}</p>
+          <p className="text-[var(--text-base)] text-xl font-bold">{fmtShort(totalPaid, lang)}</p>
           <p className="text-[var(--text-muted)] text-xs mt-0.5">{paidEntries.length} {t.periods}</p>
         </div>
         <div className="bg-[var(--bg-card2)] border border-amber-500/20 rounded-2xl px-4 py-3">
           <p className="text-[var(--text-muted)] text-xs mb-1">{t.kpiPending}</p>
-          <p className="text-amber-400 text-xl font-bold">{fmtShort(pending)}</p>
+          <p className="text-[var(--text-base)] text-xl font-bold">{fmtShort(pending, lang)}</p>
           <p className="text-[var(--text-muted)] text-xs mt-0.5">{filteredEntries.filter(e => e.status !== 'paid' && e.status !== 'estimated_paid').length} {t.periods}</p>
         </div>
         <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl px-4 py-3">
           <p className="text-[var(--text-muted)] text-xs mb-1">{t.kpiAvg}</p>
-          <p className="text-[var(--text-base)] text-xl font-bold">{fmtShort(avgPaid)}</p>
+          <p className="text-[var(--text-base)] text-xl font-bold">{fmtShort(avgPaid, lang)}</p>
           <p className="text-[var(--text-muted)] text-xs mt-0.5">{t.perPeriod}</p>
         </div>
       </div>
@@ -550,7 +546,7 @@ export default function PayoutsView({ entries }: Props) {
                       )}
                     </td>
                     <td className="px-4 py-3.5 text-right text-[var(--text-base)] font-bold text-sm">{entry.ordersCount}</td>
-                    <td className="px-4 py-3.5 text-right text-[var(--text-base)] font-bold text-sm">{fmtShort(entry.grossRevenue)}</td>
+                    <td className="px-4 py-3.5 text-right text-[var(--text-base)] font-bold text-sm">{fmtShort(entry.grossRevenue, lang)}</td>
                     {entry.awaitingSettlement ? (
                       <>
                         {/* Yandex row before Yandex publishes real
@@ -569,13 +565,13 @@ export default function PayoutsView({ entries }: Props) {
                             themselves hard to read; a plain minus sign +
                             the "Комиссия / Доставка / …" column header is
                             enough to signal that these are subtractions. */}
-                        <td className="px-4 py-3.5 text-right text-[var(--text-base)] font-bold text-sm">{entry.commission > 0 ? '-' : ''}{fmtShort(entry.commission)}</td>
-                        <td className="px-4 py-3.5 text-right text-[var(--text-base)] font-bold text-sm">{entry.delivery > 0 ? '-' : ''}{fmtShort(entry.delivery)}</td>
-                        <td className="px-4 py-3.5 text-right text-[var(--text-base)] font-bold text-sm">{entry.returns > 0 ? '-' : ''}{fmtShort(entry.returns)}</td>
-                        <td className="px-4 py-3.5 text-right text-[var(--text-base)] font-bold text-sm">{entry.adSpend > 0 ? '-' : ''}{fmtShort(entry.adSpend)}</td>
-                        <td className="px-4 py-3.5 text-right text-[var(--text-base)] font-bold text-sm">{entry.tax > 0 ? '-' : ''}{fmtShort(entry.tax)}</td>
+                        <td className="px-4 py-3.5 text-right text-[var(--text-base)] font-bold text-sm">{entry.commission > 0 ? '-' : ''}{fmtShort(entry.commission, lang)}</td>
+                        <td className="px-4 py-3.5 text-right text-[var(--text-base)] font-bold text-sm">{entry.delivery > 0 ? '-' : ''}{fmtShort(entry.delivery, lang)}</td>
+                        <td className="px-4 py-3.5 text-right text-[var(--text-base)] font-bold text-sm">{entry.returns > 0 ? '-' : ''}{fmtShort(entry.returns, lang)}</td>
+                        <td className="px-4 py-3.5 text-right text-[var(--text-base)] font-bold text-sm">{entry.adSpend > 0 ? '-' : ''}{fmtShort(entry.adSpend, lang)}</td>
+                        <td className="px-4 py-3.5 text-right text-[var(--text-base)] font-bold text-sm">{entry.tax > 0 ? '-' : ''}{fmtShort(entry.tax, lang)}</td>
                         <td className="px-4 py-3.5 text-right">
-                          <span className="text-[var(--text-base)] font-bold text-sm">{fmtShort(entry.netPayout)}</span>
+                          <span className="text-[var(--text-base)] font-bold text-sm">{fmtShort(entry.netPayout, lang)}</span>
                         </td>
                       </>
                     )}
