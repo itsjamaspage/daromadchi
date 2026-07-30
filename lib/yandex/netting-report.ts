@@ -178,9 +178,11 @@ export function describeNettingReport(buffer: ArrayBuffer): NettingReportShape {
     return {
       name,
       rowCount: rows.length,
-      // Trim each cell to 60 chars and each row to first 20 cells so the
-      // debug blob stays under a couple KB even for wide reports.
-      firstRows: nonEmpty.slice(0, 3).map(r => r.slice(0, 20).map(c =>
+      // Show every column (no truncation to N cells) — Yandex added new
+      // financial columns beyond col 19 in a schema change and we could
+      // not see them. Cell values still trimmed to 60 chars so the blob
+      // stays readable.
+      firstRows: nonEmpty.slice(0, 3).map(r => r.map(c =>
         typeof c === 'string' && c.length > 60 ? c.slice(0, 60) + '…' : c,
       )),
     }
