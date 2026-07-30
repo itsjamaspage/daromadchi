@@ -6,6 +6,37 @@ const WB_CONTENT     = 'https://content-api.wildberries.ru'
 const WB_STATS       = 'https://statistics-api.wildberries.ru'
 const WB_MARKETPLACE = 'https://marketplace-api.wildberries.ru'
 
+// Per-shop rate-limit cooldown. WB's global limiter uses a per-seller
+// UUID; every 429/461 seems to RESET the cooldown window if you keep
+// hitting them (seller reported being locked out 17h straight while our
+// cron re-fired every 15 min). This map skips WB sync for a fixed
+// window after we see a rate-limit response, so the cron stops making
+// things worse. Cleared on process restart — acceptable since PM2
+// bounces typically once a day at most.
+const wbThrottledUntil = new Map<string, number>()
+const WB_THROTTLE_COOLDOWN_MS = 60 * 60 * 1000 // 1h — safer starting point
+
+function isThrottled(shopId: string): boolean {
+  const until = wbThrottledUntil.get(shopId)
+  return until != null && until > Date.now()
+}
+function throttleUntilCooldown(shopId: string): number {
+  const until = Date.now() + WB_THROTTLE_COOLDOWN_MS
+  wbThrottledUntil.set(shopId, until)
+  return until
+}
+// Exported so /api/wildberries/reset-throttle (or a dashboard button)
+// can clear it after the seller waits + regenerates a token.
+export function clearWbThrottle(shopId: string) {
+  wbThrottledUntil.delete(shopId)
+}
+// Exported so the settings card can show "Throttled by WB until X".
+export function getWbThrottledUntil(shopId: string): number | null {
+  const until = wbThrottledUntil.get(shopId)
+  if (until == null || until <= Date.now()) return null
+  return until
+}
+
 function bearerHeaders(token: string) {
   return { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
 }
@@ -29,6 +60,20 @@ export async function syncFromWildberries(
   token: string,
   fromDateOverride?: Date,
 ): Promise<WbSyncResult> {
+  // Short-circuit: if WB rate-limited us in the last hour, skip the
+  // whole sync. Each 429 seems to extend WB's cooldown, so hitting them
+  // during the block makes it last longer, not shorter.
+  const throttledUntil = getWbThrottledUntil(shopId)
+  if (throttledUntil) {
+    const minsLeft = Math.max(1, Math.ceil((throttledUntil - Date.now()) / 60_000))
+    return {
+      ok: false,
+      productsUpserted: 0,
+      ordersUpserted: 0,
+      errors: [`WB throttled — skipping sync for ~${minsLeft} more minutes to let their limiter reset.`],
+    }
+  }
+
   let productsUpserted = 0
   let ordersUpserted   = 0
   let ordersInserted   = 0
@@ -39,6 +84,20 @@ export async function syncFromWildberries(
   // barcode → nmId, needed for FBS stock lookups (v3 stocks API is barcode-keyed)
   const barcodeToNm = new Map<string, string>()
 
+  // Wrapped in a helper for uniform 429/461 handling across every WB call
+  // in this function. Any 429 or 461 flips the shop into cooldown state
+  // and returns `null` so the caller can short-circuit its own request.
+  async function wbFetch(url: string, init?: RequestInit): Promise<Response | null> {
+    const res = await marketplaceFetch(url, init)
+    if (res.status === 429 || res.status === 461) {
+      const until = throttleUntilCooldown(shopId)
+      console.warn(`[WB sync] rate-limited (${res.status}) on ${url} — cooldown until ${new Date(until).toISOString()}`)
+      errors.push(`WB rate-limit (${res.status}); pausing WB sync for ~1 hour.`)
+      return null
+    }
+    return res
+  }
+
   // ─── Products (Content API v2) ──────────────────────────────────────────────
   try {
     let cursor: Record<string, unknown> = { limit: 100 }
@@ -46,11 +105,12 @@ export async function syncFromWildberries(
     const allCards: any[] = []
 
     for (let page = 0; page < 20; page++) {
-      const res = await marketplaceFetch(`${WB_CONTENT}/content/v2/get/cards/list`, {
+      const res = await wbFetch(`${WB_CONTENT}/content/v2/get/cards/list`, {
         method: 'POST',
         headers: bearerHeaders(token),
         body: JSON.stringify({ settings: { cursor, filter: { withPhoto: -1 } } }),
       })
+      if (!res) break // rate-limited; wbFetch already recorded the cooldown + error
       if (!res.ok) {
         errors.push(`Products API ${res.status}: ${await res.text()}`)
         break
@@ -174,19 +234,21 @@ export async function syncFromWildberries(
       fbsSkippedReason = 'no_barcodes'
     } else {
       try {
-        const whRes = await marketplaceFetch(`${WB_MARKETPLACE}/api/v3/warehouses`, { headers: bearerHeaders(token) })
+        const whRes = await wbFetch(`${WB_MARKETPLACE}/api/v3/warehouses`, { headers: bearerHeaders(token) })
+        if (!whRes) throw new Error('rate-limited')
         if (whRes.ok) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const whs: any[] = await whRes.json() ?? []
           const allBarcodes = [...barcodeToNm.keys()]
-          for (const wh of whs) {
+          outer: for (const wh of whs) {
             if (!wh?.id) continue
             for (let i = 0; i < allBarcodes.length; i += 1000) {
-              const res = await marketplaceFetch(`${WB_MARKETPLACE}/api/v3/stocks/${wh.id}`, {
+              const res = await wbFetch(`${WB_MARKETPLACE}/api/v3/stocks/${wh.id}`, {
                 method: 'POST',
                 headers: bearerHeaders(token),
                 body: JSON.stringify({ skus: allBarcodes.slice(i, i + 1000) }),
               })
+              if (!res) break outer // rate-limited — abort remaining warehouses
               if (!res.ok) continue
               const json = await res.json()
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -265,11 +327,11 @@ export async function syncFromWildberries(
     // Fetch sales data (has forPay = net amount after WB commission)
     const salesFeeByGNumber = new Map<string, { fee: number; delivery: number }>()
     try {
-      const salesRes = await marketplaceFetch(
+      const salesRes = await wbFetch(
         `${WB_STATS}/api/v1/supplier/sales?dateFrom=${df}&flag=0`,
         { headers: statsHeaders(token) },
       )
-      if (salesRes.ok) {
+      if (salesRes && salesRes.ok) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const salesLines: any[] = await salesRes.json()
         if (Array.isArray(salesLines)) {
@@ -287,10 +349,15 @@ export async function syncFromWildberries(
       }
     } catch { /* sales data is best-effort */ }
 
-    const res = await marketplaceFetch(
+    const res = await wbFetch(
       `${WB_STATS}/api/v1/supplier/orders?dateFrom=${df}&flag=0`,
       { headers: statsHeaders(token) },
     )
+    if (!res) {
+      // Rate-limited. wbFetch already recorded the cooldown; return
+      // whatever we've got so far.
+      return { ok: false, productsUpserted, ordersUpserted, ordersInserted, errors }
+    }
     if (!res.ok) {
       // Surface the real reason so a shop with a broken token / rate limit /
       // permissions issue doesn't look identical to a shop with 0 orders.
@@ -429,7 +496,8 @@ export async function syncFromWildberries(
     for (let page = 0; page < 20; page++) {
       const url = `${WB_STATS}/api/v1/supplier/reportDetailByPeriod?dateFrom=${reportFrom}&dateTo=${reportTo}` +
         (lastRrdId > 0 ? `&rrdid=${lastRrdId}` : '')
-      const reportRes = await marketplaceFetch(url, { headers: statsHeaders(token) })
+      const reportRes = await wbFetch(url, { headers: statsHeaders(token) })
+      if (!reportRes) break // rate-limited
       if (!reportRes.ok) break
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const entries: any[] = await reportRes.json()
