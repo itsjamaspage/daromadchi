@@ -48,9 +48,12 @@ function fmt(n: number) {
 }
 
 function fmtShort(n: number) {
-  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + ' mln'
-  if (n >= 1_000)     return (n / 1_000).toFixed(0) + ' ming'
-  return String(n)
+  // Millions → condense with one decimal ("1.4 mln") so long columns
+  // still fit. Everything below a million shows the precise number
+  // with a thin-space thousands separator — sellers were confused when
+  // 59 940 rendered as "60 ming" and Yandex's own UI showed 59 940,00.
+  if (Math.abs(n) >= 1_000_000) return (n / 1_000_000).toFixed(1) + ' mln'
+  return new Intl.NumberFormat('uz-UZ').format(Math.round(n))
 }
 
 function StatusBadge({ status }: { status: PayoutEntry['status'] }) {
