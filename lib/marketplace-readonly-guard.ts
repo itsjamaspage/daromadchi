@@ -20,15 +20,16 @@ const APPROVED_POST_ENDPOINTS: RegExp[] = [
   /api\.partner\.market\.yandex\.ru\/v2\/campaigns\/\d+\/offers\/stocks/,
   // Yandex Market — SKU stats (date range in body, POST is required read)
   /api\.partner\.market\.yandex\.ru\/v2\/campaigns\/\d+\/stats\/skus/,
-  // Yandex Market — united-netting-report (POST to REQUEST a report; the
-  // report itself contains READ-ONLY financial/settlement data. Approved
-  // by owner in the payouts real-data thread — needed so the Payouts
-  // page can display Yandex's actual per-order commission/delivery
-  // figures instead of estimates.) Both the legacy /reports/ path and
-  // the newer business-scoped /businesses/{id}/reports/ path — Yandex
-  // 404s the old one on some accounts.
-  /api\.partner\.market\.yandex\.ru\/reports\/united-netting-report\/generate/,
-  /api\.partner\.market\.yandex\.ru\/businesses\/\d+\/reports\/united-netting-report\/generate/,
+  // Yandex Market — every report-generate endpoint (POST to REQUEST a
+  // report, response contains READ-ONLY financial / settlement /
+  // realization / stocks data). Approved by owner for real-payout data
+  // on the Payouts page. Broad pattern covers united-netting-report,
+  // goods-realization, goods-turnover, and any future report type
+  // Yandex ships under the same namespace; also covers both the legacy
+  // /reports/... path and the newer /businesses/{id}/reports/... one.
+  /api\.partner\.market\.yandex\.ru\/reports\/[a-z-]+\/generate/,
+  /api\.partner\.market\.yandex\.ru\/businesses\/\d+\/reports\/[a-z-]+\/generate/,
+  /api\.partner\.market\.yandex\.ru\/campaigns\/\d+\/reports\/[a-z-]+\/generate/,
   // Wildberries Content API — paginated card list (POST is the read method)
   /content-api\.wildberries\.ru\/content\/v2\/get\/cards\/list/,
   // Wildberries Marketplace API — FBS stock lookup by barcodes (POST is the read

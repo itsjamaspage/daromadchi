@@ -91,18 +91,49 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
 
   const probes: Probe[] = []
 
+  const businessId = req.nextUrl.searchParams.get('businessId')
+  const reportProbe = req.nextUrl.searchParams.get('reports') === '1'
+
+  if (reportProbe) {
+    // Probe every plausible report-generate path so we can identify
+    // which URL Yandex actually accepts on THIS seller's account. All
+    // are POST with the same body Yandex documents; a 200 anywhere
+    // wins, everything else (404 / 400 / 405) shows up as a code.
+    const bid = businessId ?? campaignId // fallback if seller didn't paste one
+    const body = JSON.stringify({
+      businessId: Number(bid),
+      dateTimeFrom: '2026-07-01T00:00:00Z',
+      dateTimeTo:   '2026-07-31T23:59:59Z',
+    })
+    const paths = [
+      `/reports/united-netting-report/generate`,
+      `/businesses/${bid}/reports/united-netting-report/generate`,
+      `/reports/united-netting-report/generate?format=CSV`,
+      `/reports/united-netting-report/generate?format=FILE`,
+      `/reports/united-netting/generate`,
+      `/reports/goods-realization/generate`,
+      `/campaigns/${campaignId}/reports/united-netting-report/generate`,
+      `/businesses/${bid}/reports/goods-realization/generate`,
+    ]
+    for (const p of paths) {
+      probes.push(await postProbe(p, `${YANDEX_API_BASE}${p}`, token, body))
+    }
+    return NextResponse.json({
+      ok: true,
+      hint: 'The report-generate path that returns 200 is the one we want. 404 means the path is wrong; 400/405 means path is right but body is off.',
+      campaignId,
+      businessId: bid,
+      probes,
+    }, { status: 200 })
+  }
+
   if (orderId) {
-    // v2 single-order endpoint returns the full order object with all
-    // financial fields (buyerTotal, itemsTotal, deliveryTotal,
-    // commissionTotal, subsidyTotal, etc.).
     probes.push(await probe(
       `GET /v2/campaigns/${campaignId}/orders/${orderId}`,
       `${YANDEX_API_BASE}/v2/campaigns/${campaignId}/orders/${orderId}`,
       token,
     ))
   } else {
-    // Latest ~10 orders — useful to eyeball what commissionTotal looks
-    // like on a bunch at once.
     probes.push(await probe(
       `GET /v2/campaigns/${campaignId}/orders (latest)`,
       `${YANDEX_API_BASE}/v2/campaigns/${campaignId}/orders?pageSize=10`,
@@ -117,3 +148,39 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
     probes,
   }, { status: 200 })
 })
+
+// POST-flavored probe used by the ?reports=1 branch.
+async function postProbe(label: string, url: string, token: string, body: string): Promise<Probe> {
+  try {
+    const res = await marketplaceFetch(url, {
+      method: 'POST',
+      headers: {
+        'Api-Key': token.trim(),
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body,
+      next: { revalidate: 0 },
+    })
+    const text = await res.text().catch(() => '')
+    let parsed: unknown = null
+    try { parsed = JSON.parse(text) } catch { /* ignore */ }
+    return {
+      label,
+      url: url.replace(YANDEX_API_BASE, ''),
+      ok: res.ok,
+      status: res.status,
+      bodySnippet: text.slice(0, 400),
+      parsed,
+    }
+  } catch (e) {
+    return {
+      label,
+      url: url.replace(YANDEX_API_BASE, ''),
+      ok: false,
+      status: 0,
+      bodySnippet: e instanceof Error ? e.message : String(e),
+      parsed: null,
+    }
+  }
+}
