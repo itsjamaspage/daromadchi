@@ -517,11 +517,21 @@ function WildberriesCard({ shop }: { shop: Shop | null; userId: string }) {
   const hasKey  = !!shop?.api_key_encrypted
   const lastSync = shop?.last_synced_at
     ? new Date(shop.last_synced_at).toLocaleString(lang === 'ru' ? 'ru-RU' : lang === 'en' ? 'en-US' : 'uz-UZ') : null
-  // Server writes throttled_until on the shop row when WB returns 429/461;
-  // it clears itself once the cooldown passes, but the shop row is fetched
-  // once per page load so we mirror the same expiry check client-side.
+  // Server writes throttled_until on the shop row when WB returns 429/461.
+  // Comparing `throttled_until > Date.now()` inside render is impure
+  // (different values SSR vs client → hydration mismatch), so:
+  //   - Initial render: assume active if throttled_until is set at all.
+  //   - After mount: an interval ticks every 30s and stores a client-side
+  //     snapshot; once the snapshot passes the cooldown, the chip auto-
+  //     hides. No page reload needed, no setState in the effect body.
   const throttledUntilMs = shop?.throttled_until ? new Date(shop.throttled_until).getTime() : 0
-  const throttled = throttledUntilMs > Date.now()
+  const [nowSnapshot, setNowSnapshot] = useState<number | null>(null)
+  useEffect(() => {
+    if (!throttledUntilMs) return
+    const id = window.setInterval(() => { setNowSnapshot(Date.now()) }, 30_000)
+    return () => window.clearInterval(id)
+  }, [throttledUntilMs])
+  const throttled = throttledUntilMs > 0 && (nowSnapshot == null || throttledUntilMs > nowSnapshot)
   const throttledUntilLabel = throttled
     ? new Date(throttledUntilMs).toLocaleString(lang === 'ru' ? 'ru-RU' : lang === 'en' ? 'en-US' : 'uz-UZ')
     : null
