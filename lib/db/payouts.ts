@@ -117,6 +117,10 @@ export async function getPayoutEntries(): Promise<PayoutEntry[]> {
     revenue: number; realFee: number; realDelivery: number
     penalty: number; storageFee: number; additionalPayment: number
     count: number; returnCount: number; returnAmount: number
+    // Actual min/max ordered_at across NON-CANCELLED orders in this
+    // bucket. Cancelled/returned orders are excluded so an empty payout
+    // period doesn't get a range from its refunded orders.
+    firstOrderAt: Date | null; lastOrderAt: Date | null
   }
   const grouped = new Map<string, Bucket>()
 
@@ -129,6 +133,7 @@ export async function getPayoutEntries(): Promise<PayoutEntry[]> {
       revenue: 0, realFee: 0, realDelivery: 0,
       penalty: 0, storageFee: 0, additionalPayment: 0,
       count: 0, returnCount: 0, returnAmount: 0,
+      firstOrderAt: null, lastOrderAt: null,
     }
 
     if (row.status === 'cancelled' || row.status === 'returned') {
@@ -142,8 +147,14 @@ export async function getPayoutEntries(): Promise<PayoutEntry[]> {
       b.storageFee += Number(row.storage_fee ?? 0)
       b.additionalPayment += Number(row.additional_payment ?? 0)
       b.count += 1
+      if (!b.firstOrderAt || d < b.firstOrderAt) b.firstOrderAt = d
+      if (!b.lastOrderAt  || d > b.lastOrderAt)  b.lastOrderAt  = d
     }
     grouped.set(key, b)
+  }
+
+  function isoDate(d: Date | null): string | null {
+    return d ? d.toISOString().slice(0, 10) : null
   }
 
   const now = new Date()
@@ -190,6 +201,8 @@ export async function getPayoutEntries(): Promise<PayoutEntry[]> {
       payoutDate: null,
       payoutEstimated: true,
       items: itemsMap.get(key) ?? [],
+      firstOrderDate: isoDate(v.firstOrderAt),
+      lastOrderDate:  isoDate(v.lastOrderAt),
     }
   })
 

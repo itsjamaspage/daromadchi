@@ -8,20 +8,34 @@ import MpBadge from '@/components/dashboard/MpBadge'
 import { useLang } from '@/app/providers'
 import { dashT } from '@/lib/dashT'
 
-// Format a "2026-07" bucket key into "Июль 2026" / "July 2026" /
-// "Iyul 2026" and a human date range ("1–31 июля 2026"). Cleaner than
-// leaving the raw YYYY-MM string in the UI.
-function formatPeriod(period: string, locale: string): { label: string; range: string } {
+// Format a "2026-07" bucket key into a locale-aware month/year label
+// ("Июль 2026" / "July 2026" / "Iyul 2026") plus a "when did the
+// orders actually happen" range built from real order timestamps
+// (firstOrderDate / lastOrderDate). Whole-month boundary text
+// ("1–31 июл. 2026") was misleading because it always spanned the
+// full month regardless of whether orders were bunched on one day.
+function formatPeriod(
+  period: string,
+  locale: string,
+  firstOrderDate: string | null,
+  lastOrderDate: string | null,
+): { label: string; range: string } {
   const [y, m] = period.split('-').map(Number)
   if (!y || !m) return { label: period, range: '' }
   const first = new Date(Date.UTC(y, m - 1, 1))
-  const last = new Date(Date.UTC(y, m, 0)) // day 0 of next month = last day of this month
   const monthName = first.toLocaleDateString(locale, { month: 'long', timeZone: 'UTC' })
   const label = `${monthName.charAt(0).toUpperCase()}${monthName.slice(1)} ${y}`
-  const firstDay = first.toLocaleDateString(locale, { day: 'numeric', timeZone: 'UTC' })
-  const lastDay = last.toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })
-  const range = `${firstDay}–${lastDay}`
-  return { label, range }
+
+  if (!firstOrderDate || !lastOrderDate) return { label, range: '' }
+
+  const fmtDay = (iso: string) => {
+    const dt = new Date(iso + 'T00:00:00Z')
+    return dt.toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })
+  }
+  if (firstOrderDate === lastOrderDate) {
+    return { label, range: fmtDay(firstOrderDate) }
+  }
+  return { label, range: `${fmtDay(firstOrderDate)} – ${fmtDay(lastOrderDate)}` }
 }
 
 interface Props {
@@ -301,7 +315,7 @@ export default function PayoutsView({ entries }: Props) {
             </thead>
             <tbody>
               {filteredEntries.map(entry => {
-                const period = formatPeriod(entry.period, locale)
+                const period = formatPeriod(entry.period, locale, entry.firstOrderDate, entry.lastOrderDate)
                 const topItem = entry.items[0]
                 return (
                 <Fragment key={entry.id}>

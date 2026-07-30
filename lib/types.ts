@@ -223,6 +223,12 @@ export interface PayoutEntry {
   // Per-product breakdown of the orders that fed this payout period.
   // Grouped by product so 50 orders of the same SKU collapse into one row.
   items: PayoutOrderItem[]
+  // Actual first and last order dates in this payout period as
+  // YYYY-MM-DD strings — used to render "when did these orders
+  // happen" instead of the whole-month boundary. Both null if the
+  // period has no non-cancelled orders.
+  firstOrderDate: string | null
+  lastOrderDate: string | null
 }
 
 export interface WatchlistItem {
