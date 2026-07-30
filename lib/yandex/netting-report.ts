@@ -244,6 +244,11 @@ export function parseNettingReport(buffer: ArrayBuffer): SettlementTransaction[]
   const idxQty                 = findCol(header, ['Количество'])
   const idxStatusNote          = findCol(header, ['Статус'])
 
+  // If we can't find the two columns that decide "is this a real
+  // financial event" — amount and entry type — the sheet is not the
+  // netting report we expect. Bail out rather than emit garbage.
+  if (idxAmount < 0 || idxEntryType < 0) return []
+
   const results: SettlementTransaction[] = []
   for (let i = headerIdx + 1; i < rows.length; i++) {
     const row = rows[i]
@@ -253,13 +258,31 @@ export function parseNettingReport(buffer: ArrayBuffer): SettlementTransaction[]
     const entryType = String(row[idxEntryType] ?? '').trim()
     if (!entryType || entryType === 'Итого' || entryType === 'Итого:') continue
 
-    const txnIdRaw = row[idxTransactionId]
-    if (txnIdRaw == null || txnIdRaw === '') continue
-    // xlsx may parse large IDs as numbers in scientific notation — normalize
-    // to a plain string via BigInt when it's an integer-valued number.
-    const transactionId = typeof txnIdRaw === 'number' && Number.isFinite(txnIdRaw)
-      ? String(BigInt(Math.round(txnIdRaw)))
-      : String(txnIdRaw).trim()
+    // Yandex's newest layout leaves "ID транзакции" NULL until the
+    // payment actually posts — the row still carries a real amount +
+    // entry type + source, so we can't just skip it. Synthesize a
+    // stable, deterministic key from the immutable event fields so
+    // upserts hit the same row on every re-sync, and switch to Yandex's
+    // real ID automatically once it appears (the natural key changes).
+    const txnIdRaw = idxTransactionId >= 0 ? row[idxTransactionId] : null
+    let transactionId: string
+    if (txnIdRaw != null && txnIdRaw !== '') {
+      // xlsx may parse large IDs as numbers in scientific notation —
+      // normalize to a plain string via BigInt when it's an integer.
+      transactionId = typeof txnIdRaw === 'number' && Number.isFinite(txnIdRaw)
+        ? String(BigInt(Math.round(txnIdRaw)))
+        : String(txnIdRaw).trim()
+    } else {
+      const orderNumRaw = idxYandexOrderNum >= 0 ? row[idxYandexOrderNum] : null
+      const orderNum = orderNumRaw != null
+        ? (typeof orderNumRaw === 'number' && Number.isFinite(orderNumRaw) ? String(BigInt(Math.round(orderNumRaw))) : String(orderNumRaw).trim())
+        : 'noorder'
+      const txDate = idxTransactionDate >= 0 ? row[idxTransactionDate] : null
+      const txDateKey = txDate instanceof Date ? txDate.toISOString() : String(txDate ?? '')
+      const src = idxEntrySource >= 0 ? String(row[idxEntrySource] ?? '') : ''
+      const amt = row[idxAmount]
+      transactionId = `synth:${orderNum}:${txDateKey}:${entryType}:${src}:${amt}`
+    }
 
     const amountRaw = row[idxAmount]
     const amount = typeof amountRaw === 'number' ? amountRaw : Number(String(amountRaw ?? '0').replace(',', '.'))
