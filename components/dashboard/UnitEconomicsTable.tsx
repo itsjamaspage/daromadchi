@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import {
   Search, Trash2, Settings2, ExternalLink, ChevronUp, ChevronDown,
   Package, Plus, X, Check, Pencil,
@@ -75,6 +76,7 @@ interface Props {
 export default function UnitEconomicsTable({ items: initialItems, defaultSettings, fromExtension }: Props) {
   const { lang } = useLang()
   const d = translations[lang].dashboard
+  const router = useRouter()
   const ALL_COLUMNS = useMemo(() => COL_KEYS.map(key => ({
     key, label: (d as unknown as Record<string, string>)[COL_I18N_KEY[key]] ?? key, always: COL_ALWAYS.has(key),
   })), [d])
@@ -183,6 +185,11 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
       const newItem: UnitEconomicsItem = { ...extPending, id: json.id, addedAt: new Date().toISOString() }
       setItems(prev => [newItem, ...prev])
       setExtPending(null)
+      // Refresh the server component so the "N products" header count
+      // in the page shell matches the new table length, and so the
+      // row picks up real per-SKU rates via getRealRatesBySku on the
+      // next render (its output isn't part of client state).
+      router.refresh()
     } catch {
       setExtError('Tarmoq xatosi. Qayta urinib ko\'ring.')
       setExtSaving(false)

@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server'
 import { inArray, and, gte, eq } from 'drizzle-orm'
 import { getCurrentUser } from '@/lib/auth/session'
-import { db, shops, uzumSettlementOrders, yandexSettlementTransactions } from '@/lib/db'
-import { getRealFinancialsByBucket } from '@/lib/db/real-financials'
+import { db, shops, uzumSettlementOrders, yandexSettlementTransactions, unitEconomicsItems } from '@/lib/db'
+import { getRealFinancialsByBucket, getRealRatesBySku } from '@/lib/db/real-financials'
 import { withErrorHandler } from '@/lib/api-handler'
 
 export const runtime = 'nodejs'
@@ -37,6 +37,30 @@ export const GET = withErrorHandler(async () => {
   const bucketMap = await getRealFinancialsByBucket(shopIds, since, 'month')
   const buckets = Array.from(bucketMap.entries()).map(([k, v]) => ({ bucket: k, ...v }))
 
+  // SKU-level view — the piece that decides whether Unit Economics
+  // rows pick up real per-SKU rates. When these don't match, the UE
+  // table falls back to hardcoded defaults and the seller sees the
+  // "11% / 5% / 17%" placeholder rows they complained about.
+  const rateMap = await getRealRatesBySku(user.id)
+  const ratesBySku = Array.from(rateMap.entries()).map(([sku, r]) => ({ sku, ...r }))
+  const ueItems = await db.select({
+    id: unitEconomicsItems.id,
+    title: unitEconomicsItems.title,
+    sku: unitEconomicsItems.sku,
+    marketplace: unitEconomicsItems.marketplace,
+  }).from(unitEconomicsItems).where(eq(unitEconomicsItems.user_id, user.id))
+  // Cross-check: for each UE item, does its SKU match any real-rate SKU?
+  const ueVsRates = ueItems.map(it => ({
+    ...it,
+    matchedRate: it.sku ? (rateMap.get(it.sku) ?? null) : null,
+    // Also show what real-rate SKU (if any) CONTAINS the UE SKU — helps
+    // spot cases where Uzum stored "5124786-JMJ16BEG" while UE stored
+    // just "JMJ16BEG" (or vice versa).
+    substringMatchOfRateSku: it.sku
+      ? Array.from(rateMap.keys()).find(k => k === it.sku || k.includes(it.sku!) || (it.sku! && it.sku!.includes(k))) ?? null
+      : null,
+  }))
+
   return NextResponse.json({
     ok: true,
     windowSince: since.toISOString(),
@@ -47,6 +71,8 @@ export const GET = withErrorHandler(async () => {
       rows: uzRows.map(r => ({
         uzum_order_item_id: r.uzum_order_item_id,
         uzum_order_id: r.uzum_order_id,
+        sku_title: r.sku_title,
+        product_title: r.product_title,
         status: r.status,
         transaction_at: r.transaction_at,
         date_issued_at: r.date_issued_at,
@@ -66,10 +92,13 @@ export const GET = withErrorHandler(async () => {
         entry_type: r.entry_type,
         entry_source: r.entry_source,
         order_type: r.order_type,
+        sku: r.sku,
         amount: r.amount,
         transaction_at: r.transaction_at,
       })),
     },
     aggregator: { buckets },
+    perSkuRates: ratesBySku,
+    unitEconomicsItems: ueVsRates,
   })
 })

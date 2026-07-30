@@ -48,12 +48,30 @@ export async function getUnitEconomicsItems(): Promise<UnitEconomicsItem[]> {
     getRealRatesBySku(userId),
   ])
 
+  // Try exact SKU first, then normalised (uppercase + strip
+  // punctuation), then any settlement SKU that contains the UE SKU
+  // as a substring (Uzum's "5124786-JMJ16BEG" style). Same laxness
+  // as the diagnose endpoint reports.
+  const normSku = (s: string) => s.toUpperCase().replace(/[^A-Z0-9]/g, '')
+  const findRate = (sku: string, marketplace: string) => {
+    const direct = realRates.get(sku)
+    if (direct && direct.marketplace === marketplace) return direct
+    const norm = normSku(sku)
+    const normHit = realRates.get(norm)
+    if (normHit && normHit.marketplace === marketplace) return normHit
+    for (const [k, v] of realRates) {
+      if (v.marketplace !== marketplace) continue
+      if (k === sku || k.includes(sku) || sku.includes(k)) return v
+      if (normSku(k) === norm || normSku(k).includes(norm) || norm.includes(normSku(k))) return v
+    }
+    return null
+  }
   return rows.map(row => {
     const item = mapRow(row)
     const sku = (item.sku ?? '').trim()
     if (!sku) return item
-    const rate = realRates.get(sku)
-    if (!rate || rate.marketplace !== item.marketplace) return item
+    const rate = findRate(sku, item.marketplace)
+    if (!rate) return item
 
     // Recompute commission + delivery + downstream fields from real
     // rates. Preserve the user's own costPrice, ad %, tax, packaging.

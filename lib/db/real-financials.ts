@@ -162,6 +162,18 @@ export interface RealRateForSku {
   windowSince: string     // ISO date the rate was computed from
 }
 
+/**
+ * Normalise a SKU for cross-source matching. Uzum stores compound
+ * SKUs like "5124786-JMJ16BEG" (vendorId-yourSKU); Yandex stores just
+ * the seller's own SKU; the extension may pass yet another variant.
+ * We uppercase, strip whitespace and non-alphanumerics, and keep the
+ * result. Matching then compares normalised forms and also allows
+ * substring hits (either side contained in the other).
+ */
+function normSku(s: string | null | undefined): string {
+  return (s ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '')
+}
+
 export async function getRealRatesBySku(userId: string, windowDays = 60): Promise<Map<string, RealRateForSku>> {
   const out = new Map<string, RealRateForSku>()
 
@@ -207,13 +219,18 @@ export async function getRealRatesBySku(userId: string, windowDays = 60): Promis
       }
       for (const [sku, v] of perSku) {
         if (v.gross <= 0) continue
-        out.set(sku, {
+        const rate: RealRateForSku = {
           marketplace:  'yandex_market',
           commissionPct: (v.commission / v.gross) * 100,
           deliveryPct:   (v.delivery   / v.gross) * 100,
           itemCount:     v.itemCount,
           windowSince:   sinceIso,
-        })
+        }
+        out.set(sku, rate)
+        // Also index under normalised form so UE items whose stored
+        // SKU differs only in case / punctuation still match.
+        const norm = normSku(sku)
+        if (norm && norm !== sku) out.set(norm, rate)
       }
     } catch (e) {
       console.error('[real-financials] yandex per-sku failed:', String(e).slice(0, 200))
@@ -250,13 +267,29 @@ export async function getRealRatesBySku(userId: string, windowDays = 60): Promis
       }
       for (const [sku, v] of perSku) {
         if (v.gross <= 0) continue
-        out.set(sku, {
+        const rate: RealRateForSku = {
           marketplace:  'uzum',
           commissionPct: (v.commission / v.gross) * 100,
           deliveryPct:   (v.delivery   / v.gross) * 100,
           itemCount:     v.itemCount,
           windowSince:   sinceIso,
-        })
+        }
+        out.set(sku, rate)
+        // Uzum's sku_title often looks like "5124786-JMJ16BEG" —
+        // register aliases so both "5124786-JMJ16BEG" and "JMJ16BEG"
+        // (which is what the seller typically types into Unit
+        // Economics or the extension passes as productId) hit the
+        // same rate.
+        const norm = normSku(sku)
+        if (norm && norm !== sku) out.set(norm, rate)
+        // Also register each dash-separated segment individually so
+        // "5124786-JMJ16BEG" is findable via "JMJ16BEG" alone.
+        for (const part of sku.split(/[-\s|/,]+/)) {
+          const p = part.trim()
+          if (p && p !== sku && !out.has(p)) out.set(p, rate)
+          const pn = normSku(p)
+          if (pn && pn !== p && !out.has(pn)) out.set(pn, rate)
+        }
       }
     } catch (e) {
       console.error('[real-financials] uzum per-sku failed:', String(e).slice(0, 200))
