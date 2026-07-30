@@ -2,10 +2,27 @@
 
 import { useState, useRef, Fragment } from 'react'
 import { ChevronDown, ChevronUp, HelpCircle } from 'lucide-react'
-import type { PayoutEntry, PayoutOrderItem } from '@/lib/types'
+import type { PayoutEntry, PayoutOrderItem, MarketplaceType } from '@/lib/types'
 import ExportButton from '@/components/dashboard/ExportButton'
+import MpBadge from '@/components/dashboard/MpBadge'
 import { useLang } from '@/app/providers'
 import { dashT } from '@/lib/dashT'
+
+// Format a "2026-07" bucket key into "Июль 2026" / "July 2026" /
+// "Iyul 2026" and a human date range ("1–31 июля 2026"). Cleaner than
+// leaving the raw YYYY-MM string in the UI.
+function formatPeriod(period: string, locale: string): { label: string; range: string } {
+  const [y, m] = period.split('-').map(Number)
+  if (!y || !m) return { label: period, range: '' }
+  const first = new Date(Date.UTC(y, m - 1, 1))
+  const last = new Date(Date.UTC(y, m, 0)) // day 0 of next month = last day of this month
+  const monthName = first.toLocaleDateString(locale, { month: 'long', timeZone: 'UTC' })
+  const label = `${monthName.charAt(0).toUpperCase()}${monthName.slice(1)} ${y}`
+  const firstDay = first.toLocaleDateString(locale, { day: 'numeric', timeZone: 'UTC' })
+  const lastDay = last.toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })
+  const range = `${firstDay}–${lastDay}`
+  return { label, range }
+}
 
 interface Props {
   entries: PayoutEntry[]
@@ -178,6 +195,7 @@ type MpFilter = typeof MP_TAB_VALUES[number]
 export default function PayoutsView({ entries }: Props) {
   const { lang } = useLang()
   const t = dashT[lang].payouts
+  const locale = lang === 'ru' ? 'ru-RU' : lang === 'en' ? 'en-US' : 'uz-UZ'
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [mpFilter, setMpFilter] = useState<MpFilter>('all')
   const printRef = useRef<HTMLDivElement>(null)
@@ -282,16 +300,29 @@ export default function PayoutsView({ entries }: Props) {
               </tr>
             </thead>
             <tbody>
-              {filteredEntries.map(entry => (
+              {filteredEntries.map(entry => {
+                const period = formatPeriod(entry.period, locale)
+                const topItem = entry.items[0]
+                return (
                 <Fragment key={entry.id}>
                   <tr
                     onClick={() => toggle(entry.id)}
                     className="border-b border-[var(--border)] hover:bg-[var(--bg-card2)] transition-colors cursor-pointer"
                   >
                     <td className="px-5 py-3.5">
-                      <p className="text-[var(--text-base)] text-sm font-medium">{entry.period}</p>
-                      {entry.payoutDate && (
-                        <p className="text-[var(--text-muted)] text-xs">{entry.payoutDate}</p>
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <p className="text-[var(--text-base)] text-sm font-medium">{period.label}</p>
+                        {entry.marketplace && <MpBadge mp={entry.marketplace as MarketplaceType} />}
+                      </div>
+                      <p className="text-[var(--text-muted)] text-xs">
+                        {period.range}
+                        {entry.payoutDate && ` · ${entry.payoutDate}`}
+                      </p>
+                      {topItem && (
+                        <p className="text-[var(--text-muted)] text-xs mt-0.5 truncate max-w-[280px]" title={topItem.productTitle}>
+                          {topItem.productTitle}
+                          {entry.items.length > 1 && ` +${entry.items.length - 1}`}
+                        </p>
                       )}
                     </td>
                     <td className="px-4 py-3.5 text-right text-[var(--text-dim)] text-sm">{entry.ordersCount}</td>
@@ -321,7 +352,8 @@ export default function PayoutsView({ entries }: Props) {
                     </tr>
                   )}
                 </Fragment>
-              ))}
+                )
+              })}
             </tbody>
           </table>
         </div>
