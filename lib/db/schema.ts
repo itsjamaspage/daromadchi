@@ -539,3 +539,31 @@ export const suggestedAliases = pgTable('suggested_aliases', {
   index('suggested_aliases_status_idx').on(t.status),
   index('suggested_aliases_canonical_idx').on(t.canonical_id),
 ])
+
+/* ── 27. yandex_settlement_transactions ────────────────────────────────────── */
+// Raw per-transaction rows from Yandex Market's united-netting-report.
+// One row per financial event; aggregated per-order in lib/db/payouts.ts
+// so the Payouts UI shows real settlement numbers instead of
+// "Ожидает данных Yandex".
+export const yandexSettlementTransactions = pgTable('yandex_settlement_transactions', {
+  id:                  uuid('id').primaryKey().defaultRandom(),
+  shop_id:             uuid('shop_id').notNull().references(() => shops.id, { onDelete: 'cascade' }),
+  transaction_id:      text('transaction_id').notNull(),
+  order_id_external:   text('order_id_external'),
+  entry_type:          text('entry_type').notNull(),   // "Начисление" | "Удержание"
+  entry_source:        text('entry_source'),           // e.g. "Платёж покупателя", "Оплата услуг Market Yandex Go"
+  order_type:          text('order_type'),             // e.g. "Продажа физлицу", "Доставка покупателю", "Поручение на продажу"
+  sku:                 text('sku'),
+  amount:              numeric('amount', { precision: 14, scale: 2 }).notNull(),
+  quantity:            integer('quantity'),
+  transaction_at:      timestamp('transaction_at', { withTimezone: true }),
+  order_created_at:    timestamp('order_created_at', { withTimezone: true }),
+  order_delivered_at:  timestamp('order_delivered_at', { withTimezone: true }),
+  status_note:         text('status_note'),
+  report_id:           text('report_id'),
+  synced_at:           timestamp('synced_at', { withTimezone: true }).defaultNow().notNull(),
+}, (t) => [
+  uniqueIndex('yandex_settlement_shop_txn_unique').on(t.shop_id, t.transaction_id),
+  index('yandex_settlement_shop_order_idx').on(t.shop_id, t.order_id_external),
+  index('yandex_settlement_transaction_at_idx').on(t.transaction_at),
+])

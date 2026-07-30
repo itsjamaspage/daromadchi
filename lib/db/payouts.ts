@@ -1,5 +1,5 @@
 import { inArray, gte, and, ne, eq, sql, asc } from 'drizzle-orm'
-import { db, orders, orderItems, products, shops, productAdsStats } from '@/lib/db'
+import { db, orders, orderItems, products, shops, productAdsStats, yandexSettlementTransactions } from '@/lib/db'
 import { getShopIds } from '@/lib/db/shop-context'
 import { getUnitEcoSettings } from '@/lib/db/unit-economics'
 import type { PayoutEntry, PayoutOrderItem } from '@/lib/types'
@@ -170,6 +170,46 @@ export async function getPayoutEntries(): Promise<PayoutEntry[]> {
   const now = new Date()
   const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
 
+  // Yandex real-settlement aggregation. Per YYYY-MM bucket, sum:
+  //   - Начисления (positive contribution to what seller receives)
+  //   - Удержания (negative contribution)
+  // Grouped by (shop_id, YYYY-MM) so we can match the |mp key below.
+  const ymShopIds = shopRows.filter(r => r.marketplace === 'yandex_market').map(r => r.id)
+  const ymSettlementByKey = new Map<string, { credit: number; debit: number; commission: number; delivery: number; other: number; txnCount: number }>()
+  if (ymShopIds.length > 0) {
+    const settlementRows = await db.select({
+      month:  sql<string>`to_char(${yandexSettlementTransactions.transaction_at}, 'YYYY-MM')`.as('month'),
+      entry_type: yandexSettlementTransactions.entry_type,
+      entry_source: yandexSettlementTransactions.entry_source,
+      order_type: yandexSettlementTransactions.order_type,
+      amount: yandexSettlementTransactions.amount,
+    }).from(yandexSettlementTransactions)
+      .where(and(
+        inArray(yandexSettlementTransactions.shop_id, ymShopIds),
+        gte(yandexSettlementTransactions.transaction_at, since),
+      ))
+    for (const r of settlementRows) {
+      if (!r.month) continue
+      const key = `${r.month}|yandex_market`
+      const b = ymSettlementByKey.get(key) ?? { credit: 0, debit: 0, commission: 0, delivery: 0, other: 0, txnCount: 0 }
+      const amt = Number(r.amount)
+      b.txnCount += 1
+      if (r.entry_type === 'Начисление') {
+        b.credit += amt
+      } else {
+        b.debit += amt
+        // Split debits by orderType so the UI can show delivery vs commission
+        // separately. "Доставка покупателю" is delivery, everything else is
+        // rolled into commission (which for Yandex Uzbekistan includes their
+        // bundled "Услуги маркета" — commission + acquiring + ads).
+        if ((r.order_type ?? '').includes('Доставка')) b.delivery += amt
+        else if ((r.order_type ?? '').includes('Поручение')) b.commission += amt
+        else b.other += amt
+      }
+      ymSettlementByKey.set(key, b)
+    }
+  }
+
   const entries: PayoutEntry[] = Array.from(grouped.entries()).flatMap(([key, v]) => {
     const [monthKey, mp] = key.split('|')
 
@@ -189,6 +229,39 @@ export async function getPayoutEntries(): Promise<PayoutEntry[]> {
     // settlement per order — then this branch flips to real numbers.
     if (mp === 'yandex_market') {
       const isPast = monthKey < currentMonth
+      const settled = ymSettlementByKey.get(key)
+      // If Yandex has already published settlement data for this month,
+      // use its REAL numbers. Otherwise return an "awaiting" placeholder.
+      if (settled && settled.txnCount > 0) {
+        const netPayout = settled.credit - settled.debit
+        const entry: PayoutEntry = {
+          id: key,
+          period: monthKey,
+          marketplace: mp,
+          grossRevenue: settled.credit || v.revenue,
+          commission: settled.commission + settled.other, // "Услуги маркета" bundles commission + ads + acquiring
+          delivery: settled.delivery,
+          returns: v.returnAmount,
+          adSpend: 0,
+          acquiring: 0,
+          tax: 0,
+          penalty: 0,
+          storageFee: 0,
+          additionalPayment: 0,
+          otherDeductions: 0,
+          netPayout,
+          ordersCount: v.count,
+          status: isPast ? 'estimated_paid' : 'estimated_pending',
+          payoutDate: null,
+          payoutEstimated: false,
+          items: itemsMap.get(key) ?? [],
+          firstOrderDate: isoDate(v.firstOrderAt),
+          lastOrderDate:  isoDate(v.lastOrderAt),
+          awaitingSettlement: false,
+        }
+        return [entry]
+      }
+
       const entry: PayoutEntry = {
         id: key,
         period: monthKey,

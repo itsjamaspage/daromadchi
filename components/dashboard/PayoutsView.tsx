@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useRef, Fragment } from 'react'
-import { ChevronDown, ChevronUp, HelpCircle } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { ChevronDown, ChevronUp, HelpCircle, RefreshCw } from 'lucide-react'
 import type { PayoutEntry, PayoutOrderItem, MarketplaceType } from '@/lib/types'
 import ExportButton from '@/components/dashboard/ExportButton'
 import MpBadge from '@/components/dashboard/MpBadge'
@@ -210,9 +211,30 @@ export default function PayoutsView({ entries }: Props) {
   const { lang } = useLang()
   const t = dashT[lang].payouts
   const locale = lang === 'ru' ? 'ru-RU' : lang === 'en' ? 'en-US' : 'uz-UZ'
+  const router = useRouter()
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [mpFilter, setMpFilter] = useState<MpFilter>('all')
+  const [refreshingYm, setRefreshingYm] = useState<false | 'loading' | 'ok' | 'err'>(false)
   const printRef = useRef<HTMLDivElement>(null)
+
+  // Any Yandex row currently in the awaiting-settlement state? If yes,
+  // show the "Обновить данные Yandex" button; otherwise there's nothing
+  // to refresh from the seller's POV.
+  const hasAwaitingYm = entries.some(e => e.marketplace === 'yandex_market' && e.awaitingSettlement)
+
+  async function refreshYandex() {
+    setRefreshingYm('loading')
+    try {
+      const res = await fetch('/api/yandex/refresh-settlements', { method: 'POST' })
+      if (!res.ok) throw new Error(String(res.status))
+      setRefreshingYm('ok')
+      // Give the server a moment to commit rows, then refresh RSC data.
+      setTimeout(() => router.refresh(), 500)
+    } catch {
+      setRefreshingYm('err')
+      setTimeout(() => setRefreshingYm(false), 3000)
+    }
+  }
 
   const mpTabs = [
     { value: 'all' as const,           label: t.tabAll },
@@ -269,7 +291,28 @@ export default function PayoutsView({ entries }: Props) {
               </button>
             ))}
           </div>
-        <ExportButton data={exportData} filename="tolovu-hisoboti" targetRef={printRef} />
+        <div className="flex items-center gap-2 ml-auto">
+          {hasAwaitingYm && (
+            <button
+              onClick={refreshYandex}
+              disabled={refreshingYm === 'loading'}
+              className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-xl border transition-colors disabled:opacity-60"
+              style={{
+                background: refreshingYm === 'ok' ? 'rgba(16,185,129,0.15)' : refreshingYm === 'err' ? 'rgba(239,68,68,0.15)' : 'var(--bg-card2)',
+                borderColor: 'var(--border)',
+                color: refreshingYm === 'ok' ? '#10b981' : refreshingYm === 'err' ? '#ef4444' : 'var(--text-base)',
+              }}
+              title={t.awaitingSettlementHint}
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${refreshingYm === 'loading' ? 'animate-spin' : ''}`} />
+              {refreshingYm === 'loading' ? t.refreshingYandex
+                : refreshingYm === 'ok'    ? t.refreshYandexDone
+                : refreshingYm === 'err'   ? t.refreshYandexFailed
+                : t.refreshYandex}
+            </button>
+          )}
+          <ExportButton data={exportData} filename="tolovu-hisoboti" targetRef={printRef} />
+        </div>
       </div>
 
       {/* Estimation warning — sellers were comparing these projections to

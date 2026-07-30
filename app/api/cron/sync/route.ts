@@ -5,6 +5,7 @@ import { db, shops, users, userSettings } from '@/lib/db'
 import { syncFromUzum } from '@/lib/uzum/sync'
 import { syncFromYandex } from '@/lib/yandex/sync'
 import { syncFromWildberries } from '@/lib/wildberries/sync'
+import { syncYandexSettlements } from '@/lib/yandex/settlements-sync'
 import { decrypt } from '@/lib/crypto'
 import { withErrorHandler } from '@/lib/api-handler'
 import { sendTelegramMessage } from '@/lib/telegram'
@@ -48,6 +49,15 @@ async function syncShop(
       r = { ...await syncFromUzum(shop.id, token) }
     } else if (shop.marketplace === 'yandex_market' && shop.shop_id_external) {
       r = { ...await syncFromYandex(shop.id, token, shop.shop_id_external) }
+      // Also refresh Yandex real-settlement data — async report API can
+      // take minutes, kept behind try/catch so a settlement failure
+      // never blocks the primary orders sync from being marked ok.
+      try {
+        const s = await syncYandexSettlements(shop.id, token, shop.shop_id_external)
+        ;(r as Record<string, unknown>).settlements = s
+      } catch (e) {
+        ;(r as Record<string, unknown>).settlements = { ok: false, error: String(e).slice(0, 300) }
+      }
     } else if (shop.marketplace === 'wildberries') {
       r = { ...await syncFromWildberries(null, shop.id, token) }
     }
