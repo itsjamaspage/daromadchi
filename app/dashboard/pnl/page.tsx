@@ -6,7 +6,7 @@ import { getUserShops } from '@/lib/db/shop-context'
 import PnlChart from './PnlChart'
 import ExportButton from '@/components/dashboard/ExportButton'
 import MarketplaceTabs from '@/components/dashboard/MarketplaceTabs'
-import DateRangePicker from '@/components/dashboard/DateRangePicker'
+import CalendarPicker from '@/components/dashboard/CalendarPicker'
 import { getT, getLang } from '@/lib/server-i18n'
 import type { MarketplaceType } from '@/lib/types'
 
@@ -126,7 +126,10 @@ export default async function PnlPage({ searchParams }: Props) {
         </div>
         <div className="flex items-center gap-2">
           <Suspense>
-            <DateRangePicker period={range.period} from={params.from} to={params.to} />
+            <CalendarPicker
+              from={params.from ?? range.from.toISOString().slice(0, 10)}
+              to={params.to ?? range.to.toISOString().slice(0, 10)}
+            />
           </Suspense>
           {!isEmpty && <ExportButton data={exportData} filename="pnl-hisoboti" />}
         </div>
