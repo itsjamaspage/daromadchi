@@ -51,9 +51,21 @@ export default async function PnlPage({ searchParams }: Props) {
   const params = await searchParams
   const marketplace = parseMp(params.mp)
   const range = parseRange(params)
-  const [t, lang, pnl, userShops] = await Promise.all([
+  // Second query: TODAY's data ONLY, day-bucket. Shown as a separate top
+  // row in the table so the seller sees "sales today" at a glance — the
+  // previous relabel just changed the month row's text without changing
+  // its data, which was misleading (the row said "30 July" but held all
+  // of July). Now the today row's numbers are actually today-only, and
+  // the monthly rows below continue to hold whole-month totals.
+  const todayStart = new Date()
+  todayStart.setHours(0, 0, 0, 0)
+  const todayEnd = new Date()
+  todayEnd.setHours(23, 59, 59, 999)
+
+  const [t, lang, pnl, todayPnl, userShops] = await Promise.all([
     getT(), getLang(),
     getPnl({ from: range.from, to: range.to, bucket: range.bucket, marketplace }),
+    getPnl({ from: todayStart, to: todayEnd, bucket: 'day', marketplace }),
     getUserShops(),
   ])
   const d = t.dashboard
@@ -72,19 +84,16 @@ export default async function PnlPage({ searchParams }: Props) {
     return `${monthName.charAt(0).toUpperCase()}${monthName.slice(1)} ${dt.getUTCFullYear()}`
   }
 
-  // For the row containing today (last row on a range that ends today),
-  // relabel with today's date instead of the month name — the seller
-  // wants to see "30 июля 2026" on the row where the "текущий" tag
-  // sits, not the whole-month "Июль 2026" text.
-  const today = new Date()
-  const todayLabel = today.toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' })
-  const todayBucketKey = range.bucket === 'day'
-    ? `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
-    : `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`
-  const monthlyData = pnl.rows.map(m => ({
-    ...m,
-    month: m.bucketKey === todayBucketKey ? todayLabel : labelFor(m.bucketKey),
-  }))
+  const monthlyData = pnl.rows.map(m => ({ ...m, month: labelFor(m.bucketKey) }))
+
+  // Build a dedicated "today" row from the single-day query. This row is
+  // rendered ABOVE the monthly rows and is NOT included in the totals
+  // reduce below (would double-count today's numbers, since the July
+  // 2026 monthly row already contains today's data).
+  const todayLabel = new Date().toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' })
+  const todayRow = todayPnl.rows[0]
+    ? { ...todayPnl.rows[0], month: todayLabel }
+    : null
   const isEmpty = monthlyData.length === 0 || monthlyData.every(m => m.revenue === 0 && m.cancelled_count === 0)
   const hasShops = userShops.length > 0
   const anyEstimated = monthlyData.some(m => m.estimated)
@@ -236,16 +245,36 @@ export default async function PnlPage({ searchParams }: Props) {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[var(--border)]">
-                  {monthlyData.map((m, i) => {
+                  {/* Today's row — separate query, day-bucket, TODAY only.
+                      Highlighted background + текущий tag so the seller
+                      sees "here's what happened today specifically". Not
+                      counted in totals (avoids double-count with the
+                      current month row below). */}
+                  {todayRow && (
+                    <tr key="today" className="bg-[var(--bg-card2)]" style={{ borderBottom: '2px solid var(--border2)' }}>
+                      <td className="px-4 py-4 text-[var(--text-base)] font-medium">
+                        {todayRow.month}
+                        <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded" style={{ color: 'var(--c1)', background: 'var(--bg-base)' }}>{d.current}</span>
+                      </td>
+                      <td className={num}>{todayRow.order_count}</td>
+                      <td className={num}>{todayRow.cancelled_count || '—'}</td>
+                      <td className={num}>{fmt(todayRow.revenue)}</td>
+                      <td className={num}>{est(todayRow.commission, todayRow.estimated, `≈ ${pnl.params.commissionPct}%`)}</td>
+                      <td className={num}>{todayRow.delivery > 0 ? est(todayRow.delivery, todayRow.estimated, `≈ ${pnl.params.lastMilePct}%`) : '—'}</td>
+                      <td className={num}>{est(todayRow.acquiring, todayRow.estimated, `≈ ${pnl.params.acquiringPct}%`)}</td>
+                      <td className={num}>{est(todayRow.tax, true, `≈ ${pnl.params.taxPct}%`)}</td>
+                      <td className={num}>{est(todayRow.ads, todayRow.adSpendEstimated, `≈ ${pnl.params.adPct}%`)}</td>
+                      <td className={num}>{todayRow.cogs > 0 ? fmt(todayRow.cogs) : '—'}</td>
+                      <td className={`${num} font-bold`}>{fmt(todayRow.net)}</td>
+                      <td className={num}>{todayRow.revenue > 0 ? ((todayRow.net / todayRow.revenue) * 100).toFixed(1) : '0.0'}%</td>
+                    </tr>
+                  )}
+                  {monthlyData.map(m => {
                     const margin = m.revenue > 0 ? (m.net / m.revenue) * 100 : 0
-                    const isLast = i === monthlyData.length - 1
                     return (
-                      <tr key={m.bucketKey} className={isLast ? 'bg-[var(--bg-card2)]' : ''}>
+                      <tr key={m.bucketKey}>
                         <td className="px-4 py-4 text-[var(--text-base)] font-medium">
                           {m.month}
-                          {isLast && (
-                            <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded" style={{ color: 'var(--c1)', background: 'var(--bg-card2)' }}>{d.current}</span>
-                          )}
                         </td>
                         <td className={num}>{m.order_count}</td>
                         <td className={num}>{m.cancelled_count || '—'}</td>
