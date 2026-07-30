@@ -125,6 +125,16 @@ export async function getPayoutEntries(): Promise<PayoutEntry[]> {
   const grouped = new Map<string, Bucket>()
 
   for (const row of orderRows) {
+    // Cancelled orders NEVER enter the payout pipeline — the buyer's
+    // money was refunded before the marketplace paid the seller, so
+    // they don't affect what gets deposited. Skip entirely (was
+    // previously counted as "Возвраты" which read as a payout
+    // deduction, but there's nothing to deduct because the money was
+    // never transferred). Only true returns — customer received the
+    // product and returned it — actually claw money back from a prior
+    // payout, and stay in returnAmount.
+    if (row.status === 'cancelled') continue
+
     const d = row.ordered_at
     const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
     const mp = mpByShop.get(row.shop_id) ?? 'uzum'
@@ -136,7 +146,7 @@ export async function getPayoutEntries(): Promise<PayoutEntry[]> {
       firstOrderAt: null, lastOrderAt: null,
     }
 
-    if (row.status === 'cancelled' || row.status === 'returned') {
+    if (row.status === 'returned') {
       b.returnCount += 1
       b.returnAmount += Number(row.revenue ?? 0)
     } else {

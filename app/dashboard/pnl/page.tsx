@@ -229,8 +229,14 @@ export default async function PnlPage({ searchParams }: Props) {
           )}
 
           <PnlChart
-            data={monthlyData.map(m => ({
-              month:   m.month,
+            // Chart uses ALL rows the query returned (including the
+            // current month we hid from the table). Without this the
+            // chart is empty whenever the picked range doesn't include
+            // any past month with orders — e.g. the default "current
+            // month → today" view had zero bars because the only row
+            // with data (this month) was filtered out.
+            data={pnl.rows.map(m => ({
+              month:   labelFor(m.bucketKey),
               revenue: m.revenue,
               cost:    m.commission + m.delivery + m.acquiring + m.tax + m.ads + m.cogs + m.penalty + m.storageFee + m.additionalPayment,
               profit:  m.net,
