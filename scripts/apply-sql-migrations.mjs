@@ -20,6 +20,7 @@ const MIGRATIONS = [
   'migrations/migrations/033_suggested_aliases.sql',
   'migrations/migrations/034_password_reset_tokens.sql',
   'migrations/migrations/035_yandex_settlements.sql',
+  'migrations/migrations/036_uzum_settlements.sql',
 ]
 
 function loadDatabaseUrl() {

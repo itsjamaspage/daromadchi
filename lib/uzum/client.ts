@@ -230,6 +230,57 @@ export async function fetchUzumOrders(
   })
 }
 
+// GET /v1/finance/orders — real per-order-item financials (seller price,
+// commission, delivery fee, seller profit, withdrawn profit). This is the
+// canonical settlement view Uzum shows the seller on their "Финансы →
+// Продажи" screen; we use it instead of estimating from Unit Economics
+// percentages. Paginated; requires shopIds; dates are Unix epoch ms.
+export interface UzumFinanceOrderItem {
+  id: number
+  status: 'TO_WITHDRAW' | 'PROCESSING' | 'CANCELED' | 'PARTIALLY_CANCELLED'
+  date?: number         // unix epoch ms (transaction date)
+  dateIssued?: number   // unix epoch ms
+  orderId: number
+  skuTitle?: string
+  productId?: number
+  shopId?: number
+  productTitle?: string
+  sellerPrice?: number         // per-item sell price, integer so'm
+  amount?: number              // units in this line
+  amountReturns?: number
+  cancelled?: number
+  commission?: number          // ACTUAL commission (not an estimate)
+  sellerProfit?: number        // ACTUAL profit
+  purchasePrice?: number
+  logisticDeliveryFee?: number // ACTUAL delivery fee
+  withdrawnProfit?: number     // net take-home after everything
+  returnCause?: string
+  comment?: string
+}
+interface UzumFinanceOrdersResponse {
+  orderItems?: UzumFinanceOrderItem[]
+  totalElements?: number
+}
+export async function fetchUzumFinanceOrders(
+  token: string,
+  shopIds: number[],
+  page = 0,
+  pageSize = 100,
+  fromDateMs?: number,
+  toDateMs?: number,
+): Promise<{ items: UzumFinanceOrderItem[]; totalElements: number }> {
+  return withRetry(() => {
+    const params = new URLSearchParams({ page: String(page), size: String(pageSize), group: 'false' })
+    for (const id of shopIds) params.append('shopIds', String(id))
+    if (fromDateMs != null) params.set('dateFrom', String(fromDateMs))
+    if (toDateMs != null)   params.set('dateTo',   String(toDateMs))
+    return request<UzumFinanceOrdersResponse>(`/v1/finance/orders?${params}`, token).then(r => ({
+      items: r.orderItems ?? [],
+      totalElements: r.totalElements ?? 0,
+    }))
+  })
+}
+
 // ─── OpenAPI spec (GET /swagger/api-docs) ────────────────────────────────────
 // Proven readable with the seller token. Gives the AUTHORITATIVE status enum
 // of GET /v2/fbs/orders' `status` parameter, replacing hand-maintained guesses

@@ -1,5 +1,5 @@
 import { inArray, gte, and, ne, eq, sql, asc } from 'drizzle-orm'
-import { db, orders, orderItems, products, shops, productAdsStats, yandexSettlementTransactions } from '@/lib/db'
+import { db, orders, orderItems, products, shops, productAdsStats, yandexSettlementTransactions, uzumSettlementOrders } from '@/lib/db'
 import { getShopIds } from '@/lib/db/shop-context'
 import { getUnitEcoSettings } from '@/lib/db/unit-economics'
 import type { PayoutEntry, PayoutOrderItem } from '@/lib/types'
@@ -220,6 +220,53 @@ export async function getPayoutEntries(): Promise<PayoutEntry[]> {
     }
   }
 
+  // Uzum real-settlement aggregation — mirror the Yandex approach.
+  // /v1/finance/orders returns per-order-item rows with authoritative
+  // sellerPrice / commission / logisticDeliveryFee / withdrawnProfit,
+  // so we sum by (shop_id × YYYY-MM) and use those instead of the
+  // Unit-Economics-percentage estimate.
+  const uzShopIds = shopRows.filter(r => r.marketplace === 'uzum').map(r => r.id)
+  const uzSettlementByKey = new Map<string, { gross: number; commission: number; delivery: number; net: number; profitFallback: number; itemCount: number }>()
+  if (uzShopIds.length > 0) {
+    try {
+      const settlementRows = await db.select({
+        month:            sql<string>`to_char(${uzumSettlementOrders.transaction_at}, 'YYYY-MM')`.as('month'),
+        status:           uzumSettlementOrders.status,
+        seller_price:     uzumSettlementOrders.seller_price,
+        commission:       uzumSettlementOrders.commission,
+        delivery:         uzumSettlementOrders.logistic_delivery_fee,
+        withdrawn_profit: uzumSettlementOrders.withdrawn_profit,
+        seller_profit:    uzumSettlementOrders.seller_profit,
+      }).from(uzumSettlementOrders)
+        .where(and(
+          inArray(uzumSettlementOrders.shop_id, uzShopIds),
+          gte(uzumSettlementOrders.transaction_at, since),
+        ))
+      for (const r of settlementRows) {
+        if (!r.month) continue
+        // Skip cancelled — Uzum sends them with sellerPrice > 0 too, and
+        // we already show cancellations in the returns column.
+        if (r.status === 'CANCELED') continue
+        const key = `${r.month}|uzum`
+        const b = uzSettlementByKey.get(key) ?? { gross: 0, commission: 0, delivery: 0, net: 0, profitFallback: 0, itemCount: 0 }
+        b.itemCount += 1
+        b.gross      += Number(r.seller_price ?? 0)
+        b.commission += Number(r.commission   ?? 0)
+        b.delivery   += Number(r.delivery     ?? 0)
+        // Prefer withdrawnProfit (what actually hit the seller's balance)
+        // and fall back to sellerProfit (pre-withdrawal profit) if the
+        // former is still null for a fresh row.
+        const withdrawn = r.withdrawn_profit != null ? Number(r.withdrawn_profit) : null
+        const profit    = r.seller_profit    != null ? Number(r.seller_profit)    : null
+        if (withdrawn != null) b.net += withdrawn
+        if (profit    != null) b.profitFallback += profit
+        uzSettlementByKey.set(key, b)
+      }
+    } catch (e) {
+      console.error('[payouts] uzum_settlement_orders query failed:', String(e).slice(0, 200))
+    }
+  }
+
   const entries: PayoutEntry[] = Array.from(grouped.entries()).flatMap(([key, v]) => {
     const [monthKey, mp] = key.split('|')
 
@@ -298,6 +345,51 @@ export async function getPayoutEntries(): Promise<PayoutEntry[]> {
         awaitingSettlement: true,
       }
       return [entry]
+    }
+
+    // Uzum real-settlement branch. Prefer /v1/finance/orders data when
+    // we have any items in this month — it carries Uzum's authoritative
+    // commission + delivery + net, so we stop estimating from the
+    // Unit-Economics percentages.
+    if (mp === 'uzum') {
+      const settled = uzSettlementByKey.get(key)
+      if (settled && settled.itemCount > 0) {
+        const isPast = monthKey < currentMonth
+        // Net: withdrawnProfit when present (money actually released),
+        // else sellerProfit (pre-release), else derive from
+        // sellerPrice − commission − delivery. Prefer the one that
+        // most closely matches what Uzum's own UI displays.
+        const derivedNet = settled.gross - settled.commission - settled.delivery
+        const net = settled.net > 0 ? settled.net
+                  : settled.profitFallback > 0 ? settled.profitFallback
+                  : derivedNet
+        const entry: PayoutEntry = {
+          id: key,
+          period: monthKey,
+          marketplace: mp,
+          grossRevenue: settled.gross || v.revenue,
+          commission: settled.commission,
+          delivery: settled.delivery,
+          returns: v.returnAmount,
+          adSpend: realAdSpendMap.get(key) ?? 0,
+          acquiring: 0,
+          tax: 0,
+          penalty: v.penalty,
+          storageFee: v.storageFee,
+          additionalPayment: v.additionalPayment,
+          otherDeductions: 0,
+          netPayout: net,
+          ordersCount: v.count,
+          status: isPast ? 'estimated_paid' : 'estimated_pending',
+          payoutDate: null,
+          payoutEstimated: false,
+          items: itemsMap.get(key) ?? [],
+          firstOrderDate: isoDate(v.firstOrderAt),
+          lastOrderDate:  isoDate(v.lastOrderAt),
+          awaitingSettlement: false,
+        }
+        return [entry]
+      }
     }
 
     const estimated = v.realFee === 0 && v.revenue > 0

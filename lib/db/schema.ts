@@ -567,3 +567,39 @@ export const yandexSettlementTransactions = pgTable('yandex_settlement_transacti
   index('yandex_settlement_shop_order_idx').on(t.shop_id, t.order_id_external),
   index('yandex_settlement_transaction_at_idx').on(t.transaction_at),
 ])
+
+/* ── 28. uzum_settlement_orders ──────────────────────────────────────────────── */
+// Per-order-item settlement rows from Uzum's /v1/finance/orders — the
+// same view Uzum shows the seller in "Финансы → Продажи". Real commission,
+// delivery fee, and withdrawn profit, so Payouts stops estimating from
+// Unit Economics percentages.
+export const uzumSettlementOrders = pgTable('uzum_settlement_orders', {
+  id:                    uuid('id').primaryKey().defaultRandom(),
+  shop_id:               uuid('shop_id').notNull().references(() => shops.id, { onDelete: 'cascade' }),
+  uzum_order_item_id:    bigint('uzum_order_item_id', { mode: 'number' }).notNull(),
+  uzum_order_id:         bigint('uzum_order_id', { mode: 'number' }).notNull(),
+  uzum_shop_id:          bigint('uzum_shop_id', { mode: 'number' }),
+  product_id:            bigint('product_id', { mode: 'number' }),
+  product_title:         text('product_title'),
+  sku_title:             text('sku_title'),
+  // TO_WITHDRAW | PROCESSING | CANCELED | PARTIALLY_CANCELLED
+  status:                text('status').notNull(),
+  transaction_at:        timestamp('transaction_at', { withTimezone: true }),
+  date_issued_at:        timestamp('date_issued_at', { withTimezone: true }),
+  seller_price:          numeric('seller_price', { precision: 14, scale: 2 }).notNull().default('0'),
+  commission:            numeric('commission', { precision: 14, scale: 2 }).notNull().default('0'),
+  seller_profit:         numeric('seller_profit', { precision: 14, scale: 2 }),
+  withdrawn_profit:      numeric('withdrawn_profit', { precision: 14, scale: 2 }),
+  purchase_price:        numeric('purchase_price', { precision: 14, scale: 2 }),
+  logistic_delivery_fee: numeric('logistic_delivery_fee', { precision: 14, scale: 2 }).notNull().default('0'),
+  amount:                integer('amount'),
+  amount_returns:        integer('amount_returns'),
+  cancelled:             integer('cancelled'),
+  return_cause:          text('return_cause'),
+  comment:               text('comment'),
+  synced_at:             timestamp('synced_at', { withTimezone: true }).defaultNow().notNull(),
+}, (t) => [
+  uniqueIndex('uzum_settlement_shop_item_unique').on(t.shop_id, t.uzum_order_item_id),
+  index('uzum_settlement_shop_order_idx').on(t.shop_id, t.uzum_order_id),
+  index('uzum_settlement_transaction_at_idx').on(t.transaction_at),
+])

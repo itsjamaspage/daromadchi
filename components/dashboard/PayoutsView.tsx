@@ -219,6 +219,7 @@ export default function PayoutsView({ entries }: Props) {
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [mpFilter, setMpFilter] = useState<MpFilter>('all')
   const [refreshingYm, setRefreshingYm] = useState<false | 'loading'>(false)
+  const [refreshingUz, setRefreshingUz] = useState<false | 'loading'>(false)
   // Chip shows `short` (a compact one-liner). Hovering surfaces `full`,
   // which is the same summary plus any debug JSON returned by the sync
   // (report id, XLSX shape, etc.). Keeping the two separate stops the
@@ -286,6 +287,41 @@ export default function PayoutsView({ entries }: Props) {
       setRefreshingYm(false)
       // Auto-dismiss the toast-like message after 30s — long enough for
       // a screenshot of the hover panel when the debug JSON matters.
+      setTimeout(() => setRefreshMsg(null), 30_000)
+    }
+  }
+
+  async function refreshUzum() {
+    setMenuOpen(false)
+    setRefreshingUz('loading')
+    setRefreshMsg(null)
+    try {
+      const res = await fetch('/api/uzum/refresh-settlements', { method: 'POST' })
+      let payload: { ok?: boolean; results?: Array<{ ok: boolean; inserted?: number; error?: string; skipped?: string; debug?: unknown }> } = {}
+      try { payload = await res.json() } catch { /* non-json */ }
+      const results = payload.results ?? []
+      const totalInserted = results.reduce((s, r) => s + (r.inserted ?? 0), 0)
+      const firstErrorRow = results.find(r => !r.ok)
+      const firstSkipRow  = results.find(r => r.skipped)
+      const buildFull = (summary: string, dbg: unknown) =>
+        dbg ? `${summary}\n\n${JSON.stringify(dbg, null, 2)}` : summary
+      if (!res.ok) {
+        setRefreshMsg({ tone: 'err', short: `HTTP ${res.status}`, full: `HTTP ${res.status}` })
+      } else if (firstErrorRow) {
+        const raw = firstErrorRow.error ?? 'error'
+        setRefreshMsg({ tone: 'err', short: raw.slice(0, 160), full: buildFull(raw, firstErrorRow.debug) })
+      } else if (totalInserted > 0) {
+        setRefreshMsg({ tone: 'ok', short: `${totalInserted} Uzum items`, full: `${totalInserted} items` })
+        setTimeout(() => router.refresh(), 500)
+      } else {
+        const raw = firstSkipRow?.skipped ?? 'Uzum вернул 0 записей'
+        setRefreshMsg({ tone: 'ok', short: raw.slice(0, 160), full: buildFull(raw, firstSkipRow?.debug) })
+      }
+    } catch (e) {
+      const s = String(e).slice(0, 200)
+      setRefreshMsg({ tone: 'err', short: s, full: s })
+    } finally {
+      setRefreshingUz(false)
       setTimeout(() => setRefreshMsg(null), 30_000)
     }
   }
@@ -412,6 +448,16 @@ export default function PayoutsView({ entries }: Props) {
                 >
                   <RefreshCw className={`w-3.5 h-3.5 flex-shrink-0 ${refreshingYm === 'loading' ? 'animate-spin' : ''}`} />
                   {refreshingYm === 'loading' ? t.refreshingYandex : t.refreshYandex}
+                </button>
+                <button
+                  type="button"
+                  onClick={refreshUzum}
+                  disabled={refreshingUz === 'loading'}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium hover:opacity-80 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed text-left"
+                  style={{ color: 'var(--text-base)' }}
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 flex-shrink-0 ${refreshingUz === 'loading' ? 'animate-spin' : ''}`} />
+                  {refreshingUz === 'loading' ? 'Обновление Uzum…' : 'Обновить данные Uzum'}
                 </button>
               </div>
             )}
