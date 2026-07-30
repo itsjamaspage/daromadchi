@@ -49,16 +49,21 @@ export async function syncUzumSettlements(
   const dateTo = now
   const dateFrom = now - windowDays * 24 * 60 * 60 * 1000
 
-  // Page through /v1/finance/orders. Uzum caps size at 100; break on
-  // an empty page or after we've read everything the totalElements
-  // header advertised, whichever comes first. Hard-cap at 100 pages
-  // (10 000 items) so a broken totalElements can't loop forever.
+  // Page through /v1/finance/orders. Uzum caps size at 100 per page.
+  // Bound both call count and wall-clock so a slow Uzum response or a
+  // huge backfill can't push us past nginx's ~60s upstream timeout —
+  // returning a partial batch is better than a 504 that shows the seller
+  // nothing at all.
   const items: UzumFinanceOrderItem[] = []
   let totalReported = 0
   let firstPageRawShape: string | undefined
   let firstProbedUrl: string | undefined
-  const fetchPages = async (from: number | undefined, to: number | undefined) => {
-    for (let page = 0; page < 100; page++) {
+  const startedAt = Date.now()
+  const DEADLINE_MS = 45_000 // leave ~15s headroom under nginx's 60s cap
+  let deadlineHit = false
+  const fetchPages = async (from: number | undefined, to: number | undefined, maxPages: number) => {
+    for (let page = 0; page < maxPages; page++) {
+      if (Date.now() - startedAt > DEADLINE_MS) { deadlineHit = true; break }
       const r = await fetchUzumFinanceOrders(token, uzumShopIds, page, 100, from, to)
       totalReported = r.totalElements
       if (page === 0) { firstPageRawShape = r.rawShape; firstProbedUrl = r.probedUrl }
@@ -68,31 +73,33 @@ export async function syncUzumSettlements(
     }
   }
   try {
-    await fetchPages(dateFrom, dateTo)
-    // Fallback: if the dated call came up empty, retry once WITHOUT the
-    // date filter. Uzum's /v1/finance/orders may be filtering by payout
-    // date (which lags order date by weeks — payouts arrive on schedule)
-    // rather than order date, so a 14-day window can miss recent orders.
-    // Client-side filter items down to our window afterwards so we don't
-    // ingest an infinite backfill.
+    // Dated call — sellers with normal volume land under 5 pages here.
+    await fetchPages(dateFrom, dateTo, 20)
+    // Fallback: if the dated call came up empty, retry WITHOUT the date
+    // filter. Uzum's endpoint may filter by payout date (which lags
+    // order date by weeks — user's own screenshot showed "К выплате 7
+    // августа" for a Jul 26 delivery), so a 14-day window can miss
+    // recent orders whose payout hasn't been scheduled yet. Cap the
+    // fallback at 10 pages (1 000 items) so a large-history shop can't
+    // trip the timeout; recent orders come first in Uzum's ordering so
+    // 1 000 items comfortably covers weeks of activity.
     if (items.length === 0) {
-      await fetchPages(undefined, undefined)
+      await fetchPages(undefined, undefined, 10)
       const filtered = items.filter(it => {
         const d = it.date ?? it.dateIssued
         return typeof d === 'number' && d >= dateFrom && d <= dateTo
       })
-      // Replace items with the client-filtered subset.
       items.length = 0
       items.push(...filtered)
     }
   } catch (e) {
-    return { ok: false, inserted: 0, error: `fetch: ${String(e).slice(0, 300)}`, debug: { uzumShopIds, dateFrom, dateTo, gotSoFar: items.length, probedUrl: firstProbedUrl } }
+    return { ok: false, inserted: 0, error: `fetch: ${String(e).slice(0, 300)}`, debug: { uzumShopIds, dateFrom, dateTo, gotSoFar: items.length, probedUrl: firstProbedUrl, elapsedMs: Date.now() - startedAt } }
   }
 
   if (items.length === 0) {
     // Include the raw first-page response snapshot so we can tell whether
     // the window was genuinely empty vs. we parsed the wrong envelope path.
-    return { ok: true, inserted: 0, skipped: 'no finance/orders items in window', debug: { uzumShopIds, dateFrom, dateTo, dateFromIso: new Date(dateFrom).toISOString(), dateToIso: new Date(dateTo).toISOString(), totalReported, rawShape: firstPageRawShape, probedUrl: firstProbedUrl } }
+    return { ok: true, inserted: 0, skipped: deadlineHit ? 'timed out before Uzum returned data' : 'no finance/orders items in window', debug: { uzumShopIds, dateFrom, dateTo, dateFromIso: new Date(dateFrom).toISOString(), dateToIso: new Date(dateTo).toISOString(), totalReported, rawShape: firstPageRawShape, probedUrl: firstProbedUrl, deadlineHit, elapsedMs: Date.now() - startedAt } }
   }
 
   const rows = items.map(it => {
