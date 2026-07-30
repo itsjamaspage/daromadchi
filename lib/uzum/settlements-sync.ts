@@ -55,10 +55,12 @@ export async function syncUzumSettlements(
   // (10 000 items) so a broken totalElements can't loop forever.
   const items: UzumFinanceOrderItem[] = []
   let totalReported = 0
+  let firstPageRawShape: string | undefined
   try {
     for (let page = 0; page < 100; page++) {
       const r = await fetchUzumFinanceOrders(token, uzumShopIds, page, 100, dateFrom, dateTo)
       totalReported = r.totalElements
+      if (page === 0) firstPageRawShape = r.rawShape
       if (r.items.length === 0) break
       items.push(...r.items)
       if (items.length >= totalReported && totalReported > 0) break
@@ -68,7 +70,9 @@ export async function syncUzumSettlements(
   }
 
   if (items.length === 0) {
-    return { ok: true, inserted: 0, skipped: 'no finance/orders items in window', debug: { uzumShopIds, dateFrom, dateTo, totalReported } }
+    // Include the raw first-page response snapshot so we can tell whether
+    // the window was genuinely empty vs. we parsed the wrong envelope path.
+    return { ok: true, inserted: 0, skipped: 'no finance/orders items in window', debug: { uzumShopIds, dateFrom, dateTo, dateFromIso: new Date(dateFrom).toISOString(), dateToIso: new Date(dateTo).toISOString(), totalReported, rawShape: firstPageRawShape } }
   }
 
   const rows = items.map(it => {

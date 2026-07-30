@@ -257,9 +257,22 @@ export interface UzumFinanceOrderItem {
   returnCause?: string
   comment?: string
 }
-interface UzumFinanceOrdersResponse {
+// Uzum wraps most responses in the GenericResponse envelope
+// { payload: {...}, errors, timestamp }, but some endpoints return the
+// dto directly. Handle both — checked in this order:
+//   r.orderItems (direct dto)
+// | r.payload.orderItems (wrapped)
+// | r.data.orderItems (some sandbox variants)
+// | r.payload.data.orderItems (double-wrap seen on v1/finance/expenses)
+interface RawFinanceResponse {
   orderItems?: UzumFinanceOrderItem[]
   totalElements?: number
+  payload?: {
+    orderItems?: UzumFinanceOrderItem[]
+    totalElements?: number
+    data?: { orderItems?: UzumFinanceOrderItem[]; totalElements?: number }
+  }
+  data?: { orderItems?: UzumFinanceOrderItem[]; totalElements?: number }
 }
 export async function fetchUzumFinanceOrders(
   token: string,
@@ -268,16 +281,33 @@ export async function fetchUzumFinanceOrders(
   pageSize = 100,
   fromDateMs?: number,
   toDateMs?: number,
-): Promise<{ items: UzumFinanceOrderItem[]; totalElements: number }> {
+): Promise<{ items: UzumFinanceOrderItem[]; totalElements: number; rawShape?: string }> {
   return withRetry(() => {
     const params = new URLSearchParams({ page: String(page), size: String(pageSize), group: 'false' })
     for (const id of shopIds) params.append('shopIds', String(id))
     if (fromDateMs != null) params.set('dateFrom', String(fromDateMs))
     if (toDateMs != null)   params.set('dateTo',   String(toDateMs))
-    return request<UzumFinanceOrdersResponse>(`/v1/finance/orders?${params}`, token).then(r => ({
-      items: r.orderItems ?? [],
-      totalElements: r.totalElements ?? 0,
-    }))
+    return request<RawFinanceResponse>(`/v1/finance/orders?${params}`, token).then(r => {
+      const items =
+        r.orderItems
+        ?? r.payload?.orderItems
+        ?? r.data?.orderItems
+        ?? r.payload?.data?.orderItems
+        ?? []
+      const totalElements =
+        r.totalElements
+        ?? r.payload?.totalElements
+        ?? r.data?.totalElements
+        ?? r.payload?.data?.totalElements
+        ?? 0
+      // When we come up empty, keep a compact snapshot of the top-level
+      // keys + a 400-char JSON slice so the sync debug can prove the
+      // shape wasn't a parse miss vs. a genuinely empty window.
+      const rawShape = items.length === 0
+        ? `keys=[${Object.keys(r ?? {}).join(',')}] body=${JSON.stringify(r).slice(0, 400)}`
+        : undefined
+      return { items, totalElements, rawShape }
+    })
   })
 }
 
