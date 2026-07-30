@@ -1,0 +1,116 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { eq, and } from 'drizzle-orm'
+import { getCurrentUser } from '@/lib/auth/session'
+import { db, shops } from '@/lib/db'
+import { decrypt } from '@/lib/crypto'
+import { marketplaceFetch } from '@/lib/marketplace-readonly-guard'
+import { YANDEX_API_BASE } from '@/lib/yandex/client'
+import { withErrorHandler } from '@/lib/api-handler'
+
+export const runtime = 'nodejs'
+export const maxDuration = 60
+
+// READ-ONLY diagnostic. Calls Yandex Market's real API for the current
+// user's YM campaign and returns the raw response so the seller can
+// verify what Yandex actually sends as commissionTotal / deliveryTotal /
+// buyerTotal per order.
+//
+// Usage:
+//   GET /api/yandex/diagnose?orderId=<yandex order id>   → single order
+//   GET /api/yandex/diagnose                             → latest 10 orders
+//
+// Auth: the current user must have a connected Yandex Market shop.
+
+interface Probe {
+  label: string
+  url: string
+  ok: boolean
+  status: number
+  bodySnippet: string
+  parsed: unknown
+}
+
+async function probe(label: string, url: string, token: string): Promise<Probe> {
+  try {
+    const res = await marketplaceFetch(url, {
+      headers: { Authorization: `Bearer ${token.trim()}`, Accept: 'application/json' },
+      next: { revalidate: 0 },
+    })
+    const text = await res.text().catch(() => '')
+    let parsed: unknown = null
+    try { parsed = JSON.parse(text) } catch { /* not json */ }
+    return {
+      label,
+      url: url.replace(YANDEX_API_BASE, ''),
+      ok: res.ok,
+      status: res.status,
+      bodySnippet: text.slice(0, 800),
+      parsed,
+    }
+  } catch (e) {
+    return {
+      label,
+      url: url.replace(YANDEX_API_BASE, ''),
+      ok: false,
+      status: 0,
+      bodySnippet: e instanceof Error ? e.message : String(e),
+      parsed: null,
+    }
+  }
+}
+
+export const GET = withErrorHandler(async (req: NextRequest) => {
+  const user = await getCurrentUser()
+  if (!user) return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 })
+
+  const orderId = req.nextUrl.searchParams.get('orderId')
+
+  // Find the user's Yandex shop (any of them if multiple).
+  const ymShops = await db.select({
+    id: shops.id,
+    api_key_encrypted: shops.api_key_encrypted,
+    shop_id_external: shops.shop_id_external,
+  }).from(shops).where(and(eq(shops.user_id, user.id), eq(shops.marketplace, 'yandex_market')))
+
+  if (ymShops.length === 0) {
+    return NextResponse.json({ ok: false, error: 'No Yandex Market shop connected for this user.' }, { status: 404 })
+  }
+
+  const shop = ymShops[0]
+  if (!shop.api_key_encrypted) {
+    return NextResponse.json({ ok: false, error: 'Yandex shop has no stored API token.' }, { status: 400 })
+  }
+  const token = decrypt(shop.api_key_encrypted)
+  const campaignId = shop.shop_id_external
+  if (!campaignId) {
+    return NextResponse.json({ ok: false, error: 'Yandex shop is missing a campaign ID.' }, { status: 400 })
+  }
+
+  const probes: Probe[] = []
+
+  if (orderId) {
+    // v2 single-order endpoint returns the full order object with all
+    // financial fields (buyerTotal, itemsTotal, deliveryTotal,
+    // commissionTotal, subsidyTotal, etc.).
+    probes.push(await probe(
+      `GET /v2/campaigns/${campaignId}/orders/${orderId}`,
+      `${YANDEX_API_BASE}/v2/campaigns/${campaignId}/orders/${orderId}`,
+      token,
+    ))
+  } else {
+    // Latest ~10 orders — useful to eyeball what commissionTotal looks
+    // like on a bunch at once.
+    probes.push(await probe(
+      `GET /v2/campaigns/${campaignId}/orders (latest)`,
+      `${YANDEX_API_BASE}/v2/campaigns/${campaignId}/orders?pageSize=10`,
+      token,
+    ))
+  }
+
+  return NextResponse.json({
+    ok: true,
+    hint: 'commissionTotal is what Yandex says the seller will be charged in commission for this order. buyerTotal − commissionTotal − deliveryTotal ≈ what the seller will actually receive.',
+    campaignId,
+    probes,
+  }, { status: 200 })
+})
