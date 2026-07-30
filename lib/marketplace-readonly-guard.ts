@@ -24,8 +24,11 @@ const APPROVED_POST_ENDPOINTS: RegExp[] = [
   // report itself contains READ-ONLY financial/settlement data. Approved
   // by owner in the payouts real-data thread — needed so the Payouts
   // page can display Yandex's actual per-order commission/delivery
-  // figures instead of estimates.)
+  // figures instead of estimates.) Both the legacy /reports/ path and
+  // the newer business-scoped /businesses/{id}/reports/ path — Yandex
+  // 404s the old one on some accounts.
   /api\.partner\.market\.yandex\.ru\/reports\/united-netting-report\/generate/,
+  /api\.partner\.market\.yandex\.ru\/businesses\/\d+\/reports\/united-netting-report\/generate/,
   // Wildberries Content API — paginated card list (POST is the read method)
   /content-api\.wildberries\.ru\/content\/v2\/get\/cards\/list/,
   // Wildberries Marketplace API — FBS stock lookup by barcodes (POST is the read

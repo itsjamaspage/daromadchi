@@ -59,6 +59,12 @@ async function yandexRequest<T>(path: string, token: string, options?: RequestIn
 /**
  * Kick off report generation. Returns Yandex's reportId — poll it with
  * getReportStatus until DONE.
+ *
+ * Yandex renamed this endpoint from `/reports/united-netting-report/generate`
+ * (returns 404 now) to the business-scoped
+ * `/businesses/{businessId}/reports/united-netting-report/generate`.
+ * Uses the new one first; if Yandex 404s AGAIN (some sellers may still
+ * be on legacy routing), falls back to the old path.
  */
 export async function generateNettingReport(
   token: string,
@@ -70,23 +76,37 @@ export async function generateNettingReport(
     result?: { reportId?: string; estimatedGenerationTime?: number }
     errors?: { code: string; message: string }[]
   }
-  const data = await yandexRequest<GenerateResponse>(
-    `/reports/united-netting-report/generate?format=FILE`,
-    token,
-    {
-      method: 'POST',
-      body: JSON.stringify({
-        businessId,
-        dateTimeFrom: `${dateFrom}T00:00:00Z`,
-        dateTimeTo:   `${dateTo}T23:59:59Z`,
-      }),
-    },
-  )
-  const id = data.result?.reportId
-  if (!id) {
-    throw new Error(`Yandex report generate returned no reportId. Body: ${JSON.stringify(data).slice(0, 400)}`)
+  const body = JSON.stringify({
+    businessId,
+    dateTimeFrom: `${dateFrom}T00:00:00Z`,
+    dateTimeTo:   `${dateTo}T23:59:59Z`,
+  })
+
+  const paths = [
+    `/businesses/${businessId}/reports/united-netting-report/generate`,
+    `/reports/united-netting-report/generate`, // legacy fallback
+  ]
+
+  let lastErr: Error | null = null
+  for (const path of paths) {
+    try {
+      const data = await yandexRequest<GenerateResponse>(path, token, { method: 'POST', body })
+      const id = data.result?.reportId
+      if (!id) {
+        lastErr = new Error(`Yandex report generate returned no reportId (${path}). Body: ${JSON.stringify(data).slice(0, 400)}`)
+        continue
+      }
+      return id
+    } catch (e) {
+      lastErr = e as Error
+      // Only fall through on 404 — every other status (401, 403, 500…)
+      // means the endpoint exists and something else is wrong, so
+      // don't waste a second attempt.
+      const msg = String(lastErr)
+      if (!msg.includes('404')) break
+    }
   }
-  return id
+  throw lastErr ?? new Error('Yandex report generate: unknown failure')
 }
 
 export interface ReportStatus {

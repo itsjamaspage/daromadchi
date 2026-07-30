@@ -323,21 +323,38 @@ export default function PayoutsView({ entries }: Props) {
           </div>
         <div className="flex items-center gap-2 ml-auto">
           {refreshMsg && (
-            <button
-              type="button"
-              onClick={() => {
-                navigator.clipboard?.writeText(refreshMsg.text).catch(() => {})
-              }}
-              className="text-xs font-medium px-3 py-1.5 rounded-lg cursor-pointer"
-              style={{
-                background: refreshMsg.tone === 'ok' ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)',
-                color: refreshMsg.tone === 'ok' ? '#10b981' : '#ef4444',
-                maxWidth: 480,
-              }}
-              title={refreshMsg.text + '  (click to copy full text)'}
-            >
-              <span className="block truncate text-left">{refreshMsg.text}</span>
-            </button>
+            <div className="relative group">
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard?.writeText(refreshMsg.text).catch(() => {})
+                }}
+                className="text-xs font-medium px-3 py-1.5 rounded-lg cursor-pointer max-w-[480px] block truncate text-left"
+                style={{
+                  background: refreshMsg.tone === 'ok' ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)',
+                  color: refreshMsg.tone === 'ok' ? '#10b981' : '#ef4444',
+                }}
+                title="Click to copy full error"
+              >
+                {refreshMsg.text}
+              </button>
+              {/* Real hover tooltip — a full-width, wrapping panel that
+                  stays open long enough to read even if the message is
+                  huge. Positioned below the chip so it doesn't get cut
+                  off by the header bar. */}
+              <div
+                className="hidden group-hover:block absolute right-0 top-full mt-1 z-50 p-3 rounded-lg shadow-xl text-xs whitespace-pre-wrap break-all"
+                style={{
+                  background: 'var(--bg-card)',
+                  border: '1px solid var(--border)',
+                  color: 'var(--text-base)',
+                  minWidth: 320,
+                  maxWidth: 720,
+                }}
+              >
+                {refreshMsg.text}
+              </div>
+            </div>
           )}
           <ExportButton data={exportData} filename="tolovu-hisoboti" targetRef={printRef} />
           {/* Kebab (⋮) menu: single icon that expands into a dropdown.
