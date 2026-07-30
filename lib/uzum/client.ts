@@ -274,6 +274,12 @@ interface RawFinanceResponse {
   }
   data?: { orderItems?: UzumFinanceOrderItem[]; totalElements?: number }
 }
+// All 4 statuses per Uzum's OpenAPI enum. Sent explicitly because the
+// endpoint returned 0 items for a window the seller cabinet clearly
+// showed orders in, which suggests the default (no statuses) filters
+// EVERYTHING out rather than including all statuses.
+const UZUM_FINANCE_STATUSES = ['TO_WITHDRAW', 'PROCESSING', 'CANCELED', 'PARTIALLY_CANCELLED']
+
 export async function fetchUzumFinanceOrders(
   token: string,
   shopIds: number[],
@@ -281,13 +287,15 @@ export async function fetchUzumFinanceOrders(
   pageSize = 100,
   fromDateMs?: number,
   toDateMs?: number,
-): Promise<{ items: UzumFinanceOrderItem[]; totalElements: number; rawShape?: string }> {
+): Promise<{ items: UzumFinanceOrderItem[]; totalElements: number; rawShape?: string; probedUrl?: string }> {
   return withRetry(() => {
     const params = new URLSearchParams({ page: String(page), size: String(pageSize), group: 'false' })
     for (const id of shopIds) params.append('shopIds', String(id))
+    for (const s of UZUM_FINANCE_STATUSES) params.append('statuses', s)
     if (fromDateMs != null) params.set('dateFrom', String(fromDateMs))
     if (toDateMs != null)   params.set('dateTo',   String(toDateMs))
-    return request<RawFinanceResponse>(`/v1/finance/orders?${params}`, token).then(r => {
+    const path = `/v1/finance/orders?${params}`
+    return request<RawFinanceResponse>(path, token).then(r => {
       const items =
         r.orderItems
         ?? r.payload?.orderItems
@@ -306,7 +314,7 @@ export async function fetchUzumFinanceOrders(
       const rawShape = items.length === 0
         ? `keys=[${Object.keys(r ?? {}).join(',')}] body=${JSON.stringify(r).slice(0, 400)}`
         : undefined
-      return { items, totalElements, rawShape }
+      return { items, totalElements, rawShape, probedUrl: path }
     })
   })
 }

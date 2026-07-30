@@ -56,23 +56,43 @@ export async function syncUzumSettlements(
   const items: UzumFinanceOrderItem[] = []
   let totalReported = 0
   let firstPageRawShape: string | undefined
-  try {
+  let firstProbedUrl: string | undefined
+  const fetchPages = async (from: number | undefined, to: number | undefined) => {
     for (let page = 0; page < 100; page++) {
-      const r = await fetchUzumFinanceOrders(token, uzumShopIds, page, 100, dateFrom, dateTo)
+      const r = await fetchUzumFinanceOrders(token, uzumShopIds, page, 100, from, to)
       totalReported = r.totalElements
-      if (page === 0) firstPageRawShape = r.rawShape
+      if (page === 0) { firstPageRawShape = r.rawShape; firstProbedUrl = r.probedUrl }
       if (r.items.length === 0) break
       items.push(...r.items)
       if (items.length >= totalReported && totalReported > 0) break
     }
+  }
+  try {
+    await fetchPages(dateFrom, dateTo)
+    // Fallback: if the dated call came up empty, retry once WITHOUT the
+    // date filter. Uzum's /v1/finance/orders may be filtering by payout
+    // date (which lags order date by weeks — payouts arrive on schedule)
+    // rather than order date, so a 14-day window can miss recent orders.
+    // Client-side filter items down to our window afterwards so we don't
+    // ingest an infinite backfill.
+    if (items.length === 0) {
+      await fetchPages(undefined, undefined)
+      const filtered = items.filter(it => {
+        const d = it.date ?? it.dateIssued
+        return typeof d === 'number' && d >= dateFrom && d <= dateTo
+      })
+      // Replace items with the client-filtered subset.
+      items.length = 0
+      items.push(...filtered)
+    }
   } catch (e) {
-    return { ok: false, inserted: 0, error: `fetch: ${String(e).slice(0, 300)}`, debug: { uzumShopIds, dateFrom, dateTo, gotSoFar: items.length } }
+    return { ok: false, inserted: 0, error: `fetch: ${String(e).slice(0, 300)}`, debug: { uzumShopIds, dateFrom, dateTo, gotSoFar: items.length, probedUrl: firstProbedUrl } }
   }
 
   if (items.length === 0) {
     // Include the raw first-page response snapshot so we can tell whether
     // the window was genuinely empty vs. we parsed the wrong envelope path.
-    return { ok: true, inserted: 0, skipped: 'no finance/orders items in window', debug: { uzumShopIds, dateFrom, dateTo, dateFromIso: new Date(dateFrom).toISOString(), dateToIso: new Date(dateTo).toISOString(), totalReported, rawShape: firstPageRawShape } }
+    return { ok: true, inserted: 0, skipped: 'no finance/orders items in window', debug: { uzumShopIds, dateFrom, dateTo, dateFromIso: new Date(dateFrom).toISOString(), dateToIso: new Date(dateTo).toISOString(), totalReported, rawShape: firstPageRawShape, probedUrl: firstProbedUrl } }
   }
 
   const rows = items.map(it => {
