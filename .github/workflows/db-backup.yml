@@ -1,0 +1,106 @@
+name: DB · Backup Postgres
+
+# Read-only backup of whatever DATABASE_URL currently points to (Supabase
+# today, self-hosted Postgres after migration). Runs pg_dump on the VPS,
+# gzips the result, and uploads it as a workflow artifact so you can
+# download it from the Actions tab. Also keeps 14 rotated copies on the
+# VPS at /var/backups/daromadchi/.
+#
+# Trigger this MANUALLY from the Actions tab whenever you want a fresh
+# safety net. Also runs nightly at 03:00 UTC so there's always <24h of
+# recovery loss if the VPS explodes.
+#
+# The dump is --schema=public only — Supabase's proprietary schemas
+# (auth, storage, realtime, pgsodium, graphql, _supabase, _realtime,
+# etc.) are excluded so the file can be restored into a plain Postgres.
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 3 * * *'  # 03:00 UTC nightly
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VPS_SSH_KEY }}" | base64 -d > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Run pg_dump on VPS
+        run: |
+          ssh -i ~/.ssh/deploy_key ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} 'bash -s' <<'REMOTE'
+          set -euo pipefail
+
+          # Ensure pg_dump is available on the VPS. postgresql-client-common
+          # + postgresql-client are ~10MB; safe to apt-install on first run.
+          if ! command -v pg_dump >/dev/null 2>&1; then
+            echo "Installing postgresql-client..."
+            sudo apt-get update -qq
+            sudo apt-get install -y --no-install-recommends postgresql-client >/dev/null
+          fi
+
+          # Find the app's .env file and pull DATABASE_URL out of it.
+          # Same file-priority order as deploy.yml.
+          cd /var/www/daromadchi
+          DB_URL=""
+          for f in .env.production.local .env.local .env .env.production; do
+            [ -f "$f" ] || continue
+            v=$(grep -m1 '^DATABASE_URL=' "$f" | cut -d= -f2- | sed "s/^[\"']//;s/[\"']$//")
+            if [ -n "$v" ]; then DB_URL="$v"; break; fi
+          done
+          if [ -z "$DB_URL" ]; then
+            echo "ERROR: DATABASE_URL not found in any .env file under /var/www/daromadchi"
+            exit 1
+          fi
+
+          # Print the host only (never the password) so the workflow log
+          # confirms which DB we backed up without leaking the credential.
+          HOST=$(echo "$DB_URL" | sed -E 's#.*@([^:/]+).*#\1#')
+          echo "Dumping public schema from host: $HOST"
+
+          sudo mkdir -p /var/backups/daromadchi
+          sudo chown -R "$(whoami)":"$(whoami)" /var/backups/daromadchi
+          STAMP=$(date -u +%Y%m%d-%H%M%S)
+          OUT=/var/backups/daromadchi/dump-${STAMP}.dump
+
+          # --schema=public: skip Supabase's proprietary schemas so this
+          #   dump restores cleanly into any plain Postgres.
+          # -Fc: custom format, best for pg_restore, ~5x smaller than plain SQL.
+          # --no-owner --no-acl: strip Supabase-specific role/ACL metadata
+          #   that would fail on a fresh Postgres with different roles.
+          pg_dump "$DB_URL" \
+            --schema=public \
+            --no-owner --no-acl \
+            -Fc \
+            -f "$OUT"
+
+          echo "Wrote $OUT ($(du -h "$OUT" | cut -f1))"
+
+          # Keep the 14 newest dumps, delete the rest.
+          ls -1t /var/backups/daromadchi/dump-*.dump 2>/dev/null | tail -n +15 | xargs -r rm -f
+          echo "Retention: kept newest 14 dumps."
+
+          # Emit the newest dump's filename so the workflow can pull it.
+          echo "$OUT" > /tmp/last-backup-path
+          REMOTE
+
+      - name: Copy dump back to runner for artifact upload
+        run: |
+          # Resolve the exact filename the VPS just wrote.
+          FILE=$(ssh -i ~/.ssh/deploy_key ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} 'cat /tmp/last-backup-path')
+          echo "Fetching $FILE from VPS..."
+          scp -i ~/.ssh/deploy_key "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:$FILE" ./backup.dump
+          ls -lh backup.dump
+
+      - name: Upload dump as workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: daromadchi-db-backup
+          path: backup.dump
+          retention-days: 30
+          compression-level: 0  # already compressed by -Fc
