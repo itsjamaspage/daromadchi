@@ -1,6 +1,6 @@
 import { eq, sql } from 'drizzle-orm'
 import { db, shops, uzumSettlementOrders } from '@/lib/db'
-import { fetchUzumFinanceOrders, fetchUzumShops, type UzumFinanceOrderItem } from './client'
+import { fetchUzumFinanceOrders, fetchUzumShops, type UzumFinanceOrderItem, UzumApiError } from './client'
 
 /**
  * Fetch and store Uzum's REAL per-order-item settlement data for one
@@ -30,19 +30,36 @@ export async function syncUzumSettlements(
   token: string,
   windowDays = 14,
 ): Promise<UzumSettlementsSyncResult> {
-  // The Uzum finance endpoint is scoped to Uzum shop IDs (numeric),
-  // NOT our internal shop UUID. Resolve them from /v1/shops on the fly
-  // — a single seller token can own multiple Uzum shops and this
-  // returns all of them.
-  let uzumShopIds: number[]
-  try {
-    const shops = await fetchUzumShops(token)
-    uzumShopIds = shops.map(s => s.id).filter((n): n is number => typeof n === 'number' && Number.isFinite(n))
-  } catch (e) {
-    return { ok: false, inserted: 0, error: `resolve shops: ${String(e).slice(0, 300)}` }
+  // Resolve numeric Uzum shopIds needed by /v1/finance/orders. Prefer
+  // the value the regular Uzum sync already cached in shops.shop_id_external
+  // — that's the same numeric id, saved on every successful sync — so
+  // we don't burn a call on /v1/shops (which has been intermittently
+  // 404-ing for some sellers, blocking settlements entirely).
+  let uzumShopIds: number[] = []
+  const [dbShop] = await db.select({ shop_id_external: shops.shop_id_external })
+    .from(shops).where(eq(shops.id, shopId)).limit(1)
+  const cached = dbShop?.shop_id_external
+  if (cached && /^\d+$/.test(cached)) {
+    uzumShopIds = [Number(cached)]
+  }
+  // Fall back to /v1/shops only when we truly have no cached id (fresh
+  // token, sync never ran). Swallow a 404 — it means the endpoint isn't
+  // reachable on this token's tier, not that the shop doesn't exist.
+  if (uzumShopIds.length === 0) {
+    try {
+      const list = await fetchUzumShops(token)
+      uzumShopIds = list.map(s => s.id).filter((n): n is number => typeof n === 'number' && Number.isFinite(n))
+    } catch (e) {
+      if (!(e instanceof UzumApiError && e.status === 404)) {
+        return { ok: false, inserted: 0, error: `resolve shops: ${String(e).slice(0, 300)}` }
+      }
+      // 404 on /v1/shops with no cached id — nothing we can do here
+      // without another sync run first. Return a helpful skip.
+      return { ok: false, inserted: 0, error: 'No Uzum shopId cached — run the regular Uzum sync once (or wait for the next cron) so shop_id_external gets populated.' }
+    }
   }
   if (uzumShopIds.length === 0) {
-    return { ok: false, inserted: 0, error: 'no Uzum shops returned for this token' }
+    return { ok: false, inserted: 0, error: 'no Uzum shops resolved for this token' }
   }
 
   const now = Date.now()
