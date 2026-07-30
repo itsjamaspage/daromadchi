@@ -415,16 +415,24 @@ export async function fetchYandexStocks(
     if (pageToken) params.set('page_token', pageToken)
     const url = `/v2/campaigns/${campaignId}/offers/stocks?${params}`
     // Yandex's endpoint has accepted different body shapes across versions.
-    // Try current spec first (`offerIds` list). If that returns 400/422,
-    // fall back to an empty body (returns all offers/warehouses), then to
-    // the legacy `skus` shape as a last resort. First 2xx wins.
-    const attempts = [
-      { offerIds: skus.slice(0, 200), withTurnover: false, archived: false },
-      {},
-      { skus: skus.slice(0, 200) },
+    // Order matters: put the KNOWN-WORKING shape first so we stop
+    // burning a 400 request on every sync (visible on the seller's
+    // Yandex API log — this endpoint was showing 50% error rate purely
+    // because the previous order 400'd on attempt 1 and succeeded on
+    // attempt 2). Empty body returns the paginated list of all offers,
+    // which for typical shops is already covered by the limit=200 query
+    // param.
+    //
+    // withTurnover/archived were valid on /v2/campaigns/{id}/offers
+    // (the catalog endpoint) but not on /offers/stocks — sending them
+    // here triggers a schema-mismatch 400.
+    const attempts: Array<{ body: object; label: string }> = [
+      { body: {},                                     label: 'empty' },
+      { body: { offerIds: skus.slice(0, 200) },       label: 'offerIds' },
+      { body: { skus: skus.slice(0, 200) },           label: 'skus-legacy' },
     ]
     let lastErr: unknown = null
-    for (const body of attempts) {
+    for (const { body, label } of attempts) {
       try {
         return await request<YandexStocksResponse>(url, token, {
           method: 'POST',
@@ -433,6 +441,10 @@ export async function fetchYandexStocks(
       } catch (e) {
         lastErr = e
         if (!(e instanceof YandexApiError && (e.status === 400 || e.status === 422))) throw e
+        // Log the response body so if Yandex changes their schema again
+        // we see WHY, not just "400" — the seller's Yandex API log only
+        // shows status codes.
+        console.warn(`[yandex stocks] ${label} shape rejected: ${(e as YandexApiError).body?.slice(0, 300)}`)
       }
     }
     throw lastErr
