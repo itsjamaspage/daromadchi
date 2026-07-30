@@ -51,29 +51,28 @@ export default function CalendarPicker({ from, to }: Props) {
   const [pending, startTransition] = useTransition()
   const wrapRef = useRef<HTMLDivElement>(null)
 
-  const [open, setOpen] = useState(false)
   const initialFrom = from ? fromISODate(from) : null
   const initialTo   = to ? fromISODate(to) : null
+  const [open, setOpen] = useState(false)
   const [selFrom, setSelFrom] = useState<Date | null>(initialFrom)
   const [selTo,   setSelTo]   = useState<Date | null>(initialTo)
   const [viewMonth, setViewMonth] = useState<Date>(startOfMonth(initialFrom ?? initialTo ?? new Date()))
 
   useEffect(() => {
-    if (!open) {
-      setSelFrom(initialFrom)
-      setSelTo(initialTo)
-      setViewMonth(startOfMonth(initialFrom ?? initialTo ?? new Date()))
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open])
-
-  useEffect(() => {
     if (!open) return
     function onDoc(e: MouseEvent) {
-      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false)
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) {
+        setOpen(false)
+        setSelFrom(initialFrom)
+        setSelTo(initialTo)
+        setViewMonth(startOfMonth(initialFrom ?? initialTo ?? new Date()))
+      }
     }
     document.addEventListener('mousedown', onDoc)
     return () => document.removeEventListener('mousedown', onDoc)
+    // Re-read initialFrom/initialTo on each open so a URL change (Apply
+    // navigation) is reflected the next time the picker opens.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 
   // Locale-aware weekday headers, Monday-first (matches uz/ru convention).
@@ -138,11 +137,6 @@ export default function CalendarPicker({ from, to }: Props) {
       setOpen(false)
     })
   }
-
-  const monthTitle = (() => {
-    const name = viewMonth.toLocaleDateString(locale, { month: 'long' })
-    return `${name.charAt(0).toUpperCase()}${name.slice(1)} ${viewMonth.getFullYear()}`
-  })()
 
   // Build the 6×7 grid. Monday-first: shift Sunday(0)→7.
   const firstDay = startOfMonth(viewMonth)
