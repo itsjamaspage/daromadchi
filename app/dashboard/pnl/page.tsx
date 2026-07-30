@@ -1,11 +1,12 @@
 import { FileText, Settings } from 'lucide-react'
 import Link from 'next/link'
 import { Suspense } from 'react'
-import { getMonthlyPnl } from '@/lib/db/pnl'
+import { getPnl } from '@/lib/db/pnl'
 import { getUserShops } from '@/lib/db/shop-context'
 import PnlChart from './PnlChart'
 import ExportButton from '@/components/dashboard/ExportButton'
 import MarketplaceTabs from '@/components/dashboard/MarketplaceTabs'
+import CalendarPicker from '@/components/dashboard/CalendarPicker'
 import { getT, getLang } from '@/lib/server-i18n'
 import type { MarketplaceType } from '@/lib/types'
 
@@ -18,6 +19,36 @@ function parseMp(v: string | undefined): MarketplaceType | undefined {
   return (VALID_MP as readonly string[]).includes(v ?? '') ? v as MarketplaceType : undefined
 }
 
+function parseRange(params: Record<string, string>): {
+  from: Date; to: Date; bucket: 'day' | 'month'; period: string
+} {
+  const to = new Date()
+  to.setHours(23, 59, 59, 999)
+
+  // Custom range wins over any preset.
+  if (params.from && params.to) {
+    const from = new Date(params.from + 'T00:00:00')
+    const toDate = new Date(params.to + 'T23:59:59')
+    const diffDays = Math.round((toDate.getTime() - from.getTime()) / 86400000)
+    return { from, to: toDate, bucket: diffDays > 31 ? 'month' : 'day', period: '' }
+  }
+
+  // Default: today only, daily bucket — show current date data.
+  // User can pick a longer range via CalendarPicker.
+  const daysRaw = params.days
+  if (!daysRaw) {
+    const from = new Date()
+    from.setHours(0, 0, 0, 0)
+    return { from, to, bucket: 'day', period: '1' }
+  }
+
+  const days = Math.max(1, Math.min(3650, Number(daysRaw) || 1))
+  const from = new Date()
+  from.setDate(from.getDate() - (days - 1))
+  from.setHours(0, 0, 0, 0)
+  return { from, to, bucket: days > 31 ? 'month' : 'day', period: String(days) }
+}
+
 interface Props {
   searchParams: Promise<Record<string, string>>
 }
@@ -25,19 +56,29 @@ interface Props {
 export default async function PnlPage({ searchParams }: Props) {
   const params = await searchParams
   const marketplace = parseMp(params.mp)
-  const [t, lang, pnl, userShops] = await Promise.all([getT(), getLang(), getMonthlyPnl(30, marketplace), getUserShops()])
+  const range = parseRange(params)
+  const [t, lang, pnl, userShops] = await Promise.all([
+    getT(), getLang(),
+    getPnl({ from: range.from, to: range.to, bucket: range.bucket, marketplace }),
+    getUserShops(),
+  ])
   const d = t.dashboard
-  // Month names in the UI language — not hardcoded to one locale.
   const locale = lang === 'ru' ? 'ru-RU' : lang === 'en' ? 'en-US' : 'uz-UZ'
-  const todayKey = new Date().toISOString().slice(0, 10)
-  const monthlyData = pnl.rows.map(m => ({
-    ...m,
-    month: new Date(m.monthKey + 'T00:00:00').toLocaleDateString(locale, { day: 'numeric', month: 'short', year: '2-digit' }),
-  }))
-  const isEmpty = monthlyData.length === 0
+
+  function labelFor(key: string): string {
+    if (range.bucket === 'day') {
+      const dt = new Date(key + 'T00:00:00Z')
+      return dt.toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })
+    }
+    const dt = new Date(key + '-01T00:00:00Z')
+    const monthName = dt.toLocaleDateString(locale, { month: 'long', timeZone: 'UTC' })
+    return `${monthName.charAt(0).toUpperCase()}${monthName.slice(1)} ${dt.getUTCFullYear()}`
+  }
+
+  const monthlyData = pnl.rows.map(m => ({ ...m, month: labelFor(m.bucketKey) }))
+  const isEmpty = monthlyData.length === 0 || monthlyData.every(m => m.revenue === 0 && m.cancelled_count === 0)
   const hasShops = userShops.length > 0
   const anyEstimated = monthlyData.some(m => m.estimated)
-  // Every number in one color — the reader compares magnitudes, not colors.
   const num = 'px-4 py-4 text-right text-[var(--text-base)]'
 
   const totals = monthlyData.reduce((s, m) => ({
@@ -54,7 +95,6 @@ export default async function PnlPage({ searchParams }: Props) {
   }), { orders: 0, cancelled: 0, revenue: 0, commission: 0, delivery: 0, acquiring: 0, tax: 0, ads: 0, cogs: 0, net: 0 })
   const totalExpenses = totals.commission + totals.delivery + totals.acquiring + totals.tax + totals.ads + totals.cogs
   const avgMargin = totals.revenue > 0 ? (totals.net / totals.revenue) * 100 : 0
-  const estText = (v: number, isEst: boolean) => `${isEst && v > 0 ? '≈ ' : ''}${fmt(v)}`
   const est = (v: number, isEst: boolean, tooltip?: string) => {
     if (!isEst || v === 0) return fmt(v)
     return <span title={tooltip} className="underline decoration-dotted decoration-[var(--text-muted)] cursor-help">{'≈ '}{fmt(v)}</span>
@@ -86,7 +126,15 @@ export default async function PnlPage({ searchParams }: Props) {
             {isEmpty ? d.pnlSubtitleEmpty : d.pnlSubtitle}
           </p>
         </div>
-        {!isEmpty && <ExportButton data={exportData} filename="pnl-hisoboti" />}
+        <div className="flex items-center gap-2">
+          <Suspense>
+            <CalendarPicker
+              from={params.from ?? range.from.toISOString().slice(0, 10)}
+              to={params.to ?? range.to.toISOString().slice(0, 10)}
+            />
+          </Suspense>
+          {!isEmpty && <ExportButton data={exportData} filename="pnl-hisoboti" />}
+        </div>
       </div>
 
       <Suspense>
@@ -113,13 +161,6 @@ export default async function PnlPage({ searchParams }: Props) {
         </div>
       ) : (
         <>
-          {/* Summary — five cards. "Marketplace payout" mirrors what the
-              seller's marketplace balance page shows (revenue − commission −
-              delivery = what the marketplace will pay out). "Real profit"
-              subtracts the seller's own costs on top (COGS, acquiring, tax,
-              ads) — the true bottom line. Both are shown so users can
-              cross-check against Uzum/YM/WB's own dashboards without
-              confusing the two definitions. */}
           {(() => {
             const marketplacePayout = totals.revenue - totals.commission - totals.delivery
             return (
@@ -140,7 +181,6 @@ export default async function PnlPage({ searchParams }: Props) {
             )
           })()}
 
-          {/* How the numbers are computed */}
           {anyEstimated && (
             <div className="flex items-start gap-3 rounded-xl px-4 py-3 text-xs border"
               style={{ background: 'var(--bg-card2)', borderColor: 'var(--border)', color: 'var(--text-muted)' }}>
@@ -153,7 +193,6 @@ export default async function PnlPage({ searchParams }: Props) {
             </div>
           )}
 
-          {/* Chart */}
           <PnlChart
             data={monthlyData.map(m => ({
               month:   m.month,
@@ -168,7 +207,6 @@ export default async function PnlPage({ searchParams }: Props) {
             ordersLabel={d.ordersCol}
           />
 
-          {/* Monthly breakdown — every expense line visible, one color */}
           <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-sm" style={{ minWidth: 980 }}>
@@ -191,11 +229,12 @@ export default async function PnlPage({ searchParams }: Props) {
                 <tbody className="divide-y divide-[var(--border)]">
                   {monthlyData.map((m, i) => {
                     const margin = m.revenue > 0 ? (m.net / m.revenue) * 100 : 0
+                    const isLast = i === monthlyData.length - 1
                     return (
-                      <tr key={m.month} className={i === monthlyData.length - 1 ? 'bg-[var(--bg-card2)]' : ''}>
+                      <tr key={m.bucketKey} className={isLast ? 'bg-[var(--bg-card2)]' : ''}>
                         <td className="px-4 py-4 text-[var(--text-base)] font-medium">
                           {m.month}
-                          {m.monthKey === todayKey && (
+                          {isLast && (
                             <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded" style={{ color: 'var(--c1)', background: 'var(--bg-card2)' }}>{d.current}</span>
                           )}
                         </td>
@@ -213,7 +252,6 @@ export default async function PnlPage({ searchParams }: Props) {
                       </tr>
                     )
                   })}
-                  {/* Totals */}
                   <tr className="border-t border-[var(--border2)]">
                     <td className="px-4 py-4 text-[var(--text-base)] font-bold text-xs uppercase tracking-wide">{d.total}</td>
                     <td className={`${num} font-bold`}>{totals.orders}</td>
@@ -228,7 +266,6 @@ export default async function PnlPage({ searchParams }: Props) {
                     <td className={`${num} font-bold`}>{fmt(totals.net)}</td>
                     <td className={`${num} font-bold`}>{avgMargin.toFixed(1)}%</td>
                   </tr>
-                  {/* Total expenses line */}
                   <tr>
                     <td colSpan={4} className="px-4 py-3 text-xs text-[var(--text-muted)]" />
                     <td colSpan={6} className="px-4 py-3 text-right text-xs text-[var(--text-muted)]">

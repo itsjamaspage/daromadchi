@@ -13,8 +13,10 @@ import type { MarketplaceType } from '@/lib/types'
  * product's cost price × units sold. Cancelled orders are excluded from every
  * money figure but shown as a count so a cancellation-only day still renders.
  */
-export interface MonthlyPnl {
-  /** raw YYYY-MM-DD key */
+export interface PnlRow {
+  /** YYYY-MM or YYYY-MM-DD depending on bucket — the page formats it in-locale */
+  bucketKey: string
+  /** kept for backward compatibility with legacy callers */
   monthKey: string
   month: string
   order_count: number
@@ -36,6 +38,9 @@ export interface MonthlyPnl {
   adSpendEstimated: boolean
 }
 
+// Alias for callers that were reading MonthlyPnl by name.
+export type MonthlyPnl = PnlRow
+
 export interface PnlParams {
   commissionPct: number
   acquiringPct: number
@@ -44,10 +49,23 @@ export interface PnlParams {
   lastMilePct: number
 }
 
-export async function getMonthlyPnl(
-  days = 30,
-  marketplace?: MarketplaceType,
-): Promise<{ rows: MonthlyPnl[]; params: PnlParams }> {
+export interface PnlOpts {
+  from: Date
+  to: Date
+  bucket: 'day' | 'month'
+  marketplace?: MarketplaceType
+}
+
+/**
+ * P&L for an arbitrary date range and bucket granularity.
+ * - bucket='day'  → one row per YYYY-MM-DD (used for short ranges like "today" or "7 days")
+ * - bucket='month' → one row per YYYY-MM (used for long ranges like "1 year")
+ * COGS and ad-spend are aggregated at the same granularity so the estimated
+ * lines stay proportional to the row they belong to instead of leaking across
+ * months when a range spans a month boundary.
+ */
+export async function getPnl(opts: PnlOpts): Promise<{ rows: PnlRow[]; params: PnlParams }> {
+  const { from, to, bucket, marketplace } = opts
   const ue = await getUnitEcoSettings()
   const params: PnlParams = {
     commissionPct: ue.defaultCommissionPct,
@@ -60,10 +78,11 @@ export async function getMonthlyPnl(
   const shopIds = await getShopIds(marketplace)
   if (!shopIds || shopIds.length === 0) return { rows: [], params }
 
-  const since = new Date()
-  since.setDate(since.getDate() - days)
+  const fromStr = from.toISOString().slice(0, 10)
+  const fmt = bucket === 'day' ? 'YYYY-MM-DD' : 'YYYY-MM'
+  const orderBucketSql   = sql<string>`to_char(${orders.ordered_at}, ${sql.raw(`'${fmt}'`)})`
+  const adBucketSql      = sql<string>`to_char(${productAdsStats.date}::date, ${sql.raw(`'${fmt}'`)})`
 
-  const sinceStr = since.toISOString().slice(0, 10)
   const [rows, cogsRows, adSpendRows] = await Promise.all([
     db.select({
       ordered_at: orders.ordered_at,
@@ -77,47 +96,67 @@ export async function getMonthlyPnl(
     }).from(orders)
       .where(and(
         inArray(orders.shop_id, shopIds),
-        gte(orders.ordered_at, since),
+        gte(orders.ordered_at, from),
+        sql`${orders.ordered_at} <= ${to}`,
       ))
       .orderBy(asc(orders.ordered_at)),
     db.select({
-      month: sql<string>`to_char(${orders.ordered_at}, 'YYYY-MM-DD')`.as('month'),
-      cogs: sql<number>`coalesce(sum(${orderItems.quantity} * coalesce(${products.cost_price}, 0)), 0)`.as('cogs'),
+      bucket: orderBucketSql.as('bucket'),
+      cogs:   sql<number>`coalesce(sum(${orderItems.quantity} * coalesce(${products.cost_price}, 0)), 0)`.as('cogs'),
     }).from(orderItems)
       .innerJoin(orders, eq(orderItems.order_id, orders.id))
       .leftJoin(products, eq(orderItems.product_id, products.id))
       .where(and(
         inArray(orders.shop_id, shopIds),
-        gte(orders.ordered_at, since),
+        gte(orders.ordered_at, from),
+        sql`${orders.ordered_at} <= ${to}`,
         ne(orders.status, 'cancelled'),
         ne(orders.status, 'returned'),
       ))
-      .groupBy(sql`to_char(${orders.ordered_at}, 'YYYY-MM-DD')`),
+      .groupBy(orderBucketSql),
     db.select({
-      month: sql<string>`to_char(${productAdsStats.date}::date, 'YYYY-MM-DD')`.as('month'),
-      spend: sql<number>`coalesce(sum(${productAdsStats.spend}), 0)`.as('spend'),
+      bucket: adBucketSql.as('bucket'),
+      spend:  sql<number>`coalesce(sum(${productAdsStats.spend}), 0)`.as('spend'),
     }).from(productAdsStats)
       .where(and(
         inArray(productAdsStats.shop_id, shopIds),
-        gte(productAdsStats.date, sinceStr),
+        gte(productAdsStats.date, fromStr),
+        sql`${productAdsStats.date} <= ${to.toISOString().slice(0, 10)}`,
       ))
-      .groupBy(sql`to_char(${productAdsStats.date}::date, 'YYYY-MM-DD')`),
+      .groupBy(adBucketSql),
   ])
 
-  if (rows.length === 0) return { rows: [], params }
+  const cogsByBucket = new Map(cogsRows.map(r => [r.bucket, Number(r.cogs)]))
+  const adSpendByBucket = new Map(adSpendRows.map(r => [r.bucket, Number(r.spend)]))
 
-  const cogsByMonth = new Map(cogsRows.map(r => [r.month, Number(r.cogs)]))
-  const realAdSpendByMonth = new Map(adSpendRows.map(r => [r.month, Number(r.spend)]))
-
+  // Zero-fill every DAY bucket in the range so an empty day renders a
+  // "0" bar on the chart. Month buckets are NOT zero-filled — an empty
+  // month is just noise in the table (5 rows of zeros before the first
+  // month with orders is what the seller complained about) and the
+  // chart handles missing months by simply omitting the bar.
   const grouped = new Map<string, {
     revenue: number; realFee: number; realDelivery: number; count: number
     cancelledCount: number; cancelledAmount: number
     penalty: number; storageFee: number; additionalPayment: number
   }>()
+  if (bucket === 'day') {
+    const cursor = new Date(from.getFullYear(), from.getMonth(), from.getDate())
+    const stop   = new Date(to.getFullYear(), to.getMonth(), to.getDate())
+    while (cursor <= stop) {
+      const key = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}-${String(cursor.getDate()).padStart(2, '0')}`
+      grouped.set(key, {
+        revenue: 0, realFee: 0, realDelivery: 0, count: 0, cancelledCount: 0, cancelledAmount: 0,
+        penalty: 0, storageFee: 0, additionalPayment: 0,
+      })
+      cursor.setDate(cursor.getDate() + 1)
+    }
+  }
 
   for (const row of rows) {
     const d = row.ordered_at
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+    const key = bucket === 'day'
+      ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+      : `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
     const ex = grouped.get(key) ?? {
       revenue: 0, realFee: 0, realDelivery: 0, count: 0, cancelledCount: 0, cancelledAmount: 0,
       penalty: 0, storageFee: 0, additionalPayment: 0,
@@ -137,47 +176,54 @@ export async function getMonthlyPnl(
     grouped.set(key, ex)
   }
 
-  const result = Array.from(grouped.entries()).map(([key, v]) => {
-    const d = new Date(key + 'T00:00:00')
-    // Real marketplace numbers when present; the user's percentages otherwise.
-    const estimated  = v.realFee === 0 && v.revenue > 0
-    const commission = estimated ? v.revenue * params.commissionPct / 100 : v.realFee
-    const delivery   = v.realDelivery > 0 ? v.realDelivery : v.revenue * params.lastMilePct / 100
-    // Acquiring is bundled into marketplace commission. Only add as
-    // separate estimate when commission itself is estimated.
-    const acquiring  = estimated ? v.revenue * params.acquiringPct / 100 : 0
-    const realAdSpend = realAdSpendByMonth.get(key) ?? 0
-    const adSpendEstimated = realAdSpend === 0 && v.revenue > 0
-    const ads = adSpendEstimated ? v.revenue * params.adPct / 100 : realAdSpend
-    const cogs       = cogsByMonth.get(key) ?? 0
-    const penalty    = v.penalty
-    const storageFee = v.storageFee
-    const additionalPayment = v.additionalPayment
-    const taxBase    = ue.taxType === 'income'
-      ? v.revenue
-      : Math.max(v.revenue - commission - delivery - acquiring - ads - cogs - penalty - storageFee - additionalPayment, 0)
-    const tax        = taxBase * params.taxPct / 100
-    return {
-      monthKey:         key,
-      month:            d.toLocaleDateString('uz-UZ', { day: 'numeric', month: 'short', year: '2-digit' }),
-      order_count:      v.count,
-      cancelled_count:  v.cancelledCount,
-      cancelled_amount: v.cancelledAmount,
-      revenue:          v.revenue,
-      commission,
-      delivery,
-      acquiring,
-      tax,
-      ads,
-      cogs,
-      penalty,
-      storageFee,
-      additionalPayment,
-      net: v.revenue - commission - delivery - acquiring - tax - ads - cogs - penalty - storageFee - additionalPayment,
-      estimated,
-      adSpendEstimated,
-    }
-  })
+  const result: PnlRow[] = Array.from(grouped.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([key, v]) => {
+      const estimated  = v.realFee === 0 && v.revenue > 0
+      const commission = estimated ? v.revenue * params.commissionPct / 100 : v.realFee
+      const delivery   = v.realDelivery > 0 ? v.realDelivery : v.revenue * params.lastMilePct / 100
+      const acquiring  = estimated ? v.revenue * params.acquiringPct / 100 : 0
+      const realAdSpend = adSpendByBucket.get(key) ?? 0
+      const adSpendEstimated = realAdSpend === 0 && v.revenue > 0
+      const ads = adSpendEstimated ? v.revenue * params.adPct / 100 : realAdSpend
+      const cogs       = cogsByBucket.get(key) ?? 0
+      const penalty    = v.penalty
+      const storageFee = v.storageFee
+      const additionalPayment = v.additionalPayment
+      const taxBase    = ue.taxType === 'income'
+        ? v.revenue
+        : Math.max(v.revenue - commission - delivery - acquiring - ads - cogs - penalty - storageFee - additionalPayment, 0)
+      const tax        = taxBase * params.taxPct / 100
+      return {
+        bucketKey:        key,
+        monthKey:         key,
+        month:            key, // raw — the page formats via toLocaleDateString
+        order_count:      v.count,
+        cancelled_count:  v.cancelledCount,
+        cancelled_amount: v.cancelledAmount,
+        revenue:          v.revenue,
+        commission,
+        delivery,
+        acquiring,
+        tax,
+        ads,
+        cogs,
+        penalty,
+        storageFee,
+        additionalPayment,
+        net: v.revenue - commission - delivery - acquiring - tax - ads - cogs - penalty - storageFee - additionalPayment,
+        estimated,
+        adSpendEstimated,
+      }
+    })
 
   return { rows: result, params }
+}
+
+/** @deprecated use getPnl instead */
+export async function getMonthlyPnl(months = 6, marketplace?: MarketplaceType) {
+  const to = new Date()
+  const from = new Date()
+  from.setMonth(from.getMonth() - months)
+  return getPnl({ from, to, bucket: 'month', marketplace })
 }

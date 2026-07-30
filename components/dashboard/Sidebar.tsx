@@ -16,8 +16,10 @@ import { helpContent, type HelpSection } from '@/lib/help-tooltips'
 
 type NavItem = { href: string; key: string; icon: React.ElementType }
 
-const UPCOMING_KEYS = new Set(['advertising', 'seasonality'])
+const UPCOMING_KEYS = new Set(['advertising', 'seasonality', 'team'])
 
+// Order matters: active items first, then everything in UPCOMING_KEYS
+// last so all "coming soon" entries group at the bottom of the sidebar.
 const storeNavItems: NavItem[] = [
   { href: '/dashboard',                key: 'dashboard',     icon: LayoutDashboard },
   { href: '/dashboard/products',       key: 'products',      icon: Package         },
@@ -27,9 +29,9 @@ const storeNavItems: NavItem[] = [
   { href: '/dashboard/unit-economics', key: 'unitEconomics', icon: Layers          },
   { href: '/dashboard/pnl',            key: 'pnl',           icon: FileText        },
   { href: '/dashboard/calculator',     key: 'calculator',    icon: Calculator      },
-  { href: '/dashboard/team',           key: 'team',          icon: Users           },
   { href: '/dashboard/alerts',         key: 'alerts',        icon: AlertTriangle   },
   { href: '/dashboard/payouts',        key: 'payouts',       icon: CreditCard      },
+  { href: '/dashboard/team',           key: 'team',          icon: Users           },
   { href: '/dashboard/advertising',    key: 'advertising',   icon: Megaphone       },
   { href: '/dashboard/seasonality',    key: 'seasonality',   icon: CalendarDays    },
 ]
@@ -44,6 +46,11 @@ const UPCOMING_TEXT: Record<string, { uz: string; en: string; ru: string }> = {
     uz: "Mavsumiylik bo'limi tez orada ishga tushadi!",
     en: 'Seasonality section is coming soon!',
     ru: 'Раздел сезонности скоро будет доступен!',
+  },
+  team: {
+    uz: "Jamoa bo'limi tez orada ishga tushadi!",
+    en: 'Team section is coming soon!',
+    ru: 'Раздел команды скоро будет доступен!',
   },
 }
 

@@ -66,6 +66,13 @@ const _fetchProducts = unstable_cache(
     const groupShopCount = new Map<string, number>()
     const groupMaxStock = new Map<string, number>()
     const groupTotalPending = new Map<string, number>()
+    // Same grouping logic as the Stocks page (lib/db/stock-groups.ts):
+    // FBO/FBY warehouses are independent per marketplace → SUM them.
+    // FBS / unknown share one physical pool → MAX to avoid double-count.
+    // Total physical = FBS max + FBO sum. Exposed as a per-row field
+    // so the Products page can show "per-listing / physical total".
+    const groupFbsMax = new Map<string, number>()
+    const groupFboSum = new Map<string, number>()
     for (const p of productRows) {
       if (!p.sku) continue
       const key = p.sku.trim().toLowerCase().replace(/[\s\-_./]+/g, '')
@@ -73,7 +80,10 @@ const _fetchProducts = unstable_cache(
       groupMaxStock.set(key, Math.max(groupMaxStock.get(key) ?? 0, p.stock_quantity))
       const isFbs = p.fulfillment_type === 'fbs' || p.fulfillment_type === null
       if (isFbs) {
+        groupFbsMax.set(key, Math.max(groupFbsMax.get(key) ?? 0, p.stock_quantity))
         groupTotalPending.set(key, (groupTotalPending.get(key) ?? 0) + (inTransitByProductId.get(p.id) ?? 0))
+      } else {
+        groupFboSum.set(key, (groupFboSum.get(key) ?? 0) + p.stock_quantity)
       }
     }
 
@@ -85,18 +95,10 @@ const _fetchProducts = unstable_cache(
       const deliveredUnits = Math.max(orderSold - dbInTransit, 0)
       const key = p.sku ? p.sku.trim().toLowerCase().replace(/[\s\-_./]+/g, '') : null
       const isShared = key ? (groupShopCount.get(key) ?? 0) > 1 : false
-      const ft = p.fulfillment_type
-      const isFbo = ft === 'fbo' || ft === 'fby'
-      let availableStock: number
-      if (isFbo) {
-        availableStock = Math.max(0, p.stock_quantity - dbInTransit)
-      } else if (isShared && key) {
-        const maxStock = groupMaxStock.get(key) ?? p.stock_quantity
-        const totalPending = groupTotalPending.get(key) ?? 0
-        availableStock = Math.max(0, maxStock - totalPending)
-      } else {
-        availableStock = Math.max(0, p.stock_quantity - dbInTransit)
-      }
+      const availableStock = Math.max(0, p.stock_quantity - dbInTransit)
+      const totalPhysical = key
+        ? (groupFbsMax.get(key) ?? 0) + (groupFboSum.get(key) ?? 0)
+        : p.stock_quantity
 
       return {
         id: p.id,
@@ -113,6 +115,7 @@ const _fetchProducts = unstable_cache(
         updated_at: p.updated_at.toISOString(),
         marketplace: shopInfo.get(p.shop_id)?.marketplace,
         available_stock: availableStock,
+        total_physical: totalPhysical,
         profit: Number(p.selling_price ?? 0) - Number(p.cost_price ?? 0),
         sold,
         delivered: deliveredUnits,
@@ -449,6 +452,9 @@ const _fetchProductsPaginated = unstable_cache(
     const groupShopCount = new Map<string, number>()
     const groupMaxStock = new Map<string, number>()
     const groupTotalPending = new Map<string, number>()
+    // Same shape as _fetchProducts / lib/db/stock-groups.ts.
+    const groupFbsMax = new Map<string, number>()
+    const groupFboSum = new Map<string, number>()
     for (const p of productRows) {
       if (!p.sku) continue
       const key = p.sku.trim().toLowerCase().replace(/[\s\-_./]+/g, '')
@@ -456,7 +462,10 @@ const _fetchProductsPaginated = unstable_cache(
       groupMaxStock.set(key, Math.max(groupMaxStock.get(key) ?? 0, p.stock_quantity))
       const isFbs = p.fulfillment_type === 'fbs' || p.fulfillment_type === null
       if (isFbs) {
+        groupFbsMax.set(key, Math.max(groupFbsMax.get(key) ?? 0, p.stock_quantity))
         groupTotalPending.set(key, (groupTotalPending.get(key) ?? 0) + (inTransitMap.get(p.id) ?? 0))
+      } else {
+        groupFboSum.set(key, (groupFboSum.get(key) ?? 0) + p.stock_quantity)
       }
     }
 
@@ -468,18 +477,10 @@ const _fetchProductsPaginated = unstable_cache(
       const deliveredUnits = Math.max(orderSold - dbInTransit, 0)
       const key = p.sku ? p.sku.trim().toLowerCase().replace(/[\s\-_./]+/g, '') : null
       const isShared = key ? (groupShopCount.get(key) ?? 0) > 1 : false
-      const ft = p.fulfillment_type
-      const isFbo = ft === 'fbo' || ft === 'fby'
-      let availableStock: number
-      if (isFbo) {
-        availableStock = Math.max(0, p.stock_quantity - dbInTransit)
-      } else if (isShared && key) {
-        const maxStock = groupMaxStock.get(key) ?? p.stock_quantity
-        const totalPending = groupTotalPending.get(key) ?? 0
-        availableStock = Math.max(0, maxStock - totalPending)
-      } else {
-        availableStock = Math.max(0, p.stock_quantity - dbInTransit)
-      }
+      const availableStock = Math.max(0, p.stock_quantity - dbInTransit)
+      const totalPhysical = key
+        ? (groupFbsMax.get(key) ?? 0) + (groupFboSum.get(key) ?? 0)
+        : p.stock_quantity
 
       return {
         id: p.id,
@@ -496,6 +497,7 @@ const _fetchProductsPaginated = unstable_cache(
         updated_at: p.updated_at.toISOString(),
         marketplace: shopInfo.get(p.shop_id)?.marketplace,
         available_stock: availableStock,
+        total_physical: totalPhysical,
         profit: Number(p.selling_price ?? 0) - Number(p.cost_price ?? 0),
         sold,
         delivered: deliveredUnits,

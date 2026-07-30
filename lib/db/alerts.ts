@@ -31,6 +31,7 @@ export async function getStockAlerts(): Promise<StockAlert[]> {
     sku: products.sku,
     stock_quantity: products.stock_quantity,
     shop_id: products.shop_id,
+    fulfillment_type: products.fulfillment_type,
   }).from(products).where(inArray(products.shop_id, shopIds))
 
   if (productRows.length === 0) return []
@@ -61,34 +62,48 @@ export async function getStockAlerts(): Promise<StockAlert[]> {
     }
   } catch { /* best-effort */ }
 
-  const groupTotalSold = new Map<string, number>()
+  // Group by normalized SKU (same rule as lib/db/products.ts) so shared
+  // listings across marketplaces surface a consistent "physical total".
+  // Alerts previously grouped by warehouse_id:sku which missed cross-
+  // marketplace groups whenever the warehouse ids didn't match — leading
+  // to two per-listing rows the seller couldn't reconcile against the
+  // Products page's Umumiy/Общий hint.
+  function skuKey(sku: string | null): string | null {
+    return sku ? sku.trim().toLowerCase().replace(/[\s\-_./]+/g, '') : null
+  }
   const groupShopCount = new Map<string, number>()
+  const groupFbsMax = new Map<string, number>()
+  const groupFboSum = new Map<string, number>()
   for (const p of productRows) {
-    if (!p.sku) continue
-    const wid = shopInfo.get(p.shop_id)?.warehouseId
-    if (!wid) continue
-    const key = `${wid}:${p.sku}`
-    groupTotalSold.set(key, (groupTotalSold.get(key) ?? 0) + (salesMap.get(p.id) ?? 0))
+    const key = skuKey(p.sku)
+    if (!key) continue
     groupShopCount.set(key, (groupShopCount.get(key) ?? 0) + 1)
+    const isFbs = p.fulfillment_type === 'fbs' || p.fulfillment_type === null
+    if (isFbs) {
+      groupFbsMax.set(key, Math.max(groupFbsMax.get(key) ?? 0, p.stock_quantity))
+    } else {
+      groupFboSum.set(key, (groupFboSum.get(key) ?? 0) + p.stock_quantity)
+    }
   }
 
   const PERIOD_DAYS = 30
   const result: StockAlert[] = []
 
   for (const row of productRows) {
-    const wid = shopInfo.get(row.shop_id)?.warehouseId
-    const key = wid && row.sku ? `${wid}:${row.sku}` : null
+    const key = skuKey(row.sku)
     const isShared = key ? (groupShopCount.get(key) ?? 0) > 1 : false
 
-    // Units on open orders (pending/confirmed) are reserved — subtract them
-    // so остаток reflects units actually available to sell, matching the
-    // logic in lib/db/products.ts.
+    // Per-listing available: what THIS marketplace shows as sellable now.
+    // Units on open orders (pending/confirmed) are reserved — subtract
+    // them so остаток reflects units actually available to sell.
     const inTransit = inTransitMap.get(row.id) ?? 0
-    const availableStock = isShared && key
-      ? Math.max(0, row.stock_quantity - (groupTotalSold.get(key) ?? 0))
-      : Math.max(0, row.stock_quantity - inTransit)
+    const availableStock = Math.max(0, row.stock_quantity - inTransit)
 
     if (availableStock > threshold) continue
+
+    const totalPhysical = key
+      ? (groupFbsMax.get(key) ?? 0) + (groupFboSum.get(key) ?? 0)
+      : row.stock_quantity
 
     const sold = salesMap.get(row.id) ?? 0
     const dailySales = sold / PERIOD_DAYS
@@ -104,6 +119,7 @@ export async function getStockAlerts(): Promise<StockAlert[]> {
       dailySales:   Math.round(dailySales * 10) / 10,
       marketplace:  (shopInfo.get(row.shop_id)?.marketplace ?? 'uzum') as MarketplaceType,
       isShared,
+      totalPhysical,
     })
   }
 

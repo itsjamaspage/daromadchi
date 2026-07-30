@@ -134,6 +134,13 @@ export interface Product {
   in_transit: number             // units on open orders (pending/confirmed) + counter surplus
   cancelled: number              // units on cancelled orders
   is_shared: boolean             // true when physical_stock links across marketplaces
+  // Total physical inventory across every listing sharing this SKU.
+  // For shared-FBS SKUs (one warehouse, listed on multiple marketplaces)
+  // this is the max across per-marketplace stocks. For non-shared SKUs
+  // it equals this row's own stock. Populated so the Products page can
+  // show "per-listing / physical total" side-by-side without hiding the
+  // wider inventory picture. See lib/db/products.ts for the derivation.
+  total_physical: number
 }
 
 export interface Order {
@@ -175,15 +182,24 @@ export interface StockAlert {
   productId: string
   productTitle: string
   sku: string
-  currentStock: number   // warehouse-aware available stock
+  currentStock: number   // per-listing available stock (matches the marketplace's own cabinet)
   threshold: number
   daysLeft: number       // estimated days until stockout at current sales rate
   dailySales: number     // avg daily sales
   marketplace: MarketplaceType
   isShared?: boolean     // true when stock is pooled across a warehouse
+  totalPhysical?: number // total physical stock in seller warehouse across all listings sharing this SKU
 }
 
 // ── Payouts ───────────────────────────────────────────────────────────────────
+export interface PayoutOrderItem {
+  productTitle: string
+  sku: string | null
+  qty: number
+  revenue: number
+  orderCount: number
+}
+
 export interface PayoutEntry {
   id: string
   period: string
@@ -204,6 +220,9 @@ export interface PayoutEntry {
   status: 'paid' | 'pending' | 'processing' | 'estimated_paid' | 'estimated_pending'
   payoutDate: string | null
   payoutEstimated: boolean
+  // Per-product breakdown of the orders that fed this payout period.
+  // Grouped by product so 50 orders of the same SKU collapse into one row.
+  items: PayoutOrderItem[]
 }
 
 export interface WatchlistItem {

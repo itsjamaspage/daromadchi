@@ -1,6 +1,6 @@
 'use client'
 
-import { Wrench } from 'lucide-react'
+import { Wrench, Users, CalendarDays, Megaphone } from 'lucide-react'
 import { useLang } from '@/app/providers'
 
 const LABELS = {
@@ -18,12 +18,22 @@ const LABELS = {
   },
 } as const
 
+const ICONS = {
+  wrench: Wrench,
+  team: Users,
+  seasonality: CalendarDays,
+  advertising: Megaphone,
+} as const
+
+export type ComingSoonIcon = keyof typeof ICONS
+
 interface Props {
   title: string
-  icon?: React.ComponentType<{ className?: string }>
+  icon?: ComingSoonIcon
 }
 
-export default function ComingSoon({ title, icon: Icon = Wrench }: Props) {
+export default function ComingSoon({ title, icon = 'wrench' }: Props) {
+  const Icon = ICONS[icon] ?? Wrench
   const { lang } = useLang()
   const l = LABELS[lang] ?? LABELS.uz
 

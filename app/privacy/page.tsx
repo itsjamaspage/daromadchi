@@ -10,7 +10,7 @@ const T = {
   uz: {
     title: 'Maxfiylik siyosati va Foydalanish shartlari',
     subtitle: "Daromadchi platformasidan foydalanish orqali siz ushbu siyosatga rozilik bildirasiz.",
-    updated: 'Oxirgi yangilanish: 2026-06-04',
+    updated: 'Oxirgi yangilanish: 2026-07-29',
     sections: [
       {
         heading: '1. Umumiy ma\'lumot',
@@ -20,7 +20,7 @@ const T = {
       {
         heading: '2. Qanday ma\'lumotlar to\'planadi',
         short: 'Ma\'lumotlar',
-        body: `• Hisob ma\'lumotlari: elektron pochta manzili va shifrlangan parol (Supabase Auth orqali).\n• Do\'kon ma\'lumotlari: siz kiritgan marketplace API kaliti (AES-256 bilan shifrlangan holda saqlanadi).\n• Savdo ma\'lumotlari: marketplace API orqali olingan buyurtmalar, mahsulotlar, zaxira va reklama statistikasi.\n• Brauzer kengaytmasi ma\'lumotlari: kengaytma o\'rnatilsa, marketplace sahifalaridan (Uzum, Wildberries, Yandex Market) narx va mahsulot ma\'lumotlari to\'planadi — faqat siz kirgan hisob doirasida.\n• Telegram ma\'lumotlari: ogohlantirishlar yoqilganda foydalanuvchining Telegram chat ID si saqlanadi — faqat xabarnoma yuborish uchun.\n• Texnik ma\'lumotlar: brauzer turi, IP-manzil (xavfsizlik maqsadida), tizim jurnallari.\n\nBiz to\'lov kartasi ma\'lumotlari, hujjat nusxalari yoki boshqa maxsus kategoriyali shaxsiy ma\'lumotlarni to\'plamaymiz.`,
+        body: `• Hisob ma\'lumotlari: elektron pochta manzili va bcrypt bilan xeshlangan parol — biz ochiq matn parolga hech qachon ega bo\'lmaymiz.\n• Do\'kon ma\'lumotlari: siz kiritgan marketplace API kaliti (AES-256 bilan shifrlangan holda saqlanadi).\n• Savdo ma\'lumotlari: marketplace API orqali olingan buyurtmalar, mahsulotlar, zaxira va reklama statistikasi.\n• Brauzer kengaytmasi ma\'lumotlari: kengaytma o\'rnatilsa, marketplace sahifalaridan (Uzum, Wildberries, Yandex Market) narx va mahsulot ma\'lumotlari to\'planadi — faqat siz kirgan hisob doirasida.\n• Telegram ma\'lumotlari: ogohlantirishlar yoqilganda foydalanuvchining Telegram chat ID si saqlanadi — faqat xabarnoma yuborish uchun.\n• Texnik ma\'lumotlar: brauzer turi, IP-manzil (xavfsizlik maqsadida), tizim jurnallari.\n\nBiz to\'lov kartasi ma\'lumotlari, hujjat nusxalari yoki boshqa maxsus kategoriyali shaxsiy ma\'lumotlarni to\'plamaymiz.`,
       },
       {
         heading: '3. Ma\'lumotlar qanday ishlatiladi',
@@ -30,7 +30,7 @@ const T = {
       {
         heading: '4. Saqlash va xavfsizlik',
         short: 'Xavfsizlik',
-        body: `Ma\'lumotlar Supabase Inc. (infrastruktura provayderi, AQSh) PostgreSQL ma\'lumotlar bazasida saqlanadi. API kalitlari AES-256-CBC algoritmi bilan shifrlangan holda saqlanadi. Barcha uzatmalar HTTPS orqali amalga oshiriladi.\n\nUchinchi shaxslar: Supabase (ma\'lumotlar bazasi infratuzilmasi) — ma\'lumotlarga faqat texnik xizmat ko\'rsatish doirasida kirish huquqiga ega. Boshqa uchinchi shaxslarga ma\'lumot uzatilmaydi.\n\nZRU-547 Qonuni talablariga ko\'ra, shaxsiy ma\'lumotlar faqat zarur muddat davomida, lekin eng ko\'pi bilan hisob o\'chirilgandan keyin 1 yil saqlanadi.`,
+        body: `Ma\'lumotlar Hetzner Online GmbH (infratuzilma provayderi, Germaniya) ijaraga olingan serverida joylashgan PostgreSQL ma\'lumotlar bazasida saqlanadi. Ma\'lumotlar bazasi to\'liq daromadchi tomonidan boshqariladi — uchinchi tomon boshqariladigan ma\'lumotlar bazasi xizmati ishlatilmaydi. API kalitlari AES-256-CBC algoritmi bilan shifrlangan holda saqlanadi. Parollar bcrypt bilan xeshlanadi. Barcha uzatmalar HTTPS (TLS 1.2+) orqali amalga oshiriladi.\n\nUchinchi shaxslar: Hetzner Online GmbH (fizik server ijarasi, Germaniya) va Telegram Messenger LLP (bildirishnomalar yuborilganda, ixtiyoriy). Boshqa uchinchi shaxslarga ma\'lumot uzatilmaydi.\n\nZRU-547 Qonuni talablariga ko\'ra, shaxsiy ma\'lumotlar faqat zarur muddat davomida, lekin eng ko\'pi bilan hisob o\'chirilgandan keyin 1 yil saqlanadi.`,
       },
       {
         heading: '5. Foydalanuvchi huquqlari',
@@ -72,16 +72,16 @@ const T = {
   ru: {
     title: 'Политика конфиденциальности и Условия использования',
     subtitle: 'Используя платформу Daromadchi, вы соглашаетесь с данной политикой.',
-    updated: 'Последнее обновление: 2026-06-04',
+    updated: 'Последнее обновление: 2026-07-29',
     sections: [
       { heading: '1. Общие сведения', short: 'Общее',
         body: `Daromadchi — аналитическая платформа для продавцов на маркетплейсах Узбекистана (Uzum Market, Wildberries, Yandex Market). Настоящая политика разработана в соответствии с Законом РУз «О персональных данных» (2 июля 2019 г., ЗРУ-547) и Законом «Об информатизации» (11 декабря 2003 г., № 560-II).` },
       { heading: '2. Какие данные собираются', short: 'Данные',
-        body: `• Учётные данные: адрес электронной почты и зашифрованный пароль (через Supabase Auth).\n• Данные магазина: API-ключ маркетплейса, введённый вами (хранится в зашифрованном виде AES-256).\n• Торговые данные: заказы, товары, запасы и рекламная статистика, полученные через API маркетплейса.\n• Данные браузерного расширения: при установке расширения со страниц маркетплейсов собираются цены и данные о товарах — только в рамках вашей учётной записи.\n• Данные Telegram: при включении уведомлений сохраняется Telegram chat ID — исключительно для отправки уведомлений.\n• Технические данные: тип браузера, IP-адрес (в целях безопасности), системные журналы.\n\nМы не собираем данные платёжных карт, копии документов или иные специальные категории персональных данных.` },
+        body: `• Учётные данные: адрес электронной почты и хеш пароля (bcrypt) — мы никогда не имеем доступа к открытому тексту пароля.\n• Данные магазина: API-ключ маркетплейса, введённый вами (хранится в зашифрованном виде AES-256).\n• Торговые данные: заказы, товары, запасы и рекламная статистика, полученные через API маркетплейса.\n• Данные браузерного расширения: при установке расширения со страниц маркетплейсов собираются цены и данные о товарах — только в рамках вашей учётной записи.\n• Данные Telegram: при включении уведомлений сохраняется Telegram chat ID — исключительно для отправки уведомлений.\n• Технические данные: тип браузера, IP-адрес (в целях безопасности), системные журналы.\n\nМы не собираем данные платёжных карт, копии документов или иные специальные категории персональных данных.` },
       { heading: '3. Как используются данные', short: 'Использование',
         body: `• Формирование показателей панели управления, отчётов и уведомлений.\n• Синхронизация с API маркетплейса (только режим чтения — мы не изменяем ничего в вашем магазине).\n• Безопасность: обнаружение и предотвращение несанкционированного доступа.\n• Улучшение сервиса: анонимная статистика использования.\n\nМы не продаём ваши данные третьим лицам и не используем их в рекламных целях.` },
       { heading: '4. Хранение и безопасность', short: 'Безопасность',
-        body: `Данные хранятся в базе данных Supabase Inc. (провайдер инфраструктуры, США), PostgreSQL. API-ключи шифруются алгоритмом AES-256-CBC. Все передачи осуществляются по протоколу HTTPS.\n\nТретьи лица: Supabase (инфраструктура базы данных) — доступ к данным только в рамках технического обслуживания. Данные не передаются иным третьим лицам.\n\nВ соответствии с Законом ЗРУ-547 персональные данные хранятся только в течение необходимого срока, но не более 1 года после удаления аккаунта.` },
+        body: `Данные хранятся в базе PostgreSQL, развёрнутой на выделенном сервере Hetzner Online GmbH (провайдер инфраструктуры, Германия). База данных полностью управляется командой daromadchi — сторонняя managed-DB-услуга не используется. API-ключи шифруются алгоритмом AES-256-CBC. Пароли хешируются bcrypt. Все передачи данных осуществляются по протоколу HTTPS (TLS 1.2+).\n\nТретьи лица: Hetzner Online GmbH (аренда физического сервера, Германия) и Telegram Messenger LLP (при отправке уведомлений, опционально). Иным третьим лицам данные не передаются.\n\nВ соответствии с Законом ЗРУ-547 персональные данные хранятся только в течение необходимого срока, но не более 1 года после удаления аккаунта.` },
       { heading: '5. Права пользователей', short: 'Права',
         body: `На основании Закона ЗРУ-547 вы имеете право:\n• Получить доступ к своим данным и их копию.\n• Потребовать исправления или удаления данных.\n• Отозвать согласие на обработку данных.\n• Перенести свои данные в другой сервис.\n\nДля реализации своих прав обращайтесь в Telegram: @daromadchi_alerts_bot. Запросы рассматриваются в течение 15 рабочих дней.` },
       { heading: '6. Куки и отслеживание', short: 'Куки',
@@ -101,16 +101,16 @@ const T = {
   en: {
     title: 'Privacy Policy & Terms of Use',
     subtitle: 'By using the Daromadchi platform, you agree to this policy.',
-    updated: 'Last updated: 2026-06-04',
+    updated: 'Last updated: 2026-07-29',
     sections: [
       { heading: '1. About', short: 'About',
         body: `Daromadchi is an analytics platform for sellers on Uzbekistan marketplaces (Uzum Market, Wildberries, Yandex Market). This policy is prepared in compliance with the Law of the Republic of Uzbekistan "On Personal Data" (2 July 2019, ZRU-547) and the Law "On Informatization" (11 December 2003, No. 560-II).` },
       { heading: '2. What data we collect', short: 'Data',
-        body: `• Account data: email address and encrypted password (via Supabase Auth).\n• Shop data: the marketplace API key you provide (stored encrypted with AES-256).\n• Trading data: orders, products, stock levels and ad statistics fetched via the marketplace API.\n• Browser extension data: if the extension is installed, price and product data is collected from marketplace pages — only within your logged-in account.\n• Telegram data: when alerts are enabled, your Telegram chat ID is stored solely for sending notifications.\n• Technical data: browser type, IP address (for security purposes), system logs.\n\nWe do not collect payment card details, identity document copies, or other special-category personal data.` },
+        body: `• Account data: email address and a bcrypt password hash — we never have access to the plain-text password.\n• Shop data: the marketplace API key you provide (stored encrypted with AES-256).\n• Trading data: orders, products, stock levels and ad statistics fetched via the marketplace API.\n• Browser extension data: if the extension is installed, price and product data is collected from marketplace pages — only within your logged-in account.\n• Telegram data: when alerts are enabled, your Telegram chat ID is stored solely for sending notifications.\n• Technical data: browser type, IP address (for security purposes), system logs.\n\nWe do not collect payment card details, identity document copies, or other special-category personal data.` },
       { heading: '3. How data is used', short: 'Usage',
         body: `• Generating dashboard metrics, reports and alerts.\n• Marketplace API synchronisation (read-only — we never modify anything in your store).\n• Security: detecting and preventing unauthorised access.\n• Service improvement: anonymous usage statistics.\n\nWe do not sell your data to third parties or use it for advertising purposes.` },
       { heading: '4. Storage & security', short: 'Security',
-        body: `Data is stored with Supabase Inc. (infrastructure provider, USA) in a PostgreSQL database. API keys are encrypted with AES-256-CBC. All data in transit is protected by HTTPS.\n\nThird parties: Supabase (database infrastructure) — access limited to technical operations only. No data is sold or shared with any other third parties.\n\nUnder Law ZRU-547, personal data is retained only as long as necessary, and for no more than 1 year after account deletion.` },
+        body: `Data is stored in a PostgreSQL database on a dedicated server rented from Hetzner Online GmbH (infrastructure provider, Germany). The database is fully self-managed by daromadchi — no third-party managed-database service is used. API keys are encrypted with AES-256-CBC. Passwords are hashed with bcrypt. All data in transit is protected by HTTPS (TLS 1.2+).\n\nThird parties: Hetzner Online GmbH (physical server rental, Germany) and Telegram Messenger LLP (when notifications are sent, optional). No data is sold or shared with any other third parties.\n\nUnder Law ZRU-547, personal data is retained only as long as necessary, and for no more than 1 year after account deletion.` },
       { heading: '5. User rights', short: 'Rights',
         body: `Under Law ZRU-547 you have the right to:\n• Access and receive a copy of your data.\n• Request correction or deletion of your data.\n• Withdraw consent to data processing.\n• Data portability — transfer your data to another service.\n\nTo exercise your rights, contact us on Telegram: @daromadchi_alerts_bot. Requests are processed within 15 working days.` },
       { heading: '6. Cookies & tracking', short: 'Cookies',

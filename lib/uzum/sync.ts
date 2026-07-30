@@ -201,7 +201,18 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
           const res = await fetchUzumShopProducts(token, uShop.id, page, size)
           const list = res.productList ?? []
           for (const card of list) {
+            // Uzum has a product-level "lifecycle" status field. When it is
+            // RUN_OUT (Uzbek: "Tugadi", Russian: "Закончился") the seller
+            // cabinet marks the listing as out of stock and unsellable,
+            // regardless of what the SKU-level quantityActive / quantityFbs
+            // numbers say. Those numeric fields include buckets like units
+            // returned from cancelled orders that are physically in seller
+            // hands but NOT re-listable, so trusting them causes daromadchi
+            // to show phantom stock. Reading status.value keeps us aligned
+            // with Uzum's own UI — the two numbers cannot diverge.
+            const outOfStock = card.status?.value === 'RUN_OUT'
             for (const sku of card.skuList ?? []) {
+              const rawStock = (sku.quantityActive ?? 0) + (sku.quantityFbs ?? 0)
               productRows.push({
                 shop_id: shopId,
                 marketplace_product_id: String(sku.skuId),
@@ -210,7 +221,7 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
                 category: card.category ?? null,
                 selling_price: sku.price ?? null,
                 cost_price: sku.purchasePrice || null,
-                stock_quantity: (sku.quantityActive ?? 0) + (sku.quantityFbs ?? 0),
+                stock_quantity: outOfStock ? 0 : rawStock,
                 // Marketplace-authoritative lifetime units sold (includes FBO,
                 // which we can't read at the order level). Used as the "sold"
                 // figure so FBO sales are counted even without order records.
@@ -262,6 +273,26 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
               fulfillment_type: 'fbs',
             }).where(eq(products.id, r.id))
           }
+        }
+
+        // Zombie cleanup — same shape as the WB sync fix. When a seller
+        // removes a listing on Uzum, the product row used to sit in our DB
+        // forever with the last-known stock number. Now: any DB row for
+        // this shop whose skuId isn't in the fresh Uzum response gets
+        // deleted. Only runs when we actually got a non-empty productRows
+        // list (which itself required the fetch loop to complete without
+        // throwing — otherwise we're in the catch block below and skip
+        // this whole branch). order_items.product_id is ON DELETE SET NULL
+        // so historical order rows survive.
+        const freshIds = new Set(productRows.map(r => r.marketplace_product_id))
+        const zombieIds = existingProds
+          .filter(p => !freshIds.has(String(p.marketplace_product_id)))
+          .map(p => p.id)
+        if (zombieIds.length > 0) {
+          await db.delete(products).where(and(
+            eq(products.shop_id, shopId),
+            inArray(products.id, zombieIds),
+          ))
         }
       }
     } catch (prodSyncErr) {

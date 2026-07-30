@@ -94,9 +94,11 @@ export default function DateRangePicker({ period, from, to }: Props) {
   }
 
   const PRESETS = [
-    { label: lang === 'uz' ? '30 kun' : '30 дн.',  days: '30'  },
-    { label: lang === 'uz' ? '90 kun' : '90 дн.',  days: '90'  },
-    { label: lang === 'uz' ? '1 yil'  : '1 год',   days: '365' },
+    { label: lang === 'uz' ? 'Bugun' : lang === 'ru' ? 'Сегодня' : 'Today', days: '1'   },
+    { label: lang === 'uz' ? '7 kun' : lang === 'ru' ? '7 дн.'   : '7 days', days: '7'  },
+    { label: lang === 'uz' ? '30 kun' : lang === 'ru' ? '30 дн.' : '30 days', days: '30' },
+    { label: lang === 'uz' ? '90 kun' : lang === 'ru' ? '90 дн.' : '90 days', days: '90' },
+    { label: lang === 'uz' ? '1 yil'  : lang === 'ru' ? '1 год'  : '1 year',  days: '365'},
   ]
 
   const activeDays = !from && !to ? (period ?? '365') : null
@@ -144,14 +146,14 @@ export default function DateRangePicker({ period, from, to }: Props) {
           className="fixed left-4 right-4 sm:absolute sm:left-auto sm:right-0 sm:w-auto top-[4.5rem] sm:top-full sm:mt-2 z-50 rounded-2xl border shadow-2xl p-4 space-y-3"
           style={{ background: 'var(--bg-card)', borderColor: 'var(--border)', minWidth: 240 }}
         >
-          {/* Quick presets */}
-          <div className="flex gap-1.5">
+          {/* Quick presets — wrap so all fit on narrow dropdowns */}
+          <div className="flex flex-wrap gap-1.5">
             {PRESETS.map(({ label: pl, days }) => (
               <button
                 key={days}
                 onClick={() => applyPreset(days)}
                 disabled={pending}
-                className="flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1 disabled:opacity-60"
+                className="flex-1 min-w-[60px] py-1.5 px-2 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1 disabled:opacity-60"
                 style={{
                   background: activeDays === days ? 'var(--bg-card2)' : 'var(--bg-input)',
                   border: activeDays === days ? '1px solid var(--border)' : '1px solid var(--border)',

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useCallback, Fragment } from 'react'
+import { useState, useMemo, useCallback, useEffect, useRef, Fragment } from 'react'
 import { Search, Check, X, Pencil } from 'lucide-react'
 import ExportButton from './ExportButton'
 import FulfillmentBadge from './FulfillmentBadge'
@@ -44,6 +44,79 @@ function stockBadge(qty: number) {
   if (qty >= 30) return { bgColor: 'rgba(100, 116, 139, 0.2)', color: 'var(--text-dim)' }
   if (qty >= 10) return { bgColor: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b' }
   return           { bgColor: 'rgba(239, 68, 68, 0.1)', color: '#ef4444' }
+}
+
+// "?" hint next to Остаток. Opens on hover (desktop) and on tap (mobile).
+// Explains the difference between per-listing stock (what this marketplace
+// says) and total physical stock in the seller's warehouse across every
+// SKU-shared listing. Click outside to close on mobile.
+function StockHint({ product }: { product: Product }) {
+  const { lang } = useLang()
+  const d = translations[lang].dashboard
+  const [open, setOpen] = useState(false)
+  const wrapRef = useRef<HTMLSpanElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    function onDoc(e: MouseEvent) {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', onDoc)
+    return () => document.removeEventListener('mousedown', onDoc)
+  }, [open])
+
+  const total = product.total_physical ?? product.available_stock
+  const perListing = product.available_stock
+  const differs = product.is_shared && total !== perListing
+
+  return (
+    <span
+      ref={wrapRef}
+      className="relative inline-flex"
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
+    >
+      <button
+        type="button"
+        onClick={(e) => { e.stopPropagation(); setOpen(o => !o) }}
+        className="inline-flex items-center justify-center w-4 h-4 rounded-full text-[10px] font-bold cursor-help"
+        style={{
+          background: differs ? 'rgba(168,85,247,0.15)' : 'rgba(100,116,139,0.15)',
+          color: differs ? '#a855f7' : 'var(--text-muted)',
+          border: `1px solid ${differs ? 'rgba(168,85,247,0.35)' : 'rgba(100,116,139,0.3)'}`,
+        }}
+        aria-label={d.stockHintAria}
+      >
+        ?
+      </button>
+      {open && (
+        <span
+          className="absolute right-0 top-6 z-30 w-64 rounded-xl p-3 text-left text-xs leading-relaxed shadow-xl"
+          style={{
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border)',
+            color: 'var(--text-base)',
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="font-semibold mb-1.5" style={{ color: 'var(--text-base)' }}>
+            {d.stockHintTitle}
+          </div>
+          <div className="flex items-center justify-between py-0.5">
+            <span style={{ color: 'var(--text-muted)' }}>{d.stockHintWarehouse}</span>
+            <span className="font-bold tabular-nums" style={{ color: differs ? '#a855f7' : 'var(--text-base)' }}>{total}</span>
+          </div>
+          <div className="flex items-center justify-between py-0.5">
+            <span style={{ color: 'var(--text-muted)' }}>{d.stockHintMarketplace}</span>
+            <span className="font-medium tabular-nums" style={{ color: 'var(--text-base)' }}>{perListing}</span>
+          </div>
+          <div className="mt-2 pt-2 text-[11px]" style={{ borderTop: '1px solid var(--border)', color: 'var(--text-muted)' }}>
+            {product.is_shared ? d.stockHintShared : d.stockHintSingle}
+          </div>
+        </span>
+      )}
+    </span>
+  )
 }
 
 function EditRow({ product, onClose, onSaved }: { product: Product; onClose: () => void; onSaved: (productId: string, newCostPrice: number | null, fetchDone: Promise<void>) => void }) {
@@ -243,28 +316,35 @@ export default function ProductsTable({ products }: { products: Product[] }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-1 p-1 rounded-xl w-fit border" style={{ background: 'var(--bg-card2)', borderColor: 'var(--border)' }}>
-        {TABS.map(({ key, label }) => (
-          <button key={key} onClick={() => setTab(key)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border"
-            style={tab === key ? {
-              background: 'var(--bg-card2)',
-              color: 'var(--c1)',
-               borderColor: 'var(--border)',
-            } : {
-              color: 'var(--text-muted)',
-              borderColor: 'transparent',
-            }}>
-            {label}
-            <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={tab === key ? {
-              background: 'var(--bg-card2)',
-              color: 'var(--c1)',
-            } : {
-              background: 'rgba(255, 255, 255, 0.04)',
-              color: 'var(--text-muted)',
-            }}>{tabCounts[key]}</span>
-          </button>
-        ))}
+      {/* Outer wrapper gives us horizontal scroll on narrow viewports.
+          `w-fit` on the inner tab bar previously clipped the last two
+          status chips on iPhone-width screens with no way to reach
+          them. Hide the scrollbar itself so it doesn't sit on top of
+          the chips on macOS/iOS. */}
+      <div className="w-full overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="flex items-center gap-1 p-1 rounded-xl w-fit border" style={{ background: 'var(--bg-card2)', borderColor: 'var(--border)' }}>
+          {TABS.map(({ key, label }) => (
+            <button key={key} onClick={() => setTab(key)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border whitespace-nowrap flex-shrink-0"
+              style={tab === key ? {
+                background: 'var(--bg-card2)',
+                color: 'var(--c1)',
+                 borderColor: 'var(--border)',
+              } : {
+                color: 'var(--text-muted)',
+                borderColor: 'transparent',
+              }}>
+              {label}
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={tab === key ? {
+                background: 'var(--bg-card2)',
+                color: 'var(--c1)',
+              } : {
+                background: 'rgba(255, 255, 255, 0.04)',
+                color: 'var(--text-muted)',
+              }}>{tabCounts[key]}</span>
+            </button>
+          ))}
+        </div>
       </div>
 
       {tab === 'low_stock' && (
@@ -337,13 +417,16 @@ export default function ProductsTable({ products }: { products: Product[] }) {
                 <th className="text-right font-medium px-5 py-3">{d.orderedTab}</th>
                 <th className="text-right font-medium px-5 py-3">{d.cancelledTab}</th>
                 <th className="text-right font-medium px-5 py-3 cursor-pointer select-none" style={{ color: 'var(--text-muted)' }} onClick={() => toggleSort('stock_quantity')}>
-                  {d.stockQty} <SortIcon col="stock_quantity" sortBy={sortBy} sortDir={sortDir} />
+                  <span className="inline-flex items-center gap-1">
+                    {d.stockQty}
+                    <SortIcon col="stock_quantity" sortBy={sortBy} sortDir={sortDir} />
+                  </span>
                 </th>
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 ? (
-                <tr><td colSpan={8} className="px-5 py-10 text-center text-sm" style={{ color: 'var(--text-muted)' }}>{d.noProductsTitle}</td></tr>
+                <tr><td colSpan={10} className="px-5 py-10 text-center text-sm" style={{ color: 'var(--text-muted)' }}>{d.noProductsTitle}</td></tr>
               ) : filtered.map((p, idx) => {
                 const price  = Number(p.selling_price ?? 0)
                 const margin = price > 0 ? Number(((p.profit / price) * 100).toFixed(1)) : 0
@@ -405,9 +488,12 @@ export default function ProductsTable({ products }: { products: Product[] }) {
                         {p.cancelled ?? 0}
                       </td>
                       <td className="px-5 py-4 text-right">
-                        <span className="text-xs font-medium px-2.5 py-1 rounded-lg" style={{ background: stock.bgColor, color: stock.color }}>
-                          {p.available_stock}
-                        </span>
+                        <div className="inline-flex items-center gap-1.5">
+                          <span className="text-xs font-medium px-2.5 py-1 rounded-lg" style={{ background: stock.bgColor, color: stock.color }}>
+                            {p.available_stock}
+                          </span>
+                          <StockHint product={p} />
+                        </div>
                       </td>
                     </tr>
                     {isEditing && (

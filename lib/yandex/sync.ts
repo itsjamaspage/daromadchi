@@ -162,13 +162,13 @@ export async function syncFromYandex(
         // Stock priority: FBS warehouses endpoint → campaign offers endpoint →
         // inline offer.stocks. null = no source returned data → keep the
         // existing DB value on update so we don't clobber real stock with 0.
-        // Pick FIT count if present (do NOT sum FIT + AVAILABLE — they're
-        // the same physical units reported under different type buckets).
+        // Only trust FIT — same reasoning as fetchAllYandexStocks: AVAILABLE
+        // and list[0] on the mapping's inline offer.stocks aren't sellable
+        // inventory, matching YM's own catalog UI which displays FIT.
         let inlineStock: number | undefined
         if (Array.isArray(e.offer.stocks) && e.offer.stocks.length > 0) {
           const fit = e.offer.stocks.find(s => s?.type === 'FIT')
-          const avail = e.offer.stocks.find(s => s?.type === 'AVAILABLE')
-          inlineStock = fit?.count ?? avail?.count ?? e.offer.stocks[0]?.count ?? 0
+          inlineStock = fit?.count ?? 0
         }
         const stock = (shopSku ? stockMap.get(shopSku) : undefined)
           ?? (marketSku ? stockMap.get(marketSku) : undefined)
@@ -238,6 +238,27 @@ export async function syncFromYandex(
             if (r.stock_quantity != null) patch.stock_quantity = r.stock_quantity
             await db.update(products).set(patch).where(eq(products.id, r.id))
           }
+        }
+
+        // Zombie cleanup — same shape as the WB and Uzum sync fixes. When
+        // a seller removes an offer on Yandex Market, the product row
+        // used to sit in our DB forever with the last-known stock number.
+        // Now: any DB row for this shop whose marketplace_product_id isn't
+        // in the fresh YM offerMappings response gets deleted. Only runs
+        // when productRows is non-empty (the fetch loop completed and
+        // returned something) — otherwise we're either in the catch below
+        // or the shop legitimately has zero offers and we don't want to
+        // nuke everything on a transient auth blip. order_items.product_id
+        // is ON DELETE SET NULL so historical orders survive.
+        const freshIds = new Set(productRows.map(r => r.marketplace_product_id))
+        const zombieIds = existingProds
+          .filter(p => !freshIds.has(String(p.marketplace_product_id)))
+          .map(p => p.id)
+        if (zombieIds.length > 0) {
+          await db.delete(products).where(and(
+            eq(products.shop_id, shopId),
+            inArray(products.id, zombieIds),
+          ))
         }
       }
       productsOk = true
