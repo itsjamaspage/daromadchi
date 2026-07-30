@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { revalidateTag } from 'next/cache'
 import { eq, and } from 'drizzle-orm'
 import { getCurrentUser } from '@/lib/auth/session'
 import { db, shops } from '@/lib/db'
@@ -44,6 +45,10 @@ export const POST = withErrorHandler(async () => {
       results.push({ shopId: s.id, ok: false, error: String(e).slice(0, 2000) })
     }
   }
+
+  // Same cross-page invalidation as the Yandex refresh endpoint —
+  // Dashboard KPIs and P&L both consume this tag.
+  revalidateTag('settlements', { expire: 0 })
 
   return NextResponse.json({ ok: true, results })
 })

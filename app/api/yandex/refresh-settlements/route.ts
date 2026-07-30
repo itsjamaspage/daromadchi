@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { revalidateTag } from 'next/cache'
 import { eq, and } from 'drizzle-orm'
 import { getCurrentUser } from '@/lib/auth/session'
 import { db, shops } from '@/lib/db'
@@ -46,6 +47,11 @@ export const POST = withErrorHandler(async () => {
       results.push({ shopId: s.id, ok: false, error: String(e).slice(0, 2000) })
     }
   }
+
+  // Invalidate the cache tag shared by Dashboard KPIs, P&L, and Payouts
+  // so a manual refresh flips all three pages to the new numbers on the
+  // next request instead of waiting out the 30s revalidate window.
+  revalidateTag('settlements', { expire: 0 })
 
   return NextResponse.json({ ok: true, results })
 })

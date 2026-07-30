@@ -3,6 +3,7 @@ import { inArray, gte, lte, and, eq, sql } from 'drizzle-orm'
 import { db, orders, orderItems, products } from '@/lib/db'
 import { getShopIds, getCurrentUserId } from '@/lib/db/shop-context'
 import { computeStockGroups } from '@/lib/db/stock-groups'
+import { getRealFinancialsByBucket } from '@/lib/db/real-financials'
 import type { Kpis, MarketplaceType } from '@/lib/types'
 
 function pct(curr: number, prev: number): number | null {
@@ -21,27 +22,58 @@ async function fetchPeriodKpis(shopIds: string[], since: Date | null, until: Dat
   if (since) conditions.push(gte(orders.ordered_at, since))
   if (until) conditions.push(lte(orders.ordered_at, until))
 
-  const [orderAgg] = await db.select({
-    total_revenue: sql<number>`coalesce(sum(${orders.revenue}::numeric) filter (where ${orders.status} <> 'cancelled'), 0)`,
-    total_profit: sql<number>`coalesce(sum(${orders.revenue}::numeric - coalesce(${orders.marketplace_fee}::numeric, 0) - coalesce(${orders.delivery_cost}::numeric, 0)) filter (where ${orders.status} <> 'cancelled'), 0)`,
-    total_orders: sql<number>`count(*)`,
-    cancelled_orders: sql<number>`count(*) filter (where ${orders.status} = 'cancelled')`,
-  }).from(orders).where(and(...conditions))
+  // COGS aggregated in the same period so the Dashboard's Чистая
+  // прибыль matches P&L / Payouts' "after everything" figure.
+  const [orderAgg, cogsAgg, unitAgg] = await Promise.all([
+    db.select({
+      total_revenue: sql<number>`coalesce(sum(${orders.revenue}::numeric) filter (where ${orders.status} <> 'cancelled'), 0)`,
+      // Estimate-only fallback: revenue − stored marketplace_fee − stored
+      // delivery_cost. Overridden below with real settlement net when the
+      // Yandex/Uzum settlement tables have any rows for this period.
+      total_profit_estimate: sql<number>`coalesce(sum(${orders.revenue}::numeric - coalesce(${orders.marketplace_fee}::numeric, 0) - coalesce(${orders.delivery_cost}::numeric, 0)) filter (where ${orders.status} <> 'cancelled'), 0)`,
+      total_orders: sql<number>`count(*)`,
+      cancelled_orders: sql<number>`count(*) filter (where ${orders.status} = 'cancelled')`,
+    }).from(orders).where(and(...conditions)),
+    db.select({
+      cogs: sql<number>`coalesce(sum(${orderItems.quantity} * coalesce(${products.cost_price}, 0)), 0)`,
+    }).from(orderItems)
+      .innerJoin(orders, eq(orderItems.order_id, orders.id))
+      .leftJoin(products, eq(orderItems.product_id, products.id))
+      .where(and(...conditions, sql`${orders.status} <> 'cancelled'`)),
+    // Cancelled UNITS (a single cancelled order can hold several items — users
+    // think in items, so the KPI note shows both counts).
+    db.select({
+      units: sql<number>`coalesce(sum(${orderItems.quantity}), 0)`,
+    }).from(orderItems)
+      .innerJoin(orders, eq(orderItems.order_id, orders.id))
+      .where(and(...conditions, sql`${orders.status} = 'cancelled'`)),
+  ])
 
-  // Cancelled UNITS (a single cancelled order can hold several items — users
-  // think in items, so the KPI note shows both counts).
-  const [unitAgg] = await db.select({
-    units: sql<number>`coalesce(sum(${orderItems.quantity}), 0)`,
-  }).from(orderItems)
-    .innerJoin(orders, eq(orderItems.order_id, orders.id))
-    .where(and(...conditions, sql`${orders.status} = 'cancelled'`))
+  // Sum real per-month settlement net across the period so "Чистая
+  // прибыль" tracks what actually hits (or will hit) the seller's
+  // balance, not the estimated marketplace_fee subtraction stored at
+  // order-sync time. Fall back to the orders-table estimate when no
+  // settlement rows exist for the period.
+  const revenue = Number(orderAgg[0]?.total_revenue ?? 0)
+  const cogs = Number(cogsAgg[0]?.cogs ?? 0)
+  const fromDate = since ?? new Date(0)
+  const realBuckets = await getRealFinancialsByBucket(shopIds, fromDate, 'month')
+  let realNet = 0
+  let hasAnyReal = false
+  for (const b of realBuckets.values()) {
+    if (b.itemCount > 0) { hasAnyReal = true; realNet += b.net }
+  }
+  const netFromMarketplace = hasAnyReal ? realNet : Number(orderAgg[0]?.total_profit_estimate ?? 0)
+  // Dashboard "Чистая прибыль" = what the marketplace pays out minus what
+  // the seller paid for the goods. Matches P&L "Чистая после расходов".
+  const profit = netFromMarketplace - cogs
 
   return {
-    revenue: Number(orderAgg?.total_revenue ?? 0),
-    profit: Number(orderAgg?.total_profit ?? 0),
-    orders: Number(orderAgg?.total_orders ?? 0),
-    cancelled: Number(orderAgg?.cancelled_orders ?? 0),
-    cancelledUnits: Number(unitAgg?.units ?? 0),
+    revenue,
+    profit,
+    orders: Number(orderAgg[0]?.total_orders ?? 0),
+    cancelled: Number(orderAgg[0]?.cancelled_orders ?? 0),
+    cancelledUnits: Number(unitAgg[0]?.units ?? 0),
   }
 }
 
@@ -105,8 +137,8 @@ const _fetchKpis = unstable_cache(
 
     return result
   },
-  ['kpis-v2'],
-  { revalidate: 30, tags: ['product-data', 'order-data'] },
+  ['kpis-v3'],
+  { revalidate: 30, tags: ['product-data', 'order-data', 'settlements'] },
 )
 
 export async function getKpis(

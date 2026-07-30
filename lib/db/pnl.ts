@@ -2,6 +2,7 @@ import { inArray, gte, and, asc, ne, eq, sql } from 'drizzle-orm'
 import { db, orders, orderItems, products, productAdsStats } from '@/lib/db'
 import { getShopIds } from '@/lib/db/shop-context'
 import { getUnitEcoSettings } from '@/lib/db/unit-economics'
+import { getRealFinancialsByBucket } from '@/lib/db/real-financials'
 import type { MarketplaceType } from '@/lib/types'
 
 /**
@@ -129,6 +130,10 @@ export async function getPnl(opts: PnlOpts): Promise<{ rows: PnlRow[]; params: P
 
   const cogsByBucket = new Map(cogsRows.map(r => [r.bucket, Number(r.cogs)]))
   const adSpendByBucket = new Map(adSpendRows.map(r => [r.bucket, Number(r.spend)]))
+  // Real per-bucket settlement financials. When present for a bucket
+  // they REPLACE the Unit-Economics estimates for that bucket, so
+  // Dashboard / P&L / Payouts all show identical numbers.
+  const realByBucket = await getRealFinancialsByBucket(shopIds, from, bucket)
 
   // Zero-fill every DAY bucket in the range so an empty day renders a
   // "0" bar on the chart. Month buckets are NOT zero-filled — an empty
@@ -180,10 +185,23 @@ export async function getPnl(opts: PnlOpts): Promise<{ rows: PnlRow[]; params: P
   const result: PnlRow[] = Array.from(grouped.entries())
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([key, v]) => {
-      const estimated  = v.realFee === 0 && v.revenue > 0
-      const commission = estimated ? v.revenue * params.commissionPct / 100 : v.realFee
-      const delivery   = v.realDelivery > 0 ? v.realDelivery : v.revenue * params.lastMilePct / 100
-      const acquiring  = estimated ? v.revenue * params.acquiringPct / 100 : 0
+      // Prefer real settlement data (Yandex united-netting or Uzum
+      // /v1/finance/orders) when we have any for the bucket; fall back
+      // to marketplace_fee stored on the orders row; fall back again
+      // to Unit-Economics percentages. Same precedence Payouts uses.
+      const real = realByBucket.get(key)
+      const hasReal = !!real && real.itemCount > 0
+      const estimated  = !hasReal && v.realFee === 0 && v.revenue > 0
+      const commission = hasReal ? real!.commission
+                       : estimated ? v.revenue * params.commissionPct / 100
+                       : v.realFee
+      const delivery   = hasReal ? real!.delivery
+                       : v.realDelivery > 0 ? v.realDelivery
+                       : v.revenue * params.lastMilePct / 100
+      // Acquiring is bundled into marketplace commission (Uzum + Yandex
+      // both fold it in). Only show a separate estimated acquiring line
+      // when we're falling back to Unit-Economics percentages.
+      const acquiring  = (!hasReal && estimated) ? v.revenue * params.acquiringPct / 100 : 0
       const realAdSpend = adSpendByBucket.get(key) ?? 0
       const adSpendEstimated = realAdSpend === 0 && v.revenue > 0
       const ads = adSpendEstimated ? v.revenue * params.adPct / 100 : realAdSpend

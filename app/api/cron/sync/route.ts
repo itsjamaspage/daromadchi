@@ -189,6 +189,10 @@ export const GET = withErrorHandler(async (req: Request) => {
   if (results.some(r => r.ok)) {
     revalidateTag('product-data', { expire: 0 })
     revalidateTag('order-data', { expire: 0 })
+    // Settlements ride the same sync — Yandex netting-report + Uzum
+    // finance/orders both refresh here, so blow away the shared tag
+    // Dashboard / P&L / Payouts all subscribe to.
+    revalidateTag('settlements', { expire: 0 })
   }
 
   return NextResponse.json({ ok: true, synced: results.length, skipped: skippedCount, results })
