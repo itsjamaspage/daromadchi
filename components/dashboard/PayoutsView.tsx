@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useRef, Fragment } from 'react'
+import { useState, useRef, useEffect, Fragment } from 'react'
 import { useRouter } from 'next/navigation'
-import { ChevronDown, ChevronUp, HelpCircle, RefreshCw } from 'lucide-react'
+import { ChevronDown, ChevronUp, HelpCircle, RefreshCw, MoreVertical } from 'lucide-react'
 import type { PayoutEntry, PayoutOrderItem, MarketplaceType } from '@/lib/types'
 import ExportButton from '@/components/dashboard/ExportButton'
 import MpBadge from '@/components/dashboard/MpBadge'
@@ -214,25 +214,55 @@ export default function PayoutsView({ entries }: Props) {
   const router = useRouter()
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [mpFilter, setMpFilter] = useState<MpFilter>('all')
-  const [refreshingYm, setRefreshingYm] = useState<false | 'loading' | 'ok' | 'err'>(false)
+  const [refreshingYm, setRefreshingYm] = useState<false | 'loading'>(false)
+  const [refreshMsg, setRefreshMsg] = useState<{ tone: 'ok' | 'err'; text: string } | null>(null)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
   const printRef = useRef<HTMLDivElement>(null)
 
-  // Any Yandex row currently in the awaiting-settlement state? If yes,
-  // show the "Обновить данные Yandex" button; otherwise there's nothing
-  // to refresh from the seller's POV.
-  const hasAwaitingYm = entries.some(e => e.marketplace === 'yandex_market' && e.awaitingSettlement)
+  // Close the kebab menu on outside click.
+  useEffect(() => {
+    if (!menuOpen) return
+    function onDoc(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false)
+    }
+    document.addEventListener('mousedown', onDoc)
+    return () => document.removeEventListener('mousedown', onDoc)
+  }, [menuOpen])
 
   async function refreshYandex() {
+    setMenuOpen(false)
     setRefreshingYm('loading')
+    setRefreshMsg(null)
     try {
       const res = await fetch('/api/yandex/refresh-settlements', { method: 'POST' })
-      if (!res.ok) throw new Error(String(res.status))
-      setRefreshingYm('ok')
-      // Give the server a moment to commit rows, then refresh RSC data.
-      setTimeout(() => router.refresh(), 500)
-    } catch {
-      setRefreshingYm('err')
-      setTimeout(() => setRefreshingYm(false), 3000)
+      // Interpret the endpoint's `results[]` — even when HTTP is 200,
+      // individual shops can report ok:false. Surface the actual sync
+      // outcome so the seller sees "3 транзакций синхронизировано" or
+      // the concrete error instead of a green "OK" that lied.
+      let payload: { ok?: boolean; results?: Array<{ ok: boolean; inserted?: number; error?: string; skipped?: string }> } = {}
+      try { payload = await res.json() } catch { /* non-json */ }
+      const results = payload.results ?? []
+      const totalInserted = results.reduce((s, r) => s + (r.inserted ?? 0), 0)
+      const firstError = results.find(r => !r.ok)?.error
+      const firstSkip  = results.find(r => r.skipped)?.skipped
+      if (!res.ok) {
+        setRefreshMsg({ tone: 'err', text: `HTTP ${res.status}` })
+      } else if (firstError) {
+        setRefreshMsg({ tone: 'err', text: firstError })
+      } else if (totalInserted > 0) {
+        setRefreshMsg({ tone: 'ok', text: `${totalInserted} tx` })
+        setTimeout(() => router.refresh(), 500)
+      } else {
+        // Sync ran cleanly but Yandex returned no transactions yet.
+        setRefreshMsg({ tone: 'ok', text: firstSkip ?? 'Yandex вернул 0 транзакций' })
+      }
+    } catch (e) {
+      setRefreshMsg({ tone: 'err', text: String(e).slice(0, 120) })
+    } finally {
+      setRefreshingYm(false)
+      // Auto-dismiss the toast-like message after 8s.
+      setTimeout(() => setRefreshMsg(null), 8000)
     }
   }
 
@@ -292,26 +322,52 @@ export default function PayoutsView({ entries }: Props) {
             ))}
           </div>
         <div className="flex items-center gap-2 ml-auto">
-          {hasAwaitingYm && (
-            <button
-              onClick={refreshYandex}
-              disabled={refreshingYm === 'loading'}
-              className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-xl border transition-colors disabled:opacity-60"
+          {refreshMsg && (
+            <span
+              className="text-xs font-medium px-3 py-1.5 rounded-lg"
               style={{
-                background: refreshingYm === 'ok' ? 'rgba(16,185,129,0.15)' : refreshingYm === 'err' ? 'rgba(239,68,68,0.15)' : 'var(--bg-card2)',
-                borderColor: 'var(--border)',
-                color: refreshingYm === 'ok' ? '#10b981' : refreshingYm === 'err' ? '#ef4444' : 'var(--text-base)',
+                background: refreshMsg.tone === 'ok' ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)',
+                color: refreshMsg.tone === 'ok' ? '#10b981' : '#ef4444',
               }}
-              title={t.awaitingSettlementHint}
+              title={refreshMsg.text}
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${refreshingYm === 'loading' ? 'animate-spin' : ''}`} />
-              {refreshingYm === 'loading' ? t.refreshingYandex
-                : refreshingYm === 'ok'    ? t.refreshYandexDone
-                : refreshingYm === 'err'   ? t.refreshYandexFailed
-                : t.refreshYandex}
-            </button>
+              {refreshMsg.text.length > 40 ? refreshMsg.text.slice(0, 40) + '…' : refreshMsg.text}
+            </span>
           )}
           <ExportButton data={exportData} filename="tolovu-hisoboti" targetRef={printRef} />
+          {/* Kebab (⋮) menu: single icon that expands into a dropdown.
+              Currently one action — "Обновить данные Yandex" — but the
+              menu is designed to hold future actions (e.g. re-sync WB
+              settlements) without cluttering the toolbar. */}
+          <div className="relative" ref={menuRef}>
+            <button
+              type="button"
+              onClick={() => setMenuOpen(o => !o)}
+              className="p-2 rounded-xl border transition-colors"
+              style={{ background: 'var(--bg-card2)', borderColor: 'var(--border)', color: 'var(--text-base)' }}
+              aria-label="More actions"
+              title="More actions"
+            >
+              <MoreVertical className="w-4 h-4" />
+            </button>
+            {menuOpen && (
+              <div
+                className="absolute right-0 top-full mt-2 z-50 rounded-xl border shadow-lg py-1 min-w-[220px]"
+                style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}
+              >
+                <button
+                  type="button"
+                  onClick={refreshYandex}
+                  disabled={refreshingYm === 'loading'}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium hover:opacity-80 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed text-left"
+                  style={{ color: 'var(--text-base)' }}
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 flex-shrink-0 ${refreshingYm === 'loading' ? 'animate-spin' : ''}`} />
+                  {refreshingYm === 'loading' ? t.refreshingYandex : t.refreshYandex}
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

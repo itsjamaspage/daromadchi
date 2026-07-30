@@ -18,12 +18,20 @@ import {
  * quota per row, and a smaller window generates faster). New sellers
  * or backfill jobs can pass a larger number.
  */
+export interface SettlementsSyncResult {
+  ok: boolean
+  inserted: number
+  error?: string
+  skipped?: string
+  debug?: Record<string, unknown>
+}
+
 export async function syncYandexSettlements(
   shopId: string,
   token: string,
   campaignId: string,
   windowDays = 7,
-): Promise<{ ok: boolean; inserted: number; error?: string; skipped?: string }> {
+): Promise<SettlementsSyncResult> {
   // Yandex's netting-report API is scoped to businessId, not campaignId.
   // Resolve one from the other.
   let businessId: number | undefined
@@ -56,27 +64,32 @@ export async function syncYandexSettlements(
   try {
     reportId = await generateNettingReport(token, businessId, dateFrom, dateTo)
   } catch (e) {
-    return { ok: false, inserted: 0, error: `generateNettingReport failed: ${String(e).slice(0, 200)}` }
+    return { ok: false, inserted: 0, error: `generate: ${String(e).slice(0, 300)}`, debug: { businessId, dateFrom, dateTo } }
   }
 
-  const status = await pollReportUntilReady(token, reportId)
+  let status
+  try {
+    status = await pollReportUntilReady(token, reportId)
+  } catch (e) {
+    return { ok: false, inserted: 0, error: `poll: ${String(e).slice(0, 300)}`, debug: { reportId, businessId, dateFrom, dateTo } }
+  }
   if (status.status === 'NO_DATA') {
-    return { ok: true, inserted: 0, skipped: 'no transactions in window' }
+    return { ok: true, inserted: 0, skipped: 'no transactions in window', debug: { reportId, status: status.status, dateFrom, dateTo } }
   }
   if (status.status !== 'DONE' || !status.fileUrl) {
-    return { ok: false, inserted: 0, error: `Report status=${status.status}; no fileUrl.` }
+    return { ok: false, inserted: 0, error: `report status=${status.status}, fileUrl=${status.fileUrl ?? 'null'}`, debug: { reportId, status: status.status } }
   }
 
   let buffer: ArrayBuffer
   try {
     buffer = await downloadReport(status.fileUrl, token)
   } catch (e) {
-    return { ok: false, inserted: 0, error: `downloadReport failed: ${String(e).slice(0, 200)}` }
+    return { ok: false, inserted: 0, error: `download: ${String(e).slice(0, 300)}`, debug: { reportId, fileUrl: status.fileUrl } }
   }
 
   const parsed = parseNettingReport(buffer)
   if (parsed.length === 0) {
-    return { ok: true, inserted: 0, skipped: 'parsed 0 transactions' }
+    return { ok: true, inserted: 0, skipped: 'parsed 0 transactions from a non-empty XLSX (parser miss?)', debug: { reportId, bufferBytes: buffer.byteLength } }
   }
 
   // Signed amount convention: negative for "Удержание", positive for
