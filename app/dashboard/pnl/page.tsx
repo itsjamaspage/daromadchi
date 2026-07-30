@@ -32,15 +32,22 @@ function parseRange(params: Record<string, string>): {
     return { from, to: toDate, bucket: 'month', period: '' }
   }
 
-  // Default: last 6 months, monthly rows. The seller specifically asked
-  // NOT to see 30 daily rows of mostly zeroes on the first visit —
-  // monthly aggregation stays the default no matter what preset is set.
-  const daysRaw = params.days ?? '180'
-  const days = Math.max(1, Math.min(3650, Number(daysRaw) || 180))
-  const from = new Date()
-  from.setDate(from.getDate() - (days - 1))
+  // Preset "N days" (kept for backwards compat with old links).
+  if (params.days) {
+    const days = Math.max(1, Math.min(3650, Number(params.days) || 30))
+    const from = new Date()
+    from.setDate(from.getDate() - (days - 1))
+    from.setHours(0, 0, 0, 0)
+    return { from, to, bucket: 'month', period: String(days) }
+  }
+
+  // Default: current month, day 1 → today. Was previously "last 180
+  // days" which landed on a Feb 1 – Jul 30 range that looked hardcoded
+  // in the calendar-picker button. Current-month is what business
+  // dashboards default to and avoids confusing pre-selected dates.
+  const from = new Date(to.getFullYear(), to.getMonth(), 1)
   from.setHours(0, 0, 0, 0)
-  return { from, to, bucket: 'month', period: String(days) }
+  return { from, to, bucket: 'month', period: '' }
 }
 
 interface Props {
@@ -84,22 +91,32 @@ export default async function PnlPage({ searchParams }: Props) {
     return `${monthName.charAt(0).toUpperCase()}${monthName.slice(1)} ${dt.getUTCFullYear()}`
   }
 
-  const monthlyData = pnl.rows.map(m => ({ ...m, month: labelFor(m.bucketKey) }))
-
-  // Build a dedicated "today" row from the single-day query. This row is
-  // rendered ABOVE the monthly rows and is NOT included in the totals
-  // reduce below (would double-count today's numbers, since the July
-  // 2026 monthly row already contains today's data).
+  // Build the today row from its dedicated single-day query.
   const todayLabel = new Date().toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' })
   const todayRow = todayPnl.rows[0]
     ? { ...todayPnl.rows[0], month: todayLabel }
     : null
-  const isEmpty = monthlyData.length === 0 || monthlyData.every(m => m.revenue === 0 && m.cancelled_count === 0)
+
+  // Filter out the current-month row from the monthly rows — today's
+  // data is now shown by the todayRow and the whole-month version was
+  // redundant/confusing (both rows said "July 2026"'s numbers). Only
+  // PAST months get their own monthly row; today gets its dedicated
+  // top row; totals still reflect the full picked range.
+  const now = new Date()
+  const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+  const monthlyData = pnl.rows
+    .filter(m => m.bucketKey !== currentMonthKey)
+    .map(m => ({ ...m, month: labelFor(m.bucketKey) }))
+  // Totals reduce over ALL rows the query returned (INCLUDING the
+  // current month that we hid from the row display) so the итого row
+  // still reflects the full picked range, not just past months.
+  const allRowsForTotals = pnl.rows
+  const isEmpty = pnl.rows.length === 0 || pnl.rows.every(m => m.revenue === 0 && m.cancelled_count === 0)
   const hasShops = userShops.length > 0
-  const anyEstimated = monthlyData.some(m => m.estimated)
+  const anyEstimated = pnl.rows.some(m => m.estimated)
   const num = 'px-4 py-4 text-right text-[var(--text-base)]'
 
-  const totals = monthlyData.reduce((s, m) => ({
+  const totals = allRowsForTotals.reduce((s, m) => ({
     orders:    s.orders + m.order_count,
     cancelled: s.cancelled + m.cancelled_count,
     revenue:   s.revenue + m.revenue,
@@ -299,7 +316,7 @@ export default async function PnlPage({ searchParams }: Props) {
                     <td className={`${num} font-bold`}>{totals.delivery > 0 ? fmt(totals.delivery) : '—'}</td>
                     <td className={`${num} font-bold`}>{est(totals.acquiring, anyEstimated, `≈ ${pnl.params.acquiringPct}%`)}</td>
                     <td className={`${num} font-bold`}>{est(totals.tax, true, `≈ ${pnl.params.taxPct}%`)}</td>
-                    <td className={`${num} font-bold`}>{est(totals.ads, monthlyData.some(m => m.adSpendEstimated), `≈ ${pnl.params.adPct}%`)}</td>
+                    <td className={`${num} font-bold`}>{est(totals.ads, allRowsForTotals.some(m => m.adSpendEstimated), `≈ ${pnl.params.adPct}%`)}</td>
                     <td className={`${num} font-bold`}>{totals.cogs > 0 ? fmt(totals.cogs) : '—'}</td>
                     <td className={`${num} font-bold`}>{fmt(totals.net)}</td>
                     <td className={`${num} font-bold`}>{avgMargin.toFixed(1)}%</td>

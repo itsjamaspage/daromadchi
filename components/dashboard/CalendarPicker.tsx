@@ -121,9 +121,12 @@ export default function CalendarPicker({ from, to }: Props) {
     p.delete('days')
     p.set('from', toISODate(rangeFrom))
     p.set('to',   toISODate(rangeTo))
+    // Close the popover IMMEDIATELY so the UI reacts to the click even
+    // if the router transition takes a moment. Then push the new URL
+    // in a transition so React can show pending state on the button.
+    setOpen(false)
     startTransition(() => {
       router.push(`${pathname}?${p.toString()}`, { scroll: false })
-      setOpen(false)
     })
   }
 
@@ -132,9 +135,9 @@ export default function CalendarPicker({ from, to }: Props) {
     p.delete('days')
     p.delete('from')
     p.delete('to')
+    setOpen(false)
     startTransition(() => {
       router.push(`${pathname}?${p.toString()}`, { scroll: false })
-      setOpen(false)
     })
   }
 
