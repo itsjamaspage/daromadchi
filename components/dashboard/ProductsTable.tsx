@@ -316,28 +316,35 @@ export default function ProductsTable({ products }: { products: Product[] }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-1 p-1 rounded-xl w-fit border" style={{ background: 'var(--bg-card2)', borderColor: 'var(--border)' }}>
-        {TABS.map(({ key, label }) => (
-          <button key={key} onClick={() => setTab(key)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border"
-            style={tab === key ? {
-              background: 'var(--bg-card2)',
-              color: 'var(--c1)',
-               borderColor: 'var(--border)',
-            } : {
-              color: 'var(--text-muted)',
-              borderColor: 'transparent',
-            }}>
-            {label}
-            <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={tab === key ? {
-              background: 'var(--bg-card2)',
-              color: 'var(--c1)',
-            } : {
-              background: 'rgba(255, 255, 255, 0.04)',
-              color: 'var(--text-muted)',
-            }}>{tabCounts[key]}</span>
-          </button>
-        ))}
+      {/* Outer wrapper gives us horizontal scroll on narrow viewports.
+          `w-fit` on the inner tab bar previously clipped the last two
+          status chips on iPhone-width screens with no way to reach
+          them. Hide the scrollbar itself so it doesn't sit on top of
+          the chips on macOS/iOS. */}
+      <div className="w-full overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="flex items-center gap-1 p-1 rounded-xl w-fit border" style={{ background: 'var(--bg-card2)', borderColor: 'var(--border)' }}>
+          {TABS.map(({ key, label }) => (
+            <button key={key} onClick={() => setTab(key)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border whitespace-nowrap flex-shrink-0"
+              style={tab === key ? {
+                background: 'var(--bg-card2)',
+                color: 'var(--c1)',
+                 borderColor: 'var(--border)',
+              } : {
+                color: 'var(--text-muted)',
+                borderColor: 'transparent',
+              }}>
+              {label}
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={tab === key ? {
+                background: 'var(--bg-card2)',
+                color: 'var(--c1)',
+              } : {
+                background: 'rgba(255, 255, 255, 0.04)',
+                color: 'var(--text-muted)',
+              }}>{tabCounts[key]}</span>
+            </button>
+          ))}
+        </div>
       </div>
 
       {tab === 'low_stock' && (
