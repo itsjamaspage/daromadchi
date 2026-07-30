@@ -215,7 +215,11 @@ export default function PayoutsView({ entries }: Props) {
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [mpFilter, setMpFilter] = useState<MpFilter>('all')
   const [refreshingYm, setRefreshingYm] = useState<false | 'loading'>(false)
-  const [refreshMsg, setRefreshMsg] = useState<{ tone: 'ok' | 'err'; text: string } | null>(null)
+  // Chip shows `short` (a compact one-liner). Hovering surfaces `full`,
+  // which is the same summary plus any debug JSON returned by the sync
+  // (report id, XLSX shape, etc.). Keeping the two separate stops the
+  // JSON from overflowing into the truncated chip text.
+  const [refreshMsg, setRefreshMsg] = useState<{ tone: 'ok' | 'err'; short: string; full: string } | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
   const printRef = useRef<HTMLDivElement>(null)
@@ -246,28 +250,39 @@ export default function PayoutsView({ entries }: Props) {
       const totalInserted = results.reduce((s, r) => s + (r.inserted ?? 0), 0)
       const firstErrorRow = results.find(r => !r.ok)
       const firstSkipRow  = results.find(r => r.skipped)
-      // Append the debug blob (report id, xlsx shape, etc.) to the tooltip
-      // so we can inspect what Yandex actually sent when the sync silently
-      // returned 0 transactions or errored.
-      const withDebug = (base: string, dbg: unknown) =>
-        dbg ? `${base}\n\n${JSON.stringify(dbg, null, 2)}` : base
+      // The chip needs a short, human-friendly one-liner; the hover panel
+      // shows the same summary plus the full debug JSON (report id, XLSX
+      // shape, whatever the sync produced).
+      const buildFull = (summary: string, dbg: unknown) =>
+        dbg ? `${summary}\n\n${JSON.stringify(dbg, null, 2)}` : summary
+      // Yandex uses HTTP 420 for "you're generating reports too fast".
+      // Translate it into a friendly hint so the seller knows to wait,
+      // not to keep spamming refresh.
+      const friendly = (raw: string) =>
+        /Yandex API 420/.test(raw)
+          ? 'Yandex ограничил частые запросы отчётов. Подождите 10–15 мин и попробуйте снова.'
+          : raw
       if (!res.ok) {
-        setRefreshMsg({ tone: 'err', text: `HTTP ${res.status}` })
+        setRefreshMsg({ tone: 'err', short: `HTTP ${res.status}`, full: `HTTP ${res.status}` })
       } else if (firstErrorRow) {
-        setRefreshMsg({ tone: 'err', text: withDebug(firstErrorRow.error ?? 'error', firstErrorRow.debug) })
+        const raw = firstErrorRow.error ?? 'error'
+        const short = friendly(raw).slice(0, 160)
+        setRefreshMsg({ tone: 'err', short, full: buildFull(friendly(raw), firstErrorRow.debug) })
       } else if (totalInserted > 0) {
-        setRefreshMsg({ tone: 'ok', text: `${totalInserted} tx` })
+        setRefreshMsg({ tone: 'ok', short: `${totalInserted} tx`, full: `${totalInserted} tx` })
         setTimeout(() => router.refresh(), 500)
       } else {
-        // Sync ran cleanly but Yandex returned no transactions yet.
-        setRefreshMsg({ tone: 'ok', text: withDebug(firstSkipRow?.skipped ?? 'Yandex вернул 0 транзакций', firstSkipRow?.debug) })
+        const raw = firstSkipRow?.skipped ?? 'Yandex вернул 0 транзакций'
+        setRefreshMsg({ tone: 'ok', short: raw.slice(0, 160), full: buildFull(raw, firstSkipRow?.debug) })
       }
     } catch (e) {
-      setRefreshMsg({ tone: 'err', text: String(e).slice(0, 120) })
+      const s = String(e).slice(0, 200)
+      setRefreshMsg({ tone: 'err', short: s, full: s })
     } finally {
       setRefreshingYm(false)
-      // Auto-dismiss the toast-like message after 8s.
-      setTimeout(() => setRefreshMsg(null), 8000)
+      // Auto-dismiss the toast-like message after 30s — long enough for
+      // a screenshot of the hover panel when the debug JSON matters.
+      setTimeout(() => setRefreshMsg(null), 30_000)
     }
   }
 
@@ -332,7 +347,7 @@ export default function PayoutsView({ entries }: Props) {
               <button
                 type="button"
                 onClick={() => {
-                  navigator.clipboard?.writeText(refreshMsg.text).catch(() => {})
+                  navigator.clipboard?.writeText(refreshMsg.full).catch(() => {})
                 }}
                 className="text-xs font-medium px-3 py-1.5 rounded-lg cursor-pointer max-w-[480px] block truncate text-left"
                 style={{
@@ -341,23 +356,25 @@ export default function PayoutsView({ entries }: Props) {
                 }}
                 title="Click to copy full error"
               >
-                {refreshMsg.text}
+                {refreshMsg.short}
               </button>
               {/* Real hover tooltip — a full-width, wrapping panel that
                   stays open long enough to read even if the message is
                   huge. Positioned below the chip so it doesn't get cut
                   off by the header bar. */}
               <div
-                className="hidden group-hover:block absolute right-0 top-full mt-1 z-50 p-3 rounded-lg shadow-xl text-xs whitespace-pre-wrap break-all"
+                className="hidden group-hover:block absolute right-0 top-full mt-1 z-50 p-3 rounded-lg shadow-xl text-xs whitespace-pre-wrap break-all font-mono"
                 style={{
                   background: 'var(--bg-card)',
                   border: '1px solid var(--border)',
                   color: 'var(--text-base)',
-                  minWidth: 320,
-                  maxWidth: 720,
+                  minWidth: 480,
+                  maxWidth: 900,
+                  maxHeight: 500,
+                  overflow: 'auto',
                 }}
               >
-                {refreshMsg.text}
+                {refreshMsg.full}
               </div>
             </div>
           )}
