@@ -78,8 +78,8 @@ proxy.ts               # Middleware — CORS, routing
 Marketplace APIs (Uzum, Yandex, WB)
         │
         ▼
-  /api/cron/sync  ◄── Called by external cron (vercel.json schedule)
-        │               Currently: once/day at midnight (0 0 * * *)
+  /api/cron/sync  ◄── Called by VPS system crontab via cron-runner.sh
+        │               Currently: every 15 min (*/15 * * * *)
         ▼
   lib/{uzum,yandex,wildberries}/sync.ts
         │
@@ -93,8 +93,9 @@ Marketplace APIs (Uzum, Yandex, WB)
   Dashboard pages read cached data
 ```
 
-**Sync frequency:** Once per day (`0 0 * * *` in vercel.json). The sync endpoint
-is protected by `CRON_SECRET`. Each shop is synced in batches of 5 concurrent requests.
+**Sync frequency:** Every 15 min (`*/15 * * * *` in the VPS crontab, installed
+by `.github/workflows/deploy.yml`). The sync endpoint is protected by
+`CRON_SECRET`. Each shop is synced in batches of 5 concurrent requests.
 
 **Cache invalidation:** Mutation endpoints (cost price update, shop token save, etc.)
 call `revalidateTag('product-data', { expire: 0 })` for immediate cache expiration.
@@ -236,8 +237,8 @@ Light theme has a blue canvas (`#83c0f7`). Dark theme is Revolut-style black (`#
 | Marketplace sync | Daily at midnight | `/api/cron/sync` |
 | Telegram digest | Daily at 05:00 | `/api/cron/telegram-digest` |
 
-Both are triggered externally (vercel.json crons or system cron on Hetzner)
-and protected by `CRON_SECRET` header.
+Both are triggered by the VPS system crontab (installed by `deploy.yml` →
+`cron-runner.sh`) and protected by a `CRON_SECRET` header.
 
 ## Deployment
 

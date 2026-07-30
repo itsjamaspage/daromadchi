@@ -986,7 +986,7 @@
       },
       'github-ci': {
         name: 'GitHub Actions CI/CD',
-        desc: 'Pipeline: Lint → TypeCheck → Build → Health Check (main only) → Telegram Notify. Runs on every push. Build requires Supabase and encryption env vars as secrets.',
+        desc: 'Pipeline: Lint → TypeCheck → Build → Health Check (main only) → Telegram Notify. Runs on every push. Build requires the ENCRYPTION_KEY secret.',
         tech: ['GitHub Actions', 'Node.js 20', 'npm ci', '5 jobs'],
         connections: [
           { name: 'Deploy Pipeline', desc: 'Triggers deploy on push to main' },

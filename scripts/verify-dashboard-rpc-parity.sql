@@ -1,6 +1,7 @@
 -- ╔══════════════════════════════════════════════════════════════════════════════╗
 -- ║  DASHBOARD RPC PARITY VERIFICATION                                         ║
--- ║  Run this in Supabase SQL Editor to verify RPCs match old JS aggregation.  ║
+-- ║  Run this via psql against the VPS Postgres to verify RPCs match         ║
+-- ║  the JS aggregation baseline.                                              ║
 -- ║  RPCs under test: get_dashboard_kpis, get_daily_revenue, get_category_revenue ║
 -- ║  User: 4d1182a9-4785-4a83-a492-433ff081b1ae                                ║
 -- ║  DEMO shops excluded (matches production getUserShops filter)               ║

@@ -1,18 +1,19 @@
 name: DB · Backup Postgres
 
-# Read-only backup of whatever DATABASE_URL currently points to (Supabase
-# today, self-hosted Postgres after migration). Runs pg_dump on the VPS,
-# gzips the result, and uploads it as a workflow artifact so you can
-# download it from the Actions tab. Also keeps 14 rotated copies on the
-# VPS at /var/backups/daromadchi/.
+# Nightly + on-demand backup of whatever DATABASE_URL points to on the
+# VPS. Runs pg_dump on the VPS itself (Postgres is bound to 127.0.0.1),
+# keeps 14 rotated dumps at /var/backups/daromadchi/, and uploads the
+# newest as a GitHub Actions artifact (30-day retention) so a fresh
+# restore-able copy also lives off the VPS.
 #
-# Trigger this MANUALLY from the Actions tab whenever you want a fresh
-# safety net. Also runs nightly at 03:00 UTC so there's always <24h of
-# recovery loss if the VPS explodes.
+# Trigger MANUALLY from the Actions tab any time you want an on-demand
+# dump. Otherwise runs itself nightly at 03:00 UTC — recovery point
+# is at most ~24h stale.
 #
-# The dump is --schema=public only — Supabase's proprietary schemas
-# (auth, storage, realtime, pgsodium, graphql, _supabase, _realtime,
-# etc.) are excluded so the file can be restored into a plain Postgres.
+# --schema=public --no-owner --no-acl -Fc: dump can be restored into
+# any plain Postgres of the same or newer major version with a single
+# `pg_restore -d …` call. See docs/RESTORE.md (if present) or ping the
+# runbook in the commit that added this workflow.
 
 on:
   workflow_dispatch:
@@ -68,11 +69,10 @@ jobs:
           STAMP=$(date -u +%Y%m%d-%H%M%S)
           OUT=/var/backups/daromadchi/dump-${STAMP}.dump
 
-          # --schema=public: skip Supabase's proprietary schemas so this
-          #   dump restores cleanly into any plain Postgres.
+          # --schema=public: only the app's data; skip system schemas.
           # -Fc: custom format, best for pg_restore, ~5x smaller than plain SQL.
-          # --no-owner --no-acl: strip Supabase-specific role/ACL metadata
-          #   that would fail on a fresh Postgres with different roles.
+          # --no-owner --no-acl: skip role/ACL metadata so the dump is
+          #   portable between Postgres instances with different roles.
           pg_dump "$DB_URL" \
             --schema=public \
             --no-owner --no-acl \
