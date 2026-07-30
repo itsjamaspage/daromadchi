@@ -195,6 +195,28 @@
     return /\/product(--|\/|\d)/i.test(path) || /\/sku\//i.test(path) || /\/card\/[^/]+\/\d+/.test(path);
   }
 
+  // Fetch REAL per-SKU rates from daromadchi (see content-wb.js).
+  async function fetchRealRatesYm(sku) {
+    if (!sku) return null
+    const cacheKey = `drmRate_ym_${sku}`
+    const now = Date.now()
+    try {
+      const cached = await new Promise(res => chrome.storage.local.get(cacheKey, res))
+      const hit = cached?.[cacheKey]
+      if (hit && (now - hit.at) < 10 * 60 * 1000) return hit.data
+    } catch { /* ignore */ }
+    try {
+      const url = `https://daromadchi.uz/api/extension/rates?sku=${encodeURIComponent(sku)}&marketplace=yandex_market`
+      const res = await fetch(url, { credentials: 'include' })
+      if (!res.ok) return null
+      const json = await res.json()
+      if (!json?.ok) return null
+      const data = json.hasReal ? { commissionPct: json.commissionPct, deliveryPct: json.deliveryPct, itemCount: json.itemCount } : null
+      try { chrome.storage.local.set({ [cacheKey]: { at: now, data } }) } catch { /* ignore */ }
+      return data
+    } catch { return null }
+  }
+
   function calcYm(price, { costPrice=0, packaging=0, adPct=5, volume=1, fby=true, commPct=undefined }={}) {
     if(commPct===undefined) commPct=getYmCommission();
     const commission = Math.round(price * commPct / 100);

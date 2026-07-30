@@ -194,6 +194,30 @@
   function getProductId() { const m=window.location.pathname.match(/-(\d{5,})/); return m?m[1]:null; }
   function fp(n) { if(n===null||n===undefined) return '—'; return Math.round(n).toLocaleString('uz-UZ')+" so'm"; }
 
+  // Same shared helper as content-wb.js — fetch REAL per-SKU rates
+  // from daromadchi. Cached 10 min per SKU. See content-wb.js's
+  // fetchRealRatesWb for the reasoning.
+  async function fetchRealRatesUzum(sku) {
+    if (!sku) return null
+    const cacheKey = `drmRate_uzum_${sku}`
+    const now = Date.now()
+    try {
+      const cached = await new Promise(res => chrome.storage.local.get(cacheKey, res))
+      const hit = cached?.[cacheKey]
+      if (hit && (now - hit.at) < 10 * 60 * 1000) return hit.data
+    } catch { /* ignore */ }
+    try {
+      const url = `https://daromadchi.uz/api/extension/rates?sku=${encodeURIComponent(sku)}&marketplace=uzum`
+      const res = await fetch(url, { credentials: 'include' })
+      if (!res.ok) return null
+      const json = await res.json()
+      if (!json?.ok) return null
+      const data = json.hasReal ? { commissionPct: json.commissionPct, deliveryPct: json.deliveryPct, itemCount: json.itemCount } : null
+      try { chrome.storage.local.set({ [cacheKey]: { at: now, data } }) } catch { /* ignore */ }
+      return data
+    } catch { return null }
+  }
+
   function calcUzum(price,{costPrice=0,packaging=0,adPct=5,fbo=true,volume=1,commPct=undefined}={}) {
     if(commPct===undefined) commPct=getCommission();
     const commission = Math.round(price*commPct/100);
@@ -258,6 +282,13 @@
       if(data.drmTheme)theme=data.drmTheme;
       commPct=data.drmCommOverride_uzum!=null?data.drmCommOverride_uzum:getCommission();
       render();
+      // Real per-SKU rate from settlements (when the seller is logged
+      // into daromadchi and has already sold this SKU). Manual override
+      // still wins so the seller's explicit setting isn't clobbered.
+      fetchRealRatesUzum(productId).then(rate => {
+        if (!rate || rate.commissionPct == null) return;
+        if (data.drmCommOverride_uzum == null) { commPct = rate.commissionPct; render(); }
+      });
     });
 
     function gi(){

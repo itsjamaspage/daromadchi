@@ -245,6 +245,32 @@
     }
     function getArticle() { const m=location.pathname.match(/\/catalog\/(\d+)/); return m?m[1]:null; }
 
+    // Fetch REAL per-SKU commission % from daromadchi's backend. Uses
+    // the browser's session cookie (extension has host_permissions for
+    // daromadchi.uz, so the cookie flows on cross-origin fetch). Cached
+    // in chrome.storage for 10 min per (sku, marketplace) key to avoid
+    // hammering the endpoint on every widget mount / re-render.
+    async function fetchRealRatesWb(sku) {
+      if (!sku) return null
+      const cacheKey = `drmRate_wb_${sku}`
+      const now = Date.now()
+      try {
+        const cached = await new Promise(res => chrome.storage.local.get(cacheKey, res))
+        const hit = cached?.[cacheKey]
+        if (hit && (now - hit.at) < 10 * 60 * 1000) return hit.data
+      } catch { /* ignore */ }
+      try {
+        const url = `https://daromadchi.uz/api/extension/rates?sku=${encodeURIComponent(sku)}&marketplace=wb`
+        const res = await fetch(url, { credentials: 'include' })
+        if (!res.ok) return null
+        const json = await res.json()
+        if (!json?.ok) return null
+        const data = json.hasReal ? { commissionPct: json.commissionPct, deliveryPct: json.deliveryPct, itemCount: json.itemCount } : null
+        try { chrome.storage.local.set({ [cacheKey]: { at: now, data } }) } catch { /* ignore */ }
+        return data
+      } catch { return null }
+    }
+
     function calcWb(price, { costPrice=0, packaging=0, adPct=5, volume=1, fby=true, commPct=undefined }={}) {
       if(commPct===undefined) commPct=getCommission();
       const commission = Math.round(price * commPct / 100);
@@ -323,12 +349,28 @@
       document.body.appendChild(toggleBtn);
       toggleBtn.onclick = () => { wrap.style.display='block'; toggleBtn.style.setProperty('display','none','important'); };
 
+      // Track the seller's own commission rate (manual override wins;
+      // else real per-SKU rate from settlements; else the category default).
+      // realRate persists in this closure so gi() and calcWb pick it up
+      // whenever the widget re-renders.
+      let realRate = null;
       chrome.storage.local.get(['ueSettings','drmLang','drmTheme','drmCommOverride_wb'], data => {
         if (data.ueSettings) { costPrice=data.ueSettings.costPrice||0; packaging=data.ueSettings.packaging||0; adPct=data.ueSettings.adPct||5; volume=data.ueSettings.volume||1; fby=data.ueSettings.fby!==undefined?data.ueSettings.fby:true; }
         if (data.drmLang) langKey=data.drmLang;
         if (data.drmTheme) theme=data.drmTheme;
         commPct=data.drmCommOverride_wb!=null?data.drmCommOverride_wb:getCommission();
         render();
+        // Fire-and-forget: if the seller is logged into daromadchi and
+        // this SKU has real settlement history, override commPct with
+        // the actual rate and re-render. Manual override still wins if
+        // one is stored — the seller's explicit setting has priority
+        // over what the backend inferred.
+        fetchRealRatesWb(article).then(rate => {
+          if (!rate || rate.commissionPct == null) return;
+          realRate = rate;
+          if (data.drmCommOverride_wb == null) commPct = rate.commissionPct;
+          render();
+        });
       });
 
       function gi() {
