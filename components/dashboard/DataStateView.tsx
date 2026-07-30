@@ -8,9 +8,8 @@ import { translations } from '@/lib/i18n'
 
 function fs(n: number | undefined) {
   if (n === undefined) return '—'
-  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + ' mln'
-  if (n >= 1_000) return (n / 1_000).toFixed(0) + ' ming'
-  return String(n)
+  if (Math.abs(n) >= 1_000_000) return (n / 1_000_000).toFixed(1) + ' mln'
+  return new Intl.NumberFormat('uz-UZ').format(Math.round(n))
 }
 
 function statusStyle(s: SyncDay['status']) {

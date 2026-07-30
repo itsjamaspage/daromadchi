@@ -8,9 +8,10 @@ import { useLang } from '@/app/providers'
 import { dashT } from '@/lib/dashT'
 
 function fs(n: number) {
-  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + ' mln'
-  if (n >= 1_000) return (n / 1_000).toFixed(0) + ' ming'
-  return String(n)
+  // Precise, thousands-separated. Only condense at 1M+ where a full
+  // digit run would blow up narrow columns.
+  if (Math.abs(n) >= 1_000_000) return (n / 1_000_000).toFixed(1) + ' mln'
+  return new Intl.NumberFormat('uz-UZ').format(Math.round(n))
 }
 function fsFull(n: number) {
   return new Intl.NumberFormat('uz-UZ').format(Math.round(n)) + " so'm"

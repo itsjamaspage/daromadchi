@@ -48,12 +48,13 @@ function fmt(n: number) {
 }
 
 function fmtShort(n: number) {
-  // Millions → condense with one decimal ("1.4 mln") so long columns
-  // still fit. Everything below a million shows the precise number
-  // with a thin-space thousands separator — sellers were confused when
-  // 59 940 rendered as "60 ming" and Yandex's own UI showed 59 940,00.
-  if (Math.abs(n) >= 1_000_000) return (n / 1_000_000).toFixed(1) + ' mln'
-  return new Intl.NumberFormat('uz-UZ').format(Math.round(n))
+  // Precise, thousands-separated, currency-labelled. Sellers reading
+  // bare digits ("76 000") without a "so'm" tail had to guess whether
+  // the column meant sum, count, or percent — appending the unit makes
+  // it unambiguous at a glance. Only condense at 1M+ where a full
+  // digit run would overflow narrow columns.
+  if (Math.abs(n) >= 1_000_000) return (n / 1_000_000).toFixed(1) + " mln so'm"
+  return new Intl.NumberFormat('uz-UZ').format(Math.round(n)) + " so'm"
 }
 
 function StatusBadge({ status }: { status: PayoutEntry['status'] }) {
@@ -502,8 +503,8 @@ export default function PayoutsView({ entries }: Props) {
                         </p>
                       )}
                     </td>
-                    <td className="px-4 py-3.5 text-right text-[var(--text-dim)] text-sm">{entry.ordersCount}</td>
-                    <td className="px-4 py-3.5 text-right text-[var(--text-dim)] text-sm">{fmtShort(entry.grossRevenue)}</td>
+                    <td className="px-4 py-3.5 text-right text-[var(--text-base)] font-bold text-sm">{entry.ordersCount}</td>
+                    <td className="px-4 py-3.5 text-right text-[var(--text-base)] font-bold text-sm">{fmtShort(entry.grossRevenue)}</td>
                     {entry.awaitingSettlement ? (
                       <>
                         {/* Yandex row before Yandex publishes real
@@ -517,11 +518,16 @@ export default function PayoutsView({ entries }: Props) {
                       </>
                     ) : (
                       <>
-                        <td className="px-4 py-3.5 text-right text-red-400 text-sm">-{fmtShort(entry.commission)}</td>
-                        <td className="px-4 py-3.5 text-right text-red-400 text-sm">-{fmtShort(entry.delivery)}</td>
-                        <td className="px-4 py-3.5 text-right text-red-400 text-sm">-{fmtShort(entry.returns)}</td>
-                        <td className="px-4 py-3.5 text-right text-red-400 text-sm">-{fmtShort(entry.adSpend)}</td>
-                        <td className="px-4 py-3.5 text-right text-red-400 text-sm">-{fmtShort(entry.tax)}</td>
+                        {/* Bold, full-contrast digits with a leading "-" for
+                            deductions. Red-tinted digits made the numbers
+                            themselves hard to read; a plain minus sign +
+                            the "Комиссия / Доставка / …" column header is
+                            enough to signal that these are subtractions. */}
+                        <td className="px-4 py-3.5 text-right text-[var(--text-base)] font-bold text-sm">{entry.commission > 0 ? '-' : ''}{fmtShort(entry.commission)}</td>
+                        <td className="px-4 py-3.5 text-right text-[var(--text-base)] font-bold text-sm">{entry.delivery > 0 ? '-' : ''}{fmtShort(entry.delivery)}</td>
+                        <td className="px-4 py-3.5 text-right text-[var(--text-base)] font-bold text-sm">{entry.returns > 0 ? '-' : ''}{fmtShort(entry.returns)}</td>
+                        <td className="px-4 py-3.5 text-right text-[var(--text-base)] font-bold text-sm">{entry.adSpend > 0 ? '-' : ''}{fmtShort(entry.adSpend)}</td>
+                        <td className="px-4 py-3.5 text-right text-[var(--text-base)] font-bold text-sm">{entry.tax > 0 ? '-' : ''}{fmtShort(entry.tax)}</td>
                         <td className="px-4 py-3.5 text-right">
                           <span className="text-[var(--text-base)] font-bold text-sm">{fmtShort(entry.netPayout)}</span>
                         </td>
