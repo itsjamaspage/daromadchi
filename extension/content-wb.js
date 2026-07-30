@@ -158,14 +158,24 @@
         return n >= 100 ? n : null;
       }
 
-      // Priority 0: structured data / meta tags (most reliable, never changes)
+      // Collect every candidate the DOM offers, then return the SMALLEST.
+      // Strikethrough old prices are always > current, and stale/legacy
+      // meta tags (a seller reported meta[itemprop="price"]=20042026 for
+      // a product whose visible current price was 145 900) tend to be
+      // wildly larger than the actual price — voting them down via min
+      // is more reliable than the previous first-hit priority chain,
+      // which trusted meta blindly.
+      const candidates = [];
+      const push = (p) => { if (typeof p === 'number' && p >= 100) candidates.push(p); };
+
+      // Source 1: structured data / meta tags
       for (const attr of [['meta[itemprop="price"]','content'], ['meta[property="product:price:amount"]','content'], ['[itemprop="price"]','content']]) {
         const el = document.querySelector(attr[0]);
         const val = el?.getAttribute(attr[1]);
-        if (val) { const p = parseInt(val.replace(/[^\d]/g,''), 10); if (p >= 100) return p; }
+        if (val) push(parseInt(val.replace(/[^\d]/g,''), 10));
       }
 
-      // Priority 1: known WB class fragments (hashed but stable substrings)
+      // Source 2: known WB class fragments (hashed but stable substrings)
       const priority = [
         '[class*="priceBlockFinalPrice"]',
         '[class*="priceBlockPrice--"]',
@@ -179,46 +189,37 @@
         '[class*="current-price"]',
       ];
       for (const sel of priority) {
-        const el = document.querySelector(sel);
-        if (!el) continue;
-        if (/[Oo]ld|[Cc]ross|[Ss]trike|[Pp]rev|through/.test(el.className)) continue;
-        const p = extractPrice(el.innerText);
-        if (p) return p;
+        for (const el of document.querySelectorAll(sel)) {
+          if (/[Oo]ld|[Cc]ross|[Ss]trike|[Pp]rev|through/.test(el.className)) continue;
+          push(extractPrice(el.innerText));
+        }
       }
 
-      // Priority 2: <ins> tags (WB uses ins for current price, del/s for old)
-      const insTags = Array.from(document.querySelectorAll('ins'));
-      const visibleIns = insTags.filter(el => {
-        if (/[Oo]ld|[Cc]ross|[Ss]trike/.test(el.className)) return false;
+      // Source 3: <ins> tags (WB uses ins for current price, del/s for old)
+      for (const el of document.querySelectorAll('ins')) {
+        if (/[Oo]ld|[Cc]ross|[Ss]trike/.test(el.className)) continue;
         const rect = el.getBoundingClientRect();
-        return rect.width > 0 && rect.top > 0 && rect.top < window.innerHeight * 2;
-      });
-      visibleIns.sort((a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top);
-      for (const el of visibleIns) {
-        const p = extractPrice(el.innerText);
-        if (p) return p;
+        if (rect.width <= 0 || rect.top < 0 || rect.top > window.innerHeight * 2) continue;
+        push(extractPrice(el.innerText));
       }
 
-      // Priority 3: collect ALL currency prices and return the minimum (= current price,
-      // since strikethrough old price is always higher). Works even when class names are
-      // fully obfuscated and different between WB RU and WB UZ.
+      // Source 4: every visible currency-suffixed element on the page.
       const currencyRe = /сум|so['']m|₽|руб/i;
-      const prices = [];
       for (const el of document.querySelectorAll('span,ins,strong,b,div,p,del,s')) {
         const text = el.innerText?.trim() || '';
         if (!currencyRe.test(text)) continue;
-        // Skip if this element is explicitly the old/strikethrough price
         const tag = el.tagName.toLowerCase();
         if (tag === 'del' || tag === 's') continue;
         const cls = (el.className || '').toLowerCase();
         if (cls.includes('old') || cls.includes('cross') || cls.includes('strike') || cls.includes('prev') || cls.includes('through')) continue;
-        const p = extractPrice(text);
-        if (p) prices.push(p);
+        push(extractPrice(text));
       }
-      // The minimum is the discounted current price
-      if (prices.length > 0) return Math.min(...prices);
 
-      return null;
+      if (candidates.length === 0) return null;
+      // Return the minimum: current price ≤ strikethrough ≤ legacy/stale meta.
+      // This survives obfuscated class names AND bogus meta tags in a single
+      // decision instead of a fragile priority-first-hit chain.
+      return Math.min(...candidates);
     }
 
     function parseWbTitle() {
