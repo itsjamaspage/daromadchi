@@ -125,27 +125,53 @@ export async function syncYandexSettlements(
   }))
 
   // Chunked upsert — Postgres has a parameter limit around 65k, and each
-  // row has ~14 columns.
+  // row has ~14 columns. Wrapped in try/catch so a schema mismatch (an
+  // unknown "Тип транзакции" value that violates a check constraint, a
+  // stale migration missing a column, etc.) surfaces the FULL SQL error
+  // in the debug tooltip instead of being swallowed and shown as the
+  // truncated 300-char stringified error from the route's outer catch.
   const CHUNK = 500
-  for (let i = 0; i < rows.length; i += CHUNK) {
-    const slice = rows.slice(i, i + CHUNK)
-    await db.insert(yandexSettlementTransactions).values(slice).onConflictDoUpdate({
-      target: [yandexSettlementTransactions.shop_id, yandexSettlementTransactions.transaction_id],
-      set: {
-        entry_type:         sql`excluded.entry_type`,
-        entry_source:       sql`excluded.entry_source`,
-        order_type:         sql`excluded.order_type`,
-        sku:                sql`excluded.sku`,
-        amount:             sql`excluded.amount`,
-        quantity:           sql`excluded.quantity`,
-        transaction_at:     sql`excluded.transaction_at`,
-        order_created_at:   sql`excluded.order_created_at`,
-        order_delivered_at: sql`excluded.order_delivered_at`,
-        status_note:        sql`excluded.status_note`,
-        report_id:          sql`excluded.report_id`,
-        synced_at:          sql`now()`,
+  try {
+    for (let i = 0; i < rows.length; i += CHUNK) {
+      const slice = rows.slice(i, i + CHUNK)
+      await db.insert(yandexSettlementTransactions).values(slice).onConflictDoUpdate({
+        target: [yandexSettlementTransactions.shop_id, yandexSettlementTransactions.transaction_id],
+        set: {
+          entry_type:         sql`excluded.entry_type`,
+          entry_source:       sql`excluded.entry_source`,
+          order_type:         sql`excluded.order_type`,
+          sku:                sql`excluded.sku`,
+          amount:             sql`excluded.amount`,
+          quantity:           sql`excluded.quantity`,
+          transaction_at:     sql`excluded.transaction_at`,
+          order_created_at:   sql`excluded.order_created_at`,
+          order_delivered_at: sql`excluded.order_delivered_at`,
+          status_note:        sql`excluded.status_note`,
+          report_id:          sql`excluded.report_id`,
+          synced_at:          sql`now()`,
+        },
+      })
+    }
+  } catch (e) {
+    const err = e as { message?: string; code?: string; detail?: string; constraint?: string; column?: string; table?: string }
+    return {
+      ok: false,
+      inserted: 0,
+      error: `insert: ${err.message ?? String(e)}`.slice(0, 400),
+      debug: {
+        reportId,
+        rowCount: rows.length,
+        // Postgres error fields drizzle passes through — the actual
+        // reason (unique_violation, not_null, check, etc.) plus the
+        // offending column/constraint name.
+        pgCode:       err.code,
+        pgDetail:     err.detail,
+        pgConstraint: err.constraint,
+        pgColumn:     err.column,
+        pgTable:      err.table,
+        firstRow:     rows[0],
       },
-    })
+    }
   }
 
   return { ok: true, inserted: rows.length }

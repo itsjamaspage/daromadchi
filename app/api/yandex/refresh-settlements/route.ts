@@ -41,7 +41,9 @@ export const POST = withErrorHandler(async () => {
       const r = await syncYandexSettlements(s.id, token, s.shop_id_external)
       results.push({ shopId: s.id, ...r })
     } catch (e) {
-      results.push({ shopId: s.id, ok: false, error: String(e).slice(0, 300) })
+      // 2000-char slice (not 300) so a DB error's full statement +
+      // reason survives — the tooltip renders long text fine.
+      results.push({ shopId: s.id, ok: false, error: String(e).slice(0, 2000) })
     }
   }
 
