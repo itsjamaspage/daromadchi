@@ -9,11 +9,18 @@ export default function NavigationEvents() {
   const prevKey = useRef<string | null>(null)
   const pendingEnd = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Fire __loading_end__ whenever pathname OR search params change
+  // Fire __loading_end__ whenever pathname OR search params change,
+  // AND on initial mount. Without the mount fire, opening a fresh tab
+  // (extension → window.open) leaves the D-logo loading overlay stuck
+  // forever if anything else dispatched __loading_start__ — the
+  // usePathname first-render just records the key and returns without
+  // signalling "loaded", so the overlay never hides.
   useEffect(() => {
     const key = `${pathname}?${searchParams.toString()}`
     if (prevKey.current === null) {
       prevKey.current = key
+      if (pendingEnd.current) clearTimeout(pendingEnd.current)
+      window.dispatchEvent(new Event('__loading_end__'))
       return
     }
     if (prevKey.current !== key) {

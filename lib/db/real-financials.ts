@@ -1,5 +1,6 @@
-import { inArray, gte, and, sql } from 'drizzle-orm'
+import { inArray, gte, and, sql, eq } from 'drizzle-orm'
 import { db, shops, yandexSettlementTransactions, uzumSettlementOrders } from '@/lib/db'
+import type { MarketplaceType } from '@/lib/types'
 
 /**
  * One source of truth for REAL per-bucket settlement financials. Reads
@@ -133,6 +134,132 @@ export async function getRealFinancialsByBucket(
       }
     } catch (e) {
       console.error('[real-financials] uzum query failed:', String(e).slice(0, 200))
+    }
+  }
+
+  return out
+}
+
+/**
+ * Per-SKU real commission + delivery rates, derived from settlements.
+ *
+ * Consumed by lib/db/unit-economics.ts so the Unit Economics page can
+ * show the seller's ACTUAL marketplace fees for each SKU they've
+ * already sold, instead of a hard-coded "5% commission, 20% delivery"
+ * default that's wrong for every marketplace.
+ *
+ * Key insight for Yandex: this seller's netting shows commission +
+ * delivery + acquiring all bundled into "Оплата услуг Market Yandex
+ * Go" charges tagged as "Продажа физлицу" order_type. So the "commission"
+ * we compute IS the bundled total, and delivery = 0. UnitEconomicsTable
+ * should render delivery=0 for Yandex without a separate line.
+ */
+export interface RealRateForSku {
+  marketplace: MarketplaceType
+  commissionPct: number   // real commission as % of seller_price
+  deliveryPct: number     // real delivery as % of seller_price (0 for Yandex — bundled)
+  itemCount: number       // number of settled items backing this rate
+  windowSince: string     // ISO date the rate was computed from
+}
+
+export async function getRealRatesBySku(userId: string, windowDays = 60): Promise<Map<string, RealRateForSku>> {
+  const out = new Map<string, RealRateForSku>()
+
+  const since = new Date()
+  since.setDate(since.getDate() - windowDays)
+  const sinceIso = since.toISOString()
+
+  const userShops = await db.select({ id: shops.id, marketplace: shops.marketplace })
+    .from(shops).where(eq(shops.user_id, userId))
+  const ymShopIds = userShops.filter(s => s.marketplace === 'yandex_market').map(s => s.id)
+  const uzShopIds = userShops.filter(s => s.marketplace === 'uzum').map(s => s.id)
+
+  // Yandex — aggregate by sku over the whole shop. Credit rows carry
+  // seller_price (Начисление · Платёж покупателя), debit rows carry the
+  // fees. Both share the same SKU column so a single SUM query per
+  // marketplace works.
+  if (ymShopIds.length > 0) {
+    try {
+      const rows = await db.select({
+        sku:         yandexSettlementTransactions.sku,
+        entry_type:  yandexSettlementTransactions.entry_type,
+        order_type:  yandexSettlementTransactions.order_type,
+        amount:      yandexSettlementTransactions.amount,
+      }).from(yandexSettlementTransactions)
+        .where(and(
+          inArray(yandexSettlementTransactions.shop_id, ymShopIds),
+          gte(yandexSettlementTransactions.transaction_at, since),
+        ))
+      const perSku = new Map<string, { gross: number; commission: number; delivery: number; itemCount: number }>()
+      for (const r of rows) {
+        const sku = (r.sku ?? '').trim()
+        if (!sku) continue
+        const b = perSku.get(sku) ?? { gross: 0, commission: 0, delivery: 0, itemCount: 0 }
+        const amt = Number(r.amount)
+        b.itemCount += 1
+        if (r.entry_type === 'Начисление') {
+          b.gross += amt
+        } else {
+          if ((r.order_type ?? '').includes('Доставка')) b.delivery += amt
+          else b.commission += amt
+        }
+        perSku.set(sku, b)
+      }
+      for (const [sku, v] of perSku) {
+        if (v.gross <= 0) continue
+        out.set(sku, {
+          marketplace:  'yandex_market',
+          commissionPct: (v.commission / v.gross) * 100,
+          deliveryPct:   (v.delivery   / v.gross) * 100,
+          itemCount:     v.itemCount,
+          windowSince:   sinceIso,
+        })
+      }
+    } catch (e) {
+      console.error('[real-financials] yandex per-sku failed:', String(e).slice(0, 200))
+    }
+  }
+
+  // Uzum — per-item rows already carry sku_title + real seller_price +
+  // commission + logistic_delivery_fee. Skip CANCELED (seller neither
+  // received the money nor paid the fee).
+  if (uzShopIds.length > 0) {
+    try {
+      const rows = await db.select({
+        sku:          uzumSettlementOrders.sku_title,
+        status:       uzumSettlementOrders.status,
+        seller_price: uzumSettlementOrders.seller_price,
+        commission:   uzumSettlementOrders.commission,
+        delivery:     uzumSettlementOrders.logistic_delivery_fee,
+      }).from(uzumSettlementOrders)
+        .where(and(
+          inArray(uzumSettlementOrders.shop_id, uzShopIds),
+          gte(uzumSettlementOrders.transaction_at, since),
+        ))
+      const perSku = new Map<string, { gross: number; commission: number; delivery: number; itemCount: number }>()
+      for (const r of rows) {
+        if (r.status === 'CANCELED') continue
+        const sku = (r.sku ?? '').trim()
+        if (!sku) continue
+        const b = perSku.get(sku) ?? { gross: 0, commission: 0, delivery: 0, itemCount: 0 }
+        b.itemCount += 1
+        b.gross      += Number(r.seller_price ?? 0)
+        b.commission += Number(r.commission   ?? 0)
+        b.delivery   += Number(r.delivery     ?? 0)
+        perSku.set(sku, b)
+      }
+      for (const [sku, v] of perSku) {
+        if (v.gross <= 0) continue
+        out.set(sku, {
+          marketplace:  'uzum',
+          commissionPct: (v.commission / v.gross) * 100,
+          deliveryPct:   (v.delivery   / v.gross) * 100,
+          itemCount:     v.itemCount,
+          windowSince:   sinceIso,
+        })
+      }
+    } catch (e) {
+      console.error('[real-financials] uzum per-sku failed:', String(e).slice(0, 200))
     }
   }
 

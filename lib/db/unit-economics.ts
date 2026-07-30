@@ -1,6 +1,7 @@
 import { eq, and, inArray, desc } from 'drizzle-orm'
 import { db, unitEconomicsItems, userSettings } from '@/lib/db'
 import { getCurrentUserId } from '@/lib/db/shop-context'
+import { getRealRatesBySku } from '@/lib/db/real-financials'
 import type { UnitEconomicsItem, UnitEcoSettings, MarketplaceType } from '@/lib/types'
 
 function mapRow(row: typeof unitEconomicsItems.$inferSelect): UnitEconomicsItem {
@@ -36,11 +37,47 @@ export async function getUnitEconomicsItems(): Promise<UnitEconomicsItem[]> {
   const userId = await getCurrentUserId()
   if (!userId) return []
 
-  const rows = await db.select().from(unitEconomicsItems)
-    .where(eq(unitEconomicsItems.user_id, userId))
-    .orderBy(desc(unitEconomicsItems.created_at))
+  const [rows, realRates] = await Promise.all([
+    db.select().from(unitEconomicsItems)
+      .where(eq(unitEconomicsItems.user_id, userId))
+      .orderBy(desc(unitEconomicsItems.created_at)),
+    // Real per-SKU commission + delivery rates from the seller's own
+    // settlement history. When present for the item's SKU, they REPLACE
+    // the stored/default Unit Economics fees so the page shows what
+    // the marketplace actually charged, not a hard-coded percentage.
+    getRealRatesBySku(userId),
+  ])
 
-  return rows.map(mapRow)
+  return rows.map(row => {
+    const item = mapRow(row)
+    const sku = (item.sku ?? '').trim()
+    if (!sku) return item
+    const rate = realRates.get(sku)
+    if (!rate || rate.marketplace !== item.marketplace) return item
+
+    // Recompute commission + delivery + downstream fields from real
+    // rates. Preserve the user's own costPrice, ad %, tax, packaging.
+    const commission = Math.round(item.sellingPrice * rate.commissionPct / 100)
+    const delivery   = Math.round(item.sellingPrice * rate.deliveryPct   / 100)
+    // Everything else stays as the row already had it (COGS/ads/tax).
+    const cogs   = item.costPrice + (item.landedCost ?? 0)
+    const netProfit = item.sellingPrice - commission - delivery - item.acquiring - item.adSpend - item.tax - cogs
+    const margin    = item.sellingPrice > 0 ? (netProfit / item.sellingPrice) * 100 : 0
+    const roi       = cogs > 0 ? (netProfit / cogs) * 100 : 0
+    return {
+      ...item,
+      commissionPct: rate.commissionPct,
+      commission,
+      delivery,
+      netProfit,
+      margin,
+      roi,
+      // Marker consumed by UnitEconomicsTable to show a "R" (real) badge
+      // in the commission column instead of "≈".
+      ratesSource: 'real' as const,
+      ratesSourceItemCount: rate.itemCount,
+    }
+  })
 }
 
 export async function deleteUnitEconomicsItems(ids: string[]): Promise<void> {

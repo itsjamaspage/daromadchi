@@ -41,6 +41,15 @@ export interface UnitEconomicsItem {
   supplierUrl?: string
   productUrl?: string
   addedAt: string
+  // Marker set when commissionPct / delivery were computed from the
+  // seller's own settlement history (Yandex netting or Uzum
+  // finance/orders) instead of a hard-coded percentage default.
+  // UnitEconomicsTable shows an "R" badge when this is 'real' — sellers
+  // can tell at a glance which rows carry real marketplace fees vs.
+  // still-unmapped ones using the default estimate.
+  ratesSource?: 'real' | 'default'
+  /** Number of settled items backing the real rate (only when ratesSource='real'). */
+  ratesSourceItemCount?: number
 }
 
 export interface UnitEcoSettings {

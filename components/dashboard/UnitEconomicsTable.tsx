@@ -561,7 +561,23 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
                         </td>
                       )
                       if (col.key === 'landedCost') return <td key="landedCost" className="px-3 py-3 text-[var(--text-base)] text-xs">{item.landedCost ? fs(item.landedCost) : '—'}</td>
-                      if (col.key === 'commission') return <td key="commission" className="px-3 py-3 text-xs"><span className="text-red-600">−{fs(item.commission)}</span><span className="text-[var(--text-base)] text-[10px] ml-1 opacity-60">({item.commissionPct}%)</span></td>
+                      if (col.key === 'commission') return (
+                        <td key="commission" className="px-3 py-3 text-xs">
+                          <span className="text-red-600">−{fs(item.commission)}</span>
+                          <span className="text-[var(--text-base)] text-[10px] ml-1 opacity-60">({Math.round(item.commissionPct * 10) / 10}%)</span>
+                          {/* "R" badge = commission % was computed from
+                              this SKU's actual settlements, not the default
+                              Unit Economics %. Sellers see at a glance
+                              which rows are trustworthy. */}
+                          {item.ratesSource === 'real' && (
+                            <span
+                              className="ml-1.5 inline-flex items-center justify-center text-[9px] font-bold rounded px-1 py-0.5 align-middle"
+                              style={{ background: 'rgba(16,185,129,0.15)', color: '#059669', border: '1px solid rgba(16,185,129,0.3)' }}
+                              title={`Real rate from ${item.ratesSourceItemCount ?? 0} settled sale${(item.ratesSourceItemCount ?? 0) === 1 ? '' : 's'}`}
+                            >R</span>
+                          )}
+                        </td>
+                      )
                       if (col.key === 'delivery') return <td key="delivery" className="px-3 py-3 text-red-600 text-xs">−{fs(item.delivery)}</td>
                       if (col.key === 'lastMile') return <td key="lastMile" className="px-3 py-3 text-red-600 text-xs">{item.lastMile > 0 ? `−${fs(item.lastMile)}` : '—'}</td>
                       if (col.key === 'acquiring') return <td key="acquiring" className="px-3 py-3 text-red-600 text-xs">−{fs(item.acquiring)}</td>

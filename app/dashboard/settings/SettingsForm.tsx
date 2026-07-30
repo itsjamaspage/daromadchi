@@ -222,7 +222,9 @@ function UzumCard({ shop }: { shop: Shop | null; userId: string }) {
             <a href="https://seller.uzum.uz" target="_blank" rel="noopener noreferrer" className="flex items-center gap-0.5" style={{ color: 'var(--c1)' }}>
               seller.uzum.uz <ExternalLink className="w-3 h-3" />
             </a>
-            → Mening profilim → API kalitlari → Maxfiy kalitni nusxalang
+            {lang === 'ru' ? '→ Мой профиль → API-ключи → Скопировать секретный ключ'
+              : lang === 'en' ? '→ My profile → API keys → Copy secret key'
+              : '→ Mening profilim → API kalitlari → Maxfiy kalitni nusxalang'}
           </p>
         </div>
         <StatusMsg msg={saveMsg} />
@@ -669,10 +671,14 @@ function WildberriesCard({ shop }: { shop: Shop | null; userId: string }) {
               className="inline-flex items-center gap-0.5" style={{ color: 'var(--c1)' }}>
               seller.wildberries.ru <ExternalLink className="w-3 h-3" />
             </a>
-            {' '}→ Nastroyki → Dostup k API → Sozdat' novy klyuch
+            {lang === 'ru' ? ' → Настройки → Доступ к API → Создать новый ключ'
+              : lang === 'en' ? ' → Settings → API access → Create new key'
+              : " → Nastroyki → Dostup k API → Sozdat' novy klyuch"}
           </p>
           <p className="text-xs mt-1" style={{ color: 'var(--text-dim)' }}>
-            ⚠️ Token yaratishda IP cheklovini olib tashlang, aks holda sinxronlash ishlamaydi.
+            {lang === 'ru' ? '⚠️ При создании токена снимите ограничение по IP, иначе синхронизация не будет работать.'
+              : lang === 'en' ? '⚠️ When creating the token, remove the IP restriction — otherwise sync will not work.'
+              : '⚠️ Token yaratishda IP cheklovini olib tashlang, aks holda sinxronlash ishlamaydi.'}
           </p>
         </div>
         <StatusMsg msg={saveMsg} />
