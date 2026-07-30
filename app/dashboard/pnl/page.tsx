@@ -25,23 +25,22 @@ function parseRange(params: Record<string, string>): {
   const to = new Date()
   to.setHours(23, 59, 59, 999)
 
-  // Custom range wins over preset days.
+  // Custom range wins over any preset.
   if (params.from && params.to) {
     const from = new Date(params.from + 'T00:00:00')
     const toDate = new Date(params.to + 'T23:59:59')
-    const spanDays = Math.max(1, Math.round((toDate.getTime() - from.getTime()) / 86400000) + 1)
-    return { from, to: toDate, bucket: spanDays <= 62 ? 'day' : 'month', period: '' }
+    return { from, to: toDate, bucket: 'month', period: '' }
   }
 
-  // Preset "N days". Default 30d to match the rest of the dashboard.
-  const daysRaw = params.days ?? '30'
-  const days = Math.max(1, Math.min(3650, Number(daysRaw) || 30))
+  // Default: last 6 months, monthly rows. The seller specifically asked
+  // NOT to see 30 daily rows of mostly zeroes on the first visit —
+  // monthly aggregation stays the default no matter what preset is set.
+  const daysRaw = params.days ?? '180'
+  const days = Math.max(1, Math.min(3650, Number(daysRaw) || 180))
   const from = new Date()
   from.setDate(from.getDate() - (days - 1))
   from.setHours(0, 0, 0, 0)
-  // Auto-bucket: short → day, long → month.
-  const bucket: 'day' | 'month' = days <= 62 ? 'day' : 'month'
-  return { from, to, bucket, period: String(days) }
+  return { from, to, bucket: 'month', period: String(days) }
 }
 
 interface Props {
