@@ -319,6 +319,7 @@ export const dashT = {
       itemsTitle: 'Mahsulotlar', itemsEmpty: 'Bu davrda mahsulot buyurtmalari yo\'q.',
       itemProduct: 'Mahsulot', itemQty: 'Miqdor', itemRevenue: 'Tushum', itemOrders: 'buyurtma',
       itemsShowMore: 'Yana ko\'rsatish', itemsShowLess: 'Kamroq ko\'rsatish',
+      estimateNote: "Raqamlar — sizning Unit Economics foizlaringiz asosidagi TAXMIN. Marketpleysning haqiqiy to'lovi farq qiladi — aniq summani marketpleys kabinetingizdagi «Moliya» bo'limida ko'ring.",
     },
     seasonality: {
       insightBest: 'Eng yaxshi oy', insightLow: 'Eng past oy',
@@ -710,6 +711,7 @@ export const dashT = {
       itemsTitle: 'Products', itemsEmpty: 'No product orders in this period.',
       itemProduct: 'Product', itemQty: 'Qty', itemRevenue: 'Revenue', itemOrders: 'orders',
       itemsShowMore: 'Show more', itemsShowLess: 'Show less',
+      estimateNote: "Numbers are ESTIMATES based on your Unit Economics percentages. Actual marketplace payout will differ — check the exact amount in your marketplace's finance section.",
     },
     seasonality: {
       insightBest: 'Best month', insightLow: 'Lowest month',
@@ -1098,6 +1100,7 @@ export const dashT = {
       itemsTitle: 'Товары', itemsEmpty: 'В этом периоде нет заказов по товарам.',
       itemProduct: 'Товар', itemQty: 'Кол-во', itemRevenue: 'Выручка', itemOrders: 'заказов',
       itemsShowMore: 'Показать ещё', itemsShowLess: 'Свернуть',
+      estimateNote: "Цифры — ОЦЕНКА на основе процентов из вашего Unit Economics. Реальная выплата маркетплейса будет отличаться — точную сумму смотрите в разделе «Финансы» кабинета маркетплейса.",
     },
     seasonality: {
       insightBest: 'Лучший месяц', insightLow: 'Худший месяц',

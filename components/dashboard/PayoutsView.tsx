@@ -268,6 +268,16 @@ export default function PayoutsView({ entries }: Props) {
         <ExportButton data={exportData} filename="tolovu-hisoboti" targetRef={printRef} />
       </div>
 
+      {/* Estimation warning — sellers were comparing these projections to
+          their marketplace's actual scheduled payouts and getting
+          confused when the numbers didn't match. Loud banner makes it
+          unambiguous. */}
+      <div className="flex items-start gap-3 rounded-xl px-4 py-3 text-xs border"
+        style={{ background: 'var(--bg-card2)', borderColor: 'var(--border)', color: 'var(--text-muted)' }}>
+        <HelpCircle className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: 'var(--c1)' }} />
+        <span>{t.estimateNote}</span>
+      </div>
+
       {/* Summary cards */}
       <div className="grid grid-cols-3 gap-3">
         <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl px-4 py-3">
@@ -333,8 +343,11 @@ export default function PayoutsView({ entries }: Props) {
                         {entry.payoutDate && ` · ${entry.payoutDate}`}
                       </p>
                       {topItem && (
-                        <p className="text-[var(--text-muted)] text-xs mt-0.5 truncate max-w-[280px]" title={topItem.productTitle}>
+                        <p className="text-[var(--text-muted)] text-xs mt-0.5 truncate max-w-[280px]" title={`${topItem.productTitle}${topItem.sku ? ' · ' + topItem.sku : ''}`}>
                           {topItem.productTitle}
+                          {topItem.sku && (
+                            <span className="font-mono ml-1" style={{ color: 'var(--text-dim)' }}>· {topItem.sku}</span>
+                          )}
                           {entry.items.length > 1 && ` +${entry.items.length - 1}`}
                         </p>
                       )}
