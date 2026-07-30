@@ -20,6 +20,12 @@ const APPROVED_POST_ENDPOINTS: RegExp[] = [
   /api\.partner\.market\.yandex\.ru\/v2\/campaigns\/\d+\/offers\/stocks/,
   // Yandex Market — SKU stats (date range in body, POST is required read)
   /api\.partner\.market\.yandex\.ru\/v2\/campaigns\/\d+\/stats\/skus/,
+  // Yandex Market — united-netting-report (POST to REQUEST a report; the
+  // report itself contains READ-ONLY financial/settlement data. Approved
+  // by owner in the payouts real-data thread — needed so the Payouts
+  // page can display Yandex's actual per-order commission/delivery
+  // figures instead of estimates.)
+  /api\.partner\.market\.yandex\.ru\/reports\/united-netting-report\/generate/,
   // Wildberries Content API — paginated card list (POST is the read method)
   /content-api\.wildberries\.ru\/content\/v2\/get\/cards\/list/,
   // Wildberries Marketplace API — FBS stock lookup by barcodes (POST is the read

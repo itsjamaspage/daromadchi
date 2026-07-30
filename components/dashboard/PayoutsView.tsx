@@ -323,16 +323,21 @@ export default function PayoutsView({ entries }: Props) {
           </div>
         <div className="flex items-center gap-2 ml-auto">
           {refreshMsg && (
-            <span
-              className="text-xs font-medium px-3 py-1.5 rounded-lg"
+            <button
+              type="button"
+              onClick={() => {
+                navigator.clipboard?.writeText(refreshMsg.text).catch(() => {})
+              }}
+              className="text-xs font-medium px-3 py-1.5 rounded-lg cursor-pointer"
               style={{
                 background: refreshMsg.tone === 'ok' ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)',
                 color: refreshMsg.tone === 'ok' ? '#10b981' : '#ef4444',
+                maxWidth: 480,
               }}
-              title={refreshMsg.text}
+              title={refreshMsg.text + '  (click to copy full text)'}
             >
-              {refreshMsg.text.length > 40 ? refreshMsg.text.slice(0, 40) + '…' : refreshMsg.text}
-            </span>
+              <span className="block truncate text-left">{refreshMsg.text}</span>
+            </button>
           )}
           <ExportButton data={exportData} filename="tolovu-hisoboti" targetRef={printRef} />
           {/* Kebab (⋮) menu: single icon that expands into a dropdown.
