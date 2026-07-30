@@ -72,7 +72,19 @@ export default async function PnlPage({ searchParams }: Props) {
     return `${monthName.charAt(0).toUpperCase()}${monthName.slice(1)} ${dt.getUTCFullYear()}`
   }
 
-  const monthlyData = pnl.rows.map(m => ({ ...m, month: labelFor(m.bucketKey) }))
+  // For the row containing today (last row on a range that ends today),
+  // relabel with today's date instead of the month name — the seller
+  // wants to see "30 июля 2026" on the row where the "текущий" tag
+  // sits, not the whole-month "Июль 2026" text.
+  const today = new Date()
+  const todayLabel = today.toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' })
+  const todayBucketKey = range.bucket === 'day'
+    ? `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+    : `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`
+  const monthlyData = pnl.rows.map(m => ({
+    ...m,
+    month: m.bucketKey === todayBucketKey ? todayLabel : labelFor(m.bucketKey),
+  }))
   const isEmpty = monthlyData.length === 0 || monthlyData.every(m => m.revenue === 0 && m.cancelled_count === 0)
   const hasShops = userShops.length > 0
   const anyEstimated = monthlyData.some(m => m.estimated)
