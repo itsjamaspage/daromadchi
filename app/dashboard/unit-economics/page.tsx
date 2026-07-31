@@ -1,5 +1,5 @@
 import { getT, getLang } from '@/lib/server-i18n'
-import { Info, Download, ArrowRight } from 'lucide-react'
+import { Download, ArrowRight } from 'lucide-react'
 import UnitEconomicsTable from '@/components/dashboard/UnitEconomicsTable'
 import { getUnitEconomicsItems, getUnitEcoSettings } from '@/lib/db/unit-economics'
 import type { MarketplaceType } from '@/lib/types'
@@ -69,12 +69,6 @@ export default async function UnitEconomicsPage({
           </div>
           <p className="text-[var(--text-muted)] text-sm">{d.unitEcoSubtitle}</p>
         </div>
-      </div>
-
-      {/* How it works */}
-      <div className="flex items-start gap-3 bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl px-4 py-3">
-        <Info className="w-4 h-4 flex-shrink-0 mt-0.5 text-[var(--c1)]" />
-        <p className="text-xs leading-relaxed text-[var(--text-base)]">{d.unitEcoNote}</p>
       </div>
 
       {/* Extension install CTA */}

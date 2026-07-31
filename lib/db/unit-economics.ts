@@ -71,8 +71,37 @@ export async function getUnitEconomicsItems(): Promise<UnitEconomicsItem[]> {
     }
     return null
   }
+  // Extension v2.5.0 corrections applied on the read path so users see
+  // fixed numbers immediately without clicking Recalculate. Two rules,
+  // matching the /api/unit-economics/recalc endpoint exactly:
+  //   1) Yandex Market delivery → 0 (YM UZ bundles fulfillment into the
+  //      commission, no separate per-unit shipping fee).
+  //   2) Ad spend that equals sellingPrice × 5% within 1 so'm is the old
+  //      auto-default from the widget — treat it as unset (0). Explicit
+  //      user ad-% entries won't match the rounded 5% exactly.
+  function applyV250Fix(item: UnitEconomicsItem): UnitEconomicsItem {
+    let delivery = item.delivery
+    let adSpend  = item.adSpend
+    let touched  = false
+    if (item.marketplace === 'yandex_market' && delivery > 0) {
+      delivery = 0
+      touched  = true
+    }
+    const autoAd = Math.round(item.sellingPrice * 5 / 100)
+    if (adSpend > 0 && Math.abs(adSpend - autoAd) <= 1) {
+      adSpend = 0
+      touched = true
+    }
+    if (!touched) return item
+    const cogs      = item.costPrice + (item.landedCost ?? 0)
+    const netProfit = item.sellingPrice - item.commission - delivery - item.lastMile - item.acquiring - adSpend - item.tax - cogs
+    const margin    = item.sellingPrice > 0 ? (netProfit / item.sellingPrice) * 100 : 0
+    const roi       = cogs > 0 ? (netProfit / cogs) * 100 : 0
+    return { ...item, delivery, adSpend, netProfit, margin, roi }
+  }
+
   return rows.map(row => {
-    const item = mapRow(row)
+    const item = applyV250Fix(mapRow(row))
     const sku = (item.sku ?? '').trim()
     if (!sku) return item
     const rate = findRate(sku, item.marketplace)

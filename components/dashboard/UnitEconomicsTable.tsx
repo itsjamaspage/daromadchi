@@ -545,7 +545,7 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
               <tbody className="divide-y divide-[var(--border)]">
                 {filtered.map(item => (
                   <tr key={item.id}
-                    className={`hover:bg-[var(--bg-card2)] transition-colors ${selected.has(item.id) ? 'bg-[var(--c1)]/5' : ''}`}>
+                    className={`font-semibold hover:bg-[var(--bg-card2)] transition-colors ${selected.has(item.id) ? 'bg-[var(--c1)]/5' : ''}`}>
                     <td className="px-4 py-3">
                       <input type="checkbox"
                         checked={selected.has(item.id)}
