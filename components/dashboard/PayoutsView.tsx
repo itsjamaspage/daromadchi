@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, Fragment } from 'react'
 import { useRouter } from 'next/navigation'
 import { ChevronDown, ChevronUp, HelpCircle, RefreshCw, MoreVertical } from 'lucide-react'
 import type { PayoutEntry, PayoutOrderItem, MarketplaceType } from '@/lib/types'
+import { WB_ENABLED } from '@/lib/feature-flags'
 import ExportButton from '@/components/dashboard/ExportButton'
 import MpBadge from '@/components/dashboard/MpBadge'
 import { useLang } from '@/app/providers'
@@ -336,7 +337,7 @@ export default function PayoutsView({ entries }: Props) {
     { value: 'all' as const,           label: t.tabAll },
     { value: 'uzum' as const,          label: t.tabUzum },
     { value: 'yandex_market' as const, label: t.tabYandex },
-    { value: 'wildberries' as const,   label: t.tabWb },
+    ...(WB_ENABLED ? [{ value: 'wildberries' as const, label: t.tabWb }] : []),
   ]
 
   const filteredEntries = mpFilter === 'all' ? entries : entries.filter(e => e.marketplace === mpFilter)

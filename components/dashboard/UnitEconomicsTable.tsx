@@ -11,6 +11,7 @@ import ExportButton from '@/components/dashboard/ExportButton'
 import FulfillmentBadge from '@/components/dashboard/FulfillmentBadge'
 import { useLang } from '@/app/providers'
 import { translations } from '@/lib/i18n'
+import { WB_ENABLED } from '@/lib/feature-flags'
 
 const MP_META: Record<string, { label: string; short: string; color: string; bg: string }> = {
   uzum:          { label: 'Uzum',          short: 'UZ', color: '#494fdf', bg: 'rgba(73,79,223,0.12)'   },
@@ -324,7 +325,7 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
 
       {/* Marketplace tabs */}
       <div className="flex items-center gap-1.5 p-1 bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl w-fit">
-        {(['all', 'uzum', 'yandex_market', 'wildberries'] as const).map(mp => (
+        {((['all', 'uzum', 'yandex_market', 'wildberries'] as const).filter(mp => mp !== 'wildberries' || WB_ENABLED)).map(mp => (
           <button
             key={mp}
             onClick={() => setMpFilter(mp)}

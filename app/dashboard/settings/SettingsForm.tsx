@@ -10,6 +10,7 @@ import {
 import type { Shop } from '@/lib/types'
 import { useLang } from '@/app/providers'
 import { translations } from '@/lib/i18n'
+import { WB_ENABLED } from '@/lib/feature-flags'
 
 // ─── Shared sub-components ────────────────────────────────────────────────────
 
@@ -635,6 +636,34 @@ function WildberriesCard({ shop }: { shop: Shop | null; userId: string }) {
     clearInterval(interval)
     setSyncStep(null)
     setSyncing(false)
+  }
+
+  // Wildberries integration is sunset for now — WB's rate limiter kept
+  // locking the app into a permanent throttled state. Render a
+  // read-only "Coming soon" card so the seller sees WB exists but
+  // can't enter a token or trigger a sync until we re-enable it.
+  if (!WB_ENABLED) {
+    return (
+      <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden opacity-70">
+        <div className="px-6 py-4 border-b border-[var(--border)] flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'var(--bg-card2)', border: '1px solid var(--border)' }}>
+            <span className="text-sm font-bold" style={{ color: 'var(--c1)' }}>WB</span>
+          </div>
+          <div>
+            <p className="text-[var(--text-base)] font-semibold text-sm">Wildberries</p>
+            <p className="text-[var(--text-muted)] text-xs">seller.wildberries.ru</p>
+          </div>
+          <span className="ml-auto text-[10px] font-semibold px-2 py-1 rounded-full border bg-[var(--bg-card2)] border-[var(--border)] text-[var(--text-muted)]">
+            {lang === 'ru' ? 'Скоро' : lang === 'en' ? 'Coming soon' : "Tez orada"}
+          </span>
+        </div>
+        <div className="p-6 text-xs text-[var(--text-muted)] leading-relaxed">
+          {lang === 'ru' ? 'Интеграция с Wildberries временно приостановлена. Мы вернём её, как только их лимитер станет стабильнее для нашего сценария синхронизации. Уже подключённые токены не удаляются — вы сможете продолжить сразу, как только интеграция снова заработает.'
+            : lang === 'en' ? 'Wildberries integration is temporarily paused. It will come back once their rate limiter behaves reliably for our sync pattern. Already-saved tokens are not deleted — you will pick up right where you left off when it reopens.'
+            : "Wildberries integratsiyasi vaqtincha to'xtatildi. Ularning limiterlari bizning sinxronizatsiya sxemamiz uchun barqaror ishlaganda qayta yoqamiz. Saqlangan tokenlar o'chirilmaydi — qayta ochilganda oldingi holatdan davom etishingiz mumkin."}
+        </div>
+      </div>
+    )
   }
 
   return (

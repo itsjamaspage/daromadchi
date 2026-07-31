@@ -7,6 +7,7 @@ import { syncFromYandex } from '@/lib/yandex/sync'
 import { syncFromWildberries } from '@/lib/wildberries/sync'
 import { syncYandexSettlements } from '@/lib/yandex/settlements-sync'
 import { syncUzumSettlements } from '@/lib/uzum/settlements-sync'
+import { WB_ENABLED } from '@/lib/feature-flags'
 import { decrypt } from '@/lib/crypto'
 import { withErrorHandler } from '@/lib/api-handler'
 import { sendTelegramMessage } from '@/lib/telegram'
@@ -69,7 +70,7 @@ async function syncShop(
       } catch (e) {
         ;(r as Record<string, unknown>).settlements = { ok: false, error: String(e).slice(0, 300) }
       }
-    } else if (shop.marketplace === 'wildberries') {
+    } else if (shop.marketplace === 'wildberries' && WB_ENABLED) {
       r = { ...await syncFromWildberries(null, shop.id, token) }
     }
     if (!r) return { shopId: shop.id, marketplace: shop.marketplace, ok: true, skipped: true }

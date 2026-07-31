@@ -6,6 +6,7 @@ import { db, shops } from '@/lib/db'
 import { decrypt } from '@/lib/crypto'
 import { syncFromWildberries } from '@/lib/wildberries/sync'
 import { logger } from '@/lib/logger'
+import { WB_ENABLED } from '@/lib/feature-flags'
 import { withErrorHandler } from '@/lib/api-handler'
 
 function fromDaysToDate(fromDays: unknown): Date | undefined {
@@ -15,6 +16,7 @@ function fromDaysToDate(fromDays: unknown): Date | undefined {
 }
 
 export const POST = withErrorHandler(async (req: NextRequest) => {
+  if (!WB_ENABLED) return NextResponse.json({ ok: false, error: 'Wildberries integration is temporarily disabled.' }, { status: 503 })
   const user = await getCurrentUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
@@ -47,6 +49,7 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
 })
 
 export const GET = withErrorHandler(async () => {
+  if (!WB_ENABLED) return NextResponse.json({ ok: false, error: 'Wildberries integration is temporarily disabled.' }, { status: 503 })
   const user = await getCurrentUser()
   if (!user) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 })
 

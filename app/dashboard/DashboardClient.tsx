@@ -6,6 +6,7 @@ import { Suspense } from 'react'
 import Link from 'next/link'
 import { DollarSign, TrendingUp, ShoppingBag, Package, Settings, ArrowRight, RefreshCw, LayoutDashboard } from 'lucide-react'
 import KpiCard from '@/components/dashboard/KpiCard'
+import { WB_ENABLED } from '@/lib/feature-flags'
 import RevenueChart from '@/components/dashboard/RevenueChart'
 import DateRangePicker from '@/components/dashboard/DateRangePicker'
 import StockAlerts from '@/components/dashboard/StockAlerts'
@@ -166,12 +167,13 @@ export default function DashboardClient({ slices, stockGroups, days, period, fro
 
       {/* Marketplace tabs — client-side switching, no page reload */}
       <div className="flex items-center gap-1.5 p-1 bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl w-fit">
-        {([
+        {(([
           { label: d.all,           mp: undefined,       color: 'blue'  },
           { label: 'Uzum',          mp: 'uzum',          color: 'blue'  },
           { label: 'Yandex Market', mp: 'yandex_market', color: 'amber' },
           { label: 'Wildberries',   mp: 'wildberries',   color: 'blue'  },
-        ] as { label: string; mp: MarketplaceType | undefined; color: string }[]).map(({ label, mp, color }) => {
+        ] as { label: string; mp: MarketplaceType | undefined; color: string }[])
+          .filter(t => t.mp !== 'wildberries' || WB_ENABLED)).map(({ label, mp, color }) => {
           const active = marketplace === mp
           return (
             <button
