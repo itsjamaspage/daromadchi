@@ -342,10 +342,10 @@ export default function DashboardClient({ slices, stockGroups, days, period, fro
         </div>
       )}
 
-      {/* Stock alerts */}
-      {!hiddenWidgets.has('alerts') && (
-        <StockAlerts groups={stockGroups} isDark={isDark} />
-      )}
+      {/* Stock alerts moved to the dedicated /dashboard/stocks page —
+          keeping the same widget on the dashboard was noisy and
+          redundant. Users go to the sidebar "Остатки" link when they
+          want that view. */}
 
       {/* Chart + recent orders */}
       {!hiddenWidgets.has('chart') && (

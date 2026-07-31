@@ -2,6 +2,7 @@ import { eq, and, inArray, desc } from 'drizzle-orm'
 import { db, unitEconomicsItems, userSettings } from '@/lib/db'
 import { getCurrentUserId } from '@/lib/db/shop-context'
 import { getRealRatesBySku } from '@/lib/db/real-financials'
+import { WB_ENABLED } from '@/lib/feature-flags'
 import type { UnitEconomicsItem, UnitEcoSettings, MarketplaceType } from '@/lib/types'
 
 function mapRow(row: typeof unitEconomicsItems.$inferSelect): UnitEconomicsItem {
@@ -37,7 +38,7 @@ export async function getUnitEconomicsItems(): Promise<UnitEconomicsItem[]> {
   const userId = await getCurrentUserId()
   if (!userId) return []
 
-  const [rows, realRates] = await Promise.all([
+  const [rowsRaw, realRates] = await Promise.all([
     db.select().from(unitEconomicsItems)
       .where(eq(unitEconomicsItems.user_id, userId))
       .orderBy(desc(unitEconomicsItems.created_at)),
@@ -47,6 +48,10 @@ export async function getUnitEconomicsItems(): Promise<UnitEconomicsItem[]> {
     // the marketplace actually charged, not a hard-coded percentage.
     getRealRatesBySku(userId),
   ])
+  // Same WB sunset gate. Items stay in the DB — user can wipe them
+  // via the delete button — just hidden from the table while the
+  // integration is off.
+  const rows = WB_ENABLED ? rowsRaw : rowsRaw.filter(r => r.marketplace !== 'wildberries')
 
   // Try exact SKU first, then normalised (uppercase + strip
   // punctuation), then any settlement SKU that contains the UE SKU

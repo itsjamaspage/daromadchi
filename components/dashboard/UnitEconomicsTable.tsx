@@ -235,7 +235,21 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ids }),
-    }).catch(() => {})
+    }).then(() => router.refresh()).catch(() => {})
+  }
+
+  // Per-row delete — mirrors deleteSelected but for a single id, wired
+  // to a Trash icon at the end of each row so the seller can wipe a
+  // stale item (e.g. a sunset-marketplace product) without going
+  // through the bulk checkbox + Delete button flow.
+  function deleteOne(id: string) {
+    setItems(prev => prev.filter(i => i.id !== id))
+    setSelected(prev => { const n = new Set(prev); n.delete(id); return n })
+    fetch('/api/unit-economics', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids: [id] }),
+    }).then(() => router.refresh()).catch(() => {})
   }
 
   function toggleCol(key: ColKey) {
@@ -652,12 +666,20 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
                       )
                       return null
                     })}
-                    {/* Always-visible edit button */}
+                    {/* Always-visible edit + delete buttons */}
                     <td className="px-3 py-3">
-                      <button onClick={() => openEdit(item)}
-                        className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium bg-[var(--bg-card2)] hover:bg-[#6aabf0]/20 text-[var(--c1)] hover:text-[var(--c1)] transition-colors border border-[var(--border)]">
-                        <Pencil className="w-3 h-3" /> {d.ueBtnEdit}
-                      </button>
+                      <div className="flex items-center gap-1">
+                        <button onClick={() => openEdit(item)}
+                          className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium bg-[var(--bg-card2)] hover:bg-[#6aabf0]/20 text-[var(--c1)] hover:text-[var(--c1)] transition-colors border border-[var(--border)]">
+                          <Pencil className="w-3 h-3" /> {d.ueBtnEdit}
+                        </button>
+                        <button
+                          onClick={() => { if (confirm(lang === 'ru' ? `Удалить «${item.title}»?` : lang === 'en' ? `Delete "${item.title}"?` : `«${item.title}» ni o'chirasizmi?`)) deleteOne(item.id) }}
+                          title={lang === 'ru' ? 'Удалить' : lang === 'en' ? 'Delete' : "O'chirish"}
+                          className="flex items-center justify-center w-7 h-7 rounded-lg bg-[var(--bg-card2)] hover:bg-red-500/15 text-[var(--text-muted)] hover:text-red-500 transition-colors border border-[var(--border)]">
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
