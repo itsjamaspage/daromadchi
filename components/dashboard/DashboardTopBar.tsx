@@ -39,7 +39,12 @@ export default function DashboardTopBar({ userName, userEmail }: Props) {
 
   async function handleLogout() {
     setOpen(false)
-    await signOut({ redirectTo: '/login' })
+    // NextAuth v5's redirectTo builds an absolute URL from AUTH_URL/NEXTAUTH_URL
+    // on the server — if that env is stale (e.g. localhost:3000) the browser
+    // gets sent there. Navigate client-side with a relative URL instead so
+    // the user always lands on the current origin's /login.
+    await signOut({ redirect: false })
+    window.location.assign('/login')
   }
 
   const initial = userName[0]?.toUpperCase() ?? 'U'
