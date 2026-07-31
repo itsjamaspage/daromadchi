@@ -81,6 +81,33 @@ const ORDERS_PAGE_SIZE = 50
 // External order id: SellerOrderDto uses `id`; legacy payloads use `orderId`.
 const extIdOf = (o: UzumFbsOrder): string => String(o.id ?? o.orderId ?? '')
 
+// Build a one- or multi-line Telegram alert entry per newly-inserted
+// order. Callers pass the order's items joined with product info so the
+// seller sees color/variant (e.g. "Смарт-часы M9, ЧЕРНЫЕ (JMM9-BLK)")
+// instead of just an order id + total. Single-item orders stay compact
+// on one line; multi-item orders unfold into bullets under the order
+// header. Falls back gracefully when a product wasn't matched.
+export function formatOrderLine(
+  extId: string,
+  revenue: number,
+  items: Array<{ skuId: string; qty: number }>,
+  prodInfo: Map<string, { title: string; sku: string | null }>,
+): string {
+  const money = `${revenue} so'm`
+  if (items.length === 0) return `#${extId} — ${money}`
+  const labelFor = (it: { skuId: string; qty: number }) => {
+    const info = prodInfo.get(it.skuId)
+    const title = info?.title?.trim() || `SKU ${it.skuId}`
+    const sku   = info?.sku?.trim()
+    const name  = sku ? `${title} (${sku})` : title
+    return it.qty > 1 ? `${name} × ${it.qty}` : name
+  }
+  if (items.length === 1) return `#${extId} — ${labelFor(items[0])} — ${money}`
+  const bullets = items.slice(0, 5).map(it => `      • ${labelFor(it)}`).join('\n')
+  const more    = items.length > 5 ? `\n      +${items.length - 5} more` : ''
+  return `#${extId} — ${money}\n${bullets}${more}`
+}
+
 // dateCreated may be an ISO string, an epoch number, or a numeric string —
 // and the epoch may be seconds or milliseconds. An unparseable value must not
 // become Invalid Date (that would abort the whole upsert), so fall back to now.
@@ -495,9 +522,37 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
       const toInsOrd = orderRows.filter(r => !existingOrdMap.has(r.order_id_external))
       const toUpdOrd = orderRows.filter(r => existingOrdMap.has(r.order_id_external))
       ordersInserted = toInsOrd.length
+
+      // Look up per-item product info once for the whole batch so the
+      // "new order" Telegram alert can name what was ordered (color/
+      // variant lives in the product title on Uzum). Uzum's order items
+      // carry only skuId (== products.marketplace_product_id).
+      const skuIds = new Set<string>()
+      const rawByExtId = new Map<string, Array<{ skuId: string; qty: number }>>()
+      for (const { o } of taggedOrders) {
+        const extId = extIdOf(o)
+        const items = (o.orderItems ?? o.items ?? [])
+          .map(it => ({ skuId: String(it.skuId ?? ''), qty: Number(it.quantity ?? 1) }))
+          .filter(it => it.skuId)
+        rawByExtId.set(extId, items)
+        for (const it of items) skuIds.add(it.skuId)
+      }
+      let prodInfo = new Map<string, { title: string; sku: string | null }>()
+      if (skuIds.size > 0) {
+        const prodRows = await db.select({
+          mpid: products.marketplace_product_id,
+          title: products.title,
+          sku: products.sku,
+        }).from(products).where(and(
+          eq(products.shop_id, shopId),
+          inArray(products.marketplace_product_id, [...skuIds]),
+        ))
+        prodInfo = new Map(prodRows.map(p => [String(p.mpid), { title: p.title ?? '', sku: p.sku }]))
+      }
+
       for (const r of toInsOrd) {
         if (r.status === 'pending' || r.status === 'confirmed') {
-          newOrders.push(`#${r.order_id_external} — ${r.revenue} so'm, ${r.items_count} dona`)
+          newOrders.push(formatOrderLine(r.order_id_external, r.revenue, rawByExtId.get(r.order_id_external) ?? [], prodInfo))
         }
       }
 

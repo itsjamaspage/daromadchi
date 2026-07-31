@@ -20,6 +20,27 @@ const STATUS_MAP: Record<string, string> = {
   RETURNED: 'returned',
 }
 
+// Same shape as Uzum's formatOrderLine helper — kept per-file so each
+// sync stays independently importable. Single-item orders compact,
+// multi-item unfold into bullets.
+export function formatYmOrderLine(
+  extId: string,
+  revenue: number,
+  items: Array<{ name: string; sku: string; qty: number }>,
+): string {
+  const money = `${revenue} so'm`
+  if (items.length === 0) return `#${extId} — ${money}`
+  const labelFor = (it: { name: string; sku: string; qty: number }) => {
+    const title = it.name?.trim() || (it.sku ? `SKU ${it.sku}` : 'товар')
+    const name  = it.sku ? `${title} (${it.sku})` : title
+    return it.qty > 1 ? `${name} × ${it.qty}` : name
+  }
+  if (items.length === 1) return `#${extId} — ${labelFor(items[0])} — ${money}`
+  const bullets = items.slice(0, 5).map(it => `      • ${labelFor(it)}`).join('\n')
+  const more    = items.length > 5 ? `\n      +${items.length - 5} more` : ''
+  return `#${extId} — ${money}\n${bullets}${more}`
+}
+
 export interface YandexSyncResult {
   ok: boolean
   ordersUpserted: number
@@ -406,9 +427,23 @@ export async function syncFromYandex(
       const toInsert = orderRows.filter(r => !existingOrderMap.has(r.order_id_external))
       const toUpdate = orderRows.filter(r => existingOrderMap.has(r.order_id_external))
       ordersInserted = toInsert.length
+
+      // Yandex order items already carry offerName + offerId (== shopSku),
+      // so no products-table lookup needed to enrich the new-order alert
+      // with a human-readable product name (colour lives in the title on
+      // per-colour listings, in the SKU stem on variant listings).
+      const itemsByExtId = new Map<string, Array<{ name: string; sku: string; qty: number }>>()
+      for (const o of withDates) {
+        itemsByExtId.set(String(o.o.id), (o.o.items ?? []).map(it => ({
+          name: it.offerName ?? '',
+          sku:  it.offerId ?? '',
+          qty:  it.count ?? 1,
+        })))
+      }
+
       for (const r of toInsert) {
         if (r.status === 'pending' || r.status === 'confirmed') {
-          newOrders.push(`#${r.order_id_external} — ${r.revenue ?? 0} so'm, ${r.items_count} dona`)
+          newOrders.push(formatYmOrderLine(r.order_id_external, r.revenue ?? 0, itemsByExtId.get(r.order_id_external) ?? []))
         }
       }
 
