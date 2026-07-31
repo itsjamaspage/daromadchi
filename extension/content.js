@@ -218,7 +218,7 @@
     } catch { return null }
   }
 
-  function calcUzum(price,{costPrice=0,packaging=0,adPct=5,fbo=true,volume=1,commPct=undefined}={}) {
+  function calcUzum(price,{costPrice=0,packaging=0,adPct=0,fbo=true,volume=1,commPct=undefined}={}) {
     if(commPct===undefined) commPct=getCommission();
     const commission = Math.round(price*commPct/100);
     const delivery   = fbo ? Math.min(50000, volume<=1 ? 5250 : 5250 + (Math.ceil(volume)-1)*250) : 0;

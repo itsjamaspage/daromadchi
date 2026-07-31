@@ -217,10 +217,16 @@
     } catch { return null }
   }
 
-  function calcYm(price, { costPrice=0, packaging=0, adPct=5, volume=1, fby=true, commPct=undefined }={}) {
+  function calcYm(price, { costPrice=0, packaging=0, adPct=0, volume=1, fby=true, commPct=undefined }={}) {
     if(commPct===undefined) commPct=getYmCommission();
     const commission = Math.round(price * commPct / 100);
-    const delivery   = fby ? Math.round(volume * 15000) : Math.round(volume * 10000);
+    // Yandex Market UZ bundles fulfillment (pick, pack, first-mile, last-
+    // mile) INTO the category commission for both FBY and FBS/DBS today —
+    // there is no separate per-unit shipping fee like Uzum's 5 250 base.
+    // Prior 15 000×volume estimate double-counted logistics against the
+    // seller and produced negative margins on light SKUs. Sellers with
+    // atypical volumetric shipping can still override this via costPrice.
+    const delivery   = 0;
     const returns    = Math.round(price * 0.02);
     const acquiring  = Math.round(price * 0.005);
     const adSpend    = Math.round(price * adPct / 100);
