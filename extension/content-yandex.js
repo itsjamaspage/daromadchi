@@ -164,17 +164,26 @@
     return null;
   }
 
-  // Yandex Market — category commissions. Includes both Latin/Uzbek and Russian Cyrillic breadcrumb/title text.
+  // Yandex Market — "Услуги Маркета" total deduction by category. YM UZ
+  // shows sellers ONE aggregate on the balance page ("Услуги Маркета
+  // −16 060 сум" on the 76 000 sum FBS headphones order verified against
+  // real settlement = 21% of price). Under the hood that aggregate is
+  // raw category commission + order processing + placement + last-mile
+  // via YM Express + acquiring, but the seller never sees the split.
+  // Match what the seller sees: expose the bundle as one number labeled
+  // "commission" and set delivery to 0 below. Numbers here are for FBS;
+  // FBY is ~7 pp lower (Yandex-run fulfilment is cheaper per unit),
+  // adjusted in calcYm.
   const YM_COMM_MAP = [
-    [/apple|iphone|ipad|macbook|airpods/i, 1.5],
-    [/smartfon|telefon|samsung|xiaomi|redmi|смартфон|телефон/i, 4],
-    [/noutbuk|laptop|notebook|ноутбук|компьютер/i, 4],
-    [/elektronika|электроника|наушник|naushnik|gadget|гаджет|планшет|телевизор|aksesuar/i, 5],
-    [/бытовая техника|холодильник|стиральн|пылесос|кондиционер|maishiy|bytovaya/i, 6],
-    [/авто|автотовар|шина|запчаст|avto|mashina/i, 8],
-    [/парфюм|духи|красота|косметик|уход за|макияж|parfyum|gozellik|kosmetika|beauty/i, 10],
-    [/дом и сад|кухня|мебел|текстил|посуд|oshxona|mebel|dom.i.sad/i, 11],
-    [/одежда|обувь|сумк|ювелирн|kiyim|odejda|shoes|fashion/i, 12],
+    [/apple|iphone|ipad|macbook|airpods/i, 15],
+    [/smartfon|telefon|samsung|xiaomi|redmi|смартфон|телефон/i, 17],
+    [/noutbuk|laptop|notebook|ноутбук|компьютер/i, 17],
+    [/elektronika|электроника|наушник|naushnik|gadget|гаджет|планшет|телевизор|aksesuar/i, 20],
+    [/бытовая техника|холодильник|стиральн|пылесос|кондиционер|maishiy|bytovaya/i, 21],
+    [/авто|автотовар|шина|запчаст|avto|mashina/i, 22],
+    [/парфюм|духи|красота|косметик|уход за|макияж|parfyum|gozellik|kosmetika|beauty/i, 23],
+    [/дом и сад|кухня|мебел|текстил|посуд|oshxona|mebel|dom.i.sad/i, 24],
+    [/одежда|обувь|сумк|ювелирн|kiyim|odejda|shoes|fashion/i, 25],
   ];
 
   function getYmCommission() {
@@ -187,7 +196,7 @@
     if (document.title) parts.push(document.title);
     const text = parts.join(' ');
     for (const [re, pct] of YM_COMM_MAP) if (re.test(text)) return pct;
-    return 10;
+    return 20;  // Unknown-category default matches the "electronics" bucket
   }
 
   function isYmProductPage() {
@@ -219,19 +228,19 @@
 
   function calcYm(price, { costPrice=0, packaging=0, adPct=0, volume=1, fby=true, commPct=undefined }={}) {
     if(commPct===undefined) commPct=getYmCommission();
-    const commission = Math.round(price * commPct / 100);
-    // Yandex Market UZ charges an "Услуги Маркета" services bundle on top
-    // of the raw category commission — order processing + shelf placement +
-    // (for FBY) storage + (for FBS) last-mile via YM Express + acquiring,
-    // all rolled into one deduction on the seller's balance page. Percent
-    // varies by fulfillment model:
-    //   • FBY (Yandex fulfilment): ~8% of price bundle
-    //   • FBS (Seller ships via YM courier): ~15% of price bundle
-    // Real measured example: 76 000 UZS FBS headphones order was billed
-    // 16 060 UZS in services (21%) = 5% raw commission + ~16% bundle.
-    // Prior "volume × 15 000 UZS" estimate was volumetric and produced
-    // wrong numbers for anything not exactly 1 liter.
-    const delivery   = fby ? Math.round(price * 0.08) : Math.round(price * 0.15);
+    // FBY-run fulfilment is ~7 percentage points cheaper per unit than
+    // FBS since Yandex handles the last-mile in bulk. YM_COMM_MAP defaults
+    // are FBS bundle numbers, so shave 7 pp for FBY orders. Floor at 3%
+    // so we never flip negative for a category like Apple bulk-discount.
+    const effectivePct = fby ? Math.max(3, commPct - 7) : commPct;
+    const commission = Math.round(price * effectivePct / 100);
+    // No separate delivery line on YM UZ. Everything YM bills — raw
+    // commission, order processing, placement, last-mile via YM Express,
+    // acquiring — is rolled into the commPct above so the extension
+    // matches what the seller sees on their balance page as one line
+    // ("Услуги Маркета"). Volumetric shipping (rare, only DBS with
+    // seller's own courier) still goes into costPrice.
+    const delivery   = 0;
     const returns    = Math.round(price * 0.02);
     const acquiring  = Math.round(price * 0.005);
     const adSpend    = Math.round(price * adPct / 100);

@@ -629,11 +629,11 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
                           )}
                         </td>
                       )
-                      if (col.key === 'delivery') return <td key="delivery" className="px-3 py-3 text-red-600 text-xs">−{fs(item.delivery)}</td>
-                      if (col.key === 'lastMile') return <td key="lastMile" className="px-3 py-3 text-red-600 text-xs">{item.lastMile > 0 ? `−${fs(item.lastMile)}` : '—'}</td>
-                      if (col.key === 'acquiring') return <td key="acquiring" className="px-3 py-3 text-red-600 text-xs">−{fs(item.acquiring)}</td>
-                      if (col.key === 'adSpend') return <td key="adSpend" className="px-3 py-3 text-red-600 text-xs">−{fs(item.adSpend)}</td>
-                      if (col.key === 'tax') return <td key="tax" className="px-3 py-3 text-red-600 text-xs">−{fs(item.tax)}</td>
+                      if (col.key === 'delivery') return <td key="delivery" className="px-3 py-3 text-red-600 text-xs">{item.delivery > 0 ? `−${fs(item.delivery)}` : <span className="text-[var(--text-muted)]">—</span>}</td>
+                      if (col.key === 'lastMile') return <td key="lastMile" className="px-3 py-3 text-red-600 text-xs">{item.lastMile > 0 ? `−${fs(item.lastMile)}` : <span className="text-[var(--text-muted)]">—</span>}</td>
+                      if (col.key === 'acquiring') return <td key="acquiring" className="px-3 py-3 text-red-600 text-xs">{item.acquiring > 0 ? `−${fs(item.acquiring)}` : <span className="text-[var(--text-muted)]">—</span>}</td>
+                      if (col.key === 'adSpend') return <td key="adSpend" className="px-3 py-3 text-red-600 text-xs">{item.adSpend > 0 ? `−${fs(item.adSpend)}` : <span className="text-[var(--text-muted)]">—</span>}</td>
+                      if (col.key === 'tax') return <td key="tax" className="px-3 py-3 text-red-600 text-xs">{item.tax > 0 ? `−${fs(item.tax)}` : <span className="text-[var(--text-muted)]">—</span>}</td>
                       if (col.key === 'netProfit') return (
                         <td key="netProfit" className={`px-3 py-3 text-xs font-bold ${item.netProfit >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
                           {item.netProfit >= 0 ? '+' : ''}{fs(item.netProfit)}

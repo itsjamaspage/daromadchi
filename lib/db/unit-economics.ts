@@ -71,34 +71,41 @@ export async function getUnitEconomicsItems(): Promise<UnitEconomicsItem[]> {
     }
     return null
   }
-  // Extension v2.5.1 corrections applied on the read path so users see
+  // Extension v2.5.2 corrections applied on the read path so users see
   // fixed numbers immediately without clicking Recalculate. Rules match
   // the /api/unit-economics/recalc endpoint exactly:
-  //   1) Yandex Market delivery is not a volumetric per-unit shipping fee.
-  //      YM UZ charges an "Услуги Маркета" services bundle (order
-  //      processing + placement + last-mile via YM Express + acquiring)
-  //      that varies by fulfillment model. Set delivery to a share of
-  //      price that approximates that bundle:
-  //        • FBS default: 15% (verified against real settlement:
-  //          76 000 UZS order → 16 060 UZS services deduction = 21% total,
-  //          matching 5% raw commission + 15% bundle + ~1% acquiring)
-  //      Only rewrite when the stored value looks like the old
-  //      volumetric estimate (multiple of 5 000, or 0 from a prior
-  //      over-correction) so we don't clobber a value the seller
-  //      manually edited.
+  //   1) Yandex Market has no separate delivery line — the seller's
+  //      balance page shows one aggregate deduction ("Услуги Маркета")
+  //      that includes commission + order processing + placement +
+  //      last-mile + acquiring. Set delivery to 0 and roll the whole
+  //      bundle into the commission %. Bundle target for FBS is
+  //      currently 20% (electronics tier, matching real settlement:
+  //      76 000 UZS order → 16 060 UZS services = 21% total). Rewrite
+  //      commission_pct + commission when the stored commission is
+  //      clearly a "raw only" number (≤10% of price for a YM row), so
+  //      we don't clobber a value the seller manually edited high.
   //   2) Ad spend that equals sellingPrice × 5% within 1 so'm is the old
   //      auto-default from the widget — treat it as unset (0). Explicit
   //      user ad-% entries won't match the rounded 5% exactly.
-  function applyV251Fix(item: UnitEconomicsItem): UnitEconomicsItem {
-    let delivery = item.delivery
-    let adSpend  = item.adSpend
-    let touched  = false
+  function applyV252Fix(item: UnitEconomicsItem): UnitEconomicsItem {
+    let delivery      = item.delivery
+    let commission    = item.commission
+    let commissionPct = item.commissionPct
+    let adSpend       = item.adSpend
+    let touched       = false
     if (item.marketplace === 'yandex_market') {
-      const target = Math.round(item.sellingPrice * 0.15)
-      const looksVolumetric = delivery === 0 || (delivery > 0 && delivery % 5000 === 0)
-      if (looksVolumetric && Math.abs(delivery - target) > 1) {
-        delivery = target
-        touched = true
+      if (delivery > 0) {
+        delivery = 0
+        touched  = true
+      }
+      // Raw commission ≤10% on YM means the row was stored before we
+      // rolled the services bundle into the number. Promote it to a
+      // 20%-of-price bundle so the row totals match the seller's
+      // balance page.
+      if (item.sellingPrice > 0 && commissionPct > 0 && commissionPct <= 10) {
+        commissionPct = 20
+        commission    = Math.round(item.sellingPrice * 0.20)
+        touched       = true
       }
     }
     const autoAd = Math.round(item.sellingPrice * 5 / 100)
@@ -108,14 +115,14 @@ export async function getUnitEconomicsItems(): Promise<UnitEconomicsItem[]> {
     }
     if (!touched) return item
     const cogs      = item.costPrice + (item.landedCost ?? 0)
-    const netProfit = item.sellingPrice - item.commission - delivery - item.lastMile - item.acquiring - adSpend - item.tax - cogs
+    const netProfit = item.sellingPrice - commission - delivery - item.lastMile - item.acquiring - adSpend - item.tax - cogs
     const margin    = item.sellingPrice > 0 ? (netProfit / item.sellingPrice) * 100 : 0
     const roi       = cogs > 0 ? (netProfit / cogs) * 100 : 0
-    return { ...item, delivery, adSpend, netProfit, margin, roi }
+    return { ...item, delivery, commission, commissionPct, adSpend, netProfit, margin, roi }
   }
 
   return rows.map(row => {
-    const item = applyV251Fix(mapRow(row))
+    const item = applyV252Fix(mapRow(row))
     const sku = (item.sku ?? '').trim()
     if (!sku) return item
     const rate = findRate(sku, item.marketplace)

@@ -4,19 +4,19 @@ import { db, unitEconomicsItems } from '@/lib/db'
 import { getCurrentUserId } from '@/lib/db/shop-context'
 import { withErrorHandler } from '@/lib/api-handler'
 
-// Backfill: reapply the current extension-side math (v2.5.1) to rows
+// Backfill: reapply the current extension-side math (v2.5.2) to rows
 // that were inserted by earlier versions. Two changes to apply:
 //
-//   1. Yandex Market delivery is not a volumetric per-unit fee. YM UZ
-//      charges an "Услуги Маркета" services bundle (order processing +
-//      placement + last-mile via YM Express + acquiring). For FBS the
-//      bundle is ~15% of price on top of the raw category commission.
-//      Verified against real settlement — 76 000 UZS order was billed
-//      16 060 UZS in services (21.1% = 5% raw commission + 15% bundle
-//      + ~1% acquiring). Rewrite the stored delivery to 15% of price
-//      only when the current value looks like the old volumetric
-//      estimate (0 or a multiple of 5 000) — never clobber a value
-//      the seller manually edited to something arbitrary.
+//   1. Yandex Market has no separate delivery line — the seller's
+//      balance page shows one aggregate deduction ("Услуги Маркета")
+//      that includes commission + order processing + placement +
+//      last-mile + acquiring. Set delivery to 0 and roll the whole
+//      bundle into the commission. Bundle target for FBS is 20%
+//      (electronics tier, verified against real settlement: 76 000
+//      UZS order → 16 060 UZS services = 21% total). Rewrite the
+//      stored commission when the current value is clearly a "raw
+//      only" number (≤10% of price for a YM row) so we don't clobber
+//      a value the seller manually edited high.
 //
 //   2. Ad-spend default went from 5% to 0%. Rows where the stored
 //      ad_spend matches selling_price × 5% within a 1-so'm rounding
@@ -35,35 +35,44 @@ export const POST = withErrorHandler(async () => {
   const rows = await db.select().from(unitEconomicsItems)
     .where(eq(unitEconomicsItems.user_id, userId))
 
-  let ymDeliveryFixed = 0
-  let adSpendFixed    = 0
-  let updated         = 0
+  let ymBundleFixed = 0
+  let adSpendFixed  = 0
+  let updated       = 0
 
   for (const row of rows) {
     const sellingPrice = Number(row.selling_price)
     const costPrice    = Number(row.cost_price)
     const landedCost   = row.landed_cost !== null ? Number(row.landed_cost) : 0
 
-    const commission = Number(row.commission)
-    let   delivery   = Number(row.delivery)
-    const lastMile   = Number(row.last_mile)
-    const acquiring  = Number(row.acquiring)
-    let   adSpend    = Number(row.ad_spend)
-    const tax        = Number(row.tax)
+    let   commission    = Number(row.commission)
+    let   commissionPct = Number(row.commission_pct)
+    let   delivery      = Number(row.delivery)
+    const lastMile      = Number(row.last_mile)
+    const acquiring     = Number(row.acquiring)
+    let   adSpend       = Number(row.ad_spend)
+    const tax           = Number(row.tax)
 
     let touched = false
 
-    // Fix 1 — YM services bundle. Replace old volumetric estimate (or a
-    // previous over-correction to 0) with 15% of price, which matches
-    // what YM UZ actually bills for FBS orders on top of the raw
-    // category commission.
+    // Fix 1 — YM Услуги Маркета bundle. Zero out any delivery line
+    // (YM has none) and promote a raw-commission-only value to the
+    // 20% FBS bundle so the row totals match the seller's balance
+    // page. A stored raw % on YM is anything ≤10% — the seller can
+    // still manually edit past that with the row-level editor.
     if (row.marketplace === 'yandex_market') {
-      const target = Math.round(sellingPrice * 0.15)
-      const looksVolumetric = delivery === 0 || (delivery > 0 && delivery % 5000 === 0)
-      if (looksVolumetric && Math.abs(delivery - target) > 1) {
-        delivery = target
-        touched  = true
-        ymDeliveryFixed++
+      let ymTouched = false
+      if (delivery > 0) {
+        delivery = 0
+        ymTouched = true
+      }
+      if (sellingPrice > 0 && commissionPct > 0 && commissionPct <= 10) {
+        commissionPct = 20
+        commission    = Math.round(sellingPrice * 0.20)
+        ymTouched     = true
+      }
+      if (ymTouched) {
+        touched = true
+        ymBundleFixed++
       }
     }
 
@@ -85,12 +94,14 @@ export const POST = withErrorHandler(async () => {
     const roi       = cogs > 0 ? (netProfit / cogs) * 100 : 0
 
     await db.update(unitEconomicsItems).set({
-      delivery:   String(delivery),
-      ad_spend:   String(adSpend),
-      net_profit: String(Math.round(netProfit)),
-      margin:     String(Math.round(margin * 10) / 10),
-      roi:        cogs > 0 ? String(Math.round(roi * 10) / 10) : row.roi,
-      updated_at: new Date(),
+      commission_pct: String(commissionPct),
+      commission:     String(commission),
+      delivery:       String(delivery),
+      ad_spend:       String(adSpend),
+      net_profit:     String(Math.round(netProfit)),
+      margin:         String(Math.round(margin * 10) / 10),
+      roi:            cogs > 0 ? String(Math.round(roi * 10) / 10) : row.roi,
+      updated_at:     new Date(),
     }).where(and(
       eq(unitEconomicsItems.id, row.id),
       eq(unitEconomicsItems.user_id, userId),
@@ -100,9 +111,9 @@ export const POST = withErrorHandler(async () => {
 
   return NextResponse.json({
     ok: true,
-    scanned:          rows.length,
+    scanned:        rows.length,
     updated,
-    ymDeliveryFixed,
+    ymBundleFixed,
     adSpendFixed,
   })
 })
