@@ -4,12 +4,19 @@ import { db, unitEconomicsItems } from '@/lib/db'
 import { getCurrentUserId } from '@/lib/db/shop-context'
 import { withErrorHandler } from '@/lib/api-handler'
 
-// Backfill: reapply the current extension-side math (v2.5.0) to rows
+// Backfill: reapply the current extension-side math (v2.5.1) to rows
 // that were inserted by earlier versions. Two changes to apply:
 //
-//   1. Yandex Market delivery went from `volume × 15 000` to 0 —
-//      YM UZ bundles fulfillment into the category commission, so
-//      the earlier value double-counted logistics on every YM row.
+//   1. Yandex Market delivery is not a volumetric per-unit fee. YM UZ
+//      charges an "Услуги Маркета" services bundle (order processing +
+//      placement + last-mile via YM Express + acquiring). For FBS the
+//      bundle is ~15% of price on top of the raw category commission.
+//      Verified against real settlement — 76 000 UZS order was billed
+//      16 060 UZS in services (21.1% = 5% raw commission + 15% bundle
+//      + ~1% acquiring). Rewrite the stored delivery to 15% of price
+//      only when the current value looks like the old volumetric
+//      estimate (0 or a multiple of 5 000) — never clobber a value
+//      the seller manually edited to something arbitrary.
 //
 //   2. Ad-spend default went from 5% to 0%. Rows where the stored
 //      ad_spend matches selling_price × 5% within a 1-so'm rounding
@@ -46,11 +53,18 @@ export const POST = withErrorHandler(async () => {
 
     let touched = false
 
-    // Fix 1 — YM delivery bundled in commission.
-    if (row.marketplace === 'yandex_market' && delivery > 0) {
-      delivery = 0
-      touched = true
-      ymDeliveryFixed++
+    // Fix 1 — YM services bundle. Replace old volumetric estimate (or a
+    // previous over-correction to 0) with 15% of price, which matches
+    // what YM UZ actually bills for FBS orders on top of the raw
+    // category commission.
+    if (row.marketplace === 'yandex_market') {
+      const target = Math.round(sellingPrice * 0.15)
+      const looksVolumetric = delivery === 0 || (delivery > 0 && delivery % 5000 === 0)
+      if (looksVolumetric && Math.abs(delivery - target) > 1) {
+        delivery = target
+        touched  = true
+        ymDeliveryFixed++
+      }
     }
 
     // Fix 2 — 5%-of-price auto-default ad_spend rewrite. Compare using

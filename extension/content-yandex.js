@@ -220,13 +220,18 @@
   function calcYm(price, { costPrice=0, packaging=0, adPct=0, volume=1, fby=true, commPct=undefined }={}) {
     if(commPct===undefined) commPct=getYmCommission();
     const commission = Math.round(price * commPct / 100);
-    // Yandex Market UZ bundles fulfillment (pick, pack, first-mile, last-
-    // mile) INTO the category commission for both FBY and FBS/DBS today —
-    // there is no separate per-unit shipping fee like Uzum's 5 250 base.
-    // Prior 15 000×volume estimate double-counted logistics against the
-    // seller and produced negative margins on light SKUs. Sellers with
-    // atypical volumetric shipping can still override this via costPrice.
-    const delivery   = 0;
+    // Yandex Market UZ charges an "Услуги Маркета" services bundle on top
+    // of the raw category commission — order processing + shelf placement +
+    // (for FBY) storage + (for FBS) last-mile via YM Express + acquiring,
+    // all rolled into one deduction on the seller's balance page. Percent
+    // varies by fulfillment model:
+    //   • FBY (Yandex fulfilment): ~8% of price bundle
+    //   • FBS (Seller ships via YM courier): ~15% of price bundle
+    // Real measured example: 76 000 UZS FBS headphones order was billed
+    // 16 060 UZS in services (21%) = 5% raw commission + ~16% bundle.
+    // Prior "volume × 15 000 UZS" estimate was volumetric and produced
+    // wrong numbers for anything not exactly 1 liter.
+    const delivery   = fby ? Math.round(price * 0.08) : Math.round(price * 0.15);
     const returns    = Math.round(price * 0.02);
     const acquiring  = Math.round(price * 0.005);
     const adSpend    = Math.round(price * adPct / 100);

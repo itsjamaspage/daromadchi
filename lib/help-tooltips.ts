@@ -310,7 +310,7 @@ export const helpContent: HelpDB = {
       title: 'Birlik iqtisodiyoti',
       what: 'Har bir mahsulot yoki buyurtma bo\'yicha haqiqiy foyda: narxdan barcha xarajatlar (komissiya, yetkazish, soliq) ayirilgandan keyingi holat.\n\n⚠️ Eslatma: bu ma\'lumotlar taxminiy hisoblanadi va aniq buxgalteriya hisobi o\'rnini bosmaydi.',
       why: 'Qaysi mahsulotlar sof foyda keltiradi, qaysilari aslida zararli ekanini bilib oling.',
-      how: 'Foyda marjasi manfiy bo\'lsa — mahsulot narxini oshirish yoki xarajatlarni kamaytirish kerak.',
+      how: 'Chrome kengaytmasini o\'rnating → Uzum yoki Yandex Market\'da mahsulot sahifasini oching → «Birlik iqtisodiyotiga qo\'shish» tugmasini bosing. Mahsulot fotosurat va tafsilotlari bilan avtomatik qo\'shiladi. Foyda marjasi manfiy bo\'lsa — narxni oshirish yoki xarajatlarni kamaytirish kerak.',
       steps: [
         { step: 1, text: 'Sotish narxi va sotuv hajmi olinadi' },
         { step: 2, text: 'Komissiya, yetkazish, qaytarishlar ayiriladi' },
@@ -322,7 +322,7 @@ export const helpContent: HelpDB = {
       title: 'Юнит-экономика',
       what: 'Реальная прибыль на единицу товара или заказ: цена минус все расходы (комиссия, доставка, налоги).\n\n⚠️ Примечание: данные являются приблизительными и не заменяют точный бухгалтерский учёт.',
       why: 'Узнайте, какие товары приносят чистую прибыль, а какие на самом деле убыточны.',
-      how: 'Отрицательная маржа — нужно поднять цену или снизить расходы.',
+      how: 'Установите расширение Chrome → откройте страницу товара на Uzum или Yandex Market → нажмите «Добавить в юнит-экономику». Товар с фото и деталями добавится сюда автоматически. Отрицательная маржа — нужно поднять цену или снизить расходы.',
       steps: [
         { step: 1, text: 'Берётся цена продажи и объём продаж' },
         { step: 2, text: 'Вычитаются комиссия, доставка, возвраты' },
@@ -334,7 +334,7 @@ export const helpContent: HelpDB = {
       title: 'Unit Economics',
       what: 'Real profit per product or order: price minus all costs (commission, delivery, taxes).\n\n⚠️ Note: these figures are approximate estimates and do not replace precise accounting.',
       why: 'Find out which products generate real profit and which are actually losing money.',
-      how: 'Negative margin = raise price or cut costs.',
+      how: 'Install the Chrome extension → open any product page on Uzum or Yandex Market → click "Add to Unit Economics". The product with photo and details lands here automatically. Negative margin = raise price or cut costs.',
       steps: [
         { step: 1, text: 'Sale price and sales volume are taken' },
         { step: 2, text: 'Commission, delivery, and returns are subtracted' },
