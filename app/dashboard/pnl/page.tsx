@@ -29,16 +29,21 @@ function parseRange(params: Record<string, string>): {
   if (params.from && params.to) {
     const from = new Date(params.from + 'T00:00:00')
     const toDate = new Date(params.to + 'T23:59:59')
-    return { from, to: toDate, bucket: 'month', period: '' }
+    const diffDays = Math.round((toDate.getTime() - from.getTime()) / 86400000)
+    return { from, to: toDate, bucket: diffDays > 31 ? 'month' : 'day', period: '' }
   }
 
   // Preset "N days" (kept for backwards compat with old links).
+  // Auto-picks daily bucket for short ranges (≤31 days) — this is the
+  // feature branch's intent, kept here so N-day presets do the right
+  // thing without changing the "default = current month" behavior
+  // that shipped with the recent Payouts/PnL unification.
   if (params.days) {
     const days = Math.max(1, Math.min(3650, Number(params.days) || 30))
     const from = new Date()
     from.setDate(from.getDate() - (days - 1))
     from.setHours(0, 0, 0, 0)
-    return { from, to, bucket: 'month', period: String(days) }
+    return { from, to, bucket: days > 31 ? 'month' : 'day', period: String(days) }
   }
 
   // Default: current month, day 1 → today. Was previously "last 180
@@ -78,9 +83,6 @@ export default async function PnlPage({ searchParams }: Props) {
   const d = t.dashboard
   const locale = lang === 'ru' ? 'ru-RU' : lang === 'en' ? 'en-US' : 'uz-UZ'
 
-  // Format the bucket key into a human-friendly, unambiguous label.
-  // Day: "26 июля 2026" / "26 Jul 2026" / "26 Iyul 2026" — no more "июль 26 г." ambiguity.
-  // Month: "Июль 2026" / "July 2026" / "Iyul 2026".
   function labelFor(key: string): string {
     if (range.bucket === 'day') {
       const dt = new Date(key + 'T00:00:00Z')
@@ -136,7 +138,7 @@ export default async function PnlPage({ searchParams }: Props) {
   }
 
   const exportData = monthlyData.map(m => ({
-    [d.month]:                     m.month,
+    [d.date]:                      m.month,
     [d.ordersCol]:                 m.order_count,
     [d.topSoldCancelled]:          m.cancelled_count,
     [`${d.revenue} (so'm)`]:       Math.round(m.revenue),
@@ -253,7 +255,7 @@ export default async function PnlPage({ searchParams }: Props) {
               <table className="w-full text-sm" style={{ minWidth: 980 }}>
                 <thead>
                   <tr className="text-[var(--text-muted)] text-xs border-b border-[var(--border)]">
-                    <th className="text-left font-medium px-4 py-3">{d.month}</th>
+                    <th className="text-left font-medium px-4 py-3">{d.date}</th>
                     <th className="text-right font-medium px-4 py-3">{d.ordersCol}</th>
                     <th className="text-right font-medium px-4 py-3">{d.topSoldCancelled}</th>
                     <th className="text-right font-medium px-4 py-3">{d.revenue}</th>

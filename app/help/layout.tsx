@@ -4,8 +4,8 @@ import HelpHeaderControls from './HelpHeaderControls'
 import BackButton from './BackButton'
 
 export const metadata: Metadata = {
-  title: 'Yordam Markazi — Daromadchi',
-  description: "Daromadchi platformasidan foydalanish bo'yicha qo'llanmalar va maqolalar",
+  title: 'Help Center — Daromadchi',
+  description: 'Guides and articles for using the Daromadchi platform',
 }
 
 export default function HelpLayout({ children }: { children: React.ReactNode }) {
@@ -23,18 +23,7 @@ export default function HelpLayout({ children }: { children: React.ReactNode }) 
             </Link>
           </div>
 
-          <div className="flex items-center gap-3">
-            <HelpHeaderControls />
-            <Link href="/help" className="text-xs text-[var(--text-muted)] hover:text-[var(--c1)] transition-colors hidden sm:block">
-              Yordam markazi
-            </Link>
-            <Link
-              href="/dashboard"
-              className="px-3 py-1.5 rounded-lg bg-[var(--c1)] text-[#020c1a] font-semibold text-xs hover:opacity-90 transition-opacity"
-            >
-              Dashboard
-            </Link>
-          </div>
+          <HelpHeaderControls />
         </div>
       </header>
 

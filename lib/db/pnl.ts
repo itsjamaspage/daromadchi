@@ -6,13 +6,13 @@ import { getRealFinancialsByBucket } from '@/lib/db/real-financials'
 import type { MarketplaceType } from '@/lib/types'
 
 /**
- * Monthly P&L with a full expense breakdown. Marketplaces rarely report fees
+ * Daily P&L with a full expense breakdown. Marketplaces rarely report fees
  * per order (Uzum's seller API doesn't), so where real numbers are missing the
  * expense lines are ESTIMATED from the user's Unit Economics parameters
  * (commission %, acquiring %, tax %, ad %, last-mile %) — the same numbers
  * they already maintain on the Unit Economics page. COGS comes from each
  * product's cost price × units sold. Cancelled orders are excluded from every
- * money figure but shown as a count so a cancellation-only month still renders.
+ * money figure but shown as a count so a cancellation-only day still renders.
  */
 export interface PnlRow {
   /** YYYY-MM or YYYY-MM-DD depending on bucket — the page formats it in-locale */
@@ -98,7 +98,6 @@ export async function getPnl(opts: PnlOpts): Promise<{ rows: PnlRow[]; params: P
       .where(and(
         inArray(orders.shop_id, shopIds),
         gte(orders.ordered_at, from),
-        // include the upper bound: gte(ordered_at, from) AND ordered_at <= to+1day
         sql`${orders.ordered_at} <= ${to}`,
       ))
       .orderBy(asc(orders.ordered_at)),

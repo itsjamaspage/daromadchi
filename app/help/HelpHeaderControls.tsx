@@ -1,9 +1,16 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import Link from 'next/link'
 import { Sun, Moon, Globe } from 'lucide-react'
 import { useTheme, useLang } from '@/app/providers'
 import type { Lang } from '@/lib/i18n'
+
+const T = {
+  uz: { helpCenter: 'Yordam markazi', dashboard: 'Dashboard' },
+  ru: { helpCenter: 'Справочный центр', dashboard: 'Панель управления' },
+  en: { helpCenter: 'Help Center', dashboard: 'Dashboard' },
+}
 
 export default function HelpHeaderControls() {
   const { theme, toggle } = useTheme()
@@ -11,6 +18,7 @@ export default function HelpHeaderControls() {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   const langs: Lang[] = ['uz', 'ru', 'en']
+  const t = T[lang]
 
   useEffect(() => {
     const h = (e: MouseEvent) => {
@@ -63,6 +71,16 @@ export default function HelpHeaderControls() {
           ? <Sun className="w-3.5 h-3.5 text-amber-400" />
           : <Moon className="w-3.5 h-3.5 text-blue-500" />}
       </button>
+
+      <Link href="/help" className="text-xs text-[var(--text-muted)] hover:text-[var(--c1)] transition-colors hidden sm:block">
+        {t.helpCenter}
+      </Link>
+      <Link
+        href="/dashboard"
+        className="px-3 py-1.5 rounded-lg bg-[var(--c1)] text-[#020c1a] font-semibold text-xs hover:opacity-90 transition-opacity"
+      >
+        {t.dashboard}
+      </Link>
     </div>
   )
 }
