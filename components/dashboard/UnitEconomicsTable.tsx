@@ -4,7 +4,7 @@ import { useState, useMemo, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Search, Trash2, Settings2, ExternalLink, ChevronUp, ChevronDown,
-  Package, Plus, X, Check, Pencil,
+  Package, Plus, X, Check, Pencil, RefreshCw,
 } from 'lucide-react'
 import type { UnitEconomicsItem, UnitEcoSettings, MarketplaceType } from '@/lib/types'
 import ExportButton from '@/components/dashboard/ExportButton'
@@ -106,6 +106,21 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
   const [extPending, setExtPending]   = useState<FromExtension | null>(fromExtension ?? null)
   const [extSaving, setExtSaving]     = useState(false)
   const [extError, setExtError]       = useState<string | null>(null)
+
+  const [recalcState, setRecalcState] = useState<'idle' | 'running' | 'done' | 'err'>('idle')
+  async function handleRecalc() {
+    setRecalcState('running')
+    try {
+      const res = await fetch('/api/unit-economics/recalc', { method: 'POST' })
+      if (!res.ok) throw new Error(String(res.status))
+      setRecalcState('done')
+      router.refresh()
+      setTimeout(() => setRecalcState('idle'), 2500)
+    } catch {
+      setRecalcState('err')
+      setTimeout(() => setRecalcState('idle'), 2500)
+    }
+  }
 
   // Edit modal
   const [editingItem, setEditingItem] = useState<UnitEconomicsItem | null>(null)
@@ -373,6 +388,20 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
               <Trash2 className="w-3.5 h-3.5" /> O&apos;chirish ({selected.size})
             </button>
           )}
+          <button onClick={handleRecalc} disabled={recalcState === 'running'}
+            title={lang === 'ru' ? 'Пересчитать по актуальным формулам (v2.5.0)'
+              : lang === 'en' ? 'Recalculate rows with the current formulas (v2.5.0)'
+              : "Amaldagi formulalar bilan qayta hisoblash (v2.5.0)"}
+            className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl border transition-all disabled:opacity-60 disabled:cursor-wait ${
+              recalcState === 'done' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500'
+              : recalcState === 'err' ? 'bg-red-500/10 border-red-500/30 text-red-500'
+              : 'bg-[var(--bg-card2)] hover:bg-[var(--bg-card2)] text-[var(--text-muted)] hover:text-[var(--text-base)] border-[var(--border)]'
+            }`}>
+            <RefreshCw className={`w-3.5 h-3.5 ${recalcState === 'running' ? 'animate-spin' : ''}`} />
+            {recalcState === 'done' ? (lang === 'ru' ? 'Готово' : lang === 'en' ? 'Done' : 'Tayyor')
+              : recalcState === 'err' ? (lang === 'ru' ? 'Ошибка' : lang === 'en' ? 'Error' : 'Xato')
+              : (lang === 'ru' ? 'Пересчитать' : lang === 'en' ? 'Recalculate' : 'Qayta hisoblash')}
+          </button>
           <button onClick={() => { setShowColPicker(v => !v); setShowSettings(false) }}
             className="flex items-center gap-1.5 px-3 py-2 bg-[var(--bg-card2)] hover:bg-[var(--bg-card2)] text-[var(--text-muted)] hover:text-[var(--text-base)] text-xs font-semibold rounded-xl border border-[var(--border)] transition-all">
             <Package className="w-3.5 h-3.5" /> {d.ueColumns}
