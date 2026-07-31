@@ -37,12 +37,12 @@ export const POST = withErrorHandler(async () => {
     const costPrice    = Number(row.cost_price)
     const landedCost   = row.landed_cost !== null ? Number(row.landed_cost) : 0
 
-    let commission = Number(row.commission)
-    let delivery   = Number(row.delivery)
-    let lastMile   = Number(row.last_mile)
-    let acquiring  = Number(row.acquiring)
-    let adSpend    = Number(row.ad_spend)
-    let tax        = Number(row.tax)
+    const commission = Number(row.commission)
+    let   delivery   = Number(row.delivery)
+    const lastMile   = Number(row.last_mile)
+    const acquiring  = Number(row.acquiring)
+    let   adSpend    = Number(row.ad_spend)
+    const tax        = Number(row.tax)
 
     let touched = false
 
