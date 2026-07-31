@@ -2,6 +2,13 @@
 (function () {
   'use strict';
 
+  // Wildberries integration is sunset — see lib/feature-flags.ts on
+  // the app side. Short-circuit here so the widget never injects
+  // itself on wildberries.ru pages. Flip to true (or remove this
+  // guard) when the integration re-opens.
+  const WB_EXTENSION_ENABLED = false;
+  if (!WB_EXTENSION_ENABLED) return;
+
   const IS_SELLER  = location.hostname.includes('seller.wildberries');
   const IS_PRODUCT = !IS_SELLER && (
     /\/catalog\/\d+\/detail/.test(location.pathname) ||

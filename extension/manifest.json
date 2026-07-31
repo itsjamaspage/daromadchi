@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Daromadchi — Uzum, Yandex & Wildberries Analytics",
-  "version": "2.3.0",
+  "version": "2.4.0",
   "description": "Uzum, Yandex Market va Wildberries sotuvchilari uchun aqlli tahlil: marja, ROI, reklama samaradorligi",
   "icons": {
     "16": "icons/icon16.png",

@@ -658,9 +658,7 @@ function WildberriesCard({ shop }: { shop: Shop | null; userId: string }) {
           </span>
         </div>
         <div className="p-6 text-xs text-[var(--text-muted)] leading-relaxed">
-          {lang === 'ru' ? 'Интеграция с Wildberries временно приостановлена. Мы вернём её, как только их лимитер станет стабильнее для нашего сценария синхронизации. Уже подключённые токены не удаляются — вы сможете продолжить сразу, как только интеграция снова заработает.'
-            : lang === 'en' ? 'Wildberries integration is temporarily paused. It will come back once their rate limiter behaves reliably for our sync pattern. Already-saved tokens are not deleted — you will pick up right where you left off when it reopens.'
-            : "Wildberries integratsiyasi vaqtincha to'xtatildi. Ularning limiterlari bizning sinxronizatsiya sxemamiz uchun barqaror ishlaganda qayta yoqamiz. Saqlangan tokenlar o'chirilmaydi — qayta ochilganda oldingi holatdan davom etishingiz mumkin."}
+          {lang === 'ru' ? 'Wildberries — скоро' : lang === 'en' ? 'Wildberries — coming soon' : 'Wildberries — tez orada'}
         </div>
       </div>
     )

@@ -5,6 +5,7 @@ import { shops, userSettings, products, orders } from '@/lib/db/schema'
 import { eq, count } from 'drizzle-orm'
 import SettingsForm from './SettingsForm'
 import type { Shop } from '@/lib/types'
+import { WB_ENABLED } from '@/lib/feature-flags'
 
 export default async function SettingsPage() {
   const [t, user] = await Promise.all([getT(), getCurrentUser()])
@@ -34,14 +35,22 @@ export default async function SettingsPage() {
       if (row.marketplace === 'wildberries')   wbShop     = s
     }
 
-    const shopsWithKeys = [uzumShop, yandexShop, wbShop].filter(Boolean) as Shop[]
-    await Promise.all(shopsWithKeys.map(async s => {
+    // When WB is sunset (see lib/feature-flags.ts), hide any leftover
+    // WB shop counts — otherwise the "WB · 1 товаров" chip at the top
+    // of Settings would show stale numbers even though the rest of the
+    // app has stopped rendering WB data.
+    const countedShops = ([uzumShop, yandexShop, WB_ENABLED ? wbShop : null].filter(Boolean)) as Shop[]
+    await Promise.all(countedShops.map(async s => {
       const [[{ total: pc }], [{ total: oc }]] = await Promise.all([
         db.select({ total: count() }).from(products).where(eq(products.shop_id, s.id)),
         db.select({ total: count() }).from(orders).where(eq(orders.shop_id, s.id)),
       ])
       shopCounts[s.marketplace] = { products: pc ?? 0, orders: oc ?? 0 }
     }))
+    // Explicitly zero the WB row so the summary UI reads 0/0 instead
+    // of skipping the chip entirely (users had asked to see WB as
+    // "upcoming", not disappeared).
+    if (!WB_ENABLED) shopCounts['wildberries'] = { products: 0, orders: 0 }
   }
 
   let telegramChatId:   string | null = null
