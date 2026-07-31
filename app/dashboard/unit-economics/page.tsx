@@ -50,10 +50,10 @@ export default async function UnitEconomicsPage({
     : 'Brauzer kengaytmasini o\'rnating'
 
   const extDesc = lang === 'ru'
-    ? 'Расширение работает в Chrome, Edge и Brave. Откройте карточку товара на Uzum.uz или WB и добавьте продукт одним нажатием — все данные попадут сюда автоматически.'
+    ? 'Расширение работает в Chrome, Edge и Brave. Откройте карточку товара на Uzum.uz или Yandex Market и добавьте продукт одним нажатием — все данные попадут сюда автоматически.'
     : lang === 'en'
-    ? 'Works in Chrome, Edge and Brave. Open any product on Uzum.uz or WB and add it with one click — all data appears here automatically.'
-    : 'Chrome, Edge va Brave\'da ishlaydi. Uzum.uz yoki WB\'da mahsulot kartasini oching va bir tugma bilan qo\'shing — barcha ma\'lumotlar avtomatik tushadi.'
+    ? 'Works in Chrome, Edge and Brave. Open any product on Uzum.uz or Yandex Market and add it with one click — all data appears here automatically.'
+    : 'Chrome, Edge va Brave\'da ishlaydi. Uzum.uz yoki Yandex Market\'da mahsulot kartasini oching va bir tugma bilan qo\'shing — barcha ma\'lumotlar avtomatik tushadi.'
 
   const extBtn = lang === 'ru' ? 'Установить' : lang === 'en' ? 'Install now' : 'O\'rnatish'
 
