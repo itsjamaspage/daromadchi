@@ -5,6 +5,7 @@ import { useState, useMemo } from 'react'
 import { Calculator, TrendingDown, AlertTriangle, Info, Zap } from 'lucide-react'
 import { useLang } from '@/app/providers'
 import { dashT } from '@/lib/dashT'
+import { WB_ENABLED } from '@/lib/feature-flags'
 
 function fmt(n: number) {
   return new Intl.NumberFormat('uz-UZ').format(Math.round(n))
@@ -130,7 +131,7 @@ export default function CalculatorPage() {
   }, [price, cost, logistics, adSpend, returnRate, units, commission, volume, payoutSched, mp])
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto">
+    <div className="space-y-6 max-w-7xl mx-auto">
       <div>
         <div className="flex items-center gap-2 mb-0.5">
           <h1 className="text-2xl font-bold text-[var(--text-base)] flex items-center gap-2">
@@ -143,18 +144,21 @@ export default function CalculatorPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Two equal columns on wide screens; single column stack below.
+          Previous max-w-6xl left too much dead space on 1440px+ monitors
+          and made both cards feel cramped. */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full">
         {/* ── Inputs ──────────────────────────────────────────────────── */}
         <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl p-6 space-y-4">
           <h2 className="text-[var(--text-base)] font-semibold text-sm">{t.productInfo}</h2>
 
           {/* Marketplace selector */}
           <div className="flex items-center gap-1 p-1 bg-[var(--bg-input)] border border-[var(--border)] rounded-xl w-fit">
-            {([
+            {(([
               { id: 'uzum',        label: 'Uzum Market' },
               { id: 'yandex',      label: 'Yandex Market' },
               { id: 'wildberries', label: 'Wildberries' },
-            ] as { id: MP; label: string }[]).map(m => (
+            ] as { id: MP; label: string }[]).filter(m => m.id !== 'wildberries' || WB_ENABLED)).map(m => (
               <button
                 key={m.id}
                 onClick={() => { setMp(m.id); setCatIdx(0) }}

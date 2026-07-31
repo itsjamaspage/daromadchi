@@ -278,7 +278,7 @@ function DashMockup({ lang }: { lang: Lang }) {
         <div style={{ background: bg2, borderBottom: `1px solid ${border}`, padding: '8px 12px',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
           <div style={{ display: 'flex', gap: 3 }}>
-            {[T.mockup.all[lang],'Uzum','Wildberries','Yandex Market'].map((tab, i) => (
+            {[T.mockup.all[lang],'Uzum','Yandex Market'].map((tab, i) => (
               <div key={tab} style={{ fontSize: 10, fontWeight: 600, padding: '4px 9px', borderRadius: 6, cursor: 'pointer',
                 background: i === 0 ? teal : 'transparent', color: i === 0 ? '#fff' : muted }}>
                 {tab}
@@ -318,7 +318,8 @@ function DashMockup({ lang }: { lang: Lang }) {
             <p style={{ fontSize: 8, color: muted, marginBottom: 8, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
               {T.mockup.platforms[lang]}
             </p>
-            {[{mp:'Uzum',c:teal,pct:'48%'},{mp:'WB',c:teal,pct:'32%'},{mp:'YM',c:teal,pct:'20%'}].map(m => (
+            {/* Mock breakdown: WB removed while the integration is sunset. */}
+            {[{mp:'Uzum',c:teal,pct:'70%'},{mp:'YM',c:teal,pct:'30%'}].map(m => (
               <div key={m.mp} style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 6 }}>
                 <div style={{ width: 5, height: 5, borderRadius: '50%', background: m.c }} />
                 <span style={{ fontSize: 9, color: ink, flex: 1 }}>{m.mp}</span>
@@ -861,7 +862,7 @@ function HowItWorksSection({ lang }: { lang: Lang }) {
           <p style={{ fontSize: 11, fontWeight: 700, color: sub, marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
             {T.howItWorks.yourStores[lang]}
           </p>
-          {[{mp:'Uzum',c:acc.color,status:'✅'},{mp:'Wildberries',c:acc.color,status:'✅'},{mp:'Yandex Market',c:acc.color,status:'⏳'}].map(m => (
+          {[{mp:'Uzum',c:acc.color,status:'✅'},{mp:'Yandex Market',c:acc.color,status:'✅'}].map(m => (
             <div key={m.mp} style={{ display: 'flex', alignItems: 'center', gap: 10,
               padding: '12px 14px', background: fldBg, borderRadius: 10, border: `1px solid ${uiBdr}`, marginBottom: 8 }}>
               <div style={{ width: 9, height: 9, borderRadius: '50%', background: m.c }} />
@@ -1726,7 +1727,7 @@ function CtaSection({ lang }: { lang: Lang }) {
       <div className="hidden lg:block">
         <FloatCard mp="Uzum"metric={T.cta.revenue[lang]} value={T.cta.revenueValue[lang]} change="+12%" up delay={0} floatDur={3.8}
           style={{ left: '4%', top: '20%', transform: 'rotate(-3.5deg)', zIndex: 5, opacity: 0.9 }} />
-        <FloatCard mp="Wildberries"metric={T.cta.orders[lang]} value="1 842" change="+8%" up delay={0.1} floatDur={4.3}
+        <FloatCard mp="Yandex Market"metric={T.cta.orders[lang]} value="1 842" change="+8%" up delay={0.1} floatDur={4.3}
           style={{ right: '3%', top: '18%', transform: 'rotate(4deg)', zIndex: 5, opacity: 0.9 }} />
         <FloatCard mp="Yandex Market"metric={T.cta.drr[lang]} value="8.2%" change="-1.4%" up={false} delay={0.15} floatDur={3.6}
           style={{ left: '6%', bottom: '20%', transform: 'rotate(-2deg)', zIndex: 5, opacity: 0.9 }} />

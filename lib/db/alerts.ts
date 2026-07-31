@@ -1,6 +1,7 @@
 import { eq, and, ne, or, isNull, inArray, gte, sql } from 'drizzle-orm'
 import { db, shops, products, orderItems, orders, userSettings } from '@/lib/db'
 import { getCurrentUserId } from '@/lib/db/shop-context'
+import { WB_ENABLED } from '@/lib/feature-flags'
 import type { StockAlert, MarketplaceType } from '@/lib/types'
 
 export type { StockAlert }
@@ -13,7 +14,12 @@ export async function getStockAlerts(): Promise<StockAlert[]> {
     db.select({ alert_stock_threshold: userSettings.alert_stock_threshold })
       .from(userSettings).where(eq(userSettings.user_id, userId)).limit(1),
     db.select({ id: shops.id, marketplace: shops.marketplace, warehouse_id: shops.warehouse_id })
-      .from(shops).where(and(eq(shops.user_id, userId), or(isNull(shops.shop_id_external), ne(shops.shop_id_external, 'DEMO')))),
+      .from(shops).where(and(
+        eq(shops.user_id, userId),
+        or(isNull(shops.shop_id_external), ne(shops.shop_id_external, 'DEMO')),
+        // WB sunset — hide from Alerts too. Same gate as products/orders.
+        ...(WB_ENABLED ? [] : [ne(shops.marketplace, 'wildberries')]),
+      )),
   ])
 
   const threshold = settingsRows[0]?.alert_stock_threshold ?? 15

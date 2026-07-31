@@ -38,12 +38,12 @@ export const T = {
   },
 
   hero: {
-    headingLine1: tr('Управляйте продажами на трёх маркетплейсах', "Uchta marketpleys sotuvlaringizni bitta joydan boshqaring", 'Manage your sales across three marketplaces'),
+    headingLine1: tr('Управляйте продажами на двух маркетплейсах', "Ikkita marketpleys sotuvlaringizni bitta joydan boshqaring", 'Manage your sales across two marketplaces'),
     headingLine2: tr('из одной панели', '', 'from one dashboard'),
     subtitle: tr(
-      'Выручка, ДРР, остатки и юнит-экономика по Uzum, Wildberries и Yandex Market — обновление каждые 15 минут, без ручного ввода',
-      "Uzum, Wildberries va Yandex Market bo'yicha daromad, DRR, qoldiqlar va birlik-iqtisod — har 15 daqiqada yangilanadi, qo'lda kiritishsiz",
-      'Revenue, DRR, stock and unit economics across Uzum, Wildberries and Yandex Market — updated every 15 minutes, no manual entry',
+      'Выручка, ДРР, остатки и юнит-экономика по Uzum и Yandex Market — обновление каждые 15 минут, без ручного ввода',
+      "Uzum va Yandex Market bo'yicha daromad, DRR, qoldiqlar va birlik-iqtisod — har 15 daqiqada yangilanadi, qo'lda kiritishsiz",
+      'Revenue, DRR, stock and unit economics across Uzum and Yandex Market — updated every 15 minutes, no manual entry',
     ),
     startFree: tr('Начать бесплатно', 'Bepul boshlash', 'Start for free'),
     howItWorks: tr('Как это работает', 'Qanday ishlaydi', 'How it works'),
