@@ -16,7 +16,7 @@ const T = {
       {
         heading: '1. Platformadan foydalanish',
         short: 'Foydalanish',
-        body: `Daromadchi — Uzbekiston bozorlarida (Uzum Market, Wildberries, Yandex Market) savdo qiluvchi sotuvchilar uchun mo'ljallangan analitika platformasidir.\n\nPlatformadan foydalanish uchun:\n• Faqat o'zingizga tegishli yoki vakolatli bo'lgan marketplace hisobi API kalitlarini kiritishingiz mumkin.\n• Platformani buzish, qayta sotish yoki ruxsatsiz maqsadlarda foydalanish taqiqlanadi.\n• Hisob ma'lumotlarini maxfiy saqlash va ularga ruxsatsiz kirishni darhol bizga xabar qilish majburiydir.`,
+        body: `Daromadchi — Uzbekiston bozorlarida (Uzum Market, Yandex Market) savdo qiluvchi sotuvchilar uchun mo'ljallangan analitika platformasidir.\n\nPlatformadan foydalanish uchun:\n• Faqat o'zingizga tegishli yoki vakolatli bo'lgan marketplace hisobi API kalitlarini kiritishingiz mumkin.\n• Platformani buzish, qayta sotish yoki ruxsatsiz maqsadlarda foydalanish taqiqlanadi.\n• Hisob ma'lumotlarini maxfiy saqlash va ularga ruxsatsiz kirishni darhol bizga xabar qilish majburiydir.`,
       },
       {
         heading: '2. Hisob va xavfsizlik',
@@ -68,7 +68,7 @@ const T = {
       {
         heading: '1. Использование платформы',
         short: 'Использование',
-        body: `Daromadchi — аналитическая платформа для продавцов на маркетплейсах Узбекистана (Uzum Market, Wildberries, Yandex Market).\n\nДля использования платформы:\n• Вы можете вводить только API-ключи аккаунтов маркетплейса, которые принадлежат вам или на использование которых вы уполномочены.\n• Запрещается взлом, перепродажа или использование платформы в несанкционированных целях.\n• Вы обязаны хранить учётные данные в тайне и незамедлительно сообщать нам о несанкционированном доступе.`,
+        body: `Daromadchi — аналитическая платформа для продавцов на маркетплейсах Узбекистана (Uzum Market, Yandex Market).\n\nДля использования платформы:\n• Вы можете вводить только API-ключи аккаунтов маркетплейса, которые принадлежат вам или на использование которых вы уполномочены.\n• Запрещается взлом, перепродажа или использование платформы в несанкционированных целях.\n• Вы обязаны хранить учётные данные в тайне и незамедлительно сообщать нам о несанкционированном доступе.`,
       },
       {
         heading: '2. Аккаунт и безопасность',
@@ -120,7 +120,7 @@ const T = {
       {
         heading: '1. Use of the platform',
         short: 'Usage',
-        body: `Daromadchi is an analytics platform for sellers on Uzbekistan marketplaces (Uzum Market, Wildberries, Yandex Market).\n\nTo use the platform:\n• You may only enter API keys for marketplace accounts you own or are authorised to use.\n• Hacking, reselling or using the platform for unauthorised purposes is prohibited.\n• You must keep your credentials confidential and immediately notify us of any unauthorised access.`,
+        body: `Daromadchi is an analytics platform for sellers on Uzbekistan marketplaces (Uzum Market, Yandex Market).\n\nTo use the platform:\n• You may only enter API keys for marketplace accounts you own or are authorised to use.\n• Hacking, reselling or using the platform for unauthorised purposes is prohibited.\n• You must keep your credentials confidential and immediately notify us of any unauthorised access.`,
       },
       {
         heading: '2. Account and security',

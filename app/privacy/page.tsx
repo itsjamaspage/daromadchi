@@ -15,12 +15,12 @@ const T = {
       {
         heading: '1. Umumiy ma\'lumot',
         short: 'Umumiy',
-        body: `Daromadchi — Uzbekiston bozorlarida (Uzum Market, Wildberries, Yandex Market) savdo qiluvchi sotuvchilar uchun mo\'ljallangan analitika platformasidir. Ushbu siyosat "Shaxsiy ma\'lumotlar to\'g\'risida"gi O\'zbekiston Respublikasi Qonuni (2019-yil 2-iyul, ZRU-547-son) va O\'zbekiston Respublikasining "Axborotlashtirish to\'g\'risida"gi Qonuniga (2003-yil 11-dekabr, 560-II-son) muvofiq tuzilgan.`,
+        body: `Daromadchi — Uzbekiston bozorlarida (Uzum Market, Yandex Market) savdo qiluvchi sotuvchilar uchun mo\'ljallangan analitika platformasidir. Ushbu siyosat "Shaxsiy ma\'lumotlar to\'g\'risida"gi O\'zbekiston Respublikasi Qonuni (2019-yil 2-iyul, ZRU-547-son) va O\'zbekiston Respublikasining "Axborotlashtirish to\'g\'risida"gi Qonuniga (2003-yil 11-dekabr, 560-II-son) muvofiq tuzilgan.`,
       },
       {
         heading: '2. Qanday ma\'lumotlar to\'planadi',
         short: 'Ma\'lumotlar',
-        body: `• Hisob ma\'lumotlari: elektron pochta manzili va bcrypt bilan xeshlangan parol — biz ochiq matn parolga hech qachon ega bo\'lmaymiz.\n• Do\'kon ma\'lumotlari: siz kiritgan marketplace API kaliti (AES-256 bilan shifrlangan holda saqlanadi).\n• Savdo ma\'lumotlari: marketplace API orqali olingan buyurtmalar, mahsulotlar, zaxira va reklama statistikasi.\n• Brauzer kengaytmasi ma\'lumotlari: kengaytma o\'rnatilsa, marketplace sahifalaridan (Uzum, Wildberries, Yandex Market) narx va mahsulot ma\'lumotlari to\'planadi — faqat siz kirgan hisob doirasida.\n• Telegram ma\'lumotlari: ogohlantirishlar yoqilganda foydalanuvchining Telegram chat ID si saqlanadi — faqat xabarnoma yuborish uchun.\n• Texnik ma\'lumotlar: brauzer turi, IP-manzil (xavfsizlik maqsadida), tizim jurnallari.\n\nBiz to\'lov kartasi ma\'lumotlari, hujjat nusxalari yoki boshqa maxsus kategoriyali shaxsiy ma\'lumotlarni to\'plamaymiz.`,
+        body: `• Hisob ma\'lumotlari: elektron pochta manzili va bcrypt bilan xeshlangan parol — biz ochiq matn parolga hech qachon ega bo\'lmaymiz.\n• Do\'kon ma\'lumotlari: siz kiritgan marketplace API kaliti (AES-256 bilan shifrlangan holda saqlanadi).\n• Savdo ma\'lumotlari: marketplace API orqali olingan buyurtmalar, mahsulotlar, zaxira va reklama statistikasi.\n• Brauzer kengaytmasi ma\'lumotlari: kengaytma o\'rnatilsa, marketplace sahifalaridan (Uzum, Yandex Market) narx va mahsulot ma\'lumotlari to\'planadi — faqat siz kirgan hisob doirasida.\n• Telegram ma\'lumotlari: ogohlantirishlar yoqilganda foydalanuvchining Telegram chat ID si saqlanadi — faqat xabarnoma yuborish uchun.\n• Texnik ma\'lumotlar: brauzer turi, IP-manzil (xavfsizlik maqsadida), tizim jurnallari.\n\nBiz to\'lov kartasi ma\'lumotlari, hujjat nusxalari yoki boshqa maxsus kategoriyali shaxsiy ma\'lumotlarni to\'plamaymiz.`,
       },
       {
         heading: '3. Ma\'lumotlar qanday ishlatiladi',
@@ -75,7 +75,7 @@ const T = {
     updated: 'Последнее обновление: 2026-07-29',
     sections: [
       { heading: '1. Общие сведения', short: 'Общее',
-        body: `Daromadchi — аналитическая платформа для продавцов на маркетплейсах Узбекистана (Uzum Market, Wildberries, Yandex Market). Настоящая политика разработана в соответствии с Законом РУз «О персональных данных» (2 июля 2019 г., ЗРУ-547) и Законом «Об информатизации» (11 декабря 2003 г., № 560-II).` },
+        body: `Daromadchi — аналитическая платформа для продавцов на маркетплейсах Узбекистана (Uzum Market, Yandex Market). Настоящая политика разработана в соответствии с Законом РУз «О персональных данных» (2 июля 2019 г., ЗРУ-547) и Законом «Об информатизации» (11 декабря 2003 г., № 560-II).` },
       { heading: '2. Какие данные собираются', short: 'Данные',
         body: `• Учётные данные: адрес электронной почты и хеш пароля (bcrypt) — мы никогда не имеем доступа к открытому тексту пароля.\n• Данные магазина: API-ключ маркетплейса, введённый вами (хранится в зашифрованном виде AES-256).\n• Торговые данные: заказы, товары, запасы и рекламная статистика, полученные через API маркетплейса.\n• Данные браузерного расширения: при установке расширения со страниц маркетплейсов собираются цены и данные о товарах — только в рамках вашей учётной записи.\n• Данные Telegram: при включении уведомлений сохраняется Telegram chat ID — исключительно для отправки уведомлений.\n• Технические данные: тип браузера, IP-адрес (в целях безопасности), системные журналы.\n\nМы не собираем данные платёжных карт, копии документов или иные специальные категории персональных данных.` },
       { heading: '3. Как используются данные', short: 'Использование',
@@ -104,7 +104,7 @@ const T = {
     updated: 'Last updated: 2026-07-29',
     sections: [
       { heading: '1. About', short: 'About',
-        body: `Daromadchi is an analytics platform for sellers on Uzbekistan marketplaces (Uzum Market, Wildberries, Yandex Market). This policy is prepared in compliance with the Law of the Republic of Uzbekistan "On Personal Data" (2 July 2019, ZRU-547) and the Law "On Informatization" (11 December 2003, No. 560-II).` },
+        body: `Daromadchi is an analytics platform for sellers on Uzbekistan marketplaces (Uzum Market, Yandex Market). This policy is prepared in compliance with the Law of the Republic of Uzbekistan "On Personal Data" (2 July 2019, ZRU-547) and the Law "On Informatization" (11 December 2003, No. 560-II).` },
       { heading: '2. What data we collect', short: 'Data',
         body: `• Account data: email address and a bcrypt password hash — we never have access to the plain-text password.\n• Shop data: the marketplace API key you provide (stored encrypted with AES-256).\n• Trading data: orders, products, stock levels and ad statistics fetched via the marketplace API.\n• Browser extension data: if the extension is installed, price and product data is collected from marketplace pages — only within your logged-in account.\n• Telegram data: when alerts are enabled, your Telegram chat ID is stored solely for sending notifications.\n• Technical data: browser type, IP address (for security purposes), system logs.\n\nWe do not collect payment card details, identity document copies, or other special-category personal data.` },
       { heading: '3. How data is used', short: 'Usage',

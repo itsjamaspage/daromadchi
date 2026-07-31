@@ -545,7 +545,6 @@ function MarqueeSection({ lang }: { lang: Lang }) {
   const itemCol  = isDark ? '#ffffff'                : '#0e1b2e'
   const dotCol   = isDark ? 'rgba(255,255,255,0.2)'  : 'rgba(14,27,46,0.2)'
   const items = [
-    'Wildberries',
     T.marquee.salesAnalytics[lang],
     'P&L hisobot',
     'Yandex Market',
@@ -1195,16 +1194,9 @@ function ExtensionSection({ lang }: { lang: Lang }) {
         T.extension.uzumPoint3[lang],
       ],
     },
-    {
-      name: 'Wildberries', color: '#CB11AB', bg: 'rgba(203,17,171,0.1)',
-      icon: 'WB',
-      headline: T.extension.wbHeadline[lang],
-      points: [
-        T.extension.wbPoint1[lang],
-        T.extension.wbPoint2[lang],
-        T.extension.wbPoint3[lang],
-      ],
-    },
+    // Wildberries extension card removed — WB integration is sunset
+    // app-wide. The 4-card grid is now a 3-card layout (see
+    // md:grid-cols-3 override on the grid below).
     {
       name: 'Yandex Market', color: '#E8A000', bg: 'rgba(232,160,0,0.1)',
       icon: 'YM',
@@ -1238,9 +1230,9 @@ function ExtensionSection({ lang }: { lang: Lang }) {
           sub={T.extension.sub[lang]}
         />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-12">
           {(() => {
-            const glowHsl = ['234 67 57', '307 84 43', '39 100 45', '207 90 74']
+            const glowHsl = ['234 67 57', '39 100 45', '207 90 74']
             const glowCols = [
               ['#494fdf', '#6366f1', '#818cf8'],
               ['#CB11AB', '#ec4899', '#f0abfc'],
@@ -1506,7 +1498,6 @@ function ResourcesSection({ lang }: { lang: Lang }) {
       icon: <Plug2 size={18} color={acc.tint} />,
       items: [
         { t: 'Uzum Market',   d: T.resources.intUzumDesc[lang] },
-        { t: 'Wildberries',   d: T.resources.intWbDesc[lang] },
         { t: 'Yandex Market', d: T.resources.intYmDesc[lang] },
       ],
       link: T.resources.intLink[lang],
@@ -1789,7 +1780,7 @@ function FooterSection({ lang }: { lang: Lang }) {
       { label: T.footer.about[lang], href: '/about' },
     ]},
     { head: T.footer.marketplacesHead[lang], links: [
-      { label: 'Uzum Market', href: '#' }, { label: 'Wildberries', href: '#' }, { label: 'Yandex Market', href: '#' },
+      { label: 'Uzum Market', href: '#' }, { label: 'Yandex Market', href: '#' },
     ]},
     { head: T.footer.contactHead[lang], links: [
       { label: 'Telegram', href: 'https://t.me/daromadchi_alerts_bot' },
@@ -1811,7 +1802,7 @@ function FooterSection({ lang }: { lang: Lang }) {
               {T.footer.description[lang]}
             </p>
             <div style={{ display: 'flex', gap: 8, marginTop: 20 }}>
-              {['Uzum','WB','YM'].map(mp => (
+              {['Uzum','YM'].map(mp => (
                 <div key={mp} style={{ fontSize: 10, fontWeight: 700, color: isDark ? '#ffffff' : P.ink, background: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(14,34,51,0.12)', borderRadius: 4, padding: '3px 7px' }}>
                   {mp}
                 </div>
