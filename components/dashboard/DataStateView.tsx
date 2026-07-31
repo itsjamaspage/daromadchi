@@ -5,6 +5,7 @@ import { RefreshCw, AlertCircle, CheckCircle2, Clock, AlertTriangle } from 'luci
 import type { SyncDay } from '@/lib/types'
 import { useLang } from '@/app/providers'
 import { translations } from '@/lib/i18n'
+import { WB_ENABLED } from '@/lib/feature-flags'
 
 function fs(n: number | undefined) {
   if (n === undefined) return '—'
@@ -99,11 +100,11 @@ export default function DataStateView({ uzumDays, yandexDays, wbDays, connectedM
     <div className="space-y-4">
       {/* Marketplace tabs */}
       <div className="flex items-center gap-1 p-1 bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl w-fit">
-        {([
+        {(([
           { id: 'uzum',   label: 'Uzum' },
           { id: 'yandex', label: 'Yandex Market' },
           { id: 'wb',     label: 'Wildberries' },
-        ] as { id: MP; label: string }[]).map(m => (
+        ] as { id: MP; label: string }[]).filter(m => m.id !== 'wb' || WB_ENABLED)).map(m => (
           <button key={m.id}
             onClick={() => { setMp(m.id); setSelected(new Set()); setHoveredDay(null) }}
             className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${

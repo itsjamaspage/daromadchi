@@ -8,6 +8,7 @@ import { useLang } from '@/app/providers'
 import { dashT } from '@/lib/dashT'
 import type { SyncDay } from '@/lib/types'
 import DataStateView from '@/components/dashboard/DataStateView'
+import { WB_ENABLED } from '@/lib/feature-flags'
 
 interface Shop {
   id: string
@@ -239,7 +240,7 @@ export default function SyncStatusClient({ shops, uzumDays, yandexDays, wbDays, 
     await Promise.allSettled([
       fetch('/api/uzum/sync', { method: 'POST' }),
       fetch('/api/yandex/sync', { method: 'POST' }),
-      fetch('/api/wildberries/sync', { method: 'POST' }),
+      ...(WB_ENABLED ? [fetch('/api/wildberries/sync', { method: 'POST' })] : []),
     ])
     router.refresh()
     setSyncingAll(false)

@@ -6,6 +6,7 @@ import type { AdCampaign, AdType } from '@/lib/types'
 import ExportButton from '@/components/dashboard/ExportButton'
 import { useLang } from '@/app/providers'
 import { dashT } from '@/lib/dashT'
+import { WB_ENABLED } from '@/lib/feature-flags'
 
 function fs(n: number) {
   // Precise, thousands-separated. Only condense at 1M+ where a full
@@ -96,7 +97,7 @@ export default function AdvertisingView({ uzumCampaigns, wbCampaigns }: Props) {
     <div className="space-y-4" ref={printRef}>
       {/* Marketplace tabs */}
       <div className="flex items-center gap-1 p-1 bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl w-fit">
-        {(['uzum', 'wb', 'ym'] as MarketplaceTab[]).map(mp => (
+        {((['uzum', 'wb', 'ym'] as MarketplaceTab[]).filter(mp => mp !== 'wb' || WB_ENABLED)).map(mp => (
           <button key={mp} onClick={() => setMarketplace(mp)}
             className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${
               marketplace === mp

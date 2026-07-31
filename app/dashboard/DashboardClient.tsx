@@ -231,15 +231,18 @@ export default function DashboardClient({ slices, stockGroups, days, period, fro
         const mpLinks: Record<string, { url: string; label: string }> = {
           uzum:          { url: 'https://seller.uzum.uz',           label: 'seller.uzum.uz'           },
           yandex_market: { url: 'https://partner.market.yandex.ru', label: 'partner.market.yandex.ru' },
-          wildberries:   { url: 'https://seller.wildberries.ru',    label: 'seller.wildberries.ru'    },
+          ...(WB_ENABLED ? { wildberries: { url: 'https://seller.wildberries.ru', label: 'seller.wildberries.ru' } } : {}),
         }
+        const mpKeys = WB_ENABLED
+          ? (['uzum', 'yandex_market', 'wildberries'] as const)
+          : (['uzum', 'yandex_market'] as const)
         // On a specific tab show only that marketplace; on "Все" show all connected ones
         const linksToShow: { url: string; label: string }[] = marketplace
           ? [mpLinks[marketplace]].filter(Boolean)
-          : (['uzum', 'yandex_market', 'wildberries'] as const)
+          : mpKeys
               .filter(mp => slices[mp].hasConnectedShop)
               .map(mp => mpLinks[mp])
-        // Fallback: if no connected shops yet, show all three
+        // Fallback: if no connected shops yet, show all enabled marketplaces
         const fallbackLinks = Object.values(mpLinks)
         const displayLinks = linksToShow.length > 0 ? linksToShow : fallbackLinks
 

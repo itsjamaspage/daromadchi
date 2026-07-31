@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { X, Zap } from 'lucide-react'
 import { useLang } from '@/app/providers'
+import { WB_ENABLED } from '@/lib/feature-flags'
 
 const STORAGE_KEY = 'daromadchi-welcome-dismissed'
 
@@ -38,11 +39,11 @@ const LABELS = {
   },
 }
 
-const MARKETPLACES = [
+const MARKETPLACES = ([
   { key: 'uzum',   label: (l: typeof LABELS.uz) => l.uzum,   accent: 'var(--c1)',  letter: 'U' },
   { key: 'yandex', label: (l: typeof LABELS.uz) => l.yandex, accent: '#f59e0b',    letter: 'Y' },
   { key: 'wb',     label: (l: typeof LABELS.uz) => l.wb,     accent: '#7c3aed',    letter: 'W' },
-]
+] as const).filter(m => m.key !== 'wb' || WB_ENABLED)
 
 interface Props {
   hasShops: boolean
