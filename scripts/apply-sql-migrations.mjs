@@ -23,6 +23,7 @@ const MIGRATIONS = [
   'migrations/migrations/036_uzum_settlements.sql',
   'migrations/migrations/037_shops_throttled_until.sql',
   'migrations/migrations/038_stock_sync_mode.sql',
+  'migrations/migrations/039_stock_write_log.sql',
 ]
 
 function loadDatabaseUrl() {

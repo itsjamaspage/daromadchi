@@ -647,3 +647,44 @@ export const uzumSettlementOrders = pgTable('uzum_settlement_orders', {
   index('uzum_settlement_shop_order_idx').on(t.shop_id, t.uzum_order_id),
   index('uzum_settlement_transaction_at_idx').on(t.transaction_at),
 ])
+
+/* ── 29. stock_write_log ─────────────────────────────────────────────────────── */
+// Audit trail for EVERY stock-write attempt made by lib/marketplace/stock-writer.ts
+// — sent, dry-run simulated, skipped, guard-blocked, kill-switched, or errored.
+// One row per attempt. This is the only place stock writes are recorded; nothing
+// else in the app writes to a marketplace.
+export const stockWriteLog = pgTable('stock_write_log', {
+  id:                 uuid('id').primaryKey().defaultRandom(),
+  shop_id:            uuid('shop_id').notNull().references(() => shops.id, { onDelete: 'cascade' }),
+  product_id:         uuid('product_id').references(() => products.id, { onDelete: 'set null' }),
+  marketplace:        marketplaceTypeEnum('marketplace').notNull(),
+  // Seller article / shopSku (for grouping + the YM write payload).
+  sku:                text('sku'),
+  // The exact identifier the write used: Uzum string barcode, or YM shopSku.
+  identifier:         text('identifier'),
+  // YM only — the warehouseId targeted.
+  warehouse_id:       text('warehouse_id'),
+  endpoint:           text('endpoint'),
+  method:             text('method'),
+  // Quantity as requested by the caller, before Math.max(0, …) clamping.
+  requested_quantity: integer('requested_quantity'),
+  // Clamped quantity actually written / simulated.
+  quantity:           integer('quantity'),
+  // Monotonic freshness version (per shop+sku); enforced in Phase 4.
+  version:            integer('version'),
+  dry_run:            boolean('dry_run').default(false).notNull(),
+  // sent | dry_run | skipped | blocked | killed | error
+  status:             text('status').notNull(),
+  // Machine-readable reason: missing_barcode, missing_warehouse, not_stock_sync,
+  // kill_switch, guard_blocked, http_<code>, exception, …
+  reason:             text('reason'),
+  http_status:        integer('http_status'),
+  request_body:       text('request_body'),
+  response_body:      text('response_body'),
+  error:              text('error'),
+  created_at:         timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (t) => [
+  index('stock_write_log_shop_id_idx').on(t.shop_id),
+  index('stock_write_log_created_at_idx').on(t.created_at),
+  index('stock_write_log_status_idx').on(t.status),
+])

@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "seed:categories": "tsx drizzle/seeds/category-canonicals.ts",
-    "categories:suggest": "tsx scripts/suggest-category-aliases.ts"
+    "categories:suggest": "tsx scripts/suggest-category-aliases.ts",
+    "test:guard": "node --import tsx --test lib/marketplace-readonly-guard.test.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
