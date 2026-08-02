@@ -6,6 +6,7 @@ import BackButton from '@/app/help/BackButton'
 export const metadata: Metadata = {
   title: 'Terms of Use — Daromadchi',
   description: 'Daromadchi platform terms of use',
+  alternates: { canonical: '/terms' },
 }
 
 export default function TermsLayout({ children }: { children: React.ReactNode }) {

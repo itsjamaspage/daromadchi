@@ -6,6 +6,7 @@ import BackButton from './BackButton'
 export const metadata: Metadata = {
   title: 'Help Center — Daromadchi',
   description: 'Guides and articles for using the Daromadchi platform',
+  alternates: { canonical: '/help' },
 }
 
 export default function HelpLayout({ children }: { children: React.ReactNode }) {

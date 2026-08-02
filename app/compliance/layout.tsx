@@ -5,6 +5,7 @@ import ComplianceHeaderControls from './ComplianceHeaderControls'
 export const metadata: Metadata = {
   title: 'Ma\'lumotlar Muvofiqlik — Daromadchi',
   description: 'Daromadchi platformasida shaxsiy ma\'lumotlarni qayta ishlash, xavfsizlik va O\'zbekiston qonunlariga muvofiqlik hujjati.',
+  alternates: { canonical: '/compliance' },
 }
 
 export default function ComplianceLayout({ children }: { children: React.ReactNode }) {

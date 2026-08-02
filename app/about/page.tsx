@@ -13,7 +13,7 @@ export const metadata: Metadata = {
     description: 'O\'zbekistondagi Uzum, Wildberries va Yandex Market sotuvchilari uchun analitika platformasi.',
     url: 'https://www.daromadchi.uz/about',
   },
-  alternates: { canonical: 'https://www.daromadchi.uz/about' },
+  alternates: { canonical: '/about' },
 }
 
 const VALUES = [

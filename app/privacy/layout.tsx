@@ -6,6 +6,7 @@ import BackButton from '@/app/help/BackButton'
 export const metadata: Metadata = {
   title: 'Privacy Policy — Daromadchi',
   description: 'Daromadchi Chrome Extension privacy policy',
+  alternates: { canonical: '/privacy' },
 }
 
 export default function PrivacyLayout({ children }: { children: React.ReactNode }) {
