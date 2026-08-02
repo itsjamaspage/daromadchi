@@ -24,6 +24,8 @@ const MIGRATIONS = [
   'migrations/migrations/037_shops_throttled_until.sql',
   'migrations/migrations/038_stock_sync_mode.sql',
   'migrations/migrations/039_stock_write_log.sql',
+  'migrations/migrations/040_stock_sync_state.sql',
+  'migrations/migrations/041_shops_stock_poll.sql',
 ]
 
 function loadDatabaseUrl() {

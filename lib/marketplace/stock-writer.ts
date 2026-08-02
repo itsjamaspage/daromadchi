@@ -51,6 +51,13 @@ export interface PushStockParams {
   warehouseId?: string | null
   /** products.id for the audit-row FK (optional). */
   productId?: string | null
+  /**
+   * ISO timestamp stamped into the YM payload's `updatedAt`. MUST be the moment
+   * the quantity was computed, and stable across retries of the same logical
+   * write — the caller computes it once alongside `version`. Defaults to now
+   * only when a caller omits it (single, non-retried writes).
+   */
+  updatedAt?: string
 }
 
 export interface PushStockResult {
@@ -237,11 +244,14 @@ export async function pushStock(params: PushStockParams): Promise<PushStockResul
     method = 'PUT'
     identifier = shopSku
     whId = wh
+    // updatedAt = moment of computation (stable across retries): use the value
+    // the caller stamped alongside `version`; fall back to now only if omitted.
+    const updatedAt = params.updatedAt ?? new Date().toISOString()
     body = JSON.stringify({
       skus: [{
         sku: shopSku,
         warehouseId: whNum,
-        items: [{ count: clamped, type: 'FIT', updatedAt: new Date().toISOString() }],
+        items: [{ count: clamped, type: 'FIT', updatedAt }],
       }],
     })
   }

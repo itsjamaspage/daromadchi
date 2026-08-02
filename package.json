@@ -9,7 +9,9 @@
     "lint": "eslint",
     "seed:categories": "tsx drizzle/seeds/category-canonicals.ts",
     "categories:suggest": "tsx scripts/suggest-category-aliases.ts",
-    "test:guard": "node --import tsx --test lib/marketplace-readonly-guard.test.ts"
+    "test:guard": "node --import tsx --test lib/marketplace-readonly-guard.test.ts",
+    "test:stock": "node --import tsx --test lib/marketplace-readonly-guard.test.ts lib/marketplace/stock-allocation.test.ts",
+    "stock-sync:demo": "tsx scripts/stock-sync-dry-run-demo.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

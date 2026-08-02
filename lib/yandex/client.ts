@@ -622,6 +622,74 @@ export async function fetchAllYandexStocks(
   return { stockMap, lastError }
 }
 
+// ─── FBS warehouses (GET /v2/campaigns/{id}/warehouses) — READ ────────────────
+// The warehouseId(s) a stock-update PUT targets. Most FBS sellers have exactly
+// one. Used by the identifier backfill so a live write never guesses.
+export interface YandexWarehouse {
+  id: number
+  name?: string
+}
+
+export async function fetchYandexWarehouses(token: string, campaignId: string): Promise<YandexWarehouse[]> {
+  return withRetry(async () => {
+    try {
+      const data = await request<{ result?: { warehouses?: YandexWarehouse[] }; warehouses?: YandexWarehouse[] }>(
+        `/v2/campaigns/${campaignId}/warehouses`,
+        token,
+      )
+      return data.result?.warehouses ?? data.warehouses ?? []
+    } catch (e) {
+      if (e instanceof YandexApiError && (e.status === 404 || e.status === 403)) return []
+      throw e
+    }
+  })
+}
+
+// Per-offer stock location (offerId → { warehouseId, count }) from the same
+// offers/stocks READ used for stock numbers, but keeping the warehouseId this
+// time. Prefers the per-warehouse response shape; falls back to the campaign's
+// single warehouse when the endpoint only returns the flat skus[] shape.
+export async function fetchYandexStockLocations(
+  token: string,
+  campaignId: string,
+): Promise<Map<string, { warehouseId: number; count: number }>> {
+  const out = new Map<string, { warehouseId: number; count: number }>()
+  let fallbackWarehouse: number | null = null
+  try {
+    const whs = await fetchYandexWarehouses(token, campaignId)
+    if (whs.length > 0) fallbackWarehouse = whs[0].id
+  } catch { /* best-effort */ }
+
+  const countFit = (stocks: { type?: string; count?: number }[] | undefined): number => {
+    const fit = (stocks ?? []).find(s => s?.type === 'FIT')
+    return fit?.count ?? 0
+  }
+
+  try {
+    let pageToken: string | undefined
+    do {
+      const res = await fetchYandexStocks(token, campaignId, [], pageToken)
+      // Newer shape: result.warehouses[].offers[] — warehouseId is authoritative.
+      for (const w of res.result.warehouses ?? []) {
+        const whId = w.warehouseId ?? fallbackWarehouse
+        for (const off of w.offers ?? []) {
+          if (!off.offerId || whId == null) continue
+          out.set(off.offerId, { warehouseId: whId, count: countFit(off.stocks) })
+        }
+      }
+      // Older shape: result.skus[] — no per-row warehouseId, use the fallback.
+      for (const item of res.result.skus ?? []) {
+        const key = item.sku ?? item.offerId
+        if (!key || fallbackWarehouse == null) continue
+        if (!out.has(key)) out.set(key, { warehouseId: fallbackWarehouse, count: countFit(item.warehouseStocks ?? item.stocks) })
+      }
+      pageToken = res.result.nextPageToken ?? res.result.paging?.nextPageToken
+    } while (pageToken)
+  } catch { /* best-effort — caller surfaces missing identifiers as a skip */ }
+
+  return out
+}
+
 // Fetch SKU stats for a period (best-effort)
 export async function fetchAllYandexSkuStats(
   token: string,

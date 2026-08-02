@@ -125,6 +125,11 @@ export const shops = pgTable('shops', {
   primary_channel_priority: integer('primary_channel_priority').default(100).notNull(),
   // When the user consented to edit mode for this shop (audit trail).
   stock_sync_consent_at:    timestamp('stock_sync_consent_at', { withTimezone: true }),
+  // Cheap order change-detector state for the tiered Uzum poller: the last
+  // CREATED-order count we saw and when we last polled. A changed count is the
+  // signal to run Step A/B for that shop's SKU groups.
+  last_orders_count:        integer('last_orders_count'),
+  stock_poll_at:            timestamp('stock_poll_at', { withTimezone: true }),
   created_at:        timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 }, (t) => [
   index('shops_user_id_idx').on(t.user_id),
@@ -687,4 +692,26 @@ export const stockWriteLog = pgTable('stock_write_log', {
   index('stock_write_log_shop_id_idx').on(t.shop_id),
   index('stock_write_log_created_at_idx').on(t.created_at),
   index('stock_write_log_status_idx').on(t.status),
+])
+
+/* ── 30. stock_sync_state ────────────────────────────────────────────────────── */
+// Monotonic freshness version per (shop, sku-group) plus the last decision, so a
+// stock write can be stamped with a version at the moment it's computed and a
+// stale/retried write can be refused (freshness guard — enforced in Phase 4).
+export const stockSyncState = pgTable('stock_sync_state', {
+  id:             uuid('id').primaryKey().defaultRandom(),
+  shop_id:        uuid('shop_id').notNull().references(() => shops.id, { onDelete: 'cascade' }),
+  product_id:     uuid('product_id').references(() => products.id, { onDelete: 'set null' }),
+  // Normalized cross-marketplace match key for the SKU group.
+  sku:            text('sku').notNull(),
+  // Monotonic — incremented on each real diff we decide to write.
+  version:        integer('version').default(0).notNull(),
+  // Last computed shared available and the target we pushed to THIS shop.
+  last_available: integer('last_available'),
+  last_target:    integer('last_target'),
+  last_pushed_at: timestamp('last_pushed_at', { withTimezone: true }),
+  updated_at:     timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (t) => [
+  uniqueIndex('stock_sync_state_shop_sku_unique').on(t.shop_id, t.sku),
+  index('stock_sync_state_shop_id_idx').on(t.shop_id),
 ])
