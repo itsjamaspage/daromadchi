@@ -1339,7 +1339,7 @@ Email manzil o'zgartirilsa, ikki tasdiqlash kerak:
     content: `
 ## API token nima?
 
-API token — Daromadchi'ga Uzum Market hisobingizdan ma'lumotlarni o'qish uchun ruxsat beruvchi kalit. Token faqat o'qish uchun ishlaydi, ya'ni Daromadchi hech qachon tovarlar qo'shib yoki buyurtmalar bekor qilib bo'lmaydi.
+API token — Daromadchi'ga Uzum Market hisobingizdan ma'lumotlarni o'qish uchun ruxsat beruvchi kalit. Sukut bo'yicha token faqat o'qish uchun ishlaydi — Daromadchi tovarlar qo'shmaydi yoki buyurtmalarni bekor qilmaydi. Agar do'kon uchun ixtiyoriy «ostatok sinxronizatsiyasi» rejimini yoqsangiz, Daromadchi o'sha do'kon listingida faqat ostatok (qoldiq soni)ni yangilay oladi — boshqa hech narsani emas (bu SKU_UPDATE huquqiga ega tokenni talab qiladi).
 
 ## Token olish (Uzum Market)
 
@@ -2645,7 +2645,7 @@ Daromadchi принимает следующие способы оплаты:
   'api-token-sozlash': `
 ## Что такое API-токен?
 
-API-токен — ключ, дающий Daromadchi разрешение читать данные из вашего аккаунта Uzum Market. Токен работает только на чтение: Daromadchi не может добавлять товары или отменять заказы.
+API-токен — ключ, дающий Daromadchi разрешение читать данные из вашего аккаунта Uzum Market. По умолчанию токен работает только на чтение: Daromadchi не добавляет товары и не отменяет заказы. Если вы включите для магазина необязательный режим синхронизации остатков, Daromadchi сможет обновлять на листинге этого магазина только количество (остаток) — и ничего больше (для этого нужен токен с правом SKU_UPDATE).
 
 ## Получение токена (Uzum Market)
 
@@ -3845,7 +3845,7 @@ Enable in **Settings → Security → 2FA**:
   'api-token-sozlash': `
 ## What is an API token?
 
-An API token is a key giving Daromadchi permission to read data from your Uzum Market account. The token is read-only: Daromadchi cannot add products or cancel orders.
+An API token is a key giving Daromadchi permission to read data from your Uzum Market account. By default the token is used read-only: Daromadchi does not add products or cancel orders. If you turn on the optional Stock-sync mode for a shop, Daromadchi can update only the stock quantity (ostatok) on that shop's listing — and nothing else (this needs a token with the SKU_UPDATE permission).
 
 ## Get a token (Uzum Market)
 

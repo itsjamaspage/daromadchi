@@ -8,8 +8,11 @@ import type { MarketplaceType } from '@/lib/types'
  *
  * Products are grouped across the user's shops by normalized seller article
  * (SKU) — the same article on Uzum, Wildberries and Yandex Market means the
- * same physical product. All numbers are computed from data already synced
- * READ-ONLY from the marketplaces; nothing is ever written back to a store.
+ * same physical product. All numbers here are computed from data already synced
+ * from the marketplaces; this display math never writes to a store. (Writing the
+ * corrected leftover back to a listing is a separate, opt-in path —
+ * lib/marketplace/stock-writer.ts — used only for stock_sync shops; read-only
+ * shops, the default, are never written to.)
  *
  * Two leftover modes per group:
  *  • api      — FBS/FBO-aware aggregation per member:

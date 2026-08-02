@@ -9,13 +9,19 @@
  *   • POST                  → rejected unless the exact URL is a marketplace
  *                             READ that requires POST (APPROVED_POST_ENDPOINTS).
  *
- * The SOLE sanctioned exception is the audited, opt-in, stock-quantity-only
- * writer (lib/marketplace/stock-writer.ts). It — and only it — calls this guard
- * with intent 'stock-write'. Such a request must match the method-exact,
- * URL-exact APPROVED_STOCK_WRITE_ENDPOINTS allowlist (stock endpoints only).
- * Anything else with write intent is logged as `blocked` and never sent.
- * Every other marketplace write remains forbidden without fresh written
- * approval from the owner.
+ * There are exactly TWO sanctioned write exceptions, each narrow and audited:
+ *   • intent 'stock-write' — the opt-in, stock-quantity-ONLY writer
+ *     (lib/marketplace/stock-writer.ts). Must match the method-exact, URL-exact
+ *     APPROVED_STOCK_WRITE_ENDPOINTS (stock endpoints only). Changes nothing but
+ *     the ostatok, and only for shops whose owner opted in.
+ *   • intent 'order-cancel' — the oversell cancel path
+ *     (lib/marketplace/order-cancel.ts). Must match APPROVED_ORDER_CANCEL_ENDPOINTS
+ *     and may ONLY cancel (the shared YM status endpoint additionally requires a
+ *     CANCELLED body and forbids any forward status).
+ * Each writer — and only it — calls this guard with its intent. Anything else
+ * with write intent is logged as `blocked` and never sent. Every other
+ * marketplace write remains forbidden without fresh written approval from the
+ * owner.
  */
 
 import { logger } from './logger'

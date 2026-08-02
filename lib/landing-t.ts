@@ -135,9 +135,9 @@ export const T = {
     signUp: tr('Зарегистрироваться', "Ro'yxatdan o'tish", 'Sign up'),
     step2Title: tr('Подключите магазин', "Do'koningizni ulang", 'Connect your store'),
     step2Desc: tr(
-      'Вставьте API-ключ из кабинета Uzum или Яндекс — получите доступ к данным магазина, платформа работает в режиме «только чтение»',
-      "Uzum yoki Yandex kabinetidan API kalitini kiriting — do'kon ma'lumotlariga kirish oling, platforma «faqat o'qish» rejimida ishlaydi",
-      'Paste API key from Uzum or Yandex — and access to your store\'s data, our platform works in "read only" mode.',
+      'Вставьте API-ключ из кабинета Uzum или Яндекс — получите доступ к данным магазина. По умолчанию платформа только читает данные (остатки можно синхронизировать по желанию).',
+      "Uzum yoki Yandex kabinetidan API kalitini kiriting — do'kon ma'lumotlariga kirish oling. Sukut bo'yicha platforma faqat ma'lumot o'qiydi (ostatokni xohishingizga ko'ra sinxronlash mumkin).",
+      'Paste your API key from Uzum or Yandex to access your store\'s data. By default the platform only reads your data (you can optionally turn on stock sync).',
     ),
     yourStores: tr('Ваши магазины', "Do'konlaringiz", 'Your stores'),
     step3Title: tr('Данные готовы', "Ma'lumotlar tayyor", 'Data is ready'),
@@ -310,9 +310,9 @@ export const T = {
     accent: tr('вопросы', 'savollar', 'questions'),
     q1: tr('Безопасно ли подключать API-ключ?', 'API kalitini ulash xavfsizmi?', 'Is it safe to connect my API key?'),
     a1: tr(
-      'Да. Мы используем только Read Only ключи — мы можем читать данные из вашего магазина, но никогда не можем изменять цены, товары или заказы. Ключ хранится в зашифрованном виде.',
-      "Ha. Biz faqat Read Only kalitlaridan foydalanamiz — biz do'kongingizdagi ma'lumotlarni o'qiy olamiz, lekin narxlar, mahsulotlar yoki buyurtmalarni hech qachon o'zgartira olmaymiz.",
-      'Yes. We only use Read Only keys — we can read data from your store but can never modify prices, products or orders. The key is stored encrypted.',
+      'Да. По умолчанию мы только читаем данные вашего магазина — мы никогда не меняем цены, товары или заказы. Единственное, что мы можем изменить, — это количество остатка, и только если вы сами включите необязательный режим синхронизации остатков для магазина (он требует ключ с правом на изменение остатков). Ключ хранится в зашифрованном виде.',
+      "Ha. Sukut bo'yicha biz faqat do'koningiz ma'lumotlarini o'qiymiz — narxlar, mahsulotlar yoki buyurtmalarni hech qachon o'zgartirmaymiz. O'zgartira oladigan yagona narsa — ostatok (qoldiq soni), va faqat siz do'kon uchun ixtiyoriy ostatok sinxronizatsiyasi rejimini yoqsangiz (bu ostatokni o'zgartirish huquqiga ega kalitni talab qiladi). Kalit shifrlangan holda saqlanadi.",
+      'Yes. By default we only read your store — we never change prices, products, or orders. The one thing we can change is the stock quantity (ostatok), and only if you turn on the optional Stock-sync mode for that shop (which needs a key with stock-update permission). The key is stored encrypted.',
     ),
     q2: tr(
       'Как быстро появляются данные после подключения?',
