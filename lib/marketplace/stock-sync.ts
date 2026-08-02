@@ -18,6 +18,7 @@ import { db, shops, products, orders, orderItems, stockSyncState } from '@/lib/d
 import { logger } from '@/lib/logger'
 import { pushStock, type StockWriteStatus } from '@/lib/marketplace/stock-writer'
 import { planStockWrites, type SyncMember, type OversellMode } from '@/lib/marketplace/stock-allocation'
+import { handleOversell } from '@/lib/marketplace/oversell'
 import { decrypt } from '@/lib/crypto'
 import { fetchAllUzumSkuStocks } from '@/lib/uzum/client'
 import { fetchYandexStockLocations } from '@/lib/yandex/client'
@@ -141,6 +142,21 @@ async function loadGroups(userId: string): Promise<{
   return { shopsById, groups }
 }
 
+// Resolve the group's oversell policy from the primary (lowest-priority)
+// stock_sync shop, with an explicit safe fallback. `writable` is guaranteed
+// non-empty and stock_sync-only by the caller, so the primary is never
+// read-only; the ?? 'lock_last_unit' still guards a missing/unknown value so
+// the result is never undefined.
+function resolveOversellPolicy(
+  writable: SyncMember[],
+  shopsById: Map<string, ShopRow>,
+): { mode: OversellMode; sourceShopId: string | null } {
+  const primary = [...writable].sort((a, b) => a.priority - b.priority)[0]
+  if (!primary) return { mode: 'lock_last_unit', sourceShopId: null }
+  const mode = shopsById.get(primary.shopId)?.oversell_mode ?? 'lock_last_unit'
+  return { mode, sourceShopId: primary.shopId }
+}
+
 // Bump and return the monotonic version for (shop, match-key), recording the
 // last decision. Called once per real write, before pushing.
 async function bumpVersion(shopId: string, matchKey: string, productId: string, available: number, target: number): Promise<number> {
@@ -177,12 +193,40 @@ export async function syncStockSyncGroups(opts: RunOptions): Promise<StockSyncRu
     if (writableMembers.length === 0) continue // Step A only (display), no writes
     groupsConsidered++
 
-    // Oversell policy comes from the primary (lowest-priority) stock_sync shop.
-    const primary = [...writableMembers].sort((a, b) => a.priority - b.priority)[0]
-    const oversellMode = shopsById.get(primary.shopId)?.oversell_mode ?? 'lock_last_unit'
+    // Oversell policy: the primary (lowest-priority) stock_sync shop decides.
+    // Explicit fallback to lock_last_unit (the safe default) if — for any reason
+    // — the primary is missing or carries no policy. Never resolve to undefined.
+    const { mode: oversellMode, sourceShopId } = resolveOversellPolicy(writableMembers, shopsById)
 
     const { available, plans } = planStockWrites(group.members, oversellMode)
     anyDisplayChange = true // available may have moved; refresh the display
+
+    // Oversell detection: raw (pre-clamp) available below zero means the same
+    // physical unit was sold more than once. Alert + (rate-limited) auto-cancel.
+    const maxStock = Math.max(0, ...group.members.map(m => Math.max(0, m.listedStock)))
+    const pending = group.members.reduce((s, m) => s + Math.max(0, m.pending), 0)
+    const rawAvailable = maxStock - pending
+    if (rawAvailable < 0) {
+      try {
+        await handleOversell({
+          userId: opts.userId,
+          matchKey,
+          title: group.members[0]?.sku ?? matchKey,
+          rawAvailable,
+          productIds: [...group.products.keys()],
+          forceDryRun: opts.forceDryRun,
+        })
+      } catch (err) {
+        logger.error('oversell_handler_failed', { matchKey, error: String(err).slice(0, 300) })
+      }
+    }
+
+    const groupWrites = plans.filter(p => p.willWrite)
+    // Log which shop's policy governed this group the first time it actually
+    // drives a write, so unexpected group behaviour later is traceable.
+    if (groupWrites.length > 0) {
+      logger.info('stock_sync_policy_applied', { matchKey, oversellMode, sourceShopId, available, writes: groupWrites.length })
+    }
 
     for (const plan of plans) {
       if (!plan.willWrite) continue // real diff only
@@ -213,6 +257,7 @@ export async function syncStockSyncGroups(opts: RunOptions): Promise<StockSyncRu
         warehouseId,
         productId: product.id,
         updatedAt: computedAt,
+        freshnessKey: matchKey,
       })
 
       entries.push({
@@ -317,7 +362,7 @@ export async function firstLivePush(userId: string, productId: string): Promise<
       shop_id_external: shop.shop_id_external, api_mode: shop.api_mode,
     },
     sku: marketSku, barcode, quantity: found.target, dryRun: false, version, warehouseId,
-    productId: found.product.id, updatedAt: new Date().toISOString(),
+    productId: found.product.id, updatedAt: new Date().toISOString(), freshnessKey: found.matchKey,
   })
 
   if (result.status !== 'sent') {

@@ -15,7 +15,10 @@ const YM_OFFER_MAPPINGS = 'https://api.partner.market.yandex.ru/v2/businesses/55
 const UZUM_STOCK_WRITE = 'https://api-seller.uzum.uz/api/seller-openapi/v2/fbs/sku/stocks'
 const UZUM_SEND_PRICE = 'https://api-seller.uzum.uz/api/seller-openapi/v1/product/12345/sendPriceData'
 const UZUM_ORDER_CANCEL = 'https://api-seller.uzum.uz/api/seller-openapi/v1/fbs/order/98765/cancel'
+const UZUM_ORDER_CONFIRM = 'https://api-seller.uzum.uz/api/seller-openapi/v1/fbs/order/98765/confirm'
+const UZUM_ORDER_REFUND = 'https://api-seller.uzum.uz/api/seller-openapi/v1/fbs/order/98765/refund'
 const UZUM_SHOPS_GET = 'https://api-seller.uzum.uz/api/seller-openapi/v1/shops'
+const YM_ORDER_STATUS = 'https://api.partner.market.yandex.ru/v2/campaigns/149137909/orders/555/status'
 
 describe('marketplace egress guard — read intent (default)', () => {
   it('allows plain GET reads', () => {
@@ -72,5 +75,51 @@ describe('marketplace egress guard — stock-write intent', () => {
 
   it('BLOCKS the stock path with a trailing query string (exact-URL only)', () => {
     assert.throws(() => checkMarketplaceRequest(YM_STOCKS_Q, 'PUT', 'stock-write'), /STOCK-WRITE GUARD/)
+  })
+
+  it('BLOCKS the order-cancel endpoint reached with STOCK-write intent (separate allowlists)', () => {
+    assert.throws(() => checkMarketplaceRequest(UZUM_ORDER_CANCEL, 'POST', 'stock-write'), /STOCK-WRITE GUARD/)
+  })
+})
+
+describe('marketplace egress guard — order-cancel intent (cancel-ONLY)', () => {
+  it('allows the exact Uzum order-cancel (POST …/fbs/order/{id}/cancel)', () => {
+    assert.doesNotThrow(() => checkMarketplaceRequest(UZUM_ORDER_CANCEL, 'POST', 'order-cancel'))
+  })
+
+  it('allows the YM status endpoint ONLY when the body is a cancellation', () => {
+    assert.doesNotThrow(() => checkMarketplaceRequest(
+      YM_ORDER_STATUS, 'PUT', 'order-cancel',
+      JSON.stringify({ order: { status: 'CANCELLED', substatus: 'SHOP_FAILED' } }),
+    ))
+  })
+
+  // The load-bearing "exactly one hole" proof: the cancel path cannot confirm,
+  // process, refund, or otherwise mutate an order.
+  it('BLOCKS the YM status endpoint when the body confirms/advances the order', () => {
+    assert.throws(() => checkMarketplaceRequest(
+      YM_ORDER_STATUS, 'PUT', 'order-cancel',
+      JSON.stringify({ order: { status: 'PROCESSING' } }),
+    ), /ORDER-CANCEL GUARD/)
+  })
+
+  it('BLOCKS the YM status endpoint with no body / a body missing CANCELLED', () => {
+    assert.throws(() => checkMarketplaceRequest(YM_ORDER_STATUS, 'PUT', 'order-cancel'), /ORDER-CANCEL GUARD/)
+    assert.throws(() => checkMarketplaceRequest(
+      YM_ORDER_STATUS, 'PUT', 'order-cancel', JSON.stringify({ order: { substatus: 'X' } }),
+    ), /ORDER-CANCEL GUARD/)
+  })
+
+  it('BLOCKS a Uzum order CONFIRM with cancel intent (confirm is a different URL)', () => {
+    assert.throws(() => checkMarketplaceRequest(UZUM_ORDER_CONFIRM, 'POST', 'order-cancel'), /ORDER-CANCEL GUARD/)
+  })
+
+  it('BLOCKS a Uzum order REFUND with cancel intent', () => {
+    assert.throws(() => checkMarketplaceRequest(UZUM_ORDER_REFUND, 'POST', 'order-cancel'), /ORDER-CANCEL GUARD/)
+  })
+
+  it('BLOCKS a stock-write endpoint reached with CANCEL intent (separate allowlists)', () => {
+    assert.throws(() => checkMarketplaceRequest(UZUM_STOCK_WRITE, 'POST', 'order-cancel'), /ORDER-CANCEL GUARD/)
+    assert.throws(() => checkMarketplaceRequest(YM_STOCKS, 'PUT', 'order-cancel'), /ORDER-CANCEL GUARD/)
   })
 })

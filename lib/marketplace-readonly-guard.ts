@@ -75,9 +75,37 @@ const APPROVED_STOCK_WRITE_ENDPOINTS: { marketplace: string; method: string; pat
   },
 ]
 
+/**
+ * The SECOND sanctioned write family: seller-initiated order CANCELLATION, used
+ * only by the oversell auto/one-click cancel path (Phase 4). Separately
+ * allowlisted from stock writes and, crucially, cancel-ONLY:
+ *   • Uzum — POST …/v1/fbs/order/{id}/cancel is a cancel-specific URL; confirm,
+ *     refund, delivering, invoice etc. are different URLs and never match.
+ *   • YM — the status endpoint is SHARED with confirm/process, so a URL match is
+ *     not enough: the body MUST set status CANCELLED and MUST NOT set any
+ *     forward status. This is what proves the cancel path can only cancel.
+ */
+const APPROVED_ORDER_CANCEL_ENDPOINTS: {
+  marketplace: string; method: string; pattern: RegExp; requireBody?: RegExp; forbidBody?: RegExp
+}[] = [
+  {
+    marketplace: 'uzum',
+    method: 'POST',
+    pattern: /^https:\/\/api-seller\.uzum\.uz\/api\/seller-openapi\/v1\/fbs\/order\/\d+\/cancel$/,
+  },
+  {
+    marketplace: 'yandex_market',
+    method: 'PUT',
+    pattern: /^https:\/\/api\.partner\.market\.yandex\.ru\/v2\/campaigns\/\d+\/orders\/\d+\/status$/,
+    requireBody: /"status"\s*:\s*"CANCELLED"/,
+    forbidBody: /"status"\s*:\s*"(PROCESSING|DELIVERY|PICKUP|DELIVERED)"/,
+  },
+]
+
 // Intent an *individual* request declares. Default (and everything that omits
-// it) is 'read'. Only the stock-writer passes 'stock-write'.
-export type MarketplaceIntent = 'read' | 'stock-write'
+// it) is 'read'. Only the stock-writer passes 'stock-write'; only the
+// order-cancel path passes 'order-cancel'.
+export type MarketplaceIntent = 'read' | 'stock-write' | 'order-cancel'
 
 export interface MarketplaceInit extends RequestInit {
   intent?: MarketplaceIntent
@@ -88,7 +116,12 @@ export interface MarketplaceInit extends RequestInit {
  * returns void when it may proceed. Exported so it can be unit-tested directly
  * (the load-bearing test lives in marketplace-readonly-guard.test.ts).
  */
-export function checkMarketplaceRequest(url: string, method: string, intent: MarketplaceIntent = 'read'): void {
+export function checkMarketplaceRequest(
+  url: string,
+  method: string,
+  intent: MarketplaceIntent = 'read',
+  body?: string,
+): void {
   const m = method.toUpperCase()
 
   if (intent === 'stock-write') {
@@ -101,6 +134,21 @@ export function checkMarketplaceRequest(url: string, method: string, intent: Mar
       throw new Error(
         `[STOCK-WRITE GUARD] Blocked ${m} to marketplace API: ${url}\n` +
         `The only sanctioned marketplace writes are the exact stock endpoints. Nothing else is sent.`,
+      )
+    }
+    return
+  }
+
+  if (intent === 'order-cancel') {
+    const match = APPROVED_ORDER_CANCEL_ENDPOINTS.find(e => e.method === m && e.pattern.test(url))
+    const bodyOk = match
+      && (!match.requireBody || (body != null && match.requireBody.test(body)))
+      && (!match.forbidBody || !(body != null && match.forbidBody.test(body)))
+    if (!match || !bodyOk) {
+      logger.warn('marketplace_cancel_blocked', { method: m, url, reason: !match ? 'not_in_cancel_allowlist' : 'body_not_a_cancellation' })
+      throw new Error(
+        `[ORDER-CANCEL GUARD] Blocked ${m} to marketplace API: ${url}\n` +
+        `The cancel path may ONLY cancel — it cannot confirm, refund, or otherwise mutate an order.`,
       )
     }
     return
@@ -135,8 +183,9 @@ export function checkMarketplaceRequest(url: string, method: string, intent: Mar
 export function marketplaceFetch(url: string, init?: MarketplaceInit): Promise<Response> {
   const method = (init?.method ?? 'GET').toUpperCase()
   const intent = init?.intent ?? 'read'
+  const bodyStr = typeof init?.body === 'string' ? init.body : undefined
 
-  checkMarketplaceRequest(url, method, intent)
+  checkMarketplaceRequest(url, method, intent, bodyStr)
 
   // Strip the non-standard `intent` field before handing the init to fetch().
   const fetchInit: MarketplaceInit = { ...init }

@@ -715,3 +715,31 @@ export const stockSyncState = pgTable('stock_sync_state', {
   uniqueIndex('stock_sync_state_shop_sku_unique').on(t.shop_id, t.sku),
   index('stock_sync_state_shop_id_idx').on(t.shop_id),
 ])
+
+/* ── 31. order_cancel_log ────────────────────────────────────────────────────── */
+// Audit for the oversell cancel path — a SEPARATE sanctioned write from stock,
+// with its own allowlist. One row per attempt, one-click (human) or auto.
+export const orderCancelLog = pgTable('order_cancel_log', {
+  id:                uuid('id').primaryKey().defaultRandom(),
+  shop_id:           uuid('shop_id').notNull().references(() => shops.id, { onDelete: 'cascade' }),
+  marketplace:       marketplaceTypeEnum('marketplace').notNull(),
+  order_id_external: text('order_id_external'),
+  reason:            text('reason'),
+  endpoint:          text('endpoint'),
+  method:            text('method'),
+  // true = fired automatically off the oversell detector; false = one-click (human).
+  auto:              boolean('auto').default(false).notNull(),
+  dry_run:           boolean('dry_run').default(false).notNull(),
+  // sent | dry_run | skipped | blocked | killed | error | rate_limited
+  status:            text('status').notNull(),
+  detail:            text('detail'),
+  http_status:       integer('http_status'),
+  request_body:      text('request_body'),
+  response_body:     text('response_body'),
+  error:             text('error'),
+  created_at:        timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (t) => [
+  index('order_cancel_log_shop_id_idx').on(t.shop_id),
+  index('order_cancel_log_created_at_idx').on(t.created_at),
+  index('order_cancel_log_auto_idx').on(t.auto),
+])

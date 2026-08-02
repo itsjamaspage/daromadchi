@@ -15,7 +15,8 @@
  *   • audited in stock_write_log (sent | dry_run | skipped | blocked | killed | error)
  */
 
-import { db, stockWriteLog } from '@/lib/db'
+import { and, eq } from 'drizzle-orm'
+import { db, stockWriteLog, stockSyncState } from '@/lib/db'
 import { decrypt } from '@/lib/crypto'
 import { logger } from '@/lib/logger'
 import { marketplaceFetch, type MarketplaceInit } from '@/lib/marketplace-readonly-guard'
@@ -51,6 +52,12 @@ export interface PushStockParams {
   warehouseId?: string | null
   /** products.id for the audit-row FK (optional). */
   productId?: string | null
+  /**
+   * Match-key for the freshness guard. When set, the write is refused if a newer
+   * version has already been recorded for this (shop, key) — a stale/out-of-order
+   * write can never leapfrog a correct one. Omit to skip the check.
+   */
+  freshnessKey?: string
   /**
    * ISO timestamp stamped into the YM payload's `updatedAt`. MUST be the moment
    * the quantity was computed, and stable across retries of the same logical
@@ -256,7 +263,21 @@ export async function pushStock(params: PushStockParams): Promise<PushStockResul
     })
   }
 
-  // 5. Decrypt the token.
+  // 5. Freshness guard — refuse a stale/out-of-order write (HARD: monotonic
+  //    version per shop+sku). A newer version already recorded means this write
+  //    would leapfrog a correct value backwards; drop it.
+  if (params.freshnessKey) {
+    const [st] = await db.select({ version: stockSyncState.version })
+      .from(stockSyncState)
+      .where(and(eq(stockSyncState.shop_id, shop.id), eq(stockSyncState.sku, params.freshnessKey)))
+    if (st && version < st.version) {
+      logger.warn('stock_write_stale', { shopId: shop.id, key: params.freshnessKey, writeVersion: version, currentVersion: st.version })
+      const logId = await audit({ ...base, dry_run: dryRun, endpoint: url, method, identifier, warehouse_id: whId, status: 'skipped', reason: 'stale_version' })
+      return { status: 'skipped', reason: 'stale_version', quantity: clamped, logId }
+    }
+  }
+
+  // 6. Decrypt the token.
   const token = shop.api_key_encrypted ? decrypt(shop.api_key_encrypted) : ''
   if (!token) {
     const logId = await audit({ ...base, dry_run: dryRun, endpoint: url, method, identifier, warehouse_id: whId, status: 'skipped', reason: 'no_token' })
@@ -267,7 +288,7 @@ export async function pushStock(params: PushStockParams): Promise<PushStockResul
     ? { Authorization: token, Accept: 'application/json', 'Content-Type': 'application/json' } // Uzum: no "Bearer" prefix
     : { 'Api-Key': token, Accept: 'application/json', 'Content-Type': 'application/json' }
 
-  // 6. DRY-RUN: log exactly what WOULD be sent and send nothing (HARD RULE #5).
+  // 7. DRY-RUN: log exactly what WOULD be sent and send nothing (HARD RULE #5).
   if (dryRun) {
     logger.info('stock_write_dry_run', { shopId: shop.id, marketplace, method, url, identifier, warehouseId: whId, quantity: clamped, version, body })
     const logId = await audit({
@@ -277,7 +298,7 @@ export async function pushStock(params: PushStockParams): Promise<PushStockResul
     return { status: 'dry_run', quantity: clamped, logId }
   }
 
-  // 7. LIVE: send through the shared guard with stock-write intent.
+  // 8. LIVE: send through the shared guard with stock-write intent.
   try {
     const res = await sendWithRetry(url, { method, headers, body, intent: 'stock-write' })
     let respText = ''
