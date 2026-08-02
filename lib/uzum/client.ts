@@ -620,6 +620,98 @@ export async function fetchUzumFinanceData(
   return { entries, balance, debug }
 }
 
+// ─── FBS SKU stocks (GET /v3/fbs/sku/stocks) — READ, requires SKU_READ ─────────
+// The ONLY place the string barcode comes from. The write DTO and this read DTO
+// both type `barcode` as a string; the product-card read types it as int64
+// (drops leading zeros), so the barcode used for a write MUST be sourced here.
+// Response shape isn't firmly documented for us — parse tolerantly.
+export interface UzumSkuStock {
+  barcode?: string | number
+  skuId?: number
+  sku?: string
+  sellerSku?: string
+  sellerSkuCode?: string
+  sellerItemCode?: string
+  article?: string
+  productId?: number
+  amount?: number
+  quantityActive?: number
+  fbsLinked?: boolean
+}
+
+export async function fetchUzumSkuStocks(
+  token: string,
+  page = 0,
+  size = 100,
+): Promise<UzumSkuStock[]> {
+  return withRetry(async () => {
+    const params = new URLSearchParams({ page: String(page), size: String(size) })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const j = await request<any>(`/v3/fbs/sku/stocks?${params}`, token)
+    const arr =
+      j?.payload?.skuList ?? j?.payload?.stocks ?? j?.payload?.content
+      ?? j?.skuList ?? j?.stocks ?? j?.data
+      ?? (Array.isArray(j?.payload) ? j.payload : null)
+      ?? (Array.isArray(j) ? j : [])
+    return Array.isArray(arr) ? (arr as UzumSkuStock[]) : []
+  })
+}
+
+// Fetch every page of /v3/fbs/sku/stocks (barcodes for a whole shop).
+export async function fetchAllUzumSkuStocks(token: string, maxPages = 50): Promise<UzumSkuStock[]> {
+  const out: UzumSkuStock[] = []
+  for (let page = 0; page < maxPages; page++) {
+    const batch = await fetchUzumSkuStocks(token, page, 100)
+    out.push(...batch)
+    if (batch.length < 100) break
+  }
+  return out
+}
+
+// ─── Cheap order change-detector (GET /v2/fbs/orders/count) — READ ────────────
+// Returns the count for a status (default CREATED) plus the rate-limit headers so
+// the poller can honor them, including the daily cap X-RateLimit-Remaining-Per-Day.
+export interface UzumOrdersCount {
+  count: number | null
+  rateLimitRemaining: number | null
+  rateLimitRemainingPerDay: number | null
+  retryAfterSec: number | null
+  httpStatus: number
+}
+
+export async function fetchUzumOrdersCount(
+  token: string,
+  shopIds: number[],
+  status = 'CREATED',
+): Promise<UzumOrdersCount> {
+  return withRetry(async () => {
+    const params = new URLSearchParams({ status })
+    for (const id of shopIds) params.append('shopIds', String(id))
+    const res = await marketplaceFetch(`${UZUM_API_BASE}/v2/fbs/orders/count?${params}`, {
+      headers: { Authorization: token.trim(), Accept: 'application/json' },
+      next: { revalidate: 0 },
+    })
+    const remaining = Number(res.headers.get('X-RateLimit-Remaining'))
+    const remainingDay = Number(res.headers.get('X-RateLimit-Remaining-Per-Day'))
+    const retryAfter = Number(res.headers.get('Retry-After'))
+    if (!res.ok) {
+      throw new UzumApiError(res.status, `Uzum orders/count ${res.status}`, await res.text().catch(() => ''))
+    }
+    // Body is either a bare number or an envelope { payload: <number> }.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const j: any = await res.json().catch(() => null)
+    const raw = typeof j === 'number' ? j : (j?.payload ?? j?.count ?? j?.data ?? null)
+    const count = typeof raw === 'number' ? raw : (raw != null && Number.isFinite(Number(raw)) ? Number(raw) : null)
+    return {
+      count,
+      rateLimitRemaining: Number.isFinite(remaining) ? remaining : null,
+      rateLimitRemainingPerDay: Number.isFinite(remainingDay) ? remainingDay : null,
+      retryAfterSec: Number.isFinite(retryAfter) ? retryAfter : null,
+      httpStatus: res.status,
+    }
+  })
+}
+
 // Fetch all pages of a paginated resource
 export async function fetchAllPages<T>(
   fetcher: (page: number) => Promise<{ data: T[]; totalCount: number; pageSize?: number }>,

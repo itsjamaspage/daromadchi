@@ -253,5 +253,25 @@ Both are triggered by the VPS system crontab (installed by `deploy.yml` →
 1. **Cache tags:** `'product-data'` for products/KPIs, `'order-data'` for orders/revenue
 2. **Cache invalidation:** Always use `revalidateTag(tag, { expire: 0 })`, never `'max'`
 3. **New DB columns:** Add via SQL migration first, query via raw SQL until migration is confirmed run. Do NOT add to Drizzle schema until the column exists in production DB.
-4. **Marketplace APIs:** Read-only. Never write data to marketplace APIs.
+4. **Marketplace APIs:** Read-only by default. The one exception is the opt-in, per-shop **Stock-sync (edit)** mode, which — after the seller consents — updates ONLY the stock quantity (ostatok) through the single audited writer (`lib/marketplace/stock-writer.ts`) and its method-exact allowlist, plus a separately-allowlisted oversell order-cancel path (`lib/marketplace/order-cancel.ts`). Every other marketplace write is prohibited. See "Cross-marketplace stock" below.
 5. **Extension auth:** Uses `extension_token` column via raw SQL, not Drizzle schema field.
+
+## Cross-marketplace stock (identical SKUs)
+
+When the same seller article (SKU) is listed on more than one marketplace, Daromadchi
+treats those listings as one group (normalized SKU as the match key). For FBS listings
+the group shares a **single physical pool** — the same units are advertised as "N
+available" on each marketplace at once — so the true leftover is **`MAX(stock across the
+group) − SUM(all pending orders across the group)`**, not the sum of the per-listing
+numbers (summing would invent stock that isn't there and invite overselling). FBO/FBY
+warehouses are independent per marketplace and are summed instead. This is the math in
+`lib/db/stock-groups.ts` and `lib/db/products.ts`.
+
+**Read-only shops (the default):** this is a pure display calculation. Daromadchi shows
+the corrected leftover but **never writes anything back** to any marketplace — the
+identical-SKU listings are only reconciled in the app's own view.
+
+**Stock-sync shops (opt-in):** the same `MAX − pending` number is additionally written
+back to each opted-in listing (stock quantity only) so the marketplaces stop showing a
+unit that another marketplace already sold. That write path is entirely separate from the
+read-only math above and only ever touches shops whose owner turned edit mode on.

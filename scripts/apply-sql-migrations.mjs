@@ -22,6 +22,11 @@ const MIGRATIONS = [
   'migrations/migrations/035_yandex_settlements.sql',
   'migrations/migrations/036_uzum_settlements.sql',
   'migrations/migrations/037_shops_throttled_until.sql',
+  'migrations/migrations/038_stock_sync_mode.sql',
+  'migrations/migrations/039_stock_write_log.sql',
+  'migrations/migrations/040_stock_sync_state.sql',
+  'migrations/migrations/041_shops_stock_poll.sql',
+  'migrations/migrations/042_order_cancel_log.sql',
 ]
 
 function loadDatabaseUrl() {

@@ -365,7 +365,7 @@
       <div class="info-text">
         Syncs orders, inventory, and prices across Uzum Market, Yandex Market, and Wildberries.
         Web dashboard + Chrome Extension for seller analytics and automation.
-        All marketplace integrations are <strong>strictly read-only</strong> — no writes allowed.
+        Marketplace integrations are <strong>read-only by default</strong>; the one exception is the opt-in, per-shop Stock-sync mode, which writes only the stock quantity (ostatok) through a single audited writer after the seller consents.
         Auth via NextAuth.js v5 (JWT + email verification). Self-hosted on Hetzner VPS.
       </div>
       <div class="legend" id="legendFilter">
@@ -429,8 +429,8 @@
             <div class="card-tags"><span class="tag">IP-based</span><span class="tag">In-memory</span></div>
           </div>
           <div class="card auth-card" data-id="readonly-guard">
-            <div class="card-name"><span class="status-dot green"></span>Read-Only Guard</div>
-            <div class="card-desc">Enforces marketplace API read-only rule. Only whitelisted POST-for-read endpoints allowed.</div>
+            <div class="card-name"><span class="status-dot green"></span>Marketplace Egress Guard</div>
+            <div class="card-desc">Read-only by default. Whitelisted POST-for-read endpoints; the only write exceptions are the method-exact stock-write (ostatok only) and order-cancel allowlists.</div>
             <div class="card-tags"><span class="tag">Middleware</span><span class="tag">Whitelist</span></div>
           </div>
         </div>
@@ -791,8 +791,8 @@
         ]
       },
       'readonly-guard': {
-        name: 'Marketplace Read-Only Guard',
-        desc: 'Enforces the immutable rule: NO writes to marketplace APIs. Only whitelisted POST-for-read endpoints are allowed (Yandex offer-mappings, stocks, stats return 405 on GET). All other PUT/PATCH/DELETE to external marketplaces are blocked.',
+        name: 'Marketplace Egress Guard',
+        desc: 'Enforces the rule: read-only by default. Whitelisted POST-for-read endpoints are allowed (Yandex offer-mappings, stocks, stats return 405 on GET). The only sanctioned writes are the method-exact, URL-exact stock-write (ostatok only, opt-in) and order-cancel allowlists; every other PUT/PATCH/DELETE to external marketplaces is blocked.',
         tech: ['Middleware', 'Whitelist', 'Immutable Rule'],
         connections: [
           { name: 'Marketplace Sync', desc: 'Guards all outbound marketplace requests' }
@@ -810,7 +810,7 @@
       },
       'api-sync': {
         name: 'Marketplace Sync APIs',
-        desc: '5 routes: uzum/sync, wildberries/sync, yandex/sync, wildberries/ads-sync, yandex/ads-sync. All strictly read-only. Sync orders, products, stocks, advertising stats from marketplace APIs to local PostgreSQL.',
+        desc: '5 routes: uzum/sync, wildberries/sync, yandex/sync, wildberries/ads-sync, yandex/ads-sync. All read-only — they only pull data in. Sync orders, products, stocks, advertising stats from marketplace APIs to local PostgreSQL. (Writing the ostatok back is a separate opt-in path, not these routes.)',
         tech: ['REST', 'Read-only', 'Background jobs', 'Encrypted tokens'],
         connections: [
           { name: 'Uzum Market', desc: 'Sync orders and products' },
@@ -922,8 +922,8 @@
       },
       'uzum': {
         name: 'Uzum Market API',
-        desc: 'Uzbekistan\'s largest marketplace. REST API integration for syncing orders, products, and sales statistics. Strictly read-only — no price/stock/listing writes.',
-        tech: ['REST API', 'Read-only', 'OAuth tokens'],
+        desc: 'Uzbekistan\'s largest marketplace. REST API integration for syncing orders, products, and sales statistics. Read-only by default; opt-in Stock-sync may update stock quantity (ostatok) only — never price or listings.',
+        tech: ['REST API', 'Read-only default', 'OAuth tokens'],
         connections: [{ name: 'Marketplace Sync APIs', desc: 'uzum/sync endpoint' }]
       },
       'yandex': {

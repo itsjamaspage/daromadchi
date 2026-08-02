@@ -55,6 +55,13 @@ export const taxTypeEnum = pgEnum('tax_type', ['income', 'income_minus_expense']
 
 export const planTypeEnum = pgEnum('plan_type', ['free', 'pro', 'pro_plus'])
 
+// Per-shop API posture. read_only (default) never writes to the marketplace;
+// stock_sync opts a single shop into the audited stock-quantity-only writer.
+export const apiModeEnum = pgEnum('api_mode', ['read_only', 'stock_sync'])
+
+// How stock-sync splits a shared physical unit across marketplaces (Phase 3).
+export const oversellModeEnum = pgEnum('oversell_mode', ['lock_last_unit', 'partition', 'off'])
+
 /* ── 1. users ───────────────────────────────────────────────────────────────── */
 
 export const users = pgTable('users', {
@@ -100,6 +107,29 @@ export const shops = pgTable('shops', {
   // deploys don't wipe it.
   throttled_until:   timestamp('throttled_until', { withTimezone: true }),
   warehouse_id:      uuid('warehouse_id').references(() => warehouses.id, { onDelete: 'set null' }),
+  // ── Stock-sync (edit) mode — opt-in, OFF by default ─────────────────────
+  // read_only (default): the app only reads marketplace data and NEVER
+  // writes. stock_sync: the single audited writer (lib/marketplace/stock-
+  // writer.ts) may push ostatok — stock QUANTITY only — to this shop's live
+  // listing. Nothing else (price/title/order/invoice/…) is ever written.
+  api_mode:                 apiModeEnum('api_mode').default('read_only').notNull(),
+  // Dry-run: when true the writer LOGS the intended store write and sends
+  // nothing. First enable + this toggle are dry-run; live writes happen only
+  // after it's turned off.
+  stock_sync_dry_run:       boolean('stock_sync_dry_run').default(true).notNull(),
+  // How to allocate the last shared unit across marketplaces (Phase 3).
+  oversell_mode:            oversellModeEnum('oversell_mode').default('lock_last_unit').notNull(),
+  // Lower number = higher priority; under lock_last_unit the highest-priority
+  // (lowest number) channel keeps the last unit at qty=1 while others go to 0.
+  // Migration sets existing Uzum rows to 0 (primary); everything else is 100.
+  primary_channel_priority: integer('primary_channel_priority').default(100).notNull(),
+  // When the user consented to edit mode for this shop (audit trail).
+  stock_sync_consent_at:    timestamp('stock_sync_consent_at', { withTimezone: true }),
+  // Cheap order change-detector state for the tiered Uzum poller: the last
+  // CREATED-order count we saw and when we last polled. A changed count is the
+  // signal to run Step A/B for that shop's SKU groups.
+  last_orders_count:        integer('last_orders_count'),
+  stock_poll_at:            timestamp('stock_poll_at', { withTimezone: true }),
   created_at:        timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 }, (t) => [
   index('shops_user_id_idx').on(t.user_id),
@@ -124,6 +154,19 @@ export const products = pgTable('products', {
   // 'fbs' (seller ships) | 'fbo' (marketplace warehouse) | 'fby' (Yandex
   // fulfillment) | null (unknown → treated as FBS by stock aggregation).
   fulfillment_type:       text('fulfillment_type'),
+  // ── Cross-marketplace stock-WRITE identifiers (populated in Phase 3) ─────
+  // Uzum: the STRING barcode from GET /v3/fbs/sku/stocks. The write DTO
+  // (POST /v2/fbs/sku/stocks) types barcode as a string, but the product-card
+  // read types it as int64 (drops leading zeros). The barcode used for a write
+  // MUST be sourced here, never from the product card. Null until the barcode
+  // sync step runs — a live Uzum write is refused without it.
+  market_barcode:         text('market_barcode'),
+  // Yandex Market: the exact shopSku the stock-update PUT expects (sourced
+  // from the offers/stocks read).
+  market_sku:             text('market_sku'),
+  // Yandex Market: the warehouseId the stock-update PUT targets (sourced from
+  // the offers/stocks read). Stored as text — it's a marketplace-side id.
+  market_warehouse_id:    text('market_warehouse_id'),
   updated_at:             timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 }, (t) => [
   index('products_shop_id_idx').on(t.shop_id),
@@ -608,4 +651,95 @@ export const uzumSettlementOrders = pgTable('uzum_settlement_orders', {
   uniqueIndex('uzum_settlement_shop_item_unique').on(t.shop_id, t.uzum_order_item_id),
   index('uzum_settlement_shop_order_idx').on(t.shop_id, t.uzum_order_id),
   index('uzum_settlement_transaction_at_idx').on(t.transaction_at),
+])
+
+/* ── 29. stock_write_log ─────────────────────────────────────────────────────── */
+// Audit trail for EVERY stock-write attempt made by lib/marketplace/stock-writer.ts
+// — sent, dry-run simulated, skipped, guard-blocked, kill-switched, or errored.
+// One row per attempt. This is the only place stock writes are recorded; nothing
+// else in the app writes to a marketplace.
+export const stockWriteLog = pgTable('stock_write_log', {
+  id:                 uuid('id').primaryKey().defaultRandom(),
+  shop_id:            uuid('shop_id').notNull().references(() => shops.id, { onDelete: 'cascade' }),
+  product_id:         uuid('product_id').references(() => products.id, { onDelete: 'set null' }),
+  marketplace:        marketplaceTypeEnum('marketplace').notNull(),
+  // Seller article / shopSku (for grouping + the YM write payload).
+  sku:                text('sku'),
+  // The exact identifier the write used: Uzum string barcode, or YM shopSku.
+  identifier:         text('identifier'),
+  // YM only — the warehouseId targeted.
+  warehouse_id:       text('warehouse_id'),
+  endpoint:           text('endpoint'),
+  method:             text('method'),
+  // Quantity as requested by the caller, before Math.max(0, …) clamping.
+  requested_quantity: integer('requested_quantity'),
+  // Clamped quantity actually written / simulated.
+  quantity:           integer('quantity'),
+  // Monotonic freshness version (per shop+sku); enforced in Phase 4.
+  version:            integer('version'),
+  dry_run:            boolean('dry_run').default(false).notNull(),
+  // sent | dry_run | skipped | blocked | killed | error
+  status:             text('status').notNull(),
+  // Machine-readable reason: missing_barcode, missing_warehouse, not_stock_sync,
+  // kill_switch, guard_blocked, http_<code>, exception, …
+  reason:             text('reason'),
+  http_status:        integer('http_status'),
+  request_body:       text('request_body'),
+  response_body:      text('response_body'),
+  error:              text('error'),
+  created_at:         timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (t) => [
+  index('stock_write_log_shop_id_idx').on(t.shop_id),
+  index('stock_write_log_created_at_idx').on(t.created_at),
+  index('stock_write_log_status_idx').on(t.status),
+])
+
+/* ── 30. stock_sync_state ────────────────────────────────────────────────────── */
+// Monotonic freshness version per (shop, sku-group) plus the last decision, so a
+// stock write can be stamped with a version at the moment it's computed and a
+// stale/retried write can be refused (freshness guard — enforced in Phase 4).
+export const stockSyncState = pgTable('stock_sync_state', {
+  id:             uuid('id').primaryKey().defaultRandom(),
+  shop_id:        uuid('shop_id').notNull().references(() => shops.id, { onDelete: 'cascade' }),
+  product_id:     uuid('product_id').references(() => products.id, { onDelete: 'set null' }),
+  // Normalized cross-marketplace match key for the SKU group.
+  sku:            text('sku').notNull(),
+  // Monotonic — incremented on each real diff we decide to write.
+  version:        integer('version').default(0).notNull(),
+  // Last computed shared available and the target we pushed to THIS shop.
+  last_available: integer('last_available'),
+  last_target:    integer('last_target'),
+  last_pushed_at: timestamp('last_pushed_at', { withTimezone: true }),
+  updated_at:     timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (t) => [
+  uniqueIndex('stock_sync_state_shop_sku_unique').on(t.shop_id, t.sku),
+  index('stock_sync_state_shop_id_idx').on(t.shop_id),
+])
+
+/* ── 31. order_cancel_log ────────────────────────────────────────────────────── */
+// Audit for the oversell cancel path — a SEPARATE sanctioned write from stock,
+// with its own allowlist. One row per attempt, one-click (human) or auto.
+export const orderCancelLog = pgTable('order_cancel_log', {
+  id:                uuid('id').primaryKey().defaultRandom(),
+  shop_id:           uuid('shop_id').notNull().references(() => shops.id, { onDelete: 'cascade' }),
+  marketplace:       marketplaceTypeEnum('marketplace').notNull(),
+  order_id_external: text('order_id_external'),
+  reason:            text('reason'),
+  endpoint:          text('endpoint'),
+  method:            text('method'),
+  // true = fired automatically off the oversell detector; false = one-click (human).
+  auto:              boolean('auto').default(false).notNull(),
+  dry_run:           boolean('dry_run').default(false).notNull(),
+  // sent | dry_run | skipped | blocked | killed | error | rate_limited
+  status:            text('status').notNull(),
+  detail:            text('detail'),
+  http_status:       integer('http_status'),
+  request_body:      text('request_body'),
+  response_body:     text('response_body'),
+  error:             text('error'),
+  created_at:        timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (t) => [
+  index('order_cancel_log_shop_id_idx').on(t.shop_id),
+  index('order_cancel_log_created_at_idx').on(t.created_at),
+  index('order_cancel_log_auto_idx').on(t.auto),
 ])

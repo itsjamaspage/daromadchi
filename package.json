@@ -8,7 +8,12 @@
     "start": "next start",
     "lint": "eslint",
     "seed:categories": "tsx drizzle/seeds/category-canonicals.ts",
-    "categories:suggest": "tsx scripts/suggest-category-aliases.ts"
+    "categories:suggest": "tsx scripts/suggest-category-aliases.ts",
+    "test:guard": "node --import tsx --test lib/marketplace-readonly-guard.test.ts",
+    "test:stock": "node --import tsx --test lib/marketplace-readonly-guard.test.ts lib/marketplace/stock-allocation.test.ts",
+    "test:integration": "node --import tsx --test lib/marketplace/stock-writer.integration.test.ts",
+    "stock-sync:demo": "tsx scripts/stock-sync-dry-run-demo.ts",
+    "stock-sync:live-verify": "tsx scripts/stock-sync-live-verify.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
