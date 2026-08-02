@@ -322,10 +322,12 @@ export interface FirstLiveResult {
 }
 
 /**
- * The controlled first live write: one hand-picked product, pushed LIVE, then
- * read back to prove the marketplace actually shows the new number.
+ * A single verified live write: push one hand-picked product LIVE, then read it
+ * back to prove the marketplace actually shows the new number (a bare 200 is not
+ * trusted). `quantity` overrides the planned target — used by the restore step
+ * to set the SKU back to its correct real stock and verify that write too.
  */
-export async function firstLivePush(userId: string, productId: string): Promise<FirstLiveResult> {
+export async function verifiedLivePush(userId: string, productId: string, quantity?: number): Promise<FirstLiveResult> {
   const fail = (reason: string, target = 0): FirstLiveResult =>
     ({ productId, status: 'skipped', target, pushed: false, observed: null, verified: false, reason })
 
@@ -345,32 +347,42 @@ export async function firstLivePush(userId: string, productId: string): Promise<
   }
   if (!found) return fail('product_not_found')
 
+  const target = quantity != null ? Math.max(0, Math.trunc(quantity)) : found.target
+
   const shop = shopsById.get(found.product.shop_id)
-  if (!shop) return fail('shop_not_found', found.target)
-  if (shop.api_mode !== 'stock_sync') return fail('shop_read_only', found.target)
+  if (!shop) return fail('shop_not_found', target)
+  if (shop.api_mode !== 'stock_sync') return fail('shop_read_only', target)
 
   const barcode = shop.marketplace === 'uzum' ? found.product.market_barcode : null
   const marketSku = shop.marketplace === 'yandex_market' ? found.product.market_sku : found.product.sku
   const warehouseId = shop.marketplace === 'yandex_market' ? found.product.market_warehouse_id : null
   const identifier = shop.marketplace === 'uzum' ? barcode : marketSku
-  if (!identifier) return fail('missing_identifier', found.target)
+  if (!identifier) return fail('missing_identifier', target)
 
-  const version = await bumpVersion(shop.id, found.matchKey, found.product.id, found.available, found.target)
+  const version = await bumpVersion(shop.id, found.matchKey, found.product.id, found.available, target)
   const result = await pushStock({
     shop: {
       id: shop.id, marketplace: shop.marketplace, api_key_encrypted: shop.api_key_encrypted,
       shop_id_external: shop.shop_id_external, api_mode: shop.api_mode,
     },
-    sku: marketSku, barcode, quantity: found.target, dryRun: false, version, warehouseId,
+    sku: marketSku, barcode, quantity: target, dryRun: false, version, warehouseId,
     productId: found.product.id, updatedAt: new Date().toISOString(), freshnessKey: found.matchKey,
   })
 
   if (result.status !== 'sent') {
-    return { productId, status: result.status, target: found.target, pushed: false, observed: null, verified: false, reason: result.reason }
+    return { productId, status: result.status, target, pushed: false, observed: null, verified: false, reason: result.reason }
   }
 
   const observed = await readBackStock(shop, identifier)
-  const verified = observed === found.target
-  logger.info('first_live_read_back', { productId, marketplace: shop.marketplace, target: found.target, observed, verified })
-  return { productId, status: 'sent', target: found.target, pushed: true, observed, verified }
+  const verified = observed === target
+  logger.info('verified_live_read_back', { productId, marketplace: shop.marketplace, target, observed, verified })
+  return { productId, status: 'sent', target, pushed: true, observed, verified }
+}
+
+/**
+ * The controlled first live write: one hand-picked product at its planned target,
+ * pushed LIVE and read back. Thin wrapper over verifiedLivePush.
+ */
+export function firstLivePush(userId: string, productId: string): Promise<FirstLiveResult> {
+  return verifiedLivePush(userId, productId)
 }
