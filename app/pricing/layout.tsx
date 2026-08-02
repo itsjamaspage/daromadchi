@@ -8,7 +8,7 @@ export const metadata: Metadata = {
     description: 'Marketplace analitika platformasi narxlari. Bepul sinab ko\'ring, keyin Pro yoki Pro+ rejaga o\'ting.',
     url: 'https://www.daromadchi.uz/pricing',
   },
-  alternates: { canonical: 'https://www.daromadchi.uz/pricing' },
+  alternates: { canonical: '/pricing' },
 }
 
 export default function PricingLayout({ children }: { children: React.ReactNode }) {

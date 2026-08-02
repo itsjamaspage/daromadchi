@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import Sidebar from '@/components/dashboard/Sidebar'
 import DashboardTopBar from '@/components/dashboard/DashboardTopBar'
 import MobileNav from '@/components/dashboard/MobileNav'
@@ -5,6 +6,13 @@ import BottomNav from '@/components/dashboard/BottomNav'
 import FeedbackWidget from '@/components/dashboard/FeedbackWidget'
 import ChannelGate from '@/components/dashboard/ChannelGate'
 import { getCurrentUser } from '@/lib/auth/session'
+
+// Keep the entire authenticated dashboard out of search. Inherited by every
+// /dashboard/* route → <meta name="robots" content="noindex, nofollow">.
+// Paired with allowing the crawl in robots.ts so Google can actually read this.
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+}
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const user = await getCurrentUser()

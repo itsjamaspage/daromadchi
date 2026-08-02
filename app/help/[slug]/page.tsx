@@ -11,10 +11,12 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
   const article = getArticle(slug, 'uz')
-  if (!article) return {}
+  // Unknown slug → don't let a not-found/placeholder page get indexed.
+  if (!article) return { robots: { index: false, follow: false } }
   return {
     title: `${article.title} — Daromadchi`,
     description: article.summary,
+    alternates: { canonical: `/help/${slug}` },
   }
 }
 

@@ -77,6 +77,20 @@ export async function proxy(request: NextRequest) {
   const origin = request.headers.get('origin')
   const isExtRoute = EXTENSION_ROUTE.test(pathname)
 
+  // ── Canonical host: 301 apex → www ──────────────────────────────────────────
+  // Without this, daromadchi.uz and www.daromadchi.uz serve identical content
+  // and every page has a duplicate the canonicals can't fully resolve. Redirect
+  // only page requests on the exact apex host (leave /api/ alone so API and
+  // extension clients — which may POST — are never turned into GETs by a 301).
+  const host = (request.headers.get('x-forwarded-host') ?? request.headers.get('host') ?? '').toLowerCase()
+  if (host === 'daromadchi.uz' && !pathname.startsWith('/api/')) {
+    const url = request.nextUrl.clone()
+    url.protocol = 'https:'
+    url.host = 'www.daromadchi.uz'
+    url.port = ''
+    return NextResponse.redirect(url, 301)
+  }
+
   if (pathname.startsWith('/api/')) {
     // Handle CORS preflight
     if (request.method === 'OPTIONS') {

@@ -50,9 +50,11 @@ export const metadata: Metadata = {
     shortcut: '/icon.svg',
     apple: '/icon.svg',
   },
-  alternates: {
-    canonical: 'https://www.daromadchi.uz',
-  },
+  // NOTE: no site-wide `alternates.canonical` here on purpose. A canonical set
+  // in the root layout is inherited by every page that doesn't override it,
+  // which made /help, /help/[slug], /privacy, /terms, /compliance, /dashboard,
+  // etc. all canonicalize to the homepage. Each route now sets its own
+  // self-referential canonical (resolved against metadataBase).
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
