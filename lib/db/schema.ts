@@ -55,6 +55,13 @@ export const taxTypeEnum = pgEnum('tax_type', ['income', 'income_minus_expense']
 
 export const planTypeEnum = pgEnum('plan_type', ['free', 'pro', 'pro_plus'])
 
+// Per-shop API posture. read_only (default) never writes to the marketplace;
+// stock_sync opts a single shop into the audited stock-quantity-only writer.
+export const apiModeEnum = pgEnum('api_mode', ['read_only', 'stock_sync'])
+
+// How stock-sync splits a shared physical unit across marketplaces (Phase 3).
+export const oversellModeEnum = pgEnum('oversell_mode', ['lock_last_unit', 'partition', 'off'])
+
 /* ── 1. users ───────────────────────────────────────────────────────────────── */
 
 export const users = pgTable('users', {
@@ -100,6 +107,24 @@ export const shops = pgTable('shops', {
   // deploys don't wipe it.
   throttled_until:   timestamp('throttled_until', { withTimezone: true }),
   warehouse_id:      uuid('warehouse_id').references(() => warehouses.id, { onDelete: 'set null' }),
+  // ── Stock-sync (edit) mode — opt-in, OFF by default ─────────────────────
+  // read_only (default): the app only reads marketplace data and NEVER
+  // writes. stock_sync: the single audited writer (lib/marketplace/stock-
+  // writer.ts) may push ostatok — stock QUANTITY only — to this shop's live
+  // listing. Nothing else (price/title/order/invoice/…) is ever written.
+  api_mode:                 apiModeEnum('api_mode').default('read_only').notNull(),
+  // Dry-run: when true the writer LOGS the intended store write and sends
+  // nothing. First enable + this toggle are dry-run; live writes happen only
+  // after it's turned off.
+  stock_sync_dry_run:       boolean('stock_sync_dry_run').default(true).notNull(),
+  // How to allocate the last shared unit across marketplaces (Phase 3).
+  oversell_mode:            oversellModeEnum('oversell_mode').default('lock_last_unit').notNull(),
+  // Lower number = higher priority; under lock_last_unit the highest-priority
+  // (lowest number) channel keeps the last unit at qty=1 while others go to 0.
+  // Migration sets existing Uzum rows to 0 (primary); everything else is 100.
+  primary_channel_priority: integer('primary_channel_priority').default(100).notNull(),
+  // When the user consented to edit mode for this shop (audit trail).
+  stock_sync_consent_at:    timestamp('stock_sync_consent_at', { withTimezone: true }),
   created_at:        timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 }, (t) => [
   index('shops_user_id_idx').on(t.user_id),
@@ -124,6 +149,19 @@ export const products = pgTable('products', {
   // 'fbs' (seller ships) | 'fbo' (marketplace warehouse) | 'fby' (Yandex
   // fulfillment) | null (unknown → treated as FBS by stock aggregation).
   fulfillment_type:       text('fulfillment_type'),
+  // ── Cross-marketplace stock-WRITE identifiers (populated in Phase 3) ─────
+  // Uzum: the STRING barcode from GET /v3/fbs/sku/stocks. The write DTO
+  // (POST /v2/fbs/sku/stocks) types barcode as a string, but the product-card
+  // read types it as int64 (drops leading zeros). The barcode used for a write
+  // MUST be sourced here, never from the product card. Null until the barcode
+  // sync step runs — a live Uzum write is refused without it.
+  market_barcode:         text('market_barcode'),
+  // Yandex Market: the exact shopSku the stock-update PUT expects (sourced
+  // from the offers/stocks read).
+  market_sku:             text('market_sku'),
+  // Yandex Market: the warehouseId the stock-update PUT targets (sourced from
+  // the offers/stocks read). Stored as text — it's a marketplace-side id.
+  market_warehouse_id:    text('market_warehouse_id'),
   updated_at:             timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 }, (t) => [
   index('products_shop_id_idx').on(t.shop_id),

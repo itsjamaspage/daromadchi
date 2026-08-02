@@ -26,9 +26,10 @@ export default async function SettingsPage() {
       if (row.shop_id_external === 'DEMO') continue
       const s = {
         ...row,
-        created_at:       row.created_at.toISOString(),
-        last_synced_at:   row.last_synced_at?.toISOString()   ?? null,
-        throttled_until:  row.throttled_until?.toISOString()  ?? null,
+        created_at:            row.created_at.toISOString(),
+        last_synced_at:        row.last_synced_at?.toISOString()        ?? null,
+        throttled_until:       row.throttled_until?.toISOString()       ?? null,
+        stock_sync_consent_at: row.stock_sync_consent_at?.toISOString() ?? null,
       } as Shop
       if (row.marketplace === 'uzum')          uzumShop   = s
       if (row.marketplace === 'yandex_market') yandexShop = s
