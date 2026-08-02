@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth/config'
+import { apexToWwwRedirect } from '@/lib/seo/apex-redirect'
 
 // ── CORS ──────────────────────────────────────────────────────────────────────
 
@@ -79,17 +80,14 @@ export async function proxy(request: NextRequest) {
 
   // ── Canonical host: 301 apex → www ──────────────────────────────────────────
   // Without this, daromadchi.uz and www.daromadchi.uz serve identical content
-  // and every page has a duplicate the canonicals can't fully resolve. Redirect
-  // only page requests on the exact apex host (leave /api/ alone so API and
-  // extension clients — which may POST — are never turned into GETs by a 301).
-  const host = (request.headers.get('x-forwarded-host') ?? request.headers.get('host') ?? '').toLowerCase()
-  if (host === 'daromadchi.uz' && !pathname.startsWith('/api/')) {
-    const url = request.nextUrl.clone()
-    url.protocol = 'https:'
-    url.host = 'www.daromadchi.uz'
-    url.port = ''
-    return NextResponse.redirect(url, 301)
-  }
+  // and every page has a duplicate the canonicals can't fully resolve. The
+  // decision (apex-only, /api/ excluded, loop-safe) lives in a pure, unit-tested
+  // helper — see lib/seo/apex-redirect.ts.
+  const apexRedirect = apexToWwwRedirect(
+    request.headers.get('x-forwarded-host') ?? request.headers.get('host'),
+    request.nextUrl,
+  )
+  if (apexRedirect) return NextResponse.redirect(apexRedirect, 301)
 
   if (pathname.startsWith('/api/')) {
     // Handle CORS preflight

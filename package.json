@@ -12,6 +12,7 @@
     "test:guard": "node --import tsx --test lib/marketplace-readonly-guard.test.ts",
     "test:stock": "node --import tsx --test lib/marketplace-readonly-guard.test.ts lib/marketplace/stock-allocation.test.ts",
     "test:integration": "node --import tsx --test lib/marketplace/stock-writer.integration.test.ts",
+    "test:seo": "node --import tsx --test lib/seo/apex-redirect.test.ts",
     "stock-sync:demo": "tsx scripts/stock-sync-dry-run-demo.ts",
     "stock-sync:live-verify": "tsx scripts/stock-sync-live-verify.ts"
   },
