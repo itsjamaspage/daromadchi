@@ -5,6 +5,7 @@ import { Search, Check, X, Pencil } from 'lucide-react'
 import ExportButton from './ExportButton'
 import FulfillmentBadge from './FulfillmentBadge'
 import MpBadge, { MP_META } from './MpBadge'
+import { ColorBadge } from '@/components/ColorBadge'
 import { useLang } from '@/app/providers'
 import { translations } from '@/lib/i18n'
 import type { Product } from '@/lib/types'
@@ -432,6 +433,12 @@ export default function ProductsTable({ products }: { products: Product[] }) {
                                   Umumiy
                                 </span>
                               )}
+                              {/* NOTE: color is parsed from the product title, not the SKU (SKUs are intentionally the
+                                  same, e.g. JMM99, across colors and markets). If both colors are ever listed on the
+                                  SAME marketplace, product-matching (keyed partly on SKU) could merge the two rows.
+                                  The badge still renders correctly per-title; the fix, if needed later, is to make the
+                                  product key (sku + resolveColor(title)). Do not implement that now. */}
+                              <ColorBadge title={p.title} />
                             </div>
                           </div>
                           <Pencil className="w-3.5 h-3.5 flex-shrink-0 opacity-30" style={{ color: 'var(--text-muted)' }} />
