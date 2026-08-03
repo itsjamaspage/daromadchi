@@ -26,6 +26,10 @@ async function main() {
     JOIN shops s ON s.id = p.shop_id
     LEFT JOIN ${categoryAliases} ca
       ON ca.original_name = p.category AND ca.marketplace = s.marketplace::text
+    -- Never suggest grouping archived listings (Uzum phantoms) — they aren't
+    -- sellable and grouping them is pointless noise. Mirrors the products/Остатки
+    -- default views. Column added in migration 045.
+    WHERE p.is_archived = false
   `)
   const raw = res.rows as Array<{
     id: string; sku: string | null; title: string; category: string | null
