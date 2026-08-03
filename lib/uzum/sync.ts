@@ -216,7 +216,7 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
     const productRows: {
       shop_id: string; marketplace_product_id: string; title: string; sku: string
       category: string | null; selling_price: number | null; cost_price: number | null
-      stock_quantity: number; quantity_sold: number | null
+      stock_quantity: number; quantity_sold: number | null; is_archived: boolean
     }[] = []
 
     // Product sync is best-effort: shops with 0 active listings return 403.
@@ -238,8 +238,14 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
             // to show phantom stock. Reading status.value keeps us aligned
             // with Uzum's own UI — the two numbers cannot diverge.
             const outOfStock = card.status?.value === 'RUN_OUT'
+            // Uzum exposes "archived" three ways in a card; any one is enough.
+            // Kept as an isolated expression so it's easy to log if a sync ever
+            // fails to flip a known-archived product (the field paths are the
+            // first suspect). See migration 045 / the products "Архивные" tab.
+            const cardArchived = card.status?.value === 'ARCHIVED'
             for (const sku of card.skuList ?? []) {
               const rawStock = (sku.quantityActive ?? 0) + (sku.quantityFbs ?? 0)
+              const isArchived = cardArchived || sku.archived === true || sku.status?.value === 'ARCHIVED'
               productRows.push({
                 shop_id: shopId,
                 marketplace_product_id: String(sku.skuId),
@@ -253,6 +259,7 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
                 // which we can't read at the order level). Used as the "sold"
                 // figure so FBO sales are counted even without order records.
                 quantity_sold: sku.quantitySold ?? null,
+                is_archived: isArchived,
               })
             }
           }
@@ -280,6 +287,7 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
             cost_price: r.cost_price != null ? String(r.cost_price) : null,
             stock_quantity: r.stock_quantity,
             quantity_sold: r.quantity_sold,
+            is_archived: r.is_archived,
             // Uzbekistan's dominant model is FBS (seller ships from home).
             // Uzum's product API doesn't expose per-SKU fulfillment reliably,
             // so mark all Uzum products FBS by default. Users on FBO can
@@ -297,6 +305,10 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
               stock_quantity: r.stock_quantity,
               quantity_sold: r.quantity_sold,
               marketplace_product_id: r.marketplace_product_id,
+              // Re-stamped every sync so un-archiving on Uzum flips this back to
+              // false. (cost_price stays omitted here on purpose — see note in
+              // the insert path: re-syncs must not clobber hand-entered costs.)
+              is_archived: r.is_archived,
               fulfillment_type: 'fbs',
             }).where(eq(products.id, r.id))
           }
@@ -601,6 +613,8 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
                 cost_price: null,
                 stock_quantity: 0,
                 quantity_sold: null,
+                // Order-derived fallback: no card data, so not archived.
+                is_archived: false,
               })
             }
           }
@@ -676,6 +690,8 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
                   sku: mpid, category: null,
                   selling_price: it.price ?? null, cost_price: null, stock_quantity: 0,
                   quantity_sold: null,
+                  // Order-derived fallback: no card data, so not archived.
+                  is_archived: false,
                 })
               }
             }
