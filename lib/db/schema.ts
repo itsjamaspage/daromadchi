@@ -9,6 +9,7 @@ import {
   numeric,
   timestamp,
   date,
+  jsonb,
   uniqueIndex,
   index,
   serial,
@@ -742,4 +743,31 @@ export const orderCancelLog = pgTable('order_cancel_log', {
   index('order_cancel_log_shop_id_idx').on(t.shop_id),
   index('order_cancel_log_created_at_idx').on(t.created_at),
   index('order_cancel_log_auto_idx').on(t.auto),
+])
+
+/* ── 32. suggested_product_groups ────────────────────────────────────────────── */
+// Read-only "product group" suggestions: cross-marketplace pairs that look like
+// the same physical product, proposed by scripts/suggest-product-groups.ts for a
+// human to approve. NEVER auto-merged. On approval the API writes a
+// product_group_merges row (source→target) that computeStockGroups already
+// consumes. Pair keys are stored in canonical (sorted) order so a pair is never
+// suggested twice in both directions.
+export const suggestedProductGroups = pgTable('suggested_product_groups', {
+  id:           uuid('id').primaryKey().defaultRandom(),
+  user_id:      uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  // Normalized cross-marketplace match keys (stock-groups.ts normalizeKey), sorted.
+  a_match_key:  text('a_match_key').notNull(),
+  b_match_key:  text('b_match_key').notNull(),
+  a_product_id: uuid('a_product_id').references(() => products.id, { onDelete: 'set null' }),
+  b_product_id: uuid('b_product_id').references(() => products.id, { onDelete: 'set null' }),
+  score:        numeric('score', { precision: 4, scale: 3 }).notNull(),
+  tier:         text('tier').notNull(),   // strong | likely | weak
+  // Which signals fired: color/category match, title jaccard, price ratio, barcode.
+  signals:      jsonb('signals'),
+  status:       text('status').notNull().default('pending'),  // pending | approved | rejected
+  reviewed_at:  timestamp('reviewed_at', { withTimezone: true }),
+  created_at:   timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (t) => [
+  uniqueIndex('suggested_product_groups_pair_unique').on(t.user_id, t.a_match_key, t.b_match_key),
+  index('suggested_product_groups_user_status_idx').on(t.user_id, t.status),
 ])
