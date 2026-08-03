@@ -249,7 +249,12 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
               productRows.push({
                 shop_id: shopId,
                 marketplace_product_id: String(sku.skuId),
-                title: sku.skuTitle || sku.productTitle || card.title || 'Mahsulot',
+                // Prefer the descriptive product name. sku.skuTitle is often
+                // just the colour/variant ("Белый", "Бежевый"), so it's the
+                // last resort — otherwise many products get named by colour and
+                // become indistinguishable. The colour still shows as the chip
+                // beside the SKU code.
+                title: sku.productTitle || card.title || sku.skuTitle || 'Mahsulot',
                 sku: sku.sellerItemCode || sku.article || String(sku.skuId),
                 category: card.category ?? null,
                 selling_price: sku.price ?? null,
