@@ -3,6 +3,7 @@ import { Boxes, Settings } from 'lucide-react'
 import Link from 'next/link'
 import { getStockGroups } from '@/lib/db/stock-groups'
 import StocksTable from '@/components/dashboard/StocksTable'
+import ProductGroupSuggestions from '@/components/dashboard/ProductGroupSuggestions'
 import LastSyncedServer from '@/components/dashboard/LastSyncedServer'
 import HelpTooltip from '@/components/dashboard/HelpTooltip'
 import { getT } from '@/lib/server-i18n'
@@ -27,6 +28,9 @@ export default async function StocksPage() {
           <LastSyncedServer />
         </Suspense>
       </div>
+
+      {/* Read-only suggestion panel; self-hides when there are 0 pending. */}
+      <ProductGroupSuggestions />
 
       {groups.length === 0 ? (
         <div className="border border-dashed rounded-2xl p-10 text-center"
