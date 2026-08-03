@@ -167,10 +167,18 @@ export const products = pgTable('products', {
   // Yandex Market: the warehouseId the stock-update PUT targets (sourced from
   // the offers/stocks read). Stored as text — it's a marketplace-side id.
   market_warehouse_id:    text('market_warehouse_id'),
+  // Uzum returns archived products in the product-list API; without this they
+  // insert as active and clutter every default view. Set on each sync from the
+  // card/SKU archived flags (see lib/uzum/sync.ts). Existing rows default false
+  // and are re-evaluated on the next sync. Default views filter is_archived=false;
+  // the products page's "Архивные" tab shows the true ones.
+  is_archived:            boolean('is_archived').default(false).notNull(),
   updated_at:             timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 }, (t) => [
   index('products_shop_id_idx').on(t.shop_id),
   index('products_sku_idx').on(t.sku),
+  // Default views filter by shop_id + is_archived=false; composite keeps that fast.
+  index('products_shop_archived_idx').on(t.shop_id, t.is_archived),
 ])
 
 /* ── 5. orders ──────────────────────────────────────────────────────────────── */
