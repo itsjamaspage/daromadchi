@@ -72,7 +72,9 @@ export interface StockGroup {
   merged_from: string[]
 }
 
-function normalizeKey(sku: string): string {
+// The canonical cross-marketplace grouping key. Exported so the product-group
+// suggester writes/reads the exact same key `computeStockGroups` groups by.
+export function normalizeKey(sku: string): string {
   return sku.trim().toLowerCase().replace(/[\s\-_./]+/g, '')
 }
 
