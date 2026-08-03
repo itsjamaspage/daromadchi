@@ -6,7 +6,7 @@
 
 export type ColorKey =
   | 'black' | 'white' | 'blue' | 'red' | 'green' | 'gray'
-  | 'gold' | 'pink' | 'purple' | 'yellow' | 'brown'
+  | 'gold' | 'pink' | 'purple' | 'yellow' | 'brown' | 'beige'
 
 // Same set the UI language switcher uses (app/providers → useLang).
 export type BadgeLang = 'uz' | 'ru' | 'en'
@@ -28,6 +28,7 @@ const RULES: Rule[] = [
   { key: 'purple', hex: '#7c3aed',              stems: ['фиолет'],             words: ['binafsha', 'purple'] },
   { key: 'yellow', hex: '#eab308',              stems: ['жёлт', 'желт'],       words: ['sariq', 'yellow'] },
   { key: 'brown',  hex: '#78350f',              stems: ['коричн'],             words: ['jigarrang', 'brown'] },
+  { key: 'beige',  hex: '#d2b48c', ring: true,  stems: ['беж'],                words: ['bej', 'beige'] },
 ]
 
 // Localized color names — the badge shows the name in the current UI language.
@@ -43,6 +44,7 @@ export const COLOR_LABELS: Record<ColorKey, Record<BadgeLang, string>> = {
   purple: { uz: 'Binafsha', ru: 'Фиолетовый',  en: 'Purple' },
   yellow: { uz: 'Sariq',    ru: 'Жёлтый',      en: 'Yellow' },
   brown:  { uz: 'Jigar',    ru: 'Коричневый',  en: 'Brown'  },
+  beige:  { uz: 'Bej',      ru: 'Бежевый',     en: 'Beige'  },
 }
 
 export function resolveColor(title?: string | null): ProductColor | null {
