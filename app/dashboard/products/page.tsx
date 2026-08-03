@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { getProductsPaginated } from '@/lib/db/products'
 import ProductsTable from '@/components/dashboard/ProductsTable'
 import MarketplaceTabs from '@/components/dashboard/MarketplaceTabs'
+import ArchivedTabs from '@/components/dashboard/ArchivedTabs'
 import Pagination from '@/components/dashboard/Pagination'
 import LastSyncedServer from '@/components/dashboard/LastSyncedServer'
 import { getT } from '@/lib/server-i18n'
@@ -22,10 +23,11 @@ export default async function ProductsPage({ searchParams }: Props) {
   const mp = (VALID_MARKETPLACES as readonly string[]).includes(params.mp ?? '')
     ? (params.mp as MarketplaceType)
     : undefined
+  const archived = params.archived === '1'
 
-  const [t, { rows: products, total }] = await Promise.all([
+  const [t, { rows: products, total, archivedTotal }] = await Promise.all([
     getT(),
-    getProductsPaginated(page, PAGE_SIZE, mp),
+    getProductsPaginated(page, PAGE_SIZE, mp, archived),
   ])
   const d = t.dashboard
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
@@ -38,9 +40,12 @@ export default async function ProductsPage({ searchParams }: Props) {
       </div>
 
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <Suspense>
-          <MarketplaceTabs current={mp} />
-        </Suspense>
+        <div className="flex items-center gap-3 flex-wrap">
+          <Suspense>
+            <MarketplaceTabs current={mp} />
+          </Suspense>
+          <ArchivedTabs archived={archived} archivedTotal={archivedTotal} mp={mp} />
+        </div>
         <Suspense>
           <LastSyncedServer />
         </Suspense>

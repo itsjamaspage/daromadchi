@@ -115,6 +115,14 @@ export interface UzumSku {
   article?: string
   sellerItemCode?: string
   barcode?: number
+  // Per-SKU archived signals (a card can also be archived at the card level via
+  // UzumProductCard.status). Any of these true → the sync marks the row archived.
+  archived?: boolean
+  status?: {
+    value?: string
+    title?: string
+    description?: string
+  }
 }
 
 export interface UzumProductCard {

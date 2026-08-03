@@ -7,7 +7,8 @@ import type { Product, MarketplaceType } from '@/lib/types'
 
 export interface PaginatedProducts {
   rows: Product[]
-  total: number
+  total: number         // count for the CURRENT view (active, or archived)
+  archivedTotal: number // count of archived products, always — powers the "Архивные" tab badge
 }
 
 const _fetchProducts = unstable_cache(
@@ -30,7 +31,8 @@ const _fetchProducts = unstable_cache(
         fulfillment_type: products.fulfillment_type,
         updated_at: products.updated_at,
       }).from(products)
-        .where(inArray(products.shop_id, allShopIds))
+        // Active metrics (dashboard home, analytics, ABC-XYZ) exclude archived.
+        .where(and(inArray(products.shop_id, allShopIds), eq(products.is_archived, false)))
         .orderBy(asc(products.title)),
       db.select({
         product_id: orderItems.product_id,
@@ -385,7 +387,7 @@ export async function getCategoryRevenue(
 }
 
 const _fetchProductsPaginated = unstable_cache(
-  async (userId: string, marketplace: string | null, page: number, pageSize: number): Promise<PaginatedProducts> => {
+  async (userId: string, marketplace: string | null, page: number, pageSize: number, archived: boolean): Promise<PaginatedProducts> => {
     const offset = (page - 1) * pageSize
 
     const shopConditions = [
@@ -399,14 +401,19 @@ const _fetchProductsPaginated = unstable_cache(
     const userShops = await db.select({ id: shops.id, marketplace: shops.marketplace, warehouse_id: shops.warehouse_id })
       .from(shops).where(and(...shopConditions))
     const shopIds = userShops.map(s => s.id)
-    if (shopIds.length === 0) return { rows: [], total: 0 }
+    if (shopIds.length === 0) return { rows: [], total: 0, archivedTotal: 0 }
 
     const shopInfo = new Map<string, { marketplace: MarketplaceType; warehouseId: string | null }>()
     for (const s of userShops) {
       shopInfo.set(s.id, { marketplace: s.marketplace as MarketplaceType, warehouseId: s.warehouse_id })
     }
 
-    const [productRows, [{ total }]] = await Promise.all([
+    // Current view filters on the requested archived state; the badge count
+    // always reflects archived rows regardless of which view is open.
+    const viewWhere = and(inArray(products.shop_id, shopIds), eq(products.is_archived, archived))
+    const archivedWhere = and(inArray(products.shop_id, shopIds), eq(products.is_archived, true))
+
+    const [productRows, [{ total }], [{ archivedTotal }]] = await Promise.all([
       db.select({
         id: products.id,
         shop_id: products.shop_id,
@@ -419,13 +426,15 @@ const _fetchProductsPaginated = unstable_cache(
         category: products.category,
         marketplace_product_id: products.marketplace_product_id,
         fulfillment_type: products.fulfillment_type,
+        is_archived: products.is_archived,
         updated_at: products.updated_at,
       }).from(products)
-        .where(inArray(products.shop_id, shopIds))
+        .where(viewWhere)
         .orderBy(asc(products.title))
         .limit(pageSize)
         .offset(offset),
-      db.select({ total: count() }).from(products).where(inArray(products.shop_id, shopIds)),
+      db.select({ total: count() }).from(products).where(viewWhere),
+      db.select({ archivedTotal: count() }).from(products).where(archivedWhere),
     ])
 
     const productIds = productRows.map(p => p.id)
@@ -507,17 +516,18 @@ const _fetchProductsPaginated = unstable_cache(
         in_transit: dbInTransit + surplus,
         cancelled: cancelledMap.get(p.id) ?? 0,
         is_shared: isShared,
+        is_archived: p.is_archived,
       } as Product
     })
 
-    return { rows, total }
+    return { rows, total, archivedTotal }
   },
-  ['products-paginated-rpc-v3'],
+  ['products-paginated-rpc-v4'],
   { revalidate: 30, tags: ['product-data'] },
 )
 
-export async function getProductsPaginated(page = 1, pageSize = 50, marketplace?: MarketplaceType): Promise<PaginatedProducts> {
+export async function getProductsPaginated(page = 1, pageSize = 50, marketplace?: MarketplaceType, archived = false): Promise<PaginatedProducts> {
   const userId = await getCurrentUserId()
-  if (!userId) return { rows: [], total: 0 }
-  return _fetchProductsPaginated(userId, marketplace ?? null, page, pageSize)
+  if (!userId) return { rows: [], total: 0, archivedTotal: 0 }
+  return _fetchProductsPaginated(userId, marketplace ?? null, page, pageSize, archived)
 }
