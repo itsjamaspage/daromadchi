@@ -414,7 +414,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
                 const isEditing = editingId === p.id
                 return (
                   <Fragment key={p.id}>
-                    <tr style={{ borderBottom: (!isEditing && idx < filtered.length - 1) ? '1px solid var(--border)' : isEditing ? '1px solid var(--border)' : 'none', cursor: 'pointer' }}
+                    <tr style={{ borderBottom: (!isEditing && idx < filtered.length - 1) ? '1px solid var(--border)' : isEditing ? '1px solid var(--border)' : 'none', cursor: 'pointer', opacity: p.is_archived ? 0.55 : undefined }}
                       onClick={() => setEditingId(isEditing ? null : p.id)}>
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-2">

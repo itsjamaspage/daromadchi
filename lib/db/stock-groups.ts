@@ -99,7 +99,8 @@ export async function computeStockGroups(userId: string, shopIds: string[]): Pro
       selling_price: products.selling_price,
       stock_quantity: products.stock_quantity,
       fulfillment_type: products.fulfillment_type,
-    }).from(products).where(inArray(products.shop_id, shopIds)),
+      // Остатки never shows archived listings — they aren't sellable stock.
+    }).from(products).where(and(inArray(products.shop_id, shopIds), eq(products.is_archived, false))),
     db.select({ id: shops.id, marketplace: shops.marketplace })
       .from(shops).where(inArray(shops.id, shopIds)),
     db.select({
