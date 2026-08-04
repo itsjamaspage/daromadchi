@@ -148,6 +148,13 @@ export interface ProductSalesRow {
   qty_cancelled: number // units on cancelled orders, shown separately
   qty_returned: number
   revenue: number       // revenue of real sales only
+  // Variant grouping keys — carried through from products so the Analytics
+  // "Top sold" table can collapse per-colour listings under a parent row.
+  // Both stay NULL when the order's product was hard-deleted (orphan case):
+  // NULL key = "flat row, don't try to group", same rule products use for
+  // legitimately single-variant products. LEFT JOIN preserves the orphan.
+  variant_group_key: string | null
+  variant_color: string | null
 }
 
 const _fetchProductSales = unstable_cache(
@@ -175,11 +182,16 @@ const _fetchProductSales = unstable_cache(
     // Cancelled/returned units are NOT sales — they are counted separately so
     // the UI can show everything that happened in the store, in real units.
     // LEFT join on products: an order item whose product link failed to
-    // resolve must still be visible, not silently dropped.
+    // resolve must still be visible, not silently dropped. Variant fields
+    // ride along on the same LEFT JOIN — orphan rows come back with
+    // variant_group_key NULL, which the client-side grouping treats as
+    // "flat row, do not group" (same rule as single-variant products).
     const rows = await db.select({
       product_id: orderItems.product_id,
       title: products.title,
       sku: products.sku,
+      variant_group_key: products.variant_group_key,
+      variant_color: products.variant_color,
       qty_sold: sql<number>`coalesce(sum(${orderItems.quantity}) filter (where ${orders.status} not in ('cancelled','returned')), 0)`.as('qty_sold'),
       qty_in_transit: sql<number>`coalesce(sum(${orderItems.quantity}) filter (where ${orders.status} in ('pending','confirmed')), 0)`.as('qty_in_transit'),
       qty_cancelled: sql<number>`coalesce(sum(${orderItems.quantity}) filter (where ${orders.status} = 'cancelled'), 0)`.as('qty_cancelled'),
@@ -189,7 +201,7 @@ const _fetchProductSales = unstable_cache(
       .innerJoin(orders, eq(orderItems.order_id, orders.id))
       .leftJoin(products, eq(orderItems.product_id, products.id))
       .where(and(...conditions))
-      .groupBy(orderItems.product_id, products.title, products.sku)
+      .groupBy(orderItems.product_id, products.title, products.sku, products.variant_group_key, products.variant_color)
 
     // Reconcile with Uzum's lifetime quantitySold on the unfiltered view: the
     // counter increments at ORDER time while fresh orders are hidden from the
@@ -201,6 +213,7 @@ const _fetchProductSales = unstable_cache(
     if (!sinceDate && !untilDate) {
       const prodRows = await db.select({
         id: products.id, title: products.title, sku: products.sku, quantity_sold: products.quantity_sold,
+        variant_group_key: products.variant_group_key, variant_color: products.variant_color,
       }).from(products).where(inArray(products.shop_id, shopIds))
       const dbUnits = new Map(rows.filter(r => r.product_id).map(r => [r.product_id as string, Number(r.qty_sold)]))
       const seen = new Set(rows.map(r => r.product_id))
@@ -215,6 +228,8 @@ const _fetchProductSales = unstable_cache(
           extraRows.push({
             product_id: p.id, title: p.title, sku: p.sku ?? null,
             qty_sold: 0, qty_in_transit: surplus, qty_cancelled: 0, qty_returned: 0, revenue: 0,
+            variant_group_key: p.variant_group_key ?? null,
+            variant_color: p.variant_color ?? null,
           })
         }
       }
@@ -231,6 +246,12 @@ const _fetchProductSales = unstable_cache(
         // unrecoverable — label it plainly rather than the cryptic "Unknown".
         title: r.title ?? 'Удалённый товар',
         sku: r.sku ?? null,
+        // NULL variant_group_key propagates through — the client's grouping
+        // treats NULL as "don't group", so an orphan row lands as a flat
+        // "Удалённый товар" row without ever getting absorbed into a group
+        // and without erroring out on the union-find lookup.
+        variant_group_key: r.variant_group_key ?? null,
+        variant_color: r.variant_color ?? null,
         // Sold = delivered units: DB non-cancelled minus those still in transit.
         qty_sold: Math.max(Number(r.qty_sold) - dbInTransit, 0),
         qty_in_transit: dbInTransit + surplus,
@@ -241,7 +262,10 @@ const _fetchProductSales = unstable_cache(
     })
     return [...mapped, ...extraRows]
   },
-  ['product-sales-v6'],
+  // Bump cache tag when the row shape changes so a redeploy with an
+  // in-memory `unstable_cache` doesn't serve v6 rows missing the two
+  // new variant fields.
+  ['product-sales-v7'],
   { revalidate: 30, tags: ['product-data'] },
 )
 
