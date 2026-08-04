@@ -74,10 +74,11 @@ export interface StockGroup {
   /** match_keys that were manually merged into this group */
   merged_from: string[]
   /**
-   * Variant grouping (Phase 2). The single distinct non-null variant_group_key
-   * across this group's members, or null when there is none OR the members
-   * disagree (a cross-marketplace SKU whose listings carry different keys) —
-   * the safe-degradation rule: ambiguous → ungrouped flat row.
+   * Variant-parent key (Phase 3). The canonical key of this group's product
+   * parent — the connected component of StockGroups linked by sharing any member
+   * variant_group_key on any marketplace (so a same-SKU product listed on both
+   * marketplaces still nests). Null when the group has no variant key at all.
+   * StockGroups sharing this value render under one collapsible parent (2+).
    */
   variant_group_key: string | null
   /** Resolved colour key of this variant (first non-null member), for the child label. */
@@ -300,10 +301,9 @@ export async function computeStockGroups(userId: string, shopIds: string[]): Pro
       ? Math.max(0, link!.total_physical_stock! - sinceBaseline)
       : Math.max(0, totalStock - totalInProcess)
 
-    // Variant identity for this SKU group: the single distinct non-null
-    // variant_group_key across members. Zero or >1 distinct → null (flat row).
-    const distinctVariantKeys = [...new Set(members.map(m => m.variant_group_key).filter((k): k is string => k != null))]
-    const variantGroupKey = distinctVariantKeys.length === 1 ? distinctVariantKeys[0] : null
+    // variant_group_key is resolved AFTER the loop by union-find (Phase 3): a
+    // product parent is the transitive closure of StockGroups sharing any member
+    // variant_group_key on any marketplace. Set to null here as a placeholder.
     const variantColor = members.find(m => m.variant_color != null)?.variant_color ?? null
 
     const dailyVelocity = sold14 / 14
@@ -326,10 +326,45 @@ export async function computeStockGroups(userId: string, shopIds: string[]): Pro
       sold_14d: sold14,
       days_of_stock: dailyVelocity > 0 ? Math.floor(leftover / dailyVelocity) : null,
       merged_from: mergedFromMap.get(key) ?? [],
-      variant_group_key: variantGroupKey,
+      variant_group_key: null,
       variant_color: variantColor,
     })
   }
+
+  // ── Phase 3: cross-marketplace variant parents ─────────────────────────────
+  // Phase 2 grouped by a single per-SKU key, so a product listed on BOTH
+  // marketplaces (its StockGroup carries e.g. uzum:… AND yandex:… keys) fell to
+  // a flat row. Union StockGroups into product parents by the transitive closure
+  // of "shares any member variant_group_key on any marketplace": the two merged
+  // JMWHT / JMBLK groups both hold uzum:3135544 → one M9 parent, even though each
+  // also spans Yandex. J16 (different SKU codes per marketplace) shares no key
+  // across marketplaces, so it stays split — the SKU codes decide, no special case.
+  const uf = new Map<number, number>()
+  result.forEach((_, i) => uf.set(i, i))
+  const find = (x: number): number => { let r = x; while (uf.get(r)! !== r) r = uf.get(r)!; return r }
+  const union = (a: number, b: number) => { const ra = find(a), rb = find(b); if (ra !== rb) uf.set(ra, rb) }
+  // Link every pair of StockGroups that share a variant_group_key.
+  const keyToIdx = new Map<string, number[]>()
+  result.forEach((g, i) => {
+    for (const k of new Set(g.members.map(m => m.variant_group_key).filter((k): k is string => k != null))) {
+      const list = keyToIdx.get(k)
+      if (list) list.push(i); else keyToIdx.set(k, [i])
+    }
+  })
+  for (const idxs of keyToIdx.values()) for (let j = 1; j < idxs.length; j++) union(idxs[0], idxs[j])
+  // Canonical parent key per component = the smallest member key in the whole
+  // component (stable + shared by every group in it); null when it has no keys.
+  const compKeys = new Map<number, string[]>()
+  result.forEach((g, i) => {
+    const root = find(i)
+    const acc = compKeys.get(root) ?? []
+    for (const m of g.members) if (m.variant_group_key) acc.push(m.variant_group_key)
+    compKeys.set(root, acc)
+  })
+  result.forEach((g, i) => {
+    const keys = compKeys.get(find(i))!
+    g.variant_group_key = keys.length ? [...keys].sort()[0] : null
+  })
 
   // Lowest leftover first — the products that need attention float to the top.
   result.sort((a, b) => a.leftover - b.leftover || b.total_sold - a.total_sold)
