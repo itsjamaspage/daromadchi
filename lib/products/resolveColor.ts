@@ -47,6 +47,15 @@ export const COLOR_LABELS: Record<ColorKey, Record<BadgeLang, string>> = {
   beige:  { uz: 'Bej',      ru: 'Бежевый',     en: 'Beige'  },
 }
 
+// Swatch metadata by resolved colour key — the companion to COLOR_LABELS, so a
+// consumer holding a stored colour KEY (e.g. products.variant_color) can render
+// the same swatch as ColorBadge without re-parsing a title. Null for unknown keys.
+export function colorMetaFor(key: string | null | undefined): { hex: string; ring?: boolean } | null {
+  if (!key) return null
+  const r = RULES.find((x) => x.key === key)
+  return r ? { hex: r.hex, ring: r.ring } : null
+}
+
 export function resolveColor(title?: string | null): ProductColor | null {
   if (!title) return null
   const t = title.toLowerCase()

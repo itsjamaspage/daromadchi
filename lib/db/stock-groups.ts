@@ -40,6 +40,9 @@ export interface StockGroupMember {
   selling_price: number | null
   // 'fbs' (seller ships) | 'fbo' / 'fby' (marketplace warehouse) | null (unknown)
   fulfillment_type: string | null
+  // Variant grouping (Phases 1/1.5): parent key + resolved colour key, per member.
+  variant_group_key: string | null
+  variant_color: string | null
 }
 
 export interface StockGroup {
@@ -70,6 +73,15 @@ export interface StockGroup {
   days_of_stock: number | null
   /** match_keys that were manually merged into this group */
   merged_from: string[]
+  /**
+   * Variant grouping (Phase 2). The single distinct non-null variant_group_key
+   * across this group's members, or null when there is none OR the members
+   * disagree (a cross-marketplace SKU whose listings carry different keys) —
+   * the safe-degradation rule: ambiguous → ungrouped flat row.
+   */
+  variant_group_key: string | null
+  /** Resolved colour key of this variant (first non-null member), for the child label. */
+  variant_color: string | null
 }
 
 // The canonical cross-marketplace grouping key. Exported so the product-group
@@ -101,6 +113,8 @@ export async function computeStockGroups(userId: string, shopIds: string[]): Pro
       selling_price: products.selling_price,
       stock_quantity: products.stock_quantity,
       fulfillment_type: products.fulfillment_type,
+      variant_group_key: products.variant_group_key,
+      variant_color: products.variant_color,
       // Остатки never shows archived listings — they aren't sellable stock.
     }).from(products).where(and(inArray(products.shop_id, shopIds), eq(products.is_archived, false))),
     db.select({ id: shops.id, marketplace: shops.marketplace })
@@ -185,6 +199,8 @@ export async function computeStockGroups(userId: string, shopIds: string[]): Pro
       sold_total: soldByProduct.get(p.id) ?? 0,
       selling_price: p.selling_price ? Number(p.selling_price) : null,
       fulfillment_type: p.fulfillment_type,
+      variant_group_key: p.variant_group_key,
+      variant_color: p.variant_color,
     }
     const list = groups.get(key)
     if (list) list.push(member)
@@ -284,6 +300,12 @@ export async function computeStockGroups(userId: string, shopIds: string[]): Pro
       ? Math.max(0, link!.total_physical_stock! - sinceBaseline)
       : Math.max(0, totalStock - totalInProcess)
 
+    // Variant identity for this SKU group: the single distinct non-null
+    // variant_group_key across members. Zero or >1 distinct → null (flat row).
+    const distinctVariantKeys = [...new Set(members.map(m => m.variant_group_key).filter((k): k is string => k != null))]
+    const variantGroupKey = distinctVariantKeys.length === 1 ? distinctVariantKeys[0] : null
+    const variantColor = members.find(m => m.variant_color != null)?.variant_color ?? null
+
     const dailyVelocity = sold14 / 14
     result.push({
       match_key: key,
@@ -304,6 +326,8 @@ export async function computeStockGroups(userId: string, shopIds: string[]): Pro
       sold_14d: sold14,
       days_of_stock: dailyVelocity > 0 ? Math.floor(leftover / dailyVelocity) : null,
       merged_from: mergedFromMap.get(key) ?? [],
+      variant_group_key: variantGroupKey,
+      variant_color: variantColor,
     })
   }
 

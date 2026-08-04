@@ -1,13 +1,42 @@
 'use client'
 
-import { useMemo, useState, useTransition } from 'react'
+import { Fragment, useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Search, ChevronUp, ChevronDown, Pencil, Link2, Unlink } from 'lucide-react'
+import { Search, ChevronUp, ChevronDown, ChevronRight, Pencil, Link2, Unlink } from 'lucide-react'
 import FulfillmentBadge from './FulfillmentBadge'
 import { useLang } from '@/app/providers'
 import { translations } from '@/lib/i18n'
+import { COLOR_LABELS, colorMetaFor, type ColorKey } from '@/lib/products/resolveColor'
 import type { StockGroup } from '@/lib/db/stock-groups'
 import type { MarketplaceType } from '@/lib/types'
+
+// Localised "N вариантов" style count. Kept tiny + inline like the ColorBadge.
+function variantCountLabel(n: number, lang: 'uz' | 'ru' | 'en'): string {
+  if (lang === 'en') return `${n} variants`
+  if (lang === 'uz') return `${n} ta variant`
+  // ru plural: 2 варианта / 5 вариантов
+  const mod10 = n % 10, mod100 = n % 100
+  const word = mod10 === 1 && mod100 !== 11 ? 'вариант'
+    : mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14) ? 'варианта'
+    : 'вариантов'
+  return `${n} ${word}`
+}
+
+// Small colour chip for a variant child row: swatch + localised label, built
+// from the stored colour KEY (products.variant_color) via the shared palette.
+// Renders nothing when the key is null/unknown — child then shows by SKU only.
+function VariantColorChip({ colorKey, lang }: { colorKey: string | null; lang: 'uz' | 'ru' | 'en' }) {
+  const meta = colorMetaFor(colorKey)
+  if (!meta || !colorKey) return null
+  const name = COLOR_LABELS[colorKey as ColorKey]?.[lang] ?? colorKey
+  return (
+    <span className="inline-flex items-center gap-1 text-[11px]" style={{ color: 'var(--text-muted)' }}>
+      <span className="h-2.5 w-2.5 rounded-full"
+        style={{ backgroundColor: meta.hex, boxShadow: meta.ring ? 'inset 0 0 0 1px var(--border)' : undefined }} />
+      {name}
+    </span>
+  )
+}
 
 const MP_META: Record<MarketplaceType, { label: string; short: string; color: string; bg: string }> = {
   uzum:          { label: 'Uzum',        short: 'UZ', color: '#494fdf', bg: 'rgba(73,79,223,0.12)'  },
@@ -201,6 +230,8 @@ export default function StocksTable({ groups }: { groups: StockGroup[] }) {
   // columns and let tapping reveal them below as label/value pairs.
   const [mobileInfoKey, setMobileInfoKey] = useState<string | null>(null)
   const [linkingKey, setLinkingKey] = useState<string | null>(null)
+  // Which variant parents are expanded (collapsed by default). Keyed by variant_group_key.
+  const [expandedVariants, setExpandedVariants] = useState<Set<string>>(new Set())
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -210,7 +241,38 @@ export default function StocksTable({ groups }: { groups: StockGroup[] }) {
       g.members.some(m => m.sku?.toLowerCase().includes(q) || m.title.toLowerCase().includes(q)))
   }, [groups, query])
 
+  // Nest StockGroups under a collapsible variant parent when 2+ of them share one
+  // variant_group_key (the safe-degradation key resolved in computeStockGroups).
+  // A single-variant or null-key group renders as a normal flat row, in place.
+  const displayItems = useMemo(() => {
+    const countByKey = new Map<string, number>()
+    for (const g of filtered) {
+      if (g.variant_group_key) countByKey.set(g.variant_group_key, (countByKey.get(g.variant_group_key) ?? 0) + 1)
+    }
+    const emitted = new Set<string>()
+    const items: ({ type: 'flat'; group: StockGroup } | { type: 'parent'; key: string; title: string; children: StockGroup[] })[] = []
+    for (const g of filtered) {
+      const vk = g.variant_group_key
+      if (vk && (countByKey.get(vk) ?? 0) >= 2) {
+        if (emitted.has(vk)) continue
+        emitted.add(vk)
+        items.push({ type: 'parent', key: vk, title: g.title, children: filtered.filter(x => x.variant_group_key === vk) })
+      } else {
+        items.push({ type: 'flat', group: g })
+      }
+    }
+    return items
+  }, [filtered])
+
   const linkingGroup = linkingKey ? groups.find(g => g.match_key === linkingKey) : null
+
+  function toggleVariant(key: string) {
+    setExpandedVariants(prev => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key); else next.add(key)
+      return next
+    })
+  }
 
   return (
     <div className="space-y-4">
@@ -235,16 +297,39 @@ export default function StocksTable({ groups }: { groups: StockGroup[] }) {
             </tr>
           </thead>
           <tbody>
-            {filtered.map(g => {
-              const badge = leftoverBadge(g.leftover, g.stock_threshold)
-              const isOpen = openKey === g.match_key
-              const isMobileOpen = mobileInfoKey === g.match_key
+            {displayItems.map(item => {
+              if (item.type === 'flat') {
+                const g = item.group
+                const isOpen = openKey === g.match_key
+                const isMobileOpen = mobileInfoKey === g.match_key
+                return (
+                  <FragmentRow key={g.match_key} group={g}
+                    badge={leftoverBadge(g.leftover, g.stock_threshold)} isOpen={isOpen}
+                    isMobileOpen={isMobileOpen}
+                    onToggle={() => setOpenKey(isOpen ? null : g.match_key)}
+                    onMobileToggle={() => setMobileInfoKey(isMobileOpen ? null : g.match_key)}
+                    onLink={() => setLinkingKey(g.match_key)} d={d} />
+                )
+              }
+              // Variant parent: collapsible header row, then its child StockGroups.
+              const expanded = expandedVariants.has(item.key)
               return (
-                <FragmentRow key={g.match_key} group={g} badge={badge} isOpen={isOpen}
-                  isMobileOpen={isMobileOpen}
-                  onToggle={() => setOpenKey(isOpen ? null : g.match_key)}
-                  onMobileToggle={() => setMobileInfoKey(isMobileOpen ? null : g.match_key)}
-                  onLink={() => setLinkingKey(g.match_key)} d={d} />
+                <Fragment key={item.key}>
+                  <VariantParentRow item={item} expanded={expanded} lang={lang}
+                    onToggle={() => toggleVariant(item.key)} />
+                  {expanded && item.children.map(cg => {
+                    const isOpen = openKey === cg.match_key
+                    const isMobileOpen = mobileInfoKey === cg.match_key
+                    return (
+                      <FragmentRow key={cg.match_key} group={cg} isChild lang={lang}
+                        badge={leftoverBadge(cg.leftover, cg.stock_threshold)} isOpen={isOpen}
+                        isMobileOpen={isMobileOpen}
+                        onToggle={() => setOpenKey(isOpen ? null : cg.match_key)}
+                        onMobileToggle={() => setMobileInfoKey(isMobileOpen ? null : cg.match_key)}
+                        onLink={() => setLinkingKey(cg.match_key)} d={d} />
+                    )
+                  })}
+                </Fragment>
               )
             })}
           </tbody>
@@ -284,7 +369,42 @@ function UnlinkButton({ sourceKey, d }: { sourceKey: string; d: Record<string, s
   )
 }
 
-function FragmentRow({ group: g, badge, isOpen, isMobileOpen, onToggle, onMobileToggle, onLink, d }: {
+// Collapsible header for a variant group (2+ colour variants of one parent).
+// Its own stock cells stay empty — the per-colour numbers live on the children
+// (matches Uzum's seller catalogue). The Leftover cell shows a muted Σ total.
+function VariantParentRow({ item, expanded, onToggle, lang }: {
+  item: { key: string; title: string; children: StockGroup[] }
+  expanded: boolean
+  onToggle: () => void
+  lang: 'uz' | 'ru' | 'en'
+}) {
+  const totalLeftover = item.children.reduce((s, c) => s + c.leftover, 0)
+  return (
+    <tr className="border-t cursor-pointer" style={{ borderColor: 'var(--border)', background: 'var(--bg-card2)' }}
+      onClick={onToggle}>
+      <td className="px-5 py-3">
+        <div className="flex items-center gap-2">
+          <span className="shrink-0" style={{ color: 'var(--text-muted)' }}>
+            {expanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+          </span>
+          <p className="font-semibold leading-tight line-clamp-2 sm:line-clamp-none" style={{ color: 'var(--text-base)' }} title={item.title}>{item.title}</p>
+          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded shrink-0"
+            style={{ background: 'var(--bg-input)', color: 'var(--text-muted)' }}>
+            {variantCountLabel(item.children.length, lang)}
+          </span>
+        </div>
+      </td>
+      <td className="hidden sm:table-cell px-5 py-3" />
+      <td className="hidden sm:table-cell px-5 py-3" />
+      <td className="px-5 py-3">
+        <span className="text-[11px]" style={{ color: 'var(--text-muted)' }}>Σ {totalLeftover}</span>
+      </td>
+      <td className="px-2 py-3" />
+    </tr>
+  )
+}
+
+function FragmentRow({ group: g, badge, isOpen, isMobileOpen, onToggle, onMobileToggle, onLink, d, isChild, lang }: {
   group: StockGroup
   badge: { bg: string; color: string }
   isOpen: boolean
@@ -293,6 +413,8 @@ function FragmentRow({ group: g, badge, isOpen, isMobileOpen, onToggle, onMobile
   onMobileToggle: () => void
   onLink: () => void
   d: Record<string, string>
+  isChild?: boolean
+  lang?: 'uz' | 'ru' | 'en'
 }) {
   const mps = MP_ORDER.filter(mp => mp in g.stock_by_marketplace || mp in g.sold_by_marketplace)
   return (
@@ -307,14 +429,18 @@ function FragmentRow({ group: g, badge, isOpen, isMobileOpen, onToggle, onMobile
           if (target.closest('button, a')) return
           onMobileToggle()
         }}>
-        <td className="px-5 py-3.5">
+        {/* Variant children are indented and marked with a left accent so the
+            parent→child hierarchy reads at a glance. */}
+        <td className="px-5 py-3.5" style={isChild ? { paddingLeft: '2.75rem', borderLeft: '2px solid var(--border)' } : undefined}>
           <div className="flex items-start justify-between gap-2">
-            <p className="font-semibold leading-tight line-clamp-2 sm:line-clamp-none flex-1" style={{ color: 'var(--text-base)' }} title={g.title}>{g.title}</p>
+            <p className={`leading-tight line-clamp-2 sm:line-clamp-none flex-1 ${isChild ? 'text-xs font-normal' : 'font-semibold'}`}
+              style={{ color: isChild ? 'var(--text-muted)' : 'var(--text-base)' }} title={g.title}>{g.title}</p>
             <span className="sm:hidden mt-0.5 shrink-0" style={{ color: 'var(--text-muted)' }}>
               {isMobileOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
             </span>
           </div>
           <div className="flex flex-wrap items-center gap-1.5 mt-1">
+            {isChild && <VariantColorChip colorKey={g.variant_color} lang={lang ?? 'uz'} />}
             <span className="text-[11px]" style={{ color: 'var(--text-muted)' }}>{g.members[0]?.sku ?? '—'}</span>
             {mps.map(mp => {
               const m = MP_META[mp]
