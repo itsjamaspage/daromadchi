@@ -298,10 +298,29 @@ export async function syncFromYandex(
           .filter(p => !freshIds.has(String(p.marketplace_product_id)))
           .map(p => p.id)
         if (zombieIds.length > 0) {
-          await db.delete(products).where(and(
-            eq(products.shop_id, shopId),
-            inArray(products.id, zombieIds),
-          ))
+          // A SOLD product must never be hard-deleted: order_items.product_id is
+          // ON DELETE SET NULL, so deleting it orphans its orders → "Unknown" in
+          // analytics, with identity unrecoverable (order_items stores no title/
+          // SKU snapshot). Soft-delete zombies that have order history
+          // (is_archived = true → hidden from active views, record + order links
+          // survive); hard-delete only order-free zombies, exactly as before.
+          const sold = await db.selectDistinct({ product_id: orderItems.product_id })
+            .from(orderItems).where(inArray(orderItems.product_id, zombieIds))
+          const soldIds = new Set(sold.map(r => r.product_id).filter((id): id is string => id != null))
+          const toArchive = zombieIds.filter(id => soldIds.has(id))
+          const toDelete = zombieIds.filter(id => !soldIds.has(id))
+          if (toArchive.length > 0) {
+            await db.update(products).set({ is_archived: true }).where(and(
+              eq(products.shop_id, shopId),
+              inArray(products.id, toArchive),
+            ))
+          }
+          if (toDelete.length > 0) {
+            await db.delete(products).where(and(
+              eq(products.shop_id, shopId),
+              inArray(products.id, toDelete),
+            ))
+          }
         }
       }
       productsOk = true
