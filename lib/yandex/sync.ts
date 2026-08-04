@@ -102,6 +102,7 @@ export async function syncFromYandex(
       // will preserve the existing DB value instead of writing 0.
       stock_quantity: number | null
       fulfillment_type: 'fbs' | 'fby'
+      variant_group_key: string | null
     }[] = []
     try {
       const entries = await fetchAllYandexProducts(token, campaignId, businessId)
@@ -207,6 +208,10 @@ export async function syncFromYandex(
           || e.mapping?.marketCategoryName?.trim()
           || e.mapping?.categoryName?.trim()
           || null
+        // Variants of one parent share the same mapping.marketModelName (verified:
+        // JMWHT and JMBLK match; JMJ16BEG differs). String equality groups them.
+        // Namespaced so it can never collide with an Uzum key. Null when absent.
+        const modelName = e.mapping?.marketModelName?.trim()
         return {
           shop_id: shopId,
           marketplace_product_id: String(marketSku || shopSku || ''),
@@ -217,6 +222,7 @@ export async function syncFromYandex(
           cost_price: null,
           stock_quantity: stock,
           fulfillment_type: campaignFulfillmentType,
+          variant_group_key: modelName ? `yandex:${modelName}` : null,
         }
       })
       if (productRows.length > 0) {
@@ -240,6 +246,7 @@ export async function syncFromYandex(
             // didn't report a stock number.
             stock_quantity: r.stock_quantity ?? 0,
             fulfillment_type: r.fulfillment_type,
+            variant_group_key: r.variant_group_key,
           })))
         }
         if (toUpd.length > 0) {
@@ -257,6 +264,10 @@ export async function syncFromYandex(
             if (r.category != null) patch.category = r.category
             if (r.selling_price != null) patch.selling_price = String(r.selling_price)
             if (r.stock_quantity != null) patch.stock_quantity = r.stock_quantity
+            // Only overwrite the group key when this sync derived one — a missing
+            // marketModelName shouldn't wipe an existing grouping (mirrors the
+            // "don't clobber real data with nulls" rule for the fields above).
+            if (r.variant_group_key != null) patch.variant_group_key = r.variant_group_key
             await db.update(products).set(patch).where(eq(products.id, r.id))
           }
         }
@@ -497,6 +508,8 @@ export async function syncFromYandex(
                 cost_price: null,
                 stock_quantity: 0,
                 fulfillment_type: campaignFulfillmentType,
+                // Order-derived fallback: no mapping, so no variant grouping.
+                variant_group_key: null,
               })
             }
           }
@@ -561,6 +574,8 @@ export async function syncFromYandex(
                   sku: it.offerId, category: null,
                   selling_price: it.buyerPrice ?? it.price ?? null, cost_price: null, stock_quantity: 0,
                   fulfillment_type: campaignFulfillmentType,
+                  // Order-derived fallback: no mapping, so no variant grouping.
+                  variant_group_key: null,
                 })
               }
             }
