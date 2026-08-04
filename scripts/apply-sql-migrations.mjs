@@ -29,6 +29,7 @@ const MIGRATIONS = [
   'migrations/migrations/042_order_cancel_log.sql',
   'migrations/migrations/043_suggested_product_groups.sql',
   'migrations/migrations/045_products_is_archived.sql',
+  'migrations/migrations/046_products_variant_group_key.sql',
 ]
 
 function loadDatabaseUrl() {

@@ -174,12 +174,22 @@ export const products = pgTable('products', {
   // and are re-evaluated on the next sync. Default views filter is_archived=false;
   // the products page's "Архивные" tab shows the true ones.
   is_archived:            boolean('is_archived').default(false).notNull(),
+  // Groups colour/size variants of one parent product (later: a collapsible
+  // parent row that expands to per-variant children). Namespaced by marketplace
+  // — 'uzum:<card.productId>' | 'yandex:<marketModelName>' — so keys never
+  // collide across marketplaces. Nullable: single-variant products may have none.
+  // Set by the two syncs; unused by any view until the Phase 2 UI.
+  variant_group_key:      text('variant_group_key'),
   updated_at:             timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 }, (t) => [
   index('products_shop_id_idx').on(t.shop_id),
   index('products_sku_idx').on(t.sku),
   // Default views filter by shop_id + is_archived=false; composite keeps that fast.
   index('products_shop_archived_idx').on(t.shop_id, t.is_archived),
+  // Grouped variant queries filter by shop and group by key. (marketplace isn't a
+  // products column — it lives on shops — and shop_id already implies it, so the
+  // index is (shop_id, variant_group_key).)
+  index('products_shop_variant_group_idx').on(t.shop_id, t.variant_group_key),
 ])
 
 /* ── 5. orders ──────────────────────────────────────────────────────────────── */
