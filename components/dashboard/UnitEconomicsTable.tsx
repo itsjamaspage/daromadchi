@@ -41,21 +41,27 @@ function stockColor(s: number | undefined) {
 }
 
 const COL_KEYS = [
-  'title', 'sku', 'sellingPrice', 'costPrice', 'landedCost', 'commission',
-  'delivery', 'lastMile', 'acquiring', 'adSpend', 'tax', 'netProfit',
-  'roi', 'margin', 'stock', 'supplierUrl',
+  'title', 'sku', 'sellingPrice', 'costPrice', 'landedCost',
+  'directTotal', 'commission', 'delivery', 'lastMile', 'acquiring',
+  'adSpend', 'tax', 'turnoverTotal', 'netProfit', 'roi', 'margin',
+  'stock', 'supplierUrl',
 ] as const
 type ColKey = typeof COL_KEYS[number]
 const COL_ALWAYS = new Set<ColKey>(['title', 'netProfit', 'roi'])
 
 const COL_I18N_KEY: Record<ColKey, string> = {
   title: 'ueColProduct', sku: 'ueColSku', sellingPrice: 'ueColPrice', costPrice: 'ueColCost',
-  landedCost: 'ueColLanded', commission: 'ueColCommission', delivery: 'ueColDelivery',
+  landedCost: 'ueColLanded', directTotal: 'ueColDirect',
+  commission: 'ueColCommission', delivery: 'ueColDelivery',
   lastMile: 'ueColLastMile', acquiring: 'ueColAcquiring', adSpend: 'ueColAdSpend',
-  tax: 'ueColTax', netProfit: 'ueColProfit', roi: 'ueColRoi', margin: 'ueColMargin',
+  tax: 'ueColTax', turnoverTotal: 'ueColTurnover',
+  netProfit: 'ueColProfit', roi: 'ueColRoi', margin: 'ueColMargin',
   stock: 'ueColStock', supplierUrl: 'ueColSupplier',
 }
-const DEFAULT_VISIBLE: ColKey[] = ['title','sellingPrice','costPrice','landedCost','commission','delivery','adSpend','netProfit','roi','margin','stock','supplierUrl']
+// Direct + turnover totals visible by default — that's the whole point
+// of this table. Users still get individual fee columns when they toggle
+// the picker, but the default view shows the two-bucket summary.
+const DEFAULT_VISIBLE: ColKey[] = ['title','sellingPrice','costPrice','landedCost','directTotal','commission','delivery','adSpend','turnoverTotal','netProfit','roi','margin','stock','supplierUrl']
 
 const DEFAULT_SETTINGS: UnitEcoSettings = {
   acquiringPct: 1.5,
@@ -158,10 +164,15 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
     const acq = draft.acquiring ?? 0
     const ad  = draft.adSpend   ?? 0
     const tax = draft.tax       ?? 0
-    const np  = sp - cp - lc - com - del - lm - acq - ad - tax
+    // Same two derived totals the server attaches in withTotals(). Kept in
+    // sync client-side too so the inline cost editor updates the direct
+    // and turnover cells instantly instead of waiting for router.refresh.
+    const directTotal   = cp + lc
+    const turnoverTotal = com + del + lm + acq + ad + tax
+    const np  = sp - directTotal - turnoverTotal
     const margin = sp > 0 ? (np / sp) * 100 : 0
-    const roi    = cp + lc > 0 ? (np / (cp + lc)) * 100 : 0
-    return { ...draft, commission: com, netProfit: np, margin, roi }
+    const roi    = directTotal > 0 ? (np / directTotal) * 100 : 0
+    return { ...draft, commission: com, netProfit: np, margin, roi, directTotal, turnoverTotal }
   }
 
   function setDraftField(key: keyof UnitEconomicsItem, value: unknown) {
@@ -612,6 +623,18 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
                         </td>
                       )
                       if (col.key === 'landedCost') return <td key="landedCost" className="px-3 py-3 text-[var(--text-base)] text-xs">{item.landedCost ? fs(item.landedCost) : '—'}</td>
+                      if (col.key === 'directTotal') return (
+                        // Money the seller invested upfront (purchase +
+                        // landed logistics). ROI's denominator — the
+                        // number a capital-efficient product keeps small.
+                        // Blue tint to distinguish from the red turnover
+                        // fees on either side.
+                        <td key="directTotal" className="px-3 py-3 text-xs font-bold" style={{ color: 'var(--c1)' }}>
+                          {(item.directTotal ?? 0) > 0
+                            ? fs(item.directTotal ?? 0)
+                            : <span className="text-[var(--text-muted)]">—</span>}
+                        </td>
+                      )
                       if (col.key === 'commission') return (
                         <td key="commission" className="px-3 py-3 text-xs">
                           <span className="text-red-600">−{fs(item.commission)}</span>
@@ -634,6 +657,18 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
                       if (col.key === 'acquiring') return <td key="acquiring" className="px-3 py-3 text-red-600 text-xs">{item.acquiring > 0 ? `−${fs(item.acquiring)}` : <span className="text-[var(--text-muted)]">—</span>}</td>
                       if (col.key === 'adSpend') return <td key="adSpend" className="px-3 py-3 text-red-600 text-xs">{item.adSpend > 0 ? `−${fs(item.adSpend)}` : <span className="text-[var(--text-muted)]">—</span>}</td>
                       if (col.key === 'tax') return <td key="tax" className="px-3 py-3 text-red-600 text-xs">{item.tax > 0 ? `−${fs(item.tax)}` : <span className="text-[var(--text-muted)]">—</span>}</td>
+                      if (col.key === 'turnoverTotal') return (
+                        // Sum of every fee the marketplace subtracts from
+                        // each sale — commission + delivery + lastMile +
+                        // acquiring + adSpend + tax. Shown red like the
+                        // individual fee columns so the eye reads it as
+                        // an outflow, but bolder because it's the roll-up.
+                        <td key="turnoverTotal" className="px-3 py-3 text-xs font-bold text-red-600">
+                          {(item.turnoverTotal ?? 0) > 0
+                            ? `−${fs(item.turnoverTotal ?? 0)}`
+                            : <span className="text-[var(--text-muted)]">—</span>}
+                        </td>
+                      )
                       if (col.key === 'netProfit') return (
                         <td key="netProfit" className={`px-3 py-3 text-xs font-bold ${item.netProfit >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
                           {item.netProfit >= 0 ? '+' : ''}{fs(item.netProfit)}

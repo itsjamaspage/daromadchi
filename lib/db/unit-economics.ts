@@ -34,6 +34,28 @@ function mapRow(row: typeof unitEconomicsItems.$inferSelect): UnitEconomicsItem 
   }
 }
 
+/**
+ * Derive the two cost-group totals and attach them to the item. Called
+ * as the last step of every read path so `directTotal` and
+ * `turnoverTotal` are always in sync with whatever other fields the
+ * upstream calc already settled on.
+ *
+ *   direct   — money the seller invested upfront, before the sale:
+ *              purchase price + landed logistics to warehouse. This is
+ *              what ROI divides by (net profit / invested capital) and
+ *              the number a capital-efficient product keeps small.
+ *   turnover — every fee the marketplace subtracts from each sale:
+ *              commission + delivery + lastMile + acquiring + adSpend
+ *              + tax. Grows with revenue rather than with your outlay.
+ *
+ * Pure derivation from existing fields, never persisted.
+ */
+function withTotals(item: UnitEconomicsItem): UnitEconomicsItem {
+  const directTotal   = item.costPrice + (item.landedCost ?? 0)
+  const turnoverTotal = item.commission + item.delivery + item.lastMile + item.acquiring + item.adSpend + item.tax
+  return { ...item, directTotal, turnoverTotal }
+}
+
 export async function getUnitEconomicsItems(): Promise<UnitEconomicsItem[]> {
   const userId = await getCurrentUserId()
   if (!userId) return []
@@ -114,30 +136,33 @@ export async function getUnitEconomicsItems(): Promise<UnitEconomicsItem[]> {
       touched = true
     }
     if (!touched) return item
-    const cogs      = item.costPrice + (item.landedCost ?? 0)
-    const netProfit = item.sellingPrice - commission - delivery - item.lastMile - item.acquiring - adSpend - item.tax - cogs
+    // `direct` is the invested-capital denominator ROI divides by —
+    // identical to the `directTotal` withTotals() attaches below.
+    const direct    = item.costPrice + (item.landedCost ?? 0)
+    const netProfit = item.sellingPrice - commission - delivery - item.lastMile - item.acquiring - adSpend - item.tax - direct
     const margin    = item.sellingPrice > 0 ? (netProfit / item.sellingPrice) * 100 : 0
-    const roi       = cogs > 0 ? (netProfit / cogs) * 100 : 0
+    const roi       = direct > 0 ? (netProfit / direct) * 100 : 0
     return { ...item, delivery, commission, commissionPct, adSpend, netProfit, margin, roi }
   }
 
   return rows.map(row => {
     const item = applyV252Fix(mapRow(row))
     const sku = (item.sku ?? '').trim()
-    if (!sku) return item
+    if (!sku) return withTotals(item)
     const rate = findRate(sku, item.marketplace)
-    if (!rate) return item
+    if (!rate) return withTotals(item)
 
     // Recompute commission + delivery + downstream fields from real
     // rates. Preserve the user's own costPrice, ad %, tax, packaging.
     const commission = Math.round(item.sellingPrice * rate.commissionPct / 100)
     const delivery   = Math.round(item.sellingPrice * rate.deliveryPct   / 100)
-    // Everything else stays as the row already had it (COGS/ads/tax).
-    const cogs   = item.costPrice + (item.landedCost ?? 0)
-    const netProfit = item.sellingPrice - commission - delivery - item.acquiring - item.adSpend - item.tax - cogs
+    // `direct` is the invested-capital denominator ROI divides by —
+    // identical to the `directTotal` withTotals() attaches below.
+    const direct    = item.costPrice + (item.landedCost ?? 0)
+    const netProfit = item.sellingPrice - commission - delivery - item.acquiring - item.adSpend - item.tax - direct
     const margin    = item.sellingPrice > 0 ? (netProfit / item.sellingPrice) * 100 : 0
-    const roi       = cogs > 0 ? (netProfit / cogs) * 100 : 0
-    return {
+    const roi       = direct > 0 ? (netProfit / direct) * 100 : 0
+    return withTotals({
       ...item,
       commissionPct: rate.commissionPct,
       commission,
@@ -149,7 +174,7 @@ export async function getUnitEconomicsItems(): Promise<UnitEconomicsItem[]> {
       // in the commission column instead of "≈".
       ratesSource: 'real' as const,
       ratesSourceItemCount: rate.itemCount,
-    }
+    })
   })
 }
 

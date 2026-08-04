@@ -50,6 +50,14 @@ export interface UnitEconomicsItem {
   ratesSource?: 'real' | 'default'
   /** Number of settled items backing the real rate (only when ratesSource='real'). */
   ratesSourceItemCount?: number
+  /** Derived at read time — never persisted. Money the seller invested
+   *  upfront (purchase price + landed logistics to warehouse). This is
+   *  what ROI divides by. */
+  directTotal?: number
+  /** Derived at read time — never persisted. Sum of every fee the
+   *  marketplace subtracts from each sale (commission + delivery +
+   *  lastMile + acquiring + adSpend + tax). */
+  turnoverTotal?: number
 }
 
 export interface UnitEcoSettings {
