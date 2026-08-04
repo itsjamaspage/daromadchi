@@ -38,6 +38,8 @@ export async function getStockAlerts(): Promise<StockAlert[]> {
     stock_quantity: products.stock_quantity,
     shop_id: products.shop_id,
     fulfillment_type: products.fulfillment_type,
+    variant_group_key: products.variant_group_key,
+    variant_color: products.variant_color,
   }).from(products).where(inArray(products.shop_id, shopIds))
 
   if (productRows.length === 0) return []
@@ -126,6 +128,8 @@ export async function getStockAlerts(): Promise<StockAlert[]> {
       marketplace:  (shopInfo.get(row.shop_id)?.marketplace ?? 'uzum') as MarketplaceType,
       isShared,
       totalPhysical,
+      variant_group_key: row.variant_group_key,
+      variant_color: row.variant_color,
     })
   }
 
