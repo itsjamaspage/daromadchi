@@ -1,15 +1,90 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo, Fragment } from 'react'
 import { useRouter } from 'next/navigation'
-import { Settings2, AlertTriangle, Bell, Package } from 'lucide-react'
+import { Settings2, AlertTriangle, Bell, Package, ChevronRight, ChevronDown } from 'lucide-react'
 import type { StockAlert } from '@/lib/db/alerts'
 import type { AlertSettings } from '@/lib/db/alerts'
 import ExportButton from '@/components/dashboard/ExportButton'
 import MpBadge from '@/components/dashboard/MpBadge'
 import TelegramConnect from '@/components/dashboard/TelegramConnect'
+import { COLOR_LABELS, colorMetaFor, type ColorKey } from '@/lib/products/resolveColor'
 import { useLang } from '@/app/providers'
 import { translations } from '@/lib/i18n'
+
+// Severity rank of one alert (2 critical > 1 warning > 0 watch). Kept in sync
+// with the per-row classification in the table body.
+type Sev = 0 | 1 | 2
+function severityOf(a: StockAlert): Sev {
+  if (a.currentStock <= 0 || a.daysLeft <= 3) return 2
+  if (a.daysLeft <= 7) return 1
+  return 0
+}
+
+// SKU-normaliser matching computeStockGroups' normalizeKey — bridges the same
+// product across marketplaces (identical SKU → one product parent).
+function normSku(s: string | null): string | null {
+  return s ? s.trim().toLowerCase().replace(/[\s\-_./]+/g, '') : null
+}
+
+function variantCountLabel(n: number, lang: 'uz' | 'ru' | 'en'): string {
+  if (lang === 'en') return `${n} variants`
+  if (lang === 'uz') return `${n} ta variant`
+  const mod10 = n % 10, mod100 = n % 100
+  const word = mod10 === 1 && mod100 !== 11 ? 'вариант'
+    : mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14) ? 'варианта'
+    : 'вариантов'
+  return `${n} ${word}`
+}
+
+function VariantColorChip({ colorKey, lang }: { colorKey: string | null | undefined; lang: 'uz' | 'ru' | 'en' }) {
+  const meta = colorMetaFor(colorKey)
+  if (!meta || !colorKey) return null
+  const name = COLOR_LABELS[colorKey as ColorKey]?.[lang] ?? colorKey
+  return (
+    <span className="inline-flex items-center gap-1 text-xs text-[var(--text-muted)]">
+      <span className="h-2.5 w-2.5 rounded-full"
+        style={{ backgroundColor: meta.hex, boxShadow: meta.ring ? 'inset 0 0 0 1px var(--border)' : undefined }} />
+      {name}
+    </span>
+  )
+}
+
+// Same union-find grouping as Остатки/Товары: parent = transitive closure of
+// alerts sharing a variant_group_key OR a normalised SKU (the SKU bridge unites
+// the same product across marketplaces). Parent forms at 2+; else flat, in place.
+function groupAlerts(alerts: StockAlert[]): ({ type: 'flat'; alert: StockAlert } | { type: 'parent'; key: string; title: string; children: StockAlert[] })[] {
+  const uf = new Map<string, string>()
+  const find = (x: string): string => { let r = x; while (uf.get(r)! !== r) r = uf.get(r)!; return r }
+  const union = (a: string, b: string) => { const ra = find(a), rb = find(b); if (ra !== rb) uf.set(ra, rb) }
+  for (const a of alerts) if (a.variant_group_key && !uf.has(a.variant_group_key)) uf.set(a.variant_group_key, a.variant_group_key)
+  const keysBySku = new Map<string, string[]>()
+  for (const a of alerts) {
+    if (!a.variant_group_key) continue
+    const nk = normSku(a.sku)
+    if (!nk) continue
+    const list = keysBySku.get(nk)
+    if (list) { if (!list.includes(a.variant_group_key)) list.push(a.variant_group_key) }
+    else keysBySku.set(nk, [a.variant_group_key])
+  }
+  for (const keys of keysBySku.values()) for (let j = 1; j < keys.length; j++) union(keys[0], keys[j])
+  const parentKeyOf = (a: StockAlert): string | null => a.variant_group_key ? find(a.variant_group_key) : null
+  const countByParent = new Map<string, number>()
+  for (const a of alerts) { const pk = parentKeyOf(a); if (pk) countByParent.set(pk, (countByParent.get(pk) ?? 0) + 1) }
+  const emitted = new Set<string>()
+  const items: ({ type: 'flat'; alert: StockAlert } | { type: 'parent'; key: string; title: string; children: StockAlert[] })[] = []
+  for (const a of alerts) {
+    const pk = parentKeyOf(a)
+    if (pk && (countByParent.get(pk) ?? 0) >= 2) {
+      if (emitted.has(pk)) continue
+      emitted.add(pk)
+      items.push({ type: 'parent', key: pk, title: a.productTitle, children: alerts.filter(x => parentKeyOf(x) === pk) })
+    } else {
+      items.push({ type: 'flat', alert: a })
+    }
+  }
+  return items
+}
 
 interface Props {
   alerts: StockAlert[]
@@ -100,8 +175,18 @@ export default function StockAlertsView({ alerts, settings: initialSettings }: P
 
   // Match the per-row classification: out-of-stock always counts as
   // critical, everything else follows the daysLeft thresholds.
+  // Count cards stay per-variant (real number of alerting SKUs) — grouping is
+  // display-only and must never change the actual alert tally.
   const critical = alerts.filter(a => a.currentStock <= 0 || a.daysLeft <= 3).length
   const warning  = alerts.filter(a => a.currentStock > 0 && a.daysLeft > 3 && a.daysLeft <= 7).length
+
+  const [expandedVariants, setExpandedVariants] = useState<Set<string>>(new Set())
+  const toggleVariant = (key: string) => setExpandedVariants(prev => {
+    const next = new Set(prev)
+    if (next.has(key)) next.delete(key); else next.add(key)
+    return next
+  })
+  const displayItems = useMemo(() => groupAlerts(alerts), [alerts])
 
   const exportData = alerts.map(a => ({
     [d.colProduct]:    a.productTitle,
@@ -161,6 +246,90 @@ export default function StockAlertsView({ alerts, settings: initialSettings }: P
       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">
         {daysLeft} {d.daysSuffix}
       </span>
+    )
+  }
+
+  // Status badge by severity — shared by child rows and the parent header.
+  const statusBadge = (sev: Sev) => sev === 2 ? (
+    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-red-500/15 text-red-400 border border-red-500/20">
+      <Bell className="w-3 h-3" /> {d.statusCritical}
+    </span>
+  ) : sev === 1 ? (
+    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/20">
+      <AlertTriangle className="w-3 h-3" /> {d.statusWarning}
+    </span>
+  ) : (
+    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-[var(--bg-card2)] text-[var(--text-muted)] border border-[var(--border)]">
+      {d.statusWatch}
+    </span>
+  )
+
+  // One alert row. Reused flat and as a variant child (isChild → indent + colour
+  // chip). Body unchanged from before grouping — all columns preserved.
+  const renderAlertRow = (alert: StockAlert, isChild = false) => {
+    const sev = severityOf(alert)
+    const isCritical = sev === 2, isWarning = sev === 1
+    return (
+      <tr key={alert.productId} className="hover:bg-[var(--bg-card2)] transition-colors">
+        <td className="px-5 py-3.5" style={isChild ? { paddingLeft: '2.75rem', borderLeft: '2px solid var(--border)' } : undefined}>
+          <div className="flex items-start gap-2">
+            <div className={`w-2 h-2 rounded-full flex-shrink-0 mt-1.5 ${
+              isCritical ? 'bg-red-500' : isWarning ? 'bg-amber-500' : 'bg-emerald-500'
+            }`} />
+            <div className="min-w-0">
+              <div className="text-[var(--text-base)] text-sm font-medium">{alert.productTitle}</div>
+              <div className="mt-0.5 flex items-center flex-wrap gap-1.5">
+                {isChild && <VariantColorChip colorKey={alert.variant_color} lang={lang} />}
+                <MpBadge mp={alert.marketplace} />
+              </div>
+            </div>
+          </div>
+        </td>
+        <td className="px-5 py-3.5 text-[var(--text-muted)] text-sm font-mono">{alert.sku}</td>
+        <td className="px-5 py-3.5">
+          <div className="inline-flex items-center gap-1.5">
+            <span className={`text-sm font-bold ${
+              isCritical ? 'text-red-400' : isWarning ? 'text-amber-400' : 'text-[var(--text-base)]'
+            }`}>
+              {alert.currentStock} {d.unitsSuffix}
+            </span>
+            <AlertStockHint alert={alert} />
+          </div>
+        </td>
+        <td className="px-5 py-3.5 text-[var(--text-muted)] text-sm">{alert.threshold} {d.unitsSuffix}</td>
+        <td className="px-5 py-3.5">{daysLeftBadge(alert.daysLeft, alert.dailySales)}</td>
+        <td className="px-5 py-3.5 text-[var(--text-dim)] text-sm">{alert.dailySales}{d.perDay}</td>
+        <td className="px-5 py-3.5">{statusBadge(sev)}</td>
+      </tr>
+    )
+  }
+
+  // Variant parent header. Per-variant columns (SKU/Остаток/Порог/дней/продаж)
+  // are blank — values live on the children (Остаток blank avoids shared-pool
+  // double-count). Status = the WORST child severity, so a collapsed parent
+  // still surfaces a critical child (grouping must never hide an alert).
+  const renderAlertParent = (item: { key: string; title: string; children: StockAlert[] }, expanded: boolean) => {
+    const worst = item.children.reduce<Sev>((m, c) => (Math.max(m, severityOf(c)) as Sev), 0)
+    return (
+      <tr key={item.key} className="cursor-pointer bg-[var(--bg-card2)]" onClick={() => toggleVariant(item.key)}>
+        <td className="px-5 py-3.5">
+          <div className="flex items-center gap-2">
+            <span className="shrink-0 text-[var(--text-muted)]">
+              {expanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+            </span>
+            <span className="text-[var(--text-base)] text-sm font-semibold">{item.title}</span>
+            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded shrink-0 bg-[var(--bg-input)] text-[var(--text-muted)]">
+              {variantCountLabel(item.children.length, lang)}
+            </span>
+          </div>
+        </td>
+        <td className="px-5 py-3.5" />
+        <td className="px-5 py-3.5" />
+        <td className="px-5 py-3.5" />
+        <td className="px-5 py-3.5" />
+        <td className="px-5 py-3.5" />
+        <td className="px-5 py-3.5">{statusBadge(worst)}</td>
+      </tr>
     )
   }
 
@@ -254,64 +423,14 @@ export default function StockAlertsView({ alerts, settings: initialSettings }: P
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--border)]">
-                {alerts.map(alert => {
-                  // A completely out-of-stock listing is ALWAYS critical
-                  // regardless of recent sales — the seller was confused
-                  // when a "0 шт · 0/день" row rendered as green
-                  // "Наблюдение" while a "0 шт · 0.1/день" row on the
-                  // same page rendered red "Критично". If you have 0
-                  // stock, you cannot ship anything: that's a red row.
-                  const outOfStock = alert.currentStock <= 0
-                  const isCritical = outOfStock || alert.daysLeft <= 3
-                  const isWarning  = !isCritical && alert.daysLeft <= 7
+                {displayItems.map(item => {
+                  if (item.type === 'flat') return renderAlertRow(item.alert)
+                  const expanded = expandedVariants.has(item.key)
                   return (
-                    <tr
-                      key={alert.productId}
-                      className="hover:bg-[var(--bg-card2)] transition-colors"
-                    >
-                      <td className="px-5 py-3.5">
-                        <div className="flex items-start gap-2">
-                          <div className={`w-2 h-2 rounded-full flex-shrink-0 mt-1.5 ${
-                            isCritical ? 'bg-red-500' : isWarning ? 'bg-amber-500' : 'bg-emerald-500'
-                          }`} />
-                          <div className="min-w-0">
-                            <div className="text-[var(--text-base)] text-sm font-medium">{alert.productTitle}</div>
-                            <div className="mt-0.5">
-                              <MpBadge mp={alert.marketplace} />
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-5 py-3.5 text-[var(--text-muted)] text-sm font-mono">{alert.sku}</td>
-                      <td className="px-5 py-3.5">
-                        <div className="inline-flex items-center gap-1.5">
-                          <span className={`text-sm font-bold ${
-                            isCritical ? 'text-red-400' : isWarning ? 'text-amber-400' : 'text-[var(--text-base)]'
-                          }`}>
-                            {alert.currentStock} {d.unitsSuffix}
-                          </span>
-                          <AlertStockHint alert={alert} />
-                        </div>
-                      </td>
-                      <td className="px-5 py-3.5 text-[var(--text-muted)] text-sm">{alert.threshold} {d.unitsSuffix}</td>
-                      <td className="px-5 py-3.5">{daysLeftBadge(alert.daysLeft, alert.dailySales)}</td>
-                      <td className="px-5 py-3.5 text-[var(--text-dim)] text-sm">{alert.dailySales}{d.perDay}</td>
-                      <td className="px-5 py-3.5">
-                        {isCritical ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-red-500/15 text-red-400 border border-red-500/20">
-                            <Bell className="w-3 h-3" /> {d.statusCritical}
-                          </span>
-                        ) : isWarning ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/20">
-                            <AlertTriangle className="w-3 h-3" /> {d.statusWarning}
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-[var(--bg-card2)] text-[var(--text-muted)] border border-[var(--border)]">
-                            {d.statusWatch}
-                          </span>
-                        )}
-                      </td>
-                    </tr>
+                    <Fragment key={item.key}>
+                      {renderAlertParent(item, expanded)}
+                      {expanded && item.children.map(c => renderAlertRow(c, true))}
+                    </Fragment>
                   )
                 })}
               </tbody>

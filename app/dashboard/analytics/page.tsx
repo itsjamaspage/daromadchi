@@ -6,20 +6,25 @@ import { getProducts } from '@/lib/db/products'
 import { getProductSales } from '@/lib/db/products'
 import { getKpis } from '@/lib/db/kpis'
 import MarketplaceTabs from '@/components/dashboard/MarketplaceTabs'
-import EditableCostCell from '@/components/dashboard/EditableCostCell'
-import FulfillmentBadge from '@/components/dashboard/FulfillmentBadge'
+import AnalyticsTopSoldTable from '@/components/dashboard/AnalyticsTopSoldTable'
+import AnalyticsMarginTable from '@/components/dashboard/AnalyticsMarginTable'
 import PeriodSelector from './PeriodSelector'
 import { getT } from '@/lib/server-i18n'
 import type { MarketplaceType } from '@/lib/types'
 
-const MP_META: Record<string, { short: string; color: string; bg: string }> = {
-  uzum:          { short: 'UZ', color: '#494fdf', bg: 'rgba(73,79,223,0.12)'   },
-  yandex_market: { short: 'YM', color: '#E8A000', bg: 'rgba(232,160,0,0.12)'  },
-  wildberries:   { short: 'WB', color: '#CB11AB', bg: 'rgba(203,17,171,0.12)' },
-}
-
 function fmt(n: number) {
   return new Intl.NumberFormat('uz-UZ').format(Math.round(n))
+}
+
+// Cyrillic plural for "N variants" — same one Products page uses. Passed
+// down to both grouped Analytics tables so the parent chip reads
+// "2 варианта" not "2 вариантов".
+function variantCountLabel(n: number): string {
+  const mod10 = n % 10, mod100 = n % 100
+  const word = mod10 === 1 && mod100 !== 11 ? 'вариант'
+    : mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14) ? 'варианта'
+    : 'вариантов'
+  return `${n} ${word}`
 }
 
 const VALID_MP = ['uzum', 'yandex_market', 'wildberries'] as const
@@ -111,12 +116,6 @@ export default async function AnalyticsPage({ searchParams }: Props) {
     return sum + cost * (fboUnits + fbsUnits)
   }, 0)
 
-  const sortedByMargin = [...products].sort((a, b) => {
-    const ma = Number(a.selling_price ?? 0) > 0 ? a.profit / Number(a.selling_price) : 0
-    const mb = Number(b.selling_price ?? 0) > 0 ? b.profit / Number(b.selling_price) : 0
-    return mb - ma
-  })
-
   return (
     <div className="space-y-6">
       <div>
@@ -205,61 +204,25 @@ export default async function AnalyticsPage({ searchParams }: Props) {
             ))}
           </div>
 
-          {/* Top sold in selected period */}
+          {/* Top sold in selected period — variant-grouped */}
           <div className="border rounded-2xl overflow-hidden" style={{ background: 'var(--bg-card2)', borderColor: 'var(--border)' }}>
             <div className="px-5 py-4 flex items-center gap-2" style={{ borderBottom: '1px solid var(--border)' }}>
               <TrendingUp className="w-4 h-4" style={{ color: 'var(--c1)' }} />
               <h2 className="font-semibold text-sm" style={{ color: 'var(--text-base)' }}>{d.topSoldTitle}</h2>
             </div>
-            {periodSales.length === 0 ? (
-              <p className="px-5 py-6 text-sm" style={{ color: 'var(--text-muted)' }}>{d.noSalesInPeriod}</p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="text-xs" style={{ color: 'var(--text-muted)', borderBottom: '1px solid var(--border)', background: 'rgba(255,255,255,0.01)' }}>
-                      <th className="text-left font-medium px-5 py-3">{d.product}</th>
-                      <th className="text-right font-medium px-4 py-3">{d.topSoldQty}</th>
-                      <th className="text-right font-medium px-4 py-3">{d.topSoldInTransit}</th>
-                      <th className="text-right font-medium px-4 py-3">{d.topSoldCancelled}</th>
-                      <th className="text-right font-medium px-4 py-3">{d.topSoldRevenue}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {periodSales.slice(0, 20).map((row, idx) => (
-                      <tr key={row.product_id ?? row.title} style={{ borderBottom: idx < Math.min(periodSales.length, 20) - 1 ? '1px solid var(--border)' : 'none' }}>
-                        <td className="px-5 py-3.5">
-                          <p className="font-medium line-clamp-2 sm:line-clamp-none" style={{ color: 'var(--text-base)' }} title={row.title}>{row.title}</p>
-                          {row.sku && (
-                            <div className="flex items-center flex-wrap gap-1.5 mt-0.5">
-                              <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{row.sku}</span>
-                              {(() => {
-                                const matching = products.filter(p => p.sku === row.sku || p.id === row.product_id)
-                                const mps = [...new Set(matching.map(p => p.marketplace).filter(Boolean))]
-                                const fts = [...new Set(matching.map(p => p.fulfillment_type).filter(Boolean))]
-                                return (
-                                  <>
-                                    {mps.map(mp => {
-                                      const m = MP_META[mp!]
-                                      return m ? <span key={mp} className="text-[10px] font-bold px-1.5 py-0.5 rounded" style={{ background: m.bg, color: m.color }}>{m.short}</span> : null
-                                    })}
-                                    {fts.map(ft => <FulfillmentBadge key={ft} type={ft} />)}
-                                  </>
-                                )
-                              })()}
-                            </div>
-                          )}
-                        </td>
-                        <td className="px-4 py-3.5 text-right font-semibold" style={{ color: 'var(--c1)' }}>{row.qty_sold}</td>
-                        <td className="px-4 py-3.5 text-right font-semibold" style={{ color: row.qty_in_transit > 0 ? '#f59e0b' : 'var(--text-muted)' }}>{row.qty_in_transit}</td>
-                        <td className="px-4 py-3.5 text-right font-semibold" style={{ color: row.qty_cancelled + row.qty_returned > 0 ? '#ef4444' : 'var(--text-muted)' }}>{row.qty_cancelled + row.qty_returned}</td>
-                        <td className="px-4 py-3.5 text-right" style={{ color: 'var(--text-dim)' }}>{fmt(row.revenue)} so'm</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+            <AnalyticsTopSoldTable
+              rows={periodSales}
+              products={products}
+              labels={{
+                product:   d.product,
+                qty:       d.topSoldQty,
+                inTransit: d.topSoldInTransit,
+                cancelled: d.topSoldCancelled,
+                revenue:   d.topSoldRevenue,
+                noSales:   d.noSalesInPeriod,
+                variants:  variantCountLabel,
+              }}
+            />
           </div>
 
           {/* Low-margin alerts */}
@@ -291,77 +254,26 @@ export default async function AnalyticsPage({ searchParams }: Props) {
             </span>
           </div>
 
-          {/* Full margin table */}
+          {/* Full margin table — variant-grouped */}
           <div className="border rounded-2xl overflow-hidden" style={{ background: 'var(--bg-card2)', borderColor: 'var(--border)' }}>
             <div className="px-5 py-4" style={{ borderBottom: '1px solid var(--border)' }}>
               <h2 className="font-semibold text-sm" style={{ color: 'var(--text-base)' }}>{d.marginByProduct}</h2>
             </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-xs" style={{ color: 'var(--text-muted)', borderBottom: '1px solid var(--border)', background: 'rgba(255, 255, 255, 0.01)' }}>
-                    <th className="text-left font-medium px-5 py-3">{d.product}</th>
-                    <th className="text-right font-medium px-4 py-3">{d.price}</th>
-                    <th className="text-right font-medium px-4 py-3">{d.costPrice}</th>
-                    <th className="text-right font-medium px-4 py-3">{d.profit}</th>
-                    <th className="text-right font-medium px-4 py-3">{d.margin}</th>
-                    <th className="text-right font-medium px-4 py-3">{d.stockQty}</th>
-                    <th className="text-right font-medium px-4 py-3">{d.stockValue}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sortedByMargin.map((p, idx) => {
-                    const price    = Number(p.selling_price ?? 0)
-                    const cost     = Number(p.cost_price ?? 0)
-                    const margin   = price > 0 ? (p.profit / price) * 100 : 0
-                    // Show units actually on the shelf (raw stock minus units
-                    // reserved by pending orders), and value them at that.
-                    const stockQty = p.available_stock
-                    const stockVal = cost * stockQty
-                    const profitColor = p.profit > 0 ? '#10b981' : '#ef4444'
-                    const marginColor = margin >= 35 ? '#10b981' : margin >= 15 ? '#f59e0b' : '#ef4444'
-                    return (
-                      <tr key={p.id} style={{ borderBottom: idx < sortedByMargin.length - 1 ? '1px solid var(--border)' : 'none' }}>
-                        <td className="px-5 py-3.5">
-                          <p className="font-medium line-clamp-2 sm:line-clamp-none" style={{ color: 'var(--text-base)' }} title={p.title}>{p.title}</p>
-                          <div className="flex items-center flex-wrap gap-1.5 mt-0.5">
-                            <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{p.sku}</span>
-                            {p.marketplace && (() => { const m = MP_META[p.marketplace]; return m ? <span className="text-[10px] font-bold px-1.5 py-0.5 rounded" style={{ background: m.bg, color: m.color }}>{m.short}</span> : null })()}
-                            <FulfillmentBadge type={p.fulfillment_type} />
-                          </div>
-                        </td>
-                        <td className="px-4 py-3.5 text-right" style={{ color: 'var(--text-dim)' }}>{fmt(price)} so'm</td>
-                        <td className="px-4 py-3.5 text-right">
-                          <EditableCostCell productId={p.id} initialCost={cost > 0 ? cost : null} />
-                        </td>
-                        <td className="px-4 py-3.5 text-right">
-                          <span className="font-semibold" style={{ color: profitColor }}>
-                            {fmt(p.profit)} so'm
-                          </span>
-                        </td>
-                        <td className="px-4 py-3.5 text-right">
-                          <span className="font-semibold" style={{ color: marginColor }}>
-                            {margin.toFixed(1)}%
-                          </span>
-                        </td>
-                        <td className="px-4 py-3.5 text-right" style={{ color: 'var(--text-dim)' }}>{stockQty}</td>
-                        <td className="px-4 py-3.5 text-right" style={{ color: 'var(--text-muted)' }}>
-                          {stockVal > 0 ? `${fmt(stockVal)} so'm` : '—'}
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-                <tfoot>
-                  <tr style={{ background: 'rgba(255, 255, 255, 0.03)', borderTop: '1px solid var(--border)' }}>
-                    <td colSpan={6} className="px-5 py-4 font-bold text-xs uppercase tracking-wide" style={{ color: 'var(--text-base)' }}>
-                      {d.warehouseValueTotal}
-                    </td>
-                    <td className="px-4 py-4 text-right font-bold" style={{ color: 'var(--c1)' }}>{fmt(totalStockValue)} so'm</td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
+            <AnalyticsMarginTable
+              products={products}
+              totalStockValue={totalStockValue}
+              labels={{
+                product:             d.product,
+                price:               d.price,
+                costPrice:           d.costPrice,
+                profit:              d.profit,
+                margin:              d.margin,
+                stockQty:            d.stockQty,
+                stockValue:          d.stockValue,
+                warehouseValueTotal: d.warehouseValueTotal,
+                variants:            variantCountLabel,
+              }}
+            />
           </div>
         </>
       )}

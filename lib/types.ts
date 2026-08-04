@@ -227,6 +227,8 @@ export interface StockAlert {
   marketplace: MarketplaceType
   isShared?: boolean     // true when stock is pooled across a warehouse
   totalPhysical?: number // total physical stock in seller warehouse across all listings sharing this SKU
+  variant_group_key?: string | null // marketplace-namespaced parent key (variant grouping)
+  variant_color?: string | null     // resolved colour key for the per-variant label
 }
 
 // ── Payouts ───────────────────────────────────────────────────────────────────
