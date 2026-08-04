@@ -122,9 +122,7 @@ function LandingNav({ lang }: { lang: Lang }) {
     { label: T.nav.help[lang], href: '#faq' },
   ]
 
-  const borderCol = isDark ? 'rgba(255,255,255,0.2)' : 'rgba(14,34,51,0.15)'
   const iconCol   = isDark ? '#ffffff' : P.stone
-  const baseColor = isDark ? P.dCard2 : '#ffffff'
   const pillColor = isDark ? 'rgba(255,255,255,0.08)' : '#ffffff'
   const hoverCircle = isDark ? '#e2e8f0' : '#83c0f9'
 
@@ -134,7 +132,6 @@ function LandingNav({ lang }: { lang: Lang }) {
         <button
           onClick={() => setLangOpen(v => !v)}
           className="pill-ctrl-btn"
-          style={{ color: iconCol, border: `1px solid ${borderCol}`, background: 'transparent' }}
         >
           {lang.toUpperCase()}
         </button>
@@ -151,14 +148,10 @@ function LandingNav({ lang }: { lang: Lang }) {
           </div>
         )}
       </div>
-      <button onClick={toggle} className="pill-ctrl-btn"
-        style={{ color: iconCol, border: `1px solid ${borderCol}`, background: 'transparent' }}>
+      <button onClick={toggle} className="pill-ctrl-btn">
         {theme === 'dark' ? '☀' : '☾'}
       </button>
-      <Link href="/login"
-        style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-          width: 44, height: 44, borderRadius: 9999, border: `1px solid ${borderCol}`,
-          color: iconCol, textDecoration: 'none', flexShrink: 0 }}>
+      <Link href="/login" className="pill-ctrl-link">
         <UserCircle size={18} />
       </Link>
     </>
@@ -170,9 +163,9 @@ function LandingNav({ lang }: { lang: Lang }) {
       logoAlt="Daromadchi"
       logoHref="/"
       items={navItems}
-      baseColor={baseColor}
+      baseColor="var(--nav-bg)"
       pillColor={pillColor}
-      pillTextColor={isDark ? '#e2e8f0' : P.ink}
+      pillTextColor="var(--text-base)"
       hoveredPillTextColor={isDark ? P.dCard2 : P.ink}
       hoverCircleColor={hoverCircle}
       rightContent={rightContent}
