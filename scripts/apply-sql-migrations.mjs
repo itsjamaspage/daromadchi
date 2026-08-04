@@ -30,6 +30,7 @@ const MIGRATIONS = [
   'migrations/migrations/043_suggested_product_groups.sql',
   'migrations/migrations/045_products_is_archived.sql',
   'migrations/migrations/046_products_variant_group_key.sql',
+  'migrations/migrations/047_products_variant_color.sql',
 ]
 
 function loadDatabaseUrl() {

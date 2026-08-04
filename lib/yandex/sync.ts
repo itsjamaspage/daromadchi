@@ -10,6 +10,7 @@ import {
   fetchCampaignInfo,
   YandexApiError,
 } from './client'
+import { resolveColor } from '@/lib/products/resolveColor'
 
 const STATUS_MAP: Record<string, string> = {
   PENDING: 'pending',
@@ -103,6 +104,7 @@ export async function syncFromYandex(
       stock_quantity: number | null
       fulfillment_type: 'fbs' | 'fby'
       variant_group_key: string | null
+      variant_color: string | null
     }[] = []
     try {
       const entries = await fetchAllYandexProducts(token, campaignId, businessId)
@@ -212,6 +214,10 @@ export async function syncFromYandex(
         // JMWHT and JMBLK match; JMJ16BEG differs). String equality groups them.
         // Namespaced so it can never collide with an Uzum key. Null when absent.
         const modelName = e.mapping?.marketModelName?.trim()
+        // No dedicated colour field — the per-variant colour lives in the market
+        // SKU name (e.g. "M9 Белый"); resolveColor extracts it. Offer name is a
+        // secondary source. Null when no known colour word is present.
+        const variantColor = resolveColor(e.mapping?.marketSkuName ?? e.offer.name)?.key ?? null
         return {
           shop_id: shopId,
           marketplace_product_id: String(marketSku || shopSku || ''),
@@ -223,6 +229,7 @@ export async function syncFromYandex(
           stock_quantity: stock,
           fulfillment_type: campaignFulfillmentType,
           variant_group_key: modelName ? `yandex:${modelName}` : null,
+          variant_color: variantColor,
         }
       })
       if (productRows.length > 0) {
@@ -247,6 +254,7 @@ export async function syncFromYandex(
             stock_quantity: r.stock_quantity ?? 0,
             fulfillment_type: r.fulfillment_type,
             variant_group_key: r.variant_group_key,
+            variant_color: r.variant_color,
           })))
         }
         if (toUpd.length > 0) {
@@ -268,6 +276,9 @@ export async function syncFromYandex(
             // marketModelName shouldn't wipe an existing grouping (mirrors the
             // "don't clobber real data with nulls" rule for the fields above).
             if (r.variant_group_key != null) patch.variant_group_key = r.variant_group_key
+            // Same "don't clobber with null" rule — keep a resolved colour if a
+            // later sync can't derive one (e.g. marketSkuName intermittently absent).
+            if (r.variant_color != null) patch.variant_color = r.variant_color
             await db.update(products).set(patch).where(eq(products.id, r.id))
           }
         }
@@ -510,6 +521,7 @@ export async function syncFromYandex(
                 fulfillment_type: campaignFulfillmentType,
                 // Order-derived fallback: no mapping, so no variant grouping.
                 variant_group_key: null,
+                variant_color: null,
               })
             }
           }
@@ -576,6 +588,7 @@ export async function syncFromYandex(
                   fulfillment_type: campaignFulfillmentType,
                   // Order-derived fallback: no mapping, so no variant grouping.
                   variant_group_key: null,
+                  variant_color: null,
                 })
               }
             }

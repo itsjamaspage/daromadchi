@@ -180,6 +180,11 @@ export const products = pgTable('products', {
   // collide across marketplaces. Nullable: single-variant products may have none.
   // Set by the two syncs; unused by any view until the Phase 2 UI.
   variant_group_key:      text('variant_group_key'),
+  // Resolved colour KEY of this variant (resolveColor: 'white' | 'beige' | …),
+  // from Uzum sku.skuTitle / Yandex mapping.marketSkuName. Powers the per-colour
+  // child label ("Цвет: Белый") in the collapsible variant view. Nullable when
+  // no known colour. Set by both syncs; localised at display time via COLOR_LABELS.
+  variant_color:          text('variant_color'),
   updated_at:             timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 }, (t) => [
   index('products_shop_id_idx').on(t.shop_id),
