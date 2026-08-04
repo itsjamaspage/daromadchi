@@ -225,7 +225,11 @@ const _fetchProductSales = unstable_cache(
       const surplus = r.product_id ? (surplusByProduct.get(r.product_id) ?? 0) : 0
       return {
         product_id: r.product_id,
-        title: r.title ?? 'Unknown',
+        // Null title = the product was hard-deleted and its order_items.product_id
+        // went NULL (pre-fix orphans; the zombie-cleanup no longer deletes sold
+        // products). No title/SKU is stored on order_items, so the identity is
+        // unrecoverable — label it plainly rather than the cryptic "Unknown".
+        title: r.title ?? 'Удалённый товар',
         sku: r.sku ?? null,
         // Sold = delivered units: DB non-cancelled minus those still in transit.
         qty_sold: Math.max(Number(r.qty_sold) - dbInTransit, 0),
