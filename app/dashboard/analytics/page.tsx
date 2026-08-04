@@ -19,14 +19,6 @@ function fmt(n: number) {
 // Cyrillic plural for "N variants" — same one Products page uses. Passed
 // down to both grouped Analytics tables so the parent chip reads
 // "2 варианта" not "2 вариантов".
-function variantCountLabel(n: number): string {
-  const mod10 = n % 10, mod100 = n % 100
-  const word = mod10 === 1 && mod100 !== 11 ? 'вариант'
-    : mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14) ? 'варианта'
-    : 'вариантов'
-  return `${n} ${word}`
-}
-
 const VALID_MP = ['uzum', 'yandex_market', 'wildberries'] as const
 function parseMp(v: string | undefined): MarketplaceType | undefined {
   return (VALID_MP as readonly string[]).includes(v ?? '') ? v as MarketplaceType : undefined
@@ -220,7 +212,6 @@ export default async function AnalyticsPage({ searchParams }: Props) {
                 cancelled: d.topSoldCancelled,
                 revenue:   d.topSoldRevenue,
                 noSales:   d.noSalesInPeriod,
-                variants:  variantCountLabel,
               }}
             />
           </div>
@@ -271,7 +262,6 @@ export default async function AnalyticsPage({ searchParams }: Props) {
                 stockQty:            d.stockQty,
                 stockValue:          d.stockValue,
                 warehouseValueTotal: d.warehouseValueTotal,
-                variants:            variantCountLabel,
               }}
             />
           </div>
