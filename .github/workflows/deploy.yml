@@ -5,6 +5,15 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# Serialize deploys. Without this, two merges to main close together spin up two
+# deploy runs that both `git reset --hard` + `npm ci` + `next build` in the SAME
+# /var/www/daromadchi tree — one yanks the working tree out from under the other's
+# build, which SIGTERMs it (exit 143). cancel-in-progress: false queues the newer
+# run until the current one finishes, so deploys never overlap and each completes.
+concurrency:
+  group: deploy-vps
+  cancel-in-progress: false
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
