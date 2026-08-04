@@ -783,30 +783,12 @@ function WildberriesCard({ shop }: { shop: Shop | null; userId: string }) {
     setSyncing(false)
   }
 
-  // Wildberries integration is sunset for now — WB's rate limiter kept
-  // locking the app into a permanent throttled state. Render a
-  // read-only "Coming soon" card so the seller sees WB exists but
-  // can't enter a token or trigger a sync until we re-enable it.
+  // Wildberries integration is sunset for now — WB's rate limiter kept locking
+  // the app into a permanent throttled state. While sunset, render nothing at
+  // all (the "Coming soon" card was removed per request). All the WB code below
+  // is kept intact so flipping WB_ENABLED back on restores the full card.
   if (!WB_ENABLED) {
-    return (
-      <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden opacity-70">
-        <div className="px-6 py-4 border-b border-[var(--border)] flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'var(--bg-card2)', border: '1px solid var(--border)' }}>
-            <span className="text-sm font-bold" style={{ color: 'var(--c1)' }}>WB</span>
-          </div>
-          <div>
-            <p className="text-[var(--text-base)] font-semibold text-sm">Wildberries</p>
-            <p className="text-[var(--text-muted)] text-xs">seller.wildberries.ru</p>
-          </div>
-          <span className="ml-auto text-[10px] font-semibold px-2 py-1 rounded-full border bg-[var(--bg-card2)] border-[var(--border)] text-[var(--text-muted)]">
-            {lang === 'ru' ? 'Скоро' : lang === 'en' ? 'Coming soon' : "Tez orada"}
-          </span>
-        </div>
-        <div className="p-6 text-xs text-[var(--text-muted)] leading-relaxed">
-          {lang === 'ru' ? 'Wildberries — скоро' : lang === 'en' ? 'Wildberries — coming soon' : 'Wildberries — tez orada'}
-        </div>
-      </div>
-    )
+    return null
   }
 
   return (
