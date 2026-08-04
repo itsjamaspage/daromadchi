@@ -431,6 +431,8 @@ const _fetchProductsPaginated = unstable_cache(
         marketplace_product_id: products.marketplace_product_id,
         fulfillment_type: products.fulfillment_type,
         is_archived: products.is_archived,
+        variant_group_key: products.variant_group_key,
+        variant_color: products.variant_color,
         updated_at: products.updated_at,
       }).from(products)
         .where(viewWhere)
@@ -521,6 +523,8 @@ const _fetchProductsPaginated = unstable_cache(
         cancelled: cancelledMap.get(p.id) ?? 0,
         is_shared: isShared,
         is_archived: p.is_archived,
+        variant_group_key: p.variant_group_key,
+        variant_color: p.variant_color,
       } as Product
     })
 
