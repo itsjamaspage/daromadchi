@@ -29,6 +29,8 @@ const _fetchProducts = unstable_cache(
         category: products.category,
         marketplace_product_id: products.marketplace_product_id,
         fulfillment_type: products.fulfillment_type,
+        variant_group_key: products.variant_group_key,
+        variant_color: products.variant_color,
         updated_at: products.updated_at,
       }).from(products)
         // Active metrics (dashboard home, analytics, ABC-XYZ) exclude archived.
@@ -125,10 +127,15 @@ const _fetchProducts = unstable_cache(
         in_transit: dbInTransit + surplus,
         cancelled: cancelledByProductId.get(p.id) ?? 0,
         is_shared: isShared,
+        variant_group_key: p.variant_group_key,
+        variant_color: p.variant_color,
       } as Product
     })
   },
-  ['products-v9'],
+  // v10: added variant_group_key/variant_color so the Analytics margin table can
+  // group (it was starved of the keys → every row fell to a flat row). Bumped so
+  // stale v9 rows (missing the fields) aren't served during the revalidate window.
+  ['products-v10'],
   { revalidate: 30, tags: ['product-data'] },
 )
 
