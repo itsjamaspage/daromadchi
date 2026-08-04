@@ -1,8 +1,10 @@
 import { FileText, Settings } from 'lucide-react'
 import Link from 'next/link'
 import { Suspense } from 'react'
+import { count, inArray } from 'drizzle-orm'
+import { db, orders } from '@/lib/db'
 import { getPnl } from '@/lib/db/pnl'
-import { getUserShops } from '@/lib/db/shop-context'
+import { getUserShops, getShopIds } from '@/lib/db/shop-context'
 import PnlChart from './PnlChart'
 import ExportButton from '@/components/dashboard/ExportButton'
 import MarketplaceTabs from '@/components/dashboard/MarketplaceTabs'
@@ -46,11 +48,13 @@ function parseRange(params: Record<string, string>): {
     return { from, to, bucket: days > 31 ? 'month' : 'day', period: String(days) }
   }
 
-  // Default: current month, day 1 → today. Was previously "last 180
-  // days" which landed on a Feb 1 – Jul 30 range that looked hardcoded
-  // in the calendar-picker button. Current-month is what business
-  // dashboards default to and avoids confusing pre-selected dates.
-  const from = new Date(to.getFullYear(), to.getMonth(), 1)
+  // Default: last 90 days (rolling). Current-month was too narrow — a seller
+  // whose orders were in a prior month (e.g. July orders viewed on Aug 1) landed
+  // on an empty page even though orders existed. 90 days surfaces recent activity
+  // on load; the calendar picker still lets them narrow or widen. Monthly bucket
+  // since the span crosses months.
+  const from = new Date(to)
+  from.setDate(from.getDate() - 89)   // 90 days inclusive of today
   from.setHours(0, 0, 0, 0)
   return { from, to, bucket: 'month', period: '' }
 }
@@ -115,6 +119,20 @@ export default async function PnlPage({ searchParams }: Props) {
   const allRowsForTotals = pnl.rows
   const isEmpty = pnl.rows.length === 0 || pnl.rows.every(m => m.revenue === 0 && m.cancelled_count === 0)
   const hasShops = userShops.length > 0
+
+  // Only when the picked range is empty: does the store have ANY orders ever
+  // (respecting the current marketplace tab)? Lets the empty state point at the
+  // date filter ("no orders in this period, widen the range") when widening would
+  // actually help, and fall back to the honest "no orders yet" for a brand-new
+  // store. One cheap count, run only in the empty case.
+  let hasAnyOrders = false
+  if (isEmpty && hasShops) {
+    const shopIdsForCount = await getShopIds(marketplace)
+    if (shopIdsForCount && shopIdsForCount.length > 0) {
+      const [{ n }] = await db.select({ n: count() }).from(orders).where(inArray(orders.shop_id, shopIdsForCount))
+      hasAnyOrders = n > 0
+    }
+  }
   const anyEstimated = pnl.rows.some(m => m.estimated)
   const num = 'px-4 py-4 text-right text-[var(--text-base)]'
 
@@ -184,10 +202,10 @@ export default async function PnlPage({ searchParams }: Props) {
             <FileText className="w-7 h-7" style={{ color: 'var(--c1)' }} />
           </div>
           <h2 className="text-[var(--text-base)] font-bold text-lg mb-2">
-            {hasShops ? d.noOrdersConnectedTitle : d.noData}
+            {!hasShops ? d.noData : hasAnyOrders ? d.pnlNoOrdersRangeTitle : d.noOrdersConnectedTitle}
           </h2>
           <p className="text-[var(--text-muted)] text-sm mb-6 max-w-sm mx-auto">
-            {hasShops ? d.noOrdersConnectedDesc : d.noDataPnlDesc}
+            {!hasShops ? d.noDataPnlDesc : hasAnyOrders ? d.pnlNoOrdersRangeDesc : d.noOrdersConnectedDesc}
           </p>
           {!hasShops && (
             <Link href="/dashboard/settings"
