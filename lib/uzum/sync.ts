@@ -15,6 +15,7 @@ import {
   type UzumFbsOrder,
   type UzumFbsOrderItem,
 } from './client'
+import { resolveColor } from '@/lib/products/resolveColor'
 
 const STATUS_MAP: Record<string, string> = {
   // Not-yet-shipped / being prepared by the seller
@@ -217,7 +218,7 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
       shop_id: string; marketplace_product_id: string; title: string; sku: string
       category: string | null; selling_price: number | null; cost_price: number | null
       stock_quantity: number; quantity_sold: number | null; is_archived: boolean
-      variant_group_key: string | null
+      variant_group_key: string | null; variant_color: string | null
     }[] = []
 
     // Product sync is best-effort: shops with 0 active listings return 403.
@@ -270,6 +271,9 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
                 // same parent product (card.productId). Namespaced so it can
                 // never collide with a Yandex group key.
                 variant_group_key: `uzum:${card.productId}`,
+                // The colour lives in skuTitle ("Белый"); resolve it to a palette
+                // key for the per-colour child label. Null when unrecognised.
+                variant_color: resolveColor(sku.skuTitle)?.key ?? null,
               })
             }
           }
@@ -299,6 +303,7 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
             quantity_sold: r.quantity_sold,
             is_archived: r.is_archived,
             variant_group_key: r.variant_group_key,
+            variant_color: r.variant_color,
             // Uzbekistan's dominant model is FBS (seller ships from home).
             // Uzum's product API doesn't expose per-SKU fulfillment reliably,
             // so mark all Uzum products FBS by default. Users on FBO can
@@ -322,6 +327,7 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
               is_archived: r.is_archived,
               // Re-stamped so a card's variant grouping stays current.
               variant_group_key: r.variant_group_key,
+              variant_color: r.variant_color,
               fulfillment_type: 'fbs',
             }).where(eq(products.id, r.id))
           }
@@ -630,6 +636,7 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
                 // variant grouping (no parent productId available).
                 is_archived: false,
                 variant_group_key: null,
+                variant_color: null,
               })
             }
           }
@@ -709,6 +716,7 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
                   // variant grouping (no parent productId available).
                   is_archived: false,
                   variant_group_key: null,
+                  variant_color: null,
                 })
               }
             }
