@@ -267,6 +267,35 @@
   font-weight: 700;
   cursor: pointer;
   flex-shrink: 0;
+  background: transparent;
+  /* dark mode default */
+  color: rgba(197, 232, 254, 0.80);
+  border: 1px solid rgba(197, 232, 254, 0.25);
+}
+
+[data-theme="light"] .pill-ctrl-btn {
+  color: #374151;
+  border-color: rgba(14, 34, 51, 0.15);
+}
+
+.pill-nav-right a.pill-ctrl-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 9999px;
+  text-decoration: none;
+  flex-shrink: 0;
+  background: transparent;
+  /* dark mode default */
+  color: rgba(197, 232, 254, 0.80);
+  border: 1px solid rgba(197, 232, 254, 0.25);
+}
+
+[data-theme="light"] .pill-nav-right a.pill-ctrl-link {
+  color: #374151;
+  border-color: rgba(14, 34, 51, 0.15);
 }
 
 .pill-lang-dropdown {
