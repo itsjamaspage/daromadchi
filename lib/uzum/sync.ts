@@ -217,6 +217,7 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
       shop_id: string; marketplace_product_id: string; title: string; sku: string
       category: string | null; selling_price: number | null; cost_price: number | null
       stock_quantity: number; quantity_sold: number | null; is_archived: boolean
+      variant_group_key: string | null
     }[] = []
 
     // Product sync is best-effort: shops with 0 active listings return 403.
@@ -265,6 +266,10 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
                 // figure so FBO sales are counted even without order records.
                 quantity_sold: sku.quantitySold ?? null,
                 is_archived: isArchived,
+                // All SKUs in one card's skuList are colour/size variants of the
+                // same parent product (card.productId). Namespaced so it can
+                // never collide with a Yandex group key.
+                variant_group_key: `uzum:${card.productId}`,
               })
             }
           }
@@ -293,6 +298,7 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
             stock_quantity: r.stock_quantity,
             quantity_sold: r.quantity_sold,
             is_archived: r.is_archived,
+            variant_group_key: r.variant_group_key,
             // Uzbekistan's dominant model is FBS (seller ships from home).
             // Uzum's product API doesn't expose per-SKU fulfillment reliably,
             // so mark all Uzum products FBS by default. Users on FBO can
@@ -314,6 +320,8 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
               // false. (cost_price stays omitted here on purpose — see note in
               // the insert path: re-syncs must not clobber hand-entered costs.)
               is_archived: r.is_archived,
+              // Re-stamped so a card's variant grouping stays current.
+              variant_group_key: r.variant_group_key,
               fulfillment_type: 'fbs',
             }).where(eq(products.id, r.id))
           }
@@ -618,8 +626,10 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
                 cost_price: null,
                 stock_quantity: 0,
                 quantity_sold: null,
-                // Order-derived fallback: no card data, so not archived.
+                // Order-derived fallback: no card data, so not archived and no
+                // variant grouping (no parent productId available).
                 is_archived: false,
+                variant_group_key: null,
               })
             }
           }
@@ -695,8 +705,10 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
                   sku: mpid, category: null,
                   selling_price: it.price ?? null, cost_price: null, stock_quantity: 0,
                   quantity_sold: null,
-                  // Order-derived fallback: no card data, so not archived.
+                  // Order-derived fallback: no card data, so not archived and no
+                  // variant grouping (no parent productId available).
                   is_archived: false,
+                  variant_group_key: null,
                 })
               }
             }
