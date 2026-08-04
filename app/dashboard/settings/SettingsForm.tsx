@@ -1089,17 +1089,24 @@ interface Props {
 export default function SettingsForm({ uzumShop, yandexShop, wbShop, shopCounts, userId, telegramChatId, telegramUsername }: Props) {
   const { lang } = useLang()
   const t = translations[lang].dashboard.settingsPage
-  const mpCards = [
+  const allMpCards = [
     { shop: uzumShop, mp: 'uzum', Component: UzumCard },
     { shop: yandexShop, mp: 'yandex_market', Component: YandexCard },
     { shop: wbShop, mp: 'wildberries', Component: WildberriesCard },
   ]
+  // Wildberries is sunset — its card renders nothing, so drop it from the grid
+  // entirely rather than leave an empty third column that shoves the remaining
+  // two cards to the left. Columns then match the visible card count so the
+  // pair fills the width evenly (restores to 3 when WB is re-enabled).
+  const mpCards = WB_ENABLED ? allMpCards : allMpCards.filter(c => c.mp !== 'wildberries')
   const connected = mpCards.filter(c => c.shop?.api_key_encrypted)
+  const cardCols    = mpCards.length >= 3   ? 'md:grid-cols-3' : 'md:grid-cols-2'
+  const summaryCols = connected.length >= 3 ? 'sm:grid-cols-3' : 'sm:grid-cols-2'
 
   return (
     <div className="space-y-6">
       {connected.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className={`grid grid-cols-1 ${summaryCols} gap-3`}>
           {connected.map(({ mp }) => {
             const c = shopCounts[mp]
             const labels: Record<string, string> = { uzum: 'Uzum', yandex_market: 'Yandex', wildberries: 'WB' }
@@ -1114,7 +1121,7 @@ export default function SettingsForm({ uzumShop, yandexShop, wbShop, shopCounts,
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className={`grid grid-cols-1 ${cardCols} gap-4`}>
         {mpCards.map(({ shop, Component }) => (
           <Component key={shop?.id ?? Component.name} shop={shop} userId={userId} />
         ))}
