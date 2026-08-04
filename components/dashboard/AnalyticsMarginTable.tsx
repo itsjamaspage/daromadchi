@@ -19,6 +19,19 @@ function fmt(n: number) {
   return new Intl.NumberFormat('uz-UZ').format(Math.round(n))
 }
 
+// Localised "N вариантов". Computed in the client component (it has lang) — a
+// function prop can't cross the Server→Client boundary, which is what crashed
+// the page. Mirrors the StocksTable/ProductsTable helper.
+function variantCountLabel(n: number, lang: 'uz' | 'ru' | 'en'): string {
+  if (lang === 'en') return `${n} variants`
+  if (lang === 'uz') return `${n} ta variant`
+  const mod10 = n % 10, mod100 = n % 100
+  const word = mod10 === 1 && mod100 !== 11 ? 'вариант'
+    : mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14) ? 'варианта'
+    : 'вариантов'
+  return `${n} ${word}`
+}
+
 function VariantColorChip({ colorKey, lang }: { colorKey: string | null | undefined; lang: 'uz' | 'ru' | 'en' }) {
   const meta = colorMetaFor(colorKey)
   if (!meta || !colorKey) return null
@@ -44,7 +57,6 @@ interface Props {
     stockQty: string
     stockValue: string
     warehouseValueTotal: string
-    variants: (n: number) => string
   }
 }
 
@@ -127,7 +139,7 @@ export default function AnalyticsMarginTable({ products, totalStockValue, labels
             <p className="font-semibold line-clamp-2 sm:line-clamp-none" style={{ color: 'var(--text-base)' }} title={item.representative.row.title}>{item.representative.row.title}</p>
             <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded shrink-0"
               style={{ background: 'var(--bg-input)', color: 'var(--text-muted)' }}>
-              {labels.variants(item.children.length)}
+              {variantCountLabel(item.children.length, lang)}
             </span>
           </div>
         </td>
