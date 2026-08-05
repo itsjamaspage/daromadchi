@@ -452,6 +452,14 @@ export async function syncFromYandex(
           return mapped as 'pending' | 'confirmed' | 'delivered' | 'cancelled' | 'returned'
         })(),
         revenue: o.buyerTotal ?? o.itemsTotal ?? 0,
+        // marketplace_fee is settlement-sourced for Yandex and stays NULL here
+        // by design. The /campaigns/{id}/orders endpoint carries no real fee —
+        // `commissionTotal` is absent on this endpoint (always undefined → null)
+        // and, even where present, is an order-time ESTIMATE, not the settled
+        // charge. The authoritative commission arrives days later in the united
+        // netting report (yandex_settlement_transactions) and is consumed via
+        // lib/db/real-financials.ts. Do NOT map a percentage or a phantom field
+        // here — the P&L shows "pending" until settlement lands (see lib/db/pnl.ts).
         marketplace_fee: o.commissionTotal ?? null,
         delivery_cost: o.deliveryTotal ?? null,
         items_count: o.items?.length ?? 1,

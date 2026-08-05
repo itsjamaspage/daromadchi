@@ -154,6 +154,12 @@ export default async function PnlPage({ searchParams }: Props) {
     if (!isEst || v === 0) return fmt(v)
     return <span title={tooltip} className="underline decoration-dotted decoration-[var(--text-muted)] cursor-help">{'≈ '}{fmt(v)}</span>
   }
+  // Yandex fee that hasn't settled yet: show a muted "pending" placeholder
+  // rather than a fabricated percentage estimate or a misleading zero.
+  const pendingCell = (
+    <span title={d.pnlFeePendingHint} className="text-[var(--text-muted)] italic cursor-help">{d.pnlFeePending}</span>
+  )
+  const totalsFeePending = allRowsForTotals.some(m => m.feePending)
 
   const exportData = monthlyData.map(m => ({
     [d.date]:                      m.month,
@@ -302,8 +308,8 @@ export default async function PnlPage({ searchParams }: Props) {
                       <td className={num}>{todayRow.order_count}</td>
                       <td className={num}>{todayRow.cancelled_count || '—'}</td>
                       <td className={num}>{fmt(todayRow.revenue)}</td>
-                      <td className={num}>{est(todayRow.commission, todayRow.estimated, `≈ ${pnl.params.commissionPct}%`)}</td>
-                      <td className={num}>{todayRow.delivery > 0 ? est(todayRow.delivery, todayRow.estimated, `≈ ${pnl.params.lastMilePct}%`) : '—'}</td>
+                      <td className={num}>{todayRow.feePending && todayRow.commission === 0 ? pendingCell : est(todayRow.commission, todayRow.estimated, `≈ ${pnl.params.commissionPct}%`)}</td>
+                      <td className={num}>{todayRow.feePending && todayRow.delivery === 0 ? pendingCell : todayRow.delivery > 0 ? est(todayRow.delivery, todayRow.estimated, `≈ ${pnl.params.lastMilePct}%`) : '—'}</td>
                       <td className={num}>{est(todayRow.acquiring, todayRow.estimated, `≈ ${pnl.params.acquiringPct}%`)}</td>
                       <td className={num}>{est(todayRow.tax, true, `≈ ${pnl.params.taxPct}%`)}</td>
                       <td className={num}>{est(todayRow.ads, todayRow.adSpendEstimated, `≈ ${pnl.params.adPct}%`)}</td>
@@ -322,8 +328,8 @@ export default async function PnlPage({ searchParams }: Props) {
                         <td className={num}>{m.order_count}</td>
                         <td className={num}>{m.cancelled_count || '—'}</td>
                         <td className={num}>{fmt(m.revenue)}</td>
-                        <td className={num}>{est(m.commission, m.estimated, `≈ ${pnl.params.commissionPct}%`)}</td>
-                        <td className={num}>{m.delivery > 0 ? est(m.delivery, m.estimated, `≈ ${pnl.params.lastMilePct}%`) : '—'}</td>
+                        <td className={num}>{m.feePending && m.commission === 0 ? pendingCell : est(m.commission, m.estimated, `≈ ${pnl.params.commissionPct}%`)}</td>
+                        <td className={num}>{m.feePending && m.delivery === 0 ? pendingCell : m.delivery > 0 ? est(m.delivery, m.estimated, `≈ ${pnl.params.lastMilePct}%`) : '—'}</td>
                         <td className={num}>{est(m.acquiring, m.estimated, `≈ ${pnl.params.acquiringPct}%`)}</td>
                         <td className={num}>{est(m.tax, true, `≈ ${pnl.params.taxPct}%`)}</td>
                         <td className={num}>{est(m.ads, m.adSpendEstimated, `≈ ${pnl.params.adPct}%`)}</td>
@@ -338,8 +344,8 @@ export default async function PnlPage({ searchParams }: Props) {
                     <td className={`${num} font-bold`}>{totals.orders}</td>
                     <td className={`${num} font-bold`}>{totals.cancelled || '—'}</td>
                     <td className={`${num} font-bold`}>{fmt(totals.revenue)}</td>
-                    <td className={`${num} font-bold`}>{est(totals.commission, anyEstimated, `≈ ${pnl.params.commissionPct}%`)}</td>
-                    <td className={`${num} font-bold`}>{totals.delivery > 0 ? fmt(totals.delivery) : '—'}</td>
+                    <td className={`${num} font-bold`}>{totalsFeePending && totals.commission === 0 ? pendingCell : est(totals.commission, anyEstimated, `≈ ${pnl.params.commissionPct}%`)}</td>
+                    <td className={`${num} font-bold`}>{totalsFeePending && totals.delivery === 0 ? pendingCell : totals.delivery > 0 ? fmt(totals.delivery) : '—'}</td>
                     <td className={`${num} font-bold`}>{est(totals.acquiring, anyEstimated, `≈ ${pnl.params.acquiringPct}%`)}</td>
                     <td className={`${num} font-bold`}>{est(totals.tax, true, `≈ ${pnl.params.taxPct}%`)}</td>
                     <td className={`${num} font-bold`}>{est(totals.ads, allRowsForTotals.some(m => m.adSpendEstimated), `≈ ${pnl.params.adPct}%`)}</td>
