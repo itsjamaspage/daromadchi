@@ -24,6 +24,8 @@ export interface RealBucket {
   delivery: number
   net: number
   itemCount: number   // >0 means real data is present; 0 → caller uses its own estimate
+  ymItemCount: number // Yandex-only settled item count; lets callers tell whether
+                      // YANDEX specifically has settled, not just the bucket overall
 }
 
 export async function getRealFinancialsByBucket(
@@ -44,11 +46,12 @@ export async function getRealFinancialsByBucket(
   const uzShopIds = shopRows.filter(r => r.marketplace === 'uzum').map(r => r.id)
 
   const bump = (key: string, patch: Partial<RealBucket>) => {
-    const cur = out.get(key) ?? { commission: 0, delivery: 0, net: 0, itemCount: 0 }
-    cur.commission += patch.commission ?? 0
-    cur.delivery   += patch.delivery   ?? 0
-    cur.net        += patch.net        ?? 0
-    cur.itemCount  += patch.itemCount  ?? 0
+    const cur = out.get(key) ?? { commission: 0, delivery: 0, net: 0, itemCount: 0, ymItemCount: 0 }
+    cur.commission  += patch.commission  ?? 0
+    cur.delivery    += patch.delivery    ?? 0
+    cur.net         += patch.net         ?? 0
+    cur.itemCount   += patch.itemCount   ?? 0
+    cur.ymItemCount += patch.ymItemCount ?? 0
     out.set(key, cur)
   }
 
@@ -86,6 +89,7 @@ export async function getRealFinancialsByBucket(
           delivery: v.delivery,
           net: v.credit - v.commission - v.delivery,
           itemCount: v.itemCount,
+          ymItemCount: v.itemCount,
         })
       }
     } catch (e) {

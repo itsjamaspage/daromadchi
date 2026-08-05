@@ -37,6 +37,13 @@ export interface PnlRow {
   /** true when commission/delivery came from percentages, not marketplace data */
   estimated: boolean
   adSpendEstimated: boolean
+  /**
+   * true when the bucket has a Yandex sale whose real settlement hasn't landed
+   * yet. Yandex fees are NEVER estimated from a percentage (the order endpoint
+   * carries no real fee — only the netting report does, a few days later), so
+   * the UI shows "pending" for these instead of a fabricated number.
+   */
+  feePending: boolean
 }
 
 // Alias for callers that were reading MonthlyPnl by name.
@@ -88,6 +95,7 @@ export async function getPnl(opts: PnlOpts): Promise<{ rows: PnlRow[]; params: P
     db.select({
       ordered_at: orders.ordered_at,
       status: orders.status,
+      marketplace: orders.marketplace,
       revenue: orders.revenue,
       marketplace_fee: orders.marketplace_fee,
       delivery_cost: orders.delivery_cost,
@@ -141,6 +149,11 @@ export async function getPnl(opts: PnlOpts): Promise<{ rows: PnlRow[]; params: P
   // chart handles missing months by simply omitting the bar.
   const grouped = new Map<string, {
     revenue: number; realFee: number; realDelivery: number; count: number
+    // revenueEstimable = non-cancelled revenue EXCLUDING Yandex. Percentage
+    // estimates for missing fees are applied ONLY to this, so Yandex revenue
+    // is never multiplied into a fabricated fee. hasYandex flags a Yandex sale
+    // in the bucket so we can mark its fee "pending" until settlement lands.
+    revenueEstimable: number; hasYandex: boolean
     cancelledCount: number; cancelledAmount: number
     penalty: number; storageFee: number; additionalPayment: number
   }>()
@@ -150,7 +163,8 @@ export async function getPnl(opts: PnlOpts): Promise<{ rows: PnlRow[]; params: P
     while (cursor <= stop) {
       const key = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}-${String(cursor.getDate()).padStart(2, '0')}`
       grouped.set(key, {
-        revenue: 0, realFee: 0, realDelivery: 0, count: 0, cancelledCount: 0, cancelledAmount: 0,
+        revenue: 0, realFee: 0, realDelivery: 0, count: 0, revenueEstimable: 0, hasYandex: false,
+        cancelledCount: 0, cancelledAmount: 0,
         penalty: 0, storageFee: 0, additionalPayment: 0,
       })
       cursor.setDate(cursor.getDate() + 1)
@@ -163,20 +177,26 @@ export async function getPnl(opts: PnlOpts): Promise<{ rows: PnlRow[]; params: P
       ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
       : `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
     const ex = grouped.get(key) ?? {
-      revenue: 0, realFee: 0, realDelivery: 0, count: 0, cancelledCount: 0, cancelledAmount: 0,
+      revenue: 0, realFee: 0, realDelivery: 0, count: 0, revenueEstimable: 0, hasYandex: false,
+      cancelledCount: 0, cancelledAmount: 0,
       penalty: 0, storageFee: 0, additionalPayment: 0,
     }
     if (row.status === 'cancelled' || row.status === 'returned') {
       ex.cancelledCount += 1
       ex.cancelledAmount += Number(row.revenue ?? 0)
     } else {
-      ex.revenue      += Number(row.revenue ?? 0)
+      const rev = Number(row.revenue ?? 0)
+      ex.revenue      += rev
       ex.realFee      += Number(row.marketplace_fee ?? 0)
       ex.realDelivery += Number(row.delivery_cost ?? 0)
       ex.penalty      += Number(row.penalty ?? 0)
       ex.storageFee   += Number(row.storage_fee ?? 0)
       ex.additionalPayment += Number(row.additional_payment ?? 0)
       ex.count        += 1
+      // Yandex fees are settlement-only — never estimate them. Keep Yandex
+      // revenue out of the estimable base and flag the sale as pending.
+      if (row.marketplace === 'yandex_market') ex.hasYandex = true
+      else ex.revenueEstimable += rev
     }
     grouped.set(key, ex)
   }
@@ -190,17 +210,23 @@ export async function getPnl(opts: PnlOpts): Promise<{ rows: PnlRow[]; params: P
       // to Unit-Economics percentages. Same precedence Payouts uses.
       const real = realByBucket.get(key)
       const hasReal = !!real && real.itemCount > 0
-      const estimated  = !hasReal && v.realFee === 0 && v.revenue > 0
+      const hasRealYandex = !!real && real.ymItemCount > 0
+      // Percentage estimates apply ONLY to estimable (non-Yandex) revenue —
+      // Yandex fees are settlement-only and are never fabricated from a %.
+      const estimated  = !hasReal && v.realFee === 0 && v.revenueEstimable > 0
       const commission = hasReal ? real!.commission
-                       : estimated ? v.revenue * params.commissionPct / 100
+                       : estimated ? v.revenueEstimable * params.commissionPct / 100
                        : v.realFee
       const delivery   = hasReal ? real!.delivery
                        : v.realDelivery > 0 ? v.realDelivery
-                       : v.revenue * params.lastMilePct / 100
+                       : v.revenueEstimable * params.lastMilePct / 100
       // Acquiring is bundled into marketplace commission (Uzum + Yandex
       // both fold it in). Only show a separate estimated acquiring line
       // when we're falling back to Unit-Economics percentages.
-      const acquiring  = (!hasReal && estimated) ? v.revenue * params.acquiringPct / 100 : 0
+      const acquiring  = (!hasReal && estimated) ? v.revenueEstimable * params.acquiringPct / 100 : 0
+      // A Yandex sale whose real settlement hasn't landed yet → its fee is
+      // "pending" (shown as a placeholder), not zero and not an estimate.
+      const feePending = v.hasYandex && !hasRealYandex
       // Ads: use ONLY real productAdsStats data. Sellers explicitly
       // asked to drop the "estimate from % of revenue" fallback — that
       // was producing phantom ad-spend lines for shops that never ran
@@ -238,6 +264,7 @@ export async function getPnl(opts: PnlOpts): Promise<{ rows: PnlRow[]; params: P
         net: v.revenue - commission - delivery - acquiring - tax - ads - cogs - penalty - storageFee - additionalPayment,
         estimated,
         adSpendEstimated,
+        feePending,
       }
     })
 
