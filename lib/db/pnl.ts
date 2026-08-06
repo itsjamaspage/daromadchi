@@ -1,5 +1,5 @@
 import { inArray, gte, and, asc, ne, eq, sql } from 'drizzle-orm'
-import { db, orders, orderItems, products, productAdsStats } from '@/lib/db'
+import { db, orders, orderItems, products, productAdsStats, shops, uzumSettlementOrders, yandexSettlementTransactions } from '@/lib/db'
 import { getShopIds } from '@/lib/db/shop-context'
 import { getUnitEcoSettings } from '@/lib/db/unit-economics'
 import { getRealFinancialsByBucket } from '@/lib/db/real-financials'
@@ -315,6 +315,49 @@ export async function getCogsBreakdown(opts: {
       costPrice: r.costPrice != null ? Number(r.costPrice) : null,
     }))
     .sort((a, b) => b.qty - a.qty)
+}
+
+/** Delivery (logistics) charged per marketplace over the range, from the same
+ *  settlement sources the P&L delivery figure uses — Uzum logistic_delivery_fee
+ *  and Yandex "Доставка"-tagged debits. Backs the Доставка card tooltip so it
+ *  can name which store charged the fee. Only non-zero stores matter to the UI. */
+export interface DeliveryByMp { marketplace: 'uzum' | 'yandex_market'; delivery: number }
+
+export async function getDeliveryByMarketplace(opts: {
+  from: Date; to: Date; marketplace?: MarketplaceType
+}): Promise<DeliveryByMp[]> {
+  const shopIds = await getShopIds(opts.marketplace)
+  if (!shopIds || shopIds.length === 0) return []
+  const shopRows = await db.select({ id: shops.id, marketplace: shops.marketplace })
+    .from(shops).where(inArray(shops.id, shopIds))
+  const uz = shopRows.filter(r => r.marketplace === 'uzum').map(r => r.id)
+  const ym = shopRows.filter(r => r.marketplace === 'yandex_market').map(r => r.id)
+
+  const out: DeliveryByMp[] = []
+  if (uz.length > 0) {
+    const [r] = await db.select({
+      d: sql<number>`coalesce(sum(${uzumSettlementOrders.logistic_delivery_fee}), 0)`,
+    }).from(uzumSettlementOrders).where(and(
+      inArray(uzumSettlementOrders.shop_id, uz),
+      gte(uzumSettlementOrders.transaction_at, opts.from),
+      sql`${uzumSettlementOrders.transaction_at} <= ${opts.to}`,
+      ne(uzumSettlementOrders.status, 'CANCELED'),
+    ))
+    out.push({ marketplace: 'uzum', delivery: Number(r?.d ?? 0) })
+  }
+  if (ym.length > 0) {
+    const [r] = await db.select({
+      d: sql<number>`coalesce(sum(${yandexSettlementTransactions.amount}), 0)`,
+    }).from(yandexSettlementTransactions).where(and(
+      inArray(yandexSettlementTransactions.shop_id, ym),
+      gte(yandexSettlementTransactions.transaction_at, opts.from),
+      sql`${yandexSettlementTransactions.transaction_at} <= ${opts.to}`,
+      eq(yandexSettlementTransactions.entry_type, 'Удержание'),
+      sql`${yandexSettlementTransactions.order_type} like '%Доставка%'`,
+    ))
+    out.push({ marketplace: 'yandex_market', delivery: Number(r?.d ?? 0) })
+  }
+  return out
 }
 
 /** @deprecated use getPnl instead */
