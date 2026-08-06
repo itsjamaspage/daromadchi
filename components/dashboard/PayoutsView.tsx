@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, Fragment } from 'react'
 import { useRouter } from 'next/navigation'
-import { ChevronDown, ChevronUp, HelpCircle, RefreshCw, MoreVertical } from 'lucide-react'
+import { ChevronDown, ChevronUp, HelpCircle, RefreshCw, MoreVertical, CreditCard } from 'lucide-react'
 import type { PayoutEntry, PayoutOrderItem, MarketplaceType } from '@/lib/types'
 import { WB_ENABLED } from '@/lib/feature-flags'
 import ExportButton from '@/components/dashboard/ExportButton'
@@ -491,7 +491,19 @@ export default function PayoutsView({ entries }: Props) {
         </div>
       </div>
 
-      {/* Table */}
+      {/* Empty state — no real settlement data for this filter yet. We show
+          confirmed payouts only, so until a period settles there is nothing
+          to render here (no estimates, no zero rows). */}
+      {filteredEntries.length === 0 ? (
+        <div className="bg-[var(--bg-card2)] border border-dashed border-[var(--border)] rounded-2xl p-10 text-center">
+          <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: 'var(--bg-base)', border: '1px solid var(--border)' }}>
+            <CreditCard className="w-7 h-7" style={{ color: 'var(--c1)' }} />
+          </div>
+          <h3 className="text-[var(--text-base)] font-bold text-lg mb-2">{t.emptyNoSettlementTitle}</h3>
+          <p className="text-[var(--text-muted)] text-sm max-w-md mx-auto">{t.emptyNoSettlementDesc}</p>
+        </div>
+      ) : (
+      /* Table */
       <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -599,6 +611,7 @@ export default function PayoutsView({ entries }: Props) {
           </table>
         </div>
       </div>
+      )}
     </div>
   )
 }
