@@ -5,6 +5,7 @@ import { getCurrentUser } from '@/lib/auth/session'
 import { db, shops } from '@/lib/db'
 import { decrypt } from '@/lib/crypto'
 import { syncYandexSettlements } from '@/lib/yandex/settlements-sync'
+import { syncYandexBoostSpend } from '@/lib/yandex/boost-sync'
 import { withErrorHandler } from '@/lib/api-handler'
 
 export const runtime = 'nodejs'
@@ -40,7 +41,15 @@ export const POST = withErrorHandler(async () => {
     try {
       const token = decrypt(s.api_key_encrypted)
       const r = await syncYandexSettlements(s.id, token, s.shop_id_external)
-      results.push({ shopId: s.id, ...r })
+      // Refresh boost (Буст продаж) ad spend alongside settlements — best-effort
+      // so a boost-report failure never fails the settlements refresh.
+      let boostSpend: unknown
+      try {
+        boostSpend = await syncYandexBoostSpend(s.id, token, s.shop_id_external)
+      } catch (e) {
+        boostSpend = { ok: false, error: String(e).slice(0, 300) }
+      }
+      results.push({ shopId: s.id, ...r, boostSpend })
     } catch (e) {
       // 2000-char slice (not 300) so a DB error's full statement +
       // reason survives — the tooltip renders long text fine.

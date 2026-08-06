@@ -1,4 +1,4 @@
-import { eq, ne, and, or, isNull, inArray, gte } from 'drizzle-orm'
+import { eq, ne, and, or, isNull, inArray, gte, sql } from 'drizzle-orm'
 import { db, shops, productAdsStats } from '@/lib/db'
 import { getCurrentUserId } from '@/lib/db/shop-context'
 import type { AdsStatsSummary, MarketplaceType } from '@/lib/types'
@@ -51,4 +51,55 @@ export async function getAdsStats(
     })
   }
   return map
+}
+
+/** Per-marketplace ad-spend rollup for the Advertising page. Sources
+ *  product_ads_stats (the same table the P&L "Реклама" line reads) and splits
+ *  cash vs. bonus so the Yandex boost breakdown is visible. Marketplace comes
+ *  from the shop, not the nullable product_ads_stats.marketplace column, so
+ *  legacy WB rows are still attributed correctly. */
+export interface AdSpendByMarketplace {
+  marketplace: MarketplaceType
+  spend: number
+  cash: number
+  bonus: number
+  impressions: number
+  clicks: number
+}
+
+export async function getAdSpendByMarketplace(days = 30): Promise<AdSpendByMarketplace[]> {
+  const userId = await getCurrentUserId()
+  if (!userId) return []
+
+  const since = new Date()
+  since.setDate(since.getDate() - days + 1)
+  const sinceStr = since.toISOString().split('T')[0]
+
+  const rows = await db.select({
+    marketplace: shops.marketplace,
+    spend:       sql<number>`coalesce(sum(${productAdsStats.spend}), 0)`,
+    cash:        sql<number>`coalesce(sum(${productAdsStats.cash_spend}), 0)`,
+    bonus:       sql<number>`coalesce(sum(${productAdsStats.bonus_spend}), 0)`,
+    impressions: sql<number>`coalesce(sum(${productAdsStats.impressions}), 0)`,
+    clicks:      sql<number>`coalesce(sum(${productAdsStats.clicks}), 0)`,
+  }).from(productAdsStats)
+    .innerJoin(shops, eq(productAdsStats.shop_id, shops.id))
+    .where(and(
+      eq(shops.user_id, userId),
+      or(isNull(shops.shop_id_external), ne(shops.shop_id_external, 'DEMO')),
+      gte(productAdsStats.date, sinceStr),
+    ))
+    .groupBy(shops.marketplace)
+
+  return rows
+    .map(r => ({
+      marketplace: r.marketplace as MarketplaceType,
+      spend:       Number(r.spend),
+      cash:        Number(r.cash),
+      bonus:       Number(r.bonus),
+      impressions: Number(r.impressions),
+      clicks:      Number(r.clicks),
+    }))
+    .filter(r => r.spend > 0 || r.impressions > 0 || r.clicks > 0)
+    .sort((a, b) => b.spend - a.spend)
 }

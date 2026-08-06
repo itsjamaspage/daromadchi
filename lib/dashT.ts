@@ -293,6 +293,8 @@ export const dashT = {
       pageTitle: 'Reklama', pageSubtitle: 'CPC va CPO reklama kampaniyalari tahlili',
       noData: "Reklama ma'lumotlari yo'q", noDataDesc: "Ma'lumotlar ko'rsatilishi uchun do'konni sinxronlang. Siz quyidagi savdo maydonchalarida reklama boshqarish kabinetiga o'tishingiz mumkin:",
       goUzum: "Uzum seller kabinetiga o'tish", goWb: 'Wildberries kabinetiga o\'tish', goYandex: 'Yandex Market kabinetiga o\'tish',
+      colMarketplace: 'Savdo maydonchasi', colCash: 'Pul (naqd)', colBonus: 'Bonus',
+      bonusNote: 'Yandex Bust: pul + bonus (Vzaimozachyot) alohida.',
     },
     reviews: {
       kpiTotal: 'Jami izohlar', kpiAvgRating: "O'rtacha reyting",
@@ -693,6 +695,8 @@ export const dashT = {
       pageTitle: 'Advertising', pageSubtitle: 'CPC and CPO ad campaign analytics',
       noData: 'No advertising data', noDataDesc: 'Sync your store to see ad data. You can also manage your campaigns directly in the marketplace seller portals:',
       goUzum: 'Go to Uzum seller portal', goWb: 'Go to Wildberries portal', goYandex: 'Go to Yandex Market portal',
+      colMarketplace: 'Marketplace', colCash: 'Cash', colBonus: 'Bonus',
+      bonusNote: 'Yandex Boost: cash + bonus (mutual settlement) shown separately.',
     },
     reviews: {
       kpiTotal: 'Total reviews', kpiAvgRating: 'Avg rating',
@@ -1090,6 +1094,8 @@ export const dashT = {
       pageTitle: 'Реклама', pageSubtitle: 'Аналитика рекламных кампаний CPC и CPO',
       noData: 'Нет данных по рекламе', noDataDesc: 'Синхронизируйте магазин для отображения рекламных данных. Вы также можете управлять кампаниями напрямую в кабинетах продавца:',
       goUzum: 'Перейти в кабинет Uzum', goWb: 'Перейти в кабинет Wildberries', goYandex: 'Перейти в кабинет Яндекс.Маркет',
+      colMarketplace: 'Маркетплейс', colCash: 'Деньги', colBonus: 'Бонусы',
+      bonusNote: 'Яндекс Буст: деньги + бонусы (взаимозачёт) показаны отдельно.',
     },
     reviews: {
       kpiTotal: 'Всего отзывов', kpiAvgRating: 'Средний рейтинг',
