@@ -16,7 +16,7 @@ import { helpContent, type HelpSection } from '@/lib/help-tooltips'
 
 type NavItem = { href: string; key: string; icon: React.ElementType }
 
-const UPCOMING_KEYS = new Set(['advertising', 'seasonality', 'team'])
+const UPCOMING_KEYS = new Set(['seasonality', 'team'])
 
 // Order matters: active items first, then everything in UPCOMING_KEYS
 // last so all "coming soon" entries group at the bottom of the sidebar.
@@ -31,17 +31,12 @@ const storeNavItems: NavItem[] = [
   { href: '/dashboard/calculator',     key: 'calculator',    icon: Calculator      },
   { href: '/dashboard/alerts',         key: 'alerts',        icon: AlertTriangle   },
   { href: '/dashboard/payouts',        key: 'payouts',       icon: CreditCard      },
-  { href: '/dashboard/team',           key: 'team',          icon: Users           },
   { href: '/dashboard/advertising',    key: 'advertising',   icon: Megaphone       },
+  { href: '/dashboard/team',           key: 'team',          icon: Users           },
   { href: '/dashboard/seasonality',    key: 'seasonality',   icon: CalendarDays    },
 ]
 
 const UPCOMING_TEXT: Record<string, { uz: string; en: string; ru: string }> = {
-  advertising: {
-    uz: "Reklama bo'limi tez orada ishga tushadi!",
-    en: 'Advertising section is coming soon!',
-    ru: 'Раздел рекламы скоро будет доступен!',
-  },
   seasonality: {
     uz: "Mavsumiylik bo'limi tez orada ishga tushadi!",
     en: 'Seasonality section is coming soon!',
