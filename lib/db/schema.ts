@@ -268,6 +268,17 @@ export const productAdsStats = pgTable('product_ads_stats', {
   spend:            numeric('spend').default('0').notNull(),
   orders_from_ads:  integer('orders_from_ads').default(0).notNull(),
   revenue_from_ads: numeric('revenue_from_ads').default('0').notNull(),
+  // Which marketplace this ad-spend row came from (nullable — legacy WB rows
+  // predate this column and derive their marketplace from the shop instead).
+  marketplace:      text('marketplace'),
+  // Cash vs. bonus split of `spend`. `spend` stays = cash_spend + bonus_spend so
+  // the P&L "Реклама" line keeps reading a single column. Yandex boost lands the
+  // Взаимозачёт credit in bonus_spend, so cash can be 0 while spend is not.
+  cash_spend:       numeric('cash_spend').default('0').notNull(),
+  bonus_spend:      numeric('bonus_spend').default('0').notNull(),
+  // Human-readable source of the spend ("yandex-boost", or the matched Uzum
+  // expense source string) — surfaced so the real source is auditable.
+  source_label:     text('source_label'),
 }, (t) => [
   uniqueIndex('product_ads_stats_shop_sku_date_idx').on(t.shop_id, t.sku, t.date),
 ])
