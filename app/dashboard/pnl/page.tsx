@@ -353,6 +353,19 @@ export default async function PnlPage({ searchParams }: Props) {
                     <td className={`${num} font-bold`}>{fmt(totals.net)}</td>
                     <td className={`${num} font-bold`}>{avgMargin.toFixed(1)}%</td>
                   </tr>
+                  {/* Marketplace-withheld subtotal: commission + delivery +
+                      acquiring only (what the marketplace itself took), a
+                      readability sum of cells already shown above — distinct
+                      from the all-costs total below (which adds tax/ads/COGS).
+                      No new calculation: purely the sum of displayed figures. */}
+                  <tr>
+                    <td colSpan={4} className="px-4 py-2 text-xs text-[var(--text-muted)]" />
+                    <td colSpan={6} className="px-4 py-2 text-right text-xs text-[var(--text-muted)]">
+                      {d.pnlMpWithheld} ({d.commission2} + {d.delivery} + {d.acquiringLabel}):
+                    </td>
+                    <td className={`${num} font-bold`}>{fmt(totals.commission + totals.delivery + totals.acquiring)}</td>
+                    <td />
+                  </tr>
                   <tr>
                     <td colSpan={4} className="px-4 py-3 text-xs text-[var(--text-muted)]" />
                     <td colSpan={6} className="px-4 py-3 text-right text-xs text-[var(--text-muted)]">
