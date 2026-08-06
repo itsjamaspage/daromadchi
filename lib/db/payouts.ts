@@ -308,7 +308,8 @@ export async function getPayoutEntries(): Promise<PayoutEntry[]> {
           otherDeductions: 0,
           netPayout,
           ordersCount: v.count,
-          status: isPast ? 'estimated_paid' : 'estimated_pending',
+          // Real Yandex netting data — a confirmed payout, not an estimate.
+          status: isPast ? 'paid' : 'pending',
           payoutDate: null,
           payoutEstimated: false,
           items: itemsMap.get(key) ?? [],
@@ -380,7 +381,8 @@ export async function getPayoutEntries(): Promise<PayoutEntry[]> {
           otherDeductions: 0,
           netPayout: net,
           ordersCount: v.count,
-          status: isPast ? 'estimated_paid' : 'estimated_pending',
+          // Real Uzum /finance/orders data — a confirmed payout, not an estimate.
+          status: isPast ? 'paid' : 'pending',
           payoutDate: null,
           payoutEstimated: false,
           items: itemsMap.get(key) ?? [],
@@ -437,6 +439,14 @@ export async function getPayoutEntries(): Promise<PayoutEntry[]> {
     return [entry]
   })
 
-  entries.sort((a, b) => b.period.localeCompare(a.period))
-  return entries
+  // Real payout data ONLY. Drop the estimate fallback (payoutEstimated) and
+  // the Yandex "awaiting" placeholder (awaitingSettlement) so a period appears
+  // here only once the marketplace has published its real settlement/netting
+  // for it — never a percentage estimate, never a zero-filled row. The two
+  // settled branches above are the only ones with payoutEstimated=false AND
+  // awaitingSettlement=false, so only genuinely-settled periods survive.
+  // (The P&L still surfaces these orders as revenue + a "pending" fee.)
+  const realEntries = entries.filter(e => !e.payoutEstimated && !e.awaitingSettlement)
+  realEntries.sort((a, b) => b.period.localeCompare(a.period))
+  return realEntries
 }
