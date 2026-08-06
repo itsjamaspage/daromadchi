@@ -3,7 +3,8 @@ import Link from 'next/link'
 import { Suspense } from 'react'
 import { count, inArray } from 'drizzle-orm'
 import { db, orders } from '@/lib/db'
-import { getPnl } from '@/lib/db/pnl'
+import { getPnl, getCogsBreakdown } from '@/lib/db/pnl'
+import CogsCardEditor from '@/components/dashboard/CogsCardEditor'
 import { getUserShops, getShopIds } from '@/lib/db/shop-context'
 import PnlChart from './PnlChart'
 import ExportButton from '@/components/dashboard/ExportButton'
@@ -78,11 +79,14 @@ export default async function PnlPage({ searchParams }: Props) {
   const todayEnd = new Date()
   todayEnd.setHours(23, 59, 59, 999)
 
-  const [t, lang, pnl, todayPnl, userShops] = await Promise.all([
+  const [t, lang, pnl, todayPnl, userShops, cogsProducts] = await Promise.all([
     getT(), getLang(),
     getPnl({ from: range.from, to: range.to, bucket: range.bucket, marketplace }),
     getPnl({ from: todayStart, to: todayEnd, bucket: 'day', marketplace }),
     getUserShops(),
+    // Products behind the range's Себестоимость — backs the card's inline
+    // per-product cost editor. Same range/marketplace as the totals.
+    getCogsBreakdown({ from: range.from, to: range.to, marketplace }),
   ])
   const d = t.dashboard
   const locale = lang === 'ru' ? 'ru-RU' : lang === 'en' ? 'en-US' : 'uz-UZ'
@@ -227,28 +231,36 @@ export default async function PnlPage({ searchParams }: Props) {
             return (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
                 {[
-                  { label: d.totalRevenuePnl,   value: fmt(totals.revenue),                     hint: d.pnlHintRevenue },
-                  { label: d.commission2,       value: est(totals.commission, anyEstimated),     hint: d.pnlHintCommission },
+                  { label: d.totalRevenuePnl,   value: fmt(totals.revenue),                     hint: d.pnlHintRevenue,      node: null },
+                  { label: d.commission2,       value: est(totals.commission, anyEstimated),     hint: d.pnlHintCommission,   node: null },
                   // Delivery as its own headline card, next to Комиссия — the
                   // same total shown in the table (mirrors its pending state so
                   // an unsettled Yandex delivery reads "pending", not a zero).
-                  { label: d.delivery,          value: totalsFeePending && totals.delivery === 0 ? pendingCell : fmt(totals.delivery), hint: d.pnlHintDelivery },
-                  { label: d.marketplacePayout, value: est(marketplacePayout, anyEstimated),     hint: d.marketplacePayoutHint },
-                  { label: d.cogsLabel,         value: fmt(totals.cogs),                         hint: d.pnlHintCogs },
-                  { label: d.netNoCommission,   value: fmt(totals.net),                          hint: d.pnlHintNet },
-                ].map(({ label, value, hint }) => (
+                  { label: d.delivery,          value: totalsFeePending && totals.delivery === 0 ? pendingCell : fmt(totals.delivery), hint: d.pnlHintDelivery, node: null },
+                  { label: d.marketplacePayout, value: est(marketplacePayout, anyEstimated),     hint: d.marketplacePayoutHint, node: null },
+                  // Себестоимость is the one user-editable input: its card opens
+                  // a per-product cost editor (writes real cost_price, P&L
+                  // recomputes). node overrides the plain value render.
+                  { label: d.cogsLabel,         value: fmt(totals.cogs),                         hint: d.pnlHintCogs,
+                    node: <CogsCardEditor
+                      total={fmt(totals.cogs)}
+                      products={cogsProducts}
+                      labels={{ title: d.pnlCogsEditTitle, hint: d.pnlCogsEditHint, product: d.pnlCogsEditProduct, qty: d.pnlCogsEditQty, cost: d.pnlCogsEditCost, empty: d.pnlCogsEditEmpty, done: d.pnlCogsEditDone }}
+                    /> },
+                  { label: d.netNoCommission,   value: fmt(totals.net),                          hint: d.pnlHintNet,          node: null },
+                ].map(({ label, value, hint, node }) => (
                   <div key={label} className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl p-5">
                     <div className="flex items-center gap-1 mb-2">
                       <p className="text-[var(--text-muted)] text-xs">{label}</p>
                       {/* Help "?" — hover text explains where the number comes
-                          from and, where it's user-editable (e.g. Себестоимость
-                          via product cost prices), where to change it so the P&L
+                          from and, where it's user-editable (Себестоимость via
+                          product cost prices), where to change it so the P&L
                           updates. Native title tooltip, matching the table's "?". */}
                       <span title={hint} aria-label={hint} className="cursor-help text-[var(--text-muted)] hover:text-[var(--c1)] transition-colors flex-shrink-0">
                         <HelpCircle className="w-3.5 h-3.5" />
                       </span>
                     </div>
-                    <p className="text-xl font-bold text-[var(--text-base)]">{value}</p>
+                    {node ?? <p className="text-xl font-bold text-[var(--text-base)]">{value}</p>}
                   </div>
                 ))}
               </div>

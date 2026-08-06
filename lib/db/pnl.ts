@@ -271,6 +271,52 @@ export async function getPnl(opts: PnlOpts): Promise<{ rows: PnlRow[]; params: P
   return { rows: result, params }
 }
 
+/** One row per product sold in the range — backs the P&L "Себестоимость"
+ *  card's inline cost editor. COGS = Σ(qty × cost_price), so the only
+ *  coherent way to change it is per-product cost. Cancelled/returned are
+ *  excluded (they don't contribute to COGS), matching getPnl's cogs query. */
+export interface CogsProduct {
+  productId: string
+  title: string | null
+  sku: string | null
+  qty: number
+  costPrice: number | null
+}
+
+export async function getCogsBreakdown(opts: {
+  from: Date; to: Date; marketplace?: MarketplaceType
+}): Promise<CogsProduct[]> {
+  const shopIds = await getShopIds(opts.marketplace)
+  if (!shopIds || shopIds.length === 0) return []
+  const rows = await db.select({
+    productId: orderItems.product_id,
+    title:     products.title,
+    sku:       products.sku,
+    qty:       sql<number>`coalesce(sum(${orderItems.quantity}), 0)`.as('qty'),
+    costPrice: products.cost_price,
+  }).from(orderItems)
+    .innerJoin(orders, eq(orderItems.order_id, orders.id))
+    .innerJoin(products, eq(orderItems.product_id, products.id))
+    .where(and(
+      inArray(orders.shop_id, shopIds),
+      gte(orders.ordered_at, opts.from),
+      sql`${orders.ordered_at} <= ${opts.to}`,
+      ne(orders.status, 'cancelled'),
+      ne(orders.status, 'returned'),
+    ))
+    .groupBy(orderItems.product_id, products.title, products.sku, products.cost_price)
+  return rows
+    .filter((r): r is typeof r & { productId: string } => r.productId != null)
+    .map(r => ({
+      productId: r.productId,
+      title:     r.title,
+      sku:       r.sku,
+      qty:       Number(r.qty),
+      costPrice: r.costPrice != null ? Number(r.costPrice) : null,
+    }))
+    .sort((a, b) => b.qty - a.qty)
+}
+
 /** @deprecated use getPnl instead */
 export async function getMonthlyPnl(months = 6, marketplace?: MarketplaceType) {
   const to = new Date()
