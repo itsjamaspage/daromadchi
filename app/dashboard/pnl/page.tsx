@@ -1,4 +1,5 @@
-import { FileText, Settings, HelpCircle } from 'lucide-react'
+import { FileText, Settings } from 'lucide-react'
+import InfoTooltip from '@/components/dashboard/InfoTooltip'
 import Link from 'next/link'
 import { Suspense } from 'react'
 import { count, inArray } from 'drizzle-orm'
@@ -252,13 +253,10 @@ export default async function PnlPage({ searchParams }: Props) {
                   <div key={label} className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl p-5">
                     <div className="flex items-center gap-1 mb-2">
                       <p className="text-[var(--text-muted)] text-xs">{label}</p>
-                      {/* Help "?" — hover text explains where the number comes
-                          from and, where it's user-editable (Себестоимость via
-                          product cost prices), where to change it so the P&L
-                          updates. Native title tooltip, matching the table's "?". */}
-                      <span title={hint} aria-label={hint} className="cursor-help text-[var(--text-muted)] hover:text-[var(--c1)] transition-colors flex-shrink-0">
-                        <HelpCircle className="w-3.5 h-3.5" />
-                      </span>
+                      {/* Real popover — shows on hover AND on click/tap. The
+                          native `title` attribute never appears on touch and
+                          lags on desktop, so the "?" was doing nothing useful. */}
+                      <InfoTooltip text={hint} />
                     </div>
                     {node ?? <p className="text-xl font-bold text-[var(--text-base)]">{value}</p>}
                   </div>
