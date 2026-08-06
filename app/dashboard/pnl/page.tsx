@@ -225,10 +225,14 @@ export default async function PnlPage({ searchParams }: Props) {
           {(() => {
             const marketplacePayout = totals.revenue - totals.commission - totals.delivery
             return (
-              <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
                 {[
                   { label: d.totalRevenuePnl,   value: fmt(totals.revenue),                     hint: null },
                   { label: d.commission2,       value: est(totals.commission, anyEstimated),     hint: null },
+                  // Delivery as its own headline card, next to Комиссия — the
+                  // same total shown in the table (mirrors its pending state so
+                  // an unsettled Yandex delivery reads "pending", not a zero).
+                  { label: d.delivery,          value: totalsFeePending && totals.delivery === 0 ? pendingCell : fmt(totals.delivery), hint: null },
                   { label: d.marketplacePayout, value: est(marketplacePayout, anyEstimated),     hint: d.marketplacePayoutHint },
                   { label: d.cogsLabel,         value: fmt(totals.cogs),                         hint: null },
                   { label: d.netNoCommission,   value: fmt(totals.net),                          hint: null },
