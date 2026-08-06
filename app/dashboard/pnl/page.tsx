@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { Suspense } from 'react'
 import { count, inArray } from 'drizzle-orm'
 import { db, orders } from '@/lib/db'
-import { getPnl, getCogsBreakdown } from '@/lib/db/pnl'
+import { getPnl, getCogsBreakdown, getDeliveryByMarketplace } from '@/lib/db/pnl'
 import CogsCardEditor from '@/components/dashboard/CogsCardEditor'
 import { getUserShops, getShopIds } from '@/lib/db/shop-context'
 import PnlChart from './PnlChart'
@@ -80,7 +80,7 @@ export default async function PnlPage({ searchParams }: Props) {
   const todayEnd = new Date()
   todayEnd.setHours(23, 59, 59, 999)
 
-  const [t, lang, pnl, todayPnl, userShops, cogsProducts] = await Promise.all([
+  const [t, lang, pnl, todayPnl, userShops, cogsProducts, deliveryByMp] = await Promise.all([
     getT(), getLang(),
     getPnl({ from: range.from, to: range.to, bucket: range.bucket, marketplace }),
     getPnl({ from: todayStart, to: todayEnd, bucket: 'day', marketplace }),
@@ -88,6 +88,8 @@ export default async function PnlPage({ searchParams }: Props) {
     // Products behind the range's Себестоимость — backs the card's inline
     // per-product cost editor. Same range/marketplace as the totals.
     getCogsBreakdown({ from: range.from, to: range.to, marketplace }),
+    // Per-store split of the Доставка figure, so its tooltip names the store.
+    getDeliveryByMarketplace({ from: range.from, to: range.to, marketplace }),
   ])
   const d = t.dashboard
   const locale = lang === 'ru' ? 'ru-RU' : lang === 'en' ? 'en-US' : 'uz-UZ'
@@ -154,6 +156,13 @@ export default async function PnlPage({ searchParams }: Props) {
     net:       s.net + m.net,
   }), { orders: 0, cancelled: 0, revenue: 0, commission: 0, delivery: 0, acquiring: 0, tax: 0, ads: 0, cogs: 0, net: 0 })
   const totalExpenses = totals.commission + totals.delivery + totals.acquiring + totals.tax + totals.ads + totals.cogs
+  // Доставка tooltip: name the store(s) that actually charged the logistics,
+  // from the per-marketplace settlement split. Only non-zero stores are shown.
+  const mpName = (mp: string) => mp === 'uzum' ? 'Uzum' : mp === 'yandex_market' ? 'Yandex Market' : mp
+  const deliveryStores = deliveryByMp.filter(s => s.delivery > 0)
+  const deliveryHint = deliveryStores.length > 0
+    ? `${d.pnlHintDelivery} ${d.pnlDeliveryByStore} ${deliveryStores.map(s => `${mpName(s.marketplace)} — ${fmt(s.delivery)}`).join(' · ')}`
+    : d.pnlHintDelivery
   const avgMargin = totals.revenue > 0 ? (totals.net / totals.revenue) * 100 : 0
   const est = (v: number, isEst: boolean, tooltip?: string) => {
     if (!isEst || v === 0) return fmt(v)
@@ -237,7 +246,7 @@ export default async function PnlPage({ searchParams }: Props) {
                   // Delivery as its own headline card, next to Комиссия — the
                   // same total shown in the table (mirrors its pending state so
                   // an unsettled Yandex delivery reads "pending", not a zero).
-                  { label: d.delivery,          value: totalsFeePending && totals.delivery === 0 ? pendingCell : fmt(totals.delivery), hint: d.pnlHintDelivery, node: null },
+                  { label: d.delivery,          value: totalsFeePending && totals.delivery === 0 ? pendingCell : fmt(totals.delivery), hint: deliveryHint, node: null },
                   { label: d.marketplacePayout, value: est(marketplacePayout, anyEstimated),     hint: d.marketplacePayoutHint, node: null },
                   // Себестоимость is the one user-editable input: its card opens
                   // a per-product cost editor (writes real cost_price, P&L
@@ -249,14 +258,16 @@ export default async function PnlPage({ searchParams }: Props) {
                       labels={{ title: d.pnlCogsEditTitle, hint: d.pnlCogsEditHint, product: d.pnlCogsEditProduct, qty: d.pnlCogsEditQty, cost: d.pnlCogsEditCost, empty: d.pnlCogsEditEmpty, done: d.pnlCogsEditDone }}
                     /> },
                   { label: d.netNoCommission,   value: fmt(totals.net),                          hint: d.pnlHintNet,          node: null },
-                ].map(({ label, value, hint, node }) => (
+                ].map(({ label, value, hint, node }, i) => (
                   <div key={label} className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl p-5">
                     <div className="flex items-center gap-1 mb-2">
                       <p className="text-[var(--text-muted)] text-xs">{label}</p>
                       {/* Real popover — shows on hover AND on click/tap. The
                           native `title` attribute never appears on touch and
-                          lags on desktop, so the "?" was doing nothing useful. */}
-                      <InfoTooltip text={hint} />
+                          lags on desktop, so the "?" was doing nothing useful.
+                          Right-half cards open leftward so the last card's
+                          tooltip isn't clipped off the right edge. */}
+                      <InfoTooltip text={hint} align={i >= 3 ? 'right' : 'left'} />
                     </div>
                     {node ?? <p className="text-xl font-bold text-[var(--text-base)]">{value}</p>}
                   </div>

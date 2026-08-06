@@ -7,7 +7,7 @@ import { HelpCircle } from 'lucide-react'
 // AND on click/tap (state), because the native `title` attribute never appears
 // on touch and is delayed on desktop. Click-outside closes it. Used on the
 // P&L KPI cards to explain where each number comes from.
-export default function InfoTooltip({ text }: { text: string }) {
+export default function InfoTooltip({ text, align = 'left' }: { text: string; align?: 'left' | 'right' }) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLSpanElement>(null)
 
@@ -32,7 +32,7 @@ export default function InfoTooltip({ text }: { text: string }) {
       </button>
       <span
         role="tooltip"
-        className={`${open ? 'block' : 'hidden'} group-hover:block absolute left-0 top-full mt-1.5 z-50 w-56 max-w-[70vw] p-2.5 rounded-lg text-xs font-normal normal-case leading-snug shadow-xl pointer-events-none`}
+        className={`${open ? 'block' : 'hidden'} group-hover:block absolute ${align === 'right' ? 'right-0' : 'left-0'} top-full mt-1.5 z-50 w-56 max-w-[70vw] p-2.5 rounded-lg text-xs font-normal normal-case leading-snug shadow-xl pointer-events-none`}
         style={{
           background: 'var(--bg-card)',
           border: '1px solid var(--border)',
