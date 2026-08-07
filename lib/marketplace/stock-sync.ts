@@ -28,6 +28,14 @@ import type { MarketplaceType } from '@/lib/types'
 
 const IN_SCOPE: MarketplaceType[] = ['uzum', 'yandex_market']
 
+// A 'skipped' write worth notifying about: one where we couldn't target the
+// write and the seller must fix config (missing identifier / token). Benign
+// skips (stale_version dedup, not_stock_sync, marketplace_out_of_scope) stay
+// silent so a busy seller isn't spammed on every cycle.
+const ACTIONABLE_SKIP_REASONS = new Set([
+  'missing_barcode', 'missing_sku', 'missing_warehouse', 'missing_campaign', 'no_token',
+])
+
 function normalizeKey(sku: string): string {
   return sku.trim().toLowerCase().replace(/[\s\-_./]+/g, '')
 }
@@ -311,11 +319,13 @@ export async function syncStockSyncGroups(opts: RunOptions): Promise<StockSyncRu
         status: result.status, reason: result.reason,
       })
 
-      // Notify ONLY on an actual write attempt: 'sent' (success) or 'error'/
-      // 'blocked' (real failure the seller must fix manually). Operational
-      // states ('skipped' config/dedup, 'killed' switch) are not per-sale
-      // failures and are left out to avoid noise.
-      if (result.status === 'sent' || result.status === 'error' || result.status === 'blocked') {
+      // Notify on an actual write attempt — 'sent' (success), 'error'/'blocked'
+      // (real failure) — AND on an ACTIONABLE skip (missing identifier/token the
+      // seller must fix), so a stock update is never silently dropped. Benign
+      // skips (stale_version, not_stock_sync, killed switch) stay silent.
+      const actionableSkip = result.status === 'skipped'
+        && !!result.reason && ACTIONABLE_SKIP_REASONS.has(result.reason)
+      if (result.status === 'sent' || result.status === 'error' || result.status === 'blocked' || actionableSkip) {
         // Origin = the other group member with the most stock — the store that
         // held the unit and sold it, decrementing its own count.
         const origin = group.members

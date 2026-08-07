@@ -38,14 +38,25 @@ function label(mp: string): string {
   return MP_LABEL[mp] ?? mp
 }
 
+// Human-readable phrasing for the technical skip/error reasons, so a "skipped"
+// notification tells the seller WHAT to fix instead of a raw code. Unknown
+// reasons fall back to the raw string.
+const REASON_PHRASE: Record<string, string> = {
+  missing_sku:       'нет идентификатора товара',
+  missing_barcode:   'нет штрихкода',
+  missing_warehouse: 'нет склада',
+  missing_campaign:  'нет кампании',
+  no_token:          'нет токена',
+}
+
 function buildMessage(e: StockUpdateEvent): string {
   const store = label(e.targetMarketplace)
   if (e.ok) {
     const origin = e.originMarketplace ? ` (продажа на ${label(e.originMarketplace)})` : ''
     return `✅ ${e.sku}${origin}: остаток на ${store} обновлён ${e.listed}→${e.target}.`
   }
-  const why = e.reason ? ` (${e.reason})` : ''
-  return `⚠️ ${e.sku}: не удалось обновить остаток на ${store}${why}. Обновите вручную.`
+  const why = e.reason ? ` (${REASON_PHRASE[e.reason] ?? e.reason})` : ''
+  return `⚠️ ${e.sku}: остаток на ${store} НЕ обновлён${why}. Обновите вручную.`
 }
 
 /**
