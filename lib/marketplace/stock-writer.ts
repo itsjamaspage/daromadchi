@@ -298,15 +298,27 @@ export async function pushStock(params: PushStockParams): Promise<PushStockResul
     let respText = ''
     try { respText = await res.text() } catch { /* ignore */ }
     const status: StockWriteStatus = res.ok ? 'sent' : 'error'
+    // Compact, single-lined snippet of the marketplace's error body — the actual
+    // diagnostic for a 4xx (bad field, wrong DTO, unknown barcode, …). The full
+    // body still lands in response_body; this makes the audit `reason` column
+    // self-explanatory without a second lookup.
+    const bodySnippet = respText.replace(/\s+/g, ' ').trim().slice(0, 300)
+    // machineReason stays a stable, parseable code (`http_400`) — it's what the
+    // caller returns and what the notification/dedup path keys on, so a repeating
+    // failure keeps one identity. auditReason additionally carries the body.
+    const machineReason = res.ok ? undefined : `http_${res.status}`
+    const auditReason = res.ok
+      ? 'ok'
+      : bodySnippet ? `http_${res.status}: ${bodySnippet}` : `http_${res.status}`
     if (!res.ok) {
-      logger.error('stock_write_http_error', { shopId: shop.id, marketplace, url, http: res.status, body: respText.slice(0, 300) })
+      logger.error('stock_write_http_error', { shopId: shop.id, marketplace, url, http: res.status, body: respText.slice(0, 500) })
     }
     const logId = await audit({
       ...base, dry_run: false, endpoint: url, method, identifier, warehouse_id: whId,
-      status, reason: res.ok ? 'ok' : `http_${res.status}`, http_status: res.status,
+      status, reason: auditReason, http_status: res.status,
       request_body: body, response_body: respText.slice(0, 2000),
     })
-    return { status, reason: res.ok ? undefined : `http_${res.status}`, quantity: clamped, httpStatus: res.status, logId }
+    return { status, reason: machineReason, quantity: clamped, httpStatus: res.status, logId }
   } catch (err) {
     const blocked = err instanceof Error && /GUARD/.test(err.message)
     const status: StockWriteStatus = blocked ? 'blocked' : 'error'
