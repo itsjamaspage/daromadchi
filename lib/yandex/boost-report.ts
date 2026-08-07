@@ -250,3 +250,43 @@ export function parseBoostReport(buffer: ArrayBuffer, fallbackDate?: string): Bo
   }
   return results
 }
+
+export interface BoostParseDiagnostic {
+  sheetNames: string[]
+  headerFound: boolean
+  headerSheet: string | null
+  headerRowIndex: number      // 0-based; -1 if no header row recognized
+  dataRowsBelowHeader: number // non-empty, non-footer rows after the header
+}
+
+/**
+ * Explain WHY parseBoostReport returned zero rows, so an empty report (Yandex
+ * settles spend ~1 day in arrears) can be told apart from a real parser miss —
+ * the two look identical from an empty product_ads_stats otherwise. Reuses the
+ * exact same spend-anchored header scan as parseBoostReport:
+ *   - headerFound=false            → structure unrecognized (real problem)
+ *   - headerFound, dataRows=0       → report genuinely empty (expected lag)
+ *   - headerFound, dataRows>0       → header + rows present but parsed 0 (parser miss)
+ */
+export function diagnoseBoostReport(buffer: ArrayBuffer): BoostParseDiagnostic {
+  const wb = XLSX.read(buffer, { type: 'array', cellDates: true })
+  const sheetNames = wb.SheetNames.slice()
+  for (const name of wb.SheetNames) {
+    const s = wb.Sheets[name]
+    if (!s) continue
+    const r: unknown[][] = XLSX.utils.sheet_to_json(s, { header: 1, raw: true, defval: null })
+    const idx = r.findIndex(row =>
+      Array.isArray(row) &&
+      (findCol(row, BOOST_CASH_HEADERS) >= 0 || findCol(row, BOOST_BONUS_HEADERS) >= 0))
+    if (idx < 0) continue
+    let dataRows = 0
+    for (let i = idx + 1; i < r.length; i++) {
+      const row = r[i]
+      if (!Array.isArray(row) || row.every(c => c == null || c === '')) continue
+      if (row.some(v => { const t = String(v ?? '').trim(); return t === 'Итого' || t === 'Итого:' || t === 'Всего' })) continue
+      dataRows++
+    }
+    return { sheetNames, headerFound: true, headerSheet: name, headerRowIndex: idx, dataRowsBelowHeader: dataRows }
+  }
+  return { sheetNames, headerFound: false, headerSheet: null, headerRowIndex: -1, dataRowsBelowHeader: 0 }
+}

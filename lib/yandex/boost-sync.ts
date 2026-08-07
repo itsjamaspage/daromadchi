@@ -6,6 +6,7 @@ import {
   pollReportUntilReady,
   downloadReport,
   parseBoostReport,
+  diagnoseBoostReport,
   describeNettingReport,
 } from './boost-report'
 
@@ -114,12 +115,31 @@ export async function syncYandexBoostSpend(
   // fallback those rows would be dropped (a primary cause of 0 parsed rows).
   const parsed = parseBoostReport(buffer, dateTo)
   if (parsed.length === 0) {
-    // Report downloaded but parsed to 0 rows from a non-empty file → parser
-    // miss. Log the shape snapshot (sheet names + first rows) so the parser
-    // can be reconciled against the real sheet without another blind deploy.
+    // Zero rows has THREE distinct causes that otherwise look identical from an
+    // empty product_ads_stats. Diagnose which, so the log says exactly which —
+    // an empty report (Yandex settles spend ~1 day in arrears) must NOT read as
+    // a bug, and a real parser/structure miss must NOT read as harmless lag.
+    const diag = diagnoseBoostReport(buffer)
+    if (!diag.headerFound) {
+      // No recognizable boost header anywhere → structure unexpected. Real
+      // problem: dump the shape so the parser can be reconciled.
+      const shape = describeNettingReport(buffer)
+      console.error('[yandex-boost] STRUCTURE UNRECOGNIZED — no boost header found', { shopId, reportId, bufferBytes: buffer.byteLength, diag, shape: JSON.stringify(shape).slice(0, 2000) })
+      return { ok: true, inserted: 0, skipped: 'boost report structure unrecognized (no header)', debug: { reportId, reason: 'header_not_found', diag, shape } }
+    }
+    if (diag.dataRowsBelowHeader === 0) {
+      // Header present, zero data rows → the report is genuinely empty. Yandex
+      // finalizes "Фактические расходы"/"Списано бонусов" ~1 day in arrears, so
+      // recent spend simply isn't in the downloadable report yet. Expected lag,
+      // NOT an error — the next cron cycle after Yandex settles will pick it up.
+      console.log('[yandex-boost] REPORT EMPTY (expected Yandex settlement lag ~1 day) — no finalized boost spend rows yet, will land on a later sync', { shopId, reportId, dateFrom, dateTo, diag })
+      return { ok: true, inserted: 0, skipped: 'boost report empty — Yandex settlement lag (expected, not an error)', debug: { reportId, reason: 'empty_report_lag', diag } }
+    }
+    // Header AND data rows present but the parser extracted nothing → a real
+    // parser miss. Dump the shape so column/date mapping can be reconciled.
     const shape = describeNettingReport(buffer)
-    console.error('[yandex-boost] parsed 0 rows from non-empty XLSX (parser miss)', { shopId, reportId, bufferBytes: buffer.byteLength, shape: JSON.stringify(shape).slice(0, 2000) })
-    return { ok: true, inserted: 0, skipped: 'parsed 0 boost rows from a non-empty XLSX (parser miss?)', debug: { reportId, bufferBytes: buffer.byteLength, shape } }
+    console.error('[yandex-boost] PARSER MISS — header + data rows present but parsed 0', { shopId, reportId, bufferBytes: buffer.byteLength, diag, shape: JSON.stringify(shape).slice(0, 2000) })
+    return { ok: true, inserted: 0, skipped: 'boost parser miss — header + rows present, parsed 0', debug: { reportId, reason: 'parser_miss', diag, shape } }
   }
 
   // Aggregate per (date, campaignId) — the report is usually already one row
