@@ -34,6 +34,8 @@ export interface BackfillResult {
   /** Products still missing the identifier needed for a write, after backfill. */
   missingAfter: number
   error?: string
+  /** Present only on a 0-match run: the raw shape of both sides, for diagnosis. */
+  debug?: Record<string, unknown>
 }
 
 function nonBlank(v: unknown): string | null {
@@ -99,8 +101,7 @@ export async function backfillShopIdentifiers(shop: BackfillShop): Promise<Backf
       // every key they actually carry), and our products' keys — so the exact
       // field/id/case mismatch is visible without another blind round.
       if (base.matched === 0 && rows.length > 0) {
-        logger.warn('uzum_barcode_backfill_no_match', {
-          shopId: shop.id,
+        const diag = {
           stockCount: stocks.length,
           sampleRecords: stocks.slice(0, 3).map(s => ({
             barcode: s.barcode, skuId: s.skuId, sku: s.sku, sellerSku: s.sellerSku,
@@ -109,7 +110,9 @@ export async function backfillShopIdentifiers(shop: BackfillShop): Promise<Backf
             allKeys: Object.keys(s as Record<string, unknown>),
           })),
           ourProducts: rows.slice(0, 3).map(p => ({ mpid: p.mpid, sku: p.sku })),
-        })
+        }
+        logger.warn('uzum_barcode_backfill_no_match', { shopId: shop.id, ...diag })
+        base.debug = diag // also returned in the backfill route's JSON response
       }
     } else if (shop.marketplace === 'yandex_market') {
       const campaignId = nonBlank(shop.shop_id_external)
