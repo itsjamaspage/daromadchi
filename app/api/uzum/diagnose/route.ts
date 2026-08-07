@@ -100,9 +100,11 @@ function collectStatusEnums(node: unknown, out: Set<string>, depth = 0): void {
   }
 }
 
-// Fetch Uzum's OpenAPI spec (tries the common paths) and extract the FBS order
-// status enum, so we sweep real values instead of guessing.
-async function discoverStatuses(token: string): Promise<{ specPath: string | null; discoveredStatuses: string[] }> {
+// Fetch Uzum's OpenAPI spec JSON (tries the common paths). Read-only — a plain
+// GET the readonly guard always allows. Returns the parsed spec + the path it
+// came from, or null when none of the candidates serve a usable spec.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function fetchUzumOpenApiSpec(token: string): Promise<{ specPath: string; spec: any } | null> {
   // The swagger UI is served under /swagger/… (see lib/uzum/client.ts), so the
   // spec most likely lives there too — try those first.
   const paths = [
@@ -118,13 +120,78 @@ async function discoverStatuses(token: string): Promise<{ specPath: string | nul
       if (!res.ok) continue
       const json = await res.json().catch(() => null)
       if (!json || (typeof json === 'object' && !('openapi' in json) && !('swagger' in json) && !('components' in json) && !('paths' in json))) continue
-      const out = new Set<string>()
-      collectStatusEnums(json, out)
-      if (out.size > 0) return { specPath: p, discoveredStatuses: [...out] }
-      return { specPath: p, discoveredStatuses: [] }
+      return { specPath: p, spec: json }
     } catch { /* try next path */ }
   }
-  return { specPath: null, discoveredStatuses: [] }
+  return null
+}
+
+// Resolve a possibly-$ref schema node against the spec root ($ref chains only).
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function resolveRef(spec: any, node: any, depth = 0): any {
+  if (depth > 8 || node == null || typeof node !== 'object') return node
+  if (typeof node.$ref === 'string') {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let cur: any = spec
+    for (const part of node.$ref.replace(/^#\//, '').split('/')) cur = cur?.[part]
+    return resolveRef(spec, cur, depth + 1)
+  }
+  return node
+}
+
+// Compact, up-to-two-level description of a request schema: the field names,
+// their types/enums, and which are REQUIRED. This is what disambiguates the
+// stock-write DTO (right field names? is fbsLinked here and required?).
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function describeSchema(spec: any, schema: any, depth = 0): unknown {
+  schema = resolveRef(spec, schema)
+  if (!schema || typeof schema !== 'object') return null
+  if (schema.type === 'array' || schema.items) {
+    return { type: 'array', items: depth < 3 ? describeSchema(spec, schema.items, depth + 1) : '…' }
+  }
+  const props = schema.properties && typeof schema.properties === 'object' ? schema.properties : null
+  if (!props) return { type: schema.type ?? 'unknown', ...(schema.enum ? { enum: schema.enum } : {}) }
+  const out: Record<string, unknown> = {}
+  for (const [k, v] of Object.entries(props)) {
+    const rv = resolveRef(spec, v)
+    if (depth < 2 && rv && (rv.type === 'array' || rv.properties)) {
+      out[k] = describeSchema(spec, rv, depth + 1)
+    } else {
+      out[k] = {
+        type: rv?.type ?? 'unknown',
+        ...(rv?.format ? { format: rv.format } : {}),
+        ...(rv?.enum ? { enum: rv.enum } : {}),
+      }
+    }
+  }
+  return { type: 'object', required: schema.required ?? [], properties: out }
+}
+
+// Extract the AUTHORITATIVE request DTO for the Uzum stock-WRITE endpoint(s)
+// straight from Uzum's OpenAPI spec — every /fbs/sku/stocks path with a POST or
+// PUT, resolved to concrete field names/required flags. This is the ground truth
+// for fixing validation-failed-001 without guessing the shape.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function discoverStockWriteDto(spec: any): unknown[] {
+  const results: unknown[] = []
+  const paths = spec?.paths
+  if (!paths || typeof paths !== 'object') return results
+  for (const [path, ops] of Object.entries(paths)) {
+    if (!/\/fbs\/sku\/stocks\/?$/.test(path)) continue
+    for (const method of ['post', 'put', 'patch']) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const op = (ops as any)?.[method]
+      if (!op) continue
+      const schema = op.requestBody?.content?.['application/json']?.schema
+      results.push({
+        path,
+        method: method.toUpperCase(),
+        summary: op.summary ?? op.operationId ?? null,
+        requestBody: schema ? describeSchema(spec, schema) : null,
+      })
+    }
+  }
+  return results
 }
 
 export const GET = withErrorHandler(async (req: Request) => {
@@ -171,7 +238,18 @@ export const GET = withErrorHandler(async (req: Request) => {
   const orderProbes: Probe[] = []
   const gap = () => new Promise(r => setTimeout(r, 2000))
 
-  const { specPath, discoveredStatuses } = await discoverStatuses(token)
+  // Fetch Uzum's OpenAPI spec ONCE and mine it for both the FBS order-status
+  // enum AND the authoritative stock-WRITE request DTO (the ground truth for the
+  // validation-failed-001 the live stock write returns).
+  const specResult = await fetchUzumOpenApiSpec(token)
+  const specPath = specResult?.specPath ?? null
+  const discoveredStatuses: string[] = (() => {
+    if (!specResult) return []
+    const out = new Set<string>()
+    collectStatusEnums(specResult.spec, out)
+    return [...out]
+  })()
+  const stockWriteDto = specResult ? discoverStockWriteDto(specResult.spec) : []
 
   // A known-real external order id from our DB (the cancelled order) — used to
   // discover whether a by-id detail endpoint exists at all.
@@ -270,11 +348,15 @@ export const GET = withErrorHandler(async (req: Request) => {
     uzumShopIds,
     specPath,
     discoveredStatuses,
+    // Authoritative stock-WRITE request DTO(s) mined from Uzum's OpenAPI spec —
+    // the exact field names / required flags the write must match to stop
+    // returning validation-failed-001. Empty [] means the spec wasn't reachable.
+    stockWriteDto,
     validStatuses,
     productSample,
     productStocks,
     shopsProbe,
     orderProbes,
-    hint: 'validStatuses = FBS statuses that returned 200. productSample shows whether SKU.quantitySold is populated (our FBO sold workaround). analytics_* probes hunt for an FBO revenue source a read-only key can reach. Paste the full JSON to support.',
+    hint: 'stockWriteDto = the authoritative Uzum stock-write request DTO from their OpenAPI spec — compare its field names/required flags against what we send ({skuAmountList:[{barcode,amount,fbsLinked}]}) to fix validation-failed-001. validStatuses = FBS statuses that returned 200. productSample shows whether SKU.quantitySold is populated. Paste the full JSON to support.',
   })
 })
