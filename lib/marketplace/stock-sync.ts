@@ -13,13 +13,14 @@
  */
 
 import { revalidateTag } from 'next/cache'
-import { and, eq, inArray, sql } from 'drizzle-orm'
+import { and, eq, inArray, isNull, sql } from 'drizzle-orm'
 import { db, shops, products, orders, orderItems, stockSyncState } from '@/lib/db'
 import { logger } from '@/lib/logger'
 import { pushStock, type StockWriteStatus } from '@/lib/marketplace/stock-writer'
 import { planStockWrites, type SyncMember, type OversellMode } from '@/lib/marketplace/stock-allocation'
 import { handleOversell } from '@/lib/marketplace/oversell'
 import { notifyStockUpdates, type StockUpdateEvent } from '@/lib/marketplace/stock-notify'
+import { backfillShopIdentifiers } from '@/lib/marketplace/identifier-backfill'
 import { decrypt } from '@/lib/crypto'
 import { fetchAllUzumSkuStocks } from '@/lib/uzum/client'
 import { fetchYandexStockLocations } from '@/lib/yandex/client'
@@ -171,12 +172,60 @@ async function bumpVersion(shopId: string, matchKey: string, productId: string, 
 }
 
 /**
+ * Ensure the stock-WRITE identifiers are populated before any write is planned.
+ * Uzum keys on products.market_barcode and Yandex on products.market_sku (+
+ * market_warehouse_id); the product/order sync never fills these — they come
+ * from backfillShopIdentifiers (read-only endpoints). Without them every write
+ * skips (missing_barcode / missing_sku), which is exactly what a live sale hit.
+ *
+ * Runs a shop's backfill ONLY when it still has a product missing its
+ * identifier, so once populated this is a cheap existence check with no
+ * marketplace call — safe to call on every sync/webhook trigger. Best-effort:
+ * a backfill failure never blocks the sync (the write simply skips as before).
+ */
+async function ensureWriteIdentifiers(userId: string): Promise<void> {
+  const shopRows = await db.select({
+    id: shops.id,
+    marketplace: shops.marketplace,
+    api_key_encrypted: shops.api_key_encrypted,
+    shop_id_external: shops.shop_id_external,
+  }).from(shops).where(and(
+    eq(shops.user_id, userId),
+    eq(shops.is_active, true),
+    eq(shops.api_mode, 'stock_sync'),
+    inArray(shops.marketplace, IN_SCOPE),
+  ))
+
+  for (const s of shopRows) {
+    if (!s.api_key_encrypted) continue
+    // Uzum needs market_barcode; Yandex needs market_sku (+ warehouse, set
+    // together with market_sku by the backfill).
+    const missingCol = s.marketplace === 'uzum' ? products.market_barcode : products.market_sku
+    const [missing] = await db.select({ id: products.id }).from(products)
+      .where(and(eq(products.shop_id, s.id), isNull(missingCol))).limit(1)
+    if (!missing) continue
+    try {
+      await backfillShopIdentifiers({
+        id: s.id,
+        marketplace: s.marketplace,
+        api_key_encrypted: s.api_key_encrypted,
+        shop_id_external: s.shop_id_external,
+      })
+    } catch (err) {
+      logger.warn('ensure_write_identifiers_failed', { shopId: s.id, error: String(err).slice(0, 200) })
+    }
+  }
+}
+
+/**
  * Run Step A + Step B for every SKU group that has at least one stock_sync
- * member. Returns a log of every planned write (the dry-run log when shops are
- * in test mode).
+ * member. Returns a log of every planned write with its actual result.
  */
 export async function syncStockSyncGroups(opts: RunOptions): Promise<StockSyncRunResult> {
   const computedAt = new Date().toISOString()
+  // Self-heal the write identifiers before planning, so a live write always has
+  // a target (Uzum barcode / YM shopSku+warehouse) instead of skipping.
+  await ensureWriteIdentifiers(opts.userId)
   const { shopsById, groups } = await loadGroups(opts.userId)
   const entries: StockSyncLogEntry[] = []
   // Collected across the run and dispatched once at the end (best-effort). Only
@@ -351,6 +400,7 @@ export async function verifiedLivePush(userId: string, productId: string, quanti
   const fail = (reason: string, target = 0): FirstLiveResult =>
     ({ productId, status: 'skipped', target, pushed: false, observed: null, verified: false, reason })
 
+  await ensureWriteIdentifiers(userId)
   const { shopsById, groups } = await loadGroups(userId)
 
   // Find the product's group + member.
