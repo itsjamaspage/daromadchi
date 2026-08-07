@@ -74,32 +74,48 @@ export async function syncYandexBoostSpend(
   try {
     reportId = await generateBoostReport(token, businessId, dateFrom, dateTo)
   } catch (e) {
-    return { ok: false, inserted: 0, error: `generate: ${String(e).slice(0, 300)}`, debug: { businessId, dateFrom, dateTo } }
+    // LOUD: the real Yandex reason (INVALID_REQUEST + field) now rides in the
+    // error message (see boost-report.ts yandexRequest). Log it so it lands in
+    // the cron log this run instead of hiding as a generic "skipped".
+    const msg = `generate: ${String(e).slice(0, 500)}`
+    console.error('[yandex-boost] FAILED', { shopId, businessId, dateFrom, dateTo, error: msg })
+    return { ok: false, inserted: 0, error: msg, debug: { businessId, dateFrom, dateTo } }
   }
 
   let status
   try {
     status = await pollReportUntilReady(token, reportId)
   } catch (e) {
-    return { ok: false, inserted: 0, error: `poll: ${String(e).slice(0, 300)}`, debug: { reportId, businessId, dateFrom, dateTo } }
+    const msg = `poll: ${String(e).slice(0, 500)}`
+    console.error('[yandex-boost] FAILED', { shopId, reportId, error: msg })
+    return { ok: false, inserted: 0, error: msg, debug: { reportId, businessId, dateFrom, dateTo } }
   }
   if (status.status === 'NO_DATA') {
+    console.log('[yandex-boost] no boost spend in window', { shopId, reportId, dateFrom, dateTo })
     return { ok: true, inserted: 0, skipped: 'no boost spend in window', debug: { reportId, status: status.status, dateFrom, dateTo } }
   }
   if (status.status !== 'DONE' || !status.fileUrl) {
-    return { ok: false, inserted: 0, error: `report status=${status.status}, fileUrl=${status.fileUrl ?? 'null'}`, debug: { reportId, status: status.status } }
+    const msg = `report status=${status.status}, fileUrl=${status.fileUrl ?? 'null'}`
+    console.error('[yandex-boost] FAILED', { shopId, reportId, error: msg })
+    return { ok: false, inserted: 0, error: msg, debug: { reportId, status: status.status } }
   }
 
   let buffer: ArrayBuffer
   try {
     buffer = await downloadReport(status.fileUrl, token)
   } catch (e) {
-    return { ok: false, inserted: 0, error: `download: ${String(e).slice(0, 300)}`, debug: { reportId, fileUrl: status.fileUrl } }
+    const msg = `download: ${String(e).slice(0, 500)}`
+    console.error('[yandex-boost] FAILED', { shopId, reportId, error: msg })
+    return { ok: false, inserted: 0, error: msg, debug: { reportId, fileUrl: status.fileUrl } }
   }
 
   const parsed = parseBoostReport(buffer)
   if (parsed.length === 0) {
+    // Report downloaded but parsed to 0 rows from a non-empty file → parser
+    // miss. Log the shape snapshot (sheet names + first rows) so the parser
+    // can be reconciled against the real sheet without another blind deploy.
     const shape = describeNettingReport(buffer)
+    console.error('[yandex-boost] parsed 0 rows from non-empty XLSX (parser miss)', { shopId, reportId, bufferBytes: buffer.byteLength, shape: JSON.stringify(shape).slice(0, 2000) })
     return { ok: true, inserted: 0, skipped: 'parsed 0 boost rows from a non-empty XLSX (parser miss?)', debug: { reportId, bufferBytes: buffer.byteLength, shape } }
   }
 
@@ -167,13 +183,16 @@ export async function syncYandexBoostSpend(
       }
       return out
     }
+    const msg = `insert: ${(e as { message?: string }).message ?? String(e)}`.slice(0, 2000)
+    console.error('[yandex-boost] FAILED', { shopId, reportId, error: msg, errorCause: pick(errCause) })
     return {
       ok: false,
       inserted: 0,
-      error: `insert: ${(e as { message?: string }).message ?? String(e)}`.slice(0, 2000),
+      error: msg,
       debug: { reportId, rowCount: rows.length, errorOuter: pick(e), errorCause: pick(errCause), firstRow: rows[0] },
     }
   }
 
+  console.log('[yandex-boost] OK', { shopId, reportId, inserted: rows.length, dateFrom, dateTo })
   return { ok: true, inserted: rows.length }
 }

@@ -43,7 +43,13 @@ async function yandexRequest<T>(path: string, token: string, options?: RequestIn
   if (!res.ok) {
     let body = ''
     try { body = await res.text() } catch { /* ignore */ }
-    throw new YandexApiError(res.status, `Yandex API ${res.status} (${path})`, body)
+    // Fold the response body INTO the message. Yandex returns the real reason
+    // (e.g. INVALID_REQUEST + which field is wrong) only in the body; without
+    // this, downstream `String(e)` yields a bare "Yandex API 400 (…)" and the
+    // actual cause is lost — which is exactly how a bad report request hid for
+    // a full deploy cycle as a generic "skipped".
+    const snippet = body ? ` — ${body.replace(/\s+/g, ' ').trim().slice(0, 500)}` : ''
+    throw new YandexApiError(res.status, `Yandex API ${res.status} (${path})${snippet}`, body)
   }
   return await res.json() as T
 }
@@ -78,8 +84,15 @@ export async function generateBoostReport(
     dateTimeTo,
   })
 
+  // `format` is a QUERY parameter on Yandex's report-generate endpoints, and
+  // the boost-consolidated endpoint rejects generation with INVALID_REQUEST
+  // when it isn't given an explicit, valid format. Request XLSX — the format
+  // parseBoostReport() reads (the netting report happens to work off Yandex's
+  // default, but boost does not, so we state it outright). Query string still
+  // matches the guard's `/reports/[a-z-]+/generate` allowlist entry (the
+  // pattern is an unanchored substring test on the path).
   const data = await yandexRequest<GenerateResponse>(
-    `/reports/boost-consolidated/generate`,
+    `/reports/boost-consolidated/generate?format=XLSX`,
     token,
     { method: 'POST', body },
   )
