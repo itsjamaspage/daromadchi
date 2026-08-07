@@ -1,6 +1,7 @@
 import { Bell } from 'lucide-react'
 import { getStockAlerts, getAlertSettings } from '@/lib/db/alerts'
 import StockAlertsView from '@/components/dashboard/StockAlertsView'
+import StockNotifyToggles from '@/components/dashboard/StockNotifyToggles'
 import { getT } from '@/lib/server-i18n'
 
 export default async function AlertsPage() {
@@ -20,6 +21,8 @@ export default async function AlertsPage() {
           <p className="text-[var(--text-muted)] text-sm">{d.alertsSubtitle}</p>
         </div>
       </div>
+
+      <StockNotifyToggles />
 
       <StockAlertsView alerts={alerts} settings={settings} />
     </div>

@@ -352,6 +352,10 @@ export const userSettings = pgTable('user_settings', {
   notif_daily_summary:       boolean('notif_daily_summary').default(true).notNull(),
   notif_new_orders:          boolean('notif_new_orders').default(true).notNull(),
   notif_weekly_report:       boolean('notif_weekly_report').default(false).notNull(),
+  // Cross-store stock-sync update notifications — two independent channels,
+  // both default ON. Fire only on an actual cross-store stock-UPDATE event.
+  notif_stock_update_inapp:    boolean('notif_stock_update_inapp').default(true).notNull(),
+  notif_stock_update_telegram: boolean('notif_stock_update_telegram').default(true).notNull(),
   notif_send_time:           text('notif_send_time').default('09:00').notNull(),
   notif_send_days:           integer('notif_send_days').array().default([1, 2, 3, 4, 5, 6, 0]).notNull(),
   notif_lang:                text('notif_lang').default('uz').notNull(),

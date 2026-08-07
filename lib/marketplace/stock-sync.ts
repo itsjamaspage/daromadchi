@@ -19,6 +19,7 @@ import { logger } from '@/lib/logger'
 import { pushStock, type StockWriteStatus } from '@/lib/marketplace/stock-writer'
 import { planStockWrites, type SyncMember, type OversellMode } from '@/lib/marketplace/stock-allocation'
 import { handleOversell } from '@/lib/marketplace/oversell'
+import { notifyStockUpdates, type StockUpdateEvent } from '@/lib/marketplace/stock-notify'
 import { decrypt } from '@/lib/crypto'
 import { fetchAllUzumSkuStocks } from '@/lib/uzum/client'
 import { fetchYandexStockLocations } from '@/lib/yandex/client'
@@ -178,6 +179,9 @@ export async function syncStockSyncGroups(opts: RunOptions): Promise<StockSyncRu
   const computedAt = new Date().toISOString()
   const { shopsById, groups } = await loadGroups(opts.userId)
   const entries: StockSyncLogEntry[] = []
+  // Collected across the run and dispatched once at the end (best-effort). Only
+  // actual write attempts (sent / error / blocked) become notification events.
+  const notifyEvents: StockUpdateEvent[] = []
   let groupsConsidered = 0
   let writesPlanned = 0
   let anyDisplayChange = false
@@ -257,8 +261,33 @@ export async function syncStockSyncGroups(opts: RunOptions): Promise<StockSyncRu
         available, listed: plan.member.listedStock, target: plan.target, version,
         status: result.status, reason: result.reason,
       })
+
+      // Notify ONLY on an actual write attempt: 'sent' (success) or 'error'/
+      // 'blocked' (real failure the seller must fix manually). Operational
+      // states ('skipped' config/dedup, 'killed' switch) are not per-sale
+      // failures and are left out to avoid noise.
+      if (result.status === 'sent' || result.status === 'error' || result.status === 'blocked') {
+        // Origin = the other group member with the most stock — the store that
+        // held the unit and sold it, decrementing its own count.
+        const origin = group.members
+          .filter(m => m.productId !== plan.member.productId)
+          .sort((a, b) => b.listedStock - a.listedStock)[0]
+        notifyEvents.push({
+          sku: plan.member.sku ?? matchKey,
+          targetMarketplace: shop.marketplace,
+          originMarketplace: origin?.marketplace ?? null,
+          listed: plan.member.listedStock,
+          target: plan.target,
+          ok: result.status === 'sent',
+          reason: result.status === 'sent' ? undefined : (result.reason ?? result.status),
+        })
+      }
     }
   }
+
+  // Cross-store stock-update notifications (in-app + Telegram, per-user toggles,
+  // result-accurate). Best-effort — never blocks the sync.
+  await notifyStockUpdates(opts.userId, notifyEvents)
 
   // Step A: refresh the display so the recomputed available shows immediately.
   if (anyDisplayChange) {

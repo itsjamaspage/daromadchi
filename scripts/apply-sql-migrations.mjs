@@ -32,6 +32,7 @@ const MIGRATIONS = [
   'migrations/migrations/046_products_variant_group_key.sql',
   'migrations/migrations/047_products_variant_color.sql',
   'migrations/migrations/048_ads_spend_columns.sql',
+  'migrations/migrations/049_stock_update_notif_prefs.sql',
 ]
 
 function loadDatabaseUrl() {
