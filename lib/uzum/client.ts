@@ -672,7 +672,10 @@ export async function fetchUzumSkuStocks(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const j = await request<any>(`/v3/fbs/sku/stocks?${params}`, token)
     const arr =
-      j?.payload?.skuList ?? j?.payload?.stocks ?? j?.payload?.content
+      // /v3/fbs/sku/stocks returns its rows under payload.skuAmountList — the
+      // key the chain missed, so it fell through to [] and the identifier
+      // backfill matched 0/N. Check it first, keep the others as fallbacks.
+      j?.payload?.skuAmountList ?? j?.payload?.skuList ?? j?.payload?.stocks ?? j?.payload?.content
       ?? j?.skuList ?? j?.stocks ?? j?.data
       ?? (Array.isArray(j?.payload) ? j.payload : null)
       ?? (Array.isArray(j) ? j : [])
