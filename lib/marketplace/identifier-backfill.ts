@@ -63,18 +63,28 @@ export async function backfillShopIdentifiers(shop: BackfillShop): Promise<Backf
   try {
     if (shop.marketplace === 'uzum') {
       const stocks = await fetchAllUzumSkuStocks(token)
-      // Index barcode by every identifier the record might carry.
+      // Index barcode by every identifier the record might carry, NORMALIZED
+      // (trim + lowercase) so a case/whitespace variant between Uzum's sellerSku
+      // and our products.sku still lines up. The key that actually exists on
+      // both sides is the seller article (sellerSku == our sku, e.g. JMBLK) —
+      // marketplace_product_id is the product-card id and won't match the
+      // barcode endpoint's skuId, so we lean on the sku match.
+      const normKey = (v: unknown): string | null => nonBlank(v)?.toLowerCase() ?? null
       const barcodeByKey = new Map<string, string>()
       for (const s of stocks) {
         const bc = nonBlank(s.barcode)
         if (!bc) continue
-        for (const key of [s.skuId, s.sku, s.sellerSku, s.sellerSkuCode, s.sellerItemCode, s.article]) {
-          const k = nonBlank(key)
+        for (const key of [s.skuId, s.sku, s.sellerSku, s.sellerSkuCode, s.sellerItemCode, s.article, s.productId]) {
+          const k = normKey(key)
           if (k) barcodeByKey.set(k, bc)
         }
       }
+      const lookup = (p: { mpid: string | null; sku: string | null }): string | undefined => {
+        const byMpid = normKey(p.mpid); const bySku = normKey(p.sku)
+        return (byMpid ? barcodeByKey.get(byMpid) : undefined) ?? (bySku ? barcodeByKey.get(bySku) : undefined)
+      }
       for (const p of rows) {
-        const bc = (p.mpid && barcodeByKey.get(String(p.mpid).trim())) || (p.sku && barcodeByKey.get(p.sku.trim()))
+        const bc = lookup(p)
         if (!bc) continue
         base.matched++
         if (p.barcode !== bc) {
@@ -82,7 +92,25 @@ export async function backfillShopIdentifiers(shop: BackfillShop): Promise<Backf
           base.updated++
         }
       }
-      base.missingAfter = rows.filter(p => !(p.barcode || barcodeByKey.get(String(p.mpid).trim()) || (p.sku && barcodeByKey.get(p.sku.trim())))).length
+      base.missingAfter = rows.filter(p => !(p.barcode || lookup(p))).length
+
+      // Still nothing matched from a non-empty product list? Log the REAL shape
+      // on both sides — record count, the first records' identifier fields (and
+      // every key they actually carry), and our products' keys — so the exact
+      // field/id/case mismatch is visible without another blind round.
+      if (base.matched === 0 && rows.length > 0) {
+        logger.warn('uzum_barcode_backfill_no_match', {
+          shopId: shop.id,
+          stockCount: stocks.length,
+          sampleRecords: stocks.slice(0, 3).map(s => ({
+            barcode: s.barcode, skuId: s.skuId, sku: s.sku, sellerSku: s.sellerSku,
+            sellerSkuCode: s.sellerSkuCode, sellerItemCode: s.sellerItemCode,
+            article: s.article, productId: s.productId,
+            allKeys: Object.keys(s as Record<string, unknown>),
+          })),
+          ourProducts: rows.slice(0, 3).map(p => ({ mpid: p.mpid, sku: p.sku })),
+        })
+      }
     } else if (shop.marketplace === 'yandex_market') {
       const campaignId = nonBlank(shop.shop_id_external)
       if (!campaignId) return { ...base, error: 'no_campaign_id' }
