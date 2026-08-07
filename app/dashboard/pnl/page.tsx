@@ -155,7 +155,6 @@ export default async function PnlPage({ searchParams }: Props) {
     cogs:      s.cogs + m.cogs,
     net:       s.net + m.net,
   }), { orders: 0, cancelled: 0, revenue: 0, commission: 0, delivery: 0, acquiring: 0, tax: 0, ads: 0, cogs: 0, net: 0 })
-  const totalExpenses = totals.commission + totals.delivery + totals.acquiring + totals.tax + totals.ads + totals.cogs
   // Доставка tooltip: name the store(s) that actually charged the logistics,
   // from the per-marketplace settlement split. Only non-zero stores are shown.
   const mpName = (mp: string) => mp === 'uzum' ? 'Uzum' : mp === 'yandex_market' ? 'Yandex Market' : mp
@@ -388,24 +387,17 @@ export default async function PnlPage({ searchParams }: Props) {
                     <td className={`${num} font-bold`}>{avgMargin.toFixed(1)}%</td>
                   </tr>
                   {/* Marketplace-withheld subtotal: commission + delivery +
-                      acquiring only (what the marketplace itself took), a
-                      readability sum of cells already shown above — distinct
-                      from the all-costs total below (which adds tax/ads/COGS).
-                      No new calculation: purely the sum of displayed figures. */}
+                      acquiring only (what the marketplace itself took) — a
+                      readability sum of cells already shown above, no new
+                      calculation. (An all-costs total row used to sit below
+                      this; removed as redundant with the Чистая column, which
+                      already nets every expense out of revenue.) */}
                   <tr>
                     <td colSpan={4} className="px-4 py-2 text-xs text-[var(--text-muted)]" />
                     <td colSpan={6} className="px-4 py-2 text-right text-xs text-[var(--text-muted)]">
-                      {d.pnlMpWithheld} ({d.commission2} + {d.delivery} + {d.acquiringLabel}):
+                      {d.pnlMpWithheld}:
                     </td>
                     <td className={`${num} font-bold`}>{fmt(totals.commission + totals.delivery + totals.acquiring)}</td>
-                    <td />
-                  </tr>
-                  <tr>
-                    <td colSpan={4} className="px-4 py-3 text-xs text-[var(--text-muted)]" />
-                    <td colSpan={6} className="px-4 py-3 text-right text-xs text-[var(--text-muted)]">
-                      {d.commission2} + {d.delivery} + {d.acquiringLabel} + {d.taxLabel} + {d.adsLabel} + {d.cogsLabel}:
-                    </td>
-                    <td className={`${num} font-bold`}>{fmt(totalExpenses)}</td>
                     <td />
                   </tr>
                 </tbody>
