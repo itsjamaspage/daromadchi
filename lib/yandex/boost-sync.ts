@@ -109,7 +109,10 @@ export async function syncYandexBoostSpend(
     return { ok: false, inserted: 0, error: msg, debug: { reportId, fileUrl: status.fileUrl } }
   }
 
-  const parsed = parseBoostReport(buffer)
+  // Pass dateTo as the fallback date: the consolidated report is often one
+  // row per campaign for the whole window with no per-day Дата, and without a
+  // fallback those rows would be dropped (a primary cause of 0 parsed rows).
+  const parsed = parseBoostReport(buffer, dateTo)
   if (parsed.length === 0) {
     // Report downloaded but parsed to 0 rows from a non-empty file → parser
     // miss. Log the shape snapshot (sheet names + first rows) so the parser
@@ -143,7 +146,9 @@ export async function syncYandexBoostSpend(
     shop_id:      shopId,
     // Synthetic per-campaign key — satisfies the not-null sku + the unique
     // (shop_id, sku, date) index so each campaign/day upserts to its own row.
-    sku:          `ymcamp:${v.campaignId}`,
+    // When the report carries no campaign id (aggregated one-row report), fall
+    // back to a stable constant so the row still lands and upserts cleanly.
+    sku:          v.campaignId ? `ymcamp:${v.campaignId}` : 'yandex-boost',
     date:         v.date,
     marketplace:  'yandex_market',
     impressions:  v.impressions,
