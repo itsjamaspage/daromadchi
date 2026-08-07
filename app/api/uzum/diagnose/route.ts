@@ -4,7 +4,7 @@ import { getCurrentUser } from '@/lib/auth/session'
 import { db, shops, orders } from '@/lib/db'
 import { decrypt } from '@/lib/crypto'
 import { marketplaceFetch } from '@/lib/marketplace-readonly-guard'
-import { UZUM_API_BASE } from '@/lib/uzum/client'
+import { UZUM_API_BASE, fetchAllUzumSkuStocks } from '@/lib/uzum/client'
 import { withErrorHandler } from '@/lib/api-handler'
 
 export const runtime = 'nodejs'
@@ -339,6 +339,25 @@ export const GET = withErrorHandler(async (req: Request) => {
     } catch { /* best-effort */ }
   }
 
+  // Raw sample of the v3 /fbs/sku/stocks records — the EXACT source the barcode
+  // backfill matches against. Dumps every key each record carries (not just the
+  // ones we type) so the field that holds the seller article (sellerItemCode /
+  // skuTitle / …) and the per-variant barcode is visible, and any cross-wired
+  // barcode↔SKU mapping can be pinned without guessing.
+  let skuStocksSample: unknown = null
+  try {
+    const stocks = await fetchAllUzumSkuStocks(token)
+    skuStocksSample = {
+      count: stocks.length,
+      records: stocks.slice(0, 12).map((s) => {
+        const r = s as Record<string, unknown>
+        return { allKeys: Object.keys(r), ...r }
+      }),
+    }
+  } catch (err) {
+    skuStocksSample = { error: String(err).slice(0, 300) }
+  }
+
   const validStatuses = orderProbes.filter(p => p.status === 200).map(p => `${p.label}${p.count ? `(${p.count})` : '(0)'}`)
 
   return NextResponse.json({
@@ -352,6 +371,10 @@ export const GET = withErrorHandler(async (req: Request) => {
     // the exact field names / required flags the write must match to stop
     // returning validation-failed-001. Empty [] means the spec wasn't reachable.
     stockWriteDto,
+    // Raw v3 /fbs/sku/stocks records the barcode backfill matches on — compare
+    // each record's seller-article field + barcode against products.sku to see
+    // which SKUs were cross-wired to the wrong barcode.
+    skuStocksSample,
     validStatuses,
     productSample,
     productStocks,
