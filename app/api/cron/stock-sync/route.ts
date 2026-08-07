@@ -73,15 +73,25 @@ export const GET = withErrorHandler(async (req: Request) => {
         stock_poll_at: new Date(),
       }).where(eq(shops.id, shop.id))
 
-      if (changed) usersToSync.add(shop.user_id)
+      // Sync this stock_sync user UNCONDITIONALLY — do NOT gate on the count
+      // delta. The CREATED-count detector is edge-triggered and misses a sale
+      // that opens and closes CREATED inside one poll window (the sync then
+      // never runs → usersSynced:0). The tier above already sets the cadence:
+      // aggressive (low-stock) shops reach here every cycle, healthy shops every
+      // COARSE interval — so this catches a missed sale within that window.
+      // Cheap: syncStockSyncGroups only issues a marketplace WRITE on a real
+      // target != listed diff, so idle runs make ZERO write calls (just DB reads
+      // + the identifier existence check). `changed` is kept for logging only.
+      usersToSync.add(shop.user_id)
       results.push({ shopId: shop.id, aggressive, count: countRes.count, prev: shop.last_orders_count, changed, remainingPerDay: countRes.rateLimitRemainingPerDay })
     } catch (err) {
       results.push({ shopId: shop.id, error: String(err).slice(0, 200) })
     }
   }
 
-  // Run Step A/B once per user whose Uzum order count moved. Writes are always
-  // live for stock_sync shops — a detected change propagates immediately.
+  // Run Step A/B for every stock_sync user polled this cycle (no longer gated
+  // on a count delta — see above). Writes are always live and fire only on a
+  // real diff, so a no-change user's run is DB-only with no marketplace writes.
   const runs: Record<string, unknown>[] = []
   for (const userId of usersToSync) {
     try {
