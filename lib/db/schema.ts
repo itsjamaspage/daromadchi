@@ -755,6 +755,32 @@ export const stockSyncState = pgTable('stock_sync_state', {
   index('stock_sync_state_shop_id_idx').on(t.shop_id),
 ])
 
+/* ── 30b. stock_notify_state ─────────────────────────────────────────────────── */
+// Notification DEDUP for cross-store stock-sync updates. One row per
+// (user, sku, marketplace) holding the LAST outcome we notified about, so a
+// notification fires only when THIS cycle's outcome (status + target + reason)
+// DIFFERS from the stored one. Without this, a persistent write failure (e.g. a
+// listing whose stock write 400s every cycle) re-notifies the seller every
+// 5 minutes even though nothing changed. This suppresses only NOTIFICATIONS —
+// stock_write_log still records every attempt.
+export const stockNotifyState = pgTable('stock_notify_state', {
+  id:          uuid('id').primaryKey().defaultRandom(),
+  user_id:     uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  // Human SKU / normalized match key, as carried on the notification event.
+  sku:         text('sku').notNull(),
+  // The store the write targeted (event.targetMarketplace).
+  marketplace: marketplaceTypeEnum('marketplace').notNull(),
+  // Last-notified outcome fingerprint: write status, the quantity we targeted,
+  // and the (machine) reason. A change in any of these = a genuinely new outcome.
+  last_status: text('last_status'),
+  last_target: integer('last_target'),
+  last_reason: text('last_reason'),
+  updated_at:  timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (t) => [
+  uniqueIndex('stock_notify_state_user_sku_mp_unique').on(t.user_id, t.sku, t.marketplace),
+  index('stock_notify_state_user_id_idx').on(t.user_id),
+])
+
 /* ── 31. order_cancel_log ────────────────────────────────────────────────────── */
 // Audit for the oversell cancel path — a SEPARATE sanctioned write from stock,
 // with its own allowlist. One row per attempt, one-click (human) or auto.

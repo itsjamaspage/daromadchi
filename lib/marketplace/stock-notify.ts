@@ -12,10 +12,18 @@
  * 2→1", a failed one says "FAILED, update manually". It never claims success on
  * a failed write. Best-effort: a notification failure never propagates to the
  * caller or blocks the primary sync.
+ *
+ * DEDUP (notify on transition, not on state): each channel fires only when THIS
+ * cycle's outcome — (status, target, reason) — DIFFERS from the last one we
+ * notified for that (user, sku, marketplace). A persistent failure that repeats
+ * unchanged every 5-min cycle (e.g. a listing whose write keeps returning the
+ * same http_400) is notified ONCE, not every cycle. Last-notified outcomes live
+ * in `stock_notify_state`. This suppresses only NOTIFICATIONS — stock_write_log
+ * still records every attempt.
  */
 
-import { eq } from 'drizzle-orm'
-import { db, userSettings, alerts } from '@/lib/db'
+import { and, eq } from 'drizzle-orm'
+import { db, userSettings, alerts, stockNotifyState } from '@/lib/db'
 import { logger } from '@/lib/logger'
 import { sendTelegramMessage } from '@/lib/telegram'
 import type { MarketplaceType } from '@/lib/types'
@@ -76,7 +84,38 @@ export async function notifyStockUpdates(userId: string, events: StockUpdateEven
     const telegramOn = s?.telegram ?? true
     const chat       = s?.chat ?? null
 
+    // Both channels off → nothing to notify through; don't touch dedup state.
+    if (!inAppOn && !telegramOn) return
+
     for (const e of events) {
+      // Outcome fingerprint for this (user, sku, marketplace). A change in the
+      // write status, the targeted quantity, or the reason is a genuinely NEW
+      // outcome worth telling the seller about; an identical repeat is not.
+      const status = e.ok ? 'sent' : 'fail'
+      const target = e.target
+      const reason = e.reason ?? null
+
+      // Skip when the last-notified outcome is identical. Fail-OPEN on a read
+      // error (treat as new) so a real change is never silently swallowed.
+      let isNew = true
+      try {
+        const [prev] = await db.select({
+          status: stockNotifyState.last_status,
+          target: stockNotifyState.last_target,
+          reason: stockNotifyState.last_reason,
+        }).from(stockNotifyState).where(and(
+          eq(stockNotifyState.user_id, userId),
+          eq(stockNotifyState.sku, e.sku),
+          eq(stockNotifyState.marketplace, e.targetMarketplace),
+        ))
+        if (prev && prev.status === status && prev.target === target && (prev.reason ?? null) === reason) {
+          isNew = false
+        }
+      } catch (err) {
+        logger.warn('stock_notify_dedup_read_failed', { userId, error: String(err).slice(0, 200) })
+      }
+      if (!isNew) continue
+
       const message = buildMessage(e)
 
       let sentToTelegram = false
@@ -100,6 +139,20 @@ export async function notifyStockUpdates(userId: string, events: StockUpdateEven
         } catch (err) {
           logger.warn('stock_notify_inapp_failed', { userId, error: String(err).slice(0, 200) })
         }
+      }
+
+      // Record the outcome we just notified so an identical repeat next cycle
+      // stays silent. Best-effort — a write miss only risks a duplicate later.
+      try {
+        await db.insert(stockNotifyState).values({
+          user_id: userId, sku: e.sku, marketplace: e.targetMarketplace,
+          last_status: status, last_target: target, last_reason: reason,
+        }).onConflictDoUpdate({
+          target: [stockNotifyState.user_id, stockNotifyState.sku, stockNotifyState.marketplace],
+          set: { last_status: status, last_target: target, last_reason: reason, updated_at: new Date() },
+        })
+      } catch (err) {
+        logger.warn('stock_notify_dedup_write_failed', { userId, error: String(err).slice(0, 200) })
       }
     }
   } catch (err) {
