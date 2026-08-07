@@ -63,11 +63,6 @@ function ipAllowed(ip: string | null): boolean {
   return cidrs.some(c => ipInCidr(ip, c))
 }
 
-function webhookLive(): boolean {
-  const v = (process.env.YM_STOCK_SYNC_WEBHOOK_LIVE ?? '').trim().toLowerCase()
-  return v === '1' || v === 'true' || v === 'yes' || v === 'on'
-}
-
 export async function POST(req: Request): Promise<Response> {
   const ip = clientIp(req)
 
@@ -100,8 +95,8 @@ export async function POST(req: Request): Promise<Response> {
   logger.info('ym_notify', { ip, type })
 
   // Resolve the shop from the campaignId in the payload, then run Step A/B in
-  // the background so we return within the 10s budget. Writes stay dry-run
-  // unless the operator has explicitly enabled the webhook-live flag.
+  // the background so we return within the 10s budget. Writes are always live —
+  // a qualifying stock change propagates to the other store immediately.
   const campaignId = body?.campaignId ?? body?.shopId ?? body?.order?.campaignId
   if (campaignId != null) {
     void (async () => {
@@ -110,8 +105,8 @@ export async function POST(req: Request): Promise<Response> {
           .from(shops)
           .where(and(eq(shops.shop_id_external, String(campaignId)), eq(shops.marketplace, 'yandex_market')))
         if (!shop) { logger.warn('ym_notify_shop_not_found', { campaignId }); return }
-        const res = await syncStockSyncGroups({ userId: shop.user_id, forceDryRun: !webhookLive() })
-        logger.info('ym_notify_processed', { campaignId, writesPlanned: res.writesPlanned, live: webhookLive() })
+        const res = await syncStockSyncGroups({ userId: shop.user_id })
+        logger.info('ym_notify_processed', { campaignId, writesPlanned: res.writesPlanned, live: true })
       } catch (err) {
         logger.error('ym_notify_process_failed', { campaignId, error: String(err).slice(0, 300) })
       }

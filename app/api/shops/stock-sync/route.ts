@@ -13,7 +13,6 @@ import { withErrorHandler } from '@/lib/api-handler'
 const StockSyncSchema = z.object({
   marketplace:   z.enum(['uzum', 'yandex_market']),
   api_mode:      z.enum(['read_only', 'stock_sync']),
-  dry_run:       z.boolean().optional(),
   oversell_mode: z.enum(['lock_last_unit', 'partition', 'off']).optional(),
   // Must be true to switch a shop INTO stock_sync for the first time.
   consent:       z.boolean().optional(),
@@ -28,7 +27,7 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   if (!parsed.success) {
     return NextResponse.json({ ok: false, error: parsed.error.issues[0]?.message ?? 'Invalid request' }, { status: 400 })
   }
-  const { marketplace, api_mode, dry_run, oversell_mode, consent } = parsed.data
+  const { marketplace, api_mode, oversell_mode, consent } = parsed.data
 
   const [shop] = await db.select({
     id: shops.id,
@@ -52,14 +51,10 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   const update: Record<string, unknown> = { api_mode }
   if (oversell_mode) update.oversell_mode = oversell_mode
 
-  if (enabling) {
-    // HARD RULE #5: first enable is ALWAYS dry-run. The store write stays
-    // simulated until the user explicitly turns Test mode off in a later save.
-    update.stock_sync_dry_run = true
-    if (!shop.stock_sync_consent_at) update.stock_sync_consent_at = new Date()
-  } else if (typeof dry_run === 'boolean') {
-    // Only an already-enabled shop can toggle live writes on/off.
-    update.stock_sync_dry_run = dry_run
+  // Opting a shop into stock_sync makes its cross-store stock writes LIVE
+  // immediately — there is no dry-run step. Consent (above) is the gate.
+  if (enabling && !shop.stock_sync_consent_at) {
+    update.stock_sync_consent_at = new Date()
   }
 
   await db.update(shops).set(update).where(eq(shops.id, shop.id))
@@ -68,14 +63,12 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     userId: user.id,
     marketplace,
     api_mode,
-    dry_run: update.stock_sync_dry_run ?? dry_run ?? null,
     enabling,
   })
 
   return NextResponse.json({
     ok: true,
     api_mode,
-    stock_sync_dry_run: update.stock_sync_dry_run ?? dry_run ?? null,
     consented: !!(update.stock_sync_consent_at ?? shop.stock_sync_consent_at),
   })
 })

@@ -34,7 +34,6 @@ interface ShopRow {
   id: string
   marketplace: MarketplaceType
   api_mode: 'read_only' | 'stock_sync'
-  stock_sync_dry_run: boolean
   oversell_mode: OversellMode
   primary_channel_priority: number
   shop_id_external: string | null
@@ -59,7 +58,6 @@ export interface StockSyncLogEntry {
   available: number
   listed: number
   target: number
-  dryRun: boolean
   version: number
   status: StockWriteStatus
   reason?: string
@@ -74,8 +72,6 @@ export interface StockSyncRunResult {
 
 interface RunOptions {
   userId: string
-  /** Force every write to dry-run regardless of the shop's flag (YM-webhook path). */
-  forceDryRun?: boolean
   /** Restrict to a single normalized match key (first-live / targeted runs). */
   onlyMatchKey?: string
 }
@@ -88,7 +84,6 @@ async function loadGroups(userId: string): Promise<{
     id: shops.id,
     marketplace: shops.marketplace,
     api_mode: shops.api_mode,
-    stock_sync_dry_run: shops.stock_sync_dry_run,
     oversell_mode: shops.oversell_mode,
     primary_channel_priority: shops.primary_channel_priority,
     shop_id_external: shops.shop_id_external,
@@ -214,7 +209,6 @@ export async function syncStockSyncGroups(opts: RunOptions): Promise<StockSyncRu
           title: group.members[0]?.sku ?? matchKey,
           rawAvailable,
           productIds: [...group.products.keys()],
-          forceDryRun: opts.forceDryRun,
         })
       } catch (err) {
         logger.error('oversell_handler_failed', { matchKey, error: String(err).slice(0, 300) })
@@ -233,7 +227,6 @@ export async function syncStockSyncGroups(opts: RunOptions): Promise<StockSyncRu
       writesPlanned++
       const shop = shopsById.get(plan.member.shopId)!
       const product = group.products.get(plan.member.productId)!
-      const dryRun = shop.stock_sync_dry_run || !!opts.forceDryRun
 
       // Resolve the write identifier just before pushing.
       const barcode = shop.marketplace === 'uzum' ? product.market_barcode : null
@@ -252,7 +245,6 @@ export async function syncStockSyncGroups(opts: RunOptions): Promise<StockSyncRu
         sku: marketSku,
         barcode,
         quantity: plan.target,
-        dryRun,
         version,
         warehouseId,
         productId: product.id,
@@ -262,7 +254,7 @@ export async function syncStockSyncGroups(opts: RunOptions): Promise<StockSyncRu
 
       entries.push({
         matchKey, marketplace: shop.marketplace, shopId: shop.id, productId: product.id,
-        available, listed: plan.member.listedStock, target: plan.target, dryRun, version,
+        available, listed: plan.member.listedStock, target: plan.target, version,
         status: result.status, reason: result.reason,
       })
     }
@@ -276,7 +268,6 @@ export async function syncStockSyncGroups(opts: RunOptions): Promise<StockSyncRu
 
   logger.info('stock_sync_run', {
     userId: opts.userId, computedAt, groupsConsidered, writesPlanned,
-    dryRunAll: entries.length > 0 && entries.every(e => e.dryRun),
   })
   return { computedAt, groupsConsidered, writesPlanned, entries }
 }
@@ -365,7 +356,7 @@ export async function verifiedLivePush(userId: string, productId: string, quanti
       id: shop.id, marketplace: shop.marketplace, api_key_encrypted: shop.api_key_encrypted,
       shop_id_external: shop.shop_id_external, api_mode: shop.api_mode,
     },
-    sku: marketSku, barcode, quantity: target, dryRun: false, version, warehouseId,
+    sku: marketSku, barcode, quantity: target, version, warehouseId,
     productId: found.product.id, updatedAt: new Date().toISOString(), freshnessKey: found.matchKey,
   })
 

@@ -9,10 +9,13 @@
  *   • restricted to stock_sync shops on Uzum / Yandex Market only
  *   • hard-skipped when the write identifier is missing/blank (never guess)
  *   • clamped to Math.max(0, quantity)
- *   • dry-run first: logs the intended request, sends NOTHING
  *   • routed through the shared marketplaceFetch guard with intent 'stock-write',
  *     which only lets the exact stock endpoint through
- *   • audited in stock_write_log (sent | dry_run | skipped | blocked | killed | error)
+ *   • audited in stock_write_log (sent | skipped | blocked | killed | error)
+ *
+ * Writes are ALWAYS LIVE and automatic — there is no dry-run gate and no env
+ * flag that disables writing. Transparency comes from the audit log + the
+ * seller notification, not from a pre-write simulation.
  */
 
 import { and, eq } from 'drizzle-orm'
@@ -24,7 +27,7 @@ import { UZUM_API_BASE } from '@/lib/uzum/client'
 import { YANDEX_API_BASE } from '@/lib/yandex/client'
 import type { MarketplaceType } from '@/lib/types'
 
-export type StockWriteStatus = 'sent' | 'dry_run' | 'skipped' | 'blocked' | 'killed' | 'error'
+export type StockWriteStatus = 'sent' | 'skipped' | 'blocked' | 'killed' | 'error'
 
 export interface StockWriteShop {
   id: string
@@ -44,8 +47,6 @@ export interface PushStockParams {
   barcode: string | null
   /** Desired quantity. Clamped to Math.max(0, quantity) before anything else. */
   quantity: number
-  /** true → log the intended write and send nothing. */
-  dryRun: boolean
   /** Monotonic freshness version (per shop+sku). Recorded now; enforced in Phase 4. */
   version: number
   /** Yandex Market warehouseId the write targets. Required for YM. */
@@ -176,7 +177,7 @@ async function sendWithRetry(url: string, init: MarketplaceInit, retries = 3): P
  * Returns the outcome; every path is audited in stock_write_log.
  */
 export async function pushStock(params: PushStockParams): Promise<PushStockResult> {
-  const { shop, sku, barcode, dryRun, version, warehouseId, productId } = params
+  const { shop, sku, barcode, version, warehouseId, productId } = params
   const marketplace = shop.marketplace
   const requested = params.quantity
   const clamped = Math.max(0, Math.trunc(Number.isFinite(requested) ? requested : 0)) // HARD RULE #6
@@ -194,19 +195,19 @@ export async function pushStock(params: PushStockParams): Promise<PushStockResul
   // 1. Global kill switch — disables ALL writes instantly (HARD RULE #8).
   if (killSwitchOn()) {
     logger.warn('stock_write_kill_switch', { shopId: shop.id, marketplace, sku })
-    const logId = await audit({ ...base, dry_run: dryRun, status: 'killed', reason: 'kill_switch' })
+    const logId = await audit({ ...base, dry_run: false, status: 'killed', reason: 'kill_switch' })
     return { status: 'killed', reason: 'kill_switch', quantity: clamped, logId }
   }
 
   // 2. Read-only shops are NEVER written to (HARD RULE #9).
   if (shop.api_mode !== 'stock_sync') {
-    const logId = await audit({ ...base, dry_run: dryRun, status: 'skipped', reason: 'not_stock_sync' })
+    const logId = await audit({ ...base, dry_run: false, status: 'skipped', reason: 'not_stock_sync' })
     return { status: 'skipped', reason: 'not_stock_sync', quantity: clamped, logId }
   }
 
   // 3. Scope: Uzum + Yandex Market only (no Wildberries).
   if (marketplace !== 'uzum' && marketplace !== 'yandex_market') {
-    const logId = await audit({ ...base, dry_run: dryRun, status: 'skipped', reason: 'marketplace_out_of_scope' })
+    const logId = await audit({ ...base, dry_run: false, status: 'skipped', reason: 'marketplace_out_of_scope' })
     return { status: 'skipped', reason: 'marketplace_out_of_scope', quantity: clamped, logId }
   }
 
@@ -222,7 +223,7 @@ export async function pushStock(params: PushStockParams): Promise<PushStockResul
   if (marketplace === 'uzum') {
     const bc = barcode?.trim()
     if (!bc) {
-      const logId = await audit({ ...base, dry_run: dryRun, status: 'skipped', reason: 'missing_barcode' })
+      const logId = await audit({ ...base, dry_run: false, status: 'skipped', reason: 'missing_barcode' })
       return { status: 'skipped', reason: 'missing_barcode', quantity: clamped, logId }
     }
     url = `${UZUM_API_BASE}/v2/fbs/sku/stocks`
@@ -236,15 +237,15 @@ export async function pushStock(params: PushStockParams): Promise<PushStockResul
     const wh = warehouseId?.trim()
     const whNum = Number(wh)
     if (!campaignId) {
-      const logId = await audit({ ...base, dry_run: dryRun, status: 'skipped', reason: 'missing_campaign' })
+      const logId = await audit({ ...base, dry_run: false, status: 'skipped', reason: 'missing_campaign' })
       return { status: 'skipped', reason: 'missing_campaign', quantity: clamped, logId }
     }
     if (!shopSku) {
-      const logId = await audit({ ...base, dry_run: dryRun, status: 'skipped', reason: 'missing_sku' })
+      const logId = await audit({ ...base, dry_run: false, status: 'skipped', reason: 'missing_sku' })
       return { status: 'skipped', reason: 'missing_sku', quantity: clamped, logId }
     }
     if (!wh || !Number.isFinite(whNum)) {
-      const logId = await audit({ ...base, dry_run: dryRun, status: 'skipped', reason: 'missing_warehouse' })
+      const logId = await audit({ ...base, dry_run: false, status: 'skipped', reason: 'missing_warehouse' })
       return { status: 'skipped', reason: 'missing_warehouse', quantity: clamped, logId }
     }
     url = `${YANDEX_API_BASE}/v2/campaigns/${campaignId}/offers/stocks`
@@ -272,7 +273,7 @@ export async function pushStock(params: PushStockParams): Promise<PushStockResul
       .where(and(eq(stockSyncState.shop_id, shop.id), eq(stockSyncState.sku, params.freshnessKey)))
     if (st && version < st.version) {
       logger.warn('stock_write_stale', { shopId: shop.id, key: params.freshnessKey, writeVersion: version, currentVersion: st.version })
-      const logId = await audit({ ...base, dry_run: dryRun, endpoint: url, method, identifier, warehouse_id: whId, status: 'skipped', reason: 'stale_version' })
+      const logId = await audit({ ...base, dry_run: false, endpoint: url, method, identifier, warehouse_id: whId, status: 'skipped', reason: 'stale_version' })
       return { status: 'skipped', reason: 'stale_version', quantity: clamped, logId }
     }
   }
@@ -280,7 +281,7 @@ export async function pushStock(params: PushStockParams): Promise<PushStockResul
   // 6. Decrypt the token.
   const token = shop.api_key_encrypted ? decrypt(shop.api_key_encrypted) : ''
   if (!token) {
-    const logId = await audit({ ...base, dry_run: dryRun, endpoint: url, method, identifier, warehouse_id: whId, status: 'skipped', reason: 'no_token' })
+    const logId = await audit({ ...base, dry_run: false, endpoint: url, method, identifier, warehouse_id: whId, status: 'skipped', reason: 'no_token' })
     return { status: 'skipped', reason: 'no_token', quantity: clamped, logId }
   }
 
@@ -288,17 +289,10 @@ export async function pushStock(params: PushStockParams): Promise<PushStockResul
     ? { Authorization: token, Accept: 'application/json', 'Content-Type': 'application/json' } // Uzum: no "Bearer" prefix
     : { 'Api-Key': token, Accept: 'application/json', 'Content-Type': 'application/json' }
 
-  // 7. DRY-RUN: log exactly what WOULD be sent and send nothing (HARD RULE #5).
-  if (dryRun) {
-    logger.info('stock_write_dry_run', { shopId: shop.id, marketplace, method, url, identifier, warehouseId: whId, quantity: clamped, version, body })
-    const logId = await audit({
-      ...base, dry_run: true, endpoint: url, method, identifier, warehouse_id: whId,
-      status: 'dry_run', reason: 'dry_run', request_body: body,
-    })
-    return { status: 'dry_run', quantity: clamped, logId }
-  }
-
-  // 8. LIVE: send through the shared guard with stock-write intent.
+  // 7. LIVE: send through the shared guard with stock-write intent. Writes are
+  //    always live — no dry-run gate. Kill switch (step 1), read-only/scope/
+  //    identifier/freshness guards above, and the URL-exact readonly guard below
+  //    are the safety layers; transparency is the audit log + notification.
   try {
     const res = await sendWithRetry(url, { method, headers, body, intent: 'stock-write' })
     let respText = ''

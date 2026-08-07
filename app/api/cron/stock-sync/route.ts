@@ -80,8 +80,8 @@ export const GET = withErrorHandler(async (req: Request) => {
     }
   }
 
-  // Run Step A/B once per user whose Uzum order count moved. Each shop's own
-  // dry_run flag still governs whether a write is simulated or sent.
+  // Run Step A/B once per user whose Uzum order count moved. Writes are always
+  // live for stock_sync shops — a detected change propagates immediately.
   const runs: Record<string, unknown>[] = []
   for (const userId of usersToSync) {
     try {

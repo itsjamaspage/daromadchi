@@ -1,4 +1,3 @@
-/* eslint-disable react/no-unescaped-entities */
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -44,7 +43,6 @@ function StockSyncPanel({ shop, marketplace }: { shop: Shop | null; marketplace:
 
   const alreadyConsented = !!shop?.stock_sync_consent_at
   const [mode,     setMode]     = useState<'read_only' | 'stock_sync'>(shop?.api_mode ?? 'read_only')
-  const [dryRun,   setDryRun]   = useState<boolean>(shop?.stock_sync_dry_run ?? true)
   const [oversell, setOversell] = useState<'lock_last_unit' | 'partition' | 'off'>(shop?.oversell_mode ?? 'lock_last_unit')
   const [consentChecked, setConsentChecked] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -56,13 +54,12 @@ function StockSyncPanel({ shop, marketplace }: { shop: Shop | null; marketplace:
 
   const needsConsent = mode === 'stock_sync' && !alreadyConsented && !consentChecked
   const savedMode = shop.api_mode ?? 'read_only'
-  const savedDry  = shop.stock_sync_dry_run ?? true
-  const badge = savedMode === 'read_only' ? t.ssBadgeReadOnly : savedDry ? t.ssBadgeTest : t.ssBadgeLive
+  // stock_sync now always means live writes (no dry-run), so the badge is a
+  // two-state read-only vs live indicator.
+  const badge = savedMode === 'read_only' ? t.ssBadgeReadOnly : t.ssBadgeLive
   const badgeCls = savedMode === 'read_only'
     ? 'bg-slate-500/10 border-[var(--border)] text-[var(--text-muted)]'
-    : savedDry
-      ? 'bg-[var(--badge-ok-bg)] border-[var(--badge-ok-bdr)] text-[var(--badge-ok-text)]'
-      : 'bg-[var(--status-err-bg)] border-[var(--status-err-bdr)] text-[var(--status-err-text)]'
+    : 'bg-[var(--status-err-bg)] border-[var(--status-err-bdr)] text-[var(--status-err-text)]'
 
   const cardCls = (active: boolean) =>
     `text-left flex flex-col gap-1 p-3 rounded-xl border transition-colors ${
@@ -80,7 +77,6 @@ function StockSyncPanel({ shop, marketplace }: { shop: Shop | null; marketplace:
         body: JSON.stringify({
           marketplace,
           api_mode: mode,
-          dry_run: dryRun,
           oversell_mode: oversell,
           consent: consentChecked || alreadyConsented,
         }),
@@ -139,14 +135,6 @@ function StockSyncPanel({ shop, marketplace }: { shop: Shop | null; marketplace:
               </label>
             </div>
           )}
-
-          <label className="flex items-start gap-2 cursor-pointer">
-            <input type="checkbox" checked={dryRun} onChange={e => setDryRun(e.target.checked)} className="mt-0.5" />
-            <span>
-              <span className="text-sm font-medium text-[var(--text-base)]">{t.ssTestModeLabel}</span>
-              <span className="block text-xs text-[var(--text-muted)]">{dryRun ? t.ssTestModeDesc : t.ssLiveDesc}</span>
-            </span>
-          </label>
 
           <div>
             <p className="text-xs font-medium text-[var(--text-muted)] mb-1.5">{t.ssOversellLabel}</p>

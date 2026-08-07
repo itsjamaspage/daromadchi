@@ -67,7 +67,6 @@ export interface OversellGroup {
   title: string
   rawAvailable: number          // negative
   productIds: string[]          // all products in the group
-  forceDryRun?: boolean
 }
 
 export type OversellAction = 'alert_only' | 'auto_cancelled' | 'rate_limited' | 'no_later_order' | 'auto_disabled'
@@ -138,7 +137,10 @@ export async function handleOversell(g: OversellGroup): Promise<OversellOutcome>
     shop: { id: shop.id, marketplace: shop.marketplace as MarketplaceType, api_key_encrypted: shop.api_key_encrypted, shop_id_external: shop.shop_id_external },
     orderIdExternal: later.orderIdExternal,
     reason: 'OUT_OF_STOCK',
-    dryRun: !!g.forceDryRun || shop.stock_sync_dry_run,
+    // Order-cancel keeps its OWN independent safety: env flag STOCK_SYNC_AUTOCANCEL
+    // (off by default) + rate limit + this per-shop simulate gate. Stock writes
+    // are always live now, but auto-cancelling a customer's order stays gated.
+    dryRun: shop.stock_sync_dry_run,
     auto: true,
   })
 

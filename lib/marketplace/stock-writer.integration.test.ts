@@ -88,7 +88,7 @@ async function readBackYm(sku: string): Promise<number | null> {
 describe('Uzum live round-trip (real pushStock + read-back)', () => {
   it('push target 0 → 200 → read-back observed === target', async () => {
     store.uzum.set(BARCODE, 1) // listed 1 before the sale
-    const res = await pushStock({ shop: uzumShop, sku: SHOP_SKU, barcode: BARCODE, quantity: 0, dryRun: false, version: 1 })
+    const res = await pushStock({ shop: uzumShop, sku: SHOP_SKU, barcode: BARCODE, quantity: 0, version: 1 })
     assert.equal(res.status, 'sent')
     // exact payload the writer built
     assert.deepEqual(lastWrite?.body, { skuAmountList: [{ barcode: BARCODE, amount: 0, fbsLinked: true }] })
@@ -97,13 +97,13 @@ describe('Uzum live round-trip (real pushStock + read-back)', () => {
   })
 
   it('restore to real stock (target 5) → read-back verifies too', async () => {
-    const res = await pushStock({ shop: uzumShop, sku: SHOP_SKU, barcode: BARCODE, quantity: 5, dryRun: false, version: 2 })
+    const res = await pushStock({ shop: uzumShop, sku: SHOP_SKU, barcode: BARCODE, quantity: 5, version: 2 })
     assert.equal(res.status, 'sent')
     assert.equal(await readBackUzum(BARCODE), 5)
   })
 
   it('clamps a negative quantity to 0 on the wire', async () => {
-    await pushStock({ shop: uzumShop, sku: SHOP_SKU, barcode: BARCODE, quantity: -3, dryRun: false, version: 3 })
+    await pushStock({ shop: uzumShop, sku: SHOP_SKU, barcode: BARCODE, quantity: -3, version: 3 })
     assert.equal((lastWrite?.body as { skuAmountList: { amount: number }[] }).skuAmountList[0].amount, 0)
   })
 })
@@ -112,7 +112,7 @@ describe('Yandex Market round-trip + stale-updatedAt detection', () => {
   it('honest store: push 0 → read-back observed === target, payload carries FIT + updatedAt', async () => {
     ymDropsWrite = false
     store.ym.set(SHOP_SKU, 1)
-    const res = await pushStock({ shop: ymShop, sku: SHOP_SKU, barcode: null, warehouseId: '987654', quantity: 0, dryRun: false, version: 1, updatedAt: '2026-08-02T10:00:00.000Z' })
+    const res = await pushStock({ shop: ymShop, sku: SHOP_SKU, barcode: null, warehouseId: '987654', quantity: 0, version: 1, updatedAt: '2026-08-02T10:00:00.000Z' })
     assert.equal(res.status, 'sent')
     const item = (lastWrite?.body as { skus: { warehouseId: number; items: { count: number; type: string; updatedAt: string }[] }[] }).skus[0]
     assert.equal(item.warehouseId, 987654)
@@ -124,7 +124,7 @@ describe('Yandex Market round-trip + stale-updatedAt detection', () => {
   it('STALE updatedAt: store returns 200 but ignores the write → read-back catches it (observed !== target)', async () => {
     ymDropsWrite = true            // YM silently drops the write (stale timestamp)
     store.ym.set(SHOP_SKU, 1)      // still listing 1
-    const res = await pushStock({ shop: ymShop, sku: SHOP_SKU, barcode: null, warehouseId: '987654', quantity: 0, dryRun: false, version: 2, updatedAt: '2026-08-02T10:00:00.000Z' })
+    const res = await pushStock({ shop: ymShop, sku: SHOP_SKU, barcode: null, warehouseId: '987654', quantity: 0, version: 2, updatedAt: '2026-08-02T10:00:00.000Z' })
     assert.equal(res.status, 'sent')            // bare HTTP 200 — looks like success
     const observed = await readBackYm(SHOP_SKU)
     assert.equal(observed, 1)                   // store did NOT change
