@@ -1,7 +1,8 @@
 import { eq, and, inArray, gte, lt } from 'drizzle-orm'
-import { db, shops as shopsTable, orders as ordersTable, userSettings as userSettingsTable } from '@/lib/db'
+import { db, shops as shopsTable, orders as ordersTable, orderItems as orderItemsTable, products as productsTable } from '@/lib/db'
 import { computeStockGroups } from '@/lib/db/stock-groups'
-import { notifT, fmtNumber, type NotifLang } from '@/lib/notif-i18n'
+import { COLOR_LABELS, type ColorKey, type BadgeLang } from '@/lib/products/resolveColor'
+import { notifT, type NotifLang } from '@/lib/notif-i18n'
 
 const MP_FLAG: Record<string, string> = {
   uzum:          '🟣UZ',
@@ -37,24 +38,20 @@ export async function buildDigestForUser(
 
   const mpByShop = new Map<string, string>(shopRows.map(r => [r.id, r.marketplace]))
 
-  const [ueRow] = await db.select({ commPct: userSettingsTable.ue_comm_pct })
-    .from(userSettingsTable).where(eq(userSettingsTable.user_id, s.user_id))
-  const commPct = ueRow ? Number(ueRow.commPct) : 10
-
   const parts: string[] = []
 
   // ── Daily summary (yesterday's sales) ──
   if (s.notif_daily_summary) {
-    const day = await buildSalesSummary(shopIds, mpByShop, 1, lang, commPct)
+    const day = await buildSalesSummary(shopIds, mpByShop, 1, lang)
     if (day) parts.push(`${t.dailyTitle}\n` + day)
 
-    const today = await buildSalesSummary(shopIds, mpByShop, 0, lang, commPct)
+    const today = await buildSalesSummary(shopIds, mpByShop, 0, lang)
     if (today) parts.push(`${t.todayTitle}\n` + today)
   }
 
   // ── Weekly report (last 7 days, Mondays only) ──
   if (s.notif_weekly_report && includeWeekly) {
-    const week = await buildSalesSummary(shopIds, mpByShop, 7, lang, commPct)
+    const week = await buildSalesSummary(shopIds, mpByShop, 7, lang)
     if (week) parts.push(`${t.weeklyTitle(7)}\n` + week)
   }
 
@@ -89,14 +86,17 @@ function truncate(s: string, max: number): string {
 
 /**
  * Sales summary for the last `days` days (days=0 → today so far).
- * Now includes per-marketplace breakdown and estimated profit.
+ *
+ * Lists the actual ORDERED PRODUCTS — one line per order item as
+ * "<flag> <product name> · <colour> · <SKU>". No revenue / commission / profit:
+ * the seller asked for just the product identity of what sold. Cancelled orders
+ * are still tallied so a return/cancel isn't silently dropped.
  */
 async function buildSalesSummary(
   shopIds: string[],
   mpByShop: Map<string, string>,
   days: number,
   lang: NotifLang,
-  commPct: number,
 ): Promise<string | null> {
   const t = notifT(lang)
   const UZ_MS = 5 * 60 * 60_000
@@ -106,66 +106,64 @@ async function buildSalesSummary(
   const since = new Date(midnightUtc.getTime() - days * 86_400_000)
   const until = days === 0 ? new Date() : midnightUtc
 
-  const orderRows = await db.select({
-    id: ordersTable.id,
+  // One row per order ITEM in the window, carrying the product's identity
+  // (name, colour key, seller SKU) and its order's marketplace + status.
+  const rows = await db.select({
+    orderId: ordersTable.id,
     shop_id: ordersTable.shop_id,
     status: ordersTable.status,
-    revenue: ordersTable.revenue,
-    marketplace_fee: ordersTable.marketplace_fee,
-    delivery_cost: ordersTable.delivery_cost,
-    order_id_external: ordersTable.order_id_external,
+    title: productsTable.title,
+    sku: productsTable.sku,
+    color: productsTable.variant_color,
   }).from(ordersTable)
+    .leftJoin(orderItemsTable, eq(orderItemsTable.order_id, ordersTable.id))
+    .leftJoin(productsTable, eq(orderItemsTable.product_id, productsTable.id))
     .where(and(
       inArray(ordersTable.shop_id, shopIds),
       gte(ordersTable.ordered_at, since),
       lt(ordersTable.ordered_at, until),
     ))
 
-  const active    = orderRows.filter(o => o.status !== 'cancelled' && o.status !== 'returned')
-  const cancelled = orderRows.filter(o => o.status === 'cancelled')
+  const active    = rows.filter(o => o.status !== 'cancelled' && o.status !== 'returned')
+  const cancelled = rows.filter(o => o.status === 'cancelled')
 
   if (active.length === 0 && cancelled.length === 0) {
     return days === 0 ? null : t.noOrders
   }
 
-  // Per-marketplace aggregation
-  const mpStats = new Map<string, { orders: number; revenue: number; fee: number; delivery: number }>()
-  for (const o of active) {
-    const mp = mpByShop.get(o.shop_id) ?? 'uzum'
-    const s = mpStats.get(mp) ?? { orders: 0, revenue: 0, fee: 0, delivery: 0 }
-    s.orders += 1
-    s.revenue += Number(o.revenue ?? 0)
-    s.fee += Number(o.marketplace_fee ?? 0)
-    s.delivery += Number(o.delivery_cost ?? 0)
-    mpStats.set(mp, s)
+  const colorLabel = (key: string | null): string | null => {
+    if (!key) return null
+    const l = COLOR_LABELS[key as ColorKey]
+    return l ? l[lang as BadgeLang] : null
   }
 
-  const totalRevenue = active.reduce((s, o) => s + Number(o.revenue ?? 0), 0)
-  const totalFee = active.reduce((s, o) => s + Number(o.marketplace_fee ?? 0), 0)
-  const totalDelivery = active.reduce((s, o) => s + Number(o.delivery_cost ?? 0), 0)
-  const estimatedFee = totalFee > 0 ? totalFee : totalRevenue * commPct / 100
-  const profit = totalRevenue - estimatedFee - totalDelivery
-  const isEstimated = totalFee === 0 && totalRevenue > 0
-
+  // One line per ordered product: "<flag> <name> · <colour> · <SKU>". Fields
+  // that are missing (no colour resolved, no SKU) are simply omitted so a line
+  // is never padded with blanks. Capped so a busy window can't produce a wall.
+  const MAX_ITEMS = 30
+  const withProduct = active.filter(o => (o.title && o.title.trim()) || (o.sku && o.sku.trim()))
   const lines: string[] = []
-
-  // Per-marketplace order lines
-  for (const [mp, s] of Array.from(mpStats.entries()).sort((a, b) => b[1].revenue - a[1].revenue)) {
-    const flag = MP_FLAG[mp] ?? mp
-    const fee = s.fee > 0 ? s.fee : s.revenue * commPct / 100
-    lines.push(`${flag}: <b>${s.orders}</b> ${t.orders.toLowerCase()} · ${fmtNumber(s.revenue, lang)} ${t.som} (−${fmtNumber(fee, lang)} ${t.commission.toLowerCase()})`)
+  for (const o of withProduct.slice(0, MAX_ITEMS)) {
+    const flag = MP_FLAG[mpByShop.get(o.shop_id) ?? 'uzum'] ?? ''
+    const name = o.title?.trim()
+    const sku = o.sku?.trim()
+    const parts: string[] = [name || sku || '—']
+    const c = colorLabel(o.color)
+    if (c) parts.push(c)
+    // Only append the SKU when it isn't already the name we showed.
+    if (sku && sku !== (name ?? '')) parts.push(sku)
+    lines.push(`${flag} ${parts.join(' · ')}`.trim())
   }
-
-  // Totals
-  if (mpStats.size > 1 || active.length > 0) {
-    const approx = isEstimated ? '≈ ' : ''
-    lines.push(`💰 ${t.revenue}: <b>${fmtNumber(totalRevenue, lang)} ${t.som}</b>`)
-    lines.push(`📈 ${t.profit}: <b>${approx}${fmtNumber(profit, lang)} ${t.som}</b>`)
-  }
+  const remaining = withProduct.length - Math.min(withProduct.length, MAX_ITEMS)
+  if (remaining > 0) lines.push(`… +${remaining}`)
 
   if (cancelled.length > 0) {
-    lines.push(`🚫 ${t.cancelled}: ${cancelled.length}`)
+    lines.push(`🚫 ${t.cancelled}: ${new Set(cancelled.map(c => c.orderId)).size}`)
   }
+
+  // Active orders exist but none carried a resolvable product (no items synced):
+  // fall back to a non-empty acknowledgement rather than an empty section.
+  if (lines.length === 0) return days === 0 ? null : t.noOrders
 
   return lines.join('\n')
 }
