@@ -39,6 +39,7 @@ export async function syncYandexBoostSpend(
   token: string,
   campaignId: string,
   windowDays = 14,
+  opts: { ignoreCooldown?: boolean } = {},
 ): Promise<SettlementsSyncResult> {
   // Yandex's report API is scoped to businessId, not campaignId. Self-heal any
   // shop whose stored business_id equals its campaignId (an early-flow bug) by
@@ -55,9 +56,15 @@ export async function syncYandexBoostSpend(
   // cooldown that re-fires each cron cycle and floods the seller's
   // "Ошибки · API Маркета" log at 100%. After a 403 we skip boost sync and
   // re-probe only ~weekly (self-heals if the seller later grants access).
+  // A MANUAL/on-demand sync (opts.ignoreCooldown) always re-probes boost right
+  // now: the seller has just granted the API key «Продвижение» access and wants
+  // the data immediately, not after the weekly cron re-probe. The automatic cron
+  // path passes no flag, so its weekly back-off here is unchanged. On a
+  // successful generate the cooldown is cleared further down, so the normal cron
+  // resumes fetching boost every cycle.
   const BOOST_REPROBE_MS = 7 * 24 * 60 * 60_000
   const disabledAt = shopRow[0]?.boostDisabledAt
-  if (disabledAt && Date.now() - new Date(disabledAt).getTime() < BOOST_REPROBE_MS) {
+  if (!opts.ignoreCooldown && disabledAt && Date.now() - new Date(disabledAt).getTime() < BOOST_REPROBE_MS) {
     return { ok: true, inserted: 0, skipped: 'boost report disabled after 403 (API key lacks advertising access) — re-probing weekly' }
   }
   const storedLooksValid = storedBid && /^\d+$/.test(storedBid) && storedBid !== campaignId
