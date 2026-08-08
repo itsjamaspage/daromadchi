@@ -4,8 +4,7 @@ import { getCurrentUser } from '@/lib/auth/session'
 import { db, shops, orders } from '@/lib/db'
 import { decrypt } from '@/lib/crypto'
 import { marketplaceFetch } from '@/lib/marketplace-readonly-guard'
-import { UZUM_API_BASE, fetchAllUzumSkuStocks, fetchAllUzumExpenses } from '@/lib/uzum/client'
-import { UZUM_AD_SOURCE_MATCHERS } from '@/lib/uzum/sync'
+import { UZUM_API_BASE, fetchAllUzumSkuStocks } from '@/lib/uzum/client'
 import { withErrorHandler } from '@/lib/api-handler'
 
 export const runtime = 'nodejs'
@@ -359,65 +358,6 @@ export const GET = withErrorHandler(async (req: Request) => {
     skuStocksSample = { error: String(err).slice(0, 300) }
   }
 
-  // Raw dump of /v1/finance/expenses OUTCOME rows — the ONLY read that reveals
-  // real Uzum advertising / boost / promotion cost (there is no campaign endpoint
-  // on the seller tier). The sync counts an OUTCOME row as ad spend when its
-  // `source` OR `name` (lowercased) contains any UZUM_AD_SOURCE_MATCHERS token;
-  // we import that SAME constant so this probe can never drift from the live
-  // matcher. Every distinct OUTCOME source/name in the 14-day window (mirrors the
-  // sync window) is dumped with `matched` flagged, so we can settle the one open
-  // question — is ad spend actually flowing, or is the matcher missing Uzum's
-  // real string — WITHOUT server logs. Read-only; never writes.
-  //
-  // Reading the result:
-  //   • totalOutcomeRows === 0  → Uzum simply hasn't billed an ad charge in 14
-  //     days yet. That's "no charge yet", NOT "matcher broken" — don't confuse them.
-  //   • totalOutcomeRows > 0 but matchedDistinctSources === 0 → the matcher is
-  //     missing a real string. Copy the unmatched `source`/`name` below into
-  //     UZUM_AD_SOURCE_MATCHERS (lib/uzum/sync.ts) and the spend starts flowing.
-  //   • matchedDistinctSources > 0 → it's already working; matchedSpendSum is the
-  //     14-day ad total the sync would have written to product_ads_stats.
-  let adExpensesProbe: unknown = null
-  if (uzumShopIds.length) {
-    try {
-      const now = Date.now()
-      const from = now - 14 * 24 * 60 * 60 * 1000
-      const payments = await fetchAllUzumExpenses(token, uzumShopIds, from, now)
-      const outcomes = payments.filter(p => p.type === 'OUTCOME')
-      const matches = (p: { source?: string; name?: string }) =>
-        UZUM_AD_SOURCE_MATCHERS.some(m => `${p.source ?? ''} ${p.name ?? ''}`.toLowerCase().includes(m))
-      // Collapse identical charges to one line per distinct (source|name): the
-      // seller needs the STRINGS and whether each matched, not every occurrence.
-      const seen = new Map<string, { source: string; name: string; type: string; sampleAmount: number; count: number; matched: boolean }>()
-      for (const p of outcomes) {
-        const key = `${p.source ?? ''}|||${p.name ?? ''}`
-        const ex = seen.get(key)
-        if (ex) { ex.count++; continue }
-        seen.set(key, {
-          source: p.source ?? '',
-          name: p.name ?? '',
-          type: p.type,
-          sampleAmount: Math.abs(p.paymentPrice ?? 0),
-          count: 1,
-          matched: matches(p),
-        })
-      }
-      const distinctRows = [...seen.values()]
-      const matchedSpendSum = outcomes.filter(matches).reduce((s, p) => s + Math.abs(p.paymentPrice ?? 0), 0)
-      adExpensesProbe = {
-        windowDays: 14,
-        totalOutcomeRows: outcomes.length,
-        distinctOutcomeSources: distinctRows.length,
-        matchedDistinctSources: distinctRows.filter(r => r.matched).length,
-        matchedSpendSum,
-        matchers: UZUM_AD_SOURCE_MATCHERS,
-        distinctRows,
-      }
-    } catch (err) {
-      adExpensesProbe = { error: String(err).slice(0, 300) }
-    }
-  }
-
   const validStatuses = orderProbes.filter(p => p.status === 200).map(p => `${p.label}${p.count ? `(${p.count})` : '(0)'}`)
 
   return NextResponse.json({
@@ -435,17 +375,11 @@ export const GET = withErrorHandler(async (req: Request) => {
     // each record's seller-article field + barcode against products.sku to see
     // which SKUs were cross-wired to the wrong barcode.
     skuStocksSample,
-    // Raw /v1/finance/expenses OUTCOME rows over 14 days with `matched` flagged
-    // against the LIVE ad-source matcher. Settles whether Uzum ad spend is
-    // flowing: totalOutcomeRows=0 → no ad charge billed yet; rows>0 &
-    // matchedDistinctSources=0 → matcher missing a real string (copy it into
-    // UZUM_AD_SOURCE_MATCHERS); matchedDistinctSources>0 → already working.
-    adExpensesProbe,
     validStatuses,
     productSample,
     productStocks,
     shopsProbe,
     orderProbes,
-    hint: 'stockWriteDto = the authoritative Uzum stock-write request DTO from their OpenAPI spec — compare its field names/required flags against what we send ({skuAmountList:[{barcode,amount,fbsLinked}]}) to fix validation-failed-001. validStatuses = FBS statuses that returned 200. productSample shows whether SKU.quantitySold is populated. adExpensesProbe = 14-day OUTCOME rows with `matched` flagged: totalOutcomeRows=0 means Uzum has not billed an ad charge yet (not a matcher bug); rows>0 with matchedDistinctSources=0 means the matcher is missing a real source string (add it to UZUM_AD_SOURCE_MATCHERS). Paste the full JSON to support.',
+    hint: 'stockWriteDto = the authoritative Uzum stock-write request DTO from their OpenAPI spec — compare its field names/required flags against what we send ({skuAmountList:[{barcode,amount,fbsLinked}]}) to fix validation-failed-001. validStatuses = FBS statuses that returned 200. productSample shows whether SKU.quantitySold is populated. Paste the full JSON to support.',
   })
 })
