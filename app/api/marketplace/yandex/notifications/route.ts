@@ -6,6 +6,9 @@ import { syncStockSyncGroups } from '@/lib/marketplace/stock-sync'
 
 export const runtime = 'nodejs'
 
+// Static validation ack — no body, triggers nothing.
+const PING_ACK = { version: 1, name: 'daromadchi', ok: true } as const
+
 /**
  * Yandex Market push-notification receiver.
  *
@@ -16,6 +19,21 @@ export const runtime = 'nodejs'
  * real PING + a real notification ack under 10s and explicitly flips
  * YM_STOCK_SYNC_WEBHOOK_LIVE — this route never forces a live write on its own.
  */
+
+/**
+ * URL-validation probe (GET / HEAD).
+ *
+ * Yandex Market's "Проверка URL" health-check does NOT always PING with POST —
+ * a GET against a POST-only route handler returns 405, which YM's console
+ * reports as `CANT_GET_RESPONSE` / subtype `HTTP` and refuses to connect the
+ * subscription. Answer GET (Next.js derives HEAD from it) with the same static
+ * 200 ack the POST PING returns. This path is READ-ONLY: it never reads a body,
+ * never touches the DB, and never calls any marketplace API — real
+ * notifications still arrive as authenticated POSTs handled below.
+ */
+export async function GET(): Promise<Response> {
+  return NextResponse.json(PING_ACK)
+}
 
 // Yandex notification source ranges. Overridable via YM_NOTIFY_ALLOWED_IPS
 // (comma-separated CIDRs / exact IPs). Defaults cover the documented ranges.
@@ -81,7 +99,7 @@ export async function POST(req: Request): Promise<Response> {
   // Validation handshake — ack fast, do nothing, no gating.
   if (type === 'PING' || !body) {
     logger.info('ym_notify_ping', { ip })
-    return NextResponse.json({ version: 1, name: 'daromadchi', ok: true })
+    return NextResponse.json(PING_ACK)
   }
 
   // ── Real notification: authenticate before it can trigger a live write. ──
