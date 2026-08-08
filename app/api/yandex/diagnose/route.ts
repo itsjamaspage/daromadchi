@@ -73,6 +73,7 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
     id: shops.id,
     api_key_encrypted: shops.api_key_encrypted,
     shop_id_external: shops.shop_id_external,
+    business_id: shops.business_id,
   }).from(shops).where(and(eq(shops.user_id, user.id), eq(shops.marketplace, 'yandex_market')))
 
   if (ymShops.length === 0) {
@@ -99,13 +100,25 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
     // which URL Yandex actually accepts on THIS seller's account. All
     // are POST with the same body Yandex documents; a 200 anywhere
     // wins, everything else (404 / 400 / 405) shows up as a code.
-    const bid = businessId ?? campaignId // fallback if seller didn't paste one
+    //
+    // Resolve the businessId the boost sync actually uses: the query param
+    // wins, else the shop's stored, self-healed business_id, else the
+    // campaignId as a last resort. Using the REAL businessId is what makes the
+    // boost-consolidated probe below return Yandex's authentic error (a
+    // permission/region 403) instead of a bogus INVALID_REQUEST from a wrong id.
+    const storedBid = shop.business_id
+    const storedLooksValid = storedBid && /^\d+$/.test(storedBid) && storedBid !== campaignId
+    const bid = businessId ?? (storedLooksValid ? storedBid : campaignId)
     const body = JSON.stringify({
       businessId: Number(bid),
       dateTimeFrom: '2026-07-01T00:00:00Z',
       dateTimeTo:   '2026-07-31T23:59:59Z',
     })
     const paths = [
+      // THE ONE WE'RE CHECKING: is boost-consolidated a permission 403 (fixable
+      // by granting the API key «Продвижение») or a region/account 403 (dead)?
+      // The parsed body carries Yandex's error `code` — that settles it.
+      `/reports/boost-consolidated/generate?format=XLSX`,
       `/reports/united-netting-report/generate`,
       `/businesses/${bid}/reports/united-netting-report/generate`,
       `/reports/united-netting-report/generate?format=CSV`,
@@ -120,7 +133,7 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
     }
     return NextResponse.json({
       ok: true,
-      hint: 'The report-generate path that returns 200 is the one we want. 404 means the path is wrong; 400/405 means path is right but body is off.',
+      hint: 'boost-consolidated: 200 = API works (not dead); 403 with an ACCESS/permission code = grant the API key «Продвижение»; 403 with a REGION/RESTRICTED code = account/region block. The netting report generating 200 while boost 403s tells you the key itself is valid.',
       campaignId,
       businessId: bid,
       probes,
