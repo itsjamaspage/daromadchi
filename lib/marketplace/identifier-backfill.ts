@@ -76,7 +76,16 @@ export async function backfillShopIdentifiers(shop: BackfillShop): Promise<Backf
       for (const s of stocks) {
         const bc = nonBlank(s.barcode)
         if (!bc) continue
-        for (const key of [s.skuId, s.sku, s.sellerSku, s.sellerSkuCode, s.sellerItemCode, s.article, s.productId]) {
+        // Index the barcode ONLY by identifiers that are UNIQUE PER VARIANT. The
+        // card-level productId is SHARED by every colour/size variant of a
+        // product (products.variant_group_key = uzum:<card.productId>), so
+        // indexing a barcode under it makes the LAST variant's barcode overwrite
+        // its siblings' — then a lookup returns the WRONG variant's barcode and
+        // SKUs get cross-wired (a live write then targets the wrong listing).
+        // Our products.marketplace_product_id is the per-variant skuId and
+        // products.sku is the seller article, so we never need productId to
+        // match; dropping it removes the collision without losing a real match.
+        for (const key of [s.skuId, s.sku, s.sellerSku, s.sellerSkuCode, s.sellerItemCode, s.article]) {
           const k = normKey(key)
           if (k) barcodeByKey.set(k, bc)
         }

@@ -107,6 +107,13 @@ export const shops = pgTable('shops', {
   // getting hammered by our 15-min cron. Persisted (not in-memory) so
   // deploys don't wipe it.
   throttled_until:   timestamp('throttled_until', { withTimezone: true }),
+  // Yandex Market boost-consolidated (Буст продаж) report cooldown. The report
+  // is a separate permission on the seller's API key; a key without advertising
+  // access gets a hard 403 on every generate, which otherwise re-fires each cron
+  // cycle and floods the seller's "Ошибки · API Маркета" log at 100%. On a 403
+  // we stamp this and skip boost sync, re-probing only ~weekly so the feature
+  // still self-heals if the seller later grants access. Cleared on a success.
+  yandex_boost_disabled_at: timestamp('yandex_boost_disabled_at', { withTimezone: true }),
   warehouse_id:      uuid('warehouse_id').references(() => warehouses.id, { onDelete: 'set null' }),
   // ── Stock-sync (edit) mode — opt-in, OFF by default ─────────────────────
   // read_only (default): the app only reads marketplace data and NEVER
