@@ -65,34 +65,43 @@ function ipAllowed(ip: string | null): boolean {
 
 export async function POST(req: Request): Promise<Response> {
   const ip = clientIp(req)
-
-  // Optional shared secret in the query string (URL secrecy is YM's default auth).
   const url = new URL(req.url)
-  const token = url.searchParams.get('token')
-  const expected = process.env.YM_NOTIFY_TOKEN
-  if (expected && token !== expected) {
-    logger.warn('ym_notify_bad_token', { ip })
-    return NextResponse.json({ ok: false }, { status: 403 })
-  }
 
-  if (!ipAllowed(ip)) {
-    logger.warn('ym_notify_ip_blocked', { ip })
-    return NextResponse.json({ ok: false, error: 'forbidden' }, { status: 403 })
-  }
-
+  // Parse the body FIRST. The validation PING must be acked with 200 regardless
+  // of source IP or token, or Yandex marks the whole subscription "Некорректный
+  // URL" and refuses to connect. A PING carries no data and triggers nothing, so
+  // acking it unconditionally is safe — the auth gate below still guards every
+  // notification that actually DOES something (a live cross-store stock write).
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let body: any = null
   try { body = await req.json() } catch { /* PING may be empty */ }
 
   const type = String(body?.notificationType ?? body?.type ?? '').toUpperCase()
 
-  // Validation handshake — ack fast, do nothing.
+  // Validation handshake — ack fast, do nothing, no gating.
   if (type === 'PING' || !body) {
     logger.info('ym_notify_ping', { ip })
     return NextResponse.json({ version: 1, name: 'daromadchi', ok: true })
   }
 
-  logger.info('ym_notify', { ip, type })
+  // ── Real notification: authenticate before it can trigger a live write. ──
+  // Yandex Market's own model is a SECRET URL, so a matching ?token= is the
+  // primary, transport-agnostic gate; a request from Yandex's documented IP
+  // ranges is also accepted. EITHER is sufficient — this is deliberately more
+  // permissive than requiring both, because the hardcoded IP list can miss a
+  // Market notification egress range and silently drop real events. The source
+  // IP is logged on every accept/reject so an unlisted range is discoverable
+  // (add it via YM_NOTIFY_ALLOWED_IPS) rather than invisible.
+  const token = url.searchParams.get('token')
+  const expected = process.env.YM_NOTIFY_TOKEN
+  const tokenOk = !!expected && token === expected
+  const ipOk = ipAllowed(ip)
+  if (!tokenOk && !ipOk) {
+    logger.warn('ym_notify_unauthorized', { ip, type, hasToken: !!token, tokenConfigured: !!expected })
+    return NextResponse.json({ ok: false, error: 'forbidden' }, { status: 403 })
+  }
+
+  logger.info('ym_notify', { ip, type, via: tokenOk ? 'token' : 'ip' })
 
   // Resolve the shop from the campaignId in the payload, then run Step A/B in
   // the background so we return within the 10s budget. Writes are always live —
