@@ -37,7 +37,11 @@ export const POST = withErrorHandler(async () => {
     notif_weekly_report: settings.notif_weekly_report,
     notif_lang: settings.notif_lang,
     alert_stock_threshold: settings.alert_stock_threshold,
-  }, true)
+    // includeWeekly=false: the test should mirror a normal DAILY notification.
+    // Forcing the weekly section made a single order appear twice (yesterday +
+    // last-7-days), which reads as duplicate spam. The weekly report still fires
+    // on Mondays in the real cron.
+  }, false)
 
   const body = digest
     ? `${t.testHeader}\n\n${digest.text}`
