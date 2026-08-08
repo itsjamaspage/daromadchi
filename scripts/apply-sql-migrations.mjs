@@ -31,7 +31,10 @@ const MIGRATIONS = [
   'migrations/migrations/045_products_is_archived.sql',
   'migrations/migrations/046_products_variant_group_key.sql',
   'migrations/migrations/047_products_variant_color.sql',
-  'migrations/migrations/048_ads_spend_columns.sql',
+  // 048_ads_spend_columns.sql intentionally NOT listed: it ALTERs
+  // product_ads_stats, which 052 drops. Re-running it after the drop fails with
+  // "relation product_ads_stats does not exist". The table and its ad-spend
+  // feature were removed, so this migration is obsolete.
   'migrations/migrations/049_stock_update_notif_prefs.sql',
   'migrations/migrations/050_stock_notify_state.sql',
   'migrations/migrations/051_shops_yandex_boost_disabled.sql',
