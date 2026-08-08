@@ -6,7 +6,6 @@ import { syncFromUzum } from '@/lib/uzum/sync'
 import { syncFromYandex } from '@/lib/yandex/sync'
 import { syncFromWildberries } from '@/lib/wildberries/sync'
 import { syncYandexSettlements } from '@/lib/yandex/settlements-sync'
-import { syncYandexBoostSpend } from '@/lib/yandex/boost-sync'
 import { syncUzumSettlements } from '@/lib/uzum/settlements-sync'
 import { WB_ENABLED } from '@/lib/feature-flags'
 import { decrypt } from '@/lib/crypto'
@@ -70,15 +69,6 @@ async function syncShop(
         ;(r as Record<string, unknown>).settlements = s
       } catch (e) {
         ;(r as Record<string, unknown>).settlements = { ok: false, error: String(e).slice(0, 300) }
-      }
-      // Boost (Буст продаж) ad spend — cash + bonus — from the boost-consolidated
-      // report. Best-effort: a boost-report hiccup must never block the primary
-      // orders/settlements sync.
-      try {
-        const b = await syncYandexBoostSpend(shop.id, token, shop.shop_id_external)
-        ;(r as Record<string, unknown>).boostSpend = b
-      } catch (e) {
-        ;(r as Record<string, unknown>).boostSpend = { ok: false, error: String(e).slice(0, 300) }
       }
     } else if (shop.marketplace === 'wildberries' && WB_ENABLED) {
       r = { ...await syncFromWildberries(null, shop.id, token) }

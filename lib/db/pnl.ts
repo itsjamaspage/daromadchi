@@ -1,5 +1,5 @@
 import { inArray, gte, and, asc, ne, eq, sql } from 'drizzle-orm'
-import { db, orders, orderItems, products, productAdsStats, shops, uzumSettlementOrders, yandexSettlementTransactions } from '@/lib/db'
+import { db, orders, orderItems, products, shops, uzumSettlementOrders, yandexSettlementTransactions } from '@/lib/db'
 import { getShopIds } from '@/lib/db/shop-context'
 import { getUnitEcoSettings } from '@/lib/db/unit-economics'
 import { getRealFinancialsByBucket } from '@/lib/db/real-financials'
@@ -28,7 +28,6 @@ export interface PnlRow {
   delivery: number
   acquiring: number
   tax: number
-  ads: number
   cogs: number
   net: number
   penalty: number
@@ -36,7 +35,6 @@ export interface PnlRow {
   additionalPayment: number
   /** true when commission/delivery came from percentages, not marketplace data */
   estimated: boolean
-  adSpendEstimated: boolean
   /**
    * true when the bucket has a Yandex sale whose real settlement hasn't landed
    * yet. Yandex fees are NEVER estimated from a percentage (the order endpoint
@@ -53,7 +51,6 @@ export interface PnlParams {
   commissionPct: number
   acquiringPct: number
   taxPct: number
-  adPct: number
   lastMilePct: number
 }
 
@@ -79,19 +76,16 @@ export async function getPnl(opts: PnlOpts): Promise<{ rows: PnlRow[]; params: P
     commissionPct: ue.defaultCommissionPct,
     acquiringPct: ue.acquiringPct,
     taxPct: ue.taxPct,
-    adPct: ue.adPct,
     lastMilePct: ue.lastMilePct,
   }
 
   const shopIds = await getShopIds(marketplace)
   if (!shopIds || shopIds.length === 0) return { rows: [], params }
 
-  const fromStr = from.toISOString().slice(0, 10)
   const fmt = bucket === 'day' ? 'YYYY-MM-DD' : 'YYYY-MM'
   const orderBucketSql   = sql<string>`to_char(${orders.ordered_at}, ${sql.raw(`'${fmt}'`)})`
-  const adBucketSql      = sql<string>`to_char(${productAdsStats.date}::date, ${sql.raw(`'${fmt}'`)})`
 
-  const [rows, cogsRows, adSpendRows] = await Promise.all([
+  const [rows, cogsRows] = await Promise.all([
     db.select({
       ordered_at: orders.ordered_at,
       status: orders.status,
@@ -123,20 +117,9 @@ export async function getPnl(opts: PnlOpts): Promise<{ rows: PnlRow[]; params: P
         ne(orders.status, 'returned'),
       ))
       .groupBy(orderBucketSql),
-    db.select({
-      bucket: adBucketSql.as('bucket'),
-      spend:  sql<number>`coalesce(sum(${productAdsStats.spend}), 0)`.as('spend'),
-    }).from(productAdsStats)
-      .where(and(
-        inArray(productAdsStats.shop_id, shopIds),
-        gte(productAdsStats.date, fromStr),
-        sql`${productAdsStats.date} <= ${to.toISOString().slice(0, 10)}`,
-      ))
-      .groupBy(adBucketSql),
   ])
 
   const cogsByBucket = new Map(cogsRows.map(r => [r.bucket, Number(r.cogs)]))
-  const adSpendByBucket = new Map(adSpendRows.map(r => [r.bucket, Number(r.spend)]))
   // Real per-bucket settlement financials. When present for a bucket
   // they REPLACE the Unit-Economics estimates for that bucket, so
   // Dashboard / P&L / Payouts all show identical numbers.
@@ -227,13 +210,6 @@ export async function getPnl(opts: PnlOpts): Promise<{ rows: PnlRow[]; params: P
       // A Yandex sale whose real settlement hasn't landed yet → its fee is
       // "pending" (shown as a placeholder), not zero and not an estimate.
       const feePending = v.hasYandex && !hasRealYandex
-      // Ads: use ONLY real productAdsStats data. Sellers explicitly
-      // asked to drop the "estimate from % of revenue" fallback — that
-      // was producing phantom ad-spend lines for shops that never ran
-      // ads. If we have no real data, show 0, not an estimate.
-      const realAdSpend = adSpendByBucket.get(key) ?? 0
-      const ads = realAdSpend
-      const adSpendEstimated = false
       const cogs       = cogsByBucket.get(key) ?? 0
       const penalty    = v.penalty
       const storageFee = v.storageFee
@@ -256,14 +232,12 @@ export async function getPnl(opts: PnlOpts): Promise<{ rows: PnlRow[]; params: P
         delivery,
         acquiring,
         tax,
-        ads,
         cogs,
         penalty,
         storageFee,
         additionalPayment,
-        net: v.revenue - commission - delivery - acquiring - tax - ads - cogs - penalty - storageFee - additionalPayment,
+        net: v.revenue - commission - delivery - acquiring - tax - cogs - penalty - storageFee - additionalPayment,
         estimated,
-        adSpendEstimated,
         feePending,
       }
     })

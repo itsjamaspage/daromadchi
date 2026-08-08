@@ -146,69 +146,6 @@ export interface UzumShopProductsResponse {
   totalProductsAmount: number
 }
 
-// ─── Finance / expenses (GET /v1/finance/expenses) ───────────────────────────
-// Uzum's authoritative record of money DEBITED from the seller — the same
-// "Финансы → Расходы" screen. Ad/boost/promotion spend lands here as OUTCOME
-// rows; there is no separate campaign endpoint on the seller-openapi tier, so
-// this is the ONLY read that reveals real advertising cost. The exact `source`
-// string Uzum uses for ads is not documented for us — lib/uzum/sync.ts logs
-// every OUTCOME row so the real value is discoverable on the first live run.
-export interface SellerPaymentDto {
-  paymentPrice: number
-  name: string
-  source: string
-  type: 'OUTCOME' | 'INCOME'
-  status: string
-  shopId: number
-  dateService: string  // date-time
-  dateCreated: string  // date-time
-}
-
-interface UzumExpensesResponse {
-  payload?: { payments?: SellerPaymentDto[] }
-  // tolerate a direct/alternate envelope
-  payments?: SellerPaymentDto[]
-  data?: { payments?: SellerPaymentDto[] }
-}
-
-// GET /v1/finance/expenses — shopIds repeated per id; dates are Unix epoch ms.
-export async function fetchUzumExpenses(
-  token: string,
-  shopIds: number[],
-  dateFromMs: number,
-  dateToMs: number,
-  page = 0,
-  size = 100,
-): Promise<{ payments: SellerPaymentDto[] }> {
-  return withRetry(() => {
-    const params = new URLSearchParams({ page: String(page), size: String(size) })
-    for (const id of shopIds) params.append('shopIds', String(id))
-    params.set('dateFrom', String(dateFromMs))
-    params.set('dateTo', String(dateToMs))
-    return request<UzumExpensesResponse>(`/v1/finance/expenses?${params}`, token).then(r => ({
-      payments: r.payload?.payments ?? r.payments ?? r.data?.payments ?? [],
-    }))
-  })
-}
-
-// Pull every page of /v1/finance/expenses for the given window.
-export async function fetchAllUzumExpenses(
-  token: string,
-  shopIds: number[],
-  dateFromMs: number,
-  dateToMs: number,
-  size = 100,
-  maxPages = 20,
-): Promise<SellerPaymentDto[]> {
-  const out: SellerPaymentDto[] = []
-  for (let page = 0; page < maxPages; page++) {
-    const { payments } = await fetchUzumExpenses(token, shopIds, dateFromMs, dateToMs, page, size)
-    out.push(...payments)
-    if (payments.length < size) break
-  }
-  return out
-}
-
 // ─── API calls ────────────────────────────────────────────────────────────────
 
 // ─── FBS Orders (GET /v2/fbs/orders) ─────────────────────────────────────────

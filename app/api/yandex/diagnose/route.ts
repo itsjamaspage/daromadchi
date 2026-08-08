@@ -115,10 +115,6 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
       dateTimeTo:   '2026-07-31T23:59:59Z',
     })
     const paths = [
-      // THE ONE WE'RE CHECKING: is boost-consolidated a permission 403 (fixable
-      // by granting the API key «Продвижение») or a region/account 403 (dead)?
-      // The parsed body carries Yandex's error `code` — that settles it.
-      `/reports/boost-consolidated/generate?format=XLSX`,
       `/reports/united-netting-report/generate`,
       `/businesses/${bid}/reports/united-netting-report/generate`,
       `/reports/united-netting-report/generate?format=CSV`,
@@ -133,7 +129,7 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
     }
     return NextResponse.json({
       ok: true,
-      hint: 'boost-consolidated: 200 = API works (not dead); 403 with an ACCESS/permission code = grant the API key «Продвижение»; 403 with a REGION/RESTRICTED code = account/region block. The netting report generating 200 while boost 403s tells you the key itself is valid.',
+      hint: 'united-netting-report: 200 = the settlements report generates on this account; a 403/404 code identifies which report path the API key accepts.',
       campaignId,
       businessId: bid,
       probes,

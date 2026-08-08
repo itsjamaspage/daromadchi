@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, Package, ShoppingCart,
   ChevronRight, X, BarChart2, Calculator, FileText,
-  Megaphone, Layers, AlertTriangle, CreditCard,
+  Layers, AlertTriangle, CreditCard,
   CalendarDays, Users, Boxes,
 } from 'lucide-react'
 import { useLang, useTheme } from '@/app/providers'
@@ -31,7 +31,6 @@ const storeNavItems: NavItem[] = [
   { href: '/dashboard/calculator',     key: 'calculator',    icon: Calculator      },
   { href: '/dashboard/alerts',         key: 'alerts',        icon: AlertTriangle   },
   { href: '/dashboard/payouts',        key: 'payouts',       icon: CreditCard      },
-  { href: '/dashboard/advertising',    key: 'advertising',   icon: Megaphone       },
   { href: '/dashboard/team',           key: 'team',          icon: Users           },
   { href: '/dashboard/seasonality',    key: 'seasonality',   icon: CalendarDays    },
 ]

@@ -151,10 +151,9 @@ export default async function PnlPage({ searchParams }: Props) {
     delivery:  s.delivery + m.delivery,
     acquiring: s.acquiring + m.acquiring,
     tax:       s.tax + m.tax,
-    ads:       s.ads + m.ads,
     cogs:      s.cogs + m.cogs,
     net:       s.net + m.net,
-  }), { orders: 0, cancelled: 0, revenue: 0, commission: 0, delivery: 0, acquiring: 0, tax: 0, ads: 0, cogs: 0, net: 0 })
+  }), { orders: 0, cancelled: 0, revenue: 0, commission: 0, delivery: 0, acquiring: 0, tax: 0, cogs: 0, net: 0 })
   // Доставка tooltip: name the store(s) that actually charged the logistics,
   // from the per-marketplace settlement split. Only non-zero stores are shown.
   const mpName = (mp: string) => mp === 'uzum' ? 'Uzum' : mp === 'yandex_market' ? 'Yandex Market' : mp
@@ -183,7 +182,6 @@ export default async function PnlPage({ searchParams }: Props) {
     [`${d.delivery} (so'm)`]:      Math.round(m.delivery),
     [`${d.acquiringLabel} (so'm)`]: Math.round(m.acquiring),
     [`${d.taxLabel} (so'm)`]:      Math.round(m.tax),
-    [`${d.adsLabel} (so'm)`]:      Math.round(m.ads),
     [`${d.cogsLabel} (so'm)`]:     Math.round(m.cogs),
     [`${d.net} (so'm)`]:           Math.round(m.net),
   }))
@@ -281,7 +279,7 @@ export default async function PnlPage({ searchParams }: Props) {
               <Settings className="w-4 h-4 mt-0.5 flex-shrink-0" />
               <span>
                 {d.pnlEstimatedNote}{' '}
-                ({d.commission2} {pnl.params.commissionPct}% · {d.acquiringLabel} {pnl.params.acquiringPct}% · {d.taxLabel} {pnl.params.taxPct}% · {d.adsLabel} {pnl.params.adPct}%) —{' '}
+                ({d.commission2} {pnl.params.commissionPct}% · {d.acquiringLabel} {pnl.params.acquiringPct}% · {d.taxLabel} {pnl.params.taxPct}%) —{' '}
                 <Link href="/dashboard/unit-economics" className="underline" style={{ color: 'var(--c1)' }}>Unit Economics</Link>
               </span>
             </div>
@@ -297,7 +295,7 @@ export default async function PnlPage({ searchParams }: Props) {
             data={pnl.rows.map(m => ({
               month:   labelFor(m.bucketKey),
               revenue: m.revenue,
-              cost:    m.commission + m.delivery + m.acquiring + m.tax + m.ads + m.cogs + m.penalty + m.storageFee + m.additionalPayment,
+              cost:    m.commission + m.delivery + m.acquiring + m.tax + m.cogs + m.penalty + m.storageFee + m.additionalPayment,
               profit:  m.net,
               orders:  m.order_count,
             }))}
@@ -320,7 +318,6 @@ export default async function PnlPage({ searchParams }: Props) {
                     <th className="text-right font-medium px-4 py-3">{d.delivery}</th>
                     <th className="text-right font-medium px-4 py-3">{d.acquiringLabel}</th>
                     <th className="text-right font-medium px-4 py-3">{d.taxLabel}</th>
-                    <th className="text-right font-medium px-4 py-3">{d.adsLabel}</th>
                     <th className="text-right font-medium px-4 py-3">{d.cogsLabel}</th>
                     <th className="text-right font-medium px-4 py-3">{d.net}</th>
                     <th className="text-right font-medium px-4 py-3">{d.margin}</th>
@@ -345,7 +342,6 @@ export default async function PnlPage({ searchParams }: Props) {
                       <td className={num}>{todayRow.feePending && todayRow.delivery === 0 ? pendingCell : todayRow.delivery > 0 ? est(todayRow.delivery, todayRow.estimated, `≈ ${pnl.params.lastMilePct}%`) : '—'}</td>
                       <td className={num}>{est(todayRow.acquiring, todayRow.estimated, `≈ ${pnl.params.acquiringPct}%`)}</td>
                       <td className={num}>{est(todayRow.tax, true, `≈ ${pnl.params.taxPct}%`)}</td>
-                      <td className={num}>{est(todayRow.ads, todayRow.adSpendEstimated, `≈ ${pnl.params.adPct}%`)}</td>
                       <td className={num}>{todayRow.cogs > 0 ? fmt(todayRow.cogs) : '—'}</td>
                       <td className={`${num} font-bold`}>{fmt(todayRow.net)}</td>
                       <td className={num}>{todayRow.revenue > 0 ? ((todayRow.net / todayRow.revenue) * 100).toFixed(1) : '0.0'}%</td>
@@ -365,7 +361,6 @@ export default async function PnlPage({ searchParams }: Props) {
                         <td className={num}>{m.feePending && m.delivery === 0 ? pendingCell : m.delivery > 0 ? est(m.delivery, m.estimated, `≈ ${pnl.params.lastMilePct}%`) : '—'}</td>
                         <td className={num}>{est(m.acquiring, m.estimated, `≈ ${pnl.params.acquiringPct}%`)}</td>
                         <td className={num}>{est(m.tax, true, `≈ ${pnl.params.taxPct}%`)}</td>
-                        <td className={num}>{est(m.ads, m.adSpendEstimated, `≈ ${pnl.params.adPct}%`)}</td>
                         <td className={num}>{m.cogs > 0 ? fmt(m.cogs) : '—'}</td>
                         <td className={`${num} font-bold`}>{fmt(m.net)}</td>
                         <td className={num}>{margin.toFixed(1)}%</td>
@@ -381,7 +376,6 @@ export default async function PnlPage({ searchParams }: Props) {
                     <td className={`${num} font-bold`}>{totalsFeePending && totals.delivery === 0 ? pendingCell : totals.delivery > 0 ? fmt(totals.delivery) : '—'}</td>
                     <td className={`${num} font-bold`}>{est(totals.acquiring, anyEstimated, `≈ ${pnl.params.acquiringPct}%`)}</td>
                     <td className={`${num} font-bold`}>{est(totals.tax, true, `≈ ${pnl.params.taxPct}%`)}</td>
-                    <td className={`${num} font-bold`}>{est(totals.ads, allRowsForTotals.some(m => m.adSpendEstimated), `≈ ${pnl.params.adPct}%`)}</td>
                     <td className={`${num} font-bold`}>{totals.cogs > 0 ? fmt(totals.cogs) : '—'}</td>
                     <td className={`${num} font-bold`}>{fmt(totals.net)}</td>
                     <td className={`${num} font-bold`}>{avgMargin.toFixed(1)}%</td>
@@ -394,7 +388,7 @@ export default async function PnlPage({ searchParams }: Props) {
                       already nets every expense out of revenue.) */}
                   <tr>
                     <td colSpan={4} className="px-4 py-2 text-xs text-[var(--text-muted)]" />
-                    <td colSpan={6} className="px-4 py-2 text-right text-xs text-[var(--text-muted)]">
+                    <td colSpan={5} className="px-4 py-2 text-right text-xs text-[var(--text-muted)]">
                       {d.pnlMpWithheld}:
                     </td>
                     <td className={`${num} font-bold`}>{fmt(totals.commission + totals.delivery + totals.acquiring)}</td>
