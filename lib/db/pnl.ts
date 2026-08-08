@@ -140,20 +140,10 @@ export async function getPnl(opts: PnlOpts): Promise<{ rows: PnlRow[]; params: P
     cancelledCount: number; cancelledAmount: number
     penalty: number; storageFee: number; additionalPayment: number
   }>()
-  if (bucket === 'day') {
-    const cursor = new Date(from.getFullYear(), from.getMonth(), from.getDate())
-    const stop   = new Date(to.getFullYear(), to.getMonth(), to.getDate())
-    while (cursor <= stop) {
-      const key = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}-${String(cursor.getDate()).padStart(2, '0')}`
-      grouped.set(key, {
-        revenue: 0, realFee: 0, realDelivery: 0, count: 0, revenueEstimable: 0, hasYandex: false,
-        cancelledCount: 0, cancelledAmount: 0,
-        penalty: 0, storageFee: 0, additionalPayment: 0,
-      })
-      cursor.setDate(cursor.getDate() + 1)
-    }
-  }
-
+  // Only days that actually have an order (or cancellation) get a row — the loop
+  // below creates a bucket per order date. We deliberately DON'T pre-fill every
+  // day in the range with a zero row: sellers asked to see only the dates when
+  // something sold, not a wall of "0 so'm" days padding out the chart and table.
   for (const row of rows) {
     const d = row.ordered_at
     const key = bucket === 'day'
