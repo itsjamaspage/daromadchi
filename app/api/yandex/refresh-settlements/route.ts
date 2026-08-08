@@ -5,7 +5,6 @@ import { getCurrentUser } from '@/lib/auth/session'
 import { db, shops } from '@/lib/db'
 import { decrypt } from '@/lib/crypto'
 import { syncYandexSettlements } from '@/lib/yandex/settlements-sync'
-import { syncYandexBoostSpend } from '@/lib/yandex/boost-sync'
 import { withErrorHandler } from '@/lib/api-handler'
 
 export const runtime = 'nodejs'
@@ -41,19 +40,7 @@ export const POST = withErrorHandler(async () => {
     try {
       const token = decrypt(s.api_key_encrypted)
       const r = await syncYandexSettlements(s.id, token, s.shop_id_external)
-      // Refresh boost (Буст продаж) ad spend alongside settlements — best-effort
-      // so a boost-report failure never fails the settlements refresh.
-      let boostSpend: unknown
-      try {
-        // Manual refresh: bypass the weekly 403 back-off so a seller who has just
-        // granted the API key «Продвижение» access gets boost data on THIS click
-        // instead of waiting out the cron re-probe. A successful (200) fetch
-        // clears yandex_boost_disabled_at, so the cron resumes on its own.
-        boostSpend = await syncYandexBoostSpend(s.id, token, s.shop_id_external, 14, { ignoreCooldown: true })
-      } catch (e) {
-        boostSpend = { ok: false, error: String(e).slice(0, 300) }
-      }
-      results.push({ shopId: s.id, ...r, boostSpend })
+      results.push({ shopId: s.id, ...r })
     } catch (e) {
       // 2000-char slice (not 300) so a DB error's full statement +
       // reason survives — the tooltip renders long text fine.

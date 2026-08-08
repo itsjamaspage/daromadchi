@@ -1,5 +1,5 @@
 import { inArray, gte, and, ne, eq, sql, asc } from 'drizzle-orm'
-import { db, orders, orderItems, products, shops, productAdsStats, yandexSettlementTransactions, uzumSettlementOrders } from '@/lib/db'
+import { db, orders, orderItems, products, shops, yandexSettlementTransactions, uzumSettlementOrders } from '@/lib/db'
 import { getShopIds } from '@/lib/db/shop-context'
 import { getUnitEcoSettings } from '@/lib/db/unit-economics'
 import type { PayoutEntry, PayoutOrderItem } from '@/lib/types'
@@ -19,8 +19,7 @@ export async function getPayoutEntries(): Promise<PayoutEntry[]> {
   const since = new Date()
   since.setMonth(since.getMonth() - 12)
 
-  const sinceStr = since.toISOString().slice(0, 10)
-  const [orderRows, cogsRows, adSpendRows, itemRows] = await Promise.all([
+  const [orderRows, cogsRows, itemRows] = await Promise.all([
     db.select({
       shop_id: orders.shop_id,
       ordered_at: orders.ordered_at,
@@ -51,17 +50,6 @@ export async function getPayoutEntries(): Promise<PayoutEntry[]> {
         ne(orders.status, 'returned'),
       ))
       .groupBy(sql`to_char(${orders.ordered_at}, 'YYYY-MM')`, orders.marketplace),
-    db.select({
-      month: sql<string>`to_char(${productAdsStats.date}::date, 'YYYY-MM')`.as('month'),
-      marketplace: shops.marketplace,
-      spend: sql<number>`coalesce(sum(${productAdsStats.spend}), 0)`.as('spend'),
-    }).from(productAdsStats)
-      .innerJoin(shops, eq(productAdsStats.shop_id, shops.id))
-      .where(and(
-        inArray(productAdsStats.shop_id, allShopIds),
-        gte(productAdsStats.date, sinceStr),
-      ))
-      .groupBy(sql`to_char(${productAdsStats.date}::date, 'YYYY-MM')`, shops.marketplace),
     // Per-product breakdown per period+marketplace. Aggregated in SQL so
     // 100 orders of the same SKU collapse to one row before it ever hits
     // the Node side. Cancelled/returned excluded — those already show in
@@ -96,7 +84,6 @@ export async function getPayoutEntries(): Promise<PayoutEntry[]> {
   if (orderRows.length === 0) return []
 
   const cogsMap = new Map(cogsRows.map(r => [`${r.month}|${r.marketplace}`, Number(r.cogs)]))
-  const realAdSpendMap = new Map(adSpendRows.map(r => [`${r.month}|${r.marketplace}`, Number(r.spend)]))
 
   const itemsMap = new Map<string, PayoutOrderItem[]>()
   for (const r of itemRows) {
@@ -372,7 +359,7 @@ export async function getPayoutEntries(): Promise<PayoutEntry[]> {
           commission: settled.commission,
           delivery: settled.delivery,
           returns: v.returnAmount,
-          adSpend: realAdSpendMap.get(key) ?? 0,
+          adSpend: 0,
           acquiring: 0,
           tax: 0,
           penalty: v.penalty,
@@ -401,8 +388,7 @@ export async function getPayoutEntries(): Promise<PayoutEntry[]> {
     // separate estimate when commission itself is estimated.
     const acquiring = estimated ? v.revenue * ue.acquiringPct / 100 : 0
     const tax = v.revenue * ue.taxPct / 100
-    const realAdSpend = realAdSpendMap.get(key) ?? 0
-    const adSpend = realAdSpend > 0 ? realAdSpend : (v.revenue > 0 ? v.revenue * ue.adPct / 100 : 0)
+    const adSpend = 0
     const cogs = cogsMap.get(key) ?? 0
     const penalty = v.penalty
     const storageFee = v.storageFee

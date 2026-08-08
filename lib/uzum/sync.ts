@@ -1,12 +1,11 @@
 import { eq, ne, and, inArray, count, sql } from 'drizzle-orm'
-import { db, shops, products, orders, orderItems, syncDays, productAdsStats } from '@/lib/db'
+import { db, shops, products, orders, orderItems, syncDays } from '@/lib/db'
 import { clearShopData } from '@/lib/db/clear-shop-data'
 import {
   fetchAllPages,
   fetchUzumOrders,
   fetchUzumShops,
   fetchUzumShopProducts,
-  fetchAllUzumExpenses,
   fetchUzumFbsStatusEnum,
   fetchUzumInvoices,
   discoverUzumFinancePaths,
@@ -144,19 +143,6 @@ function effectiveQty(
     return total / p
   }
   return q
-}
-
-// OUTCOME rows on /v1/finance/expenses whose `source` OR `name` contains any of
-// these (case-insensitive) are treated as advertising / boost / promotion spend
-// and summed into product_ads_stats. Uzum's exact ad-source string isn't
-// documented for us, so the list is deliberately broad AND every OUTCOME row is
-// logged on sync (see `[uzum-ads]` logs) so the real value can be confirmed and
-// this list tightened later. Exported so it's overridable/testable.
-export const UZUM_AD_SOURCE_MATCHERS = ['реклам', 'буст', 'boost', 'promot', 'продвиж', 'cpo', 'продвижение']
-
-function isUzumAdExpense(p: { source?: string; name?: string }): boolean {
-  const hay = `${p.source ?? ''} ${p.name ?? ''}`.toLowerCase()
-  return UZUM_AD_SOURCE_MATCHERS.some(m => hay.includes(m))
 }
 
 export interface SyncResult {
@@ -939,77 +925,10 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
       warnings.push(`Items repair: ${String(e).slice(0, 120)}`)
     }
 
-    // ── Ad spend (GET /v1/finance/expenses) ───────────────────────────────────
-    // Uzum has no campaign endpoint on this API tier; advertising / boost cost
-    // shows up as OUTCOME rows on the expenses screen. Pull the same 14-day
-    // window the settlements sync uses, LOG every distinct OUTCOME row (so the
-    // real ad `source` string is discoverable), then aggregate the matched ad
-    // rows per (shop, day) into product_ads_stats. Best-effort — never fails
-    // the whole sync. READ-ONLY (GET).
-    let campaignsUpserted = 0
-    try {
-      const nowMs = Date.now()
-      const EXPENSES_WINDOW_DAYS = 14
-      const fromMs = nowMs - EXPENSES_WINDOW_DAYS * 24 * 60 * 60 * 1000
-      const payments = await fetchAllUzumExpenses(token, uzumShopIds, fromMs, nowMs)
-      const outcomes = payments.filter(p => p.type === 'OUTCOME')
-
-      // Log EVERY distinct OUTCOME row (not just matches) so the real ad-source
-      // string surfaces in logs on the first live run.
-      const seen = new Set<string>()
-      for (const p of outcomes) {
-        const key = `${p.source}|${p.name}`
-        if (seen.has(key)) continue
-        seen.add(key)
-        console.log('[uzum-ads]', JSON.stringify({
-          source: p.source, name: p.name, type: p.type,
-          paymentPrice: p.paymentPrice, dateService: p.dateService,
-        }))
-      }
-
-      // Aggregate matched ad expenses per YYYY-MM-DD, summing paymentPrice.
-      const adByDate = new Map<string, { spend: number; source: string }>()
-      for (const p of outcomes) {
-        if (!isUzumAdExpense(p)) continue
-        const day = String(p.dateService ?? '').slice(0, 10)
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) continue
-        const amount = Math.abs(Number(p.paymentPrice) || 0)
-        if (amount <= 0) continue
-        const ex = adByDate.get(day) ?? { spend: 0, source: p.source || p.name || 'uzum-ads' }
-        ex.spend += amount
-        adByDate.set(day, ex)
-      }
-
-      if (adByDate.size > 0) {
-        const adRows = [...adByDate.entries()].map(([day, v]) => ({
-          shop_id:      shopId,
-          sku:          'uzum-ads', // synthetic key: satisfies not-null sku + unique (shop_id,sku,date)
-          date:         day,
-          marketplace:  'uzum',
-          spend:        String(v.spend),
-          cash_spend:   String(v.spend),
-          bonus_spend:  '0',
-          source_label: v.source.slice(0, 200),
-        }))
-        for (let i = 0; i < adRows.length; i += 500) {
-          await db.insert(productAdsStats).values(adRows.slice(i, i + 500)).onConflictDoUpdate({
-            target: [productAdsStats.shop_id, productAdsStats.sku, productAdsStats.date],
-            set: {
-              spend:        sql`excluded.spend`,
-              cash_spend:   sql`excluded.cash_spend`,
-              bonus_spend:  sql`excluded.bonus_spend`,
-              marketplace:  sql`excluded.marketplace`,
-              source_label: sql`excluded.source_label`,
-            },
-          })
-        }
-        campaignsUpserted = adRows.length
-        debug.uzumAdSpendDays = String(adRows.length)
-      }
-    } catch (e) {
-      // Ad-spend sync is best-effort — don't fail the whole sync.
-      debug.uzumAdSpendError = String(e).slice(0, 200)
-    }
+    // Ad-spend sync removed: neither Uzum's seller API nor its /v1/finance/expenses
+    // feed exposes advertising/boost cost (verified — the expenses feed returned
+    // zero OUTCOME rows), so there was nothing real to record.
+    const campaignsUpserted = 0
 
     // ── Finance data (real commission from Uzum) ────────────────────────────
     // Uzum's finance section shows real commission deductions per order.

@@ -20,10 +20,10 @@ interface Shop {
   orderCount: number
 }
 
-const MP_CONFIG: Record<string, { label: string; color: string; letter: string; syncUrl: string; adsUrl?: string }> = {
+const MP_CONFIG: Record<string, { label: string; color: string; letter: string; syncUrl: string }> = {
   uzum:         { label: 'Uzum Market',    color: 'violet',  letter: 'U', syncUrl: '/api/uzum/sync' },
   yandex_market:{ label: 'Yandex Market',  color: 'amber',   letter: 'Y', syncUrl: '/api/yandex/sync' },
-  wildberries:  { label: 'Wildberries',    color: 'purple',  letter: 'W', syncUrl: '/api/wildberries/sync', adsUrl: '/api/wildberries/ads-sync' },
+  wildberries:  { label: 'Wildberries',    color: 'purple',  letter: 'W', syncUrl: '/api/wildberries/sync' },
 }
 
 const COLOR_CLASSES: Record<string, { bg: string; border: string; text: string; badge: string }> = {
@@ -39,9 +39,7 @@ function ShopCard({ shop }: { shop: Shop }) {
   const st = dashT[lang].settings
 
   const [syncState, setSyncState]     = useState<'idle' | 'syncing' | 'ok' | 'err'>('idle')
-  const [adsSyncState, setAdsSyncState] = useState<'idle' | 'syncing' | 'ok' | 'err'>('idle')
   const [syncMsg, setSyncMsg]   = useState<string | null>(null)
-  const [adsSyncMsg, setAdsSyncMsg] = useState<string | null>(null)
   const [fromDays, setFromDays] = useState<number | null>(null)
   const [diagState, setDiagState] = useState<'idle' | 'running' | 'done' | 'err'>('idle')
   const [diagMsg, setDiagMsg]     = useState<string | null>(null)
@@ -98,25 +96,6 @@ function ShopCard({ shop }: { shop: Shop }) {
       console.log('[uzum diagnose]', data)
     } catch {
       setDiagState('err'); setDiagMsg('Diagnostika xatosi')
-    }
-  }
-
-  async function handleAdsSync() {
-    if (!cfg?.adsUrl) return
-    setAdsSyncState('syncing'); setAdsSyncMsg(null)
-    try {
-      const res = await fetch(cfg.adsUrl, { method: 'POST' })
-      const data = await res.json()
-      if (data.ok) {
-        setAdsSyncState('ok')
-        setAdsSyncMsg(`${data.statsUpserted ?? 0} ${st.adsSynced}`)
-        setTimeout(() => { setAdsSyncState('idle'); setAdsSyncMsg(null) }, 4000)
-      } else {
-        setAdsSyncState('err')
-        setAdsSyncMsg(data.error ?? t.errorSync)
-      }
-    } catch {
-      setAdsSyncState('err'); setAdsSyncMsg(t.errorSync)
     }
   }
 
@@ -192,23 +171,10 @@ function ShopCard({ shop }: { shop: Shop }) {
             </button>
           )}
 
-          {cfg.adsUrl && (
-            <button
-              onClick={handleAdsSync}
-              disabled={adsSyncState === 'syncing' || !hasKey}
-              className={`flex items-center gap-2 border disabled:opacity-40 disabled:cursor-not-allowed text-sm font-medium px-4 py-2 rounded-xl transition-colors ${col.bg} ${col.border} ${col.text} hover:opacity-80`}
-            >
-              {adsSyncState === 'syncing' ? <Loader2 className="w-4 h-4 animate-spin" /> : adsSyncState === 'ok' ? <CheckCircle className="w-4 h-4" /> : adsSyncState === 'err' ? <XCircle className="w-4 h-4" /> : <RefreshCw className="w-4 h-4" />}
-              {adsSyncState === 'syncing' ? t.adsSyncing : t.adsSync}
-            </button>
-          )}
         </div>
 
         {syncMsg && (
           <p className={`text-xs ${syncState === 'err' ? 'text-red-400' : 'text-emerald-400'}`}>{syncMsg}</p>
-        )}
-        {adsSyncMsg && (
-          <p className={`text-xs ${adsSyncState === 'err' ? 'text-red-400' : 'text-emerald-400'}`}>{adsSyncMsg}</p>
         )}
         {diagMsg && (
           <p className={`text-xs break-all ${diagState === 'err' ? 'text-red-400' : 'text-[var(--text-muted)]'}`}>{diagMsg}</p>

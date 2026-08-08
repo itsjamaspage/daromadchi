@@ -1,5 +1,5 @@
 import { eq, inArray } from 'drizzle-orm'
-import { db, orders, orderItems, products, syncDays, adCampaigns, searchPhrases, productAdsStats } from '@/lib/db'
+import { db, orders, orderItems, products, syncDays, adCampaigns, searchPhrases } from '@/lib/db'
 
 export async function clearShopData(shopId: string): Promise<void> {
   const orderRows = await db.select({ id: orders.id }).from(orders)
@@ -16,6 +16,5 @@ export async function clearShopData(shopId: string): Promise<void> {
     db.delete(syncDays).where(eq(syncDays.shop_id, shopId)),
     db.delete(adCampaigns).where(eq(adCampaigns.shop_id, shopId)),
     db.delete(searchPhrases).where(eq(searchPhrases.shop_id, shopId)),
-    db.delete(productAdsStats).where(eq(productAdsStats.shop_id, shopId)),
   ])
 }
