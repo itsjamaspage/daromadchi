@@ -6,8 +6,22 @@ import { syncStockSyncGroups } from '@/lib/marketplace/stock-sync'
 
 export const runtime = 'nodejs'
 
-// Static validation ack — no body, triggers nothing.
-const PING_ACK = { version: 1, name: 'daromadchi', ok: true } as const
+// YM's notification service requires the 200 ack for EVERY notification (the
+// validation PING and every real event) to be a `SendNotificationResponse`:
+//   { version: string(1..100), name: string(1..100), time: ISO-8601 UTC datetime }
+// with all three fields REQUIRED. Our old `{ version: 1, name, ok }` shape was
+// rejected as INVALID_RESPONSE / INVALID_DATA — `version` must be a string, not a
+// number, and the required `time` field was missing — so the subscription never
+// enabled. `time` is per-request (when we began processing), so build it fresh.
+// Source: github.com/yandex-market/yandex-market-notification-api
+//   openapi/paths/notification.yaml (200 -> SendNotificationResponse)
+//   openapi/components/schemas/SendNotificationResponse.yaml
+const INTEGRATION_VERSION = '1.0'
+const INTEGRATION_NAME = 'daromadchi'
+
+function notificationAck() {
+  return { version: INTEGRATION_VERSION, name: INTEGRATION_NAME, time: new Date().toISOString() }
+}
 
 /**
  * Yandex Market push-notification receiver.
@@ -26,13 +40,13 @@ const PING_ACK = { version: 1, name: 'daromadchi', ok: true } as const
  * Yandex Market's "Проверка URL" health-check does NOT always PING with POST —
  * a GET against a POST-only route handler returns 405, which YM's console
  * reports as `CANT_GET_RESPONSE` / subtype `HTTP` and refuses to connect the
- * subscription. Answer GET (Next.js derives HEAD from it) with the same static
+ * subscription. Answer GET (Next.js derives HEAD from it) with the same
  * 200 ack the POST PING returns. This path is READ-ONLY: it never reads a body,
  * never touches the DB, and never calls any marketplace API — real
  * notifications still arrive as authenticated POSTs handled below.
  */
 export async function GET(): Promise<Response> {
-  return NextResponse.json(PING_ACK)
+  return NextResponse.json(notificationAck())
 }
 
 // Yandex notification source ranges. Overridable via YM_NOTIFY_ALLOWED_IPS
@@ -99,7 +113,7 @@ export async function POST(req: Request): Promise<Response> {
   // Validation handshake — ack fast, do nothing, no gating.
   if (type === 'PING' || !body) {
     logger.info('ym_notify_ping', { ip })
-    return NextResponse.json(PING_ACK)
+    return NextResponse.json(notificationAck())
   }
 
   // ── Real notification: authenticate before it can trigger a live write. ──
@@ -140,5 +154,7 @@ export async function POST(req: Request): Promise<Response> {
     })()
   }
 
-  return NextResponse.json({ ok: true })
+  // Real notifications get the same SendNotificationResponse ack YM's spec
+  // requires for a 200 — anything else is rejected as INVALID_DATA.
+  return NextResponse.json(notificationAck())
 }
