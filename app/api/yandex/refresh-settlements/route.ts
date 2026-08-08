@@ -45,7 +45,11 @@ export const POST = withErrorHandler(async () => {
       // so a boost-report failure never fails the settlements refresh.
       let boostSpend: unknown
       try {
-        boostSpend = await syncYandexBoostSpend(s.id, token, s.shop_id_external)
+        // Manual refresh: bypass the weekly 403 back-off so a seller who has just
+        // granted the API key «Продвижение» access gets boost data on THIS click
+        // instead of waiting out the cron re-probe. A successful (200) fetch
+        // clears yandex_boost_disabled_at, so the cron resumes on its own.
+        boostSpend = await syncYandexBoostSpend(s.id, token, s.shop_id_external, 14, { ignoreCooldown: true })
       } catch (e) {
         boostSpend = { ok: false, error: String(e).slice(0, 300) }
       }
