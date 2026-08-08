@@ -1,6 +1,6 @@
 import { eq, sql } from 'drizzle-orm'
 import { db, shops, productAdsStats } from '@/lib/db'
-import { fetchCampaignInfo } from './client'
+import { fetchCampaignInfo, YandexApiError } from './client'
 import {
   generateBoostReport,
   pollReportUntilReady,
@@ -44,8 +44,22 @@ export async function syncYandexBoostSpend(
   // shop whose stored business_id equals its campaignId (an early-flow bug) by
   // re-fetching via /v2/campaigns/{campaignId}. Same logic as settlements-sync.
   let businessId: number | undefined
-  const shopRow = await db.select({ business_id: shops.business_id }).from(shops).where(eq(shops.id, shopId)).limit(1)
+  const shopRow = await db.select({
+    business_id: shops.business_id,
+    boostDisabledAt: shops.yandex_boost_disabled_at,
+  }).from(shops).where(eq(shops.id, shopId)).limit(1)
   const storedBid = shopRow[0]?.business_id
+
+  // The boost-consolidated report is a SEPARATE permission on the seller's API
+  // key. A key without advertising access hard-403s on every generate; without a
+  // cooldown that re-fires each cron cycle and floods the seller's
+  // "Ошибки · API Маркета" log at 100%. After a 403 we skip boost sync and
+  // re-probe only ~weekly (self-heals if the seller later grants access).
+  const BOOST_REPROBE_MS = 7 * 24 * 60 * 60_000
+  const disabledAt = shopRow[0]?.boostDisabledAt
+  if (disabledAt && Date.now() - new Date(disabledAt).getTime() < BOOST_REPROBE_MS) {
+    return { ok: true, inserted: 0, skipped: 'boost report disabled after 403 (API key lacks advertising access) — re-probing weekly' }
+  }
   const storedLooksValid = storedBid && /^\d+$/.test(storedBid) && storedBid !== campaignId
   if (storedLooksValid) {
     businessId = Number(storedBid)
@@ -75,12 +89,27 @@ export async function syncYandexBoostSpend(
   try {
     reportId = await generateBoostReport(token, businessId, dateFrom, dateTo)
   } catch (e) {
+    // 403 = the API key can't read the boost report (no advertising access).
+    // This is a permission wall, not a transient error — retrying every cycle
+    // only spams the seller's API error log. Stamp the cooldown and skip quietly
+    // (re-probed ~weekly); do NOT report it as a failure.
+    const status = e instanceof YandexApiError ? e.status : (/(^|\D)403(\D|$)/.test(String(e)) ? 403 : 0)
+    if (status === 403) {
+      await db.update(shops).set({ yandex_boost_disabled_at: new Date() }).where(eq(shops.id, shopId)).catch(() => {})
+      console.warn('[yandex-boost] 403 FORBIDDEN — API key lacks boost/advertising report access; backing off (weekly re-probe)', { shopId, businessId })
+      return { ok: true, inserted: 0, skipped: 'boost report forbidden (403) — API key lacks advertising access; backing off (weekly re-probe)', debug: { businessId } }
+    }
     // LOUD: the real Yandex reason (INVALID_REQUEST + field) now rides in the
     // error message (see boost-report.ts yandexRequest). Log it so it lands in
     // the cron log this run instead of hiding as a generic "skipped".
     const msg = `generate: ${String(e).slice(0, 500)}`
     console.error('[yandex-boost] FAILED', { shopId, businessId, dateFrom, dateTo, error: msg })
     return { ok: false, inserted: 0, error: msg, debug: { businessId, dateFrom, dateTo } }
+  }
+  // generate succeeded → boost access is fine; lift any prior 403 cooldown so a
+  // seller who just granted access recovers immediately.
+  if (disabledAt) {
+    await db.update(shops).set({ yandex_boost_disabled_at: null }).where(eq(shops.id, shopId)).catch(() => {})
   }
 
   let status
