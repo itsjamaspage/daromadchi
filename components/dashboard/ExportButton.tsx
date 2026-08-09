@@ -14,8 +14,7 @@ interface ExportButtonProps {
   label?: string
 }
 
-function exportCsv(data: ExportRow[], filename: string) {
-  const sep = ','
+function exportCsv(data: ExportRow[], filename: string, sep: ',' | ';') {
   const headers = Object.keys(data[0])
   const rows = data.map(row =>
     headers.map(h => {
@@ -25,8 +24,12 @@ function exportCsv(data: ExportRow[], filename: string) {
         ? `"${s.replace(/"/g, '""')}"` : s
     }).join(sep)
   )
-  // sep= hint tells Excel which delimiter to use, fixing locale issues
-  const csv = [`sep=${sep}`, headers.join(sep), ...rows].join('\n')
+  // NO `sep=` directive line: it makes Excel ignore the UTF-8 BOM and read the
+  // file in the system ANSI codepage, which garbles Cyrillic (Дата → "Р”Р°С‚Р°").
+  // Instead rely on the BOM for UTF-8 and pick the delimiter to match the
+  // reader's locale — RU/UZ Excel splits on ';', EN on ',' — so columns still
+  // split on double-click. CRLF line endings for Windows Excel.
+  const csv = [headers.join(sep), ...rows].join('\r\n')
   const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
@@ -124,7 +127,9 @@ export default function ExportButton({ data, filename = 'hisobot', targetRef: _t
   function handleCsv() {
     if (!data?.length) return
     setOpen(false)
-    exportCsv(data, filename)
+    // RU/UZ Windows Excel uses ';' as the list separator, EN uses ','. Match it
+    // so the file opens into columns without the (BOM-breaking) sep= directive.
+    exportCsv(data, filename, lang === 'en' ? ',' : ';')
   }
 
   const hasCsv = !!data?.length

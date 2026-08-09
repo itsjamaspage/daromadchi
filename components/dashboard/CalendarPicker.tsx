@@ -75,6 +75,24 @@ export default function CalendarPicker({ from, to }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 
+  // Persist the last chosen range across refreshes/navigation. On mount, if the
+  // URL carries no explicit range (no from/to/days), restore the saved one so a
+  // refresh doesn't snap back to the default window. Saved on Apply, cleared on
+  // Clear.
+  useEffect(() => {
+    if (from || to || searchParams.get('days')) return
+    let saved: { from?: string; to?: string } | null = null
+    try { saved = JSON.parse(localStorage.getItem('drmDateRange') || 'null') } catch { /* ignore */ }
+    if (saved?.from && saved?.to) {
+      const p = new URLSearchParams(searchParams.toString())
+      p.delete('days')
+      p.set('from', saved.from)
+      p.set('to',   saved.to)
+      router.replace(`${pathname}?${p.toString()}`, { scroll: false })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   // Locale-aware weekday headers, Monday-first (matches uz/ru convention).
   const locale = lang === 'ru' ? 'ru-RU' : lang === 'en' ? 'en-US' : 'uz-UZ'
   const weekdayShort: string[] = []
@@ -121,6 +139,7 @@ export default function CalendarPicker({ from, to }: Props) {
     p.delete('days')
     p.set('from', toISODate(rangeFrom))
     p.set('to',   toISODate(rangeTo))
+    try { localStorage.setItem('drmDateRange', JSON.stringify({ from: toISODate(rangeFrom), to: toISODate(rangeTo) })) } catch { /* ignore */ }
     // Close the popover IMMEDIATELY so the UI reacts to the click even
     // if the router transition takes a moment. Then push the new URL
     // in a transition so React can show pending state on the button.
@@ -135,6 +154,7 @@ export default function CalendarPicker({ from, to }: Props) {
     p.delete('days')
     p.delete('from')
     p.delete('to')
+    try { localStorage.removeItem('drmDateRange') } catch { /* ignore */ }
     setOpen(false)
     startTransition(() => {
       router.push(`${pathname}?${p.toString()}`, { scroll: false })
