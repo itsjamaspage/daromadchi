@@ -15,6 +15,7 @@ import {
   type UzumFbsOrderItem,
 } from './client'
 import { resolveColor } from '@/lib/products/resolveColor'
+import { canonicalSkuCandidates } from '@/lib/products/sku-aliases'
 
 // Four user-facing statuses (internal keys in parens):
 //   1. Создан    (pending)   — seller has the order, packing it, not yet shipped
@@ -859,12 +860,24 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
       // for a single-product shop, to that lone product.
       const cleanArticle = (it: UzumFbsOrderItem): string | undefined =>
         (it.sellerSku ?? it.sellerItemCode ?? it.article ?? '').trim() || undefined
+      // Match the seller article against products.sku through the alias/prefix
+      // normalizer, so a legacy article ("5124786-JMJ16BEG") re-links to its
+      // renamed product ("JMJ16BG") instead of orphaning. Tries the clean article
+      // and the skuTitle (which also carries the article for older payloads).
+      const skuMatch = (it: UzumFbsOrderItem): string | undefined => {
+        for (const raw of [cleanArticle(it), it.skuTitle]) {
+          for (const cand of canonicalSkuCandidates(raw)) {
+            const hit = skuMap.get(normSku(cand))
+            if (hit) return hit
+          }
+        }
+        return undefined
+      }
       const resolveProductId = (it: UzumFbsOrderItem): string | null => {
-        const art = cleanArticle(it)
         const bc  = it.barcode != null ? String(it.barcode).trim() : ''
         return (
           pidMap.get(String(it.skuId)) ??
-          (art ? skuMap.get(normSku(art)) : undefined) ??
+          skuMatch(it) ??
           (bc ? barcodeMap.get(bc) : undefined) ??
           (it.productTitle ? titleMap.get(it.productTitle.trim().toLowerCase()) : undefined) ??
           (dbProducts.length === 1 ? dbProducts[0].id as string : null)
@@ -880,6 +893,26 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
         orderIdMap.set(o.order_id_external as string, o.id as string)
       }
 
+      // GUARD — never clobber a good link. The rebuild below deletes and
+      // re-inserts every line for these orders, so a line whose incoming SKU no
+      // longer resolves would come back with product_id = NULL, re-orphaning a
+      // link an earlier sync (or a manual backfill) had already made. Snapshot
+      // the existing non-null links first, keyed by (order_id, snapshot sku ==
+      // skuTitle), and reuse them when — and only when — the fresh resolution
+      // fails. We only ever ADD a product_id, never overwrite a good one with NULL.
+      const preservedLinks = new Map<string, string>()
+      const linkKey = (orderDbId: string, snapSku: string | null): string =>
+        `${orderDbId}::${normSku(snapSku ?? '')}`
+      const rebuildOrderIds = [...new Set([...orderIdMap.values()])]
+      if (rebuildOrderIds.length > 0) {
+        const existingItems = await db.select({ order_id: orderItems.order_id, sku: orderItems.sku, product_id: orderItems.product_id })
+          .from(orderItems)
+          .where(and(inArray(orderItems.order_id, rebuildOrderIds), sql`${orderItems.product_id} is not null`))
+        for (const r of existingItems) {
+          if (r.product_id) preservedLinks.set(linkKey(r.order_id as string, r.sku as string | null), r.product_id as string)
+        }
+      }
+
       const itemRows: {
         order_id: string; product_id: string | null;
         quantity: number; price_per_unit: number
@@ -891,14 +924,18 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
         if (!dbOrderId) continue
         const lines = o.orderItems ?? o.items ?? []
         for (const it of lines) {
-          const pid = resolveProductId(it)
+          const snap = uzumItemSnapshot(it)
+          let pid = resolveProductId(it)
+          // Guard: don't downgrade an existing good link to NULL when the
+          // incoming (legacy/stale) SKU no longer resolves.
+          if (pid == null) pid = preservedLinks.get(linkKey(dbOrderId, snap.sku)) ?? null
           const productPrice = pid ? priceByDbId.get(pid) : undefined
           itemRows.push({
             order_id:       dbOrderId,
             product_id:     pid,
             quantity:       effectiveQty(o, it, lines.length, productPrice),
             price_per_unit: it.price > 0 ? it.price : (productPrice ?? 0),
-            ...uzumItemSnapshot(it),
+            ...snap,
           })
         }
         // Order arrived with no line items at all: in a single-product shop we
