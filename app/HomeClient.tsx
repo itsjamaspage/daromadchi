@@ -1828,6 +1828,7 @@ function FooterSection({ lang }: { lang: Lang }) {
             {[
               { label: T.footer.privacy[lang], href: '/privacy' },
               { label: T.footer.terms[lang], href: '/terms' },
+              { label: T.footer.cookies[lang], href: '/cookies' },
               { label: T.footer.compliance[lang], href: '/compliance' },
             ].map(l => (
               <a key={l.href} href={l.href} style={{ fontSize: 12, color: subtle, textDecoration: 'none', transition: 'color 0.12s' }}

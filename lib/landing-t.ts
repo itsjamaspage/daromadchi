@@ -399,6 +399,7 @@ export const T = {
     location: tr('г. Ташкент, Узбекистан', "Toshkent shahri, O'zbekiston", 'Tashkent, Uzbekistan'),
     privacy: tr('Конфиденциальность', 'Maxfiylik', 'Privacy'),
     terms: tr('Публичная оферта', 'Ommaviy oferta', 'Terms'),
+    cookies: tr('Cookie', 'Cookie', 'Cookies'),
     compliance: tr('Соответствие данных', 'Muvofiqlik', 'Compliance'),
   },
 
