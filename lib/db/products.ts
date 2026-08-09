@@ -432,7 +432,9 @@ const _fetchCategoryRevenue = unstable_cache(
       name_en: r.name_en,
       revenue: r.revenue,
       profit: r.profit,
-      percent: totalRevenue > 0 ? Math.round((r.revenue / totalRevenue) * 100) : 0,
+      // Full-precision share; the label rounds for display (to 1 dp) so the
+      // shown figures still sum to ~100. Don't round here or the decimals are lost.
+      percent: totalRevenue > 0 ? (r.revenue / totalRevenue) * 100 : 0,
     }))
   },
   ['category-revenue-rpc-v2'],

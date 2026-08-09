@@ -78,7 +78,7 @@ export default function CategoryChart({ data }: { data: CategoryData[] }) {
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs truncate" style={{ color: 'var(--text-dim)' }}>{d.name}</span>
                     <div className="flex items-center gap-2 ml-2 flex-shrink-0">
-                      <span className="text-[11px]" style={{ color: 'var(--text-muted)' }}>{d.percent.toFixed(0)}%</span>
+                      <span className="text-[11px]" style={{ color: 'var(--text-muted)' }}>{d.percent.toFixed(1)}%</span>
                       <span className="text-[11px] font-medium tabular-nums" style={{ color: 'var(--text-dim)' }}>
                         {new Intl.NumberFormat('uz-UZ').format(Math.round(d.revenue / 1_000_000))}M
                       </span>
