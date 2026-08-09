@@ -162,6 +162,11 @@ export interface ProductSalesRow {
   // legitimately single-variant products. LEFT JOIN preserves the orphan.
   variant_group_key: string | null
   variant_color: string | null
+  // Which marketplace this product's sales came from, so the UI can badge each
+  // Top-products row (UZ / YM / WB). A product belongs to one shop → one
+  // marketplace, so grouping by it never fragments a row. NULL only on the
+  // orphan/hard-deleted case (filtered out of the sold list anyway).
+  marketplace: MarketplaceType | null
 }
 
 const _fetchProductSales = unstable_cache(
@@ -199,6 +204,7 @@ const _fetchProductSales = unstable_cache(
       sku: products.sku,
       variant_group_key: products.variant_group_key,
       variant_color: products.variant_color,
+      marketplace: orders.marketplace,
       qty_sold: sql<number>`coalesce(sum(${orderItems.quantity}) filter (where ${orders.status} not in ('cancelled','returned')), 0)`.as('qty_sold'),
       qty_in_transit: sql<number>`coalesce(sum(${orderItems.quantity}) filter (where ${orders.status} in ('pending','confirmed')), 0)`.as('qty_in_transit'),
       qty_cancelled: sql<number>`coalesce(sum(${orderItems.quantity}) filter (where ${orders.status} = 'cancelled'), 0)`.as('qty_cancelled'),
@@ -208,7 +214,7 @@ const _fetchProductSales = unstable_cache(
       .innerJoin(orders, eq(orderItems.order_id, orders.id))
       .leftJoin(products, eq(orderItems.product_id, products.id))
       .where(and(...conditions))
-      .groupBy(orderItems.product_id, products.title, products.sku, products.variant_group_key, products.variant_color)
+      .groupBy(orderItems.product_id, products.title, products.sku, products.variant_group_key, products.variant_color, orders.marketplace)
 
     // Reconcile with Uzum's lifetime quantitySold on the unfiltered view: the
     // counter increments at ORDER time while fresh orders are hidden from the
@@ -218,9 +224,14 @@ const _fetchProductSales = unstable_cache(
     const surplusByProduct = new Map<string, number>()
     const extraRows: ProductSalesRow[] = []
     if (!sinceDate && !untilDate) {
+      // marketplace isn't a products column (it lives on shops), so map it via
+      // the product's shop for the no-order rows below.
+      const shopRows = await db.select({ id: shops.id, marketplace: shops.marketplace })
+        .from(shops).where(inArray(shops.id, shopIds))
+      const mpByShop = new Map(shopRows.map(s => [s.id, s.marketplace]))
       const prodRows = await db.select({
         id: products.id, title: products.title, sku: products.sku, quantity_sold: products.quantity_sold,
-        variant_group_key: products.variant_group_key, variant_color: products.variant_color,
+        variant_group_key: products.variant_group_key, variant_color: products.variant_color, shop_id: products.shop_id,
       }).from(products).where(inArray(products.shop_id, shopIds))
       const dbUnits = new Map(rows.filter(r => r.product_id).map(r => [r.product_id as string, Number(r.qty_sold)]))
       const seen = new Set(rows.map(r => r.product_id))
@@ -237,6 +248,7 @@ const _fetchProductSales = unstable_cache(
             qty_sold: 0, qty_in_transit: surplus, qty_cancelled: 0, qty_returned: 0, revenue: 0,
             variant_group_key: p.variant_group_key ?? null,
             variant_color: p.variant_color ?? null,
+            marketplace: mpByShop.get(p.shop_id) ?? null,
           })
         }
       }
@@ -265,6 +277,7 @@ const _fetchProductSales = unstable_cache(
         // and without erroring out on the union-find lookup.
         variant_group_key: r.variant_group_key ?? null,
         variant_color: r.variant_color ?? null,
+        marketplace: r.marketplace ?? null,
         // Sold = delivered units: DB non-cancelled minus those still in transit.
         qty_sold: Math.max(Number(r.qty_sold) - dbInTransit, 0),
         qty_in_transit: dbInTransit + surplus,
@@ -278,7 +291,7 @@ const _fetchProductSales = unstable_cache(
   // Bump cache tag when the row shape changes so a redeploy with an
   // in-memory `unstable_cache` doesn't serve v6 rows missing the two
   // new variant fields.
-  ['product-sales-v7'],
+  ['product-sales-v8'],
   { revalidate: 30, tags: ['product-data'] },
 )
 

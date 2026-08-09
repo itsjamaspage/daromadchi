@@ -28,6 +28,25 @@ function formatSum(n: number) {
   return new Intl.NumberFormat('uz-UZ').format(n) + " so'm"
 }
 
+// Short marketplace badge for the Top-products list: UZ (Uzum) / YM (Yandex
+// Market) / WB (Wildberries). Colour-coded so a store is recognisable at a
+// glance without reading the letters.
+const MP_BADGE: Record<MarketplaceType, { label: string; cls: string }> = {
+  uzum:          { label: 'UZ', cls: 'bg-violet-500/15 text-violet-500 border border-violet-500/30' },
+  yandex_market: { label: 'YM', cls: 'bg-amber-500/15 text-amber-600 border border-amber-500/30' },
+  wildberries:   { label: 'WB', cls: 'bg-fuchsia-500/15 text-fuchsia-500 border border-fuchsia-500/30' },
+}
+function MarketplaceBadge({ marketplace }: { marketplace?: MarketplaceType | null }) {
+  if (!marketplace) return null
+  const b = MP_BADGE[marketplace]
+  if (!b) return null
+  return (
+    <span className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold leading-none ${b.cls}`}>
+      {b.label}
+    </span>
+  )
+}
+
 interface CategoryData {
   name: string
   name_ru?: string
@@ -428,7 +447,10 @@ export default function DashboardClient({ slices, stockGroups, days, period, fro
                     <tr key={p.product_id} className="hover:bg-[var(--bg-card2)] transition-colors">
                       <td className="py-3 pr-4">
                         <p className="text-[var(--text-base)] font-medium text-xs">{p.title}</p>
-                        <p className="text-[var(--text-muted)] text-xs">{p.sku}</p>
+                        <p className="text-[var(--text-muted)] text-xs flex items-center gap-1.5">
+                          {p.sku}
+                          <MarketplaceBadge marketplace={p.marketplace} />
+                        </p>
                       </td>
                       <td className="py-3 pr-4 text-right">
                         <span className={`${isDark ? 'text-emerald-400' : 'text-emerald-700'} font-medium text-xs`}>{formatSum(p.revenue)}</span>
@@ -440,7 +462,10 @@ export default function DashboardClient({ slices, stockGroups, days, period, fro
                     <tr key={p.id} className="hover:bg-[var(--bg-card2)] transition-colors">
                       <td className="py-3 pr-4">
                         <p className="text-[var(--text-base)] font-medium text-xs">{p.title}</p>
-                        <p className="text-[var(--text-muted)] text-xs">{p.sku}</p>
+                        <p className="text-[var(--text-muted)] text-xs flex items-center gap-1.5">
+                          {p.sku}
+                          <MarketplaceBadge marketplace={p.marketplace} />
+                        </p>
                       </td>
                       <td className="py-3 pr-4 text-right">
                         <span className="text-emerald-400 font-medium text-xs">{formatSum(Number(p.selling_price ?? 0) * (p.sold ?? 0))}</span>
