@@ -39,6 +39,7 @@ const MIGRATIONS = [
   'migrations/migrations/050_stock_notify_state.sql',
   'migrations/migrations/051_shops_yandex_boost_disabled.sql',
   'migrations/migrations/052_drop_product_ads_stats.sql',
+  'migrations/migrations/053_order_items_product_snapshot.sql',
 ]
 
 function loadDatabaseUrl() {

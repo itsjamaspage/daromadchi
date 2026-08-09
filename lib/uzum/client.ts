@@ -155,6 +155,13 @@ export interface UzumShopProductsResponse {
 export interface UzumFbsOrderItem {
   skuId: number
   productTitle?: string
+  // The order payload also carries the human product name (`title`) and the
+  // seller article / SKU (`skuTitle`, e.g. "5124786-JMM99-БЕЛЫЙ", whose suffix
+  // holds the colour). Snapshotted onto order_items so a notification can name
+  // the product even when the skuId never linked to a products row.
+  title?: string
+  skuTitle?: string
+  barcode?: string | number
   quantity?: number
   amount?: number // some payloads use `amount` for the unit count
   price: number
