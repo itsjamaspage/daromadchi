@@ -8,6 +8,7 @@ import type { Lang } from '@/lib/i18n'
 import LoadingOverlay from './components/LoadingOverlay'
 import NavigationEvents from './components/NavigationEvents'
 import CookieConsent from '@/components/CookieConsent'
+import Analytics from './components/Analytics'
 
 const spaceGrotesk = Space_Grotesk({
   subsets: ['latin'],
@@ -80,6 +81,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           </Providers>
           <Suspense><NavigationEvents /></Suspense>
           <LoadingOverlay />
+          <Analytics />
         </div>
       </body>
     </html>
