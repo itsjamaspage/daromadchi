@@ -87,7 +87,13 @@ export const TAXONOMY: CanonicalCategory[] = [
       en: ['smart watches','smartwatches','fitness trackers','fitness bands','wearables','apple watch','sport watches','kids smart watches'],
     },
     raw_examples: {
-      uzum: ['Aqlli soatlar','Smart soatlar','Fitness bilaguzuklar'],
+      // Uzum returns the category as a raw localized string that varies by
+      // account language / taxonomy version, so the SAME watch can arrive as
+      // Uzbek ("Aqlli soatlar") OR Russian ("Смарт-часы" / "Умные часы"). All
+      // spellings must be listed here or a Uzum product stored under the
+      // Russian label misses the alias join (keyed by marketplace='uzum') and
+      // fragments into its own donut slice.
+      uzum: ['Aqlli soatlar','Smart soatlar','Fitness bilaguzuklar','Смарт-часы','Умные часы'],
       wildberries: ['Умные часы и браслеты','Смарт-часы'],
       yandex_market: ['Умные часы','Фитнес-браслеты','Умные часы и браслеты','Смарт-часы'],
     },
