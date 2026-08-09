@@ -1,6 +1,7 @@
 'use client'
 
 import { useLang } from '@/app/providers'
+import { reopenConsent, useConsentGA } from '@/lib/cookie-consent'
 
 type Row = { name: string; purpose: string; type: string; life: string }
 
@@ -18,6 +19,11 @@ const T: Record<string, {
   noTrack: string
   manageTitle: string
   manage: string
+  changeChoice: string
+  statusLabel: string
+  statusAccepted: string
+  statusDeclined: string
+  statusUnset: string
   rights: string
 }> = {
   uz: {
@@ -38,7 +44,12 @@ const T: Record<string, {
     noTrackTitle: 'Analitika (roziligingiz bilan)',
     noTrack: 'Rozilik bersangiz, saytni yaxshilash uchun Google Analytics 4 dan foydalanamiz. U faqat siz «Qabul qilish» tugmasini bosgandan keyin yuklanadi; «Rad etish»ni tanlasangiz umuman yuklanmaydi. Reklama cookie-lari yo\'q, ma\'lumotlaringizni sotmaymiz va Google Analytics\'ga shaxsiy ma\'lumot (email, foydalanuvchi ID, do\'kon nomi) yubormaymiz.',
     manageTitle: 'Cookie-larni boshqarish',
-    manage: 'Istalgan vaqtda brauzer sozlamalari orqali cookie-larni o\'chirishingiz yoki bloklashingiz mumkin. Ammo zarur cookie-lar o\'chirilsa, tizimga kirish ishlamasligi mumkin. Analitikaga bergan roziligingizni brauzer ma\'lumotlarini tozalab istalgan vaqtda qaytarib olishingiz mumkin.',
+    manage: 'Istalgan vaqtda brauzer sozlamalari orqali cookie-larni o\'chirishingiz yoki bloklashingiz mumkin. Ammo zarur cookie-lar o\'chirilsa, tizimga kirish ishlamasligi mumkin. Analitikaga bergan roziligingizni quyidagi tugma orqali istalgan vaqtda o\'zgartirishingiz mumkin.',
+    changeChoice: 'Cookie tanlovini o\'zgartirish',
+    statusLabel: 'Joriy tanlov:',
+    statusAccepted: 'Analitika qabul qilingan',
+    statusDeclined: 'Analitika rad etilgan',
+    statusUnset: 'Hali tanlanmagan',
     rights: 'Batafsil ma\'lumot uchun Maxfiylik siyosatimizga qarang.',
   },
   ru: {
@@ -59,7 +70,12 @@ const T: Record<string, {
     noTrackTitle: 'Аналитика (с вашего согласия)',
     noTrack: 'С вашего согласия мы используем Google Analytics 4 для улучшения сайта. Он загружается только после нажатия «Принять»; если вы выберете «Отклонить», он не загружается вовсе. Никаких рекламных cookie, мы не продаём ваши данные и не передаём в Google Analytics персональные данные (email, ID пользователя, название магазина).',
     manageTitle: 'Управление cookie',
-    manage: 'Вы можете в любой момент удалить или заблокировать cookie в настройках браузера. Однако при удалении необходимых cookie вход в систему может перестать работать. Согласие на аналитику можно отозвать в любой момент, очистив данные сайта в браузере.',
+    manage: 'Вы можете в любой момент удалить или заблокировать cookie в настройках браузера. Однако при удалении необходимых cookie вход в систему может перестать работать. Согласие на аналитику можно изменить в любой момент с помощью кнопки ниже.',
+    changeChoice: 'Изменить выбор cookie',
+    statusLabel: 'Текущий выбор:',
+    statusAccepted: 'Аналитика принята',
+    statusDeclined: 'Аналитика отклонена',
+    statusUnset: 'Выбор ещё не сделан',
     rights: 'Подробнее — в нашей Политике конфиденциальности.',
   },
   en: {
@@ -80,7 +96,12 @@ const T: Record<string, {
     noTrackTitle: 'Analytics (with your consent)',
     noTrack: 'With your consent we use Google Analytics 4 to improve the site. It loads only after you click "Accept"; if you choose "Decline" it is never loaded. No advertising cookies, we do not sell your data, and we never send personal data (email, user ID, shop name) to Google Analytics.',
     manageTitle: 'Managing cookies',
-    manage: 'You can delete or block cookies at any time in your browser settings. Note that if you remove essential cookies, logging in may stop working. You can withdraw analytics consent at any time by clearing the site data in your browser.',
+    manage: 'You can delete or block cookies at any time in your browser settings. Note that if you remove essential cookies, logging in may stop working. You can change your analytics consent at any time using the button below.',
+    changeChoice: 'Change cookie choice',
+    statusLabel: 'Current choice:',
+    statusAccepted: 'Analytics accepted',
+    statusDeclined: 'Analytics declined',
+    statusUnset: 'No choice made yet',
     rights: 'For more detail, see our Privacy Policy.',
   },
 }
@@ -88,6 +109,13 @@ const T: Record<string, {
 export default function CookiesPage() {
   const { lang } = useLang()
   const t = T[lang] ?? T.uz
+  const consent = useConsentGA()
+  const statusText = consent === 'accepted' ? t.statusAccepted
+    : consent === 'declined' ? t.statusDeclined
+    : t.statusUnset
+  const statusColor = consent === 'accepted' ? '#10b981'
+    : consent === 'declined' ? 'var(--text-muted)'
+    : 'var(--text-muted)'
 
   return (
     <main className="flex-1 min-w-0 px-6 sm:px-8 py-16">
@@ -142,6 +170,20 @@ export default function CookiesPage() {
               {t.manageTitle}
             </h2>
             <p className="text-base leading-relaxed" style={{ color: 'var(--text-muted)' }}>{t.manage}</p>
+            <div className="flex flex-wrap items-center gap-3 mt-4">
+              <button
+                type="button"
+                onClick={reopenConsent}
+                className="btn-primary"
+                style={{ height: '2.5rem', padding: '0 1.25rem', fontSize: '0.875rem' }}
+              >
+                {t.changeChoice}
+              </button>
+              <span className="text-sm" style={{ color: 'var(--text-muted)' }}>
+                {t.statusLabel}{' '}
+                <span className="font-semibold" style={{ color: statusColor }}>{statusText}</span>
+              </span>
+            </div>
           </div>
         </div>
 

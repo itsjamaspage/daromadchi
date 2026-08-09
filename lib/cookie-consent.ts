@@ -41,7 +41,24 @@ function set(v: Exclude<Consent, ''>): void {
 }
 
 export function acceptCookies(): void { set('accepted') }
-export function declineCookies(): void { set('declined') }
+
+export function declineCookies(): void {
+  // If analytics was already accepted (and gtag.js therefore loaded on this
+  // page), reload after recording the decline: unmounting <GoogleAnalytics>
+  // removes the script tag but not the already-initialised tracker, so a
+  // reload is the only way to actually stop collection for the current visit.
+  let wasAccepted = false
+  try { wasAccepted = localStorage.getItem(CONSENT_KEY) === 'accepted' } catch { /* ignore */ }
+  set('declined')
+  if (wasAccepted && typeof window !== 'undefined') window.location.reload()
+}
+
+// Clears the stored choice so the consent banner reappears, letting a visitor
+// change their decision from the /cookies page without clearing browser data.
+export function reopenConsent(): void {
+  try { localStorage.removeItem(CONSENT_KEY) } catch { /* ignore */ }
+  listeners.forEach(l => l())
+}
 
 // Two SSR snapshots for two different needs, sharing one client store:
 
