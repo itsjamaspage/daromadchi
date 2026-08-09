@@ -237,6 +237,13 @@ export const orderItems = pgTable('order_items', {
   quantity:       integer('quantity').default(1).notNull(),
   price_per_unit: numeric('price_per_unit'),
   cost_per_unit:  numeric('cost_per_unit'),
+  // Product identity snapshotted from the order payload at sync time, so a line
+  // can name what was ordered even when product_id never linked to a products
+  // row (multi-product shops where skuId matching failed). Nullable — the
+  // products join stays the primary source; these are the fallback.
+  title:          text('title'),
+  sku:            text('sku'),
+  variant_color:  text('variant_color'),
 }, (t) => [
   index('order_items_order_id_idx').on(t.order_id),
   index('order_items_product_id_idx').on(t.product_id),

@@ -116,6 +116,9 @@ async function buildSalesSummary(
     title: productsTable.title,
     sku: productsTable.sku,
     color: productsTable.variant_color,
+    itemTitle: orderItemsTable.title,
+    itemSku: orderItemsTable.sku,
+    itemColor: orderItemsTable.variant_color,
     qty: orderItemsTable.quantity,
     unitPrice: orderItemsTable.price_per_unit,
   }).from(ordersTable)
@@ -146,15 +149,21 @@ async function buildSalesSummary(
   const fmtPrice = (n: number | null): string | null =>
     n != null && n > 0 ? `${Math.round(n).toLocaleString('ru-RU')} ${t.som}` : null
 
+  // Prefer the identity snapshotted on the order item; fall back to the joined
+  // product row (which is null when the item's skuId never linked to a product).
+  const nameOf  = (o: typeof active[number]) => (o.itemTitle ?? o.title ?? '').trim()
+  const skuOf   = (o: typeof active[number]) => (o.itemSku ?? o.sku ?? '').trim()
+  const colorOf = (o: typeof active[number]) => o.itemColor ?? o.color
+
   const MAX_ITEMS = 30
-  const withProduct = active.filter(o => (o.title && o.title.trim()) || (o.sku && o.sku.trim()))
+  const withProduct = active.filter(o => nameOf(o) || skuOf(o))
   const lines: string[] = []
   for (const o of withProduct.slice(0, MAX_ITEMS)) {
     const flag = MP_FLAG[mpByShop.get(o.shop_id) ?? 'uzum'] ?? ''
-    const name = o.title?.trim()
-    const sku = o.sku?.trim()
+    const name = nameOf(o)
+    const sku = skuOf(o)
     const parts: string[] = [name || sku || '—']
-    const c = colorLabel(o.color)
+    const c = colorLabel(colorOf(o))
     if (c) parts.push(c)
     // Only append the SKU when it isn't already the name we showed.
     if (sku && sku !== (name ?? '')) parts.push(sku)
@@ -203,6 +212,9 @@ async function buildPendingDeliveries(
     title: productsTable.title,
     sku: productsTable.sku,
     color: productsTable.variant_color,
+    itemTitle: orderItemsTable.title,
+    itemSku: orderItemsTable.sku,
+    itemColor: orderItemsTable.variant_color,
     qty: orderItemsTable.quantity,
     unitPrice: orderItemsTable.price_per_unit,
   }).from(ordersTable)
@@ -233,10 +245,12 @@ async function buildPendingDeliveries(
   const lines: string[] = []
   for (const o of fbs.slice(0, MAX_ITEMS)) {
     const flag = MP_FLAG[mpByShop.get(o.shop_id) ?? 'uzum'] ?? ''
-    const name = o.title?.trim()
-    const sku = o.sku?.trim()
+    // Prefer the identity snapshotted on the order item; fall back to the
+    // joined product row.
+    const name = (o.itemTitle ?? o.title ?? '').trim()
+    const sku = (o.itemSku ?? o.sku ?? '').trim()
     const seg: string[] = [name || sku || '—']
-    const c = colorLabel(o.color)
+    const c = colorLabel(o.itemColor ?? o.color)
     if (c) seg.push(c)
     if (sku && sku !== (name ?? '')) seg.push(sku)
     const linePrice = o.unitPrice != null

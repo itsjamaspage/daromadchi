@@ -124,6 +124,20 @@ function parseOrderedAt(v: unknown): Date {
   return new Date()
 }
 
+// Product identity snapshotted from an Uzum order item onto order_items, so a
+// line can name what was ordered even when the item's skuId never linked to a
+// products row. `skuTitle` holds the seller article + colour suffix (e.g.
+// "5124786-JMM99-БЕЛЫЙ"); the colour is resolved from it.
+function uzumItemSnapshot(it: UzumFbsOrderItem): { title: string | null; sku: string | null; variant_color: string | null } {
+  const name = (it.productTitle ?? it.title ?? '').trim() || null
+  const sku  = (it.skuTitle ?? '').trim() || null
+  return {
+    title: name,
+    sku,
+    variant_color: resolveColor(sku ?? name ?? '')?.key ?? null,
+  }
+}
+
 // Uzum's FBS list can report quantity=1 while the order-level price is an
 // exact multiple of the unit price (a real 2-unit order came back as one
 // item, quantity 1, price 76 000 with order price 152 000). When the order has
@@ -774,13 +788,13 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
             ])
             const oMap = new Map<string, string>(); for (const o of dbOrds) oMap.set(o.order_id_external as string, o.id as string)
             const pMap = new Map<string, string>(); for (const p of dbProds) if (p.marketplace_product_id) pMap.set(String(p.marketplace_product_id), p.id as string)
-            const itmRows: { order_id: string; product_id: string | null; quantity: number; price_per_unit: number }[] = []
+            const itmRows: { order_id: string; product_id: string | null; quantity: number; price_per_unit: number; title: string | null; sku: string | null; variant_color: string | null }[] = []
             for (const o of extractOrders) {
               const dbOid = oMap.get(extIdOf(o))
               if (!dbOid) continue
               const lines = o.orderItems ?? o.items ?? []
               for (const it of lines) {
-                itmRows.push({ order_id: dbOid, product_id: pMap.get(String(it.skuId)) ?? null, quantity: effectiveQty(o, it, lines.length), price_per_unit: it.price })
+                itmRows.push({ order_id: dbOid, product_id: pMap.get(String(it.skuId)) ?? null, quantity: effectiveQty(o, it, lines.length), price_per_unit: it.price, ...uzumItemSnapshot(it) })
               }
             }
             if (itmRows.length > 0) {
@@ -792,6 +806,9 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
                   product_id: r.product_id,
                   quantity: r.quantity,
                   price_per_unit: String(r.price_per_unit),
+                  title: r.title,
+                  sku: r.sku,
+                  variant_color: r.variant_color,
                 })))
               }
             }
@@ -835,6 +852,7 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
       const itemRows: {
         order_id: string; product_id: string | null;
         quantity: number; price_per_unit: number
+        title: string | null; sku: string | null; variant_color: string | null
       }[] = []
       for (const o of uzumOrders) {
         const extId = extIdOf(o)
@@ -849,6 +867,7 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
             product_id:     pid,
             quantity:       effectiveQty(o, it, lines.length, productPrice),
             price_per_unit: it.price > 0 ? it.price : (productPrice ?? 0),
+            ...uzumItemSnapshot(it),
           })
         }
         // Order arrived with no line items at all: in a single-product shop we
@@ -859,7 +878,8 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
           const sp = priceByDbId.get(pid)
           const total = o.price ?? o.totalPrice ?? 0
           const qty = sp && total > 0 && total % sp === 0 ? total / sp : 1
-          itemRows.push({ order_id: dbOrderId, product_id: pid, quantity: qty, price_per_unit: sp ?? total })
+          itemRows.push({ order_id: dbOrderId, product_id: pid, quantity: qty, price_per_unit: sp ?? total,
+            title: dbProducts[0].title ?? null, sku: null, variant_color: null })
         }
       }
       const unmatched = itemRows.filter(r => r.product_id == null).length
@@ -875,6 +895,9 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
             product_id: r.product_id,
             quantity: r.quantity,
             price_per_unit: String(r.price_per_unit),
+            title: r.title,
+            sku: r.sku,
+            variant_color: r.variant_color,
           })))
         }
         itemsUpserted += itemRows.length
