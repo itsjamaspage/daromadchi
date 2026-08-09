@@ -141,8 +141,9 @@ export const dashT = {
     },
     calculator: {
       title: 'Foyda kalkulyatori',
-      subtitlePre: 'Uzum komissiyasi, qaytarish va logistika hisobga olingandan keyin',
+      subtitlePre: 'Uzum va Yandex komissiyasi, qaytarish va logistika hisobga olingandan keyin',
       subtitleStrong: 'haqiqiy foydangizni', subtitlePost: 'bilib oling',
+      subtitleDisclaimer: 'Bu sahifadagi barcha raqamlar taxminiy — biz ularning aniq ekanligini kafolatlamaymiz.',
       productInfo: "Mahsulot ma'lumotlari",
       sellPrice: "Sotish narxi (so'm)", cost: "Tannarx (so'm)", logistics: "Logistika (so'm)",
       adSpend: "Reklama xarajati (so'm)", returnRate: 'Qaytarish foizi (%)', monthlyUnits: 'Oylik savdo (dona)',
@@ -544,7 +545,8 @@ export const dashT = {
     calculator: {
       title: 'Profit calculator',
       subtitlePre: 'Find out your',
-      subtitleStrong: 'real profit', subtitlePost: 'after Uzum commission, returns and logistics',
+      subtitleStrong: 'real profit', subtitlePost: 'after Uzum and Yandex commission, returns and logistics',
+      subtitleDisclaimer: 'All figures on this page are estimates — we do not guarantee they are exact.',
       productInfo: 'Product details',
       sellPrice: "Selling price (so'm)", cost: "Cost (so'm)", logistics: "Logistics (so'm)",
       adSpend: "Ad spend (so'm)", returnRate: 'Return rate (%)', monthlyUnits: 'Monthly sales (units)',
@@ -943,7 +945,8 @@ export const dashT = {
     calculator: {
       title: 'Калькулятор прибыли',
       subtitlePre: 'Узнайте',
-      subtitleStrong: 'реальную прибыль', subtitlePost: 'с учётом комиссии Uzum, возвратов и логистики',
+      subtitleStrong: 'реальную прибыль', subtitlePost: 'с учётом комиссии Uzum и Yandex, возвратов и логистики',
+      subtitleDisclaimer: 'Все цифры на этой странице ориентировочные — мы не гарантируем их точность.',
       productInfo: 'Данные о товаре',
       sellPrice: "Цена продажи (so'm)", cost: "Себестоимость (so'm)", logistics: "Логистика (so'm)",
       adSpend: "Расход на рекламу (so'm)", returnRate: 'Процент возвратов (%)', monthlyUnits: 'Продажи в месяц (шт.)',

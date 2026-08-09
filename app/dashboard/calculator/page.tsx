@@ -5,36 +5,12 @@ import { useState, useMemo } from 'react'
 import { Calculator, TrendingDown, AlertTriangle, Info, Zap } from 'lucide-react'
 import { useLang } from '@/app/providers'
 import { dashT } from '@/lib/dashT'
-import { WB_ENABLED } from '@/lib/feature-flags'
 
 function fmt(n: number) {
   return new Intl.NumberFormat('uz-UZ').format(Math.round(n))
 }
 
 const UZUM_RATES = [5, 5, 6, 8, 8, 9, 7, 10, 10, 10, 11, 9, 12, 10, 6, 10]
-
-// Wildberries UZ — exact rates from official WB commission table (commission.xlsx, WB warehouse / FBY)
-const WB_CATS: { name: Record<string, string>; rate: number }[] = [
-  { name: { uz: 'Smartfonlar',                    ru: 'Смартфоны',                         en: 'Smartphones'                     }, rate: 3    },
-  { name: { uz: 'Planshetlar',                    ru: 'Планшеты',                          en: 'Tablets'                         }, rate: 5    },
-  { name: { uz: 'Noutbuklar',                     ru: 'Ноутбуки',                          en: 'Laptops'                         }, rate: 5    },
-  { name: { uz: 'Kompyuterlar',                   ru: 'Компьютеры',                        en: 'Desktop computers'               }, rate: 9.5  },
-  { name: { uz: 'Aqlli soat va fitness',          ru: 'Смарт-часы и фитнес-трекеры',       en: 'Smartwatches & fitness trackers' }, rate: 14.5 },
-  { name: { uz: 'Elektronika aksessuarlari',      ru: 'Аксессуары для электроники',        en: 'Electronic accessories'          }, rate: 20   },
-  { name: { uz: 'Maishiy texnika',                ru: 'Бытовая техника',                   en: 'Home appliances'                 }, rate: 14   },
-  { name: { uz: 'Kiyim',                          ru: 'Одежда',                            en: 'Clothing'                       }, rate: 23   },
-  { name: { uz: 'Ichki kiyim',                    ru: 'Нижнее бельё',                      en: 'Underwear'                      }, rate: 23   },
-  { name: { uz: 'Sport kiyimi',                   ru: 'Спортивная одежда',                 en: 'Sportswear'                     }, rate: 23   },
-  { name: { uz: 'Poyabzal',                       ru: 'Обувь',                             en: 'Footwear'                       }, rate: 18   },
-  { name: { uz: 'Sport jihozlari va aksessuarlar',ru: 'Спорттовары и аксессуары',          en: 'Sports equipment & accessories'  }, rate: 18   },
-  { name: { uz: "Go'zallik va parvarish",         ru: 'Красота и уход',                    en: 'Beauty & care'                  }, rate: 18   },
-  { name: { uz: 'Uy tekstili va interer',         ru: 'Текстиль для дома и декор',         en: 'Home textiles & interior decor'  }, rate: 19   },
-  { name: { uz: "O'yinchoqlar",                   ru: 'Игрушки',                           en: 'Toys'                           }, rate: 18   },
-  { name: { uz: 'Oziq-ovqat',                     ru: 'Продукты питания',                  en: 'Groceries'                      }, rate: 11   },
-  { name: { uz: 'Avtomobil qismlari',             ru: 'Автозапчасти',                      en: 'Car parts & accessories'         }, rate: 8    },
-  { name: { uz: 'Bolalar kiyimi va mahsulotlari', ru: 'Детская одежда и товары',           en: 'Baby clothing & products'        }, rate: 8    },
-  { name: { uz: 'Boshqa',                         ru: 'Другое',                            en: 'Other'                          }, rate: 17   },
-]
 
 // Yandex Market Go UZ — category commissions (partner.market.yandex.uz official tariff table)
 // Apple: 1.5% (explicit). Others: midpoint of official band per category.
@@ -50,7 +26,7 @@ const YANDEX_CATS: { name: Record<string, string>; rate: number }[] = [
   { name: { uz: 'Kiyim, poyabzal va sumkalar', ru: 'Одежда, обувь и сумки', en: 'Apparel, shoes & bags' }, rate: 12 },
 ]
 
-type MP = 'uzum' | 'yandex' | 'wildberries'
+type MP = 'uzum' | 'yandex'
 
 const inputCls = "w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--border2)] focus:ring-1 focus:ring-[var(--border)] transition-all"
 
@@ -60,8 +36,7 @@ export default function CalculatorPage() {
   const [mp, setMp] = useState<MP>('uzum')
   const UZUM_CATEGORIES = t.categories.map((name, i) => ({ name, rate: UZUM_RATES[i], approx: false }))
   const YANDEX_CATEGORIES = YANDEX_CATS.map(c => ({ name: c.name[lang] ?? c.name.uz, rate: c.rate, approx: true }))
-  const WB_CATEGORIES = WB_CATS.map(c => ({ name: c.name[lang] ?? c.name.uz, rate: c.rate, approx: false }))
-  const CATEGORIES = mp === 'uzum' ? UZUM_CATEGORIES : mp === 'yandex' ? YANDEX_CATEGORIES : WB_CATEGORIES
+  const CATEGORIES = mp === 'uzum' ? UZUM_CATEGORIES : YANDEX_CATEGORIES
   const isApprox = mp !== 'uzum'
   const [price,      setPrice]      = useState('')
   const [cost,       setCost]       = useState('')
@@ -142,6 +117,9 @@ export default function CalculatorPage() {
         <p className="text-[var(--text-muted)] text-sm">
           {t.subtitlePre} <strong className="text-[var(--text-base)]">{t.subtitleStrong}</strong> {t.subtitlePost}
         </p>
+        <p className="text-[var(--text-muted)] text-xs mt-1 italic">
+          {t.subtitleDisclaimer}
+        </p>
       </div>
 
       {/* Two equal columns on wide screens; single column stack below.
@@ -154,11 +132,10 @@ export default function CalculatorPage() {
 
           {/* Marketplace selector */}
           <div className="flex items-center gap-1 p-1 bg-[var(--bg-input)] border border-[var(--border)] rounded-xl w-fit">
-            {(([
-              { id: 'uzum',        label: 'Uzum Market' },
-              { id: 'yandex',      label: 'Yandex Market' },
-              { id: 'wildberries', label: 'Wildberries' },
-            ] as { id: MP; label: string }[]).filter(m => m.id !== 'wildberries' || WB_ENABLED)).map(m => (
+            {([
+              { id: 'uzum',   label: 'Uzum Market' },
+              { id: 'yandex', label: 'Yandex Market' },
+            ] as { id: MP; label: string }[]).map(m => (
               <button
                 key={m.id}
                 onClick={() => { setMp(m.id); setCatIdx(0) }}
@@ -248,7 +225,7 @@ export default function CalculatorPage() {
           <div className="flex items-center gap-2 border rounded-xl px-4 py-2.5" style={{ background: 'var(--bg-card2)',  borderColor: 'var(--border)' }}>
             <Info className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--c1)' }} />
             <p className="text-xs text-[var(--text-base)]">
-              {mp === 'uzum' ? 'Uzum' : mp === 'yandex' ? 'Yandex Market' : 'Wildberries'} {lang === 'ru' ? 'комиссия:' : lang === 'en' ? 'commission:' : 'komissiyasi:'}
+              {mp === 'uzum' ? 'Uzum' : 'Yandex Market'} {lang === 'ru' ? 'комиссия:' : lang === 'en' ? 'commission:' : 'komissiyasi:'}
               {' '}<span className="font-semibold" style={{ color: 'var(--c1)' }}>{isApprox ? '~' : ''}{commission}%</span> · {CATEGORIES[catIdx].name}
               {isApprox && <span className="ml-1 font-medium text-amber-700">({lang === 'ru' ? 'приблизительно' : lang === 'en' ? 'approximate' : 'taxminiy'})</span>}
             </p>

@@ -6,6 +6,7 @@ import BottomNav from '@/components/dashboard/BottomNav'
 import FeedbackWidget from '@/components/dashboard/FeedbackWidget'
 import ChannelGate from '@/components/dashboard/ChannelGate'
 import { getCurrentUser } from '@/lib/auth/session'
+import { getStockAlerts } from '@/lib/db/alerts'
 
 // Keep the entire authenticated dashboard out of search. Inherited by every
 // /dashboard/* route → <meta name="robots" content="noindex, nofollow">.
@@ -17,6 +18,15 @@ export const metadata: Metadata = {
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const user = await getCurrentUser()
 
+  // Total in-app notifications shown as a badge next to the theme toggle.
+  // Currently the notifications page surfaces stock alerts, so the count is
+  // simply how many alerts the seller has right now. Best-effort: a DB hiccup
+  // must never break the whole dashboard shell, so fall back to 0.
+  let notificationCount = 0
+  try {
+    notificationCount = (await getStockAlerts()).length
+  } catch { /* best-effort — show no badge on failure */ }
+
   return (
     <ChannelGate>
       <div className="min-h-screen">
@@ -26,7 +36,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         </div>
 
         {/* Desktop top bar — profile pill + dropdown */}
-        <DashboardTopBar userName={user?.full_name ?? user?.email?.split('@')[0] ?? 'User'} userEmail={user?.email ?? ''} />
+        <DashboardTopBar userName={user?.full_name ?? user?.email?.split('@')[0] ?? 'User'} userEmail={user?.email ?? ''} notificationCount={notificationCount} />
 
         {/* Mobile: top bar with hamburger + slide-in drawer */}
         <MobileNav />

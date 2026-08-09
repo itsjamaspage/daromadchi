@@ -19,9 +19,9 @@ const LANGS: { value: Lang; label: string }[] = [
   { value: 'en', label: 'EN' },
 ]
 
-interface Props { userName: string; userEmail: string }
+interface Props { userName: string; userEmail: string; notificationCount?: number }
 
-export default function DashboardTopBar({ userName, userEmail }: Props) {
+export default function DashboardTopBar({ userName, userEmail, notificationCount = 0 }: Props) {
   const [open, setOpen]   = useState(false)
   const dropRef           = useRef<HTMLDivElement>(null)
   const router            = useRouter()
@@ -49,8 +49,9 @@ export default function DashboardTopBar({ userName, userEmail }: Props) {
 
   const initial = userName[0]?.toUpperCase() ?? 'U'
 
+  const notifLabel = (d.nav as Record<string,string>).notifications ?? 'Bildirishnomalar'
+
   const menuItems = [
-    { href: '/dashboard/notifications', icon: BellRing,   label: (d.nav as Record<string,string>).notifications  ?? 'Bildirishnomalar' },
     { href: '/dashboard/billing',       icon: CreditCard,  label: (d.nav as Record<string,string>).billing        ?? "Tarif va to'lov"   },
     { href: '/dashboard/profile',       icon: UserCircle,  label: (d.nav as Record<string,string>).profile        ?? 'Profil'           },
     { href: '/help',                    icon: HelpCircle,  label: (d.nav as Record<string,string>).help           ?? 'Yordam markazi'   },
@@ -70,6 +71,26 @@ export default function DashboardTopBar({ userName, userEmail }: Props) {
       className="hidden lg:flex fixed top-0 left-14 right-0 h-14 z-30 items-center justify-end px-6 border-b gap-3"
       style={{ background: topBg, borderColor: topBdr }}
     >
+      {/* Notifications — moved out of the profile dropdown, sits next to the
+          theme toggle. Badge shows the total number of in-app alerts. */}
+      <Link
+        href="/dashboard/notifications"
+        className="relative w-9 h-9 flex items-center justify-center rounded-xl border transition-all"
+        style={{ background: topBtn, borderColor: topBtnBdr, color: topMut }}
+        title={notifLabel}
+        aria-label={notifLabel}
+      >
+        <BellRing className="w-4 h-4" />
+        {notificationCount > 0 && (
+          <span
+            className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full text-[10px] font-bold leading-none"
+            style={{ background: '#ef4444', color: '#fff' }}
+          >
+            {notificationCount > 99 ? '99+' : notificationCount}
+          </span>
+        )}
+      </Link>
+
       {/* Theme toggle — always visible in header */}
       <button
         onClick={toggle}
