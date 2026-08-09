@@ -46,6 +46,16 @@ jobs:
             || (echo "npm ci failed, wiping node_modules and retrying..." && rm -rf node_modules && npm ci --no-audit --no-fund) \
             || (echo "npm ci still failing, falling back to npm install..." && rm -rf node_modules && npm install --no-audit --no-fund)
           echo "Building..."
+          # Clear the previous Turbopack build output before rebuilding. `.next`
+          # is gitignored so `git reset --hard` never touches it, and a stale
+          # cache from an earlier build can leave the production compile
+          # referencing an externalized module copy (e.g. .next/node_modules/
+          # pg-<hash>/esm/index.mjs) that this build never regenerates — the
+          # compile "succeeds" but page-data collection then dies with
+          # ERR_MODULE_NOT_FOUND, aborting the deploy before migrations run. A
+          # full rebuild each deploy is cheap (~40s) and immune to that. Mirrors
+          # the node_modules self-heal above.
+          rm -rf .next
           npm run build
           echo "Applying DB migrations..."
           node scripts/apply-sql-migrations.mjs
