@@ -309,7 +309,7 @@
       const eco=calcYm(price,{...gi(),fby}); const c=pColor(eco.margin);
       const S=(id,v)=>{const e=wrap.querySelector('#drm-ym-v-'+id);if(e)e.textContent=v;};
       const C=(id,col)=>{const e=wrap.querySelector('#drm-ym-v-'+id);if(e)e.style.color=col;};
-      S('comm',`−${fp(eco.commission)}`); S('comm-pct',String(eco.commPct)); S('delivery',`−${fp(eco.delivery)}`);
+      S('comm',`−${fp(eco.commission)}`); S('comm-pct',String(eco.commPct));
       S('mkt',`−${fp(eco.mktTotal)}`); S('total',`−${fp(eco.jamiTotal)}`);
       S('profit',fp(eco.netProfit)); S('margin',`${eco.margin}% ${L().marja}`);
       C('profit',c); C('margin',c);
@@ -368,7 +368,6 @@
             <div style="display:flex;flex-direction:column;gap:4px">
               <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:${t.muted}">${l.narx}</span><span style="color:${t.text};font-weight:600">${fp(price)}</span></div>
               ${row(`${l.comm} (<span id="drm-ym-v-comm-pct">${_commPct}</span>%)`,'comm',`−${fp(eco.commission)}`)}
-              ${row(l.delivery+` (${fby?'FBY':'FBS'})`,'delivery',`−${fp(eco.delivery)}`,` <span style="color:${t.amber};font-size:10px">${l.taxminiy}</span>`)}
               <div style="height:1px;background:${t.border};margin:2px 0"></div>
               <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600"><span style="color:${t.muted}">${l.totalMkt}</span><span id="drm-ym-v-mkt" style="color:${t.red}">−${fp(eco.mktTotal)}</span></div>
               <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600"><span style="color:${t.muted}">${l.totalCost}</span><span id="drm-ym-v-total" style="color:${t.red}">−${fp(eco.jamiTotal)}</span></div>
