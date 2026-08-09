@@ -16,40 +16,40 @@ import {
 } from './client'
 import { resolveColor } from '@/lib/products/resolveColor'
 
+// Four user-facing statuses (internal keys in parens):
+//   1. Создан    (pending)   — seller has the order, packing it, not yet shipped
+//   2. В процессе (confirmed) — in transit / on the way to the customer
+//   3. Доставлен  (delivered) — customer received it (Uzum «Выданы» tab)
+//   4. Отменён    (cancelled/returned) — cancelled or returned
+// 'returned' is kept as its own internal status only so Payouts can account for
+// a refund/clawback correctly; it renders as "Отменён" like cancelled.
 const STATUS_MAP: Record<string, string> = {
-  // Not-yet-shipped / being prepared by the seller
+  // ── 1. Создан — being prepared by the seller ──
   CREATED: 'pending',
-  NEW: 'pending',
-  PENDING: 'pending',
-  CONFIRMED: 'pending',
-  AGREED: 'pending',
-  ACCEPTED: 'pending',
-  PACKED: 'pending',
-  PACKAGED: 'pending',
-  ASSEMBLED: 'pending',
-  READY: 'pending',
-  PROCESSING: 'pending',
   PACKING: 'pending',
-  IN_PROGRESS: 'pending',
-  PENDING_CANCELLATION: 'pending',
-  // Handed to Uzum / in transit / awaiting pickup at the PVZ
-  SENT: 'confirmed',
-  HANDED_OVER: 'confirmed',
-  TRANSFERRED: 'confirmed',
-  ON_DELIVERY: 'confirmed',
+  PENDING_DELIVERY: 'pending',
+  // defensive aliases for the same "not yet shipped" stage
+  NEW: 'pending', PENDING: 'pending', CONFIRMED: 'pending', AGREED: 'pending',
+  ACCEPTED: 'pending', PACKED: 'pending', PACKAGED: 'pending', ASSEMBLED: 'pending',
+  READY: 'pending', PROCESSING: 'pending', IN_PROGRESS: 'pending',
+  // ── 2. В процессе — in transit / awaiting pickup, NOT yet collected ──
   DELIVERING: 'confirmed',
-  ACTIVE: 'confirmed',
-  PENDING_DELIVERY: 'confirmed',
-  ACCEPTED_AT_DP: 'confirmed',
-  DELIVERED_TO_CUSTOMER_DELIVERY_POINT: 'confirmed',
-  TO_WITHDRAW: 'confirmed',
-  PARTIALLY_CANCELLED: 'confirmed',
-  // Finished
+  ACCEPTED_AT_DP: 'confirmed',   // arrived at the pickup point, not yet handed over
+  // defensive aliases
+  SENT: 'confirmed', HANDED_OVER: 'confirmed', TRANSFERRED: 'confirmed',
+  ON_DELIVERY: 'confirmed', ACTIVE: 'confirmed',
+  // ── 3. Доставлен — customer RECEIVED the order («Выданы») ──
+  // DELIVERED_TO_CUSTOMER_DELIVERY_POINT fires when the customer collects the
+  // order at the PVZ (Uzum's «Выданы» tab) — it is a delivered state, not "in
+  // transit". Previously mis-mapped to 'confirmed', which froze delivered
+  // orders in «В процессе».
+  DELIVERED_TO_CUSTOMER_DELIVERY_POINT: 'delivered',
   DELIVERED: 'delivered',
   COMPLETED: 'delivered',
-  // Cancelled / returned
-  CANCELLED: 'cancelled',
+  // ── 4. Отменён — cancelled or returned ──
   CANCELED: 'cancelled',
+  CANCELLED: 'cancelled',
+  PENDING_CANCELLATION: 'cancelled',
   EXPIRED: 'cancelled',
   RETURNED: 'returned',
 }
@@ -61,10 +61,13 @@ const STATUS_MAP: Record<string, string> = {
 // which is exactly where a fresh not-yet-shipped order lives (a real active
 // order was invisible for days because of that). Names Uzum rejects for a
 // given account return 400 and are recorded in debug, not treated as errors.
+// The authoritative FBS order-status enum from Uzum's OpenAPI spec. Values not
+// in it were removed: TO_WITHDRAW / PROCESSING / PARTIALLY_CANCELLED all return
+// HTTP 400 on every query (confirmed live) and just add noise.
 const FBS_STATUSES = [
-  'CREATED', 'PROCESSING', 'PACKING', 'TO_WITHDRAW', 'PENDING_DELIVERY',
+  'CREATED', 'PACKING', 'PENDING_DELIVERY',
   'DELIVERING', 'ACCEPTED_AT_DP', 'DELIVERED_TO_CUSTOMER_DELIVERY_POINT',
-  'DELIVERED', 'COMPLETED', 'PENDING_CANCELLATION', 'PARTIALLY_CANCELLED',
+  'DELIVERED', 'COMPLETED', 'PENDING_CANCELLATION',
   'CANCELED', 'RETURNED',
 ]
 

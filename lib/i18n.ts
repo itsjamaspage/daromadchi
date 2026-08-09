@@ -286,13 +286,13 @@ export const translations = {
       sold: 'Yetkazilgan',
       // Status labels
       status: {
-        pending: 'Jarayonda',
-        confirmed: 'Tasdiqlandi',
+        pending: 'Yaratildi',
+        confirmed: 'Yo‘lda',
         delivered: 'Yetkazildi',
         cancelled: 'Bekor qilindi',
-        returned: 'Qaytarildi',
+        returned: 'Bekor qilindi',
         cancelledShort: 'Bekor',
-        inProcess: 'Jarayonda',
+        inProcess: 'Yo‘lda',
         all: 'Barchasi',
       },
       // Analytics page
@@ -1205,13 +1205,13 @@ export const translations = {
       sold: 'Delivered',
       // Status labels
       status: {
-        pending: 'In process',
-        confirmed: 'Confirmed',
+        pending: 'Created',
+        confirmed: 'In transit',
         delivered: 'Delivered',
         cancelled: 'Cancelled',
-        returned: 'Returned',
+        returned: 'Cancelled',
         cancelledShort: 'Cancelled',
-        inProcess: 'In process',
+        inProcess: 'In transit',
         all: 'All',
       },
       // Analytics page
@@ -2124,11 +2124,11 @@ export const translations = {
       sold: 'Доставлено',
       // Status labels
       status: {
-        pending: 'В процессе',
-        confirmed: 'Подтверждён',
+        pending: 'Создан',
+        confirmed: 'В процессе',
         delivered: 'Доставлен',
         cancelled: 'Отменён',
-        returned: 'Возврат',
+        returned: 'Отменён',
         cancelledShort: 'Отменён',
         inProcess: 'В процессе',
         all: 'Все',
