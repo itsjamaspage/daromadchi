@@ -40,7 +40,13 @@ export async function getStockAlerts(): Promise<StockAlert[]> {
     fulfillment_type: products.fulfillment_type,
     variant_group_key: products.variant_group_key,
     variant_color: products.variant_color,
-  }).from(products).where(inArray(products.shop_id, shopIds))
+  }).from(products).where(and(
+    inArray(products.shop_id, shopIds),
+    // Archived listings aren't sellable stock — exclude them so a dead/archived
+    // product (e.g. a discontinued SKU) never surfaces as a "critical" alert.
+    // Matches computeStockGroups, which already filters is_archived.
+    eq(products.is_archived, false),
+  ))
 
   if (productRows.length === 0) return []
 

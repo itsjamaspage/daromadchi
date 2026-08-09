@@ -242,7 +242,13 @@ const _fetchProductSales = unstable_cache(
       }
     }
 
-    const mapped = rows.map(r => {
+    const mapped = rows
+      // Drop orphan rows whose product was hard-deleted (product_id NULL). They
+      // surfaced as a single "Удалённый товар" line — confusing and often the
+      // top row by revenue. Their orders still count in the KPIs/P&L; they're
+      // just not shown as a phantom product in the per-product Top Sales list.
+      .filter(r => r.product_id != null)
+      .map(r => {
       const dbInTransit = Number(r.qty_in_transit)
       const surplus = r.product_id ? (surplusByProduct.get(r.product_id) ?? 0) : 0
       return {
