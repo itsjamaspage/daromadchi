@@ -32,16 +32,16 @@ export function sellerOrderUrl(marketplace: string, extId: string | null, opts?:
   return null
 }
 
-// Three lifecycle buckets instead of five near-identical status tabs: an
-// order is IN PROCESS (pending/confirmed) until it's DELIVERED; cancelled and
-// returned orders land in CANCELLED. Orders move between buckets on their own
-// as the sync updates order.status.
-const STATUS_GROUP: Record<OrderStatus, 'in_process' | 'delivered' | 'cancelled'> = {
-  pending: 'in_process', confirmed: 'in_process',
+// Four lifecycle statuses: Создан (pending) → В процессе (confirmed) →
+// Доставлен (delivered), plus Отменён (cancelled/returned). Orders move between
+// tabs on their own as the sync updates order.status. `returned` folds into the
+// cancelled tab (both display as "Отменён").
+const STATUS_GROUP: Record<OrderStatus, 'pending' | 'confirmed' | 'delivered' | 'cancelled'> = {
+  pending: 'pending', confirmed: 'confirmed',
   delivered: 'delivered',
   cancelled: 'cancelled', returned: 'cancelled',
 }
-type StatusTab = 'all' | 'in_process' | 'delivered' | 'cancelled'
+type StatusTab = 'all' | 'pending' | 'confirmed' | 'delivered' | 'cancelled'
 
 export default function OrdersTable({ orders }: { orders: Order[] }) {
   const { lang } = useLang()
@@ -58,7 +58,8 @@ export default function OrdersTable({ orders }: { orders: Order[] }) {
 
   const STATUS_TABS: { value: StatusTab; label: string }[] = [
     { value: 'all',        label: s.all            },
-    { value: 'in_process', label: s.inProcess      },
+    { value: 'pending',    label: s.pending        },
+    { value: 'confirmed',  label: s.confirmed      },
     { value: 'delivered',  label: s.delivered      },
     { value: 'cancelled',  label: s.cancelledShort },
   ]
@@ -68,7 +69,7 @@ export default function OrdersTable({ orders }: { orders: Order[] }) {
 
   const statusCounts = useMemo(() =>
     orders.reduce((acc, o) => {
-      const g = STATUS_GROUP[o.status] ?? 'in_process'
+      const g = STATUS_GROUP[o.status] ?? 'pending'
       acc[g] = (acc[g] || 0) + 1
       return acc
     }, {} as Record<string, number>)
@@ -76,7 +77,7 @@ export default function OrdersTable({ orders }: { orders: Order[] }) {
 
   const filtered = useMemo(() => {
     let rows = [...orders]
-    if (status !== 'all') rows = rows.filter(o => (STATUS_GROUP[o.status] ?? 'in_process') === status)
+    if (status !== 'all') rows = rows.filter(o => (STATUS_GROUP[o.status] ?? 'pending') === status)
     if (query.trim()) {
       const q = query.toLowerCase()
       rows = rows.filter(o =>
