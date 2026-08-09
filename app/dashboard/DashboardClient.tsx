@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { Suspense } from 'react'
 import Link from 'next/link'
@@ -127,6 +127,37 @@ export default function DashboardClient({ slices, stockGroups, days, period, fro
     slices[sliceKey as keyof typeof slices]
 
   const isEmpty = kpis.total_orders === 0 && allProducts.length === 0
+
+  // Top products: collapse the SAME SKU sold across different marketplaces into
+  // ONE line with combined delivered units + revenue (a seller's article
+  // "JMJ16BG" is one product whether it sold on Uzum or Yandex). Rows with no
+  // SKU can't be merged, so they stay individual (keyed by product_id). Sorted
+  // by revenue so it's actually "top", then capped at 5.
+  const topProducts = useMemo(() => {
+    type Row = { key: string; title: string; sku: string | null; qty: number; revenue: number; marketplaces: Set<MarketplaceType> }
+    const bySku = new Map<string, Row>()
+    const rows: Row[] = []
+    for (const p of productSales) {
+      const mps = new Set<MarketplaceType>()
+      if (p.marketplace) mps.add(p.marketplace)
+      const skuKey = p.sku?.trim().toLowerCase()
+      if (skuKey) {
+        const ex = bySku.get(skuKey)
+        if (ex) {
+          ex.qty += p.qty_sold
+          ex.revenue += p.revenue
+          if (p.marketplace) ex.marketplaces.add(p.marketplace)
+          continue
+        }
+        const row: Row = { key: `sku:${skuKey}`, title: p.title, sku: p.sku, qty: p.qty_sold, revenue: p.revenue, marketplaces: mps }
+        bySku.set(skuKey, row)
+        rows.push(row)
+      } else {
+        rows.push({ key: `pid:${p.product_id}`, title: p.title, sku: p.sku, qty: p.qty_sold, revenue: p.revenue, marketplaces: mps })
+      }
+    }
+    return rows.sort((a, b) => b.revenue - a.revenue).slice(0, 5)
+  }, [productSales])
 
   type WidgetId = 'kpis' | 'alerts' | 'chart' | 'categories'
 
@@ -443,19 +474,19 @@ export default function DashboardClient({ slices, stockGroups, days, period, fro
                     </td>
                   </tr>
                 ) : productSales.length > 0
-                  ? productSales.slice(0, 5).map(p => (
-                    <tr key={p.product_id} className="hover:bg-[var(--bg-card2)] transition-colors">
+                  ? topProducts.map(p => (
+                    <tr key={p.key} className="hover:bg-[var(--bg-card2)] transition-colors">
                       <td className="py-3 pr-4">
                         <p className="text-[var(--text-base)] font-medium text-xs">{p.title}</p>
                         <p className="text-[var(--text-muted)] text-xs flex items-center gap-1.5">
                           {p.sku}
-                          <MarketplaceBadge marketplace={p.marketplace} />
+                          {[...p.marketplaces].map(mp => <MarketplaceBadge key={mp} marketplace={mp} />)}
                         </p>
                       </td>
                       <td className="py-3 pr-4 text-right">
                         <span className={`${isDark ? 'text-emerald-400' : 'text-emerald-700'} font-medium text-xs`}>{formatSum(p.revenue)}</span>
                       </td>
-                      <td className="py-3 text-right text-[var(--text-dim)] text-xs">{p.qty_sold}</td>
+                      <td className="py-3 text-right text-[var(--text-dim)] text-xs">{p.qty}</td>
                     </tr>
                   ))
                   : [...allProducts].sort((a, b) => (b.sold ?? 0) - (a.sold ?? 0)).slice(0, 5).map(p => (
