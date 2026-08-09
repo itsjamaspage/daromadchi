@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useSyncExternalStore } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { signOut } from 'next-auth/react'
@@ -12,6 +12,7 @@ import { useTheme, useLang } from '@/app/providers'
 import { translations } from '@/lib/i18n'
 import type { Lang } from '@/lib/i18n'
 import Glossary from '@/components/dashboard/Glossary'
+import { subscribeNotifSeen, getSeenCount, getServerSeenCount } from '@/lib/notif-seen'
 
 const LANGS: { value: Lang; label: string }[] = [
   { value: 'uz', label: 'UZ' },
@@ -28,6 +29,11 @@ export default function DashboardTopBar({ userName, userEmail, notificationCount
   const { theme, toggle } = useTheme()
   const { lang, setLang } = useLang()
   const d                 = translations[lang].dashboard
+
+  // Alerts the user has already seen (from opening the notifications page) are
+  // subtracted from the badge, so visiting that page clears it to 0.
+  const seenCount = useSyncExternalStore(subscribeNotifSeen, getSeenCount, getServerSeenCount)
+  const unseen    = Math.max(0, notificationCount - seenCount)
 
   useEffect(() => {
     const h = (e: MouseEvent) => {
@@ -81,12 +87,12 @@ export default function DashboardTopBar({ userName, userEmail, notificationCount
         aria-label={notifLabel}
       >
         <BellRing className="w-4 h-4" />
-        {notificationCount > 0 && (
+        {unseen > 0 && (
           <span
             className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full text-[10px] font-bold leading-none"
             style={{ background: '#ef4444', color: '#fff' }}
           >
-            {notificationCount > 99 ? '99+' : notificationCount}
+            {unseen > 99 ? '99+' : unseen}
           </span>
         )}
       </Link>

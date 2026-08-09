@@ -53,15 +53,15 @@ export default function CookieConsent() {
         <Link
           href="/cookies"
           className="font-semibold underline"
-          style={{ color: '#16a34a' }}
+          style={{ color: 'var(--c1)' }}
         >
           {t.more}
         </Link>
       </p>
       <button
         onClick={acceptConsent}
-        className="flex-shrink-0 px-5 py-1.5 rounded-lg text-sm font-bold text-white transition-opacity hover:opacity-90"
-        style={{ background: '#16a34a' }}
+        className="btn-primary flex-shrink-0"
+        style={{ height: '2.25rem', padding: '0 1.25rem', fontSize: '0.875rem' }}
       >
         {t.ok}
       </button>

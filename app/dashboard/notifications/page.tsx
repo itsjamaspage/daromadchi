@@ -1,6 +1,7 @@
 import { Bell, Package, AlertTriangle } from 'lucide-react'
 import { getT } from '@/lib/server-i18n'
 import { getStockAlerts } from '@/lib/db/alerts'
+import MarkNotificationsSeen from '@/components/dashboard/MarkNotificationsSeen'
 
 export default async function NotificationsPage() {
   const [t, alerts] = await Promise.all([getT(), getStockAlerts()])
@@ -8,6 +9,8 @@ export default async function NotificationsPage() {
 
   return (
     <div className="space-y-6">
+      {/* Opening this page marks the current alerts as seen → clears the bell badge. */}
+      <MarkNotificationsSeen count={alerts.length} />
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 rounded-xl bg-[var(--bg-card2)] border border-[var(--border)] flex items-center justify-center">
           <Bell className="w-5 h-5 text-[var(--c1)]" />
