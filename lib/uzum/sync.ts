@@ -823,25 +823,47 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
     // ── Order items (best-effort) ─────────────────────────────────────────────
     // Build a map: marketplace_product_id → products.id for fast lookup
     try {
-      const dbProducts = await db.select({ id: products.id, marketplace_product_id: products.marketplace_product_id, title: products.title, selling_price: products.selling_price })
+      const dbProducts = await db.select({ id: products.id, marketplace_product_id: products.marketplace_product_id, title: products.title, selling_price: products.selling_price, sku: products.sku, market_barcode: products.market_barcode })
         .from(products).where(eq(products.shop_id, shopId))
       const pidMap = new Map<string, string>()
       const titleMap = new Map<string, string>()
+      const skuMap = new Map<string, string>()
+      const barcodeMap = new Map<string, string>()
       const priceByDbId = new Map<string, number>()
+      const normSku = (s: string) => s.trim().toLowerCase()
       for (const p of dbProducts) {
         if (p.marketplace_product_id) pidMap.set(String(p.marketplace_product_id), p.id as string)
         if (p.title) titleMap.set(p.title.trim().toLowerCase(), p.id as string)
+        // products.sku holds the seller's clean article (sellerItemCode/article),
+        // e.g. "JMWHT" — the reliable cross-feed join key. Skip when it's just a
+        // stringified skuId (the order-stub fallback), which is already covered
+        // by pidMap and would otherwise create false article matches.
+        if (p.sku && p.sku.trim() && p.sku.trim() !== String(p.marketplace_product_id)) {
+          skuMap.set(normSku(p.sku), p.id as string)
+        }
+        if (p.market_barcode && p.market_barcode.trim()) barcodeMap.set(p.market_barcode.trim(), p.id as string)
         const sp = p.selling_price != null ? Number(p.selling_price) : 0
         if (sp > 0) priceByDbId.set(p.id as string, sp)
       }
-      // The order item's skuId doesn't always match the product API's skuId
-      // (different id spaces). Fall back to title match, then — for a
-      // single-product shop — to that lone product, so analytics never lose
-      // the item to a null product_id.
-      const resolveProductId = (it: UzumFbsOrderItem): string | null =>
-        pidMap.get(String(it.skuId)) ??
-        (it.productTitle ? titleMap.get(it.productTitle.trim().toLowerCase()) : undefined) ??
-        (dbProducts.length === 1 ? dbProducts[0].id as string : null)
+      // The order item's skuId doesn't always match the product-card skuId
+      // (different id spaces), which is why raw skuId matching silently drops
+      // items to a null product_id. Resolve against the STABLE keys the order
+      // line also carries — the seller's clean article (== products.sku) and the
+      // barcode (== products.market_barcode) — before falling back to title and,
+      // for a single-product shop, to that lone product.
+      const cleanArticle = (it: UzumFbsOrderItem): string | undefined =>
+        (it.sellerSku ?? it.sellerItemCode ?? it.article ?? '').trim() || undefined
+      const resolveProductId = (it: UzumFbsOrderItem): string | null => {
+        const art = cleanArticle(it)
+        const bc  = it.barcode != null ? String(it.barcode).trim() : ''
+        return (
+          pidMap.get(String(it.skuId)) ??
+          (art ? skuMap.get(normSku(art)) : undefined) ??
+          (bc ? barcodeMap.get(bc) : undefined) ??
+          (it.productTitle ? titleMap.get(it.productTitle.trim().toLowerCase()) : undefined) ??
+          (dbProducts.length === 1 ? dbProducts[0].id as string : null)
+        )
+      }
 
       // Map order_id_external → orders.id
       const extIds = uzumOrders.map(o => extIdOf(o))

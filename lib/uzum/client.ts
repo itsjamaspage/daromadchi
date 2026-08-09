@@ -161,6 +161,14 @@ export interface UzumFbsOrderItem {
   // the product even when the skuId never linked to a products row.
   title?: string
   skuTitle?: string
+  // The FBS order line also carries the seller's own clean article code
+  // (e.g. "JMWHT") under one of these keys depending on the API version. It
+  // matches products.sku exactly and — unlike skuId, whose id-space differs
+  // between the order feed and the product-card feed — is a reliable join key.
+  // Optional because not every payload/version includes it.
+  sellerSku?: string
+  sellerItemCode?: string
+  article?: string
   barcode?: string | number
   quantity?: number
   amount?: number // some payloads use `amount` for the unit count
