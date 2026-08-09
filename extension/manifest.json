@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Daromadchi — Uzum & Yandex Analytics",
-  "version": "2.5.2",
+  "version": "2.6.0",
   "description": "Uzum va Yandex Market sotuvchilari uchun aqlli tahlil: marja, ROI, reklama samaradorligi",
   "icons": {
     "16": "icons/icon16.png",

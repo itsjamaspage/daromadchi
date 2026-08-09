@@ -88,9 +88,9 @@ function truncate(s: string, max: number): string {
  * Sales summary for the last `days` days (days=0 → today so far).
  *
  * Lists the actual ORDERED PRODUCTS — one line per order item as
- * "<flag> <product name> · <colour> · <SKU>". No revenue / commission / profit:
- * the seller asked for just the product identity of what sold. Cancelled orders
- * are still tallied so a return/cancel isn't silently dropped.
+ * "<flag> <product name> · <colour> · <SKU> — <price>". Just the product
+ * identity + the order price (no commission / profit analytics). Cancelled
+ * orders are still tallied so a return/cancel isn't silently dropped.
  */
 async function buildSalesSummary(
   shopIds: string[],
@@ -112,9 +112,12 @@ async function buildSalesSummary(
     orderId: ordersTable.id,
     shop_id: ordersTable.shop_id,
     status: ordersTable.status,
+    revenue: ordersTable.revenue,
     title: productsTable.title,
     sku: productsTable.sku,
     color: productsTable.variant_color,
+    qty: orderItemsTable.quantity,
+    unitPrice: orderItemsTable.price_per_unit,
   }).from(ordersTable)
     .leftJoin(orderItemsTable, eq(orderItemsTable.order_id, ordersTable.id))
     .leftJoin(productsTable, eq(orderItemsTable.product_id, productsTable.id))
@@ -140,6 +143,9 @@ async function buildSalesSummary(
   // One line per ordered product: "<flag> <name> · <colour> · <SKU>". Fields
   // that are missing (no colour resolved, no SKU) are simply omitted so a line
   // is never padded with blanks. Capped so a busy window can't produce a wall.
+  const fmtPrice = (n: number | null): string | null =>
+    n != null && n > 0 ? `${Math.round(n).toLocaleString('ru-RU')} ${t.som}` : null
+
   const MAX_ITEMS = 30
   const withProduct = active.filter(o => (o.title && o.title.trim()) || (o.sku && o.sku.trim()))
   const lines: string[] = []
@@ -152,7 +158,14 @@ async function buildSalesSummary(
     if (c) parts.push(c)
     // Only append the SKU when it isn't already the name we showed.
     if (sku && sku !== (name ?? '')) parts.push(sku)
-    lines.push(`${flag} ${parts.join(' · ')}`.trim())
+    // Price: this item's line total (unit price × qty), else the order revenue.
+    const linePrice = o.unitPrice != null
+      ? Number(o.unitPrice) * (Number(o.qty) || 1)
+      : (o.revenue != null ? Number(o.revenue) : null)
+    const priceStr = fmtPrice(linePrice)
+    let line = `${flag} ${parts.join(' · ')}`.trim()
+    if (priceStr) line += ` — ${priceStr}`
+    lines.push(line)
   }
   const remaining = withProduct.length - Math.min(withProduct.length, MAX_ITEMS)
   if (remaining > 0) lines.push(`… +${remaining}`)
@@ -179,42 +192,63 @@ async function buildPendingDeliveries(
 ): Promise<string | null> {
   const t = notifT(lang)
 
-  // Match the dashboard's "В процессе" set — pending + confirmed. Whatever
-  // the app shows in that column, the digest should show under the same
-  // header. Diverging created confusion when an order the DB still had at
-  // 'pending' appeared under "К отправке" in the digest while the app
-  // showed it as "В процессе".
-  const pendingOrders = await db.select({
-    id: ordersTable.id,
+  // Match the dashboard's "В процессе" set — pending + confirmed. One row per
+  // order ITEM so each line can name the ordered product (name · colour · SKU)
+  // and its price, instead of a bare per-marketplace count.
+  const rows = await db.select({
+    orderId: ordersTable.id,
     shop_id: ordersTable.shop_id,
-    status: ordersTable.status,
     fulfillment_type: ordersTable.fulfillment_type,
-    items_count: ordersTable.items_count,
+    revenue: ordersTable.revenue,
+    title: productsTable.title,
+    sku: productsTable.sku,
+    color: productsTable.variant_color,
+    qty: orderItemsTable.quantity,
+    unitPrice: orderItemsTable.price_per_unit,
   }).from(ordersTable)
+    .leftJoin(orderItemsTable, eq(orderItemsTable.order_id, ordersTable.id))
+    .leftJoin(productsTable, eq(orderItemsTable.product_id, productsTable.id))
     .where(and(
       inArray(ordersTable.shop_id, shopIds),
       inArray(ordersTable.status, ['pending', 'confirmed']),
     ))
 
-  // Only FBS orders need seller delivery to PVZ
-  const fbsOrders = pendingOrders.filter(o =>
+  // Only FBS/DBS orders need the seller to ship to a PVZ.
+  const fbs = rows.filter(o =>
     !o.fulfillment_type || o.fulfillment_type === 'fbs' || o.fulfillment_type === 'dbs')
+  if (fbs.length === 0) return null
 
-  if (fbsOrders.length === 0) return null
+  const totalCount = new Set(fbs.map(o => o.orderId)).size
 
-  const byMp = new Map<string, { count: number; items: number }>()
-  for (const o of fbsOrders) {
-    const mp = mpByShop.get(o.shop_id) ?? 'uzum'
-    const s = byMp.get(mp) ?? { count: 0, items: 0 }
-    s.count += 1
-    s.items += o.items_count
-    byMp.set(mp, s)
+  const colorLabel = (key: string | null): string | null => {
+    if (!key) return null
+    const l = COLOR_LABELS[key as ColorKey]
+    return l ? l[lang as BadgeLang] : null
   }
+  const fmtPrice = (n: number | null): string | null =>
+    n != null && n > 0 ? `${Math.round(n).toLocaleString('ru-RU')} ${t.som}` : null
 
-  const totalCount = fbsOrders.length
-  const lines = Array.from(byMp.entries())
-    .sort((a, b) => b[1].count - a[1].count)
-    .map(([mp, s]) => `  ${MP_FLAG[mp] ?? mp}: <b>${s.count}</b> (${s.items} ${t.lowStockUnit})`)
+  // One line per pending order item: "<flag> <name> · <colour> · <SKU> — <price>".
+  const MAX_ITEMS = 30
+  const lines: string[] = []
+  for (const o of fbs.slice(0, MAX_ITEMS)) {
+    const flag = MP_FLAG[mpByShop.get(o.shop_id) ?? 'uzum'] ?? ''
+    const name = o.title?.trim()
+    const sku = o.sku?.trim()
+    const seg: string[] = [name || sku || '—']
+    const c = colorLabel(o.color)
+    if (c) seg.push(c)
+    if (sku && sku !== (name ?? '')) seg.push(sku)
+    const linePrice = o.unitPrice != null
+      ? Number(o.unitPrice) * (Number(o.qty) || 1)
+      : (o.revenue != null ? Number(o.revenue) : null)
+    const priceStr = fmtPrice(linePrice)
+    let line = `${flag} ${seg.join(' · ')}`.trim()
+    if (priceStr) line += ` — ${priceStr}`
+    lines.push(line)
+  }
+  const remaining = fbs.length - Math.min(fbs.length, MAX_ITEMS)
+  if (remaining > 0) lines.push(`… +${remaining}`)
 
   return `${t.deliveryTitle(totalCount)}\n${lines.join('\n')}`
 }

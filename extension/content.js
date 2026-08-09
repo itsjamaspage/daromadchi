@@ -222,16 +222,16 @@
     if(commPct===undefined) commPct=getCommission();
     const commission = Math.round(price*commPct/100);
     const delivery   = fbo ? Math.min(50000, volume<=1 ? 5250 : 5250 + (Math.ceil(volume)-1)*250) : 0;
-    const returns    = Math.round(price*0.02);
-    const acquiring  = Math.round(price*0.015);
-    const adSpend    = Math.round(price*adPct/100);
-    const tax        = Math.round(price*0.06);
-    const mktTotal   = commission+delivery+returns+acquiring;
-    const jamiTotal  = mktTotal+adSpend+tax+packaging+costPrice;
+    // Only real, known costs are shown: Uzum commission + delivery + the
+    // seller's own cost price + packaging. The estimated returns, acquiring,
+    // ad and tax lines were removed — they were fixed-percentage guesses, not
+    // real seller data.
+    const mktTotal   = commission+delivery;
+    const jamiTotal  = mktTotal+packaging+costPrice;
     const netProfit  = price-jamiTotal;
     const margin     = Math.round((netProfit/price)*100);
     const roi        = costPrice>0?Math.round((netProfit/costPrice)*100):null;
-    return {commPct,commission,delivery,returns,acquiring,adSpend,tax,packaging,costPrice,mktTotal,jamiTotal,netProfit,margin,roi};
+    return {commPct,commission,delivery,packaging,costPrice,mktTotal,jamiTotal,netProfit,margin,roi};
   }
 
   function pColor(m) { const t=T(); return m>=25?t.green:m>=10?t.amber:t.red; }
@@ -295,7 +295,6 @@
       return{
         costPrice:parseFloat(wrap.querySelector('#drm-inp-cost')?.value)||0,
         packaging:parseFloat(wrap.querySelector('#drm-inp-pack')?.value)||0,
-        adPct:parseFloat(wrap.querySelector('#drm-inp-ad')?.value)||5,
         volume:parseFloat(wrap.querySelector('#drm-cost-vol')?.value)||1,
         commPct:parseFloat(wrap.querySelector('#drm-inp-comm')?.value)||commPct||getCommission(),
       };
@@ -307,8 +306,6 @@
       const S=(id,v)=>{const e=wrap.querySelector('#drm-v-'+id);if(e)e.textContent=v;};
       const C=(id,col)=>{const e=wrap.querySelector('#drm-v-'+id);if(e)e.style.color=col;};
       S('comm',`−${fp(eco.commission)}`);S('comm-pct',String(eco.commPct));S('delivery',`−${fp(eco.delivery)}`);
-      S('returns',`−${fp(eco.returns)}`);S('acq',`−${fp(eco.acquiring)}`);
-      S('ad',`−${fp(eco.adSpend)}`);S('tax',`−${fp(eco.tax)}`);
       S('mkt',`−${fp(eco.mktTotal)}`);S('total',`−${fp(eco.jamiTotal)}`);
       S('profit',fp(eco.netProfit));S('margin',`${eco.margin}% ${L().marja}`);
       C('profit',c);C('margin',c);
@@ -367,7 +364,6 @@
               <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:${t.muted}">${l.costLabel}</span>${inp('drm-inp-cost',costPrice)}</div>
               <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:${t.muted}">${l.packLabel}</span>${inp('drm-inp-pack',packaging)}</div>
               <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:${t.muted}">${l.commLabel}</span>${inp('drm-inp-comm',_commPct,'10','0.5')}</div>
-              <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:${t.muted}">${l.adLabel}</span>${inp('drm-inp-ad',adPct,'5','0.5')}</div>
               <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:${t.muted}">${l.volLabel}</span>${inp('drm-cost-vol',volume,'1','0.1')}</div>
             </div>
           </div>
@@ -379,10 +375,6 @@
               <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:${t.muted}">${l.narx}</span><span style="color:${t.text};font-weight:600">${fp(price)}</span></div>
               ${row(`${l.comm} (<span id="drm-v-comm-pct">${_commPct}</span>%)`,'comm',`−${fp(eco.commission)}`)}
               ${row(l.delivery,'delivery',`−${fp(eco.delivery)}`,` <span style="color:${t.amber};font-size:10px">${l.taxminiy}</span>`)}
-              ${row(l.returns,'returns',`−${fp(eco.returns)}`,` <span style="color:${t.amber};font-size:10px">${l.taxminiy}</span>`)}
-              ${row(l.acquiring,'acq',`−${fp(eco.acquiring)}`)}
-              ${row(l.reklama+` (${adPct}%)`,'ad',`−${fp(eco.adSpend)}`)}
-              ${row(l.tax,'tax',`−${fp(eco.tax)}`)}
               <div style="font-size:10px;color:${t.muted};font-style:italic;padding:1px 0">${l.saqlash}</div>
               <div style="height:1px;background:${t.border};margin:2px 0"></div>
               <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600"><span style="color:${t.muted}">${l.totalMkt}</span><span id="drm-v-mkt" style="color:${t.red}">−${fp(eco.mktTotal)}</span></div>
@@ -413,7 +405,7 @@
       wrap.querySelector('#drm-fbo').onclick=()=>{fbo=true;render();};
       wrap.querySelector('#drm-fbs').onclick=()=>{fbo=false;render();};
       ['uz','ru','en'].forEach(k=>{wrap.querySelector(`#drm-lang-${k}`)?.addEventListener('click',()=>{langKey=k;chrome.storage.local.set({drmLang:k});render();});});
-      ['#drm-inp-cost','#drm-inp-pack','#drm-inp-ad','#drm-cost-vol'].forEach(id=>{wrap.querySelector(id)?.addEventListener('input',liveRecalc);});
+      ['#drm-inp-cost','#drm-inp-pack','#drm-cost-vol'].forEach(id=>{wrap.querySelector(id)?.addEventListener('input',liveRecalc);});
       wrap.querySelector('#drm-inp-comm')?.addEventListener('input',()=>{
         const v=parseFloat(wrap.querySelector('#drm-inp-comm')?.value);
         if(v>0){commPct=v;}
@@ -433,8 +425,7 @@
           source:'uzum',title,url:location.href,
           price:String(price2||''),commPct:String(eco2?.commPct||''),
           commission:String(eco2?.commission||''),delivery:String(eco2?.delivery||''),
-          acquiring:String(eco2?.acquiring||''),adSpend:String(eco2?.adSpend||''),
-          tax:String(eco2?.tax||''),packaging:String(eco2?.packaging||''),
+          packaging:String(eco2?.packaging||''),
           profit:String(eco2?.netProfit??''),margin:String(eco2?.margin??''),roi:String(eco2?.roi??''),
         });
         if(productId)params.set('productId',productId);

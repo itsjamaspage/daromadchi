@@ -282,16 +282,15 @@
       if(commPct===undefined) commPct=getCommission();
       const commission = Math.round(price * commPct / 100);
       const delivery   = fby ? Math.round(volume * 20000) : Math.round(volume * 10000);
-      const returns    = Math.round(price * 0.03);
-      const acquiring  = Math.round(price * 0.015);
-      const adSpend    = Math.round(price * adPct / 100);
-      const tax        = Math.round(price * 0.06);
-      const mktTotal   = commission + delivery + returns + acquiring;
-      const jamiTotal  = mktTotal + adSpend + tax + packaging + costPrice;
+      // Only real, known costs are shown: commission + delivery + the seller's
+      // own cost price + packaging. The estimated returns, acquiring, ad and tax
+      // lines were removed — they were fixed-percentage guesses, not real data.
+      const mktTotal   = commission + delivery;
+      const jamiTotal  = mktTotal + packaging + costPrice;
       const netProfit  = price - jamiTotal;
       const margin     = Math.round((netProfit / price) * 100);
       const roi        = costPrice > 0 ? Math.round((netProfit / costPrice) * 100) : null;
-      return { commPct, commission, delivery, returns, acquiring, adSpend, tax, packaging, costPrice, mktTotal, jamiTotal, netProfit, margin, roi };
+      return { commPct, commission, delivery, packaging, costPrice, mktTotal, jamiTotal, netProfit, margin, roi };
     }
 
     function pColor(m) { const t=T(); return m>=25?t.green:m>=10?t.amber:t.red; }
@@ -384,7 +383,6 @@
         return {
           costPrice: parseFloat(wrap.querySelector('#drm-wb-cost')?.value)||0,
           packaging: parseFloat(wrap.querySelector('#drm-wb-pack')?.value)||0,
-          adPct:     parseFloat(wrap.querySelector('#drm-wb-ad')?.value)||5,
           volume:    parseFloat(wrap.querySelector('#drm-wb-vol')?.value)||1,
           commPct:   parseFloat(wrap.querySelector('#drm-wb-comm')?.value)||commPct||getCommission(),
         };
@@ -396,8 +394,6 @@
         const S=(id,v)=>{const e=wrap.querySelector('#drm-wb-v-'+id);if(e)e.textContent=v;};
         const C=(id,col)=>{const e=wrap.querySelector('#drm-wb-v-'+id);if(e)e.style.color=col;};
         S('comm',`−${fp(eco.commission)}`); S('comm-pct',String(eco.commPct)); S('delivery',`−${fp(eco.delivery)}`);
-        S('returns',`−${fp(eco.returns)}`); S('acq',`−${fp(eco.acquiring)}`);
-        S('ad',`−${fp(eco.adSpend)}`); S('tax',`−${fp(eco.tax)}`);
         S('mkt',`−${fp(eco.mktTotal)}`); S('total',`−${fp(eco.jamiTotal)}`);
         S('profit',fp(eco.netProfit)); S('margin',`${eco.margin}% ${L().marja}`);
         C('profit',c); C('margin',c);
@@ -449,7 +445,6 @@
                 <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:${t.muted}">${l.costLabel}</span>${inp('drm-wb-cost',costPrice)}</div>
                 <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:${t.muted}">${l.packLabel}</span>${inp('drm-wb-pack',packaging)}</div>
                 <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:${t.muted}">${l.commLabel}</span>${inp('drm-wb-comm',_commPct,'17','0.5')}</div>
-                <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:${t.muted}">${l.adLabel}</span>${inp('drm-wb-ad',adPct,'5','0.5')}</div>
                 <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:${t.muted}">${l.volLabel}</span>${inp('drm-wb-vol',volume,'1','0.1')}</div>
               </div>
             </div>
@@ -461,10 +456,6 @@
                 <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:${t.muted}">${l.narx}</span><span style="color:${t.text};font-weight:600">${fp(price)}</span></div>
                 ${row(`${l.comm} (<span id="drm-wb-v-comm-pct">${_commPct}</span>%)`,'comm',`−${fp(eco.commission)}`)}
                 ${row(l.delivery+` (${fby?'FBY':'FBS'})`,'delivery',`−${fp(eco.delivery)}`,` <span style="color:${t.amber};font-size:10px">${l.taxminiy}</span>`)}
-                ${row(l.returns,'returns',`−${fp(eco.returns)}`,` <span style="color:${t.amber};font-size:10px">${l.taxminiy}</span>`)}
-                ${row(l.acquiring,'acq',`−${fp(eco.acquiring)}`)}
-                ${row(l.reklama+` (${adPct}%)`,'ad',`−${fp(eco.adSpend)}`)}
-                ${row(l.tax,'tax',`−${fp(eco.tax)}`)}
                 <div style="height:1px;background:${t.border};margin:2px 0"></div>
                 <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600"><span style="color:${t.muted}">${l.totalMkt}</span><span id="drm-wb-v-mkt" style="color:${t.red}">−${fp(eco.mktTotal)}</span></div>
                 <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600"><span style="color:${t.muted}">${l.totalCost}</span><span id="drm-wb-v-total" style="color:${t.red}">−${fp(eco.jamiTotal)}</span></div>
@@ -490,7 +481,7 @@
         wrap.querySelector('#drm-wb-fby').onclick     = () => { fby=true; render(); };
         wrap.querySelector('#drm-wb-fbs').onclick     = () => { fby=false; render(); };
         ['uz','ru','en'].forEach(k => { wrap.querySelector(`#drm-wb-lang-${k}`)?.addEventListener('click',()=>{ langKey=k; chrome.storage.local.set({drmLang:k}); render(); }); });
-        ['#drm-wb-cost','#drm-wb-pack','#drm-wb-ad','#drm-wb-vol'].forEach(id => { wrap.querySelector(id)?.addEventListener('input',liveRecalc); });
+        ['#drm-wb-cost','#drm-wb-pack','#drm-wb-vol'].forEach(id => { wrap.querySelector(id)?.addEventListener('input',liveRecalc); });
         wrap.querySelector('#drm-wb-comm')?.addEventListener('input',()=>{
           const v=parseFloat(wrap.querySelector('#drm-wb-comm')?.value);
           if(v>0){commPct=v;}
@@ -511,8 +502,7 @@
             source:'wb', title:liveTitle, url:location.href,
             price:String(price||''), commPct:String(eco2?.commPct||''),
             commission:String(eco2?.commission||''), delivery:String(eco2?.delivery||''),
-            acquiring:String(eco2?.acquiring||''), adSpend:String(eco2?.adSpend||''),
-            tax:String(eco2?.tax||''), packaging:String(eco2?.packaging||''),
+            packaging:String(eco2?.packaging||''),
             profit:String(eco2?.netProfit??''), margin:String(eco2?.margin??''), roi:String(eco2?.roi??''),
           });
           if (article) params.set('productId',article);
