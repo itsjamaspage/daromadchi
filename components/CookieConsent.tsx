@@ -1,45 +1,45 @@
 'use client'
 
-import { useSyncExternalStore } from 'react'
 import Link from 'next/link'
 import { useLang } from '@/app/providers'
-
-const STORAGE_KEY = 'cookie-consent'
+import { useConsentBanner, acceptCookies, declineCookies } from '@/lib/cookie-consent'
 
 const T = {
-  uz: { text: 'Biz cookie-fayllardan foydalanamiz.', more: 'Batafsil', ok: 'OK' },
-  ru: { text: 'Мы используем cookie.',                more: 'Подробнее', ok: 'ОК' },
-  en: { text: 'We use cookies.',                      more: 'Learn more', ok: 'OK' },
+  uz: {
+    text: 'Biz zarur cookie-lardan foydalanamiz va, roziligingiz bilan, saytni yaxshilash uchun anonim analitikadan (Google Analytics).',
+    more: 'Batafsil',
+    accept: 'Qabul qilish',
+    decline: 'Rad etish',
+  },
+  ru: {
+    text: 'Мы используем необходимые cookie и, с вашего согласия, анонимную аналитику (Google Analytics) для улучшения сайта.',
+    more: 'Подробнее',
+    accept: 'Принять',
+    decline: 'Отклонить',
+  },
+  en: {
+    text: 'We use essential cookies and, with your consent, anonymous analytics (Google Analytics) to improve the site.',
+    more: 'Learn more',
+    accept: 'Accept',
+    decline: 'Decline',
+  },
 }
 
-// Read the consent flag through an external store so React handles SSR/hydration
-// cleanly (no setState-in-effect, no hydration flash): the server and the first
-// client render both treat consent as given → render nothing, then the client
-// re-reads localStorage after mount and shows the banner only if not accepted.
-let listeners: Array<() => void> = []
-function subscribe(cb: () => void) {
-  listeners.push(cb)
-  return () => { listeners = listeners.filter(l => l !== cb) }
-}
-function getSnapshot(): string {
-  try { return localStorage.getItem(STORAGE_KEY) ?? '' } catch { return 'accepted' }
-}
-function getServerSnapshot(): string { return 'accepted' }
-function acceptConsent() {
-  try { localStorage.setItem(STORAGE_KEY, 'accepted') } catch { /* ignore */ }
-  listeners.forEach(l => l())
-}
-
+// Consent is read through a shared external store (lib/cookie-consent) so React
+// handles SSR/hydration cleanly: the server treats consent as decided → renders
+// nothing (no banner flash), then the client re-reads localStorage after mount
+// and shows the banner only when no choice has been made yet.
 export default function CookieConsent() {
   const { lang } = useLang()
-  const consent = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot)
+  const consent = useConsentBanner()
 
-  if (consent) return null
+  // Only show while the visitor has not yet accepted or declined.
+  if (consent !== '') return null
   const t = T[lang] ?? T.uz
 
   return (
     <div
-      className="fixed z-[100] bottom-4 left-4 right-4 sm:right-auto sm:max-w-md flex items-center gap-3 px-4 py-3 rounded-xl border shadow-2xl"
+      className="fixed z-[100] bottom-4 left-4 right-4 sm:right-auto sm:max-w-md flex flex-col gap-3 px-4 py-3 rounded-xl border shadow-2xl"
       style={{
         background: 'var(--bg-card)',
         borderColor: 'var(--border)',
@@ -47,8 +47,9 @@ export default function CookieConsent() {
       }}
       role="dialog"
       aria-live="polite"
+      aria-label="Cookie consent"
     >
-      <p className="text-sm flex-1" style={{ color: 'var(--text-base)' }}>
+      <p className="text-sm" style={{ color: 'var(--text-base)' }}>
         {t.text}{' '}
         <Link
           href="/cookies"
@@ -58,13 +59,29 @@ export default function CookieConsent() {
           {t.more}
         </Link>
       </p>
-      <button
-        onClick={acceptConsent}
-        className="btn-primary flex-shrink-0"
-        style={{ height: '2.25rem', padding: '0 1.25rem', fontSize: '0.875rem' }}
-      >
-        {t.ok}
-      </button>
+      <div className="flex items-center gap-2 justify-end">
+        <button
+          onClick={declineCookies}
+          className="flex-shrink-0 rounded-lg border font-semibold transition-colors"
+          style={{
+            height: '2.25rem',
+            padding: '0 1rem',
+            fontSize: '0.875rem',
+            color: 'var(--text-base)',
+            borderColor: 'var(--border2)',
+            background: 'transparent',
+          }}
+        >
+          {t.decline}
+        </button>
+        <button
+          onClick={acceptCookies}
+          className="btn-primary flex-shrink-0"
+          style={{ height: '2.25rem', padding: '0 1.25rem', fontSize: '0.875rem' }}
+        >
+          {t.accept}
+        </button>
+      </div>
     </div>
   )
 }
