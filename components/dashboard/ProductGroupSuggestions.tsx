@@ -139,7 +139,7 @@ export default function ProductGroupSuggestions() {
         <Link2 className="w-4 h-4" style={{ color: 'var(--c1)' }} />
         <h2 className="text-sm font-semibold" style={{ color: 'var(--text-base)' }}>{T.title}</h2>
         <span className="min-w-5 h-5 px-1.5 inline-flex items-center justify-center text-[11px] font-bold rounded-full"
-          style={{ background: 'var(--c1)', color: '#fff' }}>
+          style={{ background: 'var(--c1)', color: 'var(--on-c1)' }}>
           {items.length}
         </span>
       </div>

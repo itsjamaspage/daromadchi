@@ -250,7 +250,7 @@ export default function FeedbackWidget() {
                   onClick={handleSubmit}
                   disabled={!text.trim() || sending}
                   className="flex items-center justify-center gap-2 w-full py-2 rounded-xl text-xs font-semibold transition-all disabled:opacity-40"
-                  style={{ background: 'var(--c1)', color: '#fff' }}>
+                  style={{ background: 'var(--c1)', color: 'var(--on-c1)' }}>
                   {sending ? t.sending : <><Send className="w-3.5 h-3.5" /> {t.send}</>}
                 </button>
               </div>

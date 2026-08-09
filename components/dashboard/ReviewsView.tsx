@@ -230,7 +230,7 @@ export default function ReviewsView({ reviews }: Props) {
                   />
                   <div className="flex gap-2">
                     <button onClick={() => submitReply(review.id)}
-                      className="px-4 py-2 bg-[var(--c1)] hover:bg-[#6aabf0] text-[var(--text-base)] text-xs font-semibold rounded-xl transition-colors">
+                      className="px-4 py-2 bg-[var(--c1)] hover:bg-[#6aabf0] text-[var(--on-c1)] text-xs font-semibold rounded-xl transition-colors">
                       {t.replySend}
                     </button>
                     <button onClick={() => setReplyOpen(null)}

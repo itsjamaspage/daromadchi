@@ -59,6 +59,7 @@ html, body {
   --nav-bg:     rgba(255, 255, 255, 0.97);
 
   --c1:         #0284c7;   /* ocean blue — readable on light backgrounds */
+  --on-c1:      #ffffff;   /* text/icon color on a --c1 fill */
   --c2:         #0369a1;   /* ocean blue dark */
 
   --scrollbar-track: #f4f4f4;
@@ -110,6 +111,7 @@ html, body {
   --nav-bg:     rgba(22, 22, 22, 0.96);
 
   --c1:         #ffffff;   /* white — brand primary */
+  --on-c1:      #161616;   /* text/icon color on a --c1 fill */
   --c2:         #e2e8f0;   /* soft white — brand secondary */
 
   --scrollbar-track: #111111;
@@ -161,6 +163,7 @@ html, body {
   --nav-bg:     rgba(22, 22, 22, 0.96);
 
   --c1:         #ffffff;   /* white — brand primary */
+  --on-c1:      #161616;   /* text/icon color on a --c1 fill */
   --c2:         #e2e8f0;   /* soft white — brand secondary */
 
   --scrollbar-track: #111111;

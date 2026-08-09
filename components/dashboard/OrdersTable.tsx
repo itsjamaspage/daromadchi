@@ -110,7 +110,7 @@ export default function OrdersTable({ orders }: { orders: Order[] }) {
             key={tab.value}
             onClick={() => setStatus(tab.value)}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 ${
-              status === tab.value ? 'text-[var(--text-base)]' : 'text-[var(--text-base)] opacity-70 hover:opacity-100'
+              status === tab.value ? 'text-[var(--on-c1)]' : 'text-[var(--text-base)] opacity-70 hover:opacity-100'
             }`}
             style={status === tab.value ? { background: 'var(--c1)' } : undefined}
           >

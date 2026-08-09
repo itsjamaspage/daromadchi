@@ -217,7 +217,7 @@ export default function TelegramConnect() {
               <button
                 onClick={savePrefs}
                 disabled={saving}
-                className="bg-[var(--c1)] hover:bg-[#6aabf0] disabled:opacity-60 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors"
+                className="bg-[var(--c1)] hover:bg-[#6aabf0] disabled:opacity-60 text-[var(--on-c1)] text-sm font-semibold px-4 py-2 rounded-xl transition-colors"
               >
                 {saving ? d.saving : saved ? d.saved : d.tgSavePrefs}
               </button>

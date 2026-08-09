@@ -120,7 +120,7 @@ export default function DashboardTopBar({ userName, userEmail, notificationCount
           {/* Avatar */}
           <div
             className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 overflow-hidden"
-            style={{ background: 'var(--c1)', color: '#fff' }}
+            style={{ background: 'var(--c1)', color: 'var(--on-c1)' }}
           >
             {initial}
           </div>

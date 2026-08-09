@@ -114,7 +114,7 @@ function GroupEditor({ group, onDone }: { group: StockGroup; onDone: () => void 
       <div className="flex gap-2 pb-5">
         <button onClick={() => save()} disabled={isPending}
           className="text-xs font-semibold px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
-          style={{ background: 'var(--c1)', color: 'white' }}>
+          style={{ background: 'var(--c1)', color: 'var(--on-c1)' }}>
           {d.save}
         </button>
         {group.total_physical_stock != null && (

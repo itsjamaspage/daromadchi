@@ -34,7 +34,7 @@ function NewDataToastInner({ onRefresh }: { onRefresh: () => void }) {
         <button
           onClick={onRefresh}
           className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg transition-all"
-          style={{ background: 'var(--c1)', color: 'white' }}
+          style={{ background: 'var(--c1)', color: 'var(--on-c1)' }}
         >
           <RefreshCw className="w-3 h-3" />
           {d.refreshBtn}

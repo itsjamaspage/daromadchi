@@ -35,14 +35,14 @@ export default function ArchivedTabs({
       <Link
         href={activeHref}
         className={pill(!archived)}
-        style={!archived ? { background: 'var(--c1)', color: '#fff' } : { color: 'var(--text-muted)' }}
+        style={!archived ? { background: 'var(--c1)', color: 'var(--on-c1)' } : { color: 'var(--text-muted)' }}
       >
         {activeLabel}
       </Link>
       <Link
         href={archivedHref}
         className={pill(archived)}
-        style={archived ? { background: 'var(--c1)', color: '#fff' } : { color: 'var(--text-muted)' }}
+        style={archived ? { background: 'var(--c1)', color: 'var(--on-c1)' } : { color: 'var(--text-muted)' }}
       >
         {archivedLabel}
         <span
