@@ -1,0 +1,12 @@
+-- Persist the RAW marketplace order status alongside the normalized 5-value
+-- `status` enum. The normalized enum collapses distinct raw states that the
+-- stock draw-down must tell apart: on Uzum FBS, «В поставке» (raw DELIVERING,
+-- still in transit to the pickup point) and «Приняты Uzum» (raw ACCEPTED_AT_DP,
+-- the PVZ has received the item) BOTH normalize to 'confirmed'. Stock must only
+-- reserve at PVZ receipt (ACCEPTED_AT_DP) and later — never at DELIVERING — so
+-- the reserving condition keys off this raw value, not the normalized enum.
+--
+-- Nullable: legacy rows synced before this column stay NULL until the next sync
+-- backfills them; the reserving condition falls back to status='confirmed' for
+-- NULL rows so nothing briefly un-reserves in the meantime. Idempotent.
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS marketplace_status text;

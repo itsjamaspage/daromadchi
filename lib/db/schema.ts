@@ -215,6 +215,10 @@ export const orders = pgTable('orders', {
   // 'dbs' (delivery by seller), etc. Nullable for legacy/unknown rows.
   fulfillment_type:  text('fulfillment_type'),
   status:            orderStatusEnum('status').default('pending').notNull(),
+  // Raw marketplace order status (e.g. Uzum DELIVERING vs ACCEPTED_AT_DP, Yandex
+  // DELIVERY) preserved verbatim. The normalized `status` above collapses states
+  // the stock draw-down must separate — see migration 054 + RESERVING_RAW_STATUSES.
+  marketplace_status: text('marketplace_status'),
   revenue:           numeric('revenue'),
   marketplace_fee:   numeric('marketplace_fee'),
   delivery_cost:     numeric('delivery_cost'),

@@ -451,6 +451,10 @@ export async function syncFromYandex(
           if (!STATUS_MAP[o.status]) console.warn(`[SYNC WARNING] Unmapped Yandex order status: "${o.status}" for order ${o.id}. Defaulting to pending.`)
           return mapped as 'pending' | 'confirmed' | 'delivered' | 'cancelled' | 'returned'
         })(),
+        // Raw Yandex status, kept so the stock draw-down keys off the physical
+        // hand-off boundary (DELIVERY) rather than the coarse normalized enum.
+        // See RESERVING_RAW_STATUSES.
+        marketplace_status: o.status ?? null,
         revenue: o.buyerTotal ?? o.itemsTotal ?? 0,
         // marketplace_fee is settlement-sourced for Yandex and stays NULL here
         // by design. The /campaigns/{id}/orders endpoint carries no real fee —
@@ -503,6 +507,7 @@ export async function syncFromYandex(
             order_id_external: r.order_id_external,
             marketplace: r.marketplace,
             status: r.status,
+            marketplace_status: r.marketplace_status,
             revenue: r.revenue != null ? String(r.revenue) : null,
             marketplace_fee: r.marketplace_fee != null ? String(r.marketplace_fee) : null,
             delivery_cost: r.delivery_cost != null ? String(r.delivery_cost) : null,
@@ -515,6 +520,7 @@ export async function syncFromYandex(
       for (const r of toUpdate) {
         await db.update(orders).set({
           status: r.status,
+          marketplace_status: r.marketplace_status,
           revenue: r.revenue != null ? String(r.revenue) : null,
           marketplace_fee: r.marketplace_fee != null ? String(r.marketplace_fee) : null,
           delivery_cost: r.delivery_cost != null ? String(r.delivery_cost) : null,

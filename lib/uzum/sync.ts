@@ -562,6 +562,10 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
           if (!STATUS_MAP[o.status]) console.warn(`[SYNC WARNING] Unmapped Uzum order status: "${o.status}" for order ${extId}. Defaulting to pending.`)
           return mapped as 'pending' | 'confirmed' | 'delivered' | 'cancelled' | 'returned'
         })(),
+        // Raw Uzum status, kept so the stock draw-down can separate «В поставке»
+        // (DELIVERING) from «Приняты Uzum» (ACCEPTED_AT_DP) — both normalize to
+        // 'confirmed'. See RESERVING_RAW_STATUSES.
+        marketplace_status: o.status ?? null,
         revenue,
         // Units, not line items: an order of 2× one SKU must show 2, not 1.
         items_count: allItems.length > 0
@@ -623,6 +627,7 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
             marketplace: r.marketplace,
             fulfillment_type: r.fulfillment_type,
             status: r.status,
+            marketplace_status: r.marketplace_status,
             revenue: String(r.revenue),
             items_count: r.items_count,
             ordered_at: r.ordered_at,
@@ -633,6 +638,7 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
         await db.update(orders).set({
           fulfillment_type: r.fulfillment_type,
           status: r.status,
+          marketplace_status: r.marketplace_status,
           revenue: String(r.revenue),
           items_count: r.items_count,
           ordered_at: r.ordered_at,

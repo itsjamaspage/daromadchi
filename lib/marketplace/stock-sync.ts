@@ -17,7 +17,8 @@ import { and, eq, inArray, isNull, sql } from 'drizzle-orm'
 import { db, shops, products, orders, orderItems, stockSyncState } from '@/lib/db'
 import { logger } from '@/lib/logger'
 import { pushStock, type StockWriteStatus } from '@/lib/marketplace/stock-writer'
-import { planStockWrites, STOCK_RESERVING_STATUSES, type SyncMember, type OversellMode } from '@/lib/marketplace/stock-allocation'
+import { planStockWrites, type SyncMember, type OversellMode } from '@/lib/marketplace/stock-allocation'
+import { reservingOrderCondition } from '@/lib/marketplace/reserving-orders'
 import { handleOversell } from '@/lib/marketplace/oversell'
 import { notifyStockUpdates, type StockUpdateEvent } from '@/lib/marketplace/stock-notify'
 import { backfillShopIdentifiers } from '@/lib/marketplace/identifier-backfill'
@@ -120,10 +121,11 @@ async function loadGroups(userId: string): Promise<{
       qty: sql<number>`coalesce(sum(${orderItems.quantity}), 0)`.as('qty'),
     }).from(orderItems)
       .innerJoin(orders, eq(orderItems.order_id, orders.id))
-      // Only orders that RESERVE stock (handed over / brought to PVZ) draw down
-      // available. Still-with-seller 'pending' orders keep listings full. See
-      // STOCK_RESERVING_STATUSES.
-      .where(and(inArray(orders.shop_id, shopIds), inArray(orders.status, [...STOCK_RESERVING_STATUSES])))
+      // Only orders that RESERVE stock (PVZ has received the unit — Uzum
+      // ACCEPTED_AT_DP / Yandex DELIVERY — and later) draw down available.
+      // Orders still in transit to the PVZ or with the seller keep listings
+      // full. Shared condition, see reservingOrderCondition / RESERVING_RAW_STATUSES.
+      .where(and(inArray(orders.shop_id, shopIds), reservingOrderCondition()))
       .groupBy(orderItems.product_id),
   ])
 

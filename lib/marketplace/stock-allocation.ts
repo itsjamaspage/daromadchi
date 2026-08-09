@@ -14,26 +14,40 @@
 import type { MarketplaceType } from '@/lib/types'
 
 /**
- * Order statuses whose units RESERVE shared stock (draw down `available`, and so
- * lower the ostatok written to the other marketplaces in the group).
+ * RAW marketplace order statuses whose units RESERVE shared stock (draw down
+ * `available`, and so lower the ostatok written to the other marketplaces in the
+ * group). Keyed off the RAW status (orders.marketplace_status), NOT the
+ * normalized 5-value enum, because the enum is too coarse: on Uzum FBS both
+ * «В поставке» (DELIVERING, still in transit to the PVZ) and «Приняты Uzum»
+ * (ACCEPTED_AT_DP, the PVZ has received the item) normalize to 'confirmed', yet
+ * the seller's rule is that stock must NOT draw down until PVZ receipt.
  *
- * A unit is only reserved once the seller has physically HANDED IT OVER — i.e.
- * brought it to the PVZ / pickup point, so it has left the seller's hands. In
- * the normalized order status that hand-off is 'confirmed':
- *   Uzum  → HANDED_OVER / SENT / DELIVERING / ACCEPTED_AT_DP  (STATUS_MAP → 'confirmed')
- *   Yandex→ DELIVERY                                          (STATUS_MAP → 'confirmed')
+ * The boundary is PVZ RECEIPT and later, never earlier:
+ *   Uzum   → ACCEPTED_AT_DP   («Приняты Uzum» — PVZ received; also covers the
+ *                              later «Ждут выдачи» which stays ACCEPTED_AT_DP).
+ *            HANDED_OVER / TRANSFERRED — defensive aliases for "the seller has
+ *                              handed the item over at the pickup point".
+ *            EXCLUDES DELIVERING / SENT / ON_DELIVERY (still «В поставке»,
+ *            in transit) and everything at «Новые» / «В сборке».
+ *   Yandex → DELIVERY         — the order has been shipped / handed off to the
+ *                              delivery service (the physical hand-off boundary).
  *
- * Orders still sitting with the seller — 'pending' (Uzum CREATED/PACKING/READY,
- * Yandex PENDING/PROCESSING) — do NOT reserve stock, so listings stay at full
- * ostatok until the product is actually taken to the PVZ. 'delivered' is already
- * reflected in the marketplace's own listed stock, so it isn't re-counted here.
+ * 'delivered' («Выданы» — customer collected) is already reflected in the
+ * marketplace's own listed stock, so it is NOT re-counted here (double-subtract).
  *
- * Trade-off: keeping listings full through the 'pending' window means the same
- * physical unit can be ordered on both marketplaces before either is handed
- * over; the oversell safety net (which reads the SAME set) resolves that at
- * hand-off time.
+ * The raw strings do not collide across marketplaces (Uzum in-transit is
+ * DELIVERING, Yandex reserving is DELIVERY), so one flat union set is safe.
+ *
+ * Trade-off: keeping listings full until PVZ receipt means the same physical
+ * unit can be ordered on both marketplaces before either is received; the
+ * oversell safety net (which reads the SAME set) resolves that at receipt time.
  */
-export const STOCK_RESERVING_STATUSES = ['confirmed'] as const
+export const RESERVING_RAW_STATUSES = [
+  // Uzum — PVZ has received the item («Приняты Uzum») and later
+  'ACCEPTED_AT_DP', 'HANDED_OVER', 'TRANSFERRED',
+  // Yandex — shipped / handed off to delivery
+  'DELIVERY',
+] as const
 
 export type OversellMode = 'lock_last_unit' | 'partition' | 'off'
 
@@ -46,9 +60,10 @@ export interface SyncMember {
   priority: number
   /** What the marketplace currently lists as available (products.stock_quantity). */
   listedStock: number
-  /** Reserving order units on this listing — those handed over / brought to the
-   *  PVZ ('confirmed'). Not-yet-shipped 'pending' orders are excluded so they
-   *  don't draw down stock. See STOCK_RESERVING_STATUSES. */
+  /** Reserving order units on this listing — those the PVZ has received
+   *  (Uzum ACCEPTED_AT_DP / Yandex DELIVERY) and later. Orders still in transit
+   *  to the PVZ or with the seller are excluded so they don't draw down stock.
+   *  See RESERVING_RAW_STATUSES. */
   pending: number
   sku: string | null
 }
@@ -128,7 +143,12 @@ export function planStockWrites(members: SyncMember[], mode: OversellMode): Stoc
   const writable = members.filter(m => m.apiMode === 'stock_sync').sort(byPriority)
   const targets = allocateTargets(available, writable, mode)
   const plans: PlannedWrite[] = writable.map(m => {
-    const target = targets.get(m.shopId) ?? available
+    let target = targets.get(m.shopId) ?? available
+    // Backstop: never RAISE a listing that has an open reserving order against
+    // it — a unit on it is already committed at the PVZ, so raising would
+    // un-reserve it and risk an oversell. Only lower or hold. Legitimate restock
+    // increases are still allowed when the listing has no open reserving orders.
+    if (m.pending > 0 && target > m.listedStock) target = m.listedStock
     return { member: m, target, willWrite: target !== m.listedStock }
   })
   return { available, plans }

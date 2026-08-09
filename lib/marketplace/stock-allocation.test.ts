@@ -88,6 +88,35 @@ describe('off', () => {
   })
 })
 
+describe('backstop guard — never raise a listing with an open reserving order', () => {
+  it('holds a listing with an open reserving order instead of raising it', () => {
+    // Uzum listed 3 with 1 reserving order; YM listed 5, no order.
+    // MAX 5 − pending 1 = available 4. 'off' would push 4 to both, RAISING Uzum
+    // 3→4 and un-reserving its committed unit. Guard clamps Uzum to hold at 3.
+    const { available, plans } = planStockWrites(
+      [uzum({ listedStock: 3, pending: 1 }), ym({ listedStock: 5, pending: 0 })],
+      'off',
+    )
+    assert.equal(available, 4)
+    const byShop = Object.fromEntries(plans.map(p => [p.member.shopId, p.target]))
+    assert.equal(byShop['uzum-shop'], 3)   // held, NOT raised to 4 (open order)
+    assert.equal(byShop['ym-shop'], 4)     // lowered 5→4, allowed
+  })
+
+  it('still allows a legitimate restock increase when there is no open order', () => {
+    // Uzum listed 3, NO reserving order; YM listed 5. available 5 → Uzum may
+    // rise 3→5 (a real restock, nothing committed against it).
+    const { available, plans } = planStockWrites(
+      [uzum({ listedStock: 3, pending: 0 }), ym({ listedStock: 5, pending: 0 })],
+      'off',
+    )
+    assert.equal(available, 5)
+    const uzumPlan = plans.find(p => p.member.shopId === 'uzum-shop')!
+    assert.equal(uzumPlan.target, 5)       // raised — restock allowed
+    assert.equal(uzumPlan.willWrite, true)
+  })
+})
+
 describe('real-diff-only + read-only members', () => {
   it('no write when the listed number already equals the target', () => {
     // available 2, both already listing 2 → no writes

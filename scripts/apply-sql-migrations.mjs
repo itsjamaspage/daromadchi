@@ -40,6 +40,7 @@ const MIGRATIONS = [
   'migrations/migrations/051_shops_yandex_boost_disabled.sql',
   'migrations/migrations/052_drop_product_ads_stats.sql',
   'migrations/migrations/053_order_items_product_snapshot.sql',
+  'migrations/migrations/054_orders_marketplace_status.sql',
 ]
 
 function loadDatabaseUrl() {
