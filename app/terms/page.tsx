@@ -11,12 +11,12 @@ const T = {
   uz: {
     title: 'Foydalanish shartlari',
     subtitle: "Daromadchi platformasidan foydalanish orqali siz ushbu shartlarga rozilik bildirasiz.",
-    updated: 'Oxirgi yangilanish: 2026-06-08',
+    updated: 'Oxirgi yangilanish: 2026-08-09',
     sections: [
       {
         heading: '1. Platformadan foydalanish',
         short: 'Foydalanish',
-        body: `Daromadchi — Uzbekiston bozorlarida (Uzum Market, Yandex Market) savdo qiluvchi sotuvchilar uchun mo'ljallangan analitika platformasidir.\n\nPlatformadan foydalanish uchun:\n• Faqat o'zingizga tegishli yoki vakolatli bo'lgan marketplace hisobi API kalitlarini kiritishingiz mumkin.\n• Platformani buzish, qayta sotish yoki ruxsatsiz maqsadlarda foydalanish taqiqlanadi.\n• Hisob ma'lumotlarini maxfiy saqlash va ularga ruxsatsiz kirishni darhol bizga xabar qilish majburiydir.`,
+        body: `Daromadchi — Uzbekiston bozorlarida (Uzum Market, Yandex Market) savdo qiluvchi sotuvchilar uchun mo'ljallangan analitika platformasidir.\n\nPlatformadan foydalanish uchun:\n• Faqat o'zingizga tegishli yoki vakolatli bo'lgan marketplace hisobi API kalitlarini kiritishingiz mumkin.\n• Platformani buzish, qayta sotish yoki ruxsatsiz maqsadlarda foydalanish taqiqlanadi.\n• Hisob ma'lumotlarini maxfiy saqlash va ularga ruxsatsiz kirishni darhol bizga xabar qilish majburiydir.\n\nXizmat operatori (huquqiy shaxs): YATT Xakimjonov Jamshid (yakka tartibdagi tadbirkor), INN 51608028660035, O'zbekiston Respublikasi. «Daromadchi» — xizmat nomi.`,
       },
       {
         heading: '2. Hisob va xavfsizlik',
@@ -46,29 +46,29 @@ const T = {
       {
         heading: "7. Hisob o'chirish",
         short: "O'chirish",
-        body: `Siz istalgan vaqtda hisobingizni o'chirishingiz mumkin. O'chirish so'rovi uchun ${COMPANY_EMAIL} manziliga murojaat qiling. Hisobingiz o'chirilganidan so'ng 30 kun ichida ma'lumotlaringiz to'liq o'chiriladi.`,
+        body: `Siz istalgan vaqtda hisobingizni o'chirishingiz mumkin. O'chirish so'rovi uchun ${COMPANY_EMAIL} manziliga murojaat qiling. Hisobingiz o'chirilganidan so'ng shaxsiy ma'lumotlaringiz 30 kun ichida to'liq o'chiriladi. Moliyaviy va hisob-kitob hujjatlari (hisob-fakturalar, to'lovlar) O'zbekiston Respublikasining soliq va buxgalteriya qonunchiligi talab qilgan hollarda uzoqroq saqlanishi mumkin.`,
       },
       {
         heading: "8. Qo'llaniladigan qonun",
         short: 'Qonun',
-        body: `Ushbu shartlar O'zbekiston Respublikasi qonunlariga muvofiq boshqariladi. Nizolar O'zbekiston Respublikasining vakolatli sudlari orqali hal etiladi.`,
+        body: `Ushbu shartlar O'zbekiston Respublikasi qonunlariga muvofiq boshqariladi. Nizolar O'zbekiston Respublikasining vakolatli sudlari orqali hal etiladi.\n\nShaxsiy ma'lumotlar «Shaxsiy ma'lumotlar to'g'risida»gi Qonun (2019-yil 2-iyul, ZRU-547-son, 1125-son Qonun bilan o'zgartirilgan, 2026-yil 27-martdan kuchga kirgan) asosida qayta ishlanadi. Nazorat organlari — Adliya vazirligi huzuridagi Shaxsiylashtirish agentligi va «Uzkomnazorat» davlat inspeksiyasi.`,
       },
       {
         heading: '9. Aloqa',
         short: 'Aloqa',
-        body: `Savollar yoki shikoyatlar uchun:\nElektron pochta: ${COMPANY_EMAIL}`,
+        body: `Umumiy savollar yoki shikoyatlar uchun:\nElektron pochta: ${COMPANY_EMAIL}\n\nShaxsiy ma'lumotlar bilan bog'liq so'rovlar uchun: privacy@daromadchi.uz`,
       },
     ],
   },
   ru: {
     title: 'Условия использования',
     subtitle: 'Используя платформу Daromadchi, вы соглашаетесь с данными условиями.',
-    updated: 'Последнее обновление: 2026-06-08',
+    updated: 'Последнее обновление: 2026-08-09',
     sections: [
       {
         heading: '1. Использование платформы',
         short: 'Использование',
-        body: `Daromadchi — аналитическая платформа для продавцов на маркетплейсах Узбекистана (Uzum Market, Yandex Market).\n\nДля использования платформы:\n• Вы можете вводить только API-ключи аккаунтов маркетплейса, которые принадлежат вам или на использование которых вы уполномочены.\n• Запрещается взлом, перепродажа или использование платформы в несанкционированных целях.\n• Вы обязаны хранить учётные данные в тайне и незамедлительно сообщать нам о несанкционированном доступе.`,
+        body: `Daromadchi — аналитическая платформа для продавцов на маркетплейсах Узбекистана (Uzum Market, Yandex Market).\n\nДля использования платформы:\n• Вы можете вводить только API-ключи аккаунтов маркетплейса, которые принадлежат вам или на использование которых вы уполномочены.\n• Запрещается взлом, перепродажа или использование платформы в несанкционированных целях.\n• Вы обязаны хранить учётные данные в тайне и незамедлительно сообщать нам о несанкционированном доступе.\n\nОператор сервиса (юридическое лицо): ЯТТ Хакимжонов Жамшид (индивидуальный предприниматель), ИНН 51608028660035, Республика Узбекистан. «Daromadchi» — наименование сервиса.`,
       },
       {
         heading: '2. Аккаунт и безопасность',
@@ -98,29 +98,29 @@ const T = {
       {
         heading: '7. Удаление аккаунта',
         short: 'Удаление',
-        body: `Вы можете удалить свой аккаунт в любое время. Для этого обратитесь на ${COMPANY_EMAIL}. После удаления аккаунта ваши данные будут полностью удалены в течение 30 дней.`,
+        body: `Вы можете удалить свой аккаунт в любое время. Для этого обратитесь на ${COMPANY_EMAIL}. После удаления аккаунта ваши персональные данные будут полностью удалены в течение 30 дней. Финансовые и расчётные документы (счета, платежи) могут храниться дольше, если этого требует налоговое и бухгалтерское законодательство Республики Узбекистан.`,
       },
       {
         heading: '8. Применимое право',
         short: 'Право',
-        body: `Настоящие условия регулируются законодательством Республики Узбекистан. Споры разрешаются через компетентные суды Республики Узбекистан.`,
+        body: `Настоящие условия регулируются законодательством Республики Узбекистан. Споры разрешаются через компетентные суды Республики Узбекистан.\n\nПерсональные данные обрабатываются в соответствии с Законом «О персональных данных» (2 июля 2019 г., № ЗРУ-547, с изменениями по Закону № 1125, вступившими в силу 27 марта 2026 г.). Надзорные органы — Агентство персонализации при Министерстве юстиции и государственная инспекция «Узкомназорат».`,
       },
       {
         heading: '9. Контакты',
         short: 'Контакты',
-        body: `По вопросам или жалобам:\nЭлектронная почта: ${COMPANY_EMAIL}`,
+        body: `По общим вопросам или жалобам:\nЭлектронная почта: ${COMPANY_EMAIL}\n\nПо вопросам, связанным с персональными данными: privacy@daromadchi.uz`,
       },
     ],
   },
   en: {
     title: 'Terms of Use',
     subtitle: 'By using the Daromadchi platform, you agree to these terms.',
-    updated: 'Last updated: 2026-06-08',
+    updated: 'Last updated: 2026-08-09',
     sections: [
       {
         heading: '1. Use of the platform',
         short: 'Usage',
-        body: `Daromadchi is an analytics platform for sellers on Uzbekistan marketplaces (Uzum Market, Yandex Market).\n\nTo use the platform:\n• You may only enter API keys for marketplace accounts you own or are authorised to use.\n• Hacking, reselling or using the platform for unauthorised purposes is prohibited.\n• You must keep your credentials confidential and immediately notify us of any unauthorised access.`,
+        body: `Daromadchi is an analytics platform for sellers on Uzbekistan marketplaces (Uzum Market, Yandex Market).\n\nTo use the platform:\n• You may only enter API keys for marketplace accounts you own or are authorised to use.\n• Hacking, reselling or using the platform for unauthorised purposes is prohibited.\n• You must keep your credentials confidential and immediately notify us of any unauthorised access.\n\nService operator (legal person): YATT Xakimjonov Jamshid (individual entrepreneur), INN 51608028660035, Republic of Uzbekistan. "Daromadchi" is the name of the service.`,
       },
       {
         heading: '2. Account and security',
@@ -150,17 +150,17 @@ const T = {
       {
         heading: '7. Account deletion',
         short: 'Deletion',
-        body: `You may delete your account at any time by contacting ${COMPANY_EMAIL}. Your data will be permanently deleted within 30 days of account deletion.`,
+        body: `You may delete your account at any time by contacting ${COMPANY_EMAIL}. Your personal data will be permanently deleted within 30 days of account deletion. Financial and accounting records (invoices, payments) may be retained longer where the tax and accounting laws of the Republic of Uzbekistan require.`,
       },
       {
         heading: '8. Governing law',
         short: 'Law',
-        body: `These terms are governed by the laws of the Republic of Uzbekistan. Disputes shall be resolved through the competent courts of the Republic of Uzbekistan.`,
+        body: `These terms are governed by the laws of the Republic of Uzbekistan. Disputes shall be resolved through the competent courts of the Republic of Uzbekistan.\n\nPersonal data is processed under the Law "On Personal Data" (2 July 2019, No. ZRU-547, as amended by Law No. 1125, in force 27 March 2026). The supervisory authorities are the Personalization Agency under the Ministry of Justice and the state inspectorate Uzkomnazorat.`,
       },
       {
         heading: '9. Contact',
         short: 'Contact',
-        body: `For questions or complaints:\nEmail: ${COMPANY_EMAIL}`,
+        body: `For general questions or complaints:\nEmail: ${COMPANY_EMAIL}\n\nFor personal-data requests: privacy@daromadchi.uz`,
       },
     ],
   },
