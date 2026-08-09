@@ -207,7 +207,7 @@ function EditRow({ product, onClose, onSaved }: { product: Product; onClose: () 
 
   return (
     <tr>
-      <td colSpan={9} className="px-5 py-4" style={{ background: 'var(--bg-input)' }}>
+      <td colSpan={10} className="px-5 py-4" style={{ background: 'var(--bg-input)' }}>
         <div className="flex flex-wrap items-end gap-4">
           <div>
             <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-muted)' }}>{d.price}</label>
@@ -487,6 +487,12 @@ export default function ProductsTable({ products }: { products: Product[] }) {
             </span>
           </div>
         </td>
+        {/* Категория · Цена · Себестоимость · Прибыль · Маржа — left blank on the
+            parent (per-unit economics don't aggregate). Must be exactly these 5
+            cells so the Σ columns below line up with Доставлено / В процессе /
+            Отменённые. (A missing Маржа cell here shifted every Σ one column left,
+            so collapsed "Доставлено" showed Σ in_transit instead of Σ delivered.) */}
+        <td className="px-5 py-4" />
         <td className="px-5 py-4" />
         <td className="px-5 py-4" />
         <td className="px-5 py-4" />
@@ -494,6 +500,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
         <td className="px-5 py-4 text-right" style={{ color: 'var(--text-muted)' }}>Σ {sum(c => c.delivered)}</td>
         <td className="px-5 py-4 text-right" style={{ color: 'var(--text-muted)' }}>Σ {sum(c => c.in_transit)}</td>
         <td className="px-5 py-4 text-right" style={{ color: 'var(--text-muted)' }}>Σ {sum(c => c.cancelled)}</td>
+        {/* Остаток — blank (a stock sum would double-count shared FBS pools). */}
         <td className="px-5 py-4" />
       </tr>
     )
