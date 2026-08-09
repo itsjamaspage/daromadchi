@@ -19,6 +19,7 @@ import { db, shops, orders, orderItems, userSettings, orderCancelLog } from '@/l
 import { logger } from '@/lib/logger'
 import { sendTelegramMessage } from '@/lib/telegram'
 import { cancelOrder } from '@/lib/marketplace/order-cancel'
+import { STOCK_RESERVING_STATUSES } from '@/lib/marketplace/stock-allocation'
 import type { MarketplaceType } from '@/lib/types'
 
 const AUTO_CANCEL_WINDOW_MS = 60 * 60 * 1000 // 1 hour
@@ -95,7 +96,9 @@ export async function handleOversell(g: OversellGroup): Promise<OversellOutcome>
         orderedAt: orders.ordered_at,
       }).from(orders)
         .innerJoin(orderItems, eq(orderItems.order_id, orders.id))
-        .where(and(inArray(orderItems.product_id, g.productIds), inArray(orders.status, ['pending', 'confirmed'])))
+        // Cancel among the SAME set that reserves stock (handed over / at PVZ),
+        // so detection and resolution stay coherent. See STOCK_RESERVING_STATUSES.
+        .where(and(inArray(orderItems.product_id, g.productIds), inArray(orders.status, [...STOCK_RESERVING_STATUSES])))
         .orderBy(desc(orders.ordered_at))
         .limit(1)
     : []

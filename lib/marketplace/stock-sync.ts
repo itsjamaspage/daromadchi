@@ -17,7 +17,7 @@ import { and, eq, inArray, isNull, sql } from 'drizzle-orm'
 import { db, shops, products, orders, orderItems, stockSyncState } from '@/lib/db'
 import { logger } from '@/lib/logger'
 import { pushStock, type StockWriteStatus } from '@/lib/marketplace/stock-writer'
-import { planStockWrites, type SyncMember, type OversellMode } from '@/lib/marketplace/stock-allocation'
+import { planStockWrites, STOCK_RESERVING_STATUSES, type SyncMember, type OversellMode } from '@/lib/marketplace/stock-allocation'
 import { handleOversell } from '@/lib/marketplace/oversell'
 import { notifyStockUpdates, type StockUpdateEvent } from '@/lib/marketplace/stock-notify'
 import { backfillShopIdentifiers } from '@/lib/marketplace/identifier-backfill'
@@ -120,7 +120,10 @@ async function loadGroups(userId: string): Promise<{
       qty: sql<number>`coalesce(sum(${orderItems.quantity}), 0)`.as('qty'),
     }).from(orderItems)
       .innerJoin(orders, eq(orderItems.order_id, orders.id))
-      .where(and(inArray(orders.shop_id, shopIds), inArray(orders.status, ['pending', 'confirmed'])))
+      // Only orders that RESERVE stock (handed over / brought to PVZ) draw down
+      // available. Still-with-seller 'pending' orders keep listings full. See
+      // STOCK_RESERVING_STATUSES.
+      .where(and(inArray(orders.shop_id, shopIds), inArray(orders.status, [...STOCK_RESERVING_STATUSES])))
       .groupBy(orderItems.product_id),
   ])
 

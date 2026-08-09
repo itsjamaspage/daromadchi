@@ -13,6 +13,28 @@
 
 import type { MarketplaceType } from '@/lib/types'
 
+/**
+ * Order statuses whose units RESERVE shared stock (draw down `available`, and so
+ * lower the ostatok written to the other marketplaces in the group).
+ *
+ * A unit is only reserved once the seller has physically HANDED IT OVER — i.e.
+ * brought it to the PVZ / pickup point, so it has left the seller's hands. In
+ * the normalized order status that hand-off is 'confirmed':
+ *   Uzum  → HANDED_OVER / SENT / DELIVERING / ACCEPTED_AT_DP  (STATUS_MAP → 'confirmed')
+ *   Yandex→ DELIVERY                                          (STATUS_MAP → 'confirmed')
+ *
+ * Orders still sitting with the seller — 'pending' (Uzum CREATED/PACKING/READY,
+ * Yandex PENDING/PROCESSING) — do NOT reserve stock, so listings stay at full
+ * ostatok until the product is actually taken to the PVZ. 'delivered' is already
+ * reflected in the marketplace's own listed stock, so it isn't re-counted here.
+ *
+ * Trade-off: keeping listings full through the 'pending' window means the same
+ * physical unit can be ordered on both marketplaces before either is handed
+ * over; the oversell safety net (which reads the SAME set) resolves that at
+ * hand-off time.
+ */
+export const STOCK_RESERVING_STATUSES = ['confirmed'] as const
+
 export type OversellMode = 'lock_last_unit' | 'partition' | 'off'
 
 export interface SyncMember {
@@ -24,7 +46,9 @@ export interface SyncMember {
   priority: number
   /** What the marketplace currently lists as available (products.stock_quantity). */
   listedStock: number
-  /** Open (pending/confirmed) order units on this listing. */
+  /** Reserving order units on this listing — those handed over / brought to the
+   *  PVZ ('confirmed'). Not-yet-shipped 'pending' orders are excluded so they
+   *  don't draw down stock. See STOCK_RESERVING_STATUSES. */
   pending: number
   sku: string | null
 }
