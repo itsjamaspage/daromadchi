@@ -42,33 +42,39 @@ function getEffectivePlan(user: { plan: string; plan_expires_at: Date | null; tr
 
 async function syncShop(
   shop: { id: string; marketplace: string; api_key_encrypted: string; shop_id_external: string | null },
+  heavy: boolean,
 ): Promise<Record<string, unknown>> {
   const start = Date.now()
   try {
     const token = decrypt(shop.api_key_encrypted)
     let r: { ok: boolean; [key: string]: unknown } | undefined
     if (shop.marketplace === 'uzum') {
-      r = { ...await syncFromUzum(shop.id, token) }
+      r = { ...await syncFromUzum(shop.id, token, heavy) }
+      // Settlements are heavy (extra API + async reports) — only on a heavy tick.
       // Also pull real per-order-item financials from /v1/finance/orders
       // so Payouts shows Uzum's authoritative commission / delivery /
       // net instead of the Unit-Economics estimate. Guarded so a
       // finance-endpoint hiccup doesn't fail the primary sync.
-      try {
-        const s = await syncUzumSettlements(shop.id, token)
-        ;(r as Record<string, unknown>).settlements = s
-      } catch (e) {
-        ;(r as Record<string, unknown>).settlements = { ok: false, error: String(e).slice(0, 300) }
+      if (heavy) {
+        try {
+          const s = await syncUzumSettlements(shop.id, token)
+          ;(r as Record<string, unknown>).settlements = s
+        } catch (e) {
+          ;(r as Record<string, unknown>).settlements = { ok: false, error: String(e).slice(0, 300) }
+        }
       }
     } else if (shop.marketplace === 'yandex_market' && shop.shop_id_external) {
-      r = { ...await syncFromYandex(shop.id, token, shop.shop_id_external) }
-      // Also refresh Yandex real-settlement data — async report API can
-      // take minutes, kept behind try/catch so a settlement failure
-      // never blocks the primary orders sync from being marked ok.
-      try {
-        const s = await syncYandexSettlements(shop.id, token, shop.shop_id_external)
-        ;(r as Record<string, unknown>).settlements = s
-      } catch (e) {
-        ;(r as Record<string, unknown>).settlements = { ok: false, error: String(e).slice(0, 300) }
+      r = { ...await syncFromYandex(shop.id, token, shop.shop_id_external, undefined, heavy) }
+      // Settlements are heavy (async report API can take minutes) — only on a
+      // heavy tick. Kept behind try/catch so a settlement failure never blocks
+      // the primary orders sync from being marked ok.
+      if (heavy) {
+        try {
+          const s = await syncYandexSettlements(shop.id, token, shop.shop_id_external)
+          ;(r as Record<string, unknown>).settlements = s
+        } catch (e) {
+          ;(r as Record<string, unknown>).settlements = { ok: false, error: String(e).slice(0, 300) }
+        }
       }
     } else if (shop.marketplace === 'wildberries' && WB_ENABLED) {
       r = { ...await syncFromWildberries(null, shop.id, token) }
@@ -114,20 +120,26 @@ export const GET = withErrorHandler(async (req: Request) => {
   }
 
   const now = Date.now()
-  const eligibleShops = allShops.filter(s => {
+  // Every active shop syncs its ORDERS on every 5-min tick, so new-order
+  // Telegram alerts fire near-real-time regardless of plan. The plan interval
+  // now only decides whether this tick ALSO runs the heavy work (product
+  // catalog + settlements) and advances last_synced_at — previously the whole
+  // sync was gated behind the interval, so a `pro` user could wait up to 2h and
+  // a `free` user up to 6h for a "new order" alert.
+  const shopsToSync = allShops.map(s => {
     const plan = userPlanMap.get(s.user_id) ?? 'free'
     const interval = SYNC_INTERVAL_MS[plan] ?? SYNC_INTERVAL_MS.free
-    if (!s.last_synced_at) return true
-    return now - new Date(s.last_synced_at).getTime() >= interval
+    const heavy = !s.last_synced_at || (now - new Date(s.last_synced_at).getTime() >= interval)
+    return { ...s, heavy }
   })
 
   const results: Record<string, unknown>[] = []
-  const skippedCount = allShops.length - eligibleShops.length
+  const heavyCount = shopsToSync.filter(s => s.heavy).length
 
-  for (let i = 0; i < eligibleShops.length; i += CONCURRENCY) {
-    const batch = eligibleShops.slice(i, i + CONCURRENCY)
+  for (let i = 0; i < shopsToSync.length; i += CONCURRENCY) {
+    const batch = shopsToSync.slice(i, i + CONCURRENCY)
     const settled = await Promise.allSettled(
-      batch.map(s => syncShop({ ...s, api_key_encrypted: s.api_key_encrypted! }))
+      batch.map(s => syncShop({ ...s, api_key_encrypted: s.api_key_encrypted! }, s.heavy))
     )
     for (const outcome of settled) {
       if (outcome.status === 'fulfilled') {
@@ -147,7 +159,7 @@ export const GET = withErrorHandler(async (req: Request) => {
   for (const r of results) {
     const newOrders = (r.newOrders as string[] | undefined) ?? []
     if (newOrders.length === 0) continue
-    const shop = eligibleShops.find(s => s.id === r.shopId)
+    const shop = shopsToSync.find(s => s.id === r.shopId)
     if (!shop || !shop.last_synced_at) continue
     const list = ordersByUser.get(shop.user_id) ?? []
     list.push({ marketplace: shop.marketplace, name: shop.name, lines: newOrders })
@@ -196,5 +208,5 @@ export const GET = withErrorHandler(async (req: Request) => {
     revalidateTag('settlements', { expire: 0 })
   }
 
-  return NextResponse.json({ ok: true, synced: results.length, skipped: skippedCount, results })
+  return NextResponse.json({ ok: true, synced: results.length, heavy: heavyCount, results })
 })

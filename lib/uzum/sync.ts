@@ -174,6 +174,9 @@ export interface SyncResult {
   newOrders?: string[]
   productsUpserted: number
   campaignsUpserted: number
+  // False on a lightweight orders-only tick (product pull skipped, last_synced_at
+  // not advanced); true/undefined on a full heavy run.
+  heavy?: boolean
   // Observability: how many raw orders each source returned, and whether the
   // order endpoints actually succeeded. When ordersDegraded is true, the order
   // fetch failed and last_synced_at was intentionally NOT advanced so the same
@@ -192,7 +195,10 @@ export interface SyncResult {
   debug?: Record<string, string>
 }
 
-export async function syncFromUzum(shopId: string, token: string): Promise<SyncResult> {
+// heavy=false → orders-only pass: resolve the shop + fetch/insert orders + fire
+// new-order alerts, but skip the throttled product/SKU pull and don't advance
+// last_synced_at.
+export async function syncFromUzum(shopId: string, token: string, heavy = true): Promise<SyncResult> {
   const warnings: string[] = []
   const debug: Record<string, string> = {}
   let itemsUpserted = 0
@@ -233,7 +239,12 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
 
     // Product sync is best-effort: shops with 0 active listings return 403.
     // We still want to fetch orders for such shops, so catch and continue.
-    try {
+    // Heavy-only: this paginated product/SKU pull is the expensive, throttled
+    // part. An orders-only tick skips it — productRows stays empty and the
+    // new-order alert falls back to DB-known product names (formatOrderLine
+    // degrades to "SKU <id>" when a product isn't matched). Shop resolution
+    // above stays outside the gate because the order fetch needs uzumShops.
+    if (heavy) try {
       for (const uShop of uzumShops) {
         const size = 100
         for (let page = 0; page < 100; page++) {
@@ -644,6 +655,26 @@ export async function syncFromUzum(shopId: string, token: string): Promise<SyncR
           items_count: r.items_count,
           ordered_at: r.ordered_at,
         }).where(eq(orders.id, existingOrdMap.get(r.order_id_external)!))
+      }
+    }
+
+    // ── Orders-only tick: order insert + new-order alert are done above. Return
+    // before the throttled derive/order-item/finance/metadata work, and do NOT
+    // advance last_synced_at (that write lives below and only runs on a heavy
+    // pass), so the heavy pass still becomes due on schedule. ──
+    if (!heavy) {
+      return {
+        ok: !ordersDegraded,
+        ordersUpserted: orderRows.length,
+        productsUpserted: 0,
+        campaignsUpserted: 0,
+        fbsCount: fbsOrders.length,
+        fboCount: fboOrders.length,
+        ordersDegraded,
+        ordersInserted,
+        newOrders,
+        heavy: false,
+        debug,
       }
     }
 

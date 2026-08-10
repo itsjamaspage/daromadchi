@@ -51,6 +51,9 @@ export interface YandexSyncResult {
   newOrders?: string[]
   productsUpserted: number
   campaignsUpserted: number
+  // False on a lightweight orders-only tick (products/settlements/catalog were
+  // skipped, last_synced_at not advanced); true/undefined on a full heavy run.
+  heavy?: boolean
   error?: string
   details?: string
   // Structured diagnostic dump — surfaced in the sync toast so users can see
@@ -64,6 +67,9 @@ export async function syncFromYandex(
   token: string,
   campaignId: string,
   fromDateOverride?: Date,
+  // heavy=false → orders-only pass: fetch/insert orders + fire new-order alerts,
+  // but skip the throttled product-catalog work and don't advance last_synced_at.
+  heavy = true,
 ): Promise<YandexSyncResult> {
   const warnings: string[] = []
   const debug: Record<string, string | number> = {}
@@ -106,7 +112,12 @@ export async function syncFromYandex(
       variant_group_key: string | null
       variant_color: string | null
     }[] = []
-    try {
+    // Heavy-only: the paginated product-catalog fetch (offer-mappings + SKU
+    // stats) is the expensive, throttled part. An orders-only tick skips it;
+    // productRows stays empty and the shopSku bridge below self-skips (it is
+    // guarded on productRows.length > 0), while the order insert + alert path
+    // reads item names straight from the order payload — no products needed.
+    if (heavy) try {
       const entries = await fetchAllYandexProducts(token, campaignId, businessId)
       debug.offerMappings = entries.length
 
@@ -533,6 +544,23 @@ export async function syncFromYandex(
     }
 
     const newOrderRows = orderRows
+
+    // ── Orders-only tick: order insert + new-order alert are done above. Return
+    // before the throttled product/order-item/settlement/metadata work, and do
+    // NOT advance last_synced_at (that write lives below and only runs on a heavy
+    // pass), so the heavy pass still becomes due on schedule. ──
+    if (!heavy) {
+      return {
+        ok: ordersOk,
+        ordersUpserted: newOrderRows.length,
+        ordersInserted,
+        newOrders,
+        productsUpserted: 0,
+        campaignsUpserted: 0,
+        heavy: false,
+        debug,
+      }
+    }
 
     // ── Derive products from order items if product sync returned nothing ────
     if (productRows.length === 0 && yandexOrders.length > 0) {
