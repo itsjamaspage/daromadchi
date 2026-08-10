@@ -248,6 +248,33 @@ export async function syncStockSyncGroups(opts: RunOptions): Promise<StockSyncRu
   let writesPlanned = 0
   let anyDisplayChange = false
 
+  // Live Uzum FBS-linked state — fetched lazily once per Uzum shop per run and
+  // memoized, so a run with no Uzum writes pays nothing. A SKU the seller hasn't
+  // stocked in their Uzum FBS warehouse comes back fbsLinked:false, and every
+  // write to it returns validation-failed-001 (HTTP 400): 280+ noise rows/day in
+  // stock_write_log plus alerts for products they aren't even selling. We skip
+  // those writes silently (in the loop below). Best-effort: if the read fails the
+  // map is empty and nothing is skipped, so writes proceed exactly as before.
+  const uzumFbsLinkedCache = new Map<string, Map<string, boolean>>()
+  async function uzumFbsLinkedFor(shop: ShopRow): Promise<Map<string, boolean>> {
+    const cached = uzumFbsLinkedCache.get(shop.id)
+    if (cached) return cached
+    const map = new Map<string, boolean>()
+    if (shop.marketplace === 'uzum' && shop.api_key_encrypted) {
+      try {
+        const stocks = await fetchAllUzumSkuStocks(decrypt(shop.api_key_encrypted))
+        for (const s of stocks) {
+          const bc = String(s.barcode ?? '').trim()
+          if (bc && typeof s.fbsLinked === 'boolean') map.set(bc, s.fbsLinked)
+        }
+      } catch (err) {
+        logger.warn('uzum_fbs_linked_fetch_failed', { shopId: shop.id, error: String(err).slice(0, 200) })
+      }
+    }
+    uzumFbsLinkedCache.set(shop.id, map)
+    return map
+  }
+
   for (const [matchKey, group] of groups) {
     if (opts.onlyMatchKey && matchKey !== opts.onlyMatchKey) continue
     const writableMembers = group.members.filter(m => m.apiMode === 'stock_sync')
@@ -298,6 +325,25 @@ export async function syncStockSyncGroups(opts: RunOptions): Promise<StockSyncRu
       const barcode = shop.marketplace === 'uzum' ? product.market_barcode : null
       const marketSku = shop.marketplace === 'yandex_market' ? product.market_sku : product.sku
       const warehouseId = shop.marketplace === 'yandex_market' ? product.market_warehouse_id : null
+
+      // Silent skip: never attempt a Uzum write for a SKU the seller hasn't
+      // linked to their FBS warehouse (fbsLinked:false → guaranteed HTTP 400).
+      // Uzum-only, keyed on the LIVE fbsLinked value; ONLY an explicit false
+      // skips, so linked SKUs (e.g. a stocked variant) and any SKU we couldn't
+      // read still write normally. No pushStock call → no stock_write_log row and
+      // no notification. Auto-resumes when the seller restocks (fbsLinked flips
+      // true on the next run's read) — no code change needed for that transition.
+      if (shop.marketplace === 'uzum' && barcode) {
+        const linked = await uzumFbsLinkedFor(shop)
+        if (linked.get(barcode.trim()) === false) {
+          entries.push({
+            matchKey, marketplace: shop.marketplace, shopId: shop.id, productId: product.id,
+            available, listed: plan.member.listedStock, target: plan.target, version: 0,
+            status: 'skipped', reason: 'fbs_not_linked',
+          })
+          continue
+        }
+      }
 
       const version = await bumpVersion(shop.id, matchKey, product.id, available, plan.target)
       const result = await pushStock({
