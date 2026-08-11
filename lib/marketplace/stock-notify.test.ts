@@ -45,6 +45,19 @@ describe('buildDigestMessage', () => {
     assert.equal(msg.split('📦').length - 1, 1)
   })
 
+  it('renders full name, colour and price in the SKU header', () => {
+    const msg = buildDigestMessage([{
+      sku: 'JMBLK',
+      events: [ev({
+        sku: 'JMBLK', targetMarketplace: 'uzum', ok: true, listed: 2, target: 1,
+        name: 'Куртка зимняя', colorKey: 'black', price: 450000,
+      })],
+    }])
+    // • JMBLK — Куртка зимняя · Чёрный · 450 000 сум (продажа на Uzum):
+    assert.match(msg, /• JMBLK — Куртка зимняя · Чёрный · 450 000 сум \(продажа на Uzum\):/)
+    assert.match(msg, /✅ Uzum: 2→1/)
+  })
+
   it('humanizes known skip reasons', () => {
     const msg = buildDigestMessage([{
       sku: 'JMJ16BG',

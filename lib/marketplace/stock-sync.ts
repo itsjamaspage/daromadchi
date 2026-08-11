@@ -59,6 +59,9 @@ interface ProductRow {
   market_barcode: string | null
   market_sku: string | null
   market_warehouse_id: string | null
+  title: string | null
+  variant_color: string | null
+  selling_price: string | null
 }
 
 export interface StockSyncLogEntry {
@@ -115,6 +118,9 @@ async function loadGroups(userId: string): Promise<{
       market_barcode: products.market_barcode,
       market_sku: products.market_sku,
       market_warehouse_id: products.market_warehouse_id,
+      title: products.title,
+      variant_color: products.variant_color,
+      selling_price: products.selling_price,
     }).from(products).where(inArray(products.shop_id, shopIds)) as Promise<ProductRow[]>,
     db.select({
       product_id: orderItems.product_id,
@@ -255,17 +261,22 @@ export async function syncStockSyncGroups(opts: RunOptions): Promise<StockSyncRu
   // stock_write_log plus alerts for products they aren't even selling. We skip
   // those writes silently (in the loop below). Best-effort: if the read fails the
   // map is empty and nothing is skipped, so writes proceed exactly as before.
-  const uzumFbsLinkedCache = new Map<string, Map<string, boolean>>()
-  async function uzumFbsLinkedFor(shop: ShopRow): Promise<Map<string, boolean>> {
+  // barcode → { fbsLinked, dbsLinked }: fbsLinked gates the write (explicit false
+  // skips); both flags are echoed into the FBS stock-write body (required fields).
+  type UzumLinkFlags = { fbsLinked: boolean; dbsLinked: boolean }
+  const uzumFbsLinkedCache = new Map<string, Map<string, UzumLinkFlags>>()
+  async function uzumFbsLinkedFor(shop: ShopRow): Promise<Map<string, UzumLinkFlags>> {
     const cached = uzumFbsLinkedCache.get(shop.id)
     if (cached) return cached
-    const map = new Map<string, boolean>()
+    const map = new Map<string, UzumLinkFlags>()
     if (shop.marketplace === 'uzum' && shop.api_key_encrypted) {
       try {
         const stocks = await fetchAllUzumSkuStocks(decrypt(shop.api_key_encrypted))
         for (const s of stocks) {
           const bc = String(s.barcode ?? '').trim()
-          if (bc && typeof s.fbsLinked === 'boolean') map.set(bc, s.fbsLinked)
+          if (bc && typeof s.fbsLinked === 'boolean') {
+            map.set(bc, { fbsLinked: s.fbsLinked, dbsLinked: s.dbsLinked === true })
+          }
         }
       } catch (err) {
         logger.warn('uzum_fbs_linked_fetch_failed', { shopId: shop.id, error: String(err).slice(0, 200) })
@@ -333,9 +344,15 @@ export async function syncStockSyncGroups(opts: RunOptions): Promise<StockSyncRu
       // read still write normally. No pushStock call → no stock_write_log row and
       // no notification. Auto-resumes when the seller restocks (fbsLinked flips
       // true on the next run's read) — no code change needed for that transition.
+      // Uzum link flags: gate the write on fbsLinked (explicit false skips) and
+      // capture both flags to echo into the write body. Default true/false when
+      // the barcode isn't in the FBS list (or the read failed).
+      let uzumFbsLinked: boolean | undefined
+      let uzumDbsLinked: boolean | undefined
       if (shop.marketplace === 'uzum' && barcode) {
         const linked = await uzumFbsLinkedFor(shop)
-        if (linked.get(barcode.trim()) === false) {
+        const flags = linked.get(barcode.trim())
+        if (flags?.fbsLinked === false) {
           entries.push({
             matchKey, marketplace: shop.marketplace, shopId: shop.id, productId: product.id,
             available, listed: plan.member.listedStock, target: plan.target, version: 0,
@@ -343,6 +360,7 @@ export async function syncStockSyncGroups(opts: RunOptions): Promise<StockSyncRu
           })
           continue
         }
+        if (flags) { uzumFbsLinked = flags.fbsLinked; uzumDbsLinked = flags.dbsLinked }
       }
 
       const version = await bumpVersion(shop.id, matchKey, product.id, available, plan.target)
@@ -356,9 +374,11 @@ export async function syncStockSyncGroups(opts: RunOptions): Promise<StockSyncRu
         },
         sku: marketSku,
         barcode,
-        // Uzum v3 FBS stock-update keys on the FBS skuId (products.market_sku),
-        // not the barcode. Yandex path is unaffected.
+        // Uzum FBS stock-update (POST /v2/fbs/sku/stocks) requires all 5 fields;
+        // it keys on the FBS skuId (products.market_sku). Yandex path is unaffected.
         uzumSkuId: shop.marketplace === 'uzum' ? product.market_sku : null,
+        uzumFbsLinked,
+        uzumDbsLinked,
         quantity: plan.target,
         version,
         warehouseId,
@@ -393,6 +413,11 @@ export async function syncStockSyncGroups(opts: RunOptions): Promise<StockSyncRu
           target: plan.target,
           ok: result.status === 'sent',
           reason: result.status === 'sent' ? undefined : (result.reason ?? result.status),
+          // Product identity for the Telegram/in-app header: full name, colour,
+          // price (same physical product across the group).
+          name: product.title,
+          colorKey: product.variant_color,
+          price: product.selling_price != null ? Number(product.selling_price) : null,
         })
       }
     }

@@ -6,7 +6,7 @@
  *
  * It is NOT a live-store proof (a genuine live write needs real seller tokens +
  * DB + outbound access). What it proves hermetically:
- *   • the write payloads are exactly right (Uzum v3 skuAmountList skuId+amount, YM
+ *   • the write payloads are exactly right (Uzum v2 skuAmountList, all 5 fields, YM
  *     FIT+updatedAt), reach the store, and the value round-trips on read-back;
  *   • the read-back catches a "silent 200 that changed nothing" — the YM
  *     stale-updatedAt failure mode — as observed !== target.
@@ -38,20 +38,21 @@ before(() => {
     const method = (init?.method ?? 'GET').toUpperCase()
     const body = typeof init?.body === 'string' ? JSON.parse(init.body) : undefined
 
-    // Uzum stock WRITE (v3, keyed on the FBS skuId — NOT the barcode)
-    if (path.endsWith('/v3/fbs/sku/stocks') && method === 'POST') {
+    // Uzum stock WRITE (POST /v2/fbs/sku/stocks, keyed on the FBS skuId; body
+    // carries all 5 fields — skuId, barcode, amount, fbsLinked, dbsLinked).
+    if (path.endsWith('/v2/fbs/sku/stocks') && method === 'POST') {
       lastWrite = { url, method, body }
       for (const s of body.skuAmountList) {
-        const rec = store.uzum.get(String(s.skuId)) ?? { barcode: '', amount: 0 }
+        const rec = store.uzum.get(String(s.skuId)) ?? { barcode: String(s.barcode ?? ''), amount: 0 }
         rec.amount = s.amount
         store.uzum.set(String(s.skuId), rec)
       }
       return json({ status: 'OK' })
     }
-    // Uzum stock READ (read-back source): rows carry skuId + barcode + amount,
-    // under payload.skuAmountList (the key the real /v3 read uses).
+    // Uzum stock READ (GET /v3/fbs/sku/stocks; read-back + fbsLinked/dbsLinked
+    // source): rows under payload.skuAmountList (the key the real read uses).
     if (path.endsWith('/v3/fbs/sku/stocks') && method === 'GET') {
-      const skuAmountList = [...store.uzum.entries()].map(([skuId, rec]) => ({ skuId: Number(skuId), barcode: rec.barcode, amount: rec.amount }))
+      const skuAmountList = [...store.uzum.entries()].map(([skuId, rec]) => ({ skuId: Number(skuId), barcode: rec.barcode, amount: rec.amount, fbsLinked: true, dbsLinked: false }))
       return json({ payload: { skuAmountList } })
     }
     // YM warehouses READ
@@ -96,9 +97,9 @@ describe('Uzum live round-trip (real pushStock + read-back)', () => {
     store.uzum.set(SKU_ID, { barcode: BARCODE, amount: 1 }) // listed 1 before the sale
     const res = await pushStock({ shop: uzumShop, sku: SHOP_SKU, barcode: BARCODE, uzumSkuId: SKU_ID, quantity: 0, version: 1 })
     assert.equal(res.status, 'sent')
-    // exact payload the writer built: v3 keys on skuId — no barcode, no fbsLinked
-    assert.deepEqual(lastWrite?.body, { skuAmountList: [{ skuId: Number(SKU_ID), amount: 0 }] })
-    assert.ok(String(lastWrite?.url).endsWith('/v3/fbs/sku/stocks'))
+    // exact payload the writer built: v2, all 5 required fields, keyed on skuId
+    assert.deepEqual(lastWrite?.body, { skuAmountList: [{ skuId: Number(SKU_ID), barcode: BARCODE, amount: 0, fbsLinked: true, dbsLinked: false }] })
+    assert.ok(String(lastWrite?.url).endsWith('/v2/fbs/sku/stocks'))
     const observed = await readBackUzum(BARCODE)
     assert.equal(observed, 0)      // observed === target
   })

@@ -612,6 +612,10 @@ export interface UzumSkuStock {
   amount?: number
   quantityActive?: number
   fbsLinked?: boolean
+  // Where the SKU is linked — read flags carried straight back into the FBS
+  // stock-write body (all 5 fields required). fbsLinked=true, dbsLinked=false
+  // for an FBS-only SKU.
+  dbsLinked?: boolean
 }
 
 export async function fetchUzumSkuStocks(

@@ -95,8 +95,8 @@ export async function backfillShopIdentifiers(shop: BackfillShop): Promise<Backf
         return (byMpid ? barcodeByKey.get(byMpid) : undefined) ?? (bySku ? barcodeByKey.get(bySku) : undefined)
       }
       // The Uzum FBS skuId keyed by the SAME barcode string returned by lookup().
-      // products.market_sku is blank for Uzum until now; the v3 FBS stock-update
-      // write keys on this skuId, so persist it here (barcode is unique per variant).
+      // products.market_sku is blank for Uzum until now; the FBS stock-update write
+      // keys on this skuId, so persist it here (barcode is unique per variant).
       const skuIdByBarcode = new Map<string, string>()
       for (const s of stocks) {
         const bc = nonBlank(s.barcode)

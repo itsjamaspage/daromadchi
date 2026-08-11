@@ -62,7 +62,7 @@ const WRITE_METHODS = new Set(['PUT', 'PATCH', 'DELETE'])
  * The ONLY sanctioned marketplace writes. Method-exact AND URL-exact (anchored,
  * no query string) — kept deliberately separate from the read-POST allowlist
  * above so the same-path/different-method cases can never blur together:
- *   • Uzum  stock write:  POST https://api-seller.uzum.uz/.../v3/fbs/sku/stocks
+ *   • Uzum  stock write:  POST https://api-seller.uzum.uz/.../v2/fbs/sku/stocks
  *   • YM    stock write:  PUT  https://api.partner.market.yandex.ru/v2/campaigns/{id}/offers/stocks
  * Note YM uses POST on that identical /offers/stocks path for a READ (see
  * APPROVED_POST_ENDPOINTS) — only the PUT is a write, and only with write intent.
@@ -72,7 +72,7 @@ const APPROVED_STOCK_WRITE_ENDPOINTS: { marketplace: string; method: string; pat
   {
     marketplace: 'uzum',
     method: 'POST',
-    pattern: /^https:\/\/api-seller\.uzum\.uz\/api\/seller-openapi\/v3\/fbs\/sku\/stocks$/,
+    pattern: /^https:\/\/api-seller\.uzum\.uz\/api\/seller-openapi\/v2\/fbs\/sku\/stocks$/,
   },
   {
     marketplace: 'yandex_market',

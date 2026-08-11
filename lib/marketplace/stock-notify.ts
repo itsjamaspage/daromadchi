@@ -30,6 +30,7 @@ import { and, eq } from 'drizzle-orm'
 import { db, userSettings, alerts, stockNotifyState } from '@/lib/db'
 import { logger } from '@/lib/logger'
 import { sendTelegramMessage } from '@/lib/telegram'
+import { COLOR_LABELS } from '@/lib/products/resolveColor'
 import type { MarketplaceType } from '@/lib/types'
 
 const MP_LABEL: Record<string, string> = {
@@ -44,10 +45,27 @@ export interface StockUpdateEvent {
   target: number                                // number written
   ok: boolean                                   // true only when the write actually succeeded
   reason?: string                               // failure reason when !ok
+  // Product identity for the header line (all optional — a group with none still
+  // renders the SKU alone). Same physical product across the group, so one set.
+  name?: string | null                          // products.title — full product name
+  colorKey?: string | null                      // products.variant_color — resolved key
+  price?: number | null                         // products.selling_price (UZS)
 }
 
 function label(mp: string): string {
   return MP_LABEL[mp] ?? mp
+}
+
+// Localize a resolved colour key to Russian (the notification language). Unknown
+// keys are omitted rather than shown raw.
+function colorLabelRu(key: string | null | undefined): string | null {
+  if (!key) return null
+  return (COLOR_LABELS as Record<string, Record<string, string>>)[key]?.ru ?? null
+}
+
+// "450000" → "450 000" (space-grouped thousands, ru style).
+function fmtSum(n: number): string {
+  return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
 }
 
 // Human-readable phrasing for the technical skip/error reasons, so a failed
@@ -78,8 +96,16 @@ export function buildDigestMessage(groups: { sku: string; events: StockUpdateEve
   for (const g of groups) {
     const origin = g.events.map(e => e.originMarketplace).find(Boolean) ?? null
     const originTxt = origin ? ` (продажа на ${label(origin)})` : ''
+    // All events in a group are the same physical product → take identity once.
+    const first = g.events[0]
+    const name  = first?.name?.trim() || null
+    const color = colorLabelRu(first?.colorKey)
+    const price = first?.price != null && first.price > 0 ? `${fmtSum(first.price)} сум` : null
+    // • <SKU> — <name> · <color> · <price> сум (продажа на <origin>):
+    const meta = [name, color, price].filter(Boolean).join(' · ')
+    const metaTxt = meta ? ` — ${meta}` : ''
     lines.push('')
-    lines.push(`• ${g.sku}${originTxt}:`)
+    lines.push(`• ${g.sku}${metaTxt}${originTxt}:`)
     for (const e of g.events) {
       if (e.ok) {
         lines.push(`   ✅ ${label(e.targetMarketplace)}: ${e.listed}→${e.target}`)
