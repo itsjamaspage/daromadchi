@@ -43,8 +43,15 @@ export interface PushStockParams {
   shop: StockWriteShop
   /** Seller article / shopSku — used in the audit log and (for YM) the payload. */
   sku: string | null
-  /** Uzum market barcode (STRING, from /v3/fbs/sku/stocks). Required for Uzum. */
+  /** Uzum market barcode (STRING, from /v3/fbs/sku/stocks). Read-side only now —
+   *  used by the fbsLinked guard, NOT the write body. */
   barcode: string | null
+  /**
+   * Uzum FBS skuId (numeric, from GET /v3/fbs/sku/stocks, persisted in
+   * products.market_sku). Uzum's v3 FBS stock-update keys on this — required for
+   * a Uzum write; a blank value is a hard skip (missing_uzum_skuid).
+   */
+  uzumSkuId?: string | null
   /** Desired quantity. Clamped to Math.max(0, quantity) before anything else. */
   quantity: number
   /** Monotonic freshness version (per shop+sku). Recorded now; enforced in Phase 4. */
@@ -177,7 +184,7 @@ async function sendWithRetry(url: string, init: MarketplaceInit, retries = 3): P
  * Returns the outcome; every path is audited in stock_write_log.
  */
 export async function pushStock(params: PushStockParams): Promise<PushStockResult> {
-  const { shop, sku, barcode, version, warehouseId, productId } = params
+  const { shop, sku, barcode, uzumSkuId, version, warehouseId, productId } = params
   const marketplace = shop.marketplace
   const requested = params.quantity
   const clamped = Math.max(0, Math.trunc(Number.isFinite(requested) ? requested : 0)) // HARD RULE #6
@@ -221,15 +228,20 @@ export async function pushStock(params: PushStockParams): Promise<PushStockResul
   let body: string
 
   if (marketplace === 'uzum') {
-    const bc = barcode?.trim()
-    if (!bc) {
-      const logId = await audit({ ...base, dry_run: false, status: 'skipped', reason: 'missing_barcode' })
-      return { status: 'skipped', reason: 'missing_barcode', quantity: clamped, logId }
+    // Uzum FBS stock-update (v3) keys on the FBS skuId from GET /v3/fbs/sku/stocks
+    // (persisted in products.market_sku), NOT the barcode. A barcode-only body to
+    // /v2 returned validation-failed-001 (HTTP 400) on every attempt. Send skuId +
+    // amount only; the read DTO's `fbsLinked` is a read flag and is NOT part of
+    // the write body. Endpoint version aligns with the read (/v3).
+    const skuId = uzumSkuId?.trim()
+    if (!skuId) {
+      const logId = await audit({ ...base, dry_run: false, status: 'skipped', reason: 'missing_uzum_skuid' })
+      return { status: 'skipped', reason: 'missing_uzum_skuid', quantity: clamped, logId }
     }
-    url = `${UZUM_API_BASE}/v2/fbs/sku/stocks`
+    url = `${UZUM_API_BASE}/v3/fbs/sku/stocks`
     method = 'POST'
-    identifier = bc
-    body = JSON.stringify({ skuAmountList: [{ barcode: bc, amount: clamped, fbsLinked: true }] })
+    identifier = skuId
+    body = JSON.stringify({ skuAmountList: [{ skuId: Number(skuId), amount: clamped }] })
   } else {
     // yandex_market
     const campaignId = shop.shop_id_external?.trim()

@@ -356,6 +356,9 @@ export async function syncStockSyncGroups(opts: RunOptions): Promise<StockSyncRu
         },
         sku: marketSku,
         barcode,
+        // Uzum v3 FBS stock-update keys on the FBS skuId (products.market_sku),
+        // not the barcode. Yandex path is unaffected.
+        uzumSkuId: shop.marketplace === 'uzum' ? product.market_sku : null,
         quantity: plan.target,
         version,
         warehouseId,
