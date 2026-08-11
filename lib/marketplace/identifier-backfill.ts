@@ -94,12 +94,25 @@ export async function backfillShopIdentifiers(shop: BackfillShop): Promise<Backf
         const byMpid = normKey(p.mpid); const bySku = normKey(p.sku)
         return (byMpid ? barcodeByKey.get(byMpid) : undefined) ?? (bySku ? barcodeByKey.get(bySku) : undefined)
       }
+      // The Uzum FBS skuId keyed by the SAME barcode string returned by lookup().
+      // products.market_sku is blank for Uzum until now; the v3 FBS stock-update
+      // write keys on this skuId, so persist it here (barcode is unique per variant).
+      const skuIdByBarcode = new Map<string, string>()
+      for (const s of stocks) {
+        const bc = nonBlank(s.barcode)
+        const sid = s.skuId != null ? String(s.skuId) : null
+        if (bc && sid) skuIdByBarcode.set(bc, sid)
+      }
       for (const p of rows) {
         const bc = lookup(p)
         if (!bc) continue
         base.matched++
-        if (p.barcode !== bc) {
-          await db.update(products).set({ market_barcode: bc }).where(eq(products.id, p.id))
+        const sid = skuIdByBarcode.get(bc) ?? null
+        const patch: { market_barcode?: string; market_sku?: string } = {}
+        if (p.barcode !== bc) patch.market_barcode = bc
+        if (sid && p.marketSku !== sid) patch.market_sku = sid
+        if (Object.keys(patch).length > 0) {
+          await db.update(products).set(patch).where(eq(products.id, p.id))
           base.updated++
         }
       }
