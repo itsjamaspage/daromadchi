@@ -1237,10 +1237,9 @@ Bekor qilish amaldan ошса ham joriy to'lov davri so'ngigacha tarifdan foydal
 
 ## Ma'lumotlar saqlanishi
 
-Bekor qilgandan so'ng:
-- Ma'lumotlar 30 kun davomida saqlanadi
-- 30 kundan so'ng o'chiriladi
-- Qayta obuna bo'lsangiz, ma'lumotlar tiklanadi
+Obunani bekor qilganingizdan so'ng hisobingiz va ma'lumotlaringiz o'chirilmaydi — biz hisoblarni avtomatik o'chirmaymiz. Ma'lumotlaringiz hisobingiz mavjud bo'lgunicha saqlanadi va istalgan vaqtda qayta obuna bo'lishingiz mumkin.
+
+Hisobingizni butunlay o'chirishni istasangiz, buni istalgan vaqtda sozlamalardagi "Hisobni o'chirish so'rovi" funksiyasi orqali yoki privacy@daromadchi.uz manziliga so'rov yuborib amalga oshirishingiz mumkin.
 
 <info>Yillik obunada 2 oylik chegirma (17% tejash). Yillik obunani bekor qilsangiz, foydalanilmagan qism qaytariladi.</info>
 `,
@@ -2568,10 +2567,9 @@ Daromadchi принимает следующие способы оплаты:
 
 ## Сохранность данных
 
-После отмены:
-- Данные хранятся 30 дней
-- По истечении 30 дней данные удаляются
-- При повторной подписке данные восстанавливаются
+После отмены подписки ваш аккаунт и данные не удаляются — мы не удаляем аккаунты автоматически. Данные хранятся, пока существует аккаунт, и вы можете возобновить подписку в любой момент.
+
+Если вы хотите полностью удалить аккаунт, это можно сделать в любое время через функцию «Запрос на удаление аккаунта» в настройках или направив запрос на privacy@daromadchi.uz.
 
 <info>При годовой подписке скидка 2 месяца (экономия 17%). При отмене годовой подписки неиспользованная часть возвращается.</info>
 `,
@@ -3768,10 +3766,9 @@ Even after cancellation you can use the plan until the end of the paid period.
 
 ## Data retention
 
-After cancellation:
-- Data is stored for 30 days
-- After 30 days, data is deleted
-- If you re-subscribe, data is restored
+After you cancel, your account and data are not deleted — we do not delete accounts automatically. Your data is kept for as long as your account exists, and you can re-subscribe at any time.
+
+If you want to delete your account entirely, you can do so at any time via the "Account deletion request" feature in settings or by emailing privacy@daromadchi.uz.
 
 <info>Annual subscription includes 2 months free (17% saving). If you cancel an annual subscription, the unused portion is refunded.</info>
 `,
