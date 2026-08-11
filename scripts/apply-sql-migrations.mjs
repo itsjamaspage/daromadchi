@@ -51,6 +51,9 @@ const MIGRATIONS = [
   // Idempotent (guarded on the value still existing) + atomic. Take a DB backup
   // before the first apply. See the file header.
   'migrations/migrations/057_drop_wildberries_enum.sql',
+  // Records signup consent (Privacy/Terms/Cookies) for ZRU-547. Additive +
+  // idempotent (ADD COLUMN IF NOT EXISTS).
+  'migrations/migrations/058_users_consented_at.sql',
 ]
 
 function loadDatabaseUrl() {
