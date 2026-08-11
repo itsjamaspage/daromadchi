@@ -1,0 +1,13 @@
+-- 060_stock_notify_last_available.sql
+-- Adds the group free-to-sell (`available`) to the stock-notification dedup
+-- fingerprint. The digest is deduped on (last_status, last_target,
+-- last_available, last_reason) within a short time window, so:
+--   • the webhook+cron twin (same sale, same state, seconds apart) collapses to
+--     ONE Telegram message, and
+--   • the "⚠️ Осталось N" restock line rides this same key (it is derived from
+--     `available`) instead of bypassing dedup — no more duplicate restock alerts.
+-- A genuine new sale moves `available`, giving a new key that still notifies.
+--
+-- Additive, nullable, idempotent — safe to re-run. Existing rows keep NULL
+-- (treated as "no prior available", so the next outcome is always sent once).
+ALTER TABLE stock_notify_state ADD COLUMN IF NOT EXISTS last_available integer;

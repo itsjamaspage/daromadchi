@@ -57,6 +57,10 @@ const MIGRATIONS = [
   // Mirror-always: migrate lock_last_unit groups -> 'off' and flip the column
   // default. Idempotent (UPDATE by value + ALTER SET DEFAULT).
   'migrations/migrations/059_oversell_mode_off_default.sql',
+  // Adds last_available to the stock-notify dedup fingerprint (collapses the
+  // webhook+cron duplicate digest; restock line rides dedup). Additive +
+  // idempotent (ADD COLUMN IF NOT EXISTS).
+  'migrations/migrations/060_stock_notify_last_available.sql',
 ]
 
 function loadDatabaseUrl() {

@@ -159,3 +159,37 @@ export function planStockWrites(members: SyncMember[], mode: OversellMode): Stoc
   })
   return { available, plans }
 }
+
+/**
+ * Group-level REASSERT: the members to actually push this cycle.
+ *
+ * If ANY writable member has a real diff (willWrite), the whole group is
+ * "changing" and EVERY writable member is re-pushed to its target — INCLUDING a
+ * member whose `listedStock` already equals `target`. Rationale (the stale-copy
+ * root cause): the marketplace where the sale happened auto-adjusts its OWN live
+ * stock, but our products.stock_quantity copy for that listing can lag reality.
+ * A per-member `target === listedStock` equality then wrongly skips the very
+ * listing that needs re-raising — e.g. Yandex's real stock is 0 while our DB
+ * still says 1, target is 1, so the equality skips it and the mirror never
+ * re-raises Yandex 0→1. Reasserting the whole changing group re-pushes it
+ * regardless of the (possibly-stale) equality.
+ *
+ * A fully-unchanged group (NO member willWrite) writes NOTHING — this stays a
+ * strict no-op so idle cycles make zero marketplace calls.
+ */
+export function planGroupWrites(plan: StockPlan): PlannedWrite[] {
+  const changing = plan.plans.some(p => p.willWrite)
+  return changing ? plan.plans : []
+}
+
+/**
+ * The value to write back into products.stock_quantity after a push, or null when
+ * there is nothing to do. ONLY a successful push ('sent') updates our copy, and
+ * only when it actually differs from what we already store — so the DB copy
+ * tracks the live listing and can't drift into a false `target === listedStock`
+ * skip on the next cycle (the stale-copy root cause). `status` is the writer's
+ * StockWriteStatus; typed as string here to keep this module dependency-free.
+ */
+export function stockWriteBack(status: string, target: number, currentStock: number): number | null {
+  return status === 'sent' && currentStock !== target ? target : null
+}

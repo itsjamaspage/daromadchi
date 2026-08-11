@@ -17,7 +17,7 @@ import { and, eq, inArray, isNull, sql } from 'drizzle-orm'
 import { db, shops, products, orders, orderItems, stockSyncState } from '@/lib/db'
 import { logger } from '@/lib/logger'
 import { pushStock, type StockWriteStatus } from '@/lib/marketplace/stock-writer'
-import { planStockWrites, type SyncMember, type OversellMode } from '@/lib/marketplace/stock-allocation'
+import { planStockWrites, planGroupWrites, stockWriteBack, type SyncMember, type OversellMode } from '@/lib/marketplace/stock-allocation'
 import { reservingOrderCondition } from '@/lib/marketplace/reserving-orders'
 import { handleOversell } from '@/lib/marketplace/oversell'
 import { notifyStockUpdates, type StockUpdateEvent } from '@/lib/marketplace/stock-notify'
@@ -319,15 +319,21 @@ export async function syncStockSyncGroups(opts: RunOptions): Promise<StockSyncRu
       }
     }
 
-    const groupWrites = plans.filter(p => p.willWrite)
+    // Group-level REASSERT: if ANY writable member has a real diff, re-push EVERY
+    // writable member to its target — even one whose (possibly-stale) listedStock
+    // already equals target. The sale-origin marketplace auto-adjusts its own live
+    // stock but our stock_quantity copy for it can lag, so a per-member equality
+    // would wrongly skip the listing that needs re-raising (the stale-Yandex root
+    // cause). A fully-unchanged group still writes NOTHING (strict no-op).
+    const toWrite = planGroupWrites({ available, plans })
     // Log which shop's policy governed this group the first time it actually
     // drives a write, so unexpected group behaviour later is traceable.
-    if (groupWrites.length > 0) {
-      logger.info('stock_sync_policy_applied', { matchKey, oversellMode, sourceShopId, available, writes: groupWrites.length })
+    if (toWrite.length > 0) {
+      const realDiffs = plans.filter(p => p.willWrite).length
+      logger.info('stock_sync_policy_applied', { matchKey, oversellMode, sourceShopId, available, writes: toWrite.length, realDiffs })
     }
 
-    for (const plan of plans) {
-      if (!plan.willWrite) continue // real diff only
+    for (const plan of toWrite) {
       writesPlanned++
       const shop = shopsById.get(plan.member.shopId)!
       const product = group.products.get(plan.member.productId)!
@@ -392,6 +398,21 @@ export async function syncStockSyncGroups(opts: RunOptions): Promise<StockSyncRu
         available, listed: plan.member.listedStock, target: plan.target, version,
         status: result.status, reason: result.reason,
       })
+
+      // Write-back: on a SUCCESSFUL push, keep our products.stock_quantity copy in
+      // lockstep with what we just wrote to the live listing. This is what stops
+      // the copy from drifting: once written, listedStock === real stock next
+      // cycle, so the reassert's own trigger stays honest and a false
+      // target===listed skip can't recur. Best-effort — a miss only risks one more
+      // reassert later, never a crash.
+      const writeBack = stockWriteBack(result.status, plan.target, product.stock_quantity)
+      if (writeBack !== null) {
+        try {
+          await db.update(products).set({ stock_quantity: writeBack }).where(eq(products.id, product.id))
+        } catch (err) {
+          logger.warn('stock_writeback_failed', { productId: product.id, error: String(err).slice(0, 200) })
+        }
+      }
 
       // Notify on an actual write attempt — 'sent' (success), 'error'/'blocked'
       // (real failure) — AND on an ACTIONABLE skip (missing identifier/token the

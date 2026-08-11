@@ -781,9 +781,13 @@ export const stockNotifyState = pgTable('stock_notify_state', {
   // The store the write targeted (event.targetMarketplace).
   marketplace: marketplaceTypeEnum('marketplace').notNull(),
   // Last-notified outcome fingerprint: write status, the quantity we targeted,
-  // and the (machine) reason. A change in any of these = a genuinely new outcome.
+  // the group's free-to-sell (available), and the (machine) reason. A change in
+  // any of these = a genuinely new outcome. `last_available` is part of the key so
+  // the restock line (derived from available) rides the same dedup, and a new sale
+  // that moves the shared pool always re-notifies.
   last_status: text('last_status'),
   last_target: integer('last_target'),
+  last_available: integer('last_available'),
   last_reason: text('last_reason'),
   updated_at:  timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 }, (t) => [

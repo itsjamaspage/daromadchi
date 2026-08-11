@@ -2,7 +2,7 @@
 // Run: node --import tsx --test lib/marketplace/stock-allocation.test.ts
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
-import { computeAvailable, planStockWrites, type SyncMember } from './stock-allocation'
+import { computeAvailable, planStockWrites, planGroupWrites, stockWriteBack, type SyncMember } from './stock-allocation'
 
 function member(over: Partial<SyncMember>): SyncMember {
   return {
@@ -131,6 +131,50 @@ describe('backstop guard (lock_last_unit / partition only) — never raise a lis
     const uzumPlan = plans.find(p => p.member.shopId === 'uzum-shop')!
     assert.equal(uzumPlan.target, 5)       // raised — restock allowed
     assert.equal(uzumPlan.willWrite, true)
+  })
+})
+
+describe('planGroupWrites — group-level reassert (stale-copy fix)', () => {
+  it('reasserts a member whose listedStock===target when ANOTHER member is changing', () => {
+    // The prod JMBLK case: Uzum listed 2 (a real diff → 1), Yandex listed 1 with
+    // target 1 (equal — would normally skip). Yandex's DB copy is STALE (real 0),
+    // so the group must reassert Yandex too. planGroupWrites returns BOTH.
+    const plan = planStockWrites(
+      [uzum({ listedStock: 2, pending: 1 }), ym({ listedStock: 1, pending: 0 })],
+      'off',
+    )
+    assert.equal(plan.available, 1) // MAX(2,1) − 1
+    const uzumPlan = plan.plans.find(p => p.member.shopId === 'uzum-shop')!
+    const ymPlan = plan.plans.find(p => p.member.shopId === 'ym-shop')!
+    assert.equal(uzumPlan.willWrite, true)   // 2 → 1, real diff
+    assert.equal(ymPlan.willWrite, false)    // 1 → 1, equal (stale copy)
+    const toWrite = planGroupWrites(plan)
+    assert.equal(toWrite.length, 2)          // BOTH written — Yandex reasserted
+    assert.ok(toWrite.some(p => p.member.shopId === 'ym-shop'))
+    const ymWrite = toWrite.find(p => p.member.shopId === 'ym-shop')!
+    assert.equal(ymWrite.target, 1)          // Yandex re-pushed to 1 (0→1 in reality)
+  })
+
+  it('writes NOTHING for a fully-unchanged group (strict no-op)', () => {
+    // available 2, both already listing 2 → no member willWrite → no reassert.
+    const plan = planStockWrites([uzum({ listedStock: 2, pending: 0 }), ym({ listedStock: 2 })], 'off')
+    assert.equal(plan.plans.every(p => !p.willWrite), true)
+    assert.equal(planGroupWrites(plan).length, 0)
+  })
+})
+
+describe('stockWriteBack — keep the DB copy in lockstep with the live listing', () => {
+  it('returns the target on a successful push that changed the value', () => {
+    assert.equal(stockWriteBack('sent', 1, 0), 1)   // Yandex 0 → 1: write back 1
+    assert.equal(stockWriteBack('sent', 1, 2), 1)   // Uzum 2 → 1: write back 1
+  })
+  it('returns null when the push did not succeed', () => {
+    for (const s of ['skipped', 'blocked', 'killed', 'error']) {
+      assert.equal(stockWriteBack(s, 1, 0), null)
+    }
+  })
+  it('returns null when the copy already equals the target (no redundant write)', () => {
+    assert.equal(stockWriteBack('sent', 1, 1), null)
   })
 })
 

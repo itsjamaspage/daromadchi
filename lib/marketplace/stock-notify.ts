@@ -119,23 +119,69 @@ export function buildDigestMessage(groups: { sku: string; events: StockUpdateEve
     // fires whenever the post-update pool is below 5 (4 or fewer). The dispatcher
     // never dedups a group whose available < 5, so this sends on every such sale.
     const groupAvailable = first?.available
-    if (typeof groupAvailable === 'number' && groupAvailable < 5) {
+    if (typeof groupAvailable === 'number' && groupAvailable < RESTOCK_THRESHOLD) {
       lines.push(`   ⚠️ Осталось ${groupAvailable} — пополните склад`)
     }
   }
   return lines.join('\n')
 }
 
-// A group is force-included in the digest (bypassing per-store dedup) when its
-// shared free-to-sell is below the restock threshold, so the restock warning
-// resends on every qualifying sale even if the per-store X→Y is unchanged.
+// Below this shared free-to-sell the digest carries the "⚠️ Осталось N" restock
+// line. It is NOT a dedup bypass: the line rides the normal (target, available)
+// dedup via `available` being part of the fingerprint, so it resends whenever the
+// pool genuinely moves but not on a duplicate trigger for the SAME sale.
 const RESTOCK_THRESHOLD = 5
-function belowRestockThreshold(events: StockUpdateEvent[]): boolean {
-  return events.some(e => typeof e.available === 'number' && e.available < RESTOCK_THRESHOLD)
+
+// How long an identical digest is treated as a duplicate. One physical sale fans
+// out to TWO sync triggers (the Yandex webhook AND the 5-min cron), seconds
+// apart, producing the SAME (status, target, available) for the SAME SKU — this
+// window collapses that twin into one message. A genuine new sale changes
+// `available` (a new key → sends), and the same state recurring AFTER the window
+// (a later, separate sellout) also sends again.
+const DEDUP_WINDOW_MS = 10 * 60 * 1000
+
+export interface NotifyFingerprint {
+  status: string
+  target: number
+  available: number
+  reason: string | null
 }
 
-function fingerprint(e: StockUpdateEvent): { status: string; target: number; reason: string | null } {
-  return { status: e.ok ? 'sent' : 'fail', target: e.target, reason: e.reason ?? null }
+export function fingerprintOf(e: StockUpdateEvent): NotifyFingerprint {
+  return {
+    status: e.ok ? 'sent' : 'fail',
+    target: e.target,
+    available: typeof e.available === 'number' ? e.available : -1,
+    reason: e.reason ?? null,
+  }
+}
+
+/**
+ * Decide whether one SKU's events are a RECENT DUPLICATE that should be
+ * suppressed. Pure — the caller supplies the last-notified fingerprint (and its
+ * age in ms) per target marketplace, read from stock_notify_state.
+ *
+ * Suppress ONLY when EVERY event matches a stored fingerprint whose age is within
+ * DEDUP_WINDOW_MS. If any event is new (different status/target/available/reason)
+ * OR its match is older than the window, the SKU is sent. This collapses the
+ * webhook+cron twin while still notifying on a real change or a later recurrence.
+ */
+export function isRecentDuplicate(
+  events: StockUpdateEvent[],
+  priorByMarketplace: Map<string, { fp: NotifyFingerprint; ageMs: number }>,
+  windowMs: number = DEDUP_WINDOW_MS,
+): boolean {
+  if (events.length === 0) return true
+  return events.every(e => {
+    const prior = priorByMarketplace.get(e.targetMarketplace)
+    if (!prior) return false
+    if (prior.ageMs > windowMs) return false
+    const fp = fingerprintOf(e)
+    return prior.fp.status === fp.status
+      && prior.fp.target === fp.target
+      && prior.fp.available === fp.available
+      && (prior.fp.reason ?? null) === fp.reason
+  })
 }
 
 /**
@@ -166,37 +212,53 @@ export async function notifyStockUpdates(userId: string, events: StockUpdateEven
       if (arr) arr.push(e); else bySku.set(e.sku, [e])
     }
 
-    // Keep only the SKUs whose outcome is genuinely NEW vs the last notification
-    // (any of its stores changed). An unchanged SKU is dropped entirely, so a
-    // persistent failure isn't re-sent every cycle. Fail-OPEN on a read error
-    // (treat as new) so a real change is never silently swallowed.
+    // Keep only the SKUs whose outcome is genuinely NEW — not a RECENT DUPLICATE.
+    // A single physical sale fans out to two triggers (Yandex webhook + 5-min
+    // cron) producing an identical (status, target, available) digest seconds
+    // apart; those are collapsed to ONE message. An unchanged SKU whose last
+    // notification is within the window is dropped; a real change (new available/
+    // target) or the same state recurring AFTER the window still sends. The
+    // restock line rides this same key (available is in the fingerprint) — it is
+    // NOT a dedup bypass. Fail-OPEN on a read error (treat as new) so a real
+    // change is never silently swallowed.
+    const now = Date.now()
     const changed: { sku: string; events: StockUpdateEvent[] }[] = []
     for (const [sku, evs] of bySku) {
-      // A group below the restock threshold ALWAYS sends (bypasses dedup), so the
-      // restock warning resends on every qualifying sale even if the per-store
-      // X→Y outcome is unchanged.
-      let skuIsNew = belowRestockThreshold(evs)
+      const priorByMarketplace = new Map<string, { fp: NotifyFingerprint; ageMs: number }>()
+      let readFailed = false
       for (const e of evs) {
-        const fp = fingerprint(e)
         try {
           const [prev] = await db.select({
             status: stockNotifyState.last_status,
             target: stockNotifyState.last_target,
+            available: stockNotifyState.last_available,
             reason: stockNotifyState.last_reason,
+            updatedAt: stockNotifyState.updated_at,
           }).from(stockNotifyState).where(and(
             eq(stockNotifyState.user_id, userId),
             eq(stockNotifyState.sku, sku),
             eq(stockNotifyState.marketplace, e.targetMarketplace),
           ))
-          if (!(prev && prev.status === fp.status && prev.target === fp.target && (prev.reason ?? null) === fp.reason)) {
-            skuIsNew = true
+          if (prev) {
+            priorByMarketplace.set(e.targetMarketplace, {
+              fp: {
+                status: prev.status ?? '',
+                target: prev.target ?? -1,
+                available: prev.available ?? -1,
+                reason: prev.reason ?? null,
+              },
+              ageMs: prev.updatedAt ? now - new Date(prev.updatedAt).getTime() : Number.POSITIVE_INFINITY,
+            })
           }
         } catch (err) {
           logger.warn('stock_notify_dedup_read_failed', { userId, error: String(err).slice(0, 200) })
-          skuIsNew = true
+          readFailed = true
         }
       }
-      if (skuIsNew) changed.push({ sku, events: evs })
+      // Fail-open on a read error; otherwise suppress only a recent duplicate.
+      if (readFailed || !isRecentDuplicate(evs, priorByMarketplace)) {
+        changed.push({ sku, events: evs })
+      }
     }
 
     if (changed.length === 0) return // nothing new this cycle → no message
@@ -232,14 +294,14 @@ export async function notifyStockUpdates(userId: string, events: StockUpdateEven
     // miss only risks a duplicate later, never a crash.
     for (const { sku, events: evs } of changed) {
       for (const e of evs) {
-        const fp = fingerprint(e)
+        const fp = fingerprintOf(e)
         try {
           await db.insert(stockNotifyState).values({
             user_id: userId, sku, marketplace: e.targetMarketplace,
-            last_status: fp.status, last_target: fp.target, last_reason: fp.reason,
+            last_status: fp.status, last_target: fp.target, last_available: fp.available, last_reason: fp.reason,
           }).onConflictDoUpdate({
             target: [stockNotifyState.user_id, stockNotifyState.sku, stockNotifyState.marketplace],
-            set: { last_status: fp.status, last_target: fp.target, last_reason: fp.reason, updated_at: new Date() },
+            set: { last_status: fp.status, last_target: fp.target, last_available: fp.available, last_reason: fp.reason, updated_at: new Date() },
           })
         } catch (err) {
           logger.warn('stock_notify_dedup_write_failed', { userId, error: String(err).slice(0, 200) })
