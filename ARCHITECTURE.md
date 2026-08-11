@@ -171,6 +171,18 @@ plus a separately-allowlisted oversell order-cancel path
 - `getCurrentUser()` reads the session → looks up the user by email in the DB.
 - `getUserFromBearerToken()` decodes the NextAuth JWT for API calls.
 
+**Signup consent gate (ZRU-547).** Account creation requires explicit, opt-in consent
+to the Privacy Policy, Terms and Cookie Policy:
+- The signup form has a required, unchecked-by-default checkbox linking to `/privacy`,
+  `/terms`, `/cookies`; it disables both "Create account" and "Continue with Google"
+  until ticked (uz/ru/en).
+- **Server-enforced, not just UI:** `/api/auth/signup` rejects with 400 unless
+  `consent === true`. For Google, the new-user branch of the NextAuth `signIn` callback
+  requires a short-lived first-party `signup_consent` cookie (set by the page before the
+  OAuth redirect, survives the round-trip); without it no account is created and the user
+  is bounced to `/login?consent=required`. Existing users signing in are unaffected.
+- Consent is recorded as `users.consented_at` (migration 058) on both paths.
+
 ### Extension Auth (Token-based)
 
 The extension uses a separate token-based auth system (not NextAuth JWTs):
@@ -301,11 +313,12 @@ processor. (The former GitHub-artifact upload was removed.)
 - **A migration file only runs if it is registered in the `MIGRATIONS` array in
   `scripts/apply-sql-migrations.mjs`.** Unregistered files are silently skipped — always
   add the new file to that list in the same change.
-- Migrations are current through **057**. Notable recent ones:
+- Migrations are current through **058**. Notable recent ones:
   - `054` — `orders.marketplace_status`
   - `055` — privacy/retention (`plan_cancelled_at`; `payments.user_id` → `ON DELETE SET NULL`)
   - `056` — `payments.payer_email` (tax retention)
   - `057` — dropped `'wildberries'` from the `marketplace_type` enum
+  - `058` — `users.consented_at` (signup consent record, ZRU-547)
 
 ## Deployment
 
@@ -332,6 +345,11 @@ processor. (The former GitHub-artifact upload was removed.)
    path (`lib/marketplace/order-cancel.ts`). Every other marketplace write is prohibited.
    See "Cross-marketplace stock" below and `AGENTS.md`.
 5. **Extension auth:** Uses the `extension_token` column via raw SQL, not a Drizzle schema field.
+6. **Keep the docs in sync:** when you add a migration or a user-facing auth/privacy/payments
+   feature, update **this file** *and* `public/architecture.html` (the interactive diagram) in
+   the same change — including the "Migrations current through NNN" line here and the
+   `Migrations → NNN` label in the diagram. These two drift one step behind on every deploy
+   otherwise.
 
 ## Cross-marketplace stock (identical SKUs)
 
