@@ -41,6 +41,12 @@ const MIGRATIONS = [
   'migrations/migrations/052_drop_product_ads_stats.sql',
   'migrations/migrations/053_order_items_product_snapshot.sql',
   'migrations/migrations/054_orders_marketplace_status.sql',
+  // 055 was applied manually on prod but never registered here — a fresh deploy
+  // would have missed it. It is idempotent (ADD COLUMN IF NOT EXISTS + a DO block
+  // that drops/re-adds the payments.user_id FK by discovery), so re-running is a
+  // no-op. Registered now so the repo is the source of truth.
+  'migrations/migrations/055_privacy_retention.sql',
+  'migrations/migrations/056_payments_payer_email.sql',
 ]
 
 function loadDatabaseUrl() {
