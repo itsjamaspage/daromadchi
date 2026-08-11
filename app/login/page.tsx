@@ -40,6 +40,16 @@ const ui = {
     emailNotVerified: 'Emailingiz tasdiqlanmagan. Tasdiqlash kodini tekshiring.',
     orDivider: 'yoki',
     googleBtn: 'Google bilan davom etish',
+    consent: {
+      pre: 'Men ',
+      privacy: 'Maxfiylik siyosati',
+      sep1: ', ',
+      terms: 'Foydalanish shartlari',
+      sep2: ' va ',
+      cookies: 'Cookie siyosati',
+      post: ' bilan tanishdim va roziligimni bildiraman.',
+      errorNeeded: 'Davom etish uchun shartlarga rozilik bildiring.',
+    },
   },
   en: {
     tagline: 'Sales analytics platform',
@@ -73,6 +83,16 @@ const ui = {
     emailNotVerified: 'Your email is not verified. Please check your verification code.',
     orDivider: 'or',
     googleBtn: 'Continue with Google',
+    consent: {
+      pre: 'I have read and agree to the ',
+      privacy: 'Privacy Policy',
+      sep1: ', ',
+      terms: 'Terms of Use',
+      sep2: ' and ',
+      cookies: 'Cookie Policy',
+      post: '.',
+      errorNeeded: 'Please agree to the terms to continue.',
+    },
   },
   ru: {
     tagline: 'Платформа аналитики продаж',
@@ -106,6 +126,16 @@ const ui = {
     emailNotVerified: 'Ваш email не подтверждён. Проверьте код подтверждения.',
     orDivider: 'или',
     googleBtn: 'Продолжить через Google',
+    consent: {
+      pre: 'Я ознакомился(лась) и соглашаюсь с ',
+      privacy: 'Политикой конфиденциальности',
+      sep1: ', ',
+      terms: 'Условиями использования',
+      sep2: ' и ',
+      cookies: 'Политикой использования cookie',
+      post: '.',
+      errorNeeded: 'Пожалуйста, примите условия, чтобы продолжить.',
+    },
   },
 }
 
@@ -212,14 +242,19 @@ function LoginForm() {
 
   const searchParams = useSearchParams()
   const refCode = searchParams.get('ref') ?? ''
+  // A new Google user bounced back by the server-side consent gate arrives with
+  // ?consent=required — open the signup tab and seed the notice. Derived at
+  // first render (no effect / synchronous setState).
+  const consentRequired = searchParams.get('consent') === 'required'
 
-  const [mode, setMode] = useState<'login' | 'signup' | 'forgot' | 'verify'>('login')
+  const [mode, setMode] = useState<'login' | 'signup' | 'forgot' | 'verify'>(consentRequired ? 'signup' : 'login')
+  const [consent, setConsent] = useState(false)
   const [email,    setEmail]    = useState('')
   const [password, setPassword] = useState('')
   const [name,     setName]     = useState('')
   const [showPw,   setShowPw]   = useState(false)
   const [loading,  setLoading]  = useState(false)
-  const [error,    setError]    = useState('')
+  const [error,    setError]    = useState(consentRequired ? t.consent.errorNeeded : '')
   const [success,  setSuccess]  = useState(false)
   const [resetSent, setResetSent] = useState(false)
   const [showSignupHint, setShowSignupHint] = useState(false)
@@ -253,6 +288,7 @@ function LoginForm() {
 
   function switchMode(m: 'login' | 'signup' | 'forgot' | 'verify') {
     setMode(m); setError(''); setSuccess(false); setResetSent(false); setShowSignupHint(false); setVerifyCode(''); setResendMsg('')
+    setConsent(false)
   }
 
   async function handleReset(e: React.FormEvent) {
@@ -351,7 +387,7 @@ function LoginForm() {
         const signupRes = await fetch('/api/auth/signup', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password, name }),
+          body: JSON.stringify({ email, password, name, consent }),
         })
         const signupData = await signupRes.json()
         if (!signupRes.ok) {
@@ -616,7 +652,28 @@ function LoginForm() {
                   </div>
                 )}
 
-                <button type="submit" disabled={loading}
+                {mode === 'signup' && (
+                  <label className="flex items-start gap-2.5 cursor-pointer select-none pt-1">
+                    <input
+                      type="checkbox"
+                      checked={consent}
+                      onChange={e => { setConsent(e.target.checked); if (e.target.checked) setError('') }}
+                      className="mt-0.5 w-4 h-4 flex-shrink-0 cursor-pointer"
+                      style={{ accentColor: '#0369a1' }}
+                    />
+                    <span className="text-xs leading-relaxed" style={{ color: textMuted }}>
+                      {t.consent.pre}
+                      <a href="/privacy" target="_blank" rel="noopener noreferrer" className="font-semibold underline underline-offset-2" style={{ color: '#0369a1' }}>{t.consent.privacy}</a>
+                      {t.consent.sep1}
+                      <a href="/terms" target="_blank" rel="noopener noreferrer" className="font-semibold underline underline-offset-2" style={{ color: '#0369a1' }}>{t.consent.terms}</a>
+                      {t.consent.sep2}
+                      <a href="/cookies" target="_blank" rel="noopener noreferrer" className="font-semibold underline underline-offset-2" style={{ color: '#0369a1' }}>{t.consent.cookies}</a>
+                      {t.consent.post}
+                    </span>
+                  </label>
+                )}
+
+                <button type="submit" disabled={loading || (mode === 'signup' && !consent)}
                   className="w-full font-bold rounded-xl py-3 text-sm transition-all flex items-center justify-center gap-2 mt-1 disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{ background: '#ffffff', color: '#0e2233', border: '2px solid rgba(255,255,255,0.6)', boxShadow: '0 4px 16px rgba(255,255,255,0.15)' }}>
                   {loading
@@ -635,8 +692,20 @@ function LoginForm() {
                       <div className="flex-1 h-px" style={{ background: inputBorder }} />
                     </div>
 
-                    <button type="button" disabled={loading}
-                      onClick={() => signIn('google', { callbackUrl: '/dashboard' })}
+                    <button type="button" disabled={loading || (mode === 'signup' && !consent)}
+                      onClick={() => {
+                        // In signup mode the consent box gates this button, and
+                        // we drop a short-lived first-party cookie the server
+                        // reads when creating the new Google user (see the
+                        // signIn callback in lib/auth/config.ts). Existing users
+                        // signing in are unaffected — the server only requires
+                        // it when a NEW account would be created.
+                        if (mode === 'signup') {
+                          const secure = typeof location !== 'undefined' && location.protocol === 'https:' ? '; secure' : ''
+                          document.cookie = `signup_consent=1; path=/; max-age=600; samesite=lax${secure}`
+                        }
+                        signIn('google', { callbackUrl: '/dashboard' })
+                      }}
                       className="w-full font-semibold rounded-xl py-3 text-sm transition-all flex items-center justify-center gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90"
                       style={{
                         background: isDark ? '#252525' : '#ffffff',
