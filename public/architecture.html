@@ -603,7 +603,7 @@
           <div class="card data-card" data-id="postgresql">
             <div class="card-name"><span class="status-dot green"></span>PostgreSQL 17</div>
             <div class="card-desc">34 tables — auth/users, shops/products/orders, stock-sync logs, categories, settlements, unit economics, ops. Self-hosted on the VPS.</div>
-            <div class="card-tags"><span class="tag">Drizzle ORM</span><span class="tag">34 tables</span><span class="tag">Migrations → 057</span></div>
+            <div class="card-tags"><span class="tag">Drizzle ORM</span><span class="tag">34 tables</span><span class="tag">Migrations → 058</span></div>
           </div>
           <div class="card data-card" data-id="drizzle">
             <div class="card-name"><span class="status-dot green"></span>Drizzle ORM</div>
@@ -786,7 +786,7 @@
       },
       'nextauth': {
         name: 'NextAuth (Auth.js) v5',
-        desc: 'Authentication via a Credentials provider with bcrypt hashing (12 rounds) AND an optional Google OAuth provider (rendered only when AUTH_GOOGLE_ID / AUTH_GOOGLE_SECRET are set). 30-day JWT sessions, no DB session adapter. Blocks login for unverified emails when SMTP is configured. Protects /dashboard via middleware.',
+        desc: 'Authentication via a Credentials provider with bcrypt hashing (12 rounds) AND an optional Google OAuth provider (rendered only when AUTH_GOOGLE_ID / AUTH_GOOGLE_SECRET are set). 30-day JWT sessions, no DB session adapter. Blocks login for unverified emails when SMTP is configured. Protects /dashboard via middleware. New Google signups pass the same consent gate — a short-lived signup_consent cookie is checked server-side in the signIn callback before a new account is created.',
         tech: ['Auth.js v5', 'JWT', 'bcryptjs', 'Credentials', 'Google OAuth (optional)'],
         connections: [
           { name: 'Web App', desc: 'Session validation and route protection' },
@@ -823,7 +823,7 @@
       },
       'api-auth': {
         name: 'Auth APIs',
-        desc: '[...nextauth] (login/session), signup (with verification), verify-email, resend-code, reset-password (+ /confirm), delete-account (admin-only via x-admin-secret).',
+        desc: '[...nextauth] (login/session), signup (with verification), verify-email, resend-code, reset-password (+ /confirm), delete-account (admin-only via x-admin-secret). Signup requires explicit consent to the Privacy Policy, Terms and Cookie Policy — server-enforced (400 without it) and recorded as users.consented_at (ZRU-547).',
         tech: ['NextAuth', 'bcryptjs', 'Zod validation', 'Rate limiting'],
         connections: [
           { name: 'NextAuth (Auth.js) v5', desc: 'Session management' },
@@ -938,7 +938,7 @@
       'postgresql': {
         name: 'PostgreSQL 17',
         desc: '34 tables, self-hosted on the VPS. Auth & users: users, user_settings, accounts, sessions, verification_tokens, password_reset_tokens, ext_activation_codes. Marketplace: shops, products, orders, order_items, warehouses. Stock-sync: stock_sync_state, stock_write_log, stock_notify_state, order_cancel_log. Categories & grouping: categories_canonical, category_aliases, suggested_aliases, product_links, product_group_merges, suggested_product_groups. Finance: payments, uzum_settlement_orders, yandex_settlement_transactions. Unit economics: unit_economics_items, search_phrases. Ops: sync_days, sync_logs, alerts, competitor_watchlist, ad_campaigns, bot_sessions, channel_nonces.',
-        tech: ['PostgreSQL 17', 'Drizzle ORM', '34 tables', 'Migrations → 057'],
+        tech: ['PostgreSQL 17', 'Drizzle ORM', '34 tables', 'Migrations → 058'],
         connections: [
           { name: 'Drizzle ORM', desc: 'Type-safe query builder' },
           { name: 'All API Routes', desc: 'Central data store for all operations' },
@@ -947,7 +947,7 @@
       },
       'drizzle': {
         name: 'Drizzle ORM',
-        desc: 'Type-safe SQL query builder for PostgreSQL. Schema-first (lib/db/schema.ts). SQL migrations live in migrations/migrations/NNN_*.sql and are applied on deploy by scripts/apply-sql-migrations.mjs — a file only runs if it is registered in that list. Current through migration 057.',
+        desc: 'Type-safe SQL query builder for PostgreSQL. Schema-first (lib/db/schema.ts). SQL migrations live in migrations/migrations/NNN_*.sql and are applied on deploy by scripts/apply-sql-migrations.mjs — a file only runs if it is registered in that list. Current through migration 058 (058 adds users.consented_at for signup consent).',
         tech: ['TypeScript', 'Schema-first', 'Migrations'],
         connections: [
           { name: 'PostgreSQL 17', desc: 'Generates and runs SQL' },
@@ -1087,7 +1087,7 @@
       'pg-settings': { name: 'Settings Page', desc: 'Shop API-key management (encrypted), profile, notification preferences.', tech: ['Dashboard'], connections: [] },
       'pg-account': { name: 'Account Page', desc: 'Account management including the "Request account deletion" flow (ZRU-547).', tech: ['Dashboard'], connections: [] },
       'pg-landing': { name: 'Landing Page', desc: 'Public landing page — hero, features, pricing, testimonials. Multi-language.', tech: ['Public'], connections: [] },
-      'pg-login': { name: 'Login / Signup Page', desc: 'Auth page with login, signup, forgot-password and email-verification modes; optional Google button.', tech: ['Public'], connections: [] },
+      'pg-login': { name: 'Login / Signup Page', desc: 'Auth page with login, signup, forgot-password and email-verification modes; optional Google button. The signup tab has a required, unchecked-by-default consent checkbox (Privacy/Terms/Cookies) that gates both the Create-account and Continue-with-Google buttons.', tech: ['Public'], connections: [] },
       'pg-pricing': { name: 'Pricing Page', desc: 'Plan comparison — Free, Pro, Pro+.', tech: ['Public'], connections: [] },
       'pg-help': { name: 'Help Center', desc: 'Knowledge base with searchable, slug-routed articles.', tech: ['Public'], connections: [] },
       'pg-about': { name: 'About Page', desc: 'Company information and mission.', tech: ['Public'], connections: [] },
