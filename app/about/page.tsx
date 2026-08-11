@@ -7,10 +7,10 @@ import {
 
 export const metadata: Metadata = {
   title: 'Biz haqimizda',
-  description: 'Daromadchi — O\'zbekistondagi marketplace sotuvchilari uchun analitika platformasi. Uzum, Wildberries va Yandex Market sotuvchilari uchun sotuv tahlili va daromad hisoblash.',
+  description: 'Daromadchi — O\'zbekistondagi marketplace sotuvchilari uchun analitika platformasi. Uzum va Yandex Market sotuvchilari uchun sotuv tahlili va daromad hisoblash.',
   openGraph: {
     title: 'Daromadchi haqida — Marketplace analitika platformasi',
-    description: 'O\'zbekistondagi Uzum, Wildberries va Yandex Market sotuvchilari uchun analitika platformasi.',
+    description: 'O\'zbekistondagi Uzum va Yandex Market sotuvchilari uchun analitika platformasi.',
     url: 'https://www.daromadchi.uz/about',
   },
   alternates: { canonical: '/about' },
@@ -19,7 +19,7 @@ export const metadata: Metadata = {
 const VALUES = [
   { icon: Target, title: 'Aniqlik', desc: 'Haqiqiy vaqtda sinxronlangan, barcha ma\'lumotlar to\'g\'ridan-to\'g\'ri marketplace API orqali olinadi.' },
   { icon: Shield, title: 'Xavfsizlik', desc: 'API kalitlaringiz shifrlangan holda saqlanadi. Biz hech qachon sizning do\'koningizga yozmaymiz — faqat o\'qiymiz.' },
-  { icon: Layers, title: 'Soddalik', desc: '3 ta marketpleysni bitta ekranda ko\'ring. Murakkab tahlilni oddiy qilib ko\'rsatamiz.' },
+  { icon: Layers, title: 'Soddalik', desc: 'Barcha marketpleyslarni bitta ekranda ko\'ring. Murakkab tahlilni oddiy qilib ko\'rsatamiz.' },
   { icon: Users, title: 'Sotuvchilar uchun', desc: 'O\'zbekistondagi sotuvchilar ehtiyojiga moslashtirilgan. O\'zbek, rus va ingliz tillarida.' },
 ]
 
@@ -55,7 +55,7 @@ export default function AboutPage() {
             <span className="grad-text">analitika platformasi</span>
           </h1>
           <p className="text-lg md:text-xl text-[var(--text-muted)] leading-relaxed max-w-2xl mx-auto">
-            Daromadchi — O&apos;zbekistondagi Uzum, Wildberries va Yandex Market sotuvchilariga
+            Daromadchi — O&apos;zbekistondagi Uzum va Yandex Market sotuvchilariga
             sotuv tahlili, daromad va foyda hisoblash, tovar analitikasi va boshqa ko&apos;plab
             imkoniyatlarni taqdim etuvchi platforma.
           </p>
@@ -69,7 +69,7 @@ export default function AboutPage() {
             <h2 className="text-2xl md:text-3xl font-bold mb-4">Bizning maqsadimiz</h2>
             <p className="text-[var(--text-muted)] text-lg leading-relaxed">
               O&apos;zbekistondagi marketplace sotuvchilari ko&apos;pincha har bir platforma uchun
-              alohida tahlil qilishga majbur. Biz buni o&apos;zgartirmoqdamiz — Uzum, Wildberries
+              alohida tahlil qilishga majbur. Biz buni o&apos;zgartirmoqdamiz — Uzum
               va Yandex Market ma&apos;lumotlarini bitta platformaga jamlash orqali sotuvchilarga
               to&apos;g&apos;ri qarorlar qabul qilishda yordam beramiz.
             </p>
@@ -128,7 +128,6 @@ export default function AboutPage() {
           <div className="flex flex-wrap justify-center gap-4">
             {[
               { name: 'Uzum Market', color: '#494fdf' },
-              { name: 'Wildberries', color: '#CB11AB' },
               { name: 'Yandex Market', color: '#E8A000' },
             ].map(mp => (
               <div key={mp.name} className="px-6 py-3 rounded-xl border border-[var(--border)] bg-[var(--bg-card)] flex items-center gap-3">

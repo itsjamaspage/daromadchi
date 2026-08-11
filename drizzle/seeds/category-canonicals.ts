@@ -60,7 +60,7 @@ async function main() {
         }
       }
 
-      for (const mp of ['uzum', 'wildberries', 'yandex_market'] as const) {
+      for (const mp of ['uzum', 'yandex_market'] as const) {
         for (const raw of cat.raw_examples[mp]) {
           const [a] = await tx
             .insert(categoryAliases)

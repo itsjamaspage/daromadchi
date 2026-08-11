@@ -5,7 +5,6 @@ import { RefreshCw, AlertCircle, CheckCircle2, Clock, AlertTriangle } from 'luci
 import type { SyncDay } from '@/lib/types'
 import { useLang } from '@/app/providers'
 import { translations } from '@/lib/i18n'
-import { WB_ENABLED } from '@/lib/feature-flags'
 
 function fs(n: number | undefined) {
   if (n === undefined) return '—'
@@ -31,16 +30,15 @@ function statusIcon(s: SyncDay['status']) {
   }
 }
 
-type MP = 'uzum' | 'yandex' | 'wb'
+type MP = 'uzum' | 'yandex'
 
 interface Props {
   uzumDays:     SyncDay[]
   yandexDays:   SyncDay[]
-  wbDays:       SyncDay[]
   connectedMps?: string[]
 }
 
-export default function DataStateView({ uzumDays, yandexDays, wbDays, connectedMps }: Props) {
+export default function DataStateView({ uzumDays, yandexDays, connectedMps }: Props) {
   const { lang } = useLang()
   const d = translations[lang].dashboard
   const [mp, setMp] = useState<MP>('uzum')
@@ -48,8 +46,8 @@ export default function DataStateView({ uzumDays, yandexDays, wbDays, connectedM
   const [resyncing, setResyncing] = useState<Set<string>>(new Set())
   const [hoveredDay, setHoveredDay] = useState<SyncDay | null>(null)
 
-  const days = mp === 'uzum' ? uzumDays : mp === 'yandex' ? yandexDays : wbDays
-  const mpId = mp === 'uzum' ? 'uzum' : mp === 'yandex' ? 'yandex_market' : 'wildberries'
+  const days = mp === 'uzum' ? uzumDays : yandexDays
+  const mpId = mp === 'uzum' ? 'uzum' : 'yandex_market'
   const isConnected = !connectedMps || connectedMps.length === 0 || connectedMps.includes(mpId)
 
   function statusLabel(s: SyncDay['status']) {
@@ -75,7 +73,7 @@ export default function DataStateView({ uzumDays, yandexDays, wbDays, connectedM
   }
 
   async function resyncSelected() {
-    const marketplace = mp === 'uzum' ? 'uzum' : mp === 'yandex' ? 'yandex_market' : 'wildberries'
+    const marketplace = mp === 'uzum' ? 'uzum' : 'yandex_market'
     setResyncing(new Set(selected))
     setSelected(new Set())
     await fetch('/api/sync/resync-days', {
@@ -100,11 +98,10 @@ export default function DataStateView({ uzumDays, yandexDays, wbDays, connectedM
     <div className="space-y-4">
       {/* Marketplace tabs */}
       <div className="flex items-center gap-1 p-1 bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl w-fit">
-        {(([
+        {([
           { id: 'uzum',   label: 'Uzum' },
           { id: 'yandex', label: 'Yandex Market' },
-          { id: 'wb',     label: 'Wildberries' },
-        ] as { id: MP; label: string }[]).filter(m => m.id !== 'wb' || WB_ENABLED)).map(m => (
+        ] as { id: MP; label: string }[]).map(m => (
           <button key={m.id}
             onClick={() => { setMp(m.id); setSelected(new Set()); setHoveredDay(null) }}
             className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${

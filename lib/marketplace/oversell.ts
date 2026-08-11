@@ -33,7 +33,7 @@ function autoCancelMax(): number {
   return Number.isFinite(n) && n > 0 ? Math.floor(n) : 3
 }
 
-const MP_LABEL: Record<string, string> = { uzum: 'Uzum', yandex_market: 'Yandex Market', wildberries: 'Wildberries' }
+const MP_LABEL: Record<string, string> = { uzum: 'Uzum', yandex_market: 'Yandex Market' }
 
 async function telegramChat(userId: string): Promise<string | null> {
   const [s] = await db.select({ chat: userSettings.telegram_chat_id })

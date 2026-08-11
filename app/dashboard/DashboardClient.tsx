@@ -6,7 +6,6 @@ import { Suspense } from 'react'
 import Link from 'next/link'
 import { DollarSign, TrendingUp, ShoppingBag, Package, Settings, ArrowRight, RefreshCw, LayoutDashboard } from 'lucide-react'
 import KpiCard from '@/components/dashboard/KpiCard'
-import { WB_ENABLED } from '@/lib/feature-flags'
 import RevenueChart from '@/components/dashboard/RevenueChart'
 import DateRangePicker from '@/components/dashboard/DateRangePicker'
 import StockAlerts from '@/components/dashboard/StockAlerts'
@@ -29,12 +28,11 @@ function formatSum(n: number) {
 }
 
 // Short marketplace badge for the Top-products list: UZ (Uzum) / YM (Yandex
-// Market) / WB (Wildberries). Colour-coded so a store is recognisable at a
-// glance without reading the letters.
+// Market). Colour-coded so a store is recognisable at a glance without
+// reading the letters.
 const MP_BADGE: Record<MarketplaceType, { label: string; cls: string }> = {
   uzum:          { label: 'UZ', cls: 'bg-violet-500/15 text-violet-500 border border-violet-500/30' },
   yandex_market: { label: 'YM', cls: 'bg-amber-500/15 text-amber-600 border border-amber-500/30' },
-  wildberries:   { label: 'WB', cls: 'bg-fuchsia-500/15 text-fuchsia-500 border border-fuchsia-500/30' },
 }
 function MarketplaceBadge({ marketplace }: { marketplace?: MarketplaceType | null }) {
   if (!marketplace) return null
@@ -72,7 +70,6 @@ interface Props {
     all: MarketplaceSlice
     uzum: MarketplaceSlice
     yandex_market: MarketplaceSlice
-    wildberries: MarketplaceSlice
   }
   stockGroups: StockGroup[]
   days: number
@@ -217,13 +214,11 @@ export default function DashboardClient({ slices, stockGroups, days, period, fro
 
       {/* Marketplace tabs — client-side switching, no page reload */}
       <div className="flex items-center gap-1.5 p-1 bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl w-fit">
-        {(([
+        {([
           { label: d.all,           mp: undefined,       color: 'blue'  },
           { label: 'Uzum',          mp: 'uzum',          color: 'blue'  },
           { label: 'Yandex Market', mp: 'yandex_market', color: 'amber' },
-          { label: 'Wildberries',   mp: 'wildberries',   color: 'blue'  },
-        ] as { label: string; mp: MarketplaceType | undefined; color: string }[])
-          .filter(t => t.mp !== 'wildberries' || WB_ENABLED)).map(({ label, mp, color }) => {
+        ] as { label: string; mp: MarketplaceType | undefined; color: string }[]).map(({ label, mp, color }) => {
           const active = marketplace === mp
           return (
             <button
@@ -281,11 +276,8 @@ export default function DashboardClient({ slices, stockGroups, days, period, fro
         const mpLinks: Record<string, { url: string; label: string }> = {
           uzum:          { url: 'https://seller.uzum.uz',           label: 'seller.uzum.uz'           },
           yandex_market: { url: 'https://partner.market.yandex.ru', label: 'partner.market.yandex.ru' },
-          ...(WB_ENABLED ? { wildberries: { url: 'https://seller.wildberries.ru', label: 'seller.wildberries.ru' } } : {}),
         }
-        const mpKeys = WB_ENABLED
-          ? (['uzum', 'yandex_market', 'wildberries'] as const)
-          : (['uzum', 'yandex_market'] as const)
+        const mpKeys = ['uzum', 'yandex_market'] as const
         // On a specific tab show only that marketplace; on "Все" show all connected ones
         const linksToShow: { url: string; label: string }[] = marketplace
           ? [mpLinks[marketplace]].filter(Boolean)
@@ -317,7 +309,7 @@ export default function DashboardClient({ slices, stockGroups, days, period, fro
         }
         // Marketplace-specific not-connected card
         if (marketplace) {
-          const mpName = ({ uzum: 'Uzum Market', yandex_market: 'Yandex Market', wildberries: 'Wildberries' } as Record<string, string>)[marketplace]
+          const mpName = ({ uzum: 'Uzum Market', yandex_market: 'Yandex Market' } as Record<string, string>)[marketplace]
           const mpLink = displayLinks[0]
           return (
             <div className="bg-[var(--bg-card2)] border border-dashed rounded-2xl p-10" style={{  borderColor: 'var(--border)' }}>
@@ -433,7 +425,7 @@ export default function DashboardClient({ slices, stockGroups, days, period, fro
                         <p className="text-sm text-[var(--text-base)] font-medium truncate font-mono">{order.order_id_external ?? order.id.slice(0, 8)}</p>
                       )
                     })()}
-                    <p className="text-xs text-[var(--text-muted)] truncate">{{ uzum: 'Uzum Market', yandex_market: 'Yandex Market', wildberries: 'Wildberries' }[order.marketplace] ?? order.marketplace}</p>
+                    <p className="text-xs text-[var(--text-muted)] truncate">{{ uzum: 'Uzum Market', yandex_market: 'Yandex Market' }[order.marketplace] ?? order.marketplace}</p>
                   </div>
                   <span className={`text-[11px] font-medium px-2 py-0.5 rounded-lg flex-shrink-0 ${(isDark ? STATUS_CLASS_DARK : STATUS_CLASS_LIGHT)[order.status] ?? 'bg-slate-500/10 text-[var(--text-muted)]'}`}>
                     {s[order.status as keyof typeof s] ?? order.status}

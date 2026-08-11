@@ -2,7 +2,6 @@ import { cache } from 'react'
 import { getCurrentUser } from '@/lib/auth/session'
 import { eq, ne, and, or, isNull, asc, inArray, desc } from 'drizzle-orm'
 import { db, shops, orders, syncDays } from '@/lib/db'
-import { WB_ENABLED } from '@/lib/feature-flags'
 import type { MarketplaceType } from '@/lib/types'
 
 export interface ShopRef {
@@ -25,13 +24,7 @@ export const getUserShops = cache(async (): Promise<ShopRef[]> => {
   const rows = await db.select({ id: shops.id, marketplace: shops.marketplace })
     .from(shops)
     .where(and(eq(shops.user_id, userId), or(isNull(shops.shop_id_external), ne(shops.shop_id_external, 'DEMO'))))
-  // Wildberries is sunset (see lib/feature-flags.ts). Excluding WB
-  // shops here means every downstream consumer — Products, Orders,
-  // Payouts, Dashboard KPIs, Analytics, P&L — automatically stops
-  // showing WB data without needing per-view filtering. Data stays in
-  // the DB (nothing destructive), just hidden from the app.
-  const active = WB_ENABLED ? rows : rows.filter(r => r.marketplace !== 'wildberries')
-  return active as ShopRef[]
+  return rows as ShopRef[]
 })
 
 export const getShopIds = cache(async (marketplace?: MarketplaceType): Promise<string[] | null> => {

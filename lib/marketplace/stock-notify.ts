@@ -33,7 +33,7 @@ import { sendTelegramMessage } from '@/lib/telegram'
 import type { MarketplaceType } from '@/lib/types'
 
 const MP_LABEL: Record<string, string> = {
-  uzum: 'Uzum', yandex_market: 'Yandex Market', wildberries: 'Wildberries',
+  uzum: 'Uzum', yandex_market: 'Yandex Market',
 }
 
 export interface StockUpdateEvent {

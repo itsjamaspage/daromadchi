@@ -3,7 +3,7 @@ import { addUnitEconomicsItem, deleteUnitEconomicsItems, updateUnitEconomicsSupp
 import { getCurrentUser } from '@/lib/auth/session'
 import { withErrorHandler } from '@/lib/api-handler'
 
-const MARKETPLACES = ['uzum', 'yandex_market', 'wildberries'] as const
+const MARKETPLACES = ['uzum', 'yandex_market'] as const
 
 // Fields that may be updated via PATCH
 const ALLOWED_UPDATE_FIELDS = new Set([

@@ -23,7 +23,6 @@ export default async function UnitEconomicsPage({
 
   const sourceRaw = str(sp.source)
   const marketplace: MarketplaceType =
-    sourceRaw === 'wb' ? 'wildberries' :
     sourceRaw === 'yandex_market' ? 'yandex_market' : 'uzum'
 
   const fromExtension = sourceRaw ? {

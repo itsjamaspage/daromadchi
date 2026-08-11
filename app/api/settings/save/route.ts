@@ -8,7 +8,7 @@ import { encrypt } from '@/lib/crypto'
 import { withErrorHandler } from '@/lib/api-handler'
 
 const SaveSchema = z.object({
-  marketplace:    z.enum(['uzum', 'yandex_market', 'wildberries']),
+  marketplace:    z.enum(['uzum', 'yandex_market']),
   apiKey:         z.string().max(2000).optional(),
   shopIdExternal: z.string().max(200).optional(),
   shopName:       z.string().max(200).optional(),
@@ -53,7 +53,7 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
 
   await db.insert(shops).values({
     user_id:     user.id,
-    name:        shopName ?? (marketplace === 'uzum' ? 'Uzum do\'konim' : marketplace === 'wildberries' ? 'Wildberries do\'konim' : 'Yandex Market do\'konim'),
+    name:        shopName ?? (marketplace === 'uzum' ? 'Uzum do\'konim' : 'Yandex Market do\'konim'),
     marketplace,
     is_active:   true,
     ...update,

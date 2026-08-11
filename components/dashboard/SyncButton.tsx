@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import { RefreshCw, CheckCircle, XCircle } from 'lucide-react'
 import { useLang } from '@/app/providers'
 import { translations } from '@/lib/i18n'
-import { WB_ENABLED } from '@/lib/feature-flags'
 
 export default function SyncButton() {
   const router = useRouter()
@@ -19,7 +18,6 @@ export default function SyncButton() {
       const results = await Promise.allSettled([
         fetch('/api/uzum/sync', { method: 'POST' }),
         fetch('/api/yandex/sync', { method: 'POST' }),
-        ...(WB_ENABLED ? [fetch('/api/wildberries/sync', { method: 'POST' })] : []),
       ])
       const allOk = results.every(r => r.status === 'fulfilled' && r.value.ok)
       setState(allOk ? 'ok' : 'err')

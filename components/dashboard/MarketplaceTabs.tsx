@@ -4,19 +4,13 @@ import Link from 'next/link'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { useLang, useTheme } from '@/app/providers'
 import { dashT } from '@/lib/dashT'
-import { WB_ENABLED } from '@/lib/feature-flags'
 import type { MarketplaceType } from '@/lib/types'
 
-const ALL_TABS: { mp: MarketplaceType | undefined; labelKey: 'all' | null; fallback: string; color: 'blue' | 'amber' }[] = [
+const TABS: { mp: MarketplaceType | undefined; labelKey: 'all' | null; fallback: string; color: 'blue' | 'amber' }[] = [
   { mp: undefined,       labelKey: 'all', fallback: 'All',           color: 'blue'  },
   { mp: 'uzum',          labelKey: null,  fallback: 'Uzum',          color: 'blue'  },
   { mp: 'yandex_market', labelKey: null,  fallback: 'Yandex Market', color: 'amber' },
-  { mp: 'wildberries',   labelKey: null,  fallback: 'Wildberries',   color: 'blue'  },
 ]
-// Wildberries is sunset — see lib/feature-flags.ts. Filter it out of
-// every marketplace-tab surface (Payouts, Dashboard, Orders, etc.)
-// via this shared list.
-const TABS = ALL_TABS.filter(t => t.mp !== 'wildberries' || WB_ENABLED)
 
 export default function MarketplaceTabs({ current }: { current: MarketplaceType | undefined }) {
   const pathname     = usePathname()

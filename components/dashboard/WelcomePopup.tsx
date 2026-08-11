@@ -5,7 +5,6 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { X, Zap } from 'lucide-react'
 import { useLang } from '@/app/providers'
-import { WB_ENABLED } from '@/lib/feature-flags'
 
 const STORAGE_KEY = 'daromadchi-welcome-dismissed'
 
@@ -15,7 +14,6 @@ const LABELS = {
     subtitle: "Do'kon tahlilini boshlash uchun kamida bitta marketpleysingizni ulang.",
     uzum:     "Uzum Market ulash",
     yandex:   "Yandex Market ulash",
-    wb:       "Wildberries ulash",
     later:    "Keyinroq",
     settings: "Sozlamalarga o'tish",
   },
@@ -24,7 +22,6 @@ const LABELS = {
     subtitle: "Подключите хотя бы один маркетплейс, чтобы начать аналитику магазина.",
     uzum:     "Подключить Uzum Market",
     yandex:   "Подключить Yandex Market",
-    wb:       "Подключить Wildberries",
     later:    "Позже",
     settings: "Перейти в настройки",
   },
@@ -33,7 +30,6 @@ const LABELS = {
     subtitle: "Connect at least one marketplace to start your store analytics.",
     uzum:     "Connect Uzum Market",
     yandex:   "Connect Yandex Market",
-    wb:       "Connect Wildberries",
     later:    "Later",
     settings: "Go to Settings",
   },
@@ -42,8 +38,7 @@ const LABELS = {
 const MARKETPLACES = ([
   { key: 'uzum',   label: (l: typeof LABELS.uz) => l.uzum,   accent: 'var(--c1)',  letter: 'U' },
   { key: 'yandex', label: (l: typeof LABELS.uz) => l.yandex, accent: '#f59e0b',    letter: 'Y' },
-  { key: 'wb',     label: (l: typeof LABELS.uz) => l.wb,     accent: '#7c3aed',    letter: 'W' },
-] as const).filter(m => m.key !== 'wb' || WB_ENABLED)
+] as const)
 
 interface Props {
   hasShops: boolean

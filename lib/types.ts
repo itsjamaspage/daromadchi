@@ -1,4 +1,4 @@
-export type MarketplaceType = 'uzum' | 'yandex_market' | 'wildberries'
+export type MarketplaceType = 'uzum' | 'yandex_market'
 
 export interface AdsStatsSummary {
   impressions: number

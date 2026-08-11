@@ -47,6 +47,10 @@ const MIGRATIONS = [
   // no-op. Registered now so the repo is the source of truth.
   'migrations/migrations/055_privacy_retention.sql',
   'migrations/migrations/056_payments_payer_email.sql',
+  // High-stakes: rebuilds the marketplace_type enum to drop 'wildberries'.
+  // Idempotent (guarded on the value still existing) + atomic. Take a DB backup
+  // before the first apply. See the file header.
+  'migrations/migrations/057_drop_wildberries_enum.sql',
 ]
 
 function loadDatabaseUrl() {

@@ -15,7 +15,7 @@ const PRO_FEATURES = [
   "Unlimited do'konlar",
   'Unlimited mahsulotlar',
   '12 oylik tarix',
-  'Uzum + Yandex Market + Wildberries',
+  'Uzum + Yandex Market',
   'Unit-ekonomika',
   'Reklama tahlili',
   'Qidiruv iboralari',
@@ -94,7 +94,6 @@ const comparisonFeatures: Feature[] = [
   { label: 'Tarix chuqurligi',                   free: '30 kun', pro: '12 oy',   proplus: '12 oy'   },
   { label: 'Uzum integratsiya',                  free: true,     pro: true,      proplus: true      },
   { label: 'Yandex Market',                      free: false,    pro: true,      proplus: true      },
-  { label: 'Wildberries',                        free: false,    pro: true,      proplus: true      },
   { label: 'Kengaytma (extension)',              free: true,     pro: true,      proplus: true      },
   { label: 'Unit-ekonomika',                     free: false,    pro: true,      proplus: true      },
   { label: 'Reklama tahlili',                    free: false,    pro: true,      proplus: true      },
@@ -118,11 +117,7 @@ const faqs: FaqItem[] = [
   },
   {
     q: "Pro va Pro+ orasidagi asosiy farq nima?",
-    a: "Pro tarifi o'sib kelayotgan biznes uchun barcha asosiy analitika vositalarini beradi. Pro+ esa qo'shimcha ravishda API kirish, 5 ta jamoa a'zosi, Wildberries integratsiyasi, maxsus hisobotlar va 15 daqiqali prioritet qo'llab-quvvatlashni taqdim etadi.",
-  },
-  {
-    q: "Pro+ da Wildberries integratsiyasi qanday ishlaydi?",
-    a: "Pro+ tarifida Wildberries do'koningizni ham ulab, Uzum va Yandex Market bilan birga bitta panelda ko'rishingiz mumkin. Uch bozorni bir joydan boshqarish imkoniyati faqat Pro+ da mavjud.",
+    a: "Pro tarifi o'sib kelayotgan biznes uchun barcha asosiy analitika vositalarini beradi. Pro+ esa qo'shimcha ravishda API kirish, 5 ta jamoa a'zosi, maxsus hisobotlar va 15 daqiqali prioritet qo'llab-quvvatlashni taqdim etadi.",
   },
   {
     q: "Tarifni istalgan vaqt o'zgartirish mumkinmi?",

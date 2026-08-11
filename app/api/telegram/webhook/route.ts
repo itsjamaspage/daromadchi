@@ -105,7 +105,6 @@ function botT(lang: string | null | undefined) {
 const MKT_NAMES: Record<string, string> = {
   uzum:          '🟣 Uzum Market',
   yandex_market: '🟡 Yandex Market',
-  wildberries:   '🟣 Wildberries',
 }
 
 const WELCOME_UNLINKED: Record<string, string> = {

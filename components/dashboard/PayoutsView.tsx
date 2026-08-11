@@ -4,7 +4,6 @@ import { useState, useRef, useEffect, Fragment } from 'react'
 import { useRouter } from 'next/navigation'
 import { ChevronDown, ChevronUp, HelpCircle, RefreshCw, MoreVertical, CreditCard } from 'lucide-react'
 import type { PayoutEntry, PayoutOrderItem, MarketplaceType } from '@/lib/types'
-import { WB_ENABLED } from '@/lib/feature-flags'
 import ExportButton from '@/components/dashboard/ExportButton'
 import MpBadge from '@/components/dashboard/MpBadge'
 import { useLang } from '@/app/providers'
@@ -215,7 +214,7 @@ function DeductionBar({ entry }: { entry: PayoutEntry }) {
   )
 }
 
-const MP_TAB_VALUES = ['all', 'uzum', 'yandex_market', 'wildberries'] as const
+const MP_TAB_VALUES = ['all', 'uzum', 'yandex_market'] as const
 type MpFilter = typeof MP_TAB_VALUES[number]
 
 export default function PayoutsView({ entries }: Props) {
@@ -337,7 +336,6 @@ export default function PayoutsView({ entries }: Props) {
     { value: 'all' as const,           label: t.tabAll },
     { value: 'uzum' as const,          label: t.tabUzum },
     { value: 'yandex_market' as const, label: t.tabYandex },
-    ...(WB_ENABLED ? [{ value: 'wildberries' as const, label: t.tabWb }] : []),
   ]
 
   const filteredEntries = mpFilter === 'all' ? entries : entries.filter(e => e.marketplace === mpFilter)

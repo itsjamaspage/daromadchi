@@ -78,13 +78,12 @@ export default function AnalyticsBoard({ chartData, categoryData, products, kpis
 
   /* Stacked channel data — split daily revenue across marketplaces deterministically */
   const channelData = useMemo(() => {
-    const split = [0.54, 0.31, 0.15] // uzum / yandex / wildberries
+    const split = [0.63] // uzum / yandex
     return chartData.map((d, i) => {
       const wobble = ((i * 7) % 11) / 100 - 0.05
       const uzum = Math.round(d.revenue * (split[0] + wobble))
-      const yandex = Math.round(d.revenue * (split[1] - wobble / 2))
-      const wb = Math.max(0, d.revenue - uzum - yandex)
-      return { date: d.date, Uzum: uzum, Yandex: yandex, Wildberries: wb }
+      const yandex = Math.max(0, d.revenue - uzum)
+      return { date: d.date, Uzum: uzum, Yandex: yandex }
     })
   }, [chartData])
 
@@ -226,8 +225,7 @@ export default function AnalyticsBoard({ chartData, categoryData, products, kpis
               />
               <Legend wrapperStyle={{ fontSize: 11, color: axisColor }} iconType="circle" />
               <Bar dataKey="Uzum" stackId="a" fill={PALETTE[0]} radius={[0, 0, 0, 0]} />
-              <Bar dataKey="Yandex" stackId="a" fill={PALETTE[3]} />
-              <Bar dataKey="Wildberries" stackId="a" fill={PALETTE[5]} radius={[4, 4, 0, 0]} />
+              <Bar dataKey="Yandex" stackId="a" fill={PALETTE[3]} radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>

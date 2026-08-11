@@ -8,7 +8,6 @@ import { useLang } from '@/app/providers'
 import { dashT } from '@/lib/dashT'
 import type { SyncDay } from '@/lib/types'
 import DataStateView from '@/components/dashboard/DataStateView'
-import { WB_ENABLED } from '@/lib/feature-flags'
 
 interface Shop {
   id: string
@@ -23,7 +22,6 @@ interface Shop {
 const MP_CONFIG: Record<string, { label: string; color: string; letter: string; syncUrl: string }> = {
   uzum:         { label: 'Uzum Market',    color: 'violet',  letter: 'U', syncUrl: '/api/uzum/sync' },
   yandex_market:{ label: 'Yandex Market',  color: 'amber',   letter: 'Y', syncUrl: '/api/yandex/sync' },
-  wildberries:  { label: 'Wildberries',    color: 'purple',  letter: 'W', syncUrl: '/api/wildberries/sync' },
 }
 
 const COLOR_CLASSES: Record<string, { bg: string; border: string; text: string; badge: string }> = {
@@ -47,7 +45,7 @@ function ShopCard({ shop }: { shop: Shop }) {
   const cfg = MP_CONFIG[shop.marketplace]
   const col = COLOR_CLASSES[cfg?.color ?? 'violet']
   const LAUNCH_YEAR: Record<string, string> = {
-    uzum: 'okt 2022', yandex_market: 'apr 2025', wildberries: 'fev 2022',
+    uzum: 'okt 2022', yandex_market: 'apr 2025',
   }
   const hasKey = !!shop.api_key_encrypted
   const lastSync = shop.last_synced_at ? new Date(shop.last_synced_at).toLocaleString() : null
@@ -188,25 +186,23 @@ interface Props {
   shops: Shop[]
   uzumDays: SyncDay[]
   yandexDays: SyncDay[]
-  wbDays: SyncDay[]
   connectedMps: string[]
 }
 
-export default function SyncStatusClient({ shops, uzumDays, yandexDays, wbDays, connectedMps }: Props) {
+export default function SyncStatusClient({ shops, uzumDays, yandexDays, connectedMps }: Props) {
   const router = useRouter()
   const { lang } = useLang()
   const t = dashT[lang].sync
   const [syncingAll, setSyncingAll] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
 
-  const hasDays = uzumDays.length > 0 || yandexDays.length > 0 || wbDays.length > 0
+  const hasDays = uzumDays.length > 0 || yandexDays.length > 0
 
   async function handleSyncAll() {
     setSyncingAll(true)
     await Promise.allSettled([
       fetch('/api/uzum/sync', { method: 'POST' }),
       fetch('/api/yandex/sync', { method: 'POST' }),
-      ...(WB_ENABLED ? [fetch('/api/wildberries/sync', { method: 'POST' })] : []),
     ])
     router.refresh()
     setSyncingAll(false)
@@ -253,7 +249,6 @@ export default function SyncStatusClient({ shops, uzumDays, yandexDays, wbDays, 
             <DataStateView
               uzumDays={uzumDays}
               yandexDays={yandexDays}
-              wbDays={wbDays}
               connectedMps={connectedMps}
             />
           )}

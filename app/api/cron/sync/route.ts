@@ -4,10 +4,8 @@ import { eq, and, isNotNull } from 'drizzle-orm'
 import { db, shops, users, userSettings } from '@/lib/db'
 import { syncFromUzum } from '@/lib/uzum/sync'
 import { syncFromYandex } from '@/lib/yandex/sync'
-import { syncFromWildberries } from '@/lib/wildberries/sync'
 import { syncYandexSettlements } from '@/lib/yandex/settlements-sync'
 import { syncUzumSettlements } from '@/lib/uzum/settlements-sync'
-import { WB_ENABLED } from '@/lib/feature-flags'
 import { decrypt } from '@/lib/crypto'
 import { withErrorHandler } from '@/lib/api-handler'
 import { sendTelegramMessage } from '@/lib/telegram'
@@ -20,7 +18,6 @@ const CONCURRENCY = 5
 const MP_LABEL: Record<string, string> = {
   uzum: 'Uzum Market',
   yandex_market: 'Yandex Market',
-  wildberries: 'Wildberries',
 }
 
 const SYNC_INTERVAL_MS: Record<string, number> = {
@@ -76,8 +73,6 @@ async function syncShop(
           ;(r as Record<string, unknown>).settlements = { ok: false, error: String(e).slice(0, 300) }
         }
       }
-    } else if (shop.marketplace === 'wildberries' && WB_ENABLED) {
-      r = { ...await syncFromWildberries(null, shop.id, token) }
     }
     if (!r) return { shopId: shop.id, marketplace: shop.marketplace, ok: true, skipped: true }
     return { shopId: shop.id, marketplace: shop.marketplace, ms: Date.now() - start, ...r }

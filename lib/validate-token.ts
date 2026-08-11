@@ -33,26 +33,6 @@ export async function validateMarketplaceToken(
         if (!res.ok) logger.warn('validate_token_rejected', { marketplace, status: res.status })
         return res.ok
       }
-      case 'wildberries': {
-        // Was: common-api.wildberries.ru/api/v1/seller-info — that endpoint
-        // now 401s scope-restricted tokens even when the token is fully
-        // valid for the sync's actual APIs, so we were rejecting good tokens
-        // and never writing them to the DB. Validate against the exact
-        // endpoint the sync starts with (Content API cards list) so a token
-        // that passes here is guaranteed to work for at least one real call.
-        const res = await marketplaceFetch('https://content-api.wildberries.ru/content/v2/get/cards/list', {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-            Accept: 'application/json',
-          },
-          body: JSON.stringify({ settings: { cursor: { limit: 1 }, filter: { withPhoto: -1 } } }),
-          cache: 'no-store',
-        })
-        if (!res.ok) logger.warn('validate_token_rejected', { marketplace, status: res.status })
-        return res.ok
-      }
       default:
         return false
     }

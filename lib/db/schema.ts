@@ -20,7 +20,6 @@ import {
 export const marketplaceTypeEnum = pgEnum('marketplace_type', [
   'uzum',
   'yandex_market',
-  'wildberries',
 ])
 
 export const orderStatusEnum = pgEnum('order_status', [

@@ -41,9 +41,8 @@ function VariantColorChip({ colorKey, lang }: { colorKey: string | null; lang: '
 const MP_META: Record<MarketplaceType, { label: string; short: string; color: string; bg: string }> = {
   uzum:          { label: 'Uzum',        short: 'UZ', color: '#494fdf', bg: 'rgba(73,79,223,0.12)'  },
   yandex_market: { label: 'Yandex',      short: 'YM', color: '#E8A000', bg: 'rgba(232,160,0,0.12)'  },
-  wildberries:   { label: 'Wildberries', short: 'WB', color: '#CB11AB', bg: 'rgba(203,17,171,0.12)' },
 }
-const MP_ORDER: MarketplaceType[] = ['uzum', 'wildberries', 'yandex_market']
+const MP_ORDER: MarketplaceType[] = ['uzum', 'yandex_market']
 
 function MpCount({ mp, value }: { mp: MarketplaceType; value: number }) {
   const m = MP_META[mp]
