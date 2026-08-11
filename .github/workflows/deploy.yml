@@ -80,7 +80,6 @@ jobs:
             stock-sync)      curl -sf -m 280 -H "x-cron-secret: $SECRET" "http://127.0.0.1:$PORT/api/cron/stock-sync" ;;
             digest)          curl -sf -m 110 -H "Authorization: Bearer $SECRET" "http://127.0.0.1:$PORT/api/cron/telegram-digest" ;;
             expire-plans)    curl -sf -m 60  -H "Authorization: Bearer $SECRET" "http://127.0.0.1:$PORT/api/billing/expire-plans" ;;
-            retention-purge) curl -sf -m 120 -H "x-cron-secret: $SECRET" "http://127.0.0.1:$PORT/api/cron/retention-purge" ;;
           esac
           EOS
           chmod +x /var/www/daromadchi/cron-runner.sh
@@ -91,10 +90,7 @@ jobs:
             echo '*/5 * * * * /var/www/daromadchi/cron-runner.sh sync >> $HOME/daromadchi-cron.log 2>&1'
             echo '*/5 * * * * /var/www/daromadchi/cron-runner.sh stock-sync >> $HOME/daromadchi-cron.log 2>&1'
             echo '5 * * * * /var/www/daromadchi/cron-runner.sh digest >> $HOME/daromadchi-cron.log 2>&1'
-            # Daily: downgrade lapsed paid plans (stamps plan_cancelled_at), then
-            # the 30-day post-cancellation purge. Purge is a no-op (dry-run) until
-            # RETENTION_PURGE_ENABLED=true is set in the server .env.
-            echo '15 3 * * * /var/www/daromadchi/cron-runner.sh expire-plans >> $HOME/daromadchi-cron.log 2>&1'
-            echo '30 3 * * * /var/www/daromadchi/cron-runner.sh retention-purge >> $HOME/daromadchi-cron.log 2>&1' ) | crontab -
+            # Daily: downgrade lapsed paid plans to free.
+            echo '15 3 * * * /var/www/daromadchi/cron-runner.sh expire-plans >> $HOME/daromadchi-cron.log 2>&1' ) | crontab -
           echo "Deploy complete."
           DEPLOY
