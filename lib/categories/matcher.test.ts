@@ -14,7 +14,7 @@ describe('matchCategory — exact tier', () => {
     const failures: string[] = []
 
     for (const cat of TAXONOMY) {
-      for (const mp of ['uzum', 'wildberries', 'yandex_market'] as const) {
+      for (const mp of ['uzum', 'yandex_market'] as const) {
         for (const raw of cat.raw_examples[mp]) {
           const result = matchCategory(raw)
           if (!result || result.canonical_id !== cat.id || result.tier !== 'exact' || result.score !== 1.0) {

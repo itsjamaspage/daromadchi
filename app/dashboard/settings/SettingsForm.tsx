@@ -9,7 +9,6 @@ import {
 import type { Shop } from '@/lib/types'
 import { useLang } from '@/app/providers'
 import { translations } from '@/lib/i18n'
-import { WB_ENABLED } from '@/lib/feature-flags'
 
 // ─── Shared sub-components ────────────────────────────────────────────────────
 
@@ -634,256 +633,6 @@ function YandexCard({ shop }: { shop: Shop | null; userId: string }) {
   )
 }
 
-// ─── Wildberries section ──────────────────────────────────────────────────────
-
-function WildberriesCard({ shop }: { shop: Shop | null; userId: string }) {
-  const router = useRouter()
-  const { lang } = useLang()
-  const t = translations[lang].dashboard.settingsPage
-
-  const [apiKey,   setApiKey]   = useState('')
-  const [saving,   setSaving]   = useState(false)
-  const [syncing,  setSyncing]  = useState(false)
-  const [testing,  setTesting]  = useState(false)
-  const [resetting, setResetting] = useState(false)
-  const [syncStep, setSyncStep] = useState<string | null>(null)
-  const [saveMsg,  setSaveMsg]  = useState<{ ok: boolean; text: string } | null>(null)
-  const [syncMsg,  setSyncMsg]  = useState<{ ok: boolean; text: string } | null>(null)
-
-  const hasKey  = !!shop?.api_key_encrypted
-  const lastSync = shop?.last_synced_at
-    ? new Date(shop.last_synced_at).toLocaleString(lang === 'ru' ? 'ru-RU' : lang === 'en' ? 'en-US' : 'uz-UZ') : null
-  // Server writes throttled_until on the shop row when WB returns 429/461.
-  // Comparing `throttled_until > Date.now()` inside render is impure
-  // (different values SSR vs client → hydration mismatch), so:
-  //   - Initial render: assume active if throttled_until is set at all.
-  //   - After mount: an interval ticks every 30s and stores a client-side
-  //     snapshot; once the snapshot passes the cooldown, the chip auto-
-  //     hides. No page reload needed, no setState in the effect body.
-  const throttledUntilMs = shop?.throttled_until ? new Date(shop.throttled_until).getTime() : 0
-  const [nowSnapshot, setNowSnapshot] = useState<number | null>(null)
-  useEffect(() => {
-    if (!throttledUntilMs) return
-    const id = window.setInterval(() => { setNowSnapshot(Date.now()) }, 30_000)
-    return () => window.clearInterval(id)
-  }, [throttledUntilMs])
-  const throttled = throttledUntilMs > 0 && (nowSnapshot == null || throttledUntilMs > nowSnapshot)
-  const throttledUntilLabel = throttled
-    ? new Date(throttledUntilMs).toLocaleString(lang === 'ru' ? 'ru-RU' : lang === 'en' ? 'en-US' : 'uz-UZ')
-    : null
-
-  async function handleResetThrottle() {
-    setResetting(true); setSyncMsg(null)
-    try {
-      const res = await fetch('/api/wildberries/reset-throttle', { method: 'POST' })
-      const data = await res.json()
-      if (data.ok) {
-        setSyncMsg({ ok: true, text: lang === 'ru' ? 'Лимит WB сброшен. Можно синхронизировать.' : lang === 'en' ? 'WB throttle reset. You can sync now.' : 'WB limiti tozalandi. Endi sinxronlash mumkin.' })
-        router.refresh()
-      } else {
-        setSyncMsg({ ok: false, text: data.error ?? t.error })
-      }
-    } catch {
-      setSyncMsg({ ok: false, text: t.networkErr })
-    }
-    setResetting(false)
-  }
-
-  async function handleSave(e: React.FormEvent) {
-    e.preventDefault()
-    if (!apiKey.trim()) return
-    setSaving(true); setSaveMsg(null)
-    try {
-      const res  = await fetch('/api/shops/token', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ marketplace: 'wildberries', token: apiKey.trim(), shopName: t.wbShopName }),
-      })
-      const data = await res.json()
-      setSaveMsg(data.ok
-        ? { ok: true, text: data.message ?? t.saved }
-        : { ok: false, text: data.error ?? t.error })
-      if (data.ok) {
-        setApiKey('')
-        router.refresh()
-        triggerWbSync()
-      }
-    } catch {
-      setSaveMsg({ ok: false, text: t.networkErr })
-    }
-    setSaving(false)
-  }
-
-  function triggerWbSync() {
-    setSyncing(true); setSyncMsg(null)
-    const steps = [t.syncStepProducts, t.syncStepOrders, t.syncStepSaving]
-    let stepIdx = 0
-    setSyncStep(steps[0])
-    const interval = setInterval(() => {
-      stepIdx = Math.min(stepIdx + 1, steps.length - 1)
-      setSyncStep(steps[stepIdx])
-    }, 4000)
-    fetch('/api/wildberries/sync', { method: 'POST' })
-      .then(r => r.json())
-      .then(data => {
-        setSyncMsg(data.ok
-          ? { ok: true, text: `${data.productsUpserted ?? 0} ${t.products}, ${data.ordersUpserted ?? 0} ${t.orders} ${t.updated}.` }
-          : { ok: false, text: data.error ?? (data.errors?.[0]) ?? t.error })
-        if (data.ok) router.refresh()
-      })
-      .catch(() => setSyncMsg({ ok: false, text: t.networkErr }))
-      .finally(() => { clearInterval(interval); setSyncStep(null); setSyncing(false) })
-  }
-
-  async function handleTest() {
-    setTesting(true); setSyncMsg(null)
-    try {
-      const res  = await fetch('/api/wildberries/sync', { method: 'GET' })
-      const data = await res.json()
-      setSyncMsg({ ok: data.ok, text: data.message ?? data.error ?? t.error })
-    } catch {
-      setSyncMsg({ ok: false, text: t.networkErr })
-    }
-    setTesting(false)
-  }
-
-  async function handleSync() {
-    setSyncing(true); setSyncMsg(null)
-    const steps = [t.syncStepProducts, t.syncStepOrders, t.syncStepSaving]
-    let stepIdx = 0
-    setSyncStep(steps[0])
-    const interval = setInterval(() => {
-      stepIdx = Math.min(stepIdx + 1, steps.length - 1)
-      setSyncStep(steps[stepIdx])
-    }, 4000)
-    try {
-      const res  = await fetch('/api/wildberries/sync', { method: 'POST' })
-      const data = await res.json()
-      setSyncMsg(data.ok
-        ? { ok: true, text: `${data.productsUpserted ?? 0} ${t.products}, ${data.ordersUpserted ?? 0} ${t.orders} ${t.updated}.` }
-        : { ok: false, text: data.error ?? (data.errors?.[0]) ?? t.error })
-      if (data.ok) router.refresh()
-    } catch {
-      setSyncMsg({ ok: false, text: t.networkErr })
-    }
-    clearInterval(interval)
-    setSyncStep(null)
-    setSyncing(false)
-  }
-
-  // Wildberries integration is sunset for now — WB's rate limiter kept locking
-  // the app into a permanent throttled state. While sunset, render nothing at
-  // all (the "Coming soon" card was removed per request). All the WB code below
-  // is kept intact so flipping WB_ENABLED back on restores the full card.
-  if (!WB_ENABLED) {
-    return null
-  }
-
-  return (
-    <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
-      {/* Header */}
-      <div className="px-6 py-4 border-b border-[var(--border)] flex items-center gap-3">
-        <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'var(--bg-card2)', border: '1px solid var(--border)' }}>
-          <span className="text-sm font-bold" style={{ color: 'var(--c1)' }}>WB</span>
-        </div>
-        <div>
-          <p className="text-[var(--text-base)] font-semibold text-sm">Wildberries</p>
-          <p className="text-[var(--text-muted)] text-xs">seller.wildberries.ru</p>
-        </div>
-        <span className={`ml-auto text-[10px] font-semibold px-2 py-1 rounded-full border ${hasKey ? 'bg-[var(--badge-ok-bg)] border-[var(--badge-ok-bdr)] text-[var(--badge-ok-text)]' : 'bg-slate-500/10 border-[var(--border)] text-[var(--text-muted)]'}`}>
-          {hasKey ? t.connected : t.notConnected}
-        </span>
-      </div>
-
-      {/* API token form */}
-      <form onSubmit={handleSave} className="p-6 space-y-4">
-        <div>
-          <label className="flex items-center gap-1.5 text-xs font-medium text-[var(--text-muted)] mb-2">
-            <Key className="w-3.5 h-3.5" /> API Token
-          </label>
-          <input
-            type="password"
-            value={apiKey}
-            onChange={e => setApiKey(e.target.value)}
-            placeholder={t.tokenPlaceholder}
-            className="w-full bg-[var(--bg-input)] border border-[var(--border2)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-base)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--border2)] transition-all font-mono"
-          />
-          <p className="text-[var(--text-muted)] text-xs mt-1.5">
-            <a href="https://seller.wildberries.ru/supplier-settings/access-to-api" target="_blank" rel="noopener noreferrer"
-              className="inline-flex items-center gap-0.5" style={{ color: 'var(--c1)' }}>
-              seller.wildberries.ru <ExternalLink className="w-3 h-3" />
-            </a>
-            {lang === 'ru' ? ' → Настройки → Доступ к API → Создать новый ключ'
-              : lang === 'en' ? ' → Settings → API access → Create new key'
-              : " → Nastroyki → Dostup k API → Sozdat' novy klyuch"}
-          </p>
-          <p className="text-xs mt-1" style={{ color: 'var(--text-dim)' }}>
-            {lang === 'ru' ? '⚠️ При создании токена снимите ограничение по IP, иначе синхронизация не будет работать.'
-              : lang === 'en' ? '⚠️ When creating the token, remove the IP restriction — otherwise sync will not work.'
-              : '⚠️ Token yaratishda IP cheklovini olib tashlang, aks holda sinxronlash ishlamaydi.'}
-          </p>
-        </div>
-        <StatusMsg msg={saveMsg} />
-        <button type="submit" disabled={saving}
-          className="flex items-center gap-2 btn-primary disabled:opacity-50 px-4 py-2 rounded-xl transition-colors">
-          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-          {t.save}
-        </button>
-      </form>
-
-      {/* Sync */}
-      {shop && (
-        <div className="px-6 pb-6 space-y-3 border-t border-[var(--border)] pt-4">
-          <p className="text-[var(--text-muted)] text-xs">
-            {lastSync ? <>{t.lastSync}: <span className="text-[var(--text-dim)]">{lastSync}</span></> : t.neverSynced}
-          </p>
-          {syncing && syncStep && (
-            <div className="flex items-center gap-2 text-xs rounded-xl px-3 py-2" style={{ color: 'var(--c1)', background: 'var(--bg-card2)', border: '1px solid var(--border)' }}>
-              <Loader2 className="w-3.5 h-3.5 animate-spin flex-shrink-0" />
-              {syncStep}
-            </div>
-          )}
-          <StatusMsg msg={syncMsg} />
-          {throttled && (
-            <div className="flex items-start gap-2 text-xs rounded-xl px-3 py-2"
-              style={{ color: 'var(--status-err-text)', background: 'var(--status-err-bg)', border: '1px solid var(--status-err-bdr)' }}>
-              <AlertTriangle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
-              <span>
-                {lang === 'ru'
-                  ? `Wildberries ограничил синхронизацию до ${throttledUntilLabel}. Приложение подождёт, чтобы их лимитер восстановился.`
-                  : lang === 'en'
-                  ? `Wildberries throttled sync until ${throttledUntilLabel}. The app will wait for their limiter to recover.`
-                  : `Wildberries sinxronlashni ${throttledUntilLabel} gacha cheklab qo'ydi. Ilova ularning limiterini tiklanishini kutadi.`}
-              </span>
-            </div>
-          )}
-          <div className="flex gap-2 flex-wrap">
-            <button onClick={handleTest} disabled={testing || syncing || !hasKey}
-              title={!hasKey ? 'Avval token saqlang' : ''}
-              className="flex items-center gap-2 bg-[var(--bg-input)] hover:bg-[var(--bg-input)] border border-[var(--border2)] disabled:opacity-40 disabled:cursor-not-allowed text-[var(--text-dim)] text-sm font-medium px-4 py-2 rounded-xl transition-colors">
-              {testing ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" style={{ color: 'var(--status-ok-text)' }} />}
-              {t.check}
-            </button>
-            <button onClick={handleSync} disabled={syncing || !hasKey}
-              title={!hasKey ? 'Avval token saqlang' : ''}
-              className="flex items-center gap-2 btn-primary border border-transparent disabled:opacity-40 disabled:cursor-not-allowed px-4 py-2 rounded-xl transition-colors">
-              {syncing ? <><Loader2 className="w-4 h-4 animate-spin" /> {t.syncing}</> : <><RefreshCw className="w-4 h-4" /> {t.sync}</>}
-            </button>
-            {throttled && (
-              <button onClick={handleResetThrottle} disabled={resetting}
-                title={lang === 'ru' ? 'Сбросить сохранённый лимит и попробовать синхронизацию снова' : 'Reset the stored throttle and try syncing again'}
-                className="flex items-center gap-2 bg-[var(--bg-input)] hover:bg-[var(--bg-input)] border border-[var(--border2)] disabled:opacity-40 disabled:cursor-not-allowed text-[var(--text-dim)] text-sm font-medium px-4 py-2 rounded-xl transition-colors">
-                {resetting ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-                {lang === 'ru' ? 'Сбросить лимит' : lang === 'en' ? 'Reset throttle' : 'Limitni tozalash'}
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
-
 // ─── Warehouses section ───────────────────────────────────────────────────────
 
 interface WarehouseRow { id: string; name: string; created_at: string }
@@ -892,7 +641,6 @@ interface ShopLite { id: string; name: string; marketplace: string; warehouse_id
 const MP_BADGE: Record<string, { label: string; color: string; bg: string }> = {
   uzum:          { label: 'UZ', color: '#494fdf', bg: 'rgba(73,79,223,0.15)'   },
   yandex_market: { label: 'YM', color: '#E8A000', bg: 'rgba(232,160,0,0.15)'  },
-  wildberries:   { label: 'WB', color: '#CB11AB', bg: 'rgba(203,17,171,0.15)' },
 }
 
 function WarehousesCard() {
@@ -1067,26 +815,19 @@ function WarehousesCard() {
 interface Props {
   uzumShop:          Shop | null
   yandexShop:        Shop | null
-  wbShop:            Shop | null
   shopCounts:        Record<string, { products: number; orders: number }>
   userId:            string
   telegramChatId?:   string | null
   telegramUsername?: string | null
 }
 
-export default function SettingsForm({ uzumShop, yandexShop, wbShop, shopCounts, userId, telegramChatId, telegramUsername }: Props) {
+export default function SettingsForm({ uzumShop, yandexShop, shopCounts, userId, telegramChatId, telegramUsername }: Props) {
   const { lang } = useLang()
   const t = translations[lang].dashboard.settingsPage
-  const allMpCards = [
+  const mpCards = [
     { shop: uzumShop, mp: 'uzum', Component: UzumCard },
     { shop: yandexShop, mp: 'yandex_market', Component: YandexCard },
-    { shop: wbShop, mp: 'wildberries', Component: WildberriesCard },
   ]
-  // Wildberries is sunset — its card renders nothing, so drop it from the grid
-  // entirely rather than leave an empty third column that shoves the remaining
-  // two cards to the left. Columns then match the visible card count so the
-  // pair fills the width evenly (restores to 3 when WB is re-enabled).
-  const mpCards = WB_ENABLED ? allMpCards : allMpCards.filter(c => c.mp !== 'wildberries')
   const connected = mpCards.filter(c => c.shop?.api_key_encrypted)
   const cardCols    = mpCards.length >= 3   ? 'md:grid-cols-3' : 'md:grid-cols-2'
   const summaryCols = connected.length >= 3 ? 'sm:grid-cols-3' : 'sm:grid-cols-2'
@@ -1097,7 +838,7 @@ export default function SettingsForm({ uzumShop, yandexShop, wbShop, shopCounts,
         <div className={`grid grid-cols-1 ${summaryCols} gap-3`}>
           {connected.map(({ mp }) => {
             const c = shopCounts[mp]
-            const labels: Record<string, string> = { uzum: 'Uzum', yandex_market: 'Yandex', wildberries: 'WB' }
+            const labels: Record<string, string> = { uzum: 'Uzum', yandex_market: 'Yandex' }
             return (
               <div key={mp} className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl px-4 py-3">
                 <p className="text-xs font-semibold mb-1" style={{ color: 'var(--c1)' }}>{labels[mp]}</p>

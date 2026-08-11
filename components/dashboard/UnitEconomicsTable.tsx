@@ -11,12 +11,10 @@ import ExportButton from '@/components/dashboard/ExportButton'
 import FulfillmentBadge from '@/components/dashboard/FulfillmentBadge'
 import { useLang } from '@/app/providers'
 import { translations } from '@/lib/i18n'
-import { WB_ENABLED } from '@/lib/feature-flags'
 
 const MP_META: Record<string, { label: string; short: string; color: string; bg: string }> = {
   uzum:          { label: 'Uzum',          short: 'UZ', color: '#494fdf', bg: 'rgba(73,79,223,0.12)'   },
   yandex_market: { label: 'Yandex Market', short: 'YM', color: '#E8A000', bg: 'rgba(232,160,0,0.12)'  },
-  wildberries:   { label: 'Wildberries',   short: 'WB', color: '#CB11AB', bg: 'rgba(203,17,171,0.12)' },
 }
 
 function fs(n: number) {
@@ -98,7 +96,7 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
   const [showSettings, setShowSettings] = useState(false)
   const [settings, setSettings]         = useState<UnitEcoSettings>(initSettings)
   const [draftSettings, setDraftSettings] = useState<UnitEcoSettings>(initSettings)
-  const [mpFilter, setMpFilter] = useState<'all' | 'uzum' | 'yandex_market' | 'wildberries'>('all')
+  const [mpFilter, setMpFilter] = useState<'all' | 'uzum' | 'yandex_market'>('all')
   const [editingSupplier, setEditingSupplier] = useState<string|null>(null)
   const supplierRef = useRef<HTMLInputElement>(null)
   // Inline cost editor: click the Tannarx cell to enter a new value —
@@ -365,7 +363,7 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
 
       {/* Marketplace tabs */}
       <div className="flex items-center gap-1.5 p-1 bg-[var(--bg-card2)] border border-[var(--border)] rounded-xl w-fit">
-        {((['all', 'uzum', 'yandex_market', 'wildberries'] as const).filter(mp => mp !== 'wildberries' || WB_ENABLED)).map(mp => (
+        {(['all', 'uzum', 'yandex_market'] as const).map(mp => (
           <button
             key={mp}
             onClick={() => setMpFilter(mp)}

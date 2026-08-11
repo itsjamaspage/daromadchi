@@ -20,7 +20,7 @@ function parseDays(v: string | undefined): number {
   return 365
 }
 
-const VALID_MARKETPLACES = ['uzum', 'yandex_market', 'wildberries'] as const
+const VALID_MARKETPLACES = ['uzum', 'yandex_market'] as const
 
 function parseMarketplace(params: Record<string, string> | undefined): MarketplaceType | undefined {
   const v = params?.mp
@@ -83,14 +83,12 @@ export default async function DashboardPage({ searchParams }: Props) {
   const hasShops   = allShops.length > 0
   const hasUzum    = allShops.some(s => s.marketplace === 'uzum')
   const hasYM      = allShops.some(s => s.marketplace === 'yandex_market')
-  const hasWB      = allShops.some(s => s.marketplace === 'wildberries')
 
-  const [allSlice, uzumSlice, ymSlice, wbSlice, stockGroups, syncInfo] = await Promise.all([
+  const [allSlice, uzumSlice, ymSlice, stockGroups, syncInfo] = await Promise.all([
     fetchSlice(days, undefined,       hasShops,  from, to),
     fetchSlice(days, 'uzum',          hasUzum,   from, to),
     fetchSlice(days, 'yandex_market', hasYM,     from, to),
-    fetchSlice(days, 'wildberries',   hasWB,     from, to),
-    // Cross-marketplace grouped stock — same SKU on Uzum + YM + WB collapses
+    // Cross-marketplace grouped stock — same SKU on Uzum + YM collapses
     // to one alert with marketplace badges instead of N duplicates.
     getStockGroups().catch(e => { console.error('[dashboard] getStockGroups', e); return [] }),
     getSyncInfo().catch(e => { console.error('[dashboard] getSyncInfo', e); return { lastSyncedAt: null, lastSyncFailed: false, alerts: [] } }),
@@ -100,7 +98,7 @@ export default async function DashboardPage({ searchParams }: Props) {
     <Suspense>
       <WelcomePopup hasShops={hasShops} />
       <DashboardClient
-        slices={{ all: allSlice, uzum: uzumSlice, yandex_market: ymSlice, wildberries: wbSlice }}
+        slices={{ all: allSlice, uzum: uzumSlice, yandex_market: ymSlice }}
         stockGroups={stockGroups}
         days={days}
         period={period}

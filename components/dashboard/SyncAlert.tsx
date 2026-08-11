@@ -6,7 +6,6 @@ import { AlertTriangle, X, RefreshCw } from 'lucide-react'
 import { useLang } from '@/app/providers'
 import { dashT } from '@/lib/dashT'
 import type { SyncAlert as SyncAlertType } from '@/lib/db/shop-context'
-import { WB_ENABLED } from '@/lib/feature-flags'
 
 interface Props {
   alerts: SyncAlertType[]
@@ -27,7 +26,6 @@ export default function SyncAlert({ alerts }: Props) {
       await Promise.allSettled([
         fetch('/api/uzum/sync', { method: 'POST' }),
         fetch('/api/yandex/sync', { method: 'POST' }),
-        ...(WB_ENABLED ? [fetch('/api/wildberries/sync', { method: 'POST' })] : []),
       ])
       router.refresh()
     } finally {

@@ -18,7 +18,7 @@ function fmt(n: number) {
   return new Intl.NumberFormat('uz-UZ').format(Math.round(n)) + " so'm"
 }
 
-const VALID_MP = ['uzum', 'yandex_market', 'wildberries'] as const
+const VALID_MP = ['uzum', 'yandex_market'] as const
 function parseMp(v: string | undefined): MarketplaceType | undefined {
   return (VALID_MP as readonly string[]).includes(v ?? '') ? v as MarketplaceType : undefined
 }

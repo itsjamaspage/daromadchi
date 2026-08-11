@@ -6,7 +6,6 @@ import { notifT, type NotifLang } from '@/lib/notif-i18n'
 
 const MP_FLAG: Record<string, string> = {
   uzum:          '🟣UZ',
-  wildberries:   '🟣WB',
   yandex_market: '🟡YM',
 }
 

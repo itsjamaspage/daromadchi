@@ -5,7 +5,6 @@ import { shops, userSettings, products, orders } from '@/lib/db/schema'
 import { eq, count } from 'drizzle-orm'
 import SettingsForm from './SettingsForm'
 import type { Shop } from '@/lib/types'
-import { WB_ENABLED } from '@/lib/feature-flags'
 
 export default async function SettingsPage() {
   const [t, user] = await Promise.all([getT(), getCurrentUser()])
@@ -13,7 +12,6 @@ export default async function SettingsPage() {
 
   let uzumShop:   Shop | null = null
   let yandexShop: Shop | null = null
-  let wbShop:     Shop | null = null
   const shopCounts: Record<string, { products: number; orders: number }> = {}
 
   if (user) {
@@ -33,14 +31,9 @@ export default async function SettingsPage() {
       } as Shop
       if (row.marketplace === 'uzum')          uzumShop   = s
       if (row.marketplace === 'yandex_market') yandexShop = s
-      if (row.marketplace === 'wildberries')   wbShop     = s
     }
 
-    // When WB is sunset (see lib/feature-flags.ts), hide any leftover
-    // WB shop counts — otherwise the "WB · 1 товаров" chip at the top
-    // of Settings would show stale numbers even though the rest of the
-    // app has stopped rendering WB data.
-    const countedShops = ([uzumShop, yandexShop, WB_ENABLED ? wbShop : null].filter(Boolean)) as Shop[]
+    const countedShops = ([uzumShop, yandexShop].filter(Boolean)) as Shop[]
     await Promise.all(countedShops.map(async s => {
       const [[{ total: pc }], [{ total: oc }]] = await Promise.all([
         db.select({ total: count() }).from(products).where(eq(products.shop_id, s.id)),
@@ -48,10 +41,6 @@ export default async function SettingsPage() {
       ])
       shopCounts[s.marketplace] = { products: pc ?? 0, orders: oc ?? 0 }
     }))
-    // Explicitly zero the WB row so the summary UI reads 0/0 instead
-    // of skipping the chip entirely (users had asked to see WB as
-    // "upcoming", not disappeared).
-    if (!WB_ENABLED) shopCounts['wildberries'] = { products: 0, orders: 0 }
   }
 
   let telegramChatId:   string | null = null
@@ -79,7 +68,6 @@ export default async function SettingsPage() {
       <SettingsForm
         uzumShop={uzumShop}
         yandexShop={yandexShop}
-        wbShop={wbShop}
         shopCounts={shopCounts}
         userId={user?.id ?? ''}
         telegramChatId={telegramChatId}

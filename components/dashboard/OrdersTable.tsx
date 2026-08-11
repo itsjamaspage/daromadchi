@@ -16,7 +16,6 @@ function fmt(n: number, lang: string) {
 const MP_META: Record<string, { short: string; color: string; bg: string }> = {
   uzum:          { short: 'UZ', color: '#494fdf', bg: 'rgba(73,79,223,0.12)'   },
   yandex_market: { short: 'YM', color: '#E8A000', bg: 'rgba(232,160,0,0.12)'  },
-  wildberries:   { short: 'WB', color: '#CB11AB', bg: 'rgba(203,17,171,0.12)' },
 }
 
 export function sellerOrderUrl(marketplace: string, extId: string | null, opts?: { shopIdExternal?: string | null; businessId?: string | null }): string | null {
@@ -28,7 +27,6 @@ export function sellerOrderUrl(marketplace: string, extId: string | null, opts?:
     if (biz && campaign) return `https://partner.market.yandex.ru/business/${biz}/orders?campaignId=${campaign}`
     return null
   }
-  if (marketplace === 'wildberries') return `https://seller.wildberries.ru/orders-and-returns/orders?search=${extId}`
   return null
 }
 

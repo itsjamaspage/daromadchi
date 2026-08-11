@@ -19,7 +19,7 @@ function getAllTerms(cat: CanonicalCategory): string[] {
     all.push(cat.name[lang])
     all.push(...cat.terms[lang])
   }
-  for (const mp of ['uzum', 'wildberries', 'yandex_market'] as const) {
+  for (const mp of ['uzum', 'yandex_market'] as const) {
     all.push(...cat.raw_examples[mp])
   }
   return all

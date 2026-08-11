@@ -2,7 +2,6 @@ import { unstable_cache } from 'next/cache'
 import { eq, ne, and, or, isNull, inArray, gte, lte, asc, sql, count } from 'drizzle-orm'
 import { db, shops, products, orders, orderItems, categoryAliases, categoriesCanonical } from '@/lib/db'
 import { getShopIds, getCurrentUserId } from '@/lib/db/shop-context'
-import { WB_ENABLED } from '@/lib/feature-flags'
 import type { Product, MarketplaceType } from '@/lib/types'
 
 export interface PaginatedProducts {
@@ -461,8 +460,6 @@ const _fetchProductsPaginated = unstable_cache(
       or(isNull(shops.shop_id_external), ne(shops.shop_id_external, 'DEMO')),
     ]
     if (marketplace) shopConditions.push(eq(shops.marketplace, marketplace as MarketplaceType))
-    // Same WB sunset as getUserShops — see lib/feature-flags.ts.
-    if (!WB_ENABLED) shopConditions.push(ne(shops.marketplace, 'wildberries'))
 
     const userShops = await db.select({ id: shops.id, marketplace: shops.marketplace, warehouse_id: shops.warehouse_id })
       .from(shops).where(and(...shopConditions))

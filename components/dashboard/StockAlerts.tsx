@@ -11,9 +11,8 @@ import type { MarketplaceType } from '@/lib/types'
 const MP_META: Record<MarketplaceType, { short: string; color: string; bg: string }> = {
   uzum:          { short: 'UZ', color: '#494fdf', bg: 'rgba(73,79,223,0.12)'   },
   yandex_market: { short: 'YM', color: '#E8A000', bg: 'rgba(232,160,0,0.12)'  },
-  wildberries:   { short: 'WB', color: '#CB11AB', bg: 'rgba(203,17,171,0.12)' },
 }
-const MP_ORDER: MarketplaceType[] = ['uzum', 'yandex_market', 'wildberries']
+const MP_ORDER: MarketplaceType[] = ['uzum', 'yandex_market']
 
 // A group is "alerting" when leftover has dropped to (or below) its threshold,
 // OR when the run-rate says fewer than 30 days of stock remain. Threshold

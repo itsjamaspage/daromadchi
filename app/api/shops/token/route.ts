@@ -6,13 +6,12 @@ import { getCurrentUser } from '@/lib/auth/session'
 import { db, shops } from '@/lib/db'
 import { encrypt } from '@/lib/crypto'
 import { validateMarketplaceToken } from '@/lib/validate-token'
-import { WB_ENABLED } from '@/lib/feature-flags'
 import { clearShopData } from '@/lib/db/clear-shop-data'
 import { logger } from '@/lib/logger'
 import { withErrorHandler } from '@/lib/api-handler'
 
 const TokenSchema = z.object({
-  marketplace: z.enum(['wildberries', 'uzum', 'yandex_market']),
+  marketplace: z.enum(['uzum', 'yandex_market']),
   token:       z.string().max(2000).optional(),
   campaignId:  z.string().max(200).optional(),
   // Yandex only. Persisted to shops.business_id so the netting-report
@@ -32,10 +31,6 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     return NextResponse.json({ ok: false, error: parsed.error.issues[0]?.message ?? 'Noto\'g\'ri ma\'lumot' }, { status: 400 })
   }
   const { marketplace, token, campaignId, businessId, shopName } = parsed.data
-
-  if (marketplace === 'wildberries' && !WB_ENABLED) {
-    return NextResponse.json({ ok: false, error: 'Wildberries integration is temporarily disabled.' }, { status: 400 })
-  }
 
   if (businessId?.trim() && !/^\d+$/.test(businessId.trim())) {
     return NextResponse.json({ ok: false, error: 'Business ID должен состоять только из цифр.' }, { status: 400 })

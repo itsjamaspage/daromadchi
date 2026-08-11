@@ -11,7 +11,7 @@ import { getT } from '@/lib/server-i18n'
 import type { MarketplaceType } from '@/lib/types'
 
 const PAGE_SIZE = 50
-const VALID_MARKETPLACES = ['uzum', 'yandex_market', 'wildberries'] as const
+const VALID_MARKETPLACES = ['uzum', 'yandex_market'] as const
 
 interface Props {
   searchParams: Promise<Record<string, string>>

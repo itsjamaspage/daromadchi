@@ -58,9 +58,8 @@ export async function GET(req: NextRequest) {
 
   const map = await getRealRatesBySku(user.id)
   const rate = map.get(sku)
-  // Normalize marketplace: the extension may send 'wb' (short) or
-  // 'wildberries' (full). Accept both.
-  const normalized = mp === 'wb' ? 'wildberries' : mp === 'yandex' ? 'yandex_market' : mp
+  // Normalize marketplace: the extension may send 'yandex' (short).
+  const normalized = mp === 'yandex' ? 'yandex_market' : mp
   if (!rate || rate.marketplace !== normalized) {
     return NextResponse.json({ ok: true, hasReal: false, sku, marketplace: normalized }, { headers })
   }

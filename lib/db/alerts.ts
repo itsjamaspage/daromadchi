@@ -1,7 +1,6 @@
 import { eq, and, ne, or, isNull, inArray, gte, sql } from 'drizzle-orm'
 import { db, shops, products, orderItems, orders, userSettings } from '@/lib/db'
 import { getCurrentUserId } from '@/lib/db/shop-context'
-import { WB_ENABLED } from '@/lib/feature-flags'
 import type { StockAlert, MarketplaceType } from '@/lib/types'
 
 export type { StockAlert }
@@ -17,8 +16,6 @@ export async function getStockAlerts(): Promise<StockAlert[]> {
       .from(shops).where(and(
         eq(shops.user_id, userId),
         or(isNull(shops.shop_id_external), ne(shops.shop_id_external, 'DEMO')),
-        // WB sunset — hide from Alerts too. Same gate as products/orders.
-        ...(WB_ENABLED ? [] : [ne(shops.marketplace, 'wildberries')]),
       )),
   ])
 
