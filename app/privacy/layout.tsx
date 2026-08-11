@@ -5,7 +5,7 @@ import BackButton from '@/app/help/BackButton'
 
 export const metadata: Metadata = {
   title: 'Privacy Policy — Daromadchi',
-  description: 'Daromadchi Chrome Extension privacy policy',
+  description: 'Daromadchi platform privacy policy — how personal data is collected, processed, stored and protected under the personal-data law of the Republic of Uzbekistan.',
   alternates: { canonical: '/privacy' },
 }
 
