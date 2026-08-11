@@ -5,6 +5,7 @@ import { getLang } from '@/lib/lang'
 import { dashT } from '@/lib/dashT'
 import { getUserPlanFull } from '@/lib/api/auth'
 import { getCurrentUser } from '@/lib/auth/session'
+import RequestDeletionButton from './RequestDeletionButton'
 
 export default async function AccountPage() {
   const user = await getCurrentUser()
@@ -142,6 +143,9 @@ export default async function AccountPage() {
           </div>
         </div>
       </div>
+
+      {/* Account deletion (request-based; operator processes it) */}
+      <RequestDeletionButton lang={lang} />
     </div>
   )
 }

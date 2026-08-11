@@ -68,12 +68,19 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     if (p.status === 'paid') return rpc(id, { perform_time: Date.now(), transaction: p.id, state: STATE.PAID })
 
     const now = Date.now()
+    // payments.user_id is nullable (SET NULL on account deletion), but an active
+    // checkout always has one; guard so a detached row can't crash completion.
     await Promise.all([
       db.update(payments).set({ status: 'paid', updated_at: new Date() }).where(eq(payments.id, p.id)),
-      db.update(users).set({
-        plan: p.plan as 'free' | 'pro' | 'pro_plus',
-        plan_expires_at: new Date(planExpiresAt(p.period_months)),
-      }).where(eq(users.id, p.user_id)),
+      p.user_id
+        ? db.update(users).set({
+            plan: p.plan as 'free' | 'pro' | 'pro_plus',
+            plan_expires_at: new Date(planExpiresAt(p.period_months)),
+            // Re-subscribe clears the post-cancellation retention clock so the
+            // account and its data are preserved (never reaches the 30-day purge).
+            plan_cancelled_at: null,
+          }).where(eq(users.id, p.user_id))
+        : Promise.resolve(),
     ])
     return rpc(id, { perform_time: now, transaction: p.id, state: STATE.PAID })
   }

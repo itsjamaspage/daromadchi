@@ -1,10 +1,13 @@
 name: DB · Backup Postgres
 
 # Nightly + on-demand backup of whatever DATABASE_URL points to on the
-# VPS. Runs pg_dump on the VPS itself (Postgres is bound to 127.0.0.1),
-# keeps 14 rotated dumps at /var/backups/daromadchi/, and uploads the
-# newest as a GitHub Actions artifact (30-day retention) so a fresh
-# restore-able copy also lives off the VPS.
+# VPS. Runs pg_dump on the VPS itself (Postgres is bound to 127.0.0.1)
+# and keeps 14 rotated dumps at /var/backups/daromadchi/.
+#
+# Backups stay ON OUR OWN INFRASTRUCTURE (the Hetzner VPS) only. The dump
+# is NOT copied off the VPS or uploaded to GitHub — the full DB (emails,
+# password hashes, payments, Telegram IDs, encrypted marketplace tokens)
+# must never leave our infrastructure, so GitHub is not a data processor.
 #
 # Trigger MANUALLY from the Actions tab any time you want an on-demand
 # dump. Otherwise runs itself nightly at 03:00 UTC — recovery point
@@ -84,23 +87,5 @@ jobs:
           # Keep the 14 newest dumps, delete the rest.
           ls -1t /var/backups/daromadchi/dump-*.dump 2>/dev/null | tail -n +15 | xargs -r rm -f
           echo "Retention: kept newest 14 dumps."
-
-          # Emit the newest dump's filename so the workflow can pull it.
-          echo "$OUT" > /tmp/last-backup-path
+          echo "Backup complete — dump stored on the VPS only, not copied off-host."
           REMOTE
-
-      - name: Copy dump back to runner for artifact upload
-        run: |
-          # Resolve the exact filename the VPS just wrote.
-          FILE=$(ssh -i ~/.ssh/deploy_key ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} 'cat /tmp/last-backup-path')
-          echo "Fetching $FILE from VPS..."
-          scp -i ~/.ssh/deploy_key "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:$FILE" ./backup.dump
-          ls -lh backup.dump
-
-      - name: Upload dump as workflow artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: daromadchi-db-backup
-          path: backup.dump
-          retention-days: 30
-          compression-level: 0  # already compressed by -Fc

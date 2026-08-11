@@ -13,8 +13,14 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
+  // Downgrade to free AND stamp plan_cancelled_at = now, which starts the 30-day
+  // post-cancellation retention clock (see /api/cron/retention-purge). The
+  // ne(plan,'free') guard means this fires once, on the paid→free transition, so
+  // the timestamp is not reset on later runs. Re-subscribing clears it (see the
+  // payme/click completion routes). Dormant never-paid free accounts keep
+  // plan_cancelled_at = null and are never purged.
   const rows = await db.update(users)
-    .set({ plan: 'free', plan_expires_at: null })
+    .set({ plan: 'free', plan_expires_at: null, plan_cancelled_at: new Date() })
     .where(and(
       ne(users.plan, 'free'),
       lt(users.plan_expires_at, new Date()),

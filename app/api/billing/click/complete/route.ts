@@ -38,12 +38,19 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     return NextResponse.json({ ...base, error: 0, error_note: 'Cancelled' })
   }
 
+  // payments.user_id is nullable (SET NULL on account deletion), but an active
+  // checkout always has one; guard so a detached row can't crash completion.
   await Promise.all([
     db.update(payments).set({ status: 'paid', updated_at: new Date() }).where(eq(payments.id, payment.id)),
-    db.update(users).set({
-      plan:            payment.plan as 'free' | 'pro' | 'pro_plus',
-      plan_expires_at: new Date(planExpiresAt(payment.period_months)),
-    }).where(eq(users.id, payment.user_id)),
+    payment.user_id
+      ? db.update(users).set({
+          plan:            payment.plan as 'free' | 'pro' | 'pro_plus',
+          plan_expires_at: new Date(planExpiresAt(payment.period_months)),
+          // Re-subscribe clears the post-cancellation retention clock so the
+          // account and its data are preserved (never reaches the 30-day purge).
+          plan_cancelled_at: null,
+        }).where(eq(users.id, payment.user_id))
+      : Promise.resolve(),
   ])
 
   return NextResponse.json({ ...base, error: 0, error_note: 'Success' })

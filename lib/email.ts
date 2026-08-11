@@ -175,3 +175,32 @@ export async function sendPasswordResetCode(email: string, code: string) {
     `),
   })
 }
+
+// Notifies the data-protection inbox that a logged-in user asked to have their
+// account deleted. Does NOT delete anything — an operator processes the request
+// via the admin delete endpoint. Sent to privacy@daromadchi.uz.
+const PRIVACY_INBOX = 'privacy@daromadchi.uz'
+export async function sendAccountDeletionRequest(userEmail: string, userId: string, requestedAt: string) {
+  await transporter.sendMail({
+    from: `"Daromadchi" <${process.env.SMTP_FROM ?? process.env.SMTP_USER}>`,
+    to: PRIVACY_INBOX,
+    replyTo: userEmail,
+    subject: `Account deletion request — ${userEmail}`,
+    html: emailLayout(`
+      <div>
+        <h1 style="font-size: 18px; font-weight: 800; color: #0e2233; margin: 0 0 12px;">Account deletion request</h1>
+        <p style="color: #334155; font-size: 14px; margin: 0 0 8px; line-height: 1.6;">
+          A logged-in user has requested deletion of their account and personal data.
+        </p>
+        <table role="presentation" cellpadding="0" cellspacing="0" style="width: 100%; font-size: 13px; color: #334155; margin: 12px 0;">
+          <tr><td style="padding: 4px 0; color: #64748b;">Email</td><td style="padding: 4px 0; font-weight: 600;">${userEmail}</td></tr>
+          <tr><td style="padding: 4px 0; color: #64748b;">User ID</td><td style="padding: 4px 0; font-family: monospace;">${userId}</td></tr>
+          <tr><td style="padding: 4px 0; color: #64748b;">Requested at</td><td style="padding: 4px 0;">${requestedAt}</td></tr>
+        </table>
+        <p style="color: #64748b; font-size: 12px; margin: 12px 0 0; line-height: 1.6;">
+          Process via the admin delete-account endpoint. Payment/tax records are retained (anonymized) per policy.
+        </p>
+      </div>
+    `),
+  })
+}
