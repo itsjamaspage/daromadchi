@@ -88,14 +88,31 @@ describe('off', () => {
   })
 })
 
-describe('backstop guard — never raise a listing with an open reserving order', () => {
-  it('holds a listing with an open reserving order instead of raising it', () => {
+describe('off (mirror-always) — no backstop, mirror available to every channel', () => {
+  it('mirrors available to a member WITH an open reserving order (target=available, NOT clamped)', () => {
     // Uzum listed 3 with 1 reserving order; YM listed 5, no order.
-    // MAX 5 − pending 1 = available 4. 'off' would push 4 to both, RAISING Uzum
-    // 3→4 and un-reserving its committed unit. Guard clamps Uzum to hold at 3.
+    // MAX 5 − pending 1 = available 4. In 'off' the reserve backstop is SKIPPED,
+    // so Uzum re-raises 3→4 to mirror the pool even though it holds a reserve.
+    // (This is exactly what lets Yandex re-raise 0→1 to match Uzum.)
     const { available, plans } = planStockWrites(
       [uzum({ listedStock: 3, pending: 1 }), ym({ listedStock: 5, pending: 0 })],
       'off',
+    )
+    assert.equal(available, 4)
+    const byShop = Object.fromEntries(plans.map(p => [p.member.shopId, p.target]))
+    assert.equal(byShop['uzum-shop'], 4)   // MIRRORED — raised 3→4 despite the open order
+    assert.equal(byShop['ym-shop'], 4)
+  })
+})
+
+describe('backstop guard (lock_last_unit / partition only) — never raise a listing with an open order', () => {
+  it('holds a listing with an open reserving order instead of raising it', () => {
+    // Same inputs as above but under lock_last_unit: available 4 (>=2) would push
+    // 4 to both, RAISING Uzum 3→4 and un-reserving its committed unit. The backstop
+    // (still active in non-off modes) clamps Uzum to hold at 3.
+    const { available, plans } = planStockWrites(
+      [uzum({ listedStock: 3, pending: 1 }), ym({ listedStock: 5, pending: 0 })],
+      'lock_last_unit',
     )
     assert.equal(available, 4)
     const byShop = Object.fromEntries(plans.map(p => [p.member.shopId, p.target]))
@@ -108,7 +125,7 @@ describe('backstop guard — never raise a listing with an open reserving order'
     // rise 3→5 (a real restock, nothing committed against it).
     const { available, plans } = planStockWrites(
       [uzum({ listedStock: 3, pending: 0 }), ym({ listedStock: 5, pending: 0 })],
-      'off',
+      'lock_last_unit',
     )
     assert.equal(available, 5)
     const uzumPlan = plans.find(p => p.member.shopId === 'uzum-shop')!

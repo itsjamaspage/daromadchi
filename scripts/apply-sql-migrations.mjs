@@ -54,6 +54,9 @@ const MIGRATIONS = [
   // Records signup consent (Privacy/Terms/Cookies) for ZRU-547. Additive +
   // idempotent (ADD COLUMN IF NOT EXISTS).
   'migrations/migrations/058_users_consented_at.sql',
+  // Mirror-always: migrate lock_last_unit groups -> 'off' and flip the column
+  // default. Idempotent (UPDATE by value + ALTER SET DEFAULT).
+  'migrations/migrations/059_oversell_mode_off_default.sql',
 ]
 
 function loadDatabaseUrl() {

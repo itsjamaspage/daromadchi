@@ -159,17 +159,17 @@ async function loadGroups(userId: string): Promise<{
 }
 
 // Resolve the group's oversell policy from the primary (lowest-priority)
-// stock_sync shop, with an explicit safe fallback. `writable` is guaranteed
-// non-empty and stock_sync-only by the caller, so the primary is never
-// read-only; the ?? 'lock_last_unit' still guards a missing/unknown value so
-// the result is never undefined.
+// stock_sync shop, with an explicit fallback. `writable` is guaranteed non-empty
+// and stock_sync-only by the caller, so the primary is never read-only; the
+// ?? 'off' still guards a missing/unknown value so the result is never
+// undefined. Default is 'off' (mirror-always) — matches the column default.
 function resolveOversellPolicy(
   writable: SyncMember[],
   shopsById: Map<string, ShopRow>,
 ): { mode: OversellMode; sourceShopId: string | null } {
   const primary = [...writable].sort((a, b) => a.priority - b.priority)[0]
-  if (!primary) return { mode: 'lock_last_unit', sourceShopId: null }
-  const mode = shopsById.get(primary.shopId)?.oversell_mode ?? 'lock_last_unit'
+  if (!primary) return { mode: 'off', sourceShopId: null }
+  const mode = shopsById.get(primary.shopId)?.oversell_mode ?? 'off'
   return { mode, sourceShopId: primary.shopId }
 }
 
@@ -293,8 +293,8 @@ export async function syncStockSyncGroups(opts: RunOptions): Promise<StockSyncRu
     groupsConsidered++
 
     // Oversell policy: the primary (lowest-priority) stock_sync shop decides.
-    // Explicit fallback to lock_last_unit (the safe default) if — for any reason
-    // — the primary is missing or carries no policy. Never resolve to undefined.
+    // Default 'off' (mirror-always) if — for any reason — the primary is missing
+    // or carries no policy. Never resolve to undefined.
     const { mode: oversellMode, sourceShopId } = resolveOversellPolicy(writableMembers, shopsById)
 
     const { available, plans } = planStockWrites(group.members, oversellMode)
@@ -418,6 +418,8 @@ export async function syncStockSyncGroups(opts: RunOptions): Promise<StockSyncRu
           name: product.title,
           colorKey: product.variant_color,
           price: product.selling_price != null ? Number(product.selling_price) : null,
+          // GROUP shared free-to-sell after this update — drives the restock line.
+          available,
         })
       }
     }

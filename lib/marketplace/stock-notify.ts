@@ -45,6 +45,7 @@ export interface StockUpdateEvent {
   target: number                                // number written
   ok: boolean                                   // true only when the write actually succeeded
   reason?: string                               // failure reason when !ok
+  available: number                             // GROUP free-to-sell after the update (shared pool)
   // Product identity for the header line (all optional — a group with none still
   // renders the SKU alone). Same physical product across the group, so one set.
   name?: string | null                          // products.title — full product name
@@ -114,8 +115,23 @@ export function buildDigestMessage(groups: { sku: string; events: StockUpdateEve
         lines.push(`   ⚠️ ${label(e.targetMarketplace)}: не обновлён${why} — обновите вручную`)
       }
     }
+    // Restock warning on the GROUP's shared free-to-sell (not per-marketplace):
+    // fires whenever the post-update pool is below 5 (4 or fewer). The dispatcher
+    // never dedups a group whose available < 5, so this sends on every such sale.
+    const groupAvailable = first?.available
+    if (typeof groupAvailable === 'number' && groupAvailable < 5) {
+      lines.push(`   ⚠️ Осталось ${groupAvailable} — пополните склад`)
+    }
   }
   return lines.join('\n')
+}
+
+// A group is force-included in the digest (bypassing per-store dedup) when its
+// shared free-to-sell is below the restock threshold, so the restock warning
+// resends on every qualifying sale even if the per-store X→Y is unchanged.
+const RESTOCK_THRESHOLD = 5
+function belowRestockThreshold(events: StockUpdateEvent[]): boolean {
+  return events.some(e => typeof e.available === 'number' && e.available < RESTOCK_THRESHOLD)
 }
 
 function fingerprint(e: StockUpdateEvent): { status: string; target: number; reason: string | null } {
@@ -156,7 +172,10 @@ export async function notifyStockUpdates(userId: string, events: StockUpdateEven
     // (treat as new) so a real change is never silently swallowed.
     const changed: { sku: string; events: StockUpdateEvent[] }[] = []
     for (const [sku, evs] of bySku) {
-      let skuIsNew = false
+      // A group below the restock threshold ALWAYS sends (bypasses dedup), so the
+      // restock warning resends on every qualifying sale even if the per-store
+      // X→Y outcome is unchanged.
+      let skuIsNew = belowRestockThreshold(evs)
       for (const e of evs) {
         const fp = fingerprint(e)
         try {

@@ -148,7 +148,13 @@ export function planStockWrites(members: SyncMember[], mode: OversellMode): Stoc
     // it — a unit on it is already committed at the PVZ, so raising would
     // un-reserve it and risk an oversell. Only lower or hold. Legitimate restock
     // increases are still allowed when the listing has no open reserving orders.
-    if (m.pending > 0 && target > m.listedStock) target = m.listedStock
+    //
+    // SKIPPED in 'off' (mirror-always) mode: the owner accepts the last-unit
+    // oversell so every writable channel mirrors the true free-to-sell number —
+    // even a member holding a reserve re-raises to `available` (this is what lets
+    // Yandex re-raise 0→1 to match Uzum). The backstop still applies for
+    // lock_last_unit / partition.
+    if (mode !== 'off' && m.pending > 0 && target > m.listedStock) target = m.listedStock
     return { member: m, target, willWrite: target !== m.listedStock }
   })
   return { available, plans }

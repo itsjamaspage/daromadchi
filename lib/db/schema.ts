@@ -133,8 +133,11 @@ export const shops = pgTable('shops', {
   // nothing. First enable + this toggle are dry-run; live writes happen only
   // after it's turned off.
   stock_sync_dry_run:       boolean('stock_sync_dry_run').default(true).notNull(),
-  // How to allocate the last shared unit across marketplaces (Phase 3).
-  oversell_mode:            oversellModeEnum('oversell_mode').default('lock_last_unit').notNull(),
+  // How to allocate the last shared unit across marketplaces. Default 'off' =
+  // mirror the true free-to-sell number to every channel (incl. the last unit).
+  // 'lock_last_unit'/'partition' remain valid enum values but are no longer the
+  // default; migration 059 also migrated existing lock_last_unit rows → 'off'.
+  oversell_mode:            oversellModeEnum('oversell_mode').default('off').notNull(),
   // Lower number = higher priority; under lock_last_unit the highest-priority
   // (lowest number) channel keeps the last unit at qty=1 while others go to 0.
   // Migration sets existing Uzum rows to 0 (primary); everything else is 100.

@@ -11,7 +11,7 @@ import { buildDigestMessage, type StockUpdateEvent } from './stock-notify'
 const ev = (o: Partial<StockUpdateEvent> & { sku: string }): StockUpdateEvent => ({
   targetMarketplace: 'yandex_market',
   originMarketplace: 'uzum',
-  listed: 1, target: 0, ok: true,
+  listed: 1, target: 0, ok: true, available: 10,   // default >= 5 → no restock line
   ...o,
 })
 
@@ -56,6 +56,13 @@ describe('buildDigestMessage', () => {
     // • JMBLK — Куртка зимняя · Чёрный · 450 000 сум (продажа на Uzum):
     assert.match(msg, /• JMBLK — Куртка зимняя · Чёрный · 450 000 сум \(продажа на Uzum\):/)
     assert.match(msg, /✅ Uzum: 2→1/)
+  })
+
+  it('appends the restock warning when group free-to-sell < 5, omits it at >= 5', () => {
+    const low = buildDigestMessage([{ sku: 'JMBLK', events: [ev({ sku: 'JMBLK', available: 3 })] }])
+    assert.match(low, /⚠️ Осталось 3 — пополните склад/)
+    const ok = buildDigestMessage([{ sku: 'JMBLK', events: [ev({ sku: 'JMBLK', available: 5 })] }])
+    assert.doesNotMatch(ok, /пополните склад/)
   })
 
   it('humanizes known skip reasons', () => {
