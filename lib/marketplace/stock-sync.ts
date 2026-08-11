@@ -14,10 +14,10 @@
 
 import { revalidateTag } from 'next/cache'
 import { and, eq, inArray, isNull, sql } from 'drizzle-orm'
-import { db, shops, products, orders, orderItems, stockSyncState } from '@/lib/db'
+import { db, shops, products, orders, orderItems, stockSyncState, stockNotifyOrderSeen } from '@/lib/db'
 import { logger } from '@/lib/logger'
 import { pushStock, type StockWriteStatus } from '@/lib/marketplace/stock-writer'
-import { planStockWrites, planGroupWrites, stockWriteBack, type SyncMember, type OversellMode } from '@/lib/marketplace/stock-allocation'
+import { planStockWrites, planGroupWrites, stockWriteBack, detectNewOrders, type SyncMember, type OversellMode } from '@/lib/marketplace/stock-allocation'
 import { reservingOrderCondition } from '@/lib/marketplace/reserving-orders'
 import { handleOversell } from '@/lib/marketplace/oversell'
 import { notifyStockUpdates, type StockUpdateEvent } from '@/lib/marketplace/stock-notify'
@@ -90,9 +90,17 @@ interface RunOptions {
   onlyMatchKey?: string
 }
 
+interface SyncGroup {
+  members: SyncMember[]
+  products: Map<string, ProductRow>
+  /** Ids (orders.id) of the reserving orders drawing on this group right now —
+   *  the raw material for the new-order notification gate (detectNewOrders). */
+  reservingOrderIds: Set<string>
+}
+
 async function loadGroups(userId: string): Promise<{
   shopsById: Map<string, ShopRow>
-  groups: Map<string, { members: SyncMember[]; products: Map<string, ProductRow> }>
+  groups: Map<string, SyncGroup>
 }> {
   const shopRows = (await db.select({
     id: shops.id,
@@ -106,10 +114,10 @@ async function loadGroups(userId: string): Promise<{
 
   const shopsById = new Map(shopRows.filter(s => IN_SCOPE.includes(s.marketplace)).map(s => [s.id, s]))
   const shopIds = [...shopsById.keys()]
-  const groups = new Map<string, { members: SyncMember[]; products: Map<string, ProductRow> }>()
+  const groups = new Map<string, SyncGroup>()
   if (shopIds.length === 0) return { shopsById, groups }
 
-  const [prodRows, pendingRows] = await Promise.all([
+  const [prodRows, pendingRows, reservingRows] = await Promise.all([
     db.select({
       id: products.id,
       shop_id: products.shop_id,
@@ -133,17 +141,37 @@ async function loadGroups(userId: string): Promise<{
       // full. Shared condition, see reservingOrderCondition / RESERVING_RAW_STATUSES.
       .where(and(inArray(orders.shop_id, shopIds), reservingOrderCondition()))
       .groupBy(orderItems.product_id),
+    // Per-product reserving ORDER ids (distinct) — feeds the new-order gate. Same
+    // reserving predicate as the pending sum above, but keeps order identity so a
+    // genuinely new sale can be told apart from a repeat reconcile write.
+    db.select({
+      product_id: orderItems.product_id,
+      order_id: orders.id,
+    }).from(orderItems)
+      .innerJoin(orders, eq(orderItems.order_id, orders.id))
+      .where(and(inArray(orders.shop_id, shopIds), reservingOrderCondition()))
+      .groupBy(orderItems.product_id, orders.id),
   ])
 
   const pendingByProduct = new Map(pendingRows.map(r => [r.product_id, Number(r.qty)]))
+  // product_id → reserving order ids on it (product_id can be null when a Yandex
+  // line never linked to a products row — those are un-attributable, exactly as
+  // the pending sum drops them, so nothing over-counts).
+  const orderIdsByProduct = new Map<string, string[]>()
+  for (const r of reservingRows) {
+    if (!r.product_id || !r.order_id) continue
+    const arr = orderIdsByProduct.get(r.product_id)
+    if (arr) arr.push(r.order_id); else orderIdsByProduct.set(r.product_id, [r.order_id])
+  }
 
   for (const p of prodRows) {
     const shop = shopsById.get(p.shop_id)
     if (!shop) continue
     const key = p.sku ? normalizeKey(p.sku) : `#${p.id}`
     let g = groups.get(key)
-    if (!g) { g = { members: [], products: new Map() }; groups.set(key, g) }
+    if (!g) { g = { members: [], products: new Map(), reservingOrderIds: new Set() }; groups.set(key, g) }
     g.products.set(p.id, p)
+    for (const oid of orderIdsByProduct.get(p.id) ?? []) g.reservingOrderIds.add(oid)
     g.members.push({
       productId: p.id,
       shopId: p.shop_id,
@@ -156,6 +184,53 @@ async function loadGroups(userId: string): Promise<{
     })
   }
   return { shopsById, groups }
+}
+
+// ─── New-order notification gate: seen reserving-order sets ────────────────────
+// The digest fires on a genuinely NEW reserving order (a real sale), never on a
+// repeat reconcile write. We remember, per (user, match_key), the reserving order
+// ids we've already accounted for; detectNewOrders() compares the current set.
+
+function sameStringSet(a: Set<string>, b: Set<string>): boolean {
+  if (a.size !== b.size) return false
+  for (const x of a) if (!b.has(x)) return false
+  return true
+}
+
+// Batch-load every group's seen reserving-order set for the user (one query).
+// On a read failure returns an empty map → a group's set reads as empty →
+// detectNewOrders treats its open orders as new (FAIL-OPEN: notify, with the
+// (target, available) dedup as backstop) rather than silently swallowing a sale.
+async function loadSeenOrderIds(userId: string): Promise<Map<string, Set<string>>> {
+  const out = new Map<string, Set<string>>()
+  try {
+    const rows = await db.select({
+      key: stockNotifyOrderSeen.match_key,
+      ids: stockNotifyOrderSeen.seen_order_ids,
+    }).from(stockNotifyOrderSeen).where(eq(stockNotifyOrderSeen.user_id, userId))
+    for (const r of rows) {
+      const ids = Array.isArray(r.ids) ? (r.ids as unknown[]).filter((x): x is string => typeof x === 'string') : []
+      out.set(r.key, new Set(ids))
+    }
+  } catch (err) {
+    logger.warn('stock_notify_order_seen_read_failed', { userId, error: String(err).slice(0, 200) })
+  }
+  return out
+}
+
+// Persist the current reserving-order set for one group (upsert). Best-effort —
+// a miss only risks one duplicate/missed gate later, never a crash.
+async function saveSeenOrderIds(userId: string, matchKey: string, ids: string[]): Promise<void> {
+  try {
+    await db.insert(stockNotifyOrderSeen).values({
+      user_id: userId, match_key: matchKey, seen_order_ids: ids, updated_at: new Date(),
+    }).onConflictDoUpdate({
+      target: [stockNotifyOrderSeen.user_id, stockNotifyOrderSeen.match_key],
+      set: { seen_order_ids: ids, updated_at: new Date() },
+    })
+  } catch (err) {
+    logger.warn('stock_notify_order_seen_write_failed', { userId, error: String(err).slice(0, 200) })
+  }
 }
 
 // Resolve the group's oversell policy from the primary (lowest-priority)
@@ -246,6 +321,10 @@ export async function syncStockSyncGroups(opts: RunOptions): Promise<StockSyncRu
   // a target (Uzum barcode / YM shopSku+warehouse) instead of skipping.
   await ensureWriteIdentifiers(opts.userId)
   const { shopsById, groups } = await loadGroups(opts.userId)
+  // Seen reserving-order sets per group — the new-order notification gate. Loaded
+  // once for the whole run; per-group updates are written back only when the set
+  // actually changed, so idle cycles issue zero writes here.
+  const seenByKey = await loadSeenOrderIds(opts.userId)
   const entries: StockSyncLogEntry[] = []
   // Collected across the run and dispatched once at the end (best-effort). Only
   // actual write attempts (sent / error / blocked) become notification events.
@@ -291,6 +370,20 @@ export async function syncStockSyncGroups(opts: RunOptions): Promise<StockSyncRu
     const writableMembers = group.members.filter(m => m.apiMode === 'stock_sync')
     if (writableMembers.length === 0) continue // Step A only (display), no writes
     groupsConsidered++
+
+    // New-order NOTIFICATION gate. A digest fires ONLY when a genuinely new
+    // reserving order appeared for this group since the last run — a real sale.
+    // A pure reconcile write (an idempotent stock correction with no new order —
+    // e.g. the mirror re-asserting a listing, a restock, an identifier backfill)
+    // still updates the marketplaces, but does so SILENTLY. This is the PRIMARY
+    // gate; the (target, available) dedup in notifyStockUpdates is the secondary
+    // safety for concurrent triggers. The reconcile WRITE path below is NOT gated
+    // — only the notification is.
+    const seen = seenByKey.get(matchKey) ?? new Set<string>()
+    const { hasNewOrder, nextSeen } = detectNewOrders([...group.reservingOrderIds], [...seen])
+    if (!sameStringSet(seen, group.reservingOrderIds)) {
+      await saveSeenOrderIds(opts.userId, matchKey, nextSeen)
+    }
 
     // Oversell policy: the primary (lowest-priority) stock_sync shop decides.
     // Default 'off' (mirror-always) if — for any reason — the primary is missing
@@ -418,9 +511,15 @@ export async function syncStockSyncGroups(opts: RunOptions): Promise<StockSyncRu
       // (real failure) — AND on an ACTIONABLE skip (missing identifier/token the
       // seller must fix), so a stock update is never silently dropped. Benign
       // skips (stale_version, not_stock_sync, killed switch) stay silent.
+      //
+      // GATED on hasNewOrder: only a run that saw a genuinely new reserving order
+      // for this group emits notification events. A pure reconcile write (no new
+      // order) has already corrected the marketplace above; it does so SILENTLY —
+      // no digest, no restock line. This is what stops the same 2→1 correction
+      // re-notifying every cron cycle.
       const actionableSkip = result.status === 'skipped'
         && !!result.reason && ACTIONABLE_SKIP_REASONS.has(result.reason)
-      if (result.status === 'sent' || result.status === 'error' || result.status === 'blocked' || actionableSkip) {
+      if (hasNewOrder && (result.status === 'sent' || result.status === 'error' || result.status === 'blocked' || actionableSkip)) {
         // Origin = the other group member with the most stock — the store that
         // held the unit and sold it, decrementing its own count.
         const origin = group.members

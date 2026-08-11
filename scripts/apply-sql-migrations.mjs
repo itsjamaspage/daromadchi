@@ -61,6 +61,10 @@ const MIGRATIONS = [
   // webhook+cron duplicate digest; restock line rides dedup). Additive +
   // idempotent (ADD COLUMN IF NOT EXISTS).
   'migrations/migrations/060_stock_notify_last_available.sql',
+  // Decouples the digest from reconcile writes: tracks seen reserving orders per
+  // group so a notification fires on a NEW order, not on every stock correction.
+  // Additive + idempotent (CREATE TABLE/INDEX IF NOT EXISTS).
+  'migrations/migrations/061_stock_notify_order_seen.sql',
 ]
 
 function loadDatabaseUrl() {

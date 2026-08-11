@@ -193,3 +193,29 @@ export function planGroupWrites(plan: StockPlan): PlannedWrite[] {
 export function stockWriteBack(status: string, target: number, currentStock: number): number | null {
   return status === 'sent' && currentStock !== target ? target : null
 }
+
+/**
+ * NEW-ORDER detection for the notification gate. Given the group's CURRENT
+ * reserving-order ids and the set we've already accounted for (notified about),
+ * decide whether a genuinely NEW reserving order appeared this cycle — a real
+ * sale that drew down stock — and return the set to persist for next time.
+ *
+ *   • hasNewOrder — true iff some current id was NOT previously seen. This is the
+ *     PRIMARY notification gate: a pure reconcile write (a stock correction with
+ *     no new order) leaves the set unchanged → hasNewOrder=false → SILENT.
+ *   • nextSeen — the current reserving set. Ids that LEFT the window (order
+ *     delivered) are pruned; an id never re-enters reserving once delivered, so
+ *     pruning can't resurrect a stale "new". Keeps the set bounded by open orders.
+ *
+ * Order arrival/removal within one cycle is handled by id identity, not counts or
+ * timestamps: A delivered + B arrived in the same window still flags B as new
+ * (different id) even though the count is unchanged.
+ */
+export function detectNewOrders(
+  currentIds: readonly string[],
+  seenIds: readonly string[],
+): { hasNewOrder: boolean; nextSeen: string[] } {
+  const seen = new Set(seenIds)
+  const hasNewOrder = currentIds.some(id => !seen.has(id))
+  return { hasNewOrder, nextSeen: [...new Set(currentIds)] }
+}

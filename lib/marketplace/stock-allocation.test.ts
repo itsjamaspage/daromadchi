@@ -2,7 +2,7 @@
 // Run: node --import tsx --test lib/marketplace/stock-allocation.test.ts
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
-import { computeAvailable, planStockWrites, planGroupWrites, stockWriteBack, type SyncMember } from './stock-allocation'
+import { computeAvailable, planStockWrites, planGroupWrites, stockWriteBack, detectNewOrders, type SyncMember } from './stock-allocation'
 
 function member(over: Partial<SyncMember>): SyncMember {
   return {
@@ -175,6 +175,41 @@ describe('stockWriteBack — keep the DB copy in lockstep with the live listing'
   })
   it('returns null when the copy already equals the target (no redundant write)', () => {
     assert.equal(stockWriteBack('sent', 1, 1), null)
+  })
+})
+
+describe('detectNewOrders — notify on a NEW order, stay silent on reconcile', () => {
+  it('flags a new reserving order (id not previously seen)', () => {
+    const { hasNewOrder, nextSeen } = detectNewOrders(['orderA'], [])
+    assert.equal(hasNewOrder, true)              // first sighting of orderA → notify
+    assert.deepEqual(nextSeen.sort(), ['orderA'])
+  })
+
+  it('a pure reconcile run (same reserving set) is NOT a new order → silent', () => {
+    const { hasNewOrder, nextSeen } = detectNewOrders(['orderA'], ['orderA'])
+    assert.equal(hasNewOrder, false)             // no new id → reconcile only, silent
+    assert.deepEqual(nextSeen, ['orderA'])
+  })
+
+  it('two consecutive runs with the SAME single order → new once, then silent', () => {
+    // Run 1: nothing seen yet → new.
+    const run1 = detectNewOrders(['orderA'], [])
+    assert.equal(run1.hasNewOrder, true)
+    // Run 2: seen carries orderA from run 1 → not new.
+    const run2 = detectNewOrders(['orderA'], run1.nextSeen)
+    assert.equal(run2.hasNewOrder, false)        // one digest total, not two
+  })
+
+  it('detects a NEW order even when count is unchanged (A delivered, B arrived)', () => {
+    const { hasNewOrder, nextSeen } = detectNewOrders(['orderB'], ['orderA'])
+    assert.equal(hasNewOrder, true)              // B is new despite same count of 1
+    assert.deepEqual(nextSeen, ['orderB'])       // A pruned (left the reserving window)
+  })
+
+  it('an order LEAVING the window (delivered) is not a new order → silent', () => {
+    const { hasNewOrder, nextSeen } = detectNewOrders([], ['orderA'])
+    assert.equal(hasNewOrder, false)             // set shrank, nothing new
+    assert.deepEqual(nextSeen, [])
   })
 })
 

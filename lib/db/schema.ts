@@ -795,6 +795,28 @@ export const stockNotifyState = pgTable('stock_notify_state', {
   index('stock_notify_state_user_id_idx').on(t.user_id),
 ])
 
+/* ── 30c. stock_notify_order_seen ────────────────────────────────────────────── */
+// Which RESERVING orders a SKU group has ALREADY been notified about, so the
+// stock digest fires on a genuinely NEW order (a real sale) — NOT on a pure
+// reconcile write (an idempotent stock correction with no new order). One row per
+// (user, match_key) holding the set of reserving order ids currently accounted
+// for. A run whose reserving-order set contains an id NOT in this set = a new
+// sale drew down stock → the group may notify. Ids that left the reserving window
+// are pruned (an order never re-enters reserving once delivered), keeping the set
+// bounded by the open orders on that SKU.
+export const stockNotifyOrderSeen = pgTable('stock_notify_order_seen', {
+  id:             uuid('id').primaryKey().defaultRandom(),
+  user_id:        uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  // Normalized match key identifying the cross-marketplace SKU group.
+  match_key:      text('match_key').notNull(),
+  // The reserving order ids (orders.id) currently accounted for on this group.
+  seen_order_ids: jsonb('seen_order_ids').notNull().default([]),
+  updated_at:     timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (t) => [
+  uniqueIndex('stock_notify_order_seen_user_key_unique').on(t.user_id, t.match_key),
+  index('stock_notify_order_seen_user_id_idx').on(t.user_id),
+])
+
 /* ── 31. order_cancel_log ────────────────────────────────────────────────────── */
 // Audit for the oversell cancel path — a SEPARATE sanctioned write from stock,
 // with its own allowlist. One row per attempt, one-click (human) or auto.
