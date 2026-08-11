@@ -74,9 +74,10 @@ export const users = pgTable('users', {
   plan:            planTypeEnum('plan').default('free').notNull(),
   plan_expires_at: timestamp('plan_expires_at', { withTimezone: true }),
   trial_ends_at:   timestamp('trial_ends_at', { withTimezone: true }),
-  // Set when a PAID plan lapses to free (expire-plans), cleared on re-subscribe.
-  // The 30-day post-cancellation retention purge (/api/cron/retention-purge)
-  // keys off this: null = never cancelled (dormant free accounts are NOT purged).
+  // Legacy column (migration 055). Formerly stamped by expire-plans to drive a
+  // 30-day post-cancellation auto-purge, which has been removed. Retained as an
+  // unused nullable column to avoid a destructive migration; no code reads or
+  // writes it.
   plan_cancelled_at: timestamp('plan_cancelled_at', { withTimezone: true }),
   created_at:      timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updated_at:      timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
@@ -402,7 +403,7 @@ export const payments = pgTable('payments', {
   // Nullable + SET NULL on user delete: financial/tax records must SURVIVE
   // account deletion (Uzbek accounting law), so the payer link is severed but
   // the row (amount/date/provider/txn/plan/period/status) is retained. See
-  // migration 055 and /api/cron/retention-purge (which detaches before delete).
+  // migration 055.
   user_id:                  uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
   // Payer email snapshotted at payment creation, retained for tax/accounting.
   // Independent of user_id: survives account deletion (when user_id -> null) so
