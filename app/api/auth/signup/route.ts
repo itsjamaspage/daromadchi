@@ -12,6 +12,10 @@ const SignupSchema = z.object({
   email:    z.string().email('Email noto\'g\'ri formatda'),
   password: z.string().min(6, 'Parol kamida 6 ta belgi bo\'lishi kerak').max(128),
   name:     z.string().max(100).optional(),
+  // Lawful-consent gate (ZRU-547): the client sends this only when the user
+  // ticked the Privacy/Terms/Cookies checkbox. Enforced server-side below so
+  // consent cannot be bypassed by calling the API directly.
+  consent:  z.boolean().optional(),
 })
 
 const signupRateMap = new Map<string, { count: number; resetAt: number }>()
@@ -52,7 +56,17 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message ?? 'Noto\'g\'ri ma\'lumot' }, { status: 400 })
   }
-  const { email, password, name } = parsed.data
+  const { email, password, name, consent } = parsed.data
+
+  // Consent is mandatory for account creation (ZRU-547). The UI disables the
+  // submit button until the box is ticked; this is the server-side backstop.
+  if (consent !== true) {
+    return NextResponse.json(
+      { error: 'Davom etish uchun Maxfiylik siyosati, Foydalanish shartlari va Cookie siyosatiga rozilik bildiring.' },
+      { status: 400 },
+    )
+  }
+
   const emailLower = email.toLowerCase()
 
   const existing = await db.query.users.findFirst({
@@ -69,6 +83,7 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     email: emailLower,
     full_name: name?.trim() ?? null,
     password_hash: passwordHash,
+    consented_at: new Date(),
   }).returning({ id: users.id })
 
   let needsVerification = false

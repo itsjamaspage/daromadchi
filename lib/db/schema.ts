@@ -71,6 +71,10 @@ export const users = pgTable('users', {
   phone:           text('phone'),
   password_hash:   text('password_hash'),
   email_verified:  timestamp('email_verified'),
+  // Timestamp of consent to the Privacy Policy / Terms / Cookie Policy at signup
+  // (ZRU-547 lawful-consent record). Set on account creation for BOTH the
+  // email/password and Google paths. Migration 058.
+  consented_at:    timestamp('consented_at', { withTimezone: true }),
   plan:            planTypeEnum('plan').default('free').notNull(),
   plan_expires_at: timestamp('plan_expires_at', { withTimezone: true }),
   trial_ends_at:   timestamp('trial_ends_at', { withTimezone: true }),

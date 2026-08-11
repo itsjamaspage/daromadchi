@@ -363,10 +363,10 @@
     <div class="info-bar">
       <div class="info-title">Daromadchi — Multi-Marketplace Seller Dashboard</div>
       <div class="info-text">
-        Syncs orders, inventory, and prices across Uzum Market, Yandex Market, and Wildberries.
-        Web dashboard + Chrome Extension for seller analytics and automation.
+        Syncs orders, inventory, and stock across <strong>Uzum Market and Yandex Market</strong>.
+        Web dashboard + Chrome Extension for seller analytics.
         Marketplace integrations are <strong>read-only by default</strong>; the one exception is the opt-in, per-shop Stock-sync mode, which writes only the stock quantity (ostatok) through a single audited writer after the seller consents.
-        Auth via NextAuth.js v5 (JWT + email verification). Self-hosted on Hetzner VPS.
+        Auth via NextAuth (Auth.js) v5 — Credentials + bcrypt, optional Google OAuth, JWT sessions, email verification. Google Analytics 4 is consent-gated. Self-hosted on a Hetzner VPS (Finland / Helsinki).
       </div>
       <div class="legend" id="legendFilter">
         <div class="legend-item" data-filter="client"><div class="legend-dot client"></div>Client</div>
@@ -381,7 +381,7 @@
 
     <div class="header">
       <div class="title">SYSTEM ARCHITECTURE</div>
-      <div class="subtitle">Click any component for details — 50+ routes, 21 database tables, 3 marketplaces</div>
+      <div class="subtitle">Click any component for details — 70+ API routes · 34 database tables · Uzum + Yandex Market</div>
     </div>
 
     <div class="arch-container" id="archContainer">
@@ -396,12 +396,12 @@
           </div>
           <div class="card client-card" data-id="chrome-ext">
             <div class="card-name"><span class="status-dot green"></span>Chrome Extension</div>
-            <div class="card-desc">Marketplace browser automation. Price/stock monitoring, product tracking, daily summaries, Telegram alerts.</div>
+            <div class="card-desc">Manifest v3. Injects cost/margin overlays on Uzum and Yandex Market product pages; syncs its auth token from the web app.</div>
             <div class="card-tags"><span class="tag">Manifest v3</span><span class="tag">Service Workers</span><span class="tag">Content Scripts</span></div>
           </div>
           <div class="card client-card" data-id="telegram-bot">
             <div class="card-name"><span class="status-dot green"></span>Telegram Bot</div>
-            <div class="card-desc">User notifications: daily digest, price alerts, order updates. Account linking via deep links. Preference management.</div>
+            <div class="card-desc">User notifications: daily/weekly digest, stock &amp; order alerts. Account linking via deep links. Preference management.</div>
             <div class="card-tags"><span class="tag">Bot API</span><span class="tag">Webhooks</span><span class="tag">Deep Links</span></div>
           </div>
         </div>
@@ -411,27 +411,27 @@
 
       <!-- AUTH LAYER -->
       <div class="section" data-category="auth">
-        <div class="section-label auth-label">Authentication & Security</div>
+        <div class="section-label auth-label">Authentication &amp; Security</div>
         <div class="cards-row cols-4" id="auth-row">
           <div class="card auth-card" data-id="nextauth">
-            <div class="card-name"><span class="status-dot green"></span>NextAuth.js v5</div>
-            <div class="card-desc">Credentials provider, bcrypt hashing, 30-day JWT sessions. Blocks unverified emails.</div>
-            <div class="card-tags"><span class="tag">JWT</span><span class="tag">bcryptjs</span><span class="tag">Credentials</span></div>
+            <div class="card-name"><span class="status-dot green"></span>NextAuth (Auth.js) v5</div>
+            <div class="card-desc">Credentials + bcrypt, optional Google OAuth, 30-day JWT sessions. Blocks unverified emails.</div>
+            <div class="card-tags"><span class="tag">JWT</span><span class="tag">bcryptjs</span><span class="tag">Credentials</span><span class="tag">Google OAuth</span></div>
           </div>
           <div class="card auth-card" data-id="email-verify">
             <div class="card-name"><span class="status-dot green"></span>Email Verification</div>
-            <div class="card-desc">6-digit code on signup via SMTP. 10-min expiry. Rate-limited resend (5/10min). Graceful degradation without SMTP.</div>
-            <div class="card-tags"><span class="tag">Nodemailer</span><span class="tag">Gmail SMTP</span><span class="tag">6-digit code</span></div>
+            <div class="card-desc">6-digit code on signup via SMTP. 10-min expiry. Rate-limited resend. Graceful degradation without SMTP.</div>
+            <div class="card-tags"><span class="tag">Nodemailer</span><span class="tag">SMTP</span><span class="tag">6-digit code</span></div>
           </div>
           <div class="card auth-card" data-id="rate-limit">
             <div class="card-name"><span class="status-dot green"></span>Rate Limiting</div>
-            <div class="card-desc">Per-IP rate limits: signup 10/hr, auth 20/min, sync 10/min, general 100/min. In-memory Map.</div>
+            <div class="card-desc">Per-IP rate limits: signup 10/hr, plus per-endpoint limits. In-memory Map, resets on restart.</div>
             <div class="card-tags"><span class="tag">IP-based</span><span class="tag">In-memory</span></div>
           </div>
           <div class="card auth-card" data-id="readonly-guard">
             <div class="card-name"><span class="status-dot green"></span>Marketplace Egress Guard</div>
             <div class="card-desc">Read-only by default. Whitelisted POST-for-read endpoints; the only write exceptions are the method-exact stock-write (ostatok only) and order-cancel allowlists.</div>
-            <div class="card-tags"><span class="tag">Middleware</span><span class="tag">Whitelist</span></div>
+            <div class="card-tags"><span class="tag">Guard</span><span class="tag">Allowlist</span></div>
           </div>
         </div>
       </div>
@@ -452,19 +452,39 @@
           </div>
           <div class="card dashboard-card" data-id="pg-products">
             <div class="card-name">Products</div>
-            <div class="card-desc">Product catalog, physical stock, listings</div>
+            <div class="card-desc">Product catalog, cost price, listings</div>
+          </div>
+          <div class="card dashboard-card" data-id="pg-stocks">
+            <div class="card-name">Stocks</div>
+            <div class="card-desc">Cross-marketplace stock, low-stock alerts</div>
           </div>
           <div class="card dashboard-card" data-id="pg-pnl">
-            <div class="card-name">P&L</div>
-            <div class="card-desc">Profit & loss breakdown per product</div>
+            <div class="card-name">P&amp;L</div>
+            <div class="card-desc">Profit &amp; loss breakdown per product</div>
+          </div>
+          <div class="card dashboard-card" data-id="pg-unit-econ">
+            <div class="card-name">Unit Economics</div>
+            <div class="card-desc">Per-unit cost and profit analysis</div>
+          </div>
+          <div class="card dashboard-card" data-id="pg-payouts">
+            <div class="card-name">Payouts</div>
+            <div class="card-desc">Marketplace settlement / payout tracking</div>
           </div>
           <div class="card dashboard-card" data-id="pg-billing">
             <div class="card-name">Billing</div>
-            <div class="card-desc">Subscription plans, Click/Payme payments</div>
+            <div class="card-desc">Subscription plan &amp; payment history</div>
           </div>
-          <div class="card dashboard-card" data-id="pg-advertising">
-            <div class="card-name">Advertising</div>
-            <div class="card-desc">Ad campaign stats and spend tracking</div>
+          <div class="card dashboard-card" data-id="pg-calculator">
+            <div class="card-name">Calculator</div>
+            <div class="card-desc">Pricing &amp; margin calculator</div>
+          </div>
+          <div class="card dashboard-card" data-id="pg-alerts">
+            <div class="card-name">Alerts</div>
+            <div class="card-desc">Custom alert rules &amp; thresholds</div>
+          </div>
+          <div class="card dashboard-card" data-id="pg-notifications">
+            <div class="card-name">Notifications</div>
+            <div class="card-desc">Telegram notification preferences</div>
           </div>
           <div class="card dashboard-card" data-id="pg-keywords">
             <div class="card-name">Keywords</div>
@@ -482,29 +502,13 @@
             <div class="card-name">Search Phrases</div>
             <div class="card-desc">Search query analytics</div>
           </div>
-          <div class="card dashboard-card" data-id="pg-calculator">
-            <div class="card-name">Calculator</div>
-            <div class="card-desc">Pricing & margin calculator</div>
-          </div>
-          <div class="card dashboard-card" data-id="pg-unit-econ">
-            <div class="card-name">Unit Economics</div>
-            <div class="card-desc">Per-unit cost and profit analysis</div>
-          </div>
-          <div class="card dashboard-card" data-id="pg-alerts">
-            <div class="card-name">Alerts</div>
-            <div class="card-desc">Custom alert rules & notification settings</div>
-          </div>
-          <div class="card dashboard-card" data-id="pg-payouts">
-            <div class="card-name">Payouts</div>
-            <div class="card-desc">Marketplace payout tracking</div>
+          <div class="card dashboard-card" data-id="pg-referral">
+            <div class="card-name">Referral</div>
+            <div class="card-desc">Referral program &amp; tracking</div>
           </div>
           <div class="card dashboard-card" data-id="pg-team">
             <div class="card-name">Team</div>
             <div class="card-desc">Multi-user team access</div>
-          </div>
-          <div class="card dashboard-card" data-id="pg-referral">
-            <div class="card-name">Referral</div>
-            <div class="card-desc">Referral program & tracking</div>
           </div>
           <div class="card dashboard-card" data-id="pg-sync">
             <div class="card-name">Data Sync</div>
@@ -512,7 +516,11 @@
           </div>
           <div class="card dashboard-card" data-id="pg-settings">
             <div class="card-name">Settings</div>
-            <div class="card-desc">Account, profile, shop tokens, notifications</div>
+            <div class="card-desc">Shop tokens, profile, preferences</div>
+          </div>
+          <div class="card dashboard-card" data-id="pg-account">
+            <div class="card-name">Account</div>
+            <div class="card-desc">Account management &amp; deletion request</div>
           </div>
         </div>
       </div>
@@ -521,56 +529,66 @@
 
       <!-- API LAYER -->
       <div class="section" data-category="api">
-        <div class="section-label api-label">API Routes (50+ endpoints)</div>
+        <div class="section-label api-label">API Routes (70+ endpoints)</div>
         <div class="cards-row cols-5" id="api-row">
           <div class="card api-card" data-id="api-auth">
             <div class="card-name">Auth APIs</div>
-            <div class="card-desc">signup, login, verify-email, resend-code, delete-account, update-password</div>
-            <div class="card-tags"><span class="tag">6 routes</span></div>
+            <div class="card-desc">[...nextauth], signup, verify-email, resend-code, reset-password (+ confirm), delete-account (admin)</div>
+            <div class="card-tags"><span class="tag">7 routes</span></div>
           </div>
           <div class="card api-card" data-id="api-sync">
             <div class="card-name">Marketplace Sync</div>
-            <div class="card-desc">uzum/sync, wildberries/sync, yandex/sync, wildberries/ads-sync, yandex/ads-sync</div>
-            <div class="card-tags"><span class="tag">5 routes</span><span class="tag">read-only</span></div>
+            <div class="card-desc">uzum/sync, yandex/sync, uzum|yandex/diagnose, refresh-settlements. Read-only — data only flows in.</div>
+            <div class="card-tags"><span class="tag">read-only</span></div>
+          </div>
+          <div class="card api-card" data-id="api-stock-sync">
+            <div class="card-name">Stock-sync APIs</div>
+            <div class="card-desc">shops/stock-sync (+ backfill, first-live, cancel-order). The sanctioned ostatok-only write path, fully audited.</div>
+            <div class="card-tags"><span class="tag">opt-in</span><span class="tag">audited</span></div>
           </div>
           <div class="card api-card" data-id="api-billing">
             <div class="card-name">Billing APIs</div>
-            <div class="card-desc">create-payment, click/prepare, click/complete, payme webhook, expire-plans</div>
-            <div class="card-tags"><span class="tag">5 routes</span></div>
+            <div class="card-desc">expire-plans (daily cron downgrade). No direct payment routes — Payme/Click removed; Atmos planned.</div>
+            <div class="card-tags"><span class="tag">plans</span></div>
+          </div>
+          <div class="card api-card" data-id="api-account">
+            <div class="card-name">Account APIs</div>
+            <div class="card-desc">account/request-deletion — notifies the operator; the actual delete is the admin auth/delete-account route.</div>
+            <div class="card-tags"><span class="tag">ZRU-547</span></div>
           </div>
           <div class="card api-card" data-id="api-extension">
             <div class="card-name">Extension APIs</div>
-            <div class="card-desc">activate, me, products, product, stats, validate, send-alerts, daily-summary, telegram-link/status</div>
-            <div class="card-tags"><span class="tag">10 routes</span><span class="tag">CORS</span></div>
+            <div class="card-desc">me, products, product, stats, activate, validate, send-alerts, send-daily-summary, telegram-link/status</div>
+            <div class="card-tags"><span class="tag">Bearer token</span></div>
           </div>
           <div class="card api-card" data-id="api-telegram">
             <div class="card-name">Telegram APIs</div>
-            <div class="card-desc">link, disconnect, status, prefs, webhook, channel-check, channel-nonce</div>
-            <div class="card-tags"><span class="tag">7 routes</span></div>
+            <div class="card-desc">link, disconnect, status, prefs, webhook, setup-webhook, test, channel-check, ext/channel-nonce</div>
+            <div class="card-tags"><span class="tag">webhook</span></div>
           </div>
           <div class="card api-card" data-id="api-cron">
             <div class="card-name">Cron Jobs</div>
-            <div class="card-desc">cron/sync — scheduled marketplace sync. cron/telegram-digest — daily summary notifications.</div>
-            <div class="card-tags"><span class="tag">2 routes</span><span class="tag">scheduled</span></div>
+            <div class="card-desc">cron/sync + cron/stock-sync (every 5 min), cron/telegram-digest (hourly), billing/expire-plans (daily)</div>
+            <div class="card-tags"><span class="tag">4 jobs</span><span class="tag">scheduled</span></div>
           </div>
           <div class="card api-card" data-id="api-data">
             <div class="card-name">Data APIs</div>
-            <div class="card-desc">alerts, settings, products/physical-stock, warehouses, warehouses/assign, sync-days, unit-economics</div>
-            <div class="card-tags"><span class="tag">8 routes</span></div>
+            <div class="card-desc">alerts, settings, products/update, warehouses, sync-days, unit-economics, stock-groups, product-groups, categories</div>
+            <div class="card-tags"><span class="tag">CRUD</span></div>
           </div>
           <div class="card api-card" data-id="api-market">
-            <div class="card-name">Market APIs</div>
-            <div class="card-desc">market/products, market/wildberries, market/yandex — proxy endpoints for marketplace data</div>
-            <div class="card-tags"><span class="tag">3 routes</span></div>
+            <div class="card-name">Market Proxy</div>
+            <div class="card-desc">market/products, market/yandex — normalize marketplace data for the dashboard</div>
+            <div class="card-tags"><span class="tag">2 routes</span></div>
           </div>
           <div class="card api-card" data-id="api-other">
             <div class="card-name">Other APIs</div>
-            <div class="card-desc">health, feedback, demo, referral/track, settings/save, shops/token</div>
-            <div class="card-tags"><span class="tag">6 routes</span></div>
+            <div class="card-desc">health, feedback, referral/track, diagnostics/state, settlements/diagnose, shops/token</div>
+            <div class="card-tags"><span class="tag">misc</span></div>
           </div>
           <div class="card api-card" data-id="api-handler">
             <div class="card-name">API Handler</div>
-            <div class="card-desc">withErrorHandler wrapper — centralized error handling, logging, CORS for all routes</div>
+            <div class="card-desc">withErrorHandler wrapper — centralized error handling and logging for all routes</div>
             <div class="card-tags"><span class="tag">middleware</span></div>
           </div>
         </div>
@@ -583,19 +601,19 @@
         <div class="section-label data-label">Data Layer</div>
         <div class="cards-row cols-3" id="data-row">
           <div class="card data-card" data-id="postgresql">
-            <div class="card-name"><span class="status-dot green"></span>PostgreSQL 16</div>
-            <div class="card-desc">21 tables: users, shops, orders, products, order_items, daily_stats, ad_campaigns, ad_stats, keywords, reviews, search_phrases, warehouses, warehouse_mappings, billing_plans, payments, sync_logs, settings, alerts, alert_settings, referrals, verification_tokens</div>
-            <div class="card-tags"><span class="tag">Drizzle ORM</span><span class="tag">21 tables</span><span class="tag">Migrations</span></div>
+            <div class="card-name"><span class="status-dot green"></span>PostgreSQL 17</div>
+            <div class="card-desc">34 tables — auth/users, shops/products/orders, stock-sync logs, categories, settlements, unit economics, ops. Self-hosted on the VPS.</div>
+            <div class="card-tags"><span class="tag">Drizzle ORM</span><span class="tag">34 tables</span><span class="tag">Migrations → 058</span></div>
           </div>
           <div class="card data-card" data-id="drizzle">
             <div class="card-name"><span class="status-dot green"></span>Drizzle ORM</div>
-            <div class="card-desc">Type-safe SQL queries, schema-first migrations, relational queries. Supports all 21 tables with proper relations.</div>
+            <div class="card-desc">Type-safe SQL, schema-first. SQL migrations in migrations/migrations/, applied on deploy via scripts/apply-sql-migrations.mjs (registration required).</div>
             <div class="card-tags"><span class="tag">TypeScript</span><span class="tag">Schema</span><span class="tag">Migrate</span></div>
           </div>
           <div class="card data-card" data-id="encryption">
             <div class="card-name"><span class="status-dot green"></span>Encryption</div>
-            <div class="card-desc">AES-256-GCM encryption for shop API tokens at rest. ENCRYPTION_KEY env var. Encrypt/decrypt on read/write.</div>
-            <div class="card-tags"><span class="tag">AES-256-GCM</span><span class="tag">Token storage</span></div>
+            <div class="card-desc">AES-256-CBC for marketplace API keys at rest (shops.api_key_encrypted). ENCRYPTION_KEY env var. Decrypt only before a marketplace call.</div>
+            <div class="card-tags"><span class="tag">AES-256-CBC</span><span class="tag">Key storage</span></div>
           </div>
         </div>
       </div>
@@ -605,35 +623,30 @@
       <!-- EXTERNAL SERVICES -->
       <div class="section" data-category="external">
         <div class="section-label external-label">External Services</div>
-        <div class="cards-row cols-6" id="external-row">
+        <div class="cards-row cols-5" id="external-row">
           <div class="card external-card" data-id="uzum">
             <div class="card-name">Uzum Market</div>
-            <div class="card-desc">Uzbekistan marketplace — orders, products, stats sync</div>
+            <div class="card-desc">Uzbekistan marketplace — orders, products, stock, settlements sync</div>
             <div class="card-tags"><span class="tag">REST API</span><span class="tag">read-only</span></div>
           </div>
           <div class="card external-card" data-id="yandex">
             <div class="card-name">Yandex Market</div>
-            <div class="card-desc">Russia marketplace — orders, offers, ads, stocks sync</div>
+            <div class="card-desc">Marketplace — orders, offers, stocks, settlements sync</div>
             <div class="card-tags"><span class="tag">REST API</span><span class="tag">read-only</span></div>
           </div>
-          <div class="card external-card" data-id="wildberries">
-            <div class="card-name">Wildberries</div>
-            <div class="card-desc">Russia marketplace — orders, products, ads sync</div>
-            <div class="card-tags"><span class="tag">REST API</span><span class="tag">read-only</span></div>
+          <div class="card external-card" data-id="google">
+            <div class="card-name">Google</div>
+            <div class="card-desc">Optional OAuth sign-in (email + name only) and Google Analytics 4 — GA4 loads only after cookie consent</div>
+            <div class="card-tags"><span class="tag">OAuth 2.0</span><span class="tag">GA4</span></div>
           </div>
-          <div class="card external-card" data-id="click-pay">
-            <div class="card-name">Click</div>
-            <div class="card-desc">UZ payment — prepare/complete flow</div>
-            <div class="card-tags"><span class="tag">Payment</span></div>
+          <div class="card external-card" data-id="atmos" style="opacity: 0.6;">
+            <div class="card-name"><span class="status-dot yellow"></span>Atmos</div>
+            <div class="card-desc">Payment aggregator (Payme, Click, Uzcard, Humo, Visa). PLANNED — not yet integrated; no code in the app today.</div>
+            <div class="card-tags"><span class="tag">planned</span><span class="tag">payments</span></div>
           </div>
-          <div class="card external-card" data-id="payme-pay">
-            <div class="card-name">Payme</div>
-            <div class="card-desc">UZ payment — webhook integration</div>
-            <div class="card-tags"><span class="tag">Payment</span></div>
-          </div>
-          <div class="card external-card" data-id="gmail-smtp">
-            <div class="card-name">Gmail SMTP</div>
-            <div class="card-desc">Verification codes, password resets via App Password</div>
+          <div class="card external-card" data-id="smtp">
+            <div class="card-name">SMTP Email</div>
+            <div class="card-desc">Verification codes, password resets, and the account-deletion-request notice to the operator</div>
             <div class="card-tags"><span class="tag">Nodemailer</span></div>
           </div>
         </div>
@@ -643,12 +656,12 @@
 
       <!-- INFRASTRUCTURE -->
       <div class="section" data-category="infra">
-        <div class="section-label infra-label">Infrastructure & Deployment</div>
-        <div class="cards-row cols-5" id="infra-row">
+        <div class="section-label infra-label">Infrastructure &amp; Deployment</div>
+        <div class="cards-row cols-4" id="infra-row">
           <div class="card infra-card" data-id="hetzner">
             <div class="card-name"><span class="status-dot green"></span>Hetzner VPS</div>
-            <div class="card-desc">Ubuntu 24.04, production host for app + database. IP: 65.21.158.239</div>
-            <div class="card-tags"><span class="tag">Ubuntu 24.04</span><span class="tag">Self-hosted</span></div>
+            <div class="card-desc">Ubuntu, Finland (Helsinki). Single host for the app, PostgreSQL and Nginx. Postgres bound to 127.0.0.1.</div>
+            <div class="card-tags"><span class="tag">Finland</span><span class="tag">Self-hosted</span></div>
           </div>
           <div class="card infra-card" data-id="nginx">
             <div class="card-name"><span class="status-dot green"></span>Nginx</div>
@@ -657,18 +670,28 @@
           </div>
           <div class="card infra-card" data-id="pm2">
             <div class="card-name"><span class="status-dot green"></span>PM2</div>
-            <div class="card-desc">Process manager — auto-restart, logs, cluster mode</div>
+            <div class="card-desc">Process manager — auto-restart, logs. Runs the Next.js server (daromadchi).</div>
             <div class="card-tags"><span class="tag">Node.js</span><span class="tag">Process Mgr</span></div>
           </div>
           <div class="card infra-card" data-id="github-ci">
             <div class="card-name"><span class="status-dot green"></span>GitHub Actions</div>
-            <div class="card-desc">CI/CD: Lint → TypeCheck → Build → Health Check → Deploy via SSH → Telegram notify</div>
-            <div class="card-tags"><span class="tag">CI/CD</span><span class="tag">5 jobs</span></div>
+            <div class="card-desc">Lint → TypeCheck → Build → Health check. Deploy workflow SSHes to the VPS.</div>
+            <div class="card-tags"><span class="tag">CI/CD</span></div>
           </div>
           <div class="card infra-card" data-id="deploy">
             <div class="card-name"><span class="status-dot green"></span>Deploy Pipeline</div>
-            <div class="card-desc">git reset --hard → npm ci → npm run build → pm2 restart. Triggered on push to main.</div>
+            <div class="card-desc">Push to main → SSH → git update → rm -rf .next &amp;&amp; npm run build → apply migrations → pm2 restart.</div>
             <div class="card-tags"><span class="tag">SSH</span><span class="tag">Auto-deploy</span></div>
+          </div>
+          <div class="card infra-card" data-id="cron-scheduler">
+            <div class="card-name"><span class="status-dot green"></span>Cron Scheduler</div>
+            <div class="card-desc">VPS system crontab (cron-runner.sh): sync + stock-sync every 5 min, telegram-digest hourly, expire-plans daily.</div>
+            <div class="card-tags"><span class="tag">crontab</span><span class="tag">CRON_SECRET</span></div>
+          </div>
+          <div class="card infra-card" data-id="backups">
+            <div class="card-name"><span class="status-dot green"></span>DB Backups</div>
+            <div class="card-desc">Nightly 03:00 UTC + manual. pg_dump runs ON the VPS; 14 rotated dumps at /var/backups/daromadchi/ — never copied off-host.</div>
+            <div class="card-tags"><span class="tag">pg_dump</span><span class="tag">local-only</span></div>
           </div>
         </div>
       </div>
@@ -699,7 +722,7 @@
           </div>
           <div class="card client-card" data-id="pg-legal">
             <div class="card-name">Legal</div>
-            <div class="card-desc">Terms, privacy, compliance</div>
+            <div class="card-desc">Privacy, terms, cookies, compliance (uz/ru/en)</div>
           </div>
         </div>
       </div>
@@ -734,105 +757,124 @@
     const data = {
       'web-app': {
         name: 'Web App',
-        desc: 'Next.js 16 dashboard at daromadchi.uz. React 19 with Turbopack. 20+ dashboard pages for multi-marketplace seller analytics. Language switcher (UZ/RU/EN). Email verification on signup with 6-digit code. Responsive design with Tailwind CSS.',
+        desc: 'Next.js 16.2.4 dashboard at daromadchi.uz. React 19 with Turbopack. 20+ authenticated dashboard pages plus public landing/pricing/legal. Language switcher (UZ/RU/EN). Email verification on signup. Google Analytics 4 loads only after the visitor accepts analytics cookies (production only).',
         tech: ['React 19', 'Next.js 16.2.4', 'TypeScript', 'Tailwind CSS', 'Turbopack', 'i18n (UZ/RU/EN)'],
         connections: [
-          { name: 'NextAuth.js v5', desc: 'Session management and route protection' },
+          { name: 'NextAuth (Auth.js) v5', desc: 'Session management and route protection' },
           { name: 'API Routes', desc: 'All dashboard data flows through REST APIs' },
-          { name: 'Hetzner VPS', desc: 'Hosted as PM2-managed Node.js process' }
+          { name: 'Google', desc: 'Consent-gated GA4 analytics' },
+          { name: 'Hetzner VPS', desc: 'Hosted as a PM2-managed Node.js process' }
         ]
       },
       'chrome-ext': {
         name: 'Chrome Extension',
-        desc: 'Manifest v3 browser extension for marketplace automation. Tracks products, monitors prices and stock across all three marketplaces. Sends daily summaries and alerts via Telegram. Communicates with API via CORS-whitelisted requests.',
-        tech: ['Manifest v3', 'Service Workers', 'Content Scripts', 'CORS'],
+        desc: 'Manifest v3 browser extension. Content scripts inject cost/margin overlays on Uzum (content.js) and Yandex Market (content-yandex.js) product pages; content-daromadchi.js syncs the auth token from the web app. Talks to the app via Bearer-token Extension APIs.',
+        tech: ['Manifest v3', 'Service Workers', 'Content Scripts', 'Bearer token'],
         connections: [
-          { name: 'Extension APIs', desc: '10 dedicated endpoints for activation, products, stats, alerts' },
-          { name: 'Telegram Bot', desc: 'Sends alerts and daily summaries via linked Telegram account' }
+          { name: 'Extension APIs', desc: 'Dedicated Bearer-token endpoints for products, stats, alerts' },
+          { name: 'Telegram Bot', desc: 'Sends alerts and daily summaries via the linked Telegram account' }
         ]
       },
       'telegram-bot': {
         name: 'Telegram Bot',
-        desc: 'User-facing Telegram bot for notifications. Daily digest of marketplace stats. Price change alerts. Order notifications. Account linking via deep links with nonce verification. Per-user notification preferences. Also receives CI/CD deploy notifications from GitHub Actions.',
+        desc: 'User-facing Telegram bot for notifications: daily/weekly digest, low-stock and order alerts. Account linking via deep links with nonce verification. Per-user notification preferences. Also receives CI/CD deploy notifications.',
         tech: ['Telegram Bot API', 'Webhooks', 'Deep Links', 'Nonce Auth'],
         connections: [
-          { name: 'Telegram APIs', desc: '7 routes for link, disconnect, status, prefs, webhook' },
-          { name: 'Cron Jobs', desc: 'telegram-digest sends scheduled daily summaries' },
-          { name: 'GitHub Actions', desc: 'Receives deploy success/failure notifications' }
+          { name: 'Telegram APIs', desc: 'Routes for link, disconnect, status, prefs, webhook' },
+          { name: 'Cron Jobs', desc: 'telegram-digest sends scheduled summaries' }
         ]
       },
       'nextauth': {
-        name: 'NextAuth.js v5',
-        desc: 'Authentication via Credentials provider with bcrypt password hashing (12 rounds). 30-day JWT sessions. Case-insensitive email lookup. Blocks login for unverified emails when SMTP is configured (EMAIL_NOT_VERIFIED error). Protects all /dashboard routes via middleware.',
-        tech: ['NextAuth v5', 'JWT', 'bcryptjs', 'Credentials Provider', 'Middleware'],
+        name: 'NextAuth (Auth.js) v5',
+        desc: 'Authentication via a Credentials provider with bcrypt hashing (12 rounds) AND an optional Google OAuth provider (rendered only when AUTH_GOOGLE_ID / AUTH_GOOGLE_SECRET are set). 30-day JWT sessions, no DB session adapter. Blocks login for unverified emails when SMTP is configured. Protects /dashboard via middleware. New Google signups pass the same consent gate — a short-lived signup_consent cookie is checked server-side in the signIn callback before a new account is created.',
+        tech: ['Auth.js v5', 'JWT', 'bcryptjs', 'Credentials', 'Google OAuth (optional)'],
         connections: [
           { name: 'Web App', desc: 'Session validation and route protection' },
-          { name: 'PostgreSQL', desc: 'Users table with email_verified timestamp' },
+          { name: 'PostgreSQL 17', desc: 'Users table with email_verified timestamp' },
           { name: 'Email Verification', desc: 'Enforces verification before first login' }
         ]
       },
       'email-verify': {
         name: 'Email Verification',
-        desc: '6-digit verification code sent via SMTP on signup. Codes stored in verification_tokens table with 10-minute expiry. Rate-limited resend (5 per 10 min per IP). Graceful degradation: verification only enforced when SMTP_USER env var is set. Prevents email enumeration on resend endpoint.',
-        tech: ['Nodemailer', 'Gmail App Password', 'SMTP', 'crypto.randomInt', 'HTML Templates'],
+        desc: '6-digit verification code sent via SMTP on signup. Codes stored in verification_tokens with a 10-minute expiry. Rate-limited resend. Graceful degradation: verification is only enforced when SMTP_USER is set.',
+        tech: ['Nodemailer', 'SMTP', 'crypto.randomInt', 'HTML templates'],
         connections: [
           { name: 'Auth APIs', desc: 'signup, verify-email, resend-code routes' },
-          { name: 'PostgreSQL', desc: 'verification_tokens table with token, user_id, email, expires_at' },
-          { name: 'Gmail SMTP', desc: 'Sends HTML-formatted verification emails' }
+          { name: 'PostgreSQL 17', desc: 'verification_tokens table' },
+          { name: 'SMTP Email', desc: 'Sends HTML verification emails' }
         ]
       },
       'rate-limit': {
         name: 'Rate Limiting',
-        desc: 'Per-IP rate limiting using in-memory Map. Signup: 10 per hour. Auth: 20 per minute. Sync: 10 per minute. General API: 100 per minute. Map auto-cleanup when size exceeds 5000 entries. Resets on server restart.',
+        desc: 'Per-IP rate limiting using an in-memory Map. Signup is capped (e.g. 10/hour/IP) with additional per-endpoint limits. Map auto-cleans when it grows large. Resets on server restart.',
         tech: ['In-memory Map', 'IP-based', 'Per-endpoint limits'],
         connections: [
-          { name: 'API Routes', desc: 'Applied to all authenticated endpoints' },
           { name: 'Auth APIs', desc: 'Stricter limits for signup and login' }
         ]
       },
       'readonly-guard': {
         name: 'Marketplace Egress Guard',
-        desc: 'Enforces the rule: read-only by default. Whitelisted POST-for-read endpoints are allowed (Yandex offer-mappings, stocks, stats return 405 on GET). The only sanctioned writes are the method-exact, URL-exact stock-write (ostatok only, opt-in) and order-cancel allowlists; every other PUT/PATCH/DELETE to external marketplaces is blocked.',
-        tech: ['Middleware', 'Whitelist', 'Immutable Rule'],
+        desc: 'Enforces read-only-by-default. Whitelisted POST-for-read endpoints are allowed (Yandex offer-mappings, stocks, stats return 405 on GET). The only sanctioned writes are the method-exact, URL-exact stock-write (ostatok only, opt-in) and order-cancel allowlists; every other PUT/PATCH/DELETE to a marketplace is blocked.',
+        tech: ['Guard', 'Allowlist', 'Immutable rule'],
         connections: [
-          { name: 'Marketplace Sync', desc: 'Guards all outbound marketplace requests' }
+          { name: 'Marketplace Sync', desc: 'Guards all outbound marketplace requests' },
+          { name: 'Stock-sync APIs', desc: 'The only sanctioned write path passes through here' }
         ]
       },
       'api-auth': {
         name: 'Auth APIs',
-        desc: '6 routes: [...nextauth] (login/session), signup (with verification), verify-email (6-digit code), resend-code (rate-limited), delete-account (admin-only via CRON_SECRET), update-password.',
+        desc: '[...nextauth] (login/session), signup (with verification), verify-email, resend-code, reset-password (+ /confirm), delete-account (admin-only via x-admin-secret). Signup requires explicit consent to the Privacy Policy, Terms and Cookie Policy — server-enforced (400 without it) and recorded as users.consented_at (ZRU-547).',
         tech: ['NextAuth', 'bcryptjs', 'Zod validation', 'Rate limiting'],
         connections: [
-          { name: 'NextAuth.js v5', desc: 'Session management' },
+          { name: 'NextAuth (Auth.js) v5', desc: 'Session management' },
           { name: 'Email Verification', desc: 'Verification flow on signup' },
-          { name: 'PostgreSQL', desc: 'Users and verification_tokens tables' }
+          { name: 'PostgreSQL 17', desc: 'users and verification_tokens tables' }
         ]
       },
       'api-sync': {
         name: 'Marketplace Sync APIs',
-        desc: '5 routes: uzum/sync, wildberries/sync, yandex/sync, wildberries/ads-sync, yandex/ads-sync. All read-only — they only pull data in. Sync orders, products, stocks, advertising stats from marketplace APIs to local PostgreSQL. (Writing the ostatok back is a separate opt-in path, not these routes.)',
-        tech: ['REST', 'Read-only', 'Background jobs', 'Encrypted tokens'],
+        desc: 'uzum/sync, yandex/sync, uzum/diagnose, yandex/diagnose, uzum/refresh-settlements, yandex/refresh-settlements. All read-only — they only pull data in. Writing the ostatok back is a separate opt-in path (Stock-sync APIs), not these routes.',
+        tech: ['REST', 'Read-only', 'Encrypted tokens'],
         connections: [
-          { name: 'Uzum Market', desc: 'Sync orders and products' },
-          { name: 'Yandex Market', desc: 'Sync orders, offers, ads, stocks' },
-          { name: 'Wildberries', desc: 'Sync orders, products, ads' },
-          { name: 'PostgreSQL', desc: 'Store all synced data' }
+          { name: 'Uzum Market', desc: 'Sync orders, products, stock, settlements' },
+          { name: 'Yandex Market', desc: 'Sync orders, offers, stocks, settlements' },
+          { name: 'PostgreSQL 17', desc: 'Store all synced data' }
+        ]
+      },
+      'api-stock-sync': {
+        name: 'Stock-sync APIs',
+        desc: 'The sanctioned WRITE path (opt-in edit mode): shops/stock-sync, stock-sync/backfill, stock-sync/first-live, stock-sync/cancel-order. Pushes stock QUANTITY (ostatok) only through the single audited writer; may cancel an order on oversell. Everything is logged to stock_write_log / order_cancel_log.',
+        tech: ['Audited writer', 'Opt-in', 'ostatok only'],
+        connections: [
+          { name: 'Marketplace Egress Guard', desc: 'Method/URL-exact write allowlist' },
+          { name: 'Uzum Market', desc: 'Stock-quantity write-back (opted-in shops)' },
+          { name: 'Yandex Market', desc: 'Stock-quantity write-back (opted-in shops)' },
+          { name: 'PostgreSQL 17', desc: 'stock_write_log, order_cancel_log audit trail' }
         ]
       },
       'api-billing': {
         name: 'Billing APIs',
-        desc: '5 routes: create-payment (initiate subscription), click/prepare + click/complete (Click payment flow), payme (Payme webhook), expire-plans (cron-triggered plan expiration).',
-        tech: ['Click API', 'Payme API', 'Webhooks', 'Plan management'],
+        desc: 'expire-plans — a daily cron that downgrades lapsed paid plans to free. There are NO direct payment routes: the former Payme/Click integrations were removed. Card payments will run through the Atmos aggregator once it is integrated.',
+        tech: ['Plan management', 'Cron'],
         connections: [
-          { name: 'Click', desc: 'Two-phase payment: prepare then complete' },
-          { name: 'Payme', desc: 'Webhook-based payment confirmation' },
-          { name: 'PostgreSQL', desc: 'billing_plans and payments tables' }
+          { name: 'Atmos', desc: 'Planned payment aggregator (not yet integrated)' },
+          { name: 'PostgreSQL 17', desc: 'payments table (+ payer_email retained for tax)' }
+        ]
+      },
+      'api-account': {
+        name: 'Account APIs',
+        desc: 'account/request-deletion — a signed-in user asks for deletion; the app emails privacy@ and pings the admin Telegram, then confirms. It deletes nothing itself. The actual delete is the admin-only auth/delete-account route (cascade delete; payment/tax rows are kept via ON DELETE SET NULL + payer_email). No automatic retention purge.',
+        tech: ['ZRU-547', 'Operator-notified', 'Cascade delete'],
+        connections: [
+          { name: 'SMTP Email', desc: 'Deletion-request notice to privacy@' },
+          { name: 'Telegram Bot', desc: 'Deletion-request alert to the admin chat' },
+          { name: 'PostgreSQL 17', desc: 'Cascade delete; payments retained via SET NULL' }
         ]
       },
       'api-extension': {
         name: 'Extension APIs',
-        desc: '10 routes for Chrome extension: activate (license), me (user info), products/product (catalog), stats (dashboard data), validate (token check), send-alerts, send-daily-summary, telegram-link/telegram-status.',
-        tech: ['CORS', 'Token auth', 'Cross-origin'],
+        desc: 'Bearer-token endpoints for the Chrome extension: me, products, product, stats, activate, validate, send-alerts, send-daily-summary, telegram-link, telegram-status.',
+        tech: ['Bearer token', 'Cross-origin'],
         connections: [
           { name: 'Chrome Extension', desc: 'All extension communication goes through these endpoints' },
           { name: 'Telegram Bot', desc: 'Extension triggers Telegram alerts and summaries' }
@@ -840,193 +882,216 @@
       },
       'api-telegram': {
         name: 'Telegram APIs',
-        desc: '7 routes: link (deep link account linking), disconnect, status (check link), prefs (notification preferences), webhook (bot updates), channel-check, ext/channel-nonce (nonce verification).',
+        desc: 'link (deep-link account linking), disconnect, status, prefs, webhook (bot updates), setup-webhook, test, channel-check, ext/channel-nonce (nonce verification).',
         tech: ['Bot API', 'Webhooks', 'Deep Links', 'Nonce'],
         connections: [
-          { name: 'Telegram Bot', desc: 'Manages bot webhook and user interactions' },
-          { name: 'PostgreSQL', desc: 'Stores telegram_chat_id and notification prefs in users table' }
+          { name: 'Telegram Bot', desc: 'Manages the bot webhook and user interactions' },
+          { name: 'PostgreSQL 17', desc: 'Telegram chat id + notification prefs in user_settings' }
         ]
       },
       'api-cron': {
         name: 'Cron Jobs',
-        desc: '2 scheduled routes: cron/sync (periodic marketplace data sync for all active shops), cron/telegram-digest (daily summary notifications to linked Telegram users). Protected by CRON_SECRET header.',
-        tech: ['Scheduled', 'CRON_SECRET auth', 'Background processing'],
+        desc: '4 scheduled routes (system crontab, CRON_SECRET-protected): cron/sync and cron/stock-sync (every 5 min), cron/telegram-digest (hourly), billing/expire-plans (daily). There is NO retention-purge job — that feature was removed.',
+        tech: ['Scheduled', 'CRON_SECRET', 'Background processing'],
         connections: [
+          { name: 'Cron Scheduler', desc: 'Invoked by the VPS crontab via cron-runner.sh' },
           { name: 'Marketplace Sync', desc: 'Triggers sync for all active shops' },
-          { name: 'Telegram Bot', desc: 'Sends daily digest notifications' },
-          { name: 'PostgreSQL', desc: 'Reads shop configs, writes sync results' }
+          { name: 'Stock-sync APIs', desc: 'Drives the periodic stock reconcile' },
+          { name: 'Telegram Bot', desc: 'Sends the digest' }
         ]
       },
       'api-data': {
         name: 'Data APIs',
-        desc: '8 routes: alerts (CRUD), alerts/settings, products/physical-stock, warehouses, warehouses/assign, sync-days, unit-economics, unit-economics/settings.',
+        desc: 'alerts (+ settings, stock-notify), settings/save + language, products/update + physical-stock, warehouses (+ assign), sync-days, sync-status, unit-economics (+ settings, recalc), stock-groups (+ merge), product-groups/suggestions, categories.',
         tech: ['REST', 'Authenticated', 'CRUD'],
         connections: [
-          { name: 'PostgreSQL', desc: 'Direct database queries for dashboard data' },
-          { name: 'Dashboard Pages', desc: 'Supply data to analytics, alerts, warehouse pages' }
+          { name: 'PostgreSQL 17', desc: 'Direct database queries for dashboard data' },
+          { name: 'Dashboard Pages', desc: 'Supply data to analytics, stocks, alerts, unit-economics' }
         ]
       },
       'api-market': {
         name: 'Market Proxy APIs',
-        desc: '3 routes: market/products (aggregated product data), market/wildberries, market/yandex. Proxy endpoints that normalize marketplace data formats for the dashboard.',
-        tech: ['REST', 'Data normalization', 'Aggregation'],
+        desc: 'market/products (aggregated product data) and market/yandex. Proxy endpoints that normalize marketplace data for the dashboard.',
+        tech: ['REST', 'Data normalization'],
         connections: [
-          { name: 'PostgreSQL', desc: 'Read synced marketplace data' },
+          { name: 'PostgreSQL 17', desc: 'Read synced marketplace data' },
           { name: 'Dashboard Pages', desc: 'Normalized data for product views' }
         ]
       },
       'api-other': {
         name: 'Other APIs',
-        desc: '6 routes: health (uptime check for CI), feedback (user feedback form), demo (demo data), referral/track (referral link tracking), settings/save, shops/token (encrypted shop API token management).',
+        desc: 'health (CI uptime check), feedback, referral/track, diagnostics/state, settlements/diagnose, marketplace/yandex/notifications, shops/token (encrypted shop API-key save).',
         tech: ['REST', 'Health check', 'Feedback'],
         connections: [
-          { name: 'GitHub Actions', desc: 'Health check endpoint pinged after deploy' },
-          { name: 'PostgreSQL', desc: 'Store feedback, referrals, settings' }
+          { name: 'GitHub Actions', desc: '/api/health pinged after deploy' },
+          { name: 'PostgreSQL 17', desc: 'Store feedback, referrals, tokens' }
         ]
       },
       'api-handler': {
         name: 'API Handler (withErrorHandler)',
-        desc: 'Centralized error handling wrapper for all API routes. Catches errors, formats responses, adds CORS headers. Used by every route via withErrorHandler() HOF.',
-        tech: ['Error handling', 'CORS', 'HOF pattern'],
+        desc: 'Centralized error-handling wrapper for API routes. Catches errors, formats responses, logs. Used by routes via the withErrorHandler() higher-order function.',
+        tech: ['Error handling', 'Logging', 'HOF pattern'],
         connections: [
-          { name: 'All API Routes', desc: 'Wraps every route handler' }
+          { name: 'All API Routes', desc: 'Wraps route handlers' }
         ]
       },
       'postgresql': {
-        name: 'PostgreSQL 16',
-        desc: '21 tables: users, shops, orders, products, order_items, daily_stats, ad_campaigns, ad_stats, keywords, reviews, search_phrases, warehouses, warehouse_mappings, billing_plans, payments, sync_logs, settings, alerts, alert_settings, referrals, verification_tokens. Self-hosted on Hetzner VPS.',
-        tech: ['PostgreSQL 16', 'Drizzle ORM', 'Migrations', 'Indexes', '21 tables'],
+        name: 'PostgreSQL 17',
+        desc: '34 tables, self-hosted on the VPS. Auth & users: users, user_settings, accounts, sessions, verification_tokens, password_reset_tokens, ext_activation_codes. Marketplace: shops, products, orders, order_items, warehouses. Stock-sync: stock_sync_state, stock_write_log, stock_notify_state, order_cancel_log. Categories & grouping: categories_canonical, category_aliases, suggested_aliases, product_links, product_group_merges, suggested_product_groups. Finance: payments, uzum_settlement_orders, yandex_settlement_transactions. Unit economics: unit_economics_items, search_phrases. Ops: sync_days, sync_logs, alerts, competitor_watchlist, ad_campaigns, bot_sessions, channel_nonces.',
+        tech: ['PostgreSQL 17', 'Drizzle ORM', '34 tables', 'Migrations → 058'],
         connections: [
           { name: 'Drizzle ORM', desc: 'Type-safe query builder' },
           { name: 'All API Routes', desc: 'Central data store for all operations' },
-          { name: 'Hetzner VPS', desc: 'Runs locally on the same server' }
+          { name: 'Hetzner VPS', desc: 'Runs locally on the same server (127.0.0.1)' }
         ]
       },
       'drizzle': {
         name: 'Drizzle ORM',
-        desc: 'Type-safe SQL query builder for PostgreSQL. Schema-first approach with TypeScript types generated from schema definitions. Supports relational queries, migrations, and all 21 tables with proper foreign key relations.',
-        tech: ['TypeScript', 'Schema-first', 'Relational queries', 'Migrations'],
+        desc: 'Type-safe SQL query builder for PostgreSQL. Schema-first (lib/db/schema.ts). SQL migrations live in migrations/migrations/NNN_*.sql and are applied on deploy by scripts/apply-sql-migrations.mjs — a file only runs if it is registered in that list. Current through migration 058 (058 adds users.consented_at for signup consent).',
+        tech: ['TypeScript', 'Schema-first', 'Migrations'],
         connections: [
-          { name: 'PostgreSQL', desc: 'Generates and runs SQL queries' },
-          { name: 'API Routes', desc: 'Used by all routes for database access' }
+          { name: 'PostgreSQL 17', desc: 'Generates and runs SQL' },
+          { name: 'All API Routes', desc: 'Database access layer' }
         ]
       },
       'encryption': {
         name: 'Token Encryption',
-        desc: 'AES-256-GCM encryption for marketplace API tokens stored in the shops table. Encrypts on save, decrypts on read. Uses ENCRYPTION_KEY environment variable. Prevents token exposure if database is compromised.',
-        tech: ['AES-256-GCM', 'Node.js crypto', 'At-rest encryption'],
+        desc: 'AES-256-CBC encryption for marketplace API keys stored in shops.api_key_encrypted. Encrypts on save, decrypts only right before a marketplace call. Key from the ENCRYPTION_KEY environment variable.',
+        tech: ['AES-256-CBC', 'Node.js crypto', 'At-rest'],
         connections: [
-          { name: 'PostgreSQL', desc: 'Encrypted tokens stored in shops table' },
-          { name: 'Marketplace Sync', desc: 'Decrypts tokens before API calls' }
+          { name: 'PostgreSQL 17', desc: 'Encrypted keys in the shops table' },
+          { name: 'Marketplace Sync', desc: 'Decrypts keys before API calls' }
         ]
       },
       'uzum': {
         name: 'Uzum Market API',
-        desc: 'Uzbekistan\'s largest marketplace. REST API integration for syncing orders, products, and sales statistics. Read-only by default; opt-in Stock-sync may update stock quantity (ostatok) only — never price or listings.',
-        tech: ['REST API', 'Read-only default', 'OAuth tokens'],
-        connections: [{ name: 'Marketplace Sync APIs', desc: 'uzum/sync endpoint' }]
+        desc: 'Uzbekistan marketplace. REST API for syncing orders, products, stock and settlements. Read-only by default; opt-in Stock-sync may update stock quantity (ostatok) only — never price or listings.',
+        tech: ['REST API', 'Read-only default'],
+        connections: [{ name: 'Marketplace Sync APIs', desc: 'uzum/sync + settlements' }]
       },
       'yandex': {
         name: 'Yandex Market API',
-        desc: 'Russian marketplace. Syncs orders, offer-mappings, stocks, and advertising stats. Some endpoints require POST for read operations (offer-mappings, stocks, stats — whitelisted in read-only guard).',
+        desc: 'Marketplace. Syncs orders, offer-mappings, stocks and settlements. Some endpoints require POST for read operations (offer-mappings, stocks, stats — whitelisted in the egress guard).',
         tech: ['REST API', 'Read-only', 'POST-for-read'],
-        connections: [{ name: 'Marketplace Sync APIs', desc: 'yandex/sync and yandex/ads-sync endpoints' }]
+        connections: [{ name: 'Marketplace Sync APIs', desc: 'yandex/sync + settlements + notifications' }]
       },
-      'wildberries': {
-        name: 'Wildberries API',
-        desc: 'Russian marketplace. Syncs orders, products, and advertising campaign statistics. REST API with token-based authentication. Strictly read-only.',
-        tech: ['REST API', 'Read-only', 'Token auth'],
-        connections: [{ name: 'Marketplace Sync APIs', desc: 'wildberries/sync and wildberries/ads-sync endpoints' }]
+      'google': {
+        name: 'Google',
+        desc: 'Two uses. (1) Optional OAuth sign-in — the app receives only email + name from Google; no Google tokens are stored. (2) Google Analytics 4 web analytics, loaded via @next/third-parties ONLY after the visitor accepts analytics cookies (production only). No PII is sent to GA.',
+        tech: ['OAuth 2.0', 'GA4', 'Consent-gated'],
+        connections: [
+          { name: 'NextAuth (Auth.js) v5', desc: 'Optional Google OAuth provider' },
+          { name: 'Web App', desc: 'Consent-gated GA4 page-view analytics' }
+        ]
       },
-      'click-pay': {
-        name: 'Click Payment',
-        desc: 'Uzbekistan payment provider. Two-phase flow: prepare (reserves funds) → complete (confirms payment). Used for subscription billing.',
-        tech: ['Payment API', 'Two-phase', 'UZS currency'],
-        connections: [{ name: 'Billing APIs', desc: 'click/prepare and click/complete routes' }]
+      'atmos': {
+        name: 'Atmos (planned)',
+        desc: 'Uzbek payment aggregator that provides Payme, Click, Uzcard, Humo and Visa. PLANNED / not yet integrated — there is no Atmos code in the app today. When live, card data is entered on Atmos and never touches the app; only a payment record (amount, date, transaction id, plan, payer email) is stored.',
+        tech: ['Planned', 'Payment aggregator'],
+        connections: [
+          { name: 'Billing APIs', desc: 'Future subscription payment flow' }
+        ]
       },
-      'payme-pay': {
-        name: 'Payme Payment',
-        desc: 'Uzbekistan payment provider. Webhook-based integration — Payme sends transaction events to our webhook endpoint for confirmation.',
-        tech: ['Payment API', 'Webhooks', 'UZS currency'],
-        connections: [{ name: 'Billing APIs', desc: 'payme webhook route' }]
-      },
-      'gmail-smtp': {
-        name: 'Gmail SMTP',
-        desc: 'Email delivery via Gmail App Password. Sends HTML-formatted 6-digit verification codes on signup and password reset codes. Configurable via SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM env vars.',
-        tech: ['Nodemailer', 'Gmail', 'App Password', 'HTML templates'],
-        connections: [{ name: 'Email Verification', desc: 'Sends verification and password reset codes' }]
+      'smtp': {
+        name: 'SMTP Email',
+        desc: 'Transactional email via Nodemailer. Sends 6-digit verification codes and password-reset codes, and the account-deletion-request notification to the operator (privacy@).',
+        tech: ['Nodemailer', 'SMTP', 'HTML templates'],
+        connections: [
+          { name: 'Email Verification', desc: 'Sends verification and reset codes' },
+          { name: 'Account APIs', desc: 'Delivers the deletion-request notice' }
+        ]
       },
       'hetzner': {
         name: 'Hetzner VPS',
-        desc: 'Production server (65.21.158.239) running Ubuntu 24.04. Hosts Next.js app (PM2), PostgreSQL 16, and Nginx reverse proxy. All services run on a single VPS.',
-        tech: ['Ubuntu 24.04', 'Dedicated VPS', '65.21.158.239'],
+        desc: 'Production VPS in Finland (Helsinki), Ubuntu. Hosts the Next.js app (PM2), PostgreSQL 17 and Nginx on a single server. Postgres is bound to 127.0.0.1.',
+        tech: ['Ubuntu', 'Finland / Helsinki', 'Self-hosted'],
         connections: [
-          { name: 'Nginx', desc: 'Reverse proxy on port 80/443' },
-          { name: 'PM2', desc: 'Manages Node.js process' },
-          { name: 'PostgreSQL', desc: 'Local database on same server' }
+          { name: 'Nginx', desc: 'Reverse proxy on 80/443' },
+          { name: 'PM2', desc: 'Manages the Node.js process' },
+          { name: 'PostgreSQL 17', desc: 'Local database on the same server' }
         ]
       },
       'nginx': {
         name: 'Nginx',
         desc: 'Reverse proxy and SSL termination. Routes daromadchi.uz traffic to localhost:3000 (Next.js). Handles HTTPS certificates.',
-        tech: ['Reverse Proxy', 'SSL/TLS', 'Let\'s Encrypt'],
+        tech: ['Reverse Proxy', 'SSL/TLS'],
         connections: [
           { name: 'Web App', desc: 'Proxies HTTPS traffic to Next.js' },
-          { name: 'Hetzner VPS', desc: 'Runs as system service' }
+          { name: 'Hetzner VPS', desc: 'Runs as a system service' }
         ]
       },
       'pm2': {
         name: 'PM2',
-        desc: 'Node.js process manager. Auto-restarts on crash, log management, startup scripts. Runs the Next.js production server.',
+        desc: 'Node.js process manager. Auto-restarts on crash, manages logs. Runs the Next.js production server (process name: daromadchi).',
         tech: ['Process Manager', 'Auto-restart', 'Logs'],
         connections: [
-          { name: 'Web App', desc: 'Manages Next.js process lifecycle' },
+          { name: 'Web App', desc: 'Manages the Next.js process lifecycle' },
           { name: 'Deploy Pipeline', desc: 'pm2 restart daromadchi after deploy' }
         ]
       },
       'github-ci': {
         name: 'GitHub Actions CI/CD',
-        desc: 'Pipeline: Lint → TypeCheck → Build → Health Check (main only) → Telegram Notify. Runs on every push. Build requires the ENCRYPTION_KEY secret.',
-        tech: ['GitHub Actions', 'Node.js 20', 'npm ci', '5 jobs'],
+        desc: 'Pipeline: Lint → TypeCheck → Build → Health check (against /api/health). The deploy workflow SSHes to the VPS; a separate db-backup workflow runs nightly.',
+        tech: ['GitHub Actions', 'npm ci'],
         connections: [
-          { name: 'Deploy Pipeline', desc: 'Triggers deploy on push to main' },
-          { name: 'Telegram Bot', desc: 'Sends deploy success/failure notifications' },
-          { name: 'Health Check', desc: 'Pings /api/health after deploy' }
+          { name: 'Deploy Pipeline', desc: 'Deploys on push to main' },
+          { name: 'DB Backups', desc: 'Nightly pg_dump workflow' },
+          { name: 'Telegram Bot', desc: 'Deploy success/failure notifications' }
         ]
       },
       'deploy': {
         name: 'Deploy Pipeline',
-        desc: 'On push to main: SSH to VPS → git reset --hard origin/main → npm ci → npm run build → pm2 restart daromadchi. Automated via GitHub Actions.',
+        desc: 'On push to main: SSH to the VPS → git update → rm -rf .next && npm run build → node scripts/apply-sql-migrations.mjs → pm2 restart daromadchi. The cron schedule is (re)installed each deploy.',
         tech: ['SSH', 'git', 'npm', 'pm2'],
         connections: [
           { name: 'Hetzner VPS', desc: 'Deploys via SSH' },
-          { name: 'GitHub Actions', desc: 'Triggered by successful CI build' }
+          { name: 'GitHub Actions', desc: 'Triggered by a successful build' },
+          { name: 'Cron Scheduler', desc: 'Re-installs the crontab each deploy' }
         ]
       },
-      'pg-analytics': { name: 'Analytics Page', desc: 'Revenue, orders, and profit KPIs broken down by marketplace and time period. Charts and summary cards.', tech: ['Dashboard'], connections: [] },
+      'cron-scheduler': {
+        name: 'Cron Scheduler',
+        desc: 'The VPS system crontab, installed by deploy.yml via cron-runner.sh. Hits local endpoints with the CRON_SECRET: sync + stock-sync every 5 min, telegram-digest hourly, expire-plans daily. No retention-purge.',
+        tech: ['crontab', 'cron-runner.sh', 'CRON_SECRET'],
+        connections: [
+          { name: 'Cron Jobs', desc: 'Invokes the 4 scheduled API routes' }
+        ]
+      },
+      'backups': {
+        name: 'DB Backups',
+        desc: 'db-backup.yml — nightly at 03:00 UTC plus manual dispatch. GitHub Actions SSHes to the VPS and runs pg_dump THERE, keeping the 14 newest rotated dumps at /var/backups/daromadchi/. The dump never leaves the VPS — no off-host copy and no GitHub artifact, so the full DB stays on our own infrastructure.',
+        tech: ['pg_dump', '-Fc', 'Local-only', '14 rotated'],
+        connections: [
+          { name: 'Hetzner VPS', desc: 'pg_dump runs on the VPS; dumps stay there' },
+          { name: 'GitHub Actions', desc: 'Schedules/triggers the backup over SSH' }
+        ]
+      },
+      'pg-analytics': { name: 'Analytics Page', desc: 'Revenue, orders, and profit KPIs broken down by marketplace and period. Charts and summary cards.', tech: ['Dashboard'], connections: [] },
       'pg-orders': { name: 'Orders Page', desc: 'Order history with filtering by marketplace, date range, and status. Detailed order view with line items.', tech: ['Dashboard'], connections: [] },
-      'pg-products': { name: 'Products Page', desc: 'Product catalog across all marketplaces. Physical stock tracking, listing status.', tech: ['Dashboard'], connections: [] },
-      'pg-pnl': { name: 'P&L Page', desc: 'Profit and loss analysis per product, per marketplace. Revenue minus costs, commissions, and fees.', tech: ['Dashboard'], connections: [] },
-      'pg-billing': { name: 'Billing Page', desc: 'Subscription management. Plan comparison, payment history. Click and Payme integration.', tech: ['Dashboard'], connections: [] },
-      'pg-advertising': { name: 'Advertising Page', desc: 'Ad campaign performance stats from Yandex and Wildberries. Spend tracking and ROI.', tech: ['Dashboard'], connections: [] },
-      'pg-keywords': { name: 'Keywords Page', desc: 'Keyword research tools and ranking data for marketplace SEO optimization.', tech: ['Dashboard'], connections: [] },
-      'pg-reviews': { name: 'Reviews Page', desc: 'Customer review monitoring across marketplaces. Rating trends.', tech: ['Dashboard'], connections: [] },
-      'pg-seasonality': { name: 'Seasonality Page', desc: 'Seasonal demand trends and forecasting to help with inventory planning.', tech: ['Dashboard'], connections: [] },
-      'pg-search': { name: 'Search Phrases Page', desc: 'Search query analytics showing what customers search for on marketplaces.', tech: ['Dashboard'], connections: [] },
+      'pg-products': { name: 'Products Page', desc: 'Product catalog across marketplaces. Cost price editing, listing status, stock.', tech: ['Dashboard'], connections: [] },
+      'pg-stocks': { name: 'Stocks Page', desc: 'Cross-marketplace stock view (MAX − pending for shared SKUs), low-stock alerts.', tech: ['Dashboard'], connections: [] },
+      'pg-pnl': { name: 'P&L Page', desc: 'Profit and loss per product and marketplace — revenue minus costs, commissions and fees.', tech: ['Dashboard'], connections: [] },
+      'pg-unit-econ': { name: 'Unit Economics Page', desc: 'Per-unit cost analysis including marketplace fees, logistics and commissions.', tech: ['Dashboard'], connections: [] },
+      'pg-payouts': { name: 'Payouts Page', desc: 'Marketplace settlement / payout tracking, reconciled against expected revenue.', tech: ['Dashboard'], connections: [] },
+      'pg-billing': { name: 'Billing Page', desc: 'Subscription management — plan comparison and payment history. (Payments move to Atmos once integrated.)', tech: ['Dashboard'], connections: [] },
       'pg-calculator': { name: 'Calculator Page', desc: 'Pricing and margin calculator. Input costs and see projected profit per unit.', tech: ['Dashboard'], connections: [] },
-      'pg-unit-econ': { name: 'Unit Economics Page', desc: 'Per-unit cost analysis including marketplace fees, logistics, and commissions.', tech: ['Dashboard'], connections: [] },
-      'pg-alerts': { name: 'Alerts Page', desc: 'Custom alert rules for price changes, stock levels, order spikes. Notification settings.', tech: ['Dashboard'], connections: [] },
-      'pg-payouts': { name: 'Payouts Page', desc: 'Track marketplace payouts and reconcile with expected revenue.', tech: ['Dashboard'], connections: [] },
-      'pg-team': { name: 'Team Page', desc: 'Multi-user team management. Invite team members with role-based access.', tech: ['Dashboard'], connections: [] },
-      'pg-referral': { name: 'Referral Page', desc: 'Referral program dashboard. Share links, track signups, earn rewards.', tech: ['Dashboard'], connections: [] },
-      'pg-sync': { name: 'Data Sync Page', desc: 'Manual sync triggers for each marketplace. View sync history and status logs.', tech: ['Dashboard'], connections: [] },
-      'pg-settings': { name: 'Settings Page', desc: 'Account settings, profile, shop API token management (encrypted), notification preferences.', tech: ['Dashboard'], connections: [] },
-      'pg-landing': { name: 'Landing Page', desc: 'Public landing page with hero section, feature showcase, pricing tiers, and testimonials. Multi-language support.', tech: ['Public'], connections: [] },
-      'pg-login': { name: 'Login / Signup Page', desc: 'Authentication page with login, signup, forgot password, and email verification modes. 6-digit code input with auto-focus and paste support.', tech: ['Public'], connections: [] },
-      'pg-pricing': { name: 'Pricing Page', desc: 'Detailed plan comparison page. Free, Pro, and Enterprise tiers.', tech: ['Public'], connections: [] },
-      'pg-help': { name: 'Help Center', desc: 'Knowledge base with searchable articles. Slug-based article routing.', tech: ['Public'], connections: [] },
-      'pg-about': { name: 'About Page', desc: 'Company information and mission statement.', tech: ['Public'], connections: [] },
-      'pg-legal': { name: 'Legal Pages', desc: 'Terms of service, privacy policy, and compliance documentation.', tech: ['Public'], connections: [] },
+      'pg-alerts': { name: 'Alerts Page', desc: 'Custom alert rules for stock levels and thresholds.', tech: ['Dashboard'], connections: [] },
+      'pg-notifications': { name: 'Notifications Page', desc: 'Telegram notification preferences — which alerts and digests to receive.', tech: ['Dashboard'], connections: [] },
+      'pg-keywords': { name: 'Keywords Page', desc: 'Keyword research and ranking data for marketplace SEO.', tech: ['Dashboard'], connections: [] },
+      'pg-reviews': { name: 'Reviews Page', desc: 'Customer review monitoring across marketplaces. Rating trends.', tech: ['Dashboard'], connections: [] },
+      'pg-seasonality': { name: 'Seasonality Page', desc: 'Seasonal demand trends to help with inventory planning.', tech: ['Dashboard'], connections: [] },
+      'pg-search': { name: 'Search Phrases Page', desc: 'Search query analytics — what customers search for on marketplaces.', tech: ['Dashboard'], connections: [] },
+      'pg-referral': { name: 'Referral Page', desc: 'Referral program dashboard — share links, track signups.', tech: ['Dashboard'], connections: [] },
+      'pg-team': { name: 'Team Page', desc: 'Multi-user team access.', tech: ['Dashboard'], connections: [] },
+      'pg-sync': { name: 'Data Sync Page', desc: 'Manual sync triggers per marketplace. Sync history and status.', tech: ['Dashboard'], connections: [] },
+      'pg-settings': { name: 'Settings Page', desc: 'Shop API-key management (encrypted), profile, notification preferences.', tech: ['Dashboard'], connections: [] },
+      'pg-account': { name: 'Account Page', desc: 'Account management including the "Request account deletion" flow (ZRU-547).', tech: ['Dashboard'], connections: [] },
+      'pg-landing': { name: 'Landing Page', desc: 'Public landing page — hero, features, pricing, testimonials. Multi-language.', tech: ['Public'], connections: [] },
+      'pg-login': { name: 'Login / Signup Page', desc: 'Auth page with login, signup, forgot-password and email-verification modes; optional Google button. The signup tab has a required, unchecked-by-default consent checkbox (Privacy/Terms/Cookies) that gates both the Create-account and Continue-with-Google buttons.', tech: ['Public'], connections: [] },
+      'pg-pricing': { name: 'Pricing Page', desc: 'Plan comparison — Free, Pro, Pro+.', tech: ['Public'], connections: [] },
+      'pg-help': { name: 'Help Center', desc: 'Knowledge base with searchable, slug-routed articles.', tech: ['Public'], connections: [] },
+      'pg-about': { name: 'About Page', desc: 'Company information and mission.', tech: ['Public'], connections: [] },
+      'pg-legal': { name: 'Legal Pages', desc: 'Privacy policy, terms of use, cookie policy and compliance — uz/ru/en.', tech: ['Public'], connections: [] },
     };
 
     const detailPanel = document.getElementById('detailPanel');

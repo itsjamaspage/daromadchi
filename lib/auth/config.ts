@@ -97,10 +97,24 @@ const authConfig: NextAuthConfig = {
               .where(eq(users.id, existing.id))
           }
         } else {
+          // New Google user = account creation, so lawful consent (ZRU-547) is
+          // required. The /login page sets a short-lived first-party
+          // `signup_consent` cookie right before starting the Google flow when
+          // the consent box is ticked; it survives the OAuth round-trip
+          // (SameSite=Lax, sent on the top-level callback navigation). No
+          // cookie ⇒ do NOT create the account — bounce back to /login to
+          // capture consent first. This is the server-side backstop that stops
+          // Google signups from bypassing the checkbox.
+          const { cookies } = await import('next/headers')
+          const consented = (await cookies()).get('signup_consent')?.value === '1'
+          if (!consented) {
+            return '/login?consent=required'
+          }
           const [created] = await db.insert(users).values({
             email,
             full_name: user.name ?? null,
             email_verified: new Date(),
+            consented_at: new Date(),
           }).returning({ id: users.id })
           user.id = created!.id
         }
