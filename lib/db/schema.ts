@@ -405,6 +405,10 @@ export const payments = pgTable('payments', {
   // the row (amount/date/provider/txn/plan/period/status) is retained. See
   // migration 055 and /api/cron/retention-purge (which detaches before delete).
   user_id:                  uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
+  // Payer email snapshotted at payment creation, retained for tax/accounting.
+  // Independent of user_id: survives account deletion (when user_id -> null) so
+  // the financial record still identifies who paid. See migration 056.
+  payer_email:              text('payer_email'),
   provider:                 text('provider').notNull(),
   provider_transaction_id:  text('provider_transaction_id'),
   plan:                     text('plan').notNull(),

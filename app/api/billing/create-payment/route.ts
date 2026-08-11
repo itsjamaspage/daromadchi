@@ -25,6 +25,9 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
 
   const [payment] = await db.insert(payments).values({
     user_id:       user.id,
+    // Snapshot the payer's email at payment time. Retained for tax/accounting
+    // even after the account is deleted (user_id -> null); see migration 056.
+    payer_email:   user.email,
     provider,      // 'click' | 'payme'
     plan,
     period_months: months,
