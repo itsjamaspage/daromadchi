@@ -1,36 +1,61 @@
-export type PlanKey = 'pro' | 'pro_plus'
-export type Period  = 'monthly' | 'annual'
+export type PlanKey  = 'pro' | 'pro_plus'
+export type Interval = 'monthly' | 'annual'
 
-// SOURCE OF TRUTH: subscription prices are denominated in USD. The UZS figures
-// shown to users are DERIVED at request time from the live USD→UZS rate
-// (lib/billing/fx.ts) and rounded to a clean so'm amount — so the displayed price
-// tracks the exchange rate instead of drifting from a hardcoded number.
-export const PLAN_PRICES_USD: Record<PlanKey, number> = {
-  pro:      20,   // $/month
-  pro_plus: 40,   // $/month
+// ─────────────────────────────────────────────────────────────────────────────
+// SINGLE SOURCE OF TRUTH for money. Prices are a FIXED so'm amount, stored in
+// TIYIN (1 so'm = 100 tiyin) as integers. Every place that shows OR charges a
+// price reads from here: the landing page, /pricing, the dashboard billing page,
+// and the ATMOS charge (amount_tiyin). We do NOT charge an FX-derived, daily-
+// fluctuating number — the USD figure is a DISPLAY-ONLY approximation and MUST
+// NEVER feed a charged amount.
+//
+// Agreed anchor (confirmed, deliberate so'm price — NOT a USD-derived number):
+// Pro 250 000 so'm/mo, Pro+ 500 000 so'm/mo. Annual is billed with 3 months free
+// (pay 9 of 12): annualTotal = monthly × 9 → 2 250 000 / 4 500 000 so'm.
+// ─────────────────────────────────────────────────────────────────────────────
+export const PLAN_PRICES_TIYIN: Record<PlanKey, { monthly: number; annualTotal: number }> = {
+  pro:      { monthly: 25_000_000, annualTotal: 225_000_000 }, // 250 000 / 2 250 000 so'm
+  pro_plus: { monthly: 50_000_000, annualTotal: 450_000_000 }, // 500 000 / 4 500 000 so'm
 }
 
-// Annual billing = 3 months free: you pay for 9 of the 12 months. Applied to the
-// per-month figure shown when the annual toggle is on.
-export const ANNUAL_MONTHS_PAID  = 9
-export const ANNUAL_MONTHS_TOTAL = 12
-
-export const PLAN_MONTHS: Record<Period, number> = { monthly: 1, annual: 12 }
-
-// Round a raw UZS amount to the nearest 1000 so'm for a clean displayed price.
-export function roundUzs(uzs: number): number {
-  return Math.round(uzs / 1000) * 1000
+// DISPLAY-ONLY dollar reference for the "≈ $N/mo" secondary label. Never charged.
+export const PLAN_PRICES_USD_DISPLAY: Record<PlanKey, number> = {
+  pro:      20,
+  pro_plus: 40,
 }
 
-// Monthly USD price → clean UZS figure at the given USD→UZS rate.
-export function usdMonthlyToUzs(usd: number, rate: number): number {
-  return roundUzs(usd * rate)
+export const TIYIN_PER_SOM = 100
+
+// Exact integer conversions. Amounts sent to ATMOS are ALWAYS tiyin; amounts
+// shown to users are ALWAYS so'm. Keep the boundary explicit — a wrong exponent
+// here over/undercharges 100×.
+export function somToTiyin(som: number): number {
+  return Math.round(som) * TIYIN_PER_SOM
+}
+export function tiyinToSom(tiyin: number): number {
+  return Math.round(tiyin / TIYIN_PER_SOM)
 }
 
-// The per-month price shown on the annual toggle (3 months free), from a monthly
-// UZS figure. Rounded to a clean so'm amount.
-export function annualMonthlyUzs(monthlyUzs: number): number {
-  return roundUzs((monthlyUzs * ANNUAL_MONTHS_PAID) / ANNUAL_MONTHS_TOTAL)
+// The tiyin amount to charge for a plan+interval. This is the value the ATMOS
+// checkout passes as `amount`.
+export function planAmountTiyin(plan: PlanKey, interval: Interval): number {
+  const p = PLAN_PRICES_TIYIN[plan]
+  return interval === 'annual' ? p.annualTotal : p.monthly
+}
+
+// How many months a plan+interval covers (for subscription period math).
+export function planPeriodMonths(interval: Interval): number {
+  return interval === 'annual' ? 12 : 1
+}
+
+// tiyin → "252 000" (so'm, space-grouped thousands). Display only.
+export function formatSomFromTiyin(tiyin: number): string {
+  return String(tiyinToSom(tiyin)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
+}
+
+// The per-month so'm figure shown on the annual toggle (annualTotal / 12).
+export function annualMonthlySom(plan: PlanKey): number {
+  return Math.round(tiyinToSom(PLAN_PRICES_TIYIN[plan].annualTotal) / 12)
 }
 
 export function planExpiresAt(months: number): string {

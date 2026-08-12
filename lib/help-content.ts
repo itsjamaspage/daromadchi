@@ -1137,7 +1137,7 @@ Uchta tarif mavjud: Bepul, Pro va Pro+.
 
 ## Pro tarif
 
-**300,000 so'm/oy**
+**250,000 so'm/oy**
 
 Bepul tarifning hamma narsi, qo'shimcha:
 - 3 ta do'kon
@@ -1151,7 +1151,7 @@ Bepul tarifning hamma narsi, qo'shimcha:
 
 ## Pro+ tarif
 
-**600,000 so'm/oy**
+**500,000 so'm/oy**
 
 Pro tarifning hamma narsi, qo'shimcha:
 - 5+ do'konlar
@@ -2481,7 +2481,7 @@ Daromadchi разделяет ваши продажи по категориям.
 
 ## Тариф Pro
 
-**300 000 сум/месяц**
+**250 000 сум/месяц**
 
 Всё из бесплатного тарифа, плюс:
 - 3 магазина
@@ -2495,7 +2495,7 @@ Daromadchi разделяет ваши продажи по категориям.
 
 ## Тариф Pro+
 
-**600 000 сум/месяц**
+**500 000 сум/месяц**
 
 Всё из тарифа Pro, плюс:
 - 5+ магазинов
@@ -3680,7 +3680,7 @@ Three plans are available: Free, Pro, and Pro+.
 
 ## Pro plan
 
-**300,000 sum/month**
+**250,000 sum/month**
 
 Everything in Free, plus:
 - 3 stores
@@ -3694,7 +3694,7 @@ Everything in Free, plus:
 
 ## Pro+ plan
 
-**600,000 sum/month**
+**500,000 sum/month**
 
 Everything in Pro, plus:
 - 5+ stores
