@@ -422,11 +422,56 @@ export const payments = pgTable('payments', {
   period_months:            integer('period_months').default(1).notNull(),
   amount:                   numeric('amount').notNull(),
   status:                   paymentStatusEnum('status').default('pending').notNull(),
+  // ── ATMOS integration (additive) ──
+  // Our idempotency key, generated + persisted BEFORE calling ATMOS so retries
+  // and callbacks match exactly one row and we never charge twice for one intent.
+  ext_id:                   uuid('ext_id').defaultRandom(),
+  // Reconciliation key we send to ATMOS and receive back in the callback.
+  account:                  text('account'),
+  // Authoritative charged amount in TIYIN (the value sent to ATMOS). `amount`
+  // above stays the so'm figure for the existing tax/accounting record.
+  amount_tiyin:             integer('amount_tiyin'),
+  // ATMOS-side identifiers.
+  atmos_transaction_id:     text('atmos_transaction_id'),
+  atmos_invoice_token:      text('atmos_invoice_token'),
+  // Fiscal receipt URL returned on a successful charge.
+  ofd_url:                  text('ofd_url'),
+  // Subscription this payment settles (loose link — no hard FK).
+  subscription_id:          uuid('subscription_id'),
+  // Last raw callback payload, for audit/debugging.
+  raw_callback:             jsonb('raw_callback'),
   created_at:               timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updated_at:               timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 }, (t) => [
   index('payments_user_id_idx').on(t.user_id),
   index('payments_provider_tx_idx').on(t.provider_transaction_id),
+  uniqueIndex('payments_ext_id_unique').on(t.ext_id),
+  index('payments_account_idx').on(t.account),
+])
+
+/* ── 14b. subscriptions ─────────────────────────────────────────────────────── */
+// One active/pending subscription per user. Status starts 'pending' and flips to
+// 'active' only when a payment callback confirms settlement. The card_* columns
+// are RESERVED for Phase 2 recurring (card binding) — unused and unwritten now.
+export const subscriptionStatusEnum = pgEnum('subscription_status', [
+  'pending', 'active', 'past_due', 'cancelled', 'expired',
+])
+
+export const subscriptions = pgTable('subscriptions', {
+  id:                 uuid('id').primaryKey().defaultRandom(),
+  user_id:            uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  plan:               text('plan').notNull(),        // 'pro' | 'pro_plus'
+  interval:           text('interval').notNull(),    // 'monthly' | 'annual'
+  status:             subscriptionStatusEnum('status').default('pending').notNull(),
+  current_period_end: timestamp('current_period_end', { withTimezone: true }),
+  // Phase 2 (recurring) — reserved, not populated in Phase 1:
+  card_id:            text('card_id'),
+  card_token_encrypted: text('card_token_encrypted'),
+  created_at:         timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updated_at:         timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (t) => [
+  index('subscriptions_user_id_idx').on(t.user_id),
+  index('subscriptions_status_idx').on(t.status),
 ])
 
 /* ── 15. alerts ─────────────────────────────────────────────────────────────── */

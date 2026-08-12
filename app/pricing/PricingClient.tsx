@@ -12,7 +12,6 @@ import {
 // the live USD→UZS rate. `monthly`/`yearly` are clean so'm figures; `usd` is the
 // underlying dollar price shown as secondary text.
 export interface PricingData {
-  rate: number
   pro:      { usd: number; monthly: number; yearly: number }
   pro_plus: { usd: number; monthly: number; yearly: number }
 }

@@ -12,6 +12,7 @@ import {
 import { useTheme, useLang } from './providers'
 import type { Lang } from '@/lib/i18n'
 import { T } from '@/lib/landing-t'
+import { PLAN_PRICES_TIYIN, formatSomFromTiyin } from '@/lib/billing/plans'
 
 import PillNav from './components/PillNav'
 import BorderGlow from './components/BorderGlow'
@@ -1346,7 +1347,7 @@ function PricingSection({ lang }: { lang: Lang }) {
       cta: T.pricing.freeCta[lang], ctaHref: '/login',
     },
     {
-      name: 'Pro', price: '300 000', badge: T.pricing.proBadge[lang],
+      name: 'Pro', price: formatSomFromTiyin(PLAN_PRICES_TIYIN.pro.monthly), badge: T.pricing.proBadge[lang],
       sub: T.pricing.proSub[lang], highlight: true,
       features: [
         T.pricing.proFeature1[lang],
@@ -1358,7 +1359,7 @@ function PricingSection({ lang }: { lang: Lang }) {
       cta: T.pricing.proCta[lang], ctaHref: '/login',
     },
     {
-      name: 'Pro+', price: '600 000',
+      name: 'Pro+', price: formatSomFromTiyin(PLAN_PRICES_TIYIN.pro_plus.monthly),
       sub: T.pricing.proPlusSub[lang], highlight: false,
       features: [
         T.pricing.proPlusFeature1[lang],

@@ -7,13 +7,16 @@ import {
 import { useLang } from '@/app/providers'
 import { translations } from '@/lib/i18n'
 import type { BillingInfo, PlanType, PaymentRecord } from '@/lib/db/billing'
+import { PLAN_PRICES_TIYIN, formatSomFromTiyin } from '@/lib/billing/plans'
 
 type T = typeof translations['uz']['dashboard']
 
+// Prices read from the single tiyin source of truth (lib/billing/plans.ts) — the
+// same figures the landing page, /pricing, and the ATMOS charge use.
 const PLAN_PRICES: Record<PlanType, string> = {
   free:     'Bepul',
-  pro:      "300,000 so'm",
-  pro_plus: "600,000 so'm",
+  pro:      `${formatSomFromTiyin(PLAN_PRICES_TIYIN.pro.monthly)} so'm`,
+  pro_plus: `${formatSomFromTiyin(PLAN_PRICES_TIYIN.pro_plus.monthly)} so'm`,
 }
 
 function planFeatures(d: T): Record<PlanType, string[]> {
