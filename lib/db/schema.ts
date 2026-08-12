@@ -817,6 +817,29 @@ export const stockNotifyOrderSeen = pgTable('stock_notify_order_seen', {
   index('stock_notify_order_seen_user_id_idx').on(t.user_id),
 ])
 
+/* ── 30d. oversell_notify_state ──────────────────────────────────────────────── */
+// Notification DEDUP for the OVERSELL alert. Without it, an unresolved oversell
+// (a reserving order that exceeds physical stock) re-fires the same «⚠️ Oversell»
+// Telegram alert on EVERY 5-min reconcile cycle — the seller drowns in identical
+// messages for one situation. One row per (user, match_key) holding the last
+// oversell we alerted about: the later order and the oversold amount. The alert
+// fires only when THIS is a distinct oversell (a new later order, or a deeper
+// oversold count) — one alert per real situation, not one per cycle.
+export const oversellNotifyState = pgTable('oversell_notify_state', {
+  id:               uuid('id').primaryKey().defaultRandom(),
+  user_id:          uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  match_key:        text('match_key').notNull(),
+  // The later (most recent) reserving order that caused the oversell we alerted
+  // about — external id when present, else the internal id.
+  last_order_ext:   text('last_order_ext'),
+  // How many units over stock the last alert reported.
+  last_oversold_by: integer('last_oversold_by'),
+  updated_at:       timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (t) => [
+  uniqueIndex('oversell_notify_state_user_key_unique').on(t.user_id, t.match_key),
+  index('oversell_notify_state_user_id_idx').on(t.user_id),
+])
+
 /* ── 31. order_cancel_log ────────────────────────────────────────────────────── */
 // Audit for the oversell cancel path — a SEPARATE sanctioned write from stock,
 // with its own allowlist. One row per attempt, one-click (human) or auto.

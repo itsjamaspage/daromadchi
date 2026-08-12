@@ -65,6 +65,10 @@ const MIGRATIONS = [
   // group so a notification fires on a NEW order, not on every stock correction.
   // Additive + idempotent (CREATE TABLE/INDEX IF NOT EXISTS).
   'migrations/migrations/061_stock_notify_order_seen.sql',
+  // Dedup for the oversell alert: one alert per distinct oversell (new later
+  // order / deeper count), not one per 5-min reconcile cycle. Additive +
+  // idempotent (CREATE TABLE/INDEX IF NOT EXISTS).
+  'migrations/migrations/062_oversell_notify_state.sql',
 ]
 
 function loadDatabaseUrl() {

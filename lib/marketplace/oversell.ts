@@ -15,7 +15,7 @@
  */
 
 import { and, desc, eq, gte, inArray, sql } from 'drizzle-orm'
-import { db, shops, orders, orderItems, userSettings, orderCancelLog } from '@/lib/db'
+import { db, shops, orders, orderItems, userSettings, orderCancelLog, oversellNotifyState } from '@/lib/db'
 import { logger } from '@/lib/logger'
 import { sendTelegramMessage } from '@/lib/telegram'
 import { cancelOrder } from '@/lib/marketplace/order-cancel'
@@ -70,7 +70,54 @@ export interface OversellGroup {
   productIds: string[]          // all products in the group
 }
 
-export type OversellAction = 'alert_only' | 'auto_cancelled' | 'rate_limited' | 'no_later_order' | 'auto_disabled'
+// Pure DEDUP decision: is THIS oversell the same situation we already alerted
+// about? Same later order AND same oversold amount = a duplicate → suppress. A
+// new later order or a deeper oversold count is a distinct situation → alert.
+// Exported for a focused, DB-free test.
+export function isDuplicateOversell(
+  prev: { orderExt: string | null; oversoldBy: number | null } | null | undefined,
+  cur: { orderExt: string | null; oversoldBy: number },
+): boolean {
+  return !!prev
+    && (prev.orderExt ?? null) === (cur.orderExt ?? null)
+    && (prev.oversoldBy ?? null) === cur.oversoldBy
+}
+
+// Load the last-alerted oversell fingerprint for (user, match_key). Best-effort:
+// a read failure returns null → the caller FAILS OPEN (alerts), so a real
+// oversell is never silently swallowed by a transient DB error.
+async function lastOversellAlert(userId: string, matchKey: string): Promise<{ orderExt: string | null; oversoldBy: number | null } | null> {
+  try {
+    const [prev] = await db.select({
+      orderExt: oversellNotifyState.last_order_ext,
+      oversoldBy: oversellNotifyState.last_oversold_by,
+    }).from(oversellNotifyState).where(and(
+      eq(oversellNotifyState.user_id, userId),
+      eq(oversellNotifyState.match_key, matchKey),
+    ))
+    return prev ?? null
+  } catch (err) {
+    logger.warn('oversell_dedup_read_failed', { userId, error: String(err).slice(0, 200) })
+    return null
+  }
+}
+
+// Persist the oversell we just alerted about, so an identical repeat next cycle
+// stays silent. Best-effort — a miss only risks one duplicate later, never a crash.
+async function recordOversellAlert(userId: string, matchKey: string, orderExt: string | null, oversoldBy: number): Promise<void> {
+  try {
+    await db.insert(oversellNotifyState).values({
+      user_id: userId, match_key: matchKey, last_order_ext: orderExt, last_oversold_by: oversoldBy, updated_at: new Date(),
+    }).onConflictDoUpdate({
+      target: [oversellNotifyState.user_id, oversellNotifyState.match_key],
+      set: { last_order_ext: orderExt, last_oversold_by: oversoldBy, updated_at: new Date() },
+    })
+  } catch (err) {
+    logger.warn('oversell_dedup_write_failed', { userId, error: String(err).slice(0, 200) })
+  }
+}
+
+export type OversellAction = 'alert_only' | 'auto_cancelled' | 'rate_limited' | 'no_later_order' | 'auto_disabled' | 'suppressed_duplicate'
 
 export interface OversellOutcome {
   action: OversellAction
@@ -108,6 +155,21 @@ export async function handleOversell(g: OversellGroup): Promise<OversellOutcome>
     ? `${MP_LABEL[later.marketplace] ?? later.marketplace} #${later.orderIdExternal ?? later.orderId}`
     : '—'
   const head = `⚠️ <b>Oversell</b>: <b>${g.title}</b>\nSold ${oversoldBy} more than in stock. Latest order: ${laterLabel}.`
+
+  // DEDUP: fire ONCE per distinct oversell situation, not every reconcile cycle.
+  // An unresolved oversell recurs every 5-min sync; without this the seller gets
+  // the same «⚠️ Oversell» alert indefinitely (141 identical messages). We
+  // fingerprint on the later order + oversold amount: a NEW later order or a
+  // DEEPER oversell re-alerts; the same unchanged situation stays silent. This
+  // gates the whole handler — the auto-cancel action path also stops re-attacking
+  // an already-handled order every cycle. Fail-OPEN on a read miss (alert).
+  const fpOrder = later?.orderIdExternal ?? later?.orderId ?? null
+  const prevAlert = await lastOversellAlert(g.userId, g.matchKey)
+  if (isDuplicateOversell(prevAlert, { orderExt: fpOrder, oversoldBy })) {
+    return { action: 'suppressed_duplicate', oversoldBy }
+  }
+  // Record BEFORE alerting so a best-effort alert failure can't re-spam next cycle.
+  await recordOversellAlert(g.userId, g.matchKey, fpOrder, oversoldBy)
 
   // 1. Always alert first.
   if (!autoCancelEnabled()) {
