@@ -9,6 +9,8 @@ import { syncUzumSettlements } from '@/lib/uzum/settlements-sync'
 import { decrypt } from '@/lib/crypto'
 import { withErrorHandler } from '@/lib/api-handler'
 import { sendTelegramMessage } from '@/lib/telegram'
+import { reconcilePhysicalStock } from '@/lib/marketplace/physical-stock'
+import { logger } from '@/lib/logger'
 
 export const runtime    = 'nodejs'
 export const maxDuration = 300
@@ -75,6 +77,19 @@ async function syncShop(
       }
     }
     if (!r) return { shopId: shop.id, marketplace: shop.marketplace, ok: true, skipped: true }
+    // After a heavy product sync refreshed stock_quantity from the live listings,
+    // reconcile physical_stock (the shared pool that drives `available`): adopt a
+    // listing read as the pool ONLY when it's seller-originated — differs from our
+    // most-recent stock write — never when it equals our own throttle. This is
+    // what keeps our mirror writes from ever feeding the pool. Best-effort — a
+    // reconcile failure must never fail the sync.
+    if (heavy && r.ok) {
+      try {
+        await reconcilePhysicalStock(shop.id)
+      } catch (e) {
+        logger.warn('physical_stock_reconcile_failed', { shopId: shop.id, error: String(e).slice(0, 200) })
+      }
+    }
     return { shopId: shop.id, marketplace: shop.marketplace, ms: Date.now() - start, ...r }
   } catch (err) {
     return { shopId: shop.id, marketplace: shop.marketplace, ms: Date.now() - start, ok: false, error: String(err) }

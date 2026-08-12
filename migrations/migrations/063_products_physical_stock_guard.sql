@@ -1,0 +1,11 @@
+-- 063_products_physical_stock_guard.sql
+-- products.physical_stock is the shared-pool source for cross-marketplace stock
+-- sync (computeAvailable reads it, product sync self-populates it). The column
+-- was originally added by 005_shared_inventory.sql, which is NOT in the deploy
+-- migrator's registered list (that list begins at 021) — so a FRESH deploy would
+-- never create it and the stock-sync queries would fail. This guard guarantees
+-- the column exists on every environment.
+--
+-- Additive + idempotent (ADD COLUMN IF NOT EXISTS) — safe to re-run; existing
+-- rows (incl. the live DB where the column already exists) are untouched.
+ALTER TABLE products ADD COLUMN IF NOT EXISTS physical_stock integer;

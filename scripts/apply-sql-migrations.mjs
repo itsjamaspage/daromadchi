@@ -69,6 +69,10 @@ const MIGRATIONS = [
   // order / deeper count), not one per 5-min reconcile cycle. Additive +
   // idempotent (CREATE TABLE/INDEX IF NOT EXISTS).
   'migrations/migrations/062_oversell_notify_state.sql',
+  // Guards products.physical_stock (the shared-pool source) — 005 created it but
+  // isn't registered, so a fresh deploy would miss it. Idempotent (ADD COLUMN IF
+  // NOT EXISTS).
+  'migrations/migrations/063_products_physical_stock_guard.sql',
 ]
 
 function loadDatabaseUrl() {

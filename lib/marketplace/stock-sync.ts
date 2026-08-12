@@ -56,6 +56,7 @@ interface ProductRow {
   shop_id: string
   sku: string | null
   stock_quantity: number
+  physical_stock: number | null
   market_barcode: string | null
   market_sku: string | null
   market_warehouse_id: string | null
@@ -123,6 +124,7 @@ async function loadGroups(userId: string): Promise<{
       shop_id: products.shop_id,
       sku: products.sku,
       stock_quantity: products.stock_quantity,
+      physical_stock: products.physical_stock,
       market_barcode: products.market_barcode,
       market_sku: products.market_sku,
       market_warehouse_id: products.market_warehouse_id,
@@ -179,6 +181,7 @@ async function loadGroups(userId: string): Promise<{
       apiMode: shop.api_mode,
       priority: shop.primary_channel_priority,
       listedStock: p.stock_quantity,
+      physicalStock: p.physical_stock,
       pending: pendingByProduct.get(p.id) ?? 0,
       sku: p.sku,
     })
@@ -493,11 +496,12 @@ export async function syncStockSyncGroups(opts: RunOptions): Promise<StockSyncRu
       })
 
       // Write-back: on a SUCCESSFUL push, keep our products.stock_quantity copy in
-      // lockstep with what we just wrote to the live listing. This is what stops
-      // the copy from drifting: once written, listedStock === real stock next
-      // cycle, so the reassert's own trigger stays honest and a false
-      // target===listed skip can't recur. Best-effort — a miss only risks one more
-      // reassert later, never a crash.
+      // lockstep with what we just wrote to the live listing, so willWrite doesn't
+      // re-fire the same throttle every cycle. This touches ONLY stock_quantity
+      // (the outbound listing view) — NEVER physical_stock (the pool). The pool is
+      // computed from physical_stock alone (computeAvailable), so this write-back
+      // can no longer shrink `available`; it's the listing that moves, not the
+      // pool. Best-effort — a miss only risks one redundant reassert later.
       const writeBack = stockWriteBack(result.status, plan.target, product.stock_quantity)
       if (writeBack !== null) {
         try {

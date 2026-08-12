@@ -58,8 +58,16 @@ export interface SyncMember {
   apiMode: 'read_only' | 'stock_sync'
   /** Lower = higher priority. The primary (lowest) keeps the last unit. */
   priority: number
-  /** What the marketplace currently lists as available (products.stock_quantity). */
+  /** What the marketplace currently lists as available (products.stock_quantity)
+   *  — the OUTBOUND throttled listing (a view we write to marketplaces). This is
+   *  used for the per-member write decision (willWrite), NOT as the pool. */
   listedStock: number
+  /** The real on-hand pool for this member (products.physical_stock). The ONLY
+   *  input to `available`. NEVER written by our own throttle/mirror writes — it
+   *  moves only on a seller-originated stock change (see physicalStockFromRead).
+   *  NULL until product sync self-populates it, in which case computeAvailable
+   *  seeds from listedStock so behaviour degrades gracefully. */
+  physicalStock: number | null
   /** Reserving order units on this listing — those the PVZ has received
    *  (Uzum ACCEPTED_AT_DP / Yandex DELIVERY) and later. Orders still in transit
    *  to the PVZ or with the seller are excluded so they don't draw down stock.
@@ -91,9 +99,35 @@ export interface StockPlan {
  */
 export function computeAvailable(members: SyncMember[]): number {
   if (members.length === 0) return 0
-  const maxStock = Math.max(0, ...members.map(m => Math.max(0, m.listedStock)))
+  // POOL = physical_stock (real on-hand inventory), NOT stock_quantity (the
+  // THROTTLED outbound listing). Reading the throttled listing back as the pool
+  // is exactly what ratcheted available 2→1→0: each cycle re-subtracted the open
+  // reserve from an already-throttled number. physical_stock is never written by
+  // our mirror writes, so it holds the true pool. Fall back to listedStock only
+  // to SEED a member whose physical_stock is still NULL (product sync populates
+  // it on the next seller-originated read).
+  const poolOf = (m: SyncMember) => Math.max(0, m.physicalStock ?? m.listedStock)
+  const maxStock = Math.max(0, ...members.map(poolOf))
   const pending = members.reduce((s, m) => s + Math.max(0, m.pending), 0)
   return Math.max(0, maxStock - pending)
+}
+
+/**
+ * The value to write into products.physical_stock given a fresh marketplace
+ * listing read, or null to LEAVE IT UNTOUCHED.
+ *
+ * A read that EQUALS our most-recent written target is OUR OWN throttle/mirror
+ * write coming back — it must never feed the pool, so return null. Any other read
+ * is a SELLER-originated stock change (the seller re-stocked or adjusted their
+ * listing), including the first-ever read of a product we've never written
+ * (lastSentTarget = null) — adopt it as the pool.
+ *
+ * This is the guarantee that our own writes can never shrink the shared pool:
+ * the only path that moves physical_stock ignores reads that match what we wrote.
+ */
+export function physicalStockFromRead(read: number, lastSentTarget: number | null): number | null {
+  if (lastSentTarget != null && read === lastSentTarget) return null
+  return read
 }
 
 // Deterministic ordering: priority asc, then Uzum before others (so Uzum is the

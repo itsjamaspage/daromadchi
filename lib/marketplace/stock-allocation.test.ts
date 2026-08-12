@@ -2,7 +2,7 @@
 // Run: node --import tsx --test lib/marketplace/stock-allocation.test.ts
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
-import { computeAvailable, planStockWrites, planGroupWrites, stockWriteBack, detectNewOrders, type SyncMember } from './stock-allocation'
+import { computeAvailable, planStockWrites, planGroupWrites, stockWriteBack, detectNewOrders, physicalStockFromRead, type SyncMember } from './stock-allocation'
 
 function member(over: Partial<SyncMember>): SyncMember {
   return {
@@ -12,6 +12,9 @@ function member(over: Partial<SyncMember>): SyncMember {
     apiMode: over.apiMode ?? 'stock_sync',
     priority: over.priority ?? 100,
     listedStock: over.listedStock ?? 0,
+    // Default NULL → computeAvailable seeds from listedStock, preserving the
+    // pre-physical_stock behaviour every existing test relies on.
+    physicalStock: over.physicalStock ?? null,
     pending: over.pending ?? 0,
     sku: over.sku ?? 'JMJ16BEG',
   }
@@ -27,6 +30,64 @@ describe('computeAvailable', () => {
     assert.equal(computeAvailable([uzum({ listedStock: 3, pending: 1 }), ym({ listedStock: 3 })]), 2)
     assert.equal(computeAvailable([uzum({ listedStock: 2, pending: 1 }), ym({ listedStock: 2 })]), 1)
     assert.equal(computeAvailable([uzum({ listedStock: 0, pending: 5 })]), 0)
+  })
+})
+
+describe('computeAvailable — pool comes from physical_stock, NOT the throttled listing', () => {
+  it('(a) physical_stock=2 with one pending reserving order → available=1 (NOT 0)', () => {
+    // The real pool is 2, one unit reserved by an open order → 1 free.
+    const members = [
+      uzum({ physicalStock: 2, listedStock: 2, pending: 0 }),
+      ym({ physicalStock: 2, listedStock: 2, pending: 1 }),
+    ]
+    assert.equal(computeAvailable(members), 1)
+  })
+
+  it('(b) throttling stock_quantity down to 1 does NOT lower available while physical_stock=2', () => {
+    // Uzum listing was throttled to 1 (listedStock=1) but the pool is still 2.
+    // Old code read MAX(listedStock)=1 − pending 1 = 0 (the ratchet). New code
+    // reads MAX(physicalStock)=2 − 1 = 1. The pool is immune to our throttle.
+    const members = [
+      uzum({ physicalStock: 2, listedStock: 1, pending: 0 }),
+      ym({ physicalStock: 2, listedStock: 1, pending: 1 }),
+    ]
+    assert.equal(computeAvailable(members), 1)
+    // Prove the old (throttled-listing) math would have collapsed to 0:
+    const oldStyle = Math.max(0, Math.max(1, 1) - 1)
+    assert.equal(oldStyle, 0)
+  })
+
+  it('falls back to listedStock only while physical_stock is still NULL (seed)', () => {
+    const members = [
+      uzum({ physicalStock: null, listedStock: 3, pending: 1 }),
+      ym({ physicalStock: null, listedStock: 3, pending: 0 }),
+    ]
+    assert.equal(computeAvailable(members), 2)   // seeds from listedStock=3
+  })
+
+  it('a member with a stale-low listing does not drag the pool below a peer physical_stock', () => {
+    // YM physical NULL (seed 0 from a stale listing) must not beat Uzum physical 2.
+    const members = [
+      uzum({ physicalStock: 2, listedStock: 2, pending: 1 }),
+      ym({ physicalStock: null, listedStock: 0, pending: 0 }),
+    ]
+    assert.equal(computeAvailable(members), 1)   // MAX(2, 0) − 1
+  })
+})
+
+describe('physicalStockFromRead — our throttle never feeds the pool', () => {
+  it('(c) a seller-originated listing change updates physical_stock (read adopted)', () => {
+    assert.equal(physicalStockFromRead(5, 1), 5)      // read 5 ≠ our last write 1 → seller re-stocked
+    assert.equal(physicalStockFromRead(2, 0), 2)      // read 2 ≠ our last write 0 → seller change
+  })
+
+  it('(d) our OWN throttle write (read equals our last target) does NOT change physical_stock', () => {
+    assert.equal(physicalStockFromRead(1, 1), null)   // we wrote 1, listing reads 1 → ignore
+    assert.equal(physicalStockFromRead(0, 0), null)
+  })
+
+  it('adopts the first-ever read of a product we have never written (lastSentTarget null)', () => {
+    assert.equal(physicalStockFromRead(3, null), 3)   // seed the pool from the initial listing
   })
 })
 
