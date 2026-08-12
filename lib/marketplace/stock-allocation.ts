@@ -31,6 +31,10 @@ import type { MarketplaceType } from '@/lib/types'
  *            in transit) and everything at «Новые» / «В сборке».
  *   Yandex → DELIVERY         — the order has been shipped / handed off to the
  *                              delivery service (the physical hand-off boundary).
+ *            PICKUP           — waiting at the pickup point, ordered but not yet
+ *                              collected: a physical unit is still committed, so
+ *                              it must draw down. Only DELIVERED (collected)
+ *                              releases it.
  *
  * 'delivered' («Выданы» — customer collected) is already reflected in the
  * marketplace's own listed stock, so it is NOT re-counted here (double-subtract).
@@ -45,8 +49,9 @@ import type { MarketplaceType } from '@/lib/types'
 export const RESERVING_RAW_STATUSES = [
   // Uzum — PVZ has received the item («Приняты Uzum») and later
   'ACCEPTED_AT_DP', 'HANDED_OVER', 'TRANSFERRED',
-  // Yandex — shipped / handed off to delivery
-  'DELIVERY',
+  // Yandex — shipped / handed off to delivery, or waiting at the pickup point
+  // (ordered, not yet collected). DELIVERED (collected) is excluded — see above.
+  'DELIVERY', 'PICKUP',
 ] as const
 
 export type OversellMode = 'lock_last_unit' | 'partition' | 'off'

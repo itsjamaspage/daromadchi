@@ -2,7 +2,7 @@
 // Run: node --import tsx --test lib/marketplace/stock-allocation.test.ts
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
-import { computeAvailable, planStockWrites, planGroupWrites, stockWriteBack, detectNewOrders, physicalStockFromRead, type SyncMember } from './stock-allocation'
+import { computeAvailable, planStockWrites, planGroupWrites, stockWriteBack, detectNewOrders, physicalStockFromRead, RESERVING_RAW_STATUSES, type SyncMember } from './stock-allocation'
 
 function member(over: Partial<SyncMember>): SyncMember {
   return {
@@ -23,6 +23,32 @@ function member(over: Partial<SyncMember>): SyncMember {
 // The worked example: JMJ16BEG on Uzum (listed 1) + YM (listed 1), one Uzum sale.
 const uzum = (o: Partial<SyncMember> = {}) => member({ shopId: 'uzum-shop', marketplace: 'uzum', priority: 0, listedStock: 1, ...o })
 const ym = (o: Partial<SyncMember> = {}) => member({ shopId: 'ym-shop', marketplace: 'yandex_market', priority: 100, listedStock: 1, ...o })
+
+describe('RESERVING_RAW_STATUSES — Yandex PICKUP reserves a unit', () => {
+  // Mirror the SQL's status→pending mapping: reservingOrderCondition() counts an
+  // order only when its raw marketplace_status is in this set.
+  const reserving = (status: string) => (RESERVING_RAW_STATUSES as readonly string[]).includes(status)
+
+  it('PICKUP reserves (ordered, waiting at the pickup point); DELIVERED does not', () => {
+    assert.ok(reserving('PICKUP'))        // committed unit → draws down
+    assert.ok(reserving('DELIVERY'))      // still reserving alongside PICKUP
+    assert.ok(!reserving('DELIVERED'))    // collected → already in listed stock
+  })
+
+  it("an order at marketplace_status='PICKUP' counts as pending=1 and reduces available by 1", () => {
+    const pending = ['PICKUP'].filter(reserving).length
+    assert.equal(pending, 1)
+    // Physical pool 2, one PICKUP order reserving → available 1 (down from 2).
+    const withPickup = [
+      uzum({ physicalStock: 2, listedStock: 2, pending: 0 }),
+      ym({ physicalStock: 2, listedStock: 2, pending }),
+    ]
+    assert.equal(computeAvailable(withPickup), 1)
+    // Same group with no reserving order stays at 2 — proving PICKUP is what drew it down.
+    const noOrder = [uzum({ physicalStock: 2, pending: 0 }), ym({ physicalStock: 2, pending: 0 })]
+    assert.equal(computeAvailable(noOrder), 2)
+  })
+})
 
 describe('computeAvailable', () => {
   it('MAX(stock) − SUM(pending), clamped at 0', () => {
