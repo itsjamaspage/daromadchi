@@ -26,6 +26,15 @@ export interface AtmosEnv {
   callbackCidr: string
 }
 
+// Unit of the `amount` field ATMOS sends in the billing callback.
+//   'tiyin' | 'som' → the callback amount is checked with STRICT equality.
+//   'unknown'       → TEMPORARY: the check is non-blocking (accepts tiyin OR
+//                     so'm) and logs a WARN on every callback so it reads as an
+//                     open question, not a silent accept.
+// TODO(atmos): confirm the unit with ATMOS, then set this to 'tiyin' (or 'som').
+export type AmountUnit = 'tiyin' | 'som' | 'unknown'
+export const ATMOS_CALLBACK_AMOUNT_UNIT: AmountUnit = 'unknown'
+
 export class AtmosConfigError extends Error {
   constructor(message: string) {
     super(message)

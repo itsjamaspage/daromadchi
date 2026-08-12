@@ -27,8 +27,9 @@ CREATE TABLE IF NOT EXISTS subscriptions (
 CREATE INDEX IF NOT EXISTS subscriptions_user_id_idx ON subscriptions (user_id);
 CREATE INDEX IF NOT EXISTS subscriptions_status_idx  ON subscriptions (status);
 
--- Additive ATMOS columns on the existing payments table.
-ALTER TABLE payments ADD COLUMN IF NOT EXISTS ext_id               uuid DEFAULT gen_random_uuid();
+-- Additive ATMOS columns on the existing payments table. The hosted-checkout
+-- flow keys off request_id + account (NOT ext_id, which is the direct/MPS flow).
+ALTER TABLE payments ADD COLUMN IF NOT EXISTS request_id           uuid DEFAULT gen_random_uuid();
 ALTER TABLE payments ADD COLUMN IF NOT EXISTS account              text;
 ALTER TABLE payments ADD COLUMN IF NOT EXISTS amount_tiyin         integer;
 ALTER TABLE payments ADD COLUMN IF NOT EXISTS atmos_transaction_id text;
@@ -37,7 +38,7 @@ ALTER TABLE payments ADD COLUMN IF NOT EXISTS ofd_url              text;
 ALTER TABLE payments ADD COLUMN IF NOT EXISTS subscription_id      uuid;
 ALTER TABLE payments ADD COLUMN IF NOT EXISTS raw_callback         jsonb;
 
--- ext_id is the idempotency key: unique so one intent maps to exactly one row.
-CREATE UNIQUE INDEX IF NOT EXISTS payments_ext_id_unique ON payments (ext_id);
--- account is the callback lookup key.
-CREATE INDEX IF NOT EXISTS payments_account_idx ON payments (account);
+-- request_id is the idempotency key: unique so one intent maps to exactly one row.
+CREATE UNIQUE INDEX IF NOT EXISTS payments_request_id_unique ON payments (request_id);
+-- account is the per-attempt reconciliation / callback-lookup key: unique.
+CREATE UNIQUE INDEX IF NOT EXISTS payments_account_unique ON payments (account);

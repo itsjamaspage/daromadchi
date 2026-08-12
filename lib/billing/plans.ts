@@ -9,13 +9,13 @@ export type Interval = 'monthly' | 'annual'
 // fluctuating number — the USD figure is a DISPLAY-ONLY approximation and MUST
 // NEVER feed a charged amount.
 //
-// Agreed anchor (confirmed): Pro 252 000 so'm/mo, Pro+ 504 000 so'm/mo. Annual is
-// billed with 3 months free (pay 9 of 12): 189 000 / 378 000 so'm per month →
-// annualTotal = ×12.
+// Agreed anchor (confirmed, deliberate so'm price — NOT a USD-derived number):
+// Pro 250 000 so'm/mo, Pro+ 500 000 so'm/mo. Annual is billed with 3 months free
+// (pay 9 of 12): annualTotal = monthly × 9 → 2 250 000 / 4 500 000 so'm.
 // ─────────────────────────────────────────────────────────────────────────────
 export const PLAN_PRICES_TIYIN: Record<PlanKey, { monthly: number; annualTotal: number }> = {
-  pro:      { monthly: 25_200_000, annualTotal: 226_800_000 }, // 252 000 / 2 268 000 so'm
-  pro_plus: { monthly: 50_400_000, annualTotal: 453_600_000 }, // 504 000 / 4 536 000 so'm
+  pro:      { monthly: 25_000_000, annualTotal: 225_000_000 }, // 250 000 / 2 250 000 so'm
+  pro_plus: { monthly: 50_000_000, annualTotal: 450_000_000 }, // 500 000 / 4 500 000 so'm
 }
 
 // DISPLAY-ONLY dollar reference for the "≈ $N/mo" secondary label. Never charged.

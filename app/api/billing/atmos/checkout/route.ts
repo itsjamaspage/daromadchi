@@ -1,8 +1,8 @@
 /**
  * ATMOS hosted-checkout initiation (Phase 1).
  *
- * Creates a pending subscription + a pending payment row (with a persisted ext_id
- * idempotency key), then asks ATMOS for a hosted invoice and returns its payment
+ * Creates a pending subscription + a pending payment row (with a persisted
+ * request_id idempotency key), then asks ATMOS for a hosted invoice and returns its payment
  * URL. NO card data passes through Daromadchi — the customer enters their card on
  * ATMOS's page. Recurring/binding is Phase 2.
  */
@@ -60,8 +60,8 @@ export async function POST(req: Request) {
 
   const amountTiyin = planAmountTiyin(plan, interval)
   const periodMonths = planPeriodMonths(interval)
+  const requestId = randomUUID()        // hosted-checkout idempotency key (create/get)
   const account = randomUUID()          // reconciliation key echoed back in the callback
-  const extId = account                 // one idempotency key per attempt
 
   // Persist the intent BEFORE calling ATMOS so a retry/callback maps to this row.
   let subscriptionId: string
@@ -81,7 +81,7 @@ export async function POST(req: Request) {
       amount: String(tiyinToSom(amountTiyin)),   // so'm, for the existing tax record
       amount_tiyin: amountTiyin,                  // authoritative charged tiyin
       status: 'pending',
-      ext_id: extId,
+      request_id: requestId,
       account,
       subscription_id: subscriptionId,
     }).returning({ id: payments.id })
@@ -98,6 +98,7 @@ export async function POST(req: Request) {
     const token = await getAccessToken()
     const resp = await createInvoice({
       amountTiyin,
+      requestId,
       account,
       successUrl: `${appUrl}/billing/success`,
       items: buildSubscriptionOfdItems(planLabel, amountTiyin),

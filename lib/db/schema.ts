@@ -423,10 +423,14 @@ export const payments = pgTable('payments', {
   amount:                   numeric('amount').notNull(),
   status:                   paymentStatusEnum('status').default('pending').notNull(),
   // ── ATMOS integration (additive) ──
-  // Our idempotency key, generated + persisted BEFORE calling ATMOS so retries
-  // and callbacks match exactly one row and we never charge twice for one intent.
-  ext_id:                   uuid('ext_id').defaultRandom(),
-  // Reconciliation key we send to ATMOS and receive back in the callback.
+  // Hosted-checkout idempotency key (checkout/invoice/create + /get key off
+  // request_id + account, NOT ext_id — ext_id belongs to the direct/MPS flow we
+  // are NOT building). Generated + persisted BEFORE calling ATMOS so a retry
+  // reuses one intent and we never charge twice. (A future MPS/direct flow would
+  // add its own ext_id column — intentionally absent here.)
+  request_id:               uuid('request_id').defaultRandom(),
+  // Per-attempt reconciliation key we send to ATMOS and receive back in the
+  // callback for lookup — unique.
   account:                  text('account'),
   // Authoritative charged amount in TIYIN (the value sent to ATMOS). `amount`
   // above stays the so'm figure for the existing tax/accounting record.
@@ -445,8 +449,8 @@ export const payments = pgTable('payments', {
 }, (t) => [
   index('payments_user_id_idx').on(t.user_id),
   index('payments_provider_tx_idx').on(t.provider_transaction_id),
-  uniqueIndex('payments_ext_id_unique').on(t.ext_id),
-  index('payments_account_idx').on(t.account),
+  uniqueIndex('payments_request_id_unique').on(t.request_id),
+  uniqueIndex('payments_account_unique').on(t.account),
 ])
 
 /* ── 14b. subscriptions ─────────────────────────────────────────────────────── */

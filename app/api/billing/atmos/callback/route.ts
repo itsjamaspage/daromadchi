@@ -18,7 +18,7 @@ import { NextResponse } from 'next/server'
 import { and, eq } from 'drizzle-orm'
 import { db, payments, subscriptions, users } from '@/lib/db'
 import { logger } from '@/lib/logger'
-import { getAtmosEnv } from '@/lib/atmos/env'
+import { getAtmosEnv, ATMOS_CALLBACK_AMOUNT_UNIT } from '@/lib/atmos/env'
 import { verifySign } from '@/lib/atmos/sign'
 import { ipInCidr, clientIpFromForwarded } from '@/lib/atmos/net'
 import { tiyinToSom } from '@/lib/billing/plans'
@@ -87,18 +87,24 @@ export async function POST(req: Request) {
   // Idempotency: already settled → re-ack without re-applying.
   if (pay.status === 'paid') return NextResponse.json(OK, { status: 200 })
 
-  // 5. Confirm the amount. ATMOS may send tiyin or so'm — accept either against
-  //    our authoritative tiyin, and FLAG the unit for confirmation. A value that
-  //    matches NEITHER is a tampered/mismatched amount → reject.
+  // 5. Confirm the amount against our authoritative tiyin. The comparison depends
+  //    on ATMOS_CALLBACK_AMOUNT_UNIT:
+  //      'tiyin'/'som' → STRICT equality (the real check, once the unit is known);
+  //      'unknown'     → TEMPORARY non-blocking: accept tiyin OR so'm and WARN on
+  //                      every callback so this is visibly a pending question, not
+  //                      a silent accept. TODO(atmos): set the unit to close this.
   const amountNum = Number(amountRaw)
   const expectTiyin = pay.amountTiyin ?? -1
-  const matchesTiyin = amountNum === expectTiyin
-  const matchesSom = amountNum === tiyinToSom(expectTiyin)
-  if (!matchesTiyin && !matchesSom) {
-    return reject('amount_mismatch', { account, got: amountNum, expectTiyin })
-  }
-  if (matchesSom && !matchesTiyin) {
-    logger.warn('atmos_callback_amount_in_som', { account, got: amountNum, expectTiyin }) // TODO(atmos): confirm unit
+  const expectSom = tiyinToSom(expectTiyin)
+  if (ATMOS_CALLBACK_AMOUNT_UNIT === 'tiyin') {
+    if (amountNum !== expectTiyin) return reject('amount_mismatch', { account, got: amountNum, expectTiyin })
+  } else if (ATMOS_CALLBACK_AMOUNT_UNIT === 'som') {
+    if (amountNum !== expectSom) return reject('amount_mismatch', { account, got: amountNum, expectSom })
+  } else {
+    if (amountNum !== expectTiyin && amountNum !== expectSom) {
+      return reject('amount_mismatch', { account, got: amountNum, expectTiyin })
+    }
+    logger.warn('atmos_callback_amount_unit_unknown', { account, got: amountNum, expectTiyin, expectSom })
   }
 
   // 6. Settle: mark paid, activate subscription + user plan, store OFD url.

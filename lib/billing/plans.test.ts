@@ -9,8 +9,8 @@ import {
 
 describe('tiyin ↔ so\'m conversion (the 100× boundary)', () => {
   it('somToTiyin multiplies by 100; tiyinToSom divides by 100', () => {
-    assert.equal(somToTiyin(252_000), 25_200_000)
-    assert.equal(tiyinToSom(25_200_000), 252_000)
+    assert.equal(somToTiyin(250_000), 25_000_000)
+    assert.equal(tiyinToSom(25_000_000), 250_000)
     assert.equal(somToTiyin(1), 100)
     assert.equal(tiyinToSom(100), 1)
   })
@@ -23,22 +23,26 @@ describe('tiyin ↔ so\'m conversion (the 100× boundary)', () => {
 })
 
 describe('anchor amounts', () => {
-  it('Pro = 25 200 000 tiyin (252 000 so\'m), Pro+ = 50 400 000 tiyin (504 000 so\'m)', () => {
-    assert.equal(PLAN_PRICES_TIYIN.pro.monthly, 25_200_000)
-    assert.equal(PLAN_PRICES_TIYIN.pro_plus.monthly, 50_400_000)
-    assert.equal(tiyinToSom(PLAN_PRICES_TIYIN.pro.monthly), 252_000)
-    assert.equal(tiyinToSom(PLAN_PRICES_TIYIN.pro_plus.monthly), 504_000)
+  it('Pro = 25 000 000 tiyin (250 000 so\'m), Pro+ = 50 000 000 tiyin (500 000 so\'m)', () => {
+    assert.equal(PLAN_PRICES_TIYIN.pro.monthly, 25_000_000)
+    assert.equal(PLAN_PRICES_TIYIN.pro_plus.monthly, 50_000_000)
+    assert.equal(tiyinToSom(PLAN_PRICES_TIYIN.pro.monthly), 250_000)
+    assert.equal(tiyinToSom(PLAN_PRICES_TIYIN.pro_plus.monthly), 500_000)
   })
-  it('annual totals are 12 × the annual-monthly figure (3 months free applied)', () => {
-    assert.equal(PLAN_PRICES_TIYIN.pro.annualTotal, 226_800_000)      // 2 268 000 so'm
-    assert.equal(PLAN_PRICES_TIYIN.pro_plus.annualTotal, 453_600_000) // 4 536 000 so'm
-    assert.equal(annualMonthlySom('pro'), 189_000)
-    assert.equal(annualMonthlySom('pro_plus'), 378_000)
+  it('annual totals = monthly × 9 (3 months free)', () => {
+    assert.equal(PLAN_PRICES_TIYIN.pro.annualTotal, 225_000_000)      // 2 250 000 so'm
+    assert.equal(PLAN_PRICES_TIYIN.pro_plus.annualTotal, 450_000_000) // 4 500 000 so'm
+    // Sanity: annualTotal is exactly 9× the monthly so'm.
+    assert.equal(tiyinToSom(PLAN_PRICES_TIYIN.pro.annualTotal), 250_000 * 9)
+    assert.equal(tiyinToSom(PLAN_PRICES_TIYIN.pro_plus.annualTotal), 500_000 * 9)
+    // Per-month figure shown on the annual toggle (annualTotal / 12).
+    assert.equal(annualMonthlySom('pro'), 187_500)
+    assert.equal(annualMonthlySom('pro_plus'), 375_000)
   })
   it('planAmountTiyin picks monthly vs annualTotal', () => {
-    assert.equal(planAmountTiyin('pro', 'monthly'), 25_200_000)
-    assert.equal(planAmountTiyin('pro', 'annual'), 226_800_000)
-    assert.equal(planAmountTiyin('pro_plus', 'monthly'), 50_400_000)
+    assert.equal(planAmountTiyin('pro', 'monthly'), 25_000_000)
+    assert.equal(planAmountTiyin('pro', 'annual'), 225_000_000)
+    assert.equal(planAmountTiyin('pro_plus', 'monthly'), 50_000_000)
   })
   it('planPeriodMonths: monthly=1, annual=12', () => {
     assert.equal(planPeriodMonths('monthly'), 1)
@@ -48,8 +52,8 @@ describe('anchor amounts', () => {
 
 describe('formatSomFromTiyin', () => {
   it('space-groups thousands from a tiyin amount', () => {
-    assert.equal(formatSomFromTiyin(25_200_000), '252 000')
-    assert.equal(formatSomFromTiyin(50_400_000), '504 000')
+    assert.equal(formatSomFromTiyin(25_000_000), '250 000')
+    assert.equal(formatSomFromTiyin(50_000_000), '500 000')
     assert.equal(formatSomFromTiyin(100), '1')
   })
 })

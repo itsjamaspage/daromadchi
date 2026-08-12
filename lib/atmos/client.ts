@@ -122,6 +122,7 @@ export interface AtmosOfdItem {
 
 export interface CreateInvoiceParams {
   amountTiyin: number   // ALWAYS tiyin
+  requestId: string     // hosted-checkout idempotency key
   account: string       // our reconciliation key (also echoed in the callback)
   successUrl: string
   items: AtmosOfdItem[]
@@ -135,7 +136,8 @@ export async function createInvoice(
 ): Promise<AtmosResponse> {
   const body = {
     store_id: env.storeId,
-    amount: params.amountTiyin,   // tiyin — never an FX-derived number
+    request_id: params.requestId,   // idempotency key for this create call
+    amount: params.amountTiyin,     // tiyin — never an FX-derived number
     account: params.account,
     success_url: params.successUrl,
     items: params.items,
