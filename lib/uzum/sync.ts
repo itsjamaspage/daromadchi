@@ -13,9 +13,28 @@ import {
   UzumApiError,
   type UzumFbsOrder,
   type UzumFbsOrderItem,
+  type UzumSku,
 } from './client'
 import { resolveColor } from '@/lib/products/resolveColor'
 import { canonicalSkuCandidates } from '@/lib/products/sku-aliases'
+
+// Resolve a SKU's colour: prefer the skuTitle suffix (БЕЖЕВ / БЕЛЫЙ …), then
+// fall back to the structured «Цвет» / «Rang» characteristic already present in
+// the product-card payload. Its RU value resolves cleanly (e.g. «Бежевый» →
+// beige), so SKUs whose title carries no colour word still get a colour.
+function uzumSkuColor(sku: UzumSku): string | null {
+  const fromTitle = resolveColor(sku.skuTitle)?.key
+  if (fromTitle) return fromTitle
+  const c = sku.characteristicsList?.find(
+    (x) => x.characteristicTitle?.ru === 'Цвет' || x.characteristicTitle?.uz === 'Rang',
+  )
+  return (
+    resolveColor(c?.characteristicValue?.ru)?.key ??
+    resolveColor(c?.characteristicValue?.uz)?.key ??
+    resolveColor(sku.characteristics)?.key ??
+    null
+  )
+}
 
 // Four user-facing statuses (internal keys in parens):
 //   1. Создан    (pending)   — seller has the order, packing it, not yet shipped
@@ -292,9 +311,10 @@ export async function syncFromUzum(shopId: string, token: string, heavy = true):
                 // same parent product (card.productId). Namespaced so it can
                 // never collide with a Yandex group key.
                 variant_group_key: `uzum:${card.productId}`,
-                // The colour lives in skuTitle ("Белый"); resolve it to a palette
-                // key for the per-colour child label. Null when unrecognised.
-                variant_color: resolveColor(sku.skuTitle)?.key ?? null,
+                // Colour for the per-colour child label: skuTitle suffix first,
+                // then the structured «Цвет» characteristic. Null when neither
+                // yields a recognised colour.
+                variant_color: uzumSkuColor(sku),
               })
             }
           }

@@ -7,6 +7,7 @@ import {
   fetchAllYandexSkuStats,
   fetchAllYandexOfferPrices,
   fetchAllYandexCampaignOffers,
+  fetchAllYandexOfferCards,
   fetchCampaignInfo,
   YandexApiError,
 } from './client'
@@ -98,6 +99,21 @@ export async function syncFromYandex(
       }
     } catch (e) {
       debug.campaignInfo = e instanceof YandexApiError ? `${e.status}` : 'err'
+    }
+
+    // Colour-attribute fallback. The offer / market-SKU NAME often has no colour
+    // word (e.g. the J16 earphones), but the seller-set «Цвет» lives in the
+    // offer-cards parameterValues. Fetch the offerId → colour map once,
+    // best-effort, and apply it only where the name yields no colour. Read-only
+    // (offer-cards POST is a read; needs businessId, same as offer-mappings).
+    let offerCardColors = new Map<string, string>()
+    if (businessId) {
+      try {
+        offerCardColors = await fetchAllYandexOfferCards(token, businessId)
+        debug.offerCardColors = offerCardColors.size
+      } catch (e) {
+        debug.offerCardColors = e instanceof YandexApiError ? `${e.status}` : 'err'
+      }
     }
 
     // ── Products (best-effort — don't fail the whole sync if endpoint 404s) ──
@@ -225,10 +241,15 @@ export async function syncFromYandex(
         // JMWHT and JMBLK match; JMJ16BEG differs). String equality groups them.
         // Namespaced so it can never collide with an Uzum key. Null when absent.
         const modelName = e.mapping?.marketModelName?.trim()
-        // No dedicated colour field — the per-variant colour lives in the market
-        // SKU name (e.g. "M9 Белый"); resolveColor extracts it. Offer name is a
-        // secondary source. Null when no known colour word is present.
-        const variantColor = resolveColor(e.mapping?.marketSkuName ?? e.offer.name)?.key ?? null
+        // No dedicated colour field on offer-mappings — the per-variant colour
+        // lives in the market SKU name (e.g. "M9 Белый"); resolveColor extracts
+        // it, offer name is a secondary source. When the name has no colour word
+        // (e.g. the J16 earphones), fall back to the offer-cards «Цвет» attribute
+        // keyed by offerId (= shopSku). Null when neither yields a colour.
+        const variantColor = resolveColor(e.mapping?.marketSkuName ?? e.offer.name)?.key
+          ?? (shopSku ? offerCardColors.get(shopSku) : undefined)
+          ?? (marketSku ? offerCardColors.get(marketSku) : undefined)
+          ?? null
         return {
           shop_id: shopId,
           marketplace_product_id: String(marketSku || shopSku || ''),
