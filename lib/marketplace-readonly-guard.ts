@@ -32,6 +32,10 @@ const APPROVED_POST_ENDPOINTS: RegExp[] = [
   // Yandex Market — offer-mappings (GET returns 405, POST is the read method)
   /api\.partner\.market\.yandex\.ru\/v2\/businesses\/\d+\/offer-mappings/,
   /api\.partner\.market\.yandex\.ru\/v2\/campaigns\/\d+\/offer-mappings/,
+  // Yandex Market — offer-cards (POST is the read method). Returns read-only
+  // characteristic values (parameterValues) incl. «Цвет»; used to recover a
+  // variant colour when the offer/SKU name has no colour word. No write path.
+  /api\.partner\.market\.yandex\.ru\/v2\/businesses\/\d+\/offer-cards/,
   // Yandex Market — stocks (SKU list too large for query string, POST is required read)
   /api\.partner\.market\.yandex\.ru\/v2\/campaigns\/\d+\/offers\/stocks/,
   // Yandex Market — SKU stats (date range in body, POST is required read)

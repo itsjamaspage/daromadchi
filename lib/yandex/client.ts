@@ -6,6 +6,7 @@
 // Docs: https://yandex.ru/dev/market/partner-api/doc/
 
 import { marketplaceFetch } from '@/lib/marketplace-readonly-guard'
+import { resolveColor } from '@/lib/products/resolveColor'
 
 export const YANDEX_API_BASE = 'https://api.partner.market.yandex.ru'
 
@@ -551,6 +552,51 @@ export async function fetchAllYandexProducts(
     pageToken = res.result.paging?.nextPageToken
   } while (pageToken)
   return all
+}
+
+// ── Offer cards (POST is the read verb) ──────────────────────────────────────
+// offer-cards is the only Partner-API payload that carries the seller-set
+// characteristic values (parameterValues), including «Цвет». offer-mappings
+// (used for the main product sync) does NOT return them. We read it purely to
+// recover a variant colour when the offer / market-SKU NAME has no colour word
+// (e.g. the J16 earphones, whose name is just "Беспроводные наушники J16 …").
+// Read-only: allowlisted in APPROVED_POST_ENDPOINTS; no write capability here.
+interface YandexOfferCardParam { parameterId?: number; valueId?: number; value?: string; unitId?: number }
+interface YandexOfferCard { offerId?: string; parameterValues?: YandexOfferCardParam[] }
+interface YandexOfferCardsResponse {
+  result?: { offerCards?: YandexOfferCard[]; paging?: { nextPageToken?: string } }
+}
+
+// Returns offerId → resolved ColorKey for offers whose parameterValues contain a
+// recognisable colour word. Best-effort: the caller uses it only as a fallback
+// and swallows failures (accounts without card access answer 403/404). We scan
+// every parameter value through resolveColor rather than hard-coding a colour
+// parameterId — those ids are category-specific and the payload carries no
+// parameter names, and only genuine colour words resolve, so the first hit wins.
+export async function fetchAllYandexOfferCards(
+  token: string,
+  businessId: number,
+): Promise<Map<string, string>> {
+  const colorByOffer = new Map<string, string>()
+  let pageToken: string | undefined
+  do {
+    const params = new URLSearchParams({ limit: '200' })
+    if (pageToken) params.set('page_token', pageToken)
+    const res = await withRetry(() => request<YandexOfferCardsResponse>(
+      `/v2/businesses/${businessId}/offer-cards?${params}`,
+      token,
+      { method: 'POST', body: '{}' },
+    ))
+    for (const card of res.result?.offerCards ?? []) {
+      if (!card.offerId || colorByOffer.has(card.offerId)) continue
+      for (const p of card.parameterValues ?? []) {
+        const key = resolveColor(p.value)?.key
+        if (key) { colorByOffer.set(card.offerId, key); break }
+      }
+    }
+    pageToken = res.result?.paging?.nextPageToken
+  } while (pageToken)
+  return colorByOffer
 }
 
 // Fetch stocks for all SKUs in batches of 500. Also returns the last HTTP

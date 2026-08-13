@@ -123,6 +123,16 @@ export interface UzumSku {
     title?: string
     description?: string
   }
+  // Structured seller-set characteristics from the product card. The colour
+  // lives here under characteristicsList[].characteristicTitle.ru === 'Цвет'
+  // (uz 'Rang') — the robust source for a variant colour when skuTitle carries
+  // no colour word (e.g. the J16 earphones). `characteristics` is the flat
+  // localized value string (often the uz form, e.g. "Sargʻish").
+  characteristics?: string
+  characteristicsList?: Array<{
+    characteristicTitle?: { uz?: string; ru?: string }
+    characteristicValue?: { uz?: string; ru?: string }
+  }>
 }
 
 export interface UzumProductCard {

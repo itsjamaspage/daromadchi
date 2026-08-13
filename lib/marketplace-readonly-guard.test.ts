@@ -11,6 +11,7 @@ import { checkMarketplaceRequest } from './marketplace-readonly-guard'
 const YM_STOCKS = 'https://api.partner.market.yandex.ru/v2/campaigns/149137909/offers/stocks'
 const YM_STOCKS_Q = `${YM_STOCKS}?limit=200`
 const YM_OFFER_MAPPINGS = 'https://api.partner.market.yandex.ru/v2/businesses/555/offer-mappings'
+const YM_OFFER_CARDS = 'https://api.partner.market.yandex.ru/v2/businesses/555/offer-cards?limit=200'
 
 const UZUM_STOCK_WRITE = 'https://api-seller.uzum.uz/api/seller-openapi/v2/fbs/sku/stocks'
 const UZUM_SEND_PRICE = 'https://api-seller.uzum.uz/api/seller-openapi/v1/product/12345/sendPriceData'
@@ -30,6 +31,12 @@ describe('marketplace egress guard — read intent (default)', () => {
     assert.doesNotThrow(() => checkMarketplaceRequest(YM_OFFER_MAPPINGS, 'POST', 'read'))
     assert.doesNotThrow(() => checkMarketplaceRequest(YM_STOCKS, 'POST', 'read'))
     assert.doesNotThrow(() => checkMarketplaceRequest(YM_STOCKS_Q, 'POST', 'read'))
+  })
+
+  it('allows the YM offer-cards read-POST (colour attribute source, incl. query string)', () => {
+    assert.doesNotThrow(() => checkMarketplaceRequest(YM_OFFER_CARDS, 'POST', 'read'))
+    // …but only as a READ. offer-cards must never be reachable with write intent.
+    assert.throws(() => checkMarketplaceRequest(YM_OFFER_CARDS, 'PUT', 'stock-write'), /STOCK-WRITE GUARD/)
   })
 
   it('rejects a non-allowlisted POST (Uzum stock-WRITE path is not a read)', () => {
