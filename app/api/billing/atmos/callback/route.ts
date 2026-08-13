@@ -1,144 +1,148 @@
 /**
- * ATMOS billing callback (Phase 1).
+ * ATMOS billing callback (Step 5) — server-to-server, PUBLIC (no auth).
  *
- * ATMOS calls this BEFORE finalizing a charge. It settles ONLY on HTTP 200 +
- * {"status":1,"message":"Успешно"}. We:
- *   1. accept only source IPs in ATMOS's range (92.63.207.0/24), read from
- *      X-Forwarded-For behind the reverse proxy;
- *   2. verify the `sign` HMAC over store_id+transaction_id+account+amount+api_key;
- *   3. match the payment by `account`, confirm the amount, mark it paid, activate
- *      the subscription + the user's plan, store the OFD receipt url;
- *   4. respond with the exact ack ATMOS requires.
+ * ATMOS finalizes a charge ONLY when we reply HTTP 200 with exactly
+ * {"status":1,"message":"Успешно"}. Anything else ({"status":0,...}) rejects it.
  *
- * Idempotent: a repeat callback for an already-paid payment re-acks {status:1}
- * without re-applying anything.
+ * Order of operations:
+ *   1. Log the FULL raw body (jsonb) before any processing.
+ *   2. (Toggleable) source-IP allowlist — default OFF in DEV.
+ *   3. Confirm the classic callback shape; unknown shape ⇒ log + status 0.
+ *   4. Verify sign == md5(store_id+transaction_id+account+amount+api_key)
+ *      (constant-time, isolated in lib/billing/atmos.ts).
+ *   5. Look up the payment by `account`; idempotent re-ack if already SUCCESS.
+ *   6. Cross-check the real status via getInvoiceStatus() (defense in depth).
+ *   7. Activate idempotently (at-most-once guard in lib/billing/activate.ts).
  */
 
 import { NextResponse } from 'next/server'
-import { and, eq } from 'drizzle-orm'
-import { db, payments, subscriptions, users } from '@/lib/db'
+import { eq } from 'drizzle-orm'
+import { db, payments } from '@/lib/db'
 import { logger } from '@/lib/logger'
-import { getAtmosEnv, ATMOS_CALLBACK_AMOUNT_UNIT } from '@/lib/atmos/env'
-import { verifySign } from '@/lib/atmos/sign'
-import { ipInCidr, clientIpFromForwarded } from '@/lib/atmos/net'
+import {
+  getConfig, verifyCallbackSign, getInvoiceStatus,
+  clientIpFromForwarded, isCallbackIpAllowed, AtmosConfigError,
+} from '@/lib/billing/atmos'
+import { applyAtmosPaymentSuccess } from '@/lib/billing/activate'
 import { tiyinToSom } from '@/lib/billing/plans'
 
 export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
 
-const OK = { status: 1, message: 'Успешно' }
+const ACCEPT = { status: 1, message: 'Успешно' }
 function reject(message: string, log?: Record<string, unknown>) {
   if (log) logger.warn('atmos_callback_rejected', { message, ...log })
   return NextResponse.json({ status: 0, message }, { status: 200 })
 }
 
 export async function POST(req: Request) {
-  let env
+  // 1. Log the raw body FIRST, before any processing.
+  const rawText = await req.text().catch(() => '')
+  let body: Record<string, unknown> | null = null
   try {
-    env = getAtmosEnv()
+    body = rawText ? (JSON.parse(rawText) as Record<string, unknown>) : null
+  } catch {
+    body = null
+  }
+  logger.info('atmos_callback_raw', { raw: body ?? rawText })
+
+  // Config (needed for sign + cross-check). Missing config ⇒ cannot verify.
+  let cfg
+  try {
+    cfg = getConfig()
   } catch (err) {
-    logger.error('atmos_callback_not_configured', { error: String(err).slice(0, 200) })
+    logger.error('atmos_callback_not_configured', {
+      error: err instanceof AtmosConfigError ? err.message : String(err).slice(0, 200),
+    })
     return reject('not_configured')
   }
 
-  // 1. Source-IP allowlist (reverse-proxy aware).
-  const xff = req.headers.get('x-forwarded-for')
-  const ip = clientIpFromForwarded(xff, req.headers.get('x-real-ip'))
-  if (!ip || !ipInCidr(ip, env.callbackCidr)) {
+  // 2. Toggleable source-IP allowlist (default OFF in DEV).
+  const ip = clientIpFromForwarded(req.headers.get('x-forwarded-for'), req.headers.get('x-real-ip'))
+  if (!isCallbackIpAllowed(ip, cfg)) {
     return reject('forbidden_ip', { ip })
   }
 
-  // 2. Parse body.
-  let body: Record<string, unknown>
-  try {
-    body = (await req.json()) as Record<string, unknown>
-  } catch {
-    return reject('invalid_body')
-  }
-  const transactionId = String(body.transaction_id ?? body.transactionId ?? '')
-  const account = String(body.account ?? '')
-  const amountRaw = body.amount
-  const sign = String(body.sign ?? '')
-  if (!transactionId || !account || amountRaw == null || !sign) {
-    return reject('missing_fields')
+  // 3. Confirm the classic callback shape. Unknown shape ⇒ do NOT guess.
+  const storeId = body?.store_id
+  const transactionId = body?.transaction_id
+  const transactionTime = body?.transaction_time
+  const amount = body?.amount
+  const account = body?.account
+  const sign = body?.sign
+  const shapeOk =
+    storeId != null && transactionId != null && transactionTime != null &&
+    amount != null && account != null && typeof sign === 'string'
+  if (!shapeOk) {
+    logger.error('UNEXPECTED CALLBACK SHAPE', { raw: body ?? rawText })
+    return reject('unexpected_shape')
   }
 
-  // 3. Verify sign using the amount FIELD VERBATIM (see lib/atmos/sign.ts).
-  const okSign = verifySign(sign, {
-    storeId: env.storeId,
-    transactionId,
-    account,
-    amount: amountRaw as string | number,
-    apiKey: env.callbackApiKey,
+  const accountStr = String(account)
+  const transactionIdStr = String(transactionId)
+
+  // 4. Verify the signature (MD5, constant-time), using amount VERBATIM.
+  const okSign = verifyCallbackSign(sign, {
+    storeId: String(storeId),
+    transactionId: transactionIdStr,
+    account: accountStr,
+    amount: amount as string | number,   // byte-identical to what ATMOS sent
+    apiKey: cfg.callbackApiKey,
   })
-  if (!okSign) return reject('bad_sign', { account, transactionId })
+  if (!okSign) return reject('bad_sign', { account: accountStr, transactionId: transactionIdStr })
 
-  // 4. Match the payment by account.
+  // 5. Look up the payment by account (== our internal payment id).
   const [pay] = await db.select({
     id: payments.id,
-    userId: payments.user_id,
-    plan: payments.plan,
-    periodMonths: payments.period_months,
+    atmosStatus: payments.atmos_status,
+    atmosPaymentId: payments.atmos_payment_id,
     amountTiyin: payments.amount_tiyin,
-    status: payments.status,
-    subscriptionId: payments.subscription_id,
-  }).from(payments).where(eq(payments.account, account))
-  if (!pay) return reject('unknown_account', { account })
+  }).from(payments).where(eq(payments.account, accountStr))
+  if (!pay) return reject('unknown_account', { account: accountStr })
 
-  // Idempotency: already settled → re-ack without re-applying.
-  if (pay.status === 'paid') return NextResponse.json(OK, { status: 200 })
-
-  // 5. Confirm the amount against our authoritative tiyin. The comparison depends
-  //    on ATMOS_CALLBACK_AMOUNT_UNIT:
-  //      'tiyin'/'som' → STRICT equality (the real check, once the unit is known);
-  //      'unknown'     → TEMPORARY non-blocking: accept tiyin OR so'm and WARN on
-  //                      every callback so this is visibly a pending question, not
-  //                      a silent accept. TODO(atmos): set the unit to close this.
-  const amountNum = Number(amountRaw)
-  const expectTiyin = pay.amountTiyin ?? -1
-  const expectSom = tiyinToSom(expectTiyin)
-  if (ATMOS_CALLBACK_AMOUNT_UNIT === 'tiyin') {
-    if (amountNum !== expectTiyin) return reject('amount_mismatch', { account, got: amountNum, expectTiyin })
-  } else if (ATMOS_CALLBACK_AMOUNT_UNIT === 'som') {
-    if (amountNum !== expectSom) return reject('amount_mismatch', { account, got: amountNum, expectSom })
-  } else {
-    if (amountNum !== expectTiyin && amountNum !== expectSom) {
-      return reject('amount_mismatch', { account, got: amountNum, expectTiyin })
-    }
-    logger.warn('atmos_callback_amount_unit_unknown', { account, got: amountNum, expectTiyin, expectSom })
+  // Idempotency: already settled ⇒ re-ack without re-applying anything.
+  if (pay.atmosStatus === 'success') {
+    return NextResponse.json(ACCEPT, { status: 200 })
   }
 
-  // 6. Settle: mark paid, activate subscription + user plan, store OFD url.
-  const ofdUrl = typeof body.ofd_url === 'string' ? body.ofd_url
-    : typeof body.ofd_link === 'string' ? body.ofd_link : null
-  const now = new Date()
-  const periodEnd = new Date(now)
-  periodEnd.setMonth(periodEnd.getMonth() + (pay.periodMonths ?? 1))
+  // Advisory amount check (sign already binds amount; the real gate is the
+  // getInvoiceStatus cross-check below). Warn if it matches neither tiyin nor so'm.
+  const amountNum = Number(amount)
+  const expectTiyin = pay.amountTiyin ?? -1
+  if (amountNum !== expectTiyin && amountNum !== tiyinToSom(expectTiyin)) {
+    logger.warn('atmos_callback_amount_advisory', { account: accountStr, got: amountNum, expectTiyin })
+  }
 
+  // 6. Cross-check the authoritative status before activating (defense in depth).
+  if (!pay.atmosPaymentId) return reject('no_atmos_payment_id', { account: accountStr })
+  let statusOk = false
   try {
-    await db.update(payments).set({
-      status: 'paid',
-      atmos_transaction_id: transactionId,
-      ofd_url: ofdUrl,
-      raw_callback: body,
-      updated_at: now,
-    }).where(eq(payments.id, pay.id))
-
-    if (pay.subscriptionId) {
-      await db.update(subscriptions).set({
-        status: 'active', current_period_end: periodEnd, updated_at: now,
-      }).where(eq(subscriptions.id, pay.subscriptionId))
-    }
-
-    if (pay.userId) {
-      await db.update(users).set({
-        plan: pay.plan as 'pro' | 'pro_plus', plan_expires_at: periodEnd,
-      }).where(and(eq(users.id, pay.userId)))
+    const st = await getInvoiceStatus(pay.atmosPaymentId)
+    statusOk = st.paid
+    if (!statusOk) {
+      return reject('status_not_paid', { account: accountStr, state: st.state })
     }
   } catch (err) {
-    logger.error('atmos_callback_settle_failed', { account, error: String(err).slice(0, 300) })
-    return reject('settle_failed', { account })
+    logger.error('atmos_callback_status_check_failed', { account: accountStr, error: String(err).slice(0, 200) })
+    return reject('status_check_failed', { account: accountStr })
   }
 
-  logger.info('atmos_callback_settled', { account, transactionId, plan: pay.plan })
-  return NextResponse.json(OK, { status: 200 })
+  // 7. Activate idempotently (at-most-once guard).
+  const ofdUrl = typeof body?.ofd_url === 'string' ? body.ofd_url
+    : typeof body?.ofd_link === 'string' ? (body.ofd_link as string) : null
+  try {
+    const result = await applyAtmosPaymentSuccess({
+      paymentId: pay.id,
+      transactionId: transactionIdStr,
+      ofdUrl,
+      rawPayload: body,
+      source: 'callback',
+    })
+    logger.info('atmos_callback_settled', { account: accountStr, transactionId: transactionIdStr, outcome: result.outcome })
+  } catch (err) {
+    logger.error('atmos_callback_settle_failed', { account: accountStr, error: String(err).slice(0, 300) })
+    return reject('settle_failed', { account: accountStr })
+  }
+
+  return NextResponse.json(ACCEPT, { status: 200 })
 }

@@ -44,6 +44,32 @@ function fmtDate(iso: string) {
 function PlanModal({ current, onClose, d }: { current: PlanType; onClose: () => void; d: T }) {
   const plans: PlanType[] = ['free', 'pro', 'pro_plus']
   const PLAN_FEATURES = planFeatures(d)
+  const [busy, setBusy] = useState<PlanType | null>(null)
+  const [err, setErr]   = useState<string | null>(null)
+
+  // Initiate ATMOS hosted checkout: derive amount server-side, then redirect the
+  // browser to ATMOS's payment page (card entry never touches our servers).
+  async function startCheckout(plan: PlanType) {
+    if (plan === 'free') return
+    setErr(null)
+    setBusy(plan)
+    try {
+      const res = await fetch('/api/billing/atmos/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan, interval: 'monthly' }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (res.ok && data?.url) {
+        window.location.assign(data.url as string)
+        return
+      }
+      setErr(String(data?.error ?? 'checkout_failed'))
+    } catch {
+      setErr('network_error')
+    }
+    setBusy(null)
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -90,19 +116,33 @@ function PlanModal({ current, onClose, d }: { current: PlanType; onClose: () => 
                     </li>
                   ))}
                 </ul>
-                {!isCurrent ? (
+                {isCurrent ? (
+                  <div className="mt-2 w-full text-center text-xs font-medium py-2" style={{ color: 'color-mix(in srgb, var(--c1) 75%, transparent)' }}>
+                    {d.billingCurrentPlanLabel}
+                  </div>
+                ) : plan === 'free' ? (
                   <a href="/pricing" className="mt-2 w-full btn-primary text-xs font-semibold py-2 rounded-lg transition-colors text-center">
                     {d.billingSelectPlan}
                   </a>
                 ) : (
-                  <div className="mt-2 w-full text-center text-xs font-medium py-2" style={{ color: 'color-mix(in srgb, var(--c1) 75%, transparent)' }}>
-                    {d.billingCurrentPlanLabel}
-                  </div>
+                  <button
+                    type="button"
+                    disabled={busy !== null}
+                    onClick={() => startCheckout(plan)}
+                    className="mt-2 w-full btn-primary text-xs font-semibold py-2 rounded-lg transition-colors text-center disabled:opacity-60"
+                  >
+                    {busy === plan ? '…' : d.billingSelectPlan}
+                  </button>
                 )}
               </div>
             )
           })}
         </div>
+        {err && (
+          <div className="px-6 pb-5 -mt-2">
+            <p className="text-xs text-red-400">To‘lovni boshlashda xatolik. Qaytadan urinib ko‘ring.</p>
+          </div>
+        )}
       </div>
     </div>
   )
