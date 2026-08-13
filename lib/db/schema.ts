@@ -43,6 +43,18 @@ export const paymentStatusEnum = pgEnum('payment_status', [
   'failed',
 ])
 
+// Authoritative ATMOS hosted-checkout lifecycle. Separate from the legacy
+// payment_status above (which the dashboard history UI reads): the two are
+// flipped together in the single settle transaction. SUCCESS is entered at most
+// once, from a non-final state, inside a DB transaction (see lib/billing/activate.ts).
+export const atmosPaymentStatusEnum = pgEnum('atmos_payment_status', [
+  'created',
+  'pending',
+  'success',
+  'failed',
+  'cancelled',
+])
+
 export const syncDayStatusEnum = pgEnum('sync_day_status', [
   'ready',
   'success',
@@ -429,15 +441,19 @@ export const payments = pgTable('payments', {
   // reuses one intent and we never charge twice. (A future MPS/direct flow would
   // add its own ext_id column — intentionally absent here.)
   request_id:               uuid('request_id').defaultRandom(),
-  // Per-attempt reconciliation key we send to ATMOS and receive back in the
-  // callback for lookup — unique.
+  // Per-attempt reconciliation key we send to ATMOS as `account` and receive
+  // back in the callback for lookup. Set to our own payment id — unique.
   account:                  text('account'),
   // Authoritative charged amount in TIYIN (the value sent to ATMOS). `amount`
   // above stays the so'm figure for the existing tax/accounting record.
   amount_tiyin:             integer('amount_tiyin'),
   // ATMOS-side identifiers.
-  atmos_transaction_id:     text('atmos_transaction_id'),
+  atmos_payment_id:         text('atmos_payment_id'),      // invoice payment_id (from create; used by /get)
+  atmos_transaction_id:     text('atmos_transaction_id'),  // card transaction_id (from the callback)
   atmos_invoice_token:      text('atmos_invoice_token'),
+  // Authoritative ATMOS lifecycle state + the moment SUCCESS was applied.
+  atmos_status:             atmosPaymentStatusEnum('atmos_status').default('created').notNull(),
+  confirmed_at:             timestamp('confirmed_at', { withTimezone: true }),
   // Fiscal receipt URL returned on a successful charge.
   ofd_url:                  text('ofd_url'),
   // Subscription this payment settles (loose link — no hard FK).
@@ -451,6 +467,7 @@ export const payments = pgTable('payments', {
   index('payments_provider_tx_idx').on(t.provider_transaction_id),
   uniqueIndex('payments_request_id_unique').on(t.request_id),
   uniqueIndex('payments_account_unique').on(t.account),
+  index('payments_atmos_status_idx').on(t.atmos_status),
 ])
 
 /* ── 14b. subscriptions ─────────────────────────────────────────────────────── */

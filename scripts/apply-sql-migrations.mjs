@@ -73,9 +73,10 @@ const MIGRATIONS = [
   // isn't registered, so a fresh deploy would miss it. Idempotent (ADD COLUMN IF
   // NOT EXISTS).
   'migrations/migrations/063_products_physical_stock_guard.sql',
-  // ATMOS billing Phase 1: subscriptions table + additive ATMOS columns on
-  // payments. Additive + idempotent (CREATE/ADD COLUMN IF NOT EXISTS + guarded
-  // enum).
+  // ATMOS billing (hosted checkout): subscriptions table + additive ATMOS columns
+  // on payments, including the authoritative atmos_status lifecycle enum +
+  // confirmed_at + atmos_payment_id. Additive + idempotent (CREATE/ADD COLUMN IF
+  // NOT EXISTS + guarded enum) — safe to re-run.
   'migrations/migrations/064_atmos_billing.sql',
 ]
 
