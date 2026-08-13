@@ -81,6 +81,7 @@ const body = {
   account,
   amount: amountTiyin,
   success_url: process.env.ATMOS_SUCCESS_URL || 'https://daromadchi.uz/billing/atmos/return',
+  expiration_time: 60,   // integer minutes — NOT a date string (avoids -999998)
   items: [{
     items_id: '1',
     code: need('ATMOS_SERVICE_IKPU'),

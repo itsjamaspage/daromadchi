@@ -175,14 +175,23 @@ export interface CreateInvoiceResult {
   raw: Record<string, unknown>
 }
 
+// Invoice lifetime sent to ATMOS as an integer number of MINUTES, in the
+// snake_case field `expiration_time`. We deliberately do NOT send an
+// `expiration_date` string: an ISO value (e.g. `new Date().toISOString()` →
+// `...THH:mm:ss.SSSZ`) fails ATMOS's strict `yyyy-MM-dd'T'HH:mm:ss` parse and
+// returns -999998 "Invalid request format". Integer minutes sidesteps the trap.
+const INVOICE_EXPIRATION_MINUTES = 60
+
 export async function createInvoice(p: CreateInvoiceParams): Promise<CreateInvoiceResult> {
   const cfg = getConfig()
+  // Every field here MUST be snake_case + lowercase (ATMOS rejects camelCase).
   const body = {
     request_id: p.requestId,
     store_id: Number(cfg.storeId),
     account: String(p.account),
     amount: p.amountTiyin,
     success_url: cfg.successUrl,
+    expiration_time: INVOICE_EXPIRATION_MINUTES,   // integer minutes — NOT a date string
     items: [
       {
         items_id: '1',
