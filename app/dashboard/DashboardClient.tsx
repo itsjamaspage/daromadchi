@@ -125,35 +125,48 @@ export default function DashboardClient({ slices, stockGroups, days, period, fro
 
   const isEmpty = kpis.total_orders === 0 && allProducts.length === 0
 
-  // Top products: collapse the SAME SKU sold across different marketplaces into
-  // ONE line with combined delivered units + revenue (a seller's article
-  // "JMJ16BG" is one product whether it sold on Uzum or Yandex). Rows with no
-  // SKU can't be merged, so they stay individual (keyed by product_id). Sorted
-  // by revenue so it's actually "top", then capped at 5.
+  // Top products: collapse listings that are really ONE product into a single
+  // line with combined delivered units + revenue. Two rows merge when they
+  // share a normalised SKU (the same article cross-listed on two marketplaces,
+  // e.g. "JMJ16BG" on Uzum + Yandex) OR a variant_group_key (different-colour
+  // variants of one model, e.g. M9 black "JMBLK" + M9 white "JMWHT" under one
+  // parent). This mirrors the Analytics "Top sold" collapse; the SKU bridge
+  // additionally covers rows that carry no variant_group_key. Rows with neither
+  // key stay individual. Sorted by revenue so it's actually "top", capped at 5.
   const topProducts = useMemo(() => {
     type Row = { key: string; title: string; sku: string | null; qty: number; revenue: number; marketplaces: Set<MarketplaceType> }
-    const bySku = new Map<string, Row>()
-    const rows: Row[] = []
-    for (const p of productSales) {
-      const mps = new Set<MarketplaceType>()
-      if (p.marketplace) mps.add(p.marketplace)
-      const skuKey = p.sku?.trim().toLowerCase()
-      if (skuKey) {
-        const ex = bySku.get(skuKey)
-        if (ex) {
-          ex.qty += p.qty_sold
-          ex.revenue += p.revenue
-          if (p.marketplace) ex.marketplaces.add(p.marketplace)
-          continue
-        }
-        const row: Row = { key: `sku:${skuKey}`, title: p.title, sku: p.sku, qty: p.qty_sold, revenue: p.revenue, marketplaces: mps }
-        bySku.set(skuKey, row)
-        rows.push(row)
+    const norm = (s: string | null) => { const t = s?.trim().toLowerCase(); return t && t.length ? t : null }
+
+    // Union-find over row indices: union any two rows sharing a SKU or a group.
+    const parent = productSales.map((_, i) => i)
+    const find = (x: number): number => { let r = x; while (parent[r] !== r) r = parent[r]; parent[x] = r; return r }
+    const union = (a: number, b: number) => { const ra = find(a), rb = find(b); if (ra !== rb) parent[ra] = rb }
+    const firstBySku = new Map<string, number>()
+    const firstByVgk = new Map<string, number>()
+    productSales.forEach((p, i) => {
+      const nk = norm(p.sku)
+      if (nk) { const j = firstBySku.get(nk); if (j === undefined) firstBySku.set(nk, i); else union(i, j) }
+      if (p.variant_group_key) { const j = firstByVgk.get(p.variant_group_key); if (j === undefined) firstByVgk.set(p.variant_group_key, i); else union(i, j) }
+    })
+
+    // Aggregate each component; the highest-revenue member names the row.
+    const byRoot = new Map<number, Row & { repRevenue: number }>()
+    productSales.forEach((p, i) => {
+      const r = find(i)
+      const ex = byRoot.get(r)
+      if (!ex) {
+        byRoot.set(r, { key: `grp:${r}`, title: p.title, sku: p.sku, qty: p.qty_sold, revenue: p.revenue, marketplaces: new Set(p.marketplace ? [p.marketplace] : []), repRevenue: p.revenue })
       } else {
-        rows.push({ key: `pid:${p.product_id}`, title: p.title, sku: p.sku, qty: p.qty_sold, revenue: p.revenue, marketplaces: mps })
+        ex.qty += p.qty_sold
+        ex.revenue += p.revenue
+        if (p.marketplace) ex.marketplaces.add(p.marketplace)
+        if (p.revenue > ex.repRevenue) { ex.repRevenue = p.revenue; ex.title = p.title; ex.sku = p.sku }
       }
-    }
-    return rows.sort((a, b) => b.revenue - a.revenue).slice(0, 5)
+    })
+    return [...byRoot.values()]
+      .map((r): Row => ({ key: r.key, title: r.title, sku: r.sku, qty: r.qty, revenue: r.revenue, marketplaces: r.marketplaces }))
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 5)
   }, [productSales])
 
   type WidgetId = 'kpis' | 'alerts' | 'chart' | 'categories'
