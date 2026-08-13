@@ -20,6 +20,7 @@ import { dashT } from '@/lib/dashT'
 import type { Kpis, Order, Product, DailyRevenue, MarketplaceType } from '@/lib/types'
 import type { ProductSalesRow } from '@/lib/db/products'
 import type { StockGroup } from '@/lib/db/stock-groups'
+import { colorMetaFor, COLOR_LABELS, type ColorKey } from '@/lib/products/resolveColor'
 
 function formatSum(n: number) {
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(1).replace(/\.0$/, '') + " mln so'm"
@@ -41,6 +42,23 @@ function MarketplaceBadge({ marketplace }: { marketplace?: MarketplaceType | nul
   return (
     <span className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold leading-none ${b.cls}`}>
       {b.label}
+    </span>
+  )
+}
+
+// Colour swatch + label for a Top-products row (e.g. "● Чёрный"), shown next to
+// the marketplace badges so colour variants of one model are told apart at a
+// glance. Same chip the Analytics / Остатки tables use. Renders nothing when the
+// product has no resolved colour.
+function VariantColorChip({ colorKey, lang }: { colorKey: string | null | undefined; lang: 'uz' | 'ru' | 'en' }) {
+  const meta = colorMetaFor(colorKey)
+  if (!meta || !colorKey) return null
+  const name = COLOR_LABELS[colorKey as ColorKey]?.[lang] ?? colorKey
+  return (
+    <span className="inline-flex items-center gap-1 text-xs text-[var(--text-muted)]">
+      <span className="h-2.5 w-2.5 rounded-full"
+        style={{ backgroundColor: meta.hex, boxShadow: meta.ring ? 'inset 0 0 0 1px var(--border)' : undefined }} />
+      {name}
     </span>
   )
 }
@@ -134,7 +152,7 @@ export default function DashboardClient({ slices, stockGroups, days, period, fro
   // additionally covers rows that carry no variant_group_key. Rows with neither
   // key stay individual. Sorted by revenue so it's actually "top", capped at 5.
   const topProducts = useMemo(() => {
-    type Row = { key: string; title: string; sku: string | null; qty: number; revenue: number; marketplaces: Set<MarketplaceType> }
+    type Row = { key: string; title: string; sku: string | null; variant_color: string | null; qty: number; revenue: number; marketplaces: Set<MarketplaceType> }
     const norm = (s: string | null) => { const t = s?.trim().toLowerCase(); return t && t.length ? t : null }
 
     // Union-find over row indices: union any two rows sharing a SKU or a group.
@@ -155,16 +173,16 @@ export default function DashboardClient({ slices, stockGroups, days, period, fro
       const r = find(i)
       const ex = byRoot.get(r)
       if (!ex) {
-        byRoot.set(r, { key: `grp:${r}`, title: p.title, sku: p.sku, qty: p.qty_sold, revenue: p.revenue, marketplaces: new Set(p.marketplace ? [p.marketplace] : []), repRevenue: p.revenue })
+        byRoot.set(r, { key: `grp:${r}`, title: p.title, sku: p.sku, variant_color: p.variant_color, qty: p.qty_sold, revenue: p.revenue, marketplaces: new Set(p.marketplace ? [p.marketplace] : []), repRevenue: p.revenue })
       } else {
         ex.qty += p.qty_sold
         ex.revenue += p.revenue
         if (p.marketplace) ex.marketplaces.add(p.marketplace)
-        if (p.revenue > ex.repRevenue) { ex.repRevenue = p.revenue; ex.title = p.title; ex.sku = p.sku }
+        if (p.revenue > ex.repRevenue) { ex.repRevenue = p.revenue; ex.title = p.title; ex.sku = p.sku; ex.variant_color = p.variant_color }
       }
     })
     return [...byRoot.values()]
-      .map((r): Row => ({ key: r.key, title: r.title, sku: r.sku, qty: r.qty, revenue: r.revenue, marketplaces: r.marketplaces }))
+      .map((r): Row => ({ key: r.key, title: r.title, sku: r.sku, variant_color: r.variant_color, qty: r.qty, revenue: r.revenue, marketplaces: r.marketplaces }))
       .sort((a, b) => b.revenue - a.revenue)
       .slice(0, 5)
   }, [productSales])
@@ -486,6 +504,7 @@ export default function DashboardClient({ slices, stockGroups, days, period, fro
                         <p className="text-[var(--text-muted)] text-xs flex items-center gap-1.5">
                           {p.sku}
                           {[...p.marketplaces].map(mp => <MarketplaceBadge key={mp} marketplace={mp} />)}
+                          <VariantColorChip colorKey={p.variant_color} lang={lang} />
                         </p>
                       </td>
                       <td className="py-3 pr-4 text-right">
