@@ -36,6 +36,11 @@ export const adTypeEnum = pgEnum('ad_type', ['cpc', 'cpo'])
 
 export const adStatusEnum = pgEnum('ad_status', ['active', 'paused', 'stopped'])
 
+// Movement kinds for the event-sourced FBS on-hand ledger (stock_ledger).
+export const stockLedgerReasonEnum = pgEnum('stock_ledger_reason', [
+  'seed', 'consume', 'return', 'cancel', 'manual',
+])
+
 export const paymentStatusEnum = pgEnum('payment_status', [
   'pending',
   'paid',
@@ -959,4 +964,39 @@ export const suggestedProductGroups = pgTable('suggested_product_groups', {
 }, (t) => [
   uniqueIndex('suggested_product_groups_pair_unique').on(t.user_id, t.a_match_key, t.b_match_key),
   index('suggested_product_groups_user_status_idx').on(t.user_id, t.status),
+])
+
+/* ── 34. stock_ledger ─────────────────────────────────────────────────────── */
+// Event-sourced on-hand ledger for the FBS shared pool. Root-cause fix: nothing
+// ever debited products.physical_stock on a sale — it only mirrored each
+// marketplace's own listing, so a sale on one marketplace never reached the
+// shared pool (both listings sat stale-high and our sync re-propagated the
+// pre-sale number). This makes the group's on-hand AUTHORITATIVE: one append-only
+// row per movement of the cross-marketplace SKU group (match_key), and
+// on_hand = SUM(delta). Reasons:
+//   • seed    — seller-confirmed starting on-hand (+N)
+//   • consume — a unit committed to an order, debited at PLACEMENT / first
+//               sighting via new-order detection (−N). Option A: the reservation
+//               and the debit are ONE event → available = max(0, Σ delta), no
+//               separate pending term.
+//   • cancel  — a previously-consumed order was cancelled before fulfilment (+N)
+//   • return  — a delivered unit came back AND re-enters sellable stock (+N)
+//   • manual  — seller/admin correction (±N)
+// Order-driven events are idempotent per (user, match_key, reason, order) so a
+// re-sync never double-counts; seed/manual carry a NULL order_id_external
+// (NULLs distinct → multiple manual corrections allowed).
+export const stockLedger = pgTable('stock_ledger', {
+  id:                uuid('id').primaryKey().defaultRandom(),
+  user_id:           uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  match_key:         text('match_key').notNull(),
+  delta:             integer('delta').notNull(),
+  reason:            stockLedgerReasonEnum('reason').notNull(),
+  order_id_external: text('order_id_external'),
+  marketplace:       marketplaceTypeEnum('marketplace'),
+  note:              text('note'),
+  created_at:        timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (t) => [
+  uniqueIndex('stock_ledger_user_key_reason_order_unique').on(t.user_id, t.match_key, t.reason, t.order_id_external),
+  index('stock_ledger_user_key_idx').on(t.user_id, t.match_key),
+  index('stock_ledger_created_at_idx').on(t.created_at),
 ])

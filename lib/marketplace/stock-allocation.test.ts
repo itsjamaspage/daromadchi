@@ -24,6 +24,30 @@ function member(over: Partial<SyncMember>): SyncMember {
 const uzum = (o: Partial<SyncMember> = {}) => member({ shopId: 'uzum-shop', marketplace: 'uzum', priority: 0, listedStock: 1, ...o })
 const ym = (o: Partial<SyncMember> = {}) => member({ shopId: 'ym-shop', marketplace: 'yandex_market', priority: 100, listedStock: 1, ...o })
 
+describe('computeAvailable — ledger mode (Option A on_hand override)', () => {
+  it('THE JMBLK fix: both pools stale at 2, ledger on_hand=1 → available 1 (NOT MAX(2,2)=2)', () => {
+    const members = [uzum({ physicalStock: 2, listedStock: 2, pending: 0 }), ym({ physicalStock: 2, listedStock: 2, pending: 0 })]
+    assert.equal(computeAvailable(members, 1), 1)   // the sold unit is finally visible
+    assert.equal(computeAvailable(members, 0), 0)
+    assert.equal(computeAvailable(members, -3), 0)  // never negative
+  })
+  it('ignores pending in ledger mode — the debit already happened at placement', () => {
+    const members = [uzum({ physicalStock: 2, pending: 1 }), ym({ physicalStock: 2, pending: 1 })]
+    assert.equal(computeAvailable(members, 2), 2)   // pending NOT re-subtracted (would be double-count)
+  })
+  it('falls back to the legacy MAX path when on_hand is null/undefined', () => {
+    const members = [uzum({ physicalStock: 2, pending: 0 }), ym({ physicalStock: 2, pending: 1 })]
+    assert.equal(computeAvailable(members), 1)          // MAX(2,2)-1, unchanged
+    assert.equal(computeAvailable(members, null), 1)    // explicit null = fallback
+    assert.equal(computeAvailable(members, undefined), 1)
+  })
+  it('planStockWrites threads on_hand through to available', () => {
+    const members = [uzum({ physicalStock: 2, listedStock: 2 }), ym({ physicalStock: 2, listedStock: 2 })]
+    assert.equal(planStockWrites(members, 'off', 1).available, 1)
+    assert.equal(planStockWrites(members, 'off').available, 2)   // no on_hand → legacy MAX
+  })
+})
+
 describe('RESERVING_RAW_STATUSES — Yandex PICKUP reserves a unit', () => {
   // Mirror the SQL's status→pending mapping: reservingOrderCondition() counts an
   // order only when its raw marketplace_status is in this set.
