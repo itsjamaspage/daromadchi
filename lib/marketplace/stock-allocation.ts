@@ -102,7 +102,17 @@ export interface StockPlan {
  * available" on every marketplace from one physical pool; SUM(pending) because
  * every open order anywhere draws from that pool.
  */
-export function computeAvailable(members: SyncMember[]): number {
+export function computeAvailable(members: SyncMember[], onHand?: number | null): number {
+  // LEDGER MODE (Option A): when the group has an authoritative on-hand from the
+  // event-sourced stock_ledger, that number already nets out every placed order
+  // (debit at placement), so free-to-sell is just it, clamped — NO cross-listing
+  // MAX, and NO pending re-subtraction (the reservation IS the debit). This is
+  // the real fix: the old path below could never decrement, because a sale only
+  // moved one marketplace's listing and MAX re-propagated the stale peer. `onHand`
+  // is null/undefined for groups not yet seeded onto the ledger; those fall
+  // through to the legacy listing-derived path unchanged.
+  if (onHand != null) return Math.max(0, onHand)
+
   if (members.length === 0) return 0
   // POOL = physical_stock (real on-hand inventory), NOT stock_quantity (the
   // THROTTLED outbound listing). Reading the throttled listing back as the pool
@@ -177,8 +187,8 @@ function allocateTargets(available: number, sorted: SyncMember[], mode: Oversell
  * only feed the shared `available`); only stock_sync members get a target, and
  * only a real diff (target !== listed) becomes an actual write.
  */
-export function planStockWrites(members: SyncMember[], mode: OversellMode): StockPlan {
-  const available = computeAvailable(members)
+export function planStockWrites(members: SyncMember[], mode: OversellMode, onHand?: number | null): StockPlan {
+  const available = computeAvailable(members, onHand)
   const writable = members.filter(m => m.apiMode === 'stock_sync').sort(byPriority)
   const targets = allocateTargets(available, writable, mode)
   const plans: PlannedWrite[] = writable.map(m => {

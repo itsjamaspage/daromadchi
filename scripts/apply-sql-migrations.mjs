@@ -78,6 +78,7 @@ const MIGRATIONS = [
   // confirmed_at + atmos_payment_id. Additive + idempotent (CREATE/ADD COLUMN IF
   // NOT EXISTS + guarded enum) — safe to re-run.
   'migrations/migrations/064_atmos_billing.sql',
+  'migrations/migrations/065_stock_ledger.sql',
 ]
 
 function loadDatabaseUrl() {
