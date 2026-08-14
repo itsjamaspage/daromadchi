@@ -240,6 +240,25 @@ export interface PayoutOrderItem {
   orderCount: number
 }
 
+// Settlement/payout state for a payout row. Driven by real marketplace signals,
+// never the calendar (a past month proves nothing about whether money moved).
+//   available_to_withdraw — Uzum TO_WITHDRAW: earned, withdrawable, NOT withdrawn.
+//   fees_pending          — Yandex settled credit posted but fee debits not yet
+//                           final (stays inside the pending bucket, flagged).
+//   paid / estimated_paid — reserved; NOT emitted by the settled branches today
+//                           (no accessible Uzum payout-history feed — 403 RBAC;
+//                           no Yandex order-level withdrawal feed). See
+//                           docs/plans/payouts-settlement-accuracy.md.
+//   processing            — legacy, deprecated; kept for back-compat, not emitted.
+export type PayoutStatus =
+  | 'paid'
+  | 'pending'
+  | 'available_to_withdraw'
+  | 'fees_pending'
+  | 'estimated_paid'
+  | 'estimated_pending'
+  | 'processing'
+
 export interface PayoutEntry {
   id: string
   period: string
@@ -257,7 +276,7 @@ export interface PayoutEntry {
   otherDeductions: number
   netPayout: number
   ordersCount: number
-  status: 'paid' | 'pending' | 'processing' | 'estimated_paid' | 'estimated_pending'
+  status: PayoutStatus
   payoutDate: string | null
   payoutEstimated: boolean
   // Per-product breakdown of the orders that fed this payout period.
