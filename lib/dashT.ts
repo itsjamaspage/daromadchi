@@ -310,6 +310,8 @@ export const dashT = {
     },
     payouts: {
       kpiTotalPaid: "Jami to'langan", kpiPending: 'Kutilayotgan', kpiAvg: "O'rtacha to'lov",
+      kpiAvailable: 'Chiqarishga tayyor', statusAvailable: 'Chiqarishga tayyor',
+      statusFeesPending: '≈ Komissiya kutilmoqda', paidPendingApi: "To'lovlar: API ruxsati kutilmoqda",
       perPeriod: 'har bir davr', periods: 'ta davr',
       statusPaid: "To'langan", statusProcessing: 'Jarayonda', statusPending: 'Kutilmoqda',
       segCommission: 'Komissiya', segDelivery: 'Yetkazish', segReturns: 'Qaytarishlar',
@@ -713,6 +715,8 @@ export const dashT = {
     },
     payouts: {
       kpiTotalPaid: 'Total paid', kpiPending: 'Pending', kpiAvg: 'Avg payout',
+      kpiAvailable: 'Available to withdraw', statusAvailable: 'Available to withdraw',
+      statusFeesPending: '≈ Fees pending', paidPendingApi: 'Payouts: pending API access',
       perPeriod: 'per period', periods: 'periods',
       statusPaid: 'Paid', statusProcessing: 'Processing', statusPending: 'Pending',
       segCommission: 'Commission', segDelivery: 'Delivery', segReturns: 'Returns',
@@ -1113,6 +1117,8 @@ export const dashT = {
     },
     payouts: {
       kpiTotalPaid: 'Всего выплачено', kpiPending: 'Ожидает', kpiAvg: 'Средняя выплата',
+      kpiAvailable: 'Доступно к выводу', statusAvailable: 'Доступно к выводу',
+      statusFeesPending: '≈ Комиссия ожидается', paidPendingApi: 'Выплаты: ожидает доступа к API',
       perPeriod: 'за период', periods: 'периодов',
       statusPaid: 'Выплачено', statusProcessing: 'В обработке', statusPending: 'Ожидает',
       segCommission: 'Комиссия', segDelivery: 'Доставка', segReturns: 'Возвраты',

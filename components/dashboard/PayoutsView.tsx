@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, Fragment } from 'react'
 import { useRouter } from 'next/navigation'
 import { ChevronDown, ChevronUp, HelpCircle, RefreshCw, MoreVertical, CreditCard } from 'lucide-react'
 import type { PayoutEntry, PayoutOrderItem, MarketplaceType } from '@/lib/types'
+import { isPaidStatus, isAvailableStatus, isPendingStatus } from '@/lib/db/payout-status'
 import ExportButton from '@/components/dashboard/ExportButton'
 import MpBadge from '@/components/dashboard/MpBadge'
 import { useLang } from '@/app/providers'
@@ -91,6 +92,23 @@ function StatusBadge({ status }: { status: PayoutEntry['status'] }) {
     return (
       <span className="inline-flex px-2.5 py-1 rounded-lg text-xs font-semibold bg-[var(--bg-card2)] text-[var(--text-muted)] border border-dashed border-[var(--border)]">
         ≈ {t.statusPending}
+      </span>
+    )
+  }
+  // Earned & withdrawable, not yet withdrawn (Uzum TO_WITHDRAW). Calm/neutral —
+  // this is money the seller HAS, awaiting withdrawal; never render it alarming.
+  if (status === 'available_to_withdraw') {
+    return (
+      <span className="inline-flex px-2.5 py-1 rounded-lg text-xs font-semibold bg-sky-500/15 text-sky-400 border border-sky-500/20">
+        {t.statusAvailable}
+      </span>
+    )
+  }
+  // Yandex settled but fee debits not posted yet — net isn't final.
+  if (status === 'fees_pending') {
+    return (
+      <span className="inline-flex px-2.5 py-1 rounded-lg text-xs font-semibold bg-amber-500/10 text-amber-400/80 border border-dashed border-amber-500/25">
+        {t.statusFeesPending}
       </span>
     )
   }
@@ -344,10 +362,18 @@ export default function PayoutsView({ entries }: Props) {
   // netPayout=0 as a placeholder and would drag averages/totals down
   // if summed.
   const withKnownNet = filteredEntries.filter(e => !e.awaitingSettlement)
-  const paidEntries = withKnownNet.filter(e => e.status === 'paid' || e.status === 'estimated_paid')
-  const totalPaid   = paidEntries.reduce((s, e) => s + e.netPayout, 0)
-  const pending     = withKnownNet.filter(e => e.status !== 'paid' && e.status !== 'estimated_paid').reduce((s, e) => s + e.netPayout, 0)
-  const avgPaid     = paidEntries.length > 0 ? Math.round(totalPaid / paidEntries.length) : 0
+  // Three mutually-exclusive buckets (see lib/db/payout-status.ts):
+  //  • available  — Uzum TO_WITHDRAW: earned, withdrawable, not withdrawn (headline).
+  //  • pending    — in progress, incl. fees_pending (Yandex net not final).
+  //  • paid       — money proven to have left the marketplace. Not emitted today
+  //                 (no accessible Uzum payout feed / no Yandex withdrawal feed),
+  //                 so the tile is an honest "pending API access" placeholder.
+  const availableEntries = withKnownNet.filter(e => isAvailableStatus(e.status))
+  const totalAvailable   = availableEntries.reduce((s, e) => s + e.netPayout, 0)
+  const pendingEntries   = withKnownNet.filter(e => isPendingStatus(e.status))
+  const pending          = pendingEntries.reduce((s, e) => s + e.netPayout, 0)
+  const paidEntries      = withKnownNet.filter(e => isPaidStatus(e.status))
+  const totalPaid        = paidEntries.reduce((s, e) => s + e.netPayout, 0)
 
   function toggle(id: string) {
     setExpandedId(prev => prev === id ? null : id)
@@ -363,7 +389,11 @@ export default function PayoutsView({ entries }: Props) {
     [`${t.colAd} (so'm)`]:      e.adSpend,
     [`${t.colTax} (so'm)`]:     e.tax,
     [`${t.colNet} (so'm)`]:     e.netPayout,
-    [t.colStatus]: (e.status === 'paid' || e.status === 'estimated_paid') ? `${e.payoutEstimated ? '≈ ' : ''}${t.statusPaid}` : e.status === 'processing' ? t.statusProcessing : `${e.payoutEstimated ? '≈ ' : ''}${t.statusPending}`,
+    [t.colStatus]: e.status === 'available_to_withdraw' ? t.statusAvailable
+      : e.status === 'fees_pending' ? t.statusFeesPending
+      : isPaidStatus(e.status) ? `${e.payoutEstimated ? '≈ ' : ''}${t.statusPaid}`
+      : e.status === 'processing' ? t.statusProcessing
+      : `${e.payoutEstimated ? '≈ ' : ''}${t.statusPending}`,
   }))
 
   return (
@@ -470,22 +500,25 @@ export default function PayoutsView({ entries }: Props) {
         </div>
       </div>
 
-      {/* Summary cards */}
+      {/* Summary cards. Headline is "available to withdraw" (real, provable
+          from Uzum TO_WITHDRAW). "Paid" is a muted placeholder because no
+          accessible marketplace feed proves a completed withdrawal yet —
+          honest "unmeasured", not a false zero. */}
       <div className="grid grid-cols-3 gap-3">
-        <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl px-4 py-3">
-          <p className="text-[var(--text-muted)] text-xs mb-1">{t.kpiTotalPaid}</p>
-          <p className="text-[var(--text-base)] text-xl font-bold">{fmtShort(totalPaid, lang)}</p>
-          <p className="text-[var(--text-muted)] text-xs mt-0.5">{paidEntries.length} {t.periods}</p>
+        <div className="bg-[var(--bg-card2)] border border-sky-500/20 rounded-2xl px-4 py-3">
+          <p className="text-[var(--text-muted)] text-xs mb-1">{t.kpiAvailable}</p>
+          <p className="text-[var(--text-base)] text-xl font-bold">{fmtShort(totalAvailable, lang)}</p>
+          <p className="text-[var(--text-muted)] text-xs mt-0.5">{availableEntries.length} {t.periods}</p>
         </div>
         <div className="bg-[var(--bg-card2)] border border-amber-500/20 rounded-2xl px-4 py-3">
           <p className="text-[var(--text-muted)] text-xs mb-1">{t.kpiPending}</p>
           <p className="text-[var(--text-base)] text-xl font-bold">{fmtShort(pending, lang)}</p>
-          <p className="text-[var(--text-muted)] text-xs mt-0.5">{filteredEntries.filter(e => e.status !== 'paid' && e.status !== 'estimated_paid').length} {t.periods}</p>
+          <p className="text-[var(--text-muted)] text-xs mt-0.5">{pendingEntries.length} {t.periods}</p>
         </div>
-        <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl px-4 py-3">
-          <p className="text-[var(--text-muted)] text-xs mb-1">{t.kpiAvg}</p>
-          <p className="text-[var(--text-base)] text-xl font-bold">{fmtShort(avgPaid, lang)}</p>
-          <p className="text-[var(--text-muted)] text-xs mt-0.5">{t.perPeriod}</p>
+        <div className="bg-[var(--bg-card2)] border border-dashed border-[var(--border)] rounded-2xl px-4 py-3 opacity-70">
+          <p className="text-[var(--text-muted)] text-xs mb-1">{t.kpiTotalPaid}</p>
+          <p className="text-[var(--text-base)] text-xl font-bold">{paidEntries.length > 0 ? fmtShort(totalPaid, lang) : '—'}</p>
+          <p className="text-[var(--text-muted)] text-xs mt-0.5">{paidEntries.length > 0 ? `${paidEntries.length} ${t.periods}` : t.paidPendingApi}</p>
         </div>
       </div>
 
@@ -582,7 +615,8 @@ export default function PayoutsView({ entries }: Props) {
                         <td className="px-4 py-3.5 text-right text-[var(--text-base)] font-bold text-sm">{entry.adSpend > 0 ? '-' : ''}{fmtShort(entry.adSpend, lang)}</td>
                         <td className="px-4 py-3.5 text-right text-[var(--text-base)] font-bold text-sm">{entry.tax > 0 ? '-' : ''}{fmtShort(entry.tax, lang)}</td>
                         <td className="px-4 py-3.5 text-right">
-                          <span className="text-[var(--text-base)] font-bold text-sm">{fmtShort(entry.netPayout, lang)}</span>
+                          {/* fees_pending: net excludes not-yet-posted fees → mark it non-final with a ≈ */}
+                          <span className="text-[var(--text-base)] font-bold text-sm" title={entry.status === 'fees_pending' ? t.statusFeesPending : undefined}>{entry.status === 'fees_pending' ? '≈ ' : ''}{fmtShort(entry.netPayout, lang)}</span>
                         </td>
                       </>
                     )}

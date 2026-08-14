@@ -3,6 +3,7 @@ import { db, orders, orderItems, products, shops, yandexSettlementTransactions, 
 import { getShopIds } from '@/lib/db/shop-context'
 import { getUnitEcoSettings } from '@/lib/db/unit-economics'
 import type { PayoutEntry, PayoutOrderItem } from '@/lib/types'
+import { deriveUzumBucketStatus, deriveYandexSettledStatus } from '@/lib/db/payout-status'
 
 export type { PayoutEntry }
 
@@ -213,7 +214,7 @@ export async function getPayoutEntries(): Promise<PayoutEntry[]> {
   // so we sum by (shop_id × YYYY-MM) and use those instead of the
   // Unit-Economics-percentage estimate.
   const uzShopIds = shopRows.filter(r => r.marketplace === 'uzum').map(r => r.id)
-  const uzSettlementByKey = new Map<string, { gross: number; commission: number; delivery: number; net: number; profitFallback: number; itemCount: number }>()
+  const uzSettlementByKey = new Map<string, { gross: number; commission: number; delivery: number; net: number; profitFallback: number; itemCount: number; statuses: Set<string> }>()
   if (uzShopIds.length > 0) {
     try {
       const settlementRows = await db.select({
@@ -235,8 +236,12 @@ export async function getPayoutEntries(): Promise<PayoutEntry[]> {
         // we already show cancellations in the returns column.
         if (r.status === 'CANCELED') continue
         const key = `${r.month}|uzum`
-        const b = uzSettlementByKey.get(key) ?? { gross: 0, commission: 0, delivery: 0, net: 0, profitFallback: 0, itemCount: 0 }
+        const b = uzSettlementByKey.get(key) ?? { gross: 0, commission: 0, delivery: 0, net: 0, profitFallback: 0, itemCount: 0, statuses: new Set<string>() }
         b.itemCount += 1
+        // Track the per-order finance/orders status so the bucket status is
+        // rolled up from real signals (TO_WITHDRAW vs PROCESSING), never the
+        // calendar. CANCELED is already skipped above.
+        if (r.status) b.statuses.add(r.status)
         b.gross      += Number(r.seller_price ?? 0)
         b.commission += Number(r.commission   ?? 0)
         b.delivery   += Number(r.delivery     ?? 0)
@@ -295,8 +300,11 @@ export async function getPayoutEntries(): Promise<PayoutEntry[]> {
           otherDeductions: 0,
           netPayout,
           ordersCount: v.count,
-          // Real Yandex netting data — a confirmed payout, not an estimate.
-          status: isPast ? 'paid' : 'pending',
+          // Yandex posts the credit (Начисление) before the fee debits
+          // (Удержания): credit>0 with debit==0 means the net isn't final yet →
+          // fees_pending (visible at gross, flagged), else pending. Never
+          // calendar-'paid' (no order-level Yandex withdrawal feed).
+          status: deriveYandexSettledStatus(settled.credit, settled.debit),
           payoutDate: null,
           payoutEstimated: false,
           items: itemsMap.get(key) ?? [],
@@ -342,7 +350,6 @@ export async function getPayoutEntries(): Promise<PayoutEntry[]> {
     if (mp === 'uzum') {
       const settled = uzSettlementByKey.get(key)
       if (settled && settled.itemCount > 0) {
-        const isPast = monthKey < currentMonth
         // Net: withdrawnProfit when present (money actually released),
         // else sellerProfit (pre-release), else derive from
         // sellerPrice − commission − delivery. Prefer the one that
@@ -368,8 +375,10 @@ export async function getPayoutEntries(): Promise<PayoutEntry[]> {
           otherDeductions: 0,
           netPayout: net,
           ordersCount: v.count,
-          // Real Uzum /finance/orders data — a confirmed payout, not an estimate.
-          status: isPast ? 'paid' : 'pending',
+          // Status from REAL Uzum order signals, never the calendar: any
+          // TO_WITHDRAW → available_to_withdraw (earned, not withdrawn), else
+          // pending. Never 'paid' — no accessible completed-withdrawal feed.
+          status: deriveUzumBucketStatus([...settled.statuses]),
           payoutDate: null,
           payoutEstimated: false,
           items: itemsMap.get(key) ?? [],
