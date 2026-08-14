@@ -5,6 +5,8 @@ import assert from 'node:assert/strict'
 import {
   deriveUzumBucketStatus,
   deriveYandexSettledStatus,
+  isYandexTransferred,
+  isYandexAwaitingTransfer,
   isPaidStatus,
   isAvailableStatus,
   isPendingStatus,
@@ -56,6 +58,37 @@ describe('Yandex status — partial netting flagged, NEVER paid (BUG 2)', () => 
   it('NEVER emits paid from a settled Yandex bucket (no calendar paid)', () => {
     assert.equal(isPaidStatus(deriveYandexSettledStatus(100000, 0)), false)
     assert.equal(isPaidStatus(deriveYandexSettledStatus(100000, 16060)), false)
+  })
+})
+
+describe('Yandex netting transfer signal — "paid" IS provable (PROBLEM 1)', () => {
+  // The confirmed example: order 59564845443 → «Переведён по графику выплат», п/п №92735.
+  it('«Переведён по графику выплат» + payment-order number → transferred → paid', () => {
+    assert.equal(isYandexTransferred('Переведён по графику выплат', '92735'), true)
+    assert.equal(deriveYandexSettledStatus(59940, 0, true), 'paid')
+    assert.equal(isPaidStatus(deriveYandexSettledStatus(59940, 0, true)), true)
+  })
+
+  // Order 60137441539 (M9) → «Будет переведён по графику выплат», no п/п → still pending.
+  it('«Будет переведён по графику выплат» (no п/п) → NOT transferred, NOT paid', () => {
+    assert.equal(isYandexTransferred('Будет переведён по графику выплат', null), false)
+    assert.equal(isYandexAwaitingTransfer('Будет переведён по графику выплат'), true)
+    assert.equal(isPaidStatus(deriveYandexSettledStatus(100000, 16000, false)), false)
+  })
+
+  it('«Переведён» WITHOUT a payment-order number is not proof of transfer', () => {
+    assert.equal(isYandexTransferred('Переведён по графику выплат', null), false)
+    assert.equal(isYandexTransferred('Переведён по графику выплат', '  '), false)
+  })
+
+  it('handles the е/ё spelling of переведен/переведён', () => {
+    assert.equal(isYandexTransferred('Переведен по графику выплат', '92735'), true)
+  })
+
+  it('transferPosted=false keeps the existing fees_pending / pending behavior', () => {
+    assert.equal(deriveYandexSettledStatus(100000, 0, false), 'fees_pending')
+    assert.equal(deriveYandexSettledStatus(100000, 16060, false), 'pending')
+    assert.equal(deriveYandexSettledStatus(100000, 0), 'fees_pending') // default arg
   })
 })
 

@@ -25,17 +25,48 @@ export function deriveUzumBucketStatus(orderStatuses: readonly string[]): Payout
 }
 
 /**
- * Yandex settled-bucket status. Yandex's netting report posts the credit
- * (Начисление) before the fee debits (Удержания), so a bucket can be "settled"
- * with credit only:
+ * Whether a Yandex netting transaction represents money ALREADY TRANSFERRED to
+ * the seller. The united-netting report's "Статус" column reads
+ * «Переведён по графику выплат» once a payment order has been issued, and carries
+ * a payment-order number («Номер платежного поручения»). Both must be present:
+ * the status text alone (without a п/п number) is not proof of transfer.
  *
- *   credit > 0 AND debit == 0 → fees_pending  (net not final; stays in pending bucket, flagged)
- *   else                      → pending        (fees final)
- *
- * NEVER calendar-'paid' — there is no order-level Yandex withdrawal feed, so a
- * settled row reads as pending/awaiting payout, not "paid".
+ * «Будет переведён по графику выплат» (future) also contains "перевед" — it is
+ * excluded by the "будет" guard, and it never carries a payment-order number.
  */
-export function deriveYandexSettledStatus(credit: number, debit: number): PayoutStatus {
+export function isYandexTransferred(
+  statusNote: string | null | undefined,
+  paymentOrderNumber: string | null | undefined,
+): boolean {
+  const s = (statusNote ?? '').toLowerCase()
+  const transferred = s.includes('перевед') && !s.includes('будет') // «Переведён…», not «Будет переведён…»
+  const hasPaymentOrder = !!(paymentOrderNumber && String(paymentOrderNumber).trim())
+  return transferred && hasPaymentOrder
+}
+
+/**
+ * Whether a Yandex netting transaction is still AWAITING transfer
+ * («Будет переведён по графику выплат»). Used to keep a month bucket out of
+ * "paid" while any of its transfers are still scheduled-but-not-sent.
+ */
+export function isYandexAwaitingTransfer(statusNote: string | null | undefined): boolean {
+  const s = (statusNote ?? '').toLowerCase()
+  return s.includes('будет') && s.includes('перевед') // «Будет переведён…»
+}
+
+/**
+ * Yandex settled-bucket status, driven by the netting report — NEVER the calendar.
+ *
+ *   transferPosted (a payment order issued, none still awaiting) → paid
+ *   else credit > 0 AND debit == 0 → fees_pending  (net not final; flagged, in pending bucket)
+ *   else                          → pending        (fees final, transfer not yet posted)
+ *
+ * `transferPosted` is rolled up in payouts.ts from the bucket's transactions:
+ * true when at least one is isYandexTransferred and none is isYandexAwaitingTransfer.
+ * Defaults to false so existing callers (and pre-payment-order data) behave as before.
+ */
+export function deriveYandexSettledStatus(credit: number, debit: number, transferPosted = false): PayoutStatus {
+  if (transferPosted) return 'paid'
   return credit > 0 && debit === 0 ? 'fees_pending' : 'pending'
 }
 
