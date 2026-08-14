@@ -175,23 +175,21 @@ export interface CreateInvoiceResult {
   raw: Record<string, unknown>
 }
 
-// Invoice lifetime sent to ATMOS as an integer number of MINUTES, in the
-// snake_case field `expiration_time`. We deliberately do NOT send an
-// `expiration_date` string: an ISO value (e.g. `new Date().toISOString()` →
-// `...THH:mm:ss.SSSZ`) fails ATMOS's strict `yyyy-MM-dd'T'HH:mm:ss` parse and
-// returns -999998 "Invalid request format". Integer minutes sidesteps the trap.
-const INVOICE_EXPIRATION_MINUTES = 60
-
 export async function createInvoice(p: CreateInvoiceParams): Promise<CreateInvoiceResult> {
   const cfg = getConfig()
   // Every field here MUST be snake_case + lowercase (ATMOS rejects camelCase).
   const body = {
     request_id: p.requestId,
     store_id: Number(cfg.storeId),
+    // ATMOS requires BOTH keys to be PRESENT, even empty. Verified on the live DEV
+    // sandbox (store 11054): empty strings return code 0. An integer
+    // expiration_time or a formatted expiration_date string both fail — empty
+    // strings for both is the working shape.
+    expiration_time: '',
+    expiration_date: '',
     account: String(p.account),
     amount: p.amountTiyin,
     success_url: cfg.successUrl,
-    expiration_time: INVOICE_EXPIRATION_MINUTES,   // integer minutes — NOT a date string
     items: [
       {
         items_id: '1',
@@ -199,7 +197,9 @@ export async function createInvoice(p: CreateInvoiceParams): Promise<CreateInvoi
         name: p.itemName,
         amount: p.amountTiyin,   // single line == total
         quantity: 1,             // quantity 1 avoids unit-vs-total ambiguity
-        details: [{ name: 'quantity', values: '1' }],
+        // details is a single OBJECT, not an array — the array form returns
+        // -999999 "System error"; the object form is verified to return code 0.
+        details: { name: 'quantity', values: '1' },
       },
     ],
   }
