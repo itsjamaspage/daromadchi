@@ -175,7 +175,7 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
   //   - Удержания (negative contribution)
   // Grouped by (shop_id, YYYY-MM) so we can match the |mp key below.
   const ymShopIds = shopRows.filter(r => r.marketplace === 'yandex_market').map(r => r.id)
-  const ymSettlementByKey = new Map<string, { credit: number; debit: number; commission: number; delivery: number; other: number; txnCount: number; transferred: number; awaiting: number }>()
+  const ymSettlementByKey = new Map<string, { credit: number; debit: number; commission: number; delivery: number; other: number; txnCount: number; transferred: number; awaiting: number; paymentOrders: Set<string> }>()
   if (ymShopIds.length > 0) {
     // Try/catch guards against the migration not yet being applied on
     // this DB (fresh deploy race, or admin manually rolled back). The
@@ -198,15 +198,19 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
       for (const r of settlementRows) {
         if (!r.month) continue
         const key = `${r.month}|yandex_market`
-        const b = ymSettlementByKey.get(key) ?? { credit: 0, debit: 0, commission: 0, delivery: 0, other: 0, txnCount: 0, transferred: 0, awaiting: 0 }
+        const b = ymSettlementByKey.get(key) ?? { credit: 0, debit: 0, commission: 0, delivery: 0, other: 0, txnCount: 0, transferred: 0, awaiting: 0, paymentOrders: new Set<string>() }
         const amt = Number(r.amount)
         b.txnCount += 1
         // Transfer roll-up (PROBLEM 1): count transactions the netting report says
         // are transferred («Переведён…» + payment-order number) vs still awaiting
         // («Будет переведён…»). A bucket is "paid" only when it has a transfer and
         // nothing still awaiting — see deriveYandexSettledStatus(transferPosted).
-        if (isYandexTransferred(r.status_note, r.payment_order_number)) b.transferred += 1
-        else if (isYandexAwaitingTransfer(r.status_note)) b.awaiting += 1
+        if (isYandexTransferred(r.status_note, r.payment_order_number)) {
+          b.transferred += 1
+          // The payment-order number (№ платежного поручения, e.g. 92735) is the
+          // bank-statement reference for this payout — collect it for the paid row.
+          if (r.payment_order_number) b.paymentOrders.add(String(r.payment_order_number).trim())
+        } else if (isYandexAwaitingTransfer(r.status_note)) b.awaiting += 1
         if (r.entry_type === 'Начисление') {
           b.credit += amt
         } else {
@@ -321,6 +325,7 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
           netPayout,
           ordersCount: v.count,
           orderNumbers: v.orderNumbers,
+          paymentReferences: [...settled.paymentOrders],
           // Status from the netting report, never the calendar:
           //  • transferPosted (a payment order issued, none still awaiting) → paid
           //  • credit>0 & debit==0 (fees not posted yet) → fees_pending (visible at gross)
