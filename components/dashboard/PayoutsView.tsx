@@ -6,6 +6,7 @@ import { ChevronDown, ChevronUp, HelpCircle, RefreshCw, MoreVertical, CreditCard
 import type { PayoutEntry, PayoutOrderItem, MarketplaceType } from '@/lib/types'
 import { isPaidStatus, isAvailableStatus, isPendingStatus } from '@/lib/db/payout-status'
 import ExportButton from '@/components/dashboard/ExportButton'
+import DateRangePicker from '@/components/dashboard/DateRangePicker'
 import MpBadge from '@/components/dashboard/MpBadge'
 import { useLang } from '@/app/providers'
 import { dashT } from '@/lib/dashT'
@@ -42,6 +43,10 @@ function formatPeriod(
 
 interface Props {
   entries: PayoutEntry[]
+  // Date-range state (URL-driven, same as the dashboard). Drives DateRangePicker.
+  period?: string
+  from?: string
+  to?: string
 }
 
 // Currency suffix per app language. The UZ shop currency is always
@@ -235,7 +240,7 @@ function DeductionBar({ entry }: { entry: PayoutEntry }) {
 const MP_TAB_VALUES = ['all', 'uzum', 'yandex_market'] as const
 type MpFilter = typeof MP_TAB_VALUES[number]
 
-export default function PayoutsView({ entries }: Props) {
+export default function PayoutsView({ entries, period = '365', from, to }: Props) {
   const { lang } = useLang()
   const t = dashT[lang].payouts
   const locale = lang === 'ru' ? 'ru-RU' : lang === 'en' ? 'en-US' : 'uz-UZ'
@@ -453,6 +458,7 @@ export default function PayoutsView({ entries }: Props) {
               </div>
             </div>
           )}
+          <DateRangePicker period={period} from={from} to={to} />
           <ExportButton data={exportData} filename="tolovu-hisoboti" targetRef={printRef} />
           {/* Kebab (⋮) menu: single icon that expands into a dropdown.
               Currently one action — "Обновить данные Yandex" — but the
