@@ -82,6 +82,9 @@ const MIGRATIONS = [
   // Additive + idempotent (ADD COLUMN IF NOT EXISTS): Yandex payment-order
   // columns for the netting "paid" signal.
   'migrations/migrations/066_yandex_payment_order.sql',
+  // Additive + idempotent (ADD COLUMN IF NOT EXISTS): netting «Название товара»
+  // so Payouts shows the Yandex product name exactly as the finance report prints it.
+  'migrations/migrations/067_yandex_product_name.sql',
 ]
 
 function loadDatabaseUrl() {
