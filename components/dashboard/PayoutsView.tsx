@@ -124,7 +124,7 @@ function StatusBadge({ status }: { status: PayoutEntry['status'] }) {
   )
 }
 
-function ItemBreakdown({ items }: { items: PayoutOrderItem[] }) {
+function ItemBreakdown({ items, orderNumbers }: { items: PayoutOrderItem[]; orderNumbers?: string[] }) {
   const { lang } = useLang()
   const t = dashT[lang].payouts
   const [expanded, setExpanded] = useState(false)
@@ -146,6 +146,13 @@ function ItemBreakdown({ items }: { items: PayoutOrderItem[] }) {
       <p className="text-[var(--text-muted)] text-xs font-semibold uppercase tracking-wider">
         {t.itemsTitle} · {items.length}
       </p>
+      {orderNumbers && orderNumbers.length > 0 && (
+        <p className="text-[var(--text-muted)] text-xs">
+          {t.orderNumbersLabel}:{' '}
+          <span className="font-mono text-[var(--text-base)]">{orderNumbers.slice(0, 20).join(', ')}</span>
+          {orderNumbers.length > 20 ? ` +${orderNumbers.length - 20}` : ''}
+        </p>
+      )}
       <table className="w-full text-sm">
         <thead>
           <tr className="text-[var(--text-muted)] text-[11px] uppercase tracking-wider border-b border-[var(--border)]">
@@ -387,6 +394,7 @@ export default function PayoutsView({ entries, period = '365', from, to }: Props
   const exportData = filteredEntries.map(e => ({
     [t.colPeriod]:              e.period,
     [t.colOrders]:              e.ordersCount,
+    [t.orderNumbersLabel]:      (e.orderNumbers ?? []).join(', '),
     [`${t.colGross} (so'm)`]:   e.grossRevenue,
     [`${t.colCommission} (so'm)`]: e.commission,
     [`${t.colDelivery} (so'm)`]: e.delivery,
@@ -637,7 +645,7 @@ export default function PayoutsView({ entries, period = '365', from, to }: Props
                   {expandedId === entry.id && (
                     <tr className="border-b border-[var(--border)]">
                       <td colSpan={11} className="p-0">
-                        <ItemBreakdown items={entry.items} />
+                        <ItemBreakdown items={entry.items} orderNumbers={entry.orderNumbers} />
                         <DeductionBar entry={entry} />
                       </td>
                     </tr>

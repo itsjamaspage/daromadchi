@@ -282,6 +282,9 @@ export interface PayoutEntry {
   // Per-product breakdown of the orders that fed this payout period.
   // Grouped by product so 50 orders of the same SKU collapse into one row.
   items: PayoutOrderItem[]
+  // Marketplace order numbers (orders.order_id_external) in this period, so a row
+  // can be cross-referenced with the seller cabinet's order list.
+  orderNumbers?: string[]
   // Actual first and last order dates in this payout period as
   // YYYY-MM-DD strings — used to render "when did these orders
   // happen" instead of the whole-month boundary. Both null if the

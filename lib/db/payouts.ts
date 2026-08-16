@@ -29,6 +29,7 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
   const [orderRows, cogsRows, itemRows] = await Promise.all([
     db.select({
       shop_id: orders.shop_id,
+      order_id_external: orders.order_id_external,
       ordered_at: orders.ordered_at,
       status: orders.status,
       revenue: orders.revenue,
@@ -115,6 +116,9 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
     // bucket. Cancelled/returned orders are excluded so an empty payout
     // period doesn't get a range from its refunded orders.
     firstOrderAt: Date | null; lastOrderAt: Date | null
+    // Marketplace order numbers (orders.order_id_external) contributing to this
+    // payout period — so a row can be cross-referenced with the seller cabinet.
+    orderNumbers: string[]
   }
   const grouped = new Map<string, Bucket>()
 
@@ -138,6 +142,7 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
       penalty: 0, storageFee: 0, additionalPayment: 0,
       count: 0, returnCount: 0, returnAmount: 0,
       firstOrderAt: null, lastOrderAt: null,
+      orderNumbers: [],
     }
 
     if (row.status === 'returned') {
@@ -151,6 +156,7 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
       b.storageFee += Number(row.storage_fee ?? 0)
       b.additionalPayment += Number(row.additional_payment ?? 0)
       b.count += 1
+      if (row.order_id_external) b.orderNumbers.push(row.order_id_external)
       if (!b.firstOrderAt || d < b.firstOrderAt) b.firstOrderAt = d
       if (!b.lastOrderAt  || d > b.lastOrderAt)  b.lastOrderAt  = d
     }
@@ -314,6 +320,7 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
           otherDeductions: 0,
           netPayout,
           ordersCount: v.count,
+          orderNumbers: v.orderNumbers,
           // Status from the netting report, never the calendar:
           //  • transferPosted (a payment order issued, none still awaiting) → paid
           //  • credit>0 & debit==0 (fees not posted yet) → fees_pending (visible at gross)
@@ -351,6 +358,7 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
         otherDeductions: 0,
         netPayout: 0,
         ordersCount: v.count,
+        orderNumbers: v.orderNumbers,
         status: isPast ? 'pending' : 'estimated_pending',
         payoutDate: null,
         payoutEstimated: false,
@@ -394,6 +402,7 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
           otherDeductions: 0,
           netPayout: net,
           ordersCount: v.count,
+          orderNumbers: v.orderNumbers,
           // Status from REAL Uzum order signals, never the calendar: any
           // TO_WITHDRAW → available_to_withdraw (earned, not withdrawn), else
           // pending. Never 'paid' — no accessible completed-withdrawal feed.
@@ -441,6 +450,7 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
       otherDeductions: cogs,
       netPayout,
       ordersCount: v.count,
+      orderNumbers: v.orderNumbers,
       // TODO: replace with real payout schedule data from each marketplace's API
       status: isPast ? 'estimated_paid' : 'estimated_pending',
       payoutDate: null,
