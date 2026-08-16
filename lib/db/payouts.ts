@@ -175,7 +175,7 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
   //   - Удержания (negative contribution)
   // Grouped by (shop_id, YYYY-MM) so we can match the |mp key below.
   const ymShopIds = shopRows.filter(r => r.marketplace === 'yandex_market').map(r => r.id)
-  const ymSettlementByKey = new Map<string, { credit: number; debit: number; commission: number; delivery: number; other: number; txnCount: number; transferred: number; awaiting: number; paymentOrders: Set<string> }>()
+  const ymSettlementByKey = new Map<string, { credit: number; debit: number; commission: number; delivery: number; other: number; txnCount: number; transferred: number; awaiting: number; paymentOrders: Set<string>; orderNumbers: Set<string> }>()
   if (ymShopIds.length > 0) {
     // Try/catch guards against the migration not yet being applied on
     // this DB (fresh deploy race, or admin manually rolled back). The
@@ -190,6 +190,7 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
         amount: yandexSettlementTransactions.amount,
         status_note: yandexSettlementTransactions.status_note,
         payment_order_number: yandexSettlementTransactions.payment_order_number,
+        order_id_external: yandexSettlementTransactions.order_id_external,
       }).from(yandexSettlementTransactions)
         .where(and(
           inArray(yandexSettlementTransactions.shop_id, ymShopIds),
@@ -198,9 +199,12 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
       for (const r of settlementRows) {
         if (!r.month) continue
         const key = `${r.month}|yandex_market`
-        const b = ymSettlementByKey.get(key) ?? { credit: 0, debit: 0, commission: 0, delivery: 0, other: 0, txnCount: 0, transferred: 0, awaiting: 0, paymentOrders: new Set<string>() }
+        const b = ymSettlementByKey.get(key) ?? { credit: 0, debit: 0, commission: 0, delivery: 0, other: 0, txnCount: 0, transferred: 0, awaiting: 0, paymentOrders: new Set<string>(), orderNumbers: new Set<string>() }
         const amt = Number(r.amount)
         b.txnCount += 1
+        // Order numbers straight from the Finance section (netting report) — the
+        // same «Номер заказа» the seller sees in Финансовые отчёты, not the Orders feed.
+        if (r.order_id_external) b.orderNumbers.add(String(r.order_id_external).trim())
         // Transfer roll-up (PROBLEM 1): count transactions the netting report says
         // are transferred («Переведён…» + payment-order number) vs still awaiting
         // («Будет переведён…»). A bucket is "paid" only when it has a transfer and
@@ -238,12 +242,13 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
   // so we sum by (shop_id × YYYY-MM) and use those instead of the
   // Unit-Economics-percentage estimate.
   const uzShopIds = shopRows.filter(r => r.marketplace === 'uzum').map(r => r.id)
-  const uzSettlementByKey = new Map<string, { gross: number; commission: number; delivery: number; net: number; profitFallback: number; itemCount: number; statuses: Set<string> }>()
+  const uzSettlementByKey = new Map<string, { gross: number; commission: number; delivery: number; net: number; profitFallback: number; itemCount: number; statuses: Set<string>; orderNumbers: Set<string> }>()
   if (uzShopIds.length > 0) {
     try {
       const settlementRows = await db.select({
         month:            sql<string>`to_char(${uzumSettlementOrders.transaction_at}, 'YYYY-MM')`.as('month'),
         status:           uzumSettlementOrders.status,
+        uzum_order_id:    uzumSettlementOrders.uzum_order_id,
         seller_price:     uzumSettlementOrders.seller_price,
         commission:       uzumSettlementOrders.commission,
         delivery:         uzumSettlementOrders.logistic_delivery_fee,
@@ -260,12 +265,15 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
         // we already show cancellations in the returns column.
         if (r.status === 'CANCELED') continue
         const key = `${r.month}|uzum`
-        const b = uzSettlementByKey.get(key) ?? { gross: 0, commission: 0, delivery: 0, net: 0, profitFallback: 0, itemCount: 0, statuses: new Set<string>() }
+        const b = uzSettlementByKey.get(key) ?? { gross: 0, commission: 0, delivery: 0, net: 0, profitFallback: 0, itemCount: 0, statuses: new Set<string>(), orderNumbers: new Set<string>() }
         b.itemCount += 1
         // Track the per-order finance/orders status so the bucket status is
         // rolled up from real signals (TO_WITHDRAW vs PROCESSING), never the
         // calendar. CANCELED is already skipped above.
         if (r.status) b.statuses.add(r.status)
+        // Order number from the Finance section (/v1/finance/orders) — matches
+        // Uzum's «Финансы» view, not the Orders feed.
+        if (r.uzum_order_id != null) b.orderNumbers.add(String(r.uzum_order_id))
         b.gross      += Number(r.seller_price ?? 0)
         b.commission += Number(r.commission   ?? 0)
         b.delivery   += Number(r.delivery     ?? 0)
@@ -324,7 +332,7 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
           otherDeductions: 0,
           netPayout,
           ordersCount: v.count,
-          orderNumbers: v.orderNumbers,
+          orderNumbers: [...settled.orderNumbers],
           paymentReferences: [...settled.paymentOrders],
           // Status from the netting report, never the calendar:
           //  • transferPosted (a payment order issued, none still awaiting) → paid
@@ -407,7 +415,7 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
           otherDeductions: 0,
           netPayout: net,
           ordersCount: v.count,
-          orderNumbers: v.orderNumbers,
+          orderNumbers: [...settled.orderNumbers],
           // Status from REAL Uzum order signals, never the calendar: any
           // TO_WITHDRAW → available_to_withdraw (earned, not withdrawn), else
           // pending. Never 'paid' — no accessible completed-withdrawal feed.
