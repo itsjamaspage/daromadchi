@@ -1,6 +1,7 @@
-import { eq, sql } from 'drizzle-orm'
+import { eq, and, notInArray, sql } from 'drizzle-orm'
 import { db, shops, uzumSettlementOrders } from '@/lib/db'
 import { fetchUzumFinanceOrders, fetchUzumShops, type UzumFinanceOrderItem, UzumApiError } from './client'
+import { mergeSettlementItems, collectUndatedUntilCovered, TERMINAL_UZUM_STATUSES } from './settlement-merge'
 
 /**
  * Fetch and store Uzum's REAL per-order-item settlement data for one
@@ -71,47 +72,77 @@ export async function syncUzumSettlements(
   // huge backfill can't push us past nginx's ~60s upstream timeout —
   // returning a partial batch is better than a 504 that shows the seller
   // nothing at all.
-  const items: UzumFinanceOrderItem[] = []
+  let items: UzumFinanceOrderItem[] = []
+  const datedItems: UzumFinanceOrderItem[] = []
+  const undatedItems: UzumFinanceOrderItem[] = []
   let totalReported = 0
   let firstPageRawShape: string | undefined
   let firstProbedUrl: string | undefined
   const startedAt = Date.now()
   const DEADLINE_MS = 45_000 // leave ~15s headroom under nginx's 60s cap
   let deadlineHit = false
-  const fetchPages = async (from: number | undefined, to: number | undefined, maxPages: number) => {
+  // Page into `target`. Break condition is PER-CALL (this call's totalElements),
+  // so the dated pass and the undated pass don't interfere with each other's
+  // paging.
+  const fetchPages = async (from: number | undefined, to: number | undefined, maxPages: number, target: UzumFinanceOrderItem[]) => {
     for (let page = 0; page < maxPages; page++) {
       if (Date.now() - startedAt > DEADLINE_MS) { deadlineHit = true; break }
       const r = await fetchUzumFinanceOrders(token, uzumShopIds, page, 100, from, to)
       totalReported = r.totalElements
-      if (page === 0) { firstPageRawShape = r.rawShape; firstProbedUrl = r.probedUrl }
+      if (firstProbedUrl === undefined) { firstPageRawShape = r.rawShape; firstProbedUrl = r.probedUrl }
       if (r.items.length === 0) break
-      items.push(...r.items)
-      if (items.length >= totalReported && totalReported > 0) break
+      target.push(...r.items)
+      if (target.length >= r.totalElements && r.totalElements > 0) break
     }
   }
+  // Non-terminal orders we already track MUST be refreshed until they reach a
+  // terminal state (a PROCESSING order can flip to TO_WITHDRAW weeks later). Load
+  // their item ids so the undated pass keeps paging until it re-sees ALL of them —
+  // the coverage guarantee that removes the page-cap ceiling. Best-effort: on a
+  // read failure we fall back to the baseline sweep.
+  let mustCover = new Set<number>()
   try {
-    // Dated call — sellers with normal volume land under 5 pages here.
-    await fetchPages(dateFrom, dateTo, 20)
-    // Fallback: if the dated call came up empty, retry WITHOUT the date
-    // filter. Uzum's endpoint may filter by payout date (which lags
-    // order date by weeks — user's own screenshot showed "К выплате 7
-    // августа" for a Jul 26 delivery), so a 14-day window can miss
-    // recent orders whose payout hasn't been scheduled yet. Cap the
-    // fallback at 10 pages (1 000 items) so a large-history shop can't
-    // trip the timeout; recent orders come first in Uzum's ordering so
-    // 1 000 items comfortably covers weeks of activity.
-    if (items.length === 0) {
-      await fetchPages(undefined, undefined, 10)
-      const filtered = items.filter(it => {
-        const d = it.date ?? it.dateIssued
-        return typeof d === 'number' && d >= dateFrom && d <= dateTo
-      })
-      items.length = 0
-      items.push(...filtered)
+    const pendingRows = await db
+      .select({ id: uzumSettlementOrders.uzum_order_item_id })
+      .from(uzumSettlementOrders)
+      .where(and(
+        eq(uzumSettlementOrders.shop_id, shopId),
+        notInArray(uzumSettlementOrders.status, [...TERMINAL_UZUM_STATUSES]),
+      ))
+    mustCover = new Set(pendingRows.map(r => r.id))
+  } catch (e) {
+    console.warn('[uzum settlements] could not load non-terminal orders to cover:', String(e).slice(0, 150))
+  }
+
+  try {
+    // 1) Dated window — Uzum filters this by payout date (which lags order date).
+    await fetchPages(dateFrom, dateTo, 20, datedItems)
+    // 2) Undated recent pass — refreshes orders that flipped status weeks after
+    //    delivery, when their date is already outside the window (order 117751391).
+    //    Pages until every non-terminal order (mustCover) is re-seen — NOT a fixed
+    //    cap — so a shop with more recent activity than the baseline can't let an
+    //    old flip fall off the end silently. minPages = baseline recent sweep;
+    //    maxPages + the deadline guard bound the worst case; hitCap → warn.
+    const undated = await collectUndatedUntilCovered(
+      async (page) => {
+        const r = await fetchUzumFinanceOrders(token, uzumShopIds, page, 100, undefined, undefined)
+        if (firstProbedUrl === undefined) { firstPageRawShape = r.rawShape; firstProbedUrl = r.probedUrl }
+        return { items: r.items, totalElements: r.totalElements }
+      },
+      mustCover,
+      { minPages: 10, maxPages: 30, deadlineHit: () => { const hit = Date.now() - startedAt > DEADLINE_MS; if (hit) deadlineHit = true; return hit } },
+    )
+    undatedItems.push(...undated.items)
+    if (undated.hitCap) {
+      console.warn(`[uzum settlements] undated pass hit the ${undated.pagesFetched}-page cap with ${mustCover.size} non-terminal orders to cover — some older status flips may not have refreshed (shopId=${shopId}).`)
     }
   } catch (e) {
-    return { ok: false, inserted: 0, error: `fetch: ${String(e).slice(0, 300)}`, debug: { uzumShopIds, dateFrom, dateTo, gotSoFar: items.length, probedUrl: firstProbedUrl, elapsedMs: Date.now() - startedAt } }
+    return { ok: false, inserted: 0, error: `fetch: ${String(e).slice(0, 300)}`, debug: { uzumShopIds, dateFrom, dateTo, gotSoFar: datedItems.length + undatedItems.length, probedUrl: firstProbedUrl, elapsedMs: Date.now() - startedAt } }
   }
+
+  // Merge both passes, deduped by order-item id. The undated recent pass is kept
+  // in full (no window re-filter) so late-flipping orders refresh their status.
+  items = mergeSettlementItems(datedItems, undatedItems)
 
   if (items.length === 0) {
     // Include the raw first-page response snapshot so we can tell whether

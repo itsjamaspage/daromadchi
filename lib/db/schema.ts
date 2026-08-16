@@ -728,7 +728,12 @@ export const yandexSettlementTransactions = pgTable('yandex_settlement_transacti
   transaction_at:      timestamp('transaction_at', { withTimezone: true }),
   order_created_at:    timestamp('order_created_at', { withTimezone: true }),
   order_delivered_at:  timestamp('order_delivered_at', { withTimezone: true }),
-  status_note:         text('status_note'),
+  status_note:         text('status_note'),          // "Статус": «Переведён…» | «Будет переведён…»
+  // Payment-order («платежное поручение») — present once the money is TRANSFERRED
+  // on the payout schedule. status_note «Переведён…» + a payment_order_number is
+  // the authoritative "paid" signal used by lib/db/payouts.ts. Nullable/additive.
+  payment_order_number: text('payment_order_number'),
+  payment_order_date:  timestamp('payment_order_date', { withTimezone: true }),
   report_id:           text('report_id'),
   synced_at:           timestamp('synced_at', { withTimezone: true }).defaultNow().notNull(),
 }, (t) => [

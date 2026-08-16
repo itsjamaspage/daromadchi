@@ -35,6 +35,12 @@ export interface SettlementTransaction {
   orderCreatedAt: Date | null
   orderDeliveredAt: Date | null
   statusNote: string | null
+  // Payment-order («платежное поручение») columns. Present once Yandex has
+  // TRANSFERRED the money on the payout schedule; null while it's only
+  // «Будет переведён». statusNote «Переведён…» + a payment-order number is the
+  // authoritative "paid" signal (see lib/db/payout-status.ts:isYandexTransferred).
+  paymentOrderNumber: string | null
+  paymentOrderDate: Date | null
 }
 
 async function yandexRequest<T>(path: string, token: string, options?: RequestInit): Promise<T> {
@@ -243,6 +249,10 @@ export function parseNettingReport(buffer: ArrayBuffer): SettlementTransaction[]
   const idxEntrySource         = findCol(header, ['Источник транзакции'])
   const idxQty                 = findCol(header, ['Количество'])
   const idxStatusNote          = findCol(header, ['Статус'])
+  // Payment-order columns — the authoritative "transferred" signal. Yandex has
+  // used a few label variants across report versions; match any.
+  const idxPayOrderNum         = findCol(header, ['Номер платежного поручения', 'Номер платёжного поручения', '№ платежного поручения'])
+  const idxPayOrderDate        = findCol(header, ['Дата платежного поручения', 'Дата платёжного поручения'])
 
   // If we can't find the two columns that decide "is this a real
   // financial event" — amount and entry type — the sheet is not the
@@ -328,6 +338,13 @@ export function parseNettingReport(buffer: ArrayBuffer): SettlementTransaction[]
       orderCreatedAt:    idxOrderCreatedAt   >= 0 ? toDate(row[idxOrderCreatedAt])   : null,
       orderDeliveredAt:  idxOrderDeliveredAt >= 0 ? toDate(row[idxOrderDeliveredAt]) : null,
       statusNote:        idxStatusNote       >= 0 ? String(row[idxStatusNote] ?? '').trim() || null : null,
+      // xlsx may parse a numeric п/п as a number — normalize to a plain string.
+      paymentOrderNumber: idxPayOrderNum >= 0 && row[idxPayOrderNum] != null && row[idxPayOrderNum] !== ''
+        ? (typeof row[idxPayOrderNum] === 'number' && Number.isFinite(row[idxPayOrderNum] as number)
+            ? String(BigInt(Math.round(row[idxPayOrderNum] as number)))
+            : String(row[idxPayOrderNum]).trim() || null)
+        : null,
+      paymentOrderDate:  idxPayOrderDate >= 0 ? toDate(row[idxPayOrderDate]) : null,
     })
   }
   return results

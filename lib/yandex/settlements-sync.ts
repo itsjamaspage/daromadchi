@@ -121,6 +121,8 @@ export async function syncYandexSettlements(
     order_created_at:   t.orderCreatedAt,
     order_delivered_at: t.orderDeliveredAt,
     status_note:        t.statusNote,
+    payment_order_number: t.paymentOrderNumber,
+    payment_order_date: t.paymentOrderDate,
     report_id:          reportId,
   }))
 
@@ -147,6 +149,8 @@ export async function syncYandexSettlements(
           order_created_at:   sql`excluded.order_created_at`,
           order_delivered_at: sql`excluded.order_delivered_at`,
           status_note:        sql`excluded.status_note`,
+          payment_order_number: sql`excluded.payment_order_number`,
+          payment_order_date: sql`excluded.payment_order_date`,
           report_id:          sql`excluded.report_id`,
           synced_at:          sql`now()`,
         },
