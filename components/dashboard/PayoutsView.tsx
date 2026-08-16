@@ -124,7 +124,7 @@ function StatusBadge({ status }: { status: PayoutEntry['status'] }) {
   )
 }
 
-function ItemBreakdown({ items, orderNumbers }: { items: PayoutOrderItem[]; orderNumbers?: string[] }) {
+function ItemBreakdown({ items }: { items: PayoutOrderItem[] }) {
   const { lang } = useLang()
   const t = dashT[lang].payouts
   const [expanded, setExpanded] = useState(false)
@@ -146,13 +146,6 @@ function ItemBreakdown({ items, orderNumbers }: { items: PayoutOrderItem[]; orde
       <p className="text-[var(--text-muted)] text-xs font-semibold uppercase tracking-wider">
         {t.itemsTitle} · {items.length}
       </p>
-      {orderNumbers && orderNumbers.length > 0 && (
-        <p className="text-[var(--text-muted)] text-xs">
-          {t.orderNumbersLabel}:{' '}
-          <span className="font-mono text-[var(--text-base)]">{orderNumbers.slice(0, 20).join(', ')}</span>
-          {orderNumbers.length > 20 ? ` +${orderNumbers.length - 20}` : ''}
-        </p>
-      )}
       <table className="w-full text-sm">
         <thead>
           <tr className="text-[var(--text-muted)] text-[11px] uppercase tracking-wider border-b border-[var(--border)]">
@@ -395,6 +388,7 @@ export default function PayoutsView({ entries, period = '365', from, to }: Props
     [t.colPeriod]:              e.period,
     [t.colOrders]:              e.ordersCount,
     [t.orderNumbersLabel]:      (e.orderNumbers ?? []).join(', '),
+    [t.paymentRefTitle]:        (e.paymentReferences ?? []).join(', '),
     [`${t.colGross} (so'm)`]:   e.grossRevenue,
     [`${t.colCommission} (so'm)`]: e.commission,
     [`${t.colDelivery} (so'm)`]: e.delivery,
@@ -602,6 +596,24 @@ export default function PayoutsView({ entries, period = '365', from, to }: Props
                           {entry.items.length > 1 && ` +${entry.items.length - 1}`}
                         </p>
                       )}
+                      {/* Inline references so a row can be reconciled at a glance:
+                          the marketplace order number(s), and — for a paid Yandex
+                          period — the payment-order № (bank-statement reference). */}
+                      {((entry.orderNumbers?.length ?? 0) > 0 || (entry.paymentReferences?.length ?? 0) > 0) && (
+                        <p className="text-xs mt-0.5 font-mono flex flex-wrap gap-x-2 gap-y-0.5">
+                          {entry.orderNumbers && entry.orderNumbers.length > 0 && (
+                            <span className="text-[var(--text-muted)]">
+                              № {entry.orderNumbers.slice(0, 3).join(', ')}
+                              {entry.orderNumbers.length > 3 ? ` +${entry.orderNumbers.length - 3}` : ''}
+                            </span>
+                          )}
+                          {entry.paymentReferences && entry.paymentReferences.length > 0 && (
+                            <span className="text-emerald-500" title={t.paymentRefTitle}>
+                              {t.paymentRefLabel} {entry.paymentReferences.join(', ')}
+                            </span>
+                          )}
+                        </p>
+                      )}
                     </td>
                     <td className="px-4 py-3.5 text-right text-[var(--text-base)] font-bold text-sm">{entry.ordersCount}</td>
                     <td className="px-4 py-3.5 text-right text-[var(--text-base)] font-bold text-sm">{fmtShort(entry.grossRevenue, lang)}</td>
@@ -645,7 +657,7 @@ export default function PayoutsView({ entries, period = '365', from, to }: Props
                   {expandedId === entry.id && (
                     <tr className="border-b border-[var(--border)]">
                       <td colSpan={11} className="p-0">
-                        <ItemBreakdown items={entry.items} orderNumbers={entry.orderNumbers} />
+                        <ItemBreakdown items={entry.items} />
                         <DeductionBar entry={entry} />
                       </td>
                     </tr>

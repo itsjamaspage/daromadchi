@@ -285,6 +285,10 @@ export interface PayoutEntry {
   // Marketplace order numbers (orders.order_id_external) in this period, so a row
   // can be cross-referenced with the seller cabinet's order list.
   orderNumbers?: string[]
+  // Yandex payment-order numbers («№ платежного поручения», e.g. 92735) for a
+  // transferred (paid) period — the bank-statement reference that proves the
+  // payout hit the account. Only populated once the netting shows «Переведён».
+  paymentReferences?: string[]
   // Actual first and last order dates in this payout period as
   // YYYY-MM-DD strings — used to render "when did these orders
   // happen" instead of the whole-month boundary. Both null if the
