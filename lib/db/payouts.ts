@@ -7,7 +7,7 @@ import { deriveUzumBucketStatus, deriveYandexSettledStatus, isYandexTransferred,
 
 export type { PayoutEntry }
 
-export async function getPayoutEntries(): Promise<PayoutEntry[]> {
+export async function getPayoutEntries(range?: { from?: string; to?: string }): Promise<PayoutEntry[]> {
   const ue = await getUnitEcoSettings()
   const allShopIds = await getShopIds()
   if (!allShopIds || allShopIds.length === 0) return []
@@ -19,10 +19,17 @@ export async function getPayoutEntries(): Promise<PayoutEntry[]> {
 
   const since = new Date()
   since.setMonth(since.getMonth() - 12)
+  // Widen the query horizon if a custom range reaches further back than 12 months,
+  // so a hand-picked older range still has data to filter.
+  if (range?.from) {
+    const rf = new Date(range.from)
+    if (!Number.isNaN(rf.getTime()) && rf < since) since.setTime(rf.getTime())
+  }
 
   const [orderRows, cogsRows, itemRows] = await Promise.all([
     db.select({
       shop_id: orders.shop_id,
+      order_id_external: orders.order_id_external,
       ordered_at: orders.ordered_at,
       status: orders.status,
       revenue: orders.revenue,
@@ -109,6 +116,9 @@ export async function getPayoutEntries(): Promise<PayoutEntry[]> {
     // bucket. Cancelled/returned orders are excluded so an empty payout
     // period doesn't get a range from its refunded orders.
     firstOrderAt: Date | null; lastOrderAt: Date | null
+    // Marketplace order numbers (orders.order_id_external) contributing to this
+    // payout period — so a row can be cross-referenced with the seller cabinet.
+    orderNumbers: string[]
   }
   const grouped = new Map<string, Bucket>()
 
@@ -132,6 +142,7 @@ export async function getPayoutEntries(): Promise<PayoutEntry[]> {
       penalty: 0, storageFee: 0, additionalPayment: 0,
       count: 0, returnCount: 0, returnAmount: 0,
       firstOrderAt: null, lastOrderAt: null,
+      orderNumbers: [],
     }
 
     if (row.status === 'returned') {
@@ -145,6 +156,7 @@ export async function getPayoutEntries(): Promise<PayoutEntry[]> {
       b.storageFee += Number(row.storage_fee ?? 0)
       b.additionalPayment += Number(row.additional_payment ?? 0)
       b.count += 1
+      if (row.order_id_external) b.orderNumbers.push(row.order_id_external)
       if (!b.firstOrderAt || d < b.firstOrderAt) b.firstOrderAt = d
       if (!b.lastOrderAt  || d > b.lastOrderAt)  b.lastOrderAt  = d
     }
@@ -308,6 +320,7 @@ export async function getPayoutEntries(): Promise<PayoutEntry[]> {
           otherDeductions: 0,
           netPayout,
           ordersCount: v.count,
+          orderNumbers: v.orderNumbers,
           // Status from the netting report, never the calendar:
           //  • transferPosted (a payment order issued, none still awaiting) → paid
           //  • credit>0 & debit==0 (fees not posted yet) → fees_pending (visible at gross)
@@ -345,6 +358,7 @@ export async function getPayoutEntries(): Promise<PayoutEntry[]> {
         otherDeductions: 0,
         netPayout: 0,
         ordersCount: v.count,
+        orderNumbers: v.orderNumbers,
         status: isPast ? 'pending' : 'estimated_pending',
         payoutDate: null,
         payoutEstimated: false,
@@ -388,6 +402,7 @@ export async function getPayoutEntries(): Promise<PayoutEntry[]> {
           otherDeductions: 0,
           netPayout: net,
           ordersCount: v.count,
+          orderNumbers: v.orderNumbers,
           // Status from REAL Uzum order signals, never the calendar: any
           // TO_WITHDRAW → available_to_withdraw (earned, not withdrawn), else
           // pending. Never 'paid' — no accessible completed-withdrawal feed.
@@ -435,6 +450,7 @@ export async function getPayoutEntries(): Promise<PayoutEntry[]> {
       otherDeductions: cogs,
       netPayout,
       ordersCount: v.count,
+      orderNumbers: v.orderNumbers,
       // TODO: replace with real payout schedule data from each marketplace's API
       status: isPast ? 'estimated_paid' : 'estimated_pending',
       payoutDate: null,
@@ -455,6 +471,24 @@ export async function getPayoutEntries(): Promise<PayoutEntry[]> {
   // awaitingSettlement=false, so only genuinely-settled periods survive.
   // (The P&L still surfaces these orders as revenue + a "pending" fee.)
   const realEntries = entries.filter(e => !e.payoutEstimated && !e.awaitingSettlement)
-  realEntries.sort((a, b) => b.period.localeCompare(a.period))
-  return realEntries
+  // Latest activity on top — sort by the most recent order date in each period,
+  // not just the YYYY-MM bucket, so within the same month a newer row (e.g. a
+  // 10 Aug Yandex period) sits above an older one (7 Aug Uzum). Falls back to
+  // firstOrderDate, then the period key. Dates are YYYY-MM-DD so lexical compare
+  // is chronological.
+  realEntries.sort((a, b) =>
+    (b.lastOrderDate ?? b.firstOrderDate ?? '').localeCompare(a.lastOrderDate ?? a.firstOrderDate ?? '')
+    || b.period.localeCompare(a.period))
+
+  // Date-range filter: keep periods whose order span overlaps [from, to]. Dates
+  // are YYYY-MM-DD so lexical compare is chronological; fall back to the period's
+  // month boundaries when a bucket has no order dates.
+  if (!range?.from && !range?.to) return realEntries
+  const rFrom = range.from ?? '0000-01-01'
+  const rTo = range.to ?? '9999-12-31'
+  return realEntries.filter(e => {
+    const eFrom = e.firstOrderDate ?? `${e.period}-01`
+    const eTo = e.lastOrderDate ?? `${e.period}-31`
+    return eTo >= rFrom && eFrom <= rTo
+  })
 }

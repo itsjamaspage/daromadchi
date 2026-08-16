@@ -3,8 +3,38 @@ import { getPayoutEntries } from '@/lib/db/payouts'
 import PayoutsView from '@/components/dashboard/PayoutsView'
 import { getT } from '@/lib/server-i18n'
 
-export default async function PayoutsPage() {
-  const [t, entries] = await Promise.all([getT(), getPayoutEntries()])
+// Same preset vocabulary as the dashboard's DateRangePicker (?days=…).
+function parseDays(v: string): number {
+  if (v === '7') return 7
+  if (v === '30') return 30
+  if (v === '90') return 90
+  if (v === '365') return 365
+  if (v === 'month') return new Date().getDate() // days elapsed this month
+  return 365
+}
+function daysAgo(n: number): string {
+  const d = new Date()
+  d.setDate(d.getDate() - n)
+  return d.toISOString().slice(0, 10)
+}
+
+interface Props {
+  searchParams: Promise<Record<string, string>>
+}
+
+export default async function PayoutsPage({ searchParams }: Props) {
+  const params = await searchParams
+  const period = params?.days ?? '365'
+  const from = params?.from
+  const to = params?.to
+  // Effective range: an explicit custom range wins; otherwise the preset window.
+  const rangeFrom = from ?? daysAgo(parseDays(period))
+  const rangeTo = to ?? new Date().toISOString().slice(0, 10)
+
+  const [t, entries] = await Promise.all([
+    getT(),
+    getPayoutEntries({ from: rangeFrom, to: rangeTo }),
+  ])
   const d = t.dashboard
 
   return (
@@ -21,7 +51,7 @@ export default async function PayoutsPage() {
         </div>
       </div>
 
-      <PayoutsView entries={entries} />
+      <PayoutsView entries={entries} period={period} from={from} to={to} />
     </div>
   )
 }
