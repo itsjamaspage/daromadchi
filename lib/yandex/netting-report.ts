@@ -29,6 +29,11 @@ export interface SettlementTransaction {
   entrySource: string | null   // "Платёж покупателя" | "Оплата услуг Market Yandex Go" | …
   orderType: string | null     // "Продажа физлицу" | "Доставка покупателю" | "Поручение на продажу"
   sku: string | null
+  // «Название товара (к начислению) или услуги (к удержанию)» — the product name on
+  // sale (Начисление) rows, a service name (commission/logistics) on fee (Удержание)
+  // rows. Payouts uses it as the Yandex product name so a row reads exactly as the
+  // seller's finance report prints it. Null when the column is absent/empty.
+  productName: string | null
   amount: number               // signed — Начисление positive, Удержание negative
   quantity: number | null
   transactionAt: Date | null
@@ -244,6 +249,7 @@ export function parseNettingReport(buffer: ArrayBuffer): SettlementTransaction[]
   const idxOrderDeliveredAt    = findCol(header, ['Дата доставки заказа'])
   const idxOrderType           = findCol(header, ['Тип заказа'])
   const idxSku                 = findCol(header, ['Ваш SKU', 'SKU'])
+  const idxProductName         = findCol(header, ['Название товара (к начислению) или услуги (к удержанию)', 'Название товара', 'Наименование товара'])
   const idxAmount              = findCol(header, ['Сумма транзакции, UZS', 'Сумма транзакции'])
   const idxEntryType           = findCol(header, ['Тип транзакции'])
   const idxEntrySource         = findCol(header, ['Источник транзакции'])
@@ -332,6 +338,7 @@ export function parseNettingReport(buffer: ArrayBuffer): SettlementTransaction[]
       entrySource:       idxEntrySource >= 0 ? String(row[idxEntrySource] ?? '').trim() || null : null,
       orderType:         idxOrderType   >= 0 ? String(row[idxOrderType]   ?? '').trim() || null : null,
       sku:               idxSku         >= 0 ? String(row[idxSku]         ?? '').trim() || null : null,
+      productName:       idxProductName >= 0 ? String(row[idxProductName] ?? '').trim() || null : null,
       amount:            Number.isFinite(amount) ? amount : 0,
       quantity:          idxQty >= 0 && row[idxQty] != null ? Math.round(Number(row[idxQty])) : null,
       transactionAt:     idxTransactionDate  >= 0 ? toDate(row[idxTransactionDate])  : null,

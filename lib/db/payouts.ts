@@ -189,6 +189,10 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
   // Grouped by (shop_id, YYYY-MM) so we can match the |mp key below.
   const ymShopIds = shopRows.filter(r => r.marketplace === 'yandex_market').map(r => r.id)
   const ymSettlementByKey = new Map<string, { credit: number; debit: number; commission: number; delivery: number; other: number; txnCount: number; transferred: number; awaiting: number; paymentOrders: Set<string>; orderNumbers: Set<string>; orderLines: Map<string, { sku: string | null; credit: number; debit: number }> }>()
+  // SKU → product name taken straight from the netting report's «Название товара»
+  // (sale rows only). Lets Payouts show the Yandex product name exactly as the
+  // seller's finance report prints it, in preference to the SKU→catalog title.
+  const ymFinanceNameBySku = new Map<string, string>()
   if (ymShopIds.length > 0) {
     // Try/catch guards against the migration not yet being applied on
     // this DB (fresh deploy race, or admin manually rolled back). The
@@ -205,6 +209,7 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
         payment_order_number: yandexSettlementTransactions.payment_order_number,
         order_id_external: yandexSettlementTransactions.order_id_external,
         sku: yandexSettlementTransactions.sku,
+        product_name: yandexSettlementTransactions.product_name,
       }).from(yandexSettlementTransactions)
         .where(and(
           inArray(yandexSettlementTransactions.shop_id, ymShopIds),
@@ -229,6 +234,13 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
           if (r.entry_type === 'Начисление') line.credit += amt
           else line.debit += amt
           b.orderLines.set(orderNum, line)
+        }
+        // «Название товара» is the product name on sale (Начисление) rows and a
+        // SERVICE name (commission/logistics) on fee rows — so capture it only
+        // from the sale line, keyed by SKU, first-writer-wins.
+        if (r.entry_type === 'Начисление' && r.product_name && r.sku) {
+          const k = String(r.sku).trim()
+          if (k && !ymFinanceNameBySku.has(k)) ymFinanceNameBySku.set(k, r.product_name)
         }
         // Transfer roll-up (PROBLEM 1): count transactions the netting report says
         // are transferred («Переведён…» + payment-order number) vs still awaiting
@@ -358,15 +370,25 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
       if (settled && settled.txnCount > 0) {
         const netPayout = settled.credit - settled.debit
         // Per-order named breakdown from the netting report: each «Номер заказа»
-        // paired with its net (credit − debit) and product name (resolved from
-        // the SKU via the catalog). Sorted by net so the biggest orders lead.
+        // paired with its net (credit − debit) and product name. Name comes from
+        // the report's own «Название товара» (so it reads exactly as the seller's
+        // finance report), falling back to the SKU→catalog title if the report
+        // row had no name. Sorted by net so the biggest orders lead.
         const orderLines: PayoutOrderLine[] = [...settled.orderLines.entries()]
           .map(([number, l]) => ({
             number,
-            name: l.sku ? (skuTitle.get(l.sku) ?? null) : null,
+            name: l.sku ? (ymFinanceNameBySku.get(l.sku) ?? skuTitle.get(l.sku) ?? null) : null,
             net: l.credit - l.debit,
           }))
           .sort((a, b) => b.net - a.net)
+        // Show the finance report's product name on the row's headline/breakdown
+        // too: remap each item's title by SKU, keeping the catalog title only as a
+        // fallback when the report didn't name that SKU.
+        const ymItems = (itemsMap.get(key) ?? []).map(it => {
+          const k = it.sku ? it.sku.trim() : ''
+          const financeName = k ? ymFinanceNameBySku.get(k) : undefined
+          return financeName ? { ...it, productTitle: financeName } : it
+        })
         const entry: PayoutEntry = {
           id: key,
           period: monthKey,
@@ -399,7 +421,7 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
           ),
           payoutDate: null,
           payoutEstimated: false,
-          items: itemsMap.get(key) ?? [],
+          items: ymItems,
           firstOrderDate: isoDate(v.firstOrderAt),
           lastOrderDate:  isoDate(v.lastOrderAt),
           awaitingSettlement: false,

@@ -113,6 +113,7 @@ export async function syncYandexSettlements(
     entry_source:       t.entrySource,
     order_type:         t.orderType,
     sku:                t.sku,
+    product_name:       t.productName,
     // Persist absolute magnitude in `amount`; sign is derivable from
     // entry_type. That way math on the aggregator side is unambiguous.
     amount:             String(Math.abs(t.amount)),
@@ -143,6 +144,7 @@ export async function syncYandexSettlements(
           entry_source:       sql`excluded.entry_source`,
           order_type:         sql`excluded.order_type`,
           sku:                sql`excluded.sku`,
+          product_name:       sql`excluded.product_name`,
           amount:             sql`excluded.amount`,
           quantity:           sql`excluded.quantity`,
           transaction_at:     sql`excluded.transaction_at`,

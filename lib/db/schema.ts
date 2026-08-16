@@ -723,6 +723,10 @@ export const yandexSettlementTransactions = pgTable('yandex_settlement_transacti
   entry_source:        text('entry_source'),           // e.g. "Платёж покупателя", "Оплата услуг Market Yandex Go"
   order_type:          text('order_type'),             // e.g. "Продажа физлицу", "Доставка покупателю", "Поручение на продажу"
   sku:                 text('sku'),
+  // «Название товара» from the netting report — the product name on sale rows.
+  // Payouts shows this as the Yandex product name so a row reads exactly as the
+  // seller's finance report prints it. Additive/nullable; backfilled on next sync.
+  product_name:        text('product_name'),
   amount:              numeric('amount', { precision: 14, scale: 2 }).notNull(),
   quantity:            integer('quantity'),
   transaction_at:      timestamp('transaction_at', { withTimezone: true }),
