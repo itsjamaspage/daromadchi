@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { CreditCard } from 'lucide-react'
 import { getPayoutEntries } from '@/lib/db/payouts'
 import PayoutsView from '@/components/dashboard/PayoutsView'
@@ -51,7 +52,11 @@ export default async function PayoutsPage({ searchParams }: Props) {
         </div>
       </div>
 
-      <PayoutsView entries={entries} period={period} from={from} to={to} />
+      {/* Suspense boundary required: PayoutsView renders DateRangePicker, a client
+          component that calls useSearchParams() (mirrors the dashboard page). */}
+      <Suspense>
+        <PayoutsView entries={entries} period={period} from={from} to={to} />
+      </Suspense>
     </div>
   )
 }
