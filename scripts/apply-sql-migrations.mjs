@@ -79,6 +79,9 @@ const MIGRATIONS = [
   // NOT EXISTS + guarded enum) — safe to re-run.
   'migrations/migrations/064_atmos_billing.sql',
   'migrations/migrations/065_stock_ledger.sql',
+  // Additive + idempotent (ADD COLUMN IF NOT EXISTS): Yandex payment-order
+  // columns for the netting "paid" signal.
+  'migrations/migrations/066_yandex_payment_order.sql',
 ]
 
 function loadDatabaseUrl() {
