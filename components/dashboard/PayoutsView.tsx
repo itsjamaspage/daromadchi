@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, Fragment } from 'react'
 import { useRouter } from 'next/navigation'
 import { ChevronDown, ChevronUp, HelpCircle, RefreshCw, MoreVertical, CreditCard } from 'lucide-react'
-import type { PayoutEntry, PayoutOrderItem, MarketplaceType } from '@/lib/types'
+import type { PayoutEntry, PayoutOrderItem, PayoutOrderLine, MarketplaceType } from '@/lib/types'
 import { isPaidStatus, isAvailableStatus, isPendingStatus } from '@/lib/db/payout-status'
 import ExportButton from '@/components/dashboard/ExportButton'
 import DateRangePicker from '@/components/dashboard/DateRangePicker'
@@ -166,6 +166,65 @@ function ItemBreakdown({ items }: { items: PayoutOrderItem[] }) {
               </td>
               <td className="py-2 text-right text-[var(--text-base)] font-bold tabular-nums">×{item.qty}</td>
               <td className="py-2 text-right text-[var(--text-base)] font-bold tabular-nums">{fmt(item.revenue, lang)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {hidden > 0 && (
+        <button
+          type="button"
+          onClick={() => setExpanded(e => !e)}
+          className="text-xs font-medium hover:underline"
+          style={{ color: 'var(--c1)' }}
+        >
+          {expanded ? t.itemsShowLess : `${t.itemsShowMore} (+${hidden})`}
+        </button>
+      )}
+    </div>
+  )
+}
+
+// Per-order named breakdown, sourced from the marketplace's Finance/settlement
+// data (Yandex netting / Uzum finance-orders). Each row is one order number —
+// exactly what the seller sees in финансы — with its product name and net.
+// Distinct from ItemBreakdown, which groups by product across the whole month;
+// this lists individual orders so a number can be matched line-for-line.
+function OrderBreakdown({ orders }: { orders: PayoutOrderLine[] }) {
+  const { lang } = useLang()
+  const t = dashT[lang].payouts
+  const [expanded, setExpanded] = useState(false)
+
+  if (orders.length === 0) return null
+
+  const INITIAL = 8
+  const visible = expanded ? orders : orders.slice(0, INITIAL)
+  const hidden = orders.length - INITIAL
+
+  return (
+    <div className="px-5 py-4 border-t border-[var(--border)] space-y-2">
+      <p className="text-[var(--text-muted)] text-xs font-semibold uppercase tracking-wider">
+        {t.ordersLineTitle} · {orders.length}
+      </p>
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="text-[var(--text-muted)] text-[11px] uppercase tracking-wider border-b border-[var(--border)]">
+            <th className="text-left font-medium py-2">{t.orderNumbersLabel}</th>
+            <th className="text-left font-medium py-2">{t.itemProduct}</th>
+            <th className="text-right font-medium py-2">{t.ordersLineNet}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {visible.map((o, i) => (
+            <tr key={`${o.number}-${i}`} className="border-b border-[var(--border)] last:border-b-0">
+              <td className="py-2 pr-3 align-top">
+                <span className="text-[var(--text-base)] font-mono text-xs">№ {o.number}</span>
+              </td>
+              <td className="py-2 pr-3">
+                {o.name
+                  ? <span className="text-[var(--text-base)] leading-tight">{o.name}</span>
+                  : <span className="text-[var(--text-muted)] italic text-xs">{t.ordersLineNoName}</span>}
+              </td>
+              <td className="py-2 text-right text-[var(--text-base)] font-bold tabular-nums whitespace-nowrap">{fmtShort(o.net, lang)}</td>
             </tr>
           ))}
         </tbody>
@@ -661,6 +720,7 @@ export default function PayoutsView({ entries, period = '365', from, to }: Props
                   {expandedId === entry.id && (
                     <tr className="border-b border-[var(--border)]">
                       <td colSpan={11} className="p-0">
+                        {entry.orders && entry.orders.length > 0 && <OrderBreakdown orders={entry.orders} />}
                         <ItemBreakdown items={entry.items} />
                         <DeductionBar entry={entry} />
                       </td>

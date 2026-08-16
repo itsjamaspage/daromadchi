@@ -240,6 +240,17 @@ export interface PayoutOrderItem {
   orderCount: number
 }
 
+// A single settled order inside a payout period, named. Sourced from each
+// marketplace's Finance/settlement data (Yandex netting, Uzum finance/orders)
+// — NOT the Orders feed — so the number+name matches what the seller sees in
+// the cabinet's финансы/финансовые отчёты. `name` is null when the product
+// title can't be resolved for the order's SKU (graceful — number still shows).
+export interface PayoutOrderLine {
+  number: string
+  name: string | null
+  net: number
+}
+
 // Settlement/payout state for a payout row. Driven by real marketplace signals,
 // never the calendar (a past month proves nothing about whether money moved).
 //   available_to_withdraw — Uzum TO_WITHDRAW: earned, withdrawable, NOT withdrawn.
@@ -289,6 +300,11 @@ export interface PayoutEntry {
   // transferred (paid) period — the bank-statement reference that proves the
   // payout hit the account. Only populated once the netting shows «Переведён».
   paymentReferences?: string[]
+  // Per-order named breakdown for this settled period: each order number paired
+  // with its product name and net, sourced from the marketplace's Finance data.
+  // Lets the seller read "which order, which product, how much" against the
+  // cabinet's финансы view. Only set on the settled (real-data) branches.
+  orders?: PayoutOrderLine[]
   // Actual first and last order dates in this payout period as
   // YYYY-MM-DD strings — used to render "when did these orders
   // happen" instead of the whole-month boundary. Both null if the
