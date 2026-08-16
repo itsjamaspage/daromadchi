@@ -579,14 +579,30 @@ export default function PayoutsView({ entries, period = '365', from, to }: Props
                     className="border-b border-[var(--border)] hover:bg-[var(--bg-card2)] transition-colors cursor-pointer"
                   >
                     <td className="px-5 py-3.5">
-                      <div className="flex items-center gap-2 mb-0.5">
-                        <p className="text-[var(--text-base)] text-sm font-medium">{period.label}</p>
+                      {/* MAIN (headline): the marketplace order number(s) + — for a
+                          paid Yandex period — the payment-order № (bank reference).
+                          Month + date are demoted below. Falls back to the period
+                          label when a row has no order numbers. */}
+                      <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                        {((entry.orderNumbers?.length ?? 0) > 0 || (entry.paymentReferences?.length ?? 0) > 0) ? (
+                          <p className="text-sm font-semibold font-mono flex items-center flex-wrap gap-x-2 gap-y-0.5">
+                            {entry.orderNumbers && entry.orderNumbers.length > 0 && (
+                              <span className="text-[var(--text-base)]">
+                                № {entry.orderNumbers.slice(0, 3).join(', ')}
+                                {entry.orderNumbers.length > 3 ? ` +${entry.orderNumbers.length - 3}` : ''}
+                              </span>
+                            )}
+                            {entry.paymentReferences && entry.paymentReferences.length > 0 && (
+                              <span className="text-emerald-500" title={t.paymentRefTitle}>
+                                {t.paymentRefLabel} {entry.paymentReferences.join(', ')}
+                              </span>
+                            )}
+                          </p>
+                        ) : (
+                          <p className="text-[var(--text-base)] text-sm font-semibold">{period.label}</p>
+                        )}
                         {entry.marketplace && <MpBadge mp={entry.marketplace as MarketplaceType} />}
                       </div>
-                      <p className="text-[var(--text-muted)] text-xs">
-                        {period.range}
-                        {entry.payoutDate && ` · ${entry.payoutDate}`}
-                      </p>
                       {topItem && (
                         <p className="text-[var(--text-muted)] text-xs mt-0.5 truncate max-w-[280px]" title={`${topItem.productTitle}${topItem.sku ? ' · ' + topItem.sku : ''}`}>
                           {topItem.productTitle}
@@ -596,24 +612,12 @@ export default function PayoutsView({ entries, period = '365', from, to }: Props
                           {entry.items.length > 1 && ` +${entry.items.length - 1}`}
                         </p>
                       )}
-                      {/* Inline references so a row can be reconciled at a glance:
-                          the marketplace order number(s), and — for a paid Yandex
-                          period — the payment-order № (bank-statement reference). */}
-                      {((entry.orderNumbers?.length ?? 0) > 0 || (entry.paymentReferences?.length ?? 0) > 0) && (
-                        <p className="text-xs mt-0.5 font-mono flex flex-wrap gap-x-2 gap-y-0.5">
-                          {entry.orderNumbers && entry.orderNumbers.length > 0 && (
-                            <span className="text-[var(--text-muted)]">
-                              № {entry.orderNumbers.slice(0, 3).join(', ')}
-                              {entry.orderNumbers.length > 3 ? ` +${entry.orderNumbers.length - 3}` : ''}
-                            </span>
-                          )}
-                          {entry.paymentReferences && entry.paymentReferences.length > 0 && (
-                            <span className="text-emerald-500" title={t.paymentRefTitle}>
-                              {t.paymentRefLabel} {entry.paymentReferences.join(', ')}
-                            </span>
-                          )}
-                        </p>
-                      )}
+                      {/* Demoted: month + date, below the identifiers. */}
+                      <p className="text-[var(--text-muted)] text-xs mt-0.5">
+                        {((entry.orderNumbers?.length ?? 0) > 0 || (entry.paymentReferences?.length ?? 0) > 0) ? `${period.label} · ` : ''}
+                        {period.range}
+                        {entry.payoutDate && ` · ${entry.payoutDate}`}
+                      </p>
                     </td>
                     <td className="px-4 py-3.5 text-right text-[var(--text-base)] font-bold text-sm">{entry.ordersCount}</td>
                     <td className="px-4 py-3.5 text-right text-[var(--text-base)] font-bold text-sm">{fmtShort(entry.grossRevenue, lang)}</td>
