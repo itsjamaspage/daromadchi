@@ -2,7 +2,7 @@ import { inArray, gte, and, ne, eq, sql, asc } from 'drizzle-orm'
 import { db, orders, orderItems, products, shops, yandexSettlementTransactions, uzumSettlementOrders } from '@/lib/db'
 import { getShopIds } from '@/lib/db/shop-context'
 import { getUnitEcoSettings } from '@/lib/db/unit-economics'
-import type { PayoutEntry, PayoutOrderItem } from '@/lib/types'
+import type { PayoutEntry, PayoutOrderItem, PayoutOrderLine } from '@/lib/types'
 import { deriveUzumBucketStatus, deriveYandexSettledStatus, isYandexTransferred, isYandexAwaitingTransfer } from '@/lib/db/payout-status'
 
 export type { PayoutEntry }
@@ -108,6 +108,19 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
   }
   for (const list of itemsMap.values()) list.sort((a, b) => b.revenue - a.revenue)
 
+  // Global SKU → product title map, built from the same per-product breakdown
+  // rows. Used to name Yandex settled orders: the netting report carries a SKU
+  // per transaction but no product title, so we resolve the title from the
+  // seller's own catalog. Uzum's finance/orders already carries product_title,
+  // so it doesn't need this. Keys are trimmed so they match the netting SKUs.
+  const skuTitle = new Map<string, string>()
+  for (const r of itemRows) {
+    if (r.sku && r.productTitle) {
+      const k = String(r.sku).trim()
+      if (k && !skuTitle.has(k)) skuTitle.set(k, r.productTitle)
+    }
+  }
+
   type Bucket = {
     revenue: number; realFee: number; realDelivery: number
     penalty: number; storageFee: number; additionalPayment: number
@@ -175,7 +188,7 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
   //   - Удержания (negative contribution)
   // Grouped by (shop_id, YYYY-MM) so we can match the |mp key below.
   const ymShopIds = shopRows.filter(r => r.marketplace === 'yandex_market').map(r => r.id)
-  const ymSettlementByKey = new Map<string, { credit: number; debit: number; commission: number; delivery: number; other: number; txnCount: number; transferred: number; awaiting: number; paymentOrders: Set<string>; orderNumbers: Set<string> }>()
+  const ymSettlementByKey = new Map<string, { credit: number; debit: number; commission: number; delivery: number; other: number; txnCount: number; transferred: number; awaiting: number; paymentOrders: Set<string>; orderNumbers: Set<string>; orderLines: Map<string, { sku: string | null; credit: number; debit: number }> }>()
   if (ymShopIds.length > 0) {
     // Try/catch guards against the migration not yet being applied on
     // this DB (fresh deploy race, or admin manually rolled back). The
@@ -191,6 +204,7 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
         status_note: yandexSettlementTransactions.status_note,
         payment_order_number: yandexSettlementTransactions.payment_order_number,
         order_id_external: yandexSettlementTransactions.order_id_external,
+        sku: yandexSettlementTransactions.sku,
       }).from(yandexSettlementTransactions)
         .where(and(
           inArray(yandexSettlementTransactions.shop_id, ymShopIds),
@@ -199,12 +213,23 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
       for (const r of settlementRows) {
         if (!r.month) continue
         const key = `${r.month}|yandex_market`
-        const b = ymSettlementByKey.get(key) ?? { credit: 0, debit: 0, commission: 0, delivery: 0, other: 0, txnCount: 0, transferred: 0, awaiting: 0, paymentOrders: new Set<string>(), orderNumbers: new Set<string>() }
+        const b = ymSettlementByKey.get(key) ?? { credit: 0, debit: 0, commission: 0, delivery: 0, other: 0, txnCount: 0, transferred: 0, awaiting: 0, paymentOrders: new Set<string>(), orderNumbers: new Set<string>(), orderLines: new Map<string, { sku: string | null; credit: number; debit: number }>() }
         const amt = Number(r.amount)
         b.txnCount += 1
         // Order numbers straight from the Finance section (netting report) — the
         // same «Номер заказа» the seller sees in Финансовые отчёты, not the Orders feed.
-        if (r.order_id_external) b.orderNumbers.add(String(r.order_id_external).trim())
+        const orderNum = r.order_id_external ? String(r.order_id_external).trim() : ''
+        if (orderNum) {
+          b.orderNumbers.add(orderNum)
+          // Per-order accumulation: credit (Начисление) is what the seller earns
+          // on the order; debits (commission/delivery) reduce it. net = credit − debit.
+          // The netting SKU names the product via skuTitle; keep the first non-empty SKU.
+          const line = b.orderLines.get(orderNum) ?? { sku: null, credit: 0, debit: 0 }
+          if (!line.sku && r.sku) line.sku = String(r.sku).trim()
+          if (r.entry_type === 'Начисление') line.credit += amt
+          else line.debit += amt
+          b.orderLines.set(orderNum, line)
+        }
         // Transfer roll-up (PROBLEM 1): count transactions the netting report says
         // are transferred («Переведён…» + payment-order number) vs still awaiting
         // («Будет переведён…»). A bucket is "paid" only when it has a transfer and
@@ -242,13 +267,14 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
   // so we sum by (shop_id × YYYY-MM) and use those instead of the
   // Unit-Economics-percentage estimate.
   const uzShopIds = shopRows.filter(r => r.marketplace === 'uzum').map(r => r.id)
-  const uzSettlementByKey = new Map<string, { gross: number; commission: number; delivery: number; net: number; profitFallback: number; itemCount: number; statuses: Set<string>; orderNumbers: Set<string> }>()
+  const uzSettlementByKey = new Map<string, { gross: number; commission: number; delivery: number; net: number; profitFallback: number; itemCount: number; statuses: Set<string>; orderNumbers: Set<string>; orderLines: Map<string, { name: string | null; gross: number; commission: number; delivery: number; withdrawn: number; profit: number }> }>()
   if (uzShopIds.length > 0) {
     try {
       const settlementRows = await db.select({
         month:            sql<string>`to_char(${uzumSettlementOrders.transaction_at}, 'YYYY-MM')`.as('month'),
         status:           uzumSettlementOrders.status,
         uzum_order_id:    uzumSettlementOrders.uzum_order_id,
+        product_title:    uzumSettlementOrders.product_title,
         seller_price:     uzumSettlementOrders.seller_price,
         commission:       uzumSettlementOrders.commission,
         delivery:         uzumSettlementOrders.logistic_delivery_fee,
@@ -265,7 +291,7 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
         // we already show cancellations in the returns column.
         if (r.status === 'CANCELED') continue
         const key = `${r.month}|uzum`
-        const b = uzSettlementByKey.get(key) ?? { gross: 0, commission: 0, delivery: 0, net: 0, profitFallback: 0, itemCount: 0, statuses: new Set<string>(), orderNumbers: new Set<string>() }
+        const b = uzSettlementByKey.get(key) ?? { gross: 0, commission: 0, delivery: 0, net: 0, profitFallback: 0, itemCount: 0, statuses: new Set<string>(), orderNumbers: new Set<string>(), orderLines: new Map<string, { name: string | null; gross: number; commission: number; delivery: number; withdrawn: number; profit: number }>() }
         b.itemCount += 1
         // Track the per-order finance/orders status so the bucket status is
         // rolled up from real signals (TO_WITHDRAW vs PROCESSING), never the
@@ -273,10 +299,14 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
         if (r.status) b.statuses.add(r.status)
         // Order number from the Finance section (/v1/finance/orders) — matches
         // Uzum's «Финансы» view, not the Orders feed.
-        if (r.uzum_order_id != null) b.orderNumbers.add(String(r.uzum_order_id))
-        b.gross      += Number(r.seller_price ?? 0)
-        b.commission += Number(r.commission   ?? 0)
-        b.delivery   += Number(r.delivery     ?? 0)
+        const uzOrderNum = r.uzum_order_id != null ? String(r.uzum_order_id) : ''
+        if (uzOrderNum) b.orderNumbers.add(uzOrderNum)
+        const sellerPrice = Number(r.seller_price ?? 0)
+        const comm        = Number(r.commission   ?? 0)
+        const deliv       = Number(r.delivery     ?? 0)
+        b.gross      += sellerPrice
+        b.commission += comm
+        b.delivery   += deliv
         // Prefer withdrawnProfit (what actually hit the seller's balance)
         // and fall back to sellerProfit (pre-withdrawal profit) if the
         // former is still null for a fresh row.
@@ -284,6 +314,18 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
         const profit    = r.seller_profit    != null ? Number(r.seller_profit)    : null
         if (withdrawn != null) b.net += withdrawn
         if (profit    != null) b.profitFallback += profit
+        // Per-order accumulation — the finance/orders feed already carries the
+        // product title, so Uzum orders are named directly (no SKU→title lookup).
+        if (uzOrderNum) {
+          const line = b.orderLines.get(uzOrderNum) ?? { name: null, gross: 0, commission: 0, delivery: 0, withdrawn: 0, profit: 0 }
+          if (!line.name && r.product_title) line.name = r.product_title
+          line.gross      += sellerPrice
+          line.commission += comm
+          line.delivery   += deliv
+          if (withdrawn != null) line.withdrawn += withdrawn
+          if (profit    != null) line.profit    += profit
+          b.orderLines.set(uzOrderNum, line)
+        }
         uzSettlementByKey.set(key, b)
       }
     } catch (e) {
@@ -315,6 +357,16 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
       // use its REAL numbers. Otherwise return an "awaiting" placeholder.
       if (settled && settled.txnCount > 0) {
         const netPayout = settled.credit - settled.debit
+        // Per-order named breakdown from the netting report: each «Номер заказа»
+        // paired with its net (credit − debit) and product name (resolved from
+        // the SKU via the catalog). Sorted by net so the biggest orders lead.
+        const orderLines: PayoutOrderLine[] = [...settled.orderLines.entries()]
+          .map(([number, l]) => ({
+            number,
+            name: l.sku ? (skuTitle.get(l.sku) ?? null) : null,
+            net: l.credit - l.debit,
+          }))
+          .sort((a, b) => b.net - a.net)
         const entry: PayoutEntry = {
           id: key,
           period: monthKey,
@@ -334,6 +386,7 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
           ordersCount: v.count,
           orderNumbers: [...settled.orderNumbers],
           paymentReferences: [...settled.paymentOrders],
+          orders: orderLines,
           // Status from the netting report, never the calendar:
           //  • transferPosted (a payment order issued, none still awaiting) → paid
           //  • credit>0 & debit==0 (fees not posted yet) → fees_pending (visible at gross)
@@ -398,6 +451,18 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
         const net = settled.net > 0 ? settled.net
                   : settled.profitFallback > 0 ? settled.profitFallback
                   : derivedNet
+        // Per-order named breakdown from /v1/finance/orders: each order number
+        // with its product name and net, mirroring the bucket's net logic
+        // (withdrawn → profit → gross−commission−delivery). Biggest net first.
+        const orderLines: PayoutOrderLine[] = [...settled.orderLines.entries()]
+          .map(([number, l]) => ({
+            number,
+            name: l.name ?? null,
+            net: l.withdrawn > 0 ? l.withdrawn
+               : l.profit > 0 ? l.profit
+               : l.gross - l.commission - l.delivery,
+          }))
+          .sort((a, b) => b.net - a.net)
         const entry: PayoutEntry = {
           id: key,
           period: monthKey,
@@ -416,6 +481,7 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
           netPayout: net,
           ordersCount: v.count,
           orderNumbers: [...settled.orderNumbers],
+          orders: orderLines,
           // Status from REAL Uzum order signals, never the calendar: any
           // TO_WITHDRAW → available_to_withdraw (earned, not withdrawn), else
           // pending. Never 'paid' — no accessible completed-withdrawal feed.
