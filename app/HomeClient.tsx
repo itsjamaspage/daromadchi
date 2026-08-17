@@ -1356,7 +1356,7 @@ function PricingSection({ lang }: { lang: Lang }) {
         T.pricing.proFeature4[lang],
         T.pricing.proFeature5[lang],
       ],
-      cta: T.pricing.proCta[lang], ctaHref: '/login',
+      cta: T.pricing.proCta[lang], ctaHref: '/login?plan=pro',
     },
     {
       name: 'Pro+', price: formatSomFromTiyin(PLAN_PRICES_TIYIN.pro_plus.monthly),
@@ -1367,7 +1367,7 @@ function PricingSection({ lang }: { lang: Lang }) {
         T.pricing.proPlusFeature3[lang],
         T.pricing.proPlusFeature4[lang],
       ],
-      cta: T.pricing.proPlusCta[lang], ctaHref: '/login',
+      cta: T.pricing.proPlusCta[lang], ctaHref: '/login?plan=pro_plus',
     },
   ]
 
