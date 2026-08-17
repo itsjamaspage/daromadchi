@@ -19,7 +19,7 @@
 import 'server-only'
 import {
   verifyCallbackSign, atmosCallbackSignPayload, computeCallbackSign,
-  ipInCidr, ipv4ToInt, clientIpFromForwarded, type CallbackSignParts,
+  ipInCidr, ipInAnyCidr, ipv4ToInt, clientIpFromForwarded, type CallbackSignParts,
 } from './atmos-verify'
 
 // Re-export the pure verification helpers so the rest of billing depends only on
@@ -27,7 +27,7 @@ import {
 // they stay unit-testable under `node --test`.
 export {
   verifyCallbackSign, atmosCallbackSignPayload, computeCallbackSign,
-  ipInCidr, ipv4ToInt, clientIpFromForwarded,
+  ipInCidr, ipInAnyCidr, ipv4ToInt, clientIpFromForwarded,
 }
 export type { CallbackSignParts }
 
@@ -76,7 +76,12 @@ export function getConfig(): AtmosConfig {
     successUrl:     req('ATMOS_SUCCESS_URL'),
     // Toggleable; defaults OFF so DEV/sandbox works before ATMOS confirms the range.
     ipAllowlistEnabled: /^(1|true|on|yes)$/i.test(process.env.ATMOS_CALLBACK_IP_ALLOWLIST?.trim() || ''),
-    callbackCidr:   process.env.ATMOS_CALLBACK_CIDR?.trim() || '92.63.207.0/24',
+    // Comma-separated CIDR list. Real ATMOS callbacks arrive from the CDN77
+    // Amsterdam pool 152.233.12.0/23 in production (the documented 92.63.207.0/24
+    // does NOT match live traffic), so BOTH ranges are allowed by default — a
+    // single documented CIDR would silently reject real payments if the allowlist
+    // is ever turned on. Override with ATMOS_CALLBACK_CIDR (comma-separated).
+    callbackCidr:   process.env.ATMOS_CALLBACK_CIDR?.trim() || '152.233.12.0/23,92.63.207.0/24',
   }
 }
 
@@ -255,10 +260,11 @@ export async function getInvoiceStatus(paymentId: string): Promise<NormalizedInv
 // The MD5 sign verifier and CIDR matcher are the pure helpers imported/re-exported
 // above (./atmos-verify). Only the config-aware toggle lives here.
 
-/** True when the callback source IP is permitted. Allowlist OFF ⇒ always true. */
+/** True when the callback source IP is permitted. Allowlist OFF ⇒ always true.
+ *  When ON, the IP must fall in ANY of the configured CIDRs (see callbackCidr). */
 export function isCallbackIpAllowed(ip: string | null, cfg: AtmosConfig = getConfig()): boolean {
   if (!cfg.ipAllowlistEnabled) return true
-  return !!ip && ipInCidr(ip, cfg.callbackCidr)
+  return !!ip && ipInAnyCidr(ip, cfg.callbackCidr)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
