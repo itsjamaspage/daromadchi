@@ -29,44 +29,27 @@ export const POPULAR_LABEL: Record<Lang, string> = {
   en: 'Popular',
 }
 
-// Feature bullets per tier. Store counts (1 / 3 / 5) match PLAN_SHOP_LIMITS;
-// free history matches the enforced 7-day cap.
+// Feature bullets per tier — the plan offerings themselves are unchanged; these
+// are the same offerings named as they appear on the pricing cards, laddered so
+// each higher tier is a strict superset of the one below (Free ⊂ Pro ⊂ Pro+).
+// No store-count bullets — plan store limits live in PLAN_SHOP_LIMITS, not here.
+// Same list is used on both the landing section and the dashboard modal so they
+// can't drift.
 const FEATURES: Record<Lang, Record<PlanTier, string[]>> = {
   ru: {
-    free: ['1 магазин', '7 дней истории', 'Базовая аналитика'],
-    pro: [
-      'До 3 магазинов',
-      'Вся аналитика (юнит-экономика, реклама, P&L)',
-      'Uzum + Yandex Market',
-      'Автосинхронизация',
-      'Email и Telegram уведомления',
-      'Chrome-расширение',
-    ],
-    pro_plus: ['До 5 магазинов', 'Всё из Pro', 'API-доступ', 'Приоритетная поддержка'],
+    free: ['Умный дашборд', 'Аналитика товаров и рекламы', 'Финансы и ДДС'],
+    pro: ['Умный дашборд', 'Аналитика товаров и рекламы', 'Финансы и ДДС', 'Unit-экономика'],
+    pro_plus: ['Умный дашборд', 'Аналитика товаров и рекламы', 'Финансы и ДДС', 'Unit-экономика', 'Фактическая Unit-экономика'],
   },
   uz: {
-    free: ["1 do'kon", '7 kunlik tarix', 'Asosiy tahlil'],
-    pro: [
-      "3 ta do'kongacha",
-      'Barcha tahlillar (yunit-iqtisod, reklama, P&L)',
-      'Uzum + Yandex Market',
-      'Avto-sinxronizatsiya',
-      'Email va Telegram bildirishnomalar',
-      'Chrome kengaytma',
-    ],
-    pro_plus: ["5 ta do'kongacha", 'Barcha Pro imkoniyatlari', 'API kirish', 'Ustuvor yordam'],
+    free: ['Aqlli boshqaruv paneli', 'Mahsulot va reklama tahlili', 'Moliya va pul oqimi (DDS)'],
+    pro: ['Aqlli boshqaruv paneli', 'Mahsulot va reklama tahlili', 'Moliya va pul oqimi (DDS)', 'Unit-iqtisod'],
+    pro_plus: ['Aqlli boshqaruv paneli', 'Mahsulot va reklama tahlili', 'Moliya va pul oqimi (DDS)', 'Unit-iqtisod', 'Faktik Unit-iqtisod'],
   },
   en: {
-    free: ['1 store', '7 days of history', 'Basic analytics'],
-    pro: [
-      'Up to 3 stores',
-      'Full analytics (unit economics, ads, P&L)',
-      'Uzum + Yandex Market',
-      'Auto-sync',
-      'Email & Telegram notifications',
-      'Chrome extension',
-    ],
-    pro_plus: ['Up to 5 stores', 'Everything in Pro', 'API access', 'Priority support'],
+    free: ['Smart dashboard', 'Product & ad analytics', 'Finance & cash flow'],
+    pro: ['Smart dashboard', 'Product & ad analytics', 'Finance & cash flow', 'Unit economics'],
+    pro_plus: ['Smart dashboard', 'Product & ad analytics', 'Finance & cash flow', 'Unit economics', 'Actual unit economics'],
   },
 }
 
