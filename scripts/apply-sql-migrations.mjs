@@ -89,6 +89,10 @@ const MIGRATIONS = [
   // (provider, provider_transaction_id, period_months, updated_at) missing on prod
   // — the ATMOS create-route INSERT failed on "provider does not exist".
   'migrations/migrations/068_payments_missing_columns.sql',
+  // Additive + idempotent: display-only card metadata (last4/expiry/holder) for
+  // the direct card-binding billing flow. The encrypted token reuses the
+  // existing subscriptions.card_token_encrypted column.
+  'migrations/migrations/069_subscription_card_display.sql',
 ]
 
 function loadDatabaseUrl() {

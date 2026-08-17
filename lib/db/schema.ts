@@ -490,9 +490,14 @@ export const subscriptions = pgTable('subscriptions', {
   interval:           text('interval').notNull(),    // 'monthly' | 'annual'
   status:             subscriptionStatusEnum('status').default('pending').notNull(),
   current_period_end: timestamp('current_period_end', { withTimezone: true }),
-  // Phase 2 (recurring) — reserved, not populated in Phase 1:
+  // Direct card-binding flow: the reusable ATMOS card token (ENCRYPTED at rest via
+  // lib/crypto) drives auto-renewal. card_last4/expiry/holder are display-only —
+  // NO full PAN is ever stored.
   card_id:            text('card_id'),
   card_token_encrypted: text('card_token_encrypted'),
+  card_last4:         text('card_last4'),
+  card_expiry:        text('card_expiry'),   // "MM/YY" for display
+  card_holder:        text('card_holder'),
   created_at:         timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updated_at:         timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 }, (t) => [

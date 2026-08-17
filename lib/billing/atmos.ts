@@ -180,6 +180,12 @@ export interface CreateInvoiceResult {
   raw: Record<string, unknown>
 }
 
+/**
+ * @deprecated Hosted checkout returns -999999 for our store (broken on ATMOS's
+ * side). Billing is moving to the direct card-binding flow (payCreate /
+ * bindCard* / payPreApply / payApply above). Kept only until the billing UI stops
+ * calling /api/billing/atmos/create; do not use for new code.
+ */
 export async function createInvoice(p: CreateInvoiceParams): Promise<CreateInvoiceResult> {
   const cfg = getConfig()
   // Every field here MUST be snake_case + lowercase (ATMOS rejects camelCase).
@@ -220,6 +226,105 @@ export async function createInvoice(p: CreateInvoiceParams): Promise<CreateInvoi
   }
   return { paymentId, url, token, raw: json }
 }
+
+// ── Direct card-binding flow (the WORKING path) ──────────────────────────────
+//
+// The hosted /checkout/invoice/create endpoint returns -999999 for our store
+// (broken on ATMOS's side), so billing uses ATMOS's direct API, verified live on
+// the VPS against store 11054. Business errors arrive as HTTP 200 with
+// {result:{code,description}} — success is result.code==='OK'. Amounts are TIYIN;
+// card expiry is "YYmm" (03/29 → "2903"). NO PAN is ever stored or logged.
+
+function atmosResultCode(json: Record<string, unknown>): { code: string; description: string } {
+  const r = asRecord(json.result)
+  return { code: String(r.code ?? ''), description: String(r.description ?? '') }
+}
+
+/** Throw on an explicit non-OK result.code; pass when it's OK or absent. */
+function assertAtmosOk(json: Record<string, unknown>, ctx: string): void {
+  const { code, description } = atmosResultCode(json)
+  if (code && code.toUpperCase() !== 'OK') {
+    throw new AtmosApiError(code, `${ctx} failed: ${description || 'ATMOS error'} (${code})`)
+  }
+}
+
+function pickDeep(json: Record<string, unknown>, keys: string[]): string | undefined {
+  return pickString(json, keys)
+    ?? pickString(asRecord(json.result), keys)
+    ?? pickString(asRecord(json.data), keys)
+}
+
+export interface PayCreateResult { transactionId: string; raw: Record<string, unknown> }
+/** Create a charge draft for our `account` (our internal payment id). TIYIN. */
+export async function payCreate(account: string, amountTiyin: number): Promise<PayCreateResult> {
+  const cfg = getConfig()
+  const json = await authedPost<Record<string, unknown>>('/merchant/pay/create', {
+    amount: amountTiyin, account: String(account), store_id: Number(cfg.storeId),
+  })
+  assertAtmosOk(json, 'pay/create')
+  const transactionId = pickDeep(json, ['transaction_id', 'transactionId'])
+  if (!transactionId) throw new AtmosApiError('bad_response', 'pay/create returned no transaction_id')
+  return { transactionId, raw: json }
+}
+
+export interface BindInitResult { transactionId: string; raw: Record<string, unknown> }
+/** Begin card binding — ATMOS sends an SMS OTP to the cardholder. expiry is "YYmm". */
+export async function bindCardInit(cardNumber: string, expiryYYmm: string): Promise<BindInitResult> {
+  const json = await authedPost<Record<string, unknown>>('/partner/bind-card/init', {
+    card_number: String(cardNumber), expiry: String(expiryYYmm),
+  })
+  assertAtmosOk(json, 'bind-card/init')
+  const transactionId = pickDeep(json, ['transaction_id', 'transactionId'])
+  if (!transactionId) throw new AtmosApiError('bad_response', 'bind-card/init returned no transaction_id')
+  return { transactionId, raw: json }
+}
+
+export interface BindConfirmResult {
+  cardToken: string
+  cardId: string | null
+  panMasked: string | null
+  cardHolder: string | null
+  raw: Record<string, unknown>
+}
+/** Confirm card binding with the SMS OTP → reusable card token (+ masked pan for display). */
+export async function bindCardConfirm(transactionId: string, otp: string): Promise<BindConfirmResult> {
+  const json = await authedPost<Record<string, unknown>>('/partner/bind-card/confirm', {
+    transaction_id: String(transactionId), otp: String(otp),
+  })
+  assertAtmosOk(json, 'bind-card/confirm')
+  const cardToken = pickDeep(json, ['card_token', 'cardToken', 'token'])
+  if (!cardToken) throw new AtmosApiError('bad_response', 'bind-card/confirm returned no card_token')
+  return {
+    cardToken,
+    cardId:     pickDeep(json, ['card_id', 'cardId']) ?? null,
+    panMasked:  pickDeep(json, ['pan', 'card_number', 'masked_pan', 'card_pan']) ?? null,
+    cardHolder: pickDeep(json, ['card_holder', 'cardholder', 'holder', 'fullname']) ?? null,
+    raw: json,
+  }
+}
+
+/** Stage a token charge before applying it. */
+export async function payPreApply(transactionId: string, cardToken: string): Promise<Record<string, unknown>> {
+  const cfg = getConfig()
+  const json = await authedPost<Record<string, unknown>>('/merchant/pay/pre-apply', {
+    transaction_id: String(transactionId), card_token: String(cardToken), store_id: Number(cfg.storeId),
+  })
+  assertAtmosOk(json, 'pay/pre-apply')
+  return json
+}
+
+/** Apply (capture) the charge. For token payments the OTP is the LITERAL "111111". */
+export async function payApply(transactionId: string, otp: string): Promise<Record<string, unknown>> {
+  const cfg = getConfig()
+  const json = await authedPost<Record<string, unknown>>('/merchant/pay/apply', {
+    transaction_id: String(transactionId), otp: String(otp), store_id: Number(cfg.storeId),
+  })
+  assertAtmosOk(json, 'pay/apply')
+  return json
+}
+
+/** OTP literal ATMOS requires for token (card-bound) charges — never an SMS code. */
+export const TOKEN_PAYMENT_OTP = '111111'
 
 // ── getInvoiceStatus (authoritative re-query) ────────────────────────────────
 
