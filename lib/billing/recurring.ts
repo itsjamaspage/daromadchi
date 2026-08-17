@@ -15,8 +15,13 @@ export async function chargeBoundCard(
   account: string,
   amountTiyin: number,
   cardToken: string,
+  // Called with the pay/create transaction id BEFORE pay/apply, so the caller can
+  // persist it (payments.atmos_payment_id) while the charge is still in flight —
+  // the ATMOS callback fires DURING pay/apply and needs it to match cleanly.
+  onCreated?: (transactionId: string) => Promise<void> | void,
 ): Promise<{ transactionId: string }> {
   const { transactionId } = await payCreate(account, amountTiyin)
+  if (onCreated) await onCreated(transactionId)
   await payPreApply(transactionId, cardToken)
   await payApply(transactionId, TOKEN_PAYMENT_OTP)
   return { transactionId }

@@ -147,7 +147,11 @@ export async function POST(req: Request) {
       logger.warn('atmos_callback_status_check_failed', { account: accountStr, error: String(err).slice(0, 200) })
     }
   } else {
-    logger.warn('atmos_callback_no_atmos_payment_id', { account: accountStr })
+    // Not an error: the cross-check is advisory and the sign+account already
+    // authenticate this callback. atmos_payment_id is normally persisted before
+    // pay/apply (bind-confirm / renewal), so this only happens if the callback
+    // wins the race with that write — activation below still proceeds. Info, not warn.
+    logger.info('atmos_callback_no_atmos_payment_id_yet', { account: accountStr })
   }
 
   // 7. Activate idempotently (at-most-once guard).

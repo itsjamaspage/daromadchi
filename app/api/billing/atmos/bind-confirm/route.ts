@@ -79,7 +79,15 @@ export async function POST(req: Request) {
   // 3. Charge the bound card for the first period.
   let payTxnId: string
   try {
-    const res = await chargeBoundCard(String(pay.account), Number(pay.amountTiyin ?? 0), bind.cardToken)
+    const res = await chargeBoundCard(
+      String(pay.account), Number(pay.amountTiyin ?? 0), bind.cardToken,
+      // Persist the pay/create txn id before pay/apply so the parallel callback
+      // resolves it cleanly (no atmos_callback_no_atmos_payment_id).
+      async (txnId) => {
+        await db.update(payments).set({ atmos_payment_id: txnId, updated_at: new Date() })
+          .where(eq(payments.id, paymentId)).catch(() => {})
+      },
+    )
     payTxnId = res.transactionId
   } catch (err) {
     // The card IS bound (token stored) — surface cardBound so the UI offers "retry
