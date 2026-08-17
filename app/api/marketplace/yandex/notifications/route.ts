@@ -128,9 +128,20 @@ export async function POST(req: Request): Promise<Response> {
   const expected = process.env.YM_NOTIFY_TOKEN
   const tokenOk = !!expected && token === expected
   const ipOk = ipAllowed(ip)
+
+  // ACK vs ACT are separate. Yandex's notification API needs a 200
+  // SendNotificationResponse for EVERY delivered notification, or it flags the
+  // whole subscription broken (a 403 surfaced as CANT_GET_RESPONSE / HTTP 403 in
+  // the seller console and 100% failure). So we ACK every well-formed
+  // notification. Only an AUTHENTICATED one (matching ?token= or a listed Yandex
+  // IP) is allowed to ACT — i.e. trigger the live cross-store stock write. An
+  // unauthenticated notification is acked and dropped, doing nothing, so a spoofed
+  // POST can never move stock. The source IP is logged so a real-but-unlisted
+  // Yandex egress range is discoverable — add it via YM_NOTIFY_ALLOWED_IPS (or set
+  // YM_NOTIFY_TOKEN and register the URL with ?token=…) to enable the side-effect.
   if (!tokenOk && !ipOk) {
-    logger.warn('ym_notify_unauthorized', { ip, type, hasToken: !!token, tokenConfigured: !!expected })
-    return NextResponse.json({ ok: false, error: 'forbidden' }, { status: 403 })
+    logger.warn('ym_notify_unauthenticated_acked', { ip, type, hasToken: !!token, tokenConfigured: !!expected })
+    return NextResponse.json(notificationAck())
   }
 
   logger.info('ym_notify', { ip, type, via: tokenOk ? 'token' : 'ip' })
