@@ -87,7 +87,11 @@ export const GET = withErrorHandler(async (req: Request) => {
 
     try {
       const token = decrypt(s.tokenEnc as string)
-      const { transactionId } = await chargeBoundCard(account, amountTiyin, token)
+      const { transactionId } = await chargeBoundCard(account, amountTiyin, token,
+        async (txnId) => {
+          await db.update(payments).set({ atmos_payment_id: txnId, updated_at: now })
+            .where(eq(payments.id, paymentId)).catch(() => {})
+        })
       // Activates the payment + extends the subscription/user plan, anchored on the
       // existing expiry (applyAtmosPaymentSuccess bases the new period on the later
       // of now / current expiry).

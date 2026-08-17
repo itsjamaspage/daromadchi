@@ -29,6 +29,7 @@ const BT: Record<Lang, Record<string, string>> = {
     errOtp: "Kod noto'g'ri yoki eskirgan. Qaytadan kiriting.",
     errCharge: "To'lov amalga oshmadi. Qaytadan urinib ko'ring.",
     errUnavailable: "To'lov vaqtincha mavjud emas.", errGeneric: "Xatolik. Qaytadan urinib ko'ring.",
+    statusFailed: 'Xatolik',
   },
   en: {
     cardStep: 'Card details', cardNumber: 'Card number', expiry: 'Expiry (MM/YY)',
@@ -43,6 +44,7 @@ const BT: Record<Lang, Record<string, string>> = {
     errOtp: 'Wrong or expired code. Please try again.',
     errCharge: 'Payment failed. Please try again.',
     errUnavailable: 'Payments are temporarily unavailable.', errGeneric: 'Something went wrong. Try again.',
+    statusFailed: 'Failed',
   },
   ru: {
     cardStep: 'Данные карты', cardNumber: 'Номер карты', expiry: 'Срок (ММ/ГГ)',
@@ -57,6 +59,7 @@ const BT: Record<Lang, Record<string, string>> = {
     errOtp: 'Неверный или устаревший код. Введите ещё раз.',
     errCharge: 'Оплата не прошла. Попробуйте снова.',
     errUnavailable: 'Оплата временно недоступна.', errGeneric: 'Произошла ошибка. Попробуйте снова.',
+    statusFailed: 'Ошибка',
   },
 }
 
@@ -418,11 +421,20 @@ function InvoiceModal({ onClose, d }: { onClose: () => void; d: T }) {
   )
 }
 
-function statusBadge(status: PaymentRecord['status'], d: T) {
+function statusBadge(status: PaymentRecord['status'], d: T, failedLabel: string) {
   if (status === 'paid') {
     return (
       <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
         <CheckCircle className="w-3 h-3" /> {d.billingSuccess}
+      </span>
+    )
+  }
+  // failed / cancelled must NOT read as "pending" — a broken/abandoned attempt is
+  // not an in-progress one. Show it distinctly (red) so real state is legible.
+  if (status === 'failed' || status === 'cancelled') {
+    return (
+      <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-red-500/10 border border-red-500/20 text-red-400">
+        <X className="w-3 h-3" /> {failedLabel}
       </span>
     )
   }
@@ -580,7 +592,7 @@ export default function BillingClient({ billing, initialPlan }: { billing: Billi
                     <td className="px-5 py-3.5 text-[var(--text-muted)] text-xs">{fmtDate(row.date)}</td>
                     <td className="px-4 py-3.5 text-[var(--text-base)] text-xs font-medium">{row.plan}</td>
                     <td className="px-4 py-3.5 text-right text-emerald-400 text-xs font-semibold">{fmtSom(row.amount)}</td>
-                    <td className="px-4 py-3.5 text-center">{statusBadge(row.status, d)}</td>
+                    <td className="px-4 py-3.5 text-center">{statusBadge(row.status, d, b.statusFailed)}</td>
                   </tr>
                 ))}
               </tbody>
