@@ -85,6 +85,10 @@ const MIGRATIONS = [
   // Additive + idempotent (ADD COLUMN IF NOT EXISTS): netting «Название товара»
   // so Payouts shows the Yandex product name exactly as the finance report prints it.
   'migrations/migrations/067_yandex_product_name.sql',
+  // Additive + idempotent (ADD COLUMN IF NOT EXISTS): base payments columns
+  // (provider, provider_transaction_id, period_months, updated_at) missing on prod
+  // — the ATMOS create-route INSERT failed on "provider does not exist".
+  'migrations/migrations/068_payments_missing_columns.sql',
 ]
 
 function loadDatabaseUrl() {
