@@ -37,19 +37,19 @@ export const POPULAR_LABEL: Record<Lang, string> = {
 // can't drift.
 const FEATURES: Record<Lang, Record<PlanTier, string[]>> = {
   ru: {
-    free: ['Умный дашборд', 'Аналитика товаров и рекламы', 'Финансы и ДДС'],
-    pro: ['Умный дашборд', 'Аналитика товаров и рекламы', 'Финансы и ДДС', 'Unit-экономика'],
-    pro_plus: ['Умный дашборд', 'Аналитика товаров и рекламы', 'Финансы и ДДС', 'Unit-экономика', 'Фактическая Unit-экономика'],
+    free: ['Умный дашборд', 'Аналитика товаров', 'Финансы и ДДС'],
+    pro: ['Умный дашборд', 'Аналитика товаров', 'Финансы и ДДС', 'Unit-экономика'],
+    pro_plus: ['Умный дашборд', 'Аналитика товаров', 'Финансы и ДДС', 'Unit-экономика', 'Фактическая Unit-экономика'],
   },
   uz: {
-    free: ['Aqlli boshqaruv paneli', 'Mahsulot va reklama tahlili', 'Moliya va pul oqimi (DDS)'],
-    pro: ['Aqlli boshqaruv paneli', 'Mahsulot va reklama tahlili', 'Moliya va pul oqimi (DDS)', 'Unit-iqtisod'],
-    pro_plus: ['Aqlli boshqaruv paneli', 'Mahsulot va reklama tahlili', 'Moliya va pul oqimi (DDS)', 'Unit-iqtisod', 'Faktik Unit-iqtisod'],
+    free: ['Aqlli boshqaruv paneli', 'Mahsulot tahlili', 'Moliya va pul oqimi (DDS)'],
+    pro: ['Aqlli boshqaruv paneli', 'Mahsulot tahlili', 'Moliya va pul oqimi (DDS)', 'Unit-iqtisod'],
+    pro_plus: ['Aqlli boshqaruv paneli', 'Mahsulot tahlili', 'Moliya va pul oqimi (DDS)', 'Unit-iqtisod', 'Faktik Unit-iqtisod'],
   },
   en: {
-    free: ['Smart dashboard', 'Product & ad analytics', 'Finance & cash flow'],
-    pro: ['Smart dashboard', 'Product & ad analytics', 'Finance & cash flow', 'Unit economics'],
-    pro_plus: ['Smart dashboard', 'Product & ad analytics', 'Finance & cash flow', 'Unit economics', 'Actual unit economics'],
+    free: ['Smart dashboard', 'Product analytics', 'Finance & cash flow'],
+    pro: ['Smart dashboard', 'Product analytics', 'Finance & cash flow', 'Unit economics'],
+    pro_plus: ['Smart dashboard', 'Product analytics', 'Finance & cash flow', 'Unit economics', 'Actual unit economics'],
   },
 }
 
