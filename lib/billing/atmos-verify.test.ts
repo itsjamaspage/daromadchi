@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import {
   atmosCallbackSignPayload, computeCallbackSign, verifyCallbackSign,
-  ipInCidr, clientIpFromForwarded,
+  ipInCidr, ipInAnyCidr, clientIpFromForwarded,
 } from './atmos-verify'
 
 const parts = {
@@ -59,6 +59,24 @@ test('ipInCidr matches inside /24 and rejects outside', () => {
   assert.equal(ipInCidr('92.63.208.1', '92.63.207.0/24'), false)
   assert.equal(ipInCidr('10.0.0.1', '92.63.207.0/24'), false)
   assert.equal(ipInCidr('not-an-ip', '92.63.207.0/24'), false)
+})
+
+test('ipInAnyCidr matches the real ATMOS ranges and rejects outside', () => {
+  const ranges = '152.233.12.0/23,92.63.207.0/24'
+  // CDN77-Amsterdam pool (real production callbacks — address varies per payment)
+  assert.equal(ipInAnyCidr('152.233.12.242', ranges), true)
+  assert.equal(ipInAnyCidr('152.233.13.245', ranges), true)  // /23 spans .12 and .13
+  // documented range still allowed
+  assert.equal(ipInAnyCidr('92.63.207.10', ranges), true)
+  // outside both
+  assert.equal(ipInAnyCidr('152.233.14.1', ranges), false)
+  assert.equal(ipInAnyCidr('10.0.0.1', ranges), false)
+})
+
+test('ipInAnyCidr tolerates spaces/semicolons and blank lists', () => {
+  assert.equal(ipInAnyCidr('92.63.207.1', '152.233.12.0/23 ; 92.63.207.0/24'), true)
+  assert.equal(ipInAnyCidr('92.63.207.1', ''), false)        // fail closed
+  assert.equal(ipInAnyCidr('not-an-ip', '92.63.207.0/24'), false)
 })
 
 test('clientIpFromForwarded takes the leftmost XFF entry, else fallback', () => {

@@ -69,6 +69,17 @@ export function ipInCidr(ip: string, cidr: string): boolean {
   return (ipInt & mask) === (baseInt & mask)
 }
 
+// Match an IP against a LIST of CIDRs (comma/space/semicolon-separated). ATMOS
+// callbacks arrive from more than one network — the documented 92.63.207.0/24
+// AND, in production, the CDN77-Amsterdam pool 152.233.12.0/23 (address varies
+// per payment). A single-CIDR check keyed on the documented range silently drops
+// live payments, so the allowlist (when enabled) must accept every real range.
+// Empty/blank list ⇒ false (fail closed).
+export function ipInAnyCidr(ip: string, cidrList: string): boolean {
+  const cidrs = cidrList.split(/[\s,;]+/).map(c => c.trim()).filter(Boolean)
+  return cidrs.some(cidr => ipInCidr(ip, cidr))
+}
+
 // Real client IP from behind the reverse proxy: leftmost X-Forwarded-For entry,
 // falling back to a directly-observed address.
 export function clientIpFromForwarded(xff: string | null | undefined, fallback?: string | null): string | null {
