@@ -273,6 +273,21 @@ function LoginForm() {
   const router = useRouter()
 
   useEffect(() => {
+    // Already signed in? Don't show a login form — honor the intent that brought
+    // them here. A ?plan=… (from a /pricing or landing tariff click) sends them
+    // straight to Billing with that plan; otherwise to the dashboard. Uses the
+    // NextAuth session endpoint (no SessionProvider needed).
+    let alive = true
+    fetch('/api/auth/session', { cache: 'no-store' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(s => { if (alive && s?.user) router.replace(postLoginDest) })
+      .catch(() => {})
+    return () => { alive = false }
+  // postLoginDest is derived from stable searchParams; run once on mount.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  useEffect(() => {
     // NextAuth publishes registered providers here — if 'google' is present
     // the OAuth env vars are set on the server. Hide the button otherwise so
     // clicks can't hit a provider that isn't configured.
