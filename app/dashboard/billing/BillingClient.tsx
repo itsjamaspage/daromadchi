@@ -41,7 +41,7 @@ function fmtDate(iso: string) {
 
 // ── Plan Modal ─────────────────────────────────────────────────────────────────
 
-function PlanModal({ current, onClose, d }: { current: PlanType; onClose: () => void; d: T }) {
+function PlanModal({ current, highlight, onClose, d }: { current: PlanType; highlight?: 'pro' | 'pro_plus'; onClose: () => void; d: T }) {
   const plans: PlanType[] = ['free', 'pro', 'pro_plus']
   const PLAN_FEATURES = planFeatures(d)
   const [busy, setBusy] = useState<PlanType | null>(null)
@@ -88,12 +88,17 @@ function PlanModal({ current, onClose, d }: { current: PlanType; onClose: () => 
         <div className="p-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
           {plans.map(plan => {
             const isCurrent = plan === current
+            // Plan the user picked on /pricing — ring it so their choice is obvious
+            // (only when it isn't already the current plan, which has its own style).
+            const isPicked = !isCurrent && plan === highlight
             return (
               <div
                 key={plan}
                 className="rounded-xl border p-4 flex flex-col gap-3 transition-all"
                 style={isCurrent
                   ? { borderColor: 'color-mix(in srgb, var(--c1) 50%, transparent)', background: 'color-mix(in srgb, var(--c1) 6%, transparent)' }
+                  : isPicked
+                  ? { borderColor: 'var(--c1)', background: 'color-mix(in srgb, var(--c1) 8%, transparent)', boxShadow: '0 0 0 2px color-mix(in srgb, var(--c1) 35%, transparent)' }
                   : { borderColor: 'var(--border)', background: 'var(--bg-card2)' }}
               >
                 <div className="flex items-center justify-between">
@@ -230,11 +235,13 @@ function statusBadge(status: PaymentRecord['status'], d: T) {
 
 // ── Page ───────────────────────────────────────────────────────────────────────
 
-export default function BillingClient({ billing }: { billing: BillingInfo }) {
+export default function BillingClient({ billing, initialPlan }: { billing: BillingInfo; initialPlan?: 'pro' | 'pro_plus' }) {
   const { lang } = useLang()
   const d = translations[lang].dashboard
   const PLAN_FEATURES = planFeatures(d)
-  const [showPlanModal, setShowPlanModal]       = useState(false)
+  // Arriving from /pricing (?plan=…) opens the chooser immediately with that plan
+  // highlighted, so "Попробовать Pro" → login lands on a ready-to-pay screen.
+  const [showPlanModal, setShowPlanModal]       = useState(!!initialPlan)
   const [showInvoiceModal, setShowInvoiceModal] = useState(false)
 
   const plan = billing.plan
@@ -354,7 +361,7 @@ export default function BillingClient({ billing }: { billing: BillingInfo }) {
         )}
       </div>
 
-      {showPlanModal    && <PlanModal    current={plan} onClose={() => setShowPlanModal(false)} d={d} />}
+      {showPlanModal    && <PlanModal    current={plan} highlight={initialPlan} onClose={() => setShowPlanModal(false)} d={d} />}
       {showInvoiceModal && <InvoiceModal onClose={() => setShowInvoiceModal(false)} d={d} />}
     </div>
   )
