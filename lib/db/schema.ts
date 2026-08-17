@@ -490,6 +490,9 @@ export const subscriptions = pgTable('subscriptions', {
   interval:           text('interval').notNull(),    // 'monthly' | 'annual'
   status:             subscriptionStatusEnum('status').default('pending').notNull(),
   current_period_end: timestamp('current_period_end', { withTimezone: true }),
+  // When true, the renewal cron charges the stored card token before expiry.
+  // Defaults true (set when a card is bound); the seller can toggle it off.
+  autorenew:          boolean('autorenew').default(true).notNull(),
   // Direct card-binding flow: the reusable ATMOS card token (ENCRYPTED at rest via
   // lib/crypto) drives auto-renewal. card_last4/expiry/holder are display-only —
   // NO full PAN is ever stored.

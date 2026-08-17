@@ -51,6 +51,7 @@ export const GET = withErrorHandler(async (req: Request) => {
     tokenEnc: subscriptions.card_token_encrypted,
   }).from(subscriptions).where(and(
     inArray(subscriptions.status, ['active', 'past_due']),
+    eq(subscriptions.autorenew, true),   // per-subscription toggle (billing page)
     isNotNull(subscriptions.card_token_encrypted),
     lt(subscriptions.current_period_end, dueBefore),
   ))

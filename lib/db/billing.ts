@@ -1,8 +1,15 @@
-import { eq, desc } from 'drizzle-orm'
-import { db, users, payments } from '@/lib/db'
+import { eq, desc, inArray, and } from 'drizzle-orm'
+import { db, users, payments, subscriptions } from '@/lib/db'
 import { getCurrentUserId } from '@/lib/db/shop-context'
 
 export type PlanType = 'free' | 'pro' | 'pro_plus'
+
+// Display-only saved-card summary. NEVER includes the token or full PAN.
+export interface SavedCard {
+  last4: string | null
+  expiry: string | null
+  holder: string | null
+}
 
 export interface PaymentRecord {
   id: string
@@ -18,17 +25,21 @@ export interface BillingInfo {
   isOnTrial: boolean
   trialEndsAt: string | null
   payments: PaymentRecord[]
+  // Saved card (display-only) + whether auto-renew is on. Null card ⇒ none bound.
+  card: SavedCard | null
+  autorenew: boolean
 }
 
 export async function getBilling(): Promise<BillingInfo> {
   const empty: BillingInfo = {
     plan: 'free', planExpiresAt: null, isOnTrial: false, trialEndsAt: null, payments: [],
+    card: null, autorenew: false,
   }
 
   const userId = await getCurrentUserId()
   if (!userId) return empty
 
-  const [[userRow], paymentRows] = await Promise.all([
+  const [[userRow], paymentRows, subRows] = await Promise.all([
     db.select({
       plan: users.plan,
       plan_expires_at: users.plan_expires_at,
@@ -43,6 +54,18 @@ export async function getBilling(): Promise<BillingInfo> {
     }).from(payments)
       .where(eq(payments.user_id, userId))
       .orderBy(desc(payments.created_at)),
+    // Most-recent subscription with a bound card — powers the "Your card" panel
+    // and the auto-renew toggle. The token itself is never selected.
+    db.select({
+      cardLast4: subscriptions.card_last4,
+      cardExpiry: subscriptions.card_expiry,
+      cardHolder: subscriptions.card_holder,
+      hasToken: subscriptions.card_token_encrypted,
+      autorenew: subscriptions.autorenew,
+    }).from(subscriptions)
+      .where(and(eq(subscriptions.user_id, userId), inArray(subscriptions.status, ['active', 'past_due', 'pending'])))
+      .orderBy(desc(subscriptions.updated_at))
+      .limit(1),
   ])
 
   const plan = (userRow?.plan ?? 'free') as PlanType
@@ -58,5 +81,11 @@ export async function getBilling(): Promise<BillingInfo> {
     status: p.status as PaymentRecord['status'],
   }))
 
-  return { plan, planExpiresAt, isOnTrial, trialEndsAt, payments: paymentList }
+  const sub = subRows[0]
+  const card: SavedCard | null = sub?.hasToken
+    ? { last4: sub.cardLast4 ?? null, expiry: sub.cardExpiry ?? null, holder: sub.cardHolder ?? null }
+    : null
+  const autorenew = !!sub?.autorenew
+
+  return { plan, planExpiresAt, isOnTrial, trialEndsAt, payments: paymentList, card, autorenew }
 }

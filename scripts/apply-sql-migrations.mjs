@@ -93,6 +93,8 @@ const MIGRATIONS = [
   // the direct card-binding billing flow. The encrypted token reuses the
   // existing subscriptions.card_token_encrypted column.
   'migrations/migrations/069_subscription_card_display.sql',
+  // Additive + idempotent: per-subscription auto-renew flag for the renewal cron.
+  'migrations/migrations/070_subscription_autorenew.sql',
 ]
 
 function loadDatabaseUrl() {
