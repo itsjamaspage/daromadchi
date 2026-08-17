@@ -5,7 +5,12 @@
  *
  * Runs: bind-card/init → (you type the SMS OTP) → bind-card/confirm → pay/create →
  * pay/pre-apply → pay/apply. Amounts in TIYIN; expiry "YYmm"; token apply OTP is the
- * literal "111111". NOTHING is stored — this only proves the ATMOS calls succeed.
+ * literal "111111".
+ *
+ * Persists a payments row for the test `account` in the DB FIRST (via DATABASE_URL)
+ * so ATMOS's Callback API resolves it during pay/apply — a fake/unsaved account is
+ * rejected with STPIMS-ERR-093 (unknown_account), the exact false-failure that
+ * misled us today. The reusable card token is NEVER stored or logged.
  *
  * Usage (repo root, .env loaded):
  *   node scripts/atmos-direct-test.mjs
@@ -18,6 +23,7 @@ import { readFileSync, existsSync } from 'node:fs'
 import { createInterface } from 'node:readline/promises'
 import { stdin as input, stdout as output } from 'node:process'
 import { randomUUID } from 'node:crypto'
+import pg from 'pg'
 
 function loadEnv() {
   for (const f of ['.env.local', '.env', '.env.production.local', '.env.production']) {
@@ -62,6 +68,35 @@ async function post(path, body, token) {
 
 const pick = (o, keys) => { for (const k of keys) { const s = o?.[k] ?? o?.result?.[k] ?? o?.data?.[k]; if (s != null && s !== '') return String(s) } return undefined }
 
+// Persist a payments row for `account` BEFORE charging. ATMOS's Callback API looks
+// the account up in OUR DB during pay/apply and REJECTS unknown accounts with
+// STPIMS-ERR-093 — so a fake/unsaved account makes this test fail the SAME way our
+// raw curl tests did today, even though the backend is fine. This mirrors exactly
+// what the app's bind-init route does. Best-effort: warns loudly if DATABASE_URL is
+// absent (then the test is only valid if the store has NO callback registered).
+async function persistAccount(account, amountTiyin) {
+  const url = process.env.DATABASE_URL
+  if (!url) {
+    console.warn('⚠  DATABASE_URL not set — the test account is NOT in the DB. If the store has a')
+    console.warn('   Callback API registered, pay/apply will hit STPIMS-ERR-093 (unknown_account).')
+    console.warn('   Run this on the VPS with DATABASE_URL loaded for a valid end-to-end test.\n')
+    return
+  }
+  const pool = new pg.Pool({ connectionString: url })
+  try {
+    const som = String(Math.round(amountTiyin / 100))
+    await pool.query(
+      `INSERT INTO payments (id, provider, plan, amount, amount_tiyin, account, payer_email)
+       VALUES ($1, 'atmos', 'pro', $2, $3, $1, '[atmos:direct test]')
+       ON CONFLICT (account) DO NOTHING`,
+      [account, som, amountTiyin],
+    )
+    console.log(`✓ persisted test payment row (account ${account.slice(0, 8)}…) — callback will resolve it\n`)
+  } finally {
+    await pool.end()
+  }
+}
+
 const card = arg('--card', '5614688715378807').replace(/\s/g, '')
 const expiryRaw = arg('--expiry', '03/29')
 const digits = expiryRaw.replace(/\D/g, '')
@@ -71,6 +106,10 @@ const account = randomUUID()
 
 const token = await getToken()
 console.log('✓ token acquired (value not printed)\n')
+
+// Persist the account BEFORE any charge so ATMOS's callback lookup succeeds
+// (unknown accounts → STPIMS-ERR-093). Mirrors the app's bind-init route.
+await persistAccount(account, amountTiyin)
 
 console.log(`1. bind-card/init  card ****${card.slice(-4)}  expiry ${expiryYYmm}`)
 const init = await post('/partner/bind-card/init', { card_number: card, expiry: expiryYYmm }, token)
