@@ -48,9 +48,13 @@ export const metadata: Metadata = {
     images: ['/og-image.png'],
   },
   icons: {
-    icon: '/icon.svg',
-    shortcut: '/icon.svg',
-    apple: '/icon.svg',
+    icon: [
+      { url: '/icon.svg', type: 'image/svg+xml' },
+      { url: '/favicon.ico', sizes: '16x16 32x32' },
+      { url: '/icon-32.png', type: 'image/png', sizes: '32x32' },
+    ],
+    shortcut: '/favicon.ico',
+    apple: '/apple-icon.png',
   },
   // NOTE: no site-wide `alternates.canonical` here on purpose. A canonical set
   // in the root layout is inherited by every page that doesn't override it,
@@ -68,7 +72,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <head>
         <link rel="manifest" href="/manifest.json" />
         <link rel="icon" href="/icon.svg" type="image/svg+xml" />
-        <link rel="apple-touch-icon" href="/icon.svg" />
+        <link rel="icon" href="/favicon.ico" sizes="16x16 32x32" />
+        <link rel="apple-touch-icon" href="/apple-icon.png" />
         <meta name="theme-color" content="#161616" media="(prefers-color-scheme: dark)" />
         <meta name="theme-color" content="#83c0f7" media="(prefers-color-scheme: light)" />
         <script dangerouslySetInnerHTML={{ __html: `(function(){try{var t=localStorage.getItem('theme');document.documentElement.setAttribute('data-theme',t||'light');document.documentElement.style.backgroundColor=t==='dark'?'#161616':'#83c0f7';}catch(e){document.documentElement.setAttribute('data-theme','light');document.documentElement.style.backgroundColor='#83c0f7';}})()` }} />
