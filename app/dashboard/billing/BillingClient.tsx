@@ -9,6 +9,7 @@ import { useLang } from '@/app/providers'
 import { translations } from '@/lib/i18n'
 import type { BillingInfo, PlanType, PaymentRecord } from '@/lib/db/billing'
 import { PLAN_PRICES_TIYIN, formatSomFromTiyin } from '@/lib/billing/plans'
+import { planFeatureList, PLAN_ANCHOR_SOM, PLAN_DISCOUNT_PCT, popularLabel } from '@/lib/billing/plan-features'
 
 type T = typeof translations['uz']['dashboard']
 type Lang = 'uz' | 'en' | 'ru'
@@ -69,14 +70,6 @@ const PLAN_PRICES: Record<PlanType, string> = {
   pro_plus: `${formatSomFromTiyin(PLAN_PRICES_TIYIN.pro_plus.monthly)} so'm`,
 }
 
-function planFeatures(d: T): Record<PlanType, string[]> {
-  return {
-    free:     [`1 ${d.billingFeat1Store}`, d.billingFeatHistory7, d.billingFeatBasicStats],
-    pro:      [`3 ${d.billingFeatStores}`, d.billingFeatHistory90, d.billingFeatPnl, d.billingFeatAds, d.billingFeatTelegram, d.billingFeatExtension],
-    pro_plus: [`3 ${d.billingFeatStores}`, d.billingFeatHistory90, d.billingFeatPnl, d.billingFeatAds, d.billingFeatTelegram, d.billingFeatExtension],
-  }
-}
-
 function planLabel(plan: PlanType, d: T): string {
   return plan === 'pro' ? d.billingPro : plan === 'pro_plus' ? d.billingProPlus : d.billingFree
 }
@@ -115,7 +108,7 @@ function UpgradeModal({ current, highlight, lang, d, onClose }: {
 }) {
   const router = useRouter()
   const b = BT[lang]
-  const PLAN_FEATURES = planFeatures(d)
+  const PLAN_FEATURES = planFeatureList(lang)
   const plans: PlanType[] = ['free', 'pro', 'pro_plus']
 
   const [step, setStep] = useState<'choose' | 'card' | 'otp' | 'success'>(highlight ? 'card' : 'choose')
@@ -219,19 +212,34 @@ function UpgradeModal({ current, highlight, lang, d, onClose }: {
                 <div key={p} className="rounded-xl border p-4 flex flex-col gap-3 transition-all"
                   style={isCurrent
                     ? { borderColor: 'color-mix(in srgb, var(--c1) 50%, transparent)', background: 'color-mix(in srgb, var(--c1) 6%, transparent)' }
+                    : p === 'pro'
+                    ? { borderColor: '#2F6DF6', background: 'color-mix(in srgb, #2F6DF6 5%, transparent)', boxShadow: '0 0 0 1px #2F6DF6' }
                     : { borderColor: 'var(--border)', background: 'var(--bg-card2)' }}>
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between gap-2">
                     <span className="text-xs font-bold px-2 py-0.5 rounded-full"
                       style={isCurrent
                         ? { background: 'color-mix(in srgb, var(--c1) 18%, transparent)', border: '1px solid color-mix(in srgb, var(--c1) 30%, transparent)', color: 'var(--c1)' }
                         : { background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text-muted)' }}>
                       {planLabel(p, d)}
                     </span>
-                    {isCurrent && <CheckCircle className="w-4 h-4" style={{ color: 'var(--c1)' }} />}
+                    {p === 'pro' && !isCurrent && (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full text-white" style={{ background: '#2F6DF6' }}>
+                        {popularLabel(lang)}
+                      </span>
+                    )}
+                    {isCurrent && <CheckCircle className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--c1)' }} />}
                   </div>
-                  <p className="font-bold text-base" style={{ color: isCurrent ? 'var(--c1)' : 'var(--text-base)' }}>
-                    {PLAN_PRICES[p]}{p !== 'free' && <span className="text-[var(--text-muted)] font-normal text-xs">{d.billingPerMonth}</span>}
-                  </p>
+                  <div>
+                    {(p === 'pro' || p === 'pro_plus') && (
+                      <div className="flex items-center gap-1.5 mb-0.5">
+                        <span className="text-xs line-through text-[var(--text-muted)] opacity-70">{fmtSom(PLAN_ANCHOR_SOM[p])}</span>
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full text-white" style={{ background: '#2F6DF6' }}>−{PLAN_DISCOUNT_PCT[p]}%</span>
+                      </div>
+                    )}
+                    <p className="font-bold text-base" style={{ color: isCurrent ? 'var(--c1)' : 'var(--text-base)' }}>
+                      {PLAN_PRICES[p]}{p !== 'free' && <span className="text-[var(--text-muted)] font-normal text-xs">{d.billingPerMonth}</span>}
+                    </p>
+                  </div>
                   <ul className="space-y-1.5 flex-1">
                     {PLAN_FEATURES[p].map(f => (
                       <li key={f} className="flex items-start gap-1.5 text-xs text-[var(--text-muted)]">
@@ -452,7 +460,7 @@ export default function BillingClient({ billing, initialPlan }: { billing: Billi
   const l = (lang in BT ? lang : 'uz') as Lang
   const b = BT[l]
   const d = translations[lang].dashboard
-  const PLAN_FEATURES = planFeatures(d)
+  const PLAN_FEATURES = planFeatureList(l)
   const [showPlanModal, setShowPlanModal]       = useState(!!initialPlan)
   const [showInvoiceModal, setShowInvoiceModal] = useState(false)
 
