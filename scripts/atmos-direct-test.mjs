@@ -85,9 +85,13 @@ async function persistAccount(account, amountTiyin) {
   const pool = new pg.Pool({ connectionString: url })
   try {
     const som = String(Math.round(amountTiyin / 100))
+    // id is generated in SQL (gen_random_uuid) so `account` binds to ONE column
+    // only — binding the same $1 to both id(uuid) and account(text) made Postgres
+    // fail with "inconsistent types deduced for parameter $1: uuid versus text"
+    // (42P08). The callback keys off the `account` column, so id need not equal it.
     await pool.query(
       `INSERT INTO payments (id, provider, plan, amount, amount_tiyin, account, payer_email)
-       VALUES ($1, 'atmos', 'pro', $2, $3, $1, '[atmos:direct test]')
+       VALUES (gen_random_uuid(), 'atmos', 'pro', $2::numeric, $3::integer, $1::text, '[atmos:direct test]')
        ON CONFLICT (account) DO NOTHING`,
       [account, som, amountTiyin],
     )
