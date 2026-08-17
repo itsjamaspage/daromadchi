@@ -13,6 +13,7 @@ import { useTheme, useLang } from './providers'
 import type { Lang } from '@/lib/i18n'
 import { T } from '@/lib/landing-t'
 import { PLAN_PRICES_TIYIN, formatSomFromTiyin } from '@/lib/billing/plans'
+import { planFeatureList, PLAN_ANCHOR_SOM, PLAN_DISCOUNT_PCT, popularLabel, fmtSom } from '@/lib/billing/plan-features'
 
 import PillNav from './components/PillNav'
 import BorderGlow from './components/BorderGlow'
@@ -1335,38 +1336,33 @@ function PricingSection({ lang }: { lang: Lang }) {
   const ink    = isDark ? P.dText   : P.ink
   const muted  = isDark ? P.dMuted  : P.stone
 
-  const tiers = [
+  // Feature bullets come from the shared source of truth so the landing page and
+  // the dashboard "Сменить тариф" modal always match. anchor/discount are
+  // display-only framing — the real charged price stays PLAN_PRICES_TIYIN.
+  const feats = planFeatureList(lang)
+  const tiers: Array<{
+    name: string; price: string; anchor: string | null; discount: number | null
+    badge: string | null; sub: string; highlight: boolean; features: string[]
+    cta: string; ctaHref: string
+  }> = [
     {
-      name: T.pricing.freeName[lang], price: '0',
+      name: T.pricing.freeName[lang], price: '0', anchor: null, discount: null, badge: null,
       sub: T.pricing.freeSub[lang], highlight: false,
-      features: [
-        T.pricing.freeFeature1[lang],
-        T.pricing.freeFeature2[lang],
-        T.pricing.freeFeature3[lang],
-      ],
+      features: feats.free,
       cta: T.pricing.freeCta[lang], ctaHref: '/login',
     },
     {
-      name: 'Pro', price: formatSomFromTiyin(PLAN_PRICES_TIYIN.pro.monthly), badge: T.pricing.proBadge[lang],
+      name: 'Pro', price: formatSomFromTiyin(PLAN_PRICES_TIYIN.pro.monthly),
+      anchor: fmtSom(PLAN_ANCHOR_SOM.pro), discount: PLAN_DISCOUNT_PCT.pro, badge: popularLabel(lang),
       sub: T.pricing.proSub[lang], highlight: true,
-      features: [
-        T.pricing.proFeature1[lang],
-        T.pricing.proFeature2[lang],
-        T.pricing.proFeature3[lang],
-        T.pricing.proFeature4[lang],
-        T.pricing.proFeature5[lang],
-      ],
+      features: feats.pro,
       cta: T.pricing.proCta[lang], ctaHref: '/login?plan=pro',
     },
     {
       name: 'Pro+', price: formatSomFromTiyin(PLAN_PRICES_TIYIN.pro_plus.monthly),
+      anchor: fmtSom(PLAN_ANCHOR_SOM.pro_plus), discount: PLAN_DISCOUNT_PCT.pro_plus, badge: null,
       sub: T.pricing.proPlusSub[lang], highlight: false,
-      features: [
-        T.pricing.proPlusFeature1[lang],
-        T.pricing.proPlusFeature2[lang],
-        T.pricing.proPlusFeature3[lang],
-        T.pricing.proPlusFeature4[lang],
-      ],
+      features: feats.pro_plus,
       cta: T.pricing.proPlusCta[lang], ctaHref: '/login?plan=pro_plus',
     },
   ]
@@ -1411,15 +1407,30 @@ function PricingSection({ lang }: { lang: Lang }) {
                     <p style={{ fontSize: 13, fontWeight: 700, color: t.highlight ? (isDark ? P.green : acc.dk) : muted }}>
                       {t.name}
                     </p>
-                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                    {(t as any).badge && (
-                      <span style={{ background: '#ffffff', borderRadius: 100, padding: '3px 12px',
-                        fontSize: 10, fontWeight: 800, color: '#0e1b2e', letterSpacing: '0.04em' }}>
-                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                        {(t as any).badge}
+                    {t.badge && (
+                      <span style={{ background: '#2F6DF6', borderRadius: 100, padding: '3px 12px',
+                        fontSize: 10, fontWeight: 800, color: '#ffffff', letterSpacing: '0.04em' }}>
+                        {t.badge}
                       </span>
                     )}
                   </div>
+
+                  {/* Struck "anchor" price + discount chip (display-only framing). */}
+                  {t.anchor && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
+                      <span style={{ fontSize: 15, fontWeight: 600, textDecoration: 'line-through', opacity: 0.65,
+                        color: t.highlight ? (isDark ? P.muted : P.dMuted) : muted,
+                        fontFamily: 'var(--font-mono-landing), monospace' }}>
+                        {t.anchor}
+                      </span>
+                      {t.discount != null && (
+                        <span style={{ background: '#2F6DF6', color: '#fff', borderRadius: 100,
+                          padding: '2px 7px', fontSize: 10, fontWeight: 800, letterSpacing: '0.02em' }}>
+                          −{t.discount}%
+                        </span>
+                      )}
+                    </div>
+                  )}
 
                   <div style={{ marginBottom: 4 }}>
                     <span style={{ fontSize: 34, fontWeight: 800,
