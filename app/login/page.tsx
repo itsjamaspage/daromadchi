@@ -246,6 +246,14 @@ function LoginForm() {
   // ?consent=required — open the signup tab and seed the notice. Derived at
   // first render (no effect / synchronous setState).
   const consentRequired = searchParams.get('consent') === 'required'
+  // A plan chosen on /pricing (?plan=pro|pro_plus) carries through login so the
+  // user lands on Billing with that plan's checkout ready — not the generic
+  // dashboard. Validated against the two paid keys; anything else → dashboard.
+  const planParam = searchParams.get('plan')
+  const postLoginDest =
+    planParam === 'pro' || planParam === 'pro_plus'
+      ? `/dashboard/billing?plan=${planParam}`
+      : '/dashboard'
 
   const [mode, setMode] = useState<'login' | 'signup' | 'forgot' | 'verify'>(consentRequired ? 'signup' : 'login')
   const [consent, setConsent] = useState(false)
@@ -380,7 +388,7 @@ function LoginForm() {
           }
           setLoading(false)
         } else {
-          router.push('/dashboard')
+          router.push(postLoginDest)
           router.refresh()
         }
       } else {
@@ -704,7 +712,7 @@ function LoginForm() {
                           const secure = typeof location !== 'undefined' && location.protocol === 'https:' ? '; secure' : ''
                           document.cookie = `signup_consent=1; path=/; max-age=600; samesite=lax${secure}`
                         }
-                        signIn('google', { callbackUrl: '/dashboard' })
+                        signIn('google', { callbackUrl: postLoginDest })
                       }}
                       className="w-full font-semibold rounded-xl py-3 text-sm transition-all flex items-center justify-center gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90"
                       style={{
