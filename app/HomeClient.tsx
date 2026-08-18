@@ -1401,8 +1401,10 @@ function PricingSection({ lang }: { lang: Lang }) {
           <p style={{ fontSize: 16, color: muted, maxWidth: 400, margin: '0 auto' }}>
             {T.pricing.sub[lang]}
           </p>
-          {/* Monthly / Yearly toggle */}
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 24,
+        </motion.div>
+        {/* Monthly / Yearly toggle — sits just above the cards, inside the pricing container */}
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 28 }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4,
             padding: 4, borderRadius: 100, background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(14,27,46,0.06)' }}>
             {([['monthly', TL.monthly], ['annual', TL.yearly]] as const).map(([val, label]) => {
               const active = iv === val
@@ -1415,7 +1417,7 @@ function PricingSection({ lang }: { lang: Lang }) {
               )
             })}
           </div>
-        </motion.div>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           {tiers.map((t, i) => (
             <motion.div key={t.name}
