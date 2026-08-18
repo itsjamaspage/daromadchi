@@ -30,7 +30,7 @@ const T = {
     nav: { home: 'Bosh sahifa', compare: 'Taqqoslash', faq: 'Savollar', login: 'Kirish', start: 'Boshlash' },
     heroTitle1: 'Barcha imkoniyatlar.', heroTitle2: 'Bir joyda.',
     trust: ['3 kun bepul sinov', "Bir nechta do'kon", 'Istalgan vaqt bekor qilish'],
-    monthly: 'Oylik', yearly: 'Yillik', save3mo: '3 oy bepul',
+    monthly: 'Oylik', yearly: 'Yillik',
     perMonth: "so'm/oy", usdMonth: '/oy', alwaysFree: 'Hamisha bepul', yearlyLine: 'Yillik',
     onlyProPlus: 'Faqat Pro+ da',
     freeName: 'Bepul', freeDesc: "Boshlash uchun ideal — hech qanday to'lov talab etilmaydi", freeCta: 'Boshlash',
@@ -66,7 +66,7 @@ const T = {
       { q: 'Pro va Pro+ orasidagi asosiy farq nima?', a: "Pro tarifi o'sib kelayotgan biznes uchun barcha asosiy analitika vositalarini beradi. Pro+ esa qo'shimcha ravishda API kirish, 5 ta jamoa a'zosi, maxsus hisobotlar va 15 daqiqali prioritet qo'llab-quvvatlashni taqdim etadi." },
       { q: "Tarifni istalgan vaqt o'zgartirish mumkinmi?", a: "Ha. Bepuldan Pro ga yoki Pro dan Pro+ ga istalgan vaqt o'tishingiz mumkin. O'zgarish darhol kuchga kiradi." },
       { q: "Ma'lumotlarim xavfsizmi?", a: "Ha. Barcha ma'lumotlar shifrlangan holda saqlanadi va faqat sizga tegishli. Hech qachon uchinchi shaxslarga ma'lumot berilmaydi." },
-      { q: "Yillik tarifda qanday chegirma bo'ladi?", aTemplate: (p: string, pp: string) => `Yillik tarifda 3 oy bepul olasiz — ya'ni 12 oy uchun faqat 9 oylik to'lov. Pro uchun ${p} so'm/oy, Pro+ uchun ${pp} so'm/oy (yillik to'lov).` },
+      { q: "Yillik tarifda qanday chegirma bo'ladi?", aTemplate: (p: string, pp: string) => `Yillik tarif oylikdan arzonroq: Pro — ${p} so'm/oy, Pro+ — ${pp} so'm/oy (yillik to'lovda).` },
     ],
     bottomTitle: 'Hali ham savol bormi?', bottomSub: 'Bizning jamoa sizga yordam berishga tayyor. Odatda 15 daqiqa ichida javob beramiz.',
     bottomTelegram: 'Telegram orqali yozing', bottomStart: 'Bepul boshlash',
@@ -76,7 +76,7 @@ const T = {
     nav: { home: 'Главная', compare: 'Сравнение', faq: 'Вопросы', login: 'Войти', start: 'Начать' },
     heroTitle1: 'Все возможности.', heroTitle2: 'В одном месте.',
     trust: ['3 дня бесплатно', 'Несколько магазинов', 'Отмена в любой момент'],
-    monthly: 'Помесячно', yearly: 'Ежегодно', save3mo: '3 месяца бесплатно',
+    monthly: 'Помесячно', yearly: 'Ежегодно',
     perMonth: 'сум/мес', usdMonth: '/мес', alwaysFree: 'Всегда бесплатно', yearlyLine: 'За год',
     onlyProPlus: 'Только в Pro+',
     freeName: 'Бесплатно', freeDesc: 'Идеально для старта — оплата не требуется', freeCta: 'Начать',
@@ -112,7 +112,7 @@ const T = {
       { q: 'В чём основная разница между Pro и Pro+?', a: 'Pro даёт все основные инструменты аналитики для растущего бизнеса. Pro+ дополнительно включает доступ к API, команду из 5 пользователей, кастомные отчёты и приоритетную поддержку с ответом за 15 минут.' },
       { q: 'Можно ли менять тариф в любое время?', a: 'Да. Вы можете перейти с бесплатного на Pro или с Pro на Pro+ в любой момент. Изменение вступает в силу сразу.' },
       { q: 'Мои данные в безопасности?', a: 'Да. Все данные хранятся в зашифрованном виде и принадлежат только вам. Мы никогда не передаём их третьим лицам.' },
-      { q: 'Какая скидка на годовом тарифе?', aTemplate: (p: string, pp: string) => `На годовом тарифе вы получаете 3 месяца бесплатно — то есть за 12 месяцев платите как за 9. Pro — ${p} сум/мес, Pro+ — ${pp} сум/мес (при оплате за год).` },
+      { q: 'Какая скидка на годовом тарифе?', aTemplate: (p: string, pp: string) => `Годовой тариф выгоднее помесячного: Pro — ${p} сум/мес, Pro+ — ${pp} сум/мес (при оплате за год).` },
     ],
     bottomTitle: 'Остались вопросы?', bottomSub: 'Наша команда готова помочь. Обычно отвечаем в течение 15 минут.',
     bottomTelegram: 'Написать в Telegram', bottomStart: 'Начать бесплатно',
@@ -122,7 +122,7 @@ const T = {
     nav: { home: 'Home', compare: 'Compare', faq: 'FAQ', login: 'Log in', start: 'Get started' },
     heroTitle1: 'Every feature.', heroTitle2: 'In one place.',
     trust: ['3-day free trial', 'Multiple stores', 'Cancel anytime'],
-    monthly: 'Monthly', yearly: 'Yearly', save3mo: '3 months free',
+    monthly: 'Monthly', yearly: 'Yearly',
     perMonth: "so'm/mo", usdMonth: '/mo', alwaysFree: 'Free forever', yearlyLine: 'Yearly',
     onlyProPlus: 'Pro+ only',
     freeName: 'Free', freeDesc: 'Perfect to start — no payment required', freeCta: 'Get started',
@@ -158,7 +158,7 @@ const T = {
       { q: "What's the main difference between Pro and Pro+?", a: 'Pro gives every core analytics tool for a growing business. Pro+ additionally provides API access, a 5-member team, custom reports and 15-minute priority support.' },
       { q: 'Can I change plan anytime?', a: 'Yes. You can move from Free to Pro or Pro to Pro+ anytime. The change takes effect immediately.' },
       { q: 'Is my data safe?', a: "Yes. All data is stored encrypted and belongs only to you. It's never shared with third parties." },
-      { q: 'What discount does the yearly plan give?', aTemplate: (p: string, pp: string) => `On the yearly plan you get 3 months free — you pay for 9 of 12 months. Pro — ${p} so'm/mo, Pro+ — ${pp} so'm/mo (billed yearly).` },
+      { q: 'What discount does the yearly plan give?', aTemplate: (p: string, pp: string) => `The yearly plan is cheaper than monthly: Pro — ${p} so'm/mo, Pro+ — ${pp} so'm/mo (billed yearly).` },
     ],
     bottomTitle: 'Still have a question?', bottomSub: 'Our team is ready to help. We usually reply within 15 minutes.',
     bottomTelegram: 'Message us on Telegram', bottomStart: 'Start free',
@@ -465,15 +465,9 @@ export default function PricingClient({ prices }: { prices: PricingData }) {
                 style={{ left: isYearly ? '30px' : '4px' }}
               />
             </button>
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium" style={{ color: isYearly ? 'var(--text-base)' : 'var(--text-muted)' }}>
-                {t.yearly}
-              </span>
-              <span className="text-xs font-bold px-2.5 py-1 rounded-full"
-                style={{ background: 'rgba(47,109,246,0.14)', color: '#2F6DF6', border: '1px solid rgba(47,109,246,0.3)' }}>
-                {t.save3mo}
-              </span>
-            </div>
+            <span className="text-sm font-medium" style={{ color: isYearly ? 'var(--text-base)' : 'var(--text-muted)' }}>
+              {t.yearly}
+            </span>
           </div>
         </div>
       </section>
