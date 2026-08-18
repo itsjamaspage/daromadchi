@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { eq, and, isNotNull, sql } from 'drizzle-orm'
 import { db, shops, users } from '@/lib/db'
+import { computeEffectivePlan } from '@/lib/billing/features'
 import { withErrorHandler } from '@/lib/api-handler'
 
 export const runtime = 'nodejs'
@@ -13,11 +14,13 @@ const SYNC_INTERVAL_MS: Record<string, number> = {
   pro_plus: 30 * 60 * 1000,
 }
 
+// Delegates to the shared rule in lib/billing/features — see cron/sync.
 function effectivePlan(u: { plan: string | null; plan_expires_at: Date | null; trial_ends_at: Date | null }): string {
-  const plan = u.plan ?? 'free'
-  if (plan !== 'free' && u.plan_expires_at && new Date(u.plan_expires_at) < new Date()) return 'free'
-  if (plan === 'free' && u.trial_ends_at && new Date(u.trial_ends_at) > new Date()) return 'pro'
-  return plan
+  return computeEffectivePlan({
+    plan: u.plan,
+    planExpiresAt: u.plan_expires_at,
+    trialEndsAt: u.trial_ends_at,
+  })
 }
 
 async function tableExists(name: string): Promise<boolean> {

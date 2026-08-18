@@ -104,6 +104,10 @@ const MIGRATIONS = [
   // renewal cron stops charging whatever lib/billing/plans.ts currently says.
   // Backfills from each subscription's last settled payment. Idempotent.
   'migrations/migrations/072_subscription_agreed_amount.sql',
+  // Grandfathers accounts already on the old flat prices. The column is added
+  // WITHOUT a default so the backfill can claim only undecided (NULL) rows —
+  // otherwise a re-run would grandfather future subscribers onto old pricing.
+  'migrations/migrations/073_users_grandfathered.sql',
 ]
 
 function loadDatabaseUrl() {

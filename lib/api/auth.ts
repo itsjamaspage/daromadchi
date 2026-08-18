@@ -1,5 +1,6 @@
 import { eq, ne, and, or, isNull, sql } from 'drizzle-orm'
 import { db, shops, users } from '@/lib/db'
+import { computeEffectivePlan, trialEndFrom } from '@/lib/billing/features'
 
 export async function getExtensionUser(authHeader: string | null) {
   const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null
@@ -38,22 +39,20 @@ export async function getUserPlan(userId: string): Promise<Plan> {
 
   const plan = (data?.plan ?? 'free') as Plan
 
-  if (plan !== 'free' && data?.plan_expires_at) {
-    if (new Date(data.plan_expires_at) < new Date()) return 'free'
+  // First sight of a free account with no trial recorded starts its trial. The
+  // write is the ONLY side effect here; the decision itself lives in
+  // computeEffectivePlan so cron jobs and diagnostics share one implementation.
+  let trialEndsAt: Date | null = data?.trial_ends_at ?? null
+  if (plan === 'free' && !trialEndsAt) {
+    trialEndsAt = trialEndFrom(new Date())
+    await db.update(users).set({ trial_ends_at: trialEndsAt }).where(eq(users.id, userId))
   }
 
-  if (plan === 'free') {
-    if (!data?.trial_ends_at) {
-      const trialEnd = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)
-      await db.update(users).set({ trial_ends_at: trialEnd }).where(eq(users.id, userId))
-      return 'pro'
-    }
-    if (new Date(data.trial_ends_at) > new Date()) {
-      return 'pro'
-    }
-  }
-
-  return plan
+  return computeEffectivePlan({
+    plan,
+    planExpiresAt: data?.plan_expires_at ?? null,
+    trialEndsAt,
+  }) as Plan
 }
 
 export interface PlanInfo {
@@ -85,7 +84,7 @@ export async function getUserPlanFull(userId: string): Promise<PlanInfo> {
 
   if (plan === 'free') {
     if (!trialEndsAt) {
-      const trialEnd = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)
+      const trialEnd = trialEndFrom(new Date())
       await db.update(users).set({ trial_ends_at: trialEnd }).where(eq(users.id, userId))
       effectivePlan = 'pro'
       isOnTrial = true

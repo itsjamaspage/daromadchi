@@ -93,6 +93,11 @@ export const users = pgTable('users', {
   // email/password and Google paths. Migration 058.
   consented_at:    timestamp('consented_at', { withTimezone: true }),
   plan:            planTypeEnum('plan').default('free').notNull(),
+  // Sellers on the OLD flat prices keep their price and full access permanently.
+  // Checked first in hasFeature() (lib/billing/features.ts), before any plan or
+  // trial logic. Nullable: NULL means migration 073 had not decided this row yet
+  // and is treated as false. Migration 073.
+  is_grandfathered: boolean('is_grandfathered').default(false),
   plan_expires_at: timestamp('plan_expires_at', { withTimezone: true }),
   trial_ends_at:   timestamp('trial_ends_at', { withTimezone: true }),
   // Legacy column (migration 055). Formerly stamped by expire-plans to drive a
