@@ -11,6 +11,7 @@ import { withErrorHandler } from '@/lib/api-handler'
 import { sendTelegramMessage } from '@/lib/telegram'
 import { reconcilePhysicalStock } from '@/lib/marketplace/physical-stock'
 import { logger } from '@/lib/logger'
+import { computeEffectivePlan } from '@/lib/billing/features'
 
 export const runtime    = 'nodejs'
 export const maxDuration = 300
@@ -28,15 +29,14 @@ const SYNC_INTERVAL_MS: Record<string, number> = {
   pro_plus: 30 * 60 * 1000,
 }
 
+// Delegates to the shared rule in lib/billing/features so sync, diagnostics and
+// lib/api/auth cannot drift apart on what "effective plan" means.
 function getEffectivePlan(user: { plan: string; plan_expires_at: Date | null; trial_ends_at: Date | null }): string {
-  const plan = user.plan ?? 'free'
-  if (plan !== 'free' && user.plan_expires_at) {
-    if (new Date(user.plan_expires_at) < new Date()) return 'free'
-  }
-  if (plan === 'free' && user.trial_ends_at) {
-    if (new Date(user.trial_ends_at) > new Date()) return 'pro'
-  }
-  return plan
+  return computeEffectivePlan({
+    plan: user.plan,
+    planExpiresAt: user.plan_expires_at,
+    trialEndsAt: user.trial_ends_at,
+  })
 }
 
 async function syncShop(
