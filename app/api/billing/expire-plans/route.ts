@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { and, ne, lt } from 'drizzle-orm'
 import { db, users } from '@/lib/db'
 import { withErrorHandler } from '@/lib/api-handler'
+import { logger } from '@/lib/logger'
+import { recomputeDerivedTiers } from '@/lib/db/derived-tier'
 
 // Called by the cron job daily. Downgrades users whose plan_expires_at
 // has passed. `plan` is a Postgres enum; the string cast at .set()
@@ -23,5 +25,21 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
     ))
     .returning({ id: users.id })
 
-  return NextResponse.json({ ok: true, downgraded: rows.length })
+  // Refresh the turnover-derived tier RECOMMENDATION for every account. This
+  // rides the existing daily job rather than adding a scheduler — the crontab on
+  // the VPS already calls expire-plans, and a recommendation does not need to be
+  // fresher than a day. It writes users.derived_tier only; entitlement above is
+  // untouched, so this can never grant or remove access.
+  //
+  // Best-effort: a failure here must not stop the downgrade sweep, which is the
+  // job's actual contract.
+  let tiers: Awaited<ReturnType<typeof recomputeDerivedTiers>> | null = null
+  try {
+    tiers = await recomputeDerivedTiers()
+    logger.info('derived_tier_recompute_done', { ...tiers })
+  } catch (err) {
+    logger.error('derived_tier_recompute_failed', { error: String(err).slice(0, 300) })
+  }
+
+  return NextResponse.json({ ok: true, downgraded: rows.length, tiers })
 })

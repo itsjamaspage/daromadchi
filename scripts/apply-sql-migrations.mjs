@@ -108,6 +108,9 @@ const MIGRATIONS = [
   // WITHOUT a default so the backfill can claim only undecided (NULL) rows —
   // otherwise a re-run would grandfather future subscribers onto old pricing.
   'migrations/migrations/073_users_grandfathered.sql',
+  // Advisory turnover-derived tier columns. Additive + idempotent; no backfill
+  // (the cron fills them, and a made-up value would fire the nudge branches).
+  'migrations/migrations/074_users_derived_tier.sql',
 ]
 
 function loadDatabaseUrl() {

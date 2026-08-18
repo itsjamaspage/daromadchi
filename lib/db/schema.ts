@@ -98,6 +98,12 @@ export const users = pgTable('users', {
   // trial logic. Nullable: NULL means migration 073 had not decided this row yet
   // and is treated as false. Migration 073.
   is_grandfathered: boolean('is_grandfathered').default(false),
+  // Turnover-derived tier RECOMMENDATION — advisory only. Never read by
+  // hasFeature(); entitlement comes from `plan` above. NULL = not yet computed,
+  // which is distinct from "computed, and the answer is free". Migration 074.
+  derived_tier:             text('derived_tier'),
+  derived_turnover_som:     numeric('derived_turnover_som'),
+  derived_tier_computed_at: timestamp('derived_tier_computed_at', { withTimezone: true }),
   plan_expires_at: timestamp('plan_expires_at', { withTimezone: true }),
   trial_ends_at:   timestamp('trial_ends_at', { withTimezone: true }),
   // Legacy column (migration 055). Formerly stamped by expire-plans to drive a
