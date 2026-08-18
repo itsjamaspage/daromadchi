@@ -14,7 +14,7 @@ export type Interval = 'monthly' | 'annual'
 // (pay 9 of 12): annualTotal = monthly × 9 → 2 250 000 / 4 500 000 so'm.
 // ─────────────────────────────────────────────────────────────────────────────
 export const PLAN_PRICES_TIYIN: Record<PlanKey, { monthly: number; annualTotal: number }> = {
-  pro:      { monthly: 25_000_000, annualTotal: 225_000_000 }, // 250 000 / 2 250 000 so'm
+  pro:      { monthly: 5_000_000, annualTotal: 225_000_000 }, // TEMP TEST: 50 000 so'm/mo (revert to 25_000_000 = 250 000) — annual unchanged
   pro_plus: { monthly: 50_000_000, annualTotal: 450_000_000 }, // 500 000 / 4 500 000 so'm
 }
 
