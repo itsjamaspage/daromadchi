@@ -490,6 +490,15 @@ export const subscriptions = pgTable('subscriptions', {
   interval:           text('interval').notNull(),    // 'monthly' | 'annual'
   status:             subscriptionStatusEnum('status').default('pending').notNull(),
   current_period_end: timestamp('current_period_end', { withTimezone: true }),
+  // The price the SELLER AGREED TO, in tiyin, captured when the subscription was
+  // created. The renewal cron charges THIS — never the live PLAN_PRICES_TIYIN.
+  // Editing a plan's configured price must never silently reprice anyone who
+  // already subscribed; without this column a subscription bought at a 50 000
+  // so'm test price would renew at whatever the config happens to say today.
+  // NULL means "we do not know what they agreed to" — the renewal cron SKIPS
+  // those rather than guessing. Backfilled from each subscription's last
+  // successful payment by migration 072.
+  agreed_amount_tiyin: integer('agreed_amount_tiyin'),
   // When true, the renewal cron charges the stored card token before expiry.
   // Defaults true (set when a card is bound); the seller can toggle it off.
   autorenew:          boolean('autorenew').default(true).notNull(),

@@ -13,7 +13,7 @@
  */
 
 import 'server-only'
-import { and, eq, notInArray } from 'drizzle-orm'
+import { and, eq, notInArray, sql } from 'drizzle-orm'
 import { db, payments, subscriptions, users } from '@/lib/db'
 
 const FINAL_STATES = ['success', 'failed', 'cancelled'] as const
@@ -60,6 +60,7 @@ export async function applyAtmosPaymentSuccess(input: ApplySuccessInput): Promis
         plan: payments.plan,
         periodMonths: payments.period_months,
         subscriptionId: payments.subscription_id,
+        amountTiyin: payments.amount_tiyin,
       })
 
     if (flipped.length === 0) {
@@ -81,7 +82,17 @@ export async function applyAtmosPaymentSuccess(input: ApplySuccessInput): Promis
 
     if (pay.subscriptionId) {
       await tx.update(subscriptions)
-        .set({ status: 'active', current_period_end: periodEnd, updated_at: now })
+        .set({
+          status: 'active',
+          current_period_end: periodEnd,
+          updated_at: now,
+          // Self-heal the agreed price for any subscription that reached
+          // settlement without one (legacy rows, or a future checkout path that
+          // forgets to set it). COALESCE so a RENEWAL never overwrites the
+          // original agreed price with whatever this cycle happened to charge —
+          // only a subscription that has none gets filled.
+          agreed_amount_tiyin: sql`COALESCE(${subscriptions.agreed_amount_tiyin}, ${pay.amountTiyin ?? null})`,
+        })
         .where(eq(subscriptions.id, pay.subscriptionId))
     }
 

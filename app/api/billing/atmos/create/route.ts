@@ -58,7 +58,9 @@ export async function POST(req: Request) {
   let subscriptionId: string
   try {
     const [sub] = await db.insert(subscriptions).values({
-      user_id: user.id, plan, interval, status: 'pending',
+      // Lock in what this seller agreed to pay. Renewals charge THIS, so a later
+      // edit to PLAN_PRICES_TIYIN can never silently reprice them.
+      user_id: user.id, plan, interval, status: 'pending', agreed_amount_tiyin: amountTiyin,
     }).returning({ id: subscriptions.id })
     subscriptionId = sub.id
 

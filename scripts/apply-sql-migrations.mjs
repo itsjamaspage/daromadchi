@@ -100,6 +100,10 @@ const MIGRATIONS = [
   // turnover that decides a seller's tier. Collapses any existing duplicates
   // first (keeping the row with the most order_items). Idempotent.
   'migrations/migrations/071_orders_identity_unique.sql',
+  // Billing correctness: records the price each subscriber agreed to, so the
+  // renewal cron stops charging whatever lib/billing/plans.ts currently says.
+  // Backfills from each subscription's last settled payment. Idempotent.
+  'migrations/migrations/072_subscription_agreed_amount.sql',
 ]
 
 function loadDatabaseUrl() {
