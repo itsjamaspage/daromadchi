@@ -56,18 +56,21 @@ account_turnover AS (
 )
 
 -- ── 1. Band distribution ────────────────────────────────────────────────────
--- Bands are the FINAL agreed ladder, with the 12–30 mln slice broken out so the
--- on-ramp-tier question is still answerable from the same run.
+-- Bands are the FINAL agreed ladder (Free 0–12 / Pro 12–50 / Pro+ 50–120 /
+-- Biznes 120–180 / Enterprise 180+), with the wide Pro and Pro+ bands split in
+-- half so you can see whether sellers sit near a boundary — the two paid bands
+-- are 38 and 70 mln wide, so a single count per band hides a lot.
 SELECT
     CASE
         WHEN turnover_30d =  0          THEN '0. No sales        (0)'
         WHEN turnover_30d <  12000000   THEN '1. Free            (0 – 12 mln)'
-        WHEN turnover_30d <  30000000   THEN '2. Pro / on-ramp?  (12 – 30 mln)'
-        WHEN turnover_30d <  90000000   THEN '3. Pro             (30 – 90 mln)'
-        WHEN turnover_30d < 120000000   THEN '4. Pro+            (90 – 120 mln)'
-        WHEN turnover_30d < 162000000   THEN '5. Biznes          (120 – 162 mln)'
-        WHEN turnover_30d < 180000000   THEN '6. Biznes/popup    (162 – 180 mln)'
-        ELSE                                 '7. Enterprise      (180 mln+)'
+        WHEN turnover_30d <  30000000   THEN '2. Pro, low half   (12 – 30 mln)'
+        WHEN turnover_30d <  50000000   THEN '3. Pro, top half   (30 – 50 mln)'
+        WHEN turnover_30d <  90000000   THEN '4. Pro+, low half  (50 – 90 mln)'
+        WHEN turnover_30d < 120000000   THEN '5. Pro+, top half  (90 – 120 mln)'
+        WHEN turnover_30d < 162000000   THEN '6. Biznes          (120 – 162 mln)'
+        WHEN turnover_30d < 180000000   THEN '7. Biznes/popup    (162 – 180 mln)'
+        ELSE                                 '8. Enterprise      (180 mln+)'
     END AS band,
     COUNT(*)                                            AS sellers,
     ROUND(100.0 * COUNT(*) / SUM(COUNT(*)) OVER (), 1)  AS pct_of_sellers,
