@@ -5,7 +5,7 @@ import { useState, useEffect, useRef, useMemo } from 'react'
 import {
   Check, X, Zap, Shield, Star,
   TrendingUp, ChevronRight, MessageCircle, ChevronDown,
-  Lock, Users, FileText, Clock, Mail,
+  Lock, Clock,
 } from 'lucide-react'
 import { useLang } from '@/app/providers'
 
@@ -39,31 +39,26 @@ const T = {
     freeFeatures: ["1 ta do'kon", '100 ta mahsulot', '30 kunlik tarix', 'Uzum integratsiya', 'Kengaytma (extension)'],
     proFeatures: [
       "Unlimited do'konlar", 'Unlimited mahsulotlar', '12 oylik tarix', 'Uzum + Yandex Market', 'Unit-ekonomika',
-      'Reklama tahlili', 'Qidiruv iboralari', 'Eksport Excel / PDF', 'F&Z (P&L) hisobot', 'Mavsumiylik tahlili',
-      'Narx kuzatuvi', 'Maxsus hisobotlar', 'API kirish',
+      'Eksport Excel / PDF', 'F&Z (P&L) hisobot', 'Maxsus hisobotlar',
     ],
     proPlusExtras: [
-      { label: 'Jamoa (5 foydalanuvchi)', desc: 'Rol va ruxsat boshqaruvi' },
-      { label: 'Avtomatik hisobot emailga', desc: 'Kunlik/haftalik yetkazib berish' },
       { label: "Prioritet qo'llab-quvvatlash", desc: '15 daqiqa ichida javob' },
-      { label: 'White-label PDF (brend logosi bilan)', desc: "Hisobotlarda o'z logoyingiz" },
     ],
     calloutTitle: "Pro+ nima qo'shadi?",
     calloutBody: "Pro dagi hamma narsa bor. Pro+ faqat katta jamoalar va agentliklar uchun qo'shimcha beradi:",
-    calloutHighlight: "5 foydalanuvchi jamoa, avtomatik email hisobot, prioritet qo'llab-quvvatlash va white-label PDF",
+    calloutHighlight: "prioritet qo'llab-quvvatlash — 15 daqiqa ichida javob",
     calloutCta: "Pro+ ni ko'rish →",
     cmpBadge: 'Batafsil taqqoslash', cmpHeading: 'Taqqoslash', cmpSub: 'Qaysi tarif sizga mos ekanini aniqlang',
     cmpCore: 'Asosiy imkoniyatlar', unlimited: 'Cheksiz', days30: '30 kun', months12: '12 oy', maksimal: 'MAKSIMAL', freePrice: "0 so'm",
     cmpFeatures: [
       "Do'konlar soni", 'Mahsulotlar soni', 'Tarix chuqurligi', 'Uzum integratsiya', 'Yandex Market',
-      'Kengaytma (extension)', 'Unit-ekonomika', 'Reklama tahlili', 'Qidiruv iboralari', 'Eksport Excel / PDF',
-      'F&Z (P&L) hisobot', 'Mavsumiylik tahlili', 'Narx kuzatuvi', 'Maxsus hisobotlar', 'API kirish',
-      'Jamoa (5 foydalanuvchi)', 'Avtomatik hisobot emailga', "Prioritet qo'llab-quvvatlash", 'White-label PDF',
+      'Kengaytma (extension)', 'Unit-ekonomika', 'Eksport Excel / PDF', 'F&Z (P&L) hisobot',
+      'Maxsus hisobotlar', "Prioritet qo'llab-quvvatlash",
     ],
     faqBadge: "Ko'p so'raladigan savollar", faqHeading: 'Savollar & Javoblar', faqSub: "Qo'shimcha savolingiz bo'lsa Telegram orqali bog'laning",
     faq: [
       { q: 'Bepul tarifda kredit karta kerakmi?', a: "Yo'q. Bepul tarifni boshlash uchun hech qanday to'lov ma'lumoti talab etilmaydi." },
-      { q: 'Pro va Pro+ orasidagi asosiy farq nima?', a: "Pro tarifi o'sib kelayotgan biznes uchun barcha asosiy analitika vositalarini beradi. Pro+ esa qo'shimcha ravishda API kirish, 5 ta jamoa a'zosi, maxsus hisobotlar va 15 daqiqali prioritet qo'llab-quvvatlashni taqdim etadi." },
+      { q: 'Pro va Pro+ orasidagi asosiy farq nima?', a: "Pro tarifi o'sib kelayotgan biznes uchun barcha asosiy analitika vositalarini beradi. Pro+ esa qo'shimcha ravishda 15 daqiqa ichida javob beradigan prioritet qo'llab-quvvatlashni taqdim etadi." },
       { q: "Tarifni istalgan vaqt o'zgartirish mumkinmi?", a: "Ha. Bepuldan Pro ga yoki Pro dan Pro+ ga istalgan vaqt o'tishingiz mumkin. O'zgarish darhol kuchga kiradi." },
       { q: "Ma'lumotlarim xavfsizmi?", a: "Ha. Barcha ma'lumotlar shifrlangan holda saqlanadi va faqat sizga tegishli. Hech qachon uchinchi shaxslarga ma'lumot berilmaydi." },
       { q: "Yillik tarifda qanday chegirma bo'ladi?", aTemplate: (p: string, pp: string) => `Yillik tarif oylikdan arzonroq: Pro — ${p} so'm/oy, Pro+ — ${pp} so'm/oy (yillik to'lovda).` },
@@ -85,31 +80,26 @@ const T = {
     freeFeatures: ['1 магазин', '100 товаров', 'История 30 дней', 'Интеграция Uzum', 'Расширение (extension)'],
     proFeatures: [
       'Безлимит магазинов', 'Безлимит товаров', 'История 12 месяцев', 'Uzum + Yandex Market', 'Юнит-экономика',
-      'Аналитика рекламы', 'Поисковые запросы', 'Экспорт Excel / PDF', 'Отчёт P&L', 'Анализ сезонности',
-      'Отслеживание цен', 'Кастомные отчёты', 'Доступ к API',
+      'Экспорт Excel / PDF', 'Отчёт P&L', 'Кастомные отчёты',
     ],
     proPlusExtras: [
-      { label: 'Команда (5 пользователей)', desc: 'Управление ролями и доступом' },
-      { label: 'Автоотчёты на email', desc: 'Ежедневная/еженедельная доставка' },
       { label: 'Приоритетная поддержка', desc: 'Ответ в течение 15 минут' },
-      { label: 'White-label PDF (с вашим логотипом)', desc: 'Ваш логотип в отчётах' },
     ],
     calloutTitle: 'Что добавляет Pro+?',
     calloutBody: 'Всё из Pro включено. Pro+ добавляет только для крупных команд и агентств:',
-    calloutHighlight: 'команда на 5 пользователей, автоотчёты на email, приоритетная поддержка и white-label PDF',
+    calloutHighlight: 'приоритетная поддержка — ответ в течение 15 минут',
     calloutCta: 'Смотреть Pro+ →',
     cmpBadge: 'Подробное сравнение', cmpHeading: 'Сравнение', cmpSub: 'Определите, какой тариф вам подходит',
     cmpCore: 'Основные возможности', unlimited: 'Безлимит', days30: '30 дней', months12: '12 месяцев', maksimal: 'МАКСИМУМ', freePrice: '0 сум',
     cmpFeatures: [
       'Количество магазинов', 'Количество товаров', 'Глубина истории', 'Интеграция Uzum', 'Yandex Market',
-      'Расширение (extension)', 'Юнит-экономика', 'Аналитика рекламы', 'Поисковые запросы', 'Экспорт Excel / PDF',
-      'Отчёт P&L', 'Анализ сезонности', 'Отслеживание цен', 'Кастомные отчёты', 'Доступ к API',
-      'Команда (5 пользователей)', 'Автоотчёты на email', 'Приоритетная поддержка', 'White-label PDF',
+      'Расширение (extension)', 'Юнит-экономика', 'Экспорт Excel / PDF', 'Отчёт P&L',
+      'Кастомные отчёты', 'Приоритетная поддержка',
     ],
     faqBadge: 'Частые вопросы', faqHeading: 'Вопросы и ответы', faqSub: 'Есть ещё вопрос? Напишите нам в Telegram',
     faq: [
       { q: 'Нужна ли карта для бесплатного тарифа?', a: 'Нет. Для старта на бесплатном тарифе платёжные данные не нужны.' },
-      { q: 'В чём основная разница между Pro и Pro+?', a: 'Pro даёт все основные инструменты аналитики для растущего бизнеса. Pro+ дополнительно включает доступ к API, команду из 5 пользователей, кастомные отчёты и приоритетную поддержку с ответом за 15 минут.' },
+      { q: 'В чём основная разница между Pro и Pro+?', a: 'Pro даёт все основные инструменты аналитики для растущего бизнеса. Pro+ дополнительно включает приоритетную поддержку с ответом за 15 минут.' },
       { q: 'Можно ли менять тариф в любое время?', a: 'Да. Вы можете перейти с бесплатного на Pro или с Pro на Pro+ в любой момент. Изменение вступает в силу сразу.' },
       { q: 'Мои данные в безопасности?', a: 'Да. Все данные хранятся в зашифрованном виде и принадлежат только вам. Мы никогда не передаём их третьим лицам.' },
       { q: 'Какая скидка на годовом тарифе?', aTemplate: (p: string, pp: string) => `Годовой тариф выгоднее помесячного: Pro — ${p} сум/мес, Pro+ — ${pp} сум/мес (при оплате за год).` },
@@ -131,31 +121,26 @@ const T = {
     freeFeatures: ['1 store', '100 products', '30-day history', 'Uzum integration', 'Extension'],
     proFeatures: [
       'Unlimited stores', 'Unlimited products', '12-month history', 'Uzum + Yandex Market', 'Unit economics',
-      'Ad analytics', 'Search terms', 'Export Excel / PDF', 'P&L report', 'Seasonality analysis',
-      'Price tracking', 'Custom reports', 'API access',
+      'Export Excel / PDF', 'P&L report', 'Custom reports',
     ],
     proPlusExtras: [
-      { label: 'Team (5 users)', desc: 'Roles & permissions' },
-      { label: 'Automated email reports', desc: 'Daily/weekly delivery' },
       { label: 'Priority support', desc: 'Reply within 15 minutes' },
-      { label: 'White-label PDF (your logo)', desc: 'Your logo on reports' },
     ],
     calloutTitle: 'What does Pro+ add?',
     calloutBody: 'Everything in Pro is included. Pro+ adds, just for large teams and agencies:',
-    calloutHighlight: 'a 5-user team, automated email reports, priority support and white-label PDF',
+    calloutHighlight: 'priority support — a reply within 15 minutes',
     calloutCta: 'See Pro+ →',
     cmpBadge: 'Detailed comparison', cmpHeading: 'Comparison', cmpSub: 'Find the plan that fits you',
     cmpCore: 'Core features', unlimited: 'Unlimited', days30: '30 days', months12: '12 months', maksimal: 'MAXIMUM', freePrice: "0 so'm",
     cmpFeatures: [
       'Number of stores', 'Number of products', 'History depth', 'Uzum integration', 'Yandex Market',
-      'Extension', 'Unit economics', 'Ad analytics', 'Search terms', 'Export Excel / PDF',
-      'P&L report', 'Seasonality analysis', 'Price tracking', 'Custom reports', 'API access',
-      'Team (5 users)', 'Automated email reports', 'Priority support', 'White-label PDF',
+      'Extension', 'Unit economics', 'Export Excel / PDF', 'P&L report',
+      'Custom reports', 'Priority support',
     ],
     faqBadge: 'FAQ', faqHeading: 'Questions & Answers', faqSub: 'Have another question? Reach us on Telegram',
     faq: [
       { q: 'Do I need a credit card for the free plan?', a: 'No. Starting the free plan requires no payment details.' },
-      { q: "What's the main difference between Pro and Pro+?", a: 'Pro gives every core analytics tool for a growing business. Pro+ additionally provides API access, a 5-member team, custom reports and 15-minute priority support.' },
+      { q: "What's the main difference between Pro and Pro+?", a: 'Pro gives every core analytics tool for a growing business. Pro+ additionally provides 15-minute priority support.' },
       { q: 'Can I change plan anytime?', a: 'Yes. You can move from Free to Pro or Pro to Pro+ anytime. The change takes effect immediately.' },
       { q: 'Is my data safe?', a: "Yes. All data is stored encrypted and belongs only to you. It's never shared with third parties." },
       { q: 'What discount does the yearly plan give?', aTemplate: (p: string, pp: string) => `The yearly plan is cheaper than monthly: Pro — ${p} so'm/mo, Pro+ — ${pp} so'm/mo (billed yearly).` },
@@ -219,7 +204,7 @@ export default function PricingClient({ prices }: { prices: PricingData }) {
   const [langOpen, setLangOpen] = useState(false)
 
   const PROPLUS_EXTRAS = useMemo(() => {
-    const icons = [Users, Mail, Clock, FileText]
+    const icons = [Clock]
     return t.proPlusExtras.map((e, i) => ({ icon: icons[i], label: e.label, desc: e.desc }))
   }, [t])
 
@@ -275,25 +260,17 @@ export default function PricingClient({ prices }: { prices: PricingData }) {
   const comparisonFeatures: Feature[] = useMemo(() => {
     const f = t.cmpFeatures
     return [
-      { label: f[0],  free: '1',         pro: t.unlimited, pro_plus: t.unlimited },
-      { label: f[1],  free: '100',       pro: t.unlimited, pro_plus: t.unlimited },
-      { label: f[2],  free: t.days30,    pro: t.months12,  pro_plus: t.months12  },
-      { label: f[3],  free: true,        pro: true,        pro_plus: true        },
-      { label: f[4],  free: false,       pro: true,        pro_plus: true        },
-      { label: f[5],  free: true,        pro: true,        pro_plus: true        },
-      { label: f[6],  free: false,       pro: true,        pro_plus: true        },
-      { label: f[7],  free: false,       pro: true,        pro_plus: true        },
-      { label: f[8],  free: false,       pro: true,        pro_plus: true        },
-      { label: f[9],  free: false,       pro: true,        pro_plus: true        },
-      { label: f[10], free: false,       pro: true,        pro_plus: true        },
-      { label: f[11], free: false,       pro: true,        pro_plus: true        },
-      { label: f[12], free: false,       pro: true,        pro_plus: true        },
-      { label: f[13], free: false,       pro: true,        pro_plus: true        },
-      { label: f[14], free: false,       pro: true,        pro_plus: true        },
-      { label: f[15], free: false,       pro: false,       pro_plus: true        },
-      { label: f[16], free: false,       pro: false,       pro_plus: true        },
-      { label: f[17], free: false,       pro: false,       pro_plus: true        },
-      { label: f[18], free: false,       pro: false,       pro_plus: true        },
+      { label: f[0],  free: '1',      pro: t.unlimited, pro_plus: t.unlimited }, // stores
+      { label: f[1],  free: '100',    pro: t.unlimited, pro_plus: t.unlimited }, // products
+      { label: f[2],  free: t.days30, pro: t.months12,  pro_plus: t.months12  }, // history depth
+      { label: f[3],  free: true,     pro: true,        pro_plus: true        }, // Uzum
+      { label: f[4],  free: false,    pro: true,        pro_plus: true        }, // Yandex Market
+      { label: f[5],  free: true,     pro: true,        pro_plus: true        }, // extension
+      { label: f[6],  free: false,    pro: true,        pro_plus: true        }, // unit economics
+      { label: f[7],  free: false,    pro: true,        pro_plus: true        }, // Excel / PDF export
+      { label: f[8],  free: false,    pro: true,        pro_plus: true        }, // P&L report
+      { label: f[9],  free: false,    pro: true,        pro_plus: true        }, // custom reports
+      { label: f[10], free: false,    pro: false,       pro_plus: true        }, // priority support (Pro+ only)
     ]
   }, [t])
 
