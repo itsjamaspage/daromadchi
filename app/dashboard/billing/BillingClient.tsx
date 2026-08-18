@@ -8,7 +8,8 @@ import {
 import { useLang } from '@/app/providers'
 import { translations } from '@/lib/i18n'
 import type { BillingInfo, PlanType, PaymentRecord } from '@/lib/db/billing'
-import { PLAN_PRICES_TIYIN, formatSomFromTiyin } from '@/lib/billing/plans'
+import { PLAN_PRICES_TIYIN, formatSomFromTiyin, annualMonthlySom, planAmountTiyin } from '@/lib/billing/plans'
+import type { Interval } from '@/lib/billing/plans'
 import { planFeatureList, PLAN_ANCHOR_SOM, PLAN_DISCOUNT_PCT, popularLabel } from '@/lib/billing/plan-features'
 
 type T = typeof translations['uz']['dashboard']
@@ -31,6 +32,12 @@ const BT: Record<Lang, Record<string, string>> = {
     errCharge: "To'lov amalga oshmadi. Qaytadan urinib ko'ring.",
     errUnavailable: "To'lov vaqtincha mavjud emas.", errGeneric: "Xatolik. Qaytadan urinib ko'ring.",
     statusFailed: 'Xatolik',
+    monthly: 'Oylik', yearly: 'Yillik', perMonthShort: '/oy',
+    billedYearly: "yiliga bir marta to'lov", saveYear: 'Tejang',
+    confirmTitle: "To'lovni tasdiqlash",
+    chargeOnceYear: "12 oy uchun bir martalik to'lov:",
+    chargeMonthly: 'Har oy avtomatik to‘lov:',
+    perMonthEq: 'oyiga', continue: 'Davom etish',
   },
   en: {
     cardStep: 'Card details', cardNumber: 'Card number', expiry: 'Expiry (MM/YY)',
@@ -46,6 +53,12 @@ const BT: Record<Lang, Record<string, string>> = {
     errCharge: 'Payment failed. Please try again.',
     errUnavailable: 'Payments are temporarily unavailable.', errGeneric: 'Something went wrong. Try again.',
     statusFailed: 'Failed',
+    monthly: 'Monthly', yearly: 'Yearly', perMonthShort: '/mo',
+    billedYearly: 'billed once per year', saveYear: 'Save',
+    confirmTitle: 'Confirm payment',
+    chargeOnceYear: 'One-time charge for 12 months:',
+    chargeMonthly: 'Charged automatically each month:',
+    perMonthEq: 'per month', continue: 'Continue',
   },
   ru: {
     cardStep: 'Данные карты', cardNumber: 'Номер карты', expiry: 'Срок (ММ/ГГ)',
@@ -61,6 +74,12 @@ const BT: Record<Lang, Record<string, string>> = {
     errCharge: 'Оплата не прошла. Попробуйте снова.',
     errUnavailable: 'Оплата временно недоступна.', errGeneric: 'Произошла ошибка. Попробуйте снова.',
     statusFailed: 'Ошибка',
+    monthly: 'Помесячно', yearly: 'Ежегодно', perMonthShort: '/мес',
+    billedYearly: 'списание раз в год', saveYear: 'Экономия',
+    confirmTitle: 'Подтверждение оплаты',
+    chargeOnceYear: 'Единоразовое списание за 12 месяцев:',
+    chargeMonthly: 'Автосписание каждый месяц:',
+    perMonthEq: 'в месяц', continue: 'Продолжить',
   },
 }
 
@@ -101,18 +120,51 @@ function friendlyError(code: string | undefined, stage: string | undefined, b: R
   return b.errGeneric
 }
 
-// ── Upgrade Modal — 3 steps: choose → card → OTP → success ──────────────────────
+// Interval-aware price display for a paid plan. Monthly shows the flat monthly
+// figure; yearly shows the discounted per-month rate + the once-a-year total.
+function planPriceView(p: 'pro' | 'pro_plus', iv: Interval, b: Record<string, string>) {
+  if (iv === 'annual') {
+    return {
+      big: `${new Intl.NumberFormat('uz-UZ').format(annualMonthlySom(p))} so'm`,
+      sub: `${formatSomFromTiyin(PLAN_PRICES_TIYIN[p].annualTotal)} so'm · ${b.billedYearly}`,
+    }
+  }
+  return { big: `${formatSomFromTiyin(PLAN_PRICES_TIYIN[p].monthly)} so'm`, sub: null as string | null }
+}
 
-function UpgradeModal({ current, highlight, lang, d, onClose }: {
-  current: PlanType; highlight?: 'pro' | 'pro_plus'; lang: Lang; d: T; onClose: () => void
+// Monthly / Yearly switch (shared by the choose + confirm steps).
+function IntervalTabs({ value, onChange, b }: {
+  value: Interval; onChange: (v: Interval) => void; b: Record<string, string>
+}) {
+  return (
+    <div className="inline-flex items-center gap-1 p-1 rounded-full border border-[var(--border2)] bg-[var(--bg-input)]">
+      {(['monthly', 'annual'] as const).map(v => (
+        <button key={v} type="button" onClick={() => onChange(v)} aria-pressed={value === v}
+          className="text-xs font-semibold px-3.5 py-1.5 rounded-full transition-colors"
+          style={value === v ? { background: '#2F6DF6', color: '#fff' } : { color: 'var(--text-muted)' }}>
+          {v === 'monthly' ? b.monthly : b.yearly}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+// ── Upgrade Modal — steps: choose → confirm → card → OTP → success ───────────────
+
+function UpgradeModal({ current, highlight, initialInterval, lang, d, onClose }: {
+  current: PlanType; highlight?: 'pro' | 'pro_plus'; initialInterval?: Interval; lang: Lang; d: T; onClose: () => void
 }) {
   const router = useRouter()
   const b = BT[lang]
   const PLAN_FEATURES = planFeatureList(lang)
   const plans: PlanType[] = ['free', 'pro', 'pro_plus']
 
-  const [step, setStep] = useState<'choose' | 'card' | 'otp' | 'success'>(highlight ? 'card' : 'choose')
+  // Opened straight on a plan (via ?plan=) still lands on the confirm step first,
+  // so the user always sees the exact amount (and, for yearly, the once-a-year
+  // total) before any card details or charge.
+  const [step, setStep] = useState<'choose' | 'confirm' | 'card' | 'otp' | 'success'>(highlight ? 'confirm' : 'choose')
   const [plan, setPlan] = useState<PlanType | null>(highlight ?? null)
+  const [billingInterval, setBillingInterval] = useState<Interval>(initialInterval ?? 'monthly')
   const [cardNumber, setCardNumber] = useState('')
   const [expiry, setExpiry] = useState('')
   const [otp, setOtp] = useState('')
@@ -130,7 +182,7 @@ function UpgradeModal({ current, highlight, lang, d, onClose }: {
 
   function choose(p: PlanType) {
     if (p === 'free') return
-    setPlan(p); setErr(null); setStep('card')
+    setPlan(p); setErr(null); setStep('confirm')
   }
 
   async function submitCard(resending = false) {
@@ -143,7 +195,7 @@ function UpgradeModal({ current, highlight, lang, d, onClose }: {
     try {
       const res = await fetch('/api/billing/atmos/bind-init', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan, interval: 'monthly', card_number: pan, expiry: exp }),
+        body: JSON.stringify({ plan, interval: billingInterval, card_number: pan, expiry: exp }),
       })
       const data = await res.json().catch(() => ({}))
       if (res.ok && data?.ok) {
@@ -182,7 +234,7 @@ function UpgradeModal({ current, highlight, lang, d, onClose }: {
     setBusy(false)
   }
 
-  const title = step === 'card' ? b.cardStep : step === 'otp' ? b.otpStep : step === 'success' ? b.successStep : d.billingChangePlanTitle
+  const title = step === 'confirm' ? b.confirmTitle : step === 'card' ? b.cardStep : step === 'otp' ? b.otpStep : step === 'success' ? b.successStep : d.billingChangePlanTitle
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -190,8 +242,13 @@ function UpgradeModal({ current, highlight, lang, d, onClose }: {
       <div className="relative w-full max-w-2xl bg-[var(--bg-card2)] border border-[var(--border2)] rounded-2xl shadow-2xl shadow-black/60 overflow-hidden">
         <div className="px-6 py-4 border-b border-[var(--border)] flex items-center justify-between">
           <div className="flex items-center gap-2">
-            {step === 'card' && !highlight && (
+            {step === 'confirm' && !highlight && (
               <button onClick={() => { setStep('choose'); setErr(null) }} className="text-[var(--text-muted)] hover:text-[var(--text-base)] p-0.5" aria-label={b.back}>
+                <ArrowLeft className="w-4 h-4" />
+              </button>
+            )}
+            {step === 'card' && (
+              <button onClick={() => { setStep('confirm'); setErr(null) }} className="text-[var(--text-muted)] hover:text-[var(--text-base)] p-0.5" aria-label={b.back}>
                 <ArrowLeft className="w-4 h-4" />
               </button>
             )}
@@ -205,9 +262,14 @@ function UpgradeModal({ current, highlight, lang, d, onClose }: {
 
         {/* Step: choose plan */}
         {step === 'choose' && (
-          <div className="p-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="p-6">
+          <div className="flex justify-center mb-5">
+            <IntervalTabs value={billingInterval} onChange={setBillingInterval} b={b} />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {plans.map(p => {
               const isCurrent = p === current
+              const price = p === 'free' ? null : planPriceView(p, billingInterval, b)
               return (
                 <div key={p} className="rounded-xl border p-4 flex flex-col gap-3 transition-all"
                   style={isCurrent
@@ -230,15 +292,16 @@ function UpgradeModal({ current, highlight, lang, d, onClose }: {
                     {isCurrent && <CheckCircle className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--c1)' }} />}
                   </div>
                   <div>
-                    {(p === 'pro' || p === 'pro_plus') && (
+                    {(p === 'pro' || p === 'pro_plus') && billingInterval === 'monthly' && (
                       <div className="flex items-center gap-1.5 mb-0.5">
                         <span className="text-xs line-through text-[var(--text-muted)] opacity-70">{fmtSom(PLAN_ANCHOR_SOM[p])}</span>
                         <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full text-white" style={{ background: '#2F6DF6' }}>−{PLAN_DISCOUNT_PCT[p]}%</span>
                       </div>
                     )}
                     <p className="font-bold text-base" style={{ color: isCurrent ? 'var(--c1)' : 'var(--text-base)' }}>
-                      {PLAN_PRICES[p]}{p !== 'free' && <span className="text-[var(--text-muted)] font-normal text-xs">{d.billingPerMonth}</span>}
+                      {price ? price.big : PLAN_PRICES.free}{p !== 'free' && <span className="text-[var(--text-muted)] font-normal text-xs">{b.perMonthShort}</span>}
                     </p>
+                    {price?.sub && <p className="text-[11px] text-[var(--text-muted)] mt-0.5">{price.sub}</p>}
                   </div>
                   <ul className="space-y-1.5 flex-1">
                     {PLAN_FEATURES[p].map(f => (
@@ -262,14 +325,46 @@ function UpgradeModal({ current, highlight, lang, d, onClose }: {
               )
             })}
           </div>
+          </div>
         )}
+
+        {/* Step: confirm — always shown before card entry / charge, so the exact
+            amount (and the once-a-year total for yearly) is explicit. */}
+        {step === 'confirm' && plan && plan !== 'free' && (() => {
+          const p = plan as 'pro' | 'pro_plus'
+          const chargeTiyin = planAmountTiyin(p, billingInterval)
+          return (
+            <div className="p-6 space-y-5">
+              <div className="flex justify-center">
+                <IntervalTabs value={billingInterval} onChange={setBillingInterval} b={b} />
+              </div>
+              <div className="rounded-xl border border-[var(--border2)] bg-[var(--bg-input)] p-5 text-center">
+                <p className="text-sm text-[var(--text-muted)]">{planLabel(p, d)} · {billingInterval === 'annual' ? b.yearly : b.monthly}</p>
+                <p className="text-xs text-[var(--text-muted)] mt-3">{billingInterval === 'annual' ? b.chargeOnceYear : b.chargeMonthly}</p>
+                <p className="text-3xl font-black text-[var(--text-base)] mt-1 tabular-nums">{formatSomFromTiyin(chargeTiyin)} <span className="text-base font-bold">so&rsquo;m</span></p>
+                {billingInterval === 'annual' && (
+                  <p className="text-xs text-[var(--text-muted)] mt-1.5">
+                    ≈ {new Intl.NumberFormat('uz-UZ').format(annualMonthlySom(p))} so&rsquo;m {b.perMonthEq} · {b.billedYearly}
+                  </p>
+                )}
+              </div>
+              <button type="button" onClick={() => { setErr(null); setStep('card') }}
+                className="w-full btn-primary text-sm font-semibold py-2.5 rounded-xl">
+                {b.continue}
+              </button>
+            </div>
+          )
+        })()}
 
         {/* Step: card details */}
         {step === 'card' && plan && (
           <form onSubmit={e => { e.preventDefault(); submitCard() }} className="p-6 space-y-4">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-[var(--text-muted)]">{planLabel(plan, d)}</span>
-              <span className="font-bold text-[var(--text-base)]">{PLAN_PRICES[plan]}<span className="text-[var(--text-muted)] font-normal text-xs">{d.billingPerMonth}</span></span>
+              <span className="text-[var(--text-muted)]">{planLabel(plan, d)} · {billingInterval === 'annual' ? b.yearly : b.monthly}</span>
+              <span className="font-bold text-[var(--text-base)] text-right">
+                {formatSomFromTiyin(planAmountTiyin(plan as 'pro' | 'pro_plus', billingInterval))} so&rsquo;m
+                <span className="text-[var(--text-muted)] font-normal text-xs">{billingInterval === 'annual' ? ` · ${b.billedYearly}` : d.billingPerMonth}</span>
+              </span>
             </div>
             <div>
               <label className="block text-xs font-medium text-[var(--text-muted)] mb-2">{b.cardNumber}</label>
@@ -455,7 +550,7 @@ function statusBadge(status: PaymentRecord['status'], d: T, failedLabel: string)
 
 // ── Page ───────────────────────────────────────────────────────────────────────
 
-export default function BillingClient({ billing, initialPlan }: { billing: BillingInfo; initialPlan?: 'pro' | 'pro_plus' }) {
+export default function BillingClient({ billing, initialPlan, initialInterval }: { billing: BillingInfo; initialPlan?: 'pro' | 'pro_plus'; initialInterval?: Interval }) {
   const { lang } = useLang()
   const l = (lang in BT ? lang : 'uz') as Lang
   const b = BT[l]
@@ -609,7 +704,7 @@ export default function BillingClient({ billing, initialPlan }: { billing: Billi
         )}
       </div>
 
-      {showPlanModal    && <UpgradeModal current={plan} highlight={initialPlan} lang={l} d={d} onClose={() => setShowPlanModal(false)} />}
+      {showPlanModal    && <UpgradeModal current={plan} highlight={initialPlan} initialInterval={initialInterval} lang={l} d={d} onClose={() => setShowPlanModal(false)} />}
       {showInvoiceModal && <InvoiceModal onClose={() => setShowInvoiceModal(false)} d={d} />}
     </div>
   )
