@@ -19,7 +19,7 @@ import { logger } from '@/lib/logger'
 import { decrypt } from '@/lib/crypto'
 import { chargeBoundCard } from '@/lib/billing/recurring'
 import { applyAtmosPaymentSuccess } from '@/lib/billing/activate'
-import { planAmountTiyin, planPeriodMonths, tiyinToSom, type PlanKey, type Interval } from '@/lib/billing/plans'
+import { planPeriodMonths, tiyinToSom, type Interval } from '@/lib/billing/plans'
 
 export const runtime = 'nodejs'
 export const maxDuration = 300
@@ -49,6 +49,7 @@ export const GET = withErrorHandler(async (req: Request) => {
     id: subscriptions.id, userId: subscriptions.user_id, plan: subscriptions.plan,
     interval: subscriptions.interval, periodEnd: subscriptions.current_period_end,
     tokenEnc: subscriptions.card_token_encrypted,
+    agreedAmountTiyin: subscriptions.agreed_amount_tiyin,
   }).from(subscriptions).where(and(
     inArray(subscriptions.status, ['active', 'past_due']),
     eq(subscriptions.autorenew, true),   // per-subscription toggle (billing page)
@@ -56,11 +57,28 @@ export const GET = withErrorHandler(async (req: Request) => {
     lt(subscriptions.current_period_end, dueBefore),
   ))
 
-  let charged = 0, failed = 0, downgraded = 0, skipped = 0
+  let charged = 0, failed = 0, downgraded = 0, skipped = 0, noAgreedAmount = 0
   for (const s of due) {
     if (s.plan !== 'pro' && s.plan !== 'pro_plus') { skipped++; continue }
     const interval: Interval = s.interval === 'annual' ? 'annual' : 'monthly'
-    const amountTiyin = planAmountTiyin(s.plan as PlanKey, interval)
+    // Charge WHAT THEY AGREED TO, never the live PLAN_PRICES_TIYIN. Deriving the
+    // amount from config means any later price edit silently reprices existing
+    // subscribers: a card charged 50 000 so'm during the pricing test would be
+    // charged 250 000 here once the config was restored.
+    //
+    // No agreed amount ⇒ SKIP. We would rather miss a renewal (recoverable: the
+    // seller can pay again) than charge a number nobody consented to
+    // (unrecoverable: that is a refund and a complaint). Migration 072
+    // backfills these from the last settled payment, so a row still NULL here is
+    // one we genuinely have no authorised price for.
+    const amountTiyin = s.agreedAmountTiyin
+    if (amountTiyin == null || amountTiyin <= 0) {
+      noAgreedAmount++
+      logger.error('billing_renew_skipped_no_agreed_amount', {
+        subscriptionId: s.id, userId: s.userId, plan: s.plan, interval,
+      })
+      continue
+    }
     const periodMonths = planPeriodMonths(interval)
 
     if (dryRun) {
@@ -112,6 +130,6 @@ export const GET = withErrorHandler(async (req: Request) => {
     }
   }
 
-  logger.info('billing_renew_done', { dryRun, due: due.length, charged, failed, downgraded, skipped })
-  return NextResponse.json({ ok: true, dryRun, due: due.length, charged, failed, downgraded, skipped })
+  logger.info('billing_renew_done', { dryRun, due: due.length, charged, failed, downgraded, skipped, noAgreedAmount })
+  return NextResponse.json({ ok: true, dryRun, due: due.length, charged, failed, downgraded, skipped, noAgreedAmount })
 })
