@@ -12,7 +12,7 @@ import {
 import { useTheme, useLang } from './providers'
 import type { Lang } from '@/lib/i18n'
 import { T } from '@/lib/landing-t'
-import { PLAN_PRICES_TIYIN, formatSomFromTiyin } from '@/lib/billing/plans'
+import { PLAN_PRICES_TIYIN, formatSomFromTiyin, planAnnualTotalTiyin } from '@/lib/billing/plans'
 import { planFeatureList, PLAN_ANCHOR_SOM, PLAN_DISCOUNT_PCT, popularLabel, fmtSom } from '@/lib/billing/plan-features'
 
 import PillNav from './components/PillNav'
@@ -1365,17 +1365,17 @@ function PricingSection({ lang }: { lang: Lang }) {
     },
     {
       name: 'Pro',
-      price: formatSomFromTiyin(iv === 'annual' ? perMonthTiyin(PLAN_PRICES_TIYIN.pro.annualTotal) : PLAN_PRICES_TIYIN.pro.monthly),
+      price: formatSomFromTiyin(iv === 'annual' ? perMonthTiyin(planAnnualTotalTiyin('pro')) : PLAN_PRICES_TIYIN.pro.monthly),
       anchor: iv === 'annual' ? null : fmtSom(PLAN_ANCHOR_SOM.pro), discount: iv === 'annual' ? null : PLAN_DISCOUNT_PCT.pro, badge: popularLabel(lang),
-      sub: T.pricing.proSub[lang], yearTotal: iv === 'annual' ? `${formatSomFromTiyin(PLAN_PRICES_TIYIN.pro.annualTotal)} so'm · ${TL.billed}` : null, highlight: true,
+      sub: T.pricing.proSub[lang], yearTotal: iv === 'annual' ? `${formatSomFromTiyin(planAnnualTotalTiyin('pro'))} so'm · ${TL.billed}` : null, highlight: true,
       features: feats.pro,
       cta: T.pricing.proCta[lang], ctaHref: iv === 'annual' ? '/login?plan=pro&interval=annual' : '/login?plan=pro',
     },
     {
       name: 'Pro+',
-      price: formatSomFromTiyin(iv === 'annual' ? perMonthTiyin(PLAN_PRICES_TIYIN.pro_plus.annualTotal) : PLAN_PRICES_TIYIN.pro_plus.monthly),
+      price: formatSomFromTiyin(iv === 'annual' ? perMonthTiyin(planAnnualTotalTiyin('pro_plus')) : PLAN_PRICES_TIYIN.pro_plus.monthly),
       anchor: iv === 'annual' ? null : fmtSom(PLAN_ANCHOR_SOM.pro_plus), discount: iv === 'annual' ? null : PLAN_DISCOUNT_PCT.pro_plus, badge: null,
-      sub: T.pricing.proPlusSub[lang], yearTotal: iv === 'annual' ? `${formatSomFromTiyin(PLAN_PRICES_TIYIN.pro_plus.annualTotal)} so'm · ${TL.billed}` : null, highlight: false,
+      sub: T.pricing.proPlusSub[lang], yearTotal: iv === 'annual' ? `${formatSomFromTiyin(planAnnualTotalTiyin('pro_plus'))} so'm · ${TL.billed}` : null, highlight: false,
       features: feats.pro_plus,
       cta: T.pricing.proPlusCta[lang], ctaHref: iv === 'annual' ? '/login?plan=pro_plus&interval=annual' : '/login?plan=pro_plus',
     },

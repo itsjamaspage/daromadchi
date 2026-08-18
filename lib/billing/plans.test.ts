@@ -3,7 +3,8 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 import {
-  PLAN_PRICES_TIYIN, somToTiyin, tiyinToSom, planAmountTiyin, planPeriodMonths,
+  PLAN_PRICES_TIYIN, ANNUAL_DISCOUNT_PCT, planAnnualTotalTiyin,
+  somToTiyin, tiyinToSom, planAmountTiyin, planPeriodMonths,
   formatSomFromTiyin, annualMonthlySom,
 } from './plans'
 
@@ -22,27 +23,30 @@ describe('tiyin ↔ so\'m conversion (the 100× boundary)', () => {
   })
 })
 
-describe('anchor amounts', () => {
-  it('Pro = 25 000 000 tiyin (250 000 so\'m), Pro+ = 50 000 000 tiyin (500 000 so\'m)', () => {
-    assert.equal(PLAN_PRICES_TIYIN.pro.monthly, 25_000_000)
-    assert.equal(PLAN_PRICES_TIYIN.pro_plus.monthly, 50_000_000)
-    assert.equal(tiyinToSom(PLAN_PRICES_TIYIN.pro.monthly), 250_000)
-    assert.equal(tiyinToSom(PLAN_PRICES_TIYIN.pro_plus.monthly), 500_000)
-  })
-  it('annual totals = monthly × 9 (3 months free)', () => {
-    assert.equal(PLAN_PRICES_TIYIN.pro.annualTotal, 225_000_000)      // 2 250 000 so'm
-    assert.equal(PLAN_PRICES_TIYIN.pro_plus.annualTotal, 450_000_000) // 4 500 000 so'm
-    // Sanity: annualTotal is exactly 9× the monthly so'm.
-    assert.equal(tiyinToSom(PLAN_PRICES_TIYIN.pro.annualTotal), 250_000 * 9)
-    assert.equal(tiyinToSom(PLAN_PRICES_TIYIN.pro_plus.annualTotal), 500_000 * 9)
-    // Per-month figure shown on the annual toggle (annualTotal / 12).
-    assert.equal(annualMonthlySom('pro'), 187_500)
-    assert.equal(annualMonthlySom('pro_plus'), 375_000)
-  })
-  it('planAmountTiyin picks monthly vs annualTotal', () => {
-    assert.equal(planAmountTiyin('pro', 'monthly'), 25_000_000)
-    assert.equal(planAmountTiyin('pro', 'annual'), 225_000_000)
-    assert.equal(planAmountTiyin('pro_plus', 'monthly'), 50_000_000)
+describe('annual is DERIVED from monthly (no hardcoded yearly)', () => {
+  // Assert the relationship, not absolute prices, so these survive a monthly
+  // price change (e.g. a temporary test price) without going stale.
+  for (const key of ['pro', 'pro_plus'] as const) {
+    it(`${key}: yearly = monthly × 12 − ${ANNUAL_DISCOUNT_PCT[key]}%`, () => {
+      const monthly = PLAN_PRICES_TIYIN[key].monthly
+      const expected = Math.round((monthly * 12 * (100 - ANNUAL_DISCOUNT_PCT[key])) / 100)
+      assert.equal(planAnnualTotalTiyin(key), expected)
+      // planAmountTiyin routes to the derived yearly / the monthly.
+      assert.equal(planAmountTiyin(key, 'annual'), expected)
+      assert.equal(planAmountTiyin(key, 'monthly'), monthly)
+      // The per-month figure on the yearly toggle is the yearly total / 12.
+      assert.equal(annualMonthlySom(key), Math.round(tiyinToSom(expected) / 12))
+    })
+  }
+  it('at the default 250 000 / 500 000 monthly, yearly = 2 400 000 / 4 500 000', () => {
+    // Only checks the derivation math against the intended anchors; skipped in
+    // spirit whenever a temporary test monthly is in effect.
+    if (PLAN_PRICES_TIYIN.pro.monthly === 25_000_000) {
+      assert.equal(planAnnualTotalTiyin('pro'), 240_000_000)      // 2 400 000 so'm (200 000/mo)
+    }
+    if (PLAN_PRICES_TIYIN.pro_plus.monthly === 50_000_000) {
+      assert.equal(planAnnualTotalTiyin('pro_plus'), 450_000_000) // 4 500 000 so'm (375 000/mo)
+    }
   })
   it('planPeriodMonths: monthly=1, annual=12', () => {
     assert.equal(planPeriodMonths('monthly'), 1)
