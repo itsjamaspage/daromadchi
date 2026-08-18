@@ -95,6 +95,11 @@ const MIGRATIONS = [
   'migrations/migrations/069_subscription_card_display.sql',
   // Additive + idempotent: per-subscription auto-renew flag for the renewal cron.
   'migrations/migrations/070_subscription_autorenew.sql',
+  // Billing correctness: order identity (shop_id, order_id_external) becomes
+  // UNIQUE, so a duplicated order can no longer inflate the trailing-30-day
+  // turnover that decides a seller's tier. Collapses any existing duplicates
+  // first (keeping the row with the most order_items). Idempotent.
+  'migrations/migrations/071_orders_identity_unique.sql',
 ]
 
 function loadDatabaseUrl() {

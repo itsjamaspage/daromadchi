@@ -663,7 +663,13 @@ export async function syncFromUzum(shopId: string, token: string, heavy = true):
             revenue: String(r.revenue),
             items_count: r.items_count,
             ordered_at: r.ordered_at,
-          })))
+          // Migration 071 makes (shop_id, order_id_external) unique. The
+          // select-then-insert above is not atomic, so two concurrent syncs for
+          // one shop can both decide to insert. Before 071 that silently
+          // duplicated the order; without this it would abort the whole sync
+          // run. The loser skips — the winner already wrote identical data, and
+          // the toUpdOrd pass keeps it current.
+          }))).onConflictDoNothing()
         }
       }
       for (const r of toUpdOrd) {

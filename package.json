@@ -15,6 +15,7 @@
     "test:integration": "node --import tsx --test lib/marketplace/stock-writer.integration.test.ts",
     "test:seo": "node --import tsx --test lib/seo/apex-redirect.test.ts",
     "test:atmos": "node --import tsx --test lib/billing/atmos-verify.test.ts",
+    "test:tiers": "node --import tsx --test lib/billing/tiers.test.ts",
     "atmos:manual": "node scripts/atmos-manual-test.mjs",
     "atmos:direct": "node scripts/atmos-direct-test.mjs",
     "stock-sync:demo": "tsx scripts/stock-sync-dry-run-demo.ts",
