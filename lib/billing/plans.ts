@@ -15,7 +15,7 @@ export type Interval = 'monthly' | 'annual'
 // year; restoring 250 000 restores the 250 000-based year. Default anchors:
 // Pro 250 000 so'm/mo, Pro+ 500 000 so'm/mo.
 export const PLAN_PRICES_TIYIN: Record<PlanKey, { monthly: number }> = {
-  pro:      { monthly: 5_000_000 }, // TEMP TEST: 50 000 so'm/mo (revert to 25_000_000 = 250 000)
+  pro:      { monthly: 25_000_000 }, // 250 000 so'm/mo
   pro_plus: { monthly: 50_000_000 }, // 500 000 so'm/mo
 }
 
