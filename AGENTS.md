@@ -40,3 +40,14 @@ owner (jkhakimjonov8@gmail.com).
 Violation = immediate revert of the offending commit.
 <!-- END:marketplace-readonly-rule -->
 
+
+<!-- BEGIN:skills-guidance -->
+# Skills available in this repo (.claude/skills/)
+Five skills are installed. Use each for its purpose — match skill to task, do not run all on everything.
+- brainstorming: before implementing any non-trivial feature/change, turn the idea into an approved design first. Skip for trivial or fully-specified fixes.
+- grill-me: user-invoked only (/grill-me). Use when asked to pressure-test a plan or design. Do not self-invoke.
+- frontend-design: whenever building or reshaping UI (pages, components, tables).
+- skill-creator: only when explicitly asked to create or edit a skill.
+- find-skills: when a task might need a skill we don't have, search the ecosystem and suggest before hand-rolling.
+For quick one-line changes, skip the process skills entirely.
+<!-- END:skills-guidance -->
