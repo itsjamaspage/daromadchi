@@ -546,7 +546,11 @@ export async function syncFromYandex(
             items_count: r.items_count,
             ordered_at: new Date(r.ordered_at),
             fulfillment_type: r.fulfillment_type,
-          })))
+          // See the matching note in lib/uzum/sync.ts: (shop_id,
+          // order_id_external) is unique as of migration 071, and this
+          // select-then-insert is not atomic. A concurrent inserter wins; this
+          // run skips rather than aborting, and toUpdate refreshes the row.
+          }))).onConflictDoNothing()
         }
       }
       for (const r of toUpdate) {
