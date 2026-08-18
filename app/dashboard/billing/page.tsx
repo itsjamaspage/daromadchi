@@ -12,5 +12,9 @@ export default async function BillingPage({ searchParams }: Props) {
   // without hunting for the button. Ignore anything that isn't a paid key.
   const initialPlan =
     params?.plan === 'pro' || params?.plan === 'pro_plus' ? params.plan : undefined
-  return <BillingClient billing={billing} initialPlan={initialPlan} />
+  // ?interval=annual (from the yearly toggle on the pricing cards) opens the
+  // chooser on the yearly option so the confirm popup shows the once-a-year total.
+  const initialInterval =
+    params?.interval === 'annual' || params?.interval === 'monthly' ? params.interval : undefined
+  return <BillingClient billing={billing} initialPlan={initialPlan} initialInterval={initialInterval} />
 }

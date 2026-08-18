@@ -1336,34 +1336,48 @@ function PricingSection({ lang }: { lang: Lang }) {
   const ink    = isDark ? P.dText   : P.ink
   const muted  = isDark ? P.dMuted  : P.stone
 
+  // Monthly / yearly toggle. Yearly shows the discounted per-month rate and the
+  // once-a-year total; the CTA carries ?interval=annual so the dashboard checkout
+  // opens on the yearly option (and its confirm popup shows the yearly charge).
+  const [annual, setAnnual] = useState(false)
+  const iv: 'monthly' | 'annual' = annual ? 'annual' : 'monthly'
+  const TL = ({
+    uz: { monthly: 'Oylik', yearly: 'Yillik', billed: "yiliga bir marta to'lov" },
+    ru: { monthly: 'Помесячно', yearly: 'Ежегодно', billed: 'списание раз в год' },
+    en: { monthly: 'Monthly', yearly: 'Yearly', billed: 'billed once a year' },
+  } as const)[lang]
+  const perMonthTiyin = (annualTotal: number) => Math.round(annualTotal / 12)
+
   // Feature bullets come from the shared source of truth so the landing page and
   // the dashboard "Сменить тариф" modal always match. anchor/discount are
   // display-only framing — the real charged price stays PLAN_PRICES_TIYIN.
   const feats = planFeatureList(lang)
   const tiers: Array<{
     name: string; price: string; anchor: string | null; discount: number | null
-    badge: string | null; sub: string; highlight: boolean; features: string[]
+    badge: string | null; sub: string; yearTotal: string | null; highlight: boolean; features: string[]
     cta: string; ctaHref: string
   }> = [
     {
       name: T.pricing.freeName[lang], price: '0', anchor: null, discount: null, badge: null,
-      sub: T.pricing.freeSub[lang], highlight: false,
+      sub: T.pricing.freeSub[lang], yearTotal: null, highlight: false,
       features: feats.free,
       cta: T.pricing.freeCta[lang], ctaHref: '/login',
     },
     {
-      name: 'Pro', price: formatSomFromTiyin(PLAN_PRICES_TIYIN.pro.monthly),
-      anchor: fmtSom(PLAN_ANCHOR_SOM.pro), discount: PLAN_DISCOUNT_PCT.pro, badge: popularLabel(lang),
-      sub: T.pricing.proSub[lang], highlight: true,
+      name: 'Pro',
+      price: formatSomFromTiyin(iv === 'annual' ? perMonthTiyin(PLAN_PRICES_TIYIN.pro.annualTotal) : PLAN_PRICES_TIYIN.pro.monthly),
+      anchor: iv === 'annual' ? null : fmtSom(PLAN_ANCHOR_SOM.pro), discount: iv === 'annual' ? null : PLAN_DISCOUNT_PCT.pro, badge: popularLabel(lang),
+      sub: T.pricing.proSub[lang], yearTotal: iv === 'annual' ? `${formatSomFromTiyin(PLAN_PRICES_TIYIN.pro.annualTotal)} so'm · ${TL.billed}` : null, highlight: true,
       features: feats.pro,
-      cta: T.pricing.proCta[lang], ctaHref: '/login?plan=pro',
+      cta: T.pricing.proCta[lang], ctaHref: iv === 'annual' ? '/login?plan=pro&interval=annual' : '/login?plan=pro',
     },
     {
-      name: 'Pro+', price: formatSomFromTiyin(PLAN_PRICES_TIYIN.pro_plus.monthly),
-      anchor: fmtSom(PLAN_ANCHOR_SOM.pro_plus), discount: PLAN_DISCOUNT_PCT.pro_plus, badge: null,
-      sub: T.pricing.proPlusSub[lang], highlight: false,
+      name: 'Pro+',
+      price: formatSomFromTiyin(iv === 'annual' ? perMonthTiyin(PLAN_PRICES_TIYIN.pro_plus.annualTotal) : PLAN_PRICES_TIYIN.pro_plus.monthly),
+      anchor: iv === 'annual' ? null : fmtSom(PLAN_ANCHOR_SOM.pro_plus), discount: iv === 'annual' ? null : PLAN_DISCOUNT_PCT.pro_plus, badge: null,
+      sub: T.pricing.proPlusSub[lang], yearTotal: iv === 'annual' ? `${formatSomFromTiyin(PLAN_PRICES_TIYIN.pro_plus.annualTotal)} so'm · ${TL.billed}` : null, highlight: false,
       features: feats.pro_plus,
-      cta: T.pricing.proPlusCta[lang], ctaHref: '/login?plan=pro_plus',
+      cta: T.pricing.proPlusCta[lang], ctaHref: iv === 'annual' ? '/login?plan=pro_plus&interval=annual' : '/login?plan=pro_plus',
     },
   ]
 
@@ -1387,6 +1401,20 @@ function PricingSection({ lang }: { lang: Lang }) {
           <p style={{ fontSize: 16, color: muted, maxWidth: 400, margin: '0 auto' }}>
             {T.pricing.sub[lang]}
           </p>
+          {/* Monthly / Yearly toggle */}
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 24,
+            padding: 4, borderRadius: 100, background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(14,27,46,0.06)' }}>
+            {([['monthly', TL.monthly], ['annual', TL.yearly]] as const).map(([val, label]) => {
+              const active = iv === val
+              return (
+                <button key={val} type="button" onClick={() => setAnnual(val === 'annual')}
+                  style={{ fontSize: 13, fontWeight: 700, padding: '7px 18px', borderRadius: 100, border: 'none', cursor: 'pointer',
+                    background: active ? '#2F6DF6' : 'transparent', color: active ? '#fff' : muted, transition: 'all 0.15s' }}>
+                  {label}
+                </button>
+              )
+            })}
+          </div>
         </motion.div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           {tiers.map((t, i) => (
@@ -1439,7 +1467,10 @@ function PricingSection({ lang }: { lang: Lang }) {
                       {t.price === '0' ? '0' : <SlotPrice value={t.price} trigger={inView} delay={i * 0.18 + 0.4} />}
                     </span>
                   </div>
-                  <p style={{ fontSize: 13, color: t.highlight ? (isDark ? P.muted : P.dMuted) : muted, marginBottom: 24 }}>{t.sub}</p>
+                  <p style={{ fontSize: 13, color: t.highlight ? (isDark ? P.muted : P.dMuted) : muted, marginBottom: t.yearTotal ? 4 : 24 }}>{t.sub}</p>
+                  {t.yearTotal && (
+                    <p style={{ fontSize: 12, fontWeight: 600, color: t.highlight ? (isDark ? P.green : '#7bbaf7') : acc.tint, marginBottom: 24 }}>{t.yearTotal}</p>
+                  )}
 
                   <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
                     {t.features.map((f, fi) => (
