@@ -24,6 +24,13 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+
+    // Vendored agent skills (.claude/skills/**) are third-party tooling, not
+    // app source: they ship their own CommonJS helper scripts and Python, and
+    // are never bundled or executed by the app. Linting them fails CI's `lint`
+    // job, and `build` depends on `lint` — so without this, adding a skill
+    // blocks every deploy.
+    ".claude/**",
   ]),
 
   // Marketplace read-only enforcement: ban raw fetch() in marketplace files.
