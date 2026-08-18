@@ -8,7 +8,7 @@ import {
 import { useLang } from '@/app/providers'
 import { translations } from '@/lib/i18n'
 import type { BillingInfo, PlanType, PaymentRecord } from '@/lib/db/billing'
-import { PLAN_PRICES_TIYIN, formatSomFromTiyin, annualMonthlySom, planAmountTiyin } from '@/lib/billing/plans'
+import { PLAN_PRICES_TIYIN, formatSomFromTiyin, annualMonthlySom, planAmountTiyin, planAnnualTotalTiyin } from '@/lib/billing/plans'
 import type { Interval } from '@/lib/billing/plans'
 import { planFeatureList, PLAN_ANCHOR_SOM, PLAN_DISCOUNT_PCT, popularLabel } from '@/lib/billing/plan-features'
 
@@ -126,7 +126,7 @@ function planPriceView(p: 'pro' | 'pro_plus', iv: Interval, b: Record<string, st
   if (iv === 'annual') {
     return {
       big: `${new Intl.NumberFormat('uz-UZ').format(annualMonthlySom(p))} so'm`,
-      sub: `${formatSomFromTiyin(PLAN_PRICES_TIYIN[p].annualTotal)} so'm · ${b.billedYearly}`,
+      sub: `${formatSomFromTiyin(planAnnualTotalTiyin(p))} so'm · ${b.billedYearly}`,
     }
   }
   return { big: `${formatSomFromTiyin(PLAN_PRICES_TIYIN[p].monthly)} so'm`, sub: null as string | null }
@@ -242,7 +242,7 @@ function UpgradeModal({ current, highlight, initialInterval, lang, d, onClose }:
       <div className="relative w-full max-w-2xl bg-[var(--bg-card2)] border border-[var(--border2)] rounded-2xl shadow-2xl shadow-black/60 overflow-hidden">
         <div className="px-6 py-4 border-b border-[var(--border)] flex items-center justify-between">
           <div className="flex items-center gap-2">
-            {step === 'confirm' && !highlight && (
+            {step === 'confirm' && (
               <button onClick={() => { setStep('choose'); setErr(null) }} className="text-[var(--text-muted)] hover:text-[var(--text-base)] p-0.5" aria-label={b.back}>
                 <ArrowLeft className="w-4 h-4" />
               </button>
@@ -558,6 +558,15 @@ export default function BillingClient({ billing, initialPlan, initialInterval }:
   const PLAN_FEATURES = planFeatureList(l)
   const [showPlanModal, setShowPlanModal]       = useState(!!initialPlan)
   const [showInvoiceModal, setShowInvoiceModal] = useState(false)
+  // Which plan the modal opens straight onto. Only the ?plan= auto-open uses a
+  // highlight; the "change plan" / "add payment" buttons clear it so the modal
+  // opens on the plan chooser (all tariffs visible), not a single locked plan.
+  const [modalHighlight, setModalHighlight]     = useState<'pro' | 'pro_plus' | undefined>(initialPlan)
+
+  function openPlanChooser() {
+    setModalHighlight(undefined)
+    setShowPlanModal(true)
+  }
 
   const plan = billing.plan
   const isFree = plan === 'free'
@@ -606,7 +615,7 @@ export default function BillingClient({ billing, initialPlan, initialInterval }:
           </div>
           <div className="flex-shrink-0">
             <button
-              onClick={() => setShowPlanModal(true)}
+              onClick={openPlanChooser}
               className="flex items-center gap-2 btn-primary text-sm font-semibold px-5 py-2.5 rounded-xl shadow-lg"
             >
               <Package className="w-4 h-4" />
@@ -616,7 +625,33 @@ export default function BillingClient({ billing, initialPlan, initialInterval }:
         </div>
       </div>
 
-      {/* Your card + auto-renew (only when a card is bound) */}
+      {/* Payment Methods */}
+      <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
+        <div className="px-5 py-4 border-b border-[var(--border)] flex items-center gap-2">
+          <CreditCard className="w-4 h-4 text-[var(--c1)]" />
+          <h2 className="text-[var(--text-base)] font-semibold text-sm">{d.billingPaymentMethods}</h2>
+        </div>
+        <div className="p-5">
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={openPlanChooser}
+              className="flex items-center gap-2 text-sm font-medium text-[var(--text-dim)] hover:text-[var(--text-base)] border border-[var(--border2)] px-4 py-2 rounded-xl transition-all bg-[var(--bg-card2)]"
+            >
+              <span className="text-[var(--c1)] font-bold text-base leading-none">+</span>
+              {d.billingAddPayment}
+            </button>
+            <button
+              onClick={() => setShowInvoiceModal(true)}
+              className="flex items-center gap-2 text-sm font-medium text-[var(--text-dim)] hover:text-[var(--text-base)] border border-[var(--border2)] px-4 py-2 rounded-xl transition-all bg-[var(--bg-card2)]"
+            >
+              <Receipt className="w-4 h-4 text-[var(--text-muted)]" />
+              {d.billingRequestInvoice}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Your card + auto-renew — shown BELOW "add payment" once a card is bound. */}
       {billing.card && (
         <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
           <div className="px-5 py-4 border-b border-[var(--border)] flex items-center gap-2">
@@ -643,32 +678,6 @@ export default function BillingClient({ billing, initialPlan, initialInterval }:
           </div>
         </div>
       )}
-
-      {/* Payment Methods */}
-      <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
-        <div className="px-5 py-4 border-b border-[var(--border)] flex items-center gap-2">
-          <CreditCard className="w-4 h-4 text-[var(--c1)]" />
-          <h2 className="text-[var(--text-base)] font-semibold text-sm">{d.billingPaymentMethods}</h2>
-        </div>
-        <div className="p-5">
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => setShowPlanModal(true)}
-              className="flex items-center gap-2 text-sm font-medium text-[var(--text-dim)] hover:text-[var(--text-base)] border border-[var(--border2)] px-4 py-2 rounded-xl transition-all bg-[var(--bg-card2)]"
-            >
-              <span className="text-[var(--c1)] font-bold text-base leading-none">+</span>
-              {d.billingAddPayment}
-            </button>
-            <button
-              onClick={() => setShowInvoiceModal(true)}
-              className="flex items-center gap-2 text-sm font-medium text-[var(--text-dim)] hover:text-[var(--text-base)] border border-[var(--border2)] px-4 py-2 rounded-xl transition-all bg-[var(--bg-card2)]"
-            >
-              <Receipt className="w-4 h-4 text-[var(--text-muted)]" />
-              {d.billingRequestInvoice}
-            </button>
-          </div>
-        </div>
-      </div>
 
       {/* Payment History */}
       <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">
@@ -704,7 +713,7 @@ export default function BillingClient({ billing, initialPlan, initialInterval }:
         )}
       </div>
 
-      {showPlanModal    && <UpgradeModal current={plan} highlight={initialPlan} initialInterval={initialInterval} lang={l} d={d} onClose={() => setShowPlanModal(false)} />}
+      {showPlanModal    && <UpgradeModal current={plan} highlight={modalHighlight} initialInterval={initialInterval} lang={l} d={d} onClose={() => setShowPlanModal(false)} />}
       {showInvoiceModal && <InvoiceModal onClose={() => setShowInvoiceModal(false)} d={d} />}
     </div>
   )
