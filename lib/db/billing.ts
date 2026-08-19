@@ -28,12 +28,16 @@ export interface BillingInfo {
   // Saved card (display-only) + whether auto-renew is on. Null card ⇒ none bound.
   card: SavedCard | null
   autorenew: boolean
+  /** Turnover-derived tier RECOMMENDATION (migration 074). null = not computed yet. */
+  derivedTier: string | null
+  /** The 30-day turnover the recommendation was derived from, in so'm. */
+  derivedTurnoverSom: number | null
 }
 
 export async function getBilling(): Promise<BillingInfo> {
   const empty: BillingInfo = {
     plan: 'free', planExpiresAt: null, isOnTrial: false, trialEndsAt: null, payments: [],
-    card: null, autorenew: false,
+    card: null, autorenew: false, derivedTier: null, derivedTurnoverSom: null,
   }
 
   const userId = await getCurrentUserId()
@@ -44,6 +48,8 @@ export async function getBilling(): Promise<BillingInfo> {
       plan: users.plan,
       plan_expires_at: users.plan_expires_at,
       trial_ends_at: users.trial_ends_at,
+      derived_tier: users.derived_tier,
+      derived_turnover_som: users.derived_turnover_som,
     }).from(users).where(eq(users.id, userId)),
     db.select({
       id: payments.id,
@@ -87,5 +93,15 @@ export async function getBilling(): Promise<BillingInfo> {
     : null
   const autorenew = !!sub?.autorenew
 
-  return { plan, planExpiresAt, isOnTrial, trialEndsAt, payments: paymentList, card, autorenew }
+  // Recommendation only — it never affects what the seller may use. NULL stays
+  // NULL: "not computed yet" must stay distinguishable from "computed, free".
+  const derivedTier = userRow?.derived_tier ?? null
+  const rawTurnover = userRow?.derived_turnover_som
+  const derivedTurnoverSom = rawTurnover == null ? null : Number(rawTurnover)
+
+  return {
+    plan, planExpiresAt, isOnTrial, trialEndsAt, payments: paymentList, card, autorenew,
+    derivedTier,
+    derivedTurnoverSom: derivedTurnoverSom !== null && Number.isFinite(derivedTurnoverSom) ? derivedTurnoverSom : null,
+  }
 }
