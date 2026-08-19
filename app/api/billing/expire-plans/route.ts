@@ -5,6 +5,7 @@ import { withErrorHandler } from '@/lib/api-handler'
 import { logger } from '@/lib/logger'
 import { recomputeDerivedTiers } from '@/lib/db/derived-tier'
 import { dispatchDuePriceNotices } from '@/lib/billing/price-notice'
+import { dispatchTierNudges } from '@/lib/billing/nudge'
 
 // Called by the cron job daily. Downgrades users whose plan_expires_at
 // has passed. `plan` is a Postgres enum; the string cast at .set()
@@ -57,5 +58,21 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
     logger.error('price_notice_sweep_failed', { error: String(err).slice(0, 300) })
   }
 
-  return NextResponse.json({ ok: true, downgraded: rows.length, tiers, notices })
+  // Free-tier nudges: trial ending, trial over, turnover outgrew Free. Runs
+  // AFTER the tier recompute above, so "outgrew free" reads today's figure
+  // rather than yesterday's.
+  //
+  // Best-effort, and unlike the price notice a failure here is harmless: a nudge
+  // is a suggestion, and nothing is charged or gated on whether it arrived.
+  let nudges: Awaited<ReturnType<typeof dispatchTierNudges>> | null = null
+  try {
+    nudges = await dispatchTierNudges()
+    if (nudges.trialEnding + nudges.trialEnded + nudges.outgrewFree > 0) {
+      logger.info('tier_nudge_sweep_done', { ...nudges })
+    }
+  } catch (err) {
+    logger.error('tier_nudge_sweep_failed', { error: String(err).slice(0, 300) })
+  }
+
+  return NextResponse.json({ ok: true, downgraded: rows.length, tiers, notices, nudges })
 })
