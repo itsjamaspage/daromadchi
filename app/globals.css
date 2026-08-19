@@ -315,6 +315,22 @@ h1, h2, h3, h4, h5, h6 {
   from { opacity: 0; transform: translateY(32px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+/* Tier tabs: the selected plan's detail panel drops into view, the way the
+   reference carousel slides its content down. Scoped to this one class with its
+   own reduced-motion guard — the stylesheet has no global
+   prefers-reduced-motion rule, and adding one here would silently change every
+   other animation in the app. */
+@keyframes tier-slide-in {
+  from { opacity: 0; transform: translateY(-22px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.tier-panel-enter {
+  animation: tier-slide-in 0.45s cubic-bezier(0.455, 0.03, 0.515, 0.955) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tier-panel-enter { animation: none; }
+}
+
 @keyframes float {
   0%, 100% { transform: translateY(0px); }
   50%       { transform: translateY(-10px); }

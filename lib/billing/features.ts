@@ -118,3 +118,27 @@ export function hasFeature(input: EntitlementInput, feature: Feature, now: Date 
   // Free and out of trial: only the permanent set, already returned above.
   return TRIAL_FEATURES.has(feature) && isOnTrial(input, now)
 }
+
+/**
+ * Order the capabilities are listed in on marketing surfaces. Same order the
+ * /pricing comparison table uses, so the two never disagree about the story.
+ */
+export const FEATURE_ORDER: readonly Feature[] = [
+  'dashboard', 'products', 'orders', 'marketplaces',
+  'analytics', 'stock_sync', 'finances', 'unit_economics',
+] as const
+
+/** How a feature reads on a plan card: kept for good, or only for the trial. */
+export type FeatureAvailability = 'included' | 'trial'
+
+/**
+ * What a plan's "what's included" list should say about `feature`.
+ *
+ * Derived from the very sets hasFeature() gates on, so a plan card cannot
+ * advertise something the gate then refuses. Paid tiers differ by turnover and
+ * price, not capability, so they all read the same.
+ */
+export function featureAvailability(plan: Plan, feature: Feature): FeatureAvailability {
+  if (PAID_PLANS.has(plan)) return 'included'
+  return FREE_FOREVER.has(feature) ? 'included' : 'trial'
+}
