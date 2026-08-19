@@ -196,10 +196,17 @@ export default function TierLadder({
                     <span className="text-xs font-normal" style={{ color: 'var(--text-muted)' }}>{t('perMonth')}</span>
                   </span>
                 )}
-                {/* In-app (onSelect given) EVERY self-serve row is buyable: a
-                    seller with no measured sales must still be able to pick a
+                {/* Two audiences, two behaviours — both sides of the merge were
+                    right about their own case.
+
+                    In-app (onSelect given): EVERY self-serve row is buyable. A
+                    seller with no measured sales still has to be able to pick a
                     plan, and turnover only decides which one we recommend.
-                    On the public page only the matched row offers an action. */}
+
+                    Public page (no onSelect): only the MATCHED row offers an
+                    action, and when a tier has no checkout route — Biznes,
+                    Enterprise — it points at contact rather than a link that
+                    would fail. */}
                 {!compact && onSelect ? (
                   tier === currentTier ? (
                     <span className="mt-1 block text-xs font-semibold" style={{ color: 'var(--c1)' }}>
@@ -217,11 +224,16 @@ export default function TierLadder({
                       {t('talkToUs')}
                     </a>
                   )
-                ) : !compact && isMatch && href ? (
+                ) : !compact && isMatch ? (href ? (
                   <a href={href} className="mt-1 block text-xs font-semibold underline underline-offset-2" style={{ color: 'var(--c1)' }}>
                     {isSelfServe(tier) ? t('choose') : t('start')}
                   </a>
-                ) : null}
+                ) : (
+                  <a href="https://t.me/daromadchi_uz" target="_blank" rel="noopener noreferrer"
+                    className="mt-1 block text-xs font-semibold underline underline-offset-2" style={{ color: 'var(--c1)' }}>
+                    {t('talkToUs')}
+                  </a>
+                )) : null}
               </span>
             </li>
           )

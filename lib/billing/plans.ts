@@ -9,28 +9,38 @@ export type Interval = 'monthly' | 'annual'
 // fluctuating number — the USD figure is a DISPLAY-ONLY approximation and MUST
 // NEVER feed a charged amount.
 //
-// The MONTHLY price is the single knob per plan (tiyin). Change it and the whole
-// plan reprices — including the yearly total, which is DERIVED from it, never
-// hardcoded. So a 50 000 so'm test monthly automatically yields a 50 000-based
-// year; restoring 250 000 restores the 250 000-based year. Default anchors:
-// Pro 250 000 so'm/mo, Pro+ 500 000 so'm/mo.
-export const PLAN_PRICES_TIYIN: Record<PlanKey, { monthly: number }> = {
-  pro:      { monthly: 25_000_000 }, // 250 000 so'm/mo
-  pro_plus: { monthly: 50_000_000 }, // 500 000 so'm/mo
+// Each plan carries BOTH figures explicitly: the monthly price, and the
+// per-month price when billed annually.
+//
+// Yearly used to be derived from a whole-number discount, which cannot express
+// the agreed ladder: Pro's 150 000 → 125 000 is 16.67 %, and rounding that to
+// 17 % would CHARGE 124 500 while every page advertised 125 000. The agreed
+// numbers are the source of truth; the discount badge is derived from them
+// instead (annualDiscountPct below), so display and charge cannot disagree.
+//
+// Turnover ladder: Pro 150 000/mo (125 000 when billed yearly),
+// Pro+ 250 000/mo (225 000 yearly). Biznes and Enterprise are deliberately
+// absent — checkout cannot bill them, so their prices live in ./tier-pricing.ts
+// behind a contact route. Adding them here would make them look purchasable.
+//
+// Existing subscribers are NOT repriced by changes here: each subscription
+// carries the amount it was sold at in agreed_amount_tiyin, and the renewal cron
+// charges that.
+export const PLAN_PRICES_TIYIN: Record<PlanKey, { monthly: number; annualPerMonth: number }> = {
+  pro:      { monthly: 15_000_000, annualPerMonth: 12_500_000 }, // 150 000 / 125 000 so'm
+  pro_plus: { monthly: 25_000_000, annualPerMonth: 22_500_000 }, // 250 000 / 225 000 so'm
 }
 
-// Yearly is 12× the monthly minus a per-plan discount. Pro 20% ⇒ 200 000/mo-equiv,
-// Pro+ 25% ⇒ 375 000/mo-equiv (at the default 250 000 / 500 000 monthly prices).
-export const ANNUAL_DISCOUNT_PCT: Record<PlanKey, number> = {
-  pro:      20,
-  pro_plus: 25,
-}
-
-// Yearly total in tiyin, computed from the monthly price + the plan's discount.
-// This is the amount charged once for a 12-month subscription. Always derived —
-// change the monthly above and this follows automatically.
+// The amount charged once for a 12-month subscription.
 export function planAnnualTotalTiyin(plan: PlanKey): number {
-  return Math.round((PLAN_PRICES_TIYIN[plan].monthly * 12 * (100 - ANNUAL_DISCOUNT_PCT[plan])) / 100)
+  return PLAN_PRICES_TIYIN[plan].annualPerMonth * 12
+}
+
+// The "−N %" badge. Derived from the two prices above so it can never advertise
+// a saving the charged amounts do not actually deliver.
+export function annualDiscountPct(plan: PlanKey): number {
+  const p = PLAN_PRICES_TIYIN[plan]
+  return Math.round((1 - p.annualPerMonth / p.monthly) * 100)
 }
 
 // DISPLAY-ONLY dollar reference for the "≈ $N/mo" secondary label. Never charged.

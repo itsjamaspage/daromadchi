@@ -59,9 +59,13 @@ marketplace the account has connected. Four exclusions, all deliberate:
 | finances / payouts | trial | ✓ | ✓ | ✓ | ✓ |
 | unit-economics | trial | ✓ | ✓ | ✓ | ✓ |
 
-"trial" = free for the account's first **21 days** (`created_at + 21 days`), then
-gated. After trial a free account keeps dashboard + products + orders/alerts +
-both marketplaces.
+"trial" = free for the account's first **14 days** (2 weeks), then gated. After
+trial a free account keeps dashboard + products + orders/alerts + both
+marketplaces.
+
+The length is `TRIAL_DAYS` in `lib/billing/features.ts` and every user-facing
+string derives from it. Do not hardcode the number in copy — that is how the
+site advertised a 3-day trial long after the code had changed.
 
 One data structure, one `hasFeature(account, feature)` helper. No scattered
 inline plan checks — and note there are already **three** copies of

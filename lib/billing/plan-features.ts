@@ -1,33 +1,18 @@
-// SINGLE source of truth for the marketing feature bullets + display-only price
-// anchors shown on BOTH the landing pricing section (app/HomeClient.tsx) and the
-// dashboard "Сменить тариф" modal (app/dashboard/billing/BillingClient.tsx), so
-// the two can never drift apart again.
+// Marketing feature bullets for the current-plan card on the dashboard billing
+// page.
 //
-// NONE of this affects what ATMOS charges — the real charged price comes from
-// PLAN_PRICES_TIYIN (lib/billing/plans.ts). The anchor ("was") prices below are
-// purely visual discount framing.
+// NONE of this affects what ATMOS charges — the charged price comes from
+// PLAN_PRICES_TIYIN (lib/billing/plans.ts).
+//
+// The struck-through "was" anchors (350 000 / 650 000) and their discount
+// badges were removed with the turnover ladder: they framed 250 000 / 500 000 as
+// a saving against a price that was never charged, and once the real prices
+// became 150 000 / 250 000 the framing described nothing at all. The yearly
+// discount badge is now derived from the two real prices — see
+// annualDiscountPct() in ./plans.ts.
 
 export type PlanTier = 'free' | 'pro' | 'pro_plus'
 type Lang = 'uz' | 'en' | 'ru'
-
-// Display-only "was" prices in so'm, struck through above the real price to convey
-// a discount. NEVER charged. Real prices stay 250 000 / 500 000 (PLAN_PRICES_TIYIN).
-export const PLAN_ANCHOR_SOM: Record<'pro' | 'pro_plus', number> = {
-  pro: 350_000,
-  pro_plus: 650_000,
-}
-
-// Rounded discount vs the anchor: (350-250)/350 ≈ 29 %, (650-500)/650 ≈ 23 %.
-export const PLAN_DISCOUNT_PCT: Record<'pro' | 'pro_plus', number> = {
-  pro: 29,
-  pro_plus: 23,
-}
-
-export const POPULAR_LABEL: Record<Lang, string> = {
-  ru: 'Популярный',
-  uz: 'Ommabop',
-  en: 'Popular',
-}
 
 // Feature bullets per tier — the plan offerings themselves are unchanged; these
 // are the same offerings named as they appear on the pricing cards, laddered so
@@ -57,9 +42,9 @@ export function planFeatureList(lang: string): Record<PlanTier, string[]> {
   return FEATURES[(lang in FEATURES ? lang : 'uz') as Lang]
 }
 
-export function popularLabel(lang: string): string {
-  return POPULAR_LABEL[(lang in POPULAR_LABEL ? lang : 'uz') as Lang]
-}
+// popularLabel() went with the "Ommabop" badge on the plan cards: under the
+// turnover ladder a tier is assigned, so calling one of them popular would
+// suggest a choice the seller does not make.
 
 // so'm formatting to match the rest of billing (thousands-spaced).
 export function fmtSom(n: number): string {

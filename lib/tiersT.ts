@@ -2,11 +2,31 @@
 // section and the dashboard billing modal, so the three cannot describe the
 // same model in three different vocabularies.
 import type { Lang } from './i18n'
+import { TRIAL_DAYS } from './billing/features'
 
 type Tr = Record<Lang, string>
 function tr(ru: string, uz: string, en: string): Tr {
   return { ru, uz, en }
 }
+
+/**
+ * Russian needs the right case for a day count: 1/21/31 день, 2–4 дня,
+ * 5–20 дней. Interpolating TRIAL_DAYS blindly would print "21 дней", so the
+ * rule lives here rather than in a hardcoded string that goes stale.
+ */
+function ruDays(n: number): string {
+  const mod100 = n % 100
+  if (mod100 >= 11 && mod100 <= 14) return 'дней'
+  switch (n % 10) {
+    case 1: return 'день'
+    case 2: case 3: case 4: return 'дня'
+    default: return 'дней'
+  }
+}
+
+const D: number = TRIAL_DAYS
+const RU_D = `${D} ${ruDays(D)}`
+const EN_D = `${D} day${D === 1 ? '' : 's'}`
 
 export const tiersT = {
   // ── how the model works ──
@@ -57,11 +77,11 @@ export const tiersT = {
   seeAll:       tr('Все тарифы', 'Barcha tariflar', 'See all tiers'),
 
   // ── trial ──
-  trialBadge:   tr('21 день бесплатно', '21 kun bepul', '21 days free'),
+  trialBadge:   tr(`${RU_D} бесплатно`, `${D} kun bepul`, `${EN_D} free`),
   trialNote:    tr(
-    'Первые 21 день после регистрации все функции открыты.',
-    "Ro'yxatdan o'tgandan keyingi 21 kun davomida barcha imkoniyatlar ochiq.",
-    'Everything is unlocked for your first 21 days.',
+    `Первые ${RU_D} после регистрации все функции открыты.`,
+    `Ro'yxatdan o'tgandan keyingi ${D} kun davomida barcha imkoniyatlar ochiq.`,
+    `Everything is unlocked for your first ${EN_D}.`,
   ),
 
   // ── billing modal ──
@@ -95,5 +115,5 @@ export const tiersT = {
 
   // ── feature matrix ──
   featuresTitle: tr('Что входит', 'Nimalar kiradi', "What's included"),
-  trial:         tr('21 дн.', '21 kun', '21 days'),
+  trial:         tr(`${D} дн.`, `${D} kun`, EN_D),
 } satisfies Record<string, Tr>
