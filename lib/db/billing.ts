@@ -2,7 +2,10 @@ import { eq, desc, inArray, and } from 'drizzle-orm'
 import { db, users, payments, subscriptions } from '@/lib/db'
 import { getCurrentUserId } from '@/lib/db/shop-context'
 
-export type PlanType = 'free' | 'pro' | 'pro_plus'
+// Mirrors the plan_type enum in the database (migration 075 added 'biznes').
+// Biznes is card-payable like Pro and Pro+, so it has to be representable here —
+// otherwise the billing UI can offer a tier it cannot then pass to checkout.
+export type PlanType = 'free' | 'pro' | 'pro_plus' | 'biznes'
 
 // Display-only saved-card summary. NEVER includes the token or full PAN.
 export interface SavedCard {

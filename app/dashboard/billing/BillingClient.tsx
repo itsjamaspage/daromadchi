@@ -9,9 +9,9 @@ import { useLang } from '@/app/providers'
 import { translations } from '@/lib/i18n'
 import type { BillingInfo, PlanType, PaymentRecord } from '@/lib/db/billing'
 import { PLAN_PRICES_TIYIN, formatSomFromTiyin, annualMonthlySom, planAmountTiyin } from '@/lib/billing/plans'
-import type { Interval } from '@/lib/billing/plans'
+import type { Interval, PlanKey } from '@/lib/billing/plans'
 import { planFeatureList } from '@/lib/billing/plan-features'
-import TierLadder from '@/components/pricing/TierLadder'
+import TierCards from '@/components/pricing/TierCards'
 import { tiersT } from '@/lib/tiersT'
 import type { Tier } from '@/lib/billing/tiers'
 
@@ -90,10 +90,16 @@ const PLAN_PRICES: Record<PlanType, string> = {
   free:     'Bepul',
   pro:      `${formatSomFromTiyin(PLAN_PRICES_TIYIN.pro.monthly)} so'm`,
   pro_plus: `${formatSomFromTiyin(PLAN_PRICES_TIYIN.pro_plus.monthly)} so'm`,
+  biznes:   `${formatSomFromTiyin(PLAN_PRICES_TIYIN.biznes.monthly)} so'm`,
 }
 
 function planLabel(plan: PlanType, d: T): string {
-  return plan === 'pro' ? d.billingPro : plan === 'pro_plus' ? d.billingProPlus : d.billingFree
+  if (plan === 'pro') return d.billingPro
+  if (plan === 'pro_plus') return d.billingProPlus
+  // Biznes has no entry in the shared dashboard dictionary; the tier vocabulary
+  // lives in tiersT, which is where the ladder and cards read their names from.
+  if (plan === 'biznes') return tiersT.biznes.uz
+  return d.billingFree
 }
 
 function fmtSom(n: number) {
@@ -283,14 +289,13 @@ function UpgradeModal({ current, highlight, initialInterval, lang, d, derivedTie
               <IntervalTabs value={billingInterval} onChange={setBillingInterval} b={b} />
             </div>
 
-            <TierLadder
+            <TierCards
               lang={lang}
               interval={billingInterval}
               highlight={derivedTier}
-              markRecommended
               showInput={false}
               currentTier={current as Tier}
-              onSelect={tier => choose(tier as 'pro' | 'pro_plus')}
+              onSelect={tier => choose(tier as PlanKey)}
             />
           </div>
         )}
@@ -572,7 +577,9 @@ export default function BillingClient({ billing, initialPlan, initialInterval }:
               <p className="text-[var(--text-base)] font-bold text-xl">{PLAN_PRICES[plan]}<span className="text-[var(--text-muted)] font-normal text-sm">{d.billingPerMonth}</span></p>
             )}
             <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {PLAN_FEATURES[plan].map(f => (
+              {/* Every paid tier carries the same features, so Biznes reuses the
+                  Pro+ bullet list rather than needing its own copy. */}
+              {(PLAN_FEATURES[plan === 'biznes' ? 'pro_plus' : plan] ?? []).map((f: string) => (
                 <li key={f} className="flex items-center gap-2 text-sm text-[var(--text-dim)]">
                   <CheckCircle className="w-3.5 h-3.5 flex-shrink-0" style={{ color: 'var(--c1)' }} />
                   {f}
