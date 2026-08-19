@@ -74,7 +74,7 @@ export default async function AccountPage() {
         {isOnTrial && (
           <div className="mx-6 mt-5 flex items-center justify-between gap-4 bg-emerald-500/10 border border-emerald-500/25 rounded-xl px-4 py-3">
             <p className="text-emerald-400 text-sm font-medium">
-              Pro tarifni 3 kun bepul sinayapsiz. {trialDaysLeft} kun qoldi.
+              {t.trialActive(String(trialDaysLeft))}
             </p>
             <Link href="/pricing"
               className="btn-primary text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap">
@@ -87,7 +87,7 @@ export default async function AccountPage() {
         {trialExpired && (
           <div className="mx-6 mt-5 flex items-center justify-between gap-4 bg-amber-500/10 border border-amber-500/25 rounded-xl px-4 py-3">
             <p className="text-amber-400 text-sm font-medium">
-              Bepul sinov tugadi. Pro tarifga o&apos;tib barcha imkoniyatlardan foydalaning.
+              {t.trialOver}
             </p>
             <Link href="/pricing"
               className="btn-primary text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap">

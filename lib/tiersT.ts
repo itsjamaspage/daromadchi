@@ -2,31 +2,13 @@
 // section and the dashboard billing modal, so the three cannot describe the
 // same model in three different vocabularies.
 import type { Lang } from './i18n'
-import { TRIAL_DAYS, type Feature } from './billing/features'
+import { type Feature } from './billing/features'
+import { TRIAL_D as D, TRIAL_RU as RU_D, TRIAL_EN as EN_D } from './trial-copy'
 
 type Tr = Record<Lang, string>
 function tr(ru: string, uz: string, en: string): Tr {
   return { ru, uz, en }
 }
-
-/**
- * Russian needs the right case for a day count: 1/21/31 день, 2–4 дня,
- * 5–20 дней. Interpolating TRIAL_DAYS blindly would print "21 дней", so the
- * rule lives here rather than in a hardcoded string that goes stale.
- */
-function ruDays(n: number): string {
-  const mod100 = n % 100
-  if (mod100 >= 11 && mod100 <= 14) return 'дней'
-  switch (n % 10) {
-    case 1: return 'день'
-    case 2: case 3: case 4: return 'дня'
-    default: return 'дней'
-  }
-}
-
-const D: number = TRIAL_DAYS
-const RU_D = `${D} ${ruDays(D)}`
-const EN_D = `${D} day${D === 1 ? '' : 's'}`
 
 export const tiersT = {
   // ── how the model works ──

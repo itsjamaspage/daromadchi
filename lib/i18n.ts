@@ -1,5 +1,8 @@
 export type Lang = 'en' | 'ru' | 'uz'
 
+// Trial copy is interpolated, never typed as a digit — see lib/trial-copy.ts.
+import { TRIAL_UZ, TRIAL_RU, TRIAL_EN } from './trial-copy'
+
 export const translations = {
   uz: {
     dashboard: {
@@ -735,9 +738,9 @@ export const translations = {
     ctaTitle2: 'oshiring',
     ctaSubtitle: "Ro'yxatdan o'ting va demo ma'lumotlar bilan dashboardni sinab ko'ring. Karta shart emas.",
     footer: 'Uzum Market sotuvchilari uchun.',
-    trialFreeStart: '3 kun bepul boshlash',
-    trialFree: '3 kun bepul sinab ko\'ring',
-    stickyBarText: '3 kun bepul sinab ko\'ring.',
+    trialFreeStart: `${TRIAL_UZ} bepul boshlash`,
+    trialFree: `${TRIAL_UZ} bepul sinab ko'ring`,
+    stickyBarText: `${TRIAL_UZ} bepul sinab ko'ring.`,
     testimonialsBadge: 'Foydalanuvchilar',
     testimonialsTitle: 'Sotuvchilar nima deydi',
     testimonialsList: [
@@ -1654,9 +1657,9 @@ export const translations = {
     ctaTitle2: 'sales',
     ctaSubtitle: 'Sign up and try the dashboard with demo data. No credit card required.',
     footer: 'For Uzum Market sellers.',
-    trialFreeStart: 'Start 3 days free',
-    trialFree: '3 days free trial',
-    stickyBarText: '3 days free trial.',
+    trialFreeStart: `Start ${TRIAL_EN} free`,
+    trialFree: `${TRIAL_EN} free trial`,
+    stickyBarText: `${TRIAL_EN} free trial.`,
     testimonialsBadge: 'Users',
     testimonialsTitle: 'What sellers say',
     testimonialsList: [
@@ -2573,9 +2576,9 @@ export const translations = {
     ctaTitle2: 'продажи',
     ctaSubtitle: 'Зарегистрируйтесь и попробуйте дашборд с демо-данными. Карта не нужна.',
     footer: 'Для продавцов Uzum Market.',
-    trialFreeStart: '3 дня бесплатно',
-    trialFree: '3 дня бесплатно',
-    stickyBarText: '3 дня бесплатно.',
+    trialFreeStart: `${TRIAL_RU} бесплатно`,
+    trialFree: `${TRIAL_RU} бесплатно`,
+    stickyBarText: `${TRIAL_RU} бесплатно.`,
     testimonialsBadge: 'Отзывы',
     testimonialsTitle: 'Что говорят продавцы',
     testimonialsList: [

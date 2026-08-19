@@ -8,7 +8,7 @@ import {
 import { useLang } from '@/app/providers'
 import TierTabs from '@/components/pricing/TierTabs'
 import { tiersT } from '@/lib/tiersT'
-import { TRIAL_DAYS } from '@/lib/billing/features'
+import { TRIAL_D as D, TRIAL_RU as RU_D } from '@/lib/trial-copy'
 import { telegramContactUrl } from '@/lib/contact'
 
 // The Free card's bullets are the FREE_FOREVER set in lib/billing/features.ts,
@@ -40,14 +40,6 @@ interface FaqItem  { q: string; a: string }
 // homepage). Plan offerings themselves are unchanged — only their language.
 // Trial copy is interpolated from TRIAL_DAYS. Hardcoding it is how this page
 // spent weeks advertising a 3-day trial after the code had moved on.
-const D: number = TRIAL_DAYS
-const RU_DAYS = (n: number) => {
-  const m = n % 100
-  if (m >= 11 && m <= 14) return 'дней'
-  return n % 10 === 1 ? 'день' : n % 10 >= 2 && n % 10 <= 4 ? 'дня' : 'дней'
-}
-const RU_D = `${D} ${RU_DAYS(D)}`
-
 const T = {
   uz: {
     nav: { home: 'Bosh sahifa', compare: 'Taqqoslash', faq: 'Savollar', login: 'Kirish', start: 'Boshlash' },
