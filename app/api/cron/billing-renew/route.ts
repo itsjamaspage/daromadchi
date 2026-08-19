@@ -19,6 +19,7 @@ import { logger } from '@/lib/logger'
 import { decrypt } from '@/lib/crypto'
 import { chargeBoundCard } from '@/lib/billing/recurring'
 import { applyAtmosPaymentSuccess } from '@/lib/billing/activate'
+import { renewalAmountTiyin, pendingAmountIsChargeable, promotePendingAmount } from '@/lib/billing/price-notice'
 import { planPeriodMonths, tiyinToSom, isPlanKey, type Interval } from '@/lib/billing/plans'
 
 export const runtime = 'nodejs'
@@ -50,6 +51,9 @@ export const GET = withErrorHandler(async (req: Request) => {
     interval: subscriptions.interval, periodEnd: subscriptions.current_period_end,
     tokenEnc: subscriptions.card_token_encrypted,
     agreedAmountTiyin: subscriptions.agreed_amount_tiyin,
+    pendingAmountTiyin: subscriptions.pending_amount_tiyin,
+    pendingEffectiveDate: subscriptions.pending_effective_date,
+    pendingNotifiedAt: subscriptions.pending_notified_at,
   }).from(subscriptions).where(and(
     inArray(subscriptions.status, ['active', 'past_due']),
     eq(subscriptions.autorenew, true),   // per-subscription toggle (billing page)
@@ -74,7 +78,28 @@ export const GET = withErrorHandler(async (req: Request) => {
     // (unrecoverable: that is a refund and a complaint). Migration 072
     // backfills these from the last settled payment, so a row still NULL here is
     // one we genuinely have no authorised price for.
-    const amountTiyin = s.agreedAmountTiyin
+    // A staged price change is charged ONLY once the seller was told, long
+    // enough ago, and the effective date has arrived — every other case falls
+    // back to the amount they agreed to. An increase that was never delivered
+    // does not become chargeable just because its date passed.
+    const chargingNewPrice = pendingAmountIsChargeable({
+      pending_amount_tiyin: s.pendingAmountTiyin,
+      pending_effective_date: s.pendingEffectiveDate,
+      pending_notified_at: s.pendingNotifiedAt,
+    }, now)
+    const amountTiyin = renewalAmountTiyin({
+      agreed_amount_tiyin: s.agreedAmountTiyin,
+      pending_amount_tiyin: s.pendingAmountTiyin,
+      pending_effective_date: s.pendingEffectiveDate,
+      pending_notified_at: s.pendingNotifiedAt,
+    }, now)
+    if (s.pendingAmountTiyin != null && !chargingNewPrice) {
+      logger.info('billing_renew_pending_price_not_yet_due', {
+        subscriptionId: s.id,
+        effectiveDate: s.pendingEffectiveDate?.toISOString() ?? null,
+        notified: s.pendingNotifiedAt !== null,
+      })
+    }
     if (amountTiyin == null || amountTiyin <= 0) {
       noAgreedAmount++
       logger.error('billing_renew_skipped_no_agreed_amount', {
@@ -85,7 +110,7 @@ export const GET = withErrorHandler(async (req: Request) => {
     const periodMonths = planPeriodMonths(interval)
 
     if (dryRun) {
-      logger.info('billing_renew_dryrun', { subscriptionId: s.id, plan: s.plan, amountTiyin })
+      logger.info('billing_renew_dryrun', { subscriptionId: s.id, plan: s.plan, amountTiyin, chargingNewPrice })
       continue
     }
 
@@ -117,6 +142,11 @@ export const GET = withErrorHandler(async (req: Request) => {
       // existing expiry (applyAtmosPaymentSuccess bases the new period on the later
       // of now / current expiry).
       await applyAtmosPaymentSuccess({ paymentId, transactionId, source: 'return' })
+      // Promote AFTER the charge succeeded. Moving the agreed price on the
+      // strength of an attempt would leave a seller agreed to a number they
+      // never actually paid; a failed charge keeps the old price and the notice
+      // standing, and the next run tries again.
+      if (chargingNewPrice) await promotePendingAmount(s.id, now)
       charged++
     } catch (err) {
       await db.update(payments).set({ status: 'failed', atmos_status: 'failed', updated_at: now })

@@ -4,6 +4,7 @@ import { db, users } from '@/lib/db'
 import { withErrorHandler } from '@/lib/api-handler'
 import { logger } from '@/lib/logger'
 import { recomputeDerivedTiers } from '@/lib/db/derived-tier'
+import { dispatchDuePriceNotices } from '@/lib/billing/price-notice'
 
 // Called by the cron job daily. Downgrades users whose plan_expires_at
 // has passed. `plan` is a Postgres enum; the string cast at .set()
@@ -41,5 +42,20 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
     logger.error('derived_tier_recompute_failed', { error: String(err).slice(0, 300) })
   }
 
-  return NextResponse.json({ ok: true, downgraded: rows.length, tiers })
+  // Tell anyone whose staged price change is approaching. Rides this job rather
+  // than adding a scheduler, same as the tier recompute above.
+  //
+  // Best-effort for the same reason: the downgrade sweep is this job's contract.
+  // A failure here cannot overcharge anyone — an undelivered notice leaves
+  // pending_notified_at NULL, and the renewal refuses to charge a new amount
+  // without it, so the seller keeps paying what they agreed to.
+  let notices: Awaited<ReturnType<typeof dispatchDuePriceNotices>> | null = null
+  try {
+    notices = await dispatchDuePriceNotices()
+    if (notices.due > 0) logger.info('price_notice_sweep_done', { ...notices })
+  } catch (err) {
+    logger.error('price_notice_sweep_failed', { error: String(err).slice(0, 300) })
+  }
+
+  return NextResponse.json({ ok: true, downgraded: rows.length, tiers, notices })
 })
