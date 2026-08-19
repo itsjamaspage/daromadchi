@@ -44,8 +44,18 @@ const TRIAL_FEATURES: ReadonlySet<Feature> = new Set<Feature>([
   'analytics', 'stock_sync', 'finances', 'unit_economics',
 ])
 
-/** How long a NEW free account's trial runs. Existing trial_ends_at values are never rewritten. */
-export const TRIAL_DAYS = 21
+/**
+ * How long a NEW free account's trial runs.
+ *
+ * Existing trial_ends_at values are never rewritten, so changing this only
+ * affects accounts that have not started a trial yet — nobody in flight loses
+ * days they were already promised.
+ *
+ * Every piece of user-facing copy derives from this number (lib/tiersT.ts).
+ * Hardcoding it in the UI is how the site ended up advertising a 3-day trial
+ * long after the code had moved on.
+ */
+export const TRIAL_DAYS = 14
 
 export function trialEndFrom(start: Date): Date {
   return new Date(start.getTime() + TRIAL_DAYS * 24 * 60 * 60 * 1000)
