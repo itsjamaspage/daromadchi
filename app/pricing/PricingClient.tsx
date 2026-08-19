@@ -8,6 +8,7 @@ import {
 import { useLang } from '@/app/providers'
 import TierLadder from '@/components/pricing/TierLadder'
 import { tiersT } from '@/lib/tiersT'
+import { TRIAL_DAYS } from '@/lib/billing/features'
 
 // UZS prices derived server-side from the USD source of truth (lib/billing) at
 // the live USD→UZS rate. `monthly`/`yearly` are clean so'm figures; `usd` is the
@@ -21,7 +22,7 @@ type Lang = 'uz' | 'en' | 'ru'
 // Under the turnover model every PAID tier has the same features — they differ
 // by turnover and price, not capability. So the matrix is Free vs Paid, not five
 // columns of which four would be identical. 'trial' is a third cell state: free
-// accounts get these for 21 days, then they gate off.
+// accounts get these for the trial window, then they gate off.
 type Cell = boolean | 'trial'
 interface Feature { label: string; free: Cell; paid: Cell }
 interface FaqItem  { q: string; a: string }
@@ -30,11 +31,21 @@ interface FaqItem  { q: string; a: string }
 // Whole-page translations so the RU/UZ/EN switcher in the navbar actually changes
 // the content (the switcher writes the shared lang via useLang, same as the
 // homepage). Plan offerings themselves are unchanged — only their language.
+// Trial copy is interpolated from TRIAL_DAYS. Hardcoding it is how this page
+// spent weeks advertising a 3-day trial after the code had moved on.
+const D: number = TRIAL_DAYS
+const RU_DAYS = (n: number) => {
+  const m = n % 100
+  if (m >= 11 && m <= 14) return 'дней'
+  return n % 10 === 1 ? 'день' : n % 10 >= 2 && n % 10 <= 4 ? 'дня' : 'дней'
+}
+const RU_D = `${D} ${RU_DAYS(D)}`
+
 const T = {
   uz: {
     nav: { home: 'Bosh sahifa', compare: 'Taqqoslash', faq: 'Savollar', login: 'Kirish', start: 'Boshlash' },
     heroTitle1: 'Barcha imkoniyatlar.', heroTitle2: 'Bir joyda.',
-    trust: ['21 kun bepul sinov', "Bir nechta do'kon", 'Istalgan vaqt bekor qilish'],
+    trust: [`${D} kun bepul sinov`, "Bir nechta do'kon", 'Istalgan vaqt bekor qilish'],
     monthly: 'Oylik', yearly: 'Yillik',
     perMonth: "so'm/oy", usdMonth: '/oy', alwaysFree: 'Hamisha bepul', yearlyLine: 'Yillik',
     onlyProPlus: 'Faqat Pro+ da',
@@ -55,7 +66,7 @@ const T = {
     calloutCta: "Pro+ ni ko'rish →",
     cmpBadge: 'Batafsil taqqoslash', cmpHeading: 'Taqqoslash', cmpSub: 'Qaysi tarif sizga mos ekanini aniqlang',
     paidColumn: 'Pullik tariflar', paidColumnSub: 'Pro · Pro+ · Biznes · Enterprise',
-    trialCell: '21 kun', trialFootnote: "21 kundan keyin bu imkoniyatlar yopiladi — qolganlari doimo bepul.",
+    trialCell: `${D} kun`, trialFootnote: `${D} kundan keyin bu imkoniyatlar yopiladi — qolganlari doimo bepul.`,
     cmpCore: 'Asosiy imkoniyatlar', unlimited: 'Cheksiz', days30: '30 kun', months12: '12 oy', maksimal: 'MAKSIMAL', freePrice: "0 so'm",
     cmpFeatures: [
       'Aqlli boshqaruv paneli', 'Mahsulotlar', 'Buyurtmalar va ogohlantirishlar',
@@ -77,7 +88,7 @@ const T = {
   ru: {
     nav: { home: 'Главная', compare: 'Сравнение', faq: 'Вопросы', login: 'Войти', start: 'Начать' },
     heroTitle1: 'Все возможности.', heroTitle2: 'В одном месте.',
-    trust: ['21 день бесплатно', 'Несколько магазинов', 'Отмена в любой момент'],
+    trust: [`${RU_D} бесплатно`, 'Несколько магазинов', 'Отмена в любой момент'],
     monthly: 'Помесячно', yearly: 'Ежегодно',
     perMonth: 'сум/мес', usdMonth: '/мес', alwaysFree: 'Всегда бесплатно', yearlyLine: 'За год',
     onlyProPlus: 'Только в Pro+',
@@ -98,7 +109,7 @@ const T = {
     calloutCta: 'Смотреть Pro+ →',
     cmpBadge: 'Подробное сравнение', cmpHeading: 'Сравнение', cmpSub: 'Определите, какой тариф вам подходит',
     paidColumn: 'Платные тарифы', paidColumnSub: 'Pro · Pro+ · Бизнес · Enterprise',
-    trialCell: '21 дн.', trialFootnote: 'Через 21 день эти функции закрываются — остальные остаются бесплатными навсегда.',
+    trialCell: `${D} дн.`, trialFootnote: `Через ${RU_D} эти функции закрываются — остальные остаются бесплатными навсегда.`,
     cmpCore: 'Основные возможности', unlimited: 'Безлимит', days30: '30 дней', months12: '12 месяцев', maksimal: 'МАКСИМУМ', freePrice: '0 сум',
     cmpFeatures: [
       'Умный дашборд', 'Товары', 'Заказы и уведомления',
@@ -120,7 +131,7 @@ const T = {
   en: {
     nav: { home: 'Home', compare: 'Compare', faq: 'FAQ', login: 'Log in', start: 'Get started' },
     heroTitle1: 'Every feature.', heroTitle2: 'In one place.',
-    trust: ['21-day free trial', 'Multiple stores', 'Cancel anytime'],
+    trust: [`${D}-day free trial`, 'Multiple stores', 'Cancel anytime'],
     monthly: 'Monthly', yearly: 'Yearly',
     perMonth: "so'm/mo", usdMonth: '/mo', alwaysFree: 'Free forever', yearlyLine: 'Yearly',
     onlyProPlus: 'Pro+ only',
@@ -141,7 +152,7 @@ const T = {
     calloutCta: 'See Pro+ →',
     cmpBadge: 'Detailed comparison', cmpHeading: 'Comparison', cmpSub: 'Find the plan that fits you',
     paidColumn: 'Paid tiers', paidColumnSub: 'Pro · Pro+ · Biznes · Enterprise',
-    trialCell: '21 days', trialFootnote: 'After 21 days these lock; everything else stays free for good.',
+    trialCell: `${D} days`, trialFootnote: `After ${D} days these lock; everything else stays free for good.`,
     cmpCore: 'Core features', unlimited: 'Unlimited', days30: '30 days', months12: '12 months', maksimal: 'MAXIMUM', freePrice: "0 so'm",
     cmpFeatures: [
       'Smart dashboard', 'Products', 'Orders & alerts',
@@ -166,7 +177,7 @@ const somFmt = new Intl.NumberFormat('uz-UZ')
 
 function FeatureValue({ value, trialLabel }: { value: Cell; trialLabel: string }) {
   // Three states, not two. 'trial' is the whole point of the free tier: the
-  // feature is there for 21 days and then it is not, which neither a tick nor a
+  // feature is there for the trial window and then it is not, which neither a tick nor a
   // cross tells the truth about.
   if (value === 'trial') {
     return (
