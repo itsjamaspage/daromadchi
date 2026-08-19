@@ -86,6 +86,19 @@ export const tiersT = {
 
   // ── billing modal ──
   yourTurnover: tr('Ваш оборот за 30 дней', '30 kunlik aylanmangiz', 'Your 30-day turnover'),
+  recommended:  tr('Рекомендуем', 'Tavsiya etamiz', 'Recommended'),
+  // Shown to a brand-new seller who has no measured sales yet. They still pick a
+  // plan; the measurement only moves them later.
+  noSalesYet:   tr(
+    'Продаж пока нет — выберите тариф, а мы подберём точный по мере роста.',
+    "Hozircha sotuv yo'q — tarifni tanlang, o'sishingizga qarab aniqlashtiramiz.",
+    'No sales measured yet — pick a plan and we will match it to your growth.',
+  ),
+  autoAdjust:   tr(
+    'Мы считаем ваш оборот за 30 дней. Если он выйдет за рамки тарифа, мы предупредим вас заранее и предложим подходящий — без автоматического списания новой суммы.',
+    "30 kunlik aylanmangizni hisoblab boramiz. Agar u tarif chegarasidan chiqsa, oldindan xabar beramiz va mos tarifni taklif qilamiz — yangi summa avtomatik yechilmaydi.",
+    'We measure your 30-day turnover. If it outgrows your plan we tell you first and suggest the right one — no new amount is charged automatically.',
+  ),
   computedNote: tr(
     'Тариф рассчитан по вашему обороту — менять вручную не нужно.',
     "Tarif aylanmangiz bo'yicha hisoblangan — qo'lda o'zgartirish shart emas.",
