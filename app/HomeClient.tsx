@@ -7,13 +7,14 @@ import {
   TrendingUp, TrendingDown, ArrowRight, X, Check,
   ChevronDown, BarChart2, Package, Bell,
   LayoutDashboard, ShoppingCart, Megaphone, Layers,
-  BookOpen, MessageCircle, Plug2, UserCircle,
+  BookOpen, MessageCircle, Plug2, UserCircle, ChevronRight,
 } from 'lucide-react'
 import { useTheme, useLang } from './providers'
 import type { Lang } from '@/lib/i18n'
 import { T } from '@/lib/landing-t'
-import { PLAN_PRICES_TIYIN, formatSomFromTiyin, planAnnualTotalTiyin } from '@/lib/billing/plans'
-import { planFeatureList, PLAN_ANCHOR_SOM, PLAN_DISCOUNT_PCT, popularLabel, fmtSom } from '@/lib/billing/plan-features'
+import { PLAN_PRICES_TIYIN, formatSomFromTiyin } from '@/lib/billing/plans'
+import TierLadder from '@/components/pricing/TierLadder'
+import { tiersT } from '@/lib/tiersT'
 
 import PillNav from './components/PillNav'
 import BorderGlow from './components/BorderGlow'
@@ -1295,37 +1296,6 @@ function ExtensionSection({ lang }: { lang: Lang }) {
 }
 
 // ── 7. PRICING — theme-aware ──────────────────────────────────────────────────
-function SlotPrice({ value, trigger, delay = 0 }: { value: string; trigger: boolean; delay?: number }) {
-  const DIGITS = '0123456789'
-  const blank = value.replace(/\d/g, '-')
-  const [display, setDisplay] = useState(blank)
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  useEffect(() => {
-    if (!trigger) return
-    const plainLen = value.replace(/ /g, '').length
-    timerRef.current = setTimeout(() => {
-      let frame = 0
-      const total = 22 + plainLen * 3
-      const iv = setInterval(() => {
-        if (frame >= total) { setDisplay(value); clearInterval(iv); return }
-        setDisplay(
-          value.split('').map((ch, i) => {
-            if (ch === ' ') return ' '
-            const charIdx = value.slice(0, i + 1).replace(/ /g, '').length - 1
-            const revealFrame = Math.floor(total * 0.55 * ((charIdx + 1) / plainLen))
-            return frame > revealFrame ? ch : DIGITS[Math.floor(Math.random() * 10)]
-          }).join('')
-        )
-        frame++
-      }, 48)
-    }, delay * 1000)
-    return () => { if (timerRef.current) clearTimeout(timerRef.current) }
-  }, [trigger, value, delay])
-
-  return <span className="tabular-nums">{display}</span>
-}
-
 function PricingSection({ lang }: { lang: Lang }) {
   const isDark = useIsDark()
   const acc = useAccent()
@@ -1346,40 +1316,6 @@ function PricingSection({ lang }: { lang: Lang }) {
     ru: { monthly: 'Помесячно', yearly: 'Ежегодно', billed: 'списание раз в год' },
     en: { monthly: 'Monthly', yearly: 'Yearly', billed: 'billed once a year' },
   } as const)[lang]
-  const perMonthTiyin = (annualTotal: number) => Math.round(annualTotal / 12)
-
-  // Feature bullets come from the shared source of truth so the landing page and
-  // the dashboard "Сменить тариф" modal always match. anchor/discount are
-  // display-only framing — the real charged price stays PLAN_PRICES_TIYIN.
-  const feats = planFeatureList(lang)
-  const tiers: Array<{
-    name: string; price: string; anchor: string | null; discount: number | null
-    badge: string | null; sub: string; yearTotal: string | null; highlight: boolean; features: string[]
-    cta: string; ctaHref: string
-  }> = [
-    {
-      name: T.pricing.freeName[lang], price: '0', anchor: null, discount: null, badge: null,
-      sub: T.pricing.freeSub[lang], yearTotal: null, highlight: false,
-      features: feats.free,
-      cta: T.pricing.freeCta[lang], ctaHref: '/login',
-    },
-    {
-      name: 'Pro',
-      price: formatSomFromTiyin(iv === 'annual' ? perMonthTiyin(planAnnualTotalTiyin('pro')) : PLAN_PRICES_TIYIN.pro.monthly),
-      anchor: iv === 'annual' ? null : fmtSom(PLAN_ANCHOR_SOM.pro), discount: iv === 'annual' ? null : PLAN_DISCOUNT_PCT.pro, badge: popularLabel(lang),
-      sub: T.pricing.proSub[lang], yearTotal: iv === 'annual' ? `${formatSomFromTiyin(planAnnualTotalTiyin('pro'))} so'm · ${TL.billed}` : null, highlight: true,
-      features: feats.pro,
-      cta: T.pricing.proCta[lang], ctaHref: iv === 'annual' ? '/login?plan=pro&interval=annual' : '/login?plan=pro',
-    },
-    {
-      name: 'Pro+',
-      price: formatSomFromTiyin(iv === 'annual' ? perMonthTiyin(planAnnualTotalTiyin('pro_plus')) : PLAN_PRICES_TIYIN.pro_plus.monthly),
-      anchor: iv === 'annual' ? null : fmtSom(PLAN_ANCHOR_SOM.pro_plus), discount: iv === 'annual' ? null : PLAN_DISCOUNT_PCT.pro_plus, badge: null,
-      sub: T.pricing.proPlusSub[lang], yearTotal: iv === 'annual' ? `${formatSomFromTiyin(planAnnualTotalTiyin('pro_plus'))} so'm · ${TL.billed}` : null, highlight: false,
-      features: feats.pro_plus,
-      cta: T.pricing.proPlusCta[lang], ctaHref: iv === 'annual' ? '/login?plan=pro_plus&interval=annual' : '/login?plan=pro_plus',
-    },
-  ]
 
   return (
     <section id="pricing" ref={sectionRef} style={{ position: 'relative', background: secBg, padding: '88px 24px',
@@ -1418,90 +1354,23 @@ function PricingSection({ lang }: { lang: Lang }) {
             })}
           </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          {tiers.map((t, i) => (
-            <motion.div key={t.name}
-              initial={{ opacity: 0, y: -140, scale: 0.9 }}
-              animate={inView ? { opacity: 1, y: 0, scale: t.highlight ? 1.02 : 1 } : {}}
-              transition={{ delay: i * 0.18, type: 'spring', stiffness: 160, damping: 18 }}>
-              <BorderGlow
-                backgroundColor={t.highlight ? (isDark ? '#ffffff' : '#0e1b2e') : (isDark ? P.dCard : P.card)}
-                glowColor={isDark ? "0 0 85" : "207 100 55"}
-                colors={t.highlight ? ['#83c0f9', '#60a5fa', '#bfdbfe'] : ['#83c0f9', '#60a5fa', '#a5f3fc']}
-                borderRadius={20}
-                glowIntensity={t.highlight ? (isDark ? 1.5 : 1.2) : (isDark ? 1.2 : 0.9)}
-                style={{ display: 'flex', flexDirection: 'column', height: '100%' }}
-              >
-                <div style={{ padding: '28px 24px', display: 'flex', flexDirection: 'column', flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                    <p style={{ fontSize: 13, fontWeight: 700, color: t.highlight ? (isDark ? P.green : acc.dk) : muted }}>
-                      {t.name}
-                    </p>
-                    {t.badge && (
-                      <span style={{ background: '#2F6DF6', borderRadius: 100, padding: '3px 12px',
-                        fontSize: 10, fontWeight: 800, color: '#ffffff', letterSpacing: '0.04em' }}>
-                        {t.badge}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Struck "anchor" price + discount chip (display-only framing). */}
-                  {t.anchor && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
-                      <span style={{ fontSize: 15, fontWeight: 600, textDecoration: 'line-through', opacity: 0.65,
-                        color: t.highlight ? (isDark ? P.muted : P.dMuted) : muted,
-                        fontFamily: 'var(--font-mono-landing), monospace' }}>
-                        {t.anchor}
-                      </span>
-                      {t.discount != null && (
-                        <span style={{ background: '#2F6DF6', color: '#fff', borderRadius: 100,
-                          padding: '2px 7px', fontSize: 10, fontWeight: 800, letterSpacing: '0.02em' }}>
-                          −{t.discount}%
-                        </span>
-                      )}
-                    </div>
-                  )}
-
-                  <div style={{ marginBottom: 4 }}>
-                    <span style={{ fontSize: 34, fontWeight: 800,
-                      color: t.highlight ? (isDark ? P.ink : '#E8FFF8') : ink,
-                      fontFamily: 'var(--font-mono-landing), monospace' }}>
-                      {t.price === '0' ? '0' : <SlotPrice value={t.price} trigger={inView} delay={i * 0.18 + 0.4} />}
-                    </span>
-                  </div>
-                  <p style={{ fontSize: 13, color: t.highlight ? (isDark ? P.muted : P.dMuted) : muted, marginBottom: t.yearTotal ? 4 : 24 }}>{t.sub}</p>
-                  {t.yearTotal && (
-                    <p style={{ fontSize: 12, fontWeight: 600, color: t.highlight ? (isDark ? P.green : '#7bbaf7') : acc.tint, marginBottom: 24 }}>{t.yearTotal}</p>
-                  )}
-
-                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
-                    {t.features.map((f, fi) => (
-                      <motion.div key={f}
-                        initial={{ opacity: 0, x: -8 }}
-                        animate={inView ? { opacity: 1, x: 0 } : {}}
-                        transition={{ delay: i * 0.18 + 0.7 + fi * 0.05, duration: 0.25 }}
-                        style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-                        <Check size={14} color={t.highlight ? (isDark ? P.green : '#7bbaf7') : acc.tint} style={{ marginTop: 2, flexShrink: 0 }}/>
-                        <span style={{ fontSize: 13, color: t.highlight ? (isDark ? P.ink : '#E8FFF8') : ink, lineHeight: 1.4 }}>{f}</span>
-                      </motion.div>
-                    ))}
-                  </div>
-
-                  <Link href={t.ctaHref}
-                    style={{ display: 'block', textAlign: 'center', fontSize: 14, fontWeight: 700,
-                      background: t.highlight ? '#ffffff' : (isDark ? '#ffffff' : '#0e1b2e'),
-                      color: t.highlight ? '#0e1b2e' : (isDark ? '#0e1b2e' : '#ffffff'),
-                      padding: '13px 24px', borderRadius: 10,
-                      textDecoration: 'none', transition: 'all 0.15s' }}
-                    onMouseEnter={e => { e.currentTarget.style.background = t.highlight ? '#e8edf2' : (isDark ? '#f0f0f0' : '#1a2a3e') }}
-                    onMouseLeave={e => { e.currentTarget.style.background = t.highlight ? '#ffffff' : (isDark ? '#ffffff' : '#0e1b2e') }}>
-                    {t.cta}
-                  </Link>
-                </div>
-              </BorderGlow>
-            </motion.div>
-          ))}
-        </div>
+        {/* The same turnover ladder as /pricing, in teaser form: turnover on the
+            left, tier and price on the right, and a link through for the full
+            comparison. One model, told the same way in both places. */}
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          animate={inView ? { opacity: 1, y: 0 } : {}}
+          transition={{ type: 'spring', stiffness: 160, damping: 20 }}
+          style={{ maxWidth: 720, margin: '0 auto' }}>
+          <TierLadder lang={lang} interval={iv} showInput={false} />
+          <div style={{ textAlign: 'center', marginTop: 20 }}>
+            <Link href="/pricing"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 14, fontWeight: 700,
+                padding: '12px 24px', borderRadius: 14, background: '#2F6DF6', color: '#fff', textDecoration: 'none' }}>
+              {tiersT.seeAll[lang]} <ChevronRight size={16} />
+            </Link>
+          </div>
+        </motion.div>
       </div>
     </section>
   )

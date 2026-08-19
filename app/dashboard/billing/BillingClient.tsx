@@ -8,9 +8,13 @@ import {
 import { useLang } from '@/app/providers'
 import { translations } from '@/lib/i18n'
 import type { BillingInfo, PlanType, PaymentRecord } from '@/lib/db/billing'
-import { PLAN_PRICES_TIYIN, formatSomFromTiyin, annualMonthlySom, planAmountTiyin, planAnnualTotalTiyin } from '@/lib/billing/plans'
+import { PLAN_PRICES_TIYIN, formatSomFromTiyin, annualMonthlySom, planAmountTiyin } from '@/lib/billing/plans'
 import type { Interval } from '@/lib/billing/plans'
-import { planFeatureList, PLAN_ANCHOR_SOM, PLAN_DISCOUNT_PCT, popularLabel } from '@/lib/billing/plan-features'
+import { planFeatureList } from '@/lib/billing/plan-features'
+import TierLadder from '@/components/pricing/TierLadder'
+import { tiersT } from '@/lib/tiersT'
+import { isSelfServe } from '@/lib/billing/tier-pricing'
+import type { Tier } from '@/lib/billing/tiers'
 
 type T = typeof translations['uz']['dashboard']
 type Lang = 'uz' | 'en' | 'ru'
@@ -122,15 +126,6 @@ function friendlyError(code: string | undefined, stage: string | undefined, b: R
 
 // Interval-aware price display for a paid plan. Monthly shows the flat monthly
 // figure; yearly shows the discounted per-month rate + the once-a-year total.
-function planPriceView(p: 'pro' | 'pro_plus', iv: Interval, b: Record<string, string>) {
-  if (iv === 'annual') {
-    return {
-      big: `${new Intl.NumberFormat('uz-UZ').format(annualMonthlySom(p))} so'm`,
-      sub: `${formatSomFromTiyin(planAnnualTotalTiyin(p))} so'm · ${b.billedYearly}`,
-    }
-  }
-  return { big: `${formatSomFromTiyin(PLAN_PRICES_TIYIN[p].monthly)} so'm`, sub: null as string | null }
-}
 
 // Monthly / Yearly switch (shared by the choose + confirm steps).
 function IntervalTabs({ value, onChange, b }: {
@@ -151,13 +146,15 @@ function IntervalTabs({ value, onChange, b }: {
 
 // ── Upgrade Modal — steps: choose → confirm → card → OTP → success ───────────────
 
-function UpgradeModal({ current, highlight, initialInterval, lang, d, onClose }: {
-  current: PlanType; highlight?: 'pro' | 'pro_plus'; initialInterval?: Interval; lang: Lang; d: T; onClose: () => void
+function UpgradeModal({ current, highlight, initialInterval, lang, d, derivedTier, derivedTurnoverSom, onClose }: {
+  current: PlanType; highlight?: 'pro' | 'pro_plus'; initialInterval?: Interval; lang: Lang; d: T
+  /** Turnover-derived tier. null until the daily cron has computed one. */
+  derivedTier: Tier | null
+  derivedTurnoverSom: number | null
+  onClose: () => void
 }) {
   const router = useRouter()
   const b = BT[lang]
-  const PLAN_FEATURES = planFeatureList(lang)
-  const plans: PlanType[] = ['free', 'pro', 'pro_plus']
 
   // Opened straight on a plan (via ?plan=) still lands on the confirm step first,
   // so the user always sees the exact amount (and, for yearly, the once-a-year
@@ -262,69 +259,55 @@ function UpgradeModal({ current, highlight, initialInterval, lang, d, onClose }:
 
         {/* Step: choose plan */}
         {step === 'choose' && (
-          <div className="p-6">
-          <div className="flex justify-center mb-5">
-            <IntervalTabs value={billingInterval} onChange={setBillingInterval} b={b} />
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {plans.map(p => {
-              const isCurrent = p === current
-              const price = p === 'free' ? null : planPriceView(p, billingInterval, b)
-              return (
-                <div key={p} className="rounded-xl border p-4 flex flex-col gap-3 transition-all"
-                  style={isCurrent
-                    ? { borderColor: 'color-mix(in srgb, var(--c1) 50%, transparent)', background: 'color-mix(in srgb, var(--c1) 6%, transparent)' }
-                    : p === 'pro'
-                    ? { borderColor: '#2F6DF6', background: 'color-mix(in srgb, #2F6DF6 5%, transparent)', boxShadow: '0 0 0 1px #2F6DF6' }
-                    : { borderColor: 'var(--border)', background: 'var(--bg-card2)' }}>
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-xs font-bold px-2 py-0.5 rounded-full"
-                      style={isCurrent
-                        ? { background: 'color-mix(in srgb, var(--c1) 18%, transparent)', border: '1px solid color-mix(in srgb, var(--c1) 30%, transparent)', color: 'var(--c1)' }
-                        : { background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text-muted)' }}>
-                      {planLabel(p, d)}
-                    </span>
-                    {p === 'pro' && !isCurrent && (
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full text-white" style={{ background: '#2F6DF6' }}>
-                        {popularLabel(lang)}
-                      </span>
-                    )}
-                    {isCurrent && <CheckCircle className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--c1)' }} />}
-                  </div>
-                  <div>
-                    {(p === 'pro' || p === 'pro_plus') && billingInterval === 'monthly' && (
-                      <div className="flex items-center gap-1.5 mb-0.5">
-                        <span className="text-xs line-through text-[var(--text-muted)] opacity-70">{fmtSom(PLAN_ANCHOR_SOM[p])}</span>
-                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full text-white" style={{ background: '#2F6DF6' }}>−{PLAN_DISCOUNT_PCT[p]}%</span>
-                      </div>
-                    )}
-                    <p className="font-bold text-base" style={{ color: isCurrent ? 'var(--c1)' : 'var(--text-base)' }}>
-                      {price ? price.big : PLAN_PRICES.free}{p !== 'free' && <span className="text-[var(--text-muted)] font-normal text-xs">{b.perMonthShort}</span>}
-                    </p>
-                    {price?.sub && <p className="text-[11px] text-[var(--text-muted)] mt-0.5">{price.sub}</p>}
-                  </div>
-                  <ul className="space-y-1.5 flex-1">
-                    {PLAN_FEATURES[p].map(f => (
-                      <li key={f} className="flex items-start gap-1.5 text-xs text-[var(--text-muted)]">
-                        <CheckCircle className="w-3 h-3 text-emerald-400 flex-shrink-0 mt-0.5" />{f}
-                      </li>
-                    ))}
-                  </ul>
-                  {isCurrent ? (
-                    <div className="mt-2 w-full text-center text-xs font-medium py-2" style={{ color: 'color-mix(in srgb, var(--c1) 75%, transparent)' }}>
-                      {d.billingCurrentPlanLabel}
-                    </div>
-                  ) : p === 'free' ? (
-                    <a href="/pricing" className="mt-2 w-full btn-primary text-xs font-semibold py-2 rounded-lg text-center">{d.billingSelectPlan}</a>
-                  ) : (
-                    <button type="button" onClick={() => choose(p)} className="mt-2 w-full btn-primary text-xs font-semibold py-2 rounded-lg text-center">
-                      {d.billingSelectPlan}
-                    </button>
-                  )}
+          <div className="p-6 space-y-4">
+            {/* Not a chooser any more. Turnover assigns the tier, so presenting
+                five selectable options would offer a choice the model does not
+                have — and a seller picking a tier below their turnover would
+                simply fail at checkout. Show what they are, and one way to pay. */}
+            {derivedTier ? (
+              <>
+                <div className="rounded-2xl border p-4" style={{ borderColor: 'var(--border)', background: 'var(--bg-card2)' }}>
+                  <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{tiersT.yourTurnover[lang]}</p>
+                  <p className="text-2xl font-bold tabular-nums mt-0.5" style={{ color: 'var(--text-base)' }}>
+                    {derivedTurnoverSom !== null ? fmtSom(derivedTurnoverSom) : '—'}{' '}
+                    <span className="text-sm font-normal" style={{ color: 'var(--text-muted)' }}>{tiersT.som[lang]}</span>
+                  </p>
+                  <p className="text-xs mt-2" style={{ color: 'var(--text-muted)' }}>{tiersT.computedNote[lang]}</p>
                 </div>
-              )
-            })}
-          </div>
+
+                <div className="flex justify-center">
+                  <IntervalTabs value={billingInterval} onChange={setBillingInterval} b={b} />
+                </div>
+
+                <TierLadder lang={lang} interval={billingInterval} highlight={derivedTier} showInput={false} />
+
+                {isSelfServe(derivedTier) ? (
+                  derivedTier === current ? (
+                    <p className="text-center text-xs font-medium py-2" style={{ color: 'var(--c1)' }}>
+                      {tiersT.currentPlan[lang]}
+                    </p>
+                  ) : (
+                    <button type="button" onClick={() => choose(derivedTier as 'pro' | 'pro_plus')}
+                      className="btn-primary w-full rounded-xl py-3 text-sm font-semibold">
+                      {tiersT.payWith[lang]}
+                    </button>
+                  )
+                ) : (
+                  <a href="https://t.me/daromadchi_uz" target="_blank" rel="noopener noreferrer"
+                    className="btn-primary block w-full rounded-xl py-3 text-center text-sm font-semibold">
+                    {tiersT.talkToUs[lang]}
+                  </a>
+                )}
+              </>
+            ) : (
+              // No turnover computed yet: say what to do, do not guess a tier.
+              <div className="rounded-2xl border border-dashed p-6 text-center" style={{ borderColor: 'var(--border)' }}>
+                <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{tiersT.notComputed[lang]}</p>
+                <a href="/dashboard/settings" className="btn-primary mt-4 inline-block rounded-xl px-5 py-2.5 text-xs font-semibold">
+                  {d.goToSettings}
+                </a>
+              </div>
+            )}
           </div>
         )}
 
@@ -713,7 +696,9 @@ export default function BillingClient({ billing, initialPlan, initialInterval }:
         )}
       </div>
 
-      {showPlanModal    && <UpgradeModal current={plan} highlight={modalHighlight} initialInterval={initialInterval} lang={l} d={d} onClose={() => setShowPlanModal(false)} />}
+      {showPlanModal    && <UpgradeModal current={plan} highlight={modalHighlight} initialInterval={initialInterval} lang={l} d={d}
+        derivedTier={billing.derivedTier as Tier | null} derivedTurnoverSom={billing.derivedTurnoverSom}
+        onClose={() => setShowPlanModal(false)} />}
       {showInvoiceModal && <InvoiceModal onClose={() => setShowInvoiceModal(false)} d={d} />}
     </div>
   )

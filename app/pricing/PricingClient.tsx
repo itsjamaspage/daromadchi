@@ -1,13 +1,13 @@
 'use client'
 
 import Link from 'next/link'
-import { useState, useEffect, useRef, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import {
-  Check, X, Zap, Shield, Star,
-  TrendingUp, ChevronRight, MessageCircle, ChevronDown,
-  Lock, Clock,
+  Check, X, Clock, TrendingUp, ChevronRight, MessageCircle, ChevronDown,
 } from 'lucide-react'
 import { useLang } from '@/app/providers'
+import TierLadder from '@/components/pricing/TierLadder'
+import { tiersT } from '@/lib/tiersT'
 
 // UZS prices derived server-side from the USD source of truth (lib/billing) at
 // the live USD→UZS rate. `monthly`/`yearly` are clean so'm figures; `usd` is the
@@ -18,7 +18,12 @@ export interface PricingData {
 }
 
 type Lang = 'uz' | 'en' | 'ru'
-interface Feature { label: string; free: boolean | string; pro: boolean | string; pro_plus: boolean | string }
+// Under the turnover model every PAID tier has the same features — they differ
+// by turnover and price, not capability. So the matrix is Free vs Paid, not five
+// columns of which four would be identical. 'trial' is a third cell state: free
+// accounts get these for 21 days, then they gate off.
+type Cell = boolean | 'trial'
+interface Feature { label: string; free: Cell; paid: Cell }
 interface FaqItem  { q: string; a: string }
 
 // ── i18n ─────────────────────────────────────────────────────────────────────
@@ -29,7 +34,7 @@ const T = {
   uz: {
     nav: { home: 'Bosh sahifa', compare: 'Taqqoslash', faq: 'Savollar', login: 'Kirish', start: 'Boshlash' },
     heroTitle1: 'Barcha imkoniyatlar.', heroTitle2: 'Bir joyda.',
-    trust: ['3 kun bepul sinov', "Bir nechta do'kon", 'Istalgan vaqt bekor qilish'],
+    trust: ['21 kun bepul sinov', "Bir nechta do'kon", 'Istalgan vaqt bekor qilish'],
     monthly: 'Oylik', yearly: 'Yillik',
     perMonth: "so'm/oy", usdMonth: '/oy', alwaysFree: 'Hamisha bepul', yearlyLine: 'Yillik',
     onlyProPlus: 'Faqat Pro+ da',
@@ -49,11 +54,13 @@ const T = {
     calloutHighlight: "prioritet qo'llab-quvvatlash — 15 daqiqa ichida javob",
     calloutCta: "Pro+ ni ko'rish →",
     cmpBadge: 'Batafsil taqqoslash', cmpHeading: 'Taqqoslash', cmpSub: 'Qaysi tarif sizga mos ekanini aniqlang',
+    paidColumn: 'Pullik tariflar', paidColumnSub: 'Pro · Pro+ · Biznes · Enterprise',
+    trialCell: '21 kun', trialFootnote: "21 kundan keyin bu imkoniyatlar yopiladi — qolganlari doimo bepul.",
     cmpCore: 'Asosiy imkoniyatlar', unlimited: 'Cheksiz', days30: '30 kun', months12: '12 oy', maksimal: 'MAKSIMAL', freePrice: "0 so'm",
     cmpFeatures: [
-      "Do'konlar soni", 'Mahsulotlar soni', 'Tarix chuqurligi', 'Uzum integratsiya', 'Yandex Market',
-      'Kengaytma (extension)', 'Unit-ekonomika', 'Eksport Excel / PDF', 'F&Z (P&L) hisobot',
-      'Maxsus hisobotlar', "Prioritet qo'llab-quvvatlash",
+      'Aqlli boshqaruv paneli', 'Mahsulotlar', 'Buyurtmalar va ogohlantirishlar',
+      'Uzum + Yandex Market', 'Tahlil', 'Ombor sinxronizatsiyasi',
+      'Moliya va to\'lovlar', 'Unit-iqtisod',
     ],
     faqBadge: "Ko'p so'raladigan savollar", faqHeading: 'Savollar & Javoblar', faqSub: "Qo'shimcha savolingiz bo'lsa Telegram orqali bog'laning",
     faq: [
@@ -70,7 +77,7 @@ const T = {
   ru: {
     nav: { home: 'Главная', compare: 'Сравнение', faq: 'Вопросы', login: 'Войти', start: 'Начать' },
     heroTitle1: 'Все возможности.', heroTitle2: 'В одном месте.',
-    trust: ['3 дня бесплатно', 'Несколько магазинов', 'Отмена в любой момент'],
+    trust: ['21 день бесплатно', 'Несколько магазинов', 'Отмена в любой момент'],
     monthly: 'Помесячно', yearly: 'Ежегодно',
     perMonth: 'сум/мес', usdMonth: '/мес', alwaysFree: 'Всегда бесплатно', yearlyLine: 'За год',
     onlyProPlus: 'Только в Pro+',
@@ -90,11 +97,13 @@ const T = {
     calloutHighlight: 'приоритетная поддержка — ответ в течение 15 минут',
     calloutCta: 'Смотреть Pro+ →',
     cmpBadge: 'Подробное сравнение', cmpHeading: 'Сравнение', cmpSub: 'Определите, какой тариф вам подходит',
+    paidColumn: 'Платные тарифы', paidColumnSub: 'Pro · Pro+ · Бизнес · Enterprise',
+    trialCell: '21 дн.', trialFootnote: 'Через 21 день эти функции закрываются — остальные остаются бесплатными навсегда.',
     cmpCore: 'Основные возможности', unlimited: 'Безлимит', days30: '30 дней', months12: '12 месяцев', maksimal: 'МАКСИМУМ', freePrice: '0 сум',
     cmpFeatures: [
-      'Количество магазинов', 'Количество товаров', 'Глубина истории', 'Интеграция Uzum', 'Yandex Market',
-      'Расширение (extension)', 'Юнит-экономика', 'Экспорт Excel / PDF', 'Отчёт P&L',
-      'Кастомные отчёты', 'Приоритетная поддержка',
+      'Умный дашборд', 'Товары', 'Заказы и уведомления',
+      'Uzum + Yandex Market', 'Аналитика', 'Синхронизация склада',
+      'Финансы и выплаты', 'Юнит-экономика',
     ],
     faqBadge: 'Частые вопросы', faqHeading: 'Вопросы и ответы', faqSub: 'Есть ещё вопрос? Напишите нам в Telegram',
     faq: [
@@ -111,7 +120,7 @@ const T = {
   en: {
     nav: { home: 'Home', compare: 'Compare', faq: 'FAQ', login: 'Log in', start: 'Get started' },
     heroTitle1: 'Every feature.', heroTitle2: 'In one place.',
-    trust: ['3-day free trial', 'Multiple stores', 'Cancel anytime'],
+    trust: ['21-day free trial', 'Multiple stores', 'Cancel anytime'],
     monthly: 'Monthly', yearly: 'Yearly',
     perMonth: "so'm/mo", usdMonth: '/mo', alwaysFree: 'Free forever', yearlyLine: 'Yearly',
     onlyProPlus: 'Pro+ only',
@@ -131,11 +140,13 @@ const T = {
     calloutHighlight: 'priority support — a reply within 15 minutes',
     calloutCta: 'See Pro+ →',
     cmpBadge: 'Detailed comparison', cmpHeading: 'Comparison', cmpSub: 'Find the plan that fits you',
+    paidColumn: 'Paid tiers', paidColumnSub: 'Pro · Pro+ · Biznes · Enterprise',
+    trialCell: '21 days', trialFootnote: 'After 21 days these lock; everything else stays free for good.',
     cmpCore: 'Core features', unlimited: 'Unlimited', days30: '30 days', months12: '12 months', maksimal: 'MAXIMUM', freePrice: "0 so'm",
     cmpFeatures: [
-      'Number of stores', 'Number of products', 'History depth', 'Uzum integration', 'Yandex Market',
-      'Extension', 'Unit economics', 'Export Excel / PDF', 'P&L report',
-      'Custom reports', 'Priority support',
+      'Smart dashboard', 'Products', 'Orders & alerts',
+      'Uzum + Yandex Market', 'Analytics', 'Stock sync',
+      'Finances & payouts', 'Unit economics',
     ],
     faqBadge: 'FAQ', faqHeading: 'Questions & Answers', faqSub: 'Have another question? Reach us on Telegram',
     faq: [
@@ -153,27 +164,30 @@ const T = {
 
 const somFmt = new Intl.NumberFormat('uz-UZ')
 
-function FeatureValue({ value, col }: { value: boolean | string; col: 'free' | 'pro' | 'pro_plus' }) {
-  const isProplus = col === 'pro_plus'
-  if (typeof value === 'string') {
-    return <span className="text-sm font-semibold" style={{ color: 'var(--text-base)' }}>{value}</span>
+function FeatureValue({ value, trialLabel }: { value: Cell; trialLabel: string }) {
+  // Three states, not two. 'trial' is the whole point of the free tier: the
+  // feature is there for 21 days and then it is not, which neither a tick nor a
+  // cross tells the truth about.
+  if (value === 'trial') {
+    return (
+      <span className="rounded-full px-2.5 py-1 text-[11px] font-semibold whitespace-nowrap"
+        style={{ background: 'rgba(47,109,246,0.12)', color: 'var(--c1)', border: '1px solid rgba(47,109,246,0.35)' }}>
+        {trialLabel}
+      </span>
+    )
   }
   if (value) {
-    // Brand-blue check for Pro, gold for Pro+ — both readable in light + dark.
     return (
-      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full"
-        style={{
-          background: isProplus ? 'rgba(234,179,8,0.18)' : 'rgba(47,109,246,0.16)',
-          border: `1px solid ${isProplus ? 'rgba(202,138,4,0.55)' : 'rgba(47,109,246,0.55)'}`,
-        }}>
-        <Check className="w-3.5 h-3.5" style={{ color: isProplus ? '#b45309' : '#2F6DF6' }} />
+      <span className="inline-flex h-6 w-6 items-center justify-center rounded-full"
+        style={{ background: 'rgba(47,109,246,0.16)', border: '1px solid rgba(47,109,246,0.55)' }}>
+        <Check className="h-3.5 w-3.5" style={{ color: '#2F6DF6' }} />
       </span>
     )
   }
   return (
-    <span className="inline-flex items-center justify-center w-6 h-6 rounded-full"
+    <span className="inline-flex h-6 w-6 items-center justify-center rounded-full"
       style={{ background: 'var(--bg-card2)', border: '1px solid var(--border2)' }}>
-      <X className="w-3.5 h-3.5" style={{ color: 'var(--text-muted)' }} />
+      <X className="h-3.5 w-3.5" style={{ color: 'var(--text-muted)' }} />
     </span>
   )
 }
@@ -203,74 +217,17 @@ export default function PricingClient({ prices }: { prices: PricingData }) {
   const t = T[(lang in T ? lang : 'uz') as Lang]
   const [langOpen, setLangOpen] = useState(false)
 
-  const PROPLUS_EXTRAS = useMemo(() => {
-    const icons = [Clock]
-    return t.proPlusExtras.map((e, i) => ({ icon: icons[i], label: e.label, desc: e.desc }))
-  }, [t])
-
-  // Plan cards, built from the server-computed UZS prices. Free stays at 0.
-  const plans = useMemo(() => ([
-    {
-      key: 'free',
-      name: t.freeName,
-      usd: 0,
-      monthlyPrice: 0,
-      yearlyPrice: 0,
-      desc: t.freeDesc,
-      icon: Zap,
-      highlighted: false,
-      badge: null as string | null,
-      cta: t.freeCta,
-      href: '/login',
-      features: t.freeFeatures as readonly string[],
-      extras: [] as typeof PROPLUS_EXTRAS,
-    },
-    {
-      key: 'pro',
-      name: t.proName,
-      usd: prices.pro.usd,
-      monthlyPrice: prices.pro.monthly,
-      yearlyPrice: prices.pro.yearly,
-      desc: t.proDesc,
-      icon: Shield,
-      highlighted: true,
-      badge: t.proBadge as string | null,
-      cta: t.proCta,
-      href: '/login?plan=pro',
-      features: t.proFeatures as readonly string[],
-      extras: [] as typeof PROPLUS_EXTRAS,
-    },
-    {
-      key: 'pro_plus',
-      name: t.proPlusName,
-      usd: prices.pro_plus.usd,
-      monthlyPrice: prices.pro_plus.monthly,
-      yearlyPrice: prices.pro_plus.yearly,
-      desc: t.proPlusDesc,
-      icon: Star,
-      highlighted: false,
-      badge: t.proPlusBadge as string | null,
-      cta: t.proPlusCta,
-      href: '/login?plan=pro_plus',
-      features: t.proFeatures as readonly string[],
-      extras: PROPLUS_EXTRAS,
-    },
-  ]), [prices, t, PROPLUS_EXTRAS])
-
   const comparisonFeatures: Feature[] = useMemo(() => {
     const f = t.cmpFeatures
     return [
-      { label: f[0],  free: '1',      pro: t.unlimited, pro_plus: t.unlimited }, // stores
-      { label: f[1],  free: '100',    pro: t.unlimited, pro_plus: t.unlimited }, // products
-      { label: f[2],  free: t.days30, pro: t.months12,  pro_plus: t.months12  }, // history depth
-      { label: f[3],  free: true,     pro: true,        pro_plus: true        }, // Uzum
-      { label: f[4],  free: false,    pro: true,        pro_plus: true        }, // Yandex Market
-      { label: f[5],  free: true,     pro: true,        pro_plus: true        }, // extension
-      { label: f[6],  free: false,    pro: true,        pro_plus: true        }, // unit economics
-      { label: f[7],  free: false,    pro: true,        pro_plus: true        }, // Excel / PDF export
-      { label: f[8],  free: false,    pro: true,        pro_plus: true        }, // P&L report
-      { label: f[9],  free: false,    pro: true,        pro_plus: true        }, // custom reports
-      { label: f[10], free: false,    pro: false,       pro_plus: true        }, // priority support (Pro+ only)
+      { label: f[0], free: true,    paid: true }, // dashboard
+      { label: f[1], free: true,    paid: true }, // products
+      { label: f[2], free: true,    paid: true }, // orders + alerts
+      { label: f[3], free: true,    paid: true }, // both marketplaces
+      { label: f[4], free: 'trial', paid: true }, // analytics
+      { label: f[5], free: 'trial', paid: true }, // stock sync
+      { label: f[6], free: 'trial', paid: true }, // finances / payouts
+      { label: f[7], free: 'trial', paid: true }, // unit economics
     ]
   }, [t])
 
@@ -280,64 +237,10 @@ export default function PricingClient({ prices }: { prices: PricingData }) {
       : { q: item.q, a: (item as { a: string }).a })
   ), [t, prices])
 
-  const cardsGridRef                        = useRef<HTMLDivElement>(null)
-  const firedRef                            = useRef(false)
-  const [hasAnimated,    setHasAnimated]    = useState(false)
-  const [counts,         setCounts]         = useState([0, 0, 0])
-  const [isYearly,       setIsYearly]       = useState(false)
-
-  useEffect(() => {
-    const el = cardsGridRef.current
-    if (!el) return
-
-    const startAnimation = () => {
-      if (firedRef.current) return
-      firedRef.current = true
-      setTimeout(() => {
-        setHasAnimated(true)
-        const duration = 1500
-        const targets = plans.map(p => isYearly ? p.yearlyPrice : p.monthlyPrice)
-        const start = performance.now()
-        const tick = (now: number) => {
-          const t2 = Math.min((now - start) / duration, 1)
-          const ease = 1 - Math.pow(1 - t2, 3)
-          setCounts(targets.map(v => Math.round(v * ease)))
-          if (t2 < 1) requestAnimationFrame(tick)
-        }
-        requestAnimationFrame(tick)
-      }, 400)
-    }
-
-    const obs = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) { obs.disconnect(); startAnimation() }
-      },
-      { threshold: 0.2 },
-    )
-    obs.observe(el)
-    return () => obs.disconnect()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  useEffect(() => {
-    if (!hasAnimated) return
-    const targets = plans.map(p => isYearly ? p.yearlyPrice : p.monthlyPrice)
-    const duration = 600
-    const start = performance.now()
-    const startCounts = [...counts]
-    const tick = (now: number) => {
-      const t2 = Math.min((now - start) / duration, 1)
-      const ease = 1 - Math.pow(1 - t2, 3)
-      setCounts(targets.map((v, i) => Math.round(startCounts[i] + (v - startCounts[i]) * ease)))
-      if (t2 < 1) requestAnimationFrame(tick)
-    }
-    requestAnimationFrame(tick)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isYearly])
-
-  function fmtCount(n: number) {
-    return new Intl.NumberFormat('uz-UZ').format(n)
-  }
+  // Only the yearly/monthly toggle survives from the old card block: the price
+  // count-up animation drove digits that no longer exist, so its observer, both
+  // requestAnimationFrame loops and the counter state went with the cards.
+  const [isYearly, setIsYearly] = useState(false)
 
   return (
     <div className="min-h-screen overflow-x-hidden" style={{ background: 'var(--bg-base)', color: 'var(--text-base)' }}>
@@ -449,191 +352,15 @@ export default function PricingClient({ prices }: { prices: PricingData }) {
         </div>
       </section>
 
-      {/* Pricing cards */}
+      {/* Turnover ladder — the tier follows the seller's own turnover, so
+          turnover is the left-hand column and the plan name is the consequence.
+          Every price is visible before any input; the field only highlights. */}
       <section className="pb-24 px-4 sm:px-6">
-        <div className="max-w-5xl mx-auto">
-          <div ref={cardsGridRef} className="grid grid-cols-1 md:grid-cols-3 gap-5 items-stretch">
-            {plans.map((plan, cardIdx) => {
-              const Icon = plan.icon
-              const isProplus = plan.key === 'pro_plus'
-              const currentPrice = isYearly ? plan.yearlyPrice : plan.monthlyPrice
-              const displayPrice = currentPrice === 0 ? '0' : fmtCount(counts[cardIdx])
-
-              return (
-                <div
-                  key={plan.key}
-                  className="relative flex flex-col rounded-3xl border overflow-hidden"
-                  style={{
-                    background: plan.highlighted
-                      ? 'linear-gradient(160deg, #0e1b2e 0%, #17335c 100%)'
-                      : 'var(--bg-card2)',
-                    borderColor: plan.highlighted
-                      ? 'rgba(47,109,246,0.6)'
-                      : isProplus
-                      ? 'rgba(202,138,4,0.4)'
-                      : 'var(--border)',
-                    boxShadow: plan.highlighted
-                      ? '0 8px 48px rgba(23,51,92,0.35), 0 2px 12px rgba(0,0,0,0.25)'
-                      : undefined,
-                    opacity: hasAnimated ? undefined : 0,
-                    animation: hasAnimated
-                      ? `drm-drop 1s cubic-bezier(0.22,0.61,0.36,1) ${cardIdx * 180}ms both`
-                      : undefined,
-                    transform: plan.highlighted ? 'scale(1.02)' : undefined,
-                  }}
-                >
-                  {/* Top accent line */}
-                  {plan.highlighted && (
-                    <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: 'linear-gradient(to right, #2F6DF6, #60a5fa, #2F6DF6)' }} />
-                  )}
-                  {isProplus && (
-                    <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-yellow-500 to-transparent" />
-                  )}
-
-                  {/* Badge */}
-                  {plan.badge && (
-                    <div className="absolute top-4 right-4">
-                      <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full text-white"
-                        style={{
-                          background: isProplus
-                            ? 'linear-gradient(to right, #b45309, #d97706)'
-                            : '#2F6DF6',
-                          boxShadow: isProplus ? '0 4px 12px rgba(180,83,9,0.3)' : '0 4px 12px rgba(47,109,246,0.35)',
-                        }}>
-                        <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                        {plan.badge}
-                      </span>
-                    </div>
-                  )}
-
-                  <div className="p-7 flex flex-col flex-1 gap-5">
-                    {/* Plan name + icon */}
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl flex items-center justify-center border shrink-0" style={{
-                        background: plan.highlighted ? 'rgba(47,109,246,0.22)' : isProplus ? 'rgba(234,179,8,0.12)' : 'var(--bg-input)',
-                        borderColor: plan.highlighted ? 'rgba(47,109,246,0.5)' : isProplus ? 'rgba(202,138,4,0.35)' : 'var(--border2)',
-                      }}>
-                        <Icon className="w-5 h-5" style={{ color: plan.highlighted ? '#7bb0ff' : isProplus ? '#b45309' : 'var(--text-muted)' }} />
-                      </div>
-                      <h3 className="font-bold text-xl" style={{ color: plan.highlighted ? '#ffffff' : 'var(--text-base)' }}>{plan.name}</h3>
-                    </div>
-
-                    {/* Price */}
-                    <div>
-                      <div className="flex items-end gap-1.5">
-                        <span className="text-5xl font-black tabular-nums leading-none" style={{
-                          color: plan.highlighted ? '#ffffff' : isProplus ? '#b45309' : 'var(--text-base)',
-                        }}>
-                          {displayPrice}
-                        </span>
-                        {currentPrice > 0 && (
-                          <span className="text-sm font-medium pb-1" style={{ color: plan.highlighted ? 'rgba(255,255,255,0.75)' : 'var(--text-muted)' }}>
-                            {t.perMonth}
-                          </span>
-                        )}
-                      </div>
-                      {/* USD source-of-truth reference */}
-                      {currentPrice > 0 && (
-                        <p className="text-xs mt-1" style={{ color: plan.highlighted ? 'rgba(255,255,255,0.6)' : 'var(--text-muted)' }}>
-                          ≈ ${plan.usd}{t.usdMonth}
-                        </p>
-                      )}
-                      {currentPrice === 0 && (
-                        <p className="text-sm mt-1" style={{ color: plan.highlighted ? 'rgba(255,255,255,0.7)' : 'var(--text-muted)' }}>
-                          {t.alwaysFree}
-                        </p>
-                      )}
-                      {isYearly && currentPrice > 0 && (
-                        <p className="text-xs mt-1 font-medium" style={{ color: plan.highlighted ? '#7bb0ff' : '#2F6DF6' }}>
-                          {t.yearlyLine}: {fmtCount(currentPrice * 12)} so&rsquo;m
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Desc */}
-                    <p className="text-sm leading-relaxed -mt-1" style={{ color: plan.highlighted ? 'rgba(255,255,255,0.7)' : 'var(--text-muted)' }}>
-                      {plan.desc}
-                    </p>
-
-                    {/* CTA */}
-                    <Link href={plan.href}
-                      className="flex items-center justify-center gap-2 font-bold py-3.5 rounded-2xl transition-all text-sm"
-                      style={
-                        plan.highlighted
-                          ? { background: '#ffffff', color: '#0e1b2e', boxShadow: '0 4px 20px rgba(0,0,0,0.25)' }
-                          : isProplus
-                          ? { background: 'linear-gradient(to right, #b45309, #d97706)', color: '#ffffff', boxShadow: '0 4px 20px rgba(180,83,9,0.25)' }
-                          : { background: 'var(--bg-input)', color: 'var(--text-base)', border: '1px solid var(--border2)' }
-                      }>
-                      {plan.cta} <ChevronRight className="w-4 h-4" />
-                    </Link>
-
-                    {/* Divider */}
-                    <div className="h-px" style={{ background: plan.highlighted ? 'rgba(255,255,255,0.12)' : 'var(--border)' }} />
-
-                    {/* Features */}
-                    <ul className="space-y-2.5 flex-1">
-                      {plan.features.map((feat) => (
-                        <li key={feat} className="flex items-start gap-2.5">
-                          <span className="mt-0.5 shrink-0 w-5 h-5 rounded-full flex items-center justify-center" style={{
-                            background: plan.highlighted ? 'rgba(123,176,255,0.22)' : isProplus ? 'rgba(234,179,8,0.14)' : 'rgba(47,109,246,0.12)',
-                            border: `1px solid ${plan.highlighted ? 'rgba(123,176,255,0.4)' : isProplus ? 'rgba(202,138,4,0.4)' : 'rgba(47,109,246,0.35)'}`,
-                          }}>
-                            <Check className="w-3 h-3" style={{ color: plan.highlighted ? '#7bb0ff' : isProplus ? '#b45309' : '#2F6DF6' }} />
-                          </span>
-                          <span className="text-sm leading-relaxed" style={{ color: plan.highlighted ? 'rgba(255,255,255,0.82)' : 'var(--text-base)' }}>
-                            {feat}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-
-                    {/* Pro+ exclusives */}
-                    {isProplus && plan.extras.length > 0 && (
-                      <div className="rounded-2xl p-4 border" style={{ background: 'rgba(234,179,8,0.08)', borderColor: 'rgba(202,138,4,0.3)' }}>
-                        <div className="flex items-center gap-2 mb-3">
-                          <Lock className="w-3.5 h-3.5" style={{ color: '#b45309' }} />
-                          <span className="text-xs font-bold uppercase tracking-widest" style={{ color: '#b45309' }}>{t.onlyProPlus}</span>
-                        </div>
-                        <ul className="space-y-2.5">
-                          {plan.extras.map(({ icon: ExtraIcon, label, desc }) => (
-                            <li key={label} className="flex items-start gap-2.5">
-                              <span className="mt-0.5 shrink-0 w-5 h-5 rounded-full flex items-center justify-center border" style={{ background: 'rgba(234,179,8,0.18)', borderColor: 'rgba(202,138,4,0.4)' }}>
-                                <ExtraIcon className="w-3 h-3" style={{ color: '#b45309' }} />
-                              </span>
-                              <div>
-                                <p className="text-sm font-semibold leading-tight" style={{ color: 'var(--text-base)' }}>{label}</p>
-                                <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{desc}</p>
-                              </div>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-
-          {/* Callout — brand-blue accent + solid text so it reads on the light canvas. */}
-          <div className="mt-6 rounded-2xl border p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4"
-            style={{ background: 'rgba(47,109,246,0.08)', borderColor: 'rgba(47,109,246,0.3)' }}>
-            <div className="shrink-0 w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'rgba(47,109,246,0.16)', border: '1px solid rgba(47,109,246,0.4)' }}>
-              <Star className="w-5 h-5" style={{ color: '#2F6DF6' }} />
-            </div>
-            <div className="flex-1">
-              <p className="font-bold text-sm" style={{ color: 'var(--text-base)' }}>{t.calloutTitle}</p>
-              <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
-                {t.calloutBody}{' '}
-                <span className="font-semibold" style={{ color: '#2F6DF6' }}>{t.calloutHighlight}</span>.
-              </p>
-            </div>
-            <Link href="/login?plan=pro_plus" className="shrink-0 text-xs font-bold px-4 py-2 rounded-xl text-white transition-all"
-              style={{ background: '#2F6DF6' }}>
-              {t.calloutCta}
-            </Link>
-          </div>
+        <div className="max-w-3xl mx-auto">
+          <TierLadder lang={lang} interval={isYearly ? 'annual' : 'monthly'} />
+          <p className="mt-4 text-center text-xs" style={{ color: 'var(--text-muted)' }}>
+            {tiersT.trialNote[lang]}
+          </p>
         </div>
       </section>
 
@@ -650,57 +377,47 @@ export default function PricingClient({ prices }: { prices: PricingData }) {
           </div>
 
           <div className="rounded-3xl border overflow-hidden" style={{ borderColor: 'var(--border)', background: 'var(--bg-card2)' }}>
-            <div className="grid grid-cols-4 border-b" style={{ borderColor: 'var(--border)' }}>
-              <div className="p-5 col-span-1" />
-              {[t.freeName, t.proName, t.proPlusName].map((name, idx) => (
-                <div key={name} className="p-5 text-center border-l" style={{
-                  borderColor: 'var(--border)',
-                  background: idx === 1 ? 'rgba(47,109,246,0.08)' : idx === 2 ? 'rgba(234,179,8,0.07)' : undefined,
-                }}>
-                  <div className="font-bold text-sm sm:text-base" style={{ color: idx === 1 ? '#2F6DF6' : idx === 2 ? '#b45309' : 'var(--text-base)' }}>{name}</div>
-                  <div className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
-                    {idx === 0 ? t.freePrice : idx === 1 ? `${somFmt.format(prices.pro.monthly)} ${t.perMonth.split('/')[0]}` : `${somFmt.format(prices.pro_plus.monthly)} ${t.perMonth.split('/')[0]}`}
-                  </div>
-                  {idx === 2 && (
-                    <div className="mt-1.5">
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: 'rgba(234,179,8,0.18)', color: '#b45309' }}>{t.maksimal}</span>
-                    </div>
-                  )}
-                </div>
-              ))}
+            {/* Two columns, not five: every paid tier carries the same features,
+                so four identical columns would only invite a hunt for a
+                difference that is not there. */}
+            <div className="grid grid-cols-[1.4fr_1fr_1fr] border-b" style={{ borderColor: 'var(--border)' }}>
+              <div className="p-5" />
+              <div className="border-l p-5 text-center" style={{ borderColor: 'var(--border)' }}>
+                <div className="text-sm font-bold sm:text-base" style={{ color: 'var(--text-base)' }}>{t.freeName}</div>
+                <div className="mt-1 text-xs" style={{ color: 'var(--text-muted)' }}>{t.freePrice}</div>
+              </div>
+              <div className="border-l p-5 text-center" style={{ borderColor: 'var(--border)', background: 'rgba(47,109,246,0.08)' }}>
+                <div className="text-sm font-bold sm:text-base" style={{ color: '#2F6DF6' }}>{t.paidColumn}</div>
+                <div className="mt-1 text-xs" style={{ color: 'var(--text-muted)' }}>{t.paidColumnSub}</div>
+              </div>
             </div>
 
-            <div className="grid grid-cols-4 border-b" style={{ borderColor: 'var(--border)', background: 'var(--bg-card)' }}>
-              <div className="px-5 py-2 col-span-4">
+            <div className="grid border-b" style={{ borderColor: 'var(--border)', background: 'var(--bg-card)' }}>
+              <div className="px-5 py-2">
                 <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>{t.cmpCore}</span>
               </div>
             </div>
 
-            {comparisonFeatures.map((feat, i) => {
-              const isProplusOnly = !feat.pro && feat.pro_plus
-              return (
-                <div key={feat.label}
-                  className="grid grid-cols-4 border-b last:border-b-0"
-                  style={{
-                    borderColor: 'var(--border)',
-                    background: isProplusOnly ? 'rgba(234,179,8,0.05)' : i % 2 === 0 ? 'transparent' : 'var(--bg-card2)',
-                  }}>
-                  <div className="px-5 py-4 flex items-center gap-2 text-sm font-medium" style={{ color: 'var(--text-base)' }}>
-                    {isProplusOnly && <Lock className="w-3 h-3 shrink-0" style={{ color: '#b45309' }} />}
-                    {feat.label}
-                  </div>
-                  {(['free', 'pro', 'pro_plus'] as const).map((col, idx) => (
-                    <div key={col} className="px-5 py-4 flex items-center justify-center border-l" style={{
-                      borderColor: 'var(--border)',
-                      background: idx === 1 ? 'rgba(47,109,246,0.05)' : idx === 2 ? 'rgba(234,179,8,0.05)' : undefined,
-                    }}>
-                      <FeatureValue value={feat[col]} col={col} />
-                    </div>
-                  ))}
+            {comparisonFeatures.map((feat, i) => (
+              <div key={feat.label}
+                className="grid grid-cols-[1.4fr_1fr_1fr] border-b last:border-b-0"
+                style={{ borderColor: 'var(--border)', background: i % 2 === 0 ? 'transparent' : 'var(--bg-card2)' }}>
+                <div className="flex items-center gap-2 px-5 py-4 text-sm font-medium" style={{ color: 'var(--text-base)' }}>
+                  {feat.free === 'trial' && <Clock className="w-3 h-3 shrink-0" style={{ color: 'var(--c1)' }} />}
+                  {feat.label}
                 </div>
-              )
-            })}
+                <div className="flex items-center justify-center border-l px-5 py-4" style={{ borderColor: 'var(--border)' }}>
+                  <FeatureValue value={feat.free} trialLabel={t.trialCell} />
+                </div>
+                <div className="flex items-center justify-center border-l px-5 py-4"
+                  style={{ borderColor: 'var(--border)', background: 'rgba(47,109,246,0.05)' }}>
+                  <FeatureValue value={feat.paid} trialLabel={t.trialCell} />
+                </div>
+              </div>
+            ))}
           </div>
+
+          <p className="mt-4 text-center text-xs" style={{ color: 'var(--text-muted)' }}>{t.trialFootnote}</p>
         </div>
       </section>
 
