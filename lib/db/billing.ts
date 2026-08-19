@@ -1,6 +1,7 @@
 import { eq, desc, inArray, and } from 'drizzle-orm'
 import { db, users, payments, subscriptions } from '@/lib/db'
 import { getCurrentUserId } from '@/lib/db/shop-context'
+import { getCancellationState } from '@/lib/billing/cancel'
 
 // Mirrors the plan_type enum in the database (migration 075 added 'biznes').
 // Biznes is card-payable like Pro and Pro+, so it has to be representable here —
@@ -35,18 +36,23 @@ export interface BillingInfo {
   derivedTier: string | null
   /** The 30-day turnover the recommendation was derived from, in so'm. */
   derivedTurnoverSom: number | null
+  /** When the seller cancelled, or null. Access still runs to accessUntil. */
+  cancelledAt: string | null
+  /** The date access was promised until at cancellation time. */
+  accessUntil: string | null
 }
 
 export async function getBilling(): Promise<BillingInfo> {
   const empty: BillingInfo = {
     plan: 'free', planExpiresAt: null, isOnTrial: false, trialEndsAt: null, payments: [],
     card: null, autorenew: false, derivedTier: null, derivedTurnoverSom: null,
+    cancelledAt: null, accessUntil: null,
   }
 
   const userId = await getCurrentUserId()
   if (!userId) return empty
 
-  const [[userRow], paymentRows, subRows] = await Promise.all([
+  const [[userRow], paymentRows, subRows, cancellation] = await Promise.all([
     db.select({
       plan: users.plan,
       plan_expires_at: users.plan_expires_at,
@@ -75,6 +81,7 @@ export async function getBilling(): Promise<BillingInfo> {
       .where(and(eq(subscriptions.user_id, userId), inArray(subscriptions.status, ['active', 'past_due', 'pending'])))
       .orderBy(desc(subscriptions.updated_at))
       .limit(1),
+    getCancellationState(userId),
   ])
 
   const plan = (userRow?.plan ?? 'free') as PlanType
@@ -104,6 +111,8 @@ export async function getBilling(): Promise<BillingInfo> {
 
   return {
     plan, planExpiresAt, isOnTrial, trialEndsAt, payments: paymentList, card, autorenew,
+    cancelledAt: cancellation.cancelledAt?.toISOString() ?? null,
+    accessUntil: cancellation.accessUntil?.toISOString() ?? null,
     derivedTier,
     derivedTurnoverSom: derivedTurnoverSom !== null && Number.isFinite(derivedTurnoverSom) ? derivedTurnoverSom : null,
   }

@@ -41,6 +41,18 @@ const BT: Record<Lang, Record<string, string>> = {
     chargeOnceYear: "12 oy uchun bir martalik to'lov:",
     chargeMonthly: 'Har oy avtomatik to‘lov:',
     perMonthEq: 'oyiga', continue: 'Davom etish',
+    cancelPlan: 'Tarifni bekor qilish',
+    cancelTitle: 'Tarifni bekor qilasizmi?',
+    cancelBody: "Keyingi to'lov olinmaydi. To'langan davr oxirigacha barcha imkoniyatlar ochiq qoladi, keyin Bepul tarifga o'tasiz.",
+    cancelBodyNoPeriod: "Keyingi to'lov olinmaydi. Hozircha to'langan davr yo'q, shuning uchun Bepul tarifga darhol o'tasiz.",
+    cancelConfirm: 'Ha, bekor qilaman',
+    cancelKeep: 'Yo\u2018q, qoldiraman',
+    cancelledBadge: 'Bekor qilingan',
+    cancelledUntil: 'Faol:',
+    cancelledThenFree: 'gacha, keyin Bepul',
+    cancelledOver: "To'langan davr tugadi.",
+    resumePlan: 'Tarifni qayta tiklash',
+    resumeErrOver: "To'langan davr tugagan — yangi tarifni tanlang.",
   },
   en: {
     cardStep: 'Card details', cardNumber: 'Card number', expiry: 'Expiry (MM/YY)',
@@ -62,6 +74,18 @@ const BT: Record<Lang, Record<string, string>> = {
     chargeOnceYear: 'One-time charge for 12 months:',
     chargeMonthly: 'Charged automatically each month:',
     perMonthEq: 'per month', continue: 'Continue',
+    cancelPlan: 'Cancel plan',
+    cancelTitle: 'Cancel your plan?',
+    cancelBody: 'You will not be charged again. Everything stays unlocked until the period you have paid for ends, then you move to Free.',
+    cancelBodyNoPeriod: 'You will not be charged again. There is no paid period running, so you move to Free right away.',
+    cancelConfirm: 'Yes, cancel',
+    cancelKeep: 'No, keep it',
+    cancelledBadge: 'Cancelled',
+    cancelledUntil: 'Active until',
+    cancelledThenFree: ', then Free',
+    cancelledOver: 'Your paid period has ended.',
+    resumePlan: 'Resume plan',
+    resumeErrOver: 'The paid period is over — choose a plan instead.',
   },
   ru: {
     cardStep: 'Данные карты', cardNumber: 'Номер карты', expiry: 'Срок (ММ/ГГ)',
@@ -83,6 +107,18 @@ const BT: Record<Lang, Record<string, string>> = {
     chargeOnceYear: 'Единоразовое списание за 12 месяцев:',
     chargeMonthly: 'Автосписание каждый месяц:',
     perMonthEq: 'в месяц', continue: 'Продолжить',
+    cancelPlan: 'Отменить тариф',
+    cancelTitle: 'Отменить тариф?',
+    cancelBody: 'Списаний больше не будет. Все возможности останутся открытыми до конца оплаченного периода, затем вы перейдёте на Бесплатный.',
+    cancelBodyNoPeriod: 'Списаний больше не будет. Оплаченного периода нет, поэтому вы перейдёте на Бесплатный сразу.',
+    cancelConfirm: 'Да, отменить',
+    cancelKeep: 'Нет, оставить',
+    cancelledBadge: 'Отменён',
+    cancelledUntil: 'Активен до',
+    cancelledThenFree: ', затем Бесплатный',
+    cancelledOver: 'Оплаченный период закончился.',
+    resumePlan: 'Возобновить тариф',
+    resumeErrOver: 'Оплаченный период закончился — выберите тариф заново.',
   },
 }
 
@@ -535,6 +571,10 @@ export default function BillingClient({ billing, initialPlan, initialInterval }:
   // opens on the plan chooser (all tariffs visible), not a single locked plan.
   const [modalHighlight, setModalHighlight]     = useState<PlanKey | undefined>(initialPlan)
 
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false)
+  const [cancelBusy, setCancelBusy] = useState(false)
+  const [cancelError, setCancelError] = useState<string | null>(null)
+
   function openPlanChooser() {
     setModalHighlight(undefined)
     setShowPlanModal(true)
@@ -542,6 +582,38 @@ export default function BillingClient({ billing, initialPlan, initialInterval }:
 
   const plan = billing.plan
   const isFree = plan === 'free'
+
+  // A cancellation the seller is still living inside: no further charge, but the
+  // period they paid for is running. `accessUntil` null means there was nothing
+  // paid for to honour, so there is no "active until" date to show.
+  const accessUntil = billing.accessUntil ? new Date(billing.accessUntil) : null
+  const isCancelled = billing.cancelledAt !== null
+  const cancelledStillActive = isCancelled && accessUntil !== null && accessUntil > new Date()
+
+  async function post(action: 'cancel' | 'resume') {
+    setCancelBusy(true)
+    setCancelError(null)
+    try {
+      const res = await fetch('/api/billing/cancel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action }),
+      })
+      const data = await res.json().catch(() => null)
+      if (!res.ok || !data?.ok) {
+        setCancelError(data?.error === 'period_over' ? b.resumeErrOver : b.errGeneric)
+        return
+      }
+      // Reload rather than patch local state: the plan card, the card panel and
+      // the auto-renew toggle all read from the server's billing snapshot, and
+      // a hand-maintained copy of that is how they drift apart.
+      window.location.reload()
+    } catch {
+      setCancelError(b.errGeneric)
+    } finally {
+      setCancelBusy(false)
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -567,10 +639,26 @@ export default function BillingClient({ billing, initialPlan, initialInterval }:
               {billing.isOnTrial && (
                 <span className="text-xs px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400">Trial</span>
               )}
-              {billing.planExpiresAt && (
+              {billing.planExpiresAt && !isCancelled && (
                 <span className="text-xs text-[var(--text-muted)]">
                   {d.billingExpiry} <span className="text-[var(--text-dim)]">{fmtDate(billing.planExpiresAt)}</span>
                 </span>
+              )}
+              {/* Cancelled: say what they still have and when it ends, in one
+                  line, instead of an expiry date that reads like a renewal. */}
+              {isCancelled && (
+                <span className="text-xs px-2 py-0.5 rounded-full"
+                  style={{ background: 'color-mix(in srgb, var(--text-muted) 12%, transparent)', color: 'var(--text-muted)' }}>
+                  {b.cancelledBadge}
+                </span>
+              )}
+              {cancelledStillActive && (
+                <span className="text-xs text-[var(--text-muted)]">
+                  {b.cancelledUntil} <span className="text-[var(--text-dim)]">{fmtDate(billing.accessUntil!)}</span>{b.cancelledThenFree}
+                </span>
+              )}
+              {isCancelled && !cancelledStillActive && (
+                <span className="text-xs text-[var(--text-muted)]">{b.cancelledOver}</span>
               )}
             </div>
             {!isFree && (
@@ -587,14 +675,39 @@ export default function BillingClient({ billing, initialPlan, initialInterval }:
               ))}
             </ul>
           </div>
-          <div className="flex-shrink-0">
+          <div className="flex-shrink-0 flex flex-col items-stretch gap-2">
             <button
               onClick={openPlanChooser}
-              className="flex items-center gap-2 btn-primary text-sm font-semibold px-5 py-2.5 rounded-xl shadow-lg"
+              className="flex items-center justify-center gap-2 btn-primary text-sm font-semibold px-5 py-2.5 rounded-xl shadow-lg"
             >
               <Package className="w-4 h-4" />
               {isFree ? d.billingUpgrade : d.billingChangePlan}
             </button>
+
+            {/* Cancel is available while a paid plan is live and not already
+                cancelled. It is a quiet, bordered button, not a red one: ending a
+                subscription is a normal thing a seller is entitled to do, and
+                dressing it as a danger action reads as a dark pattern. */}
+            {!isFree && !isCancelled && (
+              <button
+                onClick={() => { setCancelError(null); setShowCancelConfirm(true) }}
+                className="text-xs font-semibold px-5 py-2 rounded-xl border transition-colors"
+                style={{ borderColor: 'var(--border2)', color: 'var(--text-muted)' }}
+              >
+                {b.cancelPlan}
+              </button>
+            )}
+
+            {cancelledStillActive && (
+              <button
+                onClick={() => post('resume')}
+                disabled={cancelBusy}
+                className="text-xs font-semibold px-5 py-2 rounded-xl border transition-colors disabled:opacity-60"
+                style={{ borderColor: 'var(--c1)', color: 'var(--c1)' }}
+              >
+                {cancelBusy ? b.processing : b.resumePlan}
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -691,6 +804,47 @@ export default function BillingClient({ billing, initialPlan, initialInterval }:
         derivedTier={billing.derivedTier as Tier | null} derivedTurnoverSom={billing.derivedTurnoverSom}
         onClose={() => setShowPlanModal(false)} />}
       {showInvoiceModal && <InvoiceModal onClose={() => setShowInvoiceModal(false)} d={d} />}
+
+      {/* Cancel confirmation. It states the consequence in full — no further
+          charge, access until the paid period ends, then Free — because that is
+          the whole of what a seller needs to decide, and a vague "are you sure?"
+          is how people cancel expecting a refund. */}
+      {showCancelConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.6)' }}
+          role="dialog" aria-modal="true" aria-labelledby="cancel-title">
+          <div className="w-full max-w-sm rounded-2xl overflow-hidden"
+            style={{ background: 'var(--bg-card2)', border: '1px solid var(--border2)' }}>
+            <div className="p-6 space-y-3">
+              <h3 id="cancel-title" className="font-bold text-base" style={{ color: 'var(--text-base)' }}>
+                {b.cancelTitle}
+              </h3>
+              <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>
+                {billing.planExpiresAt ? b.cancelBody : b.cancelBodyNoPeriod}
+              </p>
+              {billing.planExpiresAt && (
+                <p className="text-sm font-semibold" style={{ color: 'var(--text-base)' }}>
+                  {b.cancelledUntil} {fmtDate(billing.planExpiresAt)}{b.cancelledThenFree}
+                </p>
+              )}
+              {cancelError && <p className="text-sm text-red-400">{cancelError}</p>}
+            </div>
+            <div className="flex gap-2 p-4 pt-0">
+              {/* "Keep it" is the primary button: the destructive option should
+                  not be the one a stray Enter press lands on. */}
+              <button onClick={() => setShowCancelConfirm(false)} disabled={cancelBusy}
+                className="flex-1 btn-primary rounded-xl py-2.5 text-sm font-semibold disabled:opacity-60">
+                {b.cancelKeep}
+              </button>
+              <button onClick={() => post('cancel')} disabled={cancelBusy}
+                className="flex-1 rounded-xl border py-2.5 text-sm font-semibold disabled:opacity-60"
+                style={{ borderColor: 'var(--border2)', color: 'var(--text-muted)' }}>
+                {cancelBusy ? b.processing : b.cancelConfirm}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

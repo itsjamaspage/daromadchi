@@ -115,6 +115,11 @@ const MIGRATIONS = [
   // the value and nothing else: the runner wraps each file in one transaction,
   // and a new enum value cannot be USED until that transaction commits.
   'migrations/migrations/075_plan_type_biznes.sql',
+  // Records a cancellation: when it was requested, and the access date the
+  // seller was promised. Additive + idempotent, no backfill — there is no
+  // cancellation history to reconstruct, and a made-up date is a fake audit
+  // trail. Entitlement is untouched; access still runs off plan_expires_at.
+  'migrations/migrations/076_subscription_cancellation.sql',
 ]
 
 function loadDatabaseUrl() {
