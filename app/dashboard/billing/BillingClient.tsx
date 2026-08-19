@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import {
-  CreditCard, CheckCircle, X, Star, Zap, Package, Receipt, FileText, Lock, Loader2, ArrowLeft,
+  CreditCard, CheckCircle, X, Star, Zap, Package, Receipt, FileText, Lock, Loader2, ArrowLeft, AlertCircle,
 } from 'lucide-react'
 import { useLang } from '@/app/providers'
 import { translations } from '@/lib/i18n'
@@ -53,6 +53,9 @@ const BT: Record<Lang, Record<string, string>> = {
     cancelledOver: "To'langan davr tugadi.",
     resumePlan: 'Tarifni qayta tiklash',
     resumeErrOver: "To'langan davr tugagan — yangi tarifni tanlang.",
+    priceNoticeTitle: "Tarif narxi o'zgaradi",
+    priceNoticeFrom: 'dan boshlab:',
+    priceNoticeBody: "Bu sanagacha yangi narx yechilmaydi. Agar sizga to'g'ri kelmasa, quyida tarifni bekor qilishingiz mumkin — to'lovlar to'xtaydi, kirish esa to'langan davr oxirigacha saqlanadi.",
   },
   en: {
     cardStep: 'Card details', cardNumber: 'Card number', expiry: 'Expiry (MM/YY)',
@@ -86,6 +89,9 @@ const BT: Record<Lang, Record<string, string>> = {
     cancelledOver: 'Your paid period has ended.',
     resumePlan: 'Resume plan',
     resumeErrOver: 'The paid period is over — choose a plan instead.',
+    priceNoticeTitle: 'Your plan price is changing',
+    priceNoticeFrom: 'From',
+    priceNoticeBody: 'Nothing is charged at the new price before that date. If it does not suit you, cancel below — charging stops and your access runs to the end of the period you have paid for.',
   },
   ru: {
     cardStep: 'Данные карты', cardNumber: 'Номер карты', expiry: 'Срок (ММ/ГГ)',
@@ -119,6 +125,9 @@ const BT: Record<Lang, Record<string, string>> = {
     cancelledOver: 'Оплаченный период закончился.',
     resumePlan: 'Возобновить тариф',
     resumeErrOver: 'Оплаченный период закончился — выберите тариф заново.',
+    priceNoticeTitle: 'Изменение цены тарифа',
+    priceNoticeFrom: 'С',
+    priceNoticeBody: 'До этой даты списаний по новой цене не будет. Если она вам не подходит, отмените тариф ниже — списания прекратятся, а доступ сохранится до конца оплаченного периода.',
   },
 }
 
@@ -621,6 +630,27 @@ export default function BillingClient({ billing, initialPlan, initialInterval }:
         <h1 className="text-2xl font-bold text-[var(--text-base)]">{d.billingTitle}</h1>
         <p className="text-[var(--text-muted)] text-sm mt-1">{d.billingSubtitle}</p>
       </div>
+
+      {/* Advance notice of a price change.
+          Shown from the moment the change is staged, next to the Cancel button
+          it tells the seller about — a notice that does not put the way out in
+          reach is not much of a notice. It never claims the amount has changed:
+          nothing is charged at the new price until the date named here. */}
+      {billing.pendingPrice && (
+        <div className="rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center gap-4"
+          style={{ background: 'color-mix(in srgb, var(--c1) 8%, var(--bg-card2))', border: '1px solid color-mix(in srgb, var(--c1) 35%, transparent)' }}>
+          <AlertCircle className="w-5 h-5 flex-shrink-0" style={{ color: 'var(--c1)' }} />
+          <div className="flex-1 space-y-1">
+            <p className="font-semibold text-sm" style={{ color: 'var(--text-base)' }}>{b.priceNoticeTitle}</p>
+            <p className="text-sm" style={{ color: 'var(--text-base)' }}>
+              {l === 'uz'
+                ? <><span className="font-semibold">{fmtDate(billing.pendingPrice.effectiveDate)}</span> {b.priceNoticeFrom} <span className="font-bold">{formatSomFromTiyin(billing.pendingPrice.newAmountTiyin)} so&rsquo;m</span></>
+                : <>{b.priceNoticeFrom} <span className="font-semibold">{fmtDate(billing.pendingPrice.effectiveDate)}</span> — <span className="font-bold">{formatSomFromTiyin(billing.pendingPrice.newAmountTiyin)} so&rsquo;m</span></>}
+            </p>
+            <p className="text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>{b.priceNoticeBody}</p>
+          </div>
+        </div>
+      )}
 
       {/* Current Plan Card */}
       <div className="bg-[var(--bg-card2)] rounded-2xl overflow-hidden" style={{ border: '1px solid var(--border2)' }}>

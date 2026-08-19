@@ -120,6 +120,11 @@ const MIGRATIONS = [
   // cancellation history to reconstruct, and a made-up date is a fake audit
   // trail. Entitlement is untouched; access still runs off plan_expires_at.
   'migrations/migrations/076_subscription_cancellation.sql',
+  // Stages a price change and records when the subscriber was told. The renewal
+  // refuses the new amount unless the notice is present and old enough, so an
+  // undelivered increase simply never charges. Additive + idempotent, no
+  // backfill — staging a charge nobody approved is the failure mode here.
+  'migrations/migrations/077_subscription_price_notice.sql',
 ]
 
 function loadDatabaseUrl() {

@@ -71,6 +71,21 @@ export const PLAN_PRICES_USD_DISPLAY: Record<PlanKey, number> = {
   biznes:   80,
 }
 
+/**
+ * How long before a charge an existing subscriber must be told about a price
+ * increase.
+ *
+ * Lives here, with the prices themselves, because it is a term OF the price and
+ * because this module is client-safe: /terms is a client component and quotes
+ * this number, and pulling it from lib/billing/price-notice.ts would drag the
+ * database driver into the browser bundle. The enforcement reads the same
+ * constant, so the document cannot promise a window the renewal does not keep.
+ *
+ * Two weeks matches the trial window sellers already know, and is long enough
+ * that cancelling before the new amount lands is a real option, not a race.
+ */
+export const PRICE_NOTICE_DAYS = 14
+
 export const TIYIN_PER_SOM = 100
 
 // Exact integer conversions. Amounts sent to ATMOS are ALWAYS tiyin; amounts

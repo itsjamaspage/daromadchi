@@ -521,6 +521,15 @@ export const subscriptions = pgTable('subscriptions', {
   // entitlement stays users.plan_expires_at.
   cancelled_at:       timestamp('cancelled_at', { withTimezone: true }),
   access_until:       timestamp('access_until', { withTimezone: true }),
+  // A price change staged but NOT yet charged (migration 077). The renewal keeps
+  // billing agreed_amount_tiyin until pending_effective_date has arrived AND
+  // pending_notified_at proves the seller was told, long enough in advance. Only
+  // then is the pending amount charged and promoted into agreed_amount_tiyin.
+  // See lib/billing/price-notice.ts — this is the one sanctioned way an agreed
+  // price ever moves.
+  pending_amount_tiyin:   integer('pending_amount_tiyin'),
+  pending_effective_date: timestamp('pending_effective_date', { withTimezone: true }),
+  pending_notified_at:    timestamp('pending_notified_at', { withTimezone: true }),
   // Direct card-binding flow: the reusable ATMOS card token (ENCRYPTED at rest via
   // lib/crypto) drives auto-renewal. card_last4/expiry/holder are display-only —
   // NO full PAN is ever stored.
