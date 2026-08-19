@@ -9,7 +9,7 @@ import { useLang } from '@/app/providers'
 import TierTabs from '@/components/pricing/TierTabs'
 import { tiersT } from '@/lib/tiersT'
 import { TRIAL_D as D, TRIAL_RU as RU_D } from '@/lib/trial-copy'
-import { telegramContactUrl } from '@/lib/contact'
+import { TELEGRAM_CONTACT_URL } from '@/lib/contact'
 
 // The Free card's bullets are the FREE_FOREVER set in lib/billing/features.ts,
 // worded for a seller. They used to promise "1 store / 100 products / 30-day
@@ -463,7 +463,7 @@ export default function PricingClient({ prices }: { prices: PricingData }) {
                 {t.bottomSub}
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <a href={telegramContactUrl('pricing')} target="_blank" rel="noopener noreferrer"
+                <a href={TELEGRAM_CONTACT_URL} target="_blank" rel="noopener noreferrer"
                   className="flex items-center justify-center gap-2 font-bold px-8 py-4 rounded-2xl transition-all text-sm border"
                   style={{ background: '#ffffff', color: '#0e1b2e', borderColor: 'var(--border2)', boxShadow: '0 4px 20px rgba(0,0,0,0.12)' }}>
                   <svg className="w-4 h-4" viewBox="0 0 24 24" fill="#2F6DF6">

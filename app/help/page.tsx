@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useState } from 'react'
 import { getCategoryList } from '@/lib/help-content'
 import { useLang } from '@/app/providers'
-import { telegramContactUrl } from '@/lib/contact'
+import { TELEGRAM_CONTACT_URL } from '@/lib/contact'
 
 const T = {
   uz: {
@@ -153,7 +153,7 @@ export default function HelpPage() {
         <p className="text-[var(--text-muted)] text-sm mb-2">{t.notFound}</p>
         <p className="text-[var(--text-base)] font-semibold mb-4">{t.contact}</p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <a href={telegramContactUrl('help')} target="_blank" rel="noopener noreferrer"
+          <a href={TELEGRAM_CONTACT_URL} target="_blank" rel="noopener noreferrer"
             className="px-5 py-2.5 rounded-xl bg-[var(--c1)] text-[#020c1a] font-semibold text-sm hover:opacity-90 transition-opacity">
             {t.telegram}
           </a>
