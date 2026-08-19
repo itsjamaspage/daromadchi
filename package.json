@@ -29,7 +29,8 @@
     "test:price-notice": "node --conditions=react-server --import tsx --test lib/billing/price-notice.integration.test.ts",
     "test:nudge": "node --conditions=react-server --import tsx --test lib/billing/nudge.integration.test.ts",
     "audit:merges": "node scripts/audit-merges.mjs",
-    "test:lifecycle": "node --conditions=react-server --import tsx --test lib/billing/lifecycle.integration.test.ts"
+    "test:lifecycle": "node --conditions=react-server --import tsx --test lib/billing/lifecycle.integration.test.ts",
+    "test:payout-status": "node --import tsx --test lib/db/payout-status.test.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
