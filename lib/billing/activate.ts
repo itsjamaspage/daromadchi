@@ -15,6 +15,8 @@
 import 'server-only'
 import { and, eq, notInArray, sql } from 'drizzle-orm'
 import { db, payments, subscriptions, users } from '@/lib/db'
+import { isPlanKey } from '@/lib/billing/plans'
+import { logger } from '@/lib/logger'
 
 const FINAL_STATES = ['success', 'failed', 'cancelled'] as const
 
@@ -96,10 +98,17 @@ export async function applyAtmosPaymentSuccess(input: ApplySuccessInput): Promis
         .where(eq(subscriptions.id, pay.subscriptionId))
     }
 
-    if (pay.userId && (pay.plan === 'pro' || pay.plan === 'pro_plus')) {
+    // EVERY plan checkout can sell must be grantable here. This used to name
+    // pro and pro_plus by hand, so a settled Biznes payment — 500 000 so'm,
+    // charged, invoice paid — left users.plan untouched and the seller on free.
+    // isPlanKey reads the same price table checkout bills from, so the two
+    // cannot drift apart again.
+    if (pay.userId && isPlanKey(pay.plan)) {
       await tx.update(users)
         .set({ plan: pay.plan, plan_expires_at: periodEnd, updated_at: now })
         .where(eq(users.id, pay.userId))
+    } else if (pay.userId) {
+      logger.error('billing_activate_unknown_plan', { paymentId: pay.id, plan: pay.plan })
     }
 
     return { applied: true, outcome: 'activated' }

@@ -15,17 +15,12 @@ import { eq } from 'drizzle-orm'
 import { db, payments, subscriptions } from '@/lib/db'
 import { getCurrentUser } from '@/lib/auth/session'
 import { logger } from '@/lib/logger'
-import { planAmountTiyin, planPeriodMonths, tiyinToSom, PLAN_PRICES_TIYIN, type PlanKey, type Interval } from '@/lib/billing/plans'
+import { planAmountTiyin, planPeriodMonths, tiyinToSom, isPlanKey, type PlanKey, type Interval } from '@/lib/billing/plans'
 import { bindCardInit, AtmosConfigError, AtmosApiError } from '@/lib/billing/atmos'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-// Derived from PLAN_PRICES_TIYIN so a tier added there is billable here without
-// a second edit — the mismatch that kept Biznes unbuyable while it had a price.
-function isPlanKey(v: unknown): v is PlanKey {
-  return typeof v === 'string' && Object.prototype.hasOwnProperty.call(PLAN_PRICES_TIYIN, v)
-}
 function isInterval(v: unknown): v is Interval { return v === 'monthly' || v === 'annual' }
 
 // "MM/YY" | "MMYY" | "MM/YYYY" → { atmos: "YYmm", display: "MM/YY" }. Null if bad.
