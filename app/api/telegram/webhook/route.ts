@@ -36,7 +36,6 @@ const BOT_I18N: Record<Lang, {
   activationCodeValid: string
   activationExpiry: string
   thanksQuestion: string
-  contactGreeting: string
 }> = {
   uz: {
     notifPrompt:  '⚙️ Bildirishnomalarni sozlang:',
@@ -57,7 +56,6 @@ const BOT_I18N: Record<Lang, {
     activationCodeValid: 'Kodni kengaytmaga kiriting.',
     activationExpiry: 'Kod 30 daqiqa amal qiladi.',
     thanksQuestion: '✅ Savolingiz uchun rahmat! Qabul qildik, tez orada javob beramiz.',
-    contactGreeting: "✅ Salom! Savolingizni shu yerga yozing — tez orada javob beramiz.",
   },
   ru: {
     notifPrompt:  '⚙️ Настройте уведомления:',
@@ -78,7 +76,6 @@ const BOT_I18N: Record<Lang, {
     activationCodeValid: 'Введите код в расширение.',
     activationExpiry: 'Код действует 30 минут.',
     thanksQuestion: '✅ Спасибо за ваш вопрос! Мы получили его и ответим в ближайшее время.',
-    contactGreeting: '✅ Здравствуйте! Напишите свой вопрос прямо здесь — ответим в ближайшее время.',
   },
   en: {
     notifPrompt:  '⚙️ Configure notifications:',
@@ -99,7 +96,6 @@ const BOT_I18N: Record<Lang, {
     activationCodeValid: 'Enter the code in the extension.',
     activationExpiry: 'Code is valid for 30 minutes.',
     thanksQuestion: '✅ Thank you for your question! We received it and will get back to you soon.',
-    contactGreeting: '✅ Hello! Send your question right here — we will get back to you shortly.',
   },
 }
 
@@ -412,24 +408,6 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   // ── /start <token> — user came from Settings "Telegram ulash" button ──────
   if (text.startsWith('/start ') || text.startsWith('/start@')) {
     const token = text.split(' ')[1]?.trim()
-
-    // ── /start contact_<source> — someone pressed "Contact us" on the site ──
-    // Without this they land in the language picker and the extension
-    // activation flow, which is the same wrong-page feeling as the channel link
-    // this replaced. Greet them, ask for the question, and tell the operators
-    // somebody is waiting; the free-text handler below forwards what they write.
-    if (token?.startsWith('contact')) {
-      const source = token.slice('contact'.length).replace(/^_/, '') || 'site'
-      const contactLang = (await getSession(chatId))?.lang ?? 'uz'
-      await sendTelegramMessage(chatId, botT(contactLang).contactGreeting)
-      const from = message.from as { first_name?: string; username?: string }
-      const who = [from?.first_name ?? '', from?.username ? `@${from.username}` : '', `(ID: ${chatId})`]
-        .filter(Boolean).join(' ')
-      await notifyAdmins(
-        `💬 <b>Yangi murojaat / Новое обращение</b>\n\n👤 ${who}\n📍 ${source}`
-      )
-      return NextResponse.json({ ok: true })
-    }
 
     if (token?.startsWith('chancheck_')) {
       const nonce = token.replace('chancheck_', '')

@@ -14,7 +14,7 @@ import type { Lang } from '@/lib/i18n'
 import { T } from '@/lib/landing-t'
 import { PLAN_PRICES_TIYIN, formatSomFromTiyin } from '@/lib/billing/plans'
 import TierTabs from '@/components/pricing/TierTabs'
-import { TELEGRAM_BOT_URL } from '@/lib/contact'
+import { TELEGRAM_CONTACT_URL } from '@/lib/contact'
 import { tiersT } from '@/lib/tiersT'
 
 import PillNav from './components/PillNav'
@@ -1398,7 +1398,9 @@ function ResourcesSection({ lang }: { lang: Lang }) {
         { t: T.resources.tgItem3Title[lang], d: T.resources.tgItem3Desc[lang] },
       ],
       link: T.resources.tgLink[lang],
-      href: 'https://t.me/daromadchi',
+      // The card promises a support chat; @daromadchi is not ours, so it went
+      // nowhere. The support account is the one destination here that answers.
+      href: TELEGRAM_CONTACT_URL,
     },
     {
       num: '03',
@@ -1506,7 +1508,13 @@ function ResourcesSection({ lang }: { lang: Lang }) {
                                 </div>
                               ))}
                             </div>
+                            {/* Two of the three cards link inside the app; this
+                                one leaves it, and an external target must not be
+                                forced on the others. */}
                             <Link href={item.href}
+                              {...(item.href.startsWith('http')
+                                ? { target: '_blank', rel: 'noopener noreferrer' }
+                                : {})}
                               style={{ fontSize: 13, fontWeight: 700, color: acc.tint, textDecoration: 'none', display: 'inline-block' }}
                               onMouseEnter={e => (e.currentTarget.style.opacity = '0.7')}
                               onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
@@ -1691,7 +1699,7 @@ function FooterSection({ lang }: { lang: Lang }) {
       { label: 'Uzum Market', href: '#' }, { label: 'Yandex Market', href: '#' },
     ]},
     { head: T.footer.contactHead[lang], links: [
-      { label: 'Telegram', href: TELEGRAM_BOT_URL },
+      { label: 'Telegram', href: TELEGRAM_CONTACT_URL },
     ]},
   ]
 

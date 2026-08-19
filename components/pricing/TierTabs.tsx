@@ -23,7 +23,7 @@ import { tierPriceTiyin, tierCheckoutHref, isSelfServe } from '@/lib/billing/tie
 import { formatSomFromTiyin, type Interval } from '@/lib/billing/plans'
 import { FEATURE_ORDER, featureAvailability, type Plan } from '@/lib/billing/features'
 import { tiersT, featureT } from '@/lib/tiersT'
-import { telegramContactUrl } from '@/lib/contact'
+import { TELEGRAM_CONTACT_URL } from '@/lib/contact'
 import type { Lang } from '@/lib/i18n'
 
 /** Low → high, the order a seller grows through. */
@@ -335,7 +335,7 @@ function TierPanel({ tier, lang, interval, isMatch, isCurrent, onSelect }: {
               {t('choose')}
             </button>
           ) : tier === 'free' ? null : (
-            <a href={telegramContactUrl('enterprise')} target="_blank" rel="noopener noreferrer"
+            <a href={TELEGRAM_CONTACT_URL} target="_blank" rel="noopener noreferrer"
               className="block w-full rounded-xl border py-2.5 text-center text-xs font-semibold"
               style={{ borderColor: 'var(--border2)', color: 'var(--text-base)' }}>
               {t('talkToUs')}
@@ -348,7 +348,7 @@ function TierPanel({ tier, lang, interval, isMatch, isCurrent, onSelect }: {
             {tier === 'free' ? t('start') : t('choose')}
           </a>
         ) : (
-          <a href={telegramContactUrl('enterprise')} target="_blank" rel="noopener noreferrer"
+          <a href={TELEGRAM_CONTACT_URL} target="_blank" rel="noopener noreferrer"
             className="block w-full rounded-xl border py-2.5 text-center text-xs font-semibold"
             style={{ borderColor: 'var(--border2)', color: 'var(--text-base)' }}>
             {t('talkToUs')}
