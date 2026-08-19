@@ -19,6 +19,8 @@ import {
   dispatchTierNudges, getActiveNotice, dismissNotice,
   TRIAL_REMINDER_DAYS, RENUDGE_DAYS,
 } from './nudge'
+import { ENTERPRISE_POPUP_THRESHOLD } from './tiers'
+import { ADMIN_CHAT_IDS } from '@/lib/telegram-admin'
 
 const DAY = 24 * 60 * 60 * 1000
 const ago = (d: number) => new Date(Date.now() - d * DAY)
@@ -185,6 +187,59 @@ describe('outgrowing Free', () => {
     await dispatchTierNudges()
     assert.deepEqual(await kindsOf(id), ['outgrew_free'],
       'delivery is best-effort; the in-app banner must still appear')
+  })
+})
+
+describe('approaching Enterprise', () => {
+  it('reaches out at the threshold, and tells the operators too', async () => {
+    sent = []
+    const id = await seed({ derivedTier: 'biznes', turnoverSom: ENTERPRISE_POPUP_THRESHOLD })
+    const result = await dispatchTierNudges()
+    assert.ok(result.enterpriseOutreach >= 1)
+    assert.ok((await kindsOf(id)).includes('enterprise_outreach'))
+
+    // Outreach means a person gets in touch: the seller hearing about it is only
+    // half of it, and the half that does not scale is the operator knowing.
+    assert.ok(sent.some(m => m.includes(`chat-${id}`)), 'the seller is told')
+    assert.ok(sent.some(m => ADMIN_CHAT_IDS.some(a => m.includes(a))), 'the operators are told')
+  })
+
+  it('stays quiet just below the threshold', async () => {
+    const id = await seed({ derivedTier: 'biznes', turnoverSom: ENTERPRISE_POPUP_THRESHOLD - 1 })
+    await dispatchTierNudges()
+    assert.ok(!(await kindsOf(id)).includes('enterprise_outreach'))
+  })
+
+  it('fires for a PAYING account — the threshold sits inside Biznes', async () => {
+    const id = await seed({ plan: 'biznes', derivedTier: 'biznes', turnoverSom: 170_000_000 })
+    const kinds = await kindsOf(id)
+    await dispatchTierNudges()
+    assert.ok((await kindsOf(id)).includes('enterprise_outreach'),
+      'the seller this is written for is usually already paying')
+    assert.ok(!kinds.includes('outgrew_free'), 'and is not nudged about outgrowing free')
+  })
+
+  it('does not repeat inside the re-nudge window', async () => {
+    const id = await seed({ plan: 'biznes', derivedTier: 'biznes', turnoverSom: 170_000_000 })
+    await dispatchTierNudges()
+    const before = (await noticesOf(id)).find(n => n.kind === 'enterprise_outreach')!
+    await dispatchTierNudges()
+    const after = (await noticesOf(id)).find(n => n.kind === 'enterprise_outreach')!
+    assert.equal(after.sentAt.getTime(), before.sentAt.getTime())
+  })
+
+  it('records the turnover and the threshold that triggered it', async () => {
+    const id = await seed({ plan: 'biznes', derivedTier: 'biznes', turnoverSom: 175_000_000 })
+    await dispatchTierNudges()
+    const notice = (await noticesOf(id)).find(n => n.kind === 'enterprise_outreach')!
+    assert.equal(notice.detail?.turnoverSom, 175_000_000)
+    assert.equal(notice.detail?.threshold, ENTERPRISE_POPUP_THRESHOLD)
+  })
+
+  it('says nothing when turnover has not been computed', async () => {
+    const id = await seed({ plan: 'biznes', derivedTier: null, turnoverSom: null })
+    await dispatchTierNudges()
+    assert.deepEqual(await kindsOf(id), [])
   })
 })
 
