@@ -1,4 +1,5 @@
 import type { Lang } from './i18n'
+import { TRIAL_UZ, TRIAL_RU, TRIAL_EN } from './trial-copy'
 
 type Tr = Record<Lang, string>
 
@@ -117,7 +118,8 @@ export const T = {
       "Har kuni soat 10:00 da — savdolar, qoldiqlar va buyurtmalar bo'yicha xulosa",
       'Every day at 10:00 — summary of sales, stock and orders',
     ),
-    startFree3Days: tr('Начать бесплатно 3 дня →', '3 kun bepul boshlash →', 'Start free 3 days →'),
+    // Key name kept so callers do not churn; the number comes from TRIAL_DAYS.
+    startFree3Days: tr(`Начать бесплатно ${TRIAL_RU} →`, `${TRIAL_UZ} bepul boshlash →`, `Start free ${TRIAL_EN} →`),
     explorePlatform: tr('Изучить платформу →', "Platformani o'rganish →", 'Explore platform →'),
   },
 

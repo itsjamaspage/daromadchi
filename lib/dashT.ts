@@ -221,9 +221,15 @@ export const dashT = {
       defaultUser: 'Foydalanuvchi', joined: "Ro'yxatdan o'tgan:",
       planTitle: 'Tarif rejasi', expires: 'Muddati:',
       planFree: 'Bepul', planPro: 'Pro', planProPlus: 'Pro+',
-      freeDesc: "1 do'kon · 7 kunlik tarix", proDesc: "3 do'kon · Cheksiz tarix",
-      proPlusDesc: "5 do'kon · Cheksiz tarix · Ustuvor qo'llab-quvvatlash",
+      // Store counts and history windows were never enforced — PLAN_SHOP_LIMITS
+      // enforced nothing and is gone. What a plan actually gives is
+      // lib/billing/features.ts, so these say that instead.
+      freeDesc: "Boshqaruv paneli, mahsulotlar, buyurtmalar va ikkala marketpleys",
+      proDesc: "Barcha imkoniyatlar: tahlil, ombor, moliya, unit-iqtisod",
+      proPlusDesc: "Barcha imkoniyatlar · Ustuvor qo'llab-quvvatlash",
       upgradePro: "Pro ga o'tish →",
+      trialActive: (left: string) => `Barcha imkoniyatlar ochiq. ${left} kun qoldi.`,
+      trialOver: "Bepul sinov tugadi. Barcha imkoniyatlar uchun tarifni tanlang.",
       security: 'Xavfsizlik', password: 'Parol', passwordDesc: "Parolingizni o'zgartiring", change: "O'zgartirish",
     },
     abcxyz: {
@@ -627,9 +633,12 @@ export const dashT = {
       defaultUser: 'User', joined: 'Joined:',
       planTitle: 'Subscription plan', expires: 'Expires:',
       planFree: 'Free', planPro: 'Pro', planProPlus: 'Pro+',
-      freeDesc: '1 store · 7-day history', proDesc: '3 stores · Unlimited history',
-      proPlusDesc: '5 stores · Unlimited history · Priority support',
+      freeDesc: 'Dashboard, products, orders and both marketplaces',
+      proDesc: 'Everything: analytics, stock sync, finances, unit economics',
+      proPlusDesc: 'Everything · Priority support',
       upgradePro: 'Upgrade to Pro →',
+      trialActive: (left: string) => `Everything is unlocked. ${left} days left.`,
+      trialOver: 'Your free trial has ended. Choose a plan to unlock everything.',
       security: 'Security', password: 'Password', passwordDesc: 'Change your password', change: 'Change',
     },
     market: {
@@ -1030,9 +1039,12 @@ export const dashT = {
       defaultUser: 'Пользователь', joined: 'Зарегистрирован:',
       planTitle: 'Тарифный план', expires: 'Действует до:',
       planFree: 'Бесплатный', planPro: 'Pro', planProPlus: 'Pro+',
-      freeDesc: '1 магазин · история 7 дней', proDesc: '3 магазина · Неограниченная история',
-      proPlusDesc: '5 магазинов · Неограниченная история · Приоритетная поддержка',
+      freeDesc: 'Дашборд, товары, заказы и оба маркетплейса',
+      proDesc: 'Всё: аналитика, склад, финансы, юнит-экономика',
+      proPlusDesc: 'Всё · Приоритетная поддержка',
       upgradePro: 'Перейти на Pro →',
+      trialActive: (left: string) => `Все возможности открыты. Осталось ${left} дн.`,
+      trialOver: 'Пробный период закончился. Выберите тариф, чтобы открыть всё.',
       security: 'Безопасность', password: 'Пароль', passwordDesc: 'Измените ваш пароль', change: 'Изменить',
     },
     market: {

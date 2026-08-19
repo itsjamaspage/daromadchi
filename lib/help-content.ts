@@ -1,3 +1,7 @@
+// Trial length is interpolated from TRIAL_DAYS — see lib/trial-copy.ts. These
+// articles said "3 kunlik / 3-дневный / 3-day" long after the code moved to 14.
+import { TRIAL_UZ, TRIAL_RU, TRIAL_EN } from './trial-copy'
+
 export interface Article {
   slug: string
   title: string
@@ -1161,7 +1165,7 @@ Pro tarifning hamma narsi, qo'shimcha:
 - Jamoa boshqaruvi
 - Oxirgi 365 kunlik ma'lumotlar
 
-<info>Barcha tariflar 3 kunlik bepul sinov bilan keladi. Karta ma'lumotlari talab qilinmaydi.</info>
+<info>Barcha tariflar ${TRIAL_UZ}lik bepul sinov bilan keladi. Karta ma'lumotlari talab qilinmaydi.</info>
 `,
   },
   {
@@ -1201,7 +1205,7 @@ Mobil to'lov tizimlari orqali:
 ## To'lov muddati
 
 - Oylik to'lovlar: har oy bir xil kunda
-- Kechikish bo'lsa: 3 kunlik sinov muddat
+- Kechikish bo'lsa: 3 kunlik imtiyozli muddat
 - To'lov qilinmasa: tarif Bepulga tushiriladi
 
 <warning>To'lov ma'lumotlari xavfsiz SSL orqali saqlanadi. Karta raqamlari to'liq saqlanmaydi.</warning>
@@ -1249,11 +1253,11 @@ Hisobingizni butunlay o'chirishni istasangiz, buni istalgan vaqtda sozlamalardag
     title: "Bepul sinov davri",
     category: "To'lov va Tariflar",
     categorySlug: 'tolov-va-tariflar',
-    summary: "3 kunlik bepul sinov davridan qanday foydalanish.",
+    summary: `${TRIAL_UZ}lik bepul sinov davridan qanday foydalanish.`,
     content: `
 ## Bepul sinov davri
 
-Daromadchi'ga yangi ro'yxatdan o'tgan foydalanuvchilar **3 kunlik Pro tarif sinov davrini** bepul ishlatadilar.
+Daromadchi'ga yangi ro'yxatdan o'tgan foydalanuvchilar **${TRIAL_UZ}lik Pro tarif sinov davrini** bepul ishlatadilar.
 
 ## Nima kiritilgan?
 
@@ -1271,7 +1275,7 @@ Sinov davri uchun karta yoki to'lov ma'lumotlari talab qilinmaydi. Faqat email b
 
 ## Sinov tugagandan so'ng
 
-Sinov davri tugashidan 2 kun oldin email va Telegram orqali eslatma yuboriladi. Agar tarif tanlamasangiz, avtomatik Bepul tarifga o'tiladi.
+Sinov tugagach, tarif tanlamasangiz, avtomatik Bepul tarifga o'tiladi.
 
 ## Sinov davri tugash sanasini ko'rish
 
@@ -1549,7 +1553,7 @@ const ARTICLE_TITLES: Record<string, Record<string, { title: string; summary: st
   'tariflar':              { ru: { title: 'Тарифы и цены',                          summary: 'Доступные тарифы, их различия и какой подходит вам.' },                    en: { title: 'Plans and pricing',                      summary: 'Available plans, differences, and which one suits you.' } },
   'tolov-usullari':        { ru: { title: 'Способы оплаты',                         summary: 'Как оплатить тариф и какие способы оплаты доступны.' },                    en: { title: 'Payment methods',                        summary: 'How to pay for a plan and which payment methods are available.' } },
   'tarifni-ozgartirish':   { ru: { title: 'Смена или отмена тарифа',               summary: 'Обновление, понижение или отмена подписки.' },                             en: { title: 'Change or cancel plan',                  summary: 'Upgrading, downgrading or cancelling your subscription.' } },
-  'bepul-sinov':           { ru: { title: 'Бесплатный пробный период',             summary: 'Как воспользоваться 3-дневным бесплатным пробным периодом.' },             en: { title: 'Free trial period',                      summary: 'How to use the 3-day free trial.' } },
+  'bepul-sinov':           { ru: { title: 'Бесплатный пробный период',             summary: `Как воспользоваться бесплатным пробным периодом на ${TRIAL_RU}.` },             en: { title: 'Free trial period',                      summary: `How to use the ${TRIAL_EN} free trial.` } },
   'hisob-sozlamalari':     { ru: { title: 'Настройки аккаунта и профиля',          summary: 'Обновление данных профиля, пароля и настроек безопасности.' },             en: { title: 'Account and profile settings',           summary: 'Updating profile details, password, and security settings.' } },
   'api-token-sozlash':     { ru: { title: 'Добавление и управление API-токеном',   summary: 'Добавление, обновление и проверка токена Uzum Market.' },                  en: { title: 'Add and manage API token',               summary: 'Adding, updating and verifying your Uzum Market token.' } },
   'jamoa-boshqaruvi':      { ru: { title: 'Управление командой',                   summary: 'Добавление участников, роли и управление правами доступа.' },              en: { title: 'Team management',                        summary: 'Adding members, roles and managing access permissions.' } },
@@ -2505,7 +2509,7 @@ Daromadchi разделяет ваши продажи по категориям.
 - Управление командой
 - Данные за последние 365 дней
 
-<info>Все тарифы включают 3-дневный бесплатный пробный период. Данные карты не требуются.</info>
+<info>Все тарифы включают бесплатный пробный период на ${TRIAL_RU}. Данные карты не требуются.</info>
 `,
   'tolov-usullari': `
 ## Способы оплаты
@@ -2576,7 +2580,7 @@ Daromadchi принимает следующие способы оплаты:
   'bepul-sinov': `
 ## Бесплатный пробный период
 
-Новые пользователи Daromadchi получают **3-дневный бесплатный пробный период с тарифом Pro**.
+Новые пользователи Daromadchi получают **бесплатный пробный период с тарифом Pro на ${TRIAL_RU}**.
 
 ## Что включено?
 
@@ -2594,7 +2598,7 @@ Daromadchi принимает следующие способы оплаты:
 
 ## После окончания пробного периода
 
-За 2 дня до окончания придёт напоминание по email и в Telegram. Если тариф не выбрать — автоматически переходите на Бесплатный.
+По окончании пробного периода, если тариф не выбрать, вы автоматически переходите на Бесплатный.
 
 ## Как узнать дату окончания
 
@@ -3704,7 +3708,7 @@ Everything in Pro, plus:
 - Team management
 - Last 365 days of data
 
-<info>All plans include a 3-day free trial. No card details required.</info>
+<info>All plans include a ${TRIAL_EN} free trial. No card details required.</info>
 `,
   'tolov-usullari': `
 ## Payment methods
@@ -3775,7 +3779,7 @@ If you want to delete your account entirely, you can do so at any time via the "
   'bepul-sinov': `
 ## Free trial
 
-New Daromadchi users get a **3-day free Pro plan trial**.
+New Daromadchi users get a **${TRIAL_EN} free Pro plan trial**.
 
 ## What's included?
 
@@ -3793,7 +3797,7 @@ No card or payment information is needed for the trial. Just register with your 
 
 ## After the trial ends
 
-A reminder is sent 2 days before the trial ends via email and Telegram. If you don't choose a plan, you are automatically moved to the Free plan.
+When the trial ends, if you have not chosen a plan you are automatically moved to the Free plan.
 
 ## Check expiry date
 
