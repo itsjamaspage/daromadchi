@@ -38,6 +38,19 @@ export const nudgeT = {
   over30Days:       tr('За последние 30 дней:', "So'nggi 30 kunda:", 'Over the last 30 days:'),
   suggestedTier:    tr('По нашей шкале это тариф', "Bizning shkalamiz bo'yicha bu", 'On our ladder that is'),
 
+  enterpriseTitle:  tr(
+    'Ваш оборот подходит к верхней границе тарифов',
+    "Aylanmangiz tariflarning yuqori chegarasiga yaqinlashmoqda",
+    'Your turnover is approaching the top of our ladder',
+  ),
+  enterpriseBody:   tr(
+    'На таких объёмах мы подбираем условия индивидуально — лимиты, интеграции и поддержку под ваш процесс. Автоматически ничего не меняется: ваш текущий тариф продолжает работать как есть.',
+    "Bunday hajmlarda shartlarni alohida kelishamiz — limitlar, integratsiyalar va qo'llab-quvvatlash sizning jarayoningizga moslanadi. Avtomatik hech narsa o'zgarmaydi: joriy tarifingiz o'z holicha ishlayveradi.",
+    'At this volume we set terms individually — limits, integrations and support around your process. Nothing changes automatically: your current plan keeps working exactly as it is.',
+  ),
+  talkToUs:         tr('Связаться с нами', "Biz bilan bog'lanish", 'Talk to us'),
+  later:            tr('Позже', 'Keyinroq', 'Later'),
+
   choosePlan:       tr('Выбрать тариф', 'Tarifni tanlash', 'Choose a plan'),
   dismiss:          tr('Понятно', 'Tushunarli', 'Got it'),
 } satisfies Record<string, Tr>

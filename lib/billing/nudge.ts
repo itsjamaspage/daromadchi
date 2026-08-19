@@ -26,12 +26,19 @@ import { db, users, userSettings, userNotices } from '@/lib/db'
 import { sendTelegramMessage } from '@/lib/telegram'
 import { TRIAL_DAYS } from '@/lib/billing/features'
 import { tierPriceTiyin } from '@/lib/billing/tier-pricing'
+import { shouldTriggerEnterpriseOutreach, ENTERPRISE_POPUP_THRESHOLD } from '@/lib/billing/tiers'
+import { ADMIN_CHAT_IDS } from '@/lib/telegram-admin'
+// telegramContactUrl is what main exports today. The support-account rescue
+// (#239) replaces it with TELEGRAM_CONTACT_URL; whichever of the two merges
+// second swaps this one line.
+import { telegramContactUrl } from '@/lib/contact'
+const CONTACT_URL = telegramContactUrl('enterprise')
 import { formatSomFromTiyin } from '@/lib/billing/plans'
 import type { Tier } from '@/lib/billing/tiers'
 import { TRIAL_REMINDER_DAYS, RENUDGE_DAYS } from '@/lib/billing/nudge-constants'
 import { logger } from '@/lib/logger'
 
-export const NOTICE_KINDS = ['trial_ending', 'trial_ended', 'outgrew_free'] as const
+export const NOTICE_KINDS = ['trial_ending', 'trial_ended', 'outgrew_free', 'enterprise_outreach'] as const
 export type NoticeKind = (typeof NOTICE_KINDS)[number]
 
 // Timings live in ./nudge-constants.ts: the help articles quote them and are
@@ -138,12 +145,23 @@ function outgrewFreeText(lang: NoticeLang, turnoverSom: number, tier: Tier): str
   return `📈 <b>Aylanmangiz o'sdi</b>\n\nSo'nggi 30 kunda: <b>${som(turnoverSom)} so'm</b>. Bizning shkalamiz bo'yicha bu <b>${name}</b>${price ? ` — ${price} so'm/oy` : ''}.\n\nHech narsa avtomatik yechilmaydi: tarifni o'zingiz xohlaganingizda ulaysiz.`
 }
 
+function enterpriseOutreachText(lang: NoticeLang, turnoverSom: number): string {
+  if (lang === 'ru') {
+    return `🏆 <b>Ваш оборот подходит к верхней границе тарифов</b>\n\nЗа последние 30 дней: <b>${som(turnoverSom)} сум</b>. На таких объёмах мы подбираем условия индивидуально — лимиты, интеграции и поддержку под ваш процесс.\n\nНапишите нам: ${CONTACT_URL}`
+  }
+  if (lang === 'en') {
+    return `🏆 <b>Your turnover is approaching the top of our ladder</b>\n\nOver the last 30 days: <b>${som(turnoverSom)} so'm</b>. At this volume we set terms individually — limits, integrations and support around your process.\n\nTalk to us: ${CONTACT_URL}`
+  }
+  return `🏆 <b>Aylanmangiz tariflarning yuqori chegarasiga yaqinlashmoqda</b>\n\nSo'nggi 30 kunda: <b>${som(turnoverSom)} so'm</b>. Bunday hajmlarda shartlarni alohida kelishamiz — limitlar, integratsiyalar va qo'llab-quvvatlash sizning jarayoningizga moslanadi.\n\nBizga yozing: ${CONTACT_URL}`
+}
+
 /* ── the sweep ────────────────────────────────────────────────────────────── */
 
 export interface NudgeSweepResult {
   trialEnding: number
   trialEnded: number
   outgrewFree: number
+  enterpriseOutreach: number
 }
 
 /** Telegram is best-effort: the in-app banner is recorded either way. */
@@ -161,7 +179,7 @@ async function tell(chatId: string | null, text: string): Promise<void> {
  * in-app regardless. Only a charge needs proof of notice.
  */
 export async function dispatchTierNudges(now: Date = new Date()): Promise<NudgeSweepResult> {
-  const result: NudgeSweepResult = { trialEnding: 0, trialEnded: 0, outgrewFree: 0 }
+  const result: NudgeSweepResult = { trialEnding: 0, trialEnded: 0, outgrewFree: 0, enterpriseOutreach: 0 }
   const reminderAt = new Date(now.getTime() + TRIAL_REMINDER_DAYS * DAY_MS)
 
   // ── trial ending ──────────────────────────────────────────────────────────
@@ -223,6 +241,35 @@ export async function dispatchTierNudges(now: Date = new Date()): Promise<NudgeS
     if (!await claimNotice(u.id, 'outgrew_free', { turnoverSom: turnover, tier }, RENUDGE_DAYS, now)) continue
     await tell(u.chatId, outgrewFreeText(pickLang(u.lang), turnover, tier))
     result.outgrewFree++
+  }
+
+  // ── approaching Enterprise ────────────────────────────────────────────────
+  // Runs for EVERY plan, not just free: the threshold is 90 % of the Biznes
+  // ceiling, so the seller this is written for is usually already paying. The
+  // point is to reach them BEFORE the ladder runs out, not after.
+  //
+  // This one also pings the operators, because "outreach" means a person gets
+  // in touch — a seller at this volume being left to read a banner is the
+  // failure this branch exists to prevent.
+  const approaching = await db.select({
+    id: users.id, email: users.email, plan: users.plan,
+    turnover: users.derived_turnover_som,
+    chatId: userSettings.telegram_chat_id, lang: userSettings.notif_lang,
+  }).from(users)
+    .leftJoin(userSettings, eq(userSettings.user_id, users.id))
+    .where(isNotNull(users.derived_turnover_som))
+
+  for (const u of approaching) {
+    const turnover = Number(u.turnover ?? 0)
+    if (!shouldTriggerEnterpriseOutreach(turnover)) continue
+    if (!await claimNotice(u.id, 'enterprise_outreach',
+      { turnoverSom: turnover, threshold: ENTERPRISE_POPUP_THRESHOLD }, RENUDGE_DAYS, now)) continue
+
+    await tell(u.chatId, enterpriseOutreachText(pickLang(u.lang), turnover))
+    await Promise.allSettled(ADMIN_CHAT_IDS.map(chatId => sendTelegramMessage(chatId,
+      `🏆 <b>Enterprise outreach</b>\n\n👤 ${u.email}\n📊 ${som(turnover)} so'm / 30 kun\n📦 ${u.plan}`,
+    )))
+    result.enterpriseOutreach++
   }
 
   return result

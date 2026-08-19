@@ -10,6 +10,7 @@ import { getStockAlerts } from '@/lib/db/alerts'
 import { lockedNavKeys } from '@/lib/billing/nav-gating'
 import { getActiveNotice } from '@/lib/billing/nudge'
 import NudgeBanner from '@/components/dashboard/NudgeBanner'
+import EnterpriseOutreachModal from '@/components/dashboard/EnterpriseOutreachModal'
 
 // Keep the entire authenticated dashboard out of search. Inherited by every
 // /dashboard/* route → <meta name="robots" content="noindex, nofollow">.
@@ -69,7 +70,13 @@ export default async function DashboardLayout({ children }: { children: React.Re
           <div className="p-4 sm:p-6 lg:p-8">
             {/* Above the page, not over it: a seller who has just been told
                 their trial is ending is trying to use the product. */}
-            {notice && <NudgeBanner kind={notice.kind} detail={notice.detail} />}
+            {notice && notice.kind !== 'enterprise_outreach' && (
+              <NudgeBanner kind={notice.kind} detail={notice.detail} />
+            )}
+            {/* The one nudge that interrupts — see the component for why. */}
+            {notice?.kind === 'enterprise_outreach' && (
+              <EnterpriseOutreachModal detail={notice.detail} />
+            )}
             {children}
           </div>
         </main>
