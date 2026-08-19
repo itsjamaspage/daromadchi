@@ -545,6 +545,33 @@ export const subscriptions = pgTable('subscriptions', {
   index('subscriptions_status_idx').on(t.status),
 ])
 
+/* ── 14c. user_notices ──────────────────────────────────────────────────────── */
+
+/**
+ * Nudges we have sent a seller: trial ending, trial over, turnover outgrew Free,
+ * enterprise outreach. One row per (user, kind) — the unique index is the
+ * throttle that stops the daily sweep repeating itself (migration 078).
+ *
+ * NOT the record for a price change. That is legal evidence and lives on the
+ * subscription (subscriptions.pending_notified_at), where it cannot be
+ * throttled, overwritten or dismissed away.
+ */
+export const userNotices = pgTable('user_notices', {
+  id:           uuid('id').primaryKey().defaultRandom(),
+  user_id:      uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  kind:         text('kind').notNull(),
+  sent_at:      timestamp('sent_at', { withTimezone: true }).defaultNow().notNull(),
+  /** NULL until the seller dismisses the in-app banner. */
+  dismissed_at: timestamp('dismissed_at', { withTimezone: true }),
+  /** What they were shown — the turnover figure, the tier suggested. */
+  detail:       jsonb('detail').$type<Record<string, unknown>>(),
+  created_at:   timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updated_at:   timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (t) => [
+  uniqueIndex('user_notices_user_kind_idx').on(t.user_id, t.kind),
+  index('user_notices_active_idx').on(t.user_id, t.sent_at),
+])
+
 /* ── 15. alerts ─────────────────────────────────────────────────────────────── */
 
 export const alerts = pgTable('alerts', {

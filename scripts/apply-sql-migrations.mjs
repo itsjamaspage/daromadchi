@@ -125,6 +125,11 @@ const MIGRATIONS = [
   // undelivered increase simply never charges. Additive + idempotent, no
   // backfill — staging a charge nobody approved is the failure mode here.
   'migrations/migrations/077_subscription_price_notice.sql',
+  // One row per (seller, kind of nudge). The unique index is the throttle that
+  // stops a daily sweep telling the same seller the same thing every morning.
+  // Additive + idempotent, no backfill — a backfilled row would mark a nudge as
+  // already sent and silence the first real one.
+  'migrations/migrations/078_user_notices.sql',
 ]
 
 function loadDatabaseUrl() {

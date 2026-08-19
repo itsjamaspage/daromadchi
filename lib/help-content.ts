@@ -1,6 +1,7 @@
 // Trial length is interpolated from TRIAL_DAYS — see lib/trial-copy.ts. These
 // articles said "3 kunlik / 3-дневный / 3-day" long after the code moved to 14.
 import { TRIAL_UZ, TRIAL_RU, TRIAL_EN } from './trial-copy'
+import { TRIAL_REMINDER_DAYS } from './billing/nudge-constants'
 
 export interface Article {
   slug: string
@@ -1275,7 +1276,7 @@ Sinov davri uchun karta yoki to'lov ma'lumotlari talab qilinmaydi. Faqat email b
 
 ## Sinov tugagandan so'ng
 
-Sinov tugagach, tarif tanlamasangiz, avtomatik Bepul tarifga o'tiladi.
+Tugashiga ${TRIAL_REMINDER_DAYS} kun qolganda ilovada va Telegram orqali eslatma yuboriladi. Sinov tugagach, tarif tanlamasangiz, avtomatik Bepul tarifga o'tiladi.
 
 ## Sinov davri tugash sanasini ko'rish
 
@@ -2598,7 +2599,7 @@ Daromadchi принимает следующие способы оплаты:
 
 ## После окончания пробного периода
 
-По окончании пробного периода, если тариф не выбрать, вы автоматически переходите на Бесплатный.
+Напоминание придёт в приложении и в Telegram — за ${TRIAL_REMINDER_DAYS} дн. до окончания. По окончании пробного периода, если тариф не выбрать, вы автоматически переходите на Бесплатный.
 
 ## Как узнать дату окончания
 
@@ -3797,7 +3798,7 @@ No card or payment information is needed for the trial. Just register with your 
 
 ## After the trial ends
 
-When the trial ends, if you have not chosen a plan you are automatically moved to the Free plan.
+We remind you in the app and on Telegram ${TRIAL_REMINDER_DAYS} days before it ends. When the trial ends, if you have not chosen a plan you are automatically moved to the Free plan.
 
 ## Check expiry date
 

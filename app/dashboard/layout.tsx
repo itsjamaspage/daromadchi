@@ -8,6 +8,8 @@ import ChannelGate from '@/components/dashboard/ChannelGate'
 import { getCurrentUser } from '@/lib/auth/session'
 import { getStockAlerts } from '@/lib/db/alerts'
 import { lockedNavKeys } from '@/lib/billing/nav-gating'
+import { getActiveNotice } from '@/lib/billing/nudge'
+import NudgeBanner from '@/components/dashboard/NudgeBanner'
 
 // Keep the entire authenticated dashboard out of search. Inherited by every
 // /dashboard/* route → <meta name="robots" content="noindex, nofollow">.
@@ -40,6 +42,14 @@ export default async function DashboardLayout({ children }: { children: React.Re
     locked = await lockedNavKeys(user?.id ?? null)
   } catch { /* best-effort — show no locks on failure */ }
 
+  // The newest nudge the seller has not dismissed. Best-effort for the same
+  // reason as the two above: this is a suggestion, and nothing about the
+  // dashboard should fail because a suggestion could not be loaded.
+  let notice: Awaited<ReturnType<typeof getActiveNotice>> = null
+  try {
+    if (user?.id) notice = await getActiveNotice(user.id)
+  } catch { /* best-effort — show no banner on failure */ }
+
   return (
     <ChannelGate>
       <div className="min-h-screen">
@@ -57,6 +67,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
         {/* Main content — offset by collapsed sidebar width only */}
         <main className="lg:ml-14 pt-14 pb-20 lg:pb-0 min-w-0">
           <div className="p-4 sm:p-6 lg:p-8">
+            {/* Above the page, not over it: a seller who has just been told
+                their trial is ending is trying to use the product. */}
+            {notice && <NudgeBanner kind={notice.kind} detail={notice.detail} />}
             {children}
           </div>
         </main>
