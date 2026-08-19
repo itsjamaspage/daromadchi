@@ -72,9 +72,22 @@ interface Props {
   showInput?: boolean
   /** Drop prices and CTAs to a single line, for the landing teaser. */
   compact?: boolean
+  /**
+   * Make every self-serve row selectable. A seller with no measured sales still
+   * has to be able to pick something — turnover only decides which tier we
+   * RECOMMEND, and a brand-new account has no turnover to recommend from.
+   */
+  onSelect?: (tier: Tier) => void
+  /** Label the highlighted row as our recommendation rather than a fact. */
+  markRecommended?: boolean
+  /** The tier the seller is already on, so its row says so instead of offering a buy. */
+  currentTier?: Tier | null
 }
 
-export default function TierLadder({ lang, interval, highlight = null, showInput = true, compact = false }: Props) {
+export default function TierLadder({
+  lang, interval, highlight = null, showInput = true, compact = false,
+  onSelect, markRecommended = false, currentTier = null,
+}: Props) {
   const t = (k: keyof typeof tiersT) => tiersT[k][lang]
   const [entered, setEntered] = useState('')
 
@@ -154,6 +167,12 @@ export default function TierLadder({ lang, interval, highlight = null, showInput
 
               <span className="hidden items-center gap-2 sm:flex">
                 <span className="text-sm font-bold" style={{ color: 'var(--text-base)' }}>{t(TIER_LABEL[tier])}</span>
+                {markRecommended && isMatch && (
+                  <span className="rounded-full px-2 py-0.5 text-[10px] font-semibold whitespace-nowrap"
+                    style={{ background: 'var(--c1)', color: '#fff' }}>
+                    {t('recommended')}
+                  </span>
+                )}
                 {tier === 'free' && (
                   <span className="rounded-full px-2 py-0.5 text-[10px] font-semibold"
                     style={{ background: 'rgba(47,109,246,0.12)', color: 'var(--c1)' }}>
@@ -177,11 +196,32 @@ export default function TierLadder({ lang, interval, highlight = null, showInput
                     <span className="text-xs font-normal" style={{ color: 'var(--text-muted)' }}>{t('perMonth')}</span>
                   </span>
                 )}
-                {!compact && isMatch && href && (
+                {/* In-app (onSelect given) EVERY self-serve row is buyable: a
+                    seller with no measured sales must still be able to pick a
+                    plan, and turnover only decides which one we recommend.
+                    On the public page only the matched row offers an action. */}
+                {!compact && onSelect ? (
+                  tier === currentTier ? (
+                    <span className="mt-1 block text-xs font-semibold" style={{ color: 'var(--c1)' }}>
+                      {t('currentPlan')}
+                    </span>
+                  ) : isSelfServe(tier) ? (
+                    <button type="button" onClick={() => onSelect(tier)}
+                      className="mt-1 text-xs font-semibold underline underline-offset-2"
+                      style={{ color: 'var(--c1)' }}>
+                      {t('choose')}
+                    </button>
+                  ) : tier === 'free' ? null : (
+                    <a href="https://t.me/daromadchi_uz" target="_blank" rel="noopener noreferrer"
+                      className="mt-1 block text-xs font-semibold underline underline-offset-2" style={{ color: 'var(--c1)' }}>
+                      {t('talkToUs')}
+                    </a>
+                  )
+                ) : !compact && isMatch && href ? (
                   <a href={href} className="mt-1 block text-xs font-semibold underline underline-offset-2" style={{ color: 'var(--c1)' }}>
                     {isSelfServe(tier) ? t('choose') : t('start')}
                   </a>
-                )}
+                ) : null}
               </span>
             </li>
           )

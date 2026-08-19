@@ -13,7 +13,6 @@ import type { Interval } from '@/lib/billing/plans'
 import { planFeatureList } from '@/lib/billing/plan-features'
 import TierLadder from '@/components/pricing/TierLadder'
 import { tiersT } from '@/lib/tiersT'
-import { isSelfServe } from '@/lib/billing/tier-pricing'
 import type { Tier } from '@/lib/billing/tiers'
 
 type T = typeof translations['uz']['dashboard']
@@ -260,54 +259,39 @@ function UpgradeModal({ current, highlight, initialInterval, lang, d, derivedTie
         {/* Step: choose plan */}
         {step === 'choose' && (
           <div className="p-6 space-y-4">
-            {/* Not a chooser any more. Turnover assigns the tier, so presenting
-                five selectable options would offer a choice the model does not
-                have — and a seller picking a tier below their turnover would
-                simply fail at checkout. Show what they are, and one way to pay. */}
-            {derivedTier ? (
-              <>
-                <div className="rounded-2xl border p-4" style={{ borderColor: 'var(--border)', background: 'var(--bg-card2)' }}>
+            {/* The plans are ALWAYS shown and always selectable.
+                Turnover decides which tier we RECOMMEND, not which one a seller
+                is allowed to buy — and every new account starts at zero measured
+                sales, so gating the list behind a computed tier left brand-new
+                sellers with no way to subscribe at all. */}
+            <div className="rounded-2xl border p-4" style={{ borderColor: 'var(--border)', background: 'var(--bg-card2)' }}>
+              {derivedTurnoverSom !== null && derivedTurnoverSom > 0 ? (
+                <>
                   <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{tiersT.yourTurnover[lang]}</p>
                   <p className="text-2xl font-bold tabular-nums mt-0.5" style={{ color: 'var(--text-base)' }}>
-                    {derivedTurnoverSom !== null ? fmtSom(derivedTurnoverSom) : '—'}{' '}
+                    {fmtSom(derivedTurnoverSom)}{' '}
                     <span className="text-sm font-normal" style={{ color: 'var(--text-muted)' }}>{tiersT.som[lang]}</span>
                   </p>
-                  <p className="text-xs mt-2" style={{ color: 'var(--text-muted)' }}>{tiersT.computedNote[lang]}</p>
-                </div>
+                </>
+              ) : (
+                <p className="text-sm" style={{ color: 'var(--text-base)' }}>{tiersT.noSalesYet[lang]}</p>
+              )}
+              <p className="text-xs mt-2" style={{ color: 'var(--text-muted)' }}>{tiersT.autoAdjust[lang]}</p>
+            </div>
 
-                <div className="flex justify-center">
-                  <IntervalTabs value={billingInterval} onChange={setBillingInterval} b={b} />
-                </div>
+            <div className="flex justify-center">
+              <IntervalTabs value={billingInterval} onChange={setBillingInterval} b={b} />
+            </div>
 
-                <TierLadder lang={lang} interval={billingInterval} highlight={derivedTier} showInput={false} />
-
-                {isSelfServe(derivedTier) ? (
-                  derivedTier === current ? (
-                    <p className="text-center text-xs font-medium py-2" style={{ color: 'var(--c1)' }}>
-                      {tiersT.currentPlan[lang]}
-                    </p>
-                  ) : (
-                    <button type="button" onClick={() => choose(derivedTier as 'pro' | 'pro_plus')}
-                      className="btn-primary w-full rounded-xl py-3 text-sm font-semibold">
-                      {tiersT.payWith[lang]}
-                    </button>
-                  )
-                ) : (
-                  <a href="https://t.me/daromadchi_uz" target="_blank" rel="noopener noreferrer"
-                    className="btn-primary block w-full rounded-xl py-3 text-center text-sm font-semibold">
-                    {tiersT.talkToUs[lang]}
-                  </a>
-                )}
-              </>
-            ) : (
-              // No turnover computed yet: say what to do, do not guess a tier.
-              <div className="rounded-2xl border border-dashed p-6 text-center" style={{ borderColor: 'var(--border)' }}>
-                <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{tiersT.notComputed[lang]}</p>
-                <a href="/dashboard/settings" className="btn-primary mt-4 inline-block rounded-xl px-5 py-2.5 text-xs font-semibold">
-                  {d.goToSettings}
-                </a>
-              </div>
-            )}
+            <TierLadder
+              lang={lang}
+              interval={billingInterval}
+              highlight={derivedTier}
+              markRecommended
+              showInput={false}
+              currentTier={current as Tier}
+              onSelect={tier => choose(tier as 'pro' | 'pro_plus')}
+            />
           </div>
         )}
 
