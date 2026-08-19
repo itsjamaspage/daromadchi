@@ -553,8 +553,20 @@ export default function ProductsTable({ products }: { products: Product[] }) {
         </div>
       )}
 
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1 max-w-sm">
+      {/* Two things here are load-bearing, neither is cosmetic.
+          1. items-start/sm:items-center — without it the row stretches every
+             child to the tallest, which is the wrapping category-chip group. The
+             search wrapper grows taller than the input inside it, and the
+             magnifier (positioned at top-1/2 of the WRAPPER) drops below the
+             input. Every other filter row already carries these classes;
+             this one missed them.
+          2. sm:w-64 sm:shrink-0 instead of flex-1 — with enough categories the
+             chip group's natural width is large, and a flex-1 search loses the
+             width fight and collapses to barely wider than its own icon. A fixed
+             basis that cannot shrink keeps the field usable and lets the chips
+             wrap into whatever is left, which is what they already do. */}
+      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+        <div className="relative w-full sm:w-64 sm:shrink-0">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--text-muted)' }} />
           <input
             type="text"
