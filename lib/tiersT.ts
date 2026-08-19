@@ -97,10 +97,43 @@ export const tiersT = {
   requestInvoice: tr('Выставить счёт', "Hisob-faktura so'rash", 'Request an invoice'),
   currentPlan:  tr('Текущий тариф', 'Joriy tarif', 'Current plan'),
 
+  // ── turnover panel on the billing page ──
+  // "Turnover", never "revenue" or "доход": this is the value of orders that
+  // decides the tier, not money the seller keeps. Calling it income on a BILLING
+  // page — next to real amounts they are charged — would be the single most
+  // misleading word in the product.
+  turnoverPanelTitle: tr('Ваш оборот', 'Aylanmangiz', 'Your turnover'),
+  turnoverIsNotProfit: tr(
+    'Это стоимость заказов за 30 дней без отменённых и возвратов — не прибыль и не выплаты. По ней определяется тариф.',
+    "Bu 30 kunlik buyurtmalar qiymati (bekor qilingan va qaytarilganlarsiz) — foyda yoki to'lov emas. Tarif shunga qarab belgilanadi.",
+    'This is the value of your orders over 30 days, excluding cancelled and returned — not profit, not payouts. It is what sets your tier.',
+  ),
+  bandLabel:    tr('Диапазон тарифа', 'Tarif oralig\u2018i', 'Tier range'),
+  ofCeiling:    tr('от верхней границы', 'yuqori chegaradan', 'of the ceiling'),
+  nearCeiling:  tr('Вы близко к верхней границе тарифа', 'Tarifning yuqori chegarasiga yaqinsiz', 'You are close to outgrowing this tier'),
+  noCeiling:    tr(
+    'Это верхний тариф — фиксированной границы нет. На таких объёмах условия обсуждаются индивидуально.',
+    "Bu eng yuqori tarif — belgilangan chegara yo'q. Bunday hajmlarda shartlar alohida kelishiladi.",
+    'This is the top tier — there is no fixed ceiling. At this volume terms are agreed individually.',
+  ),
+
   // ── feature matrix ──
   featuresTitle: tr('Что входит', 'Nimalar kiradi', "What's included"),
   trial:         tr(`${D} дн.`, `${D} kun`, EN_D),
 } satisfies Record<string, Tr>
+
+/**
+ * "At 50 000 000 so'm you move to Pro+."
+ *
+ * Built per language rather than by concatenating label fragments: Uzbek puts
+ * the verb last and Russian does not, so the fragment approach produced word
+ * salad in one of the three every time.
+ */
+export function nearCeilingSentence(lang: Lang, amountSom: string, nextTier: string): string {
+  if (lang === 'ru') return `При обороте ${amountSom} сум вы переходите на ${nextTier}.`
+  if (lang === 'en') return `At ${amountSom} so'm you move to ${nextTier}.`
+  return `Aylanma ${amountSom} so'mga yetganda ${nextTier} tarifiga o'tasiz.`
+}
 
 /**
  * Capability names for the per-tier "what's included" list.

@@ -11,6 +11,7 @@ import type { BillingInfo, PlanType, PaymentRecord } from '@/lib/db/billing'
 import { PLAN_PRICES_TIYIN, formatSomFromTiyin, annualMonthlySom, planAmountTiyin } from '@/lib/billing/plans'
 import type { Interval, PlanKey } from '@/lib/billing/plans'
 import { planFeatureList } from '@/lib/billing/plan-features'
+import TurnoverPanel from '@/components/dashboard/TurnoverPanel'
 import TierTabs from '@/components/pricing/TierTabs'
 import { tiersT } from '@/lib/tiersT'
 import type { Tier } from '@/lib/billing/tiers'
@@ -741,6 +742,10 @@ export default function BillingClient({ billing, initialPlan, initialInterval }:
           </div>
         </div>
       </div>
+
+      {/* Where they sit on the turnover ladder. Display-only: it reads the
+          recommendation the daily job already computed and changes nothing. */}
+      <TurnoverPanel lang={l} tier={billing.derivedTier as Tier | null} turnoverSom={billing.derivedTurnoverSom} />
 
       {/* Payment Methods */}
       <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl overflow-hidden">

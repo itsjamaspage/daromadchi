@@ -35,10 +35,49 @@ export const TURNOVER_BANDS: readonly { tier: Tier; min: number }[] = [
 ] as const
 
 /**
- * Turnover at which we reach out before the seller outgrows Biznes — 90 % of the
- * 180 mln Enterprise floor. Not a band boundary; it triggers the outreach popup.
+ * How far into a band counts as "about to outgrow it".
+ *
+ * 90 %. This was already the rule — the Enterprise outreach popup fires at
+ * 162 mln, which is 90 % of the 180 mln Biznes ceiling — it just was not written
+ * as a rule. Naming it here means the billing page's warning and the outreach
+ * popup answer the same question with the same arithmetic instead of two
+ * numbers that agree by coincidence until someone edits one.
  */
-export const ENTERPRISE_POPUP_THRESHOLD = 162_000_000
+export const NEAR_CEILING_FRACTION = 0.9
+
+/** The turnover range a tier owns: [min, max). max is null for the top tier. */
+export function bandRange(tier: Tier): { min: number; max: number | null } {
+  const i = TURNOVER_BANDS.findIndex(b => b.tier === tier)
+  if (i === -1) return { min: 0, max: null }
+  return {
+    min: TURNOVER_BANDS[i].min,
+    // Bands are ordered high → low, so the NEXT tier up is the previous entry.
+    max: i === 0 ? null : TURNOVER_BANDS[i - 1].min,
+  }
+}
+
+/** The tier above this one, or null at the top. */
+export function nextTierUp(tier: Tier): Tier | null {
+  const i = TURNOVER_BANDS.findIndex(b => b.tier === tier)
+  return i > 0 ? TURNOVER_BANDS[i - 1].tier : null
+}
+
+/**
+ * Turnover at which a seller is close enough to the top of `tier` to be told.
+ * null for Enterprise, which has no ceiling to approach.
+ */
+export function nearCeilingThreshold(tier: Tier): number | null {
+  const { max } = bandRange(tier)
+  return max === null ? null : Math.round(max * NEAR_CEILING_FRACTION)
+}
+
+/**
+ * Turnover at which we reach out before the seller outgrows Biznes.
+ *
+ * Derived rather than typed, so it cannot drift from the rule above: it IS
+ * "90 % of the Biznes ceiling", and it still evaluates to 162 000 000.
+ */
+export const ENTERPRISE_POPUP_THRESHOLD = nearCeilingThreshold('biznes') as number
 
 /**
  * Map trailing-30-day turnover (so'm) to a tier.
