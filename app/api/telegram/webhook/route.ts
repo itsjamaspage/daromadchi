@@ -3,6 +3,7 @@ import { eq, and, gt } from 'drizzle-orm'
 import { db, botSessions, userSettings, shops, channelNonces, extActivationCodes } from '@/lib/db'
 import { sendTelegramMessage, sendTelegramKeyboard, answerCallbackQuery, editMessageButtons } from '@/lib/telegram'
 import { withErrorHandler } from '@/lib/api-handler'
+import { ADMIN_CHAT_IDS } from '@/lib/telegram-admin'
 
 export const GET = withErrorHandler(async () => {
   return NextResponse.json({ ok: true, bot_token_set: !!process.env.TELEGRAM_BOT_TOKEN })
@@ -35,6 +36,7 @@ const BOT_I18N: Record<Lang, {
   activationCodeValid: string
   activationExpiry: string
   thanksQuestion: string
+  contactGreeting: string
 }> = {
   uz: {
     notifPrompt:  '⚙️ Bildirishnomalarni sozlang:',
@@ -55,6 +57,7 @@ const BOT_I18N: Record<Lang, {
     activationCodeValid: 'Kodni kengaytmaga kiriting.',
     activationExpiry: 'Kod 30 daqiqa amal qiladi.',
     thanksQuestion: '✅ Savolingiz uchun rahmat! Qabul qildik, tez orada javob beramiz.',
+    contactGreeting: "✅ Salom! Savolingizni shu yerga yozing — tez orada javob beramiz.",
   },
   ru: {
     notifPrompt:  '⚙️ Настройте уведомления:',
@@ -75,6 +78,7 @@ const BOT_I18N: Record<Lang, {
     activationCodeValid: 'Введите код в расширение.',
     activationExpiry: 'Код действует 30 минут.',
     thanksQuestion: '✅ Спасибо за ваш вопрос! Мы получили его и ответим в ближайшее время.',
+    contactGreeting: '✅ Здравствуйте! Напишите свой вопрос прямо здесь — ответим в ближайшее время.',
   },
   en: {
     notifPrompt:  '⚙️ Configure notifications:',
@@ -95,6 +99,7 @@ const BOT_I18N: Record<Lang, {
     activationCodeValid: 'Enter the code in the extension.',
     activationExpiry: 'Code is valid for 30 minutes.',
     thanksQuestion: '✅ Thank you for your question! We received it and will get back to you soon.',
+    contactGreeting: '✅ Hello! Send your question right here — we will get back to you shortly.',
   },
 }
 
@@ -226,6 +231,16 @@ async function getUserShops(userId: string) {
   return db.select({ name: shops.name, marketplace: shops.marketplace })
     .from(shops)
     .where(eq(shops.user_id, userId))
+}
+
+/**
+ * Fan an operational alert out to every configured operator.
+ *
+ * Best-effort per chat: one operator having blocked the bot must not stop the
+ * others from hearing about a waiting customer.
+ */
+async function notifyAdmins(html: string) {
+  await Promise.allSettled(ADMIN_CHAT_IDS.map(id => sendTelegramMessage(id, html)))
 }
 
 async function sendLangSelect(chatId: string) {
@@ -398,6 +413,24 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   if (text.startsWith('/start ') || text.startsWith('/start@')) {
     const token = text.split(' ')[1]?.trim()
 
+    // ── /start contact_<source> — someone pressed "Contact us" on the site ──
+    // Without this they land in the language picker and the extension
+    // activation flow, which is the same wrong-page feeling as the channel link
+    // this replaced. Greet them, ask for the question, and tell the operators
+    // somebody is waiting; the free-text handler below forwards what they write.
+    if (token?.startsWith('contact')) {
+      const source = token.slice('contact'.length).replace(/^_/, '') || 'site'
+      const contactLang = (await getSession(chatId))?.lang ?? 'uz'
+      await sendTelegramMessage(chatId, botT(contactLang).contactGreeting)
+      const from = message.from as { first_name?: string; username?: string }
+      const who = [from?.first_name ?? '', from?.username ? `@${from.username}` : '', `(ID: ${chatId})`]
+        .filter(Boolean).join(' ')
+      await notifyAdmins(
+        `💬 <b>Yangi murojaat / Новое обращение</b>\n\n👤 ${who}\n📍 ${source}`
+      )
+      return NextResponse.json({ ok: true })
+    }
+
     if (token?.startsWith('chancheck_')) {
       const nonce = token.replace('chancheck_', '')
       const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
@@ -528,9 +561,7 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   const uname     = (message.from?.username  as string | undefined) ?? ''
   const senderInfo = [firstName, uname ? `@${uname}` : '', `(ID: ${chatId})`].filter(Boolean).join(' ')
   await sendTelegramMessage(chatId, botT(lang).thanksQuestion)
-  await sendTelegramMessage('6884517020',
-    `📩 <b>Yangi savol / Новый вопрос</b>\n\n👤 ${senderInfo}\n\n💬 ${text}`
-  )
+  await notifyAdmins(`📩 <b>Yangi savol / Новый вопрос</b>\n\n👤 ${senderInfo}\n\n💬 ${text}`)
 
   return NextResponse.json({ ok: true })
 })

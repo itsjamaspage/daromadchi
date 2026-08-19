@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { sendTelegramMessage, sendTelegramPhoto } from '@/lib/telegram'
 import { withErrorHandler } from '@/lib/api-handler'
+import { ADMIN_CHAT_IDS } from '@/lib/telegram-admin'
 
-const FEEDBACK_CHAT_IDS = ['6884517020']
+const FEEDBACK_CHAT_IDS = ADMIN_CHAT_IDS
 const VALID_TYPES = ['bug', 'idea'] as const
 const MAX_MSG_LEN = 2000
 // ~5 MB image → base64 ≈ 6.7 MB string

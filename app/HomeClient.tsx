@@ -14,6 +14,7 @@ import type { Lang } from '@/lib/i18n'
 import { T } from '@/lib/landing-t'
 import { PLAN_PRICES_TIYIN, formatSomFromTiyin } from '@/lib/billing/plans'
 import TierTabs from '@/components/pricing/TierTabs'
+import { TELEGRAM_BOT_URL } from '@/lib/contact'
 import { tiersT } from '@/lib/tiersT'
 
 import PillNav from './components/PillNav'
@@ -1690,7 +1691,7 @@ function FooterSection({ lang }: { lang: Lang }) {
       { label: 'Uzum Market', href: '#' }, { label: 'Yandex Market', href: '#' },
     ]},
     { head: T.footer.contactHead[lang], links: [
-      { label: 'Telegram', href: 'https://t.me/daromadchi_alerts_bot' },
+      { label: 'Telegram', href: TELEGRAM_BOT_URL },
     ]},
   ]
 

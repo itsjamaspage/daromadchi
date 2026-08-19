@@ -9,6 +9,7 @@ import { useLang } from '@/app/providers'
 import TierTabs from '@/components/pricing/TierTabs'
 import { tiersT } from '@/lib/tiersT'
 import { TRIAL_DAYS } from '@/lib/billing/features'
+import { telegramContactUrl } from '@/lib/contact'
 
 // UZS prices derived server-side from the USD source of truth (lib/billing) at
 // the live USD→UZS rate. `monthly`/`yearly` are clean so'm figures; `usd` is the
@@ -464,7 +465,7 @@ export default function PricingClient({ prices }: { prices: PricingData }) {
                 {t.bottomSub}
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <a href="https://t.me/daromadchi_uz" target="_blank" rel="noopener noreferrer"
+                <a href={telegramContactUrl('pricing')} target="_blank" rel="noopener noreferrer"
                   className="flex items-center justify-center gap-2 font-bold px-8 py-4 rounded-2xl transition-all text-sm border"
                   style={{ background: '#ffffff', color: '#0e1b2e', borderColor: 'var(--border2)', boxShadow: '0 4px 20px rgba(0,0,0,0.12)' }}>
                   <svg className="w-4 h-4" viewBox="0 0 24 24" fill="#2F6DF6">
