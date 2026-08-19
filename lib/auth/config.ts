@@ -123,6 +123,16 @@ const authConfig: NextAuthConfig = {
     },
     async jwt({ token, user }) {
       if (user) {
+        // Record that the seller was here. This is the ONLY writer of
+        // last_active_at, and the account lifecycle reads nothing else — so a
+        // single sign-in takes an account out of every stage of the freeze/
+        // delete ladder at once. Best-effort: a failed write must never block a
+        // login, it only delays the clock by one session.
+        if (user.id) {
+          void import('@/lib/billing/lifecycle')
+            .then(m => m.touchLastActive(user.id as string))
+            .catch(() => {})
+        }
         token.sub = user.id
         token.email = user.email
       }
