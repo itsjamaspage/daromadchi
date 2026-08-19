@@ -130,6 +130,11 @@ const MIGRATIONS = [
   // Additive + idempotent, no backfill — a backfilled row would mark a nudge as
   // already sent and silence the first real one.
   'migrations/migrations/078_user_notices.sql',
+  // Account lifecycle: last sign-in, and whether the account is frozen. The
+  // backfill sets last_active_at from created_at only where it is still NULL —
+  // a NULL must never be read as a year of silence, and a re-run must never
+  // reset a real sign-in back to the signup date.
+  'migrations/migrations/079_account_lifecycle.sql',
 ]
 
 function loadDatabaseUrl() {

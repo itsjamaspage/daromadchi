@@ -111,6 +111,11 @@ export const users = pgTable('users', {
   // unused nullable column to avoid a destructive migration; no code reads or
   // writes it.
   plan_cancelled_at: timestamp('plan_cancelled_at', { withTimezone: true }),
+  // Account lifecycle (migration 079). last_active_at is set on every sign-in;
+  // NULL means UNKNOWN, never "inactive". frozen_at gates the dashboard behind a
+  // one-click reactivate and destroys nothing. See lib/billing/lifecycle.ts.
+  last_active_at:  timestamp('last_active_at', { withTimezone: true }),
+  frozen_at:       timestamp('frozen_at', { withTimezone: true }),
   created_at:      timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updated_at:      timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 })
