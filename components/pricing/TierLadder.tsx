@@ -177,11 +177,19 @@ export default function TierLadder({ lang, interval, highlight = null, showInput
                     <span className="text-xs font-normal" style={{ color: 'var(--text-muted)' }}>{t('perMonth')}</span>
                   </span>
                 )}
-                {!compact && isMatch && href && (
+                {/* Biznes and Enterprise cannot be paid for by card, so the
+                    matched row offers the route that actually exists rather
+                    than a checkout link that would fail. */}
+                {!compact && isMatch && (href ? (
                   <a href={href} className="mt-1 block text-xs font-semibold underline underline-offset-2" style={{ color: 'var(--c1)' }}>
                     {isSelfServe(tier) ? t('choose') : t('start')}
                   </a>
-                )}
+                ) : (
+                  <a href="https://t.me/daromadchi_uz" target="_blank" rel="noopener noreferrer"
+                    className="mt-1 block text-xs font-semibold underline underline-offset-2" style={{ color: 'var(--c1)' }}>
+                    {t('talkToUs')}
+                  </a>
+                ))}
               </span>
             </li>
           )
