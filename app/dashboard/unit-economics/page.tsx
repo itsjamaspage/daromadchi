@@ -1,4 +1,6 @@
 import { getT, getLang } from '@/lib/server-i18n'
+import { currentUserAccess } from '@/lib/billing/entitlement'
+import FeatureLock from '@/components/dashboard/FeatureLock'
 import { Download, ArrowRight } from 'lucide-react'
 import UnitEconomicsTable from '@/components/dashboard/UnitEconomicsTable'
 import { getUnitEconomicsItems, getUnitEcoSettings } from '@/lib/db/unit-economics'
@@ -9,6 +11,12 @@ export default async function UnitEconomicsPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
+  // Gate BEFORE the queries — see the note on the analytics page.
+  const [gateLang, access] = await Promise.all([getLang(), currentUserAccess('unit_economics')])
+  if (!access.allowed) {
+    return <FeatureLock lang={gateLang} feature="unit_economics" hadTrial={access.trialEnded} />
+  }
+
   const [t, lang, items, settings, sp] = await Promise.all([
     getT(),
     getLang(),

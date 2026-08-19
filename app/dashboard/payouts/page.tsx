@@ -2,7 +2,9 @@ import { Suspense } from 'react'
 import { CreditCard } from 'lucide-react'
 import { getPayoutEntries } from '@/lib/db/payouts'
 import PayoutsView from '@/components/dashboard/PayoutsView'
-import { getT } from '@/lib/server-i18n'
+import { getT, getLang } from '@/lib/server-i18n'
+import { currentUserAccess } from '@/lib/billing/entitlement'
+import FeatureLock from '@/components/dashboard/FeatureLock'
 
 // Same preset vocabulary as the dashboard's DateRangePicker (?days=…).
 function parseDays(v: string): number {
@@ -24,6 +26,10 @@ interface Props {
 }
 
 export default async function PayoutsPage({ searchParams }: Props) {
+  // Gate BEFORE the queries — see the note on the analytics page.
+  const [lang, access] = await Promise.all([getLang(), currentUserAccess('finances')])
+  if (!access.allowed) return <FeatureLock lang={lang} feature="finances" hadTrial={access.trialEnded} />
+
   const params = await searchParams
   const period = params?.days ?? '365'
   const from = params?.from

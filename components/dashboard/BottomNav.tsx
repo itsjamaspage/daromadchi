@@ -2,11 +2,11 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Package, ShoppingCart, BarChart2, Settings } from 'lucide-react'
+import { LayoutDashboard, Package, ShoppingCart, BarChart2, Settings, Lock } from 'lucide-react'
 import { useLang } from '@/app/providers'
 import { translations } from '@/lib/i18n'
 
-export default function BottomNav() {
+export default function BottomNav({ lockedKeys = [] }: { lockedKeys?: string[] }) {
   const pathname = usePathname()
   const { lang } = useLang()
   const d = translations[lang].dashboard
@@ -15,7 +15,7 @@ export default function BottomNav() {
     { href: '/dashboard',            label: d.nav.dashboard,   icon: LayoutDashboard },
     { href: '/dashboard/products',   label: d.nav.products,    icon: Package         },
     { href: '/dashboard/orders',     label: d.nav.orders,      icon: ShoppingCart    },
-    { href: '/dashboard/analytics',  label: d.nav.analytics,   icon: BarChart2       },
+    { href: '/dashboard/analytics',  label: d.nav.analytics,   icon: BarChart2, key: 'analytics' },
     { href: '/dashboard/settings',   label: d.nav.settings,    icon: Settings        },
   ]
 
@@ -23,15 +23,19 @@ export default function BottomNav() {
     <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-[var(--border)] bg-[var(--bg-base)]"
       style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 12px)' }}>
       <div className="flex items-stretch h-16">
-        {tabs.map(({ href, label, icon: Icon }) => {
+        {tabs.map(({ href, label, icon: Icon, key }) => {
           const active = pathname === href
+          // Marked, not hidden — the tap still lands on the page, which is where
+          // the lock is explained and the upgrade offered.
+          const locked = key !== undefined && lockedKeys.includes(key)
           return (
             <Link key={href} href={href}
               className="flex-1 flex flex-col items-center justify-center gap-1 text-[10px] font-medium transition-all"
-              style={{ color: active ? 'var(--c1)' : 'var(--text-muted)' }}>
-              <div className="w-8 h-6 flex items-center justify-center rounded-lg transition-all"
+              style={{ color: active ? 'var(--c1)' : 'var(--text-muted)', opacity: locked ? 0.6 : 1 }}>
+              <div className="relative w-8 h-6 flex items-center justify-center rounded-lg transition-all"
                 style={{ background: active ? 'rgba(0,0,0,0.06)' : 'transparent' }}>
                 <Icon className="w-4 h-4" />
+                {locked && <Lock className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5" />}
               </div>
               {label}
             </Link>

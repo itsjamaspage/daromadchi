@@ -6,11 +6,33 @@ import StocksTable from '@/components/dashboard/StocksTable'
 import ProductGroupSuggestions from '@/components/dashboard/ProductGroupSuggestions'
 import LastSyncedServer from '@/components/dashboard/LastSyncedServer'
 import HelpTooltip from '@/components/dashboard/HelpTooltip'
-import { getT } from '@/lib/server-i18n'
+import { getT, getLang } from '@/lib/server-i18n'
+import { currentUserAccess, everyActiveShopIsReadOnly } from '@/lib/billing/entitlement'
+import { getCurrentUserId } from '@/lib/db/shop-context'
+import FeatureLock from '@/components/dashboard/FeatureLock'
+import { lockT } from '@/lib/lockT'
 
 export const dynamic = 'force-dynamic'
 
 export default async function StocksPage() {
+  // Gated, not frozen — and only when there is genuinely nothing left to show.
+  //
+  // A seller who still has one stock_sync shop keeps the page: write-back is off
+  // for them under lib/marketplace/stock-sync.ts, but the live figures they can
+  // see are real. A seller whose every active shop is read_only never had
+  // write-back, so past the trial this page holds nothing they are entitled to.
+  //
+  // What it must never do is serve a stale snapshot dressed as live: a wrong
+  // number here has the seller restock against it.
+  const [lang, access] = await Promise.all([getLang(), currentUserAccess('stock_sync')])
+  if (!access.allowed) {
+    const userId = await getCurrentUserId()
+    if (!userId || await everyActiveShopIsReadOnly(userId)) {
+      return <FeatureLock lang={lang} feature="stock_sync" hadTrial={access.trialEnded}
+        note={lockT.stockNote[lang]} />
+    }
+  }
+
   const [t, groups] = await Promise.all([getT(), getStockGroups()])
   const d = t.dashboard.stocksPage
 

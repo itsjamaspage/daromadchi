@@ -22,13 +22,19 @@ export async function getShopIds(userId: string, shopId?: string | null): Promis
   return rows.map(s => s.id)
 }
 
-export type Plan = 'free' | 'pro' | 'pro_plus'
+export type Plan = 'free' | 'pro' | 'pro_plus' | 'biznes' | 'enterprise'
 
-export const PLAN_SHOP_LIMITS: Record<Plan, number> = {
-  free:     1,
-  pro:      3,
-  pro_plus: 5,
-}
+// PLAN_SHOP_LIMITS (free 1 / pro 3 / pro_plus 5) was removed here.
+//
+// It enforced nothing — no caller ever read it — while /pricing advertised
+// "Unlimited do'konlar" on Pro, so the repository shipped a limit and its own
+// contradiction side by side. It also contradicted the entitlement rules
+// themselves: `marketplaces` is in FREE_FOREVER, meaning a free account is
+// entitled to Uzum AND Yandex Market, which takes two shops. Capping free at one
+// would have taken away a capability the free tier is promised.
+//
+// Store count is not a gated capability under the turnover model. Tiers differ
+// by turnover and price; what a seller may USE is lib/billing/features.ts.
 
 export async function getUserPlan(userId: string): Promise<Plan> {
   const [data] = await db.select({

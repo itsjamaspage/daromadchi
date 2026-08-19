@@ -5,6 +5,7 @@ import { getCurrentUser } from '@/lib/auth/session'
 import { db, shops, orders } from '@/lib/db'
 import { withErrorHandler } from '@/lib/api-handler'
 import { cancelOrder } from '@/lib/marketplace/order-cancel'
+import { userHasFeature } from '@/lib/billing/entitlement'
 import type { MarketplaceType } from '@/lib/types'
 
 const Schema = z.object({ orderId: z.string().uuid() })
@@ -15,6 +16,13 @@ const Schema = z.object({ orderId: z.string().uuid() })
 export const POST = withErrorHandler(async (req: Request) => {
   const user = await getCurrentUser()
   if (!user) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 })
+
+  // The oversell cancel belongs to stock-sync, so it follows the same plan gate
+  // as the write-back that produces the oversell. Refusing here can only ever
+  // prevent a marketplace write, never allow one.
+  if (!await userHasFeature(user.id, 'stock_sync')) {
+    return NextResponse.json({ ok: false, error: 'Plan required' }, { status: 403 })
+  }
 
   const parsed = Schema.safeParse(await req.json().catch(() => null))
   if (!parsed.success) return NextResponse.json({ ok: false, error: 'orderId (uuid) required' }, { status: 400 })

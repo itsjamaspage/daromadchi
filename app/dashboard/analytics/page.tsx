@@ -9,7 +9,9 @@ import MarketplaceTabs from '@/components/dashboard/MarketplaceTabs'
 import AnalyticsTopSoldTable from '@/components/dashboard/AnalyticsTopSoldTable'
 import AnalyticsMarginTable from '@/components/dashboard/AnalyticsMarginTable'
 import PeriodSelector from './PeriodSelector'
-import { getT } from '@/lib/server-i18n'
+import { getT, getLang } from '@/lib/server-i18n'
+import { currentUserAccess } from '@/lib/billing/entitlement'
+import FeatureLock from '@/components/dashboard/FeatureLock'
 import type { MarketplaceType } from '@/lib/types'
 
 function fmt(n: number) {
@@ -41,6 +43,11 @@ interface Props {
 }
 
 export default async function AnalyticsPage({ searchParams }: Props) {
+  // Gate BEFORE the queries: a locked page must not pay for data it will not
+  // show, and nothing gated should reach the browser to be hidden with CSS.
+  const [lang, access] = await Promise.all([getLang(), currentUserAccess('analytics')])
+  if (!access.allowed) return <FeatureLock lang={lang} feature="analytics" hadTrial={access.trialEnded} />
+
   const params = await searchParams
   const marketplace = parseMp(params.mp)
   const days = parseDays(params.days)

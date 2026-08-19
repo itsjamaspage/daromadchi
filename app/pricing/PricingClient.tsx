@@ -11,6 +11,12 @@ import { tiersT } from '@/lib/tiersT'
 import { TRIAL_DAYS } from '@/lib/billing/features'
 import { telegramContactUrl } from '@/lib/contact'
 
+// The Free card's bullets are the FREE_FOREVER set in lib/billing/features.ts,
+// worded for a seller. They used to promise "1 store / 100 products / 30-day
+// history / Uzum only" — none of which any code enforced, and the last of which
+// contradicted `marketplaces` being free forever. A price page may not advertise
+// a limit the product does not have, in either direction.
+//
 // UZS prices derived server-side from the USD source of truth (lib/billing) at
 // the live USD→UZS rate. `monthly`/`yearly` are clean so'm figures; `usd` is the
 // underlying dollar price shown as secondary text.
@@ -53,7 +59,7 @@ const T = {
     freeName: 'Bepul', freeDesc: "Boshlash uchun ideal — hech qanday to'lov talab etilmaydi", freeCta: 'Boshlash',
     proName: 'Pro', proDesc: "O'sib kelayotgan biznes uchun to'liq analitika vositalari", proBadge: 'Eng mashhur', proCta: "Sinab ko'ring",
     proPlusName: 'Pro+', proPlusDesc: "Yirik biznes uchun — Pro imkoniyatlari + eksklyuziv funksiyalar", proPlusBadge: 'Maksimal', proPlusCta: 'Pro+ ni boshlash',
-    freeFeatures: ["1 ta do'kon", '100 ta mahsulot', '30 kunlik tarix', 'Uzum integratsiya', 'Kengaytma (extension)'],
+    freeFeatures: ['Aqlli boshqaruv paneli', 'Mahsulotlar', 'Buyurtmalar va ogohlantirishlar', 'Uzum + Yandex Market', 'Kengaytma (extension)'],
     proFeatures: [
       "Unlimited do'konlar", 'Unlimited mahsulotlar', '12 oylik tarix', 'Uzum + Yandex Market', 'Unit-ekonomika',
       'Eksport Excel / PDF', 'F&Z (P&L) hisobot', 'Maxsus hisobotlar',
@@ -96,7 +102,7 @@ const T = {
     freeName: 'Бесплатно', freeDesc: 'Идеально для старта — оплата не требуется', freeCta: 'Начать',
     proName: 'Pro', proDesc: 'Полный набор аналитики для растущего бизнеса', proBadge: 'Популярный', proCta: 'Попробовать',
     proPlusName: 'Pro+', proPlusDesc: 'Для крупного бизнеса — возможности Pro + эксклюзивные функции', proPlusBadge: 'Максимум', proPlusCta: 'Подключить Pro+',
-    freeFeatures: ['1 магазин', '100 товаров', 'История 30 дней', 'Интеграция Uzum', 'Расширение (extension)'],
+    freeFeatures: ['Умный дашборд', 'Товары', 'Заказы и уведомления', 'Uzum + Yandex Market', 'Расширение (extension)'],
     proFeatures: [
       'Безлимит магазинов', 'Безлимит товаров', 'История 12 месяцев', 'Uzum + Yandex Market', 'Юнит-экономика',
       'Экспорт Excel / PDF', 'Отчёт P&L', 'Кастомные отчёты',
@@ -139,7 +145,7 @@ const T = {
     freeName: 'Free', freeDesc: 'Perfect to start — no payment required', freeCta: 'Get started',
     proName: 'Pro', proDesc: 'Full analytics toolkit for a growing business', proBadge: 'Most popular', proCta: 'Try it',
     proPlusName: 'Pro+', proPlusDesc: 'For large business — Pro features + exclusive tools', proPlusBadge: 'Maximum', proPlusCta: 'Get Pro+',
-    freeFeatures: ['1 store', '100 products', '30-day history', 'Uzum integration', 'Extension'],
+    freeFeatures: ['Smart dashboard', 'Products', 'Orders & alerts', 'Uzum + Yandex Market', 'Extension'],
     proFeatures: [
       'Unlimited stores', 'Unlimited products', '12-month history', 'Uzum + Yandex Market', 'Unit economics',
       'Export Excel / PDF', 'P&L report', 'Custom reports',
