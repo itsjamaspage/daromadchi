@@ -1,4 +1,4 @@
-export type PlanKey  = 'pro' | 'pro_plus'
+export type PlanKey  = 'pro' | 'pro_plus' | 'biznes'
 export type Interval = 'monthly' | 'annual'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -19,9 +19,9 @@ export type Interval = 'monthly' | 'annual'
 // instead (annualDiscountPct below), so display and charge cannot disagree.
 //
 // Turnover ladder: Pro 150 000/mo (125 000 when billed yearly),
-// Pro+ 250 000/mo (225 000 yearly). Biznes and Enterprise are deliberately
-// absent — checkout cannot bill them, so their prices live in ./tier-pricing.ts
-// behind a contact route. Adding them here would make them look purchasable.
+// Pro+ 250 000/mo (225 000 yearly), Biznes 500 000/mo (450 000 yearly).
+// Enterprise stays absent — there is no single price to publish, and checkout
+// cannot bill it.
 //
 // Existing subscribers are NOT repriced by changes here: each subscription
 // carries the amount it was sold at in agreed_amount_tiyin, and the renewal cron
@@ -29,6 +29,7 @@ export type Interval = 'monthly' | 'annual'
 export const PLAN_PRICES_TIYIN: Record<PlanKey, { monthly: number; annualPerMonth: number }> = {
   pro:      { monthly: 15_000_000, annualPerMonth: 12_500_000 }, // 150 000 / 125 000 so'm
   pro_plus: { monthly: 25_000_000, annualPerMonth: 22_500_000 }, // 250 000 / 225 000 so'm
+  biznes:   { monthly: 50_000_000, annualPerMonth: 45_000_000 }, // 500 000 / 450 000 so'm
 }
 
 // The amount charged once for a 12-month subscription.
@@ -47,6 +48,7 @@ export function annualDiscountPct(plan: PlanKey): number {
 export const PLAN_PRICES_USD_DISPLAY: Record<PlanKey, number> = {
   pro:      20,
   pro_plus: 40,
+  biznes:   80,
 }
 
 export const TIYIN_PER_SOM = 100

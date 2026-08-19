@@ -50,6 +50,32 @@ describe('paid plans', () => {
   })
 })
 
+describe('biznes behaves as an ordinary paid tier', () => {
+  // It became card-payable in its own right; nothing in entitlement should treat
+  // it as a special case, and a lapsed biznes must fall back to free like any
+  // other paid plan rather than keeping access.
+  const biznes:       EntitlementInput = { plan: 'biznes', planExpiresAt: soon(30), trialEndsAt: null }
+  const lapsedBiznes: EntitlementInput = { plan: 'biznes', planExpiresAt: ago(1),   trialEndsAt: null }
+
+  it('an active biznes plan unlocks everything', () => {
+    assert.equal(computeEffectivePlan(biznes, NOW), 'biznes')
+    for (const f of [...FREE_FOREVER, ...GATED]) {
+      assert.equal(hasFeature(biznes, f, NOW), true, f)
+    }
+  })
+  it('a lapsed biznes plan falls back to free', () => {
+    assert.equal(computeEffectivePlan(lapsedBiznes, NOW), 'free')
+    for (const f of GATED) assert.equal(hasFeature(lapsedBiznes, f, NOW), false, f)
+  })
+  it('a biznes plan is never "on trial"', () => {
+    assert.equal(isOnTrial({ ...biznes, trialEndsAt: soon(5) }, NOW), false)
+  })
+  it('grandfathering still wins over everything, including biznes', () => {
+    const grandfathered: EntitlementInput = { ...lapsedBiznes, isGrandfathered: true }
+    for (const f of GATED) assert.equal(hasFeature(grandfathered, f, NOW), true, f)
+  })
+})
+
 describe('grandfathering is checked FIRST', () => {
   // The whole point: an old-price account must not be gated by a rule written
   // after they subscribed — even if every other signal says "free".

@@ -15,7 +15,7 @@ import { db, payments, subscriptions } from '@/lib/db'
 import { getCurrentUser } from '@/lib/auth/session'
 import { logger } from '@/lib/logger'
 import {
-  planAmountTiyin, planPeriodMonths, formatSomFromTiyin,
+  planAmountTiyin, planPeriodMonths, formatSomFromTiyin, PLAN_PRICES_TIYIN,
   tiyinToSom, type PlanKey, type Interval,
 } from '@/lib/billing/plans'
 import { createInvoice, AtmosConfigError } from '@/lib/billing/atmos'
@@ -23,7 +23,11 @@ import { createInvoice, AtmosConfigError } from '@/lib/billing/atmos'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-function isPlanKey(v: unknown): v is PlanKey { return v === 'pro' || v === 'pro_plus' }
+// Derived from PLAN_PRICES_TIYIN so a tier added there is billable here without
+// a second edit — the mismatch that kept Biznes unbuyable while it had a price.
+function isPlanKey(v: unknown): v is PlanKey {
+  return typeof v === 'string' && Object.prototype.hasOwnProperty.call(PLAN_PRICES_TIYIN, v)
+}
 function isInterval(v: unknown): v is Interval { return v === 'monthly' || v === 'annual' }
 
 function itemName(plan: PlanKey, interval: Interval): string {
