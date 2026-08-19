@@ -11,6 +11,8 @@ import { lockedNavKeys } from '@/lib/billing/nav-gating'
 import { getActiveNotice } from '@/lib/billing/nudge'
 import NudgeBanner from '@/components/dashboard/NudgeBanner'
 import EnterpriseOutreachModal from '@/components/dashboard/EnterpriseOutreachModal'
+import FrozenGate from '@/components/dashboard/FrozenGate'
+import { isFrozen } from '@/lib/billing/lifecycle'
 
 // Keep the entire authenticated dashboard out of search. Inherited by every
 // /dashboard/* route → <meta name="robots" content="noindex, nofollow">.
@@ -51,6 +53,15 @@ export default async function DashboardLayout({ children }: { children: React.Re
     if (user?.id) notice = await getActiveNotice(user.id)
   } catch { /* best-effort — show no banner on failure */ }
 
+  // A frozen account sees the restore screen instead of the dashboard. NOT
+  // best-effort in the other direction: if this lookup fails we show the
+  // dashboard, because locking a paying seller out on a DB hiccup is far worse
+  // than a frozen one seeing their data for another day.
+  let frozen = false
+  try {
+    if (user?.id) frozen = await isFrozen(user.id)
+  } catch { /* on failure, do not gate */ }
+
   return (
     <ChannelGate>
       <div className="min-h-screen">
@@ -68,6 +79,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         {/* Main content — offset by collapsed sidebar width only */}
         <main className="lg:ml-14 pt-14 pb-20 lg:pb-0 min-w-0">
           <div className="p-4 sm:p-6 lg:p-8">
+            {frozen ? <FrozenGate /> : <>
             {/* Above the page, not over it: a seller who has just been told
                 their trial is ending is trying to use the product. */}
             {notice && notice.kind !== 'enterprise_outreach' && (
@@ -78,6 +90,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
               <EnterpriseOutreachModal detail={notice.detail} />
             )}
             {children}
+            </>}
           </div>
         </main>
 

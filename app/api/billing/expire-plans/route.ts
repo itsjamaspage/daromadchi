@@ -6,6 +6,7 @@ import { logger } from '@/lib/logger'
 import { recomputeDerivedTiers } from '@/lib/db/derived-tier'
 import { dispatchDuePriceNotices } from '@/lib/billing/price-notice'
 import { dispatchTierNudges } from '@/lib/billing/nudge'
+import { sweepAccountLifecycle } from '@/lib/billing/lifecycle'
 
 // Called by the cron job daily. Downgrades users whose plan_expires_at
 // has passed. `plan` is a Postgres enum; the string cast at .set()
@@ -74,5 +75,23 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
     logger.error('tier_nudge_sweep_failed', { error: String(err).slice(0, 300) })
   }
 
-  return NextResponse.json({ ok: true, downgraded: rows.length, tiers, notices, nudges })
+  // Account lifecycle: warn, freeze, and — only behind
+  // ACCOUNT_LIFECYCLE_DELETE_ENABLED — delete accounts nobody has signed into
+  // for well over a year. Unset, it reports who it WOULD delete and deletes
+  // nobody.
+  //
+  // Best-effort like the sweeps above. Failing here cannot destroy anything: the
+  // destructive step is the last one and is flag-gated, so an exception simply
+  // means the ladder does not advance today.
+  let lifecycle: Awaited<ReturnType<typeof sweepAccountLifecycle>> | null = null
+  try {
+    lifecycle = await sweepAccountLifecycle()
+    if (lifecycle.warned + lifecycle.frozen + lifecycle.deletable > 0) {
+      logger.info('account_lifecycle_sweep_done', { ...lifecycle })
+    }
+  } catch (err) {
+    logger.error('account_lifecycle_sweep_failed', { error: String(err).slice(0, 300) })
+  }
+
+  return NextResponse.json({ ok: true, downgraded: rows.length, tiers, notices, nudges, lifecycle })
 })
