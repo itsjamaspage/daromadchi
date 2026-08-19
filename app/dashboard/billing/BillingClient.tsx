@@ -11,7 +11,7 @@ import type { BillingInfo, PlanType, PaymentRecord } from '@/lib/db/billing'
 import { PLAN_PRICES_TIYIN, formatSomFromTiyin, annualMonthlySom, planAmountTiyin } from '@/lib/billing/plans'
 import type { Interval, PlanKey } from '@/lib/billing/plans'
 import { planFeatureList } from '@/lib/billing/plan-features'
-import TierCards from '@/components/pricing/TierCards'
+import TierTabs from '@/components/pricing/TierTabs'
 import { tiersT } from '@/lib/tiersT'
 import type { Tier } from '@/lib/billing/tiers'
 
@@ -289,7 +289,7 @@ function UpgradeModal({ current, highlight, initialInterval, lang, d, derivedTie
               <IntervalTabs value={billingInterval} onChange={setBillingInterval} b={b} />
             </div>
 
-            <TierCards
+            <TierTabs
               lang={lang}
               interval={billingInterval}
               highlight={derivedTier}

@@ -13,7 +13,7 @@ import { useTheme, useLang } from './providers'
 import type { Lang } from '@/lib/i18n'
 import { T } from '@/lib/landing-t'
 import { PLAN_PRICES_TIYIN, formatSomFromTiyin } from '@/lib/billing/plans'
-import TierCards from '@/components/pricing/TierCards'
+import TierTabs from '@/components/pricing/TierTabs'
 import { tiersT } from '@/lib/tiersT'
 
 import PillNav from './components/PillNav'
@@ -1362,7 +1362,7 @@ function PricingSection({ lang }: { lang: Lang }) {
           animate={inView ? { opacity: 1, y: 0 } : {}}
           transition={{ type: 'spring', stiffness: 160, damping: 20 }}
           style={{ maxWidth: 720, margin: '0 auto' }}>
-          <TierCards lang={lang} interval={iv} showInput={false} />
+          <TierTabs lang={lang} interval={iv} showInput={false} />
           <div style={{ textAlign: 'center', marginTop: 20 }}>
             <Link href="/pricing"
               style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 14, fontWeight: 700,

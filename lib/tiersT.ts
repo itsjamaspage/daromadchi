@@ -2,7 +2,7 @@
 // section and the dashboard billing modal, so the three cannot describe the
 // same model in three different vocabularies.
 import type { Lang } from './i18n'
-import { TRIAL_DAYS } from './billing/features'
+import { TRIAL_DAYS, type Feature } from './billing/features'
 
 type Tr = Record<Lang, string>
 function tr(ru: string, uz: string, en: string): Tr {
@@ -119,3 +119,22 @@ export const tiersT = {
   featuresTitle: tr('Что входит', 'Nimalar kiradi', "What's included"),
   trial:         tr(`${D} дн.`, `${D} kun`, EN_D),
 } satisfies Record<string, Tr>
+
+/**
+ * Capability names for the per-tier "what's included" list.
+ *
+ * Keyed by the Feature union in lib/billing/features.ts rather than by array
+ * position, so adding a capability there is a type error here until it is
+ * named — the /pricing table's parallel arrays could silently slip out of
+ * alignment, this cannot.
+ */
+export const featureT: Record<Feature, Tr> = {
+  dashboard:      tr('Умный дашборд', 'Aqlli boshqaruv paneli', 'Smart dashboard'),
+  products:       tr('Товары', 'Mahsulotlar', 'Products'),
+  orders:         tr('Заказы и уведомления', 'Buyurtmalar va ogohlantirishlar', 'Orders & alerts'),
+  marketplaces:   tr('Uzum + Yandex Market', 'Uzum + Yandex Market', 'Uzum + Yandex Market'),
+  analytics:      tr('Аналитика', 'Tahlil', 'Analytics'),
+  stock_sync:     tr('Синхронизация склада', 'Ombor sinxronizatsiyasi', 'Stock sync'),
+  finances:       tr("Финансы и выплаты", "Moliya va to'lovlar", 'Finances & payouts'),
+  unit_economics: tr('Юнит-экономика', 'Unit-iqtisod', 'Unit economics'),
+}
