@@ -23,7 +23,8 @@
     "atmos:direct": "node scripts/atmos-direct-test.mjs",
     "stock-sync:demo": "tsx scripts/stock-sync-dry-run-demo.ts",
     "stock-sync:live-verify": "tsx scripts/stock-sync-live-verify.ts",
-    "test:activate": "node --conditions=react-server --import tsx --test lib/billing/activate.integration.test.ts"
+    "test:activate": "node --conditions=react-server --import tsx --test lib/billing/activate.integration.test.ts",
+    "test:cancel": "node --conditions=react-server --import tsx --test lib/billing/cancel.integration.test.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

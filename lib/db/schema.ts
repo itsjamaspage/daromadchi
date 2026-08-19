@@ -513,6 +513,14 @@ export const subscriptions = pgTable('subscriptions', {
   // When true, the renewal cron charges the stored card token before expiry.
   // Defaults true (set when a card is bound); the seller can toggle it off.
   autorenew:          boolean('autorenew').default(true).notNull(),
+  // Cancellation (migration 076). cancelled_at is the audit trail — when the
+  // seller withdrew the charging authorisation. access_until is the promise made
+  // at that moment, frozen so a later write to current_period_end cannot move a
+  // date the seller was told. NULL access_until = cancelled before any paid
+  // period existed. Neither column grants or removes access on its own:
+  // entitlement stays users.plan_expires_at.
+  cancelled_at:       timestamp('cancelled_at', { withTimezone: true }),
+  access_until:       timestamp('access_until', { withTimezone: true }),
   // Direct card-binding flow: the reusable ATMOS card token (ENCRYPTED at rest via
   // lib/crypto) drives auto-renewal. card_last4/expiry/holder are display-only —
   // NO full PAN is ever stored.
