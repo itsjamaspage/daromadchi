@@ -249,6 +249,17 @@ export interface PayoutOrderLine {
   number: string
   name: string | null
   net: number
+  /**
+   * Settlement state of THIS order, not of the month it sits in.
+   *
+   * A month is routinely part-transferred, and one status cannot describe it:
+   * before, one transfer marked the whole month paid (over-reporting the
+   * in-transit rows); after, one in-transit row marked the whole month pending
+   * (hiding money the bank had already sent). Both were the same mistake at
+   * different ends. Status belongs on the order, which is the unit the
+   * marketplace actually transfers.
+   */
+  status: PayoutStatus
 }
 
 // Settlement/payout state for a payout row. Driven by real marketplace signals,
@@ -267,6 +278,10 @@ export type PayoutStatus =
   | 'available_to_withdraw'
   | 'fees_pending'
   | 'estimated_paid'
+  // A month whose orders are partly transferred and partly not. It exists so the
+  // period row can stop pretending a mixed month is one thing; the truthful
+  // per-order figures are in `orders`.
+  | 'partially_paid'
   | 'estimated_pending'
   | 'processing'
 

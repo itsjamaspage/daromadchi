@@ -98,6 +98,57 @@ export function deriveYandexSettledStatus(credit: number, debit: number, transfe
   return credit > 0 && debit === 0 ? 'fees_pending' : 'pending'
 }
 
+/* ── per-order settlement ──────────────────────────────────────────────────── */
+
+/** The minimum an order needs to be classified and totalled. */
+export interface SettledOrder {
+  net: number
+  status: PayoutStatus
+}
+
+/**
+ * One order's status, from the transfer signal on its own transactions.
+ *
+ * `transferred` is true when ANY transaction for the order passes
+ * isYandexTransferred — a «Переведён…» status carrying a payment-order number.
+ * That п/п is the bank-statement reference: it exists precisely because the
+ * money moved, so an order that has one is settled regardless of what the rest
+ * of its month is doing.
+ */
+export function deriveYandexOrderStatus(transferred: boolean): PayoutStatus {
+  return transferred ? 'paid' : 'pending'
+}
+
+/**
+ * The month's status, rolled up from its orders.
+ *
+ * Reports `partially_paid` rather than picking a side, because picking a side is
+ * what produced both bugs: a mixed month called `paid` overstates, called
+ * `pending` understates. Falls back to the caller's transaction-level status
+ * when there are no per-order rows to roll up (a bucket can carry fee-only
+ * transactions with no order number).
+ */
+export function deriveBucketStatusFromOrders(
+  orders: readonly SettledOrder[],
+  fallback: PayoutStatus,
+): PayoutStatus {
+  if (orders.length === 0) return fallback
+  const paid = orders.filter(o => isPaidStatus(o.status)).length
+  if (paid === 0) return fallback
+  return paid === orders.length ? 'paid' : 'partially_paid'
+}
+
+/**
+ * Money proven transferred, summed from ORDERS rather than whole months.
+ *
+ * This is the number the "Всего выплачено" tile shows. Summing whole buckets is
+ * what made a part-paid month contribute either all of its net or none of it;
+ * summing the orders inside it contributes exactly the part that moved.
+ */
+export function sumPaidOrders(orders: readonly SettledOrder[]): number {
+  return orders.reduce((total, o) => total + (isPaidStatus(o.status) ? o.net : 0), 0)
+}
+
 // ── KPI bucket classifiers (shared by PayoutsView totals) ────────────────────
 // Three mutually-exclusive display buckets: paid / available / pending.
 
@@ -111,7 +162,20 @@ export function isAvailableStatus(s: PayoutStatus): boolean {
   return s === 'available_to_withdraw'
 }
 
-/** In-progress: pending, fees-not-final, or estimated-pending. Includes legacy 'processing'. */
+/**
+ * In-progress: pending, fees-not-final, or estimated-pending. Includes legacy
+ * 'processing'.
+ *
+ * `partially_paid` is deliberately in NEITHER this nor isPaidStatus. Its month
+ * holds both, so counting the whole bucket in either tile would restate the very
+ * error this split exists to remove — the paid tile sums orders, and the pending
+ * tile counts only months with nothing transferred.
+ */
 export function isPendingStatus(s: PayoutStatus): boolean {
   return s === 'pending' || s === 'fees_pending' || s === 'estimated_pending' || s === 'processing'
+}
+
+/** A month that is part transferred, part not. Neither paid nor pending. */
+export function isPartiallyPaidStatus(s: PayoutStatus): boolean {
+  return s === 'partially_paid'
 }

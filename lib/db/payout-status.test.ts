@@ -8,6 +8,10 @@ import {
   isYandexTransferred,
   isYandexAwaitingTransfer,
   yandexFullyTransferred,
+  deriveYandexOrderStatus,
+  deriveBucketStatusFromOrders,
+  sumPaidOrders,
+  isPartiallyPaidStatus,
   isPaidStatus,
   isAvailableStatus,
   isPendingStatus,
@@ -156,6 +160,76 @@ describe('no settlement data means pending, never paid-by-age', () => {
     for (const s of ['pending', 'estimated_pending'] as const) {
       assert.equal(isPaidStatus(s), false)
       assert.equal(isPendingStatus(s), true)
+    }
+  })
+})
+
+describe('per-order settlement — the real seller data', () => {
+  // The two orders from the report that produced this fix.
+  const PAID_ORDER    = { number: '59564845443', net: 59_940, transferred: true }   // п/п 92735
+  const PENDING_ORDER = { number: '60137441539', net: 100_000, transferred: false } // «Будет переведён», no п/п
+
+  it('an order carrying a payment-order number is paid', () => {
+    // The п/п IS the bank reference: it exists because the money moved.
+    assert.equal(isYandexTransferred('Переведён по графику выплат', '92735'), true)
+    assert.equal(deriveYandexOrderStatus(PAID_ORDER.transferred), 'paid')
+  })
+
+  it('an order without one is pending, whatever its month is doing', () => {
+    assert.equal(isYandexTransferred('Будет переведён по графику выплат', null), false)
+    assert.equal(deriveYandexOrderStatus(PENDING_ORDER.transferred), 'pending')
+  })
+
+  it('the mixed bucket reports exactly 59 940 paid and 100 000 pending', () => {
+    // The case BOTH previous versions got wrong, in opposite directions:
+    // before, the whole 159 940 read as paid; after the strict fix, none of it
+    // did. The truth is one of each.
+    const orders = [PAID_ORDER, PENDING_ORDER].map(o => ({
+      net: o.net, status: deriveYandexOrderStatus(o.transferred),
+    }))
+    const bucketNet = orders.reduce((s, o) => s + o.net, 0)
+
+    const paid = sumPaidOrders(orders)
+    assert.equal(paid, 59_940, 'paid total is the transferred order only')
+    assert.equal(bucketNet - paid, 100_000, 'and the remainder stays pending')
+
+    const status = deriveBucketStatusFromOrders(orders, 'pending')
+    assert.equal(status, 'partially_paid')
+    assert.equal(isPaidStatus(status), false, 'a mixed month must not inflate the paid tile')
+    assert.equal(isPendingStatus(status), false, 'nor be counted whole into pending')
+    assert.equal(isPartiallyPaidStatus(status), true)
+  })
+
+  it('a month where every order transferred is simply paid', () => {
+    const orders = [
+      { net: 10_000, status: deriveYandexOrderStatus(true) },
+      { net: 20_000, status: deriveYandexOrderStatus(true) },
+    ]
+    assert.equal(deriveBucketStatusFromOrders(orders, 'pending'), 'paid')
+    assert.equal(sumPaidOrders(orders), 30_000)
+  })
+
+  it('a month where nothing transferred keeps the transaction-level fallback', () => {
+    const orders = [
+      { net: 10_000, status: deriveYandexOrderStatus(false) },
+      { net: 20_000, status: deriveYandexOrderStatus(false) },
+    ]
+    assert.equal(deriveBucketStatusFromOrders(orders, 'fees_pending'), 'fees_pending')
+    assert.equal(sumPaidOrders(orders), 0)
+  })
+
+  it('a bucket with no order rows falls back rather than inventing a status', () => {
+    // Fee-only months carry transactions with no «Номер заказа».
+    assert.equal(deriveBucketStatusFromOrders([], 'pending'), 'pending')
+    assert.equal(sumPaidOrders([]), 0)
+  })
+
+  it('Uzum orders can never reach paid — no per-order transfer signal exists', () => {
+    for (const statuses of [['TO_WITHDRAW'], ['PROCESSING'], ['TO_WITHDRAW', 'PROCESSING'], []]) {
+      const s = deriveUzumBucketStatus(statuses)
+      assert.equal(isPaidStatus(s), false)
+      assert.equal(sumPaidOrders([{ net: 50_300, status: s }]), 0,
+        'the Uzum 50 300 stays out of the paid total until the RBAC endpoint opens')
     }
   })
 })
