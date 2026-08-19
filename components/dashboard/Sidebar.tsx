@@ -7,7 +7,7 @@ import {
   LayoutDashboard, Package, ShoppingCart,
   ChevronRight, X, BarChart2, Calculator, FileText,
   Layers, AlertTriangle, CreditCard,
-  CalendarDays, Users, Boxes,
+  CalendarDays, Users, Boxes, Lock,
 } from 'lucide-react'
 import { useLang, useTheme } from '@/app/providers'
 import { translations } from '@/lib/i18n'
@@ -50,9 +50,16 @@ const UPCOMING_TEXT: Record<string, { uz: string; en: string; ru: string }> = {
 
 interface SidebarProps {
   onClose?: () => void
+  /**
+   * Nav keys whose page is gated for this account (lib/billing/nav-gating).
+   * Advisory only — it marks the entry and still lets the click through, so the
+   * page itself explains the lock and offers the upgrade. Hiding the entry
+   * would leave a seller wondering where a section went.
+   */
+  lockedKeys?: string[]
 }
 
-export default function Sidebar({ onClose }: SidebarProps) {
+export default function Sidebar({ onClose, lockedKeys = [] }: SidebarProps) {
   const pathname = usePathname()
   const { lang } = useLang()
   const { theme } = useTheme()
@@ -105,6 +112,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
         </p>
         {storeNavItems.map(({ href, key, icon: Icon }) => {
           const isUpcoming = UPCOMING_KEYS.has(key)
+          const isLocked = lockedKeys.includes(key)
           const active = !isUpcoming && pathname === href
           const label = (d.nav as unknown as Record<string, string>)[key] ?? key
 
@@ -147,8 +155,9 @@ export default function Sidebar({ onClose }: SidebarProps) {
                 }}
               >
                 <Icon className="w-4 h-4 flex-shrink-0" style={{ color: active ? activeCol : sideText }} />
-                <span className="sidebar-label truncate flex-1">{label}</span>
-                {active && <ChevronRight className="sidebar-label w-3 h-3 flex-shrink-0" style={{ color: activeCol }} />}
+                <span className="sidebar-label truncate flex-1" style={isLocked ? { opacity: 0.6 } : undefined}>{label}</span>
+                {isLocked && <Lock className="sidebar-label w-3 h-3 flex-shrink-0" style={{ color: sideText, opacity: 0.7 }} />}
+                {active && !isLocked && <ChevronRight className="sidebar-label w-3 h-3 flex-shrink-0" style={{ color: activeCol }} />}
               </Link>
               {(key in helpContent) && (
                 <span className="sidebar-label">

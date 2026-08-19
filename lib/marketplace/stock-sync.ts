@@ -17,6 +17,7 @@ import { and, eq, inArray, isNull, sql } from 'drizzle-orm'
 import { db, shops, products, orders, orderItems, stockSyncState, stockNotifyOrderSeen } from '@/lib/db'
 import { logger } from '@/lib/logger'
 import { pushStock, type StockWriteStatus } from '@/lib/marketplace/stock-writer'
+import { userHasFeature } from '@/lib/billing/entitlement'
 import { planStockWrites, planGroupWrites, stockWriteBack, detectNewOrders, type SyncMember, type OversellMode } from '@/lib/marketplace/stock-allocation'
 import { reservingOrderCondition } from '@/lib/marketplace/reserving-orders'
 import { handleOversell } from '@/lib/marketplace/oversell'
@@ -320,6 +321,17 @@ async function ensureWriteIdentifiers(userId: string): Promise<void> {
  */
 export async function syncStockSyncGroups(opts: RunOptions): Promise<StockSyncRunResult> {
   const computedAt = new Date().toISOString()
+
+  // Plan gate. This is an ADDITIONAL condition on top of the per-shop api_mode
+  // guard in stock-writer.ts — it can only ever refuse a write, never permit one
+  // that guard would deny (AGENTS.md). Placed at the top of the run rather than
+  // per write so a gated account also stops emitting stock-update notifications,
+  // which are dispatched from the events this run collects. Low-stock alerts are
+  // a different flag and are untouched: Free keeps those.
+  if (!await userHasFeature(opts.userId, 'stock_sync')) {
+    logger.info('stock_sync_plan_gated', { userId: opts.userId })
+    return { computedAt, groupsConsidered: 0, writesPlanned: 0, entries: [] }
+  }
   // Self-heal the write identifiers before planning, so a live write always has
   // a target (Uzum barcode / YM shopSku+warehouse) instead of skipping.
   await ensureWriteIdentifiers(opts.userId)
@@ -637,6 +649,10 @@ export async function verifiedLivePush(userId: string, productId: string, quanti
   const shop = shopsById.get(found.product.shop_id)
   if (!shop) return fail('shop_not_found', target)
   if (shop.api_mode !== 'stock_sync') return fail('shop_read_only', target)
+  // Same additional condition as the batch run: a gated account cannot fire a
+  // live write from the first-live button either. The api_mode check above stays
+  // exactly where it is — this is layered on top of it, not instead of it.
+  if (!await userHasFeature(userId, 'stock_sync')) return fail('plan_gated', target)
 
   const barcode = shop.marketplace === 'uzum' ? found.product.market_barcode : null
   const marketSku = shop.marketplace === 'yandex_market' ? found.product.market_sku : found.product.sku

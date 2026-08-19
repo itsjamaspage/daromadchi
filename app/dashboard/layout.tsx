@@ -7,6 +7,7 @@ import FeedbackWidget from '@/components/dashboard/FeedbackWidget'
 import ChannelGate from '@/components/dashboard/ChannelGate'
 import { getCurrentUser } from '@/lib/auth/session'
 import { getStockAlerts } from '@/lib/db/alerts'
+import { lockedNavKeys } from '@/lib/billing/nav-gating'
 
 // Keep the entire authenticated dashboard out of search. Inherited by every
 // /dashboard/* route → <meta name="robots" content="noindex, nofollow">.
@@ -27,19 +28,31 @@ export default async function DashboardLayout({ children }: { children: React.Re
     notificationCount = (await getStockAlerts()).length
   } catch { /* best-effort — show no badge on failure */ }
 
+  // Which sidebar entries lead to a locked page. Computed here, in the one
+  // server component every dashboard route already renders, so the nav marks
+  // them instead of letting a seller walk into a wall with no warning.
+  //
+  // Best-effort, like the alert count above: this only decorates the nav, and a
+  // DB hiccup must not take the whole dashboard shell down. Failing open costs
+  // nothing — every gated page re-checks entitlement itself.
+  let locked: string[] = []
+  try {
+    locked = await lockedNavKeys(user?.id ?? null)
+  } catch { /* best-effort — show no locks on failure */ }
+
   return (
     <ChannelGate>
       <div className="min-h-screen">
         {/* Desktop sidebar — icon-only (56px), hover-expands to 240px over content */}
         <div className="hidden lg:block fixed left-0 top-0 h-full z-40">
-          <Sidebar />
+          <Sidebar lockedKeys={locked} />
         </div>
 
         {/* Desktop top bar — profile pill + dropdown */}
         <DashboardTopBar userName={user?.full_name ?? user?.email?.split('@')[0] ?? 'User'} userEmail={user?.email ?? ''} notificationCount={notificationCount} />
 
         {/* Mobile: top bar with hamburger + slide-in drawer */}
-        <MobileNav />
+        <MobileNav lockedKeys={locked} />
 
         {/* Main content — offset by collapsed sidebar width only */}
         <main className="lg:ml-14 pt-14 pb-20 lg:pb-0 min-w-0">
@@ -49,7 +62,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         </main>
 
         {/* Mobile bottom tab bar */}
-        <BottomNav />
+        <BottomNav lockedKeys={locked} />
 
         {/* Feedback widget — right side */}
         <FeedbackWidget />

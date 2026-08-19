@@ -12,6 +12,8 @@ import ExportButton from '@/components/dashboard/ExportButton'
 import MarketplaceTabs from '@/components/dashboard/MarketplaceTabs'
 import CalendarPicker from '@/components/dashboard/CalendarPicker'
 import { getT, getLang } from '@/lib/server-i18n'
+import { currentUserAccess } from '@/lib/billing/entitlement'
+import FeatureLock from '@/components/dashboard/FeatureLock'
 import type { MarketplaceType } from '@/lib/types'
 
 function fmt(n: number) {
@@ -66,6 +68,14 @@ interface Props {
 }
 
 export default async function PnlPage({ searchParams }: Props) {
+  // P&L is a finances surface: it reads the same settled money the payouts page
+  // does, so leaving it open would hand a gated seller the data through the
+  // side door. Gated BEFORE the queries — see the note on the analytics page.
+  const [gateLang, access] = await Promise.all([getLang(), currentUserAccess('finances')])
+  if (!access.allowed) {
+    return <FeatureLock lang={gateLang} feature="finances" hadTrial={access.trialEnded} />
+  }
+
   const params = await searchParams
   const marketplace = parseMp(params.mp)
   const range = parseRange(params)

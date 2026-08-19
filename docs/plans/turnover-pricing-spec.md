@@ -164,15 +164,21 @@ One change per branch, separate PRs, in order. Do not bundle.
 | # | Branch | Status |
 |---|---|---|
 | 1 | `feat/turnover-tier-compute` | **merged** (#219) |
-| 1a | `fix/renewal-agreed-price` | **open** (#220) |
-| 2 | `feat/plan-gating-trial-grandfather` | next |
-| 3 | `feat/pricing-page-ui` | |
+| 1a | `fix/renewal-agreed-price` | **merged** (#220) |
+| 2a | the `hasFeature` rule itself | **merged** (#222) |
+| 2b | derived tier persisted as a recommendation | **merged** (#223) |
+| 2c | `feat/plan-gating` — apply the rule | **this branch** |
+| 3 | `feat/pricing-page-ui` | **merged** (#224, #226, #227, #229, #230, #231) |
 | 4 | `feat/free-to-paid-nudge` | |
 | 5 | `feat/enterprise-outgrowth-popup` | |
 | 6 | `feat/account-lifecycle-freeze-delete` | |
 | 7 | `feat/plan-cancellation` | greenfield — see §7 |
 | 8 | `feat/price-change-notice` | depends on 1a + 7 |
 | 9 | `test/recurring-charge-harness` | must follow 1a |
+
+Branch 2 was split in delivery: the rule (2a) and the recommendation it reads
+alongside (2b) shipped before anything was gated, so the gate could be turned on
+in one reviewable change with the rule already proven.
 
 Cron is already scheduled on the VPS (`/var/www/daromadchi/cron-runner.sh`, not
 in git). Hook trial/freeze work into the existing `expire-plans` job and
@@ -202,12 +208,20 @@ Each of these was wrong in the earlier text. Listed so they are not reinstated.
 - **The 50 000 so'm test subscription.** Migration 072 locks its agreed price at
   50 000 forever. Correct on consent grounds; moving it to the real price is a
   deliberate act that needs notice, i.e. the price-change branch.
-- **Store limits.** `PLAN_SHOP_LIMITS` (`lib/api/auth.ts:26`) enforces free 1 /
-  pro 3 / pro_plus 5, while `/pricing` advertises "Unlimited do'konlar" for Pro.
-  That contradiction predates this work. Keep limits and fix the copy, or drop
-  them.
-- **In-flight trials.** Today's trial grants full Pro; the new one grants only
-  analytics + stock + finances + unit-econ. Users mid-trial would lose access
-  they currently have.
+- ~~**Store limits.**~~ **Resolved in 2c: dropped.** `PLAN_SHOP_LIMITS` enforced
+  nothing — no caller read it — while `/pricing` advertised "Unlimited
+  do'konlar", and capping free at one shop would have contradicted
+  `marketplaces` being FREE_FOREVER (two marketplaces need two shops). Store
+  count is not a gated capability; what a seller may USE is
+  `lib/billing/features.ts`. The Free card's bullets were rewritten to the
+  free-forever set at the same time, since "100 products" and "30-day history"
+  were unenforced in exactly the same way.
+- ~~**In-flight trials.**~~ **Resolved: not applicable.** There are no users, so
+  nobody is mid-trial and the new gating applies cleanly. No grandfathering of
+  trial scope is needed.
+
+- **The `plan_type` enum stops at `biznes`.** `hasFeature()` answers correctly
+  for `'enterprise'`, but no row can hold that value, so an enterprise seller
+  cannot be recorded as one. Needs a migration when Branch 5 lands.
 - **`cron-runner.sh` is not in version control.** If the VPS dies, the schedule
   dies with it.

@@ -17,6 +17,7 @@
     "test:atmos": "node --import tsx --test lib/billing/atmos-verify.test.ts",
     "test:tiers": "node --import tsx --test lib/billing/tiers.test.ts",
     "test:features": "node --import tsx --test lib/billing/features.test.ts",
+    "test:gating": "node --import tsx --test lib/billing/entitlement.integration.test.ts",
     "atmos:manual": "node scripts/atmos-manual-test.mjs",
     "atmos:direct": "node scripts/atmos-direct-test.mjs",
     "stock-sync:demo": "tsx scripts/stock-sync-dry-run-demo.ts",

@@ -15,7 +15,7 @@ const LANGS: { value: Lang; label: string }[] = [
   { value: 'en', label: 'EN' },
 ]
 
-export default function MobileNav() {
+export default function MobileNav({ lockedKeys = [] }: { lockedKeys?: string[] }) {
   const [open, setOpen]       = useState(false)
   const pathname              = usePathname()
   const { theme, toggle }     = useTheme()
@@ -90,7 +90,7 @@ export default function MobileNav() {
       <div className={`lg:hidden fixed top-0 left-0 h-full z-50 transition-transform duration-300 ease-in-out ${
         open ? 'translate-x-0' : '-translate-x-full'
       }`}>
-        <Sidebar onClose={() => setOpen(false)} />
+        <Sidebar onClose={() => setOpen(false)} lockedKeys={lockedKeys} />
       </div>
     </>
   )
