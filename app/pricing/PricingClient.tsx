@@ -6,7 +6,7 @@ import {
   Check, X, Clock, TrendingUp, ChevronRight, MessageCircle, ChevronDown,
 } from 'lucide-react'
 import { useLang } from '@/app/providers'
-import TierLadder from '@/components/pricing/TierLadder'
+import TierCards from '@/components/pricing/TierCards'
 import { tiersT } from '@/lib/tiersT'
 import { TRIAL_DAYS } from '@/lib/billing/features'
 
@@ -368,7 +368,7 @@ export default function PricingClient({ prices }: { prices: PricingData }) {
           Every price is visible before any input; the field only highlights. */}
       <section className="pb-24 px-4 sm:px-6">
         <div className="max-w-3xl mx-auto">
-          <TierLadder lang={lang} interval={isYearly ? 'annual' : 'monthly'} />
+          <TierCards lang={lang} interval={isYearly ? 'annual' : 'monthly'} />
           <p className="mt-4 text-center text-xs" style={{ color: 'var(--text-muted)' }}>
             {tiersT.trialNote[lang]}
           </p>

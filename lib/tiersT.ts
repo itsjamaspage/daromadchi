@@ -75,6 +75,8 @@ export const tiersT = {
   choose:       tr('Подключить', 'Ulash', 'Get started'),
   talkToUs:     tr('Связаться', "Bog'lanish", 'Talk to us'),
   seeAll:       tr('Все тарифы', 'Barcha tariflar', 'See all tiers'),
+  prevTier:     tr('Предыдущий тариф', 'Oldingi tarif', 'Previous tier'),
+  nextTier:     tr('Следующий тариф', 'Keyingi tarif', 'Next tier'),
 
   // ── trial ──
   trialBadge:   tr(`${RU_D} бесплатно`, `${D} kun bepul`, `${EN_D} free`),
