@@ -30,6 +30,7 @@ import {
   planAnnualTotalTiyin,
   type Interval,
   type PlanKey,
+  isPlanKey,
 } from '@/lib/billing/plans'
 
 /* ── time ───────────────────────────────────────────────────────────────────── */
@@ -47,7 +48,9 @@ export function tashkentMonthStart(now: Date = new Date()): Date {
 // plan/interval are free-text columns; anything unrecognised is excluded from
 // money math rather than silently priced as Pro.
 function normPlan(v: string | null): PlanKey | null {
-  return v === 'pro' || v === 'pro_plus' ? v : null
+  // Every plan with a price counts toward the money math. Listing keys by hand
+  // left Biznes revenue out of MRR entirely.
+  return isPlanKey(v) ? v : null
 }
 
 function normInterval(v: string | null): Interval {

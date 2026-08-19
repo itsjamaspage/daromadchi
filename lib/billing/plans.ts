@@ -32,6 +32,26 @@ export const PLAN_PRICES_TIYIN: Record<PlanKey, { monthly: number; annualPerMont
   biznes:   { monthly: 50_000_000, annualPerMonth: 45_000_000 }, // 500 000 / 450 000 so'm
 }
 
+/**
+ * Is this a plan checkout can sell?
+ *
+ * Derived from PLAN_PRICES_TIYIN and exported from here so every gate on "which
+ * plans are real" reads the same table. Two API routes had already copied this
+ * function; the copies that mattered were the hand-written `plan === 'pro' ||
+ * plan === 'pro_plus'` checks elsewhere, which is how Biznes could be charged
+ * for and then never granted.
+ */
+export function isPlanKey(v: unknown): v is PlanKey {
+  return typeof v === 'string' && Object.prototype.hasOwnProperty.call(PLAN_PRICES_TIYIN, v)
+}
+
+/** What each plan is called on an invoice and in the UI. */
+export const PLAN_DISPLAY_NAME: Record<PlanKey, string> = {
+  pro:      'Pro',
+  pro_plus: 'Pro+',
+  biznes:   'Biznes',
+}
+
 // The amount charged once for a 12-month subscription.
 export function planAnnualTotalTiyin(plan: PlanKey): number {
   return PLAN_PRICES_TIYIN[plan].annualPerMonth * 12

@@ -152,7 +152,7 @@ function IntervalTabs({ value, onChange, b }: {
 // ── Upgrade Modal — steps: choose → confirm → card → OTP → success ───────────────
 
 function UpgradeModal({ current, highlight, initialInterval, lang, d, derivedTier, derivedTurnoverSom, onClose }: {
-  current: PlanType; highlight?: 'pro' | 'pro_plus'; initialInterval?: Interval; lang: Lang; d: T
+  current: PlanType; highlight?: PlanKey; initialInterval?: Interval; lang: Lang; d: T
   /** Turnover-derived tier. null until the daily cron has computed one. */
   derivedTier: Tier | null
   derivedTurnoverSom: number | null
@@ -303,7 +303,7 @@ function UpgradeModal({ current, highlight, initialInterval, lang, d, derivedTie
         {/* Step: confirm — always shown before card entry / charge, so the exact
             amount (and the once-a-year total for yearly) is explicit. */}
         {step === 'confirm' && plan && plan !== 'free' && (() => {
-          const p = plan as 'pro' | 'pro_plus'
+          const p = plan as PlanKey
           const chargeTiyin = planAmountTiyin(p, billingInterval)
           return (
             <div className="p-6 space-y-5">
@@ -334,7 +334,7 @@ function UpgradeModal({ current, highlight, initialInterval, lang, d, derivedTie
             <div className="flex items-center justify-between text-sm">
               <span className="text-[var(--text-muted)]">{planLabel(plan, d)} · {billingInterval === 'annual' ? b.yearly : b.monthly}</span>
               <span className="font-bold text-[var(--text-base)] text-right">
-                {formatSomFromTiyin(planAmountTiyin(plan as 'pro' | 'pro_plus', billingInterval))} so&rsquo;m
+                {formatSomFromTiyin(planAmountTiyin(plan as PlanKey, billingInterval))} so&rsquo;m
                 <span className="text-[var(--text-muted)] font-normal text-xs">{billingInterval === 'annual' ? ` · ${b.billedYearly}` : d.billingPerMonth}</span>
               </span>
             </div>
@@ -522,7 +522,7 @@ function statusBadge(status: PaymentRecord['status'], d: T, failedLabel: string)
 
 // ── Page ───────────────────────────────────────────────────────────────────────
 
-export default function BillingClient({ billing, initialPlan, initialInterval }: { billing: BillingInfo; initialPlan?: 'pro' | 'pro_plus'; initialInterval?: Interval }) {
+export default function BillingClient({ billing, initialPlan, initialInterval }: { billing: BillingInfo; initialPlan?: PlanKey; initialInterval?: Interval }) {
   const { lang } = useLang()
   const l = (lang in BT ? lang : 'uz') as Lang
   const b = BT[l]
@@ -533,7 +533,7 @@ export default function BillingClient({ billing, initialPlan, initialInterval }:
   // Which plan the modal opens straight onto. Only the ?plan= auto-open uses a
   // highlight; the "change plan" / "add payment" buttons clear it so the modal
   // opens on the plan chooser (all tariffs visible), not a single locked plan.
-  const [modalHighlight, setModalHighlight]     = useState<'pro' | 'pro_plus' | undefined>(initialPlan)
+  const [modalHighlight, setModalHighlight]     = useState<PlanKey | undefined>(initialPlan)
 
   function openPlanChooser() {
     setModalHighlight(undefined)

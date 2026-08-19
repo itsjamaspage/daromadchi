@@ -19,7 +19,7 @@ import { logger } from '@/lib/logger'
 import { decrypt } from '@/lib/crypto'
 import { chargeBoundCard } from '@/lib/billing/recurring'
 import { applyAtmosPaymentSuccess } from '@/lib/billing/activate'
-import { planPeriodMonths, tiyinToSom, type Interval } from '@/lib/billing/plans'
+import { planPeriodMonths, tiyinToSom, isPlanKey, type Interval } from '@/lib/billing/plans'
 
 export const runtime = 'nodejs'
 export const maxDuration = 300
@@ -59,7 +59,10 @@ export const GET = withErrorHandler(async (req: Request) => {
 
   let charged = 0, failed = 0, downgraded = 0, skipped = 0, noAgreedAmount = 0
   for (const s of due) {
-    if (s.plan !== 'pro' && s.plan !== 'pro_plus') { skipped++; continue }
+    // Every plan checkout can sell must also RENEW. Naming pro and pro_plus by
+    // hand here meant a paying Biznes subscriber was silently never charged
+    // again and dropped to free at period end.
+    if (!isPlanKey(s.plan)) { skipped++; continue }
     const interval: Interval = s.interval === 'annual' ? 'annual' : 'monthly'
     // Charge WHAT THEY AGREED TO, never the live PLAN_PRICES_TIYIN. Deriving the
     // amount from config means any later price edit silently reprices existing

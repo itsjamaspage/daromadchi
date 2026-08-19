@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Mail, Lock, Loader2, Eye, EyeOff, User, CheckCircle, ArrowLeft, ShieldCheck } from 'lucide-react'
 import { useTheme, useLang } from '@/app/providers'
+import { isPlanKey } from '@/lib/billing/plans'
 
 const ui = {
   uz: {
@@ -246,14 +247,14 @@ function LoginForm() {
   // ?consent=required — open the signup tab and seed the notice. Derived at
   // first render (no effect / synchronous setState).
   const consentRequired = searchParams.get('consent') === 'required'
-  // A plan chosen on /pricing (?plan=pro|pro_plus) carries through login so the
-  // user lands on Billing with that plan's checkout ready — not the generic
-  // dashboard. Validated against the two paid keys; anything else → dashboard.
+  // A plan chosen on /pricing (?plan=…) carries through login so the user lands
+  // on Billing with that plan's checkout ready — not the generic dashboard.
+  // Validated against the price table rather than a hand-written pair: naming
+  // two keys here silently dropped the Biznes link /pricing was handing out.
   const planParam = searchParams.get('plan')
-  const postLoginDest =
-    planParam === 'pro' || planParam === 'pro_plus'
-      ? `/dashboard/billing?plan=${planParam}`
-      : '/dashboard'
+  const postLoginDest = isPlanKey(planParam)
+    ? `/dashboard/billing?plan=${planParam}`
+    : '/dashboard'
 
   const [mode, setMode] = useState<'login' | 'signup' | 'forgot' | 'verify'>(consentRequired ? 'signup' : 'login')
   const [consent, setConsent] = useState(false)

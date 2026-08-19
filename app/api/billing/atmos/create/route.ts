@@ -15,7 +15,7 @@ import { db, payments, subscriptions } from '@/lib/db'
 import { getCurrentUser } from '@/lib/auth/session'
 import { logger } from '@/lib/logger'
 import {
-  planAmountTiyin, planPeriodMonths, formatSomFromTiyin, PLAN_PRICES_TIYIN,
+  planAmountTiyin, planPeriodMonths, formatSomFromTiyin, isPlanKey, PLAN_DISPLAY_NAME,
   tiyinToSom, type PlanKey, type Interval,
 } from '@/lib/billing/plans'
 import { createInvoice, AtmosConfigError } from '@/lib/billing/atmos'
@@ -23,15 +23,12 @@ import { createInvoice, AtmosConfigError } from '@/lib/billing/atmos'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-// Derived from PLAN_PRICES_TIYIN so a tier added there is billable here without
-// a second edit — the mismatch that kept Biznes unbuyable while it had a price.
-function isPlanKey(v: unknown): v is PlanKey {
-  return typeof v === 'string' && Object.prototype.hasOwnProperty.call(PLAN_PRICES_TIYIN, v)
-}
 function isInterval(v: unknown): v is Interval { return v === 'monthly' || v === 'annual' }
 
 function itemName(plan: PlanKey, interval: Interval): string {
-  const name = plan === 'pro_plus' ? 'Pro+' : 'Pro'
+  // Read the display table rather than a ternary: the ternary printed "Pro" on
+  // a Biznes invoice, which is a receipt that does not match what was sold.
+  const name = PLAN_DISPLAY_NAME[plan]
   const period = interval === 'annual' ? '12 мес' : '1 мес'
   return `Daromadchi — подписка (${name}, ${period})`
 }

@@ -497,7 +497,7 @@ export const subscriptionStatusEnum = pgEnum('subscription_status', [
 export const subscriptions = pgTable('subscriptions', {
   id:                 uuid('id').primaryKey().defaultRandom(),
   user_id:            uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  plan:               text('plan').notNull(),        // 'pro' | 'pro_plus'
+  plan:               text('plan').notNull(),        // a PlanKey: 'pro' | 'pro_plus' | 'biznes'
   interval:           text('interval').notNull(),    // 'monthly' | 'annual'
   status:             subscriptionStatusEnum('status').default('pending').notNull(),
   current_period_end: timestamp('current_period_end', { withTimezone: true }),
