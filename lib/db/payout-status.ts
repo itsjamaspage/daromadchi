@@ -46,8 +46,14 @@ export function isYandexTransferred(
 
 /**
  * Whether a Yandex netting transaction is still AWAITING transfer
- * («Будет переведён по графику выплат»). Used to keep a month bucket out of
- * "paid" while any of its transfers are still scheduled-but-not-sent.
+ * («Будет переведён по графику выплат»).
+ *
+ * Kept for what it describes, but it is NO LONGER what decides "paid" — see
+ * yandexFullyTransferred below. Counting only the statuses we recognise as
+ * awaiting meant any wording we had not thought of counted as neither, and a
+ * bucket holding it was free to call itself paid. «Переводятся» (in transit) is
+ * exactly that: it shares no stem with «переведён» (перевод vs перевед) and has
+ * no «будет», so it slipped through both.
  */
 export function isYandexAwaitingTransfer(statusNote: string | null | undefined): boolean {
   const s = (statusNote ?? '').toLowerCase()
@@ -55,14 +61,36 @@ export function isYandexAwaitingTransfer(statusNote: string | null | undefined):
 }
 
 /**
+ * Is EVERY transaction in this bucket proven transferred?
+ *
+ * This replaces "has a transfer and nothing recognisably awaiting" with positive
+ * proof, and the difference is the bug it fixes. The old rule asked what we could
+ * recognise as NOT yet sent; anything unrecognised — a status wording nobody had
+ * seen, «Переводятся» above all — answered "no", and the bucket called itself
+ * paid. In the report that produced this fix, 32 940 genuinely transferred and
+ * 100 000 still in transit were shown to the seller as 59 940 paid.
+ *
+ * Now a bucket is paid only when the count of transferred transactions equals
+ * the count of transactions in it. A row we cannot classify keeps the whole
+ * bucket out of "paid", which is the direction that can only ever understate
+ * what the seller has been sent.
+ *
+ * Both counts come from the same loop over the same rows in payouts.ts, so they
+ * cannot drift apart.
+ */
+export function yandexFullyTransferred(txnCount: number, transferredCount: number): boolean {
+  if (txnCount <= 0) return false
+  return transferredCount >= txnCount
+}
+
+/**
  * Yandex settled-bucket status, driven by the netting report — NEVER the calendar.
  *
- *   transferPosted (a payment order issued, none still awaiting) → paid
+ *   transferPosted (EVERY transaction proven transferred) → paid
  *   else credit > 0 AND debit == 0 → fees_pending  (net not final; flagged, in pending bucket)
  *   else                          → pending        (fees final, transfer not yet posted)
  *
- * `transferPosted` is rolled up in payouts.ts from the bucket's transactions:
- * true when at least one is isYandexTransferred and none is isYandexAwaitingTransfer.
+ * `transferPosted` is rolled up in payouts.ts via yandexFullyTransferred().
  * Defaults to false so existing callers (and pre-payment-order data) behave as before.
  */
 export function deriveYandexSettledStatus(credit: number, debit: number, transferPosted = false): PayoutStatus {

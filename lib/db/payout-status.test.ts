@@ -7,6 +7,7 @@ import {
   deriveYandexSettledStatus,
   isYandexTransferred,
   isYandexAwaitingTransfer,
+  yandexFullyTransferred,
   isPaidStatus,
   isAvailableStatus,
   isPendingStatus,
@@ -89,6 +90,73 @@ describe('Yandex netting transfer signal — "paid" IS provable (PROBLEM 1)', ()
     assert.equal(deriveYandexSettledStatus(100000, 0, false), 'fees_pending')
     assert.equal(deriveYandexSettledStatus(100000, 16060, false), 'pending')
     assert.equal(deriveYandexSettledStatus(100000, 0), 'fees_pending') // default arg
+  })
+})
+
+describe('«Переводятся» — in transit is NOT transferred', () => {
+  // The exact wording that produced the overstatement. Yandex reported
+  // 32 940 transferred and 100 000 still «Переводятся»; the app showed 59 940
+  // paid, because this status matched neither classifier and so blocked
+  // nothing.
+  //
+  // «Переводятся» shares no stem with «переведён»: перевод- vs перевед-. And it
+  // carries no «будет». That is why BOTH of the old checks answered no.
+  const IN_TRANSIT = 'Переводятся'
+
+  it('is not counted as transferred, even with a payment-order number', () => {
+    assert.equal(isYandexTransferred(IN_TRANSIT, '92735'), false)
+  })
+
+  it('is not recognised as awaiting either — which is exactly the trap', () => {
+    assert.equal(isYandexAwaitingTransfer(IN_TRANSIT), false)
+  })
+
+  it('the OLD rule called such a bucket paid; the new one does not', () => {
+    // One row genuinely transferred, two still in transit: 3 transactions.
+    const txnCount = 3, transferred = 1, awaitingRecognised = 0
+
+    const oldRule = transferred > 0 && awaitingRecognised === 0
+    assert.equal(oldRule, true, 'reproduces the bug: the old guard passed')
+    assert.equal(deriveYandexSettledStatus(176_000, 0, oldRule), 'paid')
+
+    const newRule = yandexFullyTransferred(txnCount, transferred)
+    assert.equal(newRule, false)
+    const status = deriveYandexSettledStatus(176_000, 0, newRule)
+    assert.equal(isPaidStatus(status), false, 'in-transit money must not read as paid')
+  })
+
+  it('a bucket where every row IS transferred still reads paid', () => {
+    assert.equal(yandexFullyTransferred(3, 3), true)
+    assert.equal(deriveYandexSettledStatus(176_000, 1_000, true), 'paid')
+  })
+
+  it('any unclassifiable status keeps the bucket out of paid', () => {
+    // The point of positive proof: a wording nobody has seen yet fails closed.
+    for (const unknown of ['Переводятся', 'В обработке', 'На согласовании', '']) {
+      assert.equal(isYandexTransferred(unknown, '92735'), false, unknown)
+    }
+    assert.equal(yandexFullyTransferred(2, 1), false)
+  })
+
+  it('an empty bucket is never paid', () => {
+    assert.equal(yandexFullyTransferred(0, 0), false)
+  })
+})
+
+describe('no settlement data means pending, never paid-by-age', () => {
+  // The second bug: a month bucket with no settlement rows used to be marked
+  // 'estimated_paid' purely because the month had ended. Age is not a
+  // settlement signal — a Uzum payout that failed and was reversed still showed
+  // as «Выплачено» through this path.
+  it('estimated_paid is still counted as paid, which is why it must not be emitted', () => {
+    assert.equal(isPaidStatus('estimated_paid'), true)
+  })
+
+  it('the fallback statuses now in use are both pending-side', () => {
+    for (const s of ['pending', 'estimated_pending'] as const) {
+      assert.equal(isPaidStatus(s), false)
+      assert.equal(isPendingStatus(s), true)
+    }
   })
 })
 

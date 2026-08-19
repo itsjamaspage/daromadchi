@@ -3,7 +3,7 @@ import { db, orders, orderItems, products, shops, yandexSettlementTransactions, 
 import { getShopIds } from '@/lib/db/shop-context'
 import { getUnitEcoSettings } from '@/lib/db/unit-economics'
 import type { PayoutEntry, PayoutOrderItem, PayoutOrderLine } from '@/lib/types'
-import { deriveUzumBucketStatus, deriveYandexSettledStatus, isYandexTransferred, isYandexAwaitingTransfer } from '@/lib/db/payout-status'
+import { deriveUzumBucketStatus, deriveYandexSettledStatus, isYandexTransferred, isYandexAwaitingTransfer, yandexFullyTransferred } from '@/lib/db/payout-status'
 
 export type { PayoutEntry }
 
@@ -242,10 +242,12 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
           const k = String(r.sku).trim()
           if (k && !ymFinanceNameBySku.has(k)) ymFinanceNameBySku.set(k, r.product_name)
         }
-        // Transfer roll-up (PROBLEM 1): count transactions the netting report says
-        // are transferred («Переведён…» + payment-order number) vs still awaiting
-        // («Будет переведён…»). A bucket is "paid" only when it has a transfer and
-        // nothing still awaiting — see deriveYandexSettledStatus(transferPosted).
+        // Transfer roll-up: count transactions the netting report PROVES were
+        // transferred («Переведён…» + payment-order number). The bucket is paid
+        // only when that count reaches txnCount — positive proof, not "nothing
+        // recognisably awaiting". `awaiting` is still tracked for diagnosis but
+        // no longer decides anything: it could only ever describe wordings we
+        // already knew, and «Переводятся» was not one of them.
         if (isYandexTransferred(r.status_note, r.payment_order_number)) {
           b.transferred += 1
           // The payment-order number (№ платежного поручения, e.g. 92735) is the
@@ -417,7 +419,7 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
           status: deriveYandexSettledStatus(
             settled.credit,
             settled.debit,
-            settled.transferred > 0 && settled.awaiting === 0,
+            yandexFullyTransferred(settled.txnCount, settled.transferred),
           ),
           payoutDate: null,
           payoutEstimated: false,
@@ -552,8 +554,14 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
       netPayout,
       ordersCount: v.count,
       orderNumbers: v.orderNumbers,
-      // TODO: replace with real payout schedule data from each marketplace's API
-      status: isPast ? 'estimated_paid' : 'estimated_pending',
+      // No settlement data for this bucket, so nothing PROVES the money moved.
+      //
+      // This used to read `isPast ? 'estimated_paid' : ...`, which called a month
+      // paid on its age alone — a Uzum payout that failed and was reversed still
+      // showed as «Выплачено» because nothing here consults payout outcomes at
+      // all. Age is not a settlement signal, so it no longer produces one. The
+      // Yandex no-settlement branch above already worked this way.
+      status: isPast ? 'pending' : 'estimated_pending',
       payoutDate: null,
       payoutEstimated: true,
       items: itemsMap.get(key) ?? [],
