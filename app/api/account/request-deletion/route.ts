@@ -4,11 +4,12 @@ import { sendAccountDeletionRequest } from '@/lib/email'
 import { sendTelegramMessage } from '@/lib/telegram'
 import { withErrorHandler } from '@/lib/api-handler'
 import { logger } from '@/lib/logger'
+import { ADMIN_CHAT_IDS } from '@/lib/telegram-admin'
 
 export const runtime = 'nodejs'
 
-// Admin chat that receives operational alerts (same chat the feedback flow uses).
-const ADMIN_CHAT_ID = '6884517020'
+// Admin chats that receive operational alerts (the same ones the feedback flow
+// uses), from TELEGRAM_ADMIN_CHAT_ID.
 
 // User-facing "Request account deletion". A logged-in user asks for their
 // account to be deleted; we notify the operator (email to privacy@ + Telegram)
@@ -28,10 +29,12 @@ export const POST = withErrorHandler(async () => {
   // (email or Telegram) reaching the operator is enough to action it.
   const results = await Promise.allSettled([
     sendAccountDeletionRequest(user.email, user.id, requestedAt),
-    sendTelegramMessage(
-      ADMIN_CHAT_ID,
+    // One entry in `results`, however many operators are configured, so the
+    // telegramOk bookkeeping below stays right.
+    Promise.all(ADMIN_CHAT_IDS.map(chatId => sendTelegramMessage(
+      chatId,
       `🗑️ <b>Account deletion request</b>\nEmail: ${user.email}\nUser ID: <code>${user.id}</code>\nRequested: ${requestedAt}`,
-    ),
+    ))),
   ])
   const delivered = results.some(r => r.status === 'fulfilled')
   logger.info('account_deletion_requested', {
