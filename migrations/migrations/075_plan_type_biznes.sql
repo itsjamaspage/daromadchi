@@ -1,0 +1,23 @@
+-- 075: add 'biznes' to the plan_type enum so users.plan can hold it.
+--
+-- Biznes becomes self-serve: checkout can bill it by card like Pro and Pro+, and
+-- settlement writes users.plan = 'biznes'. Without this value that write fails
+-- with an invalid-input error AFTER the card has already been charged, which is
+-- the worst possible place to discover a missing enum value.
+--
+-- ── Why this file adds the value and does NOTHING else ──────────────────────
+-- scripts/apply-sql-migrations.mjs sends each file as one multi-statement query,
+-- which node-pg wraps in an implicit transaction. Postgres permits
+-- ALTER TYPE ... ADD VALUE inside a transaction (12+), but the new value CANNOT
+-- BE USED until that transaction commits. So any statement here that referenced
+-- 'biznes' — a backfill, a default, a CHECK — would fail with
+-- "unsafe use of new value of enum type". Adding the value is therefore the
+-- whole of this migration; anything that needs to USE it belongs in a later one.
+--
+-- ADD VALUE is also non-blocking: it appends to the enum's internal list and
+-- does not rewrite the users table or take a heavy lock.
+--
+-- Idempotent via IF NOT EXISTS, which matters because every registered migration
+-- re-runs on every deploy.
+
+ALTER TYPE plan_type ADD VALUE IF NOT EXISTS 'biznes';

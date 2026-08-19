@@ -111,6 +111,10 @@ const MIGRATIONS = [
   // Advisory turnover-derived tier columns. Additive + idempotent; no backfill
   // (the cron fills them, and a made-up value would fire the nudge branches).
   'migrations/migrations/074_users_derived_tier.sql',
+  // Adds 'biznes' to the plan_type enum so checkout can settle that tier. Adds
+  // the value and nothing else: the runner wraps each file in one transaction,
+  // and a new enum value cannot be USED until that transaction commits.
+  'migrations/migrations/075_plan_type_biznes.sql',
 ]
 
 function loadDatabaseUrl() {

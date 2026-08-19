@@ -80,7 +80,8 @@ export interface AdminMetrics {
   monthRevenueTiyin: number
   paidPaymentCount: number
   activeCount: number
-  byPlan: { pro: PlanSplit; pro_plus: PlanSplit }
+  /** One entry per billable plan — widens automatically when PlanKey gains a tier. */
+  byPlan: Record<PlanKey, PlanSplit>
   byInterval: { monthly: PlanSplit; annual: PlanSplit }
   newThisMonth: number
   churnedThisMonth: number
@@ -209,7 +210,7 @@ export async function getAdminAnalytics(now: Date = new Date()): Promise<AdminAn
     monthRevenueTiyin: Number(revenueRows[0]?.thisMonth ?? 0),
     paidPaymentCount: Number(revenueRows[0]?.count ?? 0),
     activeCount: 0,
-    byPlan: { pro: { count: 0, mrrTiyin: 0 }, pro_plus: { count: 0, mrrTiyin: 0 } },
+    byPlan: { pro: { count: 0, mrrTiyin: 0 }, pro_plus: { count: 0, mrrTiyin: 0 }, biznes: { count: 0, mrrTiyin: 0 } },
     byInterval: { monthly: { count: 0, mrrTiyin: 0 }, annual: { count: 0, mrrTiyin: 0 } },
     newThisMonth: 0,
     churnedThisMonth: 0,

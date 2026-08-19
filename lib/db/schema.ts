@@ -70,7 +70,7 @@ export const syncDayStatusEnum = pgEnum('sync_day_status', [
 
 export const taxTypeEnum = pgEnum('tax_type', ['income', 'income_minus_expense'])
 
-export const planTypeEnum = pgEnum('plan_type', ['free', 'pro', 'pro_plus'])
+export const planTypeEnum = pgEnum('plan_type', ['free', 'pro', 'pro_plus', 'biznes'])
 
 // Per-shop API posture. read_only (default) never writes to the marketplace;
 // stock_sync opts a single shop into the audited stock-quantity-only writer.
