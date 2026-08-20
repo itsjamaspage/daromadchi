@@ -3,7 +3,9 @@
 Branch: `fix/payouts-settlement-accuracy` (off clean `main`). Separate from
 `fix/fbs-stock-sync-ledger` and unrelated to ATMOS — neither is touched.
 
-**Status: PLAN ONLY. No code changes yet.**
+**Status: SHIPPED for Yandex, CLOSED-BLOCKED for Uzum.** See §9 for what live data
+settled, including one theory in this document's own history that turned out to be
+a false pattern. No further Uzum work is buildable until the RBAC ticket resolves.
 
 Two confirmed payout-accuracy bugs, both making earnings look further along than the
 marketplace reports:
@@ -108,9 +110,14 @@ No `paid`.
 
 **Yandex** (`yandexSettlementTransactions`, aggregated `payouts.ts:183–202`):
 `credits+debits present → pending` · `credits present, debits absent/partial → fees_pending`
-· `no settlement txns → estimated/awaiting (filtered)`. No `paid` (deferred; also lacks an
-order-level withdrawal feed). A settled-but-unwithdrawn Yandex row reads as **pending /
-awaiting payout**, never "stuck" or alarming — mirroring Uzum's available-vs-pending.
+· `no settlement txns → estimated/awaiting (filtered)`. A settled-but-unwithdrawn Yandex row
+reads as **pending / awaiting payout**, never "stuck" or alarming — mirroring Uzum's
+available-vs-pending.
+
+> **SUPERSEDED for `paid`.** This section said Yandex lacks an order-level withdrawal feed.
+> It does not: the netting report's payment-order number IS one, per order. `paid` is emitted
+> now — see §9.1. The Uzum half of this mapping still stands exactly as written, and §9.2
+> records why it cannot change.
 
 ---
 
@@ -262,6 +269,91 @@ Pure-function/computation tests (no network), mirroring
 выводу" as the headline and demote/hide "Выплачено" until a payout feed exists (b, recommended).
 
 ---
+
+## 9. Live-data findings (2026-08-20) — what is settled, and what is dead
+
+Everything below is measured against one real seller's data across three
+independent sources: the Yandex united-netting report, the Uzum seller panel, and
+the bank account that received the money. No inference from a single figure.
+
+### 9.1 Yandex — SOLVED, per order, via the payment-order number
+
+Ran `parseNettingReport` over the real report (period 01.06–20.08). Eight
+transactions, two orders:
+
+```
+59564845443  Начисление  +76 000  «Переведён по графику выплат»       п/п 92735   TRANSFERRED
+59564845443  Удержание    −2 000  «Удержан из платежей покупателей»   п/п 92735
+59564845443  Удержание   −14 060  «Удержан из платежей покупателей»   п/п 92735
+60137441539  Начисление +100 000  «Будет переведён по графику выплат»     —       awaiting
+60137441539  Удержание ×4 −27 000 «Будет удержан из платежей…»            —
+
+→ 59564845443  net 59 940  PAID     (bank: 59 940 from ООО «YGO UB», 5 Aug)
+→ 60137441539  net 73 000  pending
+```
+
+Two things this proves, both of which had been open questions:
+
+1. **Zero transferred rows lack an order number.** Every п/п sits on a row
+   carrying its own «Номер заказа», so per-order attribution works on real data
+   and needs no fallback for order-less transfer rows.
+2. **A bucket-level "every row transferred" rule would still be wrong.** Order
+   59564845443 has one transferred row and two deduction rows whose status text
+   («Удержан из платежей покупателей») contains no transfer wording at all. Only
+   the per-order rule marks it paid.
+
+### 9.2 Uzum — no settlement signal exists. Both candidates are dead.
+
+| Candidate | Result | Evidence |
+|---|---|---|
+| payout-history endpoint | **403 RBAC** | every path probed; §0 |
+| `withdrawnProfit` field | **always `0.00`** | both orders read `0.00` and `TO_WITHDRAW` after their payouts had landed in the bank |
+
+`withdrawnProfit` was the promising one — it is the natural Uzum equivalent of a
+Yandex п/п, it is already ingested, and `payouts.ts` already prefers it when
+computing net. It is simply never populated. Checked against orders 121172241 and
+117751391 on 2026-08-20, after batches №5000390691 (50 300, 14.08) and
+№5000404101 (83 000, 19.08) had both completed and both credits had appeared in
+the bank. Still `0.00`.
+
+**Do not wire it.** A field that reads zero for money already received is not a
+settlement signal, and treating it as one would put Uzum orders permanently in
+"not paid" while looking like it worked.
+
+The seller panel *does* show the batch history with success/failure marks
+(№5000404101 ✓, №5000390691 ✓, №5000360785 ✗). The data exists; the API withholds
+it. That single access grant is the only thing between this and full accuracy —
+the Appendix design is ready to build the day it lands.
+
+### 9.3 RETRACTED — the "5 250 delivery-fee gap" was a false pattern
+
+An earlier reading of this data claimed Uzum paid 50 300 against an order worth
+55 550, and that the 5 250 difference — exactly one `logistic_delivery_fee` —
+meant the fee was being deducted twice. **It does not. Uzum batches payouts by
+schedule, not by order**, and once the third batch landed the totals reconciled
+to the so'm:
+
+```
+orders «К выводу»    :  77 750 + 55 550           = 133 300
+batches COMPLETED    :  50 300 (14.08) + 83 000 (19.08) = 133 300
+```
+
+Batch №5000360785 (55 550) failed on 06.08 and its money was re-issued across the
+two later batches, which is why no single batch matches any single order. The
+arithmetic was never wrong; the mapping assumption was. Recorded here because the
+subtraction is genuinely seductive — 55 550 − 5 250 = 50 300 — and the next person
+to look at one batch in isolation will find it again.
+
+### 9.4 The honest ceiling, until the RBAC ticket resolves
+
+- «Всего выплачено» shows **Yandex only**. For this seller: 59 940.
+- Uzum's 133 300 is reported as **earned**, with "Uzum does not report
+  withdrawals" stated on the tile — not as "available to withdraw", which claimed
+  the money was still unwithdrawn when part of it was already in the bank.
+- Nothing claims a transfer it cannot prove, in either direction.
+
+**Owner action, not a code task:** chase the Uzum finance-payout API scope. It is
+the only remaining blocker, and it is on Uzum's side.
 
 ## Appendix — DEFERRED Option B (gated on Uzum granting finance-payout API access)
 
