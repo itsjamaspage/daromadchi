@@ -1,10 +1,8 @@
-import { Suspense } from 'react'
 import { Boxes, Settings } from 'lucide-react'
 import Link from 'next/link'
 import { getStockGroups } from '@/lib/db/stock-groups'
 import StocksTable from '@/components/dashboard/StocksTable'
 import ProductGroupSuggestions from '@/components/dashboard/ProductGroupSuggestions'
-import LastSyncedServer from '@/components/dashboard/LastSyncedServer'
 import HelpTooltip from '@/components/dashboard/HelpTooltip'
 import { getT, getLang } from '@/lib/server-i18n'
 import { currentUserAccess, everyActiveShopIsReadOnly } from '@/lib/billing/entitlement'
@@ -46,9 +44,6 @@ export default async function StocksPage() {
           </div>
           <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{d.subtitle}</p>
         </div>
-        <Suspense>
-          <LastSyncedServer />
-        </Suspense>
       </div>
 
       {/* Read-only suggestion panel; self-hides when there are 0 pending. */}
