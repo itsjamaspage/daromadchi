@@ -223,5 +223,9 @@ Each of these was wrong in the earlier text. Listed so they are not reinstated.
 - **The `plan_type` enum stops at `biznes`.** `hasFeature()` answers correctly
   for `'enterprise'`, but no row can hold that value, so an enterprise seller
   cannot be recorded as one. Needs a migration when Branch 5 lands.
-- **`cron-runner.sh` is not in version control.** If the VPS dies, the schedule
-  dies with it.
+- ~~**`cron-runner.sh` is not in version control.**~~ **Resolved:** the runner is
+  now `scripts/cron-runner.sh`, with `scripts/crontab.example` and
+  `docs/ops/cron.md`. One caveat carried forward: the live cadences were never
+  committed and cannot be recovered from the repo, so every schedule except
+  `expire-plans` is a proposal until someone diffs it against `crontab -l`. The
+  procedure is in the ops doc.
