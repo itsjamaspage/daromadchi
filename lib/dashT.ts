@@ -317,6 +317,8 @@ export const dashT = {
     payouts: {
       kpiTotalPaid: "Jami to'langan", kpiPending: 'Kutilayotgan', kpiAvg: "O'rtacha to'lov",
       kpiAvailable: 'Ishlab topilgan', statusAvailable: 'Ishlab topilgan',
+      uzToWithdraw: 'Yechib olishga', uzProcessing: 'Ishlanmoqda',
+      uzCanceled: 'Bekor qilingan', uzPartiallyCanceled: 'Qisman bekor qilingan',
       earnedUnknownWithdrawal: "Uzum yechib olishlar haqida xabar bermaydi",
       statusFeesPending: '≈ Komissiya kutilmoqda', paidPendingApi: "To'lovlar: API ruxsati kutilmoqda",
       perPeriod: 'har bir davr', periods: 'ta davr',
@@ -728,6 +730,8 @@ export const dashT = {
     payouts: {
       kpiTotalPaid: 'Total paid', kpiPending: 'Pending', kpiAvg: 'Avg payout',
       kpiAvailable: 'Earned', statusAvailable: 'Earned',
+      uzToWithdraw: 'To withdraw', uzProcessing: 'Processing',
+      uzCanceled: 'Cancelled', uzPartiallyCanceled: 'Partially cancelled',
       earnedUnknownWithdrawal: 'Uzum does not report withdrawals',
       statusFeesPending: '≈ Fees pending', paidPendingApi: 'Payouts: pending API access',
       perPeriod: 'per period', periods: 'periods',
@@ -1136,6 +1140,8 @@ export const dashT = {
     payouts: {
       kpiTotalPaid: 'Всего выплачено', kpiPending: 'Ожидает', kpiAvg: 'Средняя выплата',
       kpiAvailable: 'Заработано', statusAvailable: 'Заработано',
+      uzToWithdraw: 'К выводу', uzProcessing: 'В обработке',
+      uzCanceled: 'Отменён', uzPartiallyCanceled: 'Частично отменён',
       earnedUnknownWithdrawal: 'Uzum не сообщает о выводах',
       statusFeesPending: '≈ Комиссия ожидается', paidPendingApi: 'Выплаты: ожидает доступа к API',
       perPeriod: 'за период', periods: 'периодов',

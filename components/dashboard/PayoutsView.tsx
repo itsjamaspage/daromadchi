@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, Fragment } from 'react'
 import { useRouter } from 'next/navigation'
 import { ChevronDown, ChevronUp, HelpCircle, RefreshCw, MoreVertical, CreditCard } from 'lucide-react'
-import type { PayoutEntry, PayoutOrderItem, PayoutOrderLine, MarketplaceType } from '@/lib/types'
+import type { PayoutEntry, PayoutOrderItem, PayoutOrderLine, MarketplaceType, UzumOrderStatus } from '@/lib/types'
 import { isPaidStatus, isAvailableStatus, isPendingStatus, isPartiallyPaidStatus, sumPaidOrders } from '@/lib/db/payout-status'
 import ExportButton from '@/components/dashboard/ExportButton'
 import DateRangePicker from '@/components/dashboard/DateRangePicker'
@@ -69,7 +69,17 @@ function fmtShort(n: number, lang: string) {
   return new Intl.NumberFormat('uz-UZ').format(Math.round(n)) + ' ' + suf
 }
 
-function StatusBadge({ status }: { status: PayoutEntry['status'] }) {
+function StatusBadge({ status, uzumStatus }: {
+  status: PayoutEntry['status']
+  /**
+   * Uzum's own state for this row. When present it REPLACES the derived badge:
+   * «Заработано» was a placeholder standing in for a state Uzum names exactly,
+   * and the precise name is more useful to a seller than our summary of it.
+   * Yandex passes nothing here and is untouched — its per-order settlement is
+   * proven by the payment-order number and «Выплачено» is a real claim there.
+   */
+  uzumStatus?: UzumOrderStatus | null
+}) {
   const { lang } = useLang()
   const t = dashT[lang].payouts
   if (status === 'paid') {
@@ -100,6 +110,24 @@ function StatusBadge({ status }: { status: PayoutEntry['status'] }) {
     return (
       <span className="inline-flex px-2.5 py-1 rounded-lg text-xs font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/20">
         {t.statusProcessing}
+      </span>
+    )
+  }
+  // Uzum, straight from /v1/finance/orders. Deliberately ahead of every derived
+  // branch below: if Uzum told us the state, that is what we show.
+  if (uzumStatus) {
+    const uz = {
+      TO_WITHDRAW:         { label: t.uzToWithdraw,         cls: 'bg-sky-500/15 text-sky-400 border-sky-500/20' },
+      PROCESSING:          { label: t.uzProcessing,         cls: 'bg-amber-500/15 text-amber-400 border-amber-500/20' },
+      PARTIALLY_CANCELLED: { label: t.uzPartiallyCanceled,  cls: 'bg-amber-500/10 text-amber-400/80 border-amber-500/25' },
+      CANCELED:            { label: t.uzCanceled,           cls: 'bg-[var(--bg-card2)] text-[var(--text-muted)] border-[var(--border)]' },
+    }[uzumStatus]
+    return (
+      // TO_WITHDRAW is money the seller HAS earned — calm, never alarming — and
+      // the tooltip keeps saying why we cannot call it paid.
+      <span title={uzumStatus === 'TO_WITHDRAW' ? t.earnedUnknownWithdrawal : undefined}
+        className={`inline-flex px-2.5 py-1 rounded-lg text-xs font-semibold border whitespace-nowrap ${uz.cls}`}>
+        {uz.label}
       </span>
     )
   }
@@ -245,7 +273,7 @@ function OrderBreakdown({ orders }: { orders: PayoutOrderLine[] }) {
               {/* The status that actually belongs to this order. It used to be
                   the month's, which is how an order carrying its own payment-order
                   number could sit under a badge saying «Ожидает». */}
-              <td className="py-2 pl-3 text-right"><StatusBadge status={o.status} /></td>
+              <td className="py-2 pl-3 text-right"><StatusBadge status={o.status} uzumStatus={o.uzumStatus} /></td>
             </tr>
           ))}
         </tbody>
@@ -490,7 +518,13 @@ export default function PayoutsView({ entries, period = '365', from, to }: Props
     [`${t.colAd} (so'm)`]:      e.adSpend,
     [`${t.colTax} (so'm)`]:     e.tax,
     [`${t.colNet} (so'm)`]:     e.netPayout,
-    [t.colStatus]: e.status === 'available_to_withdraw' ? t.statusAvailable
+    // Same rule as the badge — a CSV that says «Заработано» while the screen
+    // says «К выводу» is the same row disagreeing with itself.
+    [t.colStatus]: e.uzumStatus ? ({
+        TO_WITHDRAW: t.uzToWithdraw, PROCESSING: t.uzProcessing,
+        PARTIALLY_CANCELLED: t.uzPartiallyCanceled, CANCELED: t.uzCanceled,
+      }[e.uzumStatus])
+      : e.status === 'available_to_withdraw' ? t.statusAvailable
       : e.status === 'fees_pending' ? t.statusFeesPending
       : isPartiallyPaidStatus(e.status) ? t.statusPartiallyPaid
       : isPaidStatus(e.status) ? `${e.payoutEstimated ? '≈ ' : ''}${t.statusPaid}`
@@ -759,7 +793,7 @@ export default function PayoutsView({ entries, period = '365', from, to }: Props
                         </td>
                       </>
                     )}
-                    <td className="px-4 py-3.5"><StatusBadge status={entry.status} /></td>
+                    <td className="px-4 py-3.5"><StatusBadge status={entry.status} uzumStatus={entry.uzumStatus} /></td>
                     <td className="px-3 py-3.5 text-[var(--text-muted)]">
                       {expandedId === entry.id
                         ? <ChevronUp className="w-4 h-4" />
