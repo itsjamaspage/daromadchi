@@ -4,6 +4,7 @@ import { getCurrentUser } from '@/lib/auth/session'
 import { db, shops, uzumSettlementOrders, yandexSettlementTransactions, unitEconomicsItems } from '@/lib/db'
 import { getRealFinancialsByBucket, getRealRatesBySku } from '@/lib/db/real-financials'
 import { withErrorHandler } from '@/lib/api-handler'
+import { isYandexTransferred } from '@/lib/db/payout-status'
 
 export const runtime = 'nodejs'
 
@@ -86,9 +87,16 @@ export const GET = withErrorHandler(async () => {
     yandex: {
       totalRows: ymRows.length,
       rowsInWindow: ymFilteredCount,
-      // First 5 only to keep the payload small.
-      rows: ymRows.slice(0, 5).map(r => ({
+      // First 25 (was 5) — five was fewer rows than a single month holds, so the
+      // transferred ones were routinely among the omitted.
+      rows: ymRows.slice(0, 25).map(r => ({
         transaction_id: r.transaction_id,
+        // The three fields that decide whether an order reads as paid. They were
+        // missing here, which made this endpoint unable to answer the one
+        // question it gets opened for: "why is this order not marked Выплачено?"
+        order_id_external: r.order_id_external,
+        status_note: r.status_note,
+        payment_order_number: r.payment_order_number,
         entry_type: r.entry_type,
         entry_source: r.entry_source,
         order_type: r.order_type,
@@ -96,6 +104,38 @@ export const GET = withErrorHandler(async () => {
         amount: r.amount,
         transaction_at: r.transaction_at,
       })),
+      // The verdict, so nobody has to re-derive it by eye from the rows above.
+      // Per order: is any of its own transactions proven transferred, and if the
+      // month has a payment-order number that none of its orders carries, say so
+      // — that is the exact shape that would leave a month showing «п/п 92735»
+      // while every order in it reads «Ожидает».
+      transferSignal: (() => {
+        const byOrder = new Map<string, { net: number; transferred: boolean; paymentOrders: Set<string> }>()
+        const monthPaymentOrders = new Set<string>()
+        let rowsWithoutOrderNumber = 0
+        for (const r of ymRows) {
+          const transferred = isYandexTransferred(r.status_note, r.payment_order_number)
+          if (transferred && r.payment_order_number) monthPaymentOrders.add(String(r.payment_order_number).trim())
+          const num = r.order_id_external ? String(r.order_id_external).trim() : ''
+          if (!num) { if (transferred) rowsWithoutOrderNumber++; continue }
+          const b = byOrder.get(num) ?? { net: 0, transferred: false, paymentOrders: new Set<string>() }
+          const amt = Number(r.amount ?? 0)
+          b.net += r.entry_type === 'Начисление' ? amt : -Math.abs(amt)
+          if (transferred) {
+            b.transferred = true
+            if (r.payment_order_number) b.paymentOrders.add(String(r.payment_order_number).trim())
+          }
+          byOrder.set(num, b)
+        }
+        return {
+          orders: [...byOrder.entries()].map(([number, b]) => ({
+            number, net: b.net, transferred: b.transferred, paymentOrders: [...b.paymentOrders],
+          })),
+          monthPaymentOrders: [...monthPaymentOrders],
+          transferredRowsWithoutOrderNumber: rowsWithoutOrderNumber,
+          paidTotal: [...byOrder.values()].reduce((t, b) => t + (b.transferred ? b.net : 0), 0),
+        }
+      })(),
     },
     aggregator: { buckets },
     perSkuRates: ratesBySku,
