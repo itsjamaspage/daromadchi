@@ -1,0 +1,47 @@
+# Daromadchi scheduled jobs — install with `crontab scripts/crontab.example`
+# AFTER reconciling with the live crontab. See docs/ops/cron.md.
+#
+# ⚠️  ONLY ONE LINE HERE IS KNOWN-CORRECT.
+#
+# The live schedule has never been in version control, so this file cannot be a
+# copy of it. `expire-plans` is documented in docs/plans/turnover-pricing-spec.md
+# and is reproduced exactly. Every other cadence below is a PROPOSAL derived from
+# what the code implies, and must be checked against `crontab -l` on the VPS
+# before it replaces anything — see docs/ops/cron.md for the diff procedure.
+#
+# Overwriting the live crontab with these guesses would silently change how often
+# sellers' data syncs and when they are charged. Reconcile first.
+
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+DAROMADCHI_DIR=/var/www/daromadchi
+DAROMADCHI_URL=https://www.daromadchi.uz
+MAILTO=""
+
+# ── KNOWN ────────────────────────────────────────────────────────────────────
+# Daily housekeeping, and the busiest job in the product: it expires lapsed
+# plans, recomputes every derived tier, sends due price notices, runs the
+# free-tier nudges, and steps the account-lifecycle ladder. Documented at
+# docs/plans/turnover-pricing-spec.md §3.
+15 3 * * *   /var/www/daromadchi/cron-runner.sh expire-plans
+
+# ── PROPOSED — verify against `crontab -l` before use ─────────────────────────
+
+# Marketplace order/product sync. The landing page tells sellers orders update
+# "every 15 minutes", and lib/uzum/sync.ts calls the cron "half-hourly" — those
+# two disagree, so the live value decides.
+*/15 * * * *  /var/www/daromadchi/cron-runner.sh sync
+
+# Stock write-back. Frequency is a trade-off nobody has written down: too slow
+# oversells, too fast burns marketplace rate limit.
+*/10 * * * *  /var/www/daromadchi/cron-runner.sh stock-sync
+
+# Telegram digests. The route filters on each seller's own notification window
+# (lib/telegram.ts isInNotificationWindow), so this only needs to run often
+# enough that no window is missed — hourly at :05 clears the hour boundary.
+5 * * * *     /var/www/daromadchi/cron-runner.sh telegram-digest
+
+# Renewals. Charges cards, so it runs once a day and early, leaving the working
+# day for a human to see failures. Gated by BILLING_AUTORENEW_ENABLED — with that
+# unset this is a no-op regardless of schedule.
+30 2 * * *    /var/www/daromadchi/cron-runner.sh billing-renew
