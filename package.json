@@ -31,7 +31,9 @@
     "audit:merges": "node scripts/audit-merges.mjs",
     "test:lifecycle": "node --conditions=react-server --import tsx --test lib/billing/lifecycle.integration.test.ts",
     "test:payout-status": "node --import tsx --test lib/db/payout-status.test.ts",
-    "test:renew": "node --conditions=react-server --import tsx --test lib/billing/renew.integration.test.ts"
+    "test:renew": "node --conditions=react-server --import tsx --test lib/billing/renew.integration.test.ts",
+    "probe:uzum-payout": "tsx scripts/probe-uzum-payout-surface.ts",
+    "test:probe-classifier": "node --import tsx --test scripts/probe-uzum-payout-surface.test.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
