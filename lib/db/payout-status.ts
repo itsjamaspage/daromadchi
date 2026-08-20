@@ -13,7 +13,7 @@ import type { PayoutStatus } from '@/lib/types'
  * statuses. Enum: TO_WITHDRAW | PROCESSING | CANCELED | PARTIALLY_CANCELLED.
  * CANCELED is excluded upstream (shown in returns).
  *
- *   any TO_WITHDRAW present → available_to_withdraw  (earned, withdrawable, NOT withdrawn)
+ *   any TO_WITHDRAW present → available_to_withdraw  (earned; withdrawal state UNKNOWN)
  *   else                    → pending
  *
  * NEVER 'paid': Uzum exposes no completed-withdrawal signal to this token
@@ -157,7 +157,14 @@ export function isPaidStatus(s: PayoutStatus): boolean {
   return s === 'paid' || s === 'estimated_paid'
 }
 
-/** Earned & withdrawable but not yet withdrawn (Uzum TO_WITHDRAW). */
+/**
+ * Earned, with the withdrawal state unknown (Uzum TO_WITHDRAW).
+ *
+ * The enum value still reads available_to_withdraw for compatibility, but the
+ * claim it once made — "not yet withdrawn" — was wrong: Uzum reports no
+ * withdrawal signal, and money in this state has demonstrably reached a seller's
+ * bank while still counted here. The UI says "earned" for that reason.
+ */
 export function isAvailableStatus(s: PayoutStatus): boolean {
   return s === 'available_to_withdraw'
 }

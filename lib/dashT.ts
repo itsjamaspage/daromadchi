@@ -316,7 +316,8 @@ export const dashT = {
     },
     payouts: {
       kpiTotalPaid: "Jami to'langan", kpiPending: 'Kutilayotgan', kpiAvg: "O'rtacha to'lov",
-      kpiAvailable: 'Chiqarishga tayyor', statusAvailable: 'Chiqarishga tayyor',
+      kpiAvailable: 'Ishlab topilgan', statusAvailable: 'Ishlab topilgan',
+      earnedUnknownWithdrawal: "Uzum yechib olishlar haqida xabar bermaydi",
       statusFeesPending: '≈ Komissiya kutilmoqda', paidPendingApi: "To'lovlar: API ruxsati kutilmoqda",
       perPeriod: 'har bir davr', periods: 'ta davr',
       statusPaid: "To'langan", statusProcessing: 'Jarayonda', statusPending: 'Kutilmoqda',
@@ -726,7 +727,8 @@ export const dashT = {
     },
     payouts: {
       kpiTotalPaid: 'Total paid', kpiPending: 'Pending', kpiAvg: 'Avg payout',
-      kpiAvailable: 'Available to withdraw', statusAvailable: 'Available to withdraw',
+      kpiAvailable: 'Earned', statusAvailable: 'Earned',
+      earnedUnknownWithdrawal: 'Uzum does not report withdrawals',
       statusFeesPending: '≈ Fees pending', paidPendingApi: 'Payouts: pending API access',
       perPeriod: 'per period', periods: 'periods',
       statusPaid: 'Paid', statusProcessing: 'Processing', statusPending: 'Pending',
@@ -1133,7 +1135,8 @@ export const dashT = {
     },
     payouts: {
       kpiTotalPaid: 'Всего выплачено', kpiPending: 'Ожидает', kpiAvg: 'Средняя выплата',
-      kpiAvailable: 'Доступно к выводу', statusAvailable: 'Доступно к выводу',
+      kpiAvailable: 'Заработано', statusAvailable: 'Заработано',
+      earnedUnknownWithdrawal: 'Uzum не сообщает о выводах',
       statusFeesPending: '≈ Комиссия ожидается', paidPendingApi: 'Выплаты: ожидает доступа к API',
       perPeriod: 'за период', periods: 'периодов',
       statusPaid: 'Выплачено', statusProcessing: 'В обработке', statusPending: 'Ожидает',
