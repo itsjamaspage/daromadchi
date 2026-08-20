@@ -147,6 +147,22 @@ A seller notified of a price increase must be able to cancel so that it takes
 effect **before** `pending_effective_date` — they are never charged the new
 amount against their will.
 
+### The renewal loop is proven; the gateway is not
+
+`lib/billing/renew.ts` holds the renewal rules and `npm run test:renew` drives
+them against a real Postgres with a fake gateway: what gets charged, what gets
+skipped, what a failure does, and that a second pass never charges the same card
+twice. Every rule above is pinned there, and the mutations that would break them
+— hardcoding the plan list again, billing `PLAN_PRICES_TIYIN` instead of the
+agreed price, promoting a price before the charge clears, renewing a cancelled
+subscription — each fail the suite.
+
+**A green harness is not permission to turn autorenew on.** It proves our logic,
+not ATMOS: real charging is still blocked on `unknown_account`, and no card has
+ever been charged by this path. `BILLING_AUTORENEW_ENABLED=1` stays off until
+that is resolved, and the first live run should go with `BILLING_RENEW_DRY_RUN=1`
+to read what it intends to charge before it charges anything.
+
 ### Policy pages
 
 Prices may change with advance notice; sellers are notified in-app and via
@@ -167,14 +183,19 @@ One change per branch, separate PRs, in order. Do not bundle.
 | 1a | `fix/renewal-agreed-price` | **merged** (#220) |
 | 2a | the `hasFeature` rule itself | **merged** (#222) |
 | 2b | derived tier persisted as a recommendation | **merged** (#223) |
-| 2c | `feat/plan-gating` — apply the rule | **this branch** |
+| 2c | `feat/plan-gating` — apply the rule | **merged** (#233) |
 | 3 | `feat/pricing-page-ui` | **merged** (#224, #226, #227, #229, #230, #231) |
-| 4 | `feat/free-to-paid-nudge` | |
-| 5 | `feat/enterprise-outgrowth-popup` | |
-| 6 | `feat/account-lifecycle-freeze-delete` | |
-| 7 | `feat/plan-cancellation` | greenfield — see §7 |
-| 8 | `feat/price-change-notice` | depends on 1a + 7 |
-| 9 | `test/recurring-charge-harness` | must follow 1a |
+| 4 | `feat/free-to-paid-nudge` | **merged** (#238) |
+| 5 | `feat/enterprise-outgrowth-popup` | **merged** (#240) |
+| 6 | `feat/account-lifecycle-freeze-delete` | **merged** (#242) — deletion still behind a switch |
+| 7 | `feat/plan-cancellation` | **merged** (#236) |
+| 8 | `feat/price-change-notice` | **merged** (#237) |
+| 9 | `test/recurring-charge-harness` | **this branch** |
+
+Two branches were added in flight and are not in the original numbering:
+#235 grants and renews Biznes (a settled 500 000 so'm payment left the seller on
+free — a live money bug found while building 2c), and #243 shows the seller their
+own turnover against the ladder on the billing page.
 
 Branch 2 was split in delivery: the rule (2a) and the recommendation it reads
 alongside (2b) shipped before anything was gated, so the gate could be turned on
