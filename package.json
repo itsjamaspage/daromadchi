@@ -30,7 +30,8 @@
     "test:nudge": "node --conditions=react-server --import tsx --test lib/billing/nudge.integration.test.ts",
     "audit:merges": "node scripts/audit-merges.mjs",
     "test:lifecycle": "node --conditions=react-server --import tsx --test lib/billing/lifecycle.integration.test.ts",
-    "test:payout-status": "node --import tsx --test lib/db/payout-status.test.ts"
+    "test:payout-status": "node --import tsx --test lib/db/payout-status.test.ts",
+    "test:renew": "node --conditions=react-server --import tsx --test lib/billing/renew.integration.test.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
