@@ -110,11 +110,17 @@ function StatusBadge({ status }: { status: PayoutEntry['status'] }) {
       </span>
     )
   }
-  // Earned & withdrawable, not yet withdrawn (Uzum TO_WITHDRAW). Calm/neutral —
-  // this is money the seller HAS, awaiting withdrawal; never render it alarming.
+  // Uzum TO_WITHDRAW: earned, withdrawal state UNKNOWN.
+  //
+  // It used to read "available to withdraw", which claims the money has not been
+  // withdrawn yet — and some of it had: 50 300 reached the seller's bank while
+  // this badge still called it withdrawable. Uzum publishes no withdrawal signal
+  // to this token, so the honest claim is the one the data supports: earned.
+  // Calm/neutral — this is money the seller HAS; never render it alarming.
   if (status === 'available_to_withdraw') {
     return (
-      <span className="inline-flex px-2.5 py-1 rounded-lg text-xs font-semibold bg-sky-500/15 text-sky-400 border border-sky-500/20">
+      <span title={t.earnedUnknownWithdrawal}
+        className="inline-flex px-2.5 py-1 rounded-lg text-xs font-semibold bg-sky-500/15 text-sky-400 border border-sky-500/20">
         {t.statusAvailable}
       </span>
     )
@@ -603,9 +609,17 @@ export default function PayoutsView({ entries, period = '365', from, to }: Props
           honest "unmeasured", not a false zero. */}
       <div className="grid grid-cols-3 gap-3">
         <div className="bg-[var(--bg-card2)] border border-sky-500/20 rounded-2xl px-4 py-3">
+          {/* "Earned", not "available to withdraw".
+              Only Uzum reaches this state, and Uzum publishes no withdrawal
+              signal — so some of this money has already reached the seller's
+              bank while the tile still called it withdrawable. "Available"
+              asserts something we cannot know; "earned" is what the data
+              actually supports. */}
           <p className="text-[var(--text-muted)] text-xs mb-1">{t.kpiAvailable}</p>
           <p className="text-[var(--text-base)] text-xl font-bold">{fmtShort(totalAvailable, lang)}</p>
-          <p className="text-[var(--text-muted)] text-xs mt-0.5">{availableEntries.length} {t.periods}</p>
+          <p className="text-[var(--text-muted)] text-xs mt-0.5">
+            {availableEntries.length} {t.periods} · {t.earnedUnknownWithdrawal}
+          </p>
         </div>
         <div className="bg-[var(--bg-card2)] border border-amber-500/20 rounded-2xl px-4 py-3">
           <p className="text-[var(--text-muted)] text-xs mb-1">{t.kpiPending}</p>
