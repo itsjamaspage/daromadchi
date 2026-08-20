@@ -3,7 +3,7 @@ import { db, orders, orderItems, products, shops, yandexSettlementTransactions, 
 import { getShopIds } from '@/lib/db/shop-context'
 import { getUnitEcoSettings } from '@/lib/db/unit-economics'
 import type { PayoutEntry, PayoutOrderItem, PayoutOrderLine } from '@/lib/types'
-import { deriveUzumBucketStatus, deriveYandexSettledStatus, isYandexTransferred, isYandexAwaitingTransfer, yandexFullyTransferred } from '@/lib/db/payout-status'
+import { deriveUzumBucketStatus, deriveYandexSettledStatus, isYandexTransferred, isYandexAwaitingTransfer, yandexFullyTransferred, deriveYandexOrderStatus, deriveBucketStatusFromOrders } from '@/lib/db/payout-status'
 
 export type { PayoutEntry }
 
@@ -188,7 +188,7 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
   //   - Удержания (negative contribution)
   // Grouped by (shop_id, YYYY-MM) so we can match the |mp key below.
   const ymShopIds = shopRows.filter(r => r.marketplace === 'yandex_market').map(r => r.id)
-  const ymSettlementByKey = new Map<string, { credit: number; debit: number; commission: number; delivery: number; other: number; txnCount: number; transferred: number; awaiting: number; paymentOrders: Set<string>; orderNumbers: Set<string>; orderLines: Map<string, { sku: string | null; credit: number; debit: number }> }>()
+  const ymSettlementByKey = new Map<string, { credit: number; debit: number; commission: number; delivery: number; other: number; txnCount: number; transferred: number; awaiting: number; paymentOrders: Set<string>; orderNumbers: Set<string>; orderLines: Map<string, { sku: string | null; credit: number; debit: number; transferred: boolean }> }>()
   // SKU → product name taken straight from the netting report's «Название товара»
   // (sale rows only). Lets Payouts show the Yandex product name exactly as the
   // seller's finance report prints it, in preference to the SKU→catalog title.
@@ -218,7 +218,7 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
       for (const r of settlementRows) {
         if (!r.month) continue
         const key = `${r.month}|yandex_market`
-        const b = ymSettlementByKey.get(key) ?? { credit: 0, debit: 0, commission: 0, delivery: 0, other: 0, txnCount: 0, transferred: 0, awaiting: 0, paymentOrders: new Set<string>(), orderNumbers: new Set<string>(), orderLines: new Map<string, { sku: string | null; credit: number; debit: number }>() }
+        const b = ymSettlementByKey.get(key) ?? { credit: 0, debit: 0, commission: 0, delivery: 0, other: 0, txnCount: 0, transferred: 0, awaiting: 0, paymentOrders: new Set<string>(), orderNumbers: new Set<string>(), orderLines: new Map<string, { sku: string | null; credit: number; debit: number; transferred: boolean }>() }
         const amt = Number(r.amount)
         b.txnCount += 1
         // Order numbers straight from the Finance section (netting report) — the
@@ -229,10 +229,15 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
           // Per-order accumulation: credit (Начисление) is what the seller earns
           // on the order; debits (commission/delivery) reduce it. net = credit − debit.
           // The netting SKU names the product via skuTitle; keep the first non-empty SKU.
-          const line = b.orderLines.get(orderNum) ?? { sku: null, credit: 0, debit: 0 }
+          const line = b.orderLines.get(orderNum) ?? { sku: null, credit: 0, debit: 0, transferred: false }
           if (!line.sku && r.sku) line.sku = String(r.sku).trim()
           if (r.entry_type === 'Начисление') line.credit += amt
           else line.debit += amt
+          // The transfer signal, kept per ORDER instead of only counted for the
+          // month. It was already computed on this row and thrown away, which is
+          // why an order carrying п/п 92735 could render as «Ожидает» — the proof
+          // was in the data, just never attached to the thing it proved.
+          if (isYandexTransferred(r.status_note, r.payment_order_number)) line.transferred = true
           b.orderLines.set(orderNum, line)
         }
         // «Название товара» is the product name on sale (Начисление) rows and a
@@ -381,6 +386,7 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
             number,
             name: l.sku ? (ymFinanceNameBySku.get(l.sku) ?? skuTitle.get(l.sku) ?? null) : null,
             net: l.credit - l.debit,
+            status: deriveYandexOrderStatus(l.transferred),
           }))
           .sort((a, b) => b.net - a.net)
         // Show the finance report's product name on the row's headline/breakdown
@@ -416,10 +422,16 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
           //  • credit>0 & debit==0 (fees not posted yet) → fees_pending (visible at gross)
           //  • else → pending
           // transferPosted = the bucket has a transferred txn and none still awaiting.
-          status: deriveYandexSettledStatus(
-            settled.credit,
-            settled.debit,
-            yandexFullyTransferred(settled.txnCount, settled.transferred),
+          // Rolled up from the orders above, so a part-transferred month says so
+          // instead of picking a side. The transaction-level rule remains the
+          // fallback for buckets with no order-numbered rows (fee-only months).
+          status: deriveBucketStatusFromOrders(
+            orderLines,
+            deriveYandexSettledStatus(
+              settled.credit,
+              settled.debit,
+              yandexFullyTransferred(settled.txnCount, settled.transferred),
+            ),
           ),
           payoutDate: null,
           payoutEstimated: false,
@@ -485,6 +497,11 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
             net: l.withdrawn > 0 ? l.withdrawn
                : l.profit > 0 ? l.profit
                : l.gross - l.commission - l.delivery,
+            // Uzum publishes no per-order transfer signal to this token — its
+            // payout-history endpoint is 403 RBAC — so no Uzum order can be
+            // proven paid. It inherits the bucket's status, which reaches
+            // available_to_withdraw at best and never 'paid'.
+            status: deriveUzumBucketStatus([...settled.statuses]),
           }))
           .sort((a, b) => b.net - a.net)
         const entry: PayoutEntry = {

@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, Fragment } from 'react'
 import { useRouter } from 'next/navigation'
 import { ChevronDown, ChevronUp, HelpCircle, RefreshCw, MoreVertical, CreditCard } from 'lucide-react'
 import type { PayoutEntry, PayoutOrderItem, PayoutOrderLine, MarketplaceType } from '@/lib/types'
-import { isPaidStatus, isAvailableStatus, isPendingStatus } from '@/lib/db/payout-status'
+import { isPaidStatus, isAvailableStatus, isPendingStatus, isPartiallyPaidStatus, sumPaidOrders } from '@/lib/db/payout-status'
 import ExportButton from '@/components/dashboard/ExportButton'
 import DateRangePicker from '@/components/dashboard/DateRangePicker'
 import MpBadge from '@/components/dashboard/MpBadge'
@@ -83,6 +83,16 @@ function StatusBadge({ status }: { status: PayoutEntry['status'] }) {
     return (
       <span className="inline-flex px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-500/10 text-emerald-400/70 border border-emerald-500/10">
         ≈ {t.statusPaid}
+      </span>
+    )
+  }
+  // A month that is part transferred. Amber rather than green: some of this
+  // money has not moved, and a green badge on a mixed month is the same claim
+  // that made the whole bucket read as paid before.
+  if (status === 'partially_paid') {
+    return (
+      <span className="inline-flex px-2.5 py-1 rounded-lg text-xs font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/20">
+        {t.statusPartiallyPaid}
       </span>
     )
   }
@@ -211,6 +221,7 @@ function OrderBreakdown({ orders }: { orders: PayoutOrderLine[] }) {
             <th className="text-left font-medium py-2">{t.orderNumbersLabel}</th>
             <th className="text-left font-medium py-2">{t.itemProduct}</th>
             <th className="text-right font-medium py-2">{t.ordersLineNet}</th>
+            <th className="text-right font-medium py-2">{t.colStatus}</th>
           </tr>
         </thead>
         <tbody>
@@ -225,6 +236,10 @@ function OrderBreakdown({ orders }: { orders: PayoutOrderLine[] }) {
                   : <span className="text-[var(--text-muted)] italic text-xs">{t.ordersLineNoName}</span>}
               </td>
               <td className="py-2 text-right text-[var(--text-base)] font-bold tabular-nums whitespace-nowrap">{fmtShort(o.net, lang)}</td>
+              {/* The status that actually belongs to this order. It used to be
+                  the month's, which is how an order carrying its own payment-order
+                  number could sit under a badge saying «Ожидает». */}
+              <td className="py-2 pl-3 text-right"><StatusBadge status={o.status} /></td>
             </tr>
           ))}
         </tbody>
@@ -434,10 +449,24 @@ export default function PayoutsView({ entries, period = '365', from, to }: Props
   //                 so the tile is an honest "pending API access" placeholder.
   const availableEntries = withKnownNet.filter(e => isAvailableStatus(e.status))
   const totalAvailable   = availableEntries.reduce((s, e) => s + e.netPayout, 0)
+  // A partially-paid month is in neither tile as a whole: its paid part is
+  // counted above, order by order, and its unpaid remainder is the difference.
+  // Adding its full net here would restate the money already counted as paid.
   const pendingEntries   = withKnownNet.filter(e => isPendingStatus(e.status))
   const pending          = pendingEntries.reduce((s, e) => s + e.netPayout, 0)
-  const paidEntries      = withKnownNet.filter(e => isPaidStatus(e.status))
-  const totalPaid        = paidEntries.reduce((s, e) => s + e.netPayout, 0)
+    + withKnownNet.filter(e => isPartiallyPaidStatus(e.status))
+        .reduce((s, e) => s + (e.netPayout - sumPaidOrders(e.orders ?? [])), 0)
+  // Paid is summed from ORDERS, not whole months.
+  //
+  // A month is routinely part transferred: summing buckets contributed either
+  // all of a mixed month's net or none of it, which is exactly how the tile went
+  // from overstating (one transfer marked the month paid) to showing nothing at
+  // all (one in-transit row marked it pending). Order-level totals contribute
+  // precisely the part that moved.
+  const paidOrders = withKnownNet.flatMap(e => e.orders ?? [])
+  const totalPaid  = sumPaidOrders(paidOrders)
+  const paidOrderCount = paidOrders.filter(o => isPaidStatus(o.status)).length
+  const hasPaid        = paidOrderCount > 0
 
   function toggle(id: string) {
     setExpandedId(prev => prev === id ? null : id)
@@ -457,6 +486,7 @@ export default function PayoutsView({ entries, period = '365', from, to }: Props
     [`${t.colNet} (so'm)`]:     e.netPayout,
     [t.colStatus]: e.status === 'available_to_withdraw' ? t.statusAvailable
       : e.status === 'fees_pending' ? t.statusFeesPending
+      : isPartiallyPaidStatus(e.status) ? t.statusPartiallyPaid
       : isPaidStatus(e.status) ? `${e.payoutEstimated ? '≈ ' : ''}${t.statusPaid}`
       : e.status === 'processing' ? t.statusProcessing
       : `${e.payoutEstimated ? '≈ ' : ''}${t.statusPending}`,
@@ -582,10 +612,16 @@ export default function PayoutsView({ entries, period = '365', from, to }: Props
           <p className="text-[var(--text-base)] text-xl font-bold">{fmtShort(pending, lang)}</p>
           <p className="text-[var(--text-muted)] text-xs mt-0.5">{pendingEntries.length} {t.periods}</p>
         </div>
-        <div className="bg-[var(--bg-card2)] border border-dashed border-[var(--border)] rounded-2xl px-4 py-3 opacity-70">
+        {/* Not dashed/dimmed any more once there is a real figure: this tile used
+            to be a permanent "pending API access" placeholder because nothing
+            could ever prove a transfer. Yandex п/п numbers do prove one, per
+            order, so when we have them the tile is a real number. */}
+        <div className={`bg-[var(--bg-card2)] rounded-2xl px-4 py-3 ${hasPaid ? 'border border-[var(--border)]' : 'border border-dashed border-[var(--border)] opacity-70'}`}>
           <p className="text-[var(--text-muted)] text-xs mb-1">{t.kpiTotalPaid}</p>
-          <p className="text-[var(--text-base)] text-xl font-bold">{paidEntries.length > 0 ? fmtShort(totalPaid, lang) : '—'}</p>
-          <p className="text-[var(--text-muted)] text-xs mt-0.5">{paidEntries.length > 0 ? `${paidEntries.length} ${t.periods}` : t.paidPendingApi}</p>
+          <p className="text-[var(--text-base)] text-xl font-bold">{hasPaid ? fmtShort(totalPaid, lang) : '—'}</p>
+          <p className="text-[var(--text-muted)] text-xs mt-0.5">
+            {hasPaid ? `${paidOrderCount} ${t.colOrders.toLowerCase()}` : t.paidPendingApi}
+          </p>
         </div>
       </div>
 
