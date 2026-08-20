@@ -3,7 +3,7 @@ import { db, orders, orderItems, products, shops, yandexSettlementTransactions, 
 import { getShopIds } from '@/lib/db/shop-context'
 import { getUnitEcoSettings } from '@/lib/db/unit-economics'
 import type { PayoutEntry, PayoutOrderItem, PayoutOrderLine } from '@/lib/types'
-import { deriveUzumBucketStatus, deriveYandexSettledStatus, isYandexTransferred, isYandexAwaitingTransfer, yandexFullyTransferred, deriveYandexOrderStatus, deriveBucketStatusFromOrders } from '@/lib/db/payout-status'
+import { deriveUzumBucketStatus, rollUpUzumOrderStatus, deriveYandexSettledStatus, isYandexTransferred, isYandexAwaitingTransfer, yandexFullyTransferred, deriveYandexOrderStatus, deriveBucketStatusFromOrders } from '@/lib/db/payout-status'
 
 export type { PayoutEntry }
 
@@ -286,7 +286,7 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
   // so we sum by (shop_id × YYYY-MM) and use those instead of the
   // Unit-Economics-percentage estimate.
   const uzShopIds = shopRows.filter(r => r.marketplace === 'uzum').map(r => r.id)
-  const uzSettlementByKey = new Map<string, { gross: number; commission: number; delivery: number; net: number; profitFallback: number; itemCount: number; statuses: Set<string>; orderNumbers: Set<string>; orderLines: Map<string, { name: string | null; gross: number; commission: number; delivery: number; withdrawn: number; profit: number }> }>()
+  const uzSettlementByKey = new Map<string, { gross: number; commission: number; delivery: number; net: number; profitFallback: number; itemCount: number; statuses: Set<string>; orderNumbers: Set<string>; orderLines: Map<string, { name: string | null; gross: number; commission: number; delivery: number; withdrawn: number; profit: number; statuses: Set<string> }> }>()
   if (uzShopIds.length > 0) {
     try {
       const settlementRows = await db.select({
@@ -310,7 +310,7 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
         // we already show cancellations in the returns column.
         if (r.status === 'CANCELED') continue
         const key = `${r.month}|uzum`
-        const b = uzSettlementByKey.get(key) ?? { gross: 0, commission: 0, delivery: 0, net: 0, profitFallback: 0, itemCount: 0, statuses: new Set<string>(), orderNumbers: new Set<string>(), orderLines: new Map<string, { name: string | null; gross: number; commission: number; delivery: number; withdrawn: number; profit: number }>() }
+        const b = uzSettlementByKey.get(key) ?? { gross: 0, commission: 0, delivery: 0, net: 0, profitFallback: 0, itemCount: 0, statuses: new Set<string>(), orderNumbers: new Set<string>(), orderLines: new Map<string, { name: string | null; gross: number; commission: number; delivery: number; withdrawn: number; profit: number; statuses: Set<string> }>() }
         b.itemCount += 1
         // Track the per-order finance/orders status so the bucket status is
         // rolled up from real signals (TO_WITHDRAW vs PROCESSING), never the
@@ -336,7 +336,10 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
         // Per-order accumulation — the finance/orders feed already carries the
         // product title, so Uzum orders are named directly (no SKU→title lookup).
         if (uzOrderNum) {
-          const line = b.orderLines.get(uzOrderNum) ?? { name: null, gross: 0, commission: 0, delivery: 0, withdrawn: 0, profit: 0 }
+          const line = b.orderLines.get(uzOrderNum) ?? { name: null, gross: 0, commission: 0, delivery: 0, withdrawn: 0, profit: 0, statuses: new Set<string>() }
+          // THIS order's own statuses. The bucket's set cannot describe one
+          // order: a month holds several, and they differ.
+          if (r.status) line.statuses.add(r.status)
           if (!line.name && r.product_title) line.name = r.product_title
           line.gross      += sellerPrice
           line.commission += comm
@@ -497,11 +500,14 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
             net: l.withdrawn > 0 ? l.withdrawn
                : l.profit > 0 ? l.profit
                : l.gross - l.commission - l.delivery,
-            // Uzum publishes no per-order transfer signal to this token — its
-            // payout-history endpoint is 403 RBAC — so no Uzum order can be
-            // proven paid. It inherits the bucket's status, which reaches
-            // available_to_withdraw at best and never 'paid'.
+            // Uzum publishes no per-order transfer signal to this token — no
+            // payout resource exists in its API at all (§9.5) — so no Uzum
+            // order can be proven paid. This stays the bucket's PayoutStatus
+            // because every KPI totals from it and none of them may move.
             status: deriveUzumBucketStatus([...settled.statuses]),
+            // What the badge actually shows: Uzum's own state for THIS order,
+            // not the month's. Rolled up across the order's items.
+            uzumStatus: rollUpUzumOrderStatus([...l.statuses]),
           }))
           .sort((a, b) => b.net - a.net)
         const entry: PayoutEntry = {
@@ -527,6 +533,8 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
           // TO_WITHDRAW → available_to_withdraw (earned, not withdrawn), else
           // pending. Never 'paid' — no accessible completed-withdrawal feed.
           status: deriveUzumBucketStatus([...settled.statuses]),
+          // Display only — the period badge. KPIs read `status` above.
+          uzumStatus: rollUpUzumOrderStatus([...settled.statuses]),
           payoutDate: null,
           payoutEstimated: false,
           items: itemsMap.get(key) ?? [],

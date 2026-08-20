@@ -15,6 +15,8 @@ import {
   isPaidStatus,
   isAvailableStatus,
   isPendingStatus,
+  rollUpUzumOrderStatus,
+  isUzumOrderStatus,
 } from './payout-status'
 
 describe('Uzum status — available vs pending, NEVER paid (BUG 1)', () => {
@@ -252,5 +254,50 @@ describe('KPI bucket classifiers are mutually exclusive', () => {
       [isPaidStatus('pending'), isAvailableStatus('pending'), isPendingStatus('pending')],
       [false, false, true],
     )
+  })
+})
+
+describe('rollUpUzumOrderStatus — one status for a row of many items', () => {
+  it('reports TO_WITHDRAW only when every item reached it', () => {
+    assert.equal(rollUpUzumOrderStatus(['TO_WITHDRAW']), 'TO_WITHDRAW')
+    assert.equal(rollUpUzumOrderStatus(['TO_WITHDRAW', 'TO_WITHDRAW']), 'TO_WITHDRAW')
+  })
+
+  it('lets one unready item speak for the order', () => {
+    // The whole point of the rule. "Any TO_WITHDRAW wins" is what the bucket
+    // rule did, and it would show an order as ready to withdraw while half of
+    // it is still being processed.
+    assert.equal(rollUpUzumOrderStatus(['TO_WITHDRAW', 'PROCESSING']), 'PROCESSING')
+    assert.equal(rollUpUzumOrderStatus(['PROCESSING', 'TO_WITHDRAW']), 'PROCESSING')
+  })
+
+  it('ranks PROCESSING below PARTIALLY_CANCELLED', () => {
+    assert.equal(rollUpUzumOrderStatus(['PARTIALLY_CANCELLED', 'PROCESSING']), 'PROCESSING')
+    assert.equal(rollUpUzumOrderStatus(['PARTIALLY_CANCELLED', 'TO_WITHDRAW']), 'PARTIALLY_CANCELLED')
+  })
+
+  it('describes a part-cancelled order by what is still sellable', () => {
+    assert.equal(rollUpUzumOrderStatus(['CANCELED', 'TO_WITHDRAW']), 'TO_WITHDRAW')
+    assert.equal(rollUpUzumOrderStatus(['CANCELED', 'PROCESSING']), 'PROCESSING')
+  })
+
+  it('reports CANCELED only when nothing is left', () => {
+    assert.equal(rollUpUzumOrderStatus(['CANCELED']), 'CANCELED')
+    assert.equal(rollUpUzumOrderStatus(['CANCELED', 'CANCELED']), 'CANCELED')
+  })
+
+  it('returns null rather than inventing a state', () => {
+    assert.equal(rollUpUzumOrderStatus([]), null)
+    assert.equal(rollUpUzumOrderStatus(['SOMETHING_NEW']), null)
+    // An unknown value must not drag a known one down either — it is ignored,
+    // not treated as "least advanced".
+    assert.equal(rollUpUzumOrderStatus(['SOMETHING_NEW', 'TO_WITHDRAW']), 'TO_WITHDRAW')
+  })
+
+  it('guards the DB text column', () => {
+    assert.equal(isUzumOrderStatus('TO_WITHDRAW'), true)
+    assert.equal(isUzumOrderStatus('WITHDRAWN'), false)   // never existed
+    assert.equal(isUzumOrderStatus(null), false)
+    assert.equal(isUzumOrderStatus(''), false)
   })
 })
