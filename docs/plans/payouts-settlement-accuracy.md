@@ -3,9 +3,12 @@
 Branch: `fix/payouts-settlement-accuracy` (off clean `main`). Separate from
 `fix/fbs-stock-sync-ledger` and unrelated to ATMOS — neither is touched.
 
-**Status: SHIPPED for Yandex, CLOSED-BLOCKED for Uzum.** See §9 for what live data
-settled, including one theory in this document's own history that turned out to be
-a false pattern. No further Uzum work is buildable until the RBAC ticket resolves.
+**Status: SHIPPED for Yandex, CLOSED for Uzum — investigation over.** See §9 for what
+live data settled, including one theory in this document's own history that turned out
+to be a false pattern. §9.5 is the final word on Uzum: three independent lines of
+attack were probed to exhaustion and all three are dead. The token cannot see payout
+data by design. Nothing further is buildable, and nothing further should be attempted
+in code — the only unblock is an owner-side API-scope request to Uzum.
 
 Two confirmed payout-accuracy bugs, both making earnings look further along than the
 marketplace reports:
@@ -304,6 +307,10 @@ Two things this proves, both of which had been open questions:
 
 ### 9.2 Uzum — no settlement signal exists. Both candidates are dead.
 
+> Superseded in scope by **§9.5**, which closes the three remaining ways this
+> conclusion could still have been wrong. 9.2 is the first two candidates; 9.5
+> is the complete list.
+
 | Candidate | Result | Evidence |
 |---|---|---|
 | payout-history endpoint | **403 RBAC** | every path probed; §0 |
@@ -354,6 +361,84 @@ to look at one batch in isolation will find it again.
 
 **Owner action, not a code task:** chase the Uzum finance-payout API scope. It is
 the only remaining blocker, and it is on Uzum's side.
+
+### 9.5 FINAL — the token cannot see Uzum payouts, and this is now proven
+
+§9.2 concluded that no settlement signal exists. It was right, but it rested on
+absence of evidence: candidates had been tried and had failed. Three explanations
+for that failure remained open, each of which would have meant the signal was
+there and we were the ones missing it —
+
+1. a status value Uzum sends that we never request,
+2. a withdrawal row in `/v1/finance/expenses`, a path in our spec we never read,
+3. a payout endpoint needing POST for a read, never actually attempted because
+   the read-only guard rejected it locally and the rejection read like a denial.
+
+`scripts/probe-uzum-payout-surface.ts` (merged in #251) settles all three. Run on
+the VPS 2026-08-20; results below are from the owner's run.
+
+| # | Check | Result | Verdict |
+|---|---|---|---|
+| 1 | Full OpenAPI spec: every path + the declared finance status enum | `missingFromOurs: []` — the four statuses we send ARE the complete enum. 14 finance-shaped paths, none new | **No hidden `WITHDRAWN`/`PAID` state.** Dead |
+| 2 | `GET /v1/finance/expenses` | 0 rows | **No withdrawal signal.** Dead |
+| 3 | Every payout candidate | `403` from Uzum, and absent from this token's spec — no POST variant declared to try | **Fully blocked.** Dead |
+
+**The decisive detail is in check 3.** The endpoints return `403` (they exist
+server-side) while being *absent from the spec this token is served*. Uzum scopes
+the published API surface to the caller's role. So the boundary is not a missing
+feature, a wrong parameter, or anything in our code — it is a permission grant we
+do not hold. That is the difference between "we could not find it" and "we are not
+allowed to see it", and only the second one is worth acting on.
+
+`TO_WITHDRAW` is therefore genuinely terminal for us: it is the last state this
+role is ever shown. An order sits there whether its money is still with Uzum or
+already in the seller's bank, and no field, feed, or endpoint available to this
+token distinguishes those two.
+
+#### Everything now ruled out, in one place
+
+| Candidate | Status | Where |
+|---|---|---|
+| payout-history endpoint | 403 RBAC, not in this token's spec | §0, §9.5 |
+| `withdrawnProfit` field | always `0.00`, including after money landed | §9.2 |
+| a status we never requested | enum is complete — nothing missing | §9.5 |
+| `/v1/finance/expenses` | 0 rows | §9.5 |
+| POST-for-read on payout paths | no POST declared on any of them | §9.5 |
+| `dateIssued` as a weaker signal | cannot distinguish issued-and-paid from issued-and-**failed** (№5000360785) | §9.5 |
+| matching orders to batches by amount + date | provably unsafe — batches are by schedule, and a failed batch re-issues across later ones | §9.3 |
+
+The last two deserve their emphasis: both would have produced a "Выплачено" badge
+on money that never arrived. Batch №5000360785 failed, and any signal that cannot
+see a failure cannot certify a payment.
+
+#### What is NOT being built, deliberately
+
+The seller panel does show the batch history with ✓/✗ marks, authenticated by the
+seller's browser session rather than the API token — and the Chrome extension is
+already injected on `seller.uzum.uz` (it returns early at `content.js:5`), so the
+access to reach it exists. **This was considered and rejected by the owner.** It
+is an undocumented internal API, it puts a settlement-critical dependency on an
+extension and a logged-in browser, and it carries ToS risk to the seller's own
+account — all to earn a cosmetic badge. Recorded so it is not rediscovered and
+mistaken for an unexplored idea.
+
+#### The only unblock
+
+Owner action, not a code task: ask Uzum to grant the API token's role the
+finance/payout-history scope. When it lands, re-run the probe — it is the
+verification tool for exactly this, and its output says what became visible:
+
+```
+set -a; . ./.env; set +a
+npm run probe:uzum-payout > /tmp/uzum-probe.json
+```
+
+Check 1's `financePaths` will list any newly-exposed payout path, and check 3 will
+classify its POST as read or mutation from the spec's own `operationId` before
+anything is allowlisted. Only then does the deferred Option B in the Appendix
+become buildable. Until it does, the app's current behaviour — «Заработано» plus
+"Uzum не сообщает о выводах" — is not a placeholder to improve on. It is the
+correct and complete answer to what this token can know.
 
 ## Appendix — DEFERRED Option B (gated on Uzum granting finance-payout API access)
 
