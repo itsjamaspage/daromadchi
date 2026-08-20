@@ -1,6 +1,7 @@
 import { eq, ne, and, inArray, count, sql } from 'drizzle-orm'
 import { db, shops, products, orders, orderItems, syncDays } from '@/lib/db'
 import { clearShopData } from '@/lib/db/clear-shop-data'
+import { uzumStockQuantity } from './stock-reading'
 import {
   fetchAllPages,
   fetchUzumOrders,
@@ -270,23 +271,17 @@ export async function syncFromUzum(shopId: string, token: string, heavy = true):
           const res = await fetchUzumShopProducts(token, uShop.id, page, size)
           const list = res.productList ?? []
           for (const card of list) {
-            // Uzum has a product-level "lifecycle" status field. When it is
-            // RUN_OUT (Uzbek: "Tugadi", Russian: "Закончился") the seller
-            // cabinet marks the listing as out of stock and unsellable,
-            // regardless of what the SKU-level quantityActive / quantityFbs
-            // numbers say. Those numeric fields include buckets like units
-            // returned from cancelled orders that are physically in seller
-            // hands but NOT re-listable, so trusting them causes daromadchi
-            // to show phantom stock. Reading status.value keeps us aligned
-            // with Uzum's own UI — the two numbers cannot diverge.
-            const outOfStock = card.status?.value === 'RUN_OUT'
+            // Stock now comes from the SKU quantities alone — see
+            // lib/uzum/stock-reading.ts. The card's RUN_OUT lifecycle status
+            // used to force 0 here, which froze a restocked SKU at 0 on every
+            // heavy pass because that status does not flip back the moment a
+            // seller adds units.
             // Uzum exposes "archived" three ways in a card; any one is enough.
             // Kept as an isolated expression so it's easy to log if a sync ever
             // fails to flip a known-archived product (the field paths are the
             // first suspect). See migration 045 / the products "Архивные" tab.
             const cardArchived = card.status?.value === 'ARCHIVED'
             for (const sku of card.skuList ?? []) {
-              const rawStock = (sku.quantityActive ?? 0) + (sku.quantityFbs ?? 0)
               const isArchived = cardArchived || sku.archived === true || sku.status?.value === 'ARCHIVED'
               productRows.push({
                 shop_id: shopId,
@@ -301,7 +296,7 @@ export async function syncFromUzum(shopId: string, token: string, heavy = true):
                 category: card.category ?? null,
                 selling_price: sku.price ?? null,
                 cost_price: sku.purchasePrice || null,
-                stock_quantity: outOfStock ? 0 : rawStock,
+                stock_quantity: uzumStockQuantity(sku),
                 // Marketplace-authoritative lifetime units sold (includes FBO,
                 // which we can't read at the order level). Used as the "sold"
                 // figure so FBO sales are counted even without order records.
