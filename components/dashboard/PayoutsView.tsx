@@ -462,18 +462,6 @@ export default function PayoutsView({ entries, period = '365', from, to }: Props
   const pending          = pendingEntries.reduce((s, e) => s + e.netPayout, 0)
     + withKnownNet.filter(e => isPartiallyPaidStatus(e.status))
         .reduce((s, e) => s + (e.netPayout - sumPaidOrders(e.orders ?? [])), 0)
-  // Paid is summed from ORDERS, not whole months.
-  //
-  // A month is routinely part transferred: summing buckets contributed either
-  // all of a mixed month's net or none of it, which is exactly how the tile went
-  // from overstating (one transfer marked the month paid) to showing nothing at
-  // all (one in-transit row marked it pending). Order-level totals contribute
-  // precisely the part that moved.
-  const paidOrders = withKnownNet.flatMap(e => e.orders ?? [])
-  const totalPaid  = sumPaidOrders(paidOrders)
-  const paidOrderCount = paidOrders.filter(o => isPaidStatus(o.status)).length
-  const hasPaid        = paidOrderCount > 0
-
   function toggle(id: string) {
     setExpandedId(prev => prev === id ? null : id)
   }
@@ -607,7 +595,7 @@ export default function PayoutsView({ entries, period = '365', from, to }: Props
           from Uzum TO_WITHDRAW). "Paid" is a muted placeholder because no
           accessible marketplace feed proves a completed withdrawal yet —
           honest "unmeasured", not a false zero. */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="bg-[var(--bg-card2)] border border-sky-500/20 rounded-2xl px-4 py-3">
           {/* "Earned", not "available to withdraw".
               Only Uzum reaches this state, and Uzum publishes no withdrawal
@@ -625,17 +613,6 @@ export default function PayoutsView({ entries, period = '365', from, to }: Props
           <p className="text-[var(--text-muted)] text-xs mb-1">{t.kpiPending}</p>
           <p className="text-[var(--text-base)] text-xl font-bold">{fmtShort(pending, lang)}</p>
           <p className="text-[var(--text-muted)] text-xs mt-0.5">{pendingEntries.length} {t.periods}</p>
-        </div>
-        {/* Not dashed/dimmed any more once there is a real figure: this tile used
-            to be a permanent "pending API access" placeholder because nothing
-            could ever prove a transfer. Yandex п/п numbers do prove one, per
-            order, so when we have them the tile is a real number. */}
-        <div className={`bg-[var(--bg-card2)] rounded-2xl px-4 py-3 ${hasPaid ? 'border border-[var(--border)]' : 'border border-dashed border-[var(--border)] opacity-70'}`}>
-          <p className="text-[var(--text-muted)] text-xs mb-1">{t.kpiTotalPaid}</p>
-          <p className="text-[var(--text-base)] text-xl font-bold">{hasPaid ? fmtShort(totalPaid, lang) : '—'}</p>
-          <p className="text-[var(--text-muted)] text-xs mt-0.5">
-            {hasPaid ? `${paidOrderCount} ${t.colOrders.toLowerCase()}` : t.paidPendingApi}
-          </p>
         </div>
       </div>
 
