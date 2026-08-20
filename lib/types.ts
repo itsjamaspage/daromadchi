@@ -260,6 +260,16 @@ export interface PayoutOrderLine {
    * marketplace actually transfers.
    */
   status: PayoutStatus
+  /**
+   * Uzum's own status for THIS order, when the row is Uzum's. Null for Yandex,
+   * whose settlement is proven per order by its payment-order number and whose
+   * badge keeps reading `status` above.
+   *
+   * Shown instead of the derived PayoutStatus because "earned" was a placeholder
+   * standing in for a state Uzum names precisely. Nothing downstream reads it —
+   * every KPI still totals from `status`.
+   */
+  uzumStatus?: UzumOrderStatus | null
 }
 
 // Settlement/payout state for a payout row. Driven by real marketplace signals,
@@ -272,6 +282,17 @@ export interface PayoutOrderLine {
 //                           no Yandex order-level withdrawal feed). See
 //                           docs/plans/payouts-settlement-accuracy.md.
 //   processing            — legacy, deprecated; kept for back-compat, not emitted.
+/**
+ * Uzum's own per-order-item settlement state, exactly as /v1/finance/orders
+ * reports it. This is the complete enum — confirmed against Uzum's OpenAPI
+ * document, see docs/evidence/uzum-seller-openapi-finance.md §4. TO_WITHDRAW
+ * ("к выводу средств") is the LAST state the API defines: there is no
+ * WITHDRAWN/PAID to wait for, because Uzum publishes no settlement signal.
+ *
+ * Display-only. It never feeds a KPI — PayoutStatus below still decides those.
+ */
+export type UzumOrderStatus = 'TO_WITHDRAW' | 'PROCESSING' | 'CANCELED' | 'PARTIALLY_CANCELLED'
+
 export type PayoutStatus =
   | 'paid'
   | 'pending'
@@ -303,6 +324,12 @@ export interface PayoutEntry {
   netPayout: number
   ordersCount: number
   status: PayoutStatus
+  /**
+   * The period's Uzum status, rolled up from the orders inside it — see
+   * rollUpUzumOrderStatus. Null for Yandex and for a period with no recognised
+   * Uzum status, where the badge falls back to `status`.
+   */
+  uzumStatus?: UzumOrderStatus | null
   payoutDate: string | null
   payoutEstimated: boolean
   // Per-product breakdown of the orders that fed this payout period.
