@@ -449,6 +449,10 @@ extension and a logged-in browser, and it carries ToS risk to the seller's own
 account — all to earn a cosmetic badge. Recorded so it is not rediscovered and
 mistaken for an unexplored idea.
 
+> **Superseded by §9.6.** This entry framed the route as a judgement call about
+> risk. It is not: clause 2.11 of Uzum's offer prohibits it outright. Read §9.6
+> before reconsidering — there is nothing here left to weigh.
+
 #### The only unblock
 
 Owner action, not a code task — and, per the correction above, a different ask
@@ -467,16 +471,68 @@ npm run probe:uzum-payout > /tmp/uzum-probe.json
 Check 1's `financePaths` will list any newly-exposed payout path — today it is
 two — and check 3 will classify its POST as read or mutation from the spec's own
 `operationId` before anything is allowlisted. Only then does the deferred Option
-B in the Appendix become buildable. Until it does, the app's current behaviour — «Заработано» plus
-"Uzum не сообщает о выводах" — is not a placeholder to improve on. It is the
-correct and complete answer to what Uzum's API reports. The limitation is
-Uzum's, not Daromadchi's.
+B in the Appendix become buildable. Until it does, the app's current behaviour — «Заработано» on the tile, «К выводу»
+on the row, both under "Uzum не сообщает о выводах" — is not a placeholder to
+improve on. It is the correct and complete answer to what Uzum's API reports. The
+limitation is Uzum's, not Daromadchi's. And per §9.6 the private endpoint is not
+a way around it: that route is prohibited by contract, not merely unattractive.
 
-## Appendix — DEFERRED Option B (gated on Uzum BUILDING a payout API; see §9.5)
+### 9.6 CLOSED BY CONTRACT — the internal endpoint is prohibited, not merely risky
 
-Build this only if Uzum ships a payout/withdrawal-history endpoint. Per §9.5 no such
-resource exists in the seller API today, so this is gated on Uzum building one — not on
-a permission being granted. Preserved so the design isn't lost.
+Owner checked Uzum's public offer (оферта, ред. 14.08.2026). **Clause 2.11**
+prohibits using any non-Uzum software to interact with the Личный кабинет
+without Uzum's agreement; the penalty is blocking or termination of the seller
+account (see also **9.2.10**). That is the binding text, read from the contract
+rather than inferred.
+
+This supersedes how §"What is NOT being built" framed the same route. That entry
+called it a judgement call — undocumented API, fragile dependency, "ToS risk" —
+and a judgement call can be revisited when the trade-off shifts. This cannot.
+The door is closed by the contract the seller signed, and no amount of
+engineering care reopens it.
+
+**What the endpoint actually holds** (recorded so nobody has to look again, and
+so nobody mistakes "unknown" for "unexplored"):
+
+`seller.uzum.uz/.../withdrawals` returns complete payout data — payout number,
+amount, status `APPROVED` / `REJECTED`, and `completedAt`. Every field Option B
+in the Appendix needs, including the failed-payout signal that explains why
+№5000360785's order stays available. The data problem is solved. **The access
+problem is not, and is not solvable by us**: the endpoint is authenticated by the
+seller's browser session, and reaching it from Daromadchi is exactly the
+non-Uzum-software interaction clause 2.11 forbids.
+
+So the earlier finding stands but for a stronger reason. §9.5 established that
+Uzum's *public API* has no payout resource. §9.6 establishes that the *private*
+one may not be used. Both roads are closed, by different authorities.
+
+**The two compliant paths, and nothing else:**
+
+1. **Ask Uzum for official access.** Clause 2.11 forbids third-party software
+   used *without Uzum's agreement* — so agreement is the mechanism the contract
+   itself names. Either an API scope over this data or written permission for
+   Daromadchi to read it. Owner action, not a code task.
+2. **Manual "mark as paid".** The seller can see their own payout history in
+   their own panel; the app cannot. Letting them record it turns an unknowable
+   into a known without touching Uzum's systems at all. No ToS surface, because
+   nothing talks to Uzum.
+
+**Until then the automated ceiling stands, deliberately.** The KPI tile reads
+«Заработано», the per-row badge reads «К выводу», and the tooltip says «Uzum не
+сообщает о выводах». Relabelling the row was proposed and **declined by the
+owner**: «К выводу» is Uzum's own `TO_WITHDRAW` in Uzum's own words, so a seller
+cross-checking against their panel sees matching vocabulary, and the tooltip
+carries the caveat. It is not a placeholder waiting to be improved. It is the
+most the app can honestly say from data it is permitted to have.
+
+## Appendix — DEFERRED Option B (gated on Uzum BUILDING a payout API; see §9.5 and §9.6)
+
+Build this only if Uzum ships a payout/withdrawal-history endpoint, or grants written
+agreement to read the existing one. Per §9.5 no such resource exists in the *public*
+seller API today, and per §9.6 the *private* endpoint that does hold this data is
+prohibited by clause 2.11 of Uzum's offer — so this is gated on Uzum acting, either by
+building an API or by agreeing to access. Not on anything we can do. Preserved so the
+design isn't lost.
 
 - **Signal:** ingest the "История выплат" batches, each with `batch_ext_id` (№5000…), a
   **success/failed/pending status** (the ✗ on №5000360785 is why its order stays available),
