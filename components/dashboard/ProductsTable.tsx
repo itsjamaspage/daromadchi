@@ -1,12 +1,11 @@
 'use client'
 
 import { useState, useMemo, useCallback, useEffect, useRef, Fragment } from 'react'
-import { Search, Check, X, Pencil, ChevronRight, ChevronDown } from 'lucide-react'
+import { Search, Check, X, Pencil } from 'lucide-react'
 import ExportButton from './ExportButton'
 import FulfillmentBadge from './FulfillmentBadge'
 import MpBadge, { MP_META } from './MpBadge'
 import { ColorBadge } from '@/components/ColorBadge'
-import { COLOR_LABELS, colorMetaFor, type ColorKey } from '@/lib/products/resolveColor'
 import { useLang } from '@/app/providers'
 import { translations } from '@/lib/i18n'
 import type { Product } from '@/lib/types'
@@ -14,81 +13,6 @@ import { useRouter } from 'next/navigation'
 
 function fmt(n: number) {
   return new Intl.NumberFormat('uz-UZ').format(n) + " so'm"
-}
-
-// SKU-normaliser matching computeStockGroups' normalizeKey — used to bridge the
-// same product across marketplaces (identical SKU code → one product parent).
-function normSku(s: string | null): string | null {
-  return s ? s.trim().toLowerCase().replace(/[\s\-_./]+/g, '') : null
-}
-
-// Localised "N вариантов". Mirrors the StocksTable helper.
-function variantCountLabel(n: number, lang: 'uz' | 'ru' | 'en'): string {
-  if (lang === 'en') return `${n} variants`
-  if (lang === 'uz') return `${n} ta variant`
-  const mod10 = n % 10, mod100 = n % 100
-  const word = mod10 === 1 && mod100 !== 11 ? 'вариант'
-    : mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14) ? 'варианта'
-    : 'вариантов'
-  return `${n} ${word}`
-}
-
-// Colour chip for a variant child, from the stored variant_color key (same
-// swatch mechanism as Остатки / ColorBadge). Null key → renders nothing.
-function VariantColorChip({ colorKey, lang }: { colorKey: string | null | undefined; lang: 'uz' | 'ru' | 'en' }) {
-  const meta = colorMetaFor(colorKey)
-  if (!meta || !colorKey) return null
-  const name = COLOR_LABELS[colorKey as ColorKey]?.[lang] ?? colorKey
-  return (
-    <span className="inline-flex items-center gap-1 text-xs" style={{ color: 'var(--text-muted)' }}>
-      <span className="h-2.5 w-2.5 rounded-full"
-        style={{ backgroundColor: meta.hex, boxShadow: meta.ring ? 'inset 0 0 0 1px var(--border)' : undefined }} />
-      {name}
-    </span>
-  )
-}
-
-// Groups filtered products into collapsible variant parents. A product parent is
-// the transitive closure of products linked by a shared variant_group_key OR a
-// shared normalised SKU (the SKU bridge is what unites the same product across
-// marketplaces — uzum:… and yandex:… keys — exactly like Phase 3 on Остатки).
-// A parent forms only when 2+ products land in one component; everything else is
-// a flat row, emitted in the original sorted position.
-function groupProducts(rows: Product[]): ({ type: 'flat'; product: Product } | { type: 'parent'; key: string; title: string; children: Product[] })[] {
-  // union-find over variant_group_keys
-  const uf = new Map<string, string>()
-  const find = (x: string): string => { let r = x; while (uf.get(r)! !== r) r = uf.get(r)!; return r }
-  const union = (a: string, b: string) => { const ra = find(a), rb = find(b); if (ra !== rb) uf.set(ra, rb) }
-  for (const p of rows) if (p.variant_group_key && !uf.has(p.variant_group_key)) uf.set(p.variant_group_key, p.variant_group_key)
-  // Bridge: keys co-occurring on one normalised SKU are the same product.
-  const keysBySku = new Map<string, string[]>()
-  for (const p of rows) {
-    if (!p.variant_group_key) continue
-    const nk = normSku(p.sku)
-    if (!nk) continue
-    const list = keysBySku.get(nk)
-    if (list) { if (!list.includes(p.variant_group_key)) list.push(p.variant_group_key) }
-    else keysBySku.set(nk, [p.variant_group_key])
-  }
-  for (const keys of keysBySku.values()) for (let j = 1; j < keys.length; j++) union(keys[0], keys[j])
-  // parent key per product = canonical component key (or null when no key)
-  const parentKeyOf = (p: Product): string | null => p.variant_group_key ? find(p.variant_group_key) : null
-  const countByParent = new Map<string, number>()
-  for (const p of rows) { const pk = parentKeyOf(p); if (pk) countByParent.set(pk, (countByParent.get(pk) ?? 0) + 1) }
-
-  const emitted = new Set<string>()
-  const items: ({ type: 'flat'; product: Product } | { type: 'parent'; key: string; title: string; children: Product[] })[] = []
-  for (const p of rows) {
-    const pk = parentKeyOf(p)
-    if (pk && (countByParent.get(pk) ?? 0) >= 2) {
-      if (emitted.has(pk)) continue
-      emitted.add(pk)
-      items.push({ type: 'parent', key: pk, title: p.title, children: rows.filter(x => parentKeyOf(x) === pk) })
-    } else {
-      items.push({ type: 'flat', product: p })
-    }
-  }
-  return items
 }
 
 // Product-level filters only. Order-status chips (delivered / in-process /
@@ -276,16 +200,6 @@ export default function ProductsTable({ products }: { products: Product[] }) {
   const [stockThreshold, setStockThreshold] = useState(10)
   const [editingId,      setEditingId]      = useState<string | null>(null)
   const [optimisticUpdates, setOptimisticUpdates] = useState<Map<string, number | null>>(new Map())
-  // Which variant parents are expanded (collapsed by default). Keyed by parent key.
-  const [expandedVariants, setExpandedVariants] = useState<Set<string>>(new Set())
-  const toggleVariant = useCallback((key: string) => {
-    setExpandedVariants(prev => {
-      const next = new Set(prev)
-      if (next.has(key)) next.delete(key); else next.add(key)
-      return next
-    })
-  }, [])
-
   // Language-independent sentinel for "all categories": the state must never
   // hold a LOCALIZED label — switching the UI language used to leave the old
   // language's "All" string in state, which then filtered every row out and
@@ -348,9 +262,6 @@ export default function ProductsTable({ products }: { products: Product[] }) {
     return rows
   }, [enriched, query, category, tab, sortBy, sortDir, stockThreshold])
 
-  // Collapsible variant grouping, layered on the already-filtered/sorted rows.
-  const displayItems = useMemo(() => groupProducts(filtered), [filtered])
-
   function toggleSort(col: typeof sortBy) {
     if (sortBy === col) setSortDir(d => d === 'desc' ? 'asc' : 'desc')
     else { setSortBy(col); setSortDir('desc') }
@@ -370,9 +281,6 @@ export default function ProductsTable({ products }: { products: Product[] }) {
     [d.costPriceLabel]:   p.cost_price ?? 0,
     [d.profit]:           p.profit,
     [`${d.margin} (%)`]:  (p.profit / (Number(p.selling_price) || 1) * 100).toFixed(1),
-    [d.sold]:             p.delivered ?? 0,
-    [d.orderedTab]:       p.in_transit ?? 0,
-    [d.cancelledTab]:     p.cancelled ?? 0,
     [d.stockQty]:         p.available_stock,
   }))
 
@@ -381,10 +289,10 @@ export default function ProductsTable({ products }: { products: Product[] }) {
     low_stock: enriched.reduce((s, p) => s + p.available_stock, 0),
   }
 
-  // One product row. Reused for flat rows and for variant children (isChild adds
-  // an indent + a colour chip from variant_color). Body is unchanged from before
-  // the grouping was added — all existing per-variant columns/edit are preserved.
-  const renderRow = (p: Product, isChild = false) => {
+  // One product row. Every product is its own top-level row — variants are not
+  // folded into a collapsible parent, so a seller reads the list straight down
+  // instead of expanding groups to reach a SKU.
+  const renderRow = (p: Product) => {
     const price  = Number(p.selling_price ?? 0)
     const margin = price > 0 ? Number(((p.profit / price) * 100).toFixed(1)) : 0
     const stock = stockBadge(p.available_stock)
@@ -394,12 +302,11 @@ export default function ProductsTable({ products }: { products: Product[] }) {
       <Fragment key={p.id}>
         <tr style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer', opacity: p.is_archived ? 0.55 : undefined }}
           onClick={() => setEditingId(isEditing ? null : p.id)}>
-          <td className="px-5 py-4" style={isChild ? { paddingLeft: '2.75rem', borderLeft: '2px solid var(--border)' } : undefined}>
+          <td className="px-5 py-4">
             <div className="flex items-center gap-2">
               <div>
                 <p className="font-medium line-clamp-2 sm:line-clamp-none" style={{ color: 'var(--text-base)' }} title={p.title}>{p.title}</p>
                 <div className="flex items-center flex-wrap gap-1.5 mt-0.5">
-                  {isChild && <VariantColorChip colorKey={p.variant_color} lang={lang} />}
                   <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{p.sku}</span>
                   {p.marketplace && <MpBadge mp={p.marketplace} />}
                   <FulfillmentBadge type={p.fulfillment_type} />
@@ -437,15 +344,6 @@ export default function ProductsTable({ products }: { products: Product[] }) {
               </div>
             </div>
           </td>
-          <td className="px-5 py-4 text-right" style={{ color: 'var(--text-dim)' }}>
-            {p.delivered ?? 0}
-          </td>
-          <td className="px-5 py-4 text-right font-medium tabular-nums" style={{ color: (p.in_transit ?? 0) > 0 ? '#f59e0b' : 'var(--text-muted)' }}>
-            {p.in_transit ?? 0}
-          </td>
-          <td className="px-5 py-4 text-right font-medium tabular-nums" style={{ color: (p.cancelled ?? 0) > 0 ? '#ef4444' : 'var(--text-muted)' }}>
-            {p.cancelled ?? 0}
-          </td>
           <td className="px-5 py-4 text-right">
             <div className="inline-flex items-center gap-1.5">
               <span className="text-xs font-medium px-2.5 py-1 rounded-lg" style={{ background: stock.bgColor, color: stock.color }}>
@@ -463,46 +361,6 @@ export default function ProductsTable({ products }: { products: Product[] }) {
           />
         )}
       </Fragment>
-    )
-  }
-
-  // Parent header row for a variant group. Per-unit economics (price/cost/profit/
-  // margin) and stock are left blank — they don't aggregate meaningfully (and a
-  // stock sum would double-count shared FBS pools). The additive unit columns
-  // (delivered/ordered/cancelled) show a muted Σ. Real values stay on children.
-  const renderVariantParent = (item: { key: string; title: string; children: Product[] }, expanded: boolean) => {
-    const sum = (f: (p: Product) => number | null | undefined) => item.children.reduce((s, c) => s + (f(c) ?? 0), 0)
-    return (
-      <tr key={item.key} style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer', background: 'var(--bg-card2)' }}
-        onClick={() => toggleVariant(item.key)}>
-        <td className="px-5 py-4">
-          <div className="flex items-center gap-2">
-            <span className="shrink-0" style={{ color: 'var(--text-muted)' }}>
-              {expanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-            </span>
-            <p className="font-semibold line-clamp-2 sm:line-clamp-none" style={{ color: 'var(--text-base)' }} title={item.title}>{item.title}</p>
-            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded shrink-0"
-              style={{ background: 'var(--bg-input)', color: 'var(--text-muted)' }}>
-              {variantCountLabel(item.children.length, lang)}
-            </span>
-          </div>
-        </td>
-        {/* Категория · Цена · Себестоимость · Прибыль · Маржа — left blank on the
-            parent (per-unit economics don't aggregate). Must be exactly these 5
-            cells so the Σ columns below line up with Доставлено / В процессе /
-            Отменённые. (A missing Маржа cell here shifted every Σ one column left,
-            so collapsed "Доставлено" showed Σ in_transit instead of Σ delivered.) */}
-        <td className="px-5 py-4" />
-        <td className="px-5 py-4" />
-        <td className="px-5 py-4" />
-        <td className="px-5 py-4" />
-        <td className="px-5 py-4" />
-        <td className="px-5 py-4 text-right" style={{ color: 'var(--text-muted)' }}>Σ {sum(c => c.delivered)}</td>
-        <td className="px-5 py-4 text-right" style={{ color: 'var(--text-muted)' }}>Σ {sum(c => c.in_transit)}</td>
-        <td className="px-5 py-4 text-right" style={{ color: 'var(--text-muted)' }}>Σ {sum(c => c.cancelled)}</td>
-        {/* Остаток — blank (a stock sum would double-count shared FBS pools). */}
-        <td className="px-5 py-4" />
-      </tr>
     )
   }
 
@@ -617,9 +475,6 @@ export default function ProductsTable({ products }: { products: Product[] }) {
                 <th className="text-right font-medium px-5 py-3 cursor-pointer select-none" style={{ color: 'var(--text-muted)' }} onClick={() => toggleSort('margin')}>
                   {d.margin} <SortIcon col="margin" sortBy={sortBy} sortDir={sortDir} />
                 </th>
-                <th className="text-right font-medium px-5 py-3">{d.sold}</th>
-                <th className="text-right font-medium px-5 py-3">{d.orderedTab}</th>
-                <th className="text-right font-medium px-5 py-3">{d.cancelledTab}</th>
                 <th className="text-right font-medium px-5 py-3 cursor-pointer select-none" style={{ color: 'var(--text-muted)' }} onClick={() => toggleSort('stock_quantity')}>
                   <span className="inline-flex items-center gap-1">
                     {d.stockQty}
@@ -629,18 +484,9 @@ export default function ProductsTable({ products }: { products: Product[] }) {
               </tr>
             </thead>
             <tbody>
-              {displayItems.length === 0 ? (
-                <tr><td colSpan={10} className="px-5 py-10 text-center text-sm" style={{ color: 'var(--text-muted)' }}>{d.noProductsTitle}</td></tr>
-              ) : displayItems.map(item => {
-                if (item.type === 'flat') return renderRow(item.product)
-                const expanded = expandedVariants.has(item.key)
-                return (
-                  <Fragment key={item.key}>
-                    {renderVariantParent(item, expanded)}
-                    {expanded && item.children.map(c => renderRow(c, true))}
-                  </Fragment>
-                )
-              })}
+              {filtered.length === 0 ? (
+                <tr><td colSpan={7} className="px-5 py-10 text-center text-sm" style={{ color: 'var(--text-muted)' }}>{d.noProductsTitle}</td></tr>
+              ) : filtered.map(p => renderRow(p))}
             </tbody>
           </table>
         </div>
