@@ -18,6 +18,7 @@ import { and, desc, eq, gte, inArray, sql } from 'drizzle-orm'
 import { db, shops, orders, orderItems, userSettings, orderCancelLog, oversellNotifyState } from '@/lib/db'
 import { logger } from '@/lib/logger'
 import { sendTelegramMessage } from '@/lib/telegram'
+import { notifT, normalizeLang, type NotifLang, type NotifStrings } from '@/lib/notif-i18n'
 import { cancelOrder } from '@/lib/marketplace/order-cancel'
 import { reservingOrderCondition } from '@/lib/marketplace/reserving-orders'
 import type { MarketplaceType } from '@/lib/types'
@@ -35,16 +36,25 @@ function autoCancelMax(): number {
 
 const MP_LABEL: Record<string, string> = { uzum: 'Uzum', yandex_market: 'Yandex Market' }
 
-async function telegramChat(userId: string): Promise<string | null> {
-  const [s] = await db.select({ chat: userSettings.telegram_chat_id })
+async function telegramTarget(userId: string): Promise<{ chat: string; lang: NotifLang } | null> {
+  const [s] = await db.select({ chat: userSettings.telegram_chat_id, lang: userSettings.notif_lang })
     .from(userSettings).where(eq(userSettings.user_id, userId))
-  return s?.chat ?? null
+  return s?.chat ? { chat: s.chat, lang: normalizeLang(s.lang) } : null
 }
 
-async function alert(userId: string, text: string): Promise<void> {
-  const chat = await telegramChat(userId)
-  if (!chat) { logger.warn('oversell_alert_no_chat', { userId }); return }
-  try { await sendTelegramMessage(chat, text) } catch (e) { logger.warn('oversell_alert_failed', { userId, error: String(e).slice(0, 200) }) }
+/**
+ * Send an oversell alert, composed in the seller's own language.
+ *
+ * The callers pass a builder rather than a finished string: the alert body is
+ * localised, so it cannot be assembled until the language is known, and the
+ * language is only known here. Handing this function a plain string is what let
+ * these messages sit in English for every seller.
+ */
+async function alert(userId: string, build: (T: NotifStrings) => string): Promise<void> {
+  const target = await telegramTarget(userId)
+  if (!target) { logger.warn('oversell_alert_no_chat', { userId }); return }
+  try { await sendTelegramMessage(target.chat, build(notifT(target.lang))) }
+  catch (e) { logger.warn('oversell_alert_failed', { userId, error: String(e).slice(0, 200) }) }
 }
 
 // Count auto-cancels for this user in the rolling window (blast-radius limit).
@@ -173,24 +183,24 @@ export async function handleOversell(g: OversellGroup): Promise<OversellOutcome>
 
   // 1. Always alert first.
   if (!autoCancelEnabled()) {
-    await alert(g.userId, `${head}\nAuto-cancel is OFF — cancel the later order manually if needed.`)
+    await alert(g.userId, T => `${head}\n${T.oversellAutoCancelOff}`)
     return { action: 'alert_only', oversoldBy }
   }
   if (!later || !later.orderIdExternal) {
-    await alert(g.userId, `${head}\nNo open order found to auto-cancel — please check manually.`)
+    await alert(g.userId, T => `${head}\n${T.oversellNoLaterOrder}`)
     return { action: 'no_later_order', oversoldBy }
   }
 
   // 2. Rate limit — escalate to a human instead of cancelling beyond the cap.
   const used = await recentAutoCancels(g.userId)
   if (used >= autoCancelMax()) {
-    await alert(g.userId, `${head}\n🚫 Auto-cancel rate limit reached (${used}/${autoCancelMax()} this hour). NOT auto-cancelling — human needed. Use one-click cancel for ${laterLabel}.`)
+    await alert(g.userId, T => `${head}\n${T.oversellRateLimited(used, autoCancelMax(), laterLabel)}`)
     logger.warn('oversell_autocancel_rate_limited', { userId: g.userId, used, max: autoCancelMax() })
     return { action: 'rate_limited', oversoldBy }
   }
 
   // 3. Alert that we are acting, THEN cancel.
-  await alert(g.userId, `${head}\n🤖 Auto-cancelling the later order (${laterLabel}, reason OUT_OF_STOCK).`)
+  await alert(g.userId, T => `${head}\n${T.oversellCancelling(laterLabel)}`)
 
   const [shop] = await db.select({
     id: shops.id, marketplace: shops.marketplace,
