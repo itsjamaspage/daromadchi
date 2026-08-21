@@ -10,6 +10,7 @@ import { decrypt } from '@/lib/crypto'
 import { withErrorHandler } from '@/lib/api-handler'
 import { sendTelegramMessage } from '@/lib/telegram'
 import { reconcilePhysicalStock } from '@/lib/marketplace/physical-stock'
+import { refreshUzumStock } from '@/lib/marketplace/stock-refresh'
 import { logger } from '@/lib/logger'
 import { computeEffectivePlan } from '@/lib/billing/features'
 
@@ -22,6 +23,12 @@ const MP_LABEL: Record<string, string> = {
   uzum: 'Uzum Market',
   yandex_market: 'Yandex Market',
 }
+
+// Stock re-reads on its own fixed clock, the same shape PR #155 gave orders.
+// NOT plan-gated: a stale stock number is what makes the app look like it does
+// not update itself, and that impression is identical on every plan. The
+// expensive work below stays throttled.
+const STOCK_REFRESH_MS = 15 * 60 * 1000
 
 const SYNC_INTERVAL_MS: Record<string, number> = {
   free:     6 * 60 * 60 * 1000,
@@ -42,10 +49,31 @@ function getEffectivePlan(user: { plan: string; plan_expires_at: Date | null; tr
 async function syncShop(
   shop: { id: string; marketplace: string; api_key_encrypted: string; shop_id_external: string | null },
   heavy: boolean,
+  stockDue: boolean,
 ): Promise<Record<string, unknown>> {
   const start = Date.now()
   try {
     const token = decrypt(shop.api_key_encrypted)
+    // Stock-only refresh. Skipped when this tick is already heavy — the heavy
+    // pass re-reads the same quantities from the same endpoint, so running both
+    // would double the calls to write the identical number.
+    let stockRefresh: Record<string, unknown> | undefined
+    if (stockDue && !heavy && shop.marketplace === 'uzum') {
+      const sr = await refreshUzumStock(shop.id, token, shop.shop_id_external)
+      stockRefresh = { ...sr }
+      if (sr.ok) {
+        // Only advance the stock clock on a real read. A failed refresh must
+        // stay due, or one bad tick would push the next attempt out 15 minutes.
+        await db.update(shops).set({ stock_synced_at: new Date() }).where(eq(shops.id, shop.id))
+        // physical_stock feeds the write-back pool and would otherwise sit on
+        // the heavy pass's clock while stock_quantity moved every 15 min.
+        try {
+          await reconcilePhysicalStock(shop.id)
+        } catch (e) {
+          logger.warn('physical_stock_reconcile_failed', { shopId: shop.id, error: String(e).slice(0, 200) })
+        }
+      }
+    }
     let r: { ok: boolean; [key: string]: unknown } | undefined
     if (shop.marketplace === 'uzum') {
       r = { ...await syncFromUzum(shop.id, token, heavy) }
@@ -76,7 +104,7 @@ async function syncShop(
         }
       }
     }
-    if (!r) return { shopId: shop.id, marketplace: shop.marketplace, ok: true, skipped: true }
+    if (!r) return { shopId: shop.id, marketplace: shop.marketplace, ok: true, skipped: true, ...(stockRefresh ? { stockRefresh } : {}) }
     // After a heavy product sync refreshed stock_quantity from the live listings,
     // reconcile physical_stock (the shared pool that drives `available`): adopt a
     // listing read as the pool ONLY when it's seller-originated — differs from our
@@ -90,7 +118,7 @@ async function syncShop(
         logger.warn('physical_stock_reconcile_failed', { shopId: shop.id, error: String(e).slice(0, 200) })
       }
     }
-    return { shopId: shop.id, marketplace: shop.marketplace, ms: Date.now() - start, ...r }
+    return { shopId: shop.id, marketplace: shop.marketplace, ms: Date.now() - start, ...r, ...(stockRefresh ? { stockRefresh } : {}) }
   } catch (err) {
     return { shopId: shop.id, marketplace: shop.marketplace, ms: Date.now() - start, ok: false, error: String(err) }
   }
@@ -112,6 +140,7 @@ export const GET = withErrorHandler(async (req: Request) => {
     api_key_encrypted: shops.api_key_encrypted,
     shop_id_external: shops.shop_id_external,
     last_synced_at: shops.last_synced_at,
+    stock_synced_at: shops.stock_synced_at,
   }).from(shops)
     .where(and(eq(shops.is_active, true), isNotNull(shops.api_key_encrypted)))
 
@@ -140,16 +169,20 @@ export const GET = withErrorHandler(async (req: Request) => {
     const plan = userPlanMap.get(s.user_id) ?? 'free'
     const interval = SYNC_INTERVAL_MS[plan] ?? SYNC_INTERVAL_MS.free
     const heavy = !s.last_synced_at || (now - new Date(s.last_synced_at).getTime() >= interval)
-    return { ...s, heavy }
+    // Independent of `heavy` and of the plan. Null reads as "never refreshed",
+    // so the first tick after deploy refreshes every shop.
+    const stockDue = !s.stock_synced_at || (now - new Date(s.stock_synced_at).getTime() >= STOCK_REFRESH_MS)
+    return { ...s, heavy, stockDue }
   })
 
   const results: Record<string, unknown>[] = []
   const heavyCount = shopsToSync.filter(s => s.heavy).length
+  const stockCount = shopsToSync.filter(s => s.stockDue && !s.heavy).length
 
   for (let i = 0; i < shopsToSync.length; i += CONCURRENCY) {
     const batch = shopsToSync.slice(i, i + CONCURRENCY)
     const settled = await Promise.allSettled(
-      batch.map(s => syncShop({ ...s, api_key_encrypted: s.api_key_encrypted! }, s.heavy))
+      batch.map(s => syncShop({ ...s, api_key_encrypted: s.api_key_encrypted! }, s.heavy, s.stockDue))
     )
     for (const outcome of settled) {
       if (outcome.status === 'fulfilled') {
@@ -218,5 +251,5 @@ export const GET = withErrorHandler(async (req: Request) => {
     revalidateTag('settlements', { expire: 0 })
   }
 
-  return NextResponse.json({ ok: true, synced: results.length, heavy: heavyCount, results })
+  return NextResponse.json({ ok: true, synced: results.length, heavy: heavyCount, stockRefreshed: stockCount, results })
 })

@@ -37,6 +37,31 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 4, baseMs = 600): Pr
   throw new Error('unreachable')
 }
 
+/**
+ * Uzum's rate-limit headers from the most recent response, per process.
+ *
+ * Recorded here rather than fetched separately because the headers ride every
+ * response already — asking for them would mean spending a call to measure how
+ * many calls we have left. Callers read it after a fetch to log real headroom
+ * instead of reasoning about it from a schedule.
+ */
+export interface UzumRateLimit { remainingPerDay: number | null; limitPerDay: number | null; at: Date }
+let lastRateLimit: UzumRateLimit | null = null
+export function getUzumRateLimit(): UzumRateLimit | null { return lastRateLimit }
+
+function recordRateLimit(res: Response): void {
+  const num = (v: string | null) => {
+    if (v == null || v.trim() === '') return null
+    const n = Number(v)
+    return Number.isFinite(n) ? n : null
+  }
+  const remaining = num(res.headers.get('x-ratelimit-remaining-per-day'))
+  const limit = num(res.headers.get('x-ratelimit-limit-per-day'))
+  // Only replace a reading when this response actually carried one.
+  if (remaining === null && limit === null) return
+  lastRateLimit = { remainingPerDay: remaining, limitPerDay: limit, at: new Date() }
+}
+
 // Auth: apiKey in Authorization header WITHOUT any prefix ("без префикса Bearer")
 // Per Uzum swagger securitySchemes.TokenAuth.description
 async function request<T>(
@@ -60,6 +85,7 @@ async function request<T>(
     },
     next: { revalidate: 0 },
   })
+  recordRateLimit(res)
   if (!res.ok) {
     let body = ''
     try { body = await res.text() } catch { /* ignore */ }
