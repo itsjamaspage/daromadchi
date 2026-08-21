@@ -1,4 +1,3 @@
-import { Suspense } from 'react'
 import { CreditCard } from 'lucide-react'
 import { getPayoutEntries } from '@/lib/db/payouts'
 import PayoutsView from '@/components/dashboard/PayoutsView'
@@ -7,46 +6,27 @@ import { startOfIsoWeek, localDateStr } from '@/lib/period-week'
 import { currentUserAccess } from '@/lib/billing/entitlement'
 import FeatureLock from '@/components/dashboard/FeatureLock'
 
-// Same preset vocabulary as the dashboard's DateRangePicker (?days=…), plus
-// `week` — the default here.
+// This page shows the CURRENT WEEK and nothing else. The range is fixed in
+// code: no presets, no custom dates, no ?days= / ?from= / ?to= override. A URL
+// carrying those params is ignored rather than honoured, so a stale link or an
+// old bookmark cannot put the page on a range it no longer offers.
 //
-// `week` is the CURRENT ISO week (Monday→today), not a rolling 7 days. The
-// difference is the whole point of the weekly view: a rolling window slides a
-// little every day and never closes, so nothing ever becomes "last week". A
-// calendar week ends on Sunday night; come Monday the page shows a fresh week
-// and the finished one is reachable through the range picker. That is the
-// history.
-function parseDays(v: string): number {
-  if (v === '7') return 7
-  if (v === '30') return 30
-  if (v === '90') return 90
-  if (v === '365') return 365
-  if (v === 'month') return new Date().getDate() // days elapsed this month
-  return 365
-}
+// "Week" is the calendar week, Monday→today — not a rolling seven days. A
+// rolling window slides a little every day and never closes; a calendar week
+// ends Sunday night and a fresh one starts Monday, which is what makes this
+// page mean "this week's earnings" without anyone setting anything.
 
-interface Props {
-  searchParams: Promise<Record<string, string>>
-}
-
-export default async function PayoutsPage({ searchParams }: Props) {
+export default async function PayoutsPage() {
   // Gate BEFORE the queries — see the note on the analytics page.
   const [lang, access] = await Promise.all([getLang(), currentUserAccess('finances')])
   if (!access.allowed) return <FeatureLock lang={lang} feature="finances" hadTrial={access.trialEnded} />
 
-  const params = await searchParams
-  const period = params?.days ?? 'week'
-  const from = params?.from
-  const to = params?.to
-  // Effective range: an explicit custom range wins; otherwise the preset window.
   // localDateStr, never toISOString() — the latter converts to UTC, which in a
   // +05:00 shop turns "today" into "yesterday" for the last five hours of every
   // evening, silently dropping the newest orders out of the range.
   const now = new Date()
-  const rangeFrom = from ?? (period === 'week'
-    ? localDateStr(startOfIsoWeek(now))
-    : localDateStr(new Date(now.getTime() - parseDays(period) * 86_400_000)))
-  const rangeTo = to ?? localDateStr(now)
+  const rangeFrom = localDateStr(startOfIsoWeek(now))
+  const rangeTo = localDateStr(now)
 
   const [t, entries] = await Promise.all([
     getT(),
@@ -68,11 +48,7 @@ export default async function PayoutsPage({ searchParams }: Props) {
         </div>
       </div>
 
-      {/* Suspense boundary required: PayoutsView renders DateRangePicker, a client
-          component that calls useSearchParams() (mirrors the dashboard page). */}
-      <Suspense>
-        <PayoutsView entries={entries} period={period} from={from} to={to} />
-      </Suspense>
+      <PayoutsView entries={entries} />
     </div>
   )
 }

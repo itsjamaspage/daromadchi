@@ -2,11 +2,10 @@
 
 import { useState, useRef, useEffect, Fragment } from 'react'
 import { useRouter } from 'next/navigation'
-import { ChevronDown, ChevronUp, HelpCircle, RefreshCw, MoreVertical, CreditCard } from 'lucide-react'
+import { ChevronDown, ChevronUp, HelpCircle, RefreshCw, MoreVertical, CreditCard, CalendarDays } from 'lucide-react'
 import type { PayoutEntry, PayoutOrderItem, PayoutOrderLine, MarketplaceType } from '@/lib/types'
-import { isoWeekBounds } from '@/lib/period-week'
+import { isoWeekBounds, isoWeekKey } from '@/lib/period-week'
 import ExportButton from '@/components/dashboard/ExportButton'
-import DateRangePicker from '@/components/dashboard/DateRangePicker'
 import MpBadge from '@/components/dashboard/MpBadge'
 import { useLang } from '@/app/providers'
 import { dashT } from '@/lib/dashT'
@@ -41,10 +40,6 @@ function formatPeriod(
 
 interface Props {
   entries: PayoutEntry[]
-  // Date-range state (URL-driven, same as the dashboard). Drives DateRangePicker.
-  period?: string
-  from?: string
-  to?: string
 }
 
 // Currency suffix per app language. The UZ shop currency is always
@@ -245,7 +240,7 @@ function DeductionBar({ entry }: { entry: PayoutEntry }) {
 const MP_TAB_VALUES = ['all', 'uzum', 'yandex_market'] as const
 type MpFilter = typeof MP_TAB_VALUES[number]
 
-export default function PayoutsView({ entries, period = '365', from, to }: Props) {
+export default function PayoutsView({ entries }: Props) {
   const { lang } = useLang()
   const t = dashT[lang].payouts
   const locale = lang === 'ru' ? 'ru-RU' : lang === 'en' ? 'en-US' : 'uz-UZ'
@@ -371,6 +366,15 @@ export default function PayoutsView({ entries, period = '365', from, to }: Props
   // Exclude awaitingSettlement rows from KPI totals — those have
   // netPayout=0 as a placeholder and would drag averages/totals down
   // if summed.
+  // Which week is on screen. Derived from the clock, exactly as the server
+  // derives the query range, so the two cannot disagree.
+  const currentWeekLabel = (() => {
+    const b = isoWeekBounds(isoWeekKey(new Date()))
+    if (!b) return ''
+    const dm = (d: Date) => d.toLocaleDateString(locale, { day: 'numeric', month: 'short' })
+    return `${dm(b.start)} – ${dm(b.end)}`
+  })()
+
   const withKnownNet = filteredEntries.filter(e => !e.awaitingSettlement)
   // Both tiles are sums of money columns — no status anywhere.
   //
@@ -465,7 +469,14 @@ export default function PayoutsView({ entries, period = '365', from, to }: Props
               </div>
             </div>
           )}
-          <DateRangePicker period={period} from={from} to={to} showWeek defaultPeriod="week" />
+          {/* The week is fixed to the current one, so this is a label, not a
+              control. The seller still needs to see WHICH week they are reading;
+              only the ability to change it is gone. */}
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border"
+            style={{ background: 'var(--bg-card2)', borderColor: 'var(--border)', color: 'var(--text-base)' }}>
+            <CalendarDays className="w-3.5 h-3.5" style={{ color: 'var(--c1)' }} />
+            {currentWeekLabel}
+          </span>
           <ExportButton data={exportData} filename="tolovu-hisoboti" targetRef={printRef} />
           {/* Kebab (⋮) menu: single icon that expands into a dropdown.
               Currently one action — "Обновить данные Yandex" — but the
