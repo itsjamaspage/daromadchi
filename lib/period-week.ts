@@ -79,13 +79,3 @@ export function isoWeekBounds(key: string): { start: Date; end: Date } | null {
 export function localDateStr(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
-
-/** Monday–Sunday of the week BEFORE the one containing `now`. */
-export function previousIsoWeekBounds(now: Date = new Date()): { start: Date; end: Date } {
-  const start = startOfIsoWeek(now)
-  start.setDate(start.getDate() - 7)
-  const end = new Date(start)
-  end.setDate(end.getDate() + 6)
-  end.setHours(23, 59, 59, 999)
-  return { start, end }
-}
