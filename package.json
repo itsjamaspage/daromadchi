@@ -35,6 +35,7 @@
     "probe:uzum-payout": "tsx scripts/probe-uzum-payout-surface.ts",
     "test:probe-classifier": "node --import tsx --test scripts/probe-uzum-payout-surface.test.ts",
     "measure:stock-latency": "tsx scripts/measure-stock-sync-latency.ts",
+    "probe:yandex-catalog": "tsx scripts/probe-yandex-catalog-path.ts",
     "probe:yandex-keys": "tsx scripts/probe-yandex-stock-keys.ts",
     "test:uzum-stock": "node --import tsx --test lib/uzum/stock-reading.test.ts"
   },
