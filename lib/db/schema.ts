@@ -142,6 +142,10 @@ export const shops = pgTable('shops', {
   is_active:         boolean('is_active').default(true).notNull(),
   token_valid:       boolean('token_valid'),
   last_synced_at:    timestamp('last_synced_at', { withTimezone: true }),
+  // When the cheap stock-only refresh last ran. Deliberately separate from
+  // last_synced_at, which means "the heavy pass ran" and gates on the plan
+  // interval — one column cannot carry both clocks truthfully.
+  stock_synced_at:   timestamp('stock_synced_at', { withTimezone: true }),
   // Marketplace rate-limit cooldown. When set to a future timestamp,
   // sync() short-circuits without hitting the marketplace API — lets
   // e.g. Wildberries' per-seller limiter naturally decay instead of

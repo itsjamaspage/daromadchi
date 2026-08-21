@@ -135,6 +135,7 @@ const MIGRATIONS = [
   // a NULL must never be read as a year of silence, and a re-run must never
   // reset a real sign-in back to the signup date.
   'migrations/migrations/079_account_lifecycle.sql',
+  'migrations/migrations/080_shops_stock_synced_at.sql',
 ]
 
 function loadDatabaseUrl() {
