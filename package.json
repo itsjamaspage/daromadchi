@@ -33,7 +33,8 @@
     "test:payout-status": "node --import tsx --test lib/db/payout-status.test.ts",
     "test:renew": "node --conditions=react-server --import tsx --test lib/billing/renew.integration.test.ts",
     "probe:uzum-payout": "tsx scripts/probe-uzum-payout-surface.ts",
-    "test:probe-classifier": "node --import tsx --test scripts/probe-uzum-payout-surface.test.ts"
+    "test:probe-classifier": "node --import tsx --test scripts/probe-uzum-payout-surface.test.ts",
+    "probe:yandex-keys": "tsx scripts/probe-yandex-stock-keys.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
