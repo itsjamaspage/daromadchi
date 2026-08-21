@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { eq } from 'drizzle-orm'
 import { db, alerts, userSettings } from '@/lib/db'
 import { getExtensionUser, getUserPlan } from '@/lib/api/auth'
-import { sendTelegramMessage } from '@/lib/telegram'
+import { sendSellerMessageTo } from '@/lib/telegram-seller'
 import { withErrorHandler } from '@/lib/api-handler'
 
 interface AlertInput {
@@ -36,14 +36,17 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
 
   await db.insert(alerts).values(rows)
 
-  const [settings] = await db.select({ telegram_chat_id: userSettings.telegram_chat_id })
+  const [settings] = await db.select({
+    telegram_chat_id: userSettings.telegram_chat_id,
+    notif_lang: userSettings.notif_lang,
+  })
     .from(userSettings)
     .where(eq(userSettings.user_id, user.id))
 
   let sent = 0
   if (settings?.telegram_chat_id) {
     for (const a of alertInputs) {
-      const ok = await sendTelegramMessage(settings.telegram_chat_id, a.message)
+      const ok = await sendSellerMessageTo(settings.telegram_chat_id, settings.notif_lang, () => a.message)
       if (ok) sent++
     }
   }

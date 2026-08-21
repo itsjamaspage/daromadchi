@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { eq } from 'drizzle-orm'
 import { getCurrentUser } from '@/lib/auth/session'
 import { db, userSettings } from '@/lib/db'
-import { sendTelegramMessage } from '@/lib/telegram'
+import { sendSellerMessageTo } from '@/lib/telegram-seller'
 import { withErrorHandler } from '@/lib/api-handler'
 import { notifT } from '@/lib/notif-i18n'
 import { buildDigestForUser } from '@/lib/telegram-digest'
@@ -47,6 +47,6 @@ export const POST = withErrorHandler(async () => {
     ? `${t.testHeader}\n\n${digest.text}`
     : `${t.testHeader}\n\n${t.noOrders}\n\n${t.testFooter}`
 
-  const ok = await sendTelegramMessage(settings.telegram_chat_id, body)
+  const ok = await sendSellerMessageTo(settings.telegram_chat_id, settings.notif_lang, () => body)
   return NextResponse.json({ ok })
 })

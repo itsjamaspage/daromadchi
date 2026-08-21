@@ -6,11 +6,37 @@
 
 export type NotifLang = 'uz' | 'ru' | 'en'
 
+// Russian count-noun agreement for «заказ»: 1 заказ, 2–4 заказа, 5+ заказов —
+// and 11–14 take the 5+ form regardless of their last digit.
+function ruOrders(n: number): string {
+  const mod10 = n % 10, mod100 = n % 100
+  if (mod10 === 1 && mod100 !== 11) return 'новый заказ'
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return 'новых заказа'
+  return 'новых заказов'
+}
+
+// Technical skip/error reasons, phrased for a seller. One table per language so
+// a new reason is added in three places at once rather than three files.
+const REASONS: Record<NotifLang, Record<string, string>> = {
+  uz: { missing_sku: "tovar identifikatori yo'q", missing_barcode: "shtrix-kod yo'q",
+        missing_warehouse: "ombor yo'q", missing_campaign: "kampaniya yo'q", no_token: "token yo'q" },
+  ru: { missing_sku: 'нет идентификатора товара', missing_barcode: 'нет штрихкода',
+        missing_warehouse: 'нет склада', missing_campaign: 'нет кампании', no_token: 'нет токена' },
+  en: { missing_sku: 'no product identifier', missing_barcode: 'no barcode',
+        missing_warehouse: 'no warehouse', missing_campaign: 'no campaign', no_token: 'no token' },
+}
+
+/** `http_503` -> "<prefix> (HTTP 503)"; anything else passes through raw. */
+function httpReason(reason: string, prefix: string): string {
+  const m = /^http_(\d+)/.exec(reason)
+  return m ? `${prefix} (HTTP ${m[1]})` : reason
+}
+
 export function normalizeLang(v: string | null | undefined): NotifLang {
   return v === 'ru' || v === 'en' || v === 'uz' ? v : 'uz'
 }
 
-interface NotifStrings {
+export interface NotifStrings {
   dailyTitle: string
   todayTitle: string
   weeklyTitle: (days: number) => string
@@ -32,6 +58,34 @@ interface NotifStrings {
   stockUpdateLine: (product: string, orderMp: string, newQty: number, targetMps: string) => string
   stockUpdateCta: string
   deliveryTitle: (n: number) => string
+  // New-order alert. Was built as a hardcoded Uzbek literal in the sync cron and
+  // so ignored notif_lang entirely — the one Telegram message that did.
+  newOrdersTitle: (n: number) => string
+  newOrdersSub: string
+  newOrdersLine: (marketplace: string, n: number) => string
+  newOrdersMore: (n: number) => string
+  newOrdersCta: string
+  // Stock-sync digest (lib/marketplace/stock-notify.ts). Was hardcoded Russian.
+  stockSyncTitle: string
+  stockSyncSoldOn: (marketplace: string) => string
+  stockSyncOk: (marketplace: string, from: number, to: number) => string
+  stockSyncFailed: (marketplace: string, why: string) => string
+  stockSyncRestock: (left: number) => string
+  stockSyncReason: (reason: string) => string
+  // Extension daily summary (app/api/extension/send-daily-summary). Was hardcoded Uzbek.
+  extDailyTitle: (date: string) => string
+  extRevenue: string
+  extProfit: string
+  extOrders: string
+  extReturned: string
+  extLowStock: string
+  extUnit: string
+  extFooter: string
+  // Oversell alerts (lib/marketplace/oversell.ts). Was hardcoded English.
+  oversellAutoCancelOff: string
+  oversellNoLaterOrder: string
+  oversellRateLimited: (used: number, max: number, mp: string) => string
+  oversellCancelling: (mp: string) => string
   deliverTo: string
   deliverBy: string
   fromMarket: string
@@ -64,6 +118,29 @@ const STRINGS: Record<NotifLang, NotifStrings> = {
     stockUpdateLine: (product, orderMp, newQty, targetMps) => `• ${product} — buyurtma ${orderMp}, <b>${newQty}</b> qiling: ${targetMps}`,
     stockUpdateCta: "Boshqa do'konlarda qoldiqni yangilang.",
     deliveryTitle:  (n) => `📦 <b>Jarayonda (${n})</b>`,
+    newOrdersTitle: (n) => `🛒 <b>Yangi buyurtma${n > 1 ? `lar (${n})` : ''}!</b>`,
+    newOrdersSub:   "Yig'ib jo'natish kerak:",
+    newOrdersLine:  (mp, n) => `• ${mp}: <b>${n}</b> ta yangi buyurtma`,
+    newOrdersMore:  (n) => `…va yana ${n} ta`,
+    newOrdersCta:   'Batafsil',
+    stockSyncTitle: '📦 Qoldiq yangilandi (sotuv):',
+    stockSyncSoldOn: (mp) => ` (${mp} da sotildi)`,
+    stockSyncOk:    (mp, from, to) => `   ✅ ${mp}: ${from}→${to}`,
+    stockSyncFailed:(mp, why) => `   ⚠️ ${mp}: yangilanmadi${why} — qo'lda yangilang`,
+    stockSyncRestock: (left) => `   ⚠️ ${left} ta qoldi — omborni to'ldiring`,
+    stockSyncReason: (r) => REASONS.uz[r] ?? httpReason(r, 'API xatosi'),
+    extDailyTitle:  (d) => `📊 <b>Kunlik hisobot — ${d}</b>`,
+    extRevenue:     '💰 Daromad',
+    extProfit:      '📈 Sof foyda',
+    extOrders:      '🛒 Buyurtmalar',
+    extReturned:    '↩️ Qaytarilgan',
+    extLowStock:    '⚠️ <b>Kam zaxira:</b>',
+    extUnit:        'dona',
+    extFooter:      "daromadchi.uz da to'liq tahlil",
+    oversellAutoCancelOff: "Avtomatik bekor qilish O'CHIQ — keyingi buyurtmani qo'lda bekor qiling.",
+    oversellNoLaterOrder:  "Bekor qilish uchun ochiq buyurtma topilmadi — qo'lda tekshiring.",
+    oversellRateLimited:   (used, max, mp) => `🚫 Avtomatik bekor qilish chegarasi (${used}/${max} shu soatda). Bekor QILINMADI — ${mp} uchun qo'lda bekor qiling.`,
+    oversellCancelling:    (mp) => `🤖 Keyingi buyurtma bekor qilinmoqda (${mp}, sabab OUT_OF_STOCK).`,
     deliverTo:      'PVZ ga',
     deliverBy:      'gacha',
     fromMarket:     'dan',
@@ -94,6 +171,29 @@ const STRINGS: Record<NotifLang, NotifStrings> = {
     stockUpdateLine: (product, orderMp, newQty, targetMps) => `• ${product} — заказ ${orderMp}, поставьте <b>${newQty}</b>: ${targetMps}`,
     stockUpdateCta: 'Обновите остатки в других магазинах.',
     deliveryTitle:  (n) => `📦 <b>В процессе (${n})</b>`,
+    newOrdersTitle: (n) => n > 1 ? `🛒 <b>Новые заказы (${n})!</b>` : '🛒 <b>Новый заказ!</b>',
+    newOrdersSub:   'Нужно собрать и отправить:',
+    newOrdersLine:  (mp, n) => `• ${mp}: <b>${n}</b> ${ruOrders(n)}`,
+    newOrdersMore:  (n) => `…и ещё ${n}`,
+    newOrdersCta:   'Подробнее',
+    stockSyncTitle: '📦 Остатки обновлены (продажа):',
+    stockSyncSoldOn: (mp) => ` (продажа на ${mp})`,
+    stockSyncOk:    (mp, from, to) => `   ✅ ${mp}: ${from}→${to}`,
+    stockSyncFailed:(mp, why) => `   ⚠️ ${mp}: не обновлён${why} — обновите вручную`,
+    stockSyncRestock: (left) => `   ⚠️ Осталось ${left} — пополните склад`,
+    stockSyncReason: (r) => REASONS.ru[r] ?? httpReason(r, 'ошибка API'),
+    extDailyTitle:  (d) => `📊 <b>Отчёт за день — ${d}</b>`,
+    extRevenue:     '💰 Выручка',
+    extProfit:      '📈 Чистая прибыль',
+    extOrders:      '🛒 Заказы',
+    extReturned:    '↩️ Возвраты',
+    extLowStock:    '⚠️ <b>Низкий остаток:</b>',
+    extUnit:        'шт',
+    extFooter:      'полная аналитика на daromadchi.uz',
+    oversellAutoCancelOff: 'Автоотмена ВЫКЛЮЧЕНА — отмените поздний заказ вручную, если нужно.',
+    oversellNoLaterOrder:  'Не найден открытый заказ для автоотмены — проверьте вручную.',
+    oversellRateLimited:   (used, max, mp) => `🚫 Достигнут лимит автоотмены (${used}/${max} за час). НЕ отменяем автоматически — отмените ${mp} вручную.`,
+    oversellCancelling:    (mp) => `🤖 Отменяем поздний заказ (${mp}, причина OUT_OF_STOCK).`,
     deliverTo:      'в ПВЗ',
     deliverBy:      'до',
     fromMarket:     'из',
@@ -124,6 +224,29 @@ const STRINGS: Record<NotifLang, NotifStrings> = {
     stockUpdateLine: (product, orderMp, newQty, targetMps) => `• ${product} — order on ${orderMp}, set to <b>${newQty}</b>: ${targetMps}`,
     stockUpdateCta: 'Update stock in other stores.',
     deliveryTitle:  (n) => `📦 <b>In process (${n})</b>`,
+    newOrdersTitle: (n) => n > 1 ? `🛒 <b>New orders (${n})!</b>` : '🛒 <b>New order!</b>',
+    newOrdersSub:   'Ready to pick and ship:',
+    newOrdersLine:  (mp, n) => `• ${mp}: <b>${n}</b> new order${n === 1 ? '' : 's'}`,
+    newOrdersMore:  (n) => `…and ${n} more`,
+    newOrdersCta:   'Details',
+    stockSyncTitle: '📦 Stock updated (sale):',
+    stockSyncSoldOn: (mp) => ` (sold on ${mp})`,
+    stockSyncOk:    (mp, from, to) => `   ✅ ${mp}: ${from}→${to}`,
+    stockSyncFailed:(mp, why) => `   ⚠️ ${mp}: not updated${why} — update manually`,
+    stockSyncRestock: (left) => `   ⚠️ ${left} left — restock`,
+    stockSyncReason: (r) => REASONS.en[r] ?? httpReason(r, 'API error'),
+    extDailyTitle:  (d) => `📊 <b>Daily report — ${d}</b>`,
+    extRevenue:     '💰 Revenue',
+    extProfit:      '📈 Net profit',
+    extOrders:      '🛒 Orders',
+    extReturned:    '↩️ Returned',
+    extLowStock:    '⚠️ <b>Low stock:</b>',
+    extUnit:        'pcs',
+    extFooter:      'full analytics at daromadchi.uz',
+    oversellAutoCancelOff: 'Auto-cancel is OFF — cancel the later order manually if needed.',
+    oversellNoLaterOrder:  'No open order found to auto-cancel — please check manually.',
+    oversellRateLimited:   (used, max, mp) => `🚫 Auto-cancel rate limit reached (${used}/${max} this hour). NOT auto-cancelling — use one-click cancel for ${mp}.`,
+    oversellCancelling:    (mp) => `🤖 Auto-cancelling the later order (${mp}, reason OUT_OF_STOCK).`,
     deliverTo:      'to PVZ',
     deliverBy:      'by',
     fromMarket:     'from',
@@ -138,7 +261,12 @@ export function notifT(lang: string | null | undefined): NotifStrings {
   return STRINGS[normalizeLang(lang)]
 }
 
+/** BCP-47 locale for the seller's notification language — dates and numbers. */
+export function notifLocale(lang: string | null | undefined): string {
+  const l = normalizeLang(lang)
+  return l === 'ru' ? 'ru-RU' : l === 'en' ? 'en-US' : 'uz-UZ'
+}
+
 export function fmtNumber(n: number, lang: string | null | undefined): string {
-  const loc = normalizeLang(lang) === 'ru' ? 'ru-RU' : normalizeLang(lang) === 'en' ? 'en-US' : 'uz-UZ'
-  return new Intl.NumberFormat(loc).format(Math.round(n))
+  return new Intl.NumberFormat(notifLocale(lang)).format(Math.round(n))
 }

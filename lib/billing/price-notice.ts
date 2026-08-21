@@ -30,7 +30,7 @@
 import 'server-only'
 import { and, eq, isNotNull, isNull, lte, inArray, desc } from 'drizzle-orm'
 import { db, subscriptions, userSettings } from '@/lib/db'
-import { sendTelegramMessage } from '@/lib/telegram'
+import { sendSellerMessageTo } from '@/lib/telegram-seller'
 import { formatSomFromTiyin, PRICE_NOTICE_DAYS } from '@/lib/billing/plans'
 import { logger } from '@/lib/logger'
 
@@ -265,8 +265,9 @@ export async function dispatchDuePriceNotices(now: Date = new Date()): Promise<N
     let delivered = false
     if (row.chatId) {
       const lang = (['uz', 'ru', 'en'].includes(row.lang ?? '') ? row.lang : 'uz') as NoticeLang
+      const pending = row.pending, effective = row.effective
       try {
-        delivered = await sendTelegramMessage(row.chatId, noticeText(lang, row.pending, row.effective))
+        delivered = await sendSellerMessageTo(row.chatId, lang, () => noticeText(lang, pending, effective))
       } catch (err) {
         logger.warn('billing_price_notice_send_failed', {
           subscriptionId: row.id, error: String(err).slice(0, 200),

@@ -29,7 +29,8 @@
 import { and, eq } from 'drizzle-orm'
 import { db, userSettings, alerts, stockNotifyState } from '@/lib/db'
 import { logger } from '@/lib/logger'
-import { sendTelegramMessage } from '@/lib/telegram'
+import { sendSellerMessageTo } from '@/lib/telegram-seller'
+import { notifT, normalizeLang, type NotifLang } from '@/lib/notif-i18n'
 import { COLOR_LABELS } from '@/lib/products/resolveColor'
 import type { MarketplaceType } from '@/lib/types'
 
@@ -57,34 +58,15 @@ function label(mp: string): string {
   return MP_LABEL[mp] ?? mp
 }
 
-// Localize a resolved colour key to Russian (the notification language). Unknown
-// keys are omitted rather than shown raw.
-function colorLabelRu(key: string | null | undefined): string | null {
+// Localize a resolved colour key. Unknown keys are omitted rather than shown raw.
+function colorLabel(key: string | null | undefined, lang: NotifLang): string | null {
   if (!key) return null
-  return (COLOR_LABELS as Record<string, Record<string, string>>)[key]?.ru ?? null
+  return (COLOR_LABELS as Record<string, Record<string, string>>)[key]?.[lang] ?? null
 }
 
-// "450000" → "450 000" (space-grouped thousands, ru style).
+// "450000" → "450 000" (space-grouped thousands).
 function fmtSum(n: number): string {
   return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
-}
-
-// Human-readable phrasing for the technical skip/error reasons, so a failed
-// line tells the seller WHAT went wrong instead of a raw code. Unknown reasons
-// fall back to a compact rendering (HTTP codes) or the raw string.
-const REASON_PHRASE: Record<string, string> = {
-  missing_sku:       'нет идентификатора товара',
-  missing_barcode:   'нет штрихкода',
-  missing_warehouse: 'нет склада',
-  missing_campaign:  'нет кампании',
-  no_token:          'нет токена',
-}
-
-function phraseFor(reason: string): string {
-  if (REASON_PHRASE[reason]) return REASON_PHRASE[reason]
-  const http = reason.match(/^http_(\d+)/)
-  if (http) return `ошибка API (HTTP ${http[1]})`
-  return reason
 }
 
 /**
@@ -92,16 +74,20 @@ function phraseFor(reason: string): string {
  * naming the sold product (and where it sold), followed by one line per store
  * with its actual result. Exported for a focused, DB-free unit test.
  */
-export function buildDigestMessage(groups: { sku: string; events: StockUpdateEvent[] }[]): string {
-  const lines: string[] = ['📦 Остатки обновлены (продажа):']
+export function buildDigestMessage(
+  groups: { sku: string; events: StockUpdateEvent[] }[],
+  lang: NotifLang = 'uz',
+): string {
+  const T = notifT(lang)
+  const lines: string[] = [T.stockSyncTitle]
   for (const g of groups) {
     const origin = g.events.map(e => e.originMarketplace).find(Boolean) ?? null
-    const originTxt = origin ? ` (продажа на ${label(origin)})` : ''
+    const originTxt = origin ? T.stockSyncSoldOn(label(origin)) : ''
     // All events in a group are the same physical product → take identity once.
     const first = g.events[0]
     const name  = first?.name?.trim() || null
-    const color = colorLabelRu(first?.colorKey)
-    const price = first?.price != null && first.price > 0 ? `${fmtSum(first.price)} сум` : null
+    const color = colorLabel(first?.colorKey, lang)
+    const price = first?.price != null && first.price > 0 ? `${fmtSum(first.price)} ${T.som}` : null
     // • <SKU> — <name> · <color> · <price> сум (продажа на <origin>):
     const meta = [name, color, price].filter(Boolean).join(' · ')
     const metaTxt = meta ? ` — ${meta}` : ''
@@ -109,10 +95,10 @@ export function buildDigestMessage(groups: { sku: string; events: StockUpdateEve
     lines.push(`• ${g.sku}${metaTxt}${originTxt}:`)
     for (const e of g.events) {
       if (e.ok) {
-        lines.push(`   ✅ ${label(e.targetMarketplace)}: ${e.listed}→${e.target}`)
+        lines.push(T.stockSyncOk(label(e.targetMarketplace), e.listed, e.target))
       } else {
-        const why = e.reason ? ` (${phraseFor(e.reason)})` : ''
-        lines.push(`   ⚠️ ${label(e.targetMarketplace)}: не обновлён${why} — обновите вручную`)
+        const why = e.reason ? ` (${T.stockSyncReason(e.reason)})` : ''
+        lines.push(T.stockSyncFailed(label(e.targetMarketplace), why))
       }
     }
     // Restock warning on the GROUP's shared free-to-sell (not per-marketplace):
@@ -120,7 +106,7 @@ export function buildDigestMessage(groups: { sku: string; events: StockUpdateEve
     // never dedups a group whose available < 5, so this sends on every such sale.
     const groupAvailable = first?.available
     if (typeof groupAvailable === 'number' && groupAvailable < RESTOCK_THRESHOLD) {
-      lines.push(`   ⚠️ Осталось ${groupAvailable} — пополните склад`)
+      lines.push(T.stockSyncRestock(groupAvailable))
     }
   }
   return lines.join('\n')
@@ -196,6 +182,7 @@ export async function notifyStockUpdates(userId: string, events: StockUpdateEven
       chat:     userSettings.telegram_chat_id,
       inApp:    userSettings.notif_stock_update_inapp,
       telegram: userSettings.notif_stock_update_telegram,
+      lang:     userSettings.notif_lang,
     }).from(userSettings).where(eq(userSettings.user_id, userId))
 
     const inAppOn    = s?.inApp ?? true
@@ -264,16 +251,16 @@ export async function notifyStockUpdates(userId: string, events: StockUpdateEven
     if (changed.length === 0) return // nothing new this cycle → no message
 
     // ONE combined message across both channels.
-    const message = buildDigestMessage(changed)
+    const message = buildDigestMessage(changed, normalizeLang(s?.lang))
 
     let sentToTelegram = false
     if (telegramOn && chat) {
-      try {
-        await sendTelegramMessage(chat, message)
-        sentToTelegram = true
-      } catch (err) {
-        logger.warn('stock_notify_telegram_failed', { userId, error: String(err).slice(0, 200) })
-      }
+      // Use the RETURN VALUE, not the absence of a throw. sendSellerMessageTo
+      // reports failure by returning false so a caller's loop is never aborted,
+      // which means `await` completing proves nothing about delivery — marking
+      // it sent on that basis would record a message the seller never got.
+      sentToTelegram = await sendSellerMessageTo(chat, s?.lang, () => message, userId)
+      if (!sentToTelegram) logger.warn('stock_notify_telegram_failed', { userId })
     }
 
     if (inAppOn) {

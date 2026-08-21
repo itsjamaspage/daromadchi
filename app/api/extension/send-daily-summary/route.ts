@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { eq, and, inArray, gte, lte, asc } from 'drizzle-orm'
 import { db, orders as ordersTable, products, userSettings } from '@/lib/db'
 import { getExtensionUser, getShopIds, getUserPlan } from '@/lib/api/auth'
-import { sendTelegramMessage, isInNotificationWindow } from '@/lib/telegram'
+import { isInNotificationWindow } from '@/lib/telegram'
+import { sendSellerMessageTo } from '@/lib/telegram-seller'
+import { notifT, notifLocale } from '@/lib/notif-i18n'
 import { withErrorHandler } from '@/lib/api-handler'
 
 function fmt(n: number) {
@@ -21,6 +23,7 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   const [settings] = await db.select({
     telegram_chat_id: userSettings.telegram_chat_id,
     notif_send_time: userSettings.notif_send_time,
+    notif_lang: userSettings.notif_lang,
   }).from(userSettings).where(eq(userSettings.user_id, user.id)).limit(1)
 
   if (!settings?.telegram_chat_id) {
@@ -67,27 +70,30 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   const delivery   = active.reduce((s, o) => s + Number(o.delivery_cost   ?? 0), 0)
   const profit     = revenue - commission - delivery
 
-  const dateStr = new Date().toLocaleDateString('uz-UZ', { day: '2-digit', month: '2-digit', year: 'numeric' })
+  const T = notifT(settings.notif_lang)
+  // Date locale follows the seller's language too — a Russian report dated in
+  // uz-UZ format is the same mismatch one line smaller.
+  const dateStr = new Date().toLocaleDateString(notifLocale(settings.notif_lang), { day: '2-digit', month: '2-digit', year: 'numeric' })
 
   const lines: string[] = [
-    `📊 <b>Kunlik hisobot — ${dateStr}</b>`,
+    T.extDailyTitle(dateStr),
     ``,
-    `💰 Daromad: <b>${fmt(revenue)}</b>`,
-    `📈 Sof foyda: <b>${fmt(profit)}</b>`,
-    `🛒 Buyurtmalar: <b>${active.length}</b>`,
+    `${T.extRevenue}: <b>${fmt(revenue)}</b>`,
+    `${T.extProfit}: <b>${fmt(profit)}</b>`,
+    `${T.extOrders}: <b>${active.length}</b>`,
   ]
 
-  if (returned.length > 0) lines.push(`↩️ Qaytarilgan: <b>${returned.length}</b>`)
+  if (returned.length > 0) lines.push(`${T.extReturned}: <b>${returned.length}</b>`)
 
   if (lowStockRows.length > 0) {
-    lines.push(``, `⚠️ <b>Kam zaxira:</b>`)
+    lines.push(``, T.extLowStock)
     for (const p of lowStockRows) {
-      lines.push(`• ${p.title}: ${p.stock_quantity} dona`)
+      lines.push(`• ${p.title}: ${p.stock_quantity} ${T.extUnit}`)
     }
   }
 
-  lines.push(``, `<i>daromadchi.uz da to'liq tahlil</i>`)
+  lines.push(``, `<i>${T.extFooter}</i>`)
 
-  const ok = await sendTelegramMessage(settings.telegram_chat_id, lines.join('\n'))
+  const ok = await sendSellerMessageTo(settings.telegram_chat_id, settings.notif_lang, () => lines.join('\n'))
   return NextResponse.json({ ok })
 })

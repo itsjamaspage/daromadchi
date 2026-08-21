@@ -15,9 +15,10 @@
  */
 
 import { and, desc, eq, gte, inArray, sql } from 'drizzle-orm'
-import { db, shops, orders, orderItems, userSettings, orderCancelLog, oversellNotifyState } from '@/lib/db'
+import { db, shops, orders, orderItems, orderCancelLog, oversellNotifyState } from '@/lib/db'
 import { logger } from '@/lib/logger'
-import { sendTelegramMessage } from '@/lib/telegram'
+import { sendSellerMessage } from '@/lib/telegram-seller'
+import type { NotifStrings } from '@/lib/notif-i18n'
 import { cancelOrder } from '@/lib/marketplace/order-cancel'
 import { reservingOrderCondition } from '@/lib/marketplace/reserving-orders'
 import type { MarketplaceType } from '@/lib/types'
@@ -35,16 +36,10 @@ function autoCancelMax(): number {
 
 const MP_LABEL: Record<string, string> = { uzum: 'Uzum', yandex_market: 'Yandex Market' }
 
-async function telegramChat(userId: string): Promise<string | null> {
-  const [s] = await db.select({ chat: userSettings.telegram_chat_id })
-    .from(userSettings).where(eq(userSettings.user_id, userId))
-  return s?.chat ?? null
-}
-
-async function alert(userId: string, text: string): Promise<void> {
-  const chat = await telegramChat(userId)
-  if (!chat) { logger.warn('oversell_alert_no_chat', { userId }); return }
-  try { await sendTelegramMessage(chat, text) } catch (e) { logger.warn('oversell_alert_failed', { userId, error: String(e).slice(0, 200) }) }
+/** Oversell alert, in the seller's own language. See lib/telegram-seller.ts. */
+async function alert(userId: string, build: (T: NotifStrings) => string): Promise<void> {
+  const sent = await sendSellerMessage(userId, T => build(T))
+  if (!sent) logger.warn('oversell_alert_not_sent', { userId })
 }
 
 // Count auto-cancels for this user in the rolling window (blast-radius limit).
@@ -173,24 +168,24 @@ export async function handleOversell(g: OversellGroup): Promise<OversellOutcome>
 
   // 1. Always alert first.
   if (!autoCancelEnabled()) {
-    await alert(g.userId, `${head}\nAuto-cancel is OFF — cancel the later order manually if needed.`)
+    await alert(g.userId, T => `${head}\n${T.oversellAutoCancelOff}`)
     return { action: 'alert_only', oversoldBy }
   }
   if (!later || !later.orderIdExternal) {
-    await alert(g.userId, `${head}\nNo open order found to auto-cancel — please check manually.`)
+    await alert(g.userId, T => `${head}\n${T.oversellNoLaterOrder}`)
     return { action: 'no_later_order', oversoldBy }
   }
 
   // 2. Rate limit — escalate to a human instead of cancelling beyond the cap.
   const used = await recentAutoCancels(g.userId)
   if (used >= autoCancelMax()) {
-    await alert(g.userId, `${head}\n🚫 Auto-cancel rate limit reached (${used}/${autoCancelMax()} this hour). NOT auto-cancelling — human needed. Use one-click cancel for ${laterLabel}.`)
+    await alert(g.userId, T => `${head}\n${T.oversellRateLimited(used, autoCancelMax(), laterLabel)}`)
     logger.warn('oversell_autocancel_rate_limited', { userId: g.userId, used, max: autoCancelMax() })
     return { action: 'rate_limited', oversoldBy }
   }
 
   // 3. Alert that we are acting, THEN cancel.
-  await alert(g.userId, `${head}\n🤖 Auto-cancelling the later order (${laterLabel}, reason OUT_OF_STOCK).`)
+  await alert(g.userId, T => `${head}\n${T.oversellCancelling(laterLabel)}`)
 
   const [shop] = await db.select({
     id: shops.id, marketplace: shops.marketplace,

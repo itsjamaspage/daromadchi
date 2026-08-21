@@ -23,7 +23,7 @@ describe('buildDigestMessage', () => {
         ev({ sku: 'JMWHT', targetMarketplace: 'yandex_market', ok: true, listed: 1, target: 0 }),
         ev({ sku: 'JMWHT', targetMarketplace: 'uzum', ok: false, reason: 'http_400' }),
       ],
-    }])
+    }], 'ru')
     // One header naming the sold SKU + origin, once.
     assert.equal(msg.split('JMWHT').length - 1, 1)
     assert.match(msg, /продажа на Uzum/)
@@ -36,7 +36,7 @@ describe('buildDigestMessage', () => {
     const msg = buildDigestMessage([
       { sku: 'JMWHT', events: [ev({ sku: 'JMWHT', target: 0 })] },
       { sku: 'JMBLK', events: [ev({ sku: 'JMBLK', target: 2 })] },
-    ])
+    ], 'ru')
     const bullets = msg.split('\n').filter(l => l.startsWith('• '))
     assert.equal(bullets.length, 2)
     assert.match(msg, /• JMWHT/)
@@ -52,16 +52,16 @@ describe('buildDigestMessage', () => {
         sku: 'JMBLK', targetMarketplace: 'uzum', ok: true, listed: 2, target: 1,
         name: 'Куртка зимняя', colorKey: 'black', price: 450000,
       })],
-    }])
+    }], 'ru')
     // • JMBLK — Куртка зимняя · Чёрный · 450 000 сум (продажа на Uzum):
     assert.match(msg, /• JMBLK — Куртка зимняя · Чёрный · 450 000 сум \(продажа на Uzum\):/)
     assert.match(msg, /✅ Uzum: 2→1/)
   })
 
   it('appends the restock warning when group free-to-sell < 5, omits it at >= 5', () => {
-    const low = buildDigestMessage([{ sku: 'JMBLK', events: [ev({ sku: 'JMBLK', available: 3 })] }])
+    const low = buildDigestMessage([{ sku: 'JMBLK', events: [ev({ sku: 'JMBLK', available: 3 })] }], 'ru')
     assert.match(low, /⚠️ Осталось 3 — пополните склад/)
-    const ok = buildDigestMessage([{ sku: 'JMBLK', events: [ev({ sku: 'JMBLK', available: 5 })] }])
+    const ok = buildDigestMessage([{ sku: 'JMBLK', events: [ev({ sku: 'JMBLK', available: 5 })] }], 'ru')
     assert.doesNotMatch(ok, /пополните склад/)
   })
 
@@ -69,7 +69,7 @@ describe('buildDigestMessage', () => {
     const msg = buildDigestMessage([{
       sku: 'JMJ16BG',
       events: [ev({ sku: 'JMJ16BG', targetMarketplace: 'uzum', ok: false, reason: 'missing_barcode' })],
-    }])
+    }], 'ru')
     assert.match(msg, /нет штрихкода/)
   })
 })
