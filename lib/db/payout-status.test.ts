@@ -6,6 +6,7 @@ import {
   deriveUzumBucketStatus,
   deriveYandexSettledStatus,
   isYandexTransferred,
+  isYandexSentStatus,
   isYandexAwaitingTransfer,
   yandexFullyTransferred,
   deriveYandexOrderStatus,
@@ -299,5 +300,68 @@ describe('rollUpUzumOrderStatus — one status for a row of many items', () => {
     assert.equal(isUzumOrderStatus('WITHDRAWN'), false)   // never existed
     assert.equal(isUzumOrderStatus(null), false)
     assert.equal(isUzumOrderStatus(''), false)
+  })
+})
+
+describe('«Отправлен» — the second sent wording', () => {
+  // Both orders from the report that exposed this. One under each wording, both
+  // carrying a payment order, both genuinely in the seller's bank — and only the
+  // first one used to read as paid.
+  const PEREVEDEN = { note: 'Переведён по графику выплат', pp: '92735' }  // order 59564845443
+  const OTPRAVLEN = { note: 'Отправлен',                   pp: '5913'  }  // order 60137441539
+
+  it('order 59564845443 — «Переведён» + п/п 92735 is paid', () => {
+    assert.equal(isYandexTransferred(PEREVEDEN.note, PEREVEDEN.pp), true)
+    assert.equal(deriveYandexOrderStatus(true), 'paid')
+  })
+
+  it('order 60137441539 — «Отправлен» + п/п 5913 is paid', () => {
+    // The regression this fixes: money already sent, badge said «Ожидает».
+    assert.equal(isYandexTransferred(OTPRAVLEN.note, OTPRAVLEN.pp), true)
+  })
+
+  it('both orders together make their bucket fully transferred', () => {
+    const rows = [PEREVEDEN, OTPRAVLEN]
+    const transferred = rows.filter(r => isYandexTransferred(r.note, r.pp)).length
+    assert.equal(transferred, 2)
+    assert.equal(yandexFullyTransferred(rows.length, transferred), true)
+    assert.equal(deriveYandexSettledStatus(176_000, 1_000, true), 'paid')
+  })
+
+  it('inflected forms of both verbs are covered', () => {
+    for (const note of ['Отправлен', 'Отправлено', 'ОТПРАВЛЕН', 'Переведена']) {
+      assert.equal(isYandexTransferred(note, '5913'), true, note)
+    }
+  })
+
+  it('«Отправлен» without a payment order is NOT paid', () => {
+    // The п/п is the bank-statement reference; status text alone never suffices.
+    assert.equal(isYandexTransferred('Отправлен', null), false)
+    assert.equal(isYandexTransferred('Отправлен', '   '), false)
+  })
+
+  it('a future tense is not a completed send, whichever verb it uses', () => {
+    // The «будет» guard covers every stem, not just «перевед» — that asymmetry
+    // is exactly the kind of gap that produced this bug.
+    assert.equal(isYandexSentStatus('Будет отправлен'), false)
+    assert.equal(isYandexSentStatus('Будет переведён по графику выплат'), false)
+    assert.equal(isYandexTransferred('Будет отправлен', '5913'), false)
+  })
+
+  it('«Переводятся» stays out — in transit is still not arrived', () => {
+    // Guarded here as well as in its own block: adding a stem must not widen
+    // the rule onto money that has not landed.
+    assert.equal(isYandexSentStatus('Переводятся'), false)
+    assert.equal(isYandexTransferred('Переводятся', '92735'), false)
+  })
+
+  it('«Отправляется» — in the act of sending — is not sent', () => {
+    assert.equal(isYandexSentStatus('Отправляется'), false)
+  })
+
+  it('an unknown wording still fails closed, п/п or not', () => {
+    for (const note of ['В обработке', 'На согласовании', '', null, undefined]) {
+      assert.equal(isYandexTransferred(note, '5913'), false, String(note))
+    }
   })
 })
