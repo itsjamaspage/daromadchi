@@ -19,6 +19,15 @@
 //   4. A parent forms only when ≥2 rows land in one component;
 //      singletons stay flat so the table doesn't sprout meaningless
 //      chevrons.
+//
+// `bridge` rows exist for rule 2 alone. The SKU bridge can only weld two
+// marketplaces together when it can SEE a SKU on both of them, and a table
+// built from sales contains only the listings that sold — so a product whose
+// black variant sold on Uzum and white variant sold on Yandex arrives with the
+// two welding listings absent and falls apart into two unrelated rows. Passing
+// the full product list as `bridge` restores the missing links without putting
+// unsold listings on screen: bridge entries join the union-find, are never
+// counted toward the ≥2 threshold, and are never emitted.
 
 export interface Groupable {
   id: string
@@ -36,7 +45,12 @@ function normSku(s: string | null): string | null {
   return t.length ? t : null
 }
 
-export function groupByVariant<T extends Groupable>(rows: T[]): GroupedItem<T>[] {
+export function groupByVariant<T extends Groupable>(
+  rows: T[],
+  bridge: Groupable[] = [],
+): GroupedItem<T>[] {
+  // Union-find sees rows + bridge; everything below the linking step sees rows.
+  const linkable: Groupable[] = bridge.length ? [...rows, ...bridge] : rows
   const uf = new Map<string, string>()
   const find = (x: string): string => {
     let r = x
@@ -48,7 +62,7 @@ export function groupByVariant<T extends Groupable>(rows: T[]): GroupedItem<T>[]
     if (ra !== rb) uf.set(ra, rb)
   }
 
-  for (const p of rows) {
+  for (const p of linkable) {
     if (p.variant_group_key && !uf.has(p.variant_group_key)) {
       uf.set(p.variant_group_key, p.variant_group_key)
     }
@@ -56,7 +70,7 @@ export function groupByVariant<T extends Groupable>(rows: T[]): GroupedItem<T>[]
 
   // SKU bridge: keys co-occurring on one normalised SKU are the same product.
   const keysBySku = new Map<string, string[]>()
-  for (const p of rows) {
+  for (const p of linkable) {
     if (!p.variant_group_key) continue
     const nk = normSku(p.sku)
     if (!nk) continue

@@ -72,31 +72,47 @@ export default function AnalyticsTopSoldTable({ rows, products, labels }: Props)
   // variant parent count as one visible entry — otherwise a product with
   // many colours could exhaust the slice on itself. Group first, then
   // slice.
-  const grouped = groupByVariant(rows.map(r => ({
-    id: r.product_id ?? `no-pid:${r.title}`,
-    sku: r.sku,
-    variant_group_key: r.variant_group_key,
-    row: r,
-  })))
+  // `products` rides along as bridge-only input: group keys are namespaced per
+  // marketplace (uzum:<cardId> / yandex:<modelName>) so they never match across
+  // marketplaces on their own — a shared SKU is the only weld. This table holds
+  // just the listings that sold, so when a product's black variant sold on Uzum
+  // and its white variant on Yandex, the two listings that would have welded
+  // them are missing and the colours split into unrelated rows. The full list
+  // restores the links; nothing unsold is rendered.
+  const grouped = groupByVariant(
+    rows.map(r => ({
+      id: r.product_id ?? `no-pid:${r.title}`,
+      sku: r.sku,
+      variant_group_key: r.variant_group_key,
+      row: r,
+    })),
+    products.map(p => ({ id: p.id, sku: p.sku, variant_group_key: p.variant_group_key ?? null })),
+  )
   const displayed = grouped.slice(0, 20)
 
   if (rows.length === 0) {
     return <p className="px-5 py-6 text-sm" style={{ color: 'var(--text-muted)' }}>{labels.noSales}</p>
   }
 
-  // Match the badge lookup the server did — same SKU/product_id lookup
-  // pattern, moved client-side unchanged.
+  // A sales row is one product's orders on one marketplace, so it gets exactly
+  // one marketplace badge. The marketplace comes off the ORDER (row.marketplace)
+  // — the authoritative answer to "where did this sale happen".
+  //
+  // The previous lookup matched `p.sku === row.sku || p.id === row.product_id`
+  // and unioned whatever came back. Sellers list the same goods on both
+  // marketplaces under one SKU, so the SKU arm matched the twin listing too and
+  // every row rendered UZ *and* YM — turning a Uzum row and a Yandex row of the
+  // same product into what looked like a duplicated line. Resolve by product_id
+  // only: that identifies this exact listing, and its fulfillment type with it.
   const badgesFor = (row: ProductSalesRow) => {
-    const matching = products.filter(p => p.sku === row.sku || p.id === row.product_id)
-    const mps = [...new Set(matching.map(p => p.marketplace).filter(Boolean))]
-    const fts = [...new Set(matching.map(p => p.fulfillment_type).filter(Boolean))]
+    const product = row.product_id ? products.find(p => p.id === row.product_id) : undefined
+    const mp = row.marketplace ?? product?.marketplace ?? null
+    const m = mp ? MP_META[mp] : null
+    const ft = product?.fulfillment_type ?? null
     return (
       <>
-        {mps.map(mp => {
-          const m = MP_META[mp!]
-          return m ? <span key={mp} className="text-[10px] font-bold px-1.5 py-0.5 rounded" style={{ background: m.bg, color: m.color }}>{m.short}</span> : null
-        })}
-        {fts.map(ft => <FulfillmentBadge key={ft} type={ft} />)}
+        {m && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded" style={{ background: m.bg, color: m.color }}>{m.short}</span>}
+        {ft && <FulfillmentBadge type={ft} />}
       </>
     )
   }
