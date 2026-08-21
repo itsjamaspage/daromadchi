@@ -15,10 +15,10 @@
  */
 
 import { and, desc, eq, gte, inArray, sql } from 'drizzle-orm'
-import { db, shops, orders, orderItems, userSettings, orderCancelLog, oversellNotifyState } from '@/lib/db'
+import { db, shops, orders, orderItems, orderCancelLog, oversellNotifyState } from '@/lib/db'
 import { logger } from '@/lib/logger'
-import { sendTelegramMessage } from '@/lib/telegram'
-import { notifT, normalizeLang, type NotifLang, type NotifStrings } from '@/lib/notif-i18n'
+import { sendSellerMessage } from '@/lib/telegram-seller'
+import type { NotifStrings } from '@/lib/notif-i18n'
 import { cancelOrder } from '@/lib/marketplace/order-cancel'
 import { reservingOrderCondition } from '@/lib/marketplace/reserving-orders'
 import type { MarketplaceType } from '@/lib/types'
@@ -36,25 +36,10 @@ function autoCancelMax(): number {
 
 const MP_LABEL: Record<string, string> = { uzum: 'Uzum', yandex_market: 'Yandex Market' }
 
-async function telegramTarget(userId: string): Promise<{ chat: string; lang: NotifLang } | null> {
-  const [s] = await db.select({ chat: userSettings.telegram_chat_id, lang: userSettings.notif_lang })
-    .from(userSettings).where(eq(userSettings.user_id, userId))
-  return s?.chat ? { chat: s.chat, lang: normalizeLang(s.lang) } : null
-}
-
-/**
- * Send an oversell alert, composed in the seller's own language.
- *
- * The callers pass a builder rather than a finished string: the alert body is
- * localised, so it cannot be assembled until the language is known, and the
- * language is only known here. Handing this function a plain string is what let
- * these messages sit in English for every seller.
- */
+/** Oversell alert, in the seller's own language. See lib/telegram-seller.ts. */
 async function alert(userId: string, build: (T: NotifStrings) => string): Promise<void> {
-  const target = await telegramTarget(userId)
-  if (!target) { logger.warn('oversell_alert_no_chat', { userId }); return }
-  try { await sendTelegramMessage(target.chat, build(notifT(target.lang))) }
-  catch (e) { logger.warn('oversell_alert_failed', { userId, error: String(e).slice(0, 200) }) }
+  const sent = await sendSellerMessage(userId, T => build(T))
+  if (!sent) logger.warn('oversell_alert_not_sent', { userId })
 }
 
 // Count auto-cancels for this user in the rolling window (blast-radius limit).

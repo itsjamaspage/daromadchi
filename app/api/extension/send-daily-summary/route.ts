@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { eq, and, inArray, gte, lte, asc } from 'drizzle-orm'
 import { db, orders as ordersTable, products, userSettings } from '@/lib/db'
 import { getExtensionUser, getShopIds, getUserPlan } from '@/lib/api/auth'
-import { sendTelegramMessage, isInNotificationWindow } from '@/lib/telegram'
+import { isInNotificationWindow } from '@/lib/telegram'
+import { sendSellerMessageTo } from '@/lib/telegram-seller'
 import { notifT, notifLocale } from '@/lib/notif-i18n'
 import { withErrorHandler } from '@/lib/api-handler'
 
@@ -93,6 +94,6 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
 
   lines.push(``, `<i>${T.extFooter}</i>`)
 
-  const ok = await sendTelegramMessage(settings.telegram_chat_id, lines.join('\n'))
+  const ok = await sendSellerMessageTo(settings.telegram_chat_id, settings.notif_lang, () => lines.join('\n'))
   return NextResponse.json({ ok })
 })

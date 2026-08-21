@@ -29,7 +29,7 @@
 import { and, eq } from 'drizzle-orm'
 import { db, userSettings, alerts, stockNotifyState } from '@/lib/db'
 import { logger } from '@/lib/logger'
-import { sendTelegramMessage } from '@/lib/telegram'
+import { sendSellerMessageTo } from '@/lib/telegram-seller'
 import { notifT, normalizeLang, type NotifLang } from '@/lib/notif-i18n'
 import { COLOR_LABELS } from '@/lib/products/resolveColor'
 import type { MarketplaceType } from '@/lib/types'
@@ -256,7 +256,7 @@ export async function notifyStockUpdates(userId: string, events: StockUpdateEven
     let sentToTelegram = false
     if (telegramOn && chat) {
       try {
-        await sendTelegramMessage(chat, message)
+        await sendSellerMessageTo(chat, s?.lang, () => message)
         sentToTelegram = true
       } catch (err) {
         logger.warn('stock_notify_telegram_failed', { userId, error: String(err).slice(0, 200) })

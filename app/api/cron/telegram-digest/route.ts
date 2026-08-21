@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { isNotNull } from 'drizzle-orm'
 import { db, userSettings } from '@/lib/db'
-import { sendTelegramMessage } from '@/lib/telegram'
+import { sendSellerMessageTo } from '@/lib/telegram-seller'
 import { withErrorHandler } from '@/lib/api-handler'
 import { buildDigestForUser } from '@/lib/telegram-digest'
 
@@ -60,7 +60,7 @@ export const GET = withErrorHandler(async (req: Request) => {
     const msg = await buildDigestForUser(s, uzDay === 1)
     if (!msg) continue
 
-    await sendTelegramMessage(s.telegram_chat_id, msg.text)
+    await sendSellerMessageTo(s.telegram_chat_id, s.notif_lang, () => msg.text)
     sent.push({ userId: s.user_id, parts: msg.headers })
   }
 

@@ -8,8 +8,8 @@ import { syncYandexSettlements } from '@/lib/yandex/settlements-sync'
 import { syncUzumSettlements } from '@/lib/uzum/settlements-sync'
 import { decrypt } from '@/lib/crypto'
 import { withErrorHandler } from '@/lib/api-handler'
-import { sendTelegramMessage } from '@/lib/telegram'
-import { notifT } from '@/lib/notif-i18n'
+import { sendSellerMessageTo } from '@/lib/telegram-seller'
+import type { NotifStrings } from '@/lib/notif-i18n'
 import { reconcilePhysicalStock } from '@/lib/marketplace/physical-stock'
 import { refreshUzumStock, refreshYandexStock } from '@/lib/marketplace/stock-refresh'
 import { logger } from '@/lib/logger'
@@ -235,19 +235,17 @@ export const GET = withErrorHandler(async (req: Request) => {
       if (!shopOrders) continue
 
       const total = shopOrders.reduce((sum, o) => sum + o.lines.length, 0)
-      const T = notifT(s.notif_lang)
-      const blocks = shopOrders.map(o => {
-        const mpName = MP_LABEL[o.marketplace] ?? o.marketplace
-        const detail = o.lines.slice(0, 10).map(l => `   ${l}`).join('\n')
-        const more = o.lines.length > 10 ? `\n   ${T.newOrdersMore(o.lines.length - 10)}` : ''
-        return `${T.newOrdersLine(mpName, o.lines.length)}\n${detail}${more}`
-      }).join('\n')
+      const buildMsg = (T: NotifStrings) => {
+        const blocks = shopOrders.map(o => {
+          const mpName = MP_LABEL[o.marketplace] ?? o.marketplace
+          const detail = o.lines.slice(0, 10).map(l => `   ${l}`).join('\n')
+          const more = o.lines.length > 10 ? `\n   ${T.newOrdersMore(o.lines.length - 10)}` : ''
+          return `${T.newOrdersLine(mpName, o.lines.length)}\n${detail}${more}`
+        }).join('\n')
+        return `${T.newOrdersTitle(total)}\n${T.newOrdersSub}\n\n${blocks}\n\n${T.newOrdersCta}: https://daromadchi.uz/dashboard/orders`
+      }
 
-      const msg = `${T.newOrdersTitle(total)}\n${T.newOrdersSub}\n\n${blocks}\n\n${T.newOrdersCta}: https://daromadchi.uz/dashboard/orders`
-
-      try {
-        await sendTelegramMessage(s.telegram_chat_id, msg)
-      } catch { /* best-effort */ }
+      await sendSellerMessageTo(s.telegram_chat_id, s.notif_lang, buildMsg)
     }
   }
 
