@@ -233,10 +233,18 @@ const _fetchProductSales = unstable_cache(
       const shopRows = await db.select({ id: shops.id, marketplace: shops.marketplace })
         .from(shops).where(inArray(shops.id, shopIds))
       const mpByShop = new Map(shopRows.map(s => [s.id, s.marketplace]))
+      // Archived listings are excluded on purpose. The surplus below is derived
+      // from Uzum's LIFETIME quantity_sold counter, which keeps its value after a
+      // listing is delisted — so a dead listing with an unreconciled count kept
+      // emitting a synthetic "1 in process" row that nothing could ever clear (no
+      // order will arrive to reconcile it). A delisted product has no units in
+      // transit, so it gets no synthetic units at all: neither a phantom row here
+      // nor a surplus added to a real one. Its genuine orders are untouched —
+      // they come from the orders join above and stay in the history.
       const prodRows = await db.select({
         id: products.id, title: products.title, sku: products.sku, quantity_sold: products.quantity_sold,
         variant_group_key: products.variant_group_key, variant_color: products.variant_color, shop_id: products.shop_id,
-      }).from(products).where(inArray(products.shop_id, shopIds))
+      }).from(products).where(and(inArray(products.shop_id, shopIds), eq(products.is_archived, false)))
       const dbUnits = new Map(rows.filter(r => r.product_id).map(r => [r.product_id as string, Number(r.qty_sold)]))
       const seen = new Set(rows.map(r => r.product_id))
       for (const p of prodRows) {
@@ -295,7 +303,7 @@ const _fetchProductSales = unstable_cache(
   // Bump cache tag when the row shape changes so a redeploy with an
   // in-memory `unstable_cache` doesn't serve v6 rows missing the two
   // new variant fields.
-  ['product-sales-v9'],
+  ['product-sales-v10'],
   { revalidate: 30, tags: ['product-data'] },
 )
 
