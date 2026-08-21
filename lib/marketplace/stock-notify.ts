@@ -255,12 +255,12 @@ export async function notifyStockUpdates(userId: string, events: StockUpdateEven
 
     let sentToTelegram = false
     if (telegramOn && chat) {
-      try {
-        await sendSellerMessageTo(chat, s?.lang, () => message)
-        sentToTelegram = true
-      } catch (err) {
-        logger.warn('stock_notify_telegram_failed', { userId, error: String(err).slice(0, 200) })
-      }
+      // Use the RETURN VALUE, not the absence of a throw. sendSellerMessageTo
+      // reports failure by returning false so a caller's loop is never aborted,
+      // which means `await` completing proves nothing about delivery — marking
+      // it sent on that basis would record a message the seller never got.
+      sentToTelegram = await sendSellerMessageTo(chat, s?.lang, () => message, userId)
+      if (!sentToTelegram) logger.warn('stock_notify_telegram_failed', { userId })
     }
 
     if (inAppOn) {

@@ -92,3 +92,32 @@ test('reason phrasing is translated, and an unknown reason survives untranslated
   // Something we have no phrasing for is passed through rather than dropped.
   for (const lang of LANGS) assert.equal(notifT(lang).stockSyncReason('brand_new_reason'), 'brand_new_reason')
 })
+
+// ── Delivery must not depend on localisation being correct ──────────────────
+// A missing key or a typo in one language block is a cosmetic bug. A seller
+// never hearing that an order arrived is not. These pin that ordering.
+
+test('a builder that throws still produces a message, never silence', async () => {
+  const { renderForTest } = await import('./telegram-seller-render')
+  // Blows up only for ru — the uz table is a different object, so the fallback
+  // has something intact to build from.
+  const build = (T: NotifStrings, lang: NotifLang) => {
+    if (lang === 'ru') throw new TypeError('T.somethingNew is not a function')
+    return `ok in ${lang}: ${T.newOrdersSub}`
+  }
+  const text = renderForTest(build, 'ru')
+  assert.ok(text.length > 0, 'must render something')
+  assert.match(text, /ok in uz/, 'falls back to the other string table')
+})
+
+test('a builder that throws in EVERY language still sends a generic notice', async () => {
+  const { renderForTest } = await import('./telegram-seller-render')
+  const text = renderForTest(() => { throw new Error('broken in all languages') }, 'ru')
+  assert.ok(text.length > 0)
+  assert.match(text, /daromadchi\.uz/, 'the seller is still pointed somewhere useful')
+})
+
+test('a working builder is untouched by the fallback path', async () => {
+  const { renderForTest } = await import('./telegram-seller-render')
+  assert.equal(renderForTest((T) => T.newOrdersCta, 'ru'), notifT('ru').newOrdersCta)
+})

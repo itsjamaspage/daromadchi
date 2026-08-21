@@ -2,7 +2,8 @@ import 'server-only'
 import { eq } from 'drizzle-orm'
 import { db, userSettings } from '@/lib/db'
 import { sendTelegramMessage } from '@/lib/telegram'
-import { notifT, normalizeLang, type NotifLang, type NotifStrings } from '@/lib/notif-i18n'
+import { normalizeLang, type NotifLang, type NotifStrings } from '@/lib/notif-i18n'
+import { renderSellerText } from '@/lib/telegram-seller-render'
 import { logger } from '@/lib/logger'
 
 /**
@@ -34,8 +35,18 @@ import { logger } from '@/lib/logger'
  * replying in the chat's own language). Adding a seller notification that
  * bypasses this now fails lint, which fails the build.
  *
- * Returns false when the seller has no Telegram linked, or the send failed —
- * never throws, because a notification must not break the job that triggered it.
+ * ── Localisation must never cost delivery ───────────────────────────────────
+ * The builder is called OUTSIDE the send, and a builder that throws does not
+ * cancel the message. A missing key or a typo in one language's block is a
+ * cosmetic bug; a seller never hearing that an order arrived is not. So a throw
+ * falls back to Uzbek (a different string table, so a bug in one cannot take
+ * both), and if that throws too, to a plain notice pointing at the dashboard.
+ * Something always goes out, and every fallback is logged at error level so the
+ * underlying bug is visible rather than absorbed.
+ *
+ * Returns false only when there is genuinely nowhere to send (no linked chat)
+ * or the transport gave up after its retries. Never throws, because a
+ * notification must not break the job that triggered it.
  */
 export async function sendSellerMessage(
   userId: string,
@@ -47,13 +58,7 @@ export async function sendSellerMessage(
   }).from(userSettings).where(eq(userSettings.user_id, userId))
 
   if (!s?.chat) return false
-  const lang = normalizeLang(s.lang)
-  try {
-    return await sendTelegramMessage(s.chat, build(notifT(lang), lang))
-  } catch (e) {
-    logger.warn('seller_message_failed', { userId, error: String(e).slice(0, 200) })
-    return false
-  }
+  return sendSellerMessageTo(s.chat, s.lang, build, userId)
 }
 
 /**
@@ -66,12 +71,17 @@ export async function sendSellerMessageTo(
   chatId: string,
   lang: string | null | undefined,
   build: (T: NotifStrings, lang: NotifLang) => string,
+  userId?: string,
 ): Promise<boolean> {
-  const l = normalizeLang(lang)
+  const text = renderSellerText(build, normalizeLang(lang), userId)
   try {
-    return await sendTelegramMessage(chatId, build(notifT(l), l))
+    const ok = await sendTelegramMessage(chatId, text)
+    if (!ok) logger.warn('seller_message_not_delivered', { userId, chatId })
+    return ok
   } catch (e) {
-    logger.warn('seller_message_failed', { error: String(e).slice(0, 200) })
+    // sendTelegramMessage already swallows its own errors; this is belt-and-braces
+    // so an unexpected throw still cannot abort the caller's loop.
+    logger.warn('seller_message_send_threw', { userId, error: String(e).slice(0, 200) })
     return false
   }
 }
