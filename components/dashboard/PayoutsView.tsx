@@ -465,7 +465,7 @@ export default function PayoutsView({ entries, period = '365', from, to }: Props
               </div>
             </div>
           )}
-          <DateRangePicker period={period} from={from} to={to} showWeek defaultPeriod="week" />
+          <DateRangePicker period={period} from={from} to={to} presets={['week', 'lastweek']} defaultPeriod="week" />
           <ExportButton data={exportData} filename="tolovu-hisoboti" targetRef={printRef} />
           {/* Kebab (⋮) menu: single icon that expands into a dropdown.
               Currently one action — "Обновить данные Yandex" — but the

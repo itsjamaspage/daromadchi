@@ -11,8 +11,12 @@ interface Props {
   period: string
   from?: string
   to?: string
-  /** Offer a "this week" (Mon→today) preset. Only pages that resolve `days=week`. */
-  showWeek?: boolean
+  /**
+   * Which preset chips to show, by `days` key, in this order. Omit for the
+   * default day-window set. Only pass 'week'/'lastweek' from a page that
+   * resolves those keys into real dates.
+   */
+  presets?: string[]
   /** Which preset is active when the URL carries none. Defaults to 1 year. */
   defaultPeriod?: string
 }
@@ -40,7 +44,7 @@ function Spinner({ className }: { className?: string }) {
   )
 }
 
-export default function DateRangePicker({ period, from, to, showWeek = false, defaultPeriod = '365' }: Props) {
+export default function DateRangePicker({ period, from, to, presets, defaultPeriod = '365' }: Props) {
   const [open, setOpen] = useState(false)
   const [customFrom, setCustomFrom] = useState(from ?? defaultFrom())
   const [customTo, setCustomTo]     = useState(to ?? todayStr())
@@ -97,18 +101,25 @@ export default function DateRangePicker({ period, from, to, showWeek = false, de
     })
   }
 
-  // `week` is offered only where the host page knows how to resolve it (today,
-  // that is the Заработок page). Other pages map an unknown preset to a
-  // 1-year window, so showing them a button that silently means something else
-  // would be worse than not showing it.
-  const PRESETS = [
+  // Every preset this picker can offer. A host page chooses which apply via
+  // `presets`; the default is the full day-window set the dashboard uses.
+  //
+  // The week presets are opt-in because only a page that resolves `days=week`
+  // and `days=lastweek` into real dates can honour them — everywhere else an
+  // unknown preset falls through to a 1-year window, and a button that silently
+  // means something other than its label is worse than no button.
+  const ALL_PRESETS: { label: string; days: string }[] = [
     { label: lang === 'uz' ? 'Bugun' : lang === 'ru' ? 'Сегодня' : 'Today', days: '1'   },
-    ...(showWeek ? [{ label: lang === 'uz' ? 'Shu hafta' : lang === 'ru' ? 'Эта неделя' : 'This week', days: 'week' }] : []),
+    { label: lang === 'uz' ? 'Shu hafta' : lang === 'ru' ? 'Эта неделя' : 'This week', days: 'week' },
+    { label: lang === 'uz' ? "O'tgan hafta" : lang === 'ru' ? 'Прошлая неделя' : 'Last week', days: 'lastweek' },
     { label: lang === 'uz' ? '7 kun' : lang === 'ru' ? '7 дн.'   : '7 days', days: '7'  },
     { label: lang === 'uz' ? '30 kun' : lang === 'ru' ? '30 дн.' : '30 days', days: '30' },
     { label: lang === 'uz' ? '90 kun' : lang === 'ru' ? '90 дн.' : '90 days', days: '90' },
     { label: lang === 'uz' ? '1 yil'  : lang === 'ru' ? '1 год'  : '1 year',  days: '365'},
   ]
+  const PRESETS = presets
+    ? presets.map(k => ALL_PRESETS.find(p => p.days === k)).filter((p): p is { label: string; days: string } => !!p)
+    : ALL_PRESETS.filter(p => p.days !== 'week' && p.days !== 'lastweek')
 
   const activeDays = !from && !to ? (period ?? defaultPeriod) : null
 
@@ -118,7 +129,8 @@ export default function DateRangePicker({ period, from, to, showWeek = false, de
     '365': { uz: '1 yil',  ru: '1 год',  en: '1 year'  },
     '1':   { uz: '1 kun',  ru: '1 день', en: 'Today'   },
     '7':   { uz: '7 kun',  ru: '7 дн.',  en: '7 days'  },
-    'week': { uz: 'Shu hafta', ru: 'Эта неделя', en: 'This week' },
+    'week':     { uz: 'Shu hafta',    ru: 'Эта неделя',    en: 'This week' },
+    'lastweek': { uz: "O'tgan hafta", ru: 'Прошлая неделя', en: 'Last week' },
   }
 
   const label = from && to

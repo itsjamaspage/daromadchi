@@ -3,26 +3,28 @@ import { CreditCard } from 'lucide-react'
 import { getPayoutEntries } from '@/lib/db/payouts'
 import PayoutsView from '@/components/dashboard/PayoutsView'
 import { getT, getLang } from '@/lib/server-i18n'
-import { startOfIsoWeek, localDateStr } from '@/lib/period-week'
+import { startOfIsoWeek, previousIsoWeekBounds, localDateStr } from '@/lib/period-week'
 import { currentUserAccess } from '@/lib/billing/entitlement'
 import FeatureLock from '@/components/dashboard/FeatureLock'
 
-// Same preset vocabulary as the dashboard's DateRangePicker (?days=…), plus
-// `week` — the default here.
+// This page offers exactly two presets: `week` and `lastweek`. Both are
+// CALENDAR weeks (Monday→Sunday), not rolling windows — a rolling window slides
+// a little every day and never closes, so no week is ever finished and nothing
+// ever becomes "last week".
 //
-// `week` is the CURRENT ISO week (Monday→today), not a rolling 7 days. The
-// difference is the whole point of the weekly view: a rolling window slides a
-// little every day and never closes, so nothing ever becomes "last week". A
-// calendar week ends on Sunday night; come Monday the page shows a fresh week
-// and the finished one is reachable through the range picker. That is the
-// history.
-function parseDays(v: string): number {
-  if (v === '7') return 7
-  if (v === '30') return 30
-  if (v === '90') return 90
-  if (v === '365') return 365
-  if (v === 'month') return new Date().getDate() // days elapsed this month
-  return 365
+//   week      Monday of the current week → today (the week so far)
+//   lastweek  Monday → Sunday of the week before (a closed range)
+//
+// `lastweek` is the only preset here with a fixed END date. The others ran to
+// today, so the range code below cannot assume `to = today` — an off-by-one
+// there would silently fold last week's Sunday into this week.
+function presetRange(preset: string, now: Date): { from: string; to: string } {
+  if (preset === 'lastweek') {
+    const b = previousIsoWeekBounds(now)
+    return { from: localDateStr(b.start), to: localDateStr(b.end) }
+  }
+  // 'week' and anything unrecognised: the current week so far.
+  return { from: localDateStr(startOfIsoWeek(now)), to: localDateStr(now) }
 }
 
 interface Props {
@@ -38,15 +40,15 @@ export default async function PayoutsPage({ searchParams }: Props) {
   const period = params?.days ?? 'week'
   const from = params?.from
   const to = params?.to
-  // Effective range: an explicit custom range wins; otherwise the preset window.
+  // Effective range: an explicit custom range from the date inputs wins;
+  // otherwise the preset window.
+  //
   // localDateStr, never toISOString() — the latter converts to UTC, which in a
   // +05:00 shop turns "today" into "yesterday" for the last five hours of every
   // evening, silently dropping the newest orders out of the range.
-  const now = new Date()
-  const rangeFrom = from ?? (period === 'week'
-    ? localDateStr(startOfIsoWeek(now))
-    : localDateStr(new Date(now.getTime() - parseDays(period) * 86_400_000)))
-  const rangeTo = to ?? localDateStr(now)
+  const preset = presetRange(period, new Date())
+  const rangeFrom = from ?? preset.from
+  const rangeTo = to ?? preset.to
 
   const [t, entries] = await Promise.all([
     getT(),

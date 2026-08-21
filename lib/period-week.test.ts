@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { isoWeekKey, startOfIsoWeek, endOfIsoWeek, isoWeekBounds, localDateStr, currentIsoWeekKey } from './period-week'
+import { isoWeekKey, startOfIsoWeek, endOfIsoWeek, isoWeekBounds, previousIsoWeekBounds, localDateStr, currentIsoWeekKey } from './period-week'
 
 const d = (s: string) => { const [y, m, day] = s.split('-').map(Number); return new Date(y, m - 1, day) }
 
@@ -69,4 +69,40 @@ test('localDateStr uses local parts — never a UTC shift', () => {
 
 test('currentIsoWeekKey accepts an injected clock', () => {
   assert.equal(currentIsoWeekKey(d('2026-08-21')), '2026-W34')
+})
+
+test('previous week is the seven days before this one, Monday–Sunday', () => {
+  const b = previousIsoWeekBounds(d('2026-08-21'))       // Friday of W34
+  assert.equal(localDateStr(b.start), '2026-08-10')      // Monday of W33
+  assert.equal(localDateStr(b.end),   '2026-08-16')      // Sunday of W33
+  assert.equal(isoWeekKey(b.start), '2026-W33')
+  assert.equal(isoWeekKey(b.end),   '2026-W33')
+})
+
+test('previous week from a Monday is the week that just ended, not this one', () => {
+  // The off-by-one that would show a seller their current week twice.
+  const b = previousIsoWeekBounds(d('2026-08-24'))       // Monday, W35 begins
+  assert.equal(localDateStr(b.start), '2026-08-17')
+  assert.equal(localDateStr(b.end),   '2026-08-23')
+})
+
+test('previous week from a Sunday does not swallow that Sunday', () => {
+  const b = previousIsoWeekBounds(d('2026-08-23'))       // Sunday, last day of W34
+  assert.equal(isoWeekKey(b.start), '2026-W33')
+  assert.ok(localDateStr(b.end) < '2026-08-23')
+})
+
+test('this week and last week never overlap and leave no gap', () => {
+  for (const day of ['2026-08-17', '2026-08-21', '2026-08-23', '2027-01-01', '2025-12-31']) {
+    const now = d(day)
+    const prev = previousIsoWeekBounds(now)
+    const thisMon = startOfIsoWeek(now)
+    const gapDays = (thisMon.getTime() - prev.end.getTime()) / 86_400_000
+    assert.ok(gapDays > 0 && gapDays < 1, `${day}: last week must end the moment this one starts`)
+  }
+})
+
+test('previous week crosses the ISO year boundary correctly', () => {
+  const b = previousIsoWeekBounds(d('2027-01-05'))       // Tuesday of 2027-W01
+  assert.equal(isoWeekKey(b.start), '2026-W53')
 })
