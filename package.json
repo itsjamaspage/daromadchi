@@ -34,6 +34,7 @@
     "test:renew": "node --conditions=react-server --import tsx --test lib/billing/renew.integration.test.ts",
     "probe:uzum-payout": "tsx scripts/probe-uzum-payout-surface.ts",
     "test:probe-classifier": "node --import tsx --test scripts/probe-uzum-payout-surface.test.ts",
+    "measure:stock-latency": "tsx scripts/measure-stock-sync-latency.ts",
     "probe:yandex-keys": "tsx scripts/probe-yandex-stock-keys.ts"
   },
   "dependencies": {
