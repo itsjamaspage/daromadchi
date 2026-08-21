@@ -2,10 +2,11 @@
 
 import { useState, useRef, useEffect, Fragment } from 'react'
 import { useRouter } from 'next/navigation'
-import { ChevronDown, ChevronUp, HelpCircle, RefreshCw, MoreVertical, CreditCard, CalendarDays } from 'lucide-react'
+import { ChevronDown, ChevronUp, HelpCircle, RefreshCw, MoreVertical, CreditCard } from 'lucide-react'
 import type { PayoutEntry, PayoutOrderItem, PayoutOrderLine, MarketplaceType } from '@/lib/types'
 import { isoWeekBounds, isoWeekKey } from '@/lib/period-week'
 import ExportButton from '@/components/dashboard/ExportButton'
+import DateRangePicker from '@/components/dashboard/DateRangePicker'
 import MpBadge from '@/components/dashboard/MpBadge'
 import { useLang } from '@/app/providers'
 import { dashT } from '@/lib/dashT'
@@ -40,6 +41,9 @@ function formatPeriod(
 
 interface Props {
   entries: PayoutEntry[]
+  /** Custom range from the URL, when the seller set one. Drives DateRangePicker. */
+  from?: string
+  to?: string
 }
 
 // Currency suffix per app language. The UZ shop currency is always
@@ -240,7 +244,7 @@ function DeductionBar({ entry }: { entry: PayoutEntry }) {
 const MP_TAB_VALUES = ['all', 'uzum', 'yandex_market'] as const
 type MpFilter = typeof MP_TAB_VALUES[number]
 
-export default function PayoutsView({ entries }: Props) {
+export default function PayoutsView({ entries, from, to }: Props) {
   const { lang } = useLang()
   const t = dashT[lang].payouts
   const locale = lang === 'ru' ? 'ru-RU' : lang === 'en' ? 'en-US' : 'uz-UZ'
@@ -469,14 +473,10 @@ export default function PayoutsView({ entries }: Props) {
               </div>
             </div>
           )}
-          {/* The week is fixed to the current one, so this is a label, not a
-              control. The seller still needs to see WHICH week they are reading;
-              only the ability to change it is gone. */}
-          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border"
-            style={{ background: 'var(--bg-card2)', borderColor: 'var(--border)', color: 'var(--text-base)' }}>
-            <CalendarDays className="w-3.5 h-3.5" style={{ color: 'var(--c1)' }} />
-            {currentWeekLabel}
-          </span>
+          {/* Opens to НАЧАЛО/КОНЕЦ date inputs only — no preset chips. The page
+              lands on the current week without anyone choosing it, and a seller
+              who wants another week picks the dates. */}
+          <DateRangePicker period="" from={from} to={to} presets={[]} fallbackLabel={currentWeekLabel} />
           <ExportButton data={exportData} filename="tolovu-hisoboti" targetRef={printRef} />
           {/* Kebab (⋮) menu: single icon that expands into a dropdown.
               Currently one action — "Обновить данные Yandex" — but the

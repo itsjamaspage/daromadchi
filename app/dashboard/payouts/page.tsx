@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { CreditCard } from 'lucide-react'
 import { getPayoutEntries } from '@/lib/db/payouts'
 import PayoutsView from '@/components/dashboard/PayoutsView'
@@ -6,17 +7,22 @@ import { startOfIsoWeek, localDateStr } from '@/lib/period-week'
 import { currentUserAccess } from '@/lib/billing/entitlement'
 import FeatureLock from '@/components/dashboard/FeatureLock'
 
-// This page shows the CURRENT WEEK and nothing else. The range is fixed in
-// code: no presets, no custom dates, no ?days= / ?from= / ?to= override. A URL
-// carrying those params is ignored rather than honoured, so a stale link or an
-// old bookmark cannot put the page on a range it no longer offers.
+// This page DEFAULTS to the current week. There are no preset chips: the
+// default is fixed in code rather than chosen, and ?days= is ignored so a stale
+// link carrying an old preset cannot put the page on a range it no longer
+// offers. An explicit ?from=&?to= pair — the only thing the date inputs
+// produce — is honoured, so a seller can still read any other week.
 //
 // "Week" is the calendar week, Monday→today — not a rolling seven days. A
 // rolling window slides a little every day and never closes; a calendar week
 // ends Sunday night and a fresh one starts Monday, which is what makes this
 // page mean "this week's earnings" without anyone setting anything.
 
-export default async function PayoutsPage() {
+interface Props {
+  searchParams: Promise<Record<string, string>>
+}
+
+export default async function PayoutsPage({ searchParams }: Props) {
   // Gate BEFORE the queries — see the note on the analytics page.
   const [lang, access] = await Promise.all([getLang(), currentUserAccess('finances')])
   if (!access.allowed) return <FeatureLock lang={lang} feature="finances" hadTrial={access.trialEnded} />
@@ -24,9 +30,13 @@ export default async function PayoutsPage() {
   // localDateStr, never toISOString() — the latter converts to UTC, which in a
   // +05:00 shop turns "today" into "yesterday" for the last five hours of every
   // evening, silently dropping the newest orders out of the range.
+  const params = await searchParams
+  // Both bounds or neither — a half-set range would silently pair one custom
+  // date with a default, which is not a range anyone asked for.
+  const custom = params?.from && params?.to ? { from: params.from, to: params.to } : null
   const now = new Date()
-  const rangeFrom = localDateStr(startOfIsoWeek(now))
-  const rangeTo = localDateStr(now)
+  const rangeFrom = custom?.from ?? localDateStr(startOfIsoWeek(now))
+  const rangeTo = custom?.to ?? localDateStr(now)
 
   const [t, entries] = await Promise.all([
     getT(),
@@ -48,7 +58,9 @@ export default async function PayoutsPage() {
         </div>
       </div>
 
-      <PayoutsView entries={entries} />
+      <Suspense>
+        <PayoutsView entries={entries} from={custom?.from} to={custom?.to} />
+      </Suspense>
     </div>
   )
 }

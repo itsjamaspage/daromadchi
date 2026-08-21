@@ -6,6 +6,15 @@
 
 export type NotifLang = 'uz' | 'ru' | 'en'
 
+// Russian count-noun agreement for «заказ»: 1 заказ, 2–4 заказа, 5+ заказов —
+// and 11–14 take the 5+ form regardless of their last digit.
+function ruOrders(n: number): string {
+  const mod10 = n % 10, mod100 = n % 100
+  if (mod10 === 1 && mod100 !== 11) return 'новый заказ'
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return 'новых заказа'
+  return 'новых заказов'
+}
+
 export function normalizeLang(v: string | null | undefined): NotifLang {
   return v === 'ru' || v === 'en' || v === 'uz' ? v : 'uz'
 }
@@ -32,6 +41,13 @@ interface NotifStrings {
   stockUpdateLine: (product: string, orderMp: string, newQty: number, targetMps: string) => string
   stockUpdateCta: string
   deliveryTitle: (n: number) => string
+  // New-order alert. Was built as a hardcoded Uzbek literal in the sync cron and
+  // so ignored notif_lang entirely — the one Telegram message that did.
+  newOrdersTitle: (n: number) => string
+  newOrdersSub: string
+  newOrdersLine: (marketplace: string, n: number) => string
+  newOrdersMore: (n: number) => string
+  newOrdersCta: string
   deliverTo: string
   deliverBy: string
   fromMarket: string
@@ -64,6 +80,11 @@ const STRINGS: Record<NotifLang, NotifStrings> = {
     stockUpdateLine: (product, orderMp, newQty, targetMps) => `• ${product} — buyurtma ${orderMp}, <b>${newQty}</b> qiling: ${targetMps}`,
     stockUpdateCta: "Boshqa do'konlarda qoldiqni yangilang.",
     deliveryTitle:  (n) => `📦 <b>Jarayonda (${n})</b>`,
+    newOrdersTitle: (n) => `🛒 <b>Yangi buyurtma${n > 1 ? `lar (${n})` : ''}!</b>`,
+    newOrdersSub:   "Yig'ib jo'natish kerak:",
+    newOrdersLine:  (mp, n) => `• ${mp}: <b>${n}</b> ta yangi buyurtma`,
+    newOrdersMore:  (n) => `…va yana ${n} ta`,
+    newOrdersCta:   'Batafsil',
     deliverTo:      'PVZ ga',
     deliverBy:      'gacha',
     fromMarket:     'dan',
@@ -94,6 +115,11 @@ const STRINGS: Record<NotifLang, NotifStrings> = {
     stockUpdateLine: (product, orderMp, newQty, targetMps) => `• ${product} — заказ ${orderMp}, поставьте <b>${newQty}</b>: ${targetMps}`,
     stockUpdateCta: 'Обновите остатки в других магазинах.',
     deliveryTitle:  (n) => `📦 <b>В процессе (${n})</b>`,
+    newOrdersTitle: (n) => n > 1 ? `🛒 <b>Новые заказы (${n})</b>` : '🛒 <b>Новый заказ</b>',
+    newOrdersSub:   'Нужно собрать и отправить:',
+    newOrdersLine:  (mp, n) => `• ${mp}: <b>${n}</b> ${ruOrders(n)}`,
+    newOrdersMore:  (n) => `…и ещё ${n}`,
+    newOrdersCta:   'Подробнее',
     deliverTo:      'в ПВЗ',
     deliverBy:      'до',
     fromMarket:     'из',
@@ -124,6 +150,11 @@ const STRINGS: Record<NotifLang, NotifStrings> = {
     stockUpdateLine: (product, orderMp, newQty, targetMps) => `• ${product} — order on ${orderMp}, set to <b>${newQty}</b>: ${targetMps}`,
     stockUpdateCta: 'Update stock in other stores.',
     deliveryTitle:  (n) => `📦 <b>In process (${n})</b>`,
+    newOrdersTitle: (n) => n > 1 ? `🛒 <b>New orders (${n})</b>` : '🛒 <b>New order</b>',
+    newOrdersSub:   'Ready to pick and ship:',
+    newOrdersLine:  (mp, n) => `• ${mp}: <b>${n}</b> new order${n === 1 ? '' : 's'}`,
+    newOrdersMore:  (n) => `…and ${n} more`,
+    newOrdersCta:   'Details',
     deliverTo:      'to PVZ',
     deliverBy:      'by',
     fromMarket:     'from',

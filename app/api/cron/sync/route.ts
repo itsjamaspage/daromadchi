@@ -9,6 +9,7 @@ import { syncUzumSettlements } from '@/lib/uzum/settlements-sync'
 import { decrypt } from '@/lib/crypto'
 import { withErrorHandler } from '@/lib/api-handler'
 import { sendTelegramMessage } from '@/lib/telegram'
+import { notifT } from '@/lib/notif-i18n'
 import { reconcilePhysicalStock } from '@/lib/marketplace/physical-stock'
 import { refreshUzumStock, refreshYandexStock } from '@/lib/marketplace/stock-refresh'
 import { logger } from '@/lib/logger'
@@ -218,6 +219,11 @@ export const GET = withErrorHandler(async (req: Request) => {
       user_id: userSettings.user_id,
       telegram_chat_id: userSettings.telegram_chat_id,
       notif_new_orders: userSettings.notif_new_orders,
+      // The seller's chosen notification language. This alert used to be a
+      // hardcoded Uzbek literal and was the only Telegram message that never
+      // read it — so a Russian seller got Russian digests and Uzbek order
+      // alerts, in the same chat.
+      notif_lang: userSettings.notif_lang,
     }).from(userSettings)
       .where(and(
         isNotNull(userSettings.telegram_chat_id),
@@ -229,14 +235,15 @@ export const GET = withErrorHandler(async (req: Request) => {
       if (!shopOrders) continue
 
       const total = shopOrders.reduce((sum, o) => sum + o.lines.length, 0)
+      const T = notifT(s.notif_lang)
       const blocks = shopOrders.map(o => {
         const mpName = MP_LABEL[o.marketplace] ?? o.marketplace
         const detail = o.lines.slice(0, 10).map(l => `   ${l}`).join('\n')
-        const more = o.lines.length > 10 ? `\n   …va yana ${o.lines.length - 10} ta` : ''
-        return `• ${mpName}: <b>${o.lines.length}</b> ta yangi buyurtma\n${detail}${more}`
+        const more = o.lines.length > 10 ? `\n   ${T.newOrdersMore(o.lines.length - 10)}` : ''
+        return `${T.newOrdersLine(mpName, o.lines.length)}\n${detail}${more}`
       }).join('\n')
 
-      const msg = `🛒 <b>Yangi buyurtma${total > 1 ? `lar (${total})` : ''}!</b>\nYig'ib jo'natish kerak:\n\n${blocks}\n\nBatafsil: https://daromadchi.uz/dashboard/orders`
+      const msg = `${T.newOrdersTitle(total)}\n${T.newOrdersSub}\n\n${blocks}\n\n${T.newOrdersCta}: https://daromadchi.uz/dashboard/orders`
 
       try {
         await sendTelegramMessage(s.telegram_chat_id, msg)

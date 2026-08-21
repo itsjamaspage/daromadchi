@@ -11,10 +11,13 @@ interface Props {
   period: string
   from?: string
   to?: string
-  /** Offer a "this week" (Mon→today) preset. Only pages that resolve `days=week`. */
-  showWeek?: boolean
-  /** Which preset is active when the URL carries none. Defaults to 1 year. */
-  defaultPeriod?: string
+  /**
+   * Which preset chips to show, by `days` key. Omit for the default set; pass
+   * [] for a dates-only picker on a page whose default range is fixed in code.
+   */
+  presets?: string[]
+  /** Button text when no custom range is set — the host page's own default. */
+  fallbackLabel?: string
 }
 
 function formatDateLabel(date: string) {
@@ -40,7 +43,7 @@ function Spinner({ className }: { className?: string }) {
   )
 }
 
-export default function DateRangePicker({ period, from, to, showWeek = false, defaultPeriod = '365' }: Props) {
+export default function DateRangePicker({ period, from, to, presets, fallbackLabel }: Props) {
   const [open, setOpen] = useState(false)
   const [customFrom, setCustomFrom] = useState(from ?? defaultFrom())
   const [customTo, setCustomTo]     = useState(to ?? todayStr())
@@ -97,20 +100,20 @@ export default function DateRangePicker({ period, from, to, showWeek = false, de
     })
   }
 
-  // `week` is offered only where the host page knows how to resolve it (today,
-  // that is the Заработок page). Other pages map an unknown preset to a
-  // 1-year window, so showing them a button that silently means something else
-  // would be worse than not showing it.
-  const PRESETS = [
+  const ALL_PRESETS = [
     { label: lang === 'uz' ? 'Bugun' : lang === 'ru' ? 'Сегодня' : 'Today', days: '1'   },
-    ...(showWeek ? [{ label: lang === 'uz' ? 'Shu hafta' : lang === 'ru' ? 'Эта неделя' : 'This week', days: 'week' }] : []),
     { label: lang === 'uz' ? '7 kun' : lang === 'ru' ? '7 дн.'   : '7 days', days: '7'  },
     { label: lang === 'uz' ? '30 kun' : lang === 'ru' ? '30 дн.' : '30 days', days: '30' },
     { label: lang === 'uz' ? '90 kun' : lang === 'ru' ? '90 дн.' : '90 days', days: '90' },
     { label: lang === 'uz' ? '1 yil'  : lang === 'ru' ? '1 год'  : '1 year',  days: '365'},
   ]
+  // An empty list is a real choice — a page with a fixed default range wants
+  // the date inputs and no chips — so this checks for undefined, not falsiness.
+  const PRESETS = presets === undefined
+    ? ALL_PRESETS
+    : presets.map(k => ALL_PRESETS.find(p => p.days === k)).filter((p): p is typeof ALL_PRESETS[number] => !!p)
 
-  const activeDays = !from && !to ? (period ?? defaultPeriod) : null
+  const activeDays = !from && !to ? period : null
 
   const PRESET_LABELS: Record<string, Record<string, string>> = {
     '30':  { uz: '30 kun', ru: '30 дн.', en: '30 days' },
@@ -118,12 +121,15 @@ export default function DateRangePicker({ period, from, to, showWeek = false, de
     '365': { uz: '1 yil',  ru: '1 год',  en: '1 year'  },
     '1':   { uz: '1 kun',  ru: '1 день', en: 'Today'   },
     '7':   { uz: '7 kun',  ru: '7 дн.',  en: '7 days'  },
-    'week': { uz: 'Shu hafta', ru: 'Эта неделя', en: 'This week' },
   }
 
   const label = from && to
     ? `${formatDateLabel(from)} — ${formatDateLabel(to)}`
     : (PRESET_LABELS[period]?.[lang] ?? PRESET_LABELS[period]?.en)
+      // A host page whose default range is fixed in code has no preset to name
+      // it, so it supplies the label itself — otherwise the button would read
+      // "Выбрать период" while a range was very much already in effect.
+      ?? fallbackLabel
       ?? (lang === 'ru' ? 'Выбрать период' : lang === 'uz' ? 'Davr tanlash' : 'Select period')
 
   const inputStyle = {
@@ -157,7 +163,7 @@ export default function DateRangePicker({ period, from, to, showWeek = false, de
           style={{ background: 'var(--bg-card)', borderColor: 'var(--border)', minWidth: 240 }}
         >
           {/* Quick presets — wrap so all fit on narrow dropdowns */}
-          <div className="flex flex-wrap gap-1.5">
+          {PRESETS.length > 0 && <div className="flex flex-wrap gap-1.5">
             {PRESETS.map(({ label: pl, days }) => (
               <button
                 key={days}
@@ -174,7 +180,7 @@ export default function DateRangePicker({ period, from, to, showWeek = false, de
                 {pl}
               </button>
             ))}
-          </div>
+          </div>}
           <div className="flex flex-col gap-2">
             <div className="space-y-1">
               <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>
