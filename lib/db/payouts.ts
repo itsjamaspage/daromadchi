@@ -1,10 +1,26 @@
-import { inArray, gte, and, ne, eq, sql, asc } from 'drizzle-orm'
+import { inArray, gte, and, ne, eq, sql, asc, type AnyColumn } from 'drizzle-orm'
 import { db, orders, orderItems, products, shops, yandexSettlementTransactions, uzumSettlementOrders } from '@/lib/db'
 import { getShopIds } from '@/lib/db/shop-context'
 import { getUnitEcoSettings } from '@/lib/db/unit-economics'
 import type { PayoutEntry, PayoutOrderItem, PayoutOrderLine } from '@/lib/types'
 import { isoWeekKey, currentIsoWeekKey } from '@/lib/period-week'
+
+// The period bucket, defined ONCE.
+//
+// Postgres requires a non-aggregated select expression to appear verbatim in
+// GROUP BY. Writing the to_char() twice — once in each place — is a standing
+// invitation to change one and not the other, and that is precisely how the
+// weekly migration broke this page: the SELECT became ISO weeks while the
+// GROUP BY stayed on 'YYYY-MM', so every query here failed with "column
+// orders.ordered_at must appear in the GROUP BY clause". Call this in both
+// positions and they cannot drift.
+//
+// IYYY-"W"IW is ISO-8601: weeks run Monday→Sunday and belong to the year
+// containing their Thursday. lib/period-week.ts reproduces it in JS and is
+// verified against this exact expression.
 import { deriveUzumBucketStatus, rollUpUzumOrderStatus, deriveYandexSettledStatus, isYandexTransferred, isYandexAwaitingTransfer, yandexFullyTransferred, deriveYandexOrderStatus, deriveBucketStatusFromOrders } from '@/lib/db/payout-status'
+
+const weekBucket = (col: AnyColumn) => sql<string>`to_char(${col}, 'IYYY-"W"IW')`
 
 export type { PayoutEntry }
 
@@ -46,7 +62,7 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
       ))
       .orderBy(asc(orders.ordered_at)),
     db.select({
-      period: sql<string>`to_char(${orders.ordered_at}, 'IYYY-"W"IW')`.as('period'),
+      period: weekBucket(orders.ordered_at).as('period'),
       marketplace: orders.marketplace,
       cogs: sql<number>`coalesce(sum(${orderItems.quantity} * coalesce(${products.cost_price}, 0)), 0)`.as('cogs'),
     }).from(orderItems)
@@ -58,13 +74,13 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
         ne(orders.status, 'cancelled'),
         ne(orders.status, 'returned'),
       ))
-      .groupBy(sql`to_char(${orders.ordered_at}, 'YYYY-MM')`, orders.marketplace),
+      .groupBy(weekBucket(orders.ordered_at), orders.marketplace),
     // Per-product breakdown per period+marketplace. Aggregated in SQL so
     // 100 orders of the same SKU collapse to one row before it ever hits
     // the Node side. Cancelled/returned excluded — those already show in
     // the top-level "returns" column and would double-count here.
     db.select({
-      period: sql<string>`to_char(${orders.ordered_at}, 'IYYY-"W"IW')`.as('period'),
+      period: weekBucket(orders.ordered_at).as('period'),
       marketplace: orders.marketplace,
       productId: orderItems.product_id,
       productTitle: products.title,
@@ -82,7 +98,7 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
         ne(orders.status, 'returned'),
       ))
       .groupBy(
-        sql`to_char(${orders.ordered_at}, 'YYYY-MM')`,
+        weekBucket(orders.ordered_at),
         orders.marketplace,
         orderItems.product_id,
         products.title,
@@ -205,7 +221,7 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
     // exist yet — every Yandex row just stays in "awaiting" state.
     try {
       const settlementRows = await db.select({
-        period: sql<string>`to_char(${yandexSettlementTransactions.transaction_at}, 'IYYY-"W"IW')`.as('period'),
+        period: weekBucket(yandexSettlementTransactions.transaction_at).as('period'),
         entry_type: yandexSettlementTransactions.entry_type,
         entry_source: yandexSettlementTransactions.entry_source,
         order_type: yandexSettlementTransactions.order_type,
@@ -295,7 +311,7 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
   if (uzShopIds.length > 0) {
     try {
       const settlementRows = await db.select({
-        period:           sql<string>`to_char(${uzumSettlementOrders.transaction_at}, 'IYYY-"W"IW')`.as('period'),
+        period:           weekBucket(uzumSettlementOrders.transaction_at).as('period'),
         status:           uzumSettlementOrders.status,
         uzum_order_id:    uzumSettlementOrders.uzum_order_id,
         product_title:    uzumSettlementOrders.product_title,
