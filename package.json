@@ -35,7 +35,8 @@
     "probe:uzum-payout": "tsx scripts/probe-uzum-payout-surface.ts",
     "test:probe-classifier": "node --import tsx --test scripts/probe-uzum-payout-surface.test.ts",
     "measure:stock-latency": "tsx scripts/measure-stock-sync-latency.ts",
-    "probe:yandex-keys": "tsx scripts/probe-yandex-stock-keys.ts"
+    "probe:yandex-keys": "tsx scripts/probe-yandex-stock-keys.ts",
+    "test:uzum-stock": "node --import tsx --test lib/uzum/stock-reading.test.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
