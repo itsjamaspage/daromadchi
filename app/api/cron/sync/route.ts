@@ -10,7 +10,7 @@ import { decrypt } from '@/lib/crypto'
 import { withErrorHandler } from '@/lib/api-handler'
 import { sendTelegramMessage } from '@/lib/telegram'
 import { reconcilePhysicalStock } from '@/lib/marketplace/physical-stock'
-import { refreshUzumStock } from '@/lib/marketplace/stock-refresh'
+import { refreshUzumStock, refreshYandexStock } from '@/lib/marketplace/stock-refresh'
 import { logger } from '@/lib/logger'
 import { computeEffectivePlan } from '@/lib/billing/features'
 
@@ -58,10 +58,14 @@ async function syncShop(
     // pass re-reads the same quantities from the same endpoint, so running both
     // would double the calls to write the identical number.
     let stockRefresh: Record<string, unknown> | undefined
-    if (stockDue && !heavy && shop.marketplace === 'uzum') {
-      const sr = await refreshUzumStock(shop.id, token, shop.shop_id_external)
-      stockRefresh = { ...sr }
-      if (sr.ok) {
+    if (stockDue && !heavy) {
+      const sr = shop.marketplace === 'uzum'
+        ? await refreshUzumStock(shop.id, token, shop.shop_id_external)
+        : shop.marketplace === 'yandex_market' && shop.shop_id_external
+          ? await refreshYandexStock(shop.id, token, shop.shop_id_external)
+          : null
+      stockRefresh = sr ? { ...sr } : undefined
+      if (sr?.ok) {
         // Only advance the stock clock on a real read. A failed refresh must
         // stay due, or one bad tick would push the next attempt out 15 minutes.
         await db.update(shops).set({ stock_synced_at: new Date() }).where(eq(shops.id, shop.id))

@@ -27,6 +27,7 @@ import 'server-only'
 import { eq, inArray } from 'drizzle-orm'
 import { db, products } from '@/lib/db'
 import { fetchUzumShopProducts, fetchUzumShops, getUzumRateLimit, UzumApiError } from '@/lib/uzum/client'
+import { fetchAllYandexStocks } from '@/lib/yandex/client'
 import { uzumStockQuantity } from '@/lib/uzum/stock-reading'
 import { logger } from '@/lib/logger'
 
@@ -119,4 +120,71 @@ export async function refreshUzumStock(
     rateLimitPerDay: rl?.limitPerDay ?? null,
   })
   return { ok: true, seen: live.size, updated }
+}
+
+/**
+ * Refresh one Yandex shop's stock quantities.
+ *
+ * ── The join, and why it is trusted ─────────────────────────────────────────
+ * The stocks response is keyed by offerId — the seller's own code — which is
+ * what products.sku holds. It is NOT marketplace_product_id: that column holds
+ * marketSku for catalog-created rows, and marketSku never appears as a stocks
+ * key. Matching on the wrong one of those two is the single easiest way to get
+ * this silently wrong, so the query below is deliberately scoped to sku.
+ *
+ * A live probe against the real account confirmed the join: 8 catalog entries,
+ * 8 stock keys, every SKU hitting on shopSku with the expected FIT count. The
+ * frozen-KBBLK report that started this was not a broken join.
+ *
+ * ── Partial reads ───────────────────────────────────────────────────────────
+ * Yandex pages sequentially, so a mid-page failure stops a batch early with a
+ * partly-filled map. That is now visible (`complete`), and it matters here
+ * because absence means "unknown" — on a truncated read the untouched SKUs
+ * silently keep their old values, which is safe but worth logging rather than
+ * reporting as a clean refresh.
+ */
+export async function refreshYandexStock(
+  shopId: string,
+  token: string,
+  campaignId: string,
+): Promise<StockRefreshResult> {
+  // Ask for the SKUs we actually track. The endpoint ignores the list when the
+  // empty-body attempt wins and returns the whole catalogue paginated, which is
+  // harmless — we only read keys we have rows for.
+  const own = await db.select({
+    id: products.id, sku: products.sku, stock: products.stock_quantity,
+  }).from(products).where(eq(products.shop_id, shopId))
+  const skus = own.map(p => p.sku).filter((s): s is string => !!s)
+  if (skus.length === 0) return { ok: true, seen: 0, updated: 0 }
+
+  let stockMap: Map<string, number>
+  let complete: boolean
+  let lastError: string | null
+  try {
+    const r = await fetchAllYandexStocks(token, campaignId, skus)
+    stockMap = r.stockMap; complete = r.complete; lastError = r.lastError
+  } catch (e) {
+    return { ok: false, seen: 0, updated: 0, error: String(e).slice(0, 200) }
+  }
+  // Nothing readable at all is a failed refresh, not an empty catalogue — the
+  // stock clock must stay due so the next tick retries.
+  if (stockMap.size === 0) {
+    return { ok: false, seen: 0, updated: 0, error: lastError ?? 'stocks response empty' }
+  }
+
+  let updated = 0
+  for (const p of own) {
+    if (!p.sku) continue
+    const next = stockMap.get(p.sku)
+    // Absent = UNKNOWN. Never written, never zeroed.
+    if (next === undefined || next === p.stock) continue
+    await db.update(products).set({ stock_quantity: next }).where(eq(products.id, p.id))
+    updated++
+  }
+
+  logger.info('yandex_stock_refresh', {
+    shopId, seen: stockMap.size, updated, complete,
+    ...(lastError ? { lastError } : {}),
+  })
+  return { ok: true, seen: stockMap.size, updated }
 }
