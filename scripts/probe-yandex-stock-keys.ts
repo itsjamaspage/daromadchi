@@ -29,7 +29,9 @@
 import { eq, and } from 'drizzle-orm'
 import { db, shops } from '@/lib/db'
 import { decrypt } from '@/lib/crypto'
-import { fetchAllYandexProducts, fetchYandexStocks } from '@/lib/yandex/client'
+import {
+  fetchAllYandexProducts, fetchYandexStocks, fetchCampaigns, fetchCampaignInfo,
+} from '@/lib/yandex/client'
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -41,19 +43,55 @@ const show = (s: string | null | undefined) =>
 
 async function main() {
   const [shop] = await db.select({
-    id: shops.id, ext: shops.shop_id_external, enc: shops.api_key_encrypted,
+    id: shops.id, ext: shops.shop_id_external, biz: shops.business_id,
+    enc: shops.api_key_encrypted,
   }).from(shops).where(and(
     eq(shops.marketplace, 'yandex_market'), eq(shops.is_active, true),
   ))
   if (!shop?.enc || !shop.ext) { console.log('No active Yandex shop with a token.'); process.exit(1) }
   const token = decrypt(shop.enc)
 
+  // ── Which number is which? ────────────────────────────────────────────────
+  // Yandex has two identifiers and they are NOT interchangeable: campaign IDs
+  // address /v2/campaigns/{id}/… (orders, stocks, prices) while business IDs
+  // address /v2/businesses/{id}/… (offer-mappings, offer-cards). Feeding one to
+  // the other's path returns 404, which the sync swallows as "no data" — so the
+  // first job here is to prove which number shops.shop_id_external actually is
+  // before any conclusion is drawn from a miss.
+  const campaigns = await fetchCampaigns(token).catch(() => [])
+  const campaignIds = campaigns.map((c: any) => String(c.id))
+  const storedIsCampaign = campaignIds.includes(String(shop.ext))
+
+  let campaignId = String(shop.ext)
+  let businessId: number | undefined = shop.biz ? Number(shop.biz) : undefined
+
+  console.log('\n══ Identity check ══')
+  console.log(`  shops.shop_id_external : ${shop.ext}`)
+  console.log(`  shops.business_id      : ${shop.biz ?? '(null)'}`)
+  console.log(`  /v2/campaigns returns  : ${campaignIds.length ? campaignIds.join(', ') : '(none — token may lack access)'}`)
+  if (!storedIsCampaign && campaignIds.length > 0) {
+    campaignId = campaignIds[0]
+    console.log(`  ⚠ stored id is NOT a campaign id. Using campaign ${campaignId} instead.`)
+    console.log(`    Every /v2/campaigns/{id}/… call the sync makes with the stored id would 404,`)
+    console.log(`    and the sync treats a 404 stocks response as "no data", not as an error.`)
+  } else if (storedIsCampaign) {
+    console.log(`  ✓ stored id IS a valid campaign id.`)
+  }
+  // The sync derives businessId from the campaign; mirror that so offer-mappings
+  // takes the business path it takes in production rather than the 404 fallback.
+  if (!businessId) {
+    const info = await fetchCampaignInfo(token, campaignId).catch(() => null)
+    businessId = info?.businessId || undefined
+    console.log(`  businessId via campaign: ${businessId ?? '(unresolved)'}`)
+  }
+  console.log(`\n  Using campaignId=${campaignId}  businessId=${businessId ?? '(none)'}`)
+
   // Side A — the catalog, which is what the sync iterates.
-  const entries: any[] = await fetchAllYandexProducts(token, shop.ext)
+  const entries: any[] = await fetchAllYandexProducts(token, campaignId, businessId)
   const skuOf = (o: any): string => (o?.shopSku && o.shopSku.trim()) || (o?.offerId && o.offerId.trim()) || ''
 
   // Side B — the stocks response, which is what the map is keyed from.
-  const res: any = await fetchYandexStocks(token, shop.ext, [])
+  const res: any = await fetchYandexStocks(token, campaignId, [])
   const stockKeys = new Map<string, number>()
   const raw: string[] = []
   const take = (key: string, stocks: any[] | undefined) => {
