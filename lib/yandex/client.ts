@@ -606,9 +606,16 @@ export async function fetchAllYandexStocks(
   token: string,
   campaignId: string,
   skus: string[],
-): Promise<{ stockMap: Map<string, number>; lastError: string | null }> {
+): Promise<{ stockMap: Map<string, number>; lastError: string | null; complete: boolean }> {
   const stockMap = new Map<string, number>()
   let lastError: string | null = null
+  // Paging is sequential — each page's token comes from the one before — so a
+  // failure part-way cannot be retried past, and the batch simply stops early
+  // with a partly-filled map. Callers previously could not tell that apart from
+  // a complete read, and absence in this map means "no data" downstream, which
+  // preserves whatever a row already held. A truncated read therefore looked
+  // exactly like "nothing changed". This flag is the difference.
+  let complete = true
   for (let i = 0; i < skus.length; i += 200) {
     const batch = skus.slice(i, i + 200)
     try {
@@ -663,9 +670,10 @@ export async function fetchAllYandexStocks(
       } else {
         lastError = 'err'
       }
+      complete = false
     }
   }
-  return { stockMap, lastError }
+  return { stockMap, lastError, complete }
 }
 
 // ─── FBS warehouses (GET /v2/campaigns/{id}/warehouses) — READ ────────────────
