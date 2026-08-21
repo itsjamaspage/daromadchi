@@ -3,41 +3,39 @@
 import { useState, useRef, useEffect, Fragment } from 'react'
 import { useRouter } from 'next/navigation'
 import { ChevronDown, ChevronUp, HelpCircle, RefreshCw, MoreVertical, CreditCard } from 'lucide-react'
-import type { PayoutEntry, PayoutOrderItem, PayoutOrderLine, MarketplaceType, UzumOrderStatus } from '@/lib/types'
-import { isPaidStatus, isAvailableStatus, isPendingStatus, isPartiallyPaidStatus, sumPaidOrders } from '@/lib/db/payout-status'
+import type { PayoutEntry, PayoutOrderItem, PayoutOrderLine, MarketplaceType } from '@/lib/types'
+import { isoWeekBounds } from '@/lib/period-week'
 import ExportButton from '@/components/dashboard/ExportButton'
 import DateRangePicker from '@/components/dashboard/DateRangePicker'
 import MpBadge from '@/components/dashboard/MpBadge'
 import { useLang } from '@/app/providers'
 import { dashT } from '@/lib/dashT'
 
-// Format a "2026-07" bucket key into a locale-aware month/year label
-// ("Июль 2026" / "July 2026" / "Iyul 2026") plus a "when did the
-// orders actually happen" range built from real order timestamps
-// (firstOrderDate / lastOrderDate). Whole-month boundary text
-// ("1–31 июл. 2026") was misleading because it always spanned the
-// full month regardless of whether orders were bunched on one day.
+// Format a "2026-W34" bucket key into a Monday–Sunday label
+// ("18–24 авг. 2026"), plus a "when did the orders actually happen" range built
+// from real order timestamps.
+//
+// The label is the week's real boundary because that IS the bucket: unlike the
+// month labels this replaced, a week is short enough that its edges tell the
+// seller something. The secondary range still narrows to the days that actually
+// carried orders, so a week with one Tuesday sale says so.
 function formatPeriod(
   period: string,
   locale: string,
   firstOrderDate: string | null,
   lastOrderDate: string | null,
 ): { label: string; range: string } {
-  const [y, m] = period.split('-').map(Number)
-  if (!y || !m) return { label: period, range: '' }
-  const first = new Date(Date.UTC(y, m - 1, 1))
-  const monthName = first.toLocaleDateString(locale, { month: 'long', timeZone: 'UTC' })
-  const label = `${monthName.charAt(0).toUpperCase()}${monthName.slice(1)} ${y}`
+  const bounds = isoWeekBounds(period)
+  if (!bounds) return { label: period, range: '' }
+  const dayMonth = (d: Date) => d.toLocaleDateString(locale, { day: 'numeric', month: 'short' })
+  const label = `${dayMonth(bounds.start)} – ${dayMonth(bounds.end)} ${bounds.end.getFullYear()}`
 
   if (!firstOrderDate || !lastOrderDate) return { label, range: '' }
-
   const fmtDay = (iso: string) => {
     const dt = new Date(iso + 'T00:00:00Z')
-    return dt.toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })
+    return dt.toLocaleDateString(locale, { day: 'numeric', month: 'short', timeZone: 'UTC' })
   }
-  if (firstOrderDate === lastOrderDate) {
-    return { label, range: fmtDay(firstOrderDate) }
-  }
+  if (firstOrderDate === lastOrderDate) return { label, range: fmtDay(firstOrderDate) }
   return { label, range: `${fmtDay(firstOrderDate)} – ${fmtDay(lastOrderDate)}` }
 }
 
@@ -67,105 +65,6 @@ function fmtShort(n: number, lang: string) {
   const suf = currencySuffix(lang)
   if (Math.abs(n) >= 1_000_000) return (n / 1_000_000).toFixed(1) + ' mln ' + suf
   return new Intl.NumberFormat('uz-UZ').format(Math.round(n)) + ' ' + suf
-}
-
-function StatusBadge({ status, uzumStatus }: {
-  status: PayoutEntry['status']
-  /**
-   * Uzum's own state for this row. When present it REPLACES the derived badge:
-   * «Заработано» was a placeholder standing in for a state Uzum names exactly,
-   * and the precise name is more useful to a seller than our summary of it.
-   * Yandex passes nothing here and is untouched — its per-order settlement is
-   * proven by the payment-order number and «Выплачено» is a real claim there.
-   */
-  uzumStatus?: UzumOrderStatus | null
-}) {
-  const { lang } = useLang()
-  const t = dashT[lang].payouts
-  if (status === 'paid') {
-    return (
-      <span className="inline-flex px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">
-        {t.statusPaid}
-      </span>
-    )
-  }
-  if (status === 'estimated_paid') {
-    return (
-      <span className="inline-flex px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-500/10 text-emerald-400/70 border border-emerald-500/10">
-        ≈ {t.statusPaid}
-      </span>
-    )
-  }
-  // A month that is part transferred. Amber rather than green: some of this
-  // money has not moved, and a green badge on a mixed month is the same claim
-  // that made the whole bucket read as paid before.
-  if (status === 'partially_paid') {
-    return (
-      <span className="inline-flex px-2.5 py-1 rounded-lg text-xs font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/20">
-        {t.statusPartiallyPaid}
-      </span>
-    )
-  }
-  if (status === 'processing') {
-    return (
-      <span className="inline-flex px-2.5 py-1 rounded-lg text-xs font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/20">
-        {t.statusProcessing}
-      </span>
-    )
-  }
-  // Uzum, straight from /v1/finance/orders. Deliberately ahead of every derived
-  // branch below: if Uzum told us the state, that is what we show.
-  if (uzumStatus) {
-    const uz = {
-      TO_WITHDRAW:         { label: t.uzToWithdraw,         cls: 'bg-sky-500/15 text-sky-400 border-sky-500/20' },
-      PROCESSING:          { label: t.uzProcessing,         cls: 'bg-amber-500/15 text-amber-400 border-amber-500/20' },
-      PARTIALLY_CANCELLED: { label: t.uzPartiallyCanceled,  cls: 'bg-amber-500/10 text-amber-400/80 border-amber-500/25' },
-      CANCELED:            { label: t.uzCanceled,           cls: 'bg-[var(--bg-card2)] text-[var(--text-muted)] border-[var(--border)]' },
-    }[uzumStatus]
-    return (
-      // TO_WITHDRAW is money the seller HAS earned — calm, never alarming — and
-      // the tooltip keeps saying why we cannot call it paid.
-      <span title={uzumStatus === 'TO_WITHDRAW' ? t.earnedUnknownWithdrawal : undefined}
-        className={`inline-flex px-2.5 py-1 rounded-lg text-xs font-semibold border whitespace-nowrap ${uz.cls}`}>
-        {uz.label}
-      </span>
-    )
-  }
-  if (status === 'estimated_pending') {
-    return (
-      <span className="inline-flex px-2.5 py-1 rounded-lg text-xs font-semibold bg-[var(--bg-card2)] text-[var(--text-muted)] border border-dashed border-[var(--border)]">
-        ≈ {t.statusPending}
-      </span>
-    )
-  }
-  // Uzum TO_WITHDRAW: earned, withdrawal state UNKNOWN.
-  //
-  // It used to read "available to withdraw", which claims the money has not been
-  // withdrawn yet — and some of it had: 50 300 reached the seller's bank while
-  // this badge still called it withdrawable. Uzum publishes no withdrawal signal
-  // to this token, so the honest claim is the one the data supports: earned.
-  // Calm/neutral — this is money the seller HAS; never render it alarming.
-  if (status === 'available_to_withdraw') {
-    return (
-      <span title={t.earnedUnknownWithdrawal}
-        className="inline-flex px-2.5 py-1 rounded-lg text-xs font-semibold bg-sky-500/15 text-sky-400 border border-sky-500/20">
-        {t.statusAvailable}
-      </span>
-    )
-  }
-  // Yandex settled but fee debits not posted yet — net isn't final.
-  if (status === 'fees_pending') {
-    return (
-      <span className="inline-flex px-2.5 py-1 rounded-lg text-xs font-semibold bg-amber-500/10 text-amber-400/80 border border-dashed border-amber-500/25">
-        {t.statusFeesPending}
-      </span>
-    )
-  }
-  return (
-    <span className="inline-flex px-2.5 py-1 rounded-lg text-xs font-semibold bg-[var(--bg-card2)] text-[var(--text-muted)] border border-[var(--border)]">
-      {t.statusPending}
-    </span>
-  )
 }
 
 function ItemBreakdown({ items }: { items: PayoutOrderItem[] }) {
@@ -255,7 +154,6 @@ function OrderBreakdown({ orders }: { orders: PayoutOrderLine[] }) {
             <th className="text-left font-medium py-2">{t.orderNumbersLabel}</th>
             <th className="text-left font-medium py-2">{t.itemProduct}</th>
             <th className="text-right font-medium py-2">{t.ordersLineNet}</th>
-            <th className="text-right font-medium py-2">{t.colStatus}</th>
           </tr>
         </thead>
         <tbody>
@@ -273,7 +171,6 @@ function OrderBreakdown({ orders }: { orders: PayoutOrderLine[] }) {
               {/* The status that actually belongs to this order. It used to be
                   the month's, which is how an order carrying its own payment-order
                   number could sit under a badge saying «Ожидает». */}
-              <td className="py-2 pl-3 text-right"><StatusBadge status={o.status} uzumStatus={o.uzumStatus} /></td>
             </tr>
           ))}
         </tbody>
@@ -475,21 +372,24 @@ export default function PayoutsView({ entries, period = '365', from, to }: Props
   // netPayout=0 as a placeholder and would drag averages/totals down
   // if summed.
   const withKnownNet = filteredEntries.filter(e => !e.awaitingSettlement)
-  // Three mutually-exclusive buckets (see lib/db/payout-status.ts):
-  //  • available  — Uzum TO_WITHDRAW: earned, withdrawable, not withdrawn (headline).
-  //  • pending    — in progress, incl. fees_pending (Yandex net not final).
-  //  • paid       — money proven to have left the marketplace. Not emitted today
-  //                 (no accessible Uzum payout feed / no Yandex withdrawal feed),
-  //                 so the tile is an honest "pending API access" placeholder.
-  const availableEntries = withKnownNet.filter(e => isAvailableStatus(e.status))
-  const totalAvailable   = availableEntries.reduce((s, e) => s + e.netPayout, 0)
-  // A partially-paid month is in neither tile as a whole: its paid part is
-  // counted above, order by order, and its unpaid remainder is the difference.
-  // Adding its full net here would restate the money already counted as paid.
-  const pendingEntries   = withKnownNet.filter(e => isPendingStatus(e.status))
-  const pending          = pendingEntries.reduce((s, e) => s + e.netPayout, 0)
-    + withKnownNet.filter(e => isPartiallyPaidStatus(e.status))
-        .reduce((s, e) => s + (e.netPayout - sumPaidOrders(e.orders ?? [])), 0)
+  // Both tiles are sums of money columns — no status anywhere.
+  //
+  // They used to split the same money by PayoutStatus: «Заработано» was the
+  // Uzum TO_WITHDRAW total, «Ожидает» everything classed as in-progress. That
+  // classification is the one this page just stopped showing per row, because it
+  // was wrong in both directions — Yandex read «Ожидает» on transferred orders,
+  // Uzum read «К выводу» on money already banked. Leaving it driving the
+  // headline numbers would have kept the same false claim and only made it
+  // bigger: a wrong badge sits on one row, a wrong KPI is the first thing read.
+  //
+  // What replaces it is arithmetic on the columns the seller can check against
+  // the table: net is the Чистая выплата column summed, deductions is everything
+  // the marketplace took. Neither can drift from the rows below them.
+  const totalNet = withKnownNet.reduce((s, e) => s + e.netPayout, 0)
+  const totalDeductions = withKnownNet.reduce(
+    (s, e) => s + e.commission + e.delivery + e.returns + e.adSpend + e.tax + e.acquiring
+      + e.penalty + e.storageFee + e.otherDeductions, 0)
+
   function toggle(id: string) {
     setExpandedId(prev => prev === id ? null : id)
   }
@@ -506,18 +406,6 @@ export default function PayoutsView({ entries, period = '365', from, to }: Props
     [`${t.colAd} (so'm)`]:      e.adSpend,
     [`${t.colTax} (so'm)`]:     e.tax,
     [`${t.colNet} (so'm)`]:     e.netPayout,
-    // Same rule as the badge — a CSV that says «Заработано» while the screen
-    // says «К выводу» is the same row disagreeing with itself.
-    [t.colStatus]: e.uzumStatus ? ({
-        TO_WITHDRAW: t.uzToWithdraw, PROCESSING: t.uzProcessing,
-        PARTIALLY_CANCELLED: t.uzPartiallyCanceled, CANCELED: t.uzCanceled,
-      }[e.uzumStatus])
-      : e.status === 'available_to_withdraw' ? t.statusAvailable
-      : e.status === 'fees_pending' ? t.statusFeesPending
-      : isPartiallyPaidStatus(e.status) ? t.statusPartiallyPaid
-      : isPaidStatus(e.status) ? `${e.payoutEstimated ? '≈ ' : ''}${t.statusPaid}`
-      : e.status === 'processing' ? t.statusProcessing
-      : `${e.payoutEstimated ? '≈ ' : ''}${t.statusPending}`,
   }))
 
   return (
@@ -577,7 +465,7 @@ export default function PayoutsView({ entries, period = '365', from, to }: Props
               </div>
             </div>
           )}
-          <DateRangePicker period={period} from={from} to={to} />
+          <DateRangePicker period={period} from={from} to={to} showWeek defaultPeriod="week" />
           <ExportButton data={exportData} filename="tolovu-hisoboti" targetRef={printRef} />
           {/* Kebab (⋮) menu: single icon that expands into a dropdown.
               Currently one action — "Обновить данные Yandex" — but the
@@ -631,22 +519,14 @@ export default function PayoutsView({ entries, period = '365', from, to }: Props
           honest "unmeasured", not a false zero. */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="bg-[var(--bg-card2)] border border-sky-500/20 rounded-2xl px-4 py-3">
-          {/* "Earned", not "available to withdraw".
-              Only Uzum reaches this state, and Uzum publishes no withdrawal
-              signal — so some of this money has already reached the seller's
-              bank while the tile still called it withdrawable. "Available"
-              asserts something we cannot know; "earned" is what the data
-              actually supports. */}
-          <p className="text-[var(--text-muted)] text-xs mb-1">{t.kpiAvailable}</p>
-          <p className="text-[var(--text-base)] text-xl font-bold">{fmtShort(totalAvailable, lang)}</p>
-          <p className="text-[var(--text-muted)] text-xs mt-0.5">
-            {availableEntries.length} {t.periods} · {t.earnedUnknownWithdrawal}
-          </p>
+          <p className="text-[var(--text-muted)] text-xs mb-1">{t.kpiEarned}</p>
+          <p className="text-[var(--text-base)] text-xl font-bold">{fmtShort(totalNet, lang)}</p>
+          <p className="text-[var(--text-muted)] text-xs mt-0.5">{withKnownNet.length} {t.periods}</p>
         </div>
         <div className="bg-[var(--bg-card2)] border border-amber-500/20 rounded-2xl px-4 py-3">
-          <p className="text-[var(--text-muted)] text-xs mb-1">{t.kpiPending}</p>
-          <p className="text-[var(--text-base)] text-xl font-bold">{fmtShort(pending, lang)}</p>
-          <p className="text-[var(--text-muted)] text-xs mt-0.5">{pendingEntries.length} {t.periods}</p>
+          <p className="text-[var(--text-muted)] text-xs mb-1">{t.kpiDeducted}</p>
+          <p className="text-[var(--text-base)] text-xl font-bold">{fmtShort(totalDeductions, lang)}</p>
+          <p className="text-[var(--text-muted)] text-xs mt-0.5">{t.kpiDeductedHint}</p>
         </div>
       </div>
 
@@ -684,7 +564,6 @@ export default function PayoutsView({ entries, period = '365', from, to }: Props
                     </span>
                   </span>
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">{t.colStatus}</th>
                 <th className="px-3 py-3" />
               </tr>
             </thead>
@@ -770,7 +649,6 @@ export default function PayoutsView({ entries, period = '365', from, to }: Props
                         </td>
                       </>
                     )}
-                    <td className="px-4 py-3.5"><StatusBadge status={entry.status} uzumStatus={entry.uzumStatus} /></td>
                     <td className="px-3 py-3.5 text-[var(--text-muted)]">
                       {expandedId === entry.id
                         ? <ChevronUp className="w-4 h-4" />

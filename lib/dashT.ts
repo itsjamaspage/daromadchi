@@ -316,6 +316,8 @@ export const dashT = {
     },
     payouts: {
       kpiPending: 'Kutilayotgan', kpiAvg: "O'rtacha to'lov",
+      kpiEarned: 'Sof daromad', kpiDeducted: 'Marketpleys ushlab qoldi',
+      kpiDeductedHint: 'komissiya, yetkazish, qaytarish, reklama, soliq',
       kpiAvailable: 'Ishlab topilgan', statusAvailable: 'Ishlab topilgan',
       uzToWithdraw: 'Yechib olishga', uzProcessing: 'Ishlanmoqda',
       uzCanceled: 'Bekor qilingan', uzPartiallyCanceled: 'Qisman bekor qilingan',
@@ -729,6 +731,8 @@ export const dashT = {
     },
     payouts: {
       kpiPending: 'Pending', kpiAvg: 'Avg payout',
+      kpiEarned: 'Earned (net)', kpiDeducted: 'Marketplace deductions',
+      kpiDeductedHint: 'commission, delivery, returns, ads, tax',
       kpiAvailable: 'Earned', statusAvailable: 'Earned',
       uzToWithdraw: 'To withdraw', uzProcessing: 'Processing',
       uzCanceled: 'Cancelled', uzPartiallyCanceled: 'Partially cancelled',
@@ -1139,6 +1143,8 @@ export const dashT = {
     },
     payouts: {
       kpiPending: 'Ожидает', kpiAvg: 'Средняя выплата',
+      kpiEarned: 'Заработано (чистыми)', kpiDeducted: 'Удержано маркетплейсом',
+      kpiDeductedHint: 'комиссия, доставка, возвраты, реклама, налог',
       kpiAvailable: 'Заработано', statusAvailable: 'Заработано',
       uzToWithdraw: 'К выводу', uzProcessing: 'В обработке',
       uzCanceled: 'Отменён', uzPartiallyCanceled: 'Частично отменён',
