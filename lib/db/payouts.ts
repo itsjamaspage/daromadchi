@@ -3,6 +3,7 @@ import { db, orders, orderItems, products, shops, yandexSettlementTransactions, 
 import { getShopIds } from '@/lib/db/shop-context'
 import { getUnitEcoSettings } from '@/lib/db/unit-economics'
 import type { PayoutEntry, PayoutOrderItem, PayoutOrderLine } from '@/lib/types'
+import { isoWeekKey, currentIsoWeekKey } from '@/lib/period-week'
 import { deriveUzumBucketStatus, rollUpUzumOrderStatus, deriveYandexSettledStatus, isYandexTransferred, isYandexAwaitingTransfer, yandexFullyTransferred, deriveYandexOrderStatus, deriveBucketStatusFromOrders } from '@/lib/db/payout-status'
 
 export type { PayoutEntry }
@@ -45,7 +46,7 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
       ))
       .orderBy(asc(orders.ordered_at)),
     db.select({
-      month: sql<string>`to_char(${orders.ordered_at}, 'YYYY-MM')`.as('month'),
+      period: sql<string>`to_char(${orders.ordered_at}, 'IYYY-"W"IW')`.as('period'),
       marketplace: orders.marketplace,
       cogs: sql<number>`coalesce(sum(${orderItems.quantity} * coalesce(${products.cost_price}, 0)), 0)`.as('cogs'),
     }).from(orderItems)
@@ -63,7 +64,7 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
     // the Node side. Cancelled/returned excluded — those already show in
     // the top-level "returns" column and would double-count here.
     db.select({
-      month: sql<string>`to_char(${orders.ordered_at}, 'YYYY-MM')`.as('month'),
+      period: sql<string>`to_char(${orders.ordered_at}, 'IYYY-"W"IW')`.as('period'),
       marketplace: orders.marketplace,
       productId: orderItems.product_id,
       productTitle: products.title,
@@ -91,11 +92,11 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
 
   if (orderRows.length === 0) return []
 
-  const cogsMap = new Map(cogsRows.map(r => [`${r.month}|${r.marketplace}`, Number(r.cogs)]))
+  const cogsMap = new Map(cogsRows.map(r => [`${r.period}|${r.marketplace}`, Number(r.cogs)]))
 
   const itemsMap = new Map<string, PayoutOrderItem[]>()
   for (const r of itemRows) {
-    const key = `${r.month}|${r.marketplace}`
+    const key = `${r.period}|${r.marketplace}`
     const list = itemsMap.get(key) ?? []
     list.push({
       productTitle: r.productTitle ?? '—',
@@ -147,9 +148,13 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
     if (row.status === 'cancelled') continue
 
     const d = row.ordered_at
-    const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+    // Must produce byte-identical keys to the to_char(…, 'IYYY-"W"IW') buckets
+    // above — a JS week and a SQL week that disagree would split one period into
+    // two rows. lib/period-week.ts is verified against Postgres for both year
+    // boundaries; see its tests.
+    const weekKey = isoWeekKey(d)
     const mp = mpByShop.get(row.shop_id) ?? 'uzum'
-    const key = `${monthKey}|${mp}`
+    const key = `${weekKey}|${mp}`
     const b = grouped.get(key) ?? {
       revenue: 0, realFee: 0, realDelivery: 0,
       penalty: 0, storageFee: 0, additionalPayment: 0,
@@ -181,7 +186,7 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
   }
 
   const now = new Date()
-  const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+  const currentWeek = currentIsoWeekKey(now)
 
   // Yandex real-settlement aggregation. Per YYYY-MM bucket, sum:
   //   - Начисления (positive contribution to what seller receives)
@@ -200,7 +205,7 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
     // exist yet — every Yandex row just stays in "awaiting" state.
     try {
       const settlementRows = await db.select({
-        month:  sql<string>`to_char(${yandexSettlementTransactions.transaction_at}, 'YYYY-MM')`.as('month'),
+        period: sql<string>`to_char(${yandexSettlementTransactions.transaction_at}, 'IYYY-"W"IW')`.as('period'),
         entry_type: yandexSettlementTransactions.entry_type,
         entry_source: yandexSettlementTransactions.entry_source,
         order_type: yandexSettlementTransactions.order_type,
@@ -216,8 +221,8 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
           gte(yandexSettlementTransactions.transaction_at, since),
         ))
       for (const r of settlementRows) {
-        if (!r.month) continue
-        const key = `${r.month}|yandex_market`
+        if (!r.period) continue
+        const key = `${r.period}|yandex_market`
         const b = ymSettlementByKey.get(key) ?? { credit: 0, debit: 0, commission: 0, delivery: 0, other: 0, txnCount: 0, transferred: 0, awaiting: 0, paymentOrders: new Set<string>(), orderNumbers: new Set<string>(), orderLines: new Map<string, { sku: string | null; credit: number; debit: number; transferred: boolean }>() }
         const amt = Number(r.amount)
         b.txnCount += 1
@@ -290,7 +295,7 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
   if (uzShopIds.length > 0) {
     try {
       const settlementRows = await db.select({
-        month:            sql<string>`to_char(${uzumSettlementOrders.transaction_at}, 'YYYY-MM')`.as('month'),
+        period:           sql<string>`to_char(${uzumSettlementOrders.transaction_at}, 'IYYY-"W"IW')`.as('period'),
         status:           uzumSettlementOrders.status,
         uzum_order_id:    uzumSettlementOrders.uzum_order_id,
         product_title:    uzumSettlementOrders.product_title,
@@ -305,11 +310,11 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
           gte(uzumSettlementOrders.transaction_at, since),
         ))
       for (const r of settlementRows) {
-        if (!r.month) continue
+        if (!r.period) continue
         // Skip cancelled — Uzum sends them with sellerPrice > 0 too, and
         // we already show cancellations in the returns column.
         if (r.status === 'CANCELED') continue
-        const key = `${r.month}|uzum`
+        const key = `${r.period}|uzum`
         const b = uzSettlementByKey.get(key) ?? { gross: 0, commission: 0, delivery: 0, net: 0, profitFallback: 0, itemCount: 0, statuses: new Set<string>(), orderNumbers: new Set<string>(), orderLines: new Map<string, { name: string | null; gross: number; commission: number; delivery: number; withdrawn: number; profit: number; statuses: Set<string> }>() }
         b.itemCount += 1
         // Track the per-order finance/orders status so the bucket status is
@@ -356,7 +361,7 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
   }
 
   const entries: PayoutEntry[] = Array.from(grouped.entries()).flatMap(([key, v]) => {
-    const [monthKey, mp] = key.split('|')
+    const [weekKey, mp] = key.split('|')
 
     // Yandex Market special-case: the `commissionTotal` field on the
     // /v2/campaigns/{id}/orders endpoint is Yandex's order-TIME
@@ -373,7 +378,7 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
     // TODO: fetch Yandex united-netting-report API and store real
     // settlement per order — then this branch flips to real numbers.
     if (mp === 'yandex_market') {
-      const isPast = monthKey < currentMonth
+      const isPast = weekKey < currentWeek
       const settled = ymSettlementByKey.get(key)
       // If Yandex has already published settlement data for this month,
       // use its REAL numbers. Otherwise return an "awaiting" placeholder.
@@ -402,7 +407,7 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
         })
         const entry: PayoutEntry = {
           id: key,
-          period: monthKey,
+          period: weekKey,
           marketplace: mp,
           grossRevenue: settled.credit || v.revenue,
           commission: settled.commission + settled.other, // "Услуги маркета" bundles commission + ads + acquiring
@@ -448,7 +453,7 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
 
       const entry: PayoutEntry = {
         id: key,
-        period: monthKey,
+        period: weekKey,
         marketplace: mp,
         grossRevenue: v.revenue,
         commission: 0,
@@ -512,7 +517,7 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
           .sort((a, b) => b.net - a.net)
         const entry: PayoutEntry = {
           id: key,
-          period: monthKey,
+          period: weekKey,
           marketplace: mp,
           grossRevenue: settled.gross || v.revenue,
           commission: settled.commission,
@@ -560,10 +565,10 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
     const additionalPayment = v.additionalPayment
     const netPayout = v.revenue - commission - delivery - acquiring - tax - adSpend - cogs - penalty - storageFee - additionalPayment
 
-    const isPast = monthKey < currentMonth
+    const isPast = weekKey < currentWeek
     const entry: PayoutEntry = {
       id: key,
-      period: monthKey,
+      period: weekKey,
       marketplace: mp,
       grossRevenue: v.revenue,
       commission,

@@ -24,7 +24,7 @@ export const translations = {
         sync: 'Sinxronizatsiya',
         referral: 'Referal dasturi',
         alerts: 'Ogohlantirishlar',
-        payouts: "To'lovlar",
+        payouts: "Daromad",
         reviews: 'Izohlar',
         seasonality: 'Mavsumiylik',
         marketResearch: 'Bozor tadqiqoti',
@@ -532,8 +532,8 @@ export const translations = {
       yandexNotConnectedDesc: "Yandex bozor tadqiqotini ko'rish uchun Sozlamalarda Partner API tokeningizni ulang.",
       connectYandex: 'Yandex ulash',
       // Payouts page
-      payoutsTitle: "To'lovlar",
-      payoutsSubtitle: "Marketplace to'lovlari va chegirmalar tahlili",
+      payoutsTitle: "Daromad",
+      payoutsSubtitle: "Davrlar bo'yicha daromad: brutto, komissiya, yetkazish, sof",
       // Settings page
       settingsTitle: 'Sozlamalar',
       settingsSubtitle: 'Marketplace integratsiyalari va standart sozlamalar',
@@ -943,7 +943,7 @@ export const translations = {
         sync: 'Sync',
         referral: 'Referral Program',
         alerts: 'Alerts',
-        payouts: 'Payouts',
+        payouts: 'Earnings',
         reviews: 'Reviews',
         seasonality: 'Seasonality',
         marketResearch: 'Market Research',
@@ -1451,8 +1451,8 @@ export const translations = {
       yandexNotConnectedDesc: 'Connect your Partner API token in Settings to view Yandex market research.',
       connectYandex: 'Connect Yandex',
       // Payouts page
-      payoutsTitle: 'Payouts',
-      payoutsSubtitle: 'Marketplace payouts and deductions analysis',
+      payoutsTitle: 'Earnings',
+      payoutsSubtitle: 'Earnings by period: gross, commission, delivery, net',
       // Settings page
       settingsTitle: 'Settings',
       settingsSubtitle: 'Marketplace integrations and default settings',
@@ -1862,7 +1862,7 @@ export const translations = {
         sync: 'Синхронизация',
         referral: 'Реферальная программа',
         alerts: 'Оповещения',
-        payouts: 'Выплаты',
+        payouts: 'Заработок',
         reviews: 'Отзывы',
         seasonality: 'Сезонность',
         marketResearch: 'Исследование рынка',
@@ -2370,8 +2370,8 @@ export const translations = {
       yandexNotConnectedDesc: 'Подключите Partner API токен в Настройках, чтобы видеть исследование рынка Яндекс.',
       connectYandex: 'Подключить Яндекс',
       // Payouts page
-      payoutsTitle: 'Выплаты',
-      payoutsSubtitle: 'Анализ выплат и вычетов маркетплейса',
+      payoutsTitle: 'Заработок',
+      payoutsSubtitle: 'Заработок по периодам: брутто, комиссия, доставка, чистыми',
       // Settings page
       settingsTitle: 'Настройки',
       settingsSubtitle: 'Интеграции с маркетплейсами и настройки по умолчанию',

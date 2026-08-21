@@ -3,10 +3,19 @@ import { CreditCard } from 'lucide-react'
 import { getPayoutEntries } from '@/lib/db/payouts'
 import PayoutsView from '@/components/dashboard/PayoutsView'
 import { getT, getLang } from '@/lib/server-i18n'
+import { startOfIsoWeek, localDateStr } from '@/lib/period-week'
 import { currentUserAccess } from '@/lib/billing/entitlement'
 import FeatureLock from '@/components/dashboard/FeatureLock'
 
-// Same preset vocabulary as the dashboard's DateRangePicker (?days=…).
+// Same preset vocabulary as the dashboard's DateRangePicker (?days=…), plus
+// `week` — the default here.
+//
+// `week` is the CURRENT ISO week (Monday→today), not a rolling 7 days. The
+// difference is the whole point of the weekly view: a rolling window slides a
+// little every day and never closes, so nothing ever becomes "last week". A
+// calendar week ends on Sunday night; come Monday the page shows a fresh week
+// and the finished one is reachable through the range picker. That is the
+// history.
 function parseDays(v: string): number {
   if (v === '7') return 7
   if (v === '30') return 30
@@ -14,11 +23,6 @@ function parseDays(v: string): number {
   if (v === '365') return 365
   if (v === 'month') return new Date().getDate() // days elapsed this month
   return 365
-}
-function daysAgo(n: number): string {
-  const d = new Date()
-  d.setDate(d.getDate() - n)
-  return d.toISOString().slice(0, 10)
 }
 
 interface Props {
@@ -31,12 +35,18 @@ export default async function PayoutsPage({ searchParams }: Props) {
   if (!access.allowed) return <FeatureLock lang={lang} feature="finances" hadTrial={access.trialEnded} />
 
   const params = await searchParams
-  const period = params?.days ?? '365'
+  const period = params?.days ?? 'week'
   const from = params?.from
   const to = params?.to
   // Effective range: an explicit custom range wins; otherwise the preset window.
-  const rangeFrom = from ?? daysAgo(parseDays(period))
-  const rangeTo = to ?? new Date().toISOString().slice(0, 10)
+  // localDateStr, never toISOString() — the latter converts to UTC, which in a
+  // +05:00 shop turns "today" into "yesterday" for the last five hours of every
+  // evening, silently dropping the newest orders out of the range.
+  const now = new Date()
+  const rangeFrom = from ?? (period === 'week'
+    ? localDateStr(startOfIsoWeek(now))
+    : localDateStr(new Date(now.getTime() - parseDays(period) * 86_400_000)))
+  const rangeTo = to ?? localDateStr(now)
 
   const [t, entries] = await Promise.all([
     getT(),
