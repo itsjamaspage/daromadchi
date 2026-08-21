@@ -25,23 +25,64 @@ export function deriveUzumBucketStatus(orderStatuses: readonly string[]): Payout
 }
 
 /**
- * Whether a Yandex netting transaction represents money ALREADY TRANSFERRED to
- * the seller. The united-netting report's "Статус" column reads
- * «Переведён по графику выплат» once a payment order has been issued, and carries
- * a payment-order number («Номер платежного поручения»). Both must be present:
- * the status text alone (without a п/п number) is not proof of transfer.
+ * Stems of the "money has been sent" wordings in the netting report's "Статус"
+ * column. Yandex does not use one phrase:
  *
- * «Будет переведён по графику выплат» (future) also contains "перевед" — it is
- * excluded by the "будет" guard, and it never carries a payment-order number.
+ *   «Переведён по графику выплат»  → перевед-
+ *   «Отправлен»                    → отправлен-
+ *
+ * Both are past forms describing a completed send. Matching on the stem covers
+ * the gender/number endings Yandex inflects for (Переведён / Переведена /
+ * Отправлен / Отправлено) without listing each one.
+ *
+ * Only «перевед» was here before, which is what put a genuinely paid order under
+ * «Ожидает»: order 60137441539 carried «Отправлен» with payment order 5913 — the
+ * money was in the seller's bank — and the classifier read it as not sent.
+ */
+const SENT_STEMS = ['перевед', 'отправлен'] as const
+
+/**
+ * Whether the status text alone claims the money has been sent.
+ *
+ * The «будет» guard applies to EVERY stem, not just «перевед». Yandex writes
+ * «Будет переведён по графику выплат» for a scheduled future transfer, and the
+ * same construction is available for any of these verbs — a future tense must
+ * never read as a completed one, whichever verb it is built from.
+ *
+ * «Переводятся» (in transit) is excluded structurally rather than by a rule:
+ * its stem is перевод-, not перевед-, and it matches no other entry. Money on
+ * its way is not money that arrived.
+ */
+export function isYandexSentStatus(statusNote: string | null | undefined): boolean {
+  const s = (statusNote ?? '').toLowerCase()
+  if (s.includes('будет')) return false           // «Будет переведён…» — scheduled, not done
+  return SENT_STEMS.some(stem => s.includes(stem))
+}
+
+/**
+ * Whether a Yandex netting transaction represents money ALREADY TRANSFERRED to
+ * the seller.
+ *
+ * Two independent signals must agree, and each is doing a different job:
+ *
+ *   1. A payment-order number («Номер платежного поручения») — the bank-statement
+ *      reference. It exists because a payment instruction was issued, so it is
+ *      the closest thing in this report to physical proof.
+ *   2. A sent-family status. The п/п is not trusted alone because a number can
+ *      be assigned while the transfer is still moving; the status is what says
+ *      the send completed.
+ *
+ * Requiring both keeps the failure direction safe: an unrecognised wording, or a
+ * row with no п/п, stays out of "paid". Understating what has been sent is
+ * merely conservative; overstating it tells a seller money has arrived when it
+ * has not, which is the error this file has had to fix twice.
  */
 export function isYandexTransferred(
   statusNote: string | null | undefined,
   paymentOrderNumber: string | null | undefined,
 ): boolean {
-  const s = (statusNote ?? '').toLowerCase()
-  const transferred = s.includes('перевед') && !s.includes('будет') // «Переведён…», not «Будет переведён…»
   const hasPaymentOrder = !!(paymentOrderNumber && String(paymentOrderNumber).trim())
-  return transferred && hasPaymentOrder
+  return isYandexSentStatus(statusNote) && hasPaymentOrder
 }
 
 /**
