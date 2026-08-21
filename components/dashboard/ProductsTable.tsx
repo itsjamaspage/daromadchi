@@ -1,18 +1,45 @@
 'use client'
 
 import { useState, useMemo, useCallback, useEffect, useRef, Fragment } from 'react'
-import { Search, Check, X, Pencil } from 'lucide-react'
+import { Search, Check, X, Pencil, ChevronRight, ChevronDown } from 'lucide-react'
 import ExportButton from './ExportButton'
 import FulfillmentBadge from './FulfillmentBadge'
 import MpBadge, { MP_META } from './MpBadge'
 import { ColorBadge } from '@/components/ColorBadge'
+import { COLOR_LABELS, colorMetaFor, type ColorKey } from '@/lib/products/resolveColor'
 import { useLang } from '@/app/providers'
 import { translations } from '@/lib/i18n'
+import { groupByStoreVariant } from '@/lib/products/store-variant-grouping'
 import type { Product } from '@/lib/types'
 import { useRouter } from 'next/navigation'
 
 function fmt(n: number) {
   return new Intl.NumberFormat('uz-UZ').format(n) + " so'm"
+}
+
+// Localised "N вариантов".
+function variantCountLabel(n: number, lang: 'uz' | 'ru' | 'en'): string {
+  if (lang === 'en') return `${n} colours`
+  if (lang === 'uz') return `${n} ta rang`
+  const mod10 = n % 10, mod100 = n % 100
+  const word = mod10 === 1 && mod100 !== 11 ? 'цвет'
+    : mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14) ? 'цвета'
+    : 'цветов'
+  return `${n} ${word}`
+}
+
+// Colour swatch + name, from the stored variant_color key.
+function VariantColorChip({ colorKey, lang }: { colorKey: string | null | undefined; lang: 'uz' | 'ru' | 'en' }) {
+  const meta = colorMetaFor(colorKey)
+  if (!meta || !colorKey) return null
+  const name = COLOR_LABELS[colorKey as ColorKey]?.[lang] ?? colorKey
+  return (
+    <span className="inline-flex items-center gap-1 text-xs" style={{ color: 'var(--text-muted)' }}>
+      <span className="h-2.5 w-2.5 rounded-full"
+        style={{ backgroundColor: meta.hex, boxShadow: meta.ring ? 'inset 0 0 0 1px var(--border)' : undefined }} />
+      {name}
+    </span>
+  )
 }
 
 // Product-level filters only. Order-status chips (delivered / in-process /
@@ -200,6 +227,17 @@ export default function ProductsTable({ products }: { products: Product[] }) {
   const [stockThreshold, setStockThreshold] = useState(10)
   const [editingId,      setEditingId]      = useState<string | null>(null)
   const [optimisticUpdates, setOptimisticUpdates] = useState<Map<string, number | null>>(new Map())
+  // Which store-variant groups are open. Collapsed by default: the point of the
+  // grouping is a shorter list, so opening one is a deliberate act.
+  const [openGroups, setOpenGroups] = useState<Set<string>>(new Set())
+  const toggleGroup = useCallback((key: string) => {
+    setOpenGroups(prev => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key); else next.add(key)
+      return next
+    })
+  }, [])
+
   // Language-independent sentinel for "all categories": the state must never
   // hold a LOCALIZED label — switching the UI language used to leave the old
   // language's "All" string in state, which then filtered every row out and
@@ -262,6 +300,8 @@ export default function ProductsTable({ products }: { products: Product[] }) {
     return rows
   }, [enriched, query, category, tab, sortBy, sortDir, stockThreshold])
 
+  const displayItems = useMemo(() => groupByStoreVariant(filtered), [filtered])
+
   function toggleSort(col: typeof sortBy) {
     if (sortBy === col) setSortDir(d => d === 'desc' ? 'asc' : 'desc')
     else { setSortBy(col); setSortDir('desc') }
@@ -289,10 +329,11 @@ export default function ProductsTable({ products }: { products: Product[] }) {
     low_stock: enriched.reduce((s, p) => s + p.available_stock, 0),
   }
 
-  // One product row. Every product is its own top-level row — variants are not
-  // folded into a collapsible parent, so a seller reads the list straight down
-  // instead of expanding groups to reach a SKU.
-  const renderRow = (p: Product) => {
+  // One product row. As a group child it carries only what DIFFERS from its
+  // siblings — the colour and the SKU. Store and fulfillment badges live on the
+  // parent, where they describe the whole group instead of repeating down the
+  // column.
+  const renderRow = (p: Product, isChild = false, groupTitle?: string) => {
     const price  = Number(p.selling_price ?? 0)
     const margin = price > 0 ? Number(((p.profit / price) * 100).toFixed(1)) : 0
     const stock = stockBadge(p.available_stock)
@@ -302,14 +343,20 @@ export default function ProductsTable({ products }: { products: Product[] }) {
       <Fragment key={p.id}>
         <tr style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer', opacity: p.is_archived ? 0.55 : undefined }}
           onClick={() => setEditingId(isEditing ? null : p.id)}>
-          <td className="px-5 py-4">
+          <td className="px-5 py-4" style={isChild ? { paddingLeft: '2.75rem', borderLeft: '2px solid var(--border)' } : undefined}>
             <div className="flex items-center gap-2">
               <div>
-                <p className="font-medium line-clamp-2 sm:line-clamp-none" style={{ color: 'var(--text-base)' }} title={p.title}>{p.title}</p>
+                {/* A child repeats its group's title verbatim on Uzum (one title
+                    across every colour) but names the colour on Yandex. Print it
+                    only when it actually says something the parent didn't. */}
+                {(!isChild || (groupTitle !== undefined && p.title !== groupTitle)) && (
+                  <p className="font-medium line-clamp-2 sm:line-clamp-none" style={{ color: 'var(--text-base)' }} title={p.title}>{p.title}</p>
+                )}
                 <div className="flex items-center flex-wrap gap-1.5 mt-0.5">
+                  {isChild && <VariantColorChip colorKey={p.variant_color} lang={lang} />}
                   <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{p.sku}</span>
-                  {p.marketplace && <MpBadge mp={p.marketplace} />}
-                  <FulfillmentBadge type={p.fulfillment_type} />
+                  {!isChild && p.marketplace && <MpBadge mp={p.marketplace} />}
+                  {!isChild && <FulfillmentBadge type={p.fulfillment_type} />}
                   {p.is_shared && (
                     <span
                       className="text-[10px] font-medium px-1.5 py-0.5 rounded"
@@ -319,7 +366,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
                       Umumiy
                     </span>
                   )}
-                  <ColorBadge title={p.title} />
+                  {!isChild && <ColorBadge title={p.title} />}
                 </div>
               </div>
               <Pencil className="w-3.5 h-3.5 flex-shrink-0 opacity-30" style={{ color: 'var(--text-muted)' }} />
@@ -361,6 +408,85 @@ export default function ProductsTable({ products }: { products: Product[] }) {
           />
         )}
       </Fragment>
+    )
+  }
+
+  // Group header. Per-unit figures (price, cost, profit, margin) are NOT summed
+  // — a group of colours has one price, not the sum of its colours' prices. Show
+  // the shared figure when every colour agrees, which is the normal case for one
+  // product in one store, and «—» when they diverge so the reader opens the
+  // group rather than trusting a number that isn't true of any single listing.
+  // Остаток IS summed: colours are distinct SKUs with distinct physical stock.
+  const renderGroup = (item: { key: string; children: Product[] }, isOpen: boolean) => {
+    const kids = item.children
+    const head = kids[0]
+    const shared = <T,>(f: (p: Product) => T): T | null => {
+      const first = f(head)
+      return kids.every(k => f(k) === first) ? first : null
+    }
+    const price    = shared(k => Number(k.selling_price ?? 0))
+    const cost     = shared(k => k.cost_price ?? null)
+    const profit   = shared(k => k.profit)
+    const category = shared(k => k.category ?? null)
+    const ft       = shared(k => k.fulfillment_type)
+    const stockSum = kids.reduce((s, k) => s + k.available_stock, 0)
+    const margin   = price && price > 0 && profit != null
+      ? Number(((profit / price) * 100).toFixed(1)) : null
+    const marginColor = margin == null ? 'var(--text-muted)'
+      : margin > 35 ? '#10b981' : margin > 20 ? '#f59e0b' : '#ef4444'
+    const stock = stockBadge(stockSum)
+
+    return (
+      <tr style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer', background: 'var(--bg-card2)' }}
+        onClick={() => toggleGroup(item.key)}>
+        <td className="px-5 py-4">
+          <div className="flex items-start gap-2">
+            <span className="shrink-0 mt-0.5" style={{ color: 'var(--text-muted)' }}>
+              {isOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+            </span>
+            <div>
+              <p className="font-semibold line-clamp-2 sm:line-clamp-none" style={{ color: 'var(--text-base)' }} title={head.title}>{head.title}</p>
+              {/* Store and fulfillment describe the whole group — every member is
+                  one store's listing — so they belong here, once, instead of
+                  repeating on every colour below. */}
+              <div className="flex items-center flex-wrap gap-1.5 mt-0.5">
+                {head.marketplace && <MpBadge mp={head.marketplace} />}
+                {ft !== null && <FulfillmentBadge type={ft} />}
+                <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded"
+                  style={{ background: 'var(--bg-input)', color: 'var(--text-muted)' }}>
+                  {variantCountLabel(kids.length, lang)}
+                </span>
+              </div>
+            </div>
+          </div>
+        </td>
+        <td className="px-5 py-4">
+          <span className="text-xs px-2.5 py-1 rounded-lg border" style={{ color: 'var(--text-muted)', background: 'rgba(255, 255, 255, 0.04)', borderColor: 'var(--border)' }}>{category ?? '—'}</span>
+        </td>
+        <td className="px-5 py-4 text-right" style={{ color: 'var(--text-dim)' }}>{price != null ? fmt(price) : '—'}</td>
+        <td className="px-5 py-4 text-right" style={{ color: cost ? 'var(--text-dim)' : 'var(--text-muted)' }}>{cost ? fmt(cost) : '—'}</td>
+        <td className="px-5 py-4 text-right">
+          {profit != null
+            ? <span className="font-semibold" style={{ color: '#10b981' }}>{fmt(profit)}</span>
+            : <span style={{ color: 'var(--text-muted)' }}>—</span>}
+        </td>
+        <td className="px-5 py-4">
+          {margin != null ? (
+            <div className="flex flex-col items-end gap-1">
+              <span className="text-xs font-medium tabular-nums" style={{ color: marginColor }}>{margin}%</span>
+              <div className="w-16 h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--border)' }}>
+                <div className="h-full rounded-full"
+                  style={{ width: `${Math.min(margin, 100)}%`, background: 'linear-gradient(to right, var(--c1), #428619)' }} />
+              </div>
+            </div>
+          ) : <div className="text-right" style={{ color: 'var(--text-muted)' }}>—</div>}
+        </td>
+        <td className="px-5 py-4 text-right">
+          <span className="text-xs font-medium px-2.5 py-1 rounded-lg" style={{ background: stock.bgColor, color: stock.color }}>
+            {stockSum}
+          </span>
+        </td>
+      </tr>
     )
   }
 
@@ -484,9 +610,18 @@ export default function ProductsTable({ products }: { products: Product[] }) {
               </tr>
             </thead>
             <tbody>
-              {filtered.length === 0 ? (
+              {displayItems.length === 0 ? (
                 <tr><td colSpan={7} className="px-5 py-10 text-center text-sm" style={{ color: 'var(--text-muted)' }}>{d.noProductsTitle}</td></tr>
-              ) : filtered.map(p => renderRow(p))}
+              ) : displayItems.map(item => {
+                if (item.type === 'flat') return renderRow(item.product)
+                const isOpen = openGroups.has(item.key)
+                return (
+                  <Fragment key={item.key}>
+                    {renderGroup(item, isOpen)}
+                    {isOpen && item.children.map(c => renderRow(c, true, item.children[0].title))}
+                  </Fragment>
+                )
+              })}
             </tbody>
           </table>
         </div>
