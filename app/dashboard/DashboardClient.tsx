@@ -230,7 +230,9 @@ export default function DashboardClient({ slices, stockGroups, days, period, fro
         <div className="flex items-center gap-2 flex-wrap">
           <LastSynced lastSyncedAt={syncInfo.lastSyncedAt} lastSyncFailed={syncInfo.lastSyncFailed} />
           <Suspense>
-            <DateRangePicker period={period} from={from} to={to} />
+            {/* Chips off: the dashboard uses the current-week default + the ‹ ›
+                week arrows + a custom from–to range. No preset chips. */}
+            <DateRangePicker period={period} from={from} to={to} presets={[]} />
           </Suspense>
           <button
             onClick={() => setShowCustomize(v => !v)}
