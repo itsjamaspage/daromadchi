@@ -381,7 +381,7 @@
 
     <div class="header">
       <div class="title">SYSTEM ARCHITECTURE</div>
-      <div class="subtitle">Click any component for details — 70+ API routes · 34 database tables · Uzum + Yandex Market</div>
+      <div class="subtitle">Click any component for details — 70+ API routes · 39 database tables · Uzum + Yandex Market</div>
     </div>
 
     <div class="arch-container" id="archContainer">
@@ -548,7 +548,7 @@
           </div>
           <div class="card api-card" data-id="api-billing">
             <div class="card-name">Billing APIs</div>
-            <div class="card-desc">expire-plans (daily cron downgrade). No direct payment routes — Payme/Click removed; Atmos planned.</div>
+            <div class="card-desc">ATMOS card→OTP checkout (bind-init/confirm + S2S callback); expire-plans &amp; auto-renew crons. Uzcard/Humo today; Visa/Mastercard in progress.</div>
             <div class="card-tags"><span class="tag">plans</span></div>
           </div>
           <div class="card api-card" data-id="api-account">
@@ -602,8 +602,8 @@
         <div class="cards-row cols-3" id="data-row">
           <div class="card data-card" data-id="postgresql">
             <div class="card-name"><span class="status-dot green"></span>PostgreSQL 17</div>
-            <div class="card-desc">34 tables — auth/users, shops/products/orders, stock-sync logs, categories, settlements, unit economics, ops. Self-hosted on the VPS.</div>
-            <div class="card-tags"><span class="tag">Drizzle ORM</span><span class="tag">34 tables</span><span class="tag">Migrations → 058</span></div>
+            <div class="card-desc">39 tables — auth/users, shops/products/orders, stock-sync logs, categories, settlements, unit economics, ops. Self-hosted on the VPS.</div>
+            <div class="card-tags"><span class="tag">Drizzle ORM</span><span class="tag">39 tables</span><span class="tag">Migrations → 080</span></div>
           </div>
           <div class="card data-card" data-id="drizzle">
             <div class="card-name"><span class="status-dot green"></span>Drizzle ORM</div>
@@ -640,9 +640,9 @@
             <div class="card-tags"><span class="tag">OAuth 2.0</span><span class="tag">GA4</span></div>
           </div>
           <div class="card external-card" data-id="atmos" style="opacity: 0.6;">
-            <div class="card-name"><span class="status-dot yellow"></span>Atmos</div>
-            <div class="card-desc">Payment aggregator (Payme, Click, Uzcard, Humo, Visa). PLANNED — not yet integrated; no code in the app today.</div>
-            <div class="card-tags"><span class="tag">planned</span><span class="tag">payments</span></div>
+            <div class="card-name"><span class="status-dot green"></span>ATMOS</div>
+            <div class="card-desc">Integrated card→OTP checkout: bind card in-app (PAN transit-only, token encrypted), 3-call token charge, md5-verified callback. Uzcard/Humo today; Visa/Mastercard (incl. UZ-issued) in progress.</div>
+            <div class="card-tags"><span class="tag">integrated</span><span class="tag">payments</span></div>
           </div>
           <div class="card external-card" data-id="smtp">
             <div class="card-name">SMTP Email</div>
@@ -854,10 +854,10 @@
       },
       'api-billing': {
         name: 'Billing APIs',
-        desc: 'expire-plans — a daily cron that downgrades lapsed paid plans to free. There are NO direct payment routes: the former Payme/Click integrations were removed. Card payments will run through the Atmos aggregator once it is integrated.',
+        desc: 'ATMOS card→OTP checkout is live (bind-init/bind-confirm + S2S callback), with expire-plans and flag-gated auto-renew crons. Turnover-ladder plans (pro/pro_plus/biznes) charged in tiyin, amount derived server-side.',
         tech: ['Plan management', 'Cron'],
         connections: [
-          { name: 'Atmos', desc: 'Planned payment aggregator (not yet integrated)' },
+          { name: 'ATMOS', desc: 'Integrated card→OTP payment aggregator' },
           { name: 'PostgreSQL 17', desc: 'payments table (+ payer_email retained for tax)' }
         ]
       },
@@ -937,8 +937,8 @@
       },
       'postgresql': {
         name: 'PostgreSQL 17',
-        desc: '34 tables, self-hosted on the VPS. Auth & users: users, user_settings, accounts, sessions, verification_tokens, password_reset_tokens, ext_activation_codes. Marketplace: shops, products, orders, order_items, warehouses. Stock-sync: stock_sync_state, stock_write_log, stock_notify_state, order_cancel_log. Categories & grouping: categories_canonical, category_aliases, suggested_aliases, product_links, product_group_merges, suggested_product_groups. Finance: payments, uzum_settlement_orders, yandex_settlement_transactions. Unit economics: unit_economics_items, search_phrases. Ops: sync_days, sync_logs, alerts, competitor_watchlist, ad_campaigns, bot_sessions, channel_nonces.',
-        tech: ['PostgreSQL 17', 'Drizzle ORM', '34 tables', 'Migrations → 058'],
+        desc: '39 tables, self-hosted on the VPS. Auth & users: users, user_settings, accounts, sessions, verification_tokens, password_reset_tokens, ext_activation_codes. Marketplace: shops, products, orders, order_items, warehouses. Stock-sync: stock_sync_state, stock_write_log, stock_notify_state, order_cancel_log. Categories & grouping: categories_canonical, category_aliases, suggested_aliases, product_links, product_group_merges, suggested_product_groups. Finance: payments, uzum_settlement_orders, yandex_settlement_transactions. Unit economics: unit_economics_items, search_phrases. Ops: sync_days, sync_logs, alerts, competitor_watchlist, ad_campaigns, bot_sessions, channel_nonces.',
+        tech: ['PostgreSQL 17', 'Drizzle ORM', '39 tables', 'Migrations → 080'],
         connections: [
           { name: 'Drizzle ORM', desc: 'Type-safe query builder' },
           { name: 'All API Routes', desc: 'Central data store for all operations' },
@@ -947,7 +947,7 @@
       },
       'drizzle': {
         name: 'Drizzle ORM',
-        desc: 'Type-safe SQL query builder for PostgreSQL. Schema-first (lib/db/schema.ts). SQL migrations live in migrations/migrations/NNN_*.sql and are applied on deploy by scripts/apply-sql-migrations.mjs — a file only runs if it is registered in that list. Current through migration 058 (058 adds users.consented_at for signup consent).',
+        desc: 'Type-safe SQL query builder for PostgreSQL. Schema-first (lib/db/schema.ts). SQL migrations live in migrations/migrations/NNN_*.sql and are applied on deploy by scripts/apply-sql-migrations.mjs — a file only runs if it is registered in that list. Current through migration 080 (ATMOS billing, turnover tiers, subscription lifecycle, stock ledger, warehouses).',
         tech: ['TypeScript', 'Schema-first', 'Migrations'],
         connections: [
           { name: 'PostgreSQL 17', desc: 'Generates and runs SQL' },
@@ -985,9 +985,9 @@
         ]
       },
       'atmos': {
-        name: 'Atmos (planned)',
-        desc: 'Uzbek payment aggregator that provides Payme, Click, Uzcard, Humo and Visa. PLANNED / not yet integrated — there is no Atmos code in the app today. When live, card data is entered on Atmos and never touches the app; only a payment record (amount, date, transaction id, plan, payer email) is stored.',
-        tech: ['Planned', 'Payment aggregator'],
+        name: 'ATMOS',
+        desc: 'Uzbek payment aggregator. INTEGRATED via a direct card-binding flow: the seller enters the card in the app modal (PAN transit-only, never stored/logged), ATMOS sends an SMS OTP, and a reusable card token is stored ENCRYPTED. Charges are a 3-call token flow; a public server-to-server callback is md5-signature verified. Accepts Uzbek domestic cards (Uzcard/Humo) today; Visa/Mastercard (incl. UZ-issued) in progress. Amount is always derived server-side in tiyin.',
+        tech: ['Integrated', 'Payment aggregator'],
         connections: [
           { name: 'Billing APIs', desc: 'Future subscription payment flow' }
         ]
