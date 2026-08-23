@@ -346,11 +346,15 @@ const _fetchCategoryRevenue = unstable_cache(
 
     const conditions = [
       inArray(orders.shop_id, shopIds),
-      // Revenue counts COMPLETED sales only: delivered. Cancelled, returned,
-      // and still-in-process (pending/confirmed) orders are excluded so the
-      // donut reflects real earned revenue, not gross order intake. (Matches
-      // the delivered-only rule used across dashboard sales aggregation.)
-      eq(orders.status, 'delivered'),
+      // The category donut is a "Доля продаж" (share-of-sales) DISTRIBUTION, not
+      // the earned-revenue headline — so it counts real sales activity: every
+      // order that isn't cancelled or returned, INCLUDING still-in-transit
+      // (pending/confirmed). This matches the daily-revenue chart's basis, so a
+      // seller whose orders haven't been delivered yet still sees which
+      // categories they sell instead of a blank "Нет данных". The accrual
+      // headline KPIs (Общая выручка, Чистая прибыль) and the P&L stay
+      // delivered-only; only this distribution view widened.
+      sql`${orders.status} not in ('cancelled','returned')`,
     ]
     if (sinceDate) conditions.push(gte(orders.ordered_at, sinceDate))
     if (untilDate) conditions.push(lte(orders.ordered_at, untilDate))
