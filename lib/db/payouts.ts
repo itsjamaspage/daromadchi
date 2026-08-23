@@ -4,6 +4,7 @@ import { getShopIds } from '@/lib/db/shop-context'
 import { getUnitEcoSettings } from '@/lib/db/unit-economics'
 import type { PayoutEntry, PayoutOrderItem, PayoutOrderLine } from '@/lib/types'
 import { isoWeekKey, currentIsoWeekKey } from '@/lib/period-week'
+import { classifyYandexDebit } from '@/lib/db/real-financials'
 
 // The period bucket, defined ONCE.
 //
@@ -284,13 +285,12 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
           b.credit += amt
         } else {
           b.debit += amt
-          // Split debits by orderType so the UI can show delivery vs commission
-          // separately. "Доставка покупателю" is delivery, everything else is
-          // rolled into commission (which for Yandex Uzbekistan includes their
-          // bundled "Услуги маркета" — commission + acquiring + ads).
-          if ((r.order_type ?? '').includes('Доставка')) b.delivery += amt
-          else if ((r.order_type ?? '').includes('Поручение')) b.commission += amt
-          else b.other += amt
+          // Split debits by the SERVICE NAME (product_name), not order_type —
+          // order_type is always "Продажа физлицу". Same classifier the P&L uses
+          // (lib/db/real-financials.ts): "Доставка покупателю" → delivery,
+          // "Поручение на продажу" → commission, everything else (penalties,
+          // transfer fees, storage, acquiring, ads) → other.
+          b[classifyYandexDebit(r.product_name)] += amt
         }
         ymSettlementByKey.set(key, b)
       }
@@ -426,7 +426,7 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
           period: weekKey,
           marketplace: mp,
           grossRevenue: settled.credit || v.revenue,
-          commission: settled.commission + settled.other, // "Услуги маркета" bundles commission + ads + acquiring
+          commission: settled.commission, // "Поручение на продажу" — the real sales commission
           delivery: settled.delivery,
           returns: v.returnAmount,
           adSpend: 0,
@@ -435,7 +435,7 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
           penalty: 0,
           storageFee: 0,
           additionalPayment: 0,
-          otherDeductions: 0,
+          otherDeductions: settled.other, // penalties, transfer/acquiring, storage, ads — no longer folded into commission
           netPayout,
           ordersCount: v.count,
           orderNumbers: [...settled.orderNumbers],
