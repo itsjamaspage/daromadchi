@@ -19,6 +19,28 @@ import type { MarketplaceType } from '@/lib/types'
  * Bucket format matches what the caller uses: 'YYYY-MM' for month, or
  * 'YYYY-MM-DD' for day.
  */
+/**
+ * Classify a Yandex united-netting DEBIT (Удержание) row into commission /
+ * delivery / other, keyed off `product_name` — the «…услуги (к удержанию)»
+ * column that names the service. (order_type is NOT it — it's always "Продажа
+ * физлицу".) Only two names are real revenue-share buckets:
+ *   "Доставка покупателю"  → delivery
+ *   "Поручение на продажу" → commission (the sales commission)
+ * Everything else is a genuine "other" fee — a late-shipment penalty
+ * ("Отгрузка или доставка не вовремя"), a transfer fee ("Поручение на перевод
+ * платежа"), storage, acquiring, ads, loyalty — OR a blank/unnamed row we can't
+ * attribute (older rows synced before product_name was captured; a settlements
+ * re-sync backfills the name via the upsert). Exact match on purpose: the penalty
+ * name contains "доставка" and the transfer fee contains "Поручение", so a
+ * substring test would misfile both.
+ */
+export function classifyYandexDebit(productName: string | null | undefined): 'commission' | 'delivery' | 'other' {
+  const n = (productName ?? '').trim()
+  if (n === 'Доставка покупателю') return 'delivery'
+  if (n === 'Поручение на продажу') return 'commission'
+  return 'other'
+}
+
 export interface RealBucket {
   commission: number
   delivery: number
@@ -63,18 +85,19 @@ export async function getRealFinancialsByBucket(
     out.set(key, cur)
   }
 
-  // ── Yandex: rows tagged Начисление (credit) vs Удержание (debit). Debits are
-  //    split by order_type — the SAME classification the Payouts page uses so the
-  //    two surfaces agree: "Доставка …" → delivery, "Поручение на продажу" → the
-  //    real sales commission, everything else ("Услуги маркета" bundle: acquiring,
-  //    ads/boost, loyalty, storage, penalties) → `other`. Previously anything not
-  //    "Доставка" was dumped into commission, so commission absorbed all of those.
+  // ── Yandex: rows tagged Начисление (credit) vs Удержание (debit). The debit
+  //    TYPE lives in product_name — the «…услуги (к удержанию)» column — NOT in
+  //    order_type (which is always "Продажа физлицу"). classifyYandexDebit does
+  //    the exact-name split: "Доставка покупателю" → delivery, "Поручение на
+  //    продажу" → the real sales commission, everything else (penalties, transfer
+  //    fees, storage, acquiring, ads, loyalty — and any blank/unnamed rows) →
+  //    `other`. Net is unaffected regardless of the split (all debits subtract).
   if (ymShopIds.length > 0) {
     try {
       const rows = await db.select({
         bucket:       sql<string>`to_char(${yandexSettlementTransactions.transaction_at}, ${sql.raw(`'${fmt}'`)})`.as('bucket'),
         entry_type:   yandexSettlementTransactions.entry_type,
-        order_type:   yandexSettlementTransactions.order_type,
+        product_name: yandexSettlementTransactions.product_name,
         amount:       yandexSettlementTransactions.amount,
       }).from(yandexSettlementTransactions)
         .where(and(
@@ -88,12 +111,7 @@ export async function getRealFinancialsByBucket(
         const amt = Number(r.amount)
         b.itemCount += 1
         if (r.entry_type === 'Начисление') b.credit += amt
-        else {
-          const ot = r.order_type ?? ''
-          if (ot.includes('Доставка')) b.delivery += amt
-          else if (ot.includes('Поручение')) b.commission += amt
-          else b.other += amt
-        }
+        else b[classifyYandexDebit(r.product_name)] += amt
         perBucket.set(r.bucket, b)
       }
       for (const [k, v] of perBucket) {
