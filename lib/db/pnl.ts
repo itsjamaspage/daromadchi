@@ -32,6 +32,9 @@ export interface PnlRow {
   revenue: number
   commission: number
   delivery: number
+  /** Non-commission/non-delivery real deductions (storage, acquiring, ads,
+   *  loyalty, penalties). Split out of commission; settlement-only, else 0. */
+  otherFees: number
   acquiring: number
   tax: number
   cogs: number
@@ -212,6 +215,12 @@ export async function getPnl(opts: PnlOpts): Promise<{ rows: PnlRow[]; params: P
       // both fold it in). Only show a separate estimated acquiring line
       // when we're falling back to Unit-Economics percentages.
       const acquiring  = (!hasReal && estimated) ? v.revenueEstimable * params.acquiringPct / 100 : 0
+      // Other real marketplace deductions (storage, acquiring, ads/boost,
+      // loyalty, penalties) — split out of commission so the commission line is
+      // the true sales commission. Settlement-only; 0 unless real data exists.
+      // Net is unchanged: commission (now Поручение-only) + otherFees == the old
+      // catch-all commission, so the same total is still subtracted below.
+      const otherFees  = hasReal ? real!.other : 0
       // A Yandex sale whose real settlement hasn't landed yet → its fee is
       // "pending" (shown as a placeholder), not zero and not an estimate.
       const feePending = v.hasYandex && !hasRealYandex
@@ -237,13 +246,14 @@ export async function getPnl(opts: PnlOpts): Promise<{ rows: PnlRow[]; params: P
         revenue:          v.revenue,
         commission,
         delivery,
+        otherFees,
         acquiring,
         tax,
         cogs,
         penalty,
         storageFee,
         additionalPayment,
-        net: v.revenue - commission - delivery - acquiring - tax - cogs - penalty - storageFee - additionalPayment,
+        net: v.revenue - commission - delivery - otherFees - acquiring - tax - cogs - penalty - storageFee - additionalPayment,
         estimated,
         feePending,
       }

@@ -159,13 +159,23 @@ export default async function PnlPage({ searchParams }: Props) {
     revenue:   s.revenue + m.revenue,
     commission: s.commission + m.commission,
     delivery:  s.delivery + m.delivery,
+    otherFees: s.otherFees + m.otherFees,
     acquiring: s.acquiring + m.acquiring,
     tax:       s.tax + m.tax,
     cogs:      s.cogs + m.cogs,
     net:       s.net + m.net,
     pendingRevenue: s.pendingRevenue + m.pendingRevenue,
     pendingCount:   s.pendingCount + m.pendingCount,
-  }), { orders: 0, cancelled: 0, revenue: 0, commission: 0, delivery: 0, acquiring: 0, tax: 0, cogs: 0, net: 0, pendingRevenue: 0, pendingCount: 0 })
+  }), { orders: 0, cancelled: 0, revenue: 0, commission: 0, delivery: 0, otherFees: 0, acquiring: 0, tax: 0, cogs: 0, net: 0, pendingRevenue: 0, pendingCount: 0 })
+  // "Прочие удержания" — real marketplace deductions that are neither the sales
+  // commission nor delivery (storage, acquiring, ads, loyalty, penalties). Split
+  // out of commission so that line is the true commission. Localised inline.
+  const otherFeesLabel = lang === 'ru' ? 'Прочие' : lang === 'uz' ? 'Boshqa' : 'Other'
+  const otherFeesHint = lang === 'ru'
+    ? 'Прочие удержания маркетплейса: хранение, эквайринг, реклама, штрафы и т.п. — раньше они попадали в «Комиссию».'
+    : lang === 'uz'
+    ? 'Marketpleysning boshqa ushlab qolishlari: saqlash, ekvayring, reklama, jarimalar — avval «Komissiya»ga tushardi.'
+    : 'Other marketplace deductions: storage, acquiring, ads, penalties — previously folded into Commission.'
   // In-transit ("В процессе"): earned only once delivered, so shown apart from
   // Общая выручка / Чистая прибыль. Localised inline to avoid threading three
   // more keys through the shared i18n file for one banner.
@@ -200,6 +210,7 @@ export default async function PnlPage({ searchParams }: Props) {
     [`${d.revenue} (so'm)`]:       Math.round(m.revenue),
     [`${d.commission2} (so'm)`]:   Math.round(m.commission),
     [`${d.delivery} (so'm)`]:      Math.round(m.delivery),
+    [`${otherFeesLabel} (so'm)`]:  Math.round(m.otherFees),
     [`${d.acquiringLabel} (so'm)`]: Math.round(m.acquiring),
     [`${d.taxLabel} (so'm)`]:      Math.round(m.tax),
     [`${d.cogsLabel} (so'm)`]:     Math.round(m.cogs),
@@ -254,7 +265,7 @@ export default async function PnlPage({ searchParams }: Props) {
       ) : (
         <>
           {(() => {
-            const marketplacePayout = totals.revenue - totals.commission - totals.delivery
+            const marketplacePayout = totals.revenue - totals.commission - totals.delivery - totals.otherFees
             return (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
                 {[
@@ -326,7 +337,7 @@ export default async function PnlPage({ searchParams }: Props) {
             data={pnl.rows.map(m => ({
               month:   labelFor(m.bucketKey),
               revenue: m.revenue,
-              cost:    m.commission + m.delivery + m.acquiring + m.tax + m.cogs + m.penalty + m.storageFee + m.additionalPayment,
+              cost:    m.commission + m.delivery + m.otherFees + m.acquiring + m.tax + m.cogs + m.penalty + m.storageFee + m.additionalPayment,
               profit:  m.net,
               orders:  m.order_count,
             }))}
@@ -347,6 +358,7 @@ export default async function PnlPage({ searchParams }: Props) {
                     <th className="text-right font-medium px-4 py-3">{d.revenue}</th>
                     <th className="text-right font-medium px-4 py-3">{d.commission2}</th>
                     <th className="text-right font-medium px-4 py-3">{d.delivery}</th>
+                    <th className="text-right font-medium px-4 py-3" title={otherFeesHint}>{otherFeesLabel}</th>
                     <th className="text-right font-medium px-4 py-3">{d.acquiringLabel}</th>
                     <th className="text-right font-medium px-4 py-3">{d.taxLabel}</th>
                     <th className="text-right font-medium px-4 py-3">{d.cogsLabel}</th>
@@ -371,6 +383,7 @@ export default async function PnlPage({ searchParams }: Props) {
                       <td className={num}>{fmt(todayRow.revenue)}</td>
                       <td className={num}>{todayRow.feePending && todayRow.commission === 0 ? pendingCell : est(todayRow.commission, todayRow.estimated, `≈ ${pnl.params.commissionPct}%`)}</td>
                       <td className={num}>{todayRow.feePending && todayRow.delivery === 0 ? pendingCell : todayRow.delivery > 0 ? est(todayRow.delivery, todayRow.estimated, `≈ ${pnl.params.lastMilePct}%`) : '—'}</td>
+                      <td className={num}>{todayRow.otherFees > 0 ? fmt(todayRow.otherFees) : '—'}</td>
                       <td className={num}>{est(todayRow.acquiring, todayRow.estimated, `≈ ${pnl.params.acquiringPct}%`)}</td>
                       <td className={num}>{est(todayRow.tax, true, `≈ ${pnl.params.taxPct}%`)}</td>
                       <td className={num}>{todayRow.cogs > 0 ? fmt(todayRow.cogs) : '—'}</td>
@@ -390,6 +403,7 @@ export default async function PnlPage({ searchParams }: Props) {
                         <td className={num}>{fmt(m.revenue)}</td>
                         <td className={num}>{m.feePending && m.commission === 0 ? pendingCell : est(m.commission, m.estimated, `≈ ${pnl.params.commissionPct}%`)}</td>
                         <td className={num}>{m.feePending && m.delivery === 0 ? pendingCell : m.delivery > 0 ? est(m.delivery, m.estimated, `≈ ${pnl.params.lastMilePct}%`) : '—'}</td>
+                        <td className={num}>{m.otherFees > 0 ? fmt(m.otherFees) : '—'}</td>
                         <td className={num}>{est(m.acquiring, m.estimated, `≈ ${pnl.params.acquiringPct}%`)}</td>
                         <td className={num}>{est(m.tax, true, `≈ ${pnl.params.taxPct}%`)}</td>
                         <td className={num}>{m.cogs > 0 ? fmt(m.cogs) : '—'}</td>
@@ -405,6 +419,7 @@ export default async function PnlPage({ searchParams }: Props) {
                     <td className={`${num} font-bold`}>{fmt(totals.revenue)}</td>
                     <td className={`${num} font-bold`}>{totalsFeePending && totals.commission === 0 ? pendingCell : est(totals.commission, anyEstimated, `≈ ${pnl.params.commissionPct}%`)}</td>
                     <td className={`${num} font-bold`}>{totalsFeePending && totals.delivery === 0 ? pendingCell : totals.delivery > 0 ? fmt(totals.delivery) : '—'}</td>
+                    <td className={`${num} font-bold`}>{totals.otherFees > 0 ? fmt(totals.otherFees) : '—'}</td>
                     <td className={`${num} font-bold`}>{est(totals.acquiring, anyEstimated, `≈ ${pnl.params.acquiringPct}%`)}</td>
                     <td className={`${num} font-bold`}>{est(totals.tax, true, `≈ ${pnl.params.taxPct}%`)}</td>
                     <td className={`${num} font-bold`}>{totals.cogs > 0 ? fmt(totals.cogs) : '—'}</td>
@@ -419,10 +434,10 @@ export default async function PnlPage({ searchParams }: Props) {
                       already nets every expense out of revenue.) */}
                   <tr>
                     <td colSpan={4} className="px-4 py-2 text-xs text-[var(--text-muted)]" />
-                    <td colSpan={5} className="px-4 py-2 text-right text-xs text-[var(--text-muted)]">
+                    <td colSpan={6} className="px-4 py-2 text-right text-xs text-[var(--text-muted)]">
                       {d.pnlMpWithheld}:
                     </td>
-                    <td className={`${num} font-bold`}>{fmt(totals.commission + totals.delivery + totals.acquiring)}</td>
+                    <td className={`${num} font-bold`}>{fmt(totals.commission + totals.delivery + totals.otherFees + totals.acquiring)}</td>
                     <td />
                   </tr>
                 </tbody>
