@@ -174,14 +174,17 @@ export default async function PnlPage({ searchParams }: Props) {
     pendingCount:   s.pendingCount + m.pendingCount,
   }), { orders: 0, cancelled: 0, revenue: 0, commission: 0, delivery: 0, otherFees: 0, acquiring: 0, tax: 0, cogs: 0, net: 0, pendingRevenue: 0, pendingCount: 0 })
   // "Прочие удержания" — real marketplace deductions that are neither the sales
-  // commission nor delivery (storage, acquiring, ads, loyalty, penalties). Split
-  // out of commission so that line is the true commission. Localised inline.
+  // commission nor delivery (acquiring, ads, loyalty, penalties). Split out of
+  // commission so that line is the true commission. Localised inline.
+  // NB: storage is deliberately NOT listed — FBS/DBS sellers store their own
+  // goods, so the marketplace never charges them a storage fee (and the
+  // storage_fee column is never populated). Mentioning it here misled sellers.
   const otherFeesLabel = lang === 'ru' ? 'Прочие' : lang === 'uz' ? 'Boshqa' : 'Other'
   const otherFeesHint = lang === 'ru'
-    ? 'Прочие удержания маркетплейса: хранение, эквайринг, реклама, штрафы и т.п. — раньше они попадали в «Комиссию».'
+    ? 'Прочие удержания маркетплейса: эквайринг, реклама, штрафы и т.п. — раньше они попадали в «Комиссию».'
     : lang === 'uz'
-    ? 'Marketpleysning boshqa ushlab qolishlari: saqlash, ekvayring, reklama, jarimalar — avval «Komissiya»ga tushardi.'
-    : 'Other marketplace deductions: storage, acquiring, ads, penalties — previously folded into Commission.'
+    ? 'Marketpleysning boshqa ushlab qolishlari: ekvayring, reklama, jarimalar — avval «Komissiya»ga tushardi.'
+    : 'Other marketplace deductions: acquiring, ads, penalties — previously folded into Commission.'
   // In-transit ("В процессе"): earned only once delivered, so shown apart from
   // Общая выручка / Чистая прибыль. Localised inline to avoid threading three
   // more keys through the shared i18n file for one banner.
