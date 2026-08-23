@@ -86,10 +86,26 @@ export interface AdminMetrics {
   /** One entry per billable plan — widens automatically when PlanKey gains a tier. */
   byPlan: Record<PlanKey, PlanSplit>
   byInterval: { monthly: PlanSplit; annual: PlanSplit }
+  /** New SUBSCRIPTIONS that started this month ("new paid this month"). */
   newThisMonth: number
   churnedThisMonth: number
   /** Renewal charge failed but the paid period has not run out yet. */
   pastDueCount: number
+
+  /* ── user-base funnel (from the users table, not subscriptions) ─────────────
+   * "Registered" and "paying" are deliberately DISTINCT figures. A trial user
+   * has plan = 'free' with a future trial_ends_at, so `plan <> 'free'` never
+   * counts a trial as paying — trials are surfaced on their own line. */
+  /** Everyone who ever signed up (all-time). */
+  totalUsers: number
+  /** Accounts created this calendar month ("new signups this month"). */
+  newUsersThisMonth: number
+  /** Currently entitled to a paid tier (plan <> 'free', not expired). Never a trial. */
+  paidPlanUsers: number
+  /** Currently inside a free trial (plan = 'free', trial_ends_at in the future). NOT paying. */
+  trialUsers: number
+  /** Legacy grandfathered accounts — full access, plan column usually reads 'free'. */
+  grandfatheredUsers: number
 }
 
 export interface ActiveSubscriberRow {
@@ -155,7 +171,7 @@ function paymentState(atmosStatus: string, legacyStatus: string): PaymentState {
 export async function getAdminAnalytics(now: Date = new Date()): Promise<AdminAnalytics> {
   const monthStart = tashkentMonthStart(now)
 
-  const [subRows, revenueRows, paymentRows] = await Promise.all([
+  const [subRows, revenueRows, paymentRows, userRows] = await Promise.all([
     db
       .select({
         id: subscriptions.id,
@@ -204,6 +220,19 @@ export async function getAdminAnalytics(now: Date = new Date()): Promise<AdminAn
       .leftJoin(users, eq(payments.user_id, users.id))
       .orderBy(desc(payments.created_at))
       .limit(RECENT_PAYMENT_LIMIT),
+
+    // User-base counts — registered vs paying kept as distinct figures. Trials
+    // (plan 'free' + future trial_ends_at) are never counted as paying because
+    // the paid filter is `plan <> 'free'`.
+    db
+      .select({
+        total: sql<string>`COUNT(*)`,
+        newThisMonth: sql<string>`COUNT(*) FILTER (WHERE ${users.created_at} >= ${monthStart}::timestamptz)`,
+        paidPlan: sql<string>`COUNT(*) FILTER (WHERE ${users.plan} <> 'free' AND (${users.plan_expires_at} IS NULL OR ${users.plan_expires_at} > ${now}::timestamptz))`,
+        trialing: sql<string>`COUNT(*) FILTER (WHERE ${users.plan} = 'free' AND ${users.trial_ends_at} IS NOT NULL AND ${users.trial_ends_at} > ${now}::timestamptz)`,
+        grandfathered: sql<string>`COUNT(*) FILTER (WHERE ${users.is_grandfathered} = true)`,
+      })
+      .from(users),
   ])
 
   const metrics: AdminMetrics = {
@@ -218,6 +247,11 @@ export async function getAdminAnalytics(now: Date = new Date()): Promise<AdminAn
     newThisMonth: 0,
     churnedThisMonth: 0,
     pastDueCount: 0,
+    totalUsers: Number(userRows[0]?.total ?? 0),
+    newUsersThisMonth: Number(userRows[0]?.newThisMonth ?? 0),
+    paidPlanUsers: Number(userRows[0]?.paidPlan ?? 0),
+    trialUsers: Number(userRows[0]?.trialing ?? 0),
+    grandfatheredUsers: Number(userRows[0]?.grandfathered ?? 0),
   }
 
   const activeSubscribers: ActiveSubscriberRow[] = []
