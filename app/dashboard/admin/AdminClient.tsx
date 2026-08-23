@@ -2,8 +2,8 @@
 
 import { useMemo, useState } from 'react'
 import {
-  AlertTriangle, ArrowDownUp, CalendarClock, CreditCard, Lock,
-  TrendingUp, UserMinus, UserPlus, Users, Wallet,
+  AlertTriangle, ArrowDownUp, CalendarClock, Clock, CreditCard, Lock,
+  TrendingUp, UserCheck, UserMinus, UserPlus, Users, Wallet,
 } from 'lucide-react'
 import { useLang } from '@/app/providers'
 import { adminT } from '@/lib/adminT'
@@ -54,12 +54,15 @@ export default function AdminClient({ data }: { data: AdminAnalytics }) {
     v ?? <span className="italic text-[var(--text-muted)]">{t('noEmail')}</span>
 
   const cards = [
+    { key: 'registered',   label: t('registered'),   value: String(metrics.totalUsers),     hint: t('registeredHint'),                                icon: Users, accent: 'text-[var(--text-base)]' },
+    { key: 'signups',      label: t('newSignups'),   value: String(metrics.newUsersThisMonth), hint: null,                                            icon: UserPlus, accent: 'text-[var(--text-base)]' },
+    { key: 'active',       label: t('activeSubs'),   value: String(metrics.activeCount),    hint: `Pro ${metrics.byPlan.pro.count} · Pro+ ${metrics.byPlan.pro_plus.count} · Biznes ${metrics.byPlan.biznes.count}`, icon: UserCheck, accent: 'text-emerald-500' },
+    { key: 'trial',        label: t('trialNotPaying'), value: String(metrics.trialUsers),   hint: null,                                               icon: Clock, accent: 'text-amber-500' },
     { key: 'mrr',          label: t('mrr'),          value: som(metrics.mrrTiyin),          hint: t('mrrHint'),                                       icon: TrendingUp, accent: 'text-[var(--c1)]' },
     { key: 'arr',          label: t('arr'),          value: som(metrics.arrTiyin),          hint: null,                                               icon: CalendarClock, accent: 'text-[var(--text-base)]' },
     { key: 'total',        label: t('totalRevenue'), value: som(metrics.totalRevenueTiyin), hint: `${metrics.paidPaymentCount} ${t('paymentsCount')}`, icon: Wallet, accent: 'text-emerald-500' },
     { key: 'month',        label: t('monthRevenue'), value: som(metrics.monthRevenueTiyin), hint: null,                                               icon: CreditCard, accent: 'text-emerald-500' },
-    { key: 'active',       label: t('activeSubs'),   value: String(metrics.activeCount),    hint: `Pro ${metrics.byPlan.pro.count} · Pro+ ${metrics.byPlan.pro_plus.count}`, icon: Users, accent: 'text-[var(--text-base)]' },
-    { key: 'new',          label: t('newThisMonth'), value: String(metrics.newThisMonth),   hint: null,                                               icon: UserPlus, accent: 'text-emerald-500' },
+    { key: 'new',          label: t('newThisMonth'), value: String(metrics.newThisMonth),   hint: null,                                               icon: CreditCard, accent: 'text-emerald-500' },
     { key: 'churn',        label: t('churnedMonth'), value: String(metrics.churnedThisMonth), hint: null,                                             icon: UserMinus, accent: metrics.churnedThisMonth > 0 ? 'text-red-500' : 'text-[var(--text-base)]' },
     { key: 'pastdue',      label: t('pastDue'),      value: String(metrics.pastDueCount),   hint: t('pastDueHint'),                                   icon: AlertTriangle, accent: metrics.pastDueCount > 0 ? 'text-amber-500' : 'text-[var(--text-base)]' },
   ]
@@ -100,6 +103,19 @@ export default function AdminClient({ data }: { data: AdminAnalytics }) {
         ))}
       </div>
 
+      {/* Funnel: registered → on a paid plan → actively paying */}
+      <Funnel
+        title={t('funnelTitle')}
+        note={t('funnelNote')}
+        ofRegistered={t('ofRegistered')}
+        locale={locale}
+        stages={[
+          { label: t('funnelRegistered'), value: metrics.totalUsers },
+          { label: t('funnelPaidPlan'),   value: metrics.paidPlanUsers },
+          { label: t('funnelActive'),     value: metrics.activeCount },
+        ]}
+      />
+
       {/* Splits */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <SplitCard
@@ -108,6 +124,7 @@ export default function AdminClient({ data }: { data: AdminAnalytics }) {
           rows={[
             { label: t('planPro'),     ...metrics.byPlan.pro },
             { label: t('planProPlus'), ...metrics.byPlan.pro_plus },
+            { label: t('planBiznes'),  ...metrics.byPlan.biznes },
           ]}
           som={som}
         />
@@ -258,6 +275,42 @@ function Th({ children }: { children: React.ReactNode }) {
 
 function Td({ children, className = '' }: { children: React.ReactNode; className?: string }) {
   return <td className={`px-4 py-3 text-xs text-[var(--text-dim)] ${className}`}>{children}</td>
+}
+
+function Funnel({
+  title, note, ofRegistered, locale, stages,
+}: {
+  title: string
+  note: string
+  ofRegistered: string
+  locale: string
+  stages: { label: string; value: number }[]
+}) {
+  const base = stages[0]?.value ?? 0
+  const pctOf = (v: number) => (base > 0 ? Math.round((v / base) * 100) : 0)
+  const nf = new Intl.NumberFormat(locale)
+  return (
+    <div className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl p-5">
+      <p className="text-xs font-semibold text-[var(--text-muted)] mb-4">{title}</p>
+      <div className="flex flex-col sm:flex-row items-stretch gap-2">
+        {stages.map((s, i) => (
+          <div key={s.label} className="flex items-stretch gap-2 flex-1">
+            <div className="flex-1 rounded-xl border border-[var(--border)] bg-[var(--bg-input)] px-4 py-3">
+              <p className="text-xs text-[var(--text-muted)] mb-1">{s.label}</p>
+              <p className="text-xl font-bold text-[var(--text-base)]">{nf.format(s.value)}</p>
+              <p className="text-[10px] text-[var(--text-muted)] mt-0.5">
+                {i === 0 ? '100%' : `${pctOf(s.value)}% ${ofRegistered}`}
+              </p>
+            </div>
+            {i < stages.length - 1 && (
+              <div className="flex items-center text-[var(--text-muted)] font-bold select-none">→</div>
+            )}
+          </div>
+        ))}
+      </div>
+      <p className="text-[10px] text-[var(--text-muted)] mt-3">{note}</p>
+    </div>
+  )
 }
 
 function SplitCard({

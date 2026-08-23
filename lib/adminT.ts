@@ -23,16 +23,31 @@ export const adminT = {
   monthRevenue: tr('Выручка за этот месяц', 'Bu oydagi daromad', 'Revenue this month'),
   paymentsCount: tr('оплаченных платежей', "to'langan to'lov", 'paid payments'),
   activeSubs:   tr('Активные подписки', 'Faol obunalar', 'Active subscriptions'),
-  newThisMonth: tr('Новые за месяц', 'Bu oyda yangi', 'New this month'),
+  newThisMonth: tr('Новые оплаты за месяц', 'Bu oyda yangi to\'lov', 'New paid this month'),
   churnedMonth: tr('Ушли за месяц', 'Bu oyda ketgan', 'Churned this month'),
   pastDue:      tr('Просрочка оплаты', "To'lov muammosi", 'Past due'),
   pastDueHint:  tr('Списание не прошло, оплаченный период ещё идёт', "To'lov o'tmadi, lekin muddat hali tugamagan", 'Charge failed, paid period still running'),
+
+  // ── user base (registered vs paying) ──
+  registered:   tr('Всего регистраций', 'Jami ro\'yxatdan o\'tganlar', 'Total registered'),
+  registeredHint: tr('Все аккаунты, не только платящие', 'Barcha hisoblar, faqat to\'lovchilar emas', 'All accounts, not just paying'),
+  newSignups:   tr('Регистраций за месяц', 'Bu oyda ro\'yxatdan o\'tgan', 'Signups this month'),
+  trialNotPaying: tr('На триале (не платят)', 'Trialdagi (to\'lamaydi)', 'On trial (not paying)'),
+
+  // ── funnel ──
+  funnelTitle:     tr('Воронка: регистрация → оплата', 'Voronka: ro\'yxat → to\'lov', 'Funnel: registered → paying'),
+  funnelRegistered: tr('Зарегистрировались', 'Ro\'yxatdan o\'tgan', 'Registered'),
+  funnelPaidPlan:  tr('На платном тарифе', 'Pullik tarifda', 'On a paid plan'),
+  funnelActive:    tr('Активно платят', 'Faol to\'laydi', 'Actively paying'),
+  funnelNote:      tr('Триалы не считаются платящими (тариф «free»).', 'Triallar to\'lovchi hisoblanmaydi («free» tarif).', 'Trials are not counted as paying (plan “free”).'),
+  ofRegistered:    tr('от регистраций', 'ro\'yxatdan', 'of registered'),
 
   // ── splits ──
   byPlan:       tr('По тарифам', 'Tariflar bo\'yicha', 'By plan'),
   byInterval:   tr('Месячные и годовые', 'Oylik va yillik', 'Monthly vs yearly'),
   planPro:      tr('Pro', 'Pro', 'Pro'),
   planProPlus:  tr('Pro+', 'Pro+', 'Pro+'),
+  planBiznes:   tr('Biznes', 'Biznes', 'Biznes'),
   monthly:      tr('Месячный', 'Oylik', 'Monthly'),
   annual:       tr('Годовой', 'Yillik', 'Yearly'),
   subsUnit:     tr('подписок', 'obuna', 'subs'),

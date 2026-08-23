@@ -375,7 +375,7 @@
               <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:${t.muted}">${l.narx}</span><span style="color:${t.text};font-weight:600">${fp(price)}</span></div>
               ${row(`${l.comm} (<span id="drm-v-comm-pct">${_commPct}</span>%)`,'comm',`−${fp(eco.commission)}`)}
               ${row(l.delivery,'delivery',`−${fp(eco.delivery)}`,` <span style="color:${t.amber};font-size:10px">${l.taxminiy}</span>`)}
-              <div style="font-size:10px;color:${t.muted};font-style:italic;padding:1px 0">${l.saqlash}</div>
+              ${fbo?`<div style="font-size:10px;color:${t.muted};font-style:italic;padding:1px 0">${l.saqlash}</div>`:''}
               <div style="height:1px;background:${t.border};margin:2px 0"></div>
               <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600"><span style="color:${t.muted}">${l.totalMkt}</span><span id="drm-v-mkt" style="color:${t.red}">−${fp(eco.mktTotal)}</span></div>
               <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600"><span style="color:${t.muted}">${l.totalCost}</span><span id="drm-v-total" style="color:${t.red}">−${fp(eco.jamiTotal)}</span></div>
