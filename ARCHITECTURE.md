@@ -306,13 +306,14 @@ revenue on the accrual basis.
 sale whose netting hasn't landed shows its fee as "pending", not a fabricated zero
 or estimate.
 
-> **Known gap (Finding 2, queued).** Yandex debits are classified into commission
-> vs. delivery by a coarse test (`order_type` contains "Доставка" → delivery, else
-> → commission), so **commission is a catch-all** that also absorbs storage,
-> acquiring, ads and penalties (`lib/db/real-financials.ts`). Net profit stays
-> correct (all debits are subtracted), but the commission/delivery **breakdown is
-> not yet fully accurate**. A dedicated PR will reclassify debits using
-> `entry_source` / `product_name`.
+**Yandex deduction breakdown** is classified by the **service name**
+(`product_name`, the «…услуги (к удержанию)» column) via one shared helper,
+`classifyYandexDebit` (`lib/db/real-financials.ts`): `"Доставка покупателю"` →
+delivery, `"Поручение на продажу"` → commission, everything else (penalties,
+transfer/acquiring, storage, ads) → a distinct **«Прочие»** line. The same
+classifier backs the P&L, Payouts «Заработок», and Unit-Economics per-SKU rates,
+so all three reconcile with the seller's netting report to the som. (Keying off
+`order_type` was wrong — it's always "Продажа физлицу".)
 
 ## Account Deletion & Data Retention
 
