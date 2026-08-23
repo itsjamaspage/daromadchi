@@ -4,7 +4,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { useTransition } from 'react'
-import { CalendarDays } from 'lucide-react'
+import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useLang } from '@/app/providers'
 
 interface Props {
@@ -26,6 +26,13 @@ function formatDateLabel(date: string) {
 
 function todayStr() {
   return new Date().toISOString().slice(0, 10)
+}
+
+// Add `delta` days to a YYYY-MM-DD string, returning YYYY-MM-DD.
+function shiftDate(date: string, delta: number) {
+  const d = new Date(date)
+  d.setDate(d.getDate() + delta)
+  return d.toISOString().slice(0, 10)
 }
 
 function defaultFrom() {
@@ -100,6 +107,33 @@ export default function DateRangePicker({ period, from, to, presets, fallbackLab
     })
   }
 
+  // Effective current range — the applied from/to, or one derived from the active
+  // preset (window ending today). Used to page the range a week at a time.
+  const today = todayStr()
+  const effTo = to ?? today
+  const rangeDays = (from && to)
+    ? Math.round((new Date(to).getTime() - new Date(from).getTime()) / 86_400_000) + 1
+    : (parseInt(period, 10) || 7)
+  const effFrom = from ?? shiftDate(effTo, -(rangeDays - 1))
+  // No data lives in the future, so "next week" stops once the range reaches today.
+  const atToday = effTo >= today
+
+  // Shift the whole window ±7 days, preserving its length; clamp so it never runs
+  // past today. Leaves the dropdown as-is so the user can keep paging.
+  function shiftWeek(dir: -1 | 1) {
+    if (pending) return
+    let newFrom = shiftDate(effFrom, dir * 7)
+    let newTo = shiftDate(effTo, dir * 7)
+    if (newTo > today) { newTo = today; newFrom = shiftDate(today, -(rangeDays - 1)) }
+    const p = new URLSearchParams(searchParams.toString())
+    p.delete('days')
+    p.set('from', newFrom)
+    p.set('to', newTo)
+    startTransition(() => {
+      router.push(`${pathname}?${p.toString()}`, { scroll: false })
+    })
+  }
+
   const ALL_PRESETS = [
     { label: lang === 'uz' ? 'Bugun' : lang === 'ru' ? 'Сегодня' : 'Today', days: '1'   },
     { label: lang === 'uz' ? '7 kun' : lang === 'ru' ? '7 дн.'   : '7 days', days: '7'  },
@@ -140,7 +174,18 @@ export default function DateRangePicker({ period, from, to, presets, fallbackLab
   }
 
   return (
-    <div className="relative" ref={ref}>
+    <div className="flex items-center gap-1">
+      <button
+        onClick={() => shiftWeek(-1)}
+        disabled={pending}
+        aria-label={lang === 'ru' ? 'Прошлая неделя' : lang === 'uz' ? 'Oldingi hafta' : 'Previous week'}
+        title={lang === 'ru' ? 'Прошлая неделя (−7 дней)' : lang === 'uz' ? 'Oldingi hafta (−7 kun)' : 'Previous week (−7 days)'}
+        className="flex items-center justify-center w-8 h-8 rounded-xl border transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+        style={{ background: 'var(--bg-input)', borderColor: 'var(--border)', color: 'var(--text-base)' }}
+      >
+        <ChevronLeft className="w-4 h-4" />
+      </button>
+      <div className="relative" ref={ref}>
       <button
         onClick={() => setOpen(o => !o)}
         disabled={pending}
@@ -221,6 +266,17 @@ export default function DateRangePicker({ period, from, to, presets, fallbackLab
           </button>
         </div>
       )}
+      </div>
+      <button
+        onClick={() => shiftWeek(1)}
+        disabled={pending || atToday}
+        aria-label={lang === 'ru' ? 'Следующая неделя' : lang === 'uz' ? 'Keyingi hafta' : 'Next week'}
+        title={lang === 'ru' ? 'Следующая неделя (+7 дней)' : lang === 'uz' ? 'Keyingi hafta (+7 kun)' : 'Next week (+7 days)'}
+        className="flex items-center justify-center w-8 h-8 rounded-xl border transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+        style={{ background: 'var(--bg-input)', borderColor: 'var(--border)', color: 'var(--text-base)' }}
+      >
+        <ChevronRight className="w-4 h-4" />
+      </button>
     </div>
   )
 }
