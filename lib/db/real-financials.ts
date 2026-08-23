@@ -232,10 +232,10 @@ export async function getRealRatesBySku(userId: string, windowDays = 60): Promis
   if (ymShopIds.length > 0) {
     try {
       const rows = await db.select({
-        sku:         yandexSettlementTransactions.sku,
-        entry_type:  yandexSettlementTransactions.entry_type,
-        order_type:  yandexSettlementTransactions.order_type,
-        amount:      yandexSettlementTransactions.amount,
+        sku:          yandexSettlementTransactions.sku,
+        entry_type:   yandexSettlementTransactions.entry_type,
+        product_name: yandexSettlementTransactions.product_name,
+        amount:       yandexSettlementTransactions.amount,
       }).from(yandexSettlementTransactions)
         .where(and(
           inArray(yandexSettlementTransactions.shop_id, ymShopIds),
@@ -251,8 +251,13 @@ export async function getRealRatesBySku(userId: string, windowDays = 60): Promis
         if (r.entry_type === 'Начисление') {
           b.gross += amt
         } else {
-          if ((r.order_type ?? '').includes('Доставка')) b.delivery += amt
-          else b.commission += amt
+          // Classify by the service name (product_name), like the P&L / Payouts.
+          // A per-SKU RATE is the standard commission + delivery only — one-off
+          // "other" fees (penalties, transfer, storage, ads) are NOT part of the
+          // rate a seller prices against, so they're excluded here.
+          const cls = classifyYandexDebit(r.product_name)
+          if (cls === 'delivery') b.delivery += amt
+          else if (cls === 'commission') b.commission += amt
         }
         perSku.set(sku, b)
       }
