@@ -180,8 +180,51 @@ export default function CalendarPicker({ from, to }: Props) {
     return lang === 'ru' ? 'Выбрать даты' : lang === 'uz' ? 'Sanalarni tanlash' : 'Pick dates'
   })()
 
+  // ── Prev / next-week paging (same behaviour as the dashboard date picker) ──
+  // Shift the applied range ±7 days, preserving its length; clamp so it never
+  // runs past today. ISO date strings (YYYY-MM-DD) compare correctly as strings.
+  const todayISO = toISODate(today)
+  const effToISO = to ?? todayISO
+  const effFromISO = from ?? toISODate(new Date(fromISODate(effToISO).getTime() - 6 * 86_400_000))
+  const rangeDays = (from && to)
+    ? Math.round((fromISODate(to).getTime() - fromISODate(from).getTime()) / 86_400_000) + 1
+    : 7
+  const atToday = effToISO >= todayISO
+
+  function shiftWeek(dir: -1 | 1) {
+    if (pending) return
+    const nf = fromISODate(effFromISO); nf.setDate(nf.getDate() + dir * 7)
+    const nt = fromISODate(effToISO);   nt.setDate(nt.getDate() + dir * 7)
+    let newFrom = toISODate(nf)
+    let newTo   = toISODate(nt)
+    if (newTo > todayISO) {
+      newTo = todayISO
+      newFrom = toISODate(new Date(fromISODate(todayISO).getTime() - (rangeDays - 1) * 86_400_000))
+    }
+    const p = new URLSearchParams(searchParams.toString())
+    p.delete('days')
+    p.set('from', newFrom)
+    p.set('to',   newTo)
+    try { localStorage.setItem('drmDateRange', JSON.stringify({ from: newFrom, to: newTo })) } catch { /* ignore */ }
+    startTransition(() => {
+      router.push(`${pathname}?${p.toString()}`, { scroll: false })
+    })
+  }
+
   return (
-    <div className="relative" ref={wrapRef}>
+    <div className="flex items-center gap-1">
+      <button
+        type="button"
+        onClick={() => shiftWeek(-1)}
+        disabled={pending}
+        aria-label={lang === 'ru' ? 'Прошлая неделя' : lang === 'uz' ? 'Oldingi hafta' : 'Previous week'}
+        title={lang === 'ru' ? 'Прошлая неделя (−7 дней)' : lang === 'uz' ? 'Oldingi hafta (−7 kun)' : 'Previous week (−7 days)'}
+        className="flex items-center justify-center w-8 h-8 rounded-xl border transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+        style={{ background: 'var(--bg-input)', borderColor: 'var(--border)', color: 'var(--text-base)' }}
+      >
+        <ChevronLeft className="w-4 h-4" />
+      </button>
+      <div className="relative" ref={wrapRef}>
       <button
         onClick={() => setOpen(o => !o)}
         disabled={pending}
@@ -323,6 +366,18 @@ export default function CalendarPicker({ from, to }: Props) {
           </div>
         </div>
       )}
+      </div>
+      <button
+        type="button"
+        onClick={() => shiftWeek(1)}
+        disabled={pending || atToday}
+        aria-label={lang === 'ru' ? 'Следующая неделя' : lang === 'uz' ? 'Keyingi hafta' : 'Next week'}
+        title={lang === 'ru' ? 'Следующая неделя (+7 дней)' : lang === 'uz' ? 'Keyingi hafta (+7 kun)' : 'Next week (+7 days)'}
+        className="flex items-center justify-center w-8 h-8 rounded-xl border transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+        style={{ background: 'var(--bg-input)', borderColor: 'var(--border)', color: 'var(--text-base)' }}
+      >
+        <ChevronRight className="w-4 h-4" />
+      </button>
     </div>
   )
 }
