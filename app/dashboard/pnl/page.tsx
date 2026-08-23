@@ -52,15 +52,18 @@ function parseRange(params: Record<string, string>): {
     return { from, to, bucket: days > 31 ? 'month' : 'day', period: String(days) }
   }
 
-  // Default: last 90 days (rolling). Current-month was too narrow — a seller
-  // whose orders were in a prior month (e.g. July orders viewed on Aug 1) landed
-  // on an empty page even though orders existed. 90 days surfaces recent activity
-  // on load; the calendar picker still lets them narrow or widen. Monthly bucket
-  // since the span crosses months.
-  const from = new Date(to)
-  from.setDate(from.getDate() - 89)   // 90 days inclusive of today
-  from.setHours(0, 0, 0, 0)
-  return { from, to, bucket: 'month', period: '' }
+  // Default: the CURRENT WEEK (Mon–Sun). The P&L is read a week at a time and the
+  // ‹ / › buttons page a week each — so the default opens on "this week", not a
+  // 90-day span that buries it. Empty future days in the week simply don't render
+  // (the P&L only makes a row per day that actually has orders). Daily bucket.
+  const monday = new Date(to)
+  const dow = monday.getDay()                       // 0=Sun … 6=Sat
+  monday.setDate(monday.getDate() - (dow === 0 ? 6 : dow - 1))
+  monday.setHours(0, 0, 0, 0)
+  const sunday = new Date(monday)
+  sunday.setDate(monday.getDate() + 6)
+  sunday.setHours(23, 59, 59, 999)
+  return { from: monday, to: sunday, bucket: 'day', period: '' }
 }
 
 interface Props {
@@ -114,9 +117,12 @@ export default async function PnlPage({ searchParams }: Props) {
     return `${monthName.charAt(0).toUpperCase()}${monthName.slice(1)} ${dt.getUTCFullYear()}`
   }
 
-  // Build the today row from its dedicated single-day query.
+  // Build the today row from its dedicated single-day query — but ONLY for the
+  // month-bucket view, where "today" would otherwise be hidden inside the whole
+  // current-month row. In a day/week view today already has its own day row, so
+  // a separate today row would just duplicate it.
   const todayLabel = new Date().toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' })
-  const todayRow = todayPnl.rows[0]
+  const todayRow = range.bucket === 'month' && todayPnl.rows[0]
     ? { ...todayPnl.rows[0], month: todayLabel }
     : null
 
