@@ -22,7 +22,7 @@
  *   IGNORED  status 'pending' — checkout started, never settled; not a customer
  */
 import 'server-only'
-import { desc, eq, ne, or, sql } from 'drizzle-orm'
+import { and, desc, eq, ne, or, sql } from 'drizzle-orm'
 import { db, payments, subscriptions, users } from '@/lib/db'
 import {
   PLAN_PRICES_TIYIN,
@@ -168,8 +168,43 @@ function paymentState(atmosStatus: string, legacyStatus: string): PaymentState {
   return 'pending'
 }
 
+// The synthetic payment the ATMOS-integration test script leaves behind
+// (scripts/atmos-direct-test.mjs stamps this exact payer_email, with no user_id).
+const TEST_PAYER_EMAIL = '[atmos:direct test]'
+
 export async function getAdminAnalytics(now: Date = new Date()): Promise<AdminAnalytics> {
   const monthStart = tashkentMonthStart(now)
+
+  // ── Founder + synthetic-row exclusion ───────────────────────────────────────
+  // The founder (ADMIN_EMAIL) is testing their own product, not a customer, so
+  // their rows must NEVER inflate revenue/MRR/active/funnel/plan-splits. Resolve
+  // the founder's user id(s) from the email so the filter is by identity, not by
+  // deleting data. Predicates are written NULL-safe: they key off payer_email
+  // (which survives account deletion) and user_id, and deliberately do NOT treat
+  // "user_id IS NULL" as synthetic — a deleted REAL customer also has a null
+  // user_id and their past revenue is genuine.
+  const adminEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase() || null
+  const adminUsers = adminEmail
+    ? await db.select({ id: users.id }).from(users).where(sql`lower(${users.email}) = ${adminEmail}`)
+    : []
+  const adminIds = adminUsers.map(u => u.id)
+  const adminIdList = adminIds.length
+    ? sql.join(adminIds.map(id => sql`${id}::uuid`), sql`, `)
+    : null
+
+  // A payment counts toward revenue metrics unless it is the synthetic test row
+  // or belongs to the founder (matched by email OR linked user id).
+  const paymentExcludedParts = [
+    sql`${payments.payer_email} IS NOT DISTINCT FROM ${TEST_PAYER_EMAIL}`,
+  ]
+  if (adminEmail) paymentExcludedParts.push(sql`(${payments.payer_email} IS NOT NULL AND lower(${payments.payer_email}) = ${adminEmail})`)
+  if (adminIdList) paymentExcludedParts.push(sql`(${payments.user_id} IS NOT NULL AND ${payments.user_id} IN (${adminIdList}))`)
+  const paymentIncluded = sql`NOT (${sql.join(paymentExcludedParts, sql` OR `)})`
+
+  // Subscriptions are always linked to a user (NOT NULL FK); exclude the founder's.
+  const subFounderOk = adminIdList ? sql`${subscriptions.user_id} NOT IN (${adminIdList})` : sql`TRUE`
+  // Users table: drop the founder from every headcount/funnel figure.
+  const userFounderOk = adminEmail ? sql`lower(${users.email}) <> ${adminEmail}` : sql`TRUE`
 
   const [subRows, revenueRows, paymentRows, userRows] = await Promise.all([
     db
@@ -187,7 +222,7 @@ export async function getAdminAnalytics(now: Date = new Date()): Promise<AdminAn
       .from(subscriptions)
       .leftJoin(users, eq(subscriptions.user_id, users.id))
       // 'pending' = checkout opened and never settled. Not a customer.
-      .where(ne(subscriptions.status, 'pending'))
+      .where(and(ne(subscriptions.status, 'pending'), subFounderOk))
       .orderBy(desc(subscriptions.created_at))
       .limit(SUB_SCAN_LIMIT),
 
@@ -200,7 +235,7 @@ export async function getAdminAnalytics(now: Date = new Date()): Promise<AdminAn
         count: sql<string>`COUNT(*)`,
       })
       .from(payments)
-      .where(or(eq(payments.atmos_status, 'success'), eq(payments.status, 'paid'))),
+      .where(and(or(eq(payments.atmos_status, 'success'), eq(payments.status, 'paid')), paymentIncluded)),
 
     db
       .select({
@@ -218,6 +253,7 @@ export async function getAdminAnalytics(now: Date = new Date()): Promise<AdminAn
       })
       .from(payments)
       .leftJoin(users, eq(payments.user_id, users.id))
+      .where(paymentIncluded)
       .orderBy(desc(payments.created_at))
       .limit(RECENT_PAYMENT_LIMIT),
 
@@ -232,7 +268,8 @@ export async function getAdminAnalytics(now: Date = new Date()): Promise<AdminAn
         trialing: sql<string>`COUNT(*) FILTER (WHERE ${users.plan} = 'free' AND ${users.trial_ends_at} IS NOT NULL AND ${users.trial_ends_at} > ${now}::timestamptz)`,
         grandfathered: sql<string>`COUNT(*) FILTER (WHERE ${users.is_grandfathered} = true)`,
       })
-      .from(users),
+      .from(users)
+      .where(userFounderOk),
   ])
 
   const metrics: AdminMetrics = {
