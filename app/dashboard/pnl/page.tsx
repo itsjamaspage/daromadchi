@@ -134,7 +134,7 @@ export default async function PnlPage({ searchParams }: Props) {
   // current month that we hid from the row display) so the итого row
   // still reflects the full picked range, not just past months.
   const allRowsForTotals = pnl.rows
-  const isEmpty = pnl.rows.length === 0 || pnl.rows.every(m => m.revenue === 0 && m.cancelled_count === 0)
+  const isEmpty = pnl.rows.length === 0 || pnl.rows.every(m => m.revenue === 0 && m.cancelled_count === 0 && m.pendingRevenue === 0)
   const hasShops = userShops.length > 0
 
   // Only when the picked range is empty: does the store have ANY orders ever
@@ -163,7 +163,17 @@ export default async function PnlPage({ searchParams }: Props) {
     tax:       s.tax + m.tax,
     cogs:      s.cogs + m.cogs,
     net:       s.net + m.net,
-  }), { orders: 0, cancelled: 0, revenue: 0, commission: 0, delivery: 0, acquiring: 0, tax: 0, cogs: 0, net: 0 })
+    pendingRevenue: s.pendingRevenue + m.pendingRevenue,
+    pendingCount:   s.pendingCount + m.pendingCount,
+  }), { orders: 0, cancelled: 0, revenue: 0, commission: 0, delivery: 0, acquiring: 0, tax: 0, cogs: 0, net: 0, pendingRevenue: 0, pendingCount: 0 })
+  // In-transit ("В процессе"): earned only once delivered, so shown apart from
+  // Общая выручка / Чистая прибыль. Localised inline to avoid threading three
+  // more keys through the shared i18n file for one banner.
+  const pendingCopy = {
+    ru: { label: 'В процессе', sub: (n: number) => `${n} ${n === 1 ? 'заказ' : 'заказа(ов)'} в доставке — доход учтётся после доставки, в прибыль пока не входит` },
+    uz: { label: 'Jarayonda', sub: (n: number) => `${n} ta buyurtma yetkazilmoqda — daromad yetkazilgach hisoblanadi, hozircha foydaga kirmaydi` },
+    en: { label: 'In progress', sub: (n: number) => `${n} order(s) in delivery — counted as revenue once delivered, not in profit yet` },
+  }[lang === 'ru' ? 'ru' : lang === 'uz' ? 'uz' : 'en']
   // Доставка tooltip: name the store(s) that actually charged the logistics,
   // from the per-marketplace settlement split. Only non-zero stores are shown.
   const mpName = (mp: string) => mp === 'uzum' ? 'Uzum' : mp === 'yandex_market' ? 'Yandex Market' : mp
@@ -282,6 +292,17 @@ export default async function PnlPage({ searchParams }: Props) {
               </div>
             )
           })()}
+
+          {totals.pendingRevenue > 0 && (
+            <div className="flex items-start gap-3 rounded-xl px-4 py-3 text-xs border"
+              style={{ background: 'color-mix(in srgb, var(--c1) 6%, transparent)', borderColor: 'color-mix(in srgb, var(--c1) 30%, transparent)' }}>
+              <FileText className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: 'var(--c1)' }} />
+              <span style={{ color: 'var(--text-base)' }}>
+                <span className="font-semibold">{pendingCopy.label}: {fmt(totals.pendingRevenue)}</span>
+                <span className="text-[var(--text-muted)]"> — {pendingCopy.sub(totals.pendingCount)}</span>
+              </span>
+            </div>
+          )}
 
           {anyEstimated && (
             <div className="flex items-start gap-3 rounded-xl px-4 py-3 text-xs border"

@@ -23,6 +23,12 @@ export interface PnlRow {
   order_count: number
   cancelled_count: number
   cancelled_amount: number
+  // In-transit orders (pending/confirmed) — goods NOT yet delivered, so on an
+  // accrual basis the revenue is NOT yet earned. Kept OUT of `revenue`/`net`
+  // and surfaced separately so the seller sees "in progress" without it
+  // inflating realized profit. Realized on delivery (status='delivered').
+  pendingRevenue: number
+  pendingCount: number
   revenue: number
   commission: number
   delivery: number
@@ -113,8 +119,10 @@ export async function getPnl(opts: PnlOpts): Promise<{ rows: PnlRow[]; params: P
         inArray(orders.shop_id, shopIds),
         gte(orders.ordered_at, from),
         sql`${orders.ordered_at} <= ${to}`,
-        ne(orders.status, 'cancelled'),
-        ne(orders.status, 'returned'),
+        // COGS is recognised together with the revenue it belongs to — only for
+        // DELIVERED orders. In-transit/cancelled/returned contribute neither
+        // revenue nor cost here.
+        eq(orders.status, 'delivered'),
       ))
       .groupBy(orderBucketSql),
   ])
@@ -138,6 +146,7 @@ export async function getPnl(opts: PnlOpts): Promise<{ rows: PnlRow[]; params: P
     // in the bucket so we can mark its fee "pending" until settlement lands.
     revenueEstimable: number; hasYandex: boolean
     cancelledCount: number; cancelledAmount: number
+    pendingRevenue: number; pendingCount: number
     penalty: number; storageFee: number; additionalPayment: number
   }>()
   // Only days that actually have an order (or cancellation) get a row — the loop
@@ -152,11 +161,17 @@ export async function getPnl(opts: PnlOpts): Promise<{ rows: PnlRow[]; params: P
     const ex = grouped.get(key) ?? {
       revenue: 0, realFee: 0, realDelivery: 0, count: 0, revenueEstimable: 0, hasYandex: false,
       cancelledCount: 0, cancelledAmount: 0,
+      pendingRevenue: 0, pendingCount: 0,
       penalty: 0, storageFee: 0, additionalPayment: 0,
     }
     if (row.status === 'cancelled' || row.status === 'returned') {
       ex.cancelledCount += 1
       ex.cancelledAmount += Number(row.revenue ?? 0)
+    } else if (row.status !== 'delivered') {
+      // In-transit (pending/confirmed) — earned only once delivered. Track it
+      // separately; it must NOT feed revenue, fees, COGS or net.
+      ex.pendingRevenue += Number(row.revenue ?? 0)
+      ex.pendingCount   += 1
     } else {
       const rev = Number(row.revenue ?? 0)
       ex.revenue      += rev
@@ -217,6 +232,8 @@ export async function getPnl(opts: PnlOpts): Promise<{ rows: PnlRow[]; params: P
         order_count:      v.count,
         cancelled_count:  v.cancelledCount,
         cancelled_amount: v.cancelledAmount,
+        pendingRevenue:   v.pendingRevenue,
+        pendingCount:     v.pendingCount,
         revenue:          v.revenue,
         commission,
         delivery,
@@ -265,8 +282,9 @@ export async function getCogsBreakdown(opts: {
       inArray(orders.shop_id, shopIds),
       gte(orders.ordered_at, opts.from),
       sql`${orders.ordered_at} <= ${opts.to}`,
-      ne(orders.status, 'cancelled'),
-      ne(orders.status, 'returned'),
+      // Delivered-only, matching getPnl's COGS so the editor total reconciles
+      // with the P&L Себестоимость line.
+      eq(orders.status, 'delivered'),
     ))
     .groupBy(orderItems.product_id, products.title, products.sku, products.cost_price)
   return rows
