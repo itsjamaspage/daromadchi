@@ -133,8 +133,14 @@ export default function DashboardClient({ slices, stockGroups, days, period, fro
 
   function switchTab(mp: MarketplaceType | undefined) {
     setMarketplace(mp)
-    const url = mp ? `/dashboard?mp=${mp}&days=${period}` : `/dashboard?days=${period}`
-    router.replace(url, { scroll: false })
+    // Preserve the active range across a marketplace switch — a custom/default
+    // from–to window (e.g. the current-week default) would otherwise be lost.
+    const p = new URLSearchParams()
+    if (mp) p.set('mp', mp)
+    if (from && to) { p.set('from', from); p.set('to', to) }
+    else if (period) p.set('days', period)
+    const qs = p.toString()
+    router.replace(qs ? `/dashboard?${qs}` : '/dashboard', { scroll: false })
   }
 
   const sliceKey = marketplace ?? 'all'

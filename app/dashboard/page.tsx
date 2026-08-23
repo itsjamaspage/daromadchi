@@ -5,7 +5,7 @@ import { getKpis } from '@/lib/db/kpis'
 import { getOrders } from '@/lib/db/orders'
 import { getProducts, getProductSales, getCategoryRevenue } from '@/lib/db/products'
 import { getDailyRevenue } from '@/lib/db/revenue'
-import { getUserShops, getShopLaunchDate, getSyncInfo } from '@/lib/db/shop-context'
+import { getUserShops, getSyncInfo } from '@/lib/db/shop-context'
 import { getStockGroups } from '@/lib/db/stock-groups'
 import WelcomePopup from '@/components/dashboard/WelcomePopup'
 import type { MarketplaceType } from '@/lib/types'
@@ -62,21 +62,37 @@ interface Props {
 
 export default async function DashboardPage({ searchParams }: Props) {
   const params             = await searchParams
-  const period             = params?.days ?? '365'
-  let   days               = parseDays(period)
+  const explicitDays       = params?.days
   let   from               = params?.from
   let   to                 = params?.to
+  let   period: string
+  let   days: number
   const initialMarketplace = parseMarketplace(params)
 
-  // Default view: use the earliest order date as "from" so users always see all their data
-  if (!from && !to && period === '365') {
-    const launchDate = await getShopLaunchDate().catch(e => { console.error('[dashboard] getShopLaunchDate', e); return null })
-    if (launchDate) {
-      from = launchDate.slice(0, 10)
-      to   = new Date().toISOString().slice(0, 10)
-      // eslint-disable-next-line react-hooks/purity
-      days = Math.ceil((Date.now() - new Date(from).getTime()) / 86_400_000)
-    }
+  if (from && to) {
+    // Custom range chosen in the picker — honour it verbatim.
+    period = ''
+    days = Math.max(1, Math.ceil((new Date(to).getTime() - new Date(from).getTime()) / 86_400_000) + 1)
+  } else if (explicitDays) {
+    // Explicit preset (?days=…), e.g. the "1 year" chip.
+    period = explicitDays
+    days = parseDays(explicitDays)
+  } else {
+    // DEFAULT: the CURRENT WEEK (Mon–Sun), matching the P&L page. The ‹ / ›
+    // buttons page a week at a time, so the dashboard opens on "this week"
+    // rather than a year-long span. Revenue is delivered-basis (see kpis.ts),
+    // so the week fills in as orders are delivered.
+    const now = new Date()
+    const monday = new Date(now)
+    const dow = monday.getDay()                     // 0=Sun … 6=Sat
+    monday.setDate(monday.getDate() - (dow === 0 ? 6 : dow - 1))
+    monday.setHours(0, 0, 0, 0)
+    const sunday = new Date(monday)
+    sunday.setDate(monday.getDate() + 6)
+    from   = monday.toISOString().slice(0, 10)
+    to     = sunday.toISOString().slice(0, 10)
+    period = ''
+    days   = 7
   }
 
   const allShops   = await getUserShops().catch(e => { console.error('[dashboard] getUserShops', e); return [] })
