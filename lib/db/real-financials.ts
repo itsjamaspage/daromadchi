@@ -19,9 +19,38 @@ import type { MarketplaceType } from '@/lib/types'
  * Bucket format matches what the caller uses: 'YYYY-MM' for month, or
  * 'YYYY-MM-DD' for day.
  */
+/**
+ * Classify a Yandex united-netting DEBIT (Удержание) row into commission /
+ * delivery / other, keyed off `product_name` — the «…услуги (к удержанию)»
+ * column that names the service. (order_type is NOT it — it's always "Продажа
+ * физлицу".) Only two names are real revenue-share buckets:
+ *   "Доставка покупателю"  → delivery
+ *   "Поручение на продажу" → commission (the sales commission)
+ * Everything else is a genuine "other" fee — a late-shipment penalty
+ * ("Отгрузка или доставка не вовремя"), a transfer fee ("Поручение на перевод
+ * платежа"), storage, acquiring, ads, loyalty — OR a blank/unnamed row we can't
+ * attribute (older rows synced before product_name was captured; a settlements
+ * re-sync backfills the name via the upsert). Exact match on purpose: the penalty
+ * name contains "доставка" and the transfer fee contains "Поручение", so a
+ * substring test would misfile both.
+ */
+export function classifyYandexDebit(productName: string | null | undefined): 'commission' | 'delivery' | 'other' {
+  const n = (productName ?? '').trim()
+  if (n === 'Доставка покупателю') return 'delivery'
+  if (n === 'Поручение на продажу') return 'commission'
+  return 'other'
+}
+
 export interface RealBucket {
   commission: number
   delivery: number
+  // Non-commission, non-delivery marketplace deductions — storage, acquiring,
+  // ads/boost, loyalty, penalties, etc. Previously these were silently folded
+  // into `commission` (a catch-all), which made the commission line wrong while
+  // leaving net correct. Now split out so the breakdown reconciles with the
+  // seller's finance report. Uzum has explicit commission/delivery columns and
+  // no separate "other", so it stays 0 there.
+  other: number
   net: number
   itemCount: number   // >0 means real data is present; 0 → caller uses its own estimate
   ymItemCount: number // Yandex-only settled item count; lets callers tell whether
@@ -46,48 +75,54 @@ export async function getRealFinancialsByBucket(
   const uzShopIds = shopRows.filter(r => r.marketplace === 'uzum').map(r => r.id)
 
   const bump = (key: string, patch: Partial<RealBucket>) => {
-    const cur = out.get(key) ?? { commission: 0, delivery: 0, net: 0, itemCount: 0, ymItemCount: 0 }
+    const cur = out.get(key) ?? { commission: 0, delivery: 0, other: 0, net: 0, itemCount: 0, ymItemCount: 0 }
     cur.commission  += patch.commission  ?? 0
     cur.delivery    += patch.delivery    ?? 0
+    cur.other       += patch.other       ?? 0
     cur.net         += patch.net         ?? 0
     cur.itemCount   += patch.itemCount   ?? 0
     cur.ymItemCount += patch.ymItemCount ?? 0
     out.set(key, cur)
   }
 
-  // ── Yandex: rows tagged Начисление (credit) vs Удержание (debit),
-  //    with order_type used to split delivery from commission (Yandex
-  //    bundles a lot into "Услуги маркета" so most debits are commission).
+  // ── Yandex: rows tagged Начисление (credit) vs Удержание (debit). The debit
+  //    TYPE lives in product_name — the «…услуги (к удержанию)» column — NOT in
+  //    order_type (which is always "Продажа физлицу"). classifyYandexDebit does
+  //    the exact-name split: "Доставка покупателю" → delivery, "Поручение на
+  //    продажу" → the real sales commission, everything else (penalties, transfer
+  //    fees, storage, acquiring, ads, loyalty — and any blank/unnamed rows) →
+  //    `other`. Net is unaffected regardless of the split (all debits subtract).
   if (ymShopIds.length > 0) {
     try {
       const rows = await db.select({
         bucket:       sql<string>`to_char(${yandexSettlementTransactions.transaction_at}, ${sql.raw(`'${fmt}'`)})`.as('bucket'),
         entry_type:   yandexSettlementTransactions.entry_type,
-        order_type:   yandexSettlementTransactions.order_type,
+        product_name: yandexSettlementTransactions.product_name,
         amount:       yandexSettlementTransactions.amount,
       }).from(yandexSettlementTransactions)
         .where(and(
           inArray(yandexSettlementTransactions.shop_id, ymShopIds),
           gte(yandexSettlementTransactions.transaction_at, from),
         ))
-      const perBucket = new Map<string, { credit: number; commission: number; delivery: number; itemCount: number }>()
+      const perBucket = new Map<string, { credit: number; commission: number; delivery: number; other: number; itemCount: number }>()
       for (const r of rows) {
         if (!r.bucket) continue
-        const b = perBucket.get(r.bucket) ?? { credit: 0, commission: 0, delivery: 0, itemCount: 0 }
+        const b = perBucket.get(r.bucket) ?? { credit: 0, commission: 0, delivery: 0, other: 0, itemCount: 0 }
         const amt = Number(r.amount)
         b.itemCount += 1
         if (r.entry_type === 'Начисление') b.credit += amt
-        else {
-          if ((r.order_type ?? '').includes('Доставка')) b.delivery += amt
-          else b.commission += amt
-        }
+        else b[classifyYandexDebit(r.product_name)] += amt
         perBucket.set(r.bucket, b)
       }
       for (const [k, v] of perBucket) {
         bump(k, {
           commission: v.commission,
           delivery: v.delivery,
-          net: v.credit - v.commission - v.delivery,
+          other: v.other,
+          // net unchanged: commission + delivery + other == every debit, exactly
+          // what the old (commission + delivery) sum was before `other` was split
+          // out — so profit does not move, only the breakdown.
+          net: v.credit - v.commission - v.delivery - v.other,
           itemCount: v.itemCount,
           ymItemCount: v.itemCount,
         })
