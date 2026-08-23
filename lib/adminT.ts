@@ -90,6 +90,24 @@ export const adminT = {
   emptyPayments: tr('Платежей пока нет', "To'lovlar hali yo'q", 'No payments yet'),
   emptyChurned: tr('Никто пока не ушёл', 'Hali hech kim ketmagan', 'Nobody has churned yet'),
 
+  // ── redesign: KPIs, charts, ranges ──
+  kpiChurn:     tr('Отток (в месяц)', 'Otish (oyiga)', 'Churn (monthly)'),
+  vsLastMonth:  tr('за месяц', 'oyiga', 'vs last month'),
+  newSubsTitle: tr('Новые подписки', 'Yangi obunalar', 'New subscriptions'),
+  newSubsSub:   tr('по дням, этот месяц', 'kunlar bo\'yicha, shu oy', 'by day, this month'),
+  planShareTitle: tr('Доли тарифов (MRR)', 'Tariflar ulushi (MRR)', 'Plan share (MRR)'),
+  mrrGrowthTitle: tr('Рост MRR vs Отток', 'MRR o\'sishi vs Otish', 'MRR growth vs churn'),
+  mrrGrowthSub:   tr('новый MRR против оттока', 'yangi MRR va otish', 'new MRR vs churned revenue'),
+  seriesNewMrr:   tr('Новый MRR', 'Yangi MRR', 'New MRR'),
+  seriesChurned:  tr('Отток MRR', 'Otgan MRR', 'Churned MRR'),
+  chartCaveat:  tr(
+    'Выведено из дат (нет истории смены тарифов; отток — по концу оплаченного периода). Оплаты — точные.',
+    'Sanalardan hisoblangan (tarif tarixi yo\'q; otish — to\'langan davr oxiri bo\'yicha). To\'lovlar — aniq.',
+    'Derived from timestamps (no plan-change history; churn dated at period end). Collected payments are exact.',
+  ),
+  emptyChart:   tr('Пока нет данных за период', 'Bu davr uchun ma\'lumot yo\'q', 'No data for this period yet'),
+  shareUnit:    tr('доля', 'ulush', 'share'),
+
   som:          tr('сум', "so'm", "so'm"),
   noEmail:      tr('аккаунт удалён', "hisob o'chirilgan", 'account deleted'),
   readOnlyNote: tr(
