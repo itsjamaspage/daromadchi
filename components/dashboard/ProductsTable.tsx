@@ -361,9 +361,9 @@ export default function ProductsTable({ products }: { products: Product[] }) {
                     <span
                       className="text-[10px] font-medium px-1.5 py-0.5 rounded"
                       style={{ background: 'rgba(168,85,247,0.12)', color: '#a855f7' }}
-                      title="Bu SKU bir nechta do'kon o'rtasida bo'linadi"
+                      title={lang === 'ru' ? 'Этот SKU распределён между несколькими магазинами' : lang === 'en' ? 'This SKU is shared across several stores' : "Bu SKU bir nechta do'kon o'rtasida bo'linadi"}
                     >
-                      Umumiy
+                      {lang === 'ru' ? 'Общий' : lang === 'en' ? 'Shared' : 'Umumiy'}
                     </span>
                   )}
                   {!isChild && <ColorBadge title={p.title} />}
