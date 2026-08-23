@@ -15,22 +15,24 @@ const emptyKpis: Kpis = { total_revenue: 0, total_profit: 0, total_orders: 0, to
 
 async function fetchPeriodKpis(shopIds: string[], since: Date | null, until: Date | null) {
   // Orders KPI counts EVERY order received (a cancelled order still happened);
-  // money figures exclude cancelled — a cancelled order earns nothing.
+  // money figures recognize revenue on DELIVERY only — accrual basis, matching
+  // the P&L page (Finding 1). An in-transit or pending order has not earned
+  // anything yet, and a cancelled/returned order never will.
   const conditions = [
     inArray(orders.shop_id, shopIds),
   ]
   if (since) conditions.push(gte(orders.ordered_at, since))
   if (until) conditions.push(lte(orders.ordered_at, until))
 
-  // COGS aggregated in the same period so the Dashboard's Чистая
-  // прибыль matches P&L / Payouts' "after everything" figure.
+  // COGS aggregated over DELIVERED orders in the same period so the Dashboard's
+  // Чистая прибыль matches P&L / Payouts' "after everything" figure.
   const [orderAgg, cogsAgg, unitAgg] = await Promise.all([
     db.select({
-      total_revenue: sql<number>`coalesce(sum(${orders.revenue}::numeric) filter (where ${orders.status} <> 'cancelled'), 0)`,
+      total_revenue: sql<number>`coalesce(sum(${orders.revenue}::numeric) filter (where ${orders.status} = 'delivered'), 0)`,
       // Estimate-only fallback: revenue − stored marketplace_fee − stored
       // delivery_cost. Overridden below with real settlement net when the
       // Yandex/Uzum settlement tables have any rows for this period.
-      total_profit_estimate: sql<number>`coalesce(sum(${orders.revenue}::numeric - coalesce(${orders.marketplace_fee}::numeric, 0) - coalesce(${orders.delivery_cost}::numeric, 0)) filter (where ${orders.status} <> 'cancelled'), 0)`,
+      total_profit_estimate: sql<number>`coalesce(sum(${orders.revenue}::numeric - coalesce(${orders.marketplace_fee}::numeric, 0) - coalesce(${orders.delivery_cost}::numeric, 0)) filter (where ${orders.status} = 'delivered'), 0)`,
       total_orders: sql<number>`count(*)`,
       cancelled_orders: sql<number>`count(*) filter (where ${orders.status} = 'cancelled')`,
     }).from(orders).where(and(...conditions)),
@@ -39,7 +41,7 @@ async function fetchPeriodKpis(shopIds: string[], since: Date | null, until: Dat
     }).from(orderItems)
       .innerJoin(orders, eq(orderItems.order_id, orders.id))
       .leftJoin(products, eq(orderItems.product_id, products.id))
-      .where(and(...conditions, sql`${orders.status} <> 'cancelled'`)),
+      .where(and(...conditions, sql`${orders.status} = 'delivered'`)),
     // Cancelled UNITS (a single cancelled order can hold several items — users
     // think in items, so the KPI note shows both counts).
     db.select({
