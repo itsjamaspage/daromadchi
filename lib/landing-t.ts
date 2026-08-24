@@ -356,13 +356,13 @@ export const T = {
     q5: tr('Есть ли мобильная версия?', 'Mobil versiya bormi?', 'Is there a mobile version?'),
     a5: tr(
       'Веб-версия адаптирована для мобильных устройств и работает в любом браузере. Нативное мобильное приложение в дорожной карте на август 2026 года.',
-      "Veb-versiya mobil qurilmalar uchun moslashtirilgan. Mahalliy mobil ilova avgust 2026 yo'l xaritasida.",
+      "Veb-versiya mobil qurilmalar uchun moslashtirilgan va istalgan brauzerda ishlaydi. Mahalliy mobil ilova avgust 2026 yo'l xaritasida.",
       'The web version is mobile-responsive and works in any browser. A native mobile app is on the roadmap for August 2026.',
     ),
     q6: tr("Можно ли попробовать перед оплатой?", "To'lovdan oldin sinab ko'rsa bo'ladimi?", 'Can I try before paying?'),
     a6: tr(
       'Да, есть бесплатный тариф без ограничения по времени: до 1 магазина, топ-50 товаров, ежедневные обновления. Для доступа ко всем функциям — тариф Pro (см. цены выше).',
-      "Ha, vaqt cheklovisiz bepul tarif mavjud: 1 do'kongacha, top-50 mahsulot, kunlik yangilanishlar.",
+      "Ha, vaqt cheklovisiz bepul tarif mavjud: 1 do'kongacha, top-50 mahsulot, kunlik yangilanishlar. Barcha funksiyalar uchun — Pro tarifi (yuqoridagi narxlarga qarang).",
       "Yes, there's a free tier with no time limit: up to 1 store, top 50 products, daily updates. For all features — upgrade to Pro (see prices above).",
     ),
   },
