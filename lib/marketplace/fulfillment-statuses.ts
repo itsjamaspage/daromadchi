@@ -104,3 +104,75 @@ export function isYandexSellerFulfilled(placementType: string | null | undefined
   if (!placementType) return false
   return (YM_SELLER_FULFILLED_PLACEMENTS as readonly string[]).includes(placementType.toUpperCase())
 }
+
+/**
+ * Uzum raw FBS statuses meaning "the seller is still preparing this order".
+ *
+ * Same positive-whitelist shape as the Yandex gate above, and for the same
+ * reason: an unrecognised status must mean "no action needed", never "collect
+ * and ship". Uzum's enum is fetched live from their OpenAPI document at sync
+ * time (lib/uzum/sync.ts:449-460), so new values appear without warning.
+ *
+ * Taken from the group STATUS_MAP labels «Создан — being prepared by the
+ * seller» (lib/uzum/sync.ts:47-55). Deliberately excluded:
+ *   DELIVERING / ACCEPTED_AT_DP / … — already handed over; nothing to pick.
+ *   DELIVERED* / COMPLETED         — finished.
+ *   CANCELED / RETURNED / PENDING_CANCELLATION — nothing to ship.
+ *
+ * The defensive aliases in that map (NEW, CONFIRMED, PACKED, …) are included:
+ * they describe the same not-yet-shipped stage and cost nothing if Uzum never
+ * sends them.
+ */
+export const UZ_FULFILLMENT_STATUSES = [
+  'CREATED', 'PACKING', 'PENDING_DELIVERY',
+  'NEW', 'PENDING', 'CONFIRMED', 'AGREED', 'ACCEPTED',
+  'PACKED', 'PACKAGED', 'ASSEMBLED', 'READY', 'PROCESSING', 'IN_PROGRESS',
+] as const
+
+export function isUzumFulfillmentRequired(rawStatus: string | null | undefined): boolean {
+  if (!rawStatus) return false
+  return (UZ_FULFILLMENT_STATUSES as readonly string[]).includes(rawStatus.toUpperCase())
+}
+
+/**
+ * Marketplace-agnostic front door for "does this order still need the seller to
+ * pick, pack and ship it?", for callers holding a STORED order row rather than
+ * a marketplace DTO.
+ *
+ * `marketplace_status` is the RAW value both syncs persist verbatim. It is the
+ * only field that can answer this: the normalized `status` enum is a display
+ * bucket that collapses "seller must ship" and "already in transit" into
+ * 'pending'/'confirmed', which is exactly the conflation the Yandex gate above
+ * was written to escape.
+ *
+ * ── One deliberate difference from the Telegram gate ────────────────────────
+ * isYandexFulfillmentRequired() also checks the SUBSTATUS, and we do not store
+ * it: lib/yandex/sync.ts:566 persists `o.status` only. So for a stored Yandex
+ * row this can only ask "is it PROCESSING?", which is BROADER — it also covers
+ * the SHIPPED substatus, an order already handed to delivery.
+ *
+ * That is acceptable here and would not be for the Telegram alert. This feeds a
+ * list the seller opens and scans; the alert interrupts them. Over-including a
+ * just-shipped order in a list costs a glance. The narrower behaviour needs
+ * `substatus` persisted on `orders`, which is a schema change and its own
+ * change — not something to fake by guessing from the normalized enum.
+ *
+ * Rows synced before marketplace_status existed (migration 054) have it NULL
+ * and return false. That is the safe direction — a missing raw status means we
+ * genuinely do not know, and inventing an entry for it would repeat the
+ * `?? 'pending'` mistake.
+ */
+export const YM_STORED_FULFILMENT_STATUSES = [YM_FULFILLMENT_STATUS] as const
+
+export function orderNeedsFulfilment(order: {
+  marketplace: string
+  marketplace_status?: string | null
+}): boolean {
+  const raw = (order.marketplace_status ?? '').toUpperCase()
+  if (!raw) return false
+  if (order.marketplace === 'uzum') return isUzumFulfillmentRequired(raw)
+  if (order.marketplace === 'yandex_market') {
+    return (YM_STORED_FULFILMENT_STATUSES as readonly string[]).includes(raw)
+  }
+  return false
+}
