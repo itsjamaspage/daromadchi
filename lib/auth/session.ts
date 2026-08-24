@@ -11,8 +11,13 @@ export async function getCurrentUser() {
     return null
   }
 
+  // Emails are stored lowercased (signup, Google sign-in, credentials all
+  // normalize). Match case-insensitively so a session whose email arrives in a
+  // different case (e.g. an OAuth provider that preserves the typed casing)
+  // still resolves to the SAME account — instead of finding no row and
+  // rendering an "authenticated but empty" dashboard.
   const user = await db.query.users.findFirst({
-    where: eq(users.email, session.user.email),
+    where: eq(users.email, session.user.email.trim().toLowerCase()),
   })
 
   return user
@@ -44,7 +49,7 @@ export async function getUserFromBearerToken(authHeader: string | null) {
     const email = payload?.email as string | undefined
     if (!email) return null
     return await db.query.users.findFirst({
-      where: eq(users.email, email),
+      where: eq(users.email, email.trim().toLowerCase()),
     }) ?? null
   } catch {
     return null

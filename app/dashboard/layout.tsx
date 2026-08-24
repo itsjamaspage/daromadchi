@@ -1,4 +1,6 @@
 import type { Metadata } from 'next'
+import { redirect } from 'next/navigation'
+import { auth } from '@/lib/auth/config'
 import Sidebar from '@/components/dashboard/Sidebar'
 import DashboardTopBar from '@/components/dashboard/DashboardTopBar'
 import MobileNav from '@/components/dashboard/MobileNav'
@@ -22,6 +24,16 @@ export const metadata: Metadata = {
 }
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
+  // Require a real session to enter the dashboard. Without this, an
+  // unrecognised session (e.g. a mobile browser whose cookie isn't being sent)
+  // fell through to a misleading empty "connect your store" dashboard instead
+  // of a login prompt — the proxy's route gate is a no-op (its '/' public route
+  // matches every path), so this layout is where the dashboard is actually
+  // gated. Loop-safe: we redirect only when there is NO session at all, so a
+  // valid session that resolves a user never bounces back to /login.
+  const session = await auth()
+  if (!session?.user) redirect('/login')
+
   const user = await getCurrentUser()
 
   // Total in-app notifications shown as a badge next to the theme toggle.
