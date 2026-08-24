@@ -241,6 +241,13 @@ export const products = pgTable('products', {
   // no known colour. Set by both syncs; localised at display time via COLOR_LABELS.
   variant_color:          text('variant_color'),
   updated_at:             timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  // When stock_quantity last actually CHANGED — stamped by the
+  // products_stamp_timestamps trigger (migration 082), not by any writer, so
+  // no code path can forget it. NULL = never observed to change since the
+  // column existed; that is an honest "we do not know", not "never moved".
+  // Operational only: it answers "is this SKU's stock moving?", which nothing
+  // in the database could answer before. Not displayed.
+  stock_changed_at:       timestamp('stock_changed_at', { withTimezone: true }),
 }, (t) => [
   index('products_shop_id_idx').on(t.shop_id),
   index('products_sku_idx').on(t.sku),
