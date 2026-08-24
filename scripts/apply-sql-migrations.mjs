@@ -137,6 +137,7 @@ const MIGRATIONS = [
   'migrations/migrations/079_account_lifecycle.sql',
   'migrations/migrations/080_shops_stock_synced_at.sql',
   'migrations/migrations/081_orders_alert_sent_at.sql',
+  'migrations/migrations/082_products_stock_changed_at.sql',
 ]
 
 function loadDatabaseUrl() {
