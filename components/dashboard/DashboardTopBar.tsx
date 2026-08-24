@@ -49,8 +49,18 @@ export default function DashboardTopBar({ userName, userEmail, notificationCount
     // on the server — if that env is stale (e.g. localhost:3000) the browser
     // gets sent there. Navigate client-side with a relative URL instead so
     // the user always lands on the current origin's /login.
-    await signOut({ redirect: false })
-    window.location.assign('/login')
+    await signOut({ redirect: false }).catch(() => {})
+    // Auth.js deletes the session cookie using the options configured TODAY.
+    // A browser that logged in before the cookie was scoped to the parent
+    // domain still holds a host-only cookie of the same name, which survives
+    // that delete and keeps authenticating — /login then bounces straight back
+    // to the dashboard and sign-out looks broken. This sweeps every scope.
+    // Best-effort: if it fails, still leave rather than trapping the user here.
+    await fetch('/api/auth/signout-sweep', { method: 'POST', cache: 'no-store' }).catch(() => {})
+    // `signedout=1` tells /login to render the form instead of honouring a
+    // session it may still see for a moment. Without it a cookie that has not
+    // finished clearing turns sign-out into a redirect loop.
+    window.location.assign('/login?signedout=1')
   }
 
   const initial = userName[0]?.toUpperCase() ?? 'U'

@@ -91,8 +91,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
         {/* Desktop top bar — profile pill + dropdown */}
         <DashboardTopBar userName={user?.full_name ?? user?.email?.split('@')[0] ?? 'User'} userEmail={user?.email ?? ''} notificationCount={notificationCount} />
 
-        {/* Mobile: top bar with hamburger + slide-in drawer */}
-        <MobileNav lockedKeys={locked} />
+        {/* Mobile: top bar with hamburger + profile avatar/dropdown + drawer */}
+        <MobileNav lockedKeys={locked} userEmail={user?.email ?? ''} userName={user?.full_name ?? user?.email?.split('@')[0] ?? ''} />
 
         {/* Main content — offset by collapsed sidebar width only */}
         <main className="lg:ml-14 pt-14 pb-20 lg:pb-0 min-w-0">
