@@ -88,6 +88,13 @@ export interface YandexOrderItem {
 export interface YandexOrder {
   id: number
   status: string // CANCELLED, DELIVERED, DELIVERY, PENDING, PROCESSING, RETURNED
+  // Detail within `status` — e.g. PROCESSING/STARTED (confirmed, start packing)
+  // vs PROCESSING/SHIPPED (already handed over), or CANCELLED/USER_NOT_PAID.
+  // REQUIRED on Yandex's OrderDTO; optional here only so fixtures and older
+  // captured payloads still type-check. Read by the new-order alert gate
+  // (lib/marketplace/fulfillment-statuses.ts); NOT persisted — see the
+  // parking-lot item in docs/investigations/order-cancellation-sync-findings.md.
+  substatus?: string
   creationDate?: string  // "dd-MM-yyyy HH:mm:ss" — Yandex actual field name
   updatedAt?: string     // same format
   itemsTotal: number

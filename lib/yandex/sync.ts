@@ -12,6 +12,7 @@ import {
   YandexApiError,
 } from './client'
 import { resolveColor } from '@/lib/products/resolveColor'
+import { isYandexFulfillmentRequired } from '@/lib/marketplace/fulfillment-statuses'
 
 const STATUS_MAP: Record<string, string> = {
   PENDING: 'pending',
@@ -526,10 +527,45 @@ export async function syncFromYandex(
         })))
       }
 
+      // ── New-order alert gate ────────────────────────────────────────────
+      // Decided from the RAW Yandex payload (status + substatus), never from
+      // `r.status`: the normalized enum collapses "unpaid draft" and "packed,
+      // ready to ship" into the same `pending`, and an unmapped status (UNPAID)
+      // defaults INTO that bucket — which is how an unpaid, auto-cancelled
+      // order got announced as "collect and ship". See
+      // lib/marketplace/fulfillment-statuses.ts.
+      //
+      // Still keyed off `toInsert`, so the alert fires exactly once, on the
+      // tick that first inserts the order, and never on a re-sync.
+      const alertableExtIds = new Set(
+        withDates
+          .filter(({ o }) => isYandexFulfillmentRequired(o))
+          .map(({ o }) => String(o.id)),
+      )
+      const rawStatusByExtId = new Map(
+        withDates.map(({ o }) => [String(o.id), `${o.status ?? '?'}/${o.substatus ?? '?'}`]),
+      )
+
       for (const r of toInsert) {
-        if (r.status === 'pending' || r.status === 'confirmed') {
+        if (alertableExtIds.has(r.order_id_external)) {
           newOrders.push(formatYmOrderLine(r.order_id_external, r.revenue ?? 0, itemsByExtId.get(r.order_id_external) ?? []))
         }
+      }
+
+      // Observability for the gate: which raw states were inserted but did NOT
+      // alert. Makes a vocabulary change (or an over-tight whitelist) visible in
+      // the sync toast on the next tick instead of silently costing a seller
+      // their alerts.
+      debug.ordersAlerted = newOrders.length
+      const skippedCounts = new Map<string, number>()
+      for (const r of toInsert) {
+        if (alertableExtIds.has(r.order_id_external)) continue
+        const key = rawStatusByExtId.get(r.order_id_external) ?? '?/?'
+        skippedCounts.set(key, (skippedCounts.get(key) ?? 0) + 1)
+      }
+      if (skippedCounts.size > 0) {
+        debug.ordersAlertSkipped = [...skippedCounts.entries()]
+          .map(([k, n]) => `${k}:${n}`).join(' ')
       }
 
       if (toInsert.length > 0) {
