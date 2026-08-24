@@ -9,6 +9,8 @@ import FeedbackWidget from '@/components/dashboard/FeedbackWidget'
 import ChannelGate from '@/components/dashboard/ChannelGate'
 import { getCurrentUser } from '@/lib/auth/session'
 import { getStockAlerts } from '@/lib/db/alerts'
+import { getOrderNotifications } from '@/lib/db/order-notifications'
+import { groupStockAlerts } from '@/lib/stock-alert-group'
 import { lockedNavKeys } from '@/lib/billing/nav-gating'
 import { getActiveNotice } from '@/lib/billing/nudge'
 import NudgeBanner from '@/components/dashboard/NudgeBanner'
@@ -42,7 +44,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
   // must never break the whole dashboard shell, so fall back to 0.
   let notificationCount = 0
   try {
-    notificationCount = (await getStockAlerts()).length
+    // Badge counts BOTH halves of the notifications page. Counting only stock
+    // meant a seller with three unshipped orders and full shelves saw no badge
+    // at all — the page they were meant to open never asked them to.
+    const [stock, orderNotifs] = await Promise.all([getStockAlerts(), getOrderNotifications()])
+    notificationCount = groupStockAlerts(stock).length + orderNotifs.length
   } catch { /* best-effort — show no badge on failure */ }
 
   // Which sidebar entries lead to a locked page. Computed here, in the one

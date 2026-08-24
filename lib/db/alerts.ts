@@ -119,7 +119,17 @@ export async function getStockAlerts(): Promise<StockAlert[]> {
 
     const sold = salesMap.get(row.id) ?? 0
     const dailySales = sold / PERIOD_DAYS
-    const daysLeft = dailySales > 0 ? Math.floor(availableStock / dailySales) : 999
+    // 999 = "no sales in the window, so we cannot project a runout date". It is
+    // a MISSING ESTIMATE, not a comfortable one — the page renders it as «—».
+    //
+    // But zero available stock needs no projection: the listing cannot sell
+    // right now whatever its history. Reporting 999 for it made the page label
+    // a sold-out product «Watch» while an identical listing WITH sales history
+    // showed «Critical» — the same product appearing twice at opposite
+    // urgencies, differing only by whether it happened to sell recently.
+    const daysLeft = availableStock <= 0
+      ? 0
+      : dailySales > 0 ? Math.floor(availableStock / dailySales) : 999
 
     result.push({
       productId:    row.id,

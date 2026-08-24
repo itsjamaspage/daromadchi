@@ -50,6 +50,8 @@
     "test:stock-refresh": "node --import tsx --test lib/marketplace/stock-refresh.test.ts",
     "test:reserved-display": "node --import tsx --test lib/marketplace/reserved-display.test.ts",
     "test:stock-key": "node --import tsx --test lib/marketplace/stock-key-match.test.ts",
+    "test:notif-group": "node --import tsx --test lib/stock-alert-group.test.ts",
+    "test:fulfilment": "node --import tsx --test lib/marketplace/fulfilment-frontdoor.test.ts",
     "test:tenancy": "node --import tsx --test lib/marketplace/stock-refresh-tenancy.integration.test.ts"
   },
   "dependencies": {
