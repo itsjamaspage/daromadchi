@@ -2,6 +2,7 @@ import { eq, and, inArray, gte, sql, notInArray } from 'drizzle-orm'
 import { db, shops, products, orders, orderItems, productLinks, productGroupMerges } from '@/lib/db'
 import { getShopIds, getCurrentUserId } from '@/lib/db/shop-context'
 import type { MarketplaceType } from '@/lib/types'
+import { displayReservedCondition } from '@/lib/marketplace/reserving-orders'
 
 /*
  * Cross-marketplace leftover tracking.
@@ -104,6 +105,9 @@ export async function computeStockGroups(userId: string, shopIds: string[]): Pro
 
   const since14d = new Date()
   since14d.setDate(since14d.getDate() - 14)
+  // Pinned once per query: every group in one response must be measured
+  // against the same cutoff.
+  const now = new Date()
 
   const [productRows, shopRows, soldRows, sold14Rows, linkRows, cancelledRows, inProcessRows, mergeRows] = await Promise.all([
     db.select({
@@ -159,7 +163,11 @@ export async function computeStockGroups(userId: string, shopIds: string[]): Pro
       .innerJoin(orders, eq(orderItems.order_id, orders.id))
       .where(and(
         inArray(orders.shop_id, shopIds),
-        inArray(orders.status, ['pending', 'confirmed']),
+        // Same reserved definition the Products page and the stock engine use
+        // — see lib/marketplace/reserved-display.ts. This feeds `leftover`
+        // below, so a divergence here would put the two pages' stock numbers
+        // out of step with each other.
+        displayReservedCondition(now),
       ))
       .groupBy(orderItems.product_id),
     db.select({ source_key: productGroupMerges.source_key, target_key: productGroupMerges.target_key })

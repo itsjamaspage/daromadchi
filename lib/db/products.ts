@@ -1,4 +1,5 @@
 import { unstable_cache } from 'next/cache'
+import { displayReservedCondition } from '@/lib/marketplace/reserving-orders'
 import { eq, ne, and, or, isNull, inArray, gte, lte, asc, sql, count } from 'drizzle-orm'
 import { db, shops, products, orders, orderItems, categoryAliases, categoriesCanonical } from '@/lib/db'
 import { getShopIds, getCurrentUserId } from '@/lib/db/shop-context'
@@ -14,6 +15,9 @@ const _fetchProducts = unstable_cache(
   async (allShopIdsStr: string): Promise<Product[]> => {
     const allShopIds = allShopIdsStr ? allShopIdsStr.split(',') : []
     if (allShopIds.length === 0) return []
+    // Pinned once per query: every row in one response must be measured
+    // against the same cutoff, or two products could land either side of it.
+    const now = new Date()
 
     const [productRows, soldRows, shopRows] = await Promise.all([
       db.select({
@@ -38,7 +42,7 @@ const _fetchProducts = unstable_cache(
       db.select({
         product_id: orderItems.product_id,
         qty_sold: sql<number>`coalesce(sum(${orderItems.quantity}) filter (where ${orders.status} not in ('cancelled','returned')), 0)`.as('qty_sold'),
-        qty_in_transit: sql<number>`coalesce(sum(${orderItems.quantity}) filter (where ${orders.status} in ('pending','confirmed')), 0)`.as('qty_in_transit'),
+        qty_in_transit: sql<number>`coalesce(sum(${orderItems.quantity}) filter (where ${displayReservedCondition(now)}), 0)`.as('qty_in_transit'),
         qty_cancelled: sql<number>`coalesce(sum(${orderItems.quantity}) filter (where ${orders.status} = 'cancelled'), 0)`.as('qty_cancelled'),
       }).from(orderItems)
         .innerJoin(orders, eq(orderItems.order_id, orders.id))
@@ -477,6 +481,9 @@ const _fetchProductsPaginated = unstable_cache(
       .from(shops).where(and(...shopConditions))
     const shopIds = userShops.map(s => s.id)
     if (shopIds.length === 0) return { rows: [], total: 0, archivedTotal: 0 }
+    // Pinned once per query: every row in one response must be measured
+    // against the same cutoff, or two products could land either side of it.
+    const now = new Date()
 
     const shopInfo = new Map<string, { marketplace: MarketplaceType; warehouseId: string | null }>()
     for (const s of userShops) {
@@ -519,7 +526,7 @@ const _fetchProductsPaginated = unstable_cache(
       ? await db.select({
           product_id: orderItems.product_id,
           qty_sold: sql<number>`coalesce(sum(${orderItems.quantity}) filter (where ${orders.status} not in ('cancelled','returned')), 0)`.as('qty_sold'),
-          qty_in_transit: sql<number>`coalesce(sum(${orderItems.quantity}) filter (where ${orders.status} in ('pending','confirmed')), 0)`.as('qty_in_transit'),
+          qty_in_transit: sql<number>`coalesce(sum(${orderItems.quantity}) filter (where ${displayReservedCondition(now)}), 0)`.as('qty_in_transit'),
           qty_cancelled: sql<number>`coalesce(sum(${orderItems.quantity}) filter (where ${orders.status} = 'cancelled'), 0)`.as('qty_cancelled'),
         }).from(orderItems)
           .innerJoin(orders, eq(orderItems.order_id, orders.id))
