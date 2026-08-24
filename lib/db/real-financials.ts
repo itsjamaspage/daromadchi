@@ -221,7 +221,7 @@ export async function getRealRatesBySku(userId: string, windowDays = 60): Promis
   const sinceIso = since.toISOString()
 
   const userShops = await db.select({ id: shops.id, marketplace: shops.marketplace })
-    .from(shops).where(eq(shops.user_id, userId))
+    .from(shops).where(and(eq(shops.user_id, userId), eq(shops.is_active, true)))
   const ymShopIds = userShops.filter(s => s.marketplace === 'yandex_market').map(s => s.id)
   const uzShopIds = userShops.filter(s => s.marketplace === 'uzum').map(s => s.id)
 

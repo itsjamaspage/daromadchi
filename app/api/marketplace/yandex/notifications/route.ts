@@ -155,7 +155,7 @@ export async function POST(req: Request): Promise<Response> {
       try {
         const [shop] = await db.select({ user_id: shops.user_id })
           .from(shops)
-          .where(and(eq(shops.shop_id_external, String(campaignId)), eq(shops.marketplace, 'yandex_market')))
+          .where(and(eq(shops.shop_id_external, String(campaignId)), eq(shops.is_active, true), eq(shops.marketplace, 'yandex_market')))
         if (!shop) { logger.warn('ym_notify_shop_not_found', { campaignId }); return }
         const res = await syncStockSyncGroups({ userId: shop.user_id })
         logger.info('ym_notify_processed', { campaignId, writesPlanned: res.writesPlanned, live: true })

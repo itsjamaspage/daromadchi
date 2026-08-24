@@ -15,6 +15,7 @@ export async function getStockAlerts(): Promise<StockAlert[]> {
     db.select({ id: shops.id, marketplace: shops.marketplace, warehouse_id: shops.warehouse_id })
       .from(shops).where(and(
         eq(shops.user_id, userId),
+        eq(shops.is_active, true),
         or(isNull(shops.shop_id_external), ne(shops.shop_id_external, 'DEMO')),
       )),
   ])
