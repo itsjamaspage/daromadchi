@@ -69,6 +69,13 @@ describe('admin analytics — live metrics', () => {
     const d = await seedUser('d@real.test', { plan: 'pro', plan_expires_at: future, created_at: lastMonth })
     await db.insert(subscriptions).values({ user_id: d, plan: 'pro', interval: 'monthly', status: 'past_due', current_period_end: future, agreed_amount_tiyin: proMonthly, created_at: lastMonth })
 
+    // E — churned in a PAST month (cancelled_at = last month), but its row was
+    // TOUCHED this month (updated_at = now). Regression guard: churn must stay
+    // dated to cancelled_at, never re-dated to the update month.
+    const threeMonthsAgo = new Date(monthStart.getTime() - 70 * DAY)
+    const e = await seedUser('e@real.test', { plan: 'free', created_at: threeMonthsAgo })
+    await db.insert(subscriptions).values({ user_id: e, plan: 'pro', interval: 'monthly', status: 'cancelled', current_period_end: lastMonth, cancelled_at: lastMonth, updated_at: now, agreed_amount_tiyin: proMonthly, created_at: threeMonthsAgo })
+
     // Trial — free plan, trial not over. NOT paying.
     await seedUser('trial@real.test', { plan: 'free', trial_ends_at: future, created_at: now })
   })
@@ -107,10 +114,10 @@ describe('admin analytics — live metrics', () => {
     log('recentPayments', r.recentPayments.length)
     log('churned rows', r.churned.length)
 
-    // ── user base (founder excluded → 5 non-founder users) ──
-    assert.equal(m.totalUsers, 5, 'totalUsers excludes founder')
+    // ── user base (founder excluded → 6 non-founder users) ──
+    assert.equal(m.totalUsers, 6, 'totalUsers excludes founder')
     assert.equal(m.trialUsers, 1)
-    assert.equal(m.paidPlanUsers, 3, 'A, B, D on a live paid plan (C expired/free)')
+    assert.equal(m.paidPlanUsers, 3, 'A, B, D on a live paid plan (C, E free/expired)')
 
     // ── subscriptions ──
     assert.equal(m.activeCount, 2, 'A + B active; D past_due, C churned, founder excluded')
@@ -120,7 +127,7 @@ describe('admin analytics — live metrics', () => {
     assert.equal(m.byInterval.monthly.count, 1)
     assert.equal(m.byInterval.annual.count, 1)
     assert.equal(m.newThisMonth, 1, 'only A started this month')
-    assert.equal(m.churnedThisMonth, 1, 'C cancelled this month')
+    assert.equal(m.churnedThisMonth, 1, 'only C churned THIS month — E cancelled last month is not re-counted despite its updated_at=now')
     assert.equal(m.pastDueCount, 1, 'D past_due within period')
 
     // ── money: MRR = pro monthly + pro+ annual/12; founder & test excluded ──
@@ -130,7 +137,7 @@ describe('admin analytics — live metrics', () => {
     assert.equal(m.monthRevenueTiyin, proMonthly, 'only A paid this month')
 
     // ── funnel ──
-    assert.equal(m.totalUsers, 5)          // registered
+    assert.equal(m.totalUsers, 6)          // registered
     assert.equal(m.paidPlanUsers, 3)       // on a paid plan
     assert.equal(m.activeCount, 2)         // actively paying
 
@@ -141,11 +148,22 @@ describe('admin analytics — live metrics', () => {
     assert.equal(r.recentPayments.length, 2, 'only A + B payments remain')
     assert.equal(r.activeSubscribers.length, 2)
     assert.ok(r.churned.some(c => c.plan === 'biznes'), 'C shows in churned')
+    assert.equal(r.churned.length, 2, 'C (this month) + E (last month)')
+
+    // ── churn dating: keyed off cancelled_at, not updated_at (regression) ──
+    const lastMonthYM = new Date(lastMonth).toISOString().slice(0, 7)
+    const thisMonthYM = now.toISOString().slice(0, 7)
+    const eRow = r.churned.find(x => x.email === 'e@real.test')
+    assert.ok(eRow, 'E appears in churned')
+    assert.equal(eRow!.lapsedAt?.slice(0, 7), lastMonthYM, 'E lapse dated to cancelled_at (last) month, NOT its update month')
+    assert.notEqual(eRow!.lapsedAt?.slice(0, 7), thisMonthYM, 'E must not be re-dated to this month')
 
     // ── the derived series reflects the movement ──
     const thisMonthPoint = r.mrrSeriesMonthly[r.mrrSeriesMonthly.length - 1]
+    const lastMonthPoint = r.mrrSeriesMonthly[r.mrrSeriesMonthly.length - 2]
     assert.ok(thisMonthPoint.newMrrTiyin >= proMonthly, 'this month added ≥ A to new MRR')
-    assert.ok(thisMonthPoint.churnedMrrTiyin >= PLAN_PRICES_TIYIN.biznes.monthly, 'this month churned ≥ C')
+    assert.equal(thisMonthPoint.churnedMrrTiyin, PLAN_PRICES_TIYIN.biznes.monthly, 'this month churn is exactly C — E is NOT here')
+    assert.ok(lastMonthPoint.churnedMrrTiyin >= proMonthly, 'E churn lands in LAST month — KPI and chart now agree')
 
     console.log('  ✓ all assertions passed\n')
   })
