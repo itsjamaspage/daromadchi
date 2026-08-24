@@ -107,6 +107,10 @@ export const adminT = {
   ),
   emptyChart:   tr('Пока нет данных за период', 'Bu davr uchun ma\'lumot yo\'q', 'No data for this period yet'),
   shareUnit:    tr('доля', 'ulush', 'share'),
+  rangeCustom:  tr('Период', 'Davr', 'Range'),
+  rangeFrom:    tr('Начало', 'Boshlanish', 'From'),
+  rangeTo:      tr('Конец', 'Tugash', 'To'),
+  rangeApply:   tr('Применить', 'Qo\'llash', 'Apply'),
 
   som:          tr('сум', "so'm", "so'm"),
   noEmail:      tr('аккаунт удалён', "hisob o'chirilgan", 'account deleted'),
