@@ -179,6 +179,9 @@ export const translations = {
       notificationsTitle: 'Bildirishnomalar',
       notificationsSubtitle: 'Ombor va sotuv bo\'yicha muhim hodisalar',
       notifEmpty: 'Yangi bildirishnoma yo\'q',
+      notifOrdersHeading: 'Yig\'ib jo\'natish kerak',
+      notifStockHeading: 'Ombor',
+      notifOrderNotAlerted: 'Telegramga yuborilmagan',
       notifEmptyDesc: "Hammasi joyida — kritik holatlar yuzaga kelganda shu yerda ko'rasiz",
       // Profile page
       profileTitle: 'Profil',
@@ -1098,6 +1101,9 @@ export const translations = {
       notificationsTitle: 'Notifications',
       notificationsSubtitle: 'Important inventory and sales events',
       notifEmpty: 'No new notifications',
+      notifOrdersHeading: 'To collect and ship',
+      notifStockHeading: 'Inventory',
+      notifOrderNotAlerted: 'Not sent to Telegram',
       notifEmptyDesc: 'All good — critical events will appear here when they occur',
       // Profile page
       profileTitle: 'Profile',
@@ -2017,6 +2023,9 @@ export const translations = {
       notificationsTitle: 'Уведомления',
       notificationsSubtitle: 'Важные события по складу и продажам',
       notifEmpty: 'Нет новых уведомлений',
+      notifOrdersHeading: 'Нужно собрать и отправить',
+      notifStockHeading: 'Остатки',
+      notifOrderNotAlerted: 'Не отправлено в Telegram',
       notifEmptyDesc: 'Всё в порядке — критические события появятся здесь, когда возникнут',
       // Profile page
       profileTitle: 'Профиль',
