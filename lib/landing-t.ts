@@ -1,6 +1,26 @@
 import type { Lang } from './i18n'
 import { TRIAL_UZ, TRIAL_RU, TRIAL_EN } from './trial-copy'
 
+/**
+ * The one primary sign-up CTA label, in three languages.
+ *
+ * Every button that does the same thing — send a visitor to /login to start a
+ * free trial — now reads the same. The page previously offered five different
+ * labels for that single action ("Start for free", "Try for free", "Start free
+ * 14 days", "Connect for free", "Your profit is hiding — let\'s go find it"),
+ * which reads as five different offers.
+ *
+ * The day count comes from TRIAL_* — i.e. from TRIAL_DAYS — for the reason
+ * lib/trial-copy.ts spells out: typing the digit is how the site advertised one
+ * trial length while the code enforced another. The badge under this button
+ * said "7 days" while the button beside it said 14.
+ */
+const startFreeCta = tr(
+  `Начать бесплатно — ${TRIAL_RU} →`,
+  `Bepul boshlash — ${TRIAL_UZ} →`,
+  `Start free — ${TRIAL_EN} →`,
+)
+
 type Tr = Record<Lang, string>
 
 function tr(ru: string, uz: string, en: string): Tr {
@@ -46,7 +66,7 @@ export const T = {
       "Uzum va Yandex Market bo'yicha daromad, DRR, qoldiqlar va birlik-iqtisod — har 15 daqiqada yangilanadi, qo'lda kiritishsiz",
       'Revenue, DRR, stock and unit economics across Uzum and Yandex Market — updated every 15 minutes, no manual entry',
     ),
-    startFree: tr('Начать бесплатно', 'Bepul boshlash', 'Start for free'),
+    startFree: startFreeCta,
     howItWorks: tr('Как это работает', 'Qanday ishlaydi', 'How it works'),
   },
 
@@ -69,7 +89,7 @@ export const T = {
     row5: tr('Уведомления в Telegram', 'Telegram bildirishnomalari', 'Telegram notifications'),
     row6: tr('Экспорт в Excel', 'Excel ga eksport', 'Excel export'),
     separateDashboards: tr('2 кабинета по отдельности', '2 ta alohida kabinet', '2 separate dashboards'),
-    tryFree: tr('Попробовать бесплатно', "Bepul sinab ko'ring", 'Try for free'),
+    tryFree: startFreeCta,
   },
 
   marquee: {
@@ -119,7 +139,7 @@ export const T = {
       'Every day at 10:00 — summary of sales, stock and orders',
     ),
     // Key name kept so callers do not churn; the number comes from TRIAL_DAYS.
-    startFree3Days: tr(`Начать бесплатно ${TRIAL_RU} →`, `${TRIAL_UZ} bepul boshlash →`, `Start free ${TRIAL_EN} →`),
+    startFree3Days: startFreeCta,
     explorePlatform: tr('Изучить платформу →', "Platformani o'rganish →", 'Explore platform →'),
   },
 
@@ -149,16 +169,16 @@ export const T = {
       'Data syncs automatically — full sales history from the moment you connect, no manual entry needed',
     ),
     dailyRevenue: tr('Выручка по дням', 'Kunlik daromad', 'Daily revenue'),
-    connectFree: tr('Подключить бесплатно', 'Bepul ulash', 'Connect for free'),
+    connectFree: startFreeCta,
   },
 
   bento: {
     title: tr("Все данные маркетплейсов в одном дашборде", "Barcha marketplace ma'lumotlari bitta dashboardda", 'All your marketplace data in one dashboard'),
     accent: tr('одном дашборде', 'bitta dashboardda', 'one dashboard'),
     sub: tr(
-      'Аналитика продаж, контроль остатков и управление финансами — в реальном времени по всем трём площадкам',
-      "Sotuv tahlili, zaxira nazorati va moliyaviy boshqaruv — uchala maydoncha bo'yicha real vaqtda",
-      'Real-time profit tracking, DRR control, and inventory management across all three marketplaces',
+      'Аналитика продаж, контроль остатков и управление финансами — в реальном времени по обеим площадкам',
+      "Sotuv tahlili, zaxira nazorati va moliyaviy boshqaruv — ikkala maydoncha bo'yicha real vaqtda",
+      'Real-time profit tracking, DRR control, and inventory management across both marketplaces',
     ),
     revenue: tr('Выручка', 'Daromad', 'Revenue'),
     orders: tr('Заказы', 'Buyurtmalar', 'Orders'),
@@ -213,14 +233,6 @@ export const T = {
     uzumPoint1: tr('Комиссия маркетплейса и эквайринг', 'Marketplace va ekvayring komissiyasi', 'Marketplace fee & acquiring'),
     uzumPoint2: tr('Стоимость хранения, доставки и возвратов', 'Saqlash, yetkazib berish va qaytarish xarajatlari', 'Storage, delivery & return costs'),
     uzumPoint3: tr('Чистая прибыль и маржа в одно нажатие', 'Bir bosishda sof foyda va marja', 'Net profit & margin in one click'),
-    wbHeadline: tr(
-      'Тарифы FBW и FBS с учётом категории товара',
-      'Mahsulot toifasiga qarab FBW va FBS tariflari',
-      'FBW & FBS rates by product category',
-    ),
-    wbPoint1: tr('Стоимость хранения на складе WB', 'WB omborida saqlash narxi', 'WB warehouse storage cost'),
-    wbPoint2: tr('Расходы на возвраты и логистику', 'Qaytarish va logistika xarajatlari', 'Return & logistics expenses'),
-    wbPoint3: tr('ДРР и рентабельность по каждому SKU', "Har bir SKU bo'yicha DRR va rentabellik", 'DRR & profitability per SKU'),
     ymHeadline: tr(
       'Расчёт DBS и FBY с учётом всех комиссий',
       'Barcha komissiyalar hisobga olingan DBS va FBY hisoblash',
@@ -302,7 +314,6 @@ export const T = {
     tgLink: tr('Открыть Telegram →', 'Telegramni ochish →', 'Open Telegram →'),
     integrationsTitle: tr('Интеграции', 'Integratsiyalar', 'Integrations'),
     intUzumDesc: tr('Подключение через API-ключ', 'API kalit orqali ulash', 'Connect via API key'),
-    intWbDesc: tr('Подключение через токен WB', 'WB token orqali ulash', 'Connect via WB token'),
     intYmDesc: tr('OAuth-авторизация', 'OAuth-avtorizatsiya', 'OAuth authorisation'),
     intLink: tr('Инструкция по подключению →', "Ulash yo'riqnomasi →", 'Connection guide →'),
   },
@@ -368,12 +379,8 @@ export const T = {
       "Do'koningizni bir necha daqiqada ulang. Bepul tarif, karta bog'lanmaydi",
       'Connect your store in minutes. Free plan, no credit card required',
     ),
-    ctaBtn: tr(
-      'Устали терять деньги? Начните зарабатывать →',
-      'Zarar emas — foyda. Bugunoq boshlang →',
-      "Your profit is hiding — let's go find it →",
-    ),
-    badge1: tr('✓ 7 дней — только Pro и Pro+', '✓ 7 kun — faqat Pro va Pro+', '✓ 7 days — Pro & Pro+ only'),
+    ctaBtn: startFreeCta,
+    badge1: tr(`✓ ${TRIAL_RU} — только Pro и Pro+`, `✓ ${TRIAL_UZ} — faqat Pro va Pro+`, `✓ ${TRIAL_EN} — Pro & Pro+ only`),
     badge2: tr('✓ Без карты', '✓ Kartasiz', '✓ No card'),
     badge3: tr('✓ Быстрое подключение', '✓ Tez ulanish', '✓ Quick setup'),
     revenue: tr('Выручка', 'Daromad', 'Revenue'),
