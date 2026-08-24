@@ -17,6 +17,8 @@ export const GET = withErrorHandler(async () => {
   if (!user) return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 })
 
   const userShops = await db.select({ id: shops.id, marketplace: shops.marketplace, shop_id_external: shops.shop_id_external })
+    // Diagnostics intentionally include DEACTIVATED shops: this endpoint exists
+    // to explain a shop's state, and hiding a disconnected one would hide the answer.
     .from(shops).where(eq(shops.user_id, user.id))
   const shopIds = userShops.map(s => s.id)
 

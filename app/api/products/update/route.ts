@@ -19,7 +19,7 @@ export const PATCH = withErrorHandler(async (req: NextRequest) => {
   }
 
   const shopRows = await db.select({ id: shops.id }).from(shops)
-    .where(eq(shops.user_id, user.id))
+    .where(and(eq(shops.user_id, user.id), eq(shops.is_active, true)))
   const shopIds = shopRows.map(s => s.id)
   if (shopIds.length === 0) return NextResponse.json({ error: 'No shops' }, { status: 400 })
 

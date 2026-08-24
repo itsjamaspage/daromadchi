@@ -38,6 +38,7 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
     .from(shops)
     .where(and(
       eq(shops.user_id, user.id),
+      eq(shops.is_active, true),
       eq(shops.marketplace, mpType),
       ne(shops.shop_id_external, 'DEMO'),
     ))

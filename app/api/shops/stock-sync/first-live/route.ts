@@ -20,7 +20,7 @@ export const POST = withErrorHandler(async (req: Request) => {
   if (!parsed.success) return NextResponse.json({ ok: false, error: 'productId (uuid) required' }, { status: 400 })
 
   // Ownership check: the product must live in one of the caller's shops.
-  const userShops = await db.select({ id: shops.id }).from(shops).where(eq(shops.user_id, user.id))
+  const userShops = await db.select({ id: shops.id }).from(shops).where(and(eq(shops.user_id, user.id), eq(shops.is_active, true)))
   const shopIds = userShops.map(s => s.id)
   const [owned] = shopIds.length
     ? await db.select({ id: products.id }).from(products)

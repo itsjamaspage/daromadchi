@@ -24,6 +24,7 @@ export const POST = withErrorHandler(async () => {
     shop_id_external: shops.shop_id_external,
   }).from(shops).where(and(
     eq(shops.user_id, user.id),
+    eq(shops.is_active, true),
     eq(shops.marketplace, 'yandex_market'),
   ))
 

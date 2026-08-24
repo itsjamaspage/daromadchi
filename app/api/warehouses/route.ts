@@ -22,7 +22,7 @@ export const GET = withErrorHandler(async () => {
       marketplace: shops.marketplace,
       warehouse_id: shops.warehouse_id,
     }).from(shops)
-      .where(and(eq(shops.user_id, user.id), or(isNull(shops.shop_id_external), ne(shops.shop_id_external, 'DEMO')))),
+      .where(and(eq(shops.user_id, user.id), eq(shops.is_active, true), or(isNull(shops.shop_id_external), ne(shops.shop_id_external, 'DEMO')))),
   ])
 
   return NextResponse.json({ warehouses: warehouseRows, shops: shopRows })
