@@ -14,14 +14,45 @@ import {
 import { resolveColor } from '@/lib/products/resolveColor'
 import { isYandexFulfillmentRequired, isYandexSellerFulfilled } from '@/lib/marketplace/fulfillment-statuses'
 
+/**
+ * Yandex raw order status → our normalized enum, which the dashboard renders as
+ * four buckets (components/dashboard/OrdersTable.tsx STATUS_GROUP):
+ *   pending → Создан · confirmed → В процессе · delivered → Доставлен ·
+ *   cancelled/returned → Отменён.
+ *
+ * Keys are verbatim from the Partner API spec (OrderStatusType), whose complete
+ * enum is PLACING | RESERVED | UNPAID | PROCESSING | DELIVERY | PICKUP |
+ * DELIVERED | CANCELLED | PENDING | PARTIALLY_RETURNED | RETURNED | UNKNOWN.
+ *
+ * PICKUP was missing, so «доставлен в пункт выдачи» — an order one step from
+ * delivered — fell through `?? 'pending'` and showed as «Создан», i.e. brand
+ * new (order 60675080064). PROCESSING was mapped to 'pending' for the same
+ * bucket reason and moves to «В процессе» alongside it.
+ *
+ * STILL UNMAPPED, deliberately: PLACING, RESERVED, UNPAID and UNKNOWN. Those
+ * are drafts / unpaid states that should be non-actionable, and the enum has no
+ * such value — every one of pending/confirmed/delivered implies a real order.
+ * Giving them one needs `ALTER TYPE order_status ADD VALUE` plus a sweep of
+ * every consumer, so it is its own change; they keep today's `?? 'pending'`
+ * behaviour until then. See the follow-up issue.
+ */
 const STATUS_MAP: Record<string, string> = {
-  PENDING: 'pending',
-  PROCESSING: 'pending',
-  DELIVERY: 'confirmed',
-  DELIVERED: 'delivered',
+  // ── Создан — the seller holds it and has not shipped yet ──
+  PENDING: 'pending',              // «ожидает обработки со стороны продавца»
+  // ── В процессе — being processed, in transit, or waiting at the PVZ ──
+  PROCESSING: 'confirmed',         // «находится в обработке»
+  DELIVERY: 'confirmed',           // «передан в службу доставки»
+  PICKUP: 'confirmed',             // «доставлен в пункт выдачи» — not yet collected
+  // ── Доставлен ──
+  DELIVERED: 'delivered',          // «получен покупателем»
+  // ── Отменён ──
   CANCELLED: 'cancelled',
-  RETURNED: 'returned',
+  RETURNED: 'returned',            // «возвращен полностью»
+  PARTIALLY_RETURNED: 'returned',  // «возвращен частично»
 }
+
+/** Exported for the mapping test; not used elsewhere. */
+export const YANDEX_STATUS_MAP: Readonly<Record<string, string>> = STATUS_MAP
 
 // Same shape as Uzum's formatOrderLine helper — kept per-file so each
 // sync stays independently importable. Single-item orders compact,
