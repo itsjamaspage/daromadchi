@@ -24,6 +24,7 @@ export const POST = withErrorHandler(async () => {
     api_key_encrypted: shops.api_key_encrypted,
   }).from(shops).where(and(
     eq(shops.user_id, user.id),
+    eq(shops.is_active, true),
     eq(shops.marketplace, 'uzum'),
   ))
 

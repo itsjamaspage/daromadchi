@@ -19,7 +19,7 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
   const [shop] = await db.select({
     api_key_encrypted: shops.api_key_encrypted,
   }).from(shops)
-    .where(and(eq(shops.user_id, user.id), eq(shops.marketplace, 'yandex_market')))
+    .where(and(eq(shops.user_id, user.id), eq(shops.is_active, true), eq(shops.marketplace, 'yandex_market')))
 
   if (!shop?.api_key_encrypted) {
     return NextResponse.json(

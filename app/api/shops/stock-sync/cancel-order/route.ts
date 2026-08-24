@@ -30,7 +30,7 @@ export const POST = withErrorHandler(async (req: Request) => {
   const userShops = await db.select({
     id: shops.id, marketplace: shops.marketplace,
     api_key_encrypted: shops.api_key_encrypted, shop_id_external: shops.shop_id_external,
-  }).from(shops).where(eq(shops.user_id, user.id))
+  }).from(shops).where(and(eq(shops.user_id, user.id), eq(shops.is_active, true)))
   const shopById = new Map(userShops.map(s => [s.id, s]))
 
   const [order] = shopById.size

@@ -226,7 +226,7 @@ async function upsertSession(chatId: string, fields: Record<string, unknown>) {
 async function getUserShops(userId: string) {
   return db.select({ name: shops.name, marketplace: shops.marketplace })
     .from(shops)
-    .where(eq(shops.user_id, userId))
+    .where(and(eq(shops.user_id, userId), eq(shops.is_active, true)))
 }
 
 /**

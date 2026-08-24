@@ -23,7 +23,7 @@ export const getUserShops = cache(async (): Promise<ShopRef[]> => {
   if (!userId) return []
   const rows = await db.select({ id: shops.id, marketplace: shops.marketplace })
     .from(shops)
-    .where(and(eq(shops.user_id, userId), or(isNull(shops.shop_id_external), ne(shops.shop_id_external, 'DEMO'))))
+    .where(and(eq(shops.user_id, userId), eq(shops.is_active, true), or(isNull(shops.shop_id_external), ne(shops.shop_id_external, 'DEMO'))))
   return rows as ShopRef[]
 })
 

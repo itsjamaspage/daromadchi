@@ -74,6 +74,8 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
     api_key_encrypted: shops.api_key_encrypted,
     shop_id_external: shops.shop_id_external,
     business_id: shops.business_id,
+  // Diagnostics intentionally include DEACTIVATED shops — this endpoint exists to
+  // explain a shop's state, and hiding a disconnected one would hide the answer.
   }).from(shops).where(and(eq(shops.user_id, user.id), eq(shops.marketplace, 'yandex_market')))
 
   if (ymShops.length === 0) {

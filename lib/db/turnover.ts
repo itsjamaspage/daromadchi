@@ -49,7 +49,8 @@ function turnoverByUser(userId?: string): SQL {
              o.revenue
         FROM orders o
         JOIN shops owner ON owner.id = o.shop_id
-       WHERE (owner.shop_id_external IS NULL OR owner.shop_id_external <> 'DEMO')
+       WHERE owner.is_active
+         AND (owner.shop_id_external IS NULL OR owner.shop_id_external <> 'DEMO')
          AND o.ordered_at >= NOW() - (${TURNOVER_WINDOW_DAYS} || ' days')::interval
          AND o.status NOT IN ('cancelled', 'returned')
          ${scopeToUser}
@@ -63,6 +64,7 @@ function turnoverByUser(userId?: string): SQL {
       FROM users u
       LEFT JOIN shops s
              ON s.user_id = u.id
+            AND s.is_active
             AND (s.shop_id_external IS NULL OR s.shop_id_external <> 'DEMO')
       LEFT JOIN deduped_orders d ON d.shop_id = s.id
       ${filterUser}
