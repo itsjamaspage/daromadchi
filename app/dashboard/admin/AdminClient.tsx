@@ -23,10 +23,9 @@ const PLAN_META = [
   { key: 'biznes' as const,   label: 'Biznes', color: '#ec4899' },
 ]
 
+// Only month-boundary views are meaningful (the series is derived from
+// timestamps, not an intra-day MRR curve), so the toggle is 12M · 24M · custom.
 const RANGES = [
-  { key: '1D',  days: 1 },
-  { key: '7D',  days: 7 },
-  { key: '30D', days: 30 },
   { key: '12M', months: 12 },
   { key: '24M', months: 24 },
 ] as const
@@ -336,15 +335,34 @@ function MoneyTooltip({ active, payload, label, rows }: any) {
 }
 
 function MrrChart({ monthly, daily, theme, t }: { monthly: MrrPoint[]; daily: MrrPoint[]; theme: string; t: Tf }) {
-  const [range, setRange] = useState<string>('12M')
+  const [range, setRange] = useState<string>('12M')   // '12M' | '24M' | 'custom'
+  const [pickOpen, setPickOpen] = useState(false)
+  const [from, setFrom] = useState('')
+  const [to, setTo] = useState('')
   const c = chartColors(theme)
-  const active = RANGES.find(r => r.key === range) ?? RANGES[3]
+
   const data = useMemo(() => {
-    if ('months' in active) return monthly.slice(-active.months)
-    return daily.slice(-active.days)
-  }, [active, monthly, daily])
+    if (range === 'custom' && from && to) {
+      const spanDays = (new Date(to).getTime() - new Date(from).getTime()) / 86_400_000
+      // Wide spans read as months; a short window (≤ ~3 months) uses the daily
+      // series so it isn't a single flat point.
+      if (spanDays > 92) {
+        const fromYM = from.slice(0, 7), toYM = to.slice(0, 7)
+        return monthly.filter(p => p.key >= fromYM && p.key <= toYM)
+      }
+      return daily.filter(p => p.key >= from && p.key <= to)
+    }
+    return monthly.slice(range === '24M' ? -24 : -12)
+  }, [range, from, to, monthly, daily])
+
   const hasData = data.some(d => d.newMrrTiyin > 0 || d.churnedMrrTiyin > 0)
   const rowLabels = { newMrrTiyin: t('seriesNewMrr'), churnedMrrTiyin: t('seriesChurned') }
+  const btn = (activeState: boolean) => ({
+    background: activeState ? 'var(--bg-input)' : 'transparent',
+    borderColor: 'var(--border)',
+    color: activeState ? 'var(--c1)' : 'var(--text-muted)',
+  })
+  const inputStyle = { background: 'var(--bg-input)', borderColor: 'var(--border)', color: 'var(--text-base)', colorScheme: 'light' as const }
 
   return (
     <div className="border rounded-2xl p-5 bg-[var(--bg-card2)]" style={{ borderColor: 'var(--border)' }}>
@@ -353,21 +371,48 @@ function MrrChart({ monthly, daily, theme, t }: { monthly: MrrPoint[]; daily: Mr
           <h3 className="font-semibold text-[var(--text-base)]">{t('mrrGrowthTitle')}</h3>
           <p className="text-xs text-[var(--text-muted)] mt-0.5">{t('mrrGrowthSub')}</p>
         </div>
-        <div className="flex gap-1">
+        <div className="relative flex gap-1">
           {RANGES.map(r => (
             <button
               key={r.key}
-              onClick={() => setRange(r.key)}
+              onClick={() => { setRange(r.key); setPickOpen(false) }}
               className="text-[11px] font-semibold px-2.5 py-1 rounded-lg border transition-colors"
-              style={{
-                background: range === r.key ? 'var(--bg-input)' : 'transparent',
-                borderColor: 'var(--border)',
-                color: range === r.key ? 'var(--c1)' : 'var(--text-muted)',
-              }}
+              style={btn(range === r.key)}
             >
               {r.key}
             </button>
           ))}
+          <button
+            onClick={() => setPickOpen(o => !o)}
+            className="text-[11px] font-semibold px-2.5 py-1 rounded-lg border transition-colors inline-flex items-center gap-1"
+            style={btn(range === 'custom')}
+          >
+            <CalendarClock className="w-3 h-3" />
+            {range === 'custom' && from && to ? `${from.slice(5)} — ${to.slice(5)}` : t('rangeCustom')}
+          </button>
+          {pickOpen && (
+            <div className="absolute right-0 top-full mt-2 z-50 rounded-xl border shadow-2xl p-3 space-y-2"
+              style={{ background: 'var(--bg-card)', borderColor: 'var(--border)', minWidth: 220 }}>
+              <label className="block">
+                <span className="text-[10px] uppercase tracking-wide text-[var(--text-muted)]">{t('rangeFrom')}</span>
+                <input type="date" value={from} max={to || undefined} onChange={e => setFrom(e.target.value)}
+                  className="w-full mt-1 px-2 py-1.5 rounded-lg text-sm border outline-none" style={inputStyle} />
+              </label>
+              <label className="block">
+                <span className="text-[10px] uppercase tracking-wide text-[var(--text-muted)]">{t('rangeTo')}</span>
+                <input type="date" value={to} min={from || undefined} onChange={e => setTo(e.target.value)}
+                  className="w-full mt-1 px-2 py-1.5 rounded-lg text-sm border outline-none" style={inputStyle} />
+              </label>
+              <button
+                onClick={() => { if (from && to) { setRange('custom'); setPickOpen(false) } }}
+                disabled={!from || !to}
+                className="w-full py-1.5 rounded-lg text-sm font-semibold disabled:opacity-40"
+                style={{ background: 'var(--c1)', color: '#131321' }}
+              >
+                {t('rangeApply')}
+              </button>
+            </div>
+          )}
         </div>
       </div>
       {/* Legend */}
