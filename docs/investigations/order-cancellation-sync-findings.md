@@ -4,8 +4,17 @@
 "🛒 Новый заказ! Нужно собрать и отправить" Telegram alert.
 **Trigger case:** Yandex Market order `60767668482` (Повербанк MagSafe 5000 мА·ч,
 SKU `PBGRY`, 115 000 сум), 24.08.2026.
-**Status of this pass:** investigation only. No code, schema, migration or config
-was changed. No marketplace write was issued.
+**Status of the original pass:** investigation only. No code, schema, migration
+or config was changed. No marketplace write was issued.
+
+**Updated 24.08.2026** — Task B (ground truth for the order) has since been run
+against production and is recorded in §1.4. The fixes it led to have shipped:
+PR #299 (alert gated on raw fulfilment status), #300 (`STATUS_MAP` transit
+states), #303 (campaign id enters shop identity), #305 (shop deactivate +
+read-layer sweep), #306 (transition-alerting, migration 081). Sections below are
+the findings as written; where a later result supersedes one, it is marked in
+place rather than rewritten, so the reasoning and its confirmation stay legible
+side by side.
 
 ---
 
@@ -14,21 +23,24 @@ was changed. No marketplace write was issued.
 | Task | Verified how | Result |
 |---|---|---|
 | A — code path map | Source read | ✅ complete |
-| B — ground truth for `60767668482` | **Blocked** | ⚠️ partial — see §1 |
+| B — ground truth for `60767668482` | **Prod query, 24.08.2026** | ✅ **confirmed — the deduction held** |
 | C — Yandex sync + mapping audit | Source read | ✅ complete |
 | D — alert trigger audit | Source read | ✅ complete |
 | E — Uzum FBS parity audit | Source read + spec-derived list in code | ✅ complete except the live swagger enum |
 
-**Why B is partial.** The investigation sandbox has no `DATABASE_URL`, no `.env`,
-and no marketplace credentials (the seller token only exists encrypted in the
-production `shops` table). The production DB queries and the live
-`getOrder` read in §1.4 are written out ready to run, but were **not executed**.
-Everything asserted below without a query result is derived from source and is
-labelled as such.
+**Note on B.** When this document was first written the investigation sandbox
+had no `DATABASE_URL` and no marketplace credentials, so B was blocked and §1.3
+was an argument from code rather than an observation. **It has since been run
+against production (24.08.2026) and the deduction was correct** — see §1.4.
 
-That limitation does **not** block the root-cause finding: the alert's own text
-is reproducible from the code, byte for byte, and that alone proves which branch
-emitted it (§1.2).
+That matters more than a tidied checkbox. The entire diagnosis rested on "the
+cancellation *did* sync, so the bug is a premature alert, not a stuck row." Had
+the row come back `pending`/`UNPAID`, the fix would have belonged in the sync
+window, not the alert gate, and PR #299 would have been aimed at the wrong
+layer. The load-bearing inference is now a fact.
+
+Everything else asserted below without a query result is still derived from
+source and labelled as such.
 
 ---
 
@@ -85,8 +97,9 @@ There is no other producer of that line, and no other consumer of `newOrders`
 
 ### 1.3 Was the cancellation synced?
 
-**Almost certainly yes, within ~5 minutes — the dashboard self-corrected; the
-alert did not.** Evidence:
+**Yes — confirmed in production (§1.4). Within ~5 minutes the dashboard
+self-corrected; the alert did not.** This was originally a deduction from the
+following evidence, all of which held:
 
 - Order status is re-read on **every** cron tick, not once. `syncFromYandex`
   refetches all orders created in the last 30 days (`ORDER_STATUS_LOOKBACK_DAYS`,
@@ -102,19 +115,37 @@ alert did not.** Evidence:
   «Создан 1» bucket (that one is `60675080064`, 21/08), and there are 3 orders in
   «Отменён».
 
-**Residual check (the one thing screenshot 3 cannot settle):** the 3 orders in
-«Отменён» could all be Uzum. If Yandex's `GET /v2/campaigns/{id}/orders` omits
-`CANCELLED` orders from an unfiltered response — the code passes no `status`
-filter (`lib/yandex/client.ts:225-240`) — the row would be frozen at `pending`
-forever, and H2 would be live for Yandex as well. §1.4 settles it in one query.
+**Residual check — SETTLED.** The open worry was that the 3 orders in «Отменён»
+might all be Uzum, i.e. that Yandex's `GET /v2/campaigns/{id}/orders` omits
+`CANCELLED` orders from an unfiltered response (the code passes no `status`
+filter, `lib/yandex/client.ts:225-240`), which would have frozen the row at
+`pending` forever and made H2 live for Yandex too. The prod query in §1.4 shows
+the row at `cancelled`/`CANCELLED`, so the endpoint **does** return cancelled
+orders and the re-sync **does** reach them. H2 stays killed.
 
-### 1.4 Queries to run (read-only) — NOT YET EXECUTED
+### 1.4 Ground truth — ✅ EXECUTED against production, 24.08.2026
+
+```
+ order_id_external |  status   | marketplace_status | alert_sent_at
+-------------------+-----------+--------------------+---------------
+ 60767668482       | cancelled | CANCELLED          |
+ 60675080064       | confirmed | PICKUP             |
+```
+
+**`60767668482` is `cancelled`/`CANCELLED` — exactly as §1.3 predicted.** The
+cancellation reached us; the dashboard was right within about five minutes. The
+alert was premature, and nothing was stuck. Every conclusion below that leaned on
+this now rests on an observation.
+
+(`60675080064` is the *second* bug from this thread — the `PICKUP` order shown as
+«Создан». `confirmed`/`PICKUP` confirms the `STATUS_MAP` fix landed in prod too.)
+
+The queries, kept for re-running:
 
 ```sql
 -- 1. Where does the bug order actually sit?
---    NOTE: this schema has NO substatus / payment_type / status_updated_at /
---    synced_at / alert_sent_at columns. See §5. Do not adapt those in — they
---    do not exist.
+--    NOTE: substatus / payment_type / status_updated_at / synced_at do NOT
+--    exist on this table. alert_sent_at DOES, as of migration 081 — see §1.5.
 SELECT o.id, o.marketplace, o.order_id_external, o.status, o.marketplace_status,
        o.fulfillment_type, o.revenue, o.items_count, o.ordered_at, s.name AS shop
 FROM orders o JOIN shops s ON s.id = o.shop_id
@@ -136,11 +167,10 @@ GROUP BY 1, 2, 3
 ORDER BY 1, 4 DESC;
 ```
 
-Expected result for query 1 if the diagnosis in §1.3 holds:
-`status = 'cancelled'`, `marketplace_status = 'CANCELLED'`.
-If instead it returns `status = 'pending'` with `marketplace_status` of
-`'UNPAID'` (or `'PROCESSING'`), H2 is confirmed for Yandex and the fix set in §6
-grows by option (d).
+**Result:** `status = 'cancelled'`, `marketplace_status = 'CANCELLED'` — the
+predicted outcome. The alternative (`pending` with `UNPAID`/`PROCESSING`) would
+have confirmed H2 for Yandex and pulled option (d) into scope; it did not occur,
+so option (d) stays out.
 
 **Live API read (read-only, GET) to run alongside:**
 
@@ -157,14 +187,21 @@ decisive one**: it is the only order-status source in the product, and if a
 cancelled order is absent from it, no amount of mapping work will fix the
 dashboard.
 
-### 1.5 Alert log — there isn't one
+### 1.5 Alert log — there wasn't one at the time; there is a marker now
 
-There is **no** alert/notification log table, and **no** `alert_sent_at` /
-`notified` column on `orders` (`lib/db/schema.ts:257-281`; no migration adds one —
-`grep 'ALTER TABLE orders'` over `migrations/migrations/` returns only
-`fulfillment_type`, the WB fee columns and `marketplace_status`). So "what status
-did the order have when the alert fired?" cannot be answered from stored data —
-only from §1.2's code proof and from the app log.
+**As written (24.08.2026, pre-fix):** no alert/notification log table and no
+`alert_sent_at` / `notified` column on `orders`, so "what status did the order
+have when the alert fired?" could not be answered from stored data — only from
+§1.2's code proof and the app log.
+
+**Since superseded:** migration 081 added `orders.alert_sent_at`, as the dedup
+marker for transition-alerting (the alert gate now fires on the first transition
+into a fulfilment-required status, not only at insert). It records *when* an
+order was announced, so from now on that question is answerable from the row.
+
+It does **not** retroactively answer it for `60767668482`: the column backfilled
+to NULL, and that order was announced before it existed. For this order the
+evidence remains §1.2's code proof plus the app log below.
 
 The nearest available evidence is the pm2 app log on the VPS
 (`pm2 logs daromadchi`, `~/.pm2/logs/daromadchi-out.log`), which will contain, if
