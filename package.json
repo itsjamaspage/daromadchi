@@ -48,6 +48,7 @@
     "probe:yandex-keys": "tsx scripts/probe-yandex-stock-keys.ts",
     "test:uzum-stock": "node --import tsx --test lib/uzum/stock-reading.test.ts",
     "test:stock-refresh": "node --import tsx --test lib/marketplace/stock-refresh.test.ts",
+    "test:reserved-display": "node --import tsx --test lib/marketplace/reserved-display.test.ts",
     "test:stock-key": "node --import tsx --test lib/marketplace/stock-key-match.test.ts"
   },
   "dependencies": {

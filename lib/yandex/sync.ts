@@ -12,6 +12,7 @@ import {
   YandexApiError,
 } from './client'
 import { resolveColor } from '@/lib/products/resolveColor'
+import { ORDER_STATUS_LOOKBACK_DAYS } from '@/lib/marketplace/reserved-display'
 import { isYandexFulfillmentRequired, isYandexSellerFulfilled } from '@/lib/marketplace/fulfillment-statuses'
 
 /**
@@ -490,7 +491,6 @@ export async function syncFromYandex(
     // and its old status would sit in our DB forever. Always look back at
     // least ORDER_STATUS_LOOKBACK_DAYS so status transitions on
     // recent-but-still-open orders come through.
-    const ORDER_STATUS_LOOKBACK_DAYS = 30
     const FIRST_SYNC_LOOKBACK_DAYS = 365
     const since = fromDateOverride ?? (() => {
       const lookback = new Date()
