@@ -393,9 +393,13 @@ export async function getAdminAnalytics(now: Date = new Date()): Promise<AdminAn
         autorenew: s.autorenew,
       })
     } else if (isLapsed) {
-      // Explicitly ended rows carry their end moment on updated_at; silently
-      // lapsed ones lapsed the instant their paid period ran out.
-      const lapsedAt = explicitlyEnded ? s.updatedAt : s.periodEnd
+      // Date the lapse by cancelled_at (the audit trail of when the seller
+      // withdrew authorisation), falling back to the paid-period end for silent
+      // lapses. NOT updated_at: any later touch of the row would move it and
+      // re-date the churn into the wrong month — inflating "churned this month"
+      // and disagreeing with the chart series, which already keys off
+      // cancelled_at. (Was `explicitlyEnded ? s.updatedAt : s.periodEnd`.)
+      const lapsedAt = s.cancelledAt ?? s.periodEnd
       const reason: ChurnReason =
         s.status === 'cancelled' ? 'cancelled' : s.status === 'expired' ? 'expired' : 'lapsed'
 
