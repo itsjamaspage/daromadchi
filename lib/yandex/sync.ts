@@ -12,7 +12,7 @@ import {
   YandexApiError,
 } from './client'
 import { resolveColor } from '@/lib/products/resolveColor'
-import { isYandexFulfillmentRequired } from '@/lib/marketplace/fulfillment-statuses'
+import { isYandexFulfillmentRequired, isYandexSellerFulfilled } from '@/lib/marketplace/fulfillment-statuses'
 
 const STATUS_MAP: Record<string, string> = {
   PENDING: 'pending',
@@ -87,12 +87,22 @@ export async function syncFromYandex(
     // API doesn't answer, so the stock aggregator defaults to the safer
     // (undercounting) side.
     let campaignFulfillmentType: 'fbs' | 'fby' = 'fbs'
+    // The RAW placementType, kept separate from campaignFulfillmentType above.
+    // That one falls back to 'fbs' when the API doesn't answer — right for the
+    // stock aggregator (undercount is the safe side) but fail-OPEN for the alert
+    // gate, which must stay silent when it cannot establish the model. This stays
+    // undefined on any failure. Read only by the new-order alert gate.
+    let campaignPlacement: string | undefined
     try {
       const info = await fetchCampaignInfo(token, campaignId)
       if (info.businessId) businessId = info.businessId
       debug.businessId = businessId ?? 0
       const placement = info.campaign.placementType?.toUpperCase()
+      campaignPlacement = placement
       if (placement === 'FBY') campaignFulfillmentType = 'fby'
+      // 'EXPRESS' is unreachable: PlacementType's enum is FBS | FBY | DBS | LAAS
+      // and Express arrives as FBS («FBS или Экспресс» in the spec). Kept because
+      // it resolves to the same 'fbs'; noted so it isn't read as a live case.
       else if (placement === 'FBS' || placement === 'DBS' || placement === 'EXPRESS') campaignFulfillmentType = 'fbs'
       debug.placement = placement ?? 'unknown'
       if (businessId) {
@@ -537,10 +547,18 @@ export async function syncFromYandex(
       //
       // Still keyed off `toInsert`, so the alert fires exactly once, on the
       // tick that first inserts the order, and never on a re-sync.
+      //
+      // Gated on the fulfilment model too: on FBY, Yandex's own warehouse picks
+      // and ships, so "collect and ship" is never the seller's job. Allowlist,
+      // so a model we could not establish (campaign-info call failed →
+      // campaignPlacement undefined) stays silent rather than alerting.
+      const sellerFulfilled = isYandexSellerFulfilled(campaignPlacement)
       const alertableExtIds = new Set(
-        withDates
-          .filter(({ o }) => isYandexFulfillmentRequired(o))
-          .map(({ o }) => String(o.id)),
+        sellerFulfilled
+          ? withDates
+              .filter(({ o }) => isYandexFulfillmentRequired(o))
+              .map(({ o }) => String(o.id))
+          : [],
       )
       const rawStatusByExtId = new Map(
         withDates.map(({ o }) => [String(o.id), `${o.status ?? '?'}/${o.substatus ?? '?'}`]),
@@ -556,11 +574,15 @@ export async function syncFromYandex(
       // alert. Makes a vocabulary change (or an over-tight whitelist) visible in
       // the sync toast on the next tick instead of silently costing a seller
       // their alerts.
-      debug.ordersAlerted = newOrders.length
+      debug.ordersAlertAlerted = newOrders.length
       const skippedCounts = new Map<string, number>()
       for (const r of toInsert) {
         if (alertableExtIds.has(r.order_id_external)) continue
-        const key = rawStatusByExtId.get(r.order_id_external) ?? '?/?'
+        // When the whole campaign is out of scope, the raw status is not why the
+        // order was skipped — say so, or the breakdown reads as a status problem.
+        const key = sellerFulfilled
+          ? (rawStatusByExtId.get(r.order_id_external) ?? '?/?')
+          : `placement:${campaignPlacement ?? 'unknown'}`
         skippedCounts.set(key, (skippedCounts.get(key) ?? 0) + 1)
       }
       if (skippedCounts.size > 0) {

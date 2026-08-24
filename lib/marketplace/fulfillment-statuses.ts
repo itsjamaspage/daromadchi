@@ -71,3 +71,36 @@ export function isYandexFulfillmentRequired(order: RawYandexOrderStatus): boolea
   if (order.status !== YM_FULFILLMENT_STATUS) return false
   return (YM_FULFILLMENT_SUBSTATUSES as readonly string[]).includes(order.substatus ?? '')
 }
+
+/**
+ * Yandex placementType values where the SELLER picks, packs and ships.
+ *
+ * Verbatim from the Partner API spec (PlacementType), whose complete enum is
+ * `FBS | FBY | DBS | LAAS`:
+ *   FBS  — labelled «FBS или Экспресс»: Express is NOT a separate value, it
+ *          arrives as FBS. Seller ships. (The `placement === 'EXPRESS'` branch
+ *          in lib/yandex/sync.ts can therefore never match; harmless, since it
+ *          resolves to the same 'fbs' either way.)
+ *   DBS  — delivery by seller: the seller both stores and delivers. Seller ships.
+ *   FBY  — Yandex's own warehouse picks and ships. The seller never touches it,
+ *          so "collect and ship" is always wrong for FBY.
+ *   LAAS — logistics-as-a-service; not a seller pick-and-pack model we support.
+ *          Excluded rather than assumed.
+ *
+ * This is necessarily a CAMPAIGN-level check: Yandex's OrderDTO carries no
+ * per-order fulfilment field (verified against the spec — the DTO has id,
+ * status, substatus, paymentType, delivery, items … and nothing naming the
+ * model), so the campaign's placementType is the only signal available.
+ *
+ * Allowlist, not blocklist: an unrecognised value — and `undefined`, which is
+ * what the caller holds when the campaign-info call failed — returns false. Do
+ * NOT swap this for the sync's `campaignFulfillmentType`: that one falls back
+ * to 'fbs' when the API doesn't answer, which would alert on a campaign whose
+ * model we never actually established.
+ */
+export const YM_SELLER_FULFILLED_PLACEMENTS = ['FBS', 'DBS'] as const
+
+export function isYandexSellerFulfilled(placementType: string | null | undefined): boolean {
+  if (!placementType) return false
+  return (YM_SELLER_FULFILLED_PLACEMENTS as readonly string[]).includes(placementType.toUpperCase())
+}
