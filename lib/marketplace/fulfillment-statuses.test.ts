@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { isYandexFulfillmentRequired } from './fulfillment-statuses'
+import { isYandexFulfillmentRequired, isYandexSellerFulfilled } from './fulfillment-statuses'
 
 const ym = (status: string, substatus?: string) => ({ status, substatus })
 
@@ -66,18 +66,51 @@ test('replay 60767668482: no state in its lifecycle alerts', () => {
   }
 })
 
+// ── Fulfilment model ────────────────────────────────────────────────────────
+// PlacementType's complete enum per the spec is FBS | FBY | DBS | LAAS.
+
+test('seller-shipped models alert; Yandex-shipped and unknown ones do not', () => {
+  assert.equal(isYandexSellerFulfilled('FBS'), true)   // incl. Express — «FBS или Экспресс»
+  assert.equal(isYandexSellerFulfilled('DBS'), true)   // seller stores AND delivers
+  assert.equal(isYandexSellerFulfilled('FBY'), false)  // Yandex's warehouse ships it
+  assert.equal(isYandexSellerFulfilled('LAAS'), false)
+})
+
+test('an unestablished fulfilment model never alerts', () => {
+  // This is what the caller holds when the campaign-info call failed. Reading
+  // the sync's campaignFulfillmentType instead would say 'fbs' here and alert.
+  assert.equal(isYandexSellerFulfilled(undefined), false)
+  assert.equal(isYandexSellerFulfilled(null), false)
+  assert.equal(isYandexSellerFulfilled(''), false)
+  assert.equal(isYandexSellerFulfilled('SOME_FUTURE_MODEL'), false)
+})
+
+test('placement matching is case-insensitive', () => {
+  assert.equal(isYandexSellerFulfilled('fbs'), true)
+  assert.equal(isYandexSellerFulfilled('dbs'), true)
+})
+
 // ── The alert selection, as the sync composes it ────────────────────────────
-// Mirrors lib/yandex/sync.ts: alertable = raw-status gate; alerted = alertable
-// ∩ first-ever-insert. Proves the two conditions compose so an order that is
-// fulfilment-required but already known does NOT re-alert.
+// Mirrors lib/yandex/sync.ts: alertable = fulfilment-model gate ∧ raw-status
+// gate; alerted = alertable ∩ first-ever-insert. Proves the three conditions
+// compose — so an order that is fulfilment-required but already known does NOT
+// re-alert, and an FBY campaign alerts nothing at all.
+// `placement` is deliberately REQUIRED and un-defaulted: a default parameter
+// would swallow an explicitly-passed `undefined` and silently turn the
+// "model could not be read" case into an FBS one. The sync holds it in a plain
+// `let campaignPlacement: string | undefined`, so undefined reaches the gate.
 function alertedExtIds(
   payload: Array<{ id: number; status: string; substatus?: string }>,
   alreadyKnown: string[],
+  placement: string | undefined,
 ): string[] {
-  const known = new Set(alreadyKnown)
+  const sellerFulfilled = isYandexSellerFulfilled(placement)
   const alertable = new Set(
-    payload.filter(o => isYandexFulfillmentRequired(o)).map(o => String(o.id)),
+    sellerFulfilled
+      ? payload.filter(o => isYandexFulfillmentRequired(o)).map(o => String(o.id))
+      : [],
   )
+  const known = new Set(alreadyKnown)
   const toInsert = payload.map(o => String(o.id)).filter(id => !known.has(id))
   return toInsert.filter(id => alertable.has(id))
 }
@@ -86,9 +119,9 @@ test('a real paid order alerts once, and not again on the next tick', () => {
   const payload = [{ id: 60767668483, status: 'PROCESSING', substatus: 'STARTED' }]
 
   // Tick 1 — order is new.
-  assert.deepEqual(alertedExtIds(payload, []), ['60767668483'])
+  assert.deepEqual(alertedExtIds(payload, [], 'FBS'), ['60767668483'])
   // Tick 2 — same order re-pulled by the rolling 30-day window, now known.
-  assert.deepEqual(alertedExtIds(payload, ['60767668483']), [])
+  assert.deepEqual(alertedExtIds(payload, ['60767668483'], 'FBS'), [])
 })
 
 test('a mixed payload alerts only the order that needs picking', () => {
@@ -99,5 +132,18 @@ test('a mixed payload alerts only the order that needs picking', () => {
     { id: 4, status: 'DELIVERY',   substatus: 'SHIPPED' },
     { id: 5, status: 'PROCESSING', substatus: 'READY_TO_SHIP' },  // real work
   ]
-  assert.deepEqual(alertedExtIds(payload, []), ['2', '5'])
+  assert.deepEqual(alertedExtIds(payload, [], 'FBS'), ['2', '5'])
+})
+
+test('an FBY campaign alerts nothing, even on a fulfilment-ready order', () => {
+  const payload = [{ id: 2, status: 'PROCESSING', substatus: 'STARTED' }]
+  assert.deepEqual(alertedExtIds(payload, [], 'FBY'), [])
+  // Same order on a seller-shipped campaign still alerts — proves the FBY
+  // result is the model gate, not an accidentally broken status gate.
+  assert.deepEqual(alertedExtIds(payload, [], 'FBS'), ['2'])
+})
+
+test('a campaign whose model could not be read alerts nothing', () => {
+  const payload = [{ id: 2, status: 'PROCESSING', substatus: 'STARTED' }]
+  assert.deepEqual(alertedExtIds(payload, [], undefined), [])
 })
