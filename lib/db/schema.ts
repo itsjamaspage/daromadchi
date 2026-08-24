@@ -275,6 +275,12 @@ export const orders = pgTable('orders', {
   additional_payment: numeric('additional_payment').default('0'),
   items_count:       integer('items_count').default(0).notNull(),
   ordered_at:        timestamp('ordered_at', { withTimezone: true }).notNull(),
+  // When the "new order — collect and ship" Telegram alert was sent for this
+  // order. Dedup marker for the alert gate, which now fires on the first
+  // transition INTO a fulfilment-required status whether that happens at insert
+  // or on a later tick — the sync is stateless across ticks, so "already told
+  // them" has to be persisted. NULL = never alerted. Migration 081.
+  alert_sent_at:     timestamp('alert_sent_at', { withTimezone: true }),
 }, (t) => [
   index('orders_shop_id_idx').on(t.shop_id),
   index('orders_ordered_at_idx').on(t.ordered_at),
