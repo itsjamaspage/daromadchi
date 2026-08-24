@@ -38,6 +38,7 @@
     "test:shop-identity": "node --import tsx --test lib/db/shop-identity.test.ts",
     "test:deactivate": "node --conditions=react-server --import tsx --test app/api/shops/deactivate/deactivate.integration.test.ts",
     "test:status-map": "node --import tsx --test lib/yandex/status-map.test.ts",
+    "test:item-snapshot": "node --import tsx --test lib/yandex/item-snapshot.test.ts",
     "test:renew": "node --conditions=react-server --import tsx --test lib/billing/renew.integration.test.ts",
     "probe:uzum-payout": "tsx scripts/probe-uzum-payout-surface.ts",
     "test:probe-classifier": "node --import tsx --test scripts/probe-uzum-payout-surface.test.ts",

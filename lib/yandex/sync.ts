@@ -75,6 +75,41 @@ export function formatYmOrderLine(
   return `#${extId} — ${money}\n${bullets}${more}`
 }
 
+/**
+ * Product identity snapshotted from a Yandex order item onto `order_items` —
+ * the direct counterpart of `uzumItemSnapshot()` in lib/uzum/sync.ts.
+ *
+ * These three columns exist so an order line can still name what was ordered
+ * when `product_id` never resolved (the offer was deleted, renamed, or the SKU
+ * match missed). The Yandex writers populated none of them, so every Yandex
+ * `order_items` row had a blank `sku` and `title` while Uzum's were complete —
+ * see docs/investigations/yandex-order-items-findings.md.
+ *
+ * Field names are the required ones from the Partner API spec (OrderItemDTO):
+ *   offerId   — «Идентификатор вашего товарного предложения» (the seller SKU)
+ *   offerName — «Название товара»
+ * NOT `shopSku`, which is deprecated with a 2026-10-05 shutdown.
+ */
+export function yandexItemSnapshot(
+  it: { offerId?: string; offerName?: string },
+  // offerId → colour, from the offer-cards «Цвет» attribute. Optional: the
+  // caller only has it on a heavy pass with a resolvable businessId.
+  offerCardColors?: Map<string, string>,
+): { title: string | null; sku: string | null; variant_color: string | null } {
+  const title = (it.offerName ?? '').trim() || null
+  const sku   = (it.offerId ?? '').trim() || null
+  return {
+    title,
+    sku,
+    // Same precedence as the product path above: the offer NAME first, since on
+    // per-colour listings the colour word is in the title, then the offer-cards
+    // attribute keyed by offerId. Null when neither yields a colour.
+    variant_color: resolveColor(title ?? '')?.key
+      ?? (sku ? offerCardColors?.get(sku) : undefined)
+      ?? null,
+  }
+}
+
 export interface YandexSyncResult {
   ok: boolean
   ordersUpserted: number
@@ -848,12 +883,25 @@ export async function syncFromYandex(
               if (p.sku) pMap.set(p.sku as string, p.id as string)
               if (p.marketplace_product_id) pMap.set(p.marketplace_product_id as string, p.id as string)
             }
-            const itmRows: { order_id: string; product_id: string | null; quantity: number; price_per_unit: number }[] = []
+            // Same item snapshot as the primary writer below — this path runs
+            // instead of it for shops whose product list came from orders, and
+            // a row written here must not be poorer than one written there.
+            const itmRows: {
+              order_id: string; product_id: string | null
+              quantity: number; price_per_unit: number
+              title: string | null; sku: string | null; variant_color: string | null
+            }[] = []
             for (const o of extractOrders) {
               const dbOid = oMap.get(String(o.id))
               if (!dbOid) continue
               for (const it of o.items ?? []) {
-                itmRows.push({ order_id: dbOid, product_id: pMap.get(it.offerId) ?? null, quantity: it.count, price_per_unit: it.buyerPrice ?? it.price ?? 0 })
+                itmRows.push({
+                  order_id: dbOid,
+                  product_id: pMap.get(it.offerId) ?? null,
+                  quantity: it.count,
+                  price_per_unit: it.buyerPrice ?? it.price ?? 0,
+                  ...yandexItemSnapshot(it, offerCardColors),
+                })
               }
             }
             if (itmRows.length > 0) {
@@ -865,6 +913,9 @@ export async function syncFromYandex(
                   product_id: r.product_id,
                   quantity: r.quantity,
                   price_per_unit: String(r.price_per_unit),
+                  title: r.title,
+                  sku: r.sku,
+                  variant_color: r.variant_color,
                 })))
               }
             }
@@ -905,6 +956,7 @@ export async function syncFromYandex(
       const itemRows: {
         order_id: string; product_id: string | null;
         quantity: number; price_per_unit: number
+        title: string | null; sku: string | null; variant_color: string | null
       }[] = []
       for (const o of yandexOrders) {
         const dbOrderId = orderIdMap.get(String(o.id))
@@ -925,6 +977,11 @@ export async function syncFromYandex(
               ?? it.buyerPrice
               ?? it.price
               ?? 0,
+            // The item's OWN name/SKU, not the matched product's: product_id is
+            // frequently null here (no offer-mapping, no title match), and even
+            // when it resolves the listing may have been renamed since. This is
+            // the point-of-sale snapshot, which is why it is stored per item.
+            ...yandexItemSnapshot(it, offerCardColors),
           })
         }
       }
@@ -938,6 +995,9 @@ export async function syncFromYandex(
             product_id: r.product_id,
             quantity: r.quantity,
             price_per_unit: String(r.price_per_unit),
+            title: r.title,
+            sku: r.sku,
+            variant_color: r.variant_color,
           })))
         }
       }
