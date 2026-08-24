@@ -45,7 +45,6 @@ const P = {
   dText:     '#E8FFF8',
   // marketplace
   uzum:      '#494fdf',
-  wb:        '#CB11AB',
   yandex:    '#E8A000',
 }
 
@@ -246,7 +245,7 @@ function DashMockup({ lang }: { lang: Lang }) {
 
   const rows = [
     { name: T.mockup.winterJacket[lang],  sku: 'UZ-00312', rev: '18 240 000', drr: 7.2,  ok: true,  mp: teal },
-    { name: T.mockup.nikeAir[lang],      sku: 'WB-01847', rev: '12 590 000', drr: 11.4, ok: false, mp: teal },
+    { name: T.mockup.nikeAir[lang],      sku: 'YM-01847', rev: '12 590 000', drr: 11.4, ok: false, mp: teal },
     { name: T.mockup.hikingBackpack[lang],    sku: 'YM-00951', rev: '9 870 000',  drr: 9.8,  ok: true,  mp: teal },
     { name: T.mockup.sonyHeadphones[lang],   sku: 'UZ-00488', rev: '8 340 000',  drr: 6.1,  ok: true,  mp: teal },
   ]
