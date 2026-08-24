@@ -24,7 +24,7 @@
  * hiccup would zero a seller's whole catalogue in a single tick.
  */
 import 'server-only'
-import { eq, inArray } from 'drizzle-orm'
+import { and, eq, inArray } from 'drizzle-orm'
 import { db, products } from '@/lib/db'
 import { fetchUzumShopProducts, fetchUzumShops, getUzumRateLimit, UzumApiError } from '@/lib/uzum/client'
 import { fetchAllYandexStocks } from '@/lib/yandex/client'
@@ -107,16 +107,37 @@ export async function refreshUzumStock(
 
   // Compare before writing so `updated` counts real movement, and so an
   // unchanged catalogue costs zero UPDATEs.
+  //
+  // SCOPED TO THIS SHOP. Selecting on marketplace_product_id alone matched
+  // every row in the table carrying that skuId — including other users' — and
+  // the loop below then wrote this shop's quantities into them. Uzum skuIds are
+  // per-listing so a collision needs two sellers on the same listing, but a
+  // write with no tenant predicate is one shared listing (or one catalogue-
+  // seeded demo shop) away from real cross-account corruption, with no error
+  // and nothing in the data afterwards to show it happened.
+  //
+  // The predicate belongs HERE, in the WHERE clause, not in a check around the
+  // loop — same reasoning as app/api/shops/deactivate/route.ts: one predicate
+  // cannot be forgotten, and a check-then-write leaves a window. The Yandex
+  // sibling below was always scoped this way.
   const ids = [...live.keys()]
   const rows = await db.select({
     id: products.id, mpid: products.marketplace_product_id, stock: products.stock_quantity,
-  }).from(products).where(inArray(products.marketplace_product_id, ids))
+  }).from(products).where(and(
+    eq(products.shop_id, shopId),
+    inArray(products.marketplace_product_id, ids),
+  ))
 
   let updated = 0
   for (const r of rows) {
     const next = live.get(String(r.mpid))
     if (next === undefined || next === r.stock) continue
-    await db.update(products).set({ stock_quantity: next }).where(eq(products.id, r.id))
+    // Belt and braces: the row came from a shop-scoped SELECT, so this id is
+    // already this shop's. Re-stating it costs nothing and means the UPDATE is
+    // safe to read on its own.
+    await db.update(products)
+      .set({ stock_quantity: next })
+      .where(and(eq(products.id, r.id), eq(products.shop_id, shopId)))
     updated++
   }
 
