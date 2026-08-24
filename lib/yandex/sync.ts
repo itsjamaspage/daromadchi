@@ -100,6 +100,9 @@ export async function syncFromYandex(
       const placement = info.campaign.placementType?.toUpperCase()
       campaignPlacement = placement
       if (placement === 'FBY') campaignFulfillmentType = 'fby'
+      // 'EXPRESS' is unreachable: PlacementType's enum is FBS | FBY | DBS | LAAS
+      // and Express arrives as FBS («FBS или Экспресс» in the spec). Kept because
+      // it resolves to the same 'fbs'; noted so it isn't read as a live case.
       else if (placement === 'FBS' || placement === 'DBS' || placement === 'EXPRESS') campaignFulfillmentType = 'fbs'
       debug.placement = placement ?? 'unknown'
       if (businessId) {

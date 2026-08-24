@@ -135,6 +135,20 @@ test('a mixed payload alerts only the order that needs picking', () => {
   assert.deepEqual(alertedExtIds(payload, [], 'FBS'), ['2', '5'])
 })
 
+test('a DBS campaign alerts — the seller stores and delivers it themselves', () => {
+  // Reachable today, not hypothetical: campaignId is entered free-form by the
+  // seller (app/api/shops/token/route.ts) and no onboarding path filters on
+  // placementType, so a DBS campaign syncs through this exact code. Pinned here
+  // so "DBS alerts" is deliberate behaviour rather than a side effect of the
+  // allowlist happening to contain it.
+  const payload = [{ id: 2, status: 'PROCESSING', substatus: 'STARTED' }]
+  assert.deepEqual(alertedExtIds(payload, [], 'DBS'), ['2'])
+  // …and the status gate still applies on DBS — the model gate does not
+  // short-circuit it.
+  const unpaid = [{ id: 3, status: 'UNPAID', substatus: 'STARTED' }]
+  assert.deepEqual(alertedExtIds(unpaid, [], 'DBS'), [])
+})
+
 test('an FBY campaign alerts nothing, even on a fulfilment-ready order', () => {
   const payload = [{ id: 2, status: 'PROCESSING', substatus: 'STARTED' }]
   assert.deepEqual(alertedExtIds(payload, [], 'FBY'), [])
