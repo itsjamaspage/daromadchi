@@ -33,6 +33,7 @@
     "audit:merges": "node scripts/audit-merges.mjs",
     "test:lifecycle": "node --conditions=react-server --import tsx --test lib/billing/lifecycle.integration.test.ts",
     "test:payout-status": "node --import tsx --test lib/db/payout-status.test.ts",
+    "test:admin": "node --conditions=react-server --import tsx --test lib/db/admin-analytics.integration.test.ts",
     "test:alert-gate": "node --import tsx --test lib/marketplace/fulfillment-statuses.test.ts",
     "test:alert-transition": "node --import tsx --test lib/marketplace/alert-transition.test.ts",
     "test:shop-identity": "node --import tsx --test lib/db/shop-identity.test.ts",
@@ -46,7 +47,8 @@
     "probe:yandex-catalog": "tsx scripts/probe-yandex-catalog-path.ts",
     "probe:yandex-keys": "tsx scripts/probe-yandex-stock-keys.ts",
     "test:uzum-stock": "node --import tsx --test lib/uzum/stock-reading.test.ts",
-    "test:stock-refresh": "node --import tsx --test lib/marketplace/stock-refresh.test.ts"
+    "test:stock-refresh": "node --import tsx --test lib/marketplace/stock-refresh.test.ts",
+    "test:stock-key": "node --import tsx --test lib/marketplace/stock-key-match.test.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
