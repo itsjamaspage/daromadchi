@@ -547,9 +547,18 @@ export async function syncFromYandex(
 
     if (orderRows.length > 0) {
       const extIds = orderRows.map(r => r.order_id_external)
-      const existingOrders = await db.select({ id: orders.id, order_id_external: orders.order_id_external })
+      const existingOrders = await db.select({
+        id: orders.id,
+        order_id_external: orders.order_id_external,
+        // Dedup marker for the alert gate below — the sync is stateless across
+        // ticks, so "already told them" has to come from the row.
+        alert_sent_at: orders.alert_sent_at,
+      })
         .from(orders).where(and(eq(orders.shop_id, shopId), inArray(orders.order_id_external, extIds)))
       const existingOrderMap = new Map(existingOrders.map(o => [o.order_id_external, o.id]))
+      const alreadyAlerted = new Set(
+        existingOrders.filter(o => o.alert_sent_at != null).map(o => o.order_id_external),
+      )
 
       const toInsert = orderRows.filter(r => !existingOrderMap.has(r.order_id_external))
       const toUpdate = orderRows.filter(r => existingOrderMap.has(r.order_id_external))
@@ -576,8 +585,16 @@ export async function syncFromYandex(
       // order got announced as "collect and ship". See
       // lib/marketplace/fulfillment-statuses.ts.
       //
-      // Still keyed off `toInsert`, so the alert fires exactly once, on the
-      // tick that first inserts the order, and never on a re-sync.
+      // Fires on the first TRANSITION into a fulfilment-required status, whether
+      // that happens at insert or on a later tick. Insert-only was a permanent
+      // miss: a prepaid order is first seen as UNPAID — correctly not
+      // alert-worthy — and by the time it is paid it is an UPDATE, which the
+      // gate never looked at. Once the row exists it can never re-enter the
+      // insert set, so nothing later could rescue it.
+      //
+      // Exactly-once now comes from the persisted orders.alert_sent_at marker
+      // rather than from "is this an insert", so a re-sync of an already-alerted
+      // order stays silent no matter how many times its status is re-read.
       //
       // Gated on the fulfilment model too: on FBY, Yandex's own warehouse picks
       // and ships, so "collect and ship" is never the seller's job. Allowlist,
@@ -595,11 +612,22 @@ export async function syncFromYandex(
         withDates.map(({ o }) => [String(o.id), `${o.status ?? '?'}/${o.substatus ?? '?'}`]),
       )
 
-      for (const r of toInsert) {
-        if (alertableExtIds.has(r.order_id_external)) {
-          newOrders.push(formatYmOrderLine(r.order_id_external, r.revenue ?? 0, itemsByExtId.get(r.order_id_external) ?? []))
-        }
+      // Every order in this window that qualifies and has not been announced
+      // before — inserts and updates alike.
+      const alertedExtIds = new Set<string>()
+      for (const r of [...toInsert, ...toUpdate]) {
+        if (!alertableExtIds.has(r.order_id_external)) continue
+        if (alreadyAlerted.has(r.order_id_external)) continue
+        alertedExtIds.add(r.order_id_external)
+        newOrders.push(formatYmOrderLine(r.order_id_external, r.revenue ?? 0, itemsByExtId.get(r.order_id_external) ?? []))
       }
+      // Stamped in the same write that persists the status, below. That is
+      // before the cron actually sends the Telegram message, which is the safer
+      // side of the trade: sendSellerMessageTo never throws and retries
+      // internally, so the realistic failure is a rare lost message — whereas
+      // stamping only on a confirmed send would risk re-announcing the same
+      // order every 5 minutes for as long as it sits in PROCESSING.
+      const alertStampedAt = new Date()
 
       // Observability for the gate: which raw states were inserted but did NOT
       // alert. Makes a vocabulary change (or an over-tight whitelist) visible in
@@ -608,7 +636,8 @@ export async function syncFromYandex(
       debug.ordersAlertAlerted = newOrders.length
       const skippedCounts = new Map<string, number>()
       for (const r of toInsert) {
-        if (alertableExtIds.has(r.order_id_external)) continue
+        if (alertedExtIds.has(r.order_id_external)) continue
+        if (alreadyAlerted.has(r.order_id_external)) continue
         // When the whole campaign is out of scope, the raw status is not why the
         // order was skipped — say so, or the breakdown reads as a status problem.
         const key = sellerFulfilled
@@ -635,6 +664,7 @@ export async function syncFromYandex(
             items_count: r.items_count,
             ordered_at: new Date(r.ordered_at),
             fulfillment_type: r.fulfillment_type,
+            alert_sent_at: alertedExtIds.has(r.order_id_external) ? alertStampedAt : null,
           // See the matching note in lib/uzum/sync.ts: (shop_id,
           // order_id_external) is unique as of migration 071, and this
           // select-then-insert is not atomic. A concurrent inserter wins; this
@@ -652,6 +682,9 @@ export async function syncFromYandex(
           items_count: r.items_count,
           ordered_at: new Date(r.ordered_at),
           fulfillment_type: r.fulfillment_type,
+          // Only ever set, never cleared: an order that has been announced stays
+          // announced even if its status moves on.
+          ...(alertedExtIds.has(r.order_id_external) ? { alert_sent_at: alertStampedAt } : {}),
         }).where(eq(orders.id, existingOrderMap.get(r.order_id_external)!))
       }
       ordersOk = true
