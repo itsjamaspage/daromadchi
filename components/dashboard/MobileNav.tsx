@@ -5,7 +5,7 @@ import { useState, useEffect, useRef } from 'react'
 import { usePathname } from 'next/navigation'
 import { Menu, Sun, Moon, ChevronDown, UserCircle, CreditCard, Settings, HelpCircle, LogOut } from 'lucide-react'
 import Link from 'next/link'
-import { signOut } from 'next-auth/react'
+import { signOutEverywhere } from '@/lib/auth/sign-out-client'
 import Sidebar from './Sidebar'
 import { useTheme, useLang } from '@/app/providers'
 import { translations } from '@/lib/i18n'
@@ -51,10 +51,7 @@ export default function MobileNav({ lockedKeys = [], userEmail = '', userName = 
 
   async function handleLogout() {
     setProfileOpen(false)
-    // Relative navigation — NextAuth v5's redirectTo can build an absolute URL
-    // from a stale AUTH_URL, so sign out without a redirect and go client-side.
-    await signOut({ redirect: false })
-    window.location.assign('/login')
+    await signOutEverywhere()
   }
 
   const darkTop = theme === 'dark'
