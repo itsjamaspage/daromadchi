@@ -247,6 +247,9 @@ function LoginForm() {
   // ?consent=required — open the signup tab and seed the notice. Derived at
   // first render (no effect / synchronous setState).
   const consentRequired = searchParams.get('consent') === 'required'
+  // Set by the sign-out flow. Suppresses the already-signed-in redirect below
+  // so a cookie that has not finished clearing cannot bounce the user back in.
+  const justSignedOut = searchParams.get('signedout') === '1'
   // A plan chosen on /pricing (?plan=…) carries through login so the user lands
   // on Billing with that plan's checkout ready — not the generic dashboard.
   // Validated against the price table rather than a hand-written pair: naming
@@ -278,6 +281,11 @@ function LoginForm() {
     // them here. A ?plan=… (from a /pricing or landing tariff click) sends them
     // straight to Billing with that plan; otherwise to the dashboard. Uses the
     // NextAuth session endpoint (no SessionProvider needed).
+    // ...UNLESS they just signed out. This check is what turned a failed
+    // cookie delete into a redirect loop: sign-out sent the user here, here
+    // saw the surviving session, and sent them back. `signedout=1` means the
+    // intent was to LEAVE, so show the form and let them log in deliberately.
+    if (justSignedOut) return
     let alive = true
     fetch('/api/auth/session', { cache: 'no-store' })
       .then(r => (r.ok ? r.json() : null))
