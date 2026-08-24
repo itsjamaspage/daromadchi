@@ -50,6 +50,7 @@
     "test:stock-refresh": "node --import tsx --test lib/marketplace/stock-refresh.test.ts",
     "test:reserved-display": "node --import tsx --test lib/marketplace/reserved-display.test.ts",
     "test:stock-key": "node --import tsx --test lib/marketplace/stock-key-match.test.ts",
+    "test:signout": "node --import tsx --test lib/auth/cookie-sweep.test.ts",
     "test:tenancy": "node --import tsx --test lib/marketplace/stock-refresh-tenancy.integration.test.ts"
   },
   "dependencies": {
