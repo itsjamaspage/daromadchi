@@ -248,6 +248,14 @@ export const products = pgTable('products', {
   // Operational only: it answers "is this SKU's stock moving?", which nothing
   // in the database could answer before. Not displayed.
   stock_changed_at:       timestamp('stock_changed_at', { withTimezone: true }),
+  // Seller-entered values shown INSTEAD of the marketplace's, migration 083.
+  // NULL = no override. Needed because selling_price and stock_quantity are
+  // both rewritten by the syncs, so an edit made in place would silently
+  // revert; cost_price needs no twin because both syncs already omit it from
+  // their UPDATE patches. LOCAL ONLY — never read to build a marketplace
+  // request.
+  price_override:         numeric('price_override'),
+  stock_override:         integer('stock_override'),
 }, (t) => [
   index('products_shop_id_idx').on(t.shop_id),
   index('products_sku_idx').on(t.sku),

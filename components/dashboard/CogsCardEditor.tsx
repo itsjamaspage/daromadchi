@@ -2,12 +2,12 @@
 
 import { useState } from 'react'
 import { Pencil, X } from 'lucide-react'
-import EditableCostCell from '@/components/dashboard/EditableCostCell'
+import EditableValueCell from '@/components/dashboard/EditableValueCell'
 
 // The P&L "Себестоимость" card. COGS = Σ(qty × cost_price), so the total
 // itself isn't directly editable (you can't back-solve one sum into many
 // products). Instead the card opens a per-product editor: each product sold
-// in the period gets an inline cost-price cell (the same EditableCostCell +
+// in the period gets an inline cost-price cell (the same EditableValueCell +
 // /api/products/update the Products page uses). Saving a cost writes it back
 // to that product and router.refresh() re-runs the P&L server component, so
 // COGS and net profit update here and everywhere that product's cost feeds.
@@ -98,7 +98,8 @@ export default function CogsCardEditor({
                         </td>
                         <td className="px-3 py-2.5 text-right text-[var(--text-base)] tabular-nums">×{p.qty}</td>
                         <td className="px-5 py-2.5 text-right">
-                          <EditableCostCell productId={p.productId} initialCost={p.costPrice} />
+                          <EditableValueCell productId={p.productId} field="costPrice" value={p.costPrice}
+                            emptyLabel="+ tannarx" title="Tannarxni tahrirlash / Edit cost" />
                         </td>
                       </tr>
                     ))}

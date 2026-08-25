@@ -30,7 +30,7 @@
 
 import { Fragment, useState } from 'react'
 import { ChevronRight, ChevronDown } from 'lucide-react'
-import EditableCostCell from '@/components/dashboard/EditableCostCell'
+import EditableValueCell from '@/components/dashboard/EditableValueCell'
 import FulfillmentBadge from '@/components/dashboard/FulfillmentBadge'
 import { groupByVariant } from '@/lib/variant-grouping'
 import { COLOR_LABELS, colorMetaFor, type ColorKey } from '@/lib/products/resolveColor'
@@ -72,6 +72,33 @@ function VariantColorChip({ colorKey, lang }: { colorKey: string | null | undefi
   )
 }
 
+/**
+ * The values this table shows for one listing: the seller's override where
+ * they set one, the marketplace's number otherwise.
+ *
+ * Exported because the Analytics page's KPI cards (avg / low / high margin)
+ * must agree with the rows beneath them — computing them off selling_price
+ * while the table shows an override is how a page starts contradicting itself.
+ *
+ * Deliberately NOT folded into Product.selling_price / available_stock at the
+ * query layer: those feed the stock engine, turnover and the Products page,
+ * and a display preference set on Analytics must not reach any of them.
+ */
+export function effective(p: Product): {
+  price: number; cost: number; stockQty: number
+  priceOverridden: boolean; stockOverridden: boolean
+} {
+  const priceOverridden = p.price_override != null
+  const stockOverridden = p.stock_override != null
+  return {
+    price:    priceOverridden ? Number(p.price_override) : Number(p.selling_price ?? 0),
+    cost:     Number(p.cost_price ?? 0),
+    stockQty: stockOverridden ? Number(p.stock_override) : p.available_stock,
+    priceOverridden,
+    stockOverridden,
+  }
+}
+
 /** Sales figures for one listing. Zeroed rather than undefined so a product
  *  with no sales renders "0", not a gap the reader has to interpret. */
 interface Sales { qty_sold: number; qty_in_transit: number; qty_cancelled: number; revenue: number }
@@ -95,6 +122,11 @@ interface Props {
     stockValue: string
     warehouseValueTotal: string
     noSales: string
+    setPrice: string
+    setCost: string
+    editPriceHint: string
+    editCostHint: string
+    editStockHint: string
   }
 }
 
@@ -171,12 +203,15 @@ export default function AnalyticsProductTable({ products, sales, totalStockValue
   )
 
   const renderRow = (p: Product, isChild = false) => {
-    const price    = Number(p.selling_price ?? 0)
-    const cost     = Number(p.cost_price ?? 0)
-    const margin   = price > 0 ? (p.profit / price) * 100 : 0
-    const stockQty = p.available_stock
+    const e = effective(p)
+    const { price, cost, stockQty } = e
+    // Recomputed here, never read off p.profit: that field was calculated
+    // server-side from selling_price, so an overridden price would leave the
+    // profit and margin columns describing a price no longer on screen.
+    const profit   = price - cost
+    const margin   = price > 0 ? (profit / price) * 100 : 0
     const stockVal = cost * stockQty
-    const profitColor = p.profit > 0 ? '#10b981' : '#ef4444'
+    const profitColor = profit > 0 ? '#10b981' : '#ef4444'
     const marginColor = margin >= 35 ? '#10b981' : margin >= 15 ? '#f59e0b' : '#ef4444'
     return (
       <tr key={p.id} style={{ borderBottom: '1px solid var(--border)' }}>
@@ -189,17 +224,32 @@ export default function AnalyticsProductTable({ products, sales, totalStockValue
           </div>
         </td>
         {salesCells(salesFor(p.id))}
-        <td className="px-4 py-3.5 text-right" style={{ color: 'var(--text-dim)' }}>{fmt(price)} so&apos;m</td>
         <td className="px-4 py-3.5 text-right">
-          <EditableCostCell productId={p.id} initialCost={cost > 0 ? cost : null} />
+          <EditableValueCell productId={p.id} field="priceOverride"
+            value={price > 0 ? price : null} overridden={e.priceOverridden}
+            emptyLabel={labels.setPrice} title={labels.editPriceHint} />
         </td>
         <td className="px-4 py-3.5 text-right">
-          <span className="font-semibold" style={{ color: profitColor }}>{fmt(p.profit)} so&apos;m</span>
+          <EditableValueCell productId={p.id} field="costPrice"
+            value={cost > 0 ? cost : null}
+            emptyLabel={labels.setCost} title={labels.editCostHint} />
+        </td>
+        {/* Profit, margin and stock value are IDENTITIES of the three cells
+            above (profit = price − cost, margin = profit ÷ price, stock value
+            = cost × stock), so they are not separately editable — there would
+            be no single right answer for which input an edit should move.
+            They recompute the moment any input is saved. */}
+        <td className="px-4 py-3.5 text-right">
+          <span className="font-semibold" style={{ color: profitColor }}>{fmt(profit)} so&apos;m</span>
         </td>
         <td className="px-4 py-3.5 text-right">
           <span className="font-semibold" style={{ color: marginColor }}>{margin.toFixed(1)}%</span>
         </td>
-        <td className="px-4 py-3.5 text-right" style={{ color: 'var(--text-dim)' }}>{stockQty}</td>
+        <td className="px-4 py-3.5 text-right">
+          <EditableValueCell productId={p.id} field="stockOverride"
+            value={stockQty} overridden={e.stockOverridden} kind="int"
+            emptyLabel="0" title={labels.editStockHint} />
+        </td>
         <td className="px-4 py-3.5 text-right" style={{ color: 'var(--text-muted)' }}>
           {stockVal > 0 ? `${fmt(stockVal)} so'm` : '—'}
         </td>

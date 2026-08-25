@@ -156,6 +156,12 @@ export interface Product {
   stock_quantity: number
   physical_stock: number | null  // user-set total physical inventory
   available_stock: number        // physical_stock - sold_across_all_sku_shops, or stock_quantity
+  // Seller-entered display overrides (migration 083). NULL = show the
+  // marketplace value. Kept SEPARATE from selling_price / available_stock on
+  // purpose: those feed the stock engine, turnover and the Products page, and
+  // an Analytics display preference must not leak into any of them.
+  price_override?: number | null
+  stock_override?: number | null
   category: string | null
   marketplace_product_id: string | null
   marketplace?: MarketplaceType
