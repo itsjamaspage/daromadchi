@@ -296,6 +296,10 @@ export const orders = pgTable('orders', {
   // or on a later tick — the sync is stateless across ticks, so "already told
   // them" has to be persisted. NULL = never alerted. Migration 081.
   alert_sent_at:     timestamp('alert_sent_at', { withTimezone: true }),
+  // When we told the seller that an order we had ANNOUNCED was cancelled.
+  // Dedup marker for the cancellation notice, migration 084 — same role
+  // alert_sent_at plays for the new-order alert. NULL = not told yet.
+  cancel_alert_sent_at: timestamp('cancel_alert_sent_at', { withTimezone: true }),
 }, (t) => [
   index('orders_shop_id_idx').on(t.shop_id),
   index('orders_ordered_at_idx').on(t.ordered_at),

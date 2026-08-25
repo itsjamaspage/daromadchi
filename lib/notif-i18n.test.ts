@@ -23,6 +23,7 @@ const CALLS: Record<string, unknown[]> = {
   stockUpdateTitle: [2], stockUpdateLine: ['Item', 'Uzum', 4, 'Yandex'],
   deliveryTitle: [1],
   newOrdersTitle: [2], newOrdersLine: ['Uzum', 3], newOrdersMore: [4],
+  cancelledTitle: [2], cancelledLine: ['Uzum', 3], cancelledMore: [4],
   stockSyncSoldOn: ['Uzum'], stockSyncOk: ['Uzum', 5, 3],
   stockSyncFailed: ['Uzum', ' (x)'], stockSyncRestock: [2],
   stockSyncReason: ['missing_barcode'],

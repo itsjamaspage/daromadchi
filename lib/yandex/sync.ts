@@ -14,6 +14,7 @@ import {
 import { resolveColor } from '@/lib/products/resolveColor'
 import { ORDER_STATUS_LOOKBACK_DAYS } from '@/lib/marketplace/reserved-display'
 import { isYandexFulfillmentRequired, isYandexSellerFulfilled } from '@/lib/marketplace/fulfillment-statuses'
+import { selectCancellationAlerts } from '@/lib/marketplace/cancellation-alert'
 
 /**
  * Yandex raw order status → our normalized enum, which the dashboard renders as
@@ -118,6 +119,10 @@ export interface YandexSyncResult {
   // orders still needing fulfilment. Used for real-time Telegram alerts.
   ordersInserted?: number
   newOrders?: string[]
+  /** Display lines for orders we ANNOUNCED that have since been cancelled.
+   *  The closing bracket on the new-order alert — see
+   *  lib/marketplace/cancellation-alert.ts. */
+  cancelledOrders?: string[]
   productsUpserted: number
   campaignsUpserted: number
   // False on a lightweight orders-only tick (products/settlements/catalog were
@@ -146,6 +151,7 @@ export async function syncFromYandex(
   let productsOk = false
   let ordersOk = false
   const newOrders: string[] = []
+  const cancelledOrders: string[] = []
 
   try {
     let businessId: number | undefined
@@ -588,11 +594,24 @@ export async function syncFromYandex(
         // Dedup marker for the alert gate below — the sync is stateless across
         // ticks, so "already told them" has to come from the row.
         alert_sent_at: orders.alert_sent_at,
+        // Same, for the cancellation notice.
+        cancel_alert_sent_at: orders.cancel_alert_sent_at,
       })
         .from(orders).where(and(eq(orders.shop_id, shopId), inArray(orders.order_id_external, extIds)))
       const existingOrderMap = new Map(existingOrders.map(o => [o.order_id_external, o.id]))
       const alreadyAlerted = new Set(
         existingOrders.filter(o => o.alert_sent_at != null).map(o => o.order_id_external),
+      )
+      // Keyed by the external id, which is what the synced rows carry. Rows
+      // with no external id cannot be matched to a marketplace order at all,
+      // so they are dropped rather than keyed under ''.
+      const alertMarkers = new Map(
+        existingOrders
+          .filter(o => o.order_id_external != null)
+          .map(o => [o.order_id_external as string, {
+            alert_sent_at: o.alert_sent_at,
+            cancel_alert_sent_at: o.cancel_alert_sent_at,
+          }]),
       )
 
       const toInsert = orderRows.filter(r => !existingOrderMap.has(r.order_id_external))
@@ -664,6 +683,23 @@ export async function syncFromYandex(
       // order every 5 minutes for as long as it sits in PROCESSING.
       const alertStampedAt = new Date()
 
+      // ── Cancellation notice ─────────────────────────────────────────────
+      // The closing bracket on the alert above. An order we told the seller to
+      // pick and pack can be cancelled before delivery — a prepaid one
+      // especially — and staying silent sends them to their marketplace
+      // account looking for something that is no longer there.
+      //
+      // Runs over [...toInsert, ...toUpdate] for the same reason the alert gate
+      // does: a cancellation almost always arrives as an UPDATE to a row we
+      // inserted on an earlier tick, so an insert-only check would never see
+      // one. Idempotent via cancel_alert_sent_at.
+      const cancelledRows = selectCancellationAlerts([...toInsert, ...toUpdate], alertMarkers)
+      const cancelledExtIds = new Set(cancelledRows.map(r => r.order_id_external))
+      for (const r of cancelledRows) {
+        cancelledOrders.push(formatYmOrderLine(r.order_id_external, r.revenue ?? 0, itemsByExtId.get(r.order_id_external) ?? []))
+      }
+      debug.ordersCancelAlerted = cancelledOrders.length
+
       // Observability for the gate: which raw states were inserted but did NOT
       // alert. Makes a vocabulary change (or an over-tight whitelist) visible in
       // the sync toast on the next tick instead of silently costing a seller
@@ -700,6 +736,7 @@ export async function syncFromYandex(
             ordered_at: new Date(r.ordered_at),
             fulfillment_type: r.fulfillment_type,
             alert_sent_at: alertedExtIds.has(r.order_id_external) ? alertStampedAt : null,
+            cancel_alert_sent_at: cancelledExtIds.has(r.order_id_external) ? alertStampedAt : null,
           // See the matching note in lib/uzum/sync.ts: (shop_id,
           // order_id_external) is unique as of migration 071, and this
           // select-then-insert is not atomic. A concurrent inserter wins; this
@@ -720,6 +757,7 @@ export async function syncFromYandex(
           // Only ever set, never cleared: an order that has been announced stays
           // announced even if its status moves on.
           ...(alertedExtIds.has(r.order_id_external) ? { alert_sent_at: alertStampedAt } : {}),
+          ...(cancelledExtIds.has(r.order_id_external) ? { cancel_alert_sent_at: alertStampedAt } : {}),
         }).where(eq(orders.id, existingOrderMap.get(r.order_id_external)!))
       }
       ordersOk = true
@@ -737,6 +775,7 @@ export async function syncFromYandex(
         ordersUpserted: newOrderRows.length,
         ordersInserted,
         newOrders,
+        cancelledOrders,
         productsUpserted: 0,
         campaignsUpserted: 0,
         heavy: false,
@@ -1048,6 +1087,7 @@ export async function syncFromYandex(
       ordersUpserted: newOrderRows.length,
       ordersInserted,
       newOrders,
+      cancelledOrders,
       productsUpserted: productRows.length,
       campaignsUpserted,
       details: warnings.length ? warnings.join(' | ') : undefined,
