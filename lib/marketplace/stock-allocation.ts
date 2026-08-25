@@ -17,41 +17,61 @@ import type { MarketplaceType } from '@/lib/types'
  * RAW marketplace order statuses whose units RESERVE shared stock (draw down
  * `available`, and so lower the ostatok written to the other marketplaces in the
  * group). Keyed off the RAW status (orders.marketplace_status), NOT the
- * normalized 5-value enum, because the enum is too coarse: on Uzum FBS both
- * «В поставке» (DELIVERING, still in transit to the PVZ) and «Приняты Uzum»
- * (ACCEPTED_AT_DP, the PVZ has received the item) normalize to 'confirmed', yet
- * the seller's rule is that stock must NOT draw down until PVZ receipt.
+ * normalized 5-value enum, because the enum is too coarse to express the
+ * boundary we need.
  *
- * The boundary is PVZ RECEIPT and later, never earlier:
- *   Uzum   → ACCEPTED_AT_DP   («Приняты Uzum» — PVZ received; also covers the
- *                              later «Ждут выдачи» which stays ACCEPTED_AT_DP).
- *            HANDED_OVER / TRANSFERRED — defensive aliases for "the seller has
- *                              handed the item over at the pickup point".
- *            EXCLUDES DELIVERING / SENT / ON_DELIVERY (still «В поставке»,
- *            in transit) and everything at «Новые» / «В сборке».
- *   Yandex → DELIVERY         — the order has been shipped / handed off to the
- *                              delivery service (the physical hand-off boundary).
- *            PICKUP           — waiting at the pickup point, ordered but not yet
- *                              collected: a physical unit is still committed, so
- *                              it must draw down. Only DELIVERED (collected)
- *                              releases it.
+ * ── The boundary: reserve as soon as the order is PAID & COMMITTED, never while
+ *    it is still an unpaid draft. ───────────────────────────────────────────────
+ * A unit is reserved the moment a real, paid order commits to it — at order
+ * ingestion, NOT at PVZ hand-off — so the sibling listing on the other
+ * marketplace drops right away and the last-unit oversell window closes. But an
+ * order the buyer has NOT paid for must never reserve: this seller gets a steady
+ * stream of unpaid-then-cancelled drafts, and reserving those would briefly zero
+ * the sibling listing and suppress real sales (a phantom-stockout). So the set
+ * starts at the first PAID state and deliberately excludes every unpaid/draft
+ * state.
  *
- * 'delivered' («Выданы» — customer collected) is already reflected in the
- * marketplace's own listed stock, so it is NOT re-counted here (double-subtract).
+ *   Uzum   → PACKING           («В сборке» — the seller is assembling a PAID,
+ *                              accepted order; Uzum is prepaid, so an order the
+ *                              seller is packing has been paid for).
+ *            PENDING_DELIVERY  (packed, awaiting the courier).
+ *            DELIVERING        («В поставке» — in transit to the PVZ).
+ *            ACCEPTED_AT_DP    («Приняты Uzum» — PVZ received; also the later
+ *                              «Ждут выдачи», which stays ACCEPTED_AT_DP).
+ *            HANDED_OVER / TRANSFERRED — defensive aliases for the hand-off.
+ *            EXCLUDES CREATED / NEW / PENDING — the freshly-placed state that
+ *            still covers the unpaid / payment-processing window Uzum
+ *            auto-cancels. Reserve only once the seller is actually fulfilling.
+ *   Yandex → PROCESSING        («находится в обработке» — the ONLY status a
+ *                              seller ships from; a prepaid order reaches it only
+ *                              AFTER payment. See lib/marketplace/
+ *                              fulfillment-statuses.ts).
+ *            DELIVERY          — shipped / handed to the delivery service.
+ *            PICKUP            — waiting at the pickup point, ordered but not yet
+ *                              collected: the unit is still committed.
+ *            EXCLUDES UNPAID / PLACING / RESERVED — not paid or not finalised
+ *            (Yandex's own pre-payment states; reserving them is the bug).
+ *
+ * 'delivered' («Выданы» / DELIVERED — customer collected) is already reflected
+ * in the marketplace's own listed stock, so it is NOT re-counted (double-count).
  *
  * The raw strings do not collide across marketplaces (Uzum in-transit is
- * DELIVERING, Yandex reserving is DELIVERY), so one flat union set is safe.
+ * DELIVERING, Yandex reserving is DELIVERY; Uzum has no PROCESSING in its real
+ * FBS enum), so one flat union set is safe.
  *
- * Trade-off: keeping listings full until PVZ receipt means the same physical
- * unit can be ordered on both marketplaces before either is received; the
- * oversell safety net (which reads the SAME set) resolves that at receipt time.
+ * Trade-off (chosen deliberately): reserving at payment can briefly show the
+ * sibling low if a PAID order is later cancelled before delivery — recoverable,
+ * and far safer than the reverse (showing stock the seller has already sold,
+ * which oversells). The oversell safety net reads the SAME set, so it too now
+ * catches a double-sell at order time rather than at receipt.
  */
 export const RESERVING_RAW_STATUSES = [
-  // Uzum — PVZ has received the item («Приняты Uzum») and later
-  'ACCEPTED_AT_DP', 'HANDED_OVER', 'TRANSFERRED',
-  // Yandex — shipped / handed off to delivery, or waiting at the pickup point
-  // (ordered, not yet collected). DELIVERED (collected) is excluded — see above.
-  'DELIVERY', 'PICKUP',
+  // Uzum — paid & committed: seller packing → in transit → PVZ received.
+  // CREATED / NEW / PENDING (unpaid draft) are deliberately NOT here.
+  'PACKING', 'PENDING_DELIVERY', 'DELIVERING', 'ACCEPTED_AT_DP', 'HANDED_OVER', 'TRANSFERRED',
+  // Yandex — paid & in processing, shipped, or waiting at pickup (not collected).
+  // UNPAID / PLACING / RESERVED (not paid) are deliberately NOT here.
+  'PROCESSING', 'DELIVERY', 'PICKUP',
 ] as const
 
 export type OversellMode = 'lock_last_unit' | 'partition' | 'off'
@@ -73,10 +93,10 @@ export interface SyncMember {
    *  NULL until product sync self-populates it, in which case computeAvailable
    *  seeds from listedStock so behaviour degrades gracefully. */
   physicalStock: number | null
-  /** Reserving order units on this listing — those the PVZ has received
-   *  (Uzum ACCEPTED_AT_DP / Yandex DELIVERY) and later. Orders still in transit
-   *  to the PVZ or with the seller are excluded so they don't draw down stock.
-   *  See RESERVING_RAW_STATUSES. */
+  /** Reserving order units on this listing — paid, committed orders (Uzum
+   *  PACKING and later / Yandex PROCESSING and later). Unpaid drafts (Uzum
+   *  CREATED, Yandex UNPAID/PLACING/RESERVED) are excluded so they don't draw
+   *  down stock. See RESERVING_RAW_STATUSES. */
   pending: number
   sku: string | null
 }

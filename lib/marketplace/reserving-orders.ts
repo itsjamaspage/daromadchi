@@ -5,15 +5,17 @@
  * drift out of agreement about when a unit is committed.
  *
  * Keyed off the RAW marketplace status (orders.marketplace_status) because the
- * normalized 5-value enum collapses Uzum's «В поставке» (DELIVERING, in transit
- * to the PVZ) and «Приняты Uzum» (ACCEPTED_AT_DP, PVZ received) both into
- * 'confirmed'. See RESERVING_RAW_STATUSES for the boundary.
+ * normalized 5-value enum is too coarse: it cannot separate an unpaid draft from
+ * a paid, committed order, which is exactly the boundary the reservation needs
+ * (reserve on payment, never on an unpaid draft). See RESERVING_RAW_STATUSES.
  *
  * Transitional fallback: rows synced before orders.marketplace_status existed
  * (migration 054) have it NULL. For those we keep the previous normalized
  * behavior (status = 'confirmed') so nothing briefly un-reserves — and so no
  * oversell window opens — before the next sync backfills the raw status. Once a
- * row is re-synced its raw status is present and takes over precisely.
+ * row is re-synced its raw status is present and takes over precisely. ('confirmed'
+ * is the in-transit bucket — a safe, already-paid fallback; it never reserves an
+ * unpaid draft, which normalizes to 'pending'.)
  */
 import { and, eq, gte, inArray, isNull, notInArray, or, type SQL } from 'drizzle-orm'
 import { orders } from '@/lib/db'
