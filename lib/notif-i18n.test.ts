@@ -30,6 +30,7 @@ const CALLS: Record<string, unknown[]> = {
   extDailyTitle: ['21.08.2026'],
   oversellRateLimited: [1, 3, 'Uzum'], oversellCancelling: ['Uzum'],
   oversellHead: ['JMWHT', 'Uzum #124452180'],
+  manualStockTitle: [2], manualStockLine: ['JMWHT', 0, 'Yandex Market'],
 }
 
 function render(key: string, lang: NotifLang): string {

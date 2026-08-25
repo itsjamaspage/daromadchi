@@ -58,7 +58,8 @@
     "test:rsc": "node --import tsx --test lib/rsc-boundary.test.ts",
     "test:fulfilment": "node --import tsx --test lib/marketplace/fulfilment-frontdoor.test.ts",
     "test:signout": "node --import tsx --test lib/auth/cookie-sweep.test.ts",
-    "test:tenancy": "node --import tsx --test lib/marketplace/stock-refresh-tenancy.integration.test.ts"
+    "test:tenancy": "node --import tsx --test lib/marketplace/stock-refresh-tenancy.integration.test.ts",
+    "test:manual-stock": "node --conditions=react-server --import tsx --test lib/marketplace/manual-stock-reminder.test.ts && node --import tsx --test lib/marketplace/manual-stock-reminder.guardrail.test.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

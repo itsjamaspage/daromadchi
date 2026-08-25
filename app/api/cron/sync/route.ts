@@ -12,6 +12,7 @@ import { sendSellerMessageTo } from '@/lib/telegram-seller'
 import type { NotifStrings } from '@/lib/notif-i18n'
 import { reconcilePhysicalStock } from '@/lib/marketplace/physical-stock'
 import { refreshUzumStock, refreshYandexStock } from '@/lib/marketplace/stock-refresh'
+import { notifyManualStockUpdates } from '@/lib/marketplace/manual-stock-reminder'
 import { logger } from '@/lib/logger'
 import { computeEffectivePlan } from '@/lib/billing/features'
 
@@ -195,6 +196,25 @@ export const GET = withErrorHandler(async (req: Request) => {
       } else {
         results.push({ ok: false, error: String(outcome.reason) })
       }
+    }
+  }
+
+  // ── Manual stock reminders for READ-ONLY shops ──
+  // Runs after the stock refresh above, so the listing numbers it compares are
+  // this tick's. A read-only shop is never written to, which until now meant a
+  // sale on one marketplace left the linked listing on the other advertising
+  // stock the seller no longer had, silently — syncStockSyncGroups skips those
+  // groups entirely. This tells the seller the number to set by hand instead.
+  //
+  // Not plan-gated: writing stock for the seller is the paid feature, telling
+  // them a number is not. Best-effort per user — notifyManualStockUpdates never
+  // throws, and the extra try/catch here means one user's failure cannot stop
+  // the others or the sync itself.
+  for (const uid of new Set(shopsToSync.map(s => s.user_id))) {
+    try {
+      await notifyManualStockUpdates(uid)
+    } catch (e) {
+      logger.warn('manual_stock_notify_failed', { userId: uid, error: String(e).slice(0, 200) })
     }
   }
 

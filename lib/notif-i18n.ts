@@ -57,6 +57,13 @@ export interface NotifStrings {
   stockUpdateTitle: (n: number) => string
   stockUpdateLine: (product: string, orderMp: string, newQty: number, targetMps: string) => string
   stockUpdateCta: string
+
+  // Manual stock reminder — read-only shops, where we cannot write the number
+  // ourselves and can only tell the seller what to set.
+  manualStockTitle: (n: number) => string
+  manualStockSub: string
+  manualStockLine: (sku: string, qty: number, marketplace: string) => string
+  manualStockCta: string
   deliveryTitle: (n: number) => string
   // New-order alert. Was built as a hardcoded Uzbek literal in the sync cron and
   // so ignored notif_lang entirely — the one Telegram message that did.
@@ -127,6 +134,11 @@ const STRINGS: Record<NotifLang, NotifStrings> = {
     stockUpdateTitle: (n) => `🔄 <b>Zaxirani yangilang (${n})</b>`,
     stockUpdateLine: (product, orderMp, newQty, targetMps) => `• ${product} — buyurtma ${orderMp}, <b>${newQty}</b> qiling: ${targetMps}`,
     stockUpdateCta: "Boshqa do'konlarda qoldiqni yangilang.",
+
+    manualStockTitle: (n) => `\u{1F527} <b>Qoldiqni qo'lda yangilang (${n})</b>`,
+    manualStockSub: "Bu do'konlar faqat o'qish rejimida ulangan — Daromadchi ularda qoldiqni o'zi o'zgartira olmaydi.",
+    manualStockLine: (sku, qty, marketplace) => `\u2022 ${sku} — ${marketplace} da <b>${qty}</b> qiling`,
+    manualStockCta: "O'zgartirgach, keyingi sinxronizatsiyada tekshiramiz.",
     deliveryTitle:  (n) => `📦 <b>Jarayonda (${n})</b>`,
     newOrdersTitle: (n) => `🛒 <b>Yangi buyurtma${n > 1 ? `lar (${n})` : ''}!</b>`,
     newOrdersSub:   "Yig'ib jo'natish kerak:",
@@ -187,6 +199,11 @@ const STRINGS: Record<NotifLang, NotifStrings> = {
     stockUpdateTitle: (n) => `🔄 <b>Обновите остатки (${n})</b>`,
     stockUpdateLine: (product, orderMp, newQty, targetMps) => `• ${product} — заказ ${orderMp}, поставьте <b>${newQty}</b>: ${targetMps}`,
     stockUpdateCta: 'Обновите остатки в других магазинах.',
+
+    manualStockTitle: (n) => `\u{1F527} <b>Обновите остатки вручную (${n})</b>`,
+    manualStockSub: 'Эти магазины подключены только на чтение — Daromadchi не может изменить остаток за вас.',
+    manualStockLine: (sku, qty, marketplace) => `\u2022 ${sku} — поставьте <b>${qty}</b> на ${marketplace}`,
+    manualStockCta: 'После изменения проверим при следующей синхронизации.',
     deliveryTitle:  (n) => `📦 <b>В процессе (${n})</b>`,
     newOrdersTitle: (n) => n > 1 ? `🛒 <b>Новые заказы (${n})!</b>` : '🛒 <b>Новый заказ!</b>',
     newOrdersSub:   'Нужно собрать и отправить:',
@@ -247,6 +264,11 @@ const STRINGS: Record<NotifLang, NotifStrings> = {
     stockUpdateTitle: (n) => `🔄 <b>Update stock (${n})</b>`,
     stockUpdateLine: (product, orderMp, newQty, targetMps) => `• ${product} — order on ${orderMp}, set to <b>${newQty}</b>: ${targetMps}`,
     stockUpdateCta: 'Update stock in other stores.',
+
+    manualStockTitle: (n) => `\u{1F527} <b>Update stock by hand (${n})</b>`,
+    manualStockSub: 'These stores are connected read-only — Daromadchi cannot change the stock for you.',
+    manualStockLine: (sku, qty, marketplace) => `\u2022 ${sku} — set to <b>${qty}</b> on ${marketplace}`,
+    manualStockCta: "We'll check again on the next sync once you've changed it.",
     deliveryTitle:  (n) => `📦 <b>In process (${n})</b>`,
     newOrdersTitle: (n) => n > 1 ? `🛒 <b>New orders (${n})!</b>` : '🛒 <b>New order!</b>',
     newOrdersSub:   'Ready to pick and ship:',
