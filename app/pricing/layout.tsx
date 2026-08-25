@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Daromadchi tariflar — Bepul, Pro va Pro+ rejalar',
     description: 'Marketplace analitika platformasi narxlari. Bepul sinab ko\'ring, keyin Pro yoki Pro+ rejaga o\'ting.',
-    url: 'https://www.daromadchi.uz/pricing',
+    url: 'https://daromadchi.uz/pricing',
   },
   alternates: { canonical: '/pricing' },
 }

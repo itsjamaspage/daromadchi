@@ -14,6 +14,6 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ['/api/', '/auth/', '/billing/'],
       },
     ],
-    sitemap: 'https://www.daromadchi.uz/sitemap.xml',
+    sitemap: 'https://daromadchi.uz/sitemap.xml',
   }
 }
