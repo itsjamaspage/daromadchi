@@ -113,12 +113,48 @@ const TERMS: Term[] = [
     },
   },
   {
+    abbr: 'Ср. цена',
+    full: { uz: "Oʻrtacha sotilgan narx", ru: 'Средняя цена продажи', en: 'Average selling price' },
+    desc: {
+      uz: "Tushum ÷ yetkazilgan dona. Bu — E'LON QILINGAN narx emas, balki haqiqatda olingan narx: chegirma va aksiyalardan keyin. Narx bilan farqi — chegirmalar qancha turgani.",
+      ru: 'Выручка ÷ доставленные штуки. Это не цена в карточке, а фактически полученная: после скидок и акций. Разрыв с «Ценой» показывает, во сколько обошлись скидки.',
+      en: 'Revenue ÷ delivered units. Not the listed price — what was actually received, after discounts and promotions. The gap from Price is what those discounts cost.',
+    },
+  },
+  {
+    abbr: '% возвратов',
+    full: { uz: 'Qaytarish ulushi', ru: 'Доля возвратов', en: 'Return rate' },
+    desc: {
+      uz: "Qaytarilgan ÷ (yetkazilgan + qaytarilgan). Maxraj qaytarilganlarni ham hisobga oladi, chunki qaytarilgan tovar avval yetkazilgan: 1 yetkazilgan va 1 qaytarilgan — bu 50%, 100% emas.",
+      ru: 'Возвраты ÷ (доставлено + возвраты). Возвраты входят в знаменатель, потому что возвращённый товар сначала был доставлен: 1 доставлен и 1 возвращён — это 50%, а не 100%.',
+      en: 'Returns ÷ (delivered + returns). Returns are in the denominator because a returned unit was delivered first: 1 delivered and 1 returned is 50%, not 100%.',
+    },
+  },
+  {
+    abbr: 'Доля продаж',
+    full: { uz: 'Sotuvdagi ulush', ru: 'Доля продаж', en: 'Sales share' },
+    desc: {
+      uz: "Shu tovar tushumi ÷ tanlangan davrdagi umumiy tushum. Ustun 100% ni beradi.",
+      ru: 'Выручка товара ÷ общая выручка за выбранный период. Столбец в сумме даёт 100%.',
+      en: "This product's revenue ÷ total revenue for the selected period. The column sums to 100%.",
+    },
+  },
+  {
+    abbr: 'Маржа',
+    full: { uz: 'Marja (foyda ulushi)', ru: 'Маржа (доля прибыли)', en: 'Margin' },
+    desc: {
+      uz: "Foyda ÷ SOTISH narxi (%). Ustama bilan adashtirmang: ustama foydani TANNARXGA boʻladi, shuning uchun u har doim kattaroq koʻrinadi. 100 ga sotilgan, tannarxi 60 — marja 40%, ustama 67%.",
+      ru: 'Прибыль ÷ цена ПРОДАЖИ (%). Не путать с наценкой: наценка делит прибыль на СЕБЕСТОИМОСТЬ и потому всегда выглядит больше. Продали за 100, себестоимость 60 — маржа 40%, наценка 67%.',
+      en: 'Profit ÷ SELLING price (%). Not markup: markup divides profit by COST and therefore always looks bigger. Sold at 100, cost 60 — margin 40%, markup 67%.',
+    },
+  },
+  {
     abbr: 'ABC / XYZ',
     full: { uz: 'ABC / XYZ tahlili', ru: 'ABC / XYZ анализ', en: 'ABC / XYZ analysis' },
     desc: {
-      uz: "Tovarlarni daromad (ABC) va talab barqarorligi (XYZ) boʻyicha guruhlash.",
-      ru: 'Группировка товаров по вкладу в выручку (ABC) и стабильности спроса (XYZ).',
-      en: 'Grouping products by revenue share (ABC) and demand stability (XYZ).',
+      uz: "Tovarlarni daromad (ABC) va talab barqarorligi (XYZ) boʻyicha guruhlash. Jadvalda: A — tushumning birinchi 80% ini beruvchi tovarlar, B — 95% gacha, C — qolganlari.",
+      ru: 'Группировка товаров по вкладу в выручку (ABC) и стабильности спроса (XYZ). В таблице: A — товары, дающие первые 80% выручки, B — до 95%, C — остальные.',
+      en: 'Grouping products by revenue share (ABC) and demand stability (XYZ). In the table: A covers the first 80% of revenue, B up to 95%, C the rest.',
     },
   },
 ]
