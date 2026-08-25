@@ -135,9 +135,19 @@ export interface MrrPoint {
   netMrrTiyin: number     // new − churned
   mrrTiyin: number        // active MRR at the END of the bucket
   collectedTiyin: number  // EXACT revenue collected in the bucket (monthly only; 0 daily)
+  activeCount: number     // active subscriptions at the END of the bucket
+  newCount: number        // subscriptions that STARTED in the bucket
 }
 
 export interface NewSubPoint { key: string; label: string; count: number }
+
+/** One month of user-base growth — feeds the "signups" / "total users" spark cards. */
+export interface UsersPoint {
+  key: string        // 'YYYY-MM'
+  label: string      // short display label
+  newUsers: number   // accounts created in the bucket
+  totalUsers: number // cumulative account count at the END of the bucket
+}
 
 /** Per-plan month-over-month MRR trend (percent; null = no baseline). */
 export type PlanTrend = Record<PlanKey, number | null>
@@ -188,6 +198,8 @@ export interface AdminAnalytics {
   mrrSeriesDaily: MrrPoint[]
   /** New subscriptions per day this month (mini bar chart). */
   newSubsDaily: NewSubPoint[]
+  /** New + cumulative users per month, last 24 months (spark cards). */
+  usersSeriesMonthly: UsersPoint[]
   /** Per-plan MoM MRR trend for the plan-breakdown bar. */
   byPlanTrend: PlanTrend
 }
@@ -248,7 +260,7 @@ export async function getAdminAnalytics(now: Date = new Date()): Promise<AdminAn
   // Users table: drop the founder from every headcount/funnel figure.
   const userFounderOk = adminEmail ? sql`lower(${users.email}) <> ${adminEmail}` : sql`TRUE`
 
-  const [subRows, revenueRows, paymentRows, userRows, collectedRows] = await Promise.all([
+  const [subRows, revenueRows, paymentRows, userRows, collectedRows, usersMonthlyRows] = await Promise.all([
     db
       .select({
         id: subscriptions.id,
@@ -330,6 +342,20 @@ export async function getAdminAnalytics(now: Date = new Date()): Promise<AdminAn
         sql`COALESCE(${payments.confirmed_at}, ${payments.created_at}) >= ${tashkentMonthStartOffset(now, 23)}::timestamptz`,
       ))
       .groupBy(sql`to_char(COALESCE(${payments.confirmed_at}, ${payments.created_at}) AT TIME ZONE 'Asia/Tashkent', 'YYYY-MM')`),
+
+    // New accounts per Tashkent month (last 24 months) — real signups from
+    // users.created_at, founder excluded. Cumulative totals are derived below.
+    db
+      .select({
+        ym: sql<string>`to_char(${users.created_at} AT TIME ZONE 'Asia/Tashkent', 'YYYY-MM')`,
+        count: sql<string>`COUNT(*)`,
+      })
+      .from(users)
+      .where(and(
+        userFounderOk,
+        sql`${users.created_at} >= ${tashkentMonthStartOffset(now, 23)}::timestamptz`,
+      ))
+      .groupBy(sql`to_char(${users.created_at} AT TIME ZONE 'Asia/Tashkent', 'YYYY-MM')`),
   ])
 
   const metrics: AdminMetrics = {
@@ -505,7 +531,24 @@ export async function getAdminAnalytics(now: Date = new Date()): Promise<AdminAn
       netMrrTiyin: mv.newMrr - mv.churnedMrr,
       mrrTiyin: mrrAt(endMs),
       collectedTiyin: collectedByYm.get(ym) ?? 0,
+      activeCount: activeCountAt(endMs),
+      newCount: mv.newCount,
     })
+  }
+
+  // New + cumulative users per month. Cumulative starts from the account count
+  // that predates the 24-month window (totalUsers minus everything inside it) so
+  // the running total lands on today's real "total users".
+  const usersByYm = new Map(usersMonthlyRows.map(r => [r.ym, Number(r.count)]))
+  const newInWindow = usersMonthlyRows.reduce((s, r) => s + Number(r.count), 0)
+  let runningUsers = metrics.totalUsers - newInWindow
+  const usersSeriesMonthly: UsersPoint[] = []
+  for (let i = 23; i >= 0; i--) {
+    const start = tashkentMonthStartOffset(now, i)
+    const ym = ymOf(start)
+    const newUsers = usersByYm.get(ym) ?? 0
+    runningUsers += newUsers
+    usersSeriesMonthly.push({ key: ym, label: monthLabel(start), newUsers, totalUsers: runningUsers })
   }
 
   // Daily movement, last 90 days (Tashkent days).
@@ -526,6 +569,8 @@ export async function getAdminAnalytics(now: Date = new Date()): Promise<AdminAn
       netMrrTiyin: mv.newMrr - mv.churnedMrr,
       mrrTiyin: mrrAt(endMs),
       collectedTiyin: 0,
+      activeCount: activeCountAt(endMs),
+      newCount: mv.newCount,
     })
   }
 
@@ -579,6 +624,7 @@ export async function getAdminAnalytics(now: Date = new Date()): Promise<AdminAn
     mrrSeriesMonthly,
     mrrSeriesDaily,
     newSubsDaily,
+    usersSeriesMonthly,
     byPlanTrend,
   }
 }
