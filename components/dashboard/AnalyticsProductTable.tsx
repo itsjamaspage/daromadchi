@@ -37,6 +37,7 @@ import { COLOR_LABELS, colorMetaFor, type ColorKey } from '@/lib/products/resolv
 import { useLang } from '@/app/providers'
 import type { Product } from '@/lib/types'
 import type { ProductSalesRow } from '@/lib/db/products'
+import { effective } from '@/lib/products/effective-values'
 
 const MP_META: Record<string, { short: string; color: string; bg: string }> = {
   uzum:          { short: 'UZ', color: '#494fdf', bg: 'rgba(73,79,223,0.12)'  },
@@ -70,33 +71,6 @@ function VariantColorChip({ colorKey, lang }: { colorKey: string | null | undefi
       {name}
     </span>
   )
-}
-
-/**
- * The values this table shows for one listing: the seller's override where
- * they set one, the marketplace's number otherwise.
- *
- * Exported because the Analytics page's KPI cards (avg / low / high margin)
- * must agree with the rows beneath them — computing them off selling_price
- * while the table shows an override is how a page starts contradicting itself.
- *
- * Deliberately NOT folded into Product.selling_price / available_stock at the
- * query layer: those feed the stock engine, turnover and the Products page,
- * and a display preference set on Analytics must not reach any of them.
- */
-export function effective(p: Product): {
-  price: number; cost: number; stockQty: number
-  priceOverridden: boolean; stockOverridden: boolean
-} {
-  const priceOverridden = p.price_override != null
-  const stockOverridden = p.stock_override != null
-  return {
-    price:    priceOverridden ? Number(p.price_override) : Number(p.selling_price ?? 0),
-    cost:     Number(p.cost_price ?? 0),
-    stockQty: stockOverridden ? Number(p.stock_override) : p.available_stock,
-    priceOverridden,
-    stockOverridden,
-  }
 }
 
 /** Sales figures for one listing. Zeroed rather than undefined so a product

@@ -142,7 +142,10 @@ const _fetchProducts = unstable_cache(
   // v10: added variant_group_key/variant_color so the Analytics margin table can
   // group (it was starved of the keys → every row fell to a flat row). Bumped so
   // stale v9 rows (missing the fields) aren't served during the revalidate window.
-  ['products-v10'],
+  // v11: added price_override / stock_override. Bumped for the same reason v10
+  // was — a cached v10 row lacks the new keys, so Analytics would read every
+  // override as unset for up to the revalidate window after a deploy.
+  ['products-v11'],
   { revalidate: 30, tags: ['product-data'] },
 )
 
