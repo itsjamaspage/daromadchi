@@ -6,7 +6,7 @@ import { getProducts } from '@/lib/db/products'
 import { getProductSales } from '@/lib/db/products'
 import { getKpis } from '@/lib/db/kpis'
 import MarketplaceTabs from '@/components/dashboard/MarketplaceTabs'
-import AnalyticsProductTable from '@/components/dashboard/AnalyticsProductTable'
+import AnalyticsProductTable, { effective } from '@/components/dashboard/AnalyticsProductTable'
 import PeriodSelector from './PeriodSelector'
 import { getT, getLang } from '@/lib/server-i18n'
 import { currentUserAccess } from '@/lib/billing/entitlement'
@@ -83,22 +83,22 @@ export default async function AnalyticsPage({ searchParams }: Props) {
     ?? g.find(p => (p.selling_price ?? 0) > 0)
     ?? g[0])
 
-  const avgMargin = repMembers.length > 0
-    ? repMembers.reduce((s, p) => {
-        const price = Number(p.selling_price ?? 0)
-        return s + (price > 0 ? p.profit / price : 0)
-      }, 0) / repMembers.length * 100
+  // Every card below reads through effective(), the same helper the table
+  // rows use. Computing these off selling_price while the rows show a seller's
+  // price override is how a page starts contradicting itself: "Avg margin
+  // 95.9%" over rows that visibly say otherwise.
+  const marginOf = (p: typeof products[number]) => {
+    const { price, cost } = effective(p)
+    return price > 0 ? (price - cost) / price : null
+  }
+
+  const margins = repMembers.map(marginOf)
+  const avgMargin = margins.length > 0
+    ? margins.reduce((s: number, m) => s + (m ?? 0), 0) / margins.length * 100
     : 0
 
-  const lowMarginCount  = repMembers.filter(p => {
-    const price = Number(p.selling_price ?? 0)
-    return price > 0 && (p.profit / price) < 0.15
-  }).length
-
-  const highMarginCount = repMembers.filter(p => {
-    const price = Number(p.selling_price ?? 0)
-    return price > 0 && (p.profit / price) >= 0.35
-  }).length
+  const lowMarginCount  = margins.filter(m => m !== null && m < 0.15).length
+  const highMarginCount = margins.filter(m => m !== null && m >= 0.35).length
 
   // Warehouse value: FBS members share a physical pool (max stock), FBO
   // members each hold their own (sum). Use whichever member has a positive
@@ -109,8 +109,10 @@ export default async function AnalyticsPage({ searchParams }: Props) {
     if (cost <= 0) return sum
     const fbo = g.filter(p => p.fulfillment_type === 'fbo' || p.fulfillment_type === 'fby')
     const fbs = g.filter(p => p.fulfillment_type !== 'fbo' && p.fulfillment_type !== 'fby')
-    const fboUnits = fbo.reduce((s, p) => s + p.available_stock, 0)
-    const fbsUnits = fbs.length > 0 ? Math.max(0, ...fbs.map(p => p.available_stock)) : 0
+    // Overridden stock counts here too, so the warehouse total in the table
+    // footer matches the Stock column immediately above it.
+    const fboUnits = fbo.reduce((s, p) => s + effective(p).stockQty, 0)
+    const fbsUnits = fbs.length > 0 ? Math.max(0, ...fbs.map(p => effective(p).stockQty)) : 0
     return sum + cost * (fboUnits + fbsUnits)
   }, 0)
 
@@ -228,6 +230,11 @@ export default async function AnalyticsPage({ searchParams }: Props) {
                 stockValue:          d.stockValue,
                 warehouseValueTotal: d.warehouseValueTotal,
                 noSales:             d.noSalesInPeriod,
+                setPrice:            d.setPriceLabel,
+                setCost:             d.setCostLabel,
+                editPriceHint:       d.editPriceHint,
+                editCostHint:        d.editCostHint,
+                editStockHint:       d.editStockHint,
               }}
             />
           </div>
@@ -236,16 +243,13 @@ export default async function AnalyticsPage({ searchParams }: Props) {
           {lowMarginCount > 0 && (
             <div className="space-y-2">
               {products
-                .filter(p => {
-                  const price = Number(p.selling_price ?? 0)
-                  return price > 0 && (p.profit / price) < 0.15
-                })
+                .filter(p => { const m = marginOf(p); return m !== null && m < 0.15 })
                 .map(p => (
                   <div key={p.id} className="flex items-center gap-3 border rounded-xl px-4 py-3 text-sm" style={{ background: 'var(--alert-red-bg)', borderColor: 'var(--alert-red-border)' }}>
                     <Package className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--alert-red-icon)' }} />
                     <span className="font-medium" style={{ color: 'var(--alert-red-text)' }}>{p.title}</span>
                     <span style={{ color: 'var(--alert-red-muted)' }}>
-                      — margin {((p.profit / Number(p.selling_price)) * 100).toFixed(1)}% ({d.belowMarginNote}
+                      — margin {((marginOf(p) ?? 0) * 100).toFixed(1)}% ({d.belowMarginNote}
                     </span>
                   </div>
                 ))}
