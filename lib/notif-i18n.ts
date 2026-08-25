@@ -79,6 +79,10 @@ export interface NotifStrings {
   stockSyncFailed: (marketplace: string, why: string) => string
   stockSyncRestock: (left: number) => string
   stockSyncReason: (reason: string) => string
+  // Read-only manual-stock reminder (lib/marketplace/manual-stock-notify.ts).
+  // Tells a read-only seller the exact number to set by hand on a marketplace.
+  manualStockTitle: (n: number) => string
+  manualStockLine: (sku: string, target: number, marketplace: string) => string
   // Extension daily summary (app/api/extension/send-daily-summary). Was hardcoded Uzbek.
   extDailyTitle: (date: string) => string
   extRevenue: string
@@ -143,6 +147,8 @@ const STRINGS: Record<NotifLang, NotifStrings> = {
     stockSyncOk:    (mp, from, to) => `   ✅ ${mp}: ${from}→${to}`,
     stockSyncFailed:(mp, why) => `   ⚠️ ${mp}: yangilanmadi${why} — qo'lda yangilang`,
     stockSyncRestock: (left) => `   ⚠️ ${left} ta qoldi — omborni to'ldiring`,
+    manualStockTitle: (n) => `🔧 <b>Qoldiqni qo'lda yangilang (${n})</b>`,
+    manualStockLine:  (sku, target, mp) => `• ${sku} — ${mp}da <b>${target}</b> qo'ying`,
     stockSyncReason: (r) => REASONS.uz[r] ?? httpReason(r, 'API xatosi'),
     extDailyTitle:  (d) => `📊 <b>Kunlik hisobot — ${d}</b>`,
     extRevenue:     '💰 Daromad',
@@ -203,6 +209,8 @@ const STRINGS: Record<NotifLang, NotifStrings> = {
     stockSyncOk:    (mp, from, to) => `   ✅ ${mp}: ${from}→${to}`,
     stockSyncFailed:(mp, why) => `   ⚠️ ${mp}: не обновлён${why} — обновите вручную`,
     stockSyncRestock: (left) => `   ⚠️ Осталось ${left} — пополните склад`,
+    manualStockTitle: (n) => `🔧 <b>Обновите остатки вручную (${n})</b>`,
+    manualStockLine:  (sku, target, mp) => `• ${sku} — поставьте <b>${target}</b> на ${mp}`,
     stockSyncReason: (r) => REASONS.ru[r] ?? httpReason(r, 'ошибка API'),
     extDailyTitle:  (d) => `📊 <b>Отчёт за день — ${d}</b>`,
     extRevenue:     '💰 Выручка',
@@ -263,6 +271,8 @@ const STRINGS: Record<NotifLang, NotifStrings> = {
     stockSyncOk:    (mp, from, to) => `   ✅ ${mp}: ${from}→${to}`,
     stockSyncFailed:(mp, why) => `   ⚠️ ${mp}: not updated${why} — update manually`,
     stockSyncRestock: (left) => `   ⚠️ ${left} left — restock`,
+    manualStockTitle: (n) => `🔧 <b>Update stock manually (${n})</b>`,
+    manualStockLine:  (sku, target, mp) => `• ${sku} — set <b>${target}</b> on ${mp}`,
     stockSyncReason: (r) => REASONS.en[r] ?? httpReason(r, 'API error'),
     extDailyTitle:  (d) => `📊 <b>Daily report — ${d}</b>`,
     extRevenue:     '💰 Revenue',
