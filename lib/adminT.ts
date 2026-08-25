@@ -90,6 +90,17 @@ export const adminT = {
   emptyPayments: tr('Платежей пока нет', "To'lovlar hali yo'q", 'No payments yet'),
   emptyChurned: tr('Никто пока не ушёл', 'Hali hech kim ketmagan', 'Nobody has churned yet'),
 
+  // ── hero spark cards (Stripe-style KPI tiles) ──
+  cardMrr:       tr('MRR', 'MRR', 'MRR'),
+  cardActiveSubs: tr('Активные подписки', 'Faol obunalar', 'Active subscriptions'),
+  cardRevenue:   tr('Выручка', 'Daromad', 'Revenue'),
+  cardNewSubs:   tr('Новые подписки', 'Yangi obunalar', 'New subscriptions'),
+  cardSignups:   tr('Новые регистрации', "Yangi ro'yxatlar", 'New signups'),
+  cardUsers:     tr('Всего пользователей', 'Jami foydalanuvchilar', 'Total users'),
+  subMrr:        tr('Ежемесячный доход', 'Oylik takroriy daromad', 'Monthly recurring'),
+  subTotal:      tr('Всего сейчас', 'Hozirgi jami', 'In total'),
+  subMonth:      tr('За этот месяц', 'Bu oyda', 'This month'),
+
   // ── redesign: KPIs, charts, ranges ──
   kpiChurn:     tr('Отток (в месяц)', 'Otish (oyiga)', 'Churn (monthly)'),
   vsLastMonth:  tr('за месяц', 'oyiga', 'vs last month'),

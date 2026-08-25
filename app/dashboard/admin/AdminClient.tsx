@@ -2,11 +2,11 @@
 
 import { useMemo, useState } from 'react'
 import {
-  LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  Area, AreaChart, LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts'
 import {
   ArrowDownRight, ArrowDownUp, ArrowUpRight, CalendarClock, Clock,
-  Lock, TrendingUp, UserCheck, UserMinus, UserPlus, Users, Wallet,
+  CreditCard, Gauge, Lock, TrendingUp, UserCheck, UserMinus, UserPlus, Users, Wallet,
 } from 'lucide-react'
 import { useLang, useTheme } from '@/app/providers'
 import { adminT } from '@/lib/adminT'
@@ -57,6 +57,69 @@ function TrendChip({ pct, invert = false, suffix }: { pct: number | null; invert
   )
 }
 
+/** Stripe-style KPI tile: label + icon, big number, sub-line with MoM trend,
+ *  and a real monthly sparkline bleeding to the card's bottom edge. */
+function SparkCard({
+  label, value, sub, series, dataKey, color, icon: Icon, trend, invert, money,
+}: {
+  label: string
+  value: string
+  sub: string
+  series: MrrPoint[] | AdminAnalytics['usersSeriesMonthly']
+  dataKey: string
+  color: string
+  icon: React.ComponentType<{ className?: string }>
+  trend: number | null
+  invert: boolean
+  money: boolean
+}) {
+  const gradId = `spark-${dataKey}-${color.replace('#', '')}`
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const hasData = series.some(d => Number((d as any)[dataKey]) > 0)
+  return (
+    <div className="relative overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--bg-card2)] flex flex-col min-h-[132px]">
+      <div className="px-4 pt-4 pb-1">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-[11px] font-medium text-[var(--text-muted)] truncate">{label}</span>
+          <Icon className="w-3.5 h-3.5 text-[var(--text-muted)] flex-shrink-0" />
+        </div>
+        <p className="mt-1.5 text-2xl font-bold leading-tight text-[var(--text-base)] break-words tabular-nums">{value}</p>
+        <div className="mt-1 flex items-center gap-1.5">
+          {trend !== null && <TrendChip pct={trend} invert={invert} />}
+          <span className="text-[11px] text-[var(--text-muted)] truncate">{sub}</span>
+        </div>
+      </div>
+      <div className="mt-auto h-12 w-full">
+        {hasData && (
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={series as unknown as MrrPoint[]} margin={{ top: 6, right: 0, left: 0, bottom: 0 }}>
+              <defs>
+                <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={color} stopOpacity={0.32} />
+                  <stop offset="100%" stopColor={color} stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <Tooltip
+                cursor={false}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                content={({ active, payload }: any) => (active && payload?.length) ? (
+                  <div className="border rounded-lg px-2.5 py-1.5 shadow-xl" style={{ background: 'var(--bg-input)', borderColor: 'var(--border2)' }}>
+                    <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{payload[0].payload.label}</p>
+                    <p className="text-xs font-bold" style={{ color }}>
+                      {money ? formatSomFromTiyin(Number(payload[0].value)) : payload[0].value}
+                    </p>
+                  </div>
+                ) : null}
+              />
+              <Area type="monotone" dataKey={dataKey} stroke={color} strokeWidth={1.75} fill={`url(#${gradId})`} dot={false} isAnimationActive={false} />
+            </AreaChart>
+          </ResponsiveContainer>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export default function AdminClient({ data }: { data: AdminAnalytics }) {
   const { lang } = useLang()
   const { theme } = useTheme()
@@ -91,20 +154,37 @@ export default function AdminClient({ data }: { data: AdminAnalytics }) {
   const email = (v: string | null) =>
     v ?? <span className="italic text-[var(--text-muted)]">{t('noEmail')}</span>
 
-  // ── top KPI cards (value + MoM trend) ──
-  const kpis = [
-    { key: 'mrr',    label: t('mrr'),        value: som(metrics.mrrTiyin),      trend: metrics.mrrTrendPct,    invert: false, icon: TrendingUp,   accent: 'text-[var(--c1)]' },
-    { key: 'active', label: t('activeSubs'), value: String(metrics.activeCount), trend: metrics.activeTrendPct, invert: false, icon: UserCheck,   accent: 'text-emerald-500' },
-    { key: 'arr',    label: t('arr'),        value: som(metrics.arrTiyin),      trend: metrics.mrrTrendPct,    invert: false, icon: CalendarClock, accent: 'text-[var(--text-base)]' },
-    { key: 'churn',  label: t('kpiChurn'),   value: `${metrics.churnRatePct}%`, trend: metrics.churnTrendPct,  invert: true,  icon: UserMinus,   accent: metrics.churnRatePct > 0 ? 'text-red-500' : 'text-[var(--text-base)]' },
+  const nf = new Intl.NumberFormat(locale)
+  const monthly = data.mrrSeriesMonthly
+  const usersMonthly = data.usersSeriesMonthly
+
+  // Fallback MoM trend read straight off a spark series' last two buckets — used
+  // for cards whose exact month-boundary trend isn't precomputed server-side.
+  const sparkTrend = (series: MrrPoint[] | AdminAnalytics['usersSeriesMonthly'], key: string): number | null => {
+    if (series.length < 2) return null
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const curr = Number((series[series.length - 1] as any)[key])
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const prev = Number((series[series.length - 2] as any)[key])
+    return prev > 0 ? Math.round(((curr - prev) / prev) * 1000) / 10 : null
+  }
+
+  // ── hero spark cards — big number + real monthly sparkline ──
+  const heroCards = [
+    { key: 'mrr',     label: t('cardMrr'),        value: som(metrics.mrrTiyin),               sub: t('subMrr'),   series: monthly,      dataKey: 'mrrTiyin',       color: '#10b981', icon: TrendingUp, trend: metrics.mrrTrendPct,               invert: false, money: true  },
+    { key: 'active',  label: t('cardActiveSubs'), value: nf.format(metrics.activeCount),      sub: t('subTotal'), series: monthly,      dataKey: 'activeCount',    color: '#22c55e', icon: UserCheck,  trend: metrics.activeTrendPct,            invert: false, money: false },
+    { key: 'revenue', label: t('cardRevenue'),    value: som(metrics.monthRevenueTiyin),      sub: t('subMonth'), series: monthly,      dataKey: 'collectedTiyin', color: '#14b8a6', icon: Wallet,     trend: sparkTrend(monthly, 'collectedTiyin'), invert: false, money: true  },
+    { key: 'newsubs', label: t('cardNewSubs'),    value: nf.format(metrics.newThisMonth),     sub: t('subMonth'), series: monthly,      dataKey: 'newCount',       color: '#6366f1', icon: CreditCard, trend: sparkTrend(monthly, 'newCount'),   invert: false, money: false },
+    { key: 'signups', label: t('cardSignups'),    value: nf.format(metrics.newUsersThisMonth), sub: t('subMonth'), series: usersMonthly, dataKey: 'newUsers',       color: '#3b82f6', icon: UserPlus,   trend: sparkTrend(usersMonthly, 'newUsers'), invert: false, money: false },
+    { key: 'users',   label: t('cardUsers'),      value: nf.format(metrics.totalUsers),       sub: t('subTotal'), series: usersMonthly, dataKey: 'totalUsers',     color: '#0ea5e9', icon: Users,      trend: sparkTrend(usersMonthly, 'totalUsers'), invert: false, money: false },
   ]
 
-  // ── secondary user-base cards ──
-  const baseCards = [
-    { key: 'registered', label: t('registered'), value: String(metrics.totalUsers),        hint: t('registeredHint'), icon: Users,   accent: 'text-[var(--text-base)]' },
-    { key: 'signups',    label: t('newSignups'), value: String(metrics.newUsersThisMonth),  hint: null,                icon: UserPlus, accent: 'text-[var(--text-base)]' },
-    { key: 'trial',      label: t('trialNotPaying'), value: String(metrics.trialUsers),     hint: null,                icon: Clock,    accent: 'text-amber-500' },
-    { key: 'month',      label: t('monthRevenue'), value: som(metrics.monthRevenueTiyin),   hint: `${t('totalRevenue')}: ${som(metrics.totalRevenueTiyin)}`, icon: Wallet, accent: 'text-emerald-500' },
+  // ── secondary stat cards (no spark) ──
+  const statCards = [
+    { key: 'arr',     label: t('arr'),            value: som(metrics.arrTiyin),          hint: null,               icon: CalendarClock, accent: 'text-[var(--text-base)]', trend: null,                    invert: false },
+    { key: 'churn',   label: t('kpiChurn'),       value: `${metrics.churnRatePct}%`,     hint: t('vsLastMonth'),   icon: UserMinus,     accent: metrics.churnRatePct > 0 ? 'text-red-500' : 'text-[var(--text-base)]', trend: metrics.churnTrendPct, invert: true },
+    { key: 'trial',   label: t('trialNotPaying'), value: nf.format(metrics.trialUsers),  hint: null,               icon: Clock,         accent: 'text-amber-500',          trend: null,                    invert: false },
+    { key: 'pastdue', label: t('pastDue'),        value: nf.format(metrics.pastDueCount), hint: t('pastDueHint'),  icon: Gauge,         accent: metrics.pastDueCount > 0 ? 'text-amber-500' : 'text-[var(--text-base)]', trend: null, invert: false },
   ]
 
   return (
@@ -128,19 +208,28 @@ export default function AdminClient({ data }: { data: AdminAnalytics }) {
         <p className="text-xs text-[var(--text-muted)]">{t('readOnlyNote')}</p>
       </div>
 
-      {/* Top KPI cards with MoM trend */}
+      {/* Hero spark cards — big number + real monthly sparkline */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        {heroCards.map(({ key, ...c }) => (
+          <SparkCard key={key} {...c} />
+        ))}
+      </div>
+
+      {/* Secondary stat cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        {kpis.map(({ key, label, value, trend, invert, icon: Icon, accent }) => (
+        {statCards.map(({ key, label, value, hint, icon: Icon, accent, trend, invert }) => (
           <div key={key} className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl px-5 py-4">
             <div className="flex items-center justify-between mb-2 gap-2">
               <p className="text-xs text-[var(--text-muted)]">{label}</p>
               <Icon className={`w-4 h-4 ${accent} opacity-60 flex-shrink-0`} />
             </div>
-            <p className={`text-xl font-bold break-words ${accent}`}>{value}</p>
-            <div className="mt-1.5 flex items-center gap-1">
-              <TrendChip pct={trend} invert={invert} />
-              <span className="text-[10px] text-[var(--text-muted)]">{t('vsLastMonth')}</span>
-            </div>
+            <p className={`text-lg font-bold break-words ${accent}`}>{value}</p>
+            {(trend !== null || hint) && (
+              <div className="mt-1.5 flex items-center gap-1">
+                {trend !== null && <TrendChip pct={trend} invert={invert} />}
+                {hint && <span className="text-[10px] text-[var(--text-muted)]">{hint}</span>}
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -157,20 +246,6 @@ export default function AdminClient({ data }: { data: AdminAnalytics }) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         <NewSubsChart data={data.newSubsDaily} theme={theme} t={t} />
         <PlanShareBar byPlan={metrics.byPlan} trend={byPlanTrend} som={som} t={t} />
-      </div>
-
-      {/* User-base cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        {baseCards.map(({ key, label, value, hint, icon: Icon, accent }) => (
-          <div key={key} className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl px-5 py-4">
-            <div className="flex items-center justify-between mb-2 gap-2">
-              <p className="text-xs text-[var(--text-muted)]">{label}</p>
-              <Icon className={`w-4 h-4 ${accent} opacity-60 flex-shrink-0`} />
-            </div>
-            <p className={`text-lg font-bold break-words ${accent}`}>{value}</p>
-            {hint && <p className="text-[10px] text-[var(--text-muted)] mt-1">{hint}</p>}
-          </div>
-        ))}
       </div>
 
       {/* Funnel */}
