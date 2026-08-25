@@ -56,7 +56,7 @@ function emailLayout(content: string) {
             &copy; ${new Date().getFullYear()} Daromadchi. Barcha huquqlar himoyalangan.
           </p>
           <p style="margin: 8px 0 0;">
-            <a href="https://www.daromadchi.uz" style="color: #0ea5e9; font-size: 12px; text-decoration: none;">daromadchi.uz</a>
+            <a href="https://daromadchi.uz" style="color: #0ea5e9; font-size: 12px; text-decoration: none;">daromadchi.uz</a>
           </p>
         </td></tr>
 

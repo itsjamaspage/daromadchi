@@ -66,14 +66,17 @@ if (GOOGLE_ENABLED) {
 }
 
 // The site serves BOTH the apex `daromadchi.uz` and `www.daromadchi.uz`, and
-// proxy.ts 301s apex→www for pages while deliberately NOT redirecting `/api/*`
+// proxy.ts 301s www→apex for pages while deliberately NOT redirecting `/api/*`
 // (a 301 would drop a POST body). So a login whose credentials POST lands on the
-// apex host writes a session cookie that — with Auth.js's default host-only
-// scope — is only ever sent back to `daromadchi.uz`, never to the `www` host the
+// www host writes a session cookie that — with Auth.js's default host-only
+// scope — is only ever sent back to `www.daromadchi.uz`, never to the apex the
 // pages actually render on. The result: paid users are silently unauthenticated
-// on www (empty dashboard, "connect your store", free-tier gating), especially
-// on mobile where the apex host gets reached directly.
+// (empty dashboard, "connect your store", free-tier gating) on whichever host
+// they did not sign in from.
 //
+// This is why the redirect direction alone never fixed it, and why reversing it
+// to www→apex does not either: `/api/*` stays unredirected in both directions,
+// so the login POST can always land on the host the pages do not render on.
 // Scoping the session + callback cookies to the parent domain makes one login
 // valid on the apex AND every subdomain, so the session is recognised wherever
 // the request lands. Only `__Secure-`-prefixed cookies may carry a Domain; the

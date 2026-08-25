@@ -31,11 +31,11 @@ export const metadata: Metadata = {
   },
   description: 'Uzum va Yandex Market sotuvchilari uchun marketplace analitika platformasi. Sotuv tahlili, daromad va foyda hisoblash, tovar analitikasi — barchasi bir joyda.',
   keywords: ['marketplace analitika', 'Uzum sotuvchilar uchun', 'Yandex Market analitika', 'sotuv tahlili', 'daromad va foyda hisoblash', 'tovar analitikasi', 'marketplace analytics Uzbekistan'],
-  metadataBase: new URL('https://www.daromadchi.uz'),
+  metadataBase: new URL('https://daromadchi.uz'),
   openGraph: {
     type: 'website',
     locale: 'uz_UZ',
-    url: 'https://www.daromadchi.uz',
+    url: 'https://daromadchi.uz',
     siteName: 'Daromadchi',
     title: 'Daromadchi — Uzum, Yandex Market analitika platformasi',
     description: 'Uzum va Yandex Market sotuvchilari uchun marketplace analitika. Sotuv tahlili, daromad va foyda hisoblash, tovar analitikasi.',

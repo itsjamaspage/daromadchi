@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Daromadchi haqida — Marketplace analitika platformasi',
     description: 'O\'zbekistondagi Uzum va Yandex Market sotuvchilari uchun analitika platformasi.',
-    url: 'https://www.daromadchi.uz/about',
+    url: 'https://daromadchi.uz/about',
   },
   alternates: { canonical: '/about' },
 }
