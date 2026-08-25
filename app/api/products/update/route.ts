@@ -10,8 +10,22 @@ export const PATCH = withErrorHandler(async (req: NextRequest) => {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await req.json()
-  const productId: string = body.productId
-  if (!productId) return NextResponse.json({ error: 'productId required' }, { status: 400 })
+  // One id, or several. A variant PARENT row edits every listing in its group
+  // at once — price and cost are properties of the product, not of the colour,
+  // and making the seller type the same cost into four rows was the reason the
+  // parent pencil existed at all.
+  const productIds: string[] = Array.isArray(body.productIds)
+    ? body.productIds.filter((v: unknown): v is string => typeof v === 'string' && v.length > 0)
+    : typeof body.productId === 'string' && body.productId ? [body.productId] : []
+  if (productIds.length === 0) {
+    return NextResponse.json({ error: 'productId or productIds required' }, { status: 400 })
+  }
+  // A bounded list, so one request cannot be turned into a whole-catalogue
+  // rewrite. A variant group is a handful of listings; 100 is far above any
+  // real one and far below anything worth worrying about.
+  if (productIds.length > 100) {
+    return NextResponse.json({ error: 'too many productIds' }, { status: 400 })
+  }
 
   // Every field is OPTIONAL and distinguished from an explicit null: `null`
   // means "clear this value", an absent key means "leave it alone". Collapsing
@@ -53,7 +67,7 @@ export const PATCH = withErrorHandler(async (req: NextRequest) => {
   // belonging to someone else matches nothing and 404s.
   const result = await db.update(products)
     .set(patch)
-    .where(and(eq(products.id, productId), inArray(products.shop_id, shopIds)))
+    .where(and(inArray(products.id, productIds), inArray(products.shop_id, shopIds)))
     .returning({ id: products.id })
 
   if (result.length === 0) {

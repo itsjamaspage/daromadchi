@@ -44,3 +44,49 @@ export function effective(p: Product): EffectiveValues {
     stockOverridden,
   }
 }
+
+/**
+ * What a variant PARENT row can honestly show and edit for a whole group.
+ *
+ * A parent covers several listings. It may only display one number when every
+ * listing agrees on it — otherwise the cell says "mixed" rather than picking a
+ * member's value and presenting it as the group's, which is how a seller ends
+ * up believing all four variants cost what the first one costs.
+ *
+ * Editing is allowed either way: setting a mixed group is exactly how you make
+ * it agree.
+ *
+ * Lives here, in a plain module, rather than inline in the client table — both
+ * so it can be unit-tested without an RSC boundary, and because burying logic
+ * inside a 'use client' file is what made the last regression invisible.
+ */
+export interface GroupSharedValues {
+  /** The agreed value, or null when the listings differ or none is set. */
+  price: number | null
+  cost: number | null
+  priceMixed: boolean
+  costMixed: boolean
+  /** True only when EVERY listing carries a seller override — the dot must not
+   *  claim a group is the seller's when one member is still marketplace data. */
+  priceOverridden: boolean
+}
+
+export function groupSharedValues(rows: Product[]): GroupSharedValues {
+  const prices = rows.map(p => effective(p).price)
+  const costs  = rows.map(p => Number(p.cost_price ?? 0))
+  const agreed = (vals: number[]): number | null => {
+    if (vals.length === 0) return null
+    const first = vals[0]
+    if (!vals.every(v => v === first)) return null
+    // 0 is "not set" for display: an unpriced listing should read as empty, so
+    // the cell offers "+ price" rather than a confident zero.
+    return first > 0 ? first : null
+  }
+  return {
+    price: agreed(prices),
+    cost:  agreed(costs),
+    priceMixed: new Set(prices).size > 1,
+    costMixed:  new Set(costs).size > 1,
+    priceOverridden: rows.length > 0 && rows.every(p => effective(p).priceOverridden),
+  }
+}

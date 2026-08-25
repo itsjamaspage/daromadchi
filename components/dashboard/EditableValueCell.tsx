@@ -33,7 +33,9 @@ function fmtInt(n: number) {
 }
 
 interface Props {
-  productId: string
+  /** One listing, or every listing in a variant group when a parent row is
+   *  editing on their behalf. */
+  productId: string | string[]
   field: EditableField
   /** Current effective value: the override when set, otherwise the
    *  marketplace's own number (or null for a cost never entered). */
@@ -46,11 +48,20 @@ interface Props {
   /** Shown when there is nothing to display and no override — e.g. "+ cost". */
   emptyLabel?: string
   title?: string
+  /** Rendered instead of the pencil-with-value when a parent row is editing a
+   *  whole group and its listings do not currently agree on a value. */
+  mixedLabel?: string
+  /** True when the listings behind this cell hold different values. Editing
+   *  still works and sets them all — it is the DISPLAY that cannot honestly
+   *  show one number. */
+  mixed?: boolean
 }
 
 export default function EditableValueCell({
   productId, field, value, overridden = false, kind = 'money', emptyLabel, title,
+  mixedLabel, mixed = false,
 }: Props) {
+  const ids = Array.isArray(productId) ? productId : [productId]
   const router = useRouter()
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -78,7 +89,7 @@ export default function EditableValueCell({
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         // Only this one key is sent, so a price edit cannot touch the cost.
-        body: JSON.stringify({ productId, [field]: parsed }),
+        body: JSON.stringify({ productIds: ids, [field]: parsed }),
       })
       // On failure put the old value back rather than leaving a number on
       // screen that was never saved.
@@ -118,7 +129,10 @@ export default function EditableValueCell({
   }
 
   const hasValue = shown !== null && shown > 0
-  const label = hasValue ? (kind === 'int' ? fmtInt(shown!) : fmtMoney(shown!)) : null
+  const showMixed = mixed && shown === null
+  const label = showMixed
+    ? <span className="opacity-70">{mixedLabel ?? '—'}</span>
+    : hasValue ? (kind === 'int' ? fmtInt(shown!) : fmtMoney(shown!)) : null
 
   return (
     <button
