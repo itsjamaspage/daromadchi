@@ -74,6 +74,79 @@ describe('RESERVING_RAW_STATUSES — Yandex PICKUP reserves a unit', () => {
   })
 })
 
+describe('RESERVING_RAW_STATUSES — reserve at PAYMENT, not at unpaid draft', () => {
+  // Mirror the SQL's status→pending mapping: reservingOrderCondition() counts an
+  // order only when its raw marketplace_status is in this set.
+  const reserving = (status: string) => (RESERVING_RAW_STATUSES as readonly string[]).includes(status)
+
+  it('Uzum: paid/committed states reserve (PACKING onward); unpaid draft does NOT', () => {
+    // Paid & committed — the seller is fulfilling an accepted, prepaid order.
+    for (const s of ['PACKING', 'PENDING_DELIVERY', 'DELIVERING', 'ACCEPTED_AT_DP']) {
+      assert.ok(reserving(s), `${s} should reserve (paid/committed)`)
+    }
+    // Freshly placed / unpaid draft — Uzum auto-cancels these constantly; they
+    // must NOT reserve or they'd phantom-out the sibling listing.
+    for (const s of ['CREATED', 'NEW', 'PENDING']) {
+      assert.ok(!reserving(s), `${s} must NOT reserve (unpaid draft)`)
+    }
+  })
+
+  it('Yandex: PROCESSING (paid) reserves; UNPAID/PLACING/RESERVED do NOT', () => {
+    for (const s of ['PROCESSING', 'DELIVERY', 'PICKUP']) {
+      assert.ok(reserving(s), `${s} should reserve (paid/committed)`)
+    }
+    for (const s of ['UNPAID', 'PLACING', 'RESERVED']) {
+      assert.ok(!reserving(s), `${s} must NOT reserve (not paid / not finalised)`)
+    }
+  })
+
+  it('a PAID order (Uzum PACKING) drops the shared available at order time', () => {
+    // Pool 1; one PACKING order (paid) → pending 1 → available 0. This is the
+    // moment the sibling target must fall — before any PVZ hand-off.
+    const paidPending = ['PACKING'].filter(reserving).length   // = 1
+    const group = [
+      uzum({ physicalStock: 1, listedStock: 1, pending: paidPending }),
+      ym({ physicalStock: 1, listedStock: 1, pending: 0 }),
+    ]
+    assert.equal(computeAvailable(group), 0)
+  })
+
+  it('an UNPAID draft (Uzum CREATED) leaves available untouched — no phantom stockout', () => {
+    const draftPending = ['CREATED'].filter(reserving).length  // = 0 (excluded)
+    const group = [
+      uzum({ physicalStock: 1, listedStock: 1, pending: draftPending }),
+      ym({ physicalStock: 1, listedStock: 1, pending: 0 }),
+    ]
+    assert.equal(computeAvailable(group), 1)   // still 1 — the sibling stays sellable
+  })
+
+  it("a paid order pushes the sibling's target DOWN, and a read-only sibling is never written", () => {
+    // Last unit; a paid Uzum order reserves it. The Yandex stock_sync sibling's
+    // target must drop to 0 (willWrite), closing the oversell window at order time.
+    const paid = ['PACKING'].filter(reserving).length          // = 1
+    const { available, plans } = planStockWrites(
+      [uzum({ physicalStock: 1, listedStock: 1, pending: paid, apiMode: 'read_only' }),
+       ym({ physicalStock: 1, listedStock: 1, pending: 0, apiMode: 'stock_sync' })],
+      'off',
+    )
+    assert.equal(available, 0)
+    // Read-only Uzum is never planned for a write.
+    assert.ok(!plans.some(p => p.member.marketplace === 'uzum'))
+    // The writable Yandex sibling is targeted to 0 and will actually be written.
+    const ymPlan = plans.find(p => p.member.marketplace === 'yandex_market')
+    assert.ok(ymPlan && ymPlan.target === 0 && ymPlan.willWrite)
+  })
+
+  it('cancel / return / collected release the unit (not in the reserving set)', () => {
+    for (const s of ['CANCELED', 'CANCELLED', 'RETURNED', 'DELIVERED', 'COMPLETED', 'DELIVERED_TO_CUSTOMER_DELIVERY_POINT']) {
+      assert.ok(!reserving(s), `${s} must NOT reserve — the unit is released / already in listed stock`)
+    }
+    // A group whose only order just cancelled → pending 0 → available back to full.
+    const released = [uzum({ physicalStock: 2, pending: 0 }), ym({ physicalStock: 2, pending: 0 })]
+    assert.equal(computeAvailable(released), 2)
+  })
+})
+
 describe('computeAvailable', () => {
   it('MAX(stock) − SUM(pending), clamped at 0', () => {
     assert.equal(computeAvailable([uzum({ listedStock: 1, pending: 1 }), ym({ listedStock: 1, pending: 0 })]), 0)

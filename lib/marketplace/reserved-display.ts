@@ -5,18 +5,19 @@
  *
  * ── Defect 1: two definitions of "reserved" ─────────────────────────────────
  * The display subtracted every order in normalized `pending`/`confirmed`. The
- * stock engine subtracts RESERVING_RAW_STATUSES — five raw statuses whose
- * comment states the intent: "Orders still in transit to the PVZ or with the
- * seller keep listings full." So a brand-new PENDING order, and a PROCESSING
- * order the seller has not shipped, both reduced the number the seller reads,
- * while the engine that actually manages their stock did not consider either
- * one to hold a unit. The display over-subtracted against the system's own
- * definition. This module removes that divergence by deferring to the engine.
+ * stock engine subtracts RESERVING_RAW_STATUSES — the raw statuses that mean a
+ * PAID, committed order holds a unit (Uzum PACKING and later / Yandex PROCESSING
+ * and later). So a brand-new unpaid draft (Uzum CREATED, Yandex UNPAID) reduced
+ * the number the seller reads, while the engine that actually manages their
+ * stock did not consider it to hold a unit. The display over-subtracted against
+ * the system's own definition. This module removes that divergence by deferring
+ * to the engine.
  *
  * ── Defect 2: unbounded subtraction against a bounded sync ──────────────────
  * Fixing defect 1 does NOT fix this, and it is worth being explicit about why:
- * RESERVING_RAW_STATUSES is DELIVERY, PICKUP, ACCEPTED_AT_DP, HANDED_OVER and
- * TRANSFERRED — precisely the in-flight states an order gets STUCK in. Yandex
+ * RESERVING_RAW_STATUSES is the paid/committed set (PACKING, PENDING_DELIVERY,
+ * DELIVERING, ACCEPTED_AT_DP, HANDED_OVER, TRANSFERRED, PROCESSING, DELIVERY,
+ * PICKUP) — precisely the in-flight states an order gets STUCK in. Yandex
  * asks for orders by CREATION date over a 30-day window (lib/yandex/sync.ts),
  * so an order that ages past it is never re-fetched and its status is frozen
  * forever. A Yandex order stuck at PICKUP would therefore subtract from the

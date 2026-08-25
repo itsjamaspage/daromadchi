@@ -138,10 +138,12 @@ async function loadGroups(userId: string): Promise<{
       qty: sql<number>`coalesce(sum(${orderItems.quantity}), 0)`.as('qty'),
     }).from(orderItems)
       .innerJoin(orders, eq(orderItems.order_id, orders.id))
-      // Only orders that RESERVE stock (PVZ has received the unit — Uzum
-      // ACCEPTED_AT_DP / Yandex DELIVERY — and later) draw down available.
-      // Orders still in transit to the PVZ or with the seller keep listings
-      // full. Shared condition, see reservingOrderCondition / RESERVING_RAW_STATUSES.
+      // Only orders that RESERVE stock draw down available: a PAID, committed
+      // order (Uzum PACKING and later / Yandex PROCESSING and later), from order
+      // ingestion — so the sibling listing drops right away. Unpaid drafts (Uzum
+      // CREATED, Yandex UNPAID) keep listings full so a cancelled draft can't
+      // phantom-out the other channel. Shared condition, see
+      // reservingOrderCondition / RESERVING_RAW_STATUSES.
       .where(and(inArray(orders.shop_id, shopIds), reservingOrderCondition()))
       .groupBy(orderItems.product_id),
     // Per-product reserving ORDER ids (distinct) — feeds the new-order gate. Same
