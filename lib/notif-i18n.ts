@@ -89,9 +89,9 @@ export interface NotifStrings {
   extUnit: string
   extFooter: string
   // Oversell alerts (lib/marketplace/oversell.ts). Was hardcoded English.
-  /** Title + plain explanation with the real numbers (units in stock vs orders
-   *  received). First line is the phone-preview. */
-  oversellHead: (title: string, stock: number, ordered: number, lastOrder: string) => string
+  /** Title + plain-words explanation: the product ran out and this newest order
+   *  can't be filled. No stock-vs-orders numbers. First line is the phone-preview. */
+  oversellHead: (title: string, lastOrder: string) => string
   oversellAutoCancelOff: string
   oversellNoLaterOrder: string
   oversellRateLimited: (used: number, max: number, mp: string) => string
@@ -152,8 +152,8 @@ const STRINGS: Record<NotifLang, NotifStrings> = {
     extLowStock:    '⚠️ <b>Kam zaxira:</b>',
     extUnit:        'dona',
     extFooter:      "daromadchi.uz da to'liq tahlil",
-    oversellHead: (title, stock, ordered, lastOrder) =>
-      `⚠️ <b>Tovar yetishmayapti: ${title}</b>\nBu tovarga buyurtmalar qoldiqdan koʻp — hammasini bajarib boʻlmaydi. Qoldiqda: <b>${stock}</b> dona, buyurtma: <b>${ordered}</b> dona. Oxirgi buyurtma: ${lastOrder}.\nQoldiqni toʻldiring va uni Uzum va Yandex hisobingizda yangilang.`,
+    oversellHead: (title, lastOrder) =>
+      `⚠️ <b>Tovar tugadi: ${title}</b>\nYangi buyurtma keldi, lekin boʻsh dona qolmadi — bu tovar allaqachon toʻliq buyurtma qilingan. Buyurtma: ${lastOrder} — bajarishning iloji yoʻq.\nTovarni toʻldiring va Uzum va Yandex hisobingizda qoldiqni yangilang.`,
     oversellAutoCancelOff: "Keraksiz buyurtmani qo'lda bekor qiling.",
     oversellNoLaterOrder:  "Bekor qilish uchun ochiq buyurtma topilmadi — qo'lda tekshiring.",
     oversellRateLimited:   (used, max, mp) => `🚫 Avtomatik bekor qilish chegarasi (${used}/${max} shu soatda). Bekor QILINMADI — ${mp} uchun qo'lda bekor qiling.`,
@@ -212,8 +212,8 @@ const STRINGS: Record<NotifLang, NotifStrings> = {
     extLowStock:    '⚠️ <b>Низкий остаток:</b>',
     extUnit:        'шт',
     extFooter:      'полная аналитика на daromadchi.uz',
-    oversellHead: (title, stock, ordered, lastOrder) =>
-      `⚠️ <b>Не хватает товара: ${title}</b>\nНа этот товар заказов больше, чем есть в наличии — все не выполнить. В наличии: <b>${stock}</b> шт, заказов: <b>${ordered}</b> шт. Последний заказ: ${lastOrder}.\nПополните остаток и обновите его в Uzum и Yandex.`,
+    oversellHead: (title, lastOrder) =>
+      `⚠️ <b>Товар закончился: ${title}</b>\nПришёл новый заказ, но свободных единиц не осталось — этот товар уже весь заказан. Заказ: ${lastOrder} выполнить нечем.\nПополните товар и обновите остаток на Uzum и Yandex.`,
     oversellAutoCancelOff: 'Отмените лишний заказ вручную, если нужно.',
     oversellNoLaterOrder:  'Не найден открытый заказ для автоотмены — проверьте вручную.',
     oversellRateLimited:   (used, max, mp) => `🚫 Достигнут лимит автоотмены (${used}/${max} за час). НЕ отменяем автоматически — отмените ${mp} вручную.`,
@@ -272,8 +272,8 @@ const STRINGS: Record<NotifLang, NotifStrings> = {
     extLowStock:    '⚠️ <b>Low stock:</b>',
     extUnit:        'pcs',
     extFooter:      'full analytics at daromadchi.uz',
-    oversellHead: (title, stock, ordered, lastOrder) =>
-      `⚠️ <b>Not enough stock: ${title}</b>\nThis product has more orders than units in stock — you can't fulfil them all. In stock: <b>${stock}</b>, ordered: <b>${ordered}</b>. Latest order: ${lastOrder}.\nRestock and update it in Uzum and Yandex.`,
+    oversellHead: (title, lastOrder) =>
+      `⚠️ <b>Out of stock: ${title}</b>\nA new order came in, but there are no units left — this product is already fully ordered. Order: ${lastOrder} can't be fulfilled.\nRestock and update the quantity on Uzum and Yandex.`,
     oversellAutoCancelOff: 'Cancel the extra order manually if needed.',
     oversellNoLaterOrder:  'No open order found to auto-cancel — please check manually.',
     oversellRateLimited:   (used, max, mp) => `🚫 Auto-cancel rate limit reached (${used}/${max} this hour). NOT auto-cancelling — use one-click cancel for ${mp}.`,
