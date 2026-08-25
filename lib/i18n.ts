@@ -330,6 +330,7 @@ export const translations = {
       periodClear: 'Tozalash',
       // Top products by period
       topSoldTitle: 'Tanlangan davrda eng ko\'p sotilgan',
+      productPerformanceTitle: 'Mahsulotlar samaradorligi — sotuv va marja',
       topSoldQty: 'Yetkazilgan',
       topSoldInTransit: 'Jarayonda',
       topSoldCancelled: 'Bekor qilingan',
@@ -1252,6 +1253,7 @@ export const translations = {
       periodClear: 'Clear',
       // Top products by period
       topSoldTitle: 'Top sold in selected period',
+      productPerformanceTitle: 'Product performance — sales & margin',
       topSoldQty: 'Delivered',
       topSoldInTransit: 'In transit',
       topSoldCancelled: 'Cancelled',
@@ -2174,6 +2176,7 @@ export const translations = {
       periodClear: 'Сбросить',
       // Top products by period
       topSoldTitle: 'Топ продаж за выбранный период',
+      productPerformanceTitle: 'Продажи и маржа по товарам',
       topSoldQty: 'Доставлено',
       topSoldInTransit: 'В процессе',
       topSoldCancelled: 'Отменено',

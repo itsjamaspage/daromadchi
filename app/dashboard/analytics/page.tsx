@@ -6,8 +6,7 @@ import { getProducts } from '@/lib/db/products'
 import { getProductSales } from '@/lib/db/products'
 import { getKpis } from '@/lib/db/kpis'
 import MarketplaceTabs from '@/components/dashboard/MarketplaceTabs'
-import AnalyticsTopSoldTable from '@/components/dashboard/AnalyticsTopSoldTable'
-import AnalyticsMarginTable from '@/components/dashboard/AnalyticsMarginTable'
+import AnalyticsProductTable from '@/components/dashboard/AnalyticsProductTable'
 import PeriodSelector from './PeriodSelector'
 import { getT, getLang } from '@/lib/server-i18n'
 import { currentUserAccess } from '@/lib/billing/entitlement'
@@ -203,22 +202,32 @@ export default async function AnalyticsPage({ searchParams }: Props) {
             ))}
           </div>
 
-          {/* Top sold in selected period — variant-grouped */}
+          {/* Sales AND margin in one table — variant-grouped over the whole
+              catalogue, so a product that earns well but sold nothing this
+              period is still visible instead of being filtered out. */}
           <div className="border rounded-2xl overflow-hidden" style={{ background: 'var(--bg-card2)', borderColor: 'var(--border)' }}>
             <div className="px-5 py-4 flex items-center gap-2" style={{ borderBottom: '1px solid var(--border)' }}>
               <TrendingUp className="w-4 h-4" style={{ color: 'var(--c1)' }} />
-              <h2 className="font-semibold text-sm" style={{ color: 'var(--text-base)' }}>{d.topSoldTitle}</h2>
+              <h2 className="font-semibold text-sm" style={{ color: 'var(--text-base)' }}>{d.productPerformanceTitle}</h2>
             </div>
-            <AnalyticsTopSoldTable
-              rows={periodSales}
+            <AnalyticsProductTable
               products={products}
+              sales={periodSales}
+              totalStockValue={totalStockValue}
               labels={{
-                product:   d.product,
-                qty:       d.topSoldQty,
-                inTransit: d.topSoldInTransit,
-                cancelled: d.topSoldCancelled,
-                revenue:   d.topSoldRevenue,
-                noSales:   d.noSalesInPeriod,
+                product:             d.product,
+                qty:                 d.topSoldQty,
+                inTransit:           d.topSoldInTransit,
+                cancelled:           d.topSoldCancelled,
+                revenue:             d.topSoldRevenue,
+                price:               d.price,
+                costPrice:           d.costPrice,
+                profit:              d.profit,
+                margin:              d.margin,
+                stockQty:            d.stockQty,
+                stockValue:          d.stockValue,
+                warehouseValueTotal: d.warehouseValueTotal,
+                noSales:             d.noSalesInPeriod,
               }}
             />
           </div>
@@ -252,26 +261,6 @@ export default async function AnalyticsPage({ searchParams }: Props) {
             </span>
           </div>
 
-          {/* Full margin table — variant-grouped */}
-          <div className="border rounded-2xl overflow-hidden" style={{ background: 'var(--bg-card2)', borderColor: 'var(--border)' }}>
-            <div className="px-5 py-4" style={{ borderBottom: '1px solid var(--border)' }}>
-              <h2 className="font-semibold text-sm" style={{ color: 'var(--text-base)' }}>{d.marginByProduct}</h2>
-            </div>
-            <AnalyticsMarginTable
-              products={products}
-              totalStockValue={totalStockValue}
-              labels={{
-                product:             d.product,
-                price:               d.price,
-                costPrice:           d.costPrice,
-                profit:              d.profit,
-                margin:              d.margin,
-                stockQty:            d.stockQty,
-                stockValue:          d.stockValue,
-                warehouseValueTotal: d.warehouseValueTotal,
-              }}
-            />
-          </div>
         </>
       )}
     </div>
