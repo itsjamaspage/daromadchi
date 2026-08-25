@@ -62,10 +62,6 @@ export interface OversellGroup {
   matchKey: string
   title: string
   rawAvailable: number          // negative
-  /** Units physically in stock across the group (the "in stock" number shown). */
-  stock: number
-  /** Units on committed orders across the group (the "ordered" number shown). */
-  ordered: number
   productIds: string[]          // all products in the group
 }
 
@@ -156,7 +152,7 @@ export async function handleOversell(g: OversellGroup): Promise<OversellOutcome>
   // Localised, plain-language head with the real numbers (in stock vs ordered),
   // built inside each alert's builder so it follows the seller's notif_lang like
   // every other alert. Was hardcoded English — see lib/telegram-seller.ts.
-  const head = (T: NotifStrings) => T.oversellHead(g.title, g.stock, g.ordered, laterLabel)
+  const head = (T: NotifStrings) => T.oversellHead(g.title, laterLabel)
 
   // DEDUP: fire ONCE per distinct oversell situation, not every reconcile cycle.
   // An unresolved oversell recurs every 5-min sync; without this the seller gets

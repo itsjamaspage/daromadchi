@@ -424,8 +424,6 @@ export async function syncStockSyncGroups(opts: RunOptions): Promise<StockSyncRu
           title: group.products.get([...group.products.keys()][0] ?? '')?.title
             ?? group.members[0]?.sku ?? matchKey,
           rawAvailable,
-          stock: maxStock,     // units in stock (the "В наличии" number)
-          ordered: pending,    // units on committed orders (the "заказов" number)
           productIds: [...group.products.keys()],
         })
       } catch (err) {

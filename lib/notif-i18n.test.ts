@@ -29,7 +29,7 @@ const CALLS: Record<string, unknown[]> = {
   stockSyncReason: ['missing_barcode'],
   extDailyTitle: ['21.08.2026'],
   oversellRateLimited: [1, 3, 'Uzum'], oversellCancelling: ['Uzum'],
-  oversellHead: ['JMWHT', 0, 1, 'Uzum #124452180'],
+  oversellHead: ['JMWHT', 'Uzum #124452180'],
 }
 
 function render(key: string, lang: NotifLang): string {
