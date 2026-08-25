@@ -102,6 +102,10 @@ describe('buildManualMessage', () => {
   })
 })
 
+// Direct imports and calls only. The TRANSITIVE check — which catches reaching
+// a writer through an intermediate module, e.g. importing stock-sync.ts for its
+// loadGroups() — lives in manual-stock-notify.guardrail.test.ts. Both run; this
+// one is the fast, readable statement of intent, that one is the proof.
 describe('SAFETY — no marketplace write path is reachable from this module', () => {
   it('the module never imports the writer / order-cancel and never calls a write fn', () => {
     // Match real imports/calls only — the module's own SAFETY comment names these
