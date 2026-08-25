@@ -101,21 +101,6 @@ export default async function AnalyticsPage({ searchParams }: Props) {
   const lowMarginCount  = margins.filter(m => m !== null && m < 0.15).length
   const highMarginCount = margins.filter(m => m !== null && m >= 0.35).length
 
-  // Warehouse value: FBS members share a physical pool (max stock), FBO
-  // members each hold their own (sum). Use whichever member has a positive
-  // cost_price as the per-unit cost for the group. Uses available_stock so
-  // units already reserved by pending orders don't count as "still on shelf".
-  const totalStockValue = productGroups.reduce((sum, g) => {
-    const cost = Number(g.find(p => (p.cost_price ?? 0) > 0)?.cost_price ?? 0)
-    if (cost <= 0) return sum
-    const fbo = g.filter(p => p.fulfillment_type === 'fbo' || p.fulfillment_type === 'fby')
-    const fbs = g.filter(p => p.fulfillment_type !== 'fbo' && p.fulfillment_type !== 'fby')
-    // Overridden stock counts here too, so the warehouse total in the table
-    // footer matches the Stock column immediately above it.
-    const fboUnits = fbo.reduce((s, p) => s + effective(p).stockQty, 0)
-    const fbsUnits = fbs.length > 0 ? Math.max(0, ...fbs.map(p => effective(p).stockQty)) : 0
-    return sum + cost * (fboUnits + fbsUnits)
-  }, 0)
 
   return (
     <div className="space-y-6">
@@ -216,7 +201,6 @@ export default async function AnalyticsPage({ searchParams }: Props) {
             <AnalyticsProductTable
               products={products}
               sales={periodSales}
-              totalStockValue={totalStockValue}
               labels={{
                 product:             d.product,
                 qty:                 d.topSoldQty,
@@ -227,15 +211,11 @@ export default async function AnalyticsPage({ searchParams }: Props) {
                 costPrice:           d.costPrice,
                 profit:              d.profit,
                 margin:              d.margin,
-                stockQty:            d.stockQty,
-                stockValue:          d.stockValue,
-                warehouseValueTotal: d.warehouseValueTotal,
                 noSales:             d.noSalesInPeriod,
                 setPrice:            d.setPriceLabel,
                 setCost:             d.setCostLabel,
                 editPriceHint:       d.editPriceHint,
                 editCostHint:        d.editCostHint,
-                editStockHint:       d.editStockHint,
                 mixedValues:         d.mixedValuesLabel,
                 appliesToAll:        d.appliesToAllLabel,
               }}

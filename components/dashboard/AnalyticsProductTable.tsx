@@ -82,7 +82,6 @@ const NO_SALES: Sales = { qty_sold: 0, qty_in_transit: 0, qty_cancelled: 0, reve
 interface Props {
   products: Product[]
   sales: ProductSalesRow[]
-  totalStockValue: number
   labels: {
     product: string
     qty: string
@@ -93,23 +92,17 @@ interface Props {
     costPrice: string
     profit: string
     margin: string
-    stockQty: string
-    stockValue: string
-    warehouseValueTotal: string
     noSales: string
     setPrice: string
     setCost: string
     editPriceHint: string
     editCostHint: string
-    editStockHint: string
     mixedValues: string
     appliesToAll: string
   }
 }
 
-const COL_COUNT = 11
-
-export default function AnalyticsProductTable({ products, sales, totalStockValue, labels }: Props) {
+export default function AnalyticsProductTable({ products, sales, labels }: Props) {
   const { lang } = useLang()
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const toggle = (k: string) => setExpanded(prev => {
@@ -181,13 +174,12 @@ export default function AnalyticsProductTable({ products, sales, totalStockValue
 
   const renderRow = (p: Product, isChild = false) => {
     const e = effective(p)
-    const { price, cost, stockQty } = e
+    const { price, cost } = e
     // Recomputed here, never read off p.profit: that field was calculated
     // server-side from selling_price, so an overridden price would leave the
     // profit and margin columns describing a price no longer on screen.
     const profit   = price - cost
     const margin   = price > 0 ? (profit / price) * 100 : 0
-    const stockVal = cost * stockQty
     const profitColor = profit > 0 ? '#10b981' : '#ef4444'
     const marginColor = margin >= 35 ? '#10b981' : margin >= 15 ? '#f59e0b' : '#ef4444'
     return (
@@ -222,14 +214,6 @@ export default function AnalyticsProductTable({ products, sales, totalStockValue
         <td className="px-4 py-3.5 text-right">
           <span className="font-semibold" style={{ color: marginColor }}>{margin.toFixed(1)}%</span>
         </td>
-        <td className="px-4 py-3.5 text-right">
-          <EditableValueCell productId={p.id} field="stockOverride"
-            value={stockQty} overridden={e.stockOverridden} kind="int"
-            emptyLabel="0" title={labels.editStockHint} />
-        </td>
-        <td className="px-4 py-3.5 text-right" style={{ color: 'var(--text-muted)' }}>
-          {stockVal > 0 ? `${fmt(stockVal)} so'm` : '—'}
-        </td>
       </tr>
     )
   }
@@ -257,6 +241,14 @@ export default function AnalyticsProductTable({ products, sales, totalStockValue
     const rows = item.children.map(c => c.row)
     const ids = rows.map(p => p.id)
     const shared = groupSharedValues(rows)
+    // Computable only when BOTH inputs are one number for the whole group.
+    // A mixed cost has no single profit, and inventing one from the first
+    // variant would be exactly the lie groupSharedValues() exists to avoid.
+    const groupProfit = shared.price != null && shared.cost != null ? shared.price - shared.cost : null
+    const groupMarginPct = groupProfit != null && shared.price != null && shared.price > 0
+      ? (groupProfit / shared.price) * 100
+      : null
+    const groupUnknownLabel = shared.costMixed || shared.priceMixed ? labels.mixedValues : '—'
     const total: Sales = rows.reduce((acc, p) => {
       const s = salesFor(p.id)
       return {
@@ -282,23 +274,9 @@ export default function AnalyticsProductTable({ products, sales, totalStockValue
           </div>
         </td>
         {salesCells(total)}
-        {/* Price / cost / stock still carry no value here — they differ per
-            variant and an FBS pool shared across listings would double-count.
-            But leaving six blank cells meant a seller looking at a collapsed
-            product saw no sign the values were editable at all, which is what
-            made the feature undiscoverable. A pencil that opens the group is
-            the honest affordance: it says "editable, one level down" without
-            inventing a group-level number that does not exist. */}
-        {/* Price and cost ARE editable here, and the edit lands on every
+        {/* Price and cost are editable here, and the edit lands on every
             listing in the group. They are properties of the product, not of
-            the colour, so making the seller type one cost into four variant
-            rows was busywork — and a pencil that only expanded the row was
-            worse than none, because a pencil promises an edit.
-
-            Stock deliberately has no pencil here: it genuinely differs per
-            listing (black and white do not hold the same units), so one number
-            written across four would be a lie rather than a convenience. It
-            stays editable on the variant rows below. */}
+            the colour, so typing one cost into four variant rows was busywork. */}
         <td className="px-4 py-3.5 text-right" onClick={stop}>
           <EditableValueCell productId={ids} field="priceOverride"
             value={shared.price} overridden={shared.priceOverridden} mixed={shared.priceMixed}
@@ -311,10 +289,23 @@ export default function AnalyticsProductTable({ products, sales, totalStockValue
             mixedLabel={labels.mixedValues} emptyLabel={labels.setCost}
             title={`${labels.editCostHint} · ${labels.appliesToAll}`} />
         </td>
-        <td className="px-4 py-3.5" />
-        <td className="px-4 py-3.5" />
-        <td className="px-4 py-3.5" />
-        <td className="px-4 py-3.5" />
+        {/* Profit and margin follow from the two cells to the left. Leaving
+            them blank was a leftover from when the parent showed no price or
+            cost either: a seller typed a cost into this very row and the two
+            numbers they typed it FOR stayed empty, which reads as "the edit
+            did nothing". They are shown whenever both inputs are known, and
+            «mixed» when the group disagrees — because there is no single
+            margin for a group whose variants cost different amounts. */}
+        <td className="px-4 py-3.5 text-right">
+          {groupProfit != null
+            ? <span className="font-semibold" style={{ color: groupProfit > 0 ? '#10b981' : '#ef4444' }}>{fmt(groupProfit)} so&apos;m</span>
+            : <span style={{ color: 'var(--text-muted)' }}>{groupUnknownLabel}</span>}
+        </td>
+        <td className="px-4 py-3.5 text-right">
+          {groupMarginPct != null
+            ? <span className="font-semibold" style={{ color: groupMarginPct >= 35 ? '#10b981' : groupMarginPct >= 15 ? '#f59e0b' : '#ef4444' }}>{groupMarginPct.toFixed(1)}%</span>
+            : <span style={{ color: 'var(--text-muted)' }}>{groupUnknownLabel}</span>}
+        </td>
       </tr>
     )
   }
@@ -332,7 +323,7 @@ export default function AnalyticsProductTable({ products, sales, totalStockValue
         qty_sold: r.qty_sold, qty_in_transit: r.qty_in_transit,
         qty_cancelled: r.qty_cancelled + r.qty_returned, revenue: r.revenue,
       })}
-      {Array.from({ length: 6 }, (_, i) => (
+      {Array.from({ length: 4 }, (_, i) => (
         <td key={i} className="px-4 py-3.5 text-right" style={{ color: 'var(--text-muted)' }}>—</td>
       ))}
     </tr>
@@ -356,8 +347,6 @@ export default function AnalyticsProductTable({ products, sales, totalStockValue
             <th className="text-right font-medium px-4 py-3">{labels.costPrice}</th>
             <th className="text-right font-medium px-4 py-3">{labels.profit}</th>
             <th className="text-right font-medium px-4 py-3">{labels.margin}</th>
-            <th className="text-right font-medium px-4 py-3">{labels.stockQty}</th>
-            <th className="text-right font-medium px-4 py-3">{labels.stockValue}</th>
           </tr>
         </thead>
         <tbody>
@@ -376,14 +365,6 @@ export default function AnalyticsProductTable({ products, sales, totalStockValue
           ))}
           {orphanSales.map(renderOrphan)}
         </tbody>
-        <tfoot>
-          <tr style={{ background: 'rgba(255,255,255,0.03)', borderTop: '1px solid var(--border)' }}>
-            <td colSpan={COL_COUNT - 1} className="px-5 py-4 font-bold text-xs uppercase tracking-wide" style={{ color: 'var(--text-base)' }}>
-              {labels.warehouseValueTotal}
-            </td>
-            <td className="px-4 py-4 text-right font-bold" style={{ color: 'var(--c1)' }}>{fmt(totalStockValue)} so&apos;m</td>
-          </tr>
-        </tfoot>
       </table>
     </div>
   )

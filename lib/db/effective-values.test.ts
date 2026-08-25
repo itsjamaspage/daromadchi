@@ -158,3 +158,45 @@ test('an empty group does not claim to be overridden', () => {
   assert.equal(g.price, null)
   assert.equal(g.priceMixed, false)
 })
+
+// ── Group profit and margin ─────────────────────────────────────────────────
+// The reported bug: a seller typed a cost into a parent row and Прибыль /
+// Маржа stayed blank, which reads as "the edit did nothing". They follow from
+// the price and cost shown in that same row.
+
+test('a group with an agreed price and cost has a profit and a margin', () => {
+  const g = groupSharedValues([
+    P({ id: 'a', selling_price: 100_000, cost_price: 65_000 }),
+    P({ id: 'b', selling_price: 100_000, cost_price: 65_000 }),
+  ])
+  assert.equal(g.price, 100_000)
+  assert.equal(g.cost, 65_000)
+  const profit = g.price! - g.cost!
+  assert.equal(profit, 35_000)
+  assert.equal(((profit / g.price!) * 100).toFixed(1), '35.0')
+})
+
+test('a mixed cost leaves the group with no single margin', () => {
+  // Two variants at different costs have two margins. Showing the first one as
+  // the group's would be the same lie groupSharedValues() exists to prevent.
+  const g = groupSharedValues([
+    P({ id: 'a', selling_price: 100_000, cost_price: 65_000 }),
+    P({ id: 'b', selling_price: 100_000, cost_price: 70_000 }),
+  ])
+  assert.equal(g.cost, null)
+  assert.equal(g.costMixed, true)
+})
+
+test('a group with no cost entered yet has no margin, and that is not zero', () => {
+  const g = groupSharedValues([P({ id: 'a', selling_price: 100_000 })])
+  assert.equal(g.cost, null, 'no cost → no margin, rather than a 100% one')
+})
+
+test('an overridden price drives the group margin, not the marketplace price', () => {
+  const g = groupSharedValues([
+    P({ id: 'a', selling_price: 100_000, cost_price: 50_000, price_override: 80_000 }),
+    P({ id: 'b', selling_price: 100_000, cost_price: 50_000, price_override: 80_000 }),
+  ])
+  assert.equal(g.price, 80_000)
+  assert.equal(((g.price! - g.cost!) / g.price! * 100).toFixed(1), '37.5')
+})
