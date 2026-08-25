@@ -421,29 +421,38 @@ h1, h2, h3, h4, h5, h6 {
 /* ═══════════════════════════════════════════════════════════════════
    HELP CENTER PROSE
 ═══════════════════════════════════════════════════════════════════ */
+/* A comfortable reading column: readable measure, high-contrast body, clear
+   hierarchy. Help articles are for reading, so type + contrast lead. */
+.prose-custom { max-width: 46rem; color: var(--text-dim); font-size: 1.02rem; line-height: 1.75; }
 .prose-custom h2 {
   font-family: var(--font-display);
-  font-size: 1.05rem; font-weight: 600; letter-spacing: -0.01em;
-  color: var(--text-base); margin-top: 2rem; margin-bottom: 0.75rem;
+  font-size: 1.45rem; font-weight: 700; letter-spacing: -0.015em;
+  color: var(--text-base); margin-top: 2.5rem; margin-bottom: 0.85rem;
 }
 .prose-custom h2:first-child { margin-top: 0; }
-.prose-custom h3 { font-family: var(--font-display); font-size: 0.95rem; font-weight: 600; color: var(--text-base); margin-top: 1.5rem; margin-bottom: 0.5rem; }
-.prose-custom p  { color: var(--text-muted); font-size: 0.875rem; line-height: 1.7; margin-bottom: 1rem; }
+.prose-custom h3 { font-family: var(--font-display); font-size: 1.15rem; font-weight: 700; color: var(--text-base); margin-top: 1.85rem; margin-bottom: 0.55rem; }
+.prose-custom p  { color: var(--text-dim); font-size: 1.02rem; line-height: 1.75; margin-bottom: 1.1rem; }
 .prose-custom ul,
-.prose-custom ol { color: var(--text-muted); font-size: 0.875rem; line-height: 1.7; padding-left: 1.5rem; margin-bottom: 1rem; }
-.prose-custom li { margin-bottom: 0.25rem; }
-.prose-custom strong { color: var(--text-base); }
-.prose-custom code { background: rgba(131,192,249,0.12); border: 1px solid rgba(131,192,249,0.3); color: var(--c1); padding: 0.1rem 0.45rem; border-radius: 6px; font-size: 0.8rem; }
-.prose-custom a.prose-link { color: var(--c1); text-decoration: underline; }
+.prose-custom ol { color: var(--text-dim); font-size: 1.02rem; line-height: 1.75; padding-left: 1.4rem; margin-bottom: 1.1rem; }
+.prose-custom li { margin-bottom: 0.45rem; padding-left: 0.2rem; }
+.prose-custom li::marker { color: var(--c1); }
+/* Real bold, and single-*…* rendered as a semibold (non-italic) highlight —
+   the content uses it to call out field names like API Token / Campaign ID. */
+.prose-custom strong { color: var(--text-base); font-weight: 700; }
+.prose-custom em { font-style: normal; font-weight: 600; color: var(--text-base); }
+.prose-custom code { background: rgba(131,192,249,0.14); border: 1px solid rgba(131,192,249,0.32); color: var(--c1); padding: 0.12rem 0.45rem; border-radius: 6px; font-size: 0.9em; }
+.prose-custom a.prose-link { color: var(--c1); text-decoration: underline; text-underline-offset: 2px; font-weight: 500; }
+.prose-custom a.prose-link:hover { text-decoration-thickness: 2px; }
 .prose-custom ol { list-style-type: decimal; }
 .prose-custom ul { list-style-type: disc; }
-.prose-custom table, .prose-custom table.prose-table { width: 100%; font-size: 0.8rem; border-collapse: collapse; margin-bottom: 1rem; }
-.prose-custom th { text-align: left; color: var(--text-muted); font-weight: 600; padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border); }
-.prose-custom td { color: var(--text-muted); padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border); }
-.prose-custom pre.prose-code { background: rgba(131,192,249,0.08); border: 1px solid rgba(131,192,249,0.20); border-radius: 12px; padding: 0.875rem 1rem; overflow-x: auto; margin: 1rem 0; }
-.prose-custom pre.prose-code code { background: none; border: none; color: var(--c1); padding: 0; font-size: 0.82rem; font-family: monospace; }
-.info-box    { background: rgba(131,192,249,0.10); border: 1px solid rgba(131,192,249,0.25); border-radius: 12px; padding: 0.875rem 1rem; font-size: 0.82rem; color: var(--text-muted); margin: 1.25rem 0; }
-.warning-box { background: rgba(236,126,0,0.06); border: 1px solid rgba(236,126,0,0.2); border-radius: 12px; padding: 0.875rem 1rem; font-size: 0.82rem; color: var(--text-muted); margin: 1.25rem 0; }
+.prose-custom table, .prose-custom table.prose-table { width: 100%; font-size: 0.95rem; border-collapse: collapse; margin: 1.4rem 0; }
+.prose-custom th { text-align: left; color: var(--text-base); font-weight: 700; padding: 0.6rem 0.85rem; border-bottom: 2px solid var(--border); background: rgba(131,192,249,0.06); }
+.prose-custom td { color: var(--text-dim); padding: 0.6rem 0.85rem; border-bottom: 1px solid var(--border); }
+.prose-custom tr:last-child td { border-bottom: none; }
+.prose-custom pre.prose-code { background: rgba(131,192,249,0.08); border: 1px solid rgba(131,192,249,0.20); border-radius: 12px; padding: 1rem 1.1rem; overflow-x: auto; margin: 1.4rem 0; }
+.prose-custom pre.prose-code code { background: none; border: none; color: var(--c1); padding: 0; font-size: 0.9rem; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.info-box    { background: rgba(131,192,249,0.10); border: 1px solid rgba(131,192,249,0.25); border-left: 3px solid var(--c1); border-radius: 10px; padding: 0.9rem 1.1rem; font-size: 0.97rem; line-height: 1.6; color: var(--text-dim); margin: 1.5rem 0; }
+.warning-box { background: rgba(236,126,0,0.08); border: 1px solid rgba(236,126,0,0.28); border-left: 3px solid #ec7e00; border-radius: 10px; padding: 0.9rem 1.1rem; font-size: 0.97rem; line-height: 1.6; color: var(--text-dim); margin: 1.5rem 0; }
 
 /* Hero dashboard mockup — scale down on mobile so it fits the screen */
 @media (max-width: 640px) {

@@ -116,7 +116,7 @@ async function renderStats(token, stats, lang = 'uz') {
         <a href="https://daromadchi.uz/login" target="_blank" class="btn-login">Kirish →</a>
       </div>
       <div class="links">
-        <a href="https://daromadchi.uz/unit-economics" target="_blank" class="lnk">📊 Unit-ekonomika</a>
+        <a href="https://daromadchi.uz/dashboard/unit-economics" target="_blank" class="lnk">📊 Unit-ekonomika</a>
         <a href="https://daromadchi.uz/dashboard" target="_blank" class="lnk">📈 Dashboard</a>
       </div>`;
     return;
@@ -166,12 +166,12 @@ async function renderStats(token, stats, lang = 'uz') {
 
     <div class="links">
       <a href="https://daromadchi.uz/dashboard" target="_blank" class="lnk">📈 Dashboard</a>
-      <a href="https://daromadchi.uz/orders" target="_blank" class="lnk">📦 Buyurtmalar</a>
-      <a href="https://daromadchi.uz/products" target="_blank" class="lnk">🛍️ Mahsulotlar</a>
-      <a href="https://daromadchi.uz/analytics/ads" target="_blank" class="lnk">📢 Reklama</a>
-      <a href="https://daromadchi.uz/unit-economics" target="_blank" class="lnk">📊 Unit-eko</a>
-      <a href="https://daromadchi.uz/analytics/stock" target="_blank" class="lnk">🏭 Zaxira</a>
-      <a href="https://daromadchi.uz/analytics" target="_blank" class="lnk lnk-full">📉 To'liq tahlilni ochish →</a>
+      <a href="https://daromadchi.uz/dashboard/orders" target="_blank" class="lnk">📦 Buyurtmalar</a>
+      <a href="https://daromadchi.uz/dashboard/products" target="_blank" class="lnk">🛍️ Mahsulotlar</a>
+      <a href="https://daromadchi.uz/dashboard/alerts" target="_blank" class="lnk">⚠️ Ogohlantirishlar</a>
+      <a href="https://daromadchi.uz/dashboard/unit-economics" target="_blank" class="lnk">📊 Unit-eko</a>
+      <a href="https://daromadchi.uz/dashboard/stocks" target="_blank" class="lnk">🏭 Zaxira</a>
+      <a href="https://daromadchi.uz/dashboard/analytics" target="_blank" class="lnk lnk-full">📉 To'liq tahlilni ochish →</a>
     </div>
 
     <div class="sync-row">

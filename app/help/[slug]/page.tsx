@@ -80,7 +80,12 @@ function renderContent(raw: string) {
 
 function inlineFormat(s: string) {
   return s
+    // Bold FIRST so the double-asterisk pairs are consumed before the single
+    // pass; then single *…* becomes a semibold highlight (styled non-italic in
+    // CSS) — the content uses it for field-name labels, which previously showed
+    // raw asterisks because only bold was handled.
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/(?<![*\w])\*(?!\s)([^*\n]+?)\*(?![*\w])/g, '<em>$1</em>')
     .replace(/`([^`]+)`/g, '<code>$1</code>')
     .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" class="prose-link">$1</a>')
 }
