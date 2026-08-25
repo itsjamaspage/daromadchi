@@ -29,7 +29,8 @@
  */
 
 import { Fragment, useState } from 'react'
-import { ChevronRight, ChevronDown, Pencil } from 'lucide-react'
+import type React from 'react'
+import { ChevronRight, ChevronDown } from 'lucide-react'
 import EditableValueCell from '@/components/dashboard/EditableValueCell'
 import FulfillmentBadge from '@/components/dashboard/FulfillmentBadge'
 import { groupByVariant } from '@/lib/variant-grouping'
@@ -37,7 +38,7 @@ import { COLOR_LABELS, colorMetaFor, type ColorKey } from '@/lib/products/resolv
 import { useLang } from '@/app/providers'
 import type { Product } from '@/lib/types'
 import type { ProductSalesRow } from '@/lib/db/products'
-import { effective } from '@/lib/products/effective-values'
+import { effective, groupSharedValues } from '@/lib/products/effective-values'
 
 const MP_META: Record<string, { short: string; color: string; bg: string }> = {
   uzum:          { short: 'UZ', color: '#494fdf', bg: 'rgba(73,79,223,0.12)'  },
@@ -101,7 +102,8 @@ interface Props {
     editPriceHint: string
     editCostHint: string
     editStockHint: string
-    expandToEdit: string
+    mixedValues: string
+    appliesToAll: string
   }
 }
 
@@ -243,11 +245,18 @@ export default function AnalyticsProductTable({ products, sales, totalStockValue
    * FBS pool shared across listings. Same rule the Products and Stocks tables
    * follow; the real values live on the child rows.
    */
+  /** The parent row is itself the expand/collapse toggle, so a click that lands
+   *  on an editable cell has to stop there — otherwise opening the editor
+   *  collapses the group out from under it. */
+  const stop = (e: React.MouseEvent) => e.stopPropagation()
+
   const renderParent = (
     item: { key: string; representative: { row: Product }; children: Array<{ row: Product }> },
     isExpanded: boolean,
   ) => {
     const rows = item.children.map(c => c.row)
+    const ids = rows.map(p => p.id)
+    const shared = groupSharedValues(rows)
     const total: Sales = rows.reduce((acc, p) => {
       const s = salesFor(p.id)
       return {
@@ -280,22 +289,32 @@ export default function AnalyticsProductTable({ products, sales, totalStockValue
             made the feature undiscoverable. A pencil that opens the group is
             the honest affordance: it says "editable, one level down" without
             inventing a group-level number that does not exist. */}
-        {/* Column order is Price, Cost, Profit, Margin, Stock, Stock value —
-            so the pencils belong on 1st, 2nd and 5th. Profit, margin and stock
-            value are identities of the other three and stay empty. */}
-        {(['price', 'cost', null, null, 'stock', null] as const).map((kind, i) => (
-          <td key={i} className="px-4 py-3.5 text-right">
-            {kind && (
-              <span
-                className="inline-flex items-center justify-end w-full opacity-30 hover:opacity-80 transition-opacity"
-                title={`${kind === 'price' ? labels.editPriceHint : kind === 'cost' ? labels.editCostHint : labels.editStockHint} — ${labels.expandToEdit}`}
-                aria-label={labels.expandToEdit}
-              >
-                <Pencil className="w-3 h-3" style={{ color: 'var(--c1)' }} aria-hidden />
-              </span>
-            )}
-          </td>
-        ))}
+        {/* Price and cost ARE editable here, and the edit lands on every
+            listing in the group. They are properties of the product, not of
+            the colour, so making the seller type one cost into four variant
+            rows was busywork — and a pencil that only expanded the row was
+            worse than none, because a pencil promises an edit.
+
+            Stock deliberately has no pencil here: it genuinely differs per
+            listing (black and white do not hold the same units), so one number
+            written across four would be a lie rather than a convenience. It
+            stays editable on the variant rows below. */}
+        <td className="px-4 py-3.5 text-right" onClick={stop}>
+          <EditableValueCell productId={ids} field="priceOverride"
+            value={shared.price} overridden={shared.priceOverridden} mixed={shared.priceMixed}
+            mixedLabel={labels.mixedValues} emptyLabel={labels.setPrice}
+            title={`${labels.editPriceHint} · ${labels.appliesToAll}`} />
+        </td>
+        <td className="px-4 py-3.5 text-right" onClick={stop}>
+          <EditableValueCell productId={ids} field="costPrice"
+            value={shared.cost} mixed={shared.costMixed}
+            mixedLabel={labels.mixedValues} emptyLabel={labels.setCost}
+            title={`${labels.editCostHint} · ${labels.appliesToAll}`} />
+        </td>
+        <td className="px-4 py-3.5" />
+        <td className="px-4 py-3.5" />
+        <td className="px-4 py-3.5" />
+        <td className="px-4 py-3.5" />
       </tr>
     )
   }

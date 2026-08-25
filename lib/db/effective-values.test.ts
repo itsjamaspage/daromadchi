@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { effective } from '@/lib/products/effective-values'
+import { effective, groupSharedValues } from '@/lib/products/effective-values'
 import type { Product } from '@/lib/types'
 
 const P = (o: Partial<Product>): Product => ({
@@ -81,4 +81,80 @@ test('margin is 0-safe when there is no price', () => {
   assert.equal(e.price, 0)
   // The table guards with `price > 0`, so this must never be computed as -Infinity.
   assert.equal(e.price > 0, false)
+})
+
+// ── Parent (variant group) rows ─────────────────────────────────────────────
+// A parent covers several listings. It may only show one number when they all
+// agree; otherwise it says "mixed" rather than presenting one member's value
+// as the group's.
+
+test('a group that agrees shows the shared value', () => {
+  const g = groupSharedValues([
+    P({ id: 'a', selling_price: 100_000, cost_price: 40_000 }),
+    P({ id: 'b', selling_price: 100_000, cost_price: 40_000 }),
+  ])
+  assert.equal(g.price, 100_000)
+  assert.equal(g.cost, 40_000)
+  assert.equal(g.priceMixed, false)
+  assert.equal(g.costMixed, false)
+})
+
+test('a group that disagrees reports mixed and shows no number', () => {
+  const g = groupSharedValues([
+    P({ id: 'a', selling_price: 100_000, cost_price: 40_000 }),
+    P({ id: 'b', selling_price: 120_000, cost_price: 40_000 }),
+  ])
+  assert.equal(g.price, null, 'must not present one member\'s price as the group\'s')
+  assert.equal(g.priceMixed, true)
+  assert.equal(g.cost, 40_000, 'cost still agrees, so it still shows')
+  assert.equal(g.costMixed, false)
+})
+
+test('an override on one member makes the group price mixed', () => {
+  const g = groupSharedValues([
+    P({ id: 'a', selling_price: 100_000 }),
+    P({ id: 'b', selling_price: 100_000, price_override: 90_000 }),
+  ])
+  assert.equal(g.priceMixed, true)
+  assert.equal(g.price, null)
+})
+
+test('the override dot needs EVERY member overridden, not one', () => {
+  // Otherwise the group claims to be the seller's numbers while a member is
+  // still live marketplace data.
+  const partly = groupSharedValues([
+    P({ id: 'a', selling_price: 100_000, price_override: 90_000 }),
+    P({ id: 'b', selling_price: 100_000 }),
+  ])
+  assert.equal(partly.priceOverridden, false)
+  const all = groupSharedValues([
+    P({ id: 'a', selling_price: 100_000, price_override: 90_000 }),
+    P({ id: 'b', selling_price: 100_000, price_override: 90_000 }),
+  ])
+  assert.equal(all.priceOverridden, true)
+})
+
+test('a group with no cost set reads as empty, not as a confident zero', () => {
+  const g = groupSharedValues([P({ id: 'a' }), P({ id: 'b' })])
+  assert.equal(g.cost, null, 'the cell should offer "+ cost", not show 0')
+  assert.equal(g.costMixed, false)
+})
+
+test('one member with a cost and one without is mixed', () => {
+  const g = groupSharedValues([P({ id: 'a', cost_price: 40_000 }), P({ id: 'b' })])
+  assert.equal(g.costMixed, true)
+  assert.equal(g.cost, null)
+})
+
+test('a single-listing group behaves like that listing', () => {
+  const g = groupSharedValues([P({ id: 'a', selling_price: 100_000, cost_price: 40_000 })])
+  assert.equal(g.price, 100_000)
+  assert.equal(g.priceMixed, false)
+})
+
+test('an empty group does not claim to be overridden', () => {
+  const g = groupSharedValues([])
+  assert.equal(g.priceOverridden, false)
+  assert.equal(g.price, null)
+  assert.equal(g.priceMixed, false)
 })
