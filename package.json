@@ -54,6 +54,7 @@
     "test:notif-group": "node --import tsx --test lib/stock-alert-group.test.ts",
     "test:overrides": "node --import tsx --test lib/db/effective-values.test.ts",
     "test:prod-analytics": "node --import tsx --test lib/products/product-analytics.test.ts",
+    "test:columns": "node --import tsx --test lib/products/analytics-columns.test.ts",
     "test:rsc": "node --import tsx --test lib/rsc-boundary.test.ts",
     "test:fulfilment": "node --import tsx --test lib/marketplace/fulfilment-frontdoor.test.ts",
     "test:signout": "node --import tsx --test lib/auth/cookie-sweep.test.ts",
