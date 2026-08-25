@@ -29,7 +29,7 @@
  */
 
 import { Fragment, useState } from 'react'
-import { ChevronRight, ChevronDown } from 'lucide-react'
+import { ChevronRight, ChevronDown, Pencil } from 'lucide-react'
 import EditableValueCell from '@/components/dashboard/EditableValueCell'
 import FulfillmentBadge from '@/components/dashboard/FulfillmentBadge'
 import { groupByVariant } from '@/lib/variant-grouping'
@@ -101,6 +101,7 @@ interface Props {
     editPriceHint: string
     editCostHint: string
     editStockHint: string
+    expandToEdit: string
   }
 }
 
@@ -272,12 +273,29 @@ export default function AnalyticsProductTable({ products, sales, totalStockValue
           </div>
         </td>
         {salesCells(total)}
-        <td className="px-4 py-3.5" />
-        <td className="px-4 py-3.5" />
-        <td className="px-4 py-3.5" />
-        <td className="px-4 py-3.5" />
-        <td className="px-4 py-3.5" />
-        <td className="px-4 py-3.5" />
+        {/* Price / cost / stock still carry no value here — they differ per
+            variant and an FBS pool shared across listings would double-count.
+            But leaving six blank cells meant a seller looking at a collapsed
+            product saw no sign the values were editable at all, which is what
+            made the feature undiscoverable. A pencil that opens the group is
+            the honest affordance: it says "editable, one level down" without
+            inventing a group-level number that does not exist. */}
+        {/* Column order is Price, Cost, Profit, Margin, Stock, Stock value —
+            so the pencils belong on 1st, 2nd and 5th. Profit, margin and stock
+            value are identities of the other three and stay empty. */}
+        {(['price', 'cost', null, null, 'stock', null] as const).map((kind, i) => (
+          <td key={i} className="px-4 py-3.5 text-right">
+            {kind && (
+              <span
+                className="inline-flex items-center justify-end w-full opacity-30 hover:opacity-80 transition-opacity"
+                title={`${kind === 'price' ? labels.editPriceHint : kind === 'cost' ? labels.editCostHint : labels.editStockHint} — ${labels.expandToEdit}`}
+                aria-label={labels.expandToEdit}
+              >
+                <Pencil className="w-3 h-3" style={{ color: 'var(--c1)' }} aria-hidden />
+              </span>
+            )}
+          </td>
+        ))}
       </tr>
     )
   }

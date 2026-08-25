@@ -21,7 +21,7 @@
 
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { Check, X } from 'lucide-react'
+import { Check, X, Pencil } from 'lucide-react'
 
 export type EditableField = 'costPrice' | 'priceOverride' | 'stockOverride'
 
@@ -124,9 +124,10 @@ export default function EditableValueCell({
     <button
       onClick={() => setEditing(true)}
       disabled={saving}
-      className="border-b border-dashed border-transparent hover:border-[var(--border2)] cursor-text disabled:opacity-50 inline-flex items-center gap-1"
+      className="group/edit cursor-text disabled:opacity-50 inline-flex items-center gap-1.5 rounded px-1 -mx-1 py-0.5 hover:bg-[var(--bg-input)] transition-colors"
       style={{ color: hasValue ? 'var(--text-dim)' : 'var(--text-muted)' }}
       title={title}
+      aria-label={title}
     >
       {label ?? <span className="opacity-70">{emptyLabel ?? '—'}</span>}
       {/* A dot, not a colour change: the number must stay readable, and the
@@ -135,6 +136,16 @@ export default function EditableValueCell({
       {isOverride && (
         <span className="h-1.5 w-1.5 rounded-full shrink-0" style={{ background: 'var(--c1)' }} aria-hidden />
       )}
+      {/* The pencil is always rendered, not hover-only. A dashed underline that
+          appears on hover tells you a cell is editable only once you have
+          already guessed it might be — and on touch there is no hover at all,
+          so the affordance was invisible on a phone. Low opacity keeps a
+          column of them from competing with the numbers. */}
+      <Pencil
+        className="w-3 h-3 shrink-0 opacity-40 group-hover/edit:opacity-100 transition-opacity"
+        style={{ color: 'var(--c1)' }}
+        aria-hidden
+      />
     </button>
   )
 }

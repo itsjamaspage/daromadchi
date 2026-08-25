@@ -236,6 +236,7 @@ export default async function AnalyticsPage({ searchParams }: Props) {
                 editPriceHint:       d.editPriceHint,
                 editCostHint:        d.editCostHint,
                 editStockHint:       d.editStockHint,
+                expandToEdit:        d.expandToEditLabel,
               }}
             />
           </div>
