@@ -39,6 +39,7 @@ import { useLang } from '@/app/providers'
 import type { Product } from '@/lib/types'
 import type { ProductSalesRow } from '@/lib/db/products'
 import { effective, groupSharedValues } from '@/lib/products/effective-values'
+import { deriveMetrics, abcClassify, type AbcClass } from '@/lib/products/product-analytics'
 
 const MP_META: Record<string, { short: string; color: string; bg: string }> = {
   uzum:          { short: 'UZ', color: '#494fdf', bg: 'rgba(73,79,223,0.12)'  },
@@ -76,8 +77,16 @@ function VariantColorChip({ colorKey, lang }: { colorKey: string | null | undefi
 
 /** Sales figures for one listing. Zeroed rather than undefined so a product
  *  with no sales renders "0", not a gap the reader has to interpret. */
-interface Sales { qty_sold: number; qty_in_transit: number; qty_cancelled: number; revenue: number }
-const NO_SALES: Sales = { qty_sold: 0, qty_in_transit: 0, qty_cancelled: 0, revenue: 0 }
+interface Sales {
+  qty_sold: number; qty_in_transit: number
+  qty_cancelled: number
+  /** Split out from cancelled: a return is a completed sale that came back,
+   *  which is a different problem from an order that never shipped, and the
+   *  return RATE is only meaningful if the two are counted apart. */
+  qty_returned: number
+  revenue: number
+}
+const NO_SALES: Sales = { qty_sold: 0, qty_in_transit: 0, qty_cancelled: 0, qty_returned: 0, revenue: 0 }
 
 interface Props {
   products: Product[]
@@ -99,6 +108,11 @@ interface Props {
     editCostHint: string
     mixedValues: string
     appliesToAll: string
+    returned: string
+    returnRate: string
+    salesShare: string
+    avgPrice: string
+    abc: string
   }
 }
 
@@ -122,12 +136,18 @@ export default function AnalyticsProductTable({ products, sales, labels }: Props
     salesByProduct.set(r.product_id, {
       qty_sold:       prev.qty_sold       + r.qty_sold,
       qty_in_transit: prev.qty_in_transit + r.qty_in_transit,
-      // Cancelled and returned are one "didn't stick" column, as before.
-      qty_cancelled:  prev.qty_cancelled  + r.qty_cancelled + r.qty_returned,
+      qty_cancelled:  prev.qty_cancelled  + r.qty_cancelled,
+      qty_returned:   prev.qty_returned   + r.qty_returned,
       revenue:        prev.revenue        + r.revenue,
     })
   }
   const salesFor = (id: string): Sales => salesByProduct.get(id) ?? NO_SALES
+
+  // Denominator for "share of sales". Every row on screen, including orphaned
+  // sales — otherwise the shares would not add to 100%.
+  const periodRevenue =
+    [...salesByProduct.values()].reduce((t, s) => t + s.revenue, 0)
+    + orphanSales.reduce((t, r) => t + r.revenue, 0)
 
   // Revenue first — this is a performance table. Products that sold nothing
   // fall to the bottom and are ordered by margin among themselves, so the
@@ -145,6 +165,19 @@ export default function AnalyticsProductTable({ products, sales, labels }: Props
     row: p,
   })))
 
+  const groupRows = (item: typeof grouped[number]) =>
+    item.type === 'parent' ? item.children.map(c => c.row) : [item.row.row]
+  const groupKey = (item: typeof grouped[number]) =>
+    item.type === 'parent' ? `p:${item.key}` : `f:${item.row.row.id}`
+
+  // ABC over GROUPS, not listings. The same product sold on Uzum and Yandex is
+  // one thing to stock; ranking its two halves separately would split its
+  // revenue and demote a strong product twice.
+  const abc: Map<string, AbcClass> = abcClassify(
+    grouped.map(item => ({ id: groupKey(item), revenue: groupRevenue(groupRows(item)) })),
+  )
+  const abcFor = (item: typeof grouped[number]): AbcClass => abc.get(groupKey(item)) ?? 'C'
+
   const sortedGroups = [...grouped].sort((a, b) => {
     const rowsA = a.type === 'parent' ? a.children.map(c => c.row) : [a.row.row]
     const rowsB = b.type === 'parent' ? b.children.map(c => c.row) : [b.row.row]
@@ -152,6 +185,17 @@ export default function AnalyticsProductTable({ products, sales, labels }: Props
     if (revDiff !== 0) return revDiff
     return groupMargin(rowsB) - groupMargin(rowsA)
   })
+
+  /** A / B / C by revenue. Colour-coded so the eye finds the A products
+   *  without reading, the way the Yoolip screen does. */
+  const AbcBadge = ({ cls }: { cls: AbcClass }) => (
+    <span className="text-[11px] font-bold px-2 py-0.5 rounded"
+      style={cls === 'A' ? { background: 'rgba(16,185,129,0.15)', color: '#10b981' }
+        : cls === 'B' ? { background: 'rgba(245,158,11,0.15)', color: '#f59e0b' }
+        : { background: 'var(--bg-input)', color: 'var(--text-muted)' }}>
+      {cls}
+    </span>
+  )
 
   const badges = (p: Product) => (
     <>
@@ -163,16 +207,35 @@ export default function AnalyticsProductTable({ products, sales, labels }: Props
     </>
   )
 
-  const salesCells = (s: Sales) => (
-    <>
-      <td className="px-4 py-3.5 text-right font-semibold" style={{ color: s.qty_sold > 0 ? 'var(--c1)' : 'var(--text-muted)' }}>{s.qty_sold}</td>
-      <td className="px-4 py-3.5 text-right font-semibold" style={{ color: s.qty_in_transit > 0 ? '#f59e0b' : 'var(--text-muted)' }}>{s.qty_in_transit}</td>
-      <td className="px-4 py-3.5 text-right font-semibold" style={{ color: s.qty_cancelled > 0 ? '#ef4444' : 'var(--text-muted)' }}>{s.qty_cancelled}</td>
-      <td className="px-4 py-3.5 text-right" style={{ color: 'var(--text-dim)' }}>{fmt(s.revenue)} so&apos;m</td>
-    </>
-  )
+  const salesCells = (s: Sales) => {
+    const m = deriveMetrics(
+      { delivered: s.qty_sold, returned: s.qty_returned, revenue: s.revenue },
+      periodRevenue,
+    )
+    return (
+      <>
+        <td className="px-4 py-3.5 text-right font-semibold" style={{ color: s.qty_sold > 0 ? 'var(--c1)' : 'var(--text-muted)' }}>{s.qty_sold}</td>
+        <td className="px-4 py-3.5 text-right font-semibold" style={{ color: s.qty_in_transit > 0 ? '#f59e0b' : 'var(--text-muted)' }}>{s.qty_in_transit}</td>
+        <td className="px-4 py-3.5 text-right font-semibold" style={{ color: s.qty_cancelled > 0 ? '#ef4444' : 'var(--text-muted)' }}>{s.qty_cancelled}</td>
+        <td className="px-4 py-3.5 text-right font-semibold" style={{ color: s.qty_returned > 0 ? '#ef4444' : 'var(--text-muted)' }}>{s.qty_returned}</td>
+        {/* Amber past 10%: high enough to be a real signal on a small catalogue,
+            low enough that a genuinely bad product still stands out in red. */}
+        <td className="px-4 py-3.5 text-right" style={{ color: m.returnRate == null ? 'var(--text-muted)' : m.returnRate >= 20 ? '#ef4444' : m.returnRate >= 10 ? '#f59e0b' : 'var(--text-dim)' }}>
+          {m.returnRate == null ? '—' : `${m.returnRate.toFixed(1)}%`}
+        </td>
+        <td className="px-4 py-3.5 text-right" style={{ color: 'var(--text-dim)' }}>{fmt(s.revenue)} so&apos;m</td>
+        <td className="px-4 py-3.5 text-right" style={{ color: 'var(--text-muted)' }}>{m.salesShare.toFixed(1)}%</td>
+        {/* The realised price. Its gap from the listed Price is the number
+            worth looking at — it is what discounts and promotions actually
+            cost. Null (not 0) when nothing was delivered. */}
+        <td className="px-4 py-3.5 text-right" style={{ color: 'var(--text-dim)' }}>
+          {m.avgPrice == null ? '—' : `${fmt(m.avgPrice)} so'm`}
+        </td>
+      </>
+    )
+  }
 
-  const renderRow = (p: Product, isChild = false) => {
+  const renderRow = (p: Product, isChild = false, abcCls?: AbcClass) => {
     const e = effective(p)
     const { price, cost } = e
     // Recomputed here, never read off p.profit: that field was calculated
@@ -214,6 +277,9 @@ export default function AnalyticsProductTable({ products, sales, labels }: Props
         <td className="px-4 py-3.5 text-right">
           <span className="font-semibold" style={{ color: marginColor }}>{margin.toFixed(1)}%</span>
         </td>
+        <td className="px-4 py-3.5 text-center">
+          {abcCls ? <AbcBadge cls={abcCls} /> : null}
+        </td>
       </tr>
     )
   }
@@ -237,6 +303,7 @@ export default function AnalyticsProductTable({ products, sales, labels }: Props
   const renderParent = (
     item: { key: string; representative: { row: Product }; children: Array<{ row: Product }> },
     isExpanded: boolean,
+    abcCls: AbcClass,
   ) => {
     const rows = item.children.map(c => c.row)
     const ids = rows.map(p => p.id)
@@ -255,6 +322,7 @@ export default function AnalyticsProductTable({ products, sales, labels }: Props
         qty_sold:       acc.qty_sold       + s.qty_sold,
         qty_in_transit: acc.qty_in_transit + s.qty_in_transit,
         qty_cancelled:  acc.qty_cancelled  + s.qty_cancelled,
+        qty_returned:   acc.qty_returned   + s.qty_returned,
         revenue:        acc.revenue        + s.revenue,
       }
     }, NO_SALES)
@@ -306,6 +374,7 @@ export default function AnalyticsProductTable({ products, sales, labels }: Props
             ? <span className="font-semibold" style={{ color: groupMarginPct >= 35 ? '#10b981' : groupMarginPct >= 15 ? '#f59e0b' : '#ef4444' }}>{groupMarginPct.toFixed(1)}%</span>
             : <span style={{ color: 'var(--text-muted)' }}>{groupUnknownLabel}</span>}
         </td>
+        <td className="px-4 py-3.5 text-center"><AbcBadge cls={abcCls} /></td>
       </tr>
     )
   }
@@ -321,9 +390,9 @@ export default function AnalyticsProductTable({ products, sales, labels }: Props
       </td>
       {salesCells({
         qty_sold: r.qty_sold, qty_in_transit: r.qty_in_transit,
-        qty_cancelled: r.qty_cancelled + r.qty_returned, revenue: r.revenue,
+        qty_cancelled: r.qty_cancelled, qty_returned: r.qty_returned, revenue: r.revenue,
       })}
-      {Array.from({ length: 4 }, (_, i) => (
+      {Array.from({ length: 5 }, (_, i) => (
         <td key={i} className="px-4 py-3.5 text-right" style={{ color: 'var(--text-muted)' }}>—</td>
       ))}
     </tr>
@@ -342,21 +411,26 @@ export default function AnalyticsProductTable({ products, sales, labels }: Props
             <th className="text-right font-medium px-4 py-3">{labels.qty}</th>
             <th className="text-right font-medium px-4 py-3">{labels.inTransit}</th>
             <th className="text-right font-medium px-4 py-3">{labels.cancelled}</th>
+            <th className="text-right font-medium px-4 py-3">{labels.returned}</th>
+            <th className="text-right font-medium px-4 py-3">{labels.returnRate}</th>
             <th className="text-right font-medium px-4 py-3">{labels.revenue}</th>
+            <th className="text-right font-medium px-4 py-3">{labels.salesShare}</th>
+            <th className="text-right font-medium px-4 py-3">{labels.avgPrice}</th>
             <th className="text-right font-medium px-4 py-3">{labels.price}</th>
             <th className="text-right font-medium px-4 py-3">{labels.costPrice}</th>
             <th className="text-right font-medium px-4 py-3">{labels.profit}</th>
             <th className="text-right font-medium px-4 py-3">{labels.margin}</th>
+            <th className="text-center font-medium px-4 py-3">{labels.abc}</th>
           </tr>
         </thead>
         <tbody>
           {sortedGroups.map(item => (
             <Fragment key={item.type === 'parent' ? `p:${item.key}` : `f:${item.row.row.id}`}>
               {item.type === 'flat'
-                ? renderRow(item.row.row)
+                ? renderRow(item.row.row, false, abcFor(item))
                 : (
                   <>
-                    {renderParent(item, expanded.has(item.key))}
+                    {renderParent(item, expanded.has(item.key), abcFor(item))}
                     {expanded.has(item.key) && item.children.map(c => renderRow(c.row, true))}
                   </>
                 )

@@ -218,6 +218,11 @@ export default async function AnalyticsPage({ searchParams }: Props) {
                 editCostHint:        d.editCostHint,
                 mixedValues:         d.mixedValuesLabel,
                 appliesToAll:        d.appliesToAllLabel,
+                returned:            d.colReturned,
+                returnRate:          d.colReturnRate,
+                salesShare:          d.colSalesShare,
+                avgPrice:            d.colAvgPrice,
+                abc:                 d.colAbc,
               }}
             />
           </div>
