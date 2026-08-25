@@ -52,6 +52,7 @@
     "test:stock-key": "node --import tsx --test lib/marketplace/stock-key-match.test.ts",
     "test:notif-group": "node --import tsx --test lib/stock-alert-group.test.ts",
     "test:overrides": "node --import tsx --test lib/db/effective-values.test.ts",
+    "test:rsc": "node --import tsx --test lib/rsc-boundary.test.ts",
     "test:fulfilment": "node --import tsx --test lib/marketplace/fulfilment-frontdoor.test.ts",
     "test:signout": "node --import tsx --test lib/auth/cookie-sweep.test.ts",
     "test:tenancy": "node --import tsx --test lib/marketplace/stock-refresh-tenancy.integration.test.ts"

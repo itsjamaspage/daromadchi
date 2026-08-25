@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { effective } from '@/components/dashboard/AnalyticsProductTable'
+import { effective } from '@/lib/products/effective-values'
 import type { Product } from '@/lib/types'
 
 const P = (o: Partial<Product>): Product => ({
