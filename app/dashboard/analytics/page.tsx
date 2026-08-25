@@ -223,6 +223,32 @@ export default async function AnalyticsPage({ searchParams }: Props) {
                 salesShare:          d.colSalesShare,
                 avgPrice:            d.colAvgPrice,
                 abc:                 d.colAbc,
+                settings: {
+                  title:         d.tblSettingsTitle,
+                  button:        d.tblSettingsBtn,
+                  presetMinimal: d.tblPresetMinimal,
+                  presetSales:   d.tblPresetSales,
+                  presetMoney:   d.tblPresetMoney,
+                  presetAll:     d.tblPresetAll,
+                  // Keyed by ColumnDef.labelKey, so the panel names a column
+                  // exactly as its header does — no second translation to drift.
+                  columns: {
+                    product:           d.product,
+                    topSoldQty:        d.topSoldQty,
+                    topSoldInTransit:  d.topSoldInTransit,
+                    topSoldCancelled:  d.topSoldCancelled,
+                    colReturned:       d.colReturned,
+                    colReturnRate:     d.colReturnRate,
+                    topSoldRevenue:    d.topSoldRevenue,
+                    colSalesShare:     d.colSalesShare,
+                    colAvgPrice:       d.colAvgPrice,
+                    price:             d.price,
+                    costPrice:         d.costPrice,
+                    profit:            d.profit,
+                    margin:            d.margin,
+                    colAbc:            d.colAbc,
+                  },
+                },
               }}
             />
           </div>
