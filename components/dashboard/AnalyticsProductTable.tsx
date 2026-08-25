@@ -28,7 +28,7 @@
  * revenue in this table still reconciles with the KPI cards above it.
  */
 
-import { Fragment, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import type React from 'react'
 import { ChevronRight, ChevronDown } from 'lucide-react'
 import EditableValueCell from '@/components/dashboard/EditableValueCell'
@@ -40,6 +40,10 @@ import type { Product } from '@/lib/types'
 import type { ProductSalesRow } from '@/lib/db/products'
 import { effective, groupSharedValues } from '@/lib/products/effective-values'
 import { deriveMetrics, abcClassify, type AbcClass } from '@/lib/products/product-analytics'
+import AnalyticsTableSettings from '@/components/dashboard/AnalyticsTableSettings'
+import {
+  isVisible, normalizeHidden, COLUMN_PREFS_STORAGE_KEY,
+} from '@/lib/products/analytics-columns'
 
 const MP_META: Record<string, { short: string; color: string; bg: string }> = {
   uzum:          { short: 'UZ', color: '#494fdf', bg: 'rgba(73,79,223,0.12)'  },
@@ -113,12 +117,51 @@ interface Props {
     salesShare: string
     avgPrice: string
     abc: string
+    settings: {
+      title: string
+      button: string
+      presetMinimal: string
+      presetSales: string
+      presetMoney: string
+      presetAll: string
+      columns: Record<string, string>
+    }
   }
 }
 
 export default function AnalyticsProductTable({ products, sales, labels }: Props) {
   const { lang } = useLang()
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
+
+  // Column visibility. Read on mount rather than during render so the server
+  // and the first client render agree — reading localStorage inline would
+  // hydrate a different table than the server sent.
+  const [hidden, setHidden] = useState<string[]>([])
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(COLUMN_PREFS_STORAGE_KEY)
+      // Reading storage AFTER mount is the point: doing it during render would
+      // hydrate a different table than the server sent, which React treats as
+      // a mismatch. Same pattern and reason as TelegramConnect.tsx. The
+      // directive must be one line — a multi-line description makes
+      // "next-line" point at the comment rather than the call.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      if (raw) setHidden(normalizeHidden(JSON.parse(raw)))
+    } catch {
+      // A private window, cleared site data, or storage the browser refuses.
+      // Showing every column is the right fallback — never a blank table.
+    }
+  }, [])
+  const changeHidden = (next: string[]) => {
+    setHidden(next)
+    try {
+      window.localStorage.setItem(COLUMN_PREFS_STORAGE_KEY, JSON.stringify(next))
+    } catch { /* the choice still applies to this session */ }
+  }
+  /** Render a cell only when its column is on. One helper for the header and
+   *  every row, so a column can never be dropped from one and kept in another
+   *  — which would shift every cell after it. */
+  const col = (key: string, cell: React.ReactNode) => isVisible(key, hidden) ? cell : null
   const toggle = (k: string) => setExpanded(prev => {
     const n = new Set(prev)
     if (n.has(k)) n.delete(k); else n.add(k)
@@ -214,23 +257,23 @@ export default function AnalyticsProductTable({ products, sales, labels }: Props
     )
     return (
       <>
-        <td className="px-4 py-3.5 text-right font-semibold" style={{ color: s.qty_sold > 0 ? 'var(--c1)' : 'var(--text-muted)' }}>{s.qty_sold}</td>
-        <td className="px-4 py-3.5 text-right font-semibold" style={{ color: s.qty_in_transit > 0 ? '#f59e0b' : 'var(--text-muted)' }}>{s.qty_in_transit}</td>
-        <td className="px-4 py-3.5 text-right font-semibold" style={{ color: s.qty_cancelled > 0 ? '#ef4444' : 'var(--text-muted)' }}>{s.qty_cancelled}</td>
-        <td className="px-4 py-3.5 text-right font-semibold" style={{ color: s.qty_returned > 0 ? '#ef4444' : 'var(--text-muted)' }}>{s.qty_returned}</td>
+        {col('delivered', <td className="px-4 py-3.5 text-right font-semibold" style={{ color: s.qty_sold > 0 ? 'var(--c1)' : 'var(--text-muted)' }}>{s.qty_sold}</td>)}
+        {col('inTransit', <td className="px-4 py-3.5 text-right font-semibold" style={{ color: s.qty_in_transit > 0 ? '#f59e0b' : 'var(--text-muted)' }}>{s.qty_in_transit}</td>)}
+        {col('cancelled', <td className="px-4 py-3.5 text-right font-semibold" style={{ color: s.qty_cancelled > 0 ? '#ef4444' : 'var(--text-muted)' }}>{s.qty_cancelled}</td>)}
+        {col('returned', <td className="px-4 py-3.5 text-right font-semibold" style={{ color: s.qty_returned > 0 ? '#ef4444' : 'var(--text-muted)' }}>{s.qty_returned}</td>)}
         {/* Amber past 10%: high enough to be a real signal on a small catalogue,
             low enough that a genuinely bad product still stands out in red. */}
-        <td className="px-4 py-3.5 text-right" style={{ color: m.returnRate == null ? 'var(--text-muted)' : m.returnRate >= 20 ? '#ef4444' : m.returnRate >= 10 ? '#f59e0b' : 'var(--text-dim)' }}>
+        {col('returnRate', <td className="px-4 py-3.5 text-right" style={{ color: m.returnRate == null ? 'var(--text-muted)' : m.returnRate >= 20 ? '#ef4444' : m.returnRate >= 10 ? '#f59e0b' : 'var(--text-dim)' }}>
           {m.returnRate == null ? '—' : `${m.returnRate.toFixed(1)}%`}
-        </td>
-        <td className="px-4 py-3.5 text-right" style={{ color: 'var(--text-dim)' }}>{fmt(s.revenue)} so&apos;m</td>
-        <td className="px-4 py-3.5 text-right" style={{ color: 'var(--text-muted)' }}>{m.salesShare.toFixed(1)}%</td>
+        </td>)}
+        {col('revenue', <td className="px-4 py-3.5 text-right" style={{ color: 'var(--text-dim)' }}>{fmt(s.revenue)} so&apos;m</td>)}
+        {col('salesShare', <td className="px-4 py-3.5 text-right" style={{ color: 'var(--text-muted)' }}>{m.salesShare.toFixed(1)}%</td>)}
         {/* The realised price. Its gap from the listed Price is the number
             worth looking at — it is what discounts and promotions actually
             cost. Null (not 0) when nothing was delivered. */}
-        <td className="px-4 py-3.5 text-right" style={{ color: 'var(--text-dim)' }}>
+        {col('avgPrice', <td className="px-4 py-3.5 text-right" style={{ color: 'var(--text-dim)' }}>
           {m.avgPrice == null ? '—' : `${fmt(m.avgPrice)} so'm`}
-        </td>
+        </td>)}
       </>
     )
   }
@@ -247,39 +290,39 @@ export default function AnalyticsProductTable({ products, sales, labels }: Props
     const marginColor = margin >= 35 ? '#10b981' : margin >= 15 ? '#f59e0b' : '#ef4444'
     return (
       <tr key={p.id} style={{ borderBottom: '1px solid var(--border)' }}>
-        <td className="px-5 py-3.5" style={isChild ? { paddingLeft: '2.75rem', borderLeft: '2px solid var(--border)' } : undefined}>
+        {col('product', <td className="px-5 py-3.5" style={isChild ? { paddingLeft: '2.75rem', borderLeft: '2px solid var(--border)' } : undefined}>
           <p className="font-medium line-clamp-2 sm:line-clamp-none" style={{ color: 'var(--text-base)' }} title={p.title}>{p.title}</p>
           <div className="flex items-center flex-wrap gap-1.5 mt-0.5">
             {isChild && <VariantColorChip colorKey={p.variant_color} lang={lang} />}
             <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{p.sku}</span>
             {badges(p)}
           </div>
-        </td>
+        </td>)}
         {salesCells(salesFor(p.id))}
-        <td className="px-4 py-3.5 text-right">
+        {col('price', <td className="px-4 py-3.5 text-right">
           <EditableValueCell productId={p.id} field="priceOverride"
             value={price > 0 ? price : null} overridden={e.priceOverridden}
             emptyLabel={labels.setPrice} title={labels.editPriceHint} />
-        </td>
-        <td className="px-4 py-3.5 text-right">
+        </td>)}
+        {col('cost', <td className="px-4 py-3.5 text-right">
           <EditableValueCell productId={p.id} field="costPrice"
             value={cost > 0 ? cost : null}
             emptyLabel={labels.setCost} title={labels.editCostHint} />
-        </td>
+        </td>)}
         {/* Profit, margin and stock value are IDENTITIES of the three cells
             above (profit = price − cost, margin = profit ÷ price, stock value
             = cost × stock), so they are not separately editable — there would
             be no single right answer for which input an edit should move.
             They recompute the moment any input is saved. */}
-        <td className="px-4 py-3.5 text-right">
+        {col('profit', <td className="px-4 py-3.5 text-right">
           <span className="font-semibold" style={{ color: profitColor }}>{fmt(profit)} so&apos;m</span>
-        </td>
-        <td className="px-4 py-3.5 text-right">
+        </td>)}
+        {col('margin', <td className="px-4 py-3.5 text-right">
           <span className="font-semibold" style={{ color: marginColor }}>{margin.toFixed(1)}%</span>
-        </td>
-        <td className="px-4 py-3.5 text-center">
+        </td>)}
+        {col('abc', <td className="px-4 py-3.5 text-center">
           {abcCls ? <AbcBadge cls={abcCls} /> : null}
-        </td>
+        </td>)}
       </tr>
     )
   }
@@ -329,7 +372,7 @@ export default function AnalyticsProductTable({ products, sales, labels }: Props
     return (
       <tr key={item.key} style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer', background: 'var(--bg-card2)' }}
         onClick={() => toggle(item.key)}>
-        <td className="px-5 py-3.5">
+        {col('product', <td className="px-5 py-3.5">
           <div className="flex items-center gap-2">
             <span className="shrink-0" style={{ color: 'var(--text-muted)' }}>
               {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
@@ -340,23 +383,23 @@ export default function AnalyticsProductTable({ products, sales, labels }: Props
               {variantCountLabel(item.children.length, lang)}
             </span>
           </div>
-        </td>
+        </td>)}
         {salesCells(total)}
         {/* Price and cost are editable here, and the edit lands on every
             listing in the group. They are properties of the product, not of
             the colour, so typing one cost into four variant rows was busywork. */}
-        <td className="px-4 py-3.5 text-right" onClick={stop}>
+        {col('price', <td className="px-4 py-3.5 text-right" onClick={stop}>
           <EditableValueCell productId={ids} field="priceOverride"
             value={shared.price} overridden={shared.priceOverridden} mixed={shared.priceMixed}
             mixedLabel={labels.mixedValues} emptyLabel={labels.setPrice}
             title={`${labels.editPriceHint} · ${labels.appliesToAll}`} />
-        </td>
-        <td className="px-4 py-3.5 text-right" onClick={stop}>
+        </td>)}
+        {col('cost', <td className="px-4 py-3.5 text-right" onClick={stop}>
           <EditableValueCell productId={ids} field="costPrice"
             value={shared.cost} mixed={shared.costMixed}
             mixedLabel={labels.mixedValues} emptyLabel={labels.setCost}
             title={`${labels.editCostHint} · ${labels.appliesToAll}`} />
-        </td>
+        </td>)}
         {/* Profit and margin follow from the two cells to the left. Leaving
             them blank was a leftover from when the parent showed no price or
             cost either: a seller typed a cost into this very row and the two
@@ -364,17 +407,17 @@ export default function AnalyticsProductTable({ products, sales, labels }: Props
             did nothing". They are shown whenever both inputs are known, and
             «mixed» when the group disagrees — because there is no single
             margin for a group whose variants cost different amounts. */}
-        <td className="px-4 py-3.5 text-right">
+        {col('profit', <td className="px-4 py-3.5 text-right">
           {groupProfit != null
             ? <span className="font-semibold" style={{ color: groupProfit > 0 ? '#10b981' : '#ef4444' }}>{fmt(groupProfit)} so&apos;m</span>
             : <span style={{ color: 'var(--text-muted)' }}>{groupUnknownLabel}</span>}
-        </td>
-        <td className="px-4 py-3.5 text-right">
+        </td>)}
+        {col('margin', <td className="px-4 py-3.5 text-right">
           {groupMarginPct != null
             ? <span className="font-semibold" style={{ color: groupMarginPct >= 35 ? '#10b981' : groupMarginPct >= 15 ? '#f59e0b' : '#ef4444' }}>{groupMarginPct.toFixed(1)}%</span>
             : <span style={{ color: 'var(--text-muted)' }}>{groupUnknownLabel}</span>}
-        </td>
-        <td className="px-4 py-3.5 text-center"><AbcBadge cls={abcCls} /></td>
+        </td>)}
+        {col('abc', <td className="px-4 py-3.5 text-center"><AbcBadge cls={abcCls} /></td>)}
       </tr>
     )
   }
@@ -384,17 +427,22 @@ export default function AnalyticsProductTable({ products, sales, labels }: Props
    *  we do not know the margin, which is different from it being nil. */
   const renderOrphan = (r: ProductSalesRow) => (
     <tr key={`orphan:${r.title}:${r.sku ?? ''}`} style={{ borderBottom: '1px solid var(--border)' }}>
-      <td className="px-5 py-3.5">
-        <p className="font-medium line-clamp-2 sm:line-clamp-none" style={{ color: 'var(--text-base)' }} title={r.title}>{r.title}</p>
-        {r.sku && <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{r.sku}</span>}
-      </td>
+      {col('product', (
+        <td className="px-5 py-3.5">
+          <p className="font-medium line-clamp-2 sm:line-clamp-none" style={{ color: 'var(--text-base)' }} title={r.title}>{r.title}</p>
+          {r.sku && <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{r.sku}</span>}
+        </td>
+      ))}
       {salesCells({
         qty_sold: r.qty_sold, qty_in_transit: r.qty_in_transit,
         qty_cancelled: r.qty_cancelled, qty_returned: r.qty_returned, revenue: r.revenue,
       })}
-      {Array.from({ length: 5 }, (_, i) => (
-        <td key={i} className="px-4 py-3.5 text-right" style={{ color: 'var(--text-muted)' }}>—</td>
-      ))}
+      {/* Explicit keys rather than a count: the money columns can each be
+          switched off independently, so a fixed length would desynchronise
+          from the header the moment one was hidden. */}
+      {(['price', 'cost', 'profit', 'margin', 'abc'] as const).map(k =>
+        col(k, <td key={k} className="px-4 py-3.5 text-right" style={{ color: 'var(--text-muted)' }}>—</td>),
+      )}
     </tr>
   )
 
@@ -403,24 +451,28 @@ export default function AnalyticsProductTable({ products, sales, labels }: Props
   }
 
   return (
-    <div className="overflow-x-auto">
+    <>
+      <div className="px-5 py-2.5 flex justify-end" style={{ borderBottom: '1px solid var(--border)' }}>
+        <AnalyticsTableSettings hidden={hidden} onChange={changeHidden} labels={labels.settings} />
+      </div>
+      <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
           <tr className="text-xs" style={{ color: 'var(--text-muted)', borderBottom: '1px solid var(--border)', background: 'rgba(255,255,255,0.01)' }}>
-            <th className="text-left font-medium px-5 py-3">{labels.product}</th>
-            <th className="text-right font-medium px-4 py-3">{labels.qty}</th>
-            <th className="text-right font-medium px-4 py-3">{labels.inTransit}</th>
-            <th className="text-right font-medium px-4 py-3">{labels.cancelled}</th>
-            <th className="text-right font-medium px-4 py-3">{labels.returned}</th>
-            <th className="text-right font-medium px-4 py-3">{labels.returnRate}</th>
-            <th className="text-right font-medium px-4 py-3">{labels.revenue}</th>
-            <th className="text-right font-medium px-4 py-3">{labels.salesShare}</th>
-            <th className="text-right font-medium px-4 py-3">{labels.avgPrice}</th>
-            <th className="text-right font-medium px-4 py-3">{labels.price}</th>
-            <th className="text-right font-medium px-4 py-3">{labels.costPrice}</th>
-            <th className="text-right font-medium px-4 py-3">{labels.profit}</th>
-            <th className="text-right font-medium px-4 py-3">{labels.margin}</th>
-            <th className="text-center font-medium px-4 py-3">{labels.abc}</th>
+            {col('product', <th className="text-left font-medium px-5 py-3">{labels.product}</th>)}
+            {col('delivered', <th className="text-right font-medium px-4 py-3">{labels.qty}</th>)}
+            {col('inTransit', <th className="text-right font-medium px-4 py-3">{labels.inTransit}</th>)}
+            {col('cancelled', <th className="text-right font-medium px-4 py-3">{labels.cancelled}</th>)}
+            {col('returned', <th className="text-right font-medium px-4 py-3">{labels.returned}</th>)}
+            {col('returnRate', <th className="text-right font-medium px-4 py-3">{labels.returnRate}</th>)}
+            {col('revenue', <th className="text-right font-medium px-4 py-3">{labels.revenue}</th>)}
+            {col('salesShare', <th className="text-right font-medium px-4 py-3">{labels.salesShare}</th>)}
+            {col('avgPrice', <th className="text-right font-medium px-4 py-3">{labels.avgPrice}</th>)}
+            {col('price', <th className="text-right font-medium px-4 py-3">{labels.price}</th>)}
+            {col('cost', <th className="text-right font-medium px-4 py-3">{labels.costPrice}</th>)}
+            {col('profit', <th className="text-right font-medium px-4 py-3">{labels.profit}</th>)}
+            {col('margin', <th className="text-right font-medium px-4 py-3">{labels.margin}</th>)}
+            {col('abc', <th className="text-center font-medium px-4 py-3">{labels.abc}</th>)}
           </tr>
         </thead>
         <tbody>
@@ -440,6 +492,7 @@ export default function AnalyticsProductTable({ products, sales, labels }: Props
           {orphanSales.map(renderOrphan)}
         </tbody>
       </table>
-    </div>
+      </div>
+    </>
   )
 }
