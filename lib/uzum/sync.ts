@@ -2,6 +2,7 @@ import { eq, ne, and, inArray, count, sql } from 'drizzle-orm'
 import { db, shops, products, orders, orderItems, syncDays } from '@/lib/db'
 import { clearShopData } from '@/lib/db/clear-shop-data'
 import { uzumStockQuantity } from './stock-reading'
+import { selectCancellationAlerts } from '@/lib/marketplace/cancellation-alert'
 import {
   fetchAllPages,
   fetchUzumOrders,
@@ -192,6 +193,9 @@ export interface SyncResult {
   // that still needs fulfilling (pending/confirmed).
   ordersInserted?: number
   newOrders?: string[]
+  /** Display lines for orders we ANNOUNCED that have since been cancelled —
+   *  see lib/marketplace/cancellation-alert.ts. */
+  cancelledOrders?: string[]
   productsUpserted: number
   campaignsUpserted: number
   // False on a lightweight orders-only tick (product pull skipped, last_synced_at
@@ -224,6 +228,7 @@ export async function syncFromUzum(shopId: string, token: string, heavy = true):
   let itemsUpserted = 0
   let ordersInserted = 0
   const newOrders: string[] = []
+  const cancelledOrders: string[] = []
 
   try {
     // ── Products: resolve shop(s), then pull product/SKU data ─────────────────
@@ -605,7 +610,14 @@ export async function syncFromUzum(shopId: string, token: string, heavy = true):
     // Upsert: inserts new orders AND updates status of existing ones
     if (orderRows.length > 0) {
       const extIds = orderRows.map(r => r.order_id_external)
-      const existingOrds = await db.select({ id: orders.id, order_id_external: orders.order_id_external })
+      const existingOrds = await db.select({
+        id: orders.id,
+        order_id_external: orders.order_id_external,
+        // The two alert markers, so the cancellation notice below can tell an
+        // order we announced from one we never mentioned, and fire only once.
+        alert_sent_at: orders.alert_sent_at,
+        cancel_alert_sent_at: orders.cancel_alert_sent_at,
+      })
         .from(orders).where(and(eq(orders.shop_id, shopId), inArray(orders.order_id_external, extIds)))
       const existingOrdMap = new Map(existingOrds.map(o => [o.order_id_external, o.id]))
 
@@ -640,11 +652,38 @@ export async function syncFromUzum(shopId: string, token: string, heavy = true):
         prodInfo = new Map(prodRows.map(p => [String(p.mpid), { title: p.title ?? '', sku: p.sku }]))
       }
 
+      // Which inserts were announced. Uzum alerts on insert only, and until now
+      // it never recorded that it had — so nothing downstream could tell an
+      // order the seller was told about from one they were not. The
+      // cancellation notice needs exactly that distinction, and alert_sent_at
+      // (migration 081) is the column Yandex already uses for it.
+      const alertedExtIds = new Set<string>()
       for (const r of toInsOrd) {
         if (r.status === 'pending' || r.status === 'confirmed') {
+          alertedExtIds.add(r.order_id_external)
           newOrders.push(formatOrderLine(r.order_id_external, r.revenue, rawByExtId.get(r.order_id_external) ?? [], prodInfo))
         }
       }
+      const alertStampedAt = new Date()
+
+      // ── Cancellation notice ─────────────────────────────────────────────
+      // Only for orders we ANNOUNCED, and only once. A cancellation arrives as
+      // an UPDATE to a row inserted on an earlier tick, so this reads the
+      // update set, not the insert set.
+      const cancelMarkers = new Map(
+        existingOrds
+          .filter(o => o.order_id_external != null)
+          .map(o => [o.order_id_external as string, {
+            alert_sent_at: o.alert_sent_at,
+            cancel_alert_sent_at: o.cancel_alert_sent_at,
+          }]),
+      )
+      const cancelledRows = selectCancellationAlerts([...toInsOrd, ...toUpdOrd], cancelMarkers)
+      const cancelledExtIds = new Set(cancelledRows.map(r => r.order_id_external))
+      for (const r of cancelledRows) {
+        cancelledOrders.push(formatOrderLine(r.order_id_external, r.revenue, rawByExtId.get(r.order_id_external) ?? [], prodInfo))
+      }
+      debug.ordersCancelAlerted = String(cancelledOrders.length)
 
       if (toInsOrd.length > 0) {
         for (let i = 0; i < toInsOrd.length; i += 500) {
@@ -658,6 +697,8 @@ export async function syncFromUzum(shopId: string, token: string, heavy = true):
             revenue: String(r.revenue),
             items_count: r.items_count,
             ordered_at: r.ordered_at,
+            alert_sent_at: alertedExtIds.has(r.order_id_external) ? alertStampedAt : null,
+            cancel_alert_sent_at: cancelledExtIds.has(r.order_id_external) ? alertStampedAt : null,
           // Migration 071 makes (shop_id, order_id_external) unique. The
           // select-then-insert above is not atomic, so two concurrent syncs for
           // one shop can both decide to insert. Before 071 that silently
@@ -675,6 +716,7 @@ export async function syncFromUzum(shopId: string, token: string, heavy = true):
           revenue: String(r.revenue),
           items_count: r.items_count,
           ordered_at: r.ordered_at,
+          ...(cancelledExtIds.has(r.order_id_external) ? { cancel_alert_sent_at: alertStampedAt } : {}),
         }).where(eq(orders.id, existingOrdMap.get(r.order_id_external)!))
       }
     }
@@ -694,6 +736,7 @@ export async function syncFromUzum(shopId: string, token: string, heavy = true):
         ordersDegraded,
         ordersInserted,
         newOrders,
+        cancelledOrders,
         heavy: false,
         debug,
       }
@@ -1205,6 +1248,7 @@ export async function syncFromUzum(shopId: string, token: string, heavy = true):
       itemsUpserted,
       ordersInserted,
       newOrders,
+      cancelledOrders,
       details: warnings.length ? warnings.join(' | ') : undefined,
       debug,
     }

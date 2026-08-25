@@ -65,6 +65,13 @@ export interface NotifStrings {
   newOrdersLine: (marketplace: string, n: number) => string
   newOrdersMore: (n: number) => string
   newOrdersCta: string
+  // Cancellation notice — the closing bracket on the new-order alert. Without
+  // it the app tells a seller to pick and pack and never tells them to stop.
+  cancelledTitle: (n: number) => string
+  cancelledSub: string
+  cancelledLine: (marketplace: string, n: number) => string
+  cancelledMore: (n: number) => string
+  cancelledCta: string
   // Stock-sync digest (lib/marketplace/stock-notify.ts). Was hardcoded Russian.
   stockSyncTitle: string
   stockSyncSoldOn: (marketplace: string) => string
@@ -123,6 +130,11 @@ const STRINGS: Record<NotifLang, NotifStrings> = {
     newOrdersLine:  (mp, n) => `• ${mp}: <b>${n}</b> ta yangi buyurtma`,
     newOrdersMore:  (n) => `…va yana ${n} ta`,
     newOrdersCta:   'Batafsil',
+    cancelledTitle: (n) => `❌ <b>Buyurtma bekor qilindi${n > 1 ? ` (${n})` : ''}</b>`,
+    cancelledSub:   "Yig'ish shart emas:",
+    cancelledLine:  (mp, n) => `• ${mp}: <b>${n}</b> ta bekor qilingan`,
+    cancelledMore:  (n) => `…va yana ${n} ta`,
+    cancelledCta:   'Batafsil',
     stockSyncTitle: '📦 Qoldiq yangilandi (sotuv):',
     stockSyncSoldOn: (mp) => ` (${mp} da sotildi)`,
     stockSyncOk:    (mp, from, to) => `   ✅ ${mp}: ${from}→${to}`,
@@ -176,6 +188,11 @@ const STRINGS: Record<NotifLang, NotifStrings> = {
     newOrdersLine:  (mp, n) => `• ${mp}: <b>${n}</b> ${ruOrders(n)}`,
     newOrdersMore:  (n) => `…и ещё ${n}`,
     newOrdersCta:   'Подробнее',
+    cancelledTitle: (n) => n > 1 ? `❌ <b>Заказы отменены (${n})</b>` : '❌ <b>Заказ отменён</b>',
+    cancelledSub:   'Собирать не нужно:',
+    cancelledLine:  (mp, n) => `• ${mp}: <b>${n}</b> ${ruOrders(n)}`,
+    cancelledMore:  (n) => `…и ещё ${n}`,
+    cancelledCta:   'Подробнее',
     stockSyncTitle: '📦 Остатки обновлены (продажа):',
     stockSyncSoldOn: (mp) => ` (продажа на ${mp})`,
     stockSyncOk:    (mp, from, to) => `   ✅ ${mp}: ${from}→${to}`,
@@ -229,6 +246,11 @@ const STRINGS: Record<NotifLang, NotifStrings> = {
     newOrdersLine:  (mp, n) => `• ${mp}: <b>${n}</b> new order${n === 1 ? '' : 's'}`,
     newOrdersMore:  (n) => `…and ${n} more`,
     newOrdersCta:   'Details',
+    cancelledTitle: (n) => n > 1 ? `❌ <b>Orders cancelled (${n})</b>` : '❌ <b>Order cancelled</b>',
+    cancelledSub:   'No need to ship:',
+    cancelledLine:  (mp, n) => `• ${mp}: <b>${n}</b> cancelled`,
+    cancelledMore:  (n) => `…and ${n} more`,
+    cancelledCta:   'Details',
     stockSyncTitle: '📦 Stock updated (sale):',
     stockSyncSoldOn: (mp) => ` (sold on ${mp})`,
     stockSyncOk:    (mp, from, to) => `   ✅ ${mp}: ${from}→${to}`,

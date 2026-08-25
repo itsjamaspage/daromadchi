@@ -204,17 +204,30 @@ export const GET = withErrorHandler(async (req: Request) => {
   // re-synced old order and used to spam users hours after the fact.
   // First-ever syncs (last_synced_at null) are backfills, not new orders.
   const ordersByUser = new Map<string, { marketplace: string; name: string | null; lines: string[] }[]>()
+  const cancelsByUser = new Map<string, { marketplace: string; name: string | null; lines: string[] }[]>()
   for (const r of results) {
-    const newOrders = (r.newOrders as string[] | undefined) ?? []
-    if (newOrders.length === 0) continue
     const shop = shopsToSync.find(s => s.id === r.shopId)
+    // The first-ever sync of a shop is a backfill, not a stream of events —
+    // announcing its whole order history, cancellations included, would be a
+    // wall of notifications for orders long since settled.
     if (!shop || !shop.last_synced_at) continue
-    const list = ordersByUser.get(shop.user_id) ?? []
-    list.push({ marketplace: shop.marketplace, name: shop.name, lines: newOrders })
-    ordersByUser.set(shop.user_id, list)
+
+    const newOrders = (r.newOrders as string[] | undefined) ?? []
+    if (newOrders.length > 0) {
+      const list = ordersByUser.get(shop.user_id) ?? []
+      list.push({ marketplace: shop.marketplace, name: shop.name, lines: newOrders })
+      ordersByUser.set(shop.user_id, list)
+    }
+
+    const cancelled = (r.cancelledOrders as string[] | undefined) ?? []
+    if (cancelled.length > 0) {
+      const list = cancelsByUser.get(shop.user_id) ?? []
+      list.push({ marketplace: shop.marketplace, name: shop.name, lines: cancelled })
+      cancelsByUser.set(shop.user_id, list)
+    }
   }
 
-  if (ordersByUser.size > 0) {
+  if (ordersByUser.size > 0 || cancelsByUser.size > 0) {
     const settingsRows = await db.select({
       user_id: userSettings.user_id,
       telegram_chat_id: userSettings.telegram_chat_id,
@@ -231,8 +244,13 @@ export const GET = withErrorHandler(async (req: Request) => {
 
     for (const s of settingsRows) {
       if (!s.notif_new_orders || !s.telegram_chat_id) continue
-      const shopOrders = ordersByUser.get(s.user_id)
-      if (!shopOrders) continue
+      // A seller can have a cancellation with no new order on the same tick, so
+      // this loop can no longer bail when the new-order list is empty. Default
+      // to [] rather than leaving it possibly-undefined: the two messages below
+      // are independent, and each must be able to send on its own.
+      const shopOrders = ordersByUser.get(s.user_id) ?? []
+      const shopCancelsList = cancelsByUser.get(s.user_id) ?? []
+      if (shopOrders.length === 0 && shopCancelsList.length === 0) continue
 
       const total = shopOrders.reduce((sum, o) => sum + o.lines.length, 0)
       const buildMsg = (T: NotifStrings) => {
@@ -245,7 +263,29 @@ export const GET = withErrorHandler(async (req: Request) => {
         return `${T.newOrdersTitle(total)}\n${T.newOrdersSub}\n\n${blocks}\n\n${T.newOrdersCta}: https://daromadchi.uz/dashboard/orders`
       }
 
-      await sendSellerMessageTo(s.telegram_chat_id, s.notif_lang, buildMsg)
+      if (shopOrders.length > 0) {
+        await sendSellerMessageTo(s.telegram_chat_id, s.notif_lang, buildMsg)
+      }
+
+      // Cancellation notice, as a SEPARATE message rather than a section of
+      // the one above. They are different events with opposite meanings — "go
+      // and pack this" versus "do not" — and a seller skimming a phone
+      // notification reads the first line. Folding a cancellation into a
+      // «Новый заказ!» message is how it gets missed.
+      const shopCancels = shopCancelsList
+      if (shopCancels.length > 0) {
+        const cancelTotal = shopCancels.reduce((sum, o) => sum + o.lines.length, 0)
+        const buildCancelMsg = (T: NotifStrings) => {
+          const blocks = shopCancels.map(o => {
+            const mpName = MP_LABEL[o.marketplace] ?? o.marketplace
+            const detail = o.lines.slice(0, 10).map(l => `   ${l}`).join('\n')
+            const more = o.lines.length > 10 ? `\n   ${T.cancelledMore(o.lines.length - 10)}` : ''
+            return `${T.cancelledLine(mpName, o.lines.length)}\n${detail}${more}`
+          }).join('\n')
+          return `${T.cancelledTitle(cancelTotal)}\n${T.cancelledSub}\n\n${blocks}\n\n${T.cancelledCta}: https://daromadchi.uz/dashboard/orders`
+        }
+        await sendSellerMessageTo(s.telegram_chat_id, s.notif_lang, buildCancelMsg)
+      }
     }
   }
 

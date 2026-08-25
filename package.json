@@ -36,6 +36,7 @@
     "test:admin": "node --conditions=react-server --import tsx --test lib/db/admin-analytics.integration.test.ts",
     "test:alert-gate": "node --import tsx --test lib/marketplace/fulfillment-statuses.test.ts",
     "test:alert-transition": "node --import tsx --test lib/marketplace/alert-transition.test.ts",
+    "test:cancel-alert": "node --import tsx --test lib/marketplace/cancellation-alert.test.ts",
     "test:shop-identity": "node --import tsx --test lib/db/shop-identity.test.ts",
     "test:deactivate": "node --conditions=react-server --import tsx --test app/api/shops/deactivate/deactivate.integration.test.ts",
     "test:status-map": "node --import tsx --test lib/yandex/status-map.test.ts",
