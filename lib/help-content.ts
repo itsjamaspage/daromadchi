@@ -32,7 +32,7 @@ const ARTICLES: Article[] = [
     content: `
 ## Xush kelibsiz!
 
-Daromadchi — Uzum Market, Yandex Market va Wildberries sotuvchilari uchun to'liq analitika platformasi. Quyidagi 4 qadam orqali platformadan foydalanishni boshlashingiz mumkin.
+Daromadchi — Uzum Market va Yandex Market sotuvchilari uchun analitika platformasi. Quyidagi 4 qadam orqali ishni boshlashingiz mumkin.
 
 ## 1-qadam: Hisob yaratish
 
@@ -40,35 +40,38 @@ Ro'yxatdan o'tish sahifasiga o'ting va email manzilingiz hamda parol bilan hisob
 
 <info>Hisob yaratish bepul va kredit karta talab qilinmaydi.</info>
 
-## 2-qadam: API tokenini kiritish
+## 2-qadam: Do'kon ulash
 
-Hisobingizga kirganingizdan so'ng **Sozlamalar → API Token** bo'limiga o'ting. Uzum Market kabineti (\`seller.uzum.uz\`) dan API tokeningizni nusxalab, qo'ying.
+Hisobingizga kirganingizdan so'ng **Sozlamalar** sahifasiga o'ting — u yerda har bir marketplace uchun alohida kartochka bor:
 
-- seller.uzum.uz → Profil → API kalitlari
-- Tokenni nusxalab oling
-- Daromadchi Sozlamalar sahifasiga yapıştırın va Saqlang tugmasini bosing
+- **Uzum Market** — *API Token*: seller.uzum.uz → Sozlamalar → API integratsiya
+- **Yandex Market** — *OAuth Token* va *Campaign ID* (faqat raqamlardan iborat)
+
+Tokenni kiritib "Saqlash" ni bosing. Bir nechta do'konni ulash mumkin — har biri alohida token bilan.
+
+<info>Token faqat o'qish uchun ishlatiladi. Batafsil: «API token qo'shish va boshqarish».</info>
 
 ## 3-qadam: Ma'lumotlarni sinxronizatsiya qilish
 
-Token kiritilgandan so'ng **"Sinxronizatsiya"** tugmasini bosing. Platforma quyidagilarni yuklab oladi:
+Do'kon ulangach **"Sinxronizatsiya"** tugmasini bosing. Platforma quyidagilarni yuklab oladi:
 
-- Barcha mahsulotlar va SKU'lar
-- So'nggi 90 kunlik buyurtmalar
-- Reklama kampaniyalari va xarajatlar
-- Qoldiq ma'lumotlari
+- Mahsulotlar, SKU va variantlar
+- Buyurtmalar va ularning holati (shu jumladan bekor qilinganlar)
+- Qoldiq miqdori va omborlar
+- Narxlar, komissiya va to'lov (settlement) ma'lumotlari
 
 Birinchi sinxronizatsiya 1-3 daqiqa davom etishi mumkin.
 
 ## 4-qadam: Tahlilni boshlang
 
-Sinxronizatsiya tugagach, dashboard'da barcha ko'rsatkichlar tayyor bo'ladi:
+Sinxronizatsiya tugagach dashboard tayyor bo'ladi:
 
-- **DRR** (Reklama xarajatlari ulushi)
-- **Foyda** har bir mahsulot bo'yicha
-- **Qoldiq** va necha kun qolganini ko'rsatadi
-- **P&L hisobot** oylik tushum va xarajatlar
+- **Tushum va buyurtmalar** — tanlangan davr bo'yicha
+- **Foyda va marja** — har bir mahsulot bo'yicha (tannarx kiritilgan bo'lsa)
+- **Qoldiq** va u necha kunga yetishi
+- **F&Z (P&L) hisobot** — oylik tushum va xarajatlar
 
-<info>Ma'lumotlar har 4 soatda avtomatik yangilanadi.</info>
+<info>Ma'lumotlar keyin avtomatik yangilanadi — sinxronizatsiya har 5 daqiqada ishga tushadi.</info>
 `,
   },
   {
@@ -80,39 +83,40 @@ Sinxronizatsiya tugagach, dashboard'da barcha ko'rsatkichlar tayyor bo'ladi:
     content: `
 ## Sinxronizatsiya jarayoni
 
-Daromadchi ma'lumotlarni Uzum Market API orqali oladi. Platforma ikkita sinxronizatsiya rejimini qo'llab-quvvatlaydi.
+Daromadchi ma'lumotlarni Uzum Market va Yandex Market API'lari orqali oladi. Platforma ikkita sinxronizatsiya rejimini qo'llab-quvvatlaydi.
 
 ## Avtomatik sinxronizatsiya
 
-Ma'lumotlar **har 4 soatda** avtomatik ravishda yangilanadi:
+Sinxronizatsiya **har 5 daqiqada** fon rejimida ishga tushadi. Alohida vaqt jadvali yoki "yangilanish soati" yo'q — yangi buyurtma yoki bekor qilish odatda bir necha daqiqada ko'rinadi.
 
-- 00:00, 04:00, 08:00, 12:00, 16:00, 20:00 (Toshkent vaqti)
-- Yangilanish vaqtida dashboard o'ng yuqori burchagida indikator ko'rinadi
+Oxirgi sinxronizatsiya vaqtini **Dashboard → Sinxronizatsiya** sahifasida har bir marketplace bo'yicha alohida ko'rishingiz mumkin.
 
 ## Qo'lda sinxronizatsiya
 
-Dashboard sahifasida **"Yangilash"** tugmasi orqali istalgan vaqt sinxronizatsiyani ishga tushirishingiz mumkin.
-
-<info>Qo'lda sinxronizatsiya kuniga 10 martadan ko'p bosib bo'lmaydi (Pro tarif).</info>
+Kutmaslik uchun **Sozlamalar** sahifasidagi do'kon kartochkasida **"Sinxronlash"** tugmasini bosing.
 
 ## Qanday ma'lumotlar yuklanadi?
 
-| Ma'lumot turi | Yangilanish chastotasi |
+| Ma'lumot turi | Izoh |
 |---|---|
-| Mahsulotlar va SKU'lar | Har sinxronizatsiyada |
-| Buyurtmalar (so'nggi 90 kun) | Har sinxronizatsiyada |
-| Reklama kampaniyalari | Har sinxronizatsiyada |
-| Qoldiq miqdori | Har sinxronizatsiyada |
-| Narxlar | Har sinxronizatsiyada |
+| Mahsulotlar, SKU va variantlar | Nomi, artikul, rang/o'lcham |
+| Buyurtmalar va ularning holati | Yangi, yig'ilmoqda, yetkazilgan, qaytarilgan, bekor qilingan |
+| Qoldiq miqdori | Ombor bo'yicha |
+| Narxlar va komissiya | Marketplace hisoblagan qiymatlar |
+| To'lovlar (settlements) | F&Z va "To'lovlar" sahifasi uchun |
+
+<info>Reklama statistikasi yuklanmaydi — Uzum va Yandex Market reklama API'lari hozircha ulanmagan.</info>
 
 ## Sinxronizatsiya xatosi
 
 Agar sinxronizatsiya muvaffaqiyatsiz bo'lsa:
-1. API tokeningiz hali ham aktiv ekanligini tekshiring
-2. seller.uzum.uz hisobingizga kiring va tokenni yangilang
-3. Yangi tokenni Daromadchi Sozlamalar sahifasida yangilang
 
-<warning>Token eskirgan yoki bekor qilingan bo'lsa, ma'lumotlar yangilanmaydi.</warning>
+1. **Dashboard → Sinxronizatsiya** sahifasida xato matnini ko'ring
+2. Tokeningiz hali ham aktiv ekanligini tekshiring
+3. Marketplace kabinetiga kirib yangi token oling
+4. Yangi tokenni **Sozlamalar** sahifasida saqlang
+
+<warning>Token eskirgan yoki bekor qilingan bo'lsa, ma'lumotlar yangilanmaydi va dashboard eski raqamlarni ko'rsatishda davom etadi.</warning>
 `,
   },
   {
@@ -124,32 +128,35 @@ Agar sinxronizatsiya muvaffaqiyatsiz bo'lsa:
     content: `
 ## Fikrlaringiz bizga muhim
 
-Platformani yaxshilash uchun sizning fikrlaringizga muhtojmiz. Muammo yoki taklif bo'lsa, quyidagi yo'llar orqali bizga yetkazishingiz mumkin.
+Platformani yaxshilash uchun sizning fikrlaringizga muhtojmiz. Xato topsangiz yoki taklifingiz bo'lsa, quyidagi yo'llar bilan yetkazing.
 
-## Telegram orqali
+## Ilova ichidagi forma — eng tezkori
 
-Eng tezkor yo'l — Telegram kanalimiz:
+Dashboard'ning **o'ng chetida**, ekran o'rtasi balandligida **«Fikr»** yorlig'i turadi. Uni bosing va ikkitadan birini tanlang:
 
-- Kanal: **@daromadchi_uz**
-- Support bot: **@daromadchi_support_bot**
-- Ish vaqti: 9:00 – 22:00 (Toshkent)
+- **Xato bildirish** — nimadir noto'g'ri ishlayapti
+- **G'oya taklif qilish** — yangi imkoniyat yoki takomillashtirish
+
+Matnni yozing va **rasm biriktiring** — skrinshot muammoni tushuntirishning eng tez yo'li. Yuborilgach «Rahmat! Xabaringiz qabul qilindi» degan tasdiq chiqadi.
+
+## Telegram kanali
+
+Yangiliklar va e'lonlar: **@daromadchi_uz** (https://t.me/daromadchi_uz)
 
 ## Email orqali
 
-Batafsil muammo yoki texnik xatolik uchun:
+Batafsil yoki texnik masalalar uchun: **support@daromadchi.uz**
 
-**support@daromadchi.uz**
+Shaxsiy ma'lumotlar va hisobni o'chirish so'rovlari uchun alohida manzil: **privacy@daromadchi.uz**
 
-Xabar yozishda quyidagilarni qo'shing:
-1. Muammo qanday yuz berdi?
-2. Qaysi sahifada?
-3. Ekran skrinshotini biriktiring
+## Xabar yozishda foydali bo'ladigan ma'lumotlar
 
-## Ilova ichidagi feedback
+1. Nima kutgan edingiz va nima bo'ldi?
+2. Qaysi do'kon / marketplace?
+3. Qaysi davr tanlangan edi?
+4. Skrinshot
 
-Dashboard'ning pastki o'ng burchagidagi **"Fikr bildirish"** tugmasini bosing. Forma to'ldirib, to'g'ridan-to'g'ri yuboring.
-
-<info>Xato xabarlarini iloji boricha tezroq ko'rib chiqamiz. Odatda 24 soat ichida javob beramiz.</info>
+<info>Xabarlarni imkon qadar tez ko'rib chiqamiz. Prioritet qo'llab-quvvatlash Pro+ va undan yuqori tariflarda mavjud.</info>
 `,
   },
 
@@ -161,44 +168,53 @@ Dashboard'ning pastki o'ng burchagidagi **"Fikr bildirish"** tugmasini bosing. F
     title: 'Bildirishnoma turlari va sozlamalar',
     category: 'Bildirishnomalar',
     categorySlug: 'bildirishnomalar',
-    summary: "Qaysi bildirishnomalar bor va ularni qanday sozlash mumkin.",
+    summary: "Yangi buyurtma, bekor qilish, kam qoldiq va hisobotlar — hamda ularni qayerda sozlash.",
     content: `
 ## Bildirishnomalar nima?
 
-Daromadchi muhim hodisalar haqida avtomatik bildirishnomalar yuboradi. Bu sizga do'koningizni kuzatib borishga va muammolarga tezda munosabat bildirishga yordam beradi.
+Daromadchi muhim hodisalar haqida xabar beradi. Bildirishnomalar ikki joyda ko'rinadi: **Telegram bot** orqali va **ilova ichida** (yuqori paneldagi qo'ng'iroq belgisi → Bildirishnomalar sahifasi).
 
-## Bildirishnoma turlari
+## Telegram bildirishnomalari
 
-### 1. Kam qoldiq ogohlantirishlar
-Mahsulot qoldig'i belgilangan chegaradan past tushganda:
-- Chegara: 3-30 kun (siz sozlaysiz)
-- Qaysi SKU va qancha qoldigini ko'rsatadi
+### 🛒 Yangi buyurtmalar
+Har sinxronizatsiyada topilgan yangi buyurtmalar bitta xabarga jamlanadi: qaysi marketplace, qaysi mahsulot, nechta dona.
 
-### 2. Reklama sarfi oshib ketishi
-Kunlik reklama byudjetingiz belgilangan chegaradan oshganda:
-- Misol: Kunlik byudjet 500,000 so'm bo'lsa, 90% ga yetganda xabar beriladi
+### ❌ Bekor qilingan buyurtmalar
+Buyurtma bekor qilinganda **alohida xabar** keladi — u yangi buyurtmalar xabariga qo'shilmaydi. Sababi oddiy: "yig'ing va jo'nating" va "jo'natmang" — bir-biriga qarama-qarshi ko'rsatmalar, ularni bitta xabarga qo'shish esa bekor qilishni e'tibordan chetda qoldirishning eng oson yo'li.
 
-### 3. Savdo tushishi
-So'nggi 7 kun solishtirganda savdo hajmi keskin pasayganda:
-- Chegara: -20%, -30%, -50% (siz tanlaysiz)
+Har bir buyurtma uchun bekor qilish xabari faqat **bir marta** yuboriladi, sinxronizatsiya necha marta ishga tushishidan qat'i nazar. Bekor qilingan buyurtmalar hisobotlarda tushumdan chiqariladi.
 
-### 4. Yangi buyurtmalar
-Har yangi buyurtma kelganda xabar (tavsiya qilinmaydi — ko'p bo'lishi mumkin).
+<info>Bekor qilish xabari «Yangi buyurtmalar» sozlamasi bilan birga yoqiladi va o'chiriladi.</info>
 
-### 5. Kunlik hisobot
-Har kuni belgilangan vaqtda qisqa hisobot:
-- Tushum, buyurtmalar soni, DRR, qoldiq holati
+### 📦 Kam qoldiq
+Mahsulot qoldig'i belgilangan chegaradan past tushganda. Bir jismoniy mahsulot bo'yicha bitta qator beriladi — bir xil tovar bir necha listingda bo'lsa ham.
 
-## Sozlash
+### 🔄 Qoldiq sinxronizatsiyasi
+Bir marketplace'da sotilgan tovar boshqasida ham kamayganda (do'kon uchun «Ostatok sinxronizatsiyasi» rejimi yoqilgan bo'lsa) — nima o'zgargani va natija haqida xabar.
 
-**Dashboard → Sozlamalar → Bildirishnomalar** bo'limiga o'ting:
+### 📊 Kunlik hisobot
+Har kuni siz tanlagan vaqtda: tushum, buyurtmalar, foyda, komissiya, bekor qilinganlar, kategoriyalar bo'yicha taqsimot.
 
-1. Har bir tur uchun toggle bilan yoqing/o'chiring
-2. Chegara qiymatlarini kiriting
-3. Kunlik hisobot vaqtini tanlang
-4. "Saqlash" tugmasini bosing
+### 📈 Haftalik hisobot
+Xuddi shunday, lekin hafta bo'yicha. Standart holatda o'chirilgan.
 
-<info>Bildirishnomalar Telegram orqali yetkaziladi. Avval Telegram'ni ulash kerak.</info>
+## Telegram bildirishnomalarini sozlash
+
+Sozlamalar **botning o'zida** turadi — dashboard'da emas:
+
+1. Telegram'da botga **/start** yozing
+2. Bot menyusidan bildirishnoma sozlamalarini oching
+3. Har bir turni ✅ / ❌ tugmasi bilan yoqing yoki o'chiring:
+   📦 Kam qoldiq · 📊 Kunlik hisobot · 🛒 Yangi buyurtmalar · 📈 Haftalik hisobot
+4. Kunlik hisobot vaqtini tanlang
+
+<info>Telegram ulanmagan bo'lsa hech qanday xabar kelmaydi. «Telegram botini ulash» maqolasiga qarang.</info>
+
+## Ilova ichidagi bildirishnomalar
+
+**Dashboard → Bildirishnomalar** sahifasida kam qoldiq ogohlantirishlari va yangi buyurtmalar ro'yxati ko'rinadi. Sahifani ochish qo'ng'iroq belgisidagi hisoblagichni tozalaydi.
+
+Qoldiq o'zgarishi haqidagi xabarni ilova ichida va/yoki Telegram'da olishni **Dashboard → Ogohlantirishlar** sahifasidagi ikki tugma orqali tanlaysiz.
 `,
   },
   {
@@ -208,39 +224,43 @@ Har kuni belgilangan vaqtda qisqa hisobot:
     categorySlug: 'bildirishnomalar',
     summary: "Daromadchi bildirishnomalarini Telegram orqali qabul qilish uchun botni ulash.",
     content: `
-## Telegram bot ulash
+## Telegram botini ulash
 
-Bildirishnomalar Telegram orqali yuboriladi. Ulash uchun quyidagi qadamlarni bajaring.
+Bildirishnomalar Telegram orqali yuboriladi. Ulash bir necha bosishda bajariladi — hech qanday token ko'chirish shart emas.
 
 ## Ulash qadamlari
 
-### 1-qadam: Token oling
-**Dashboard → Sozlamalar → Bildirishnomalar** sahifasiga o'ting. "Telegram ulash" bo'limida shaxsiy token ko'rsatiladi (masalan: \`drm_abc123xyz\`).
+### 1-qadam: Sozlamalarni oching
+**Dashboard → Sozlamalar** sahifasining pastida **Telegram** kartochkasi turadi.
 
-### 2-qadam: Botga o'ting
-Telegram'da **@daromadchi_bot** ni toping yoki quyidagi havolani bosing.
+### 2-qadam: "Telegramga ulash" tugmasini bosing
+Daromadchi sizning shaxsiy havolangizni tayyorlaydi.
 
-### 3-qadam: Botni ishga tushiring
-Botga quyidagi xabarni yuboring:
+### 3-qadam: Havolani oching
+Havola Telegram'da botni ochadi va ulanish so'rovi allaqachon tayyor bo'ladi — faqat **Start** ni bosing.
 
-\`/start drm_abc123xyz\`
+### 4-qadam: Tilni tanlang
+Bot bildirishnomalar tilini so'raydi. Tanlaganingizdan so'ng ulanish tugaydi va Sozlamalar sahifasi o'zi yangilanadi: kartochkada **«Ulangan ✓»** va Telegram foydalanuvchi nomingiz ko'rinadi.
 
-(drm_abc123xyz o'rniga o'z tokeningizni yozing)
+## Ishlayotganini tekshirish
 
-### 4-qadam: Tasdiqlash
-Bot "Muvaffaqiyatli ulandi!" degan xabar yuboradi. Daromadchi sahifasi avtomatik yangilanadi.
-
-<info>Bir hisobga bir nechta Telegram hisob ulash mumkin emas.</info>
+Ulangandan keyin kartochkada **«Test yuborish»** tugmasi paydo bo'ladi. Uni bosing — bot darhol sinov xabari yuboradi. Xabar kelmasa, botni bloklab qo'ymaganingizni tekshiring.
 
 ## Ulanishni uzish
 
-Sozlamalar → Bildirishnomalar → "Telegram'dan uzish" tugmasini bosing.
+Xuddi shu kartochkadagi **«Uzish»** tugmasi. Shundan keyin hech qanday xabar yuborilmaydi.
+
+## Bildirishnomalarni sozlash
+
+Qaysi turdagi xabarlar kelishi **botning o'zida** sozlanadi — botga **/start** yozib menyudan tanlaysiz. Batafsil — «Bildirishnoma turlari va sozlamalar» maqolasida.
+
+<info>Bir Daromadchi hisobiga bitta Telegram hisobi ulanadi.</info>
 
 ## Muammo bo'lsa
 
-- Tokenni noto'g'ri kiritganingizni tekshiring
-- Token bir marta ishlatiladi — qayta ulanish uchun yangi token oling
-- Bot bloklangan bo'lsa, blokdan chiqarib qayta boshlang
+- Havolaning amal qilish muddati o'tgan bo'lsa, "Telegramga ulash" ni qayta bosib yangisini oling
+- Bot bloklangan bo'lsa, blokdan chiqarib qayta urinib ko'ring
+- Kengaytmadagi "Telegramni ulash" tugmasi ham shu sahifaga olib keladi
 `,
   },
 
@@ -252,33 +272,37 @@ Sozlamalar → Bildirishnomalar → "Telegram'dan uzish" tugmasini bosing.
     title: "Chrome kengaytmasi haqida",
     category: 'Chrome Kengaytmasi',
     categorySlug: 'chrome-kengaytmasi',
-    summary: "Uzum Market sahifalarida to'g'ridan-to'g'ri tahlil ko'rsatuvchi kengaytma.",
+    summary: "Uzum va Yandex Market sahifalarida birlik iqtisodiyotini hisoblab beruvchi kengaytma.",
     content: `
 ## Chrome kengaytmasi nima?
 
-Daromadchi Chrome kengaytmasi — Uzum Market sotuvchi kabinetida ishlayotganingizda to'g'ridan-to'g'ri tahlil ma'lumotlarini ko'rsatuvchi vosita.
+Daromadchi kengaytmasi — marketplace sahifasidan chiqmasdan **birlik iqtisodiyotini** hisoblab beruvchi vosita. Mahsulot sahifasida panel ochiladi va o'sha mahsulot uchun komissiya, yetkazib berish, sof foyda va marjani ko'rsatadi.
 
-## Nima uchun kerak?
+## Qayerda ishlaydi
 
-Uzum Market kabinetini ochganda, Daromadchi ma'lumotlarini alohida tab'da ochmasdan ham ko'rishingiz mumkin:
+- **uzum.uz** — Uzum Market mahsulot sahifalari
+- **market.yandex.ru / market.yandex.uz** — Yandex Market mahsulot sahifalari
+- **partner.market.yandex.ru** — Yandex Market hamkor kabineti
+- **daromadchi.uz** — hisobingiz bilan bog'lash uchun
 
-- Mahsulot sahifasida DRR ko'rinadi
-- Qoldiq va necha kun qolishi
-- Joriy narx va foyda marjasi
-- Raqobatchi narxlari
+Boshqa saytlarda kengaytma umuman ishga tushmaydi.
 
-## Qanday ishlaydi?
+## Nima beradi
 
-1. Chrome'ga kengaytma o'rnatiladi
-2. seller.uzum.uz saytiga kirasiz
-3. Kengaytma sahifa ma'lumotlarini o'qib, Daromadchi hisobingizdan tahlil qo'shadi
-4. Mahsulot kartasi yonida widget (mini panel) paydo bo'ladi
+### Mahsulot sahifasida panel
+Narxni sahifadan o'zi o'qiydi. Siz tannarx, qadoqlash, komissiya foizi va hajmni kiritasiz — panel darhol sof foyda va marjani qayta hisoblaydi. **FBO / FBS** tugmalari xarajat modelini almashtiradi.
 
-<info>Kengaytma faqat Chrome va Chromium-based brauzerlarda ishlaydi (Edge, Brave, Opera).</info>
+### Popup (belgini bosganda)
+Do'koningiz bo'yicha qisqacha statistika va ogohlantirishlar. Telegram ulash tugmasi ham shu yerda.
 
-## Xavfsizlik
+### Sozlamalar (Options)
+Kengaytmaning o'z ogohlantirishlari: kam qoldiq chegarasi, savdo pasayishi, qaytarish foizi, "jim soatlar" va kunlik xulosa. Bu sozlamalar brauzerda saqlanadi.
 
-Kengaytma faqat seller.uzum.uz domenida ishlaydi. Boshqa saytlarda hech qanday ma'lumot o'qimaydi.
+## Brauzerlar
+
+Chrome va Chromium asosidagi brauzerlar: Edge, Brave, Opera.
+
+<info>Panelning hisob-kitobi Daromadchi'dagi **Birlik iqtisodiyoti** sahifasi bilan bir xil formulalarga asoslanadi. Paneldagi tugma sizni to'liq kalkulyatorga olib o'tadi.</info>
 `,
   },
   {
@@ -286,38 +310,50 @@ Kengaytma faqat seller.uzum.uz domenida ishlaydi. Boshqa saytlarda hech qanday m
     title: "Widget nima ko'rsatadi",
     category: 'Chrome Kengaytmasi',
     categorySlug: 'chrome-kengaytmasi',
-    summary: "Uzum Market kabinetida paydo bo'ladigan Daromadchi widget mazmuni.",
+    summary: "Mahsulot sahifasidagi panelning har bir qatori nimani anglatadi.",
     content: `
-## Widget tarkibi
+## Panel tarkibi
 
-Daromadchi Chrome kengaytmasi yoqilganda, seller.uzum.uz mahsulot sahifalarida mini widget ko'rinadi. Widget quyidagi ma'lumotlarni o'z ichiga oladi:
+Mahsulot sahifasida Daromadchi paneli ochilganda quyidagilar ko'rinadi.
 
-## Asosiy ko'rsatkichlar
+## Yuqori qism
 
-| Ko'rsatkich | Tavsif |
+- Mahsulot nomi
+- Sahifadan o'qilgan **narx**
+- Til (UZ / RU / EN), mavzu va yangilash tugmalari
+
+## Model tanlash
+
+**FBO** yoki **FBS** tugmasi — xarajat modelini almashtiradi. Yandex sahifalarida shunga mos model ishlatiladi.
+
+## Siz kiritadigan qiymatlar
+
+| Maydon | Nima uchun kerak |
 |---|---|
-| DRR | Reklama xarajatlari ulushi (%) |
-| Joriy narx | Hozirgi sotuv narxi |
-| Tannarx | Siz kiritgan tannarx |
-| Foyda/dona | Har bir sotilgan mahsulotdan tushum |
-| Marja | Foyda % |
-| Qoldiq | Ombordagi miqdor |
-| Kunlar qoldi | Joriy savdo tezligiga ko'ra qoldiq davomiyligi |
+| **Tannarx** | Tovarning o'zingizga tushgan narxi |
+| **Qadoqlash** | Bir dona uchun qadoqlash xarajati |
+| **Komissiya (%)** | Marketplace komissiyasi; kategoriyaga qarab oldindan to'ldiriladi |
+| **Hajm** | Yetkazib berish narxini hisoblash uchun |
 
-## Reklama ma'lumotlari
+## Hisob natijasi
 
-- Aktiv kampaniyalar soni
-- Bugungi reklama sarfi
-- CPC (bir klik narxi)
-- CPO (bir buyurtma narxi)
+| Qator | Ma'nosi |
+|---|---|
+| Narx | Sahifadagi sotuv narxi |
+| Komissiya (%) | Marketplace komissiyasi |
+| Yetkazib berish | Logistika — **taxminiy** deb belgilanadi |
+| Marketplace jami | Komissiya + yetkazib berish |
+| Umumiy xarajat | Marketplace jami + tannarx + qadoqlash |
+| **Sof foyda** | Yakuniy natija, rangli chiziq bilan |
+| **Marja** | Foydaning narxdagi ulushi (%) |
 
-## Raqobatchilar
+Marja rangi holatni bildiradi: yashil — sog'lom, sariq — chegaraviy, qizil — zarar.
 
-Agar shu mahsulot uchun bozor tahlili mavjud bo'lsa:
-- Eng arzon raqobatchi narxi
-- Kategoriya o'rtacha narxi
+## Nimalar yo'q
 
-<info>Widget ma'lumotlari oxirgi sinxronizatsiyaga asoslanadi. Eng yangi ma'lumot uchun sinxronizatsiyani yangilang.</info>
+Panelda **reklama ko'rsatkichlari (DRR, CPC, CPO), kampaniyalar va raqobatchilar narxlari yo'q**. Marketplace'lar bu ma'lumotlarni API orqali bermaydi.
+
+<info>Qiymatlarni o'zgartirsangiz, foyda va marja darhol qayta hisoblanadi — saqlash tugmasini bosish shart emas.</info>
 `,
   },
   {
@@ -327,34 +363,43 @@ Agar shu mahsulot uchun bozor tahlili mavjud bo'lsa:
     categorySlug: 'chrome-kengaytmasi',
     summary: "Chrome kengaytmasini o'rnatish va sozlash bo'yicha qo'llanma.",
     content: `
-## O'rnatish qadamlari
+## 1. Chrome Web Store'dan o'rnatish
 
-### 1. Chrome Web Store'dan o'rnatish
+Kengaytma «Daromadchi — Uzum & Yandex» nomi bilan Chrome Web Store'da joylashgan:
 
-1. Chrome Web Store'ni oching
-2. "Daromadchi" deb qidiring
-3. "Chrome'ga qo'shish" tugmasini bosing
-4. Ruxsatlarni tasdiqlang
+https://chromewebstore.google.com/detail/daromadchi-%E2%80%94-uzum-yandex/kdgmhemligckdjibcojbdiofokjjnaed
 
-### 2. Hisobingizga kiring
+Havolani oching va **«Chrome'ga qo'shish»** tugmasini bosing. Xuddi shu havola Daromadchi bosh sahifasida va **Birlik iqtisodiyoti** sahifasida ham bor.
 
-Kengaytma belgisini bosing (brauzer o'ng yuqori burchagi) va Daromadchi hisob ma'lumotlaringizni kiriting.
+## 2. Hisobingizga kiring
 
-### 3. Ruxsatlarni bering
+Kengaytma belgisini bosing. Tizimga kirmagan bo'lsangiz, popup **«Kirish»** tugmasini ko'rsatadi va daromadchi.uz saytini ochadi. Kirganingizdan so'ng popup statistikangizni ko'rsata boshlaydi.
 
-Kengaytma uchun quyidagi ruxsatlar kerak:
-- seller.uzum.uz domenida ma'lumot o'qish
-- Daromadchi serveriga so'rov yuborish
+## 3. Kengaytmani faollashtirish
 
-<warning>Kengaytma faqat siz tanlagan domenlarda ishlaydi. Boshqa saytlarda faol emas.</warning>
+1. Telegram'da **@daromadchi_uz** kanaliga a'zo bo'ling
+2. Botga **/activate** yozing
+3. Bot 6 belgili kod yuboradi
+4. Kodni kengaytmaga kiriting
 
-### 4. Tekshirib ko'ring
+<info>Kod bir marta ishlaydi va muddati cheklangan. Muddati o'tsa, botga qayta **/activate** yuboring.</info>
 
-seller.uzum.uz → Mahsulotlar sahifasiga o'ting. Har bir mahsulot yonida Daromadchi widget belgisi ko'rinishi kerak.
+## 4. Ixtiyoriy: API kalitlarini kiritish
+
+Kengaytma **Sozlamalar (Options)** sahifasida marketplace kalitlarini alohida saqlash mumkin:
+
+- **Yandex Market API kaliti** — Seller kabineti → Sozlamalar → API va modullar
+- **Uzum Seller API tokeni** — seller.uzum.uz → Profil → API kalitlari
+
+Har bir maydon yonida **«Tekshirish»** tugmasi bor — kalit ishlayotganini darhol sinab ko'radi.
+
+## 5. Tekshirib ko'ring
+
+uzum.uz yoki market.yandex.ru saytida biror mahsulot sahifasini oching. Daromadchi paneli ochilishi kerak. Panel yopilgan bo'lsa, chetdagi **«D»** tugmasi orqali qayta ochiladi.
 
 ## Muammo bo'lsa
 
-- Brauzerni qayta ishga tushiring
+- Sahifani yangilang — panel sahifa yuklangandan keyin qo'shiladi
 - Kengaytmani o'chirib, qayta yoqing
 - Chrome → Ko'proq vositalar → Kengaytmalar → Daromadchi → Tafsilotlar
 `,
@@ -364,31 +409,42 @@ seller.uzum.uz → Mahsulotlar sahifasiga o'ting. Har bir mahsulot yonida Daroma
     title: "Qurilmalar boshqaruvi",
     category: 'Chrome Kengaytmasi',
     categorySlug: 'chrome-kengaytmasi',
-    summary: "Bir nechta qurilmada o'rnatilgan kengaytmalarni boshqarish.",
+    summary: "Kengaytma bir necha kompyuterda: nima hisobda, nima brauzerda saqlanadi.",
     content: `
-## Qurilmalar ro'yxati
+## Bir nechta qurilmada foydalanish
 
-Bir hisobga bir nechta qurilmada Chrome kengaytmasini ulashingiz mumkin.
+Kengaytmani xohlagancha kompyuterga o'rnatishingiz mumkin — qurilmalar soni cheklanmagan va Daromadchi'da qurilmalar ro'yxati yuritilmaydi.
 
-**Sozlamalar → Chrome Kengaytmasi → Qurilmalar** bo'limida barcha ulangan qurilmalar ko'rinadi.
+Buning o'rniga har bir brauzer mustaqil sozlanadi.
 
-## Ko'rsatilgan ma'lumotlar
+## Qaysi qurilmada nima saqlanadi
 
-Har bir qurilma uchun:
-- Qurilma nomi va brauzer versiyasi
-- Operatsion tizim
-- Oxirgi faollik vaqti
-- Holat: Aktiv / Nofaol
+| Ma'lumot | Qayerda saqlanadi |
+|---|---|
+| Do'kon ma'lumotlari, buyurtmalar, qoldiqlar | Daromadchi hisobingizda — barcha qurilmada bir xil |
+| Telegram ulanishi | Hisobingizda — bir marta ulanadi, hamma joyda ishlaydi |
+| Kengaytma ogohlantirish sozlamalari | **Faqat shu brauzerda** |
+| Kengaytmadagi API kalitlari | **Faqat shu brauzerda** |
+| Til va mavzu tanlovi | **Faqat shu brauzerda** |
 
-## Qurilmani o'chirish
+Ya'ni yangi kompyuterda kengaytmani o'rnatgach, uning **Sozlamalar** sahifasidagi chegaralarni qaytadan belgilashingiz kerak bo'ladi. Do'kon ma'lumotlari esa avtomatik ko'rinadi.
 
-Eski yoki ishlatilmaydigan qurilmani ro'yxatdan chiqarish uchun "O'chirish" tugmasini bosing. Bu qurilmadagi kengaytma hisobdan uziladi.
+## Yangi qurilmada ulash
 
-<info>Maksimum 5 ta qurilma ulanishi mumkin (Pro tarif). Pro tarifda cheksiz.</info>
+1. Kengaytmani o'rnating
+2. Daromadchi hisobingizga kiring
+3. Botga **/activate** yozib yangi kod oling va kiriting
 
-## Barcha qurilmalardan chiqish
+Eski qurilmadagi kengaytma ishlashda davom etadi — yangi faollashtirish uni o'chirmaydi.
 
-"Barchadan chiqish" tugmasi barcha qurilmalardagi sessiyalarni tugatadi. Keyin har bir qurilmada qayta kirishingiz kerak.
+## Qurilmani uzish
+
+Qurilmani masofadan uzish imkoni yo'q. O'sha qurilmada:
+
+- Kengaytmani Chrome'dan o'chiring, yoki
+- Popup orqali Telegram'ni uzing va Daromadchi hisobidan chiqing
+
+<warning>Boshqa odam ishlatgan kompyuterda hisobingizdan chiqishni unutmang — kengaytma brauzerdagi sessiya orqali ishlaydi.</warning>
 `,
   },
 
@@ -397,14 +453,16 @@ Eski yoki ishlatilmaydigan qurilmani ro'yxatdan chiqarish uchun "O'chirish" tugm
   // ───────────────────────────────────────────────
   {
     slug: 'reklama-tahlili',
-    title: "Reklama tahlili asoslari",
-    category: 'Reklama Tahlili',
+    title: "Reklama xarajatlari asoslari",
+    category: 'Reklama xarajatlari',
     categorySlug: 'reklama-tahlili',
-    summary: "DRR, CPC, CPO ko'rsatkichlari va reklama samaradorligini baholash.",
+    summary: "DRR, CPC, CPO nimani anglatadi va reklama sarfi Daromadchi hisobiga qayerdan kiradi.",
     content: `
-## Reklama tahlili nima?
+## Muhim: Daromadchi reklama kabinetiga ulanmaydi
 
-Reklama tahlili — reklama xarajatlaringiz qanchalik samarali ekanini o'lchovchi ko'rsatkichlar to'plami. Daromadchi avtomatik ravishda barcha asosiy ko'rsatkichlarni hisoblaydi.
+Daromadchi'da reklama kampaniyalari jadvali **yo'q**, va reklama statistikasi API orqali yuklanmaydi. Uzum Market ham, Yandex Market ham reklama ma'lumotlarini beruvchi API'ni hozircha ochmagan — **Sozlamalar** sahifasidagi "Reklamani sinxronlash" tugmasi ham aynan shu haqda xabar beradi.
+
+Kampaniyalar, kliklar va kunlik sarfni **marketplace kabinetida** ko'rasiz. Bu maqola esa o'sha raqamlarni qanday o'qish va Daromadchi'dagi foyda hisobiga qanday qo'shishni tushuntiradi.
 
 ## Asosiy ko'rsatkichlar
 
@@ -412,7 +470,7 @@ Reklama tahlili — reklama xarajatlaringiz qanchalik samarali ekanini o'lchovch
 \`DRR = Reklama xarajati / Tushum × 100\`
 
 - **DRR < 10%** — yaxshi
-- **DRR 10-20%** — qabul qilinarli
+- **DRR 10–20%** — qabul qilinarli
 - **DRR > 20%** — yuqori, kampaniyani tekshirish kerak
 
 ### CPC (Bir klik narxi)
@@ -424,36 +482,35 @@ Reklama tahlili — reklama xarajatlaringiz qanchalik samarali ekanini o'lchovch
 ### ROAS (Reklama daromadi)
 \`ROAS = Tushum / Reklama xarajati\`
 
-ROAS > 5 bo'lishi tavsiya etiladi.
+Bu qisqartmalarning barchasi dashboard'dagi **Qisqartmalar** bo'limida ham izohlangan.
 
-## Kampaniyalar jadvali
+## Reklama xarajati Daromadchi'ga qayerdan kiradi?
 
-Dashboard → Tahlil → Kampaniyalar bo'limida barcha aktiv va nofaol kampaniyalar, ularning ko'rsatkichlari jadvalda ko'rinadi.
+### 1. Birlik iqtisodiyoti kalkulyatori
+**Dashboard → Kalkulyator** dagi **Reklama (%)** maydoniga o'zingizning DRR'ingizni kiritasiz. Kalkulyator uni xarajat sifatida hisobga oladi va sof foyda hamda zararsizlik narxini shunga qarab chiqaradi.
 
-## Samarasiz xarajatlarni aniqlash
+### 2. F&Z (P&L) hisobot
+Marketplace reklama pulini to'lovingizdan ushlab qolgan bo'lsa, u **"Marketplace'ning boshqa ushlab qolishlari"** qatoriga tushadi (ekvayring, jarimalar bilan birga). Bu — marketplace hisobotidan olingan haqiqiy ushlanma, taxmin emas.
 
-Daromadchi avtomatik ravishda quyidagi holatlarni belgilaydi:
-- Klik bor, lekin buyurtma yo'q
-- DRR 30% dan yuqori kampaniyalar
-- Byudjet tugab qolgan kampaniyalar
-
-<info>Reklama ma'lumotlari Uzum Market API orqali olinadi va har sinxronizatsiyada yangilanadi.</info>
+<info>Ya'ni: kampaniya darajasidagi tahlil — kabinetda, foydaga ta'siri — Daromadchi'da.</info>
 `,
   },
   {
     slug: 'drr-nima',
     title: "DRR nima va qanday pasaytirish mumkin",
-    category: 'Reklama Tahlili',
+    category: 'Reklama xarajatlari',
     categorySlug: 'reklama-tahlili',
     summary: "DRR ko'rsatkichi va uni optimallashtirish usullari.",
     content: `
 ## DRR nima?
 
-**DRR** (Доля Рекламных Расходов) — reklama xarajatlarining tushum ulushi. Ruscha qisqartma bo'lsa-da, Uzum Market va Daromadchi unda foydalanadi.
+**DRR** (Доля Рекламных Расходов) — reklama xarajatlarining tushumdagi ulushi. Ruscha qisqartma bo'lsa-da, Uzum Market va Daromadchi undan foydalanadi.
 
 **Formula:** \`DRR = Reklama xarajati / Tushum × 100\`
 
 **Misol:** 1,000,000 so'm tushum, 80,000 so'm reklama → DRR = 8%
+
+<info>DRR'ni marketplace kabinetidagi kampaniya hisobotidan olasiz — Daromadchi reklama kabinetiga ulanmagan va bu raqamni o'zi hisoblay olmaydi.</info>
 
 ## Ideal DRR qanday?
 
@@ -466,6 +523,16 @@ Kategoriyaga qarab farq qiladi:
 | Uy jihozlari | 6-12% |
 | Oziq-ovqat | 3-8% |
 | Kosmetika | 10-18% |
+
+## O'zingizga mos maksimal DRR'ni qanday topish
+
+Yuqoridagi jadval — umumiy o'rtacha ko'rsatkich. Aniq javob sizning marjangizga bog'liq:
+
+1. **Dashboard → Kalkulyator** ni oching va mahsulotni tanlang
+2. **Reklama (%)** maydonini 0 ga qo'ying — bu sof marjangiz
+3. Foyda nolga yaqinlashguncha foizni asta oshiring
+
+Shu nuqta — mahsulot uchun **zararsizlik DRR'i**. Undan yuqorisi zarar demakdir.
 
 ## DRR ni pasaytirish usullari
 
@@ -484,82 +551,100 @@ Raqobatchilar arzonroq sotayotgan bo'lsa, narxni moslang
 ### 5. Mahsulot rasmlarini yaxshilash
 Yaxshi rasm CTR ni oshiradi — bir xil xarajatda ko'proq buyurtma
 
-<info>Daromadchi DRR ni automatik hisoblaydi va yuqori DRR bo'lgan kampaniyalarni sariq/qizil rang bilan belgilaydi.</info>
+<warning>Kampaniya sozlamalarining barchasi marketplace kabinetida o'zgartiriladi. Daromadchi kampaniyalarni o'zgartirmaydi va to'xtatmaydi.</warning>
 `,
   },
   {
     slug: 'samarasiz-xarajatlar',
     title: "Samarasiz reklama xarajatlarini aniqlash",
-    category: 'Reklama Tahlili',
+    category: 'Reklama xarajatlari',
     categorySlug: 'reklama-tahlili',
-    summary: "Qaysi reklama xarajatlari foyda keltirmaydi va nima qilish kerak.",
+    summary: "Kabinetdagi sarfni Daromadchi'dagi foyda bilan solishtirib isrofni topish.",
     content: `
 ## Samarasiz xarajatlar nima?
 
-Samarasiz reklama xarajati — pul ketgan, lekin buyurtmaga aylanmagan kliklar va ko'rsatuvlar.
+Samarasiz reklama xarajati — pul ketgan, lekin foydaga aylanmagan kliklar va ko'rsatuvlar.
 
-## Daromadchi qanday aniqlaydi?
+<info>Daromadchi kampaniyalarni o'zi belgilamaydi — reklama statistikasi API orqali kelmaydi. Quyida marketplace kabinetidagi raqamlar bilan Daromadchi'dagi foyda raqamlarini birga ishlatish usuli tasvirlangan.</info>
 
-Platforma avtomatik ravishda quyidagi holatlarga e'tibor beradi:
+## Ish tartibi
 
-### 1. Yuqori CPC, past konversiya
-Klik uchun ko'p pul to'lanayotgan, lekin oz buyurtma keladigan kampaniyalar.
+### 1-qadam: Kabinetdan kampaniya sarfini oling
+Marketplace kabinetida so'nggi 7-30 kunlik har bir mahsulot bo'yicha sarfni ko'chirib oling.
 
-### 2. Zero-order kampaniyalar
-So'nggi 7 kunda hech buyurtma keltirmagan, lekin pul sarflanayotgan kampaniyalar.
+### 2-qadam: Daromadchi'da o'sha mahsulotning foydasini ko'ring
+**Mahsulot tahlili** sahifasidagi jadvalda shu davr uchun:
+- **Foyda** — tannarx va komissiyalardan keyingi qoldiq
+- **Marja %** — foydaning tushumdagi ulushi
+- **Sotuv ulushi** — mahsulot umumiy tushumning necha foizi
+- **ABC** — A/B/C sinfi
 
-### 3. Eski mahsulotlar reklamasi
-Omborda qoldig'i tugayotgan mahsulotlarga reklama sarflash.
+### 3-qadam: Solishtiring
 
-### 4. DRR > 30% bo'lgan kampaniyalar
-Daromadchi bularni "Diqqat" deb belgilaydi.
+| Holat | Xulosa |
+|---|---|
+| Sarf > Foyda | Reklama zarar keltirmoqda — to'xtating yoki narxni qayta ko'rib chiqing |
+| Sarf ≈ Foyda | Nol nuqta — faqat aylanma uchun ishlayapsiz |
+| Sarf < Foyda, ABC = A | Sog'lom — byudjetni oshirish mumkin |
+| Sarf bor, sotuv yo'q | Eng aniq isrof — birinchi navbatda shuni to'xtating |
 
-## Nima qilish kerak?
+## Diqqat qiladigan holatlar
 
-1. **Kampaniyalar** jadvalida "Samarasiz" filterni qo'llang
-2. Har bir samarasiz kampaniyani ko'rib chiqing
-3. Kalit so'zlar ro'yxatini yangilang yoki kampaniyani to'xtatib qo'ying
+### Qoldig'i tugayotgan mahsulotga reklama
+**Dashboard → Ogohlantirishlar** dagi kam qoldiq ro'yxatini tekshiring. Bir necha kunga qolgan tovarga reklama qilish — pulni yo'qotish.
 
-<warning>Barcha kam konversiyali kampaniyalarni to'xtatib qo'ymang — ba'zilari brend recognitionga xizmat qilishi mumkin.</warning>
+### Qaytarish foizi yuqori mahsulotlar
+Tovar tahlili jadvalidagi **% qaytarish** ustuni. Qaytarish yuqori bo'lsa, buyurtma foyda emas — bu reklamani ikki marta qimmatga tushiradi.
+
+### Marjasi past mahsulotlar
+Marja 10% dan past bo'lsa, kichik DRR ham mahsulotni zararga o'tkazadi. Chegarani **Kalkulyator** da hisoblang.
+
+<warning>Barcha kam konversiyali kampaniyalarni birdan to'xtatib qo'ymang — ba'zilari brendni tanitishga xizmat qilishi mumkin.</warning>
 `,
   },
   {
     slug: 'kampaniya-byudjeti',
     title: "Reklama byudjetini boshqarish",
-    category: 'Reklama Tahlili',
+    category: 'Reklama xarajatlari',
     categorySlug: 'reklama-tahlili',
-    summary: "Reklama byudjetini qanday rejalashtirish va nazorat qilish.",
+    summary: "Byudjetni foyda va CPO asosida hisoblash. Byudjet marketplace kabinetida sozlanadi.",
     content: `
-## Byudjet boshqaruvi
+## Byudjet qayerda sozlanadi?
 
-Daromadchi reklama byudjetingizni nazorat qilishga yordam beradi, lekin byudjetni to'g'ridan-to'g'ri Uzum Market kabinetida sozlash kerak.
+Reklama byudjeti **marketplace kabinetida** sozlanadi — Daromadchi'da emas. Daromadchi reklama kabinetiga ulanmagan, shuning uchun byudjetni ko'rsata olmaydi, o'zgartira olmaydi va byudjet tugashi haqida ogohlantirmaydi.
 
-## Byudjet kuzatuvi
+Daromadchi bergan narsa — **byudjetni qancha qo'yish kerakligini hisoblash uchun kerakli foyda raqamlari**.
 
-**Dashboard → Tahlil → Kampaniyalar** bo'limida:
-- Har bir kampaniyaning kunlik byudjeti
-- Shu kun sarflangan miqdor
-- Byudjet tugash vaqti (taxminiy)
+## Byudjetni hisoblash
 
-## Bildirishnoma sozlash
+### 1. Bir buyurtmadan qancha foyda olasiz?
+**Dashboard → Kalkulyator** da mahsulotni tanlang, tannarx va narxni kiriting, **Reklama (%)** ni 0 ga qo'ying. Chiqqan sof foyda — bitta buyurtmadan reklamasiz oladigan pulingiz.
 
-Byudjet 80% yoki 90% ga yetganda Telegram orqali ogohlantirish olish uchun:
+### 2. Maksimal CPO'ni aniqlang
+\`Maksimal CPO = Bir buyurtmadagi sof foyda\`
 
-**Sozlamalar → Bildirishnomalar → Reklama sarfi** bo'limida chegara kiriting.
+Bundan yuqori CPO'da har bir buyurtma zarar keltiradi. Amalda foydaning yarmidan oshmaslik tavsiya etiladi.
 
-## Byudjet tavsiyalari
+### 3. Kunlik byudjetni chiqaring
+\`Kunlik byudjet = Maqsadli CPO × Kunlik maqsadli buyurtmalar\`
 
-Daromadchi quyidagi formulani tavsiya etadi:
+**Misol:** sof foyda 30,000 so'm → maqsadli CPO 15,000 so'm; kuniga 10 buyurtma kerak → byudjet 150,000 so'm/kun.
 
-\`Optimal byudjet = O'rtacha CPO × Maqsadli buyurtmalar soni\`
+### 4. Qoldiqqa qarab tekshiring
+**Dashboard → Ogohlantirishlar** da mahsulot qoldig'i necha kunga yetishini ko'ring. Byudjet qoldiqdan tez tugaydigan savdo tezligini moliyalashtirmasligi kerak.
 
-**Misol:** CPO = 15,000 so'm, maqsad = 10 buyurtma/kun → byudjet = 150,000 so'm/kun
+## Nazorat
+
+Har hafta:
+1. Kabinetdan haqiqiy sarfni oling
+2. **Mahsulotlar samaradorligi** jadvalida o'sha davr foydasini ko'ring
+3. DRR'ni qayta hisoblang va byudjetni moslang
 
 ## Mavsumiy o'zgarishlar
 
-Bayrам kunlari va mavsumiy aksiyalarda byudjetni 1.5-2x ga oshirish tavsiya etiladi.
+Bayram kunlari va mavsumiy aksiyalarda savdo ko'tariladi — byudjetni oshirishdan oldin qoldiq yetarli ekanini tekshiring.
 
-<info>Reklama byudjetini to'g'ridan-to'g'ri seller.uzum.uz → Reklama bo'limida o'zgartiring.</info>
+<info>Reklama byudjetini seller.uzum.uz yoki Yandex Market kabinetining reklama bo'limida o'zgartiring.</info>
 `,
   },
 
@@ -575,38 +660,46 @@ Bayrам kunlari va mavsumiy aksiyalarda byudjetni 1.5-2x ga oshirish tavsiya et
     content: `
 ## Qoldiqlarni boshqarish
 
-Daromadchi qoldiqlaringizni savdo tezligiga ko'ra kuzatib, qachon yangi mahsulot buyurtma qilish kerakligini aytadi.
+Daromadchi qoldiqlaringizni savdo tezligiga ko'ra kuzatadi va qachon yangi mahsulot buyurtma qilish kerakligini aytadi.
 
-## Qoldiq darajalari
+## Qoldiq necha kunga yetadi
 
-Har bir mahsulot uchun qoldiq davomiyligi hisoblanadi:
+Har bir mahsulot uchun:
 
 \`Kunlar = Qoldiq miqdori / O'rtacha kunlik savdo\`
 
-| Daraja | Kunlar | Rang |
+**Ogohlantirishlar** sahifasida bu raqam rangli belgi bilan ko'rsatiladi:
+
+| Holat | Kunlar | Rang |
 |---|---|---|
-| **A** | 30+ kun | Yashil |
-| **B** | 15-30 kun | Ko'k |
-| **C** | 7-15 kun | Sariq |
-| **D** | 7 kundan kam | Qizil |
+| **Kritik** | 3 kundan kam yoki qoldiq 0 | Qizil |
+| **Ogohlantirish** | 3-7 kun | Sariq |
+| **Kuzatuvda** | 7 kundan ko'p | Ko'k |
 
-## FBO / FBS bo'yicha ko'rish
+## Marketplace modellari
 
-Uzum Market'da ikki turdagi qoldiq mavjud:
+Buyurtma va qoldiq qaysi ombordan kelayotgani belgilar bilan ko'rsatiladi:
 
-- **FBO** — Uzum omborida saqlanayotgan mahsulotlar
-- **FBS** — Sizning omboringizda saqlanayotgan mahsulotlar
+**Uzum Market**
+- **FBO** — tovar Uzum omborida, yig'ish va yetkazish Uzum zimmasida
+- **FBS** — tovar sizning omboringizda, buyurtma kelganda o'zingiz yig'asiz
 
-Mahsulotlar jadvalida ikkala tur alohida ko'rsatiladi.
+**Yandex Market**
+- **FBY** — tovar Yandex omborida, hammasini Yandex qiladi
+- **FBS** — sizning omboringiz, Yandex logistikasi (Ekspress ham shu turga kiradi)
+- **DBS** — saqlash ham, yetkazish ham sizda
 
-## Ogohlantirish sozlash
+<info>«Yig'ing va jo'nating» xabari faqat sotuvchi o'zi yig'adigan modellarda (FBS, DBS) yuboriladi — FBO va FBY buyurtmalarida sizdan hech narsa talab qilinmaydi.</info>
 
-**Sozlamalar → Bildirishnomalar → Kam qoldiq** bo'limida:
-1. Minimal kun chegarasini kiriting (masalan: 7 kun)
-2. Qaysi mahsulot turlari uchun ogohlantirish olishni tanlang
-3. Saqlang
+## Bir tovar — bir nechta listing
 
-<info>Qoldiq ma'lumotlari Uzum Market API orqali olinadi. FBO ombori uchun real-vaqt ma'lumotlari mavjud.</info>
+Bir jismoniy mahsulot ikki marketplace'da yoki bir marketplace'da bir necha listingda turishi mumkin. **Dashboard → Qoldiqlar** sahifasida ularni bitta guruhga birlashtirasiz — shundan keyin qoldiq guruh darajasida hisoblanadi va ogohlantirish takrorlanmaydi.
+
+## Ostatok sinxronizatsiyasi (ixtiyoriy)
+
+Do'kon uchun yoqilgan bo'lsa, bir marketplace'da sotilgan tovarning qoldig'i boshqasida ham kamayadi. Bu — Daromadchi marketplace listingiga yozadigan yagona narsa, va faqat qoldiq soni. Batafsil — «API token qo'shish va boshqarish» maqolasida.
+
+<info>Qoldiq ma'lumotlari sinxronizatsiya bilan birga yangilanadi.</info>
 `,
   },
   {
@@ -618,31 +711,37 @@ Mahsulotlar jadvalida ikkala tur alohida ko'rsatiladi.
     content: `
 ## Qoldiq ogohlantirishlari
 
-Ombordagi mahsulot qoldig'i belgilangan chegaradan past tushganda Daromadchi avtomatik Telegram xabari yuboradi.
+Mahsulot qoldig'i belgilangan chegaradan past tushganda Daromadchi ogohlantiradi.
 
-## Ogohlantirish sozlamalari
+## Chegarani sozlash
 
-**Sozlamalar → Bildirishnomalar** sahifasida:
+**Dashboard → Ogohlantirishlar** sahifasida chegara maydoniga dona sonini kiriting (standart: **15 dona**) va saqlang. Ro'yxat darhol yangi chegara bo'yicha qayta hisoblanadi.
 
-- **Minimum kun chegarasi**: Necha kun qolganida ogohlantirish berilsin (standart: 7 kun)
-- **Minimum miqdor**: Necha dona qolganida ogohlantirish (standart: 10 dona)
-- **Mahsulot guruhlari**: Barcha mahsulotlar yoki faqat tanlanganlar
+Guruhga birlashtirilgan mahsulotlar uchun **Qoldiqlar** sahifasida alohida chegara belgilash mumkin.
 
-## Xabar ko'rinishi
+## Kunlar bo'yicha holat
 
-Telegram'da bunday xabar keladi:
+Chegaradan tashqari har bir qatorda qoldiq necha kunga yetishi ko'rsatiladi: 3 kundan kam — qizil, 3-7 kun — sariq, undan ko'pi — ko'k. Bu chegaralar o'zgarmas.
 
-\`⚠️ Kam qoldiq: [Mahsulot nomi]\`
-\`Qoldiq: 15 dona (5 kun)\`
-\`So'nggi sotuv: 3 dona/kun\`
+## Ogohlantirish qayerga keladi
 
-## Bir nechta ogohlantirish
+### Ilova ichida
+**Ogohlantirishlar** va **Bildirishnomalar** sahifalarida, hamda yuqori paneldagi qo'ng'iroq belgisida.
 
-Bir mahsulot uchun 2 ta chegara sozlashingiz mumkin:
-1. **Birinchi ogohlantirish** — 14 kun (buyurtma berish vaqti)
-2. **Shoshilinch ogohlantirish** — 5 kun (zudlik bilan buyurtma)
+### Telegram'da
+Telegram ulangan va botda **📦 Kam qoldiq** yoqilgan bo'lsa. Xabarda mahsulot, qolgan miqdor va necha kun qolgani yoziladi.
 
-<warning>Ogohlantirish ishlashi uchun Telegram bot ulanishi shart.</warning>
+Qoldiq o'zgarishi haqidagi xabarni ilova ichida va/yoki Telegram'da olishni **Ogohlantirishlar** sahifasidagi ikki tugma orqali tanlaysiz.
+
+## Takrorlanmaslik
+
+Bir jismoniy mahsulot uchun bitta qator beriladi — u bir necha listingda turgan bo'lsa ham. Guruhlarni **Qoldiqlar** sahifasida sozlaysiz.
+
+## Eksport
+
+Ogohlantirishlar ro'yxatini jadval fayli sifatida yuklab olish mumkin.
+
+<warning>Telegram ulanmagan bo'lsa, ogohlantirish faqat ilova ichida ko'rinadi.</warning>
 `,
   },
   {
@@ -650,42 +749,47 @@ Bir mahsulot uchun 2 ta chegara sozlashingiz mumkin:
     title: "FBO, FBS va rFBS farqlari",
     category: 'Qoldiqlar',
     categorySlug: 'qoldiqlar',
-    summary: "Uzum Market'da turli ombor modellarining farqlari va Daromadchi'da ko'rish.",
+    summary: "Uzum FBO/FBS va Yandex FBY/FBS/DBS: kim yig'adi va bu nimaga ta'sir qiladi.",
     content: `
 ## Ombor modellari
 
-Uzum Market'da mahsulotlarni sotishning uch asosiy modeli mavjud:
+Sotish modeli ikki narsani hal qiladi: tovar qayerda saqlanadi va buyurtmani kim yig'adi. Daromadchi buni har bir buyurtma va qoldiq yonidagi belgi bilan ko'rsatadi.
 
-## FBO (Fulfillment by Operator)
+## Uzum Market
 
-**Uzum ombori** — mahsulotlar Uzum Market omborida saqlanadi va yetkazib berish Uzum tomonidan amalga oshiriladi.
+### FBO (Fulfillment by Operator)
+Tovar **Uzum omborida**. Yig'ish va yetkazib berish Uzum zimmasida.
 
 - Tezroq yetkazib berish
-- Uzum omboriga etkazib berish kerak
-- Qo'shimcha saqlash xarajatlari
+- Tovarni oldindan Uzum omboriga topshirish kerak
+- Saqlash xarajatlari qo'shiladi
 
-## FBS (Fulfillment by Seller)
+### FBS (Fulfillment by Seller)
+Tovar **sizning omboringizda**. Buyurtma kelganda o'zingiz yig'ib topshirasiz.
 
-**Sotuvchi ombori** — mahsulotlar sizning omboringizda, Uzum buyurtma kelib qolsagina yetkazishingiz kerak.
+- Saqlash to'liq nazoratingizda
+- Har bir buyurtma uchun harakat talab qilinadi
 
-- Saqlash to'liq nazorat ostida
-- O'zingiz yetkazib berasiz
-- Ko'proq moslashuvchanlik
+## Yandex Market
 
-## rFBS (Real-time FBS)
+### FBY
+Tovar **Yandex omborida** — Yandex yig'adi va yetkazadi. Sizdan hech narsa talab qilinmaydi.
 
-FBS ning yangilangan versiyasi — real vaqt buyurtma boshqaruvi bilan.
+### FBS
+Tovar sizning omboringizda, yetkazib berish Yandex logistikasi orqali. **Ekspress** buyurtmalar ham shu turga kiradi — alohida model emas.
+
+### DBS (Delivery by Seller)
+Saqlash ham, yetkazib berish ham sizda.
+
+## Nima uchun bu muhim
+
+Telegram'dagi **«yig'ing va jo'nating»** xabari faqat sotuvchi o'zi yig'adigan modellarda yuboriladi: Uzum FBS, Yandex FBS va DBS. FBO va FBY buyurtmalarida sizdan hech narsa talab qilinmaydi — shuning uchun bunday buyurtma harakat so'rovi sifatida yuborilmaydi.
 
 ## Daromadchi'da ko'rish
 
-**Mahsulotlar → [Mahsulot]** sahifasida FBO va FBS qoldiqlar alohida ko'rsatiladi:
+Belgilar **Buyurtmalar** va **Qoldiqlar** jadvallarida ko'rinadi. Bir mahsulot bir vaqtning o'zida bir necha modelda turishi mumkin — jami qoldiq ularning yig'indisi, ogohlantirish esa jami bo'yicha beriladi.
 
-| Model | Qoldiq | Kunlar |
-|---|---|---|
-| FBO | 150 dona | 22 kun |
-| FBS | 80 dona | 12 kun |
-
-<info>Jami qoldiq = FBO + FBS. Ogohlantirish jami qoldig'ga qarab beriladi.</info>
+<info>rFBS — FBS ning bir ko'rinishi. Marketplace uni alohida qaytarmaydi, shuning uchun Daromadchi'da FBS sifatida ko'rinadi.</info>
 `,
   },
   {
@@ -697,34 +801,49 @@ FBS ning yangilangan versiyasi — real vaqt buyurtma boshqaruvi bilan.
     content: `
 ## Tovar aylanmasi nima?
 
-Tovar aylanmasi — mahsulot qanchalik tez sotilishini ko'rsatuvchi ko'rsatkich.
+Tovar aylanmasi — mahsulot qanchalik tez sotilishini ko'rsatuvchi ko'rsatkich. Amaliy savol esa oddiy: **qoldiq necha kunga yetadi va qachon yangi buyurtma berish kerak?**
 
-\`Aylanma = Sotilgan miqdor / O'rtacha qoldiq\`
+## Daromadchi qanday hisoblaydi
 
-## Daromadchi'da hisoblash
+Hisob **so'nggi 30 kunlik** haqiqiy savdoga asoslanadi:
 
-Platforma har bir mahsulot uchun quyidagi davrlar bo'yicha hisoblaydi:
-- So'nggi 7 kun o'rtacha kunlik savdo
-- So'nggi 30 kun o'rtacha kunlik savdo
-- Mavsumiy koeffitsient (agar mavjud bo'lsa)
+\`Kunlik savdo = So'nggi 30 kunda sotilgan / 30\`
 
-## Buyurtma prognozi
+\`Qolgan kunlar = Mavjud qoldiq / Kunlik savdo\`
 
-Joriy qoldiq va savdo tezligiga ko'ra Daromadchi hisoblaydi:
+Bu ikkala raqam **Dashboard → Ogohlantirishlar** sahifasida har bir mahsulot qatorida ko'rinadi. Ro'yxat qolgan kunlar bo'yicha saralanadi — eng shoshilinchlari tepada.
 
-\`Buyurtma berish sanasi = Bugun + (Qoldiq / Kunlik savdo) - Yetkazib berish vaqti\`
+<info>Hisobda faqat **mavjud** qoldiq ishlatiladi: allaqachon buyurtma qilingan, lekin hali jo'natilmagan birliklar ayirib tashlanadi. Aks holda sotib bo'lingan tovar hali ham javonda turgandek ko'rinardi.</info>
+
+So'nggi 30 kunda savdo bo'lmagan bo'lsa, qolgan kunlar o'rniga **«—»** ko'rsatiladi — bu «ko'p qoldi» degani emas, «hisoblab bo'lmaydi» degani.
+
+## Qachon buyurtma berish kerak
+
+\`Buyurtma berish sanasi = Bugun + (Qolgan kunlar − Yetkazib berish muddati)\`
 
 **Misol:**
 - Qoldiq: 100 dona
-- Kunlik savdo: 5 dona
-- Yetkazib berish: 5 kun
-- **Buyurtma berish sanasi: 15 kunda**
+- Kunlik savdo: 5 dona → 20 kunga yetadi
+- Yetkazib beruvchi 5 kunda keltiradi
+- **15 kundan keyin buyurtma bering**
 
-## Mavsumiy o'zgarishlar
+Yetkazib berish muddatini o'zingiz bilasiz — Daromadchi uni bilmaydi, shuning uchun bu ayirishni siz qilasiz.
 
-Bayramlar va mavsumga ko'ra savdo ko'tarilishi mumkin. Daromadchi o'tgan yilgi ma'lumotlarga asoslanib prognoz qiladi.
+## Ogohlantirish chegaralari
 
-<info>Prognoz taxminiy. Mahsulot ma'lumotlari qanchalik ko'p bo'lsa, prognoz shunchalik aniq bo'ladi.</info>
+| Holat | Qolgan kunlar |
+|---|---|
+| Kritik | 3 kundan kam yoki qoldiq 0 |
+| Ogohlantirish | 3-7 kun |
+| Kuzatuvda | 7 kundan ko'p |
+
+## Nimaga e'tibor berish kerak
+
+- **Yangi mahsulot**: 30 kunlik tarixi to'liq bo'lmagani uchun kunlik savdo past chiqadi va prognoz haqiqiydan uzoqroq ko'rinadi
+- **Aksiya davri**: aksiyadagi savdo o'rtachani ko'taradi va qoldiq kutilganidan tez tugaydi
+- **Bir tovar bir nechta listingda**: **Qoldiqlar** sahifasida ularni guruhga birlashtiring, aks holda har biri alohida hisoblanadi
+
+<info>Mavsumiylik bo'limi hozircha «Yaqin orada» holatida — mavsumiy koeffitsient hisobga olinmaydi.</info>
 `,
   },
 
@@ -736,80 +855,101 @@ Bayramlar va mavsumga ko'ra savdo ko'tarilishi mumkin. Daromadchi o'tgan yilgi m
     title: "Birlik iqtisodiyoti kalkulyatori",
     category: 'Birlik Iqtisodiyoti',
     categorySlug: 'birlik-iqtisodiyoti',
-    summary: "Har bir mahsulot uchun sof foyda, marja va zararсizlik narxini hisoblash.",
+    summary: "Har bir mahsulot uchun sof foyda, marja va zararsizlik narxini hisoblash.",
     content: `
 ## Birlik iqtisodiyoti nima?
 
-Birlik iqtisodiyoti (Unit Economics) — bir dona mahsulotni sotishdan qanchalik foyda olishini batafsil ko'rsatuvchi hisob-kitob tizimi.
+Birlik iqtisodiyoti (Unit Economics) — bir dona mahsulotni sotishdan qancha foyda qolishini ko'rsatuvchi hisob-kitob.
 
-## Kalkulyator qanday ishlaydi?
+Daromadchi'da buning uchun **ikkita** vosita bor.
 
-**Dashboard → Kalkulyator** bo'limiga o'ting. Quyidagi ma'lumotlarni kiriting:
+## 1. Foyda kalkulyatori — bitta mahsulot uchun tez hisob
 
-### Daromad
-- Sotuv narxi
+**Dashboard → Kalkulyator**. Hech narsa ulash shart emas: marketplace'ni (**Uzum** yoki **Yandex**) va kategoriyani tanlaysiz — komissiya foizi o'zi qo'yiladi.
 
-### Xarajatlar
-- Tannarx (tovar narxi)
-- Uzum komissiyasi (%)
-- Yetkazib berish xarajati
-- Qaytarish xarajati
-- Qadoqlash
-- Reklama xarajati (DRR asosida)
-- Soliq (%)
+Kiritiladigan maydonlar:
+- Sotish narxi
+- Tannarx
+- Logistika
+- Reklama xarajati
+- Qaytarish foizi (%)
+- Oylik savdo (dona)
 
-## Natijalar
+Natijada quyidagilar chiqadi:
+- **1 donadagi xarajatlar taqsimoti** — komissiya, tannarx, logistika, qaytarish zarari, reklama
+- **Sof foyda (dona)**, **Marja**, **ROI**, **DRR**, **zararsizlik narxi**
+- **Reality Check** — oylik savdoga ko'paytirilgan haqiqiy foyda, siz kutgan raqam bilan yonma-yon
 
-Kalkulyator hisoblaydi:
-- **Sof foyda** — barcha xarajatlar chegilgandan keyin
-- **Marja** — foyda %
-- **Zararсizlik narxi** — minimal sotuv narxi
-- **Maqsadli narx** — 20% marja uchun tavsiya
+Marja 20% dan past bo'lsa yoki narx zarar keltirsa, kalkulyator ogohlantiradi.
 
-## Logistika sozlamalari
+## 2. Birlik iqtisodiyoti jadvali — barcha mahsulotlar bo'yicha
 
-Uzum Market yetkazib berish tariflarini tizimga kiriting yoki avtomatik hisoblash uchun "Uzum tarifi" ni tanlang.
+**Dashboard → Birlik iqtisodiyoti**. Bu yerda mahsulotlar ro'yxati va har biri uchun to'liq hisob turadi: tannarx, yetkazib berilgan tannarx (landed cost), komissiya, yetkazib berish, reklama, jami xarajatlar, sof foyda, ROI, marja, qoldiq va yetkazib beruvchi havolasi.
 
-<info>Kalkulyator natijalarini saqlash va boshqa mahsulotlar bilan taqqoslash mumkin.</info>
+### Standart xarajatlar
+Jadval sozlamalarida bir marta belgilanadi va barcha qatorlarga qo'llanadi:
+
+| Sozlama | Standart |
+|---|---|
+| Ekvayring (%) | 1.5 |
+| Reklama (%) | 5 |
+| Soliq (%) | 6 |
+| Komissiya (%) | 10 |
+| Oxirgi milya (%) | 0 |
+| Soliq turi | Daromad (6%) yoki Daromad − xarajat (15%) |
+
+### Ustunlar
+Ustunlarni yoqib-o'chirish mumkin — kerakli ko'rinishni o'zingiz yig'asiz.
+
+## Chrome kengaytmasi bilan bog'lanish
+
+Kengaytmadagi panel xuddi shu formulalarni ishlatadi va mahsulotni to'g'ridan-to'g'ri shu jadvalga qo'shib qo'yishi mumkin.
+
+<warning>Kalkulyatordagi barcha raqamlar taxminiy. Marketplace tariflari o'zgaradi — muhim qarordan oldin kabinetdagi joriy tarifni tekshiring.</warning>
 `,
   },
   {
-    slug: 'zararсizlik-narxi',
-    title: "Zararсizlik narxi (breakeven) hisoblash",
+    slug: 'zararsizlik-narxi',
+    title: "Zararsizlik narxi (breakeven) hisoblash",
     category: 'Birlik Iqtisodiyoti',
     categorySlug: 'birlik-iqtisodiyoti',
     summary: "Mahsulot uchun minimal foydali sotuv narxini aniqlash.",
     content: `
-## Zararсizlik narxi nima?
+## Zararsizlik narxi nima?
 
-Zararсizlik narxi — barcha xarajatlarni qoplash uchun mahsulotni kamida shuncha narxda sotish kerak bo'lgan qiymat. Bu narxdan past sotish zarar demak.
+Zararsizlik narxi (breakeven) — barcha xarajatlarni qoplaydigan eng past sotuv narxi. Undan past sotish zarar demakdir.
 
 ## Formula
 
-\`Zararсizlik = Tannarx + Komissiya + Logistika + Reklama + Boshqa xarajatlar\`
+\`Zararsizlik = Tannarx + Komissiya + Logistika + Qaytarish zarari + Reklama + Soliq\`
 
 ## Daromadchi'da hisoblash
 
-Kalkulyatorga quyidagilarni kiriting:
+**Dashboard → Kalkulyator** ni oching:
 
-1. **Tannarx** — olish narxi
-2. **Uzum komissiyasi** — kategoriyaga qarab 5-25%
-3. **FBO logistika** — og'irlik va o'lchamga qarab
-4. **Qaytarish xarajati** — taxminan 5-10% qaytarish hisobga olinadi
-5. **Reklama** — maqsadli DRR asosida
+1. Marketplace'ni tanlang: **Uzum** yoki **Yandex**
+2. Kategoriyani tanlang — komissiya foizi o'zi qo'yiladi
+3. **Tannarx** ni kiriting
+4. **Logistika** ni kiriting (marketplace tarifidan)
+5. **Qaytarish foizi** ni kiriting — haqiqiy foizni **Mahsulot tahlili** jadvalidagi **% qaytarish** ustunidan oling
+6. **Reklama xarajati** ni kiriting
 
-## Maqsadli foyda
+Kalkulyator **Zararlanmaslik** qiymatini boshqa ko'rsatkichlar (marja, ROI, DRR) bilan birga chiqaradi.
 
-Zararсizlik narxiga maqsadli foydangizni qo'shing:
+## Maqsadli foyda qo'shish
 
-\`Sotuv narxi = Zararсizlik × (1 + Maqsadli marja / 100)\`
+\`Sotuv narxi = Zararsizlik × (1 + Maqsadli marja / 100)\`
 
 **Misol:**
-- Zararсizlik: 45,000 so'm
+- Zararsizlik: 45,000 so'm
 - Maqsad: 20% marja
 - **Sotuv narxi: 54,000 so'm**
 
-<info>Daromadchi avtomatik ravishda Uzum komissiyasini kategoriyaga qarab hisoblaydi.</info>
+## Joriy narxingiz yetarlimi?
+
+Kalkulyatordagi **Reality Check** bo'limi joriy narx bilan oyiga qancha foyda (yoki zarar) chiqishini ko'rsatadi. Narx zararli bo'lsa, kalkulyator uni qanchaga ko'tarish kerakligini aytadi.
+
+<info>Komissiya foizi kategoriya bo'yicha oldindan qo'yiladi, lekin uni qo'lda o'zgartirish mumkin — o'z shartnomangizdagi foiz aniqroq.</info>
 `,
   },
   {
@@ -819,27 +959,35 @@ Zararсizlik narxiga maqsadli foydangizni qo'shing:
     categorySlug: 'birlik-iqtisodiyoti',
     summary: "Mahsulot va do'kon darajasida foyda marjasi ko'rsatkichlari.",
     content: `
-## Marja turlari
+## Marja nima?
 
-### Yalpi marja (Gross Margin)
-\`Yalpi marja = (Sotuv narxi - Tannarx) / Sotuv narxi × 100\`
+Marja — foydaning tushumdagi ulushi, foizda. Daromadchi'da marja **sof marja** ma'nosida ishlatiladi: tannarx va marketplace ushlanmalaridan keyin qolgan qism.
 
-### Operatsion marja
-Yalpi marjadan operatsion xarajatlar (reklama, logistika, komissiyalar) chegilgandan keyin.
+\`Marja = Sof foyda / Tushum × 100\`
 
-### Sof marja (Net Margin)
-Barcha xarajatlar, soliqlar va to'lovlardan keyin qolgan foyda ulushi.
+## Marja va ustama (nasenka) bir narsa emas
 
-## Daromadchi'da qayerda ko'rish mumkin?
+Bu ikkisi tez-tez adashtiriladi:
 
-### Mahsulotlar jadvalida
-Har bir mahsulot qatorida marja % ko'rsatiladi.
+- **Marja** — foyda **sotuv narxidan** foiz sifatida
+- **Ustama** — foyda **tannarxdan** foiz sifatida
 
-### P&L hisobotda
-Oylik va haftalik marja tendentsiyalari grafik shaklida.
+50,000 so'mga olib 100,000 so'mga sotsangiz: ustama 100%, marja esa 50%.
 
-### Kalkulyatorda
-Kiruvchi ma'lumotlarga asoslanib real-vaqt hisoblash.
+## Marjani qayerda ko'rish mumkin
+
+### Mahsulot bo'yicha
+**Dashboard → Mahsulot tahlili** jadvalidagi **Marja** ustuni. Sahifaning yuqorisida do'kon bo'yicha **o'rtacha marja**, hamda past va yuqori marjali mahsulotlar soni ko'rsatiladi.
+
+### Variantlar bo'yicha
+Ota-qatorni ochsangiz, har bir variant (rang, o'lcham) uchun marja alohida ko'rinadi — bittasi butun guruh raqamini pasaytirayotgan bo'lishi mumkin.
+
+### Rejalashtirishda
+**Kalkulyator** va **Birlik iqtisodiyoti** jadvali marjani siz kiritgan qiymatlar asosida hisoblaydi.
+
+## Tannarxsiz marja bo'lmaydi
+
+Tannarx kiritilmagan mahsulotning marjasi haqiqiydan yuqori chiqadi — chunki eng katta xarajat hisobga olinmaydi. Tannarxni **Mahsulot tahlili** jadvalida qalam belgisi orqali yoki **Mahsulotlar** sahifasida to'ldiring.
 
 ## Ideal marja qancha?
 
@@ -850,7 +998,7 @@ Kiruvchi ma'lumotlarga asoslanib real-vaqt hisoblash.
 | Kosmetika | 25% | 40-60% |
 | Uy jihozlari | 15% | 25-35% |
 
-<info>Marja past bo'lsa ham, agar savdo hajmi katta bo'lsa umumiy foyda yuqori bo'lishi mumkin.</info>
+<info>Marja past bo'lsa ham, savdo hajmi katta bo'lsa umumiy foyda yuqori bo'lishi mumkin. Shuning uchun marjani **sotuv ulushi** ustuni bilan birga o'qing.</info>
 `,
   },
   {
@@ -860,39 +1008,37 @@ Kiruvchi ma'lumotlarga asoslanib real-vaqt hisoblash.
     categorySlug: 'birlik-iqtisodiyoti',
     summary: "FBO va FBS logistika tariflarini birlik iqtisodiyoti kalkulyatoriga qo'shish.",
     content: `
-## Logistika xarajatlari nima?
+## Logistika xarajatlari
 
-Uzum Market'da yetkazib berish xarajatlari mahsulot og'irligi, o'lchami va modeli (FBO/FBS) ga qarab farqlanadi.
+Yetkazib berish narxi mahsulotning og'irligi, hajmi va ombor modeliga (FBO/FBS, FBY/FBS/DBS) qarab farqlanadi. Bu — komissiyadan keyingi ikkinchi eng katta ushlanma.
 
-## FBO logistika tarifi
+## Daromadchi logistikani qanday hisobga oladi
 
-FBO (Uzum ombori) uchun xarajatlar:
-- Qabul qilish to'lovi: dona boshiga
-- Saqlash: kub metr×kun
-- Yetkazib berish: og'irlik va hudud
+### Kalkulyatorda — qo'lda
+**Dashboard → Kalkulyator** dagi **Logistika (so'm)** maydoniga bir dona uchun yetkazib berish xarajatini kiritasiz. Raqamni marketplace tarifidan olasiz.
 
-## FBS logistika tarifi
+### Birlik iqtisodiyoti jadvalida — qo'lda va foizli
+**Birlik iqtisodiyoti** jadvalida yetkazib berish alohida ustun bo'lib turadi. Sozlamalardagi **Oxirgi milya (%)** esa narxdan foiz sifatida qo'shiladi — tarifi foizga bog'liq bo'lgan yetkazib berish uchun qulay.
 
-FBS (Sotuvchi ombori) uchun xarajatlar:
-- Sortировка punktiga yetkazish
-- Sortировка to'lovi
+### F&Z hisobotda — haqiqiy raqam
+**F&Z hisobot** sahifasidagi **Yetkazib berish** qatori taxmin emas: u marketplace hisobotidan olinadi. Marketplace hali yakuniy hisobotni bermagan bo'lsa, qiymat yonida **≈** turadi va hisobot kelgach haqiqiysiga almashadi.
 
-## Kalkulyatorda sozlash
-
-**Kalkulyator → Logistika** bo'limida:
-
-1. **Ombor modeli** ni tanlang: FBO / FBS
-2. **Mahsulot og'irligi** (gramm)
-3. **O'lchamlari** (uzunlik × kenglik × balandlik sm)
-4. Daromadchi avtomatik Uzum tarifiga asoslanib hisoblaydi
+<info>Ya'ni rejalashtirish uchun kalkulyatordagi taxminni, o'tgan davrni baholash uchun F&Z hisobotdagi haqiqiy raqamni ishlating.</info>
 
 ## Qaytarish xarajati
 
-O'rtacha qaytarish darajasi kategoriyaga qarab 3-15%. Kalkulyatorda qaytarish % kiriting — xarajat avtomatik qo'shiladi.
+Qaytarilgan tovar logistikani ikki marta to'laydi — u yerga ham, qaytib ham.
 
 \`Qaytarish xarajati = (Qaytarish % / 100) × (Logistika × 2)\`
 
-<info>Uzum Market tariflari o'zgarishi mumkin. Daromadchi tarif o'zgarishlarini kuzatib boradi.</info>
+Qaytarish foizini kalkulyatorga kiritasiz. Haqiqiy foizni **Mahsulot tahlili** jadvalidagi **% qaytarish** ustunidan olasiz — u sizning o'z ma'lumotingizdan hisoblanadi.
+
+## Tariflarni qayerdan olish
+
+- **Uzum Market**: seller.uzum.uz kabinetidagi tariflar bo'limi
+- **Yandex Market**: hamkor kabinetidagi tariflar bo'limi
+
+<warning>Tariflar o'zgarib turadi va hududga bog'liq. Daromadchi ularni avtomatik yangilamaydi — kiritgan qiymatingizni vaqti-vaqti bilan tekshiring.</warning>
 `,
   },
 
@@ -908,43 +1054,50 @@ O'rtacha qaytarish darajasi kategoriyaga qarab 3-15%. Kalkulyatorda qaytarish % 
     content: `
 ## Dashboard ko'rsatkichlari
 
-Kirganingizda ko'rinadigan asosiy kartochkalar:
+Kirganingizda ko'rinadigan asosiy kartochkalar.
 
 ## Yuqori panel kartochkalari
 
-### Tushum (Revenue)
-So'nggi 30 kunlik umumiy sotuv tushumi. O'tgan oy bilan taqqoslanadi.
+### Tushum
+Tanlangan davrdagi umumiy sotuv tushumi. Yonida oldingi shu uzunlikdagi davr bilan taqqoslash foizi ko'rsatiladi.
+
+### Foyda
+Tannarx va marketplace ushlab qolgan summalardan keyingi sof foyda. Tannarx kiritilmagan mahsulotlar bu raqamni pasaytiradi — **Mahsulotlar** sahifasida tannarxni to'ldiring.
 
 ### Buyurtmalar
-Davr uchun umumiy buyurtmalar soni. Bekor qilinganlar hisobga olinmaydi.
+Davr uchun buyurtmalar soni. Bekor qilinganlar hisobga olinmaydi.
 
-### DRR
-Umumiy reklama xarajatlari ulushi. Barcha kampaniyalarning o'rtacha ko'rsatkichi.
-
-### Faol mahsulotlar
-Hozirda sotuvda bo'lgan SKU'lar soni.
+### Qoldiq
+Hozirgi umumiy qoldiq miqdori.
 
 ## Grafiklar
 
 ### Savdo grafigi
-7 yoki 30 kunlik kunlik savdo tendentsiyasi.
+Tanlangan davr bo'yicha kunlik tushum tendentsiyasi.
 
 ### Kategoriya tahlili
-Qaysi kategoriyadan qancha tushum — donut diagramma.
+Qaysi kategoriyadan qancha tushum kelgani — donut diagramma.
 
-### Qoldiq holati
-Kritik (D daraja) mahsulotlar soni va ularning ro'yxati.
+### Top mahsulotlar
+Davr ichida eng ko'p tushum keltirgan mahsulotlar ro'yxati.
+
+### Qoldiq ogohlantirishlari
+Qoldig'i tugayotgan mahsulotlar. To'liq ro'yxat — **Ogohlantirishlar** sahifasida.
 
 ## Vaqt oralig'ini o'zgartirish
 
-Yuqori o'ng burchakda sana filtri orqali:
-- Bugun
-- So'nggi 7 kun
-- So'nggi 30 kun
-- So'nggi 90 kun
-- Maxsus sana oralig'i
+Yuqori qismdagi sana filtri orqali:
+- Kecha
+- 7 kun
+- 30 kun
+- 90 kun
+- Shu oy
 
-<info>Ma'lumotlar oxirgi sinxronizatsiyaga asoslanadi. Vaqt muhrlari sana filtrida ko'rinadi.</info>
+## Marketplace bo'yicha ajratish
+
+Bir nechta do'kon ulangan bo'lsa, yuqoridagi marketplace tugmalari orqali faqat bitta marketplace ma'lumotlarini ko'rishingiz mumkin.
+
+<info>Barcha raqamlar oxirgi sinxronizatsiyaga asoslanadi. Oxirgi sinxronizatsiya vaqti «Sinxronizatsiya» sahifasida ko'rinadi.</info>
 `,
   },
   {
@@ -956,42 +1109,41 @@ Yuqori o'ng burchakda sana filtri orqali:
     content: `
 ## P&L hisobot nima?
 
-P&L (Profit & Loss) hisobot — do'koningizning moliyaviy natijasini to'liq ko'rsatuvchi oylik hisobot.
+F&Z (P&L — Profit & Loss) hisobot do'koningizning moliyaviy natijasini oylar kesimida ko'rsatadi. **Dashboard → F&Z hisobot** sahifasida ochiladi.
 
 ## Hisobot tarkibi
 
-### Daromad qismi
-- Umumiy sotuv tushumi
-- Qaytarishlardan ayirilgan sof tushum
+| Qator | Ma'nosi |
+|---|---|
+| **Umumiy tushum** | Yetkazilgan buyurtmalar tushumi |
+| **Komissiya** | Marketplace komissiyasi |
+| **Boshqa** | Marketplace'ning boshqa ushlab qolishlari: ekvayring, reklama, jarimalar |
+| **Yetkazib berish** | Logistika xarajatlari |
+| **Marketplace to'lovi** | Tushum − komissiya − yetkazib berish − boshqa |
+| **Tannarx (COGS)** | Sotilgan tovarlarning tannarxi |
+| **Sof foyda** | Yakuniy natija |
 
-### Xarajatlar qismi
-- Tannarx (COGS)
-- Uzum Market komissiyasi
-- Reklama xarajatlari
-- Logistika va yetkazib berish
-- Qaytarish xarajatlari
-- Boshqa operatsion xarajatlar
+## "Jarayonda" qatori
 
-### Natija
-- Yalpi foyda
-- Operatsion foyda
-- Sof foyda
+Yetkazilmagan buyurtmalar alohida ko'rsatiladi: ularning daromadi yetkazilgandan keyin hisoblanadi va hozircha foydaga kirmaydi. Bu — hisobotni haqiqiy pul bilan mos qilib turadigan qism.
 
-## Hisobotni o'qish
+## "≈" belgisi
 
-**Dashboard → F&Z Hisobot** sahifasiga o'ting.
+Ba'zi qiymatlar yonida **≈** turishi mumkin. Bu — marketplace hali yakuniy hisobotni bermagani va raqam foizlar asosida taxmin qilinganini bildiradi. Marketplace hisoboti kelgach, raqam haqiqiysiga almashadi.
 
-Oy tanlang yoki oylarga taqqoslash ko'rinishida oching.
+## Tannarxni to'g'ridan-to'g'ri tahrirlash
 
-## Solishtiruv tahlili
+Tannarx qatoridagi tugma orqali oyning tannarxini o'sha yerda to'ldirishingiz mumkin — mahsulotlar ro'yxatiga o'tmasdan. Tannarx bo'sh bo'lsa, sof foyda haqiqiydan yuqori chiqadi.
 
-P&L'ning "Solishtirish" rejimida ikki oyni yonma-yon ko'rishingiz mumkin. Bu o'sish yoki tushishni aniq ko'rsatadi.
+## Oylar bo'yicha jadval
+
+Pastdagi jadvalda har bir oy alohida qator: tushum, komissiya, boshqa ushlanmalar, tannarx va sof foyda. O'sish yoki tushishni shu yerda ko'rasiz.
 
 ## Eksport
 
-Hisobotni Excel formatida yuklab olish uchun "Eksport" tugmasini bosing.
+**Eksport** tugmasi hisobotni jadval fayli sifatida yuklab beradi.
 
-<info>P&L hisobot uchun tannarx ma'lumotlarini to'g'ri kiritish muhim. Sozlamalar → Mahsulotlar dan kiritishingiz mumkin.</info>
+<info>Tannarx kiritilmagan bo'lsa, P&L faqat marketplace ushlanmalarini ko'rsatadi — foyda haqiqiydan katta bo'lib ko'rinadi.</info>
 `,
   },
   {
@@ -999,7 +1151,7 @@ Hisobotni Excel formatida yuklab olish uchun "Eksport" tugmasini bosing.
     title: "Kategoriya va mahsulot tahlili",
     category: 'Analitika',
     categorySlug: 'analitika',
-    summary: "Qaysi kategoriya va mahsulotlar eng ko'p foyda keltirishi.",
+    summary: "Kategoriyalar bo'yicha tushum, ABC tasnifi va ABC-XYZ sahifasi.",
     content: `
 ## Kategoriya tahlili
 
@@ -1007,32 +1159,99 @@ Daromadchi sotuvlaringizni kategoriya bo'yicha ajratib ko'rsatadi.
 
 ## Dashboard'da ko'rish
 
-Asosiy dashboard'dagi donut diagrammada har bir kategoriyaning tushum ulushi ko'rinadi. Ustiga bosib batafsil ma'lumot oling.
+Asosiy dashboard'dagi **Kategoriyalar** donut diagrammasida har bir kategoriyaning tushum ulushi ko'rinadi. Diagramma yonidagi ro'yxatda summalar yozilgan.
 
-## Kategoriya sahifasi
+Kunlik hisobot Telegram'da ham kategoriyalar bo'yicha taqsimotni yuboradi.
 
-**Dashboard → Tahlil → Kategoriya** bo'limida:
-- Har bir kategoriya bo'yicha tushum
-- Buyurtmalar soni
-- O'rtacha buyurtma qiymati
-- DRR
-- Tendentsiya (o'sish/tushish)
+## Mahsulot darajasidagi tahlil
+
+**Dashboard → Mahsulot tahlili** sahifasida yuqorida umumiy raqamlar, pastida esa **Mahsulotlar samaradorligi** jadvali turadi: har bir mahsulot bo'yicha sotuv, tushum, foyda, marja va ABC sinfi. Batafsil — «Tovar tahlili jadvali» maqolasida.
 
 ## ABC tahlili
 
-Mahsulotlarni ABC tizimida tasniflash:
+Mahsulotlar tushumdagi ulushiga qarab tasniflanadi. Ro'yxat tushum bo'yicha kamayish tartibida jamlanadi va:
 
-| Sinf | Tavsif | Ulush |
-|---|---|---|
-| A | Eng muhim, ko'p daromad | 20% mahsulot, 80% daromad |
-| B | O'rtacha muhim | 30% mahsulot, 15% daromad |
-| C | Kam muhim | 50% mahsulot, 5% daromad |
+| Sinf | Qoida |
+|---|---|
+| **A** | Jamlangan tushum 80% ga yetguncha |
+| **B** | 80% dan 95% gacha |
+| **C** | Qolgan hammasi |
+
+ABC ustuni **Mahsulotlar samaradorligi** jadvalida ko'rinadi.
+
+## ABC-XYZ sahifasi
+
+**Dashboard → ABC-XYZ** sahifasi bir qadam uzoqroqqa boradi: ABC (daromad) ni XYZ (talab barqarorligi) bilan birga ko'rsatadi. AX — barqaror va daromadli, CZ — kam daromadli va oldindan aytib bo'lmaydigan.
 
 ## Top mahsulotlar
 
-**Dashboard → Mahsulotlar → Saralash: Tushum** — eng ko'p daromad keltiruvchi mahsulotlar tepada.
+Dashboard'dagi **Top mahsulotlar** bloki — davr ichida eng ko'p tushum keltirganlari. To'liq ro'yxat va saralash **Mahsulotlar** sahifasida.
 
-<info>Kategoriya tahlili va ABC analiz Standard va undan yuqori tariflarda mavjud.</info>
+<info>Kategoriya ma'lumoti marketplace bergan kategoriyaga asoslanadi. Kategoriyasi yo'q tovarlar «Kategoriyasiz» qatoriga tushadi.</info>
+`,
+  },
+  {
+    slug: 'tovar-tahlili-jadvali',
+    title: "Tovar tahlili jadvali",
+    category: 'Analitika',
+    categorySlug: 'analitika',
+    summary: "14 ta ustun, jadval sozlamalari va narx / tannarx / qoldiqni joyida tahrirlash.",
+    content: `
+## Tovar tahlili jadvali
+
+**Dashboard → Mahsulot tahlili** sahifasidagi asosiy jadval. Ilgari «Top sotilgan» va «Mahsulot bo'yicha marja tahlili» ikki alohida jadval edi — endi ular bitta jadvalga birlashtirilgan, chunki bir mahsulot haqidagi savolga ikki joyga qarab javob berish shart emas.
+
+Har bir qator — mahsulot. Variantlari (rang, o'lcham) bor tovar bitta ota-qatorga yig'iladi; uni ochib har bir variantni alohida ko'rish mumkin.
+
+## Ustunlar
+
+| Ustun | Ma'nosi |
+|---|---|
+| **Mahsulot** | Nomi va varianti. Har doim ko'rinadi |
+| **Yetkazilgan** | Davr ichida yetkazilgan dona |
+| **Yo'lda** | Yetkazilmoqda — hali foydaga kirmagan |
+| **Bekor qilingan** | Bekor qilingan buyurtmalar |
+| **Qaytarilgan** | Qaytarilgan dona |
+| **% qaytarish** | Qaytarilgan ÷ (yetkazilgan + qaytarilgan) |
+| **Tushum** | Davr tushumi |
+| **Sotuv ulushi** | Mahsulot umumiy tushumning necha foizi |
+| **O'rtacha narx** | Tushum ÷ sotilgan dona — chegirmalardan keyingi haqiqiy narx |
+| **Narx** | Joriy sotuv narxi |
+| **Tannarx** | Sizning tannarxingiz |
+| **Foyda** | Tushum − tannarx − marketplace ushlanmalari |
+| **Marja** | Foydaning tushumdagi ulushi (%) |
+| **ABC** | A / B / C sinfi |
+
+<info>Bu ustunlarning barchasi ikkala marketplace uchun ham hisoblanadi. Faqat bitta marketplace bera oladigan ko'rsatkichlar jadvalga qo'shilmagan — aks holda Yandex qatorlari doim bo'sh turgan bo'lardi.</info>
+
+## Jadval sozlamalari
+
+Jadval ustidagi **Jadval sozlamalari** tugmasi ustunlarni yoqish va o'chirish panelini ochadi. Belgini olib tashlasangiz — ustun yo'qoladi, qaytarsangiz — qayta chiqadi.
+
+Tayyor to'plamlar ham bor:
+- **Minimal** — sotildimi va daromad keltiradimi
+- **Savdo** — dona, qaytarish, ulush, ABC
+- **Pul** — narx, tannarx, foyda, marja
+
+Tanlovingiz brauzerda saqlanadi va keyingi kirishda ham shundayligicha qoladi. **Mahsulot** ustunini o'chirib bo'lmaydi — aks holda jadval nomsiz raqamlar to'plamiga aylanardi.
+
+## Qiymatlarni tahrirlash
+
+Uchta ustunni to'g'ridan-to'g'ri jadvalda o'zgartirish mumkin — qator ustiga kursorni olib borsangiz **qalam belgisi** chiqadi:
+
+- **Narx**
+- **Tannarx**
+- **Qoldiq**
+
+<warning>Bu tahrirlar faqat Daromadchi ichida qoladi. Marketplace listingiga hech narsa yuborilmaydi — narx, nom yoki boshqa hech nima o'zgarmaydi.</warning>
+
+Narx va qoldiq marketplace'dan keladi, shuning uchun sizning qiymatingiz alohida saqlanadi va ko'rsatishda ustiga qo'yiladi. Maydonni bo'shatsangiz, marketplace'ning o'z raqami qaytadi — tahrir haqiqiy qiymatni yashiradi, o'chirmaydi.
+
+Ota-qatorda **Narx** va **Tannarx** ni tahrirlash barcha variantlarga bir vaqtda qo'llanadi. Qoldiqda ota-qator uchun qalam yo'q: variantlarning qoldig'i har xil bo'ladi va ularni bitta raqamga tenglashtirish noto'g'ri bo'lardi.
+
+## Nima uchun tannarx muhim
+
+Tannarx bo'sh bo'lsa, **Foyda** va **Marja** ustunlari mahsulotni haqiqiydan foydaliroq ko'rsatadi. Tannarxni shu yerda yoki **Mahsulotlar** sahifasida to'ldiring.
 `,
   },
   {
@@ -1040,79 +1259,35 @@ Mahsulotlarni ABC tizimida tasniflash:
     title: "Qidiruv iboralari (kalit so'zlar) tahlili",
     category: 'Analitika',
     categorySlug: 'analitika',
-    summary: "Mahsulotlaringizga qaysi qidiruv so'zlari orqali trafik kelishi.",
+    summary: "Sahifa nimani ko'rsatadi va nega u marketplace API ochilgunicha bo'sh turadi.",
     content: `
 ## Qidiruv iboralari tahlili
 
-Uzum Market mijozlari qaysi so'zlarni yozib mahsulotingizga kelishini bilish reklama va SEO uchun muhim.
+Mijozlar qaysi so'zlarni yozib mahsulotingizga kelishini bilish SEO va reklama uchun muhim. Daromadchi'da bu **Dashboard → Qidiruv iboralari** sahifasida ko'rsatiladi.
 
-## Dashboard'da ko'rish
+## Sahifa nimani ko'rsatadi
 
-**Dashboard → Qidiruv iboralari** sahifasida:
-- Ko'rsatish soni (impressions)
+- Ibora va u qaysi mahsulotga tegishli
+- Ko'rsatishlar (impressions)
 - Kliklar
-- CTR (klik/ko'rsatish %)
-- O'rtacha pozitsiya
-- Konversiya
+- CTR (kliklar ÷ ko'rsatishlar)
+- Buyurtmalar
+- Sarf
 
-## Tasniflar
+<warning>Hozircha bu sahifa bo'sh turadi. Qidiruv iboralari ma'lumotlari marketplace'ning reklama/qidiruv API'sidan keladi, u esa hali ulanmagan — Uzum Market ham, Yandex Market ham bu ma'lumotni ochmagan. API ochilganda sahifa avtomatik to'ladi.</warning>
 
-### O'sib borayotgan
-CTR va savdo o'sib borayotgan iboralar — ularga e'tibor bering va ulash kerak bo'lsa reklama byudjetini oshiring.
+## Shu vaqtgacha nima qilish mumkin
 
-### Tushib borayotgan
-Ko'rsatish bor, lekin klik kam — mahsulot rasmi yoki tavsifni yaxshilash kerak.
+### Kalit so'zlarni marketplace kabinetida ko'ring
+Kabinetdagi qidiruv hisoboti — hozircha yagona manba.
 
-### Baland imkoniyat
-Ko'p ko'rsatilayotgan, lekin past pozitsiyada turgan iboralar — reklama bilan oldinga chiqing.
+### Mahsulot nomini tekshiring
+**Dashboard → Mahsulotlar** ro'yxatida mahsulot nomlari qanday yozilganini ko'ring. Nom qidiruvga to'g'ridan-to'g'ri ta'sir qiladi.
 
-## Kalit so'z strategiyasi
+### Natijani sotuv orqali o'lchang
+Nom yoki rasmni o'zgartirgandan keyin **Mahsulotlar samaradorligi** jadvalida o'sha mahsulotning tushumi va sotuv ulushi qanday o'zgarganini kuzating. Bu — kliklarsiz ham ishlaydigan o'lchov.
 
-1. CTR > 3% bo'lgan iboralarni asosiy iboralar qiling
-2. Raqobatchilar ishlatmaydigan long-tail iboralarga urg'u bering
-3. Mavsumiy iboralarni vaqtida kuzating
-
-<info>Qidiruv iboralari ma'lumotlari Uzum Market API orqali olinadi va cheklangan bo'lishi mumkin.</info>
-`,
-  },
-  {
-    slug: 'tashqi-trafik',
-    title: "Tashqi trafik tahlili",
-    category: 'Analitika',
-    categorySlug: 'analitika',
-    summary: "Instagram, Telegram va boshqa kanallardan Uzum'ga yo'naltirilgan trafik.",
-    content: `
-## Tashqi trafik nima?
-
-Tashqi trafik — Uzum Market'dan tashqarida (Instagram, Telegram, YouTube, blog) bo'lgan reklama yoki kontentdan mahsulotingizga keladigan tashrufchilar.
-
-## UTM parametrlar bilan kuzatish
-
-Tashqi trafik aniqlash uchun havolalarga UTM parametrlar qo'shing:
-
-\`https://uzum.uz/product/12345?utm_source=instagram&utm_campaign=may2025\`
-
-## Daromadchi'da ko'rish
-
-**Dashboard → Tahlil → Tashqi trafik** bo'limida:
-- Manba bo'yicha tashriflar
-- Konversiya (tashrifdan buyurtmaga)
-- Har bir manbadan tushum
-
-## Kanallar tahlili
-
-| Kanal | Trafik ulushi | Konversiya |
-|---|---|---|
-| Instagram | 45% | 2.3% |
-| Telegram | 30% | 4.1% |
-| YouTube | 15% | 1.8% |
-| Blog | 10% | 3.5% |
-
-## Tavsiya
-
-Telegram orqali kelgan trafik konversiyasi yuqori chunki auditoriya yanada ishonadiganroq. Telegram kanallar va chatlar orqali marketing samarali.
-
-<info>Tashqi trafik tahlili Pro va Enterprise tariflarda to'liq mavjud.</info>
+<info>Sahifadagi qisqartmalar (CTR, CPC) dashboard'dagi «Qisqartmalar» bo'limida izohlangan.</info>
 `,
   },
 
@@ -1124,49 +1299,52 @@ Telegram orqali kelgan trafik konversiyasi yuqori chunki auditoriya yanada ishon
     title: "Tariflar va narxlar",
     category: "To'lov va Tariflar",
     categorySlug: 'tolov-va-tariflar',
-    summary: "Mavjud tariflar, ular orasidagi farqlar va qaysi tarif siz uchun to'g'ri.",
+    summary: "Aylanmaga qarab belgilanadigan tariflar, narxlar va Bepul tarifda nima qoladi.",
     content: `
-## Daromadchi tariflar rejasi
+## Tarif aylanmaga qarab belgilanadi
 
-Uchta tarif mavjud: Bepul, Pro va Pro+.
+Daromadchi'da tarif tanlanmaydi — u sizning **so'nggi 30 kunlik sof aylanmangizga** qarab aniqlanadi. Aylanma o'sganda tarif ham ko'tariladi.
 
-## Bepul tarif
+| So'nggi 30 kunlik aylanma | Tarif |
+|---|---|
+| 12 mln so'mgacha | **Bepul** |
+| 12–50 mln so'm | **Pro** |
+| 50–120 mln so'm | **Pro+** |
+| 120–180 mln so'm | **Biznes** |
+| 180 mln so'mdan yuqori | **Enterprise** |
 
-**0 so'm/oy**
+## Narxlar
 
-- 1 ta do'kon
-- 6 tahlil sahifasi
-- Demo ma'lumotlar
-- Asosiy dashboard
-- Mahsulotlar va buyurtmalar ro'yxati
+| Tarif | Oylik | Yillik to'lovda (oyiga) |
+|---|---|---|
+| Bepul | 0 so'm | — |
+| Pro | 150 000 so'm | 125 000 so'm |
+| Pro+ | 250 000 so'm | 225 000 so'm |
+| Biznes | 500 000 so'm | 450 000 so'm |
+| Enterprise | Kelishuv asosida | — |
 
-## Pro tarif
+<info>Enterprise uchun yagona e'lon qilingan narx yo'q — bu tarif alohida kelishiladi.</info>
 
-**250,000 so'm/oy**
+## Pullik tariflar orasida farq bormi?
 
-Bepul tarifning hamma narsi, qo'shimcha:
-- 3 ta do'kon
-- Barcha tahlillar
-- Avto-sinxronizatsiya
-- P&L hisobot
-- Email ogohlantirishlar
-- Reklama tahlili va DRR
-- Qoldiq ogohlantirishlari
+Imkoniyatlar jihatidan — **yo'q**. Pro, Pro+, Biznes va Enterprise bir xil funksiyalarni beradi; ular aylanma va narx bilan farqlanadi. Pro+ va undan yuqorisida qo'shimcha ravishda **prioritet qo'llab-quvvatlash** bor.
+
+## Bepul tarifda nima qoladi
+
+Doimiy bepul:
+- Dashboard (tushum va foyda bilan)
+- Mahsulotlar
+- Buyurtmalar va ular bo'yicha bildirishnomalar (yangi buyurtma, bekor qilish, kam qoldiq)
+- **Uzum va Yandex Market** — ikkalasi ham, har qanday tarifda
 - Chrome kengaytmasi
 
-## Pro+ tarif
+Sinov davri tugagach yopiladigan bo'limlar:
+- Mahsulot tahlili
+- Qoldiqlar sahifasi va qoldiq sinxronizatsiyasi
+- Moliya va to'lovlar (F&Z hisobot)
+- Birlik iqtisodiyoti
 
-**500,000 so'm/oy**
-
-Pro tarifning hamma narsi, qo'shimcha:
-- 5+ do'konlar
-- API kirish
-- Ustuvor yordam
-- Kategoriya tahlili (batafsil)
-- Jamoa boshqaruvi
-- Oxirgi 365 kunlik ma'lumotlar
-
-<info>Barcha tariflar ${TRIAL_UZ}lik bepul sinov bilan keladi. Karta ma'lumotlari talab qilinmaydi.</info>
+<info>Barcha tariflar ${TRIAL_UZ}lik bepul sinov bilan boshlanadi. Karta ma'lumotlari talab qilinmaydi.</info>
 `,
   },
   {
@@ -1174,42 +1352,36 @@ Pro tarifning hamma narsi, qo'shimcha:
     title: "To'lov usullari",
     category: "To'lov va Tariflar",
     categorySlug: 'tolov-va-tariflar',
-    summary: "Tarifni qanday to'lash va qanday to'lov usullari mavjud.",
+    summary: "Kartani biriktirish, avtomatik yangilash, oylik va yillik to'lov.",
     content: `
-## To'lov usullari
+## To'lov usuli
 
-Daromadchi quyidagi to'lov usullarini qabul qiladi:
+Daromadchi to'lovni **bank kartasi** orqali qabul qiladi. Karta ATMOS to'lov tizimi orqali biriktiriladi.
 
-## Karta orqali
+## Kartani biriktirish
 
-Uzcard va Humo kartalar orqali oylik to'lov:
-1. **Billing → To'lov usuli** sahifasiga o'ting
-2. Karta ma'lumotlarini kiriting
-3. "Saqlash" tugmasini bosing
-4. To'lov har oy avtomatik yechiladi
+**Dashboard → Tarif va to'lov** sahifasida:
 
-## Hisob-faktura (Invoice)
+1. Tarifni tanlang va **Oylik** yoki **Yillik** to'lovni belgilang
+2. Karta raqami va amal qilish muddatini kiriting
+3. Telefoningizga kelgan SMS kodini kiriting
+4. Tasdiqlangach tarif darhol faollashadi
 
-Yuridik shaxslar uchun hisob-faktura orqali to'lov:
-1. **Billing → Hisob-faktura** ni bosing
-2. Kompaniya ma'lumotlarini kiriting (STIR, INN)
-3. Hisob-faktura emailga yuboriladi
-4. Bank orqali o'tkazma amalga oshiriladi
+<info>Karta raqami Daromadchi serverlarida to'liq saqlanmaydi — to'lov tizimi bergan xavfsiz identifikator saqlanadi.</info>
 
-## Click va Payme
+## Avtomatik yangilash
 
-Mobil to'lov tizimlari orqali:
-- Click'da "Daromadchi" ni qidiring
-- Payme'da "Daromadchi" ni qidiring
-- Hisob raqamingizni kiriting va to'lang
+Karta biriktirilgach **Avtomatik yangilash** yoqiladi: davr tugashidan oldin to'lov kartadan o'zi yechiladi. Uni istalgan vaqtda o'chirib qo'yish mumkin — shundan keyin keyingi to'lov olinmaydi.
 
-## To'lov muddati
+## Oylik va yillik
 
-- Oylik to'lovlar: har oy bir xil kunda
-- Kechikish bo'lsa: 3 kunlik imtiyozli muddat
-- To'lov qilinmasa: tarif Bepulga tushiriladi
+Yillik to'lovda oylik narx pastroq — aniq summalar «Tariflar va narxlar» maqolasidagi jadvalda. Yillik obuna bir marta, 12 oy uchun to'liq summada olinadi.
 
-<warning>To'lov ma'lumotlari xavfsiz SSL orqali saqlanadi. Karta raqamlari to'liq saqlanmaydi.</warning>
+## To'lov o'tmasa
+
+To'lov muvaffaqiyatsiz bo'lsa, sahifada sabab ko'rsatiladi va qayta urinib ko'rish mumkin. To'lovlar tarixi shu yerda, ro'yxat ko'rinishida turadi.
+
+<warning>To'lov ma'lumotlari shifrlangan aloqa orqali uzatiladi. Daromadchi hech qachon kartangizning to'liq raqamini yoki parolingizni so'ramaydi.</warning>
 `,
   },
   {
@@ -1219,34 +1391,43 @@ Mobil to'lov tizimlari orqali:
     categorySlug: 'tolov-va-tariflar',
     summary: "Tarifni yangilash, pasaytirish yoki obunani bekor qilish.",
     content: `
-## Tarifni ko'tarish
+## Tarifni o'zgartirish
 
-**Billing → Tarif tanlash** → Yangi tarif → "O'tish" tugmasini bosing.
+**Dashboard → Tarif va to'lov** sahifasida:
 
-Yangi tarif darhol faollashadi. Qolgan davr hisoblanib, farq qaytariladi yoki keyingi to'lovga qo'shiladi.
+1. Tarif tanlash oynasini oching
+2. Aylanmangizga mos keladigan tarif ajratib ko'rsatilgan bo'ladi — uni yoki boshqasini tanlang
+3. **Oylik** yoki **Yillik** to'lovni belgilang
+4. Tasdiqlang
 
-## Tarifni pasaytirish
+Yangi tarif to'lov o'tgach darhol faollashadi.
 
-Joriy to'lov davri tugagandan so'ng pastroq tarifga o'tishingiz mumkin.
+## Aylanma paneli
 
-- **Billing → Tarif tanlang → Pasaytirish**
-- O'zgarish keyingi oy boshida kuchga kiradi
+Sahifadagi aylanma paneli so'nggi 30 kunlik sof aylanmangizni va u qaysi tarif oralig'iga tushishini ko'rsatadi. Panel faqat ma'lumot uchun — u o'z-o'zidan pul yechmaydi va tarifni almashtirmaydi. Aylanma keyingi tarif chegarasiga yaqinlashsa, panel shu haqda ogohlantiradi.
 
 ## Obunani bekor qilish
 
-1. **Billing → Tarif → Bekor qilish** sahifasiga o'ting
-2. Sabab tanlang (ixtiyoriy)
-3. Tasdiqlang
+**Tarifni bekor qilish** tugmasini bosing va tasdiqlang.
 
-Bekor qilish amaldan ошса ham joriy to'lov davri so'ngigacha tarifdan foydalanishingiz mumkin.
+Bekor qilish nimani anglatadi:
+- **Keyingi to'lov olinmaydi**
+- To'langan davr oxirigacha barcha imkoniyatlar ochiq qoladi
+- Davr tugagach hisob o'zi Bepul tarifga o'tadi
+
+Bu — pul qaytarish emas va darhol uzib qo'yish ham emas. Hali hech qanday to'langan davr bo'lmasa, Bepul tarifga darhol o'tiladi.
+
+## Bekor qilishni qaytarish
+
+To'langan davr hali tugamagan bo'lsa, **Tarifni tiklash** tugmasi orqali avtomatik yangilashni qaytarib yoqishingiz mumkin.
 
 ## Ma'lumotlar saqlanishi
 
 Obunani bekor qilganingizdan so'ng hisobingiz va ma'lumotlaringiz o'chirilmaydi — biz hisoblarni avtomatik o'chirmaymiz. Ma'lumotlaringiz hisobingiz mavjud bo'lgunicha saqlanadi va istalgan vaqtda qayta obuna bo'lishingiz mumkin.
 
-Hisobingizni butunlay o'chirishni istasangiz, buni istalgan vaqtda sozlamalardagi "Hisobni o'chirish so'rovi" funksiyasi orqali yoki privacy@daromadchi.uz manziliga so'rov yuborib amalga oshirishingiz mumkin.
+Hisobingizni butunlay o'chirishni istasangiz, buni sozlamalardagi "Hisobni o'chirish so'rovi" funksiyasi orqali yoki privacy@daromadchi.uz manziliga so'rov yuborib amalga oshirishingiz mumkin.
 
-<info>Yillik obunada 2 oylik chegirma (17% tejash). Yillik obunani bekor qilsangiz, foydalanilmagan qism qaytariladi.</info>
+<info>Narx o'zgarsa, mavjud obunachilarga oldindan xabar beriladi — sizdan hozir kelishilgan summadan boshqasi olinmaydi.</info>
 `,
   },
   {
@@ -1258,29 +1439,36 @@ Hisobingizni butunlay o'chirishni istasangiz, buni istalgan vaqtda sozlamalardag
     content: `
 ## Bepul sinov davri
 
-Daromadchi'ga yangi ro'yxatdan o'tgan foydalanuvchilar **${TRIAL_UZ}lik Pro tarif sinov davrini** bepul ishlatadilar.
+Yangi ro'yxatdan o'tgan foydalanuvchilar **${TRIAL_UZ}lik** bepul sinov davrini oladi.
 
 ## Nima kiritilgan?
 
-Sinov davrida Pro tarifning barcha imkoniyatlari mavjud:
-- Cheksiz do'konlar
-- 365 kunlik ma'lumotlar
-- Jamoa boshqaruvi
+Sinov davrida pullik bo'limlar ham ochiq bo'ladi:
+
+- **Mahsulot tahlili** — 14 ustunli jadval, ABC, marja
+- **Qoldiqlar** sahifasi va qoldiq sinxronizatsiyasi
+- **Moliya va to'lovlar** — F&Z (P&L) hisobot
+- **Birlik iqtisodiyoti** kalkulyatori
+
+## Sinovdan keyin ham bepul qoladigan bo'limlar
+
+- Dashboard (tushum va foyda bilan)
+- Mahsulotlar
+- Buyurtmalar va bildirishnomalar (yangi buyurtma, bekor qilish, kam qoldiq)
+- **Uzum va Yandex Market** — ikkalasi ham
 - Chrome kengaytmasi
-- Telegram bildirishnomalar
-- P&L hisobot va reklama tahlili
 
 ## Karta talab qilinmaydi
 
-Sinov davri uchun karta yoki to'lov ma'lumotlari talab qilinmaydi. Faqat email bilan ro'yxatdan o'ting.
+Sinov davri uchun karta yoki to'lov ma'lumotlari kerak emas. Faqat email bilan ro'yxatdan o'ting.
 
 ## Sinov tugagandan so'ng
 
-Tugashiga ${TRIAL_REMINDER_DAYS} kun qolganda ilovada va Telegram orqali eslatma yuboriladi. Sinov tugagach, tarif tanlamasangiz, avtomatik Bepul tarifga o'tiladi.
+Tugashiga ${TRIAL_REMINDER_DAYS} kun qolganda ilovada va Telegram orqali eslatma yuboriladi. Sinov tugagach, tarif tanlamasangiz, yuqoridagi to'rt bo'lim yopiladi — hisob esa Bepul tarifda ishlashda davom etadi.
 
 ## Sinov davri tugash sanasini ko'rish
 
-**Billing** sahifasida sinov davri tugash sanasi va tavsiya etilgan tariflar ko'rinadi.
+**Tarif va to'lov** sahifasida sinov tugash sanasi va aylanmangizga mos tarif ko'rsatiladi.
 
 <info>Sinov davri bir marta beriladi. Boshqa email bilan ro'yxatdan o'tsangiz ham ikkinchi sinov olinmaydi.</info>
 `,
@@ -1296,42 +1484,41 @@ Tugashiga ${TRIAL_REMINDER_DAYS} kun qolganda ilovada va Telegram orqali eslatma
     categorySlug: 'hisob-sozlamalari',
     summary: "Profil ma'lumotlarini yangilash, parol va xavfsizlik sozlamalari.",
     content: `
-## Profil sozlamalari
+## Hisobingiz qayerda
 
-**Dashboard → Sozlamalar → Profil** sahifasida:
+Hisobga oid ma'lumotlar ikki sahifada:
 
-### Shaxsiy ma'lumotlar
-- Ism va familiya
-- Email manzil
-- Telefon raqami
-- Fotosuratni yuklash
+- **Dashboard → Hisob** — email, ro'yxatdan o'tgan sana, joriy tarif va uning muddati
+- **Dashboard → Profil** — ism, email va telefon maydonlari, hamda xavfsizlik bo'limi
 
-### Do'kon ma'lumotlari
-- Do'kon nomi
-- Uzum Market do'kon ID
-- Kategoriyalar
+## Tarif holati
+
+**Hisob** sahifasida joriy tarif, sinov davri tugash sanasi va tarif amal qilish muddati ko'rinadi. To'lov va tarif almashtirish — **Tarif va to'lov** sahifasida.
+
+## Til
+
+Til yuqori paneldagi **UZ / RU / EN** tugmalari orqali almashtiriladi va butun ilovaga qo'llanadi.
+
+Telegram bildirishnomalari tili **alohida** — u botni ulaganda tanlanadi va botning o'zida o'zgartiriladi.
 
 ## Parolni o'zgartirish
 
-**Sozlamalar → Xavfsizlik → Parolni o'zgartirish:**
-1. Joriy parolni kiriting
-2. Yangi parol kiriting (kamida 8 belgi)
-3. Yangi parolni tasdiqlang
-4. "Saqlash" tugmasini bosing
+Parolni tiklash havolasi orqali o'zgartiriladi:
 
-## Email manzilni o'zgartirish
+1. Tizimdan chiqing va **Kirish** sahifasini oching
+2. **«Parolni unutdingizmi?»** ni bosing
+3. Email manzilingizni kiriting
+4. Xatdagi havola orqali yangi parol o'rnating
 
-Email manzil o'zgartirilsa, ikki tasdiqlash kerak:
-1. Joriy email manziliga kod yuboriladi
-2. Yangi email manziliga tasdiqlash havolasi yuboriladi
+<info>Ikki faktorli autentifikatsiya (2FA), sessiyalar ro'yxati va xavfsizlik jurnali Profil sahifasida ko'rinadi, lekin hali ishga tushirilmagan — ular tayyorlanmoqda.</info>
 
-## Ikki faktorli autentifikatsiya (2FA)
+## Marketplace ulanishlari
 
-**Sozlamalar → Xavfsizlik → 2FA** bo'limida yoqing:
-- Google Authenticator yoki Telegram orqali
-- Har kirishda qo'shimcha kod so'raladi
+Do'kon tokenlari va yozish rejimi — **Sozlamalar** sahifasida. Batafsil: «API token qo'shish va boshqarish».
 
-<info>2FA yoqilsa hisob xavfsizligi sezilarli oshadi.</info>
+## Hisobni o'chirish
+
+**Hisob** sahifasidagi «Hisobni o'chirish so'rovi» tugmasi orqali. Batafsil: «Hisobni o'chirish».
 `,
   },
   {
@@ -1339,41 +1526,68 @@ Email manzil o'zgartirilsa, ikki tasdiqlash kerak:
     title: "API token qo'shish va boshqarish",
     category: 'Hisob Sozlamalari',
     categorySlug: 'hisob-sozlamalari',
-    summary: "Uzum Market API tokenini qo'shish, yangilash va tekshirish.",
+    summary: "Uzum va Yandex Market tokenlarini qo'shish, yangilash va yozish rejimini boshqarish.",
     content: `
 ## API token nima?
 
-API token — Daromadchi'ga Uzum Market hisobingizdan ma'lumotlarni o'qish uchun ruxsat beruvchi kalit. Sukut bo'yicha token faqat o'qish uchun ishlaydi — Daromadchi tovarlar qo'shmaydi yoki buyurtmalarni bekor qilmaydi. Agar do'kon uchun ixtiyoriy «ostatok sinxronizatsiyasi» rejimini yoqsangiz, Daromadchi o'sha do'kon listingida faqat ostatok (qoldiq soni)ni yangilay oladi — boshqa hech narsani emas (bu SKU_UPDATE huquqiga ega tokenni talab qiladi).
+API token — Daromadchi'ga marketplace hisobingizdan ma'lumotlarni **o'qish** uchun ruxsat beruvchi kalit. Har bir do'kon uchun alohida token kerak.
 
-## Token olish (Uzum Market)
+## Sukut bo'yicha: faqat o'qish
+
+Yangi ulangan do'kon **«Faqat o'qish»** rejimida ishlaydi. Bu rejimda Daromadchi hech narsa yozmaydi: narx, nom, listing, buyurtma holati — hech biri o'zgarmaydi.
+
+## Uzum Market tokeni
 
 1. seller.uzum.uz saytiga kiring
-2. Profil → API kalitlari bo'limiga o'ting
-3. "Yangi kalit yaratish" tugmasini bosing
-4. Kalit nomi kiriting (masalan: "Daromadchi")
-5. Token ko'rsatiladi — nusxalab oling
+2. **Sozlamalar → API integratsiya** bo'limiga o'ting
+3. Yangi kalit yarating va nom bering (masalan: «Daromadchi»)
+4. Token ko'rsatiladi — nusxalab oling
 
 <warning>Token faqat bir marta ko'rsatiladi. Darhol nusxalab saqlang.</warning>
 
+## Yandex Market tokeni
+
+Yandex Market uchun ikkita qiymat kerak:
+
+- **OAuth Token** — Yandex Market Partner API tokeni
+- **Campaign ID** — kampaniya raqami, faqat raqamlardan iborat
+
+Campaign ID noto'g'ri bo'lsa (email yoki havola kiritilsa), saqlashda darhol xato ko'rsatiladi.
+
 ## Daromadchi'ga kiritish
 
-**Sozlamalar → API Token** sahifasida:
-1. "Token qo'shish" tugmasini bosing
-2. Token maydoniga yapıştırın
-3. "Tekshirish va saqlash" tugmasini bosing
+**Sozlamalar** sahifasida kerakli marketplace kartochkasini toping:
 
-Muvaffaqiyatli bo'lsa, do'kon ma'lumotlari avtomatik yuklanadi.
+1. Token maydoniga tokenni joylashtiring
+2. Yandex uchun Campaign ID ni ham kiriting
+3. **Saqlash** tugmasini bosing
+4. **Sinxronlash** tugmasi bilan birinchi yuklashni boshlang
+
+Kartochkada do'kon holati («Ulangan» / «Ulanmagan») va oxirgi sinxronizatsiya vaqti ko'rinadi.
 
 ## Tokenni yangilash
 
-Token eskirgan yoki bekor qilingan bo'lsa:
-1. Uzum Market'da yangi token oling
-2. Daromadchi → Sozlamalar → API Token → "Yangilash"
-3. Yangi tokenni kiriting
+Token eskirgan yoki bekor qilingan bo'lsa, marketplace kabinetida yangisini oling va shu maydonga kiritib saqlang. Eski ma'lumotlar yo'qolmaydi.
+
+## Ixtiyoriy: «Ostatok sinxronizatsiyasi (tahrir rejimi)»
+
+Bir jismoniy tovar ikki marketplace'da sotilayotgan bo'lsa, bir joyda sotilgani ikkinchisida ham kamayishi kerak. Buning uchun do'kon uchun **tahrir rejimi**ni yoqish mumkin.
+
+Yoqishdan oldin tasdiqlash katagini belgilashingiz talab qilinadi. Yoqilganda:
+
+- Daromadchi faqat **ostatok (qoldiq soni)** ni yangilaydi
+- Narx, nom, listing, buyurtma holati, hisob-fakturalar — hech qachon o'zgarmaydi
+- Har bir yozuv jurnalga yoziladi
+
+Oxirgi umumiy birlik qanday taqsimlanishini ham tanlaysiz: oxirgisini bloklash, kanallar orasida bo'lish, yoki o'chirish.
+
+Uzum uchun bu rejim tokendan **SKU_UPDATE** huquqini talab qiladi.
+
+<warning>Tahrir rejimi standart holatda o'chirilgan. Siz uni o'zingiz yoqmaguningizcha, hech qanday do'koningizga hech narsa yozilmaydi.</warning>
 
 ## Bir nechta do'kon
 
-Har bir do'kon uchun alohida token kerak. **Sozlamalar → Do'konlar** bo'limida boshqa do'konga "Do'kon qo'shish" orqali qo'shimcha token kiritish mumkin.
+Uzum va Yandex Market kartochkalari alohida — ikkalasini bir vaqtda ulash mumkin. Dashboard'dagi marketplace tugmalari orqali ma'lumotni alohida ko'rasiz.
 `,
   },
   {
@@ -1381,47 +1595,25 @@ Har bir do'kon uchun alohida token kerak. **Sozlamalar → Do'konlar** bo'limida
     title: "Jamoa boshqaruvi",
     category: 'Hisob Sozlamalari',
     categorySlug: 'hisob-sozlamalari',
-    summary: "Jamoangizga a'zo qo'shish, rollar va ruxsatlarni boshqarish.",
+    summary: "Bo'lim tayyorlanmoqda. Hozircha ma'lumotni qanday ulashish mumkin.",
     content: `
-## Jamoa boshqaruvi
+## Jamoa boshqaruvi — tez orada
 
-Pro tarifda jamoangizdan boshqa odamlarni Daromadchi'ga qo'shishingiz mumkin.
+**Dashboard → Jamoa** sahifasi hozircha «Yaqin orada» holatida. Bo'lim ustida ishlanmoqda va tayyor bo'lganda bildiramiz.
 
-## Rollar
+## Hozircha qanday ishlaydi
 
-### Egasi (Owner)
-- Barcha imkoniyatlar
-- Jamoa boshqaruvi
-- Tarif va to'lov boshqaruvi
-- API token boshqaruvi
+Bitta Daromadchi hisobi — bitta foydalanuvchi. Bir hisobga bir nechta **do'kon** ulash mumkin (Uzum va Yandex Market, har biri alohida token bilan), lekin hisobning o'zi bitta kirish ma'lumotiga ega.
 
-### Admin
-- Dashboard va barcha tahlillar
-- Ma'lumotlarni eksport qilish
-- Bildirishnomalar sozlash
-- ❌ Tarif o'zgartira olmaydi
-- ❌ Jamoa a'zolarini o'chira olmaydi
+## Hamkasbga ma'lumot ko'rsatish kerak bo'lsa
 
-### Ko'ruvchi (Viewer)
-- Dashboard ko'rish
-- Hisobotlarni o'qish
-- ❌ Hech narsa o'zgartira olmaydi
-- ❌ Eksport qila olmaydi
+### Hisobotni eksport qiling
+Ko'pchilik jadvallarda **Eksport** tugmasi bor — F&Z hisobot, ogohlantirishlar, qidiruv iboralari, buyurtmalar. Faylni yuborish hisobga kirish huquqini bermaydi.
 
-## A'zo qo'shish
+### Telegram bildirishnomalaridan foydalaning
+Kunlik hisobot va ogohlantirishlar Telegram orqali keladi — omborchi yoki menejerga kerakli ma'lumot shu tarzda yetib boradi.
 
-**Dashboard → Jamoa → "A'zo qo'shish":**
-1. Email manzil kiriting
-2. Rol tanlang
-3. "Taklif yuborish" tugmasini bosing
-
-Taklif email orqali yuboriladi. A'zo qabul qilgach, jamoaga qo'shiladi.
-
-## A'zoni o'chirish
-
-Jamoa jadvalida a'zo yonidagi "..." menyusini bosib "O'chirish" ni tanlang.
-
-<info>Jamoa boshqaruvi faqat Pro tarifda mavjud. Bepul tarifda faqat 1 foydalanuvchi.</info>
+<warning>Parolingizni bo'lishmang. Xavfsizlik sozlamalari «Hisob xavfsizligi» maqolasida tasvirlangan.</warning>
 `,
   },
   {
@@ -1433,35 +1625,33 @@ Jamoa jadvalida a'zo yonidagi "..." menyusini bosib "O'chirish" ni tanlang.
     content: `
 ## Hisobni o'chirish
 
-Hisobingizni o'chirishdan oldin quyidagilarni bilishingiz kerak.
+O'chirish so'rov orqali amalga oshiriladi — tugmani bosishingiz bilan darhol o'chib ketmaydi.
 
 ## O'chirishdan oldin
 
-- Barcha aktiv obunalar bekor qilinadi
-- Eksport qilmoqchi bo'lgan ma'lumotlarni yuklab oling
-- Jamoa a'zolariga xabar bering
+- Kerakli hisobotlarni eksport qiling — o'chirilgandan keyin tiklab bo'lmaydi
+- Aktiv obunani bekor qiling (**Tarif va to'lov → Tarifni bekor qilish**)
+- Marketplace kabinetidagi Daromadchi tokenini bekor qiling
 
-## O'chirish jarayoni
+## So'rov yuborish
 
-**Sozlamalar → Hisob → Hisobni o'chirish:**
-1. "Hisobni o'chirish" tugmasini bosing
-2. Tasdiq matnini kiriting: \`o'chirish\`
-3. Parolingizni kiriting
-4. "Tasdiqlash" tugmasini bosing
+**Dashboard → Hisob** sahifasidagi **«Hisobni o'chirish so'rovi»** tugmasini bosing.
 
-Emailga tasdiqlash havolasi yuboriladi. Havola 24 soat davomida amal qiladi.
+So'rov operatorga yuboriladi va sizga qabul qilingani haqida tasdiq ko'rsatiladi. O'chirish nazorat ostidagi jarayon — u qo'lda bajariladi.
 
-## Ma'lumotlar o'chirilishi
+## Muqobil: privacy@daromadchi.uz
 
-- **Darhol**: Dashboard'ga kirish to'xtatiladi
-- **24 soatdan keyin**: Shaxsiy ma'lumotlar o'chiriladi
-- **30 kundan keyin**: Barcha analitika ma'lumotlari o'chiriladi
+So'rovni to'g'ridan-to'g'ri **privacy@daromadchi.uz** manziliga ham yuborishingiz mumkin. Javob muddati — 15 ish kuni (ZRU-547 Qonuni talabi).
 
-## Hisobni tiklash
+## Nima o'chiriladi
 
-O'chirish so'rovidan 24 soat ichida "Bekor qilish" havolasini bosib, o'chirishni bekor qilishingiz mumkin.
+Shaxsiy ma'lumotlaringiz va do'kon ma'lumotlaringiz o'chiriladi. To'lov yozuvlari qonun talabiga ko'ra **anonimlashtirilgan holda** saqlanadi — ular sizga bog'lanmaydi.
 
-<warning>30 kun o'tgandan keyin ma'lumotlar tiklanmaydi.</warning>
+## Obunani bekor qilish — bu boshqa narsa
+
+Obunani bekor qilsangiz hisobingiz o'chirilmaydi. Biz hisoblarni avtomatik o'chirmaymiz: ma'lumotlaringiz hisob mavjud bo'lgunicha saqlanadi va istalgan vaqtda qayta obuna bo'lishingiz mumkin.
+
+<warning>O'chirish bajarilgandan keyin ma'lumotlar tiklanmaydi. Kerakli narsani oldindan eksport qiling.</warning>
 `,
   },
   {
@@ -1473,7 +1663,7 @@ O'chirish so'rovidan 24 soat ichida "Bekor qilish" havolasini bosib, o'chirishni
     content: `
 ## Hisob xavfsizligi
 
-Daromadchi'da sizning ma'lumotlaringiz xavfsizligi ustuvor. Quyidagi sozlamalar bilan hisobingizni himoya qiling.
+Quyidagilar hisobingizni himoya qilishning amaldagi yo'llari.
 
 ## Kuchli parol
 
@@ -1483,31 +1673,36 @@ Yaxshi parol:
 - Raqamlar
 - Maxsus belgilar (!@#$)
 
-Har 3-6 oyda parolni yangilash tavsiya etiladi.
+Parolni **Kirish → «Parolni unutdingizmi?»** orqali istalgan vaqt yangilashingiz mumkin.
 
-## Ikki faktorli autentifikatsiya (2FA)
+<info>Ikki faktorli autentifikatsiya (2FA), sessiyalar ro'yxati va kirish jurnali Profil sahifasida ko'rinadi, lekin hali ishga tushirilmagan. Ular tayyor bo'lganda shu maqola yangilanadi.</info>
 
-**Sozlamalar → Xavfsizlik → 2FA** ni yoqing:
+## Barcha qurilmalardan chiqish
 
-1. Google Authenticator ilovasini yuklab oling
-2. QR-kodni skaner qiling
-3. 6 xonali kodni kiriting
-4. Zaxira kodlarni saqlang
+**Chiqish** tugmasi sessiyani barcha qurilmada tugatadi — cookie'lar butun domen bo'ylab tozalanadi. Boshqa odam ishlatgan kompyuterda ishni tugatgach chiqishni unutmang.
 
-## Kirish tarixi
+## API tokenlaringiz
 
-**Sozlamalar → Xavfsizlik → Kirish tarixi** bo'limida:
-- Barcha kirishlar (vaqt, qurilma, IP manzil)
-- Noma'lum kirish bo'lsa darhol parolni o'zgartiring
+- Token shifrlangan holda saqlanadi
+- Sukut bo'yicha faqat o'qish uchun ishlatiladi — «Ostatok sinxronizatsiyasi» rejimini o'zingiz yoqmaguningizcha hech narsa yozilmaydi
+- Tokendan shubhalansangiz, marketplace kabinetida uni bekor qiling va yangisini oling
 
-## Barcha sessiyalardan chiqish
+## Fishingdan ehtiyot bo'ling
 
-Agar hisobga ruxsatsiz kirish bo'lgan deb shubhalansangiz:
-**Sozlamalar → Xavfsizlik → Barcha sessiyalardan chiqish**
+Daromadchi hech qachon so'ramaydi:
+- Parolingizni
+- API tokeningizni (uni faqat siz Sozlamalar sahifasiga kiritasiz)
+- Kartangizning to'liq raqamini yoki SMS kodini
 
-Bu barcha qurilmalardagi aktiv sessiyalarni tugatadi.
+Rasmiy manzillar: **daromadchi.uz**, Telegram kanali **@daromadchi_uz**.
 
-<info>Daromadchi hech qachon parol yoki API token so'ramaydi. Bunday so'rov kelsa — fishing!</info>
+## Shubhali holat bo'lsa
+
+1. Parolni darhol yangilang
+2. Marketplace tokenlarini bekor qilib, yangisini oling
+3. **support@daromadchi.uz** manziliga yozing
+
+<warning>Daromadchi hech qachon parol yoki API token so'ramaydi. Bunday so'rov kelsa — bu fishing.</warning>
 `,
   },
 ]
@@ -1516,7 +1711,7 @@ const CATEGORY_NAMES: Record<string, Record<string, string>> = {
   boshlash:               { uz: 'Boshlash',              ru: 'Начало работы',         en: 'Getting started' },
   bildirishnomalar:       { uz: 'Bildirishnomalar',       ru: 'Уведомления',           en: 'Notifications' },
   'chrome-kengaytmasi':   { uz: 'Chrome Kengaytmasi',    ru: 'Расширение Chrome',     en: 'Chrome Extension' },
-  'reklama-tahlili':      { uz: 'Reklama Tahlili',        ru: 'Аналитика рекламы',    en: 'Ad Analytics' },
+  'reklama-tahlili':      { uz: 'Reklama xarajatlari',    ru: 'Расходы на рекламу',   en: 'Ad spend' },
   qoldiqlar:              { uz: 'Qoldiqlar',              ru: 'Остатки',               en: 'Stock' },
   'birlik-iqtisodiyoti':  { uz: 'Birlik Iqtisodiyoti',   ru: 'Юнит-экономика',        en: 'Unit Economics' },
   analitika:              { uz: 'Analitika',              ru: 'Аналитика',             en: 'Analytics' },
@@ -1528,36 +1723,36 @@ const ARTICLE_TITLES: Record<string, Record<string, { title: string; summary: st
   'tez-boshlash':           { ru: { title: 'Быстрый старт',                           summary: 'Регистрация, подключение токена и первый анализ за 4 шага.' },            en: { title: 'Quick start guide',                      summary: 'Registration, connecting a token, and first analysis in 4 steps.' } },
   'malumotlar-sinxronizatsiyasi': { ru: { title: 'Как работает синхронизация данных', summary: 'Автоматическая и ручная синхронизация, какие данные загружаются.' },      en: { title: 'How data sync works',                    summary: 'Auto and manual sync — what data gets imported.' } },
   'fikr-va-xato':           { ru: { title: 'Отправить отзыв или сообщить об ошибке', summary: 'Нашли ошибку или есть предложение? Как сообщить нам.' },                   en: { title: 'Submit feedback or report a bug',        summary: 'Found a bug or have a suggestion? How to reach us.' } },
-  'bildirishnomalar':       { ru: { title: 'Типы уведомлений и настройки',            summary: 'Какие уведомления доступны и как их настроить.' },                        en: { title: 'Notification types and settings',        summary: 'Which notifications are available and how to configure them.' } },
+  'bildirishnomalar':       { ru: { title: 'Типы уведомлений и настройки',            summary: 'Заказы, отмены, остатки и отчёты — и где всё это настраивается.' },        en: { title: 'Notification types and settings',        summary: 'Orders, cancellations, stock and reports — and where to configure them.' } },
   'telegram-ulash':         { ru: { title: 'Подключение Telegram-бота',               summary: 'Получайте уведомления Daromadchi через Telegram.' },                      en: { title: 'Connect Telegram bot',                   summary: 'Receive Daromadchi notifications via Telegram.' } },
-  'chrome-kengaytma':       { ru: { title: 'О расширении Chrome',                     summary: 'Расширение, показывающее аналитику прямо на страницах Uzum Market.' },   en: { title: 'About the Chrome extension',             summary: 'Extension that shows analytics directly on Uzum Market pages.' } },
-  'vidzhet-nima-korsatadi': { ru: { title: 'Что показывает виджет',                   summary: 'Содержимое виджета Daromadchi в кабинете Uzum Market.' },                 en: { title: 'What the widget shows',                  summary: 'Daromadchi widget content in your Uzum Market cabinet.' } },
+  'chrome-kengaytma':       { ru: { title: 'О расширении Chrome',                     summary: 'Расширение, считающее юнит-экономику на страницах Uzum и Yandex Market.' }, en: { title: 'About the Chrome extension',             summary: 'Extension that computes unit economics on Uzum and Yandex Market pages.' } },
+  'vidzhet-nima-korsatadi': { ru: { title: 'Что показывает виджет',                   summary: 'Что означает каждая строка панели на странице товара.' },                  en: { title: 'What the widget shows',                  summary: 'What every line of the product-page panel means.' } },
   'vidzhet-ornatish':       { ru: { title: 'Установка расширения',                    summary: 'Руководство по установке и настройке расширения Chrome.' },               en: { title: 'Install the extension',                  summary: 'Guide to installing and configuring the Chrome extension.' } },
-  'qurilmalar-boshqaruvi':  { ru: { title: 'Управление устройствами',                 summary: 'Управление расширениями, установленными на нескольких устройствах.' },    en: { title: 'Device management',                      summary: 'Manage extensions installed on multiple devices.' } },
-  'reklama-tahlili':        { ru: { title: 'Основы аналитики рекламы',                summary: 'Показатели DRR, CPC, CPO и оценка эффективности рекламы.' },             en: { title: 'Ad analytics basics',                    summary: 'DRR, CPC, CPO metrics and ad performance evaluation.' } },
+  'qurilmalar-boshqaruvi':  { ru: { title: 'Управление устройствами',                 summary: 'Расширение на нескольких компьютерах: что в аккаунте, а что в браузере.' }, en: { title: 'Device management',                      summary: 'The extension across computers: what lives in the account, what in the browser.' } },
+  'reklama-tahlili':        { ru: { title: 'Основы рекламных расходов',               summary: 'Что означают ДРР, CPC, CPO и где рекламный расход попадает в расчёты.' }, en: { title: 'Ad spend basics',                        summary: 'What DRR, CPC and CPO mean, and where ad spend enters the maths.' } },
   'drr-nima':               { ru: { title: 'Что такое DRR и как его снизить',          summary: 'Показатель DRR и методы его оптимизации.' },                            en: { title: 'What is DRR and how to reduce it',       summary: 'DRR metric and how to optimize it.' } },
-  'samarasiz-xarajatlar':   { ru: { title: 'Выявление неэффективных рекламных расходов', summary: 'Какие расходы не приносят прибыли и что с этим делать.' },            en: { title: 'Finding ineffective ad spend',           summary: 'Which costs bring no profit and what to do about it.' } },
-  'kampaniya-byudjeti':     { ru: { title: 'Управление рекламным бюджетом',           summary: 'Как планировать и контролировать рекламный бюджет.' },                   en: { title: 'Managing your ad budget',                summary: 'How to plan and control your advertising budget.' } },
+  'samarasiz-xarajatlar':   { ru: { title: 'Выявление неэффективных рекламных расходов', summary: 'Сопоставить расход из кабинета с прибылью в Daromadchi и найти трату.' }, en: { title: 'Finding ineffective ad spend',           summary: 'Pair cabinet spend with Daromadchi profit to find the waste.' } },
+  'kampaniya-byudjeti':     { ru: { title: 'Управление рекламным бюджетом',           summary: 'Расчёт бюджета через прибыль и CPO. Сам бюджет задаётся в кабинете.' },  en: { title: 'Managing your ad budget',                summary: 'Deriving the budget from profit and CPO. The budget itself lives in the cabinet.' } },
   'qoldiq-boshqaruvi':      { ru: { title: 'Управление остатками',                    summary: 'Остатки товаров на складе, уровни запасов и система оповещений.' },      en: { title: 'Stock management',                       summary: 'Warehouse stock levels and alert system.' } },
   'qoldiq-ogohlantirish':   { ru: { title: 'Оповещения об остатках',                  summary: 'Настройка оповещений о низких остатках и получение их в Telegram.' },    en: { title: 'Stock alerts',                           summary: 'Setting up low-stock alerts and receiving them in Telegram.' } },
-  'fbo-fbs-rfbs':           { ru: { title: 'Разница между FBO, FBS и rFBS',           summary: 'Различия складских моделей Uzum Market и как их видеть в Daromadchi.' }, en: { title: 'FBO, FBS and rFBS differences',          summary: 'Uzum Market warehouse model differences and how to view them.' } },
+  'fbo-fbs-rfbs':           { ru: { title: 'Разница между FBO, FBS и rFBS',           summary: 'Uzum FBO/FBS и Yandex FBY/FBS/DBS: кто собирает и на что это влияет.' }, en: { title: 'FBO, FBS and rFBS differences',          summary: 'Uzum FBO/FBS and Yandex FBY/FBS/DBS: who packs, and why it matters.' } },
   'tovar-aylanmasi':        { ru: { title: 'Оборачиваемость товаров и прогноз заказа',summary: 'Скорость оборота остатков и расчёт времени следующего заказа.' },        en: { title: 'Stock turnover and order forecast',      summary: 'Stock rotation speed and calculating when to reorder.' } },
   'birlik-iqtisodiyoti':    { ru: { title: 'Калькулятор юнит-экономики',              summary: 'Расчёт чистой прибыли, маржи и точки безубыточности для каждого товара.' }, en: { title: 'Unit economics calculator',            summary: 'Calculate net profit, margin and break-even for each product.' } },
-  'zararсizlik-narxi':     { ru: { title: 'Расчёт точки безубыточности',             summary: 'Как определить минимальную прибыльную цену продажи.' },                   en: { title: 'Break-even price calculation',           summary: 'How to find the minimum profitable selling price.' } },
+  'zararsizlik-narxi':     { ru: { title: 'Расчёт точки безубыточности',             summary: 'Как определить минимальную прибыльную цену продажи.' },                   en: { title: 'Break-even price calculation',           summary: 'How to find the minimum profitable selling price.' } },
   'marja-hisoblash':       { ru: { title: 'Расчёт маржи прибыли',                   summary: 'Показатели маржи прибыли на уровне товара и магазина.' },                  en: { title: 'Profit margin calculation',              summary: 'Profit margin metrics at product and store level.' } },
   'logistika-xarajatlari': { ru: { title: 'Расчёт расходов на логистику',           summary: 'Добавление тарифов FBO и FBS в калькулятор юнит-экономики.' },             en: { title: 'Calculating logistics costs',            summary: 'Adding FBO and FBS rates to the unit economics calculator.' } },
   'dashboard-korsatkichlari': { ru: { title: 'Понимание показателей дашборда',      summary: 'Основные карточки дашборда и их значение.' },                             en: { title: 'Understanding dashboard metrics',        summary: 'Main dashboard cards and what they mean.' } },
   'pnl-hisobot':           { ru: { title: 'Отчёт P&L (Прибыли и убытки)',           summary: 'Как читать и анализировать ежемесячный отчёт о прибылях и убытках.' },    en: { title: 'P&L report (Profit & Loss)',             summary: 'How to read and analyse the monthly profit and loss report.' } },
-  'kategoriya-tahlili':    { ru: { title: 'Анализ категорий и товаров',             summary: 'Какие категории и товары приносят наибольшую прибыль.' },                  en: { title: 'Category and product analysis',          summary: 'Which categories and products bring the most profit.' } },
-  'qidiruv-iboralari':     { ru: { title: 'Анализ поисковых запросов',             summary: 'Какой трафик приходит на ваши товары через поиск.' },                      en: { title: 'Search query (keyword) analysis',        summary: 'What search traffic comes to your products.' } },
-  'tashqi-trafik':         { ru: { title: 'Анализ внешнего трафика',               summary: 'Трафик из Instagram, Telegram и других каналов на Uzum.' },               en: { title: 'External traffic analysis',              summary: 'Traffic from Instagram, Telegram and other channels to Uzum.' } },
-  'tariflar':              { ru: { title: 'Тарифы и цены',                          summary: 'Доступные тарифы, их различия и какой подходит вам.' },                    en: { title: 'Plans and pricing',                      summary: 'Available plans, differences, and which one suits you.' } },
-  'tolov-usullari':        { ru: { title: 'Способы оплаты',                         summary: 'Как оплатить тариф и какие способы оплаты доступны.' },                    en: { title: 'Payment methods',                        summary: 'How to pay for a plan and which payment methods are available.' } },
+  'kategoriya-tahlili':    { ru: { title: 'Анализ категорий и товаров',             summary: 'Выручка по категориям, классификация ABC и страница ABC-XYZ.' },           en: { title: 'Category and product analysis',          summary: 'Revenue by category, ABC classification and the ABC-XYZ page.' } },
+  'tovar-tahlili-jadvali':   { ru: { title: 'Таблица аналитики товаров',          summary: '14 столбцов, настройки таблицы и правка цены / себестоимости / остатка на месте.' }, en: { title: 'Product analytics table',                summary: '14 columns, table settings, and editing price / cost / stock in place.' } },
+  'qidiruv-iboralari':     { ru: { title: 'Анализ поисковых запросов',             summary: 'Что показывает страница и почему она пуста до открытия API.' },             en: { title: 'Search query (keyword) analysis',        summary: 'What the page shows, and why it stays empty until the API opens.' } },
+  'tariflar':              { ru: { title: 'Тарифы и цены',                          summary: 'Тарифы по обороту, цены и что остаётся на бесплатном тарифе.' },           en: { title: 'Plans and pricing',                      summary: 'Turnover-based tiers, prices, and what the Free tier keeps.' } },
+  'tolov-usullari':        { ru: { title: 'Способы оплаты',                         summary: 'Привязка карты, автопродление, помесячная и годовая оплата.' },            en: { title: 'Payment methods',                        summary: 'Binding a card, auto-renew, monthly and yearly billing.' } },
   'tarifni-ozgartirish':   { ru: { title: 'Смена или отмена тарифа',               summary: 'Обновление, понижение или отмена подписки.' },                             en: { title: 'Change or cancel plan',                  summary: 'Upgrading, downgrading or cancelling your subscription.' } },
   'bepul-sinov':           { ru: { title: 'Бесплатный пробный период',             summary: `Как воспользоваться бесплатным пробным периодом на ${TRIAL_RU}.` },             en: { title: 'Free trial period',                      summary: `How to use the ${TRIAL_EN} free trial.` } },
   'hisob-sozlamalari':     { ru: { title: 'Настройки аккаунта и профиля',          summary: 'Обновление данных профиля, пароля и настроек безопасности.' },             en: { title: 'Account and profile settings',           summary: 'Updating profile details, password, and security settings.' } },
-  'api-token-sozlash':     { ru: { title: 'Добавление и управление API-токеном',   summary: 'Добавление, обновление и проверка токена Uzum Market.' },                  en: { title: 'Add and manage API token',               summary: 'Adding, updating and verifying your Uzum Market token.' } },
-  'jamoa-boshqaruvi':      { ru: { title: 'Управление командой',                   summary: 'Добавление участников, роли и управление правами доступа.' },              en: { title: 'Team management',                        summary: 'Adding members, roles and managing access permissions.' } },
+  'api-token-sozlash':     { ru: { title: 'Добавление и управление API-токеном',   summary: 'Токены Uzum и Yandex Market, их обновление и режим записи.' },             en: { title: 'Add and manage API token',               summary: 'Uzum and Yandex Market tokens, refreshing them, and write mode.' } },
+  'jamoa-boshqaruvi':      { ru: { title: 'Управление командой',                   summary: 'Раздел в разработке. Как пока делиться данными с коллегой.' },             en: { title: 'Team management',                        summary: 'Section still in development. How to share data meanwhile.' } },
   'hisobni-ochirish':      { ru: { title: 'Удаление аккаунта',                     summary: 'Полное удаление аккаунта Daromadchi и очистка данных.' },                  en: { title: 'Delete account',                         summary: 'Permanently deleting your Daromadchi account and data.' } },
   'xavfsizlik':            { ru: { title: 'Безопасность аккаунта',                 summary: 'Настройки безопасности для защиты вашего аккаунта.' },                     en: { title: 'Account security',                       summary: 'Security settings to protect your account.' } },
 }
@@ -1602,7 +1797,7 @@ const ARTICLE_CONTENT_RU: Record<string, string> = {
   'tez-boshlash': `
 ## Добро пожаловать!
 
-Daromadchi — полноценная аналитическая платформа для продавцов Uzum Market, Yandex Market и Wildberries. Начните работу за 4 шага.
+Daromadchi — аналитическая платформа для продавцов Uzum Market и Yandex Market. Начните работу за 4 шага.
 
 ## Шаг 1: Создать аккаунт
 
@@ -1610,607 +1805,757 @@ Daromadchi — полноценная аналитическая платфор�
 
 <info>Регистрация бесплатна и не требует данных банковской карты.</info>
 
-## Шаг 2: Добавить API-токен
+## Шаг 2: Подключить магазин
 
-После входа перейдите в **Настройки → API-токен**. Скопируйте API-токен из кабинета Uzum Market (\`seller.uzum.uz\`) и вставьте его.
+После входа откройте страницу **Настройки** — там есть отдельная карточка для каждого маркетплейса:
 
-- seller.uzum.uz → Профиль → API-ключи
-- Скопируйте токен
-- Вставьте в настройках Daromadchi и нажмите «Сохранить»
+- **Uzum Market** — *API Token*: seller.uzum.uz → Настройки → API-интеграция
+- **Yandex Market** — *OAuth Token* и *Campaign ID* (только цифры)
+
+Введите токен и нажмите «Сохранить». Можно подключить несколько магазинов — у каждого свой токен.
+
+<info>Токен используется только для чтения. Подробнее — в статье «Добавление и управление API-токеном».</info>
 
 ## Шаг 3: Синхронизировать данные
 
-После добавления токена нажмите кнопку **«Синхронизировать»**. Платформа загрузит:
+После подключения магазина нажмите **«Синхронизировать»**. Платформа загрузит:
 
-- Все товары и SKU
-- Заказы за последние 90 дней
-- Рекламные кампании и расходы
-- Данные по остаткам
+- Товары, SKU и варианты
+- Заказы и их статусы (включая отменённые)
+- Остатки и склады
+- Цены, комиссии и данные о выплатах (settlements)
 
 Первая синхронизация может занять 1–3 минуты.
 
-## Шаг 4: Начните анализ
+## Шаг 4: Начать анализ
 
-После синхронизации на дашборде будут доступны все показатели:
+После синхронизации дашборд готов:
 
-- **DRR** (доля рекламных расходов)
-- **Прибыль** по каждому товару
-- **Остатки** и прогноз их хватит на сколько дней
-- **Отчёт P&L** — доходы и расходы за месяц
+- **Выручка и заказы** за выбранный период
+- **Прибыль и маржа** по каждому товару (если введена себестоимость)
+- **Остатки** и на сколько дней их хватит
+- **Отчёт P&L** — месячная выручка и расходы
 
-<info>Данные обновляются автоматически каждые 4 часа.</info>
+<info>Дальше данные обновляются автоматически — синхронизация запускается каждые 5 минут.</info>
 `,
   'malumotlar-sinxronizatsiyasi': `
 ## Процесс синхронизации
 
-Daromadchi получает данные через API Uzum Market. Платформа поддерживает два режима синхронизации.
+Daromadchi получает данные через API Uzum Market и Yandex Market. Платформа поддерживает два режима синхронизации.
 
 ## Автоматическая синхронизация
 
-Данные обновляются **каждые 4 часа** автоматически:
+Синхронизация запускается в фоне **каждые 5 минут**. Никакого расписания или «часа обновления» нет — новый заказ или отмена обычно появляются в течение нескольких минут.
 
-- 00:00, 04:00, 08:00, 12:00, 16:00, 20:00 (по Ташкенту)
-- Во время обновления в правом верхнем углу дашборда отображается индикатор
+Время последней синхронизации по каждому маркетплейсу видно на странице **Дашборд → Синхронизация**.
 
 ## Ручная синхронизация
 
-На странице дашборда вы можете запустить синхронизацию в любой момент с помощью кнопки **«Обновить»**.
-
-<info>Ручную синхронизацию можно запускать не более 10 раз в сутки (тариф Pro).</info>
+Чтобы не ждать, нажмите **«Синхронизировать»** на карточке магазина на странице **Настройки**.
 
 ## Какие данные загружаются?
 
-| Тип данных | Частота обновления |
+| Тип данных | Комментарий |
 |---|---|
-| Товары и SKU | При каждой синхронизации |
-| Заказы (последние 90 дней) | При каждой синхронизации |
-| Рекламные кампании | При каждой синхронизации |
-| Остатки | При каждой синхронизации |
-| Цены | При каждой синхронизации |
+| Товары, SKU и варианты | Название, артикул, цвет/размер |
+| Заказы и их статусы | Новый, в сборке, доставлен, возврат, отменён |
+| Остатки | По складам |
+| Цены и комиссии | Значения, рассчитанные маркетплейсом |
+| Выплаты (settlements) | Для P&L и страницы «Выплаты» |
+
+<info>Рекламная статистика не загружается — рекламные API Uzum и Yandex Market пока не подключены.</info>
 
 ## Ошибка синхронизации
 
-Если синхронизация завершилась ошибкой:
-1. Убедитесь, что API-токен ещё активен
-2. Войдите в seller.uzum.uz и обновите токен
-3. Введите новый токен в настройках Daromadchi
+Если синхронизация не удалась:
 
-<warning>Если токен просрочен или отозван, данные не будут обновляться.</warning>
+1. Посмотрите текст ошибки на странице **Дашборд → Синхронизация**
+2. Проверьте, действителен ли ещё ваш токен
+3. Получите новый токен в кабинете маркетплейса
+4. Сохраните новый токен на странице **Настройки**
+
+<warning>Если токен истёк или отозван, данные не обновляются, и дашборд продолжает показывать старые цифры.</warning>
 `,
   'fikr-va-xato': `
 ## Ваше мнение важно
 
-Нам нужна ваша обратная связь, чтобы улучшать платформу. Если вы обнаружили ошибку или у вас есть предложение — напишите нам.
+Чтобы улучшать платформу, нам нужны ваши отзывы. Нашли ошибку или есть предложение — сообщите одним из способов ниже.
 
-## Через Telegram
+## Форма в приложении — самый быстрый путь
 
-Самый быстрый способ — наш Telegram:
+У **правого края** дашборда, на середине высоты экрана, есть вкладка **«Отзыв»**. Нажмите её и выберите одно из двух:
 
-- Канал: **@daromadchi_uz**
-- Бот поддержки: **@daromadchi_support_bot**
-- Часы работы: 9:00 – 22:00 (Ташкент)
+- **Сообщить об ошибке** — что-то работает неправильно
+- **Предложить идею** — новая функция или улучшение
 
-## По email
+Опишите суть и **прикрепите скриншот** — это самый быстрый способ объяснить проблему. После отправки появится подтверждение «Спасибо! Ваше сообщение получено».
 
-Для подробного описания проблемы или технической ошибки:
+## Telegram-канал
 
-**support@daromadchi.uz**
+Новости и анонсы: **@daromadchi_uz** (https://t.me/daromadchi_uz)
 
-При написании укажите:
-1. Как возникла проблема?
-2. На какой странице?
-3. Приложите скриншот
+## По электронной почте
 
-## Обратная связь внутри приложения
+Подробные или технические вопросы: **support@daromadchi.uz**
 
-Нажмите кнопку **«Оставить отзыв»** в правом нижнем углу дашборда. Заполните форму и отправьте прямо из приложения.
+Для запросов о персональных данных и удалении аккаунта отдельный адрес: **privacy@daromadchi.uz**
 
-<info>Мы стараемся рассматривать сообщения об ошибках как можно быстрее. Как правило, ответ приходит в течение 24 часов.</info>
+## Что полезно указать
+
+1. Что вы ожидали и что произошло?
+2. Какой магазин / маркетплейс?
+3. Какой период был выбран?
+4. Скриншот
+
+<info>Мы разбираем обращения как можно быстрее. Приоритетная поддержка доступна на Pro+ и выше.</info>
 `,
   'bildirishnomalar': `
 ## Что такое уведомления?
 
-Daromadchi автоматически отправляет уведомления о важных событиях. Это помогает следить за магазином и оперативно реагировать на проблемы.
+Daromadchi сообщает о важных событиях. Уведомления приходят в двух местах: в **Telegram-боте** и **внутри приложения** (колокольчик в верхней панели → страница «Уведомления»).
 
-## Типы уведомлений
+## Уведомления в Telegram
 
-### 1. Оповещения о низких остатках
-Когда остаток товара опускается ниже установленного порога:
-- Порог: от 3 до 30 дней (вы настраиваете)
-- Указывает, по какому SKU и сколько осталось
+### 🛒 Новые заказы
+Новые заказы, найденные при синхронизации, собираются в одно сообщение: маркетплейс, товар, количество.
 
-### 2. Превышение рекламного бюджета
-Когда дневной рекламный бюджет достигает установленного предела:
-- Пример: дневной бюджет 500 000 сум — уведомление при достижении 90%
+### ❌ Отменённые заказы
+При отмене заказа приходит **отдельное сообщение** — оно не подмешивается в сообщение о новых заказах. Причина простая: «соберите и отправьте» и «не отправляйте» — противоположные указания, и склеивание их в одно сообщение — самый надёжный способ пропустить отмену.
 
-### 3. Падение продаж
-Когда объём продаж резко снижается по сравнению с последними 7 днями:
-- Порог: -20%, -30%, -50% (вы выбираете)
+По каждому заказу сообщение об отмене отправляется **только один раз**, сколько бы раз ни отработала синхронизация. Отменённые заказы исключаются из выручки в отчётах.
 
-### 4. Новые заказы
-Уведомление о каждом новом заказе (не рекомендуется — их может быть много).
+<info>Уведомления об отменах включаются и выключаются вместе с настройкой «Новые заказы».</info>
 
-### 5. Ежедневный отчёт
-Краткий отчёт в заданное время каждый день:
-- Выручка, количество заказов, DRR, состояние остатков
+### 📦 Низкий остаток
+Когда остаток опускается ниже заданного порога. Одна строка на один физический товар — даже если он представлен несколькими листингами.
 
-## Настройка
+### 🔄 Синхронизация остатков
+Когда товар, проданный на одном маркетплейсе, уменьшается и на другом (если для магазина включён режим «Синхронизация остатков») — что изменилось и с каким результатом.
 
-Перейдите в **Дашборд → Настройки → Уведомления**:
+### 📊 Ежедневный отчёт
+Каждый день в выбранное вами время: выручка, заказы, прибыль, комиссия, отмены, разбивка по категориям.
 
-1. Включайте/выключайте каждый тип с помощью переключателя
-2. Введите пороговые значения
-3. Выберите время ежедневного отчёта
-4. Нажмите «Сохранить»
+### 📈 Еженедельный отчёт
+То же самое, но за неделю. По умолчанию выключен.
 
-<info>Уведомления доставляются через Telegram. Необходимо сначала подключить Telegram.</info>
+## Настройка Telegram-уведомлений
+
+Настройки живут **в самом боте**, а не в дашборде:
+
+1. Напишите боту **/start** в Telegram
+2. Откройте настройки уведомлений в меню бота
+3. Включайте и выключайте каждый тип кнопкой ✅ / ❌:
+   📦 Низкий остаток · 📊 Ежедневный отчёт · 🛒 Новые заказы · 📈 Еженедельный отчёт
+4. Выберите время ежедневного отчёта
+
+<info>Без подключённого Telegram сообщения не приходят. См. статью «Подключение Telegram-бота».</info>
+
+## Уведомления внутри приложения
+
+На странице **Дашборд → Уведомления** показаны оповещения о низких остатках и новые заказы. Открытие страницы сбрасывает счётчик на колокольчике.
+
+Получать ли уведомление об изменении остатка в приложении и/или в Telegram, вы выбираете двумя переключателями на странице **Дашборд → Оповещения**.
 `,
   'telegram-ulash': `
 ## Подключение Telegram-бота
 
-Уведомления отправляются через Telegram. Выполните следующие шаги для подключения.
+Уведомления приходят через Telegram. Подключение занимает несколько нажатий — копировать токен не нужно.
 
 ## Шаги подключения
 
-### Шаг 1: Получите токен
-Перейдите в **Дашборд → Настройки → Уведомления**. В разделе «Подключить Telegram» отображается ваш персональный токен (например: \`drm_abc123xyz\`).
+### Шаг 1: откройте Настройки
+Внизу страницы **Дашборд → Настройки** есть карточка **Telegram**.
 
-### Шаг 2: Найдите бота
-Найдите в Telegram **@daromadchi_bot** или перейдите по ссылке.
+### Шаг 2: нажмите «Подключить Telegram»
+Daromadchi подготовит вашу персональную ссылку.
 
-### Шаг 3: Запустите бота
-Отправьте боту следующее сообщение:
+### Шаг 3: откройте ссылку
+Ссылка открывает бота в Telegram с уже готовым запросом на подключение — остаётся нажать **Start**.
 
-\`/start drm_abc123xyz\`
+### Шаг 4: выберите язык
+Бот спросит язык уведомлений. После выбора подключение завершено, а страница Настроек обновится сама: на карточке появятся **«Подключён ✓»** и ваш ник в Telegram.
 
-(замените drm_abc123xyz на ваш токен)
+## Проверка
 
-### Шаг 4: Подтверждение
-Бот отправит сообщение «Успешно подключено!». Страница Daromadchi обновится автоматически.
-
-<info>К одному аккаунту нельзя подключить несколько Telegram-аккаунтов.</info>
+После подключения на карточке появляется кнопка **«Отправить тест»**. Нажмите её — бот сразу пришлёт тестовое сообщение. Если оно не пришло, проверьте, не заблокирован ли бот.
 
 ## Отключение
 
-Настройки → Уведомления → нажмите «Отключить Telegram».
+Кнопка **«Отключить»** на той же карточке. После неё сообщения не отправляются.
 
-## Если что-то пошло не так
+## Настройка уведомлений
 
-- Проверьте правильность введённого токена
-- Токен одноразовый — для повторного подключения получите новый
-- Если бот заблокирован — разблокируйте и начните заново
+Какие именно сообщения приходят, настраивается **в самом боте** — отправьте боту **/start** и выберите в меню. Подробнее — в статье «Типы уведомлений и настройки».
+
+<info>К одному аккаунту Daromadchi подключается один аккаунт Telegram.</info>
+
+## Если что-то не так
+
+- Если срок действия ссылки истёк, нажмите «Подключить Telegram» ещё раз и получите новую
+- Если бот заблокирован, разблокируйте его и повторите
+- Кнопка «Подключить Telegram» в расширении ведёт на эту же страницу
 `,
   'chrome-kengaytma': `
 ## Что такое расширение Chrome?
 
-Расширение Daromadchi для Chrome — это инструмент, который показывает данные аналитики прямо в кабинете продавца Uzum Market, пока вы там работаете.
+Расширение Daromadchi считает **юнит-экономику**, не уводя вас со страницы маркетплейса. На странице товара открывается панель и показывает по нему комиссию, доставку, чистую прибыль и маржу.
 
-## Зачем оно нужно?
+## Где работает
 
-Открыв кабинет Uzum Market, вы можете видеть данные Daromadchi без переключения на отдельную вкладку:
+- **uzum.uz** — страницы товаров Uzum Market
+- **market.yandex.ru / market.yandex.uz** — страницы товаров Yandex Market
+- **partner.market.yandex.ru** — кабинет партнёра Yandex Market
+- **daromadchi.uz** — для связи с вашим аккаунтом
 
-- DRR отображается прямо на странице товара
-- Остаток и количество дней до конца
-- Текущая цена и маржа прибыли
-- Цены конкурентов
+На других сайтах расширение вообще не запускается.
 
-## Как оно работает?
+## Что оно даёт
 
-1. Расширение устанавливается в Chrome
-2. Вы заходите на seller.uzum.uz
-3. Расширение считывает данные страницы и добавляет аналитику из вашего аккаунта Daromadchi
-4. Рядом с карточкой товара появляется виджет (мини-панель)
+### Панель на странице товара
+Цену она считывает со страницы сама. Вы вводите себестоимость, упаковку, процент комиссии и объём — панель тут же пересчитывает чистую прибыль и маржу. Кнопки **FBO / FBS** переключают модель расходов.
 
-<info>Расширение работает только в Chrome и браузерах на основе Chromium (Edge, Brave, Opera).</info>
+### Попап (по клику на значок)
+Краткая статистика по магазину и оповещения. Здесь же кнопка подключения Telegram.
 
-## Безопасность
+### Настройки (Options)
+Собственные оповещения расширения: порог низкого остатка, падение продаж, процент возвратов, «тихие часы» и ежедневная сводка. Эти настройки хранятся в браузере.
 
-Расширение работает только на домене seller.uzum.uz. На других сайтах никакие данные не считываются.
+## Браузеры
+
+Chrome и браузеры на Chromium: Edge, Brave, Opera.
+
+<info>Расчёт в панели использует те же формулы, что и страница **Юнит-экономика** в Daromadchi. Кнопка в панели открывает полный калькулятор.</info>
 `,
   'vidzhet-nima-korsatadi': `
-## Состав виджета
+## Из чего состоит панель
 
-Когда расширение Daromadchi для Chrome включено, на страницах товаров seller.uzum.uz отображается мини-виджет со следующими данными:
+Что вы видите, когда панель Daromadchi открыта на странице товара.
 
-## Основные показатели
+## Верхняя часть
 
-| Показатель | Описание |
+- Название товара
+- **Цена**, считанная со страницы
+- Кнопки языка (UZ / RU / EN), темы и обновления
+
+## Выбор модели
+
+Кнопки **FBO** или **FBS** переключают модель расходов. На страницах Yandex используется соответствующая модель.
+
+## Что вводите вы
+
+| Поле | Зачем нужно |
 |---|---|
-| DRR | Доля рекламных расходов (%) |
-| Текущая цена | Действующая цена продажи |
-| Себестоимость | Введённая вами себестоимость |
-| Прибыль/шт | Доход с каждой проданной единицы |
-| Маржа | Прибыль в % |
-| Остаток | Количество на складе |
-| Дней осталось | Сколько дней хватит при текущем темпе продаж |
+| **Себестоимость** | Во сколько товар обошёлся вам |
+| **Упаковка** | Расход на упаковку одной единицы |
+| **Комиссия (%)** | Комиссия маркетплейса; подставляется по категории |
+| **Объём** | Для расчёта стоимости доставки |
 
-## Рекламные данные
+## Результат расчёта
 
-- Количество активных кампаний
-- Рекламные расходы за сегодня
-- CPC (цена за клик)
-- CPO (цена за заказ)
+| Строка | Что означает |
+|---|---|
+| Цена | Цена продажи со страницы |
+| Комиссия (%) | Комиссия маркетплейса |
+| Доставка | Логистика — помечается как **ориентировочная** |
+| Итого маркетплейс | Комиссия + доставка |
+| Итого расходы | Итого маркетплейс + себестоимость + упаковка |
+| **Чистая прибыль** | Итоговый результат, с цветной полосой |
+| **Маржа** | Доля прибыли в цене (%) |
 
-## Конкуренты
+Цвет маржи показывает состояние: зелёный — здорово, жёлтый — на грани, красный — убыток.
 
-Если для данного товара есть рыночный анализ:
-- Самая низкая цена конкурента
-- Средняя цена в категории
+## Чего в панели нет
 
-<info>Данные виджета основаны на последней синхронизации. Для актуальных данных обновите синхронизацию.</info>
+В панели **нет рекламных показателей (ДРР, CPC, CPO), кампаний и цен конкурентов**. Маркетплейсы не отдают эти данные по API.
+
+<info>При изменении любого значения прибыль и маржа пересчитываются сразу — сохранять ничего не нужно.</info>
 `,
   'vidzhet-ornatish': `
-## Шаги установки
+## 1. Установка из Chrome Web Store
 
-### 1. Установка из Chrome Web Store
+Расширение опубликовано в Chrome Web Store под названием «Daromadchi — Uzum & Yandex»:
 
-1. Откройте Chrome Web Store
-2. Найдите «Daromadchi»
-3. Нажмите «Добавить в Chrome»
-4. Подтвердите разрешения
+https://chromewebstore.google.com/detail/daromadchi-%E2%80%94-uzum-yandex/kdgmhemligckdjibcojbdiofokjjnaed
 
-### 2. Войдите в аккаунт
+Откройте ссылку и нажмите **«Добавить в Chrome»**. Та же ссылка есть на главной странице Daromadchi и на странице **Юнит-экономика**.
 
-Нажмите на значок расширения (правый верхний угол браузера) и введите данные вашего аккаунта Daromadchi.
+## 2. Войдите в аккаунт
 
-### 3. Предоставьте разрешения
+Нажмите на значок расширения. Если вы не авторизованы, попап покажет кнопку **«Войти»** и откроет daromadchi.uz. После входа попап начнёт показывать вашу статистику.
 
-Расширению необходимы следующие разрешения:
-- Чтение данных на домене seller.uzum.uz
-- Отправка запросов на серверы Daromadchi
+## 3. Активируйте расширение
 
-<warning>Расширение работает только на выбранных вами доменах. На других сайтах оно неактивно.</warning>
+1. Подпишитесь на канал **@daromadchi_uz** в Telegram
+2. Отправьте боту **/activate**
+3. Бот пришлёт 6-значный код
+4. Введите код в расширении
 
-### 4. Проверьте работу
+<info>Код одноразовый и с ограниченным сроком. Если срок истёк, отправьте боту **/activate** ещё раз.</info>
 
-Перейдите в seller.uzum.uz → страница «Товары». Рядом с каждым товаром должен появиться значок виджета Daromadchi.
+## 4. Опционально: ввод API-ключей
 
-## Если что-то не работает
+На странице **Настроек (Options)** расширения можно отдельно сохранить ключи маркетплейсов:
 
-- Перезапустите браузер
-- Отключите и снова включите расширение
+- **API-ключ Yandex Market** — кабинет продавца → Настройки → API и модули
+- **Токен Uzum Seller API** — seller.uzum.uz → Профиль → API-ключи
+
+Рядом с каждым полем есть кнопка **«Проверить»** — она сразу проверяет ключ.
+
+## 5. Проверьте
+
+Откройте страницу любого товара на uzum.uz или market.yandex.ru. Панель Daromadchi должна появиться. Если она закрыта, её возвращает кнопка **«D»** сбоку.
+
+## Если что-то не так
+
+- Обновите страницу — панель добавляется после загрузки
+- Выключите и снова включите расширение
 - Chrome → Дополнительные инструменты → Расширения → Daromadchi → Подробнее
 `,
   'qurilmalar-boshqaruvi': `
-## Список устройств
+## Использование на нескольких устройствах
 
-К одному аккаунту можно подключить расширение Chrome на нескольких устройствах.
+Расширение можно установить на любое число компьютеров — ограничения нет, и список устройств в Daromadchi не ведётся.
 
-В разделе **Настройки → Расширение Chrome → Устройства** отображаются все подключённые устройства.
+Вместо этого каждый браузер настраивается независимо.
 
-## Отображаемые данные
+## Что где хранится
 
-Для каждого устройства:
-- Название устройства и версия браузера
-- Операционная система
-- Время последней активности
-- Статус: Активно / Неактивно
+| Данные | Где хранятся |
+|---|---|
+| Данные магазина, заказы, остатки | В аккаунте Daromadchi — одинаковы везде |
+| Подключение Telegram | В аккаунте — подключается один раз, работает везде |
+| Настройки оповещений расширения | **Только в этом браузере** |
+| API-ключи в расширении | **Только в этом браузере** |
+| Выбор языка и темы | **Только в этом браузере** |
 
-## Удаление устройства
+То есть после установки расширения на новом компьютере пороги на его странице **Настроек** придётся задать заново. Данные магазина подтянутся сами.
 
-Чтобы удалить старое или неиспользуемое устройство из списка, нажмите «Удалить». Расширение на этом устройстве отключится от аккаунта.
+## Подключение нового устройства
 
-<info>Можно подключить максимум 5 устройств (тариф Pro). На тарифе Pro+ — без ограничений.</info>
+1. Установите расширение
+2. Войдите в аккаунт Daromadchi
+3. Отправьте боту **/activate**, получите новый код и введите его
 
-## Выйти на всех устройствах
+Расширение на прежнем устройстве продолжит работать — новая активация его не отключает.
 
-Кнопка «Выйти на всех устройствах» завершает все активные сессии. После этого вам потребуется заново войти на каждом устройстве.
+## Отключение устройства
+
+Отключить устройство удалённо нельзя. На самом устройстве нужно:
+
+- Удалить расширение из Chrome, либо
+- Отключить Telegram через попап и выйти из аккаунта Daromadchi
+
+<warning>На чужом компьютере не забудьте выйти из аккаунта — расширение работает через сессию браузера.</warning>
 `,
   'reklama-tahlili': `
-## Что такое аналитика рекламы?
+## Важно: Daromadchi не подключается к рекламному кабинету
 
-Аналитика рекламы — набор показателей, измеряющих эффективность ваших рекламных расходов. Daromadchi автоматически рассчитывает все ключевые метрики.
+В Daromadchi **нет** таблицы рекламных кампаний, и рекламная статистика не загружается по API. Ни Uzum Market, ни Yandex Market пока не открыли API с рекламными данными — кнопка «Синхронизировать рекламу» на странице **Настройки** сообщает ровно об этом.
+
+Кампании, клики и дневной расход вы смотрите **в кабинете маркетплейса**. Эта статья объясняет, как читать те цифры и как учесть их в расчёте прибыли в Daromadchi.
 
 ## Основные показатели
 
-### DRR (Доля рекламных расходов)
-\`DRR = Рекламные расходы / Выручка × 100\`
+### ДРР (доля рекламных расходов)
+\`ДРР = Расход на рекламу / Выручка × 100\`
 
-- **DRR < 10%** — хорошо
-- **DRR 10–20%** — приемлемо
-- **DRR > 20%** — высокий, необходимо проверить кампанию
+- **ДРР < 10%** — хорошо
+- **ДРР 10–20%** — приемлемо
+- **ДРР > 20%** — высоко, кампанию стоит проверить
 
-### CPC (Цена за клик)
-\`CPC = Общие расходы / Количество кликов\`
+### CPC (цена клика)
+\`CPC = Общий расход / Количество кликов\`
 
-### CPO (Цена за заказ)
-\`CPO = Общие расходы / Количество заказов\`
+### CPO (цена заказа)
+\`CPO = Общий расход / Количество заказов\`
 
-### ROAS (Окупаемость рекламы)
-\`ROAS = Выручка / Рекламные расходы\`
+### ROAS (окупаемость рекламы)
+\`ROAS = Выручка / Расход на рекламу\`
 
-Рекомендуется ROAS > 5.
+Все эти сокращения также расшифрованы в разделе **Сокращения** на дашборде.
 
-## Таблица кампаний
+## Где рекламный расход попадает в Daromadchi?
 
-В разделе Дашборд → Аналитика → Кампании отображаются все активные и неактивные кампании с показателями.
+### 1. Калькулятор юнит-экономики
+В поле **Реклама (%)** на странице **Дашборд → Калькулятор** вы вводите свой ДРР. Калькулятор учитывает его как расход и пересчитывает чистую прибыль и точку безубыточности.
 
-## Выявление неэффективных расходов
+### 2. Отчёт P&L
+Если маркетплейс удержал рекламные деньги из вашей выплаты, они попадают в строку **«Прочие удержания маркетплейса»** (вместе с эквайрингом и штрафами). Это фактическое удержание из отчёта маркетплейса, а не оценка.
 
-Daromadchi автоматически отмечает:
-- Клики есть, но нет заказов
-- Кампании с DRR выше 30%
-- Кампании с исчерпанным бюджетом
-
-<info>Данные рекламы поступают через API Uzum Market и обновляются при каждой синхронизации.</info>
+<info>То есть: анализ на уровне кампаний — в кабинете, влияние на прибыль — в Daromadchi.</info>
 `,
   'drr-nima': `
-## Что такое DRR?
+## Что такое ДРР?
 
-**DRR** (Доля Рекламных Расходов) — доля рекламных расходов в выручке.
+**ДРР** (доля рекламных расходов) — доля расходов на рекламу в выручке.
 
-**Формула:** \`DRR = Рекламные расходы / Выручка × 100\`
+**Формула:** \`ДРР = Расход на рекламу / Выручка × 100\`
 
-**Пример:** выручка 1 000 000 сум, реклама 80 000 сум → DRR = 8%
+**Пример:** выручка 1 000 000 сум, реклама 80 000 сум → ДРР = 8%
 
-## Какой DRR считается нормальным?
+<info>ДРР вы берёте из отчёта по кампаниям в кабинете маркетплейса — Daromadchi не подключён к рекламному кабинету и не может посчитать это сам.</info>
 
-| Категория | Рекомендуемый DRR |
+## Какой ДРР считается нормальным?
+
+Зависит от категории:
+
+| Категория | Рекомендуемый ДРР |
 |---|---|
-| Электроника | 5–10% |
-| Одежда | 8–15% |
-| Товары для дома | 6–12% |
-| Продукты питания | 3–8% |
-| Косметика | 10–18% |
+| Электроника | 5-10% |
+| Одежда | 8-15% |
+| Товары для дома | 6-12% |
+| Продукты питания | 3-8% |
+| Косметика | 10-18% |
 
-## Как снизить DRR
+## Как найти свой предельный ДРР
 
-### 1. Изменить цель кампании
-Платить не за клики, а за заказы (CPC → CPO)
+Таблица выше — усреднённый ориентир. Точный ответ зависит от вашей маржи:
+
+1. Откройте **Дашборд → Калькулятор** и выберите товар
+2. Поставьте **Реклама (%)** = 0 — это ваша чистая маржа
+3. Постепенно повышайте процент, пока прибыль не приблизится к нулю
+
+Эта точка — **безубыточный ДРР** для товара. Всё, что выше, — работа в минус.
+
+## Способы снизить ДРР
+
+### 1. Сменить цель кампании
+Платить за заказ, а не за клик (CPC → CPO)
 
 ### 2. Отключить неэффективные ключевые слова
-Ключевые слова, которые дают много кликов, но мало заказов
+Слова, которые дают клики, но не дают заказов
 
-### 3. Настроить временны́е корректировки
-Снижать бюджет в периоды низких продаж
+### 3. Настроить расписание показов
+Снижать бюджет в часы с низкими продажами
 
 ### 4. Проверить цену
 Если конкуренты продают дешевле — скорректируйте цену
 
-### 5. Улучшить фото товара
-Хорошие фото повышают CTR — больше заказов при тех же расходах
+### 5. Улучшить фотографии товара
+Хорошее фото повышает CTR — больше заказов при том же расходе
 
-<info>Daromadchi рассчитывает DRR автоматически и отмечает кампании с высоким DRR жёлтым/красным цветом.</info>
+<warning>Все настройки кампаний меняются в кабинете маркетплейса. Daromadchi не изменяет и не останавливает кампании.</warning>
 `,
   'samarasiz-xarajatlar': `
 ## Что такое неэффективные расходы?
 
-Неэффективные рекламные расходы — клики и показы, на которые потрачены деньги, но которые не превратились в заказы.
+Неэффективный рекламный расход — клики и показы, за которые заплачено, но которые не превратились в прибыль.
 
-## Как Daromadchi их выявляет?
+<info>Daromadchi не размечает кампании сам — рекламная статистика не приходит по API. Ниже описан способ сопоставить цифры из кабинета маркетплейса с цифрами прибыли в Daromadchi.</info>
 
-### 1. Высокий CPC, низкая конверсия
-Кампании, за клики в которых платится много, но заказов приходит мало.
+## Порядок работы
 
-### 2. Кампании с нулевыми заказами
-Кампании, которые тратят деньги, но не принесли ни одного заказа за последние 7 дней.
+### Шаг 1: возьмите расход по кампаниям из кабинета
+В кабинете маркетплейса выгрузите расход по каждому товару за последние 7–30 дней.
 
-### 3. Реклама на товары с заканчивающимися остатками
-Трата рекламного бюджета на товары, которых почти не осталось.
+### Шаг 2: посмотрите прибыль этого товара в Daromadchi
+В таблице **Дашборд → Аналитика товаров** за тот же период:
+- **Прибыль** — что остаётся после себестоимости и комиссий
+- **Маржа %** — доля прибыли в выручке
+- **Доля продаж** — сколько процентов общей выручки даёт товар
+- **ABC** — класс A/B/C
 
-### 4. Кампании с DRR > 30%
-Daromadchi помечает их как «Внимание».
+### Шаг 3: сравните
 
-## Что делать?
+| Ситуация | Вывод |
+|---|---|
+| Расход > Прибыль | Реклама работает в минус — остановите или пересмотрите цену |
+| Расход ≈ Прибыль | Точка нуля — работаете только на оборот |
+| Расход < Прибыль, ABC = A | Здоровая ситуация — бюджет можно увеличить |
+| Расход есть, продаж нет | Самая явная трата — останавливайте в первую очередь |
 
-1. Примените фильтр «Неэффективные» в таблице **Кампании**
-2. Проанализируйте каждую неэффективную кампанию
-3. Обновите список ключевых слов или приостановите кампанию
+## На что смотреть
 
-<warning>Не останавливайте сразу все кампании с низкой конверсией — некоторые работают на узнаваемость бренда.</warning>
+### Реклама товара с заканчивающимся остатком
+Проверьте список низких остатков на странице **Дашборд → Оповещения**. Рекламировать товар, которого хватит на пару дней, — потерянные деньги.
+
+### Товары с высоким процентом возвратов
+Столбец **% возвратов** в таблице аналитики товаров. Если возвратов много, заказ не равен прибыли — и реклама обходится вдвое дороже.
+
+### Товары с низкой маржой
+При марже ниже 10% даже небольшой ДРР уводит товар в минус. Посчитайте порог в **Калькуляторе**.
+
+<warning>Не останавливайте разом все кампании с низкой конверсией — часть из них работает на узнаваемость бренда.</warning>
 `,
   'kampaniya-byudjeti': `
-## Управление бюджетом
+## Где настраивается бюджет?
 
-Daromadchi помогает контролировать рекламный бюджет, однако настраивать его нужно напрямую в кабинете Uzum Market.
+Рекламный бюджет настраивается **в кабинете маркетплейса**, а не в Daromadchi. Daromadchi не подключён к рекламному кабинету, поэтому не показывает бюджет, не меняет его и не предупреждает о его исчерпании.
 
-## Отслеживание бюджета
+Что даёт Daromadchi — **цифры прибыли, по которым бюджет можно посчитать**.
 
-В разделе **Дашборд → Аналитика → Кампании**:
-- Дневной бюджет каждой кампании
-- Потраченная сумма за сегодня
-- Прогнозируемое время исчерпания бюджета
+## Расчёт бюджета
 
-## Настройка уведомлений
+### 1. Сколько прибыли даёт один заказ?
+В **Дашборд → Калькулятор** выберите товар, введите себестоимость и цену, поставьте **Реклама (%)** = 0. Полученная чистая прибыль — то, что вы зарабатываете с заказа без рекламы.
 
-Чтобы получать уведомление в Telegram, когда бюджет достигнет 80% или 90%:
+### 2. Определите предельный CPO
+\`Предельный CPO = чистая прибыль с одного заказа\`
 
-Перейдите в **Настройки → Уведомления → Рекламные расходы** и укажите порог.
+Выше этого значения каждый заказ приносит убыток. На практике разумно не выходить за половину прибыли.
 
-## Рекомендации по бюджету
+### 3. Посчитайте дневной бюджет
+\`Дневной бюджет = целевой CPO × целевое число заказов в день\`
 
-\`Оптимальный бюджет = Средний CPO × Целевое количество заказов\`
+**Пример:** чистая прибыль 30 000 сум → целевой CPO 15 000 сум; нужно 10 заказов в день → бюджет 150 000 сум/день.
 
-**Пример:** CPO = 15 000 сум, цель = 10 заказов/день → бюджет = 150 000 сум/день
+### 4. Сверьтесь с остатком
+На странице **Дашборд → Оповещения** посмотрите, на сколько дней хватит остатка. Бюджет не должен разгонять продажи быстрее, чем позволяет склад.
 
-## Сезонные изменения
+## Контроль
 
-В праздники и сезонные акции рекомендуется увеличивать бюджет в 1,5–2 раза.
+Раз в неделю:
+1. Возьмите фактический расход из кабинета
+2. Посмотрите прибыль за тот же период в таблице **Продажи и маржа по товарам**
+3. Пересчитайте ДРР и скорректируйте бюджет
 
-<info>Рекламный бюджет изменяется напрямую в seller.uzum.uz → Реклама.</info>
+## Сезонность
+
+В праздники и во время акций продажи растут — прежде чем поднимать бюджет, убедитесь, что остатков хватит.
+
+<info>Меняйте рекламный бюджет в разделе рекламы кабинета seller.uzum.uz или Yandex Market.</info>
 `,
   'qoldiq-boshqaruvi': `
 ## Управление остатками
 
-Daromadchi отслеживает ваши остатки с учётом темпа продаж и подсказывает, когда нужно делать новый заказ.
+Daromadchi следит за остатками с учётом скорости продаж и подсказывает, когда пора заказывать товар.
 
-## Уровни остатков
+## На сколько дней хватит остатка
 
-\`Дней = Остаток / Среднесуточные продажи\`
+Для каждого товара:
 
-| Уровень | Дней | Цвет |
+\`Дни = Остаток / Средние продажи в день\`
+
+На странице **Оповещения** это число показано цветным бейджем:
+
+| Статус | Дни | Цвет |
 |---|---|---|
-| **A** | 30+ дней | Зелёный |
-| **B** | 15–30 дней | Синий |
-| **C** | 7–15 дней | Жёлтый |
-| **D** | Менее 7 дней | Красный |
+| **Критично** | Меньше 3 дней или остаток 0 | Красный |
+| **Предупреждение** | 3-7 дней | Жёлтый |
+| **Наблюдение** | Больше 7 дней | Синий |
 
-## Просмотр по FBO / FBS
+## Модели маркетплейсов
 
-На Uzum Market есть два типа остатков:
+Из какого склада идёт заказ и остаток, показывают бейджи:
 
-- **FBO** — товары на складе Uzum
-- **FBS** — товары на вашем складе
+**Uzum Market**
+- **FBO** — товар на складе Uzum, сборка и доставка на стороне Uzum
+- **FBS** — товар на вашем складе, вы собираете заказ сами
 
-В таблице товаров оба типа отображаются отдельно.
+**Yandex Market**
+- **FBY** — товар на складе Yandex, всё делает Yandex
+- **FBS** — ваш склад, логистика Yandex (Экспресс тоже относится сюда)
+- **DBS** — и хранение, и доставка на вас
 
-## Настройка уведомлений
+<info>Сообщение «соберите и отправьте» приходит только по моделям, где собирает продавец (FBS, DBS) — по заказам FBO и FBY от вас ничего не требуется.</info>
 
-В разделе **Настройки → Уведомления → Низкие остатки**:
-1. Введите минимальный порог в днях (например: 7 дней)
-2. Выберите, по каким типам товаров получать уведомления
-3. Сохраните
+## Один товар — несколько листингов
 
-<info>Данные об остатках поступают через API Uzum Market. Для склада FBO доступны данные в реальном времени.</info>
+Один физический товар может стоять на двух маркетплейсах или несколькими листингами на одном. На странице **Дашборд → Склады** вы объединяете их в группу — после этого остаток считается по группе, и оповещения не дублируются.
+
+## Синхронизация остатков (опционально)
+
+Если она включена для магазина, товар, проданный на одном маркетплейсе, уменьшается и на другом. Это единственное, что Daromadchi записывает в листинг маркетплейса, и только количество остатка. Подробнее — в статье «Добавление и управление API-токеном».
+
+<info>Остатки обновляются вместе с синхронизацией.</info>
 `,
   'qoldiq-ogohlantirish': `
 ## Оповещения об остатках
 
-Когда остаток товара на складе опускается ниже установленного порога, Daromadchi автоматически отправляет сообщение в Telegram.
+Когда остаток опускается ниже заданного порога, Daromadchi предупреждает.
 
-## Параметры оповещений
+## Настройка порога
 
-На странице **Настройки → Уведомления**:
+На странице **Дашборд → Оповещения** введите порог в штуках (по умолчанию **15 шт.**) и сохраните. Список сразу пересчитывается по новому порогу.
 
-- **Минимальный порог в днях**: через сколько дней отправлять оповещение (по умолчанию: 7 дней)
-- **Минимальное количество**: оповещение при достижении этого остатка (по умолчанию: 10 штук)
-- **Группы товаров**: все товары или только выбранные
+Для товаров, объединённых в группу, отдельный порог задаётся на странице **Остатки**.
 
-## Вид сообщения
+## Статус по дням
 
-\`⚠️ Низкий остаток: [Название товара]\`
-\`Остаток: 15 шт (5 дней)\`
-\`Последние продажи: 3 шт/день\`
+Помимо порога в каждой строке показано, на сколько дней хватит остатка: меньше 3 дней — красный, 3-7 дней — жёлтый, больше — синий. Эти границы фиксированные.
 
-## Несколько оповещений
+## Куда приходит оповещение
 
-Для одного товара можно настроить 2 порога:
-1. **Первое оповещение** — 14 дней (время для заказа)
-2. **Срочное оповещение** — 5 дней (срочно заказать)
+### В приложении
+На страницах **Оповещения** и **Уведомления**, а также на колокольчике в верхней панели.
 
-<warning>Для работы оповещений необходимо подключить Telegram-бота.</warning>
+### В Telegram
+Если Telegram подключён и в боте включён пункт **📦 Низкий остаток**. В сообщении указаны товар, остаток и на сколько дней его хватит.
+
+Получать ли уведомление об изменении остатка в приложении и/или в Telegram, вы выбираете двумя переключателями на странице **Оповещения**.
+
+## Без дублей
+
+На один физический товар приходится одна строка — даже если он представлен несколькими листингами. Группы настраиваются на странице **Остатки**.
+
+## Экспорт
+
+Список оповещений можно выгрузить в виде таблицы.
+
+<warning>Без подключённого Telegram оповещения видны только внутри приложения.</warning>
 `,
   'fbo-fbs-rfbs': `
-## Модели хранения
+## Модели склада
 
-На Uzum Market существует три основные модели продажи товаров:
+Модель продажи определяет две вещи: где лежит товар и кто собирает заказ. Daromadchi показывает это бейджем рядом с каждым заказом и остатком.
 
-## FBO (Fulfillment by Operator)
+## Uzum Market
 
-**Склад Uzum** — товары хранятся на складе Uzum Market, доставку осуществляет Uzum.
+### FBO (Fulfillment by Operator)
+Товар **на складе Uzum**. Сборка и доставка на стороне Uzum.
 
-- Более быстрая доставка
-- Необходимо завезти товары на склад Uzum
-- Дополнительные расходы на хранение
+- Быстрее доставка
+- Товар нужно заранее отгрузить на склад Uzum
+- Добавляются расходы на хранение
 
-## FBS (Fulfillment by Seller)
+### FBS (Fulfillment by Seller)
+Товар **на вашем складе**. Заказ вы собираете и передаёте сами.
 
-**Склад продавца** — товары хранятся у вас, вы отправляете их после получения заказа от Uzum.
+- Хранение полностью под вашим контролем
+- Каждый заказ требует действия
 
-- Склад под полным вашим контролем
-- Доставляете самостоятельно
-- Больше гибкости
+## Yandex Market
 
-## rFBS (Real-time FBS)
+### FBY
+Товар **на складе Yandex** — Yandex собирает и доставляет. От вас ничего не требуется.
 
-Обновлённая версия FBS — с управлением заказами в режиме реального времени.
+### FBS
+Товар на вашем складе, доставка логистикой Yandex. **Экспресс**-заказы относятся сюда же — это не отдельная модель.
 
-## Просмотр в Daromadchi
+### DBS (Delivery by Seller)
+И хранение, и доставка на вас.
 
-На странице **Товары → [Товар]** остатки FBO и FBS отображаются раздельно:
+## Почему это важно
 
-| Модель | Остаток | Дней |
-|---|---|---|
-| FBO | 150 шт | 22 дня |
-| FBS | 80 шт | 12 дней |
+Сообщение **«соберите и отправьте»** в Telegram приходит только по моделям, где собирает продавец: Uzum FBS, Yandex FBS и DBS. По заказам FBO и FBY от вас ничего не требуется — поэтому такой заказ не присылается как требование действия.
 
-<info>Общий остаток = FBO + FBS. Оповещения рассчитываются по общему остатку.</info>
+## Где смотреть в Daromadchi
+
+Бейджи видны в таблицах **Заказы** и **Остатки**. Один товар может одновременно стоять в нескольких моделях — общий остаток складывается, и оповещение даётся по сумме.
+
+<info>rFBS — разновидность FBS. Маркетплейс не возвращает её отдельно, поэтому в Daromadchi она отображается как FBS.</info>
 `,
   'tovar-aylanmasi': `
-## Что такое оборачиваемость товаров?
+## Что такое оборачиваемость?
 
-Оборачиваемость товаров — показатель того, как быстро продаётся товар.
+Оборачиваемость показывает, насколько быстро продаётся товар. Практический вопрос при этом простой: **на сколько дней хватит остатка и когда заказывать новую партию?**
 
-\`Оборачиваемость = Продано единиц / Средний остаток\`
+## Как считает Daromadchi
 
-## Расчёт в Daromadchi
+Расчёт опирается на фактические продажи **за последние 30 дней**:
 
-Платформа рассчитывает для каждого товара:
-- Среднесуточные продажи за последние 7 дней
-- Среднесуточные продажи за последние 30 дней
-- Сезонный коэффициент (при наличии данных)
+\`Продажи в день = Продано за 30 дней / 30\`
 
-## Прогноз заказа
+\`Дней остатка = Доступный остаток / Продажи в день\`
 
-\`Дата заказа = Сегодня + (Остаток / Суточные продажи) − Срок поставки\`
+Обе цифры видны в строке каждого товара на странице **Дашборд → Оповещения**. Список сортируется по дням остатка — самые срочные сверху.
+
+<info>В расчёте используется только **доступный** остаток: единицы, уже заказанные, но ещё не отгруженные, вычитаются. Иначе проданный товар выглядел бы так, будто он всё ещё на полке.</info>
+
+Если за 30 дней продаж не было, вместо дней остатка показывается **«—»** — это значит «оценить нельзя», а не «запаса много».
+
+## Когда заказывать
+
+\`Дата заказа = Сегодня + (Дней остатка − Срок поставки)\`
 
 **Пример:**
-- Остаток: 100 шт
-- Суточные продажи: 5 шт
-- Срок поставки: 5 дней
-- **Дата заказа: через 15 дней**
+- Остаток: 100 шт.
+- Продажи в день: 5 шт. → хватит на 20 дней
+- Поставщик привозит за 5 дней
+- **Заказывать через 15 дней**
 
-## Сезонные изменения
+Срок поставки знаете вы — Daromadchi его не знает, поэтому это вычитание делаете вы.
 
-В праздники и в сезон продажи могут вырасти. Daromadchi строит прогноз на основе данных прошлого года.
+## Пороги оповещений
 
-<info>Прогноз приблизительный. Чем больше данных о товаре, тем точнее прогноз.</info>
+| Статус | Дней остатка |
+|---|---|
+| Критично | Меньше 3 дней или остаток 0 |
+| Предупреждение | 3-7 дней |
+| Наблюдение | Больше 7 дней |
+
+## На что обратить внимание
+
+- **Новый товар**: истории за 30 дней ещё нет, поэтому продажи в день занижены, а прогноз выглядит длиннее реального
+- **Период акции**: продажи в акцию поднимают среднее, и остаток закончится быстрее ожидаемого
+- **Один товар в нескольких листингах**: объедините их в группу на странице **Остатки**, иначе каждый считается отдельно
+
+<info>Раздел «Сезонность» пока в статусе «Скоро» — сезонный коэффициент в расчёте не участвует.</info>
 `,
   'birlik-iqtisodiyoti': `
 ## Что такое юнит-экономика?
 
-Юнит-экономика (Unit Economics) — система расчётов, показывающая, сколько прибыли вы получаете от продажи одной единицы товара.
+Юнит-экономика — расчёт того, сколько прибыли остаётся с продажи одной единицы товара.
 
-## Как работает калькулятор?
+В Daromadchi для этого есть **два** инструмента.
 
-Перейдите в **Дашборд → Калькулятор**. Введите следующие данные:
+## 1. Калькулятор прибыли — быстрый расчёт по одному товару
 
-### Доходы
+**Дашборд → Калькулятор**. Ничего подключать не нужно: выбираете маркетплейс (**Uzum** или **Yandex**) и категорию — процент комиссии подставляется сам.
+
+Поля для ввода:
 - Цена продажи
+- Себестоимость
+- Логистика
+- Расход на рекламу
+- Процент возвратов (%)
+- Продажи в месяц (шт.)
 
-### Расходы
-- Себестоимость (закупочная цена)
-- Комиссия Uzum (%)
-- Стоимость доставки
-- Расходы на возврат
-- Упаковка
-- Рекламные расходы (на основе DRR)
-- Налог (%)
+На выходе:
+- **Разбивка расходов на 1 шт.** — комиссия, себестоимость, логистика, потери на возвратах, реклама
+- **Чистая прибыль (шт.)**, **Маржа**, **ROI**, **ДРР**, точка безубыточности
+- **Reality Check** — реальная прибыль за месяц рядом с той, которую вы ожидали
 
-## Результаты
+Если маржа ниже 20% или цена уводит в минус, калькулятор предупреждает.
 
-Калькулятор рассчитывает:
-- **Чистая прибыль** — после вычета всех расходов
-- **Маржа** — прибыль в %
-- **Точка безубыточности** — минимальная цена продажи
-- **Целевая цена** — рекомендация для маржи 20%
+## 2. Таблица юнит-экономики — по всем товарам
 
-## Настройки логистики
+**Дашборд → Юнит-экономика**. Здесь список товаров и полный расчёт по каждому: себестоимость, landed cost, комиссия, доставка, реклама, итого расходы, чистая прибыль, ROI, маржа, остаток и ссылка на поставщика.
 
-Введите тарифы доставки Uzum Market или выберите «Тариф Uzum» для автоматического расчёта.
+### Расходы по умолчанию
+Задаются один раз в настройках таблицы и применяются ко всем строкам:
 
-<info>Результаты калькулятора можно сохранять и сравнивать с другими товарами.</info>
+| Настройка | По умолчанию |
+|---|---|
+| Эквайринг (%) | 1.5 |
+| Реклама (%) | 5 |
+| Налог (%) | 6 |
+| Комиссия (%) | 10 |
+| Последняя миля (%) | 0 |
+| Тип налога | Доход (6%) или Доход − расход (15%) |
+
+### Столбцы
+Столбцы можно включать и выключать — вид собирается под вашу задачу.
+
+## Связь с расширением Chrome
+
+Панель расширения использует те же формулы и может добавить товар прямо в эту таблицу.
+
+<warning>Все цифры в калькуляторе ориентировочные. Тарифы маркетплейсов меняются — перед важным решением сверьтесь с актуальным тарифом в кабинете.</warning>
 `,
-  'zararсizlik-narxi': `
+  'zararsizlik-narxi': `
 ## Что такое точка безубыточности?
 
-Точка безубыточности — минимальная цена продажи, покрывающая все расходы. Продажа ниже этой цены означает убыток.
+Точка безубыточности — минимальная цена продажи, покрывающая все расходы. Продажа ниже неё означает убыток.
 
 ## Формула
 
-\`Безубыточность = Себестоимость + Комиссия + Логистика + Реклама + Прочие расходы\`
+\`Безубыточность = Себестоимость + Комиссия + Логистика + Потери на возвратах + Реклама + Налог\`
 
 ## Расчёт в Daromadchi
 
-Введите в калькулятор следующие данные:
+Откройте **Дашборд → Калькулятор**:
 
-1. **Себестоимость** — закупочная цена
-2. **Комиссия Uzum** — от 5 до 25% в зависимости от категории
-3. **Логистика FBO** — зависит от веса и габаритов
-4. **Расходы на возврат** — с учётом ~5–10% возвратов
-5. **Реклама** — на основе целевого DRR
+1. Выберите маркетплейс: **Uzum** или **Yandex**
+2. Выберите категорию — процент комиссии подставится сам
+3. Введите **себестоимость**
+4. Введите **логистику** (из тарифов маркетплейса)
+5. Введите **процент возвратов** — фактический возьмите из столбца **% возвратов** в таблице **Аналитика товаров**
+6. Введите **расход на рекламу**
 
-## Целевая прибыль
+Калькулятор покажет **точку безубыточности** вместе с остальными показателями (маржа, ROI, ДРР).
+
+## Добавляем целевую прибыль
 
 \`Цена продажи = Безубыточность × (1 + Целевая маржа / 100)\`
 
@@ -2219,545 +2564,601 @@ Daromadchi отслеживает ваши остатки с учётом тем
 - Цель: маржа 20%
 - **Цена продажи: 54 000 сум**
 
-<info>Daromadchi автоматически рассчитывает комиссию Uzum в зависимости от категории.</info>
+## Достаточна ли ваша текущая цена?
+
+Блок **Reality Check** в калькуляторе показывает, сколько прибыли (или убытка) даёт текущая цена за месяц. Если цена убыточна, калькулятор подскажет, на сколько её поднять.
+
+<info>Процент комиссии подставляется по категории, но его можно изменить вручную — процент из вашего договора точнее.</info>
 `,
   'marja-hisoblash': `
-## Виды маржи
+## Что такое маржа?
 
-### Валовая маржа (Gross Margin)
-\`Валовая маржа = (Цена продажи − Себестоимость) / Цена продажи × 100\`
+Маржа — доля прибыли в выручке, в процентах. В Daromadchi маржа означает **чистую маржу**: то, что остаётся после себестоимости и удержаний маркетплейса.
 
-### Операционная маржа
-Валовая маржа за вычетом операционных расходов (реклама, логистика, комиссии).
+\`Маржа = Чистая прибыль / Выручка × 100\`
 
-### Чистая маржа (Net Margin)
-Доля прибыли, остающейся после всех расходов, налогов и платежей.
+## Маржа и наценка — не одно и то же
 
-## Где смотреть в Daromadchi?
+Их часто путают:
 
-### В таблице товаров
-Маржа в % отображается в строке каждого товара.
+- **Маржа** — прибыль в процентах **от цены продажи**
+- **Наценка** — прибыль в процентах **от себестоимости**
 
-### В отчёте P&L
-Тенденции маржи по месяцам и неделям в графическом виде.
+Купили за 50 000 сум, продали за 100 000: наценка 100%, а маржа 50%.
 
-### В калькуляторе
-Расчёт в реальном времени на основе введённых данных.
+## Где смотреть маржу
+
+### По товару
+Столбец **Маржа** в таблице **Дашборд → Аналитика товаров**. Вверху страницы показаны **средняя маржа** по магазину и количество товаров с низкой и высокой маржой.
+
+### По вариантам
+Раскройте родительскую строку — маржа видна по каждому варианту (цвет, размер). Бывает, что один из них тянет вниз показатель всей группы.
+
+### При планировании
+**Калькулятор** и таблица **Юнит-экономика** считают маржу по введённым вами значениям.
+
+## Без себестоимости маржи нет
+
+У товара без себестоимости маржа завышена — самый крупный расход просто не учтён. Заполните её карандашом в таблице **Аналитика товаров** или на странице **Товары**.
 
 ## Какая маржа считается нормальной?
 
-| Категория | Минимальная | Рекомендуемая |
+| Категория | Минимальная маржа | Рекомендуемая |
 |---|---|---|
-| Электроника | 8% | 15–20% |
-| Одежда | 20% | 35–50% |
-| Косметика | 25% | 40–60% |
-| Товары для дома | 15% | 25–35% |
+| Электроника | 8% | 15-20% |
+| Одежда | 20% | 35-50% |
+| Косметика | 25% | 40-60% |
+| Товары для дома | 15% | 25-35% |
 
-<info>Даже при низкой марже общая прибыль может быть высокой, если объём продаж большой.</info>
+<info>Даже при низкой марже общая прибыль может быть высокой, если велик объём. Поэтому читайте маржу вместе со столбцом **доля продаж**.</info>
 `,
   'logistika-xarajatlari': `
-## Что такое расходы на логистику?
+## Расходы на логистику
 
-На Uzum Market стоимость доставки зависит от веса, габаритов товара и модели (FBO/FBS).
+Стоимость доставки зависит от веса, объёма и модели склада (FBO/FBS, FBY/FBS/DBS). Это второе по размеру удержание после комиссии.
 
-## Тариф логистики FBO
+## Как Daromadchi учитывает логистику
 
-Для FBO (склад Uzum) расходы включают:
-- Плата за приёмку: за единицу товара
-- Хранение: куб. метр × день
-- Доставка: зависит от веса и региона
+### В калькуляторе — вручную
+В поле **Логистика (сум)** на странице **Дашборд → Калькулятор** вы вводите стоимость доставки одной единицы. Цифру берёте из тарифов маркетплейса.
 
-## Тариф логистики FBS
+### В таблице юнит-экономики — вручную и процентом
+В таблице **Юнит-экономика** доставка вынесена в отдельный столбец. А **Последняя миля (%)** из настроек добавляется процентом от цены — удобно, когда тариф процентный.
 
-Для FBS (склад продавца) расходы включают:
-- Доставка до сортировочного центра
-- Плата за сортировку
+### В отчёте P&L — фактическая цифра
+Строка **Доставка** в отчёте **P&L** — не оценка: она берётся из отчёта маркетплейса. Если итоговый отчёт ещё не пришёл, рядом стоит **≈**, и после его получения значение заменится фактическим.
 
-## Настройка в калькуляторе
+<info>То есть: для планирования — оценка в калькуляторе, для оценки прошедшего периода — фактическая цифра в P&L.</info>
 
-В разделе **Калькулятор → Логистика**:
+## Стоимость возвратов
 
-1. Выберите **модель склада**: FBO / FBS
-2. Введите **вес товара** (в граммах)
-3. Введите **габариты** (длина × ширина × высота в см)
-4. Daromadchi автоматически рассчитает по тарифам Uzum
+Возвращённый товар оплачивает логистику дважды — туда и обратно.
 
-## Расходы на возврат
+\`Расход на возвраты = (Возвраты % / 100) × (Логистика × 2)\`
 
-Средний процент возвратов по категориям — от 3 до 15%. Введите % возвратов в калькулятор — расходы будут добавлены автоматически.
+Процент возвратов вы вводите в калькулятор. Фактический процент берите из столбца **% возвратов** в таблице **Аналитика товаров** — он считается по вашим же данным.
 
-\`Расходы на возврат = (% возвратов / 100) × (Логистика × 2)\`
+## Где взять тарифы
 
-<info>Тарифы Uzum Market могут меняться. Daromadchi отслеживает изменения тарифов.</info>
+- **Uzum Market**: раздел тарифов в кабинете seller.uzum.uz
+- **Yandex Market**: раздел тарифов в кабинете партнёра
+
+<warning>Тарифы меняются и зависят от региона. Daromadchi не обновляет их автоматически — периодически сверяйте введённое значение.</warning>
 `,
   'dashboard-korsatkichlari': `
 ## Показатели дашборда
 
-Основные карточки, которые вы видите при входе:
+Основные карточки, которые вы видите при входе.
 
-## Карточки верхней панели
+## Верхние карточки
 
-### Выручка (Revenue)
-Общая выручка от продаж за последние 30 дней. Сравнивается с предыдущим месяцем.
+### Выручка
+Общая выручка за выбранный период. Рядом — сравнение с предыдущим периодом такой же длины, в процентах.
+
+### Прибыль
+Чистая прибыль после себестоимости и удержаний маркетплейса. Товары без введённой себестоимости занижают эту цифру — заполните её на странице **Товары**.
 
 ### Заказы
-Общее количество заказов за период. Отменённые заказы не учитываются.
+Количество заказов за период. Отменённые не учитываются.
 
-### DRR
-Общая доля рекламных расходов. Среднее значение по всем кампаниям.
-
-### Активные товары
-Количество SKU, находящихся в продаже в данный момент.
+### Остаток
+Текущий суммарный остаток.
 
 ## Графики
 
 ### График продаж
-Ежедневная динамика продаж за 7 или 30 дней.
+Динамика выручки по дням за выбранный период.
 
 ### Анализ категорий
-Выручка по категориям в виде круговой диаграммы.
+Сколько выручки приносит каждая категория — круговая диаграмма.
 
-### Состояние остатков
-Количество критических (уровень D) товаров и их список.
+### Топ товаров
+Товары, давшие больше всего выручки за период.
 
-## Изменение периода
+### Оповещения об остатках
+Товары, у которых заканчивается остаток. Полный список — на странице **Оповещения**.
 
-Через фильтр дат в правом верхнем углу:
-- Сегодня
-- Последние 7 дней
-- Последние 30 дней
-- Последние 90 дней
-- Произвольный период
+## Смена периода
 
-<info>Данные основаны на последней синхронизации. Метки времени отображаются в фильтре дат.</info>
+Через фильтр дат вверху:
+- Вчера
+- 7 дней
+- 30 дней
+- 90 дней
+- Текущий месяц
+
+## Разбивка по маркетплейсам
+
+Если подключено несколько магазинов, кнопки маркетплейсов вверху позволяют смотреть данные только по одному из них.
+
+<info>Все цифры опираются на последнюю синхронизацию. Её время видно на странице «Синхронизация».</info>
 `,
   'pnl-hisobot': `
 ## Что такое отчёт P&L?
 
-P&L (Profit & Loss) — ежемесячный отчёт, полностью отражающий финансовые результаты вашего магазина.
+Отчёт P&L (Profit & Loss) показывает финансовый результат магазина по месяцам. Открывается на странице **Дашборд → Отчёт P&L**.
 
-## Состав отчёта
+## Из чего состоит отчёт
 
-### Доходная часть
-- Общая выручка от продаж
-- Чистая выручка за вычетом возвратов
+| Строка | Что означает |
+|---|---|
+| **Общая выручка** | Выручка по доставленным заказам |
+| **Комиссия** | Комиссия маркетплейса |
+| **Прочие** | Прочие удержания маркетплейса: эквайринг, реклама, штрафы |
+| **Доставка** | Логистические расходы |
+| **Выплата маркетплейса** | Выручка − комиссия − доставка − прочие |
+| **Себестоимость (COGS)** | Себестоимость проданных товаров |
+| **Чистая прибыль** | Итоговый результат |
 
-### Расходная часть
-- Себестоимость (COGS)
-- Комиссия Uzum Market
-- Рекламные расходы
-- Логистика и доставка
-- Расходы на возвраты
-- Прочие операционные расходы
+## Строка «В процессе»
 
-### Итог
-- Валовая прибыль
-- Операционная прибыль
-- Чистая прибыль
+Недоставленные заказы показаны отдельно: их доход учтётся после доставки и пока не входит в прибыль. Именно это удерживает отчёт в соответствии с реальными деньгами.
 
-## Как читать отчёт
+## Знак «≈»
 
-Перейдите в **Дашборд → Отчёт P&L**.
+Рядом с некоторыми значениями может стоять **≈**. Это значит, что маркетплейс ещё не прислал итоговый отчёт и цифра рассчитана по процентам. Когда отчёт придёт, значение заменится фактическим.
 
-Выберите месяц или откройте в режиме сравнения по месяцам.
+## Редактирование себестоимости прямо в отчёте
 
-## Сравнительный анализ
+Кнопка в строке себестоимости позволяет заполнить себестоимость за месяц на месте, не переходя в список товаров. Если себестоимость пуста, чистая прибыль будет завышена.
 
-В режиме «Сравнение» вы можете видеть два месяца рядом — это наглядно показывает рост или снижение.
+## Таблица по месяцам
+
+В таблице ниже каждый месяц — отдельная строка: выручка, комиссия, прочие удержания, себестоимость и чистая прибыль. Рост или падение видно именно здесь.
 
 ## Экспорт
 
-Нажмите «Экспорт» для загрузки отчёта в формате Excel.
+Кнопка **Экспорт** выгружает отчёт в виде таблицы.
 
-<info>Для точности отчёта P&L важно правильно указать себестоимость. Вы можете ввести её в Настройки → Товары.</info>
+<info>Без введённой себестоимости P&L показывает только удержания маркетплейса — прибыль будет выглядеть больше реальной.</info>
 `,
   'kategoriya-tahlili': `
 ## Анализ категорий
 
-Daromadchi разделяет ваши продажи по категориям.
+Daromadchi разбивает продажи по категориям.
 
-## Просмотр на дашборде
+## На дашборде
 
-На главном дашборде круговая диаграмма показывает долю выручки каждой категории. Нажмите на неё для подробной информации.
+На круговой диаграмме **Категории** видна доля выручки каждой категории, а рядом — список с суммами.
 
-## Страница категорий
+Ежедневный отчёт в Telegram тоже присылает разбивку по категориям.
 
-В разделе **Дашборд → Аналитика → Категории**:
-- Выручка по каждой категории
-- Количество заказов
-- Средний чек
-- DRR
-- Тенденция (рост/снижение)
+## Анализ на уровне товаров
+
+На странице **Дашборд → Аналитика товаров** сверху общие цифры, а ниже — таблица **Продажи и маржа по товарам**: продажи, выручка, прибыль, маржа и класс ABC по каждому товару. Подробнее — в статье «Таблица аналитики товаров».
 
 ## ABC-анализ
 
-| Класс | Описание | Доля |
-|---|---|---|
-| A | Наиболее важные, высокий доход | 20% товаров, 80% дохода |
-| B | Средневажные | 30% товаров, 15% дохода |
-| C | Наименее важные | 50% товаров, 5% дохода |
+Товары классифицируются по их доле в выручке. Список сортируется по убыванию выручки, и дальше:
+
+| Класс | Правило |
+|---|---|
+| **A** | Пока накопленная выручка не достигнет 80% |
+| **B** | От 80% до 95% |
+| **C** | Всё остальное |
+
+Столбец ABC есть в таблице **Продажи и маржа по товарам**.
+
+## Страница ABC-XYZ
+
+Страница **Дашборд → ABC-XYZ** идёт дальше: показывает ABC (доход) вместе с XYZ (стабильность спроса). AX — стабильно и доходно, CZ — мало дохода и непредсказуемо.
 
 ## Топ товаров
 
-**Дашборд → Товары → Сортировка: Выручка** — самые прибыльные товары наверху.
+Блок **Топ товаров** на дашборде — те, что дали больше всего выручки за период. Полный список и сортировка — на странице **Товары**.
 
-<info>Анализ категорий и ABC-анализ доступны на тарифах Standard и выше.</info>
+<info>Категория берётся из данных маркетплейса. Товары без категории попадают в строку «Без категории».</info>
+`,
+  'tovar-tahlili-jadvali': `
+## Таблица аналитики товаров
+
+Главная таблица на странице **Дашборд → Аналитика товаров**. Раньше «Топ продаж» и «Анализ маржи по товарам» были двумя отдельными таблицами — теперь они объединены в одну, потому что отвечать на вопрос про один товар, глядя в два места, незачем.
+
+Каждая строка — товар. Товар с вариантами (цвет, размер) сворачивается в одну родительскую строку; её можно раскрыть и посмотреть каждый вариант отдельно.
+
+## Столбцы
+
+| Столбец | Что означает |
+|---|---|
+| **Товар** | Название и вариант. Виден всегда |
+| **Доставлено** | Доставлено штук за период |
+| **В пути** | В доставке — в прибыль ещё не входит |
+| **Отменено** | Отменённые заказы |
+| **Возвраты** | Возвращено штук |
+| **% возвратов** | Возвраты ÷ (доставлено + возвраты) |
+| **Выручка** | Выручка за период |
+| **Доля продаж** | Какой процент общей выручки даёт товар |
+| **Ср. цена** | Выручка ÷ проданные штуки — фактическая цена после скидок |
+| **Цена** | Текущая цена продажи |
+| **Себестоимость** | Ваша себестоимость |
+| **Прибыль** | Выручка − себестоимость − удержания маркетплейса |
+| **Маржа** | Доля прибыли в выручке (%) |
+| **ABC** | Класс A / B / C |
+
+<info>Все эти столбцы считаются для обоих маркетплейсов. Показатели, которые может дать только один из них, в таблицу не включены — иначе строки Yandex всегда были бы пустыми.</info>
+
+## Настройки таблицы
+
+Кнопка **Настройки таблицы** над таблицей открывает панель включения и выключения столбцов. Снимаете галочку — столбец исчезает, ставите обратно — появляется.
+
+Есть и готовые наборы:
+- **Минимум** — продалось ли и зарабатывает ли
+- **Продажи** — штуки, возвраты, доля, ABC
+- **Деньги** — цена, себестоимость, прибыль, маржа
+
+Выбор сохраняется в браузере и остаётся таким же при следующем входе. Столбец **Товар** отключить нельзя — иначе таблица превратилась бы в набор безымянных чисел.
+
+## Редактирование значений
+
+Три столбца можно менять прямо в таблице — при наведении на строку появляется **значок карандаша**:
+
+- **Цена**
+- **Себестоимость**
+- **Остаток**
+
+<warning>Эти правки остаются только внутри Daromadchi. В листинг маркетплейса ничего не отправляется — ни цена, ни название, ни что-либо ещё не меняется.</warning>
+
+Цена и остаток приходят от маркетплейса, поэтому ваше значение хранится отдельно и накладывается сверху при отображении. Очистите поле — вернётся собственное число маркетплейса: правка скрывает фактическое значение, но не удаляет его.
+
+В родительской строке редактирование **Цены** и **Себестоимости** применяется сразу ко всем вариантам. Для остатка карандаша в родительской строке нет: остатки вариантов разные, и приравнивать их к одному числу было бы неверно.
+
+## Почему важна себестоимость
+
+Если себестоимость не заполнена, столбцы **Прибыль** и **Маржа** показывают товар выгоднее, чем он есть. Заполните её здесь же или на странице **Товары**.
 `,
   'qidiruv-iboralari': `
 ## Анализ поисковых запросов
 
-Знание того, по каким запросам покупатели Uzum Market находят ваш товар, важно для рекламы и SEO.
+Знать, по каким словам покупатели приходят к вашим товарам, важно для SEO и рекламы. В Daromadchi это страница **Дашборд → Поисковые фразы**.
 
-## Просмотр на дашборде
+## Что показывает страница
 
-На странице **Дашборд → Поисковые запросы**:
-- Количество показов (impressions)
+- Фраза и товар, к которому она относится
+- Показы (impressions)
 - Клики
-- CTR (клики / показы в %)
-- Средняя позиция
-- Конверсия
+- CTR (клики ÷ показы)
+- Заказы
+- Расход
 
-## Категории запросов
+<warning>Пока эта страница пустая. Данные по поисковым фразам приходят из рекламного/поискового API маркетплейса, а он ещё не подключён — ни Uzum Market, ни Yandex Market эти данные не отдают. Как только API откроется, страница заполнится автоматически.</warning>
 
-### Растущие
-Запросы с растущим CTR и продажами — уделите им внимание и при необходимости увеличьте бюджет.
+## Что можно делать до этого
 
-### Снижающиеся
-Есть показы, но мало кликов — нужно улучшить фото или описание товара.
+### Смотрите ключевые слова в кабинете маркетплейса
+Поисковый отчёт в кабинете — пока единственный источник.
 
-### Высокий потенциал
-Много показов, но низкая позиция — продвигайтесь с помощью рекламы.
+### Проверьте названия товаров
+В списке **Дашборд → Товары** посмотрите, как записаны названия. Название напрямую влияет на поиск.
 
-## Стратегия ключевых слов
+### Измеряйте результат по продажам
+После изменения названия или фото следите в таблице **Продажи и маржа по товарам**, как изменились выручка и доля продаж этого товара. Это измерение работает и без данных о кликах.
 
-1. Запросы с CTR > 3% делайте основными
-2. Делайте ставку на длинные запросы (long-tail), которые не используют конкуренты
-3. Своевременно отслеживайте сезонные запросы
-
-<info>Данные поисковых запросов поступают через API Uzum Market и могут быть ограниченными.</info>
-`,
-  'tashqi-trafik': `
-## Что такое внешний трафик?
-
-Внешний трафик — посетители, переходящие на ваш товар с платформ за пределами Uzum Market (Instagram, Telegram, YouTube, блог).
-
-## Отслеживание через UTM-параметры
-
-Для определения внешнего трафика добавляйте UTM-параметры к ссылкам:
-
-\`https://uzum.uz/product/12345?utm_source=instagram&utm_campaign=may2025\`
-
-## Просмотр в Daromadchi
-
-В разделе **Дашборд → Аналитика → Внешний трафик**:
-- Визиты по источникам
-- Конверсия (из визита в заказ)
-- Выручка с каждого источника
-
-## Анализ каналов
-
-| Канал | Доля трафика | Конверсия |
-|---|---|---|
-| Instagram | 45% | 2,3% |
-| Telegram | 30% | 4,1% |
-| YouTube | 15% | 1,8% |
-| Блог | 10% | 3,5% |
-
-## Рекомендация
-
-Трафик из Telegram конвертируется лучше, поскольку аудитория более лояльная. Маркетинг через Telegram-каналы и чаты даёт хороший результат.
-
-<info>Полный анализ внешнего трафика доступен на тарифах Pro и Enterprise.</info>
+<info>Сокращения на странице (CTR, CPC) расшифрованы в разделе «Сокращения» на дашборде.</info>
 `,
   'tariflar': `
-## Тарифные планы Daromadchi
+## Тариф определяется оборотом
 
-Доступны три тарифа: Бесплатный, Pro и Pro+.
+В Daromadchi тариф не выбирают — он определяется вашим **чистым оборотом за последние 30 дней**. Растёт оборот — поднимается и тариф.
 
-## Бесплатный тариф
+| Оборот за 30 дней | Тариф |
+|---|---|
+| До 12 млн сум | **Бесплатно** |
+| 12–50 млн сум | **Pro** |
+| 50–120 млн сум | **Pro+** |
+| 120–180 млн сум | **Бизнес** |
+| Свыше 180 млн сум | **Enterprise** |
 
-**0 сум/месяц**
+## Цены
 
-- 1 магазин
-- 6 аналитических страниц
-- Демо-данные
-- Основной дашборд
-- Список товаров и заказов
+| Тариф | В месяц | При годовой оплате (за месяц) |
+|---|---|---|
+| Бесплатно | 0 сум | — |
+| Pro | 150 000 сум | 125 000 сум |
+| Pro+ | 250 000 сум | 225 000 сум |
+| Бизнес | 500 000 сум | 450 000 сум |
+| Enterprise | По договорённости | — |
 
-## Тариф Pro
+<info>Для Enterprise нет единой публичной цены — этот тариф обсуждается отдельно.</info>
 
-**250 000 сум/месяц**
+## Отличаются ли платные тарифы по возможностям?
 
-Всё из бесплатного тарифа, плюс:
-- 3 магазина
-- Вся аналитика
-- Автосинхронизация
-- Отчёт P&L
-- Email-уведомления
-- Аналитика рекламы и DRR
-- Оповещения об остатках
+По функциям — **нет**. Pro, Pro+, Бизнес и Enterprise дают одинаковый набор; различия — в обороте и цене. Начиная с Pro+ добавляется **приоритетная поддержка**.
+
+## Что остаётся на бесплатном тарифе
+
+Бесплатно навсегда:
+- Дашборд (с выручкой и прибылью)
+- Товары
+- Заказы и уведомления по ним (новый заказ, отмена, низкий остаток)
+- **Uzum и Yandex Market** — оба, на любом тарифе
 - Расширение Chrome
 
-## Тариф Pro+
+Разделы, которые закрываются после пробного периода:
+- Аналитика товаров
+- Страница остатков и синхронизация остатков
+- Финансы и выплаты (отчёт P&L)
+- Юнит-экономика
 
-**500 000 сум/месяц**
-
-Всё из тарифа Pro, плюс:
-- 5+ магазинов
-- Доступ к API
-- Приоритетная поддержка
-- Детальный анализ категорий
-- Управление командой
-- Данные за последние 365 дней
-
-<info>Все тарифы включают бесплатный пробный период на ${TRIAL_RU}. Данные карты не требуются.</info>
+<info>Все тарифы начинаются с бесплатного пробного периода на ${TRIAL_RU}. Данные карты не требуются.</info>
 `,
   'tolov-usullari': `
-## Способы оплаты
+## Способ оплаты
 
-Daromadchi принимает следующие способы оплаты:
+Daromadchi принимает оплату **банковской картой**. Карта привязывается через платёжную систему ATMOS.
 
-## Банковской картой
+## Привязка карты
 
-Карты Uzcard и Humo — ежемесячная оплата:
-1. Перейдите в **Биллинг → Способ оплаты**
-2. Введите данные карты
-3. Нажмите «Сохранить»
-4. Оплата будет списываться автоматически каждый месяц
+На странице **Дашборд → Тариф и оплата**:
 
-## Счёт-фактура (Invoice)
+1. Выберите тариф и отметьте **Помесячно** или **Ежегодно**
+2. Введите номер карты и срок действия
+3. Введите код из SMS
+4. После подтверждения тариф активируется сразу
 
-Для юридических лиц — оплата по счёту:
-1. Нажмите **Биллинг → Счёт-фактура**
-2. Введите реквизиты компании (ИНН, СТИР)
-3. Счёт-фактура отправляется на email
-4. Оплата через банковский перевод
+<info>Номер карты не хранится в Daromadchi целиком — сохраняется безопасный идентификатор, выданный платёжной системой.</info>
 
-## Click и Payme
+## Автопродление
 
-Через мобильные платёжные системы:
-- В Click найдите «Daromadchi»
-- В Payme найдите «Daromadchi»
-- Введите номер вашего аккаунта и оплатите
+После привязки карты включается **Автоматическое продление**: списание проходит до окончания периода. Его можно выключить в любой момент — тогда следующего списания не будет.
 
-## Сроки оплаты
+## Помесячно и ежегодно
 
-- Ежемесячные платежи: каждый месяц в один и тот же день
-- При просрочке: 3-дневный льготный период
-- Если оплата не поступает: тариф снижается до Бесплатного
+При годовой оплате цена за месяц ниже — точные суммы в таблице статьи «Тарифы и цены». Годовая подписка списывается один раз, полной суммой за 12 месяцев.
 
-<warning>Платёжные данные хранятся в зашифрованном виде через SSL. Номер карты полностью не сохраняется.</warning>
+## Если платёж не прошёл
+
+При неудачном списании на странице показывается причина, и попытку можно повторить. История платежей находится там же, списком.
+
+<warning>Платёжные данные передаются по шифрованному соединению. Daromadchi никогда не спрашивает полный номер карты или ваш пароль.</warning>
 `,
   'tarifni-ozgartirish': `
-## Повышение тарифа
+## Смена тарифа
 
-Перейдите в **Биллинг → Выбор тарифа** → Новый тариф → нажмите «Перейти».
+На странице **Дашборд → Тариф и оплата**:
 
-Новый тариф активируется немедленно. Оставшийся период пересчитывается, и разница возвращается или добавляется к следующему платежу.
+1. Откройте окно выбора тарифа
+2. Тариф, соответствующий вашему обороту, будет выделен — выберите его или другой
+3. Отметьте **Помесячно** или **Ежегодно**
+4. Подтвердите
 
-## Понижение тарифа
+Новый тариф активируется сразу после прохождения платежа.
 
-После окончания текущего расчётного периода можно перейти на более низкий тариф.
+## Панель оборота
 
-- **Биллинг → Выбор тарифа → Понизить**
-- Изменение вступает в силу с начала следующего месяца
+Панель оборота на странице показывает ваш чистый оборот за последние 30 дней и то, в какой тарифный диапазон он попадает. Панель только информирует — сама по себе она ничего не списывает и тариф не меняет. Когда оборот приближается к границе следующего тарифа, панель об этом предупреждает.
 
 ## Отмена подписки
 
-1. Перейдите в **Биллинг → Тариф → Отменить подписку**
-2. Выберите причину (необязательно)
-3. Подтвердите
+Нажмите **Отменить тариф** и подтвердите.
 
-Даже после отмены вы можете пользоваться тарифом до конца оплаченного периода.
+Что означает отмена:
+- **Следующего списания не будет**
+- Все возможности остаются открытыми до конца оплаченного периода
+- По его окончании аккаунт сам переходит на Бесплатный тариф
+
+Это не возврат средств и не мгновенное отключение. Если оплаченного периода ещё нет, переход на Бесплатный происходит сразу.
+
+## Отмена отмены
+
+Пока оплаченный период не закончился, кнопка **Возобновить тариф** возвращает автопродление.
 
 ## Сохранность данных
 
-После отмены подписки ваш аккаунт и данные не удаляются — мы не удаляем аккаунты автоматически. Данные хранятся, пока существует аккаунт, и вы можете возобновить подписку в любой момент.
+После отмены подписки аккаунт и данные не удаляются — мы не удаляем аккаунты автоматически. Данные хранятся, пока существует аккаунт, и вы можете подписаться снова в любой момент.
 
-Если вы хотите полностью удалить аккаунт, это можно сделать в любое время через функцию «Запрос на удаление аккаунта» в настройках или направив запрос на privacy@daromadchi.uz.
+Если вы хотите удалить аккаунт полностью, это можно сделать через «Запрос на удаление аккаунта» в настройках или письмом на privacy@daromadchi.uz.
 
-<info>При годовой подписке скидка 2 месяца (экономия 17%). При отмене годовой подписки неиспользованная часть возвращается.</info>
+<info>Об изменении цены действующих подписчиков предупреждают заранее — с вас не спишут сумму, отличную от согласованной.</info>
 `,
   'bepul-sinov': `
 ## Бесплатный пробный период
 
-Новые пользователи Daromadchi получают **бесплатный пробный период с тарифом Pro на ${TRIAL_RU}**.
+Новые пользователи получают бесплатный пробный период на **${TRIAL_RU}**.
 
-## Что включено?
+## Что входит?
 
-В пробный период доступны все возможности тарифа Pro:
-- Неограниченное количество магазинов
-- Данные за 365 дней
-- Управление командой
+На время пробного периода открыты и платные разделы:
+
+- **Аналитика товаров** — таблица из 14 столбцов, ABC, маржа
+- Страница **Остатки** и синхронизация остатков
+- **Финансы и выплаты** — отчёт P&L
+- Калькулятор **юнит-экономики**
+
+## Что остаётся бесплатным и после пробного периода
+
+- Дашборд (с выручкой и прибылью)
+- Товары
+- Заказы и уведомления (новый заказ, отмена, низкий остаток)
+- **Uzum и Yandex Market** — оба
 - Расширение Chrome
-- Уведомления в Telegram
-- Отчёт P&L и аналитика рекламы
 
-## Карта не требуется
+## Карта не нужна
 
-Для пробного периода не нужны данные карты или платёжная информация. Достаточно зарегистрироваться по email.
+Для пробного периода не требуются карта или платёжные данные. Достаточно регистрации по email.
 
-## После окончания пробного периода
+## Что будет после
 
-Напоминание придёт в приложении и в Telegram — за ${TRIAL_REMINDER_DAYS} дн. до окончания. По окончании пробного периода, если тариф не выбрать, вы автоматически переходите на Бесплатный.
+За ${TRIAL_REMINDER_DAYS} дн. до окончания придёт напоминание в приложении и в Telegram. Когда период закончится, при отсутствии выбранного тарифа четыре раздела выше закроются — а аккаунт продолжит работать на Бесплатном тарифе.
 
-## Как узнать дату окончания
+## Где посмотреть дату окончания
 
-На странице **Биллинг** отображается дата окончания пробного периода и рекомендуемые тарифы.
+На странице **Тариф и оплата** показаны дата окончания пробного периода и тариф, соответствующий вашему обороту.
 
-<info>Пробный период предоставляется один раз. Повторная регистрация с другим email не даёт второго пробного периода.</info>
+<info>Пробный период даётся один раз. Регистрация с другим email второго периода не даёт.</info>
 `,
   'hisob-sozlamalari': `
-## Настройки профиля
+## Где находится ваш аккаунт
 
-На странице **Дашборд → Настройки → Профиль**:
+Данные аккаунта — на двух страницах:
 
-### Личные данные
-- Имя и фамилия
-- Email-адрес
-- Номер телефона
-- Загрузка фотографии
+- **Дашборд → Аккаунт** — email, дата регистрации, текущий тариф и срок его действия
+- **Дашборд → Профиль** — поля имени, email и телефона, а также раздел безопасности
 
-### Данные магазина
-- Название магазина
-- ID магазина Uzum Market
-- Категории
+## Состояние тарифа
+
+На странице **Аккаунт** видны текущий тариф, дата окончания пробного периода и срок действия тарифа. Оплата и смена тарифа — на странице **Тариф и оплата**.
+
+## Язык
+
+Язык переключается кнопками **UZ / RU / EN** в верхней панели и применяется ко всему приложению.
+
+Язык Telegram-уведомлений **отдельный** — он выбирается при подключении бота и меняется в самом боте.
 
 ## Смена пароля
 
-**Настройки → Безопасность → Сменить пароль:**
-1. Введите текущий пароль
-2. Введите новый пароль (минимум 8 символов)
-3. Подтвердите новый пароль
-4. Нажмите «Сохранить»
+Пароль меняется через ссылку восстановления:
 
-## Смена email-адреса
+1. Выйдите из аккаунта и откройте страницу **Входа**
+2. Нажмите **«Забыли пароль?»**
+3. Введите свой email
+4. Задайте новый пароль по ссылке из письма
 
-При смене email требуется двойное подтверждение:
-1. Код отправляется на текущий email
-2. Ссылка для подтверждения отправляется на новый email
+<info>Двухфакторная аутентификация (2FA), список сессий и журнал безопасности отображаются на странице Профиля, но пока не запущены — они в подготовке.</info>
 
-## Двухфакторная аутентификация (2FA)
+## Подключения маркетплейсов
 
-Включите в разделе **Настройки → Безопасность → 2FA**:
-- Через Google Authenticator или Telegram
-- При каждом входе запрашивается дополнительный код
+Токены магазинов и режим записи — на странице **Настройки**. Подробнее: «Добавление и управление API-токеном».
 
-<info>Включение 2FA значительно повышает безопасность аккаунта.</info>
+## Удаление аккаунта
+
+Через кнопку «Запрос на удаление аккаунта» на странице **Аккаунт**. Подробнее: «Удаление аккаунта».
 `,
   'api-token-sozlash': `
 ## Что такое API-токен?
 
-API-токен — ключ, дающий Daromadchi разрешение читать данные из вашего аккаунта Uzum Market. По умолчанию токен работает только на чтение: Daromadchi не добавляет товары и не отменяет заказы. Если вы включите для магазина необязательный режим синхронизации остатков, Daromadchi сможет обновлять на листинге этого магазина только количество (остаток) — и ничего больше (для этого нужен токен с правом SKU_UPDATE).
+API-токен — ключ, который разрешает Daromadchi **читать** данные из вашего кабинета маркетплейса. Для каждого магазина нужен свой токен.
 
-## Получение токена (Uzum Market)
+## По умолчанию: только чтение
+
+Только что подключённый магазин работает в режиме **«Только чтение»**. В этом режиме Daromadchi ничего не пишет: ни цену, ни название, ни листинг, ни статус заказа.
+
+## Токен Uzum Market
 
 1. Войдите на seller.uzum.uz
-2. Перейдите в Профиль → API-ключи
-3. Нажмите «Создать новый ключ»
-4. Введите название ключа (например: «Daromadchi»)
-5. Токен отображается — скопируйте его
+2. Откройте **Настройки → API-интеграция**
+3. Создайте новый ключ и дайте ему название (например, «Daromadchi»)
+4. Токен будет показан — скопируйте его
 
-<warning>Токен показывается только один раз. Сразу скопируйте и сохраните его.</warning>
+<warning>Токен показывается один раз. Скопируйте и сохраните его сразу.</warning>
 
-## Добавление в Daromadchi
+## Токен Yandex Market
 
-На странице **Настройки → API-токен**:
-1. Нажмите «Добавить токен»
-2. Вставьте токен в поле
-3. Нажмите «Проверить и сохранить»
+Для Yandex Market нужны два значения:
 
-При успешном добавлении данные магазина загрузятся автоматически.
+- **OAuth Token** — токен Yandex Market Partner API
+- **Campaign ID** — номер кампании, только цифры
+
+Если Campaign ID указан неверно (введён email или ссылка), при сохранении сразу появится ошибка.
+
+## Ввод в Daromadchi
+
+На странице **Настройки** найдите карточку нужного маркетплейса:
+
+1. Вставьте токен в поле
+2. Для Yandex введите ещё и Campaign ID
+3. Нажмите **Сохранить**
+4. Запустите первую загрузку кнопкой **Синхронизировать**
+
+На карточке видны состояние магазина («Подключён» / «Не подключён») и время последней синхронизации.
 
 ## Обновление токена
 
-Если токен просрочен или отозван:
-1. Получите новый токен в Uzum Market
-2. Daromadchi → Настройки → API-токен → «Обновить»
-3. Введите новый токен
+Если токен истёк или отозван, получите новый в кабинете маркетплейса, вставьте его в то же поле и сохраните. Прежние данные не теряются.
+
+## Опционально: «Синхронизация остатков (режим редактирования)»
+
+Если один физический товар продаётся на двух маркетплейсах, продажа в одном месте должна уменьшать остаток и в другом. Для этого магазину можно включить **режим редактирования**.
+
+Перед включением требуется отметить галочку подтверждения. При включении:
+
+- Daromadchi обновляет только **остаток (количество)**
+- Цена, название, листинг, статус заказа, счета — никогда не меняются
+- Каждая запись фиксируется в журнале
+
+Вы также выбираете, как распределяется последняя общая единица: блокировать последнюю, делить между каналами или отключить.
+
+Для Uzum этот режим требует у токена право **SKU_UPDATE**.
+
+<warning>Режим редактирования по умолчанию выключен. Пока вы не включите его сами, в ваш магазин ничего не записывается.</warning>
 
 ## Несколько магазинов
 
-Для каждого магазина нужен отдельный токен. В разделе **Настройки → Магазины** нажмите «Добавить магазин» для добавления ещё одного токена.
+Карточки Uzum и Yandex Market независимы — можно подключить обе сразу. Кнопки маркетплейсов на дашборде позволяют смотреть данные по отдельности.
 `,
   'jamoa-boshqaruvi': `
-## Управление командой
+## Управление командой — скоро
 
-На тарифе Pro вы можете добавлять других членов команды в Daromadchi.
+Страница **Дашборд → Команда** пока в статусе «Скоро». Раздел в разработке, мы сообщим, когда он будет готов.
 
-## Роли
+## Как это работает сейчас
 
-### Владелец (Owner)
-- Все возможности
-- Управление командой
-- Управление тарифом и оплатой
-- Управление API-токенами
+Один аккаунт Daromadchi — один пользователь. К одному аккаунту можно подключить несколько **магазинов** (Uzum и Yandex Market, у каждого свой токен), но сам аккаунт имеет один вход.
 
-### Администратор (Admin)
-- Дашборд и вся аналитика
-- Экспорт данных
-- Настройка уведомлений
-- ❌ Не может менять тариф
-- ❌ Не может удалять членов команды
+## Если нужно показать данные коллеге
 
-### Просмотр (Viewer)
-- Просмотр дашборда
-- Чтение отчётов
-- ❌ Ничего не может изменить
-- ❌ Не может экспортировать
+### Выгрузите отчёт
+На большинстве таблиц есть кнопка **Экспорт** — отчёт P&L, оповещения, поисковые фразы, заказы. Отправка файла не даёт доступа к аккаунту.
 
-## Добавление участника
+### Используйте Telegram-уведомления
+Ежедневный отчёт и оповещения приходят в Telegram — так нужная информация доходит до кладовщика или менеджера.
 
-**Дашборд → Команда → «Добавить участника»:**
-1. Введите email-адрес
-2. Выберите роль
-3. Нажмите «Отправить приглашение»
-
-Приглашение отправляется по email. После принятия участник добавляется в команду.
-
-## Удаление участника
-
-Нажмите «...» рядом с участником в таблице команды и выберите «Удалить».
-
-<info>Управление командой доступно только на тарифе Pro. На Бесплатном тарифе — только 1 пользователь.</info>
+<warning>Не передавайте свой пароль. Настройки безопасности описаны в статье «Безопасность аккаунта».</warning>
 `,
   'hisobni-ochirish': `
 ## Удаление аккаунта
 
-Перед удалением аккаунта ознакомьтесь со следующей информацией.
+Удаление выполняется по запросу — аккаунт не исчезает мгновенно по нажатию кнопки.
 
 ## Перед удалением
 
-- Все активные подписки будут отменены
-- Скачайте данные, которые хотите сохранить
-- Уведомите членов команды
+- Выгрузите нужные отчёты — после удаления восстановить их нельзя
+- Отмените активную подписку (**Тариф и оплата → Отменить тариф**)
+- Отзовите токен Daromadchi в кабинете маркетплейса
 
-## Процесс удаления
+## Отправка запроса
 
-**Настройки → Аккаунт → Удалить аккаунт:**
-1. Нажмите «Удалить аккаунт»
-2. Введите текст подтверждения: \`удалить\`
-3. Введите пароль
-4. Нажмите «Подтвердить»
+Нажмите **«Запрос на удаление аккаунта»** на странице **Дашборд → Аккаунт**.
 
-На email будет отправлена ссылка для подтверждения. Ссылка действует 24 часа.
+Запрос уходит оператору, а вам показывается подтверждение о получении. Удаление — контролируемая процедура и выполняется вручную.
 
-## Что происходит с данными
+## Альтернатива: privacy@daromadchi.uz
 
-- **Немедленно**: доступ к дашборду прекращается
-- **Через 24 часа**: личные данные удаляются
-- **Через 30 дней**: все аналитические данные удаляются
+Запрос можно отправить и напрямую на **privacy@daromadchi.uz**. Срок ответа — 15 рабочих дней (требование Закона ЗРУ-547).
 
-## Восстановление аккаунта
+## Что удаляется
 
-В течение 24 часов после отправки запроса вы можете нажать «Отменить» и отменить удаление.
+Ваши персональные данные и данные магазина удаляются. Платёжные записи по требованию закона сохраняются **в обезличенном виде** — с вами они не связаны.
 
-<warning>По истечении 30 дней данные не подлежат восстановлению.</warning>
+## Отмена подписки — это другое
+
+Отмена подписки не удаляет аккаунт. Мы не удаляем аккаунты автоматически: данные хранятся, пока существует аккаунт, и подписаться снова можно в любой момент.
+
+<warning>После выполнения удаления данные не восстанавливаются. Выгрузите нужное заранее.</warning>
 `,
   'xavfsizlik': `
 ## Безопасность аккаунта
 
-В Daromadchi безопасность ваших данных — приоритет. Используйте следующие настройки для защиты аккаунта.
+Ниже — реально работающие способы защитить аккаунт.
 
 ## Надёжный пароль
 
@@ -2765,33 +3166,38 @@ API-токен — ключ, дающий Daromadchi разрешение чит
 - Не менее 12 символов
 - Заглавные и строчные буквы
 - Цифры
-- Специальные символы (!@#$)
+- Спецсимволы (!@#$)
 
-Рекомендуется обновлять пароль каждые 3–6 месяцев.
+Пароль можно обновить в любой момент через **Вход → «Забыли пароль?»**.
 
-## Двухфакторная аутентификация (2FA)
+<info>Двухфакторная аутентификация (2FA), список сессий и журнал входов отображаются на странице Профиля, но пока не запущены. Когда они появятся, эта статья будет обновлена.</info>
 
-Включите в разделе **Настройки → Безопасность → 2FA**:
+## Выход на всех устройствах
 
-1. Скачайте приложение Google Authenticator
-2. Отсканируйте QR-код
-3. Введите 6-значный код
-4. Сохраните резервные коды
+Кнопка **Выйти** завершает сессию на всех устройствах — cookie очищаются по всему домену. На чужом компьютере не забудьте выйти, когда закончите.
 
-## История входов
+## Ваши API-токены
 
-В разделе **Настройки → Безопасность → История входов**:
-- Все входы (время, устройство, IP-адрес)
-- При обнаружении незнакомого входа немедленно смените пароль
+- Токен хранится в зашифрованном виде
+- По умолчанию используется только для чтения — пока вы сами не включите режим «Синхронизация остатков», ничего не записывается
+- Если есть сомнения в токене, отзовите его в кабинете маркетплейса и получите новый
 
-## Выход со всех устройств
+## Осторожно с фишингом
 
-Если вы подозреваете несанкционированный доступ:
-**Настройки → Безопасность → Выйти со всех устройств**
+Daromadchi никогда не просит:
+- Ваш пароль
+- Ваш API-токен (вы вводите его только сами на странице Настроек)
+- Полный номер карты или код из SMS
 
-Это завершит все активные сессии на всех устройствах.
+Официальные адреса: **daromadchi.uz**, Telegram-канал **@daromadchi_uz**.
 
-<info>Daromadchi никогда не запрашивает пароль или API-токен. Если вы получили такой запрос — это фишинг!</info>
+## Если что-то подозрительное
+
+1. Сразу смените пароль
+2. Отзовите токены маркетплейсов и получите новые
+3. Напишите на **support@daromadchi.uz**
+
+<warning>Daromadchi никогда не запрашивает пароль или API-токен. Такой запрос — фишинг.</warning>
 `,
 }
 
@@ -2799,1198 +3205,1407 @@ const ARTICLE_CONTENT_EN: Record<string, string> = {
   'tez-boshlash': `
 ## Welcome!
 
-Daromadchi is a full analytics platform for sellers on Uzum Market, Yandex Market, and Wildberries. Get started in 4 steps.
+Daromadchi is an analytics platform for Uzum Market and Yandex Market sellers. Get started in 4 steps.
 
 ## Step 1: Create an account
 
-Go to the registration page and create an account with your email and password. A confirmation link will be sent to your email.
+Go to the sign-up page and create an account with your email and a password. A confirmation link will be sent to your inbox.
 
-<info>Registration is free and no credit card is required.</info>
+<info>Signing up is free and requires no card details.</info>
 
-## Step 2: Add your API token
+## Step 2: Connect a store
 
-After signing in, go to **Settings → API Token**. Copy your API token from the Uzum Market seller cabinet (\`seller.uzum.uz\`) and paste it.
+After signing in, open the **Settings** page — it has a separate card for each marketplace:
 
-- seller.uzum.uz → Profile → API Keys
-- Copy the token
-- Paste it in Daromadchi Settings and click Save
+- **Uzum Market** — *API Token*: seller.uzum.uz → Settings → API integration
+- **Yandex Market** — *OAuth Token* and *Campaign ID* (digits only)
+
+Paste the token and press "Save". You can connect several stores — each with its own token.
+
+<info>The token is used for reading only. See "Add and manage API token" for details.</info>
 
 ## Step 3: Sync your data
 
-After adding the token, click **"Sync"**. The platform will load:
+Once the store is connected, press **"Sync"**. The platform will import:
 
-- All products and SKUs
-- Orders from the last 90 days
-- Ad campaigns and spend
-- Stock data
+- Products, SKUs and variants
+- Orders and their statuses (including cancelled ones)
+- Stock quantities and warehouses
+- Prices, commissions and settlement data
 
-The first sync may take 1–3 minutes.
+The first sync can take 1–3 minutes.
 
 ## Step 4: Start analysing
 
-Once synced, all metrics are ready on the dashboard:
+After the sync your dashboard is ready:
 
-- **DRR** (ad spend ratio)
-- **Profit** per product
-- **Stock** levels and days remaining
-- **P&L report** — monthly revenue and expenses
+- **Revenue and orders** for the selected period
+- **Profit and margin** per product (once cost price is filled in)
+- **Stock** and how many days it will last
+- **P&L report** — monthly revenue and costs
 
-<info>Data updates automatically every 4 hours.</info>
+<info>From then on data refreshes automatically — the sync runs every 5 minutes.</info>
 `,
   'malumotlar-sinxronizatsiyasi': `
-## How sync works
+## How syncing works
 
-Daromadchi fetches data via the Uzum Market API. The platform supports two sync modes.
+Daromadchi pulls data through the Uzum Market and Yandex Market APIs. The platform supports two sync modes.
 
 ## Automatic sync
 
-Data updates **every 4 hours** automatically:
+The sync runs in the background **every 5 minutes**. There is no schedule or "refresh hour" — a new order or a cancellation usually shows up within a few minutes.
 
-- 00:00, 04:00, 08:00, 12:00, 16:00, 20:00 (Tashkent time)
-- An indicator appears in the top-right corner of the dashboard during updates
+You can see the last sync time per marketplace on **Dashboard → Sync**.
 
 ## Manual sync
 
-On the dashboard page, click the **"Refresh"** button to trigger sync at any time.
+To avoid waiting, press **"Sync"** on the store card on the **Settings** page.
 
-<info>Manual sync can be triggered up to 10 times per day (Pro plan).</info>
+## What gets imported?
 
-## What data is loaded?
-
-| Data type | Update frequency |
+| Data type | Notes |
 |---|---|
-| Products and SKUs | Every sync |
-| Orders (last 90 days) | Every sync |
-| Ad campaigns | Every sync |
-| Stock levels | Every sync |
-| Prices | Every sync |
+| Products, SKUs and variants | Title, article, colour/size |
+| Orders and their statuses | New, packing, delivered, returned, cancelled |
+| Stock quantities | Per warehouse |
+| Prices and commission | As calculated by the marketplace |
+| Settlements | Powers the P&L and Payouts pages |
 
-## Sync error
+<info>Ad statistics are not imported — the Uzum and Yandex Market advertising APIs are not connected yet.</info>
 
-If sync fails:
-1. Verify your API token is still active
-2. Log in to seller.uzum.uz and refresh the token
-3. Enter the new token in Daromadchi Settings
+## Sync errors
 
-<warning>If the token has expired or been revoked, data will not update.</warning>
+If a sync fails:
+
+1. Read the error text on **Dashboard → Sync**
+2. Check that your token is still valid
+3. Issue a fresh token in your marketplace cabinet
+4. Save the new token on the **Settings** page
+
+<warning>If the token has expired or been revoked, data stops updating and the dashboard keeps showing old numbers.</warning>
 `,
   'fikr-va-xato': `
 ## Your feedback matters
 
-We need your feedback to improve the platform. If you find a bug or have a suggestion, reach out.
+We rely on your feedback to improve the platform. Found a bug or have a suggestion? Here's how to reach us.
 
-## Via Telegram
+## The in-app form — the fastest route
 
-The fastest way — our Telegram:
+At the **right edge** of the dashboard, halfway down the screen, there is a **"Feedback"** tab. Click it and pick one of two options:
 
-- Channel: **@daromadchi_uz**
-- Support bot: **@daromadchi_support_bot**
-- Hours: 9:00 – 22:00 (Tashkent)
+- **Report a mistake** — something is not working right
+- **Suggest an idea** — a new feature or improvement
+
+Describe it and **attach a screenshot** — that is the quickest way to explain a problem. After sending you'll see "Thank you! Your message was received."
+
+## Telegram channel
+
+News and announcements: **@daromadchi_uz** (https://t.me/daromadchi_uz)
 
 ## By email
 
-For detailed issues or technical errors:
+For detailed or technical issues: **support@daromadchi.uz**
 
-**support@daromadchi.uz**
+Data and account-deletion requests have their own address: **privacy@daromadchi.uz**
 
-When writing, include:
-1. How did the problem occur?
-2. Which page?
-3. Attach a screenshot
+## What helps us
 
-## In-app feedback
+1. What did you expect, and what happened?
+2. Which store / marketplace?
+3. Which period was selected?
+4. A screenshot
 
-Click the **"Leave feedback"** button in the bottom-right corner of the dashboard. Fill in the form and submit directly from the app.
-
-<info>We try to review bug reports as quickly as possible. Usually a response arrives within 24 hours.</info>
+<info>We review reports as quickly as we can. Priority support is available on Pro+ and above.</info>
 `,
   'bildirishnomalar': `
 ## What are notifications?
 
-Daromadchi automatically sends notifications about important events, helping you monitor your store and react quickly.
+Daromadchi tells you about events that matter. Notifications appear in two places: in the **Telegram bot** and **inside the app** (the bell in the top bar → Notifications page).
 
-## Notification types
+## Telegram notifications
 
-### 1. Low stock alerts
-When a product's stock drops below your threshold:
-- Threshold: 3–30 days (you configure)
-- Shows which SKU and how much is left
+### 🛒 New orders
+New orders found during a sync are grouped into one message: marketplace, product, quantity.
 
-### 2. Ad budget exceeded
-When the daily ad budget reaches your set limit:
-- Example: daily budget 500,000 sum — notified at 90%
+### ❌ Cancelled orders
+When an order is cancelled you get a **separate message** — it is never folded into the new-orders message. The reason is simple: "pack and ship this" and "do not" are opposite instructions, and merging them into one message is the surest way for a cancellation to be missed.
 
-### 3. Sales drop
-When sales volume drops sharply compared to the last 7 days:
-- Threshold: -20%, -30%, -50% (you choose)
+Each order's cancellation message is sent **exactly once**, no matter how many times the sync runs. Cancelled orders are excluded from revenue in reports.
 
-### 4. New orders
-Notification for each new order (not recommended — can be very frequent).
+<info>Cancellation messages are turned on and off together with the "New orders" setting.</info>
 
-### 5. Daily report
-A short report at a set time each day:
-- Revenue, orders count, DRR, stock status
+### 📦 Low stock
+When stock drops below your threshold. One line per physical product — even if it is listed several times.
 
-## Setup
+### 🔄 Stock sync
+When an item sold on one marketplace is also decremented on another (for stores with "Stock sync" mode enabled) — what changed and whether it worked.
 
-Go to **Dashboard → Settings → Notifications**:
+### 📊 Daily report
+Every day at the time you choose: revenue, orders, profit, commission, cancellations, category breakdown.
 
-1. Toggle each type on/off
-2. Enter threshold values
-3. Choose daily report time
-4. Click Save
+### 📈 Weekly report
+The same, for the week. Off by default.
 
-<info>Notifications are delivered via Telegram. You must connect Telegram first.</info>
+## Configuring Telegram notifications
+
+The settings live **in the bot itself**, not in the dashboard:
+
+1. Send **/start** to the bot in Telegram
+2. Open the notification settings from the bot menu
+3. Toggle each type with the ✅ / ❌ button:
+   📦 Low stock · 📊 Daily report · 🛒 New orders · 📈 Weekly report
+4. Pick the time for the daily report
+
+<info>Nothing is delivered until Telegram is connected. See "Connect Telegram bot".</info>
+
+## In-app notifications
+
+**Dashboard → Notifications** lists low-stock alerts and new orders. Opening the page clears the badge on the bell.
+
+Whether a stock-change notice reaches you in the app and/or in Telegram is set with the two toggles on **Dashboard → Alerts**.
 `,
   'telegram-ulash': `
-## Connect Telegram bot
+## Connecting the Telegram bot
 
-Notifications are sent via Telegram. Follow these steps to connect.
+Notifications are delivered through Telegram. Connecting takes a few clicks — no token to copy.
 
-## Connection steps
+## Steps
 
-### Step 1: Get your token
-Go to **Dashboard → Settings → Notifications**. Your personal token is shown in the "Connect Telegram" section (e.g. \`drm_abc123xyz\`).
+### Step 1: open Settings
+At the bottom of **Dashboard → Settings** there is a **Telegram** card.
 
-### Step 2: Find the bot
-Search for **@daromadchi_bot** in Telegram or use the link.
+### Step 2: press "Connect Telegram"
+Daromadchi prepares your personal link.
 
-### Step 3: Start the bot
-Send the bot this message:
+### Step 3: open the link
+The link opens the bot in Telegram with the connection request already prepared — just press **Start**.
 
-\`/start drm_abc123xyz\`
+### Step 4: choose a language
+The bot asks which language to send notifications in. After you pick one the link is complete, and the Settings page refreshes itself: the card shows **"Connected ✓"** and your Telegram username.
 
-(replace drm_abc123xyz with your token)
+## Checking it works
 
-### Step 4: Confirmation
-The bot will reply "Successfully connected!". The Daromadchi page will refresh automatically.
+Once connected, a **"Send test"** button appears on the card. Press it and the bot sends a test message straight away. If nothing arrives, check that you have not blocked the bot.
 
-<info>Only one Telegram account can be connected per Daromadchi account.</info>
+## Disconnecting
 
-## Disconnect
+The **"Disconnect"** button on the same card. After that no messages are sent.
 
-Settings → Notifications → click "Disconnect Telegram".
+## Configuring notifications
+
+Which messages you receive is configured **in the bot itself** — send **/start** to the bot and choose from the menu. See "Notification types and settings" for details.
+
+<info>One Daromadchi account links to one Telegram account.</info>
 
 ## Troubleshooting
 
-- Check that you entered the token correctly
-- The token is single-use — get a new one to reconnect
-- If the bot is blocked, unblock it and start again
+- If the link has expired, press "Connect Telegram" again for a fresh one
+- If the bot is blocked, unblock it and retry
+- The extension's "Link Telegram" button leads to this same page
 `,
   'chrome-kengaytma': `
 ## What is the Chrome extension?
 
-The Daromadchi Chrome extension shows analytics data directly inside the Uzum Market seller cabinet while you work there.
+The Daromadchi extension works out **unit economics** without taking you off the marketplace page. On a product page it opens a panel showing that product's commission, delivery, net profit and margin.
 
-## Why use it?
+## Where it runs
 
-With the extension you can see Daromadchi data without switching tabs:
+- **uzum.uz** — Uzum Market product pages
+- **market.yandex.ru / market.yandex.uz** — Yandex Market product pages
+- **partner.market.yandex.ru** — the Yandex Market partner cabinet
+- **daromadchi.uz** — to link it to your account
 
-- DRR shown directly on the product page
-- Stock level and days remaining
-- Current price and profit margin
-- Competitor prices
+On any other site the extension does not run at all.
 
-## How it works
+## What it gives you
 
-1. Install the extension in Chrome
-2. Open seller.uzum.uz
-3. The extension reads page data and overlays analytics from your Daromadchi account
-4. A widget (mini-panel) appears next to each product card
+### The product-page panel
+It reads the price off the page itself. You enter cost price, packaging, commission percentage and volume — the panel recalculates net profit and margin immediately. The **FBO / FBS** buttons switch the cost model.
 
-<info>The extension works only in Chrome and Chromium-based browsers (Edge, Brave, Opera).</info>
+### The popup (clicking the icon)
+A short summary of your store plus alerts. The Telegram link button is here too.
 
-## Security
+### Options
+The extension's own alerts: low-stock threshold, sales drop, return rate, "quiet hours" and the daily summary. These settings live in your browser.
 
-The extension only activates on the seller.uzum.uz domain. No data is read from any other site.
+## Browsers
+
+Chrome and Chromium-based browsers: Edge, Brave, Opera.
+
+<info>The panel's maths uses the same formulas as the **Unit economics** page in Daromadchi. The button in the panel opens the full calculator.</info>
 `,
   'vidzhet-nima-korsatadi': `
-## Widget contents
+## What the panel contains
 
-When the Daromadchi Chrome extension is enabled, a mini-widget appears on product pages at seller.uzum.uz.
+Here is what you see when the Daromadchi panel is open on a product page.
 
-## Main metrics
+## The top
 
-| Metric | Description |
+- Product title
+- The **price** read from the page
+- Language (UZ / RU / EN), theme and refresh buttons
+
+## Model selector
+
+The **FBO** or **FBS** buttons switch the cost model. On Yandex pages the matching model is used.
+
+## What you enter
+
+| Field | Why it is needed |
 |---|---|
-| DRR | Ad spend ratio (%) |
-| Current price | Active selling price |
-| Cost price | Your entered cost |
-| Profit/unit | Revenue per unit sold |
-| Margin | Profit % |
-| Stock | Quantity in warehouse |
-| Days left | Days remaining at current sales pace |
+| **Cost price** | What the item cost you |
+| **Packaging** | Packaging cost per unit |
+| **Commission (%)** | Marketplace commission; prefilled by category |
+| **Volume** | To work out the delivery cost |
 
-## Ad data
+## The calculated result
 
-- Number of active campaigns
-- Today's ad spend
-- CPC (cost per click)
-- CPO (cost per order)
+| Line | Meaning |
+|---|---|
+| Price | The selling price from the page |
+| Commission (%) | Marketplace commission |
+| Delivery | Logistics — flagged as **estimated** |
+| Marketplace total | Commission + delivery |
+| Total costs | Marketplace total + cost price + packaging |
+| **Net profit** | The bottom line, with a coloured bar |
+| **Margin** | Profit as a share of price (%) |
 
-## Competitors
+The margin colour reads as status: green is healthy, yellow is borderline, red is a loss.
 
-If market analysis exists for this product:
-- Lowest competitor price
-- Average category price
+## What the panel does not have
 
-<info>Widget data is based on the last sync. Refresh sync for the most current data.</info>
+There are **no ad metrics (DRR, CPC, CPO), no campaigns and no competitor prices**. The marketplaces do not expose that data over their APIs.
+
+<info>Change any value and profit and margin recalculate straight away — there is nothing to save.</info>
 `,
   'vidzhet-ornatish': `
-## Installation steps
+## 1. Install from the Chrome Web Store
 
-### 1. Install from Chrome Web Store
+The extension is published as "Daromadchi — Uzum & Yandex":
 
-1. Open the Chrome Web Store
-2. Search for "Daromadchi"
-3. Click "Add to Chrome"
-4. Confirm permissions
+https://chromewebstore.google.com/detail/daromadchi-%E2%80%94-uzum-yandex/kdgmhemligckdjibcojbdiofokjjnaed
 
-### 2. Sign in
+Open the link and press **"Add to Chrome"**. The same link is on the Daromadchi home page and on the **Unit economics** page.
 
-Click the extension icon (top-right of the browser) and enter your Daromadchi account credentials.
+## 2. Sign in
 
-### 3. Grant permissions
+Click the extension icon. If you are not signed in, the popup shows a **"Sign in"** button and opens daromadchi.uz. Once signed in, the popup starts showing your stats.
 
-The extension needs:
-- Read data on the seller.uzum.uz domain
-- Send requests to Daromadchi servers
+## 3. Activate the extension
 
-<warning>The extension only activates on your selected domains. It is inactive on other sites.</warning>
+1. Join the **@daromadchi_uz** channel on Telegram
+2. Send **/activate** to the bot
+3. The bot replies with a 6-character code
+4. Enter that code in the extension
 
-### 4. Test it
+<info>The code is single-use and expires. If it has expired, send **/activate** to the bot again.</info>
 
-Go to seller.uzum.uz → Products page. You should see a Daromadchi widget icon next to each product.
+## 4. Optional: entering API keys
+
+The extension's **Options** page can store marketplace keys separately:
+
+- **Yandex Market API key** — Seller cabinet → Settings → API and modules
+- **Uzum Seller API token** — seller.uzum.uz → Profile → API keys
+
+Each field has a **"Check"** button that tests the key right away.
+
+## 5. Verify
+
+Open any product page on uzum.uz or market.yandex.ru. The Daromadchi panel should appear. If it is closed, the **"D"** button on the edge brings it back.
 
 ## Troubleshooting
 
-- Restart the browser
-- Disable and re-enable the extension
+- Reload the page — the panel is injected after the page loads
+- Turn the extension off and on again
 - Chrome → More tools → Extensions → Daromadchi → Details
 `,
   'qurilmalar-boshqaruvi': `
-## Device list
+## Using it on several devices
 
-You can connect the Chrome extension on multiple devices to one account.
+You can install the extension on any number of computers — there is no limit, and Daromadchi keeps no device list.
 
-All connected devices are shown in **Settings → Chrome Extension → Devices**.
+Instead, each browser is configured independently.
 
-## Displayed data
+## What lives where
 
-For each device:
-- Device name and browser version
-- Operating system
-- Last activity time
-- Status: Active / Inactive
+| Data | Where it lives |
+|---|---|
+| Store data, orders, stock | In your Daromadchi account — identical everywhere |
+| Telegram link | In your account — linked once, works everywhere |
+| Extension alert settings | **In that browser only** |
+| API keys held in the extension | **In that browser only** |
+| Language and theme choice | **In that browser only** |
 
-## Remove a device
+So after installing the extension on a new computer you will need to set the thresholds on its **Options** page again. Store data appears on its own.
 
-To remove an old or unused device from the list, click "Remove". The extension on that device will be disconnected from the account.
+## Adding a new device
 
-<info>Maximum 5 devices (Pro plan). Pro+ plan has no limit.</info>
+1. Install the extension
+2. Sign in to your Daromadchi account
+3. Send **/activate** to the bot, get a fresh code and enter it
 
-## Sign out all devices
+The extension on your previous device keeps working — a new activation does not disable it.
 
-The "Sign out all devices" button ends all active sessions. You will need to sign in again on each device afterwards.
+## Disconnecting a device
+
+There is no way to disconnect a device remotely. On the device itself:
+
+- Remove the extension from Chrome, or
+- Unlink Telegram from the popup and sign out of Daromadchi
+
+<warning>On a shared computer, remember to sign out — the extension works off your browser session.</warning>
 `,
   'reklama-tahlili': `
-## What is ad analytics?
+## Important: Daromadchi does not connect to your ad account
 
-Ad analytics is a set of metrics measuring the effectiveness of your ad spend. Daromadchi calculates all key metrics automatically.
+Daromadchi has **no** ad-campaign table, and ad statistics are not imported over the API. Neither Uzum Market nor Yandex Market has opened an advertising API yet — the "Sync ads" button on the **Settings** page says exactly that.
 
-## Key metrics
+Campaigns, clicks and daily spend live **in your marketplace cabinet**. This article explains how to read those numbers and how to fold them into your profit maths in Daromadchi.
 
-### DRR (Ad spend ratio)
+## Core metrics
+
+### DRR (ad spend share)
 \`DRR = Ad spend / Revenue × 100\`
 
 - **DRR < 10%** — good
 - **DRR 10–20%** — acceptable
-- **DRR > 20%** — high, review the campaign
+- **DRR > 20%** — high, worth reviewing the campaign
 
-### CPC (Cost per click)
-\`CPC = Total spend / Number of clicks\`
+### CPC (cost per click)
+\`CPC = Total spend / Clicks\`
 
-### CPO (Cost per order)
-\`CPO = Total spend / Number of orders\`
+### CPO (cost per order)
+\`CPO = Total spend / Orders\`
 
-### ROAS (Return on ad spend)
+### ROAS (return on ad spend)
 \`ROAS = Revenue / Ad spend\`
 
-ROAS > 5 is recommended.
+All of these abbreviations are also explained in the **Abbreviations** section on the dashboard.
 
-## Campaigns table
+## Where ad spend enters Daromadchi
 
-Dashboard → Analytics → Campaigns shows all active and inactive campaigns with their metrics.
+### 1. Unit economics calculator
+The **Ads (%)** field on **Dashboard → Calculator** is where you enter your own DRR. The calculator treats it as a cost and recalculates net profit and the break-even price accordingly.
 
-## Identifying ineffective spend
+### 2. P&L report
+If the marketplace withheld ad money from your payout, it lands in the **"Other marketplace deductions"** line (alongside acquiring and penalties). That is an actual deduction taken from the marketplace's own report, not an estimate.
 
-Daromadchi automatically flags:
-- Clicks but no orders
-- Campaigns with DRR above 30%
-- Campaigns with exhausted budget
-
-<info>Ad data is fetched via the Uzum Market API and updates with every sync.</info>
+<info>In short: campaign-level analysis happens in the cabinet; its effect on profit shows up in Daromadchi.</info>
 `,
   'drr-nima': `
 ## What is DRR?
 
-**DRR** (Доля Рекламных Расходов) — the ratio of ad spend to revenue. A Russian abbreviation used on Uzum Market and in Daromadchi.
+**DRR** (from the Russian «доля рекламных расходов») is the share of revenue spent on advertising.
 
 **Formula:** \`DRR = Ad spend / Revenue × 100\`
 
-**Example:** 1,000,000 sum revenue, 80,000 sum ads → DRR = 8%
+**Example:** 1,000,000 so'm revenue, 80,000 so'm on ads → DRR = 8%
 
-## What is a good DRR?
+<info>You take DRR from the campaign report in your marketplace cabinet — Daromadchi is not connected to the ad account and cannot compute it for you.</info>
 
-Varies by category:
+## What is a healthy DRR?
+
+It depends on the category:
 
 | Category | Recommended DRR |
 |---|---|
-| Electronics | 5–10% |
-| Clothing | 8–15% |
-| Home goods | 6–12% |
-| Food | 3–8% |
-| Cosmetics | 10–18% |
+| Electronics | 5-10% |
+| Clothing | 8-15% |
+| Home goods | 6-12% |
+| Groceries | 3-8% |
+| Cosmetics | 10-18% |
+
+## Finding your own ceiling
+
+The table above is an average. The exact answer depends on your margin:
+
+1. Open **Dashboard → Calculator** and pick a product
+2. Set **Ads (%)** to 0 — that is your clean margin
+3. Raise the percentage gradually until profit approaches zero
+
+That point is the product's **break-even DRR**. Anything above it is a loss.
 
 ## How to reduce DRR
 
-### 1. Change campaign objective
-Pay per order instead of per click (CPC → CPO)
+### 1. Change the campaign goal
+Pay per order rather than per click (CPC → CPO)
 
-### 2. Remove ineffective keywords
-Keywords that bring lots of clicks but few orders
+### 2. Drop ineffective keywords
+Keywords that bring clicks but no orders
 
-### 3. Set time-based adjustments
-Lower budget during low-sales periods
+### 3. Adjust the schedule
+Lower the budget during hours with few sales
 
 ### 4. Check your price
-If competitors sell cheaper, adjust your price
+If competitors sell cheaper, adjust
 
 ### 5. Improve product photos
-Good photos raise CTR — more orders for the same spend
+A better photo lifts CTR — more orders for the same spend
 
-<info>Daromadchi calculates DRR automatically and marks high-DRR campaigns yellow/red.</info>
+<warning>All campaign settings are changed in the marketplace cabinet. Daromadchi never edits or stops campaigns.</warning>
 `,
   'samarasiz-xarajatlar': `
-## What is ineffective ad spend?
+## What counts as wasted spend?
 
-Ineffective ad spend — clicks and impressions you paid for but that didn't turn into orders.
+Wasted ad spend is clicks and impressions you paid for that never turned into profit.
 
-## How Daromadchi detects it
+<info>Daromadchi does not flag campaigns itself — ad statistics do not arrive over the API. What follows is how to pair the numbers in your marketplace cabinet with the profit numbers in Daromadchi.</info>
 
-### 1. High CPC, low conversion
-Campaigns where you pay a lot per click but get few orders.
+## The workflow
 
-### 2. Zero-order campaigns
-Campaigns spending money but with no orders in the last 7 days.
+### Step 1: pull campaign spend from the cabinet
+In your marketplace cabinet, export spend per product for the last 7–30 days.
 
-### 3. Ads on nearly out-of-stock products
-Spending ad budget on products that are almost sold out.
+### Step 2: look up that product's profit in Daromadchi
+In the **Dashboard → Product analytics** table, for the same period:
+- **Profit** — what is left after cost price and commissions
+- **Margin %** — profit as a share of revenue
+- **Sales share** — what percentage of total revenue this product carries
+- **ABC** — its A/B/C class
 
-### 4. Campaigns with DRR > 30%
-Daromadchi flags these as "Attention".
+### Step 3: compare
 
-## What to do
+| Situation | Conclusion |
+|---|---|
+| Spend > Profit | The ads run at a loss — stop them or revisit the price |
+| Spend ≈ Profit | Break-even — you are buying turnover, not profit |
+| Spend < Profit, ABC = A | Healthy — the budget can go up |
+| Spend but no sales | The clearest waste — stop this first |
 
-1. Apply the "Ineffective" filter in the **Campaigns** table
-2. Review each ineffective campaign
-3. Update your keyword list or pause the campaign
+## What to watch
 
-<warning>Don't stop all low-conversion campaigns at once — some serve brand awareness purposes.</warning>
+### Advertising a product that is about to run out
+Check the low-stock list on **Dashboard → Alerts**. Advertising an item with a few days of cover is money thrown away.
+
+### Products with a high return rate
+The **Return %** column in the product analytics table. When returns are high an order is not profit — and the advertising costs you twice.
+
+### Low-margin products
+Below a 10% margin even a small DRR pushes the product into a loss. Work out the threshold in the **Calculator**.
+
+<warning>Do not stop every low-conversion campaign at once — some of them are building brand recognition.</warning>
 `,
   'kampaniya-byudjeti': `
-## Budget management
+## Where the budget is set
 
-Daromadchi helps you monitor your ad budget, but budgets must be set directly in the Uzum Market cabinet.
+Your ad budget is set **in the marketplace cabinet**, not in Daromadchi. Daromadchi is not connected to the ad account, so it cannot show your budget, change it, or warn you when it runs out.
 
-## Budget tracking
+What Daromadchi gives you is **the profit figures the budget should be derived from**.
 
-In **Dashboard → Analytics → Campaigns**:
-- Daily budget per campaign
-- Amount spent today
-- Estimated time until budget runs out
+## Working out the budget
 
-## Set up notifications
+### 1. How much profit does one order make?
+In **Dashboard → Calculator**, pick the product, enter cost price and selling price, and set **Ads (%)** to 0. The net profit shown is what one order earns before advertising.
 
-To get a Telegram alert when budget reaches 80% or 90%:
+### 2. Find your maximum CPO
+\`Max CPO = net profit per order\`
 
-Go to **Settings → Notifications → Ad spend** and set the threshold.
+Above that, every order loses money. In practice, staying under half the profit is sensible.
 
-## Budget recommendations
+### 3. Derive the daily budget
+\`Daily budget = target CPO × target orders per day\`
 
-\`Optimal budget = Average CPO × Target orders per day\`
+**Example:** net profit 30,000 so'm → target CPO 15,000 so'm; you want 10 orders a day → budget 150,000 so'm/day.
 
-**Example:** CPO = 15,000 sum, target = 10 orders/day → budget = 150,000 sum/day
+### 4. Check it against stock
+On **Dashboard → Alerts**, see how many days of cover the product has. The budget should not drive sales faster than the warehouse can supply.
 
-## Seasonal changes
+## Keeping it in check
 
-During holidays and seasonal sales, increase budget by 1.5–2×.
+Once a week:
+1. Pull actual spend from the cabinet
+2. Look up profit for the same period in the **Product performance** table
+3. Recompute DRR and adjust the budget
 
-<info>Ad budgets are changed directly in seller.uzum.uz → Advertising.</info>
+## Seasonality
+
+Holidays and promotions lift sales — before raising the budget, make sure stock can cover it.
+
+<info>Change your ad budget in the advertising section of the seller.uzum.uz or Yandex Market cabinet.</info>
 `,
   'qoldiq-boshqaruvi': `
 ## Stock management
 
-Daromadchi tracks your stock against your sales pace and tells you when to reorder.
+Daromadchi tracks stock against your sales rate and tells you when to reorder.
 
-## Stock levels
+## How many days of cover
 
-\`Days = Stock quantity / Average daily sales\`
+For each product:
 
-| Level | Days | Colour |
+\`Days = Stock on hand / Average daily sales\`
+
+On the **Alerts** page this number appears as a coloured badge:
+
+| Status | Days | Colour |
 |---|---|---|
-| **A** | 30+ days | Green |
-| **B** | 15–30 days | Blue |
-| **C** | 7–15 days | Yellow |
-| **D** | Less than 7 days | Red |
+| **Critical** | Under 3 days, or zero stock | Red |
+| **Warning** | 3-7 days | Yellow |
+| **Watch** | Over 7 days | Blue |
 
-## FBO / FBS view
+## Marketplace models
 
-Uzum Market has two stock types:
+Badges show which warehouse an order and its stock come from:
 
-- **FBO** — products stored in Uzum's warehouse
-- **FBS** — products stored in your warehouse
+**Uzum Market**
+- **FBO** — stock sits in Uzum's warehouse; Uzum picks and ships
+- **FBS** — stock is in your warehouse; you pack each order
 
-Both types are shown separately in the products table.
+**Yandex Market**
+- **FBY** — stock sits in Yandex's warehouse; Yandex does everything
+- **FBS** — your warehouse, Yandex logistics (Express arrives as FBS too)
+- **DBS** — you both store and deliver
 
-## Set up alerts
+<info>The "pack and ship" message only fires for seller-fulfilled models (FBS, DBS) — FBO and FBY orders need nothing from you.</info>
 
-In **Settings → Notifications → Low stock**:
-1. Enter the minimum days threshold (e.g. 7 days)
-2. Choose which product types to alert on
-3. Save
+## One product, several listings
 
-<info>Stock data comes via the Uzum Market API. Real-time data is available for the FBO warehouse.</info>
+A single physical product can sit on two marketplaces, or across several listings on one. On **Dashboard → Inventory** you group them together — after that stock is counted per group and alerts stop duplicating.
+
+## Stock sync (optional)
+
+When enabled for a store, an item sold on one marketplace is also decremented on the other. This is the only thing Daromadchi ever writes to a marketplace listing, and it is the stock quantity alone. See "Add and manage API token" for details.
+
+<info>Stock figures refresh along with the sync.</info>
 `,
   'qoldiq-ogohlantirish': `
 ## Stock alerts
 
-When a product's stock drops below your threshold, Daromadchi automatically sends a Telegram message.
+When stock drops below your threshold, Daromadchi warns you.
 
-## Alert settings
+## Setting the threshold
 
-On the **Settings → Notifications** page:
+On **Dashboard → Alerts**, enter the threshold in units (default: **15 units**) and save. The list is recalculated against the new threshold immediately.
 
-- **Minimum days threshold**: when to send the alert (default: 7 days)
-- **Minimum quantity**: alert at this stock level (default: 10 units)
-- **Product groups**: all products or selected ones only
+For products grouped together, a separate threshold can be set on the **Inventory** page.
 
-## Message format
+## Days-of-cover status
 
-\`⚠️ Low stock: [Product name]\`
-\`Stock: 15 units (5 days)\`
-\`Recent sales: 3 units/day\`
+Beyond the threshold, each row shows how many days the stock will last: under 3 days is red, 3-7 days yellow, more than that blue. Those boundaries are fixed.
 
-## Multiple alerts
+## Where alerts arrive
 
-You can set 2 thresholds per product:
-1. **First alert** — 14 days (time to place an order)
-2. **Urgent alert** — 5 days (order immediately)
+### In the app
+On the **Alerts** and **Notifications** pages, and on the bell in the top bar.
 
-<warning>Telegram bot must be connected for alerts to work.</warning>
+### In Telegram
+If Telegram is connected and **📦 Low stock** is enabled in the bot. The message names the product, the quantity left and how many days it covers.
+
+Whether a stock-change notice reaches you in the app and/or in Telegram is set with the two toggles on the **Alerts** page.
+
+## No duplicates
+
+One physical product gets one row — even when it is listed several times. Groups are configured on the **Inventory** page.
+
+## Export
+
+The alert list can be downloaded as a spreadsheet.
+
+<warning>Without Telegram connected, alerts only appear inside the app.</warning>
 `,
   'fbo-fbs-rfbs': `
-## Warehouse models
+## Fulfillment models
 
-Uzum Market has three main selling models:
+The model decides two things: where the stock sits and who packs the order. Daromadchi shows it as a badge next to every order and stock figure.
 
-## FBO (Fulfillment by Operator)
+## Uzum Market
 
-**Uzum's warehouse** — products are stored at Uzum Market's warehouse and delivery is handled by Uzum.
+### FBO (Fulfillment by Operator)
+Stock sits **in Uzum's warehouse**. Uzum picks and ships.
 
 - Faster delivery
-- Must ship products to Uzum's warehouse
-- Additional storage costs
+- You must ship stock into Uzum's warehouse in advance
+- Storage costs apply
 
-## FBS (Fulfillment by Seller)
+### FBS (Fulfillment by Seller)
+Stock sits **in your warehouse**. You pack and hand over each order yourself.
 
-**Seller's warehouse** — products are stored by you; you ship after receiving an order from Uzum.
+- Storage fully under your control
+- Every order needs an action
 
-- Full control over your warehouse
-- You handle delivery
-- More flexibility
+## Yandex Market
 
-## rFBS (Real-time FBS)
+### FBY
+Stock sits **in Yandex's warehouse** — Yandex picks and ships. Nothing is required from you.
 
-An updated version of FBS with real-time order management.
+### FBS
+Stock is in your warehouse, delivery runs on Yandex logistics. **Express** orders arrive as FBS too — it is not a separate model.
 
-## View in Daromadchi
+### DBS (Delivery by Seller)
+You both store and deliver.
 
-On the **Products → [Product]** page, FBO and FBS stock levels are shown separately:
+## Why it matters
 
-| Model | Stock | Days |
-|---|---|---|
-| FBO | 150 units | 22 days |
-| FBS | 80 units | 12 days |
+The **"pack and ship"** Telegram message only fires for seller-fulfilled models: Uzum FBS, Yandex FBS and DBS. FBO and FBY orders need nothing from you — so they are never sent as a call to action.
 
-<info>Total stock = FBO + FBS. Alerts are calculated based on total stock.</info>
+## Where to see it
+
+The badges appear in the **Orders** and **Inventory** tables. One product can sit in several models at once — total stock is their sum, and alerts fire on the total.
+
+<info>rFBS is a flavour of FBS. The marketplace does not return it separately, so Daromadchi shows it as FBS.</info>
 `,
   'tovar-aylanmasi': `
 ## What is stock turnover?
 
-Stock turnover measures how quickly a product sells.
+Turnover shows how quickly a product sells. The practical question is simpler: **how many days of cover is left, and when should you reorder?**
 
-\`Turnover = Units sold / Average stock\`
+## How Daromadchi calculates it
 
-## Calculation in Daromadchi
+The maths uses actual sales over the **last 30 days**:
 
-The platform calculates for each product:
-- Average daily sales over the last 7 days
-- Average daily sales over the last 30 days
-- Seasonal coefficient (if data is available)
+\`Daily sales = Units sold in 30 days / 30\`
 
-## Order forecast
+\`Days of cover = Available stock / Daily sales\`
 
-\`Order date = Today + (Stock / Daily sales) − Lead time\`
+Both figures appear on every product row on **Dashboard → Alerts**. The list is sorted by days of cover — the most urgent first.
+
+<info>Only **available** stock is used: units already ordered but not yet shipped are subtracted. Otherwise sold goods would look as if they were still on the shelf.</info>
+
+If there were no sales in those 30 days, days of cover shows **"—"** — that means "cannot be estimated", not "plenty left".
+
+## When to reorder
+
+\`Reorder date = Today + (Days of cover − Supplier lead time)\`
 
 **Example:**
 - Stock: 100 units
-- Daily sales: 5 units
-- Lead time: 5 days
-- **Order date: in 15 days**
+- Daily sales: 5 units → 20 days of cover
+- Your supplier takes 5 days
+- **Reorder in 15 days**
 
-## Seasonal changes
+You know your lead time — Daromadchi does not, so that subtraction is yours to make.
 
-Sales may rise during holidays and peak season. Daromadchi forecasts based on last year's data.
+## Alert thresholds
 
-<info>The forecast is approximate. The more product data available, the more accurate the forecast.</info>
+| Status | Days of cover |
+|---|---|
+| Critical | Under 3 days, or zero stock |
+| Warning | 3-7 days |
+| Watch | Over 7 days |
+
+## Things to watch
+
+- **A new product**: with less than 30 days of history, daily sales come out low and the forecast looks longer than it is
+- **A promotion period**: promo sales lift the average, and stock runs out sooner than expected
+- **One product across several listings**: group them on the **Inventory** page, otherwise each is counted on its own
+
+<info>The Seasonality section is still marked "Coming soon" — no seasonal coefficient is applied.</info>
 `,
   'birlik-iqtisodiyoti': `
 ## What is unit economics?
 
-Unit Economics is a calculation system showing exactly how much profit you make from selling one unit of a product.
+Unit economics is the calculation of how much profit is left from selling a single unit.
 
-## How the calculator works
+Daromadchi gives you **two** tools for it.
 
-Go to **Dashboard → Calculator**. Enter the following:
+## 1. Profit calculator — a quick check on one product
 
-### Revenue
+**Dashboard → Calculator**. Nothing needs connecting: pick the marketplace (**Uzum** or **Yandex**) and the category, and the commission percentage fills itself in.
+
+Fields you enter:
 - Selling price
+- Cost price
+- Logistics
+- Ad spend
+- Return rate (%)
+- Monthly units sold
 
-### Costs
-- Cost price (purchase price)
-- Uzum commission (%)
-- Delivery cost
-- Return cost
-- Packaging
-- Ad spend (based on DRR)
-- Tax (%)
+What comes out:
+- **Cost breakdown per unit** — commission, cost price, logistics, return losses, advertising
+- **Net profit per unit**, **Margin**, **ROI**, **DRR**, break-even price
+- **Reality Check** — the real monthly profit next to the one you assumed
 
-## Results
+If margin falls below 20% or the price runs at a loss, the calculator warns you.
 
-The calculator computes:
-- **Net profit** — after all costs
-- **Margin** — profit %
-- **Break-even price** — minimum selling price
-- **Target price** — recommendation for 20% margin
+## 2. Unit economics table — across all products
 
-## Logistics settings
+**Dashboard → Unit economics**. Here you get a product list with the full calculation on each: cost price, landed cost, commission, delivery, advertising, total costs, net profit, ROI, margin, stock and a supplier link.
 
-Enter Uzum Market delivery rates or select "Uzum tariff" for automatic calculation.
+### Default costs
+Set once in the table settings and applied to every row:
 
-<info>Calculator results can be saved and compared across products.</info>
+| Setting | Default |
+|---|---|
+| Acquiring (%) | 1.5 |
+| Ads (%) | 5 |
+| Tax (%) | 6 |
+| Commission (%) | 10 |
+| Last mile (%) | 0 |
+| Tax type | Income (6%) or Income − expense (15%) |
+
+### Columns
+Columns can be switched on and off, so the view fits the question you're asking.
+
+## How the Chrome extension ties in
+
+The extension's panel uses the same formulas and can add a product straight into this table.
+
+<warning>Every figure in the calculator is an estimate. Marketplace rates change — check the current rate in your cabinet before an important decision.</warning>
 `,
-  'zararсizlik-narxi': `
+  'zararsizlik-narxi': `
 ## What is the break-even price?
 
-The break-even price is the minimum price you must sell at to cover all costs. Selling below this means a loss.
+The break-even price is the lowest selling price that still covers every cost. Selling below it is a loss.
 
 ## Formula
 
-\`Break-even = Cost price + Commission + Logistics + Advertising + Other costs\`
+\`Break-even = Cost price + Commission + Logistics + Return losses + Advertising + Tax\`
 
-## Calculation in Daromadchi
+## Calculating it in Daromadchi
 
-Enter in the calculator:
+Open **Dashboard → Calculator**:
 
-1. **Cost price** — purchase price
-2. **Uzum commission** — 5 to 25% depending on category
-3. **FBO logistics** — depends on weight and dimensions
-4. **Return costs** — accounting for ~5–10% returns
-5. **Advertising** — based on target DRR
+1. Pick the marketplace: **Uzum** or **Yandex**
+2. Pick the category — the commission percentage fills itself in
+3. Enter the **cost price**
+4. Enter **logistics** (from the marketplace's rate card)
+5. Enter the **return rate** — take your real one from the **Return %** column in the **Product performance** table
+6. Enter **ad spend**
 
-## Target profit
+The calculator shows the **break-even** figure alongside the other metrics (margin, ROI, DRR).
+
+## Adding a target profit
 
 \`Selling price = Break-even × (1 + Target margin / 100)\`
 
 **Example:**
-- Break-even: 45,000 sum
+- Break-even: 45,000 so'm
 - Target: 20% margin
-- **Selling price: 54,000 sum**
+- **Selling price: 54,000 so'm**
 
-<info>Daromadchi automatically calculates the Uzum commission based on product category.</info>
+## Is your current price enough?
+
+The **Reality Check** block in the calculator shows how much profit (or loss) the current price produces over a month. If the price runs at a loss, the calculator tells you how much to raise it by.
+
+<info>The commission percentage is prefilled by category, but you can override it — the rate in your own contract is more accurate.</info>
 `,
   'marja-hisoblash': `
-## Types of margin
+## What is margin?
 
-### Gross Margin
-\`Gross margin = (Selling price − Cost price) / Selling price × 100\`
+Margin is profit as a share of revenue, in percent. In Daromadchi margin means **net margin**: what is left after cost price and marketplace deductions.
 
-### Operating Margin
-Gross margin minus operating expenses (ads, logistics, commissions).
+\`Margin = Net profit / Revenue × 100\`
 
-### Net Margin
-The profit share remaining after all costs, taxes, and fees.
+## Margin and markup are not the same
 
-## Where to see it in Daromadchi
+They are easy to confuse:
 
-### In the products table
-Margin % is shown in each product row.
+- **Margin** — profit as a percentage of the **selling price**
+- **Markup** — profit as a percentage of the **cost price**
 
-### In the P&L report
-Monthly and weekly margin trends in chart form.
+Buy at 50,000 so'm and sell at 100,000: the markup is 100%, the margin is 50%.
 
-### In the calculator
-Real-time calculation based on your inputs.
+## Where to see margin
 
-## What is a good margin?
+### Per product
+The **Margin** column in the **Dashboard → Product analytics** table. At the top of the page you also get the store's **average margin** and counts of low- and high-margin products.
 
-| Category | Minimum | Recommended |
+### Per variant
+Expand a parent row and margin shows per variant (colour, size) — often one of them is dragging the whole group down.
+
+### When planning
+The **Calculator** and the **Unit economics** table compute margin from the values you enter.
+
+## No cost price, no margin
+
+A product with no cost price shows an inflated margin — the largest cost simply isn't counted. Fill it in with the pencil in the **Product performance** table, or on the **Products** page.
+
+## What margin is healthy?
+
+| Category | Minimum margin | Recommended |
 |---|---|---|
-| Electronics | 8% | 15–20% |
-| Clothing | 20% | 35–50% |
-| Cosmetics | 25% | 40–60% |
-| Home goods | 15% | 25–35% |
+| Electronics | 8% | 15-20% |
+| Clothing | 20% | 35-50% |
+| Cosmetics | 25% | 40-60% |
+| Home goods | 15% | 25-35% |
 
-<info>Even with a low margin, total profit can be high if sales volume is large.</info>
+<info>Even a low margin can produce a lot of profit at volume. So read margin alongside the **sales share** column.</info>
 `,
   'logistika-xarajatlari': `
-## What are logistics costs?
+## Logistics costs
 
-On Uzum Market, delivery costs depend on the product's weight, dimensions, and model (FBO/FBS).
+Delivery cost depends on weight, volume and the fulfillment model (FBO/FBS, FBY/FBS/DBS). It is the second-largest deduction after commission.
 
-## FBO logistics tariff
+## How Daromadchi accounts for logistics
 
-For FBO (Uzum warehouse), costs include:
-- Acceptance fee: per unit
-- Storage: cubic metre × day
-- Delivery: by weight and region
+### In the calculator — manually
+The **Logistics (so'm)** field on **Dashboard → Calculator** is where you enter delivery cost per unit. You take the figure from the marketplace's rate card.
 
-## FBS logistics tariff
+### In the unit economics table — manually and as a percentage
+In the **Unit economics** table, delivery is its own column. The **Last mile (%)** setting adds a percentage of the price on top — handy when the rate is percentage-based.
 
-For FBS (seller's warehouse), costs include:
-- Delivery to the sorting centre
-- Sorting fee
+### In the P&L report — the actual figure
+The **Delivery** line in the **P&L** report is not an estimate: it comes from the marketplace's own report. If the final report has not arrived, the value carries a **≈** and is replaced with the actual one once it does.
 
-## Set up in the calculator
-
-In **Calculator → Logistics**:
-
-1. Select **warehouse model**: FBO / FBS
-2. Enter **product weight** (grams)
-3. Enter **dimensions** (length × width × height in cm)
-4. Daromadchi calculates automatically using Uzum rates
+<info>So: use the calculator's estimate to plan, and the P&L's actual figure to judge a period that has passed.</info>
 
 ## Return costs
 
-Average return rate by category is 3–15%. Enter the return % in the calculator and costs are added automatically.
+A returned item pays logistics twice — out and back.
 
 \`Return cost = (Return % / 100) × (Logistics × 2)\`
 
-<info>Uzum Market tariffs may change. Daromadchi tracks tariff updates.</info>
+You enter the return rate into the calculator. For your actual rate, use the **Return %** column in the **Product performance** table — it is computed from your own data.
+
+## Where to find the rates
+
+- **Uzum Market**: the rates section of the seller.uzum.uz cabinet
+- **Yandex Market**: the rates section of the partner cabinet
+
+<warning>Rates change and vary by region. Daromadchi does not refresh them automatically — re-check the value you entered from time to time.</warning>
 `,
   'dashboard-korsatkichlari': `
 ## Dashboard metrics
 
-The main cards you see when you sign in:
+The main cards you see when you sign in.
 
-## Top panel cards
+## Top cards
 
 ### Revenue
-Total sales revenue for the last 30 days. Compared with the previous month.
+Total sales revenue for the selected period, with a percentage comparison against the previous period of the same length.
+
+### Profit
+Net profit after cost price and marketplace deductions. Products with no cost price drag this number down — fill it in on the **Products** page.
 
 ### Orders
-Total number of orders for the period. Cancelled orders are excluded.
+Order count for the period. Cancelled orders are excluded.
 
-### DRR
-Overall ad spend ratio. The average across all campaigns.
-
-### Active products
-Number of SKUs currently on sale.
+### Stock
+Current total stock on hand.
 
 ## Charts
 
 ### Sales chart
-Daily sales trend over 7 or 30 days.
+Daily revenue trend across the selected period.
 
 ### Category analysis
-Revenue by category as a donut chart.
+How much revenue each category brings — a donut chart.
 
-### Stock status
-Number of critical (level D) products and their list.
+### Top products
+The products that generated the most revenue in the period.
 
-## Change period
+### Stock alerts
+Products running low. The full list is on the **Alerts** page.
 
-Use the date filter in the top-right corner:
-- Today
-- Last 7 days
-- Last 30 days
-- Last 90 days
-- Custom date range
+## Changing the period
 
-<info>Data is based on the last sync. Timestamps are shown in the date filter.</info>
+Using the date filter at the top:
+- Yesterday
+- 7 days
+- 30 days
+- 90 days
+- This month
+
+## Splitting by marketplace
+
+With several stores connected, the marketplace buttons at the top let you view one marketplace at a time.
+
+<info>Every number reflects the last sync. You can see when that was on the "Sync" page.</info>
 `,
   'pnl-hisobot': `
 ## What is the P&L report?
 
-P&L (Profit & Loss) is a monthly report that fully reflects the financial results of your store.
+The P&L (Profit & Loss) report shows your store's financial result month by month. Open it at **Dashboard → P&L report**.
 
-## Report structure
+## What the report contains
 
-### Revenue section
-- Total sales revenue
-- Net revenue after returns
+| Line | Meaning |
+|---|---|
+| **Total revenue** | Revenue from delivered orders |
+| **Commission** | Marketplace commission |
+| **Other** | Other marketplace deductions: acquiring, advertising, penalties |
+| **Delivery** | Logistics costs |
+| **Marketplace payout** | Revenue − commission − delivery − other |
+| **COGS** | Cost of goods sold |
+| **Net profit** | The bottom line |
 
-### Costs section
-- Cost of goods (COGS)
-- Uzum Market commission
-- Ad spend
-- Logistics and delivery
-- Return costs
-- Other operating expenses
+## The "In progress" line
 
-### Result
-- Gross profit
-- Operating profit
-- Net profit
+Undelivered orders are shown separately: their revenue counts once delivered and is not in profit yet. This is what keeps the report aligned with real money.
 
-## How to read the report
+## The "≈" marker
 
-Go to **Dashboard → P&L Report**.
+Some values may carry a **≈**. It means the marketplace has not sent its final report yet and the figure is estimated from percentages. Once the report arrives, the number is replaced with the actual one.
 
-Select a month or open in month-comparison view.
+## Editing cost price inside the report
 
-## Comparative analysis
+The button on the cost-price line lets you fill in that month's cost price in place, without going to the product list. With cost price empty, net profit comes out too high.
 
-In "Comparison" mode you can view two months side by side — clearly showing growth or decline.
+## Month-by-month table
+
+In the table below, each month is a row: revenue, commission, other deductions, cost price and net profit. Growth or decline shows up here.
 
 ## Export
 
-Click "Export" to download the report in Excel format.
+The **Export** button downloads the report as a spreadsheet.
 
-<info>Accurate P&L requires correct cost price data. You can enter it in Settings → Products.</info>
+<info>Without cost price, the P&L only reflects marketplace deductions — profit will look larger than it is.</info>
 `,
   'kategoriya-tahlili': `
 ## Category analysis
 
-Daromadchi breaks down your sales by category.
+Daromadchi breaks your sales down by category.
 
-## View on the dashboard
+## On the dashboard
 
-The donut chart on the main dashboard shows each category's revenue share. Click for detailed information.
+The **Categories** donut chart shows each category's share of revenue, with the amounts listed beside it.
 
-## Categories page
+The daily Telegram report also includes a category breakdown.
 
-In **Dashboard → Analytics → Categories**:
-- Revenue by category
-- Number of orders
-- Average order value
-- DRR
-- Trend (up/down)
+## Product-level analysis
+
+On **Dashboard → Product analytics** the totals sit at the top and the **Product performance** table below: sales, revenue, profit, margin and ABC class per product. See "Product analytics table" for details.
 
 ## ABC analysis
 
-| Class | Description | Share |
-|---|---|---|
-| A | Most important, high revenue | 20% of products, 80% of revenue |
-| B | Medium importance | 30% of products, 15% of revenue |
-| C | Least important | 50% of products, 5% of revenue |
+Products are classified by their share of revenue. The list is sorted by revenue descending, then:
+
+| Class | Rule |
+|---|---|
+| **A** | Until cumulative revenue reaches 80% |
+| **B** | From 80% up to 95% |
+| **C** | Everything else |
+
+The ABC column lives in the **Product performance** table.
+
+## The ABC-XYZ page
+
+**Dashboard → ABC-XYZ** goes a step further: it pairs ABC (revenue) with XYZ (demand stability). AX is steady and profitable; CZ is low-revenue and unpredictable.
 
 ## Top products
 
-**Dashboard → Products → Sort by: Revenue** — most profitable products at the top.
+The **Top products** block on the dashboard lists what earned the most in the period. The full list and sorting live on the **Products** page.
 
-<info>Category analysis and ABC analysis are available on Standard plans and above.</info>
+<info>Categories come from the marketplace's own data. Products without one fall into the "Uncategorised" row.</info>
+`,
+  'tovar-tahlili-jadvali': `
+## The product analytics table
+
+The main table on **Dashboard → Product analytics**. "Top sold" and "Margin analysis by product" used to be two separate tables — they are now merged into one, because answering a question about a single product should not require looking in two places.
+
+Each row is a product. A product with variants (colour, size) collapses into one parent row that you can expand to see each variant.
+
+## Columns
+
+| Column | Meaning |
+|---|---|
+| **Product** | Title and variant. Always visible |
+| **Delivered** | Units delivered in the period |
+| **In transit** | Out for delivery — not in profit yet |
+| **Cancelled** | Cancelled orders |
+| **Returned** | Units returned |
+| **Return %** | Returned ÷ (delivered + returned) |
+| **Revenue** | Revenue for the period |
+| **Sales share** | What percentage of total revenue this product carries |
+| **Avg. price** | Revenue ÷ units sold — the real price after discounts |
+| **Price** | Current selling price |
+| **Cost price** | Your cost |
+| **Profit** | Revenue − cost price − marketplace deductions |
+| **Margin** | Profit as a share of revenue (%) |
+| **ABC** | A / B / C class |
+
+<info>Every one of these columns is computed for both marketplaces. Metrics only one marketplace can supply were left out — otherwise the Yandex rows would always be blank.</info>
+
+## Table settings
+
+The **Table settings** button above the table opens a panel for switching columns on and off. Untick one and the column disappears; tick it again and it comes back.
+
+There are ready-made presets too:
+- **Minimal** — did it sell, does it earn
+- **Sales** — units, returns, share, ABC
+- **Money** — price, cost, profit, margin
+
+Your choice is stored in the browser and is still there next time you sign in. The **Product** column cannot be switched off — the table would become a set of anonymous numbers.
+
+## Editing values
+
+Three columns can be changed straight in the table — hovering a row reveals a **pencil icon**:
+
+- **Price**
+- **Cost price**
+- **Stock**
+
+<warning>These edits stay inside Daromadchi. Nothing is sent to your marketplace listing — price, title and everything else are left untouched.</warning>
+
+Price and stock come from the marketplace, so your value is stored separately and layered on top for display. Clear the field and the marketplace's own number returns — an edit hides the real value, it never destroys it.
+
+On a parent row, editing **Price** and **Cost price** applies to every variant at once. Stock has no parent pencil: variants hold different quantities, and flattening them to one number would be wrong.
+
+## Why cost price matters
+
+With cost price empty, the **Profit** and **Margin** columns make a product look better than it is. Fill it in here or on the **Products** page.
 `,
   'qidiruv-iboralari': `
 ## Search query analysis
 
-Knowing which queries Uzum Market shoppers use to find your product is key for ads and SEO.
+Knowing which words bring customers to your products matters for SEO and advertising. In Daromadchi this is the **Dashboard → Search phrases** page.
 
-## View on the dashboard
+## What the page shows
 
-On the **Dashboard → Search queries** page:
+- The phrase and the product it belongs to
 - Impressions
 - Clicks
-- CTR (clicks / impressions %)
-- Average position
-- Conversion rate
+- CTR (clicks ÷ impressions)
+- Orders
+- Spend
 
-## Query categories
+<warning>For now this page stays empty. Search-phrase data comes from the marketplace's advertising/search API, and that is not connected yet — neither Uzum Market nor Yandex Market exposes it. Once the API opens up, the page fills in automatically.</warning>
 
-### Growing
-Queries with rising CTR and sales — pay attention and increase budget if needed.
+## What you can do meanwhile
 
-### Declining
-There are impressions but few clicks — improve product photos or description.
+### Read keywords in your marketplace cabinet
+The cabinet's search report is the only source for now.
 
-### High potential
-Many impressions but low position — promote with advertising.
+### Check your product titles
+In the **Dashboard → Products** list, look at how titles are written. The title feeds search directly.
 
-## Keyword strategy
+### Measure the result through sales
+After changing a title or photo, watch how that product's revenue and sales share move in the **Product performance** table. That measurement works without click data.
 
-1. Make queries with CTR > 3% your primary keywords
-2. Focus on long-tail queries that competitors don't use
-3. Monitor seasonal queries in time
-
-<info>Search query data comes via the Uzum Market API and may be limited.</info>
-`,
-  'tashqi-trafik': `
-## What is external traffic?
-
-External traffic — visitors coming to your product from platforms outside Uzum Market (Instagram, Telegram, YouTube, blog).
-
-## Tracking with UTM parameters
-
-Add UTM parameters to links to identify external traffic:
-
-\`https://uzum.uz/product/12345?utm_source=instagram&utm_campaign=may2025\`
-
-## View in Daromadchi
-
-In **Dashboard → Analytics → External traffic**:
-- Visits by source
-- Conversion (visit to order)
-- Revenue from each source
-
-## Channel analysis
-
-| Channel | Traffic share | Conversion |
-|---|---|---|
-| Instagram | 45% | 2.3% |
-| Telegram | 30% | 4.1% |
-| YouTube | 15% | 1.8% |
-| Blog | 10% | 3.5% |
-
-## Recommendation
-
-Telegram traffic converts better because the audience is more loyal. Marketing through Telegram channels and chats delivers good results.
-
-<info>Full external traffic analysis is available on Pro and Enterprise plans.</info>
+<info>The abbreviations on the page (CTR, CPC) are explained in the "Abbreviations" section on the dashboard.</info>
 `,
   'tariflar': `
-## Daromadchi pricing plans
+## Your tier follows your turnover
 
-Three plans are available: Free, Pro, and Pro+.
+In Daromadchi you do not pick a plan — it is derived from your **net turnover over the last 30 days**. As turnover grows, the tier moves up.
 
-## Free plan
+| 30-day turnover | Tier |
+|---|---|
+| Under 12 mln so'm | **Free** |
+| 12–50 mln so'm | **Pro** |
+| 50–120 mln so'm | **Pro+** |
+| 120–180 mln so'm | **Biznes** |
+| Above 180 mln so'm | **Enterprise** |
 
-**0 sum/month**
+## Prices
 
-- 1 store
-- 6 analytics pages
-- Demo data
-- Basic dashboard
-- Product and order lists
+| Tier | Monthly | Billed yearly (per month) |
+|---|---|---|
+| Free | 0 so'm | — |
+| Pro | 150,000 so'm | 125,000 so'm |
+| Pro+ | 250,000 so'm | 225,000 so'm |
+| Biznes | 500,000 so'm | 450,000 so'm |
+| Enterprise | By agreement | — |
 
-## Pro plan
+<info>Enterprise has no single published price — that tier is agreed separately.</info>
 
-**250,000 sum/month**
+## Do the paid tiers differ in features?
 
-Everything in Free, plus:
-- 3 stores
-- All analytics
-- Auto-sync
-- P&L report
-- Email notifications
-- Ad analytics and DRR
-- Stock alerts
-- Chrome extension
+In capability — **no**. Pro, Pro+, Biznes and Enterprise all carry the same feature set; they differ by turnover and price. From Pro+ upward you also get **priority support**.
 
-## Pro+ plan
+## What the Free tier keeps
 
-**500,000 sum/month**
+Free forever:
+- The dashboard (including revenue and profit)
+- Products
+- Orders and their notifications (new order, cancellation, low stock)
+- **Uzum and Yandex Market** — both, on every tier
+- The Chrome extension
 
-Everything in Pro, plus:
-- 5+ stores
-- API access
-- Priority support
-- Detailed category analysis
-- Team management
-- Last 365 days of data
+Sections that lock once the trial ends:
+- Product analytics
+- The Inventory page and stock sync
+- Finance and payouts (the P&L report)
+- Unit economics
 
-<info>All plans include a ${TRIAL_EN} free trial. No card details required.</info>
+<info>Every tier starts with a ${TRIAL_EN} free trial. No card details required.</info>
 `,
   'tolov-usullari': `
-## Payment methods
+## Payment method
 
-Daromadchi accepts the following payment methods:
+Daromadchi accepts payment by **bank card**. The card is bound through the ATMOS payment system.
 
-## By card
+## Binding a card
 
-Uzcard and Humo cards — monthly payment:
-1. Go to **Billing → Payment method**
-2. Enter card details
-3. Click Save
-4. Payment is charged automatically each month
+On **Dashboard → Plan & billing**:
 
-## Invoice
+1. Choose your tier and pick **Monthly** or **Yearly**
+2. Enter the card number and expiry
+3. Enter the code from the SMS
+4. Once confirmed, the plan activates immediately
 
-For legal entities — payment by invoice:
-1. Click **Billing → Invoice**
-2. Enter company details (INN, STIR)
-3. Invoice is sent to your email
-4. Pay via bank transfer
+<info>The card number is not stored in full by Daromadchi — what is kept is a secure identifier issued by the payment system.</info>
 
-## Click and Payme
+## Auto-renew
 
-Via mobile payment systems:
-- Search for "Daromadchi" in Click
-- Search for "Daromadchi" in Payme
-- Enter your account number and pay
+Once a card is bound, **Auto-renew** turns on: the charge is taken before the period ends. You can switch it off at any time — no further charge is then made.
 
-## Payment timing
+## Monthly and yearly
 
-- Monthly payments: same day each month
-- If late: 3-day grace period
-- If unpaid: plan downgraded to Free
+Billed yearly, the per-month price is lower — exact amounts are in the table in "Plans and pricing". A yearly subscription is charged once, in full, for 12 months.
 
-<warning>Payment details are securely stored via SSL. Card numbers are not stored in full.</warning>
+## If a payment fails
+
+When a charge fails, the page shows the reason and you can retry. Payment history sits on the same page as a list.
+
+<warning>Payment details travel over an encrypted connection. Daromadchi never asks for your full card number or your password.</warning>
 `,
   'tarifni-ozgartirish': `
-## Upgrade plan
+## Changing your plan
 
-Go to **Billing → Choose plan** → New plan → click "Switch".
+On **Dashboard → Plan & billing**:
 
-The new plan activates immediately. The remaining period is prorated and the difference is refunded or added to the next payment.
+1. Open the plan chooser
+2. The tier matching your turnover is highlighted — pick it or another one
+3. Select **Monthly** or **Yearly**
+4. Confirm
 
-## Downgrade plan
+The new plan activates as soon as the payment goes through.
 
-You can switch to a lower plan after the current billing period ends.
+## The turnover panel
 
-- **Billing → Choose plan → Downgrade**
-- Change takes effect at the start of the next month
+The turnover panel on the page shows your net turnover over the last 30 days and which tier band it falls into. The panel is informational — on its own it charges nothing and switches nothing. When your turnover approaches the next tier's boundary, the panel says so.
 
-## Cancel subscription
+## Cancelling your subscription
 
-1. Go to **Billing → Plan → Cancel subscription**
-2. Choose a reason (optional)
-3. Confirm
+Press **Cancel plan** and confirm.
 
-Even after cancellation you can use the plan until the end of the paid period.
+What cancelling means:
+- **You will not be charged again**
+- Everything stays unlocked until the period you paid for ends
+- After that the account moves to Free on its own
 
-## Data retention
+It is not a refund and not an immediate cut-off. If there is no paid period yet, the move to Free is immediate.
 
-After you cancel, your account and data are not deleted — we do not delete accounts automatically. Your data is kept for as long as your account exists, and you can re-subscribe at any time.
+## Undoing a cancellation
 
-If you want to delete your account entirely, you can do so at any time via the "Account deletion request" feature in settings or by emailing privacy@daromadchi.uz.
+While the paid period is still running, **Resume plan** turns auto-renew back on.
 
-<info>Annual subscription includes 2 months free (17% saving). If you cancel an annual subscription, the unused portion is refunded.</info>
+## Your data is kept
+
+Cancelling does not delete your account or your data — we never delete accounts automatically. Your data is kept for as long as the account exists, and you can resubscribe at any time.
+
+If you want the account removed entirely, use "Request account deletion" in settings or write to privacy@daromadchi.uz.
+
+<info>Existing subscribers are told in advance if a price changes — you are never charged an amount other than the one agreed.</info>
 `,
   'bepul-sinov': `
-## Free trial
+## Free trial period
 
-New Daromadchi users get a **${TRIAL_EN} free Pro plan trial**.
+New accounts get a **${TRIAL_EN}** free trial.
 
-## What's included?
+## What is included?
 
-During the trial all Pro plan features are available:
-- Unlimited stores
-- 365 days of data
-- Team management
-- Chrome extension
-- Telegram notifications
-- P&L report and ad analytics
+During the trial the paid sections are open too:
+
+- **Product analytics** — the 14-column table, ABC, margin
+- The **Inventory** page and stock sync
+- **Finance and payouts** — the P&L report
+- The **unit economics** calculator
+
+## What stays free after the trial
+
+- The dashboard (including revenue and profit)
+- Products
+- Orders and notifications (new order, cancellation, low stock)
+- **Uzum and Yandex Market** — both
+- The Chrome extension
 
 ## No card required
 
-No card or payment information is needed for the trial. Just register with your email.
+The trial needs no card or payment details. Signing up with an email is enough.
 
-## After the trial ends
+## When the trial ends
 
-We remind you in the app and on Telegram ${TRIAL_REMINDER_DAYS} days before it ends. When the trial ends, if you have not chosen a plan you are automatically moved to the Free plan.
+${TRIAL_REMINDER_DAYS} days before it runs out you get a reminder in the app and in Telegram. Once it ends, if you have not picked a plan, the four sections above lock — and the account keeps working on the Free tier.
 
-## Check expiry date
+## Seeing your trial end date
 
-The **Billing** page shows your trial expiry date and recommended plans.
+The **Plan & billing** page shows the trial end date and the tier matching your turnover.
 
-<info>The trial is provided once. Registering with a different email does not grant a second trial.</info>
+<info>The trial is granted once. Signing up with a different email does not give you a second one.</info>
 `,
   'hisob-sozlamalari': `
-## Profile settings
+## Where your account lives
 
-On the **Dashboard → Settings → Profile** page:
+Account details sit on two pages:
 
-### Personal details
-- Name and surname
-- Email address
-- Phone number
-- Upload photo
+- **Dashboard → Account** — email, join date, current tier and how long it runs
+- **Dashboard → Profile** — name, email and phone fields, plus the security section
 
-### Store details
-- Store name
-- Uzum Market store ID
-- Categories
+## Plan status
 
-## Change password
+The **Account** page shows your current tier, the trial end date and the plan's expiry. Payment and plan changes happen on **Plan & billing**.
 
-**Settings → Security → Change password:**
-1. Enter current password
-2. Enter new password (at least 8 characters)
-3. Confirm new password
-4. Click Save
+## Language
 
-## Change email
+The language switches with the **UZ / RU / EN** buttons in the top bar and applies across the app.
 
-Changing email requires double confirmation:
-1. A code is sent to the current email
-2. A confirmation link is sent to the new email
+The Telegram notification language is **separate** — you pick it when linking the bot, and change it in the bot.
 
-## Two-factor authentication (2FA)
+## Changing your password
 
-Enable in **Settings → Security → 2FA**:
-- Via Google Authenticator or Telegram
-- An additional code is requested at each login
+The password is changed through the reset link:
 
-<info>Enabling 2FA significantly increases account security.</info>
+1. Sign out and open the **Sign in** page
+2. Click **"Forgot password?"**
+3. Enter your email
+4. Set a new password from the link in the email
+
+<info>Two-factor authentication (2FA), the session list and the security log appear on the Profile page but are not live yet — they are still being built.</info>
+
+## Marketplace connections
+
+Store tokens and write mode live on the **Settings** page. See "Add and manage API token".
+
+## Deleting your account
+
+Through the "Request account deletion" button on the **Account** page. See "Delete account".
 `,
   'api-token-sozlash': `
 ## What is an API token?
 
-An API token is a key giving Daromadchi permission to read data from your Uzum Market account. By default the token is used read-only: Daromadchi does not add products or cancel orders. If you turn on the optional Stock-sync mode for a shop, Daromadchi can update only the stock quantity (ostatok) on that shop's listing — and nothing else (this needs a token with the SKU_UPDATE permission).
+An API token is a key that lets Daromadchi **read** data from your marketplace cabinet. Each store needs its own token.
 
-## Get a token (Uzum Market)
+## The default: read-only
 
-1. Log in to seller.uzum.uz
-2. Go to Profile → API Keys
-3. Click "Create new key"
-4. Enter a key name (e.g. "Daromadchi")
-5. The token is shown — copy it
+A newly connected store runs in **"Read-only"** mode. In that mode Daromadchi writes nothing: not price, not title, not the listing, not order status.
 
-<warning>The token is shown only once. Copy and save it immediately.</warning>
+## Uzum Market token
 
-## Add to Daromadchi
+1. Sign in to seller.uzum.uz
+2. Open **Settings → API integration**
+3. Create a new key and give it a name (for example "Daromadchi")
+4. The token is shown once — copy it
 
-On the **Settings → API Token** page:
-1. Click "Add token"
-2. Paste the token into the field
-3. Click "Verify and save"
+<warning>The token is displayed only once. Copy and store it immediately.</warning>
 
-If successful, your store data loads automatically.
+## Yandex Market token
 
-## Update the token
+Yandex Market needs two values:
 
-If the token has expired or been revoked:
-1. Get a new token from Uzum Market
-2. Daromadchi → Settings → API Token → "Update"
-3. Enter the new token
+- **OAuth Token** — your Yandex Market Partner API token
+- **Campaign ID** — the campaign number, digits only
 
-## Multiple stores
+If the Campaign ID is wrong (an email or a URL), saving fails straight away with an error.
 
-Each store needs its own token. In **Settings → Stores**, click "Add store" to add another token.
+## Entering them in Daromadchi
+
+On the **Settings** page, find the card for the marketplace:
+
+1. Paste the token into the field
+2. For Yandex, also enter the Campaign ID
+3. Press **Save**
+4. Start the first import with **Sync**
+
+The card shows the store's state ("Connected" / "Not connected") and the last sync time.
+
+## Refreshing a token
+
+If a token expires or is revoked, issue a new one in the marketplace cabinet, paste it into the same field and save. Existing data is not lost.
+
+## Optional: "Stock-sync (edit mode)"
+
+When one physical product sells on two marketplaces, a sale in one place should decrement the other. For that you can enable **edit mode** for a store.
+
+Before it turns on you must tick a confirmation box. Once enabled:
+
+- Daromadchi updates only the **stock quantity (ostatok)**
+- Price, title, listing, order status and invoices are never touched
+- Every write is recorded in an audit log
+
+You also choose how the last shared unit is allocated: lock the last one, partition across channels, or off.
+
+For Uzum this mode requires the **SKU_UPDATE** permission on the token.
+
+<warning>Edit mode is off by default. Until you turn it on yourself, nothing is ever written to any of your stores.</warning>
+
+## Several stores
+
+The Uzum and Yandex Market cards are independent — you can connect both at once. The marketplace buttons on the dashboard let you view each separately.
 `,
   'jamoa-boshqaruvi': `
-## Team management
+## Team management — coming soon
 
-On the Pro plan you can add other team members to Daromadchi.
+The **Dashboard → Team** page is still marked "Coming soon". The section is being built and you'll hear from us once it ships.
 
-## Roles
+## How it works today
 
-### Owner
-- All capabilities
-- Team management
-- Plan and payment management
-- API token management
+One Daromadchi account is one user. You can connect several **stores** to a single account (Uzum and Yandex Market, each with its own token), but the account itself has one set of credentials.
 
-### Admin
-- Dashboard and all analytics
-- Export data
-- Configure notifications
-- ❌ Cannot change the plan
-- ❌ Cannot remove team members
+## If you need to show data to a colleague
 
-### Viewer
-- View dashboard
-- Read reports
-- ❌ Cannot change anything
-- ❌ Cannot export
+### Export the report
+Most tables have an **Export** button — the P&L report, alerts, search phrases, orders. Sending a file does not grant account access.
 
-## Add a member
+### Use Telegram notifications
+The daily report and alerts arrive in Telegram — that is how the right information reaches a warehouse keeper or a manager.
 
-**Dashboard → Team → "Add member":**
-1. Enter email address
-2. Choose role
-3. Click "Send invitation"
-
-The invitation is sent by email. Once accepted, the member is added to the team.
-
-## Remove a member
-
-Click "..." next to the member in the team table and select "Remove".
-
-<info>Team management is only available on the Pro plan. Free plan supports only 1 user.</info>
+<warning>Do not share your password. Security settings are covered in "Account security".</warning>
 `,
   'hisobni-ochirish': `
-## Delete account
+## Deleting your account
 
-Before deleting your account, be aware of the following.
+Deletion runs as a request — the account does not vanish the moment you press a button.
 
-## Before deleting
+## Before you delete
 
-- All active subscriptions will be cancelled
-- Download any data you want to keep
-- Notify team members
+- Export the reports you need — they cannot be recovered afterwards
+- Cancel any active subscription (**Plan & billing → Cancel plan**)
+- Revoke the Daromadchi token in your marketplace cabinet
 
-## Deletion process
+## Sending the request
 
-**Settings → Account → Delete account:**
-1. Click "Delete account"
-2. Enter the confirmation text: \`delete\`
-3. Enter your password
-4. Click "Confirm"
+Press **"Request account deletion"** on the **Dashboard → Account** page.
 
-A confirmation link will be sent to your email. The link is valid for 24 hours.
+The request goes to the operator and you get a confirmation that it was received. Deletion is a controlled procedure carried out manually.
 
-## What happens to your data
+## Alternative: privacy@daromadchi.uz
 
-- **Immediately**: dashboard access stops
-- **After 24 hours**: personal data is deleted
-- **After 30 days**: all analytics data is deleted
+You can also send the request straight to **privacy@daromadchi.uz**. The response time is 15 working days (as required by Law ZRU-547).
 
-## Restore account
+## What gets deleted
 
-Within 24 hours of the deletion request, click "Cancel" to cancel the deletion.
+Your personal data and store data are removed. Payment records are retained **anonymised**, as the law requires — they are no longer linked to you.
 
-<warning>After 30 days, data cannot be recovered.</warning>
+## Cancelling a subscription is different
+
+Cancelling does not delete your account. We never delete accounts automatically: your data is kept for as long as the account exists, and you can resubscribe at any time.
+
+<warning>Once deletion has been carried out, the data cannot be restored. Export what you need beforehand.</warning>
 `,
   'xavfsizlik': `
 ## Account security
 
-At Daromadchi, the security of your data is a priority. Use these settings to protect your account.
+Here is what actually protects your account today.
 
-## Strong password
+## A strong password
 
-A good password:
+A good password has:
 - At least 12 characters
-- Upper and lowercase letters
+- Upper and lower case letters
 - Numbers
 - Special characters (!@#$)
 
-Updating your password every 3–6 months is recommended.
+You can change it at any time via **Sign in → "Forgot password?"**.
 
-## Two-factor authentication (2FA)
+<info>Two-factor authentication (2FA), the session list and the sign-in log appear on the Profile page but are not live yet. This article will be updated when they ship.</info>
 
-Enable in **Settings → Security → 2FA**:
+## Signing out everywhere
 
-1. Download Google Authenticator
-2. Scan the QR code
-3. Enter the 6-digit code
-4. Save your backup codes
+The **Sign out** button ends the session on every device — cookies are cleared across the whole domain. On a shared computer, remember to sign out when you're done.
 
-## Login history
+## Your API tokens
 
-In **Settings → Security → Login history**:
-- All logins (time, device, IP address)
-- If you see an unrecognised login, change your password immediately
+- Tokens are stored encrypted
+- By default they are used for reading only — nothing is written until you turn on "Stock sync" yourself
+- If you have any doubt about a token, revoke it in the marketplace cabinet and issue a new one
 
-## Sign out all devices
+## Watch out for phishing
 
-If you suspect unauthorised access:
-**Settings → Security → Sign out all devices**
+Daromadchi will never ask for:
+- Your password
+- Your API token (you only ever enter it yourself on the Settings page)
+- Your full card number or an SMS code
 
-This ends all active sessions on all devices.
+Official addresses: **daromadchi.uz**, Telegram channel **@daromadchi_uz**.
 
-<info>Daromadchi will never ask for your password or API token. If you receive such a request — it's phishing!</info>
+## If something looks wrong
+
+1. Change your password immediately
+2. Revoke your marketplace tokens and issue new ones
+3. Write to **support@daromadchi.uz**
+
+<warning>Daromadchi never asks for your password or API token. Any such request is phishing.</warning>
 `,
 }
 

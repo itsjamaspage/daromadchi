@@ -740,7 +740,7 @@ export const translations = {
     featuresBadge: 'Barcha imkoniyatlar',
     features: [
       { title: 'Reklama tahlili', desc: 'DRR, CPC, CPO ko\'rsatkichlari. Sotuvsiз xarajatlar va ortiqcha sarflarni avtomatik aniqlash.' },
-      { title: 'Birlik iqtisodiyoti', desc: 'Har bir mahsulot uchun sof foyda, marja va zararсizlik narxini hisoblang.' },
+      { title: 'Birlik iqtisodiyoti', desc: 'Har bir mahsulot uchun sof foyda, marja va zararsizlik narxini hisoblang.' },
       { title: 'Qoldiq ogohlantirishlari', desc: 'Savdo tezligiga ko\'ra necha kun qoldiq qolganini ko\'ring va vaqtida buyurtma bering.' },
       { title: 'P&L hisobot', desc: 'Oylik tushum, tannarx, komissiyalar va reklama xarajatlarini bitta jadvalda ko\'ring.' },
       { title: 'Avto-sinxronizatsiya', desc: 'Buyurtmalar va mahsulotlar Uzum Market API tokeni orqali avtomatik yangilanadi.' },
