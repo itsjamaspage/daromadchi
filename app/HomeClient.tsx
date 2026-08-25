@@ -122,7 +122,7 @@ function LandingNav({ lang }: { lang: Lang }) {
     { label: T.nav.howItWorks[lang], href: '#how' },
     { label: T.nav.pricing[lang], href: '#pricing' },
     { label: T.nav.extension[lang], href: '#extension' },
-    { label: T.nav.help[lang], href: '#faq' },
+    { label: T.nav.help[lang], href: '/help' },
   ]
 
   const iconCol   = isDark ? '#ffffff' : P.stone
