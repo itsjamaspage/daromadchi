@@ -62,6 +62,10 @@ export interface OversellGroup {
   matchKey: string
   title: string
   rawAvailable: number          // negative
+  /** Units physically in stock across the group (the "in stock" number shown). */
+  stock: number
+  /** Units on committed orders across the group (the "ordered" number shown). */
+  ordered: number
   productIds: string[]          // all products in the group
 }
 
@@ -149,7 +153,10 @@ export async function handleOversell(g: OversellGroup): Promise<OversellOutcome>
   const laterLabel = later
     ? `${MP_LABEL[later.marketplace] ?? later.marketplace} #${later.orderIdExternal ?? later.orderId}`
     : '—'
-  const head = `⚠️ <b>Oversell</b>: <b>${g.title}</b>\nSold ${oversoldBy} more than in stock. Latest order: ${laterLabel}.`
+  // Localised, plain-language head with the real numbers (in stock vs ordered),
+  // built inside each alert's builder so it follows the seller's notif_lang like
+  // every other alert. Was hardcoded English — see lib/telegram-seller.ts.
+  const head = (T: NotifStrings) => T.oversellHead(g.title, g.stock, g.ordered, laterLabel)
 
   // DEDUP: fire ONCE per distinct oversell situation, not every reconcile cycle.
   // An unresolved oversell recurs every 5-min sync; without this the seller gets
@@ -168,24 +175,24 @@ export async function handleOversell(g: OversellGroup): Promise<OversellOutcome>
 
   // 1. Always alert first.
   if (!autoCancelEnabled()) {
-    await alert(g.userId, T => `${head}\n${T.oversellAutoCancelOff}`)
+    await alert(g.userId, T => `${head(T)}\n${T.oversellAutoCancelOff}`)
     return { action: 'alert_only', oversoldBy }
   }
   if (!later || !later.orderIdExternal) {
-    await alert(g.userId, T => `${head}\n${T.oversellNoLaterOrder}`)
+    await alert(g.userId, T => `${head(T)}\n${T.oversellNoLaterOrder}`)
     return { action: 'no_later_order', oversoldBy }
   }
 
   // 2. Rate limit — escalate to a human instead of cancelling beyond the cap.
   const used = await recentAutoCancels(g.userId)
   if (used >= autoCancelMax()) {
-    await alert(g.userId, T => `${head}\n${T.oversellRateLimited(used, autoCancelMax(), laterLabel)}`)
+    await alert(g.userId, T => `${head(T)}\n${T.oversellRateLimited(used, autoCancelMax(), laterLabel)}`)
     logger.warn('oversell_autocancel_rate_limited', { userId: g.userId, used, max: autoCancelMax() })
     return { action: 'rate_limited', oversoldBy }
   }
 
   // 3. Alert that we are acting, THEN cancel.
-  await alert(g.userId, T => `${head}\n${T.oversellCancelling(laterLabel)}`)
+  await alert(g.userId, T => `${head(T)}\n${T.oversellCancelling(laterLabel)}`)
 
   const [shop] = await db.select({
     id: shops.id, marketplace: shops.marketplace,

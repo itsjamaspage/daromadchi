@@ -89,6 +89,9 @@ export interface NotifStrings {
   extUnit: string
   extFooter: string
   // Oversell alerts (lib/marketplace/oversell.ts). Was hardcoded English.
+  /** Title + plain explanation with the real numbers (units in stock vs orders
+   *  received). First line is the phone-preview. */
+  oversellHead: (title: string, stock: number, ordered: number, lastOrder: string) => string
   oversellAutoCancelOff: string
   oversellNoLaterOrder: string
   oversellRateLimited: (used: number, max: number, mp: string) => string
@@ -149,7 +152,9 @@ const STRINGS: Record<NotifLang, NotifStrings> = {
     extLowStock:    '⚠️ <b>Kam zaxira:</b>',
     extUnit:        'dona',
     extFooter:      "daromadchi.uz da to'liq tahlil",
-    oversellAutoCancelOff: "Avtomatik bekor qilish O'CHIQ — keyingi buyurtmani qo'lda bekor qiling.",
+    oversellHead: (title, stock, ordered, lastOrder) =>
+      `⚠️ <b>Tovar yetishmayapti: ${title}</b>\nBu tovarga buyurtmalar qoldiqdan koʻp — hammasini bajarib boʻlmaydi. Qoldiqda: <b>${stock}</b> dona, buyurtma: <b>${ordered}</b> dona. Oxirgi buyurtma: ${lastOrder}.\nQoldiqni toʻldiring va uni Uzum va Yandex hisobingizda yangilang.`,
+    oversellAutoCancelOff: "Keraksiz buyurtmani qo'lda bekor qiling.",
     oversellNoLaterOrder:  "Bekor qilish uchun ochiq buyurtma topilmadi — qo'lda tekshiring.",
     oversellRateLimited:   (used, max, mp) => `🚫 Avtomatik bekor qilish chegarasi (${used}/${max} shu soatda). Bekor QILINMADI — ${mp} uchun qo'lda bekor qiling.`,
     oversellCancelling:    (mp) => `🤖 Keyingi buyurtma bekor qilinmoqda (${mp}, sabab OUT_OF_STOCK).`,
@@ -207,7 +212,9 @@ const STRINGS: Record<NotifLang, NotifStrings> = {
     extLowStock:    '⚠️ <b>Низкий остаток:</b>',
     extUnit:        'шт',
     extFooter:      'полная аналитика на daromadchi.uz',
-    oversellAutoCancelOff: 'Автоотмена ВЫКЛЮЧЕНА — отмените поздний заказ вручную, если нужно.',
+    oversellHead: (title, stock, ordered, lastOrder) =>
+      `⚠️ <b>Не хватает товара: ${title}</b>\nНа этот товар заказов больше, чем есть в наличии — все не выполнить. В наличии: <b>${stock}</b> шт, заказов: <b>${ordered}</b> шт. Последний заказ: ${lastOrder}.\nПополните остаток и обновите его в Uzum и Yandex.`,
+    oversellAutoCancelOff: 'Отмените лишний заказ вручную, если нужно.',
     oversellNoLaterOrder:  'Не найден открытый заказ для автоотмены — проверьте вручную.',
     oversellRateLimited:   (used, max, mp) => `🚫 Достигнут лимит автоотмены (${used}/${max} за час). НЕ отменяем автоматически — отмените ${mp} вручную.`,
     oversellCancelling:    (mp) => `🤖 Отменяем поздний заказ (${mp}, причина OUT_OF_STOCK).`,
@@ -265,7 +272,9 @@ const STRINGS: Record<NotifLang, NotifStrings> = {
     extLowStock:    '⚠️ <b>Low stock:</b>',
     extUnit:        'pcs',
     extFooter:      'full analytics at daromadchi.uz',
-    oversellAutoCancelOff: 'Auto-cancel is OFF — cancel the later order manually if needed.',
+    oversellHead: (title, stock, ordered, lastOrder) =>
+      `⚠️ <b>Not enough stock: ${title}</b>\nThis product has more orders than units in stock — you can't fulfil them all. In stock: <b>${stock}</b>, ordered: <b>${ordered}</b>. Latest order: ${lastOrder}.\nRestock and update it in Uzum and Yandex.`,
+    oversellAutoCancelOff: 'Cancel the extra order manually if needed.',
     oversellNoLaterOrder:  'No open order found to auto-cancel — please check manually.',
     oversellRateLimited:   (used, max, mp) => `🚫 Auto-cancel rate limit reached (${used}/${max} this hour). NOT auto-cancelling — use one-click cancel for ${mp}.`,
     oversellCancelling:    (mp) => `🤖 Auto-cancelling the later order (${mp}, reason OUT_OF_STOCK).`,
