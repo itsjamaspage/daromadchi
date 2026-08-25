@@ -84,8 +84,9 @@ export default function HelpArticleContent({ dataPerLang }: Props) {
         </div>
       </aside>
 
-      {/* Article */}
-      <article className="flex-1 min-w-0">
+      {/* Article — on a light card so the reading surface contrasts with the
+          saturated page background instead of text sitting straight on blue. */}
+      <article className="flex-1 min-w-0 bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl p-5 sm:p-8 lg:p-10">
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-xs text-[var(--text-muted)] mb-6">
           <Link href="/help" className="hover:text-[var(--c1)] transition-colors">{t.breadcrumb}</Link>
@@ -99,7 +100,7 @@ export default function HelpArticleContent({ dataPerLang }: Props) {
           style={{ fontFamily: 'var(--font-display)', color: 'var(--text-base)' }}>
           {article.title}
         </h1>
-        <p className="text-sm text-[var(--text-muted)] mb-8 pb-8 border-b border-[var(--border)]">
+        <p className="text-base sm:text-lg text-[var(--text-dim)] leading-relaxed mb-8 pb-8 border-b border-[var(--border)] max-w-[46rem]">
           {article.summary}
         </p>
 
