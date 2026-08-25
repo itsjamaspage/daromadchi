@@ -420,6 +420,11 @@ export const userSettings = pgTable('user_settings', {
   // both default ON. Fire only on an actual cross-store stock-UPDATE event.
   notif_stock_update_inapp:    boolean('notif_stock_update_inapp').default(true).notNull(),
   notif_stock_update_telegram: boolean('notif_stock_update_telegram').default(true).notNull(),
+  // Read-only "update your stock manually" reminder. For sellers whose keys do
+  // NOT grant writes: when a linked cross-marketplace SKU is out of sync, tell
+  // the seller the exact number to set by hand. One dedicated toggle (both
+  // channels), default ON, independent of the edit-mode stock-update toggle.
+  notif_stock_manual:          boolean('notif_stock_manual').default(true).notNull(),
   notif_send_time:           text('notif_send_time').default('09:00').notNull(),
   notif_send_days:           integer('notif_send_days').array().default([1, 2, 3, 4, 5, 6, 0]).notNull(),
   notif_lang:                text('notif_lang').default('uz').notNull(),

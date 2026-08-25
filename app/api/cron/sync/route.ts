@@ -12,6 +12,7 @@ import { sendSellerMessageTo } from '@/lib/telegram-seller'
 import type { NotifStrings } from '@/lib/notif-i18n'
 import { reconcilePhysicalStock } from '@/lib/marketplace/physical-stock'
 import { refreshUzumStock, refreshYandexStock } from '@/lib/marketplace/stock-refresh'
+import { notifyManualStockUpdates } from '@/lib/marketplace/manual-stock-notify'
 import { logger } from '@/lib/logger'
 import { computeEffectivePlan } from '@/lib/billing/features'
 
@@ -195,6 +196,26 @@ export const GET = withErrorHandler(async (req: Request) => {
       } else {
         results.push({ ok: false, error: String(outcome.reason) })
       }
+    }
+  }
+
+  // ── Read-only "update your stock manually" reminders ──
+  // For sellers on read-only keys (Daromadchi never writes their stock): after
+  // this tick's stock refresh, tell them the exact number to set BY HAND on any
+  // out-of-sync linked listing. Per USER (groups are cross-shop), and only for
+  // users selling on ≥2 marketplaces — a single-marketplace seller has nothing to
+  // reconcile. Deduped per divergence value, best-effort, and NEVER writes to a
+  // marketplace (see lib/marketplace/manual-stock-notify.ts).
+  {
+    const mpByUser = new Map<string, Set<string>>()
+    for (const s of allShops) {
+      const set = mpByUser.get(s.user_id) ?? new Set<string>()
+      set.add(s.marketplace)
+      mpByUser.set(s.user_id, set)
+    }
+    for (const uid of userIds) {
+      if ((mpByUser.get(uid)?.size ?? 0) < 2) continue
+      await notifyManualStockUpdates(uid)   // internally best-effort; never throws
     }
   }
 
