@@ -1,0 +1,266 @@
+# Codebase audit — 26 Aug 2026
+
+A read-only sweep of the whole app. Every finding below was **reproduced or
+demonstrated**, not inferred; where a claim needed evidence, the command that
+produced it is quoted. Nothing here has been changed — this is the list, ranked
+by what would hurt a seller most.
+
+Scope: `app/` (194 files), `components/` (65), `lib/` (189), `scripts/` (16),
+`extension/` (8) — ~80k lines, at `46cfb78`.
+
+---
+
+## 1. Estimated marketplace fees are stored as if they were reported — HIGH
+
+`lib/uzum/sync.ts:1191` derives a commission from the shop's balance and writes
+it into `orders.marketplace_fee`:
+
+```ts
+const feeRate = totalFees / totalRevenue          // inferred from the balance
+await db.update(orders).set({
+  marketplace_fee: String(Math.round(rev * feeRate)),
+}).where(eq(orders.id, o.id))
+```
+
+`lib/money/order-economics.ts:91` treats **any** non-null `marketplace_fee` as a
+known fact:
+
+```ts
+: o.marketplaceFee != null ? known(o.marketplaceFee + (o.deliveryCost ?? 0))
+: notKnown('fee_not_reported')
+```
+
+There is no column anywhere in the schema distinguishing an estimate from a
+reported fee (`grep -n "estimated\|is_estimate\|fee_source" lib/db/schema.ts` →
+no matches).
+
+**Why it matters.** The whole point of the `Known<T>` work is that an unknown can
+never be laundered into a fact. This is a back door into exactly that: the
+display layer can no longer coerce a null to zero, but the *ingestion* layer can
+manufacture a number the display layer will then trust absolutely. A seller sees
+a confident «Чистая прибыль» computed from a fee nobody ever charged.
+
+`lib/uzum/sync.ts:1201` does the same for `delivery_cost`.
+
+**Fix shape:** a `fee_source` column (`reported` | `derived`), with `lib/money`
+treating `derived` as `fee_not_reported`. Cheap, and it closes the loop.
+
+---
+
+## 2. No test runs in CI — HIGH
+
+`.github/workflows/ci.yml` has four jobs: Lint, Type Check, Build, Health Check.
+`grep -n "test" .github/workflows/ci.yml` matches only `runs-on: ubuntu-latest`.
+
+There are **45 `test:*` scripts** in `package.json` and **no aggregate `npm test`**.
+
+**Why it matters.** Every guardrail built to make a class of bug impossible —
+`test:money` (the coalesce ban), `test:week` (the week-maths ban), `test:guard`
+(the marketplace read-only ban) — is a plain test file that nothing executes. A
+PR reintroducing `coalesce(cost_price, 0)` passes CI green. The `Known<T>` type
+*is* enforced, because `tsc --noEmit` runs; the guards around it are not.
+
+This also explains finding 3.
+
+**Fix shape:** a `test` job running the suites that need no live credentials. It
+will be red until finding 3 is dealt with, so land them together.
+
+---
+
+## 3. Five test suites have been failing on `main` — MEDIUM
+
+Verified against a stashed clean tree, so none of these are from recent work:
+
+| suite | failure |
+|---|---|
+| `test:seo` | `Could not find 'lib/seo/apex-redirect.test.ts'` — the script points at a file that does not exist |
+| `test:gating` | `This module cannot be imported from a Client Component module` — missing `--conditions=react-server` |
+| `test:price-notice` | 2 subtests fail |
+| `test:nudge` | `the trial reminder — the promise the help articles make` |
+| `test:admin` | `admin analytics — live metrics` |
+
+`test:seo` and `test:gating` look like mechanical breakage (a moved file, a
+missing flag). The other three assert real behaviour and need reading.
+
+---
+
+## 4. Sync has no concurrency control — MEDIUM
+
+`.github/workflows/deploy.yml:91-92` installs:
+
+```
+*/5 * * * * cron-runner.sh sync
+*/5 * * * * cron-runner.sh stock-sync
+```
+
+and `cron-runner.sh` calls each with `curl -m 280` — a **280-second timeout on a
+300-second interval**. `grep -rn "advisory_lock\|pg_try_advisory\|FOR UPDATE"`
+over `lib/` and `app/` returns nothing: there is no lock, no in-flight flag, no
+`flock` in the runner.
+
+When a sync exceeds 280s the curl is killed but **the server-side request keeps
+running**, and 20 seconds later the next tick starts another. The manual
+«Sinxronlash» button calls the same `syncFromUzum`, so a user can collide with a
+cron tick at any moment.
+
+**Consequences, in order of likelihood:**
+- Duplicate Telegram notifications — `detectNewOrders` is stateful, and two runs
+  can both classify the same order as new.
+- Double-applied fee backfill — finding 1's loop recomputes `feeRate` from a
+  balance that the other run is concurrently changing.
+- `orderItems` are written as `delete`-then-`insert` (`lib/uzum/sync.ts:919-921`,
+  `lib/yandex/sync.ts:960-962`); interleaving those two pairs can drop items.
+
+**Fix shape:** `pg_try_advisory_lock` keyed on `shop_id`, or `flock` in the
+runner. The advisory lock is better — it also covers the manual button.
+
+---
+
+## 5. `encrypt()` silently stores plaintext when the key is missing — MEDIUM
+
+`lib/crypto.ts:14`:
+
+```ts
+export function encrypt(plaintext: string): string {
+  const key = getKey()
+  if (!key) return plaintext        // ← "graceful degradation"
+```
+
+and `getKey()` returns `null` both when `ENCRYPTION_KEY` is unset **and** when it
+is set but not exactly 32 bytes of base64. So a missing env var *or a typo'd key*
+stores every seller's marketplace API token in the database in plaintext, with no
+error and no warning.
+
+Nothing checks for it: `grep -rn "ENCRYPTION_KEY"` across the repo finds only
+`lib/crypto.ts`, two scripts, and the CI secret. `deploy.yml` warns when
+`CRON_SECRET` is absent but says nothing about `ENCRYPTION_KEY`.
+
+The asymmetry is the tell — `decrypt()` throws loudly on a missing key, while
+`encrypt()` degrades silently. A deploy in this state is undetectable from the
+outside and self-heals on the next deploy, leaving plaintext rows behind.
+
+**Also:** `aes-256-cbc` with no authentication tag. Ciphertext is malleable and
+there is no integrity check; `aes-256-gcm` is the standard choice here.
+
+**Fix shape:** fail fast at boot when `ENCRYPTION_KEY` is absent or malformed,
+plus a deploy-time check like the `CRON_SECRET` one.
+
+---
+
+## 6. `setMonth()` month-end overflow — MEDIUM (8 sites)
+
+JavaScript rolls an overflowing day forward, so `31 May` minus one month is
+`1 May`, not `1 April`. Demonstrated:
+
+```
+── Billing period end (lib/billing/plans.ts:124, activate.ts:83)
+   paid 2026-01-31 for 1 month  →  expires 2026-03-03   ← overshoots
+   paid 2026-03-31 for 1 month  →  expires 2026-05-01   ← overshoots
+   paid 2026-08-31 for 1 month  →  expires 2026-10-01   ← overshoots
+
+── demand.ts monthKeys, run on 31 Aug 2026 (6-month window)
+   buckets : 2026-03, 2026-05, 2026-05, 2026-07, 2026-07, 2026-08
+   expected: 2026-03, 2026-04, 2026-05, 2026-06, 2026-07, 2026-08
+   MISSING : 2026-04, 2026-06     duplicated: 2026-05, 2026-07
+
+── seasonality.ts (since = now − 11 months), run on 31 Aug 2026
+   since = 2025-10-01   (expected September 2025 — a month of history dropped)
+```
+
+Sites: `lib/billing/activate.ts:83`, `lib/billing/plans.ts:124`,
+`lib/db/seasonality.ts:34,99`, `lib/db/pnl.ts:390`, `lib/db/payouts.ts:39`,
+`lib/db/demand.ts:21,64`.
+
+**Severity split.** Billing always overshoots, never undershoots — the seller
+gets a few extra days, so no one is overcharged, but renewals chaining from a
+drifted end date compound it. `demand.ts` is the functional one: the
+coefficient-of-variation that drives reorder advice is computed over a series
+with two months double-counted and two months zero-filled, once a month, on the
+29th–31st.
+
+**Fix shape:** an `addMonths()` in `lib/period-week.ts` that clamps the day, and
+a guardrail entry banning bare `setMonth`.
+
+---
+
+## 7. Three marketplace calls bypass the read-only guard — MEDIUM
+
+`AGENTS.md` makes read-only the top constraint, and `marketplaceFetch` enforces
+it. These three reach marketplace hosts with a raw `fetch()` instead:
+
+- `app/api/uzum/sync/route.ts:63` → `api-seller.uzum.uz/.../v1/shops`
+- `app/api/yandex/sync/route.ts:77` → `api.partner.market.yandex.ru/v2/campaigns/…/orders`
+- `app/api/extension/product/route.ts:137` → Uzum public product API
+
+**All three are currently GETs, so nothing is violated today.** The gap is
+structural: the guard cannot see them, so nothing stops a later edit adding
+`method: 'PUT'`. `lib/validate-token.ts` already does token validation *through*
+the guard, so the pattern to copy exists.
+
+**Fix shape:** route them through `marketplaceFetch`, then add a guardrail test
+banning raw `fetch(` to a marketplace hostname.
+
+---
+
+## 8. Per-row `UPDATE` loops in sync — LOW (feeds finding 4)
+
+~10 genuine per-row round-trip loops, the widest being the fee backfill at
+`lib/uzum/sync.ts:1188` and `:1200`, which issue one `UPDATE` per order across
+*every* non-cancelled order in the shop. Others: `identifier-backfill.ts:115,151`,
+`stock-refresh.ts:138,233`, `yandex/sync.ts:398,855,920,1058`.
+
+Not wrong, just slow — and sync slowness is what turns finding 4 from theoretical
+into routine.
+
+---
+
+## 9. Silent failure surfaces — LOW / by design, worth revisiting
+
+36 bare `catch {}` blocks and 63 `.catch(() => …)` in `app/` and `lib/`. Most are
+deliberate (best-effort Telegram, response-body reads).
+
+The one worth a second look is the dashboard pattern:
+
+```ts
+getKpis(...).catch(e => { console.error('[dashboard] getKpis', e); return emptyKpis })
+```
+
+The comment says this degrades one panel rather than 500ing the page, which is
+reasonable — but the seller cannot tell "you sold nothing this week" from "the
+query failed". Given how much of this session went into never showing a
+confident wrong number, that distinction is worth surfacing.
+
+---
+
+## What I checked and found clean
+
+Worth recording so the next audit does not redo it:
+
+- **Tenancy.** Scanned every `db.select/update/delete/insert` touching a tenant
+  table for a missing shop/user scope. 37 candidates, all scoped — either
+  directly (`inArray(orders.shop_id, shopIds)`) or via an ID list derived from a
+  scoped query. No cross-seller leak found.
+- **Read-only guard.** `lib/uzum`, `lib/yandex` and `lib/marketplace` contain
+  **zero** raw `fetch(` calls; everything goes through `marketplaceFetch`.
+  `test:guard` passes 21/21. Only the three route-level calls in finding 7 sit
+  outside it, and all are reads.
+- **Extension token.** `crypto.randomUUID() + 16 random bytes` — strong. Stored
+  plaintext with no expiry or rotation, which is worth deciding on, but not
+  guessable.
+- **Migrations.** All numbered migrations from 021 to 085 are registered in
+  `scripts/apply-sql-migrations.mjs`. (`ARCHITECTURE.md` said "current through
+  080" — corrected to 085 in this change.) Only `020_dashboard_rpcs.sql` is
+  unregistered, which is pre-runner and intentional.
+- **Cron auth.** All five cron endpoints check `CRON_SECRET`.
+
+---
+
+## Suggested order
+
+1. **Finding 2 + 3 together** — get the guards actually running. Nothing else
+   stays fixed without this.
+2. **Finding 1** — it silently undoes the money work just shipped.
+3. **Finding 5** — one boot-time check; the downside is plaintext credentials.
+4. **Finding 4** — an advisory lock keyed on `shop_id`.
+5. **Finding 6** — `addMonths()` plus a guardrail line.
+6. Findings 7–9 as cleanup.
