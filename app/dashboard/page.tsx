@@ -9,6 +9,7 @@ import { getUserShops, getSyncInfo } from '@/lib/db/shop-context'
 import { getStockGroups } from '@/lib/db/stock-groups'
 import WelcomePopup from '@/components/dashboard/WelcomePopup'
 import type { MarketplaceType } from '@/lib/types'
+import { startOfIsoWeek, endOfIsoWeek, localDateStr } from '@/lib/period-week'
 
 function parseDays(v: string | undefined): number {
   if (v === '1')     return 1
@@ -82,15 +83,13 @@ export default async function DashboardPage({ searchParams }: Props) {
     // buttons page a week at a time, so the dashboard opens on "this week"
     // rather than a year-long span. Revenue is delivered-basis (see kpis.ts),
     // so the week fills in as orders are delivered.
+    // Week maths lives in lib/period-week.ts — one Monday-based definition the
+    // P&L, Заработок and this page all share. Hand-rolled copies drifted apart:
+    // this one ended with toISOString(), which converts to UTC and can name the
+    // wrong Monday for anyone not on UTC. localDateStr keeps it local.
     const now = new Date()
-    const monday = new Date(now)
-    const dow = monday.getDay()                     // 0=Sun … 6=Sat
-    monday.setDate(monday.getDate() - (dow === 0 ? 6 : dow - 1))
-    monday.setHours(0, 0, 0, 0)
-    const sunday = new Date(monday)
-    sunday.setDate(monday.getDate() + 6)
-    from   = monday.toISOString().slice(0, 10)
-    to     = sunday.toISOString().slice(0, 10)
+    from   = localDateStr(startOfIsoWeek(now))
+    to     = localDateStr(endOfIsoWeek(now))
     period = ''
     days   = 7
   }

@@ -79,3 +79,37 @@ export function isoWeekBounds(key: string): { start: Date; end: Date } | null {
 export function localDateStr(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
+
+/**
+ * Parse `YYYY-MM-DD` as a LOCAL calendar date.
+ *
+ * `new Date('2026-08-20')` is defined to parse as UTC midnight, so rendering it
+ * with toLocaleDateString anywhere west of Greenwich prints the day BEFORE. That
+ * is why the dashboard's range button read "19 авг. — 25 авг." while its own date
+ * inputs said 08/20 — 08/26: same range, two answers. Date-only strings carry no
+ * timezone and must not acquire one on the way in.
+ */
+export function parseLocalDate(s: string): Date {
+  const [y, m, d] = s.split('-').map(Number)
+  return new Date(y, (m ?? 1) - 1, d ?? 1)
+}
+
+/** Move a `YYYY-MM-DD` string by whole days, staying in local time. */
+export function shiftLocalDate(s: string, days: number): string {
+  const d = parseLocalDate(s)
+  d.setDate(d.getDate() + days)
+  return localDateStr(d)
+}
+
+/**
+ * Is this range exactly one Monday→Sunday week?
+ *
+ * Used to decide how the ‹ › buttons page. A calendar week must stay a calendar
+ * week: clamping it to "seven days ending today" is what turned Mon–Sun into
+ * Thu–Wed after paging forward, and every week after that inherited the drift.
+ */
+export function isCalendarWeek(from: string, to: string): boolean {
+  const start = parseLocalDate(from)
+  if (start.getDay() !== 1) return false                 // must begin on a Monday
+  return localDateStr(endOfIsoWeek(start)) === to
+}
