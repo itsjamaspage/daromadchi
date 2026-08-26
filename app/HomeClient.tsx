@@ -244,10 +244,10 @@ function DashMockup({ lang }: { lang: Lang }) {
   const hi   = bars.length - 4
 
   const rows = [
-    { name: T.mockup.winterJacket[lang],  sku: 'UZ-00312', rev: '18 240 000', drr: 7.2,  ok: true,  mp: teal },
-    { name: T.mockup.nikeAir[lang],      sku: 'YM-01847', rev: '12 590 000', drr: 11.4, ok: false, mp: teal },
-    { name: T.mockup.hikingBackpack[lang],    sku: 'YM-00951', rev: '9 870 000',  drr: 9.8,  ok: true,  mp: teal },
-    { name: T.mockup.sonyHeadphones[lang],   sku: 'UZ-00488', rev: '8 340 000',  drr: 6.1,  ok: true,  mp: teal },
+    { name: T.mockup.winterJacket[lang],  sku: 'UZ-00312', rev: '18 240 000', margin: 32.4, ok: true,  mp: teal },
+    { name: T.mockup.nikeAir[lang],      sku: 'YM-01847', rev: '12 590 000', margin: 12.8, ok: false, mp: teal },
+    { name: T.mockup.hikingBackpack[lang],    sku: 'YM-00951', rev: '9 870 000',  margin: 24.1, ok: true,  mp: teal },
+    { name: T.mockup.sonyHeadphones[lang],   sku: 'UZ-00488', rev: '8 340 000',  margin: 38.5, ok: true,  mp: teal },
   ]
 
   return (
@@ -328,7 +328,7 @@ function DashMockup({ lang }: { lang: Lang }) {
         <div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 72px 88px 44px 46px',
             padding: '5px 12px', background: bg2, borderBottom: `1px solid ${border}` }}>
-            {[T.mockup.product[lang],T.mockup.sku[lang],T.mockup.revenueSum[lang],T.mockup.drrPct[lang],T.mockup.status[lang]].map(h => (
+            {[T.mockup.product[lang],T.mockup.sku[lang],T.mockup.revenueSum[lang],T.mockup.marginPct[lang],T.mockup.status[lang]].map(h => (
               <span key={h} style={{ fontSize: 8, fontWeight: 700, color: muted, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{h}</span>
             ))}
           </div>
@@ -341,7 +341,7 @@ function DashMockup({ lang }: { lang: Lang }) {
               </div>
               <span style={{ fontSize: 8, color: muted, fontFamily: 'monospace' }}>{r.sku}</span>
               <span style={{ fontSize: 9, color: ink, fontFamily: 'monospace', fontWeight: 600 }}>{r.rev}</span>
-              <span style={{ fontSize: 9, fontWeight: 700, color: r.drr > 10 ? P.red : teal }}>{r.drr}%</span>
+              <span style={{ fontSize: 9, fontWeight: 700, color: r.margin < 20 ? P.red : teal }}>{r.margin}%</span>
               <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
                 <div style={{ width: 5, height: 5, borderRadius: '50%', background: r.ok ? teal : P.red }} />
                 <span style={{ fontSize: 8, color: muted }}>{r.ok ? T.mockup.ok[lang] : T.mockup.low[lang]}</span>
@@ -546,7 +546,7 @@ function MarqueeSection({ lang }: { lang: Lang }) {
     'Yandex Market',
     T.marquee.unitEconomics[lang],
     'Uzum Market',
-    T.marquee.drrControl[lang],
+    T.marquee.marginControl[lang],
     T.marquee.excelExport[lang],
   ]
   return (
@@ -876,7 +876,7 @@ function HowItWorksSection({ lang }: { lang: Lang }) {
         <div style={{ background: uiBg, borderRadius: 16, padding: '20px',
           border: `1px solid ${uiBdr}`, boxShadow: isDark ? '0 8px 32px rgba(197,232,254,0.08)' : '0 8px 32px rgba(0,0,0,0.10)' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
-            {[{l:'Заказы',v:'1 842',d:'+300%',c:acc.color},{l:'ДРР',v:'8.2%',d:'-20.9%',c:acc.color}].map(k => (
+            {[{l:'Заказы',v:'1 842',d:'+300%',c:acc.color},{l:'Маржа',v:'32.4%',d:'+4.1%',c:acc.color}].map(k => (
               <div key={k.l} style={{ background: fldBg, borderRadius: 10, padding: '14px',
                 border: `1px solid ${uiBdr}`, borderTop: `2px solid ${k.c}` }}>
                 <p style={{ fontSize: 11, color: sub, marginBottom: 4 }}>{k.l}</p>
@@ -1022,7 +1022,7 @@ function BentoSection({ lang }: { lang: Lang }) {
           {[
             { l: T.bento.revenue[lang], v: '124.5M', d: '+12%', col: '#22c4b8', hsl: '174 67 45', cols: ['#22c4b8','#0d9488','#5eead4'] },
             { l: T.bento.orders[lang], v: '1 842', d: '+8%', col: '#60a5fa', hsl: '213 94 68', cols: ['#60a5fa','#3b82f6','#93c5fd'] },
-            { l: T.bento.drr[lang], v: '8.2%', d: '-1.4%', col: '#f59e0b', hsl: '38 92 50', cols: ['#f59e0b','#d97706','#fcd34d'] },
+            { l: T.bento.margin[lang], v: '32.4%', d: '+2.1%', col: '#f59e0b', hsl: '38 92 50', cols: ['#f59e0b','#d97706','#fcd34d'] },
             { l: T.bento.profit[lang], v: '38.2M', d: '+15%', col: '#22c55e', hsl: '142 71 45', cols: ['#22c55e','#16a34a','#86efac'] },
           ].map((k, i) => (
             <FadeUp key={k.l} delay={i * 0.07} style={{ height: '100%' }}>
@@ -1635,7 +1635,7 @@ function CtaSection({ lang }: { lang: Lang }) {
           style={{ left: '4%', top: '20%', transform: 'rotate(-3.5deg)', zIndex: 5, opacity: 0.9 }} />
         <FloatCard mp="Yandex Market"metric={T.cta.orders[lang]} value="1 842" change="+8%" up delay={0.1} floatDur={4.3}
           style={{ right: '3%', top: '18%', transform: 'rotate(4deg)', zIndex: 5, opacity: 0.9 }} />
-        <FloatCard mp="Yandex Market"metric={T.cta.drr[lang]} value="8.2%" change="-1.4%" up={false} delay={0.15} floatDur={3.6}
+        <FloatCard mp="Yandex Market"metric={T.cta.margin[lang]} value="32.4%" change="+2.1%" up={true} delay={0.15} floatDur={3.6}
           style={{ left: '6%', bottom: '20%', transform: 'rotate(-2deg)', zIndex: 5, opacity: 0.9 }} />
         <FloatCard mp="Uzum"metric={T.cta.profit[lang]} value={T.cta.profitValue[lang]} change="+15%" up delay={0.2} floatDur={4.1}
           style={{ right: '5%', bottom: '22%', transform: 'rotate(3deg)', zIndex: 5, opacity: 0.9 }} />
