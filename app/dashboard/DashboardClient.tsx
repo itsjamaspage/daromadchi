@@ -18,6 +18,7 @@ import { useSyncPolling } from '@/hooks/useSyncPolling'
 import { useLang, useTheme } from '@/app/providers'
 import { dashT } from '@/lib/dashT'
 import type { Kpis, Order, Product, DailyRevenue, MarketplaceType } from '@/lib/types'
+import { orderDisplayStatus } from '@/lib/marketplace/order-display-status'
 import type { ProductSalesRow } from '@/lib/db/products'
 import type { StockGroup } from '@/lib/db/stock-groups'
 import { colorMetaFor, COLOR_LABELS, type ColorKey } from '@/lib/products/resolveColor'
@@ -99,16 +100,19 @@ interface Props {
   syncInfo: { lastSyncedAt: string | null; lastSyncFailed: boolean; alerts: { shopName: string; status: 'error' | 'degraded'; message: string | null; syncedAt: string | null }[] }
 }
 
+// Keyed by DISPLAY status — see lib/marketplace/order-display-status.ts.
 const STATUS_CLASS_DARK: Record<string, string> = {
   pending:   'bg-slate-500/10 text-[var(--text-muted)]',
-  confirmed: 'bg-blue-500/10 text-blue-400',
+  preparing: 'bg-amber-500/10 text-amber-400',
+  shipping:  'bg-blue-500/10 text-blue-400',
   delivered: 'bg-emerald-500/10 text-emerald-400',
   cancelled: 'bg-red-500/10 text-red-400',
   returned:  'bg-amber-500/10 text-amber-400',
 }
 const STATUS_CLASS_LIGHT: Record<string, string> = {
   pending:   'bg-slate-500/10 text-slate-600',
-  confirmed: 'bg-blue-500/10 text-blue-700',
+  preparing: 'bg-amber-500/10 text-amber-700',
+  shipping:  'bg-blue-500/10 text-blue-700',
   delivered: 'bg-emerald-500/10 text-emerald-700',
   cancelled: 'bg-red-500/10 text-red-600',
   returned:  'bg-amber-500/10 text-amber-700',
@@ -466,9 +470,14 @@ export default function DashboardClient({ slices, stockGroups, days, period, fro
                     })()}
                     <p className="text-xs text-[var(--text-muted)] truncate">{{ uzum: 'Uzum Market', yandex_market: 'Yandex Market' }[order.marketplace] ?? order.marketplace}</p>
                   </div>
-                  <span className={`text-[11px] font-medium px-2 py-0.5 rounded-lg flex-shrink-0 ${(isDark ? STATUS_CLASS_DARK : STATUS_CLASS_LIGHT)[order.status] ?? 'bg-slate-500/10 text-[var(--text-muted)]'}`}>
-                    {s[order.status as keyof typeof s] ?? order.status}
-                  </span>
+                  {(() => {
+                    const ds = orderDisplayStatus(order.status, order.marketplace_status)
+                    return (
+                      <span className={`text-[11px] font-medium px-2 py-0.5 rounded-lg flex-shrink-0 ${(isDark ? STATUS_CLASS_DARK : STATUS_CLASS_LIGHT)[ds] ?? 'bg-slate-500/10 text-[var(--text-muted)]'}`}>
+                        {s[ds as keyof typeof s] ?? order.status}
+                      </span>
+                    )
+                  })()}
                 </div>
               ))}
             </div>
