@@ -67,6 +67,7 @@
     "test:week": "node --import tsx --test lib/period-week.test.ts lib/period-week.guardrail.test.ts",
     "test:variant-match": "node --import tsx --test lib/uzum/variant-match.test.ts",
     "test:money": "node --import tsx --test lib/money/order-economics.test.ts lib/money/order-economics.guardrail.test.ts",
+    "test:crypto": "node --import tsx --test lib/crypto.test.ts",
     "test:shop-lock": "node --import tsx --test lib/db/shop-lock.integration.test.ts"
   },
   "dependencies": {
