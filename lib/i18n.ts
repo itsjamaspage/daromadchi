@@ -294,6 +294,8 @@ export const translations = {
       status: {
         pending: 'Yaratildi',
         confirmed: 'Yo‘lda',
+        preparing: 'Jarayonda',
+        shipping: 'Yo‘lda',
         delivered: 'Yetkazildi',
         cancelled: 'Bekor qilindi',
         returned: 'Bekor qilindi',
@@ -1235,6 +1237,8 @@ export const translations = {
       status: {
         pending: 'Created',
         confirmed: 'In transit',
+        preparing: 'Being prepared',
+        shipping: 'On the way',
         delivered: 'Delivered',
         cancelled: 'Cancelled',
         returned: 'Cancelled',
@@ -2176,6 +2180,8 @@ export const translations = {
       status: {
         pending: 'Создан',
         confirmed: 'В процессе',
+        preparing: 'В обработке',
+        shipping: 'В доставке',
         delivered: 'Доставлен',
         cancelled: 'Отменён',
         returned: 'Отменён',

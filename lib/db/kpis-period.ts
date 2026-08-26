@@ -3,14 +3,27 @@
  * tested: kpis.ts reaches next/cache and the request-scoped shop context, which
  * a test runner cannot load, while the arithmetic here needs neither.
  *
- * Both bounds are required. The profit figure totals settlement buckets, and a
- * total with no right-hand bound is "everything from `since` until forever" —
- * which is what made a week with no orders display the whole later tail as
- * profit. See lib/db/kpis.integration.test.ts.
+ * ── One clock ───────────────────────────────────────────────────────────────
+ * Every figure here is bucketed by the ORDER's date. Revenue and COGS always
+ * were; the settlement money was not, and that mismatch is what made the profit
+ * KPI describe a period nobody asked about. Settlements are dated when the
+ * marketplace PAID, so a week with no sales showed +73 000 (payout money for
+ * older sales, with no COGS to subtract) and a week with 200 000 of sales showed
+ * −52 250 (its cost charged against settlements that had not arrived yet).
+ *
+ * Two invariants follow from putting the money on the sale's clock, and
+ * kpis.integration.test.ts asserts both:
+ *
+ *   1. profit ≤ revenue, always. Profit is revenue minus costs and no cost is
+ *      negative, so a profit above the period's own sales is arithmetically
+ *      impossible — it can only mean money from outside the period leaked in.
+ *   2. No timing-driven negatives. A period with no sales is 0, not a loss; a
+ *      period with sales is only negative when the goods genuinely cost more
+ *      than they sold for.
  */
 import { inArray, gte, lte, and, eq, sql } from 'drizzle-orm'
 import { db, orders, orderItems, products } from '@/lib/db'
-import { getRealFinancialsByBucket } from '@/lib/db/real-financials'
+import { getSettlementNetByOrder } from '@/lib/db/real-financials'
 
 export async function fetchPeriodKpis(shopIds: string[], since: Date | null, until: Date | null) {
   // Orders KPI counts EVERY order received (a cancelled order still happened);
@@ -25,13 +38,9 @@ export async function fetchPeriodKpis(shopIds: string[], since: Date | null, unt
 
   // COGS aggregated over DELIVERED orders in the same period so the Dashboard's
   // Чистая прибыль matches P&L / Payouts' "after everything" figure.
-  const [orderAgg, cogsAgg, unitAgg] = await Promise.all([
+  const [orderAgg, cogsAgg, unitAgg, deliveredOrders] = await Promise.all([
     db.select({
       total_revenue: sql<number>`coalesce(sum(${orders.revenue}::numeric) filter (where ${orders.status} = 'delivered'), 0)`,
-      // Estimate-only fallback: revenue − stored marketplace_fee − stored
-      // delivery_cost. Overridden below with real settlement net when the
-      // Yandex/Uzum settlement tables have any rows for this period.
-      total_profit_estimate: sql<number>`coalesce(sum(${orders.revenue}::numeric - coalesce(${orders.marketplace_fee}::numeric, 0) - coalesce(${orders.delivery_cost}::numeric, 0)) filter (where ${orders.status} = 'delivered'), 0)`,
       total_orders: sql<number>`count(*)`,
       cancelled_orders: sql<number>`count(*) filter (where ${orders.status} = 'cancelled')`,
     }).from(orders).where(and(...conditions)),
@@ -48,33 +57,44 @@ export async function fetchPeriodKpis(shopIds: string[], since: Date | null, unt
     }).from(orderItems)
       .innerJoin(orders, eq(orderItems.order_id, orders.id))
       .where(and(...conditions, sql`${orders.status} = 'cancelled'`)),
+    // Per-order money for the settlement attribution below. The stored fee and
+    // delivery are the fallback for an order the marketplace has not settled.
+    db.select({
+      id: orders.id,
+      revenue: orders.revenue,
+      marketplace_fee: orders.marketplace_fee,
+      delivery_cost: orders.delivery_cost,
+    }).from(orders).where(and(...conditions, sql`${orders.status} = 'delivered'`)),
   ])
 
-  // Sum real per-month settlement net across the period so "Чистая
-  // прибыль" tracks what actually hits (or will hit) the seller's
-  // balance, not the estimated marketplace_fee subtraction stored at
-  // order-sync time. Fall back to the orders-table estimate when no
-  // settlement rows exist for the period.
   const revenue = Number(orderAgg[0]?.total_revenue ?? 0)
   const cogs = Number(cogsAgg[0]?.cogs ?? 0)
+
+  // What the marketplace actually paid for the sales made in THIS period,
+  // order by order. Settlement rows carry the order they belong to, so the
+  // money follows the sale rather than the payout run.
   //
-  // BOTH bounds matter here, because this is the one caller that TOTALS the
-  // buckets instead of reading them back by key. Without `until` the sum ran
-  // from the window's start to forever, so the KPI was "every settlement since
-  // this Monday" minus "the COGS of this week" — two different periods
-  // subtracted from each other. A week with no orders had no COGS to subtract
-  // and so displayed the whole remaining tail as profit, and each earlier week
-  // showed a bigger number than the one after it.
-  const fromDate = since ?? new Date(0)
-  const realBuckets = await getRealFinancialsByBucket(shopIds, fromDate, 'month', until)
-  let realNet = 0
-  let hasAnyReal = false
-  for (const b of realBuckets.values()) {
-    if (b.itemCount > 0) { hasAnyReal = true; realNet += b.net }
+  // Per-order, not per-period, because the fallback has to be per-order too: a
+  // sale made yesterday has no settlement yet, and treating "no settlement" as
+  // "earned nothing" would charge its COGS against zero income and invent a
+  // loss — invariant 2, in the other direction. So an unsettled order falls
+  // back to the estimate stored at sync time (revenue − fee − delivery), which
+  // is what the whole period used to fall back to as a block.
+  const netByOrder = await getSettlementNetByOrder(shopIds, since, until)
+  let netFromMarketplace = 0
+  for (const o of deliveredOrders) {
+    const real = netByOrder.get(o.id as string)
+    if (real !== undefined) {
+      netFromMarketplace += real
+      continue
+    }
+    const rev = Number(o.revenue ?? 0)
+    const fee = Number(o.marketplace_fee ?? 0)
+    const del = Number(o.delivery_cost ?? 0)
+    netFromMarketplace += rev - fee - del
   }
-  const netFromMarketplace = hasAnyReal ? realNet : Number(orderAgg[0]?.total_profit_estimate ?? 0)
-  // Dashboard "Чистая прибыль" = what the marketplace pays out minus what
-  // the seller paid for the goods. Matches P&L "Чистая после расходов".
+  // Dashboard "Чистая прибыль" = what the marketplace pays out for this
+  // period's sales, minus what the seller paid for those goods.
   const profit = netFromMarketplace - cogs
 
   return {
