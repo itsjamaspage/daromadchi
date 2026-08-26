@@ -18,8 +18,7 @@ import {
   type UzumSku,
 } from './client'
 import { resolveColor } from '@/lib/products/resolveColor'
-import { canonicalSkuCandidates } from '@/lib/products/sku-aliases'
-import { pickByColor, type ProductCandidate } from '@/lib/uzum/variant-match'
+import { buildVariantIndex, resolveVariant } from '@/lib/uzum/variant-match'
 
 // Resolve a SKU's colour: prefer the skuTitle suffix (БЕЖЕВ / БЕЛЫЙ …), then
 // fall back to the structured «Цвет» / «Rang» characteristic already present in
@@ -924,82 +923,55 @@ export async function syncFromUzum(shopId: string, token: string, heavy = true):
     }
 
     // ── Order items (best-effort) ─────────────────────────────────────────────
-    // Build a map: marketplace_product_id → products.id for fast lookup
+    // Index this shop's products, then link each order line to ONE of them.
     try {
       const dbProducts = await db.select({ id: products.id, marketplace_product_id: products.marketplace_product_id, title: products.title, selling_price: products.selling_price, sku: products.sku, market_barcode: products.market_barcode, variant_color: products.variant_color })
         .from(products).where(eq(products.shop_id, shopId))
-      const pidMap = new Map<string, string>()
       // ── Variant-safe lookup ───────────────────────────────────────────────
-      // These were Map<key, id> — last write wins. Both colour variants of one
-      // product share a title, and (before the alias fix) a base article, so the
-      // loser was silently unreachable and EVERY order for it linked to the
-      // winner. A black-watch order attached to the white product, reserved
-      // against it, and inflated its sold count while the black one stayed at 0.
+      // These were flat Map<key, id> built here — last write wins. Both colour
+      // variants of one product share a title, and (before the alias fix) a base
+      // article, so the loser was silently unreachable and EVERY order for it
+      // linked to the winner. A black-watch order attached to the white product,
+      // reserved against it, and inflated its sold count while the black one
+      // stayed at 0.
       //
-      // Now every key holds ALL its candidates and the colour decides. The
-      // colour is already on both sides: order lines carry it via
-      // uzumItemSnapshot (resolveColor over the skuTitle), products carry
-      // variant_color.
-      type Cand = ProductCandidate
-      const titleMap = new Map<string, Cand[]>()
-      const skuMap = new Map<string, Cand[]>()
-      const barcodeMap = new Map<string, Cand[]>()
+      // Both halves of the fix now live in lib/uzum/variant-match.ts: the index
+      // resolves candidates from IDENTITY keys (marketplace variant id, seller
+      // article, barcode, title) and pickByColor breaks the tie by colour. Colour
+      // is never a search key — that is what keeps a black watch from matching a
+      // black powerbank. Shared with the mislink audit so the two cannot drift.
+      const index = buildVariantIndex(dbProducts.map(p => ({
+        id: p.id as string,
+        sku: p.sku,
+        title: p.title,
+        barcode: p.market_barcode,
+        marketplaceProductId: p.marketplace_product_id,
+        color: p.variant_color,
+      })))
       const priceByDbId = new Map<string, number>()
-      const normSku = (s: string) => s.trim().toLowerCase()
-      const push = (m: Map<string, Cand[]>, k: string, c: Cand) => {
-        const arr = m.get(k); if (arr) arr.push(c); else m.set(k, [c])
-      }
-      const pick = pickByColor
       for (const p of dbProducts) {
-        const cand: Cand = { id: p.id as string, color: p.variant_color ?? null }
-        if (p.marketplace_product_id) pidMap.set(String(p.marketplace_product_id), p.id as string)
-        if (p.title) push(titleMap, p.title.trim().toLowerCase(), cand)
-        // products.sku holds the seller's clean article (sellerItemCode/article),
-        // e.g. "JMWHT" — the reliable cross-feed join key. Skip when it's just a
-        // stringified skuId (the order-stub fallback), which is already covered
-        // by pidMap and would otherwise create false article matches.
-        if (p.sku && p.sku.trim() && p.sku.trim() !== String(p.marketplace_product_id)) {
-          push(skuMap, normSku(p.sku), cand)
-        }
-        if (p.market_barcode && p.market_barcode.trim()) push(barcodeMap, p.market_barcode.trim(), cand)
         const sp = p.selling_price != null ? Number(p.selling_price) : 0
         if (sp > 0) priceByDbId.set(p.id as string, sp)
       }
       // The order item's skuId doesn't always match the product-card skuId
       // (different id spaces), which is why raw skuId matching silently drops
-      // items to a null product_id. Resolve against the STABLE keys the order
-      // line also carries — the seller's clean article (== products.sku) and the
-      // barcode (== products.market_barcode) — before falling back to title and,
-      // for a single-product shop, to that lone product.
+      // items to a null product_id. resolveVariant also tries the STABLE keys the
+      // order line carries — the seller's clean article (== products.sku, through
+      // the alias/prefix normalizer, so "5124786-JMJ16BEG" re-links to the renamed
+      // "JMJ16BG"), the barcode, the title — and, for a single-product shop, that
+      // lone product.
       const cleanArticle = (it: UzumFbsOrderItem): string | undefined =>
         (it.sellerSku ?? it.sellerItemCode ?? it.article ?? '').trim() || undefined
-      // Match the seller article against products.sku through the alias/prefix
-      // normalizer, so a legacy article ("5124786-JMJ16BEG") re-links to its
-      // renamed product ("JMJ16BG") instead of orphaning. Tries the clean article
-      // and the skuTitle (which also carries the article for older payloads).
-      const skuMatch = (it: UzumFbsOrderItem, color: string | null): string | undefined => {
-        for (const raw of [cleanArticle(it), it.skuTitle]) {
-          for (const cand of canonicalSkuCandidates(raw)) {
-            const hit = pick(skuMap.get(normSku(cand)), color)
-            if (hit) return hit
-          }
-        }
-        return undefined
-      }
-      const resolveProductId = (it: UzumFbsOrderItem): string | null => {
-        const bc  = it.barcode != null ? String(it.barcode).trim() : ''
+      const normSku = (s: string): string => s.trim().toLowerCase()
+      const resolveProductId = (it: UzumFbsOrderItem): string | null => resolveVariant(index, {
+        marketplaceProductId: it.skuId,
+        skus: [cleanArticle(it), it.skuTitle],
+        barcode: it.barcode,
+        title: it.productTitle,
         // The item's colour, from the same snapshot written onto the order line —
         // one source, so the stored variant_color and the link can never disagree.
-        const color = uzumItemSnapshot(it).variant_color
-        return (
-          // Exact marketplace variant id — already variant-specific, no colour needed.
-          pidMap.get(String(it.skuId)) ??
-          skuMatch(it, color) ??
-          (bc ? pick(barcodeMap.get(bc), color) : undefined) ??
-          (it.productTitle ? pick(titleMap.get(it.productTitle.trim().toLowerCase()), color) : undefined) ??
-          (dbProducts.length === 1 ? dbProducts[0].id as string : null)
-        )
-      }
+        color: uzumItemSnapshot(it).variant_color,
+      })
 
       // Map order_id_external → orders.id
       const extIds = uzumOrders.map(o => extIdOf(o))
