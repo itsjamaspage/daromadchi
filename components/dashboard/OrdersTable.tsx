@@ -7,6 +7,7 @@ import FulfillmentBadge from './FulfillmentBadge'
 import { useLang } from '@/app/providers'
 import { translations } from '@/lib/i18n'
 import type { Order, OrderStatus } from '@/lib/types'
+import { orderDisplayStatus, type OrderDisplayStatus } from '@/lib/marketplace/order-display-status'
 
 function fmt(n: number, lang: string) {
   const suf = lang === 'ru' ? 'сум' : lang === 'en' ? 'UZS' : "so'm"
@@ -46,12 +47,15 @@ export default function OrdersTable({ orders }: { orders: Order[] }) {
   const d = translations[lang].dashboard
   const s = d.status
 
-  const statusConfig: Record<OrderStatus, { label: string; className: string; dot: string }> = {
+  // Keyed by DISPLAY status, not the stored enum: `confirmed` covers both
+  // "packed, still here" and "actually shipped", and calling the first one
+  // "on the way" told sellers a parcel had left when it had not.
+  const statusConfig: Record<OrderDisplayStatus, { label: string; className: string; dot: string }> = {
     pending:   { label: s.pending,   className: 'bg-slate-100 text-slate-600 border border-slate-300',         dot: 'bg-slate-500'   },
-    confirmed: { label: s.confirmed, className: 'bg-blue-50 text-blue-600 border border-blue-200',             dot: 'bg-blue-500'    },
+    preparing: { label: s.preparing, className: 'bg-amber-50 text-amber-700 border border-amber-200',          dot: 'bg-amber-500'   },
+    shipping:  { label: s.shipping,  className: 'bg-blue-50 text-blue-600 border border-blue-200',             dot: 'bg-blue-500'    },
     delivered: { label: s.delivered, className: 'bg-emerald-50 text-emerald-700 border border-emerald-200',    dot: 'bg-emerald-500' },
     cancelled: { label: s.cancelled, className: 'bg-red-50 text-red-600 border border-red-200',                dot: 'bg-red-500'     },
-    returned:  { label: s.returned,  className: 'bg-amber-50 text-amber-600 border border-amber-200',          dot: 'bg-amber-500'   },
   }
 
   const STATUS_TABS: { value: StatusTab; label: string }[] = [
@@ -94,7 +98,7 @@ export default function OrdersTable({ orders }: { orders: Order[] }) {
     [`${d.commission2} (so'm)`]: o.marketplace_fee ?? 0,
     [`${d.delivery} (so'm)`]: o.delivery_cost ?? 0,
     [d.items]: o.items_count,
-    [d.state]: statusConfig[o.status]?.label ?? o.status,
+    [d.state]: statusConfig[orderDisplayStatus(o.status, o.marketplace_status)]?.label ?? o.status,
   }))
 
   return (
@@ -156,7 +160,7 @@ export default function OrdersTable({ orders }: { orders: Order[] }) {
               {filtered.length === 0 ? (
                 <tr><td colSpan={7} className="px-5 py-10 text-center text-[var(--text-muted)] text-sm">{d.noOrdersTitle}</td></tr>
               ) : filtered.map(order => {
-                const sc = statusConfig[order.status]
+                const sc = statusConfig[orderDisplayStatus(order.status, order.marketplace_status)]
                 return (
                   <tr key={order.id} className="hover:bg-[var(--bg-card2)] transition-colors">
                     <td className="px-5 py-4">

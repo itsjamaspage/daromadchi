@@ -134,7 +134,14 @@ export async function getPnl(opts: PnlOpts): Promise<{ rows: PnlRow[]; params: P
   // Real per-bucket settlement financials. When present for a bucket
   // they REPLACE the Unit-Economics estimates for that bucket, so
   // Dashboard / P&L / Payouts all show identical numbers.
-  const realByBucket = await getRealFinancialsByBucket(shopIds, from, bucket)
+  //
+  // Attributed to the ORDER's date, because every other figure in this table is:
+  // the buckets below are keyed off orders.ordered_at, so settlements bucketed by
+  // payment date were read into the bucket of whatever week they were PAID, not
+  // the week that earned them. A row with no order behind it (storage, ads,
+  // penalties) keeps its payment date — it belongs to a payout period, not to a
+  // sale, and dropping it would delete a real cost from the table.
+  const realByBucket = await getRealFinancialsByBucket(shopIds, from, bucket, to, 'order')
 
   // Zero-fill every DAY bucket in the range so an empty day renders a
   // "0" bar on the chart. Month buckets are NOT zero-filled — an empty

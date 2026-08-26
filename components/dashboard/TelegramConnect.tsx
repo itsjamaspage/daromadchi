@@ -200,14 +200,18 @@ export default function TelegramConnect() {
               </div>
             </div>
 
-            {/* Delivery schedule — fixed daily at 10:00 for all users */}
+            {/* Delivery schedule — this user's OWN hour. The digest cron runs
+                hourly and only sends to users whose notif_send_time matches the
+                current Tashkent hour, so a hardcoded "10:00 for all users" was
+                wrong twice over: the default is 09:00 and the bot's buttons
+                write 08:00 / 13:00 / 20:00. */}
             <div className="space-y-2 pt-2 border-t border-[var(--border)]">
               <p className="text-[var(--text-base)] text-sm font-semibold flex items-center gap-2">
                 <Clock className="w-4 h-4 text-[var(--c1)]" /> {d.tgScheduleLabel}
               </p>
               <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border)]">
                 <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--text-base)]">
-                  <Clock className="w-4 h-4 text-[var(--c1)]" /> {d.tgScheduleFixed}
+                  <Clock className="w-4 h-4 text-[var(--c1)]" /> {d.tgScheduleFixed} {prefs.sendTime}
                 </span>
               </div>
               <p className="text-[var(--text-muted)] text-xs">{d.tgScheduleFixedHint}</p>
