@@ -579,7 +579,16 @@ export async function syncFromYandex(
         // netting report (yandex_settlement_transactions) and is consumed via
         // lib/db/real-financials.ts. Do NOT map a percentage or a phantom field
         // here — the P&L shows "pending" until settlement lands (see lib/db/pnl.ts).
-        marketplace_fee: o.commissionTotal ?? null,
+        //
+        // Explicitly null, rather than `o.commissionTotal ?? null`, which is what
+        // this said while the comment above told you not to. Today the two are
+        // identical — the field is always undefined on this endpoint, so the
+        // expression already evaluated to null and NOTHING changes here. But if
+        // Yandex ever starts returning it, the old form would have written an
+        // order-time estimate into the column lib/money reads as fact, which is
+        // the same back door migration 086 exists to close. Reading a value the
+        // comment forbids using is not worth keeping for the day it appears.
+        marketplace_fee: null,
         delivery_cost: o.deliveryTotal ?? null,
         items_count: o.items?.length ?? 1,
         ordered_at: orderedAt,
@@ -745,6 +754,13 @@ export async function syncFromYandex(
         }
       }
       for (const r of toUpdate) {
+        // money-guard-ok: this refresh cannot write a fee that needs classifying.
+        // Yandex's marketplace_fee is settlement-sourced and set to null above
+        // (line 591), so r.marketplace_fee is always null here — and lib/money
+        // reads a null fee as fee_not_reported whatever fee_source says, since
+        // delivery alone never forms a known fee total. There is no origin to
+        // record because there is no number. The authoritative commission
+        // arrives separately, in the united netting report.
         await db.update(orders).set({
           status: r.status,
           marketplace_status: r.marketplace_status,

@@ -30,7 +30,7 @@
 import { describe, it, before, after } from 'node:test'
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
-import { eq, inArray } from 'drizzle-orm'
+import { eq, inArray, sql } from 'drizzle-orm'
 import {
   db, pool, users, shops, orders, orderItems, products,
   uzumSettlementOrders, yandexSettlementTransactions,
@@ -218,6 +218,85 @@ describe('an order the marketplace has not settled yet', () => {
       assert.equal(k.revenue, 100000)
       assert.equal(k.profit, 85000, '100 000 − 12 000 fee − 3 000 delivery, no COGS (no items yet)')
       assert.ok(k.profit <= k.revenue)
+    } finally {
+      await db.delete(orders).where(eq(orders.id, id))
+    }
+  })
+})
+
+describe('a fee the sync ESTIMATED rather than the marketplace reporting it', () => {
+  // lib/uzum/sync.ts derives a fee when Uzum's finance feed returns nothing:
+  // (revenue − shop balance), spread across orders in proportion to revenue,
+  // written into marketplace_fee — the same column real commissions land in.
+  //
+  // These run against real Postgres because the whole risk is in the seam: a
+  // column the Drizzle schema deliberately does not know about (migration 086,
+  // read through raw SQL per ARCHITECTURE.md convention 3). A unit test on
+  // orderEconomics cannot prove the loader actually reads it.
+
+  it('is EXCLUDED from profit, not counted as a real fee', async () => {
+    const id = randomUUID()
+    await db.insert(orders).values({
+      id, shop_id: uzShop, order_id_external: '900101', marketplace: 'uzum', status: 'delivered',
+      revenue: '200000', marketplace_fee: '44000', delivery_cost: null,
+      ordered_at: new Date('2026-09-03T10:00:00Z'), items_count: 1,
+    })
+    await db.execute(sql`update orders set fee_source = 'derived' where id = ${id}`)
+    try {
+      const k = await fetchPeriodKpis(shopIds(),
+        new Date('2026-09-01T00:00:00Z'), new Date('2026-09-07T23:59:59Z'))
+      assert.equal(k.revenue, 200000, 'the sale still happened')
+      assert.equal(k.revenueCounted, 0, 'but none of it could be priced')
+      assert.equal(k.profit, 0, 'and a guessed fee must not produce a profit')
+      assert.deepEqual(k.pendingMarketplaces, [
+        { marketplace: 'uzum', revenue: 200000, orders: 1, reason: 'fee_not_reported' },
+      ], 'the seller is told which marketplace is unpriced, and how much')
+    } finally {
+      await db.delete(orders).where(eq(orders.id, id))
+    }
+  })
+
+  it('counts normally once the same row is stamped reported', async () => {
+    // Identical row, identical numbers — only the stamp differs. This pins the
+    // stamp as the thing that decides, and proves a later real sync correcting
+    // a guess brings the order back into the total.
+    const id = randomUUID()
+    await db.insert(orders).values({
+      id, shop_id: uzShop, order_id_external: '900102', marketplace: 'uzum', status: 'delivered',
+      revenue: '200000', marketplace_fee: '44000', delivery_cost: null,
+      ordered_at: new Date('2026-09-03T10:00:00Z'), items_count: 1,
+    })
+    await db.execute(sql`update orders set fee_source = 'reported' where id = ${id}`)
+    try {
+      const k = await fetchPeriodKpis(shopIds(),
+        new Date('2026-09-01T00:00:00Z'), new Date('2026-09-07T23:59:59Z'))
+      assert.equal(k.revenueCounted, 200000)
+      assert.equal(k.profit, 156000, '200 000 − 44 000, no COGS (no items)')
+      assert.deepEqual(k.pendingMarketplaces, [])
+    } finally {
+      await db.delete(orders).where(eq(orders.id, id))
+    }
+  })
+
+  it('defaults to reported, so existing history counts exactly as before', async () => {
+    // Migration 086 is `NOT NULL DEFAULT 'reported'`, so there is no such thing
+    // as an unstamped row once it has run — the default classifies every row
+    // that already existed, and every row inserted by code that does not set it.
+    // That is the deliberate choice recorded in the migration: nothing a seller
+    // currently sees changes on deploy.
+    const id = randomUUID()
+    await db.insert(orders).values({
+      id, shop_id: uzShop, order_id_external: '900103', marketplace: 'uzum', status: 'delivered',
+      revenue: '200000', marketplace_fee: '44000', delivery_cost: null,
+      ordered_at: new Date('2026-09-03T10:00:00Z'), items_count: 1,
+    })
+    try {
+      const [row] = await db.select({ fee_source: sql<string>`fee_source` })
+        .from(orders).where(eq(orders.id, id))
+      assert.equal(row.fee_source, 'reported', 'inserted without the column set')
+      const k = await fetchPeriodKpis(shopIds(),
+        new Date('2026-09-01T00:00:00Z'), new Date('2026-09-07T23:59:59Z'))
+      assert.equal(k.profit, 156000, 'and it counts, exactly as it did before 086')
     } finally {
       await db.delete(orders).where(eq(orders.id, id))
     }

@@ -141,6 +141,7 @@ const MIGRATIONS = [
   'migrations/migrations/083_products_local_overrides.sql',
   'migrations/migrations/084_orders_cancel_alert_sent_at.sql',
   'migrations/migrations/085_notif_stock_manual.sql',
+  'migrations/migrations/086_orders_fee_source.sql',
 ]
 
 function loadDatabaseUrl() {
