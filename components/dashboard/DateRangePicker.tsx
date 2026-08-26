@@ -6,6 +6,9 @@ import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { useTransition } from 'react'
 import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useLang } from '@/app/providers'
+import {
+  startOfIsoWeek, endOfIsoWeek, localDateStr, parseLocalDate, shiftLocalDate, isCalendarWeek,
+} from '@/lib/period-week'
 
 interface Props {
   period: string
@@ -20,25 +23,19 @@ interface Props {
   fallbackLabel?: string
 }
 
+// A date-only string has no timezone; new Date() gives it UTC's, which prints
+// the previous day anywhere west of Greenwich. That is why this button read
+// "19 авг. — 25 авг." while its own inputs said 08/20 — 08/26.
 function formatDateLabel(date: string) {
-  return new Date(date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })
+  return parseLocalDate(date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })
 }
 
 function todayStr() {
-  return new Date().toISOString().slice(0, 10)
-}
-
-// Add `delta` days to a YYYY-MM-DD string, returning YYYY-MM-DD.
-function shiftDate(date: string, delta: number) {
-  const d = new Date(date)
-  d.setDate(d.getDate() + delta)
-  return d.toISOString().slice(0, 10)
+  return localDateStr(new Date())
 }
 
 function defaultFrom() {
-  const d = new Date()
-  d.setDate(d.getDate() - 29)
-  return d.toISOString().slice(0, 10)
+  return shiftLocalDate(todayStr(), -29)
 }
 
 function Spinner({ className }: { className?: string }) {
@@ -88,6 +85,8 @@ export default function DateRangePicker({ period, from, to, presets, fallbackLab
     if (!customFrom || !customTo) return
     const p = new URLSearchParams(searchParams.toString())
     p.delete('days')
+    // A new window means a new list; keeping ?page= would land on an empty one.
+    p.delete('page')
     p.set('from', customFrom)
     p.set('to', customTo)
     shouldCloseAfterPending.current = true
@@ -100,6 +99,7 @@ export default function DateRangePicker({ period, from, to, presets, fallbackLab
     const p = new URLSearchParams(searchParams.toString())
     p.delete('from')
     p.delete('to')
+    p.delete('page')
     p.set('days', days)
     shouldCloseAfterPending.current = true
     startTransition(() => {
@@ -114,19 +114,38 @@ export default function DateRangePicker({ period, from, to, presets, fallbackLab
   const rangeDays = (from && to)
     ? Math.round((new Date(to).getTime() - new Date(from).getTime()) / 86_400_000) + 1
     : (parseInt(period, 10) || 7)
-  const effFrom = from ?? shiftDate(effTo, -(rangeDays - 1))
-  // No data lives in the future, so "next week" stops once the range reaches today.
-  const atToday = effTo >= today
+  const effFrom = from ?? shiftLocalDate(effTo, -(rangeDays - 1))
+  // A Mon–Sun week pages as a week; anything else keeps its own length.
+  const isWeek = !!(from && to) && isCalendarWeek(effFrom, effTo)
+  const thisWeekFrom = localDateStr(startOfIsoWeek(new Date()))
+  // "Next" stops at the present: for a week, once you are ON this week — its
+  // Sunday is legitimately in the future and must not be clamped away. For any
+  // other range, once it reaches today.
+  const atToday = isWeek ? effFrom >= thisWeekFrom : effTo >= today
 
-  // Shift the whole window ±7 days, preserving its length; clamp so it never runs
-  // past today. Leaves the dropdown as-is so the user can keep paging.
+  // Page the window. Leaves the dropdown as-is so the user can keep paging.
   function shiftWeek(dir: -1 | 1) {
     if (pending) return
-    let newFrom = shiftDate(effFrom, dir * 7)
-    let newTo = shiftDate(effTo, dir * 7)
-    if (newTo > today) { newTo = today; newFrom = shiftDate(today, -(rangeDays - 1)) }
+    let newFrom: string
+    let newTo: string
+    if (isWeek) {
+      // Whole calendar weeks, so Monday stays Monday. The old code shifted 7
+      // days and then clamped the END to today, which silently re-anchored the
+      // window: paging forward off Mon 24–Sun 30 produced Thu 20–Wed 26, and
+      // every week after that inherited the drift.
+      const anchor = parseLocalDate(effFrom)
+      anchor.setDate(anchor.getDate() + dir * 7)
+      newFrom = localDateStr(startOfIsoWeek(anchor))
+      newTo   = localDateStr(endOfIsoWeek(anchor))
+    } else {
+      newFrom = shiftLocalDate(effFrom, dir * 7)
+      newTo = shiftLocalDate(effTo, dir * 7)
+      if (newTo > today) { newTo = today; newFrom = shiftLocalDate(today, -(rangeDays - 1)) }
+    }
     const p = new URLSearchParams(searchParams.toString())
     p.delete('days')
+    // A new window means a new list; keeping ?page= would land on an empty one.
+    p.delete('page')
     p.set('from', newFrom)
     p.set('to', newTo)
     startTransition(() => {

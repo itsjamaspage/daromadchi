@@ -5,6 +5,7 @@ import { Suspense } from 'react'
 import { count, inArray } from 'drizzle-orm'
 import { db, orders } from '@/lib/db'
 import { getPnl, getCogsBreakdown, getDeliveryByMarketplace } from '@/lib/db/pnl'
+import { startOfIsoWeek, endOfIsoWeek, localDateStr } from '@/lib/period-week'
 import CogsCardEditor from '@/components/dashboard/CogsCardEditor'
 import { getUserShops, getShopIds } from '@/lib/db/shop-context'
 import PnlChart from './PnlChart'
@@ -56,14 +57,8 @@ function parseRange(params: Record<string, string>): {
   // ‹ / › buttons page a week each — so the default opens on "this week", not a
   // 90-day span that buries it. Empty future days in the week simply don't render
   // (the P&L only makes a row per day that actually has orders). Daily bucket.
-  const monday = new Date(to)
-  const dow = monday.getDay()                       // 0=Sun … 6=Sat
-  monday.setDate(monday.getDate() - (dow === 0 ? 6 : dow - 1))
-  monday.setHours(0, 0, 0, 0)
-  const sunday = new Date(monday)
-  sunday.setDate(monday.getDate() + 6)
-  sunday.setHours(23, 59, 59, 999)
-  return { from: monday, to: sunday, bucket: 'day', period: '' }
+  // Shared Monday-based week — see lib/period-week.ts.
+  return { from: startOfIsoWeek(to), to: endOfIsoWeek(to), bucket: 'day', period: '' }
 }
 
 interface Props {
@@ -256,8 +251,8 @@ export default async function PnlPage({ searchParams }: Props) {
         <div className="flex items-center gap-2">
           <Suspense>
             <CalendarPicker
-              from={params.from ?? range.from.toISOString().slice(0, 10)}
-              to={params.to ?? range.to.toISOString().slice(0, 10)}
+              from={params.from ?? localDateStr(range.from)}
+              to={params.to ?? localDateStr(range.to)}
             />
           </Suspense>
           {!isEmpty && <ExportButton data={exportData} filename="pnl-hisoboti" />}
