@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { eq, and, inArray, gte, lte, asc } from 'drizzle-orm'
 import { db, orders as ordersTable, products, userSettings } from '@/lib/db'
+import { loadOrderInputs } from '@/lib/money/load-order-economics'
+import { sumEconomics } from '@/lib/money/order-economics'
 import { getExtensionUser, getShopIds, getUserPlan } from '@/lib/api/auth'
 import { isInNotificationWindow } from '@/lib/telegram'
 import { sendSellerMessageTo } from '@/lib/telegram-seller'
@@ -43,10 +45,8 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   const since24h = new Date(Date.now() - 86400000)
 
   const [orderRows, lowStockRows] = await Promise.all([
+    // Counts only — the money comes from loadOrderInputs below.
     db.select({
-      revenue: ordersTable.revenue,
-      marketplace_fee: ordersTable.marketplace_fee,
-      delivery_cost: ordersTable.delivery_cost,
       items_count: ordersTable.items_count,
       status: ordersTable.status,
     }).from(ordersTable).where(and(
@@ -65,10 +65,15 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   const active   = orderRows.filter(o => o.status !== 'cancelled')
   const returned = orderRows.filter(o => o.status === 'returned')
 
-  const revenue    = active.reduce((s, o) => s + Number(o.revenue         ?? 0), 0)
-  const commission = active.reduce((s, o) => s + Number(o.marketplace_fee ?? 0), 0)
-  const delivery   = active.reduce((s, o) => s + Number(o.delivery_cost   ?? 0), 0)
-  const profit     = revenue - commission - delivery
+  // Money goes through the shared rules — see lib/money/order-economics.ts.
+  // This used to be `revenue − fee − delivery` over every non-cancelled order,
+  // which was wrong twice: it counted sales that had not been delivered yet, it
+  // subtracted no cost of goods at all, and a NULL fee (every Yandex order until
+  // its netting report lands) read as a zero fee, so the "profit" it texted the
+  // seller each morning was often just the revenue.
+  const money = sumEconomics(await loadOrderInputs(shopIds, since24h, null))
+  const revenue = money.revenue
+  const profit  = money.net
 
   const T = notifT(settings.notif_lang)
   // Date locale follows the seller's language too — a Russian report dated in

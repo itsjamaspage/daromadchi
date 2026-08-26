@@ -95,8 +95,11 @@ export default function OrdersTable({ orders }: { orders: Order[] }) {
     [d.marketplace]: MP_META[o.marketplace]?.short ?? o.marketplace,
     [d.date]: o.ordered_at,
     [`${d.revenue} (so'm)`]: o.revenue ?? 0,
-    [`${d.commission2} (so'm)`]: o.marketplace_fee ?? 0,
-    [`${d.delivery} (so'm)`]: o.delivery_cost ?? 0,
+    // An empty cell, not a zero: Yandex does not report a per-order fee until
+    // its netting report lands, and a spreadsheet column of zeros sums to a
+    // commission total that looks complete and is not.
+    [`${d.commission2} (so'm)`]: o.marketplace_fee ?? '',
+    [`${d.delivery} (so'm)`]: o.delivery_cost ?? '',
     [d.items]: o.items_count,
     [d.state]: statusConfig[orderDisplayStatus(o.status, o.marketplace_status)]?.label ?? o.status,
   }))

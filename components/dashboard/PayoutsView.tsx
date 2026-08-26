@@ -655,8 +655,21 @@ export default function PayoutsView({ entries, from, to }: Props) {
                         <td className="px-4 py-3.5 text-right text-[var(--text-base)] font-bold text-sm">{entry.adSpend > 0 ? '-' : ''}{fmtShort(entry.adSpend, lang)}</td>
                         <td className="px-4 py-3.5 text-right text-[var(--text-base)] font-bold text-sm">{entry.tax > 0 ? '-' : ''}{fmtShort(entry.tax, lang)}</td>
                         <td className="px-4 py-3.5 text-right">
-                          {/* fees_pending: net excludes not-yet-posted fees → mark it non-final with a ≈ */}
-                          <span className="text-[var(--text-base)] font-bold text-sm" title={entry.status === 'fees_pending' ? t.statusFeesPending : undefined}>{entry.status === 'fees_pending' ? '≈ ' : ''}{fmtShort(entry.netPayout, lang)}</span>
+                          {/* Two separate reasons this net is not final, both
+                              marked with the same ≈ because the seller's
+                              takeaway is identical — don't bank on this number:
+                              fees_pending = the marketplace has not posted its
+                              fees; cogsPartial = part of what sold has no cost
+                              price, so the deduction below it is incomplete.
+                              The tooltip says which, and the cost one says what
+                              to do about it. */}
+                          <span className="text-[var(--text-base)] font-bold text-sm"
+                            title={[
+                              entry.status === 'fees_pending' ? t.statusFeesPending : null,
+                              entry.cogsPartial ? t.cogsPartialHint : null,
+                            ].filter(Boolean).join('\n\n') || undefined}>
+                            {entry.status === 'fees_pending' || entry.cogsPartial ? '≈ ' : ''}{fmtShort(entry.netPayout, lang)}
+                          </span>
                         </td>
                       </>
                     )}

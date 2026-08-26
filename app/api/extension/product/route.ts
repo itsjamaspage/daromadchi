@@ -78,10 +78,19 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
         ))
       const sales7d = Number(salesRow?.n ?? 0)
 
-      // DRR: shop-level fee / revenue ratio (last 30 days)
+      // DRR: shop-level fee / revenue ratio (last 30 days).
+      //
+      // `feeReported` is the reason this is two columns and not one. Yandex
+      // leaves marketplace_fee NULL until its netting report arrives, so
+      // sum(fee) over a Yandex-only shop is NULL — and coalescing that to 0
+      // used to show the seller "DRR 0.0%", a number that reads as
+      // "your marketplace charges you nothing". No fee reported yet is not a
+      // fee of nothing; it is an answer we do not have, so send null and let
+      // the extension say so.
       const [drrRow] = await db.select({
         totalRev: sql<number>`coalesce(sum(${orders.revenue}::numeric), 0)`,
-        totalFee: sql<number>`coalesce(sum(${orders.marketplace_fee}::numeric), 0)`,
+        totalFee: sql<number>`sum(${orders.marketplace_fee}::numeric)`,
+        feeReported: sql<number>`count(${orders.marketplace_fee})`,
       }).from(orders)
         .where(and(
           inArray(orders.shop_id, shopIds),
@@ -89,12 +98,15 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
           gte(orders.ordered_at, since30d),
         ))
       const totalRev = Number(drrRow?.totalRev ?? 0)
-      const totalFee = Number(drrRow?.totalFee ?? 0)
-      const drr = totalRev > 0 ? Math.round((totalFee / totalRev) * 1000) / 10 : null
+      const drr = totalRev > 0 && Number(drrRow?.feeReported ?? 0) > 0
+        ? Math.round((Number(drrRow!.totalFee) / totalRev) * 1000) / 10
+        : null
 
       const sellingPrice = Number(product.selling_price ?? 0)
-      const costPrice    = Number(product.cost_price    ?? 0)
-      const margin = sellingPrice > 0
+      // Same rule one level down: a product the seller has not costed has an
+      // unknown margin, not a 100% one.
+      const costPrice    = product.cost_price != null ? Number(product.cost_price) : null
+      const margin = sellingPrice > 0 && costPrice != null
         ? Math.round(((sellingPrice - costPrice) / sellingPrice) * 1000) / 10
         : null
 
@@ -106,7 +118,7 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
       ownProduct = {
         title:               product.title,
         sellingPrice,
-        costPrice:           product.cost_price ? costPrice : null,
+        costPrice,
         stockQuantity:       product.stock_quantity,
         margin,
         drr,

@@ -51,6 +51,12 @@ export interface PnlRow {
    * the UI shows "pending" for these instead of a fabricated number.
    */
   feePending: boolean
+  /**
+   * True when at least one delivered item in the bucket has no cost price. The
+   * `cogs` beside it counts only the items that DO have one, so it is a floor,
+   * not the cost — and `net` is an optimistic ceiling by the same amount.
+   */
+  cogsPending: boolean
 }
 
 // Alias for callers that were reading MonthlyPnl by name.
@@ -114,7 +120,12 @@ export async function getPnl(opts: PnlOpts): Promise<{ rows: PnlRow[]; params: P
       .orderBy(asc(orders.ordered_at)),
     db.select({
       bucket: orderBucketSql.as('bucket'),
-      cogs:   sql<number>`coalesce(sum(${orderItems.quantity} * coalesce(${products.cost_price}, 0)), 0)`.as('cogs'),
+      // COGS over the items whose cost IS known, plus a count of the ones whose
+      // cost is not. The old expression defaulted a missing cost to 0, so a
+      // bucket containing one uncosted product reported a COGS that was too
+      // small and a net that was too large — with nothing on screen to say so.
+      cogs:   sql<number>`coalesce(sum(${orderItems.quantity} * ${products.cost_price}) filter (where ${products.cost_price} is not null), 0)`.as('cogs'),
+      cogs_missing: sql<number>`count(*) filter (where ${products.cost_price} is null)`.as('cogs_missing'),
     }).from(orderItems)
       .innerJoin(orders, eq(orderItems.order_id, orders.id))
       .leftJoin(products, eq(orderItems.product_id, products.id))
@@ -131,6 +142,12 @@ export async function getPnl(opts: PnlOpts): Promise<{ rows: PnlRow[]; params: P
   ])
 
   const cogsByBucket = new Map(cogsRows.map(r => [r.bucket, Number(r.cogs)]))
+  // Buckets holding at least one item with no cost price. Their COGS is a
+  // partial figure, and the net beside it is correspondingly optimistic — the
+  // table marks both rather than presenting them as settled.
+  const cogsPendingBuckets = new Set(
+    cogsRows.filter(r => Number(r.cogs_missing) > 0).map(r => r.bucket),
+  )
   // Real per-bucket settlement financials. When present for a bucket
   // they REPLACE the Unit-Economics estimates for that bucket, so
   // Dashboard / P&L / Payouts all show identical numbers.
@@ -185,7 +202,12 @@ export async function getPnl(opts: PnlOpts): Promise<{ rows: PnlRow[]; params: P
     } else {
       const rev = Number(row.revenue ?? 0)
       ex.revenue      += rev
+      // money-guard-ok: a sum of the fees WE have on record. Nothing downstream
+      // reads a zero here as "the marketplace charged nothing" — `estimated`
+      // substitutes a percentage for non-Yandex revenue, and `feePending` marks
+      // Yandex sales whose settlement has not landed instead of showing 0.
       ex.realFee      += Number(row.marketplace_fee ?? 0)
+      // money-guard-ok: as above, for delivery.
       ex.realDelivery += Number(row.delivery_cost ?? 0)
       ex.penalty      += Number(row.penalty ?? 0)
       ex.storageFee   += Number(row.storage_fee ?? 0)
@@ -232,6 +254,7 @@ export async function getPnl(opts: PnlOpts): Promise<{ rows: PnlRow[]; params: P
       // "pending" (shown as a placeholder), not zero and not an estimate.
       const feePending = v.hasYandex && !hasRealYandex
       const cogs       = cogsByBucket.get(key) ?? 0
+      const cogsPending = cogsPendingBuckets.has(key)
       const penalty    = v.penalty
       const storageFee = v.storageFee
       const additionalPayment = v.additionalPayment
@@ -263,6 +286,7 @@ export async function getPnl(opts: PnlOpts): Promise<{ rows: PnlRow[]; params: P
         net: v.revenue - commission - delivery - otherFees - acquiring - tax - cogs - penalty - storageFee - additionalPayment,
         estimated,
         feePending,
+        cogsPending,
       }
     })
 

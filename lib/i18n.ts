@@ -313,6 +313,10 @@ export const translations = {
       goToSync: "Sinxronizatsiyaga o'tish",
       totalProducts: 'Jami mahsulot',
       avgMargin: "O'rtacha margin",
+      // Shown under the average when part of the catalogue has no cost price.
+      // The average covers only the costed products — saying so is the whole
+      // point, otherwise it reads as though it covered all of them.
+      marginCoverage: "{known} ta mahsulotdan, {missing} tasida tannarx yo'q",
       lowMargin: 'Past margin (<15%)',
       highMargin: 'Yuqori margin (≥35%)',
       warehouseValueTotal: 'Ombor qiymati jami',
@@ -409,6 +413,10 @@ export const translations = {
       pnlNoOrdersRangeDesc: "Sana oralig'ini kengaytirib ko'ring.",
       pnlFeePending: 'Hisob-kitob kutilmoqda',
       pnlFeePendingHint: "To'lov summasi marketpleys hisob-kitobidan keyin ko'rinadi (odatda yetkazib berilgandan bir necha kun o'tib). Buyurtma allaqachon yetkazilgan — faqat komissiya/yetkazish summasi kutilmoqda. Taxminiy raqam ko'rsatilmaydi.",
+      // Different from pnlFeePending: nothing is being waited on here. The
+      // seller can fix it themselves by entering the cost price.
+      pnlCogsPartial: 'Tannarx to\'liq emas',
+      pnlCogsPartialHint: "Bu davrdagi ba'zi mahsulotlarning tannarxi kiritilmagan. Ko'rsatilgan tannarx — faqat ma'lum bo'lganlari, shuning uchun sof foyda haqiqiydan yuqori. Mahsulotlar bo'limida tannarxni kiriting.",
       pnlMpWithheld: 'Marketpleys ushlab qolgani jami',
       totalRevenuePnl: 'Jami daromad',
       commission2: 'Komissiya',
@@ -1257,6 +1265,7 @@ export const translations = {
       goToSync: 'Go to Sync',
       totalProducts: 'Total products',
       avgMargin: 'Avg margin',
+      marginCoverage: '{known} products; {missing} have no cost price',
       lowMargin: 'Low margin (<15%)',
       highMargin: 'High margin (≥35%)',
       warehouseValueTotal: 'Total warehouse value',
@@ -1353,6 +1362,8 @@ export const translations = {
       pnlNoOrdersRangeDesc: 'Try widening the date range.',
       pnlFeePending: 'Awaiting settlement',
       pnlFeePendingHint: 'The amount appears after the marketplace settles it (usually a few days after delivery). The order is already delivered — only the commission/delivery figure is pending. No estimate is shown.',
+      pnlCogsPartial: 'Cost incomplete',
+      pnlCogsPartialHint: 'Some products sold in this period have no cost price. The COGS shown counts only the ones that do, so the net profit beside it is higher than the real figure. Enter the missing costs on the Products page.',
       pnlMpWithheld: 'Total withheld by marketplace',
       totalRevenuePnl: 'Total revenue',
       commission2: 'Commission',
@@ -2201,6 +2212,7 @@ export const translations = {
       goToSync: 'Перейти к синхронизации',
       totalProducts: 'Всего товаров',
       avgMargin: 'Средняя маржа',
+      marginCoverage: 'по {known} товарам; у {missing} нет себестоимости',
       lowMargin: 'Низкая маржа (<15%)',
       highMargin: 'Высокая маржа (≥35%)',
       warehouseValueTotal: 'Общая стоимость склада',
@@ -2297,6 +2309,8 @@ export const translations = {
       pnlNoOrdersRangeDesc: 'Попробуйте расширить диапазон дат.',
       pnlFeePending: 'Ждём расчёт',
       pnlFeePendingHint: 'Сумма появится после расчёта маркетплейса (обычно через несколько дней после доставки). Заказ уже доставлен — ожидается только сумма комиссии/доставки. Оценка не показывается.',
+      pnlCogsPartial: 'Себестоимость неполная',
+      pnlCogsPartialHint: 'У части товаров за этот период не указана себестоимость. Показана себестоимость только известных товаров, поэтому чистая прибыль рядом выше реальной. Укажите себестоимость в разделе «Товары».',
       pnlMpWithheld: 'Итого удержано маркетплейсом',
       totalRevenuePnl: 'Общая выручка',
       commission2: 'Комиссия',

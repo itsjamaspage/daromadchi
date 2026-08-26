@@ -128,7 +128,9 @@ const _fetchProducts = unstable_cache(
         marketplace: shopInfo.get(p.shop_id)?.marketplace,
         available_stock: availableStock,
         total_physical: totalPhysical,
-        profit: Number(p.selling_price ?? 0) - Number(p.cost_price ?? 0),
+        // null, not 0: an uncosted product has an unknown profit, and the
+        // margin column is computed from this.
+        profit: p.cost_price != null ? Number(p.selling_price ?? 0) - Number(p.cost_price) : null,
         sold,
         delivered: deliveredUnits,
         in_transit: dbInTransit + surplus,
@@ -335,7 +337,8 @@ export interface CategoryRow {
   name_uz?: string
   name_en?: string
   revenue: number
-  profit: number
+  /** NULL when part of the category has no cost price — see getCategoryRevenue. */
+  profit: number | null
   percent: number
 }
 
@@ -374,7 +377,9 @@ const _fetchCategoryRevenue = unstable_cache(
     // categories_canonical. If those tables aren't present yet (deploy where
     // apply-sql-migrations.mjs didn't run to completion), fall back to raw
     // per-marketplace category grouping so the dashboard still renders.
-    const merged = new Map<string, { name: string; name_ru?: string; name_uz?: string; name_en?: string; revenue: number; profit: number }>()
+    // `costMissing` rides along per category so the caller can tell "this
+    // category earned nothing" apart from "some of it has never been costed".
+    const merged = new Map<string, { name: string; name_ru?: string; name_uz?: string; name_en?: string; revenue: number; profit: number; costMissing: number }>()
     try {
       const rows = await db.select({
         raw_category: sql<string>`coalesce(${products.category}, 'Uncategorized')`.as('raw_category'),
@@ -383,7 +388,12 @@ const _fetchCategoryRevenue = unstable_cache(
         canonical_uz: categoriesCanonical.name_uz,
         canonical_en: categoriesCanonical.name_en,
         revenue: sql<number>`coalesce(sum(${orderItems.quantity} * ${orderItems.price_per_unit}), 0)`.as('revenue'),
-        profit: sql<number>`coalesce(sum(${orderItems.quantity} * (${orderItems.price_per_unit} - coalesce(${orderItems.cost_per_unit}, ${products.cost_price}, 0))), 0)`.as('profit'),
+        // Profit over the items whose cost IS known, plus a count of the ones
+        // whose cost is not. Both are needed: the old single expression fell
+        // back to a cost of 0, so a category containing one uncosted product
+        // reported that product's entire selling price as profit.
+        profit: sql<number>`coalesce(sum(${orderItems.quantity} * (${orderItems.price_per_unit} - coalesce(${orderItems.cost_per_unit}, ${products.cost_price}))) filter (where coalesce(${orderItems.cost_per_unit}, ${products.cost_price}) is not null), 0)`.as('profit'),
+        cost_missing: sql<number>`count(*) filter (where coalesce(${orderItems.cost_per_unit}, ${products.cost_price}) is null)`.as('cost_missing'),
       }).from(orderItems)
         .innerJoin(orders, eq(orderItems.order_id, orders.id))
         .innerJoin(products, eq(orderItems.product_id, products.id))
@@ -413,6 +423,7 @@ const _fetchCategoryRevenue = unstable_cache(
         if (existing) {
           existing.revenue += Number(r.revenue)
           existing.profit += Number(r.profit)
+          existing.costMissing += Number(r.cost_missing)
         } else {
           merged.set(key, {
             name: r.canonical_ru ?? r.raw_category,
@@ -421,6 +432,7 @@ const _fetchCategoryRevenue = unstable_cache(
             name_en: r.canonical_en ?? undefined,
             revenue: Number(r.revenue),
             profit: Number(r.profit),
+            costMissing: Number(r.cost_missing),
           })
         }
       }
@@ -429,7 +441,12 @@ const _fetchCategoryRevenue = unstable_cache(
       const rows = await db.select({
         raw_category: sql<string>`coalesce(${products.category}, 'Uncategorized')`.as('raw_category'),
         revenue: sql<number>`coalesce(sum(${orderItems.quantity} * ${orderItems.price_per_unit}), 0)`.as('revenue'),
-        profit: sql<number>`coalesce(sum(${orderItems.quantity} * (${orderItems.price_per_unit} - coalesce(${orderItems.cost_per_unit}, ${products.cost_price}, 0))), 0)`.as('profit'),
+        // Profit over the items whose cost IS known, plus a count of the ones
+        // whose cost is not. Both are needed: the old single expression fell
+        // back to a cost of 0, so a category containing one uncosted product
+        // reported that product's entire selling price as profit.
+        profit: sql<number>`coalesce(sum(${orderItems.quantity} * (${orderItems.price_per_unit} - coalesce(${orderItems.cost_per_unit}, ${products.cost_price}))) filter (where coalesce(${orderItems.cost_per_unit}, ${products.cost_price}) is not null), 0)`.as('profit'),
+        cost_missing: sql<number>`count(*) filter (where coalesce(${orderItems.cost_per_unit}, ${products.cost_price}) is null)`.as('cost_missing'),
       }).from(orderItems)
         .innerJoin(orders, eq(orderItems.order_id, orders.id))
         .innerJoin(products, eq(orderItems.product_id, products.id))
@@ -441,6 +458,7 @@ const _fetchCategoryRevenue = unstable_cache(
           name: r.raw_category,
           revenue: Number(r.revenue),
           profit: Number(r.profit),
+          costMissing: Number(r.cost_missing),
         })
       }
     }
@@ -453,7 +471,10 @@ const _fetchCategoryRevenue = unstable_cache(
       name_uz: r.name_uz,
       name_en: r.name_en,
       revenue: r.revenue,
-      profit: r.profit,
+      // NULL when any item in the category has no cost price. A partial COGS is
+      // not a smaller cost, it is an unknown one — and a margin drawn from it
+      // flatters exactly the categories the seller knows least about.
+      profit: r.costMissing > 0 ? null : r.profit,
       // Full-precision share; the label rounds for display (to 1 dp) so the
       // shown figures still sum to ~100. Don't round here or the decimals are lost.
       percent: totalRevenue > 0 ? (r.revenue / totalRevenue) * 100 : 0,
@@ -605,7 +626,9 @@ const _fetchProductsPaginated = unstable_cache(
         marketplace: shopInfo.get(p.shop_id)?.marketplace,
         available_stock: availableStock,
         total_physical: totalPhysical,
-        profit: Number(p.selling_price ?? 0) - Number(p.cost_price ?? 0),
+        // null, not 0: an uncosted product has an unknown profit, and the
+        // margin column is computed from this.
+        profit: p.cost_price != null ? Number(p.selling_price ?? 0) - Number(p.cost_price) : null,
         sold,
         delivered: deliveredUnits,
         in_transit: dbInTransit + surplus,
