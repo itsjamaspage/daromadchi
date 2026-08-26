@@ -85,6 +85,8 @@ export default function DateRangePicker({ period, from, to, presets, fallbackLab
     if (!customFrom || !customTo) return
     const p = new URLSearchParams(searchParams.toString())
     p.delete('days')
+    // A new window means a new list; keeping ?page= would land on an empty one.
+    p.delete('page')
     p.set('from', customFrom)
     p.set('to', customTo)
     shouldCloseAfterPending.current = true
@@ -97,6 +99,7 @@ export default function DateRangePicker({ period, from, to, presets, fallbackLab
     const p = new URLSearchParams(searchParams.toString())
     p.delete('from')
     p.delete('to')
+    p.delete('page')
     p.set('days', days)
     shouldCloseAfterPending.current = true
     startTransition(() => {
@@ -141,6 +144,8 @@ export default function DateRangePicker({ period, from, to, presets, fallbackLab
     }
     const p = new URLSearchParams(searchParams.toString())
     p.delete('days')
+    // A new window means a new list; keeping ?page= would land on an empty one.
+    p.delete('page')
     p.set('from', newFrom)
     p.set('to', newTo)
     startTransition(() => {

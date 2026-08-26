@@ -65,12 +65,20 @@ export interface PaginatedOrders {
 }
 
 const _fetchOrdersPaginated = unstable_cache(
-  async (shopIdsStr: string, page: number, pageSize: number): Promise<PaginatedOrders> => {
+  async (shopIdsStr: string, page: number, pageSize: number, from: string, to: string): Promise<PaginatedOrders> => {
     const shopIds = shopIdsStr ? shopIdsStr.split(',') : []
     if (shopIds.length === 0) return { rows: [], total: 0 }
 
     const offset = (page - 1) * pageSize
-    const condition = inArray(orders.shop_id, shopIds)
+    // The window is a pair of LOCAL calendar days; `to` covers its whole day, so
+    // an order placed at 18:33 on the last day of the range is still in it.
+    const until = to ? new Date(to) : null
+    if (until) until.setHours(23, 59, 59, 999)
+    const condition = and(
+      inArray(orders.shop_id, shopIds),
+      ...(from ? [gte(orders.ordered_at, new Date(from))] : []),
+      ...(until ? [lte(orders.ordered_at, until)] : []),
+    )
 
     const [rows, [{ total }]] = await Promise.all([
       db.select({
@@ -92,8 +100,15 @@ const _fetchOrdersPaginated = unstable_cache(
   { revalidate: 30, tags: ['order-data'] },
 )
 
-export async function getOrdersPaginated(page = 1, pageSize = 50, marketplace?: MarketplaceType): Promise<PaginatedOrders> {
+export async function getOrdersPaginated(
+  page = 1,
+  pageSize = 50,
+  marketplace?: MarketplaceType,
+  from?: string,
+  to?: string,
+): Promise<PaginatedOrders> {
   const shopIds = await getShopIds(marketplace)
   if (!shopIds || shopIds.length === 0) return { rows: [], total: 0 }
-  return _fetchOrdersPaginated(shopIds.join(','), page, pageSize)
+  // from/to are part of the cache key, so two ranges never share a cached page.
+  return _fetchOrdersPaginated(shopIds.join(','), page, pageSize, from ?? '', to ?? '')
 }

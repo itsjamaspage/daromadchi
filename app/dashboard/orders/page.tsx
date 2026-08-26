@@ -8,6 +8,8 @@ import MarketplaceTabs from '@/components/dashboard/MarketplaceTabs'
 import Pagination from '@/components/dashboard/Pagination'
 import LastSyncedServer from '@/components/dashboard/LastSyncedServer'
 import { getT } from '@/lib/server-i18n'
+import DateRangePicker from '@/components/dashboard/DateRangePicker'
+import { startOfIsoWeek, endOfIsoWeek, localDateStr } from '@/lib/period-week'
 import type { MarketplaceType } from '@/lib/types'
 
 const PAGE_SIZE = 50
@@ -24,9 +26,17 @@ export default async function OrdersPage({ searchParams }: Props) {
     ? (params.mp as MarketplaceType)
     : undefined
 
+  // Same window as the dashboard: the CURRENT WEEK (Mon–Sun) unless the picker
+  // says otherwise, with ‹ › paging a calendar week at a time. Shared week maths
+  // — see lib/period-week.ts — so the two pages can never disagree about which
+  // days "this week" means.
+  const now = new Date()
+  const from = params.from || localDateStr(startOfIsoWeek(now))
+  const to   = params.to   || localDateStr(endOfIsoWeek(now))
+
   const [t, { rows: orders, total }, userShops] = await Promise.all([
     getT(),
-    getOrdersPaginated(page, PAGE_SIZE, mp),
+    getOrdersPaginated(page, PAGE_SIZE, mp, from, to),
     getUserShops(),
   ])
   const d = t.dashboard
@@ -44,9 +54,14 @@ export default async function OrdersPage({ searchParams }: Props) {
         <Suspense>
           <MarketplaceTabs current={mp} />
         </Suspense>
-        <Suspense>
-          <LastSyncedServer />
-        </Suspense>
+        <div className="flex items-center gap-3">
+          <Suspense>
+            <DateRangePicker period="" from={from} to={to} presets={[]} />
+          </Suspense>
+          <Suspense>
+            <LastSyncedServer />
+          </Suspense>
+        </div>
       </div>
 
       {total === 0 ? (
