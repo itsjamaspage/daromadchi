@@ -215,10 +215,13 @@ describe('the selling marketplace maintains its own stock — never remind it', 
 describe('footer — why the seller is being asked to do this by hand', () => {
   const one = [{ sku: 'PBGRY', target: 1, marketplace: 'uzum' as const }]
 
-  it('names read-only keys and says edit mode would have done it', () => {
+  it('names read-only keys and says what switching them would do', () => {
+    // Forward-looking, not counterfactual: the seller can act on "switch the
+    // keys and this stops happening" in a way that "it would have been done"
+    // gives them nowhere to go.
     const ru = buildManualMessage(one, 'ru')
     assert.match(ru, /только на чтение/)
-    assert.match(ru, /обновился бы сам/)
+    assert.match(ru, /обновляться автоматически/)
   })
 
   it('is present in every language, once', () => {
