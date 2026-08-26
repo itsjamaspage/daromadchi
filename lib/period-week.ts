@@ -234,3 +234,28 @@ export function startOfMonth(d: Date): Date {
 export function localMonthStr(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
 }
+
+/**
+ * Local 23:59:59.999 on the same calendar day.
+ *
+ * The companion to parseLocalDate, and the pair exists because mixing them was
+ * a real bug: lib/db/revenue.ts had `new Date(from)` (UTC midnight) for the
+ * start and `new Date(to + 'T23:59:59')` (local) for the end, in one function.
+ *
+ * `new Date('2026-08-24')` is parsed as UTC midnight by the spec — a
+ * date-ONLY string is UTC, while a date-time string without a zone is local.
+ * For a seller in Tashkent (UTC+5) that made every window on the dashboard
+ * begin at 05:00, so the first five hours of the selected period were missing
+ * from the KPI cards, the chart, the product table and the orders list alike.
+ */
+export function endOfLocalDay(d: Date): Date {
+  const out = new Date(d)
+  out.setHours(23, 59, 59, 999)
+  return out
+}
+
+/** Local midnight → local end-of-day for a `YYYY-MM-DD` string, in one step. */
+export function localDayRange(dateStr: string): { start: Date; end: Date } {
+  const start = parseLocalDate(dateStr)
+  return { start, end: endOfLocalDay(start) }
+}

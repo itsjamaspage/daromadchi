@@ -4,6 +4,7 @@ import { eq, ne, and, or, isNull, inArray, gte, lte, asc, sql, count } from 'dri
 import { db, shops, products, orders, orderItems, categoryAliases, categoriesCanonical } from '@/lib/db'
 import { getShopIds, getCurrentUserId } from '@/lib/db/shop-context'
 import type { Product, MarketplaceType } from '@/lib/types'
+import { parseLocalDate, endOfLocalDay } from '@/lib/period-week'
 
 export interface PaginatedProducts {
   rows: Product[]
@@ -189,9 +190,11 @@ const _fetchProductSales = unstable_cache(
     let sinceDate: Date | null = null
     let untilDate: Date | null = null
     if (from && to) {
-      sinceDate = new Date(from)
-      untilDate = new Date(to)
-      untilDate.setHours(23, 59, 59, 999)
+      // Local, not UTC — see lib/period-week.ts. A date-only string parsed with
+      // new Date() begins the seller's window five hours late in Tashkent, so
+      // this panel disagreed with the KPI cards above it.
+      sinceDate = parseLocalDate(from)
+      untilDate = endOfLocalDay(parseLocalDate(to))
     } else if (days !== null && days > 0) {
       sinceDate = new Date()
       sinceDate.setDate(sinceDate.getDate() - days)
@@ -350,9 +353,11 @@ const _fetchCategoryRevenue = unstable_cache(
     let sinceDate: Date | null = null
     let untilDate: Date | null = null
     if (from && to) {
-      sinceDate = new Date(from)
-      untilDate = new Date(to)
-      untilDate.setHours(23, 59, 59, 999)
+      // Local, not UTC — see lib/period-week.ts. A date-only string parsed with
+      // new Date() begins the seller's window five hours late in Tashkent, so
+      // this panel disagreed with the KPI cards above it.
+      sinceDate = parseLocalDate(from)
+      untilDate = endOfLocalDay(parseLocalDate(to))
     } else if (days > 0) {
       sinceDate = new Date()
       sinceDate.setDate(sinceDate.getDate() - days + 1)

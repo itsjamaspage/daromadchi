@@ -5,6 +5,7 @@ import { getShopIds, getCurrentUserId } from '@/lib/db/shop-context'
 import { computeStockGroups } from '@/lib/db/stock-groups'
 import { fetchPeriodKpis } from '@/lib/db/kpis-period'
 import type { Kpis, MarketplaceType } from '@/lib/types'
+import { kpiWindows } from '@/lib/kpi-windows'
 
 function pct(curr: number, prev: number): number | null {
   if (prev === 0) return null
@@ -19,24 +20,12 @@ const _fetchKpis = unstable_cache(
     if (shopIds.length === 0) return emptyKpis
     const allShopIds = allShopIdsStr ? allShopIdsStr.split(',') : shopIds
 
-    let sinceDate: Date | null = null
-    let untilDate: Date | null = null
-    let prevSinceDate: Date | null = null
-    let prevUntilDate: Date | null = null
-
-    if (from && to) {
-      sinceDate = new Date(from)
-      untilDate = new Date(to); untilDate.setHours(23, 59, 59, 999)
-      const spanMs = untilDate.getTime() - sinceDate.getTime()
-      prevUntilDate = new Date(sinceDate.getTime() - 1)
-      prevSinceDate = new Date(prevUntilDate.getTime() - spanMs)
-    } else if (days > 0) {
-      sinceDate = new Date()
-      sinceDate.setDate(sinceDate.getDate() - days + 1)
-      prevSinceDate = new Date(sinceDate)
-      prevSinceDate.setDate(prevSinceDate.getDate() - days)
-      prevUntilDate = new Date(sinceDate)
-    }
+    // Both windows come from one tested helper — see lib/kpi-windows.ts. This was
+    // inline date arithmetic that parsed 'YYYY-MM-DD' with `new Date(...)`, i.e.
+    // as UTC midnight, so east of Greenwich the shown week began hours late and
+    // the baseline it derived overlapped the week it was comparing against.
+    const { since: sinceDate, until: untilDate, prevSince: prevSinceDate, prevUntil: prevUntilDate } =
+      kpiWindows({ from, to, days })
 
     // Stock: when viewing "All" marketplaces, compute the physically-correct
     // total using computeStockGroups (which handles FBS shared-pool + FBO
@@ -74,7 +63,12 @@ const _fetchKpis = unstable_cache(
       const prev = await fetchPeriodKpis(shopIds, prevSinceDate, prevUntilDate)
       result.change_revenue = pct(current.revenue, prev.revenue)
       result.change_profit = pct(current.profit, prev.profit)
-      result.change_orders = pct(current.orders, prev.orders)
+      // The card SHOWS total − cancelled, so the badge beside it has to describe
+      // that same number. It was comparing raw count(*), cancelled included —
+      // which is how a week of 3 fulfilled orders and 5 cancellations came to
+      // read "+300%" next to a card saying 3.
+      result.change_orders = pct(current.orders - current.cancelled,
+                                 prev.orders - prev.cancelled)
     }
 
     return result

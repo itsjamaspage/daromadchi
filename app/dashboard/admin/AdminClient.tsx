@@ -11,6 +11,7 @@ import {
 import { useLang, useTheme } from '@/app/providers'
 import { adminT } from '@/lib/adminT'
 import { formatSomFromTiyin } from '@/lib/billing/plans'
+import { inclusiveDays } from '@/lib/kpi-windows'
 import type {
   AdminAnalytics, ChurnReason, MrrPoint, PaymentState,
 } from '@/lib/db/admin-analytics'
@@ -418,7 +419,7 @@ function MrrChart({ monthly, daily, theme, t }: { monthly: MrrPoint[]; daily: Mr
 
   const data = useMemo(() => {
     if (range === 'custom' && from && to) {
-      const spanDays = (new Date(to).getTime() - new Date(from).getTime()) / 86_400_000
+      const spanDays = inclusiveDays(from, to) - 1
       // Wide spans read as months; a short window (≤ ~3 months) uses the daily
       // series so it isn't a single flat point.
       if (spanDays > 92) {
