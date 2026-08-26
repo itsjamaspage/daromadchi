@@ -62,27 +62,45 @@ PR reintroducing `coalesce(cost_price, 0)` passes CI green. The `Known<T>` type
 
 This also explains finding 3.
 
-**Fix shape:** a `test` job running the suites that need no live credentials. It
-will be red until finding 3 is dealt with, so land them together.
+**Status: fixed.** A `Tests` job now runs on every push and PR — Postgres 16
+service, schema + migrations, 44 of 45 suites. The suite list is read out of
+`package.json` at run time rather than hardcoded, so a newly added suite is
+picked up automatically instead of being silently skipped.
+
+**Deliberately not in branch protection yet.** It runs and reports but cannot
+block a merge until someone adds "Tests" to the required checks. Nothing depends
+on it (`build`, `health-check`, `notify` untouched) and `deploy.yml` never waited
+on CI, so it cannot affect a deploy. Promote it once you have watched it pass.
 
 ---
 
-## 3. Five test suites have been failing on `main` — MEDIUM
+## 3. Five test suites failing on `main` — RESOLVED, except one
 
-Verified against a stashed clean tree, so none of these are from recent work:
+Diagnosed one by one. Four were environment or wiring, not broken behaviour —
+only `test:gating` is genuinely blocked, and by module layering rather than a
+failing assertion:
 
-| suite | failure |
-|---|---|
-| `test:seo` | `Could not find 'lib/seo/apex-redirect.test.ts'` — the script points at a file that does not exist |
-| `test:gating` | `This module cannot be imported from a Client Component module` — missing `--conditions=react-server` |
-| `test:price-notice` | 2 subtests fail |
-| `test:nudge` | `the trial reminder — the promise the help articles make` |
-| `test:admin` | `admin analytics — live metrics` |
+| suite | cause | status |
+|---|---|---|
+| `test:seo` | script pointed at `lib/seo/apex-redirect.test.ts`; the file was renamed to `canonical-host.test.ts` and the script never updated | **fixed** — one line |
+| `test:admin` | asserts GLOBAL totals over `payments`, so any other suite inserting a paid row inflates it. The query is right — admin analytics *is* global | **fixed** — own database in CI |
+| `test:nudge` | asserts "…and tells them on Telegram". `lib/telegram.ts:55` reads `TELEGRAM_BOT_TOKEN` at module load and returns `false` without it, so the test's own `fetch` mock is never reached | **fixed** — dummy token in CI env |
+| `test:price-notice` | same cause | **fixed** — same |
+| `test:gating` | `entitlement.ts` → `getCurrentUserId` → `shop-context` → `auth/session` → `auth/config` → `next-auth` → `next/navigation`. Outside Next's runtime that dies on `next/headers`, or under `--conditions=react-server` on React's server build having no `createContext`. `stock-sync` pulls the same chain | **open** |
 
-`test:seo` and `test:gating` look like mechanical breakage (a moved file, a
-missing flag). The other three assert real behaviour and need reading.
+**`test:gating` needs a refactor, not a test fix.** Billing rules should not
+depend on the auth stack. Only `currentUserAccess()` needs the session; the three
+functions the test exercises — `loadEntitlement`, `userHasFeature`,
+`everyActiveShopIsReadOnly` — already take an explicit `userId`. Moving
+`currentUserAccess` into its own module would let the suite run. Not bundled with
+the CI change: it touches call sites across the dashboard.
 
----
+**A latent break found while wiring CI:** `tsx` was never declared in
+`package.json`, despite all 45 test scripts invoking `node --import tsx`. It
+resolved only as a transitive dependency of `drizzle-kit`. A drizzle-kit bump
+that dropped it, or a change in npm hoisting, would have broken every test at
+once. Now an explicit devDependency pinned to 4.23.0 — the version already
+resolved, so nothing moves.
 
 ## 4. Sync has no concurrency control — MEDIUM
 
@@ -257,9 +275,10 @@ Worth recording so the next audit does not redo it:
 
 ## Suggested order
 
-1. **Finding 2 + 3 together** — get the guards actually running. Nothing else
-   stays fixed without this.
-2. **Finding 1** — it silently undoes the money work just shipped.
+1. ~~**Finding 2 + 3 together** — get the guards actually running.~~ **Done.**
+   44 of 45 suites now run in CI; `test:gating` needs the refactor described
+   in finding 3.
+2. **Finding 1** — it silently undoes the money work just shipped. Next.
 3. **Finding 5** — one boot-time check; the downside is plaintext credentials.
 4. **Finding 4** — an advisory lock keyed on `shop_id`.
 5. **Finding 6** — `addMonths()` plus a guardrail line.
