@@ -113,3 +113,70 @@ export function isCalendarWeek(from: string, to: string): boolean {
   if (start.getDay() !== 1) return false                 // must begin on a Monday
   return localDateStr(endOfIsoWeek(start)) === to
 }
+
+/**
+ * Page a date range forward or back by one step, and the rule for when paging
+ * forward should stop.
+ *
+ * ── Why this lives here and not in the picker ───────────────────────────────
+ * It was written twice — once in DateRangePicker, once in CalendarPicker — and
+ * the two drifted, which is the whole reason this module exists. #365 fixed the
+ * copy in DateRangePicker and left the one in CalendarPicker untouched, so the
+ * P&L page kept the original bug: paging back a week and forward again returned
+ * Thu 20 – Wed 26 instead of Mon 24 – Sun 30, and every page after that
+ * inherited the drift. A third copy would fail the same way. There is one now.
+ *
+ * ── The bug it fixes, precisely ────────────────────────────────────────────
+ * The old code shifted both ends by 7 days and then clamped the END to today:
+ *
+ *     if (newTo > today) { newTo = today; newFrom = today − (rangeDays − 1) }
+ *
+ * On a Wednesday, that re-anchors the window to Thu–Wed. It is only ever
+ * reached when the window has caught up with the present — which is exactly
+ * when the user is looking at the current week — so the drift lands on the most
+ * visited view, not an edge case.
+ *
+ * A calendar week must therefore page as a WEEK, not as "seven days": snap the
+ * shifted anchor back to its Monday. The window is then allowed to run to its
+ * Sunday even though that Sunday is in the future, because a week that ends on
+ * Wednesday is not a week.
+ */
+export function pageRange(
+  from: string,
+  to: string,
+  dir: -1 | 1,
+  now: Date = new Date(),
+): { from: string; to: string } {
+  if (isCalendarWeek(from, to)) {
+    const anchor = parseLocalDate(from)
+    anchor.setDate(anchor.getDate() + dir * 7)
+    return { from: localDateStr(startOfIsoWeek(anchor)), to: localDateStr(endOfIsoWeek(anchor)) }
+  }
+  // An arbitrary range keeps its own length and its own alignment. Clamping the
+  // end to today is fine HERE — there is no weekday anchor to destroy — and it
+  // stops a 90-day window from being paged entirely into the future.
+  const today = localDateStr(now)
+  const rangeDays = Math.round(
+    (parseLocalDate(to).getTime() - parseLocalDate(from).getTime()) / 86_400_000,
+  ) + 1
+  let newFrom = shiftLocalDate(from, dir * 7)
+  let newTo = shiftLocalDate(to, dir * 7)
+  if (newTo > today) {
+    newTo = today
+    newFrom = shiftLocalDate(today, -(rangeDays - 1))
+  }
+  return { from: newFrom, to: newTo }
+}
+
+/**
+ * Whether the "next" button should be live.
+ *
+ * For a calendar week the test is on the START, not the end: this week's Sunday
+ * is legitimately in the future, so an end-based test would disable the button
+ * while you were still a week behind — and, worse, the old end-based test is
+ * what let the clamp above fire in the first place.
+ */
+export function canPageForward(from: string, to: string, now: Date = new Date()): boolean {
+  if (isCalendarWeek(from, to)) return from < localDateStr(startOfIsoWeek(now))
+  return to < localDateStr(now)
+}

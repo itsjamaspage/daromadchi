@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useTransition } from 'react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { ChevronLeft, ChevronRight, CalendarDays } from 'lucide-react'
 import { useLang } from '@/app/providers'
+import { pageRange, canPageForward } from '@/lib/period-week'
 
 interface Props {
   from?: string
@@ -181,26 +182,22 @@ export default function CalendarPicker({ from, to }: Props) {
   })()
 
   // ── Prev / next-week paging (same behaviour as the dashboard date picker) ──
-  // Shift the applied range ±7 days, preserving its length; clamp so it never
-  // runs past today. ISO date strings (YYYY-MM-DD) compare correctly as strings.
+  // Paging lives in lib/period-week.ts, shared with DateRangePicker.
+  //
+  // It used to live here, as a second copy of the same arithmetic — and the two
+  // copies drifted. #365 fixed the other one and left this untouched, so this
+  // picker kept the original bug: shift both ends by 7 days, then clamp the end
+  // to today, which silently re-anchors a Mon–Sun week to Thu–Wed the moment it
+  // catches up with the present. Paging back a week and forward again on the
+  // P&L page returned Thu 20 – Wed 26 instead of Mon 24 – Sun 30.
   const todayISO = toISODate(today)
   const effToISO = to ?? todayISO
   const effFromISO = from ?? toISODate(new Date(fromISODate(effToISO).getTime() - 6 * 86_400_000))
-  const rangeDays = (from && to)
-    ? Math.round((fromISODate(to).getTime() - fromISODate(from).getTime()) / 86_400_000) + 1
-    : 7
-  const atToday = effToISO >= todayISO
+  const atToday = !canPageForward(effFromISO, effToISO, today)
 
   function shiftWeek(dir: -1 | 1) {
     if (pending) return
-    const nf = fromISODate(effFromISO); nf.setDate(nf.getDate() + dir * 7)
-    const nt = fromISODate(effToISO);   nt.setDate(nt.getDate() + dir * 7)
-    let newFrom = toISODate(nf)
-    let newTo   = toISODate(nt)
-    if (newTo > todayISO) {
-      newTo = todayISO
-      newFrom = toISODate(new Date(fromISODate(todayISO).getTime() - (rangeDays - 1) * 86_400_000))
-    }
+    const { from: newFrom, to: newTo } = pageRange(effFromISO, effToISO, dir, today)
     const p = new URLSearchParams(searchParams.toString())
     p.delete('days')
     p.set('from', newFrom)
