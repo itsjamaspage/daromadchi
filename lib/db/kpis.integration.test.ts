@@ -304,7 +304,11 @@ describe('a product sold with no cost price entered', () => {
     })  // cost_price left NULL, exactly like the seller's powerbanks
     await db.insert(orders).values({
       id, shop_id: uzShop, order_id_external: '900077', marketplace: 'uzum', status: 'delivered',
-      revenue: '230000', ordered_at: new Date('2026-10-05T10:00:00Z'), items_count: 2,
+      // A real commission, as Uzum stores at sync time — otherwise the order is
+      // "money not reported yet" and drops out of the profit before the missing
+      // COST can be the thing under test.
+      revenue: '230000', marketplace_fee: '39100', delivery_cost: '0',
+      ordered_at: new Date('2026-10-05T10:00:00Z'), items_count: 2,
     })
     await db.insert(orderItems).values([
       { order_id: id, product_id: noCost, quantity: 1, price_per_unit: '115000' },
@@ -315,8 +319,10 @@ describe('a product sold with no cost price entered', () => {
         new Date('2026-10-01T00:00:00Z'), new Date('2026-10-31T23:59:59Z'))
       assert.equal(k.missingCostProducts, 1, 'two lines of one product is one product to fix')
       assert.equal(k.cogs, 0)
-      // The overstatement it is warning about: profit here is the whole payout.
-      assert.equal(k.profit, k.revenue - k.fees)
+      // The overstatement it is warning about: with no cost to subtract, profit
+      // is the entire payout — 230 000 less the 39 100 commission.
+      assert.equal(k.profit, 190900)
+      assert.equal(k.profit, k.revenueCounted - k.fees)
     } finally {
       await db.delete(orderItems).where(eq(orderItems.order_id, id))
       await db.delete(orders).where(eq(orders.id, id))
@@ -327,5 +333,83 @@ describe('a product sold with no cost price entered', () => {
   it('reports zero when every product sold has a cost', async () => {
     const k = await fetchPeriodKpis(shopIds(), W1.since, W1.until)
     assert.equal(k.missingCostProducts, 0)
+  })
+})
+
+describe('money the marketplace has not reported yet', () => {
+  // The reported screen: 115 000 of Yandex sales, delivered, no netting report
+  // yet — so marketplace_fee is NULL by design (lib/yandex/sync.ts) and the old
+  // fallback read that as "no fees", returning the whole 115 000 as profit.
+  // Уzum is the opposite: its settlement feed carries commission from the start.
+  const SEP = { since: new Date('2026-09-10T00:00:00Z'), until: new Date('2026-09-16T23:59:59Z') }
+  let ymPending: string
+  let uzKnown: string
+
+  before(async () => {
+    ymPending = randomUUID(); uzKnown = randomUUID()
+    await db.insert(orders).values([
+      // Yandex: delivered, nothing settled, no stored fee → unknown.
+      { id: ymPending, shop_id: ymShop, order_id_external: '800115', marketplace: 'yandex_market',
+        status: 'delivered', revenue: '115000', ordered_at: new Date('2026-09-11T10:00:00Z'), items_count: 1 },
+      // Uzum: delivered, commission stored at sync time → known without a payout.
+      { id: uzKnown, shop_id: uzShop, order_id_external: '900115', marketplace: 'uzum',
+        status: 'delivered', revenue: '100000', marketplace_fee: '17000', delivery_cost: '5250',
+        ordered_at: new Date('2026-09-12T10:00:00Z'), items_count: 1 },
+    ])
+    await db.insert(orderItems).values(
+      { order_id: uzKnown, product_id: productId, quantity: 1, price_per_unit: '100000' })
+  })
+
+  after(async () => {
+    await db.delete(orderItems).where(inArray(orderItems.order_id, [ymPending, uzKnown]))
+    await db.delete(orders).where(inArray(orders.id, [ymPending, uzKnown]))
+  })
+
+  it('the unreported sale is left out of the profit, not counted as fee-free', async () => {
+    const k = await fetchPeriodKpis(shopIds(), SEP.since, SEP.until)
+    // Uzum only: 100 000 − 17 000 − 5 250 − 65 000 cost = 12 750.
+    assert.equal(k.profit, 12750)
+    assert.notEqual(k.profit, k.revenue, 'profit must not equal total sales')
+  })
+
+  it('the revenue CARD still shows every sale', async () => {
+    // The sale happened. Only the profit is unknown.
+    const k = await fetchPeriodKpis(shopIds(), SEP.since, SEP.until)
+    assert.equal(k.revenue, 215000)
+    assert.equal(k.revenueCounted, 100000, 'the breakdown adds up only what is counted')
+  })
+
+  it('names who is counted and who is waiting, with the amount', async () => {
+    const k = await fetchPeriodKpis(shopIds(), SEP.since, SEP.until)
+    assert.deepEqual(k.countedMarketplaces, ['uzum'])
+    assert.deepEqual(k.pendingMarketplaces, [
+      { marketplace: 'yandex_market', revenue: 115000, orders: 1 },
+    ])
+  })
+
+  it('the pending order takes its COGS with it', async () => {
+    // Leaving the cost behind while dropping the income would charge a cost
+    // against revenue the figure excludes — the same two-clock error, smaller.
+    const k = await fetchPeriodKpis(shopIds(), SEP.since, SEP.until)
+    assert.equal(k.cogs, 65000, 'only the counted order contributes cost')
+    assert.equal(k.revenueCounted - k.cogs - k.fees, k.profit)
+  })
+
+  it('a period where NOTHING is reported yet counts nothing', async () => {
+    const only = { since: new Date('2026-09-11T00:00:00Z'), until: new Date('2026-09-11T23:59:59Z') }
+    const k = await fetchPeriodKpis(shopIds(), only.since, only.until)
+    assert.equal(k.revenue, 115000, 'the sale is still a sale')
+    assert.equal(k.profit, 0)
+    assert.equal(k.revenueCounted, 0, 'so the card shows no breakdown at all')
+    assert.deepEqual(k.countedMarketplaces, [])
+    assert.equal(k.pendingMarketplaces[0].revenue, 115000)
+  })
+
+  it('still obeys both acceptance rules', async () => {
+    for (const w of [SEP, { since: SEP.since, until: new Date('2026-09-11T23:59:59Z') }]) {
+      const k = await fetchPeriodKpis(shopIds(), w.since, w.until)
+      assert.ok(k.profit <= k.revenue, `profit ${k.profit} > revenue ${k.revenue}`)
+      assert.ok(k.profit >= 0 || k.revenueCounted > 0, 'no negative from money that never arrived')
+    }
   })
 })
