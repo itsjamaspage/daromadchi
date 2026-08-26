@@ -9,6 +9,10 @@ export const dashT = {
       cogs: 'Tannarx',
       fees: 'Komissiya va yetkazish',
       net: 'Sof foyda',
+      // Which marketplace's money is in the figure, and whose is still
+      // coming. Named under the profit rather than folded into it.
+      counted: 'Hisobga olindi',
+      awaiting: 'Hisob-kitob kutilmoqda',
       noCost: 'Tannarx kiritilmagan (mahsulot: {n}) — foyda haqiqiydan yuqori',
     },
     nav: {
@@ -438,6 +442,10 @@ export const dashT = {
       cogs: 'Cost of goods',
       fees: 'Commission & delivery',
       net: 'Net profit',
+      // Which marketplace's money is in the figure, and whose is still
+      // coming. Named under the profit rather than folded into it.
+      counted: 'Counted',
+      awaiting: 'Awaiting settlement',
       noCost: 'Cost not set (products: {n}) — profit is overstated',
     },
     nav: {
@@ -862,6 +870,10 @@ export const dashT = {
       cogs: 'Себестоимость',
       fees: 'Комиссия и доставка',
       net: 'Чистая прибыль',
+      // Which marketplace's money is in the figure, and whose is still
+      // coming. Named under the profit rather than folded into it.
+      counted: 'Учтено',
+      awaiting: 'Ожидает расчёта',
       noCost: 'Себестоимость не указана (товаров: {n}) — прибыль завышена',
     },
     nav: {
