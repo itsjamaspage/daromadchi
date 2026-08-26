@@ -24,6 +24,7 @@ import { handleOversell } from '@/lib/marketplace/oversell'
 import { notifyStockUpdates, type StockUpdateEvent } from '@/lib/marketplace/stock-notify'
 import { backfillShopIdentifiers } from '@/lib/marketplace/identifier-backfill'
 import { decrypt } from '@/lib/crypto'
+import { withStockSyncLock } from '@/lib/db/shop-lock'
 import { fetchAllUzumSkuStocks } from '@/lib/uzum/client'
 import { fetchYandexStockLocations } from '@/lib/yandex/client'
 import type { MarketplaceType } from '@/lib/types'
@@ -84,6 +85,19 @@ export interface StockSyncRunResult {
   groupsConsidered: number
   writesPlanned: number
   entries: StockSyncLogEntry[]
+  /** True when another run for this user was already in flight and this call
+   *  did nothing. Not an error — cron fires again in five minutes. */
+  skippedLocked?: boolean
+}
+
+/** A run that did nothing, shaped so callers need no special case. */
+function emptyStockSyncRun(): StockSyncRunResult {
+  return {
+    computedAt: new Date().toISOString(),
+    groupsConsidered: 0,
+    writesPlanned: 0,
+    entries: [],
+  }
 }
 
 interface RunOptions {
@@ -321,7 +335,26 @@ async function ensureWriteIdentifiers(userId: string): Promise<void> {
  * Run Step A + Step B for every SKU group that has at least one stock_sync
  * member. Returns a log of every planned write with its actual result.
  */
+/**
+ * One stock write-back run per USER at a time.
+ *
+ * This is the path that writes to a marketplace, so overlapping runs are the
+ * costliest kind: the stock value itself is idempotent (both runs set the same
+ * target), but detectNewOrders is stateful, so two runs can each classify the
+ * same order as new — one live sale, two Telegram alerts and two stock_write_log
+ * rows. Keyed on userId because a sync group can span a seller's shops; see
+ * lib/db/shop-lock.ts.
+ *
+ * A refused run reports ok with skippedLocked rather than an error: cron fires
+ * this every 5 minutes, and two ticks brushing past each other is not a fault.
+ */
 export async function syncStockSyncGroups(opts: RunOptions): Promise<StockSyncRunResult> {
+  const outcome = await withStockSyncLock(opts.userId, () => syncStockSyncGroupsLocked(opts))
+  if (outcome.ran) return outcome.value
+  return { ...emptyStockSyncRun(), skippedLocked: true }
+}
+
+async function syncStockSyncGroupsLocked(opts: RunOptions): Promise<StockSyncRunResult> {
   const computedAt = new Date().toISOString()
 
   // Plan gate. This is an ADDITIONAL condition on top of the per-shop api_mode

@@ -15,6 +15,7 @@ import { resolveColor } from '@/lib/products/resolveColor'
 import { ORDER_STATUS_LOOKBACK_DAYS } from '@/lib/marketplace/reserved-display'
 import { isYandexFulfillmentRequired, isYandexSellerFulfilled } from '@/lib/marketplace/fulfillment-statuses'
 import { selectCancellationAlerts } from '@/lib/marketplace/cancellation-alert'
+import { withShopLock } from '@/lib/db/shop-lock'
 
 /**
  * Yandex raw order status → our normalized enum, which the dashboard renders as
@@ -134,9 +135,34 @@ export interface YandexSyncResult {
   // which endpoints returned data and which were empty (e.g. offer-mappings
   // returning offers with no basicPrice / no shopSku).
   debug?: Record<string, string | number>
+  /** True when another runner already held this shop's sync lock and this call
+   *  did nothing. Not an error — the next tick is five minutes away. */
+  skippedLocked?: boolean
 }
 
+/**
+ * One sync per shop — see the matching wrapper in lib/uzum/sync.ts and the
+ * reasoning in lib/db/shop-lock.ts. The lock is keyed on shopId, so a seller
+ * with both marketplaces connected still syncs each of them independently.
+ */
 export async function syncFromYandex(
+  shopId: string,
+  token: string,
+  campaignId: string,
+  fromDateOverride?: Date,
+  heavy = true,
+): Promise<YandexSyncResult> {
+  const outcome = await withShopLock(shopId,
+    () => syncFromYandexLocked(shopId, token, campaignId, fromDateOverride, heavy))
+  if (outcome.ran) return outcome.value
+  return {
+    ok: true, skippedLocked: true,
+    ordersUpserted: 0, productsUpserted: 0, campaignsUpserted: 0,
+    debug: { skipped: 'another sync is already running for this shop' },
+  }
+}
+
+async function syncFromYandexLocked(
   shopId: string,
   token: string,
   campaignId: string,
