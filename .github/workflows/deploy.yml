@@ -92,7 +92,7 @@ jobs:
           # production without it rather than silently storing plain text, so an
           # absent or malformed key turns "connect a shop" into a visible error.
           # This says so at deploy time, before a seller finds out instead.
-          ENC_LINE=$(grep -hm1 '^ENCRYPTION_KEY=' .env .env.local .env.production .env.production.local 2>/dev/null | cut -d= -f2- | tr -d '"'"'"'"'"'"'"'"')
+          ENC_LINE=$(grep -hm1 '^ENCRYPTION_KEY=' .env .env.local .env.production .env.production.local 2>/dev/null | cut -d= -f2- | tr -d "\"'")
           if [ -z "$ENC_LINE" ]; then
             echo "WARNING: ENCRYPTION_KEY is not set in the server .env — connecting a shop will now FAIL rather than store the token in plain text. Generate one with: openssl rand -base64 32"
           elif [ "$(printf %s "$ENC_LINE" | base64 -d 2>/dev/null | wc -c)" != "32" ]; then
