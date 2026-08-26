@@ -1,5 +1,5 @@
 import { inArray, gte, lte, and, sql, eq } from 'drizzle-orm'
-import { db, shops, yandexSettlementTransactions, uzumSettlementOrders } from '@/lib/db'
+import { db, shops, orders, yandexSettlementTransactions, uzumSettlementOrders } from '@/lib/db'
 import type { MarketplaceType } from '@/lib/types'
 
 /**
@@ -68,12 +68,26 @@ export interface RealBucket {
  * wrong: a week with no orders still showed a large profit, because the figure
  * was every settlement from that Monday onward minus the COGS of that one week.
  * Pass `to` whenever the result is going to be totalled.
+ *
+ * `attributeTo` picks the CLOCK:
+ *   'payment' (default) — bucket by transaction_at, when the marketplace paid.
+ *                         Right for a payout report.
+ *   'order'             — bucket by the date of the order the row belongs to,
+ *                         falling back to transaction_at for rows with no order
+ *                         behind them (storage, acquiring, ads, penalties).
+ *                         Right for anything compared against revenue or COGS,
+ *                         which are bucketed by orders.ordered_at: mixing the
+ *                         two clocks is what put a week's fees in a different
+ *                         week from its sales. The fallback is deliberate —
+ *                         overhead belongs to a payout period rather than to any
+ *                         sale, and dropping it would quietly delete real costs.
  */
 export async function getRealFinancialsByBucket(
   shopIds: string[],
   from: Date,
   bucket: 'day' | 'month',
   to?: Date | null,
+  attributeTo: 'payment' | 'order' = 'payment',
 ): Promise<Map<string, RealBucket>> {
   const out = new Map<string, RealBucket>()
   if (shopIds.length === 0) return out
@@ -107,16 +121,27 @@ export async function getRealFinancialsByBucket(
   //    `other`. Net is unaffected regardless of the split (all debits subtract).
   if (ymShopIds.length > 0) {
     try {
-      const rows = await db.select({
-        bucket:       sql<string>`to_char(${yandexSettlementTransactions.transaction_at}, ${sql.raw(`'${fmt}'`)})`.as('bucket'),
+      // The date this row is filed under: its order's, when it has one.
+      const ymAt = attributeTo === 'order'
+        ? sql`coalesce(${orders.ordered_at}, ${yandexSettlementTransactions.transaction_at})`
+        : sql`${yandexSettlementTransactions.transaction_at}`
+      const ymQuery = db.select({
+        bucket:       sql<string>`to_char(${ymAt}, ${sql.raw(`'${fmt}'`)})`.as('bucket'),
         entry_type:   yandexSettlementTransactions.entry_type,
         product_name: yandexSettlementTransactions.product_name,
         amount:       yandexSettlementTransactions.amount,
       }).from(yandexSettlementTransactions)
+      if (attributeTo === 'order') {
+        ymQuery.leftJoin(orders, and(
+          eq(orders.shop_id, yandexSettlementTransactions.shop_id),
+          eq(orders.order_id_external, yandexSettlementTransactions.order_id_external),
+        ))
+      }
+      const rows = await ymQuery
         .where(and(
           inArray(yandexSettlementTransactions.shop_id, ymShopIds),
-          gte(yandexSettlementTransactions.transaction_at, from),
-          ...(to ? [lte(yandexSettlementTransactions.transaction_at, to)] : []),
+          gte(ymAt, from),
+          ...(to ? [lte(ymAt, to)] : []),
         ))
       const perBucket = new Map<string, { credit: number; commission: number; delivery: number; other: number; itemCount: number }>()
       for (const r of rows) {
@@ -153,8 +178,11 @@ export async function getRealFinancialsByBucket(
   //    nothing, pays nothing).
   if (uzShopIds.length > 0) {
     try {
-      const rows = await db.select({
-        bucket:           sql<string>`to_char(${uzumSettlementOrders.transaction_at}, ${sql.raw(`'${fmt}'`)})`.as('bucket'),
+      const uzAt = attributeTo === 'order'
+        ? sql`coalesce(${orders.ordered_at}, ${uzumSettlementOrders.transaction_at})`
+        : sql`${uzumSettlementOrders.transaction_at}`
+      const uzQuery = db.select({
+        bucket:           sql<string>`to_char(${uzAt}, ${sql.raw(`'${fmt}'`)})`.as('bucket'),
         status:           uzumSettlementOrders.status,
         seller_price:     uzumSettlementOrders.seller_price,
         commission:       uzumSettlementOrders.commission,
@@ -162,10 +190,17 @@ export async function getRealFinancialsByBucket(
         withdrawn_profit: uzumSettlementOrders.withdrawn_profit,
         seller_profit:    uzumSettlementOrders.seller_profit,
       }).from(uzumSettlementOrders)
+      if (attributeTo === 'order') {
+        uzQuery.leftJoin(orders, and(
+          eq(orders.shop_id, uzumSettlementOrders.shop_id),
+          eq(orders.order_id_external, sql`${uzumSettlementOrders.uzum_order_id}::text`),
+        ))
+      }
+      const rows = await uzQuery
         .where(and(
           inArray(uzumSettlementOrders.shop_id, uzShopIds),
-          gte(uzumSettlementOrders.transaction_at, from),
-          ...(to ? [lte(uzumSettlementOrders.transaction_at, to)] : []),
+          gte(uzAt, from),
+          ...(to ? [lte(uzAt, to)] : []),
         ))
       for (const r of rows) {
         if (!r.bucket || r.status === 'CANCELED') continue
@@ -352,6 +387,109 @@ export async function getRealRatesBySku(userId: string, windowDays = 60): Promis
       }
     } catch (e) {
       console.error('[real-financials] uzum per-sku failed:', String(e).slice(0, 200))
+    }
+  }
+
+  return out
+}
+
+
+/* ── Settlement money, attributed to the ORDER it belongs to ──────────────────
+ *
+ * getRealFinancialsByBucket above buckets by transaction_at — WHEN THE
+ * MARKETPLACE PAID. That is the right clock for a payout report, and the wrong
+ * one for "what did this week earn": revenue and COGS are bucketed by
+ * orders.ordered_at, so subtracting one from the other mixes two calendars. A
+ * week with no sales showed +73 000 of profit (payout money for older sales
+ * landing that week, with no COGS to subtract) and a week with 200 000 of sales
+ * showed −52 250 (its cost charged against settlements that had not arrived).
+ *
+ * Both feeds can say which order a row belongs to, so the money can follow the
+ * sale instead of the payment:
+ *   • yandex_settlement_transactions.order_id_external
+ *   • uzum_settlement_orders.uzum_order_id
+ *
+ * Rows with NO order behind them — storage, acquiring, ads, penalties — do not
+ * join and are deliberately absent here. They are real costs, but they belong to
+ * a payout period rather than to any sale, and letting them through would put a
+ * loss in a week that sold nothing: the same bug with a smaller number. They
+ * stay visible on Payouts and in the P&L breakdown, which report by payout date.
+ */
+
+/** Settlement net per order, keyed by orders.id. Only orders in [from, to]. */
+export async function getSettlementNetByOrder(
+  shopIds: string[],
+  from: Date | null,
+  to: Date | null,
+): Promise<Map<string, number>> {
+  const out = new Map<string, number>()
+  if (shopIds.length === 0) return out
+
+  const window = [
+    inArray(orders.shop_id, shopIds),
+    ...(from ? [gte(orders.ordered_at, from)] : []),
+    ...(to ? [lte(orders.ordered_at, to)] : []),
+  ]
+
+  const shopRows = await db.select({ id: shops.id, marketplace: shops.marketplace })
+    .from(shops).where(inArray(shops.id, shopIds))
+  const ymShopIds = shopRows.filter(r => r.marketplace === 'yandex_market').map(r => r.id)
+  const uzShopIds = shopRows.filter(r => r.marketplace === 'uzum').map(r => r.id)
+
+  const bump = (orderId: string, amount: number): void => {
+    out.set(orderId, (out.get(orderId) ?? 0) + amount)
+  }
+
+  // Yandex: credits (Начисление) minus every debit, exactly as the bucket
+  // version nets them — the debit split into commission/delivery/other only
+  // matters for the breakdown, never for the net.
+  if (ymShopIds.length > 0) {
+    try {
+      const rows = await db.select({
+        order_id: orders.id,
+        entry_type: yandexSettlementTransactions.entry_type,
+        amount: yandexSettlementTransactions.amount,
+      }).from(yandexSettlementTransactions)
+        .innerJoin(orders, and(
+          eq(orders.shop_id, yandexSettlementTransactions.shop_id),
+          eq(orders.order_id_external, yandexSettlementTransactions.order_id_external),
+        ))
+        .where(and(inArray(yandexSettlementTransactions.shop_id, ymShopIds), ...window))
+      for (const r of rows) {
+        const amt = Number(r.amount)
+        bump(r.order_id as string, r.entry_type === 'Начисление' ? amt : -amt)
+      }
+    } catch (e) {
+      console.error('[real-financials] yandex by-order query failed:', String(e).slice(0, 200))
+    }
+  }
+
+  // Uzum: one row per order ITEM, each already carrying its own net.
+  if (uzShopIds.length > 0) {
+    try {
+      const rows = await db.select({
+        order_id: orders.id,
+        status: uzumSettlementOrders.status,
+        seller_price: uzumSettlementOrders.seller_price,
+        commission: uzumSettlementOrders.commission,
+        delivery: uzumSettlementOrders.logistic_delivery_fee,
+        withdrawn_profit: uzumSettlementOrders.withdrawn_profit,
+        seller_profit: uzumSettlementOrders.seller_profit,
+      }).from(uzumSettlementOrders)
+        .innerJoin(orders, and(
+          eq(orders.shop_id, uzumSettlementOrders.shop_id),
+          eq(orders.order_id_external, sql`${uzumSettlementOrders.uzum_order_id}::text`),
+        ))
+        .where(and(inArray(uzumSettlementOrders.shop_id, uzShopIds), ...window))
+      for (const r of rows) {
+        if (r.status === 'CANCELED') continue   // nothing earned, nothing charged
+        const withdrawn = Number(r.withdrawn_profit ?? 0)
+        const profit    = Number(r.seller_profit    ?? 0)
+        const derived   = Number(r.seller_price ?? 0) - Number(r.commission ?? 0) - Number(r.delivery ?? 0)
+        bump(r.order_id as string, withdrawn > 0 ? withdrawn : profit > 0 ? profit : derived)
+      }
+    } catch (e) {
+      console.error('[real-financials] uzum by-order query failed:', String(e).slice(0, 200))
     }
   }
 
