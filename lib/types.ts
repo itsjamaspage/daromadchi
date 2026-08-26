@@ -194,6 +194,10 @@ export interface Order {
   marketplace: MarketplaceType
   fulfillment_type: string | null  // 'fbs' | 'fbo' | 'dbs' | …
   status: OrderStatus
+  // The marketplace's own status verbatim. `status` decides the lifecycle;
+  // this decides which of the two `confirmed` meanings to SHOW — packed but not
+  // shipped, versus actually on the way. See lib/marketplace/order-display-status.ts.
+  marketplace_status?: string | null
   revenue: number | null
   marketplace_fee: number | null
   delivery_cost: number | null
