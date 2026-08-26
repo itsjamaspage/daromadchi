@@ -9,7 +9,7 @@ import { getUserShops, getSyncInfo } from '@/lib/db/shop-context'
 import { getStockGroups } from '@/lib/db/stock-groups'
 import WelcomePopup from '@/components/dashboard/WelcomePopup'
 import type { MarketplaceType } from '@/lib/types'
-import { startOfIsoWeek, endOfIsoWeek, localDateStr } from '@/lib/period-week'
+import { startOfIsoWeek, endOfIsoWeek, localDateStr, shopWeekBounds } from '@/lib/period-week'
 import { inclusiveDays } from '@/lib/kpi-windows'
 
 function parseDays(v: string | undefined): number {
@@ -89,8 +89,10 @@ export default async function DashboardPage({ searchParams }: Props) {
     // this one ended with toISOString(), which converts to UTC and can name the
     // wrong Monday for anyone not on UTC. localDateStr keeps it local.
     const now = new Date()
-    from   = localDateStr(startOfIsoWeek(now))
-    to     = localDateStr(endOfIsoWeek(now))
+    // The SELLER's week, not the viewer's or the server's — see lib/shop-time.ts.
+    const week = shopWeekBounds(now)
+    from   = week.from
+    to     = week.to
     period = ''
     days   = 7
   }
