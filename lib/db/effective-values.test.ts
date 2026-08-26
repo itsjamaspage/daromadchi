@@ -59,21 +59,28 @@ test('cost has no override twin — it is already the seller\'s own field', () =
   // Both syncs omit cost_price from their UPDATE patches, so a hand-entered
   // cost already survives. A second column for it would be dead weight.
   assert.equal(effective(P({ cost_price: 40_000 })).cost, 40_000)
-  assert.equal(effective(P({ cost_price: null })).cost, 0)
+})
+
+test('an unset cost is null, never 0', () => {
+  // This used to assert 0, and that 0 is where "Avg margin 95.9%" came from:
+  // every margin computed off it read (price − 0) / price = 100%. The absence
+  // of a cost has to survive as an absence all the way to the cell that
+  // renders it, or something downstream will quietly do arithmetic on it.
+  assert.equal(effective(P({ cost_price: null })).cost, null)
 })
 
 // ── The identities the table renders from these three ───────────────────────
 
 test('profit and margin follow an overridden price', () => {
   const e = effective(P({ selling_price: 100_000, cost_price: 60_000, price_override: 80_000 }))
-  const profit = e.price - e.cost
+  const profit = e.price - e.cost!
   assert.equal(profit, 20_000, 'profit is off the OVERRIDE, not selling_price')
   assert.equal(((profit / e.price) * 100).toFixed(1), '25.0')
 })
 
 test('stock value follows an overridden stock', () => {
   const e = effective(P({ cost_price: 5_000, available_stock: 10, stock_override: 4 }))
-  assert.equal(e.cost * e.stockQty, 20_000)
+  assert.equal(e.cost! * e.stockQty, 20_000)
 })
 
 test('margin is 0-safe when there is no price', () => {

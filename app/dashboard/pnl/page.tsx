@@ -209,6 +209,18 @@ export default async function PnlPage({ searchParams }: Props) {
     <span title={d.pnlFeePendingHint} className="text-[var(--text-muted)] italic cursor-help">{d.pnlFeePending}</span>
   )
   const totalsFeePending = allRowsForTotals.some(m => m.feePending)
+  // A separate marker for a separate problem. `pendingCell` means "the
+  // marketplace has not told us yet — wait". This one means "you have not
+  // entered a cost — you can fix it now", so it stays a number (the partial
+  // COGS is still the best floor we have) with a warning attached, rather than
+  // being replaced by the word "pending".
+  const cogsPartialMark = (
+    <sup title={d.pnlCogsPartialHint} className="ml-0.5 text-[var(--warn,#f59e0b)] cursor-help not-italic">*</sup>
+  )
+  const totalsCogsPending = allRowsForTotals.some(m => m.cogsPending)
+  const cogsCell = (value: number, pending: boolean) => (
+    <>{value > 0 ? fmt(value) : '—'}{pending ? cogsPartialMark : null}</>
+  )
 
   const exportData = monthlyData.map(m => ({
     [d.date]:                      m.month,
@@ -293,16 +305,20 @@ export default async function PnlPage({ searchParams }: Props) {
                         products={cogsProducts}
                         labels={{ title: d.pnlCogsEditTitle, hint: d.pnlCogsEditHint, product: d.pnlCogsEditProduct, qty: d.pnlCogsEditQty, cost: d.pnlCogsEditCost, empty: d.pnlCogsEditEmpty, done: d.pnlCogsEditDone }}
                       />
-                      {/* A product with no cost counts as costing nothing, which
-                          makes it look like pure profit. Say so here, where the
-                          editor that fixes it is already one click away. */}
+                      {/* An uncosted product is left OUT of the COGS sum rather
+                          than counted at zero — either way the net beside it
+                          comes out too high, so say so here, where the editor
+                          that fixes it is already one click away. */}
                       {noCostCount > 0 && (
                         <p className="text-[11px] font-medium mt-2" style={{ color: '#ef4444' }}>
                           {d.pnlCogsNoCost.replace('{n}', String(noCostCount))}
                         </p>
                       )}
                     </> },
-                  { label: d.netNoCommission,   value: fmt(totals.net),                          hint: d.pnlHintNet,          node: null },
+                  // The net carries the same marker as the COGS it is computed
+                  // from: an incomplete cost makes this number too high, and it
+                  // is the one figure a seller reads as the answer.
+                  { label: d.netNoCommission,   value: <>{fmt(totals.net)}{totalsCogsPending ? cogsPartialMark : null}</>, hint: d.pnlHintNet, node: null },
                 ].map(({ label, value, hint, node }, i) => (
                   <div key={label} className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl p-5">
                     <div className="flex items-center gap-1 mb-2">
@@ -403,7 +419,7 @@ export default async function PnlPage({ searchParams }: Props) {
                       <td className={num}>{todayRow.otherFees > 0 ? fmt(todayRow.otherFees) : '—'}</td>
                       <td className={num}>{est(todayRow.acquiring, todayRow.estimated, `≈ ${pnl.params.acquiringPct}%`)}</td>
                       <td className={num}>{est(todayRow.tax, true, `≈ ${pnl.params.taxPct}%`)}</td>
-                      <td className={num}>{todayRow.cogs > 0 ? fmt(todayRow.cogs) : '—'}</td>
+                      <td className={num}>{cogsCell(todayRow.cogs, todayRow.cogsPending)}</td>
                       <td className={`${num} font-bold`}>{fmt(todayRow.net)}</td>
                       <td className={num}>{todayRow.revenue > 0 ? ((todayRow.net / todayRow.revenue) * 100).toFixed(1) : '0.0'}%</td>
                     </tr>
@@ -423,7 +439,7 @@ export default async function PnlPage({ searchParams }: Props) {
                         <td className={num}>{m.otherFees > 0 ? fmt(m.otherFees) : '—'}</td>
                         <td className={num}>{est(m.acquiring, m.estimated, `≈ ${pnl.params.acquiringPct}%`)}</td>
                         <td className={num}>{est(m.tax, true, `≈ ${pnl.params.taxPct}%`)}</td>
-                        <td className={num}>{m.cogs > 0 ? fmt(m.cogs) : '—'}</td>
+                        <td className={num}>{cogsCell(m.cogs, m.cogsPending)}</td>
                         <td className={`${num} font-bold`}>{fmt(m.net)}</td>
                         <td className={num}>{margin.toFixed(1)}%</td>
                       </tr>
@@ -439,7 +455,7 @@ export default async function PnlPage({ searchParams }: Props) {
                     <td className={`${num} font-bold`}>{totals.otherFees > 0 ? fmt(totals.otherFees) : '—'}</td>
                     <td className={`${num} font-bold`}>{est(totals.acquiring, anyEstimated, `≈ ${pnl.params.acquiringPct}%`)}</td>
                     <td className={`${num} font-bold`}>{est(totals.tax, true, `≈ ${pnl.params.taxPct}%`)}</td>
-                    <td className={`${num} font-bold`}>{totals.cogs > 0 ? fmt(totals.cogs) : '—'}</td>
+                    <td className={`${num} font-bold`}>{cogsCell(totals.cogs, totalsCogsPending)}</td>
                     <td className={`${num} font-bold`}>{fmt(totals.net)}</td>
                     <td className={`${num} font-bold`}>{avgMargin.toFixed(1)}%</td>
                   </tr>

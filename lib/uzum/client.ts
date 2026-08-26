@@ -546,10 +546,12 @@ export async function fetchUzumFinanceData(
         const commission = Math.abs(Number(
           item.commission ?? item.commissionAmount ?? item.fee ?? item.feeAmount
           ?? item.marketplaceFee ?? item.serviceFee ?? item.marketplace_fee
+          // money-guard-ok: the last rung of a key-name ladder over Uzum's settlement feed. An entry where all three of commission/delivery/net are zero is dropped below rather than stored, and a real net payout is preferred over this estimate anyway.
           ?? item.platformFee ?? item.uzumFee ?? 0
         ))
         const delivery = Math.abs(Number(
           item.deliveryCost ?? item.deliveryAmount ?? item.logistics ?? item.logisticsFee
+          // money-guard-ok: the delivery half of the same key-name ladder over the settlement feed — see the note on commission directly above.
           ?? item.logisticsAmount ?? item.delivery ?? item.delivery_cost ?? 0
         ))
         const netPayout = Number(

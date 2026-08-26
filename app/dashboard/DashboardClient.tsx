@@ -70,7 +70,8 @@ interface CategoryData {
   name_uz?: string
   name_en?: string
   revenue: number
-  profit: number
+  /** NULL when part of the category has no cost price — see getCategoryRevenue. */
+  profit: number | null
   percent: number
 }
 

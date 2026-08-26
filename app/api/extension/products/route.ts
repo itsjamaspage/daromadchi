@@ -40,7 +40,9 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
     sku:          p.sku,
     stock:        p.stock_quantity,
     sellingPrice: Number(p.selling_price ?? 0),
-    costPrice:    Number(p.cost_price    ?? 0),
+    // null, not 0 — the extension's unit-economics panel prefills from this,
+    // and a zero would quietly present itself as a real purchase price.
+    costPrice:    p.cost_price != null ? Number(p.cost_price) : null,
     category:     p.category,
     productId:    p.marketplace_product_id,
     // Fields needed by extension alert rules — computed from available data

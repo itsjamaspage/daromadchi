@@ -198,7 +198,9 @@ export default function AnalyticsProductTable({ products, sales, labels }: Props
   const groupRevenue = (rows: Product[]) => rows.reduce((s, p) => s + salesFor(p.id).revenue, 0)
   const groupMargin = (rows: Product[]) => Math.max(0, ...rows.map(p => {
     const price = Number(p.selling_price ?? 0)
-    return price > 0 ? (p.profit / price) : 0
+    // An uncosted product contributes no margin to the ordering rather than a
+    // fictitious 100% one, which would float the least-known rows to the top.
+    return p.profit != null && price > 0 ? (p.profit / price) : 0
   }))
 
   const grouped = groupByVariant(products.map(p => ({
@@ -284,10 +286,13 @@ export default function AnalyticsProductTable({ products, sales, labels }: Props
     // Recomputed here, never read off p.profit: that field was calculated
     // server-side from selling_price, so an overridden price would leave the
     // profit and margin columns describing a price no longer on screen.
-    const profit   = price - cost
-    const margin   = price > 0 ? (profit / price) * 100 : 0
-    const profitColor = profit > 0 ? '#10b981' : '#ef4444'
-    const marginColor = margin >= 35 ? '#10b981' : margin >= 15 ? '#f59e0b' : '#ef4444'
+    // Null when the seller has not costed this product: profit off a cost of
+    // zero is the selling price, and the margin beside it reads 100%.
+    const profit   = cost != null ? price - cost : null
+    const margin   = profit != null && price > 0 ? (profit / price) * 100 : null
+    const profitColor = profit != null && profit > 0 ? '#10b981' : '#ef4444'
+    const marginColor = margin == null ? 'var(--text-muted)'
+      : margin >= 35 ? '#10b981' : margin >= 15 ? '#f59e0b' : '#ef4444'
     return (
       <tr key={p.id} style={{ borderBottom: '1px solid var(--border)' }}>
         {col('product', <td className="px-5 py-3.5" style={isChild ? { paddingLeft: '2.75rem', borderLeft: '2px solid var(--border)' } : undefined}>
@@ -306,7 +311,7 @@ export default function AnalyticsProductTable({ products, sales, labels }: Props
         </td>)}
         {col('cost', <td className="px-4 py-3.5 text-right">
           <EditableValueCell productId={p.id} field="costPrice"
-            value={cost > 0 ? cost : null}
+            value={cost != null && cost > 0 ? cost : null}
             emptyLabel={labels.setCost} title={labels.editCostHint} />
         </td>)}
         {/* Profit, margin and stock value are IDENTITIES of the three cells
@@ -315,10 +320,16 @@ export default function AnalyticsProductTable({ products, sales, labels }: Props
             be no single right answer for which input an edit should move.
             They recompute the moment any input is saved. */}
         {col('profit', <td className="px-4 py-3.5 text-right">
-          <span className="font-semibold" style={{ color: profitColor }}>{fmt(profit)} so&apos;m</span>
+          {/* An em dash, not a number: the cost cell to the left is empty, and
+              these two are identities of it. Filling that cell fills these. */}
+          {profit == null
+            ? <span style={{ color: 'var(--text-muted)' }} title={labels.costPrice}>—</span>
+            : <span className="font-semibold" style={{ color: profitColor }}>{fmt(profit)} so&apos;m</span>}
         </td>)}
         {col('margin', <td className="px-4 py-3.5 text-right">
-          <span className="font-semibold" style={{ color: marginColor }}>{margin.toFixed(1)}%</span>
+          {margin == null
+            ? <span style={{ color: 'var(--text-muted)' }} title={labels.costPrice}>—</span>
+            : <span className="font-semibold" style={{ color: marginColor }}>{margin.toFixed(1)}%</span>}
         </td>)}
         {col('abc', <td className="px-4 py-3.5 text-center">
           {abcCls ? <AbcBadge cls={abcCls} /> : null}

@@ -24,7 +24,16 @@ import type { Product } from '@/lib/types'
 
 export interface EffectiveValues {
   price: number
-  cost: number
+  /**
+   * NULL when the seller has never entered a cost — deliberately not 0.
+   *
+   * This used to be `Number(p.cost_price ?? 0)`, and every margin computed from
+   * it read `(price − 0) / price` = 100%. That is where "Avg margin 95.9%" on
+   * the Analytics page came from: not a shop with extraordinary margins, a shop
+   * that had costed some of its catalogue and not the rest. Callers must decide
+   * what to show when it is null; the honest answer is "—", not a number.
+   */
+  cost: number | null
   stockQty: number
   priceOverridden: boolean
   stockOverridden: boolean
@@ -38,7 +47,7 @@ export function effective(p: Product): EffectiveValues {
   const stockOverridden = p.stock_override != null
   return {
     price:    priceOverridden ? Number(p.price_override) : Number(p.selling_price ?? 0),
-    cost:     Number(p.cost_price ?? 0),
+    cost:     p.cost_price != null ? Number(p.cost_price) : null,
     stockQty: stockOverridden ? Number(p.stock_override) : p.available_stock,
     priceOverridden,
     stockOverridden,
@@ -73,14 +82,17 @@ export interface GroupSharedValues {
 
 export function groupSharedValues(rows: Product[]): GroupSharedValues {
   const prices = rows.map(p => effective(p).price)
-  const costs  = rows.map(p => Number(p.cost_price ?? 0))
-  const agreed = (vals: number[]): number | null => {
+  const costs  = rows.map(p => p.cost_price != null ? Number(p.cost_price) : null)
+  const agreed = (vals: (number | null)[]): number | null => {
     if (vals.length === 0) return null
     const first = vals[0]
     if (!vals.every(v => v === first)) return null
-    // 0 is "not set" for display: an unpriced listing should read as empty, so
-    // the cell offers "+ price" rather than a confident zero.
-    return first > 0 ? first : null
+    // 0 and null are both "not set" for display: an unpriced or uncosted
+    // listing should read as empty, so the cell offers "+ price" rather than a
+    // confident zero. (Costs arrive here as null now rather than coerced to 0;
+    // both land in the same branch, which is why the group behaviour is
+    // unchanged by that.)
+    return first != null && first > 0 ? first : null
   }
   return {
     price: agreed(prices),
