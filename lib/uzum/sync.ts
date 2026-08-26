@@ -19,6 +19,7 @@ import {
 } from './client'
 import { resolveColor } from '@/lib/products/resolveColor'
 import { buildVariantIndex, resolveVariant } from '@/lib/uzum/variant-match'
+import { withShopLock } from '@/lib/db/shop-lock'
 
 // Resolve a SKU's colour: prefer the skuTitle suffix (БЕЖЕВ / БЕЛЫЙ …), then
 // fall back to the structured «Цвет» / «Rang» characteristic already present in
@@ -217,12 +218,34 @@ export interface SyncResult {
   // "HTTP 400 …") plus the first raw order JSON. Returned to the Settings card
   // so a failing sync is diagnosable without server logs.
   debug?: Record<string, string>
+  /** True when another runner already held this shop's sync lock and this call
+   *  did nothing. Not an error — the next tick is five minutes away. */
+  skippedLocked?: boolean
 }
 
 // heavy=false → orders-only pass: resolve the shop + fetch/insert orders + fire
 // new-order alerts, but skip the throttled product/SKU pull and don't advance
 // last_synced_at.
+/**
+ * One sync per shop. Every caller goes through here — the cron tick, the
+ * «Sinxronlash» button — so overlapping runs are impossible regardless of which
+ * entry point fires. See lib/db/shop-lock.ts for why that matters: order_items
+ * are written delete-then-insert, and two interleaved runs can drop them.
+ */
 export async function syncFromUzum(shopId: string, token: string, heavy = true): Promise<SyncResult> {
+  const outcome = await withShopLock(shopId, () => syncFromUzumLocked(shopId, token, heavy))
+  if (outcome.ran) return outcome.value
+  // ok:true deliberately — nothing failed. A run is already in progress, and
+  // reporting an error here would light up the Settings card and the sync-alert
+  // path for the healthy case of two ticks overlapping by a few seconds.
+  return {
+    ok: true, skippedLocked: true,
+    ordersUpserted: 0, productsUpserted: 0, campaignsUpserted: 0,
+    debug: { skipped: 'another sync is already running for this shop' },
+  }
+}
+
+async function syncFromUzumLocked(shopId: string, token: string, heavy = true): Promise<SyncResult> {
   const warnings: string[] = []
   const debug: Record<string, string> = {}
   let itemsUpserted = 0
@@ -1153,10 +1176,22 @@ export async function syncFromUzum(shopId: string, token: string, heavy = true):
               ? fin.commission
               : (fin.netPayout > 0 ? Number(dbOrd.revenue ?? 0) - fin.netPayout : 0)
             if (commission > 0 || fin.delivery > 0) {
-              await db.update(orders).set({
-                marketplace_fee: String(commission),
-                ...(fin.delivery > 0 ? { delivery_cost: String(fin.delivery) } : {}),
-              }).where(eq(orders.id, dbOrd.id))
+              // Raw SQL because fee_source is deliberately not a Drizzle field
+              // yet (ARCHITECTURE.md convention 3 — the deploy builds before it
+              // migrates). Promote once 086 is confirmed applied in production.
+              //
+              // REPORTED: from Uzum's finance feed, or revenue − netPayout,
+              // which is arithmetic on a real settlement row rather than an
+              // estimate. This also UN-marks a row an earlier balance-fallback
+              // run had stamped 'derived' — real data arriving later has to be
+              // able to correct a guess, or the guess outlives its own excuse.
+              await db.execute(sql`
+                update orders set
+                  marketplace_fee = ${String(commission)},
+                  ${fin.delivery > 0 ? sql`delivery_cost = ${String(fin.delivery)},` : sql``}
+                  fee_source = 'reported'
+                where id = ${dbOrd.id}
+              `)
             }
           }
           debug.financeOrdersUpdated = String(dbFinanceOrders.length)
@@ -1187,9 +1222,18 @@ export async function syncFromUzum(shopId: string, token: string, heavy = true):
             for (const o of missingCommission) {
               const rev = Number(o.revenue ?? 0)
               if (rev > 0) {
-                await db.update(orders).set({
-                  marketplace_fee: String(Math.round(rev * feeRate)),
-                }).where(eq(orders.id, o.id))
+                // DERIVED, and it must say so. This number is the shop-wide gap
+                // between revenue and balance, spread across orders in
+                // proportion to revenue — a plausible guess, not a fee Uzum
+                // charged on THIS order. Written into the same column as real
+                // fees, an unstamped estimate is indistinguishable from a fact,
+                // and lib/money would count it as one.
+                await db.execute(sql`
+                  update orders
+                     set marketplace_fee = ${String(Math.round(rev * feeRate))},
+                         fee_source = 'derived'
+                   where id = ${o.id}
+                `)
               }
             }
             debug.financeBalanceFallback = `balance=${financeResult.balance}, totalRev=${totalRevenue}, feeRate=${(feeRate * 100).toFixed(1)}%`
@@ -1198,9 +1242,16 @@ export async function syncFromUzum(shopId: string, token: string, heavy = true):
             if (totalDelivery > 0) {
               const deliveryPerOrder = Math.round(totalDelivery / missingDelivery.length)
               for (const o of missingDelivery) {
-                await db.update(orders).set({
-                  delivery_cost: String(deliveryPerOrder),
-                }).where(eq(orders.id, o.id))
+                // DERIVED for the same reason: a flat per-order split of a
+                // shop-wide remainder. lib/money adds delivery to the fee, so an
+                // estimated delivery makes the row's fee TOTAL an estimate — the
+                // stamp describes the row, not just one column.
+                await db.execute(sql`
+                  update orders
+                     set delivery_cost = ${String(deliveryPerOrder)},
+                         fee_source = 'derived'
+                   where id = ${o.id}
+                `)
               }
               debug.financeDeliveryFallback = `balance=${financeResult.balance}, totalDelivery=${totalDelivery}, perOrder=${deliveryPerOrder}`
             }

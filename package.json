@@ -10,10 +10,11 @@
     "seed:categories": "tsx drizzle/seeds/category-canonicals.ts",
     "categories:suggest": "tsx scripts/suggest-category-aliases.ts",
     "products:suggest": "tsx scripts/suggest-product-groups.ts",
+    "test:workflows": "node --import tsx --test scripts/workflow-syntax.test.ts",
     "test:guard": "node --import tsx --test lib/marketplace-readonly-guard.test.ts",
     "test:stock": "node --import tsx --test lib/marketplace-readonly-guard.test.ts lib/marketplace/stock-allocation.test.ts lib/marketplace/manual-stock-notify.test.ts && node --import tsx --test lib/marketplace/manual-stock-notify.guardrail.test.ts",
     "test:integration": "node --import tsx --test lib/marketplace/stock-writer.integration.test.ts",
-    "test:seo": "node --import tsx --test lib/seo/apex-redirect.test.ts",
+    "test:seo": "node --import tsx --test lib/seo/canonical-host.test.ts",
     "test:atmos": "node --import tsx --test lib/billing/atmos-verify.test.ts",
     "test:tiers": "node --import tsx --test lib/billing/tiers.test.ts",
     "test:features": "node --import tsx --test lib/billing/features.test.ts",
@@ -65,8 +66,11 @@
     "test:kpis-period": "node --conditions=react-server --import tsx --test lib/db/kpis.integration.test.ts",
     "test:variant-backfill": "node --import tsx --test scripts/backfill-variant-color.test.ts",
     "test:week": "node --import tsx --test lib/period-week.test.ts lib/period-week.guardrail.test.ts",
+    "test:kpi-windows": "TZ=Asia/Tashkent node --import tsx --test lib/kpi-windows.test.ts",
     "test:variant-match": "node --import tsx --test lib/uzum/variant-match.test.ts",
-    "test:money": "node --import tsx --test lib/money/order-economics.test.ts lib/money/order-economics.guardrail.test.ts"
+    "test:money": "node --import tsx --test lib/money/order-economics.test.ts lib/money/order-economics.guardrail.test.ts",
+    "test:crypto": "node --import tsx --test lib/crypto.test.ts",
+    "test:shop-lock": "node --import tsx --test lib/db/shop-lock.integration.test.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -107,6 +111,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.4",
     "tailwindcss": "^4",
+    "tsx": "4.23.0",
     "typescript": "5.9.3"
   }
 }

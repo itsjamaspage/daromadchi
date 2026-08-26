@@ -3,7 +3,7 @@ import { db, orders, orderItems, products, shops, yandexSettlementTransactions, 
 import { getShopIds } from '@/lib/db/shop-context'
 import { getUnitEcoSettings } from '@/lib/db/unit-economics'
 import type { PayoutEntry, PayoutOrderItem, PayoutOrderLine } from '@/lib/types'
-import { isoWeekKey, currentIsoWeekKey } from '@/lib/period-week'
+import { isoWeekKey, currentIsoWeekKey, addMonths } from '@/lib/period-week'
 import { classifyYandexDebit } from '@/lib/db/real-financials'
 
 // The period bucket, defined ONCE.
@@ -35,8 +35,9 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
     .where(inArray(shops.id, allShopIds))
   const mpByShop = new Map(shopRows.map(r => [r.id, r.marketplace]))
 
-  const since = new Date()
-  since.setMonth(since.getMonth() - 12)
+  // Clamped — see lib/period-week.ts. On a month-end day the old form skipped a
+  // month, silently narrowing the payout horizon.
+  const since = addMonths(new Date(), -12)
   // Widen the query horizon if a custom range reaches further back than 12 months,
   // so a hand-picked older range still has data to filter.
   if (range?.from) {

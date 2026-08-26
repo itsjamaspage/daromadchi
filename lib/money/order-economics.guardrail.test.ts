@@ -291,3 +291,88 @@ function splitTopLevel(args: string): string[] {
   out.push(args.slice(last))
   return out
 }
+
+/**
+ * Every write to a fee column must say where the number came from.
+ *
+ * Migration 086 added orders.fee_source because lib/uzum/sync.ts was writing a
+ * DERIVED fee — (revenue − shop balance), spread across orders in proportion to
+ * revenue — into the same column real commissions land in. lib/money reads a
+ * non-null marketplace_fee as a known fact, so an unstamped estimate walked
+ * straight through the Known<T> guarantee and came out the other side as
+ * profit.
+ *
+ * Stamping the two paths that existed fixes today. This stops tomorrow: an
+ * UPDATE that sets marketplace_fee or delivery_cost without also setting
+ * fee_source is, by construction, a fee whose origin nobody recorded.
+ *
+ * INSERTs are exempt and do not need the column: 086 is NOT NULL DEFAULT
+ * 'reported', which is right for an insert — orders arrive carrying whatever
+ * the marketplace itself reported. It is the later CORRECTION passes that
+ * invent numbers.
+ */
+test('no UPDATE writes a fee without recording where it came from', () => {
+  const FEE_COLUMNS = /\b(marketplace_fee|delivery_cost)\b/
+
+  const violations: string[] = []
+  for (const file of sourceFiles(ROOT)) {
+    const rel = relative(ROOT, file).replaceAll('\\', '/')
+    if (isAllowed(rel)) continue
+    const { code, comments } = scan(readFileSync(file, 'utf8'))
+    const lines = comments.split('\n')
+
+    // Both spellings of an update: drizzle's `db.update(orders).set({...})` and
+    // a raw `update orders set ...`. Each is matched to its closing brace or
+    // backtick so a nearby unrelated statement cannot supply the stamp for it.
+    const statements: { text: string; index: number }[] = []
+    for (const m of code.matchAll(/db\s*\.\s*update\s*\(\s*orders\s*\)\s*\.\s*set\s*\(/g)) {
+      statements.push({ text: balanced(code, m.index + m[0].length, '(', ')'), index: m.index })
+    }
+    for (const m of code.matchAll(/update\s+orders\s+set\b/gi)) {
+      // Raw SQL sits in a template literal, and the interpolations inside it can
+      // hold their OWN nested templates — `${cond ? sql`a` : sql``}` is real
+      // code in lib/uzum/sync.ts. Stopping at the first backtick would cut the
+      // statement short and miss a fee_source that is genuinely there, so this
+      // tracks ${ } depth and only treats a backtick at depth 0 as the end.
+      statements.push({ text: sqlTemplate(code, m.index), index: m.index })
+    }
+
+    for (const { text, index } of statements) {
+      if (!FEE_COLUMNS.test(text)) continue
+      if (/\bfee_source\b/.test(text)) continue
+      const line = lineOf(code, index)
+      if (optedOut(lines, line)) continue
+      violations.push(`${rel}:${line}`)
+    }
+  }
+
+  assert.deepEqual(
+    violations, [],
+    'A fee written without a fee_source is a number whose origin nobody recorded,\n' +
+    'and lib/money will read it as a fact the marketplace reported. Set\n' +
+    "fee_source to 'reported' or 'derived' in the same statement:\n\n" +
+    violations.map(v => '  ' + v).join('\n') + '\n',
+  )
+})
+
+/** Text between a balanced pair, starting just after the opening one. */
+function balanced(src: string, start: number, open: string, close: string): string {
+  let depth = 1, i = start
+  while (i < src.length && depth > 0) {
+    if (src[i] === open) depth++
+    else if (src[i] === close) depth--
+    i++
+  }
+  return src.slice(start, i - 1)
+}
+
+/** From `start`, the rest of the enclosing template literal, nesting-aware. */
+function sqlTemplate(src: string, start: number): string {
+  let depth = 0
+  for (let i = start; i < src.length; i++) {
+    if (src[i] === '$' && src[i + 1] === '{') { depth++; i++; continue }
+    if (src[i] === '}' && depth > 0) { depth--; continue }
+    if (src[i] === '`' && depth === 0) return src.slice(start, i)
+  }
+  return src.slice(start)
+}

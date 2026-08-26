@@ -148,3 +148,81 @@ describe('totalling a period', () => {
     assert.deepEqual(t.costMissing, { orders: 0, revenue: 0 })
   })
 })
+
+describe('a derived fee is not a fee', () => {
+  // ── A derived fee is not a fee ──────────────────────────────────────────────
+  //
+  // lib/uzum/sync.ts estimates a fee when Uzum's finance feed returns nothing:
+  // (revenue − shop balance) spread across orders in proportion to revenue. It
+  // lands in the same column as a real reported commission. Before fee_source
+  // existed, this module could not tell them apart and counted the estimate as
+  // fact — a back door through the guarantee the Known<T> type exists to make.
+
+  it('a DERIVED fee is unknown, however confident the number looks', () => {
+    const e = orderEconomics({
+      revenue: 100_000,
+      marketplaceFee: 22_000,        // an estimate the sync computed
+      deliveryCost: null,
+      cogs: 60_000,
+      feeSource: 'derived',
+    })
+    assert.equal(e.fees.known, false)
+    assert.equal(e.fees.known === false && e.fees.reason, 'fee_not_reported')
+    assert.equal(e.net.known, false, 'and it cannot produce a net either')
+  })
+
+  it('the SAME number reported by the marketplace IS known', () => {
+    // Identical inputs but for the stamp — so the test pins the stamp as the
+    // thing that decides, not some incidental property of the numbers.
+    const e = orderEconomics({
+      revenue: 100_000,
+      marketplaceFee: 22_000,
+      deliveryCost: null,
+      cogs: 60_000,
+      feeSource: 'reported',
+    })
+    assert.equal(e.fees.known, true)
+    assert.equal(e.fees.known === true && e.fees.value, 22_000)
+    assert.equal(e.net.known === true && e.net.value, 18_000)
+  })
+
+  it('an absent stamp reads as reported — every row predating the column', () => {
+    const undef = orderEconomics({ revenue: 100_000, marketplaceFee: 22_000, deliveryCost: null, cogs: 60_000 })
+    const nul   = orderEconomics({ revenue: 100_000, marketplaceFee: 22_000, deliveryCost: null, cogs: 60_000, feeSource: null })
+    assert.equal(undef.fees.known, true)
+    assert.equal(nul.fees.known, true)
+  })
+
+  it('real settlement still wins over a derived stamp', () => {
+    // settlementNet is what the marketplace ACTUALLY paid. If we have that, the
+    // estimate in marketplace_fee is irrelevant — it must not drag the order into
+    // "unknown" when a better answer is sitting right there.
+    const e = orderEconomics({
+      revenue: 100_000,
+      marketplaceFee: 22_000,
+      deliveryCost: null,
+      settlementNet: 78_000,
+      cogs: 60_000,
+      feeSource: 'derived',
+    })
+    assert.equal(e.fees.known, true)
+    assert.equal(e.fees.known === true && e.fees.value, 22_000, 'revenue − net, from real data')
+  })
+
+  it('a derived order is EXCLUDED from a period total and named', () => {
+    const totals = sumEconomics([
+      { key: 'uzum', revenue: 100_000, marketplaceFee: 22_000, deliveryCost: null, cogs: 60_000, feeSource: 'reported' },
+      { key: 'uzum', revenue: 115_000, marketplaceFee: 25_300, deliveryCost: null, cogs: 70_000, feeSource: 'derived' },
+    ])
+    assert.equal(totals.revenue, 215_000, 'the sale happened either way')
+    assert.equal(totals.countedRevenue, 100_000, 'only the reported one is priced')
+    // Period totals are plain numbers — Known<T> guards the per-order maths, and
+    // the period reports what it could price plus what it had to set aside.
+    assert.equal(totals.net, 18_000, 'net is the counted order only')
+    assert.equal(totals.fees, 22_000)
+    assert.equal(totals.cogs, 60_000, "the excluded order's cost leaves with it")
+    assert.deepEqual(totals.excluded, [
+      { key: 'uzum', revenue: 115_000, orders: 1, reason: 'fee_not_reported' },
+    ])
+  })
+})

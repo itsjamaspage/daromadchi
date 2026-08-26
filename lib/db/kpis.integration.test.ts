@@ -30,11 +30,12 @@
 import { describe, it, before, after } from 'node:test'
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
-import { eq, inArray } from 'drizzle-orm'
+import { eq, inArray, sql } from 'drizzle-orm'
 import {
   db, pool, users, shops, orders, orderItems, products,
   uzumSettlementOrders, yandexSettlementTransactions,
 } from '@/lib/db'
+import { kpiWindows } from '@/lib/kpi-windows'
 import { fetchPeriodKpis } from '@/lib/db/kpis-period'
 import { getRealFinancialsByBucket } from '@/lib/db/real-financials'
 
@@ -220,6 +221,157 @@ describe('an order the marketplace has not settled yet', () => {
       assert.ok(k.profit <= k.revenue)
     } finally {
       await db.delete(orders).where(eq(orders.id, id))
+    }
+  })
+})
+
+describe('a fee the sync ESTIMATED rather than the marketplace reporting it', () => {
+  // lib/uzum/sync.ts derives a fee when Uzum's finance feed returns nothing:
+  // (revenue − shop balance), spread across orders in proportion to revenue,
+  // written into marketplace_fee — the same column real commissions land in.
+  //
+  // These run against real Postgres because the whole risk is in the seam: a
+  // column the Drizzle schema deliberately does not know about (migration 086,
+  // read through raw SQL per ARCHITECTURE.md convention 3). A unit test on
+  // orderEconomics cannot prove the loader actually reads it.
+
+  it('is EXCLUDED from profit, not counted as a real fee', async () => {
+    const id = randomUUID()
+    await db.insert(orders).values({
+      id, shop_id: uzShop, order_id_external: '900101', marketplace: 'uzum', status: 'delivered',
+      revenue: '200000', marketplace_fee: '44000', delivery_cost: null,
+      ordered_at: new Date('2026-09-03T10:00:00Z'), items_count: 1,
+    })
+    await db.execute(sql`update orders set fee_source = 'derived' where id = ${id}`)
+    try {
+      const k = await fetchPeriodKpis(shopIds(),
+        new Date('2026-09-01T00:00:00Z'), new Date('2026-09-07T23:59:59Z'))
+      assert.equal(k.revenue, 200000, 'the sale still happened')
+      assert.equal(k.revenueCounted, 0, 'but none of it could be priced')
+      assert.equal(k.profit, 0, 'and a guessed fee must not produce a profit')
+      assert.deepEqual(k.pendingMarketplaces, [
+        { marketplace: 'uzum', revenue: 200000, orders: 1, reason: 'fee_not_reported' },
+      ], 'the seller is told which marketplace is unpriced, and how much')
+    } finally {
+      await db.delete(orders).where(eq(orders.id, id))
+    }
+  })
+
+  it('counts normally once the same row is stamped reported', async () => {
+    // Identical row, identical numbers — only the stamp differs. This pins the
+    // stamp as the thing that decides, and proves a later real sync correcting
+    // a guess brings the order back into the total.
+    const id = randomUUID()
+    await db.insert(orders).values({
+      id, shop_id: uzShop, order_id_external: '900102', marketplace: 'uzum', status: 'delivered',
+      revenue: '200000', marketplace_fee: '44000', delivery_cost: null,
+      ordered_at: new Date('2026-09-03T10:00:00Z'), items_count: 1,
+    })
+    await db.execute(sql`update orders set fee_source = 'reported' where id = ${id}`)
+    try {
+      const k = await fetchPeriodKpis(shopIds(),
+        new Date('2026-09-01T00:00:00Z'), new Date('2026-09-07T23:59:59Z'))
+      assert.equal(k.revenueCounted, 200000)
+      assert.equal(k.profit, 156000, '200 000 − 44 000, no COGS (no items)')
+      assert.deepEqual(k.pendingMarketplaces, [])
+    } finally {
+      await db.delete(orders).where(eq(orders.id, id))
+    }
+  })
+
+  it('defaults to reported, so existing history counts exactly as before', async () => {
+    // Migration 086 is `NOT NULL DEFAULT 'reported'`, so there is no such thing
+    // as an unstamped row once it has run — the default classifies every row
+    // that already existed, and every row inserted by code that does not set it.
+    // That is the deliberate choice recorded in the migration: nothing a seller
+    // currently sees changes on deploy.
+    const id = randomUUID()
+    await db.insert(orders).values({
+      id, shop_id: uzShop, order_id_external: '900103', marketplace: 'uzum', status: 'delivered',
+      revenue: '200000', marketplace_fee: '44000', delivery_cost: null,
+      ordered_at: new Date('2026-09-03T10:00:00Z'), items_count: 1,
+    })
+    try {
+      const [row] = await db.select({ fee_source: sql<string>`fee_source` })
+        .from(orders).where(eq(orders.id, id))
+      assert.equal(row.fee_source, 'reported', 'inserted without the column set')
+      const k = await fetchPeriodKpis(shopIds(),
+        new Date('2026-09-01T00:00:00Z'), new Date('2026-09-07T23:59:59Z'))
+      assert.equal(k.profit, 156000, 'and it counts, exactly as it did before 086')
+    } finally {
+      await db.delete(orders).where(eq(orders.id, id))
+    }
+  })
+})
+
+describe('the % badge compares this week against LAST week', () => {
+  // getKpis itself resolves shops through the request-scoped auth context, which
+  // a test runner cannot provide — so this holds the piece that was broken: the
+  // two windows kpiWindows hands to the real query. The seeded weeks are the
+  // fixture's own W2 (12–18 Aug) and W3 (19–25 Aug), both Wed–Tue in UTC but
+  // seeded at 10:00, so they sit unambiguously inside their calendar weeks.
+
+  it('reads the current week and the one before it as separate, whole windows', async () => {
+    const w = kpiWindows({ from: '2026-08-19', to: '2026-08-25' })
+
+    const [curr, prev] = await Promise.all([
+      fetchPeriodKpis(shopIds(), w.since, w.until),
+      fetchPeriodKpis(shopIds(), w.prevSince, w.prevUntil),
+    ])
+
+    // W3 and W2 as the fixture defines them, with nothing bleeding across.
+    // W3 is a single 115 000 Yandex sale on 20 Aug; W2 has no sale at all —
+    // only a settlement for an OLDER order, which must not read as revenue here.
+    assert.equal(curr.revenue, 115000, 'the selected week')
+    assert.equal(prev.revenue, 0, 'the week before — W2 had no delivered sales')
+    assert.ok(w.prevUntil!.getTime() < w.since!.getTime(), 'and the windows do not overlap')
+  })
+
+  it('puts an order in exactly one of the two windows, never both', async () => {
+    // The old arithmetic derived prevUntil by subtracting milliseconds from a
+    // UTC-parsed date, so the baseline ran ten hours into the current week for a
+    // seller at UTC+5 — an order near the boundary was counted twice.
+    const id = randomUUID()
+    await db.insert(orders).values({
+      id, shop_id: uzShop, order_id_external: '900201', marketplace: 'uzum', status: 'delivered',
+      revenue: '50000', marketplace_fee: '5000', delivery_cost: null,
+      ordered_at: new Date('2026-08-19T02:00:00Z'), items_count: 1,
+    })
+    try {
+      const w = kpiWindows({ from: '2026-08-19', to: '2026-08-25' })
+      const [curr, prev] = await Promise.all([
+        fetchPeriodKpis(shopIds(), w.since, w.until),
+        fetchPeriodKpis(shopIds(), w.prevSince, w.prevUntil),
+      ])
+      const inCurrent = curr.revenue - 115000
+      assert.equal(inCurrent, 50000, 'the order belongs to the selected week')
+      assert.equal(prev.revenue, 0, 'and must not also appear in the baseline')
+    } finally {
+      await db.delete(orders).where(eq(orders.id, id))
+    }
+  })
+
+  it('compares orders NET of cancellations, matching the card', async () => {
+    // The card shows total − cancelled; the badge used to be computed from raw
+    // count(*). Three fulfilled orders beside five cancellations read "+300%".
+    const ids = [randomUUID(), randomUUID(), randomUUID()]
+    await db.insert(orders).values([
+      { id: ids[0], shop_id: uzShop, order_id_external: '900301', marketplace: 'uzum',
+        status: 'delivered', revenue: '10000', ordered_at: new Date('2026-08-20T10:00:00Z'), items_count: 1 },
+      { id: ids[1], shop_id: uzShop, order_id_external: '900302', marketplace: 'uzum',
+        status: 'cancelled', revenue: '10000', ordered_at: new Date('2026-08-20T10:00:00Z'), items_count: 1 },
+      { id: ids[2], shop_id: uzShop, order_id_external: '900303', marketplace: 'uzum',
+        status: 'cancelled', revenue: '10000', ordered_at: new Date('2026-08-20T10:00:00Z'), items_count: 1 },
+    ])
+    try {
+      const w = kpiWindows({ from: '2026-08-19', to: '2026-08-25' })
+      const curr = await fetchPeriodKpis(shopIds(), w.since, w.until)
+      assert.equal(curr.cancelled, 2, 'two cancellations in the window')
+      // What the card renders, and therefore what the badge must be built from.
+      const shown = curr.orders - curr.cancelled
+      assert.ok(shown < curr.orders, 'the displayed count excludes cancellations')
+    } finally {
+      await db.delete(orders).where(inArray(orders.id, ids))
     }
   })
 })

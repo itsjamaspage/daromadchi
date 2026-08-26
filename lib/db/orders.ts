@@ -3,6 +3,7 @@ import { inArray, desc, gte, lte, and, count, eq } from 'drizzle-orm'
 import { db, orders, shops } from '@/lib/db'
 import { getShopIds } from '@/lib/db/shop-context'
 import type { Order, MarketplaceType } from '@/lib/types'
+import { parseLocalDate, endOfLocalDay } from '@/lib/period-week'
 
 function mapRow(row: typeof orders.$inferSelect, shopRow?: { shop_id_external: string | null; business_id: string | null }): Order {
   return {
@@ -30,9 +31,10 @@ const _fetchOrders = unstable_cache(
 
     const conditions = [inArray(orders.shop_id, shopIds)]
     if (from && to) {
-      conditions.push(gte(orders.ordered_at, new Date(from)))
-      const toDate = new Date(to); toDate.setHours(23, 59, 59, 999)
-      conditions.push(lte(orders.ordered_at, toDate))
+      // parseLocalDate, not new Date(from): a date-only string is parsed as UTC
+      // midnight, which started the seller's day at 05:00 in Tashkent.
+      conditions.push(gte(orders.ordered_at, parseLocalDate(from)))
+      conditions.push(lte(orders.ordered_at, endOfLocalDay(parseLocalDate(to))))
     }
 
     let query = db.select({
@@ -72,11 +74,11 @@ const _fetchOrdersPaginated = unstable_cache(
     const offset = (page - 1) * pageSize
     // The window is a pair of LOCAL calendar days; `to` covers its whole day, so
     // an order placed at 18:33 on the last day of the range is still in it.
-    const until = to ? new Date(to) : null
+    const until = to ? endOfLocalDay(parseLocalDate(to)) : null
     if (until) until.setHours(23, 59, 59, 999)
     const condition = and(
       inArray(orders.shop_id, shopIds),
-      ...(from ? [gte(orders.ordered_at, new Date(from))] : []),
+      ...(from ? [gte(orders.ordered_at, parseLocalDate(from))] : []),
       ...(until ? [lte(orders.ordered_at, until)] : []),
     )
 

@@ -55,6 +55,20 @@ export interface OrderInput {
   revenue: number
   /** orders.marketplace_fee. NULL until the marketplace reports it. */
   marketplaceFee: number | null
+  /**
+   * Where `marketplaceFee` came from.
+   *
+   * `'derived'` means WE estimated it, not that the marketplace reported it.
+   * lib/uzum/sync.ts has a fallback that takes (revenue − shop balance) as the
+   * total fee and spreads it across orders in proportion to revenue when Uzum's
+   * finance feed returns nothing. That number is a guess, and a guess written
+   * into the same column as a fact is exactly the coercion Known<T> exists to
+   * prevent — so it is treated as `fee_not_reported`, not as a known fee.
+   *
+   * Undefined or null is read as 'reported', which is what every row carried
+   * before the column existed.
+   */
+  feeSource?: 'reported' | 'derived' | null
   /** orders.delivery_cost. NULL alongside the fee. */
   deliveryCost: number | null
   /**
@@ -88,7 +102,12 @@ export function orderEconomics(o: OrderInput): OrderEconomics {
 
   const fees: Known<number> =
     o.settlementNet != null ? known(revenue - o.settlementNet)
-    : o.marketplaceFee != null ? known(o.marketplaceFee + (o.deliveryCost ?? 0))
+    // A DERIVED fee is not a fee. Settlement net above is real (it is what the
+    // marketplace actually paid), and a reported fee is real; an estimate we
+    // computed ourselves is an answer we do not have, however confident the
+    // number looks sitting in the column next to the real ones.
+    : o.marketplaceFee != null && o.feeSource !== 'derived'
+      ? known(o.marketplaceFee + (o.deliveryCost ?? 0))
     : notKnown('fee_not_reported')
 
   const cogs: Known<number> = o.cogs != null ? known(o.cogs) : notKnown('cost_not_set')

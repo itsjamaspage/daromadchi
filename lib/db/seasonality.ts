@@ -2,6 +2,7 @@ import { inArray, ne, gte, and } from 'drizzle-orm'
 import { db, orders, orderItems, products } from '@/lib/db'
 import { getShopIds as resolveShopIds } from '@/lib/db/shop-context'
 import type { MarketplaceType } from '@/lib/types'
+import { addMonths, startOfMonth, localMonthStr } from '@/lib/period-week'
 
 export interface SeasonalityPoint {
   month: string
@@ -30,9 +31,10 @@ export async function getSeasonality(maxProducts = 6, marketplace?: MarketplaceT
   const shopIds = await getShopIds(marketplace)
   if (shopIds.length === 0) return []
 
-  const since = new Date()
-  since.setMonth(since.getMonth() - 11)
-  since.setDate(1)
+  // startOfMonth AFTER the shift, not setDate(1) after a setMonth that may have
+  // already rolled into the next month — run on the 31st, the old form landed on
+  // 1 October when it meant September, dropping a month of history.
+  const since = startOfMonth(addMonths(new Date(), -11))
 
   const orderRows = await db.select({
     id: orders.id,
@@ -93,10 +95,10 @@ export async function getSeasonality(maxProducts = 6, marketplace?: MarketplaceT
   }
 
   const monthKeys: string[] = []
-  const cur = new Date(since)
+  const cur = startOfMonth(since)   // a fresh Date; the loop advances it
   for (let i = 0; i < 12; i++) {
-    monthKeys.push(`${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, '0')}`)
-    cur.setMonth(cur.getMonth() + 1)
+    monthKeys.push(localMonthStr(cur))
+    cur.setTime(addMonths(cur, 1).getTime())
   }
 
   const result: ProductSeasonality[] = []

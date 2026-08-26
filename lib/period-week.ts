@@ -180,3 +180,82 @@ export function canPageForward(from: string, to: string, now: Date = new Date())
   if (isCalendarWeek(from, to)) return from < localDateStr(startOfIsoWeek(now))
   return to < localDateStr(now)
 }
+
+/**
+ * Add (or subtract) whole months, clamping the day to the target month.
+ *
+ * JavaScript's `setMonth` rolls an overflowing day FORWARD into the next month,
+ * which is almost never what a caller means:
+ *
+ *   31 Jan + 1 month → 31 Feb → 3 March      (not 28 Feb)
+ *   31 May − 1 month → 31 April → 1 May      (not 30 April)
+ *
+ * Both shapes shipped here. In billing it made a subscription bought on the 31st
+ * expire a few days late, and because each renewal is computed from the previous
+ * end date, the drift compounds. In the analytics windows it was worse than late
+ * — `new Date(); d.setMonth(d.getMonth() - i)` run on the 31st produced a series
+ * with two months DUPLICATED and two MISSING, so the coefficient of variation
+ * driving reorder advice was computed over a month list that was simply wrong,
+ * once a month, for three days.
+ *
+ * Clamping is the convention every billing system uses: the 31st of a month
+ * followed by a 30-day month lands on the 30th, not on the 1st of the month
+ * after.
+ */
+export function addMonths(d: Date, months: number): Date {
+  const day = d.getDate()
+  // Day 1 first, so setMonth can never overflow; then put the day back, capped
+  // at however many days the destination month actually has.
+  const out = new Date(d)
+  out.setDate(1)
+  out.setMonth(out.getMonth() + months)
+  const daysInTarget = new Date(out.getFullYear(), out.getMonth() + 1, 0).getDate()
+  out.setDate(Math.min(day, daysInTarget))
+  return out
+}
+
+/** Midnight on the 1st of `d`'s month, in LOCAL time. */
+export function startOfMonth(d: Date): Date {
+  const out = new Date(d.getFullYear(), d.getMonth(), 1)
+  out.setHours(0, 0, 0, 0)
+  return out
+}
+
+/**
+ * `YYYY-MM` in LOCAL time — never toISOString(), which shifts to UTC.
+ *
+ * The same trap localDateStr exists for, one unit up: for a seller at UTC+5, an
+ * order placed at 01:00 on 1 September is 20:00 on 31 August in UTC, so
+ * `toISOString().slice(0, 7)` files it under the wrong MONTH. That mattered here
+ * because the month keys were built from local dates while the buckets were
+ * keyed from UTC ones — so around a month boundary the series was looking up
+ * keys that could not match.
+ */
+export function localMonthStr(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+}
+
+/**
+ * Local 23:59:59.999 on the same calendar day.
+ *
+ * The companion to parseLocalDate, and the pair exists because mixing them was
+ * a real bug: lib/db/revenue.ts had `new Date(from)` (UTC midnight) for the
+ * start and `new Date(to + 'T23:59:59')` (local) for the end, in one function.
+ *
+ * `new Date('2026-08-24')` is parsed as UTC midnight by the spec — a
+ * date-ONLY string is UTC, while a date-time string without a zone is local.
+ * For a seller in Tashkent (UTC+5) that made every window on the dashboard
+ * begin at 05:00, so the first five hours of the selected period were missing
+ * from the KPI cards, the chart, the product table and the orders list alike.
+ */
+export function endOfLocalDay(d: Date): Date {
+  const out = new Date(d)
+  out.setHours(23, 59, 59, 999)
+  return out
+}
+
+/** Local midnight → local end-of-day for a `YYYY-MM-DD` string, in one step. */
+export function localDayRange(dateStr: string): { start: Date; end: Date } {
+  const start = parseLocalDate(dateStr)
+  return { start, end: endOfLocalDay(start) }
+}

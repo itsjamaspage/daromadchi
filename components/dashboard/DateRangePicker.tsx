@@ -7,6 +7,7 @@ import { useTransition } from 'react'
 import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useLang } from '@/app/providers'
 import { localDateStr, parseLocalDate, shiftLocalDate, pageRange, canPageForward } from '@/lib/period-week'
+import { inclusiveDays } from '@/lib/kpi-windows'
 
 interface Props {
   period: string
@@ -110,7 +111,7 @@ export default function DateRangePicker({ period, from, to, presets, fallbackLab
   const today = todayStr()
   const effTo = to ?? today
   const rangeDays = (from && to)
-    ? Math.round((new Date(to).getTime() - new Date(from).getTime()) / 86_400_000) + 1
+    ? inclusiveDays(from, to)
     : (parseInt(period, 10) || 7)
   const effFrom = from ?? shiftLocalDate(effTo, -(rangeDays - 1))
   // Paging and the "next" rule both live in lib/period-week.ts, shared with

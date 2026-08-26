@@ -50,6 +50,16 @@ export async function loadOrderInputs(
       marketplace_fee: orders.marketplace_fee,
       delivery_cost: orders.delivery_cost,
       marketplace: orders.marketplace,
+      // Raw SQL, not a Drizzle field, per convention 3 in ARCHITECTURE.md: the
+      // deploy runs `next build` BEFORE applying migrations, so a schema field
+      // for a column that does not exist yet would break the build on the very
+      // deploy that adds it. Promote to the Drizzle schema once 086 is confirmed
+      // applied in production.
+      //
+      // The coalesce is belt-and-braces: 086 is NOT NULL DEFAULT 'reported', so
+      // no row can actually be null. It costs nothing and means this query does
+      // not depend on that being true forever.
+      fee_source: sql<string>`coalesce(fee_source, 'reported')`,
     }).from(orders).where(and(...window)),
     // Per order: the cost, and whether any line is missing one. A line with no
     // linked product counts as missing — an unidentified item's cost is not zero.
@@ -75,6 +85,7 @@ export async function loadOrderInputs(
     key: String(r.marketplace),
     revenue: Number(r.revenue ?? 0),
     marketplaceFee: r.marketplace_fee != null ? Number(r.marketplace_fee) : null,
+    feeSource: r.fee_source === 'derived' ? 'derived' as const : 'reported' as const,
     deliveryCost: r.delivery_cost != null ? Number(r.delivery_cost) : null,
     settlementNet: netByOrder.get(r.id as string) ?? null,
     // An order with NO items at all has no known cost — the same unknown, not a

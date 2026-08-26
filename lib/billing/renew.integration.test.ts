@@ -34,6 +34,7 @@ import { db, pool, users, payments, subscriptions } from '@/lib/db'
 import { runBillingRenewal, RENEW_WINDOW_MS, GRACE_MS, type ChargeFn } from './renew'
 import { PLAN_PRICES_TIYIN } from './plans'
 import { PRICE_NOTICE_DAYS } from './price-notice'
+import { addMonths } from '@/lib/period-week'
 
 const DAY = 24 * 60 * 60 * 1000
 const ago = (d: number) => new Date(Date.now() - d * DAY)
@@ -228,7 +229,13 @@ describe('recurring charge — what it bills', () => {
     assert.equal(g.calls[0].amountTiyin, annualAgreed)
     const [pay] = await paymentsFor(subscriptionId)
     assert.equal(pay.period_months, 12)
-    const expected = new Date(endsAt); expected.setMonth(expected.getMonth() + 12)
+    // addMonths, the same clamping helper the renewal itself uses. Computing the
+    // expectation with a bare setMonth made this test month-end flaky: endsAt is
+    // now + 12h, so on the 30th or 31st the two disagreed and the assertion
+    // failed for a reason that had nothing to do with renewals. What addMonths
+    // DOES is pinned exhaustively in lib/period-week.test.ts; what this asserts
+    // is that a renewal anchors on the existing expiry and adds the term.
+    const expected = addMonths(endsAt, 12)
     const sub = await readSub(subscriptionId)
     assert.equal(sub.current_period_end?.toISOString(), expected.toISOString())
   })
@@ -299,7 +306,7 @@ describe('recurring charge — a successful renewal', () => {
 
     // Anchored on the EXISTING expiry, not on now — a renewal adds a month, it
     // does not shorten an unexpired plan to today + 1 month.
-    const expected = new Date(endsAt); expected.setMonth(expected.getMonth() + 1)
+    const expected = addMonths(endsAt, 1)
     const sub = await readSub(subscriptionId)
     assert.equal(sub.status, 'active')
     assert.equal(sub.current_period_end?.toISOString(), expected.toISOString())

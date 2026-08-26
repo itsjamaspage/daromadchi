@@ -119,3 +119,91 @@ test('nobody re-anchors a date range to "the N days ending today"', () => {
     'the P&L calendar kept returning Thu–Wed after #365 fixed the dashboard one:\n\n' +
     offenders.map(o => '  ' + o).join('\n') + '\n')
 })
+
+/**
+ * The fourth ban: month arithmetic.
+ *
+ * `setMonth` rolls an overflowing day forward — 31 Jan + 1 month is 3 March, not
+ * 28 February — and the same call subtracting is how an analytics window came to
+ * duplicate two months and drop two others. It shipped in eight places at once,
+ * which is what a primitive that everyone hand-rolls looks like.
+ *
+ * Also banned: `toISOString().slice(0, 7)` for a calendar MONTH, the same UTC
+ * trap the day-level ban already covers one unit down. It is banned everywhere
+ * rather than only under app/dashboard, because unlike the day case there is no
+ * legitimate use of a UTC month in this codebase — nothing queries a marketplace
+ * API by month.
+ */
+test('nobody does month arithmetic by hand', () => {
+  const everyFile = SEARCH.flatMap(d => [...walk(join(ROOT, d))]).map(f => f.slice(ROOT.length + 1))
+  const setMonth: string[] = []
+  const utcMonth: string[] = []
+
+  for (const f of everyFile) {
+    // lib/period-week.ts owns the implementation — addMonths is where the one
+    // legitimate setMonth lives, guarded by the day-clamp around it.
+    if (f.startsWith('lib/period-week')) continue
+    const src = readFileSync(join(ROOT, f), 'utf8')
+    const code = src
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/(^|[^:])\/\/[^\n]*/g, '$1')
+
+    if (/\.setMonth\s*\(/.test(code)) setMonth.push(f)
+    if (/toISOString\(\)\s*\.\s*slice\(\s*0\s*,\s*7\s*\)/.test(code)) utcMonth.push(f)
+  }
+
+  assert.deepEqual(setMonth, [],
+    'use addMonths() from lib/period-week.ts — setMonth rolls 31 Jan + 1 month\n' +
+    'to 3 March instead of clamping to 28 February:\n\n' +
+    setMonth.map(o => '  ' + o).join('\n') + '\n')
+
+  assert.deepEqual(utcMonth, [],
+    'use localMonthStr() — toISOString() shifts to UTC, so an order placed at\n' +
+    '01:00 on the 1st is filed under the previous month for any seller east of\n' +
+    'Greenwich:\n\n' +
+    utcMonth.map(o => '  ' + o).join('\n') + '\n')
+})
+
+/**
+ * The fifth ban: parsing a date STRING with `new Date(...)`.
+ *
+ * `new Date('2026-08-24')` is UTC midnight — the spec parses a date-ONLY string
+ * as UTC, while a date-time string without a zone is local. For a seller in
+ * Tashkent (UTC+5) that made the selected window begin at 05:00, so the first
+ * five hours of every period were missing.
+ *
+ * It was not one site. The KPI cards, the revenue chart, the product-sales
+ * table, the category chart and the orders list each parsed the `from`/`to`
+ * query params this way, so every panel on the dashboard shared the same skew —
+ * and the KPI comparison, derived from that start by millisecond arithmetic,
+ * came out ten hours off AND overlapping the week it compared against.
+ *
+ * Matching only the conventional names (`from`, `to`, `since`, `until`) is a
+ * heuristic, not a proof: a date string held in a differently-named variable
+ * slips through. It is worth having anyway — those four names are what the
+ * query params are called everywhere in this codebase, and the ban costs
+ * nothing where a genuine Date needs copying (use the value directly, or a
+ * helper that returns a fresh one).
+ */
+test('nobody parses a date string with new Date()', () => {
+  const everyFile = SEARCH.flatMap(d => [...walk(join(ROOT, d))]).map(f => f.slice(ROOT.length + 1))
+  const offenders: string[] = []
+
+  for (const f of everyFile) {
+    // period-week and kpi-windows own date parsing.
+    if (f.startsWith('lib/period-week') || f.startsWith('lib/kpi-windows')) continue
+    const src = readFileSync(join(ROOT, f), 'utf8')
+    const code = src
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/(^|[^:])\/\/[^\n]*/g, '$1')
+
+    // `new Date(from)` / `new Date(to + '…')` — the query-param names.
+    if (/new Date\(\s*(from|to|since|until)\b/.test(code)) offenders.push(f)
+  }
+
+  assert.deepEqual(offenders, [],
+    "use parseLocalDate() / endOfLocalDay() from lib/period-week.ts —\n" +
+    "new Date('2026-08-24') is UTC midnight, which starts the seller's day at\n" +
+    '05:00 in Tashkent and skews every figure computed from it:\n\n' +
+    offenders.map(o => '  ' + o).join('\n') + '\n')
+})
