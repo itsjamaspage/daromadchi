@@ -1,4 +1,4 @@
-import { eq, and, inArray, count } from 'drizzle-orm'
+import { eq, and, inArray, count, sql } from 'drizzle-orm'
 import { db, shops, products, orders, orderItems, syncDays } from '@/lib/db'
 import {
   fetchAllYandexOrders,
@@ -803,7 +803,12 @@ export async function syncFromYandex(
                 fulfillment_type: campaignFulfillmentType,
                 // Order-derived fallback: no mapping, so no variant grouping.
                 variant_group_key: null,
-                variant_color: null,
+                // The colour still comes from the order line itself, via the same
+                // snapshot the line is written with. A stub left at NULL here is a
+                // product the variant matcher cannot tell apart from its sibling,
+                // and a mislink an audit cannot see — the colour is on both sides
+                // or on neither.
+                variant_color: yandexItemSnapshot(it).variant_color,
               })
             }
           }
@@ -830,6 +835,7 @@ export async function syncFromYandex(
               cost_price: null,
               stock_quantity: r.stock_quantity ?? 0,
               fulfillment_type: r.fulfillment_type,
+              variant_color: r.variant_color,
             })))
           }
           if (toUpd.length > 0) {
@@ -843,6 +849,9 @@ export async function syncFromYandex(
                 category: r.category,
               }
               if (r.selling_price != null) patch.selling_price = String(r.selling_price)
+              // FILL, never overwrite: the catalogue path knows the colour from
+              // the offer card, which beats a guess off an order line.
+              if (r.variant_color != null) patch.variant_color = sql`coalesce(${products.variant_color}, ${r.variant_color})`
               await db.update(products).set(patch).where(eq(products.id, r.id))
             }
           }
@@ -868,9 +877,10 @@ export async function syncFromYandex(
                   sku: it.offerId, category: null,
                   selling_price: it.buyerPrice ?? it.price ?? null, cost_price: null, stock_quantity: 0,
                   fulfillment_type: campaignFulfillmentType,
-                  // Order-derived fallback: no mapping, so no variant grouping.
+                  // Order-derived fallback: no mapping, no variant grouping.
+                  // Colour from the order line — see the sibling path above.
                   variant_group_key: null,
-                  variant_color: null,
+                  variant_color: yandexItemSnapshot(it).variant_color,
                 })
               }
             }
@@ -892,6 +902,7 @@ export async function syncFromYandex(
                 selling_price: r.selling_price != null ? String(r.selling_price) : null,
                 cost_price: null,
                 stock_quantity: r.stock_quantity ?? 0,
+                variant_color: r.variant_color,
               })))
             }
             if (toUpd.length > 0) {
@@ -905,6 +916,7 @@ export async function syncFromYandex(
                   category: r.category,
                 }
                 if (r.selling_price != null) patch.selling_price = String(r.selling_price)
+                if (r.variant_color != null) patch.variant_color = sql`coalesce(${products.variant_color}, ${r.variant_color})`
                 await db.update(products).set(patch).where(eq(products.id, r.id))
               }
             }

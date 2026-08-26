@@ -766,7 +766,12 @@ export async function syncFromUzum(shopId: string, token: string, heavy = true):
                 // variant grouping (no parent productId available).
                 is_archived: false,
                 variant_group_key: null,
-                variant_color: null,
+                // The colour still comes from the order line itself, via the same
+                // snapshot the line is written with. A stub left at NULL here is
+                // a product the variant matcher cannot tell apart from its
+                // sibling, and a mislink the audit cannot see — the colour is on
+                // both sides or on neither.
+                variant_color: uzumItemSnapshot(it).variant_color,
               })
             }
           }
@@ -792,6 +797,7 @@ export async function syncFromUzum(shopId: string, token: string, heavy = true):
               selling_price: r.selling_price != null ? String(r.selling_price) : null,
               cost_price: r.cost_price != null ? String(r.cost_price) : null,
               stock_quantity: r.stock_quantity,
+              variant_color: r.variant_color,
             })))
           }
           if (toUpd.length > 0) {
@@ -803,6 +809,9 @@ export async function syncFromUzum(shopId: string, token: string, heavy = true):
                 selling_price: r.selling_price != null ? String(r.selling_price) : null,
                 stock_quantity: r.stock_quantity,
                 marketplace_product_id: r.marketplace_product_id,
+                // FILL, never overwrite: the catalogue path knows the colour from
+                // the product card, which beats a guess off an order line.
+                variant_color: sql`coalesce(${products.variant_color}, ${r.variant_color})`,
               }).where(eq(products.id, r.id))
             }
           }
@@ -843,10 +852,11 @@ export async function syncFromUzum(shopId: string, token: string, heavy = true):
                   selling_price: it.price ?? null, cost_price: null, stock_quantity: 0,
                   quantity_sold: null,
                   // Order-derived fallback: no card data, so not archived and no
-                  // variant grouping (no parent productId available).
+                  // variant grouping (no parent productId available). Colour from
+                  // the order line — see the sibling path above.
                   is_archived: false,
                   variant_group_key: null,
-                  variant_color: null,
+                  variant_color: uzumItemSnapshot(it).variant_color,
                 })
               }
             }
@@ -868,6 +878,7 @@ export async function syncFromUzum(shopId: string, token: string, heavy = true):
                 selling_price: r.selling_price != null ? String(r.selling_price) : null,
                 cost_price: r.cost_price != null ? String(r.cost_price) : null,
                 stock_quantity: r.stock_quantity,
+                variant_color: r.variant_color,
               })))
             }
             if (toUpd.length > 0) {
@@ -879,6 +890,7 @@ export async function syncFromUzum(shopId: string, token: string, heavy = true):
                   selling_price: r.selling_price != null ? String(r.selling_price) : null,
                   stock_quantity: r.stock_quantity,
                   marketplace_product_id: r.marketplace_product_id,
+                  variant_color: sql`coalesce(${products.variant_color}, ${r.variant_color})`,
                 }).where(eq(products.id, r.id))
               }
             }
