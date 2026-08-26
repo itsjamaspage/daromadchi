@@ -282,6 +282,46 @@ delivery · net), with a weekly/period view.
   RBAC), so "paid" is unprovable and is **never emitted** — a Uzum bucket tops out
   at `available_to_withdraw` (money earned, withdrawal state unknown) or `pending`.
 
+## Money — one definition of profit
+
+`lib/money/` is the single place profit is defined. Everything that shows a
+profit figure — dashboard KPIs, the extension `/stats` endpoint, the daily
+Telegram summary — loads through it.
+
+**`orderEconomics` is `revenue − fees − COGS`.** There is no second formula.
+
+**`Known<T>` makes an unknown unwritable.** It is a discriminated union:
+
+```ts
+type Known<T> = { known: true; value: T } | { known: false; reason: UnknownReason }
+```
+
+An absent fee or cost cannot be silently read as `0`; the compiler forces the
+caller to say what happens instead. This exists because every profit bug this
+project shipped had the same shape — `coalesce(marketplace_fee, 0)` claiming
+*Yandex charged nothing*, `coalesce(cost_price, 0)` claiming *these goods were
+free* — producing a number plausible enough to trust.
+
+**The two unknowns get different policies, deliberately:**
+
+| unknown | behaviour | why |
+|---|---|---|
+| `fee_not_reported` | order **excluded**, marketplace named under the total | the seller can only wait for the netting report |
+| `cost_not_set` | order **counted**, total **flagged** | the seller can fix it in a minute; excluding it would show someone who has never entered a cost a permanent zero |
+
+**Order scope is delivered-only** (`lib/money/load-order-economics.ts`), and COGS
+is `NULL` when *any* item in the set lacks a cost. A total missing one product's
+cost is not a smaller cost — it is an unknown one.
+
+**Surfaces that carry their own partial-COGS marker** rather than routing through
+`sumEconomics` (they aggregate per bucket, not per order): `lib/db/pnl.ts`
+(`cogsPending`) and `lib/db/payouts.ts` (`cogsPartial`). Both sum only costed
+items and flag the shortfall instead of defaulting a missing cost to zero.
+
+**Known gap:** `lib/uzum/sync.ts` can *derive* a fee from the shop balance and
+write it into `orders.marketplace_fee`. Nothing distinguishes a derived fee from
+a reported one, so the money module treats it as known. See `AUDIT.md`.
+
 ## Profit & Loss (P&L)
 
 Daily/monthly P&L with a full expense breakdown (`lib/db/pnl.ts`). Where a
@@ -456,7 +496,7 @@ on our own infrastructure and GitHub is not a data processor.
   always add the new file to that list in the same change. (Two dated
   `20260629_*` files — `token_valid`, `warehouses` — exist on disk but are **not
   yet registered**.)
-- **Migrations are current through 080** (the runner registers 021→080; 044/048
+- **Migrations are current through 085** (the runner registers 021→085; 044/048
   are intentionally absent). Notable recent ones:
   - `064` — ATMOS billing: `subscriptions` table + ATMOS columns on `payments` + `atmos_status` enum
   - `065` — `stock_ledger` (event-sourced authoritative on-hand per SKU group)
@@ -485,6 +525,65 @@ on our own infrastructure and GitHub is not a data processor.
 - **Domains:** `daromadchi.uz` and `www.daromadchi.uz` (both must work — for the
   extension and for the cross-host session cookie).
 
+## Dates, weeks and the period pickers
+
+`lib/period-week.ts` owns every week boundary and every range-paging decision.
+Nothing else may derive one.
+
+**Weeks run Monday→Sunday** (ISO-8601). The key format is `2026-W34`, zero-padded
+so lexicographic comparison is chronological, and matching Postgres
+`to_char(ordered_at, 'IYYY-"W"IW')` exactly — the SQL buckets and the JS labels
+must describe the same week.
+
+**Two traps this module exists to close, both of which shipped as bugs:**
+
+1. **`toISOString()` converts to UTC.** For a seller at UTC+5, local midnight
+   Monday is Sunday 19:00 UTC, so `monday.toISOString().slice(0,10)` names the
+   *wrong day*. Use `localDateStr()`.
+2. **Paging a week is not "shift 7 days".** The original code shifted both ends
+   and then clamped the end to today, which re-anchored a Mon–Sun window to
+   Thu–Wed the moment it caught up with the present — i.e. on the current week,
+   the most-viewed range. `pageRange()` snaps a calendar week back to its Monday
+   and lets it keep its Sunday even though that Sunday is in the future. A week
+   that ends on Wednesday is not a week.
+
+`canPageForward()` decides the "next" button from the week you are **on**, not
+from its Sunday; the end-based test is what let the clamp fire.
+
+**Two picker components share this module:** `DateRangePicker` (dashboard,
+Orders) and `CalendarPicker` (P&L). They render differently — plain date inputs
+versus a month grid — but both call `pageRange` / `canPageForward`. They each
+owned a copy of the paging arithmetic until the copies drifted and a fix landed
+on one and missed the other.
+
+## Testing & guardrails
+
+Tests run with `node --import tsx --test`. Modules importing `server-only` need
+`--conditions=react-server`. Integration suites expect a real Postgres via
+`DATABASE_URL`.
+
+**Guardrail tests are the enforcement mechanism for the rules above.** Rather
+than asserting behaviour, they scan the repository's own source and fail if a
+banned pattern reappears:
+
+| guard | bans |
+|---|---|
+| `lib/marketplace-readonly-guard.test.ts` | marketplace writes outside the audited writer |
+| `lib/money/order-economics.guardrail.test.ts` | `coalesce(fee/cost, 0)` and `cost_price ?? 0` outside `lib/money` |
+| `lib/period-week.guardrail.test.ts` | hand-rolled week boundaries, UTC day conversion, and a second copy of the paging clamp |
+
+The money and week guards support a per-line opt-out — `// money-guard-ok: <reason>`
+— for the handful of cases that genuinely are not the bug. The reason is
+mandatory and the scanner reads code and comments in one pass, so the marker
+cannot be smuggled in inside a string literal. **Prefer a per-line opt-out to a
+file allowlist:** a file-wide exemption in the week guard is exactly how the P&L
+picker kept its bug through the fix that was meant to remove it.
+
+> ⚠️ **These guards do not currently run in CI.** The pipeline runs lint,
+> typecheck and build only — no test job — so all 45 `test:*` scripts execute
+> only when someone runs them by hand, and several have been failing on `main`
+> unnoticed. See `AUDIT.md`.
+
 ## Key Conventions
 
 1. **Cache tags:** `'product-data'` for products/KPIs, `'order-data'` for orders/revenue.
@@ -503,7 +602,15 @@ on our own infrastructure and GitHub is not a data processor.
    allowlist, plus the separately-allowlisted oversell order-cancel path. Every other
    marketplace write is prohibited. See `AGENTS.md`.
 7. **Extension auth:** Uses the `extension_token` column via raw SQL, not a Drizzle field.
-8. **Keep the docs in sync:** when you add a migration or a user-facing
+   (Deliberate, per convention 3 — but it means `drizzle-kit push` does not know
+   the column exists. Never run `push` against production.)
+8. **Profit has one definition:** `revenue − fees − COGS`, computed in
+   `lib/money/`. Never coalesce a missing fee or cost to `0` — keep the null and
+   let the UI say "—". The guardrail test enforces this.
+9. **Week and date maths lives in `lib/period-week.ts`.** Never `getDay()`,
+   never `toISOString().slice(0,10)` for a calendar day, never a second copy of
+   the range-paging clamp.
+10. **Keep the docs in sync:** when you add a migration or a user-facing
    auth/privacy/payments feature, update **this file** *and* `public/architecture.html`
    in the same change — including the "current through NNN" migration line here and
    the `Migrations → NNN` label in the diagram.
