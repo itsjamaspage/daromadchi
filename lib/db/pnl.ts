@@ -4,6 +4,7 @@ import { getShopIds } from '@/lib/db/shop-context'
 import { getUnitEcoSettings } from '@/lib/db/unit-economics'
 import { getRealFinancialsByBucket } from '@/lib/db/real-financials'
 import type { MarketplaceType } from '@/lib/types'
+import { addMonths } from '@/lib/period-week'
 
 /**
  * Daily P&L with a full expense breakdown. Marketplaces rarely report fees
@@ -386,7 +387,8 @@ export async function getDeliveryByMarketplace(opts: {
 /** @deprecated use getPnl instead */
 export async function getMonthlyPnl(months = 6, marketplace?: MarketplaceType) {
   const to = new Date()
-  const from = new Date()
-  from.setMonth(from.getMonth() - months)
+  // Clamped: on the 31st, setMonth rolled the start forward into the next
+  // month, so the window was a month shorter than asked for.
+  const from = addMonths(new Date(), -months)
   return getPnl({ from, to, bucket: 'month', marketplace })
 }

@@ -222,3 +222,82 @@ test('a non-week range keeps its own length and is still clamped', () => {
   const atEdge = pageRange('2026-08-01', '2026-08-25', 1, WED_26_AUG_2026)
   assert.equal(atEdge.to, '2026-08-26', 'clamped to today rather than paged into the future')
 })
+
+// ── Month arithmetic ────────────────────────────────────────────────────────
+//
+// setMonth rolls an overflowing day forward. These pin the two shapes that
+// shipped: a billing period ending late, and an analytics month series with
+// months duplicated and dropped.
+
+import { addMonths, startOfMonth, localMonthStr } from './period-week'
+
+const ymd = (d: Date) => localDateStr(d)
+
+test('a month-end date clamps instead of rolling into the next month', () => {
+  // The exact cases from the audit, with the old behaviour named.
+  assert.equal(ymd(addMonths(new Date(2026, 0, 31), 1)), '2026-02-28', 'setMonth gave 2026-03-03')
+  assert.equal(ymd(addMonths(new Date(2026, 2, 31), 1)), '2026-04-30', 'setMonth gave 2026-05-01')
+  assert.equal(ymd(addMonths(new Date(2026, 4, 31), -1)), '2026-04-30', 'setMonth gave 2026-05-01')
+  assert.equal(ymd(addMonths(new Date(2026, 7, 31), 1)), '2026-09-30', 'setMonth gave 2026-10-01')
+})
+
+test('a leap year is respected', () => {
+  assert.equal(ymd(addMonths(new Date(2028, 0, 31), 1)), '2028-02-29', '2028 is a leap year')
+  assert.equal(ymd(addMonths(new Date(2026, 0, 31), 1)), '2026-02-28', '2026 is not')
+})
+
+test('a day that fits is left exactly where it is', () => {
+  assert.equal(ymd(addMonths(new Date(2026, 0, 15), 1)), '2026-02-15')
+  assert.equal(ymd(addMonths(new Date(2026, 0, 15), -1)), '2025-12-15')
+  assert.equal(ymd(addMonths(new Date(2026, 0, 15), 0)), '2026-01-15')
+})
+
+test('it crosses years in both directions', () => {
+  assert.equal(ymd(addMonths(new Date(2026, 11, 15), 1)), '2027-01-15')
+  assert.equal(ymd(addMonths(new Date(2026, 0, 15), -1)), '2025-12-15')
+  assert.equal(ymd(addMonths(new Date(2026, 5, 30), 12)), '2027-06-30')
+})
+
+test('it does not mutate its argument', () => {
+  const d = new Date(2026, 0, 31)
+  addMonths(d, 1)
+  assert.equal(ymd(d), '2026-01-31')
+})
+
+test('a month series has no duplicates and no gaps, run on the 31st', () => {
+  // The reported failure: on 31 Aug 2026 the 6-month window produced
+  // [Mar, May, May, Jul, Jul, Aug] — April and June missing entirely.
+  const on31st = new Date(2026, 7, 31)
+  const keys: string[] = []
+  for (let i = 5; i >= 0; i--) keys.push(localMonthStr(addMonths(on31st, -i)))
+  assert.deepEqual(keys, ['2026-03', '2026-04', '2026-05', '2026-06', '2026-07', '2026-08'])
+  assert.equal(new Set(keys).size, keys.length, 'every bucket is distinct')
+})
+
+test('every day of every month produces a clean 12-month series', () => {
+  // The bug only appeared on the 29th–31st, which is how it survived: any test
+  // written on a normal day passes. This walks a whole year of start dates.
+  for (let m = 0; m < 12; m++) {
+    for (let day = 28; day <= 31; day++) {
+      const start = new Date(2026, m, 1)
+      const dim = new Date(2026, m + 1, 0).getDate()
+      if (day > dim) continue
+      start.setDate(day)
+      const keys = Array.from({ length: 12 }, (_, i) => localMonthStr(addMonths(start, -(11 - i))))
+      assert.equal(new Set(keys).size, 12, `duplicate month starting ${ymd(start)}: ${keys.join(',')}`)
+    }
+  }
+})
+
+test('startOfMonth is local midnight on the 1st', () => {
+  const d = startOfMonth(new Date(2026, 7, 31, 23, 45))
+  assert.equal(ymd(d), '2026-08-01')
+  assert.equal(d.getHours(), 0)
+})
+
+test('localMonthStr uses the local month, not the UTC one', () => {
+  // Same trap as localDateStr, one unit up: east of Greenwich, local midnight on
+  // the 1st is still the previous month in UTC.
+  const firstOfMonthLocal = new Date(2026, 8, 1, 1, 0)
+  assert.equal(localMonthStr(firstOfMonthLocal), '2026-09')
+})

@@ -17,6 +17,7 @@ import { and, eq, notInArray, sql } from 'drizzle-orm'
 import { db, payments, subscriptions, users } from '@/lib/db'
 import { isPlanKey } from '@/lib/billing/plans'
 import { logger } from '@/lib/logger'
+import { addMonths } from '@/lib/period-week'
 
 const FINAL_STATES = ['success', 'failed', 'cancelled'] as const
 
@@ -79,8 +80,10 @@ export async function applyAtmosPaymentSuccess(input: ApplySuccessInput): Promis
       const [u] = await tx.select({ exp: users.plan_expires_at }).from(users).where(eq(users.id, pay.userId))
       if (u?.exp && u.exp > now) base = u.exp
     }
-    const periodEnd = new Date(base)
-    periodEnd.setMonth(periodEnd.getMonth() + (pay.periodMonths ?? 1))
+    // Clamped, so a period that starts on the 31st ends on the last day of the
+    // target month rather than spilling into the one after. This one compounds:
+    // `base` is the PREVIOUS period end, so every renewal inherited the drift.
+    const periodEnd = addMonths(base, pay.periodMonths ?? 1)
 
     if (pay.subscriptionId) {
       await tx.update(subscriptions)

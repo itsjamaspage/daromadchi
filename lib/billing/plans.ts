@@ -1,3 +1,4 @@
+import { addMonths } from '@/lib/period-week'
 export type PlanKey  = 'pro' | 'pro_plus' | 'biznes'
 export type Interval = 'monthly' | 'annual'
 
@@ -120,7 +121,8 @@ export function annualMonthlySom(plan: PlanKey): number {
 }
 
 export function planExpiresAt(months: number): string {
-  const d = new Date()
-  d.setMonth(d.getMonth() + months)
-  return d.toISOString()
+  // addMonths clamps the day: a plan bought on 31 January expires 28 February,
+  // not 3 March. setMonth rolled the overflow forward, so every month-end
+  // purchase quietly ran long.
+  return addMonths(new Date(), months).toISOString()
 }

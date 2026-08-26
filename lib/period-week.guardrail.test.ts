@@ -119,3 +119,47 @@ test('nobody re-anchors a date range to "the N days ending today"', () => {
     'the P&L calendar kept returning Thu–Wed after #365 fixed the dashboard one:\n\n' +
     offenders.map(o => '  ' + o).join('\n') + '\n')
 })
+
+/**
+ * The fourth ban: month arithmetic.
+ *
+ * `setMonth` rolls an overflowing day forward — 31 Jan + 1 month is 3 March, not
+ * 28 February — and the same call subtracting is how an analytics window came to
+ * duplicate two months and drop two others. It shipped in eight places at once,
+ * which is what a primitive that everyone hand-rolls looks like.
+ *
+ * Also banned: `toISOString().slice(0, 7)` for a calendar MONTH, the same UTC
+ * trap the day-level ban already covers one unit down. It is banned everywhere
+ * rather than only under app/dashboard, because unlike the day case there is no
+ * legitimate use of a UTC month in this codebase — nothing queries a marketplace
+ * API by month.
+ */
+test('nobody does month arithmetic by hand', () => {
+  const everyFile = SEARCH.flatMap(d => [...walk(join(ROOT, d))]).map(f => f.slice(ROOT.length + 1))
+  const setMonth: string[] = []
+  const utcMonth: string[] = []
+
+  for (const f of everyFile) {
+    // lib/period-week.ts owns the implementation — addMonths is where the one
+    // legitimate setMonth lives, guarded by the day-clamp around it.
+    if (f.startsWith('lib/period-week')) continue
+    const src = readFileSync(join(ROOT, f), 'utf8')
+    const code = src
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/(^|[^:])\/\/[^\n]*/g, '$1')
+
+    if (/\.setMonth\s*\(/.test(code)) setMonth.push(f)
+    if (/toISOString\(\)\s*\.\s*slice\(\s*0\s*,\s*7\s*\)/.test(code)) utcMonth.push(f)
+  }
+
+  assert.deepEqual(setMonth, [],
+    'use addMonths() from lib/period-week.ts — setMonth rolls 31 Jan + 1 month\n' +
+    'to 3 March instead of clamping to 28 February:\n\n' +
+    setMonth.map(o => '  ' + o).join('\n') + '\n')
+
+  assert.deepEqual(utcMonth, [],
+    'use localMonthStr() — toISOString() shifts to UTC, so an order placed at\n' +
+    '01:00 on the 1st is filed under the previous month for any seller east of\n' +
+    'Greenwich:\n\n' +
+    utcMonth.map(o => '  ' + o).join('\n') + '\n')
+})
