@@ -61,6 +61,7 @@
     "test:tenancy": "node --import tsx --test lib/marketplace/stock-refresh-tenancy.integration.test.ts",
     "audit:variant-mislinks": "node --import tsx scripts/audit-variant-mislinks.ts",
     "backfill:variant-color": "node --import tsx scripts/backfill-variant-color.ts",
+    "test:kpis-period": "node --conditions=react-server --import tsx --test lib/db/kpis.integration.test.ts",
     "test:variant-backfill": "node --import tsx --test scripts/backfill-variant-color.test.ts",
     "test:variant-match": "node --import tsx --test lib/uzum/variant-match.test.ts"
   },

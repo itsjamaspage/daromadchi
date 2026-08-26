@@ -1,4 +1,4 @@
-import { inArray, gte, and, sql, eq } from 'drizzle-orm'
+import { inArray, gte, lte, and, sql, eq } from 'drizzle-orm'
 import { db, shops, yandexSettlementTransactions, uzumSettlementOrders } from '@/lib/db'
 import type { MarketplaceType } from '@/lib/types'
 
@@ -57,10 +57,23 @@ export interface RealBucket {
                       // YANDEX specifically has settled, not just the bucket overall
 }
 
+/**
+ * Settlement financials, bucketed by day or month.
+ *
+ * `to` bounds the window on the RIGHT. It is optional because the per-bucket
+ * callers (P&L, the diagnose route) read buckets back by key and so cannot pick
+ * up a transaction outside their range — but a caller that SUMS the returned
+ * buckets has no such protection, and an unbounded sum is then "from `from`
+ * until forever". That is exactly what made the dashboard's Чистая прибыль
+ * wrong: a week with no orders still showed a large profit, because the figure
+ * was every settlement from that Monday onward minus the COGS of that one week.
+ * Pass `to` whenever the result is going to be totalled.
+ */
 export async function getRealFinancialsByBucket(
   shopIds: string[],
   from: Date,
   bucket: 'day' | 'month',
+  to?: Date | null,
 ): Promise<Map<string, RealBucket>> {
   const out = new Map<string, RealBucket>()
   if (shopIds.length === 0) return out
@@ -103,6 +116,7 @@ export async function getRealFinancialsByBucket(
         .where(and(
           inArray(yandexSettlementTransactions.shop_id, ymShopIds),
           gte(yandexSettlementTransactions.transaction_at, from),
+          ...(to ? [lte(yandexSettlementTransactions.transaction_at, to)] : []),
         ))
       const perBucket = new Map<string, { credit: number; commission: number; delivery: number; other: number; itemCount: number }>()
       for (const r of rows) {
@@ -151,6 +165,7 @@ export async function getRealFinancialsByBucket(
         .where(and(
           inArray(uzumSettlementOrders.shop_id, uzShopIds),
           gte(uzumSettlementOrders.transaction_at, from),
+          ...(to ? [lte(uzumSettlementOrders.transaction_at, to)] : []),
         ))
       for (const r of rows) {
         if (!r.bucket || r.status === 'CANCELED') continue
