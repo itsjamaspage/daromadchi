@@ -2,6 +2,7 @@ import { inArray, gte, and } from 'drizzle-orm'
 import { db, orders, orderItems } from '@/lib/db'
 import { getShopIds } from '@/lib/db/shop-context'
 import type { MarketplaceType } from '@/lib/types'
+import { addMonths, startOfMonth, localMonthStr } from '@/lib/period-week'
 
 export interface Variability {
   cv: number
@@ -17,9 +18,9 @@ export async function getDemandVariability(
   const shopIds = await getShopIds(marketplace)
   if (!shopIds || shopIds.length === 0) return out
 
-  const since = new Date()
-  since.setMonth(since.getMonth() - (months - 1))
-  since.setDate(1)
+  // startOfMonth AFTER the shift — see lib/period-week.ts. The old
+  // setMonth-then-setDate(1) had already rolled into the wrong month on the 31st.
+  const since = startOfMonth(addMonths(new Date(), -(months - 1)))
 
   const orderRows = await db.select({
     id: orders.id,
@@ -35,7 +36,10 @@ export async function getDemandVariability(
 
   const orderMonth = new Map<string, string>()
   for (const o of orderRows) {
-    orderMonth.set(o.id, o.ordered_at.toISOString().slice(0, 7))
+    // LOCAL month. toISOString() shifts to UTC, so for a seller at UTC+5 an order
+    // placed at 01:00 on the 1st was filed under the PREVIOUS month — while the
+    // key list below was built from local dates, so the two could not match.
+    orderMonth.set(o.id, localMonthStr(o.ordered_at))
   }
 
   const orderIds = orderRows.map(o => o.id)
@@ -58,11 +62,15 @@ export async function getDemandVariability(
     pm.set(m, (pm.get(m) ?? 0) + (it.quantity ?? 0))
   }
 
+  // The series the coefficient of variation is computed over. Run on the 31st,
+  // the old form produced [Mar, May, May, Jul, Jul, Aug] for a six-month window
+  // — two months counted twice, two missing entirely — so the variability that
+  // drives reorder advice was derived from a month list that was simply wrong,
+  // for three days out of every month.
+  const now = new Date()
   const monthKeys: string[] = []
   for (let i = months - 1; i >= 0; i--) {
-    const d = new Date()
-    d.setMonth(d.getMonth() - i)
-    monthKeys.push(d.toISOString().slice(0, 7))
+    monthKeys.push(localMonthStr(addMonths(now, -i)))
   }
 
   for (const [pid, pm] of perProduct) {

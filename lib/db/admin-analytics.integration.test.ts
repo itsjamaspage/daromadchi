@@ -151,8 +151,15 @@ describe('admin analytics — live metrics', () => {
     assert.equal(r.churned.length, 2, 'C (this month) + E (last month)')
 
     // ── churn dating: keyed off cancelled_at, not updated_at (regression) ──
-    const lastMonthYM = new Date(lastMonth).toISOString().slice(0, 7)
-    const thisMonthYM = now.toISOString().slice(0, 7)
+    // Asia/Tashkent, because that is the zone the production query keys months
+    // in: `to_char(… AT TIME ZONE 'Asia/Tashkent', 'YYYY-MM')`. Comparing a
+    // UTC-derived key against a Tashkent-derived one agrees for most of the
+    // month and disagrees on the 1st before 05:00 local — a test that would have
+    // failed a few hours a month for a reason unrelated to churn dating.
+    const ymTashkent = (d: Date) =>
+      d.toLocaleDateString('sv-SE', { timeZone: 'Asia/Tashkent' }).slice(0, 7)
+    const lastMonthYM = ymTashkent(new Date(lastMonth))
+    const thisMonthYM = ymTashkent(now)
     const eRow = r.churned.find(x => x.email === 'e@real.test')
     assert.ok(eRow, 'E appears in churned')
     assert.equal(eRow!.lapsedAt?.slice(0, 7), lastMonthYM, 'E lapse dated to cancelled_at (last) month, NOT its update month')
