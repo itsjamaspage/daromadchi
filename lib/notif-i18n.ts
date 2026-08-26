@@ -83,6 +83,11 @@ export interface NotifStrings {
   // Tells a read-only seller the exact number to set by hand on a marketplace.
   manualStockTitle: (n: number) => string
   manualStockLine: (product: string, target: number, marketplace: string, orderId?: string | null) => string
+  // Closing line: why a human is being asked to do this at all.
+  manualStockFooter: string
+  /** Link back to the in-app notification list. Appended to EVERY seller alert
+   *  by renderSellerText — takes the href so the URL stays out of the strings. */
+  notificationsCta: (url: string) => string
   // Extension daily summary (app/api/extension/send-daily-summary). Was hardcoded Uzbek.
   extDailyTitle: (date: string) => string
   extRevenue: string
@@ -150,6 +155,8 @@ const STRINGS: Record<NotifLang, NotifStrings> = {
     manualStockTitle: (n) => `🔧 <b>Qoldiqni qo'lda yangilang (${n})</b>`,
     manualStockLine:  (product, target, mp, orderId) =>
       `• ${product} — ${mp}da <b>${target}</b> qo'ying${orderId ? ` · buyurtma #${orderId}` : ''}`,
+    notificationsCta: (url) => `🔔 <a href="${url}">Barcha bildirishnomalar — daromadchi.uz</a>`,
+    manualStockFooter: `ℹ️ <i>API kalitlaringiz faqat o'qish uchun. Tahrirlash huquqiga ega kalitlarga almashtirsangiz, qoldiqlar avtomatik yangilanadi.</i>`,
     stockSyncReason: (r) => REASONS.uz[r] ?? httpReason(r, 'API xatosi'),
     extDailyTitle:  (d) => `📊 <b>Kunlik hisobot — ${d}</b>`,
     extRevenue:     '💰 Daromad',
@@ -213,6 +220,8 @@ const STRINGS: Record<NotifLang, NotifStrings> = {
     manualStockTitle: (n) => `🔧 <b>Обновите остатки вручную (${n})</b>`,
     manualStockLine:  (product, target, mp, orderId) =>
       `• ${product} — поставьте <b>${target}</b> на ${mp}${orderId ? ` · заказ #${orderId}` : ''}`,
+    notificationsCta: (url) => `🔔 <a href="${url}">Все уведомления на daromadchi.uz</a>`,
+    manualStockFooter: `ℹ️ <i>Ваши API-ключи работают только на чтение. Если замените их на ключи с доступом на редактирование, остатки будут обновляться автоматически.</i>`,
     stockSyncReason: (r) => REASONS.ru[r] ?? httpReason(r, 'ошибка API'),
     extDailyTitle:  (d) => `📊 <b>Отчёт за день — ${d}</b>`,
     extRevenue:     '💰 Выручка',
@@ -276,6 +285,8 @@ const STRINGS: Record<NotifLang, NotifStrings> = {
     manualStockTitle: (n) => `🔧 <b>Update stock manually (${n})</b>`,
     manualStockLine:  (product, target, mp, orderId) =>
       `• ${product} — set <b>${target}</b> on ${mp}${orderId ? ` · order #${orderId}` : ''}`,
+    notificationsCta: (url) => `🔔 <a href="${url}">All notifications on daromadchi.uz</a>`,
+    manualStockFooter: `ℹ️ <i>Your API keys are read-only. Switch to keys with edit access and stock will update automatically.</i>`,
     stockSyncReason: (r) => REASONS.en[r] ?? httpReason(r, 'API error'),
     extDailyTitle:  (d) => `📊 <b>Daily report — ${d}</b>`,
     extRevenue:     '💰 Revenue',

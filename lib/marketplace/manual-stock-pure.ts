@@ -23,6 +23,7 @@ export interface ManualReminder {
   title?: string | null      // products.title — the human name
   colorKey?: string | null   // products.variant_color — resolved key, localized at render
   orderId?: string | null    // the sale that moved this group (orders.order_id_external)
+  orderMarketplace?: MarketplaceType | null  // where that sale happened — see GroupIdentity
 }
 
 /**
@@ -37,6 +38,15 @@ export interface GroupIdentity {
   title?: string | null
   colorKey?: string | null
   orderId?: string | null
+  /**
+   * Where that sale happened. The selling marketplace decrements its OWN listing
+   * once the seller accepts the order for shipping — nobody has to touch it by
+   * hand — so a reminder naming it is at best noise and at worst an instruction
+   * to overwrite a number the marketplace is already maintaining. Reminders are
+   * for the OTHER side of the group: the listing that knows nothing about the
+   * sale and still shows the pre-sale figure.
+   */
+  orderMarketplace?: MarketplaceType | null
 }
 
 /** Localize a resolved colour key. Unknown keys are omitted, never shown raw. */
@@ -76,6 +86,10 @@ export function computeManualReminders(members: SyncMember[], identity: GroupIde
   for (const m of members) {
     if (m.apiMode !== 'read_only') continue     // only read-only listings get a manual reminder
     if (!m.sku) continue                        // no human SKU to name → skip (unidentifiable)
+    // The marketplace the sale came from maintains its own stock — see
+    // GroupIdentity.orderMarketplace. Telling the seller to set it by hand is
+    // noise next to the listing that genuinely needs a human.
+    if (identity.orderMarketplace && m.marketplace === identity.orderMarketplace) continue
     if (m.listedStock === target) continue      // already correct → no reminder
     out.push({ sku: m.sku, target, marketplace: m.marketplace, ...identity })
   }
@@ -106,5 +120,9 @@ export function buildManualMessage(items: ManualReminder[], lang: NotifLang = 'u
   for (const it of items) {
     lines.push(T.manualStockLine(productLabel(it, lang), it.target, mpLabel(it.marketplace), it.orderId ?? null))
   }
+  // Why this message exists at all. A seller who never opted into edit mode has
+  // no way to know the app COULD have done this for them, and one line at the
+  // foot is the only place that fact is ever in front of them.
+  lines.push('', T.manualStockFooter)
   return lines.join('\n')
 }

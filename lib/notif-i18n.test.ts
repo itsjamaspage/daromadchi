@@ -122,5 +122,8 @@ test('a builder that throws in EVERY language still sends a generic notice', asy
 
 test('a working builder is untouched by the fallback path', async () => {
   const { renderForTest } = await import('./telegram-seller-render')
-  assert.equal(renderForTest((T) => T.newOrdersCta, 'ru'), notifT('ru').newOrdersCta)
+  // The builder's own text survives verbatim; only the notifications link is
+  // appended after it (see the CTA tests in telegram-seller-render.test.ts).
+  const out = renderForTest((T) => T.newOrdersCta, 'ru')
+  assert.ok(out.startsWith(notifT('ru').newOrdersCta), out)
 })
