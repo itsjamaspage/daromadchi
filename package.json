@@ -39,7 +39,7 @@
     "test:cancel-alert": "node --import tsx --test lib/marketplace/cancellation-alert.test.ts",
     "test:shop-identity": "node --import tsx --test lib/db/shop-identity.test.ts",
     "test:deactivate": "node --conditions=react-server --import tsx --test app/api/shops/deactivate/deactivate.integration.test.ts",
-    "test:order-display": "node --import tsx --test lib/marketplace/order-display-status.test.ts",
+    "test:order-display": "node --import tsx --test lib/marketplace/order-display-status.test.ts lib/marketplace/order-display-labels.test.ts",
     "test:status-map": "node --import tsx --test lib/yandex/status-map.test.ts",
     "test:item-snapshot": "node --import tsx --test lib/yandex/item-snapshot.test.ts",
     "test:renew": "node --conditions=react-server --import tsx --test lib/billing/renew.integration.test.ts",

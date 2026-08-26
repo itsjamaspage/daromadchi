@@ -55,6 +55,10 @@ export const dashT = {
     status: {
       pending: 'Yaratildi', confirmed: 'Yo‘lda', delivered: 'Yetkazildi',
       cancelled: 'Bekor', returned: 'Bekor',
+      // Display-only, from orderDisplayStatus(): `confirmed` covers both
+      // "packed, still here" and "actually shipped", and the badge tells
+      // them apart. A missing key here falls back to the raw enum name.
+      preparing: 'Jarayonda', shipping: 'Yo‘lda',
     },
     products: {
       title: 'Mahsulotlar', count: 'ta mahsulot', empty: "Mahsulotlar yo'q",
@@ -480,6 +484,10 @@ export const dashT = {
     status: {
       pending: 'Created', confirmed: 'In transit', delivered: 'Delivered',
       cancelled: 'Cancelled', returned: 'Cancelled',
+      // Display-only, from orderDisplayStatus(): `confirmed` covers both
+      // "packed, still here" and "actually shipped", and the badge tells
+      // them apart. A missing key here falls back to the raw enum name.
+      preparing: 'Being prepared', shipping: 'On the way',
     },
     products: {
       title: 'Products', count: 'products', empty: 'No products',
@@ -899,6 +907,10 @@ export const dashT = {
     status: {
       pending: 'Создан', confirmed: 'В процессе', delivered: 'Доставлен',
       cancelled: 'Отменён', returned: 'Отменён',
+      // Display-only, from orderDisplayStatus(): `confirmed` covers both
+      // "packed, still here" and "actually shipped", and the badge tells
+      // them apart. A missing key here falls back to the raw enum name.
+      preparing: 'В обработке', shipping: 'В доставке',
     },
     products: {
       title: 'Товары', count: 'товаров', empty: 'Нет товаров',
