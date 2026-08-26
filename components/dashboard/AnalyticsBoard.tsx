@@ -64,7 +64,7 @@ function TipBox({ children }: { children: React.ReactNode }) {
 
 interface Props {
   chartData: DailyRevenue[]
-  categoryData: { name: string; revenue: number; profit: number; percent: number }[]
+  categoryData: { name: string; revenue: number; profit: number | null; percent: number }[]
   products: Product[]
   kpis: Kpis
 }
@@ -128,7 +128,12 @@ export default function AnalyticsBoard({ chartData, categoryData, products, kpis
   const bubbleData = useMemo(() => {
     return categoryData.slice(0, 7).map((c, i) => {
       const units = (soldByCategory.get(c.name) ?? 0) || Math.round(c.revenue / 500_000)
-      const margin = c.revenue > 0 ? Math.min(60, Math.max(4, (c.profit / c.revenue) * 100)) : 10
+      // A category with an uncosted product has no margin to plot. It keeps its
+      // bubble — it did earn revenue — but sits at the axis floor rather than
+      // being drawn at a margin computed from a cost of zero.
+      const margin = c.profit != null && c.revenue > 0
+        ? Math.min(60, Math.max(4, (c.profit / c.revenue) * 100))
+        : 10
       return { name: c.name, x: Number(margin.toFixed(1)), y: c.revenue, z: Math.max(units, 5), fill: PALETTE[i % PALETTE.length] }
     })
   }, [categoryData, soldByCategory])

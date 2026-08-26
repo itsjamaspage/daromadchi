@@ -1172,7 +1172,9 @@ export async function syncFromUzum(shopId: string, token: string, heavy = true):
           ne(orders.status, 'cancelled'),
         ))
         const totalRevenue = allOrders.reduce((s, o) => s + Number(o.revenue ?? 0), 0)
+        // money-guard-ok: a sum of the fees WE have already recorded, used to decide whether a backfill is needed. A row we recorded nothing on contributes nothing to that total — this asks about our own rows, not about what Uzum charged.
         const totalExistingFee = allOrders.reduce((s, o) => s + Number(o.marketplace_fee ?? 0), 0)
+        // money-guard-ok: as above — how much delivery cost we have already stored, not a claim that delivery was free.
         const totalExistingDelivery = allOrders.reduce((s, o) => s + Number(o.delivery_cost ?? 0), 0)
 
         if (totalRevenue > 0 && totalRevenue > financeResult.balance) {

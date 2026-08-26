@@ -151,6 +151,7 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
 
   function recalc(draft: Partial<UnitEconomicsItem>): Partial<UnitEconomicsItem> {
     const sp  = draft.sellingPrice  ?? 0
+    // money-guard-ok: the seller's own what-if calculator, not marketplace data. An empty box in a scenario they are typing means zero so far, and they can see the box.
     const cp  = draft.costPrice     ?? 0
     // Landed cost: what it actually cost to bring the unit from the supplier
     // (cargo/customs). Part of the true unit cost, so it reduces profit and
@@ -798,6 +799,9 @@ export default function UnitEconomicsTable({ items: initialItems, defaultSetting
                 {/* Cost price */}
                 <label className="flex flex-col gap-1.5">
                   <span className="text-xs font-medium text-[var(--text-muted)]">{d.ueEditCost} <span className="text-[var(--c1)]">{d.ueEditCostHint}</span></span>
+                  {/* money-guard-ok: a controlled number input needs a defined
+                      value; this is the form field the seller is filling in,
+                      not a cost read back as fact. */}
                   <input type="number" min={0} value={editDraft.costPrice ?? 0}
                     onFocus={selectOnFocus}
                     onChange={e => setDraftField('costPrice', parseFloat(e.target.value) || 0)}

@@ -80,6 +80,7 @@ export default async function AnalyticsPage({ searchParams }: Props) {
   // One representative per group for margin math (pick first with both price
   // and cost, else first with any price, else any).
   const repMembers = productGroups.map(g =>
+    // money-guard-ok: a predicate asking whether a cost EXISTS, not arithmetic on one — the zero is compared and discarded, never added to money.
     g.find(p => (p.selling_price ?? 0) > 0 && (p.cost_price ?? 0) > 0)
     ?? g.find(p => (p.selling_price ?? 0) > 0)
     ?? g[0])
@@ -90,13 +91,23 @@ export default async function AnalyticsPage({ searchParams }: Props) {
   // 95.9%" over rows that visibly say otherwise.
   const marginOf = (p: typeof products[number]) => {
     const { price, cost } = effective(p)
-    return price > 0 ? (price - cost) / price : null
+    // Null cost → null margin. A product the seller has not costed has no
+    // margin to report; treating its cost as 0 was what made this card read
+    // "Avg margin 95.9%" over rows that visibly said otherwise.
+    return price > 0 && cost != null ? (price - cost) / price : null
   }
 
   const margins = repMembers.map(marginOf)
-  const avgMargin = margins.length > 0
-    ? margins.reduce((s: number, m) => s + (m ?? 0), 0) / margins.length * 100
+  // Averaged over the products whose margin is KNOWN, not over the whole
+  // catalogue with the unknowns scored as zero — that would swap one wrong
+  // number (too high) for another (too low). `knownMargins.length` is also what
+  // the caption below counts, so the seller can see the average is over 12 of
+  // 30 products rather than assuming it covers everything.
+  const knownMargins = margins.filter((m): m is number => m !== null)
+  const avgMargin = knownMargins.length > 0
+    ? knownMargins.reduce((s, m) => s + m, 0) / knownMargins.length * 100
     : 0
+  const uncostedCount = margins.length - knownMargins.length
 
   const lowMarginCount  = margins.filter(m => m !== null && m < 0.15).length
   const highMarginCount = margins.filter(m => m !== null && m >= 0.35).length
@@ -179,13 +190,19 @@ export default async function AnalyticsPage({ searchParams }: Props) {
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {[
               { label: d.totalProducts,  value: productGroups.length.toString(),  color: 'var(--c1)' },
-              { label: d.avgMargin,      value: `${avgMargin.toFixed(1)}%`,  color: avgMargin >= 25 ? '#10b981' : '#f59e0b' },
+              { label: d.avgMargin,      value: `${avgMargin.toFixed(1)}%`,  color: avgMargin >= 25 ? '#10b981' : '#f59e0b',
+                // Says what the average is actually over. Without it the number
+                // silently describes a subset of the catalogue.
+                note: uncostedCount > 0
+                  ? d.marginCoverage.replace('{known}', String(knownMargins.length)).replace('{missing}', String(uncostedCount))
+                  : undefined },
               { label: d.lowMargin,      value: lowMarginCount.toString(),   color: lowMarginCount > 0 ? '#ef4444' : '#10b981' },
               { label: d.highMargin,     value: highMarginCount.toString(),  color: '#10b981' },
-            ].map(({ label, value, color }) => (
+            ].map(({ label, value, color, note }) => (
               <div key={label} className="border rounded-2xl p-5" style={{ background: 'var(--bg-card2)', borderColor: 'var(--border)' }}>
                 <p className="text-xs mb-2" style={{ color: 'var(--text-muted)' }}>{label}</p>
                 <p className="text-xl font-bold" style={{ color }}>{value}</p>
+                {note && <p className="text-[10px] mt-1.5 leading-snug" style={{ color: 'var(--text-muted)' }}>{note}</p>}
               </div>
             ))}
           </div>

@@ -169,7 +169,12 @@ export interface Product {
   fulfillment_type: string | null
   updated_at: string
   // computed
-  profit: number
+  /**
+   * Per-unit profit: selling price − cost price. NULL when the seller has not
+   * entered a cost — not 0, which would present the whole selling price as
+   * profit and the margin beside it as 100%.
+   */
+  profit: number | null
   sold: number                   // marketplace lifetime sold counter (or DB fallback)
   delivered: number              // units actually delivered (same formula as analytics)
   in_transit: number             // units on open orders (pending/confirmed) + counter surplus
@@ -231,7 +236,14 @@ export interface Kpis {
   /** Marketplaces with delivered sales the marketplace has not reported money
    *  for yet (Yandex publishes commission only in the netting report, days
    *  later). Excluded from the profit and named under it instead. */
-  pending_marketplaces?: { marketplace: string; revenue: number; orders: number }[]
+  pending_marketplaces?: {
+    marketplace: string
+    revenue: number
+    orders: number
+    /** Why it is not counted: the marketplace has not reported the fee yet, or
+     *  the seller has not entered a cost. Different instructions to the seller. */
+    reason: 'fee_not_reported' | 'cost_not_set'
+  }[]
   total_orders: number            // every order received, incl. cancelled
   cancelled_orders?: number       // subset of total_orders that were cancelled
   cancelled_units?: number        // item units on those cancelled orders
@@ -384,6 +396,13 @@ export interface PayoutEntry {
   // When true the UI hides estimated commission/tax/ads/net numbers
   // and shows an "Ожидает данных" state instead — no fake numbers.
   awaitingSettlement: boolean
+  /**
+   * True when at least one item sold in this period has no cost price.
+   * Different from awaitingSettlement: nothing is being waited on, the seller
+   * can enter the cost themselves. `otherDeductions` (the COGS) counts only the
+   * costed items, so it is a floor and `netPayout` is an optimistic ceiling.
+   */
+  cogsPartial: boolean
 }
 
 export interface WatchlistItem {

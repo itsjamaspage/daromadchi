@@ -21,7 +21,7 @@ const CustomTooltip = ({ active, payload }: any) => {
   )
 }
 
-interface CategoryData { name: string; name_ru?: string; name_uz?: string; name_en?: string; revenue: number; profit: number; percent: number }
+interface CategoryData { name: string; name_ru?: string; name_uz?: string; name_en?: string; revenue: number; /** NULL when part of the category has no cost price. */ profit: number | null; percent: number }
 
 function localizedName(d: CategoryData, lang: string): string {
   const langKey = `name_${lang}` as keyof CategoryData

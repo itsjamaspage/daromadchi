@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { eq, and, inArray, gte, lt, lte, gt, desc, count, sql } from 'drizzle-orm'
 import { db, orders, products, shops } from '@/lib/db'
+import { loadOrderInputs } from '@/lib/money/load-order-economics'
+import { sumEconomics } from '@/lib/money/order-economics'
 import { getExtensionUser, getShopIds, getUserPlan } from '@/lib/api/auth'
 import { withErrorHandler } from '@/lib/api-handler'
 
@@ -38,18 +40,12 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
 
   const [todayRows, yesterdayRows, cancelledRow, returnedRow, inProcessRow, lowStockRow, shopRow] = await Promise.all([
     db.select({
-      revenue: orders.revenue,
-      marketplace_fee: orders.marketplace_fee,
-      delivery_cost: orders.delivery_cost,
       status: orders.status,
     }).from(orders).where(and(
       inArray(orders.shop_id, shopIds),
       gte(orders.ordered_at, since),
     )),
     db.select({
-      revenue: orders.revenue,
-      marketplace_fee: orders.marketplace_fee,
-      delivery_cost: orders.delivery_cost,
       status: orders.status,
     }).from(orders).where(and(
       inArray(orders.shop_id, shopIds),
@@ -80,18 +76,22 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
   ])
 
   const activeToday      = todayRows.filter(o => o.status !== 'cancelled' && o.status !== 'returned')
-  const todayRevenue     = activeToday.reduce((s, o) => s + Number(o.revenue         ?? 0), 0)
-  const todayCommission  = activeToday.reduce((s, o) => s + Number(o.marketplace_fee ?? 0), 0)
-  const todayDelivery    = activeToday.reduce((s, o) => s + Number(o.delivery_cost   ?? 0), 0)
-  const todayProfit      = todayRevenue - todayCommission - todayDelivery
   const todayOrders      = activeToday.length
+  // Money through the shared rules — see lib/money/order-economics.ts. This was
+  // `revenue − fee − delivery` over every non-cancelled order: it counted sales
+  // not yet delivered, subtracted no cost of goods, and read a NULL fee (every
+  // Yandex order until its netting report lands) as a zero fee.
+  const money            = sumEconomics(await loadOrderInputs(shopIds, since, null))
+  const todayRevenue     = money.revenue
+  const todayCommission  = money.fees
+  const todayProfit      = money.net
   const todayCancelled   = todayRows.filter(o => o.status === 'cancelled').length
   const todayReturned    = todayRows.filter(o => o.status === 'returned').length
   const marginPct        = todayRevenue > 0 ? Math.round((todayProfit / todayRevenue) * 100) : 0
 
   const activeYesterday      = yesterdayRows.filter(o => o.status !== 'cancelled' && o.status !== 'returned')
-  const yesterdayRevenue     = activeYesterday.reduce((s, o) => s + Number(o.revenue ?? 0), 0)
   const yesterdayOrderCount  = activeYesterday.length
+  const yesterdayRevenue     = sumEconomics(await loadOrderInputs(shopIds, yesterday, today)).revenue
 
   const revenueChange = yesterdayRevenue    > 0 ? Math.round(((todayRevenue - yesterdayRevenue)    / yesterdayRevenue)    * 100) : null
   const ordersChange  = yesterdayOrderCount > 0 ? Math.round(((todayOrders  - yesterdayOrderCount) / yesterdayOrderCount) * 100) : null

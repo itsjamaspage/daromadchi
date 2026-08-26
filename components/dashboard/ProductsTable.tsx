@@ -204,10 +204,10 @@ export default function ProductsTable({ products }: { products: Product[] }) {
     if (tab === 'low_stock') rows = rows.filter(p => p.available_stock < stockThreshold)
 
     rows.sort((a, b) => {
-      let av: number, bv: number
+      let av: number | null, bv: number | null
       if (sortBy === 'margin') {
-        av = a.profit / (Number(a.selling_price) || 1)
-        bv = b.profit / (Number(b.selling_price) || 1)
+        av = a.profit != null ? a.profit / (Number(a.selling_price) || 1) : null
+        bv = b.profit != null ? b.profit / (Number(b.selling_price) || 1) : null
       } else if (sortBy === 'title') {
         return sortDir === 'desc'
           ? b.title.localeCompare(a.title)
@@ -216,6 +216,14 @@ export default function ProductsTable({ products }: { products: Product[] }) {
         av = a.profit; bv = b.profit
       } else {
         av = a.available_stock; bv = b.available_stock
+      }
+      // Uncosted products sink to the bottom in BOTH directions. They have no
+      // profit to rank, and parking them at one end (rather than scoring them
+      // zero) keeps "worst margin first" a list of real bad margins instead of
+      // a list of products nobody has costed yet.
+      if (av == null || bv == null) {
+        if (av == null && bv == null) return 0
+        return av == null ? 1 : -1
       }
       return sortDir === 'desc' ? bv - av : av - bv
     })
@@ -240,9 +248,14 @@ export default function ProductsTable({ products }: { products: Product[] }) {
     'Marketplace':        p.marketplace ? MP_META[p.marketplace]?.label : '',
     [d.category]:         p.category ?? '',
     [d.price]:            p.selling_price ?? 0,
-    [d.costPriceLabel]:   p.cost_price ?? 0,
-    [d.profit]:           p.profit,
-    [`${d.margin} (%)`]:  (p.profit / (Number(p.selling_price) || 1) * 100).toFixed(1),
+    // Blank when the seller has not entered a cost — exporting 0 would make the
+    // margin column beside it read 100%.
+    [d.costPriceLabel]:   p.cost_price ?? '',
+    // Both blank rather than 0 / 100.0 when there is no cost to compute from.
+    [d.profit]:           p.profit ?? '',
+    [`${d.margin} (%)`]:  p.profit != null
+      ? (p.profit / (Number(p.selling_price) || 1) * 100).toFixed(1)
+      : '',
     [d.stockQty]:         p.available_stock,
   }))
 
@@ -257,8 +270,10 @@ export default function ProductsTable({ products }: { products: Product[] }) {
   // column.
   const renderRow = (p: Product, isChild = false, groupTitle?: string) => {
     const price  = Number(p.selling_price ?? 0)
-    const margin = price > 0 ? Number(((p.profit / price) * 100).toFixed(1)) : 0
-    const marginColor  = margin > 35 ? '#10b981' : margin > 20 ? '#f59e0b' : '#ef4444'
+    const margin = p.profit != null && price > 0
+      ? Number(((p.profit / price) * 100).toFixed(1)) : null
+    const marginColor  = margin == null ? 'var(--text-muted)'
+      : margin > 35 ? '#10b981' : margin > 20 ? '#f59e0b' : '#ef4444'
     const isEditing = editingId === p.id
     return (
       <Fragment key={p.id}>
@@ -300,7 +315,11 @@ export default function ProductsTable({ products }: { products: Product[] }) {
             {p.cost_price ? fmt(p.cost_price) : '—'}
           </td>
           <td className="px-5 py-4 text-right">
-            <span className="font-semibold" style={{ color: '#10b981' }}>{fmt(p.profit)}</span>
+            {/* The cost cell to the left already reads "—" here; this is the
+                same absence, not a profit of zero. */}
+            {p.profit == null
+              ? <span style={{ color: 'var(--text-muted)' }}>—</span>
+              : <span className="font-semibold" style={{ color: '#10b981' }}>{fmt(p.profit)}</span>}
           </td>
           <td className="px-5 py-4">
             {/* The pencil sits on the margin because that is the number the
@@ -314,11 +333,16 @@ export default function ProductsTable({ products }: { products: Product[] }) {
                 <Pencil className="w-3.5 h-3.5 opacity-30" style={{ color: 'var(--text-muted)' }} />
               </span>
               <div className="flex flex-col items-end gap-1">
-                <span className="text-xs font-medium tabular-nums" style={{ color: marginColor }}>{margin}%</span>
-                <div className="w-16 h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--border)' }}>
+                <span className="text-xs font-medium tabular-nums" style={{ color: marginColor }}>
+                  {margin == null ? '—' : `${margin}%`}
+                </span>
+                {/* No bar at all when there is no margin — an empty track would
+                    read as 0%, which is a claim, and the pencil beside it is
+                    already the invitation to enter a cost. */}
+                {margin != null && <div className="w-16 h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--border)' }}>
                   <div className="h-full rounded-full"
                     style={{ width: `${Math.min(margin, 100)}%`, background: 'linear-gradient(to right, var(--c1), #428619)' }} />
-                </div>
+                </div>}
               </div>
             </div>
           </td>

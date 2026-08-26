@@ -383,7 +383,9 @@ describe('money the marketplace has not reported yet', () => {
     const k = await fetchPeriodKpis(shopIds(), SEP.since, SEP.until)
     assert.deepEqual(k.countedMarketplaces, ['uzum'])
     assert.deepEqual(k.pendingMarketplaces, [
-      { marketplace: 'yandex_market', revenue: 115000, orders: 1 },
+      // `reason` distinguishes "the marketplace has not reported" from "you have
+      // not entered a cost" — one says wait, the other says do something.
+      { marketplace: 'yandex_market', revenue: 115000, orders: 1, reason: 'fee_not_reported' },
     ])
   })
 

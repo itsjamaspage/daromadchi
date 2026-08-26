@@ -65,7 +65,12 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
     db.select({
       period: weekBucket(orders.ordered_at).as('period'),
       marketplace: orders.marketplace,
-      cogs: sql<number>`coalesce(sum(${orderItems.quantity} * coalesce(${products.cost_price}, 0)), 0)`.as('cogs'),
+      // Sum only the items whose cost is known, and count the ones whose is
+      // not. Defaulting a missing cost to 0 made an uncosted product look like
+      // pure profit in the payout line — the same coercion this project's money
+      // module exists to stop (see lib/money/order-economics.ts).
+      cogs: sql<number>`coalesce(sum(${orderItems.quantity} * ${products.cost_price}) filter (where ${products.cost_price} is not null), 0)`.as('cogs'),
+      cogs_missing: sql<number>`count(*) filter (where ${products.cost_price} is null)`.as('cogs_missing'),
     }).from(orderItems)
       .innerJoin(orders, eq(orderItems.order_id, orders.id))
       .leftJoin(products, eq(orderItems.product_id, products.id))
@@ -110,6 +115,11 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
   if (orderRows.length === 0) return []
 
   const cogsMap = new Map(cogsRows.map(r => [`${r.period}|${r.marketplace}`, Number(r.cogs)]))
+  // Period+marketplace pairs holding at least one item with no cost price:
+  // their `cogs` is a floor and the netPayout computed from it is a ceiling.
+  const cogsPendingKeys = new Set(
+    cogsRows.filter(r => Number(r.cogs_missing) > 0).map(r => `${r.period}|${r.marketplace}`),
+  )
 
   const itemsMap = new Map<string, PayoutOrderItem[]>()
   for (const r of itemRows) {
@@ -185,7 +195,13 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
       b.returnAmount += Number(row.revenue ?? 0)
     } else {
       b.revenue += Number(row.revenue ?? 0)
+      // money-guard-ok: a sum of the fees WE have on record, not a claim that
+      // the marketplace charged nothing. `estimated` below keys off this total
+      // being zero and substitutes a Unit-Economics percentage rather than
+      // letting an unreported fee pass as a real one.
       b.realFee += Number(row.marketplace_fee ?? 0)
+      // money-guard-ok: as above — how much delivery cost is on record for the
+      // period, which is what the estimate fallback needs to know.
       b.realDelivery += Number(row.delivery_cost ?? 0)
       b.penalty += Number(row.penalty ?? 0)
       b.storageFee += Number(row.storage_fee ?? 0)
@@ -378,6 +394,10 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
 
   const entries: PayoutEntry[] = Array.from(grouped.entries()).flatMap(([key, v]) => {
     const [weekKey, mp] = key.split('|')
+    // Computed once at the top because every branch below builds a PayoutEntry
+    // and all of them carry the same answer for this period+marketplace: does
+    // its COGS cover everything that sold, or only the costed part?
+    const cogsPartial = cogsPendingKeys.has(key)
 
     // Yandex Market special-case: the `commissionTotal` field on the
     // /v2/campaigns/{id}/orders endpoint is Yandex's order-TIME
@@ -463,6 +483,7 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
           firstOrderDate: isoDate(v.firstOrderAt),
           lastOrderDate:  isoDate(v.lastOrderAt),
           awaitingSettlement: false,
+          cogsPartial,
         }
         return [entry]
       }
@@ -492,6 +513,7 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
         firstOrderDate: isoDate(v.firstOrderAt),
         lastOrderDate:  isoDate(v.lastOrderAt),
         awaitingSettlement: true,
+        cogsPartial,
       }
       return [entry]
     }
@@ -562,6 +584,7 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
           firstOrderDate: isoDate(v.firstOrderAt),
           lastOrderDate:  isoDate(v.lastOrderAt),
           awaitingSettlement: false,
+          cogsPartial,
         }
         return [entry]
       }
@@ -614,6 +637,7 @@ export async function getPayoutEntries(range?: { from?: string; to?: string }): 
       firstOrderDate: isoDate(v.firstOrderAt),
       lastOrderDate:  isoDate(v.lastOrderAt),
       awaitingSettlement: false,
+      cogsPartial,
     }
     return [entry]
   })
