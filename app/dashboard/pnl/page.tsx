@@ -5,7 +5,7 @@ import { Suspense } from 'react'
 import { count, inArray } from 'drizzle-orm'
 import { db, orders } from '@/lib/db'
 import { getPnl, getCogsBreakdown, getDeliveryByMarketplace } from '@/lib/db/pnl'
-import { startOfIsoWeek, endOfIsoWeek, localDateStr } from '@/lib/period-week'
+import { startOfIsoWeek, endOfIsoWeek, localDateStr, shopWeekBounds, parseLocalDate, parseLocalDateEnd } from '@/lib/period-week'
 import CogsCardEditor from '@/components/dashboard/CogsCardEditor'
 import { getUserShops, getShopIds } from '@/lib/db/shop-context'
 import PnlChart from './PnlChart'
@@ -58,7 +58,10 @@ function parseRange(params: Record<string, string>): {
   // 90-day span that buries it. Empty future days in the week simply don't render
   // (the P&L only makes a row per day that actually has orders). Daily bucket.
   // Shared Monday-based week — see lib/period-week.ts.
-  return { from: startOfIsoWeek(to), to: endOfIsoWeek(to), bucket: 'day', period: '' }
+  // The seller's week as instants — shopDayStart/End so the boundaries are
+  // Tashkent midnight rather than the server's.
+  const week = shopWeekBounds(to)
+  return { from: parseLocalDate(week.from), to: parseLocalDateEnd(week.to), bucket: 'day', period: '' }
 }
 
 interface Props {

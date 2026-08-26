@@ -3,7 +3,7 @@ import { CreditCard } from 'lucide-react'
 import { getPayoutEntries } from '@/lib/db/payouts'
 import PayoutsView from '@/components/dashboard/PayoutsView'
 import { getT, getLang } from '@/lib/server-i18n'
-import { startOfIsoWeek, localDateStr } from '@/lib/period-week'
+import { startOfIsoWeek, localDateStr, shopWeekBounds } from '@/lib/period-week'
 import { currentUserAccess } from '@/lib/billing/entitlement'
 import FeatureLock from '@/components/dashboard/FeatureLock'
 
@@ -35,7 +35,7 @@ export default async function PayoutsPage({ searchParams }: Props) {
   // date with a default, which is not a range anyone asked for.
   const custom = params?.from && params?.to ? { from: params.from, to: params.to } : null
   const now = new Date()
-  const rangeFrom = custom?.from ?? localDateStr(startOfIsoWeek(now))
+  const rangeFrom = custom?.from ?? shopWeekBounds(now).from
   const rangeTo = custom?.to ?? localDateStr(now)
 
   const [t, entries] = await Promise.all([

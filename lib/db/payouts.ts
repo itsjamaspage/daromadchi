@@ -21,7 +21,12 @@ import { classifyYandexDebit } from '@/lib/db/real-financials'
 // verified against this exact expression.
 import { deriveUzumBucketStatus, rollUpUzumOrderStatus, deriveYandexSettledStatus, isYandexTransferred, isYandexAwaitingTransfer, yandexFullyTransferred, deriveYandexOrderStatus, deriveBucketStatusFromOrders } from '@/lib/db/payout-status'
 
-const weekBucket = (col: AnyColumn) => sql<string>`to_char(${col}, 'IYYY-"W"IW')`
+// AT TIME ZONE 'Asia/Tashkent' so the bucket is the SELLER's week, matching
+// isoWeekKey in lib/period-week.ts byte-for-byte. Without the cast Postgres uses
+// the session zone (UTC in production), which puts an order placed at 02:00
+// Monday Tashkent — 21:00 Sunday UTC — in the PREVIOUS week's payout row.
+const weekBucket = (col: AnyColumn) =>
+  sql<string>`to_char(${col} AT TIME ZONE 'Asia/Tashkent', 'IYYY-"W"IW')`
 
 export type { PayoutEntry }
 

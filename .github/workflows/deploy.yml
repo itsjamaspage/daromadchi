@@ -57,10 +57,21 @@ jobs:
           # the node_modules self-heal above.
           rm -rf .next
           npm run build
+          # Exported so both the migration step and the restarted process see it.
+          export TZ=Asia/Tashkent
           echo "Applying DB migrations..."
           node scripts/apply-sql-migrations.mjs
           echo "Restarting app..."
-          pm2 restart daromadchi
+          # TZ=Asia/Tashkent is a SAFETY NET, not the mechanism. Business dates go
+          # through lib/shop-time.ts, which names the zone explicitly and so does
+          # not care what the process TZ is — that is what makes the same answer
+          # come out in a New York browser, a UTC server and a Tashkent shop.
+          # Setting it here means any remaining ambient `new Date()` formatting
+          # (a log line, a fallback) also reads as the seller's clock rather than
+          # UTC. `--update-env` is required: pm2 keeps the old environment across
+          # a plain restart, so without it this would take effect only on a
+          # process the box happened to recreate.
+          pm2 restart daromadchi --update-env
           echo "Installing cron schedule..."
           cat > /var/www/daromadchi/cron-runner.sh <<'EOS'
           #!/bin/bash

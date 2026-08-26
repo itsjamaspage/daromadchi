@@ -1,5 +1,6 @@
 import { test, describe, it } from 'node:test'
 import assert from 'node:assert/strict'
+import { shopWeekday } from './shop-time'
 import {
   isoWeekKey, startOfIsoWeek, endOfIsoWeek, isoWeekBounds, localDateStr, currentIsoWeekKey,
   parseLocalDate, shiftLocalDate, isCalendarWeek,
@@ -53,8 +54,9 @@ test('bounds round-trip: a key maps back to the Monday–Sunday that produced it
     assert.ok(b, key)
     assert.equal(isoWeekKey(b.start), key, `${key} start`)
     assert.equal(isoWeekKey(b.end), key, `${key} end`)
-    assert.equal(b.start.getDay(), 1, 'starts Monday')
-    assert.equal(b.end.getDay(), 0, 'ends Sunday')
+    // Weekday of the INSTANT as the seller sees it, not as the process does.
+    assert.equal(shopWeekday(localDateStr(b.start)), 1, 'starts Monday')
+    assert.equal(shopWeekday(localDateStr(b.end)), 7, 'ends Sunday')
   }
 })
 
@@ -64,10 +66,19 @@ test('bounds reject a malformed or impossible key instead of guessing', () => {
   }
 })
 
-test('localDateStr uses local parts — never a UTC shift', () => {
-  // 23:30 local would roll to the next day under toISOString() in any +TZ.
-  const late = new Date(2026, 7, 21, 23, 30)
-  assert.equal(localDateStr(late), '2026-08-21')
+test('localDateStr names the SELLER\'s day, not the viewer\'s', () => {
+  // The contract changed with lib/shop-time.ts. It used to mean "the process's
+  // calendar day"; it now means Tashkent's, whoever is asking — because a
+  // browser in New York, a server in UTC and a seller in Uzbekistan are
+  // routinely on three different days at the same instant.
+  //
+  // 21:00 UTC on the 21st is already 02:00 on the 22nd for the seller.
+  assert.equal(localDateStr(new Date('2026-08-21T21:00:00Z')), '2026-08-22')
+  // 18:00 UTC is 23:00 the same day there.
+  assert.equal(localDateStr(new Date('2026-08-21T18:00:00Z')), '2026-08-21')
+  // And the boundary itself: 19:00 UTC is Tashkent midnight.
+  assert.equal(localDateStr(new Date('2026-08-21T18:59:59Z')), '2026-08-21')
+  assert.equal(localDateStr(new Date('2026-08-21T19:00:00Z')), '2026-08-22')
 })
 
 test('currentIsoWeekKey accepts an injected clock', () => {
@@ -79,12 +90,11 @@ describe('date-only strings stay on their own day', () => {
   // date inputs read 08/20 — 08/26. One range, two answers, because
   // new Date('2026-08-20') is UTC midnight and toLocaleDateString renders it in
   // the browser's zone — the previous day for anyone west of Greenwich.
-  it('parses as the local calendar day, not UTC midnight', () => {
-    const d = parseLocalDate('2026-08-20')
-    assert.equal(d.getFullYear(), 2026)
-    assert.equal(d.getMonth(), 7)      // August
-    assert.equal(d.getDate(), 20)
-    assert.equal(d.getDay(), 4)        // Thursday, in every timezone
+  it('parses to the SELLER\'s midnight, in every timezone', () => {
+    // Asserting the instant rather than its process-local parts: those parts
+    // differ by design in New York, which is the whole point of naming the zone.
+    assert.equal(parseLocalDate('2026-08-20').toISOString(), '2026-08-19T19:00:00.000Z')
+    assert.equal(shopWeekday('2026-08-20'), 4, 'Thursday, for everyone')
   })
 
   it('round-trips through localDateStr unchanged', () => {
@@ -144,7 +154,7 @@ describe('paging a week keeps Monday on Monday', () => {
     for (let i = 0; i < 20; i++) {
       const [f, t] = page(from, -1)
       assert.ok(isCalendarWeek(f, t), `${f} — ${t} is not a Mon–Sun week`)
-      assert.equal(parseLocalDate(f).getDay(), 1)
+      assert.equal(shopWeekday(f), 1)
       from = f
     }
   })
@@ -164,7 +174,10 @@ describe('paging a week keeps Monday on Monday', () => {
 import { pageRange, canPageForward } from './period-week'
 
 const WED_26_AUG_2026 = new Date(2026, 7, 26)   // month is 0-based
-const dow = (s: string) => ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][parseLocalDate(s).getDay()]
+// The seller's weekday for a date STRING. Was parseLocalDate(s).getDay(), which
+// asks the PROCESS — and parseLocalDate now returns Tashkent midnight, i.e.
+// 19:00 the previous day in UTC, which a New York process reads as Sunday.
+const dow = (s: string) => ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'][shopWeekday(s) - 1]
 
 test('paging back then forward returns to the SAME Mon–Sun week', () => {
   const week = { from: '2026-08-24', to: '2026-08-30' }
