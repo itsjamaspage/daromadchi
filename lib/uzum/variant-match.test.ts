@@ -4,7 +4,10 @@
  */
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
-import { pickByColor, type ProductCandidate } from './variant-match'
+import {
+  pickByColor, buildVariantIndex, resolveVariant,
+  type ProductCandidate, type IndexedProduct,
+} from './variant-match'
 import { canonicalSkuCandidates, LEGACY_SKU_ALIASES } from '@/lib/products/sku-aliases'
 
 const JMBLK: ProductCandidate = { id: 'id-jmblk', color: 'black' }
@@ -78,5 +81,86 @@ describe('canonicalSkuCandidates — colour variants must not collapse', () => {
         `alias ${key} → ${value} shares only "${key.slice(0, shared)}" — that is a remap ` +
         'to another product, not a rename of the same one.')
     }
+  })
+})
+
+/* ── The audit bug: colour as a search key vs colour as a tie-break ──────────
+ *
+ * The shop that hit this in production, as far as matching is concerned: two
+ * colour variants of one watch (sharing a title), plus an unrelated black
+ * powerbank. The first audit script matched on colour alone within the shop, so
+ * a black watch line offered BOTH black products and the "correct product"
+ * column named whichever came back first.
+ */
+const SHOP: IndexedProduct[] = [
+  { id: 'id-jmblk', sku: 'JMBLK', title: 'Смарт-часы M9',   color: 'black' },
+  { id: 'id-jmwht', sku: 'JMWHT', title: 'Смарт-часы M9',   color: 'white' },
+  { id: 'id-pbblk', sku: 'PBBLK', title: 'Повербанк 20000', color: 'black' },
+]
+
+describe('resolveVariant — identity first, colour only as the tie-break', () => {
+  const index = buildVariantIndex(SHOP)
+
+  it('the production line resolves to the black WATCH, never the black powerbank', () => {
+    // order_items row of 124459482: sku is the skuTitle, title is the product
+    // title shared by both colours. The article never matches products.sku
+    // ("JMM99-ЧЕРН" vs "JMBLK"), so it lands on the title step — exactly where
+    // the original mislink happened — and the colour picks within that family.
+    const got = resolveVariant(index, {
+      skus: ['5124786-JMM99-ЧЕРН'],
+      title: 'Смарт-часы M9',
+      color: 'black',
+    })
+    assert.equal(got, 'id-jmblk')
+  })
+
+  it('no black item of any shape can resolve to the powerbank', () => {
+    // The invariant the cleanup UPDATE depends on. A powerbank shares no
+    // article, barcode or title with a watch, so it is never a candidate —
+    // whatever colour the line carries.
+    for (const title of ['Смарт-часы M9', null]) {
+      for (const sku of ['5124786-JMM99-ЧЕРН', '5124786-JMM99-БЕЛ', 'JMBLK', null]) {
+        const got = resolveVariant(index, { skus: [sku], title, color: 'black' })
+        assert.notEqual(got, 'id-pbblk', `sku=${sku} title=${title} resolved to the powerbank`)
+      }
+    }
+  })
+
+  it('each colour resolves to its own product — one answer, not a list', () => {
+    assert.equal(resolveVariant(index, { skus: ['5124786-JMM99-БЕЛ'], title: 'Смарт-часы M9', color: 'white' }), 'id-jmwht')
+    assert.equal(resolveVariant(index, { skus: ['5124786-JMM99-ЧЕРН'], title: 'Смарт-часы M9', color: 'black' }), 'id-jmblk')
+  })
+
+  it('an exact article beats the shared title', () => {
+    assert.equal(resolveVariant(index, { skus: ['JMBLK'], title: 'Смарт-часы M9', color: null }), 'id-jmblk')
+  })
+
+  it('the marketplace variant id wins outright — it is already variant-specific', () => {
+    const withIds = buildVariantIndex([
+      { id: 'id-jmblk', sku: 'JMBLK', title: 'Смарт-часы M9', marketplaceProductId: 111, color: 'black' },
+      { id: 'id-jmwht', sku: 'JMWHT', title: 'Смарт-часы M9', marketplaceProductId: 222, color: 'white' },
+    ])
+    assert.equal(resolveVariant(withIds, { marketplaceProductId: '222', color: null }), 'id-jmwht')
+  })
+
+  it('returns null rather than a guess when the colour cannot decide', () => {
+    assert.equal(resolveVariant(index, { skus: [null], title: 'Смарт-часы M9', color: null }), null)
+    assert.equal(resolveVariant(index, { skus: ['UNKNOWN'], title: 'Нет такого', color: 'black' }), null)
+  })
+
+  it('a single-product shop still links without any colour evidence', () => {
+    const solo = buildVariantIndex([{ id: 'only', sku: 'X', title: 'T', color: null }])
+    assert.equal(resolveVariant(solo, { skus: ['whatever'], title: 'nothing', color: null }), 'only')
+  })
+
+  it('a sku that is just the marketplace id is not indexed as an article', () => {
+    // The order-stub path writes sku = String(skuId). Indexing that as a seller
+    // article invents matches between unrelated products.
+    const stubs = buildVariantIndex([
+      { id: 'a', sku: '5124786', marketplaceProductId: 5124786, title: 'A', color: 'black' },
+      { id: 'b', sku: '5124787', marketplaceProductId: 5124787, title: 'B', color: 'black' },
+    ])
+    assert.equal(stubs.bySku.size, 0)
+    assert.equal(resolveVariant(stubs, { marketplaceProductId: 5124787, color: 'black' }), 'b')
   })
 })

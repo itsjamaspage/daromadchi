@@ -59,7 +59,7 @@
     "test:fulfilment": "node --import tsx --test lib/marketplace/fulfilment-frontdoor.test.ts",
     "test:signout": "node --import tsx --test lib/auth/cookie-sweep.test.ts",
     "test:tenancy": "node --import tsx --test lib/marketplace/stock-refresh-tenancy.integration.test.ts",
-    "audit:variant-mislinks": "node scripts/audit-variant-mislinks.mjs",
+    "audit:variant-mislinks": "node --import tsx scripts/audit-variant-mislinks.ts",
     "test:variant-match": "node --import tsx --test lib/uzum/variant-match.test.ts"
   },
   "dependencies": {
