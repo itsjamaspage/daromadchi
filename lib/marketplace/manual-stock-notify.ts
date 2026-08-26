@@ -24,7 +24,7 @@
  * is unchanged, so a still-out-of-sync listing does not re-alert every cycle.
  */
 
-import { and, eq, inArray, sql } from 'drizzle-orm'
+import { and, desc, eq, inArray, notInArray, sql } from 'drizzle-orm'
 import { db, shops, products, orders, orderItems, userSettings, alerts, stockNotifyState } from '@/lib/db'
 import { logger } from '@/lib/logger'
 import { sendSellerMessageTo } from '@/lib/telegram-seller'
@@ -34,13 +34,15 @@ import { normalizeKey } from '@/lib/db/stock-groups'
 import { reservingOrderCondition } from '@/lib/marketplace/reserving-orders'
 import {
   computeManualReminders, shouldRemind, buildManualMessage, MANUAL_STATUS,
-  type ManualReminder,
+  type ManualReminder, type GroupIdentity,
 } from '@/lib/marketplace/manual-stock-pure'
 
 // Load this user's SKU groups (all active shops, every api_mode). Mirrors the
 // read side of the edit-mode loader but stays independent of it, so this feature
 // can never reach a write path. Returns members bucketed by normalized SKU.
-async function loadUserGroups(userId: string): Promise<Map<string, SyncMember[]>> {
+interface LoadedGroup { members: SyncMember[]; identity: GroupIdentity }
+
+async function loadUserGroups(userId: string): Promise<Map<string, LoadedGroup>> {
   const shopRows = await db.select({
     id: shops.id,
     marketplace: shops.marketplace,
@@ -51,7 +53,7 @@ async function loadUserGroups(userId: string): Promise<Map<string, SyncMember[]>
   const inScope = shopRows.filter(s => s.marketplace === 'uzum' || s.marketplace === 'yandex_market')
   const shopById = new Map(inScope.map(s => [s.id, s]))
   const shopIds = [...shopById.keys()]
-  const groups = new Map<string, SyncMember[]>()
+  const groups = new Map<string, LoadedGroup>()
   if (shopIds.length === 0) return groups
 
   const [prodRows, pendingRows] = await Promise.all([
@@ -61,6 +63,9 @@ async function loadUserGroups(userId: string): Promise<Map<string, SyncMember[]>
       sku: products.sku,
       stock_quantity: products.stock_quantity,
       physical_stock: products.physical_stock,
+      // Identity for the message. Same products row — no extra join.
+      title: products.title,
+      variant_color: products.variant_color,
     }).from(products).where(inArray(products.shop_id, shopIds)),
     db.select({
       product_id: orderItems.product_id,
@@ -72,6 +77,31 @@ async function loadUserGroups(userId: string): Promise<Map<string, SyncMember[]>
   ])
 
   const pendingByProduct = new Map(pendingRows.map(r => [r.product_id, Number(r.qty)]))
+
+  // The order to name in the message. Deliberately NOT filtered by
+  // reservingOrderCondition(): a listing can be out of sync precisely because a
+  // sale failed to register as reserving, and in that case the reserving filter
+  // would return nothing — hiding the order number in exactly the case the
+  // seller most needs it. So: the most recent order on this product that was not
+  // cancelled or returned, which is what "the sale that moved this group" means
+  // to a seller. Absent (no orders yet) simply omits the clause.
+  const latestOrderRows = shopIds.length === 0 ? [] : await db.select({
+    product_id: orderItems.product_id,
+    order_id_external: orders.order_id_external,
+    ordered_at: orders.ordered_at,
+  }).from(orderItems)
+    .innerJoin(orders, eq(orderItems.order_id, orders.id))
+    .where(and(
+      inArray(orders.shop_id, shopIds),
+      notInArray(orders.status, ['cancelled', 'returned']),
+    ))
+    .orderBy(desc(orders.ordered_at))
+
+  const latestOrderByProduct = new Map<string, string>()
+  for (const r of latestOrderRows) {
+    if (!r.product_id || !r.order_id_external) continue
+    if (!latestOrderByProduct.has(r.product_id)) latestOrderByProduct.set(r.product_id, r.order_id_external)
+  }
 
   for (const p of prodRows) {
     const shop = shopById.get(p.shop_id)
@@ -88,8 +118,17 @@ async function loadUserGroups(userId: string): Promise<Map<string, SyncMember[]>
       pending: pendingByProduct.get(p.id) ?? 0,
       sku: p.sku,
     }
-    const arr = groups.get(key)
-    if (arr) arr.push(member); else groups.set(key, [member])
+    let g = groups.get(key)
+    if (!g) { g = { members: [], identity: {} }; groups.set(key, g) }
+    g.members.push(member)
+    // First non-empty wins — every member of a group is the same physical
+    // product, so any of them can supply the name and colour.
+    if (!g.identity.title && p.title) g.identity.title = p.title
+    if (!g.identity.colorKey && p.variant_color) g.identity.colorKey = p.variant_color
+    if (!g.identity.orderId) {
+      const oid = latestOrderByProduct.get(p.id)
+      if (oid) g.identity.orderId = oid
+    }
   }
   return groups
 }
@@ -113,7 +152,7 @@ export async function notifyManualStockUpdates(userId: string): Promise<void> {
 
     const groups = await loadUserGroups(userId)
     const candidates: ManualReminder[] = []
-    for (const members of groups.values()) candidates.push(...computeManualReminders(members))
+    for (const g of groups.values()) candidates.push(...computeManualReminders(g.members, g.identity))
     if (candidates.length === 0) return
 
     // DEDUP: keep only listings whose target changed since the last manual

@@ -5,7 +5,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import {
-  computeManualReminders, shouldRemind, buildManualMessage,
+  computeManualReminders, shouldRemind, buildManualMessage, productLabel,
 } from './manual-stock-pure'
 import type { SyncMember } from './stock-allocation'
 
@@ -106,6 +106,53 @@ describe('buildManualMessage', () => {
 // a writer through an intermediate module, e.g. importing stock-sync.ts for its
 // loadGroups() — lives in manual-stock-notify.guardrail.test.ts. Both run; this
 // one is the fast, readable statement of intent, that one is the proof.
+describe('message detail — product name, colour and order number', () => {
+  // The reminder used to name a bare SKU, which is not what a seller recognises
+  // on a phone, and gave no way to tie the alert back to the sale that caused it.
+  const group = [uzum({ listedStock: 1, physicalStock: 1, pending: 1 }), ym({ listedStock: 2, physicalStock: 2 })]
+  const identity = { title: 'M9', colorKey: 'black', orderId: '124459482' }
+
+  it('carries identity from the group onto every reminder', () => {
+    const [r] = computeManualReminders(group, identity)
+    assert.equal(r.title, 'M9')
+    assert.equal(r.colorKey, 'black')
+    assert.equal(r.orderId, '124459482')
+  })
+
+  it('renders name first, then colour and SKU — and localizes the colour', () => {
+    const [r] = computeManualReminders(group, identity)
+    // Capitalised because COLOR_LABELS is shared with the badges and the
+    // edit-mode digest; rendering it differently here would be the odd one out.
+    assert.equal(productLabel(r, 'ru'), 'M9 (Чёрный, JMWHT)')
+    assert.notEqual(productLabel(r, 'uz'), productLabel(r, 'ru'))  // colour is translated
+  })
+
+  it('names the order in every language', () => {
+    const items = computeManualReminders(group, identity)
+    for (const lang of ['ru', 'uz', 'en'] as const) {
+      const msg = buildManualMessage(items, lang)
+      assert.match(msg, /124459482/, `${lang} lost the order number`)
+      assert.match(msg, /M9/, `${lang} lost the product name`)
+      assert.doesNotMatch(msg, /undefined/)
+    }
+  })
+
+  it('degrades to the bare SKU when identity is missing', () => {
+    // A product with no title, or a group whose first sale predates order sync.
+    const [r] = computeManualReminders(group)
+    assert.equal(productLabel(r, 'ru'), 'JMWHT')
+    const msg = buildManualMessage([r], 'ru')
+    assert.match(msg, /JMWHT/)
+    assert.doesNotMatch(msg, /undefined|null|\(\)/)
+    assert.doesNotMatch(msg, /заказ/, 'no order id → the clause must be omitted, not left empty')
+  })
+
+  it('omits an unknown colour key rather than printing it raw', () => {
+    const [r] = computeManualReminders(group, { title: 'M9', colorKey: 'not-a-real-colour' })
+    assert.equal(productLabel(r, 'ru'), 'M9 (JMWHT)')
+  })
+})
+
 describe('SAFETY — no marketplace write path is reachable from this module', () => {
   it('the module never imports the writer / order-cancel and never calls a write fn', () => {
     // Match real imports/calls only — the module's own SAFETY comment names these

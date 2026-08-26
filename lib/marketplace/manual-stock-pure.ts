@@ -6,6 +6,7 @@
 
 import { computeAvailable, type SyncMember } from '@/lib/marketplace/stock-allocation'
 import { notifT, type NotifLang } from '@/lib/notif-i18n'
+import { COLOR_LABELS } from '@/lib/products/resolveColor'
 import type { MarketplaceType } from '@/lib/types'
 
 const MP_LABEL: Record<string, string> = { uzum: 'Uzum', yandex_market: 'Yandex Market' }
@@ -19,6 +20,42 @@ export interface ManualReminder {
   sku: string
   target: number             // the number the seller must set by hand
   marketplace: MarketplaceType
+  title?: string | null      // products.title — the human name
+  colorKey?: string | null   // products.variant_color — resolved key, localized at render
+  orderId?: string | null    // the sale that moved this group (orders.order_id_external)
+}
+
+/**
+ * Identity for one SKU group — the same physical product on every marketplace,
+ * so one set of these covers the whole group.
+ *
+ * Deliberately a separate argument rather than fields on SyncMember: that type
+ * is shared with the edit-mode write path, and widening it to carry display
+ * copy would put presentation concerns into the allocation maths.
+ */
+export interface GroupIdentity {
+  title?: string | null
+  colorKey?: string | null
+  orderId?: string | null
+}
+
+/** Localize a resolved colour key. Unknown keys are omitted, never shown raw. */
+function colorLabel(key: string | null | undefined, lang: NotifLang): string | null {
+  if (!key) return null
+  return (COLOR_LABELS as Record<string, Record<string, string>>)[key]?.[lang] ?? null
+}
+
+/**
+ * "M9 (чёрный, JMBLK)" — name first, because that is what the seller recognises
+ * on a phone; the SKU is what they type into the marketplace, so it stays, just
+ * not as the headline. Degrades to the bare SKU when there is no title.
+ */
+export function productLabel(r: ManualReminder, lang: NotifLang): string {
+  const name = r.title?.trim()
+  const color = colorLabel(r.colorKey, lang)
+  if (!name) return r.sku
+  const inner = [color, r.sku].filter(Boolean).join(', ')
+  return `${name} (${inner})`
 }
 
 /**
@@ -30,7 +67,7 @@ export interface ManualReminder {
  * read-only listing (mirror-always). A member is "out of sync" when its currently
  * listed number differs from that target.
  */
-export function computeManualReminders(members: SyncMember[]): ManualReminder[] {
+export function computeManualReminders(members: SyncMember[], identity: GroupIdentity = {}): ManualReminder[] {
   const marketplaces = new Set(members.map(m => m.marketplace))
   if (marketplaces.size < 2) return []          // not cross-marketplace → nothing to reconcile
 
@@ -40,7 +77,7 @@ export function computeManualReminders(members: SyncMember[]): ManualReminder[] 
     if (m.apiMode !== 'read_only') continue     // only read-only listings get a manual reminder
     if (!m.sku) continue                        // no human SKU to name → skip (unidentifiable)
     if (m.listedStock === target) continue      // already correct → no reminder
-    out.push({ sku: m.sku, target, marketplace: m.marketplace })
+    out.push({ sku: m.sku, target, marketplace: m.marketplace, ...identity })
   }
   return out
 }
@@ -66,6 +103,8 @@ export function shouldRemind(
 export function buildManualMessage(items: ManualReminder[], lang: NotifLang = 'uz'): string {
   const T = notifT(lang)
   const lines: string[] = [T.manualStockTitle(items.length)]
-  for (const it of items) lines.push(T.manualStockLine(it.sku, it.target, mpLabel(it.marketplace)))
+  for (const it of items) {
+    lines.push(T.manualStockLine(productLabel(it, lang), it.target, mpLabel(it.marketplace), it.orderId ?? null))
+  }
   return lines.join('\n')
 }
