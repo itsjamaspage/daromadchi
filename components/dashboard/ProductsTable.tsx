@@ -290,7 +290,6 @@ export default function ProductsTable({ products }: { products: Product[] }) {
                   {!isChild && <ColorBadge title={p.title} />}
                 </div>
               </div>
-              <Pencil className="w-3.5 h-3.5 flex-shrink-0 opacity-30" style={{ color: 'var(--text-muted)' }} />
             </div>
           </td>
           <td className="px-5 py-4">
@@ -304,11 +303,22 @@ export default function ProductsTable({ products }: { products: Product[] }) {
             <span className="font-semibold" style={{ color: '#10b981' }}>{fmt(p.profit)}</span>
           </td>
           <td className="px-5 py-4">
-            <div className="flex flex-col items-end gap-1">
-              <span className="text-xs font-medium tabular-nums" style={{ color: marginColor }}>{margin}%</span>
-              <div className="w-16 h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--border)' }}>
-                <div className="h-full rounded-full"
-                  style={{ width: `${Math.min(margin, 100)}%`, background: 'linear-gradient(to right, var(--c1), #428619)' }} />
+            {/* The pencil sits on the margin because that is the number the
+                seller is trying to move. It opens the same editor it always
+                did — the field is the COST price, and the margin follows from
+                it — so the tooltip says which one they are typing. */}
+            <div className="flex items-center justify-end gap-2">
+              <span className="flex-shrink-0" title={lang === 'ru' ? 'Введите себестоимость — маржа считается из неё'
+                : lang === 'en' ? 'Enter the cost price — margin follows from it'
+                : 'Tannarxni kiriting — marja shundan hisoblanadi'}>
+                <Pencil className="w-3.5 h-3.5 opacity-30" style={{ color: 'var(--text-muted)' }} />
+              </span>
+              <div className="flex flex-col items-end gap-1">
+                <span className="text-xs font-medium tabular-nums" style={{ color: marginColor }}>{margin}%</span>
+                <div className="w-16 h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--border)' }}>
+                  <div className="h-full rounded-full"
+                    style={{ width: `${Math.min(margin, 100)}%`, background: 'linear-gradient(to right, var(--c1), #428619)' }} />
+                </div>
               </div>
             </div>
           </td>
