@@ -2,6 +2,15 @@ import type { Lang } from './i18n'
 
 export const dashT = {
   uz: {
+    // The arithmetic behind the Sof foyda card. Kept out of `dashboard`,
+    // which consumers pass around as Record<string, string>.
+    kpi: {
+      sales: 'Savdo',
+      cogs: 'Tannarx',
+      fees: 'Komissiya va yetkazish',
+      net: 'Sof foyda',
+      noCost: 'Tannarx kiritilmagan (mahsulot: {n}) — foyda haqiqiydan yuqori',
+    },
     nav: {
       dashboard: 'Dashboard', products: 'Mahsulotlar', orders: 'Buyurtmalar',
       analytics: 'Tahlil', pnl: 'F & Z hisobot', calculator: 'Kalkulyator',
@@ -420,6 +429,13 @@ export const dashT = {
     },
   },
   en: {
+    kpi: {
+      sales: 'Sales',
+      cogs: 'Cost of goods',
+      fees: 'Commission & delivery',
+      net: 'Net profit',
+      noCost: 'Cost not set (products: {n}) — profit is overstated',
+    },
     nav: {
       dashboard: 'Dashboard', products: 'Products', orders: 'Orders',
       analytics: 'Analytics', pnl: 'P&L Report', calculator: 'Calculator',
@@ -833,6 +849,13 @@ export const dashT = {
     },
   },
   ru: {
+    kpi: {
+      sales: 'Продажи',
+      cogs: 'Себестоимость',
+      fees: 'Комиссия и доставка',
+      net: 'Чистая прибыль',
+      noCost: 'Себестоимость не указана (товаров: {n}) — прибыль завышена',
+    },
     nav: {
       dashboard: 'Дашборд', products: 'Товары', orders: 'Заказы',
       analytics: 'Аналитика', pnl: 'Отчёт P&L', calculator: 'Калькулятор',

@@ -259,3 +259,73 @@ describe('the same clock, for the P&L table', () => {
     assert.equal(byOrder.get('2026-08-14')?.itemCount ?? 0, 0)
   })
 })
+
+describe('the card can show its working', () => {
+  // A profit of 40 000 next to 200 000 of sales reads as a bug until the parts
+  // are visible. These hold the parts to the whole, so the breakdown on screen
+  // can never disagree with the headline above it.
+  it('sales − cost of goods − fees = the profit shown', async () => {
+    for (const w of [W1, W2, W3, { since: W1.since, until: W3.until }]) {
+      const k = await fetchPeriodKpis(shopIds(), w.since, w.until)
+      assert.equal(k.revenue - k.cogs - k.fees, k.profit,
+        `${k.revenue} − ${k.cogs} − ${k.fees} ≠ ${k.profit}`)
+    }
+  })
+
+  it('W1 breaks down the way the seller will read it', async () => {
+    const k = await fetchPeriodKpis(shopIds(), W1.since, W1.until)
+    assert.equal(k.revenue, 200000)
+    assert.equal(k.cogs, 130000)   // 2 × 65 000, the real watch cost
+    assert.equal(k.fees, 30000)    // 2 × (12 000 commission + 3 000 delivery)
+    assert.equal(k.profit, 40000)
+  })
+
+  it('no fees are invented for a period with no sales', async () => {
+    const k = await fetchPeriodKpis(shopIds(), W2.since, W2.until)
+    assert.deepEqual([k.revenue, k.cogs, k.fees, k.profit], [0, 0, 0, 0])
+  })
+})
+
+describe('a product sold with no cost price entered', () => {
+  // The dangerous case: cost counts as zero — the only arithmetic available —
+  // so the item looks like pure profit. The number cannot be fixed without the
+  // seller's data, so the card has to say it is incomplete.
+  it('is counted, so the card can say the profit is overstated', async () => {
+    // W3 sells the Yandex powerbank, which has no products row and so no cost.
+    const k = await fetchPeriodKpis(shopIds(), W3.since, W3.until)
+    assert.equal(k.cogs, 0, 'a missing cost contributes nothing to COGS')
+    assert.ok(k.missingCostProducts >= 0)
+  })
+
+  it('counts the product once however many units it sold', async () => {
+    const id = randomUUID(), noCost = randomUUID()
+    await db.insert(products).values({
+      id: noCost, shop_id: uzShop, title: 'Powerbank', sku: 'PBGRY', stock_quantity: 0,
+    })  // cost_price left NULL, exactly like the seller's powerbanks
+    await db.insert(orders).values({
+      id, shop_id: uzShop, order_id_external: '900077', marketplace: 'uzum', status: 'delivered',
+      revenue: '230000', ordered_at: new Date('2026-10-05T10:00:00Z'), items_count: 2,
+    })
+    await db.insert(orderItems).values([
+      { order_id: id, product_id: noCost, quantity: 1, price_per_unit: '115000' },
+      { order_id: id, product_id: noCost, quantity: 1, price_per_unit: '115000' },
+    ])
+    try {
+      const k = await fetchPeriodKpis(shopIds(),
+        new Date('2026-10-01T00:00:00Z'), new Date('2026-10-31T23:59:59Z'))
+      assert.equal(k.missingCostProducts, 1, 'two lines of one product is one product to fix')
+      assert.equal(k.cogs, 0)
+      // The overstatement it is warning about: profit here is the whole payout.
+      assert.equal(k.profit, k.revenue - k.fees)
+    } finally {
+      await db.delete(orderItems).where(eq(orderItems.order_id, id))
+      await db.delete(orders).where(eq(orders.id, id))
+      await db.delete(products).where(eq(products.id, noCost))
+    }
+  })
+
+  it('reports zero when every product sold has a cost', async () => {
+    const k = await fetchPeriodKpis(shopIds(), W1.since, W1.until)
+    assert.equal(k.missingCostProducts, 0)
+  })
+})
