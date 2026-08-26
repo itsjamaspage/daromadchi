@@ -19,6 +19,7 @@ import {
 } from './client'
 import { resolveColor } from '@/lib/products/resolveColor'
 import { buildVariantIndex, resolveVariant } from '@/lib/uzum/variant-match'
+import { withShopLock } from '@/lib/db/shop-lock'
 
 // Resolve a SKU's colour: prefer the skuTitle suffix (БЕЖЕВ / БЕЛЫЙ …), then
 // fall back to the structured «Цвет» / «Rang» characteristic already present in
@@ -217,12 +218,34 @@ export interface SyncResult {
   // "HTTP 400 …") plus the first raw order JSON. Returned to the Settings card
   // so a failing sync is diagnosable without server logs.
   debug?: Record<string, string>
+  /** True when another runner already held this shop's sync lock and this call
+   *  did nothing. Not an error — the next tick is five minutes away. */
+  skippedLocked?: boolean
 }
 
 // heavy=false → orders-only pass: resolve the shop + fetch/insert orders + fire
 // new-order alerts, but skip the throttled product/SKU pull and don't advance
 // last_synced_at.
+/**
+ * One sync per shop. Every caller goes through here — the cron tick, the
+ * «Sinxronlash» button — so overlapping runs are impossible regardless of which
+ * entry point fires. See lib/db/shop-lock.ts for why that matters: order_items
+ * are written delete-then-insert, and two interleaved runs can drop them.
+ */
 export async function syncFromUzum(shopId: string, token: string, heavy = true): Promise<SyncResult> {
+  const outcome = await withShopLock(shopId, () => syncFromUzumLocked(shopId, token, heavy))
+  if (outcome.ran) return outcome.value
+  // ok:true deliberately — nothing failed. A run is already in progress, and
+  // reporting an error here would light up the Settings card and the sync-alert
+  // path for the healthy case of two ticks overlapping by a few seconds.
+  return {
+    ok: true, skippedLocked: true,
+    ordersUpserted: 0, productsUpserted: 0, campaignsUpserted: 0,
+    debug: { skipped: 'another sync is already running for this shop' },
+  }
+}
+
+async function syncFromUzumLocked(shopId: string, token: string, heavy = true): Promise<SyncResult> {
   const warnings: string[] = []
   const debug: Record<string, string> = {}
   let itemsUpserted = 0
