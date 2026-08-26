@@ -282,11 +282,12 @@ export function localDayRange(dateStr: string): { start: Date; end: Date } {
 /**
  * The seller's current week, as `YYYY-MM-DD` strings.
  *
- * Distinct from startOfIsoWeek/endOfIsoWeek, which stay process-local because
- * isoWeekBounds builds settlement-week LABELS from them and those must keep
- * agreeing with Postgres' own IYYY-"W"IW keys. This one answers a different
- * question — "what week is the seller in right now" — and must not depend on
- * where the browser or the server is. See lib/shop-time.ts.
+ * A convenience over startOfShopWeek/endOfShopWeek for the common case: what
+ * week is the seller in right now. (An earlier draft of this comment said
+ * startOfIsoWeek/endOfIsoWeek stayed process-local — they did not survive that
+ * way. Mixing a shop instant with process-local accessors turned out to be the
+ * bug, so those are shop-zone too, and isoWeekKey carries the matching
+ * AT TIME ZONE cast in lib/db/payouts.ts.) See lib/shop-time.ts.
  */
 export function shopWeekBounds(now: Date = new Date()): { from: string; to: string } {
   const today = shopDateStr(now)
