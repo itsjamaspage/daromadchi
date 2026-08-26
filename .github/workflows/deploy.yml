@@ -87,6 +87,17 @@ jobs:
           if ! grep -q '^CRON_SECRET=' .env .env.local .env.production .env.production.local 2>/dev/null; then
             echo "WARNING: CRON_SECRET is not set in the server .env — scheduled sync will be rejected with 403 until it is added."
           fi
+          # ENCRYPTION_KEY protects every stored marketplace API token and ATMOS
+          # card token. lib/crypto.ts now REFUSES to write a credential in
+          # production without it rather than silently storing plain text, so an
+          # absent or malformed key turns "connect a shop" into a visible error.
+          # This says so at deploy time, before a seller finds out instead.
+          ENC_LINE=$(grep -hm1 '^ENCRYPTION_KEY=' .env .env.local .env.production .env.production.local 2>/dev/null | cut -d= -f2- | tr -d '"'"'"'"'"'"'"'"')
+          if [ -z "$ENC_LINE" ]; then
+            echo "WARNING: ENCRYPTION_KEY is not set in the server .env — connecting a shop will now FAIL rather than store the token in plain text. Generate one with: openssl rand -base64 32"
+          elif [ "$(printf %s "$ENC_LINE" | base64 -d 2>/dev/null | wc -c)" != "32" ]; then
+            echo "WARNING: ENCRYPTION_KEY is set but does not decode to 32 bytes — credential writes will fail. Generate one with: openssl rand -base64 32"
+          fi
           ( crontab -l 2>/dev/null | grep -v 'daromadchi/cron-runner.sh' || true
             echo '*/5 * * * * /var/www/daromadchi/cron-runner.sh sync >> $HOME/daromadchi-cron.log 2>&1'
             echo '*/5 * * * * /var/www/daromadchi/cron-runner.sh stock-sync >> $HOME/daromadchi-cron.log 2>&1'
