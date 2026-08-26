@@ -42,6 +42,91 @@ jobs:
       - run: npm ci
       - run: npx tsc --noEmit
 
+  tests:
+    name: Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # NOT listed in branch protection yet — deliberately. It runs on every push
+    # and PR so the result is visible, but it cannot block a merge until someone
+    # adds "Tests" to the required checks. Promote it once you trust it.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: daro
+          POSTGRES_PASSWORD: daro
+          POSTGRES_DB: daro_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 5s
+          --health-timeout 5s --health-retries 10
+    env:
+      # A dummy token, never a real one. lib/telegram.ts reads TELEGRAM_BOT_TOKEN
+      # at module load and returns false without it, so the suites that assert
+      # "…and tells them on Telegram" never reach their own fetch mock and fail
+      # for a reason that has nothing to do with the code under test.
+      TELEGRAM_BOT_TOKEN: ci-dummy-token
+      TELEGRAM_BOT_USERNAME: ci_dummy_bot
+      ADMIN_EMAIL: founder@drm.test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+
+      # Two databases, because one suite cannot share.
+      #
+      # admin-analytics asserts GLOBAL totals across the payments table — that is
+      # what the page it covers actually computes — so any other suite inserting
+      # a paid payment inflates its expected figure. It is not order-dependence
+      # to be fixed in the query; the query is right. It just needs its own DB.
+      - name: Prepare databases
+        run: |
+          export PGPASSWORD=daro
+          psql -h localhost -U daro -d postgres -c 'CREATE DATABASE daro_admin;'
+          for DB in daro_test daro_admin; do
+            DATABASE_URL="postgres://daro:daro@localhost:5432/$DB" npx drizzle-kit push --force
+            DATABASE_URL="postgres://daro:daro@localhost:5432/$DB" node scripts/apply-sql-migrations.mjs
+          done
+
+      # Every test:* script except the two handled separately. Reading them out
+      # of package.json rather than listing them here means a newly added suite
+      # is picked up automatically instead of being silently skipped — which is
+      # how 45 scripts came to exist with none of them running.
+      - name: Test suites
+        run: |
+          FAILED=""
+          for T in $(node -e "const s=require('./package.json').scripts;console.log(Object.keys(s).filter(k=>k.startsWith('test:')&&k!=='test:gating'&&k!=='test:admin').join(' '))"); do
+            echo "::group::$T"
+            if npm run --silent "$T"; then echo "PASS $T"; else echo "FAIL $T"; FAILED="$FAILED $T"; fi
+            echo "::endgroup::"
+          done
+          if [ -n "$FAILED" ]; then echo "Failed:$FAILED"; exit 1; fi
+        env:
+          DATABASE_URL: postgres://daro:daro@localhost:5432/daro_test
+
+      - name: Admin analytics (isolated database)
+        run: npm run --silent test:admin
+        env:
+          DATABASE_URL: postgres://daro:daro@localhost:5432/daro_admin
+
+      # test:gating is NOT run, and this is the honest reason rather than a
+      # silent omission: lib/billing/entitlement.ts imports getCurrentUserId from
+      # lib/db/shop-context, which reaches lib/auth/session -> lib/auth/config ->
+      # next-auth -> next/navigation. Outside Next's own runtime that chain dies
+      # either on next/headers ("cannot be imported from a Client Component") or,
+      # under --conditions=react-server, on React's server build having no
+      # createContext. lib/marketplace/stock-sync pulls the same chain.
+      #
+      # It is a module-layering problem, not a failing assertion: billing rules
+      # should not depend on the auth stack. Only currentUserAccess() needs the
+      # session, and loadEntitlement/userHasFeature/everyActiveShopIsReadOnly —
+      # the three the test actually exercises — already take an explicit userId.
+      # Moving currentUserAccess into its own module would let this run.
+      # Tracked in AUDIT.md.
+
   build:
     name: Build
     runs-on: ubuntu-latest
