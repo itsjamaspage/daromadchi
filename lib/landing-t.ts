@@ -134,9 +134,9 @@ export const T = {
     ),
     feature3Title: tr('Ежедневная сводка в Telegram', "Har kuni Telegram'da xulosa", 'Daily Telegram digest'),
     feature3Desc: tr(
-      'Каждый день в 10:00 — сводка по продажам, остаткам и заказам',
-      "Har kuni soat 10:00 da — savdolar, qoldiqlar va buyurtmalar bo'yicha xulosa",
-      'Every day at 10:00 — summary of sales, stock and orders',
+      'В выбранное вами время — сводка по продажам, остаткам и заказам',
+      "O'zingiz tanlagan vaqtda — savdolar, qoldiqlar va buyurtmalar bo'yicha xulosa",
+      'At the time you choose — summary of sales, stock and orders',
     ),
     // Key name kept so callers do not churn; the number comes from TRIAL_DAYS.
     startFree3Days: startFreeCta,
