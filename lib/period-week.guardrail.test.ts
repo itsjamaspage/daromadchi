@@ -75,3 +75,47 @@ test('the guard is actually looking at files', () => {
   assert.ok(files.length > 100, `only ${files.length} files scanned`)
   assert.ok(files.some(f => f.startsWith('app/dashboard/')), 'dashboard not scanned')
 })
+
+/**
+ * The third ban, added after the P&L page shipped this exact bug.
+ *
+ * #365 fixed the drifting clamp in DateRangePicker and this file's ALLOWED set
+ * — which exists so CalendarPicker can lay out a month grid — quietly exempted
+ * the OTHER copy of it. The fix landed on one picker and missed the other, and
+ * the user found the difference on the live site.
+ *
+ * So this test does not use ALLOWED. Laying out a grid is a reason to call
+ * getDay(); it is not a reason to own a second copy of the paging arithmetic.
+ * The banned shape is re-anchoring a range to "the N days ending today":
+ *
+ *     if (newTo > today) { newTo = today; newFrom = today − (rangeDays − 1) }
+ *
+ * It is only ever reached when the window has caught up with the present, which
+ * is when the user is looking at the current week — so it corrupts the most
+ * visited view, and does it silently.
+ */
+test('nobody re-anchors a date range to "the N days ending today"', () => {
+  const everyFile = SEARCH.flatMap(d => [...walk(join(ROOT, d))]).map(f => f.slice(ROOT.length + 1))
+  const offenders: string[] = []
+
+  for (const f of everyFile) {
+    // lib/period-week.ts owns the clamp — it applies it only to ranges with no
+    // weekday anchor to destroy, which is the distinction the copies missed.
+    if (f.startsWith('lib/period-week')) continue
+    const src = readFileSync(join(ROOT, f), 'utf8')
+    // Strip comments so the prose above (and in the pickers) does not self-trip.
+    const code = src
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/(^|[^:])\/\/[^\n]*/g, '$1')
+    // The shape, not one spelling of it: a rangeDays-based rewind sitting in the
+    // same file as a clamp to today.
+    if (/rangeDays\s*-\s*1/.test(code) && /(newTo|nt)\s*[>=]=?\s*today/i.test(code)) {
+      offenders.push(f)
+    }
+  }
+
+  assert.deepEqual(offenders, [],
+    'paging belongs to pageRange() in lib/period-week.ts — a second copy is how\n' +
+    'the P&L calendar kept returning Thu–Wed after #365 fixed the dashboard one:\n\n' +
+    offenders.map(o => '  ' + o).join('\n') + '\n')
+})

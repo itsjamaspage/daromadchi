@@ -6,9 +6,7 @@ import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { useTransition } from 'react'
 import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useLang } from '@/app/providers'
-import {
-  startOfIsoWeek, endOfIsoWeek, localDateStr, parseLocalDate, shiftLocalDate, isCalendarWeek,
-} from '@/lib/period-week'
+import { localDateStr, parseLocalDate, shiftLocalDate, pageRange, canPageForward } from '@/lib/period-week'
 
 interface Props {
   period: string
@@ -115,33 +113,16 @@ export default function DateRangePicker({ period, from, to, presets, fallbackLab
     ? Math.round((new Date(to).getTime() - new Date(from).getTime()) / 86_400_000) + 1
     : (parseInt(period, 10) || 7)
   const effFrom = from ?? shiftLocalDate(effTo, -(rangeDays - 1))
-  // A Mon–Sun week pages as a week; anything else keeps its own length.
-  const isWeek = !!(from && to) && isCalendarWeek(effFrom, effTo)
-  const thisWeekFrom = localDateStr(startOfIsoWeek(new Date()))
-  // "Next" stops at the present: for a week, once you are ON this week — its
-  // Sunday is legitimately in the future and must not be clamped away. For any
-  // other range, once it reaches today.
-  const atToday = isWeek ? effFrom >= thisWeekFrom : effTo >= today
+  // Paging and the "next" rule both live in lib/period-week.ts, shared with
+  // CalendarPicker. They were inlined here until the P&L page shipped the same
+  // bug from its own copy — one definition now, so a fix cannot land on one
+  // picker and miss the other.
+  const atToday = !canPageForward(effFrom, effTo, new Date())
 
   // Page the window. Leaves the dropdown as-is so the user can keep paging.
   function shiftWeek(dir: -1 | 1) {
     if (pending) return
-    let newFrom: string
-    let newTo: string
-    if (isWeek) {
-      // Whole calendar weeks, so Monday stays Monday. The old code shifted 7
-      // days and then clamped the END to today, which silently re-anchored the
-      // window: paging forward off Mon 24–Sun 30 produced Thu 20–Wed 26, and
-      // every week after that inherited the drift.
-      const anchor = parseLocalDate(effFrom)
-      anchor.setDate(anchor.getDate() + dir * 7)
-      newFrom = localDateStr(startOfIsoWeek(anchor))
-      newTo   = localDateStr(endOfIsoWeek(anchor))
-    } else {
-      newFrom = shiftLocalDate(effFrom, dir * 7)
-      newTo = shiftLocalDate(effTo, dir * 7)
-      if (newTo > today) { newTo = today; newFrom = shiftLocalDate(today, -(rangeDays - 1)) }
-    }
+    const { from: newFrom, to: newTo } = pageRange(effFrom, effTo, dir, new Date())
     const p = new URLSearchParams(searchParams.toString())
     p.delete('days')
     // A new window means a new list; keeping ?page= would land on an empty one.

@@ -154,3 +154,71 @@ describe('paging a week keeps Monday on Monday', () => {
     assert.deepEqual(page('2026-03-02', -1), ['2026-02-23', '2026-03-01'])
   })
 })
+
+// ── Paging a week (the bug the P&L page shipped with) ───────────────────────
+//
+// Reported from the live site: "when i am changing to last week and back to
+// current week, the date ranger / calendar is breaking again". These reproduce
+// the exact sequence and the exact wrong ranges from the screenshots.
+
+import { pageRange, canPageForward } from './period-week'
+
+const WED_26_AUG_2026 = new Date(2026, 7, 26)   // month is 0-based
+const dow = (s: string) => ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][parseLocalDate(s).getDay()]
+
+test('paging back then forward returns to the SAME Mon–Sun week', () => {
+  const week = { from: '2026-08-24', to: '2026-08-30' }
+  const back = pageRange(week.from, week.to, -1, WED_26_AUG_2026)
+  assert.deepEqual(back, { from: '2026-08-17', to: '2026-08-23' })
+
+  const forward = pageRange(back.from, back.to, 1, WED_26_AUG_2026)
+  // This is the assertion that failed before: it returned 2026-08-20 (Thu),
+  // because the old clamp re-anchored the window to "the 7 days ending today".
+  assert.deepEqual(forward, week, 'forward from last week must land back on Mon 24 – Sun 30')
+})
+
+test('a week never pages into a Thu–Wed window, however far you page', () => {
+  // Walk back six weeks and forward again, checking every stop. The old bug
+  // only needed one round trip to appear, but it also COMPOUNDED — each
+  // subsequent page inherited the drift — so this walks far enough to catch that.
+  let r = { from: '2026-08-24', to: '2026-08-30' }
+  for (let i = 0; i < 6; i++) {
+    r = pageRange(r.from, r.to, -1, WED_26_AUG_2026)
+    assert.equal(dow(r.from), 'Mon', `page ${-i - 1}: ${r.from} is a ${dow(r.from)}`)
+    assert.equal(dow(r.to), 'Sun', `page ${-i - 1}: ${r.to} is a ${dow(r.to)}`)
+  }
+  for (let i = 0; i < 6; i++) {
+    r = pageRange(r.from, r.to, 1, WED_26_AUG_2026)
+    assert.equal(dow(r.from), 'Mon', `returning, page ${i + 1}: ${r.from} is a ${dow(r.from)}`)
+    assert.equal(dow(r.to), 'Sun', `returning, page ${i + 1}: ${r.to} is a ${dow(r.to)}`)
+  }
+  assert.deepEqual(r, { from: '2026-08-24', to: '2026-08-30' }, 'six back and six forward is a round trip')
+})
+
+test('the current week keeps its Sunday even though Sunday is in the future', () => {
+  // Today is Wednesday. The week must still read Mon 24 – Sun 30; truncating it
+  // at today is precisely what produced the Thu–Wed range on screen.
+  const r = pageRange('2026-08-17', '2026-08-23', 1, WED_26_AUG_2026)
+  assert.equal(r.to, '2026-08-30')
+  assert.ok(r.to > localDateStr(WED_26_AUG_2026), 'the end is allowed to be in the future')
+})
+
+test('"next" is decided by the week you are ON, not by its Sunday', () => {
+  // On the current week → nothing further to go to.
+  assert.equal(canPageForward('2026-08-24', '2026-08-30', WED_26_AUG_2026), false)
+  // On last week → the button must be live, even though its end (23rd) is past.
+  assert.equal(canPageForward('2026-08-17', '2026-08-23', WED_26_AUG_2026), true)
+})
+
+test('a non-week range keeps its own length and is still clamped', () => {
+  // A 30-day window has no weekday anchor to protect, so the old clamp is
+  // correct for it — and must not be lost while fixing the week case.
+  const r = pageRange('2026-07-01', '2026-07-30', 1, WED_26_AUG_2026)
+  assert.deepEqual(r, { from: '2026-07-08', to: '2026-08-06' }, 'both ends move by exactly 7 days')
+  assert.equal(
+    Math.round((parseLocalDate(r.to).getTime() - parseLocalDate(r.from).getTime()) / 86_400_000) + 1,
+    30, 'length preserved',
+  )
+  const atEdge = pageRange('2026-08-01', '2026-08-25', 1, WED_26_AUG_2026)
+  assert.equal(atEdge.to, '2026-08-26', 'clamped to today rather than paged into the future')
+})
