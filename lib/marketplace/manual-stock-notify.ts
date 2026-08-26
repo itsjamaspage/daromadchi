@@ -30,6 +30,7 @@ import { logger } from '@/lib/logger'
 import { sendSellerMessageTo } from '@/lib/telegram-seller'
 import { normalizeLang } from '@/lib/notif-i18n'
 import type { SyncMember } from '@/lib/marketplace/stock-allocation'
+import type { MarketplaceType } from '@/lib/types'
 import { normalizeKey } from '@/lib/db/stock-groups'
 import { reservingOrderCondition } from '@/lib/marketplace/reserving-orders'
 import {
@@ -88,6 +89,10 @@ async function loadUserGroups(userId: string): Promise<Map<string, LoadedGroup>>
   const latestOrderRows = shopIds.length === 0 ? [] : await db.select({
     product_id: orderItems.product_id,
     order_id_external: orders.order_id_external,
+    // Which marketplace the sale came from. That side maintains its own listing
+    // once the order is accepted for shipping, so it is excluded from the
+    // reminder — see GroupIdentity.orderMarketplace in manual-stock-pure.ts.
+    marketplace: orders.marketplace,
     ordered_at: orders.ordered_at,
   }).from(orderItems)
     .innerJoin(orders, eq(orderItems.order_id, orders.id))
@@ -97,10 +102,15 @@ async function loadUserGroups(userId: string): Promise<Map<string, LoadedGroup>>
     ))
     .orderBy(desc(orders.ordered_at))
 
-  const latestOrderByProduct = new Map<string, string>()
+  const latestOrderByProduct = new Map<string, { id: string; marketplace: MarketplaceType }>()
   for (const r of latestOrderRows) {
     if (!r.product_id || !r.order_id_external) continue
-    if (!latestOrderByProduct.has(r.product_id)) latestOrderByProduct.set(r.product_id, r.order_id_external)
+    if (!latestOrderByProduct.has(r.product_id)) {
+      latestOrderByProduct.set(r.product_id, {
+        id: r.order_id_external,
+        marketplace: r.marketplace as MarketplaceType,
+      })
+    }
   }
 
   for (const p of prodRows) {
@@ -126,8 +136,11 @@ async function loadUserGroups(userId: string): Promise<Map<string, LoadedGroup>>
     if (!g.identity.title && p.title) g.identity.title = p.title
     if (!g.identity.colorKey && p.variant_color) g.identity.colorKey = p.variant_color
     if (!g.identity.orderId) {
-      const oid = latestOrderByProduct.get(p.id)
-      if (oid) g.identity.orderId = oid
+      const latest = latestOrderByProduct.get(p.id)
+      if (latest) {
+        g.identity.orderId = latest.id
+        g.identity.orderMarketplace = latest.marketplace
+      }
     }
   }
   return groups

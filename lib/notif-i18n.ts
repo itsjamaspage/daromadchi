@@ -83,6 +83,8 @@ export interface NotifStrings {
   // Tells a read-only seller the exact number to set by hand on a marketplace.
   manualStockTitle: (n: number) => string
   manualStockLine: (product: string, target: number, marketplace: string, orderId?: string | null) => string
+  // Closing line: why a human is being asked to do this at all.
+  manualStockFooter: string
   // Extension daily summary (app/api/extension/send-daily-summary). Was hardcoded Uzbek.
   extDailyTitle: (date: string) => string
   extRevenue: string
@@ -150,6 +152,7 @@ const STRINGS: Record<NotifLang, NotifStrings> = {
     manualStockTitle: (n) => `🔧 <b>Qoldiqni qo'lda yangilang (${n})</b>`,
     manualStockLine:  (product, target, mp, orderId) =>
       `• ${product} — ${mp}da <b>${target}</b> qo'ying${orderId ? ` · buyurtma #${orderId}` : ''}`,
+    manualStockFooter: `ℹ️ <i>API kalitlaringiz faqat o'qish rejimida — shuning uchun bu xabar keladi. Tahrirlash huquqi berilsa, qoldiq o'zi yangilanardi.</i>`,
     stockSyncReason: (r) => REASONS.uz[r] ?? httpReason(r, 'API xatosi'),
     extDailyTitle:  (d) => `📊 <b>Kunlik hisobot — ${d}</b>`,
     extRevenue:     '💰 Daromad',
@@ -213,6 +216,7 @@ const STRINGS: Record<NotifLang, NotifStrings> = {
     manualStockTitle: (n) => `🔧 <b>Обновите остатки вручную (${n})</b>`,
     manualStockLine:  (product, target, mp, orderId) =>
       `• ${product} — поставьте <b>${target}</b> на ${mp}${orderId ? ` · заказ #${orderId}` : ''}`,
+    manualStockFooter: `ℹ️ <i>Вы получаете это, потому что ваши API-ключи работают только на чтение. С ключами на редактирование остаток обновился бы сам.</i>`,
     stockSyncReason: (r) => REASONS.ru[r] ?? httpReason(r, 'ошибка API'),
     extDailyTitle:  (d) => `📊 <b>Отчёт за день — ${d}</b>`,
     extRevenue:     '💰 Выручка',
@@ -276,6 +280,7 @@ const STRINGS: Record<NotifLang, NotifStrings> = {
     manualStockTitle: (n) => `🔧 <b>Update stock manually (${n})</b>`,
     manualStockLine:  (product, target, mp, orderId) =>
       `• ${product} — set <b>${target}</b> on ${mp}${orderId ? ` · order #${orderId}` : ''}`,
+    manualStockFooter: `ℹ️ <i>You get this because your API keys are read-only. With edit access the stock would have updated on its own.</i>`,
     stockSyncReason: (r) => REASONS.en[r] ?? httpReason(r, 'API error'),
     extDailyTitle:  (d) => `📊 <b>Daily report — ${d}</b>`,
     extRevenue:     '💰 Revenue',

@@ -164,3 +164,78 @@ describe('SAFETY — no marketplace write path is reachable from this module', (
     assert.doesNotMatch(src, /\bcancelOrder\s*\(/, 'must not call cancelOrder')
   })
 })
+
+describe('the selling marketplace maintains its own stock — never remind it', () => {
+  // The reported message: ONE Yandex order, and the reminder named BOTH stores.
+  // Yandex decrements its own listing when the seller accepts the order for
+  // shipping, so the line telling them to set it by hand was noise sitting next
+  // to the line that actually needed doing.
+  const soldOnYandex = { title: 'Повербанк MagSafe', colorKey: 'grey', orderId: '60870363586', orderMarketplace: 'yandex_market' as const }
+
+  it('drops the line for the marketplace the order came from', () => {
+    const members = [
+      uzum({ listedStock: 2, physicalStock: 2, pending: 1 }),
+      ym({ listedStock: 2, physicalStock: 2, pending: 1 }),
+    ]
+    const out = computeManualReminders(members, soldOnYandex)
+    assert.deepEqual(out.map(r => r.marketplace), ['uzum'],
+      'the Yandex listing sold the unit and updates itself — only Uzum needs a human')
+  })
+
+  it('mirrored: an Uzum sale reminds only Yandex', () => {
+    const members = [
+      uzum({ listedStock: 2, physicalStock: 2, pending: 1 }),
+      ym({ listedStock: 2, physicalStock: 2, pending: 1 }),
+    ]
+    const out = computeManualReminders(members, { orderMarketplace: 'uzum' })
+    assert.deepEqual(out.map(r => r.marketplace), ['yandex_market'])
+  })
+
+  it('suppressing the only diverging listing yields no reminder at all', () => {
+    // Uzum already correct, Yandex stale but Yandex is where it sold → nothing
+    // to say. Better silence than an instruction to fix what fixes itself.
+    const members = [
+      uzum({ listedStock: 0, physicalStock: 1, pending: 1 }),
+      ym({ listedStock: 1, physicalStock: 1, pending: 1 }),
+    ]
+    assert.deepEqual(computeManualReminders(members, { orderMarketplace: 'yandex_market' }), [])
+  })
+
+  it('with no known order marketplace, every diverging listing is still reminded', () => {
+    // The suppression is evidence-driven: absent evidence, say more rather than
+    // less. A group with no order yet must not go silent.
+    const members = [
+      uzum({ listedStock: 2, physicalStock: 2, pending: 1 }),
+      ym({ listedStock: 2, physicalStock: 2, pending: 1 }),
+    ]
+    assert.deepEqual(computeManualReminders(members).map(r => r.marketplace), ['uzum', 'yandex_market'])
+  })
+})
+
+describe('footer — why the seller is being asked to do this by hand', () => {
+  const one = [{ sku: 'PBGRY', target: 1, marketplace: 'uzum' as const }]
+
+  it('names read-only keys and says edit mode would have done it', () => {
+    const ru = buildManualMessage(one, 'ru')
+    assert.match(ru, /только на чтение/)
+    assert.match(ru, /обновился бы сам/)
+  })
+
+  it('is present in every language, once', () => {
+    for (const [lang, needle] of [['uz', /faqat o'qish/], ['ru', /только на чтение/], ['en', /read-only/]] as const) {
+      const msg = buildManualMessage(one, lang)
+      assert.match(msg, needle, `missing in ${lang}`)
+      assert.equal(msg.split('ℹ️').length - 1, 1, `footer repeated in ${lang}`)
+    }
+  })
+
+  it('comes last, after every listing line', () => {
+    const msg = buildManualMessage([
+      { sku: 'A', target: 0, marketplace: 'uzum' },
+      { sku: 'B', target: 1, marketplace: 'yandex_market' },
+    ], 'ru')
+    const lines = msg.split('\n').filter(Boolean)
+    assert.match(lines[lines.length - 1], /^ℹ️/)
+    assert.equal(lines.filter(l => l.startsWith('•')).length, 2)
+  })
+})
