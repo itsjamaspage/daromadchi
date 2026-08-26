@@ -125,6 +125,7 @@ export default function DashboardClient({ slices, stockGroups, days, period, fro
   const t = dashT[lang]
   const d = t.dashboard
   const s = t.status
+
   const router = useRouter()
 
   const [marketplace, setMarketplace] = useState<MarketplaceType | undefined>(initialMarketplace)
@@ -152,6 +153,20 @@ export default function DashboardClient({ slices, stockGroups, days, period, fro
     slices[sliceKey as keyof typeof slices]
 
   const isEmpty = kpis.total_orders === 0 && allProducts.length === 0
+
+  // "Учтено: Uzum · Ожидает расчёта: Yandex Market (115 ming so'm)". Names the
+  // marketplaces behind the profit and the ones whose money has not landed, so
+  // a figure smaller than the revenue beside it explains itself.
+  const mpName = (mp: string) => ({ uzum: 'Uzum', yandex_market: 'Yandex Market' } as Record<string, string>)[mp] ?? mp
+  const coverageParts: string[] = []
+  if ((kpis.counted_marketplaces ?? []).length > 0) {
+    coverageParts.push(`${t.kpi.counted}: ${(kpis.counted_marketplaces ?? []).map(mpName).join(', ')}`)
+  }
+  for (const p of kpis.pending_marketplaces ?? []) {
+    coverageParts.push(`${t.kpi.awaiting}: ${mpName(p.marketplace)} (${formatSum(p.revenue)})`)
+  }
+  const coverageLine = coverageParts.length > 0 ? coverageParts.join(' · ') : undefined
+
 
   // Top products: collapse listings that are really ONE product into a single
   // line with combined delivered units + revenue. Two rows merge when they
@@ -421,10 +436,15 @@ export default function DashboardClient({ slices, stockGroups, days, period, fro
           <KpiCard title={d.revenue} value={formatSum(kpis.total_revenue)}             change={isEmpty ? null : kpis.change_revenue} icon={DollarSign}  color="violet" />
           {/* Profit shows its working. 40 000 next to 200 000 of sales reads as a
               bug until the 130 000 of stock and 30 000 of fees are visible — so
-              the card sets out the arithmetic instead of asserting a total. */}
+              the card sets out the arithmetic instead of asserting a total.
+              The breakdown adds up the COUNTED sales, not every sale in the
+              period: the revenue card next door is where total sales live, and
+              money a marketplace has not reported yet is named in the coverage
+              line rather than folded in. Nothing counted → no arithmetic worth
+              showing, and that line carries the whole story. */}
           <KpiCard title={d.profit}  value={formatSum(kpis.total_profit)}              change={isEmpty ? null : kpis.change_profit}  icon={TrendingUp}  color="emerald"
-            breakdown={isEmpty || kpis.total_revenue === 0 ? undefined : [
-              { label: t.kpi.sales, value: formatSum(kpis.total_revenue) },
+            breakdown={isEmpty || (kpis.profit_revenue_counted ?? 0) === 0 ? undefined : [
+              { label: t.kpi.sales, value: formatSum(kpis.profit_revenue_counted ?? 0) },
               { label: t.kpi.cogs,  value: formatSum(kpis.profit_cogs ?? 0), kind: 'minus' },
               { label: t.kpi.fees,  value: formatSum(kpis.profit_fees ?? 0), kind: 'minus' },
               { label: t.kpi.net,   value: formatSum(kpis.total_profit),     kind: 'total' },
@@ -432,6 +452,7 @@ export default function DashboardClient({ slices, stockGroups, days, period, fro
             warning={(kpis.missing_cost_products ?? 0) > 0
               ? t.kpi.noCost.replace('{n}', String(kpis.missing_cost_products ?? 0))
               : undefined}
+            coverage={isEmpty ? undefined : coverageLine}
           />
           <KpiCard title={d.orders}
             value={(kpis.total_orders - (kpis.cancelled_orders ?? 0)).toLocaleString('uz-UZ')}

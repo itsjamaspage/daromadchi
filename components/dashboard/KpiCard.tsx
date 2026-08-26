@@ -23,6 +23,13 @@ interface KpiCardProps {
   breakdown?: KpiBreakdownRow[]
   /** Says the figure is incomplete and why. Rendered in the warning colour. */
   warning?: string
+  /**
+   * Which sources the figure covers and which are still to come. Muted, not
+   * red: money a marketplace has not reported yet is not an error, it is a
+   * fact about timing, and the seller needs to see it beside the number rather
+   * than discover it by arithmetic.
+   */
+  coverage?: string
   change?: number | null
   icon: LucideIcon
   color: 'violet' | 'emerald' | 'blue' | 'amber'
@@ -35,7 +42,7 @@ const colorMap = {
   amber:   { bgRgba: 'rgba(236,126,0,0.08)',   color: '#ec7e00' },
 }
 
-export default function KpiCard({ title, value, note, breakdown, warning, change, icon: Icon, color }: KpiCardProps) {
+export default function KpiCard({ title, value, note, breakdown, warning, coverage, change, icon: Icon, color }: KpiCardProps) {
   const c = colorMap[color]
   const isPositive = (change ?? 0) >= 0
 
@@ -100,6 +107,11 @@ export default function KpiCard({ title, value, note, breakdown, warning, change
       {warning && (
         <p className="text-[11px] font-medium mt-2" style={{ color: '#ef4444' }}>
           {warning}
+        </p>
+      )}
+      {coverage && (
+        <p className="text-[11px] mt-2 leading-snug" style={{ color: 'var(--text-muted)' }}>
+          {coverage}
         </p>
       )}
     </div>
