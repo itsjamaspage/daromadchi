@@ -163,3 +163,47 @@ test('nobody does month arithmetic by hand', () => {
     'Greenwich:\n\n' +
     utcMonth.map(o => '  ' + o).join('\n') + '\n')
 })
+
+/**
+ * The fifth ban: parsing a date STRING with `new Date(...)`.
+ *
+ * `new Date('2026-08-24')` is UTC midnight — the spec parses a date-ONLY string
+ * as UTC, while a date-time string without a zone is local. For a seller in
+ * Tashkent (UTC+5) that made the selected window begin at 05:00, so the first
+ * five hours of every period were missing.
+ *
+ * It was not one site. The KPI cards, the revenue chart, the product-sales
+ * table, the category chart and the orders list each parsed the `from`/`to`
+ * query params this way, so every panel on the dashboard shared the same skew —
+ * and the KPI comparison, derived from that start by millisecond arithmetic,
+ * came out ten hours off AND overlapping the week it compared against.
+ *
+ * Matching only the conventional names (`from`, `to`, `since`, `until`) is a
+ * heuristic, not a proof: a date string held in a differently-named variable
+ * slips through. It is worth having anyway — those four names are what the
+ * query params are called everywhere in this codebase, and the ban costs
+ * nothing where a genuine Date needs copying (use the value directly, or a
+ * helper that returns a fresh one).
+ */
+test('nobody parses a date string with new Date()', () => {
+  const everyFile = SEARCH.flatMap(d => [...walk(join(ROOT, d))]).map(f => f.slice(ROOT.length + 1))
+  const offenders: string[] = []
+
+  for (const f of everyFile) {
+    // period-week and kpi-windows own date parsing.
+    if (f.startsWith('lib/period-week') || f.startsWith('lib/kpi-windows')) continue
+    const src = readFileSync(join(ROOT, f), 'utf8')
+    const code = src
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/(^|[^:])\/\/[^\n]*/g, '$1')
+
+    // `new Date(from)` / `new Date(to + '…')` — the query-param names.
+    if (/new Date\(\s*(from|to|since|until)\b/.test(code)) offenders.push(f)
+  }
+
+  assert.deepEqual(offenders, [],
+    "use parseLocalDate() / endOfLocalDay() from lib/period-week.ts —\n" +
+    "new Date('2026-08-24') is UTC midnight, which starts the seller's day at\n" +
+    '05:00 in Tashkent and skews every figure computed from it:\n\n' +
+    offenders.map(o => '  ' + o).join('\n') + '\n')
+})

@@ -95,7 +95,7 @@ export async function getSeasonality(maxProducts = 6, marketplace?: MarketplaceT
   }
 
   const monthKeys: string[] = []
-  const cur = new Date(since)
+  const cur = startOfMonth(since)   // a fresh Date; the loop advances it
   for (let i = 0; i < 12; i++) {
     monthKeys.push(localMonthStr(cur))
     cur.setTime(addMonths(cur, 1).getTime())

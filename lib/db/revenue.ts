@@ -3,6 +3,7 @@ import { inArray, gte, lte, ne, and, sql } from 'drizzle-orm'
 import { db, orders } from '@/lib/db'
 import { getShopIds } from '@/lib/db/shop-context'
 import type { DailyRevenue, MarketplaceType } from '@/lib/types'
+import { parseLocalDate, endOfLocalDay } from '@/lib/period-week'
 
 const _fetchRevenue = unstable_cache(
   async (shopIdsStr: string, days: number, from: string, to: string): Promise<DailyRevenue[]> => {
@@ -13,8 +14,10 @@ const _fetchRevenue = unstable_cache(
     let untilDate: Date | null = null
 
     if (from) {
-      sinceDate = new Date(from)
-      untilDate = to ? new Date(to + 'T23:59:59') : null
+      // Both ends local. This used to mix the two: `new Date(from)` is UTC
+      // midnight while `new Date(to + 'T23:59:59')` is local, in one function.
+      sinceDate = parseLocalDate(from)
+      untilDate = to ? endOfLocalDay(parseLocalDate(to)) : null
     } else {
       sinceDate = new Date()
       sinceDate.setDate(sinceDate.getDate() - days + 1)

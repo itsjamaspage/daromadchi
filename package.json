@@ -65,6 +65,7 @@
     "test:kpis-period": "node --conditions=react-server --import tsx --test lib/db/kpis.integration.test.ts",
     "test:variant-backfill": "node --import tsx --test scripts/backfill-variant-color.test.ts",
     "test:week": "node --import tsx --test lib/period-week.test.ts lib/period-week.guardrail.test.ts",
+    "test:kpi-windows": "TZ=Asia/Tashkent node --import tsx --test lib/kpi-windows.test.ts",
     "test:variant-match": "node --import tsx --test lib/uzum/variant-match.test.ts",
     "test:money": "node --import tsx --test lib/money/order-economics.test.ts lib/money/order-economics.guardrail.test.ts",
     "test:crypto": "node --import tsx --test lib/crypto.test.ts",

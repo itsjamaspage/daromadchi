@@ -10,6 +10,7 @@ import { getStockGroups } from '@/lib/db/stock-groups'
 import WelcomePopup from '@/components/dashboard/WelcomePopup'
 import type { MarketplaceType } from '@/lib/types'
 import { startOfIsoWeek, endOfIsoWeek, localDateStr } from '@/lib/period-week'
+import { inclusiveDays } from '@/lib/kpi-windows'
 
 function parseDays(v: string | undefined): number {
   if (v === '1')     return 1
@@ -73,7 +74,7 @@ export default async function DashboardPage({ searchParams }: Props) {
   if (from && to) {
     // Custom range chosen in the picker — honour it verbatim.
     period = ''
-    days = Math.max(1, Math.ceil((new Date(to).getTime() - new Date(from).getTime()) / 86_400_000) + 1)
+    days = Math.max(1, inclusiveDays(from, to))
   } else if (explicitDays) {
     // Explicit preset (?days=…), e.g. the "1 year" chip.
     period = explicitDays
