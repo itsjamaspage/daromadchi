@@ -216,6 +216,13 @@ export interface DailyRevenue {
 export interface Kpis {
   total_revenue: number
   total_profit: number
+  /** The parts total_profit is made of: revenue − cogs − fees = profit. Shown
+   *  on the card so a low number explains itself instead of looking broken. */
+  profit_cogs?: number
+  profit_fees?: number
+  /** Distinct products sold in the period with no cost_price entered. Their
+   *  cost counts as zero, so profit is OVERSTATED by whatever they cost. */
+  missing_cost_products?: number
   total_orders: number            // every order received, incl. cancelled
   cancelled_orders?: number       // subset of total_orders that were cancelled
   cancelled_units?: number        // item units on those cancelled orders

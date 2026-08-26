@@ -38,7 +38,7 @@ export async function fetchPeriodKpis(shopIds: string[], since: Date | null, unt
 
   // COGS aggregated over DELIVERED orders in the same period so the Dashboard's
   // Чистая прибыль matches P&L / Payouts' "after everything" figure.
-  const [orderAgg, cogsAgg, unitAgg, deliveredOrders] = await Promise.all([
+  const [orderAgg, cogsAgg, unitAgg, deliveredOrders, missingCostAgg] = await Promise.all([
     db.select({
       total_revenue: sql<number>`coalesce(sum(${orders.revenue}::numeric) filter (where ${orders.status} = 'delivered'), 0)`,
       total_orders: sql<number>`count(*)`,
@@ -65,6 +65,16 @@ export async function fetchPeriodKpis(shopIds: string[], since: Date | null, unt
       marketplace_fee: orders.marketplace_fee,
       delivery_cost: orders.delivery_cost,
     }).from(orders).where(and(...conditions, sql`${orders.status} = 'delivered'`)),
+    // Products sold in this period with NO cost price entered. COGS treats a
+    // missing cost as zero — the only arithmetic available — so those items
+    // look like pure profit. The figure is not wrong so much as incomplete, and
+    // the card has to say so rather than present it flat.
+    db.select({
+      products: sql<number>`count(distinct ${orderItems.product_id})`,
+    }).from(orderItems)
+      .innerJoin(orders, eq(orderItems.order_id, orders.id))
+      .leftJoin(products, eq(orderItems.product_id, products.id))
+      .where(and(...conditions, sql`${orders.status} = 'delivered'`, sql`${products.cost_price} is null`)),
   ])
 
   const revenue = Number(orderAgg[0]?.total_revenue ?? 0)
@@ -100,6 +110,14 @@ export async function fetchPeriodKpis(shopIds: string[], since: Date | null, unt
   return {
     revenue,
     profit,
+    // The parts the profit is made of, so the dashboard can show its working:
+    // sales − cost of goods − what the marketplace kept = net. `fees` is derived
+    // rather than queried, because it is exactly the gap between what the sale
+    // was worth and what the marketplace paid out for it — whether that came
+    // from a settlement or from the stored estimate.
+    cogs,
+    fees: revenue - netFromMarketplace,
+    missingCostProducts: Number(missingCostAgg[0]?.products ?? 0),
     orders: Number(orderAgg[0]?.total_orders ?? 0),
     cancelled: Number(orderAgg[0]?.cancelled_orders ?? 0),
     cancelledUnits: Number(unitAgg[0]?.units ?? 0),

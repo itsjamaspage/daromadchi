@@ -419,7 +419,20 @@ export default function DashboardClient({ slices, stockGroups, days, period, fro
       {!hiddenWidgets.has('kpis') && (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
           <KpiCard title={d.revenue} value={formatSum(kpis.total_revenue)}             change={isEmpty ? null : kpis.change_revenue} icon={DollarSign}  color="violet" />
-          <KpiCard title={d.profit}  value={formatSum(kpis.total_profit)}              change={isEmpty ? null : kpis.change_profit}  icon={TrendingUp}  color="emerald" />
+          {/* Profit shows its working. 40 000 next to 200 000 of sales reads as a
+              bug until the 130 000 of stock and 30 000 of fees are visible — so
+              the card sets out the arithmetic instead of asserting a total. */}
+          <KpiCard title={d.profit}  value={formatSum(kpis.total_profit)}              change={isEmpty ? null : kpis.change_profit}  icon={TrendingUp}  color="emerald"
+            breakdown={isEmpty || kpis.total_revenue === 0 ? undefined : [
+              { label: t.kpi.sales, value: formatSum(kpis.total_revenue) },
+              { label: t.kpi.cogs,  value: formatSum(kpis.profit_cogs ?? 0), kind: 'minus' },
+              { label: t.kpi.fees,  value: formatSum(kpis.profit_fees ?? 0), kind: 'minus' },
+              { label: t.kpi.net,   value: formatSum(kpis.total_profit),     kind: 'total' },
+            ]}
+            warning={(kpis.missing_cost_products ?? 0) > 0
+              ? t.kpi.noCost.replace('{n}', String(kpis.missing_cost_products ?? 0))
+              : undefined}
+          />
           <KpiCard title={d.orders}
             value={(kpis.total_orders - (kpis.cancelled_orders ?? 0)).toLocaleString('uz-UZ')}
             note={(kpis.cancelled_orders ?? 0) > 0

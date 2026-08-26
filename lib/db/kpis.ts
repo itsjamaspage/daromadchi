@@ -58,6 +58,9 @@ const _fetchKpis = unstable_cache(
     const result: Kpis = {
       total_revenue: current.revenue,
       total_profit: current.profit,
+      profit_cogs: current.cogs,
+      profit_fees: current.fees,
+      missing_cost_products: current.missingCostProducts,
       total_orders: current.orders,
       cancelled_orders: current.cancelled,
       cancelled_units: current.cancelledUnits,

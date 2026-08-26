@@ -196,6 +196,9 @@ export default async function PnlPage({ searchParams }: Props) {
   // Доставка tooltip: name the store(s) that actually charged the logistics,
   // from the per-marketplace settlement split. Only non-zero stores are shown.
   const mpName = (mp: string) => mp === 'uzum' ? 'Uzum' : mp === 'yandex_market' ? 'Yandex Market' : mp
+  // Products sold in this range with no cost price entered. cogsProducts is
+  // already loaded for the editor, so this needs no extra query.
+  const noCostCount = cogsProducts.filter(p => p.costPrice == null).length
   const deliveryStores = deliveryByMp.filter(s => s.delivery > 0)
   const deliveryHint = deliveryStores.length > 0
     ? `${d.pnlHintDelivery} ${d.pnlDeliveryByStore} ${deliveryStores.map(s => `${mpName(s.marketplace)} — ${fmt(s.delivery)}`).join(' · ')}`
@@ -289,11 +292,21 @@ export default async function PnlPage({ searchParams }: Props) {
                   // a per-product cost editor (writes real cost_price, P&L
                   // recomputes). node overrides the plain value render.
                   { label: d.cogsLabel,         value: fmt(totals.cogs),                         hint: d.pnlHintCogs,
-                    node: <CogsCardEditor
-                      total={fmt(totals.cogs)}
-                      products={cogsProducts}
-                      labels={{ title: d.pnlCogsEditTitle, hint: d.pnlCogsEditHint, product: d.pnlCogsEditProduct, qty: d.pnlCogsEditQty, cost: d.pnlCogsEditCost, empty: d.pnlCogsEditEmpty, done: d.pnlCogsEditDone }}
-                    /> },
+                    node: <>
+                      <CogsCardEditor
+                        total={fmt(totals.cogs)}
+                        products={cogsProducts}
+                        labels={{ title: d.pnlCogsEditTitle, hint: d.pnlCogsEditHint, product: d.pnlCogsEditProduct, qty: d.pnlCogsEditQty, cost: d.pnlCogsEditCost, empty: d.pnlCogsEditEmpty, done: d.pnlCogsEditDone }}
+                      />
+                      {/* A product with no cost counts as costing nothing, which
+                          makes it look like pure profit. Say so here, where the
+                          editor that fixes it is already one click away. */}
+                      {noCostCount > 0 && (
+                        <p className="text-[11px] font-medium mt-2" style={{ color: '#ef4444' }}>
+                          {d.pnlCogsNoCost.replace('{n}', String(noCostCount))}
+                        </p>
+                      )}
+                    </> },
                   { label: d.netNoCommission,   value: fmt(totals.net),                          hint: d.pnlHintNet,          node: null },
                 ].map(({ label, value, hint, node }, i) => (
                   <div key={label} className="bg-[var(--bg-card2)] border border-[var(--border)] rounded-2xl p-5">

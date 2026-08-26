@@ -1,10 +1,28 @@
 import { TrendingUp, TrendingDown, type LucideIcon } from 'lucide-react'
 
+/** One line of the arithmetic behind a headline figure. */
+export interface KpiBreakdownRow {
+  label: string
+  value: string
+  /** 'minus' prefixes a −; 'total' rules off and sets it in the base colour. */
+  kind?: 'plus' | 'minus' | 'total'
+}
+
 interface KpiCardProps {
   title: string
   value: string
   /** small muted line under the value, e.g. "+1 bekor qilingan" */
   note?: string
+  /**
+   * The working behind `value`. A profit of 40 000 next to 200 000 of sales
+   * reads as a bug until you can see the 130 000 of stock and 30 000 of fees
+   * that produced it — so the card shows its arithmetic instead of asserting a
+   * total. Laid out as a receipt, right-aligned and tabular, because that is
+   * the shape a seller already knows how to read.
+   */
+  breakdown?: KpiBreakdownRow[]
+  /** Says the figure is incomplete and why. Rendered in the warning colour. */
+  warning?: string
   change?: number | null
   icon: LucideIcon
   color: 'violet' | 'emerald' | 'blue' | 'amber'
@@ -17,7 +35,7 @@ const colorMap = {
   amber:   { bgRgba: 'rgba(236,126,0,0.08)',   color: '#ec7e00' },
 }
 
-export default function KpiCard({ title, value, note, change, icon: Icon, color }: KpiCardProps) {
+export default function KpiCard({ title, value, note, breakdown, warning, change, icon: Icon, color }: KpiCardProps) {
   const c = colorMap[color]
   const isPositive = (change ?? 0) >= 0
 
@@ -53,6 +71,35 @@ export default function KpiCard({ title, value, note, change, icon: Icon, color 
       {note && (
         <p className="text-[11px] font-medium mt-0.5" style={{ color: '#ef4444' }}>
           {note}
+        </p>
+      )}
+      {breakdown && breakdown.length > 0 && (
+        <dl className="mt-3 pt-3 space-y-1" style={{ borderTop: '1px solid var(--border)' }}>
+          {breakdown.map(row => (
+            <div
+              key={row.label}
+              className="flex items-baseline justify-between gap-3 text-[11px]"
+              style={row.kind === 'total'
+                ? { marginTop: '0.375rem', paddingTop: '0.375rem', borderTop: '1px solid var(--border)' }
+                : undefined}
+            >
+              <dt style={{ color: 'var(--text-muted)' }}>{row.label}</dt>
+              <dd
+                className="tabular-nums"
+                style={{
+                  color: row.kind === 'total' ? 'var(--text-base)' : 'var(--text-dim)',
+                  fontWeight: row.kind === 'total' ? 600 : 500,
+                }}
+              >
+                {row.kind === 'minus' ? '−' : ''}{row.value}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      )}
+      {warning && (
+        <p className="text-[11px] font-medium mt-2" style={{ color: '#ef4444' }}>
+          {warning}
         </p>
       )}
     </div>
