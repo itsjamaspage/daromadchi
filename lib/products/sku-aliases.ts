@@ -12,7 +12,15 @@
  */
 export const LEGACY_SKU_ALIASES: Record<string, string> = {
   JMJ16BEG: 'JMJ16BG',
-  JMM99: 'JMWHT',
+  // JMM99 was here, mapped to 'JMWHT'. It is a BASE article shared by BOTH
+  // colour variants (JMM99-ЧЕРН / JMM99-БЕЛ), not a renamed variant article, so
+  // the alias made every colour resolve to the white product: a black-watch
+  // order linked to JMWHT, reserved against it, and inflated its sold count
+  // while JMBLK's stayed at zero. See the invariant test in sku-aliases.test.ts.
+  //
+  // Only ever alias a VARIANT-SPECIFIC article to its renamed self (JMJ16BEG →
+  // JMJ16BG is one variant renamed). A base article has no single right answer
+  // — the colour decides, and that is resolved in the matcher instead.
 }
 
 /**
