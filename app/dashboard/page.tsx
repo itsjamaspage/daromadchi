@@ -1,6 +1,6 @@
 import { Suspense } from 'react'
 import DashboardClient from './DashboardClient'
-import type { MarketplaceSlice } from './DashboardClient'
+import type { MarketplaceSlice, PanelKey } from './DashboardClient'
 import { getKpis } from '@/lib/db/kpis'
 import { getOrders } from '@/lib/db/orders'
 import { getProducts, getProductSales, getCategoryRevenue } from '@/lib/db/products'
@@ -31,6 +31,27 @@ function parseMarketplace(params: Record<string, string> | undefined): Marketpla
 
 // Each fetch is wrapped so one failing query (e.g. a missing table on an
 // out-of-date DB) degrades that panel rather than 500ing the whole dashboard.
+//
+// The fallback value is what the panel renders, so it has to be reported as
+// well as returned. A failed getKpis used to fall back to zeroes, and zero
+// revenue is a claim: the seller reads "you sold nothing this week" off a panel
+// that means "the query threw". Every fallback here now records the panel's
+// name in `failed`, and the client shows a placeholder instead of the number.
+async function withFallback<T>(
+  panel: PanelKey,
+  work: Promise<T>,
+  fallback: T,
+  failed: PanelKey[],
+): Promise<T> {
+  try {
+    return await work
+  } catch (e) {
+    console.error(`[dashboard] ${panel}`, e)
+    failed.push(panel)
+    return fallback
+  }
+}
+
 async function fetchSlice(
   days: number,
   marketplace: MarketplaceType | undefined,
@@ -39,13 +60,14 @@ async function fetchSlice(
   to?: string,
 ): Promise<MarketplaceSlice> {
   const emptyKpis = { total_revenue: 0, total_profit: 0, total_orders: 0, total_stock: 0 }
+  const failed: PanelKey[] = []
   const [kpis, recentOrders, allProducts, productSales, chartData, categoryData] = await Promise.all([
-    getKpis(days, marketplace, from, to).catch(e => { console.error('[dashboard] getKpis', e); return emptyKpis }),
-    getOrders(5, marketplace, from, to).catch(e => { console.error('[dashboard] getOrders', e); return [] }),
-    getProducts(marketplace).catch(e => { console.error('[dashboard] getProducts', e); return [] }),
-    getProductSales(days, marketplace, from, to).catch(e => { console.error('[dashboard] getProductSales', e); return [] }),
-    getDailyRevenue(days, marketplace, from, to).catch(e => { console.error('[dashboard] getDailyRevenue', e); return [] }),
-    getCategoryRevenue(days, marketplace, from, to).catch(e => { console.error('[dashboard] getCategoryRevenue', e); return [] }),
+    withFallback('kpis',         getKpis(days, marketplace, from, to), emptyKpis, failed),
+    withFallback('orders',       getOrders(5, marketplace, from, to), [], failed),
+    withFallback('products',     getProducts(marketplace), [], failed),
+    withFallback('productSales', getProductSales(days, marketplace, from, to), [], failed),
+    withFallback('chart',        getDailyRevenue(days, marketplace, from, to), [], failed),
+    withFallback('categories',   getCategoryRevenue(days, marketplace, from, to), [], failed),
   ])
   return {
     kpis,
@@ -55,6 +77,7 @@ async function fetchSlice(
     chartData,
     categoryData,
     hasConnectedShop,
+    failed,
   }
 }
 
