@@ -3,6 +3,7 @@ import { eq, and, ne, gte, inArray, sql } from 'drizzle-orm'
 import { db, shops, products, orders, orderItems } from '@/lib/db'
 import { getExtensionUser } from '@/lib/api/auth'
 import { withErrorHandler } from '@/lib/api-handler'
+import { marketplaceFetch } from '@/lib/marketplace-readonly-guard'
 
 const UZUM_PUBLIC = 'https://api.uzum.uz'
 
@@ -134,7 +135,10 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
 
   if (marketplace === 'uzum') {
     try {
-      const res = await fetch(`${UZUM_PUBLIC}/api/v1/product/${productId}`, {
+      // Uzum's PUBLIC catalogue API — no seller credentials involved — but it is
+      // still a marketplace host, and routing it through the guard is what keeps
+      // "every marketplace call is accounted for" true rather than nearly true.
+      const res = await marketplaceFetch(`${UZUM_PUBLIC}/api/v1/product/${productId}`, {
         headers: { Accept: 'application/json', 'User-Agent': 'Mozilla/5.0' },
         next: { revalidate: 300 },
       })

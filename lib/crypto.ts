@@ -1,6 +1,20 @@
 import { createCipheriv, createDecipheriv, randomBytes } from 'crypto'
 
-const ALGO = 'aes-256-cbc'
+// AES-256-GCM for everything written from now on. CBC encrypts but does not
+// authenticate: a ciphertext can be altered in the database and decrypt()
+// returns the altered plaintext without complaint, because there is nothing in
+// the format that could object. For an API token that is not academic — the
+// value is handed straight to a marketplace, and CBC's structure gives an
+// attacker with write access to the row meaningful control over the result.
+// GCM carries a tag that makes tampering a thrown error instead of a silent
+// substitution.
+const ALGO        = 'aes-256-gcm'
+const LEGACY_ALGO = 'aes-256-cbc'
+
+// 12 bytes is GCM's native IV size — the mode is specified around it, and any
+// other length forces an extra hashing step for no benefit. CBC used 16.
+const GCM_IV_BYTES = 12
+const GCM_TAG_BYTES = 16
 
 /**
  * WHY THIS FILE FAILS LOUDLY
@@ -67,7 +81,7 @@ const IN_PRODUCTION = () => process.env.NODE_ENV === 'production'
 let warnedAbsent = false
 
 /**
- * Returns `enc:<iv_hex>:<ciphertext_hex>`.
+ * Returns `gcm:<iv_hex>:<tag_hex>:<ciphertext_hex>`.
  *
  * Throws rather than returning plaintext when the key is missing in production
  * or malformed anywhere. Outside production a missing key returns the plaintext
@@ -103,27 +117,62 @@ export function encrypt(plaintext: string): string {
     return plaintext
   }
 
-  const iv     = randomBytes(16)
+  const iv     = randomBytes(GCM_IV_BYTES)
   const cipher = createCipheriv(ALGO, state.key, iv)
   const enc    = Buffer.concat([cipher.update(plaintext, 'utf8'), cipher.final()])
-  return `enc:${iv.toString('hex')}:${enc.toString('hex')}`
+  const tag    = cipher.getAuthTag()
+  // Four parts, against CBC's three — the prefix already distinguishes them,
+  // but the shape does too, so a malformed value cannot be mistaken for the
+  // other format and decrypted with the wrong mode.
+  return `gcm:${iv.toString('hex')}:${tag.toString('hex')}:${enc.toString('hex')}`
 }
 
-/** True if the value is in the `enc:<iv>:<ciphertext>` format. */
+/** True if the value is in either stored format — current GCM or legacy CBC. */
 export function isEncrypted(value: string): boolean {
+  return isGcm(value) || isLegacyCbc(value)
+}
+
+function isGcm(value: string): boolean {
+  return value.startsWith('gcm:') && value.split(':').length === 4
+}
+
+function isLegacyCbc(value: string): boolean {
   return value.startsWith('enc:') && value.split(':').length === 3
 }
 
 /**
- * Decrypts `enc:…` values; returns anything else unchanged.
+ * True for a value that is protected, but with the old unauthenticated cipher.
  *
- * The passthrough is not a fallback — it is how rows written before this
- * project encrypted anything, and rows written while the key was missing, stay
- * readable. `isEncrypted()` is the way to ask whether a stored value is
- * actually protected.
+ * Nothing is wrong with these rows — they decrypt correctly and stay readable
+ * indefinitely. This exists so a re-encryption pass, or a diagnostic that wants
+ * to report how much of the table is still on CBC, has something to ask.
+ */
+export function isLegacyEncryption(value: string): boolean {
+  return isLegacyCbc(value)
+}
+
+/**
+ * Decrypts both stored formats; returns anything else unchanged.
+ *
+ * BOTH, and permanently. Every credential already in the database is CBC, and
+ * nothing re-writes those rows on its own — they are re-encrypted only when a
+ * seller next saves that credential. Dropping the legacy branch on some later
+ * cleanup would lock every seller out of their own shop, so it stays.
+ *
+ * The plaintext passthrough is not a fallback either — it is how rows written
+ * before this project encrypted anything, and rows written while the key was
+ * missing, stay readable. `isEncrypted()` is the way to ask whether a stored
+ * value is actually protected; `isLegacyEncryption()` asks which cipher.
  */
 export function decrypt(value: string): string {
-  if (!value.startsWith('enc:')) return value
+  const gcm    = isGcm(value)
+  const legacy = isLegacyCbc(value)
+  // A `gcm:`/`enc:` prefix with the wrong number of parts is not a credential
+  // we can read. Returning it verbatim matches the pre-existing behaviour for a
+  // malformed `enc:` value, and a truncated ciphertext used as a token fails
+  // loudly at the marketplace rather than quietly here.
+  if (!gcm && !legacy) return value
+
   const state = keyState()
   if (state.kind !== 'ok') {
     throw new EncryptionKeyError(
@@ -132,11 +181,32 @@ export function decrypt(value: string): string {
         : `ENCRYPTION_KEY is set but unusable: ${state.reason}.`,
     )
   }
+
   const parts = value.split(':')
-  if (parts.length !== 3) return value
+
+  if (gcm) {
+    const iv  = Buffer.from(parts[1], 'hex')
+    const tag = Buffer.from(parts[2], 'hex')
+    if (iv.length !== GCM_IV_BYTES || tag.length !== GCM_TAG_BYTES) {
+      throw new EncryptionKeyError(
+        'Stored credential is not a well-formed AES-GCM value (iv or tag has ' +
+        'the wrong length). Refusing to guess at it.',
+      )
+    }
+    const decipher = createDecipheriv(ALGO, state.key, iv)
+    decipher.setAuthTag(tag)
+    // final() throws if the tag does not match. That is the whole point of the
+    // move off CBC: a row edited in the database fails here rather than
+    // returning an attacker-chosen string that gets sent to a marketplace.
+    return Buffer.concat([
+      decipher.update(Buffer.from(parts[3], 'hex')),
+      decipher.final(),
+    ]).toString('utf8')
+  }
+
   const iv       = Buffer.from(parts[1], 'hex')
   const encBuf   = Buffer.from(parts[2], 'hex')
-  const decipher = createDecipheriv(ALGO, state.key, iv)
+  const decipher = createDecipheriv(LEGACY_ALGO, state.key, iv)
   return Buffer.concat([decipher.update(encBuf), decipher.final()]).toString('utf8')
 }
 

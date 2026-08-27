@@ -7,6 +7,7 @@ import { syncFromYandex } from '@/lib/yandex/sync'
 import { decrypt } from '@/lib/crypto'
 import { logger } from '@/lib/logger'
 import { withErrorHandler } from '@/lib/api-handler'
+import { marketplaceFetch } from '@/lib/marketplace-readonly-guard'
 
 function fromDaysToDate(fromDays: unknown): Date | undefined {
   if (typeof fromDays !== 'number') return undefined
@@ -74,7 +75,8 @@ export const GET = withErrorHandler(async () => {
 
   try {
     const token = decrypt(shop.api_key_encrypted)
-    const res = await fetch(
+    // Guarded — see the matching note in app/api/uzum/sync/route.ts.
+    const res = await marketplaceFetch(
       `https://api.partner.market.yandex.ru/v2/campaigns/${shop.shop_id_external}/orders?pageSize=1`,
       {
         headers: { 'Api-Key': token, Accept: 'application/json' },
