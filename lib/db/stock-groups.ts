@@ -36,7 +36,14 @@ export interface StockGroupMember {
   marketplace: MarketplaceType
   title: string
   sku: string | null
+  /** The marketplace's own LISTED number (products.stock_quantity) — the mirror
+   *  the marketplace has already decremented for any open order. Shown per
+   *  marketplace, but NEVER used as the on-hand pool (see physical_stock). */
   stock: number
+  /** The real on-hand pool (products.physical_stock), the SAME source the sync
+   *  engine reads (lib/marketplace/stock-allocation.ts). null until product sync
+   *  self-populates it, in which case we fall back to `stock` to seed. */
+  physical_stock: number | null
   sold_total: number
   selling_price: number | null
   // 'fbs' (seller ships) | 'fbo' / 'fby' (marketplace warehouse) | null (unknown)
@@ -66,7 +73,17 @@ export interface StockGroup {
   stock_threshold: number | null
   sold_since_baseline: number
   mode: 'api' | 'baseline'
-  /** total units left across all marketplaces */
+  /** Real on-hand pool: FBS MAX + FBO SUM of physical_stock (api mode), or the
+   *  seller-entered baseline. The physical units that exist, before reservations. */
+  on_hand: number
+  /** Units held by open, paid orders — the same as total_in_process, surfaced
+   *  next to on_hand/available so the three read as one story. */
+  reserved: number
+  /** Free-to-sell = max(0, on_hand − reserved). What the seller can still sell.
+   *  Equals `leftover` — kept as a named field so the display never re-derives it. */
+  available: number
+  /** total units left across all marketplaces (== available; retained for the many
+   *  existing readers: alerts, days-of-stock, sort). */
   leftover: number
   /** units sold in the last 14 days (all marketplaces) */
   sold_14d: number
@@ -90,6 +107,36 @@ export interface StockGroup {
 // suggester writes/reads the exact same key `computeStockGroups` groups by.
 export function normalizeKey(sku: string): string {
   return sku.trim().toLowerCase().replace(/[\s\-_./]+/g, '')
+}
+
+type PoolMember = { fulfillment_type: string | null; stock: number; physical_stock: number | null }
+
+const isFbo = (m: PoolMember) => m.fulfillment_type === 'fbo' || m.fulfillment_type === 'fby'
+
+/**
+ * Real on-hand pool for a cross-marketplace group, from physical_stock — the SAME
+ * source the sync engine reads (rawGroupAvailable uses `physicalStock ?? listedStock`).
+ *   FBO/FBY → SUM  (each marketplace holds independent warehouse inventory)
+ *   FBS/unknown → MAX (one physical pool listed on every marketplace)
+ * Falls back to the listing number only to SEED a member whose physical_stock is
+ * still NULL, exactly as the engine does. NEVER subtract pending from this and then
+ * from the listing too — that is the double-count this exists to prevent.
+ */
+export function poolOnHand(members: readonly PoolMember[]): number {
+  const pool = (m: PoolMember) => Math.max(0, m.physical_stock ?? m.stock)
+  const fbo = members.filter(isFbo).reduce((s, m) => s + pool(m), 0)
+  const fbsMembers = members.filter(m => !isFbo(m))
+  const fbs = fbsMembers.length > 0 ? Math.max(0, ...fbsMembers.map(pool)) : 0
+  return fbo + fbs
+}
+
+/** The listing-mirror total (FBO sum + FBS max of stock_quantity). Display only —
+ *  what each marketplace reports, before our physical-pool correction. */
+export function groupListedStock(members: readonly PoolMember[]): number {
+  const fbo = members.filter(isFbo).reduce((s, m) => s + Math.max(0, m.stock), 0)
+  const fbsMembers = members.filter(m => !isFbo(m))
+  const fbs = fbsMembers.length > 0 ? Math.max(0, ...fbsMembers.map(m => Math.max(0, m.stock))) : 0
+  return fbo + fbs
 }
 
 /** Session-scoped variant for dashboard pages and API routes. */
@@ -117,6 +164,7 @@ export async function computeStockGroups(userId: string, shopIds: string[]): Pro
       title: products.title,
       selling_price: products.selling_price,
       stock_quantity: products.stock_quantity,
+      physical_stock: products.physical_stock,
       fulfillment_type: products.fulfillment_type,
       variant_group_key: products.variant_group_key,
       variant_color: products.variant_color,
@@ -205,6 +253,7 @@ export async function computeStockGroups(userId: string, shopIds: string[]): Pro
       title: p.title,
       sku: p.sku,
       stock: p.stock_quantity,
+      physical_stock: p.physical_stock,
       sold_total: soldByProduct.get(p.id) ?? 0,
       selling_price: p.selling_price ? Number(p.selling_price) : null,
       fulfillment_type: p.fulfillment_type,
@@ -289,25 +338,30 @@ export async function computeStockGroups(userId: string, shopIds: string[]): Pro
     // Total leftover = FBO sum + FBS max. Unknown defaults to FBS because
     // undercounting a real number is safer than inventing units that aren't
     // there (which would let sellers oversell).
-    const fboMembers = members.filter(m =>
-      m.fulfillment_type === 'fbo' || m.fulfillment_type === 'fby')
-    const fbsMembers = members.filter(m =>
-      m.fulfillment_type !== 'fbo' && m.fulfillment_type !== 'fby')
-    const fboStock = fboMembers.reduce((sum, m) => sum + m.stock, 0)
-    const fbsStock = fbsMembers.length > 0
-      ? Math.max(0, ...fbsMembers.map(m => m.stock))
-      : 0
-    const totalStock = fboStock + fbsStock
+    // The LISTING total (each marketplace's own reported number). Kept only as
+    // total_stock_api — it is NOT the pool. The marketplace has ALREADY decremented
+    // its listing for an open order, so subtracting pending from it double-counts
+    // that order — the KBWHT/JMBLK "shows 0 with a sellable unit" bug.
+    const totalStock = groupListedStock(members)
+
+    // The real on-hand pool: physical_stock (the SAME source the sync engine reads
+    // — poolOnHand mirrors rawGroupAvailable's `physicalStock ?? listedStock`).
+    const physicalOnHand = poolOnHand(members)
 
     const hasBaseline = link?.total_physical_stock != null && link.baseline_at != null
     const sinceBaseline = soldSinceBaseline.get(key) ?? 0
-    // API mode: stock_quantity from the marketplace API already reflects
-    // completed sales. Only subtract pending/confirmed orders (in-process)
-    // that the API may not have accounted for yet. Baseline mode keeps its
-    // own running tally of sold-since-baseline.
-    const leftover = hasBaseline
-      ? Math.max(0, link!.total_physical_stock! - sinceBaseline)
-      : Math.max(0, totalStock - totalInProcess)
+    // Three numbers, never collapsed into one:
+    //   on_hand  — physical units that exist (pool, or the seller's baseline)
+    //   reserved — units held by open paid orders
+    //   available — free-to-sell = max(0, on_hand − reserved)
+    // Baseline mode nets ALL sold-since-baseline instead of just open orders, so
+    // its available subtracts sinceBaseline; reserved stays informational.
+    const onHand = hasBaseline ? link!.total_physical_stock! : physicalOnHand
+    const reserved = totalInProcess
+    const available = hasBaseline
+      ? Math.max(0, onHand - sinceBaseline)
+      : Math.max(0, onHand - reserved)
+    const leftover = available
 
     // variant_group_key is resolved AFTER the loop by union-find (Phase 3): a
     // product parent is the transitive closure of StockGroups sharing any member
@@ -330,6 +384,9 @@ export async function computeStockGroups(userId: string, shopIds: string[]): Pro
       stock_threshold: link?.stock_threshold ?? null,
       sold_since_baseline: sinceBaseline,
       mode: hasBaseline ? 'baseline' : 'api',
+      on_hand: onHand,
+      reserved,
+      available,
       leftover,
       sold_14d: sold14,
       days_of_stock: dailyVelocity > 0 ? Math.floor(leftover / dailyVelocity) : null,

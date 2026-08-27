@@ -107,3 +107,34 @@ The shadow evaluator (increment 2) is deliberately **held** until #389 has run i
 
 ## Open unknown: does a marketplace self-restore on cancellation?
 It **cannot be answered from our data** — `stock_write_log` records only our writes, and `products.stock_quantity` keeps no history. Treat it as **unknown**. The cancel-restore alert's INFO branch (#388) is already observation-driven — it fires only when a restore is actually observed (`after >= before`) and does nothing if restores never happen — so it is correct either way. Do not build any ledger/alert logic that *assumes* a self-restore; wait for a live cancellation to be observed to settle it.
+
+## Every consumer of the pool — read the ledger, not the mirror
+
+When on_hand becomes authoritative, **all** of these must read it. The display path
+was silently a THIRD consumer of pool data — the KBWHT/JMBLK/PBGRY "shows 0 with a
+sellable unit" bug (Aug 27) — so the rule is: enumerate them, and none reads
+`stock_quantity` as a pool again.
+
+The bug's signature is `available = MAX(stock_quantity) − pending`: the marketplace
+already decremented its listing for the open order, so subtracting `pending` from it
+counts the order twice. The pool must be `physical_stock` (→ ledger on_hand), with
+`stock_quantity` used ONLY to display each marketplace's own listed number.
+
+| # | Consumer | File | Reads pool as | Status |
+|---|---|---|---|---|
+| 1 | **Sync engine / write planner** | `lib/marketplace/stock-allocation.ts` (`computeAvailable`/`rawGroupAvailable`), driven by `stock-sync.ts` | `physicalStock ?? listedStock` | ✅ already correct — the authority |
+| 2 | **Reconcile** (writes the pool) | `lib/marketplace/physical-stock.ts` | adopts `stock_quantity`→`physical_stock` (guarded) | writer, not reader; ledger replaces it |
+| 3 | **Manual-stock reminder** | `lib/marketplace/manual-stock-pure.ts` | `computeAvailable(members)` | ✅ correct — delegates to the engine |
+| 4 | **Display — Stocks page** | `lib/db/stock-groups.ts` (`poolOnHand`) | ~~`stock_quantity`~~ → `physical_stock` | ✅ FIXED (Aug 27) — now shows on-hand/reserved/available |
+| 5 | **Display — Products page** | `lib/db/products.ts` (2 blocks) | ~~`stock_quantity`~~ → `physical_stock ?? …` | ✅ FIXED (Aug 27) |
+| 6 | **Low-stock alerts** (Telegram) | `lib/db/alerts.ts` | ~~`stock_quantity`~~ → `physical_stock ?? …` | ✅ FIXED (Aug 27) — was firing false "running low" |
+| 7 | **Browser extension** | `app/api/extension/product`, `…/stats` | raw `stock_quantity` (no pending subtraction) | ⚠️ not the double-count, but reads the LISTING, not the pool — switch to on_hand when the ledger lands |
+
+**Ledger cutover checklist:** items 1 and 3 already funnel through `computeAvailable`,
+so pointing that one function at ledger `on_hand` (the `onHand` param already exists on
+`rawGroupAvailable`) converts them together. Items 4–6 each re-derive the pool inline
+(the reason all three carried the same bug independently) — the durable fix is for them
+to call a **single shared** `on_hand`/`available` accessor rather than re-implementing
+it. Item 7 reads the listing directly and must be pointed at the same accessor. Until
+then, `poolOnHand` (stock-groups.ts) is the shared display-side helper; the three
+display consumers should converge on it.
