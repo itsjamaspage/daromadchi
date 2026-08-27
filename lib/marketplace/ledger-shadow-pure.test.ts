@@ -38,7 +38,7 @@ describe('comparisonRows — PER ROW, not per group (the JMBLK proof)', () => {
       { marketplace: 'uzum', sku: 'JMBLK', physicalStock: 1 },
       { marketplace: 'yandex_market', sku: 'JMBLK', physicalStock: 2 },
     ]
-    const rows = comparisonRows('jmblk', members, /*legacyAvailable*/ 2, /*ledgerOnHand*/ 2)
+    const rows = comparisonRows('jmblk', members, /*legacyAvailable*/ 2, /*ledgerOnHand*/ 2, /*seeded*/ true)
     assert.equal(rows.length, 2)                       // one PER listing
     assert.equal(rows[0].legacyPhysicalStock, 1)       // uzum's own corrupted value
     assert.equal(rows[1].legacyPhysicalStock, 2)       // yandex's own value
@@ -46,9 +46,17 @@ describe('comparisonRows — PER ROW, not per group (the JMBLK proof)', () => {
     assert.deepEqual(rows.map(r => r.legacyAvailable), [2, 2])
     assert.deepEqual(rows.map(r => r.ledgerOnHand), [2, 2])
   })
-  it('diff = ledgerOnHand − legacyAvailable (0 when they agree)', () => {
+  it('diff is SUPPRESSED (null) when unseeded — the −pool value carries no signal', () => {
     const m: ShadowMember[] = [{ marketplace: 'uzum', sku: 'KBBLK', physicalStock: 2 }]
-    assert.equal(comparisonRows('kbblk', m, 2, 2)[0].diff, 0)
-    assert.equal(comparisonRows('kbblk', m, 2, -1)[0].diff, -3)  // pre-seed: on_hand negative
+    const unseeded = comparisonRows('kbblk', m, 2, 0, /*seeded*/ false)[0]
+    assert.equal(unseeded.seeded, false)
+    assert.equal(unseeded.diff, null)                  // not printed / not readable pre-seed
+    assert.equal(unseeded.ledgerOnHand, 0)             // raw components still present
+    assert.equal(unseeded.legacyAvailable, 2)
+  })
+  it('diff = ledgerOnHand − legacyAvailable ONLY once seeded', () => {
+    const m: ShadowMember[] = [{ marketplace: 'uzum', sku: 'KBBLK', physicalStock: 2 }]
+    assert.equal(comparisonRows('kbblk', m, 2, 2, true)[0].diff, 0)     // agree
+    assert.equal(comparisonRows('kbblk', m, 2, 1, true)[0].diff, -1)    // ledger 1 unit low
   })
 })

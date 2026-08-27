@@ -68,23 +68,30 @@ export interface ShadowRow {
   legacyPhysicalStock: number | null
   /** legacy group free-to-sell (computeAvailable over the pool). */
   legacyAvailable: number
-  /** ledger on_hand = Σ delta over the group's events (can be negative pre-seed). */
+  /** ledger on_hand = Σ delta over the group's events (runs NEGATIVE pre-seed). */
   ledgerOnHand: number
-  /** ledgerOnHand − legacyAvailable. Nonzero = the two disagree for this group. */
-  diff: number
+  /** does this group have a seed event? on_hand is only an absolute quantity once seeded. */
+  seeded: boolean
+  /** ledgerOnHand − legacyAvailable, but ONLY when seeded. NULL pre-seed, because
+   *  without a seed the value is uniformly −pool for every row (healthy or not) and
+   *  carries no diagnostic signal — printing it invites misreading it as corruption. */
+  diff: number | null
 }
 
 /**
  * Emit one comparison row PER member, carrying that member's own physical_stock
- * beside the shared group figures. The group numbers (legacyAvailable, ledgerOnHand)
- * repeat across a group's rows on purpose — the per-listing physicalStock is what
- * differs, and surfacing it is the entire point (JMBLK).
+ * beside the shared group figures. The group numbers repeat across a group's rows
+ * on purpose — the per-listing physicalStock is what differs (JMBLK).
+ *
+ * `diff` is computed ONLY when the group is seeded. Pre-seed it is null: on_hand
+ * has no absolute meaning yet, so a comparison to legacy is noise.
  */
 export function comparisonRows(
   matchKey: string,
   members: readonly ShadowMember[],
   legacyAvailable: number,
   ledgerOnHand: number,
+  seeded: boolean,
 ): ShadowRow[] {
   return members.map(m => ({
     matchKey,
@@ -93,13 +100,16 @@ export function comparisonRows(
     legacyPhysicalStock: m.physicalStock,
     legacyAvailable,
     ledgerOnHand,
-    diff: ledgerOnHand - legacyAvailable,
+    seeded,
+    diff: seeded ? ledgerOnHand - legacyAvailable : null,
   }))
 }
 
-/** One-line log form for a comparison row. */
+/** One-line log form. `diff` appears ONLY when seeded — a value nobody should read
+ *  pre-seed is not printed at all. */
 export function formatShadowRow(r: ShadowRow): string {
-  return `[ledger-shadow] ${r.matchKey} ${r.marketplace} sku=${r.sku ?? '—'} ` +
-    `physical=${r.legacyPhysicalStock ?? 'null'} legacyAvail=${r.legacyAvailable} ` +
-    `ledgerOnHand=${r.ledgerOnHand} diff=${r.diff}`
+  const base = `[ledger-shadow] ${r.matchKey} ${r.marketplace} sku=${r.sku ?? '—'} ` +
+    `seeded=${r.seeded} physical=${r.legacyPhysicalStock ?? 'null'} ` +
+    `legacyAvail=${r.legacyAvailable} onHand=${r.ledgerOnHand}`
+  return r.seeded ? `${base} diff=${r.diff}` : base
 }
